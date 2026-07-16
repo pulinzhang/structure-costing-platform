@@ -27,6 +27,7 @@ class Settings(BaseSettings):
     APP_VERSION: str = "1.0.0"
     APP_DESCRIPTION: str = "Stamping Costing Platform"
     DEBUG: bool = True
+    ENV: str = "development"
 
     # 服务器配置
     HOST: str = "0.0.0.0"
@@ -55,6 +56,7 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = True
+        extra = "allow"
 
 
 # 根据环境调整配置

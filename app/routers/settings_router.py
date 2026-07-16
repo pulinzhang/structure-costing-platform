@@ -14,7 +14,7 @@ logger = get_logger("router.settings")
 router = APIRouter(prefix="/settings", tags=["Settings"])
 
 
-@router.get("/", response_class=HTMLResponse)
+@router.get("/", response_class=HTMLResponse, name="settings.index")
 async def index(request: Request):
     """
     设置页面
@@ -30,13 +30,13 @@ async def index(request: Request):
     )
 
 
-@router.get("/general", response_class=HTMLResponse)
+@router.get("/general", response_class=HTMLResponse, name="settings.general")
 async def general(request: Request):
     """基本设置页面"""
     return await index(request)
 
 
-@router.get("/costing", response_class=HTMLResponse)
+@router.get("/costing", response_class=HTMLResponse, name="settings.costing")
 async def costing_settings(request: Request):
     """核价参数设置页面"""
     return await index(request)

@@ -56,6 +56,17 @@ def create_app() -> FastAPI:
 
     app.mount("/static", StaticFiles(directory="static"), name="static")
     templates = Jinja2Templates(directory="templates")
+
+    # 添加 settings 到模板上下文，这样所有模板都能访问 config
+    from fastapi.templating import Jinja2Templates as _Templates
+
+    def get_templates():
+        _t = _Templates(directory="templates")
+        _t.env.globals["config"] = settings
+        _t.env.globals["request"] = None  # placeholder
+        return _t
+
+    templates = get_templates()
     app.state.templates = templates
 
     # 详见 docs/fastapi-guide.md 第6节

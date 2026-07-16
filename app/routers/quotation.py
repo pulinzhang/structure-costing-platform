@@ -16,7 +16,7 @@ logger = get_logger("router.quotation")
 router = APIRouter(prefix="/quotation", tags=["Quotation"])
 
 
-@router.get("/", response_class=HTMLResponse)
+@router.get("/", response_class=HTMLResponse, name="quotation.index")
 async def index(request: Request):
     """
     报价列表页面
@@ -32,7 +32,7 @@ async def index(request: Request):
     )
 
 
-@router.get("/create", response_class=HTMLResponse)
+@router.get("/create", response_class=HTMLResponse, name="quotation.create")
 async def create(request: Request):
     """
     创建报价单页面
@@ -48,7 +48,7 @@ async def create(request: Request):
     )
 
 
-@router.get("/api/list")
+@router.get("/api/list", name="quotation.list")
 async def list_quotations(
     page: int = 1,
     page_size: int = 20,

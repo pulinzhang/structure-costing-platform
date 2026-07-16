@@ -16,7 +16,7 @@ logger = get_logger("router.parts")
 router = APIRouter(prefix="/parts", tags=["Parts"])
 
 
-@router.get("/", response_class=HTMLResponse)
+@router.get("/", response_class=HTMLResponse, name="parts.index")
 async def index(request: Request):
     """
     零件列表页面
@@ -32,7 +32,7 @@ async def index(request: Request):
     )
 
 
-@router.get("/api/list")
+@router.get("/api/list", name="parts.list")
 async def list_parts(
     page: int = 1,
     page_size: int = 20,

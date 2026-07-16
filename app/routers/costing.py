@@ -16,7 +16,7 @@ logger = get_logger("router.costing")
 router = APIRouter(prefix="/costing", tags=["Costing"])
 
 
-@router.get("/", response_class=HTMLResponse)
+@router.get("/", response_class=HTMLResponse, name="costing.index")
 async def index(request: Request):
     """
     核价页面
@@ -32,7 +32,7 @@ async def index(request: Request):
     )
 
 
-@router.get("/start", response_class=HTMLResponse)
+@router.get("/start", response_class=HTMLResponse, name="costing.start")
 async def start_costing(request: Request):
     """
     开始核价页面
@@ -48,7 +48,7 @@ async def start_costing(request: Request):
     )
 
 
-@router.post("/api/calculate")
+@router.post("/api/calculate", name="costing.calculate")
 async def calculate_cost(
     part_ids: list[int],
     db: Session = Depends(get_db)

@@ -15,7 +15,7 @@ logger = get_logger("router.upload")
 router = APIRouter(prefix="/upload", tags=["Upload"])
 
 
-@router.get("/", response_class=HTMLResponse)
+@router.get("/", response_class=HTMLResponse, name="upload.index")
 async def index(request: Request):
     """
     上传页面
@@ -31,7 +31,7 @@ async def index(request: Request):
     )
 
 
-@router.post("/")
+@router.post("/", name="upload.handle")
 async def upload_file(file: UploadFile = File(...)):
     """
     上传文件接口
