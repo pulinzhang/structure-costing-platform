@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}零件{% endblock %}
+
+{% block page_title %}零件管理{% endblock %}
+
+{% block breadcrumb_item %}零件{% endblock %}
+
+{% block top_actions %}
+<a href="{{ url_for('upload.index') }}" class="btn btn-primary">
+    <i class="bi bi-plus-lg me-1"></i>导入零件
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <div class="row align-items-center">
+            <div class="col-md-4">
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" class="form-control" placeholder="搜索零件..." id="searchInput" onkeyup="filterTable('partsTable', 'searchInput')">
+                </div>
+            </div>
+            <div class="col-md-8 text-end">
+                <span class="text-muted">共 0 个零件</span>
+            </div>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0" id="partsTable">
+                <thead>
+                    <tr>
+                        <th data-sortable>零件号</th>
+                        <th data-sortable>零件名称</th>
+                        <th data-sortable>材料</th>
+                        <th data-sortable>重量 (kg)</th>
+                        <th>状态</th>
+                        <th class="text-end">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="6">
+                            <div class="empty-state py-5">
+                                <i class="bi bi-inbox"></i>
+                                <h5>暂无零件数据</h5>
+                                <p class="text-muted">点击「导入零件」上传 Excel 文件</p>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="card-footer">
+        <nav>
+            <ul class="pagination justify-content-center mb-0">
+            </ul>
+        </nav>
+    </div>
+</div>
+{% endblock %}

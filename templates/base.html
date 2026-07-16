@@ -1,0 +1,148 @@
+{#**
+ * 汽车冲压件自动核价平台
+ * 基础模板 - 定义整体布局
+ *#}
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="{{ description or '汽车冲压件自动核价平台' }}">
+    <title>{% block title %}{{ title or '仪表盘' }}{% endblock %} - {{ config.APP_NAME }}</title>
+
+    {# Favicon #}
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚙️</text></svg>">
+
+    {# Google Fonts #}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    {# Bootstrap 5 CSS #}
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    {# Bootstrap Icons #}
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+
+    {# Custom CSS #}
+    <link href="{{ url_for('static', path='/css/style.css') }}" rel="stylesheet">
+
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    {# 加载状态遮罩 #}
+    <div class="loading-overlay" style="display: none;">
+        <div class="spinner"></div>
+    </div>
+
+    {# 侧边栏 #}
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <h1>
+                <i class="bi bi-gear-wide-connected"></i>
+                {{ config.APP_NAME }}
+            </h1>
+            <span>Stamping Costing Platform</span>
+        </div>
+
+        <nav>
+            <ul class="sidebar-nav">
+                <li class="sidebar-nav-item">
+                    <a href="{{ url_for('dashboard.index') }}"
+                       class="sidebar-nav-link {% if request.url.path == '/' or request.url.path == '/dashboard' %}active{% endif %}">
+                        <i class="bi bi-speedometer2"></i>
+                        <span>仪表盘</span>
+                    </a>
+                </li>
+                <li class="sidebar-nav-item">
+                    <a href="{{ url_for('upload.index') }}"
+                       class="sidebar-nav-link {% if request.url.path.startswith('/upload') %}active{% endif %}">
+                        <i class="bi bi-upload"></i>
+                        <span>上传</span>
+                    </a>
+                </li>
+                <li class="sidebar-nav-item">
+                    <a href="{{ url_for('parts.index') }}"
+                       class="sidebar-nav-link {% if request.url.path.startswith('/parts') %}active{% endif %}">
+                        <i class="bi bi-box-seam"></i>
+                        <span>零件</span>
+                    </a>
+                </li>
+                <li class="sidebar-nav-item">
+                    <a href="{{ url_for('costing.index') }}"
+                       class="sidebar-nav-link {% if request.url.path.startswith('/costing') %}active{% endif %}">
+                        <i class="bi bi-calculator"></i>
+                        <span>核价</span>
+                    </a>
+                </li>
+                <li class="sidebar-nav-item">
+                    <a href="{{ url_for('quotation.index') }}"
+                       class="sidebar-nav-link {% if request.url.path.startswith('/quotation') %}active{% endif %}">
+                        <i class="bi bi-file-earmark-text"></i>
+                        <span>报价</span>
+                    </a>
+                </li>
+
+                <li class="sidebar-nav-divider">
+                    <hr style="border-color: rgba(255,255,255,0.1); margin: 1rem 1.5rem;">
+                </li>
+
+                <li class="sidebar-nav-item">
+                    <a href="{{ url_for('settings.index') }}"
+                       class="sidebar-nav-link {% if request.url.path.startswith('/settings') %}active{% endif %}">
+                        <i class="bi bi-gear"></i>
+                        <span>设置</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <div class="sidebar-footer" style="position: absolute; bottom: 0; left: 0; right: 0; padding: 1rem 1.5rem; border-top: 1px solid rgba(255,255,255,0.1);">
+            <small style="color: rgba(255,255,255,0.5);">
+                v{{ config.APP_VERSION }}
+            </small>
+        </div>
+    </aside>
+
+    {# 主内容区 #}
+    <main class="main-content">
+        {# 顶部导航 #}
+        <header class="top-nav">
+            <div>
+                <h2>{% block page_title %}仪表盘{% endblock %}</h2>
+                {% block breadcrumb %}
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="{{ url_for('dashboard.index') }}">首页</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">{% block breadcrumb_item %}仪表盘{% endblock %}</li>
+                    </ol>
+                </nav>
+                {% endblock %}
+            </div>
+            <div>
+                {% block top_actions %}{% endblock %}
+            </div>
+        </header>
+
+        {# 页面内容 #}
+        <div class="page-content">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    {# Toast 容器 #}
+    <div class="toast-container position-fixed top-0 end-0 p-3"></div>
+
+    {# Bootstrap JS Bundle #}
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    {# HTMX #}
+    <script src="https://unpkg.com/htmx.org@1.9.10/dist/htmx.min.js"></script>
+
+    {# Custom JS #}
+    <script src="{{ url_for('static', path='/js/main.js') }}"></script>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
