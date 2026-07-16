@@ -55,12 +55,24 @@
                         <span>仪表盘</span>
                     </a>
                 </li>
-                <li class="sidebar-nav-item">
-                    <a href="{{ url_for('upload.index') }}"
-                       class="sidebar-nav-link {% if request.url.path.startswith('/upload') %}active{% endif %}">
+                <li class="sidebar-nav-item has-submenu">
+                    <a href="#"
+                       class="sidebar-nav-link {% if request.url.path.startswith('/upload') %}active{% endif %}"
+                       data-bs-toggle="collapse"
+                       data-bs-target="#uploadSubmenu"
+                       aria-expanded="{{ 'true' if request.url.path.startswith('/upload') else 'false' }}">
                         <i class="bi bi-upload"></i>
                         <span>上传</span>
+                        <i class="bi bi-chevron-down ms-auto"></i>
                     </a>
+                    <ul class="submenu collapse {% if request.url.path.startswith('/upload') %}show{% endif %}" id="uploadSubmenu">
+                        <li>
+                            <a href="{{ url_for('stamping.index') }}" class="submenu-link {% if request.url.path == '/upload/stamping' %}active{% endif %}">
+                                <i class="bi bi-car-front"></i>
+                                <span>车型冲压工艺文件</span>
+                            </a>
+                        </li>
+                    </ul>
                 </li>
                 <li class="sidebar-nav-item">
                     <a href="{{ url_for('parts.index') }}"

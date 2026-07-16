@@ -89,11 +89,12 @@ def create_app() -> FastAPI:
         )
 
     # 导入各个功能模块的路由
-    from app.routers import dashboard, upload, parts, costing, quotation, settings_router
+    from app.routers import dashboard, parts, costing, quotation, settings_router
+    from app.routers.upload import stamping_router
 
     # include_router = 注册路由，详见 docs/fastapi-guide.md 第6节
     app.include_router(dashboard.router)
-    app.include_router(upload.router)
+    app.include_router(stamping_router)
     app.include_router(parts.router)
     app.include_router(costing.router)
     app.include_router(quotation.router)

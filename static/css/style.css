@@ -94,6 +94,46 @@ body {
     border-left-color: var(--brand-primary);
 }
 
+/* 子菜单样式 */
+.has-submenu .submenu {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height 0.3s ease-out;
+}
+
+.has-submenu .submenu.show {
+    max-height: 200px;
+}
+
+.has-submenu .submenu-link {
+    display: flex;
+    align-items: center;
+    padding: 0.625rem 1.5rem 0.625rem 3.5rem;
+    color: rgba(255, 255, 255, 0.6);
+    text-decoration: none;
+    font-size: 0.875rem;
+    transition: all 0.2s;
+}
+
+.has-submenu .submenu-link:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.has-submenu .submenu-link.active {
+    color: var(--brand-primary);
+    background: rgba(13, 110, 253, 0.1);
+}
+
+.has-submenu .submenu-link i {
+    width: 20px;
+    margin-right: 0.5rem;
+    text-align: center;
+}
+
 .sidebar-nav-link i {
     width: 24px;
     margin-right: 0.75rem;
@@ -246,6 +286,11 @@ body {
 .upload-zone:hover, .upload-zone.dragover {
     border-color: var(--brand-primary);
     background: #eff6ff;
+}
+
+.upload-zone.has-file {
+    border-color: var(--success-color);
+    background: #f0fdf4;
 }
 
 .upload-zone i {
