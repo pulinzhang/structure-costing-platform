@@ -61,18 +61,11 @@ def create_app() -> FastAPI:
     app.mount("/static", StaticFiles(directory="static"), name="static")
     # 把上传目录挂为静态资源，使 sketch_url 能直接通过 URL 访问
     app.mount("/uploads", StaticFiles(directory=str(settings.UPLOAD_DIR)), name="uploads")
+
+    # 创建模板引擎
     templates = Jinja2Templates(directory="templates")
-
-    # 添加 settings 到模板上下文，这样所有模板都能访问 config
-    from fastapi.templating import Jinja2Templates as _Templates
-
-    def get_templates():
-        _t = _Templates(directory="templates")
-        _t.env.globals["config"] = settings
-        _t.env.globals["request"] = None  # placeholder
-        return _t
-
-    templates = get_templates()
+    # 添加 settings 到模板全局上下文
+    templates.env.globals["config"] = settings
     app.state.templates = templates
 
     # 详见 docs/fastapi-guide.md 第6节
