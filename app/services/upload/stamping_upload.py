@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.models import StampingPart, StampingProcess
 from app.parsers import parse_stamping_excel
+from app.config import settings
 
 
 logger = logging.getLogger("service.stamping_upload")
