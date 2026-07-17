@@ -11,6 +11,37 @@ from typing import Optional
 
 from app.config import settings
 
+# 模块级别的 app.log 处理器（独立于 LoggerConfig）
+_MOD_LOG_DIR = Path(__file__).parent.parent / "logs"
+_MOD_LOG_DIR.mkdir(parents=True, exist_ok=True)
+_app_log_handler = logging.FileHandler(
+    str(_MOD_LOG_DIR / "app.log"), 
+    encoding="utf-8",
+    mode="a"  # 追加模式
+)
+_app_log_handler.setLevel(logging.INFO)
+_app_log_handler.setFormatter(logging.Formatter(
+    "%(asctime)s | %(levelname)-8s | %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S"
+))
+# 添加到根 logger
+_root_logger = logging.getLogger()
+_root_logger.addHandler(_app_log_handler)
+_root_logger.setLevel(logging.INFO)
+print(f"[DEBUG] 模块级别 app.log 处理器已添加", file=sys.stderr)
+
+# 测试：直接在模块加载时尝试写入文件
+_TEST_LOG_DIR = Path(__file__).parent.parent/ "logs"
+_TEST_LOG_DIR.mkdir(parents=True, exist_ok=True)
+_test_handler = logging.FileHandler(str(_TEST_LOG_DIR / "module_load.log"), encoding="utf-8")
+_test_handler.setLevel(logging.INFO)
+_test_handler.setFormatter(logging.Formatter("%(asctime)s - %(message)s"))
+_test_logger = logging.getLogger("test_module")
+_test_logger.addHandler(_test_handler)
+_test_logger.setLevel(logging.INFO)
+_test_logger.info("logging_config.py 模块加载成功")
+print(f"[DEBUG] 日志模块加载，LOG_DIR={_TEST_LOG_DIR}", file=sys.stderr)
+
 
 class LoggerConfig:
     """
@@ -18,16 +49,18 @@ class LoggerConfig:
     提供统一的日志配置和管理
     """
 
-    _loggers = {}
     _configured = False
 
     @classmethod
-    def configure(cls) -> None:
+    def configure(cls, force: bool = False) -> None:
         """
         配置全局日志
         只需调用一次，在应用启动时执行
+
+        Args:
+            force: 是否强制重新配置
         """
-        if cls._configured:
+        if cls._configured and not force:
             return
 
         # 确保日志目录存在
@@ -35,17 +68,24 @@ class LoggerConfig:
 
         # 配置根日志器
         root_logger = logging.getLogger()
-        root_logger.setLevel(getattr(logging, settings.LOG_LEVEL.upper()))
+        
+        # 只在还没有配置时设置
+        if not cls._configured:
+            # 重要：清除所有现有的处理器
+            root_logger.handlers.clear()
+            
+            # 设置日志级别
+            level = getattr(logging, settings.LOG_LEVEL.upper(), logging.INFO)
+            root_logger.setLevel(level)
+            
+            # 添加控制台处理器
+            console_handler = cls._create_console_handler()
+            console_handler.setLevel(level)
+            root_logger.addHandler(console_handler)
 
-        # 清除现有处理器
-        root_logger.handlers.clear()
-
-        # 添加控制台处理器
-        console_handler = cls._create_console_handler()
-        root_logger.addHandler(console_handler)
-
-        # 添加文件处理器
+        # 添加文件处理器（总是添加，不检查是否已存在）
         file_handler = cls._create_file_handler()
+        file_handler.setLevel(logging.INFO)
         root_logger.addHandler(file_handler)
 
         cls._configured = True
@@ -55,7 +95,8 @@ class LoggerConfig:
     @staticmethod
     def _create_console_handler() -> logging.Handler:
         """创建控制台处理器"""
-        handler = logging.StreamHandler(sys.stdout)
+        # 写入 stderr 而不是 stdout，避免被 uvicorn 捕获后重定向
+        handler = logging.StreamHandler(sys.stderr)
         handler.setLevel(logging.DEBUG)
         formatter = logging.Formatter(
             fmt="%(asctime)s | %(levelname)-8s | %(name)s:%(funcName)s:%(lineno)d - %(message)s",
@@ -68,12 +109,32 @@ class LoggerConfig:
     def _create_file_handler() -> logging.Handler:
         """创建文件处理器"""
         log_file = settings.LOG_DIR / "app.log"
-        handler = RotatingFileHandler(
-            filename=str(log_file),
-            maxBytes=10 * 1024 * 1024,  # 10MB
-            backupCount=5,
-            encoding="utf-8"
-        )
+        
+        # 验证目录可写
+        import os
+        if not os.access(settings.LOG_DIR, os.W_OK):
+            print(f"[FATAL] 日志目录不可写: {settings.LOG_DIR}", file=sys.stderr)
+        
+        # 自定义 Handler，确保每次写入后立即刷新到磁盘
+        class SafeRotatingFileHandler(RotatingFileHandler):
+            def emit(self, record):
+                try:
+                    super().emit(record)
+                    self.flush()
+                except Exception as e:
+                    pass  # 静默忽略日志写入错误，避免干扰主流程
+        
+        try:
+            handler = SafeRotatingFileHandler(
+                filename=str(log_file),
+                maxBytes=10 * 1024 * 1024,  # 10MB
+                backupCount=5,
+                encoding="utf-8"
+            )
+        except Exception as e:
+            print(f"[FATAL] 无法创建文件处理器: {e}", file=sys.stderr)
+            raise
+        
         handler.setLevel(logging.INFO)
         formatter = logging.Formatter(
             fmt="%(asctime)s | %(levelname)-8s | %(name)s:%(funcName)s:%(lineno)d - %(message)s",
@@ -94,14 +155,13 @@ class LoggerConfig:
         Returns:
             logging.Logger 实例
         """
+        # 每次都确保配置已初始化
         if not cls._configured:
             cls.configure()
 
-        if name not in cls._loggers:
-            logger = logging.getLogger(name)
-            cls._loggers[name] = logger
-
-        return cls._loggers[name]
+        # 每次都获取新的 logger 实例，避免缓存导致的问题
+        logger = logging.getLogger(name)
+        return logger
 
 
 def get_logger(name: str) -> logging.Logger:
@@ -115,7 +175,19 @@ def get_logger(name: str) -> logging.Logger:
     Returns:
         logging.Logger 实例
     """
-    return LoggerConfig.get_logger(name)
+    # 确保配置已初始化
+    if not LoggerConfig._configured:
+        LoggerConfig.configure(force=True)
+
+    # 获取日志器
+    logger = logging.getLogger(name)
+    
+    # 确保日志器的级别与根日志器一致，避免子 logger 被设置为 NOTSET 导致不输出
+    root_logger = logging.getLogger()
+    if logger.level == 0:  # 0 表示 NOTSET
+        logger.setLevel(root_logger.level)
+    
+    return logger
 
 
 def log_request(logger: logging.Logger, method: str, path: str) -> None:

@@ -9,8 +9,8 @@ from typing import Optional
 from pydantic_settings import BaseSettings
 
 
-# 项目根目录
-BASE_DIR: Path = Path(__file__).resolve().parent.parent.parent
+# 项目根目录 (app/config.py -> app/ -> 项目根目录)
+BASE_DIR: Path = Path(__file__).resolve().parent.parent
 
 # 获取环境变量，默认为 development
 ENV: str = os.getenv("APP_ENV", "development")

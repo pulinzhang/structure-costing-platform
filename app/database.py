@@ -3,7 +3,6 @@
 提供 SQLAlchemy 数据库连接和会话管理
 """
 
-import logging
 from contextlib import contextmanager
 from typing import Generator
 
@@ -12,9 +11,10 @@ from sqlalchemy.orm import sessionmaker, Session, declarative_base
 from sqlalchemy.pool import StaticPool
 
 from app.config import settings
+from app.utils.logging_config import get_logger
 
 
-logger = logging.getLogger(__name__)
+logger = get_logger("database")
 
 Base = declarative_base()
 
