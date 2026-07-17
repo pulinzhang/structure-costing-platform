@@ -14,27 +14,31 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from app.config import settings, ensure_directories
-from app.utils.logging_config import LoggerConfig, log_request, log_response
+from app.utils.logging_config import LoggerConfig, log_request, log_response, get_logger
 from app.database import DatabaseConfig
 
 
-logger = logging.getLogger(__name__)
+# 重要：在导入其他模块之前先配置日志，确保所有模块的 logger 都能正确获取日志器
+# 这解决了模块导入顺序导致的日志器配置问题
+logger = get_logger("main")
+LoggerConfig.configure(force=True)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """应用生命周期管理，详见 docs/fastapi-guide.md 第8节"""
     # 启动时
+    # 注意：日志配置应该在 uvicorn 启动前完成，这里只做保障
+    from app.utils.logging_config import LoggerConfig
+    LoggerConfig.configure(force=True)
+    ensure_directories()
+    DatabaseConfig.create_tables()
+
     logger.info("=" * 50)
     logger.info(f"{settings.APP_NAME} 正在启动...")
     logger.info(f"版本: {settings.APP_VERSION}")
     logger.info(f"环境: {settings.ENV}")
     logger.info("=" * 50)
-
-    LoggerConfig.configure()
-    ensure_directories()
-    DatabaseConfig.create_tables()
-
     logger.info("应用启动完成")
     logger.info(f"访问地址: http://{settings.HOST}:{settings.PORT}")
 
@@ -55,6 +59,8 @@ def create_app() -> FastAPI:
     )
 
     app.mount("/static", StaticFiles(directory="static"), name="static")
+    # 把上传目录挂为静态资源，使 sketch_url 能直接通过 URL 访问
+    app.mount("/uploads", StaticFiles(directory=str(settings.UPLOAD_DIR)), name="uploads")
     templates = Jinja2Templates(directory="templates")
 
     # 添加 settings 到模板上下文，这样所有模板都能访问 config
@@ -137,5 +143,6 @@ if __name__ == "__main__":
         host=settings.HOST,
         port=settings.PORT,
         reload=settings.DEBUG,
-        log_level=settings.LOG_LEVEL.lower(),
+        log_level="info",
+        access_log=False,  # 禁用 uvicorn 访问日志，使用我们自己的请求日志中间件
     )

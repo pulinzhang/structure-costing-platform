@@ -41,6 +41,10 @@ class ParserResult:
     total_rows: int = 0
     parse_time_ms: float = 0
 
+    # 零件简图：part_number -> 图片二进制
+    # 同一零件多张图时保留最后一张
+    images_by_part: Dict[str, bytes] = field(default_factory=dict)
+
     @property
     def part_count(self) -> int:
         return len(self.parts)
@@ -49,11 +53,15 @@ class ParserResult:
     def process_count(self) -> int:
         return len(self.processes)
 
+    @property
+    def image_count(self) -> int:
+        return len(self.images_by_part)
+
     def log_summary(self) -> None:
         logger.info(f"=== 解析完成 ===")
         logger.info(f"Sheet: {self.sheet_name}")
         logger.info(f"表头行: {self.header_row}, 数据起始行: {self.data_start_row}")
-        logger.info(f"零件数: {self.part_count}, 工序数: {self.process_count}")
+        logger.info(f"零件数: {self.part_count}, 工序数: {self.process_count}, 简图: {self.image_count}")
         logger.info(f"Header路径: {self.header_paths}")
         logger.info(f"列映射: {self.col_map}")
         if self.warnings:
@@ -90,10 +98,10 @@ class StampingExcelParser:
             ("单重", 1000), ("零件重量", 950), ("重量", 900),
         ],
         "length": [
-            ("料片长", 1000), ("长", 700),
+            ("料片长", 1000), ("长/", 1050), ("长", 700),
         ],
         "width": [
-            ("料片宽", 1000), ("宽", 700),
+            ("料片宽", 1000), ("宽/", 1050), ("宽", 700),
         ],
         "count": [
             ("可制件数", 1000), ("件数", 950),
@@ -170,24 +178,42 @@ class StampingExcelParser:
             logger.info(f"Header路径: {self.result.header_paths}")
             logger.info(f"列映射: {self.result.col_map}")
 
+            # 预扫描图片（按 row 暂存，后续按归属映射到 part）
+            images_by_row = self._collect_images(sheet)
+
             # 解析数据
             process_count = defaultdict(int)
             current_part: Optional[Dict[str, Any]] = None
+
+            # 记录每个 part_number 在 sheet 中对应的行范围（start_row, end_row）
+            part_row_ranges: Dict[str, List[int]] = {}
+            current_part_start_row: Optional[int] = None
 
             for row_idx in range(self.result.data_start_row, sheet.max_row + 1):
                 self.result.total_rows += 1
 
                 part_no = self._get_value(sheet, row_idx, self.result.col_map.get("part_no", 2))
+                seq_no = self._get_value(sheet, row_idx, self.result.col_map.get("seq", 1))
+                part_name = self._get_value(sheet, row_idx, self.result.col_map.get("part_name", 3))
                 op = self._get_value(sheet, row_idx, self.result.col_map.get("op", 12))
 
-                if self._is_part_row(part_no):
+                if self._is_part_row(part_no, seq_no, part_name, current_part):
                     if current_part and current_part.get("part_number"):
+                        # 关闭上一个零件的行范围
+                        if current_part_start_row is not None:
+                            part_row_ranges.setdefault(
+                                current_part["part_number"], []
+                            ).append((current_part_start_row, row_idx - 1))
                         self._save_part(current_part, process_count)
                         self.result.parts.append(current_part)
                     current_part = self._parse_part_row(sheet, row_idx)
                     process_count[current_part["part_number"]] = 0
+                    current_part_start_row = row_idx
 
-                    if self._is_process_row(op):
+                    # 如果有工序信息（即使是 OP10-OP40 范围格式），也算有工序
+                    if op:
+                        process_count[current_part["part_number"]] = 1
+                    elif self._is_process_row(op):
                         process = self._parse_process(sheet, row_idx, current_part["part_number"])
                         if process:
                             self.result.processes.append(process)
@@ -201,8 +227,17 @@ class StampingExcelParser:
                         process_count[current_part["part_number"]] += 1
 
             if current_part and current_part.get("part_number"):
+                if current_part_start_row is not None:
+                    part_row_ranges.setdefault(
+                        current_part["part_number"], []
+                    ).append((current_part_start_row, sheet.max_row))
                 self._save_part(current_part, process_count)
                 self.result.parts.append(current_part)
+
+            # 把预扫描的图片按行范围映射到 part_number
+            self.result.images_by_part = self._assign_images_to_parts(
+                images_by_row, part_row_ranges
+            )
 
             self.result.parse_time_ms = (time.time() - start_time) * 1000
             self.result.log_summary()
@@ -212,6 +247,126 @@ class StampingExcelParser:
         except Exception as e:
             logger.error(f"解析文件失败: {e}")
             raise
+
+    def _collect_images(self, sheet) -> Dict[int, bytes]:
+        """
+        预扫描 Sheet 中的零件简图
+
+        仅提取零件简图列（Col 3 / Col D）上的图片。
+        其他位置（标题、自动化列、模板插图）的图片忽略。
+        返回: Excel row(1-based) -> 图片二进制
+        """
+        images_by_row: Dict[int, bytes] = {}
+        if not hasattr(sheet, "_images"):
+            return images_by_row
+
+        from openpyxl.drawing.spreadsheet_drawing import OneCellAnchor, TwoCellAnchor
+
+        sketch_col = 3  # 零件简图列（0-indexed = D 列）
+        count = 0
+        skipped = 0
+
+        for img in sheet._images:
+            anchor = getattr(img, "anchor", None)
+            if anchor is None:
+                skipped += 1
+                continue
+
+            try:
+                # 起始 col / row（0-indexed → 转 1-indexed）
+                if isinstance(anchor, (OneCellAnchor, TwoCellAnchor)):
+                    col = anchor._from.col
+                    start_row = anchor._from.row
+                else:
+                    skipped += 1
+                    continue
+
+                # 只取零件简图列的图片
+                if col != sketch_col:
+                    skipped += 1
+                    continue
+
+                # 必须起始于数据区附近（≥ header_row）
+                if start_row < self.result.header_row:
+                    skipped += 1
+                    continue
+
+                # 读取图片二进制（openpyxl 的 Image._data() 返回原始 PNG/JPEG bytes）
+                img_bytes: Optional[bytes] = None
+                try:
+                    if hasattr(img, "_data") and callable(img._data):
+                        data = img._data()
+                        if isinstance(data, bytes):
+                            img_bytes = data
+                except Exception:
+                    img_bytes = None
+                # 兜底：直接从 ref 读取
+                if not img_bytes:
+                    ref = getattr(img, "ref", None)
+                    if ref is not None and hasattr(ref, "read"):
+                        try:
+                            data = ref.read()
+                            if isinstance(data, bytes):
+                                img_bytes = data
+                        except Exception:
+                            img_bytes = None
+                if not img_bytes:
+                    skipped += 1
+                    continue
+
+                excel_row = start_row + 1
+                images_by_row[excel_row] = img_bytes
+                count += 1
+            except Exception as e:
+                logger.debug(f"读取图片失败: {e}")
+                skipped += 1
+                continue
+
+        logger.info(
+            f"预扫描图片: {count} 张候选 (跳过 {skipped} 张非零件图)"
+        )
+        return images_by_row
+
+    def _assign_images_to_parts(
+        self,
+        images_by_row: Dict[int, bytes],
+        part_row_ranges: Dict[str, List[Tuple[int, int]]],
+    ) -> Dict[str, bytes]:
+        """
+        根据行范围把图片归属到零件号
+
+        同一零件号若多张图（数据范围被中间空白截断），保留最后一张。
+        """
+        result: Dict[str, bytes] = {}
+        if not images_by_row or not part_row_ranges:
+            return result
+
+        assigned = 0
+        unmatched: List[int] = []
+        for excel_row, img_bytes in images_by_row.items():
+            matched_pn: Optional[str] = None
+            for pn, ranges in part_row_ranges.items():
+                for (start, end) in ranges:
+                    if start <= excel_row <= end:
+                        matched_pn = pn
+                        break
+                if matched_pn:
+                    break
+
+            if matched_pn:
+                result[matched_pn] = img_bytes
+                assigned += 1
+            else:
+                unmatched.append(excel_row)
+
+        if assigned:
+            logger.info(f"图片归属: {assigned} 张已归属到零件")
+        if unmatched:
+            logger.warning(
+                f"图片无法归属: 行 {unmatched[:10]}"
+                + (f" ... 共 {len(unmatched)} 行" if len(unmatched) > 10 else "")
+            )
+        return result
 
     def _find_stamping_sheet(self, workbook) -> Optional[openpyxl.worksheet.worksheet.Worksheet]:
         """识别冲压数据Sheet"""
@@ -319,20 +474,23 @@ class StampingExcelParser:
     def _build_col_map(self) -> Dict[str, int]:
         """
         根据 Header 路径建立列映射
+        注意：避免多个模式映射到同一列，并处理 length/width 冲突
         """
         col_map: Dict[str, int] = {}
+        used_cols: set = set()
 
-        for col, path in self.result.header_paths.items():
+        for col_str, path in self.result.header_paths.items():
+            col = int(col_str)
             for col_name, patterns in self.COLUMN_PATTERNS.items():
                 if col_name in col_map:
                     continue
-
+                if col in used_cols:
+                    continue
                 for pattern, score in patterns:
-                    # 检查路径是否匹配
                     if pattern in path or re.search(pattern, path, re.IGNORECASE):
                         col_map[col_name] = col
+                        used_cols.add(col)
                         break
-
         return col_map
 
     def _get_value(self, sheet, row: int, col: int) -> Any:
@@ -342,30 +500,74 @@ class StampingExcelParser:
             return self.merged_cache[cache_key]
         return sheet.cell(row, col).value
 
-    def _is_part_row(self, value: Any) -> bool:
-        """判断零件行"""
+    def _is_part_row(
+        self,
+        value: Any,
+        seq_value: Any = None,
+        name_value: Any = None,
+        current_part: Optional[Dict[str, Any]] = None,
+    ) -> bool:
+        """
+        判断是否新零件行
+
+        由于 Excel 中"零件号"列常合并多行（同一零件的多道工序共享一个编号），
+        仅看 part_no 不够。需要结合 seq、name、part_no 三元组判断：
+        - 必须是新零件的特征之一：seq 变化、name 变化，或 part_no 与上一行不同
+        """
         if not value:
             return False
 
         val_str = str(value).strip()
 
+        # 排除明显无效值
         exclude = [r"^序号?$", r"^零件号?$", r"^名称$", r"^合计", r"^备注",
                    r"^总计", r"^平均", r"^小计", r"^零件", r"^工序", r"^$"]
         for p in exclude:
             if re.match(p, val_str):
                 return False
 
-        if len(val_str) >= 6 and re.match(r"^[A-Za-z0-9]+$", val_str):
-            if re.search(r"[A-Za-z]", val_str) and re.search(r"[0-9]", val_str):
-                return True
+        # 必须符合零件号格式
+        if not (len(val_str) >= 6 and re.match(r"^[A-Za-z0-9]+$", val_str)):
+            return False
+        if not (re.search(r"[A-Za-z]", val_str) and re.search(r"[0-9]", val_str)):
+            return False
 
-        return False
+        # 如果提供了 current_part，需要新行"显著区别于"上一行
+        if current_part is not None:
+            # 同一零件号的延续（合并单元格场景）：返回 False
+            if current_part.get("part_number") == val_str:
+                # 但如果 seq/name 不同，说明是真正的新零件
+                if seq_value is not None:
+                    try:
+                        cur_seq = current_part.get("seq_no")
+                        if cur_seq is not None and str(seq_value).strip() and str(cur_seq) != str(seq_value).strip():
+                            return True
+                    except Exception:
+                        pass
+                # 默认视为同一零件的合并行
+                return False
+            # part_no 不同：是新零件
+            return True
+
+        # 没有 current_part 参考，只要有像样的零件号就是新零件
+        return True
 
     def _is_process_row(self, value: Any) -> bool:
         """判断工序行"""
         if not value:
             return False
         return bool(re.match(r"^OP\d+$", str(value).strip(), re.IGNORECASE))
+
+    def _parse_op_range(self, op_range: str) -> Optional[int]:
+        """解析 OP10-OP40 格式的范围，返回工序数量"""
+        if not op_range:
+            return None
+        match = re.match(r"^OP(\d+)\s*-\s*OP(\d+)$", str(op_range).strip(), re.IGNORECASE)
+        if match:
+            start = int(match.group(1))
+            end = int(match.group(2))
+            return end - start + 1 if end >= start else None
+        return None
 
     def _parse_part_row(self, sheet, row_idx: int) -> Dict[str, Any]:
         """解析零件行"""
@@ -382,7 +584,7 @@ class StampingExcelParser:
             "sheet_width": self._parse_decimal(self._get_value(sheet, row_idx, col_map.get("width", 9))),
             "parts_per_sheet": self._parse_int(self._get_value(sheet, row_idx, col_map.get("count", 10))),
             "sheet_type": self._get_value(sheet, row_idx, col_map.get("sheet_type", 11)),
-            "tonnage": self._parse_decimal(self._get_value(sheet, row_idx, col_map.get("tonnage", 15))),
+            "tonnage": self._parse_int(self._get_value(sheet, row_idx, col_map.get("tonnage", 15))),
             "die_type": self._get_value(sheet, row_idx, col_map.get("die_type", 16)),
             "process_method": self._get_value(sheet, row_idx, col_map.get("method", 17)),
             "automation": self._get_value(sheet, row_idx, col_map.get("auto", 18)),
@@ -406,14 +608,21 @@ class StampingExcelParser:
             "process_seq": str(op).strip(),
             "process_code": code,
             "die_sets": self._parse_int(self._get_value(sheet, row_idx, col_map.get("die_set", 14))),
-            "tonnage": self._parse_decimal(self._get_value(sheet, row_idx, col_map.get("tonnage", 15))),
+            "tonnage": self._parse_int(self._get_value(sheet, row_idx, col_map.get("tonnage", 15))),
             "remark": self._get_value(sheet, row_idx, col_map.get("remark", 19)),
         }
 
     def _save_part(self, part: Dict[str, Any], process_count: Dict[str, int]) -> None:
-        """保存零件"""
+        """保存零件（同一零件的警告只发一次）"""
         part_no = part.get("part_number")
         count = process_count.get(part_no, 0)
+
+        if not hasattr(self, "_warned_parts"):
+            self._warned_parts = set()
+
+        if part_no in self._warned_parts:
+            return
+        self._warned_parts.add(part_no)
 
         if count == 0:
             self.result.warnings.append(f"零件 {part_no} 没有任何工序")

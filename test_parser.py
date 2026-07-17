@@ -3,7 +3,7 @@ sys.path.insert(0, '.')
 from app.parsers import parse_stamping_excel
 
 # 直接测试
-parts, processes = parse_stamping_excel('excelSample/副本奇瑞T28车身件项目冲压工艺确认表-烟台海众.xlsm')
+parts, processes = parse_stamping_excel('excelSample/副本奇瑞T28车身件项目冲压工艺确认表-烟台海众.xlsx')
 
 print(f'\n最终结果:')
 print(f'零件数: {len(parts)}')
