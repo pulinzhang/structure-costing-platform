@@ -1,5 +1,9 @@
 # Services Package
 
-from app.services.upload.stamping_upload import StampingUploadService
+from app.services.stamping import StampingPartService
+from app.services.stamping.upload import StampingUploadService
 
-__all__ = ["StampingUploadService"]
+__all__ = [
+    "StampingPartService",
+    "StampingUploadService",
+]

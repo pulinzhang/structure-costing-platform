@@ -3,7 +3,6 @@
 Dashboard Router
 """
 
-import logging
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
 
@@ -21,8 +20,7 @@ async def index(request: Request):
     显示系统概览和统计信息
     """
     logger.info("访问仪表盘首页")
-    from main import app
-    return app.state.templates.TemplateResponse(
+    return request.app.state.templates.TemplateResponse(
         "dashboard.html",
         {
             "request": request,

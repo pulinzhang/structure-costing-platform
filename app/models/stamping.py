@@ -5,13 +5,13 @@
 
 from decimal import Decimal
 from datetime import datetime
-from typing import List, Optional
+from typing import List
 from sqlalchemy import (
     Column, Integer, String, DateTime, Numeric, Text, ForeignKey, Index, UniqueConstraint
 )
-from sqlalchemy.orm import declarative_base, relationship, Mapped
+from sqlalchemy.orm import relationship, Mapped
 
-Base = declarative_base()
+from app.database import Base
 
 
 class StampingPart(Base):

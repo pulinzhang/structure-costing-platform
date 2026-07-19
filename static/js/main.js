@@ -98,7 +98,117 @@ function confirmAction(message, callback) {
     }
 }
 
-// 文件上传处理
+// HttpClient - 基于标准 fetch 的 HTTP 客户端
+// 提供：自动 loading、统一错误 toast、业务响应自动解包（{success, message, data}）
+const HttpClient = (() => {
+    const DEFAULT_TIMEOUT = 30000;
+
+    let pendingRequests = 0;
+
+    function trackStart() {
+        pendingRequests++;
+        showLoading();
+    }
+
+    function trackEnd() {
+        pendingRequests = Math.max(0, pendingRequests - 1);
+        if (pendingRequests === 0) hideLoading();
+    }
+
+    function buildUrl(url, params) {
+        if (!params) return url;
+        const usp = new URLSearchParams();
+        for (const [key, value] of Object.entries(params)) {
+            if (value === undefined || value === null || value === '') continue;
+            usp.append(key, String(value));
+        }
+        const qs = usp.toString();
+        if (!qs) return url;
+        return url.includes('?') ? `${url}&${qs}` : `${url}?${qs}`;
+    }
+
+    async function parseResponse(response) {
+        const contentType = response.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+            return response.json();
+        }
+        const text = await response.text();
+        try { return JSON.parse(text); } catch { return text; }
+    }
+
+    async function request(method, url, { params, body, headers, timeout } = {}) {
+        const fullUrl = buildUrl(url, params);
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeout || DEFAULT_TIMEOUT);
+
+        const init = {
+            method,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                ...(headers || {}),
+            },
+            signal: controller.signal,
+        };
+
+        // 自动序列化 body
+        if (body !== undefined && body !== null) {
+            if (body instanceof FormData || body instanceof Blob || body instanceof ArrayBuffer) {
+                init.body = body;
+            } else {
+                init.headers['Content-Type'] = init.headers['Content-Type'] || 'application/json';
+                init.body = typeof body === 'string' ? body : JSON.stringify(body);
+            }
+        }
+
+        trackStart();
+        try {
+            const response = await fetch(fullUrl, init);
+            clearTimeout(timer);
+            const data = await parseResponse(response);
+
+            // 业务响应解包：{ success, message, data }
+            if (data && typeof data === 'object' && 'success' in data) {
+                if (data.success) {
+                    return { ok: true, status: response.status, data: data.data, message: data.message };
+                }
+                const msg = data.message || data.detail || '请求失败';
+                showToast(msg, 'danger');
+                const err = new Error(msg);
+                err.status = response.status;
+                throw err;
+            }
+
+            // HTTP 错误
+            if (!response.ok) {
+                const msg = (data && (data.message || data.detail)) || `请求失败 (${response.status})`;
+                showToast(msg, 'danger');
+                const err = new Error(msg);
+                err.status = response.status;
+                throw err;
+            }
+
+            return { ok: true, status: response.status, data };
+        } catch (error) {
+            clearTimeout(timer);
+            let message = error.message || '网络请求失败';
+            if (error.name === 'AbortError') message = '请求超时，请重试';
+            if (message !== error.message) {
+                showToast(message, 'danger');
+            }
+            throw error;
+        } finally {
+            trackEnd();
+        }
+    }
+
+    return {
+        get:    (url, opts) => request('GET',    url, opts),
+        post:   (url, body, opts) => request('POST',   url, { ...(opts || {}), body }),
+        put:    (url, body, opts) => request('PUT',    url, { ...(opts || {}), body }),
+        patch:  (url, body, opts) => request('PATCH',  url, { ...(opts || {}), body }),
+        delete: (url, opts) => request('DELETE', url, opts),
+    };
+})();
 class FileUploader {
     constructor(options = {}) {
         this.dropZone = options.dropZone;
@@ -321,6 +431,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // 导出全局函数
 window.AppConfig = AppConfig;
+window.HttpClient = HttpClient;
 window.showLoading = showLoading;
 window.hideLoading = hideLoading;
 window.showToast = showToast;

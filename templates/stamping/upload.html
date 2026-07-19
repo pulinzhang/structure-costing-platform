@@ -223,7 +223,7 @@
                     showToast('文件上传成功', 'success');
                     resetForm();
                 } else {
-                    showToast(data.detail || '上传失败', 'danger');
+                    showToast(data.message || data.detail || '上传失败', 'danger');
                 }
             })
             .catch(error => {

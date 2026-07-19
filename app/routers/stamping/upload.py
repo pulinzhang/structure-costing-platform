@@ -1,34 +1,33 @@
 """
-车型冲压工艺文件上传路由
-Stamping Process Upload Router
+冲压工艺文件上传路由
 """
 
 import logging
-from datetime import datetime
-from pathlib import Path
-from fastapi import APIRouter, Request, UploadFile, File, Form, HTTPException, Depends
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Depends, Request
+from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
 
 from app.utils.logging_config import get_logger
 from app.config import settings
 from app.database import get_db
-from app.services.upload.stamping_upload import StampingUploadService
+from app.services.stamping.upload import StampingUploadService
+from app.utils.response import ApiResponse
 
 
-logger = get_logger("router.stamping")
-router = APIRouter(prefix="/upload/stamping", tags=["Stamping Upload"])
+logger = get_logger("router.stamping.upload")
+router = APIRouter(prefix="/stamping/upload", tags=["Stamping Upload"])
 
 
-@router.get("/", response_class=HTMLResponse, name="stamping.index")
-async def index(request: Request):
-    """车型冲压工艺文件上传页面"""
-    logger.info("访问车型冲压工艺文件上传页面")
-    from main import app
-    return app.state.templates.TemplateResponse(
-        "upload/stamping.html",
-        {"request": request, "title": "车型冲压工艺文件上传"}
-    )
+@router.get("/", name="stamping.upload.index")
+async def upload_index():
+    """重定向到上传页面"""
+    return RedirectResponse(url="/stamping/upload/page", status_code=302)
+
+
+@router.get("/page", name="stamping.upload_page", response_class=HTMLResponse)
+async def upload_page(request: Request):
+    """冲压工艺文件上传页面"""
+    return request.app.state.templates.TemplateResponse("stamping/upload.html", {"request": request})
 
 
 @router.post("/", name="stamping.upload")
@@ -38,21 +37,12 @@ async def upload_stamping_file(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
 ):
-    """
-    上传车型冲压工艺文件，解析并保存到数据库
-
-    Args:
-        vehicle_model: 车型
-        version: 版本
-        file: Excel 文件
-        db: 数据库会话
-    """
+    """上传车型冲压工艺文件，解析并保存到数据库"""
     logger.info(
         f"接收到车型冲压工艺文件上传: 车型={vehicle_model}, "
         f"版本={version}, 文件={file.filename}"
     )
 
-    # 验证输入（HTTP 层职责）
     if not vehicle_model.strip():
         raise HTTPException(status_code=400, detail="请输入车型")
     if not version.strip():
@@ -67,7 +57,6 @@ async def upload_stamping_file(
             detail=f"不支持的文件类型: {ext}，支持的类型: {', '.join(settings.ALLOWED_EXTENSIONS)}"
         )
 
-    # 读取并验证文件大小
     content = await file.read()
     if len(content) > settings.MAX_UPLOAD_SIZE:
         raise HTTPException(
@@ -76,7 +65,6 @@ async def upload_stamping_file(
         )
 
     try:
-        # 调用 service 处理所有业务逻辑
         service = StampingUploadService(db)
         result = service.process_upload(
             file_content=content,
@@ -84,13 +72,10 @@ async def upload_stamping_file(
             vehicle_model=vehicle_model,
             version=version,
         )
-
-        return JSONResponse({
-            "success": True,
-            "message": f"上传成功: {result['parts_count']} 个零件",
-            "data": result,
-        })
-
+        return ApiResponse.success(
+            data=result,
+            message=f"上传成功: {result['parts_count']} 个零件, {result['processes_count']} 道工序"
+        )
     except HTTPException:
         raise
     except Exception as e:

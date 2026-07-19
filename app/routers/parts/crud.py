@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.utils.logging_config import get_logger
 from app.database import get_db
+from app.utils.response import ApiResponse
 
 
 logger = get_logger("router.parts")
@@ -22,8 +23,7 @@ async def index(request: Request):
     零件列表页面
     """
     logger.info("访问零件列表页面")
-    from main import app
-    return app.state.templates.TemplateResponse(
+    return request.app.state.templates.TemplateResponse(
         "parts.html",
         {
             "request": request,
@@ -45,10 +45,8 @@ async def list_parts(
     logger.info(f"获取零件列表: page={page}, page_size={page_size}")
 
     # TODO: 实现从数据库查询零件列表
-    return {
-        "items": [],
-        "total": 0,
-        "page": page,
-        "page_size": page_size,
-        "total_pages": 0,
-    }
+    return ApiResponse.list_(
+        data=[],
+        total=0,
+        message="零件列表功能开发中"
+    )

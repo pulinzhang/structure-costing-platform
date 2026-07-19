@@ -3,13 +3,13 @@
 Quotation Router
 """
 
-import logging
 from fastapi import APIRouter, Request, Depends
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 
 from app.utils.logging_config import get_logger
 from app.database import get_db
+from app.utils.response import ApiResponse
 
 
 logger = get_logger("router.quotation")
@@ -22,8 +22,7 @@ async def index(request: Request):
     报价列表页面
     """
     logger.info("访问报价列表页面")
-    from main import app
-    return app.state.templates.TemplateResponse(
+    return request.app.state.templates.TemplateResponse(
         "quotation.html",
         {
             "request": request,
@@ -38,8 +37,7 @@ async def create(request: Request):
     创建报价单页面
     """
     logger.info("访问创建报价单页面")
-    from main import app
-    return app.state.templates.TemplateResponse(
+    return request.app.state.templates.TemplateResponse(
         "quotation.html",
         {
             "request": request,
@@ -61,10 +59,8 @@ async def list_quotations(
     logger.info(f"获取报价列表: page={page}, page_size={page_size}")
 
     # TODO: 实现从数据库查询报价列表
-    return {
-        "items": [],
-        "total": 0,
-        "page": page,
-        "page_size": page_size,
-        "total_pages": 0,
-    }
+    return ApiResponse.list_(
+        data=[],
+        total=0,
+        message="报价列表功能开发中"
+    )

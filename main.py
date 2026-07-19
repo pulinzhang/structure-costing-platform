@@ -32,6 +32,8 @@ async def lifespan(app: FastAPI):
     from app.utils.logging_config import LoggerConfig
     LoggerConfig.configure(force=True)
     ensure_directories()
+    # 导入所有模型，确保 Base.metadata 能扫描到表结构
+    from app.models import StampingPart, StampingProcess
     DatabaseConfig.create_tables()
 
     logger.info("=" * 50)
@@ -76,10 +78,7 @@ def create_app() -> FastAPI:
         当用户访问 http://localhost:8000/ 时
         自动跳转到 /dashboard
         """
-        # 注意：这里使用 from main import app 是为了获取模板引擎
-        # 因为此时 app.state.templates 已经在 create_app() 中设置好了
-        from main import app
-        return app.state.templates.TemplateResponse(
+        return request.app.state.templates.TemplateResponse(
             "dashboard.html",
             {
                 "request": request,
@@ -88,16 +87,22 @@ def create_app() -> FastAPI:
         )
 
     # 导入各个功能模块的路由
-    from app.routers import dashboard, parts, costing, quotation, settings_router
-    from app.routers.upload import stamping_router
+    from app.routers.dashboard import router as dashboard_router
+    from app.routers.costing.crud import router as costing_router
+    from app.routers.quotation.crud import router as quotation_router
+    from app.routers.parts.crud import router as parts_router
+    from app.routers.settings.crud import router as settings_router
+    from app.routers.stamping.crud import router as stamping_crud_router
+    from app.routers.stamping.upload import router as stamping_upload_router
 
     # include_router = 注册路由，详见 docs/fastapi-guide.md 第6节
-    app.include_router(dashboard.router)
-    app.include_router(stamping_router)
-    app.include_router(parts.router)
-    app.include_router(costing.router)
-    app.include_router(quotation.router)
-    app.include_router(settings_router.router)
+    app.include_router(dashboard_router)
+    app.include_router(stamping_crud_router)
+    app.include_router(stamping_upload_router)
+    app.include_router(parts_router)
+    app.include_router(costing_router)
+    app.include_router(quotation_router)
+    app.include_router(settings_router)
 
     # 详见 docs/fastapi-guide.md 第7节
     @app.middleware("http")

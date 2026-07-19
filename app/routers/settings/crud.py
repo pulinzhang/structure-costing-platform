@@ -3,7 +3,6 @@
 Settings Router
 """
 
-import logging
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
 
@@ -20,8 +19,7 @@ async def index(request: Request):
     设置页面
     """
     logger.info("访问设置页面")
-    from main import app
-    return app.state.templates.TemplateResponse(
+    return request.app.state.templates.TemplateResponse(
         "settings.html",
         {
             "request": request,

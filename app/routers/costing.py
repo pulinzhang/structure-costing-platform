@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.utils.logging_config import get_logger
 from app.database import get_db
+from app.utils.response import ApiResponse
 
 
 logger = get_logger("router.costing")
@@ -59,7 +60,7 @@ async def calculate_cost(
     logger.info(f"计算成本: {len(part_ids)} 个零件")
 
     # TODO: 实现成本计算逻辑
-    return {
-        "success": True,
-        "results": [],
-    }
+    return ApiResponse.success(
+        data={"results": []},
+        message="成本计算功能开发中"
+    )

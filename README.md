@@ -26,28 +26,35 @@
 ```
 stamping-costing-platform/
 ├── app/
-│   ├── routers/          # API 路由
-│   │   ├── dashboard.py   # 仪表盘
-│   │   ├── upload.py      # 文件上传
-│   │   ├── parts.py       # 零件管理
-│   │   ├── costing.py      # 成本核算
-│   │   ├── quotation.py   # 报价管理
-│   │   └── settings_router.py
-│   ├── utils/            # 工具函数
-│   ├── domains/          # 领域模型
-│   ├── services/         # 业务服务
-│   ├── repositories/     # 数据访问
-│   ├── parsers/          # 文件解析
-│   ├── config.py         # 配置管理
-│   └── database.py       # 数据库配置
-├── templates/            # Jinja2 模板
-├── static/               # 静态资源
-├── data/                 # 数据库存储
-├── logs/                 # 日志文件
-├── uploads/              # 上传文件
-├── main.py               # 应用入口
-├── requirements.txt
-└── pyproject.toml
+│   ├── routers/              # API 路由
+│   │   ├── dashboard.py      # 仪表盘
+│   │   ├── costing/          # 成本核算
+│   │   ├── parts/            # 零件管理
+│   │   ├── quotation/        # 报价管理
+│   │   ├── settings/         # 系统设置
+│   │   └── stamping/         # 冲压工艺
+│   │       ├── crud.py       # 零件/工序 CRUD
+│   │       └── upload.py     # 文件上传
+│   ├── services/             # 业务逻辑层
+│   │   └── stamping/         # 冲压工艺服务
+│   │       ├── stamping_service.py
+│   │       └── upload/
+│   ├── repositories/          # 数据访问层
+│   │   └── stamping/
+│   ├── models/                # 数据库模型
+│   ├── schemas/               # Pydantic DTO
+│   ├── parsers/               # Excel 解析器
+│   ├── utils/                 # 工具函数
+│   ├── config.py              # 配置管理
+│   └── database.py            # 数据库配置
+├── templates/                  # Jinja2 模板
+├── static/                     # 静态资源
+├── docs/                       # 文档
+├── data/                       # 数据库存储
+├── logs/                       # 日志文件
+├── uploads/                    # 上传文件
+├── main.py                     # 应用入口
+└── requirements.txt
 ```
 
 ## 快速开始
@@ -103,8 +110,9 @@ uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
 - `GET /` - 首页（重定向到仪表盘）
 - `/dashboard` - 仪表盘数据
-- `/upload` - 文件上传接口
-- `/parts` - 零件管理 API
+- `/stamping/upload` - 文件上传接口
+- `/stamping/parts` - 零件管理 API
+- `/stamping/processes` - 工序管理 API
 - `/costing` - 成本核算 API
 - `/quotation` - 报价管理 API
 - `/settings` - 系统设置 API
