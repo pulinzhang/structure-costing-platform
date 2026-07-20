@@ -4,20 +4,81 @@
 """
 
 import logging
-from typing import List, Optional, Dict, Any, Tuple
-from sqlalchemy.orm import Session, selectinload
-from sqlalchemy import func
+from typing import List, Optional, Dict, Any, Tuple, Type, TypeVar
+from sqlalchemy.orm import Session
+from sqlalchemy import func, select
 
 from app.models import StampingPart, StampingProcess
 
 
 logger = logging.getLogger("repository.stamping")
 
+# 泛型：表示任意 ORM 模型类
+T = TypeVar("T")
+
+
+class BaseRepository:
+    """Repository 基类，封装通用 CRUD 操作"""
+
+    def __init__(self, model: Type[T]):
+        self.model = model
+
+    def get_by_id(self, db: Session, id: int) -> Optional[T]:
+        """根据 ID 查询单条记录"""
+        return db.query(self.model).filter(self.model.id == id).first()
+
+    def list_all(self, db: Session, skip: int = 0, limit: int = 100) -> List[T]:
+        """查询所有记录（分页）"""
+        return db.query(self.model).offset(skip).limit(limit).all()
+
+    def create(self, db: Session, data: Dict[str, Any]) -> T:
+        """创建单条记录"""
+        instance = self.model(**data)
+        db.add(instance)
+        db.commit()
+        db.refresh(instance)
+        logger.info(f"创建记录: {self.model.__name__} (id={instance.id})")
+        return instance
+
+    def bulk_create(self, db: Session, data_list: List[Dict[str, Any]]) -> List[T]:
+        """批量创建记录"""
+        instances = [self.model(**data) for data in data_list]
+        db.add_all(instances)
+        db.commit()
+        for instance in instances:
+            db.refresh(instance)
+        logger.info(f"批量创建: {self.model.__name__} x{len(instances)}")
+        return instances
+
+    def update(self, db: Session, id: int, update_data: Dict[str, Any]) -> Optional[T]:
+        """更新记录"""
+        instance = self.get_by_id(db, id)
+        if not instance:
+            return None
+        for key, value in update_data.items():
+            if hasattr(instance, key):
+                setattr(instance, key, value)
+        db.commit()
+        db.refresh(instance)
+        logger.info(f"更新记录: {self.model.__name__} (id={id})")
+        return instance
+
+    def delete(self, db: Session, id: int) -> bool:
+        """删除记录"""
+        instance = self.get_by_id(db, id)
+        if not instance:
+            return False
+        db.delete(instance)
+        db.commit()
+        logger.info(f"删除记录: {self.model.__name__} (id={id})")
+        return True
+
 
 class StampingPartRepository:
     """零件数据访问"""
 
     def get_by_id(self, db: Session, part_id: int) -> Optional[StampingPart]:
+        from sqlalchemy.orm import selectinload
         return (
             db.query(StampingPart)
             .options(selectinload(StampingPart.processes))
@@ -48,6 +109,7 @@ class StampingPartRepository:
             q = q.filter(StampingPart.part_name.like(f"%{part_name}%"))
 
         total = q.count()
+        from sqlalchemy.orm import selectinload
         parts = (
             q.options(selectinload(StampingPart.processes))
             .order_by(StampingPart.seq_no)

@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field, field_serializer
 
 
 def decimal_to_float(value: Union[Decimal, float, None]) -> float | None:
+    """Decimal 类型转 float 序列化器工厂"""
     return float(value) if isinstance(value, Decimal) else value
 
 
@@ -46,8 +47,8 @@ class StampingProcessResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
-class StampingPartListResponse(BaseModel):
-    """零件列表响应（不包含工序详情，避免 N+1 与冗余数据）"""
+class StampingPartBaseResponse(BaseModel):
+    """零件基础响应字段（被列表和详情响应共用）"""
     id: int
     vehicle_model: str
     version: str
@@ -69,50 +70,23 @@ class StampingPartListResponse(BaseModel):
     sketch_url: str | None
     created_at: datetime | None
     updated_at: datetime | None
+
+    @field_serializer("thickness", "part_weight", "sheet_length", "sheet_width", "tonnage")
+    def serialize_decimal(self, value: Union[Decimal, float, None]) -> float | None:
+        return decimal_to_float(value)
+
+    @field_serializer("created_at", "updated_at")
+    def serialize_datetime(self, value: datetime | None) -> str | None:
+        return value.isoformat() if value else None
+
+    model_config = {"from_attributes": True}
+
+
+class StampingPartListResponse(StampingPartBaseResponse):
+    """零件列表响应（不包含工序详情，避免 N+1 与冗余数据）"""
     process_count: int = 0
 
-    @field_serializer("thickness", "part_weight", "sheet_length", "sheet_width", "tonnage")
-    def serialize_decimal(self, value: Union[Decimal, float, None]) -> float | None:
-        return decimal_to_float(value)
 
-    @field_serializer("created_at", "updated_at")
-    def serialize_datetime(self, value: datetime | None) -> str | None:
-        return value.isoformat() if value else None
-
-    model_config = {"from_attributes": True}
-
-
-class StampingPartResponse(BaseModel):
+class StampingPartResponse(StampingPartBaseResponse):
     """零件响应（包含完整工序详情）"""
-    id: int
-    vehicle_model: str
-    version: str
-    seq_no: int | None
-    part_number: str
-    part_name: str | None
-    material: str | None
-    thickness: float | None
-    part_weight: float | None
-    sheet_length: float | None
-    sheet_width: float | None
-    parts_per_sheet: int | None
-    sheet_type: str | None
-    tonnage: float | None
-    die_type: str | None
-    process_method: str | None
-    automation: str | None
-    remark: str | None
-    sketch_url: str | None
-    created_at: datetime | None
-    updated_at: datetime | None
     processes: List[StampingProcessResponse] = []
-
-    @field_serializer("thickness", "part_weight", "sheet_length", "sheet_width", "tonnage")
-    def serialize_decimal(self, value: Union[Decimal, float, None]) -> float | None:
-        return decimal_to_float(value)
-
-    @field_serializer("created_at", "updated_at")
-    def serialize_datetime(self, value: datetime | None) -> str | None:
-        return value.isoformat() if value else None
-
-    model_config = {"from_attributes": True}

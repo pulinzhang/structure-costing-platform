@@ -1,10 +1,10 @@
 """
 冲压工艺文件上传路由
+前后端分离 API 接口
 """
 
 import logging
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Depends, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Depends
 from sqlalchemy.orm import Session
 
 from app.utils.logging_config import get_logger
@@ -15,22 +15,10 @@ from app.utils.response import ApiResponse
 
 
 logger = get_logger("router.stamping.upload")
-router = APIRouter(prefix="/stamping/upload", tags=["Stamping Upload"])
+router = APIRouter(prefix="/api/stamping/upload", tags=["冲压工艺上传 API"])
 
 
-@router.get("/", name="stamping.upload.index")
-async def upload_index():
-    """重定向到上传页面"""
-    return RedirectResponse(url="/stamping/upload/page", status_code=302)
-
-
-@router.get("/page", name="stamping.upload_page", response_class=HTMLResponse)
-async def upload_page(request: Request):
-    """冲压工艺文件上传页面"""
-    return request.app.state.templates.TemplateResponse("stamping/upload.html", {"request": request})
-
-
-@router.post("/", name="stamping.upload")
+@router.post("/")
 async def upload_stamping_file(
     vehicle_model: str = Form(...),
     version: str = Form(...),

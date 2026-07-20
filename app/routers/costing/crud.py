@@ -1,10 +1,9 @@
 """
 核价路由
-Costing Router
+Costing Router - API 接口
 """
 
-from fastapi import APIRouter, Request, Depends
-from fastapi.responses import HTMLResponse
+from fastapi import APIRouter, Depends, Body
 from sqlalchemy.orm import Session
 
 from app.utils.logging_config import get_logger
@@ -13,42 +12,12 @@ from app.utils.response import ApiResponse
 
 
 logger = get_logger("router.costing")
-router = APIRouter(prefix="/costing", tags=["Costing"])
+router = APIRouter(prefix="/api/costing", tags=["核价 API"])
 
 
-@router.get("/", response_class=HTMLResponse, name="costing.index")
-async def index(request: Request):
-    """
-    核价页面
-    """
-    logger.info("访问核价页面")
-    return request.app.state.templates.TemplateResponse(
-        "costing.html",
-        {
-            "request": request,
-            "title": "核价",
-        }
-    )
-
-
-@router.get("/start", response_class=HTMLResponse, name="costing.start")
-async def start_costing(request: Request):
-    """
-    开始核价页面
-    """
-    logger.info("访问开始核价页面")
-    return request.app.state.templates.TemplateResponse(
-        "costing.html",
-        {
-            "request": request,
-            "title": "核价",
-        }
-    )
-
-
-@router.post("/api/calculate", name="costing.calculate")
+@router.post("/calculate")
 async def calculate_cost(
-    part_ids: list[int],
+    part_ids: list[int] = Body(..., description="零件ID列表"),
     db: Session = Depends(get_db)
 ):
     """
@@ -56,8 +25,8 @@ async def calculate_cost(
     """
     logger.info(f"计算成本: {len(part_ids)} 个零件")
 
-    # TODO: 实现成本计算逻辑
+    # TODO: 核价功能开发中，返回占位数据
     return ApiResponse.success(
-        data={"results": []},
+        data={"results": [], "part_count": len(part_ids)},
         message="成本计算功能开发中"
     )

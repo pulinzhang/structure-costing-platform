@@ -1,38 +1,69 @@
 /**
  * 汽车冲压件自动核价平台
  * 主 JavaScript 文件
- * 遵循 docs/front-end.mdc 规范：仅使用 Tailwind 类名
+ * 前后端分离架构：纯 JavaScript，无 HTMX
  */
 
-// 全局配置
+// ===== 全局配置 =====
 const AppConfig = {
     debug: true,
-    htmxTimeout: 30000,
 };
 
-// HTMX 全局配置
-if (typeof htmx !== 'undefined') {
-    htmx.config.timeout = AppConfig.htmxTimeout;
+// ===== SVG 图标辅助函数（替代 Bootstrap Icons） =====
+// 图标 SVG 定义
+const SVG_ICONS = {
+    'file-earmark-excel': `<svg class="inline-block w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>`,
+    'trash': `<svg class="inline-block w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>`,
+    'eye': `<svg class="inline-block w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`,
+    'x-lg': `<svg class="inline-block w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>`,
+    'chevron-left': `<svg class="inline-block w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>`,
+    'chevron-right': `<svg class="inline-block w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>`,
+    'inbox': `<svg class="inline-block w-10 h-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>`,
+    'list-ol': `<svg class="inline-block w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 6h11"/><path d="M10 12h11"/><path d="M10 18h11"/><path d="M4 6h1v4"/><path d="M4 10h2"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg>`,
+    'exclamation-circle': `<svg class="inline-block w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>`,
+    'exclamation-triangle': `<svg class="inline-block w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>`,
+    'check-circle': `<svg class="inline-block w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>`,
+    'info-circle': `<svg class="inline-block w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>`,
+    'box': `<svg class="inline-block w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>`,
+    'gear': `<svg class="inline-block w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>`,
+    'plus': `<svg class="inline-block w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14"/><path d="M5 12h14"/></svg>`,
+    'download': `<svg class="inline-block w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>`,
+    'upload': `<svg class="inline-block w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/></svg>`,
+};
 
-    // HTMX 事件处理
-    document.body.addEventListener('htmx:beforeRequest', function(evt) {
-        showLoading();
-    });
+// 获取 SVG 图标
+const svgIcon = (name, extraClass = '') => {
+    if (!SVG_ICONS[name]) return '';
+    if (extraClass) {
+        return SVG_ICONS[name].replace(/class="[^"]*"/, `class="${extraClass}"`);
+    }
+    return SVG_ICONS[name];
+};
 
-    document.body.addEventListener('htmx:afterRequest', function(evt) {
-        hideLoading();
-    });
+// ===== 工具函数 =====
 
-    document.body.addEventListener('htmx:error', function(evt) {
-        hideLoading();
-        showToast('请求失败，请重试', 'error');
-    });
+/** HTML 转义（防止 XSS）- 全局可用 */
+const esc = (value) => {
+    if (value == null) return '-';
+    return String(value).replace(/[&<>"']/g, (ch) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+    }[ch]));
+};
 
-    document.body.addEventListener('htmx:responseError', function(evt) {
-        hideLoading();
-        showToast('服务器错误，请稍后重试', 'error');
-    });
-}
+/** 数字格式化 - 全局可用 */
+const fmtNum = (value, digits = 2) => {
+    if (value == null || Number.isNaN(value)) return '-';
+    return Number(value).toFixed(digits);
+};
+
+/** 文件大小格式化 */
+const formatFileSize = (bytes) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+};
 
 // ===== 加载状态管理 =====
 let loadingCount = 0;
@@ -46,7 +77,7 @@ function showLoading() {
         overlay.innerHTML = '<div class="spinner"></div>';
         document.body.appendChild(overlay);
     }
-    overlay.style.display = 'flex';
+    overlay.classList.add('visible');
 }
 
 function hideLoading() {
@@ -54,7 +85,7 @@ function hideLoading() {
     if (loadingCount === 0) {
         const overlay = document.querySelector('.loading-overlay');
         if (overlay) {
-            overlay.style.display = 'none';
+            overlay.classList.remove('visible');
         }
     }
 }
@@ -79,7 +110,7 @@ function showToast(message, type = 'info') {
     toast.innerHTML = `
         <span class="text-sm font-medium">${escapeHtml(message)}</span>
         <button type="button" class="text-white/80 hover:text-white transition-colors" onclick="this.closest('[role=alert]').remove()">
-            <i class="bi bi-x-lg"></i>
+            ${svgIcon('x-lg')}
         </button>
     `;
 
@@ -124,12 +155,10 @@ const HttpClient = (() => {
 
     function trackStart() {
         pendingRequests++;
-        showLoading();
     }
 
     function trackEnd() {
         pendingRequests = Math.max(0, pendingRequests - 1);
-        if (pendingRequests === 0) hideLoading();
     }
 
     function buildUrl(url, params) {
@@ -307,7 +336,7 @@ class FileUploader {
         if (this.previewElement) {
             this.previewElement.innerHTML = `
                 <div class="flex items-center gap-3 p-3 bg-sky-50 border border-sky-200 rounded-md">
-                    <i class="bi bi-file-earmark-excel text-2xl text-green-600"></i>
+                    <span class="text-green-600">${svgIcon('file-earmark-excel')}</span>
                     <div class="flex-1 min-w-0">
                         <div class="text-sm font-medium text-slate-900 truncate">${escapeHtml(file.name)}</div>
                         <div class="text-xs text-slate-500">${this.formatFileSize(file.size)}</div>
@@ -327,108 +356,8 @@ class FileUploader {
 }
 
 // ===== 分页（Tailwind 风格） =====
-function initPagination(containerId, options = {}) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-
-    const {
-        totalItems = 0,
-        currentPage = 1,
-        pageSize = 20,
-        onPageChange = () => {}
-    } = options;
-
-    const totalPages = Math.ceil(totalItems / pageSize);
-
-    if (totalPages <= 1) {
-        container.innerHTML = '';
-        return;
-    }
-
-    let html = '<nav class="flex items-center justify-center gap-1">';
-
-    // 上一页
-    html += `
-        <button class="p-2 rounded-md text-slate-500 hover:bg-slate-100 disabled:opacity-50 disabled:pointer-events-none transition-colors"
-                data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}>
-            <i class="bi bi-chevron-left"></i>
-        </button>
-    `;
-
-    // 页码
-    for (let i = 1; i <= totalPages; i++) {
-        if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
-            const isActive = i === currentPage;
-            html += `
-                <button class="px-3 py-1.5 text-sm font-medium rounded-md transition-colors
-                    ${isActive ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'}"
-                    data-page="${i}">
-                    ${i}
-                </button>
-            `;
-        } else if (i === currentPage - 3 || i === currentPage + 3) {
-            html += `<span class="px-2 text-slate-400">...</span>`;
-        }
-    }
-
-    // 下一页
-    html += `
-        <button class="p-2 rounded-md text-slate-500 hover:bg-slate-100 disabled:opacity-50 disabled:pointer-events-none transition-colors"
-                data-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''}>
-            <i class="bi bi-chevron-right"></i>
-        </button>
-    `;
-
-    html += '</nav>';
-    container.innerHTML = html;
-
-    // 绑定事件
-    container.querySelectorAll('button[data-page]').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const page = parseInt(this.dataset.page);
-            if (!isNaN(page) && !this.disabled) {
-                onPageChange(page);
-            }
-        });
-    });
-}
 
 // ===== 表格排序（Tailwind 风格） =====
-function initTableSort() {
-    document.querySelectorAll('th[data-sortable]').forEach(th => {
-        th.style.cursor = 'pointer';
-        th.addEventListener('click', function() {
-            const table = this.closest('table');
-            const tbody = table.querySelector('tbody');
-            const rows = Array.from(tbody.querySelectorAll('tr'));
-            const columnIndex = Array.from(this.parentNode.children).indexOf(this);
-            const isAsc = this.classList.contains('sort-asc');
-
-            // 清除所有排序标记
-            table.querySelectorAll('th').forEach(h => {
-                h.classList.remove('sort-asc', 'sort-desc');
-            });
-
-            // 排序
-            rows.sort((a, b) => {
-                const aVal = a.children[columnIndex]?.textContent.trim() || '';
-                const bVal = b.children[columnIndex]?.textContent.trim() || '';
-
-                if (isAsc) {
-                    return aVal.localeCompare(bVal, 'zh-CN', { numeric: true });
-                } else {
-                    return bVal.localeCompare(aVal, 'zh-CN', { numeric: true });
-                }
-            });
-
-            // 重新添加行
-            rows.forEach(row => tbody.appendChild(row));
-
-            // 添加排序标记
-            this.classList.add(isAsc ? 'sort-desc' : 'sort-asc');
-        });
-    });
-}
 
 // ===== 搜索过滤 =====
 function filterTable(tableId, searchInputId) {
@@ -443,57 +372,24 @@ function filterTable(tableId, searchInputId) {
     }
 }
 
-// ===== 侧边栏子菜单（纯 JS，无 Bootstrap 依赖） =====
-function initSidebarSubmenus() {
-    document.querySelectorAll('[data-submenu-toggle]').forEach(toggle => {
-        toggle.addEventListener('click', function(e) {
-            e.preventDefault();
-            const submenuId = this.getAttribute('data-submenu-toggle');
-            const submenu = document.getElementById(submenuId);
-            const parent = this.closest('.has-submenu');
-
-            if (!submenu || !parent) return;
-
-            const isOpen = submenu.classList.contains('show');
-
-            // 关闭所有其他子菜单
-            document.querySelectorAll('.has-submenu.open').forEach(item => {
-                if (item !== parent) {
-                    item.classList.remove('open');
-                    const otherSubmenu = item.querySelector('.submenu');
-                    if (otherSubmenu) {
-                        otherSubmenu.classList.remove('show');
-                    }
-                }
-            });
-
-            // 切换当前菜单
-            if (isOpen) {
-                parent.classList.remove('open');
-                submenu.classList.remove('show');
-            } else {
-                parent.classList.add('open');
-                submenu.classList.add('show');
-            }
-        });
-    });
-}
+// ===== 侧边栏子菜单（纯 JS） =====
 
 // ===== DOM 加载完成后初始化 =====
 document.addEventListener('DOMContentLoaded', function() {
-    initTableSort();
-    initSidebarSubmenus();
+    // 初始化已移除（侧边栏菜单在 app.js 中处理）
 });
 
 // ===== 导出全局函数 =====
 window.AppConfig = AppConfig;
 window.HttpClient = HttpClient;
 window.Http = HttpClient;
+window.esc = esc;
+window.fmtNum = fmtNum;
+window.formatFileSize = formatFileSize;
 window.showLoading = showLoading;
 window.hideLoading = hideLoading;
 window.showToast = showToast;
 window.confirmAction = confirmAction;
 window.FileUploader = FileUploader;
-window.initTableSort = initTableSort;
 window.filterTable = filterTable;
-window.initPagination = initPagination;
+window.svgIcon = svgIcon;

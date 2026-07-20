@@ -69,6 +69,11 @@ class ProductionSettings(Settings):
     """生产环境配置"""
     DEBUG: bool = False
     LOG_LEVEL: str = "WARNING"
+    CORS_ORIGINS: list = [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:5500",
+    ]  # 生产环境白名单
 
 
 class TestSettings(Settings):

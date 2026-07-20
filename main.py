@@ -2,16 +2,17 @@
 FastAPI 应用入口
 汽车冲压件自动核价平台
 
-学习指南详见：docs/fastapi-guide.md
+开发模式：前后端分离
+- 后端：FastAPI API Server (端口 8000)
+- 前端：静态 HTML + JavaScript (通过 Live Server 或 nginx)
 """
 
 import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings, ensure_directories
 from app.utils.logging_config import LoggerConfig, log_request, log_response, get_logger
@@ -26,7 +27,7 @@ LoggerConfig.configure(force=True)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """应用生命周期管理，详见 docs/fastapi-guide.md 第8节"""
+    """应用生命周期管理"""
     # 启动时
     # 注意：日志配置应该在 uvicorn 启动前完成，这里只做保障
     from app.utils.logging_config import LoggerConfig
@@ -44,8 +45,9 @@ async def lifespan(app: FastAPI):
     logger.info(f"版本: {settings.APP_VERSION}")
     logger.info(f"环境: {settings.ENV}")
     logger.info("=" * 50)
-    logger.info("应用启动完成")
-    logger.info(f"访问地址: http://{settings.HOST}:{settings.PORT}")
+    logger.info("API 服务启动完成")
+    logger.info(f"API 访问地址: http://{settings.HOST}:{settings.PORT}")
+    logger.info("前端静态页面: 使用 Live Server 打开 static/index.html")
 
     yield  # 详见 docs/fastapi-guide.md 第8节
 
@@ -54,7 +56,7 @@ async def lifespan(app: FastAPI):
 
 
 def create_app() -> FastAPI:
-    """创建 FastAPI 应用实例，详见 docs/fastapi-guide.md"""
+    """创建 FastAPI 应用实例"""
     app = FastAPI(
         title=settings.APP_NAME,
         description=settings.APP_DESCRIPTION,
@@ -63,34 +65,38 @@ def create_app() -> FastAPI:
         debug=settings.DEBUG,
     )
 
+    # ========== CORS 配置 ==========
+    # 根据环境配置 CORS（开发模式允许所有来源，生产环境使用白名单）
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.CORS_ORIGINS,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    # ========== 静态资源挂载 ==========
     app.mount("/static", StaticFiles(directory="static"), name="static")
     # 把上传目录挂为静态资源，使 sketch_url 能直接通过 URL 访问
     app.mount("/uploads", StaticFiles(directory=str(settings.UPLOAD_DIR)), name="uploads")
 
-    # 创建模板引擎
-    templates = Jinja2Templates(directory="templates")
-    # 添加 settings 到模板全局上下文
-    templates.env.globals["config"] = settings
-    app.state.templates = templates
+    # ========== 前端静态页面路由 ==========
+    # SPA 入口页面（所有路由都指向 index.html）
+    @app.get("/app", include_in_schema=False)
+    async def spa_index():
+        """单页应用入口"""
+        from fastapi.responses import FileResponse
+        return FileResponse("static/index.html")
 
-    # 详见 docs/fastapi-guide.md 第6节
-    @app.get("/", response_class=HTMLResponse, include_in_schema=False)
-    async def root(request: Request):
-        """
-        根路径重定向到 dashboard
-        当用户访问 http://localhost:8000/ 时
-        自动跳转到 /dashboard
-        """
-        return request.app.state.templates.TemplateResponse(
-            "dashboard.html",
-            {
-                "request": request,
-                "title": "仪表盘",
-            }
-        )
+    # 保留旧路由兼容性（重定向到 /app）
+    @app.get("/", include_in_schema=False)
+    async def root():
+        """根路径重定向到 SPA"""
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url="/app", status_code=302)
 
-    # 导入各个功能模块的路由
-    from app.routers.dashboard import router as dashboard_router
+    # ========== 导入各个功能模块的路由 ==========
+    from app.routers.dashboard.crud import router as dashboard_router
     from app.routers.costing.crud import router as costing_router
     from app.routers.quotation.crud import router as quotation_router
     from app.routers.parts.crud import router as parts_router
@@ -98,7 +104,7 @@ def create_app() -> FastAPI:
     from app.routers.stamping.crud import router as stamping_crud_router
     from app.routers.stamping.upload import router as stamping_upload_router
 
-    # include_router = 注册路由，详见 docs/fastapi-guide.md 第6节
+    # include_router = 注册路由
     app.include_router(dashboard_router)
     app.include_router(stamping_crud_router)
     app.include_router(stamping_upload_router)
@@ -107,7 +113,7 @@ def create_app() -> FastAPI:
     app.include_router(quotation_router)
     app.include_router(settings_router)
 
-    # 详见 docs/fastapi-guide.md 第7节
+    # ========== 请求日志中间件 ==========
     @app.middleware("http")
     async def log_middleware(request: Request, call_next):
         """

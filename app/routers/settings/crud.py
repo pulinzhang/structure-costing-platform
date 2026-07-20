@@ -1,40 +1,40 @@
 """
 设置路由
-Settings Router
+Settings Router - API 接口
 """
 
-from fastapi import APIRouter, Request
-from fastapi.responses import HTMLResponse
+from fastapi import APIRouter
 
 from app.utils.logging_config import get_logger
 
 
 logger = get_logger("router.settings")
-router = APIRouter(prefix="/settings", tags=["Settings"])
+router = APIRouter(prefix="/api/settings", tags=["系统设置 API"])
 
 
-@router.get("/", response_class=HTMLResponse, name="settings.index")
-async def index(request: Request):
+@router.get("/config")
+async def get_config():
     """
-    设置页面
+    获取系统配置
     """
-    logger.info("访问设置页面")
-    return request.app.state.templates.TemplateResponse(
-        "settings.html",
-        {
-            "request": request,
-            "title": "设置",
+    logger.info("获取系统配置")
+    return {
+        "success": True,
+        "message": "获取成功",
+        "data": {
+            "app_name": "汽车冲压件自动核价平台",
+            "version": "1.0.0"
         }
-    )
+    }
 
 
-@router.get("/general", response_class=HTMLResponse, name="settings.general")
-async def general(request: Request):
-    """基本设置页面"""
-    return await index(request)
-
-
-@router.get("/costing", response_class=HTMLResponse, name="settings.costing")
-async def costing_settings(request: Request):
-    """核价参数设置页面"""
-    return await index(request)
+@router.put("/config")
+async def update_config(config_data: dict):
+    """
+    更新系统配置
+    """
+    logger.info("更新系统配置")
+    return {
+        "success": True,
+        "message": "配置更新成功"
+    }
