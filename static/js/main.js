@@ -432,6 +432,8 @@ document.addEventListener('DOMContentLoaded', function() {
 // 导出全局函数
 window.AppConfig = AppConfig;
 window.HttpClient = HttpClient;
+// 兼容旧调用：Http.get/post/put/delete 走 HttpClient
+window.Http = HttpClient;
 window.showLoading = showLoading;
 window.hideLoading = hideLoading;
 window.showToast = showToast;

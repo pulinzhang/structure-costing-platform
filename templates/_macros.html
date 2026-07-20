@@ -1,0 +1,89 @@
+{#**
+ * 通用 UI 组件宏库
+ * 任何模板在使用前先：{% from "_macros.html" import card_header, empty_state, ... %}
+ * 严禁在 HTML 中复制粘贴 .card / .empty-state 等结构。
+ *
+ * 命名规范遵循 docs/naming-convention.mdc 与 docs/front-end.mdc 第 3 节。
+ *#}
+
+{# ============================================================================
+   卡片标题：统一图标 + 标题样式
+   用法：{{ card_header(icon='bi-calculator', title='待核价零件') }}
+   ============================================================================ #}
+{% macro card_header(icon='', title='') -%}
+    <div class="card-header">
+        <h5 class="mb-0">
+            {%- if icon %}<i class="bi {{ icon }} me-2"></i>{%- endif %}{{ title }}
+        </h5>
+    </div>
+{%- endmacro %}
+
+{# ============================================================================
+   空状态：表格无数据时的占位
+   用法：{{ empty_state(icon='bi-inbox', title='暂无零件数据', hint='请联系管理员导入工艺文件', colspan=9) }}
+   ============================================================================ #}
+{% macro empty_state(icon='bi-inbox', title='暂无数据', hint='', colspan=1) -%}
+    <tr><td colspan="{{ colspan }}">
+        <div class="empty-state py-5">
+            <i class="bi {{ icon }}"></i>
+            <h5>{{ title }}</h5>
+            {%- if hint %}<p class="text-muted">{{ hint }}</p>{%- endif %}
+        </div>
+    </td></tr>
+{%- endmacro %}
+
+{# ============================================================================
+   搜索框（含图标）
+   用法：{{ search_box(id='searchInput', placeholder='搜索...') }}
+   ============================================================================ #}
+{% macro search_box(id='searchInput', placeholder='搜索...') -%}
+    <div class="input-group">
+        <span class="input-group-text"><i class="bi bi-search"></i></span>
+        <input type="text" class="form-control" placeholder="{{ placeholder }}" id="{{ id }}">
+    </div>
+{%- endmacro %}
+
+{# ============================================================================
+   统计卡片（仪表盘用）
+   用法：{{ stat_card(icon='bi-box-seam', value=0, label='零件总数', color='primary') }}
+   color 取值：primary | success | warning | info | danger
+   ============================================================================ #}
+{% macro stat_card(icon='bi-box-seam', value=0, label='', color='primary') -%}
+    <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div class="d-flex align-items-center">
+                <div class="stat-icon bg-{{ color }} bg-opacity-10 text-{{ color }}">
+                    <i class="bi {{ icon }}"></i>
+                </div>
+                <div class="ms-3">
+                    <div class="stat-value">{{ value }}</div>
+                    <div class="stat-label">{{ label }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+{%- endmacro %}
+
+{# ============================================================================
+   顶部操作按钮（按钮 = 主色；次要 = 辅助态）
+   用法：{{ action_button(href=url_for('...'), label='新建报价单', icon='bi-plus-lg', variant='primary') }}
+   variant：primary | success | outline-secondary
+   ============================================================================ #}
+{% macro action_button(href='#', label='', icon='', variant='primary') -%}
+    <a href="{{ href }}" class="btn btn-{{ variant }}">
+        {%- if icon %}<i class="bi {{ icon }} me-1"></i>{%- endif %}{{ label }}
+    </a>
+{%- endmacro %}
+
+{# ============================================================================
+   表单字段：label + input 组合（label 0.8125rem 加粗）
+   用法：{{ form_field(name='vehicleModel', label='车型', icon='bi-car', placeholder='例如：H61', required=true) }}
+   ============================================================================ #}
+{% macro form_field(name='', label='', icon='', placeholder='', type='text', required=false) -%}
+    <label for="{{ name }}" class="form-label">
+        {%- if icon %}<i class="bi {{ icon }} me-1"></i>{%- endif %}{{ label }}
+        {%- if required %} <span class="text-danger">*</span>{%- endif %}
+    </label>
+    <input type="{{ type }}" class="form-control" id="{{ name }}" name="{{ name }}"
+           placeholder="{{ placeholder }}"{% if required %} required{% endif %}>
+{%- endmacro %}

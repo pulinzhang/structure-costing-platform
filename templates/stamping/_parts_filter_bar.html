@@ -1,0 +1,26 @@
+{# 冲压零件列表工具栏：搜索 + 车型/版本筛选 + 总数 #}
+<div class="card">
+    <div class="card-header">
+        <div class="row align-items-center">
+            <div class="col-md-5">
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" class="form-control" placeholder="搜索零件号或名称..." id="searchInput">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <select class="form-select" id="vehicleModelFilter">
+                    <option value="">全部车型</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select class="form-select" id="versionFilter">
+                    <option value="">全部版本</option>
+                </select>
+            </div>
+            <div class="col-md-2 text-end">
+                <span class="text-muted" id="totalCount">共 0 个零件</span>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,88 +1,34 @@
 {% extends "base.html" %}
+{% from "_macros.html" import stat_card, card_header %}
 
 {% block title %}仪表盘{% endblock %}
-
 {% block page_title %}仪表盘{% endblock %}
-
 {% block breadcrumb_item %}仪表盘{% endblock %}
 
 {% block content %}
-<!-- 统计卡片 -->
-<div class="row g-4 mb-4">
-    <div class="col-sm-6 col-xl-3">
-        <div class="stat-card">
-            <div class="d-flex align-items-center">
-                <div class="stat-icon bg-primary bg-opacity-10 text-primary">
-                    <i class="bi bi-box-seam"></i>
-                </div>
-                <div class="ms-3">
-                    <div class="stat-value">0</div>
-                    <div class="stat-label">零件总数</div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-sm-6 col-xl-3">
-        <div class="stat-card">
-            <div class="d-flex align-items-center">
-                <div class="stat-icon bg-success bg-opacity-10 text-success">
-                    <i class="bi bi-check-circle"></i>
-                </div>
-                <div class="ms-3">
-                    <div class="stat-value">0</div>
-                    <div class="stat-label">已完成核价</div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-sm-6 col-xl-3">
-        <div class="stat-card">
-            <div class="d-flex align-items-center">
-                <div class="stat-icon bg-warning bg-opacity-10 text-warning">
-                    <i class="bi bi-hourglass-split"></i>
-                </div>
-                <div class="ms-3">
-                    <div class="stat-value">0</div>
-                    <div class="stat-label">待核价</div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-sm-6 col-xl-3">
-        <div class="stat-card">
-            <div class="d-flex align-items-center">
-                <div class="stat-icon bg-info bg-opacity-10 text-info">
-                    <i class="bi bi-file-earmark-text"></i>
-                </div>
-                <div class="ms-3">
-                    <div class="stat-value">0</div>
-                    <div class="stat-label">报价单</div>
-                </div>
-            </div>
-        </div>
-    </div>
+<!-- 统计卡片（必须用 stat_card 宏，禁止硬编码 .stat-card/.stat-icon 结构）-->
+<div class="row g-3 mb-4">
+    {{ stat_card(icon='bi-box-seam', value=0, label='零件总数', color='primary') }}
+    {{ stat_card(icon='bi-check-circle', value=0, label='已完成核价', color='success') }}
+    {{ stat_card(icon='bi-hourglass-split', value=0, label='待核价', color='warning') }}
+    {{ stat_card(icon='bi-file-earmark-text', value=0, label='报价单', color='info') }}
 </div>
 
-<!-- 快捷操作 -->
-<div class="row g-4 mb-4">
+<!-- 快捷操作 + 使用指南 -->
+<div class="row g-3 mb-4">
     <div class="col-md-6">
         <div class="card h-100">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="bi bi-lightning me-2"></i>快捷操作</h5>
-            </div>
+            {{ card_header(icon='bi-lightning', title='快捷操作') }}
             <div class="card-body">
-                <div class="d-grid gap-3">
-                    <a href="{{ url_for('stamping.index') }}" class="btn btn-primary">
-                        <i class="bi bi-upload me-2"></i>上传 Excel 文件
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('stamping.upload_page') }}" class="btn btn-primary">
+                        <i class="bi bi-upload me-1"></i>上传 Excel 文件
                     </a>
                     <a href="{{ url_for('stamping.parts') }}" class="btn btn-outline-primary">
-                        <i class="bi bi-list-ul me-2"></i>查看零件列表
+                        <i class="bi bi-list-ul me-1"></i>查看零件列表
                     </a>
                     <a href="{{ url_for('costing.index') }}" class="btn btn-outline-primary">
-                        <i class="bi bi-calculator me-2"></i>开始核价
+                        <i class="bi bi-calculator me-1"></i>开始核价
                     </a>
                 </div>
             </div>
@@ -91,13 +37,11 @@
 
     <div class="col-md-6">
         <div class="card h-100">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>使用指南</h5>
-            </div>
+            {{ card_header(icon='bi-info-circle', title='使用指南') }}
             <div class="card-body">
-                <ol class="mb-0">
-                    <li class="mb-2">点击「上传」菜单，上传 Excel 文件</li>
-                    <li class="mb-2">在「零件」页面查看导入的零件数据</li>
+                <ol class="mb-0 ps-3">
+                    <li class="mb-2">在「冲压 - 上传工艺文件」页面导入 Excel</li>
+                    <li class="mb-2">在「冲压 - 零件列表」页面查看与筛选</li>
                     <li class="mb-2">在「核价」页面进行成本计算</li>
                     <li class="mb-2">在「报价」页面生成报价单</li>
                 </ol>
@@ -108,9 +52,7 @@
 
 <!-- 最近活动 -->
 <div class="card">
-    <div class="card-header">
-        <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>最近活动</h5>
-    </div>
+    {{ card_header(icon='bi-clock-history', title='最近活动') }}
     <div class="card-body">
         <div class="empty-state">
             <i class="bi bi-inbox"></i>
