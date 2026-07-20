@@ -23,14 +23,15 @@ class StampingPartService:
 
     def list_parts(self, db: Session, query: StampingPartQuery) -> tuple[List[Dict[str, Any]], int]:
         """获取零件列表（不含工序详情，含工序统计数 process_count）"""
+        skip = (query.page - 1) * query.size
         parts, total = self.repository.paginate(
             db,
             vehicle_model=query.vehicle_model,
             version=query.version,
             part_number=query.part_number,
             part_name=query.part_name,
-            skip=query.skip,
-            limit=query.limit,
+            skip=skip,
+            limit=query.size,
         )
         # 一次聚合查询补齐每行工序数（避免 ORM lazy load 触发 N+1）
         part_ids = [p.id for p in parts]

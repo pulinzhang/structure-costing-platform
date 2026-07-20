@@ -6,58 +6,62 @@
 {% block breadcrumb_item %}仪表盘{% endblock %}
 
 {% block content %}
-<!-- 统计卡片（必须用 stat_card 宏，禁止硬编码 .stat-card/.stat-icon 结构）-->
-<div class="row g-3 mb-4">
-    {{ stat_card(icon='bi-box-seam', value=0, label='零件总数', color='primary') }}
-    {{ stat_card(icon='bi-check-circle', value=0, label='已完成核价', color='success') }}
-    {{ stat_card(icon='bi-hourglass-split', value=0, label='待核价', color='warning') }}
-    {{ stat_card(icon='bi-file-earmark-text', value=0, label='报价单', color='info') }}
+{# 统计卡片 #}
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    {{ stat_card(icon='bi-box-seam', value=0, label='零件总数', color='slate') }}
+    {{ stat_card(icon='bi-check-circle', value=0, label='已完成核价', color='green') }}
+    {{ stat_card(icon='bi-hourglass-split', value=0, label='待核价', color='amber') }}
+    {{ stat_card(icon='bi-file-earmark-text', value=0, label='报价单', color='sky') }}
 </div>
 
-<!-- 快捷操作 + 使用指南 -->
-<div class="row g-3 mb-4">
-    <div class="col-md-6">
-        <div class="card h-100">
-            {{ card_header(icon='bi-lightning', title='快捷操作') }}
-            <div class="card-body">
-                <div class="d-grid gap-2">
-                    <a href="{{ url_for('stamping.upload_page') }}" class="btn btn-primary">
-                        <i class="bi bi-upload me-1"></i>上传 Excel 文件
-                    </a>
-                    <a href="{{ url_for('stamping.parts') }}" class="btn btn-outline-primary">
-                        <i class="bi bi-list-ul me-1"></i>查看零件列表
-                    </a>
-                    <a href="{{ url_for('costing.index') }}" class="btn btn-outline-primary">
-                        <i class="bi bi-calculator me-1"></i>开始核价
-                    </a>
-                </div>
+{# 快捷操作 + 使用指南 #}
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+    {# 快捷操作 #}
+    <div class="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
+        {{ card_header(icon='bi-lightning', title='快捷操作') }}
+        <div class="p-4">
+            <div class="flex flex-col gap-3">
+                <a href="{{ url_for('stamping.upload_page') }}"
+                   class="inline-flex items-center justify-center gap-2 bg-slate-900 text-white rounded-md px-4 py-2.5 text-sm font-medium hover:bg-slate-800 transition-colors">
+                    <i class="bi bi-upload"></i>
+                    上传 Excel 文件
+                </a>
+                <a href="{{ url_for('stamping.parts') }}"
+                   class="inline-flex items-center justify-center gap-2 bg-white text-slate-700 border border-slate-200 rounded-md px-4 py-2.5 text-sm font-medium hover:bg-slate-50 transition-colors">
+                    <i class="bi bi-list-ul"></i>
+                    查看零件列表
+                </a>
+                <a href="{{ url_for('costing.index') }}"
+                   class="inline-flex items-center justify-center gap-2 bg-white text-slate-700 border border-slate-200 rounded-md px-4 py-2.5 text-sm font-medium hover:bg-slate-50 transition-colors">
+                    <i class="bi bi-calculator"></i>
+                    开始核价
+                </a>
             </div>
         </div>
     </div>
 
-    <div class="col-md-6">
-        <div class="card h-100">
-            {{ card_header(icon='bi-info-circle', title='使用指南') }}
-            <div class="card-body">
-                <ol class="mb-0 ps-3">
-                    <li class="mb-2">在「冲压 - 上传工艺文件」页面导入 Excel</li>
-                    <li class="mb-2">在「冲压 - 零件列表」页面查看与筛选</li>
-                    <li class="mb-2">在「核价」页面进行成本计算</li>
-                    <li class="mb-2">在「报价」页面生成报价单</li>
-                </ol>
-            </div>
+    {# 使用指南 #}
+    <div class="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
+        {{ card_header(icon='bi-info-circle', title='使用指南') }}
+        <div class="p-4">
+            <ol class="list-decimal list-inside text-sm text-slate-600 space-y-2 mb-0">
+                <li>在「冲压 - 上传工艺文件」页面导入 Excel</li>
+                <li>在「冲压 - 零件列表」页面查看与筛选</li>
+                <li>在「核价」页面进行成本计算</li>
+                <li>在「报价」页面生成报价单</li>
+            </ol>
         </div>
     </div>
 </div>
 
-<!-- 最近活动 -->
-<div class="card">
+{# 最近活动 #}
+<div class="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
     {{ card_header(icon='bi-clock-history', title='最近活动') }}
-    <div class="card-body">
-        <div class="empty-state">
-            <i class="bi bi-inbox"></i>
-            <h5>暂无活动记录</h5>
-            <p class="text-muted">上传文件后将显示活动历史</p>
+    <div class="p-8">
+        <div class="flex flex-col items-center justify-center text-slate-400">
+            <i class="bi bi-inbox text-4xl mb-3"></i>
+            <h5 class="text-slate-600 font-medium mb-1">暂无活动记录</h5>
+            <p class="text-sm text-slate-400 mb-0">上传文件后将显示活动历史</p>
         </div>
     </div>
 </div>

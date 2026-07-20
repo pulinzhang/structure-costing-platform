@@ -1,6 +1,7 @@
 /**
  * 汽车冲压件自动核价平台
  * 主 JavaScript 文件
+ * 遵循 docs/front-end.mdc 规范：仅使用 Tailwind 类名
  */
 
 // 全局配置
@@ -33,7 +34,7 @@ if (typeof htmx !== 'undefined') {
     });
 }
 
-// 加载状态管理
+// ===== 加载状态管理 =====
 let loadingCount = 0;
 
 function showLoading() {
@@ -58,37 +59,54 @@ function hideLoading() {
     }
 }
 
-// Toast 通知
+// ===== Toast 通知（Tailwind 风格） =====
 function showToast(message, type = 'info') {
     const toastContainer = getOrCreateToastContainer();
 
+    // Tailwind 色彩映射
+    const colorMap = {
+        success: 'bg-green-600',
+        danger:  'bg-red-600',
+        warning: 'bg-amber-600',
+        info:    'bg-sky-600',
+        error:   'bg-red-600',
+    };
+    const bgClass = colorMap[type] || 'bg-slate-600';
+
     const toast = document.createElement('div');
-    toast.className = `toast align-items-center text-white bg-${type} border-0`;
+    toast.className = `flex items-center justify-between gap-3 ${bgClass} text-white px-4 py-3 rounded-md shadow-lg`;
     toast.setAttribute('role', 'alert');
     toast.innerHTML = `
-        <div class="d-flex">
-            <div class="toast-body">${message}</div>
-            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-        </div>
+        <span class="text-sm font-medium">${escapeHtml(message)}</span>
+        <button type="button" class="text-white/80 hover:text-white transition-colors" onclick="this.closest('[role=alert]').remove()">
+            <i class="bi bi-x-lg"></i>
+        </button>
     `;
 
     toastContainer.appendChild(toast);
-    const bsToast = new bootstrap.Toast(toast);
-    bsToast.show();
 
-    toast.addEventListener('hidden.bs.toast', function() {
-        toast.remove();
-    });
+    // 自动移除
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.3s';
+        setTimeout(() => toast.remove(), 300);
+    }, 4000);
 }
 
 function getOrCreateToastContainer() {
     let container = document.querySelector('.toast-container');
     if (!container) {
         container = document.createElement('div');
-        container.className = 'toast-container position-fixed top-0 end-0 p-3';
+        container.className = 'toast-container fixed top-4 right-4 flex flex-col gap-2';
         document.body.appendChild(container);
     }
     return container;
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 
 // 确认对话框
@@ -98,8 +116,7 @@ function confirmAction(message, callback) {
     }
 }
 
-// HttpClient - 基于标准 fetch 的 HTTP 客户端
-// 提供：自动 loading、统一错误 toast、业务响应自动解包（{success, message, data}）
+// ===== HttpClient =====
 const HttpClient = (() => {
     const DEFAULT_TIMEOUT = 30000;
 
@@ -150,7 +167,6 @@ const HttpClient = (() => {
             signal: controller.signal,
         };
 
-        // 自动序列化 body
         if (body !== undefined && body !== null) {
             if (body instanceof FormData || body instanceof Blob || body instanceof ArrayBuffer) {
                 init.body = body;
@@ -166,7 +182,6 @@ const HttpClient = (() => {
             clearTimeout(timer);
             const data = await parseResponse(response);
 
-            // 业务响应解包：{ success, message, data }
             if (data && typeof data === 'object' && 'success' in data) {
                 if (data.success) {
                     return { ok: true, status: response.status, data: data.data, message: data.message };
@@ -178,7 +193,6 @@ const HttpClient = (() => {
                 throw err;
             }
 
-            // HTTP 错误
             if (!response.ok) {
                 const msg = (data && (data.message || data.detail)) || `请求失败 (${response.status})`;
                 showToast(msg, 'danger');
@@ -209,12 +223,14 @@ const HttpClient = (() => {
         delete: (url, opts) => request('DELETE', url, opts),
     };
 })();
+
+// ===== FileUploader（Tailwind 风格预览） =====
 class FileUploader {
     constructor(options = {}) {
         this.dropZone = options.dropZone;
         this.inputElement = options.inputElement;
         this.previewElement = options.previewElement;
-        this.maxSize = options.maxSize || 50 * 1024 * 1024; // 50MB
+        this.maxSize = options.maxSize || 50 * 1024 * 1024;
         this.allowedTypes = options.allowedTypes || ['.xlsx', '.xls', '.csv'];
 
         this.init();
@@ -290,10 +306,12 @@ class FileUploader {
 
         if (this.previewElement) {
             this.previewElement.innerHTML = `
-                <div class="alert alert-info mb-0">
-                    <i class="bi bi-file-earmark-excel me-2"></i>
-                    <strong>${file.name}</strong>
-                    <span class="text-muted ms-2">${this.formatFileSize(file.size)}</span>
+                <div class="flex items-center gap-3 p-3 bg-sky-50 border border-sky-200 rounded-md">
+                    <i class="bi bi-file-earmark-excel text-2xl text-green-600"></i>
+                    <div class="flex-1 min-w-0">
+                        <div class="text-sm font-medium text-slate-900 truncate">${escapeHtml(file.name)}</div>
+                        <div class="text-xs text-slate-500">${this.formatFileSize(file.size)}</div>
+                    </div>
                 </div>
             `;
         }
@@ -308,57 +326,7 @@ class FileUploader {
     }
 }
 
-// 表格排序
-function initTableSort() {
-    document.querySelectorAll('th[data-sortable]').forEach(th => {
-        th.style.cursor = 'pointer';
-        th.addEventListener('click', function() {
-            const table = this.closest('table');
-            const tbody = table.querySelector('tbody');
-            const rows = Array.from(tbody.querySelectorAll('tr'));
-            const columnIndex = Array.from(this.parentNode.children).indexOf(this);
-            const isAsc = this.classList.contains('sort-asc');
-
-            // 清除所有排序标记
-            table.querySelectorAll('th').forEach(h => {
-                h.classList.remove('sort-asc', 'sort-desc');
-            });
-
-            // 排序
-            rows.sort((a, b) => {
-                const aVal = a.children[columnIndex].textContent.trim();
-                const bVal = b.children[columnIndex].textContent.trim();
-
-                if (isAsc) {
-                    return aVal.localeCompare(bVal, 'zh-CN', { numeric: true });
-                } else {
-                    return bVal.localeCompare(aVal, 'zh-CN', { numeric: true });
-                }
-            });
-
-            // 重新添加行
-            rows.forEach(row => tbody.appendChild(row));
-
-            // 添加排序标记
-            this.classList.add(isAsc ? 'sort-desc' : 'sort-asc');
-        });
-    });
-}
-
-// 搜索过滤
-function filterTable(tableId, searchInputId) {
-    const input = document.getElementById(searchInputId);
-    const filter = input.value.toLowerCase();
-    const table = document.getElementById(tableId);
-    const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
-
-    for (const row of rows) {
-        const text = row.textContent.toLowerCase();
-        row.style.display = text.includes(filter) ? '' : 'none';
-    }
-}
-
-// 分页初始化
+// ===== 分页（Tailwind 风格） =====
 function initPagination(containerId, options = {}) {
     const container = document.getElementById(containerId);
     if (!container) return;
@@ -377,62 +345,149 @@ function initPagination(containerId, options = {}) {
         return;
     }
 
-    let html = '<nav><ul class="pagination mb-0">';
+    let html = '<nav class="flex items-center justify-center gap-1">';
 
     // 上一页
-    html += `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
-        <a class="page-link" href="#" data-page="${currentPage - 1}">&laquo;</a>
-    </li>`;
+    html += `
+        <button class="p-2 rounded-md text-slate-500 hover:bg-slate-100 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+                data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}>
+            <i class="bi bi-chevron-left"></i>
+        </button>
+    `;
 
     // 页码
     for (let i = 1; i <= totalPages; i++) {
         if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
-            html += `<li class="page-item ${i === currentPage ? 'active' : ''}">
-                <a class="page-link" href="#" data-page="${i}">${i}</a>
-            </li>`;
+            const isActive = i === currentPage;
+            html += `
+                <button class="px-3 py-1.5 text-sm font-medium rounded-md transition-colors
+                    ${isActive ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'}"
+                    data-page="${i}">
+                    ${i}
+                </button>
+            `;
         } else if (i === currentPage - 3 || i === currentPage + 3) {
-            html += '<li class="page-item disabled"><span class="page-link">...</span></li>';
+            html += `<span class="px-2 text-slate-400">...</span>`;
         }
     }
 
     // 下一页
-    html += `<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
-        <a class="page-link" href="#" data-page="${currentPage + 1}">&raquo;</a>
-    </li>`;
+    html += `
+        <button class="p-2 rounded-md text-slate-500 hover:bg-slate-100 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+                data-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''}>
+            <i class="bi bi-chevron-right"></i>
+        </button>
+    `;
 
-    html += '</ul></nav>';
+    html += '</nav>';
     container.innerHTML = html;
 
     // 绑定事件
-    container.querySelectorAll('.page-link[data-page]').forEach(link => {
-        link.addEventListener('click', function(e) {
-            e.preventDefault();
+    container.querySelectorAll('button[data-page]').forEach(btn => {
+        btn.addEventListener('click', function() {
             const page = parseInt(this.dataset.page);
-            if (!isNaN(page)) {
+            if (!isNaN(page) && !this.disabled) {
                 onPageChange(page);
             }
         });
     });
 }
 
-// DOM 加载完成后初始化
+// ===== 表格排序（Tailwind 风格） =====
+function initTableSort() {
+    document.querySelectorAll('th[data-sortable]').forEach(th => {
+        th.style.cursor = 'pointer';
+        th.addEventListener('click', function() {
+            const table = this.closest('table');
+            const tbody = table.querySelector('tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            const columnIndex = Array.from(this.parentNode.children).indexOf(this);
+            const isAsc = this.classList.contains('sort-asc');
+
+            // 清除所有排序标记
+            table.querySelectorAll('th').forEach(h => {
+                h.classList.remove('sort-asc', 'sort-desc');
+            });
+
+            // 排序
+            rows.sort((a, b) => {
+                const aVal = a.children[columnIndex]?.textContent.trim() || '';
+                const bVal = b.children[columnIndex]?.textContent.trim() || '';
+
+                if (isAsc) {
+                    return aVal.localeCompare(bVal, 'zh-CN', { numeric: true });
+                } else {
+                    return bVal.localeCompare(aVal, 'zh-CN', { numeric: true });
+                }
+            });
+
+            // 重新添加行
+            rows.forEach(row => tbody.appendChild(row));
+
+            // 添加排序标记
+            this.classList.add(isAsc ? 'sort-desc' : 'sort-asc');
+        });
+    });
+}
+
+// ===== 搜索过滤 =====
+function filterTable(tableId, searchInputId) {
+    const input = document.getElementById(searchInputId);
+    const filter = input.value.toLowerCase();
+    const table = document.getElementById(tableId);
+    const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+
+    for (const row of rows) {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(filter) ? '' : 'none';
+    }
+}
+
+// ===== 侧边栏子菜单（纯 JS，无 Bootstrap 依赖） =====
+function initSidebarSubmenus() {
+    document.querySelectorAll('[data-submenu-toggle]').forEach(toggle => {
+        toggle.addEventListener('click', function(e) {
+            e.preventDefault();
+            const submenuId = this.getAttribute('data-submenu-toggle');
+            const submenu = document.getElementById(submenuId);
+            const parent = this.closest('.has-submenu');
+
+            if (!submenu || !parent) return;
+
+            const isOpen = submenu.classList.contains('show');
+
+            // 关闭所有其他子菜单
+            document.querySelectorAll('.has-submenu.open').forEach(item => {
+                if (item !== parent) {
+                    item.classList.remove('open');
+                    const otherSubmenu = item.querySelector('.submenu');
+                    if (otherSubmenu) {
+                        otherSubmenu.classList.remove('show');
+                    }
+                }
+            });
+
+            // 切换当前菜单
+            if (isOpen) {
+                parent.classList.remove('open');
+                submenu.classList.remove('show');
+            } else {
+                parent.classList.add('open');
+                submenu.classList.add('show');
+            }
+        });
+    });
+}
+
+// ===== DOM 加载完成后初始化 =====
 document.addEventListener('DOMContentLoaded', function() {
-    // 初始化表格排序
     initTableSort();
-
-    // 初始化工具提示
-    const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
-    const tooltipList = [...tooltipTriggerList].map(el => new bootstrap.Tooltip(el));
-
-    // 初始化弹出框
-    const popoverTriggerList = document.querySelectorAll('[data-bs-toggle="popover"]');
-    const popoverList = [...popoverTriggerList].map(el => new bootstrap.Popover(el));
+    initSidebarSubmenus();
 });
 
-// 导出全局函数
+// ===== 导出全局函数 =====
 window.AppConfig = AppConfig;
 window.HttpClient = HttpClient;
-// 兼容旧调用：Http.get/post/put/delete 走 HttpClient
 window.Http = HttpClient;
 window.showLoading = showLoading;
 window.hideLoading = hideLoading;

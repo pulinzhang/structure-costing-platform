@@ -36,13 +36,12 @@ def list_parts(
     db: Session = Depends(get_db),
 ):
     """获取零件列表（包含工序）"""
-    page = query.skip // query.limit + 1 if query.limit > 0 else 1
     data, total = _stamping_service.list_parts(db, query)
     return ApiResponse.list_(
         data=data,
         total=total,
-        page=page,
-        page_size=query.limit,
+        page=query.page,
+        page_size=query.size,
         message=f"查询到 {total} 个零件",
     )
 

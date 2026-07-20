@@ -18,8 +18,8 @@ class StampingPartQuery(BaseModel):
     version: Optional[str] = Field(None, description="版本")
     part_number: Optional[str] = Field(None, description="零件号")
     part_name: Optional[str] = Field(None, description="零件名称")
-    skip: int = Field(0, ge=0, description="跳过条数")
-    limit: int = Field(100, ge=1, le=500, description="返回条数")
+    page: int = Field(1, ge=1, description="页码")
+    size: int = Field(10, ge=1, le=500, description="每页条数")
 
 
 class StampingProcessResponse(BaseModel):

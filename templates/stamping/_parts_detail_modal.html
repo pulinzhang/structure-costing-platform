@@ -1,16 +1,21 @@
-{# 冲压零件详情 Modal：只放骨架，内容由 showPartDetail(partId) 异步填充 #}
-<div class="modal fade" id="partDetailModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="bi bi-info-circle me-2"></i>零件详情</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+{# 冲压零件详情 Modal（shadcn/ui 风格 Tailwind CSS，使用 Bootstrap JS Modal） #}
+<div class="modal fade" id="partDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered mx-auto my-4 max-w-2xl w-full">
+        <div class="modal-content bg-white rounded-2xl shadow-2xl shadow-slate-900/20 border-0 overflow-hidden">
+            {# Header #}
+            <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                <h5 class="text-base font-semibold text-slate-900 flex items-center gap-2">
+                    <i class="bi bi-info-circle text-slate-400"></i>
+                    零件详情
+                </h5>
+                <button type="button" class="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors" data-bs-dismiss="modal" aria-label="关闭">
+                    <i class="bi bi-x-lg"></i>
+                </button>
             </div>
-            <div class="modal-body" id="partDetailContent">
-                <div class="text-center">
-                    <div class="spinner-border" role="status">
-                        <span class="visually-hidden">加载中...</span>
-                    </div>
+            {# Body #}
+            <div class="modal-body p-6 max-h-[70vh] overflow-y-auto" id="partDetailContent">
+                <div class="flex items-center justify-center py-12">
+                    <div class="w-8 h-8 border-2 border-slate-200 border-t-slate-600 rounded-full animate-spin"></div>
                 </div>
             </div>
         </div>

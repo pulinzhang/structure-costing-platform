@@ -1,29 +1,13 @@
 /**
  * 冲压零件列表页脚本
+ * 遵循 docs/front-end.mdc 规范：仅使用 Tailwind 类名
  *
  * 依赖（由模板注入）：
- *   - PARTS_API          { LIST, DETAIL(id), DELETE(id) }
- *   - PARTS_PAGE_SIZE    每页大小
- *   - SEARCH_DEBOUNCE_MS 搜索防抖毫秒
- *
- * DOM 节点：
- *   #searchInput         搜索输入框
- *   #vehicleModelFilter  车型筛选
- *   #versionFilter       版本筛选
- *   #totalCount          总数展示
- *   #partsTableBody      表格 tbody
- *   #pagination          分页 ul
- *   #partDetailModal     详情 Modal
- *   #partDetailContent   详情内容容器
+ *   - PARTS_API              { LIST, DETAIL(id), DELETE(id) }
+ *   - PARTS_CONFIG           { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS, SEARCH_DEBOUNCE_MS, STORAGE_KEY }
  */
 
 // ===== 工具函数 =====
-
-/** 数字安全格式化：null/undefined/NaN → '-' */
-const fmtNumber = (value, digits) => {
-    if (value == null || Number.isNaN(value)) return '-';
-    return Number(value).toFixed(digits);
-};
 
 /** HTML 转义：避免 XSS */
 const esc = (value) => {
@@ -39,6 +23,7 @@ const dom = {
     searchInput:        document.getElementById('searchInput'),
     vehicleModelFilter: document.getElementById('vehicleModelFilter'),
     versionFilter:      document.getElementById('versionFilter'),
+    pageSizeSelect:     document.getElementById('pageSizeSelect'),
     totalCount:         document.getElementById('totalCount'),
     partsTableBody:     document.getElementById('partsTableBody'),
     pagination:         document.getElementById('pagination'),
@@ -50,44 +35,101 @@ const dom = {
 
 const state = {
     currentPage: 1,
+    pageSize: PARTS_CONFIG.DEFAULT_PAGE_SIZE,
     isLoading: false,
     searchTimer: null,
 };
 
+// ===== 本地存储偏好 =====
+
+/** 从 LocalStorage 加载每页数量偏好 */
+function loadPageSizePreference() {
+    try {
+        const saved = localStorage.getItem(PARTS_CONFIG.STORAGE_KEY);
+        if (saved) {
+            const parsed = parseInt(saved, 10);
+            if (PARTS_CONFIG.PAGE_SIZE_OPTIONS.includes(parsed)) {
+                return parsed;
+            }
+        }
+    } catch (e) {
+        console.warn('Failed to load page size preference:', e);
+    }
+    return PARTS_CONFIG.DEFAULT_PAGE_SIZE;
+}
+
+/** 保存每页数量偏好到 LocalStorage */
+function savePageSizePreference(pageSize) {
+    try {
+        localStorage.setItem(PARTS_CONFIG.STORAGE_KEY, String(pageSize));
+    } catch (e) {
+        console.warn('Failed to save page size preference:', e);
+    }
+}
+
+/** 初始化每页数量选择器 */
+function initPageSizeSelector() {
+    const preferredSize = loadPageSizePreference();
+    state.pageSize = preferredSize;
+
+    if (dom.pageSizeSelect) {
+        dom.pageSizeSelect.value = String(preferredSize);
+    }
+}
+
 // ===== 渲染：表格行 =====
 
-/** 空状态 HTML（与服务端 empty_state 宏一致） */
+/** 空状态 HTML（Tailwind CSS，与 _macros.html empty_state 宏一致） */
 function renderEmptyRow(message = '暂无零件数据', hint = '请联系管理员导入工艺文件', colspan = 9) {
     return `
         <tr><td colspan="${colspan}">
-            <div class="empty-state py-5">
-                <i class="bi bi-inbox"></i>
-                <h5>${esc(message)}</h5>
-                <p class="text-muted">${esc(hint)}</p>
+            <div class="flex flex-col items-center justify-center py-16 text-slate-400">
+                <div class="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
+                    <i class="bi bi-inbox text-3xl text-slate-300"></i>
+                </div>
+                <h5 class="text-slate-600 font-medium mb-1">${esc(message)}</h5>
+                <p class="text-sm text-slate-400">${esc(hint)}</p>
             </div>
         </td></tr>
     `;
 }
 
-/** 渲染单条零件行 */
-function renderPartRow(part) {
+/** 数字格式化：null/undefined/NaN → '-'，保留指定小数位 */
+const fmtNum = (value, digits = 2) => {
+    if (value == null || Number.isNaN(value)) return '-';
+    return Number(value).toFixed(digits);
+};
+
+/** 渲染单条零件行（Tailwind CSS，与 Jinja2 模板一致）
+ * 交互：操作按钮通过 group 机制，行悬停时显示
+ * 设计：奇偶行交替 bg，h-16 行高，悬停加深背景
+ */
+function renderPartRow(part, index) {
+    const thickness = fmtNum(part.thickness, 2);
+    const partWeight = fmtNum(part.part_weight, 3);
+    const processCount = part.process_count != null ? part.process_count : '-';
+    const evenBg = index % 2 === 1 ? 'bg-slate-50/50' : '';
     return `
-        <tr>
-            <td><strong>${esc(part.part_number)}</strong></td>
-            <td>${esc(part.part_name)}</td>
-            <td><span class="badge bg-primary">${esc(part.vehicle_model)}</span></td>
-            <td><span class="badge bg-secondary">${esc(part.version)}</span></td>
-            <td>${esc(part.material)}</td>
-            <td>${fmtNumber(part.thickness, 2)}</td>
-            <td>${fmtNumber(part.part_weight, 3)}</td>
-            <td><span class="badge bg-info">${part.process_count ?? 0}</span></td>
-            <td class="text-end">
-                <button class="btn btn-sm btn-outline-primary" data-action="detail" data-id="${part.id}">
-                    <i class="bi bi-eye"></i>
-                </button>
-                <button class="btn btn-sm btn-outline-danger" data-action="delete" data-id="${part.id}">
-                    <i class="bi bi-trash"></i>
-                </button>
+        <tr class="group h-16 border-b border-slate-100 ${evenBg} hover:bg-slate-100/80 transition-colors duration-150">
+            <td class="px-5 py-4"><strong class="text-slate-800">${esc(part.part_number)}</strong></td>
+            <td class="px-5 py-4 text-slate-600">${esc(part.part_name) || '-'}</td>
+            <td class="px-5 py-4 text-center">
+                <span class="px-2.5 py-1 bg-slate-100 text-slate-700 rounded-md text-xs font-medium">${esc(part.vehicle_model) || '-'}</span>
+            </td>
+            <td class="px-5 py-4 text-center text-slate-600">${esc(part.version) || '-'}</td>
+            <td class="px-5 py-4 text-slate-600">${esc(part.material) || '-'}</td>
+            <td class="px-5 py-4 text-right font-mono tabular-nums text-slate-800">${thickness}</td>
+            <td class="px-5 py-4 text-right font-mono tabular-nums text-slate-800">${partWeight}</td>
+            <td class="px-5 py-4 text-right font-mono tabular-nums text-slate-800">${processCount}</td>
+            <td class="px-5 py-4 text-center">
+                <div class="flex items-center justify-center gap-1">
+                    <button class="opacity-0 group-hover:opacity-100 p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-lg transition-all duration-150" data-action="detail" data-id="${part.id}" title="查看详情">
+                        <i class="bi bi-eye"></i>
+                    </button>
+                    <button class="opacity-0 group-hover:opacity-100 p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all duration-150" data-action="delete" data-id="${part.id}" title="删除">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
             </td>
         </tr>
     `;
@@ -98,14 +140,18 @@ function renderParts(parts) {
         dom.partsTableBody.innerHTML = renderEmptyRow();
         return;
     }
-    dom.partsTableBody.innerHTML = parts.map(renderPartRow).join('');
+    dom.partsTableBody.innerHTML = parts.map((part, index) => renderPartRow(part, index)).join('');
 }
 
 // ===== 渲染：分页 =====
 
 function renderPagination(pageInfo) {
     const { total, page, total_pages, has_next, has_prev } = pageInfo;
-    dom.totalCount.textContent = `共 ${total} 个零件，第 ${page}/${total_pages || 1} 页`;
+    const totalCountEl = document.getElementById('totalCount');
+
+    if (totalCountEl) {
+        totalCountEl.textContent = `共 ${total} 个零件`;
+    }
 
     if (!total_pages || total_pages <= 1) {
         dom.pagination.innerHTML = '';
@@ -121,32 +167,35 @@ function renderPagination(pageInfo) {
     const sortedPages = Array.from(pages).sort((a, b) => a - b);
 
     let html = `
-        <li class="page-item ${has_prev ? '' : 'disabled'}">
-            <a class="page-link" href="#" data-page="${page - 1}" aria-label="上一页">
+        <nav class="flex items-center justify-center gap-1">
+            <button class="p-2 rounded-lg text-slate-500 hover:bg-slate-100 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+                    data-page="${page - 1}" ${!has_prev ? 'disabled' : ''}>
                 <i class="bi bi-chevron-left"></i>
-            </a>
-        </li>
+            </button>
     `;
 
     let lastPage = 0;
     for (const p of sortedPages) {
         if (lastPage && p - lastPage > 1) {
-            html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+            html += `<span class="px-2 text-slate-400">...</span>`;
         }
+        const isActive = p === page;
         html += `
-            <li class="page-item ${p === page ? 'active' : ''}">
-                <a class="page-link" href="#" data-page="${p}">${p}</a>
-            </li>
+            <button class="px-3 py-1.5 text-sm font-medium rounded-lg transition-colors
+                ${isActive ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'}"
+                data-page="${p}">
+                ${p}
+            </button>
         `;
         lastPage = p;
     }
 
     html += `
-        <li class="page-item ${has_next ? '' : 'disabled'}">
-            <a class="page-link" href="#" data-page="${page + 1}" aria-label="下一页">
-                <i class="bi bi-chevron-right"></i>
-            </a>
-        </li>
+        <button class="p-2 rounded-lg text-slate-500 hover:bg-slate-100 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+                data-page="${page + 1}" ${!has_next ? 'disabled' : ''}>
+            <i class="bi bi-chevron-right"></i>
+        </button>
+        </nav>
     `;
 
     dom.pagination.innerHTML = html;
@@ -160,13 +209,13 @@ async function loadParts(page = 1) {
     state.currentPage = page;
 
     const params = {
-        skip: (page - 1) * PARTS_PAGE_SIZE,
-        limit: PARTS_PAGE_SIZE,
+        page: page,
+        size: state.pageSize,
     };
 
-    const partNumber = dom.searchInput.value.trim();
-    const vehicleModel = dom.vehicleModelFilter.value;
-    const version = dom.versionFilter.value;
+    const partNumber = dom.searchInput?.value.trim();
+    const vehicleModel = dom.vehicleModelFilter?.value;
+    const version = dom.versionFilter?.value;
     if (partNumber) params.part_number = partNumber;
     if (vehicleModel) params.vehicle_model = vehicleModel;
     if (version) params.version = version;
@@ -188,13 +237,13 @@ async function loadParts(page = 1) {
 /** 渲染单条工序行 */
 function renderProcessRow(p) {
     return `
-        <tr>
-            <td>${p.process_order ?? '-'}</td>
-            <td>${esc(p.process_seq)}</td>
-            <td>${esc(p.process_code)}</td>
-            <td>${p.die_sets ?? '-'}</td>
-            <td>${p.tonnage ? `${p.tonnage}T` : '-'}</td>
-            <td>${fmtNumber(p.cost_ratio, 4)}</td>
+        <tr class="border-b border-slate-100 last:border-b-0">
+            <td class="px-3 py-2 text-sm text-slate-600">${p.process_order ?? '-'}</td>
+            <td class="px-3 py-2 text-sm text-slate-700">${esc(p.process_seq)}</td>
+            <td class="px-3 py-2 text-sm text-slate-700">${esc(p.process_code)}</td>
+            <td class="px-3 py-2 text-sm text-right font-mono tabular-nums text-slate-700">${p.die_sets ?? '-'}</td>
+            <td class="px-3 py-2 text-sm text-right font-mono tabular-nums text-slate-700">${p.tonnage ? `${p.tonnage}T` : '-'}</td>
+            <td class="px-3 py-2 text-sm text-right font-mono tabular-nums text-slate-700">${fmtNum(p.cost_ratio, 4)}</td>
         </tr>
     `;
 }
@@ -216,55 +265,80 @@ function renderPartDetail(part) {
         ['吨位', part.tonnage ? `${part.tonnage}T` : '-'],
         ['模具类型', esc(part.die_type)],
     ];
-    const tableRow = ([label, value]) => `<tr><th>${label}</th><td>${value}</td></tr>`;
+    const tableRow = ([label, value]) => `
+        <tr class="border-b border-slate-100 last:border-b-0">
+            <th class="px-3 py-2 text-left text-xs font-medium text-slate-500 w-28">${label}</th>
+            <td class="px-3 py-2 text-sm text-slate-700">${value}</td>
+        </tr>
+    `;
 
     const processes = part.processes || [];
     const processRows = processes.length
         ? processes.map(renderProcessRow).join('')
-        : '<tr><td colspan="6" class="text-center text-muted">暂无工序数据</td></tr>';
+        : `<tr><td colspan="6" class="px-3 py-6 text-center text-sm text-slate-400">暂无工序数据</td></tr>`;
 
     return `
-        <div class="row">
-            <div class="col-md-6">
-                <table class="table table-sm">${rows.map(tableRow).join('')}</table>
+        <div class="grid grid-cols-2 gap-4 mb-4">
+            <div class="bg-slate-50 rounded-md overflow-hidden">
+                <table class="w-full text-xs">${rows.map(tableRow).join('')}</table>
             </div>
-            <div class="col-md-6">
-                <table class="table table-sm">${rowsRight.map(tableRow).join('')}</table>
+            <div class="bg-slate-50 rounded-md overflow-hidden">
+                <table class="w-full text-xs">${rowsRight.map(tableRow).join('')}</table>
             </div>
         </div>
-        <h6 class="mt-3"><i class="bi bi-list-ol me-1"></i>工序列表</h6>
-        <table class="table table-sm">
-            <thead>
-                <tr>
-                    <th>序号</th><th>工序号</th><th>代号</th>
-                    <th>模具数</th><th>吨位</th><th>成本系数</th>
-                </tr>
-            </thead>
-            <tbody>${processRows}</tbody>
-        </table>
+        <div class="border border-slate-200 rounded-md overflow-hidden">
+            <div class="px-3 py-2 bg-slate-50 border-b border-slate-200 flex items-center gap-2">
+                <i class="bi bi-list-ol text-slate-400"></i>
+                <span class="text-sm font-medium text-slate-700">工序列表</span>
+            </div>
+            <table class="w-full">
+                <thead>
+                    <tr class="bg-slate-50 border-b border-slate-200">
+                        <th class="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">序号</th>
+                        <th class="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">工序号</th>
+                        <th class="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">代号</th>
+                        <th class="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wider text-slate-500">模具数</th>
+                        <th class="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wider text-slate-500">吨位</th>
+                        <th class="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wider text-slate-500">成本系数</th>
+                    </tr>
+                </thead>
+                <tbody>${processRows}</tbody>
+            </table>
+        </div>
     `;
 }
 
-async function showPartDetail(partId) {
-    const modal = new bootstrap.Modal(dom.partDetailModalEl);
-    modal.show();
-    dom.partDetailContent.innerHTML = `
-        <div class="text-center">
-            <div class="spinner-border" role="status">
-                <span class="visually-hidden">加载中...</span>
-            </div>
-        </div>
-    `;
-    try {
-        const response = await HttpClient.get(PARTS_API.DETAIL(partId));
-        dom.partDetailContent.innerHTML = renderPartDetail(response.data);
-    } catch (error) {
-        dom.partDetailContent.innerHTML = `
-            <div class="alert alert-danger">${esc(error.message) || '加载失败'}</div>
-        `;
+/** 显示详情 Modal */
+function showPartDetail(partId) {
+    // 使用 Bootstrap Modal（已在 base.html 引入）
+    if (typeof bootstrap !== 'undefined' && dom.partDetailModalEl) {
+        const modal = new bootstrap.Modal(dom.partDetailModalEl);
+        modal.show();
     }
+
+    dom.partDetailContent.innerHTML = `
+        <div class="flex items-center justify-center py-12">
+            <div class="w-8 h-8 border-2 border-slate-200 border-t-slate-600 rounded-full animate-spin"></div>
+        </div>
+    `;
+
+    HttpClient.get(PARTS_API.DETAIL(partId))
+        .then(response => {
+            dom.partDetailContent.innerHTML = renderPartDetail(response.data);
+        })
+        .catch(error => {
+            dom.partDetailContent.innerHTML = `
+                <div class="p-4 bg-red-50 border border-red-200 rounded-md">
+                    <div class="flex items-center gap-2 text-red-600">
+                        <i class="bi bi-exclamation-circle"></i>
+                        <span class="text-sm font-medium">${esc(error.message) || '加载失败'}</span>
+                    </div>
+                </div>
+            `;
+        });
 }
 
+/** 删除零件 */
 async function deletePart(partId) {
     if (!confirm('确定要删除这个零件吗？')) return;
     try {
@@ -279,7 +353,7 @@ async function deletePart(partId) {
 // ===== 事件绑定（事件代理） =====
 
 /** 操作按钮点击（详情 / 删除） */
-dom.partsTableBody.addEventListener('click', (e) => {
+dom.partsTableBody?.addEventListener('click', (e) => {
     const btn = e.target.closest('button[data-action]');
     if (!btn) return;
     const id = Number(btn.getAttribute('data-id'));
@@ -288,25 +362,34 @@ dom.partsTableBody.addEventListener('click', (e) => {
 });
 
 /** 分页点击 */
-dom.pagination.addEventListener('click', (e) => {
-    const link = e.target.closest('a.page-link');
-    if (!link) return;
-    e.preventDefault();
-    const li = link.parentElement;
-    if (li.classList.contains('disabled') || li.classList.contains('active')) return;
-    const targetPage = parseInt(link.getAttribute('data-page'), 10);
+dom.pagination?.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-page]');
+    if (!btn || btn.disabled) return;
+    const targetPage = parseInt(btn.getAttribute('data-page'), 10);
     if (!Number.isNaN(targetPage) && targetPage >= 1) loadParts(targetPage);
 });
 
 /** 搜索输入防抖 */
-dom.searchInput.addEventListener('input', () => {
+dom.searchInput?.addEventListener('input', () => {
     clearTimeout(state.searchTimer);
-    state.searchTimer = setTimeout(() => loadParts(1), SEARCH_DEBOUNCE_MS);
+    state.searchTimer = setTimeout(() => loadParts(1), PARTS_CONFIG.SEARCH_DEBOUNCE_MS);
 });
 
 /** 筛选变化 */
-dom.vehicleModelFilter.addEventListener('change', () => loadParts(1));
-dom.versionFilter.addEventListener('change', () => loadParts(1));
+dom.vehicleModelFilter?.addEventListener('change', () => loadParts(1));
+dom.versionFilter?.addEventListener('change', () => loadParts(1));
+
+/** 每页数量变化：保存偏好并刷新 */
+dom.pageSizeSelect?.addEventListener('change', (e) => {
+    const newSize = parseInt(e.target.value, 10);
+    if (newSize && PARTS_CONFIG.PAGE_SIZE_OPTIONS.includes(newSize)) {
+        state.pageSize = newSize;
+        savePageSizePreference(newSize);
+        loadParts(1); // 重置到第一页
+    }
+});
 
 // ===== 入口 =====
+
+initPageSizeSelector();
 loadParts(1);

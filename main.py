@@ -34,6 +34,9 @@ async def lifespan(app: FastAPI):
     ensure_directories()
     # 导入所有模型，确保 Base.metadata 能扫描到表结构
     from app.models import StampingPart, StampingProcess
+    # 自动迁移：在 create_tables 之前补充缺失的列
+    from app.utils.db_migration import run_auto_migration
+    run_auto_migration()
     DatabaseConfig.create_tables()
 
     logger.info("=" * 50)

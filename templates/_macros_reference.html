@@ -1,0 +1,258 @@
+{#*
+ * Jinja2 宏模板参考 - Tailwind CSS + shadcn/ui 风格
+ *
+ * 本文件提供所有 UI 组件的宏定义示例
+ * 使用方式：在模板中 {% from "_macros.html" import xxx %}
+ *
+ * 规则：
+ * - 所有 Tailwind 类名必须写在宏内部
+ * - 禁止在 HTML 中硬编码 Tailwind 类名
+ * - 优先使用 Slate 色板（slate-50 ~ slate-900）
+ *#}
+
+{# ============================================================================
+   按钮宏 - shadcn/ui 风格
+   ============================================================================ #}
+
+{% macro btn_primary(label='', icon='', href='#', type='button') -%}
+{% if href and href != '#' %}<a href="{{ href }}">{% endif %}
+<button type="{{ type }}" class="inline-flex items-center justify-center gap-2 bg-slate-900 text-white rounded-md px-4 py-2 text-sm font-medium hover:bg-slate-800 disabled:opacity-50 disabled:pointer-events-none transition-colors">
+    {%- if icon %}<i class="bi {{ icon }}"></i>{%- endif %}{{ label }}
+</button>
+{% if href and href != '#' %}</a>{% endif %}
+{%- endmacro %}
+
+{% macro btn_secondary(label='', icon='', href='#', type='button') -%}
+{% if href and href != '#' %}<a href="{{ href }}">{% endif %}
+<button type="{{ type }}" class="inline-flex items-center justify-center gap-2 bg-white text-slate-700 border border-slate-200 rounded-md px-4 py-2 text-sm font-medium hover:bg-slate-50 disabled:opacity-50 disabled:pointer-events-none transition-colors">
+    {%- if icon %}<i class="bi {{ icon }}"></i>{%- endif %}{{ label }}
+</button>
+{% if href and href != '#' %}</a>{% endif %}
+{%- endmacro %}
+
+{% macro btn_ghost(label='', icon='', href='#', type='button') -%}
+{% if href and href != '#' %}<a href="{{ href }}">{% endif %}
+<button type="{{ type }}" class="inline-flex items-center justify-center gap-2 text-slate-600 hover:bg-slate-100 rounded-md px-4 py-2 text-sm font-medium disabled:opacity-50 disabled:pointer-events-none transition-colors">
+    {%- if icon %}<i class="bi {{ icon }}"></i>{%- endif %}{{ label }}
+</button>
+{% if href and href != '#' %}</a>{% endif %}
+{%- endmacro %}
+
+{% macro btn_danger(label='', icon='', href='#', type='button') -%}
+{% if href and href != '#' %}<a href="{{ href }}">{% endif %}
+<button type="{{ type }}" class="inline-flex items-center justify-center gap-2 bg-red-600 text-white rounded-md px-4 py-2 text-sm font-medium hover:bg-red-700 disabled:opacity-50 disabled:pointer-events-none transition-colors">
+    {%- if icon %}<i class="bi {{ icon }}"></i>{%- endif %}{{ label }}
+</button>
+{% if href and href != '#' %}</a>{% endif %}
+{%- endmacro %}
+
+{% macro icon_btn(icon='', title='', variant='default', type='button') -%}
+<button type="{{ type }}"
+        class="p-2 rounded-md transition-colors
+            {% if variant == 'default' %}text-slate-500 hover:bg-slate-100 hover:text-slate-700
+            {% elif variant == 'danger' %}text-slate-400 hover:bg-red-50 hover:text-red-600
+            {% elif variant == 'success' %}text-slate-400 hover:bg-green-50 hover:text-green-600{% endif %}"
+        title="{{ title }}">
+    <i class="bi {{ icon }}"></i>
+</button>
+{%- endmacro %}
+
+{# ============================================================================
+   表格宏
+   ============================================================================ #}
+
+{% macro table_container() -%}
+<div class="overflow-hidden rounded-lg border border-slate-200 shadow-sm">
+    <table class="w-full">
+        {{ caller() }}
+    </table>
+</div>
+{%- endmacro %}
+
+{% macro table_header(columns=[]) -%}
+<thead>
+    <tr class="bg-slate-50 border-b border-slate-200">
+        {% for col in columns %}
+        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">{{ col }}</th>
+        {% endfor %}
+    </tr>
+</thead>
+<tbody class="divide-y divide-slate-100">
+{%- endmacro %}
+
+{% macro table_cell(content='', align='left', numeric=false) -%}
+<td class="px-4 py-3 text-sm
+    {%- if numeric %} text-right font-mono tabular-nums text-slate-700
+    {%- else %} text-slate-700 text-{{ align }}
+    {%- endif %}">
+    {{ content }}
+</td>
+{%- endmacro %}
+
+{% macro table_row_end() -%}
+</tbody>
+{%- endmacro %}
+
+{# ============================================================================
+   数据行宏示例 - 零件列表
+   ============================================================================ #}
+{% macro data_table_row(part) -%}
+<tr class="group border-b border-slate-100 last:border-b-0 hover:bg-slate-50 transition-colors">
+    <td class="px-4 py-3"><strong class="text-sm font-medium text-slate-900">{{ part.part_number }}</strong></td>
+    <td class="px-4 py-3 text-sm text-slate-600">{{ part.part_name or '-' }}</td>
+    <td class="px-4 py-3 text-center">
+        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-700">
+            {{ part.vehicle_model or '-' }}
+        </span>
+    </td>
+    <td class="px-4 py-3 text-sm text-slate-600 text-center">{{ part.version or '-' }}</td>
+    <td class="px-4 py-3 text-sm text-slate-600">{{ part.material or '-' }}</td>
+    <td class="px-4 py-3 text-sm text-right font-mono tabular-nums text-slate-700">{{ part.thickness or '-' }}</td>
+    <td class="px-4 py-3 text-sm text-right font-mono tabular-nums text-slate-700">{{ part.part_weight or '-' }}</td>
+    <td class="px-4 py-3 text-sm text-right font-mono tabular-nums text-slate-700">{{ part.process_count or '-' }}</td>
+    <td class="px-4 py-3">
+        <div class="flex items-center justify-center gap-1">
+            <button class="opacity-0 group-hover:opacity-100 p-1.5 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all" data-action="detail" data-id="{{ part.id }}" title="查看详情">
+                <i class="bi bi-eye"></i>
+            </button>
+            <button class="opacity-0 group-hover:opacity-100 p-1.5 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 transition-all" data-action="delete" data-id="{{ part.id }}" title="删除">
+                <i class="bi bi-trash"></i>
+            </button>
+        </div>
+    </td>
+</tr>
+{%- endmacro %}
+
+{# ============================================================================
+   分页宏
+   ============================================================================ #}
+{% macro pagination(page_info) -%}
+{% set total = page_info.total %}
+{% set current = page_info.page %}
+{% set total_pages = page_info.total_pages %}
+
+<nav class="flex items-center justify-center gap-1">
+    <span class="text-sm text-slate-500 mr-2">共 {{ total }} 条</span>
+
+    {# 上一页 #}
+    {% if page_info.has_prev %}
+    <a href="#" data-page="{{ current - 1 }}" class="p-2 text-slate-500 hover:bg-slate-100 rounded transition-colors">
+        <i class="bi bi-chevron-left"></i>
+    </a>
+    {% else %}
+    <span class="p-2 text-slate-300 cursor-not-allowed"><i class="bi bi-chevron-left"></i></span>
+    {% endif %}
+
+    {# 页码 #}
+    {% for p in range(1, total_pages + 1) %}
+        {% if p == current %}
+        <span class="px-3 py-1.5 text-sm font-medium bg-slate-900 text-white rounded">{{ p }}</span>
+        {% else %}
+        <a href="#" data-page="{{ p }}" class="px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-100 rounded transition-colors">{{ p }}</a>
+        {% endif %}
+    {% endfor %}
+
+    {# 下一页 #}
+    {% if page_info.has_next %}
+    <a href="#" data-page="{{ current + 1 }}" class="p-2 text-slate-500 hover:bg-slate-100 rounded transition-colors">
+        <i class="bi bi-chevron-right"></i>
+    </a>
+    {% else %}
+    <span class="p-2 text-slate-300 cursor-not-allowed"><i class="bi bi-chevron-right"></i></span>
+    {% endif %}
+</nav>
+{%- endmacro %}
+
+{# ============================================================================
+   表单宏
+   ============================================================================ #}
+
+{% macro search_box(id='searchInput', placeholder='搜索...', value='') -%}
+<div class="relative">
+    <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+    <input type="text"
+           class="w-full h-9 pl-9 pr-3 text-sm border border-slate-200 rounded-md bg-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-300 transition-colors"
+           placeholder="{{ placeholder }}" id="{{ id }}" value="{{ value }}">
+</div>
+{%- endmacro %}
+
+{% macro form_field(name='', label='', icon='', placeholder='', type='text', required=false, value='') -%}
+<div class="space-y-1.5">
+    {%- if label %}
+    <label for="{{ name }}" class="text-sm font-medium text-slate-700">
+        {%- if icon %}<i class="bi {{ icon }} mr-1 text-slate-400"></i>{%- endif %}{{ label }}
+        {%- if required %}<span class="text-red-500">*</span>{% endif %}
+    </label>
+    {%- endif %}
+    <input type="{{ type }}" id="{{ name }}" name="{{ name }}" placeholder="{{ placeholder }}" value="{{ value }}"
+           class="w-full h-9 px-3 text-sm border border-slate-200 rounded-md bg-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-300 transition-colors"
+           {% if required %}required{% endif %}>
+</div>
+{%- endmacro %}
+
+{% macro form_select(name='', label='', options=[], value='', required=false) -%}
+<div class="space-y-1.5">
+    {%- if label %}
+    <label for="{{ name }}" class="text-sm font-medium text-slate-700">{{ label }}</label>
+    {%- endif %}
+    <select id="{{ name }}" name="{{ name }}"
+            class="w-full h-9 px-3 text-sm border border-slate-200 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-300 transition-colors"
+            {% if required %}required{% endif %}>
+        <option value="">请选择</option>
+        {%- for opt in options %}
+        <option value="{{ opt.value }}" {% if value == opt.value %}selected{% endif %}>{{ opt.label }}</option>
+        {%- endfor %}
+    </select>
+</div>
+{%- endmacro %}
+
+{# ============================================================================
+   状态宏
+   ============================================================================ #}
+
+{% macro empty_state(icon='bi-inbox', title='暂无数据', hint='', colspan=1) -%}
+<tr><td colspan="{{ colspan }}">
+    <div class="flex flex-col items-center justify-center py-12 text-slate-400">
+        <i class="bi {{ icon }} text-4xl mb-3"></i>
+        <h5 class="text-slate-600 font-medium mb-1">{{ title }}</h5>
+        {%- if hint %}<p class="text-sm text-slate-400">{{ hint }}</p>{%- endif %}
+    </div>
+</td></tr>
+{%- endmacro %}
+
+{% macro loading_spinner() -%}
+<div class="flex items-center justify-center py-8">
+    <div class="w-8 h-8 border-2 border-slate-200 border-t-slate-900 rounded-full animate-spin"></div>
+</div>
+{%- endmacro %}
+
+{# ============================================================================
+   卡片宏
+   ============================================================================ #}
+
+{% macro card_header(icon='', title='') -%}
+<div class="px-4 py-3 border-b border-slate-100 bg-slate-50/50">
+    <h5 class="mb-0 text-sm font-semibold text-slate-700 flex items-center gap-2">
+        {%- if icon %}<i class="bi {{ icon }} text-slate-400"></i>{%- endif %}{{ title }}
+    </h5>
+</div>
+{%- endmacro %}
+
+{% macro stat_card(icon='bi-box-seam', value=0, label='', color='slate') -%}
+<div class="bg-white border border-slate-200 rounded-lg p-4">
+    <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-md flex items-center justify-center
+            {% if color == 'slate' %}bg-slate-100 text-slate-600
+            {% elif color == 'green' %}bg-green-50 text-green-600
+            {% elif color == 'amber' %}bg-amber-50 text-amber-600
+            {% elif color == 'sky' %}bg-sky-50 text-sky-600
+            {% elif color == 'red' %}bg-red-50 text-red-600{% endif %}">
+            <i class="bi {{ icon }} text-lg"></i>
+        </div>
+        <div>
+            <div class="text-xl font-semibold text-slate-900">{{ value }}</div>
+            <div class="text-xs text-slate-500">{{ label }}</div>
+        </div>
+    </div>
+</div>
+{%- endmacro %}

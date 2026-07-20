@@ -1,5 +1,4 @@
 {% extends "base.html" %}
-{% from "_macros.html" import card_header, form_field %}
 
 {% block title %}车型冲压工艺文件上传{% endblock %}
 
@@ -8,79 +7,105 @@
 {% block breadcrumb_item %}车型冲压工艺文件上传{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-lg-8">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="bi bi-car-front me-2"></i>上传车型冲压工艺文件</h5>
-            </div>
-            <div class="card-body">
-                <form id="uploadForm">
-                    <div class="row mb-4">
-                        <div class="col-md-6">
-                            <label for="vehicleModel" class="form-label">
-                                <i class="bi bi-car me-1"></i>车型 <span class="text-danger">*</span>
-                            </label>
-                            <input type="text" class="form-control" id="vehicleModel" name="vehicle_model"
-                                   placeholder="例如：H61" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="version" class="form-label">
-                                <i class="bi bi-tag me-1"></i>版本 <span class="text-danger">*</span>
-                            </label>
-                            <input type="text" class="form-control" id="version" name="version"
-                                   placeholder="例如：V1.0" required>
-                        </div>
-                    </div>
-
-                    <div class="upload-zone" id="uploadZone">
-                        <i class="bi bi-cloud-arrow-up"></i>
-                        <h5 id="uploadTitle">拖拽文件到此处上传</h5>
-                        <p class="text-muted mb-3" id="uploadHint">或点击选择文件</p>
-                        <input type="file" id="fileInput" class="d-none" accept=".xlsx,.xls" required>
-                        <button type="button" class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
-                            <i class="bi bi-folder2-open me-1"></i>选择文件
-                        </button>
-                        <p class="text-muted mt-3 mb-0">
-                            <small>支持格式: .xlsx, .xls (最大 50MB)</small>
-                        </p>
-                    </div>
-
-                    <div id="filePreview" class="mt-4" style="display: none;">
-                    </div>
-
-                    <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
-                        <button type="button" class="btn btn-outline-secondary" onclick="resetForm()">
-                            <i class="bi bi-arrow-counterclockwise me-1"></i>重置
-                        </button>
-                        <button type="submit" class="btn btn-primary" id="submitBtn">
-                            <i class="bi bi-upload me-1"></i>上传
-                        </button>
-                    </div>
-                </form>
-            </div>
+<div class="max-w-2xl mx-auto">
+    {# 上传表单卡片 #}
+    <div class="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden mb-4">
+        <div class="px-4 py-3 border-b border-slate-100 bg-slate-50/50 flex items-center gap-2">
+            <i class="bi bi-car-front text-slate-400"></i>
+            <h5 class="text-sm font-semibold text-slate-700 mb-0">上传车型冲压工艺文件</h5>
         </div>
+        <div class="p-4">
+            <form id="uploadForm">
+                {# 车型和版本 #}
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div class="space-y-1.5">
+                        <label for="vehicleModel" class="text-sm font-medium text-slate-700 flex items-center gap-1">
+                            <i class="bi bi-car text-slate-400"></i>
+                            车型 <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text"
+                               id="vehicleModel"
+                               name="vehicle_model"
+                               placeholder="例如：H61"
+                               required
+                               class="w-full h-9 px-3 text-sm border border-slate-200 rounded-md bg-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-300 transition-colors">
+                    </div>
+                    <div class="space-y-1.5">
+                        <label for="version" class="text-sm font-medium text-slate-700 flex items-center gap-1">
+                            <i class="bi bi-tag text-slate-400"></i>
+                            版本 <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text"
+                               id="version"
+                               name="version"
+                               placeholder="例如：V1.0"
+                               required
+                               class="w-full h-9 px-3 text-sm border border-slate-200 rounded-md bg-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-300 transition-colors">
+                    </div>
+                </div>
 
-        <div class="card mt-4">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>上传说明</h5>
-            </div>
-            <div class="card-body">
-                <h6>Excel 文件格式要求：</h6>
-                <ul>
-                    <li>文件应包含冲压工艺相关信息（零件号、工序、模具信息等）</li>
-                    <li>支持多工作表导入</li>
-                    <li>请确保数据从第一行开始，不要有空行</li>
-                </ul>
-                <h6 class="mt-3">支持的字段：</h6>
-                <ul>
-                    <li>零件号 (Part Number)</li>
-                    <li>零件名称 (Part Name)</li>
-                    <li>材料 (Material)</li>
-                    <li>工序数量 (Process Count)</li>
-                    <li>模具数量 (Die Count)</li>
-                </ul>
-            </div>
+                {# 上传区域 #}
+                <div id="uploadZone"
+                     class="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center bg-slate-50 hover:bg-white hover:border-slate-400 transition-colors cursor-pointer mb-4">
+                    <i class="bi bi-cloud-arrow-up text-4xl text-slate-400 mb-3 block"></i>
+                    <h5 id="uploadTitle" class="text-base font-medium text-slate-700 mb-1">拖拽文件到此处上传</h5>
+                    <p id="uploadHint" class="text-sm text-slate-400 mb-3">或点击选择文件</p>
+                    <input type="file"
+                           id="fileInput"
+                           class="hidden"
+                           accept=".xlsx,.xls">
+                    <button type="button"
+                            onclick="document.getElementById('fileInput').click()"
+                            class="inline-flex items-center justify-center gap-2 bg-slate-900 text-white rounded-md px-4 py-2 text-sm font-medium hover:bg-slate-800 transition-colors">
+                        <i class="bi bi-folder2-open"></i>
+                        选择文件
+                    </button>
+                    <p class="text-xs text-slate-400 mt-3 mb-0">支持格式: .xlsx, .xls (最大 50MB)</p>
+                </div>
+
+                {# 文件预览 #}
+                <div id="filePreview" class="hidden mb-4"></div>
+
+                {# 按钮 #}
+                <div class="flex items-center justify-end gap-3 pt-2">
+                    <button type="button"
+                            onclick="resetForm()"
+                            class="inline-flex items-center justify-center gap-2 bg-white text-slate-700 border border-slate-200 rounded-md px-4 py-2 text-sm font-medium hover:bg-slate-50 transition-colors">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                        重置
+                    </button>
+                    <button type="submit"
+                            id="submitBtn"
+                            class="inline-flex items-center justify-center gap-2 bg-slate-900 text-white rounded-md px-4 py-2 text-sm font-medium hover:bg-slate-800 disabled:opacity-50 disabled:pointer-events-none transition-colors">
+                        <i class="bi bi-upload"></i>
+                        上传
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {# 上传说明卡片 #}
+    <div class="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
+        <div class="px-4 py-3 border-b border-slate-100 bg-slate-50/50 flex items-center gap-2">
+            <i class="bi bi-info-circle text-slate-400"></i>
+            <h5 class="text-sm font-semibold text-slate-700 mb-0">上传说明</h5>
+        </div>
+        <div class="p-4">
+            <h6 class="text-sm font-medium text-slate-700 mb-2">Excel 文件格式要求：</h6>
+            <ul class="list-disc list-inside text-sm text-slate-600 space-y-1 mb-3">
+                <li>文件应包含冲压工艺相关信息（零件号、工序、模具信息等）</li>
+                <li>支持多工作表导入</li>
+                <li>请确保数据从第一行开始，不要有空行</li>
+            </ul>
+            <h6 class="text-sm font-medium text-slate-700 mb-2">支持的字段：</h6>
+            <ul class="list-disc list-inside text-sm text-slate-600 space-y-1">
+                <li>零件号 (Part Number)</li>
+                <li>零件名称 (Part Name)</li>
+                <li>材料 (Material)</li>
+                <li>工序数量 (Process Count)</li>
+                <li>模具数量 (Die Count)</li>
+            </ul>
         </div>
     </div>
 </div>
@@ -88,153 +113,159 @@
 
 {% block extra_js %}
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const uploadZone = document.getElementById('uploadZone');
-        const fileInput = document.getElementById('fileInput');
-        const preview = document.getElementById('filePreview');
-        const uploadForm = document.getElementById('uploadForm');
-        const vehicleModel = document.getElementById('vehicleModel');
-        const version = document.getElementById('version');
+document.addEventListener('DOMContentLoaded', function() {
+    const uploadZone = document.getElementById('uploadZone');
+    const fileInput = document.getElementById('fileInput');
+    const preview = document.getElementById('filePreview');
+    const uploadForm = document.getElementById('uploadForm');
+    const vehicleModel = document.getElementById('vehicleModel');
+    const version = document.getElementById('version');
 
-        if (uploadZone && fileInput) {
-            uploadZone.addEventListener('click', function(e) {
-                if (e.target.tagName !== 'BUTTON' && !e.target.closest('button')) {
-                    fileInput.click();
-                }
-            });
-
-            fileInput.addEventListener('change', function(e) {
-                handleFiles(this.files);
-            });
-
-            uploadZone.addEventListener('dragover', function(e) {
-                e.preventDefault();
-                this.classList.add('dragover');
-            });
-
-            uploadZone.addEventListener('dragleave', function(e) {
-                e.preventDefault();
-                this.classList.remove('dragover');
-            });
-
-            uploadZone.addEventListener('drop', function(e) {
-                e.preventDefault();
-                this.classList.remove('dragover');
-                handleFiles(e.dataTransfer.files);
-            });
-        }
-
-        function handleFiles(files) {
-            if (files.length === 0) return;
-
-            const file = files[0];
-            const ext = '.' + file.name.split('.').pop().toLowerCase();
-            const allowedExts = ['.xlsx', '.xls'];
-
-            if (!allowedExts.includes(ext)) {
-                showToast('不支持的文件格式，请上传 .xlsx 或 .xls 文件', 'warning');
-                fileInput.value = '';
-                return;
+    if (uploadZone && fileInput) {
+        uploadZone.addEventListener('click', function(e) {
+            if (e.target.tagName !== 'BUTTON' && !e.target.closest('button')) {
+                fileInput.click();
             }
+        });
 
-            if (file.size > 50 * 1024 * 1024) {
-                showToast('文件过大，最大支持 50MB', 'warning');
-                fileInput.value = '';
-                return;
-            }
+        fileInput.addEventListener('change', function(e) {
+            handleFiles(this.files);
+        });
 
-            preview.style.display = 'block';
-            preview.innerHTML = `
-                <div class="alert alert-info mb-0">
-                    <div class="d-flex align-items-center">
-                        <i class="bi bi-file-earmark-excel fs-1 me-3 text-success"></i>
-                        <div class="flex-grow-1">
-                            <strong>${file.name}</strong>
-                            <div class="text-muted">${formatFileSize(file.size)}</div>
-                        </div>
-                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeFile()">
-                            <i class="bi bi-trash"></i>
-                        </button>
-                    </div>
-                </div>
-            `;
-
-            uploadZone.classList.add('has-file');
-            document.getElementById('uploadTitle').textContent = '已选择文件';
-            document.getElementById('uploadHint').textContent = file.name;
-        }
-
-        window.removeFile = function() {
-            fileInput.value = '';
-            preview.style.display = 'none';
-            uploadZone.classList.remove('has-file');
-            document.getElementById('uploadTitle').textContent = '拖拽文件到此处上传';
-            document.getElementById('uploadHint').textContent = '或点击选择文件';
-        };
-
-        window.resetForm = function() {
-            uploadForm.reset();
-            removeFile();
-        };
-
-        function formatFileSize(bytes) {
-            if (bytes === 0) return '0 Bytes';
-            const k = 1024;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-        }
-
-        uploadForm.addEventListener('submit', function(e) {
+        uploadZone.addEventListener('dragover', function(e) {
             e.preventDefault();
+            this.classList.add('bg-white', 'border-slate-400');
+        });
 
-            if (!vehicleModel.value.trim()) {
-                showToast('请输入车型', 'warning');
-                vehicleModel.focus();
-                return;
+        uploadZone.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            this.classList.remove('bg-white', 'border-slate-400');
+        });
+
+        uploadZone.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.classList.remove('bg-white', 'border-slate-400');
+            handleFiles(e.dataTransfer.files);
+        });
+    }
+
+    function handleFiles(files) {
+        if (files.length === 0) return;
+
+        const file = files[0];
+        const ext = '.' + file.name.split('.').pop().toLowerCase();
+        const allowedExts = ['.xlsx', '.xls'];
+
+        if (!allowedExts.includes(ext)) {
+            showToast('不支持的文件格式，请上传 .xlsx 或 .xls 文件', 'warning');
+            fileInput.value = '';
+            return;
+        }
+
+        if (file.size > 50 * 1024 * 1024) {
+            showToast('文件过大，最大支持 50MB', 'warning');
+            fileInput.value = '';
+            return;
+        }
+
+        preview.classList.remove('hidden');
+        preview.innerHTML = `
+            <div class="flex items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-md">
+                <i class="bi bi-file-earmark-excel text-2xl text-green-600"></i>
+                <div class="flex-1 min-w-0">
+                    <div class="text-sm font-medium text-slate-900 truncate">${escapeHtml(file.name)}</div>
+                    <div class="text-xs text-slate-500">${formatFileSize(file.size)}</div>
+                </div>
+                <button type="button"
+                        onclick="removeFile()"
+                        class="p-1.5 rounded-md text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+        `;
+
+        uploadZone.classList.add('border-green-400', 'bg-green-50/50');
+        document.getElementById('uploadTitle').textContent = '已选择文件';
+        document.getElementById('uploadHint').textContent = file.name;
+    }
+
+    window.removeFile = function() {
+        fileInput.value = '';
+        preview.classList.add('hidden');
+        uploadZone.classList.remove('border-green-400', 'bg-green-50/50');
+        document.getElementById('uploadTitle').textContent = '拖拽文件到此处上传';
+        document.getElementById('uploadHint').textContent = '或点击选择文件';
+    };
+
+    window.resetForm = function() {
+        uploadForm.reset();
+        removeFile();
+    };
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    uploadForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        if (!vehicleModel.value.trim()) {
+            showToast('请输入车型', 'warning');
+            vehicleModel.focus();
+            return;
+        }
+
+        if (!version.value.trim()) {
+            showToast('请输入版本', 'warning');
+            version.focus();
+            return;
+        }
+
+        if (!fileInput.files || fileInput.files.length === 0) {
+            showToast('请选择文件', 'warning');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('vehicle_model', vehicleModel.value.trim());
+        formData.append('version', version.value.trim());
+        formData.append('file', fileInput.files[0]);
+
+        showLoading();
+        document.getElementById('submitBtn').disabled = true;
+
+        fetch('{{ url_for("stamping.upload") }}', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            hideLoading();
+            if (data.success) {
+                showToast('文件上传成功', 'success');
+                resetForm();
+            } else {
+                showToast(data.message || data.detail || '上传失败', 'danger');
             }
-
-            if (!version.value.trim()) {
-                showToast('请输入版本', 'warning');
-                version.focus();
-                return;
-            }
-
-            if (!fileInput.files || fileInput.files.length === 0) {
-                showToast('请选择文件', 'warning');
-                return;
-            }
-
-            const formData = new FormData();
-            formData.append('vehicle_model', vehicleModel.value.trim());
-            formData.append('version', version.value.trim());
-            formData.append('file', fileInput.files[0]);
-
-            showLoading();
-            document.getElementById('submitBtn').disabled = true;
-
-            fetch('{{ url_for("stamping.upload") }}', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                hideLoading();
-                if (data.success) {
-                    showToast('文件上传成功', 'success');
-                    resetForm();
-                } else {
-                    showToast(data.message || data.detail || '上传失败', 'danger');
-                }
-            })
-            .catch(error => {
-                hideLoading();
-                showToast('上传失败: ' + error.message, 'danger');
-            })
-            .finally(() => {
-                document.getElementById('submitBtn').disabled = false;
-            });
+        })
+        .catch(error => {
+            hideLoading();
+            showToast('上传失败: ' + error.message, 'danger');
+        })
+        .finally(() => {
+            document.getElementById('submitBtn').disabled = false;
         });
     });
+});
 </script>
 {% endblock %}
