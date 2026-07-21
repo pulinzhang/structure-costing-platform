@@ -6,41 +6,10 @@
 import logging
 import sys
 from pathlib import Path
-from logging.handlers import RotatingFileHandler
 from typing import Optional
+from logging.handlers import RotatingFileHandler
 
 from app.config import settings
-
-# 模块级别的 app.log 处理器（独立于 LoggerConfig）
-_MOD_LOG_DIR = Path(__file__).parent.parent / "logs"
-_MOD_LOG_DIR.mkdir(parents=True, exist_ok=True)
-_app_log_handler = logging.FileHandler(
-    str(_MOD_LOG_DIR / "app.log"), 
-    encoding="utf-8",
-    mode="a"  # 追加模式
-)
-_app_log_handler.setLevel(logging.INFO)
-_app_log_handler.setFormatter(logging.Formatter(
-    "%(asctime)s | %(levelname)-8s | %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S"
-))
-# 添加到根 logger
-_root_logger = logging.getLogger()
-_root_logger.addHandler(_app_log_handler)
-_root_logger.setLevel(logging.INFO)
-print(f"[DEBUG] 模块级别 app.log 处理器已添加", file=sys.stderr)
-
-# 测试：直接在模块加载时尝试写入文件
-_TEST_LOG_DIR = Path(__file__).parent.parent/ "logs"
-_TEST_LOG_DIR.mkdir(parents=True, exist_ok=True)
-_test_handler = logging.FileHandler(str(_TEST_LOG_DIR / "module_load.log"), encoding="utf-8")
-_test_handler.setLevel(logging.INFO)
-_test_handler.setFormatter(logging.Formatter("%(asctime)s - %(message)s"))
-_test_logger = logging.getLogger("test_module")
-_test_logger.addHandler(_test_handler)
-_test_logger.setLevel(logging.INFO)
-_test_logger.info("logging_config.py 模块加载成功")
-print(f"[DEBUG] 日志模块加载，LOG_DIR={_TEST_LOG_DIR}", file=sys.stderr)
 
 
 class LoggerConfig:

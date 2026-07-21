@@ -1,0 +1,514 @@
+---
+description: 汽车冲压件核价平台架构规范
+alwaysApply: true
+---
+
+# 汽车冲压件核价平台 - 架构宪法
+
+> 基于垂直切片的模块化架构（Feature-based Vertical Slice Architecture）
+> 所有代码必须遵循的分层架构规范
+
+---
+
+## 一、分层职责（核心原则）
+
+```
+用户请求 ──► Router ──► Service ──► Repository ──► Database
+                │                        │
+                └────────────────────────┘
+                        返回响应
+```
+
+| 层级 | 职责 | 禁止事项 |
+|------|------|----------|
+| **Router** | 接收请求、参数验证、调用 Service、返回响应 | 禁止写业务逻辑；禁止直接查数据库 |
+| **Service** | 业务逻辑、数据转换、事务管理、异常处理 | 禁止直接写 SQL；禁止调用 Parser |
+| **Repository** | 数据库 CRUD 操作（基础查询构建） | 禁止写业务逻辑；禁止包含 if/else 业务判断 |
+| **Model** | 定义数据库表结构 | 禁止写任何逻辑方法 |
+| **Schema** | 请求验证、响应序列化（DTO） | 禁止写业务逻辑 |
+| **Parser** | 解析文件（纯函数，工具层） | 禁止写业务逻辑；禁止依赖其他层 |
+
+**Parser 特殊说明**：
+- Parser 是**横向工具层**，不属于分层体系
+- **只能被 Service 层调用**，Router 禁止直接调用 Parser
+- Parser 无依赖，不依赖任何其他层
+
+---
+
+## 二、层级详细规范
+
+### 2.1 Router 层（路由层）
+
+**职责：HTTP 入口，只做"门卫"工作**
+
+```
+Router 的三件事：
+1. 接收请求 → 从请求中提取参数
+2. 调用 Service → 把参数传给业务层
+3. 返回响应 → 把 Service 的结果封装成 HTTP 响应
+```
+
+**✅ 正确示例：**
+
+```python
+# app/routers/stamping/crud.py
+
+@router.get("/parts")
+def list_parts(
+    db: Session = Depends(get_db),
+    query: StampingPartQuery = Depends(),
+):
+    service = StampingPartService()
+    data, total = service.list_parts(db, query)
+    return ApiResponse.list_(data=data, total=total)
+```
+
+**❌ 错误示例：**
+
+```python
+# 错误：Router 做了业务逻辑
+@router.get("/parts")
+def list_parts(db: Session = Depends(get_db), query: StampingPartQuery = Depends()):
+    parts = db.query(Part).filter(...).all()  # ❌ 禁止在 Router 里查数据库
+    return {"data": parts}
+
+# 错误：Router 直接调用 Parser
+@router.post("/upload")
+def upload(file: UploadFile):
+    result = parse_excel(file)  # ❌ Parser 只能被 Service 调用
+    return result
+```
+
+---
+
+### 2.2 Service 层（服务层）
+
+**职责：业务逻辑处理、事务管理、异常处理**
+
+```python
+# app/services/stamping/stamping_service.py
+
+class StampingPartService:
+    """零件业务逻辑"""
+
+    def __init__(self):
+        self.repository = StampingPartRepository()
+
+    def list_parts(self, db: Session, query: StampingPartQuery):
+        # 业务逻辑：权限检查、参数预处理等
+        # ...
+
+        # 调用 Repository（不写 SQL）
+        parts, total = self.repository.paginate(
+            db,
+            vehicle_model=query.vehicle_model,
+            version=query.version,
+            skip=query.skip,
+            limit=query.limit,
+        )
+
+        # 数据转换：使用 Schema 序列化，不依赖 Model 的 to_dict
+        return [PartResponse.model_validate(p) for p in parts], total
+```
+
+**职责清单：**
+- 业务规则判断（权限、状态机、业务约束）
+- 组合多个 Repository 调用
+- **事务管理**（使用 `db.begin()` 或装饰器）
+- **抛出业务异常**（由 Router 统一捕获）
+- 调用 Parser（**唯一能调用 Parser 的层级**）
+- 数据序列化（使用 Schema，不在 Model 里写 `to_dict`）
+
+---
+
+### 2.3 Repository 层（仓库层）
+
+**职责：数据库操作（CRUD），只负责构建基础查询**
+
+```python
+class StampingPartRepository:
+    """零件数据访问 - 只做查询构建，不写业务逻辑"""
+
+    def paginate(
+        self,
+        db: Session,
+        vehicle_model: str,
+        version: str,
+        part_number: str = None,
+        skip: int = 0,
+        limit: int = 100,
+    ) -> Tuple[List[StampingPart], int]:
+        """
+        基础分页查询
+        - 根据传入参数构建 WHERE 条件
+        - 不包含任何 if/else 业务判断
+        - 业务规则由调用方（Service）在传参前处理
+        """
+        q = db.query(StampingPart).filter(
+            StampingPart.vehicle_model == vehicle_model,
+            StampingPart.version == version,
+        )
+        if part_number:
+            q = q.filter(StampingPart.part_number.like(f"%{part_number}%"))
+
+        total = q.count()
+        parts = q.offset(skip).limit(limit).all()
+        return parts, total
+```
+
+**❌ 禁止示例：**
+
+```python
+# 错误：Repository 包含业务判断
+def get_active_parts(self, db: Session, user_id: int):
+    user = db.query(User).filter(User.id == user_id).first()
+    if user.role == "admin":  # ❌ 这是业务逻辑，应该在 Service 中判断
+        return db.query(Part).all()
+    return db.query(Part).filter(Part.status == "active").all()
+```
+
+**Repository 边界原则：**
+- 只接收**明确的基础查询参数**（字段值、排序、分页）
+- 不接收**业务状态**（如 `is_active`、`user_role`）
+- **禁止**：业务策略/规则判断（角色判断、状态流转、权限校验）
+- **允许**：技术性判空构建动态查询（如 `if value is not None` 拼接过滤条件）
+- 所有业务规则判断必须在 Service 层完成
+
+---
+
+### 2.4 Model 层（模型层）
+
+**职责：定义数据库表结构，只定义字段，不写任何方法**
+
+```python
+# app/models/stamping.py
+
+class StampingPart(Base):
+    """只定义表结构，不写任何逻辑方法"""
+    __tablename__ = "stamping_parts"
+
+    id = Column(Integer, primary_key=True)
+    part_number = Column(String(50), unique=True, index=True)
+    vehicle_model = Column(String(50), index=True)
+    version = Column(String(50), index=True)
+    # ... 只定义字段，不写 to_dict，不写业务方法
+```
+
+**❌ 禁止示例：**
+
+```python
+# 错误：Model 包含逻辑
+class StampingPart(Base):
+    # ...
+
+    def to_dict(self):  # ❌ Model 禁止写方法
+        return {...}
+
+    @property
+    def is_valid(self):  # ❌ 业务判断不应该在 Model 里
+        return self.status == "active"
+```
+
+---
+
+### 2.5 Schema 层（模式层）
+
+**职责：请求验证、响应序列化（DTO）**
+
+```python
+# app/schemas/stamping.py
+
+from pydantic import BaseModel
+
+class StampingPartQuery(BaseModel):
+    """请求参数验证"""
+    vehicle_model: str
+    version: str
+    part_number: str | None = None
+    skip: int = 0
+    limit: int = 100
+
+class StampingPartResponse(BaseModel):
+    """响应数据序列化"""
+    id: int
+    part_number: str
+    part_name: str
+    material: str | None
+
+    class Config:
+        from_attributes = True  # 支持从 ORM 模型转换
+
+def serialize_part(part: StampingPart) -> dict:
+    """独立的序列化工具函数"""
+    return StampingPartResponse.model_validate(part).model_dump()
+```
+
+**Schema 与 Model 的区别：**
+| | Model | Schema |
+|---|---|---|
+| 用途 | 定义数据库表结构 | 请求验证 / 响应序列化 |
+| 位置 | 数据库层 | DTO 层 |
+| 逻辑 | 无 | 无 |
+
+---
+
+### 2.6 Parser 层（解析层）
+
+**职责：解析文件（横向工具，只能被 Service 调用）**
+
+```python
+# app/parsers/stamping/stamping_parser.py
+
+def parse_stamping_excel(file_path: str) -> ParseResult:
+    """
+    纯函数：输入文件路径，输出结构化数据
+    - 无副作用（不写数据库、不写文件）
+    - 不依赖任何其他层
+    - 被 Service 层调用，不被 Router 直接调用
+    """
+    # 读取 Excel
+    # 提取数据
+    return ParseResult(parts=[], processes=[], images={})
+```
+
+**调用规则：**
+```
+正确：Router → Service → Parser → Service → Repository
+错误：Router → Parser  ❌（Router 禁止直接调用 Parser）
+```
+
+---
+
+## 三、目录结构规范（垂直切片）
+
+**核心原则：按功能（feature）垂直切片，每层对齐**
+
+```
+app/
+├── common/                          # 公共层（可被所有切片依赖）
+│   ├── models/                      # 公共模型（如 User、AuditLog）
+│   ├── repositories/               # 公共数据访问
+│   ├── services/                    # 公共业务逻辑
+│   │   ├── material_service.py      # 材料计算（冲压/注塑共用）
+│   │   ├── file_service.py         # 文件存储
+│   │   └── email_service.py         # 邮件发送
+│   └── schemas/                     # 公共 Schema
+│
+├── routers/                         # Router 层
+│   └── stamping/                    # 冲压功能切片
+│       ├── __init__.py
+│       ├── crud.py                  # 查询接口
+│       └── upload.py                # 上传接口
+├── services/                        # Service 层
+│   └── stamping/                    # 冲压功能切片
+│       ├── __init__.py
+│       ├── stamping_service.py      # 零件业务逻辑
+│       └── upload/                  # 上传业务
+│           ├── __init__.py
+│           └── stamping_upload.py   # 调用 Parser，处理上传流程
+├── repositories/                     # Repository 层
+│   └── stamping/                    # 冲压功能切片
+│       ├── __init__.py
+│       └── stamping_repository.py   # 数据库 CRUD
+├── models/                         # Model 层
+│   └── stamping.py                  # 表结构定义
+├── schemas/                         # Schema 层
+│   └── stamping.py                  # 请求验证 / 响应序列化
+└── parsers/                        # Parser 层（横向工具）
+    └── stamping/                    # 冲压功能切片
+        ├── __init__.py
+        └── stamping_parser.py       # Excel 解析
+```
+
+**common/ 公共层说明：**
+| 目录 | 内容 | 示例 |
+|------|------|------|
+| `common/services/` | 真正通用的基础能力 | 材料利用率计算、文件存储、邮件发送 |
+| `common/models/` | 多功能共用的表结构 | 用户、审计日志、系统配置 |
+| `common/repositories/` | 跨功能的数据访问 | 通用 CRUD 封装 |
+
+**命名规则：**
+- Router：`app/routers/{feature}/crud.py`、`app/routers/{feature}/upload.py`
+- Service：`app/services/{feature}/{feature}_service.py`
+- Repository：`app/repositories/{feature}/{feature}_repository.py`
+- Model：`app/models/{feature}.py`
+- Schema：`app/schemas/{feature}.py`
+- Parser：`app/parsers/{feature}/{feature}_parser.py`
+- Common：`app/common/services/{service_name}.py`
+
+---
+
+## 四、依赖方向
+
+**依赖只能从外向内，不能从内向外：**
+
+```
+┌──────────────────────────────────────┐
+│              Router                   │
+└──────────────┬───────────────────────┘
+               │ 调用
+┌──────────────▼───────────────────────┐
+│              Service                 │
+├──────────────┬───────────────────────┤
+│               │ 调用 Parser（唯一合法）│
+│          ┌────▼────┐                 │
+│          │ Parser   │ ← 横向工具，无依赖│
+│          └─────────┘                 │
+│               │                     │
+│               │ 调用 Common Service  │
+│          ┌────▼────┐                 │
+│          │  Common  │ ← 基础设施层   │
+│          └─────────┘  无依赖（纯工具）│
+├──────────────┬───────────────────────┤
+│               │ 调用
+┌──────────────▼───────────────────────┐
+│           Repository                 │
+└──────────────┬───────────────────────┘
+               │ 使用
+┌──────────────▼───────────────────────┐
+│              Model                   │
+└──────────────────────────────────────┘
+```
+
+**依赖规则（扩展 common 层后）：**
+| 调用方 | 可调用 | 禁止调用 |
+|--------|--------|----------|
+| Router | Service | Repository、Model、Parser |
+| Service | Repository、Parser、**Common Service** | Router |
+| Repository | Model、**Common Repository** | Service、Router、Parser |
+| Parser | 无 | 任何层 |
+| Model | 无 | 任何层 |
+| **切片 Service** | **切片 Repository**、**Common Service** | 其他切片 Service |
+| **切片之间** | **禁止互相依赖** | 只能依赖 Common |
+
+**common/ 公共层规则：**
+```
+✅ 正确：
+  stamping/services/ → common/services/material_service.py
+  injection/services/ → common/services/material_service.py
+
+❌ 错误：
+  stamping/services/ → injection/services/  ❌（切片间禁止互相依赖）
+```
+
+---
+
+## 五、事务与异常管理
+
+### 5.1 事务边界
+
+**事务放在 Service 层**（组合多个 Repository 操作）
+
+```python
+class StampingUploadService:
+    """上传服务 - 事务管理示例"""
+
+    def process_upload(self, db: Session, ...):
+        """
+        事务边界：整个上传流程在一个事务中
+        """
+        try:
+            db.begin()  # 开始事务
+
+            # 1. 删除旧数据
+            self.part_repo.delete_by_vehicle_version(db, vehicle_model, version)
+
+            # 2. 创建新数据
+            parts = self.part_repo.bulk_create(db, parts_data)
+            processes = self.process_repo.bulk_create(db, processes_data)
+
+            db.commit()  # 提交事务
+            return {"parts": len(parts), "processes": len(processes)}
+
+        except Exception as e:
+            db.rollback()  # 失败回滚
+            raise BusinessError(f"上传失败: {e}")  # 抛出业务异常
+```
+
+### 5.2 异常处理
+
+**Service 抛出异常，Router 统一捕获**
+
+```python
+# Service 层：抛出业务异常
+class StampingPartService:
+    def get_part(self, db: Session, part_id: int):
+        part = self.repository.get_by_id(db, part_id)
+        if not part:
+            raise NotFoundError(f"零件不存在: id={part_id}")
+        return part
+
+# Router 层：统一捕获处理
+@router.get("/parts/{part_id}")
+def get_part(part_id: int, db: Session = Depends(get_db)):
+    try:
+        service = StampingPartService()
+        return ApiResponse.success(service.get_part(db, part_id))
+    except NotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+```
+
+**异常分类：**
+| 异常类型 | 抛出层 | 说明 |
+|----------|--------|------|
+| `NotFoundError` | Service | 资源不存在 |
+| `ValidationError` | Service | 业务校验失败 |
+| `BusinessError` | Service | 通用业务异常 |
+| `HTTPException` | Router | HTTP 层异常（404、400 等） |
+
+---
+
+## 六、快速检查清单
+
+修改代码前，先问自己：
+
+- [ ] 这段代码是**业务判断**吗？（权限、状态）→ 放到 **Service**
+- [ ] 这段代码是**SQL 查询构建**吗？ → 放到 **Repository**
+- [ ] 这段代码是**HTTP 处理**吗？ → 放到 **Router**
+- [ ] 这段代码是**表结构定义**吗？ → 放到 **Model**
+- [ ] 这段代码是**数据转换**吗？ → 放到 **Schema**
+- [ ] 这段代码是**文件解析**吗？ → 放到 **Parser**（只能被 Service 调用）
+- [ ] 我在 Repository 里写 `if` 判断了吗？ → **禁止**，移到 Service
+- [ ] 我在 Model 里写 `to_dict` 了吗？ → **禁止**，用 Schema 序列化
+
+---
+
+## 七、违反架构宪法的典型错误
+
+| 错误 | 问题 | 正确做法 |
+|------|------|----------|
+| Router 里写 SQL | 难以测试、逻辑分散 | Router → Service → Repository |
+| Service 里直接查数据库 | 违反单一职责 | Service 调用 Repository |
+| Model 里有业务方法 | 耦合数据库和业务 | Model 只定义结构，用 Schema 序列化 |
+| 多层都写同一份逻辑 | 代码重复、难以维护 | 各层各司其职 |
+| Router 直接调用 Parser | 绕过 Service 业务逻辑 | Router → Service → Parser |
+| Repository 包含业务判断 | 违反职责边界 | 业务判断放 Service |
+| 切片间互相依赖 | 违反依赖方向 | 用 common/ 共享公共代码 |
+
+---
+
+## 八、common/ 公共层
+
+**问题**：跨功能复用（如冲压/注塑都需材料计算）时，传统分层可直接调用，但垂直切片禁止切片间互相依赖。
+
+**解决方案**：创建 `common/` 层，所有切片都可依赖它。
+
+```text
+app/
+├── common/
+│   ├── services/material_service.py  # 纯粹技术能力（材料计算、文件存储）
+│   ├── models/                       # 共享领域模型（User、AuditLog）
+│   └── repositories/                 # 公共数据访问
+└── stamping/                         # 功能切片
+    ├── services/
+    ├── repositories/
+    └── models/
+```
+
+**规则**：
+- `common/` 是基础设施层，所有切片都可以依赖
+- 切片之间**禁止互相依赖**，只能依赖 `common/`
+- 通用技术能力（材料计算、文件存储、邮件）放在 `common/services/`
+- 共享领域模型（User、AuditLog）放在 `common/models/`
+
+**例外说明**：`common/` 是本架构中**唯一按技术层水平组织的目录**（models/services/repositories），因为它不属于任何单一业务切片。这是刻意设计的例外，而非混乱。

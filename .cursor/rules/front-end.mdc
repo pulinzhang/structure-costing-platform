@@ -1,0 +1,234 @@
+---
+description: 汽车冲压件核价平台前端开发规范
+alwaysApply: true
+---
+
+# UI/UX 设计规范 - 汽车冲压件自动核价平台
+
+## 架构说明
+
+**前后端分离 SPA 架构**
+
+- **前端**：`static/index.html` + `static/js/app.js` (纯 JavaScript SPA)
+- **后端**：FastAPI `/api/*` 接口 (仅返回 JSON)
+- **跨域**：后端配置 CORS 允许前端访问
+
+### 核心规则
+
+| 规则 | 说明 |
+|------|------|
+| **禁止 Jinja2 模板** | ❌ 不再使用 `{% for %}`、`{{ }}` 等 Jinja2 语法 |
+| **SPA 渲染** | ✅ 所有页面通过 JavaScript 动态渲染 |
+| **仅用 Tailwind CSS** | ✅ 所有样式必须且仅使用 Tailwind CSS 原子类 |
+| **保留 Bootstrap JS** | ✅ Modal、Collapse、Dropdown 等交互组件保留 Bootstrap JS 支持 |
+| **禁止内联** | ❌ 禁止使用 `style="..."` 属性（动态数据绑定除外） |
+| **禁止自定义 CSS** | ❌ 禁止在 `style.css` 中添加新的自定义类 |
+
+---
+
+## SPA 开发规范
+
+### 目录结构
+
+```
+static/
+├── index.html          # SPA 入口页面
+├── css/
+│   └── style.css      # 布局样式（侧边栏、loading 等结构样式）
+└── js/
+    ├── main.js        # 公共工具（HttpClient、Toast 等）
+    └── app.js         # SPA 主应用（页面路由、渲染逻辑）
+```
+
+### 页面渲染模式
+
+```javascript
+// 页面模板函数 - 返回 HTML 字符串
+function renderPageName() {
+    return `
+        <div class="bg-white border border-slate-200 rounded-lg p-6">
+            <h3>页面标题</h3>
+            <p>页面内容</p>
+        </div>
+    `;
+}
+
+// 页面初始化函数
+function initPageName() {
+    // 绑定事件、初始化组件
+}
+
+// 在 app.js 的 renderPage 函数中调用
+async function renderPage(pageName) {
+    switch (pageName) {
+        case 'page-name':
+            content.innerHTML = renderPageName();
+            initPageName();  // 初始化
+            break;
+    }
+}
+```
+
+### API 调用规范
+
+```javascript
+// 使用 HttpClient 调用 API
+const result = await HttpClient.get('/api/stamping/parts/list', { params });
+const pageInfo = result.data || {};
+
+// 处理响应
+if (pageInfo.list) {
+    renderParts(pageInfo.list);
+}
+```
+
+---
+
+## Tailwind CSS 视觉风格
+
+### 色彩规范
+
+| 用途 | Tailwind 类 | Hex |
+|------|-------------|-----|
+| 主色 | `slate-900` | `#0f172a` |
+| 背景 | `slate-50` | `#f8fafc` |
+| 边框 | `slate-200` | `#e2e8f0` |
+| 次要文字 | `slate-500` | `#64748b` |
+| 成功 | `green-600` | `#16a34a` |
+| 警告 | `amber-600` | `#d97706` |
+| 危险 | `red-600` | `#dc2626` |
+| 信息 | `sky-600` | `#0284c7` |
+
+### 按钮
+
+```html
+<!-- 主按钮 -->
+<button class="inline-flex items-center justify-center gap-2 bg-slate-900 text-white rounded-md px-4 py-2 text-sm font-medium hover:bg-slate-800 disabled:opacity-50 transition-colors">
+
+<!-- 次要按钮 -->
+<button class="inline-flex items-center justify-center gap-2 bg-white text-slate-700 border border-slate-200 rounded-md px-4 py-2 text-sm font-medium hover:bg-slate-50 transition-colors">
+
+<!-- 幽灵按钮 -->
+<button class="inline-flex items-center justify-center gap-2 text-slate-600 hover:bg-slate-100 rounded-md px-4 py-2 text-sm font-medium transition-colors">
+
+<!-- 危险按钮 -->
+<button class="inline-flex items-center justify-center gap-2 bg-red-600 text-white rounded-md px-4 py-2 text-sm font-medium hover:bg-red-700 transition-colors">
+```
+
+### 输入框
+
+```html
+<input class="w-full h-9 px-3 text-sm border border-slate-200 rounded-md bg-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-300 transition-colors">
+```
+
+### 卡片
+
+```html
+<div class="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
+    <div class="px-4 py-3 border-b border-slate-100 bg-slate-50/50">
+        <!-- 卡片标题 -->
+    </div>
+    <div class="p-4">
+        <!-- 卡片内容 -->
+    </div>
+</div>
+```
+
+### 表格
+
+```html
+<div class="overflow-hidden rounded-lg border border-slate-200 shadow-sm">
+    <table class="w-full">
+        <thead>
+            <tr class="bg-slate-50 border-b border-slate-200">
+                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">列头</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+            <tr class="group hover:bg-slate-50 transition-colors">
+                <td class="px-4 py-3 text-sm text-slate-700">内容</td>
+                <td class="px-4 py-3 text-sm text-right font-mono tabular-nums text-slate-700">123.45</td>
+                <td class="px-4 py-3">
+                    <div class="flex items-center justify-center gap-1">
+                        <button class="opacity-0 group-hover:opacity-100 p-1.5 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+```
+
+### 分页
+
+```html
+<nav class="flex items-center justify-center gap-1">
+    <button class="p-2 rounded-md text-slate-500 hover:bg-slate-100 disabled:opacity-50 disabled:pointer-events-none">
+        <i class="bi bi-chevron-left"></i>
+    </button>
+    <span class="px-3 py-1.5 text-sm font-medium bg-slate-900 text-white rounded">1</span>
+    <button class="p-2 rounded-md text-slate-500 hover:bg-slate-100">
+        <i class="bi bi-chevron-right"></i>
+    </button>
+</nav>
+```
+
+---
+
+## JavaScript 规范
+
+### 禁止的 Bootstrap 类名
+
+```
+❌ btn, btn-primary, btn-outline, btn-success, btn-danger
+❌ card, card-header, card-body, card-footer
+❌ form-control, form-select, form-label
+❌ table, table-hover, table-sm
+❌ badge, alert, modal, nav-pills
+❌ row, col-md-*, container
+```
+
+### 允许的 Tailwind 类名
+
+```
+✅ bg-white, bg-slate-50, bg-slate-900
+✅ text-slate-900, text-slate-600, text-slate-400
+✅ border-slate-200, rounded-md, shadow-sm
+✅ px-4, py-2, gap-2, flex, items-center
+✅ opacity-0, group-hover:opacity-100
+✅ font-mono, tabular-nums
+```
+
+### 工具函数
+
+```javascript
+// HTML 转义（防止 XSS）
+const esc = (value) => {
+    if (value == null) return '-';
+    return String(value).replace(/[&<>"']/g, (ch) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+    }[ch]));
+};
+
+// 数字格式化
+const fmtNum = (value, digits = 2) => {
+    if (value == null || Number.isNaN(value)) return '-';
+    return Number(value).toFixed(digits);
+};
+```
+
+---
+
+## 快速检查清单
+
+修改 `static/` 文件前，确认：
+
+- [ ] 没有使用 Jinja2 模板语法 (`{% %}`, `{{ }}`)
+- [ ] 页面渲染使用 JavaScript 模板字符串
+- [ ] JavaScript 中没有生成 Bootstrap 类的 HTML
+- [ ] 动态渲染的 HTML 片段使用 Tailwind 类名
+- [ ] `style.css` 没有添加新的 Bootstrap 覆盖样式
+- [ ] Toast、分页、加载动画等使用 Tailwind 风格
+- [ ] Bootstrap JS 仅用于交互功能

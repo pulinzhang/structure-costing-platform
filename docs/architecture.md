@@ -1,57 +1,67 @@
 # 汽车冲压件自动核价平台 - 架构设计
 
+> 适合初学者的分层架构指南
+
+---
+
 ## 1. 项目概述
 
 | 项目 | 说明 |
 |------|------|
-| 名称 | 汽车冲压件自动核价平台 (Stamping Costing Platform) |
-| 技术栈 | FastAPI + SQLAlchemy + SQLite + Jinja2 |
-| 定位 | B/S 架构的 Web 应用，接收冲压工艺 Excel 文件，自动解析、存储并提供查询 |
+| 名称 | 汽车冲压件自动核价平台 |
+| 技术栈 | FastAPI + SQLAlchemy + SQLite |
+| 做什么 | 接收冲压工艺 Excel 文件，自动解析、存储并提供查询 |
 | 核心流程 | 上传 Excel → 解析工序数据 → 保存简图 → 落库 → 返回结果 |
 
 ---
 
-## 2. 分层架构
+## 2. 分层架构（核心概念）
+
+### 什么是"分层"？
+
+就像一家餐厅：
+- **服务员（Router）**：接收顾客点餐，只负责传话
+- **厨师（Service）**：决定怎么做菜，处理具体业务
+- **仓库管理员（Repository）**：从冰箱（数据库）取食材、存食材
+- **冰箱（Database）**：真正存放数据的地方
+
+### 架构图
 
 ```
-┌──────────────────────────────────────────────────────────────┐
-│                    Router (路由层)                           │
-│  职责：接收 HTTP 请求、参数验证、调用 Service、返回响应          │
-│  特点：只做"门卫"，不写业务逻辑                               │
-│  文件：app/routers/**/*.py                                   │
-└──────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│  用户浏览器 / Postman / 前端                               │
+└─────────────────────────────────────────────────────────────┘
                               │
                               ▼
-┌──────────────────────────────────────────────────────────────┐
-│                    Service (服务层)                           │
-│  职责：处理所有业务逻辑（文件 IO、数据库操作、业务规则）         │
-│  特点：应用的"厨师"，做具体工作                               │
-│  文件：app/services/**/*.py                                  │
-└──────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│  Router（路由层）← 门卫                                    │
+│  • 接收请求                                                │
+│  • 验证参数                                                 │
+│  • 调用 Service                                             │
+│  • 返回响应                                                │
+└─────────────────────────────────────────────────────────────┘
                               │
                               ▼
-┌──────────────────────────────────────────────────────────────┐
-│                    Parser (解析层)                            │
-│  职责：解析特定格式的文件（如 Excel）                          │
-│  特点：纯函数，无状态，输入文件路径，输出结构化数据              │
-│  文件：app/parsers/**/*.py                                   │
-└──────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│  Service（服务层）← 厨师                                   │
+│  • 处理业务逻辑                                             │
+│  • 协调多个操作                                             │
+│  • 数据转换                                                │
+└─────────────────────────────────────────────────────────────┘
                               │
                               ▼
-┌──────────────────────────────────────────────────────────────┐
-│                    Model (模型层)                             │
-│  职责：定义数据库表结构与 Python 对象的映射                     │
-│  特点：只定义结构，不包含业务逻辑                              │
-│  文件：app/models/**/*.py                                    │
-└──────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│  Repository（仓库层）← 仓库管理员                          │
+│  • 数据库 CRUD 操作                                        │
+│  • 增删改查                                                │
+└─────────────────────────────────────────────────────────────┘
                               │
                               ▼
-┌──────────────────────────────────────────────────────────────┐
-│                    Database (数据库层)                        │
-│  职责：数据库连接、会话管理、初始化                            │
-│  特点：基础设施层                                             │
-│  文件：app/database.py                                       │
-└──────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│  Database（数据库）← 冰箱                                  │
+│  • 存储数据                                                │
+│  • SQLite 文件                                              │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -61,316 +71,421 @@
 ```
 stamping-costing-platform/
 │
-├── main.py                    # 应用入口，创建 FastAPI 实例
+├── main.py                    # 程序入口，启动 FastAPI 服务器
 │
 ├── app/
-│   ├── config.py              # 配置管理（多环境支持）
+│   ├── config.py              # 程序配置（环境变量、路径等）
+│   ├── database.py            # 数据库连接配置
 │   │
-│   ├── routers/                # 路由层（HTTP 入口）
-│   │   ├── upload/
-│   │   │   └── stamping.py     # 冲压工艺上传路由
-│   │   ├── dashboard.py        # 仪表盘
-│   │   ├── parts.py           # 零件查询
-│   │   ├── costing.py          # 核价
-│   │   ├── quotation.py       # 报价
-│   │   └── settings_router.py # 设置
+│   ├── models/                # 模型层（数据库表结构）
+│   │   └── stamping.py        # 定义零件、工序表结构
 │   │
-│   ├── services/               # 服务层（业务逻辑）
-│   │   └── upload/
-│   │       └── stamping_upload.py  # 冲压上传服务
+│   ├── schemas/               # Schema 层（请求/响应格式）
+│   │   └── stamping.py        # 定义 API 参数和返回值格式
 │   │
-│   ├── parsers/                # 解析层（文件解析）
-│   │   └── stamping_parser.py  # Excel 解析器
+│   ├── repositories/          # 仓库层（数据库操作）
+│   │   └── stamping/
+│   │       └── stamping_repository.py # 零件/工序数据库操作
 │   │
-│   ├── models/                 # 模型层（数据库表结构）
-│   │   └── stamping.py        # StampingPart / StampingProcess
+│   ├── services/              # 服务层（业务逻辑）
+│   │   └── stamping/
+│   │       ├── stamping_service.py    # 零件业务逻辑
+│   │       └── upload/                # 上传相关
+│   │           └── stamping_upload.py # 上传业务逻辑
 │   │
-│   ├── database.py             # 数据库连接
+│   ├── routers/               # 路由层（HTTP 接口入口）
+│   │   ├── dashboard.py       # 仪表盘
+│   │   ├── parts/            # 零件管理
+│   │   ├── costing/          # 核价
+│   │   ├── quotation/        # 报价
+│   │   ├── settings/         # 设置
+│   │   └── stamping/         # 冲压工艺
+│   │       ├── crud.py       # 零件查询接口
+│   │       └── upload.py     # 文件上传接口
 │   │
-│   └── utils/                  # 工具函数
-│       └── logging_config.py   # 日志配置
+│   ├── parsers/               # 解析层（读文件）
+│   │   └── stamping/
+│   │       └── stamping_parser.py # 解析冲压工艺 Excel
+│   │
+│   └── utils/                 # 工具函数
+│       ├── logging_config.py   # 日志配置
+│       └── response.py        # 统一响应格式
 │
-├── templates/                  # Jinja2 HTML 模板
-├── static/                     # 静态资源
-├── uploads/                    # 上传文件存储
-├── logs/                       # 日志文件
-└── data/                       # 数据库文件
+├── uploads/                   # 上传文件存放
+│   └── T28/                   # 按车型分目录
+│       └── 1.0/              # 按版本分目录
+│           ├── *.xlsx         # 上传的 Excel 文件
+│           └── *.png          # 零件简图
+│
+├── data/                      # SQLite 数据库文件
+│   └── stamping_costing.db    # 冲压核价数据库
+│
+└── logs/                      # 日志文件
+│   └── app.log               # 应用运行日志
 ```
 
 ---
 
-## 4. 数据模型
+## 4. 为什么要分层？
 
-### 4.1 零件主表 (StampingPart)
+### 初学者的困惑：为什么不把所有代码写在一起？
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | Integer | 主键，自增 |
-| vehicle_model | String | 车型 |
-| version | String | 版本 |
-| part_number | String | 零件号（全局唯一） |
-| part_name | String | 零件名称 |
-| material | String | 材质 |
-| thickness | Numeric | 料厚(mm) |
-| part_weight | Numeric | 零件重量(kg) |
-| tonnage | Numeric | 冲压设备吨位(T) |
-| process_method | String | 工艺方法 |
-| sketch_url | String | 零件简图 URL |
-| ... | | |
+假设你要写一个查询零件的功能：
 
-### 4.2 工序子表 (StampingProcess)
+**方式 A：全部写在一起（不推荐）**
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | Integer | 主键，自增 |
-| part_id | Integer | 外键，关联零件 |
-| process_seq | String | 工序序号（如 OP10） |
-| process_order | Integer | 零件内工序顺序 |
-| process_code | String | 工序代码 |
-| tonnage | Integer | 设备吨位(T) |
-| cost_ratio | Numeric | 费用比例 |
-| remark | Text | 备注 |
+```python
+@router.get("/parts")
+def get_parts():
+    # 1. 连接数据库
+    engine = create_engine("sqlite:///...")
+    Session = sessionmaker(bind=engine)
+    db = Session()
+
+    # 2. 查询数据
+    parts = db.query(Part).all()
+
+    # 3. 转换成字典
+    result = [{"id": p.id, "name": p.name} for p in parts]
+
+    # 4. 返回 JSON
+    return {"data": result}
+```
+
+问题：
+- 测试困难（无法单独测试查询逻辑）
+- 代码复用困难
+- 如果有多个接口都要查询 parts，代码要重复写
+- 数据库配置散落在各处
+
+**方式 B：分层（推荐）**
+
+```python
+# routers/stamping/crud.py
+@router.get("/parts")
+def get_parts():
+    service = StampingPartService()
+    return service.list_parts()  # 一行代码搞定
+```
+
+```python
+# services/stamping_service.py
+class StampingPartService:
+    def list_parts(self):
+        repo = StampingPartRepository()
+        return repo.find_all()  # 只关心业务，不关心数据库细节
+```
+
+```python
+# repositories/stamping_repository.py
+class StampingPartRepository:
+    def find_all(self):
+        return db.query(Part).all()  # 只关心数据库操作
+```
+
+好处：
+- 每层只做一件事
+- 可以单独测试每层
+- 代码可以复用
+- 改数据库不影响业务逻辑
 
 ---
 
-## 5. 核心流程
+## 5. 各层详解
 
-### 5.1 上传解析流程
+### 5.1 Router（路由层）
 
-```
-用户上传 Excel
-    │
-    ▼
-Router: 验证参数（车型、版本、文件类型、文件大小）
-    │
-    ▼
-Service.process_upload():
-    │
-    ├── 1. 保存文件到 uploads/车型/版本/
-    │
-    ├── 2. parse_stamping_excel() 解析 Excel
-    │       │
-    │       ├── 提取零件列表
-    │       ├── 提取工序列表
-    │       └── 提取简图（嵌入在 Excel 中的图片）
-    │
-    ├── 3. 保存零件简图到磁盘
-    │
-    ├── 4. _save_parts() 批量保存零件到数据库
-    │       └── 先删除同车型同版本的旧数据
-    │
-    └── 5. _save_processes() 批量保存工序到数据库
-            │
-            └── 建立零件-工序关联
-```
-
----
-
-## 6. 各层职责详解
-
-### 6.1 Router 层（路由层）
-
-**设计原则：瘦路由，厚服务**
+**职责：接收请求，返回响应**
 
 ```
-Router 的三件事：
-1. 接收请求 → 从请求中提取参数
-2. 调用 Service → 把参数传给业务层
-3. 返回响应 → 把 Service 的结果封装成 HTTP 响应
+用户请求 ──► Router ──► Service ──► Repository ──► Database
+                │
+                └──────────────────► 响应
 ```
 
-**示例对比：**
+**Router 的工作：**
+1. 接收请求参数
+2. 调用 Service
+3. 把结果包装成 JSON 返回
+
+**示例：**
 
 ```python
-# ❌ 路由承担了业务逻辑（违反单一职责）
-@router.post("/")
-async def upload(...):
-    content = await file.read()
-    # 保存文件... ← 业务逻辑
-    service = StampingUploadService(db)
-    result = service.process_file(file_path, ...)  # 只传路径
-    return {"success": True, ...}
+# app/routers/stamping/crud.py
 
-# ✓ 路由只做验证和转发
-@router.post("/")
-async def upload(...):
-    content = await file.read()
-    service = StampingUploadService(db)
-    result = service.process_upload(
-        file_content=content,      # 传递内容而非路径
-        filename=file.filename,
-        vehicle_model=vehicle_model,
-        version=version,
-    )
-    return JSONResponse({"success": True, "data": result})
+from fastapi import APIRouter, Depends
+
+router = APIRouter(prefix="/stamping", tags=["冲压"])
+
+# 查询零件列表
+@router.get("/parts")
+def list_parts(
+    vehicle_model: str,  # 接收参数
+    version: str,
+):
+    # 调用 Service
+    service = StampingPartService()
+    data, total = service.list_parts(vehicle_model, version)
+
+    # 返回响应
+    return {
+        "code": 0,
+        "message": f"查询到 {total} 个零件",
+        "data": data,
+        "total": total,
+    }
 ```
 
-### 6.2 Service 层（服务层）
+### 5.2 Service（服务层）
 
-**设计原则：高内聚，每个 Service 类对应一个业务场景**
+**职责：处理业务逻辑**
+
+**Service 的工作：**
+1. 组合多个 Repository 操作
+2. 数据格式转换
+3. 业务规则验证
+
+**示例：**
 
 ```python
-class StampingUploadService:
-    """冲压工艺上传服务"""
+# app/services/stamping_service.py
 
-    def process_upload(self, file_content, filename, vehicle_model, version):
-        """完整业务流程"""
-        # 1. 保存文件
-        # 2. 解析 Excel
-        # 3. 保存简图
-        # 4. 保存零件
-        # 5. 保存工序
-        ...
+class StampingPartService:
+    """零件业务逻辑"""
 
-    def _save_part_images(self, images, target_dir):
-        """私有方法：保存简图"""
-        ...
+    def __init__(self):
+        self.repository = StampingPartRepository()
 
-    def _save_parts(self, parts_data, ...):
-        """私有方法：保存零件"""
-        ...
+    def list_parts(self, vehicle_model, version):
+        """
+        获取零件列表
+        这里可以加业务逻辑，比如：
+        - 权限验证
+        - 数据筛选
+        - 格式转换
+        """
+        # 调用 Repository 查询数据
+        parts, total = self.repository.paginate(
+            vehicle_model=vehicle_model,
+            version=version,
+        )
 
-    def _save_processes(self, processes_data, part_map):
-        """私有方法：保存工序"""
-        ...
+        # 转换成字典格式返回
+        return [p.to_dict() for p in parts], total
 ```
 
-### 6.3 Parser 层（解析层）
+### 5.3 Repository（仓库层）
 
-**设计原则：纯函数，无状态，可测试**
+**职责：数据库操作（CRUD）**
+
+> CRUD = Create（创建）、Read（读取）、Update（更新）、Delete（删除）
+
+**Repository 的工作：**
+1. 执行 SQL 查询
+2. 增删改数据库记录
+
+**示例：**
 
 ```python
-# 输入：文件路径
-# 输出：结构化数据
-# 副作用：无（不写文件，不操作数据库）
-ParseResult = namedtuple('ParseResult', [
-    'parts',           # List[Dict]
-    'processes',       # List[Dict]
-    'images_by_part',  # Dict[part_number -> bytes]
-    'warnings',        # List[str]
-    'parse_time_ms',   # float
-])
+# app/repositories/stamping_repository.py
 
-def parse_stamping_excel(file_path: str) -> ParseResult:
-    """解析冲压工艺 Excel 文件"""
-    ...
-    return ParseResult(...)
+class StampingPartRepository:
+    """零件数据库操作"""
+
+    def get_by_id(self, db, part_id):
+        """查询单个零件"""
+        return db.query(Part).filter(Part.id == part_id).first()
+
+    def paginate(self, vehicle_model, version, skip=0, limit=100):
+        """分页查询零件"""
+        q = db.query(Part).filter(
+            Part.vehicle_model == vehicle_model,
+            Part.version == version,
+        )
+        total = q.count()
+        parts = q.offset(skip).limit(limit).all()
+        return parts, total
 ```
 
-### 6.4 Model 层（模型层）
+### 5.4 Model（模型层）
 
-**设计原则：只定义数据结构，不含业务逻辑**
+**职责：定义数据库表结构**
 
 ```python
+# app/models/stamping.py
+
+from sqlalchemy import Column, Integer, String, Numeric, ForeignKey, Text
+from sqlalchemy.orm import relationship
+
 class StampingPart(Base):
-    """冲压件主表"""
+    """零件表"""
     __tablename__ = "stamping_parts"
 
+    id = Column(Integer, primary_key=True)        # 主键
+    part_number = Column(String(50), unique=True) # 零件号
+    vehicle_model = Column(String(50))           # 车型
+    version = Column(String(50))                 # 版本
+    part_name = Column(String(200))              # 零件名称
+    material = Column(String(50))                 # 材质
+    thickness = Column(Numeric(10, 3))           # 料厚(mm)
+    tonnage = Column(Numeric(10, 1))             # 冲压吨位(T)
+
+    # 关联工序（一个零件有多个工序）
+    processes = relationship("StampingProcess", back_populates="part")
+
+class StampingProcess(Base):
+    """工序表"""
+    __tablename__ = "stamping_processes"
+
     id = Column(Integer, primary_key=True)
-    part_number = Column(String(50), unique=True)
-    vehicle_model = Column(String(50))
-    # ... 只定义字段
+    part_id = Column(Integer, ForeignKey("stamping_parts.id"))  # 外键
+    process_seq = Column(String(20))         # 工序序号（OP10、OP20...）
+    process_order = Column(Integer)           # 顺序
+    tonnage = Column(Integer)                 # 吨位
+    remark = Column(Text)                      # 备注
+
+    # 关联零件
+    part = relationship("StampingPart", back_populates="processes")
 ```
 
----
+**Model 就像：建筑图纸**，只定义有哪些字段，不包含任何操作。
 
-## 7. 配置管理
+**注意**：
+- Model 里面可以有 `relationship`，表示表与表之间的关系
+- 但不能有增删改查的代码，那些属于 Repository
 
-采用环境变量 + Pydantic Settings，支持多环境：
+### 5.5 Parser（解析层）
+
+**职责：解析文件（如 Excel）**
+
+**特点：纯函数，无副作用**
 
 ```python
-# .env 文件
-APP_ENV=development  # development | production | test
+# app/parsers/stamping_parser.py
 
-# 代码中使用
-from app.config import settings
-settings.DEBUG          # True
-settings.DATABASE_URL   # sqlite:///...
-settings.UPLOAD_DIR     # Path 对象
+def parse_stamping_excel(file_path):
+    """
+    输入：Excel 文件路径
+    输出：解析后的数据
+    """
+    # 读取 Excel
+    # 提取数据
+    # 返回结构化结果
+    return {
+        "parts": [...],
+        "processes": [...],
+        "images": {...},
+    }
 ```
 
 ---
 
-## 8. 日志管理
+## 6. 数据流向示例
 
-统一日志配置，按模块分层：
+以"上传冲压工艺 Excel"为例：
 
-```python
-# 不同模块使用不同的 logger name
-logger = get_logger("main")           # 主模块
-logger = get_logger("router.stamping") # 路由层
-logger = get_logger("service.stamping_upload")  # 服务层
-
-# 输出示例：
-# 2026-07-17 15:30:00 - main - INFO - 应用启动完成
-# 2026-07-17 15:30:01 - router.stamping - INFO - 接收到文件上传
-# 2026-07-17 15:30:02 - service.stamping_upload - INFO - 上传处理完成
+```
+1. 用户上传 Excel
+       │
+       ▼
+2. Router 接收请求
+   • 验证文件类型
+   • 提取车型、版本参数
+       │
+       ▼
+3. Service 处理业务
+   • 保存文件到磁盘
+   • 解析 Excel
+   • 保存简图
+   • 调用 Repository 保存数据
+       │
+       ├──► Repository.save_parts() ──► Database
+       │
+       └──► Repository.save_processes() ──► Database
+       │
+       ▼
+4. Router 返回结果
+   {"success": true, "parts_count": 100, ...}
 ```
 
 ---
 
-## 9. 为何这样设计？
+## 7. 快速导航
 
-### 9.1 瘦路由的好处
-
-| 好处 | 说明 |
-|------|------|
-| 职责单一 | 路由只管 HTTP 相关的事 |
-| 易于测试 | Service 层可以用单元测试覆盖，不依赖 HTTP |
-| 代码复用 | 同一个 Service 可以被多个 Router 调用（如 API + CLI） |
-| 易于维护 | 业务逻辑集中在 Service，改动时影响范围小 |
-
-### 9.2 分层的好处
-
-| 好处 | 说明 |
-|------|------|
-| 可测试 | Parser 是纯函数，Service 可以 mock DB |
-| 可替换 | 换数据库只需改 Model 层 |
-| 团队协作 | 路由、服务、解析可以分工开发 |
+| 文件 | 层 | 做什么 |
+|------|-----|--------|
+| `app/routers/stamping/crud.py` | Router | 冲压工艺 HTTP 接口 |
+| `app/routers/stamping/upload.py` | Router | 文件上传接口 |
+| `app/services/stamping/stamping_service.py` | Service | 零件业务逻辑 |
+| `app/services/stamping/upload/stamping_upload.py` | Service | 上传业务逻辑 |
+| `app/repositories/stamping/stamping_repository.py` | Repository | 数据库增删改查 |
+| `app/models/stamping.py` | Model | 数据库表定义 |
+| `app/schemas/stamping.py` | Schema | 请求/响应格式 |
+| `app/parsers/stamping/stamping_parser.py` | Parser | Excel 解析 |
+| `app/database.py` | Database | 数据库连接 |
+| `main.py` | - | 程序入口 |
 
 ---
 
-## 10. 扩展指南
+## 8. 添加新功能的步骤
 
-### 添加新功能
+假设要添加"查询工序"功能：
 
 ```
-1. 在 app/models/ 新建 model
-2. 在 app/parsers/ 新建 parser（如果需要文件解析）
-3. 在 app/services/ 新建 service
-4. 在 app/routers/ 新建 router
-5. 在 main.py 注册路由
-```
+Step 1: 定义 Schema（请求/响应格式）
+    └── app/schemas/stamping.py
+        └── class StampingProcessResponse(BaseModel): ...
 
-### 添加新路由模块
+Step 2: 扩展 Repository（数据库操作）
+    └── app/repositories/stamping/stamping_repository.py
+        └── class StampingProcessRepository:
+            └── def get_by_part_id(...): ...
 
-```python
-# app/routers/new_feature.py
-from fastapi import APIRouter
-router = APIRouter(prefix="/new-feature", tags=["New Feature"])
+Step 3: 扩展 Service（业务逻辑）
+    └── app/services/stamping/stamping_service.py
+        └── class StampingProcessService:
+            └── def get_by_part_id(...): ...
 
-@router.get("/")
-async def list_items():
-    ...
-```
+Step 4: 添加 Router（接口）
+    └── app/routers/stamping/crud.py
+        └── @router.get("/parts/{part_id}/processes"): ...
 
-```python
-# main.py
-from app.routers import new_feature_router
-app.include_router(new_feature_router)
+Step 5: 注册路由（已在 main.py 中通过 include_router 自动完成）
 ```
 
 ---
 
-## 11. 快速导航
+## 9. 常见问题
 
-| 文件 | 行数 | 职责 |
-|------|------|------|
-| `main.py` | 1-149 | 应用入口，路由注册 |
-| `app/routers/upload/stamping.py` | 1-99 | 冲压上传 HTTP 入口 |
-| `app/services/upload/stamping_upload.py` | 1-260 | 冲压上传业务逻辑 |
-| `app/parsers/stamping_parser.py` | - | Excel 解析 |
-| `app/models/stamping.py` | 1-115 | 数据库模型定义 |
-| `app/config.py` | 1-113 | 配置管理 |
-| `app/database.py` | - | 数据库连接 |
-| `app/utils/logging_config.py` | - | 日志配置 |
+### Q: Service 和 Repository 有什么区别？
+
+```
+Service（服务层）：
+• 包含业务逻辑
+• 决定"做什么"
+• 可以组合多个 Repository 操作
+
+Repository（仓库层）：
+• 只负责数据库操作
+• 决定"怎么查"
+• 单一职责：增删改查
+```
+
+### Q: 什么时候该加 Service？
+
+- 需要组合多个数据库操作
+- 需要做数据转换
+- 需要验证业务规则
+- 多个 Router 需要复用同一段逻辑
+
+### Q: 什么时候该加 Repository？
+
+- 任何需要操作数据库的时候
+- 把 SQL 相关代码隔离在这里
+
+### Q: 简单查询需要 Service 吗？
+
+如果只有简单的单表查询，可以：
+- Router → Repository → Database
+
+但为了保持一致性和可扩展性，建议都加上 Service。

@@ -3,7 +3,6 @@
 提供 SQLAlchemy 数据库连接和会话管理
 """
 
-from contextlib import contextmanager
 from typing import Generator
 
 from sqlalchemy import create_engine, event
@@ -127,32 +126,11 @@ class DatabaseConfig:
         Base.metadata.create_all(bind=engine)
         logger.info("数据库表创建完成")
 
-    @classmethod
-    def drop_tables(cls) -> None:
-        """
-        删除所有数据表
-        仅在测试或数据重置时使用
-        """
-        engine = cls.get_engine()
-        Base.metadata.drop_all(bind=engine)
-        logger.warning("数据库表已删除")
-
 
 def get_db() -> Generator[Session, None, None]:
     """
     FastAPI 依赖项：获取数据库会话
     自动处理会话的创建和关闭
-
-    Args:
-        Generator[Session, None, None]: 数据库会话生成器
-
-    Yields:
-        Session: 数据库会话实例
-
-    Example:
-        @app.get("/items")
-        def get_items(db: Session = Depends(get_db)):
-            return db.query(Item).all()
     """
     session_factory = DatabaseConfig.get_session_factory()
     session = session_factory()
@@ -160,57 +138,3 @@ def get_db() -> Generator[Session, None, None]:
         yield session
     finally:
         session.close()
-
-
-@contextmanager
-def get_db_session() -> Generator[Session, None, None]:
-    """
-    上下文管理器：获取数据库会话
-    适用于非 FastAPI 路由的场景
-
-    Yields:
-        Session: 数据库会话实例
-
-    Example:
-        with get_db_session() as session:
-            result = session.query(Item).all()
-    """
-    session_factory = DatabaseConfig.get_session_factory()
-    session = session_factory()
-    try:
-        yield session
-        session.commit()
-    except Exception:
-        session.rollback()
-        raise
-    finally:
-        session.close()
-
-
-class UnitOfWork:
-    """
-    工作单元模式
-    用于管理复杂业务逻辑中的数据库事务
-    """
-
-    def __init__(self):
-        self.session: Session = None
-
-    def __enter__(self) -> "UnitOfWork":
-        session_factory = DatabaseConfig.get_session_factory()
-        self.session = session_factory()
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb) -> bool:
-        if exc_type is not None:
-            self.session.rollback()
-            logger.error(f"事务回滚: {exc_val}")
-            return False
-
-        self.session.commit()
-        return True
-
-    def close(self) -> None:
-        """关闭会话"""
-        if self.session:
-            self.session.close()
