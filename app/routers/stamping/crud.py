@@ -3,12 +3,14 @@
 前后端分离 API 接口
 """
 
+from typing import List
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.services import StampingPartService
-from app.schemas.stamping import StampingPartQuery, StampingProcessUpdate
+from app.schemas.stamping import StampingPartQuery, StampingProcessUpdate, StampingProcessItemUpdate
 from app.utils.response import ApiResponse
 
 
@@ -79,3 +81,16 @@ def update_process(
     if not result:
         raise HTTPException(status_code=404, detail="工序不存在")
     return ApiResponse.success(data=result, message="工序更新成功")
+
+
+@router.put("/parts/{part_id}/processes")
+def batch_update_processes(
+    part_id: int,
+    body: List[StampingProcessItemUpdate],
+    db: Session = Depends(get_db),
+):
+    """批量更新零件的所有工序（仅更新 cost_ratio）"""
+    updated = _stamping_service.batch_update_processes(
+        db, [item.model_dump() for item in body]
+    )
+    return ApiResponse.success(data={"updated": updated}, message=f"成功更新 {updated} 条工序")

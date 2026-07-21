@@ -96,3 +96,9 @@ class StampingProcessUpdate(BaseModel):
     """工序更新请求"""
     cost_ratio: Optional[float] = Field(None, ge=0, le=10, description="成本系数（0~10，即0%~1000%）")
     remark: Optional[str] = None
+
+
+class StampingProcessItemUpdate(BaseModel):
+    """单个工序更新项"""
+    id: int
+    cost_ratio: Optional[float] = Field(None, ge=0, le=10)

@@ -87,3 +87,28 @@ class StampingPartService:
         if not process:
             return None
         return StampingProcessResponse.model_validate(process).model_dump()
+
+    def batch_update_processes(self, db: Session, items: List[Dict[str, Any]]) -> int:
+        """批量更新工序成本系数"""
+        import logging
+        logger = logging.getLogger("stamping")
+        logger.info(f"[DEBUG] batch_update_processes 收到 {len(items)} 条数据: {items}")
+        from app.repositories.stamping.stamping_repository import StampingProcessRepository
+        process_repo = StampingProcessRepository()
+        count = 0
+        for item in items:
+            pid = item.get("id")
+            if not pid:
+                continue
+            update_data = {k: v for k, v in item.items() if k == "id"}
+            if "cost_ratio" in item:
+                update_data["cost_ratio"] = item["cost_ratio"]
+            logger.info(f"[DEBUG] process_id={pid}, update_data={update_data}")
+            update_data.pop("id", None)
+            if not update_data:
+                logger.warning(f"[WARN] process_id={pid} 的 update_data 为空，跳过")
+                continue
+            if process_repo.update(db, int(pid), update_data):
+                count += 1
+        logger.info(f"[DEBUG] batch_update_processes 完成，更新了 {count} 条")
+        return count

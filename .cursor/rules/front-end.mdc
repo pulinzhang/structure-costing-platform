@@ -1,11 +1,19 @@
 ---
-description: 汽车冲压件核价平台前端开发规范
+description: 汽车冲压件核价平台前端开发规范 - Brabus Carbon & Precision Dark
 alwaysApply: true
 ---
 
 # UI/UX 设计规范 - 汽车冲压件自动核价平台
 
-## 架构说明
+> **设计风格**：Brabus Carbon & Precision Dark
+> **设计理念**：碳素黑 · 钛灰面板 · 标志性红 · 锐利线条
+> **核心原则**：极简克制、工业精密感、红色作为唯一的品牌强调色
+
+---
+
+## 一、架构说明
+
+### 1.1 技术架构
 
 **前后端分离 SPA 架构**
 
@@ -13,7 +21,7 @@ alwaysApply: true
 - **后端**：FastAPI `/api/*` 接口 (仅返回 JSON)
 - **跨域**：后端配置 CORS 允许前端访问
 
-### 核心规则
+### 1.2 核心规则
 
 | 规则 | 说明 |
 |------|------|
@@ -24,184 +32,407 @@ alwaysApply: true
 | **禁止内联** | ❌ 禁止使用 `style="..."` 属性（动态数据绑定除外） |
 | **禁止自定义 CSS** | ❌ 禁止在 `style.css` 中添加新的自定义类 |
 
+### 1.3 CSS 变量系统（必须使用）
+
+`style.css` 中定义的 CSS 变量是 Brabus 风格的核心，所有页面必须使用这些变量：
+
+```css
+/* --- 1. 品牌与交互主色 --- */
+--brabus-red: #d32f2f;           /* 品牌红，用于激活态、强调 */
+--brabus-red-hover: #b71c1c;     /* 悬停红 */
+--brabus-red-glow: rgba(211, 47, 47, 0.25);  /* 红光晕 */
+
+/* --- 2. 机械暗色背景阶梯 --- */
+--bg-deep: #0a0a0a;             /* 最深背景 */
+--bg-main: #121212;              /* 主背景 */
+--bg-surface: #1e1e1e;           /* 面板/卡片背景 */
+--bg-elevated: #262626;          /* 悬浮/高亮背景 */
+
+/* --- 3. 工业金属灰与文字色 --- */
+--text-main: #ffffff;            /* 主文字 */
+--text-muted: #9e9e9e;          /* 次要文字 */
+--text-disabled: #616161;        /* 禁用/占位文字 */
+
+/* --- 4. 边框、分割线与高精度线条 --- */
+--border-subtle: #222222;        /* 极细分割线 */
+--border-color: #2c2c2c;         /* 标准边框 */
+--border-active: #ff5252;        /* 激活边框（红色） */
+
+/* --- 5. 功能状态色 --- */
+--success-color: #2e7d32;
+--warning-color: #f57f17;
+--danger-color: #c62828;
+```
+
 ---
 
-## SPA 开发规范
-
-### 目录结构
+## 二、目录结构
 
 ```
 static/
-├── index.html          # SPA 入口页面
+├── index.html              # SPA 入口页面
 ├── css/
-│   └── style.css      # 布局样式（侧边栏、loading 等结构样式）
+│   └── style.css          # 全局样式 + CSS 变量（Brabus 风格）
 └── js/
-    ├── main.js        # 公共工具（HttpClient、Toast 等）
-    └── app.js         # SPA 主应用（页面路由、渲染逻辑）
+    ├── main.js            # 公共工具（HttpClient、Toast 等）
+    ├── app.js             # SPA 主应用（Hash 路由、渲染逻辑）
+    └── features/          # 功能模块
+        ├── index.js       # 页面元数据配置
+        ├── dashboard/
+        │   ├── index.js   # 仪表盘页面逻辑
+        │   └── template.js
+        ├── stamping/
+        │   ├── upload/
+        │   │   ├── index.js
+        │   │   └── template.js
+        │   └── parts/
+        │       ├── index.js
+        │       └── template.js
+        ├── costing/
+        ├── quotation/
+        └── settings/
 ```
 
-### 页面渲染模式
+### 页面模块规范
+
+每个页面模块必须导出 `pageConfig` 对象：
 
 ```javascript
-// 页面模板函数 - 返回 HTML 字符串
-function renderPageName() {
-    return `
-        <div class="bg-white border border-slate-200 rounded-lg p-6">
-            <h3>页面标题</h3>
-            <p>页面内容</p>
-        </div>
-    `;
-}
-
-// 页面初始化函数
-function initPageName() {
-    // 绑定事件、初始化组件
-}
-
-// 在 app.js 的 renderPage 函数中调用
-async function renderPage(pageName) {
-    switch (pageName) {
-        case 'page-name':
-            content.innerHTML = renderPageName();
-            initPageName();  // 初始化
-            break;
-    }
-}
-```
-
-### API 调用规范
-
-```javascript
-// 使用 HttpClient 调用 API
-const result = await HttpClient.get('/api/stamping/parts/list', { params });
-const pageInfo = result.data || {};
-
-// 处理响应
-if (pageInfo.list) {
-    renderParts(pageInfo.list);
-}
+// features/example/index.js
+export const pageConfig = {
+    render: () => `<div>页面内容</div>`,
+    init: () => { /* 初始化逻辑 */ }
+};
 ```
 
 ---
 
-## Tailwind CSS 视觉风格
+## 三、Brabus 色彩系统
 
-### 色彩规范
+### 3.1 背景色（必须使用 Tailwind 变量）
 
-| 用途 | Tailwind 类 | Hex |
-|------|-------------|-----|
-| 主色 | `slate-900` | `#0f172a` |
-| 背景 | `slate-50` | `#f8fafc` |
-| 边框 | `slate-200` | `#e2e8f0` |
-| 次要文字 | `slate-500` | `#64748b` |
-| 成功 | `green-600` | `#16a34a` |
-| 警告 | `amber-600` | `#d97706` |
-| 危险 | `red-600` | `#dc2626` |
-| 信息 | `sky-600` | `#0284c7` |
+| 用途 | Tailwind 变量 | Hex |
+|------|--------------|-----|
+| 最深背景 | `bg-[#0a0a0a]` | `#0a0a0a` |
+| 主背景 | `bg-[#121212]` | `#121212` |
+| 面板/卡片 | `bg-[#1e1e1e]` | `#1e1e1e` |
+| 悬浮背景 | `bg-[#262626]` | `#262626` |
 
-### 按钮
+### 3.2 文字色
+
+| 用途 | Tailwind 变量 | Hex |
+|------|--------------|-----|
+| 主文字 | `text-[#ffffff]` | `#ffffff` |
+| 次要文字 | `text-[#9e9e9e]` | `#9e9e9e` |
+| 禁用/占位 | `text-[#616161]` | `#616161` |
+
+### 3.3 边框色
+
+| 用途 | Tailwind 变量 | Hex |
+|------|--------------|-----|
+| 极细分割线 | `border-[#222222]` | `#222222` |
+| 标准边框 | `border-[#2c2c2c]` | `#2c2c2c` |
+| 激活边框 | `focus:border-[#ff5252]` | `#ff5252` |
+
+### 3.4 Brabus 品牌红
+
+**使用场景**：激活态边框、强调元素、悬停效果
+- 边框激活：`border-[#d32f2f]` 或 `focus:border-[#ff5252]`
+- 品牌红按钮背景：`bg-[#d32f2f]`
+- 红色光晕：`shadow-[0_0_12px_rgba(211,47,47,0.4)]`
+
+---
+
+## 四、Tailwind CSS 组件规范
+
+### 4.1 按钮系统
 
 ```html
-<!-- 主按钮 -->
-<button class="inline-flex items-center justify-center gap-2 bg-slate-900 text-white rounded-md px-4 py-2 text-sm font-medium hover:bg-slate-800 disabled:opacity-50 transition-colors">
+<!-- 主按钮 - Brabus 红 -->
+<button class="inline-flex items-center justify-center gap-2 bg-[#d32f2f] text-white px-4 py-2 text-xs font-semibold rounded hover:bg-[#b71c1c] transition-all">
+    提交
+</button>
 
-<!-- 次要按钮 -->
-<button class="inline-flex items-center justify-center gap-2 bg-white text-slate-700 border border-slate-200 rounded-md px-4 py-2 text-sm font-medium hover:bg-slate-50 transition-colors">
-
-<!-- 幽灵按钮 -->
-<button class="inline-flex items-center justify-center gap-2 text-slate-600 hover:bg-slate-100 rounded-md px-4 py-2 text-sm font-medium transition-colors">
+<!-- 次要按钮 - 边框幽灵型 -->
+<button class="inline-flex items-center justify-center gap-2 bg-transparent text-[#9e9e9e] border border-[#2c2c2c] px-4 py-2 text-xs font-medium rounded hover:border-[#9e9e9e] hover:text-white transition-all">
+    取消
+</button>
 
 <!-- 危险按钮 -->
-<button class="inline-flex items-center justify-center gap-2 bg-red-600 text-white rounded-md px-4 py-2 text-sm font-medium hover:bg-red-700 transition-colors">
+<button class="inline-flex items-center justify-center gap-2 bg-[#c62828] text-white px-4 py-2 text-xs font-semibold rounded hover:bg-[#b71c1c] transition-all">
+    删除
+</button>
+
+<!-- 幽灵按钮 -->
+<button class="inline-flex items-center justify-center gap-2 text-[#9e9e9e] hover:text-white px-4 py-2 text-xs font-medium transition-all">
+    查看详情
+</button>
 ```
 
-### 输入框
+### 4.2 输入框
 
 ```html
-<input class="w-full h-9 px-3 text-sm border border-slate-200 rounded-md bg-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-300 transition-colors">
+<!-- 标准输入框 - 内凹质感 -->
+<input type="text"
+       class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#ffffff] placeholder:text-[#616161] focus:outline-none focus:border-[#ff5252] transition-all">
+
+<!-- 带图标的搜索框 -->
+<div class="relative">
+    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+        <svg class="w-3.5 h-3.5 text-[#616161]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+        </svg>
+    </div>
+    <input type="text"
+           class="w-full h-9 pl-9 pr-4 text-xs bg-[#0a0a0a] border border-[#2c2c2c] placeholder:text-[#616161] text-[#ffffff] focus:outline-none focus:border-[#ff5252] transition-all">
+</div>
 ```
 
-### 卡片
+### 4.3 选择框
 
 ```html
-<div class="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
-    <div class="px-4 py-3 border-b border-slate-100 bg-slate-50/50">
-        <!-- 卡片标题 -->
+<!-- 下拉选择框 -->
+<select class="w-36 h-9 pl-3 pr-8 text-xs bg-[#0a0a0a] border border-[#2c2c2c] appearance-none cursor-pointer text-[#9e9e9e] focus:outline-none focus:border-[#ff5252] transition-all">
+    <option value="">全部</option>
+    <option value="T28">T28</option>
+</select>
+```
+
+### 4.4 卡片
+
+```html
+<!-- 筛选栏面板 -->
+<div class="bg-[#1e1e1e] border border-[#2c2c2c] p-3">
+    <!-- 内容 -->
+</div>
+
+<!-- 普通面板 -->
+<div class="bg-[#1e1e1e] border border-[#2c2c2c]">
+    <div class="px-4 py-3 border-b border-[#222222]">
+        <!-- 标题 -->
     </div>
     <div class="p-4">
-        <!-- 卡片内容 -->
+        <!-- 内容 -->
     </div>
 </div>
 ```
 
-### 表格
+### 4.5 表格
 
 ```html
-<div class="overflow-hidden rounded-lg border border-slate-200 shadow-sm">
-    <table class="w-full">
-        <thead>
-            <tr class="bg-slate-50 border-b border-slate-200">
-                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">列头</th>
-            </tr>
-        </thead>
-        <tbody class="divide-y divide-slate-100">
-            <tr class="group hover:bg-slate-50 transition-colors">
-                <td class="px-4 py-3 text-sm text-slate-700">内容</td>
-                <td class="px-4 py-3 text-sm text-right font-mono tabular-nums text-slate-700">123.45</td>
-                <td class="px-4 py-3">
-                    <div class="flex items-center justify-center gap-1">
-                        <button class="opacity-0 group-hover:opacity-100 p-1.5 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all">
-                            <i class="bi bi-eye"></i>
-                        </button>
-                    </div>
-                </td>
-            </tr>
-        </tbody>
-    </table>
+<div class="bg-[#1e1e1e] border border-[#2c2c2c]">
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead>
+                <tr class="bg-[#0a0a0a] border-b border-[#2c2c2c]">
+                    <th class="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161] whitespace-nowrap">
+                        列头
+                    </th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-[#222222]">
+                <tr class="hover:bg-[#ffffff]/[0.02] transition-colors">
+                    <td class="px-4 py-3 text-xs text-[#9e9e9e]">内容</td>
+                    <!-- 数值列：右对齐 + 等宽数字 -->
+                    <td class="px-4 py-3 text-xs text-right font-mono tabular-nums text-[#9e9e9e]">123.45</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
 </div>
 ```
 
-### 分页
+### 4.6 分页
 
 ```html
 <nav class="flex items-center justify-center gap-1">
-    <button class="p-2 rounded-md text-slate-500 hover:bg-slate-100 disabled:opacity-50 disabled:pointer-events-none">
-        <i class="bi bi-chevron-left"></i>
+    <button class="p-2 text-[#616161] hover:text-[#9e9e9e] disabled:opacity-50 disabled:pointer-events-none transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+        </svg>
     </button>
-    <span class="px-3 py-1.5 text-sm font-medium bg-slate-900 text-white rounded">1</span>
-    <button class="p-2 rounded-md text-slate-500 hover:bg-slate-100">
-        <i class="bi bi-chevron-right"></i>
+    <span class="px-3 py-1.5 text-xs font-medium bg-[#d32f2f] text-white rounded">1</span>
+    <button class="p-2 text-[#616161] hover:text-[#9e9e9e] transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+        </svg>
     </button>
 </nav>
 ```
 
+### 4.7 加载动画
+
+```html
+<!-- 表格/卡片加载中 -->
+<div class="flex items-center justify-center py-14">
+    <div class="w-6 h-6 border-2 border-[#2c2c2c] border-t-[#d32f2f] rounded-full animate-spin"></div>
+</div>
+
+<!-- 全屏加载遮罩 -->
+<div class="fixed inset-0 bg-[#0a0a0a] backdrop-blur-sm flex items-center justify-center z-50">
+    <div class="w-7 h-7 border-2 border-[#222222] border-t-[#d32f2f] rounded-full animate-spin"></div>
+</div>
+```
+
+### 4.8 空状态
+
+```html
+<div class="flex flex-col items-center justify-center py-14">
+    <div class="w-10 h-10 bg-[#262626] flex items-center justify-center mb-3">
+        <svg class="w-5 h-5 text-[#616161]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
+        </svg>
+    </div>
+    <h5 class="text-xs font-medium text-[#9e9e9e] mb-1">暂无数据</h5>
+    <p class="text-[11px] text-[#616161]">请先上传工艺文件</p>
+</div>
+```
+
+### 4.9 Toast 提示
+
+```html
+<!-- 成功 -->
+<div class="fixed top-4 right-4 bg-[#1e1e1e] border border-[#2e7d32] px-4 py-3 rounded shadow-lg z-50">
+    <div class="flex items-center gap-3">
+        <svg class="w-5 h-5 text-[#2e7d32]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+        </svg>
+        <span class="text-xs text-[#ffffff]">操作成功</span>
+    </div>
+</div>
+
+<!-- 错误 -->
+<div class="fixed top-4 right-4 bg-[#1e1e1e] border border-[#c62828] px-4 py-3 rounded shadow-lg z-50">
+    <div class="flex items-center gap-3">
+        <svg class="w-5 h-5 text-[#c62828]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+        <span class="text-xs text-[#ffffff]">操作失败</span>
+    </div>
+</div>
+```
+
+### 4.10 抽屉面板
+
+```html
+<!-- 背景遮罩 -->
+<div class="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm transition-opacity duration-300" id="drawerBackdrop"></div>
+
+<!-- 抽屉内容 -->
+<div class="fixed inset-y-0 right-0 z-50 w-[640px] bg-[#1a1a1a] border-l border-[#2a2a2a] transform translate-x-full transition-transform duration-300 flex flex-col">
+    <!-- 头部 -->
+    <div class="px-5 py-3.5 flex items-center justify-between shrink-0 bg-[#1f1f1f] border-b border-[#333333]">
+        <h5 class="text-[11px] font-semibold tracking-wider text-[#b0b0b0] flex items-center gap-2.5 uppercase">
+            <span style="width:3px;height:14px;background:#d32f2f;border-radius:1px;display:inline-block;box-shadow: 0 0 8px rgba(211,47,47,0.5);"></span>
+            标题
+        </h5>
+        <button type="button" id="closeDrawer" class="flex items-center justify-center w-8 h-8 rounded-md text-[#707070] hover:text-white hover:bg-[#d32f2f] transition-all">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        </button>
+    </div>
+    <!-- 可滚动内容 -->
+    <div class="flex-1 overflow-y-auto overscroll-contain p-5" id="drawerContent"></div>
+</div>
+```
+
 ---
 
-## JavaScript 规范
+## 五、Brabus 特色样式
 
-### 禁止的 Bootstrap 类名
+### 5.1 红色左指示条
+
+用于卡片、列表项的激活态指示：
+
+```css
+/* Brabus 红左指示条 */
+position: relative;
+```
+
+```html
+<div class="relative pl-3">
+    <span class="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-8 bg-[#d32f2f] rounded-sm shadow-[0_0_8px_rgba(211,47,47,0.5)]"></span>
+    内容
+</div>
+```
+
+### 5.2 数字精密感
+
+用于统计数字、金额等：
+
+```html
+<span class="text-[#ffffff] font-mono tracking-[0.04em] drop-shadow-[0_0_20px_rgba(211,47,47,0.18)]">
+    1,234
+</span>
+```
+
+### 5.3 拖拽上传区
+
+```html
+<div class="border-2 border-dashed border-[#2c2c2c] bg-[rgba(255,255,255,0.01)] rounded p-10 text-center transition-all cursor-pointer hover:border-[#d32f2f] hover:bg-[rgba(211,47,47,0.02)]">
+    <div class="flex flex-col items-center">
+        <svg class="w-10 h-10 text-[#616161] mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+        </svg>
+        <p class="text-xs text-[#9e9e9e]">拖拽文件到此处，或<span class="text-[#d32f2f]">点击选择</span></p>
+        <p class="text-[11px] text-[#616161] mt-1">支持 .xlsx 格式</p>
+    </div>
+</div>
+```
+
+### 5.4 状态徽章
+
+```html
+<!-- 成功状态 -->
+<span class="inline-flex items-center px-2 py-0.5 text-[10px] font-semibold bg-[#2e7d32]/20 text-[#4caf50] rounded">
+    已完成
+</span>
+
+<!-- 警告状态 -->
+<span class="inline-flex items-center px-2 py-0.5 text-[10px] font-semibold bg-[#f57f17]/20 text-[#ffb74d] rounded">
+    待处理
+</span>
+
+<!-- 错误状态 -->
+<span class="inline-flex items-center px-2 py-0.5 text-[10px] font-semibold bg-[#c62828]/20 text-[#ef5350] rounded">
+    失败
+</span>
+```
+
+---
+
+## 六、禁止的类名
+
+### Bootstrap 类（完全禁止）
 
 ```
-❌ btn, btn-primary, btn-outline, btn-success, btn-danger
+❌ btn, btn-primary, btn-outline, btn-success, btn-danger, btn-sm, btn-lg
 ❌ card, card-header, card-body, card-footer
 ❌ form-control, form-select, form-label
-❌ table, table-hover, table-sm
-❌ badge, alert, modal, nav-pills
-❌ row, col-md-*, container
+❌ table, table-hover, table-sm, table-striped
+❌ badge, alert, nav-pills, nav-tabs
+❌ row, col-md-*, col-*, container, container-fluid
+❌ bg-primary, bg-success, bg-warning, bg-danger, bg-info
+❌ text-primary, text-success, text-warning, text-danger
+❌ border-primary, border-success, border-warning, border-danger
 ```
 
-### 允许的 Tailwind 类名
+### 浅色系 Tailwind 类（禁止）
 
 ```
-✅ bg-white, bg-slate-50, bg-slate-900
-✅ text-slate-900, text-slate-600, text-slate-400
-✅ border-slate-200, rounded-md, shadow-sm
-✅ px-4, py-2, gap-2, flex, items-center
-✅ opacity-0, group-hover:opacity-100
-✅ font-mono, tabular-nums
+❌ bg-white, bg-slate-50, bg-gray-50, bg-zinc-50, bg-neutral-50
+❌ text-white, text-slate-50, text-gray-50, text-zinc-50, text-neutral-50
+❌ border-white, border-slate-200, border-gray-200
+❌ rounded-lg（大圆角，与 Brabus 风格冲突）
+❌ shadow-md, shadow-lg, shadow-xl（使用 CSS 自定义阴影）
 ```
 
-### 工具函数
+---
+
+## 七、JavaScript 规范
+
+### 7.1 工具函数
 
 ```javascript
 // HTML 转义（防止 XSS）
@@ -217,18 +448,122 @@ const fmtNum = (value, digits = 2) => {
     if (value == null || Number.isNaN(value)) return '-';
     return Number(value).toFixed(digits);
 };
+
+// Brabus 风格 Toast
+const showToast = (message, type = 'success') => {
+    const colors = {
+        success: 'border-[#2e7d32]',
+        error: 'border-[#c62828]',
+        warning: 'border-[#f57f17]',
+    };
+    const icons = {
+        success: 'M5 13l4 4L19 7',
+        error: 'M6 18L18 6M6 6l12 12',
+        warning: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z',
+    };
+    const iconColor = {
+        success: 'text-[#2e7d32]',
+        error: 'text-[#c62828]',
+        warning: 'text-[#f57f17]',
+    };
+
+    const toast = document.createElement('div');
+    toast.className = `fixed top-4 right-4 bg-[#1e1e1e] border ${colors[type]} px-4 py-3 rounded shadow-lg z-[9999] animate-fade-in`;
+    toast.innerHTML = `
+        <div class="flex items-center gap-3">
+            <svg class="w-5 h-5 ${iconColor[type]}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${icons[type]}"></path>
+            </svg>
+            <span class="text-xs text-[#ffffff]">${esc(message)}</span>
+        </div>
+    `;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+};
+```
+
+### 7.2 页面模板规范
+
+```javascript
+// features/example/template.js
+export function exampleTemplate() {
+    return `
+        <div class="bg-[#1e1e1e] border border-[#2c2c2c] p-4">
+            <h3 class="text-xs font-semibold text-[#9e9e9e] uppercase tracking-wider mb-4">页面标题</h3>
+            <div class="text-sm text-[#ffffff]">
+                页面内容
+            </div>
+        </div>
+    `;
+}
+```
+
+```javascript
+// features/example/index.js
+import { exampleTemplate } from './template.js';
+
+export const pageConfig = {
+    render: exampleTemplate,
+    init: () => {
+        // 初始化逻辑
+        console.log('Example page initialized');
+    }
+};
 ```
 
 ---
 
-## 快速检查清单
+## 八、样式优先级
+
+当 Tailwind 原子类与 CSS 变量冲突时，按以下优先级：
+
+1. **交互状态**（hover、focus、active）使用 Tailwind 原子类
+2. **基础样式**优先使用 CSS 变量（如 `bg-[#0a0a0a]`）
+3. **组件特定样式**在 `style.css` 中定义
+
+---
+
+## 九、快速检查清单
 
 修改 `static/` 文件前，确认：
 
 - [ ] 没有使用 Jinja2 模板语法 (`{% %}`, `{{ }}`)
 - [ ] 页面渲染使用 JavaScript 模板字符串
-- [ ] JavaScript 中没有生成 Bootstrap 类的 HTML
-- [ ] 动态渲染的 HTML 片段使用 Tailwind 类名
-- [ ] `style.css` 没有添加新的 Bootstrap 覆盖样式
-- [ ] Toast、分页、加载动画等使用 Tailwind 风格
-- [ ] Bootstrap JS 仅用于交互功能
+- [ ] 使用 Brabus 深色变量（`bg-[#0a0a0a]`、`bg-[#1e1e1e]` 等）
+- [ ] 使用 Brabus 文字色（`text-[#ffffff]`、`text-[#9e9e9e]`、`text-[#616161]`）
+- [ ] 使用 Brabus 边框色（`border-[#222222]`、`border-[#2c2c2c]`）
+- [ ] 激活态使用 Brabus 红（`focus:border-[#ff5252]`、`bg-[#d32f2f]`）
+- [ ] 没有生成 Bootstrap 类的 HTML
+- [ ] `style.css` 没有添加新的自定义类
+- [ ] Toast、加载动画、空状态使用 Brabus 风格
+- [ ] Bootstrap JS 仅用于交互功能（Modal、Collapse、Dropdown）
+
+---
+
+## 十、常用 Tailwind 类速查
+
+```javascript
+// 背景
+'bg-[#0a0a0a]', 'bg-[#121212]', 'bg-[#1e1e1e]', 'bg-[#262626]'
+
+// 文字
+'text-[#ffffff]', 'text-[#9e9e9e]', 'text-[#616161]'
+
+// 边框
+'border-[#222222]', 'border-[#2c2c2c]', 'focus:border-[#ff5252]'
+
+// 品牌红
+'bg-[#d32f2f]', 'hover:bg-[#b71c1c]', 'text-[#d32f2f]'
+
+// 状态色
+'text-[#2e7d32]', 'text-[#f57f17]', 'text-[#c62828]'
+
+// 圆角
+'rounded', 'rounded-sm', 'rounded-md'
+
+// 字体大小
+'text-[10px]', 'text-[11px]', 'text-xs', 'text-sm'
+
+// 间距
+'px-3', 'py-2', 'gap-2', 'space-y-3'
+```

@@ -63,6 +63,135 @@ def create_app() -> FastAPI:
         version=settings.APP_VERSION,
         lifespan=lifespan,
         debug=settings.DEBUG,
+        swagger_ui_parameters={
+            "defaultModelsExpandDepth": 1,
+            "docExpansion": "list",
+            "tryItOutEnabled": True,
+            "persistAuthorization": True,
+            "filter": True,
+            "displayRequestDuration": True,
+            "operationsSorter": "method",  # 按 HTTP 方法排序：get > post > put > delete > patch
+            "tagsSorter": "alpha",  # 按标签字母顺序排序
+            "deepLinking": True,  # 支持 URL 锚点直接定位到接口
+            "customSiteTitle": f"{settings.APP_NAME} - API 文档",
+            "customCss": """
+                /* ========== 基础布局 ========== */
+                /* 隐藏顶部栏 */
+                .swagger-ui .topbar { display: none; }
+                /* 页面标题 */
+                .swagger-ui .info .title {
+                    color: #1e293b; font-weight: 700; font-size: 1.5em;
+                    margin-bottom: 8px;
+                }
+                /* 页面描述 */
+                .swagger-ui .info .description {
+                    font-size: 14px; color: #64748b; margin-bottom: 20px;
+                }
+
+                /* ========== 侧边栏 ========== */
+                /* 标签分组标题 */
+                .swagger-ui .opblock-tag {
+                    font-size: 13px; font-weight: 600; color: #334155;
+                    border-bottom: 2px solid #e2e8f0;
+                    padding-bottom: 8px; margin-bottom: 8px;
+                }
+                .swagger-ui .opblock-tag:hover { background-color: #f8fafc; }
+
+                /* ========== 接口卡片 ========== */
+                /* 展开/折叠 */
+                .swagger-ui .opblock-summary-control { cursor: pointer; }
+                /* GET 方法 - 绿色 */
+                .swagger-ui .opblock.opblock-get .opblock-summary { border-left: 4px solid #16a34a; }
+                .swagger-ui .opblock.opblock-get .opblock-summary-method {
+                    background: #16a34a; color: white; font-weight: 600;
+                }
+                /* POST 方法 - 蓝色 */
+                .swagger-ui .opblock.opblock-post .opblock-summary { border-left: 4px solid #2563eb; }
+                .swagger-ui .opblock.opblock-post .opblock-summary-method {
+                    background: #2563eb; color: white; font-weight: 600;
+                }
+                /* PUT 方法 - 橙色 */
+                .swagger-ui .opblock.opblock-put .opblock-summary { border-left: 4px solid #d97706; }
+                .swagger-ui .opblock.opblock-put .opblock-summary-method {
+                    background: #d97706; color: white; font-weight: 600;
+                }
+                /* DELETE 方法 - 红色 */
+                .swagger-ui .opblock.opblock-delete .opblock-summary { border-left: 4px solid #dc2626; }
+                .swagger-ui .opblock.opblock-delete .opblock-summary-method {
+                    background: #dc2626; color: white; font-weight: 600;
+                }
+                /* PATCH 方法 - 紫色 */
+                .swagger-ui .opblock.opblock-patch .opblock-summary { border-left: 4px solid #9333ea; }
+                .swagger-ui .opblock.opblock-patch .opblock-summary-method {
+                    background: #9333ea; color: white; font-weight: 600;
+                }
+
+                /* ========== 按钮 ========== */
+                /* Try it out 按钮 */
+                .swagger-ui .btn.try-out__btn {
+                    background-color: #0f172a; border-color: #0f172a; color: white;
+                    font-weight: 500;
+                }
+                .swagger-ui .btn.try-out__btn:hover { background-color: #334155; }
+                /* Execute 按钮 */
+                .swagger-ui .btn.execute {
+                    background-color: #2563eb; border-color: #2563eb;
+                }
+                .swagger-ui .btn.execute:hover { background-color: #1d4ed8; }
+                /* Cancel 按钮 */
+                .swagger-ui .btn.cancel {
+                    background-color: #64748b; border-color: #64748b;
+                }
+                /* Authorize 按钮 */
+                .swagger-ui .btn.authorize {
+                    border-color: #2563eb; color: #2563eb;
+                }
+                .swagger-ui .btn.authorize:hover {
+                    background-color: #2563eb; color: white;
+                }
+
+                /* ========== 输入框 ========== */
+                .swagger-ui input:focus, .swagger-ui select:focus {
+                    border-color: #2563eb;
+                    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+                }
+                /* 参数必填标记 */
+                .swagger-ui .parameter__required { color: #dc2626; font-weight: 600; }
+
+                /* ========== 响应区域 ========== */
+                /* 成功响应 */
+                .swagger-ui .response-col_status { color: #16a34a; font-weight: 600; }
+                /* 错误响应 */
+                .swagger-ui .response .tab-header { font-weight: 600; }
+
+                /* ========== 状态码颜色 ========== */
+                .swagger-ui .response-tabs input:checked + label {
+                    color: #2563eb; border-color: #2563eb;
+                }
+
+                /* ========== 复制按钮 ========== */
+                .swagger-ui .opblock-section-header .copy {
+                    opacity: 0.5;
+                }
+                .swagger-ui .opblock-section-header .copy:hover {
+                    opacity: 1;
+                }
+
+                /* ========== 搜索框 ========== */
+                .swagger-ui .wrapper input {
+                    border-radius: 6px; border: 1px solid #e2e8f0;
+                }
+            """,
+        },
+        openapi_tags=[
+            {"name": "仪表盘", "description": "数据统计与看板"},
+            {"name": "冲压工艺", "description": "冲压件零件与工序管理"},
+            {"name": "冲压工艺上传", "description": "冲压工艺文件上传与解析"},
+            {"name": "零件", "description": "通用零件管理"},
+            {"name": "核价", "description": "成本计算与核价"},
+            {"name": "报价", "description": "报价单管理"},
+            {"name": "系统设置", "description": "系统配置管理"},
+        ]
     )
 
     # ========== CORS 配置 ==========
