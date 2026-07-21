@@ -223,6 +223,30 @@ class StampingPartRepository:
         counts = {pid: cnt for pid, cnt in rows}
         return {pid: counts.get(pid, 0) for pid in part_ids}
 
+    def get_filter_options(self, db: Session) -> Dict[str, List[str]]:
+        """
+        获取筛选下拉框的可选值（车型列表 & 版本列表）。
+        返回 {'vehicle_models': [...], 'versions': [...]}。
+        """
+        vehicle_models = (
+            db.query(StampingPart.vehicle_model)
+            .distinct()
+            .filter(StampingPart.vehicle_model.isnot(None))
+            .order_by(StampingPart.vehicle_model)
+            .all()
+        )
+        versions = (
+            db.query(StampingPart.version)
+            .distinct()
+            .filter(StampingPart.version.isnot(None))
+            .order_by(StampingPart.version)
+            .all()
+        )
+        return {
+            "vehicle_models": [r[0] for r in vehicle_models],
+            "versions": [r[0] for r in versions],
+        }
+
 
 class StampingProcessRepository:
     """工序数据访问"""

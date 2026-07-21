@@ -90,7 +90,7 @@ export class Router {
             }
         } catch (error) {
             console.error('渲染页面失败:', error);
-            content.innerHTML = `<div class="p-4 bg-red-50 border border-red-200 rounded-md text-red-600">加载失败: ${esc(error.message)}</div>`;
+            content.innerHTML = `<div class="p-4 bg-[#0a0a0a] border border-[#2c2c2c] text-[#d32f2f]">加载失败: ${esc(error.message)}</div>`;
         }
     }
 

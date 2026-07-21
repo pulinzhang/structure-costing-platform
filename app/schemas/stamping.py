@@ -90,3 +90,9 @@ class StampingPartListResponse(StampingPartBaseResponse):
 class StampingPartResponse(StampingPartBaseResponse):
     """零件响应（包含完整工序详情）"""
     processes: List[StampingProcessResponse] = []
+
+
+class StampingProcessUpdate(BaseModel):
+    """工序更新请求"""
+    cost_ratio: Optional[float] = Field(None, ge=0, le=10, description="成本系数（0~10，即0%~1000%）")
+    remark: Optional[str] = None

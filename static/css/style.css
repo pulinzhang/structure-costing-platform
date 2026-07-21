@@ -1,66 +1,126 @@
 /*
  * 汽车冲压件自动核价平台
- * 自定义样式表
- * 遵循 docs/front-end.mdc 规范：
- *   - 仅保留纯结构样式（Tailwind 无法实现的布局）
- *   - 禁止添加新的 Bootstrap 覆盖样式
+ * Brabus Carbon & Precision Dark 风格
+ * 碳素黑 · 钛灰面板 · 标志性红 · 锐利线条
  */
 
-/* 主题颜色变量 */
+/* ====== 全局主题变量 ====== */
 :root {
-    /* 规范 §1 主色与中性色 */
-    --primary-color:   #1E293B;
-    --neutral-bg:      #F8FAFC;
-    --neutral-border:  #E2E8F0;
-    --neutral-muted:   #64748B;
-    --text-color:      #1E293B;
+    /* --- 1. 品牌与交互主色 --- */
+    --brabus-red: #d32f2f;
+    --brabus-red-hover: #b71c1c;
+    --brabus-red-glow: rgba(211, 47, 47, 0.25);
 
-    /* 语义色 */
-    --color-success: #2dc653;
-    --color-warning: #b45309;
-    --color-danger:  #b91c1c;
-    --color-info:    #0369a1;
+    /* --- 2. 机械暗色背景阶梯 --- */
+    --bg-deep: #0a0a0a;
+    --bg-main: #121212;
+    --bg-surface: #1e1e1e;
+    --bg-elevated: #262626;
+
+    /* --- 3. 工业金属灰与文字色 --- */
+    --text-main: #ffffff;
+    --text-muted: #9e9e9e;
+    --text-disabled: #616161;
+
+    /* --- 4. 边框、分割线与高精度线条 --- */
+    --border-subtle: #222222;
+    --border-color: #2c2c2c;
+    --border-active: #ff5252;
+
+    /* --- 5. 功能状态色 --- */
+    --success-color: #2e7d32;
+    --warning-color: #f57f17;
+    --danger-color: #c62828;
 }
 
-/* 全局样式 */
+/* ====== 全局基础样式 ====== */
+* {
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
 body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background-color: var(--neutral-bg);
-    color: var(--text-color);
+    background-color: var(--bg-deep);
+    color: var(--text-main);
     min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
-/* ====== 侧边栏（纯结构，Tailwind 无法实现） ====== */
+/* 全局滚动条 */
+::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.07);
+    border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.14);
+}
+
+::selection {
+    background: var(--brabus-red-glow);
+    color: var(--text-main);
+}
+
+/* ====== 侧边栏 — 钛灰面板 ====== */
 .sidebar {
     position: fixed;
     top: 0;
     left: 0;
     height: 100vh;
-    width: 260px;
-    background: var(--primary-color);
+    width: 256px;
+    background: var(--bg-surface);
+    border-right: 1px solid var(--border-subtle);
     color: #fff;
-    padding: 1.5rem 0;
+    padding: 1.25rem 0;
     z-index: 1000;
-    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
 }
 
 .sidebar-brand {
-    padding: 0 1.5rem 1.5rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    margin-bottom: 1rem;
+    padding: 0.75rem 1.25rem 1.25rem;
+    border-bottom: 1px solid var(--border-subtle);
+    margin-bottom: 0.75rem;
+    flex-shrink: 0;
 }
 
 .sidebar-brand h1 {
-    font-size: 1.0625rem;
+    font-size: 0.8125rem;
     font-weight: 600;
-    margin: 0;
-    line-height: 1.4;
-    color: #fff;
+    margin: 0 0 0.375rem 0;
+    line-height: 1.35;
+    color: var(--text-main);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .sidebar-brand span {
-    font-size: 0.75rem;
-    color: rgba(255, 255, 255, 0.5);
+    display: block;
+    font-size: 0.625rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-disabled);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sidebar nav {
+    flex: 1;
+    overflow-y: auto;
 }
 
 .sidebar-nav {
@@ -70,29 +130,42 @@ body {
 }
 
 .sidebar-nav-item {
-    margin: 0.25rem 0;
+    margin: 0.125rem 0;
 }
 
+/* 导航链接 — 极简无边框，Brabus 红激活态 */
 .sidebar-nav-link {
     display: flex;
     align-items: center;
-    padding: 0.625rem 1.5rem;
-    color: rgba(255, 255, 255, 0.7);
+    padding: 0.5rem 1.25rem;
+    color: var(--text-muted);
     text-decoration: none;
-    transition: all 0.15s;
-    border-left: 3px solid transparent;
-    font-size: 0.875rem;
+    transition: color 0.15s ease;
+    font-size: 0.8125rem;
+    letter-spacing: 0.01em;
+    position: relative;
 }
 
 .sidebar-nav-link:hover {
-    color: #fff;
-    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-main);
 }
 
 .sidebar-nav-link.active {
-    color: #fff;
-    background: rgba(255, 255, 255, 0.1);
-    border-left-color: var(--primary-color);
+    color: var(--text-main);
+    background: rgba(255, 255, 255, 0.04);
+}
+
+/* Brabus 红左指示条 — 激活态 */
+.sidebar-nav-link.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 20%;
+    bottom: 20%;
+    width: 2px;
+    background: var(--brabus-red);
+    border-radius: 1px;
+    box-shadow: 0 0 6px var(--brabus-red-glow);
 }
 
 /* 子菜单 */
@@ -102,16 +175,16 @@ body {
     margin: 0;
     overflow: hidden;
     max-height: 0;
-    transition: max-height 0.2s ease-out;
+    transition: max-height 0.2s ease;
 }
 
 .has-submenu .submenu.show {
     max-height: 200px;
 }
 
-/* 箭头旋转 */
 .submenu-arrow {
-    transition: transform 0.2s ease-out;
+    transition: transform 0.2s ease;
+    color: var(--text-disabled);
 }
 
 .has-submenu.open .submenu-arrow {
@@ -121,116 +194,114 @@ body {
 .submenu-link {
     display: flex;
     align-items: center;
-    padding: 0.5rem 1.5rem 0.5rem 3.25rem;
-    color: rgba(255, 255, 255, 0.6);
+    padding: 0.4375rem 1.25rem 0.4375rem 3rem;
+    color: var(--text-disabled);
     text-decoration: none;
-    font-size: 0.8125rem;
-    transition: all 0.15s;
+    font-size: 0.75rem;
+    transition: color 0.15s ease;
 }
 
 .submenu-link:hover {
-    color: #fff;
-    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-muted);
 }
 
 .submenu-link.active {
-    color: #fff;
-    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-muted);
+    background: rgba(255, 255, 255, 0.04);
 }
 
-.sidebar-nav-link i,
 .sidebar-nav-link svg,
-.submenu-link i,
 .submenu-link svg {
     flex-shrink: 0;
-    width: 20px;
-    height: 20px;
     margin-right: 0.625rem;
-    text-align: center;
 }
 
-/* 分隔线 */
 .sidebar-nav-divider {
-    padding: 0 1.5rem;
+    padding: 0.375rem 1.25rem;
 }
 
 .sidebar-nav-divider hr {
-    border-color: rgba(255, 255, 255, 0.1);
-    margin: 1rem 0;
+    border-color: var(--border-subtle);
+    margin: 0.375rem 0;
 }
 
-/* 侧边栏底部 */
 .sidebar-footer {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    padding: 0.75rem 1.5rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    color: rgba(255, 255, 255, 0.5);
-    font-size: 0.75rem;
+    flex-shrink: 0;
+    padding: 0.75rem 1.25rem;
+    border-top: 1px solid var(--border-subtle);
+    color: var(--text-disabled);
+    font-size: 0.625rem;
+    letter-spacing: 0.08em;
 }
 
 /* ====== 主内容区 ====== */
 .main-content {
-    margin-left: 260px;
+    margin-left: 256px;
     min-height: 100vh;
-    padding: 1.5rem 2rem;
+    padding: 2rem;
 }
 
-.top-nav {
-    background: #fff;
-    padding: 1rem 1.5rem;
-    margin: -1.5rem -2rem 1.5rem -2rem;
-    border-bottom: 1px solid var(--neutral-border);
+/* 极简页头 — 取消大黑框，干净悬浮 */
+.page-header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.75rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--border-subtle);
 }
 
-.top-nav h2 {
+.page-header h2 {
     margin: 0;
-    font-size: 1.125rem;
+    font-size: 0.875rem;
     font-weight: 600;
-    color: var(--text-color);
+    letter-spacing: -0.01em;
+    color: var(--text-main);
 }
 
-/* ====== 面包屑 ====== */
 .breadcrumb {
     background: transparent;
     padding: 0;
-    margin-bottom: 0.25rem;
-    font-size: 0.75rem;
+    margin: 0.25rem 0 0 0;
+    font-size: 0.6875rem;
 }
 
 .breadcrumb-item a {
-    color: var(--neutral-muted);
+    color: var(--text-muted);
     text-decoration: none;
+    transition: color 0.15s ease;
+}
+
+.breadcrumb-item a:hover {
+    color: var(--text-secondary);
 }
 
 .breadcrumb-item.active {
-    color: var(--text-color);
+    color: var(--text-secondary);
 }
 
-/* ====== Toast 容器（Tailwind 定位类配合） ====== */
+/* 废弃旧 top-nav */
+.top-nav {
+    display: none;
+}
+
+/* ====== Toast ====== */
 .toast-container {
     z-index: 9999;
 }
 
-/* ====== 加载遮罩（纯结构动画） ====== */
+/* ====== 加载遮罩 ====== */
 .loading-overlay {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(255, 255, 255, 0.85);
+    background: var(--bg-deep);
+    backdrop-filter: blur(6px);
     align-items: center;
     justify-content: center;
     z-index: 9999;
-}
-
-.loading-overlay {
     display: none;
 }
 
@@ -239,26 +310,27 @@ body {
 }
 
 .spinner {
-    width: 2.5rem;
-    height: 2.5rem;
-    border: 3px solid var(--neutral-border);
-    border-top-color: var(--primary-color);
+    width: 1.75rem;
+    height: 1.75rem;
+    border: 1.5px solid var(--border-subtle);
+    border-top-color: var(--brabus-red);
     border-radius: 50%;
-    animation: spin 1s linear infinite;
+    animation: spin 0.75s linear infinite;
 }
 
 @keyframes spin {
     to { transform: rotate(360deg); }
 }
 
-/* ====== Modal 遮罩（Bootstrap Modal 依赖） ====== */
+/* ====== Modal ====== */
 .modal-backdrop {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
+    background: var(--bg-deep);
+    backdrop-filter: blur(4px);
     z-index: 1040;
 }
 
@@ -287,36 +359,37 @@ body {
 }
 
 .modal-content {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
     border-radius: 0.375rem;
-    border: none;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    background: #fff;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
 }
 
 .modal-header {
-    border-bottom: 1px solid var(--neutral-border);
-    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--border-subtle);
+    padding: 1rem 1.5rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
 }
 
 .modal-title {
-    font-size: 0.9375rem;
+    font-size: 0.875rem;
     font-weight: 600;
     margin: 0;
+    color: var(--text-main);
 }
 
 .modal-body {
-    padding: 1.25rem;
+    padding: 1.5rem;
 }
 
 .modal-footer {
-    border-top: 1px solid var(--neutral-border);
-    padding: 1rem 1.25rem;
+    border-top: 1px solid var(--border-subtle);
+    padding: 1rem 1.5rem;
     display: flex;
     justify-content: flex-end;
-    gap: 0.5rem;
+    gap: 0.625rem;
 }
 
 /* ====== 工具类 ====== */
@@ -329,6 +402,352 @@ body {
 
 .fw-semibold {
     font-weight: 600;
+}
+
+/* ====== Dashboard 卡片系统 ====== */
+
+/* 仪表盘统计卡片 */
+.dashboard-card {
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    transition: border-color 0.2s ease;
+    cursor: default;
+}
+
+.dashboard-card:hover {
+    border-color: var(--border-active);
+}
+
+/* Brabus 红左上指示条 */
+.card-red-bar {
+    position: relative;
+}
+
+.card-red-bar::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 12px;
+    bottom: 12px;
+    width: 2px;
+    background: var(--brabus-red);
+    border-radius: 1px;
+    box-shadow: 0 0 8px var(--brabus-red-glow);
+}
+
+/* 极客精密数字 — Brabus 红微光 */
+.stat-number {
+    color: var(--text-main);
+    font-family: 'Inter', monospace;
+    letter-spacing: 0.04em;
+    text-shadow: 0 0 20px rgba(211, 47, 47, 0.18);
+    transition: text-shadow 0.2s ease;
+}
+
+.dashboard-card:hover .stat-number {
+    text-shadow: 0 0 28px rgba(211, 47, 47, 0.32);
+}
+
+/* 统计数字旁图标 */
+.stat-icon {
+    background: var(--bg-elevated);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* 概览面板左红条 */
+.overview-bar {
+    display: inline-block;
+    width: 2px;
+    height: 1rem;
+    background: var(--brabus-red);
+    border-radius: 1px;
+    box-shadow: 0 0 6px var(--brabus-red-glow);
+    flex-shrink: 0;
+}
+
+/* ====== 仪表盘 CTA 按钮 ====== */
+.upload-cta {
+    background: var(--bg-elevated);
+    color: #fff;
+    border: 1px solid var(--border-color);
+    border-radius: 0.25rem;
+    padding: 0.5rem 1rem;
+}
+
+.upload-cta:hover {
+    background: var(--brabus-red);
+    border-color: var(--brabus-red-hover);
+}
+
+.overview-cta {
+    background: transparent;
+    color: var(--text-disabled);
+    border: 1px solid var(--border-subtle);
+    border-radius: 0.25rem;
+    padding: 0.5rem 1rem;
+}
+
+.overview-cta:hover {
+    color: var(--text-muted);
+    border-color: var(--border-color);
+}
+
+/* ====== 上传表单 ====== */
+
+/* 表单标签：精密小号灰色 */
+.upload-label {
+    display: block;
+    text-size-adjust: none;
+    font-size: 0.625rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-disabled);
+}
+
+/* 表单输入框：内凹质感 */
+.upload-input {
+    width: 100%;
+    background-color: var(--bg-deep, #0a0a0a);
+    border: 1px solid var(--border-color, #2c2c2c);
+    color: var(--text-main, #ffffff);
+    border-radius: 4px;
+    padding: 0.65rem 0.85rem;
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+}
+
+.upload-input:focus {
+    outline: none;
+    border-color: var(--brabus-red, #d32f2f);
+    box-shadow: 0 0 0 2px rgba(211, 47, 47, 0.15);
+}
+
+.upload-input::placeholder {
+    color: var(--text-disabled, #616161);
+}
+
+/* 拖拽上传区 */
+.upload-dropzone {
+    border: 2px dashed var(--border-color, #2c2c2c);
+    background-color: rgba(255, 255, 255, 0.01);
+    border-radius: 6px;
+    padding: 2.5rem 1.5rem;
+    text-align: center;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.upload-dropzone:hover {
+    border-color: var(--brabus-red, #d32f2f);
+    background-color: rgba(211, 47, 47, 0.02);
+}
+
+.upload-dropzone.drag-active {
+    border-color: var(--brabus-red, #d32f2f);
+    background-color: rgba(211, 47, 47, 0.03);
+    box-shadow: 0 0 16px rgba(211, 47, 47, 0.12);
+}
+
+/* Ghost 次要按钮 — 边框幽灵型 */
+.btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background-color: transparent;
+    color: var(--text-muted, #9e9e9e);
+    border: 1px solid var(--border-color, #2c2c2c);
+    padding: 0.5rem 1.2rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.btn-ghost:hover {
+    color: var(--text-main, #ffffff);
+    border-color: var(--text-muted, #9e9e9e);
+}
+
+/* 重置按钮（兼容旧名） */
+.btn-reset {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background-color: transparent;
+    color: var(--text-muted, #9e9e9e);
+    border: 1px solid var(--border-color, #2c2c2c);
+    padding: 0.5rem 1.2rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.btn-reset:hover {
+    color: var(--text-main, #ffffff);
+    border-color: var(--text-muted, #9e9e9e);
+}
+
+/* 核心提交按钮 — Brabus 红 */
+.btn-upload-submit {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background-color: var(--brabus-red, #d32f2f);
+    color: #ffffff;
+    border: 1px solid var(--brabus-red, #d32f2f);
+    padding: 0.5rem 1.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.btn-upload-submit:hover {
+    background-color: var(--brabus-red-hover, #b71c1c);
+    border-color: var(--brabus-red-hover, #b71c1c);
+    box-shadow: 0 0 12px rgba(211, 47, 47, 0.4);
+}
+
+.btn-upload-submit:disabled {
+    background: var(--bg-elevated, #262626);
+    border-color: var(--border-color, #2c2c2c);
+    color: var(--text-disabled, #616161);
+    box-shadow: none;
+    cursor: not-allowed;
+}
+
+/* 选择文件辅助按钮 */
+.btn-file-select {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: var(--bg-surface, #1e1e1e);
+    color: var(--text-main, #ffffff);
+    border: 1px solid var(--border-color, #2c2c2c);
+    padding: 0.45rem 1rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.btn-file-select:hover {
+    border-color: var(--brabus-red, #d32f2f);
+    color: var(--brabus-red, #d32f2f);
+}
+
+/* ====== 零件列表 — 数值列 ====== */
+
+/* 数值列：右对齐 + 等宽数字，小字更显精密感 */
+.table-num-cell {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    font-size: 0.7rem;
+    color: var(--text-muted, #9e9e9e);
+}
+
+/* 操作列图标：默认低透明度常驻，悬停时清晰 */
+.table-action-btn {
+    opacity: 0.2;
+    padding: 0.375rem;
+    color: var(--text-disabled, #616161);
+    border-radius: 4px;
+    transition: opacity 0.15s ease, color 0.15s ease, background-color 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.table-action-btn:hover {
+    opacity: 1;
+    color: var(--brabus-red, #d32f2f);
+    background-color: rgba(211, 47, 47, 0.08);
+}
+
+tr:hover .table-action-btn {
+    opacity: 0.8;
+}
+
+.btn-file-select:hover {
+    background: var(--brabus-red);
+    border-color: var(--brabus-red-hover);
+}
+
+/* ====== 零件列表 — 图纸缩略图 ====== */
+
+.part-cell-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.sketch-thumbnail {
+    position: relative;
+    width: 36px;
+    height: 36px;
+    border-radius: 4px;
+    background-color: var(--bg-deep, #141414);
+    border: 1px solid var(--border-color, #2c2c2c);
+    overflow: hidden;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: border-color 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sketch-thumbnail img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.sketch-thumbnail-placeholder {
+    width: 36px;
+    height: 36px;
+    border-radius: 4px;
+    background-color: var(--bg-elevated, #262626);
+    border: 1px dashed var(--border-color, #2c2c2c);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.sketch-thumbnail-placeholder svg {
+    color: var(--text-disabled, #616161);
+}
+
+.sketch-thumbnail:hover {
+    border-color: var(--brabus-red, #d32f2f);
+}
+
+.zoom-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.65);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    border-radius: 4px;
+}
+
+.sketch-thumbnail:hover .zoom-overlay {
+    opacity: 1;
+}
+
+.zoom-overlay svg {
+    width: 14px;
+    height: 14px;
+    color: #ffffff;
 }
 
 /* ====== 响应式 ====== */

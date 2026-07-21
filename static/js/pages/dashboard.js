@@ -3,8 +3,6 @@
  * 仪表盘页面逻辑
  */
 
-import { dashboardTemplate } from '../modules/dashboard.js';
-
 export const DashboardPage = {
     /**
      * 初始化仪表盘页面

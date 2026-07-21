@@ -29,6 +29,9 @@ const SVG_ICONS = {
     'plus': `<svg class="inline-block w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14"/><path d="M5 12h14"/></svg>`,
     'download': `<svg class="inline-block w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>`,
     'upload': `<svg class="inline-block w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/></svg>`,
+    'search': `<svg class="inline-block w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>`,
+    'file-earmark': `<svg class="inline-block w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>`,
+    'arrows-fullscreen': `<svg class="inline-block w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>`,
 };
 
 // 获取 SVG 图标
@@ -97,23 +100,31 @@ function hideLoading() {
 function showToast(message, type = 'info') {
     const toastContainer = getOrCreateToastContainer();
 
-    // Tailwind 色彩映射
+    // Tailwind 色彩映射 — Brabus Carbon Dark
     const colorMap = {
-        success: 'bg-green-600',
-        danger:  'bg-red-600',
-        warning: 'bg-amber-600',
-        info:    'bg-sky-600',
-        error:   'bg-red-600',
+        success: '#1e1e1e',
+        danger:  '#1e1e1e',
+        warning: '#1e1e1e',
+        info:    '#1e1e1e',
+        error:   '#1e1e1e',
     };
-    const bgClass = colorMap[type] || 'bg-slate-600';
+    const accentMap = {
+        success: '#2e7d32',
+        danger:  '#d32f2f',
+        warning: '#f57f17',
+        info:    '#616161',
+        error:   '#d32f2f',
+    };
+    const bgClass = colorMap[type] || '#1e1e1e';
+    const accent = accentMap[type] || '#616161';
 
     const toast = document.createElement('div');
-    toast.className = `flex items-center justify-between gap-3 ${bgClass} text-white px-4 py-3 rounded-md shadow-lg`;
+    toast.style.cssText = `display:flex;align-items:center;justify-content:space-between;gap:0.75rem;background:${bgClass};border:1px solid #2c2c2c;border-left:3px solid ${accent};color:#ffffff;padding:0.75rem 1rem;border-radius:0.25rem;min-width:260px;max-width:400px;box-shadow:0 8px 32px rgba(0,0,0,0.5);font-size:0.8125rem;font-weight:500;`;
     toast.setAttribute('role', 'alert');
     toast.innerHTML = `
-        <span class="text-sm font-medium">${escapeHtml(message)}</span>
-        <button type="button" class="text-white/80 hover:text-white transition-colors" onclick="this.closest('[role=alert]').remove()">
-            ${svgIcon('x-lg')}
+        <span>${escapeHtml(message)}</span>
+        <button type="button" style="color:#9e9e9e;background:none;border:none;cursor:pointer;padding:0;line-height:1;opacity:0.7;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'" onclick="this.closest('[role=alert]').remove()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
         </button>
     `;
 
@@ -338,11 +349,11 @@ class FileUploader {
 
         if (this.previewElement) {
             this.previewElement.innerHTML = `
-                <div class="flex items-center gap-3 p-3 bg-sky-50 border border-sky-200 rounded-md">
-                    <span class="text-green-600">${svgIcon('file-earmark-excel')}</span>
+                <div class="flex items-center gap-3 p-3 bg-[#121212] border border-[#2c2c2c]">
+                    <span class="text-[#2e7d32]">${svgIcon('file-earmark-excel')}</span>
                     <div class="flex-1 min-w-0">
-                        <div class="text-sm font-medium text-slate-900 truncate">${escapeHtml(file.name)}</div>
-                        <div class="text-xs text-slate-500">${this.formatFileSize(file.size)}</div>
+                        <div class="text-xs font-medium text-white truncate">${escapeHtml(file.name)}</div>
+                        <div class="text-[10px] text-[#616161]">${this.formatFileSize(file.size)}</div>
                     </div>
                 </div>
             `;
@@ -392,10 +403,6 @@ window.formatFileSize = formatFileSize;
 window.showLoading = showLoading;
 window.hideLoading = hideLoading;
 window.showToast = showToast;
-window.confirmAction = confirmAction;
-window.FileUploader = FileUploader;
-window.filterTable = filterTable;
-window.svgIcon = svgIcon;
 window.confirmAction = confirmAction;
 window.FileUploader = FileUploader;
 window.filterTable = filterTable;

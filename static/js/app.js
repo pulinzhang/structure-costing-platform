@@ -3,69 +3,71 @@
  *
  * 架构说明：
  * - 采用关注点分离（SoC）原则
- * - modules/*.js    : HTML 模板函数
- * - pages/*.js      : 页面逻辑模块（init 初始化）
- * - app.js          : SPA 核心（路由、渲染、页面注册）
+ * - features/      : 功能模块（每个功能一个子目录）
+ *   ├── template.js : HTML 模板函数
+ *   └── index.js    : 页面逻辑模块
+ * - ui/            : 可复用 UI 组件
+ * - app.js         : SPA 核心（Hash 路由、渲染、页面注册）
  */
 
-import { pageMeta } from './modules/index.js';
-import { dashboardTemplate } from './modules/dashboard.js';
-import { uploadTemplate } from './modules/upload.js';
-import { partsTemplate } from './modules/parts.js';
-import { costingTemplate } from './modules/costing.js';
-import { quotationTemplate } from './modules/quotation.js';
-import { settingsTemplate } from './modules/settings.js';
+import { pageMeta } from './features/index.js';
 
-import { DashboardPage } from './pages/dashboard.js';
-import { UploadPage } from './pages/upload.js';
-import { PartsPage } from './pages/parts.js';
+// 页面导入
+import { pageConfig as dashboardPage }      from './features/dashboard/index.js';
+import { pageConfig as stampingUploadPage } from './features/stamping/upload/index.js';
+import { pageConfig as stampingPartsPage }  from './features/stamping/parts/index.js';
+import { pageConfig as costingPage }        from './features/costing/index.js';
+import { pageConfig as quotationPage }      from './features/quotation/index.js';
+import { pageConfig as settingsPage }        from './features/settings/index.js';
 
 // ===== 页面注册 =====
-// 每个页面模块必须实现 init() 方法
-
 const pages = {
-    dashboard: {
-        render: dashboardTemplate,
-        init: () => DashboardPage.init(),
-    },
-    'stamping-upload': {
-        render: uploadTemplate,
-        init: () => UploadPage.init(),
-    },
-    'stamping-parts': {
-        render: partsTemplate,
-        init: () => PartsPage.init(),
-    },
-    costing: {
-        render: costingTemplate,
-        init: () => {},
-    },
-    quotation: {
-        render: quotationTemplate,
-        init: () => {},
-    },
-    settings: {
-        render: settingsTemplate,
-        init: () => {},
-    },
+    dashboard:       dashboardPage,
+    'stamping-upload': stampingUploadPage,
+    'stamping-parts': stampingPartsPage,
+    costing:         costingPage,
+    quotation:       quotationPage,
+    settings:        settingsPage,
 };
 
-// ===== 路由控制 =====
+const DEFAULT_PAGE = 'dashboard';
 
+// ===== Hash 路由核心 =====
+
+/**
+ * 从 URL Hash 中解析页面名，如 #/stamping-parts → stamping-parts
+ */
+function getPageFromHash() {
+    const hash = window.location.hash;           // e.g. "#/stamping-parts"
+    if (!hash || hash === '#' || hash === '#/') return DEFAULT_PAGE;
+    return hash.replace(/^#\/?/, '') || DEFAULT_PAGE;
+}
+
+/**
+ * 导航到指定页面（更新 Hash + 渲染）
+ */
+function navigateTo(pageName) {
+    if (!pages[pageName]) return;
+    window.location.hash = '/' + pageName;
+}
+
+/**
+ * 渲染页面（仅渲染，不改 Hash）
+ */
 function renderPage(pageName) {
     const page = pages[pageName];
     if (!page) {
         document.getElementById('pageContent').innerHTML =
-            '<div class="text-center text-slate-500 py-12">页面不存在</div>';
+            '<div class="text-center text-[#616161] py-12">页面不存在</div>';
         return;
     }
 
     const content = document.getElementById('pageContent');
-    const title = document.getElementById('pageTitle');
+    const title   = document.getElementById('pageTitle');
     const breadcrumb = document.getElementById('breadcrumbItem');
     const topActions = document.getElementById('topActions');
 
-    // 更新导航高亮
+    // 同步侧边栏高亮
     document.querySelectorAll('.sidebar-nav-link, .submenu-link').forEach(link => {
         link.classList.remove('active');
         if (link.dataset.page === pageName) {
@@ -75,57 +77,66 @@ function renderPage(pageName) {
         }
     });
 
-    // 更新标题
+    // 更新标题栏
     const meta = pageMeta[pageName] || { title: pageName, breadcrumb: pageName };
-    if (title) title.textContent = meta.title;
+    if (title)      title.textContent = meta.title;
     if (breadcrumb) breadcrumb.textContent = meta.breadcrumb;
-    if (topActions) topActions.innerHTML = '';
+    if (topActions)  topActions.innerHTML = '';
 
     try {
         content.innerHTML = page.render();
         page.init();
     } catch (error) {
         console.error('渲染页面失败:', error);
-        content.innerHTML = `<div class="p-4 bg-red-50 border border-red-200 rounded-md text-red-600">加载失败: ${esc(error.message)}</div>`;
+        content.innerHTML = `<div class="p-4 bg-[#0a0a0a] border border-[#2c2c2c] text-[#d32f2f]">加载失败: ${esc(error.message)}</div>`;
     }
 }
 
-// ===== 全局事件委托 =====
+/**
+ * 路由初始化：根据当前 Hash 渲染页面
+ */
+function initRouter() {
+    const pageName = getPageFromHash();
+    renderPage(pageName);
+}
 
+// ===== 全局事件 =====
+
+// 点击导航链接 → 改为更新 Hash
 document.addEventListener('click', function(e) {
-    // 页面导航链接（事件委托，支持动态渲染的内容）
-    const link = e.target.closest('[data-page]');
-    if (link) {
-        e.preventDefault();
-        const pageName = link.getAttribute('data-page');
-        renderPage(pageName);
-        return;
-    }
+    const link = e.target.closest('a[data-page]');
+    if (!link) return;
+    e.preventDefault();
+    const pageName = link.getAttribute('data-page');
+    navigateTo(pageName);
 });
 
+// 监听 Hash 变化（前进/后退 + navigateTo）
+window.addEventListener('hashchange', function() {
+    const pageName = getPageFromHash();
+    renderPage(pageName);
+});
+
+// 子菜单折叠切换
 document.addEventListener('DOMContentLoaded', function() {
-    // 初始化侧边栏子菜单
     document.querySelectorAll('[data-submenu-toggle]').forEach(toggle => {
         toggle.addEventListener('click', function(e) {
             e.preventDefault();
             const submenuId = this.getAttribute('data-submenu-toggle');
             const submenu = document.getElementById(submenuId);
-            const parent = this.closest('.has-submenu');
-
+            const parent  = this.closest('.has-submenu');
             if (!submenu || !parent) return;
 
             const isOpen = submenu.classList.contains('show');
 
-            // 关闭所有其他子菜单
             document.querySelectorAll('.has-submenu.open').forEach(item => {
                 if (item !== parent) {
                     item.classList.remove('open');
-                    const otherSubmenu = item.querySelector('.submenu');
-                    if (otherSubmenu) otherSubmenu.classList.remove('show');
+                    const s = item.querySelector('.submenu');
+                    if (s) s.classList.remove('show');
                 }
             });
 
-            // 切换当前菜单
             if (isOpen) {
                 parent.classList.remove('open');
                 submenu.classList.remove('show');
@@ -136,6 +147,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // 初始化仪表盘
-    renderPage('dashboard');
+    // 启动路由
+    initRouter();
 });

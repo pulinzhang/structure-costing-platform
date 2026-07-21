@@ -77,7 +77,7 @@ def create_app() -> FastAPI:
 
     # ========== 静态资源挂载 ==========
     app.mount("/static", StaticFiles(directory="static"), name="static")
-    # 把上传目录挂为静态资源，使 sketch_url 能直接通过 URL 访问
+    # 简图访问路径: http://host/uploads/T28/1.0/501008901AA.png
     app.mount("/uploads", StaticFiles(directory=str(settings.UPLOAD_DIR)), name="uploads")
 
     # ========== 前端静态页面路由 ==========
@@ -87,6 +87,12 @@ def create_app() -> FastAPI:
         """单页应用入口"""
         from fastapi.responses import FileResponse
         return FileResponse("static/index.html")
+
+    # favicon
+    @app.get("/favicon.ico", include_in_schema=False)
+    async def favicon():
+        from fastapi.responses import Response
+        return Response(status_code=204)
 
     # 保留旧路由兼容性（重定向到 /app）
     @app.get("/", include_in_schema=False)

@@ -64,12 +64,11 @@ class LoggerConfig:
     @staticmethod
     def _create_console_handler() -> logging.Handler:
         """创建控制台处理器"""
-        # 写入 stderr 而不是 stdout，避免被 uvicorn 捕获后重定向
         handler = logging.StreamHandler(sys.stderr)
         handler.setLevel(logging.DEBUG)
         formatter = logging.Formatter(
-            fmt="%(asctime)s | %(levelname)-8s | %(name)s:%(funcName)s:%(lineno)d - %(message)s",
-            datefmt="%Y-%m-%d %H:%M:%S"
+            fmt="%(asctime)s | %(levelname)-8s | %(message)s",
+            datefmt="%H:%M:%S"
         )
         handler.setFormatter(formatter)
         return handler
@@ -106,7 +105,7 @@ class LoggerConfig:
         
         handler.setLevel(logging.INFO)
         formatter = logging.Formatter(
-            fmt="%(asctime)s | %(levelname)-8s | %(name)s:%(funcName)s:%(lineno)d - %(message)s",
+            fmt="%(asctime)s | %(levelname)-8s | %(message)s",
             datefmt="%Y-%m-%d %H:%M:%S"
         )
         handler.setFormatter(formatter)

@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.services import StampingPartService
-from app.schemas.stamping import StampingPartQuery
+from app.schemas.stamping import StampingPartQuery, StampingProcessUpdate
 from app.utils.response import ApiResponse
 
 
@@ -23,13 +23,14 @@ def list_parts(
     db: Session = Depends(get_db),
 ):
     """获取零件列表（包含工序）"""
-    data, total = _stamping_service.list_parts(db, query)
+    data, total, filter_options = _stamping_service.list_parts(db, query)
     return ApiResponse.list_(
         data=data,
         total=total,
         page=query.page,
         page_size=query.size,
         message=f"查询到 {total} 个零件",
+        filters=filter_options,
     )
 
 
@@ -57,4 +58,24 @@ def list_parts_legacy(
     db: Session = Depends(get_db),
 ):
     """获取零件列表（兼容旧路径）"""
-    return list_parts(query=query, db=db)
+    data, total, filter_options = _stamping_service.list_parts(db, query)
+    return ApiResponse.list_(
+        data=data,
+        total=total,
+        page=query.page,
+        page_size=query.size,
+        filters=filter_options,
+    )
+
+
+@router.patch("/processes/{process_id}")
+def update_process(
+    process_id: int,
+    body: StampingProcessUpdate,
+    db: Session = Depends(get_db),
+):
+    """更新工序（如成本系数）"""
+    result = _stamping_service.update_process(db, process_id, body.model_dump(exclude_unset=True))
+    if not result:
+        raise HTTPException(status_code=404, detail="工序不存在")
+    return ApiResponse.success(data=result, message="工序更新成功")
