@@ -2,7 +2,8 @@
  * Dashboard Page Module
  * 仪表盘页面逻辑
  */
-import { dashboardTemplate } from '../templates/dashboard.html.js';
+
+import { dashboardTemplate } from '../modules/dashboard.js';
 
 export const DashboardPage = {
     /**
@@ -42,11 +43,4 @@ export const DashboardPage = {
             console.error('加载统计数据失败:', error);
         }
     },
-
-    /**
-     * 渲染页面内容
-     */
-    render() {
-        return dashboardTemplate();
-    }
 };

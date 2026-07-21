@@ -35,7 +35,10 @@ const SVG_ICONS = {
 const svgIcon = (name, extraClass = '') => {
     if (!SVG_ICONS[name]) return '';
     if (extraClass) {
-        return SVG_ICONS[name].replace(/class="[^"]*"/, `class="${extraClass}"`);
+        // 在现有 class 后追加额外的类名
+        return SVG_ICONS[name].replace(/class="([^"]*)"/, (match, existingClass) => {
+            return `class="${existingClass} ${extraClass}"`;
+        });
     }
     return SVG_ICONS[name];
 };
@@ -389,6 +392,10 @@ window.formatFileSize = formatFileSize;
 window.showLoading = showLoading;
 window.hideLoading = hideLoading;
 window.showToast = showToast;
+window.confirmAction = confirmAction;
+window.FileUploader = FileUploader;
+window.filterTable = filterTable;
+window.svgIcon = svgIcon;
 window.confirmAction = confirmAction;
 window.FileUploader = FileUploader;
 window.filterTable = filterTable;

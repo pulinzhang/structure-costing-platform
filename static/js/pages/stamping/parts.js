@@ -229,9 +229,6 @@ export const StampingPartsPage = {
         }
         const sortedPages = Array.from(pages).sort((a, b) => a - b);
 
-        const chevronLeftIcon = `<svg class="inline-block w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>`;
-        const chevronRightIcon = `<svg class="inline-block w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>`;
-
         let html = `
             <nav class="flex items-center justify-center gap-1">
                 <button class="p-2 rounded-lg text-slate-500 hover:bg-slate-100 disabled:opacity-50 disabled:pointer-events-none transition-colors"
@@ -292,7 +289,7 @@ export const StampingPartsPage = {
             contentEl.innerHTML = `
                 <div class="p-4 bg-red-50 border border-red-200 rounded-md">
                     <div class="flex items-center gap-2 text-red-600">
-                        <span class="text-slate-400">${svgIcon('exclamation-circle')}</span>
+                        <i class="bi bi-exclamation-circle"></i>
                         <span class="text-sm font-medium">${esc(error.message) || '加载失败'}</span>
                     </div>
                 </div>
@@ -352,7 +349,7 @@ export const StampingPartsPage = {
             </div>
             <div class="border border-slate-200 rounded-md overflow-hidden">
                 <div class="px-3 py-2 bg-slate-50 border-b border-slate-200 flex items-center gap-2">
-                    <span class="text-slate-400">${svgIcon('list-ol')}</span>
+                    <i class="bi bi-list-ol text-slate-400"></i>
                     <span class="text-sm font-medium text-slate-700">工序列表</span>
                 </div>
                 <table class="w-full">
