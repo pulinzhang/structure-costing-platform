@@ -854,15 +854,141 @@ tr:focus-within .die-type-select {
     color: #ffffff;
 }
 
-/* ====== 响应式 ====== */
-@media (max-width: 992px) {
-    .sidebar {
-        width: 100%;
-        height: auto;
-        position: relative;
+/* =====================================================================
+   响应式布局 — 平板 / 手机
+   断点：
+     >= 1024px 桌面：维持现有 sidebar 固定展开 + margin-left
+                  面包屑隐藏（大屏左侧已高亮，避免冗余）
+     <  1024px 平板 / 手机：侧边栏隐藏为抽屉，汉堡按钮触发
+                  面包屑显示（弥补侧边栏收起后的导航缺失）
+     <   640px 手机：进一步压缩 padding / 字号
+   ===================================================================== */
+
+/* --- 面包屑：桌面端默认隐藏（视觉冗余） --- */
+.breadcrumb-mobile-only {
+    display: none;
+}
+
+/* --- 汉堡按钮：默认隐藏（小屏通过媒体查询显示） --- */
+.sidebar-toggle {
+    display: none;
+    width: 36px;
+    height: 36px;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-muted);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+    flex-shrink: 0;
+}
+.sidebar-toggle:hover {
+    color: var(--text-main);
+    border-color: var(--text-muted);
+    background: var(--bg-elevated);
+}
+.sidebar-toggle:focus-visible {
+    outline: none;
+    border-color: var(--brabus-red);
+    box-shadow: 0 0 0 2px var(--brabus-red-glow);
+}
+
+/* --- 抽屉遮罩：默认隐藏 --- */
+.sidebar-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(2px);
+    z-index: 40;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+}
+.sidebar-backdrop.is-visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* ============ 平板及以下 (<1024px) ============ */
+@media (max-width: 1023.98px) {
+
+    /* 显示汉堡按钮 */
+    .sidebar-toggle {
+        display: inline-flex;
     }
 
+    /* 允许遮罩显示 */
+    .sidebar-backdrop {
+        display: block;
+    }
+
+    /* 侧边栏变成抽屉 */
+    .sidebar {
+        transform: translateX(-100%);
+        transition: transform 0.25s ease;
+        z-index: 50;
+        background: var(--bg-surface);
+    }
+    .sidebar.is-open {
+        transform: translateX(0);
+        box-shadow: 4px 0 24px rgba(0, 0, 0, 0.6);
+    }
+
+    /* 主内容区取消左侧偏移 */
     .main-content {
         margin-left: 0;
+        padding: 1.25rem;
+    }
+
+    /* 压缩页头 */
+    .page-header {
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        margin-bottom: 1.25rem;
+        padding-bottom: 0.875rem;
+    }
+    .page-header h2 {
+        font-size: 0.8125rem;
+    }
+    .breadcrumb {
+        font-size: 0.6875rem;
+    }
+
+    /* 小屏：显示面包屑（弥补侧边栏收起后的导航缺失） */
+    .breadcrumb-mobile-only {
+        display: block;
+    }
+}
+
+/* ============ 手机 (<640px) ============ */
+@media (max-width: 639.98px) {
+    .main-content {
+        padding: 0.875rem;
+    }
+    .sidebar-brand h1 {
+        font-size: 0.75rem;
+    }
+    .sidebar-brand span {
+        font-size: 0.5625rem;
+    }
+    .breadcrumb {
+        font-size: 0.625rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
+    }
+    .page-header h2 {
+        font-size: 0.75rem;
+    }
+}
+
+/* ============ 大屏 (>=1280px) ============ */
+@media (min-width: 1280px) {
+    .main-content {
+        padding: 2.25rem 2.5rem;
     }
 }

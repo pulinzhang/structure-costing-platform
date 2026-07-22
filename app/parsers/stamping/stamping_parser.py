@@ -151,38 +151,19 @@ class StampingExcelParser:
                     # 图片归属
                     self._handle_image_for_row(row_idx, part_no)
 
-                # 该行属于零件范围，检查是否有工序
-                op = excel_ctx.get_value(row_idx, col_map.get("op", 12))
-                code = excel_ctx.get_value(row_idx, col_map.get("code", 13))
+                # 该行属于零件范围，检查是否有工序（只用 op 列判断）
+                op_val = excel_ctx.get_value(row_idx, col_map.get("op", 12))
 
-                if current_part_number and op and code:
-                    # 同时有工序
+                if current_part_number and op_val:
+                    # 有工序代码
                     process: Optional[Process] = self._row_parser.parse_process_row(
                         row_idx, current_part_number
                     )
                     if process:
                         self.result.processes.append(process)
                         process_count[current_part_number] += 1
-            else:
-                # 非零件号行：工序行
-                if current_part_number:
-                    op = excel_ctx.get_value(row_idx, col_map.get("op", 12))
-                    code = excel_ctx.get_value(row_idx, col_map.get("code", 13))
 
-                    if op and code:
-                        # 工序行
-                        process: Optional[Process] = self._row_parser.parse_process_row(
-                            row_idx, current_part_number
-                        )
-                        if process:
-                            self.result.processes.append(process)
-                            process_count[current_part_number] += 1
-                    elif not op and not code:
-                        # 工序代码为空：工序结束
-                        pass
-
-                    # 图片归属
-                    self._handle_image_for_row(row_idx, current_part_number)
+            # 非零件号行不做处理（页脚等区域会被跳过）
 
         # 保存最后一个零件
         if current_part_number:

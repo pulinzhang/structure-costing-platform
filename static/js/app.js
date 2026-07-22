@@ -119,6 +119,51 @@ window.addEventListener('hashchange', function() {
 
 // 子菜单折叠切换
 document.addEventListener('DOMContentLoaded', function() {
+    // --- 侧边栏抽屉（响应式：< 1024px） ---
+    const sidebar         = document.getElementById('sidebar');
+    const sidebarToggle   = document.getElementById('sidebarToggle');
+    const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+
+    const closeSidebar = () => {
+        if (!sidebar) return;
+        sidebar.classList.remove('is-open');
+        if (sidebarBackdrop) sidebarBackdrop.classList.remove('is-visible');
+        if (sidebarToggle)   sidebarToggle.setAttribute('aria-expanded', 'false');
+    };
+
+    if (sidebarToggle && sidebar) {
+        sidebarToggle.addEventListener('click', function() {
+            if (sidebar.classList.contains('is-open')) {
+                closeSidebar();
+            } else {
+                sidebar.classList.add('is-open');
+                if (sidebarBackdrop) sidebarBackdrop.classList.add('is-visible');
+                sidebarToggle.setAttribute('aria-expanded', 'true');
+            }
+        });
+    }
+
+    if (sidebarBackdrop) {
+        sidebarBackdrop.addEventListener('click', closeSidebar);
+    }
+
+    // 点击侧边栏里的导航链接 → 小屏下自动关闭抽屉
+    document.querySelectorAll('.sidebar a[data-page]').forEach(link => {
+        link.addEventListener('click', () => {
+            if (window.innerWidth < 1024) closeSidebar();
+        });
+    });
+
+    // Esc 关闭
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') closeSidebar();
+    });
+
+    // 窗口拉大到桌面：自动重置抽屉状态
+    window.addEventListener('resize', function() {
+        if (window.innerWidth >= 1024) closeSidebar();
+    });
+
     document.querySelectorAll('[data-submenu-toggle]').forEach(toggle => {
         toggle.addEventListener('click', function(e) {
             e.preventDefault();

@@ -452,7 +452,7 @@ export const PartsPage = {
             : `<tr><td colspan="6" class="px-4 py-12 text-center text-[11px] text-[#333333] tracking-[0.15em]">暂无工序数据</td></tr>`;
 
         return `
-            <div class="flex flex-col h-full" style="background: linear-gradient(175deg, #0a0a0a 0%, #090909 100%);">
+            <div class="h-full min-h-full flex flex-col" style="background: linear-gradient(175deg, #0a0a0a 0%, #090909 100%);">
                 <!-- 顶部信息区域 -->
                 <div class="flex gap-3 p-4">
                     <!-- 左侧：基本信息 -->
@@ -482,8 +482,8 @@ export const PartsPage = {
                     </div>
                 </div>
 
-                <!-- 工序列表（无图纸块，顶部直接衔接） -->
-                <div class="flex-1 mx-4 mb-4 flex flex-col min-h-0 shrink-0" style="max-height: calc(100vh - 420px);">
+                <!-- 工序列表 -->
+                <div class="mx-4 mb-4 flex flex-col shrink-0">
                     <div class="px-4 py-3 flex items-center justify-between shrink-0" style="background:#0c0c0c; border-top:1px solid #262626; border-left:1px solid #282828; border-right:1px solid #181818; border-bottom:1px solid #161616; box-shadow:2px 2px 8px rgba(0,0,0,0.4), -1px 0 0 rgba(255,255,255,0.012) inset;">
                         <div class="flex items-center gap-2">
                             <span class="text-[#353535]">${window.svgIcon('list-ol')}</span>
@@ -499,7 +499,7 @@ export const PartsPage = {
                             </button>
                         </div>
                     </div>
-                    <div class="flex-1 overflow-y-auto flex flex-col" style="background:#111111; border-left:1px solid #252525; border-right:1px solid #161616; border-bottom:1px solid #0f0f0f; box-shadow:3px 3px 12px rgba(0,0,0,0.6), -1px 0 0 rgba(255,255,255,0.01) inset; scrollbar-width:thin; scrollbar-color:#1e1e1e #090909;">
+                    <div style="background:#111111; border-left:1px solid #252525; border-right:1px solid #161616; border-bottom:1px solid #0f0f0f;">
                         <table class="w-full">
                             <thead class="shrink-0">
                                 <tr style="background:#0c0c0c; border-bottom:1px solid #1a1a1a;">
@@ -518,18 +518,18 @@ export const PartsPage = {
 
                 <!-- 保存按钮与规则栏 -->
                 ${processes.length > 0 ? `
-                <div class="mx-4 mb-4 mt-auto shrink-0">
-                    <!-- 规则铭牌 -->
-                    <div class="flex items-center justify-center gap-3 py-2.5 mb-3" style="background:#080808; border:1px solid #141414; box-shadow:0 1px 0 rgba(255,255,255,0.02) inset, 0 2px 6px rgba(0,0,0,0.5);">
-                        <span class="text-[8px] text-[#2e2e2e] tracking-[0.2em] uppercase">成本规则</span>
-                        <span class="text-[8px] text-[#1e1e1e]">•</span>
-                        <span class="text-[10px] text-[#444444]"><span class="text-[#666666] font-medium tracking-wide">级进模</span> <span class="text-[#d32f2f] font-semibold tracking-wider">80%</span></span>
-                        <span class="text-[8px] text-[#1e1e1e]">•</span>
-                        <span class="text-[10px] text-[#444444]"><span class="text-[#666666] font-medium tracking-wide">单干模具</span> <span class="text-[#d32f2f] font-semibold tracking-wider">100%</span></span>
-                        <span class="text-[8px] text-[#1e1e1e]">•</span>
-                        <span class="text-[10px] text-[#444444]"><span class="text-[#666666] font-medium tracking-wide">共模</span> <span class="text-[#d32f2f] font-semibold tracking-wider">50%</span></span>
-                        <span class="text-[8px] text-[#1e1e1e]">•</span>
-                        <span class="text-[10px] text-[#444444]"><span class="text-[#666666] font-medium tracking-wide">级进共模</span> <span class="text-[#d32f2f] font-semibold tracking-wider">40%</span></span>
+                <div class="mx-4 mb-6 mt-4">
+                    <!-- 成本规则 - 紧凑低调样式 -->
+                    <div class="flex items-center justify-center gap-4 py-2 mb-3" style="background:#0a0a0a; border:1px solid #1a1a1a; border-radius:2px;">
+                        <span class="text-[7px] text-[#2a2a2a] tracking-[0.15em] uppercase">成本规则</span>
+                        <span class="text-[7px] text-[#1e1e1e]">·</span>
+                        <span class="text-[9px] text-[#3a3a3a]"><span class="text-[#555555]">级进模</span> <span class="text-[#8a3030] font-medium">80%</span></span>
+                        <span class="text-[7px] text-[#1e1e1e]">·</span>
+                        <span class="text-[9px] text-[#3a3a3a]"><span class="text-[#555555]">单干模具</span> <span class="text-[#8a3030] font-medium">100%</span></span>
+                        <span class="text-[7px] text-[#1e1e1e]">·</span>
+                        <span class="text-[9px] text-[#3a3a3a]"><span class="text-[#555555]">共模</span> <span class="text-[#8a3030] font-medium">50%</span></span>
+                        <span class="text-[7px] text-[#1e1e1e]">·</span>
+                        <span class="text-[9px] text-[#3a3a3a]"><span class="text-[#555555]">级进共模</span> <span class="text-[#8a3030] font-medium">40%</span></span>
                     </div>
                     <!-- 保存按钮 -->
                     <div class="flex justify-center">

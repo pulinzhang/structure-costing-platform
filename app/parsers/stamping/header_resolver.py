@@ -4,7 +4,7 @@
 负责：
 - 识别数据 Sheet
 - 定位表头行
-- 构建 Header Context（一级/二级标题合并）
+- 构建 Header Context（一级/二级标题合并，支持隐式横向跨列填充）
 - 建立列映射
 """
 
@@ -20,8 +20,8 @@ from app.parsers.stamping.models.header import HeaderContext
 logger = get_logger("parser.stamping.header")
 
 
-# Header 路径匹配模式
-# 格式: "一级/二级" 或 "字段名"
+# Header 路径匹配模式（精确匹配）
+# 键名与数据库字段一一对应，值列表按优先级排序
 COLUMN_PATTERNS: Dict[str, List[Tuple[str, int]]] = {
     "seq": [
         ("序号", 1000), ("No.", 900), ("S/N", 850),
@@ -43,10 +43,10 @@ COLUMN_PATTERNS: Dict[str, List[Tuple[str, int]]] = {
         ("单重", 1000), ("零件重量", 950), ("重量", 900),
     ],
     "length": [
-        ("料片长", 1000), ("长/", 1050), ("长", 700),
+        ("料片长", 1000), ("长/宽下料", 1050), ("长", 700),
     ],
     "width": [
-        ("料片宽", 1000), ("宽/", 1050), ("宽", 700),
+        ("料片宽", 1000), ("宽/下料冲孔", 1050), ("宽", 700),
     ],
     "count": [
         ("可制件数", 1000), ("件数", 950),
@@ -54,30 +54,32 @@ COLUMN_PATTERNS: Dict[str, List[Tuple[str, int]]] = {
     "sheet_type": [
         ("料片式样", 1000), ("式样", 800),
     ],
-    # 工序号（强约束字段）
+    # 工艺		
+    # 工序名称	工序	套数
+
+    # 工序号 - 精确匹配 Excel 表头文本
     "op": [
-        ("工艺/工序号", 2000), ("工艺/工序", 1900), ("工序号", 1800),
-        ("工序", 1000), ("OP", 900), ("Process", 800),
+        ("工序名称", 1000), ("OP", 900), ("Process", 800),
     ],
-    # 工艺代码（强约束字段）
+    # 工艺代码 - 精确匹配 Excel 表头文本
     "code": [
-        ("工艺/代号", 2000), ("工艺/工艺代码", 1950), ("工艺/工艺名称", 1900),
-        ("工艺/工艺内容", 1850), ("代号", 1000), ("工艺代码", 1000),
+        ("工序", 1000), ("代号", 900),
     ],
+    
     "die_set": [
-        ("设备/套数", 2000), ("设备/模具套数", 1950), ("套数", 1000),
+        ("套数", 1000),
     ],
     "tonnage": [
-        ("设备/吨位", 2000), ("设备/设备吨位", 1950), ("吨位", 1000),
+        ("吨位", 1000), ("使用冲压设备吨位", 900),
     ],
     "die_type": [
-        ("模具/类型", 2000), ("模具/模具类型", 1950), ("模具类型", 1000),
+        ("模具类型", 1000),
     ],
     "method": [
-        ("模具/成形", 2000), ("模具/成形方法", 1950), ("成形", 1000),
+        ("成形方法", 1000), ("成形", 900), ("工艺方法", 800),
     ],
     "auto": [
-        ("模具/自动化", 2000), ("自动化", 1000),
+        ("自动化", 1000),
     ],
     "remark": [
         ("备注", 1000), ("备注栏", 950),
@@ -89,15 +91,11 @@ class HeaderResolver:
     """表头解析器"""
 
     def __init__(self, get_value_fn):
-        """
-        Args:
-            get_value_fn: 单元格值获取函数 (row, col) -> Any
-        """
         self._get_value = get_value_fn
         self.header_row: int = 0
         self.data_start_row: int = 0
-        self.header_paths: Dict[str, str] = {}  # col(str) -> "一级/二级"
-        self.col_map: Dict[str, int] = {}  # 字段名 -> 列号
+        self.header_paths: Dict[str, str] = {} 
+        self.col_map: Dict[str, int] = {} 
 
     def find_stamping_sheet(self, workbook) -> Optional[openpyxl.worksheet.worksheet.Worksheet]:
         """识别冲压数据Sheet"""
@@ -127,101 +125,118 @@ class HeaderResolver:
 
     def build_header_context(self, sheet, header_row: int) -> None:
         """
-        构建 Header Context：将一级标题与二级标题合并成完整路径
-
-        例如：
-        Row 4 (一级): 工艺 | 使用冲压设备吨位 | 模具
-        Row 5 (二级): 工序号 | 代号 | 套数 | 吨位 | 类型 | 成形方法 | 自动化
-
-        结果：
-        Col 12 -> "工艺/工序号"
-        Col 13 -> "工艺/代号"
-        Col 15 -> "设备/吨位"
-        Col 16 -> "模具/类型"
+        构建 Header Context：支持合并单元格、隐式向右扩散填充及换行符清洗
         """
         header_paths: Dict[int, str] = {}
+        max_col = min(35, sheet.max_column + 1)
 
-        # 第一步：识别一级标题（合并单元格）
-        primary_headers: Dict[int, str] = {}  # col -> 一级标题
+        def clean_val(val: Any) -> str:
+            if not val:
+                return ""
+            # 清洗换行符、回车以及前后空白，避免匹配失效
+            return str(val).replace("\n", "").replace("\r", "").strip()
 
+        # 第一步：识别一级标题
+        primary_headers: Dict[int, str] = {}
+
+        # 1. 扫描标准合并单元格
         for merged_range in sheet.merged_cells.ranges:
-            if merged_range.min_row == header_row:
-                # 这是一级标题行
+            if merged_range.min_row <= header_row <= merged_range.max_row:
                 min_c = merged_range.min_col
                 max_c = merged_range.max_col
-                value = self._get_value(header_row, min_c)
+                value = clean_val(self._get_value(header_row, min_c))
                 if value:
-                    # 这个合并区域下的所有列都归属于这个一级标题
                     for c in range(min_c, max_c + 1):
-                        primary_headers[c] = str(value).strip()
+                        primary_headers[c] = value
 
-        # 也检查非合并的一级标题
-        for col in range(1, min(30, sheet.max_column + 1)):
+        # 2. 扫描普通单格一级标题
+        for col in range(1, max_col):
             if col not in primary_headers:
-                value = self._get_value(header_row, col)
+                value = clean_val(self._get_value(header_row, col))
                 if value:
-                    primary_headers[col] = str(value).strip()
+                    primary_headers[col] = value
 
-        logger.info(f"一级标题: {primary_headers}")
+        # 3. 【核心增强】向前/向右扩散填充（Forward Fill）
+        # 解决类似截图右侧“工艺”大类下有多列子项但未显式做合并单元格的问题
+        last_primary = ""
+        for col in range(1, max_col):
+            if col in primary_headers and primary_headers[col]:
+                last_primary = primary_headers[col]
+            elif last_primary and not primary_headers.get(col):
+                # 只有当该列下方存在二级标题时，才自动继承左侧的一级大标题
+                sub_val = clean_val(self._get_value(header_row + 1, col))
+                if sub_val:
+                    primary_headers[col] = last_primary
 
-        # 第二步：扫描二级标题
+        logger.info(f"处理后的一级标题: {primary_headers}")
+
+        # 第二步：扫描二级标题（位于表头行的下一行）
         sub_row = header_row + 1
-        secondary_headers: Dict[int, str] = {}  # col -> 二级标题
+        secondary_headers: Dict[int, str] = {}
 
-        for col in range(1, min(30, sheet.max_column + 1)):
-            value = self._get_value(sub_row, col)
+        for col in range(1, max_col):
+            value = clean_val(self._get_value(sub_row, col))
             if value:
-                secondary_headers[col] = str(value).strip()
+                secondary_headers[col] = value
 
-        logger.info(f"二级标题: {secondary_headers}")
+        logger.info(f"扫描到的二级标题: {secondary_headers}")
 
         # 第三步：合并成完整路径
-        for col in range(1, min(30, sheet.max_column + 1)):
+        for col in range(1, max_col):
             if col in secondary_headers:
-                primary = primary_headers.get(col, "通用")
+                primary = primary_headers.get(col, "")
                 secondary = secondary_headers[col]
-                path = f"{primary}/{secondary}"
+                # 如果一级和二级标题文本一样（如单行表头），则直接用二级名称
+                if primary and primary != secondary:
+                    path = f"{primary}/{secondary}"
+                else:
+                    path = secondary
                 header_paths[col] = path
             elif col in primary_headers:
-                # 一级标题没有对应的二级标题
                 header_paths[col] = primary_headers[col]
 
         self.header_paths = {str(k): v for k, v in header_paths.items()}
-        logger.info(f"Header路径: {self.header_paths}")
+        logger.info(f"最终 Header 路径映射: {self.header_paths}")
 
     def build_col_map(self) -> Dict[str, int]:
         """
         根据 Header 路径建立列映射
+
+        匹配规则：
+        1. header_paths 存储的是 "一级/二级" 路径
+        2. 精确匹配路径末尾文本（如 "工序"、"工序名称"、"吨位"）
+        3. 优先使用高优先级（score 高）的匹配
         """
         col_map: Dict[str, int] = {}
         used_cols: set = set()
+        all_matches: List[Tuple[int, str, int, str]] = []
 
         for col_str, path in self.header_paths.items():
             col = int(col_str)
             for col_name, patterns in COLUMN_PATTERNS.items():
-                if col_name in col_map:
-                    continue
-                if col in used_cols:
-                    continue
                 for pattern, score in patterns:
-                    if pattern in path or re.search(pattern, path, re.IGNORECASE):
-                        col_map[col_name] = col
-                        used_cols.add(col)
+                    # 精确匹配路径末尾文本
+                    # path 格式可能是 "工序/工序名称" 或 "吨位"
+                    if path.endswith(pattern):
+                        all_matches.append((score, col_name, col, pattern))
                         break
 
+        # 按 score 从高到低排序
+        all_matches.sort(key=lambda x: -x[0])
+
+        # 依次选择：只选未被使用的列
+        for score, col_name, col, pattern in all_matches:
+            if col_name not in col_map and col not in used_cols:
+                col_map[col_name] = col
+                used_cols.add(col)
+
         self.col_map = col_map
+        logger.info(f"生成的字段列映射 (col_map): {self.col_map}")
         return col_map
 
     def resolve(self, sheet) -> HeaderContext:
         """
         执行完整的表头解析流程。
-
-        Returns:
-            HeaderContext 对象，包含：
-            - header_row: 表头行号
-            - data_start_row: 数据起始行号
-            - col_map: 列映射 {字段名: 列号}
-            - header_paths: Header 路径 {列号: 完整路径}
         """
         self.header_row = self.find_header_row(sheet)
         self.data_start_row = self.header_row + 2

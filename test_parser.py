@@ -20,3 +20,20 @@ print(f'不重复零件数: {len(unique_parts)}')
 print('\n前10个零件:')
 for i, p in enumerate(parts[:10]):
     print(f"  {i+1}. {p.part_number} - {p.part_name}")
+
+# 检查目标零件的工序数量
+print('\n\n=== 检查目标零件的工序数量 ===')
+target_parts = ['502005555AA', '501008902AA']
+
+# 按零件号统计工序
+process_by_part = {}
+for proc in processes:
+    if proc.part_number not in process_by_part:
+        process_by_part[proc.part_number] = []
+    process_by_part[proc.part_number].append(proc)
+
+for part_no in target_parts:
+    procs = process_by_part.get(part_no, [])
+    print(f'\n零件 {part_no}: {len(procs)} 个工序')
+    for proc in procs:
+        print(f'  - OP{proc.process_seq}: {proc.process_code}')

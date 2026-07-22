@@ -8,8 +8,8 @@
 
 判断规则（由主循环基于零件号范围驱动）：
 - 零件行：行号在零件号范围起始行
-- 工序行：工序号列(op)有值
-- 工序结束：工序代码列(code)为空
+- 工序行：op 列（工序号）有值
+- 工序结束：op 列（工序号）为空
 """
 
 from typing import Any, Callable, Dict, Optional
@@ -62,6 +62,10 @@ class RowParser:
         """
         解析工序行。
 
+        判断规则：
+        - op 列（工序号）有值 → 工序行，返回 Process
+        - op 列（工序号）为空 → 工序结束，返回 None
+
         Args:
             row_idx: 行号
             part_number: 所属零件号
@@ -70,16 +74,15 @@ class RowParser:
             Process 对象，或 None（如果工序号为空）
         """
         col_map = self._col_map
-        op = self._get_value(row_idx, col_map.get("op", 12))
-        code = self._get_value(row_idx, col_map.get("code", 13))
+        process_seq = self._get_value(row_idx, col_map.get("op", 12))
 
-        if not op:
+        if not process_seq:
             return None
 
         return Process(
             part_number=part_number,
-            process_seq=str(op).strip(),
-            process_code=code,
+            process_seq=process_seq,
+            process_code=self._get_value(row_idx, col_map.get("code", 13)),
             die_sets=parse_int(self._get_value(row_idx, col_map.get("die_set", 14))),
             tonnage=parse_int(self._get_value(row_idx, col_map.get("tonnage", 15))),
             remark=self._get_value(row_idx, col_map.get("remark", 19)),

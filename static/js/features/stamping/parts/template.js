@@ -119,7 +119,7 @@ export function partsTemplate() {
              id="partDrawerBackdrop" style="display:none"></div>
 
         <div class="fixed inset-y-0 right-0 z-50 w-[640px] bg-[#1a1a1a] border-l border-[#2a2a2a] transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col"
-             id="partDrawer" style="display:none; box-shadow: -20px 0 60px rgba(0,0,0,0.95), -8px 0 30px rgba(0,0,0,0.8), 0 0 1px rgba(255,255,255,0.05);">
+             id="partDrawer" style="display:none; max-height: 100vh; box-shadow: -20px 0 60px rgba(0,0,0,0.95), -8px 0 30px rgba(0,0,0,0.8), 0 0 1px rgba(255,255,255,0.05);">
             <!-- 拖拽条 -->
             <div class="absolute left-0 top-0 bottom-0 w-1.5 cursor-ew-resize hover:bg-[#d32f2f]/50 transition-colors z-10"></div>
 
@@ -139,7 +139,7 @@ export function partsTemplate() {
             </div>
 
             <!-- 可滚动内容区 -->
-            <div class="flex-1 overflow-y-auto overscroll-contain" id="partDrawerContent" style="scrollbar-width: thin; scrollbar-color: #3a3a3a #1a1a1a;">
+            <div class="flex-1 min-h-0 overflow-y-auto overscroll-contain" id="partDrawerContent" style="scrollbar-width: thin; scrollbar-color: #3a3a3a #1a1a1a;">
                 <div class="flex items-center justify-center py-16">
                     <div class="w-7 h-7 border-2 border-[#2a2a2a] border-t-[#d32f2f] rounded-full animate-spin"></div>
                 </div>

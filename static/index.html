@@ -5,9 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="汽车冲压件自动核价平台">
     <title>汽车冲压件自动核价平台</title>
-
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚙️</text></svg>">
-
+    <link rel="icon" type="image/x-icon" href="/static/assets/favicon.ico">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -20,8 +18,11 @@
         <div class="spinner"></div>
     </div>
 
+    <!-- 侧边栏遮罩（仅小屏使用） -->
+    <div id="sidebarBackdrop" class="sidebar-backdrop" aria-hidden="true"></div>
+
     <!-- 侧边栏 — 钛灰面板 + Brabus 红激活指示条 -->
-    <aside class="sidebar">
+    <aside id="sidebar" class="sidebar" tabindex="-1">
         <div class="sidebar-brand">
             <h1 id="appName">汽车冲压件自动核价平台</h1>
             <span>Stamping Costing Platform</span>
@@ -89,15 +90,26 @@
     <main class="main-content">
         <!-- 极简页头：取消大黑框，干净悬浮 -->
         <header class="page-header">
-            <div>
-                <h2 id="pageTitle">仪表盘</h2>
-                <nav aria-label="breadcrumb" class="breadcrumb">
-                    <ol class="flex items-center gap-1">
-                        <li><a href="#/dashboard" class="breadcrumb-item" data-page="dashboard">首页</a></li>
-                        <li class="text-[var(--text-dim)]">/</li>
-                        <li class="breadcrumb-item active" aria-current="page" id="breadcrumbItem">仪表盘</li>
-                    </ol>
-                </nav>
+            <div class="flex items-center gap-3 min-w-0">
+                <button id="sidebarToggle" type="button"
+                        class="sidebar-toggle"
+                        aria-label="打开菜单" aria-controls="sidebar" aria-expanded="false">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                </button>
+                <div class="min-w-0">
+                    <h2 id="pageTitle">仪表盘</h2>
+                    <!-- 面包屑仅小屏显示：桌面端左侧侧边栏已高亮，避免视觉冗余 -->
+                    <nav aria-label="breadcrumb" class="breadcrumb breadcrumb-mobile-only">
+                        <ol class="flex items-center gap-1">
+                            <li><a href="#/dashboard" class="breadcrumb-item" data-page="dashboard">首页</a></li>
+                            <li class="text-[var(--text-dim)]">/</li>
+                            <li class="breadcrumb-item active" aria-current="page" id="breadcrumbItem">仪表盘</li>
+                        </ol>
+                    </nav>
+                </div>
             </div>
             <div class="flex items-center gap-3" id="topActions"></div>
         </header>
