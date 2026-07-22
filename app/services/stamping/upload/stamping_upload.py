@@ -1,14 +1,17 @@
 """
 冲压工艺上传服务
+
 处理 Excel 解析、文件保存、简图保存、数据库存储等业务逻辑
 """
 
 import logging
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Dict, List
 from sqlalchemy.orm import Session
 
 from app.parsers.stamping.stamping_parser import parse_stamping_excel
+from app.parsers.stamping.models.part import Part
+from app.parsers.stamping.models.process import Process
 from app.config import settings
 from app.repositories.stamping.stamping_repository import StampingPartRepository, StampingProcessRepository
 
@@ -30,7 +33,7 @@ class StampingUploadService:
         filename: str,
         vehicle_model: str,
         version: str,
-    ) -> Dict[str, Any]:
+    ) -> Dict:
         """
         处理冲压工艺文件上传（完整业务流程）
 
@@ -92,7 +95,7 @@ class StampingUploadService:
         filename: str,
         vehicle_model: str,
         version: str,
-    ) -> Dict[str, Any]:
+    ) -> Dict:
         """保存上传文件到磁盘，返回文件信息"""
         import datetime
 
@@ -151,7 +154,7 @@ class StampingUploadService:
 
     def _save_parts(
         self,
-        parts_data: List[Dict[str, Any]],
+        parts: List[Part],
         vehicle_model: str,
         version: str,
         safe_vehicle: str,
@@ -165,8 +168,8 @@ class StampingUploadService:
 
         # 批量创建零件
         parts_to_create = []
-        for part_data in parts_data:
-            part_number = part_data.get("part_number")
+        for part in parts:
+            part_number = part.part_number
             if not part_number:
                 continue
 
@@ -179,21 +182,21 @@ class StampingUploadService:
             parts_to_create.append({
                 "vehicle_model": vehicle_model,
                 "version": version,
-                "seq_no": part_data.get("seq_no"),
+                "seq_no": part.seq_no,
                 "part_number": part_number,
-                "part_name": part_data.get("part_name"),
-                "material": part_data.get("material"),
-                "thickness": part_data.get("thickness"),
-                "part_weight": part_data.get("part_weight"),
-                "sheet_length": part_data.get("sheet_length"),
-                "sheet_width": part_data.get("sheet_width"),
-                "parts_per_sheet": part_data.get("parts_per_sheet"),
-                "sheet_type": part_data.get("sheet_type"),
-                "tonnage": part_data.get("tonnage"),
-                "die_type": part_data.get("die_type"),
-                "process_method": part_data.get("process_method"),
-                "automation": part_data.get("automation"),
-                "remark": part_data.get("remark"),
+                "part_name": part.part_name,
+                "material": part.material,
+                "thickness": part.thickness,
+                "part_weight": part.part_weight,
+                "sheet_length": part.sheet_length,
+                "sheet_width": part.sheet_width,
+                "parts_per_sheet": part.parts_per_sheet,
+                "sheet_type": part.sheet_type,
+                "tonnage": part.tonnage,
+                "die_type": part.die_type,
+                "process_method": part.process_method,
+                "automation": part.automation,
+                "remark": part.remark,
                 "sketch_url": sketch_url,
             })
 
@@ -208,15 +211,15 @@ class StampingUploadService:
 
     def _save_processes(
         self,
-        processes_data: List[Dict[str, Any]],
+        processes: List[Process],
         part_map: Dict[str, int],
     ) -> int:
         """保存工序数据到数据库"""
         processes_to_create = []
         part_order_counter: Dict[str, int] = {}
 
-        for proc_data in processes_data:
-            part_number = proc_data.get("part_number")
+        for process in processes:
+            part_number = process.part_number
             part_id = part_map.get(part_number)
             if not part_id:
                 continue
@@ -226,12 +229,12 @@ class StampingUploadService:
 
             processes_to_create.append({
                 "part_id": part_id,
-                "process_seq": proc_data.get("process_seq"),
+                "process_seq": process.process_seq,
                 "process_order": order,
-                "process_code": proc_data.get("process_code"),
-                "die_sets": proc_data.get("die_sets"),
-                "tonnage": proc_data.get("tonnage"),
-                "remark": proc_data.get("remark"),
+                "process_code": process.process_code,
+                "die_sets": process.die_sets,
+                "tonnage": process.tonnage,
+                "remark": process.remark,
             })
 
         if processes_to_create:

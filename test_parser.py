@@ -11,12 +11,12 @@ print(f'\n最终结果:')
 print(f'零件数: {len(parts)}')
 print(f'工序数: {len(processes)}')
 
-# 检查零件是否重复
-part_nums = [p['part_number'] for p in parts]
+# 检查零件是否重复（现在用对象属性）
+part_nums = [p.part_number for p in parts]
 unique_parts = set(part_nums)
 print(f'不重复零件数: {len(unique_parts)}')
 
 # 显示前10个零件
 print('\n前10个零件:')
 for i, p in enumerate(parts[:10]):
-    print(f"  {i+1}. {p['part_number']}")
+    print(f"  {i+1}. {p.part_number} - {p.part_name}")
