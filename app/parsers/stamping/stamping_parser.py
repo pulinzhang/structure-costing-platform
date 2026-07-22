@@ -213,6 +213,11 @@ class StampingExcelParser:
                     # 如果有工序信息（即使是 OP10-OP40 范围格式），也算有工序
                     if op:
                         process_count[current_part["part_number"]] = 1
+                        # 零件行同时也是工序行（只有一道工序时）：补充添加到 processes 列表
+                        if self._is_process_row(op):
+                            process = self._parse_process(sheet, row_idx, current_part["part_number"])
+                            if process:
+                                self.result.processes.append(process)
                     elif self._is_process_row(op):
                         process = self._parse_process(sheet, row_idx, current_part["part_number"])
                         if process:
