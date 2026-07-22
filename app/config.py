@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     ENV: str = "development"
 
     # 服务器配置
-    HOST: str = "127.0.0.1"
+    HOST: str = "0.0.0.0"
     PORT: int = 8000
 
     # 数据库配置
