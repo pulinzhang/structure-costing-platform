@@ -4,7 +4,7 @@
  */
 
 import { partsTemplate } from './template.js';
-// esc / fmtNum 已通过 window 导出；window.svgIcon 通过 window.window.svgIcon 访问
+// esc / fmtNum / svgIcon / showToast / HttpClient 由 main.js 挂到 window
 
 const PARTS_CONFIG = {
     DEFAULT_PAGE_SIZE: 10,
@@ -393,11 +393,10 @@ export const PartsPage = {
             ['板材尺寸', (part.sheet_length && part.sheet_width) ? `${part.sheet_length}x${part.sheet_width}` : '-'],
             ['每辆车用量', esc(part.parts_per_sheet)],
             ['板材类型', esc(part.sheet_type)],
-            ['吨位', part.tonnage ? `${part.tonnage}T` : '-'],
             ['模具类型', esc(part.die_type)],
         ];
         // 核心成本字段 → Brabus 红高亮
-        const coreCostFields = new Set(['重量', '吨位', '模具类型']);
+        const coreCostFields = new Set(['材料', '重量', '模具类型']);
         const tableRow = ([label, value], valueClass = '') => {
             const isCore = coreCostFields.has(label);
             const tdClass = isCore

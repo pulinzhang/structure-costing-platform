@@ -1,16 +1,13 @@
 /**
  * 汽车冲压件自动核价平台
- * 主 JavaScript 文件
- * 前后端分离架构：纯 JavaScript，无 HTMX
+ * 主 JavaScript 文件 — 全局工具层
+ *
+ * 前后端分离架构：纯 JavaScript SPA + Tailwind，无 HTMX。
+ * 在 index.html 通过 <script type="module" src="js/main.js"> 直接加载
+ * （传统 <script> 而非 ES Module，确保 window.* 在 DOMContentLoaded 之前就绪）。
  */
 
-// ===== 全局配置 =====
-const AppConfig = {
-    debug: true,
-};
-
-// ===== SVG 图标辅助函数（替代 Bootstrap Icons） =====
-// 图标 SVG 定义
+// ===== SVG 图标（替代 Bootstrap Icons） =====
 const SVG_ICONS = {
     'file-earmark-excel': `<svg class="inline-block w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>`,
     'trash': `<svg class="inline-block w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>`,
@@ -32,23 +29,23 @@ const SVG_ICONS = {
     'search': `<svg class="inline-block w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>`,
     'file-earmark': `<svg class="inline-block w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>`,
     'arrows-fullscreen': `<svg class="inline-block w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>`,
+    'ruler': `<svg class="inline-block w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12h20"/><path d="M4 12v3"/><path d="M8 12v2"/><path d="M12 12v4"/><path d="M16 12v2"/><path d="M20 12v3"/></svg>`,
 };
 
-// 获取 SVG 图标
 const svgIcon = (name, extraClass = '') => {
     if (!SVG_ICONS[name]) return '';
-    if (extraClass) {
-        // 在现有 class 后追加额外的类名
-        return SVG_ICONS[name].replace(/class="([^"]*)"/, (match, existingClass) => {
-            return `class="${existingClass} ${extraClass}"`;
-        });
-    }
-    return SVG_ICONS[name];
+    if (!extraClass) return SVG_ICONS[name];
+    return SVG_ICONS[name].replace(/class="([^"]*)"/, (match, existingClass) => {
+        return `class="${existingClass} ${extraClass}"`;
+    });
 };
 
 // ===== 工具函数 =====
 
-/** HTML 转义（防止 XSS）- 全局可用 */
+/**
+ * HTML 转义（防止 XSS）
+ * null / undefined 渲染为 '-'，与表格空值展示对齐。
+ */
 const esc = (value) => {
     if (value == null) return '-';
     return String(value).replace(/[&<>"']/g, (ch) => ({
@@ -56,7 +53,7 @@ const esc = (value) => {
     }[ch]));
 };
 
-/** 数字格式化 - 全局可用 */
+/** 数字格式化 — 默认 2 位小数 */
 const fmtNum = (value, digits = 2) => {
     if (value == null || Number.isNaN(value)) return '-';
     return Number(value).toFixed(digits);
@@ -64,116 +61,76 @@ const fmtNum = (value, digits = 2) => {
 
 /** 文件大小格式化 */
 const formatFileSize = (bytes) => {
-    if (bytes === 0) return '0 Bytes';
+    if (!bytes) return '0 Bytes';
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };
 
-// ===== 加载状态管理 =====
-let loadingCount = 0;
+// ===== Toast 通知 =====
+//
+// 仅支持三种状态：success / error / warning。
+// 使用 Tailwind 任意值类构造 DOM，0 行 inline style（仅过渡属性由 JS 设置）。
 
-function showLoading() {
-    loadingCount++;
-    let overlay = document.querySelector('.loading-overlay');
-    if (!overlay) {
-        overlay = document.createElement('div');
-        overlay.className = 'loading-overlay';
-        overlay.innerHTML = '<div class="spinner"></div>';
-        document.body.appendChild(overlay);
-    }
-    overlay.classList.add('visible');
-}
+const TOAST_STYLE = {
+    success: { border: 'border-[#2e7d32]', icon: 'text-[#2e7d32]', path: 'M5 13l4 4L19 7' },
+    error:   { border: 'border-[#c62828]', icon: 'text-[#c62828]', path: 'M6 18L18 6M6 6l12 12' },
+    warning: { border: 'border-[#f57f17]', icon: 'text-[#f57f17]', path: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z' },
+};
 
-function hideLoading() {
-    loadingCount = Math.max(0, loadingCount - 1);
-    if (loadingCount === 0) {
-        const overlay = document.querySelector('.loading-overlay');
-        if (overlay) {
-            overlay.classList.remove('visible');
-        }
-    }
-}
-
-// ===== Toast 通知（Tailwind 风格） =====
-function showToast(message, type = 'info') {
-    const toastContainer = getOrCreateToastContainer();
-
-    // Tailwind 色彩映射 — Brabus Carbon Dark
-    const colorMap = {
-        success: '#1e1e1e',
-        danger:  '#1e1e1e',
-        warning: '#1e1e1e',
-        info:    '#1e1e1e',
-        error:   '#1e1e1e',
-    };
-    const accentMap = {
-        success: '#2e7d32',
-        danger:  '#d32f2f',
-        warning: '#f57f17',
-        info:    '#616161',
-        error:   '#d32f2f',
-    };
-    const bgClass = colorMap[type] || '#1e1e1e';
-    const accent = accentMap[type] || '#616161';
-
+function showToast(message, type = 'success') {
+    // 'danger' 作为 'error' 的历史别名（早期代码混用，统一收口）
+    if (type === 'danger') type = 'error';
+    const style = TOAST_STYLE[type] || TOAST_STYLE.success;
     const toast = document.createElement('div');
-    toast.style.cssText = `display:flex;align-items:center;justify-content:space-between;gap:0.75rem;background:${bgClass};border:1px solid #2c2c2c;border-left:3px solid ${accent};color:#ffffff;padding:0.75rem 1rem;border-radius:0.25rem;min-width:260px;max-width:400px;box-shadow:0 8px 32px rgba(0,0,0,0.5);font-size:0.8125rem;font-weight:500;`;
     toast.setAttribute('role', 'alert');
-    toast.innerHTML = `
-        <span>${escapeHtml(message)}</span>
-        <button type="button" style="color:#9e9e9e;background:none;border:none;cursor:pointer;padding:0;line-height:1;opacity:0.7;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'" onclick="this.closest('[role=alert]').remove()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
-        </button>
-    `;
+    toast.className = `flex items-center justify-between gap-3 bg-[#1e1e1e] border ${style.border} border-l-[3px] px-4 py-3 rounded min-w-[260px] max-w-[400px] shadow-[0_8px_32px_rgba(0,0,0,0.5)] text-[13px] text-[#ffffff] font-medium`;
 
-    toastContainer.appendChild(toast);
+    const text = document.createElement('span');
+    text.textContent = message;
+    toast.appendChild(text);
 
-    // 自动移除
-    setTimeout(() => {
+    const closeBtn = document.createElement('button');
+    closeBtn.type = 'button';
+    closeBtn.className = 'text-[#9e9e9e] opacity-70 hover:opacity-100 transition-opacity';
+    closeBtn.setAttribute('aria-label', '关闭');
+    closeBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>`;
+    closeBtn.addEventListener('click', () => toast.remove());
+    toast.appendChild(closeBtn);
+
+    const container = getOrCreateToastContainer();
+    container.appendChild(toast);
+
+    // 4 秒淡出移除
+    const dismissTimer = setTimeout(() => {
+        toast.style.transition = 'opacity 0.3s, transform 0.3s';
         toast.style.opacity = '0';
-        toast.style.transition = 'opacity 0.3s';
+        toast.style.transform = 'translateX(8px)';
         setTimeout(() => toast.remove(), 300);
     }, 4000);
+    toast.addEventListener('click', () => {
+        clearTimeout(dismissTimer);
+        toast.remove();
+    });
 }
 
 function getOrCreateToastContainer() {
     let container = document.querySelector('.toast-container');
     if (!container) {
         container = document.createElement('div');
-        container.className = 'toast-container fixed top-4 right-4 flex flex-col gap-2';
+        container.className = 'fixed top-4 right-4 flex flex-col gap-2 z-[9999]';
         document.body.appendChild(container);
     }
     return container;
 }
 
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
-// 确认对话框
-function confirmAction(message, callback) {
-    if (confirm(message)) {
-        callback();
-    }
-}
-
 // ===== HttpClient =====
+//
+// 统一封装 fetch：自动 query 序列化、JSON 头、超时、成功失败 toast、自动解包 { success, data, message }。
+
 const HttpClient = (() => {
     const DEFAULT_TIMEOUT = 30000;
-
-    let pendingRequests = 0;
-
-    function trackStart() {
-        pendingRequests++;
-    }
-
-    function trackEnd() {
-        pendingRequests = Math.max(0, pendingRequests - 1);
-    }
 
     function buildUrl(url, params) {
         if (!params) return url;
@@ -219,7 +176,6 @@ const HttpClient = (() => {
             }
         }
 
-        trackStart();
         try {
             const response = await fetch(fullUrl, init);
             clearTimeout(timer);
@@ -230,7 +186,7 @@ const HttpClient = (() => {
                     return { ok: true, status: response.status, data: data.data, message: data.message };
                 }
                 const msg = data.message || data.detail || '请求失败';
-                showToast(msg, 'danger');
+                showToast(msg, 'error');
                 const err = new Error(msg);
                 err.status = response.status;
                 throw err;
@@ -238,7 +194,7 @@ const HttpClient = (() => {
 
             if (!response.ok) {
                 const msg = (data && (data.message || data.detail)) || `请求失败 (${response.status})`;
-                showToast(msg, 'danger');
+                showToast(msg, 'error');
                 const err = new Error(msg);
                 err.status = response.status;
                 throw err;
@@ -247,14 +203,12 @@ const HttpClient = (() => {
             return { ok: true, status: response.status, data };
         } catch (error) {
             clearTimeout(timer);
-            let message = error.message || '网络请求失败';
-            if (error.name === 'AbortError') message = '请求超时，请重试';
-            if (message !== error.message) {
-                showToast(message, 'danger');
+            if (error.name === 'AbortError') {
+                showToast('请求超时，请重试', 'error');
+            } else if (!error.status) {
+                showToast(error.message || '网络请求失败', 'error');
             }
             throw error;
-        } finally {
-            trackEnd();
         }
     }
 
@@ -267,143 +221,14 @@ const HttpClient = (() => {
     };
 })();
 
-// ===== FileUploader（Tailwind 风格预览） =====
-class FileUploader {
-    constructor(options = {}) {
-        this.dropZone = options.dropZone;
-        this.inputElement = options.inputElement;
-        this.previewElement = options.previewElement;
-        this.maxSize = options.maxSize || 50 * 1024 * 1024;
-        this.allowedTypes = options.allowedTypes || ['.xlsx', '.xls', '.csv'];
+// ===== 导出全局 =====
+//
+// 注意：main.js 必须以传统 <script> 而非 type="module" 加载，
+// 这样 window.* 在 app.js / 各 page 模块运行之前已就绪。
 
-        this.init();
-    }
-
-    init() {
-        if (this.dropZone) {
-            this.setupDragAndDrop();
-        }
-        if (this.inputElement) {
-            this.inputElement.addEventListener('change', (e) => this.handleFileSelect(e));
-        }
-    }
-
-    setupDragAndDrop() {
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            this.dropZone.addEventListener(eventName, (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-            });
-        });
-
-        ['dragenter', 'dragover'].forEach(eventName => {
-            this.dropZone.addEventListener(eventName, () => {
-                this.dropZone.classList.add('dragover');
-            });
-        });
-
-        ['dragleave', 'drop'].forEach(eventName => {
-            this.dropZone.addEventListener(eventName, () => {
-                this.dropZone.classList.remove('dragover');
-            });
-        });
-
-        this.dropZone.addEventListener('drop', (e) => {
-            const files = e.dataTransfer.files;
-            this.processFiles(files);
-        });
-    }
-
-    handleFileSelect(event) {
-        const files = event.target.files;
-        this.processFiles(files);
-    }
-
-    processFiles(files) {
-        for (const file of files) {
-            if (!this.validateFile(file)) {
-                continue;
-            }
-            this.onFileSelected(file);
-        }
-    }
-
-    validateFile(file) {
-        const ext = '.' + file.name.split('.').pop().toLowerCase();
-
-        if (!this.allowedTypes.includes(ext)) {
-            showToast(`不支持的文件类型: ${ext}`, 'warning');
-            return false;
-        }
-
-        if (file.size > this.maxSize) {
-            showToast(`文件过大: ${file.name} (最大 ${this.formatFileSize(this.maxSize)})`, 'warning');
-            return false;
-        }
-
-        return true;
-    }
-
-    onFileSelected(file) {
-        console.log('文件已选择:', file.name, this.formatFileSize(file.size));
-
-        if (this.previewElement) {
-            this.previewElement.innerHTML = `
-                <div class="flex items-center gap-3 p-3 bg-[#121212] border border-[#2c2c2c]">
-                    <span class="text-[#2e7d32]">${svgIcon('file-earmark-excel')}</span>
-                    <div class="flex-1 min-w-0">
-                        <div class="text-xs font-medium text-white truncate">${escapeHtml(file.name)}</div>
-                        <div class="text-[10px] text-[#616161]">${this.formatFileSize(file.size)}</div>
-                    </div>
-                </div>
-            `;
-        }
-    }
-
-    formatFileSize(bytes) {
-        if (bytes === 0) return '0 Bytes';
-        const k = 1024;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-    }
-}
-
-// ===== 分页（Tailwind 风格） =====
-
-// ===== 表格排序（Tailwind 风格） =====
-
-// ===== 搜索过滤 =====
-function filterTable(tableId, searchInputId) {
-    const input = document.getElementById(searchInputId);
-    const filter = input.value.toLowerCase();
-    const table = document.getElementById(tableId);
-    const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
-
-    for (const row of rows) {
-        const text = row.textContent.toLowerCase();
-        row.style.display = text.includes(filter) ? '' : 'none';
-    }
-}
-
-// ===== 侧边栏子菜单（纯 JS） =====
-
-// ===== DOM 加载完成后初始化 =====
-document.addEventListener('DOMContentLoaded', function() {
-    // 初始化已移除（侧边栏菜单在 app.js 中处理）
-});
-
-// ===== 导出全局函数 =====
-window.AppConfig = AppConfig;
 window.HttpClient = HttpClient;
-window.Http = HttpClient;
 window.esc = esc;
 window.fmtNum = fmtNum;
 window.formatFileSize = formatFileSize;
-window.showLoading = showLoading;
-window.hideLoading = hideLoading;
 window.showToast = showToast;
-window.confirmAction = confirmAction;
-window.FileUploader = FileUploader;
-window.filterTable = filterTable;
 window.svgIcon = svgIcon;
