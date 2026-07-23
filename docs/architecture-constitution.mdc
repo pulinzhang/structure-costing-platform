@@ -13,10 +13,13 @@ alwaysApply: true
 ## 一、分层职责（核心原则）
 
 ```
-用户请求 ──► Router ──► Service ──► Repository ──► Database
-                │                        │
-                └────────────────────────┘
-                        返回响应
+
+请求流程：
+  Router ──► Service ──► Repository ──► Database
+
+响应流程：
+  Database ──► Repository ──► Service ──► Router ──► 返回响应
+
 ```
 
 | 层级 | 职责 | 禁止事项 |

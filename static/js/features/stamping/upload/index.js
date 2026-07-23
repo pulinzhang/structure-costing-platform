@@ -1,7 +1,9 @@
 /**
- * Upload Page Module
+ * Upload Page
  * 上传页面逻辑
  */
+
+import { uploadTemplate } from './template.js';
 
 function formatFileSize(bytes) {
     if (bytes === 0) return '0 Bytes';
@@ -44,17 +46,17 @@ export const UploadPage = {
         // 拖拽上传
         uploadZone.addEventListener('dragover', (e) => {
             e.preventDefault();
-            uploadZone.classList.add('bg-white', 'border-slate-400');
+            uploadZone.classList.add('drag-active');
         });
 
         uploadZone.addEventListener('dragleave', (e) => {
             e.preventDefault();
-            uploadZone.classList.remove('bg-white', 'border-slate-400');
+            uploadZone.classList.remove('drag-active');
         });
 
         uploadZone.addEventListener('drop', (e) => {
             e.preventDefault();
-            uploadZone.classList.remove('bg-white', 'border-slate-400');
+            uploadZone.classList.remove('drag-active');
             this.handleFiles(e.dataTransfer.files);
         });
 
@@ -90,19 +92,19 @@ export const UploadPage = {
 
         preview.classList.remove('hidden');
         preview.innerHTML = `
-            <div class="flex items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-md">
-                <span class="text-green-600">${svgIcon('file-earmark-excel')}</span>
+            <div class="flex items-center gap-3 p-3 bg-[#121212] border border-[#2c2c2c]">
+                <span class="text-[#2e7d32]">${svgIcon('file-earmark-excel')}</span>
                 <div class="flex-1 min-w-0">
-                    <div class="text-sm font-medium text-slate-900 truncate">${esc(file.name)}</div>
-                    <div class="text-xs text-slate-500">${formatFileSize(file.size)}</div>
+                    <div class="text-xs font-medium text-white truncate">${esc(file.name)}</div>
+                    <div class="text-[10px] text-[#616161]">${formatFileSize(file.size)}</div>
                 </div>
-                <button type="button" onclick="window.removeUploadFile()" class="p-1.5 rounded-md text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors">
+                <button type="button" onclick="window.removeUploadFile()" class="p-1.5 text-[#616161] hover:text-[#d32f2f] hover:bg-[#262626] rounded-sm transition-all">
                     ${svgIcon('trash')}
                 </button>
             </div>
         `;
 
-        uploadZone.classList.add('border-green-400', 'bg-green-50/50');
+        uploadZone.classList.add('border-green-700/50', 'bg-green-950/10');
         document.getElementById('uploadTitle').textContent = '已选择文件';
         document.getElementById('uploadHint').textContent = file.name;
     },
@@ -155,7 +157,15 @@ export const UploadPage = {
     },
 };
 
-// 全局函数
+/**
+ * 页面导出 - 用于 app.js 注册
+ */
+export const pageConfig = {
+    render: uploadTemplate,
+    init: () => UploadPage.init(),
+};
+
+// 全局函数供 onclick 调用
 window.removeUploadFile = function() {
     const fileInput = document.getElementById('fileInput');
     const preview = document.getElementById('filePreview');
@@ -164,7 +174,7 @@ window.removeUploadFile = function() {
     if (fileInput) fileInput.value = '';
     if (preview) preview.classList.add('hidden');
     if (uploadZone) {
-        uploadZone.classList.remove('border-green-400', 'bg-green-50/50');
+        uploadZone.classList.remove('border-green-700/50', 'bg-green-950/10');
         document.getElementById('uploadTitle').textContent = '拖拽文件到此处上传';
         document.getElementById('uploadHint').textContent = '或点击选择文件';
     }

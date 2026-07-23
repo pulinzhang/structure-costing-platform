@@ -72,6 +72,7 @@ class ApiResponse:
         page: int = 1,
         page_size: int = 20,
         message: str = "查询成功",
+        filters: dict = None,
     ) -> JSONResponse:
         """
         列表响应（标准分页格式）
@@ -82,6 +83,7 @@ class ApiResponse:
             page: 当前页码（从 1 开始）
             page_size: 每页条数
             message: 消息
+            filters: 可选，筛选下拉选项 {'vehicle_models': [...], 'versions': [...]}
 
         Returns:
             JSONResponse: 标准分页结构
@@ -95,14 +97,15 @@ class ApiResponse:
                         "page_size": int,
                         "total_pages": int,
                         "has_next": bool,
-                        "has_prev": bool
+                        "has_prev": bool,
+                        "filters": {...}   # 可选
                     }
                 }
         """
         page = max(page, 1)
         page_size = max(page_size, 1)
         total_pages = (total + page_size - 1) // page_size if total > 0 else 0
-        return JSONResponse({
+        body = {
             "success": True,
             "message": message,
             "data": {
@@ -114,4 +117,7 @@ class ApiResponse:
                 "has_next": page < total_pages,
                 "has_prev": page > 1,
             },
-        })
+        }
+        if filters is not None:
+            body["data"]["filters"] = filters
+        return JSONResponse(body)

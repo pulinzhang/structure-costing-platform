@@ -21,7 +21,7 @@ class StampingPartService:
     def __init__(self):
         self.repository = StampingPartRepository()
 
-    def list_parts(self, db: Session, query: StampingPartQuery) -> tuple[List[Dict[str, Any]], int]:
+    def list_parts(self, db: Session, query: StampingPartQuery) -> tuple[List[Dict[str, Any]], int, Dict[str, List[str]]]:
         """获取零件列表（不含工序详情，含工序统计数 process_count）"""
         skip = (query.page - 1) * query.size
         parts, total = self.repository.paginate(
@@ -42,7 +42,14 @@ class StampingPartService:
             row = StampingPartListResponse.model_validate(p).model_dump()
             row["process_count"] = process_counts.get(p.id, 0)
             rows.append(row)
-        return rows, total
+
+        # 筛选下拉框选项
+        filter_options = self.repository.get_filter_options(db)
+        return rows, total, filter_options
+
+    def get_filter_options(self, db: Session) -> Dict[str, List[str]]:
+        """获取筛选下拉框的可选值"""
+        return self.repository.get_filter_options(db)
 
     def get_by_id(self, db: Session, part_id: int) -> Optional[Dict[str, Any]]:
         """获取单个零件"""
@@ -70,3 +77,38 @@ class StampingPartService:
 
     def delete_by_vehicle_version(self, db: Session, vehicle_model: str, version: str) -> int:
         return self.repository.delete_by_vehicle_version(db, vehicle_model, version)
+
+    def update_process(self, db: Session, process_id: int, update_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """更新单个工序"""
+        from app.repositories.stamping.stamping_repository import StampingProcessRepository
+        from app.schemas.stamping import StampingProcessResponse
+        process_repo = StampingProcessRepository()
+        process = process_repo.update(db, process_id, update_data)
+        if not process:
+            return None
+        return StampingProcessResponse.model_validate(process).model_dump()
+
+    def batch_update_processes(self, db: Session, items: List[Dict[str, Any]]) -> int:
+        """批量更新工序成本系数"""
+        import logging
+        logger = logging.getLogger("stamping")
+        logger.info(f"[DEBUG] batch_update_processes 收到 {len(items)} 条数据: {items}")
+        from app.repositories.stamping.stamping_repository import StampingProcessRepository
+        process_repo = StampingProcessRepository()
+        count = 0
+        for item in items:
+            pid = item.get("id")
+            if not pid:
+                continue
+            update_data = {k: v for k, v in item.items() if k == "id"}
+            if "cost_ratio" in item:
+                update_data["cost_ratio"] = item["cost_ratio"]
+            logger.info(f"[DEBUG] process_id={pid}, update_data={update_data}")
+            update_data.pop("id", None)
+            if not update_data:
+                logger.warning(f"[WARN] process_id={pid} 的 update_data 为空，跳过")
+                continue
+            if process_repo.update(db, int(pid), update_data):
+                count += 1
+        logger.info(f"[DEBUG] batch_update_processes 完成，更新了 {count} 条")
+        return count
