@@ -397,9 +397,7 @@ export const PartsPage = {
                 <div class="relative z-10 max-w-4xl w-full mx-8 max-h-[85vh] flex flex-col">
                     <button type="button" id="closeSketchModal" class="absolute -top-10 right-0 flex items-center gap-1.5 text-[10px] text-[#555555] hover:text-white transition-colors tracking-wider group">
                         <span class="group-hover:text-[#d32f2f] transition-colors">关闭</span>
-                        <svg class="w-3.5 h-3.5 group-hover:text-[#d32f2f] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-                        </svg>
+                        ${window.svgIcon('x-lg', 'w-3.5 h-3.5 group-hover:text-[#d32f2f] transition-colors')}
                     </button>
                     <div class="flex-1 overflow-auto bg-[#0d0d0d] border border-[#222222] rounded-sm shadow-2xl">
                         <img src="${fullSketchUrl}" alt="零件图纸" class="w-full h-full object-contain">

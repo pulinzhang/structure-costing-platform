@@ -198,7 +198,6 @@ class StampingUploadService:
                 "sheet_width": part.sheet_width,
                 "parts_per_sheet": part.parts_per_sheet,
                 "sheet_type": part.sheet_type,
-                "tonnage": part.tonnage,
                 "die_type": part.die_type,
                 "process_method": part.process_method,
                 "automation": part.automation,

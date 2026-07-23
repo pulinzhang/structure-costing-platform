@@ -1,6 +1,11 @@
 /**
  * Parts Template
  * 零件列表页面 — Brabus Carbon & Precision Dark
+ *
+ * 熵增管控规则：
+ * - detailTableRow(valueClass) 的 valueClass 参数已被 CORE_COST_FIELDS 接管，传值无意义，已移除
+ * - 所有面板使用 CSS 类（brabus-panel / brabus-panel-header / brabus-table-wrapper）
+ * - SVG 统一使用 window.svgIcon 工具函数
  */
 
 export function partsTemplate() {
@@ -11,7 +16,7 @@ export function partsTemplate() {
                 <div class="flex-1 min-w-0">
                     <div class="relative">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <svg class="w-3.5 h-3.5 text-[#616161]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                            ${window.svgIcon('search', 'w-3.5 h-3.5 text-[#616161]')}
                         </div>
                         <input type="text"
                                id="searchInput"
@@ -73,11 +78,9 @@ export function partsTemplate() {
                         <tr>
                             <td colspan="10">
                                 <div class="flex flex-col items-center justify-center py-14">
-                                    <div class="w-10 h-10 bg-[#262626] flex items-center justify-center mb-3">
-                                        <svg class="w-5 h-5 text-[#616161]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path></svg>
-                                    </div>
+                                    <div class="flex justify-center mb-3">${window.svgIcon('file-inbox', 'w-5 h-5 text-[#616161]')}</div>
                                     <h5 class="text-xs font-medium text-[#9e9e9e] mb-1">暂无零件数据</h5>
-                                    <p class="text-[11px] text-[#616161]">请联系管理员导入工艺文件</p>
+                                    <p class="text-[11px] text-[#616161]">请先上传工艺文件</p>
                                 </div>
                             </td>
                         </tr>
@@ -102,22 +105,19 @@ export function partsTemplate() {
             <div class="absolute left-0 top-0 bottom-0 w-1.5 cursor-ew-resize hover:bg-[#d32f2f]/50 transition-colors z-10"></div>
 
             <!-- 头部（固定不滚动） -->
-            <div class="px-5 py-3.5 flex items-center justify-between shrink-0"
-                 style="background: linear-gradient(180deg, #1f1f1f 0%, #1a1a1a 100%); border-bottom: 1px solid #333333;">
+            <div class="px-5 py-3.5 flex items-center justify-between shrink-0 part-drawer-header">
                 <h5 class="text-[11px] font-semibold tracking-wider text-[#b0b0b0] flex items-center gap-2.5 uppercase" id="partDrawerTitle">
-                    <span style="width:3px;height:14px;background:#d32f2f;border-radius:1px;display:inline-block;box-shadow: 0 0 8px rgba(211,47,47,0.5);"></span>
+                    <span class="brabus-red-indicator"></span>
                     零件详情
                 </h5>
                 <button type="button" id="closePartDrawer"
                         class="flex items-center justify-center w-8 h-8 rounded-md text-[#707070] hover:text-white hover:bg-[#d32f2f] transition-all duration-200 group">
-                    <svg class="w-4 h-4 transition-transform duration-200 group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
+                    ${window.svgIcon('x-lg', 'w-4 h-4 transition-transform duration-200 group-hover:scale-110')}
                 </button>
             </div>
 
             <!-- 可滚动内容区 -->
-            <div class="flex-1 min-h-0 overflow-y-auto overscroll-contain" id="partDrawerContent" style="scrollbar-width: thin; scrollbar-color: #3a3a3a #1a1a1a;">
+            <div class="flex-1 min-h-0 overflow-y-auto overscroll-contain part-drawer-scroll" id="partDrawerContent">
                 <div class="flex items-center justify-center py-16">
                     <div class="w-7 h-7 border-2 border-[#2a2a2a] border-t-[#d32f2f] rounded-full animate-spin"></div>
                 </div>
@@ -127,11 +127,7 @@ export function partsTemplate() {
     `;
 }
 
-// ===== 详情抽屉内容（数据驱动模板） =====
-//
-// 与 partsTemplate 不同：本函数接收运行时 part 数据生成详情视图。
-// 调用方在 index.js: _renderDetailContent(partId) → showDetail() → innerHTML = renderDetailContent(part)
-
+// CORE_COST_FIELDS 已在文件顶部定义
 const CORE_COST_FIELDS = new Set(['材料', '重量', '模具类型']);
 
 const DIE_TYPE_OPTIONS = [
@@ -145,16 +141,19 @@ const DIE_TYPE_OPTIONS = [
 const RATIO_TO_DIE_TYPE = { 0.8: 'progressive', 1.0: 'single', 0.5: 'shared', 0.4: 'progressive_shared' };
 const deriveDieType = (p) => p.die_type || RATIO_TO_DIE_TYPE[p.cost_ratio] || 'single';
 
-function detailTableRow([label, value], valueClass = '') {
+/**
+ * 详情表格行 — 由 CORE_COST_FIELDS 决定强调样式
+ * valueClass 参数已废弃（由 CORE_COST_FIELDS 全权接管）
+ */
+function detailTableRow([label, value]) {
     const isCore = CORE_COST_FIELDS.has(label);
     const tdClass = isCore
-        ? 'text-[11px] font-mono font-semibold text-[#d32f2f] tracking-[0.05em]'
-        : `text-[11px] text-[#6b6b6b] tracking-wider ${valueClass}`;
-    const tdStyle = isCore ? ' style="text-shadow:0 0 10px rgba(211,47,47,0.3)"' : '';
+        ? 'text-[11px] font-mono font-semibold text-[#d32f2f] tracking-[0.05em] brabus-core-value'
+        : 'text-[11px] text-[#6b6b6b] tracking-wider';
     return `
             <tr class="border-b border-[#161616] last:border-b-0">
                 <th class="px-4 py-3 text-left text-[9px] font-medium uppercase tracking-[0.18em] text-[#4d4d4d] w-28">${label}</th>
-                <td class="px-4 py-3 ${tdClass}"${tdStyle}>${value}</td>
+                <td class="px-4 py-3 ${tdClass}">${value}</td>
             </tr>`;
 }
 
@@ -190,14 +189,18 @@ export function renderDetailContent(part) {
         ['车型', esc(part.vehicle_model)],
         ['版本', esc(part.version)],
         ['材料', esc(part.material)],
-        ['厚度', part.thickness != null ? `${part.thickness} mm` : '-'],
+        ['工艺方法', esc(part.process_method ?? '-')],
+        ['自动化', part.automation ? '是' : '否'],
     ];
+    // 右侧面板字段 — CORE_COST_FIELDS 会在 detailTableRow 中自动生效（材料/重量/模具类型）
     const rowsRight = [
+        ['厚度', part.thickness != null ? `${part.thickness} mm` : '-'],
         ['重量', part.part_weight != null ? `${part.part_weight} kg` : '-'],
         ['板材尺寸', (part.sheet_length && part.sheet_width) ? `${part.sheet_length}x${part.sheet_width}` : '-'],
         ['每辆车用量', esc(part.parts_per_sheet)],
         ['板材类型', esc(part.sheet_type)],
         ['模具类型', esc(part.die_type)],
+        ['备注', esc(part.remark ?? '-')],
     ];
 
     const processes = part.processes || [];
@@ -206,45 +209,43 @@ export function renderDetailContent(part) {
         : `<tr><td colspan="6" class="px-4 py-12 text-center text-[11px] text-[#333333] tracking-[0.15em]">暂无工序数据</td></tr>`;
 
     return `
-        <div class="h-full min-h-full flex flex-col" style="background: linear-gradient(175deg, #0a0a0a 0%, #090909 100%);">
+        <div class="h-full min-h-full flex flex-col part-drawer-content">
             <!-- 顶部信息区域 -->
             <div class="flex gap-3 p-4">
                 <!-- 左侧：基本信息 -->
-                <div class="flex-1" style="background:#111111; border-top:1px solid #282828; border-left:1px solid #262626; border-right:1px solid #181818; border-bottom:1px solid #101010; box-shadow:2px 2px 8px rgba(0,0,0,0.5), -1px -1px 0 rgba(255,255,255,0.015) inset; overflow:hidden;">
-                    <div class="px-4 py-3 flex items-center justify-between" style="background:#0c0c0c; border-bottom:1px solid #181818;">
+                <div class="flex-1 brabus-panel">
+                    <div class="brabus-panel-header flex items-center justify-between">
                         <div class="flex items-center gap-2">
-                            <span class="text-[#353535]">${window.svgIcon('info-circle')}</span>
+                            ${window.svgIcon('info-circle', 'w-3.5 h-3.5')}
                             <span class="text-[9px] font-semibold text-[#484848] uppercase tracking-[0.22em]">基本信息</span>
                         </div>
                         ${sketchUrl ? `
-                        <button type="button" id="openSketchModal" class="flex items-center gap-1.5 px-2.5 py-1 rounded-sm text-[9px] text-[#333333] hover:text-[#888888] border border-[#1c1c1c] hover:border-[#2e2e2e] transition-all duration-200 tracking-wide group">
-                            <svg class="w-3.5 h-3.5 text-[#2d2d2d] group-hover:text-[#888888] transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 3.75H6A2.25 2.25 0 003 6v1.5M16.5 3.75H18A2.25 2.25 0 0120.25 6v1.5m0 9V18A2.25 2.25 0 0118 20.25h-1.5m-9 0H6A2.25 2.25 0 013.75 18v-1.5M12 12l3-3m0 0l3 3m-3-3v9" />
-                            </svg>
-                            <span class="group-hover:text-[#555555] transition-colors duration-200">查看图纸</span>
+                        <button type="button" id="openSketchModal" class="btn-view-sketch">
+                            ${window.svgIcon('arrows-fullscreen', 'w-3.5 h-3.5')}
+                            <span>查看图纸</span>
                         </button>` : ''}
                     </div>
-                    <table class="w-full">${rows.map(r => detailTableRow(r, false)).join('')}</table>
+                    <table class="w-full">${rows.map(detailTableRow).join('')}</table>
                 </div>
-                <!-- 右侧：补充信息 -->
-                <div class="flex-1" style="background:#111111; border-top:1px solid #282828; border-left:1px solid #262626; border-right:1px solid #181818; border-bottom:1px solid #101010; box-shadow:2px 2px 8px rgba(0,0,0,0.5), -1px -1px 0 rgba(255,255,255,0.015) inset; overflow:hidden;">
-                    <div class="px-4 py-3 flex items-center gap-2" style="background:#0c0c0c; border-bottom:1px solid #181818;">
-                        <span class="text-[#353535]">${window.svgIcon('ruler')}</span>
+                <!-- 右侧：尺寸参数 -->
+                <div class="flex-1 brabus-panel">
+                    <div class="brabus-panel-header flex items-center gap-2">
+                        ${window.svgIcon('ruler', 'w-3.5 h-3.5')}
                         <span class="text-[9px] font-semibold text-[#484848] uppercase tracking-[0.22em]">尺寸参数</span>
                     </div>
-                    <table class="w-full">${rowsRight.map(r => detailTableRow(r)).join('')}</table>
+                    <table class="w-full">${rowsRight.map(detailTableRow).join('')}</table>
                 </div>
             </div>
 
             <!-- 工序列表 -->
             <div class="mx-4 mb-4 flex flex-col shrink-0">
-                <div class="px-4 py-3 flex items-center justify-between shrink-0" style="background:#0c0c0c; border-top:1px solid #262626; border-left:1px solid #282828; border-right:1px solid #181818; border-bottom:1px solid #161616; box-shadow:2px 2px 8px rgba(0,0,0,0.4), -1px 0 0 rgba(255,255,255,0.012) inset;">
+                <div class="brabus-section-header flex items-center justify-between">
                     <div class="flex items-center gap-2">
-                        <span class="text-[#353535]">${window.svgIcon('list-ol')}</span>
+                        ${window.svgIcon('list-ol', 'w-3.5 h-3.5')}
                         <span class="text-[9px] font-semibold text-[#484848] uppercase tracking-[0.22em]">工序列表</span>
                     </div>
                     <div class="flex items-center gap-2">
-                        <select id="batchDieTypeSelect" class="die-type-select" style="width:148px;">
+                        <select id="batchDieTypeSelect" class="h-9 px-2 text-[11px] bg-[#0a0a0a] text-[#9e9e9e] border border-[#2c2c2c] rounded-sm focus:outline-none focus:border-[#ff5252] appearance-none cursor-pointer">
                             <option value="">批量修改模具类型</option>
                             ${DIE_TYPE_OPTIONS.map(o => `<option value="${o.value}">${o.label}</option>`).join('')}
                         </select>
@@ -253,10 +254,10 @@ export function renderDetailContent(part) {
                         </button>
                     </div>
                 </div>
-                <div style="background:#111111; border-left:1px solid #252525; border-right:1px solid #161616; border-bottom:1px solid #0f0f0f;">
+                <div class="brabus-table-wrapper">
                     <table class="w-full">
                         <thead class="shrink-0">
-                            <tr style="background:#0c0c0c; border-bottom:1px solid #1a1a1a;">
+                            <tr class="bg-[#0c0c0c] border-b border-[#1a1a1a]">
                                 <th class="px-4 py-2.5 text-left text-[8px] font-semibold uppercase tracking-[0.22em] text-[#353535]">序</th>
                                 <th class="px-4 py-2.5 text-left text-[8px] font-semibold uppercase tracking-[0.22em] text-[#353535]">工序号</th>
                                 <th class="px-4 py-2.5 text-left text-[8px] font-semibold uppercase tracking-[0.22em] text-[#353535]">代号</th>
@@ -265,7 +266,7 @@ export function renderDetailContent(part) {
                                 <th class="px-4 py-2.5 text-left text-[8px] font-semibold uppercase tracking-[0.22em] text-[#353535]">模具类型</th>
                             </tr>
                         </thead>
-                        <tbody id="processTableBody" style="background:#111111;">${processRows}</tbody>
+                        <tbody id="processTableBody">${processRows}</tbody>
                     </table>
                 </div>
             </div>
@@ -273,8 +274,8 @@ export function renderDetailContent(part) {
             <!-- 保存按钮与规则栏 -->
             ${processes.length > 0 ? `
             <div class="mx-4 mb-6 mt-4">
-                <!-- 成本规则 - 紧凑低调样式 -->
-                <div class="flex items-center justify-center gap-4 py-2 mb-3" style="background:#0a0a0a; border:1px solid #1a1a1a; border-radius:2px;">
+                <!-- 成本规则 -->
+                <div class="flex items-center justify-center gap-4 py-2 mb-3 bg-[#0a0a0a] border border-[#1a1a1a] rounded-sm">
                     <span class="text-[7px] text-[#2a2a2a] tracking-[0.15em] uppercase">成本规则</span>
                     <span class="text-[7px] text-[#1e1e1e]">·</span>
                     <span class="text-[9px] text-[#3a3a3a]"><span class="text-[#555555]">级进模</span> <span class="text-[#8a3030] font-medium">80%</span></span>

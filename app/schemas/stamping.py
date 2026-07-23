@@ -62,7 +62,6 @@ class StampingPartBaseResponse(BaseModel):
     sheet_width: float | None
     parts_per_sheet: int | None
     sheet_type: str | None
-    tonnage: float | None
     die_type: str | None
     process_method: str | None
     automation: str | None
@@ -71,7 +70,7 @@ class StampingPartBaseResponse(BaseModel):
     created_at: datetime | None
     updated_at: datetime | None
 
-    @field_serializer("thickness", "part_weight", "sheet_length", "sheet_width", "tonnage")
+    @field_serializer("thickness", "part_weight", "sheet_length", "sheet_width")
     def serialize_decimal(self, value: Union[Decimal, float, None]) -> float | None:
         return decimal_to_float(value)
 

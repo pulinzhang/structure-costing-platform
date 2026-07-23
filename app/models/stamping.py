@@ -46,7 +46,6 @@ class StampingPart(Base):
     sheet_type = Column(String(50), nullable=True, comment="料片式样")
 
     # 工艺信息
-    tonnage = Column(Numeric(10, 2), nullable=True, comment="冲压设备吨位(T)")
     die_type = Column(String(50), nullable=True, comment="模具类型")
     process_method = Column(String(50), nullable=True, comment="工艺方法")
     automation = Column(String(20), nullable=True, comment="自动化")

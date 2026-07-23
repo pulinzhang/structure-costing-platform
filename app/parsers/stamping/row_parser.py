@@ -51,7 +51,6 @@ class RowParser:
             sheet_width=parse_decimal(self._get_value(row_idx, col_map.get("width", 9))),
             parts_per_sheet=parse_int(self._get_value(row_idx, col_map.get("count", 10))),
             sheet_type=self._get_value(row_idx, col_map.get("sheet_type", 11)),
-            tonnage=parse_int(self._get_value(row_idx, col_map.get("tonnage", 15))),
             die_type=self._get_value(row_idx, col_map.get("die_type", 16)),
             process_method=self._get_value(row_idx, col_map.get("method", 17)),
             automation=self._get_value(row_idx, col_map.get("auto", 18)),

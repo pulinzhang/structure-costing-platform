@@ -859,3 +859,112 @@ tr:focus-within .die-type-select {
         padding: 2.25rem 2.5rem;
     }
 }
+
+/* ============ 详情抽屉面板系统（Brabus 工业精密风格） ============ */
+.brabus-panel {
+    background: #111111;
+    border-top: 1px solid #282828;
+    border-left: 1px solid #262626;
+    border-right: 1px solid #181818;
+    border-bottom: 1px solid #101010;
+    box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.5), -1px -1px 0 rgba(255, 255, 255, 0.015) inset;
+    overflow: hidden;
+}
+
+.brabus-panel-header {
+    padding: 0.625rem 1rem;
+    background: #0c0c0c;
+    border-bottom: 1px solid #181818;
+}
+
+.brabus-section-header {
+    padding: 0.625rem 1rem;
+    background: #0c0c0c;
+    border-top: 1px solid #262626;
+    border-left: 1px solid #282828;
+    border-right: 1px solid #181818;
+    border-bottom: 1px solid #161616;
+    box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.4), -1px 0 0 rgba(255, 255, 255, 0.012) inset;
+}
+
+.brabus-table-wrapper {
+    background: #111111;
+    border-left: 1px solid #252525;
+    border-right: 1px solid #161616;
+    border-bottom: 1px solid #0f0f0f;
+}
+
+/* stat-icon 中的 SVG 默认颜色（继承父级颜色） */
+.stat-icon svg {
+    color: var(--text-disabled);
+}
+
+/* 抽屉面板红色指示条 */
+.brabus-red-indicator {
+    width: 3px;
+    height: 14px;
+    background: #d32f2f;
+    border-radius: 1px;
+    display: inline-block;
+    box-shadow: 0 0 8px rgba(211,47,47,0.5);
+}
+
+/* 工序表头行 */
+.brabus-thead-row {
+    background: #0c0c0c;
+    border-bottom: 1px solid #1a1a1a;
+}
+
+/* 详情抽屉头部 */
+.part-drawer-header {
+    background: linear-gradient(180deg, #1f1f1f 0%, #1a1a1a 100%);
+    border-bottom: 1px solid #333333;
+}
+
+/* 详情内容区背景 */
+.part-drawer-content {
+    background: linear-gradient(175deg, #0a0a0a 0%, #090909 100%);
+}
+
+/* 工序抽屉滚动区 */
+.part-drawer-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: #3a3a3a #1a1a1a;
+}
+
+/* 详情表格核心字段发光文字（仅 Core Cost Fields: 材料/重量/模具类型） */
+.brabus-core-value {
+    text-shadow: 0 0 10px rgba(211,47,47,0.3);
+}
+
+/* 查看图纸按钮 */
+.btn-view-sketch {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 2px;
+    font-size: 9px;
+    color: #333333;
+    border: 1px solid #1c1c1c;
+    transition: all 0.2s;
+    font-weight: 400;
+    letter-spacing: 0.02em;
+}
+.btn-view-sketch:hover {
+    color: #888888;
+    border-color: #2e2e2e;
+}
+.btn-view-sketch svg {
+    color: #2d2d2d;
+    transition: color 0.2s;
+}
+.btn-view-sketch:hover svg {
+    color: #888888;
+}
+
+/* 进度条动画 */
+@keyframes brabus-progress {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 100% 50%; }
+}

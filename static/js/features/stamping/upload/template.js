@@ -12,7 +12,7 @@ export function uploadTemplate() {
             <!-- ===== 左栏：表单卡片 ===== -->
             <div class="bg-[#1e1e1e] border border-[#2c2c2c]">
                 <div class="px-5 py-3 border-b border-[#222222] flex items-center gap-2.5">
-                    <svg class="w-3.5 h-3.5 text-[#616161]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"></path></svg>
+                    ${window.svgIcon('clipboard-list', 'w-3.5 h-3.5 text-[#616161]')}
                     <h5 class="text-xs font-semibold text-[#9e9e9e] mb-0">上传车型冲压工艺文件</h5>
                 </div>
                 <div class="p-5">
@@ -45,15 +45,17 @@ export function uploadTemplate() {
 
                         <!-- 拖拽上传区：加大垂直留白 -->
                         <div id="uploadZone" class="upload-dropzone mb-5">
-                            <svg class="w-10 h-10 text-[#616161] mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                            <div class="flex justify-center mb-4">${window.svgIcon('upload', 'w-10 h-10 text-[#616161]')}</div>
                             <h5 id="uploadTitle" class="text-xs font-medium text-[#9e9e9e] mb-1.5">拖拽文件到此处上传</h5>
                             <p id="uploadHint" class="text-[11px] text-[#616161] mb-5">或点击下方按钮选择文件</p>
                             <input type="file" id="fileInput" class="hidden" accept=".xlsx,.xls">
                             <button type="button"
                                     onclick="document.getElementById('fileInput').click()"
                                     class="btn-file-select">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>
-                                选择文件
+                                <span class="inline-flex items-center gap-2">
+                                    ${window.svgIcon('folder', 'w-3.5 h-3.5')}
+                                    选择文件
+                                </span>
                             </button>
                             <p class="text-[10px] text-[#616161] mt-5 mb-0">支持 .xlsx, .xls（最大 50MB）</p>
                         </div>
@@ -66,14 +68,12 @@ export function uploadTemplate() {
                             <button type="button"
                                     onclick="window.resetUploadForm()"
                                     class="btn-ghost">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                                重置
+                                <span class="inline-flex items-center gap-2">${window.svgIcon('refresh', 'w-3.5 h-3.5')}重置</span>
                             </button>
                             <button type="submit"
                                     id="submitBtn"
                                     class="btn-upload-submit disabled:opacity-30 disabled:pointer-events-none">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
-                                上传
+                                <span class="inline-flex items-center gap-2">${window.svgIcon('upload', 'w-3.5 h-3.5')}上传</span>
                             </button>
                         </div>
                     </form>
@@ -85,7 +85,7 @@ export function uploadTemplate() {
                 <!-- 上传说明 -->
                 <div class="bg-[#1e1e1e] border border-[#2c2c2c]">
                     <div class="px-5 py-3 border-b border-[#222222] flex items-center gap-2.5">
-                        <svg class="w-3.5 h-3.5 text-[#616161]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        ${window.svgIcon('information', 'w-3.5 h-3.5 text-[#616161]')}
                         <h5 class="text-xs font-semibold text-[#616161] mb-0">上传说明</h5>
                     </div>
                     <div class="p-5">
@@ -110,14 +110,12 @@ export function uploadTemplate() {
                 <!-- 最近上传记录 -->
                 <div class="bg-[#1e1e1e] border border-[#2c2c2c]">
                     <div class="px-5 py-3 border-b border-[#222222] flex items-center gap-2.5">
-                        <svg class="w-3.5 h-3.5 text-[#616161]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        ${window.svgIcon('clock', 'w-3.5 h-3.5 text-[#616161]')}
                         <h5 class="text-xs font-semibold text-[#616161] mb-0">最近上传</h5>
                     </div>
                     <div class="p-5" id="recentUploads">
                         <div class="text-center py-6">
-                            <div class="w-8 h-8 bg-[#262626] flex items-center justify-center mx-auto mb-2.5">
-                                <svg class="w-4 h-4 text-[#616161]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
-                            </div>
+                            <div class="flex justify-center mb-2.5">${window.svgIcon('archive', 'w-4 h-4 text-[#616161]')}</div>
                             <p class="text-[11px] text-[#616161]">暂无上传记录</p>
                         </div>
                     </div>

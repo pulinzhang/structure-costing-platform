@@ -60,9 +60,6 @@ class Part:
     # 料片式样（卷料/板料）
     sheet_type: Optional[str] = None
 
-    # 冲压吨位（吨）
-    tonnage: int = 0
-
     # 模具类型（单动/双动）
     die_type: Optional[str] = None
 
