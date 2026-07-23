@@ -5,14 +5,6 @@
 
 import { uploadTemplate } from './template.js';
 
-function formatFileSize(bytes) {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-}
-
 export const UploadPage = {
     /**
      * 初始化上传页面
@@ -96,7 +88,7 @@ export const UploadPage = {
                 <span class="text-[#2e7d32]">${svgIcon('file-earmark-excel')}</span>
                 <div class="flex-1 min-w-0">
                     <div class="text-xs font-medium text-white truncate">${esc(file.name)}</div>
-                    <div class="text-[10px] text-[#616161]">${formatFileSize(file.size)}</div>
+                    <div class="text-[10px] text-[#616161]">${window.formatFileSize(file.size)}</div>
                 </div>
                 <button type="button" onclick="window.removeUploadFile()" class="p-1.5 text-[#616161] hover:text-[#d32f2f] hover:bg-[#262626] rounded-sm transition-all">
                     ${svgIcon('trash')}
