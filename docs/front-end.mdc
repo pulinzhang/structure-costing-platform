@@ -27,13 +27,14 @@ alwaysApply: true
 | 规则 | 说明 |
 |------|------|
 | **禁止 Jinja2 模板** | ❌ `index.html` 静态骨架，不使用 `{% for %}`、`{{ }}` |
-| **SPA 渲染** | ✅ 所有页面内容通过 JavaScript 模块动态渲染到 `#app` 容器 |
+| **SPA 渲染** | ✅ 所有页面内容通过 JavaScript 模块动态渲染到 `#pageContent` 容器 |
 | **Tailwind CSS 优先** | ✅ 所有 UI 样式优先使用 Tailwind 原子类（CDN） |
-| **禁止自定义类** | ❌ 新增 UI 时禁止往 `style.css` 加自定义 class；颜色/间距一律走 Tailwind 原子类或 CSS 变量 |
-| **CSS 变量补足** | ✅ `style.css` 仅维护 `:root` 主题变量 + 全局基础样式（滚动条、字体、侧边栏骨架、动画 keyframes） |
+| **禁止新增自定义类** | ⚠️ `style.css` 中已有 ~80 个历史自定义 class（用于精密边框/抽屉骨架），**保留使用**，但**禁止新增同类**——新样式必须先用 Tailwind 原子类（含任意值）表达，确实无法表达才进 style.css |
+| **CSS 变量优先** | ✅ 颜色 / 阴影 / 间距走 `:root` CSS 变量或 Tailwind 任意值类，不重复硬编码 hex |
 | **内联 style 例外** | ⚠️ 仅当 Tailwind 无法表达（例如动态 border 阴影、复杂多层 `background: linear-gradient(...)`、动态多边 box-shadow、单点 SVG 装饰）才允许 `style="..."`；常规布局/颜色禁止内联 |
+| **禁止 Bootstrap 类** | ❌ 任何 `btn`/`card`/`modal`/`row`/`form-*`/`alert`/`badge` 等 Bootstrap 类一律禁止，**最近一次违规**已在 `parts/template.js` 删除（commit 见 git log） |
 
-> **历史说明**：项目早期抽屉、详情面板使用大量内联 `style` 以追求更精确的"工业精密感"阴影/边框组合。这些位置**不再追溯改造**，仅作为新代码的反面教材。新增 UI 必须先尝试 Tailwind 原子类+Tailwind 任意值类（如 `shadow-[0_0_8px_rgba(211,47,47,0.5)]`）表达。
+> **历史说明**：`style.css` 中的自定义 class 形成于项目早期追求"工业精密感"的视觉风格（如 `.btn-save-default` 的多层阴影组合、`.die-type-select` 的内嵌 SVG 箭头、`.sketch-thumbnail` 的悬停遮罩）。这些 class 仍被广泛引用，**全部保留**，但**新增同类 UI 必须先尝试 Tailwind**——能用原子类（含任意值 `shadow-[...]`、`border-[...]`）表达就不要进 style.css。
 
 ### 1.3 CSS 变量系统（必须使用）
 
@@ -56,6 +57,9 @@ alwaysApply: true
     --text-main: #ffffff;
     --text-muted: #9e9e9e;
     --text-disabled: #616161;
+    /* 历史别名（部分模板曾使用，保留向后兼容） */
+    --text-secondary: #b0b0b0;
+    --text-dim: #616161;
 
     /* --- 4. 边框、分割线与高精度线条 --- */
     --border-subtle: #222222;
@@ -69,7 +73,26 @@ alwaysApply: true
 }
 ```
 
-`style.css` 中**唯一允许**保留的自定义结构是侧边栏布局（`.sidebar`、`.nav-item`、`.main-content`、动画 `@keyframes fadeIn` / `spin` 等），不允许新增 UI 组件级 class。
+`style.css` 中允许保留的内容（按职责分组）：
+
+| 分组 | 允许 | 说明 |
+|------|------|------|
+| CSS 变量 | `:root { --brabus-red ... }` | Brabus 风格变量基础，**新增变量**也允许（需注释用途） |
+| 全局基础 | `body / * / html / ::selection / scrollbar` | 字体、平滑滚动、滚动条样式 |
+| 侧边栏骨架 | `.sidebar*` / `.main-content` / `.page-header` / `.breadcrumb*` / `.sidebar-toggle` / `.sidebar-backdrop` | 全局布局结构 |
+| 仪表盘 | `.dashboard-card` / `.stat-number` / `.stat-icon` / `.card-red-bar` / `.overview-bar` / `.upload-cta` / `.overview-cta` | 已存在页面专用组件样式 |
+| 上传页 | `.upload-label` / `.upload-input` / `.upload-dropzone` / `.drag-active` / `.btn-file-select` / `.btn-ghost` / `.btn-reset` / `.btn-upload-submit` | 已存在页面专用组件样式 |
+| 零件列表 | `.table-num-cell` / `.table-action-btn` / `.sketch-thumbnail*` / `.zoom-overlay` / `.die-type-select` / `.part-cell-wrapper` / `.btn-save-default` / `.btn-save-active` | 已存在页面专用组件样式 |
+| 通用 | `.spinner` / `.loading-overlay*` / `.toast-container` / `.modal-*` / `.text-truncate-2` / `.fw-semibold` / 动画 `@keyframes spin` 等 | 全局可用工具 |
+
+**新增自定义 class 的判定流程**：
+1. 能用 Tailwind 任意值类（`bg-[#xxx]`、`shadow-[...]`）→ 用 Tailwind
+2. 现有自定义 class 已经满足 → 复用
+3. 以上都不行（如多层 `box-shadow` 组合、伪元素 + 自定义图标）→ 才进 style.css，并加注释
+
+**违规示例**（不允许出现）：
+- `style="hover:border-color:#xxx"` — `hover:` 是 Tailwind 前缀，写在 inline style 完全无效
+- 多个 inline `style="background:#xxx; border:1px solid #xxx; ..."` — 用 Tailwind 任意值类替代
 
 ---
 

@@ -3,7 +3,7 @@
  * 零件列表页面逻辑 — Brabus Dark Industrial
  */
 
-import { partsTemplate } from './template.js';
+import { partsTemplate, renderDetailContent } from './template.js';
 // esc / fmtNum / svgIcon / showToast / HttpClient 由 main.js 挂到 window
 
 const PARTS_CONFIG = {
@@ -374,173 +374,10 @@ export const PartsPage = {
     },
 
     /**
-     * 渲染详情抽屉内容（与模态框共用同一套模板）
+     * 渲染详情抽屉内容（模板逻辑见 ./template.js: renderDetailContent）
      */
     renderDetailContent(part) {
-        const sketchUrl = part.sketch_url || '';
-        const fullSketchUrl = sketchUrl ? `/uploads/${sketchUrl}` : '';
-
-        const rows = [
-            ['零件号', esc(part.part_number)],
-            ['零件名称', esc(part.part_name)],
-            ['车型', esc(part.vehicle_model)],
-            ['版本', esc(part.version)],
-            ['材料', esc(part.material)],
-            ['厚度', part.thickness != null ? `${part.thickness} mm` : '-'],
-        ];
-        const rowsRight = [
-            ['重量', part.part_weight != null ? `${part.part_weight} kg` : '-'],
-            ['板材尺寸', (part.sheet_length && part.sheet_width) ? `${part.sheet_length}x${part.sheet_width}` : '-'],
-            ['每辆车用量', esc(part.parts_per_sheet)],
-            ['板材类型', esc(part.sheet_type)],
-            ['模具类型', esc(part.die_type)],
-        ];
-        // 核心成本字段 → Brabus 红高亮
-        const coreCostFields = new Set(['材料', '重量', '模具类型']);
-        const tableRow = ([label, value], valueClass = '') => {
-            const isCore = coreCostFields.has(label);
-            const tdClass = isCore
-                ? 'text-[11px] font-mono font-semibold text-[#d32f2f] tracking-[0.05em]'
-                : `text-[11px] text-[#6b6b6b] tracking-wider ${valueClass}`;
-            return `
-            <tr class="border-b border-[#161616] last:border-b-0">
-                <th class="px-4 py-3 text-left text-[9px] font-medium uppercase tracking-[0.18em] text-[#4d4d4d] w-28">${label}</th>
-                <td class="px-4 py-3 ${tdClass}" ${isCore ? 'style="text-shadow:0 0 10px rgba(211,47,47,0.3)"' : ''}>${value}</td>
-            </tr>`;
-        };
-
-        // 模具类型选项（与成本系数对应）
-        const dieTypeOptions = [
-            { value: 'progressive', label: '级进模（80%）' },
-            { value: 'single', label: '单干模具（100%）' },
-            { value: 'shared', label: '共模（50%）' },
-            { value: 'progressive_shared', label: '级进共模（40%）' },
-        ];
-        // 根据 cost_ratio 反查 die_type（数据库只存 cost_ratio）
-        const ratioToDieType = { 0.8: 'progressive', 1.0: 'single', 0.5: 'shared', 0.4: 'progressive_shared' };
-        const deriveDieType = (p) => {
-            if (p.die_type) return p.die_type;
-            return ratioToDieType[p.cost_ratio] || 'single';
-        };
-
-        // 工序行（可编辑）
-        const processes = part.processes || [];
-        const processRows = processes.length
-            ? processes.map((p, idx) => {
-                const processId = p.id ?? idx;
-                const dieTypeVal = deriveDieType(p);
-                return `
-                <tr class="border-b border-[#161616] last:border-b-0 group hover:bg-[#0e0e0e] transition-colors duration-200 process-row" data-process-id="${processId}">
-                    <td class="px-4 py-4 text-[10px] text-[#4a4a4a] font-mono tracking-[0.06em]">${p.process_order ?? '—'}</td>
-                    <td class="px-4 py-4 text-[11px] text-[#888888] font-mono tracking-[0.06em]">${esc(p.process_seq)}</td>
-                    <td class="px-4 py-4 text-[11px] text-[#888888] font-medium tracking-[0.05em]">${esc(p.process_code)}</td>
-                    <td class="px-4 py-4 text-right text-[11px] font-mono text-[#777777] tracking-[0.06em]">${p.die_sets ?? '—'}</td>
-                    <td class="px-4 py-4 text-right text-[11px] font-mono text-[#777777] tracking-[0.06em]">${p.tonnage ? `${p.tonnage}T` : '—'}</td>
-                    <td class="px-4 py-4">
-                        <select
-                            class="die-type-select"
-                            data-process-id="${processId}"
-                            data-field="die_type">
-                            ${dieTypeOptions.map(o => `
-                                <option value="${o.value}" ${o.value === dieTypeVal ? 'selected' : ''}>${o.label}</option>
-                            `).join('')}
-                        </select>
-                    </td>
-                </tr>`;
-            }).join('')
-            : `<tr><td colspan="6" class="px-4 py-12 text-center text-[11px] text-[#333333] tracking-[0.15em]">暂无工序数据</td></tr>`;
-
-        return `
-            <div class="h-full min-h-full flex flex-col" style="background: linear-gradient(175deg, #0a0a0a 0%, #090909 100%);">
-                <!-- 顶部信息区域 -->
-                <div class="flex gap-3 p-4">
-                    <!-- 左侧：基本信息 -->
-                    <div class="flex-1" style="background:#111111; border-top:1px solid #282828; border-left:1px solid #262626; border-right:1px solid #181818; border-bottom:1px solid #101010; box-shadow:2px 2px 8px rgba(0,0,0,0.5), -1px -1px 0 rgba(255,255,255,0.015) inset; overflow:hidden;">
-                        <div class="px-4 py-3 flex items-center justify-between" style="background:#0c0c0c; border-bottom:1px solid #181818;">
-                            <div class="flex items-center gap-2">
-                                <span class="text-[#353535]">${window.svgIcon('info-circle')}</span>
-                                <span class="text-[9px] font-semibold text-[#484848] uppercase tracking-[0.22em]">基本信息</span>
-                            </div>
-                            ${sketchUrl ? `
-                            <button type="button" id="openSketchModal" class="flex items-center gap-1.5 px-2.5 py-1 rounded-sm text-[9px] text-[#333333] hover:text-[#888888] border transition-all duration-200 tracking-wide group" style="border-color:#1c1c1c; hover:border-color:#2e2e2e;">
-                                <svg class="w-3.5 h-3.5 text-[#2d2d2d] group-hover:text-[#888888] transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 3.75H6A2.25 2.25 0 003 6v1.5M16.5 3.75H18A2.25 2.25 0 0120.25 6v1.5m0 9V18A2.25 2.25 0 0118 20.25h-1.5m-9 0H6A2.25 2.25 0 013.75 18v-1.5M12 12l3-3m0 0l3 3m-3-3v9" />
-                                </svg>
-                                <span class="group-hover:text-[#555555] transition-colors duration-200">查看图纸</span>
-                            </button>` : ''}
-                        </div>
-                        <table class="w-full">${rows.map(r => tableRow(r, false)).join('')}</table>
-                    </div>
-                    <!-- 右侧：补充信息 -->
-                    <div class="flex-1" style="background:#111111; border-top:1px solid #282828; border-left:1px solid #262626; border-right:1px solid #181818; border-bottom:1px solid #101010; box-shadow:2px 2px 8px rgba(0,0,0,0.5), -1px -1px 0 rgba(255,255,255,0.015) inset; overflow:hidden;">
-                        <div class="px-4 py-3 flex items-center gap-2" style="background:#0c0c0c; border-bottom:1px solid #181818;">
-                            <span class="text-[#353535]">${window.svgIcon('ruler')}</span>
-                            <span class="text-[9px] font-semibold text-[#484848] uppercase tracking-[0.22em]">尺寸参数</span>
-                        </div>
-                        <table class="w-full">${rowsRight.map(r => tableRow(r)).join('')}</table>
-                    </div>
-                </div>
-
-                <!-- 工序列表 -->
-                <div class="mx-4 mb-4 flex flex-col shrink-0">
-                    <div class="px-4 py-3 flex items-center justify-between shrink-0" style="background:#0c0c0c; border-top:1px solid #262626; border-left:1px solid #282828; border-right:1px solid #181818; border-bottom:1px solid #161616; box-shadow:2px 2px 8px rgba(0,0,0,0.4), -1px 0 0 rgba(255,255,255,0.012) inset;">
-                        <div class="flex items-center gap-2">
-                            <span class="text-[#353535]">${window.svgIcon('list-ol')}</span>
-                            <span class="text-[9px] font-semibold text-[#484848] uppercase tracking-[0.22em]">工序列表</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <select id="batchDieTypeSelect" class="die-type-select" style="width:148px;">
-                                <option value="">批量修改模具类型</option>
-                                ${dieTypeOptions.map(o => `<option value="${o.value}">${o.label}</option>`).join('')}
-                            </select>
-                            <button type="button" id="applyBatchDieType" class="h-9 px-4 text-[10px] bg-[#111111] text-[#555555] border-none focus:outline-none rounded-sm transition-all duration-200 hover:text-[#d32f2f] hover:shadow-[0_0_10px_rgba(211,47,47,0.1)] tracking-wide">
-                                批量应用
-                            </button>
-                        </div>
-                    </div>
-                    <div style="background:#111111; border-left:1px solid #252525; border-right:1px solid #161616; border-bottom:1px solid #0f0f0f;">
-                        <table class="w-full">
-                            <thead class="shrink-0">
-                                <tr style="background:#0c0c0c; border-bottom:1px solid #1a1a1a;">
-                                    <th class="px-4 py-2.5 text-left text-[8px] font-semibold uppercase tracking-[0.22em] text-[#353535]">序</th>
-                                    <th class="px-4 py-2.5 text-left text-[8px] font-semibold uppercase tracking-[0.22em] text-[#353535]">工序号</th>
-                                    <th class="px-4 py-2.5 text-left text-[8px] font-semibold uppercase tracking-[0.22em] text-[#353535]">代号</th>
-                                    <th class="px-4 py-2.5 text-right text-[8px] font-semibold uppercase tracking-[0.22em] text-[#353535]">模数</th>
-                                    <th class="px-4 py-2.5 text-right text-[8px] font-semibold uppercase tracking-[0.22em] text-[#353535]">吨位</th>
-                                    <th class="px-4 py-2.5 text-left text-[8px] font-semibold uppercase tracking-[0.22em] text-[#353535]">模具类型</th>
-                                </tr>
-                            </thead>
-                            <tbody id="processTableBody" style="background:#111111;">${processRows}</tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- 保存按钮与规则栏 -->
-                ${processes.length > 0 ? `
-                <div class="mx-4 mb-6 mt-4">
-                    <!-- 成本规则 - 紧凑低调样式 -->
-                    <div class="flex items-center justify-center gap-4 py-2 mb-3" style="background:#0a0a0a; border:1px solid #1a1a1a; border-radius:2px;">
-                        <span class="text-[7px] text-[#2a2a2a] tracking-[0.15em] uppercase">成本规则</span>
-                        <span class="text-[7px] text-[#1e1e1e]">·</span>
-                        <span class="text-[9px] text-[#3a3a3a]"><span class="text-[#555555]">级进模</span> <span class="text-[#8a3030] font-medium">80%</span></span>
-                        <span class="text-[7px] text-[#1e1e1e]">·</span>
-                        <span class="text-[9px] text-[#3a3a3a]"><span class="text-[#555555]">单干模具</span> <span class="text-[#8a3030] font-medium">100%</span></span>
-                        <span class="text-[7px] text-[#1e1e1e]">·</span>
-                        <span class="text-[9px] text-[#3a3a3a]"><span class="text-[#555555]">共模</span> <span class="text-[#8a3030] font-medium">50%</span></span>
-                        <span class="text-[7px] text-[#1e1e1e]">·</span>
-                        <span class="text-[9px] text-[#3a3a3a]"><span class="text-[#555555]">级进共模</span> <span class="text-[#8a3030] font-medium">40%</span></span>
-                    </div>
-                    <!-- 保存按钮 -->
-                    <div class="flex justify-center">
-                        <button type="button" id="saveProcessBtn"
-                                data-active="false"
-                                class="btn-save-default">
-                            <span class="tracking-[0.2em]">保存</span>
-                        </button>
-                    </div>
-                </div>` : ''}
-            </div>
-        `;
+        return renderDetailContent(part);
     },
 
     /**
@@ -649,13 +486,11 @@ export const PartsPage = {
     async _saveProcessEdits(partId) {
         const btn = document.getElementById('saveProcessBtn');
         const processes = this._collectProcessEdits();
-        console.log('[DEBUG] 提交工序数据:', JSON.stringify(processes, null, 2));
         if (processes.length === 0) return;
         btn.disabled = true;
         btn.innerHTML = `<svg class="w-3.5 h-3.5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>保存中...`;
         try {
             const response = await HttpClient.put(`/api/stamping/parts/${partId}/processes`, processes);
-            console.log('[DEBUG] 保存成功:', response);
             showToast('工序参数已保存', 'success');
             const btn = document.getElementById('saveProcessBtn');
             if (btn) {

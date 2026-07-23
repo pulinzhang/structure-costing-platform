@@ -17,52 +17,59 @@ alwaysApply: true
 
 **前后端分离 SPA 架构**
 
-- **前端**：`static/index.html` + `static/js/app.js` (纯 JavaScript SPA)
-- **后端**：FastAPI `/api/*` 接口 (仅返回 JSON)
+- **前端**：`static/index.html` + ES Modules SPA（无构建步骤，原生 JS + Tailwind CDN）
+- **后端**：FastAPI `/api/*` 接口（仅返回 JSON）
 - **跨域**：后端配置 CORS 允许前端访问
+- **数据获取**：`static/js/main.js` 暴露全局 `HttpClient`、`showToast`、`esc`、`fmtNum`、`svgIcon`
 
 ### 1.2 核心规则
 
 | 规则 | 说明 |
 |------|------|
-| **禁止 Jinja2 模板** | ❌ 不再使用 `{% for %}`、`{{ }}` 等 Jinja2 语法 |
-| **SPA 渲染** | ✅ 所有页面通过 JavaScript 动态渲染 |
-| **仅用 Tailwind CSS** | ✅ 所有样式必须且仅使用 Tailwind CSS 原子类 |
-| **保留 Bootstrap JS** | ✅ Modal、Collapse、Dropdown 等交互组件保留 Bootstrap JS 支持 |
-| **禁止内联** | ❌ 禁止使用 `style="..."` 属性（动态数据绑定除外） |
-| **禁止自定义 CSS** | ❌ 禁止在 `style.css` 中添加新的自定义类 |
+| **禁止 Jinja2 模板** | ❌ `index.html` 静态骨架，不使用 `{% for %}`、`{{ }}` |
+| **SPA 渲染** | ✅ 所有页面内容通过 JavaScript 模块动态渲染到 `#app` 容器 |
+| **Tailwind CSS 优先** | ✅ 所有 UI 样式优先使用 Tailwind 原子类（CDN） |
+| **禁止自定义类** | ❌ 新增 UI 时禁止往 `style.css` 加自定义 class；颜色/间距一律走 Tailwind 原子类或 CSS 变量 |
+| **CSS 变量补足** | ✅ `style.css` 仅维护 `:root` 主题变量 + 全局基础样式（滚动条、字体、侧边栏骨架、动画 keyframes） |
+| **内联 style 例外** | ⚠️ 仅当 Tailwind 无法表达（例如动态 border 阴影、复杂多层 `background: linear-gradient(...)`、动态多边 box-shadow、单点 SVG 装饰）才允许 `style="..."`；常规布局/颜色禁止内联 |
+
+> **历史说明**：项目早期抽屉、详情面板使用大量内联 `style` 以追求更精确的"工业精密感"阴影/边框组合。这些位置**不再追溯改造**，仅作为新代码的反面教材。新增 UI 必须先尝试 Tailwind 原子类+Tailwind 任意值类（如 `shadow-[0_0_8px_rgba(211,47,47,0.5)]`）表达。
 
 ### 1.3 CSS 变量系统（必须使用）
 
-`style.css` 中定义的 CSS 变量是 Brabus 风格的核心，所有页面必须使用这些变量：
+`style.css` 中 `:root` 定义的 CSS 变量是 Brabus 风格的核心，新增 UI 时**引用变量名**而非重复硬编码 hex：
 
 ```css
-/* --- 1. 品牌与交互主色 --- */
---brabus-red: #d32f2f;           /* 品牌红，用于激活态、强调 */
---brabus-red-hover: #b71c1c;     /* 悬停红 */
---brabus-red-glow: rgba(211, 47, 47, 0.25);  /* 红光晕 */
+:root {
+    /* --- 1. 品牌与交互主色 --- */
+    --brabus-red: #d32f2f;
+    --brabus-red-hover: #b71c1c;
+    --brabus-red-glow: rgba(211, 47, 47, 0.25);
 
-/* --- 2. 机械暗色背景阶梯 --- */
---bg-deep: #0a0a0a;             /* 最深背景 */
---bg-main: #121212;              /* 主背景 */
---bg-surface: #1e1e1e;           /* 面板/卡片背景 */
---bg-elevated: #262626;          /* 悬浮/高亮背景 */
+    /* --- 2. 机械暗色背景阶梯 --- */
+    --bg-deep: #0a0a0a;
+    --bg-main: #121212;
+    --bg-surface: #1e1e1e;
+    --bg-elevated: #262626;
 
-/* --- 3. 工业金属灰与文字色 --- */
---text-main: #ffffff;            /* 主文字 */
---text-muted: #9e9e9e;          /* 次要文字 */
---text-disabled: #616161;        /* 禁用/占位文字 */
+    /* --- 3. 工业金属灰与文字色 --- */
+    --text-main: #ffffff;
+    --text-muted: #9e9e9e;
+    --text-disabled: #616161;
 
-/* --- 4. 边框、分割线与高精度线条 --- */
---border-subtle: #222222;        /* 极细分割线 */
---border-color: #2c2c2c;         /* 标准边框 */
---border-active: #ff5252;        /* 激活边框（红色） */
+    /* --- 4. 边框、分割线与高精度线条 --- */
+    --border-subtle: #222222;
+    --border-color: #2c2c2c;
+    --border-active: #ff5252;
 
-/* --- 5. 功能状态色 --- */
---success-color: #2e7d32;
---warning-color: #f57f17;
---danger-color: #c62828;
+    /* --- 5. 功能状态色 --- */
+    --success-color: #2e7d32;
+    --warning-color: #f57f17;
+    --danger-color: #c62828;
+}
 ```
+
+`style.css` 中**唯一允许**保留的自定义结构是侧边栏布局（`.sidebar`、`.nav-item`、`.main-content`、动画 `@keyframes fadeIn` / `spin` 等），不允许新增 UI 组件级 class。
 
 ---
 
@@ -70,17 +77,18 @@ alwaysApply: true
 
 ```
 static/
-├── index.html              # SPA 入口页面
+├── index.html                       # SPA 入口（含 Tailwind CDN、全局脚本挂载点）
 ├── css/
-│   └── style.css          # 全局样式 + CSS 变量（Brabus 风格）
+│   └── style.css                    # CSS 变量 + 全局基础样式 + 侧边栏骨架
 └── js/
-    ├── main.js            # 公共工具（HttpClient、Toast 等）
-    ├── app.js             # SPA 主应用（Hash 路由、渲染逻辑）
-    └── features/          # 功能模块
-        ├── index.js       # 页面元数据配置
+    ├── main.js                      # 全局工具（HttpClient、esc、fmtNum、svgIcon、showToast）
+    ├── app.js                       # SPA 入口（启动 Router、注册页面）
+    ├── router.js                    # 轻量 Hash 路由（基于 Router 类）
+    └── features/                    # 业务功能模块（页面 = 一个目录）
+        ├── index.js                 # 导出 pageMeta（页面标题、面包屑元数据）
         ├── dashboard/
-        │   ├── index.js   # 仪表盘页面逻辑
-        │   └── template.js
+        │   ├── index.js             # 页面逻辑（导出具名对象，如 DashboardPage）
+        │   └── template.js          # HTML 模板字符串
         ├── stamping/
         │   ├── upload/
         │   │   ├── index.js
@@ -89,63 +97,136 @@ static/
         │       ├── index.js
         │       └── template.js
         ├── costing/
+        │   ├── index.js
+        │   └── template.js
         ├── quotation/
+        │   ├── index.js
+        │   └── template.js
         └── settings/
+            ├── index.js
+            └── template.js
 ```
 
-### 页面模块规范
+### 2.1 路由名 → 页面映射
 
-每个页面模块必须导出 `pageConfig` 对象：
+| Hash | 标题 | 对应模块 |
+|------|------|----------|
+| `#/dashboard` | 仪表盘 | `features/dashboard` |
+| `#/stamping/upload` | 上传工艺文件 | `features/stamping/upload` |
+| `#/stamping/parts` | 零件列表 | `features/stamping/parts` |
+| `#/costing` | 核价 | `features/costing` |
+| `#/quotation` | 报价 | `features/quotation` |
+| `#/settings` | 系统设置 | `features/settings` |
+
+页面标题/面包屑唯一维护点在 `features/index.js` 的 `pageMeta`。`app.js` 渲染时读取并写入 `#pageTitle` / `#breadcrumbItem`。
+
+### 2.2 页面模块规范（`pageConfig` 协议）
+
+每个功能模块导出 `pageConfig = { render, init }`，由 `app.js` 通过 `import { pageConfig as xxx }` 注册到 `pages` 字典：
 
 ```javascript
 // features/example/index.js
+import { exampleTemplate } from './template.js';
+
+const ExamplePage = {
+    init() {
+        // 1. 初始化本地状态
+        // 2. 通过 querySelector 绑定事件（模板已 render 到 #pageContent）
+        // 3. 触发首次数据加载
+        this.loadData();
+    },
+
+    async loadData() {
+        const res = await HttpClient.get('/api/example/list');
+        // 拿到 res.data 后用 DOM API 注入到模板元素
+    },
+};
+
 export const pageConfig = {
-    render: () => `<div>页面内容</div>`,
-    init: () => { /* 初始化逻辑 */ }
+    render: exampleTemplate,   // 模板函数
+    init: () => ExamplePage.init(),  // 入口委托
 };
 ```
+
+```javascript
+// features/example/template.js
+export function exampleTemplate() {
+    return `
+        <div class="bg-[#1e1e1e] border border-[#2c2c2c]">
+            <div class="px-4 py-3 border-b border-[#222222]">
+                <h3 class="text-xs font-semibold text-[#9e9e9e] uppercase tracking-wider">页面标题</h3>
+            </div>
+            <div class="p-4 text-sm text-[#ffffff]" id="exampleContainer">
+                <!-- 骨架占位，运行时由 init() 注入 DOM -->
+            </div>
+        </div>
+    `;
+}
+```
+
+**约定**：
+- `render` 必须返回**完整的 HTML 字符串**（被 `pageContent.innerHTML = page.render()` 整体替换）
+- `init` 在 `render` 之后由 `app.js` 调用，负责事件绑定与数据加载
+- 业务状态用模块内 `const xxxState = { ... }` 私有持有，不放 `window`
+- 模板内需要 JS 动态生成或替换的节点，加 `id` 便于 `getElementById` 抓取
+- 模板内 `onclick="removeUploadFile()"` 这类内联全局函数调用，可在 `index.js` 末尾用 `window.xxx = ...` 暴露；但**优先**用 `addEventListener`
 
 ---
 
 ## 三、Brabus 色彩系统
 
-### 3.1 背景色（必须使用 Tailwind 变量）
+### 3.1 背景色（Tailwind 任意值）
 
-| 用途 | Tailwind 变量 | Hex |
-|------|--------------|-----|
+| 用途 | 类 | Hex |
+|------|----|-----|
 | 最深背景 | `bg-[#0a0a0a]` | `#0a0a0a` |
 | 主背景 | `bg-[#121212]` | `#121212` |
 | 面板/卡片 | `bg-[#1e1e1e]` | `#1e1e1e` |
-| 悬浮背景 | `bg-[#262626]` | `#262626` |
+| 悬浮/高亮 | `bg-[#262626]` | `#262626` |
+| 二级深面板 | `bg-[#111111]` / `bg-[#0c0c0c]` | 用于卡片/抽屉内分层 |
 
 ### 3.2 文字色
 
-| 用途 | Tailwind 变量 | Hex |
-|------|--------------|-----|
+| 用途 | 类 | Hex |
+|------|----|-----|
 | 主文字 | `text-[#ffffff]` | `#ffffff` |
 | 次要文字 | `text-[#9e9e9e]` | `#9e9e9e` |
+| 标签/微弱 | `text-[#6b6b6b]` / `text-[#888888]` / `text-[#777777]` | 抽屉/详情行内 |
 | 禁用/占位 | `text-[#616161]` | `#616161` |
+| 极弱描边字 | `text-[#4d4d4d]` / `text-[#484848]` / `text-[#3a3a3a]` | 标签头、不活跃数字 |
 
 ### 3.3 边框色
 
-| 用途 | Tailwind 变量 | Hex |
-|------|--------------|-----|
-| 极细分割线 | `border-[#222222]` | `#222222` |
-| 标准边框 | `border-[#2c2c2c]` | `#2c2c2c` |
-| 激活边框 | `focus:border-[#ff5252]` | `#ff5252` |
+| 用途 | 类 |
+|------|----|
+| 极细分割线 | `border-[#161616]` / `border-[#181818]` / `border-[#222222]` |
+| 标准边框 | `border-[#2c2c2c]` |
+| 抽屉/面板侧边框 | `border-[#252525]` / `border-[#262626]` |
+| 激活边框 | `focus:border-[#ff5252]` / `border-[#d32f2f]` |
 
 ### 3.4 Brabus 品牌红
 
-**使用场景**：激活态边框、强调元素、悬停效果
+使用场景：激活态边框、强调元素、悬停效果、关键 KPI 高亮。
+
 - 边框激活：`border-[#d32f2f]` 或 `focus:border-[#ff5252]`
-- 品牌红按钮背景：`bg-[#d32f2f]`
-- 红色光晕：`shadow-[0_0_12px_rgba(211,47,47,0.4)]`
+- 品牌红按钮：`bg-[#d32f2f] hover:bg-[#b71c1c] text-white`
+- 红色光晕：`shadow-[0_0_8px_rgba(211,47,47,0.5)]` / `shadow-[0_0_12px_rgba(211,47,47,0.4)]`
+- 文字红色高亮：`text-[#d32f2f]`；暗红：`text-[#8a3030]`
+- 激活行左指示条：宽度 `w-0.5`、高度与行平齐、发光 `shadow-[0_0_8px_rgba(211,47,47,0.5)]`
+
+### 3.5 状态色
+
+| 状态 | 文字 | 背景（徽章） |
+|------|------|--------------|
+| 成功 | `text-[#4caf50]` | `bg-[#2e7d32]/20` |
+| 警告 | `text-[#ffb74d]` | `bg-[#f57f17]/20` |
+| 错误 | `text-[#ef5350]` | `bg-[#c62828]/20` |
 
 ---
 
 ## 四、Tailwind CSS 组件规范
 
-### 4.1 按钮系统
+### 4.1 按钮
 
 ```html
 <!-- 主按钮 - Brabus 红 -->
@@ -172,7 +253,7 @@ export const pageConfig = {
 ### 4.2 输入框
 
 ```html
-<!-- 标准输入框 - 内凹质感 -->
+<!-- 标准输入框 -->
 <input type="text"
        class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#ffffff] placeholder:text-[#616161] focus:outline-none focus:border-[#ff5252] transition-all">
 
@@ -190,15 +271,16 @@ export const pageConfig = {
 
 ### 4.3 选择框
 
+项目里 `.die-type-select` 等选择控件使用了内联样式（在 `parts/index.js`），新写法优先 Tailwind：
+
 ```html
-<!-- 下拉选择框 -->
-<select class="w-36 h-9 pl-3 pr-8 text-xs bg-[#0a0a0a] border border-[#2c2c2c] appearance-none cursor-pointer text-[#9e9e9e] focus:outline-none focus:border-[#ff5252] transition-all">
+<select class="h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#9e9e9e] appearance-none cursor-pointer focus:outline-none focus:border-[#ff5252] transition-all">
     <option value="">全部</option>
     <option value="T28">T28</option>
 </select>
 ```
 
-### 4.4 卡片
+### 4.4 卡片 / 面板
 
 ```html
 <!-- 筛选栏面板 -->
@@ -214,6 +296,12 @@ export const pageConfig = {
     <div class="p-4">
         <!-- 内容 -->
     </div>
+</div>
+
+<!-- 抽屉内二级面板（更深一阶） -->
+<div class="bg-[#111111] border border-[#262626] overflow-hidden">
+    <div class="px-4 py-3 bg-[#0c0c0c] border-b border-[#181818]">...</div>
+    ...
 </div>
 ```
 
@@ -263,7 +351,7 @@ export const pageConfig = {
 ### 4.7 加载动画
 
 ```html
-<!-- 表格/卡片加载中 -->
+<!-- 表格/卡片内加载 -->
 <div class="flex items-center justify-center py-14">
     <div class="w-6 h-6 border-2 border-[#2c2c2c] border-t-[#d32f2f] rounded-full animate-spin"></div>
 </div>
@@ -273,6 +361,8 @@ export const pageConfig = {
     <div class="w-7 h-7 border-2 border-[#222222] border-t-[#d32f2f] rounded-full animate-spin"></div>
 </div>
 ```
+
+`animate-spin` / `animate-fade-in` 由 `style.css` 中的 `@keyframes` 提供，Tailwind 标准类可直接使用。
 
 ### 4.8 空状态
 
@@ -290,35 +380,29 @@ export const pageConfig = {
 
 ### 4.9 Toast 提示
 
-```html
-<!-- 成功 -->
-<div class="fixed top-4 right-4 bg-[#1e1e1e] border border-[#2e7d32] px-4 py-3 rounded shadow-lg z-50">
-    <div class="flex items-center gap-3">
-        <svg class="w-5 h-5 text-[#2e7d32]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-        </svg>
-        <span class="text-xs text-[#ffffff]">操作成功</span>
-    </div>
-</div>
+通过 `window.showToast(message, type)` 调用。**仅支持三种 type**：`success` / `error` / `warning`。`'danger'` 作为 `'error'` 的历史别名（早期代码混用）收口。
 
-<!-- 错误 -->
-<div class="fixed top-4 right-4 bg-[#1e1e1e] border border-[#c62828] px-4 py-3 rounded shadow-lg z-50">
-    <div class="flex items-center gap-3">
-        <svg class="w-5 h-5 text-[#c62828]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-        </svg>
-        <span class="text-xs text-[#ffffff]">操作失败</span>
-    </div>
-</div>
+```javascript
+showToast('保存成功', 'success');
+showToast('保存失败', 'error');
+showToast('请检查必填项', 'warning');
 ```
 
+实现要点（见 `static/js/main.js`）：
+- DOM 完全用 Tailwind 任意值类构造（`bg-[#1e1e1e]`、`border-[#2e7d32]`、`border-l-[3px]` 等），**0 行 inline style**
+- 唯一允许的 inline 写入是淡出时的 `opacity` / `transform` 过渡（过渡属性必须 JS 控制）
+- 类型 → 颜色映射集中在文件顶部 `TOAST_STYLE` 对象，新增类型时统一在那里扩展
+- 容器固定为 `body` 末尾插入的 `.toast-container`（仅创建一次）
+
 ### 4.10 抽屉面板
+
+**渲染契约**：抽屉由调用方直接 `append` 到 `<body>` 的尾部，由各页面管理生命周期（打开时插入、关闭时移除 + 移除事件监听）。
 
 ```html
 <!-- 背景遮罩 -->
 <div class="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm transition-opacity duration-300" id="drawerBackdrop"></div>
 
-<!-- 抽屉内容 -->
+<!-- 抽屉内容（右侧滑入，宽 640px） -->
 <div class="fixed inset-y-0 right-0 z-50 w-[640px] bg-[#1a1a1a] border-l border-[#2a2a2a] transform translate-x-full transition-transform duration-300 flex flex-col">
     <!-- 头部 -->
     <div class="px-5 py-3.5 flex items-center justify-between shrink-0 bg-[#1f1f1f] border-b border-[#333333]">
@@ -343,12 +427,7 @@ export const pageConfig = {
 
 ### 5.1 红色左指示条
 
-用于卡片、列表项的激活态指示：
-
-```css
-/* Brabus 红左指示条 */
-position: relative;
-```
+激活态/警示列表项左侧 2px 宽红色发光条：
 
 ```html
 <div class="relative pl-3">
@@ -359,7 +438,7 @@ position: relative;
 
 ### 5.2 数字精密感
 
-用于统计数字、金额等：
+用于 KPI、金额等关键数字：
 
 ```html
 <span class="text-[#ffffff] font-mono tracking-[0.04em] drop-shadow-[0_0_20px_rgba(211,47,47,0.18)]">
@@ -384,27 +463,27 @@ position: relative;
 ### 5.4 状态徽章
 
 ```html
-<!-- 成功状态 -->
-<span class="inline-flex items-center px-2 py-0.5 text-[10px] font-semibold bg-[#2e7d32]/20 text-[#4caf50] rounded">
-    已完成
-</span>
-
-<!-- 警告状态 -->
-<span class="inline-flex items-center px-2 py-0.5 text-[10px] font-semibold bg-[#f57f17]/20 text-[#ffb74d] rounded">
-    待处理
-</span>
-
-<!-- 错误状态 -->
-<span class="inline-flex items-center px-2 py-0.5 text-[10px] font-semibold bg-[#c62828]/20 text-[#ef5350] rounded">
-    失败
-</span>
+<span class="inline-flex items-center px-2 py-0.5 text-[10px] font-semibold bg-[#2e7d32]/20 text-[#4caf50] rounded">已完成</span>
+<span class="inline-flex items-center px-2 py-0.5 text-[10px] font-semibold bg-[#f57f17]/20 text-[#ffb74d] rounded">待处理</span>
+<span class="inline-flex items-center px-2 py-0.5 text-[10px] font-semibold bg-[#c62828]/20 text-[#ef5350] rounded">失败</span>
 ```
+
+### 5.5 多层"工业精密"边框阴影（Brabus 风格关键识别）
+
+**仅用于**详情面板/抽屉/二级容器。新代码用 Tailwind 任意值类（如 `shadow-[2px_2px_8px_rgba(0,0,0,0.5)]`）表达，**不再新增自定义 class**：
+
+- 外层 `box-shadow: 2px 2px 8px rgba(0,0,0,0.5), -1px -1px 0 rgba(255,255,255,0.015) inset`（向下阴影 + 内高光）
+- 顶边 `border-top: 1px solid #282828`，底边 `border-bottom: 1px solid #101010`（明暗反差形成"机加工切面"）
+
+可在 `tailwind.config` 里扩展自定义插件实现，目前**仅在抽屉/详情面板二级容器允许内联**，其它位置禁止。
 
 ---
 
-## 六、禁止的类名
+## 六、禁止的类名 / 工具
 
-### Bootstrap 类（完全禁止）
+### 6.1 完全禁止：Bootstrap
+
+项目**未引入** Bootstrap。任何 `btn-*`、`card`、`form-control`、`row/col-*`、Bootstrap 颜色类（`bg-primary` 等）都不允许出现。
 
 ```
 ❌ btn, btn-primary, btn-outline, btn-success, btn-danger, btn-sm, btn-lg
@@ -415,153 +494,129 @@ position: relative;
 ❌ row, col-md-*, col-*, container, container-fluid
 ❌ bg-primary, bg-success, bg-warning, bg-danger, bg-info
 ❌ text-primary, text-success, text-warning, text-danger
-❌ border-primary, border-success, border-warning, border-danger
 ```
 
-### 浅色系 Tailwind 类（禁止）
+### 6.2 完全禁止：浅色系 Tailwind
 
 ```
 ❌ bg-white, bg-slate-50, bg-gray-50, bg-zinc-50, bg-neutral-50
 ❌ text-white, text-slate-50, text-gray-50, text-zinc-50, text-neutral-50
 ❌ border-white, border-slate-200, border-gray-200
-❌ rounded-lg（大圆角，与 Brabus 风格冲突）
-❌ shadow-md, shadow-lg, shadow-xl（使用 CSS 自定义阴影）
+❌ rounded-lg / rounded-xl / rounded-2xl / rounded-3xl（大圆角与 Brabus 风格冲突）
+❌ shadow-md, shadow-lg, shadow-xl（统一使用 CSS 自定义阴影或 Tailwind 任意值类）
 ```
+
+允许的圆角：`rounded`、`rounded-sm`、`rounded-md`（仅在 button / input / 标签徽章使用，面板保持直角）。
+
+### 6.3 不允许新增自定义 class 到 style.css
+
+仅以下结构性骨架允许存在：`.sidebar`、`.main-content`、`.nav-item`、动画 `@keyframes`。
+
+**新增 UI 一律使用 Tailwind 原子类或 Tailwind 任意值类**（如 `bg-[#0a0a0a]`、`shadow-[0_0_12px_rgba(211,47,47,0.4)]`），不得新增 `.my-card`、`.dark-panel` 之类的 class。
 
 ---
 
 ## 七、JavaScript 规范
 
-### 7.1 工具函数
+### 7.1 全局工具（来自 `main.js`）
+
+通过 `window` 暴露，所有页面直接使用，**禁止在页面里重复实现**：
+
+| 名称 | 用途 |
+|------|------|
+| `HttpClient.get/post/put/delete` | 封装好的 fetch，自动注入 JSON 头，错误统一 throw |
+| `esc(value)` | HTML 转义，防止 XSS；`null/undefined` 返回 `'-'` |
+| `fmtNum(value, digits=2)` | 数字格式化，`NaN/null` 返回 `'-'` |
+| `window.svgIcon(name)` | 集中管理的内联 SVG 图标字符串 |
+| `showToast(message, type)` | Brabus 风格 Toast，`type ∈ {success, error, warning}` |
+
+### 7.2 模板与逻辑分离
+
+模板（`template.js`）只生成静态骨架 HTML 字符串；运行时数据、事件绑定放在 `index.js`，由 `app.js` 完成 `pageContent.innerHTML = page.render()` 后再调用 `page.init()`。
 
 ```javascript
-// HTML 转义（防止 XSS）
-const esc = (value) => {
-    if (value == null) return '-';
-    return String(value).replace(/[&<>"']/g, (ch) => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
-    }[ch]));
-};
+// template.js —— 纯函数，无副作用
+export function partsTemplate() {
+    return `<div id="partsContainer">...</div>`;
+}
 
-// 数字格式化
-const fmtNum = (value, digits = 2) => {
-    if (value == null || Number.isNaN(value)) return '-';
-    return Number(value).toFixed(digits);
-};
-
-// Brabus 风格 Toast
-const showToast = (message, type = 'success') => {
-    const colors = {
-        success: 'border-[#2e7d32]',
-        error: 'border-[#c62828]',
-        warning: 'border-[#f57f17]',
-    };
-    const icons = {
-        success: 'M5 13l4 4L19 7',
-        error: 'M6 18L18 6M6 6l12 12',
-        warning: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z',
-    };
-    const iconColor = {
-        success: 'text-[#2e7d32]',
-        error: 'text-[#c62828]',
-        warning: 'text-[#f57f17]',
-    };
-
-    const toast = document.createElement('div');
-    toast.className = `fixed top-4 right-4 bg-[#1e1e1e] border ${colors[type]} px-4 py-3 rounded shadow-lg z-[9999] animate-fade-in`;
-    toast.innerHTML = `
-        <div class="flex items-center gap-3">
-            <svg class="w-5 h-5 ${iconColor[type]}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${icons[type]}"></path>
-            </svg>
-            <span class="text-xs text-[#ffffff]">${esc(message)}</span>
-        </div>
-    `;
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 3000);
-};
-```
-
-### 7.2 页面模板规范
-
-```javascript
-// features/example/template.js
-export function exampleTemplate() {
-    return `
-        <div class="bg-[#1e1e1e] border border-[#2c2c2c] p-4">
-            <h3 class="text-xs font-semibold text-[#9e9e9e] uppercase tracking-wider mb-4">页面标题</h3>
-            <div class="text-sm text-[#ffffff]">
-                页面内容
-            </div>
-        </div>
-    `;
+// index.js —— 拿到模板渲染后绑定事件
+init() {
+    // 此时 app.js 已经把 pageContent 替换为渲染好的 DOM
+    this.bindEvents();
 }
 ```
 
-```javascript
-// features/example/index.js
-import { exampleTemplate } from './template.js';
+### 7.3 URL 与 API 约定
 
-export const pageConfig = {
-    render: exampleTemplate,
-    init: () => {
-        // 初始化逻辑
-        console.log('Example page initialized');
-    }
-};
-```
+- API 基础路径：`/api`
+- 列表接口统一分页参数：`skip` / `limit`（其它接口可能用 `page` / `page_size`，按接口文档）
+- 列表响应统一结构：`{ code: 0, data: { items: [...], total: 100 } }` 或 `{ code: 0, data: [...], total: 100 }`，用 `HttpClient` 解包后访问
+
+### 7.4 命名风格
+
+参考项目级 `naming-convention.mdc`：
+
+- 变量 / 函数：小写下划线（JS 里用 camelCase 兼容：`partsState`、`loadParts`）
+- 类 / 具名对象：大驼峰（`PartsPage`、`DashboardPage`）
+- 常量：全大写下划线（`PARTS_CONFIG.DEFAULT_PAGE_SIZE`）
+- 私有变量：单下划线前缀（`_internalCache`）
 
 ---
 
 ## 八、样式优先级
 
-当 Tailwind 原子类与 CSS 变量冲突时，按以下优先级：
+1. **交互状态**（hover、focus、active）：Tailwind 原子类（`hover:bg-[#b71c1c]`、`focus:border-[#ff5252]`）
+2. **基础颜色/间距**：Tailwind 任意值类（`bg-[#0a0a0a]`、`text-[#9e9e9e]`），仅在确实需要 JS 读取的地方用 `var(--brabus-red)` 形式在 `style.css` 里读变量
+3. **必需自定义**：仅侧边栏骨架、动画 keyframes、滚动条样式
 
-1. **交互状态**（hover、focus、active）使用 Tailwind 原子类
-2. **基础样式**优先使用 CSS 变量（如 `bg-[#0a0a0a]`）
-3. **组件特定样式**在 `style.css` 中定义
+新增任何视觉规则前，问一遍："能否用 Tailwind 原子类（包括任意值）表达？"——能就不要新增。
 
 ---
 
 ## 九、快速检查清单
 
-修改 `static/` 文件前，确认：
+修改 `static/` 文件前 / 提交前自检：
 
-- [ ] 没有使用 Jinja2 模板语法 (`{% %}`, `{{ }}`)
-- [ ] 页面渲染使用 JavaScript 模板字符串
-- [ ] 使用 Brabus 深色变量（`bg-[#0a0a0a]`、`bg-[#1e1e1e]` 等）
-- [ ] 使用 Brabus 文字色（`text-[#ffffff]`、`text-[#9e9e9e]`、`text-[#616161]`）
-- [ ] 使用 Brabus 边框色（`border-[#222222]`、`border-[#2c2c2c]`）
-- [ ] 激活态使用 Brabus 红（`focus:border-[#ff5252]`、`bg-[#d32f2f]`）
-- [ ] 没有生成 Bootstrap 类的 HTML
-- [ ] `style.css` 没有添加新的自定义类
-- [ ] Toast、加载动画、空状态使用 Brabus 风格
-- [ ] Bootstrap JS 仅用于交互功能（Modal、Collapse、Dropdown）
+- [ ] 页面骨架用 ES Module + `pageMeta` 注册，没有新增到 `app.js` 的硬编码
+- [ ] 颜色用 Tailwind 任意值类，没有新增到 `style.css` 的自定义 UI class
+- [ ] 用到的颜色在 `CSS 变量系统` 表格里能找到对应（或至少属于同一阶梯：背景 `#0a0a0a/#121212/#1e1e1e/#262626`、文字 `#ffffff/#9e9e9e/#616161` 等）
+- [ ] 激活态边框使用 `#ff5252` 或 `#d32f2f`，主按钮用 `bg-[#d32f2f]`
+- [ ] 没有 Bootstrap 类、没有浅色 Tailwind 类、没有 `rounded-lg+`
+- [ ] 模板只生成静态骨架，事件绑定和数据填充都在 `index.js`
+- [ ] 用户可见文本都通过 `esc()` 转义后再 `innerHTML` 注入
+- [ ] Toast / 加载 / 空状态使用 `main.js` 已有的 `showToast` 或文档 4.7/4.8 模式
 
 ---
 
 ## 十、常用 Tailwind 类速查
 
 ```javascript
-// 背景
-'bg-[#0a0a0a]', 'bg-[#121212]', 'bg-[#1e1e1e]', 'bg-[#262626]'
+// 背景阶梯
+'bg-[#0a0a0a]', 'bg-[#121212]', 'bg-[#1e1e1e]', 'bg-[#262626]',
+'bg-[#111111]', 'bg-[#0c0c0c]'
 
-// 文字
-'text-[#ffffff]', 'text-[#9e9e9e]', 'text-[#616161]'
+// 文字阶梯
+'text-[#ffffff]', 'text-[#9e9e9e]', 'text-[#616161]',
+'text-[#888888]', 'text-[#777777]', 'text-[#6b6b6b]',
+'text-[#4d4d4d]', 'text-[#484848]', 'text-[#3a3a3a]'
 
-// 边框
-'border-[#222222]', 'border-[#2c2c2c]', 'focus:border-[#ff5252]'
+// 边框阶梯
+'border-[#161616]', 'border-[#181818]', 'border-[#222222]',
+'border-[#2c2c2c]', 'border-[#262626]', 'border-[#252525]',
+'focus:border-[#ff5252]', 'border-[#d32f2f]'
 
-// 品牌红
-'bg-[#d32f2f]', 'hover:bg-[#b71c1c]', 'text-[#d32f2f]'
+// 品牌红与状态
+'bg-[#d32f2f]', 'hover:bg-[#b71c1c]', 'text-[#d32f2f]',
+'text-[#8a3030]', 'shadow-[0_0_8px_rgba(211,47,47,0.5)]'
 
 // 状态色
 'text-[#2e7d32]', 'text-[#f57f17]', 'text-[#c62828]'
 
-// 圆角
+// 圆角（仅按钮/输入/徽章，面板用直角）
 'rounded', 'rounded-sm', 'rounded-md'
 
-// 字体大小
+// 字号
 'text-[10px]', 'text-[11px]', 'text-xs', 'text-sm'
 
 // 间距

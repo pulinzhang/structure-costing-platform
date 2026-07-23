@@ -105,7 +105,7 @@
                     <nav aria-label="breadcrumb" class="breadcrumb breadcrumb-mobile-only">
                         <ol class="flex items-center gap-1">
                             <li><a href="#/dashboard" class="breadcrumb-item" data-page="dashboard">首页</a></li>
-                            <li class="text-[var(--text-dim)]">/</li>
+                            <li class="text-[var(--text-dim)]" aria-hidden="true">/</li>
                             <li class="breadcrumb-item active" aria-current="page" id="breadcrumbItem">仪表盘</li>
                         </ol>
                     </nav>
@@ -119,8 +119,7 @@
         </div>
     </main>
 
-    <!-- Toast 容器 -->
-    <div id="toastContainer" class="toast-container fixed top-4 right-4 flex flex-col gap-2"></div>
+    <!-- Toast 容器由 main.js 动态创建（统一管理生命周期） -->
 
     <script src="/static/js/main.js?v=6"></script>
     <script type="module" src="/static/js/app.js?v=6"></script>
