@@ -44,14 +44,13 @@ stamping-costing-platform/
 │   │   ├── dashboard/         # 仪表盘
 │   │   │   └── crud.py        # GET /api/dashboard/*
 │   │   ├── stamping/          # 冲压工艺
-│   │   │   ├── crud.py        # 零件/工序 CRUD API
-│   │   │   └── upload.py      # 文件上传 API
+│   │   │   ├── crud.py        # 零件/工序 CRUD API（/api/stamping/parts/*）
+│   │   │   ├── upload.py      # 文件上传 API
+│   │   │   └── tonnage_price.py # 吨位单价维护 API
 │   │   ├── costing/           # 成本核算
 │   │   │   └── crud.py        # POST /api/costing/calculate
 │   │   ├── quotation/         # 报价管理
 │   │   │   └── crud.py        # GET /api/quotation/*
-│   │   ├── parts/             # 通用零件
-│   │   │   └── crud.py        # GET /api/parts/*
 │   │   └── settings/          # 系统设置
 │   │       └── crud.py        # GET/PUT /api/settings/*
 │   ├── services/              # 业务逻辑层
@@ -140,7 +139,6 @@ python main.py
 | | PATCH | `/api/stamping/processes/{process_id}` | 更新工序 |
 | | PUT | `/api/stamping/parts/{part_id}/processes` | 批量更新工序 |
 | **冲压工艺上传** | POST | `/api/stamping/upload/` | 上传工艺文件 |
-| **零件** | GET | `/api/parts/list` | 通用零件列表 |
 | **核价** | POST | `/api/costing/calculate` | 成本计算 |
 | **报价** | GET | `/api/quotation/list` | 报价列表 |
 | **系统设置** | GET | `/api/settings/config` | 获取配置 |

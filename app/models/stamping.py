@@ -111,3 +111,36 @@ class StampingProcess(Base):
         Index("ix_process_part_id", "part_id"),
         Index("ix_process_seq", "process_seq"),
     )
+
+
+class StampingTonnagePrice(Base):
+    """
+    冲压压机吨位单冲次价格表
+    用于存储不同年份、不同压机吨位对应的单冲次加工价格
+    """
+    __tablename__ = "stamping_tonnage_price"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+
+    # 年份（用于区分不同年度的价格标准）
+    year = Column(Integer, nullable=False, comment="年份（如 2026）")
+
+    # 压机吨位（T）
+    tonnage = Column(Integer, nullable=False, comment="压机吨位(T)")
+
+    # 单冲次价格（元/冲次）
+    price_per_stroke = Column(Numeric(12, 4), nullable=False, comment="单冲次价格(元)")
+
+    # 元数据
+    created_at = Column(DateTime, default=datetime.now, comment="创建时间")
+    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now, comment="更新时间")
+
+    __table_args__ = (
+        Index("ix_tonnage_price_year", "year"),
+        Index("ix_tonnage_price_tonnage", "tonnage"),
+        # 同年份同吨位设为联合唯一约束
+        UniqueConstraint(
+            "year", "tonnage",
+            name="uix_year_tonnage_unique"
+        ),
+    )

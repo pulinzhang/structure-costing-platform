@@ -1,6 +1,5 @@
-# Stamping Router Package
+# Stamping Routers Package
 
-from app.routers.stamping.crud import router as crud_router
-from app.routers.stamping.upload import router as upload_router
+from app.routers.stamping.tonnage_price import router as tonnage_price_router
 
-__all__ = ["crud_router", "upload_router"]
+__all__ = ["tonnage_price_router"]

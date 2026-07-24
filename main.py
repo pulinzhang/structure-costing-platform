@@ -34,7 +34,7 @@ async def lifespan(app: FastAPI):
     LoggerConfig.configure(force=True)
     ensure_directories()
     # 导入所有模型，确保 Base.metadata 能扫描到表结构
-    from app.models import StampingPart, StampingProcess
+    from app.models import StampingPart, StampingProcess, StampingTonnagePrice
     # 自动迁移：在 create_tables 之前补充缺失的列
     from app.utils.db_migration import run_auto_migration
     run_auto_migration()
@@ -187,6 +187,7 @@ def create_app() -> FastAPI:
             {"name": "仪表盘", "description": "数据统计与看板"},
             {"name": "冲压工艺", "description": "冲压件零件与工序管理"},
             {"name": "冲压工艺上传", "description": "冲压工艺文件上传与解析"},
+            {"name": "冲压吨位价格", "description": "冲压压机吨位单冲次价格管理"},
             {"name": "零件", "description": "通用零件管理"},
             {"name": "核价", "description": "成本计算与核价"},
             {"name": "报价", "description": "报价单管理"},
@@ -234,16 +235,16 @@ def create_app() -> FastAPI:
     from app.routers.dashboard.crud import router as dashboard_router
     from app.routers.costing.crud import router as costing_router
     from app.routers.quotation.crud import router as quotation_router
-    from app.routers.parts.crud import router as parts_router
     from app.routers.settings.crud import router as settings_router
     from app.routers.stamping.crud import router as stamping_crud_router
     from app.routers.stamping.upload import router as stamping_upload_router
+    from app.routers.stamping.tonnage_price import router as stamping_tonnage_price_router
 
     # include_router = 注册路由
     app.include_router(dashboard_router)
     app.include_router(stamping_crud_router)
     app.include_router(stamping_upload_router)
-    app.include_router(parts_router)
+    app.include_router(stamping_tonnage_price_router)
     app.include_router(costing_router)
     app.include_router(quotation_router)
     app.include_router(settings_router)

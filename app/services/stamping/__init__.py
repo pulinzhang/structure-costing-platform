@@ -1,4 +1,9 @@
-"""冲压工艺 Service 层"""
-from app.services.stamping.stamping_service import StampingPartService
+# Stamping Services Package
 
-__all__ = ["StampingPartService"]
+from app.services.stamping.stamping_service import StampingPartService
+from app.services.stamping.tonnage_price_service import StampingTonnagePriceService
+
+__all__ = [
+    "StampingPartService",
+    "StampingTonnagePriceService",
+]

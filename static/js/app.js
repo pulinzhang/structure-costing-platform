@@ -16,18 +16,20 @@ import { pageMeta } from './features/index.js';
 import { pageConfig as dashboardPage }      from './features/dashboard/index.js';
 import { pageConfig as stampingUploadPage } from './features/stamping/upload/index.js';
 import { pageConfig as stampingPartsPage }  from './features/stamping/parts/index.js';
+import { pageConfig as stampingTonnagePage } from './features/stamping/tonnage/index.js';
 import { pageConfig as costingPage }        from './features/costing/index.js';
 import { pageConfig as quotationPage }      from './features/quotation/index.js';
-import { pageConfig as settingsPage }        from './features/settings/index.js';
+import { pageConfig as settingsPage }       from './features/settings/index.js';
 
 // ===== 页面注册 =====
 const pages = {
-    dashboard:       dashboardPage,
+    dashboard:        dashboardPage,
     'stamping-upload': stampingUploadPage,
-    'stamping-parts': stampingPartsPage,
-    costing:         costingPage,
-    quotation:       quotationPage,
-    settings:        settingsPage,
+    'stamping-parts':  stampingPartsPage,
+    'stamping-tonnage': stampingTonnagePage,
+    costing:          costingPage,
+    quotation:        quotationPage,
+    settings:         settingsPage,
 };
 
 const DEFAULT_PAGE = 'dashboard';

@@ -36,7 +36,7 @@ export function dashboardTemplate() {
                         <p class="stat-number text-2xl font-bold" id="totalModels">—</p>
                     </div>
                     <div class="stat-icon w-8 h-8 rounded-sm flex items-center justify-center">
-                        ${window.svgIcon('arrows-split', 'w-4 h-4')}
+                        ${svgIcon('arrows-split', 'w-4 h-4')}
                     </div>
                 </div>
             </div>
@@ -47,7 +47,7 @@ export function dashboardTemplate() {
                         <p class="stat-number text-2xl font-bold" id="recentUploads">—</p>
                     </div>
                     <div class="stat-icon w-8 h-8 rounded-sm flex items-center justify-center">
-                        ${window.svgIcon('upload', 'w-4 h-4')}
+                        ${svgIcon('upload', 'w-4 h-4')}
                     </div>
                 </div>
             </div>
@@ -66,12 +66,12 @@ export function dashboardTemplate() {
             <div class="flex gap-2">
                 <!-- 主操作按钮：Brabus 机械舱质感 -->
                 <a href="#" class="inline-flex items-center gap-2 text-xs font-medium active:scale-[0.98] transition-all duration-150 upload-cta" data-page="stamping-upload">
-                    ${window.svgIcon('upload', 'w-3.5 h-3.5')}
+                    ${svgIcon('upload', 'w-3.5 h-3.5')}
                     上传工艺文件
                 </a>
                 <!-- 次要操作 -->
                 <a href="#" class="inline-flex items-center gap-2 text-xs font-medium active:scale-[0.98] transition-all duration-150 overview-cta" data-page="stamping-parts">
-                    ${window.svgIcon('box', 'w-3.5 h-3.5')}
+                    ${svgIcon('box', 'w-3.5 h-3.5')}
                     查看零件列表
                 </a>
             </div>
