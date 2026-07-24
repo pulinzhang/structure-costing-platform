@@ -170,11 +170,11 @@ class StampingTonnagePriceService:
 
         for source in source_records:
             try:
-            self.repository.create(db, {
-                "year": target_year,
-                "tonnage": source.tonnage,
-                "price_per_stroke": source.price_per_stroke,
-            })
+                self.repository.create(db, {
+                    "year": target_year,
+                    "tonnage": source.tonnage,
+                    "price_per_stroke": source.price_per_stroke,
+                })
                 created += 1
             except IntegrityError:
                 db.rollback()
