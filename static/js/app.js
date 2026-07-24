@@ -8,6 +8,9 @@
  *   └── index.js    : 页面逻辑模块
  * - ui/            : 可复用 UI 组件
  * - app.js         : SPA 核心（Hash 路由、渲染、页面注册）
+ *
+ * 缓存说明：所有子模块走裸路径依赖图，由 index.html 中 <script src="app.js?v=9">
+ * 入口 URL 的 query 串驱动整体刷新；每次脚本更新后需要同步递增 ?v= 版本号。
  */
 
 import { pageMeta } from './features/index.js';

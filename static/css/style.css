@@ -52,6 +52,13 @@ body {
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    display: grid;
+    grid-template-columns: 256px 1fr;
+    grid-template-rows: 1fr;
+    align-items: start;
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
 }
 
 /* 全局滚动条 */
@@ -77,11 +84,10 @@ body {
 
 /* ====== 侧边栏 — 钛灰面板 ====== */
 .sidebar {
-    position: fixed;
-    top: 0;
-    left: 0;
+    grid-column: 1;
     height: 100vh;
     width: 256px;
+    flex-shrink: 0; /* 不允许收缩 */
     background: var(--bg-surface);
     border-right: 1px solid var(--border-subtle);
     color: #fff;
@@ -89,6 +95,9 @@ body {
     z-index: 1000;
     display: flex;
     flex-direction: column;
+    position: sticky;
+    top: 0;
+    align-self: start;
 }
 
 .sidebar-brand {
@@ -239,9 +248,21 @@ body {
 
 /* ====== 主内容区 ====== */
 .main-content {
-    margin-left: 256px;
+    grid-column: 2;
+    min-width: 0;
     min-height: 100vh;
     padding: 2rem;
+    max-width: 100%;
+    overflow-x: hidden;
+    box-sizing: border-box;
+}
+
+/* 页面内容容器 */
+.page-content {
+    width: 100%;
+    min-width: 0; /* 允许收缩 */
+    max-width: 100%;
+    overflow-x: hidden;
 }
 
 /* 极简页头 — 取消大黑框，干净悬浮 */
@@ -804,10 +825,21 @@ tr:focus-within .die-type-select {
         box-shadow: 4px 0 24px rgba(0, 0, 0, 0.6);
     }
 
-    /* 主内容区取消左侧偏移 */
+    /* 主内容区：小屏使用块级布局 */
+    body {
+        display: block;
+    }
+    .sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        flex-shrink: unset;
+    }
     .main-content {
         margin-left: 0;
         padding: 1.25rem;
+        position: relative;
+        min-height: 100vh;
     }
 
     /* 压缩页头 */

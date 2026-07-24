@@ -1,102 +1,124 @@
 /**
  * Tonnage Price Template
  * 吨位价格维护页面 — Brabus Carbon & Precision Dark
+ *
+ * 抽屉式交互（与零件列表 /partDrawer 对齐）：
+ * - 编辑/新增  → editDrawer（640px 右侧滑入）
+ * - 复制模板  → copyDrawer（480px 右侧滑入）
+ * - 删除确认  → deleteDrawer（380px 右侧滑入）
  */
 
 export function tonnagePriceTemplate() {
     return `
-        <div class="space-y-4">
-            <!-- 页面标题区 -->
-            <div class="flex items-center justify-between mb-6">
-                <div class="flex items-center gap-3">
-                    <div class="w-[2px] h-5 bg-[#d32f2f] rounded-[1px] shadow-[0_0_6px_rgba(211,47,47,0.25)]"></div>
-                    <h2 class="text-[13px] font-semibold text-[#ffffff] tracking-wide">压机吨位单冲次价格</h2>
-                </div>
-                <div class="flex items-center gap-2">
-                    <button id="btnCopyTemplate" class="inline-flex items-center gap-1.5 bg-transparent text-[#9e9e9e] border border-[#2c2c2c] px-3 py-1.5 text-[11px] font-medium rounded hover:border-[#d32f2f] hover:text-[#d32f2f] transition-all">
-                        ${window.svgIcon('copy', 'w-3.5 h-3.5')}
-                        复制模板
-                    </button>
-                    <button id="btnAddTonnagePrice" class="inline-flex items-center gap-1.5 bg-[#d32f2f] text-white px-3 py-1.5 text-[11px] font-semibold rounded hover:bg-[#b71c1c] transition-all">
-                        ${window.svgIcon('plus', 'w-3.5 h-3.5')}
-                        新增价格
-                    </button>
-                </div>
-            </div>
+        <div class="space-y-2 w-full max-w-full">
 
-            <!-- 筛选区 -->
-            <div class="bg-[#1e1e1e] border border-[#2c2c2c] p-4">
-                <div class="flex items-end gap-4">
-                    <div class="flex-1">
-                        <label class="text-[10px] font-semibold text-[#616161] uppercase tracking-[0.1em] mb-1.5 block">选择年份</label>
-                        <select id="yearFilter" class="h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#9e9e9e] appearance-none cursor-pointer focus:outline-none focus:border-[#ff5252] transition-all rounded w-full min-w-[140px]">
-                            <option value="">全部年份</option>
-                        </select>
+            <!-- 页面主面板：面板头部（标题+按钮） + 表格 -->
+            <div class="bg-[#1e1e1e] border border-[#2c2c2c] overflow-hidden w-full max-w-full"
+                 style="box-shadow: 0 2px 12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.03);">
+
+                <!-- 面板头部：标题 + 操作按钮 -->
+                <div class="flex items-center justify-between px-5 py-3.5 border-b border-[#222222]"
+                     style="background: linear-gradient(90deg, #1c1c1c 0%, #1e1e1e 60%);">
+                    <div class="flex items-center gap-3">
+                        <div class="w-[2px] h-4 bg-[#d32f2f] rounded-[1px] shadow-[0_0_6px_rgba(211,47,47,0.3)]"></div>
+                        <h2 class="text-[12px] font-semibold text-[#c8c8c8] tracking-wide">压机吨位单冲次价格</h2>
                     </div>
-                    <button id="btnFilter" class="inline-flex items-center gap-1.5 bg-[#262626] text-[#9e9e9e] border border-[#2c2c2c] px-4 py-2 text-[11px] font-medium rounded hover:border-[#d32f2f] hover:text-[#d32f2f] transition-all">
-                        ${window.svgIcon('search', 'w-3.5 h-3.5')}
-                        查询
-                    </button>
+                    <div class="flex items-center gap-2">
+                        <button id="btnCopyTemplate" class="inline-flex items-center gap-1.5 bg-transparent text-[#888888] border border-[#2c2c2c] px-3 py-1.5 text-[11px] font-medium rounded-sm hover:border-[#d32f2f] hover:text-[#d32f2f] transition-all duration-150">
+                            ${window.svgIcon('arrows-split', 'w-3 h-3')}
+                            复制模板
+                        </button>
+                        <button id="btnAddTonnagePrice" class="inline-flex items-center gap-1.5 bg-[#d32f2f] text-white px-3 py-1.5 text-[11px] font-semibold rounded-sm hover:bg-[#b71c1c] transition-all duration-150">
+                            ${window.svgIcon('plus', 'w-3 h-3')}
+                            新增价格
+                        </button>
+                    </div>
                 </div>
-            </div>
 
-            <!-- 数据表格 -->
-            <div class="bg-[#1e1e1e] border border-[#2c2c2c]">
+                <!-- 工具栏：筛选 -->
+                <div class="flex items-center justify-between px-5 py-2.5 border-b border-[#1e1e1e]"
+                     style="background: linear-gradient(180deg, #181818 0%, #161616 100%);">
+                    <!-- 左侧：筛选控件 -->
+                    <div class="flex items-center gap-3">
+                        <div class="flex items-center gap-1.5">
+                            <label class="text-[9px] font-semibold text-[#484848] uppercase tracking-[0.12em] whitespace-nowrap">年份</label>
+                            <select id="yearFilter"
+                                    class="w-36 h-7 pl-2.5 pr-7 text-[11px] bg-[#0d0d0d] border border-[#272727] text-[#909090] appearance-none cursor-pointer focus:outline-none focus:border-[#ff5252] transition-all rounded-sm">
+                                <option value="">全部</option>
+                            </select>
+                        </div>
+
+                        <button id="btnFilter"
+                                class="inline-flex items-center gap-1 h-7 px-3 text-[11px] font-medium bg-[#242424] text-[#787878] border border-[#272727] rounded-sm hover:border-[#d32f2f] hover:text-[#d32f2f] transition-all duration-150">
+                            ${window.svgIcon('search', 'w-3 h-3')}
+                            查询
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 表格区 -->
                 <div class="overflow-x-auto">
                     <table class="w-full">
                         <thead>
-                            <tr class="bg-[#0a0a0a] border-b border-[#2c2c2c]">
-                                <th class="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161] whitespace-nowrap">年份</th>
-                                <th class="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161] whitespace-nowrap">压机吨位 (T)</th>
-                                <th class="px-4 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161] whitespace-nowrap">单冲次价格 (元)</th>
-                                <th class="px-4 py-3 text-center text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161] whitespace-nowrap w-24">操作</th>
+                            <tr style="background: linear-gradient(180deg, #111111 0%, #0e0e0e 100%); border-bottom: 1px solid #222222;">
+                                <th class="px-5 py-2.5 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">年份</th>
+                                <th class="px-5 py-2.5 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">压机吨位 (T)</th>
+                                <th class="px-5 py-2.5 text-right text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">单冲次价格 (元)</th>
+                                <th class="px-5 py-2.5 text-center text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap w-24">操作</th>
                             </tr>
                         </thead>
-                        <tbody id="tonnagePriceTableBody" class="divide-y divide-[#222222]">
+                        <tbody id="tonnagePriceTableBody" class="divide-y divide-[#1d1d1d]">
                             <!-- 动态渲染 -->
                         </tbody>
                     </table>
                 </div>
 
-                <!-- 空状态 -->
-                <div id="emptyState" class="hidden flex flex-col items-center justify-center py-14">
-                    <div class="w-10 h-10 bg-[#262626] flex items-center justify-center mb-3">
-                        ${window.svgIcon('clipboard-list', 'w-5 h-5 text-[#616161]')}
+                <!-- 分页：右下角 -->
+                <div class="flex items-center justify-between px-5 py-2 border-t border-[#1e1e1e] bg-[#141414]" id="paginationContainer">
+                    <span id="totalCountPagination" class="text-[10px] text-[#484848]"></span>
+                    <div class="flex items-center gap-0.5" id="paginationBtns">
+                        <!-- 动态渲染 -->
                     </div>
-                    <h5 class="text-xs font-medium text-[#9e9e9e] mb-1">暂无数据</h5>
-                    <p class="text-[11px] text-[#616161]">点击"新增价格"按钮添加记录</p>
+                </div>
+
+                <!-- 空状态 -->
+                <div id="emptyState" class="hidden flex flex-col items-center justify-center py-10">
+                    <div class="w-8 h-8 flex items-center justify-center mb-3 rounded-sm" style="background:#141414; border: 1px solid #222222;">
+                        ${window.svgIcon('clipboard-list', 'w-4 h-4 text-[#3a3a3a]')}
+                    </div>
+                    <h5 class="text-[11px] font-medium text-[#555555] mb-1">暂无数据</h5>
+                    <p class="text-[10px] text-[#3a3a3a]">点击上方"新增价格"添加记录</p>
                 </div>
 
                 <!-- 加载中 -->
-                <div id="loadingState" class="hidden flex items-center justify-center py-14">
-                    <div class="w-6 h-6 border-2 border-[#2c2c2c] border-t-[#d32f2f] rounded-full animate-spin"></div>
-                </div>
-            </div>
-
-            <!-- 分页 -->
-            <div id="paginationContainer" class="flex items-center justify-between text-[11px] text-[#616161]">
-                <span id="totalCount">共 0 条</span>
-                <div class="flex items-center gap-1" id="paginationBtns">
-                    <!-- 动态渲染 -->
+                <div id="loadingState" class="hidden flex items-center justify-center py-10">
+                    <div class="w-4 h-4 border border-[#252525] border-t-[#d32f2f] rounded-full animate-spin"></div>
                 </div>
             </div>
         </div>
 
-        <!-- 编辑/新增弹窗 -->
-        <div id="editModal" class="hidden fixed inset-0 z-50 flex items-center justify-center">
-            <div class="fixed inset-0 bg-black/70 backdrop-blur-sm" id="editModalBackdrop"></div>
-            <div class="relative z-10 w-[400px] bg-[#1a1a1a] border border-[#2a2a2a] rounded p-6 shadow-[0_0_40px_rgba(0,0,0,0.6)]">
-                <div class="flex items-center justify-between mb-5">
-                    <h3 id="editModalTitle" class="text-[11px] font-semibold text-[#b0b0b0] uppercase tracking-wider flex items-center gap-2">
-                        <span class="w-[2px] h-4 bg-[#d32f2f] rounded-[1px] shadow-[0_0_6px_rgba(211,47,47,0.3)]"></span>
-                        编辑价格
-                    </h3>
-                    <button id="closeEditModal" class="w-7 h-7 flex items-center justify-center rounded text-[#707070] hover:text-white hover:bg-[#d32f2f] transition-all">
-                        ${window.svgIcon('x-lg', 'w-4 h-4')}
-                    </button>
-                </div>
+        <!-- 编辑/新增抽屉 -->
+        <div class="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm transition-opacity duration-300"
+             id="editDrawerBackdrop" style="display:none"></div>
 
-                <form id="editForm" class="space-y-4">
+        <div class="fixed inset-y-0 right-0 z-50 w-[640px] bg-[#1a1a1a] border-l border-[#2a2a2a] transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col"
+             id="editDrawer" style="display:none; max-height: 100vh; box-shadow: -20px 0 60px rgba(0,0,0,0.95), -8px 0 30px rgba(0,0,0,0.8), 0 0 1px rgba(255,255,255,0.05);">
+            <div class="px-5 py-3.5 flex items-center justify-between shrink-0"
+                 style="background: linear-gradient(180deg, #1f1f1f 0%, #1a1a1a 100%); border-bottom: 1px solid #333333;">
+                <h5 class="text-[11px] font-semibold tracking-wider text-[#b0b0b0] flex items-center gap-2.5 uppercase" id="editDrawerTitle">
+                    <span style="width:3px;height:14px;background:#d32f2f;border-radius:1px;display:inline-block;box-shadow: 0 0 8px rgba(211,47,47,0.5);"></span>
+                    编辑价格
+                </h5>
+                <button type="button" id="closeEditDrawer"
+                        class="flex items-center justify-center w-8 h-8 rounded-md text-[#707070] hover:text-white hover:bg-[#d32f2f] transition-all duration-200 group">
+                    <svg class="w-4 h-4 transition-transform duration-200 group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="flex-1 min-h-0 overflow-y-auto overscroll-contain" id="editDrawerContent" style="scrollbar-width: thin; scrollbar-color: #3a3a3a #1a1a1a;">
+                <form id="editForm" class="p-6 space-y-5">
                     <input type="hidden" id="editRecordId" value="">
 
                     <div>
@@ -120,34 +142,48 @@ export function tonnagePriceTemplate() {
                                placeholder="如: 0.8500">
                     </div>
 
-                    <div class="flex items-center justify-end gap-2 pt-2">
-                        <button type="button" id="cancelEditBtn" class="inline-flex items-center gap-1.5 bg-transparent text-[#9e9e9e] border border-[#2c2c2c] px-4 py-2 text-[11px] font-medium rounded hover:border-[#9e9e9e] hover:text-white transition-all">
-                            取消
-                        </button>
-                        <button type="submit" class="inline-flex items-center gap-1.5 bg-[#d32f2f] text-white px-4 py-2 text-[11px] font-semibold rounded hover:bg-[#b71c1c] transition-all">
-                            ${window.svgIcon('check', 'w-3.5 h-3.5')}
-                            保存
-                        </button>
+                    <div class="bg-[#0c0c0c] border border-[#1a1a1a] rounded p-3">
+                        <p class="text-[11px] text-[#616161]">
+                            <span class="text-[#616161]">说明：</span>
+                            单冲次价格为该吨位压机每一次冲程的加工费用，单位：元/次。
+                        </p>
                     </div>
                 </form>
             </div>
+
+            <div class="px-6 py-4 border-t border-[#262626] flex items-center justify-end gap-2 shrink-0" style="background: linear-gradient(0deg, #1a1a1a 0%, #161616 100%);">
+                <button type="button" id="cancelEditBtn" class="inline-flex items-center gap-1.5 bg-transparent text-[#9e9e9e] border border-[#2c2c2c] px-4 py-2 text-[11px] font-medium rounded hover:border-[#9e9e9e] hover:text-white transition-all">
+                    取消
+                </button>
+                <button type="button" id="submitEditBtn" class="inline-flex items-center gap-1.5 bg-[#d32f2f] text-white px-4 py-2 text-[11px] font-semibold rounded hover:bg-[#b71c1c] transition-all">
+                    ${window.svgIcon('check-circle', 'w-3.5 h-3.5')}
+                    保存
+                </button>
+            </div>
         </div>
 
-        <!-- 复制模板弹窗 -->
-        <div id="copyModal" class="hidden fixed inset-0 z-50 flex items-center justify-center">
-            <div class="fixed inset-0 bg-black/70 backdrop-blur-sm" id="copyModalBackdrop"></div>
-            <div class="relative z-10 w-[400px] bg-[#1a1a1a] border border-[#2a2a2a] rounded p-6 shadow-[0_0_40px_rgba(0,0,0,0.6)]">
-                <div class="flex items-center justify-between mb-5">
-                    <h3 class="text-[11px] font-semibold text-[#b0b0b0] uppercase tracking-wider flex items-center gap-2">
-                        <span class="w-[2px] h-4 bg-[#d32f2f] rounded-[1px] shadow-[0_0_6px_rgba(211,47,47,0.3)]"></span>
-                        复制价格模板
-                    </h3>
-                    <button id="closeCopyModal" class="w-7 h-7 flex items-center justify-center rounded text-[#707070] hover:text-white hover:bg-[#d32f2f] transition-all">
-                        ${window.svgIcon('x-lg', 'w-4 h-4')}
-                    </button>
-                </div>
+        <!-- 复制模板抽屉 -->
+        <div class="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm transition-opacity duration-300"
+             id="copyDrawerBackdrop" style="display:none"></div>
 
-                <form id="copyForm" class="space-y-4">
+        <div class="fixed inset-y-0 right-0 z-50 w-[480px] bg-[#1a1a1a] border-l border-[#2a2a2a] transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col"
+             id="copyDrawer" style="display:none; max-height: 100vh; box-shadow: -20px 0 60px rgba(0,0,0,0.95), -8px 0 30px rgba(0,0,0,0.8), 0 0 1px rgba(255,255,255,0.05);">
+            <div class="px-5 py-3.5 flex items-center justify-between shrink-0"
+                 style="background: linear-gradient(180deg, #1f1f1f 0%, #1a1a1a 100%); border-bottom: 1px solid #333333;">
+                <h5 class="text-[11px] font-semibold tracking-wider text-[#b0b0b0] flex items-center gap-2.5 uppercase">
+                    <span style="width:3px;height:14px;background:#d32f2f;border-radius:1px;display:inline-block;box-shadow: 0 0 8px rgba(211,47,47,0.5);"></span>
+                    复制价格模板
+                </h5>
+                <button type="button" id="closeCopyDrawer"
+                        class="flex items-center justify-center w-8 h-8 rounded-md text-[#707070] hover:text-white hover:bg-[#d32f2f] transition-all duration-200 group">
+                    <svg class="w-4 h-4 transition-transform duration-200 group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="flex-1 min-h-0 overflow-y-auto overscroll-contain" id="copyDrawerContent" style="scrollbar-width: thin; scrollbar-color: #3a3a3a #1a1a1a;">
+                <form id="copyForm" class="p-6 space-y-5">
                     <div>
                         <label class="text-[10px] font-semibold text-[#616161] uppercase tracking-[0.1em] mb-1.5 block">源年份 <span class="text-[#d32f2f]">*</span></label>
                         <select id="sourceYear" required
@@ -156,7 +192,7 @@ export function tonnagePriceTemplate() {
                         </select>
                     </div>
 
-                    <div class="flex items-center justify-center">
+                    <div class="flex items-center justify-center py-1">
                         ${window.svgIcon('chevron-right', 'w-4 h-4 text-[#616161]')}
                     </div>
 
@@ -173,50 +209,58 @@ export function tonnagePriceTemplate() {
                             复制操作将<strong class="text-[#9e9e9e]">覆盖</strong>目标年份的现有数据，请谨慎操作。
                         </p>
                     </div>
-
-                    <div class="flex items-center justify-end gap-2 pt-2">
-                        <button type="button" id="cancelCopyBtn" class="inline-flex items-center gap-1.5 bg-transparent text-[#9e9e9e] border border-[#2c2c2c] px-4 py-2 text-[11px] font-medium rounded hover:border-[#9e9e9e] hover:text-white transition-all">
-                            取消
-                        </button>
-                        <button type="submit" class="inline-flex items-center gap-1.5 bg-[#d32f2f] text-white px-4 py-2 text-[11px] font-semibold rounded hover:bg-[#b71c1c] transition-all">
-                            ${window.svgIcon('copy', 'w-3.5 h-3.5')}
-                            复制
-                        </button>
-                    </div>
                 </form>
+            </div>
+
+            <div class="px-6 py-4 border-t border-[#262626] flex items-center justify-end gap-2 shrink-0" style="background: linear-gradient(0deg, #1a1a1a 0%, #161616 100%);">
+                <button type="button" id="cancelCopyBtn" class="inline-flex items-center gap-1.5 bg-transparent text-[#9e9e9e] border border-[#2c2c2c] px-4 py-2 text-[11px] font-medium rounded hover:border-[#9e9e9e] hover:text-white transition-all">
+                    取消
+                </button>
+                <button type="button" id="submitCopyBtn" class="inline-flex items-center gap-1.5 bg-[#d32f2f] text-white px-4 py-2 text-[11px] font-semibold rounded hover:bg-[#b71c1c] transition-all">
+                    ${window.svgIcon('arrows-split', 'w-3.5 h-3.5')}
+                    复制
+                </button>
             </div>
         </div>
 
-        <!-- 删除确认弹窗 -->
-        <div id="deleteModal" class="hidden fixed inset-0 z-50 flex items-center justify-center">
-            <div class="fixed inset-0 bg-black/70 backdrop-blur-sm" id="deleteModalBackdrop"></div>
-            <div class="relative z-10 w-[360px] bg-[#1a1a1a] border border-[#2a2a2a] rounded p-6 shadow-[0_0_40px_rgba(0,0,0,0.6)]">
-                <div class="flex items-center justify-between mb-5">
-                    <h3 class="text-[11px] font-semibold text-[#b0b0b0] uppercase tracking-wider flex items-center gap-2">
-                        <span class="w-[2px] h-4 bg-[#c62828] rounded-[1px] shadow-[0_0_6px_rgba(198,40,40,0.3)]"></span>
-                        确认删除
-                    </h3>
-                    <button id="closeDeleteModal" class="w-7 h-7 flex items-center justify-center rounded text-[#707070] hover:text-white hover:bg-[#d32f2f] transition-all">
-                        ${window.svgIcon('x-lg', 'w-4 h-4')}
-                    </button>
-                </div>
+        <!-- 删除确认抽屉 -->
+        <div class="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm transition-opacity duration-300"
+             id="deleteDrawerBackdrop" style="display:none"></div>
 
+        <div class="fixed inset-y-0 right-0 z-50 w-[380px] bg-[#1a1a1a] border-l border-[#2a2a2a] transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col"
+             id="deleteDrawer" style="display:none; max-height: 100vh; box-shadow: -20px 0 60px rgba(0,0,0,0.95), -8px 0 30px rgba(0,0,0,0.8), 0 0 1px rgba(255,255,255,0.05);">
+            <div class="px-5 py-3.5 flex items-center justify-between shrink-0"
+                 style="background: linear-gradient(180deg, #1f1f1f 0%, #1a1a1a 100%); border-bottom: 1px solid #333333;">
+                <h5 class="text-[11px] font-semibold tracking-wider text-[#b0b0b0] flex items-center gap-2.5 uppercase">
+                    <span style="width:3px;height:14px;background:#c62828;border-radius:1px;display:inline-block;box-shadow: 0 0 8px rgba(198,40,40,0.5);"></span>
+                    确认删除
+                </h5>
+                <button type="button" id="closeDeleteDrawer"
+                        class="flex items-center justify-center w-8 h-8 rounded-md text-[#707070] hover:text-white hover:bg-[#d32f2f] transition-all duration-200 group">
+                    <svg class="w-4 h-4 transition-transform duration-200 group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="flex-1 min-h-0 overflow-y-auto overscroll-contain" id="deleteDrawerContent" style="scrollbar-width: thin; scrollbar-color: #3a3a3a #1a1a1a;">
                 <input type="hidden" id="deleteRecordId" value="">
-
-                <p class="text-[12px] text-[#9e9e9e] mb-5">
-                    确定要删除这条价格记录吗？<br>
-                    <span class="text-[#616161]">此操作不可撤销。</span>
-                </p>
-
-                <div class="flex items-center justify-end gap-2">
-                    <button id="cancelDeleteBtn" class="inline-flex items-center gap-1.5 bg-transparent text-[#9e9e9e] border border-[#2c2c2c] px-4 py-2 text-[11px] font-medium rounded hover:border-[#9e9e9e] hover:text-white transition-all">
-                        取消
-                    </button>
-                    <button id="confirmDeleteBtn" class="inline-flex items-center gap-1.5 bg-[#c62828] text-white px-4 py-2 text-[11px] font-semibold rounded hover:bg-[#b71c1c] transition-all">
-                        ${window.svgIcon('trash', 'w-3.5 h-3.5')}
-                        删除
-                    </button>
+                <div class="p-6">
+                    <p class="text-[12px] text-[#9e9e9e] mb-3">
+                        确定要删除这条价格记录吗？
+                    </p>
+                    <p class="text-[11px] text-[#616161]">此操作不可撤销。</p>
                 </div>
+            </div>
+
+            <div class="px-6 py-4 border-t border-[#262626] flex items-center justify-end gap-2 shrink-0" style="background: linear-gradient(0deg, #1a1a1a 0%, #161616 100%);">
+                <button type="button" id="cancelDeleteBtn" class="inline-flex items-center gap-1.5 bg-transparent text-[#9e9e9e] border border-[#2c2c2c] px-4 py-2 text-[11px] font-medium rounded hover:border-[#9e9e9e] hover:text-white transition-all">
+                    取消
+                </button>
+                <button type="button" id="confirmDeleteBtn" class="inline-flex items-center gap-1.5 bg-[#c62828] text-white px-4 py-2 text-[11px] font-semibold rounded hover:bg-[#b71c1c] transition-all">
+                    ${window.svgIcon('trash', 'w-3.5 h-3.5')}
+                    删除
+                </button>
             </div>
         </div>
     `;
@@ -224,30 +268,36 @@ export function tonnagePriceTemplate() {
 
 /**
  * 渲染表格行
+ * - 偶数行微调背景色，形成精致斑马纹
+ * - 编辑图标：pencil
  */
 export function renderTableRows(records) {
-    if (!records || records.length === 0) {
+    if (!records || !Array.isArray(records) || records.length === 0) {
         return '';
     }
-    return records.map(record => `
-        <tr class="hover:bg-[#ffffff]/[0.02] transition-colors" data-id="${esc(record.id)}">
-            <td class="px-4 py-3 text-xs text-[#9e9e9e] whitespace-nowrap">${esc(record.year)}</td>
-            <td class="px-4 py-3 text-xs text-[#ffffff] whitespace-nowrap font-medium">${esc(record.tonnage)} T</td>
-            <td class="px-4 py-3 text-xs text-right font-mono tabular-nums text-[#d32f2f] whitespace-nowrap">
+    return records.map((record, idx) => {
+        const isEven = idx % 2 === 1; // 偶数行（idx 1,3,5...）略深
+        return `
+        <tr class="group transition-colors duration-150 cursor-default ${isEven ? '' : ''}"
+            data-id="${esc(record.id)}"
+            style="${isEven ? 'background: rgba(255,255,255,0.012);' : ''}">
+            <td class="px-5 py-2.5 text-[11px] text-[#686868] whitespace-nowrap font-mono tracking-wide border-b border-[#1d1d1d]">${esc(record.year)}</td>
+            <td class="px-5 py-2.5 text-[11px] text-[#b0b0b0] whitespace-nowrap font-medium tracking-wide border-b border-[#1d1d1d]">${esc(record.tonnage)} T</td>
+            <td class="px-5 py-2.5 text-[11px] text-right font-mono tabular-nums text-[#d32f2f] whitespace-nowrap tracking-wide border-b border-[#1d1d1d]">
                 <span class="shadow-[0_0_8px_rgba(211,47,47,0.2)]">${fmtNum(record.price_per_stroke, 4)}</span>
             </td>
-            <td class="px-4 py-3 text-center whitespace-nowrap">
-                <div class="flex items-center justify-center gap-1">
-                    <button class="edit-btn p-1.5 rounded text-[#616161] hover:text-[#d32f2f] hover:bg-[#d32f2f]/10 transition-all" title="编辑">
-                        ${window.svgIcon('ruler', 'w-3.5 h-3.5')}
+            <td class="px-5 py-2.5 text-center whitespace-nowrap border-b border-[#1d1d1d]">
+                <div class="flex items-center justify-center gap-0.5">
+                    <button class="edit-btn flex items-center justify-center w-7 h-7 rounded-sm text-[#484848] hover:text-[#d32f2f] hover:bg-[#d32f2f]/10 transition-all duration-150 opacity-60 hover:opacity-100" title="编辑">
+                        ${window.svgIcon('pencil', 'w-3 h-3')}
                     </button>
-                    <button class="delete-btn p-1.5 rounded text-[#616161] hover:text-[#c62828] hover:bg-[#c62828]/10 transition-all" title="删除">
-                        ${window.svgIcon('trash', 'w-3.5 h-3.5')}
+                    <button class="delete-btn flex items-center justify-center w-7 h-7 rounded-sm text-[#484848] hover:text-[#c62828] hover:bg-[#c62828]/10 transition-all duration-150 opacity-60 hover:opacity-100" title="删除">
+                        ${window.svgIcon('trash', 'w-3 h-3')}
                     </button>
                 </div>
             </td>
-        </tr>
-    `).join('');
+        </tr>`;
+    }).join('');
 }
 
 /**
@@ -260,52 +310,44 @@ export function renderPagination(currentPage, totalPages, total) {
 
     let buttons = '';
 
-    // 上一页
     buttons += `
-        <button class="page-btn px-2.5 py-1.5 rounded text-[11px] ${currentPage === 1 ? 'text-[#616161] cursor-not-allowed' : 'text-[#9e9e9e] hover:text-[#ffffff] hover:bg-[#262626]'} transition-all"
+        <button class="page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] ${currentPage === 1 ? 'text-[#333333] cursor-not-allowed' : 'text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]'} transition-all duration-150"
                 data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}>
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
             </svg>
         </button>
     `;
 
-    // 页码
     const maxVisible = 5;
     let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
     let endPage = Math.min(totalPages, startPage + maxVisible - 1);
-
     if (endPage - startPage < maxVisible - 1) {
         startPage = Math.max(1, endPage - maxVisible + 1);
     }
 
     if (startPage > 1) {
-        buttons += `<button class="page-btn px-2.5 py-1.5 rounded text-[11px] text-[#9e9e9e] hover:text-[#ffffff] hover:bg-[#262626] transition-all" data-page="1">1</button>`;
-        if (startPage > 2) {
-            buttons += `<span class="px-1 text-[#616161]">...</span>`;
-        }
+        buttons += `<button class="page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323] transition-all duration-150" data-page="1">1</button>`;
+        if (startPage > 2) buttons += `<span class="px-0.5 text-[#333333] leading-6 text-[9px]">…</span>`;
     }
 
     for (let i = startPage; i <= endPage; i++) {
         const isActive = i === currentPage;
         buttons += `
-            <button class="page-btn px-2.5 py-1.5 rounded text-[11px] ${isActive ? 'bg-[#d32f2f] text-white' : 'text-[#9e9e9e] hover:text-[#ffffff] hover:bg-[#262626]'} transition-all"
+            <button class="page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] ${isActive ? 'bg-[#d32f2f] text-white shadow-[0_0_8px_rgba(211,47,47,0.25)]' : 'text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]'} transition-all duration-150"
                     data-page="${i}">${i}</button>
         `;
     }
 
     if (endPage < totalPages) {
-        if (endPage < totalPages - 1) {
-            buttons += `<span class="px-1 text-[#616161]">...</span>`;
-        }
-        buttons += `<button class="page-btn px-2.5 py-1.5 rounded text-[11px] text-[#9e9e9e] hover:text-[#ffffff] hover:bg-[#262626] transition-all" data-page="${totalPages}">${totalPages}</button>`;
+        if (endPage < totalPages - 1) buttons += `<span class="px-0.5 text-[#333333] leading-6 text-[9px]">…</span>`;
+        buttons += `<button class="page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323] transition-all duration-150" data-page="${totalPages}">${totalPages}</button>`;
     }
 
-    // 下一页
     buttons += `
-        <button class="page-btn px-2.5 py-1.5 rounded text-[11px] ${currentPage === totalPages ? 'text-[#616161] cursor-not-allowed' : 'text-[#9e9e9e] hover:text-[#ffffff] hover:bg-[#262626]'} transition-all"
+        <button class="page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] ${currentPage === totalPages ? 'text-[#333333] cursor-not-allowed' : 'text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]'} transition-all duration-150"
                 data-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''}>
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
             </svg>
         </button>
