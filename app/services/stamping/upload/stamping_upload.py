@@ -53,12 +53,7 @@ class StampingUploadService:
 
         # 2. 解析 Excel 文件
         parse_result = parse_stamping_excel(file_info["file_path"])
-        logger.info(f"[DEBUG] 解析结果: {len(parse_result.processes)} 道工序")
-        # 检查 502005555AA 的工序
-        target_processes = [p for p in parse_result.processes if p.part_number == "502005555AA"]
-        logger.info(f"[DEBUG] 502005555AA 的工序: {len(target_processes)} 道")
-        for p in target_processes:
-            logger.info(f"  seq={p.process_seq}, code={p.process_code}")
+        logger.info("解析 Excel 完成：%d 个零件、%d 道工序", len(parse_result.parts), len(parse_result.processes))
 
         # 3. 落盘零件简图
         saved_images = self._save_part_images(parse_result.images_by_part, upload_subdir)
@@ -227,8 +222,7 @@ class StampingUploadService:
             part_number = process.part_number
             part_id = part_map.get(part_number)
             if not part_id:
-                # 调试：记录被跳过的工序
-                logger.warning(f"[DEBUG] 工序被跳过: part_number={part_number}, seq={process.process_seq}, part_map有{part_number}? {part_number in part_map}")
+                logger.warning("工序被跳过: part_number=%s, seq=%s", part_number, process.process_seq)
                 continue
 
             order = part_order_counter.get(part_number, 0) + 1
@@ -245,13 +239,7 @@ class StampingUploadService:
             })
 
         if processes_to_create:
-            logger.info(f"[DEBUG] _save_processes 准备创建 {len(processes_to_create)} 个工序")
-            # 检查 502005555AA 的工序
-            target = [p for p in processes_to_create if p.get('part_id') == part_map.get('502005555AA')]
-            if target:
-                logger.info(f"[DEBUG] 502005555AA 的工序: {target}")
             self.process_repo.bulk_create(self.db, processes_to_create)
-            logger.info(f"[DEBUG] bulk_create 完成")
 
-        logger.info(f"导入工序: {len(processes_to_create)} 个")
+        logger.info("导入工序: %d 个", len(processes_to_create))
         return len(processes_to_create)
