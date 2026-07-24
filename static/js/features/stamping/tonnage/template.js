@@ -25,7 +25,7 @@ export function tonnagePriceTemplate() {
                     </div>
                     <div class="flex items-center gap-2">
                         <button id="btnCopyTemplate" class="inline-flex items-center gap-1.5 bg-transparent text-[#888888] border border-[#2c2c2c] px-3 py-1.5 text-[11px] font-medium rounded-sm hover:border-[#d32f2f] hover:text-[#d32f2f] transition-all duration-150">
-                            ${window.svgIcon('arrows-split', 'w-3 h-3')}
+                            ${window.svgIcon('copy', 'w-3 h-3')}
                             复制模板
                         </button>
                         <button id="btnAddTonnagePrice" class="inline-flex items-center gap-1.5 bg-[#d32f2f] text-white px-3 py-1.5 text-[11px] font-semibold rounded-sm hover:bg-[#b71c1c] transition-all duration-150">
@@ -156,7 +156,7 @@ export function tonnagePriceTemplate() {
                     取消
                 </button>
                 <button type="button" id="submitEditBtn" class="inline-flex items-center gap-1.5 bg-[#d32f2f] text-white px-4 py-2 text-[11px] font-semibold rounded hover:bg-[#b71c1c] transition-all">
-                    ${window.svgIcon('check-circle', 'w-3.5 h-3.5')}
+                    ${window.svgIcon('archive', 'w-3.5 h-3.5')}
                     保存
                 </button>
             </div>
