@@ -134,7 +134,7 @@ export function partsTemplate() {
 }
 
 // CORE_COST_FIELDS 已在文件顶部定义
-const CORE_COST_FIELDS = new Set(['材料', '重量', '模具类型']);
+const CORE_COST_FIELDS = new Set(['材料', '重量', '可制件数']);
 
 const DIE_TYPE_OPTIONS = [
     { value: 'progressive', label: '级进模（80%）' },
@@ -204,7 +204,7 @@ export function renderDetailContent(part) {
         ['厚度', part.thickness != null ? `${part.thickness} mm` : '-'],
         ['重量', part.part_weight != null ? `${part.part_weight} kg` : '-'],
         ['板材尺寸', (part.sheet_length && part.sheet_width) ? `${part.sheet_length}x${part.sheet_width}` : '-'],
-        ['每辆车用量', esc(part.parts_per_sheet)],
+        ['可制件数', esc(part.parts_per_sheet)],
         ['板材类型', esc(part.sheet_type)],
         ['模具类型', esc(part.die_type)],
         ['备注', esc(part.remark ?? '-')],
