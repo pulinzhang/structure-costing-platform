@@ -188,7 +188,13 @@ class HeaderResolver:
                 secondary = secondary_headers[col]
                 # 如果一级和二级标题文本一样（如单行表头），则直接用二级名称
                 if primary and primary != secondary:
-                    path = f"{primary}/{secondary}"
+                    # 二级标题可能本身用 "/" 分隔多个概念（如 "长/卷料宽"），
+                    # 此时第一个 token 才是真正的列含义，后续都是注释。
+                    # 截取第一个 token 避免后续 endswith 匹配到注释里的字符（例如 "宽"）。
+                    secondary_meaning = secondary.split("/", 1)[0].strip()
+                    if not secondary_meaning:
+                        secondary_meaning = secondary
+                    path = f"{primary}/{secondary_meaning}"
                 else:
                     path = secondary
                 header_paths[col] = path
