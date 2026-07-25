@@ -184,7 +184,20 @@ class StampingExcelParser:
         )
 
     def _handle_image_for_row(self, row_idx: int, part_number: Optional[str]) -> None:
-        """处理该行的图片归属"""
+        """处理该行的图片归属
+
+        Excel 排版规则（基于 excelSample 样本）：
+        - 简图固定在 D 列（0-indexed col=3）
+        - 图片锚点的行号 = 零件行 或 零件行的下一行
+          （锚点行 = 0-indexed，对应到调用方 row_idx 时分别是 row_idx - 1 和 row_idx）
+
+        openpyxl 的 anchor._from.col / _from.row 都是 0-indexed，
+        调用方 row_idx 是 1-indexed 的 Excel 行号。
+
+        ⚠️ 不要用 col_map["part_name"] 查简图列：
+        1) col_map 是 1-indexed，anchor._from.col 是 0-indexed，基准不一致
+        2) 简图列是独立的"零件简图"列，不是"零件名称"列，col_map 里根本没有这个键
+        """
         if not part_number:
             return
 
@@ -192,7 +205,11 @@ class StampingExcelParser:
         if not hasattr(sheet, "_images"):
             return
 
-        sketch_col = self.result.col_map.get("part_name", 3)
+        # 0-indexed：Excel 的 D 列（"零件简图"列固定位置）
+        sketch_col_0idx = 3
+
+        # 同一张图可能同时匹配本零件的两行（part row / part row + 1），
+        # 直接用 part_number 关联的图像去重，保留先遇到的即可
         for img in sheet._images:
             anchor = getattr(img, "anchor", None)
             if anchor is None:
@@ -201,27 +218,36 @@ class StampingExcelParser:
             try:
                 from openpyxl.drawing.spreadsheet_drawing import OneCellAnchor, TwoCellAnchor
                 if isinstance(anchor, (OneCellAnchor, TwoCellAnchor)):
-                    col = anchor._from.col
-                    start_row = anchor._from.row
+                    col_0idx = anchor._from.col
+                    start_row_0idx = anchor._from.row
                 else:
                     continue
 
-                if col == sketch_col and start_row == row_idx - 1:
-                    img_bytes = None
-                    if hasattr(img, "_data") and callable(img._data):
-                        data = img._data()
+                if col_0idx != sketch_col_0idx:
+                    continue
+
+                # 行匹配允许两种情况（0-indexed == 0-indexed）：
+                # 1) start_row_0idx == row_idx - 1  → 图片与零件同 Excel 行
+                # 2) start_row_0idx == row_idx      → 图片在零件下一行
+                if start_row_0idx not in (row_idx - 1, row_idx):
+                    continue
+
+                img_bytes = None
+                if hasattr(img, "_data") and callable(img._data):
+                    data = img._data()
+                    if isinstance(data, bytes):
+                        img_bytes = data
+                if not img_bytes:
+                    ref = getattr(img, "ref", None)
+                    if ref and hasattr(ref, "read"):
+                        data = ref.read()
                         if isinstance(data, bytes):
                             img_bytes = data
-                    if not img_bytes:
-                        ref = getattr(img, "ref", None)
-                        if ref and hasattr(ref, "read"):
-                            data = ref.read()
-                            if isinstance(data, bytes):
-                                img_bytes = data
 
-                    if img_bytes:
-                        self.result.images_by_part[part_number] = img_bytes
-                        break
+                if img_bytes:
+                    self.result.images_by_part[part_number] = img_bytes
+                    # 注意：不能 break，因为同一张图可能匹配本零件的两行
+                    # 但 images_by_part 用 part_number 做 key，重写没问题
             except Exception:
                 continue
 
