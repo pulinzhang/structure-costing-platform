@@ -38,6 +38,9 @@ async def lifespan(app: FastAPI):
     # 自动迁移：在 create_tables 之前补充缺失的列
     from app.utils.db_migration import run_auto_migration
     run_auto_migration()
+    # 钢材价格表业务主键变更迁移：在 create_tables 之前完成表重建
+    from app.utils.steel_price_key_migration import run_steel_price_key_migration
+    run_steel_price_key_migration(DatabaseConfig.get_engine())
     DatabaseConfig.create_tables()
 
     logger.info("=" * 50)
@@ -188,6 +191,7 @@ def create_app() -> FastAPI:
             {"name": "冲压工艺", "description": "冲压件零件与工序管理"},
             {"name": "冲压工艺上传", "description": "冲压工艺文件上传与解析"},
             {"name": "冲压吨位价格", "description": "冲压压机吨位单冲次价格管理"},
+            {"name": "钢材价格管理", "description": "钢材价格文件导入与表格浏览"},
             {"name": "零件", "description": "通用零件管理"},
             {"name": "核价", "description": "成本计算与核价"},
             {"name": "报价", "description": "报价单管理"},
@@ -239,12 +243,14 @@ def create_app() -> FastAPI:
     from app.routers.stamping.crud import router as stamping_crud_router
     from app.routers.stamping.upload import router as stamping_upload_router
     from app.routers.stamping.tonnage_price import router as stamping_tonnage_price_router
+    from app.routers.steel_price.crud import router as steel_price_router
 
     # include_router = 注册路由
     app.include_router(dashboard_router)
     app.include_router(stamping_crud_router)
     app.include_router(stamping_upload_router)
     app.include_router(stamping_tonnage_price_router)
+    app.include_router(steel_price_router)
     app.include_router(costing_router)
     app.include_router(quotation_router)
     app.include_router(settings_router)
