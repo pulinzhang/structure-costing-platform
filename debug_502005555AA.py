@@ -5,7 +5,7 @@ import os
 API_BASE = "http://localhost:8000/api"
 
 # 上传文件
-file_path = "excelSample/副本奇瑞T28车身件项目冲压工艺确认表-烟台海众.xlsx"
+file_path = "excel_sample/副本奇瑞T28车身件项目冲压工艺确认表-烟台海众.xlsx"
 print("上传文件...")
 with open(file_path, "rb") as f:
     files = {"file": (os.path.basename(file_path), f, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")}

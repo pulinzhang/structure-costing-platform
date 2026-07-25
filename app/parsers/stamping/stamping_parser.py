@@ -186,7 +186,7 @@ class StampingExcelParser:
     def _handle_image_for_row(self, row_idx: int, part_number: Optional[str]) -> None:
         """处理该行的图片归属
 
-        Excel 排版规则（基于 excelSample 样本）：
+        Excel 排版规则（基于 excel_sample 样本）：
         - 简图固定在 D 列（0-indexed col=3）
         - 图片锚点的行号 = 零件行 或 零件行的下一行
           （锚点行 = 0-indexed，对应到调用方 row_idx 时分别是 row_idx - 1 和 row_idx）
