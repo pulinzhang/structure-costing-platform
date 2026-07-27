@@ -1,0 +1,126 @@
+"""
+钢价政策数据模型
+采用严格主子表架构：政策主表 + 阶梯明细表
+"""
+
+from datetime import datetime
+from decimal import Decimal
+from typing import List, Optional
+
+from sqlalchemy import (
+    Column, DateTime, ForeignKey, Index, Integer, Numeric, String, UniqueConstraint
+)
+from sqlalchemy.orm import Mapped, relationship
+
+from app.database import Base
+
+
+class SteelPricePolicy(Base):
+    """
+    政策主表 - 统一的钢价政策头表
+    一条政策对应多条阶梯明细
+    """
+
+    __tablename__ = "steel_price_policies"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+
+    # 生效周期
+    year = Column(Integer, nullable=False, comment="生效年度（如：2026）")
+    month = Column(String(20), nullable=False, comment="生效月份/批次（如：'4月'）")
+
+    # 钢厂与钢种
+    steel_mill = Column(String(100), nullable=False, comment="钢厂名称（如：'马钢'、'宝钢'）")
+    category_name = Column(String(100), nullable=False, comment="钢种大类（如：'冷轧钢'、'镀锌钢'）")
+
+    # 政策类型与条件
+    policy_type = Column(String(20), nullable=False, comment="政策类型：THICKNESS=厚度加减价，WIDTH=宽度加价")
+    grade_name = Column(String(100), nullable=True, comment="牌号（厚度政策通常指定，如 'DC01'）")
+    base_thickness = Column(Numeric(5, 2), nullable=True, comment="基准厚度（仅厚度政策需要，如 1.00）")
+
+    # 元数据
+    created_at = Column(DateTime, default=datetime.now, nullable=False, comment="创建时间")
+    updated_at = Column(
+        DateTime,
+        default=datetime.now,
+        onupdate=datetime.now,
+        nullable=False,
+        comment="更新时间",
+    )
+
+    # 关联子表（cascade 确保删除主表时自动删除所有明细）
+    items: Mapped[List["SteelPriceLadderItem"]] = relationship(
+        "SteelPriceLadderItem",
+        back_populates="policy",
+        cascade="all, delete-orphan",
+        order_by="SteelPriceLadderItem.sort_order, SteelPriceLadderItem.id",
+    )
+
+    __table_args__ = (
+        Index("ix_policy_year", "year"),
+        Index("ix_policy_month", "month"),
+        Index("ix_policy_steel_mill", "steel_mill"),
+        Index("ix_policy_category_name", "category_name"),
+        Index("ix_policy_policy_type", "policy_type"),
+        Index("ix_policy_grade_name", "grade_name"),
+        Index("ix_policy_base_thickness", "base_thickness"),
+        # 业务唯一约束：同年度、月份、钢厂、大类、类型、牌号、基准厚度唯一
+        UniqueConstraint(
+            "year",
+            "month",
+            "steel_mill",
+            "category_name",
+            "policy_type",
+            "grade_name",
+            "base_thickness",
+            name="uix_policy_business_key",
+        ),
+    )
+
+
+class SteelPriceLadderItem(Base):
+    """
+    阶梯明细表 - 采用 min/max 区间设计的加减价阶梯
+    """
+
+    __tablename__ = "steel_price_ladder_items"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    policy_id = Column(
+        Integer,
+        ForeignKey("steel_price_policies.id", ondelete="CASCADE"),
+        nullable=False,
+        comment="所属政策 ID",
+    )
+
+    # 附加子分组（如镀锌宽度加价中的 "厚度≤1.5mm" 或冷轧宽度中的 "DC01、DC03"）
+    target_sub_group = Column(String(100), nullable=True, comment="附加子分组条件")
+
+    # 尺寸区间下限
+    min_val = Column(Numeric(7, 2), nullable=True, comment="尺寸下限值（厚度或宽度）")
+    min_operator = Column(String(10), nullable=True, comment="下限操作符（如 '>=' 或 '>'）")
+
+    # 尺寸区间上限
+    max_val = Column(Numeric(7, 2), nullable=True, comment="尺寸上限值（厚度或宽度）")
+    max_operator = Column(String(10), nullable=True, comment="上限操作符（如 '<=' 或 '<'）")
+
+    # 对应的加减价金额（元/吨，整数精确到元）
+    price_adjustment = Column(Integer, nullable=False, comment="加减价金额（元/吨）")
+
+    # 是否为基准厚度（加价为0）
+    is_base = Column(Integer, nullable=False, default=0, comment="是否为基准厚度：0=否，1=是")
+
+    # 匹配排序号
+    sort_order = Column(Integer, nullable=False, default=0, comment="匹配排序号")
+
+    # 关联主表
+    policy: Mapped["SteelPricePolicy"] = relationship(
+        "SteelPricePolicy", back_populates="items"
+    )
+
+    __table_args__ = (
+        Index("ix_ladder_policy_id", "policy_id"),
+        Index("ix_ladder_min_val", "min_val"),
+        Index("ix_ladder_max_val", "max_val"),
+        Index("ix_ladder_sort_order", "sort_order"),
+    )
