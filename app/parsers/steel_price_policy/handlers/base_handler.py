@@ -61,6 +61,94 @@ class BaseSheetHandler:
         return []
 
     # ------------------------------------------------------------------ #
+    # 子类复用的默认厚度块查找（默认 max_col = sheet 全列）
+    # ------------------------------------------------------------------ #
+
+    def find_default_thickness_blocks(
+        self,
+        sheet: Worksheet,
+        steel_mill: str,
+        max_col: Optional[int] = None,
+    ) -> List[Dict[str, Any]]:
+        """默认厚度块扫描: 多个厚度块在左侧垂直堆叠.
+
+        关键点:
+        1. label_row 集合用 find_grade_label_rows 找出
+        2. 每个块的边界 = next_label_row - 1, 强制截断
+           (避免 find_block_end_row 因下个 label_row 非空而跨块合并)
+        3. 块的 category 由本块 grade 后缀或 label_row 上方关键字推断
+        """
+        blocks: List[Dict[str, Any]] = []
+        max_row = self.row_max(sheet)
+        max_col = max_col if max_col is not None else self.col_max(sheet)
+        last_end = 0
+
+        # 一次性找全所有 label_rows (天然块边界)
+        all_label_rows = self.find_grade_label_rows(sheet, 1, max_row)
+
+        while True:
+            label_rows = [lr for lr in all_label_rows if lr > last_end]
+            if not label_rows:
+                break
+            label_row = label_rows[0]
+            # 块下界 = min( next_label_row - 1, 其它边界信号 )
+            next_label = label_rows[1] if len(label_rows) > 1 else None
+            if next_label is not None:
+                block_end = next_label - 1
+            else:
+                # 最后一块: 用 find_block_end_row, 但允许 "宽度加减价" / "宽度加价"
+                # 作为"块结束信号"避免吸入后面的宽度块
+                block_end = self._find_thickness_block_end_with_width_hint(
+                    sheet, label_row + 1, max_row, max_col
+                )
+
+            if block_end <= label_row + 1:
+                last_end = label_row + 1
+                continue
+
+            block = self.locate_thickness_block(sheet, label_row, block_end, max_col)
+            if block:
+                # 若字面没命中 category, 用 grade 后缀再推断一次
+                block["category_name"] = self.infer_block_category(
+                    sheet, block, max_col=max_col
+                )
+                blocks.append(block)
+                last_end = block["data_row_end"]
+            else:
+                last_end = label_row + 1
+
+        return blocks
+
+    def _find_thickness_block_end_with_width_hint(
+        self,
+        sheet: Worksheet,
+        start_row: int,
+        max_row: int,
+        max_col: int,
+        *,
+        blank_limit: int = BLANK_LIMIT,
+    ) -> int:
+        """向下扫描块末尾, 但提前停在出现宽度标题的行.
+
+        触发条件: col 1 含 "宽度加减价" 或 "宽度加价" 字面.
+        这让最末尾的厚度块不会跨过宽度标题.
+        """
+        blank_streak = 0
+        for r in range(start_row, max_row + 1):
+            text = self.text(sheet, r, 1)
+            if text and ("宽度加减价" in text or "宽度加价" in text):
+                # 块到此为止; trim_block_end 会再回退去末尾空行
+                return max(start_row, r - 1)
+            has_value = any(
+                _to_str(sheet.cell(row=r, column=c).value)
+                for c in range(1, max_col + 1)
+            )
+            blank_streak = 0 if has_value else blank_streak + 1
+            if blank_streak >= blank_limit:
+                return r - blank_limit
+        return max_row
+
+    # ------------------------------------------------------------------ #
     # 块解析（通用）
     # ------------------------------------------------------------------ #
 
@@ -326,6 +414,37 @@ class BaseSheetHandler:
         return header_row
 
     # ------------------------------------------------------------------ #
+    # 扫描工具 - 边界信号
+    # ------------------------------------------------------------------ #
+
+    _SECTION_BREAK_KEYWORDS: tuple[str, ...] = (
+        # 类目标题行 (新块开始)
+        "厚度加减价", "厚度(mm)", "厚度（mm）",
+        "宽度加减价", "宽度加价", "宽度(mm)", "宽度（mm）",
+    )
+
+    def find_section_break_row(
+        self,
+        sheet: Worksheet,
+        start_row: int,
+        max_row: int,
+        scan_col: int = 1,
+    ) -> Optional[int]:
+        """从 start_row 起向下扫描, 找到第一个"段标题"行 (新块开始).
+
+        段标题关键字: 厚度加减价/厚度(mm)/宽度加减价/宽度加价
+        命中即返回行号.
+        """
+        for r in range(start_row, max_row + 1):
+            text = self.text(sheet, r, scan_col)
+            if not text:
+                continue
+            for kw in self._SECTION_BREAK_KEYWORDS:
+                if kw in text:
+                    return r
+        return None
+
+    # ------------------------------------------------------------------ #
     # 推断工具
     # ------------------------------------------------------------------ #
 
@@ -362,6 +481,99 @@ class BaseSheetHandler:
                 for hint in CATEGORY_HINTS:
                     if hint in text:
                         return hint
+        return "冷轧钢"
+
+    # ------------------------------------------------------------------ #
+    # 按钢种名后缀推断 category (兜底逻辑)
+    # ------------------------------------------------------------------ #
+
+    _GALVANIZED_SUFFIXES: tuple[str, ...] = ("+Z", "+ZF", "+ZM", "+ZA", "+AZ")
+    _PICKLED_SUFFIXES: tuple[str, ...] = ("+A",)
+
+    # 已知酸洗钢种名（行业通用，无固定后缀）
+    _PICKLED_GRADES: frozenset[str] = frozenset({
+        "SPHC", "SPHD", "SPHE", "SPHF",
+        "SAPH370", "SAPH400", "SAPH440",
+        "QStE340TM", "QStE380TM", "QStE420TM", "QStE460TM", "QStE500TM",
+        "QSTE420TM", "QSTE460TM", "QSTE500TM",
+        "B510L", "B590L",
+    })
+
+    def category_from_grade_name(self, grade: str) -> str:
+        """按钢种名后缀/名称推断 category, 用于 sheet 标题里无字面分类关键字时.
+
+        业务约束: 同一厚度块内钢种都是同一类 (冷轧/镀锌/酸洗).
+        镀锌以 +Z 后缀识别; 酸洗按已知名单 (SPHC/SAPH/QStE 等).
+        """
+        if not grade:
+            return "冷轧钢"
+        for suf in self._GALVANIZED_SUFFIXES:
+            if grade.endswith(suf):
+                return "镀锌钢"
+        # 优先按已知名单判断酸洗 (覆盖 SPHC/SAPH/QStE 等)
+        if grade in self._PICKLED_GRADES:
+            return "酸洗钢"
+        for suf in self._PICKLED_SUFFIXES:
+            if grade.endswith(suf):
+                return "酸洗钢"
+        return "冷轧钢"
+
+    def infer_block_category(
+        self,
+        sheet: Worksheet,
+        block: Dict[str, Any],
+        *,
+        max_col: int = 14,
+    ) -> str:
+        """综合 '字面 hint' 与 'grade 后缀' 推断块的 category.
+
+        优先级:
+        1. 若块标题行上方 6 行内出现 CATEGORY_HINTS, 用该字面
+           (这是旧 infer_category 的逻辑, 保留以防漏判)
+        2. 否则按块内 grade 后缀推断
+        """
+        label_row = block.get("header_row", 0) - 1  # header_row - 1 才是 label_row 附近
+        # 用 locate_thickness_block 已经写过 category_name, 先取
+        literal_cat = block.get("category_name") or "冷轧钢"
+        # 若 locate_thickness_block 已经从字面拿到了非默认 ("冷轧钢") 值, 直接信任
+        if literal_cat != "冷轧钢":
+            return literal_cat
+
+        # 否则扫块内 grade 按后缀推断
+        data_start = block["data_row_start"]
+        data_end = block["data_row_end"]
+        grade_col = block.get("grade_col", 1)
+        galvanized = pickled = cold = 0
+        for r in range(data_start, data_end + 1):
+            v = sheet.cell(row=r, column=grade_col).value
+            if v is None:
+                continue
+            t = str(v).strip()
+            if not t:
+                continue
+            if t in GRADE_LABELS:
+                continue
+            cat = self.category_from_grade_name(t)
+            if cat == "镀锌钢":
+                galvanized += 1
+            elif cat == "酸洗钢":
+                pickled += 1
+            else:
+                cold += 1
+
+        if galvanized and not cold:
+            return "镀锌钢"
+        if pickled and not cold:
+            return "酸洗钢"
+        if galvanized and cold:
+            # 跨度过大误判 → 取多者
+            if galvanized > cold:
+                return "镀锌钢"
+            if pickled > cold:
+                return "酸洗钢"
+            return "冷轧钢"
+        if pickled and cold:
+            return "酸洗钢" if pickled > cold else "冷轧钢"
         return "冷轧钢"
 
     # ------------------------------------------------------------------ #

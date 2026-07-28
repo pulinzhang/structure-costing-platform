@@ -142,7 +142,7 @@ class LadderItemResponse(BaseModel):
 class PolicyCreate(BaseModel):
     """政策创建请求"""
     year: int = Field(..., ge=2000, le=2100, description="生效年度")
-    month: str = Field(..., min_length=1, max_length=20, description="生效月份/批次（如：'4月'）")
+    month: int = Field(..., ge=1, le=12, description="生效月份（1-12）")
     steel_mill: str = Field(..., min_length=1, max_length=100, description="钢厂名称")
     category_name: str = Field(..., min_length=1, max_length=100, description="钢种大类")
     policy_type: PolicyType = Field(..., description="政策类型：THICKNESS=厚度加减价，WIDTH=宽度加价")
@@ -150,7 +150,7 @@ class PolicyCreate(BaseModel):
     base_thickness: Optional[Decimal] = Field(None, description="基准厚度（仅厚度政策需要）")
     items: list[LadderItemCreate] = Field(..., min_length=1, description="阶梯明细，至少一条")
 
-    @field_validator("month", "steel_mill", "category_name", "grade_name", mode="before")
+    @field_validator("steel_mill", "category_name", "grade_name", mode="before")
     @classmethod
     def strip_strings(cls, v):
         return _strip(v)
@@ -189,7 +189,7 @@ class PolicyListResponse(BaseModel):
     """政策列表响应（不含明细）"""
     id: int
     year: int
-    month: str
+    month: int
     steel_mill: str
     category_name: str
     policy_type: str
@@ -216,7 +216,7 @@ class PolicyDetailResponse(BaseModel):
     """政策详情响应（包含完整阶梯明细）"""
     id: int
     year: int
-    month: str
+    month: int
     steel_mill: str
     category_name: str
     policy_type: str
@@ -246,7 +246,7 @@ class PolicyDetailResponse(BaseModel):
 class PolicyQuery(BaseModel):
     """政策分页筛选参数"""
     year: Optional[int] = Field(None, ge=2000, le=2100, description="生效年度")
-    month: Optional[str] = Field(None, description="生效月份/批次")
+    month: Optional[int] = Field(None, ge=1, le=12, description="生效月份（1-12）")
     steel_mill: Optional[str] = Field(None, description="钢厂名称")
     category_name: Optional[str] = Field(None, description="钢种大类")
     policy_type: Optional[PolicyType] = Field(None, description="政策类型")
@@ -254,7 +254,7 @@ class PolicyQuery(BaseModel):
     page: int = Field(1, ge=1, description="页码")
     size: int = Field(20, ge=1, le=200, description="每页条数")
 
-    @field_validator("month", "steel_mill", "category_name", "grade_name", mode="before")
+    @field_validator("steel_mill", "category_name", "grade_name", mode="before")
     @classmethod
     def strip_query_strings(cls, v):
         return _strip(v)
@@ -263,7 +263,7 @@ class PolicyQuery(BaseModel):
 class PolicyOptionsResponse(BaseModel):
     """政策筛选下拉选项"""
     years: list[int] = Field(default_factory=list)
-    months: list[str] = Field(default_factory=list)
+    months: list[int] = Field(default_factory=list)
     steel_mills: list[str] = Field(default_factory=list)
     category_names: list[str] = Field(default_factory=list)
     policy_types: list[str] = Field(default_factory=list)
@@ -277,7 +277,7 @@ class PolicyOptionsResponse(BaseModel):
 class PolicyMatchRequest(BaseModel):
     """阶梯匹配请求"""
     year: int = Field(..., ge=2000, le=2100, description="生效年度")
-    month: str = Field(..., min_length=1, max_length=20, description="生效月份/批次")
+    month: int = Field(..., ge=1, le=12, description="生效月份（1-12）")
     steel_mill: str = Field(..., min_length=1, max_length=100, description="钢厂名称")
     category_name: str = Field(..., min_length=1, max_length=100, description="钢种大类")
     policy_type: PolicyType = Field(..., description="政策类型")
@@ -286,7 +286,7 @@ class PolicyMatchRequest(BaseModel):
     target_sub_group: Optional[str] = Field(None, max_length=100, description="附加子分组条件")
     target_value: Decimal = Field(..., description="待匹配的尺寸值（厚度或宽度）")
 
-    @field_validator("month", "steel_mill", "category_name", "grade_name", "target_sub_group", mode="before")
+    @field_validator("steel_mill", "category_name", "grade_name", "target_sub_group", mode="before")
     @classmethod
     def strip_strings(cls, v):
         return _strip(v)

@@ -151,7 +151,7 @@ class SteelPricePolicyService:
         records, total = self.repository.paginate(
             db,
             year=query.year,
-            month=query.month.strip() if query.month else None,
+            month=query.month,
             steel_mill=query.steel_mill.strip() if query.steel_mill else None,
             category_name=query.category_name.strip() if query.category_name else None,
             policy_type=query.policy_type.value if query.policy_type else None,
@@ -407,7 +407,7 @@ class SteelPricePolicyService:
         candidates = self.repository.find_candidate_policies(
             db,
             year=data.year,
-            month=data.month.strip(),
+            month=data.month,
             steel_mill=data.steel_mill.strip(),
             category_name=data.category_name.strip(),
             policy_type=data.policy_type.value,
@@ -453,7 +453,7 @@ class SteelPricePolicyService:
         file_content: bytes,
         filename: str,
         year: int,
-        month: str,
+        month: int,
     ) -> dict[str, int]:
         """
         解析 Excel 文件（传入 year/month 参数），

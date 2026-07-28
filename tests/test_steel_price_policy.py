@@ -73,7 +73,7 @@ def test_cascade_delete(db: Session):
 
     policy = SteelPricePolicy(
         year=2026,
-        month="4月",
+        month=4,
         steel_mill="马钢",
         category_name="冷轧钢",
         policy_type="THICKNESS",
@@ -102,7 +102,7 @@ def test_decimal_precision_in_insert(db: Session):
 
     policy = SteelPricePolicy(
         year=2026,
-        month="4月",
+        month=4,
         steel_mill="宝钢",
         category_name="镀锌钢",
         policy_type="WIDTH",
@@ -136,7 +136,7 @@ def test_service_create_and_get(db: Session):
 
     policy_data = PolicyCreate(
         year=2026,
-        month="5月",
+        month=5,
         steel_mill="宝钢",
         category_name="冷轧钢",
         policy_type=PolicyType.THICKNESS,
@@ -163,7 +163,7 @@ def test_service_create_and_get(db: Session):
 
     detail = svc.get_by_id(db, record["id"])
     assert detail is not None
-    assert detail["month"] == "5月"
+    assert detail["month"] == 5
     assert detail["items"][0]["price_adjustment"] == 200
 
 
@@ -176,7 +176,7 @@ def test_service_create_duplicate_rejected(db: Session):
 
     policy_data = PolicyCreate(
         year=2026,
-        month="6月",
+        month=6,
         steel_mill="马钢",
         category_name="冷轧钢",
         policy_type=PolicyType.WIDTH,
@@ -223,7 +223,7 @@ def test_service_ladder_overlap_rejected(db: Session):
 
     policy_data = PolicyCreate(
         year=2026,
-        month="7月",
+        month=7,
         steel_mill="宝钢",
         category_name="冷轧钢",
         policy_type=PolicyType.THICKNESS,
@@ -263,7 +263,7 @@ def test_service_ladder_valid_adjacent_allowed(db: Session):
 
     policy_data = PolicyCreate(
         year=2026,
-        month="8月",
+        month=8,
         steel_mill="宝钢",
         category_name="冷轧钢",
         policy_type=PolicyType.THICKNESS,
@@ -303,7 +303,7 @@ def test_service_ladder_match_exact(db: Session):
 
     policy_data = PolicyCreate(
         year=2026,
-        month="9月",
+        month=9,
         steel_mill="宝钢",
         category_name="镀锌钢",
         policy_type=PolicyType.THICKNESS,
@@ -341,7 +341,7 @@ def test_service_ladder_match_exact(db: Session):
     # 命中中间档（0.80 在闭区间内）
     match_req = PolicyMatchRequest(
         year=2026,
-        month="9月",
+        month=9,
         steel_mill="宝钢",
         category_name="镀锌钢",
         policy_type=PolicyType.THICKNESS,
@@ -369,7 +369,7 @@ def test_service_ladder_match_open_boundary(db: Session):
 
     policy_data = PolicyCreate(
         year=2026,
-        month="10月",
+        month=10,
         steel_mill="宝钢",
         category_name="冷轧钢",
         policy_type=PolicyType.THICKNESS,
@@ -392,7 +392,7 @@ def test_service_ladder_match_open_boundary(db: Session):
     result = svc.match(
         db,
         PolicyMatchRequest(
-            year=2026, month="10月", steel_mill="宝钢", category_name="冷轧钢",
+            year=2026, month=10, steel_mill="宝钢", category_name="冷轧钢",
             policy_type=PolicyType.THICKNESS, grade_name="DC01",
             base_thickness=Decimal("1.00"), target_value=Decimal("1.00"),
         ),
@@ -404,7 +404,7 @@ def test_service_ladder_match_open_boundary(db: Session):
     result2 = svc.match(
         db,
         PolicyMatchRequest(
-            year=2026, month="10月", steel_mill="宝钢", category_name="冷轧钢",
+            year=2026, month=10, steel_mill="宝钢", category_name="冷轧钢",
             policy_type=PolicyType.THICKNESS, grade_name="DC01",
             base_thickness=Decimal("1.00"), target_value=Decimal("3.00"),
         ),
@@ -421,7 +421,7 @@ def test_service_ladder_match_sort_order_priority(db: Session):
 
     policy_data = PolicyCreate(
         year=2026,
-        month="11月",
+        month=11,
         steel_mill="宝钢",
         category_name="冷轧钢",
         policy_type=PolicyType.THICKNESS,
@@ -451,7 +451,7 @@ def test_service_ladder_match_sort_order_priority(db: Session):
     result = svc.match(
         db,
         PolicyMatchRequest(
-            year=2026, month="11月", steel_mill="宝钢", category_name="冷轧钢",
+            year=2026, month=11, steel_mill="宝钢", category_name="冷轧钢",
             policy_type=PolicyType.THICKNESS, grade_name="DC01",
             base_thickness=Decimal("1.00"), target_value=Decimal("1.00"),
         ),
@@ -469,7 +469,7 @@ def test_service_ladder_match_no_candidate(db: Session):
     result = svc.match(
         db,
         PolicyMatchRequest(
-            year=2026, month="99月", steel_mill="不存在的钢厂",
+            year=2026, month=12, steel_mill="不存在的钢厂",
             category_name="冷轧钢", policy_type=PolicyType.WIDTH,
             target_value=Decimal("1000"),
         ),
@@ -509,7 +509,7 @@ def test_schema_thickness_requires_base(db: Session):
 
     with pytest.raises(ValueError, match="grade_name"):
         PolicyCreate(
-            year=2026, month="4月", steel_mill="宝钢", category_name="冷轧钢",
+            year=2026, month=4, steel_mill="宝钢", category_name="冷轧钢",
             policy_type=PolicyType.THICKNESS,
             grade_name=None,
             base_thickness=Decimal("1.00"),
@@ -518,7 +518,7 @@ def test_schema_thickness_requires_base(db: Session):
 
     with pytest.raises(ValueError, match="base_thickness"):
         PolicyCreate(
-            year=2026, month="4月", steel_mill="宝钢", category_name="冷轧钢",
+            year=2026, month=4, steel_mill="宝钢", category_name="冷轧钢",
             policy_type=PolicyType.THICKNESS,
             grade_name="DC01",
             base_thickness=None,
@@ -531,7 +531,7 @@ def test_schema_width_policy_base_not_required(db: Session):
     from app.schemas.steel_price_policy import PolicyCreate, LadderItemCreate, PolicyType
 
     policy = PolicyCreate(
-        year=2026, month="4月", steel_mill="宝钢", category_name="镀锌钢",
+        year=2026, month=4, steel_mill="宝钢", category_name="镀锌钢",
         policy_type=PolicyType.WIDTH,
         grade_name=None,
         base_thickness=None,
@@ -550,7 +550,7 @@ def test_service_update_replace_items(db: Session):
     record, _ = svc.create(
         db,
         PolicyCreate(
-            year=2026, month="12月", steel_mill="马钢", category_name="冷轧钢",
+            year=2026, month=12, steel_mill="马钢", category_name="冷轧钢",
             policy_type=PolicyType.WIDTH,
             items=[
                 LadderItemCreate(min_val=Decimal("1000"), max_val=Decimal("1500"), price_adjustment=0, sort_order=0),
@@ -582,7 +582,7 @@ def test_service_add_item_standalone(db: Session):
     record, _ = svc.create(
         db,
         PolicyCreate(
-            year=2027, month="1月", steel_mill="宝钢", category_name="冷轧钢",
+            year=2027, month=1, steel_mill="宝钢", category_name="冷轧钢",
             policy_type=PolicyType.WIDTH,
             items=[LadderItemCreate(min_val=Decimal("1000"), max_val=Decimal("1200"), price_adjustment=0, sort_order=0)],
         ),
@@ -610,7 +610,7 @@ def test_service_delete_item_standalone(db: Session):
     record, _ = svc.create(
         db,
         PolicyCreate(
-            year=2027, month="2月", steel_mill="宝钢", category_name="冷轧钢",
+            year=2027, month=2, steel_mill="宝钢", category_name="冷轧钢",
             policy_type=PolicyType.WIDTH,
             items=[
                 LadderItemCreate(min_val=Decimal("1000"), max_val=Decimal("1300"), price_adjustment=0, sort_order=0),
@@ -638,7 +638,7 @@ def test_decimal_response_not_float(db: Session):
     record, _ = svc.create(
         db,
         PolicyCreate(
-            year=2027, month="3月", steel_mill="宝钢", category_name="冷轧钢",
+            year=2027, month=3, steel_mill="宝钢", category_name="冷轧钢",
             policy_type=PolicyType.THICKNESS,
             grade_name="DC01",
             base_thickness=Decimal("0.65"),

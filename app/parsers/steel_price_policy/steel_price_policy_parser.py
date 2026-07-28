@@ -95,7 +95,7 @@ def parse_steel_price_policy_excel(
     file: Union[str, Path, bytes],
     *,
     year: int,
-    month: str,
+    month: int,
 ) -> SteelPricePolicyParseResult:
     """整张 Excel 解析（便捷 API）。
 
@@ -120,13 +120,13 @@ def parse_steel_price_policy_excel(
 class SteelPricePolicyExcelParser:
     """钢价政策 Excel 编排器（按 Sheet 依次解析，聚合结果）。"""
 
-    def __init__(self, *, year: int, month: str):
+    def __init__(self, *, year: int, month: int):
         self.year = year
         self.month = month
         self.result = SteelPricePolicyParseResult()
 
     def parse(self, file: Union[str, Path, bytes]) -> SteelPricePolicyParseResult:
-        logger.info(f"开始解析钢价政策 Excel（{self.year}年{self.month}）")
+        logger.info(f"开始解析钢价政策 Excel（{self.year}年{self.month}月）")
         self.result = SteelPricePolicyParseResult(
             year=self.year, month=self.month
         )

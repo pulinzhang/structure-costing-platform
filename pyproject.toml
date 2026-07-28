@@ -58,9 +58,34 @@ target-version = "py312"
 
 [tool.mypy]
 python_version = "3.12"
+# 开启所有核心严格检查开关
+strict = true
+
+# 强制要求所有函数和方法必须有明确的类型定义（哪怕返回 None 也必须写 -> None）
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+
+# 禁止隐式的 Any 类型（防止类型退化成动态类型）
 warn_return_any = true
-warn_unused_configs = true
-disallow_untyped_defs = false
+warn_unreachable = true
+
+# 严格禁止漏掉类型注解的函数调用
+disallow_untyped_calls = true
+
+# 允许针对第三方库无类型声明时的提示配置
+ignore_missing_imports = true
+
+# 针对特定第三方库（如 pandas, openpyxl 等早期没有完美类型标注的库）做容错
+# TOML 不支持 [[tool.mypy-xxx.*]] 这种语法，正确写法见下方 [tool.mypy.overrides]
+# [[tool.mypy-openpyxl.*]]
+# ignore_missing_imports = true
+#
+# [[tool.mypy-pandas.*]]
+# ignore_missing_imports = true
+
+[tool.mypy.overrides]
+module = ["openpyxl.*", "pandas.*"]
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

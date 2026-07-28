@@ -36,27 +36,8 @@ class AngangSheetHandler(BaseSheetHandler):
     def find_thickness_blocks(
         self, sheet: Worksheet, steel_mill: str
     ) -> List[Dict[str, Any]]:
-        """左侧（cols 1-10）：单一厚度块。"""
-        blocks: List[Dict[str, Any]] = []
-        max_row = self.row_max(sheet)
-        max_col = 10  # 左侧厚度只到 J 列
-
-        label_rows = self.find_grade_label_rows(sheet, 1, max_row)
-        if not label_rows:
-            return []
-
-        label_row = label_rows[0]
-        block_end = self.find_block_end_row(
-            sheet, label_row + 1, max_row, max_col
-        )
-
-        block = self.locate_thickness_block(
-            sheet, label_row, block_end, max_col
-        )
-        if block:
-            blocks.append(block)
-
-        return blocks
+        """左侧（cols 1-10）：多块厚度 (冷轧/镀锌/酸洗 三个)."""
+        return self.find_default_thickness_blocks(sheet, steel_mill, max_col=10)
 
     # ------------------------------------------------------------------ #
     # 宽度块
@@ -82,10 +63,23 @@ class AngangSheetHandler(BaseSheetHandler):
                 block_starts.append(r)
 
         for i, title_row in enumerate(block_starts):
-            # 该块结束 = 下一个块标题 - 1
-            block_end = (
-                block_starts[i + 1] - 1 if i + 1 < len(block_starts) else max_row
+            # 该块结束 = 下一个块标题 - 1；若没有下一标题，则用 find_block_end_row
+            if i + 1 < len(block_starts):
+                block_end = block_starts[i + 1] - 1
+            else:
+                block_end = self.find_block_end_row(
+                    sheet, title_row + 2, max_row, max_col
+                )
+            # 再一次避免吸入后面 "钢种" label_row
+            next_label_rows = self.find_grade_label_rows(sheet, title_row + 2, max_row)
+            if next_label_rows:
+                block_end = min(block_end, next_label_rows[0] - 1)
+            # 避免吸入后面的"厚度加减价"段标题
+            next_break = self.find_section_break_row(
+                sheet, title_row + 2, max_row, scan_col=1
             )
+            if next_break is not None:
+                block_end = min(block_end, next_break - 1)
 
             # 列头行 = 标题行 + 1
             header_row = title_row + 1

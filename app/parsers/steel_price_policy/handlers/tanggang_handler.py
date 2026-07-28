@@ -18,32 +18,7 @@ class TanggangSheetHandler(BaseSheetHandler):
     def find_thickness_blocks(
         self, sheet: Worksheet, steel_mill: str
     ) -> List[Dict[str, Any]]:
-        blocks: List[Dict[str, Any]] = []
-        max_row, max_col = self.row_max(sheet), self.col_max(sheet)
-        last_end = 0
-
-        while True:
-            label_rows = self.find_grade_label_rows(sheet, last_end + 1, max_row)
-            if not label_rows:
-                break
-            label_row = label_rows[0]
-            if label_row < last_end + 1:
-                last_end = label_row
-                continue
-
-            block_end = self.find_block_end_row(sheet, label_row + 1, max_row, max_col)
-            if block_end <= label_row + 1:
-                last_end = label_row + 1
-                continue
-
-            block = self.locate_thickness_block(sheet, label_row, block_end, max_col)
-            if block:
-                blocks.append(block)
-                last_end = block["data_row_end"]
-            else:
-                last_end = label_row + 1
-
-        return blocks
+        return self.find_default_thickness_blocks(sheet, steel_mill)
 
     def find_width_blocks(
         self, sheet: Worksheet, steel_mill: str
@@ -58,7 +33,21 @@ class TanggangSheetHandler(BaseSheetHandler):
                 w_title_rows.append(r)
 
         for i, title_row in enumerate(w_title_rows):
-            block_end = w_title_rows[i + 1] - 1 if i + 1 < len(w_title_rows) else max_row
+            if i + 1 < len(w_title_rows):
+                block_end = w_title_rows[i + 1] - 1
+            else:
+                block_end = self.find_block_end_row(
+                    sheet, title_row + 2, max_row, max_col
+                )
+            # 避免吸入后面的"钢种"/"厚度加减价" label_row 或段标题
+            next_label_rows = self.find_grade_label_rows(sheet, title_row + 2, max_row)
+            if next_label_rows:
+                block_end = min(block_end, next_label_rows[0] - 1)
+            next_break = self.find_section_break_row(
+                sheet, title_row + 2, max_row, scan_col=1
+            )
+            if next_break is not None:
+                block_end = min(block_end, next_break - 1)
             title_text = self.text(sheet, title_row, 1)
             if "镀锌" in title_text:
                 category = "镀锌钢"

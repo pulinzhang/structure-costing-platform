@@ -38,7 +38,7 @@ class SteelPricePolicyRepository:
         db: Session,
         *,
         year: Optional[int] = None,
-        month: Optional[str] = None,
+        month: Optional[int] = None,
         steel_mill: Optional[str] = None,
         category_name: Optional[str] = None,
         policy_type: Optional[str] = None,
@@ -51,7 +51,7 @@ class SteelPricePolicyRepository:
 
         if year is not None:
             query = query.filter(SteelPricePolicy.year == year)
-        if month:
+        if month is not None:
             query = query.filter(SteelPricePolicy.month == month)
         if steel_mill:
             query = query.filter(SteelPricePolicy.steel_mill == steel_mill)
@@ -178,7 +178,7 @@ class SteelPricePolicyRepository:
         self,
         db: Session,
         year: int,
-        month: str,
+        month: int,
         steel_mill: str,
         category_name: str,
         policy_type: str,
@@ -269,7 +269,7 @@ class SteelPricePolicyRepository:
         db: Session,
         *,
         year: int,
-        month: str,
+        month: int,
         steel_mill: str,
         category_name: str,
         policy_type: str,

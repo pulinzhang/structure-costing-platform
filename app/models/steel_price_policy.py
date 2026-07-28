@@ -27,7 +27,7 @@ class SteelPricePolicy(Base):
 
     # 生效周期
     year = Column(Integer, nullable=False, comment="生效年度（如：2026）")
-    month = Column(String(20), nullable=False, comment="生效月份/批次（如：'4月'）")
+    month = Column(Integer, nullable=False, comment="生效月份（1-12，如：4 表示 4 月）")
 
     # 钢厂与钢种
     steel_mill = Column(String(100), nullable=False, comment="钢厂名称（如：'马钢'、'宝钢'）")

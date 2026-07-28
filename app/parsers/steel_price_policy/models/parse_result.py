@@ -14,7 +14,7 @@ class SteelPricePolicyParseResult:
     warnings: List[str] = field(default_factory=list)
     sheet_names: List[str] = field(default_factory=list)
     year: int = 0
-    month: str = ""
+    month: int = 0
 
     def to_dict(self) -> dict:
         return {

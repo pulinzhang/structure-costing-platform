@@ -34,32 +34,7 @@ class ShougangSheetHandler(BaseSheetHandler):
         self, sheet: Worksheet, steel_mill: str
     ) -> List[Dict[str, Any]]:
         """首钢厚度块与默认布局相同：label_row 在 col 1，max_col=13。"""
-        blocks: List[Dict[str, Any]] = []
-        max_row = self.row_max(sheet)
-        max_col = 13  # 左侧 A-M 列
-        last_end = 0
-
-        while True:
-            label_rows = self.find_grade_label_rows(sheet, last_end + 1, max_row)
-            if not label_rows:
-                break
-            label_row = label_rows[0]
-            if label_row < last_end + 1:
-                last_end = label_row
-                continue
-
-            block_end = self.find_block_end_row(sheet, label_row + 1, max_row, max_col)
-            if block_end <= label_row + 1:
-                last_end = label_row + 1
-                continue
-
-            block = self.locate_thickness_block(sheet, label_row, block_end, max_col)
-            if block:
-                blocks.append(block)
-                last_end = block["data_row_end"]
-            else:
-                last_end = label_row + 1
-        return blocks
+        return self.find_default_thickness_blocks(sheet, steel_mill, max_col=13)
 
     # ------------------------------------------------------------------ #
     # 宽度块：col 14 出现 "宽度加减价" 标题 → 其下方/同一行 O-R 列为边界列头
@@ -80,9 +55,21 @@ class ShougangSheetHandler(BaseSheetHandler):
                 w_title_rows.append(r)
 
         for i, title_row in enumerate(w_title_rows):
-            block_end = (
-                w_title_rows[i + 1] - 1 if i + 1 < len(w_title_rows) else max_row
+            if i + 1 < len(w_title_rows):
+                block_end = w_title_rows[i + 1] - 1
+            else:
+                block_end = self.find_block_end_row(
+                    sheet, title_row + 2, max_row, min(max_col, _W_MAX_COL)
+                )
+            # 避免吸入后面的"钢种"/"厚度加减价" label_row 或段标题
+            next_label_rows = self.find_grade_label_rows(sheet, title_row + 2, max_row)
+            if next_label_rows:
+                block_end = min(block_end, next_label_rows[0] - 1)
+            next_break = self.find_section_break_row(
+                sheet, title_row + 2, max_row, scan_col=_W_TITLE_COL
             )
+            if next_break is not None:
+                block_end = min(block_end, next_break - 1)
 
             # 列头行 = 标题行 + 1（与 magang 宽度块布局一致）
             header_row = title_row + 1

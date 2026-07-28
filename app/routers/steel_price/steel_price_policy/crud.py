@@ -212,7 +212,7 @@ def match_ladder(
 @router.post("/upload")
 async def upload_policy_excel(
     year: int = Form(..., ge=2000, le=2100, description="生效年度"),
-    month: str = Form(..., min_length=1, max_length=20, description="生效月份（格式如 '4月'）"),
+    month: int = Form(..., ge=1, le=12, description="生效月份（1-12）"),
     file: UploadFile = File(..., description="一事一议价格 Excel 文件"),
     db: Session = Depends(get_db),
 ):
