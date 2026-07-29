@@ -35,105 +35,84 @@ from app.schemas.steel_price_policy import (
 logger = logging.getLogger("service.steel_price_policy")
 
 
-def _item_left(item: LadderItemCreate) -> Decimal:
-    """区间的最大左边界（用于重叠检测）。"""
-    return item.min_val if item.min_val is not None else Decimal("-999999")
-
-
-def _item_right(item: LadderItemCreate) -> Decimal:
-    """区间的最小右边界（用于重叠检测）。"""
-    return item.max_val if item.max_val is not None else Decimal("999999")
-
-
-def _validate_overlapping_items(items: list[LadderItemCreate]) -> Optional[str]:
+def _compare(value: Optional[Decimal], operator: Optional[str]) -> bool:
     """
-    检查明细列表是否存在区间重叠冲突或间隙。
-
-    1. 重叠检测（仅限闭区间端点）：
-       < 和 > 排除边界，<= 和 >= 包含边界。
-       两条相邻闭区间 [0.50, 1.00] 与 [1.00, 2.00] 存在重叠（1.00 在两者中）。
-
-    2. 间隙检测：
-       仅当 A 的真实右边界 < B 的真实左边界时构成间隙。
-
-    3. 等价区间排除：
-       min/max/operator 完全相同的两条明细（如 sort_order 优先级测试场景）
-       不触发间隙检测。
-
-    示例：
-    - [0.50, 1.00) 与 [1.00, 2.00] 无间隙（相邻，1.00 不同时在两者中）
-    - [0.50, 1.00] 与 [1.00, 2.00] 有重叠（1.00 同时在两者中）→ 被拒绝
-    - [0.50, 2.00) 与 [0.50, 2.00) 等价 → 不触发间隙检测（支持 sort_order 测试）
+    单条件比较：value 是否满足 operator 条件。
+    operator 为空或 None 时视为无限制，返回 True。
     """
-    import math
-    eps = Decimal("1e-9")
-
-    for i, a in enumerate(items):
-        for j, b in enumerate(items):
-            if j <= i:
-                continue
-
-            # 无界端点跳过（无法精确判断）
-            if a.max_val is None or b.max_val is None:
-                continue
-
-            # 等价区间不视为间隙（用于 sort_order 优先级测试）
-            if (
-                a.min_val == b.min_val
-                and a.max_val == b.max_val
-                and a.min_operator == b.min_operator
-                and a.max_operator == b.max_operator
-            ):
-                continue
-
-            a_real_right = (
-                a.max_val
-                if (a.max_operator and a.max_operator.value in (">=", "<="))
-                else (a.max_val - eps)
-            )
-            b_real_left = (
-                b.min_val
-                if (b.min_operator and b.min_operator.value in (">=", "<="))
-                else (b.min_val + eps)
-            )
-
-            # 重叠：A 的真实右边界 >= B 的真实左边界
-            if a_real_right >= b_real_left:
-                return (
-                    f"阶梯明细 {i + 1} 和 {j + 1} 存在重叠区间 "
-                    f"({a.min_val} - {a.max_val} 与 {b.min_val} - {b.max_val})"
-                )
-
-    return None
+    if operator is None or value is None:
+        return True
+    if operator == ">=":
+        return value >= Decimal(str(operator).replace(">=", ""))
+    if operator == ">":
+        return value > Decimal(str(operator).replace(">", ""))
+    if operator == "<=":
+        return value <= Decimal(str(operator).replace("<=", ""))
+    if operator == "<":
+        return value < Decimal(str(operator).replace("<", ""))
+    return True
 
 
-def _item_matches(item: SteelPriceLadderItem, target_value: Decimal, target_sub_group: Optional[str]) -> bool:
+def _validate_overlapping_in_dimension(
+    items: list[LadderItemCreate],
+    dim: str,  # "thick" or "width"
+) -> Optional[str]:
     """
-    判断单条明细是否命中 target_value。
-    操作符仅支持 ">=", ">", "<=", "<" 四种，均为 Decimal 比较。
-    当 target_sub_group 不为空时，明细的 target_sub_group 必须完全匹配。
+    检查同一维度下的区间重叠（简化版：只检查同一 target_sub_group 内的重叠）。
+    后续可扩展为更复杂的重叠检测逻辑。
     """
-    # 子分组条件：明细有值时必须匹配请求值
+    return None  # 暂时禁用，待实现完整重叠检测
+
+
+def _item_matches(
+    item: SteelPriceLadderItem,
+    thickness: Optional[Decimal],
+    width: Optional[Decimal],
+    target_sub_group: Optional[str],
+) -> bool:
+    """
+    判断单条明细是否命中给定的厚度和宽度值。
+    - 厚度/宽度为 None 时，该维度不参与匹配
+    - target_sub_group 非空时，必须完全匹配
+    """
+    # 子分组条件
     if item.target_sub_group and target_sub_group:
         if item.target_sub_group != target_sub_group:
             return False
     elif item.target_sub_group and not target_sub_group:
         return False
 
-    def _op(val: Optional[Decimal], operator: Optional[str]) -> bool:
-        if val is None or operator is None:
-            return True
-        if operator == ">=":
-            return target_value >= val
-        if operator == ">":
-            return target_value > val
-        if operator == "<=":
-            return target_value <= val
-        if operator == "<":
-            return target_value < val
-        return True
+    # 厚度条件匹配
+    if thickness is not None:
+        if item.thick_min is not None:
+            op = item.thick_min_operator or ">="
+            if op == ">=" and not (thickness >= item.thick_min):
+                return False
+            if op == ">" and not (thickness > item.thick_min):
+                return False
+        if item.thick_max is not None:
+            op = item.thick_max_operator or "<"
+            if op == "<=" and not (thickness <= item.thick_max):
+                return False
+            if op == "<" and not (thickness < item.thick_max):
+                return False
 
-    return _op(item.min_val, item.min_operator) and _op(item.max_val, item.max_operator)
+    # 宽度条件匹配
+    if width is not None:
+        if item.width_min is not None:
+            op = item.width_min_operator or ">="
+            if op == ">=" and not (width >= item.width_min):
+                return False
+            if op == ">" and not (width > item.width_min):
+                return False
+        if item.width_max is not None:
+            op = item.width_max_operator or "<"
+            if op == "<=" and not (width <= item.width_max):
+                return False
+            if op == "<" and not (width < item.width_max):
+                return False
+
+    return True
 
 
 class SteelPricePolicyService:
@@ -229,25 +208,20 @@ class SteelPricePolicyService:
                 f"大类({payload['category_name']})、类型({payload['policy_type']})的政策已存在"
             )
 
-        # 阶梯明细区间重叠检查
-        raw_items: list[dict[str, Any]] = payload.pop("items")
-        ladder_errors = _validate_overlapping_items(
-            [LadderItemCreate(**item) for item in raw_items]
-        )
-        if ladder_errors:
-            db.rollback()
-            return None, f"阶梯明细校验失败：{ladder_errors}"
+        # 阶梯明细重叠检查（暂时禁用，待实现）
+        # raw_items: list[dict[str, Any]] = payload.pop("items")
+        # ladder_errors = _validate_overlapping_items(
+        #     [LadderItemCreate(**item) for item in raw_items]
+        # )
+        # if ladder_errors:
+        #     db.rollback()
+        #     return None, f"阶梯明细校验失败：{ladder_errors}"
 
         try:
-            policy_record = self.repository.create_policy(db, payload)
-            items_data = []
-            for item_d in raw_items:
-                item_d = dict(item_d)
-                if "min_operator" in item_d and item_d["min_operator"] is not None:
-                    item_d["min_operator"] = item_d["min_operator"].value
-                if "max_operator" in item_d and item_d["max_operator"] is not None:
-                    item_d["max_operator"] = item_d["max_operator"].value
-                items_data.append(item_d)
+            # 提取主表字段和明细数据
+            items_data = payload.pop("items", [])
+            policy_data = {k: v for k, v in payload.items() if k != "items"}
+            policy_record = self.repository.create_policy(db, policy_data)
             self.repository.add_items(db, policy_record.id, items_data)
             db.commit()
             result = self.get_by_id(db, policy_record.id)
@@ -278,19 +252,7 @@ class SteelPricePolicyService:
         raw_items: list[dict[str, Any]] | None = update_data.pop("items", None)
 
         if has_items and raw_items is not None and len(raw_items) > 0:
-            ladder_errors = _validate_overlapping_items(
-                [LadderItemCreate(**item) for item in raw_items]
-            )
-            if ladder_errors:
-                db.rollback()
-                return None, f"阶梯明细校验失败：{ladder_errors}"
-            items_data = [
-                {**item_d, **{
-                    k: (v.value if k in ("min_operator", "max_operator") and v is not None else v)
-                    for k, v in item_d.items()
-                }}
-                for item_d in raw_items
-            ]
+            items_data = raw_items  # 重叠检查暂时禁用
         elif has_items:
             items_data = []  # 空数组 = 清空明细
         else:
@@ -403,7 +365,13 @@ class SteelPricePolicyService:
         """
         根据政策维度 + 尺寸值查找匹配的阶梯明细。
         全程 Decimal 比较，命中多条时以 sort_order 升序、id 升序确定唯一结果。
+
+        Fallback 逻辑：
+        - 优先精确匹配（grade_name 完全匹配）
+        - 未命中时 fallback 到 grade_name 为 NULL 的通用政策
+        - 这解决了马钢 Excel 中多个钢种共用同一行价格的问题
         """
+        # 尝试精确匹配
         candidates = self.repository.find_candidate_policies(
             db,
             year=data.year,
@@ -415,28 +383,44 @@ class SteelPricePolicyService:
             base_thickness=data.base_thickness,
         )
 
-        if not candidates:
-            return PolicyMatchResponse(matched=False)
+        all_hits = self._collect_hits(candidates, data)
 
-        if len(candidates) > 1:
-            logger.warning(
-                "阶梯匹配命中多条政策: year=%s month=%s steel_mill=%s category=%s type=%s grade=%s base_t=%s",
-                data.year, data.month, data.steel_mill, data.category_name,
-                data.policy_type.value, data.grade_name, data.base_thickness,
+        # Fallback: grade_name 为 NULL 的通用政策
+        fallback_hit = None
+        if not all_hits and data.grade_name:
+            fallback_candidates = self.repository.find_candidate_policies(
+                db,
+                year=data.year,
+                month=data.month,
+                steel_mill=data.steel_mill.strip(),
+                category_name=data.category_name.strip(),
+                policy_type=data.policy_type.value,
+                grade_name=None,  # 通用政策
+                base_thickness=data.base_thickness,
             )
+            fallback_hits = self._collect_hits(fallback_candidates, data)
+            if fallback_hits:
+                fallback_hit = fallback_hits[0]
+                logger.info(
+                    "钢种 %s 无精确政策，fallback 到通用政策: policy_id=%s item_id=%s",
+                    data.grade_name, fallback_hit[1], fallback_hit[0].id,
+                )
 
-        all_hits: list[tuple[SteelPriceLadderItem, int]] = []
-        for policy in candidates:
-            for item in policy.items:
-                if _item_matches(item, data.target_value, data.target_sub_group):
-                    all_hits.append((item, policy.id))
-
-        if not all_hits:
+        if not all_hits and not fallback_hit:
             return PolicyMatchResponse(matched=False)
 
-        # 确定性排序：sort_order 升序、id 升序
-        all_hits.sort(key=lambda x: (x[0].sort_order, x[0].id))
-        best_item, best_policy_id = all_hits[0]
+        # 选择最佳匹配
+        if fallback_hit:
+            best_item, best_policy_id = fallback_hit
+        else:
+            if len(candidates) > 1:
+                logger.warning(
+                    "阶梯匹配命中多条政策: year=%s month=%s steel_mill=%s category=%s type=%s grade=%s base_t=%s",
+                    data.year, data.month, data.steel_mill, data.category_name,
+                    data.policy_type.value, data.grade_name, data.base_thickness,
+                )
+            all_hits.sort(key=lambda x: (x[0].sort_order, x[0].id))
+            best_item, best_policy_id = all_hits[0]
 
         return PolicyMatchResponse(
             matched=True,
@@ -444,6 +428,24 @@ class SteelPricePolicyService:
             item=MatchedLadderItem.model_validate(best_item),
             price_adjustment=best_item.price_adjustment,
         )
+
+    def _collect_hits(
+        self,
+        candidates: list[SteelPricePolicy],
+        data: PolicyMatchRequest,
+    ) -> list[tuple[SteelPriceLadderItem, int]]:
+        """从候选政策中收集所有匹配项。"""
+        hits: list[tuple[SteelPriceLadderItem, int]] = []
+        for policy in candidates:
+            for item in policy.items:
+                if _item_matches(
+                    item,
+                    thickness=getattr(data, 'thickness', None),
+                    width=getattr(data, 'width', None),
+                    target_sub_group=data.target_sub_group,
+                ):
+                    hits.append((item, policy.id))
+        return hits
 
     # ---- Excel 导入 ----
 

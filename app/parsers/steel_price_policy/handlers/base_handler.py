@@ -15,6 +15,16 @@
     "base_thickness": Decimal | None,
 }
 
+厚度块描述（policy_type="THICKNESS"）：
+- 列头格式：如 "＜0.5" → 上限不含, "0.5-0.8" → 区间, "≥2.0" → 下限
+- 数据列：每列对应一个厚度区间，值为加减价（元/吨）
+- 边界推断：最后一列无上界时按 base_thickness 推断；中间列根据下一列下界推断上界
+
+宽度块描述（policy_type="WIDTH"）：
+- 列头格式：如 "＜900" → 上限不含, "900≤W＜1600" → 区间, "≥1600" → 下限
+- 数据列：每列对应一个宽度区间，值为加减价（元/吨）
+- 边界推断：最后一列无上界时为 +∞；中间列根据下一列下界推断上界
+
 基类负责：给定块描述 → List[ParsedPolicy] 的通用解析。
 """
 
@@ -162,7 +172,8 @@ class BaseSheetHandler:
         blocks = (
             self.find_thickness_blocks(sheet, steel_mill)
             if policy_type == "THICKNESS"
-            else self.find_width_blocks(sheet, steel_mill)
+            else
+            self.find_width_blocks(sheet, steel_mill)
         )
         policies: List[ParsedPolicy] = []
         for block in blocks:
@@ -196,13 +207,19 @@ class BaseSheetHandler:
         sorted_price_cols = sorted(price_cols)
 
         policies: List[ParsedPolicy] = []
+        last_grade: Optional[str] = None  # 用于合并单元格的钢种继承
         for r in range(data_start, data_end + 1):
             grade = self.text_or_none(sheet, r, grade_col)
+            # 合并单元格处理：钢种列为空时继承上一行的值
+            if not grade:
+                grade = last_grade
+            else:
+                last_grade = grade  # 更新继承值
             if not grade:
                 continue
             if grade in grade_blacklist:
                 continue
-            items = self._build_items_for_row(sheet, r, sorted_price_cols, boundaries)
+            items = self._build_items_for_row(sheet, r, sorted_price_cols, boundaries, policy_type, sort_order=r)
             if not items:
                 continue
             policies.append(
@@ -228,45 +245,187 @@ class BaseSheetHandler:
                 result[c] = b
         return result
 
+    def find_start_row(
+        self,
+        sheet: Worksheet,
+        row: int,
+        col: int,
+    ) -> Optional[int]:
+        """检查单元格是否在合并区域内，如果是，返回合并区域的起始行号。
+
+        在 openpyxl 中，合并单元格的起始单元格（top-left cell）存储值，
+        其他合并单元格（被合并的）的值为 None。
+        此方法通过检查合并单元格范围来确定当前单元格是否属于某个合并区域。
+
+        Args:
+            sheet: Excel 工作表
+            row: 当前行号（1-indexed）
+            col: 当前列号（1-indexed）
+
+        Returns:
+            如果单元格属于合并区域，返回合并区域的起始行号；否则返回 None
+        """
+
+        for merged_range in sheet.merged_cells:
+            if merged_range.min_row <= row <= merged_range.max_row and merged_range.min_col <= col <= merged_range.max_col:
+                # 当前单元格在合并区域内，返回合并区域的起始行
+                return merged_range.min_row
+
+        return None
+
+    def _find_value_above(
+        self,
+        sheet: Worksheet,
+        start_row: int,
+        col: int,
+        min_row: int = 1,
+    ) -> int:
+        """
+        向上查找非 None 值。
+
+        当合并区域的起始单元格也被 openpyxl 返回为 None 时，
+        向上查找最近的非 None 值。
+
+        Args:
+            sheet: Excel 工作表
+            start_row: 起始行号（包含）
+            col: 列号
+            min_row: 最小行号（不查询此行以上）
+
+        Returns:
+            找到的非 None 值的整数形式，未找到返回 0
+        """
+        for r in range(start_row - 1, min_row - 1, -1):
+            val = sheet.cell(row=r, column=col).value
+            if val is not None:
+                return _to_int_price(val)
+        return 0
+
     def _build_items_for_row(
         self,
         sheet: Worksheet,
         r: int,
         price_cols: List[int],
         boundaries: Dict[int, _Boundary],
+        policy_type: str = "THICKNESS",
+        sort_order: int = 0,
     ) -> List[ParsedLadderItem]:
         items: List[ParsedLadderItem] = []
-        # 排过序的列号列表，用于推断每个区间段的上界
         sorted_cols = sorted(price_cols)
         for i, c in enumerate(sorted_cols):
             if c not in boundaries:
                 continue
-            price = _to_int_price(sheet.cell(row=r, column=c).value)
-            items.append(self.build_item(boundaries[c], price))
-            # 推断上界：仅当当前列已有 max_val（即已限定上限，如纯数字 ≤X）时跳过，
-            # 其他情况取下一列的下界作为本列的上界（左闭右开）。
-            cur_has_max = boundaries[c].max_val is not None
-            if cur_has_max:
-                continue
-            if i < len(sorted_cols) - 1:
+            # 获取加减价金额。如果当前行的值为空，检查开始行是否合并到此处。
+            # 如果是合并到此处，则使用开始行的值。
+            # 注意：合并区域的起始单元格也可能被 openpyxl 返回为 None，
+            # 此时需要继续向上查找非 None 值。
+            price_cell = sheet.cell(row=r, column=c)
+            if price_cell.value is None:
+                start_row = self.find_start_row(sheet, r, c)
+                if start_row is not None:
+                    # 尝试获取起始单元格的值
+                    start_val = sheet.cell(row=start_row, column=c).value
+                    if start_val is not None:
+                        price = _to_int_price(start_val)
+                    else:
+                        # 起始单元格的值也为 None，继续向上查找非 None 值
+                        price = self._find_value_above(sheet, start_row, c)
+                else:
+                    price = 0
+            else:
+                price = _to_int_price(price_cell.value)
+
+            boundary = boundaries[c]
+
+            # 推断上界：仅当当前列已有 max_val 时跳过
+            if boundary.max_val is None and i < len(sorted_cols) - 1:
                 next_c = sorted_cols[i + 1]
                 if next_c in boundaries:
                     next_boundary = boundaries[next_c]
                     if next_boundary.min_val is not None:
-                        items[-1].max_val = next_boundary.min_val
-                        items[-1].max_operator = "<"  # 区间左闭右开，不含上界
+                        boundary.max_val = next_boundary.min_val
+                        boundary.max_operator = "<"
+
+            if policy_type == "THICKNESS":
+                # 厚度政策：只设置厚度维度
+                items.append(
+                    ParsedLadderItem(
+                        target_sub_group=None,
+                        thick_min=boundary.min_val,
+                        thick_min_operator=boundary.min_operator,
+                        thick_max=boundary.max_val,
+                        thick_max_operator=boundary.max_operator,
+                        width_min=None,
+                        width_min_operator=">=",
+                        width_max=None,
+                        width_max_operator="<",
+                        price_adjustment=price,
+                        is_base=False,
+                        sort_order=sort_order,
+                    )
+                )
+            else:
+                # 宽度政策：只设置宽度维度
+                items.append(
+                    ParsedLadderItem(
+                        target_sub_group=None,
+                        thick_min=None,
+                        thick_min_operator=">=",
+                        thick_max=None,
+                        thick_max_operator="<",
+                        width_min=boundary.min_val,
+                        width_min_operator=boundary.min_operator,
+                        width_max=boundary.max_val,
+                        width_max_operator=boundary.max_operator,
+                        price_adjustment=price,
+                        is_base=False,
+                        sort_order=sort_order,
+                    )
+                )
         return items
 
     def build_item(
-        self, boundary: _Boundary, price: int
+        self, boundary: _Boundary, price: int, width_boundary: Optional[_Boundary] = None
     ) -> ParsedLadderItem:
-        return ParsedLadderItem(
-            min_val=boundary.min_val,
-            min_operator=boundary.min_operator,
-            max_val=boundary.max_val,
-            max_operator=boundary.max_operator,
-            price_adjustment=price,
-        )
+        """构建阶梯明细项。
+
+        Args:
+            boundary: 厚度边界（或单一维度边界）
+            price: 加减价金额
+            width_boundary: 可选的宽度边界（用于 WIDTH 类型政策）
+        """
+        if width_boundary is not None:
+            # 双维度：同时有厚度和宽度
+            return ParsedLadderItem(
+                target_sub_group=None,
+                thick_min=boundary.min_val,
+                thick_min_operator=boundary.min_operator,
+                thick_max=boundary.max_val,
+                thick_max_operator=boundary.max_operator,
+                width_min=width_boundary.min_val,
+                width_min_operator=width_boundary.min_operator,
+                width_max=width_boundary.max_val,
+                width_max_operator=width_boundary.max_operator,
+                price_adjustment=price,
+                is_base=False,
+                sort_order=0,
+            )
+        else:
+            # 单维度：只有厚度
+            return ParsedLadderItem(
+                target_sub_group=None,
+                thick_min=boundary.min_val,
+                thick_min_operator=boundary.min_operator,
+                thick_max=boundary.max_val,
+                thick_max_operator=boundary.max_operator,
+                width_min=None,
+                width_min_operator=">=",
+                width_max=None,
+                width_max_operator="<",
+                price_adjustment=price,
+                is_base=False,
+                sort_order=0,
+            )
 
     # ------------------------------------------------------------------ #
     # 公共读取工具
@@ -384,13 +543,19 @@ class BaseSheetHandler:
         max_col: int,
         *,
         blank_limit: int = BLANK_LIMIT,
+        scan_cols: Optional[List[int]] = None,
     ) -> int:
-        """向下扫描，遇连续 blank_limit 个空行则停。"""
+        """向下扫描，遇连续 blank_limit 个空行则停。
+
+        Args:
+            scan_cols: 若指定，只扫描这些列；否则扫描 1..max_col。
+        """
         blank_streak = 0
+        cols = scan_cols if scan_cols is not None else list(range(1, max_col + 1))
         for r in range(start_row, max_row + 1):
             has_value = any(
                 _to_str(sheet.cell(row=r, column=c).value)
-                for c in range(1, max_col + 1)
+                for c in cols
             )
             blank_streak = 0 if has_value else blank_streak + 1
             if blank_streak >= blank_limit:
@@ -403,13 +568,42 @@ class BaseSheetHandler:
         header_row: int,
         block_end_row: int,
         max_col: int,
+        *,
+        scan_cols: Optional[List[int]] = None,
+        skip_grade_keywords: bool = False,
+        grade_col: int = 1,
     ) -> int:
-        """从 block_end_row 向上回退，去掉末尾空行。"""
+        """从 block_end_row 向上回退，去掉末尾空行。
+
+        Args:
+            scan_cols: 若指定，只扫描这些列；否则扫描 1..max_col。
+            skip_grade_keywords: 若为 True，跳过 grade 列含 GRADE_LABELS 关键字的行
+                                 （如"钢种"行），用于马钢这种左侧厚度块 grade 列
+                                 仍可能渗入右侧宽度块区域的场景。
+            grade_col: grade 所在列号，skip_grade_keywords 为 True 时使用。
+        """
+        cols = scan_cols if scan_cols is not None else list(range(1, max_col + 1))
         for r in range(block_end_row, header_row, -1):
-            if any(
-                _to_str(sheet.cell(row=r, column=c).value)
-                for c in range(1, max_col + 1)
-            ):
+            if skip_grade_keywords and grade_col in cols:
+                v = sheet.cell(row=r, column=grade_col).value
+                if v is not None and str(v).strip() in GRADE_LABELS:
+                    continue  # 跳过 grade 标题行
+            # 检查该行是否有数据（直接值或合并单元格区域内）
+            has_data = False
+            for c in cols:
+                cell_val = sheet.cell(row=r, column=c).value
+                if cell_val is not None:
+                    has_data = True
+                    break
+                # 值为 None → 可能在合并单元格区域内，检查合并范围
+                if self.find_start_row(sheet, r, c) is not None:
+                    # 合并区域的起始单元格应有值（openpyxl 会读到）
+                    start_r = self.find_start_row(sheet, r, c)
+                    merged_val = sheet.cell(row=start_r, column=c).value
+                    if merged_val is not None:
+                        has_data = True
+                        break
+            if has_data:
                 return r
         return header_row
 
@@ -636,6 +830,7 @@ class BaseSheetHandler:
         category: str = "冷轧钢",
         header_row_offset: int = 1,
         title_col: int = 1,
+        scan_cols: Optional[List[int]] = None,
     ) -> Optional[Dict[str, Any]]:
         """执行宽度块的 3 步定位（列头行 → 收集价格列 → 末尾回退），返回块描述。
 
@@ -648,6 +843,7 @@ class BaseSheetHandler:
             category: 类目名称
             header_row_offset: 列头行相对标题行的偏移（默认 +1）
             title_col: 标题所在列（用于读取 category 推断）
+            scan_cols: 扫描数据存在性时限定列范围；若 None 则扫描 1..max_col。
         """
         header_row = title_row + header_row_offset
         if header_row > block_end:
@@ -659,9 +855,20 @@ class BaseSheetHandler:
         if not price_cols:
             return None
 
-        # 从 header_row + 1 到 block_end，去末尾空行
         data_start = header_row + 1
-        data_end = self.trim_block_end(sheet, header_row, block_end, max_col)
+        # trim_block_end 扫描宽度列（+grade_col）判断真实数据末行
+        # scan_cols 必须包含 grade 列，否则只有价格列为空但 grade 列有值的行被误判
+        effective_scan_cols = list(scan_cols or range(1, max_col + 1))
+        if grade_col not in effective_scan_cols:
+            effective_scan_cols.append(grade_col)
+        # skip_grade_keywords: 左侧厚度块的 grade 列可能渗入右侧宽度区域（如"钢种"行），
+        # 需要跳过这些关键字行，否则 trim_block_end 误以为仍有数据
+        data_end = self.trim_block_end(
+            sheet, header_row, block_end, max_col,
+            scan_cols=effective_scan_cols,
+            skip_grade_keywords=True,
+            grade_col=grade_col,
+        )
 
         return {
             "category_name": category,

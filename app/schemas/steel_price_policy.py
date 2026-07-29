@@ -57,11 +57,22 @@ def _decimal_str(v: Optional[Decimal | float | int | str]) -> Optional[Decimal]:
 class LadderItemCreate(BaseModel):
     """阶梯明细创建请求"""
     target_sub_group: Optional[str] = Field(None, max_length=100, description="附加子分组条件")
-    min_val: Optional[Decimal] = Field(None, description="尺寸下限值（厚度或宽度）")
-    min_operator: Optional[Operator] = Field(None, description="下限操作符")
-    max_val: Optional[Decimal] = Field(None, description="尺寸上限值（厚度或宽度）")
-    max_operator: Optional[Operator] = Field(None, description="上限操作符")
+
+    # 厚度维度条件（全部允许为空，为空表示不限）
+    thick_min: Optional[Decimal] = Field(None, description="厚度下限值（mm）")
+    thick_min_operator: Optional[str] = Field(">=", description="厚度下限操作符")
+    thick_max: Optional[Decimal] = Field(None, description="厚度上限值（mm）")
+    thick_max_operator: Optional[str] = Field("<", description="厚度上限操作符")
+
+    # 宽度维度条件（全部允许为空，为空表示不限）
+    width_min: Optional[Decimal] = Field(None, description="宽度下限值（mm）")
+    width_min_operator: Optional[str] = Field(">=", description="宽度下限操作符")
+    width_max: Optional[Decimal] = Field(None, description="宽度上限值（mm）")
+    width_max_operator: Optional[str] = Field("<", description="宽度上限操作符")
+
+    # 加减价与排序
     price_adjustment: int = Field(..., description="加减价金额（元/吨，整数）")
+    is_base: int = Field(0, description="是否为基准厚度：0=否，1=是")
     sort_order: int = Field(0, description="匹配排序号")
 
     @field_validator("target_sub_group", mode="before")
@@ -70,29 +81,34 @@ class LadderItemCreate(BaseModel):
         return _strip(v)
 
     @model_validator(mode="after")
-    def check_boundary(self):
-        """明细至少需要一个边界；上下限同时存在时下限不得大于上限"""
-        has_min = self.min_val is not None
-        has_max = self.max_val is not None
-
-        if not has_min and not has_max:
-            raise ValueError("明细至少需要指定一个边界条件（min_val 或 max_val）")
-
-        if has_min and has_max:
-            if self.min_val > self.max_val:
-                raise ValueError(f"min_val ({self.min_val}) 不能大于 max_val ({self.max_val})")
-
+    def check_at_least_one_dimension(self):
+        """明细至少需要指定一个维度条件（厚度或宽度）"""
+        has_thick = self.thick_min is not None or self.thick_max is not None
+        has_width = self.width_min is not None or self.width_max is not None
+        if not has_thick and not has_width:
+            raise ValueError("明细至少需要指定一个维度条件（厚度或宽度）")
         return self
 
 
 class LadderItemUpdate(BaseModel):
     """阶梯明细更新请求"""
     target_sub_group: Optional[str] = Field(None, max_length=100, description="附加子分组条件")
-    min_val: Optional[Decimal] = Field(None, description="尺寸下限值")
-    min_operator: Optional[Operator] = Field(None, description="下限操作符")
-    max_val: Optional[Decimal] = Field(None, description="尺寸上限值")
-    max_operator: Optional[Operator] = Field(None, description="上限操作符")
+
+    # 厚度维度条件
+    thick_min: Optional[Decimal] = Field(None, description="厚度下限值（mm）")
+    thick_min_operator: Optional[str] = Field(None, description="厚度下限操作符")
+    thick_max: Optional[Decimal] = Field(None, description="厚度上限值（mm）")
+    thick_max_operator: Optional[str] = Field(None, description="厚度上限操作符")
+
+    # 宽度维度条件
+    width_min: Optional[Decimal] = Field(None, description="宽度下限值（mm）")
+    width_min_operator: Optional[str] = Field(None, description="宽度下限操作符")
+    width_max: Optional[Decimal] = Field(None, description="宽度上限值（mm）")
+    width_max_operator: Optional[str] = Field(None, description="宽度上限操作符")
+
+    # 加减价与排序
     price_adjustment: Optional[int] = Field(None, description="加减价金额（元/吨）")
+    is_base: Optional[int] = Field(None, description="是否为基准厚度：0=否，1=是")
     sort_order: Optional[int] = Field(None, description="匹配排序号")
 
     @field_validator("target_sub_group", mode="before")
@@ -100,31 +116,32 @@ class LadderItemUpdate(BaseModel):
     def strip_target_sub_group(cls, v):
         return _strip(v)
 
-    @model_validator(mode="after")
-    def check_boundary(self):
-        has_min = self.min_val is not None
-        has_max = self.max_val is not None
-        if not has_min and not has_max:
-            raise ValueError("明细至少需要指定一个边界条件")
-        if has_min and has_max and self.min_val > self.max_val:
-            raise ValueError(f"min_val ({self.min_val}) 不能大于 max_val ({self.max_val})")
-        return self
-
 
 class LadderItemResponse(BaseModel):
     """阶梯明细响应（全程保持 Decimal 精确表示）"""
     id: int
     policy_id: int
     target_sub_group: Optional[str]
-    min_val: Optional[Decimal]
-    min_operator: Optional[str]
-    max_val: Optional[Decimal]
-    max_operator: Optional[str]
+
+    # 厚度维度
+    thick_min: Optional[Decimal]
+    thick_min_operator: Optional[str]
+    thick_max: Optional[Decimal]
+    thick_max_operator: Optional[str]
+
+    # 宽度维度
+    width_min: Optional[Decimal]
+    width_min_operator: Optional[str]
+    width_max: Optional[Decimal]
+    width_max_operator: Optional[str]
+
+    # 加减价与标记
     price_adjustment: int
+    is_base: int
     sort_order: int
 
     @field_validator(
-        "min_val", "max_val",
+        "thick_min", "thick_max", "width_min", "width_max",
         mode="plain",
     )
     @classmethod
@@ -284,21 +301,31 @@ class PolicyMatchRequest(BaseModel):
     grade_name: Optional[str] = Field(None, max_length=100, description="牌号（THICKNESS 政策必须）")
     base_thickness: Optional[Decimal] = Field(None, description="基准厚度（THICKNESS 政策必须）")
     target_sub_group: Optional[str] = Field(None, max_length=100, description="附加子分组条件")
-    target_value: Decimal = Field(..., description="待匹配的尺寸值（厚度或宽度）")
+    thickness: Optional[Decimal] = Field(None, description="待匹配的厚度值（mm）")
+    width: Optional[Decimal] = Field(None, description="待匹配的宽度值（mm）")
 
     @field_validator("steel_mill", "category_name", "grade_name", "target_sub_group", mode="before")
     @classmethod
     def strip_strings(cls, v):
         return _strip(v)
 
-    @field_validator("target_value", mode="before")
+    @field_validator("thickness", "width", mode="before")
     @classmethod
-    def coerce_target_value(cls, v):
+    def coerce_dimensions(cls, v):
+        if v is None:
+            return None
         if isinstance(v, Decimal):
             return v
         if isinstance(v, (int, float, str)):
             return Decimal(str(v))
-        raise ValueError("target_value 必须是数字")
+        raise ValueError("thickness/width 必须是数字")
+
+    @model_validator(mode="after")
+    def check_at_least_one_dimension(self):
+        """至少需要提供 thickness 或 width 之一"""
+        if self.thickness is None and self.width is None:
+            raise ValueError("至少需要提供 thickness 或 width 之一")
+        return self
 
     @model_validator(mode="after")
     def check_thickness_requires(self):
@@ -314,14 +341,28 @@ class MatchedLadderItem(BaseModel):
     """匹配命中的阶梯明细"""
     id: int
     target_sub_group: Optional[str]
-    min_val: Optional[Decimal]
-    min_operator: Optional[str]
-    max_val: Optional[Decimal]
-    max_operator: Optional[str]
+
+    # 厚度维度
+    thick_min: Optional[Decimal]
+    thick_min_operator: Optional[str]
+    thick_max: Optional[Decimal]
+    thick_max_operator: Optional[str]
+
+    # 宽度维度
+    width_min: Optional[Decimal]
+    width_min_operator: Optional[str]
+    width_max: Optional[Decimal]
+    width_max_operator: Optional[str]
+
+    # 加减价与标记
     price_adjustment: int
+    is_base: int
     sort_order: int
 
-    @field_validator("min_val", "max_val", mode="plain")
+    @field_validator(
+        "thick_min", "thick_max", "width_min", "width_max",
+        mode="plain",
+    )
     @classmethod
     def keep_decimal(cls, v):
         return _decimal_str(v)

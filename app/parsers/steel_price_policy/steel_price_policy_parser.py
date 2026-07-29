@@ -166,9 +166,9 @@ def _load_workbook_or_bytes(file):
     """加载 workbook。"""
     if isinstance(file, (str, Path)):
         path = Path(file)
-        wb = load_workbook(str(path), data_only=True, read_only=True)
+        wb = load_workbook(str(path), data_only=True)
         return wb, path
     if isinstance(file, bytes):
-        wb = load_workbook(io.BytesIO(file), data_only=True, read_only=True)
+        wb = load_workbook(io.BytesIO(file), data_only=True)
         return wb, None
     raise TypeError(f"file must be path or bytes, got {type(file).__name__}")

@@ -52,7 +52,7 @@ _PATTERN_SIMPLE_RANGE_WITH_UNIT = re.compile(
 )
 
 
-@dataclass(frozen=True)
+@dataclass
 class _Boundary:
     min_val: Optional[Decimal] = None
     min_operator: Optional[str] = None

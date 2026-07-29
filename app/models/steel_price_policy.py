@@ -96,13 +96,17 @@ class SteelPriceLadderItem(Base):
     # 附加子分组（如镀锌宽度加价中的 "厚度≤1.5mm" 或冷轧宽度中的 "DC01、DC03"）
     target_sub_group = Column(String(100), nullable=True, comment="附加子分组条件")
 
-    # 尺寸区间下限
-    min_val = Column(Numeric(7, 2), nullable=True, comment="尺寸下限值（厚度或宽度）")
-    min_operator = Column(String(10), nullable=True, comment="下限操作符（如 '>=' 或 '>'）")
+    # 厚度区间
+    thick_min = Column(Numeric(7, 2), nullable=True, comment="厚度下限值（mm）")
+    thick_min_operator = Column(String(10), nullable=True, comment="厚度下限操作符（如 '>=' 或 '>'）")
+    thick_max = Column(Numeric(7, 2), nullable=True, comment="厚度上限值（mm）")
+    thick_max_operator = Column(String(10), nullable=True, comment="厚度上限操作符（如 '<=' 或 '<'）")
 
-    # 尺寸区间上限
-    max_val = Column(Numeric(7, 2), nullable=True, comment="尺寸上限值（厚度或宽度）")
-    max_operator = Column(String(10), nullable=True, comment="上限操作符（如 '<=' 或 '<'）")
+    # 宽度区间
+    width_min = Column(Numeric(7, 2), nullable=True, comment="宽度下限值（mm）")
+    width_min_operator = Column(String(10), nullable=True, comment="宽度下限操作符（如 '>=' 或 '>'）")
+    width_max = Column(Numeric(7, 2), nullable=True, comment="宽度上限值（mm）")
+    width_max_operator = Column(String(10), nullable=True, comment="宽度上限操作符（如 '<=' 或 '<'）")
 
     # 对应的加减价金额（元/吨，整数精确到元）
     price_adjustment = Column(Integer, nullable=False, comment="加减价金额（元/吨）")
@@ -120,7 +124,9 @@ class SteelPriceLadderItem(Base):
 
     __table_args__ = (
         Index("ix_ladder_policy_id", "policy_id"),
-        Index("ix_ladder_min_val", "min_val"),
-        Index("ix_ladder_max_val", "max_val"),
+        Index("ix_ladder_thick_min", "thick_min"),
+        Index("ix_ladder_thick_max", "thick_max"),
+        Index("ix_ladder_width_min", "width_min"),
+        Index("ix_ladder_width_max", "width_max"),
         Index("ix_ladder_sort_order", "sort_order"),
     )

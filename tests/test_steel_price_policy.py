@@ -83,8 +83,24 @@ def test_cascade_delete(db: Session):
     db.add(policy)
     db.flush()
 
-    item1 = SteelPriceLadderItem(policy_id=policy.id, min_val=Decimal("0.50"), max_val=Decimal("1.00"), price_adjustment=100, sort_order=0)
-    item2 = SteelPriceLadderItem(policy_id=policy.id, min_val=Decimal("1.00"), max_val=Decimal("2.00"), price_adjustment=50, sort_order=1)
+    item1 = SteelPriceLadderItem(
+        policy_id=policy.id,
+        thick_min=Decimal("0.50"),
+        thick_max=Decimal("1.00"),
+        thick_min_operator=">=",
+        thick_max_operator="<",
+        price_adjustment=100,
+        sort_order=0,
+    )
+    item2 = SteelPriceLadderItem(
+        policy_id=policy.id,
+        thick_min=Decimal("1.00"),
+        thick_max=Decimal("2.00"),
+        thick_min_operator=">=",
+        thick_max_operator="<",
+        price_adjustment=50,
+        sort_order=1,
+    )
     db.add_all([item1, item2])
     db.commit()
 
@@ -112,8 +128,10 @@ def test_decimal_precision_in_insert(db: Session):
 
     item = SteelPriceLadderItem(
         policy_id=policy.id,
-        min_val=Decimal("0.10"),
-        max_val=Decimal("1000.00"),
+        width_min=Decimal("0.10"),
+        width_max=Decimal("1000.00"),
+        width_min_operator=">=",
+        width_max_operator="<",
         price_adjustment=-50,
         sort_order=0,
     )
@@ -121,8 +139,8 @@ def test_decimal_precision_in_insert(db: Session):
     db.commit()
 
     loaded = db.query(SteelPriceLadderItem).filter(SteelPriceLadderItem.id == item.id).first()
-    assert loaded.min_val == Decimal("0.10")
-    assert loaded.max_val == Decimal("1000.00")
+    assert loaded.width_min == Decimal("0.10")
+    assert loaded.width_max == Decimal("1000.00")
     assert loaded.price_adjustment == -50
     assert isinstance(loaded.price_adjustment, int)
 
@@ -144,10 +162,10 @@ def test_service_create_and_get(db: Session):
         base_thickness=Decimal("1.50"),
         items=[
             LadderItemCreate(
-                min_val=Decimal("0.50"),
-                min_operator=Operator.GTE,
-                max_val=Decimal("1.00"),
-                max_operator=Operator.LT,
+                thick_min=Decimal("0.50"),
+                thick_min_operator=">=",
+                thick_max=Decimal("1.00"),
+                thick_max_operator="<",
                 price_adjustment=200,
                 sort_order=0,
             ),
@@ -181,7 +199,7 @@ def test_service_create_duplicate_rejected(db: Session):
         category_name="冷轧钢",
         policy_type=PolicyType.WIDTH,
         items=[
-            LadderItemCreate(min_val=Decimal("1000"), max_val=Decimal("1500"), price_adjustment=0, sort_order=0),
+            LadderItemCreate(width_min=Decimal("1000"), width_max=Decimal("1500"), width_min_operator=">=", width_max_operator="<", price_adjustment=0, sort_order=0),
         ],
     )
 
