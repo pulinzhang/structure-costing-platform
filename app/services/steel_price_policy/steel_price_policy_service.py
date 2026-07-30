@@ -15,8 +15,10 @@ from sqlalchemy.orm import Session
 from app.models.steel_price_policy import SteelPricePolicy, SteelPriceLadderItem
 from app.parsers.steel_price_policy import parse_steel_price_policy_excel
 from app.repositories.steel_price_policy import SteelPricePolicyRepository
+from app.repositories.steel_price_policy.dto import ExportRow, FilterOptions
 from app.schemas.steel_price_policy import (
     GradeType,
+    ImportResultResponse,
     LadderItemCreate,
     LadderItemUpdate,
     LadderItemResponse,
@@ -31,89 +33,11 @@ from app.schemas.steel_price_policy import (
     PolicyUpdate,
     PolicyType,
 )
+from app.services.steel_price_policy.excel_exporter import SteelPricePolicyExporter
+from app.services.steel_price_policy.ladder_matcher import LadderMatcher
 
 
 logger = logging.getLogger("service.steel_price_policy")
-
-
-def _compare(value: Optional[Decimal], operator: Optional[str]) -> bool:
-    """
-    单条件比较：value 是否满足 operator 条件。
-    operator 为空或 None 时视为无限制，返回 True。
-    """
-    if operator is None or value is None:
-        return True
-    if operator == ">=":
-        return value >= Decimal(str(operator).replace(">=", ""))
-    if operator == ">":
-        return value > Decimal(str(operator).replace(">", ""))
-    if operator == "<=":
-        return value <= Decimal(str(operator).replace("<=", ""))
-    if operator == "<":
-        return value < Decimal(str(operator).replace("<", ""))
-    return True
-
-
-def _validate_overlapping_in_dimension(
-    items: list[LadderItemCreate],
-    dim: str,  # "thick" or "width"
-) -> Optional[str]:
-    """
-    检查同一维度下的区间重叠（简化版：只检查同一 target_sub_group 内的重叠）。
-    后续可扩展为更复杂的重叠检测逻辑。
-    """
-    return None  # 暂时禁用，待实现完整重叠检测
-
-
-def _item_matches(
-    item: SteelPriceLadderItem,
-    thickness: Optional[Decimal],
-    width: Optional[Decimal],
-    target_sub_group: Optional[str],
-) -> bool:
-    """
-    判断单条明细是否命中给定的厚度和宽度值。
-    - 厚度/宽度为 None 时，该维度不参与匹配
-    - target_sub_group 非空时，必须完全匹配
-    """
-    # 子分组条件
-    if item.target_sub_group and target_sub_group:
-        if item.target_sub_group != target_sub_group:
-            return False
-    elif item.target_sub_group and not target_sub_group:
-        return False
-
-    # 厚度条件匹配
-    if thickness is not None:
-        if item.thick_min is not None:
-            op = item.thick_min_operator or ">="
-            if op == ">=" and not (thickness >= item.thick_min):
-                return False
-            if op == ">" and not (thickness > item.thick_min):
-                return False
-        if item.thick_max is not None:
-            op = item.thick_max_operator or "<"
-            if op == "<=" and not (thickness <= item.thick_max):
-                return False
-            if op == "<" and not (thickness < item.thick_max):
-                return False
-
-    # 宽度条件匹配
-    if width is not None:
-        if item.width_min is not None:
-            op = item.width_min_operator or ">="
-            if op == ">=" and not (width >= item.width_min):
-                return False
-            if op == ">" and not (width > item.width_min):
-                return False
-        if item.width_max is not None:
-            op = item.width_max_operator or "<"
-            if op == "<=" and not (width <= item.width_max):
-                return False
-            if op == "<" and not (width < item.width_max):
-                return False
-
-    return True
 
 
 class SteelPricePolicyService:
@@ -121,12 +45,14 @@ class SteelPricePolicyService:
 
     def __init__(self) -> None:
         self.repository = SteelPricePolicyRepository()
+        self._matcher = LadderMatcher()
+        self._exporter = SteelPricePolicyExporter()
 
     # ---- 分页列表 ----
 
     def paginate(
         self, db: Session, query: PolicyQuery
-    ) -> tuple[list[dict[str, Any]], int, PolicyOptionsResponse]:
+    ) -> tuple[list[PolicyListResponse], int, PolicyOptionsResponse]:
         skip = (query.page - 1) * query.size
         records, total = self.repository.paginate(
             db,
@@ -157,15 +83,23 @@ class SteelPricePolicyService:
                     item_count=item_count,
                     created_at=record.created_at,
                     updated_at=record.updated_at,
-                ).model_dump()
+                )
             )
-        options = self.repository.get_filter_options(db)
-        options_resp = PolicyOptionsResponse(**options)
+        filter_options = self.repository.get_filter_options(db)
+        options_resp = PolicyOptionsResponse(
+            years=filter_options.years,
+            months=filter_options.months,
+            steel_mills=filter_options.steel_mills,
+            category_names=filter_options.category_names,
+            policy_types=filter_options.policy_types,
+            grade_types=filter_options.grade_types,
+            grade_values=filter_options.grade_values,
+        )
         return rows, total, options_resp
 
     # ---- 详情 ----
 
-    def get_by_id(self, db: Session, policy_id: int) -> Optional[dict[str, Any]]:
+    def get_by_id(self, db: Session, policy_id: int) -> Optional[PolicyDetailResponse]:
         record = self.repository.get_by_id(db, policy_id)
         if record is None:
             return None
@@ -181,18 +115,18 @@ class SteelPricePolicyService:
             grade_value=record.grade_value,
             base_thickness=record.base_thickness,
             items=[
-                LadderItemResponse.model_validate(item).model_dump()
+                LadderItemResponse.model_validate(item)
                 for item in sorted_items
             ],
             created_at=record.created_at,
             updated_at=record.updated_at,
-        ).model_dump()
+        )
 
     # ---- 创建（原子含明细） ----
 
     def create(
         self, db: Session, data: PolicyCreate
-    ) -> tuple[Optional[dict[str, Any]], Optional[str]]:
+    ) -> tuple[Optional[PolicyDetailResponse], Optional[str]]:
         payload = data.model_dump()
 
         # 应用层唯一键检查（兜底 DB 唯一约束）
@@ -244,7 +178,7 @@ class SteelPricePolicyService:
 
     def update(
         self, db: Session, policy_id: int, data: PolicyUpdate
-    ) -> tuple[Optional[dict[str, Any]], Optional[str]]:
+    ) -> tuple[Optional[PolicyDetailResponse], Optional[str]]:
         existing = self.repository.get_by_id_unsafe(db, policy_id)
         if existing is None:
             db.rollback()
@@ -302,7 +236,7 @@ class SteelPricePolicyService:
 
     def add_item(
         self, db: Session, policy_id: int, data: LadderItemCreate
-    ) -> tuple[Optional[dict[str, Any]], Optional[str]]:
+    ) -> tuple[Optional[LadderItemResponse], Optional[str]]:
         policy = self.repository.get_by_id_unsafe(db, policy_id)
         if policy is None:
             return None, "政策不存在"
@@ -318,7 +252,7 @@ class SteelPricePolicyService:
         try:
             created = self.repository.add_items(db, policy_id, [item_data])
             db.commit()
-            return LadderItemResponse.model_validate(created[0]).model_dump(), None
+            return LadderItemResponse.model_validate(created[0]), None
         except Exception as error:
             db.rollback()
             logger.exception("新增阶梯明细失败: policy_id=%s, error=%s", policy_id, error)
@@ -326,7 +260,7 @@ class SteelPricePolicyService:
 
     def update_item(
         self, db: Session, item_id: int, data: LadderItemUpdate
-    ) -> tuple[Optional[dict[str, Any]], Optional[str]]:
+    ) -> tuple[Optional[LadderItemResponse], Optional[str]]:
         existing = self.repository.get_item_by_id(db, item_id)
         if existing is None:
             return None, "明细不存在"
@@ -343,7 +277,7 @@ class SteelPricePolicyService:
         try:
             updated = self.repository.update_item(db, item_id, update_data)
             db.commit()
-            return LadderItemResponse.model_validate(updated).model_dump(), None
+            return LadderItemResponse.model_validate(updated), None
         except Exception as error:
             db.rollback()
             logger.exception("更新阶梯明细失败: item_id=%s, error=%s", item_id, error)
@@ -389,7 +323,7 @@ class SteelPricePolicyService:
             base_thickness=data.base_thickness,
         )
 
-        all_hits = self._collect_hits(candidates, data)
+        all_hits = self._matcher.collect_hits(candidates, data)
 
         # Fallback: grade_value 为 NULL 的通用政策
         fallback_hit = None
@@ -405,7 +339,7 @@ class SteelPricePolicyService:
                 grade_value=None,
                 base_thickness=data.base_thickness,
             )
-            fallback_hits = self._collect_hits(fallback_candidates, data)
+            fallback_hits = self._matcher.collect_hits(fallback_candidates, data)
             if fallback_hits:
                 fallback_hit = fallback_hits[0]
                 logger.info(
@@ -426,8 +360,8 @@ class SteelPricePolicyService:
                     data.year, data.month, data.steel_mill, data.category_name,
                     data.policy_type.value, data.grade_value, data.base_thickness,
                 )
-            all_hits.sort(key=lambda x: (x[0].sort_order, x[0].id))
-            best_item, best_policy_id = all_hits[0]
+            sorted_hits = self._matcher.sort_hits(all_hits)
+            best_item, best_policy_id = sorted_hits[0]
 
         return PolicyMatchResponse(
             matched=True,
@@ -436,25 +370,28 @@ class SteelPricePolicyService:
             price_adjustment=best_item.price_adjustment,
         )
 
-    def _collect_hits(
-        self,
-        candidates: list[SteelPricePolicy],
-        data: PolicyMatchRequest,
-    ) -> list[tuple[SteelPriceLadderItem, int]]:
-        """从候选政策中收集所有匹配项。"""
-        hits: list[tuple[SteelPriceLadderItem, int]] = []
-        for policy in candidates:
-            for item in policy.items:
-                if _item_matches(
-                    item,
-                    thickness=getattr(data, 'thickness', None),
-                    width=getattr(data, 'width', None),
-                    target_sub_group=data.target_sub_group,
-                ):
-                    hits.append((item, policy.id))
-        return hits
-
     # ---- Excel 导入 ----
+
+    def validate_upload(
+        self,
+        file_content: bytes,
+        filename: str,
+    ) -> None:
+        """
+        验证上传文件，返回 None 表示验证通过。
+        抛出 ValueError 表示验证失败。
+        """
+        from app.config import settings
+
+        if not filename:
+            raise ValueError("未提供文件名")
+        if not filename.lower().endswith(".xlsx"):
+            raise ValueError("仅支持 .xlsx 文件")
+        if not file_content:
+            raise ValueError("上传文件为空")
+        if len(file_content) > settings.MAX_UPLOAD_SIZE:
+            max_mb = settings.MAX_UPLOAD_SIZE // (1024 * 1024)
+            raise ValueError(f"文件过大，最大支持 {max_mb}MB")
 
     def import_from_parser(
         self,
@@ -463,7 +400,7 @@ class SteelPricePolicyService:
         filename: str,
         year: int,
         month: int,
-    ) -> dict[str, int]:
+    ) -> ImportResultResponse:
         """
         解析 Excel 文件（传入 year/month 参数），
         按 (year, month, steel_mill, category_name, policy_type, grade_value, base_thickness)
@@ -535,9 +472,72 @@ class SteelPricePolicyService:
                 )
                 skipped += 1
 
-        return {
-            "created_count": created,
-            "updated_count": updated,
-            "skipped_count": skipped,
-            "total": created + updated,
-        }
+        return ImportResultResponse(
+            created_count=created,
+            updated_count=updated,
+            skipped_count=skipped,
+            total=created + updated,
+        )
+
+    # ---- Excel 导出数据查询 ----
+
+    def get_export_data(
+        self,
+        db: Session,
+        year: Optional[int] = None,
+        month: Optional[int] = None,
+        steel_mill: Optional[str] = None,
+        skip: int = 0,
+        limit: Optional[int] = None,
+    ) -> list[ExportRow]:
+        """
+        获取导出数据（主子表联合查询）
+        """
+        return self.repository.get_export_data(
+            db,
+            year=year,
+            month=month,
+            steel_mill=steel_mill,
+            skip=skip,
+            limit=limit,
+        )
+
+    def count_export_data(
+        self,
+        db: Session,
+        year: Optional[int] = None,
+        month: Optional[int] = None,
+        steel_mill: Optional[str] = None,
+    ) -> int:
+        """
+        统计导出数据总数
+        """
+        return self.repository.count_export_data(
+            db,
+            year=year,
+            month=month,
+            steel_mill=steel_mill,
+        )
+
+    def generate_export_excel_bytes(
+        self,
+        db: Session,
+        year: Optional[int] = None,
+        month: Optional[int] = None,
+        steel_mill: Optional[str] = None,
+    ) -> tuple[bytes, str]:
+        """
+        生成导出 Excel 文件，返回 (文件字节数据, 文件名)。
+        """
+        records = self.get_export_data(
+            db,
+            year=year,
+            month=month,
+            steel_mill=steel_mill.strip() if steel_mill else None,
+        )
+        return self._exporter.generate(
+            records=records,
+            year=year,
+            month=month,
+            steel_mill=steel_mill,
+        )
