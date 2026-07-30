@@ -35,8 +35,15 @@ from openpyxl.worksheet.worksheet import Worksheet
 
 from ..boundary_parser import _Boundary, _parse_boundary
 from ..models import ParsedLadderItem, ParsedPolicy
+from ..models.policy import GRADE_TYPE_CATEGORY, GRADE_TYPE_GRADE, GRADE_TYPE_WIDTH_RANGE
 from ..value_parser import _to_int_price, _to_str, _to_str_or_none
 from .constants import BENCH_PATTERN, BLANK_LIMIT, CATEGORY_HINTS, GRADE_LABELS, THICKNESS_HEADER_KEYWORDS
+
+# 宽度范围关键字（用于推断 grade_type = WIDTH_RANGE）
+_WIDTH_RANGE_KEYWORDS = ("≤", "≥", "＜", "＞", "W", "宽")
+
+# 已知钢材类别（用于推断 grade_type = CATEGORY）
+_CATEGORY_NAMES = frozenset({"冷轧钢", "镀锌钢", "酸洗钢", "热轧钢"})
 
 
 class BaseSheetHandler:
@@ -190,7 +197,7 @@ class BaseSheetHandler:
         block: Dict[str, Any],
     ) -> List[ParsedPolicy]:
         """给定单个块描述，解析出 ParsedPolicy 列表。"""
-        grade_col = block["grade_col"]
+        grade_col = block.get("grade_col")
         header_row = block["header_row"]
         price_cols = list(block["price_cols"])
         data_start = block["data_row_start"]
@@ -209,6 +216,9 @@ class BaseSheetHandler:
         policies: List[ParsedPolicy] = []
         last_grade: Optional[str] = None  # 用于合并单元格的钢种继承
         for r in range(data_start, data_end + 1):
+            # grade_col 为 None 时（如首钢宽度块），直接跳到下一行
+            if grade_col is None:
+                continue
             grade = self.text_or_none(sheet, r, grade_col)
             # 合并单元格处理：钢种列为空时继承上一行的值
             if not grade:
@@ -219,6 +229,8 @@ class BaseSheetHandler:
                 continue
             if grade in grade_blacklist:
                 continue
+            # 推断 grade_type
+            grade_type = self._infer_grade_type(grade, policy_type)
             items = self._build_items_for_row(sheet, r, sorted_price_cols, boundaries, policy_type, sort_order=r)
             if not items:
                 continue
@@ -226,13 +238,34 @@ class BaseSheetHandler:
                 ParsedPolicy(
                     steel_mill=steel_mill,
                     category_name=category_name,
-                    grade_name=grade,
+                    grade_type=grade_type,
+                    grade_value=grade,
                     policy_type=policy_type,
                     base_thickness=base_thickness,
                     items=items,
                 )
             )
         return policies
+
+    def _infer_grade_type(self, grade: str, policy_type: str) -> str:
+        """推断 grade 的语义类型。
+
+        规则:
+        - THICKNESS 政策：grade 必定是钢种牌号
+        - WIDTH 政策：grade 可能是钢种牌号、宽度范围或类别名
+          * 含宽度关键字（≤/≥/W/宽）→ WIDTH_RANGE
+          * 是已知类别名（冷轧钢/镀锌钢/酸洗钢）→ CATEGORY
+          * 否则 → GRADE（钢种牌号）
+        """
+        if policy_type == "THICKNESS":
+            return GRADE_TYPE_GRADE
+        # WIDTH 政策：需要区分类型
+        grade_stripped = grade.strip()
+        if any(kw in grade_stripped for kw in _WIDTH_RANGE_KEYWORDS):
+            return GRADE_TYPE_WIDTH_RANGE
+        if grade_stripped in _CATEGORY_NAMES:
+            return GRADE_TYPE_CATEGORY
+        return GRADE_TYPE_GRADE
 
     def _collect_boundaries(
         self, sheet: Worksheet, header_row: int, price_cols: List[int]

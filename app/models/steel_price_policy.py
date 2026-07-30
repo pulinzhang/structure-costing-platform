@@ -35,7 +35,9 @@ class SteelPricePolicy(Base):
 
     # 政策类型与条件
     policy_type = Column(String(20), nullable=False, comment="政策类型：THICKNESS=厚度加减价，WIDTH=宽度加价")
-    grade_name = Column(String(100), nullable=True, comment="牌号（厚度政策通常指定，如 'DC01'）")
+    # grade_type: GRADE=钢种牌号（如 DC01），WIDTH_RANGE=宽度范围（如 700≤W<900），CATEGORY=钢材类别（如 冷轧钢）
+    grade_type = Column(String(20), nullable=True, comment="grade_value 的语义类型：GRADE/WIDTH_RANGE/CATEGORY")
+    grade_value = Column(String(100), nullable=True, comment="牌号或宽度范围（GRADE 时如 'DC01'，WIDTH_RANGE 时如 '700≤W<900'，CATEGORY 时如 '冷轧钢'）")
     base_thickness = Column(Numeric(5, 2), nullable=True, comment="基准厚度（仅厚度政策需要，如 1.00）")
 
     # 元数据
@@ -62,7 +64,8 @@ class SteelPricePolicy(Base):
         Index("ix_policy_steel_mill", "steel_mill"),
         Index("ix_policy_category_name", "category_name"),
         Index("ix_policy_policy_type", "policy_type"),
-        Index("ix_policy_grade_name", "grade_name"),
+        Index("ix_policy_grade_type", "grade_type"),
+        Index("ix_policy_grade_value", "grade_value"),
         Index("ix_policy_base_thickness", "base_thickness"),
         # 业务唯一约束：同年度、月份、钢厂、大类、类型、牌号、基准厚度唯一
         UniqueConstraint(
@@ -71,7 +74,7 @@ class SteelPricePolicy(Base):
             "steel_mill",
             "category_name",
             "policy_type",
-            "grade_name",
+            "grade_value",
             "base_thickness",
             name="uix_policy_business_key",
         ),

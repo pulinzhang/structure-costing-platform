@@ -2,9 +2,14 @@
 
 一条政策 = 一个钢种 + 一类区间（厚度或宽度）+ 多个阶梯项。
 例如:
-    steel_mill="马钢(新)", category_name="冷轧钢", grade_name="DC01",
+    steel_mill="马钢(新)", category_name="冷轧钢", grade_type="GRADE", grade_value="DC01",
     policy_type="THICKNESS", base_thickness=Decimal("1.0"),
     items=[{min=0.5, >=}, {max=900, <=}, price=100, ...]
+
+grade_type 取值:
+    GRADE       - 钢种牌号（如 DC01、DX51D+Z）
+    WIDTH_RANGE - 宽度范围（如 700≤W<900、<1500）
+    CATEGORY    - 钢材大类（如 冷轧钢），用于通用宽度加价
 """
 
 from dataclasses import dataclass, field
@@ -16,12 +21,17 @@ from .ladder_item import ParsedLadderItem
 POLICY_TYPE_THICKNESS = "THICKNESS"
 POLICY_TYPE_WIDTH = "WIDTH"
 
+GRADE_TYPE_GRADE = "GRADE"
+GRADE_TYPE_WIDTH_RANGE = "WIDTH_RANGE"
+GRADE_TYPE_CATEGORY = "CATEGORY"
+
 
 @dataclass
 class ParsedPolicy:
     steel_mill: str
     category_name: str
-    grade_name: str
+    grade_type: str
+    grade_value: str
     policy_type: str
     base_thickness: Optional[Decimal] = None
     items: List[ParsedLadderItem] = field(default_factory=list)
@@ -31,7 +41,8 @@ class ParsedPolicy:
         return {
             "steel_mill": self.steel_mill,
             "category_name": self.category_name,
-            "grade_name": self.grade_name,
+            "grade_type": self.grade_type,
+            "grade_value": self.grade_value,
             "policy_type": self.policy_type,
             "base_thickness": float(self.base_thickness) if self.base_thickness is not None else None,
             "items": [item.to_dict() for item in self.items],

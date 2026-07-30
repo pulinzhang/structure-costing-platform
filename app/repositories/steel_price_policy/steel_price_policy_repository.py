@@ -42,7 +42,8 @@ class SteelPricePolicyRepository:
         steel_mill: Optional[str] = None,
         category_name: Optional[str] = None,
         policy_type: Optional[str] = None,
-        grade_name: Optional[str] = None,
+        grade_type: Optional[str] = None,
+        grade_value: Optional[str] = None,
         skip: int = 0,
         limit: int = 20,
     ) -> tuple[list[SteelPricePolicy], int]:
@@ -59,8 +60,10 @@ class SteelPricePolicyRepository:
             query = query.filter(SteelPricePolicy.category_name == category_name)
         if policy_type:
             query = query.filter(SteelPricePolicy.policy_type == policy_type)
-        if grade_name:
-            query = query.filter(SteelPricePolicy.grade_name.contains(grade_name))
+        if grade_type:
+            query = query.filter(SteelPricePolicy.grade_type == grade_type)
+        if grade_value:
+            query = query.filter(SteelPricePolicy.grade_value.contains(grade_value))
 
         total = query.count()
         records = (
@@ -70,7 +73,8 @@ class SteelPricePolicyRepository:
                 SteelPricePolicy.steel_mill,
                 SteelPricePolicy.category_name,
                 SteelPricePolicy.policy_type,
-                SteelPricePolicy.grade_name,
+                SteelPricePolicy.grade_type,
+                SteelPricePolicy.grade_value,
             )
             .offset(skip)
             .limit(limit)
@@ -111,11 +115,17 @@ class SteelPricePolicyRepository:
             r[0] for r in
             db.query(distinct(SteelPricePolicy.policy_type)).order_by(SteelPricePolicy.policy_type).all()
         ]
-        grade_names = [
+        grade_types = [
             r[0] for r in
-            db.query(distinct(SteelPricePolicy.grade_name)).filter(
-                SteelPricePolicy.grade_name.isnot(None)
-            ).order_by(SteelPricePolicy.grade_name).all()
+            db.query(distinct(SteelPricePolicy.grade_type)).filter(
+                SteelPricePolicy.grade_type.isnot(None)
+            ).order_by(SteelPricePolicy.grade_type).all()
+        ]
+        grade_values = [
+            r[0] for r in
+            db.query(distinct(SteelPricePolicy.grade_value)).filter(
+                SteelPricePolicy.grade_value.isnot(None)
+            ).order_by(SteelPricePolicy.grade_value).all()
         ]
         return {
             "years": years,
@@ -123,7 +133,8 @@ class SteelPricePolicyRepository:
             "steel_mills": steel_mills,
             "category_names": category_names,
             "policy_types": policy_types,
-            "grade_names": grade_names,
+            "grade_types": grade_types,
+            "grade_values": grade_values,
         }
 
     # ---- 主表写操作 ----
@@ -135,13 +146,14 @@ class SteelPricePolicyRepository:
         db.flush()
         base_t_str = f"{data.get('base_thickness'):.2f}" if data.get("base_thickness") is not None else "N/A"
         logger.info(
-            "创建钢价政策: year=%s month=%s steel_mill=%s category=%s type=%s grade=%s base_t=%s id=%s",
+            "创建钢价政策: year=%s month=%s steel_mill=%s category=%s type=%s grade_type=%s grade_value=%s base_t=%s id=%s",
             data.get("year"),
             data.get("month"),
             data.get("steel_mill"),
             data.get("category_name"),
             data.get("policy_type"),
-            data.get("grade_name"),
+            data.get("grade_type"),
+            data.get("grade_value"),
             base_t_str,
             policy.id,
         )
@@ -182,7 +194,8 @@ class SteelPricePolicyRepository:
         steel_mill: str,
         category_name: str,
         policy_type: str,
-        grade_name: Optional[str],
+        grade_type: Optional[str],
+        grade_value: Optional[str],
         base_thickness: Optional[Any],
         exclude_id: Optional[int] = None,
     ) -> bool:
@@ -194,12 +207,17 @@ class SteelPricePolicyRepository:
             SteelPricePolicy.category_name == category_name,
             SteelPricePolicy.policy_type == policy_type,
         )
-        # grade_name / base_thickness 允许 NULL，需要用 or_ 覆盖两侧
+        # grade_type / grade_value / base_thickness 允许 NULL，需要用 or_ 覆盖两侧
         from sqlalchemy import or_
-        if grade_name is not None:
-            query = query.filter(SteelPricePolicy.grade_name == grade_name)
+        if grade_type is not None:
+            query = query.filter(SteelPricePolicy.grade_type == grade_type)
         else:
-            query = query.filter(SteelPricePolicy.grade_name.is_(None))
+            query = query.filter(SteelPricePolicy.grade_type.is_(None))
+
+        if grade_value is not None:
+            query = query.filter(SteelPricePolicy.grade_value == grade_value)
+        else:
+            query = query.filter(SteelPricePolicy.grade_value.is_(None))
 
         if base_thickness is not None:
             query = query.filter(SteelPricePolicy.base_thickness == base_thickness)
@@ -273,7 +291,8 @@ class SteelPricePolicyRepository:
         steel_mill: str,
         category_name: str,
         policy_type: str,
-        grade_name: Optional[str] = None,
+        grade_type: Optional[str] = None,
+        grade_value: Optional[str] = None,
         base_thickness: Optional[Any] = None,
     ) -> list[SteelPricePolicy]:
         """根据政策维度条件查找候选政策（含明细）。"""
@@ -290,10 +309,15 @@ class SteelPricePolicyRepository:
         )
 
         from sqlalchemy import or_
-        if grade_name is not None:
-            query = query.filter(SteelPricePolicy.grade_name == grade_name)
+        if grade_type is not None:
+            query = query.filter(SteelPricePolicy.grade_type == grade_type)
         else:
-            query = query.filter(SteelPricePolicy.grade_name.is_(None))
+            query = query.filter(SteelPricePolicy.grade_type.is_(None))
+
+        if grade_value is not None:
+            query = query.filter(SteelPricePolicy.grade_value == grade_value)
+        else:
+            query = query.filter(SteelPricePolicy.grade_value.is_(None))
 
         if base_thickness is not None:
             query = query.filter(SteelPricePolicy.base_thickness == base_thickness)

@@ -16,6 +16,7 @@ from app.models.steel_price_policy import SteelPricePolicy, SteelPriceLadderItem
 from app.parsers.steel_price_policy import parse_steel_price_policy_excel
 from app.repositories.steel_price_policy import SteelPricePolicyRepository
 from app.schemas.steel_price_policy import (
+    GradeType,
     LadderItemCreate,
     LadderItemUpdate,
     LadderItemResponse,
@@ -134,7 +135,8 @@ class SteelPricePolicyService:
             steel_mill=query.steel_mill.strip() if query.steel_mill else None,
             category_name=query.category_name.strip() if query.category_name else None,
             policy_type=query.policy_type.value if query.policy_type else None,
-            grade_name=query.grade_name.strip() if query.grade_name else None,
+            grade_value=query.grade_value.strip() if query.grade_value else None,
+            grade_type=query.grade_type.value if query.grade_type else None,
             skip=skip,
             limit=query.size,
         )
@@ -149,7 +151,8 @@ class SteelPricePolicyService:
                     steel_mill=record.steel_mill,
                     category_name=record.category_name,
                     policy_type=record.policy_type,
-                    grade_name=record.grade_name,
+                    grade_type=record.grade_type,
+                    grade_value=record.grade_value,
                     base_thickness=record.base_thickness,
                     item_count=item_count,
                     created_at=record.created_at,
@@ -174,7 +177,8 @@ class SteelPricePolicyService:
             steel_mill=record.steel_mill,
             category_name=record.category_name,
             policy_type=record.policy_type,
-            grade_name=record.grade_name,
+            grade_type=record.grade_type,
+            grade_value=record.grade_value,
             base_thickness=record.base_thickness,
             items=[
                 LadderItemResponse.model_validate(item).model_dump()
@@ -199,7 +203,8 @@ class SteelPricePolicyService:
             steel_mill=payload["steel_mill"],
             category_name=payload["category_name"],
             policy_type=payload["policy_type"],
-            grade_name=payload.get("grade_name"),
+            grade_type=payload.get("grade_type"),
+            grade_value=payload.get("grade_value"),
             base_thickness=payload.get("base_thickness"),
         ):
             db.rollback()
@@ -367,8 +372,8 @@ class SteelPricePolicyService:
         全程 Decimal 比较，命中多条时以 sort_order 升序、id 升序确定唯一结果。
 
         Fallback 逻辑：
-        - 优先精确匹配（grade_name 完全匹配）
-        - 未命中时 fallback 到 grade_name 为 NULL 的通用政策
+        - 优先精确匹配（grade_value 完全匹配）
+        - 未命中时 fallback 到 grade_value 为 NULL 的通用政策
         - 这解决了马钢 Excel 中多个钢种共用同一行价格的问题
         """
         # 尝试精确匹配
@@ -379,15 +384,16 @@ class SteelPricePolicyService:
             steel_mill=data.steel_mill.strip(),
             category_name=data.category_name.strip(),
             policy_type=data.policy_type.value,
-            grade_name=data.grade_name.strip() if data.grade_name else None,
+            grade_type=data.grade_type.value if data.grade_type else None,
+            grade_value=data.grade_value.strip() if data.grade_value else None,
             base_thickness=data.base_thickness,
         )
 
         all_hits = self._collect_hits(candidates, data)
 
-        # Fallback: grade_name 为 NULL 的通用政策
+        # Fallback: grade_value 为 NULL 的通用政策
         fallback_hit = None
-        if not all_hits and data.grade_name:
+        if not all_hits and data.grade_value:
             fallback_candidates = self.repository.find_candidate_policies(
                 db,
                 year=data.year,
@@ -395,7 +401,8 @@ class SteelPricePolicyService:
                 steel_mill=data.steel_mill.strip(),
                 category_name=data.category_name.strip(),
                 policy_type=data.policy_type.value,
-                grade_name=None,  # 通用政策
+                grade_type=None,  # 通用政策
+                grade_value=None,
                 base_thickness=data.base_thickness,
             )
             fallback_hits = self._collect_hits(fallback_candidates, data)
@@ -403,7 +410,7 @@ class SteelPricePolicyService:
                 fallback_hit = fallback_hits[0]
                 logger.info(
                     "钢种 %s 无精确政策，fallback 到通用政策: policy_id=%s item_id=%s",
-                    data.grade_name, fallback_hit[1], fallback_hit[0].id,
+                    data.grade_value, fallback_hit[1], fallback_hit[0].id,
                 )
 
         if not all_hits and not fallback_hit:
@@ -417,7 +424,7 @@ class SteelPricePolicyService:
                 logger.warning(
                     "阶梯匹配命中多条政策: year=%s month=%s steel_mill=%s category=%s type=%s grade=%s base_t=%s",
                     data.year, data.month, data.steel_mill, data.category_name,
-                    data.policy_type.value, data.grade_name, data.base_thickness,
+                    data.policy_type.value, data.grade_value, data.base_thickness,
                 )
             all_hits.sort(key=lambda x: (x[0].sort_order, x[0].id))
             best_item, best_policy_id = all_hits[0]
@@ -459,7 +466,7 @@ class SteelPricePolicyService:
     ) -> dict[str, int]:
         """
         解析 Excel 文件（传入 year/month 参数），
-        按 (year, month, steel_mill, category_name, policy_type, grade_name, base_thickness)
+        按 (year, month, steel_mill, category_name, policy_type, grade_value, base_thickness)
         业务唯一键做 upsert：
         - 键存在 → 删除旧政策及阶梯明细，插入新政政策及阶梯明细
         - 键不存在 → 直接插入
@@ -487,7 +494,8 @@ class SteelPricePolicyService:
                 steel_mill=payload["steel_mill"],
                 category_name=payload["category_name"],
                 policy_type=payload["policy_type"],
-                grade_name=payload.get("grade_name"),
+                grade_type=payload.get("grade_type"),
+            grade_value=payload.get("grade_value"),
                 base_thickness=payload.get("base_thickness"),
             )
 
@@ -501,7 +509,8 @@ class SteelPricePolicyService:
                         steel_mill=payload["steel_mill"],
                         category_name=payload["category_name"],
                         policy_type=payload["policy_type"],
-                        grade_name=payload.get("grade_name"),
+                        grade_type=payload.get("grade_type"),
+            grade_value=payload.get("grade_value"),
                         base_thickness=payload.get("base_thickness"),
                     )
                     if old_records:
@@ -521,7 +530,7 @@ class SteelPricePolicyService:
                 logger.warning(
                     "导入政策失败 [%s]: %s - %s",
                     payload.get("steel_mill"),
-                    payload.get("grade_name"),
+                    payload.get("grade_value"),
                     error,
                 )
                 skipped += 1

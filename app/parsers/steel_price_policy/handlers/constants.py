@@ -28,3 +28,81 @@ THICKNESS_HEADER_KEYWORDS: tuple[str, ...] = (
     "厚度(mm)",
     "厚度",
 )
+
+
+# ============================
+# 厚度子组标签解析
+# ============================
+
+# 常见厚度子组标签 → (min_val, min_op, max_val, max_op)
+# 操作符: >  ≥  <  ≤  分别对应  strict_gt  gte  strict_lt  lte
+_THICKNESS_LABEL_MAP: dict[str, tuple[str, float | None, str, float | None]] = {
+    "＞1":     (">",  1.0,  "<",   None),   # t > 1
+    ">1":     (">",  1.0,  "<",   None),
+    "≥1":     (">=", 1.0,  "<",   None),   # t >= 1
+    ">=1":    (">=", 1.0,  "<",   None),
+    "≤0.5":   (">=", None, "<=",  0.5),    # t <= 0.5
+    "<=0.5":  (">=", None, "<=",  0.5),
+    "0.5<t≤1.0":  ("<",  0.5, "<=",  1.0),  # 0.5 < t <= 1.0
+    "0.5<t≤1":    ("<",  0.5, "<=",  1.0),
+    "0.5<t<1.0":  ("<",  0.5, "<",   1.0),  # 0.5 < t < 1.0
+    "0.5<t<1":    ("<",  0.5, "<",   1.0),
+    "0.8<t≤1.2":  ("<",  0.8, "<=",  1.2),
+    "0.8<t≤1.5":  ("<",  0.8, "<=",  1.5),
+    "1<t≤1.5":    ("<",  1.0, "<=",  1.5),
+    "1<t≤2.0":    ("<",  1.0, "<=",  2.0),
+    "1.2<t≤1.5":  ("<",  1.2, "<=",  1.5),
+    "1.5<t≤2.0":  ("<",  1.5, "<=",  2.0),
+    "2.0<t≤2.5":  ("<",  2.0, "<=",  2.5),
+    "2.5<t≤3.0":  ("<",  2.5, "<=",  3.0),
+}
+
+
+def parse_thickness_label(label: str) -> tuple[
+    float | None, str | None, float | None, str | None
+]:
+    """
+    将厚度子组标签解析为边界值和操作符。
+
+    支持的格式：
+      - 纯上界：``≤0.5`` / ``<=0.5``         → (None, >=, 0.5, <=)
+      - 纯下界：``＞1`` / ``>1`` / ``≥1``    → (1.0, >,  None, <)
+      - 区间：  ``0.5<t≤1.0``               → (0.5, <,  1.0, <=)
+
+    Returns:
+        (thick_min, thick_min_operator, thick_max, thick_max_operator)
+    """
+    label = label.strip()
+
+    # 1. 精确匹配
+    if label in _THICKNESS_LABEL_MAP:
+        min_op, min_val, max_op, max_val = _THICKNESS_LABEL_MAP[label]
+        return min_val, min_op, max_val, max_op
+
+    # 2. 纯下界标签：＞N / >N / ≥N / >=N
+    m = re.match(r"^[＞>≥>=]\s*(\d+(?:\.\d+)?)\s*$", label)
+    if m:
+        val = float(m.group(1))
+        return val, ">", None, "<"
+
+    # 3. 纯上界标签：≤N / <=N
+    m = re.match(r"^[≤<=]\s*(\d+(?:\.\d+)?)\s*$", label)
+    if m:
+        val = float(m.group(1))
+        return None, ">=", val, "<="
+
+    # 4. 区间标签：A<B≤C 或 A<B<C（支持全角/半角操作符）
+    #    例: 0.5<t≤1.0   0.5<t<1   >0.5 且 ≤1.0
+    for pattern in [
+        r"^(\d+(?:\.\d+)?)\s*[<＜]\s*t\s*[≤<=]\s*(\d+(?:\.\d+)?)\s*$",
+        r"^(\d+(?:\.\d+)?)\s*[<＜]\s*t\s*[<＜]\s*(\d+(?:\.\d+)?)\s*$",
+    ]:
+        m = re.match(pattern, label, re.IGNORECASE)
+        if m:
+            lo = float(m.group(1))
+            hi = float(m.group(2))
+            is_strict_hi = pattern.startswith(r"^(\d+(?:\.\d+)?)\s*[<＜]\s*t\s*[<＜]")
+            return lo, "<", hi, "<" if is_strict_hi else "<="
+
+    # 不认识的格式，返回空（不限）
+    return None, ">=", None, "<"

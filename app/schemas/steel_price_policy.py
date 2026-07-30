@@ -21,6 +21,13 @@ class PolicyType(str, Enum):
     WIDTH = "WIDTH"
 
 
+class GradeType(str, Enum):
+    """grade_value 的语义类型枚举"""
+    GRADE = "GRADE"           # 钢种牌号（如 DC01、DX51D+Z）
+    WIDTH_RANGE = "WIDTH_RANGE"  # 宽度范围（如 700≤W<900）
+    CATEGORY = "CATEGORY"     # 钢材大类（如 冷轧钢），用于通用宽度加价
+
+
 class Operator(str, Enum):
     """区间操作符枚举"""
     GTE = ">="   # 大于等于
@@ -163,21 +170,22 @@ class PolicyCreate(BaseModel):
     steel_mill: str = Field(..., min_length=1, max_length=100, description="钢厂名称")
     category_name: str = Field(..., min_length=1, max_length=100, description="钢种大类")
     policy_type: PolicyType = Field(..., description="政策类型：THICKNESS=厚度加减价，WIDTH=宽度加价")
-    grade_name: Optional[str] = Field(None, max_length=100, description="牌号（厚度政策通常指定）")
+    grade_type: Optional[GradeType] = Field(None, description="grade_value 的语义类型：GRADE/WIDTH_RANGE/CATEGORY")
+    grade_value: Optional[str] = Field(None, max_length=100, description="牌号或宽度范围（GRADE 时如 'DC01'，WIDTH_RANGE 时如 '700≤W<900'，CATEGORY 时如 '冷轧钢'）")
     base_thickness: Optional[Decimal] = Field(None, description="基准厚度（仅厚度政策需要）")
     items: list[LadderItemCreate] = Field(..., min_length=1, description="阶梯明细，至少一条")
 
-    @field_validator("steel_mill", "category_name", "grade_name", mode="before")
+    @field_validator("steel_mill", "category_name", "grade_value", mode="before")
     @classmethod
     def strip_strings(cls, v):
         return _strip(v)
 
     @model_validator(mode="after")
     def check_thickness_policy_requires_base(self):
-        """THICKNESS 政策必须提供 grade_name 和 base_thickness"""
+        """THICKNESS 政策必须提供 grade_value 和 base_thickness"""
         if self.policy_type == PolicyType.THICKNESS:
-            if not self.grade_name:
-                raise ValueError("THICKNESS 政策必须指定 grade_name（牌号）")
+            if not self.grade_value:
+                raise ValueError("THICKNESS 政策必须指定 grade_value（牌号）")
             if self.base_thickness is None:
                 raise ValueError("THICKNESS 政策必须指定 base_thickness（基准厚度）")
         return self
@@ -185,13 +193,14 @@ class PolicyCreate(BaseModel):
 
 class PolicyUpdate(BaseModel):
     """政策更新请求（业务主键字段 year/month/steel_mill/category_name/policy_type 不允许变更）"""
-    grade_name: Optional[str] = Field(None, max_length=100, description="牌号")
+    grade_type: Optional[GradeType] = Field(None, description="grade_value 的语义类型")
+    grade_value: Optional[str] = Field(None, max_length=100, description="牌号或宽度范围")
     base_thickness: Optional[Decimal] = Field(None, description="基准厚度")
     items: Optional[list[LadderItemCreate]] = Field(None, description="整组替换阶梯明细（传空数组则清空明细）")
 
-    @field_validator("grade_name", mode="before")
+    @field_validator("grade_value", mode="before")
     @classmethod
-    def strip_grade_name(cls, v):
+    def strip_grade_value(cls, v):
         return _strip(v)
 
     @model_validator(mode="after")
@@ -210,7 +219,8 @@ class PolicyListResponse(BaseModel):
     steel_mill: str
     category_name: str
     policy_type: str
-    grade_name: Optional[str]
+    grade_type: Optional[str]
+    grade_value: Optional[str]
     base_thickness: Optional[Decimal]
     item_count: int = 0
     created_at: datetime
@@ -237,7 +247,8 @@ class PolicyDetailResponse(BaseModel):
     steel_mill: str
     category_name: str
     policy_type: str
-    grade_name: Optional[str]
+    grade_type: Optional[str]
+    grade_value: Optional[str]
     base_thickness: Optional[Decimal]
     items: list[LadderItemResponse]
     created_at: datetime
@@ -267,11 +278,12 @@ class PolicyQuery(BaseModel):
     steel_mill: Optional[str] = Field(None, description="钢厂名称")
     category_name: Optional[str] = Field(None, description="钢种大类")
     policy_type: Optional[PolicyType] = Field(None, description="政策类型")
-    grade_name: Optional[str] = Field(None, description="牌号")
+    grade_type: Optional[GradeType] = Field(None, description="grade_value 的语义类型")
+    grade_value: Optional[str] = Field(None, description="牌号或宽度范围")
     page: int = Field(1, ge=1, description="页码")
     size: int = Field(20, ge=1, le=200, description="每页条数")
 
-    @field_validator("steel_mill", "category_name", "grade_name", mode="before")
+    @field_validator("steel_mill", "category_name", "grade_value", mode="before")
     @classmethod
     def strip_query_strings(cls, v):
         return _strip(v)
@@ -284,7 +296,8 @@ class PolicyOptionsResponse(BaseModel):
     steel_mills: list[str] = Field(default_factory=list)
     category_names: list[str] = Field(default_factory=list)
     policy_types: list[str] = Field(default_factory=list)
-    grade_names: list[str] = Field(default_factory=list)
+    grade_types: list[str] = Field(default_factory=list)
+    grade_values: list[str] = Field(default_factory=list)
 
 
 # ============================
@@ -298,13 +311,14 @@ class PolicyMatchRequest(BaseModel):
     steel_mill: str = Field(..., min_length=1, max_length=100, description="钢厂名称")
     category_name: str = Field(..., min_length=1, max_length=100, description="钢种大类")
     policy_type: PolicyType = Field(..., description="政策类型")
-    grade_name: Optional[str] = Field(None, max_length=100, description="牌号（THICKNESS 政策必须）")
+    grade_type: Optional[GradeType] = Field(None, description="grade_value 的语义类型")
+    grade_value: Optional[str] = Field(None, max_length=100, description="牌号或宽度范围（THICKNESS 政策必须提供 grade_value）")
     base_thickness: Optional[Decimal] = Field(None, description="基准厚度（THICKNESS 政策必须）")
     target_sub_group: Optional[str] = Field(None, max_length=100, description="附加子分组条件")
     thickness: Optional[Decimal] = Field(None, description="待匹配的厚度值（mm）")
     width: Optional[Decimal] = Field(None, description="待匹配的宽度值（mm）")
 
-    @field_validator("steel_mill", "category_name", "grade_name", "target_sub_group", mode="before")
+    @field_validator("steel_mill", "category_name", "grade_value", "target_sub_group", mode="before")
     @classmethod
     def strip_strings(cls, v):
         return _strip(v)
@@ -330,8 +344,8 @@ class PolicyMatchRequest(BaseModel):
     @model_validator(mode="after")
     def check_thickness_requires(self):
         if self.policy_type == PolicyType.THICKNESS:
-            if not self.grade_name:
-                raise ValueError("THICKNESS 政策匹配必须提供 grade_name")
+            if not self.grade_value:
+                raise ValueError("THICKNESS 政策匹配必须提供 grade_value")
             if self.base_thickness is None:
                 raise ValueError("THICKNESS 政策匹配必须提供 base_thickness")
         return self
