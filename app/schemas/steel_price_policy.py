@@ -390,3 +390,11 @@ class PolicyMatchResponse(BaseModel):
     policy_id: Optional[int] = Field(None, description="命中的政策 ID")
     item: Optional[MatchedLadderItem] = Field(None, description="命中的阶梯明细")
     price_adjustment: Optional[int] = Field(None, description="加减价金额（元/吨）")
+
+
+class ImportResultResponse(BaseModel):
+    """Excel 导入结果响应"""
+    created_count: int = Field(0, description="新增数量")
+    updated_count: int = Field(0, description="更新数量")
+    skipped_count: int = Field(0, description="跳过数量")
+    total: int = Field(0, description="处理总数")

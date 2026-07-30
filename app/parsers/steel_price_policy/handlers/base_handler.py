@@ -35,7 +35,7 @@ from openpyxl.worksheet.worksheet import Worksheet
 
 from ..boundary_parser import _Boundary, _parse_boundary
 from ..models import ParsedLadderItem, ParsedPolicy
-from ..models.policy import GRADE_TYPE_CATEGORY, GRADE_TYPE_GRADE, GRADE_TYPE_WIDTH_RANGE
+from ..models.policy import GRADE_TYPE_CATEGORY, GRADE_TYPE_GRADE, GRADE_TYPE_THICKNESS_RANGE, GRADE_TYPE_WIDTH_RANGE
 from ..value_parser import _to_int_price, _to_str, _to_str_or_none
 from .constants import BENCH_PATTERN, BLANK_LIMIT, CATEGORY_HINTS, GRADE_LABELS, THICKNESS_HEADER_KEYWORDS
 
@@ -43,7 +43,10 @@ from .constants import BENCH_PATTERN, BLANK_LIMIT, CATEGORY_HINTS, GRADE_LABELS,
 _WIDTH_RANGE_KEYWORDS = ("≤", "≥", "＜", "＞", "W", "宽")
 
 # 已知钢材类别（用于推断 grade_type = CATEGORY）
-_CATEGORY_NAMES = frozenset({"冷轧钢", "镀锌钢", "酸洗钢", "热轧钢"})
+_CATEGORY_NAMES: frozenset[str] = frozenset({"冷轧钢", "镀锌钢", "酸洗钢", "热轧钢"})
+
+# 厚度范围关键字（用于推断 grade_type = THICKNESS_RANGE）
+_THICKNESS_RANGE_KEYWORDS: tuple[str, ...] = ("厚度",)
 
 
 class BaseSheetHandler:
@@ -252,8 +255,9 @@ class BaseSheetHandler:
 
         规则:
         - THICKNESS 政策：grade 必定是钢种牌号
-        - WIDTH 政策：grade 可能是钢种牌号、宽度范围或类别名
+        - WIDTH 政策：grade 可能是钢种牌号、宽度范围、厚度范围或类别名
           * 含宽度关键字（≤/≥/W/宽）→ WIDTH_RANGE
+          * 含"厚度"关键字 → THICKNESS_RANGE
           * 是已知类别名（冷轧钢/镀锌钢/酸洗钢）→ CATEGORY
           * 否则 → GRADE（钢种牌号）
         """
@@ -263,6 +267,8 @@ class BaseSheetHandler:
         grade_stripped = grade.strip()
         if any(kw in grade_stripped for kw in _WIDTH_RANGE_KEYWORDS):
             return GRADE_TYPE_WIDTH_RANGE
+        if any(kw in grade_stripped for kw in _THICKNESS_RANGE_KEYWORDS):
+            return GRADE_TYPE_THICKNESS_RANGE
         if grade_stripped in _CATEGORY_NAMES:
             return GRADE_TYPE_CATEGORY
         return GRADE_TYPE_GRADE

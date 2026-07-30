@@ -4,6 +4,7 @@ from .ladder_item import ParsedLadderItem
 from .policy import (
     GRADE_TYPE_CATEGORY,
     GRADE_TYPE_GRADE,
+    GRADE_TYPE_THICKNESS_RANGE,
     GRADE_TYPE_WIDTH_RANGE,
     ParsedPolicy,
 )
@@ -16,4 +17,5 @@ __all__ = [
     "GRADE_TYPE_GRADE",
     "GRADE_TYPE_WIDTH_RANGE",
     "GRADE_TYPE_CATEGORY",
+    "GRADE_TYPE_THICKNESS_RANGE",
 ]

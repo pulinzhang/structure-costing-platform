@@ -61,20 +61,33 @@ def format_decimal(value, digits=2) -> str:
 
 
 def format_thick_condition(row: ExportRow) -> str:
+    """
+    格式化厚度条件 - 直接显示数据库存储值。
+    例如：thick_min=0.5, thick_min_operator='<' → 显示 "<0.50"
+    """
     parts = []
-    if row.thick_min is not None:
-        parts.append(f"{row.thick_min_operator or '>='}{format_decimal(row.thick_min)}")
-    if row.thick_max is not None:
-        parts.append(f"{row.thick_max_operator or '<'}{format_decimal(row.thick_max)}")
+
+    if row.thick_min is not None and row.thick_min_operator:
+        parts.append(f"{row.thick_min_operator}{format_decimal(row.thick_min)}")
+
+    if row.thick_max is not None and row.thick_max_operator:
+        parts.append(f"{row.thick_max_operator}{format_decimal(row.thick_max)}")
+
     return ", ".join(parts) if parts else ""
 
 
 def format_width_condition(row: ExportRow) -> str:
+    """
+    格式化宽度条件 - 直接显示数据库存储值。
+    """
     parts = []
-    if row.width_min is not None:
-        parts.append(f"{row.width_min_operator or '>='}{format_decimal(row.width_min)}")
-    if row.width_max is not None:
-        parts.append(f"{row.width_max_operator or '<'}{format_decimal(row.width_max)}")
+
+    if row.width_min is not None and row.width_min_operator:
+        parts.append(f"{row.width_min_operator}{format_decimal(row.width_min)}")
+
+    if row.width_max is not None and row.width_max_operator:
+        parts.append(f"{row.width_max_operator}{format_decimal(row.width_max)}")
+
     return ", ".join(parts) if parts else ""
 
 

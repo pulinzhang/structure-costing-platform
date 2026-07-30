@@ -7,9 +7,10 @@
     items=[{min=0.5, >=}, {max=900, <=}, price=100, ...]
 
 grade_type 取值:
-    GRADE       - 钢种牌号（如 DC01、DX51D+Z）
-    WIDTH_RANGE - 宽度范围（如 700≤W<900、<1500）
-    CATEGORY    - 钢材大类（如 冷轧钢），用于通用宽度加价
+    GRADE            - 钢种牌号（如 DC01、DX51D+Z）
+    WIDTH_RANGE      - 宽度范围（如 700≤W<900、<1500）
+    CATEGORY         - 钢材大类（如 冷轧钢），用于通用宽度加价
+    THICKNESS_RANGE  - 厚度范围（如 厚度≤1.5mm），用于按厚度区分的宽度加价
 """
 
 from dataclasses import dataclass, field
@@ -24,6 +25,7 @@ POLICY_TYPE_WIDTH = "WIDTH"
 GRADE_TYPE_GRADE = "GRADE"
 GRADE_TYPE_WIDTH_RANGE = "WIDTH_RANGE"
 GRADE_TYPE_CATEGORY = "CATEGORY"
+GRADE_TYPE_THICKNESS_RANGE = "THICKNESS_RANGE"
 
 
 @dataclass
