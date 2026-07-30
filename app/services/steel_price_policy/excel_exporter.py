@@ -54,7 +54,12 @@ def format_decimal(value, digits=2) -> str:
     if value is None:
         return ""
     if isinstance(value, Decimal):
-        value = float(value)
+        return f"{float(value):.{digits}f}"
+    if isinstance(value, str):
+        try:
+            return f"{float(value):.{digits}f}"
+        except ValueError:
+            return value
     if isinstance(value, (int, float)):
         return f"{value:.{digits}f}"
     return str(value)
@@ -62,33 +67,50 @@ def format_decimal(value, digits=2) -> str:
 
 def format_thick_condition(row: ExportRow) -> str:
     """
-    格式化厚度条件 - 直接显示数据库存储值。
-    例如：thick_min=0.5, thick_min_operator='<' → 显示 "<0.50"
+    格式化厚度条件。
+    - 仅有最小值：t操作符值 (如 t>=2.6)
+    - 既有最小值又有最大值：值操作符t, t操作符值 (如 2.6<=t<=3.0)
+    - 仅最大值：t操作符值 (如 t<3.0)
     """
     parts = []
 
     if row.thick_min is not None and row.thick_min_operator:
-        parts.append(f"{row.thick_min_operator}{format_decimal(row.thick_min)}")
+        if row.thick_max is None:
+            parts.append("t")
+            parts.append(f"{row.thick_min_operator}{format_decimal(row.thick_min, 1)}")
+        else:
+            parts.append(f"{format_decimal(row.thick_min, 1)}{row.thick_min_operator}")
 
     if row.thick_max is not None and row.thick_max_operator:
-        parts.append(f"{row.thick_max_operator}{format_decimal(row.thick_max)}")
+        parts.append("t")
+        parts.append(f"{row.thick_max_operator}{format_decimal(row.thick_max, 1)}")
 
-    return ", ".join(parts) if parts else ""
+    result = "".join(parts)
+    return result if result and result != "t" else "-"
 
 
 def format_width_condition(row: ExportRow) -> str:
     """
-    格式化宽度条件 - 直接显示数据库存储值。
+    格式化宽度条件。
+    - 仅有最小值：w操作符值 (如 w>=1000)
+    - 既有最小值又有最大值：值操作符w, w操作符值 (如 1000<=w<=1500)
+    - 仅最大值：w操作符值 (如 w<1500)
     """
     parts = []
 
     if row.width_min is not None and row.width_min_operator:
-        parts.append(f"{row.width_min_operator}{format_decimal(row.width_min)}")
+        if row.width_max is None:
+            parts.append("w")
+            parts.append(f"{row.width_min_operator}{format_decimal(row.width_min, 0)}")
+        else:
+            parts.append(f"{format_decimal(row.width_min, 0)}{row.width_min_operator}")
 
     if row.width_max is not None and row.width_max_operator:
-        parts.append(f"{row.width_max_operator}{format_decimal(row.width_max)}")
+        parts.append("w")
+        parts.append(f"{row.width_max_operator}{format_decimal(row.width_max, 0)}")
 
-    return ", ".join(parts) if parts else ""
+    result = "".join(parts)
+    return result if result and result != "w" else "-"
 
 
 # =============================================================================

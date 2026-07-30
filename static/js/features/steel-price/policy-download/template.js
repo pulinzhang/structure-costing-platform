@@ -186,24 +186,43 @@ function formatPolicyType(type) {
 
 function formatThicknessCondition(record) {
     const parts = [];
+   
     if (record.thick_min !== null && record.thick_min !== undefined && record.thick_min_operator) {
-        parts.push(`${record.thick_min_operator}${formatDecimal(record.thick_min)}`);
+        if(record.thick_max == null)
+        {
+            // 没有最大值时，显示下限
+            parts.push('t'); 
+            parts.push(`${record.thick_min_operator}${record.thick_min}`);
+        }
+        else{
+            parts.push(`${record.thick_min}${record.thick_min_operator}`);
+        }
     }
     if (record.thick_max !== null && record.thick_max !== undefined && record.thick_max_operator) {
-        parts.push(`${record.thick_max_operator}${formatDecimal(record.thick_max)}`);
+        parts.push('t');
+        parts.push(`${record.thick_max_operator}${record.thick_max}`);
     }
-    return parts.join(', ') || '-';
+    const result = parts.join('');
+    return result === 't' ? '-' : result;
 }
 
 function formatWidthCondition(record) {
     const parts = [];
+
     if (record.width_min !== null && record.width_min !== undefined && record.width_min_operator) {
-        parts.push(`${record.width_min_operator}${formatDecimal(record.width_min)}`);
+        if (record.width_max == null) {
+            parts.push('w');
+            parts.push(`${record.width_min_operator}${formatDecimal(record.width_min, 0)}`);
+        } else {
+            parts.push(`${formatDecimal(record.width_min, 0)}${record.width_min_operator}`);
+        }
     }
     if (record.width_max !== null && record.width_max !== undefined && record.width_max_operator) {
-        parts.push(`${record.width_max_operator}${formatDecimal(record.width_max)}`);
+        parts.push('w');
+        parts.push(`${record.width_max_operator}${formatDecimal(record.width_max, 0)}`);
     }
-    return parts.join(', ') || '-';
+    const result = parts.join('');
+    return result === 'w' ? '-' : result;
 }
 
 function formatDecimal(value, digits = 2) {

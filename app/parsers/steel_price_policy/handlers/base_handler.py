@@ -29,7 +29,7 @@
 """
 
 from decimal import Decimal
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from openpyxl.worksheet.worksheet import Worksheet
 
@@ -216,6 +216,9 @@ class BaseSheetHandler:
         # 排序列号，便于推断上界
         sorted_price_cols = sorted(price_cols)
 
+        # 追踪前一个边界，用于推断当前列的下限
+        prev_boundary: Optional[_Boundary] = None
+
         policies: List[ParsedPolicy] = []
         last_grade: Optional[str] = None  # 用于合并单元格的钢种继承
         for r in range(data_start, data_end + 1):
@@ -234,7 +237,10 @@ class BaseSheetHandler:
                 continue
             # 推断 grade_type
             grade_type = self._infer_grade_type(grade, policy_type)
-            items = self._build_items_for_row(sheet, r, sorted_price_cols, boundaries, policy_type, sort_order=r)
+            items, prev_boundary = self._build_items_for_row(
+                sheet, r, sorted_price_cols, boundaries, policy_type,
+                sort_order=r, prev_boundary=prev_boundary
+            )
             if not items:
                 continue
             policies.append(
@@ -348,9 +354,11 @@ class BaseSheetHandler:
         boundaries: Dict[int, _Boundary],
         policy_type: str = "THICKNESS",
         sort_order: int = 0,
-    ) -> List[ParsedLadderItem]:
+        prev_boundary: Optional[_Boundary] = None,
+    ) -> Tuple[List[ParsedLadderItem], Optional[_Boundary]]:
         items: List[ParsedLadderItem] = []
         sorted_cols = sorted(price_cols)
+        current_boundary: Optional[_Boundary] = prev_boundary
         for i, c in enumerate(sorted_cols):
             if c not in boundaries:
                 continue
@@ -375,6 +383,17 @@ class BaseSheetHandler:
                 price = _to_int_price(price_cell.value)
 
             boundary = boundaries[c]
+
+            # 推断下界：如果当前列没有 min_val 且前一列有 max_val，
+            # 则当前列的 min_val = prev.max_val，min_operator = ">="
+            if boundary.min_val is None and current_boundary is not None and current_boundary.max_val is not None:
+                boundary.min_val = current_boundary.max_val
+                boundary.min_operator = ">="
+
+            # 第一列且 min_val 仍为 None（没有前驱边界），宽度/厚度默认从 0 开始
+            if boundary.min_val is None and boundary.max_val is not None:
+                boundary.min_val = Decimal("0")
+                boundary.min_operator = ">="
 
             # 推断上界：仅当当前列已有 max_val 时跳过
             if boundary.max_val is None and i < len(sorted_cols) - 1:
@@ -403,6 +422,12 @@ class BaseSheetHandler:
                         sort_order=sort_order,
                     )
                 )
+                current_boundary = _Boundary(
+                    min_val=boundary.min_val,
+                    min_operator=boundary.min_operator,
+                    max_val=boundary.max_val,
+                    max_operator=boundary.max_operator,
+                )
             else:
                 # 宽度政策：只设置宽度维度
                 items.append(
@@ -421,7 +446,13 @@ class BaseSheetHandler:
                         sort_order=sort_order,
                     )
                 )
-        return items
+                current_boundary = _Boundary(
+                    min_val=boundary.min_val,
+                    min_operator=boundary.min_operator,
+                    max_val=boundary.max_val,
+                    max_operator=boundary.max_operator,
+                )
+        return items, current_boundary
 
     def build_item(
         self, boundary: _Boundary, price: int, width_boundary: Optional[_Boundary] = None

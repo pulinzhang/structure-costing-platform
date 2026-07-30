@@ -76,7 +76,7 @@ class AngangSheetHandler(BaseSheetHandler):
         sorted_price_cols = sorted(price_cols)
 
         # 从第一行数据读取价格（合并单元格的首个单元格值）
-        items = self._build_items_for_row(
+        items, _ = self._build_items_for_row(
             sheet, data_start, sorted_price_cols, boundaries, POLICY_TYPE_WIDTH, sort_order=0
         )
         if not items:
