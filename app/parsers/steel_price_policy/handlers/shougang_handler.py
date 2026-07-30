@@ -114,8 +114,7 @@ class ShougangSheetHandler(BaseSheetHandler):
             if not thickness_label or thickness_label in GRADE_LABELS:
                 continue
 
-            # 先构建仅有宽度维度的 items，再补充厚度子组上下文
-            raw_items = self._build_items_for_row(
+            raw_items, _ = self._build_items_for_row(
                 sheet, r, sorted_price_cols, boundaries, POLICY_TYPE_WIDTH, sort_order=r
             )
             if not raw_items:
@@ -222,7 +221,7 @@ class ShougangSheetHandler(BaseSheetHandler):
             blocks.append({
                 "category_name": category,
                 "policy_type": "WIDTH",
-                "grade_col": None,
+                "grade_col": _W_GRADE_COL,
                 "header_row": title_row + 1,  # 列头行含宽度边界
                 "price_cols": price_cols,
                 "data_row_start": data_start,
