@@ -27,7 +27,8 @@ from ..models import (
     GRADE_TYPE_WIDTH_RANGE,
 )
 from ..value_parser import _to_int_price
-from .base_handler import BaseSheetHandler, _Boundary
+from .base_handler import BaseSheetHandler
+from ..boundary_parser import _Boundary
 from .constants import GRADE_LABELS
 
 
