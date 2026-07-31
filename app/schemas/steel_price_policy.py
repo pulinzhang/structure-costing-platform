@@ -19,6 +19,7 @@ class PolicyType(str, Enum):
     """政策类型枚举"""
     THICKNESS = "THICKNESS"
     WIDTH = "WIDTH"
+    THICKNESS_WIDTH = "THICKNESS_WIDTH"  # 厚度加宽度（同时约束厚度和宽度）
 
 
 class GradeType(str, Enum):

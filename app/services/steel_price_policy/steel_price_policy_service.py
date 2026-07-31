@@ -385,8 +385,9 @@ class SteelPricePolicyService:
 
         if not filename:
             raise ValueError("未提供文件名")
-        if not filename.lower().endswith(".xlsx"):
-            raise ValueError("仅支持 .xlsx 文件")
+        ext = filename.lower()
+        if not (ext.endswith(".xlsx") or ext.endswith(".xls")):
+            raise ValueError("仅支持 .xlsx 或 .xls 文件")
         if not file_content:
             raise ValueError("上传文件为空")
         if len(file_content) > settings.MAX_UPLOAD_SIZE:

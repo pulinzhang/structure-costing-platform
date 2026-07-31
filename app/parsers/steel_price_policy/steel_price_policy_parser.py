@@ -16,6 +16,10 @@
     handlers/           每个 Sheet 排版一个处理器
     models/             ParsedPolicy, ParsedLadderItem, SheetParseResult
 
+支持 .xlsx 和 .xls 两种 Excel 格式：
+- .xlsx 使用 openpyxl 读取
+- .xls 使用 xlrd 读取，内部转换为 openpyxl Worksheet 兼容格式
+
 约定：
 - 一次只处理一张 Sheet：调用方（service）控制循环，便于持久化单张 Sheet
 - 新增钢厂只需新增 handler，找不到处理器时回退到 DefaultSheetHandler
@@ -25,7 +29,7 @@ import io
 from pathlib import Path
 from typing import List, Union
 
-from openpyxl import load_workbook
+import xlrd
 from openpyxl.worksheet.worksheet import Worksheet
 
 from app.utils.logging_config import get_logger
@@ -35,6 +39,114 @@ from .models import SteelPricePolicyParseResult
 
 
 logger = get_logger("parser.steel_price_policy")
+
+
+# ============================================================================
+# Sheet 兼容层：统一 xlrd sheet → openpyxl Worksheet 接口
+# ============================================================================
+
+
+class _XlrdSheetWrapper:
+    """将 xlrd sheet 包装为 openpyxl Worksheet 接口，供 handler 直接使用。
+
+    Handler 读取单元格的方式统一为：
+        cell.value        → 获取单元格值（str/float/int/空字符串）
+        cell.ctype        → xlrd 单元格类型（忽略，部分 handler 用不到）
+        row[c].value      → 第 c 列的值
+        sheet.max_row     → 最大行数
+        sheet.max_column  → 最大列数
+        sheet.cell(r, c).value → 单元格值
+        sheet.merged_cells → 合并单元格集合（空集合，与 openpyxl 兼容）
+    """
+
+    def __init__(self, xlrd_sheet: xlrd.sheet.Sheet) -> None:
+        self._sheet = xlrd_sheet
+        self.max_row = xlrd_sheet.nrows
+        self.max_column = xlrd_sheet.ncols
+        self.name = xlrd_sheet.name
+
+    @property
+    def merged_cells(self):
+        """返回空集合，与 openpyxl 合并单元格接口兼容。"""
+        return set()
+
+    def cell(self, row: int, column: int):
+        """返回单元格值（与 openpyxl sheet.cell(row, col) 接口兼容）。"""
+        return _XlrdCellWrapper(self._sheet, row - 1, column - 1)
+
+    def __iter__(self):
+        for row_idx in range(self.max_row):
+            yield _XlrdRowWrapper(self._sheet, row_idx)
+
+    def __getitem__(self, coord: str):
+        return self._sheet.cell_by_addr(*self._parse_coord(coord))
+
+    def _parse_coord(self, coord: str):
+        col_str, row_str = "", ""
+        for ch in coord:
+            if ch.isalpha():
+                col_str += ch
+            else:
+                row_str += ch
+        col = 0
+        for ch in col_str.upper():
+            col = col * 26 + (ord(ch) - ord("A") + 1)
+        return int(row_str) - 1, col - 1
+
+
+class _XlrdRowWrapper:
+    def __init__(self, sheet: xlrd.sheet.Sheet, row_idx: int) -> None:
+        self._sheet = sheet
+        self.row_idx = row_idx
+
+    def __iter__(self):
+        for col in range(self._sheet.ncols):
+            yield _XlrdCellWrapper(self._sheet, self.row_idx, col)
+
+    def __getitem__(self, col_idx: int):
+        return _XlrdCellWrapper(self._sheet, self.row_idx, col_idx)
+
+
+class _XlrdCellWrapper:
+    def __init__(self, sheet: xlrd.sheet.Sheet, row_idx: int, col_idx: int) -> None:
+        self._sheet = sheet
+        self.row_idx = row_idx
+        self.col_idx = col_idx
+        cell = sheet.cell(row_idx, col_idx)
+        self.value = _unwrap_xlrd_cell(cell)
+
+    @property
+    def ctype(self) -> int:
+        return self._sheet.cell(self.row_idx, self.col_idx).ctype
+
+
+def _unwrap_xlrd_cell(cell) -> Union[str, float, int, None]:
+    """将 xlrd 单元格值转为 Python 原生类型（str/float/int/None）。"""
+    ctype, value = cell.ctype, cell.value
+    if ctype == xlrd.XL_CELL_EMPTY:
+        return None
+    if ctype == xlrd.XL_CELL_TEXT:
+        return str(value).strip() if value else None
+    if ctype == xlrd.XL_CELL_NUMBER:
+        if value == int(value):
+            return int(value)
+        return value
+    if ctype == xlrd.XL_CELL_DATE:
+        from xlrd.xldate import XLDateAmbiguous, XLDateNegative, XLDateOOD
+        try:
+            tuple_val = xlrd.xldate_as_tuple(value, 0)
+            if tuple_val[0] == 0 and tuple_val[1] == 0:
+                return float(value)
+            return f"{tuple_val[0]}-{tuple_val[1]:02d}-{tuple_val[2]:02d}"
+        except (XLDateAmbiguous, XLDateNegative, XLDateOOD):
+            return float(value)
+    if ctype == xlrd.XL_CELL_BOOLEAN:
+        return bool(value)
+    if ctype == xlrd.XL_CELL_ERROR:
+        return None
+    if ctype == xlrd.XL_CELL_BLANK:
+        return None
+    return value
 
 
 # ============================================================================
@@ -158,17 +270,62 @@ class SteelPricePolicyExcelParser:
 
 
 # ============================================================================
-# Excel 加载辅助（兼容 path / bytes 两种入参）
+# Excel 加载辅助（兼容 path / bytes 两种入参，支持 .xlsx / .xls）
 # ============================================================================
 
 
-def _load_workbook_or_bytes(file):
-    """加载 workbook。"""
+class _WorkbookWrapper:
+    """统一 .xlsx / .xls 两种格式的 Workbook 接口。
+
+    接口：
+        sheetnames   → List[str]
+        __iter__     → 按顺序遍历 sheet 名称
+        __getitem__  → 按名称获取 sheet（返回 SheetWrapper）
+        close()      → 关闭资源
+    """
+
+    def __init__(self, wb, is_xls: bool = False) -> None:
+        self._wb = wb
+        self.is_xls = is_xls
+
+    @property
+    def sheetnames(self) -> List[str]:
+        return self._wb.sheet_names() if self.is_xls else self._wb.sheetnames
+
+    def __iter__(self):
+        return iter(self.sheetnames)
+
+    def __getitem__(self, name: str):
+        raw = self._wb.sheet_by_name(name) if self.is_xls else self._wb[name]
+        if self.is_xls:
+            return _XlrdSheetWrapper(raw)
+        return raw
+
+    def close(self) -> None:
+        self._wb.release_resources() if self.is_xls else self._wb.close()
+
+
+def _load_workbook_or_bytes(file) -> tuple:
+    """加载 workbook，自动识别 .xlsx / .xls 格式。
+
+    Returns:
+        (_WorkbookWrapper, path_or_none)
+    """
+    from openpyxl import load_workbook
+
     if isinstance(file, (str, Path)):
         path = Path(file)
+        if path.suffix.lower() == ".xls":
+            xlrd_wb = xlrd.open_workbook(str(path))
+            return _WorkbookWrapper(xlrd_wb, is_xls=True), path
         wb = load_workbook(str(path), data_only=True)
-        return wb, path
+        return _WorkbookWrapper(wb, is_xls=False), path
+
     if isinstance(file, bytes):
+        if file[:8] == b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1":
+            xlrd_wb = xlrd.open_workbook(file_contents=file)
+            return _WorkbookWrapper(xlrd_wb, is_xls=True), None
         wb = load_workbook(io.BytesIO(file), data_only=True)
-        return wb, None
+        return _WorkbookWrapper(wb, is_xls=False), None
+
     raise TypeError(f"file must be path or bytes, got {type(file).__name__}")
