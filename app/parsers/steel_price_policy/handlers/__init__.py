@@ -1,8 +1,9 @@
 """钢价政策 - 各钢厂 Sheet 处理器。"""
 
-from .base_handler import BaseSheetHandler
-from .default_handler import DefaultSheetHandler
+from app.parsers.steel_price_policy.handlers.base_handler import BaseSheetHandler
 from .angang_handler import AngangSheetHandler
+from .anshen_handler import AnshenSheetHandler
+from .default_handler import DefaultSheetHandler
 from .magang_handler import MagangSheetHandler
 from .shougang_handler import ShougangSheetHandler
 from .tanggang_handler import TanggangSheetHandler
@@ -13,6 +14,7 @@ __all__ = [
     "BaseSheetHandler",
     "DefaultSheetHandler",
     "AngangSheetHandler",
+    "AnshenSheetHandler",
     "MagangSheetHandler",
     "ShougangSheetHandler",
     "TanggangSheetHandler",

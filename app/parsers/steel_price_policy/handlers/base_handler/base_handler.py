@@ -22,7 +22,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from openpyxl.worksheet.worksheet import Worksheet
 
-from .constants import BLANK_LIMIT, GRADE_LABELS
+from app.parsers.steel_price_policy.handlers.constants import BLANK_LIMIT, GRADE_LABELS
 from .policy_assembler import PolicyAssembler
 from .sheet_scanner import SheetScanner
 

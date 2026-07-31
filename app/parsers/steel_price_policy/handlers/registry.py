@@ -5,6 +5,7 @@
 """
 
 from .angang_handler import AngangSheetHandler
+from .anshen_handler import AnshenSheetHandler
 from .default_handler import DefaultSheetHandler
 from .magang_handler import MagangSheetHandler
 from .shougang_handler import ShougangSheetHandler
@@ -25,6 +26,7 @@ _HANDLERS: list[tuple[type, tuple[str, ...]]] = [
     (TanggangSheetHandler, ("唐钢",)),
     (MagangSheetHandler, ("马钢",)),
     (ShougangSheetHandler, ("首钢",)),
-    (AngangSheetHandler, ("鞍钢集团", "鞍钢（", "鞍神")),
+    (AngangSheetHandler, ("鞍钢集团", "鞍钢（")),
+    (AnshenSheetHandler, ("鞍神",)),
     (VamaSheetHandler, ("VAMA", "华菱")),
 ]

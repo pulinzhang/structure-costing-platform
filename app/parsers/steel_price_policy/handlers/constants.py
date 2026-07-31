@@ -37,12 +37,12 @@ THICKNESS_HEADER_KEYWORDS: tuple[str, ...] = (
 # 常见厚度子组标签 → (min_val, min_op, max_val, max_op)
 # 操作符: >  ≥  <  ≤  分别对应  strict_gt  gte  strict_lt  lte
 _THICKNESS_LABEL_MAP: dict[str, tuple[str, float | None, str, float | None]] = {
-    "＞1":     (">",  1.0,  "<",   None),   # t > 1
-    ">1":     (">",  1.0,  "<",   None),
-    "≥1":     (">=", 1.0,  "<",   None),   # t >= 1
-    ">=1":    (">=", 1.0,  "<",   None),
-    "≤0.5":   (">=", None, "<=",  0.5),    # t <= 0.5
-    "<=0.5":  (">=", None, "<=",  0.5),
+    "＞1":      (">",  1.0,  "<",   None),   # t > 1
+    ">1":      (">",  1.0,  "<",   None),
+    "≥1":      (">=", 1.0,  "<",   None),   # t >= 1
+    ">=1":     (">=", 1.0,  "<",   None),
+    "≤0.5":    (">=", None, "<=",  0.5),    # t <= 0.5
+    "<=0.5":   (">=", None, "<=",  0.5),
     "0.5<t≤1.0":  ("<",  0.5, "<=",  1.0),  # 0.5 < t <= 1.0
     "0.5<t≤1":    ("<",  0.5, "<=",  1.0),
     "0.5<t<1.0":  ("<",  0.5, "<",   1.0),  # 0.5 < t < 1.0
@@ -55,6 +55,11 @@ _THICKNESS_LABEL_MAP: dict[str, tuple[str, float | None, str, float | None]] = {
     "1.5<t≤2.0":  ("<",  1.5, "<=",  2.0),
     "2.0<t≤2.5":  ("<",  2.0, "<=",  2.5),
     "2.5<t≤3.0":  ("<",  2.5, "<=",  3.0),
+    # 鞍神格式：A≤T≤B 和 A≤T＜B
+    "0.75≤T＜1.0": (">=", 0.75, "<",   1.0),
+    "1.0≤T≤1.6":   (">=", 1.0,  "<=",  1.6),
+    "0.75≤T<1.0":  (">=", 0.75, "<",   1.0),
+    "1.0≤T<1.6":   (">=", 1.0,  "<",   1.6),
 }
 
 
@@ -100,17 +105,18 @@ def parse_thickness_label(label: str) -> tuple[
         val = float(m.group(1))
         return None, ">=", val, "<="
 
-    # 4. 区间标签：A<B≤C 或 A<B<C（支持全角/半角操作符）
-    #    例: 0.5<t≤1.0   0.5<t<1   >0.5 且 ≤1.0
-    for pattern in [
-        r"^(\d+(?:\.\d+)?)\s*[<＜]\s*t\s*[≤<=]\s*(\d+(?:\.\d+)?)\s*$",
-        r"^(\d+(?:\.\d+)?)\s*[<＜]\s*t\s*[<＜]\s*(\d+(?:\.\d+)?)\s*$",
+    # 4. 区间标签：A≤T≤B 或 A≤T＜B 或 A<B≤C（A<B<C）
+    #    例: 1.0≤T≤1.6   0.75≤T＜1.0   0.5<t≤1.0   0.5<t<1
+    for pattern, is_strict_hi in [
+        (r"^(\d+(?:\.\d+)?)\s*[≤<=]\s*t\s*[≤<=]\s*(\d+(?:\.\d+)?)\s*$", False),
+        (r"^(\d+(?:\.\d+)?)\s*[≤<=]\s*t\s*[<＜]\s*(\d+(?:\.\d+)?)\s*$", True),
+        (r"^(\d+(?:\.\d+)?)\s*[<＜]\s*t\s*[≤<=]\s*(\d+(?:\.\d+)?)\s*$", False),
+        (r"^(\d+(?:\.\d+)?)\s*[<＜]\s*t\s*[<＜]\s*(\d+(?:\.\d+)?)\s*$", True),
     ]:
         m = re.match(pattern, cleaned, re.IGNORECASE)
         if m:
             lo = float(m.group(1))
             hi = float(m.group(2))
-            is_strict_hi = pattern.startswith(r"^(\d+(?:\.\d+)?)\s*[<＜]\s*t\s*[<＜]")
             return lo, "<", hi, "<" if is_strict_hi else "<="
 
     # 不认识的格式，返回空（不限）

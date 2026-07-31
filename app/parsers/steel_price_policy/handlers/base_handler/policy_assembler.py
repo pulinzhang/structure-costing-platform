@@ -16,9 +16,9 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from openpyxl.worksheet.worksheet import Worksheet
 
-from ..boundary_parser import _Boundary, _parse_boundary
-from ..models import ParsedLadderItem, ParsedPolicy
-from ..models.policy import (
+from app.parsers.steel_price_policy.boundary_parser import _Boundary, _parse_boundary
+from app.parsers.steel_price_policy.models import ParsedLadderItem, ParsedPolicy
+from app.parsers.steel_price_policy.models.policy import (
     GRADE_TYPE_CATEGORY,
     GRADE_TYPE_GRADE,
     GRADE_TYPE_THICKNESS_RANGE,
@@ -26,8 +26,8 @@ from ..models.policy import (
     POLICY_TYPE_THICKNESS,
     POLICY_TYPE_WIDTH,
 )
-from ..value_parser import _to_int_price
-from .constants import GRADE_LABELS
+from app.parsers.steel_price_policy.value_parser import _to_int_price
+from app.parsers.steel_price_policy.handlers.constants import GRADE_LABELS
 from .sheet_scanner import SheetScanner
 
 _WIDTH_RANGE_KEYWORDS = ("≤", "≥", "＜", "＞", "W", "宽")

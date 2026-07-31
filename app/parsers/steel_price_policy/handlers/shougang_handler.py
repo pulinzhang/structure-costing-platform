@@ -24,13 +24,13 @@
 """
 
 from decimal import Decimal
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from openpyxl.worksheet.worksheet import Worksheet
 
-from .base_handler import BaseSheetHandler
+from app.parsers.steel_price_policy.handlers.base_handler import BaseSheetHandler
 from .constants import GRADE_LABELS, parse_thickness_label
-from ..models.policy import GRADE_TYPE_WIDTH_RANGE, POLICY_TYPE_WIDTH
+from ..models.policy import POLICY_TYPE_WIDTH
 
 
 _W_GRADE_COL = 14  # N 列（钢种列）

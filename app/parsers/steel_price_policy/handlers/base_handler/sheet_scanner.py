@@ -15,9 +15,9 @@ from typing import Any, List, Optional
 
 from openpyxl.worksheet.worksheet import Worksheet
 
-from ..boundary_parser import _Boundary, _parse_boundary
-from ..value_parser import _to_int_price, _to_str, _to_str_or_none
-from .constants import (
+from app.parsers.steel_price_policy.boundary_parser import _Boundary, _parse_boundary
+from app.parsers.steel_price_policy.value_parser import _to_int_price, _to_str, _to_str_or_none
+from app.parsers.steel_price_policy.handlers.constants import (
     BENCH_PATTERN,
     BLANK_LIMIT,
     GRADE_LABELS,
@@ -286,7 +286,7 @@ class SheetScanner:
         max_col: int,
     ) -> str:
         """在 label_row 上方 6 行内查找分类关键字。"""
-        from .constants import CATEGORY_HINTS
+        from app.parsers.steel_price_policy.handlers.constants import CATEGORY_HINTS
         for r in range(max(1, label_row - 6), label_row):
             for c in range(1, max_col + 1):
                 text = _to_str(sheet.cell(row=r, column=c).value)

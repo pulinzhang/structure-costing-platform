@@ -14,7 +14,7 @@ from typing import Any, Dict, List
 
 from openpyxl.worksheet.worksheet import Worksheet
 
-from .base_handler import BaseSheetHandler
+from app.parsers.steel_price_policy.handlers.base_handler import BaseSheetHandler
 from .constants import GRADE_LABELS, parse_thickness_label
 
 

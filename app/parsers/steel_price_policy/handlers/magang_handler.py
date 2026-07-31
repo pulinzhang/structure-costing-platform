@@ -13,7 +13,7 @@ from typing import Any, Dict, List, Optional
 
 from openpyxl.worksheet.worksheet import Worksheet
 
-from .base_handler import BaseSheetHandler
+from app.parsers.steel_price_policy.handlers.base_handler import BaseSheetHandler
 
 
 # 马钢右侧宽度块
