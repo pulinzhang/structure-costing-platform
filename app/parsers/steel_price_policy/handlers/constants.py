@@ -68,25 +68,34 @@ def parse_thickness_label(label: str) -> tuple[
       - 纯上界：``≤0.5`` / ``<=0.5``         → (None, >=, 0.5, <=)
       - 纯下界：``＞1`` / ``>1`` / ``≥1``    → (1.0, >,  None, <)
       - 区间：  ``0.5<t≤1.0``               → (0.5, <,  1.0, <=)
+      - 前缀/后缀：``厚度≤1.5mm`` / ``厚度＞1.5mm`` → 自动清洗后解析
 
     Returns:
         (thick_min, thick_min_operator, thick_max, thick_max_operator)
     """
-    label = label.strip()
+    # ---- 数据清洗 ----
+    cleaned = label.strip()
+    cleaned = re.sub(r"^厚度\s*", "", cleaned)
+    # 去掉所有空白和 mm（前后/中间都可能含空格，如 ">= 1.5 mm"）
+    cleaned = re.sub(r"\s*mm\s*", "", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r"\s+", "", cleaned)  # 去掉所有剩余空格
+    if not cleaned:
+        return None, ">=", None, "<"
 
     # 1. 精确匹配
-    if label in _THICKNESS_LABEL_MAP:
-        min_op, min_val, max_op, max_val = _THICKNESS_LABEL_MAP[label]
+    if cleaned in _THICKNESS_LABEL_MAP:
+        min_op, min_val, max_op, max_val = _THICKNESS_LABEL_MAP[cleaned]
         return min_val, min_op, max_val, max_op
 
-    # 2. 纯下界标签：＞N / >N / ≥N / >=N
-    m = re.match(r"^[＞>≥>=]\s*(\d+(?:\.\d+)?)\s*$", label)
+    # 2. 纯下界标签：＞N / >N / ≥N / >=N（全角/半角均可）
+    #    清洗后操作符和数字之间无空格，全角支持
+    m = re.match(r"^(?:＞|>|≥|>=)\s*(\d+(?:\.\d+)?)\s*$", cleaned)
     if m:
         val = float(m.group(1))
         return val, ">", None, "<"
 
-    # 3. 纯上界标签：≤N / <=N
-    m = re.match(r"^[≤<=]\s*(\d+(?:\.\d+)?)\s*$", label)
+    # 3. 纯上界标签：≤N / <=N（同样用多选让 <= 作为整体优先匹配）
+    m = re.match(r"^(?:≤|<=)\s*(\d+(?:\.\d+)?)\s*$", cleaned)
     if m:
         val = float(m.group(1))
         return None, ">=", val, "<="
@@ -97,7 +106,7 @@ def parse_thickness_label(label: str) -> tuple[
         r"^(\d+(?:\.\d+)?)\s*[<＜]\s*t\s*[≤<=]\s*(\d+(?:\.\d+)?)\s*$",
         r"^(\d+(?:\.\d+)?)\s*[<＜]\s*t\s*[<＜]\s*(\d+(?:\.\d+)?)\s*$",
     ]:
-        m = re.match(pattern, label, re.IGNORECASE)
+        m = re.match(pattern, cleaned, re.IGNORECASE)
         if m:
             lo = float(m.group(1))
             hi = float(m.group(2))
