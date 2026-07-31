@@ -20,8 +20,15 @@ export function policyDownloadTemplate() {
                         <h2 class="text-[12px] font-semibold text-[#c8c8c8] tracking-wide">钢价政策导出</h2>
                     </div>
                     <div class="flex items-center gap-2">
+                        <button id="btnDeletePolicy"
+                                class="inline-flex items-center gap-1.5 bg-transparent text-[#505050] border border-[#252525] px-3 py-1.5 text-[11px] font-medium rounded-sm hover:bg-[#c62828]/15 hover:border-[#c62828]/60 hover:text-[#d45858] hover:shadow-[0_0_8px_rgba(198,40,40,0.15)] transition-all duration-200"
+                                style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);">
+                            ${window.svgIcon('trash', 'w-3 h-3')}
+                            删除
+                        </button>
                         <button id="btnExportPolicy"
-                                class="inline-flex items-center gap-1.5 bg-[#d32f2f] text-white px-3 py-1.5 text-[11px] font-semibold rounded-sm hover:bg-[#b71c1c] transition-all duration-150">
+                                class="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium rounded-sm text-[#c8c8c8] border border-[#8a2020] transition-all duration-200 hover:text-white"
+                                style="background: linear-gradient(180deg, #3d1515 0%, #2d0f0f 100%); border-color: #6b1a1a; box-shadow: 0 1px 3px rgba(0,0,0,0.4), inset 0 1px 0 rgba(211,47,47,0.1), 0 0 12px rgba(198,40,40,0.08);">
                             ${window.svgIcon('download', 'w-3 h-3')}
                             导出 Excel
                         </button>
@@ -50,38 +57,47 @@ export function policyDownloadTemplate() {
 
                 <!-- 预览区域 -->
                 <div class="p-5">
-                    <div class="text-[11px] text-[#616161] mb-3">
-                        已选条件：
-                        <span id="selectedConditions" class="text-[#9e9e9e] ml-2">请选择筛选条件</span>
+                    <!-- 已选条件：嵌入式仪表盘风格 -->
+                    <div class="mb-3 px-3 py-2 rounded-sm relative"
+                         style="background: linear-gradient(180deg, #0f0f0f 0%, #0c0c0c 100%); border: 1px solid #1a1a1a; box-shadow: inset 0 1px 3px rgba(0,0,0,0.4);">
+                        <!-- 顶部高光线 -->
+                        <div class="absolute top-0 left-0 right-0 h-px" style="background: linear-gradient(90deg, transparent 0%, #2a2a2a 50%, transparent 100%);"></div>
+                        <div class="flex items-center gap-2 text-[11px]">
+                            <span class="text-[#484848]">已选条件：</span>
+                            <span id="selectedConditions" class="text-[#888888] ml-2 font-medium tracking-wide">请选择筛选条件</span>
+                        </div>
+                        <!-- 底部暗线 -->
+                        <div class="absolute bottom-0 left-0 right-0 h-px" style="background: linear-gradient(90deg, transparent 0%, #151515 50%, transparent 100%);"></div>
                     </div>
 
                     <!-- 预览表格 -->
-                    <div class="bg-[#1a1a1a] border border-[#2c2c2c] rounded overflow-hidden">
+                    <div class="bg-[#141414] border border-[#222222] rounded-sm overflow-hidden"
+                         style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.02), 0 2px 8px rgba(0,0,0,0.3);">
                         <div class="overflow-x-auto max-h-[400px]">
                             <table class="w-full min-w-[1600px]">
                                 <thead>
-                                    <tr class="bg-[#0a0a0a] border-b border-[#2c2c2c] sticky top-0 z-10">
+                                    <tr class="border-b border-[#1e1e1e]" style="background: linear-gradient(180deg, #0c0c0c 0%, #0a0a0a 100%);">
                                         <!-- 主表字段 -->
-                                        <th class="px-3 py-2 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">政策ID</th>
-                                        <th class="px-3 py-2 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">年度</th>
-                                        <th class="px-3 py-2 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">月份</th>
-                                        <th class="px-3 py-2 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">钢厂</th>
-                                        <th class="px-3 py-2 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">钢种大类</th>
-                                        <th class="px-3 py-2 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">政策类型</th>
-                                        <th class="px-3 py-2 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">牌号类型</th>
-                                        <th class="px-3 py-2 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">牌号/范围</th>
-                                        <th class="px-3 py-2 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">基准厚度</th>
+                                        <th class="px-3 py-2 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#3a3a3a] whitespace-nowrap">政策ID</th>
+                                        <th class="px-3 py-2 text-right text-[9px] font-semibold uppercase tracking-[0.15em] text-[#3a3a3a] whitespace-nowrap">年度</th>
+                                        <th class="px-3 py-2 text-right text-[9px] font-semibold uppercase tracking-[0.15em] text-[#3a3a3a] whitespace-nowrap">月份</th>
+                                        <th class="px-3 py-2 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#3a3a3a] whitespace-nowrap">钢厂</th>
+                                        <th class="px-3 py-2 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#3a3a3a] whitespace-nowrap">钢种大类</th>
+                                        <th class="px-3 py-2 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#3a3a3a] whitespace-nowrap">政策类型</th>
+                                        <th class="px-3 py-2 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#3a3a3a] whitespace-nowrap">牌号类型</th>
+                                        <th class="px-3 py-2 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#3a3a3a] whitespace-nowrap">牌号/范围</th>
+                                        <th class="px-3 py-2 text-right text-[9px] font-semibold uppercase tracking-[0.15em] text-[#3a3a3a] whitespace-nowrap">基准厚度</th>
                                         <!-- 子表字段 -->
-                                        <th class="px-3 py-2 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">明细ID</th>
-                                        <th class="px-3 py-2 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">子分组</th>
-                                        <th class="px-3 py-2 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">厚度条件</th>
-                                        <th class="px-3 py-2 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">宽度条件</th>
-                                        <th class="px-3 py-2 text-right text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">加减价</th>
-                                        <th class="px-3 py-2 text-center text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">基准</th>
-                                        <th class="px-3 py-2 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">排序</th>
+                                        <th class="px-3 py-2 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#3a3a3a] whitespace-nowrap">明细ID</th>
+                                        <th class="px-3 py-2 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#3a3a3a] whitespace-nowrap">子分组</th>
+                                        <th class="px-3 py-2 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#3a3a3a] whitespace-nowrap">厚度条件</th>
+                                        <th class="px-3 py-2 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#3a3a3a] whitespace-nowrap">宽度条件</th>
+                                        <th class="px-3 py-2 text-right text-[9px] font-semibold uppercase tracking-[0.15em] text-[#3a3a3a] whitespace-nowrap">加减价</th>
+                                        <th class="px-3 py-2 text-center text-[9px] font-semibold uppercase tracking-[0.15em] text-[#3a3a3a] whitespace-nowrap">基准</th>
+                                        <th class="px-3 py-2 text-right text-[9px] font-semibold uppercase tracking-[0.15em] text-[#3a3a3a] whitespace-nowrap">排序</th>
                                     </tr>
                                 </thead>
-                                <tbody id="policyPreviewBody" class="divide-y divide-[#1d1d1d]">
+                                <tbody id="policyPreviewBody" class="divide-y divide-[#1a1a1a]">
                                     <tr>
                                         <td colspan="16" class="px-4 py-8 text-center text-[#616161] text-xs">
                                             请选择条件后点击"预览"查看数据
@@ -144,8 +160,7 @@ export function renderPolicyRows(records) {
             </tr>
         `;
     }
-    return records.map((record, idx) => {
-        const isEven = idx % 2 === 1;
+    return records.map((record) => {
         // 格式化厚度条件
         const thickCond = formatThicknessCondition(record);
         // 格式化宽度条件
@@ -154,24 +169,24 @@ export function renderPolicyRows(records) {
         const baseMark = record.is_base === 1 ? '✓' : '';
 
         return `
-        <tr class="group transition-colors duration-150 ${isEven ? 'bg-[rgba(255,255,255,0.012)]' : ''}">
-            <td class="px-3 py-2 text-[11px] text-[#686868] whitespace-nowrap font-mono border-b border-[#1d1d1d]">${esc(record.policy_id || '')}</td>
-            <td class="px-3 py-2 text-[11px] text-[#686868] whitespace-nowrap font-mono border-b border-[#1d1d1d]">${esc(record.year || '')}</td>
-            <td class="px-3 py-2 text-[11px] text-[#686868] whitespace-nowrap font-mono border-b border-[#1d1d1d]">${esc(record.month || '')}</td>
-            <td class="px-3 py-2 text-[11px] text-[#9e9e9e] whitespace-nowrap border-b border-[#1d1d1d]">${esc(record.steel_mill || '')}</td>
-            <td class="px-3 py-2 text-[11px] text-[#9e9e9e] whitespace-nowrap border-b border-[#1d1d1d]">${esc(record.category_name || '')}</td>
-            <td class="px-3 py-2 text-[11px] text-[#9e9e9e] whitespace-nowrap border-b border-[#1d1d1d]">${esc(formatPolicyType(record.policy_type))}</td>
-            <td class="px-3 py-2 text-[11px] text-[#9e9e9e] whitespace-nowrap border-b border-[#1d1d1d]">${esc(record.grade_type || '')}</td>
-            <td class="px-3 py-2 text-[11px] font-medium text-[#b0b0b0] whitespace-nowrap border-b border-[#1d1d1d]">${esc(record.grade_value || '')}</td>
-            <td class="px-3 py-2 text-[11px] text-[#9e9e9e] whitespace-nowrap font-mono border-b border-[#1d1d1d]">${esc(formatDecimal(record.base_thickness))}</td>
+        <tr class="group border-b border-[#181818] transition-colors duration-150 hover:bg-[#ffffff]/[0.015]">
+            <td class="px-3 py-2 text-[11px] text-[#505050] whitespace-nowrap font-mono text-right tabular-nums">${esc(record.policy_id || '')}</td>
+            <td class="px-3 py-2 text-[11px] text-[#606060] whitespace-nowrap font-mono text-right tabular-nums">${esc(record.year || '')}</td>
+            <td class="px-3 py-2 text-[11px] text-[#606060] whitespace-nowrap font-mono text-right tabular-nums">${esc(record.month || '')}</td>
+            <td class="px-3 py-2 text-[11px] text-[#888888] whitespace-nowrap">${esc(record.steel_mill || '')}</td>
+            <td class="px-3 py-2 text-[11px] text-[#888888] whitespace-nowrap">${esc(record.category_name || '')}</td>
+            <td class="px-3 py-2 text-[11px] text-[#888888] whitespace-nowrap">${esc(formatPolicyType(record.policy_type))}</td>
+            <td class="px-3 py-2 text-[11px] text-[#888888] whitespace-nowrap">${esc(record.grade_type || '')}</td>
+            <td class="px-3 py-2 text-[11px] font-medium text-[#a0a0a0] whitespace-nowrap">${esc(record.grade_value || '')}</td>
+            <td class="px-3 py-2 text-[11px] text-[#686868] whitespace-nowrap font-mono text-right tabular-nums">${esc(formatDecimal(record.base_thickness))}</td>
             <!-- 明细 -->
-            <td class="px-3 py-2 text-[11px] text-[#686868] whitespace-nowrap font-mono border-b border-[#1d1d1d]">${esc(record.item_id || '')}</td>
-            <td class="px-3 py-2 text-[11px] text-[#9e9e9e] whitespace-nowrap border-b border-[#1d1d1d]">${esc(record.target_sub_group || '')}</td>
-            <td class="px-3 py-2 text-[11px] text-[#9e9e9e] whitespace-nowrap border-b border-[#1d1d1d]">${thickCond}</td>
-            <td class="px-3 py-2 text-[11px] text-[#9e9e9e] whitespace-nowrap border-b border-[#1d1d1d]">${widthCond}</td>
-            <td class="px-3 py-2 text-[11px] text-right font-mono tabular-nums text-[#d32f2f] whitespace-nowrap border-b border-[#1d1d1d]">${esc(formatPriceAdjust(record.price_adjustment))}</td>
-            <td class="px-3 py-2 text-[11px] text-center whitespace-nowrap border-b border-[#1d1d1d] ${record.is_base === 1 ? 'text-[#2e7d32]' : 'text-[#484848]'}">${baseMark}</td>
-            <td class="px-3 py-2 text-[11px] text-[#686868] whitespace-nowrap font-mono border-b border-[#1d1d1d]">${esc(record.sort_order || '0')}</td>
+            <td class="px-3 py-2 text-[11px] text-[#505050] whitespace-nowrap font-mono text-right tabular-nums">${esc(record.item_id || '')}</td>
+            <td class="px-3 py-2 text-[11px] text-[#888888] whitespace-nowrap">${esc(record.target_sub_group || '')}</td>
+            <td class="px-3 py-2 text-[11px] text-[#888888] whitespace-nowrap font-mono">${thickCond}</td>
+            <td class="px-3 py-2 text-[11px] text-[#888888] whitespace-nowrap font-mono">${widthCond}</td>
+            <td class="px-3 py-2 text-[11px] text-right font-mono tabular-nums text-[#d45555] whitespace-nowrap">${esc(formatPriceAdjust(record.price_adjustment))}</td>
+            <td class="px-3 py-2 text-[11px] text-center whitespace-nowrap text-[#484848]">${baseMark}</td>
+            <td class="px-3 py-2 text-[11px] text-[#606060] whitespace-nowrap font-mono text-right tabular-nums">${esc(record.sort_order || '0')}</td>
         </tr>`;
     }).join('');
 }
@@ -184,45 +199,75 @@ function formatPolicyType(type) {
     return map[type] || type || '';
 }
 
+/**
+ * 通用区间格式化函数（数学区间写法，如 2.0 ≤ t ≤ 5.0）
+ * @param {string} variable - 变量名
+ * @param {number|null} minVal - 最小值
+ * @param {string|null} minOp - 最小值运算符（'>=' 或 '>'）
+ * @param {number|null} maxVal - 最大值
+ * @param {string|null} maxOp - 最大值运算符（'<=' 或 '<'）
+ * @param {number} decimals - 小数位数
+ * @returns {string} 格式化后的条件字符串
+ */
+function formatInterval(variable, minVal, minOp, maxVal, maxOp, decimals) {
+    const fmt = (v) => {
+        if (v === null || v === undefined) return '';
+        const num = Number(v);
+        return Number.isNaN(num) ? '' : num.toFixed(decimals);
+    };
+
+    const minSymbol = (op) => {
+        if (op === '>=') return '≤';
+        if (op === '>') return '<';
+        return '';
+    };
+    const maxSymbol = (op) => {
+        if (op === '<=') return '≤';
+        if (op === '<') return '<';
+        return '';
+    };
+
+    const hasMin = minVal != null && minOp;
+    const hasMax = maxVal != null && maxOp;
+
+    // 两者都有：2.0 ≤ t ≤ 5.0
+    if (hasMin && hasMax) {
+        return `${fmt(minVal)} ${minSymbol(minOp)} ${variable} ${maxSymbol(maxOp)} ${fmt(maxVal)}`;
+    }
+
+    // 只有下限：2.0 ≤ t
+    if (hasMin) {
+        return `${fmt(minVal)} ${minSymbol(minOp)} ${variable}`;
+    }
+
+    // 只有上限：t ≤ 5.0
+    if (hasMax) {
+        return `${variable} ${maxSymbol(maxOp)} ${fmt(maxVal)}`;
+    }
+
+    return '-';
+}
+
 function formatThicknessCondition(record) {
-    const parts = [];
-   
-    if (record.thick_min !== null && record.thick_min !== undefined && record.thick_min_operator) {
-        if(record.thick_max == null)
-        {
-            // 没有最大值时，显示下限
-            parts.push('t'); 
-            parts.push(`${record.thick_min_operator}${record.thick_min}`);
-        }
-        else{
-            parts.push(`${record.thick_min}${record.thick_min_operator}`);
-        }
-    }
-    if (record.thick_max !== null && record.thick_max !== undefined && record.thick_max_operator) {
-        parts.push('t');
-        parts.push(`${record.thick_max_operator}${record.thick_max}`);
-    }
-    const result = parts.join('');
-    return result === 't' ? '-' : result;
+    return formatInterval(
+        't',
+        record.thick_min,
+        record.thick_min_operator,
+        record.thick_max,
+        record.thick_max_operator,
+        2
+    );
 }
 
 function formatWidthCondition(record) {
-    const parts = [];
-
-    if (record.width_min !== null && record.width_min !== undefined && record.width_min_operator) {
-        if (record.width_max == null) {
-            parts.push('w');
-            parts.push(`${record.width_min_operator}${formatDecimal(record.width_min, 0)}`);
-        } else {
-            parts.push(`${formatDecimal(record.width_min, 0)}${record.width_min_operator}`);
-        }
-    }
-    if (record.width_max !== null && record.width_max !== undefined && record.width_max_operator) {
-        parts.push('w');
-        parts.push(`${record.width_max_operator}${formatDecimal(record.width_max, 0)}`);
-    }
-    const result = parts.join('');
-    return result === 'w' ? '-' : result;
+    return formatInterval(
+        'w',
+        record.width_min,
+        record.width_min_operator,
+        record.width_max,
+        record.width_max_operator,
+        0
+    );
 }
 
 function formatDecimal(value, digits = 2) {

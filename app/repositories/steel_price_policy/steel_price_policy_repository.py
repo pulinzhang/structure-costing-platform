@@ -489,3 +489,35 @@ class SteelPricePolicyRepository:
 
         # 总数 = 政策数（有明细的政策）+ 明细数
         return policy_count + item_count
+
+    # ---- 条件批量删除 ----
+
+    def delete_by_conditions(
+        self,
+        db: Session,
+        *,
+        year: Optional[int] = None,
+        month: Optional[int] = None,
+        steel_mill: Optional[str] = None,
+    ) -> int:
+        """
+        根据条件批量删除政策（含级联删除明细）。
+        返回删除的政策数量。
+        """
+        query = db.query(SteelPricePolicy)
+
+        if year is not None:
+            query = query.filter(SteelPricePolicy.year == year)
+        if month is not None:
+            query = query.filter(SteelPricePolicy.month == month)
+        if steel_mill:
+            query = query.filter(SteelPricePolicy.steel_mill == steel_mill)
+
+        count = query.count()
+        query.delete(synchronize_session=False)
+        db.flush()
+        logger.info(
+            "批量删除钢价政策: year=%s month=%s steel_mill=%s count=%s",
+            year, month, steel_mill, count,
+        )
+        return count

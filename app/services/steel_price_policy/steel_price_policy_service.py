@@ -541,3 +541,37 @@ class SteelPricePolicyService:
             month=month,
             steel_mill=steel_mill,
         )
+
+    # ---- 条件批量删除 ----
+
+    def delete_by_conditions(
+        self,
+        db: Session,
+        *,
+        year: Optional[int] = None,
+        month: Optional[int] = None,
+        steel_mill: Optional[str] = None,
+    ) -> tuple[int, Optional[str]]:
+        """
+        根据条件批量删除政策。
+        年度、月份、钢厂必须同时提供。
+        """
+        if year is None or month is None or not steel_mill:
+            return 0, "年度、月份、钢厂必须同时选择"
+
+        try:
+            count = self.repository.delete_by_conditions(
+                db,
+                year=year,
+                month=month,
+                steel_mill=steel_mill.strip(),
+            )
+            db.commit()
+            return count, None
+        except Exception as error:
+            db.rollback()
+            logger.exception(
+                "批量删除钢价政策失败: year=%s month=%s steel_mill=%s error=%s",
+                year, month, steel_mill, error,
+            )
+            return 0, str(error)

@@ -29,9 +29,12 @@ router = APIRouter(prefix="/api/steel-price-policies", tags=["钢价政策管理
 _policy_service = SteelPricePolicyService()
 
 
-def _map_service_error(result: tuple, entity_name: str = "记录") -> Optional[object]:
+def _map_service_error(
+    result: tuple,
+    entity_name: str = "记录",
+) -> Optional[object]:
     """
-    统一错误映射：解析 Service 层返回的 (record, error) 元组。
+    解析 Service 层返回的 (record, error) 元组。
     - error 为 None → 返回 record
     - error 含"不存在" → raise 404
     - 其它 error → raise 400
@@ -53,7 +56,9 @@ def list_policies(
     query: PolicyQuery = Depends(),
     db: Session = Depends(get_db),
 ):
-    """分页筛选政策列表"""
+    """
+    分页筛选政策列表
+    """
     records, total, options = _policy_service.paginate(db, query)
     return ApiResponse.list_(
         data=[r.model_dump() for r in records],
@@ -66,9 +71,15 @@ def list_policies(
 
 
 @router.get("/options")
-def get_policy_options(db: Session = Depends(get_db)):
-    """获取政策筛选下拉选项"""
-    _, _, options = _policy_service.paginate(db, PolicyQuery(page=1, size=1))
+def get_policy_options(
+    db: Session = Depends(get_db),
+):
+    """
+    获取政策筛选下拉选项
+    """
+    _, _, options = _policy_service.paginate(
+        db, PolicyQuery(page=1, size=1)
+    )
     return ApiResponse.success(data=options.model_dump())
 
 
@@ -83,7 +94,10 @@ async def upload_policy_excel(
     file: UploadFile = File(..., description="一事一议价格 Excel 文件"),
     db: Session = Depends(get_db),
 ):
-    """上传钢价政策 Excel，按年度+月份执行 upsert"""
+    """
+    上传钢价政策 Excel，按年度+月份执行 upsert。
+    同一 (year, month, steel_mill, category, policy_type, grade, base_thickness) 的政策会被替换。
+    """
     file_content = await file.read()
 
     try:
@@ -122,7 +136,9 @@ def export_policies_excel(
     steel_mill: Optional[str] = None,
     db: Session = Depends(get_db),
 ):
-    """导出钢价政策主子表联合数据为 Excel"""
+    """
+    导出钢价政策主子表联合数据为 Excel，用于测试部门核对。
+    """
     from fastapi.responses import StreamingResponse
     from urllib.parse import quote
 
@@ -151,7 +167,9 @@ def export_policies_preview(
     size: int = 100,
     db: Session = Depends(get_db),
 ):
-    """预览导出数据（主子表联合查询，分页）"""
+    """
+    预览导出数据（主子表联合查询，分页）
+    """
     records = _policy_service.get_export_data(
         db,
         year=year,
@@ -166,12 +184,33 @@ def export_policies_preview(
         month=month,
         steel_mill=steel_mill.strip() if steel_mill else None,
     )
-    return ApiResponse.list_(
-        data=[r.model_dump() for r in records],
-        total=total,
-        page=page,
-        page_size=size,
+    return ApiResponse.list_(data=[r.model_dump() for r in records], total=total, page=page, page_size=size)
+
+
+# =============================================================================
+# 条件批量删除
+# =============================================================================
+
+@router.delete("/batch")
+def batch_delete_policies(
+    year: Optional[int] = None,
+    month: Optional[int] = None,
+    steel_mill: Optional[str] = None,
+    db: Session = Depends(get_db),
+):
+    """
+    根据条件批量删除政策（年度、月份、钢厂）。
+    至少需要一个条件，否则返回 400。
+    """
+    count, error = _policy_service.delete_by_conditions(
+        db,
+        year=year,
+        month=month,
+        steel_mill=steel_mill,
     )
+    if error:
+        raise HTTPException(status_code=400, detail=error)
+    return ApiResponse.deleted(message=f"成功删除 {count} 条政策")
 
 
 # =============================================================================
@@ -179,8 +218,13 @@ def export_policies_preview(
 # =============================================================================
 
 @router.get("/{policy_id}")
-def get_policy(policy_id: int, db: Session = Depends(get_db)):
-    """获取政策详情（含完整阶梯明细，按 sort_order + id 排序）"""
+def get_policy(
+    policy_id: int,
+    db: Session = Depends(get_db),
+):
+    """
+    获取政策详情（含完整阶梯明细，按 sort_order + id 排序）
+    """
     record = _policy_service.get_by_id(db, policy_id)
     if record is None:
         raise HTTPException(status_code=404, detail="政策记录不存在")
@@ -188,8 +232,13 @@ def get_policy(policy_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("")
-def create_policy(body: PolicyCreate, db: Session = Depends(get_db)):
-    """原子创建政策（含阶梯明细）"""
+def create_policy(
+    body: PolicyCreate,
+    db: Session = Depends(get_db),
+):
+    """
+    原子创建政策（含阶梯明细）
+    """
     record = _map_service_error(_policy_service.create(db, body), "政策")
     return ApiResponse.created(data=record, message="政策创建成功")
 
@@ -200,16 +249,21 @@ def update_policy(
     body: PolicyUpdate,
     db: Session = Depends(get_db),
 ):
-    """更新政策（支持更新政策头字段和整组替换阶梯明细）"""
-    record = _map_service_error(
-        _policy_service.update(db, policy_id, body), "政策"
-    )
+    """
+    更新政策（支持更新政策头字段和整组替换阶梯明细）
+    """
+    record = _map_service_error(_policy_service.update(db, policy_id, body), "政策")
     return ApiResponse.updated(data=record, message="政策更新成功")
 
 
 @router.delete("/{policy_id}")
-def delete_policy(policy_id: int, db: Session = Depends(get_db)):
-    """删除政策（含级联删除全部阶梯明细）"""
+def delete_policy(
+    policy_id: int,
+    db: Session = Depends(get_db),
+):
+    """
+    删除政策（含级联删除全部阶梯明细）
+    """
     success, error = _policy_service.delete(db, policy_id)
     if not success:
         _map_service_error((None, error), "政策")
@@ -227,10 +281,10 @@ def add_ladder_item(
     body: LadderItemCreate,
     db: Session = Depends(get_db),
 ):
-    """向指定政策新增一条阶梯明细"""
-    record = _map_service_error(
-        _policy_service.add_item(db, policy_id, body), "阶梯明细"
-    )
+    """
+    向指定政策新增一条阶梯明细
+    """
+    record = _map_service_error(_policy_service.add_item(db, policy_id, body), "阶梯明细")
     return ApiResponse.created(data=record, message="阶梯明细新增成功")
 
 
@@ -241,10 +295,10 @@ def update_ladder_item(
     body: LadderItemUpdate,
     db: Session = Depends(get_db),
 ):
-    """更新指定政策下的单条阶梯明细"""
-    record = _map_service_error(
-        _policy_service.update_item(db, item_id, body), "阶梯明细"
-    )
+    """
+    更新指定政策下的单条阶梯明细
+    """
+    record = _map_service_error(_policy_service.update_item(db, item_id, body), "阶梯明细")
     return ApiResponse.updated(data=record, message="阶梯明细更新成功")
 
 
@@ -254,7 +308,9 @@ def delete_ladder_item(
     item_id: int,
     db: Session = Depends(get_db),
 ):
-    """删除指定政策下的单条阶梯明细"""
+    """
+    删除指定政策下的单条阶梯明细
+    """
     success, error = _policy_service.delete_item(db, item_id)
     if not success:
         _map_service_error((None, error), "阶梯明细")
@@ -267,7 +323,10 @@ def delete_ladder_item(
 # =============================================================================
 
 @router.post("/match")
-def match_ladder(body: PolicyMatchRequest, db: Session = Depends(get_db)):
+def match_ladder(
+    body: PolicyMatchRequest,
+    db: Session = Depends(get_db),
+):
     """
     根据政策维度与尺寸值，匹配阶梯明细并返回加减价金额。
     - 命中多条时以 sort_order 升序、id 升序确定优先级

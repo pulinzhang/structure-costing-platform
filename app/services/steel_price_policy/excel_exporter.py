@@ -65,52 +65,92 @@ def format_decimal(value, digits=2) -> str:
     return str(value)
 
 
+def format_interval(
+    variable: str,
+    min_val,
+    min_op: Optional[str],
+    max_val,
+    max_op: Optional[str],
+    decimals: int = 2,
+) -> str:
+    """
+    通用区间格式化函数（数学区间写法，如 2.0 ≤ t ≤ 5.0）
+
+    Args:
+        variable: 变量名，如 't'、'w'
+        min_val: 最小值（number 或 None）
+        min_op:  最小值运算符，'>=' 或 '>'
+        max_val: 最大值（number 或 None）
+        max_op:  最大值运算符，'<=' 或 '<'
+        decimals: 小数位数
+
+    Returns:
+        格式化后的条件字符串
+    """
+    def fmt(v):
+        if v is None:
+            return ""
+        if isinstance(v, Decimal):
+            v = float(v)
+        elif isinstance(v, str):
+            try:
+                v = float(v)
+            except ValueError:
+                return v
+        return f"{v:.{decimals}f}"
+
+    def min_symbol(op: Optional[str]) -> str:
+        if op == ">=":
+            return "≤"
+        if op == ">":
+            return "<"
+        return ""
+
+    def max_symbol(op: Optional[str]) -> str:
+        if op == "<=":
+            return "≤"
+        if op == "<":
+            return "<"
+        return ""
+
+    has_min = min_val is not None and min_op
+    has_max = max_val is not None and max_op
+
+    # 两者都有：2.0 ≤ t ≤ 5.0
+    if has_min and has_max:
+        return f"{fmt(min_val)} {min_symbol(min_op)} {variable} {max_symbol(max_op)} {fmt(max_val)}"
+
+    # 只有下限：2.0 ≤ t
+    if has_min:
+        return f"{fmt(min_val)} {min_symbol(min_op)} {variable}"
+
+    # 只有上限：t ≤ 5.0
+    if has_max:
+        return f"{variable} {max_symbol(max_op)} {fmt(max_val)}"
+
+    return "-"
+
+
 def format_thick_condition(row: ExportRow) -> str:
-    """
-    格式化厚度条件。
-    - 仅有最小值：t操作符值 (如 t>=2.6)
-    - 既有最小值又有最大值：值操作符t, t操作符值 (如 2.6<=t<=3.0)
-    - 仅最大值：t操作符值 (如 t<3.0)
-    """
-    parts = []
-
-    if row.thick_min is not None and row.thick_min_operator:
-        if row.thick_max is None:
-            parts.append("t")
-            parts.append(f"{row.thick_min_operator}{format_decimal(row.thick_min, 1)}")
-        else:
-            parts.append(f"{format_decimal(row.thick_min, 1)}{row.thick_min_operator}")
-
-    if row.thick_max is not None and row.thick_max_operator:
-        parts.append("t")
-        parts.append(f"{row.thick_max_operator}{format_decimal(row.thick_max, 1)}")
-
-    result = "".join(parts)
-    return result if result and result != "t" else "-"
+    return format_interval(
+        "t",
+        row.thick_min,
+        row.thick_min_operator,
+        row.thick_max,
+        row.thick_max_operator,
+        decimals=2,
+    )
 
 
 def format_width_condition(row: ExportRow) -> str:
-    """
-    格式化宽度条件。
-    - 仅有最小值：w操作符值 (如 w>=1000)
-    - 既有最小值又有最大值：值操作符w, w操作符值 (如 1000<=w<=1500)
-    - 仅最大值：w操作符值 (如 w<1500)
-    """
-    parts = []
-
-    if row.width_min is not None and row.width_min_operator:
-        if row.width_max is None:
-            parts.append("w")
-            parts.append(f"{row.width_min_operator}{format_decimal(row.width_min, 0)}")
-        else:
-            parts.append(f"{format_decimal(row.width_min, 0)}{row.width_min_operator}")
-
-    if row.width_max is not None and row.width_max_operator:
-        parts.append("w")
-        parts.append(f"{row.width_max_operator}{format_decimal(row.width_max, 0)}")
-
-    result = "".join(parts)
-    return result if result and result != "w" else "-"
+    return format_interval(
+        "w",
+        row.width_min,
+        row.width_min_operator,
+        row.width_max,
+        row.width_max_operator,
+        decimals=0,
+    )
 
 
 # =============================================================================
@@ -212,3 +252,4 @@ class SteelPricePolicyExporter:
         if steel_mill:
             parts.append(steel_mill)
         return f"{'_'.join(parts)}.xlsx"
+
