@@ -14,9 +14,10 @@ from .vama_handler import VamaSheetHandler
 
 
 def find_handler(sheet_name: str):
-    """根据 sheet 名字找到合适的处理器。"""
+    """根据 sheet 名字找到合适的处理器（大小写不敏感）。"""
+    sheet_lower = sheet_name.lower()
     for handler_cls, keywords in _HANDLERS:
-        if any(kw in sheet_name for kw in keywords):
+        if any(kw.lower() in sheet_lower for kw in keywords):
             return handler_cls()
     return DefaultSheetHandler()
 
@@ -26,7 +27,7 @@ _HANDLERS: list[tuple[type, tuple[str, ...]]] = [
     (TanggangSheetHandler, ("唐钢",)),
     (MagangSheetHandler, ("马钢",)),
     (ShougangSheetHandler, ("首钢",)),
-    (AngangSheetHandler, ("鞍钢集团", "鞍钢（")),
+    (AngangSheetHandler, ("鞍钢集团","鞍本", "鞍钢（")),
     (AnshenSheetHandler, ("鞍神",)),
-    (VamaSheetHandler, ("VAMA", "华菱")),
+    (VamaSheetHandler, ("Vama", "华菱")),
 ]

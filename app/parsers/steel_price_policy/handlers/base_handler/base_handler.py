@@ -26,17 +26,14 @@ from app.parsers.steel_price_policy.handlers.constants import BLANK_LIMIT, GRADE
 from .policy_assembler import PolicyAssembler
 from .sheet_scanner import SheetScanner
 
-# 向后兼容：保留给子类直接用的 scanner/assembler 实例
-scanner = SheetScanner()
-assembler = PolicyAssembler(scanner=scanner)
-
 
 class BaseSheetHandler:
     """Sheet 处理器基类。"""
 
     def __init__(self):
-        self.scanner = scanner
-        self.assembler = assembler
+        # 每个实例创建自己的 scanner 和 assembler，保证线程安全
+        self.scanner = SheetScanner()
+        self.assembler = PolicyAssembler(scanner=self.scanner)
 
     def parse(
         self,

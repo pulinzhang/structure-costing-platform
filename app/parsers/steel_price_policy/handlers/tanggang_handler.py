@@ -120,26 +120,8 @@ class TanggangSheetHandler(BaseSheetHandler):
             for block in blocks:
                 policies.extend(self._parse_tanggang_width_block(sheet, steel_mill, block))
             return policies
-        return self._parse_blocks_default(sheet, steel_mill, policy_type)
-
-    def _parse_blocks_default(
-        self,
-        sheet: Worksheet,
-        steel_mill: str,
-        policy_type: str,
-    ) -> List:
-        """THICKNESS 政策的通用解析（复用基类逻辑）。"""
-        blocks = (
-            self.find_thickness_blocks(sheet, steel_mill)
-            if policy_type == "THICKNESS"
-            else self.find_width_blocks(sheet, steel_mill)
-        )
-        policies: List = []
-        for block in blocks:
-            policies.extend(
-                self._parse_one_block(sheet, steel_mill, policy_type, block)
-            )
-        return policies
+        # THICKNESS 政策走基类的通用解析
+        return super()._parse_blocks_default(sheet, steel_mill, policy_type)
 
     # ------------------------------------------------------------------ #
     # 宽度块定位（复用基类）

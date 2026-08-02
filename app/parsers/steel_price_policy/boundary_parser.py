@@ -47,7 +47,7 @@ _PATTERN_SIMPLE_RANGE_WITH_UNIT = re.compile(
     r"^\s*(-?\d+(?:\.\d+)?)\s*[-~]\s*(-?\d+(?:\.\d+)?)\s*[a-zA-Z]*\s*$"
 )
 
-# ---------- 1.3 VAMA 特殊 "≥X-Y" 格式（显式给定上下界，终结档） ----------
+# ---------- 1.3 Vama 特殊 "≥X-Y" 格式（显式给定上下界，终结档） ----------
 # 格式：≥2.0-2.3 → min=2.0 (>=), max=2.3 (<=)
 # 注意：必须放在简单区间之前，因为 ≥ 前缀会干扰普通 X-Y 匹配
 _PATTERN_GTE_RANGE = re.compile(
@@ -138,7 +138,7 @@ def _parse_boundary(header: Any) -> Optional[_Boundary]:
         lo, hi = Decimal(match_gtlt.group(1)), Decimal(match_gtlt.group(2))
         return _Boundary(min_val=lo, min_operator=">", max_val=hi, max_operator="<=")
 
-    # ---------- 优先级3：VAMA 特殊 ≥X-Y（终结档） ----------
+    # ---------- 优先级3：Vama 特殊 ≥X-Y（终结档） ----------
     match_gte_range = _PATTERN_GTE_RANGE.match(text)
     if match_gte_range:
         lo = Decimal(match_gte_range.group(1))

@@ -21,76 +21,6 @@ _W_GRADE_COL = 15
 _W_START_COL = 16
 
 
-# 钢种名后缀 → category
-_GALVANIZED_SUFFIXES = ("+Z", "+ZF", "+ZM", "+ZA", "+AZ")
-_PICKLED_SUFFIXES = ("+A",)
-
-
-def _category_from_grade_name(grade: str) -> str:
-    """按钢种名后缀推断 category, 完全匹配 +Z/+ZF 等."""
-    for suf in _GALVANIZED_SUFFIXES:
-        if grade.endswith(suf):
-            return "镀锌钢"
-    for suf in _PICKLED_SUFFIXES:
-        if grade.endswith(suf):
-            return "酸洗钢"
-    return "冷轧钢"
-
-
-def _infer_block_category(
-    sheet: Worksheet, data_row_start: int, data_row_end: int,
-    grade_col: int = 1, max_col: int = 14
-) -> str:
-    """扫描本块所有钢种, 出现 +Z 后缀 → 镀锌; 出现 +A 后缀 → 酸洗; 否则冷轧.
-
-    业务约束: 同一块内钢种都是同一类 (冷轧/镀锌/酸洗), 所以
-    本函数扫描整个块, 但只要有一个 grade 命中 +Z, 整块就标 镀锌;
-    否则按首条非空 grade 推断.
-
-    注: _infer_block_category 现在会扫描多行, 容许 data_row_end
-    超出实际数据区 (默认 fallback to block 内 grade col=1 的非空 grade).
-    """
-    galvanized = pickled = cold = 0
-    for r in range(data_row_start, data_row_end + 1):
-        # 钢种列由 grade_col 参数指定
-        for c in (grade_col,):
-            v = sheet.cell(row=r, column=c).value
-            if v is None:
-                continue
-            t = str(v).strip()
-            if not t:
-                continue
-            # 跳过标题 / 关键字
-            if t in {"钢种", "冷轧钢种", "镀锌钢种", "酸洗钢种"}:
-                continue
-            cat = _category_from_grade_name(t)
-            if cat == "镀锌钢":
-                galvanized += 1
-            elif cat == "酸洗钢":
-                pickled += 1
-            else:
-                cold += 1
-            break  # 一行只取第一个非空 grade
-    # 优先级: 镀锌 > 酸洗 > 冷轧
-    # 业务约束: 同一块内 grade 同类, 但若 block 数据跨度过大
-    # (例如 find_block_end_row 误判), 多数派决定
-    if galvanized and not cold:
-        return "镀锌钢"
-    if pickled and not cold:
-        return "酸洗钢"
-    if galvanized and cold:
-        # 块边界误判 → 取出现次数多者
-        if galvanized > cold:
-            return "镀锌钢"
-        if pickled > cold:
-            return "酸洗钢"
-        # 平手 → 默认冷轧
-        return "冷轧钢"
-    if pickled and cold:
-        return "酸洗钢" if pickled > cold else "冷轧钢"
-    return "冷轧钢"
-
-
 class MagangSheetHandler(BaseSheetHandler):
     """马钢 Sheet 处理器。"""
 
@@ -148,12 +78,9 @@ class MagangSheetHandler(BaseSheetHandler):
 
             block = self.locate_thickness_block(sheet, label_row, block_end, max_col)
             if block:
-                # 覆写 category_name: 按本块实际钢种名后缀推断
-                block["category_name"] = _infer_block_category(
-                    sheet,
-                    data_row_start=block["data_row_start"],
-                    data_row_end=block["data_row_end"],
-                    max_col=max_col,
+                # 按本块实际钢种名后缀推断 category（复用 assembler 的推断逻辑）
+                block["category_name"] = self.assembler.infer_block_category(
+                    sheet, block, max_col=max_col
                 )
                 blocks.append(block)
                 last_end = block["data_row_end"]
@@ -211,14 +138,10 @@ class MagangSheetHandler(BaseSheetHandler):
                 scan_cols=w_scan_cols,
             )
             if block:
-                # 宽度块: 钢种列在 15, 同样按后缀推断
-                block["category_name"] = _infer_block_category(
-                    sheet,
-                    data_row_start=block["data_row_start"],
-                    data_row_end=block["data_row_end"],
-                    grade_col=_W_GRADE_COL,
+                # 按本块实际钢种名后缀推断 category（复用 assembler 的推断逻辑）
+                block["category_name"] = self.assembler.infer_block_category(
+                    sheet, block, max_col=max_col
                 )
                 blocks.append(block)
 
         return blocks
-

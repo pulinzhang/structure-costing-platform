@@ -20,7 +20,7 @@ CATEGORY_HINTS: tuple[str, ...] = (
 BENCH_PATTERN = re.compile(r"基准厚度\s*(\d+(?:\.\d+)?)")
 
 # 块结束判定：连续空行数
-BLANK_LIMIT = 3
+BLANK_LIMIT = 1
 
 # 厚度标题行关键字
 THICKNESS_HEADER_KEYWORDS: tuple[str, ...] = (
