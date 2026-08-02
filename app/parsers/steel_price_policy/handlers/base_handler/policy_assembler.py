@@ -161,20 +161,51 @@ class PolicyAssembler:
         col_idx: int,
         boundaries: Dict[int, _Boundary],
     ) -> _Boundary:
-        """若当前列无上界但有下一列，则从下一列推断上界。"""
-        if boundary.max_val is not None or col_idx >= len(sorted_cols) - 1:
-            return boundary
-        next_c = sorted_cols[col_idx + 1]
-        if next_c in boundaries:
-            next_boundary = boundaries[next_c]
-            if next_boundary.min_val is not None:
-                return _Boundary(
-                    min_val=boundary.min_val,
-                    min_operator=boundary.min_operator,
-                    max_val=next_boundary.min_val,
-                    max_operator="<",
-                )
-        return boundary
+        """推断完整边界：
+        1. 若 min_val is None 且是第一列，设为 min=0
+        2. 若 min_val is None 且非第一列，从前一列的 max_val 推断
+        3. 若 max_val is None 且有下一列，从下一列的 min_val 推断
+        4. 若 max_val is None 且是最后一列，设为 max=∞（None 表示无上限）
+        """
+        min_val = boundary.min_val
+        min_op = boundary.min_operator
+        max_val = boundary.max_val
+        max_op = boundary.max_operator
+
+        # 1. 推断下界
+        if min_val is None:
+            if col_idx == 0:
+                # 第一列，宽度从 0 开始
+                min_val = Decimal("0")
+                min_op = ">="
+            else:
+                # 从前一列的 max 推断
+                prev_c = sorted_cols[col_idx - 1]
+                if prev_c in boundaries:
+                    prev_boundary = boundaries[prev_c]
+                    if prev_boundary.max_val is not None:
+                        min_val = prev_boundary.max_val
+                        # 操作符：若前一列是 <=，则 min 用 >；若是 <，则 min 用 >=
+                        min_op = ">" if prev_boundary.max_operator == "<=" else ">="
+
+        # 2. 推断上界
+        if max_val is None:
+            if col_idx < len(sorted_cols) - 1:
+                # 有下一列，从下一列的 min_val 推断
+                next_c = sorted_cols[col_idx + 1]
+                if next_c in boundaries:
+                    next_boundary = boundaries[next_c]
+                    if next_boundary.min_val is not None:
+                        max_val = next_boundary.min_val
+                        max_op = "<"
+            # else: 最后一列且无上界，max_val 保持 None（表示 ∞）
+
+        return _Boundary(
+            min_val=min_val,
+            min_operator=min_op,
+            max_val=max_val,
+            max_operator=max_op,
+        )
 
     # ------------------------------------------------------------------ #
     # grade_type 推断

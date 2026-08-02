@@ -184,7 +184,7 @@ export function renderPolicyRows(records) {
             <td class="px-3 py-2 text-[11px] text-[#888888] whitespace-nowrap">${esc(record.target_sub_group || '')}</td>
             <td class="px-3 py-2 text-[11px] text-[#888888] whitespace-nowrap font-mono">${thickCond}</td>
             <td class="px-3 py-2 text-[11px] text-[#888888] whitespace-nowrap font-mono">${widthCond}</td>
-            <td class="px-3 py-2 text-[11px] text-right font-mono tabular-nums text-[#d45555] whitespace-nowrap">${esc(formatPriceAdjust(record.price_adjustment))}</td>
+            <td class="px-3 py-2 text-right font-mono tabular-nums whitespace-nowrap ${getPriceAdjustClass(record.price_adjustment)}">${esc(formatPriceAdjust(record.price_adjustment))}</td>
             <td class="px-3 py-2 text-[11px] text-center whitespace-nowrap text-[#484848]">${baseMark}</td>
             <td class="px-3 py-2 text-[11px] text-[#606060] whitespace-nowrap font-mono text-right tabular-nums">${esc(record.sort_order || '0')}</td>
         </tr>`;
@@ -280,6 +280,21 @@ function formatDecimal(value, digits = 2) {
     });
 }
 
+/**
+ * 获取加减价的颜色类
+ */
+function getPriceAdjustClass(value) {
+    if (value === null || value === undefined) return 'text-[#606060]';
+    const numeric = Number(value);
+    if (Number.isNaN(numeric)) return 'text-[#606060]';
+    if (numeric > 0) return 'text-[#4caf50]';  // 正数：绿色
+    if (numeric < 0) return 'text-[#d45555]';   // 负数：红色
+    return 'text-[#888888]';                     // 零：正常色
+}
+
+/**
+ * 格式化加减价显示值
+ */
 function formatPriceAdjust(value) {
     if (value === null || value === undefined) return '-';
     const numeric = Number(value);
