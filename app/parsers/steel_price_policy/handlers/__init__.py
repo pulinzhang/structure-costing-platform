@@ -4,7 +4,7 @@ from app.parsers.steel_price_policy.handlers.base_handler import BaseSheetHandle
 from .angang_handler import AngangSheetHandler
 from .anshen_handler import AnshenSheetHandler
 from .default_handler import DefaultSheetHandler
-from .magang_handler import MagangSheetHandler
+from .magang_new_handler import MagangNewSheetHandler
 from .shougang_handler import ShougangSheetHandler
 from .tanggang_handler import TanggangSheetHandler
 from .vama_handler import VamaSheetHandler
@@ -15,7 +15,7 @@ __all__ = [
     "DefaultSheetHandler",
     "AngangSheetHandler",
     "AnshenSheetHandler",
-    "MagangSheetHandler",
+    "MagangNewSheetHandler",
     "ShougangSheetHandler",
     "TanggangSheetHandler",
     "VamaSheetHandler",

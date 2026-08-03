@@ -41,7 +41,14 @@ export function policyDownloadTemplate() {
                     <div class="flex items-end gap-3 flex-wrap">
                         ${filterSelect('policyDownloadYear', '年度')}
                         ${filterSelect('policyDownloadMonth', '月份')}
-                        ${filterSelect('policyDownloadMill', '钢厂')}
+                        ${filterInputWithDatalist('policyDownloadMill', '钢厂', 'steelMillOptions')}
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button id="btnPreview"
+                                class="inline-flex items-center gap-1.5 bg-transparent text-[#888888] border border-[#2c2c2c] px-3 py-1.5 text-[11px] font-medium rounded-sm hover:border-[#d32f2f] hover:text-[#d32f2f] transition-all duration-150">
+                            ${window.svgIcon('search', 'w-3 h-3')}
+                            预览
+                        </button>
                     </div>
                 </div>
 
@@ -113,13 +120,6 @@ export function policyDownloadTemplate() {
                         <div class="text-[11px] text-[#616161]">
                             共 <span id="recordCount" class="text-[#9e9e9e] font-mono">0</span> 条记录
                         </div>
-                        <div class="flex items-center gap-2">
-                            <button id="btnPreview"
-                                    class="inline-flex items-center gap-1.5 bg-transparent text-[#888888] border border-[#2c2c2c] px-3 py-1.5 text-[11px] font-medium rounded-sm hover:border-[#d32f2f] hover:text-[#d32f2f] transition-all duration-150">
-                                ${window.svgIcon('search', 'w-3 h-3')}
-                                预览
-                            </button>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -144,6 +144,22 @@ function filterSelect(id, label) {
         <select id="${id}" class="w-36 h-7 pl-2.5 pr-7 text-[11px] bg-[#0d0d0d] border border-[#272727] text-[#909090] appearance-none cursor-pointer focus:outline-none focus:border-[#ff5252] transition-all rounded-sm">
             <option value="">全部</option>
         </select>
+    </label>`;
+}
+
+/**
+ * 带输入搜索的下拉选择器（使用 datalist 实现）
+ * @param {string} id - 输入框 ID
+ * @param {string} label - 标签文本
+ * @param {string} datalistId - datalist 的 ID
+ */
+function filterInputWithDatalist(id, label, datalistId) {
+    return `<label class="space-y-1">
+        <span class="block text-[9px] font-semibold text-[#484848] uppercase tracking-[0.12em] whitespace-nowrap">${label}</span>
+        <input type="text" id="${id}" list="${datalistId}"
+               class="w-44 h-7 pl-2.5 pr-3 text-[11px] bg-[#0d0d0d] border border-[#272727] text-[#909090] placeholder:text-[#505050] focus:outline-none focus:border-[#ff5252] focus:text-[#d0d0d0] transition-all rounded-sm"
+               placeholder="输入搜索或选择">
+        <datalist id="${datalistId}"></datalist>
     </label>`;
 }
 

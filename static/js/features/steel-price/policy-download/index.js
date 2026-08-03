@@ -55,12 +55,12 @@ async function loadFilterOptions() {
         }));
         fillSelect('policyDownloadMonth', months);
 
-        // 填充钢厂选项
-        if (data.steel_mills && Array.isArray(data.steel_mills)) {
-            fillSelect('policyDownloadMill', data.steel_mills.map(m => ({
-                value: m,
-                label: m,
-            })));
+        // 填充钢厂选项（使用 datalist 实现输入搜索）
+        const datalist = document.getElementById('steelMillOptions');
+        if (datalist && data.steel_mills && Array.isArray(data.steel_mills)) {
+            datalist.innerHTML = data.steel_mills
+                .map(m => `<option value="${esc(m)}">`)
+                .join('');
         }
 
         policyDownloadState.filtersLoaded = true;
@@ -134,10 +134,10 @@ function bindEvents() {
         monthSelect.addEventListener('change', () => updateConditionsDisplay());
     }
 
-    // 钢厂变更时更新条件显示
+    // 钢厂变更时更新条件显示（支持输入搜索）
     const millSelect = document.getElementById('policyDownloadMill');
     if (millSelect) {
-        millSelect.addEventListener('change', () => updateConditionsDisplay());
+        millSelect.addEventListener('input', () => updateConditionsDisplay());
     }
 }
 
