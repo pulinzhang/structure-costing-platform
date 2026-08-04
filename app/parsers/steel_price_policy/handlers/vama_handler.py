@@ -34,7 +34,7 @@ class VamaSheetHandler(BaseSheetHandler):
     def find_thickness_blocks(
         self, sheet: Worksheet, steel_mill: str
     ) -> List[Dict[str, Any]]:
-        blocks = self.find_default_thickness_blocks(sheet, steel_mill, max_col=10)
+        blocks = self.find_default_thickness_blocks(sheet, steel_mill)
         for block in blocks:
             # 读取 Col 10 的宽度范围（如 "1000-1600"）
             width_boundary = self._parse_width_range_from_col10(sheet, block)

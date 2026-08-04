@@ -239,12 +239,11 @@ class BaseSheetHandler:
         self,
         sheet: Worksheet,
         steel_mill: str,
-        max_col: Optional[int] = None,
     ) -> List[Dict[str, Any]]:
         """默认厚度块扫描: 多个厚度块在左侧垂直堆叠."""
         blocks: List[Dict[str, Any]] = []
         max_row = self.scanner.row_max(sheet)
-        max_col = max_col if max_col is not None else self.scanner.col_max(sheet)
+        max_col = self.scanner.col_max(sheet)
         last_end = 0
 
         all_label_rows = self.scanner.find_grade_label_rows(sheet, 1, max_row)

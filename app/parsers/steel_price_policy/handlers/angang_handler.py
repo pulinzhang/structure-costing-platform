@@ -42,7 +42,7 @@ class AngangSheetHandler(BaseSheetHandler):
         self, sheet: Worksheet, steel_mill: str
     ) -> List[Dict[str, Any]]:
         """左侧（cols 1-10）：多块厚度 (冷轧/镀锌/酸洗 三个)."""
-        return self.find_default_thickness_blocks(sheet, steel_mill, max_col=10)
+        return self.find_default_thickness_blocks(sheet, steel_mill)
 
     # ------------------------------------------------------------------ #
     # 宽度块：鞍钢专用解析（按类别生成政策，与厚度无关）

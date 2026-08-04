@@ -48,7 +48,7 @@ class MagangNewSheetHandler(BaseSheetHandler):
     def find_thickness_blocks(
         self, sheet: Worksheet, steel_mill: str
     ) -> List[Dict[str, Any]]:
-        return self.find_default_thickness_blocks(sheet, steel_mill, max_col=14)
+        return self.find_default_thickness_blocks(sheet, steel_mill)
 
     def find_width_blocks(
         self, sheet: Worksheet, steel_mill: str
