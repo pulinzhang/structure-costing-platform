@@ -70,7 +70,7 @@ class PolicyAssembler:
         if not price_cols:
             return None
 
-        data_end = self.scanner.trim_block_end(sheet, header_row, block_end, max_col)
+        data_end = block_end
         base_thickness = self.scanner.infer_base_thickness(
             sheet, header_row, label_row, max_col
         )
@@ -113,15 +113,7 @@ class PolicyAssembler:
             return None
 
         data_start = header_row + 1
-        effective_scan_cols = list(scan_cols or range(1, max_col + 1))
-        if grade_col not in effective_scan_cols:
-            effective_scan_cols.append(grade_col)
-        data_end = self.scanner.trim_block_end(
-            sheet, header_row, block_end, max_col,
-            scan_cols=effective_scan_cols,
-            skip_grade_keywords=True,
-            grade_col=grade_col,
-        )
+        data_end = block_end
 
         return {
             "category_name": category,

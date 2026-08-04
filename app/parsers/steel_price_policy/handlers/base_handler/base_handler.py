@@ -91,6 +91,11 @@ class BaseSheetHandler:
             next_label = label_rows[1] if len(label_rows) > 1 else None
             if next_label is not None:
                 block_end = next_label - 1
+                # 有下一个标签时：向下扫描找真正的数据结束行（遇空即停）
+                # 避免把后续的独立子表（如锌层加价表）错误包含进来
+                block_end = self._scan_data_end_row(
+                    sheet, label_row + 1, block_end, max_col
+                )
             else:
                 block_end = self._find_thickness_block_end_with_width_hint(
                     sheet, label_row + 1, max_row, max_col
@@ -113,6 +118,34 @@ class BaseSheetHandler:
                 last_end = label_row + 1
 
         return blocks
+
+    def _scan_data_end_row(
+        self,
+        sheet: Worksheet,
+        start_row: int,
+        max_row: int,
+        max_col: int,
+        *,
+        blank_limit: int = BLANK_LIMIT,
+    ) -> int:
+        """向下扫描找数据结束行：遇连续空行即停。
+
+        适用场景：块之间有独立子表（如镀锌块的锌层加价表）时，
+        应该从厚度数据区向下自然结束，而非向上包含子表。
+        """
+        blank_streak = 0
+        for r in range(start_row, max_row + 1):
+            has_value = any(
+                self.scanner.text(sheet, r, c)
+                for c in range(1, max_col + 1)
+            )
+            if has_value:
+                blank_streak = 0
+            else:
+                blank_streak += 1
+                if blank_streak >= blank_limit:
+                    return r - blank_limit
+        return max_row
 
     def _find_thickness_block_end_with_width_hint(
         self,
@@ -201,9 +234,6 @@ class BaseSheetHandler:
 
     def find_block_end_row(self, sheet: Worksheet, start_row: int, max_row: int, max_col: int, *, blank_limit: int = BLANK_LIMIT, scan_cols: Optional[List[int]] = None) -> int:
         return self.scanner.find_block_end_row(sheet, start_row, max_row, max_col, blank_limit=blank_limit, scan_cols=scan_cols)
-
-    def trim_block_end(self, sheet: Worksheet, header_row: int, block_end_row: int, max_col: int, *, scan_cols: Optional[List[int]] = None, skip_grade_keywords: bool = False, grade_col: int = 1) -> int:
-        return self.scanner.trim_block_end(sheet, header_row, block_end_row, max_col, scan_cols=scan_cols, skip_grade_keywords=skip_grade_keywords, grade_col=grade_col)
 
     def find_grade_label_rows(self, sheet: Worksheet, start_row: int = 1, end_row: Optional[int] = None) -> List[int]:
         return self.scanner.find_grade_label_rows(sheet, start_row, end_row)

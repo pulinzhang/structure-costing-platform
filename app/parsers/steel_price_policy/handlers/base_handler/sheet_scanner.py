@@ -196,40 +196,6 @@ class SheetScanner:
                 return r - blank_limit
         return max_row
 
-    def trim_block_end(
-        self,
-        sheet: Worksheet,
-        header_row: int,
-        block_end_row: int,
-        max_col: int,
-        *,
-        scan_cols: Optional[List[int]] = None,
-        skip_grade_keywords: bool = False,
-        grade_col: int = 1,
-    ) -> int:
-        """从 block_end_row 向上回退，去掉末尾空行。"""
-        cols = scan_cols if scan_cols is not None else list(range(1, max_col + 1))
-        for r in range(block_end_row, header_row, -1):
-            if skip_grade_keywords and grade_col in cols:
-                v = sheet.cell(row=r, column=grade_col).value
-                if v is not None and str(v).strip() in GRADE_LABELS:
-                    continue
-            has_data = False
-            for c in cols:
-                cell_val = sheet.cell(row=r, column=c).value
-                if cell_val is not None:
-                    has_data = True
-                    break
-                if self.find_start_row(sheet, r, c) is not None:
-                    start_r = self.find_start_row(sheet, r, c)
-                    merged_val = sheet.cell(row=start_r, column=c).value
-                    if merged_val is not None:
-                        has_data = True
-                        break
-            if has_data:
-                return r
-        return header_row
-
     # ------------------------------------------------------------------ #
     # 边界信号
     # ------------------------------------------------------------------ #
