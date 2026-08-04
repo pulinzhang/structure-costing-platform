@@ -36,75 +36,7 @@ class ShougangSheetHandler(BaseSheetHandler):
     def find_thickness_blocks(
         self, sheet: Worksheet, steel_mill: str
     ) -> List[Dict[str, Any]]:
-        """首钢厚度块：title 含"厚度"，grade_col=title_col-1，header_row=title_row+1。"""
-        blocks: List[Dict[str, Any]] = []
-        max_row = self.row_max(sheet)
-        max_col = self.col_max(sheet)
-
-        th_title_rows: List[int] = []
-        th_title_cols: List[int] = []
-        for r in range(1, max_row + 1):
-            for c in range(1, max_col + 1):
-                v = self.text_or_none(sheet, r, c)
-                if v and "厚度" in str(v):
-                    th_title_rows.append(r)
-                    th_title_cols.append(c)
-                    break
-
-        for idx, (title_row, title_col) in enumerate(zip(th_title_rows, th_title_cols)):
-            scan_end = th_title_rows[idx + 1] - 1 if idx + 1 < len(th_title_rows) else max_row
-
-            grade_col = title_col - 1
-            header_row = title_row + 1
-            if header_row > scan_end:
-                continue
-
-            price_end_col = self._get_merge_end_col(sheet, title_row, title_col)
-            price_cols = [
-                c for c in range(title_col, price_end_col + 1)
-                if self.text_or_none(sheet, header_row, c) is not None
-            ]
-            if not price_cols:
-                continue
-
-            data_start = None
-            data_end = None
-            blank_streak = 0
-            for r in range(header_row + 1, scan_end + 1):
-                label = self.text_or_none(sheet, r, grade_col)
-                has_price = any(self.text_or_none(sheet, r, c) for c in price_cols)
-                if label:
-                    if data_start is None:
-                        data_start = r
-                    blank_streak = 0
-                elif has_price:
-                    blank_streak = 0
-                else:
-                    blank_streak += 1
-                    if blank_streak >= 1:
-                        data_end = r - 1
-                        break
-
-            if data_start is None:
-                continue
-            if data_end is None:
-                data_end = scan_end
-
-            blocks.append({
-                "category_name": "冷轧钢",
-                "policy_type": "THICKNESS",
-                "header_row": header_row,
-                "grade_col": grade_col,
-                "price_cols": sorted(price_cols),
-                "data_row_start": data_start,
-                "data_row_end": data_end,
-                "base_thickness": self.scanner.infer_base_thickness(
-                    sheet, header_row, title_row, self.col_max(sheet)
-                ),
-                "grade_blacklist": GRADE_LABELS,
-            })
-
-        return blocks
+        return self.find_default_thickness_blocks(sheet, steel_mill, max_col=14)
 
     # ------------------------------------------------------------------ #
     # 工具

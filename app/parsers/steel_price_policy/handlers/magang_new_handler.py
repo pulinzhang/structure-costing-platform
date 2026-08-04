@@ -48,46 +48,7 @@ class MagangNewSheetHandler(BaseSheetHandler):
     def find_thickness_blocks(
         self, sheet: Worksheet, steel_mill: str
     ) -> List[Dict[str, Any]]:
-        blocks: List[Dict[str, Any]] = []
-        max_row, max_col = self.row_max(sheet), 14
-        last_end = 0
-
-        # 预先找所有 label_row, 用作块天然边界
-        all_label_rows = self.find_grade_label_rows(sheet, 1, max_row)
-
-        while True:
-            # 从 last_end + 1 之后找下一个 label_row (天然块边界)
-            label_rows = [lr for lr in all_label_rows if lr > last_end]
-            if not label_rows:
-                break
-            label_row = label_rows[0]
-            # 本块的 label_row 在 last_end + 1 与下个 label_row 之间
-            # 取下个 label_row (label_rows[1] if exists) 作为 block_end
-            next_label = label_rows[1] if len(label_rows) > 1 else None
-            # 有下一个 label 时，find_block_end_row 的 end_row 用 min(下个label-1, max_row)
-            # 即只在本块列范围内扫描，避免跨到下个块
-            scan_end = min(next_label - 1, max_row) if next_label else max_row
-            block_end = self.find_block_end_row(
-                sheet, label_row + 1, scan_end, max_col,
-            )
-            if next_label:
-                block_end = min(block_end, next_label - 1)
-            if block_end <= label_row + 1:
-                last_end = label_row + 1
-                continue
-
-            block = self.locate_thickness_block(sheet, label_row, block_end, max_col)
-            if block:
-                # 按本块实际钢种名后缀推断 category（复用 assembler 的推断逻辑）
-                block["category_name"] = self.assembler.infer_block_category(
-                    sheet, block, max_col=max_col
-                )
-                blocks.append(block)
-                last_end = block["data_row_end"]
-            else:
-                last_end = label_row + 1
-
-        return blocks
+        return self.find_default_thickness_blocks(sheet, steel_mill, max_col=14)
 
     def find_width_blocks(
         self, sheet: Worksheet, steel_mill: str
