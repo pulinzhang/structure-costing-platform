@@ -137,11 +137,40 @@ class PolicyAssembler:
         header_row: int,
         price_cols: List[int],
     ) -> Dict[int, _Boundary]:
-        """从列头行收集所有边界定义。"""
+        """从列头行收集所有边界定义（通用版）。"""
         result = {}
         for c in price_cols:
             v = sheet.cell(row=header_row, column=c).value
             b = _parse_boundary(v)
+            if b is not None:
+                result[c] = b
+        return result
+
+    def collect_boundaries_thickness(
+        self,
+        sheet: Worksheet,
+        header_row: int,
+        price_cols: List[int],
+    ) -> Dict[int, _Boundary]:
+        """从列头行收集所有边界定义（厚度专用）。
+
+        纯数字（如 "0.5"）规范化为 "<=0.5" 后解析，解析为 min=None, max=数字, max_operator="<="。
+        """
+        import re
+        from app.parsers.steel_price_policy.boundary_parser import _parse_boundary_thickness
+
+        _PURE_NUM_RE = re.compile(r"^\s*(-?\d+(?:\.\d+)?)\s*$")
+        result = {}
+        for c in price_cols:
+            raw = sheet.cell(row=header_row, column=c).value
+            # 纯数字开头：原始数据不规范，补全为 "<=数字" 使其规范
+            if isinstance(raw, (int, float)):
+                normalized = "<=" + str(raw)
+            elif isinstance(raw, str) and _PURE_NUM_RE.match(raw):
+                normalized = "<=" + raw.strip()
+            else:
+                normalized = raw
+            b = _parse_boundary_thickness(normalized)
             if b is not None:
                 result[c] = b
         return result
@@ -152,12 +181,13 @@ class PolicyAssembler:
         sorted_cols: List[int],
         col_idx: int,
         boundaries: Dict[int, _Boundary],
+        policy_type: str = "WIDTH",
     ) -> _Boundary:
         """推断完整边界：
-        1. 若 min_val is None 且是第一列，设为 min=0
-        2. 若 min_val is None 且非第一列，从前一列的 max_val 推断
-        3. 若 max_val is None 且有下一列，从下一列的 min_val 推断
-        4. 若 max_val is None 且是最后一列，设为 max=∞（None 表示无上限）
+        1. 厚度第一列纯数字（min=None, max=数字）：隐含 0 < t <= max
+        2. 通用第一列（min=None）：min >= 0
+        3. 非第一列：从前一列的 max_val 推断 min
+        4. 推断上界（见下方逻辑）
         """
         min_val = boundary.min_val
         min_op = boundary.min_operator
@@ -167,9 +197,14 @@ class PolicyAssembler:
         # 1. 推断下界
         if min_val is None:
             if col_idx == 0:
-                # 第一列，宽度从 0 开始
-                min_val = Decimal("0")
-                min_op = ">="
+                if policy_type == "THICKNESS" and boundary.max_operator == "<=":
+                    # 厚度纯数字列（如 "0.5"）：隐含 0 < t <= 0.5
+                    min_val = Decimal("0")
+                    min_op = ">"
+                else:
+                    # 通用：min >= 0
+                    min_val = Decimal("0")
+                    min_op = ">="
             else:
                 # 从前一列的 max 推断
                 prev_c = sorted_cols[col_idx - 1]
@@ -249,7 +284,7 @@ class PolicyAssembler:
                 price = _to_int_price(price_cell.value)
 
             boundary = self.infer_upper_bound(
-                boundaries[c], sorted_cols, i, boundaries
+                boundaries[c], sorted_cols, i, boundaries, policy_type
             )
 
             if policy_type == "THICKNESS":
@@ -356,22 +391,20 @@ class PolicyAssembler:
         grade_blacklist = block.get("grade_blacklist", GRADE_LABELS)
         policy_type = block.get("policy_type", POLICY_TYPE_THICKNESS)
 
-        boundaries = self.collect_boundaries(sheet, header_row, price_cols)
+        if policy_type == POLICY_TYPE_THICKNESS:
+            boundaries = self.collect_boundaries_thickness(sheet, header_row, price_cols)
+        else:
+            boundaries = self.collect_boundaries(sheet, header_row, price_cols)
         if not boundaries:
             return []
 
         sorted_price_cols = sorted(price_cols)
         policies: List[ParsedPolicy] = []
-        last_grade: Optional[str] = None
 
         for r in range(data_start, data_end + 1):
             if grade_col is None:
                 continue
             grade = self.scanner.text_or_none(sheet, r, grade_col)
-            if not grade:
-                grade = last_grade
-            else:
-                last_grade = grade
             if not grade:
                 continue
             if grade in grade_blacklist:

@@ -176,18 +176,14 @@ def _parse_boundary(header: Any) -> Optional[_Boundary]:
             op = "<"
         return _Boundary(max_val=Decimal(match_lte.group(1)), max_operator=op)
 
-    # ---------- 优先级6：纯数字（无符号）→ min=max ----------
-    match_pure = _PATTERN_PURE_NUM.match(text)
-    if match_pure:
-        val = Decimal(match_pure.group(1))
-        return _Boundary(min_val=val, min_operator=">=", max_val=val, max_operator="<=")
-
     return None
 
 
 def _parse_boundary_thickness(text: str) -> Optional[_Boundary]:
     """
-    厚度专用的 boundary 解析，纯数字视为 "<=x"（无 min 边界）。
+    厚度专用的 boundary 解析：
+    - 纯数字（如 "0.5"）→ 仅 max <=（无 min 边界）
+    - ≥ / ≤ / ≥= → 正常解析
     """
     if not text:
         return None
@@ -198,6 +194,11 @@ def _parse_boundary_thickness(text: str) -> Optional[_Boundary]:
     match_gte = _PATTERN_GTE.match(text)
     if match_gte:
         return _Boundary(min_val=Decimal(match_gte.group(1)), min_operator=">=")
+
+    # ---------- > 区间（严格大于，如 "＞0.5"）----------
+    match_gt = _PATTERN_GT.match(text)
+    if match_gt:
+        return _Boundary(min_val=Decimal(match_gt.group(1)), min_operator=">")
 
     # ---------- <= 区间 ----------
     match_lte = _PATTERN_LTE.match(text)

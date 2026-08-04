@@ -5,7 +5,7 @@
 - 维度探测（row_max / col_max）
 - 合并单元格处理（find_start_row / find_value_above）
 - 搜索定位（find_row_with_keywords / find_grade_label_rows /
-          find_thickness_title_row / find_header_row / find_block_end_row）
+          find_header_row / find_block_end_row）
 - 收集（collect_price_cols）
 
 所有方法签名均为 (sheet: Worksheet, ...) → 纯数据，不含业务语义。
@@ -55,30 +55,6 @@ class SheetScanner:
     # ------------------------------------------------------------------ #
     # 合并单元格工具
     # ------------------------------------------------------------------ #
-
-    @staticmethod
-    def find_thickness_end_col(
-        sheet: Worksheet,
-        title_row: int,
-        max_col: int,
-    ) -> int:
-        """找到"厚度加减价-基准厚度"标题行中，合并单元格的结束列。
-
-        逻辑：在 title_row 上找到含关键字的单元格，然后检查它属于哪个合并范围，
-        返回该合并范围的 max_col。若无合并则返回 max_col。
-        这样每个厚度块的结束列由其合并单元格决定，而非统一用 sheet 最大列。
-        """
-        for c in range(1, max_col + 1):
-            text = _to_str(sheet.cell(row=title_row, column=c).value)
-            if text and "厚度加减价-基准厚度" in text:
-                for merged_range in sheet.merged_cells:
-                    if (
-                        merged_range.min_row <= title_row <= merged_range.max_row
-                        and merged_range.min_col <= c <= merged_range.max_col
-                    ):
-                        return merged_range.max_col
-                return c
-        return max_col
 
     @staticmethod
     def find_start_row(
@@ -189,11 +165,40 @@ class SheetScanner:
         start_col: int = 2,
         end_col: Optional[int] = None,
     ) -> List[int]:
-        """在 header_row 上收集所有含 boundary 的列。"""
+        """在 header_row 上收集所有含 boundary 的列（通用版）。"""
         end_col = end_col or self.col_max(sheet)
         cols = []
         for c in range(start_col, end_col + 1):
             if _parse_boundary(sheet.cell(row=header_row, column=c).value) is not None:
+                cols.append(c)
+        return cols
+
+    def collect_price_cols_thickness(
+        self,
+        sheet: Worksheet,
+        header_row: int,
+        start_col: int = 2,
+        end_col: Optional[int] = None,
+    ) -> List[int]:
+        """在 header_row 上收集所有含 boundary 的列（厚度专用版）。
+
+        纯数字规范化为 "<=数字" 后判断，如 "0.5" → <=0.5。
+        """
+        import re
+        from app.parsers.steel_price_policy.boundary_parser import _parse_boundary_thickness
+
+        _PURE_NUM_RE = re.compile(r"^\s*(-?\d+(?:\.\d+)?)\s*$")
+        end_col = end_col or self.col_max(sheet)
+        cols = []
+        for c in range(start_col, end_col + 1):
+            raw = sheet.cell(row=header_row, column=c).value
+            if isinstance(raw, (int, float)):
+                normalized = "<=" + str(raw)
+            elif isinstance(raw, str) and _PURE_NUM_RE.match(raw):
+                normalized = "<=" + raw.strip()
+            else:
+                normalized = raw
+            if _parse_boundary_thickness(normalized) is not None:
                 cols.append(c)
         return cols
 

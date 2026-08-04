@@ -240,112 +240,138 @@ class BaseSheetHandler:
         sheet: Worksheet,
         steel_mill: str,
     ) -> List[Dict[str, Any]]:
-        """默认厚度块扫描: 多个厚度块在左侧垂直堆叠."""
+        """默认厚度块扫描: 按三步逻辑找块。
+
+        第一步：找到所有含 "厚度加减价-基准厚度" 或 "厚度加减价" 的单元格
+        第二步：从单元格下一行取出加减价范围（boundary 列头）
+        第三步：从单元格左边第一列的下一行取出钢种。当钢种单元格为空时，说明这个厚度块结束
+        """
         blocks: List[Dict[str, Any]] = []
         max_row = self.scanner.row_max(sheet)
         max_col = self.scanner.col_max(sheet)
-        last_end = 0
 
-        all_label_rows = self.scanner.find_grade_label_rows(sheet, 1, max_row)
+        # 第一步：收集所有"厚度加减价"标题单元格的位置
+        # 过滤条件：标题的下一行必须是边界行（含 ≥/≤/＞/< 或数字开头）
+        title_cells = []
+        for r in range(1, max_row + 1):
+            for c in range(1, max_col + 1):
+                text = self.scanner.text(sheet, r, c)
+                if text and ("厚度加减价-基准厚度" in text or "厚度加减价" in text):
+                    # 检查下一行是否是边界行
+                    next_row_text = self.scanner.text(sheet, r + 1, c)
+                    # 边界行特征：包含 ≥/≤/＞/< 或以数字开头
+                    if next_row_text and (
+                        any(s in next_row_text for s in ["≥", "≤", "＞", "<"])
+                        or next_row_text.strip()[0:1].isdigit() if next_row_text.strip() else False
+                    ):
+                        title_cells.append({"row": r, "col": c, "text": text})
 
-        while True:
-            label_rows = [lr for lr in all_label_rows if lr > last_end]
-            if not label_rows:
-                break
-            label_row = label_rows[0]
-            next_label = label_rows[1] if len(label_rows) > 1 else None
-            if next_label is not None:
-                block_end = next_label - 1
-                # 有下一个标签时：向下扫描找真正的数据结束行（遇空即停）
-                # 避免把后续的独立子表（如锌层加价表）错误包含进来
-                block_end = self._scan_data_end_row(
-                    sheet, label_row + 1, block_end, max_col
-                )
-            else:
-                block_end = self._find_thickness_block_end_with_width_hint(
-                    sheet, label_row + 1, max_row, max_col
-                )
+        # 遍历每个标题单元格，提取块信息
+        for idx, title_cell in enumerate(title_cells):
+            title_row = title_cell["row"]
+            title_col = title_cell["col"]
 
-            if block_end <= label_row + 1:
-                last_end = label_row + 1
+            # 第二步：从标题单元格下一行取出加减价范围（boundary 列头行）
+            header_row = title_row + 1
+
+            # 第三步：从标题单元格左边第一列的下一行取出钢种
+            # 钢种列 = 标题所在列 - 1（标题通常在数据列之前）
+            grade_col = title_col - 1
+
+            # 确定块的结束行：从钢种行的下一行开始，当钢种列为空时说明块结束
+            block_end = self._find_thickness_block_end(
+                sheet, title_row, grade_col, max_row, max_col
+            )
+
+            if block_end <= header_row:
                 continue
 
-            title_row = self.scanner.find_thickness_title_row(
-                sheet, label_row, block_end, scan_cols=list(range(2, max_col + 1))
+            # 收集加减价边界列
+            price_cols = self._collect_boundary_cols(
+                sheet, header_row, title_col, max_col
             )
-            if title_row is None:
-                last_end = label_row + 1
+            if not price_cols:
                 continue
 
-            thickness_end_col = self.scanner.find_thickness_end_col(
-                sheet, title_row, max_col
+            # 确定基准厚度
+            base_thickness = self.scanner.infer_base_thickness(
+                sheet, header_row, title_row, max_col
             )
 
-            block = self.assembler.locate_thickness_block(
-                sheet, label_row, block_end, thickness_end_col
+            # 先构建 block（需要 data_row_start 和 data_row_end）
+            block = {
+                "category_name": "冷轧钢",  # 先用默认值，infer_block_category 会修正
+                "policy_type": "THICKNESS",
+                "grade_col": grade_col,
+                "header_row": header_row,
+                "price_cols": price_cols,
+                "data_row_start": header_row + 1,
+                "data_row_end": block_end,
+                "base_thickness": base_thickness,
+            }
+
+            # 确定分类
+            category_name = self.assembler.infer_block_category(
+                sheet, block, max_col=max(price_cols)
             )
-            if block:
-                block["category_name"] = self.assembler.infer_block_category(
-                    sheet, block, max_col=thickness_end_col
-                )
-                blocks.append(block)
-                last_end = block["data_row_end"]
-            else:
-                last_end = label_row + 1
+            block["category_name"] = category_name
+            blocks.append(block)
 
         return blocks
 
-    def _scan_data_end_row(
+    def _find_thickness_block_end(
         self,
         sheet: Worksheet,
-        start_row: int,
+        title_row: int,
+        grade_col: int,
         max_row: int,
         max_col: int,
-        *,
-        blank_limit: int = BLANK_LIMIT,
     ) -> int:
-        """向下扫描找数据结束行：遇连续空行即停。
+        """从 header_row + 2（即第一个钢种数据行）开始扫描，当钢种列为空时说明这个厚度块结束。"""
+        # header_row = title_row + 1，数据行从 header_row + 1 开始
+        # grade_col 必须 >= 1
+        if grade_col < 1:
+            grade_col = 1
+        start_scan = title_row + 2
+        for r in range(start_scan, max_row + 1):
+            grade_text = self.scanner.text(sheet, r, grade_col)
+            # 当钢种列为空时，说明这个厚度块结束
+            if not grade_text or grade_text.strip() == "":
+                return r - 1
+        return max_row
 
-        适用场景：块之间有独立子表（如镀锌块的锌层加价表）时，
-        应该从厚度数据区向下自然结束，而非向上包含子表。
+    def _collect_boundary_cols(
+        self,
+        sheet: Worksheet,
+        header_row: int,
+        title_col: int,
+        max_col: int,
+    ) -> List[int]:
+        """从 header_row 收集所有含 boundary 的列（加减价范围列）。
+
+        厚度块专用：纯数字视为 <=（上限），如 "0.5" → <=0.5。
         """
-        blank_streak = 0
-        for r in range(start_row, max_row + 1):
-            has_value = any(
-                self.scanner.text(sheet, r, c)
-                for c in range(1, max_col + 1)
-            )
-            if has_value:
-                blank_streak = 0
-            else:
-                blank_streak += 1
-                if blank_streak >= blank_limit:
-                    return r - blank_limit
-        return max_row
+        import re
+        from app.parsers.steel_price_policy.boundary_parser import _parse_boundary_thickness
 
-    def _find_thickness_block_end_with_width_hint(
-        self,
-        sheet: Worksheet,
-        start_row: int,
-        max_row: int,
-        max_col: int,
-        *,
-        blank_limit: int = BLANK_LIMIT,
-    ) -> int:
-        """向下扫描块末尾, 提前停在出现宽度标题或锌层加价标题的行."""
-        blank_streak = 0
-        for r in range(start_row, max_row + 1):
-            text = self.scanner.text(sheet, r, 1)
-            if text and ("宽度加减价" in text or "宽度加价" in text or "锌层加价" in text):
-                return max(start_row, r - 1)
-            has_value = any(
-                self.scanner.text(sheet, r, c)
-                for c in range(1, max_col + 1)
-            )
-            blank_streak = 0 if has_value else blank_streak + 1
-            if blank_streak >= blank_limit:
-                return r - blank_limit
-        return max_row
+        _PURE_NUM_RE = re.compile(r"^\s*(-?\d+(?:\.\d+)?)\s*$")
+        cols = []
+        for c in range(title_col, max_col + 1):
+            raw = sheet.cell(row=header_row, column=c).value
+            # 纯数字开头：原始数据不规范，补全为 "<=数字" 使其规范
+            if isinstance(raw, (int, float)) or (
+                isinstance(raw, str) and _PURE_NUM_RE.match(raw)
+            ):
+                val_str = str(raw).strip()
+                if isinstance(raw, str) and not _PURE_NUM_RE.match(val_str):
+                    normalized = val_str
+                else:
+                    normalized = "<=" + val_str
+                if _parse_boundary_thickness(normalized) is not None:
+                    cols.append(c)
+            elif _parse_boundary_thickness(raw) is not None:
+                cols.append(c)
+        return cols
 
     # ------------------------------------------------------------------ #
     # 块解析（委托给 assembler）
