@@ -271,12 +271,23 @@ class BaseSheetHandler:
                 last_end = label_row + 1
                 continue
 
+            title_row = self.scanner.find_thickness_title_row(
+                sheet, label_row, block_end, scan_cols=list(range(2, max_col + 1))
+            )
+            if title_row is None:
+                last_end = label_row + 1
+                continue
+
+            thickness_end_col = self.scanner.find_thickness_end_col(
+                sheet, title_row, max_col
+            )
+
             block = self.assembler.locate_thickness_block(
-                sheet, label_row, block_end, max_col
+                sheet, label_row, block_end, thickness_end_col
             )
             if block:
                 block["category_name"] = self.assembler.infer_block_category(
-                    sheet, block, max_col=max_col
+                    sheet, block, max_col=thickness_end_col
                 )
                 blocks.append(block)
                 last_end = block["data_row_end"]
