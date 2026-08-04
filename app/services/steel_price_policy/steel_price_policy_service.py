@@ -472,6 +472,7 @@ class SteelPricePolicyService:
                 if old_id:
                     # 替换旧政策（先删后插在同一事务中）
                     self.repository.delete_policy(db, old_id)
+                    db.flush()  # 确保删除生效，避免唯一约束冲突
                     new_record = self.repository.create_policy(db, payload)
                     db.flush()  # 生成主键 ID
                     self.repository.add_items(db, new_record.id, norm_items)

@@ -27,10 +27,10 @@ def find_handler(sheet_name: str):
 _HANDLERS: list[tuple[type, tuple[str, ...]]] = [
     # 唐钢：冷轧/镀锌按钢种+宽度分段加价，厚度分档独立处理
     (TanggangSheetHandler, ("唐钢",)),
-    # 马钢（新的独立 handler，与首钢布局一致，sheet 名"马钢"）
-    (MagangSheetHandler, ("马钢",)),
-    # 马钢（旧版，按钢种（DC01等）区分宽度加价，钢种列表在表格列头）
+    # 马钢（新）：sheet 名精确为"马钢(新)"，必须放在"马钢"之前
     (MagangNewSheetHandler, ("马钢(新)",)),
+    # 马钢（旧版）：sheet 名含"马钢"但不含"(新)"
+    (MagangSheetHandler, ("马钢",)),
     # 首钢：冷轧按厚度+宽度组合，镀锌按厚度+宽度组合
     (ShougangSheetHandler, ("首钢",)),
     # 鞍钢/鞍本/本钢：按宽度区间设固定价差，冷/镀/酸洗各一套
