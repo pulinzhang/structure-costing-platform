@@ -43,10 +43,11 @@ class BaseSheetHandler:
         steel_mill: str,
         warnings: List[str],
     ) -> List:
-        """解析入口：子类通过 find_thickness_blocks / find_width_blocks 描述块，交 assembler 执行。"""
+        """解析入口：厚度块 + 宽度块 + 锌层加价块。"""
         policies: List = []
         policies.extend(self._parse_blocks(sheet, steel_mill, "THICKNESS"))
         policies.extend(self._parse_blocks(sheet, steel_mill, "WIDTH"))
+        policies.extend(self.parse_zinc_coating_blocks(sheet, steel_mill))
         return policies
 
     # ------------------------------------------------------------------ #
@@ -64,6 +65,171 @@ class BaseSheetHandler:
     ) -> List[Dict[str, Any]]:
         """返回本 Sheet 所有宽度块的描述。默认返回空，子类覆写。"""
         return []
+
+    # ------------------------------------------------------------------ #
+    # 锌层加价块查找（通用）
+    # ------------------------------------------------------------------ #
+
+    def find_zinc_coating_blocks(
+        self, sheet: Worksheet, steel_mill: str
+    ) -> List[Dict[str, Any]]:
+        """查找所有"锌层加价"表块。
+
+        表结构（严格以"锌层加价"为识别因子）：
+            R33: 镀锌量g/m2 | 80-90 | 91-120 | 121-140 | 141-160 | 161-180 | 181-200
+            R34: 厚度≥0.6mm加价(元/吨) | 0 | 46 | 91 | 135 | 180 | 226
+            R35: 厚度<0.6mm加价(元/吨) | 0 | 46 | 91 | 135 | 180 | 270
+
+        镀锌量范围格式固定为 "数字-数字" 闭区间。
+        """
+        import re
+        blocks: List[Dict[str, Any]] = []
+        max_row = self.row_max(sheet)
+        max_col = self.col_max(sheet)
+
+        zinc_label_rows: List[int] = []
+        for r in range(1, max_row + 1):
+            text = self.text(sheet, r, 1)
+            if text and "锌层加价" in text:
+                zinc_label_rows.append(r)
+
+        zinc_pattern = re.compile(r"^\d+\s*-\s*\d+$")
+
+        for label_row in zinc_label_rows:
+            range_row = label_row + 1
+            thick_ge_row = label_row + 2
+            thick_lt_row = label_row + 3
+
+            # 验证镀锌量范围行
+            range_text = self.text(sheet, range_row, 1)
+            if not range_text or "镀锌量" not in range_text:
+                continue
+
+            # 收集镀锌量范围列
+            zinc_cols: List[int] = []
+            zinc_ranges: List[str] = []
+            for c in range(2, max_col + 1):
+                val = sheet.cell(row=range_row, column=c).value
+                if val and zinc_pattern.match(str(val).strip()):
+                    zinc_cols.append(c)
+                    zinc_ranges.append(str(val).strip())
+
+            if not zinc_cols:
+                continue
+
+            # 验证价格行
+            thick_ge_ok = self.text(sheet, thick_ge_row, 1) and bool(
+                re.search(r"厚度≥0\.6mm加价", self.text(sheet, thick_ge_row, 1) or "")
+            )
+            thick_lt_ok = self.text(sheet, thick_lt_row, 1) and bool(
+                re.search(r"厚度<0\.6mm加价", self.text(sheet, thick_lt_row, 1) or "")
+            )
+            if not (thick_ge_ok and thick_lt_ok):
+                continue
+
+            blocks.append({
+                "policy_type": "ZINC_COATING",
+                "label_row": label_row,
+                "range_row": range_row,
+                "thick_ge_row": thick_ge_row,
+                "thick_lt_row": thick_lt_row,
+                "zinc_cols": zinc_cols,
+                "zinc_ranges": zinc_ranges,
+            })
+
+        return blocks
+
+    # ------------------------------------------------------------------ #
+    # 锌层加价块解析
+    # ------------------------------------------------------------------ #
+
+    def parse_zinc_coating_blocks(
+        self, sheet: Worksheet, steel_mill: str
+    ) -> List:
+        """解析所有锌层加价块，返回 ParsedPolicy 列表。"""
+        from decimal import Decimal
+        from app.parsers.steel_price_policy.models import ParsedPolicy
+
+        blocks = self.find_zinc_coating_blocks(sheet, steel_mill)
+        policies: List = []
+
+        for block in blocks:
+            zinc_cols = block["zinc_cols"]
+            zinc_ranges = block["zinc_ranges"]
+            thick_ge_row = block["thick_ge_row"]
+            thick_lt_row = block["thick_lt_row"]
+
+            thickness_conditions = [
+                (thick_ge_row, "≥0.6mm"),
+                (thick_lt_row, "<0.6mm"),
+            ]
+
+            for row, thick_cond in thickness_conditions:
+                thick_min_raw, thick_min_op, thick_max_raw, thick_max_op = self._parse_zinc_thickness_cond(thick_cond)
+                thick_min = Decimal(str(thick_min_raw)) if thick_min_raw else None
+                thick_max = Decimal(str(thick_max_raw)) if thick_max_raw else None
+
+                for c, zinc_range in zip(zinc_cols, zinc_ranges):
+                    price = self._get_zinc_price(sheet, row, c)
+                    zinc_min, zinc_max = self._parse_zinc_range(zinc_range)
+
+                    item = ParsedLadderItem(
+                        target_sub_group=None,
+                        thick_min=thick_min,
+                        thick_min_operator=thick_min_op or ">=",
+                        thick_max=thick_max,
+                        thick_max_operator=thick_max_op or "<",
+                        width_min=zinc_min,
+                        width_min_operator=">=",
+                        width_max=zinc_max,
+                        width_max_operator="<=",
+                        price_adjustment=price,
+                        is_base=False,
+                        sort_order=0,
+                    )
+
+                    policies.append(ParsedPolicy(
+                        steel_mill=steel_mill,
+                        category_name="镀锌钢",
+                        grade_type="THICKNESS_COND",
+                        grade_value=thick_cond,
+                        policy_type="ZINC_COATING",
+                        base_thickness=None,
+                        items=[item],
+                    ))
+
+        return policies
+
+    def _parse_zinc_thickness_cond(self, cond: str) -> Tuple[Optional[str], Optional[str], Optional[str], Optional[str]]:
+        """解析厚度条件字符串，如 "≥0.6mm" 或 "<0.6mm"。"""
+        if cond.startswith("≥"):
+            val = cond[1:].rstrip("mm").strip()
+            return (val, ">=", None, None)
+        elif cond.startswith("<"):
+            val = cond[1:].rstrip("mm").strip()
+            return (None, None, val, "<")
+        return (None, None, None, None)
+
+    def _parse_zinc_range(self, zinc_range: str) -> Tuple[Optional["Decimal"], Optional["Decimal"]]:
+        """解析镀锌量范围字符串，如 "80-90"（闭区间）。"""
+        from decimal import Decimal
+        parts = zinc_range.split("-")
+        if len(parts) == 2:
+            try:
+                return (Decimal(parts[0].strip()), Decimal(parts[1].strip()))
+            except Exception:
+                pass
+        return (None, None)
+
+    def _get_zinc_price(self, sheet: Worksheet, row: int, col: int) -> int:
+        """获取锌层加价价格。"""
+        cell_val = sheet.cell(row=row, column=col).value
+        if cell_val is None:
+            return 0
+        try:
+            return int(float(cell_val))
+        except Exception:
+            return 0
 
     # ------------------------------------------------------------------ #
     # 子类复用的默认厚度块查找
@@ -156,11 +322,11 @@ class BaseSheetHandler:
         *,
         blank_limit: int = BLANK_LIMIT,
     ) -> int:
-        """向下扫描块末尾, 但提前停在出现宽度标题的行."""
+        """向下扫描块末尾, 提前停在出现宽度标题或锌层加价标题的行."""
         blank_streak = 0
         for r in range(start_row, max_row + 1):
             text = self.scanner.text(sheet, r, 1)
-            if text and ("宽度加减价" in text or "宽度加价" in text):
+            if text and ("宽度加减价" in text or "宽度加价" in text or "锌层加价" in text):
                 return max(start_row, r - 1)
             has_value = any(
                 self.scanner.text(sheet, r, c)
