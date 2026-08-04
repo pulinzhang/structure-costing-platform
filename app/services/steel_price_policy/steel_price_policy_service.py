@@ -3,19 +3,23 @@
 - 管理事务（commit / rollback）
 - 执行应用层业务校验（唯一约束、阶梯区间重叠）
 - 提供阶梯匹配逻辑（全程 Decimal 比较）
+- 记录业务操作日志
 """
 
 import logging
 from decimal import Decimal
-from typing import Any, Optional
+from typing import Optional
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.models.steel_price_policy import SteelPricePolicy, SteelPriceLadderItem
 from app.parsers.steel_price_policy import parse_steel_price_policy_excel
 from app.repositories.steel_price_policy import SteelPricePolicyRepository
 from app.repositories.steel_price_policy.dto import ExportRow, FilterOptions
+from app.repositories.steel_price_policy.steel_price_policy_repository import (
+    MatchFilter,
+    PolicyFilter,
+)
 from app.schemas.steel_price_policy import (
     GradeType,
     ImportResultResponse,
@@ -33,7 +37,7 @@ from app.schemas.steel_price_policy import (
     PolicyUpdate,
     PolicyType,
 )
-from app.services.steel_price_policy.excel_exporter import SteelPricePolicyExporter
+from app.services.steel_price_policy.export_service import SteelPricePolicyExportService
 from app.services.steel_price_policy.ladder_matcher import LadderMatcher
 
 
@@ -46,16 +50,14 @@ class SteelPricePolicyService:
     def __init__(self) -> None:
         self.repository = SteelPricePolicyRepository()
         self._matcher = LadderMatcher()
-        self._exporter = SteelPricePolicyExporter()
+        self._export_service = SteelPricePolicyExportService()
 
     # ---- 分页列表 ----
 
     def paginate(
         self, db: Session, query: PolicyQuery
     ) -> tuple[list[PolicyListResponse], int, PolicyOptionsResponse]:
-        skip = (query.page - 1) * query.size
-        records, total = self.repository.paginate(
-            db,
+        policy_filter = PolicyFilter(
             year=query.year,
             month=query.month,
             steel_mill=query.steel_mill.strip() if query.steel_mill else None,
@@ -63,9 +65,11 @@ class SteelPricePolicyService:
             policy_type=query.policy_type.value if query.policy_type else None,
             grade_value=query.grade_value.strip() if query.grade_value else None,
             grade_type=query.grade_type.value if query.grade_type else None,
-            skip=skip,
+            skip=(query.page - 1) * query.size,
             limit=query.size,
         )
+        records, total = self.repository.paginate(db, policy_filter)
+
         rows = []
         for record in records:
             item_count = len(record.items)
@@ -100,7 +104,7 @@ class SteelPricePolicyService:
     # ---- 详情 ----
 
     def get_by_id(self, db: Session, policy_id: int) -> Optional[PolicyDetailResponse]:
-        record = self.repository.get_by_id(db, policy_id)
+        record = self.repository.get_by_id(db, policy_id, load_items=True)
         if record is None:
             return None
         sorted_items = sorted(record.items, key=lambda x: (x.sort_order, x.id))
@@ -130,8 +134,7 @@ class SteelPricePolicyService:
         payload = data.model_dump()
 
         # 应用层唯一键检查（兜底 DB 唯一约束）
-        if self.repository.policy_exists_with_key(
-            db,
+        match_filter = MatchFilter(
             year=payload["year"],
             month=payload["month"],
             steel_mill=payload["steel_mill"],
@@ -140,29 +143,43 @@ class SteelPricePolicyService:
             grade_type=payload.get("grade_type"),
             grade_value=payload.get("grade_value"),
             base_thickness=payload.get("base_thickness"),
-        ):
+        )
+        if self.repository.policy_exists_with_key(db, match_filter):
             db.rollback()
             return None, (
                 f"该年度({payload['year']})、月份({payload['month']})、钢厂({payload['steel_mill']})、"
                 f"大类({payload['category_name']})、类型({payload['policy_type']})的政策已存在"
             )
 
-        # 阶梯明细重叠检查（暂时禁用，待实现）
-        # raw_items: list[dict[str, Any]] = payload.pop("items")
-        # ladder_errors = _validate_overlapping_items(
-        #     [LadderItemCreate(**item) for item in raw_items]
-        # )
-        # if ladder_errors:
-        #     db.rollback()
-        #     return None, f"阶梯明细校验失败：{ladder_errors}"
-
         try:
             # 提取主表字段和明细数据
             items_data = payload.pop("items", [])
             policy_data = {k: v for k, v in payload.items() if k != "items"}
             policy_record = self.repository.create_policy(db, policy_data)
+            db.flush()  # 生成主键 ID
             self.repository.add_items(db, policy_record.id, items_data)
             db.commit()
+
+            # 事务成功后记录日志
+            base_t_str = (
+                f"{policy_record.base_thickness:.2f}"
+                if policy_record.base_thickness is not None
+                else "N/A"
+            )
+            logger.info(
+                "创建钢价政策: year=%s month=%s steel_mill=%s category=%s type=%s "
+                "grade_type=%s grade_value=%s base_t=%s id=%s",
+                policy_record.year,
+                policy_record.month,
+                policy_record.steel_mill,
+                policy_record.category_name,
+                policy_record.policy_type,
+                policy_record.grade_type,
+                policy_record.grade_value,
+                base_t_str,
+                policy_record.id,
+            )
+
             result = self.get_by_id(db, policy_record.id)
             return result, None
         except IntegrityError as error:
@@ -179,7 +196,7 @@ class SteelPricePolicyService:
     def update(
         self, db: Session, policy_id: int, data: PolicyUpdate
     ) -> tuple[Optional[PolicyDetailResponse], Optional[str]]:
-        existing = self.repository.get_by_id_unsafe(db, policy_id)
+        existing = self.repository.get_by_id(db, policy_id, load_items=False)
         if existing is None:
             db.rollback()
             return None, "记录不存在"
@@ -188,7 +205,7 @@ class SteelPricePolicyService:
 
         # 阶梯明细整组替换（items 可能为空列表，表示清空明细）
         has_items = "items" in update_data
-        raw_items: list[dict[str, Any]] | None = update_data.pop("items", None)
+        raw_items: list[dict] | None = update_data.pop("items", None)
 
         if has_items and raw_items is not None and len(raw_items) > 0:
             items_data = raw_items  # 重叠检查暂时禁用
@@ -207,6 +224,9 @@ class SteelPricePolicyService:
             if items_data is not None:
                 self.repository.replace_items(db, policy_id, items_data)
             db.commit()
+
+            logger.info("更新钢价政策: id=%s", policy_id)
+
             return self.get_by_id(db, policy_id), None
         except IntegrityError as error:
             db.rollback()
@@ -226,6 +246,9 @@ class SteelPricePolicyService:
                 db.rollback()
                 return False, "记录不存在"
             db.commit()
+
+            logger.info("删除钢价政策: id=%s", policy_id)
+
             return True, None
         except Exception as error:
             db.rollback()
@@ -237,7 +260,7 @@ class SteelPricePolicyService:
     def add_item(
         self, db: Session, policy_id: int, data: LadderItemCreate
     ) -> tuple[Optional[LadderItemResponse], Optional[str]]:
-        policy = self.repository.get_by_id_unsafe(db, policy_id)
+        policy = self.repository.get_by_id(db, policy_id, load_items=False)
         if policy is None:
             return None, "政策不存在"
 
@@ -252,6 +275,9 @@ class SteelPricePolicyService:
         try:
             created = self.repository.add_items(db, policy_id, [item_data])
             db.commit()
+
+            logger.info("新增阶梯明细: policy_id=%s item_id=%s", policy_id, created[0].id)
+
             return LadderItemResponse.model_validate(created[0]), None
         except Exception as error:
             db.rollback()
@@ -277,6 +303,9 @@ class SteelPricePolicyService:
         try:
             updated = self.repository.update_item(db, item_id, update_data)
             db.commit()
+
+            logger.info("更新阶梯明细: id=%s", item_id)
+
             return LadderItemResponse.model_validate(updated), None
         except Exception as error:
             db.rollback()
@@ -290,6 +319,9 @@ class SteelPricePolicyService:
                 db.rollback()
                 return False, "明细不存在"
             db.commit()
+
+            logger.info("删除阶梯明细: id=%s", item_id)
+
             return True, None
         except Exception as error:
             db.rollback()
@@ -310,9 +342,7 @@ class SteelPricePolicyService:
         - 未命中时 fallback 到 grade_value 为 NULL 的通用政策
         - 这解决了马钢 Excel 中多个钢种共用同一行价格的问题
         """
-        # 尝试精确匹配
-        candidates = self.repository.find_candidate_policies(
-            db,
+        match_filter = MatchFilter(
             year=data.year,
             month=data.month,
             steel_mill=data.steel_mill.strip(),
@@ -323,13 +353,15 @@ class SteelPricePolicyService:
             base_thickness=data.base_thickness,
         )
 
+        # 尝试精确匹配
+        candidates = self.repository.find_candidate_policies(db, match_filter)
+
         all_hits = self._matcher.collect_hits(candidates, data)
 
         # Fallback: grade_value 为 NULL 的通用政策
         fallback_hit = None
         if not all_hits and data.grade_value:
-            fallback_candidates = self.repository.find_candidate_policies(
-                db,
+            fallback_filter = MatchFilter(
                 year=data.year,
                 month=data.month,
                 steel_mill=data.steel_mill.strip(),
@@ -339,6 +371,7 @@ class SteelPricePolicyService:
                 grade_value=None,
                 base_thickness=data.base_thickness,
             )
+            fallback_candidates = self.repository.find_candidate_policies(db, fallback_filter)
             fallback_hits = self._matcher.collect_hits(fallback_candidates, data)
             if fallback_hits:
                 fallback_hit = fallback_hits[0]
@@ -403,82 +436,88 @@ class SteelPricePolicyService:
         month: int,
     ) -> ImportResultResponse:
         """
-        解析 Excel 文件（传入 year/month 参数），
-        按 (year, month, steel_mill, category_name, policy_type, grade_value, base_thickness)
-        业务唯一键做 upsert：
+        解析 Excel 文件并批量导入。
+        整个导入过程在单一事务中完成，要么全部成功，要么全部失败。
+
+        导入策略：
         - 键存在 → 删除旧政策及阶梯明细，插入新政政策及阶梯明细
         - 键不存在 → 直接插入
-        返回 created_count / updated_count / skipped_count。
         """
         result = parse_steel_price_policy_excel(file_content, year=year, month=month)
 
         created = 0
         updated = 0
-        skipped = 0
 
-        for policy_data in result.policies:
-            payload = policy_data.model_dump()
-            payload["year"] = year
-            payload["month"] = month
+        try:
+            for policy_data in result.policies:
+                payload = policy_data.model_dump()
+                payload["year"] = year
+                payload["month"] = month
 
-            # ParsedLadderItem.model_dump() 返回的已经是字符串，无需转换
-            raw_items = payload.pop("items")
-            norm_items = [dict(item) for item in raw_items]
+                raw_items = payload.pop("items")
+                norm_items = [dict(item) for item in raw_items]
 
-            exists = self.repository.policy_exists_with_key(
-                db,
-                year=payload["year"],
-                month=payload["month"],
-                steel_mill=payload["steel_mill"],
-                category_name=payload["category_name"],
-                policy_type=payload["policy_type"],
-                grade_type=payload.get("grade_type"),
-            grade_value=payload.get("grade_value"),
-                base_thickness=payload.get("base_thickness"),
-            )
+                match_filter = MatchFilter(
+                    year=payload["year"],
+                    month=payload["month"],
+                    steel_mill=payload["steel_mill"],
+                    category_name=payload["category_name"],
+                    policy_type=payload["policy_type"],
+                    grade_type=payload.get("grade_type"),
+                    grade_value=payload.get("grade_value"),
+                    base_thickness=payload.get("base_thickness"),
+                )
+                old_id = self.repository.get_policy_id_by_key(db, match_filter)
 
-            try:
-                if exists:
-                    # 查找旧记录 ID 并替换（复用 find_candidate_policies）
-                    old_records = self.repository.find_candidate_policies(
-                        db,
-                        year=payload["year"],
-                        month=payload["month"],
-                        steel_mill=payload["steel_mill"],
-                        category_name=payload["category_name"],
-                        policy_type=payload["policy_type"],
-                        grade_type=payload.get("grade_type"),
-            grade_value=payload.get("grade_value"),
-                        base_thickness=payload.get("base_thickness"),
-                    )
-                    if old_records:
-                        self.repository.delete_policy(db, old_records[0].id)
-                        db.commit()
+                if old_id:
+                    # 替换旧政策（先删后插在同一事务中）
+                    self.repository.delete_policy(db, old_id)
                     new_record = self.repository.create_policy(db, payload)
+                    db.flush()  # 生成主键 ID
                     self.repository.add_items(db, new_record.id, norm_items)
-                    db.commit()
+
+                    logger.info(
+                        "导入替换政策: steel_mill=%s grade_value=%s old_id=%s new_id=%s",
+                        payload.get("steel_mill"),
+                        payload.get("grade_value"),
+                        old_id,
+                        new_record.id,
+                    )
                     updated += 1
                 else:
                     new_record = self.repository.create_policy(db, payload)
+                    db.flush()  # 生成主键 ID
                     self.repository.add_items(db, new_record.id, norm_items)
-                    db.commit()
-                    created += 1
-            except Exception as error:
-                db.rollback()
-                logger.warning(
-                    "导入政策失败 [%s]: %s - %s",
-                    payload.get("steel_mill"),
-                    payload.get("grade_value"),
-                    error,
-                )
-                skipped += 1
 
-        return ImportResultResponse(
-            created_count=created,
-            updated_count=updated,
-            skipped_count=skipped,
-            total=created + updated,
-        )
+                    logger.info(
+                        "导入创建政策: steel_mill=%s grade_value=%s id=%s",
+                        payload.get("steel_mill"),
+                        payload.get("grade_value"),
+                        new_record.id,
+                    )
+                    created += 1
+
+            # 整个循环完成后统一提交
+            db.commit()
+
+            logger.info(
+                "导入完成: created=%d updated=%d total=%d",
+                created, updated, created + updated,
+            )
+
+            return ImportResultResponse(
+                created_count=created,
+                updated_count=updated,
+                skipped_count=0,
+                total=created + updated,
+            )
+        except Exception as error:
+            db.rollback()
+            logger.exception(
+                "批量导入失败（已全部回滚）: created=%d updated=%d error=%s",
+                created, updated, error,
+            )
+            raise
 
     # ---- Excel 导出数据查询 ----
 
@@ -492,9 +531,9 @@ class SteelPricePolicyService:
         limit: Optional[int] = None,
     ) -> list[ExportRow]:
         """
-        获取导出数据（主子表联合查询）
+        获取导出数据（主子表联合查询）。
         """
-        return self.repository.get_export_data(
+        return self._export_service.get_export_data(
             db,
             year=year,
             month=month,
@@ -511,9 +550,9 @@ class SteelPricePolicyService:
         steel_mill: Optional[str] = None,
     ) -> int:
         """
-        统计导出数据总数
+        统计导出数据总数。
         """
-        return self.repository.count_export_data(
+        return self._export_service.count_export_data(
             db,
             year=year,
             month=month,
@@ -530,14 +569,8 @@ class SteelPricePolicyService:
         """
         生成导出 Excel 文件，返回 (文件字节数据, 文件名)。
         """
-        records = self.get_export_data(
+        return self._export_service.export_to_excel(
             db,
-            year=year,
-            month=month,
-            steel_mill=steel_mill.strip() if steel_mill else None,
-        )
-        return self._exporter.generate(
-            records=records,
             year=year,
             month=month,
             steel_mill=steel_mill,
@@ -568,6 +601,12 @@ class SteelPricePolicyService:
                 steel_mill=steel_mill.strip(),
             )
             db.commit()
+
+            logger.info(
+                "批量删除钢价政策: year=%s month=%s steel_mill=%s count=%s",
+                year, month, steel_mill, count,
+            )
+
             return count, None
         except Exception as error:
             db.rollback()
