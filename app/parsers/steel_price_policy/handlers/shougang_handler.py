@@ -7,151 +7,199 @@ from openpyxl.worksheet.worksheet import Worksheet
 
 from app.parsers.steel_price_policy.handlers.base_handler import BaseSheetHandler
 from app.parsers.steel_price_policy.handlers.constants import GRADE_LABELS, parse_thickness_label
-from app.parsers.steel_price_policy.boundary_parser import _parse_boundary
 from ..models import ParsedPolicy
 from ..models.policy import GRADE_TYPE_WIDTH_RANGE, POLICY_TYPE_WIDTH
-
-# 宽度 boundary 特有的正则（用于区分厚度单边标签 vs 真正的宽度范围）
-import re
-
-_WIDTH_BOUNDARY_PATTERN = re.compile(
-    r"^.*?"          # 可能有前缀数字
-    r"(?:<|＜|<=|≤|＜=)"  # 左操作符
-    r".*?"           # 可能有变量名
-    r"(?:<|＜|<=|≤|＜=)"  # 右操作符
-    r".*?$"          # 任意后缀
-)
 
 
 class ShougangSheetHandler(BaseSheetHandler):
     """首钢 Sheet 处理器。
 
-    布局：
-        R4:  钢种 厚度加减价,基准厚度1.0——元/吨  ...  冷轧宽度加减价
-        R5:       ≤0.5  ≤0.6  ≤0.7  ...            <1500  <1600  ...
-        R6: DC01   210   180   140  ...              180    300   ...
-        R8:  冷轧宽度加减价          ← 块标题
-        R9:   700≤宽＜800  800≤宽＜900  900≤宽≤1050  ≥1051  ← 列头
-        R10:    ＞1         300         200          100    0     ← 数据行
-        R11:  0.5<t≤1.0    300         200           0    0
-        R12:  ≤0.5           0           0            0    0
-        R14:  镀锌宽度加减价          ← 下一块标题
-        R15:   ＜800  800≤宽＜900  900≤宽＜1000  ≥1000
-        R16:   ＞0.5    250    220    170    0
-        R17:   ≤0.5    250    100     50    0
+    布局（以基准厚度1.0为例）：
+        R4:  钢种  厚度加减价,基准厚度1.0——元/吨  ...  冷轧宽度加减价
+        R5:        ≥0.5   ≥0.6   ≥0.7  ...           700≤宽＜800  800≤宽＜900  ...  ≥1051
+        R6:  DC01   210    180    140  ...                  300       200  ...      0
+        R7:  DC03   ...
+        ...
+        R10:                  镀锌宽度加减价          ← 块标题（合并单元格，end_col=18）
+        R11:                  ＜800  800≤宽＜900  900≤宽＜1000  ≥1000
+        R12:                  ＞0.5     250       220       170    0
+        R13:                  ≤0.5     250       100        50    0
+
+    厚度块：title_col=C2，grade_col=C1（钢种列），header_row=R5，price_cols=C2~C11
+    宽度块：grade_col=title_col（C14 合并单元格），price_end_col=18
     """
 
     # ------------------------------------------------------------------ #
-    # 厚度块（与基类布局一致，直接复用）
+    # 厚度块
     # ------------------------------------------------------------------ #
 
     def find_thickness_blocks(
         self, sheet: Worksheet, steel_mill: str
     ) -> List[Dict[str, Any]]:
-        return self.find_default_thickness_blocks(sheet, steel_mill, max_col=13)
+        """首钢厚度块：title 含"厚度"，grade_col=title_col-1，header_row=title_row+1。"""
+        blocks: List[Dict[str, Any]] = []
+        max_row = self.row_max(sheet)
+        max_col = self.col_max(sheet)
+
+        th_title_rows: List[int] = []
+        th_title_cols: List[int] = []
+        for r in range(1, max_row + 1):
+            for c in range(1, max_col + 1):
+                v = self.text_or_none(sheet, r, c)
+                if v and "厚度" in str(v):
+                    th_title_rows.append(r)
+                    th_title_cols.append(c)
+                    break
+
+        for idx, (title_row, title_col) in enumerate(zip(th_title_rows, th_title_cols)):
+            scan_end = th_title_rows[idx + 1] - 1 if idx + 1 < len(th_title_rows) else max_row
+
+            grade_col = title_col - 1
+            header_row = title_row + 1
+            if header_row > scan_end:
+                continue
+
+            price_end_col = self._get_merge_end_col(sheet, title_row, title_col)
+            price_cols = [
+                c for c in range(title_col, price_end_col + 1)
+                if self.text_or_none(sheet, header_row, c) is not None
+            ]
+            if not price_cols:
+                continue
+
+            data_start = None
+            data_end = None
+            blank_streak = 0
+            for r in range(header_row + 1, scan_end + 1):
+                label = self.text_or_none(sheet, r, grade_col)
+                has_price = any(self.text_or_none(sheet, r, c) for c in price_cols)
+                if label:
+                    if data_start is None:
+                        data_start = r
+                    blank_streak = 0
+                elif has_price:
+                    blank_streak = 0
+                else:
+                    blank_streak += 1
+                    if blank_streak >= 1:
+                        data_end = r - 1
+                        break
+
+            if data_start is None:
+                continue
+            if data_end is None:
+                data_end = scan_end
+
+            blocks.append({
+                "category_name": "冷轧钢",
+                "policy_type": "THICKNESS",
+                "header_row": header_row,
+                "grade_col": grade_col,
+                "price_cols": sorted(price_cols),
+                "data_row_start": data_start,
+                "data_row_end": data_end,
+                "base_thickness": self.scanner.infer_base_thickness(
+                    sheet, header_row, title_row, self.col_max(sheet)
+                ),
+                "grade_blacklist": GRADE_LABELS,
+            })
+
+        return blocks
 
     # ------------------------------------------------------------------ #
-    # 宽度块
+    # 工具
     # ------------------------------------------------------------------ #
 
-    # ------------------------------------------------------------------ #
-    #  块定位
-    # ------------------------------------------------------------------ #
-
-    def _first_width_col(
-        self,
-        sheet: Worksheet,
-        header_row: int,
-        start_col: int = 1,
-    ) -> int | None:
-        """header_row 上，从 start_col 起第一个宽度 boundary 列。"""
-        for c in range(start_col, self.col_max(sheet) + 1):
-            if self._is_width_boundary(self.text_or_none(sheet, header_row, c)):
-                return c
-        return None
-
-    def _last_width_col(
-        self,
-        sheet: Worksheet,
-        header_row: int,
-        start_col: int,
-    ) -> int:
-        """header_row 上，从 start_col 起最后一个连续的宽度 boundary 列。"""
-        end_col = start_col
-        for c in range(start_col, self.col_max(sheet) + 1):
-            if self._is_width_boundary(self.text_or_none(sheet, header_row, c)):
-                end_col = c
-            else:
-                break
-        return end_col
-
-    def _is_width_boundary(self, text: str) -> bool:
-        """判断文本是否为宽度 boundary（而非厚度单边标签）。"""
+    def _is_width_col_header(self, text: str | None) -> bool:
+        """判断列头文本是否为宽度相关（包含"宽"，或为单操作符宽度范围）。"""
         if not text:
             return False
         text = str(text).strip()
-        # 宽度 boundary 必定包含两个操作符（既有限制又有上限，或有变量名）
-        return bool(_WIDTH_BOUNDARY_PATTERN.match(text))
+        if "宽" in text:
+            return True
+        # 单操作符宽度：≥1051, ＜800, ≥1000
+        if text.startswith("≥") or text.startswith("＞") or text.startswith("<"):
+            try:
+                num = float(text.lstrip("≥＞<　 "))
+                return num >= 100
+            except ValueError:
+                return True
+        return False
+
+    def _find_header_row_in_range(
+        self, sheet: Worksheet, title_row: int, scan_end: int
+    ) -> int | None:
+        """在 title_row+1 到 scan_end 之间，找第一个含宽度列头的行。"""
+        for r in range(title_row + 1, scan_end + 1):
+            for c in range(1, self.col_max(sheet) + 1):
+                if self._is_width_col_header(self.text_or_none(sheet, r, c)):
+                    return r
+        return None
+
+    def _get_merge_end_col(self, sheet: Worksheet, row: int, col: int) -> int:
+        """返回合并单元格的结束列号；若非合并单元格则返回传入的列号。"""
+        for merged in sheet.merged_cells.ranges:
+            if merged.min_row <= row <= merged.max_row and merged.min_col <= col <= merged.max_col:
+                return merged.max_col
+        return col
+
+    # ------------------------------------------------------------------ #
+    # 块定位
+    # ------------------------------------------------------------------ #
 
     def find_width_blocks(
         self, sheet: Worksheet, steel_mill: str
     ) -> List[Dict[str, Any]]:
         """定位首钢所有宽度块。
 
-        逻辑（按你指定的）：
-        1. 扫描全表，找含"宽度"关键字的行 → 块标题
-        2. 标题的下一行（或往后几行）→ 找第一个含宽度 boundary 的行作为列头
-        3. 块范围由相邻标题行自然确定
-        4. 在块范围内，从上往下扫描确定数据起止行（遇空1行停止）
+        1. 扫描全表，找含"宽度"关键字的行 → 块标题（其合并单元格 end_col 即为价格列终点）
+        2. 标题的下一行 → 找第一个含宽度列头的行作为列头行
+        3. 从列头行含"宽"的列确定为起始列，标题合并单元格 end_col 为终止列
+        4. 在块范围内扫描数据行
         """
         blocks: List[Dict[str, Any]] = []
         max_row = self.row_max(sheet)
         max_col = self.col_max(sheet)
 
-        # 1. 找所有含"宽度"关键字的行（块标题）
         w_title_rows: List[int] = []
         w_title_cols: List[int] = []
         for r in range(1, max_row + 1):
             for c in range(1, max_col + 1):
-                text = self.text_or_none(sheet, r, c)
-                if text and "宽度" in text:
+                if self.text_or_none(sheet, r, c) and "宽度" in str(
+                    self.text_or_none(sheet, r, c)
+                ):
                     w_title_rows.append(r)
                     w_title_cols.append(c)
                     break
 
-        # 2. 遍历每个块
         for idx, (title_row, title_col) in enumerate(zip(w_title_rows, w_title_cols)):
             scan_end = w_title_rows[idx + 1] - 1 if idx + 1 < len(w_title_rows) else max_row
 
-            # 3. 从 title_row + 1 往下，找第一个含宽度 boundary 的行作为列头行
-            header_row = None
-            for r in range(title_row + 1, scan_end + 1):
-                for c in range(1, max_col + 1):
-                    text = self.text_or_none(sheet, r, c)
-                    if self._is_width_boundary(text):
-                        header_row = r
-                        break
-                if header_row is not None:
-                    break
+            header_row = self._find_header_row_in_range(sheet, title_row, scan_end)
             if header_row is None:
                 continue
 
-            # 4. 列头行上找宽度范围起止列
-            width_start_col = self._first_width_col(sheet, header_row)
+            # 标题合并单元格的 end_col 即为价格列终点
+            price_end_col = self._get_merge_end_col(sheet, title_row, title_col)
+
+            # 从列头行含"宽"的列确定为起始列
+            width_start_col = None
+            for c in range(title_col, max_col + 1):
+                if "宽" in str(self.text_or_none(sheet, header_row, c) or ""):
+                    width_start_col = c
+                    break
             if width_start_col is None:
                 continue
-            width_end_col = self._last_width_col(sheet, header_row, width_start_col)
 
-            # 5. 收集价格列
-            price_cols = self.collect_price_cols(
-                sheet, header_row,
-                start_col=width_start_col, end_col=width_end_col,
-            )
+            # 收集价格列（title_col+1 到 price_end_col）
+            price_cols = [
+                c for c in range(title_col + 1, price_end_col + 1)
+                if self.text_or_none(sheet, header_row, c) is not None
+            ]
             if not price_cols:
                 continue
 
-            # 6. 从上往下扫描，确定数据起止行
-            # grade_col = 标题所在列（子组标签列，如 '＞1', '0.5<t≤1.0'）
+            # 扫描数据行
             grade_col = title_col
             data_start = None
             data_end = None
@@ -162,7 +210,6 @@ class ShougangSheetHandler(BaseSheetHandler):
                 has_price = any(
                     self.text_or_none(sheet, r, c) is not None for c in price_cols
                 )
-
                 if label and label not in GRADE_LABELS:
                     if data_start is None:
                         data_start = r
@@ -180,7 +227,6 @@ class ShougangSheetHandler(BaseSheetHandler):
             if data_end is None:
                 data_end = scan_end
 
-            # 7. 推断 category
             title_text = self.text_or_none(sheet, title_row, title_col) or ""
             if "镀锌" in title_text:
                 category = "镀锌钢"
@@ -194,7 +240,7 @@ class ShougangSheetHandler(BaseSheetHandler):
                 "policy_type": "WIDTH",
                 "header_row": header_row,
                 "grade_col": grade_col,
-                "price_cols": price_cols,
+                "price_cols": sorted(price_cols),
                 "data_row_start": data_start,
                 "data_row_end": data_end,
                 "base_thickness": None,
@@ -204,7 +250,7 @@ class ShougangSheetHandler(BaseSheetHandler):
         return blocks
 
     # ------------------------------------------------------------------ #
-    #  块解析
+    # 块解析
     # ------------------------------------------------------------------ #
 
     def _parse_width_block(
@@ -213,7 +259,6 @@ class ShougangSheetHandler(BaseSheetHandler):
         steel_mill: str,
         block: Dict[str, Any],
     ) -> List[ParsedPolicy]:
-        """解析单个宽度块：每行厚度子组 → 一条政策。"""
         header_row = block["header_row"]
         price_cols = sorted(block["price_cols"])
         data_start = block["data_row_start"]
@@ -263,7 +308,7 @@ class ShougangSheetHandler(BaseSheetHandler):
         return policies
 
     # ------------------------------------------------------------------ #
-    #  入口
+    # 入口
     # ------------------------------------------------------------------ #
 
     def _parse_blocks(
