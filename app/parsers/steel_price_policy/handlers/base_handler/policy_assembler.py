@@ -49,32 +49,32 @@ class PolicyAssembler:
         sheet: Worksheet,
         label_row: int,
         block_end: int,
-        max_col: int,
     ) -> Optional[Dict[str, Any]]:
         """执行厚度块的 5 步定位，返回块描述或 None。"""
         title_row = self.scanner.find_thickness_title_row(
-            sheet, label_row, block_end, scan_cols=list(range(2, max_col + 1))
+            sheet, label_row, block_end, scan_cols=None
         )
         if title_row is None:
             return None
 
         header_row = self.scanner.find_header_row(
-            sheet, title_row + 1, block_end, scan_cols=list(range(2, max_col + 1))
+            sheet, title_row + 1, block_end, scan_cols=None
         )
         if header_row is None:
             return None
 
-        price_cols = self.scanner.collect_price_cols(
-            sheet, header_row, start_col=2, end_col=max_col
+        # header 行遇到第一个空 cell 即终止扫描
+        price_cols = self.scanner.collect_price_cols_thickness(
+            sheet, header_row, start_col=2
         )
         if not price_cols:
             return None
 
         data_end = block_end
         base_thickness = self.scanner.infer_base_thickness(
-            sheet, header_row, label_row, max_col
+            sheet, header_row, label_row
         )
-        category = self.scanner.infer_category(sheet, label_row, max_col)
+        category = self.scanner.infer_category(sheet, label_row)
 
         return {
             "category_name": category,
@@ -462,8 +462,6 @@ class PolicyAssembler:
         self,
         sheet: Worksheet,
         block: Dict[str, Any],
-        *,
-        max_col: int = 14,
     ) -> str:
         """综合'字面 hint'与'grade 后缀'推断块的 category。"""
         label_row = block.get("header_row", 0) - 1

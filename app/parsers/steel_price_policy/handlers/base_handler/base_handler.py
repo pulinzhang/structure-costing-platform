@@ -280,7 +280,7 @@ class BaseSheetHandler:
 
             # 确定块的结束行：从钢种行的下一行开始，当钢种列为空时说明块结束
             block_end = self._find_thickness_block_end(
-                sheet, title_row, grade_col, max_row, max_col
+                sheet, title_row, grade_col, max_row
             )
 
             if block_end <= header_row:
@@ -288,14 +288,14 @@ class BaseSheetHandler:
 
             # 收集加减价边界列
             price_cols = self._collect_boundary_cols(
-                sheet, header_row, title_col, max_col
+                sheet, header_row, title_col
             )
             if not price_cols:
                 continue
 
             # 确定基准厚度
             base_thickness = self.scanner.infer_base_thickness(
-                sheet, header_row, title_row, max_col
+                sheet, header_row, title_row
             )
 
             # 先构建 block（需要 data_row_start 和 data_row_end）
@@ -311,9 +311,7 @@ class BaseSheetHandler:
             }
 
             # 确定分类
-            category_name = self.assembler.infer_block_category(
-                sheet, block, max_col=max(price_cols)
-            )
+            category_name = self.assembler.infer_block_category(sheet, block)
             block["category_name"] = category_name
             blocks.append(block)
 
@@ -325,17 +323,13 @@ class BaseSheetHandler:
         title_row: int,
         grade_col: int,
         max_row: int,
-        max_col: int,
     ) -> int:
         """从 header_row + 2（即第一个钢种数据行）开始扫描，当钢种列为空时说明这个厚度块结束。"""
-        # header_row = title_row + 1，数据行从 header_row + 1 开始
-        # grade_col 必须 >= 1
         if grade_col < 1:
             grade_col = 1
         start_scan = title_row + 2
         for r in range(start_scan, max_row + 1):
             grade_text = self.scanner.text(sheet, r, grade_col)
-            # 当钢种列为空时，说明这个厚度块结束
             if not grade_text or grade_text.strip() == "":
                 return r - 1
         return max_row
@@ -345,31 +339,29 @@ class BaseSheetHandler:
         sheet: Worksheet,
         header_row: int,
         title_col: int,
-        max_col: int,
     ) -> List[int]:
         """从 header_row 收集所有含 boundary 的列（加减价范围列）。
 
-        厚度块专用：纯数字视为 <=（上限），如 "0.5" → <=0.5。
+        厚度块专用：纯数字规范化为 "<=数字" 后判断，如 0.5 → <=0.5。
+        扫描时遇到第一个空 cell 即终止（块的边界由单元格是否为空决定）。
         """
         import re
         from app.parsers.steel_price_policy.boundary_parser import _parse_boundary_thickness
 
         _PURE_NUM_RE = re.compile(r"^\s*(-?\d+(?:\.\d+)?)\s*$")
+        scan_end = self.scanner.col_max(sheet)
         cols = []
-        for c in range(title_col, max_col + 1):
+        for c in range(title_col, scan_end + 1):
             raw = sheet.cell(row=header_row, column=c).value
-            # 纯数字开头：原始数据不规范，补全为 "<=数字" 使其规范
-            if isinstance(raw, (int, float)) or (
-                isinstance(raw, str) and _PURE_NUM_RE.match(raw)
-            ):
-                val_str = str(raw).strip()
-                if isinstance(raw, str) and not _PURE_NUM_RE.match(val_str):
-                    normalized = val_str
-                else:
-                    normalized = "<=" + val_str
-                if _parse_boundary_thickness(normalized) is not None:
-                    cols.append(c)
-            elif _parse_boundary_thickness(raw) is not None:
+            if raw is None:
+                break
+            if isinstance(raw, (int, float)):
+                normalized = "<=" + str(raw)
+            elif isinstance(raw, str) and _PURE_NUM_RE.match(raw):
+                normalized = "<=" + raw.strip()
+            else:
+                normalized = raw
+            if _parse_boundary_thickness(normalized) is not None:
                 cols.append(c)
         return cols
 
@@ -405,11 +397,10 @@ class BaseSheetHandler:
         sheet: Worksheet,
         label_row: int,
         block_end: int,
-        max_col: int,
     ) -> Optional[Dict[str, Any]]:
         """委托给 PolicyAssembler 执行 5 步定位。"""
         return self.assembler.locate_thickness_block(
-            sheet, label_row, block_end, max_col
+            sheet, label_row, block_end
         )
 
     def locate_width_block(
@@ -461,8 +452,8 @@ class BaseSheetHandler:
     def category_from_grade_name(self, grade: str) -> str:
         return self.assembler.category_from_grade_name(grade)
 
-    def infer_block_category(self, sheet: Worksheet, block: Dict[str, Any], *, max_col: int = 14) -> str:
-        return self.assembler.infer_block_category(sheet, block, max_col=max_col)
+    def infer_block_category(self, sheet: Worksheet, block: Dict[str, Any]) -> str:
+        return self.assembler.infer_block_category(sheet, block)
 
     # ------------------------------------------------------------------ #
     # 子类调用别名（子类用下划线前缀，与旧代码兼容）

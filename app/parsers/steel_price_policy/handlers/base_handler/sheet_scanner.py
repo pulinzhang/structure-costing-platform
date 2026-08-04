@@ -52,6 +52,18 @@ class SheetScanner:
     def col_max(sheet: Worksheet) -> int:
         return sheet.max_column or 0
 
+    @staticmethod
+    def col_max_on_row(
+        sheet: Worksheet, row: int, start_col: int = 1, end_col: Optional[int] = None
+    ) -> int:
+        """返回指定行中，最后一个非空单元格的列号。"""
+        end_col = end_col or sheet.max_column
+        last = 0
+        for c in range(start_col, end_col + 1):
+            if sheet.cell(row=row, column=c).value is not None:
+                last = c
+        return last
+
     # ------------------------------------------------------------------ #
     # 合并单元格工具
     # ------------------------------------------------------------------ #
@@ -183,15 +195,20 @@ class SheetScanner:
         """在 header_row 上收集所有含 boundary 的列（厚度专用版）。
 
         纯数字规范化为 "<=数字" 后判断，如 "0.5" → <=0.5。
+        扫描时遇到第一个空 cell 即终止（块的边界由单元格是否为空决定）。
+        例如：0.5  ＞0.5  ≥0.6  ≥0.7  ≥0.8  ≥1.0  ≥1.5  ≥1.8  ≥2.3  ≥2.51
+        当某列的单元格为空时，其后的列不再属于该块。
         """
         import re
         from app.parsers.steel_price_policy.boundary_parser import _parse_boundary_thickness
 
         _PURE_NUM_RE = re.compile(r"^\s*(-?\d+(?:\.\d+)?)\s*$")
-        end_col = end_col or self.col_max(sheet)
+        scan_end = end_col if end_col is not None else self.col_max(sheet)
         cols = []
-        for c in range(start_col, end_col + 1):
+        for c in range(start_col, scan_end + 1):
             raw = sheet.cell(row=header_row, column=c).value
+            if raw is None:
+                break
             if isinstance(raw, (int, float)):
                 normalized = "<=" + str(raw)
             elif isinstance(raw, str) and _PURE_NUM_RE.match(raw):
@@ -260,12 +277,12 @@ class SheetScanner:
         sheet: Worksheet,
         header_row: int,
         label_row: int,
-        max_col: int,
     ) -> Optional[Any]:
         """在 header_row 附近（向上 3 行）查找 `基准厚度 X.X`。"""
         from decimal import Decimal
+        scan_end = self.col_max(sheet)
         for r in range(max(1, label_row - 3), header_row + 1):
-            for c in range(1, max_col + 1):
+            for c in range(1, scan_end + 1):
                 text = _to_str(sheet.cell(row=r, column=c).value)
                 if not text:
                     continue
@@ -278,12 +295,12 @@ class SheetScanner:
         self,
         sheet: Worksheet,
         label_row: int,
-        max_col: int,
     ) -> str:
         """在 label_row 上方 6 行内查找分类关键字。"""
         from app.parsers.steel_price_policy.handlers.constants import CATEGORY_HINTS
+        scan_end = self.col_max(sheet)
         for r in range(max(1, label_row - 6), label_row):
-            for c in range(1, max_col + 1):
+            for c in range(1, scan_end + 1):
                 text = _to_str(sheet.cell(row=r, column=c).value)
                 if not text:
                     continue
