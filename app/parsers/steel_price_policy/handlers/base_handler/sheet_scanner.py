@@ -57,6 +57,30 @@ class SheetScanner:
     # ------------------------------------------------------------------ #
 
     @staticmethod
+    def find_thickness_end_col(
+        sheet: Worksheet,
+        title_row: int,
+        max_col: int,
+    ) -> int:
+        """找到"厚度加减价-基准厚度"标题行中，合并单元格的结束列。
+
+        逻辑：在 title_row 上找到含关键字的单元格，然后检查它属于哪个合并范围，
+        返回该合并范围的 max_col。若无合并则返回 max_col。
+        这样每个厚度块的结束列由其合并单元格决定，而非统一用 sheet 最大列。
+        """
+        for c in range(1, max_col + 1):
+            text = _to_str(sheet.cell(row=title_row, column=c).value)
+            if text and "厚度加减价-基准厚度" in text:
+                for merged_range in sheet.merged_cells:
+                    if (
+                        merged_range.min_row <= title_row <= merged_range.max_row
+                        and merged_range.min_col <= c <= merged_range.max_col
+                    ):
+                        return merged_range.max_col
+                return c
+        return max_col
+
+    @staticmethod
     def find_start_row(
         sheet: Worksheet,
         r: int,
