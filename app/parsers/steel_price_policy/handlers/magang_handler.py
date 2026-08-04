@@ -1,11 +1,17 @@
-"""马钢 Sheet 处理器（旧版格式，固定区域 N2:T33）。
+"""马钢 Sheet 处理器（旧版格式，固定区域 N2:T30）。
 
-五类宽度加减价区域（写死固定行）：
-    热轧宽度加减价        R2:R5     col N-T
-    冷轧卷板（非高强）    R7:R11    col N-T
-    高强冷轧卷宽度加减价   R12:R14   col N-T
-    镀锌卷板（非高强）    R20:R23   col N-T
-    镀锌卷板（高强）      R26:R29   col N-T
+六类宽度加减价区域（写死固定行）：
+    冷轧钢卷宽度加减价              header_row=3   data_row=4~5    col N(14)-R(18)
+    冷轧卷板（非高强）    header_row=9   data_row=10~11  col N(14)-T(20)
+    冷轧卷板（高强）      header_row=13  data_row=14      col N(14)-S(19)
+    镀锌卷板（非高强）    header_row=22  data_row=23      col N(14)-S(19)
+    镀锌卷板（高强）      header_row=26  data_row=27      col N(14)-S(19)
+    镀锌卷板（高强）      header_row=29  data_row=30      col N(14)-S(19)
+
+第三类，冷轧卷板（高强）宽度范围是特殊格式：
+    列头文本 <900 <1000 1000≤w<1400 1400≤w<1500 ≥1500
+    其中"<900"表示 w<900，"<1000"实际是 900≤w<1000，"≥1000"实际是 w≥1000
+    因此 col15~col19 的真实边界为：col15(900≤w<1000) col16(w≥1000) col17(1000≤w<1400) col18(1400≤w<1500) col19(w≥1500)
 
 闭区间用"～"表示，如 0.3～3.0 表示 0.3<=t<=3.0
 """
@@ -26,8 +32,41 @@ from app.parsers.steel_price_policy.models.policy import (
 
 
 # ============================================================================
-#  五类固定区域定义
+#  六类固定区域定义
 # ============================================================================
+
+# 冷轧非高强钢种
+_COLD_ROLL_NORMAL_GRADES = [
+    "DC01", "DC03", "DC04", "DC06",
+    "B180H1", "B170P1/HC180Y", "B210P1/HC220Y", "B250P1/HC260Y",
+    "HC340/590DP", "HC340LA", "HC420LA", "HC420/780DP",
+]
+
+# 高强冷轧钢种
+_COLD_ROLL_HIGH_STRENGTH_GRADES = [
+    "QSTE420TM", "SAPH370", "SAPH440", "SPHC", "SPHE",
+]
+
+# 镀锌非高强钢种
+_GALVANIZED_NORMAL_GRADES = [
+    "DC54D+Z", "DC56D+Z",
+    "HC180YD+Z", "HC220YD+Z", "HC260YD+Z",
+    "HC340/590DPD+Z", "HC420/780DPD+Z",
+    "HC340LAD+Z", "HC420LAD+Z", "HC500LAD+Z",
+]
+
+# 镀锌高强钢种1：H300LA及以上低合金、HC250/450DPD及以上双相钢、HC380/590TRD及以上
+_GALVANIZED_HIGH_STRENGTH_GRADES_1 = [
+    "H300LA", "HC250/450DPD", "HC380/590TRD",
+    "HC300/500DPD", "HC340/600DPD", "HC380/600DPD",
+    "HC420/780TRD", "HC460/780TRD", "HC500/780TRD",
+]
+
+# 镀锌高强钢种2：CR240LA、H260YD、H260LAD、H260PD、M260LYD
+_GALVANIZED_HIGH_STRENGTH_GRADES_2 = [
+    "CR240LA", "H260YD", "H260LAD", "H260PD", "M260LYD",
+]
+
 
 class _WidthRegion:
     def __init__(
@@ -41,6 +80,8 @@ class _WidthRegion:
         price_col_end: int,
         data_row_start: int,
         data_row_end: int,
+        grades: Optional[List[str]] = None,
+        is_width_special: bool = False,
     ):
         self.title = title
         self.category = category
@@ -51,6 +92,8 @@ class _WidthRegion:
         self.price_col_end = price_col_end
         self.data_row_start = data_row_start
         self.data_row_end = data_row_end
+        self.grades = grades or []
+        self.is_width_special = is_width_special
 
 
 def _grade_from_col14(sheet: Worksheet, row: int) -> Optional[str]:
@@ -71,24 +114,25 @@ def _grade_from_col15(sheet: Worksheet, row: int) -> Optional[str]:
     return None
 
 
-# 五个固定区域
+# 六个固定区域
 _WIDTH_REGIONS: List[_WidthRegion] = [
-    # 1. 热轧宽度加减价  R2:R5  col N(14)-T(20)
+    # 1. 冷轧钢宽度加减价  R2:R5  col N(14)-T(20)
     _WidthRegion(
-        title="热轧宽度加减价",
-        category="热轧钢",
+        title="冷轧钢宽度加减价",
+        category="冷轧钢",
         grade_value_fn=_grade_from_col14,
         header_row=3,
         grade_col=14,
         price_col_start=15,
-        price_col_end=19,
+        price_col_end=18,
         data_row_start=4,
         data_row_end=5,
+        grades=[],  # 通用冷轧钢宽度加减价
     ),
-    # 2. 冷轧卷板（非高强）  R7:R11  col N-T
+    # 2. 冷轧卷板（非高强）
     _WidthRegion(
         title="冷轧卷板（非高强）",
-        category="冷轧钢",
+        category="冷轧卷板（非高强）",
         grade_value_fn=_grade_from_col14,
         header_row=9,
         grade_col=14,
@@ -96,42 +140,60 @@ _WIDTH_REGIONS: List[_WidthRegion] = [
         price_col_end=20,
         data_row_start=10,
         data_row_end=11,
+        grades=_COLD_ROLL_NORMAL_GRADES,
     ),
-    # 3. 高强冷轧卷宽度加减价  R12:R14  col N-T
+    # 3. 高强冷轧卷宽度加减价（宽度列头为特殊格式：<900/<1000/...）
     _WidthRegion(
-        title="高强冷轧卷宽度加减价",
-        category="冷轧钢",
+        title="冷轧卷板（高强）",
+        category="冷轧卷板（高强）",
         grade_value_fn=_grade_from_col15,
         header_row=13,
-        grade_col=15,
-        price_col_start=16,
-        price_col_end=20,
+        grade_col=14,
+        price_col_start=15,
+        price_col_end=19,
         data_row_start=14,
         data_row_end=14,
+        grades=_COLD_ROLL_HIGH_STRENGTH_GRADES,
+        is_width_special=True,
     ),
-    # 4. 镀锌卷板（非高强）  R20:R23  col N-T
+    # 4. 镀锌卷板（非高强）
     _WidthRegion(
         title="镀锌卷板（非高强）",
-        category="镀锌钢",
+        category="镀锌卷板（非高强）",
         grade_value_fn=_grade_from_col15,
         header_row=22,
-        grade_col=15,
-        price_col_start=16,
-        price_col_end=20,
+        grade_col=14,
+        price_col_start=15,
+        price_col_end=19,
         data_row_start=23,
         data_row_end=23,
+        grades=_GALVANIZED_NORMAL_GRADES,
     ),
-    # 5. 镀锌卷板（高强）  R26:R29  col N-T
+    # 5. 镀锌卷板（高强）  H300LAD及以上低合金、HC250/450DPD及以上双相钢、HC380/590TRD及以上
     _WidthRegion(
         title="镀锌卷板（高强）",
-        category="镀锌钢",
+        category="镀锌卷板（高强）",
         grade_value_fn=_grade_from_col15,
         header_row=26,
-        grade_col=15,
-        price_col_start=16,
-        price_col_end=20,
+        grade_col=14,
+        price_col_start=15,
+        price_col_end=19,
         data_row_start=27,
         data_row_end=27,
+        grades=_GALVANIZED_HIGH_STRENGTH_GRADES_1,
+    ),
+    # 6. 镀锌卷板（高强）  CR240LA、H260YD、H260LAD、H260PD、M260LYD
+    _WidthRegion(
+        title="镀锌卷板（高强）",
+        category="镀锌卷板（高强）",
+        grade_value_fn=_grade_from_col15,
+        header_row=29,
+        grade_col=14,
+        price_col_start=15,
+        price_col_end=19,
+        data_row_start=30,
+        data_row_end=30,
+        grades=_GALVANIZED_HIGH_STRENGTH_GRADES_2,
     ),
 ]
 
@@ -252,12 +314,49 @@ def _infer_width_boundaries(
     return result
 
 
+def _parse_width_boundary_cold_high_strength(
+    price_cols: List[int],
+) -> Dict[int, Tuple[Optional[Decimal], str, Optional[Decimal], str]]:
+    """冷轧卷板（高强）特殊宽度边界：列头文本 <900 <1000 ... 与实际含义不符。
+
+    实际映射（固定写死）：
+        col15 <900        → w < 900
+        col16 <1000       → 900 <= w < 1000   （<1000 实际是第二段）
+        col17 1000≤w<1400 → 1000 <= w < 1400
+        col18 1400≤w<1500 → 1400 <= w < 1500
+        col19 ≥1500       → w >= 1500
+    """
+    result: Dict[int, Tuple[Optional[Decimal], str, Optional[Decimal], str]] = {}
+
+    # col15: w < 900
+    if 15 in price_cols:
+        result[15] = (None, ">=", Decimal("900"), "<")
+
+    # col16: 900 <= w < 1000
+    if 16 in price_cols:
+        result[16] = (Decimal("900"), ">=", Decimal("1000"), "<")
+
+    # col17: 1000 <= w < 1400
+    if 17 in price_cols:
+        result[17] = (Decimal("1000"), ">=", Decimal("1400"), "<")
+
+    # col18: 1400 <= w < 1500
+    if 18 in price_cols:
+        result[18] = (Decimal("1400"), ">=", Decimal("1500"), "<")
+
+    # col19: w >= 1500
+    if 19 in price_cols:
+        result[19] = (Decimal("1500"), ">=", None, "<")
+
+    return result
+
+
 # ============================================================================
 #  Handler
 # ============================================================================
 
 class MagangSheetHandler(BaseSheetHandler):
-    """马钢 Sheet 处理器（旧版格式）。使用固定区域逐行读取 N2:T33 五类宽度加减价。"""
+    """马钢 Sheet 处理器（旧版格式）。使用固定区域逐行读取 N2:T33 六类宽度加减价。"""
 
     def parse(
         self,
@@ -266,8 +365,8 @@ class MagangSheetHandler(BaseSheetHandler):
         warnings: List[str],
     ) -> List:
         policies: List = []
-        policies.extend(self._parse_width_fixed(sheet, steel_mill, warnings))
         policies.extend(self._parse_thickness_fixed(sheet, steel_mill))
+        policies.extend(self._parse_width_fixed(sheet, steel_mill, warnings))
         return policies
 
     # ------------------------------------------------------------------ #
@@ -290,8 +389,9 @@ class MagangSheetHandler(BaseSheetHandler):
         warnings: List[str],
     ) -> List:
         """分两步处理：
-        1. 宽引入：遍历钢种列，收集所有有效的 grade 行
-        2. 宽度块处理：从列头行解析各价格列的宽度边界
+        对于grades为空的，说明是冷轧卷类
+        对于grades不为空的，说明是板类。grades里的每一个都是一个policy
+        也就是对应主表里的，grade_value
         """
         header_row = region.header_row
         price_cols = list(range(region.price_col_start, region.price_col_end + 1))
@@ -325,22 +425,51 @@ class MagangSheetHandler(BaseSheetHandler):
         if not boundaries:
             return []
 
-        # Step 3: 对每个钢种行构建 policy
-        policies: List = []
-        for r, grade_value in grade_rows_with_value:
-            items = self._build_width_items(sheet, r, price_cols, boundaries)
-            if not items:
-                continue
+        # Step 3: 确定钢种列表
+        # grades 不为空 -> 使用 region.grades 中的钢种列表（板类）
+        # grades 为空 -> 使用行数据中的 grade_value（冷轧卷类）
+        if region.grades:
+            steel_grades = region.grades
+            use_row_grade = False
+        else:
+            steel_grades = None
+            use_row_grade = True
 
-            policies.append(ParsedPolicy(
-                steel_mill=steel_mill,
-                category_name=region.category,
-                grade_type=GRADE_TYPE_THICKNESS_RANGE,
-                grade_value=grade_value,
-                policy_type=POLICY_TYPE_WIDTH,
-                base_thickness=None,
-                items=items,
-            ))
+        # Step 4: 对每个钢种构建 policy
+        policies: List = []
+        if use_row_grade:
+            # 冷轧卷类：使用行数据中的 grade_value
+            for r, grade_value in grade_rows_with_value:
+                items = self._build_width_items(sheet, r, price_cols, boundaries)
+                if not items:
+                    continue
+
+                policies.append(ParsedPolicy(
+                    steel_mill=steel_mill,
+                    category_name=region.category,
+                    grade_type=GRADE_TYPE_THICKNESS_RANGE,
+                    grade_value=grade_value,
+                    policy_type=POLICY_TYPE_WIDTH,
+                    base_thickness=None,
+                    items=items,
+                ))
+        else:
+            # 板类：每行代表一个厚度范围，每个钢种共用该行的价格数据
+            for row_idx, (data_row, _) in enumerate(grade_rows_with_value):
+                items = self._build_width_items(sheet, data_row, price_cols, boundaries)
+                if not items:
+                    continue
+
+                for grade_value in steel_grades:
+                    policies.append(ParsedPolicy(
+                        steel_mill=steel_mill,
+                        category_name=region.category,
+                        grade_type=GRADE_TYPE_THICKNESS_RANGE,
+                        grade_value=grade_value,
+                        policy_type=POLICY_TYPE_WIDTH,
+                        base_thickness=None,
+                        items=items,
+                    ))
 
         return policies
     def _build_width_items(

@@ -22,7 +22,9 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from openpyxl.worksheet.worksheet import Worksheet
 
+from app.parsers.steel_price_policy.boundary_parser import _Boundary
 from app.parsers.steel_price_policy.handlers.constants import BLANK_LIMIT, GRADE_LABELS
+from app.parsers.steel_price_policy.models.ladder_item import ParsedLadderItem
 from .policy_assembler import PolicyAssembler
 from .sheet_scanner import SheetScanner
 
@@ -239,7 +241,7 @@ class BaseSheetHandler:
         sheet: Worksheet,
         header_row: int,
         price_cols: List[int],
-    ) -> Dict[int, "_Boundary"]:
+    ) -> Dict[int, _Boundary]:
         return self.assembler.collect_boundaries(sheet, header_row, price_cols)
 
     def _build_items_for_row(
@@ -247,10 +249,10 @@ class BaseSheetHandler:
         sheet: Worksheet,
         r: int,
         price_cols: List[int],
-        boundaries: Dict[int, "_Boundary"],
+        boundaries: Dict[int, _Boundary],
         policy_type: str = "THICKNESS",
         sort_order: int = 0,
-    ) -> Tuple[List["ParsedLadderItem"], Any]:
+    ) -> Tuple[List[ParsedLadderItem], Any]:
         return self.assembler.build_items_for_row(
             sheet, r, price_cols, boundaries, policy_type, sort_order
         )
