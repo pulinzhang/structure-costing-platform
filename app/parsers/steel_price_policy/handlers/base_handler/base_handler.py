@@ -371,10 +371,23 @@ class BaseSheetHandler:
             raw = sheet.cell(row=header_row, column=c).value
             if raw is None:
                 break
+            raw_stripped = str(raw).strip()
+            # "最大" 单独出现或 "最大X" 形式 → 无上界，视为有效边界列
+            import re as _re
+            if _re.match(r"^最大\s*(\d+(?:\.\d+)?)?\s*$", raw_stripped):
+                cols.append(c)
+                continue
             if isinstance(raw, (int, float)):
                 normalized = "<=" + str(raw)
-            elif isinstance(raw, str) and _PURE_NUM_RE.match(raw):
-                normalized = "<=" + raw.strip()
+            elif isinstance(raw, str):
+                # 处理 "最大2.5" → "<=2.5"
+                m = _re.match(r"^最大\s*(\d+(?:\.\d+)?)\s*$", raw_stripped)
+                if m:
+                    normalized = "<= " + m.group(1)
+                elif _PURE_NUM_RE.match(raw_stripped):
+                    normalized = "<=" + raw_stripped
+                else:
+                    normalized = raw_stripped
             else:
                 normalized = raw
             if _parse_boundary_thickness(normalized) is not None:
