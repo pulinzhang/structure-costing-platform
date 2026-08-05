@@ -41,9 +41,10 @@ HEADERS = [
     "牌号类型", "牌号/范围", "基准厚度",
     "明细ID", "子分组", "厚度条件", "宽度条件",
     "加减价(元/吨)", "基准", "排序",
+    "文件名", "行号", "列号",
 ]
 
-COLUMN_WIDTHS = [10, 8, 8, 12, 12, 12, 10, 15, 10, 10, 15, 18, 18, 14, 8, 8]
+COLUMN_WIDTHS = [10, 8, 8, 12, 12, 12, 10, 15, 10, 10, 15, 18, 18, 14, 8, 8, 30, 8, 8]
 
 
 # =============================================================================
@@ -215,6 +216,9 @@ class SteelPricePolicyExporter:
                 row.price_adjustment if row.price_adjustment is not None else "",
                 "是" if row.is_base == 1 else "",
                 row.sort_order or 0,
+                row.excel_filename or "",
+                row.excel_row or "",
+                row.excel_col or "",
             ]
             ws.append(row_data)
 
@@ -224,7 +228,7 @@ class SteelPricePolicyExporter:
                 cell.font = DATA_FONT
                 cell.border = THIN_BORDER
                 cell.fill = fill
-                if col_idx in (1, 2, 3, 10, 15, 16):
+                if col_idx in (1, 2, 3, 10, 17, 18, 19):
                     cell.alignment = DATA_ALIGNMENT_RIGHT
                 elif col_idx in (14,):
                     cell.alignment = DATA_ALIGNMENT_CENTER

@@ -186,6 +186,8 @@ class BaseSheetHandler:
                         price_adjustment=price,
                         is_base=False,
                         sort_order=0,
+                        excel_row=row,
+                        excel_col=c,
                     )
 
                     policies.append(ParsedPolicy(
@@ -491,6 +493,15 @@ class BaseSheetHandler:
         min_row: int = 1,
     ) -> int:
         return self.scanner.find_value_above(sheet, start_row, col, min_row)
+
+    def _find_value_above_with_row(
+        self,
+        sheet: Worksheet,
+        start_row: int,
+        col: int,
+        min_row: int = 1,
+    ) -> Tuple[int, int]:
+        return self.scanner.find_value_above_with_row(sheet, start_row, col, min_row)
 
     def _parse_one_block(
         self,

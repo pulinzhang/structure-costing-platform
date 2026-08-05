@@ -201,6 +201,9 @@ class AnshenSheetHandler(BaseSheetHandler):
                 thick_max=thick_max,
                 thick_max_operator=thick_max_op or "<",
                 price_adjustment=price,
+                sort_order=r,
+                excel_row=r,
+                excel_col=2,
             )
 
             # grade_value = 厚度范围标签（如 "1.6＜T≤2.0"）

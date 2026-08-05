@@ -102,11 +102,15 @@ export function policyDownloadTemplate() {
                                         <th class="px-3 py-2 text-right text-[9px] font-semibold uppercase tracking-[0.15em] text-[#3a3a3a] whitespace-nowrap">加减价</th>
                                         <th class="px-3 py-2 text-center text-[9px] font-semibold uppercase tracking-[0.15em] text-[#3a3a3a] whitespace-nowrap">基准</th>
                                         <th class="px-3 py-2 text-right text-[9px] font-semibold uppercase tracking-[0.15em] text-[#3a3a3a] whitespace-nowrap">排序</th>
+                                        <!-- 追溯字段 -->
+                                        <th class="px-3 py-2 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#3a3a3a] whitespace-nowrap">文件名</th>
+                                        <th class="px-3 py-2 text-right text-[9px] font-semibold uppercase tracking-[0.15em] text-[#3a3a3a] whitespace-nowrap">行号</th>
+                                        <th class="px-3 py-2 text-right text-[9px] font-semibold uppercase tracking-[0.15em] text-[#3a3a3a] whitespace-nowrap">列号</th>
                                     </tr>
                                 </thead>
                                 <tbody id="policyPreviewBody" class="divide-y divide-[#1a1a1a]">
                                     <tr>
-                                        <td colspan="16" class="px-4 py-8 text-center text-[#616161] text-xs">
+                                        <td colspan="19" class="px-4 py-8 text-center text-[#616161] text-xs">
                                             请选择条件后点击"预览"查看数据
                                         </td>
                                     </tr>
@@ -170,11 +174,11 @@ export function renderPolicyRows(records) {
     if (!records || !Array.isArray(records) || records.length === 0) {
         return `
             <tr>
-                <td colspan="16" class="px-4 py-8 text-center text-[#616161] text-xs">
-                    无数据
-                </td>
-            </tr>
-        `;
+                                        <td colspan="19" class="px-4 py-8 text-center text-[#616161] text-xs">
+                                            无数据
+                                        </td>
+                                    </tr>
+                                `;
     }
     return records.map((record) => {
         // 格式化厚度条件
@@ -195,6 +199,7 @@ export function renderPolicyRows(records) {
             <td class="px-3 py-2 text-[11px] text-[#888888] whitespace-nowrap">${esc(record.grade_type || '')}</td>
             <td class="px-3 py-2 text-[11px] font-medium text-[#a0a0a0] whitespace-nowrap">${esc(record.grade_value || '')}</td>
             <td class="px-3 py-2 text-[11px] text-[#686868] whitespace-nowrap font-mono text-right tabular-nums">${esc(formatDecimal(record.base_thickness))}</td>
+            
             <!-- 明细 -->
             <td class="px-3 py-2 text-[11px] text-[#505050] whitespace-nowrap font-mono text-right tabular-nums">${esc(record.item_id || '')}</td>
             <td class="px-3 py-2 text-[11px] text-[#888888] whitespace-nowrap">${esc(record.target_sub_group || '')}</td>
@@ -203,6 +208,10 @@ export function renderPolicyRows(records) {
             <td class="px-3 py-2 text-right font-mono tabular-nums whitespace-nowrap ${getPriceAdjustClass(record.price_adjustment)}">${esc(formatPriceAdjust(record.price_adjustment))}</td>
             <td class="px-3 py-2 text-[11px] text-center whitespace-nowrap text-[#484848]">${baseMark}</td>
             <td class="px-3 py-2 text-[11px] text-[#606060] whitespace-nowrap font-mono text-right tabular-nums">${esc(record.sort_order || '0')}</td>
+            <!-- 追溯字段 -->
+            <td class="px-3 py-2 text-[11px] text-[#888888] whitespace-nowrap">${esc(record.excel_filename || '')}</td>
+            <td class="px-3 py-2 text-[11px] text-[#606060] whitespace-nowrap font-mono text-right tabular-nums">${esc(record.excel_row ?? '')}</td>
+            <td class="px-3 py-2 text-[11px] text-[#606060] whitespace-nowrap font-mono text-right tabular-nums">${esc(record.excel_col ?? '')}</td>
         </tr>`;
     }).join('');
 }

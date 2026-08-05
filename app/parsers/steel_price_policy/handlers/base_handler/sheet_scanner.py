@@ -11,7 +11,7 @@
 所有方法签名均为 (sheet: Worksheet, ...) → 纯数据，不含业务语义。
 """
 
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Tuple
 
 from openpyxl.worksheet.worksheet import Worksheet
 
@@ -100,6 +100,23 @@ class SheetScanner:
             if val is not None:
                 return _to_int_price(val)
         return 0
+
+    @staticmethod
+    def find_value_above_with_row(
+        sheet: Worksheet,
+        start_row: int,
+        col: int,
+        min_row: int = 1,
+    ) -> Tuple[int, int]:
+        """向上查找最近的非 None 整数值，同时返回 (price, actual_row)。
+
+        用于溯源：保证 excel_row 与 price_adjustment 所在单元格严格对齐。
+        """
+        for r in range(start_row - 1, min_row - 1, -1):
+            val = sheet.cell(row=r, column=col).value
+            if val is not None:
+                return _to_int_price(val), r
+        return 0, start_row
 
     # ------------------------------------------------------------------ #
     # 搜索定位

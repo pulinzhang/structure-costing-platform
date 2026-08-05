@@ -53,3 +53,8 @@ class ExportRow(BaseModel):
     price_adjustment: Optional[int] = None
     is_base: Optional[int] = None
     sort_order: Optional[int] = None
+
+    # 追溯字段（放在最后）
+    excel_filename: Optional[str] = None  # 来源 Excel 文件名
+    excel_row: Optional[int] = None  # Excel 行号（1-based）
+    excel_col: Optional[int] = None  # Excel 列号（1-based）

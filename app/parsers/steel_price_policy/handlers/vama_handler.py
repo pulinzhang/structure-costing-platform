@@ -247,12 +247,15 @@ class VamaSheetHandler(BaseSheetHandler):
                     start_val = sheet.cell(row=start_row, column=c).value
                     if start_val is not None:
                         price = _to_int_price(start_val)
+                        price_row = start_row  # 严格溯源：price 所在行
                     else:
-                        price = self._find_value_above(sheet, start_row, c)
+                        price, price_row = self._find_value_above_with_row(sheet, start_row, c)
                 else:
                     price = 0
+                    price_row = r
             else:
                 price = _to_int_price(price_cell.value)
+                price_row = r  # 严格溯源：price 所在行
 
             boundary = boundaries[c]
 
@@ -294,6 +297,8 @@ class VamaSheetHandler(BaseSheetHandler):
                     price_adjustment=price,
                     is_base=False,
                     sort_order=sort_order,
+                    excel_row=price_row,
+                    excel_col=c,
                 )
             )
         return items

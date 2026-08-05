@@ -34,6 +34,10 @@ class ParsedLadderItem:
     is_base: bool = False  # 是否为基准厚度（加价为0）
     sort_order: int = 0
 
+    # Excel 原始位置（用于测试核对）
+    excel_row: Optional[int] = None
+    excel_col: Optional[int] = None
+
     @property
     def has_thickness_condition(self) -> bool:
         """是否有厚度条件"""
@@ -67,6 +71,9 @@ class ParsedLadderItem:
             "price_adjustment": self.price_adjustment,
             "is_base": 1 if self.is_base else 0,
             "sort_order": self.sort_order,
+            # Excel 原始位置
+            "excel_row": self.excel_row,
+            "excel_col": self.excel_col,
         }
 
     def to_dict(self) -> dict:

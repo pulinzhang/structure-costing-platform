@@ -443,7 +443,9 @@ class SteelPricePolicyService:
         - 键存在 → 删除旧政策及阶梯明细，插入新政政策及阶梯明细
         - 键不存在 → 直接插入
         """
-        result = parse_steel_price_policy_excel(file_content, year=year, month=month)
+        result = parse_steel_price_policy_excel(
+            file_content, year=year, month=month, excel_filename=filename
+        )
 
         created = 0
         updated = 0

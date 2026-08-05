@@ -542,6 +542,8 @@ class MagangSheetHandler(BaseSheetHandler):
                 price_adjustment=price,
                 is_base=False,
                 sort_order=row * 100 + i,
+                excel_row=row,
+                excel_col=c,
             ))
 
         return items

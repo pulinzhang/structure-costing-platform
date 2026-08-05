@@ -276,27 +276,32 @@ class PolicyAssembler:
                     start_val = sheet.cell(row=start_row, column=c).value
                     if start_val is not None:
                         price = _to_int_price(start_val)
+                        price_row = start_row
                     else:
-                        price = self.scanner.find_value_above(sheet, start_row, c)
+                        price, price_row = self.scanner.find_value_above_with_row(
+                            sheet, start_row, c
+                        )
                 else:
                     price = 0
+                    price_row = r
             else:
                 price = _to_int_price(price_cell.value)
+                price_row = r
 
             boundary = self.infer_upper_bound(
                 boundaries[c], sorted_cols, i, boundaries, policy_type
             )
 
             if policy_type == "THICKNESS":
-                items.append(self._make_thickness_item(boundary, price, sort_order))
+                items.append(self._make_thickness_item(boundary, price, sort_order, price_row, c))
             else:
-                items.append(self._make_width_item(boundary, price, sort_order))
+                items.append(self._make_width_item(boundary, price, sort_order, price_row, c))
 
         return items, None
 
     @staticmethod
     def _make_thickness_item(
-        boundary: _Boundary, price: int, sort_order: int
+        boundary: _Boundary, price: int, sort_order: int, excel_row: int, excel_col: int
     ) -> ParsedLadderItem:
         return ParsedLadderItem(
             target_sub_group=None,
@@ -311,11 +316,13 @@ class PolicyAssembler:
             price_adjustment=price,
             is_base=False,
             sort_order=sort_order,
+            excel_row=excel_row,
+            excel_col=excel_col,
         )
 
     @staticmethod
     def _make_width_item(
-        boundary: _Boundary, price: int, sort_order: int
+        boundary: _Boundary, price: int, sort_order: int, excel_row: int, excel_col: int
     ) -> ParsedLadderItem:
         return ParsedLadderItem(
             target_sub_group=None,
@@ -330,6 +337,8 @@ class PolicyAssembler:
             price_adjustment=price,
             is_base=False,
             sort_order=sort_order,
+            excel_row=excel_row,
+            excel_col=excel_col,
         )
 
     def build_item(
@@ -337,6 +346,8 @@ class PolicyAssembler:
         boundary: _Boundary,
         price: int,
         width_boundary: Optional[_Boundary] = None,
+        excel_row: int = 0,
+        excel_col: int = 0,
     ) -> ParsedLadderItem:
         """构建阶梯明细项（单维度或双维度）。"""
         if width_boundary is not None:
@@ -353,6 +364,8 @@ class PolicyAssembler:
                 price_adjustment=price,
                 is_base=False,
                 sort_order=0,
+                excel_row=excel_row,
+                excel_col=excel_col,
             )
         else:
             return ParsedLadderItem(
@@ -368,6 +381,8 @@ class PolicyAssembler:
                 price_adjustment=price,
                 is_base=False,
                 sort_order=0,
+                excel_row=excel_row,
+                excel_col=excel_col,
             )
 
     # ------------------------------------------------------------------ #

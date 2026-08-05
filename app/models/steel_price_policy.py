@@ -41,6 +41,7 @@ class SteelPricePolicy(Base):
     base_thickness = Column(Numeric(5, 2), nullable=True, comment="基准厚度（仅厚度政策需要，如 1.00）")
 
     # 元数据
+    excel_filename = Column(String(255), nullable=True, comment="来源 Excel 文件名")
     created_at = Column(DateTime, default=datetime.now, nullable=False, comment="创建时间")
     updated_at = Column(
         DateTime,
@@ -113,6 +114,10 @@ class SteelPriceLadderItem(Base):
 
     # 对应的加减价金额（元/吨，整数精确到元）
     price_adjustment = Column(Integer, nullable=False, comment="加减价金额（元/吨）")
+
+    # Excel 原始位置（用于测试核对）
+    excel_row = Column(Integer, nullable=True, comment="Excel 行号（1-based）")
+    excel_col = Column(Integer, nullable=True, comment="Excel 列号（1-based）")
 
     # 是否为基准厚度（加价为0）
     is_base = Column(Integer, nullable=False, default=0, comment="是否为基准厚度：0=否，1=是")

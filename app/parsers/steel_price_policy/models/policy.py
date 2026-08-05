@@ -39,6 +39,7 @@ class ParsedPolicy:
     grade_value: str
     policy_type: str
     base_thickness: Optional[Decimal] = None
+    excel_filename: Optional[str] = None
     items: List[ParsedLadderItem] = field(default_factory=list)
 
     def model_dump(self) -> dict:
@@ -50,6 +51,7 @@ class ParsedPolicy:
             "grade_value": self.grade_value,
             "policy_type": self.policy_type,
             "base_thickness": float(self.base_thickness) if self.base_thickness is not None else None,
+            "excel_filename": self.excel_filename,
             "items": [item.to_dict() for item in self.items],
         }
 

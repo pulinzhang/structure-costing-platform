@@ -27,7 +27,7 @@
 
 import io
 from pathlib import Path
-from typing import List, Union
+from typing import List, Optional, Union
 
 import xlrd
 from openpyxl.worksheet.worksheet import Worksheet
@@ -158,6 +158,7 @@ def parse_steel_price_policy_sheet(
     sheet: Worksheet,
     sheet_name: str,
     warnings: List[str],
+    excel_filename: Optional[str] = None,
 ) -> List:
     """解析一张 Sheet，返回 ParsedPolicy 列表。
 
@@ -171,6 +172,7 @@ def parse_steel_price_policy_sheet(
         sheet: openpyxl Worksheet 对象
         sheet_name: Sheet 名字（== 钢厂名）
         warnings: 调用方的警告列表（用作告警输入）
+        excel_filename: 来源 Excel 文件名（用于测试核对）
 
     Returns:
         该 Sheet 包含的所有 ParsedPolicy
@@ -178,6 +180,8 @@ def parse_steel_price_policy_sheet(
     handler = find_handler(sheet_name)
     try:
         policies = handler.parse(sheet, sheet_name, warnings)
+        for policy in policies:
+            policy.excel_filename = excel_filename
         logger.info(
             f"钢厂 [{sheet_name}] 解析完成，共 {len(policies)} 条政策"
         )
@@ -208,6 +212,7 @@ def parse_steel_price_policy_excel(
     *,
     year: int,
     month: int,
+    excel_filename: Optional[str] = None,
 ) -> SteelPricePolicyParseResult:
     """整张 Excel 解析（便捷 API）。
 
@@ -220,7 +225,7 @@ def parse_steel_price_policy_excel(
             policies = parse_steel_price_policy_sheet(sheet, sheet.name, result.warnings)
             result.policies.extend(policies)
     """
-    parser = SteelPricePolicyExcelParser(year=year, month=month)
+    parser = SteelPricePolicyExcelParser(year=year, month=month, excel_filename=excel_filename)
     return parser.parse(file)
 
 
@@ -232,9 +237,10 @@ def parse_steel_price_policy_excel(
 class SteelPricePolicyExcelParser:
     """钢价政策 Excel 编排器（按 Sheet 依次解析，聚合结果）。"""
 
-    def __init__(self, *, year: int, month: int):
+    def __init__(self, *, year: int, month: int, excel_filename: Optional[str] = None):
         self.year = year
         self.month = month
+        self.excel_filename = excel_filename
         self.result = SteelPricePolicyParseResult()
 
     def parse(self, file: Union[str, Path, bytes]) -> SteelPricePolicyParseResult:
@@ -250,7 +256,7 @@ class SteelPricePolicyExcelParser:
             for sheet_name in wb.sheetnames:
                 sheet = wb[sheet_name]
                 policies = parse_steel_price_policy_sheet(
-                    sheet, sheet_name, self.result.warnings
+                    sheet, sheet_name, self.result.warnings, excel_filename=self.excel_filename
                 )
                 self.result.policies.extend(policies)
             self._log_summary()
