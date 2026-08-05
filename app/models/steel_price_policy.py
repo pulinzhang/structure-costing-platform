@@ -112,6 +112,12 @@ class SteelPriceLadderItem(Base):
     width_max = Column(Numeric(7, 2), nullable=True, comment="宽度上限值（mm）")
     width_max_operator = Column(String(10), nullable=True, comment="宽度上限操作符（如 '<=' 或 '<'）")
 
+    # 锌层克重区间（g/m²）
+    zinc_coating_min = Column(Numeric(7, 2), nullable=True, comment="锌层克重下限值（g/m²）")
+    zinc_coating_min_operator = Column(String(10), nullable=True, comment="锌层克重下限操作符（如 '>=' 或 '>'）")
+    zinc_coating_max = Column(Numeric(7, 2), nullable=True, comment="锌层克重上限值（g/m²）")
+    zinc_coating_max_operator = Column(String(10), nullable=True, comment="锌层克重上限操作符（如 '<=' 或 '<'）")
+
     # 对应的加减价金额（元/吨，整数精确到元）
     price_adjustment = Column(Integer, nullable=False, comment="加减价金额（元/吨）")
 
@@ -136,5 +142,7 @@ class SteelPriceLadderItem(Base):
         Index("ix_ladder_thick_max", "thick_max"),
         Index("ix_ladder_width_min", "width_min"),
         Index("ix_ladder_width_max", "width_max"),
+        Index("ix_ladder_zinc_coating_min", "zinc_coating_min"),
+        Index("ix_ladder_zinc_coating_max", "zinc_coating_max"),
         Index("ix_ladder_sort_order", "sort_order"),
     )

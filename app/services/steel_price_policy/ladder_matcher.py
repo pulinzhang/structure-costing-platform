@@ -36,11 +36,12 @@ def _item_matches(
     item: SteelPriceLadderItem,
     thickness: Optional[Decimal],
     width: Optional[Decimal],
+    zinc_coating: Optional[Decimal],
     target_sub_group: Optional[str],
 ) -> bool:
     """
-    判断单条明细是否命中给定的厚度和宽度值。
-    - 厚度/宽度为 None 时，该维度不参与匹配
+    判断单条明细是否命中给定的厚度、宽度和锌层克重值。
+    - 厚度/宽度/锌层克重为 None 时，该维度不参与匹配
     - target_sub_group 非空时，必须完全匹配
     """
     # 子分组条件
@@ -80,6 +81,21 @@ def _item_matches(
             if op == "<" and not (width < item.width_max):
                 return False
 
+    # 锌层克重条件匹配
+    if zinc_coating is not None:
+        if item.zinc_coating_min is not None:
+            op = item.zinc_coating_min_operator or ">="
+            if op == ">=" and not (zinc_coating >= item.zinc_coating_min):
+                return False
+            if op == ">" and not (zinc_coating > item.zinc_coating_min):
+                return False
+        if item.zinc_coating_max is not None:
+            op = item.zinc_coating_max_operator or "<"
+            if op == "<=" and not (zinc_coating <= item.zinc_coating_max):
+                return False
+            if op == "<" and not (zinc_coating < item.zinc_coating_max):
+                return False
+
     return True
 
 
@@ -103,6 +119,7 @@ class LadderMatcher:
                     item,
                     thickness=getattr(data, "thickness", None),
                     width=getattr(data, "width", None),
+                    zinc_coating=getattr(data, "zinc_coating", None),
                     target_sub_group=data.target_sub_group,
                 ):
                     hits.append((item, policy.id))

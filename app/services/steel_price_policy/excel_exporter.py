@@ -39,7 +39,7 @@ ODD_FILL = PatternFill(start_color="FFFFFF", end_color="FFFFFF", fill_type="soli
 HEADERS = [
     "政策ID", "年度", "月份", "钢厂", "钢种大类", "政策类型",
     "牌号类型", "牌号/范围", "基准厚度",
-    "明细ID", "子分组", "厚度条件", "宽度条件",
+    "明细ID", "子分组", "厚度条件", "宽度条件", "锌层条件",
     "加减价(元/吨)", "基准", "排序",
     "文件名", "行号", "列号",
 ]
@@ -154,6 +154,17 @@ def format_width_condition(row: ExportRow) -> str:
     )
 
 
+def format_zinc_condition(row: ExportRow) -> str:
+    return format_interval(
+        "z",
+        row.zinc_coating_min,
+        row.zinc_coating_min_operator,
+        row.zinc_coating_max,
+        row.zinc_coating_max_operator,
+        decimals=0,
+    )
+
+
 # =============================================================================
 # 导出器类
 # =============================================================================
@@ -213,6 +224,7 @@ class SteelPricePolicyExporter:
                 row.target_sub_group or "",
                 format_thick_condition(row),
                 format_width_condition(row),
+                format_zinc_condition(row),
                 row.price_adjustment if row.price_adjustment is not None else "",
                 "是" if row.is_base == 1 else "",
                 row.sort_order or 0,

@@ -50,6 +50,10 @@ class ExportRow(BaseModel):
     width_min_operator: Optional[str] = None
     width_max: Optional[str] = None  # Decimal 转为字符串
     width_max_operator: Optional[str] = None
+    zinc_coating_min: Optional[str] = None  # Decimal 转为字符串
+    zinc_coating_min_operator: Optional[str] = None
+    zinc_coating_max: Optional[str] = None  # Decimal 转为字符串
+    zinc_coating_max_operator: Optional[str] = None
     price_adjustment: Optional[int] = None
     is_base: Optional[int] = None
     sort_order: Optional[int] = None

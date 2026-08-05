@@ -99,6 +99,7 @@ export function policyDownloadTemplate() {
                                         <th class="px-3 py-2 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#3a3a3a] whitespace-nowrap">子分组</th>
                                         <th class="px-3 py-2 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#3a3a3a] whitespace-nowrap">厚度条件</th>
                                         <th class="px-3 py-2 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#3a3a3a] whitespace-nowrap">宽度条件</th>
+                                        <th class="px-3 py-2 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#3a3a3a] whitespace-nowrap">锌层条件</th>
                                         <th class="px-3 py-2 text-right text-[9px] font-semibold uppercase tracking-[0.15em] text-[#3a3a3a] whitespace-nowrap">加减价</th>
                                         <th class="px-3 py-2 text-center text-[9px] font-semibold uppercase tracking-[0.15em] text-[#3a3a3a] whitespace-nowrap">基准</th>
                                         <th class="px-3 py-2 text-right text-[9px] font-semibold uppercase tracking-[0.15em] text-[#3a3a3a] whitespace-nowrap">排序</th>
@@ -110,7 +111,7 @@ export function policyDownloadTemplate() {
                                 </thead>
                                 <tbody id="policyPreviewBody" class="divide-y divide-[#1a1a1a]">
                                     <tr>
-                                        <td colspan="19" class="px-4 py-8 text-center text-[#616161] text-xs">
+                                        <td colspan="20" class="px-4 py-8 text-center text-[#616161] text-xs">
                                             请选择条件后点击"预览"查看数据
                                         </td>
                                     </tr>
@@ -174,7 +175,7 @@ export function renderPolicyRows(records) {
     if (!records || !Array.isArray(records) || records.length === 0) {
         return `
             <tr>
-                                        <td colspan="19" class="px-4 py-8 text-center text-[#616161] text-xs">
+                                        <td colspan="20" class="px-4 py-8 text-center text-[#616161] text-xs">
                                             无数据
                                         </td>
                                     </tr>
@@ -185,6 +186,8 @@ export function renderPolicyRows(records) {
         const thickCond = formatThicknessCondition(record);
         // 格式化宽度条件
         const widthCond = formatWidthCondition(record);
+        // 格式化锌层克重条件
+        const zincCond = formatZincCoatingCondition(record);
         // 基准标记
         const baseMark = record.is_base === 1 ? '✓' : '';
 
@@ -205,6 +208,7 @@ export function renderPolicyRows(records) {
             <td class="px-3 py-2 text-[11px] text-[#888888] whitespace-nowrap">${esc(record.target_sub_group || '')}</td>
             <td class="px-3 py-2 text-[11px] text-[#888888] whitespace-nowrap font-mono">${thickCond}</td>
             <td class="px-3 py-2 text-[11px] text-[#888888] whitespace-nowrap font-mono">${widthCond}</td>
+            <td class="px-3 py-2 text-[11px] text-[#888888] whitespace-nowrap font-mono">${zincCond}</td>
             <td class="px-3 py-2 text-right font-mono tabular-nums whitespace-nowrap ${getPriceAdjustClass(record.price_adjustment)}">${esc(formatPriceAdjust(record.price_adjustment))}</td>
             <td class="px-3 py-2 text-[11px] text-center whitespace-nowrap text-[#484848]">${baseMark}</td>
             <td class="px-3 py-2 text-[11px] text-[#606060] whitespace-nowrap font-mono text-right tabular-nums">${esc(record.sort_order || '0')}</td>
@@ -291,6 +295,17 @@ function formatWidthCondition(record) {
         record.width_min_operator,
         record.width_max,
         record.width_max_operator,
+        0
+    );
+}
+
+function formatZincCoatingCondition(record) {
+    return formatInterval(
+        'z',
+        record.zinc_coating_min,
+        record.zinc_coating_min_operator,
+        record.zinc_coating_max,
+        record.zinc_coating_max_operator,
         0
     );
 }

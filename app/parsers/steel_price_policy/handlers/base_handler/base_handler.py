@@ -179,10 +179,10 @@ class BaseSheetHandler:
                         thick_min_operator=thick_min_op or ">=",
                         thick_max=thick_max,
                         thick_max_operator=thick_max_op or "<",
-                        width_min=zinc_min,
-                        width_min_operator=">=",
-                        width_max=zinc_max,
-                        width_max_operator="<=",
+                        zinc_coating_min=zinc_min,
+                        zinc_coating_min_operator=">=",
+                        zinc_coating_max=zinc_max,
+                        zinc_coating_max_operator="<=",
                         price_adjustment=price,
                         is_base=False,
                         sort_order=0,
@@ -192,7 +192,7 @@ class BaseSheetHandler:
 
                     policies.append(ParsedPolicy(
                         steel_mill=steel_mill,
-                        category_name="镀锌钢",
+                        category_name="镀锌钢" + zinc_range + "g/m2",
                         grade_type="THICKNESS_COND",
                         grade_value=thick_cond,
                         policy_type="ZINC_COATING",
