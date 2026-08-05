@@ -5,7 +5,8 @@
 - 右侧独立宽度列（Col 10，格式为 "1000-1600"，表示适用宽度范围）
 - 每条厚度政策同时关联一个宽度范围，policy_type = THICKNESS_WIDTH
 
-厚度边界逻辑（闭区间示例）：
+厚度边界逻辑：
+  【冷轧钢块 - 标准厚度值，开区间】
   ≥0.5   → 0.5 ≤ w < 0.6
   ≥0.6   → 0.6 ≤ w < 0.7
   ≥0.7   → 0.7 ≤ w < 0.8
@@ -14,6 +15,12 @@
   ≥1.2   → 1.2 ≤ w < 1.5
   ≥1.5   → 1.5 ≤ w < 2.0（注意！到2.0，不是到2.3）
   ≥2.0-2.3 → 2.0 ≤ w ≤ 2.3（显式给定终点，终结档）
+
+  【镀锌钢块 - 非标准厚度值，闭区间】
+  0.5    → 0 < w ≤ 0.5（第一列纯数字，下界为0）
+  ≥0.51  → 0.5 < w ≤ 0.51（非标准厚度，闭区间）
+  ≥0.6   → 0.51 < w < 0.6（标准厚度值，开区间）
+  ...
 """
 import re
 from typing import Any, Dict, List, Optional
@@ -30,6 +37,15 @@ from .constants import GRADE_LABELS
 from ..models.ladder_item import ParsedLadderItem
 class VamaSheetHandler(BaseSheetHandler):
     """VAMA Sheet 处理器。"""
+
+    def _collect_thickness_boundaries(
+        self,
+        sheet: Worksheet,
+        header_row: int,
+        price_cols: List[int],
+    ) -> Dict[int, "_Boundary"]:
+        """VAMA 厚度专用：收集边界，使用厚度专用解析器。"""
+        return self.assembler.collect_boundaries_thickness(sheet, header_row, price_cols)
 
     def find_thickness_blocks(
         self, sheet: Worksheet, steel_mill: str
@@ -137,7 +153,7 @@ class VamaSheetHandler(BaseSheetHandler):
         block_policy_type = block.get("policy_type", policy_type)
         width_range = block.get("width_range")  # VAMA 特有
 
-        boundaries = self._collect_boundaries(sheet, header_row, price_cols)
+        boundaries = self._collect_thickness_boundaries(sheet, header_row, price_cols)
         if not boundaries:
             return []
 
@@ -185,7 +201,7 @@ class VamaSheetHandler(BaseSheetHandler):
         block_policy_type = block.get("policy_type", policy_type)
         width_range = block.get("width_range")  # VAMA 特有
 
-        boundaries = self._collect_boundaries(sheet, header_row, price_cols)
+        boundaries = self._collect_thickness_boundaries(sheet, header_row, price_cols)
         if not boundaries:
             return []
 
@@ -265,11 +281,32 @@ class VamaSheetHandler(BaseSheetHandler):
                 if next_c in boundaries:
                     next_boundary = boundaries[next_c]
                     if next_boundary.min_val is not None:
+                        max_val = next_boundary.min_val
+                        # 判断上界操作符：
+                        # 1. 显式终结档（≥X-Y 格式）：用 <= 闭区间
+                        # 2. 非标准厚度值（如 0.51、0.61）：用 <= 闭区间
+                        # 3. 标准厚度值（如 0.6、0.7、1.0）：用 < 开区间
+                        next_min_str = str(next_boundary.min_val)
+                        is_non_standard = (
+                            # 非整数厚度（如 0.51）
+                            "." in next_min_str
+                            and not next_min_str.endswith(".0")
+                        ) or (
+                            # 非5/10倍数的小数（如 0.51, 0.61 等，但 1.5 可能是标准值）
+                            "." in next_min_str
+                            and float(next_min_str) % 0.05 != 0
+                        )
+                        if is_non_standard:
+                            # 非标准厚度值 → 闭区间（≤）
+                            max_operator = "<="
+                        else:
+                            # 标准厚度值 → 开区间（<）
+                            max_operator = "<"
                         boundary = _Boundary(
                             min_val=boundary.min_val,
                             min_operator=boundary.min_operator,
-                            max_val=next_boundary.min_val,
-                            max_operator="<",
+                            max_val=max_val,
+                            max_operator=max_operator,
                         )
 
             if width_range is not None:

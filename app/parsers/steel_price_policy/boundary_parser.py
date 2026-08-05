@@ -190,6 +190,13 @@ def _parse_boundary_thickness(text: str) -> Optional[_Boundary]:
 
     text = str(text).strip()
 
+    # ---------- ≥X-Y 区间（终结档，如 "≥2.0-2.3"）----------
+    match_gte_range = _PATTERN_GTE_RANGE.match(text)
+    if match_gte_range:
+        lo = Decimal(match_gte_range.group(1))
+        hi = Decimal(match_gte_range.group(2))
+        return _Boundary(min_val=lo, min_operator=">=", max_val=hi, max_operator="<=")
+
     # ---------- >= 区间 ----------
     match_gte = _PATTERN_GTE.match(text)
     if match_gte:
