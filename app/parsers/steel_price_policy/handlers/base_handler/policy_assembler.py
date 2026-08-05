@@ -422,6 +422,9 @@ class PolicyAssembler:
             grade = self.scanner.text_or_none(sheet, r, grade_col)
             if not grade:
                 continue
+            # 钢种列 "B250P1//HC260Y" 可能是操作人员笔误，将 "//" 替换为 "/"
+            if "//" in grade:
+                grade = grade.replace("//", "/")
             if grade in grade_blacklist:
                 continue
 
@@ -493,6 +496,9 @@ class PolicyAssembler:
             if v is None:
                 continue
             t = str(v).strip()
+            # 钢种列 "B250P1//HC260Y" 可能是操作人员笔误，将 "//" 替换为 "/"
+            if "//" in t:
+                t = t.replace("//", "/")
             if not t or t in GRADE_LABELS:
                 continue
             cat = self.category_from_grade_name(t)

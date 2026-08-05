@@ -183,7 +183,7 @@ def _parse_boundary_thickness(text: str) -> Optional[_Boundary]:
     """
     厚度专用的 boundary 解析：
     - 纯数字（如 "0.5"）→ 仅 max <=（无 min 边界）
-    - ≥ / ≤ / ≥= → 正常解析
+    - ≥ / ≤ / ≥= →
     """
     if not text:
         return None
