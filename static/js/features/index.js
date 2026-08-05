@@ -30,6 +30,8 @@ export const pageMeta = {
     'steel-price-list': { title: '钢材价格表格浏览', breadcrumb: '钢材价格管理 / 表格浏览' },
     'steel-price-policy-upload': { title: '政策导入', breadcrumb: '钢价政策 / 政策导入' },
     'steel-price-policy-download': { title: '政策导出', breadcrumb: '钢价政策 / 政策导出' },
+    'base-price-upload': { title: '基准价格导入', breadcrumb: '钢材基准价格 / 基准价格导入' },
+    'base-price-download': { title: '基准价格导出', breadcrumb: '钢材基准价格 / 基准价格导出' },
     costing: { title: '核价', breadcrumb: '核价' },
     quotation: { title: '报价', breadcrumb: '报价' },
     settings: { title: '系统设置', breadcrumb: '系统设置' },

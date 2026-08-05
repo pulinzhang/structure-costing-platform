@@ -17,7 +17,7 @@
     "base_thickness": Decimal | None,
 }
 """
-
+from decimal import Decimal
 from typing import Any, Dict, List, Optional, Tuple
 
 from openpyxl.worksheet.worksheet import Worksheet
@@ -213,9 +213,17 @@ class BaseSheetHandler:
         return (None, None, None, None)
 
     def _parse_zinc_range(self, zinc_range: str) -> Tuple[Optional["Decimal"], Optional["Decimal"]]:
-        """解析镀锌量范围字符串，如 "80-90"（闭区间）。"""
+        """解析镀锌量范围字符串，兼容 "-"、"～"、"—" 等分隔符。"""
         from decimal import Decimal
-        parts = zinc_range.split("-")
+        import re
+
+        if not zinc_range:
+            return (None, None)
+
+        # 将各种常见的范围分隔符统一替换为标准的 "-"
+        normalized = re.sub(r"[～—―–]", "-", str(zinc_range))
+        parts = normalized.split("-")
+
         if len(parts) == 2:
             try:
                 return (Decimal(parts[0].strip()), Decimal(parts[1].strip()))
@@ -279,6 +287,11 @@ class BaseSheetHandler:
             # 第三步：从标题单元格左边第一列的下一行取出钢种
             # 钢种列 = 标题所在列 - 1（标题通常在数据列之前）
             grade_col = title_col - 1
+            for check_c in range(1, title_col + 1):
+                cell_text = self.scanner.text(sheet, title_row, check_c)
+                if cell_text and any(label in cell_text for label in GRADE_LABELS):
+                    grade_col = check_c
+                    break
 
             # 确定块的结束行：从钢种行的下一行开始，当钢种列为空时说明块结束
             block_end = self._find_thickness_block_end(
@@ -288,9 +301,10 @@ class BaseSheetHandler:
             if block_end <= header_row:
                 continue
 
-            # 收集加减价边界列
+            # 收集加减价边界列：从钢种列的下一列开始往右扫，或者从第 2 列开始，避免被大标题的列位置带偏
+            start_scan_col = max(2, grade_col + 1)
             price_cols = self._collect_boundary_cols(
-                sheet, header_row, title_col
+                sheet, header_row, start_scan_col
             )
             if not price_cols:
                 continue

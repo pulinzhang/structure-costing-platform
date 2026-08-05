@@ -34,7 +34,7 @@ async def lifespan(app: FastAPI):
     LoggerConfig.configure(force=True)
     ensure_directories()
     # 导入所有模型，确保 Base.metadata 能扫描到表结构
-    from app.models import StampingPart, StampingProcess, StampingTonnagePrice, SteelPrice, SteelPricePolicy, SteelPriceLadderItem
+    from app.models import StampingPart, StampingProcess, StampingTonnagePrice, SteelPrice, SteelPricePolicy, SteelPriceLadderItem, SteelBasePrice
     # 自动迁移：在 create_tables 之前补充缺失的列
     from app.utils.db_migration import run_auto_migration
     run_auto_migration()
@@ -193,6 +193,7 @@ def create_app() -> FastAPI:
             {"name": "冲压吨位价格", "description": "冲压压机吨位单冲次价格管理"},
             {"name": "钢材价格管理", "description": "钢材价格文件导入与表格浏览"},
             {"name": "钢价政策管理", "description": "钢价政策主表与阶梯明细管理"},
+            {"name": "钢材基准价格管理", "description": "钢材基准价格上传导出"},
             {"name": "零件", "description": "通用零件管理"},
             {"name": "核价", "description": "成本计算与核价"},
             {"name": "报价", "description": "报价单管理"},
@@ -246,6 +247,7 @@ def create_app() -> FastAPI:
     from app.routers.stamping.tonnage_price import router as stamping_tonnage_price_router
     from app.routers.steel_price.crud import router as steel_price_router
     from app.routers.steel_price.steel_price_policy.crud import router as steel_price_policy_router
+    from app.routers.steel_base_price.crud import router as steel_base_price_router
 
     # include_router = 注册路由
     app.include_router(dashboard_router)
@@ -254,6 +256,7 @@ def create_app() -> FastAPI:
     app.include_router(stamping_tonnage_price_router)
     app.include_router(steel_price_router)
     app.include_router(steel_price_policy_router)
+    app.include_router(steel_base_price_router)
     app.include_router(costing_router)
     app.include_router(quotation_router)
     app.include_router(settings_router)

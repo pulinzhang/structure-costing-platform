@@ -24,6 +24,8 @@ import { pageConfig as steelPriceUploadPage } from './features/steel-price/uploa
 import { pageConfig as steelPriceListPage }   from './features/steel-price/list/index.js';
 import { pageConfig as steelPricePolicyUploadPage } from './features/steel-price/policy-upload/index.js';
 import { pageConfig as steelPricePolicyDownloadPage } from './features/steel-price/policy-download/index.js';
+import { pageConfig as basePriceUploadPage } from './features/steel-price/base-price-upload/index.js';
+import { pageConfig as basePriceDownloadPage } from './features/steel-price/base-price-download/index.js';
 import { pageConfig as costingPage }        from './features/costing/index.js';
 import { pageConfig as quotationPage }      from './features/quotation/index.js';
 import { pageConfig as settingsPage }       from './features/settings/index.js';
@@ -38,6 +40,8 @@ const pages = {
     'steel-price-list': steelPriceListPage,
     'steel-price-policy-upload': steelPricePolicyUploadPage,
     'steel-price-policy-download': steelPricePolicyDownloadPage,
+    'base-price-upload': basePriceUploadPage,
+    'base-price-download': basePriceDownloadPage,
     costing:          costingPage,
     quotation:        quotationPage,
     settings:         settingsPage,

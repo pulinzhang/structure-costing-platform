@@ -1,7 +1,9 @@
-# Models Package
-from .stamping import StampingPart, StampingProcess, StampingTonnagePrice
-from .steel_price import SteelPrice
-from .steel_price_policy import SteelPricePolicy, SteelPriceLadderItem
+"""数据模型导出"""
+
+from app.models.stamping import StampingPart, StampingProcess, StampingTonnagePrice
+from app.models.steel_price import SteelPrice
+from app.models.steel_price_policy import SteelPricePolicy, SteelPriceLadderItem
+from app.models.steel_base_price import SteelBasePrice
 
 __all__ = [
     "StampingPart",
@@ -10,4 +12,5 @@ __all__ = [
     "SteelPrice",
     "SteelPricePolicy",
     "SteelPriceLadderItem",
+    "SteelBasePrice",
 ]
