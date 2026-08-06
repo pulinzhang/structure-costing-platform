@@ -14,6 +14,34 @@ export function basePriceUploadTemplate() {
                 </div>
                 <div class="p-5">
                     <form id="basePriceUploadForm">
+                        <!-- 生效期间：年度 + 月份（手工录入） -->
+                        <div class="grid grid-cols-2 gap-3 mb-5">
+                            <div class="space-y-1">
+                                <label for="basePriceYear" class="upload-label">
+                                    生效年度 <span class="text-[#d32f2f]">*</span>
+                                </label>
+                                <input type="text"
+                                       id="basePriceYear"
+                                       name="year"
+                                       placeholder="例如：2026"
+                                       required
+                                       pattern="[0-9]{4}"
+                                       class="upload-input">
+                            </div>
+                            <div class="space-y-1">
+                                <label for="basePriceMonth" class="upload-label">
+                                    生效月份 <span class="text-[#d32f2f]">*</span>
+                                </label>
+                                <input type="text"
+                                       id="basePriceMonth"
+                                       name="month"
+                                       placeholder="例如：7"
+                                       required
+                                       pattern="[0-9]{1,2}"
+                                       class="upload-input">
+                            </div>
+                        </div>
+
                         <!-- 拖拽上传区 -->
                         <div id="basePriceUploadZone" class="upload-dropzone mb-5">
                             ${window.svgIcon('upload', 'w-10 h-10 text-[#616161] mx-auto mb-4')}
@@ -60,11 +88,16 @@ export function basePriceUploadTemplate() {
                         <h5 class="text-xs font-semibold text-[#616161] mb-0">导入说明</h5>
                     </div>
                     <div class="p-5">
-                        <h6 class="upload-label mb-2.5">Excel 文件格式要求</h6>
+                        <h6 class="upload-label mb-2.5">文件来源</h6>
                         <ul class="list-disc list-inside text-xs text-[#616161] space-y-1.5 mb-4">
-                            <li>支持一事一议价格 Excel 文件</li>
-                            <li>包含芜湖、青岛等基地的基准价格</li>
-                            <li>数据从第一行开始，不要有空行</li>
+                            <li>发布价格及中标钢厂 Excel 文件（如：外协钢板2025年7月订单(2025年8月冲焊件原料)发布价格及中标.xlsx）</li>
+                            <li>由奇瑞发布的中标钢厂及到厂原卷承兑价格</li>
+                        </ul>
+                        <h6 class="upload-label mb-2.5">数据位置</h6>
+                        <ul class="list-disc list-inside text-xs text-[#616161] space-y-1.5 mb-4">
+                            <li>表头位于第4-5行，数据从第6行开始</li>
+                            <li>包含钢种、牌号、参考规格及芜湖/青岛基地的中标钢厂和到厂价格</li>
+                            <li>具体列位置由后端解析器自动识别</li>
                         </ul>
                         <h6 class="upload-label mb-2.5">Upsert 规则</h6>
                         <ul class="list-disc list-inside text-xs text-[#616161] space-y-1.5 mb-4">
@@ -74,10 +107,9 @@ export function basePriceUploadTemplate() {
                         </ul>
                         <h6 class="upload-label mb-2.5">支持的数据</h6>
                         <ul class="list-disc list-inside text-xs text-[#616161] space-y-1.5">
-                            <li>芜湖基地基准价格</li>
-                            <li>青岛基地基准价格</li>
-                            <li>大连基地基准价格</li>
-                            <li>鄂尔多斯基地基准价格</li>
+                            <li>芜湖基地中标钢厂及到厂原卷承兑价格</li>
+                            <li>青岛基地中标钢厂及到厂原卷承兑价格</li>
+                            <li>价格单位：元/吨，不含税</li>
                         </ul>
                     </div>
                 </div>

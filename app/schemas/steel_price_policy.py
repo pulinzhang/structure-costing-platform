@@ -120,12 +120,6 @@ class LadderItemUpdate(BaseModel):
     width_max: Optional[Decimal] = Field(None, description="宽度上限值（mm）")
     width_max_operator: Optional[str] = Field(None, description="宽度上限操作符")
 
-    # 锌层克重维度条件（g/m²）
-    zinc_coating_min: Optional[Decimal] = Field(None, description="锌层克重下限值（g/m²）")
-    zinc_coating_min_operator: Optional[str] = Field(None, description="锌层克重下限操作符")
-    zinc_coating_max: Optional[Decimal] = Field(None, description="锌层克重上限值（g/m²）")
-    zinc_coating_max_operator: Optional[str] = Field(None, description="锌层克重上限操作符")
-
     # 加减价与排序
     price_adjustment: Optional[int] = Field(None, description="加减价金额（元/吨）")
     is_base: Optional[int] = Field(None, description="是否为基准厚度：0=否，1=是")
@@ -155,12 +149,6 @@ class LadderItemResponse(BaseModel):
     width_max: Optional[Decimal]
     width_max_operator: Optional[str]
 
-    # 锌层克重维度
-    zinc_coating_min: Optional[Decimal]
-    zinc_coating_min_operator: Optional[str]
-    zinc_coating_max: Optional[Decimal]
-    zinc_coating_max_operator: Optional[str]
-
     # 加减价与标记
     price_adjustment: int
     is_base: int
@@ -168,7 +156,6 @@ class LadderItemResponse(BaseModel):
 
     @field_validator(
         "thick_min", "thick_max", "width_min", "width_max",
-        "zinc_coating_min", "zinc_coating_max",
         mode="plain",
     )
     @classmethod
@@ -337,14 +324,14 @@ class PolicyMatchRequest(BaseModel):
     target_sub_group: Optional[str] = Field(None, max_length=100, description="附加子分组条件")
     thickness: Optional[Decimal] = Field(None, description="待匹配的厚度值（mm）")
     width: Optional[Decimal] = Field(None, description="待匹配的宽度值（mm）")
-    zinc_coating: Optional[Decimal] = Field(None, description="待匹配的锌层克重值（g/m²）")
+    zinc_coating: Optional[int] = Field(None, description="待匹配的锌层克重（g/m²）")
 
     @field_validator("steel_mill", "category_name", "grade_value", "target_sub_group", mode="before")
     @classmethod
     def strip_strings(cls, v):
         return _strip(v)
 
-    @field_validator("thickness", "width", "zinc_coating", mode="before")
+    @field_validator("thickness", "width", mode="before")
     @classmethod
     def coerce_dimensions(cls, v):
         if v is None:
@@ -353,7 +340,18 @@ class PolicyMatchRequest(BaseModel):
             return v
         if isinstance(v, (int, float, str)):
             return Decimal(str(v))
-        raise ValueError("thickness/width/zinc_coating 必须是数字")
+        raise ValueError("thickness/width 必须是数字")
+
+    @field_validator("zinc_coating", mode="before")
+    @classmethod
+    def coerce_zinc_coating(cls, v):
+        if v is None:
+            return None
+        if isinstance(v, int):
+            return v
+        if isinstance(v, (float, str)):
+            return int(float(v))
+        raise ValueError("zinc_coating 必须是整数")
 
     @model_validator(mode="after")
     def check_at_least_one_dimension(self):
@@ -389,12 +387,6 @@ class MatchedLadderItem(BaseModel):
     width_max: Optional[Decimal]
     width_max_operator: Optional[str]
 
-    # 锌层克重维度
-    zinc_coating_min: Optional[Decimal]
-    zinc_coating_min_operator: Optional[str]
-    zinc_coating_max: Optional[Decimal]
-    zinc_coating_max_operator: Optional[str]
-
     # 加减价与标记
     price_adjustment: int
     is_base: int
@@ -402,7 +394,6 @@ class MatchedLadderItem(BaseModel):
 
     @field_validator(
         "thick_min", "thick_max", "width_min", "width_max",
-        "zinc_coating_min", "zinc_coating_max",
         mode="plain",
     )
     @classmethod

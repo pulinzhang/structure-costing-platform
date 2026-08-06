@@ -84,11 +84,36 @@ const BasePriceUploadPage = {
         }
         const title = document.getElementById('basePriceUploadTitle');
         if (title) title.innerHTML = '拖拽文件到此处上传';
+        // 清空年度和月份
+        const yearInput = document.getElementById('basePriceYear');
+        const monthInput = document.getElementById('basePriceMonth');
+        if (yearInput) yearInput.value = '';
+        if (monthInput) monthInput.value = '';
     },
 
     async submit() {
         if (!this.selectedFile) {
             showToast('请选择基准价格文件', 'warning');
+            return;
+        }
+
+        const yearInput = document.getElementById('basePriceYear');
+        const monthInput = document.getElementById('basePriceMonth');
+        const year = yearInput?.value?.trim();
+        const month = monthInput?.value?.trim();
+
+        if (!year || !month) {
+            showToast('请填写生效年度和月份', 'warning');
+            return;
+        }
+
+        if (!/^\d{4}$/.test(year)) {
+            showToast('年度格式不正确，请填写4位年份', 'warning');
+            return;
+        }
+
+        if (!/^\d{1,2}$/.test(month) || parseInt(month) < 1 || parseInt(month) > 12) {
+            showToast('月份格式不正确，请填写1-12', 'warning');
             return;
         }
 
@@ -102,7 +127,8 @@ const BasePriceUploadPage = {
         formData.append('file', this.selectedFile);
 
         try {
-            const response = await HttpClient.post('/api/steel-base-prices/upload', formData);
+            const url = `/api/steel-base-prices/upload?year=${year}&month=${month}`;
+            const response = await HttpClient.post(url, formData);
             const data = response.data || {};
             const created = data.created_count || 0;
             const updated = data.updated_count || 0;

@@ -201,8 +201,8 @@ async function previewData() {
 
     try {
         const params = {};
-        if (year) params.year = year;
-        if (month) params.month = month;
+        if (year) params.year = parseInt(year, 10);
+        if (month) params.month = parseInt(month, 10);
         if (location) params.location = location;
         if (mill) params.steel_mill = mill;
         params.page = 1;
@@ -260,8 +260,8 @@ async function exportExcel() {
 
     try {
         const params = new URLSearchParams();
-        if (year) params.append('year', year);
-        if (month) params.append('month', month);
+        if (year) params.append('year', parseInt(year, 10));
+        if (month) params.append('month', parseInt(month, 10));
         if (location) params.append('location', location);
         if (mill) params.append('steel_mill', mill);
 
@@ -338,7 +338,10 @@ async function batchDeleteBasePrices() {
     }
 
     try {
-        const params = { year, month };
+        const params = { 
+            year: parseInt(year, 10), 
+            month: parseInt(month, 10) 
+        };
         if (location) params.location = location;
         if (mill) params.steel_mill = mill;
         const response = await HttpClient.delete(`${API_BASE}/batch`, { params });
@@ -388,8 +391,8 @@ async function refreshPreview() {
 
     try {
         const params = {};
-        if (year) params.year = year;
-        if (month) params.month = month;
+        if (year) params.year = parseInt(year, 10);
+        if (month) params.month = parseInt(month, 10);
         if (location) params.location = location;
         if (mill) params.steel_mill = mill;
         params.page = 1;

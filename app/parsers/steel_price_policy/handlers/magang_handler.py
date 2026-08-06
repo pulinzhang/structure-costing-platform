@@ -487,16 +487,16 @@ class MagangSheetHandler(BaseSheetHandler):
         else:
             # 板类：外层是行（每行代表一个厚度范围），里层是该行对应的钢种；
             # 同一行的价格数据被所有钢种共用
-            for grade_value in steel_grades:
-                for data_row, _ in grade_rows_with_value:
+            for data_row, _ in grade_rows_with_value:
+                for grade_value in steel_grades:
                     items = self._build_width_items(sheet, data_row, price_cols, boundaries)
                     if not items:
                         continue
                     # Block 2: 行 10 → 厚度<0.8，行 11 → 厚度≥0.8
                     
                     if data_row in (10, 11):
-                        THICKNESS_MAP = {10: "厚度<0.8", 11: "厚度≥0.8"}
-                        category_name = region.category + THICKNESS_MAP[data_row]
+                        thick_range_label = "厚度<0.8" if data_row == 10 else "厚度≥0.8"
+                        category_name = region.category + thick_range_label
                     else:
                         category_name = region.category
                     policies.append(ParsedPolicy(

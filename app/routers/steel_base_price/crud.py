@@ -51,6 +51,62 @@ def get_base_price_options(
     return ApiResponse.success(data=filters)
 
 
+@router.get("/export-preview")
+def export_base_prices_preview(
+    year: Optional[int] = None,
+    month: Optional[int] = None,
+    location: Optional[str] = None,
+    steel_mill: Optional[str] = None,
+    page: int = 1,
+    size: int = 100,
+    db: Session = Depends(get_db),
+):
+    """预览导出数据（分页）。"""
+    skip = (page - 1) * size
+    records = _steel_base_price_service.list_for_export(
+        db,
+        year=year,
+        month=month,
+        location=location,
+        steel_mill=steel_mill,
+        skip=skip,
+        limit=size,
+    )
+    total = _steel_base_price_service.count_for_export(
+        db,
+        year=year,
+        month=month,
+        location=location,
+        steel_mill=steel_mill,
+    )
+    return ApiResponse.list_(data=records, total=total, page=page, page_size=size)
+
+
+@router.delete("/batch")
+def batch_delete_base_prices(
+    year: int,
+    month: int,
+    location: Optional[str] = None,
+    steel_mill: Optional[str] = None,
+    db: Session = Depends(get_db),
+):
+    """根据条件批量删除基准价格（年度+月份必须同时指定）。"""
+    if not year or not month:
+        raise HTTPException(status_code=400, detail="年度和月份必须同时指定")
+
+    success, error = _steel_base_price_service.batch_delete(
+        db,
+        year=year,
+        month=month,
+        location=location,
+        steel_mill=steel_mill,
+    )
+    if not success:
+        logger.error("批量删除基准价格失败: %s", error)
+        raise HTTPException(status_code=400, detail=error or "删除失败")
+    return ApiResponse.deleted(message="删除成功")
+
+
 @router.get("/{record_id}")
 def get_base_price(
     record_id: int,
@@ -108,14 +164,18 @@ def delete_base_price(
 
 @router.post("/upload")
 async def upload_base_prices(
+    year: int,
+    month: int,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
 ):
-    """上传一事一议 Excel，按唯一键执行 upsert。"""
+    """上传基准价格 Excel，按唯一键执行 upsert。"""
     if not file.filename:
         raise HTTPException(status_code=400, detail="未提供文件名")
     if not file.filename.lower().endswith((".xlsx", ".xls")):
         raise HTTPException(status_code=400, detail="仅支持 .xlsx, .xls 文件")
+    if not (1 <= month <= 12):
+        raise HTTPException(status_code=400, detail="月份必须在 1-12 之间")
 
     file_content = await file.read()
     if not file_content:
@@ -126,6 +186,8 @@ async def upload_base_prices(
             db,
             file_content=file_content,
             filename=file.filename,
+            year=year,
+            month=month,
         )
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
@@ -168,54 +230,4 @@ def export_base_prices_excel(
     )
 
 
-@router.get("/export-preview")
-def export_base_prices_preview(
-    year: Optional[int] = None,
-    month: Optional[int] = None,
-    location: Optional[str] = None,
-    steel_mill: Optional[str] = None,
-    page: int = 1,
-    size: int = 100,
-    db: Session = Depends(get_db),
-):
-    """预览导出数据（分页）。"""
-    skip = (page - 1) * size
-    records = _steel_base_price_service.list_for_export(
-        db,
-        year=year,
-        month=month,
-        location=location,
-        steel_mill=steel_mill,
-        skip=skip,
-        limit=size,
-    )
-    total = _steel_base_price_service.count_for_export(
-        db,
-        year=year,
-        month=month,
-        location=location,
-        steel_mill=steel_mill,
-    )
-    return ApiResponse.list_(data=records, total=total, page=page, page_size=size)
-
-
-@router.delete("/batch")
-def batch_delete_base_prices(
-    year: int,
-    month: int,
-    location: Optional[str] = None,
-    steel_mill: Optional[str] = None,
-    db: Session = Depends(get_db),
-):
-    """根据条件批量删除基准价格（年度+月份必须同时指定）。"""
-    if not year or not month:
-        raise HTTPException(status_code=400, detail="年度和月份必须同时指定")
-
-    result = _steel_base_price_service.delete_by_conditions(
-        db,
-        year=year,
-        month=month,
-        location=location,
-        steel_mill=steel_mill,
-    )
-    return ApiResponse.deleted(message=f"成功删除 {result['deleted_count']} 条基准价格")
+# 文件结束

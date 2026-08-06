@@ -92,11 +92,15 @@ def _parse_sheet2(wb: openpyxl.Workbook) -> dict[str, dict[str, str]]:
     ws = wb["Sheet2"]
     location_cols = {"芜湖": 1, "大连": 2, "青岛": 3}
     for row in ws.iter_rows(min_row=3, values_only=True):
+        if not row or len(row) < 2:
+            continue
         grade = _str(row[0])
         if not grade:
             continue
         result[grade] = {}
         for loc, col_idx in location_cols.items():
+            if col_idx >= len(row):
+                continue
             mill = _str(row[col_idx])
             if mill and mill not in ("-", "/", "#N/A"):
                 result[grade][loc] = mill
@@ -148,10 +152,10 @@ def parse_base_price_excel(file_content: bytes) -> ParseResult:
             break
 
     if not year_month:
-        result.errors.append("无法从 Excel 标题行提取年月（格式示例：2026年5月）")
-        return result
+        # 无法从 Excel 标题提取年月，但 service 层会传入 year/month，这里只记录 warning
+        result.warnings.append("无法从 Excel 标题行提取年月，将使用接口传入的年度月份")
 
-    year, month = year_month
+    year, month = year_month if year_month else (None, None)
     processed_rows = 0
     skip_count = 0
 
@@ -176,9 +180,9 @@ def parse_base_price_excel(file_content: bytes) -> ParseResult:
 
         sheet_name = "Sheet1"
 
-        # 芜湖基地
-        wuhu_mill = _str(row[4])
-        wuhu_price = _decimal(row[5])
+        # 芜湖基地（列4=价格, 列5=中标钢厂）
+        wuhu_price = _decimal(row[4])
+        wuhu_mill = _str(row[5])
         if wuhu_mill and wuhu_price is not None:
             result.records.append({
                 "year": year,
@@ -197,9 +201,9 @@ def parse_base_price_excel(file_content: bytes) -> ParseResult:
                 "remark": None,
             })
 
-        # 青岛基地
-        qingdao_mill = _str(row[6])
-        qingdao_price = _decimal(row[7])
+        # 青岛基地（列6=价格, 列7=中标钢厂）
+        qingdao_price = _decimal(row[6])
+        qingdao_mill = _str(row[7])
         if qingdao_mill and qingdao_price is not None:
             result.records.append({
                 "year": year,

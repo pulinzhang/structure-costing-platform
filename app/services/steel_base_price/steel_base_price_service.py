@@ -107,6 +107,8 @@ class SteelBasePriceService:
         *,
         file_content: bytes,
         filename: str,
+        year: int,
+        month: int,
     ) -> dict[str, Any]:
         """
         解析 Excel 并执行 upsert。
@@ -115,15 +117,19 @@ class SteelBasePriceService:
             db: 数据库会话
             file_content: Excel 文件字节内容
             filename: 文件名（注入到 excel_filename 字段）
+            year: 生效年度
+            month: 生效月份
 
         Returns:
             导入结果（created/updated/total/warnings）
         """
         parse_result = parse_base_price_excel(file_content)
 
-        # 注入文件名
+        # 注入文件名、年度、月份
         for record in parse_result.records:
             record["excel_filename"] = filename
+            record["year"] = year
+            record["month"] = month
 
         if not parse_result.records:
             return {
