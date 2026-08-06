@@ -93,14 +93,17 @@ export function basePriceDownloadTemplate() {
                                         <th class="px-3 py-2 text-right text-[9px] font-semibold uppercase tracking-[0.15em] text-[#3a3a3a] whitespace-nowrap">基准价格</th>
                                         <th class="px-3 py-2 text-right text-[9px] font-semibold uppercase tracking-[0.15em] text-[#3a3a3a] whitespace-nowrap">加工费</th>
                                         <th class="px-3 py-2 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#3a3a3a] whitespace-nowrap">文件名</th>
+                                        <th class="px-3 py-2 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#3a3a3a] whitespace-nowrap">表页</th>
+                                        <th class="px-3 py-2 text-right text-[9px] font-semibold uppercase tracking-[0.15em] text-[#3a3a3a] whitespace-nowrap">行号</th>
+                                        <th class="px-3 py-2 text-right text-[9px] font-semibold uppercase tracking-[0.15em] text-[#3a3a3a] whitespace-nowrap">列号</th>
                                     </tr>
                                 </thead>
                                 <tbody id="basePricePreviewBody" class="divide-y divide-[#1a1a1a]">
-                                    <tr>
-                                        <td colspan="12" class="px-4 py-8 text-center text-[#616161] text-xs">
-                                            请选择条件后点击"预览"查看数据
-                                        </td>
-                                    </tr>
+            <tr>
+                <td colspan="15" class="px-4 py-8 text-center text-[#616161] text-xs">
+                    请选择条件后点击"预览"查看数据
+                </td>
+            </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -152,7 +155,7 @@ export function renderBasePriceRows(records) {
     if (!records || !Array.isArray(records) || records.length === 0) {
         return `
             <tr>
-                <td colspan="12" class="px-4 py-8 text-center text-[#616161] text-xs">
+                <td colspan="15" class="px-4 py-8 text-center text-[#616161] text-xs">
                     无数据
                 </td>
             </tr>
@@ -173,6 +176,9 @@ export function renderBasePriceRows(records) {
             <td class="px-3 py-2 text-[11px] text-[#888888] whitespace-nowrap font-mono text-right tabular-nums">${esc(formatNumber(record.base_price))}</td>
             <td class="px-3 py-2 text-[11px] text-[#686868] whitespace-nowrap font-mono text-right tabular-nums">${esc(formatNumber(record.processing_fee))}</td>
             <td class="px-3 py-2 text-[11px] text-[#505050] whitespace-nowrap truncate max-w-[200px]">${esc(record.excel_filename || '')}</td>
+            <td class="px-3 py-2 text-[11px] text-[#505050] whitespace-nowrap">${esc(record.sheet_name || '')}</td>
+            <td class="px-3 py-2 text-[11px] text-[#505050] whitespace-nowrap font-mono text-right tabular-nums">${esc(record.excel_row || '')}</td>
+            <td class="px-3 py-2 text-[11px] text-[#505050] whitespace-nowrap font-mono text-right tabular-nums">${esc(record.excel_col || '')}</td>
         </tr>`;
     }).join('');
 }

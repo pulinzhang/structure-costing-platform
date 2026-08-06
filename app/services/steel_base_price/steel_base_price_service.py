@@ -101,6 +101,33 @@ class SteelBasePriceService:
             logger.exception("删除基准价格失败: id=%s", record_id)
             return False, str(e)
 
+    def batch_delete(
+        self,
+        db: Session,
+        *,
+        year: int,
+        month: int,
+        location: str | None = None,
+        steel_mill: str | None = None,
+    ) -> tuple[bool, str | None]:
+        """按条件批量删除（年度+月份必须同时指定）。"""
+        try:
+            count = self.repository.delete_by_conditions(
+                db,
+                year=year,
+                month=month,
+                location=location,
+                steel_mill=steel_mill,
+            )
+            db.commit()
+            logger.info("批量删除基准价格: year=%s month=%s location=%s steel_mill=%s count=%s",
+                year, month, location, steel_mill, count)
+            return True, None
+        except Exception as e:
+            db.rollback()
+            logger.exception("批量删除基准价格失败")
+            return False, str(e)
+
     def import_excel(
         self,
         db: Session,
@@ -292,7 +319,7 @@ class SteelBasePriceService:
         headers = [
             "ID", "年度", "月份", "基地", "钢厂", "钢种大类",
             "牌号", "厚度(mm)", "宽度(mm)", "基准价格(元/吨)", "加工费(元/吨)",
-            "文件名", "表页", "行号", "备注",
+            "文件名", "表页", "行号", "列号", "备注",
         ]
 
         # 写入表头
@@ -321,6 +348,7 @@ class SteelBasePriceService:
                 record.excel_filename,
                 record.sheet_name,
                 record.excel_row,
+                record.excel_col if record.excel_col else "",
                 record.remark or "",
             ]
             ws.append(row_data)
@@ -335,13 +363,13 @@ class SteelBasePriceService:
                 cell.font = data_font
                 cell.border = thin_border
                 cell.fill = fill
-                if col_idx in (1, 2, 3, 8, 9, 10, 11, 14):
+                if col_idx in (1, 2, 3, 8, 9, 10, 11, 14, 15):
                     cell.alignment = data_alignment_right
                 else:
                     cell.alignment = data_alignment_left
 
         # 设置列宽
-        column_widths = [8, 8, 8, 12, 12, 10, 15, 12, 12, 14, 14, 30, 15, 8, 20]
+        column_widths = [8, 8, 8, 12, 12, 10, 15, 12, 12, 14, 14, 30, 15, 8, 8, 20]
         for col_idx, width in enumerate(column_widths, start=1):
             letter = ws.cell(row=1, column=col_idx).column_letter
             ws.column_dimensions[letter].width = width

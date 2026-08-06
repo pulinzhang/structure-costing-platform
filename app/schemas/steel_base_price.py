@@ -137,6 +137,7 @@ class SteelBasePriceResponse(BaseModel):
     excel_filename: str
     sheet_name: str
     excel_row: int
+    excel_col: Optional[int] = None
     remark: Optional[str]
     created_at: datetime
     updated_at: datetime

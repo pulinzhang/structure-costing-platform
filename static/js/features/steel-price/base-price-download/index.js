@@ -189,7 +189,7 @@ async function previewData() {
     if (tableBody) {
         tableBody.innerHTML = `
             <tr>
-                <td colspan="12" class="px-4 py-8 text-center">
+                <td colspan="15" class="px-4 py-8 text-center">
                     <div class="flex items-center justify-center">
                         <div class="w-4 h-4 border border-[#252525] border-t-[#d32f2f] rounded-full animate-spin mr-2"></div>
                         <span class="text-[11px] text-[#616161]">加载中...</span>
@@ -228,7 +228,7 @@ async function previewData() {
         if (tableBody) {
             tableBody.innerHTML = `
                 <tr>
-                    <td colspan="12" class="px-4 py-8 text-center text-[#d32f2f] text-xs">
+                    <td colspan="15" class="px-4 py-8 text-center text-[#d32f2f] text-xs">
                         加载失败: ${esc(error.message || '未知错误')}
                     </td>
                 </tr>
@@ -356,7 +356,7 @@ async function batchDeleteBasePrices() {
         if (tableBody) {
             tableBody.innerHTML = `
                 <tr>
-                    <td colspan="12" class="px-4 py-8 text-center">
+                    <td colspan="15" class="px-4 py-8 text-center">
                         <div class="flex items-center justify-center">
                             <div class="w-4 h-4 border border-[#252525] border-t-[#d32f2f] rounded-full animate-spin mr-2"></div>
                             <span class="text-[11px] text-[#616161]">正在刷新...</span>
@@ -420,7 +420,7 @@ async function refreshPreview() {
         if (tableBody) {
             tableBody.innerHTML = `
                 <tr>
-                    <td colspan="12" class="px-4 py-8 text-center text-[#d32f2f] text-xs">
+                    <td colspan="15" class="px-4 py-8 text-center text-[#d32f2f] text-xs">
                         刷新失败: ${esc(error.message || '未知错误')}
                     </td>
                 </tr>

@@ -60,6 +60,7 @@ class SteelBasePrice(Base):
     )
     sheet_name = Column(String(100), nullable=False, comment="Excel表页名称，例：定价表")
     excel_row = Column(Integer, nullable=False, comment="源数据在Excel中的具体行号，对应序号列，例：1")
+    excel_col = Column(Integer, nullable=True, comment="Excel 列号（1-based）")
 
     # 【辅助与扩展】
     remark = Column(Text, nullable=True, comment="备注说明")

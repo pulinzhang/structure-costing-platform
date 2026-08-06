@@ -154,6 +154,17 @@ def format_width_condition(row: ExportRow) -> str:
     )
 
 
+def format_zinc_condition(row: ExportRow) -> str:
+    return format_interval(
+        "z",
+        row.zinc_coating_min,
+        row.zinc_coating_min_operator,
+        row.zinc_coating_max,
+        row.zinc_coating_max_operator,
+        decimals=0,
+    )
+
+
 # =============================================================================
 # 导出器类
 # =============================================================================

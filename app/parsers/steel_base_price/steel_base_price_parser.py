@@ -180,7 +180,10 @@ def parse_base_price_excel(file_content: bytes) -> ParseResult:
 
         sheet_name = "Sheet1"
 
-        # 芜湖基地（列4=价格, 列5=中标钢厂）
+        # 计算实际 Excel 行号（从第6行开始）
+        actual_excel_row = processed_rows + 6
+
+        # 芜湖基地（列4=价格, 列5=中标钢厂）→ 价格在 Excel 第5列(E)
         wuhu_price = _decimal(row[4])
         wuhu_mill = _str(row[5])
         if wuhu_mill and wuhu_price is not None:
@@ -197,11 +200,12 @@ def parse_base_price_excel(file_content: bytes) -> ParseResult:
                 "processing_fee": processing_fee,
                 "excel_filename": "",
                 "sheet_name": sheet_name,
-                "excel_row": processed_rows + 1,
+                "excel_row": actual_excel_row,
+                "excel_col": 5,  # 价格在 Excel 第5列(E)
                 "remark": None,
             })
 
-        # 青岛基地（列6=价格, 列7=中标钢厂）
+        # 青岛基地（列6=价格, 列7=中标钢厂）→ 价格在 Excel 第7列(G)
         qingdao_price = _decimal(row[6])
         qingdao_mill = _str(row[7])
         if qingdao_mill and qingdao_price is not None:
@@ -218,7 +222,8 @@ def parse_base_price_excel(file_content: bytes) -> ParseResult:
                 "processing_fee": processing_fee,
                 "excel_filename": "",
                 "sheet_name": sheet_name,
-                "excel_row": processed_rows + 1,
+                "excel_row": actual_excel_row,
+                "excel_col": 7,  # 价格在 Excel 第7列(G)
                 "remark": None,
             })
 

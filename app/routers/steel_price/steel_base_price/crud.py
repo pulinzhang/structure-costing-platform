@@ -48,7 +48,7 @@ def get_base_price_options(
 ):
     """获取基准价格筛选下拉选项。"""
     _, _, filters = _steel_base_price_service.paginate(db, SteelBasePriceQuery(page=1, size=1))
-    return ApiResponse.success(data=filters)
+    return ApiResponse.success(data=filters.model_dump())
 
 
 @router.get("/export-preview")
@@ -82,6 +82,35 @@ def export_base_prices_preview(
     return ApiResponse.list_(data=records, total=total, page=page, page_size=size)
 
 
+@router.get("/export")
+def export_base_prices_excel(
+    year: Optional[int] = None,
+    month: Optional[int] = None,
+    location: Optional[str] = None,
+    steel_mill: Optional[str] = None,
+    db: Session = Depends(get_db),
+):
+    """导出基准价格数据为 Excel。"""
+    from fastapi.responses import StreamingResponse
+    from urllib.parse import quote
+
+    excel_bytes, filename = _steel_base_price_service.generate_export_excel_bytes(
+        db,
+        year=year,
+        month=month,
+        location=location,
+        steel_mill=steel_mill,
+    )
+
+    return StreamingResponse(
+        iter([excel_bytes]),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={
+            "Content-Disposition": f"attachment; filename*=UTF-8''{quote(filename)}",
+        },
+    )
+
+
 @router.delete("/batch")
 def batch_delete_base_prices(
     year: int,
@@ -106,6 +135,49 @@ def batch_delete_base_prices(
         raise HTTPException(status_code=400, detail=error or "删除失败")
     return ApiResponse.deleted(message="删除成功")
 
+
+@router.post("/upload")
+async def upload_base_prices(
+    year: int,
+    month: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+):
+    """上传基准价格 Excel，按唯一键执行 upsert。"""
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="未提供文件名")
+    if not file.filename.lower().endswith((".xlsx", ".xls")):
+        raise HTTPException(status_code=400, detail="仅支持 .xlsx, .xls 文件")
+    if not (1 <= month <= 12):
+        raise HTTPException(status_code=400, detail="月份必须在 1-12 之间")
+
+    file_content = await file.read()
+    if not file_content:
+        raise HTTPException(status_code=400, detail="上传文件为空")
+
+    try:
+        result = _steel_base_price_service.import_excel(
+            db,
+            file_content=file_content,
+            filename=file.filename,
+            year=year,
+            month=month,
+        )
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    except Exception as error:
+        logger.exception("处理基准价格文件失败: filename=%s", file.filename)
+        raise HTTPException(status_code=500, detail="基准价格导入失败") from error
+
+    return ApiResponse.success(
+        data=result,
+        message=f"导入完成，新增 {result['created_count']} 条，更新 {result['updated_count']} 条，共 {result['total']} 条",
+    )
+
+
+# =============================================================================
+# 资源型路由（/{record_id} 必须放在具体路径路由之后）
+# =============================================================================
 
 @router.get("/{record_id}")
 def get_base_price(
@@ -160,74 +232,6 @@ def delete_base_price(
         logger.error("删除基准价格失败: id=%s, error=%s", record_id, error)
         raise HTTPException(status_code=400, detail=error or "删除失败")
     return ApiResponse.deleted(message="删除成功")
-
-
-@router.post("/upload")
-async def upload_base_prices(
-    year: int,
-    month: int,
-    file: UploadFile = File(...),
-    db: Session = Depends(get_db),
-):
-    """上传基准价格 Excel，按唯一键执行 upsert。"""
-    if not file.filename:
-        raise HTTPException(status_code=400, detail="未提供文件名")
-    if not file.filename.lower().endswith((".xlsx", ".xls")):
-        raise HTTPException(status_code=400, detail="仅支持 .xlsx, .xls 文件")
-    if not (1 <= month <= 12):
-        raise HTTPException(status_code=400, detail="月份必须在 1-12 之间")
-
-    file_content = await file.read()
-    if not file_content:
-        raise HTTPException(status_code=400, detail="上传文件为空")
-
-    try:
-        result = _steel_base_price_service.import_excel(
-            db,
-            file_content=file_content,
-            filename=file.filename,
-            year=year,
-            month=month,
-        )
-    except ValueError as error:
-        raise HTTPException(status_code=400, detail=str(error)) from error
-    except Exception as error:
-        logger.exception("处理基准价格文件失败: filename=%s", file.filename)
-        raise HTTPException(status_code=500, detail="基准价格导入失败") from error
-
-    return ApiResponse.success(
-        data=result,
-        message=f"导入完成，新增 {result['created_count']} 条，更新 {result['updated_count']} 条，共 {result['total']} 条",
-    )
-
-
-@router.get("/export")
-def export_base_prices_excel(
-    year: Optional[int] = None,
-    month: Optional[int] = None,
-    location: Optional[str] = None,
-    steel_mill: Optional[str] = None,
-    db: Session = Depends(get_db),
-):
-    """导出基准价格数据为 Excel。"""
-    from fastapi.responses import StreamingResponse
-    from urllib.parse import quote
-
-    excel_bytes, filename = _steel_base_price_service.generate_export_excel_bytes(
-        db,
-        year=year,
-        month=month,
-        location=location,
-        steel_mill=steel_mill,
-    )
-
-    return StreamingResponse(
-        iter([excel_bytes]),
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={
-            "Content-Disposition": f"attachment; filename*=UTF-8''{quote(filename)}",
-        },
-    )
 
 
 # 文件结束
