@@ -7,7 +7,6 @@ FastAPI 应用入口
 - 前端：静态 HTML + JavaScript (通过 Live Server 或 nginx)
 """
 
-import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
@@ -34,7 +33,6 @@ async def lifespan(app: FastAPI):
     LoggerConfig.configure(force=True)
     ensure_directories()
     # 导入所有模型，确保 Base.metadata 能扫描到表结构
-    from app.models import StampingPart, StampingProcess, StampingTonnagePrice, SteelPrice, SteelPricePolicy, SteelPriceLadderItem, SteelBasePrice
     # 自动迁移：在 create_tables 之前补充缺失的列
     from app.utils.db_migration import run_auto_migration
     run_auto_migration()
@@ -247,7 +245,7 @@ def create_app() -> FastAPI:
     from app.routers.stamping.tonnage_price import router as stamping_tonnage_price_router
     from app.routers.steel_price.crud import router as steel_price_router
     from app.routers.steel_price.steel_price_policy.crud import router as steel_price_policy_router
-    from app.routers.steel_base_price.crud import router as steel_base_price_router
+    from app.routers.steel_price.steel_base_price.crud import router as steel_base_price_router
 
     # include_router = 注册路由
     app.include_router(dashboard_router)
@@ -257,7 +255,7 @@ def create_app() -> FastAPI:
     app.include_router(steel_price_router)
     app.include_router(steel_price_policy_router)
     app.include_router(steel_base_price_router)
-    app.include_router(costing_router)
+    app.include_router(costing_router) 
     app.include_router(quotation_router)
     app.include_router(settings_router)
 
