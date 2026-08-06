@@ -47,6 +47,10 @@ def _get_model_columns(table) -> Dict[str, dict]:
         sql_type = str(col.type)
         nullable = col.nullable
         default = col.default.arg if col.default and hasattr(col.default, "arg") else None
+        # datetime.now (no parentheses) has no .arg; treat callables as no default
+        if default is None and col.default is not None:
+            if not hasattr(col.default, "arg"):
+                default = None
         is_primary = col.primary_key
 
         columns[col_name] = {
@@ -109,8 +113,11 @@ def _migrate_table(engine: Engine, table) -> List[str]:
                     default = f" DEFAULT {default_val}"
             sql = f"ALTER TABLE {table_name} ADD COLUMN {col_name} {col_type}{nullable}{default}"
             sqls.append(sql)
-            conn.execute(text(sql))
-            logger.info(f"  + ADD COLUMN {table_name}.{col_name} ({col_type})")
+            try:
+                conn.execute(text(sql))
+                logger.info(f"  + ADD COLUMN {table_name}.{col_name} ({col_type})")
+            except Exception as ex:
+                logger.warning(f"  ! ADD COLUMN {table_name}.{col_name} 失败: {ex}")
         conn.commit()
     return sqls
 

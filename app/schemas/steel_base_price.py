@@ -47,8 +47,9 @@ class SteelBasePriceCreate(BaseModel):
     sheet_name: str = Field(..., min_length=1, max_length=100, description="Excel表页名称")
     excel_row: int = Field(..., ge=1, description="源数据在Excel中的行号")
     remark: Optional[str] = Field(None, description="备注")
+    spec: Optional[str] = Field(None, max_length=50, description="规格，例：1.00*1250.00")
 
-    @field_validator("location", "steel_mill", "category_name", "grade", "excel_filename", "sheet_name", mode="before")
+    @field_validator("location", "steel_mill", "category_name", "grade", "excel_filename", "sheet_name", "spec", mode="before")
     @classmethod
     def strip_strings(cls, v):
         return _strip(v)
@@ -108,10 +109,11 @@ class SteelBasePriceQuery(BaseModel):
     steel_mill: Optional[str] = Field(None, description="中标钢厂")
     category_name: Optional[str] = Field(None, description="钢种大类")
     grade: Optional[str] = Field(None, description="钢材牌号")
+    spec: Optional[str] = Field(None, description="规格")
     page: int = Field(1, ge=1, description="页码")
     size: int = Field(20, ge=1, le=200, description="每页条数")
 
-    @field_validator("location", "steel_mill", "category_name", "grade", mode="before")
+    @field_validator("location", "steel_mill", "category_name", "grade", "spec", mode="before")
     @classmethod
     def strip_query_strings(cls, v):
         return _strip(v)
@@ -130,6 +132,7 @@ class SteelBasePriceResponse(BaseModel):
     steel_mill: str
     category_name: str
     grade: str
+    spec: Optional[str] = None
     thick: Decimal
     width: Decimal
     base_price: Decimal

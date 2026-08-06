@@ -16,6 +16,7 @@ from app.schemas.steel_base_price import (
     SteelBasePriceUpdate,
 )
 from app.services.steel_base_price import SteelBasePriceService
+from app.services.steel_base_price import SteelBasePriceExportService
 from app.utils.response import ApiResponse
 
 
@@ -23,6 +24,7 @@ logger = logging.getLogger("router.steel_base_price")
 router = APIRouter(prefix="/api/steel-base-prices", tags=["钢材基准价格管理"])
 
 _steel_base_price_service = SteelBasePriceService()
+_steel_base_price_export_service = SteelBasePriceExportService()
 
 
 @router.get("")
@@ -57,29 +59,20 @@ def export_base_prices_preview(
     month: Optional[int] = None,
     location: Optional[str] = None,
     steel_mill: Optional[str] = None,
-    page: int = 1,
-    size: int = 100,
+    spec: Optional[str] = None,
     db: Session = Depends(get_db),
+
 ):
-    """预览导出数据（分页）。"""
-    skip = (page - 1) * size
+    """预览导出数据。"""
     records = _steel_base_price_service.list_for_export(
         db,
         year=year,
         month=month,
         location=location,
         steel_mill=steel_mill,
-        skip=skip,
-        limit=size,
+        spec=spec,
     )
-    total = _steel_base_price_service.count_for_export(
-        db,
-        year=year,
-        month=month,
-        location=location,
-        steel_mill=steel_mill,
-    )
-    return ApiResponse.list_(data=records, total=total, page=page, page_size=size)
+    return ApiResponse.list_(data=records, total=len(records), page=1, page_size=len(records))
 
 
 @router.get("/export")
@@ -88,18 +81,21 @@ def export_base_prices_excel(
     month: Optional[int] = None,
     location: Optional[str] = None,
     steel_mill: Optional[str] = None,
+    spec: Optional[str] = None,
     db: Session = Depends(get_db),
+
 ):
     """导出基准价格数据为 Excel。"""
     from fastapi.responses import StreamingResponse
     from urllib.parse import quote
 
-    excel_bytes, filename = _steel_base_price_service.generate_export_excel_bytes(
+    excel_bytes, filename = _steel_base_price_export_service.export(
         db,
         year=year,
         month=month,
         location=location,
         steel_mill=steel_mill,
+        spec=spec,
     )
 
     return StreamingResponse(

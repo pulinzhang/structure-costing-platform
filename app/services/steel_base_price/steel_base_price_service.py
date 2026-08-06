@@ -1,6 +1,7 @@
 """钢材基准价格业务服务。"""
 
 import logging
+from decimal import Decimal
 from typing import Any
 
 from sqlalchemy.orm import Session
@@ -43,6 +44,7 @@ class SteelBasePriceService:
             steel_mill=query.steel_mill.strip() if query.steel_mill else None,
             category_name=query.category_name.strip() if query.category_name else None,
             grade=query.grade.strip() if query.grade else None,
+            spec=query.spec.strip() if query.spec else None,
             skip=skip,
             limit=query.size,
         )
@@ -152,12 +154,11 @@ class SteelBasePriceService:
         """
         parse_result = parse_base_price_excel(file_content)
 
-        # 注入文件名、年度、月份
+        # 注入文件名、年度、月份，修正 grade 中的 //
         for record in parse_result.records:
             record["excel_filename"] = filename
             record["year"] = year
             record["month"] = month
-
         if not parse_result.records:
             return {
                 "filename": filename,
@@ -200,8 +201,7 @@ class SteelBasePriceService:
         month: int | None = None,
         location: str | None = None,
         steel_mill: str | None = None,
-        skip: int = 0,
-        limit: int | None = None,
+        spec: str | None = None,
     ) -> list[dict[str, Any]]:
         """导出预览数据（分批）。"""
         records = self.repository.list_for_export(
@@ -210,31 +210,12 @@ class SteelBasePriceService:
             month=month,
             location=location,
             steel_mill=steel_mill,
-            skip=skip,
-            limit=limit,
+            spec=spec,
         )
         return [
             SteelBasePriceResponse.model_validate(r).model_dump()
             for r in records
         ]
-
-    def count_for_export(
-        self,
-        db: Session,
-        *,
-        year: int | None = None,
-        month: int | None = None,
-        location: str | None = None,
-        steel_mill: str | None = None,
-    ) -> int:
-        """导出数据统计。"""
-        return self.repository.count_for_export(
-            db,
-            year=year,
-            month=month,
-            location=location,
-            steel_mill=steel_mill,
-        )
 
     def delete_by_conditions(
         self,
@@ -268,126 +249,3 @@ class SteelBasePriceService:
                 "steel_mill": steel_mill,
             },
         }
-
-    def generate_export_excel_bytes(
-        self,
-        db: Session,
-        *,
-        year: int | None = None,
-        month: int | None = None,
-        location: str | None = None,
-        steel_mill: str | None = None,
-    ) -> tuple[bytes, str]:
-        """
-        生成基准价格 Excel 导出文件。
-
-        Returns:
-            (文件字节数据, 文件名)
-        """
-        from io import BytesIO
-        from openpyxl import Workbook
-        from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
-
-        records = self.repository.list_for_export(
-            db,
-            year=year,
-            month=month,
-            location=location,
-            steel_mill=steel_mill,
-        )
-
-        wb = Workbook()
-        ws = wb.active
-        ws.title = "基准价格导出"
-
-        # 表头样式
-        header_font = Font(name="微软雅黑", size=10, bold=True, color="FFFFFF")
-        header_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
-        header_alignment = Alignment(horizontal="center", vertical="center")
-
-        data_font = Font(name="微软雅黑", size=10, color="000000")
-        data_alignment_left = Alignment(horizontal="left", vertical="center")
-        data_alignment_right = Alignment(horizontal="right", vertical="center")
-
-        thin_border = Border(
-            left=Side(style="thin", color="BFBFBF"),
-            right=Side(style="thin", color="BFBFBF"),
-            top=Side(style="thin", color="BFBFBF"),
-            bottom=Side(style="thin", color="BFBFBF"),
-        )
-
-        headers = [
-            "ID", "年度", "月份", "基地", "钢厂", "钢种大类",
-            "牌号", "厚度(mm)", "宽度(mm)", "基准价格(元/吨)", "加工费(元/吨)",
-            "文件名", "表页", "行号", "列号", "备注",
-        ]
-
-        # 写入表头
-        ws.append(headers)
-        for col_idx in range(1, len(headers) + 1):
-            cell = ws.cell(row=1, column=col_idx)
-            cell.font = header_font
-            cell.fill = header_fill
-            cell.alignment = header_alignment
-            cell.border = thin_border
-
-        # 写入数据
-        for row_idx, record in enumerate(records, start=2):
-            row_data = [
-                record.id,
-                record.year,
-                record.month,
-                record.location,
-                record.steel_mill,
-                record.category_name,
-                record.grade,
-                float(record.thick) if record.thick else "",
-                float(record.width) if record.width else "",
-                float(record.base_price) if record.base_price else "",
-                float(record.processing_fee) if record.processing_fee else "",
-                record.excel_filename,
-                record.sheet_name,
-                record.excel_row,
-                record.excel_col if record.excel_col else "",
-                record.remark or "",
-            ]
-            ws.append(row_data)
-
-            fill = PatternFill(
-                start_color="F2F2F2" if row_idx % 2 == 0 else "FFFFFF",
-                end_color="F2F2F2" if row_idx % 2 == 0 else "FFFFFF",
-                fill_type="solid",
-            )
-            for col_idx in range(1, len(row_data) + 1):
-                cell = ws.cell(row=row_idx, column=col_idx)
-                cell.font = data_font
-                cell.border = thin_border
-                cell.fill = fill
-                if col_idx in (1, 2, 3, 8, 9, 10, 11, 14, 15):
-                    cell.alignment = data_alignment_right
-                else:
-                    cell.alignment = data_alignment_left
-
-        # 设置列宽
-        column_widths = [8, 8, 8, 12, 12, 10, 15, 12, 12, 14, 14, 30, 15, 8, 8, 20]
-        for col_idx, width in enumerate(column_widths, start=1):
-            letter = ws.cell(row=1, column=col_idx).column_letter
-            ws.column_dimensions[letter].width = width
-
-        ws.freeze_panes = "A2"
-
-        # 构建文件名
-        parts = ["基准价格导出"]
-        if year:
-            parts.append(f"{year}年")
-        if month:
-            parts.append(f"{month}月")
-        if location:
-            parts.append(location)
-        if steel_mill:
-            parts.append(steel_mill)
-        filename = "_".join(parts) + ".xlsx"
-
-        output = BytesIO()
-        wb.save(output)
-        return output.getvalue(), filename

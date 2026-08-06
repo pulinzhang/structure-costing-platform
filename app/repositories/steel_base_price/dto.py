@@ -17,6 +17,7 @@ class FilterOptions(BaseModel):
     steel_mills: list[str] = Field(default_factory=list)
     category_names: list[str] = Field(default_factory=list)
     grades: list[str] = Field(default_factory=list)
+    specs: list[str] = Field(default_factory=list)
 
 
 class ExportRow(BaseModel):

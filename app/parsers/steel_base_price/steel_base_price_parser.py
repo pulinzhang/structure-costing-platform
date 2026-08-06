@@ -1,165 +1,245 @@
-"""
-钢材基准价格 Excel 解析器
-解析 "发布价格及中标钢厂.xlsx" 格式：
-- Sheet1: 主数据，定价表（宽表结构，列 = 基地，列 = 价格）
-- Sheet2: 中标钢厂对照（材质 → 各基地钢厂）
-"""
-
 import io
 import re
-from dataclasses import dataclass, field
-from decimal import Decimal, InvalidOperation
-from typing import Any
-
+from dataclasses import dataclass
+from typing import List, Tuple, Optional, Dict, Any
 import openpyxl
+from openpyxl.worksheet.worksheet import Worksheet
+from decimal import Decimal
 
+# ---------- 第1层：数据类定义（明确数据结构） ----------
+@dataclass
+class BaseColumnConfig:
+    """基地列配置"""
+    location: str          # 基地名称（如 "芜湖"）
+    mill_col: int          # 钢厂列索引（0-based）
+    price_col: int         # 价格列索引（0-based）
+
+@dataclass
+class ParsedContext:
+    """解析上下文"""
+    year: Optional[int]
+    month: Optional[int]
+    base_configs: List[BaseColumnConfig]
+    sheet_name: str = "Sheet1"
 
 @dataclass
 class ParseResult:
-    records: list[dict[str, Any]] = field(default_factory=list)
-    warnings: list[str] = field(default_factory=list)
-    errors: list[str] = field(default_factory=list)
+    """解析结果"""
+    errors: List[str] = None
+    warnings: List[str] = None
+    records: List[Dict[str, Any]] = None
 
-    @property
-    def total(self) -> int:
-        return len(self.records)
+    def __post_init__(self):
+        if self.errors is None:
+            self.errors = []
+        if self.warnings is None:
+            self.warnings = []
+        if self.records is None:
+            self.records = []
 
 
-def _decimal(v: Any) -> Decimal | None:
-    """将数字或字符串转为 Decimal，失败或空值返回 None"""
-    if v is None:
-        return None
-    if isinstance(v, Decimal):
-        return v
-    if isinstance(v, (int, float)):
-        try:
-            return Decimal(str(v))
-        except (InvalidOperation, ValueError):
-            return None
-    s = str(v).strip()
-    if not s or s in ("-", "/", "#N/A", "#VALUE!", "None"):
+# ---------- 第2层：元数据/表头解析器（专注找列） ----------
+def _extract_year_month_from_sheet(ws: Worksheet) -> Tuple[Optional[int], Optional[int]]:
+    """从工作表前3行提取年月"""
+    for row in ws.iter_rows(min_row=1, max_row=3, values_only=True):
+        for cell in row:
+            if cell:
+                ym = _parse_year_month(str(cell))  # 复用你原有的函数
+                if ym:
+                    return ym
+    return None, None
+
+def _extract_base_configs(ws: Worksheet) -> List[BaseColumnConfig]:
+    """
+    从第4行(基地名)和第5行(子标题)动态识别所有基地列对。
+    返回 BaseColumnConfig 列表。
+    """
+    header_row = list(ws.iter_rows(min_row=4, max_row=4, values_only=True))[0]
+    sub_row = list(ws.iter_rows(min_row=5, max_row=5, values_only=True))[0]
+    
+    configs = []
+    # 从第5列（索引4）开始扫描，因为前4列是固定列（序号、钢种、牌号、规格）
+    for idx in range(4, len(header_row)):
+        base_name = _str(header_row[idx])
+        sub_text = _str(sub_row[idx]) if idx < len(sub_row) else ""
+        if not base_name:
+            continue
+            
+        # 判断是否为“钢厂”列（根据子标题）
+        if sub_text and ("中标钢厂" in sub_text or "钢厂" in sub_text):
+            # 检查下一列是否为对应的“价格”列
+            next_idx = idx + 1
+            if next_idx < len(header_row):
+                next_sub = _str(sub_row[next_idx]) if next_idx < len(sub_row) else ""
+                if next_sub and ("价格" in next_sub or "承兑" in next_sub):
+                    location = base_name.replace("基地", "").strip()
+                    configs.append(BaseColumnConfig(
+                        location=location,
+                        mill_col=idx,
+                        price_col=next_idx
+                    ))
+                else:
+                    # 如果顺序不是“钢厂+价格”，可以在这里记录警告（但暂不阻断）
+                    pass
+    return configs
+
+
+# ---------- 辅助函数 ----------
+
+def _str(value: Any) -> str:
+    """安全转换为字符串"""
+    if value is None:
+        return ""
+    return str(value).strip()
+
+def _decimal(value: Any) -> Optional[Decimal]:
+    """安全转换为 Decimal"""
+    if value is None:
         return None
     try:
-        return Decimal(s)
-    except (InvalidOperation, ValueError):
+        return Decimal(str(value))
+    except Exception:
         return None
 
-
-def _str(v: Any) -> str | None:
-    """转为去空白字符串，空时返回 None"""
-    if v is None:
-        return None
-    s = str(v).strip()
-    return s if s else None
-
-
-def _parse_year_month(title: str) -> tuple[int, int] | None:
+def _parse_spec(spec_str: str) -> Tuple[Optional[Decimal], Optional[Decimal]]:
     """
-    从 Excel 标题行提取年月。
-    支持格式：
-      - "外协钢板2026年5月订单(2026年6月原料)一事一议价格"
-      - "外协钢板2025年12月订单(2026年1月原料)一事一议价格"
-    返回 (year, month) 或 None
-    """
-    m = re.search(r"(\d{4})年(\d{1,2})月", title)
-    if m:
-        return int(m.group(1)), int(m.group(2))
-    return None
-
-
-def _parse_spec(spec_str: str | None) -> tuple[Decimal | None, Decimal | None]:
-    """
-    解析参考规格，如 "1.0*1250" → (thick=1.0, width=1250.0)
+    解析规格字符串，如 "0.7*1250" → (0.7, 1250)
+    返回 (厚度, 宽度)，解析失败返回 (None, None)
     """
     if not spec_str:
         return None, None
-    m = re.match(r"([\d.]+)\s*\*\s*([\d.]+)", str(spec_str).strip())
-    if m:
-        thick = _decimal(m.group(1))
-        width = _decimal(m.group(2))
+    # 匹配 数字*数字 格式
+    match = re.match(r'([\d.]+)\*(\d+)', spec_str)
+    if match:
+        thick = _decimal(match.group(1))
+        width = _decimal(match.group(2))
         return thick, width
     return None, None
 
+def _parse_year_month(text: str) -> Tuple[Optional[int], Optional[int]]:
+    """
+    从文本中解析年月，如 "2025年1月" → (2025, 1)
+    支持格式：2025年1月、2025-1、2025.1 等
+    """
+    text = _str(text)
+    # 匹配年月
+    patterns = [
+        r'(\d{4})[年\-\.](\d{1,2})',  # 2025年1月、2025-1、2025.1
+        r'(\d{4})(\d{2})',             # 202501
+    ]
+    for pattern in patterns:
+        match = re.search(pattern, text)
+        if match:
+            year = int(match.group(1))
+            month = int(match.group(2))
+            if 2000 <= year <= 2100 and 1 <= month <= 12:
+                return year, month
+    return None, None
 
-def _parse_sheet2(wb: openpyxl.Workbook) -> dict[str, dict[str, str]]:
+def _parse_sheet2(wb) -> Dict[str, str]:
     """
-    解析 Sheet2，返回映射：{ grade -> { location -> steel_mill } }
-    列布局：A=材质, B=芜湖钢厂, C=大连钢厂, D=青岛钢厂
+    解析 Sheet2，返回中标钢厂映射（钢种 → 钢厂名）
+    如果 Sheet2 不存在，返回空字典
     """
-    result: dict[str, dict[str, str]] = {}
     if "Sheet2" not in wb.sheetnames:
-        return result
-    ws = wb["Sheet2"]
-    location_cols = {"芜湖": 1, "大连": 2, "青岛": 3}
-    for row in ws.iter_rows(min_row=3, values_only=True):
-        if not row or len(row) < 2:
-            continue
-        grade = _str(row[0])
-        if not grade:
-            continue
-        result[grade] = {}
-        for loc, col_idx in location_cols.items():
-            if col_idx >= len(row):
-                continue
-            mill = _str(row[col_idx])
-            if mill and mill not in ("-", "/", "#N/A"):
-                result[grade][loc] = mill
-    return result
+        return {}
+    
+    ws2 = wb["Sheet2"]
+    mill_map = {}
+    
+    # 假设格式：第1列钢种，第2列中标钢厂
+    for row in ws2.iter_rows(min_row=1, values_only=True):
+        if row[0] and row[1]:
+            steel_type = _str(row[0])
+            mill_name = _str(row[1])
+            if steel_type:
+                mill_map[steel_type] = mill_name
+    
+    return mill_map
 
 
+# ---------- 第3层：行数据映射器（专注把一行变成多条记录） ----------
+def _map_row_to_records(
+    row: tuple,
+    context: ParsedContext,
+    excel_row_num: int,
+    processing_fee: Decimal
+) -> List[Dict[str, Any]]:
+    """
+    将一行 Excel 数据 + 基地配置 → 多条数据库记录（每个基地一条）
+    """
+    records = []
+    steel_type = _str(row[1])
+    grade = _str(row[2]).replace("//", "/")
+    spec_str = _str(row[3])
+    thick, width = _parse_spec(spec_str)  # 复用你原有的解析函数
+    
+    # 如果钢种或牌号为空，直接返回空列表（调用方负责统计跳过行数）
+    if not steel_type or not grade:
+        return []
+    
+    for cfg in context.base_configs:
+        mill = _str(row[cfg.mill_col])
+        price = _decimal(row[cfg.price_col])
+        if mill and price is not None:
+            records.append({
+                "year": context.year,
+                "month": context.month,
+                "location": cfg.location,
+                "steel_mill": mill,
+                "category_name": steel_type,
+                "grade": grade,
+                "spec": spec_str,          # 新增：原始规格字符串
+                "thick": thick,
+                "width": width,
+                "base_price": price,
+                "processing_fee": processing_fee,
+                "excel_filename": "",
+                "sheet_name": context.sheet_name,
+                "excel_row": excel_row_num,
+                "excel_col": cfg.price_col + 1,  # 转为 1-based 列号
+                "remark": None,
+            })
+    return records
+
+
+# ---------- 第4层：流程编排器（原入口函数，现在只做“组装”工作） ----------
 def parse_base_price_excel(file_content: bytes) -> ParseResult:
     """
-    解析 "发布价格及中标钢厂.xlsx" 格式 Excel。
-
-    Sheet1 布局：
-      Row4: 序号 | 钢种 | 牌号 | 参考规格 | 芜湖 | 芜湖 | 青岛基地 | 青岛基地 | 加工费
-      Row5: (空) | (空) | (空) | (空)     | 中标钢厂 | 到厂原卷承兑价格 | 中标钢厂 | 到厂原卷承兑价格 | (空)
-      Row6+: 数据行（序号为数字的才处理）
-
-    列索引（0-based）：
-      0=序号, 1=钢种, 2=牌号, 3=参考规格,
-      4=芜湖中标钢厂, 5=芜湖价格,
-      6=青岛中标钢厂, 7=青岛价格,
-      8=加工费
+    入口函数：组装所有模块，返回 ParseResult
     """
     result = ParseResult()
-
+    
+    # 1. 加载文件（I/O 职责）
     try:
         wb = openpyxl.load_workbook(io.BytesIO(file_content), data_only=True)
     except Exception as e:
         result.errors.append(f"无法打开 Excel 文件: {e}")
         return result
-
-    # 解析 Sheet2 中标钢厂对照
-    mill_map = _parse_sheet2(wb)
-
+    
     if "Sheet1" not in wb.sheetnames:
         result.errors.append("未找到 Sheet1")
         return result
-
     ws = wb["Sheet1"]
-
-    # 提取标题行中的年月
-    year_month: tuple[int, int] | None = None
-    for row in ws.iter_rows(min_row=1, max_row=3, values_only=True):
-        for cell in row:
-            if cell:
-                ym = _parse_year_month(str(cell))
-                if ym:
-                    year_month = ym
-                    break
-        if year_month:
-            break
-
-    if not year_month:
-        # 无法从 Excel 标题提取年月，但 service 层会传入 year/month，这里只记录 warning
+    
+    # 2. 提取元数据（年/月 + 基地配置）
+    year, month = _extract_year_month_from_sheet(ws)
+    if not year:
         result.warnings.append("无法从 Excel 标题行提取年月，将使用接口传入的年度月份")
-
-    year, month = year_month if year_month else (None, None)
-    processed_rows = 0
+    
+    base_configs = _extract_base_configs(ws)
+    if not base_configs:
+        result.errors.append("未能识别任何基地列，请检查表头格式")
+        return result
+    
+    context = ParsedContext(year=year, month=month, base_configs=base_configs)
+    
+    # 3. 解析 Sheet2（保留你原有的逻辑，这是独立的）
+    mill_map = _parse_sheet2(wb)  # 如果你后续要用，可以传到上下文里
+    
+    # 4. 循环处理数据行（第6行开始）
     skip_count = 0
-
-    for row in ws.iter_rows(min_row=6, values_only=True):
+    for row_idx, row in enumerate(ws.iter_rows(min_row=6, values_only=True), start=6):
         seq = row[0]
         if seq is None:
             continue
@@ -167,69 +247,22 @@ def parse_base_price_excel(file_content: bytes) -> ParseResult:
             int(seq)
         except (ValueError, TypeError):
             continue
-
-        steel_type = _str(row[1])
-        grade = _str(row[2])
-        spec_str = _str(row[3])
-        thick, width = _parse_spec(spec_str)
+        
+        # 获取加工费（固定列索引8，如果以后需要动态识别可再抽离）
         processing_fee = _decimal(row[8]) or Decimal("120.00")
-
-        if not steel_type or not grade:
+        
+        # 调用行映射器（excel_row 使用真实的行号）
+        records = _map_row_to_records(row, context, row_idx, processing_fee)
+        if not records:
             skip_count += 1
             continue
-
-        sheet_name = "Sheet1"
-
-        # 计算实际 Excel 行号（从第6行开始）
-        actual_excel_row = processed_rows + 6
-
-        # 芜湖基地（列4=价格, 列5=中标钢厂）→ 价格在 Excel 第5列(E)
-        wuhu_price = _decimal(row[4])
-        wuhu_mill = _str(row[5])
-        if wuhu_mill and wuhu_price is not None:
-            result.records.append({
-                "year": year,
-                "month": month,
-                "location": "芜湖",
-                "steel_mill": wuhu_mill,
-                "category_name": steel_type,
-                "grade": grade,
-                "thick": thick,
-                "width": width,
-                "base_price": wuhu_price,
-                "processing_fee": processing_fee,
-                "excel_filename": "",
-                "sheet_name": sheet_name,
-                "excel_row": actual_excel_row,
-                "excel_col": 5,  # 价格在 Excel 第5列(E)
-                "remark": None,
-            })
-
-        # 青岛基地（列6=价格, 列7=中标钢厂）→ 价格在 Excel 第7列(G)
-        qingdao_price = _decimal(row[6])
-        qingdao_mill = _str(row[7])
-        if qingdao_mill and qingdao_price is not None:
-            result.records.append({
-                "year": year,
-                "month": month,
-                "location": "青岛",
-                "steel_mill": qingdao_mill,
-                "category_name": steel_type,
-                "grade": grade,
-                "thick": thick,
-                "width": width,
-                "base_price": qingdao_price,
-                "processing_fee": processing_fee,
-                "excel_filename": "",
-                "sheet_name": sheet_name,
-                "excel_row": actual_excel_row,
-                "excel_col": 7,  # 价格在 Excel 第7列(G)
-                "remark": None,
-            })
-
-        processed_rows += 1
-
+        
+        result.records.extend(records)
+    
     if skip_count > 0:
-        result.warnings.append(f"跳过 {skip_count} 行（钢种或牌号为空）")
+        result.warnings.append(f"跳过 {skip_count} 行（钢种或牌号为空或无法解析）")
+    
+    # ---------- 排序：按基地列升序，再按原始行号升序 ----------
+    result.records.sort(key=lambda r: (r.get('excel_col', 0), r.get('excel_row', 0)))
 
     return result

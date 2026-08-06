@@ -41,7 +41,8 @@ class SteelBasePrice(Base):
     )
     category_name = Column(String(50), nullable=False, comment="钢种大类，例：镀锌、冷轧、酸洗")
     grade = Column(String(50), nullable=False, comment="钢材牌号，例：DC51D+Z、DC01")
-
+    #规格（厚度*宽度）
+    spec = Column(String(50), nullable=False, comment="规格，例：1.00*1250.00")
     # 【基准规格维度】
     thick = Column(Numeric(7, 2), nullable=False, comment="参考厚度(mm)，例：1.00")
     width = Column(Numeric(7, 2), nullable=False, comment="参考宽度(mm)，例：1250.00")

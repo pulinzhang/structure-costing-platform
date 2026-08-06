@@ -25,6 +25,7 @@ class BasePriceFilter:
         steel_mill: Optional[str] = None,
         category_name: Optional[str] = None,
         grade: Optional[str] = None,
+        spec: Optional[str] = None,
         skip: int = 0,
         limit: int = 20,
     ):
@@ -34,6 +35,7 @@ class BasePriceFilter:
         self.steel_mill = steel_mill
         self.category_name = category_name
         self.grade = grade
+        self.spec = spec
         self.skip = skip
         self.limit = limit
 
@@ -82,6 +84,8 @@ class SteelBasePriceRepository:
             query = query.filter(SteelBasePrice.category_name == base_price_filter.category_name)
         if base_price_filter.grade:
             query = query.filter(SteelBasePrice.grade.contains(base_price_filter.grade))
+        if base_price_filter.spec:
+            query = query.filter(SteelBasePrice.spec.contains(base_price_filter.spec))
 
         total = query.count()
         records = (
@@ -120,6 +124,7 @@ class SteelBasePriceRepository:
         steel_mills = self._distinct_values(db, SteelBasePrice.steel_mill)
         category_names = self._distinct_values(db, SteelBasePrice.category_name)
         grades = self._distinct_values(db, SteelBasePrice.grade)
+        specs = self._distinct_values(db, SteelBasePrice.spec)
         return FilterOptions(
             years=years,
             months=months,
@@ -127,6 +132,7 @@ class SteelBasePriceRepository:
             steel_mills=steel_mills,
             category_names=category_names,
             grades=grades,
+            specs=specs,
         )
 
     # ---- 写操作 ----
@@ -281,12 +287,11 @@ class SteelBasePriceRepository:
         self,
         db: Session,
         *,
-        year: Optional[int] = None,
-        month: Optional[int] = None,
-        location: Optional[str] = None,
-        steel_mill: Optional[str] = None,
-        skip: int = 0,
-        limit: Optional[int] = None,
+        year: int | None = None,
+        month: int | None = None,
+        location: str | None = None,
+        steel_mill: str | None = None,
+        spec: str | None = None,
     ) -> list[SteelBasePrice]:
         """
         获取导出所需的数据（供 ExportService 调用）。
@@ -304,13 +309,15 @@ class SteelBasePriceRepository:
             query = query.filter(SteelBasePrice.location == location)
         if steel_mill:
             query = query.filter(SteelBasePrice.steel_mill == steel_mill)
+        if spec:
+            query = query.filter(SteelBasePrice.spec.contains(spec))
 
-        query = query.order_by(SteelBasePrice.id.asc())
-
-        if skip:
-            query = query.offset(skip)
-        if limit:
-            query = query.limit(limit)
+        query = query.order_by(
+            SteelBasePrice.year.asc(),
+            SteelBasePrice.month.asc(),
+            SteelBasePrice.location.asc(),
+            SteelBasePrice.steel_mill.asc(),
+        )
 
         return query.all()
 
@@ -322,6 +329,7 @@ class SteelBasePriceRepository:
         month: Optional[int] = None,
         location: Optional[str] = None,
         steel_mill: Optional[str] = None,
+        spec: Optional[str] = None,
     ) -> int:
         """统计记录数（供 ExportService 调用）。"""
         query = db.query(SteelBasePrice)
@@ -334,5 +342,6 @@ class SteelBasePriceRepository:
             query = query.filter(SteelBasePrice.location == location)
         if steel_mill:
             query = query.filter(SteelBasePrice.steel_mill == steel_mill)
-
+        if spec:
+            query = query.filter(SteelBasePrice.spec.contains(spec))
         return query.count()
