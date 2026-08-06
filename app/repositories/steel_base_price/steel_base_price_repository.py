@@ -89,7 +89,7 @@ class SteelBasePriceRepository:
 
         total = query.count()
         records = (
-            query.order_by(SteelBasePrice.id.asc())
+            query.order_by(SteelBasePrice.year.asc(), SteelBasePrice.month.asc(), SteelBasePrice.location.asc(), SteelBasePrice.steel_mill.asc(), SteelBasePrice.excel_col.asc(), SteelBasePrice.excel_row.asc())
             .offset(base_price_filter.skip)
             .limit(base_price_filter.limit)
             .all()
@@ -315,6 +315,8 @@ class SteelBasePriceRepository:
         query = query.order_by(
             SteelBasePrice.year.asc(),
             SteelBasePrice.month.asc(),
+            SteelBasePrice.excel_col.asc(),
+            SteelBasePrice.excel_row.asc(),
             SteelBasePrice.location.asc(),
             SteelBasePrice.steel_mill.asc(),
         )

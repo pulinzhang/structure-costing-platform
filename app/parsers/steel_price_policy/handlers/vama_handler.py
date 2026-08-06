@@ -283,24 +283,13 @@ class VamaSheetHandler(BaseSheetHandler):
                     if next_boundary.min_val is not None:
                         max_val = next_boundary.min_val
                         # 判断上界操作符：
-                        # 1. 显式终结档（≥X-Y 格式）：用 <= 闭区间
-                        # 2. 非标准厚度值（如 0.51、0.61）：用 <= 闭区间
-                        # 3. 标准厚度值（如 0.6、0.7、1.0）：用 < 开区间
-                        next_min_str = str(next_boundary.min_val)
-                        is_non_standard = (
-                            # 非整数厚度（如 0.51）
-                            "." in next_min_str
-                            and not next_min_str.endswith(".0")
-                        ) or (
-                            # 非5/10倍数的小数（如 0.51, 0.61 等，但 1.5 可能是标准值）
-                            "." in next_min_str
-                            and float(next_min_str) % 0.05 != 0
-                        )
-                        if is_non_standard:
-                            # 非标准厚度值 → 闭区间（≤）
-                            max_operator = "<="
+                        # 1. 显式终结档（≥X-Y 格式）：已在 boundary_parser 中用 <=，此处不会被触发
+                        # 2. 下一档 min_operator = ">"（如 "＞0.5"）：闭区间 ≤
+                        # 3. 下一档 min_operator = ">="（如 "≥0.6"）：开区间 <
+                        if next_boundary.min_operator == ">=":
+                            max_operator = "<"
                         else:
-                            # 标准厚度值 → 开区间（<）
+                            # ">="（标准厚度值）或其它情况 → 开区间
                             max_operator = "<"
                         boundary = _Boundary(
                             min_val=boundary.min_val,

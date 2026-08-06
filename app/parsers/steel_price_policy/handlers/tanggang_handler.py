@@ -10,11 +10,14 @@
 
 镀锌块每行都是独立政策。
 """
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
+
+from decimal import Decimal
 
 from openpyxl.worksheet.worksheet import Worksheet
 
 from app.parsers.steel_price_policy.handlers.base_handler import BaseSheetHandler
+from app.parsers.steel_price_policy.boundary_parser import _Boundary
 from .constants import GRADE_LABELS, parse_thickness_label
 
 
@@ -41,8 +44,6 @@ class TanggangSheetHandler(BaseSheetHandler):
         - 钢种行（DC01、DC03、"DC04及以上"）：grade_type = GRADE
         - 厚度行（"厚度≤1.5mm"、"厚度＞1.5mm"）：grade_type = THICKNESS_RANGE
         """
-        from decimal import Decimal
-
         from ..models import ParsedPolicy
         from ..models.policy import (
             GRADE_TYPE_GRADE,
@@ -56,7 +57,7 @@ class TanggangSheetHandler(BaseSheetHandler):
         data_end = block["data_row_end"]
         category_name = block.get("category_name", "冷轧钢")
 
-        boundaries = self._collect_boundaries(sheet, header_row, price_cols)
+        boundaries = self._collect_tanggang_width_boundaries(sheet, header_row, price_cols)
         if not boundaries:
             return []
 
@@ -124,8 +125,48 @@ class TanggangSheetHandler(BaseSheetHandler):
         return super()._parse_blocks_default(sheet, steel_mill, policy_type)
 
     # ------------------------------------------------------------------ #
-    # 宽度块定位（复用基类）
+    # 宽度块定位（唐钢专用）
     # ------------------------------------------------------------------ #
+
+    def locate_width_block(
+        self,
+        sheet: Worksheet,
+        title_row: int,
+        block_end: int,
+        grade_col: int,
+        data_col_start: int,
+        max_col: int,
+        *,
+        category: str = "冷轧钢",
+        header_row_offset: int = 1,
+        scan_cols: Optional[List[int]] = None,
+    ) -> Optional[Dict[str, Any]]:
+        """唐钢专用：允许纯数字列头（如 1000mm），不走 _parse_boundary 过滤。"""
+        header_row = title_row + header_row_offset
+        if header_row > block_end:
+            return None
+
+        # 唐钢：手动收集所有非空列头（含纯数字）
+        price_cols: List[int] = []
+        for c in range(data_col_start, max_col + 1):
+            raw = sheet.cell(row=header_row, column=c).value
+            if raw is not None and str(raw).strip():
+                price_cols.append(c)
+
+        if not price_cols:
+            return None
+
+        return {
+            "category_name": category,
+            "policy_type": "WIDTH",
+            "grade_col": grade_col,
+            "header_row": header_row,
+            "price_cols": price_cols,
+            "data_row_start": header_row + 1,
+            "data_row_end": block_end,
+            "base_thickness": None,
+            "grade_blacklist": GRADE_LABELS,
+        }
 
     def find_width_blocks(
         self, sheet: Worksheet, steel_mill: str
@@ -158,3 +199,47 @@ class TanggangSheetHandler(BaseSheetHandler):
                 blocks.append(block)
 
         return blocks
+
+    # ------------------------------------------------------------------ #
+    # 唐钢宽度边界收集（处理等号区间）
+    # ------------------------------------------------------------------ #
+    def _collect_tanggang_width_boundaries(
+        self,
+        sheet: Worksheet,
+        header_row: int,
+        price_cols: List[int],
+    ) -> Dict[int, "_Boundary"]:
+        """唐钢宽度边界收集：处理纯数字等号区间。
+
+        唐钢数据中可能出现"1000mm"这样的纯数字，表示精确值区间 1000<=W<=1000。
+        需要特殊处理：
+        - 纯数字 → min=数字, min_op=">=", max=数字, max_op="<="（等号区间）
+        """
+        from app.parsers.steel_price_policy.boundary_parser import _Boundary
+        import re
+
+        result: Dict[int, _Boundary] = {}
+        _PURE_NUM_RE = re.compile(r"^\s*(-?\d+(?:\.\d+)?)\s*(?:mm)?\s*$", re.IGNORECASE)
+
+        for c in price_cols:
+            raw = sheet.cell(row=header_row, column=c).value
+            text = str(raw) if raw is not None else ""
+
+            # 纯数字：表示等号区间 1000 <= W <= 1000
+            if _PURE_NUM_RE.match(text):
+                num_str = _PURE_NUM_RE.match(text).group(1)
+                num = Decimal(num_str)
+                result[c] = _Boundary(
+                    min_val=num,
+                    min_operator=">=",
+                    max_val=num,
+                    max_operator="<=",
+                )
+            else:
+                # 非纯数字，使用通用解析
+                from app.parsers.steel_price_policy.boundary_parser import _parse_boundary
+                b = _parse_boundary(raw)
+                if b is not None:
+                    result[c] = b
+
+        return result

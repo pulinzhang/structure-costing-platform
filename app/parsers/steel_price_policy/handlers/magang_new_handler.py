@@ -101,7 +101,7 @@ class MagangNewSheetHandler(BaseSheetHandler):
             if block:
                 # 按本块实际钢种名后缀推断 category（复用 assembler 的推断逻辑）
                 block["category_name"] = self.assembler.infer_block_category(
-                    sheet, block, max_col=max_col
+                    sheet, block
                 )
                 blocks.append(block)
 
