@@ -185,6 +185,7 @@ def _extract_base_configs(ws) -> List[BaseColumnConfig]:
     支持：
     - 2列/基地：钢厂 + 价格（紧挨着）
     - 3列/基地：钢厂 + 空列 + 价格（隔了一列）
+    - 1列/基地：只有价格列（如"到厂原卷承兑价格"，无独立钢厂列）
     返回 BaseColumnConfig 列表。
     """
     header_row = list(ws.iter_rows(min_row=4, max_row=4, values_only=True))[0]
@@ -227,6 +228,41 @@ def _extract_base_configs(ws) -> List[BaseColumnConfig]:
                 price_col=price_col
             ))
         # 如果找不到价格列，跳过该基地（后续可在 warnings 中记录）
+
+    # 备用逻辑：如果上面没有识别到任何基地，尝试直接识别价格列
+    # 适用于 Row5 只有"到厂原卷承兑价格"等价格标注，没有"钢厂"字样的格式
+    if not configs:
+        for idx in range(4, len(header_row)):
+            base_name = _str(header_row[idx])
+            sub_text = _str(sub_row[idx]) if idx < len(sub_row) else ""
+
+            if not base_name:
+                continue
+
+            # 排除非基地列
+            if base_name in ("合计", "厚度加减价", "未税合计", "含税合计", "备注"):
+                continue
+
+            # 检查该列是否包含价格关键词（说明这是价格列）
+            if sub_text and ("价格" in sub_text or "承兑" in sub_text):
+                location = base_name.replace("基地", "").strip()
+                configs.append(BaseColumnConfig(
+                    location=location,
+                    mill_col=idx,  # mill_col 和 price_col 相同（没有独立钢厂列）
+                    price_col=idx
+                ))
+            elif not sub_text and base_name not in ("合计", "厚度加减价", "未税合计", "含税合计"):
+                # 无副标题的基地名列，尝试向后找价格列
+                for lookahead in range(idx + 1, len(header_row)):
+                    lookahead_sub = _str(sub_row[lookahead]) if lookahead < len(sub_row) else ""
+                    if lookahead_sub and ("价格" in lookahead_sub or "承兑" in lookahead_sub):
+                        location = base_name.replace("基地", "").strip()
+                        configs.append(BaseColumnConfig(
+                            location=location,
+                            mill_col=idx,
+                            price_col=lookahead
+                        ))
+                        break
 
     return configs
 
