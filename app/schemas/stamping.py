@@ -67,6 +67,7 @@ class StampingPartBaseResponse(BaseModel):
     automation: str | None
     remark: str | None
     sketch_url: str | None
+    excel_filename: str | None = None
     created_at: datetime | None
     updated_at: datetime | None
 

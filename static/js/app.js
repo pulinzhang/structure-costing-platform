@@ -186,15 +186,18 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             const submenuId = this.getAttribute('data-submenu-toggle');
             const submenu = document.getElementById(submenuId);
-            const parent  = this.closest('.has-submenu');
+            // 找到最近的 has-submenu 父级（可能是 .sidebar-nav-item 或 .submenu-item）
+            const parent = this.closest('.has-submenu');
             if (!submenu || !parent) return;
 
-            const isOpen = submenu.classList.contains('show');
+            const isOpen = parent.classList.contains('open');
 
-            document.querySelectorAll('.has-submenu.open').forEach(item => {
+            // 只关闭同一级别的已打开菜单（不包括嵌套的同级菜单）
+            const siblings = parent.parentElement.querySelectorAll(':scope > .has-submenu.open');
+            siblings.forEach(item => {
                 if (item !== parent) {
                     item.classList.remove('open');
-                    const s = item.querySelector('.submenu');
+                    const s = item.querySelector(':scope > .submenu');
                     if (s) s.classList.remove('show');
                 }
             });

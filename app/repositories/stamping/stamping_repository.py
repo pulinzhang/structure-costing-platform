@@ -41,12 +41,9 @@ class BaseRepository:
         return instance
 
     def bulk_create(self, db: Session, data_list: List[Dict[str, Any]]) -> List[T]:
-        """批量创建记录"""
+        """批量创建记录（不提交事务，由调用方管理）"""
         instances = [self.model(**data) for data in data_list]
         db.add_all(instances)
-        db.commit()
-        for instance in instances:
-            db.refresh(instance)
         logger.info(f"批量创建: {self.model.__name__} x{len(instances)}")
         return instances
 
@@ -156,9 +153,6 @@ class StampingPartRepository:
     def bulk_create(self, db: Session, parts_data: List[Dict[str, Any]]) -> List[StampingPart]:
         parts = [StampingPart(**data) for data in parts_data]
         db.add_all(parts)
-        db.commit()
-        for part in parts:
-            db.refresh(part)
         logger.info(f"批量创建零件: {len(parts)} 个")
         return parts
 
@@ -192,13 +186,12 @@ class StampingPartRepository:
         ).all()
 
     def delete_by_vehicle_version(self, db: Session, vehicle_model: str, version: str) -> int:
-        """删除指定车型版本的全部零件和工序"""
+        """删除指定车型版本的全部零件和工序（不提交事务，由调用方管理）"""
         parts = self.get_all_by_vehicle_version(db, vehicle_model, version)
         count = len(parts)
         for part in parts:
             db.query(StampingProcess).filter(StampingProcess.part_id == part.id).delete()
             db.delete(part)
-        db.commit()
         logger.info(f"删除车型版本: {vehicle_model}/{version}, 共 {count} 个零件")
         return count
 
@@ -276,9 +269,6 @@ class StampingProcessRepository:
     def bulk_create(self, db: Session, processes_data: List[Dict[str, Any]]) -> List[StampingProcess]:
         processes = [StampingProcess(**data) for data in processes_data]
         db.add_all(processes)
-        db.commit()
-        for p in processes:
-            db.refresh(p)
         logger.info(f"批量创建工序: {len(processes)} 个")
         return processes
 

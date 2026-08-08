@@ -59,6 +59,15 @@ class ParserResult:
     # 零件简图：零件号 -> 图片二进制
     images_by_part: Dict[str, bytes] = field(default_factory=dict)
 
+    # 冲压供应商名称
+    stamping_supplier: str = ""
+
+    # 车型（从Excel表头"项目"字段提取）
+    vehicle_model: str = ""
+
+    # 版本（从Excel表头"版本"字段提取）
+    version: str = ""
+
     @property
     def part_count(self) -> int:
         """零件数量"""

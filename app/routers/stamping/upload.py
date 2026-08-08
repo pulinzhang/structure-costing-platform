@@ -20,21 +20,17 @@ router = APIRouter(prefix="/api/stamping/upload", tags=["冲压工艺上传 API"
 
 @router.post("/")
 async def upload_stamping_file(
-    vehicle_model: str = Form(...),
-    version: str = Form(...),
+    location: str = Form(...),
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
 ):
     """上传车型冲压工艺文件，解析并保存到数据库"""
     logger.info(
-        f"接收到车型冲压工艺文件上传: 车型={vehicle_model}, "
-        f"版本={version}, 文件={file.filename}"
+        f"接收到车型冲压工艺文件上传: 基地={location}, 文件={file.filename}"
     )
 
-    if not vehicle_model.strip():
-        raise HTTPException(status_code=400, detail="请输入车型")
-    if not version.strip():
-        raise HTTPException(status_code=400, detail="请输入版本")
+    if not location.strip():
+        raise HTTPException(status_code=400, detail="请输入基地")
     if not file.filename:
         raise HTTPException(status_code=400, detail="未提供文件名")
 
@@ -57,8 +53,7 @@ async def upload_stamping_file(
         result = service.process_upload(
             file_content=content,
             filename=file.filename,
-            vehicle_model=vehicle_model,
-            version=version,
+            location=location,
         )
         return ApiResponse.success(
             data=result,

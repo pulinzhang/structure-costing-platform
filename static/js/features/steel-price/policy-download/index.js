@@ -273,7 +273,7 @@ async function exportExcel() {
 
         // 获取文件名
         const contentDisposition = response.headers.get('Content-Disposition');
-        let filename = '钢价政策导出.xlsx';
+        let filename = '厚度加减价导出.xlsx';
         if (contentDisposition) {
             const match = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
             if (match && match[1]) {

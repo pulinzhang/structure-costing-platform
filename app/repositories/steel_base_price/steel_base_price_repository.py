@@ -10,7 +10,7 @@ from sqlalchemy import distinct, func
 from sqlalchemy.orm import Session
 
 from app.models.steel_base_price import SteelBasePrice
-from app.repositories.steel_base_price.dto import FilterOptions
+from app.schemas.steel_base_price_dto import FilterOptions
 
 
 class BasePriceFilter:

@@ -22,7 +22,14 @@ class StampingPart(Base):
     __tablename__ = "stamping_parts"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-
+    # 【基地与归属维度】
+    location = Column(
+        String(50), nullable=False, comment="采购基地，例： 大连、芜湖、鄂尔多斯、青岛"
+    )
+    # 【供应商维度】
+    stamping_supplier = Column(
+        String(50), nullable=True, comment="冲压供应商，例：安庆常庆汽车部件有限公司"
+    )
     # 车型信息（直接存储，不关联车型表）
     vehicle_model = Column(String(50), nullable=False, comment="车型")
     version = Column(String(20), nullable=False, comment="版本")
@@ -53,6 +60,13 @@ class StampingPart(Base):
     # 扩展信息
     remark = Column(Text, nullable=True, comment="备注")
     sketch_url = Column(String(500), nullable=True, comment="零件简图URL（相对于上传目录，格式：车型/日期/零件号.png）")
+
+    # 【防扯皮与溯源铁证字段（核心亮点）】
+    excel_filename = Column(
+        String(255),
+        nullable=False,
+        comment="来源Excel文件名，例：2025年11月马钢测试.xlsx",
+    )
 
     # 元数据
     created_at = Column(DateTime, default=datetime.now, comment="创建时间")

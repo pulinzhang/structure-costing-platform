@@ -191,7 +191,7 @@ body {
 }
 
 .has-submenu .submenu.show {
-    max-height: 200px;
+    max-height: 600px;
 }
 
 .submenu-arrow {
@@ -220,6 +220,41 @@ body {
 .submenu-link.active {
     color: var(--text-muted);
     background: rgba(255, 255, 255, 0.04);
+}
+
+/* 嵌套子菜单 - 二级/三级 */
+.submenu-nested {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.2s ease;
+}
+
+.submenu-item.has-submenu.open > .submenu-nested {
+    max-height: 400px;
+}
+
+.submenu-item.has-submenu > .submenu-link {
+    position: relative;
+}
+
+.submenu-item.has-submenu > .submenu-link::before {
+    content: '';
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--text-disabled);
+}
+
+.submenu-nested .submenu-link {
+    padding-left: 3.5rem;
+}
+
+.submenu-nested .submenu-nested .submenu-link {
+    padding-left: 4.5rem;
 }
 
 .sidebar-nav-link svg,

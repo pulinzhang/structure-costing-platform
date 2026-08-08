@@ -4,7 +4,7 @@ from app.repositories.steel_base_price.steel_base_price_repository import (
     BasePriceFilter,
     SteelBasePriceRepository,
 )
-from app.repositories.steel_base_price.dto import FilterOptions
+from app.schemas.steel_base_price_dto import FilterOptions
 
 __all__ = [
     "BasePriceFilter",

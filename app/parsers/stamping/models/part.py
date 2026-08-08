@@ -71,3 +71,6 @@ class Part:
 
     # 备注
     remark: Optional[str] = None
+
+    # 冲压供应商（从Excel表头提取，如"烟台海众汽车零部件有限公司"）
+    stamping_supplier: Optional[str] = None

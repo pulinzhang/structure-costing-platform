@@ -10,7 +10,7 @@ from typing import Optional
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 
-from app.repositories.steel_price_policy.dto import ExportRow
+from app.schemas.steel_price_policy_dto import ExportRow
 
 
 # =============================================================================
@@ -185,7 +185,7 @@ class SteelPricePolicyExporter:
         """
         wb = Workbook()
         ws = wb.active
-        ws.title = "钢价政策导出"
+        ws.title = "厚度加减价导出"
 
         self._write_headers(ws)
         self._write_rows(ws, records)
@@ -260,7 +260,7 @@ class SteelPricePolicyExporter:
         steel_mill: Optional[str],
     ) -> str:
         """构建导出文件名"""
-        parts = ["钢价政策导出"]
+        parts = ["厚度加减价导出"]
         if year:
             parts.append(f"{year}年")
         if month:

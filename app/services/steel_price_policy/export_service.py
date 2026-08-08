@@ -1,5 +1,5 @@
 """
-钢价政策导出服务
+厚度加减价导出服务
 职责：主子表联合查询、数据扁平化、Excel 导出
 被 SteelPricePolicyService 调用
 """
@@ -10,7 +10,7 @@ from typing import Optional
 from sqlalchemy.orm import Session
 
 from app.repositories.steel_price_policy import SteelPricePolicyRepository
-from app.repositories.steel_price_policy.dto import ExportRow
+from app.schemas.steel_price_policy_dto import ExportRow
 from app.services.steel_price_policy.excel_exporter import SteelPricePolicyExporter
 
 
@@ -18,7 +18,7 @@ logger = logging.getLogger("service.steel_price_policy.export")
 
 
 class SteelPricePolicyExportService:
-    """钢价政策导出服务"""
+    """厚度加减价导出服务"""
 
     def __init__(self) -> None:
         self.repository = SteelPricePolicyRepository()
