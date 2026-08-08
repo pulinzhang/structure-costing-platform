@@ -96,7 +96,7 @@ export const UploadPage = {
             </div>
         `;
 
-        uploadZone.classList.add('border-green-700/50', 'bg-green-950/10');
+        uploadZone.classList.add('file-selected');
         document.getElementById('uploadTitle').textContent = '已选择文件';
         document.getElementById('uploadHint').textContent = file.name;
     },
@@ -105,19 +105,12 @@ export const UploadPage = {
      * 处理表单提交
      */
     handleSubmit() {
-        const vehicleModel = document.getElementById('vehicleModel');
-        const version = document.getElementById('version');
+        const location = document.getElementById('location');
         const fileInput = document.getElementById('fileInput');
 
-        if (!vehicleModel.value.trim()) {
-            showToast('请输入车型', 'warning');
-            vehicleModel.focus();
-            return;
-        }
-
-        if (!version.value.trim()) {
-            showToast('请输入版本', 'warning');
-            version.focus();
+        if (!location.value.trim()) {
+            showToast('请选择采购基地', 'warning');
+            location.focus();
             return;
         }
 
@@ -127,21 +120,20 @@ export const UploadPage = {
         }
 
         const formData = new FormData();
-        formData.append('vehicle_model', vehicleModel.value.trim());
-        formData.append('version', version.value.trim());
+        formData.append('location', location.value.trim());
         formData.append('file', fileInput.files[0]);
 
         const submitBtn = document.getElementById('submitBtn');
         submitBtn.disabled = true;
 
         HttpClient.post('/api/stamping/upload/', formData)
-            .then(() => {
-                showToast('文件上传成功', 'success');
+            .then((res) => {
+                showToast(res.message || '文件上传成功', 'success');
                 window.resetUploadForm();
             })
             .catch(error => {
                 console.error('上传失败:', error);
-                showToast(error.message || '上传失败', 'danger');
+                showToast(error.message || '上传失败', 'error');
             })
             .finally(() => {
                 submitBtn.disabled = false;
@@ -166,9 +158,9 @@ window.removeUploadFile = function() {
     if (fileInput) fileInput.value = '';
     if (preview) preview.classList.add('hidden');
     if (uploadZone) {
-        uploadZone.classList.remove('border-green-700/50', 'bg-green-950/10');
-        document.getElementById('uploadTitle').textContent = '拖拽文件到此处上传';
-        document.getElementById('uploadHint').textContent = '或点击选择文件';
+        uploadZone.classList.remove('file-selected');
+        document.getElementById('uploadTitle').textContent = '拖拽文件到此处';
+        document.getElementById('uploadHint').textContent = '或点击下方按钮选择文件';
     }
 };
 

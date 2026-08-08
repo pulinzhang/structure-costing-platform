@@ -5,6 +5,7 @@
 """
 
 import logging
+from dataclasses import asdict
 from decimal import Decimal
 from pathlib import Path
 from typing import Dict, List
@@ -15,7 +16,7 @@ from app.parsers.stamping.models.part import Part
 from app.parsers.stamping.models.process import Process
 from app.config import settings
 from app.repositories.stamping.stamping_repository import StampingPartRepository, StampingProcessRepository
-from app.schemas.stamping_upload_dto import FileInfo, PartData, ProcessData, UploadResult
+from app.schemas.dto.stamping_upload_dto import FileInfo, PartData, ProcessData, UploadResult
 
 
 logger = logging.getLogger("service.stamping_upload")
@@ -227,7 +228,7 @@ class StampingUploadService:
                 excel_filename=excel_filename,
             ))
 
-        self.part_repo.bulk_create(self.db, [p.__dict__ for p in parts_to_create])
+        self.part_repo.bulk_create(self.db, [asdict(p) for p in parts_to_create])
         # flush 确保数据落库，后续查询可看到新插入的记录
         self.db.flush()
 
@@ -269,7 +270,7 @@ class StampingUploadService:
             ))
 
         if processes_to_create:
-            self.process_repo.bulk_create(self.db, [p.__dict__ for p in processes_to_create])
+            self.process_repo.bulk_create(self.db, [asdict(p) for p in processes_to_create])
 
         logger.info("导入工序: %d 个", len(processes_to_create))
         return len(processes_to_create)

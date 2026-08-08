@@ -11,7 +11,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.schemas.steel_price_policy import (
+from app.schemas.dto.steel_price_policy_dto import (
     LadderItemCreate,
     LadderItemUpdate,
     PolicyCreate,

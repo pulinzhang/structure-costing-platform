@@ -18,8 +18,6 @@ const partsState = {
     pageSize: 10,
     isLoading: false,
     searchTimer: null,
-    vehicleOptions: [],
-    versionOptions: [],
 };
 
 export const PartsPage = {
@@ -61,6 +59,22 @@ export const PartsPage = {
 
         // 车型筛选 → 联动：选中车型后重置版本下拉，再重新加载
         pageContent?.addEventListener('change', (e) => {
+            if (e.target.id === 'locationFilter') {
+                const supplierFilter = document.getElementById('supplierFilter');
+                const vehicleModelFilter = document.getElementById('vehicleModelFilter');
+                const versionFilter = document.getElementById('versionFilter');
+                if (supplierFilter) supplierFilter.value = '';
+                if (vehicleModelFilter) vehicleModelFilter.value = '';
+                if (versionFilter) versionFilter.value = '';
+                this.loadParts(1);
+            }
+            if (e.target.id === 'supplierFilter') {
+                const vehicleModelFilter = document.getElementById('vehicleModelFilter');
+                const versionFilter = document.getElementById('versionFilter');
+                if (vehicleModelFilter) vehicleModelFilter.value = '';
+                if (versionFilter) versionFilter.value = '';
+                this.loadParts(1);
+            }
             if (e.target.id === 'vehicleModelFilter') {
                 const versionFilter = document.getElementById('versionFilter');
                 if (versionFilter) versionFilter.value = '';
@@ -108,11 +122,12 @@ export const PartsPage = {
         partsState.currentPage = page;
 
         const searchInput = document.getElementById('searchInput');
+        const locationFilter = document.getElementById('locationFilter');
+        const supplierFilter = document.getElementById('supplierFilter');
         const vehicleModelFilter = document.getElementById('vehicleModelFilter');
         const versionFilter = document.getElementById('versionFilter');
         const totalCount = document.getElementById('totalCount');
         const partsTableBody = document.getElementById('partsTableBody');
-        const pagination = document.getElementById('pagination');
 
         const params = {
             page: page,
@@ -120,16 +135,19 @@ export const PartsPage = {
         };
 
         const partNumber = searchInput?.value.trim();
+        const location = locationFilter?.value;
+        const supplier = supplierFilter?.value;
         const vehicleModel = vehicleModelFilter?.value;
         const version = versionFilter?.value;
         if (partNumber) params.part_number = partNumber;
+        if (location) params.location = location;
+        if (supplier) params.supplier = supplier;
         if (vehicleModel) params.vehicle_model = vehicleModel;
         if (version) params.version = version;
 
         try {
             const result = await HttpClient.get('/api/stamping/parts/list', { params });
             const pageInfo = result.data?.data ?? result.data ?? {};
-
 
             // 联动：更新车型 / 版本下拉选项
             this.updateFilterOptions(pageInfo.filters);
@@ -141,12 +159,12 @@ export const PartsPage = {
             console.error('加载零件列表失败:', error);
             if (partsTableBody) {
                 partsTableBody.innerHTML = `
-                    <tr><td colspan="9">
-                        <div class="p-4 bg-[#0a0a0a] border border-[#2c2c2c] text-[#d32f2f] text-xs text-center">
-                            加载失败: ${esc(error.message)}
-                        </div>
-                    </td></tr>
-                `;
+                <tr><td colspan="13">
+                    <div class="p-4 bg-[#0a0a0a] border border-[#2c2c2c] text-[#d32f2f] text-xs text-center">
+                        加载失败: ${esc(error.message)}
+                    </div>
+                </td></tr>
+            `;
             }
         } finally {
             partsState.isLoading = false;
@@ -157,26 +175,42 @@ export const PartsPage = {
      * 更新筛选下拉选项（联动）
      */
     updateFilterOptions(filters = {}) {
+        const locationFilter = document.getElementById('locationFilter');
+        const supplierFilter = document.getElementById('supplierFilter');
         const vehicleFilter = document.getElementById('vehicleModelFilter');
         const versionFilter = document.getElementById('versionFilter');
 
         // 记录当前选中值
+        const currentLocation = locationFilter?.value || '';
+        const currentSupplier = supplierFilter?.value || '';
         const currentVehicle = vehicleFilter?.value || '';
         const currentVersion = versionFilter?.value || '';
 
-        // 更新车型下拉（避免重复添加）
-        if (vehicleFilter && filters.vehicle_models) {
-            const savedVehicle = vehicleFilter.value;
-            vehicleFilter.innerHTML = `<option value="">全部车型</option>` +
-                filters.vehicle_models.map(m => `<option value="${esc(m)}">${esc(m)}</option>`).join('');
-            vehicleFilter.value = savedVehicle || currentVehicle;
+        // 更新基地下拉
+        if (locationFilter && filters.locations) {
+            locationFilter.innerHTML = `<option value="">全部基地</option>` +
+                filters.locations.map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
+            locationFilter.value = currentLocation;
         }
 
-        // 更新版本下拉（根据当前选中的车型过滤版本）
+        // 更新供应商下拉
+        if (supplierFilter && filters.suppliers) {
+            supplierFilter.innerHTML = `<option value="">全部供应商</option>` +
+                filters.suppliers.map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
+            supplierFilter.value = currentSupplier;
+        }
+
+        // 更新车型下拉
+        if (vehicleFilter && filters.vehicle_models) {
+            vehicleFilter.innerHTML = `<option value="">全部车型</option>` +
+                filters.vehicle_models.map(m => `<option value="${esc(m)}">${esc(m)}</option>`).join('');
+            vehicleFilter.value = currentVehicle;
+        }
+
+        // 更新版本下拉
         if (versionFilter && filters.versions) {
-            const versionsToShow = filters.versions;
             versionFilter.innerHTML = `<option value="">全部版本</option>` +
-                versionsToShow.map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
+                filters.versions.map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
             versionFilter.value = currentVersion;
         }
     },
@@ -190,7 +224,7 @@ export const PartsPage = {
 
         if (!parts || parts.length === 0) {
             partsTableBody.innerHTML = `
-                <tr><td colspan="9">
+                <tr><td colspan="13">
                     <div class="flex flex-col items-center justify-center py-14">
                         <div class="w-10 h-10 bg-[#262626] flex items-center justify-center mb-3">
                             <svg class="w-5 h-5 text-[#616161]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path></svg>
@@ -209,7 +243,7 @@ export const PartsPage = {
     /**
      * 渲染单行
      */
-    renderRow(part, index) {
+    renderRow(part) {
         const thickness = fmtNum(part.thickness, 2);
         const partWeight = fmtNum(part.part_weight, 3);
         const processCount = part.process_count != null ? part.process_count : '—';
@@ -237,6 +271,8 @@ export const PartsPage = {
                     <span class="text-xs font-semibold text-white font-mono tracking-wide">${esc(part.part_number)}</span>
                 </td>
                 <td class="px-4 py-3.5 text-xs text-[#9e9e9e]">${esc(part.part_name) || '—'}</td>
+                <td class="px-4 py-3.5 text-center text-xs text-[#616161]">${esc(part.location) || '—'}</td>
+                <td class="px-4 py-3.5 text-left text-xs text-[#9e9e9e]">${esc(part.stamping_supplier) || '—'}</td>
                 <td class="px-4 py-3.5 text-center">
                     <span class="inline-block px-2 py-0.5 bg-[#262626] text-[10px] font-semibold uppercase tracking-wider text-[#9e9e9e] rounded-sm">${esc(part.vehicle_model) || '—'}</span>
                 </td>
@@ -245,6 +281,7 @@ export const PartsPage = {
                 <td class="px-4 py-3.5 table-num-cell">${thickness}</td>
                 <td class="px-4 py-3.5 table-num-cell">${partWeight}</td>
                 <td class="px-4 py-3.5 table-num-cell">${processCount}</td>
+                <td class="px-4 py-3.5 text-xs text-[#777777]">${esc(part.excel_filename) || '—'}</td>
                 <td class="px-4 py-3.5">
                     <div class="flex items-center justify-center gap-1">
                         <button class="table-action-btn" data-action="detail" data-id="${part.id}" title="查看详情">

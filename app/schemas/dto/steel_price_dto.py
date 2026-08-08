@@ -1,14 +1,14 @@
-"""钢材价格请求与响应 DTO。"""
+"""
+钢材价格 DTO - 请求参数
+"""
 
-from datetime import datetime
-from decimal import Decimal
 from typing import Optional
 
-from pydantic import BaseModel, Field, field_serializer
+from pydantic import BaseModel, Field
 
 
 class SteelPriceQuery(BaseModel):
-    """钢材价格分页筛选参数。"""
+    """钢材价格查询参数 DTO"""
 
     year: Optional[int] = Field(None, ge=2000, le=2100, description="年度")
     month: Optional[int] = Field(None, ge=1, le=12, description="月份")
@@ -20,7 +20,7 @@ class SteelPriceQuery(BaseModel):
 
 
 class SteelPriceCreate(BaseModel):
-    """钢材价格创建请求（前端表单使用）。"""
+    """钢材价格创建请求 DTO"""
 
     year: int = Field(..., ge=2000, le=2100, description="年度")
     month: int = Field(..., ge=1, le=12, description="月份")
@@ -37,10 +37,7 @@ class SteelPriceCreate(BaseModel):
 
 
 class SteelPriceUpdate(BaseModel):
-    """钢材价格更新请求（前端表单使用）。
-
-    业务主键 ``(year, month, grade, thickness)`` 不允许变更，所以仅保留可编辑字段。
-    """
+    """钢材价格更新请求 DTO"""
 
     bid_price: float = Field(..., ge=0, description="中标价")
     thickness_adjustment: float = Field(..., ge=0, description="厚度加减价")
@@ -50,39 +47,3 @@ class SteelPriceUpdate(BaseModel):
     steel_type: Optional[str] = Field(None, min_length=1, max_length=50, description="钢种")
     steel_mill: Optional[str] = Field(None, min_length=1, max_length=100, description="钢厂")
     reference_spec: Optional[str] = Field(None, min_length=1, max_length=100, description="参考规格")
-
-
-class SteelPriceResponse(BaseModel):
-    """钢材价格列表响应。"""
-
-    id: int
-    year: int
-    month: int
-    steel_type: str
-    grade: str
-    reference_spec: str
-    steel_mill: str
-    bid_price: float
-    thickness: float
-    thickness_adjustment: float
-    processing_fee: float
-    final_price_per_ton: float
-    remark: str | None
-    created_at: datetime
-    updated_at: datetime
-
-    @field_serializer(
-        "bid_price",
-        "thickness",
-        "thickness_adjustment",
-        "processing_fee",
-        "final_price_per_ton",
-    )
-    def serialize_decimal(self, value: Decimal | float) -> float:
-        return float(value)
-
-    @field_serializer("created_at", "updated_at")
-    def serialize_datetime(self, value: datetime) -> str:
-        return value.isoformat()
-
-    model_config = {"from_attributes": True}

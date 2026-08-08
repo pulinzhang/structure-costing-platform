@@ -4,6 +4,8 @@
 """
 
 import logging
+from dataclasses import asdict
+
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Depends
 from sqlalchemy.orm import Session
 
@@ -56,8 +58,8 @@ async def upload_stamping_file(
             location=location,
         )
         return ApiResponse.success(
-            data=result,
-            message=f"上传成功: {result['parts_count']} 个零件, {result['processes_count']} 道工序"
+            data=asdict(result),
+            message=f"上传成功: {result.parts_count} 个零件, {result.processes_count} 道工序"
         )
     except HTTPException:
         raise

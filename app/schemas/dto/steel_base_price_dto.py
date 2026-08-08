@@ -1,13 +1,12 @@
 """
-钢材基准价格请求与响应 DTO
-全程使用 Decimal 表示尺寸和金额，绝不转换为 float
+钢材基准价格 DTO - 内部传输数据结构
 """
 
 from datetime import datetime
 from decimal import Decimal
-from typing import Any, Optional
+from typing import Optional
 
-from pydantic import BaseModel, Field, field_serializer, field_validator, model_validator
+from pydantic import BaseModel, Field, field_validator, field_serializer
 
 
 def _strip(v: Optional[str]) -> Optional[str]:
@@ -18,7 +17,7 @@ def _strip(v: Optional[str]) -> Optional[str]:
     return v if v else None
 
 
-def _decimal_str(v: Any) -> Optional[Decimal]:
+def _decimal_str(v: Optional[Decimal | float | int | str]) -> Optional[Decimal]:
     """将各种输入转为 Decimal，None 时返回 None"""
     if v is None:
         return None
@@ -61,7 +60,7 @@ class SteelBasePriceCreate(BaseModel):
 
 
 class SteelBasePriceUpdate(BaseModel):
-    """基准价格更新请求（业务键 year/month/location/steel_mill/category_name/grade/thick/width 不允许变更）"""
+    """基准价格更新请求"""
     base_price: Optional[Decimal] = Field(None, ge=Decimal("0"), description="到厂原卷承兑价格(元/吨)")
     processing_fee: Optional[Decimal] = Field(None, ge=Decimal("0"), description="原卷加工费(元/吨)")
     excel_filename: Optional[str] = Field(None, max_length=255, description="来源Excel文件名")
@@ -78,23 +77,6 @@ class SteelBasePriceUpdate(BaseModel):
     @classmethod
     def coerce_decimals(cls, v):
         return _decimal_str(v)
-
-    @model_validator(mode="after")
-    def check_at_least_one_field(self):
-        """至少需要提供一个可更新字段"""
-        if all(
-            v is None
-            for v in (
-                self.base_price,
-                self.processing_fee,
-                self.excel_filename,
-                self.sheet_name,
-                self.excel_row,
-                self.remark,
-            )
-        ):
-            raise ValueError("至少需要提供一个可更新字段")
-        return self
 
 
 # ============================
@@ -141,7 +123,7 @@ class SteelBasePriceResponse(BaseModel):
     sheet_name: str
     excel_row: int
     excel_col: Optional[int] = None
-    remark: Optional[str]
+    remark: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 
@@ -171,3 +153,47 @@ class SteelBasePriceImportResultResponse(BaseModel):
     created_count: int = Field(0, description="新增数量")
     updated_count: int = Field(0, description="更新数量")
     total: int = Field(0, description="处理总数")
+
+
+# ============================
+# 筛选选项 DTO
+# ============================
+
+class FilterOptions(BaseModel):
+    """筛选选项 DTO"""
+
+    years: list[int] = Field(default_factory=list)
+    months: list[int] = Field(default_factory=list)
+    locations: list[str] = Field(default_factory=list)
+    steel_mills: list[str] = Field(default_factory=list)
+    category_names: list[str] = Field(default_factory=list)
+    grades: list[str] = Field(default_factory=list)
+    specs: list[str] = Field(default_factory=list)
+
+
+# ============================
+# 导出数据行 DTO
+# ============================
+
+class ExportRow(BaseModel):
+    """导出数据行 DTO（扁平化结构）"""
+
+    model_config = {"from_attributes": True}
+
+    id: int
+    year: int
+    month: int
+    location: str
+    steel_mill: str
+    category_name: str
+    grade: str
+    thick: Optional[str] = None
+    width: Optional[str] = None
+    base_price: Optional[str] = None
+    processing_fee: Optional[str] = None
+    excel_filename: Optional[str] = None
+    sheet_name: Optional[str] = None
+    excel_row: Optional[int] = None
+    remark: Optional[str] = None
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None

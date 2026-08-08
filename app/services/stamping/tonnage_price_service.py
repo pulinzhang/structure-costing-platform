@@ -9,10 +9,10 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
 from app.repositories.stamping.tonnage_price_repository import StampingTonnagePriceRepository
-from app.schemas.stamping import (
+from app.schemas.vo.stamping_tonnage_price_vo import StampingTonnagePriceResponse
+from app.schemas.dto.stamping_tonnage_price_dto import (
     StampingTonnagePriceCreate,
     StampingTonnagePriceUpdate,
-    StampingTonnagePriceResponse,
     StampingTonnagePriceQuery,
 )
 

@@ -9,7 +9,12 @@ from typing import List, Dict, Any, Optional
 from sqlalchemy.orm import Session
 
 from app.repositories.stamping.stamping_repository import StampingPartRepository
-from app.schemas.stamping import StampingPartQuery, StampingPartListResponse, StampingPartResponse
+from app.schemas.vo.stamping_vo import (
+    StampingPartQuery,
+    StampingPartListResponse,
+    StampingPartWithProcessesResponse,
+    StampingProcessResponse,
+)
 
 
 logger = logging.getLogger("service.stamping")
@@ -26,10 +31,12 @@ class StampingPartService:
         skip = (query.page - 1) * query.size
         parts, total = self.repository.paginate(
             db,
+            location=query.location,
             vehicle_model=query.vehicle_model,
             version=query.version,
             part_number=query.part_number,
             part_name=query.part_name,
+            stamping_supplier=query.stamping_supplier,
             skip=skip,
             limit=query.size,
         )
@@ -52,11 +59,11 @@ class StampingPartService:
         return self.repository.get_filter_options(db)
 
     def get_by_id(self, db: Session, part_id: int) -> Optional[Dict[str, Any]]:
-        """获取单个零件"""
+        """获取单个零件（含工序）"""
         part = self.repository.get_by_id(db, part_id)
         if not part:
             return None
-        return StampingPartResponse.model_validate(part).model_dump()
+        return StampingPartWithProcessesResponse.model_validate(part).model_dump()
 
     def delete(self, db: Session, part_id: int) -> bool:
         """删除零件"""
@@ -81,7 +88,7 @@ class StampingPartService:
     def update_process(self, db: Session, process_id: int, update_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """更新单个工序"""
         from app.repositories.stamping.stamping_repository import StampingProcessRepository
-        from app.schemas.stamping import StampingProcessResponse
+        from app.schemas.vo.stamping_vo import StampingProcessResponse
         process_repo = StampingProcessRepository()
         process = process_repo.update(db, process_id, update_data)
         if not process:

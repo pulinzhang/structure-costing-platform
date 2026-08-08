@@ -58,6 +58,7 @@ class StampingExcelParser:
         self._excel_ctx: Optional[ExcelContext] = None
         self._header_resolver: Optional[HeaderResolver] = None
         self._row_parser: Optional[RowParser] = None
+        self._processed_images: set = set()  # 已处理图片集合，避免重复
 
     def parse(self, file_path: str) -> ParserResult:
         """解析冲压工艺 Excel 文件"""
@@ -166,8 +167,8 @@ class StampingExcelParser:
                     part: Part = self._row_parser.parse_part_row(row_idx)
                     self.result.parts.append(part)
 
-                    # 图片归属
-                    self._handle_image_for_row(row_idx, part_no)
+                    # 图片归属（传入完整零件范围，确保覆盖合并行的所有可能位置）
+                    self._handle_image_for_row(row_idx, part_no, part_range.end_row)
 
                 # 该行属于零件范围，检查是否有工序（只用 op 列判断）
                 op_val = excel_ctx.get_value(row_idx, col_map.get("op", 12))
@@ -201,20 +202,16 @@ class StampingExcelParser:
             part_number, process_count.get(part_number, 0), warnings
         )
 
-    def _handle_image_for_row(self, row_idx: int, part_number: Optional[str]) -> None:
+    def _handle_image_for_row(self, row_idx: int, part_number: Optional[str], end_row: int) -> None:
         """处理该行的图片归属
 
         Excel 排版规则（基于 excel_sample 样本）：
         - 简图固定在 D 列（0-indexed col=3）
-        - 图片锚点的行号 = 零件行 或 零件行的下一行
-          （锚点行 = 0-indexed，对应到调用方 row_idx 时分别是 row_idx - 1 和 row_idx）
+        - 图片锚点可能在零件起始行、零件范围中间任意行、或零件结束行的下一行
+          （因为合并单元格会导致图片锚点偏移）
 
         openpyxl 的 anchor._from.col / _from.row 都是 0-indexed，
         调用方 row_idx 是 1-indexed 的 Excel 行号。
-
-        ⚠️ 不要用 col_map["part_name"] 查简图列：
-        1) col_map 是 1-indexed，anchor._from.col 是 0-indexed，基准不一致
-        2) 简图列是独立的"零件简图"列，不是"零件名称"列，col_map 里根本没有这个键
         """
         if not part_number:
             return
@@ -226,9 +223,11 @@ class StampingExcelParser:
         # 0-indexed：Excel 的 D 列（"零件简图"列固定位置）
         sketch_col_0idx = 3
 
-        # 同一张图可能同时匹配本零件的两行（part row / part row + 1），
-        # 直接用 part_number 关联的图像去重，保留先遇到的即可
         for img in sheet._images:
+            # 跳过已有归属的图片
+            if img in getattr(self, '_processed_images', set()):
+                continue
+
             anchor = getattr(img, "anchor", None)
             if anchor is None:
                 continue
@@ -244,10 +243,15 @@ class StampingExcelParser:
                 if col_0idx != sketch_col_0idx:
                     continue
 
-                # 行匹配允许两种情况（0-indexed == 0-indexed）：
-                # 1) start_row_0idx == row_idx - 1  → 图片与零件同 Excel 行
-                # 2) start_row_0idx == row_idx      → 图片在零件下一行
-                if start_row_0idx not in (row_idx - 1, row_idx):
+                # 行匹配：0-indexed 图片行 与 1-indexed 范围的比较
+                # 图片行 8 (0-indexed) -> Excel row 9
+                # 零件范围 7-13 -> 0-indexed: 6-12
+                # 允许匹配：图片行在零件范围内（start_row-1 <= img_row < end_row）
+                img_row_0idx = start_row_0idx
+                part_start_0idx = row_idx - 1
+                part_end_0idx = end_row - 1
+
+                if not (part_start_0idx <= img_row_0idx <= part_end_0idx):
                     continue
 
                 img_bytes = None
@@ -264,8 +268,10 @@ class StampingExcelParser:
 
                 if img_bytes:
                     self.result.images_by_part[part_number] = img_bytes
-                    # 注意：不能 break，因为同一张图可能匹配本零件的两行
-                    # 但 images_by_part 用 part_number 做 key，重写没问题
+                    # 标记为已处理，避免重复
+                    if not hasattr(self, '_processed_images'):
+                        self._processed_images = set()
+                    self._processed_images.add(img)
             except Exception:
                 continue
 

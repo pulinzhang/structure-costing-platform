@@ -33,8 +33,9 @@ class PartData:
     vehicle_model: str = field(metadata={"description": "车型"})
     version: str = field(metadata={"description": "版本"})
     stamping_supplier: str = field(metadata={"description": "冲压供应商"})
-    seq_no: int | None = field(default=None, metadata={"description": "顺序号"})
     part_number: str = field(metadata={"description": "零件号"})
+    excel_filename: str = field(metadata={"description": "Excel文件名"})
+    seq_no: int | None = field(default=None, metadata={"description": "顺序号"})
     part_name: str | None = field(default=None, metadata={"description": "零件名称"})
     material: str | None = field(default=None, metadata={"description": "材质"})
     thickness: Decimal | float | None = field(default=None, metadata={"description": "料厚(mm)"})
@@ -47,8 +48,7 @@ class PartData:
     process_method: str | None = field(default=None, metadata={"description": "工序方式"})
     automation: str | None = field(default=None, metadata={"description": "自动化程度"})
     remark: str | None = field(default=None, metadata={"description": "备注"})
-    sketch_url: str | None = field(default=None, metadata={"description": "简图路径"})
-    excel_filename: str = field(metadata={"description": "Excel文件名"})
+    sketch_url: str | None = field(default=None, metadata={"description": "零件简图URL"})
 
 
 @dataclass(slots=True)
@@ -57,8 +57,9 @@ class ProcessData:
     part_id: int = field(metadata={"description": "零件ID"})
     process_seq: str = field(metadata={"description": "工序序号"})
     process_order: int = field(metadata={"description": "工序顺序"})
-    process_code: str | None = field(default=None, metadata={"description": "工序代码"})
     die_sets: int = field(metadata={"description": "模具套数"})
+    # 以下字段有默认值，放在后面
+    process_code: str | None = field(default=None, metadata={"description": "工序代码"})
     tonnage: int | None = field(default=None, metadata={"description": "吨位(T)"})
     cost_ratio: Decimal | float = field(default=Decimal("1.00"), metadata={"description": "费用比例"})
     remark: str | None = field(default=None, metadata={"description": "备注"})

@@ -11,13 +11,14 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.services.stamping import StampingTonnagePriceService
-from app.schemas.stamping import (
+from app.schemas.dto.stamping_tonnage_price_dto import (
     StampingTonnagePriceCreate,
     StampingTonnagePriceUpdate,
     StampingTonnagePriceQuery,
     StampingTonnagePriceBulkCreate,
     StampingTonnagePriceCopyTemplate,
 )
+from app.schemas.vo.stamping_tonnage_price_vo import StampingTonnagePriceResponse
 from app.utils.response import ApiResponse
 
 

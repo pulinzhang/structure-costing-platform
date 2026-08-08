@@ -20,6 +20,9 @@ class StampingPart(Base):
     vehicle_model + version 直接存于此表，不单独建车型表
     """
     __tablename__ = "stamping_parts"
+    __table_args__ = (
+        UniqueConstraint('location', 'stamping_supplier', 'vehicle_model', 'version', 'part_number', name='uix_location_supplier_vehicle_version_part'),
+    )
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     # 【基地与归属维度】
@@ -80,13 +83,15 @@ class StampingPart(Base):
     )
 
     __table_args__ = (
+        Index("ix_part_location_supplier_model_version_number",
+              "location", "stamping_supplier", "vehicle_model", "version", "part_number"),
         Index("ix_part_vehicle_model", "vehicle_model"),
         Index("ix_part_version", "version"),
         Index("ix_part_number", "part_number"),
-        # 零件号全局唯一，不允许重复插入
+        # 唯一键：基地 + 供应商 + 车型 + 版本 + 零件号
         UniqueConstraint(
-            "part_number",
-            name="uix_part_number_unique"
+            "location", "stamping_supplier", "vehicle_model", "version", "part_number",
+            name="uix_part_unique_key"
         ),
     )
 

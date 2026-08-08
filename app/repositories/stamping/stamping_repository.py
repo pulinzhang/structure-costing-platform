@@ -93,6 +93,7 @@ class StampingPartRepository:
         version: Optional[str] = None,
         part_number: Optional[str] = None,
         part_name: Optional[str] = None,
+        stamping_supplier: Optional[str] = None,
     ) -> Tuple[List[StampingPart], int]:
         """查询零件，返回 (结果列表, 总数)"""
         q = db.query(StampingPart)
@@ -104,6 +105,8 @@ class StampingPartRepository:
             q = q.filter(StampingPart.part_number.like(f"%{part_number}%"))
         if part_name:
             q = q.filter(StampingPart.part_name.like(f"%{part_name}%"))
+        if stamping_supplier is not None:
+            q = q.filter(StampingPart.stamping_supplier == stamping_supplier)
 
         total = q.count()
         from sqlalchemy.orm import selectinload
@@ -117,15 +120,21 @@ class StampingPartRepository:
     def paginate(
         self,
         db: Session,
+        location: Optional[str] = None,
         vehicle_model: Optional[str] = None,
         version: Optional[str] = None,
         part_number: Optional[str] = None,
         part_name: Optional[str] = None,
+        stamping_supplier: Optional[str] = None,
         skip: int = 0,
         limit: int = 100,
     ) -> Tuple[List[StampingPart], int]:
         """分页查询零件"""
         q = db.query(StampingPart)
+        if location is not None:
+            q = q.filter(StampingPart.location == location)
+        if stamping_supplier is not None:
+            q = q.filter(StampingPart.stamping_supplier == stamping_supplier)
         if vehicle_model is not None:
             q = q.filter(StampingPart.vehicle_model == vehicle_model)
         if version is not None:
@@ -136,7 +145,7 @@ class StampingPartRepository:
             q = q.filter(StampingPart.part_name.like(f"%{part_name}%"))
 
         total = q.count()
-        parts = q.order_by(StampingPart.seq_no).offset(skip).limit(limit).all()
+        parts = q.order_by(StampingPart.id).offset(skip).limit(limit).all()
         return parts, total
 
     def list_all(self, db: Session, skip: int = 0, limit: int = 100) -> List[StampingPart]:
@@ -218,9 +227,23 @@ class StampingPartRepository:
 
     def get_filter_options(self, db: Session) -> Dict[str, List[str]]:
         """
-        获取筛选下拉框的可选值（车型列表 & 版本列表）。
-        返回 {'vehicle_models': [...], 'versions': [...]}。
+        获取筛选下拉框的可选值（基地列表、供应商列表、车型列表 & 版本列表）。
+        返回 {'locations': [...], 'suppliers': [...], 'vehicle_models': [...], 'versions': [...]}。
         """
+        locations = (
+            db.query(StampingPart.location)
+            .distinct()
+            .filter(StampingPart.location.isnot(None))
+            .order_by(StampingPart.location)
+            .all()
+        )
+        suppliers = (
+            db.query(StampingPart.stamping_supplier)
+            .distinct()
+            .filter(StampingPart.stamping_supplier.isnot(None))
+            .order_by(StampingPart.stamping_supplier)
+            .all()
+        )
         vehicle_models = (
             db.query(StampingPart.vehicle_model)
             .distinct()
@@ -236,6 +259,8 @@ class StampingPartRepository:
             .all()
         )
         return {
+            "locations": [r[0] for r in locations],
+            "suppliers": [r[0] for r in suppliers],
             "vehicle_models": [r[0] for r in vehicle_models],
             "versions": [r[0] for r in versions],
         }

@@ -15,12 +15,10 @@ from sqlalchemy.orm import Session
 
 from app.parsers.steel_price_policy import parse_steel_price_policy_excel
 from app.repositories.steel_price_policy import SteelPricePolicyRepository
-from app.schemas.steel_price_policy_dto import ExportRow, FilterOptions
-from app.repositories.steel_price_policy.steel_price_policy_repository import (
-    MatchFilter,
-    PolicyFilter,
-)
-from app.schemas.steel_price_policy import (
+from app.repositories.steel_price_policy.steel_price_policy_repository import MatchFilter
+from app.schemas.dto.steel_price_policy_dto import (
+    ExportRow,
+    FilterOptions,
     GradeType,
     ImportResultResponse,
     LadderItemCreate,

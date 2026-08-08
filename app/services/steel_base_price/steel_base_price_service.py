@@ -8,11 +8,11 @@ from sqlalchemy.orm import Session
 
 from app.parsers.steel_base_price import parse_base_price_excel
 from app.repositories.steel_base_price import SteelBasePriceRepository
-from app.schemas.steel_base_price_dto import FilterOptions
-from app.schemas.steel_base_price import (
+from app.schemas.dto.steel_base_price_dto import FilterOptions
+from app.schemas.vo.steel_base_price_vo import SteelBasePriceResponse
+from app.schemas.dto.steel_base_price_dto import (
     SteelBasePriceCreate,
     SteelBasePriceQuery,
-    SteelBasePriceResponse,
     SteelBasePriceUpdate,
 )
 

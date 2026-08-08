@@ -9,7 +9,7 @@ from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from sqlalchemy.orm import Session
 
 from app.repositories.steel_base_price import SteelBasePriceRepository
-from app.schemas.steel_base_price import SteelBasePriceResponse
+from app.schemas.vo.steel_base_price_vo import SteelBasePriceResponse
 
 
 logger = logging.getLogger("service.steel_base_price_export")

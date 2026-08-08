@@ -8,12 +8,12 @@ from sqlalchemy.orm import Session
 
 from app.parsers.steel_price import parse_steel_price_excel
 from app.repositories.steel_price import SteelPriceRepository
-from app.schemas.steel_price import (
+from app.schemas.dto.steel_price_dto import (
     SteelPriceCreate,
     SteelPriceQuery,
-    SteelPriceResponse,
     SteelPriceUpdate,
 )
+from app.schemas.vo.steel_price_vo import SteelPriceResponse
 
 
 logger = logging.getLogger("service.steel_price")

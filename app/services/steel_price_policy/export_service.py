@@ -10,7 +10,7 @@ from typing import Optional
 from sqlalchemy.orm import Session
 
 from app.repositories.steel_price_policy import SteelPricePolicyRepository
-from app.schemas.steel_price_policy_dto import ExportRow
+from app.schemas.dto.steel_price_policy_dto import ExportRow
 from app.services.steel_price_policy.excel_exporter import SteelPricePolicyExporter
 
 

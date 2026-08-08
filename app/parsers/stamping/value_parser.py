@@ -40,12 +40,21 @@ def parse_decimal(value: Any) -> Optional[Decimal]:
 
 
 def parse_int(value: Any) -> Optional[int]:
-    """解析整数"""
+    """解析整数，处理带字母后缀的格式如 600T"""
     if value is None:
         return None
     val_str = str(value).strip()
     if not val_str:
         return None
+
+    # 提取数字部分（处理 "600T"、"800t"、"1000T" 等带字母后缀的情况）
+    # 保留小数点前的部分
+    match = re.match(r"(\d+(?:\.\d+)?)", val_str)
+    if match:
+        val_str = match.group(1)
+    else:
+        return None
+
     try:
         if "." in val_str:
             return int(float(val_str))

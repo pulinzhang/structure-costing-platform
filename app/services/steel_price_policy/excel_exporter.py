@@ -10,7 +10,7 @@ from typing import Optional
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 
-from app.schemas.steel_price_policy_dto import ExportRow
+from app.schemas.dto.steel_price_policy_dto import ExportRow
 
 
 # =============================================================================

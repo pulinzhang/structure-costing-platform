@@ -27,6 +27,16 @@ export function partsTemplate() {
                 </div>
 
                 <div class="flex flex-row flex-wrap gap-2 items-center">
+                    <select id="locationFilter"
+                            class="w-32 h-9 pl-3 pr-8 text-xs bg-[#0a0a0a] border border-[#2c2c2c] appearance-none cursor-pointer text-[#9e9e9e] focus:outline-none focus:border-[#ff5252] transition-all">
+                        <option value="">全部基地</option>
+                    </select>
+
+                    <select id="supplierFilter"
+                            class="w-36 h-9 pl-3 pr-8 text-xs bg-[#0a0a0a] border border-[#2c2c2c] appearance-none cursor-pointer text-[#9e9e9e] focus:outline-none focus:border-[#ff5252] transition-all">
+                        <option value="">全部供应商</option>
+                    </select>
+
                     <select id="vehicleModelFilter"
                             class="w-36 h-9 pl-3 pr-8 text-xs bg-[#0a0a0a] border border-[#2c2c2c] appearance-none cursor-pointer text-[#9e9e9e] focus:outline-none focus:border-[#ff5252] transition-all">
                         <option value="">全部车型</option>
@@ -66,18 +76,21 @@ export function partsTemplate() {
                             <th class="px-4 py-3 text-center text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161] whitespace-nowrap w-14">图纸</th>
                             <th class="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161] whitespace-nowrap">零件号</th>
                             <th class="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161] whitespace-nowrap">零件名称</th>
+                            <th class="px-4 py-3 text-center text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161] whitespace-nowrap">基地</th>
+                            <th class="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161] whitespace-nowrap">供应商</th>
                             <th class="px-4 py-3 text-center text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161] whitespace-nowrap">车型</th>
                             <th class="px-4 py-3 text-center text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161] whitespace-nowrap">版本</th>
                             <th class="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161] whitespace-nowrap">材料</th>
                             <th class="px-4 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161] whitespace-nowrap">厚度</th>
                             <th class="px-4 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161] whitespace-nowrap">重量</th>
                             <th class="px-4 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161] whitespace-nowrap">工序</th>
+                            <th class="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161] whitespace-nowrap">来源文件</th>
                             <th class="px-4 py-3 text-center text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161] whitespace-nowrap">操作</th>
                         </tr>
                     </thead>
                     <tbody id="partsTableBody" class="divide-y divide-[#222222]">
                         <tr>
-                            <td colspan="10">
+                            <td colspan="13">
                                 <div class="flex flex-col items-center justify-center py-14">
                                     <div class="w-10 h-10 bg-[#262626] flex items-center justify-center mb-3">
                                         <svg class="w-5 h-5 text-[#616161]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path></svg>
@@ -134,7 +147,7 @@ export function partsTemplate() {
 }
 
 // CORE_COST_FIELDS 已在文件顶部定义
-const CORE_COST_FIELDS = new Set(['材料', '重量', '可制件数']);
+const CORE_COST_FIELDS = new Set(['材料', '重量', '可制件数', '模具类型']);
 
 const DIE_TYPE_OPTIONS = [
     { value: 'progressive', label: '级进模（80%）' },
@@ -164,9 +177,13 @@ function detailTableRow([label, value]) {
             </tr>`;
 }
 
-function renderProcessRow(p, idx) {
+function renderProcessRow(p, idx, derivedDieType) {
     const processId = p.id ?? idx;
-    const dieTypeVal = deriveDieType(p);
+    // 根据 cost_ratio 推导出 die_type 值，用于选中下拉框
+    const ratioMap = { 0.8: 'progressive', 1.0: 'single', 0.5: 'shared', 0.4: 'progressive_shared' };
+    const currentDieType = p.die_type || ratioMap[p.cost_ratio] || 'single';
+    const currentLabel = derivedDieType(p);
+
     return `
                 <tr class="border-b border-[#161616] last:border-b-0 group hover:bg-[#0e0e0e] transition-colors duration-200 process-row" data-process-id="${processId}">
                     <td class="px-4 py-4 text-[10px] text-[#4a4a4a] font-mono tracking-[0.06em]">${p.process_order ?? '—'}</td>
@@ -175,14 +192,12 @@ function renderProcessRow(p, idx) {
                     <td class="px-4 py-4 text-right text-[11px] font-mono text-[#777777] tracking-[0.06em]">${p.die_sets ?? '—'}</td>
                     <td class="px-4 py-4 text-right text-[11px] font-mono text-[#777777] tracking-[0.06em]">${p.tonnage ? `${p.tonnage}T` : '—'}</td>
                     <td class="px-4 py-4">
-                        <select
-                            class="die-type-select"
-                            data-process-id="${processId}"
-                            data-field="die_type">
-                            ${DIE_TYPE_OPTIONS.map(o => `
-                                <option value="${o.value}" ${o.value === dieTypeVal ? 'selected' : ''}>${o.label}</option>
-                            `).join('')}
-                        </select>
+                        <div class="flex items-center gap-2">
+                            <select class="die-type-select h-7 px-2 text-[10px] bg-[#0a0a0a] border border-[#2c2c2c] appearance-none cursor-pointer text-[#9e9e9e] focus:outline-none focus:border-[#ff5252] transition-all rounded-sm" data-original-die-type="${currentDieType}">
+                                ${DIE_TYPE_OPTIONS.map(o => `<option value="${o.value}" ${o.value === currentDieType ? 'selected' : ''}>${o.label}</option>`).join('')}
+                            </select>
+                            <span class="text-[9px] font-mono text-[#555555] tracking-[0.05em]" title="模具成本比例">${p.cost_ratio != null ? `${(p.cost_ratio * 100).toFixed(0)}%` : '—'}</span>
+                        </div>
                     </td>
                 </tr>`;
 }
@@ -193,6 +208,8 @@ export function renderDetailContent(part) {
     const rows = [
         ['零件号', esc(part.part_number)],
         ['零件名称', esc(part.part_name)],
+        ['采购基地', esc(part.location)],
+        ['冲压供应商', esc(part.stamping_supplier)],
         ['车型', esc(part.vehicle_model)],
         ['版本', esc(part.version)],
         ['材料', esc(part.material)],
@@ -200,19 +217,27 @@ export function renderDetailContent(part) {
         ['自动化', part.automation ? '是' : '否'],
     ];
     // 右侧面板字段 — CORE_COST_FIELDS 会在 detailTableRow 中自动生效（材料/重量/模具类型）
+    const derivedDieType = (p) => {
+        const ratio = p.cost_ratio;
+        if (ratio === 0.8) return '级进模（80%）';
+        if (ratio === 1.0) return '单干模具（100%）';
+        if (ratio === 0.5) return '共模（50%）';
+        if (ratio === 0.4) return '级进共模（40%）';
+        return part.die_type || '单干模具（100%）';
+    };
     const rowsRight = [
         ['厚度', part.thickness != null ? `${part.thickness} mm` : '-'],
         ['重量', part.part_weight != null ? `${part.part_weight} kg` : '-'],
         ['板材尺寸', (part.sheet_length && part.sheet_width) ? `${part.sheet_length}x${part.sheet_width}` : '-'],
         ['可制件数', esc(part.parts_per_sheet)],
         ['板材类型', esc(part.sheet_type)],
-        ['模具类型', esc(part.die_type)],
+        ['模具类型', part.cost_ratio != null ? `${(part.cost_ratio * 100).toFixed(0)}%` : esc(part.die_type)],
         ['备注', esc(part.remark ?? '-')],
     ];
 
     const processes = part.processes || [];
     const processRows = processes.length
-        ? processes.map(renderProcessRow).join('')
+        ? processes.map((p, idx) => renderProcessRow(p, idx, derivedDieType)).join('')
         : `<tr><td colspan="6" class="px-4 py-12 text-center text-[11px] text-[#333333] tracking-[0.15em]">暂无工序数据</td></tr>`;
 
     return `

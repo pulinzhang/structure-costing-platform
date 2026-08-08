@@ -70,7 +70,9 @@ COLUMN_PATTERNS: Dict[str, List[Tuple[str, int]]] = {
         ("套数", 1000),
     ],
     "tonnage": [
-        ("吨位", 1000), ("使用冲压设备吨位", 900),
+        ("吨位", 1000),
+        ("冲压设备", 950),
+        ("使用冲压设备吨位", 900),
     ],
     "die_type": [
         ("模具类型", 1000),
@@ -112,60 +114,96 @@ class HeaderResolver:
                     return sheet
 
         return workbook.active
-    # 找到冲压供应商
+
     def find_stamping_supplier(self, sheet) -> Optional[str]:
         """从表头区域提取冲压供应商名称（冲压承制公司）"""
         for row_idx in range(1, min(10, sheet.max_row + 1)):
-            for col in range(1, min(20, sheet.max_column + 1)):
+            # 1. 先找标签所在列
+            label_col = None
+            for col in range(1, min(25, sheet.max_column + 1)):
                 val = self._get_value(row_idx, col)
                 if val and "冲压承制公司" in str(val):
-                    text = str(val)
-                    # 情况1：供应商名在同一格（格式 "冲压承制公司：安庆常庆..."）
-                    if "：" in text or ":" in text:
-                        sep = "：" if "：" in text else ":"
-                        supplier = text.split(sep, 1)[1].strip()
-                    else:
-                        # 情况2：供应商名在下一列（格式 "冲压承制公司" + "安庆常庆汽车部件有限公司"）
-                        supplier = self._get_value(row_idx, col + 1)
-                        if supplier:
-                            supplier = str(supplier).strip()
-                    if supplier:
-                        logger.info(f"找到冲压供应商: {supplier}")
-                        return supplier
+                    label_col = col
+                    break
+            
+            if label_col is None:
+                continue
+            
+            # 2. 尝试从同一单元格内解析值（格式：标签：值 或 标签:值）
+            text = str(self._get_value(row_idx, label_col))
+            if "：" in text:
+                supplier = text.split("：", 1)[1].strip()
+            elif ":" in text:
+                supplier = text.split(":", 1)[1].strip()
+            else:
+                supplier = text.replace("冲压承制公司", "").strip()
+            
+            if supplier:
+                logger.info(f"找到冲压供应商(同格): {supplier}")
+                return supplier
+            
+            # 3. 跨列查找：向右搜索标签后面的非空单元格作为值
+            for col in range(label_col + 1, min(label_col + 10, sheet.max_column + 1)):
+                val = self._get_value(row_idx, col)
+                if val and str(val).strip():
+                    supplier = str(val).strip()
+                    logger.info(f"找到冲压供应商(跨列): {supplier}")
+                    return supplier
+        
         return None
 
-    # 找到车型信息，即项目名称（T13J-BEV）
     def find_stamping_vehicle_model(self, sheet) -> Optional[str]:
-        """从表头区域提取车型信息（取第一行标题前缀）"""
-        for row_idx in range(1, min(5, sheet.max_row + 1)):
+        """从表头区域提取冲压车型/项目名称"""
+        for row_idx in range(1, min(12, sheet.max_row + 1)):
             for col in range(1, min(20, sheet.max_column + 1)):
                 val = self._get_value(row_idx, col)
-                if val and "项目" in str(val) and "冲压工艺确认表" in str(val):
-                    text = str(val)
-                    # 取 "项目" 之前的部分作为车型，如 "T13J-BEV项目冲压工艺确认表-常庆" → "T13J-BEV"
-                    if "项目" in text:
-                        vehicle_model = text.split("项目")[0].strip()
-                        if vehicle_model:
-                            logger.info(f"找到车型: {vehicle_model}")
-                            return vehicle_model
+                if not val:
+                    continue
+                text = str(val).strip()
+                if any(label in text for label in ["项目名称", "项目", "车型", "车型号", "车型代号"]):
+                    sep = "：" if "：" in text else ":" if ":" in text else None
+                    if sep:
+                        model = text.split(sep, 1)[1].strip()
+                        if model:
+                            logger.info(f"从表头找到车型: {model}")
+                            return model
+        vehicle_keywords = ["T28", "T28L", "T28EV", "T13J", "T13J-BEV", "M1", "M2", "S32", "S32EV"]
+        for row_idx in range(1, min(12, sheet.max_row + 1)):
+            for col in range(1, min(25, sheet.max_column + 1)):
+                val = self._get_value(row_idx, col)
+                if not val:
+                    continue
+                text = str(val).strip()
+                for keyword in vehicle_keywords:
+                    if keyword in text:
+                        logger.info(f"从单元格找到车型关键词: {keyword}, 原始值: {text}")
+                        return keyword
         return None
 
-    # 找到项目版本（如 V3）
     def find_stamping_project_version(self, sheet) -> Optional[str]:
-        """从表头区域提取项目版本（版本字段）"""
-        for row_idx in range(1, min(10, sheet.max_row + 1)):
-            for col in range(1, min(20, sheet.max_column + 1)):
+        """从表头区域提取项目版本信息"""
+        version_pattern = re.compile(
+            r"^(V?v?\d+(?:\.\d+)?|第?\d+版|Rev\.?\s*\d+|[A-Z]版)$",
+            re.IGNORECASE
+        )
+        for row_idx in range(1, min(12, sheet.max_row + 1)):
+            for col in range(1, min(25, sheet.max_column + 1)):
                 val = self._get_value(row_idx, col)
-                if val and str(val).strip() == "版本":
-                    # 版本值在当前格的下一列
-                    version = self._get_value(row_idx, col + 1)
-                    if version:
-                        version = str(version).strip()
-                        if version:
-                            logger.info(f"找到项目版本: {version}")
+                if not val:
+                    continue
+                text = str(val).strip()
+                if any(label in text for label in ["版本", "版次", "版本号"]):
+                    sep = "：" if "：" in text else ":" if ":" in text else None
+                    if sep:
+                        version = text.split(sep, 1)[1].strip()
+                        if version and version_pattern.match(version):
+                            logger.info(f"从表头找到版本: {version}")
                             return version
+                if version_pattern.match(text):
+                    logger.info(f"找到版本号: {text}")
+                    return text
         return None
-    
+
     def find_header_row(self, sheet) -> int:
         """找到表头起始行"""
         for row_idx in range(1, 20):
