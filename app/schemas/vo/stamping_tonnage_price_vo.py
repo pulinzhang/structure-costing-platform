@@ -4,24 +4,24 @@
 
 from datetime import datetime
 from decimal import Decimal
-from typing import Union
+from typing import Union, Optional
 
 from pydantic import BaseModel, field_serializer
 
 
 def decimal_to_float(value: Union[Decimal, float, None]) -> float | None:
-    """Decimal 类型转 float 序列化器工厂"""
+    """Decimal 类型转 float 序列化器"""
     return float(value) if isinstance(value, Decimal) else value
 
 
 class StampingTonnagePriceResponse(BaseModel):
-    """吨位价格响应 VO"""
+    """吨位价格响应 VO（对应 stamping_tonnage_prices 表）"""
     id: int
     year: int
     tonnage: int
     price_per_stroke: float
-    created_at: datetime | None
-    updated_at: datetime | None
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
 
     @field_serializer("price_per_stroke")
     def serialize_price(self, value: Union[Decimal, float]) -> float:
@@ -32,3 +32,22 @@ class StampingTonnagePriceResponse(BaseModel):
         return value.isoformat() if value else None
 
     model_config = {"from_attributes": True}
+
+
+class StampingTonnagePriceBulkCreateResponse(BaseModel):
+    """吨位价格批量创建响应 VO"""
+    created: list[StampingTonnagePriceResponse]
+    skipped: list[StampingTonnagePriceResponse]
+    failed: list[str]
+    created_count: int
+    skipped_count: int
+    failed_count: int
+
+
+class StampingTonnagePriceCopyYearResponse(BaseModel):
+    """吨位价格跨年复制响应 VO"""
+    source_year: int
+    target_year: int
+    created_count: int
+    skipped_count: int
+    failed: list[str]

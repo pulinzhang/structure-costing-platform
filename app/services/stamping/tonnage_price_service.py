@@ -4,7 +4,7 @@
 """
 
 import logging
-from typing import List, Dict, Any, Optional, Tuple
+from typing import List, Optional, Tuple
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
@@ -15,7 +15,6 @@ from app.schemas.dto.stamping_tonnage_price_dto import (
     StampingTonnagePriceUpdate,
     StampingTonnagePriceQuery,
 )
-from app.schemas.common.page_result import PageResult
 
 
 logger = logging.getLogger("service.stamping")
@@ -41,7 +40,7 @@ class StampingTonnagePriceService:
 
     def paginate(
         self, db: Session, query: StampingTonnagePriceQuery
-    ) -> Tuple[List[StampingTonnagePriceResponse], int, Dict[str, Any]]:
+    ) -> Tuple[List[StampingTonnagePriceResponse], int, dict]:
         """分页查询吨位价格"""
         skip = (query.page - 1) * query.size
         records, total = self.repository.paginate(
@@ -50,18 +49,11 @@ class StampingTonnagePriceService:
             skip=skip,
             limit=query.size,
         )
-
         rows = [StampingTonnagePriceResponse.model_validate(r) for r in records]
 
-        # 获取下拉选项
         years = self.repository.get_distinct_years(db)
         tonnages = self.repository.get_distinct_tonnages(db)
-
-        filters = {
-            "years": years,
-            "tonnages": tonnages,
-        }
-
+        filters = {"years": years, "tonnages": tonnages}
         return rows, total, filters
 
     def get_by_id(self, db: Session, id: int) -> Optional[StampingTonnagePriceResponse]:
@@ -73,14 +65,11 @@ class StampingTonnagePriceService:
 
     def create(
         self, db: Session, data: StampingTonnagePriceCreate
-    ) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
-        """
-        创建吨位价格记录
-        返回 (记录, 错误信息)
-        """
+    ) -> Tuple[Optional[StampingTonnagePriceResponse], Optional[str]]:
+        """创建吨位价格记录，返回 (记录, 错误信息)"""
         try:
             record = self.repository.create(db, data.model_dump())
-            return StampingTonnagePriceResponse.model_validate(record).model_dump(), None
+            return StampingTonnagePriceResponse.model_validate(record), None
         except IntegrityError:
             db.rollback()
             error_msg = f"该年份({data.year})和吨位({data.tonnage})的记录已存在"
@@ -93,56 +82,50 @@ class StampingTonnagePriceService:
 
     def bulk_create(
         self, db: Session, items: List[StampingTonnagePriceCreate]
-    ) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]], List[Dict[str, Any]]]:
+    ) -> Tuple[List[StampingTonnagePriceResponse], List[StampingTonnagePriceResponse], List[str]]:
         """
-        批量创建吨位价格记录
-        返回 (成功列表, 跳过列表, 失败列表)
+        批量创建吨位价格记录。
+        返回 (成功列表, 跳过列表, 失败错误信息列表)。
+        注意：跳过的记录不含详情数据，仅记录错误原因。
         """
-        created = []
-        skipped = []
-        failed = []
+        created: List[StampingTonnagePriceResponse] = []
+        skipped: List[StampingTonnagePriceResponse] = []
+        failed: List[str] = []
 
         for item in items:
             record, error = self.create(db, item)
             if record:
                 created.append(record)
-            elif "已存在" in (error or ""):
-                skipped.append({
-                    "year": item.year,
-                    "tonnage": item.tonnage,
-                    "reason": error,
-                })
+            elif error and "已存在" in error:
+                skipped.append(
+                    StampingTonnagePriceResponse(
+                        id=0,
+                        year=item.year,
+                        tonnage=item.tonnage,
+                        price_per_stroke=0.0,
+                    )
+                )
             else:
-                failed.append({
-                    "year": item.year,
-                    "tonnage": item.tonnage,
-                    "reason": error,
-                })
+                failed.append(error or "未知错误")
 
         return created, skipped, failed
 
     def update(
         self, db: Session, id: int, data: StampingTonnagePriceUpdate
-    ) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
-        """
-        更新吨位价格记录
-        返回 (记录, 错误信息)
-        """
+    ) -> Tuple[Optional[StampingTonnagePriceResponse], Optional[str]]:
+        """更新吨位价格记录，返回 (记录, 错误信息)"""
         try:
             record = self.repository.update(db, id, data.model_dump())
             if not record:
                 return None, "记录不存在"
-            return StampingTonnagePriceResponse.model_validate(record).model_dump(), None
+            return StampingTonnagePriceResponse.model_validate(record), None
         except Exception as e:
             db.rollback()
             logger.error(f"更新吨位价格失败: {e}")
             return None, str(e)
 
     def delete(self, db: Session, id: int) -> Tuple[bool, Optional[str]]:
-        """
-        删除吨位价格记录
-        返回 (是否成功, 错误信息)
-        """
+        """删除吨位价格记录，返回 (是否成功, 错误信息)"""
         success = self.repository.delete(db, id)
         if not success:
             return False, "记录不存在"
@@ -150,24 +133,22 @@ class StampingTonnagePriceService:
 
     def copy_from_year(
         self, db: Session, source_year: int, target_year: int
-    ) -> Tuple[int, int, List[Dict[str, Any]]]:
+    ) -> Tuple[int, int, List[str]]:
         """
-        从源年份复制价格到目标年份
-        返回 (创建数量, 跳过数量, 失败详情)
+        从源年份复制价格到目标年份。
+        返回 (创建数量, 跳过数量, 失败错误信息列表)。
         """
         source_records = self.repository.list_by_year(db, source_year)
         if not source_records:
-            return 0, 0, [{"reason": f"源年份 {source_year} 没有数据"}]
+            return 0, 0, [f"源年份 {source_year} 没有数据"]
 
-        # 检查目标年份是否已有数据
         target_records = self.repository.list_by_year(db, target_year)
         if target_records:
-            # 删除旧数据
             self.repository.delete_by_year(db, target_year)
 
         created = 0
         skipped = 0
-        failed = []
+        failed: List[str] = []
 
         for source in source_records:
             try:
@@ -182,10 +163,7 @@ class StampingTonnagePriceService:
                 skipped += 1
             except Exception as e:
                 db.rollback()
-                failed.append({
-                    "tonnage": source.tonnage,
-                    "reason": str(e),
-                })
+                failed.append(f"吨位 {source.tonnage}: {str(e)}")
 
         logger.info(
             f"从 {source_year} 复制到 {target_year}: "

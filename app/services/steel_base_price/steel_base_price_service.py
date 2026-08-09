@@ -1,7 +1,6 @@
 """钢材基准价格业务服务。"""
 
 import logging
-from decimal import Decimal
 from typing import Any
 
 from sqlalchemy.orm import Session
@@ -9,7 +8,10 @@ from sqlalchemy.orm import Session
 from app.parsers.steel_base_price import parse_base_price_excel
 from app.repositories.steel_base_price import SteelBasePriceRepository
 from app.schemas.dto.steel_base_price_dto import FilterOptions
-from app.schemas.vo.steel_base_price_vo import SteelBasePriceResponse
+from app.schemas.vo.steel_base_price_vo import (
+    SteelBasePriceResponse,
+    SteelBasePriceImportResultResponse,
+)
 from app.schemas.dto.steel_base_price_dto import (
     SteelBasePriceCreate,
     SteelBasePriceQuery,
@@ -30,7 +32,7 @@ class SteelBasePriceService:
         self,
         db: Session,
         query: SteelBasePriceQuery,
-    ) -> tuple[list[dict[str, Any]], int, FilterOptions]:
+    ) -> tuple[list[SteelBasePriceResponse], int, FilterOptions]:
         """分页浏览基准价格。"""
         from app.repositories.steel_base_price.steel_base_price_repository import (
             BasePriceFilter,
@@ -49,32 +51,28 @@ class SteelBasePriceService:
             limit=query.size,
         )
         records, total = self.repository.paginate(db, base_filter)
-        rows = [
-            SteelBasePriceResponse.model_validate(r).model_dump()
-            for r in records
-        ]
-        return rows, total, self.repository.get_filter_options(db)
+        return [SteelBasePriceResponse.model_validate(r) for r in records], total, self.repository.get_filter_options(db)
 
-    def get_by_id(self, db: Session, record_id: int) -> dict[str, Any] | None:
+    def get_by_id(self, db: Session, record_id: int) -> SteelBasePriceResponse | None:
         """获取单条记录。"""
         record = self.repository.get_by_id(db, record_id)
         if record is None:
             return None
-        return SteelBasePriceResponse.model_validate(record).model_dump()
+        return SteelBasePriceResponse.model_validate(record)
 
-    def create(self, db: Session, body: SteelBasePriceCreate) -> tuple[dict, str | None]:
+    def create(self, db: Session, body: SteelBasePriceCreate) -> tuple[SteelBasePriceResponse | None, str | None]:
         """创建基准价格记录。"""
         try:
             data = body.model_dump()
             record = self.repository.create(db, data)
             db.commit()
-            return SteelBasePriceResponse.model_validate(record).model_dump(), None
+            return SteelBasePriceResponse.model_validate(record), None
         except Exception as e:
             db.rollback()
             logger.exception("创建基准价格失败")
             return None, str(e)
 
-    def update(self, db: Session, record_id: int, body: SteelBasePriceUpdate) -> tuple[dict | None, str | None]:
+    def update(self, db: Session, record_id: int, body: SteelBasePriceUpdate) -> tuple[SteelBasePriceResponse | None, str | None]:
         """更新基准价格记录。"""
         try:
             data = body.model_dump(exclude_unset=True)
@@ -84,7 +82,7 @@ class SteelBasePriceService:
             if record is None:
                 return None, "记录不存在"
             db.commit()
-            return SteelBasePriceResponse.model_validate(record).model_dump(), None
+            return SteelBasePriceResponse.model_validate(record), None
         except Exception as e:
             db.rollback()
             logger.exception("更新基准价格失败: id=%s", record_id)
@@ -138,7 +136,7 @@ class SteelBasePriceService:
         filename: str,
         year: int,
         month: int,
-    ) -> dict[str, Any]:
+    ) -> SteelBasePriceImportResultResponse:
         """
         解析 Excel 并执行 upsert。
 
@@ -160,14 +158,14 @@ class SteelBasePriceService:
             record["year"] = year
             record["month"] = month
         if not parse_result.records:
-            return {
-                "filename": filename,
-                "created_count": 0,
-                "updated_count": 0,
-                "total": 0,
-                "warnings": parse_result.warnings,
-                "errors": parse_result.errors,
-            }
+            return SteelBasePriceImportResultResponse(
+                filename=filename,
+                created_count=0,
+                updated_count=0,
+                total=0,
+                warnings=parse_result.warnings,
+                errors=parse_result.errors,
+            )
 
         try:
             counts = self.repository.upsert(db, parse_result.records)
@@ -184,14 +182,14 @@ class SteelBasePriceService:
             counts["updated"],
         )
 
-        return {
-            "filename": filename,
-            "created_count": counts["created"],
-            "updated_count": counts["updated"],
-            "total": counts["created"] + counts["updated"],
-            "warnings": parse_result.warnings,
-            "errors": parse_result.errors,
-        }
+        return SteelBasePriceImportResultResponse(
+            filename=filename,
+            created_count=counts["created"],
+            updated_count=counts["updated"],
+            total=counts["created"] + counts["updated"],
+            warnings=parse_result.warnings,
+            errors=parse_result.errors,
+        )
 
     def list_for_export(
         self,
@@ -202,7 +200,7 @@ class SteelBasePriceService:
         location: str | None = None,
         steel_mill: str | None = None,
         spec: str | None = None,
-    ) -> list[dict[str, Any]]:
+    ) -> list[SteelBasePriceResponse]:
         """导出预览数据（分批）。"""
         records = self.repository.list_for_export(
             db,
@@ -212,10 +210,7 @@ class SteelBasePriceService:
             steel_mill=steel_mill,
             spec=spec,
         )
-        return [
-            SteelBasePriceResponse.model_validate(r).model_dump()
-            for r in records
-        ]
+        return [SteelBasePriceResponse.model_validate(r) for r in records]
 
     def delete_by_conditions(
         self,

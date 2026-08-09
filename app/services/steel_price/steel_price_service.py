@@ -1,7 +1,7 @@
 """钢材价格业务服务。"""
 
 import logging
-from typing import Any, Optional
+from typing import Optional
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -13,7 +13,10 @@ from app.schemas.dto.steel_price_dto import (
     SteelPriceQuery,
     SteelPriceUpdate,
 )
-from app.schemas.vo.steel_price_vo import SteelPriceResponse
+from app.schemas.vo.steel_price_vo import (
+    SteelPriceResponse,
+    SteelPriceImportResultResponse,
+)
 
 
 logger = logging.getLogger("service.steel_price")
@@ -27,7 +30,7 @@ class SteelPriceService:
 
     def paginate(
         self, db: Session, query: SteelPriceQuery
-    ) -> tuple[list[dict[str, Any]], int, dict[str, list[Any]]]:
+    ) -> tuple[list[SteelPriceResponse], int, dict[str, list[str]]]:
         skip = (query.page - 1) * query.size
         records, total = self.repository.paginate(
             db,
@@ -39,19 +42,19 @@ class SteelPriceService:
             skip=skip,
             limit=query.size,
         )
-        rows = [SteelPriceResponse.model_validate(record).model_dump() for record in records]
+        rows = [SteelPriceResponse.model_validate(record) for record in records]
         return rows, total, self.repository.get_filter_options(db)
 
-    def get_by_id(self, db: Session, record_id: int) -> Optional[dict[str, Any]]:
+    def get_by_id(self, db: Session, record_id: int) -> Optional[SteelPriceResponse]:
         """获取单条记录。"""
         record = self.repository.get_by_id(db, record_id)
         if record is None:
             return None
-        return SteelPriceResponse.model_validate(record).model_dump()
+        return SteelPriceResponse.model_validate(record)
 
     def create(
         self, db: Session, data: SteelPriceCreate
-    ) -> tuple[Optional[dict[str, Any]], Optional[str]]:
+    ) -> tuple[Optional[SteelPriceResponse], Optional[str]]:
         """创建钢材价格记录。
 
         返回 ``(记录, 错误信息)``。业务主键 ``(year, month, grade, thickness)``
@@ -62,7 +65,7 @@ class SteelPriceService:
             record = self.repository.create(db, payload)
             db.commit()
             db.refresh(record)
-            return SteelPriceResponse.model_validate(record).model_dump(), None
+            return SteelPriceResponse.model_validate(record), None
         except IntegrityError as error:
             db.rollback()
             message = (
@@ -85,7 +88,7 @@ class SteelPriceService:
 
     def update(
         self, db: Session, record_id: int, data: SteelPriceUpdate
-    ) -> tuple[Optional[dict[str, Any]], Optional[str]]:
+    ) -> tuple[Optional[SteelPriceResponse], Optional[str]]:
         """更新钢材价格记录。
 
         返回 ``(记录, 错误信息)``；记录不存在时错误以"记录不存在"开头，便于 Router
@@ -102,7 +105,7 @@ class SteelPriceService:
                 return None, "记录不存在"
             db.commit()
             db.refresh(record)
-            return SteelPriceResponse.model_validate(record).model_dump(), None
+            return SteelPriceResponse.model_validate(record), None
         except IntegrityError as error:
             db.rollback()
             logger.warning("更新钢材价格冲突: id=%s, error=%s", record_id, error)
@@ -132,7 +135,7 @@ class SteelPriceService:
         *,
         file_content: bytes,
         filename: str,
-    ) -> dict[str, Any]:
+    ) -> SteelPriceImportResultResponse:
         parse_result = parse_steel_price_excel(file_content)
 
         try:
@@ -153,11 +156,11 @@ class SteelPriceService:
             counts["created"],
             counts["updated"],
         )
-        return {
-            "filename": filename,
-            "imported_count": counts["created"] + counts["updated"],
-            "created_count": counts["created"],
-            "updated_count": counts["updated"],
-            "periods": period_labels,
-            "warnings": parse_result.warnings,
-        }
+        return SteelPriceImportResultResponse(
+            filename=filename,
+            imported_count=counts["created"] + counts["updated"],
+            created_count=counts["created"],
+            updated_count=counts["updated"],
+            periods=period_labels,
+            warnings=parse_result.warnings,
+        )

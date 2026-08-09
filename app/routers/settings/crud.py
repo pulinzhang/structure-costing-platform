@@ -34,7 +34,4 @@ async def update_config(config_data: dict):
     更新系统配置
     """
     logger.info("更新系统配置")
-    return {
-        "success": True,
-        "message": "配置更新成功"
-    }
+    return ApiResponse.updated(data=None,message="配置更新成功")

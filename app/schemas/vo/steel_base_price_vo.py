@@ -69,3 +69,12 @@ class SteelBasePriceResponse(BaseModel):
     def serialize_datetime(self, value: datetime | None) -> Optional[str]:
         """datetime → ISO 字符串序列化"""
         return datetime_to_str(value)
+
+class SteelBasePriceImportResultResponse(BaseModel):
+    """Excel 导入结果响应"""
+    filename: str
+    created_count: int = 0
+    updated_count: int = 0
+    total: int = 0
+    warnings: Optional[list[str]] = None
+    errors: Optional[list[str]] = None        
