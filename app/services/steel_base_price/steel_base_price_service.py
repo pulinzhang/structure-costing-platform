@@ -9,15 +9,15 @@ from app.parsers.steel_base_price import parse_base_price_excel
 from app.repositories.steel_base_price import SteelBasePriceRepository
 from app.schemas.dto.steel_base_price_dto import FilterOptions
 from app.schemas.vo.steel_base_price_vo import (
-    SteelBasePriceResponse,
+    FilterOptionsVO,
     SteelBasePriceImportResultResponse,
+    SteelBasePriceResponse,
 )
 from app.schemas.dto.steel_base_price_dto import (
     SteelBasePriceCreate,
     SteelBasePriceQuery,
     SteelBasePriceUpdate,
 )
-
 
 logger = logging.getLogger("service.steel_base_price")
 
@@ -28,11 +28,15 @@ class SteelBasePriceService:
     def __init__(self) -> None:
         self.repository = SteelBasePriceRepository()
 
+    def get_filter_options(self, db: Session) -> FilterOptions:
+        """获取筛选下拉选项（供 Router 转换为 VO）。"""
+        return self.repository.get_filter_options(db)
+
     def paginate(
         self,
         db: Session,
         query: SteelBasePriceQuery,
-    ) -> tuple[list[SteelBasePriceResponse], int, FilterOptions]:
+    ) -> tuple[list[SteelBasePriceResponse], int]:
         """分页浏览基准价格。"""
         from app.repositories.steel_base_price.steel_base_price_repository import (
             BasePriceFilter,
@@ -51,7 +55,7 @@ class SteelBasePriceService:
             limit=query.size,
         )
         records, total = self.repository.paginate(db, base_filter)
-        return [SteelBasePriceResponse.model_validate(r) for r in records], total, self.repository.get_filter_options(db)
+        return [SteelBasePriceResponse.model_validate(r) for r in records], total
 
     def get_by_id(self, db: Session, record_id: int) -> SteelBasePriceResponse | None:
         """获取单条记录。"""
@@ -211,36 +215,3 @@ class SteelBasePriceService:
             spec=spec,
         )
         return [SteelBasePriceResponse.model_validate(r) for r in records]
-
-    def delete_by_conditions(
-        self,
-        db: Session,
-        *,
-        year: int,
-        month: int,
-        location: str | None = None,
-        steel_mill: str | None = None,
-    ) -> dict[str, Any]:
-        """
-        按条件批量删除（年度+月份必须同时指定）。
-
-        Returns:
-            {"deleted_count": N, "conditions": {...}}
-        """
-        count = self.repository.delete_by_conditions(
-            db,
-            year=year,
-            month=month,
-            location=location,
-            steel_mill=steel_mill,
-        )
-        db.commit()
-        return {
-            "deleted_count": count,
-            "conditions": {
-                "year": year,
-                "month": month,
-                "location": location,
-                "steel_mill": steel_mill,
-            },
-        }

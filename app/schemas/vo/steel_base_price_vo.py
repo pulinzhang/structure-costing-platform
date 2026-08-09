@@ -11,7 +11,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Optional
 
-from pydantic import BaseModel, field_serializer
+from pydantic import BaseModel, Field, field_serializer
 
 
 def decimal_to_float(value: Decimal | float | None) -> Optional[float]:
@@ -70,6 +70,7 @@ class SteelBasePriceResponse(BaseModel):
         """datetime → ISO 字符串序列化"""
         return datetime_to_str(value)
 
+
 class SteelBasePriceImportResultResponse(BaseModel):
     """Excel 导入结果响应"""
     filename: str
@@ -77,4 +78,15 @@ class SteelBasePriceImportResultResponse(BaseModel):
     updated_count: int = 0
     total: int = 0
     warnings: Optional[list[str]] = None
-    errors: Optional[list[str]] = None        
+    errors: Optional[list[str]] = None
+
+
+class FilterOptionsVO(BaseModel):
+    """筛选下拉选项响应 VO"""
+    years: list[int] = Field(default_factory=list)
+    months: list[int] = Field(default_factory=list)
+    locations: list[str] = Field(default_factory=list)
+    steel_mills: list[str] = Field(default_factory=list)
+    category_names: list[str] = Field(default_factory=list)
+    grades: list[str] = Field(default_factory=list)
+    specs: list[str] = Field(default_factory=list)

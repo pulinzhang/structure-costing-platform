@@ -3,10 +3,9 @@
 只负责数据库访问，事务由 Service 层管理
 """
 
-from decimal import Decimal
 from typing import Any, Optional
 
-from sqlalchemy import distinct, func
+from sqlalchemy import distinct
 from sqlalchemy.orm import Session
 
 from app.models.steel_base_price import SteelBasePrice
@@ -46,13 +45,7 @@ class SteelBasePriceRepository:
     # ---- 查询 ----
 
     def get_by_id(self, db: Session, record_id: int) -> Optional[SteelBasePrice]:
-        """
-        根据主键查询单条记录。
-
-        Args:
-            db: 数据库会话
-            record_id: 记录主键
-        """
+        """根据主键查询单条记录。"""
         return db.query(SteelBasePrice).filter(SteelBasePrice.id == record_id).first()
 
     def paginate(
@@ -60,16 +53,7 @@ class SteelBasePriceRepository:
         db: Session,
         base_price_filter: BasePriceFilter,
     ) -> tuple[list[SteelBasePrice], int]:
-        """
-        分页筛选基准价格。
-
-        Args:
-            db: 数据库会话
-            base_price_filter: 过滤条件（包含分页参数）
-
-        Returns:
-            (records, total) 元组
-        """
+        """分页筛选基准价格。"""
         query = db.query(SteelBasePrice)
 
         if base_price_filter.year is not None:
@@ -89,7 +73,14 @@ class SteelBasePriceRepository:
 
         total = query.count()
         records = (
-            query.order_by(SteelBasePrice.year.asc(), SteelBasePrice.month.asc(), SteelBasePrice.location.asc(), SteelBasePrice.steel_mill.asc(), SteelBasePrice.excel_col.asc(), SteelBasePrice.excel_row.asc())
+            query.order_by(
+                SteelBasePrice.year.asc(),
+                SteelBasePrice.month.asc(),
+                SteelBasePrice.location.asc(),
+                SteelBasePrice.steel_mill.asc(),
+                SteelBasePrice.excel_col.asc(),
+                SteelBasePrice.excel_row.asc(),
+            )
             .offset(base_price_filter.skip)
             .limit(base_price_filter.limit)
             .all()
@@ -115,10 +106,7 @@ class SteelBasePriceRepository:
 
     def get_filter_options(self, db: Session) -> FilterOptions:
         """返回各字段的筛选下拉选项。"""
-        years = sorted(
-            self._distinct_values(db, SteelBasePrice.year, descending=True),
-            reverse=True,
-        )
+        years = self._distinct_values(db, SteelBasePrice.year, descending=True)
         months = self._distinct_values(db, SteelBasePrice.month)
         locations = self._distinct_values(db, SteelBasePrice.location)
         steel_mills = self._distinct_values(db, SteelBasePrice.steel_mill)
@@ -138,10 +126,7 @@ class SteelBasePriceRepository:
     # ---- 写操作 ----
 
     def create(self, db: Session, data: dict[str, Any]) -> SteelBasePrice:
-        """
-        创建基准价格记录。
-        注意：此方法不 flush，由调用方（Service）控制事务。
-        """
+        """创建基准价格记录。"""
         record = SteelBasePrice(**data)
         db.add(record)
         return record
@@ -152,10 +137,7 @@ class SteelBasePriceRepository:
         record_id: int,
         update_data: dict[str, Any],
     ) -> Optional[SteelBasePrice]:
-        """
-        按主键更新记录，返回更新后记录或 None（不存在）。
-        注意：此方法不 flush，由调用方（Service）控制事务。
-        """
+        """按主键更新记录，返回更新后记录或 None（不存在）。"""
         record = self.get_by_id(db, record_id)
         if record is None:
             return None
@@ -165,10 +147,7 @@ class SteelBasePriceRepository:
         return record
 
     def delete(self, db: Session, record_id: int) -> bool:
-        """
-        按主键删除记录。
-        注意：此方法不 flush，由调用方（Service）控制事务。
-        """
+        """按主键删除记录。"""
         record = self.get_by_id(db, record_id)
         if record is None:
             return False
@@ -187,7 +166,6 @@ class SteelBasePriceRepository:
         执行插入或更新。
 
         返回 ``{"created": 新增条数, "updated": 更新条数}``。
-        注意：此方法不 flush，由调用方（Service）控制事务。
         """
         if not records:
             return {"created": 0, "updated": 0}
@@ -212,7 +190,7 @@ class SteelBasePriceRepository:
             )
             if existing is not None:
                 # 更新可变更字段
-                for column in ("base_price", "processing_fee", "excel_filename", "sheet_name", "excel_row", "remark"):
+                for column in ("base_price", "processing_fee", "excel_filename", "sheet_name", "excel_row", "excel_col", "remark"):
                     if column in record_data:
                         setattr(existing, column, record_data[column])
                 updated_count += 1
@@ -223,34 +201,6 @@ class SteelBasePriceRepository:
         return {"created": created_count, "updated": updated_count}
 
     # ---- 条件批量删除 ----
-
-    def count_by_conditions(
-        self,
-        db: Session,
-        *,
-        year: Optional[int] = None,
-        month: Optional[int] = None,
-        location: Optional[str] = None,
-        steel_mill: Optional[str] = None,
-    ) -> int:
-        """
-        根据条件统计记录数量（删除前查询）。
-
-        Returns:
-            符合条件的记录数量
-        """
-        query = db.query(SteelBasePrice)
-
-        if year is not None:
-            query = query.filter(SteelBasePrice.year == year)
-        if month is not None:
-            query = query.filter(SteelBasePrice.month == month)
-        if location:
-            query = query.filter(SteelBasePrice.location == location)
-        if steel_mill:
-            query = query.filter(SteelBasePrice.steel_mill == steel_mill)
-
-        return query.count()
 
     def delete_by_conditions(
         self,
@@ -293,12 +243,7 @@ class SteelBasePriceRepository:
         steel_mill: str | None = None,
         spec: str | None = None,
     ) -> list[SteelBasePrice]:
-        """
-        获取导出所需的数据（供 ExportService 调用）。
-
-        Returns:
-            基准价格列表（按年份、月份、地点、钢厂排序）
-        """
+        """获取导出所需的数据（供 ExportService 调用）。"""
         query = db.query(SteelBasePrice)
 
         if year is not None:
@@ -315,35 +260,10 @@ class SteelBasePriceRepository:
         query = query.order_by(
             SteelBasePrice.year.asc(),
             SteelBasePrice.month.asc(),
-            SteelBasePrice.excel_col.asc(),
-            SteelBasePrice.excel_row.asc(),
             SteelBasePrice.location.asc(),
             SteelBasePrice.steel_mill.asc(),
+            SteelBasePrice.excel_col.asc(),
+            SteelBasePrice.excel_row.asc(),
         )
 
         return query.all()
-
-    def count_for_export(
-        self,
-        db: Session,
-        *,
-        year: Optional[int] = None,
-        month: Optional[int] = None,
-        location: Optional[str] = None,
-        steel_mill: Optional[str] = None,
-        spec: Optional[str] = None,
-    ) -> int:
-        """统计记录数（供 ExportService 调用）。"""
-        query = db.query(SteelBasePrice)
-
-        if year is not None:
-            query = query.filter(SteelBasePrice.year == year)
-        if month is not None:
-            query = query.filter(SteelBasePrice.month == month)
-        if location:
-            query = query.filter(SteelBasePrice.location == location)
-        if steel_mill:
-            query = query.filter(SteelBasePrice.steel_mill == steel_mill)
-        if spec:
-            query = query.filter(SteelBasePrice.spec.contains(spec))
-        return query.count()

@@ -57,7 +57,6 @@ from app.schemas.dto.stamping_upload_dto import (
 
 from app.schemas.dto.steel_base_price_dto import (
     FilterOptions as SteelBasePriceFilterOptions,
-    ExportRow as SteelBasePriceExportRow,
 )
 
 from app.schemas.dto.steel_price_policy_dto import (
@@ -94,7 +93,6 @@ __all__ = [
     "UploadResult",
     # DTO - 钢材基准价格
     "SteelBasePriceFilterOptions",
-    "SteelBasePriceExportRow",
     # DTO - 钢价政策
     "SteelPricePolicyFilterOptions",
     "SteelPricePolicyExportRow",

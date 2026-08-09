@@ -2,11 +2,10 @@
 钢材基准价格 DTO - 内部传输数据结构
 """
 
-from datetime import datetime
 from decimal import Decimal
 from typing import Optional
 
-from pydantic import BaseModel, Field, field_validator, field_serializer
+from pydantic import BaseModel, Field, field_validator
 
 
 def _strip(v: Optional[str]) -> Optional[str]:
@@ -102,65 +101,11 @@ class SteelBasePriceQuery(BaseModel):
 
 
 # ============================
-# 响应 DTO
-# ============================
-
-class SteelBasePriceResponse(BaseModel):
-    """基准价格响应"""
-    id: int
-    year: int
-    month: int
-    location: str
-    steel_mill: str
-    category_name: str
-    grade: str
-    spec: Optional[str] = None
-    thick: Decimal
-    width: Decimal
-    base_price: Decimal
-    processing_fee: Decimal
-    excel_filename: str
-    sheet_name: str
-    excel_row: int
-    excel_col: Optional[int] = None
-    remark: Optional[str] = None
-    created_at: datetime
-    updated_at: datetime
-
-    @field_serializer("thick", "width", "base_price", "processing_fee")
-    def serialize_decimal(self, value: Decimal) -> float:
-        return float(value)
-
-    @field_serializer("created_at", "updated_at")
-    def serialize_datetime(self, value: datetime) -> str:
-        return value.isoformat()
-
-    model_config = {"from_attributes": True}
-
-
-class SteelBasePriceOptionsResponse(BaseModel):
-    """基准价格筛选下拉选项"""
-    years: list[int] = Field(default_factory=list)
-    months: list[int] = Field(default_factory=list)
-    locations: list[str] = Field(default_factory=list)
-    steel_mills: list[str] = Field(default_factory=list)
-    category_names: list[str] = Field(default_factory=list)
-    grades: list[str] = Field(default_factory=list)
-
-
-class SteelBasePriceImportResultResponse(BaseModel):
-    """Excel 导入结果响应"""
-    created_count: int = Field(0, description="新增数量")
-    updated_count: int = Field(0, description="更新数量")
-    total: int = Field(0, description="处理总数")
-
-
-# ============================
 # 筛选选项 DTO
 # ============================
 
 class FilterOptions(BaseModel):
-    """筛选选项 DTO"""
+    """筛选选项 DTO（Repository → Service 层内部使用）"""
 
     years: list[int] = Field(default_factory=list)
     months: list[int] = Field(default_factory=list)
@@ -169,31 +114,3 @@ class FilterOptions(BaseModel):
     category_names: list[str] = Field(default_factory=list)
     grades: list[str] = Field(default_factory=list)
     specs: list[str] = Field(default_factory=list)
-
-
-# ============================
-# 导出数据行 DTO
-# ============================
-
-class ExportRow(BaseModel):
-    """导出数据行 DTO（扁平化结构）"""
-
-    model_config = {"from_attributes": True}
-
-    id: int
-    year: int
-    month: int
-    location: str
-    steel_mill: str
-    category_name: str
-    grade: str
-    thick: Optional[str] = None
-    width: Optional[str] = None
-    base_price: Optional[str] = None
-    processing_fee: Optional[str] = None
-    excel_filename: Optional[str] = None
-    sheet_name: Optional[str] = None
-    excel_row: Optional[int] = None
-    remark: Optional[str] = None
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
