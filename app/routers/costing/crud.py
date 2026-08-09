@@ -26,7 +26,7 @@ async def calculate_cost(
     logger.info(f"计算成本: {len(part_ids)} 个零件")
 
     # TODO: 核价功能开发中，返回占位数据
-    return ApiResponse.success(
+    return ApiResponse.ok(
         data={"results": [], "part_count": len(part_ids)},
         message="成本计算功能开发中"
     )

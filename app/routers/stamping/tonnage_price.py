@@ -38,13 +38,13 @@ def list_tonnage_prices(
     """
     if year:
         records = _stamping_tonnage_price_service.list_by_year(db, year)
-        return ApiResponse.success(
+        return ApiResponse.ok(
             data=records,
             message=f"查询到 {len(records)} 条记录",
         )
     # 不带 year：一次性返回所有年份的记录，避免 N+1
     records = _stamping_tonnage_price_service.list_all(db)
-    return ApiResponse.success(
+    return ApiResponse.ok(
         data=records,
         message=f"查询到 {len(records)} 条记录",
     )
@@ -80,7 +80,7 @@ def get_tonnage_price(
     record = _stamping_tonnage_price_service.get_by_id(db, record_id)
     if not record:
         raise HTTPException(status_code=404, detail="记录不存在")
-    return ApiResponse.success(data=record)
+    return ApiResponse.ok(data=record)
 
 
 @router.post("")
@@ -94,7 +94,7 @@ def create_tonnage_price(
     record, error = _stamping_tonnage_price_service.create(db, body)
     if error:
         raise HTTPException(status_code=400, detail=error)
-    return ApiResponse.success(data=record, message="创建成功")
+    return ApiResponse.ok(data=record, message="创建成功")
 
 
 @router.post("/bulk")
@@ -108,7 +108,7 @@ def bulk_create_tonnage_prices(
     created, skipped, failed = _stamping_tonnage_price_service.bulk_create(
         db, body.items
     )
-    return ApiResponse.success(
+    return ApiResponse.ok(
         data={
             "created": created,
             "skipped": skipped,
@@ -134,7 +134,7 @@ def update_tonnage_price(
             raise HTTPException(status_code=404, detail=error)
         logger.error("更新吨位价格失败: id=%s, error=%s", record_id, error)
         raise HTTPException(status_code=500, detail=error)
-    return ApiResponse.success(data=record, message="更新成功")
+    return ApiResponse.ok(data=record, message="更新成功")
 
 
 @router.delete("/{record_id}")
@@ -165,7 +165,7 @@ def copy_tonnage_price_template(
     created, skipped, failed = _stamping_tonnage_price_service.copy_from_year(
         db, body.source_year, body.target_year
     )
-    return ApiResponse.success(
+    return ApiResponse.ok(
         data={
             "created": created,
             "skipped": skipped,
@@ -189,4 +189,4 @@ def get_year_options(
         years.insert(0, current_year)
     if current_year + 1 not in years:
         years.insert(0, current_year + 1)
-    return ApiResponse.success(data=sorted(set(years), reverse=True))
+    return ApiResponse.ok(data=sorted(set(years), reverse=True))

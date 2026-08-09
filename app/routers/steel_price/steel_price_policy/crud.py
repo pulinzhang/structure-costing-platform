@@ -80,7 +80,7 @@ def get_policy_options(
     _, _, options = _policy_service.paginate(
         db, PolicyQuery(page=1, size=1)
     )
-    return ApiResponse.success(data=options.model_dump())
+    return ApiResponse.ok(data=options.model_dump())
 
 
 # =============================================================================
@@ -119,7 +119,7 @@ async def upload_policy_excel(
         logger.exception("处理钢价政策文件失败: filename=%s", file.filename)
         raise HTTPException(status_code=500, detail="钢价政策导入失败") from error
 
-    return ApiResponse.success(
+    return ApiResponse.ok(
         data=result.model_dump(),
         message=f"导入完成，新增 {result.created_count} 条，更新 {result.updated_count} 条，跳过 {result.skipped_count} 条",
     )
@@ -228,7 +228,7 @@ def get_policy(
     record = _policy_service.get_by_id(db, policy_id)
     if record is None:
         raise HTTPException(status_code=404, detail="政策记录不存在")
-    return ApiResponse.success(data=record)
+    return ApiResponse.ok(data=record)
 
 
 @router.post("")
@@ -334,4 +334,4 @@ def match_ladder(
     - 所有尺寸字段以 Decimal 精确传递
     """
     result = _policy_service.match(db, body)
-    return ApiResponse.success(data=result.model_dump())
+    return ApiResponse.ok(data=result.model_dump())

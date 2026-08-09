@@ -55,7 +55,7 @@ def get_base_price_options(
 ):
     """获取基准价格筛选下拉选项。"""
     _, _, filters = _steel_base_price_service.paginate(db, SteelBasePriceQuery(page=1, size=1))
-    return ApiResponse.success(data=filters.model_dump())
+    return ApiResponse.ok(data=filters.model_dump())
 
 
 @router.get("/export-preview")
@@ -170,7 +170,7 @@ async def upload_base_prices(
         logger.exception("处理基准价格文件失败: filename=%s", file.filename)
         raise HTTPException(status_code=500, detail="基准价格导入失败") from error
 
-    return ApiResponse.success(
+    return ApiResponse.ok(
         data=result,
         message=f"导入完成，新增 {result['created_count']} 条，更新 {result['updated_count']} 条，共 {result['total']} 条",
     )
@@ -189,7 +189,7 @@ def get_base_price(
     record = _steel_base_price_service.get_by_id(db, record_id)
     if record is None:
         raise HTTPException(status_code=404, detail="基准价格记录不存在")
-    return ApiResponse.success(data=record)
+    return ApiResponse.ok(data=record)
 
 
 @router.post("")
@@ -201,7 +201,7 @@ def create_base_price(
     record, error = _steel_base_price_service.create(db, body)
     if error:
         raise HTTPException(status_code=400, detail=error)
-    return ApiResponse.success(data=record, message="新增成功")
+    return ApiResponse.ok(data=record, message="新增成功")
 
 
 @router.put("/{record_id}")
@@ -217,7 +217,7 @@ def update_base_price(
             raise HTTPException(status_code=404, detail=error)
         logger.error("更新基准价格失败: id=%s, error=%s", record_id, error)
         raise HTTPException(status_code=400, detail=error)
-    return ApiResponse.success(data=record, message="更新成功")
+    return ApiResponse.ok(data=record, message="更新成功")
 
 
 @router.delete("/{record_id}")

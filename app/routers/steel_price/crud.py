@@ -49,7 +49,7 @@ def get_steel_price(
     record = _steel_price_service.get_by_id(db, record_id)
     if record is None:
         raise HTTPException(status_code=404, detail="钢材价格记录不存在")
-    return ApiResponse.success(data=record)
+    return ApiResponse.ok(data=record)
 
 
 @router.post("")
@@ -62,7 +62,7 @@ def create_steel_price(
     record, error = _steel_price_service.create(db, body)
     if error:
         raise HTTPException(status_code=400, detail=error)
-    return ApiResponse.success(data=record, message="新增成功")
+    return ApiResponse.ok(data=record, message="新增成功")
 
 
 @router.put("/{record_id}")
@@ -79,7 +79,7 @@ def update_steel_price(
             raise HTTPException(status_code=404, detail=error)
         logger.error("更新钢材价格失败: id=%s, error=%s", record_id, error)
         raise HTTPException(status_code=400, detail=error)
-    return ApiResponse.success(data=record, message="更新成功")
+    return ApiResponse.ok(data=record, message="更新成功")
 
 
 @router.delete("/{record_id}")
@@ -133,4 +133,4 @@ async def upload_steel_prices(
         f"导入成功，新增 {result['created_count']} 条，"
         f"更新 {result['updated_count']} 条，共 {result['imported_count']} 条钢材价格"
     )
-    return ApiResponse.success(data=result, message=message)
+    return ApiResponse.ok(data=result, message=message)
