@@ -15,6 +15,7 @@ from app.schemas.dto.stamping_tonnage_price_dto import (
     StampingTonnagePriceUpdate,
     StampingTonnagePriceQuery,
 )
+from app.schemas.common.page_result import PageResult
 
 
 logger = logging.getLogger("service.stamping")
@@ -28,19 +29,19 @@ class StampingTonnagePriceService:
 
     def list_by_year(
         self, db: Session, year: int
-    ) -> List[Dict[str, Any]]:
+    ) -> List[StampingTonnagePriceResponse]:
         """获取指定年份的所有吨位价格"""
         records = self.repository.list_by_year(db, year)
-        return [StampingTonnagePriceResponse.model_validate(r).model_dump() for r in records]
+        return [StampingTonnagePriceResponse.model_validate(r) for r in records]
 
-    def list_all(self, db: Session) -> List[Dict[str, Any]]:
+    def list_all(self, db: Session) -> List[StampingTonnagePriceResponse]:
         """获取所有吨位价格（按年份、吨位排序）"""
         records = self.repository.list_all(db)
-        return [StampingTonnagePriceResponse.model_validate(r).model_dump() for r in records]
+        return [StampingTonnagePriceResponse.model_validate(r) for r in records]
 
     def paginate(
         self, db: Session, query: StampingTonnagePriceQuery
-    ) -> Tuple[List[Dict[str, Any]], int, Dict[str, Any]]:
+    ) -> Tuple[List[StampingTonnagePriceResponse], int, Dict[str, Any]]:
         """分页查询吨位价格"""
         skip = (query.page - 1) * query.size
         records, total = self.repository.paginate(
@@ -50,7 +51,7 @@ class StampingTonnagePriceService:
             limit=query.size,
         )
 
-        rows = [StampingTonnagePriceResponse.model_validate(r).model_dump() for r in records]
+        rows = [StampingTonnagePriceResponse.model_validate(r) for r in records]
 
         # 获取下拉选项
         years = self.repository.get_distinct_years(db)
@@ -63,12 +64,12 @@ class StampingTonnagePriceService:
 
         return rows, total, filters
 
-    def get_by_id(self, db: Session, id: int) -> Optional[Dict[str, Any]]:
+    def get_by_id(self, db: Session, id: int) -> Optional[StampingTonnagePriceResponse]:
         """获取单个记录"""
         record = self.repository.get_by_id(db, id)
         if not record:
             return None
-        return StampingTonnagePriceResponse.model_validate(record).model_dump()
+        return StampingTonnagePriceResponse.model_validate(record)
 
     def create(
         self, db: Session, data: StampingTonnagePriceCreate

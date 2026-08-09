@@ -1,192 +1,155 @@
 """
 吨位价格路由
-Stamping API - API 接口
+API 接口定义
 """
 
-from datetime import datetime
-import logging
+from typing import List, Dict, Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.services.stamping import StampingTonnagePriceService
+from app.services.stamping.tonnage_price_service import StampingTonnagePriceService
 from app.schemas.dto.stamping_tonnage_price_dto import (
     StampingTonnagePriceCreate,
     StampingTonnagePriceUpdate,
     StampingTonnagePriceQuery,
-    StampingTonnagePriceBulkCreate,
-    StampingTonnagePriceCopyTemplate,
 )
 from app.schemas.vo.stamping_tonnage_price_vo import StampingTonnagePriceResponse
+from app.schemas.common.page_result import PageResult
 from app.utils.response import ApiResponse
 
 
-logger = logging.getLogger("router.stamping.tonnage_price")
-router = APIRouter(prefix="/api/stamping/tonnage-price", tags=["冲压吨位价格 API"])
+router = APIRouter(prefix="/api/stamping/tonnage-price", tags=["吨位价格 API"])
 
-_stamping_tonnage_price_service = StampingTonnagePriceService()
-
-
-@router.get("/list")
-def list_tonnage_prices(
-    year: int | None = None,
-    db: Session = Depends(get_db),
-):
-    """
-    获取吨位价格列表（按年份筛选）
-    """
-    if year:
-        records = _stamping_tonnage_price_service.list_by_year(db, year)
-        return ApiResponse.ok(
-            data=records,
-            message=f"查询到 {len(records)} 条记录",
-        )
-    # 不带 year：一次性返回所有年份的记录，避免 N+1
-    records = _stamping_tonnage_price_service.list_all(db)
-    return ApiResponse.ok(
-        data=records,
-        message=f"查询到 {len(records)} 条记录",
-    )
+_tonnage_price_service = StampingTonnagePriceService()
 
 
-@router.get("")
-def get_tonnage_prices(
+@router.get("/list", response_model=ApiResponse[List[StampingTonnagePriceResponse]])
+def list_all(db: Session = Depends(get_db)) -> ApiResponse[List[StampingTonnagePriceResponse]]:
+    """获取所有吨位价格列表（按年份、吨位排序）"""
+    data = _tonnage_price_service.list_all(db)
+    return ApiResponse.ok(data=data, message=f"查询到 {len(data)} 条记录")
+
+
+@router.get("/by-year/{year}", response_model=ApiResponse[List[StampingTonnagePriceResponse]])
+def list_by_year(year: int, db: Session = Depends(get_db)) -> ApiResponse[List[StampingTonnagePriceResponse]]:
+    """获取指定年份的所有吨位价格"""
+    data = _tonnage_price_service.list_by_year(db, year)
+    return ApiResponse.ok(data=data, message=f"查询到 {len(data)} 条记录")
+
+
+@router.get("/paginate", response_model=ApiResponse[PageResult[StampingTonnagePriceResponse]])
+def paginate(
     query: StampingTonnagePriceQuery = Depends(),
     db: Session = Depends(get_db),
-):
-    """
-    分页获取吨位价格列表
-    """
-    data, total, filters = _stamping_tonnage_price_service.paginate(db, query)
-    return ApiResponse.list_(
-        data=data,
+) -> ApiResponse[PageResult[StampingTonnagePriceResponse]]:
+    """分页查询吨位价格"""
+    rows, total, filters = _tonnage_price_service.paginate(db, query)
+    page_result = PageResult(
+        items=rows,
         total=total,
         page=query.page,
         page_size=query.size,
-        message=f"查询到 {total} 条记录",
-        filters=filters,
+        total_pages=(total + query.size - 1) // query.size if total > 0 else 0,
+        has_next=query.page * query.size < total,
+        has_prev=query.page > 1,
     )
+    return ApiResponse.ok(data=page_result, message=f"查询到 {total} 条记录")
 
 
-@router.get("/{record_id}")
-def get_tonnage_price(
-    record_id: int,
-    db: Session = Depends(get_db),
-):
-    """
-    获取单条吨位价格记录
-    """
-    record = _stamping_tonnage_price_service.get_by_id(db, record_id)
+@router.get("/{id}", response_model=ApiResponse[StampingTonnagePriceResponse])
+def get_by_id(id: int, db: Session = Depends(get_db)) -> ApiResponse[StampingTonnagePriceResponse]:
+    """获取单个吨位价格记录"""
+    record = _tonnage_price_service.get_by_id(db, id)
     if not record:
-        raise HTTPException(status_code=404, detail="记录不存在")
-    return ApiResponse.ok(data=record)
+        raise HTTPException(status_code=404, detail=f"吨位价格记录不存在: id={id}")
+    return ApiResponse.ok(data=record, message="获取成功")
 
 
-@router.post("")
-def create_tonnage_price(
+@router.post("", response_model=ApiResponse[StampingTonnagePriceResponse], status_code=201)
+def create(
     body: StampingTonnagePriceCreate,
     db: Session = Depends(get_db),
-):
-    """
-    创建吨位价格记录
-    """
-    record, error = _stamping_tonnage_price_service.create(db, body)
+) -> ApiResponse[StampingTonnagePriceResponse]:
+    """创建吨位价格记录"""
+    record, error = _tonnage_price_service.create(db, body)
     if error:
         raise HTTPException(status_code=400, detail=error)
-    return ApiResponse.ok(data=record, message="创建成功")
+    return ApiResponse.created(data=record, message="创建成功")
 
 
-@router.post("/bulk")
-def bulk_create_tonnage_prices(
-    body: StampingTonnagePriceBulkCreate,
+@router.post("/bulk", response_model=ApiResponse[Dict[str, Any]])
+def bulk_create(
+    items: List[StampingTonnagePriceCreate],
     db: Session = Depends(get_db),
-):
-    """
-    批量创建吨位价格记录
-    """
-    created, skipped, failed = _stamping_tonnage_price_service.bulk_create(
-        db, body.items
-    )
+) -> ApiResponse[Dict[str, Any]]:
+    """批量创建吨位价格记录"""
+    created, skipped, failed = _tonnage_price_service.bulk_create(db, items)
     return ApiResponse.ok(
         data={
             "created": created,
             "skipped": skipped,
             "failed": failed,
+            "created_count": len(created),
+            "skipped_count": len(skipped),
+            "failed_count": len(failed),
         },
-        message=f"创建成功 {len(created)} 条，跳过 {len(skipped)} 条，失败 {len(failed)} 条",
+        message=f"批量创建完成: 成功 {len(created)}, 跳过 {len(skipped)}, 失败 {len(failed)}",
     )
 
 
-@router.put("/{record_id}")
-def update_tonnage_price(
-    record_id: int,
+@router.put("/{id}", response_model=ApiResponse[StampingTonnagePriceResponse])
+def update(
+    id: int,
     body: StampingTonnagePriceUpdate,
     db: Session = Depends(get_db),
-):
-    """
-    更新吨位价格记录
-    """
-    record, error = _stamping_tonnage_price_service.update(db, record_id, body)
+) -> ApiResponse[StampingTonnagePriceResponse]:
+    """更新吨位价格记录"""
+    record, error = _tonnage_price_service.update(db, id, body)
     if error:
-        # "记录不存在" → 404；数据库/校验失败 → 500
-        if "记录不存在" in error:
-            raise HTTPException(status_code=404, detail=error)
-        logger.error("更新吨位价格失败: id=%s, error=%s", record_id, error)
-        raise HTTPException(status_code=500, detail=error)
-    return ApiResponse.ok(data=record, message="更新成功")
+        raise HTTPException(status_code=404, detail=error)
+    return ApiResponse.updated(data=record, message="更新成功")  # ✅ 修正：使用 updated()
 
 
-@router.delete("/{record_id}")
-def delete_tonnage_price(
-    record_id: int,
-    db: Session = Depends(get_db),
-):
-    """
-    删除吨位价格记录
-    """
-    success, error = _stamping_tonnage_price_service.delete(db, record_id)
+@router.delete("/{id}", response_model=ApiResponse[None])
+def delete(id: int, db: Session = Depends(get_db)) -> ApiResponse[None]:
+    """删除吨位价格记录"""
+    success, error = _tonnage_price_service.delete(db, id)
     if not success:
-        if "记录不存在" in (error or ""):
-            raise HTTPException(status_code=404, detail=error or "记录不存在")
-        logger.error("删除吨位价格失败: id=%s, error=%s", record_id, error)
-        raise HTTPException(status_code=500, detail=error or "删除失败")
+        raise HTTPException(status_code=404, detail=error or "记录不存在")
     return ApiResponse.deleted(message="删除成功")
 
 
-@router.post("/copy")
-def copy_tonnage_price_template(
-    body: StampingTonnagePriceCopyTemplate,
+@router.post("/copy-year", response_model=ApiResponse[Dict[str, Any]])
+def copy_from_year(
+    source_year: int,
+    target_year: int,
     db: Session = Depends(get_db),
-):
-    """
-    从指定年份复制价格模板到目标年份
-    """
-    created, skipped, failed = _stamping_tonnage_price_service.copy_from_year(
-        db, body.source_year, body.target_year
-    )
+) -> ApiResponse[Dict[str, Any]]:
+    """从源年份复制价格到目标年份"""
+    created, skipped, failed = _tonnage_price_service.copy_from_year(db, source_year, target_year)
     return ApiResponse.ok(
         data={
-            "created": created,
-            "skipped": skipped,
+            "source_year": source_year,
+            "target_year": target_year,
+            "created_count": created,
+            "skipped_count": skipped,
             "failed": failed,
         },
-        message=f"从 {body.source_year} 年复制到 {body.target_year} 年：创建 {created} 条",
+        message=f"从 {source_year} 复制到 {target_year}: 成功 {created}, 跳过 {skipped}",
     )
 
 
-@router.get("/options/years")
-def get_year_options(
-    db: Session = Depends(get_db),
-):
-    """
-    获取年份下拉选项
-    """
-    years = _stamping_tonnage_price_service.get_years(db)
-    # 确保包含当前年份和下一年
-    current_year = datetime.now().year
-    if current_year not in years:
-        years.insert(0, current_year)
-    if current_year + 1 not in years:
-        years.insert(0, current_year + 1)
-    return ApiResponse.ok(data=sorted(set(years), reverse=True))
+@router.get("/filters/years", response_model=ApiResponse[List[int]])
+def get_years(db: Session = Depends(get_db)) -> ApiResponse[List[int]]:
+    """获取所有年份列表"""
+    data = _tonnage_price_service.get_years(db)
+    return ApiResponse.ok(data=data)
+
+
+@router.get("/filters/tonnages", response_model=ApiResponse[List[int]])
+def get_tonnages(db: Session = Depends(get_db)) -> ApiResponse[List[int]]:
+    """获取所有吨位列表"""
+    data = _tonnage_price_service.get_tonnages(db)
+    return ApiResponse.ok(data=data)

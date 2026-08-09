@@ -147,7 +147,8 @@ export const PartsPage = {
 
         try {
             const resp = await HttpClient.get('/api/stamping/parts/list', { params });
-            // ApiResponse{ data: PageResult{ items, total, page, page_size, ... } }
+            // HttpClient 对 success:true 的响应返回 { ok, data: ApiResponse.data, message }
+            // 后端 data 字段即 PageResult，故 resp.data 已是 PageResult
             const pageInfo = resp.data ?? {};
             const items = pageInfo.items || [];
             const total = pageInfo.total ?? 0;

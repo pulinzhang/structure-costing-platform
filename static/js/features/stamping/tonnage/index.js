@@ -72,7 +72,7 @@ function init() {
  */
 async function loadYearOptions() {
     try {
-        const res = await HttpClient.get(`${API_BASE}/options/years`);
+        const res = await HttpClient.get(`${API_BASE}/filters/years`);
         tonnagePriceState.years = Array.isArray(res.data) ? res.data : [];
 
         // 渲染年份筛选下拉
@@ -110,11 +110,11 @@ async function loadData(page = 1) {
     if (tonnagePriceState.isLoading) return;
     tonnagePriceState.isLoading = true;
 
-        const tableBody = document.getElementById('tonnagePriceTableBody');
-        const emptyState = document.getElementById('emptyState');
-        const loadingState = document.getElementById('loadingState');
-        const totalCountPagination = document.getElementById('totalCountPagination');
-        const paginationBtns = document.getElementById('paginationBtns');
+    const tableBody = document.getElementById('tonnagePriceTableBody');
+    const emptyState = document.getElementById('emptyState');
+    const loadingState = document.getElementById('loadingState');
+    const totalCountPagination = document.getElementById('totalCountPagination');
+    const paginationBtns = document.getElementById('paginationBtns');
 
     if (tableBody) tableBody.innerHTML = '';
     if (emptyState) emptyState.classList.add('hidden');
@@ -130,23 +130,14 @@ async function loadData(page = 1) {
             params.year = tonnagePriceState.selectedYear;
         }
 
-        const res = await HttpClient.get(API_BASE, { params });
+        // 分页接口：使用 /paginate 端点
+        const res = await HttpClient.get(`${API_BASE}/paginate`, { params });
+        const pageResult = res.data || {};
 
-        // 后端 ApiResponse.list_ 真实结构：
-        //   { success, message, data: { list, total, page, page_size, total_pages, has_next, has_prev, filters } }
-        // HttpClient 解包后顶层 data === 后端 data
-        const payload = (res && res.data) || {};
-        const records = Array.isArray(payload.list)
-            ? payload.list
-            : (Array.isArray(payload) ? payload : (Array.isArray(res.data) ? res.data : []));
-        const total = typeof payload.total === 'number'
-            ? payload.total
-            : (typeof res.total === 'number' ? res.total : records.length);
-
-        tonnagePriceState.records = records;
-        tonnagePriceState.total = total;
-        tonnagePriceState.page = payload.page || page;
-        tonnagePriceState.totalPages = Math.ceil(total / tonnagePriceState.pageSize) || 1;
+        tonnagePriceState.records = pageResult.items || [];
+        tonnagePriceState.total = pageResult.total || 0;
+        tonnagePriceState.page = pageResult.page || page;
+        tonnagePriceState.totalPages = pageResult.total_pages || 1;
 
         if (tableBody) {
             if (tonnagePriceState.records.length === 0) {
@@ -479,10 +470,7 @@ async function copyTemplate() {
     }
 
     try {
-        await HttpClient.post(`${API_BASE}/copy`, {
-            source_year: sourceYear,
-            target_year: targetYear,
-        });
+        await HttpClient.post(`${API_BASE}/copy-year?source_year=${sourceYear}&target_year=${targetYear}`);
 
         showToast(`成功从 ${sourceYear} 年复制到 ${targetYear} 年`, 'success');
 
@@ -493,7 +481,6 @@ async function copyTemplate() {
         console.error('复制失败:', error);
     }
 }
-
 /**
  * 页面配置导出
  */
