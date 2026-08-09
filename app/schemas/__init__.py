@@ -27,14 +27,17 @@ from app.schemas.vo.stamping_vo import (
     StampingProcessItemUpdate,
 )
 
-# 吨位价格
-from app.schemas.vo.stamping_tonnage_price_vo import (
+# 吨位价格 - DTO（请求参数）
+from app.schemas.dto.stamping_tonnage_price_dto import (
     StampingTonnagePriceCreate,
     StampingTonnagePriceUpdate,
-    StampingTonnagePriceResponse,
     StampingTonnagePriceQuery,
     StampingTonnagePriceBulkCreate,
     StampingTonnagePriceCopyTemplate,
+)
+# 吨位价格 - VO（响应数据）
+from app.schemas.vo.stamping_tonnage_price_vo import (
+    StampingTonnagePriceResponse,
 )
 
 from app.schemas.vo.steel_base_price_vo import SteelBasePriceResponse
@@ -71,10 +74,11 @@ __all__ = [
     "StampingProcessResponse",
     "StampingProcessUpdate",
     "StampingProcessItemUpdate",
-    # VO - 吨位价格
+    # VO - 吨位价格（仅响应）
+    "StampingTonnagePriceResponse",
+    # DTO - 吨位价格（请求参数）
     "StampingTonnagePriceCreate",
     "StampingTonnagePriceUpdate",
-    "StampingTonnagePriceResponse",
     "StampingTonnagePriceQuery",
     "StampingTonnagePriceBulkCreate",
     "StampingTonnagePriceCopyTemplate",
