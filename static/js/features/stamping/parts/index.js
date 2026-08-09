@@ -141,20 +141,26 @@ export const PartsPage = {
         const version = versionFilter?.value;
         if (partNumber) params.part_number = partNumber;
         if (location) params.location = location;
-        if (supplier) params.supplier = supplier;
+        if (supplier) params.stamping_supplier = supplier;
         if (vehicleModel) params.vehicle_model = vehicleModel;
         if (version) params.version = version;
 
         try {
-            const result = await HttpClient.get('/api/stamping/parts/list', { params });
-            const pageInfo = result.data?.data ?? result.data ?? {};
+            const resp = await HttpClient.get('/api/stamping/parts/list', { params });
+            // ApiResponse{ data: PageResult{ items, total, page, page_size, ... } }
+            const pageInfo = resp.data ?? {};
+            const items = pageInfo.items || [];
+            const total = pageInfo.total ?? 0;
+            const totalPages = pageInfo.total_pages ?? 1;
+            const hasNext = pageInfo.has_next ?? false;
+            const hasPrev = pageInfo.has_prev ?? false;
 
-            // 联动：更新车型 / 版本下拉选项
+            // 联动：更新筛选下拉选项
             this.updateFilterOptions(pageInfo.filters);
 
-            this.renderParts(pageInfo.list || []);
-            this.renderPagination(pageInfo);
-            if (totalCount) totalCount.textContent = `共 ${pageInfo.total || 0} 个零件`;
+            this.renderParts(items);
+            this.renderPagination({ total, page, total_pages: totalPages, has_next: hasNext, has_prev: hasPrev });
+            if (totalCount) totalCount.textContent = `共 ${total} 个零件`;
         } catch (error) {
             console.error('加载零件列表失败:', error);
             if (partsTableBody) {
@@ -193,21 +199,21 @@ export const PartsPage = {
             locationFilter.value = currentLocation;
         }
 
-        // 更新供应商下拉
-        if (supplierFilter && filters.suppliers) {
+        // 更新供应商下拉（后端字段名: stamping_suppliers）
+        if (supplierFilter && filters.stamping_suppliers) {
             supplierFilter.innerHTML = `<option value="">全部供应商</option>` +
-                filters.suppliers.map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
+                filters.stamping_suppliers.map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
             supplierFilter.value = currentSupplier;
         }
 
-        // 更新车型下拉
+        // 更新车型下拉（后端字段名: vehicle_models）
         if (vehicleFilter && filters.vehicle_models) {
             vehicleFilter.innerHTML = `<option value="">全部车型</option>` +
                 filters.vehicle_models.map(m => `<option value="${esc(m)}">${esc(m)}</option>`).join('');
             vehicleFilter.value = currentVehicle;
         }
 
-        // 更新版本下拉
+        // 更新版本下拉（后端字段名: versions）
         if (versionFilter && filters.versions) {
             versionFilter.innerHTML = `<option value="">全部版本</option>` +
                 filters.versions.map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join('');

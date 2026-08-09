@@ -9,7 +9,8 @@ FastAPI 应用入口
 
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -258,6 +259,19 @@ def create_app() -> FastAPI:
     app.include_router(costing_router) 
     app.include_router(quotation_router)
     app.include_router(settings_router)
+
+    # ========== 全局异常处理器 ==========
+    from app.exceptions.handlers import (
+        http_exception_handler,
+        validation_exception_handler,
+        business_exception_handler,
+        generic_exception_handler,
+    )
+    from app.exceptions.base import BusinessException
+    app.add_exception_handler(HTTPException, http_exception_handler)
+    app.add_exception_handler(RequestValidationError, validation_exception_handler)
+    app.add_exception_handler(BusinessException, business_exception_handler)
+    app.add_exception_handler(Exception, generic_exception_handler)
 
     # ========== 请求日志中间件 ==========
     @app.middleware("http")

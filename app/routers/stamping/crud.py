@@ -5,7 +5,8 @@
 
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -15,8 +16,16 @@ from app.schemas.vo.stamping_vo import (
     StampingPartWithProcessesResponse,
     StampingProcessUpdate,
     StampingProcessItemUpdate,
+    StampingPartListResponse,
+    StampingProcessResponse,
 )
 from app.utils.response import ApiResponse
+from app.schemas.common.page_result import PageResult
+
+
+class BatchUpdateResponse(BaseModel):
+    """批量更新响应 VO"""
+    updated: int
 
 
 router = APIRouter(prefix="/api/stamping", tags=["冲压工艺 API"])
@@ -24,7 +33,7 @@ router = APIRouter(prefix="/api/stamping", tags=["冲压工艺 API"])
 _stamping_service = StampingPartService()
 
 
-@router.get("/parts/list")
+@router.get("/parts/list", response_model=ApiResponse[PageResult[StampingPartListResponse]])
 def list_parts(
     query: StampingPartQuery = Depends(),
     db: Session = Depends(get_db),
@@ -32,7 +41,7 @@ def list_parts(
     """获取零件列表（包含工序）"""
     data, total, filter_options = _stamping_service.list_parts(db, query)
     return ApiResponse.list_(
-        data=data,
+        items=data,
         total=total,
         page=query.page,
         page_size=query.size,
@@ -41,54 +50,32 @@ def list_parts(
     )
 
 
-@router.get("/parts/{part_id}")
+@router.get("/parts/{part_id}", response_model=ApiResponse[StampingPartWithProcessesResponse])
 def get_part(part_id: int, db: Session = Depends(get_db)):
     """获取单个零件（包含工序）"""
-    part = _stamping_service.get_by_id(db, part_id)
-    if not part:
-        raise HTTPException(status_code=404, detail="零件不存在")
-    return ApiResponse.success(data=part, message="零件更新成功")
+    vo = _stamping_service.get_by_id(db, part_id)
+    return ApiResponse.ok(data=vo, message="获取零件成功")
 
 
-@router.delete("/parts/{part_id}")
+@router.delete("/parts/{part_id}", response_model=ApiResponse[None])
 def delete_part(part_id: int, db: Session = Depends(get_db)):
     """删除零件（同时删除关联工序）"""
-    success = _stamping_service.delete(db, part_id)
-    if not success:
-        raise HTTPException(status_code=404, detail="零件不存在")
+    _stamping_service.delete(db, part_id)
     return ApiResponse.deleted(message="零件删除成功")
 
 
-@router.get("/parts")
-def list_parts_legacy(
-    query: StampingPartQuery = Depends(),
-    db: Session = Depends(get_db),
-):
-    """获取零件列表（兼容旧路径）"""
-    data, total, filter_options = _stamping_service.list_parts(db, query)
-    return ApiResponse.list_(
-        data=data,
-        total=total,
-        page=query.page,
-        page_size=query.size,
-        filters=filter_options,
-    )
-
-
-@router.patch("/processes/{process_id}")
+@router.patch("/processes/{process_id}", response_model=ApiResponse[StampingProcessResponse])
 def update_process(
     process_id: int,
     body: StampingProcessUpdate,
     db: Session = Depends(get_db),
 ):
     """更新工序（如成本系数）"""
-    result = _stamping_service.update_process(db, process_id, body.model_dump(exclude_unset=True))
-    if not result:
-        raise HTTPException(status_code=404, detail="工序不存在")
-    return ApiResponse.success(data=result, message="工序更新成功")
+    vo = _stamping_service.update_process(db, process_id, body.model_dump(exclude_unset=True))
+    return ApiResponse.ok(data=vo, message="工序更新成功")
 
 
-@router.put("/parts/{part_id}/processes")
+@router.put("/parts/{part_id}/processes", response_model=ApiResponse[BatchUpdateResponse])
 def batch_update_processes(
     part_id: int,
     body: List[StampingProcessItemUpdate],
@@ -98,4 +85,4 @@ def batch_update_processes(
     updated = _stamping_service.batch_update_processes(
         db, [item.model_dump() for item in body]
     )
-    return ApiResponse.success(data={"updated": updated}, message=f"成功更新 {updated} 条工序")
+    return ApiResponse.ok(data=BatchUpdateResponse(updated=updated), message=f"成功更新 {updated} 条工序")

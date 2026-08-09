@@ -7,7 +7,7 @@ from decimal import Decimal
 from typing import Optional, List, Union
 
 from pydantic import BaseModel, Field, field_serializer
-
+from app.schemas.common.page_result import PageResult
 
 def datetime_to_str(value: Union[datetime, str, None]) -> Optional[str]:
     """datetime 类型转字符串序列化器"""
@@ -64,7 +64,7 @@ class StampingPartResponse(BaseModel):
 
 
 class StampingPartListResponse(BaseModel):
-    """冲压零件列表项 VO（精简字段）"""
+    """冲压零件列表项 VO（精简字段，含工序统计数）"""
 
     model_config = {"from_attributes": True}
 
@@ -82,6 +82,7 @@ class StampingPartListResponse(BaseModel):
     location: Optional[str] = None
     excel_filename: Optional[str] = None
     sketch_url: Optional[str] = None
+    process_count: int = Field(default=0, description="工序数量")
 
     @field_serializer("thickness", "part_weight")
     def serialize_decimal(self, value):
@@ -167,3 +168,15 @@ class StampingProcessItemUpdate(BaseModel):
     id: int
     cost_ratio: Optional[float] = Field(None, ge=0, le=10, description="成本系数（0~10，即0%~1000%）")
     remark: Optional[str] = None
+
+
+class StampingPartListFilterOptions(BaseModel):
+    """零件列表筛选下拉选项 VO"""
+    locations: list[str] = Field(default_factory=list)
+    vehicle_models: list[str] = Field(default_factory=list)
+    versions: list[str] = Field(default_factory=list)
+    materials: list[str] = Field(default_factory=list)
+    stamping_suppliers: list[str] = Field(default_factory=list)
+
+
+
