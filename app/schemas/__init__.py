@@ -59,6 +59,8 @@ from app.schemas.dto.stamping_upload_dto import (
     UploadResult,
 )
 
+from app.schemas.common.page_result import PageResult
+
 from app.schemas.dto.steel_base_price_dto import (
     FilterOptions as SteelBasePriceFilterOptions,
 )
@@ -69,6 +71,8 @@ from app.schemas.dto.steel_price_policy_dto import (
 )
 
 __all__ = [
+    # Common
+    "PageResult",
     # VO - 冲压
     "StampingPartQuery",
     "StampingPartResponse",

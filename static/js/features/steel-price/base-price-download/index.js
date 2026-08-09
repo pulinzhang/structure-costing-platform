@@ -3,13 +3,12 @@
  * 基准价格导出页面逻辑
  */
 
-import { basePriceDownloadTemplate, renderBasePriceRows } from './template.js';
+import { basePriceDownloadTemplate } from './template.js';
 
 // 状态管理
 const basePriceDownloadState = {
     records: [],
     total: 0,
-    filtersLoaded: false,
 };
 
 // API 基础路径
@@ -69,7 +68,6 @@ async function loadFilterOptions() {
                 .join('');
         }
 
-        basePriceDownloadState.filtersLoaded = true;
     } catch (error) {
         console.error('加载筛选选项失败:', error);
         const currentYear = new Date().getFullYear();
@@ -432,3 +430,53 @@ export const pageConfig = {
     render: basePriceDownloadTemplate,
     init: () => init(),
 };
+
+// ===== 本地渲染辅助函数 =====
+
+function renderBasePriceRows(records) {
+    if (!records || !Array.isArray(records) || records.length === 0) {
+        return `
+            <tr>
+                <td colspan="16" class="px-4 py-8 text-center text-[#616161] text-xs">
+                    无数据
+                </td>
+            </tr>
+        `;
+    }
+    return records.map((record, index) => `
+        <tr class="group border-b border-[#181818] transition-colors duration-150 hover:bg-[#ffffff]/[0.015]">
+            <td class="px-3 py-2 text-[11px] text-[#505050] whitespace-nowrap font-mono text-right tabular-nums">${index + 1}</td>
+            <td class="px-3 py-2 text-[11px] text-[#606060] whitespace-nowrap font-mono text-right tabular-nums">${esc(record.year || '')}</td>
+            <td class="px-3 py-2 text-[11px] text-[#606060] whitespace-nowrap font-mono text-right tabular-nums">${esc(record.month || '')}</td>
+            <td class="px-3 py-2 text-[11px] text-[#888888] whitespace-nowrap">${esc(record.location || '')}</td>
+            <td class="px-3 py-2 text-[11px] text-[#888888] whitespace-nowrap">${esc(record.steel_mill || '')}</td>
+            <td class="px-3 py-2 text-[11px] text-[#888888] whitespace-nowrap">${esc(record.category_name || '')}</td>
+            <td class="px-3 py-2 text-[11px] font-medium text-[#a0a0a0] whitespace-nowrap">${esc(record.grade || '')}</td>
+            <td class="px-3 py-2 text-[11px] text-[#686868] whitespace-nowrap">${esc(record.spec || '')}</td>
+            <td class="px-3 py-2 text-[11px] text-[#686868] whitespace-nowrap font-mono text-right tabular-nums">${formatDecimal(record.thick, 2)}</td>
+            <td class="px-3 py-2 text-[11px] text-[#686868] whitespace-nowrap font-mono text-right tabular-nums">${formatInteger(record.width)}</td>
+            <td class="px-3 py-2 text-[11px] text-[#888888] whitespace-nowrap font-mono text-right tabular-nums">${formatDecimal(record.base_price, 2)}</td>
+            <td class="px-3 py-2 text-[11px] text-[#686868] whitespace-nowrap font-mono text-right tabular-nums">${formatDecimal(record.processing_fee, 2)}</td>
+            <td class="px-3 py-2 text-[11px] text-[#505050] whitespace-nowrap truncate max-w-[200px]">${esc(record.excel_filename || '—')}</td>
+            <td class="px-3 py-2 text-[11px] text-[#505050] whitespace-nowrap">${esc(record.sheet_name || '—')}</td>
+            <td class="px-3 py-2 text-[11px] text-[#505050] whitespace-nowrap font-mono text-right tabular-nums">${esc(record.excel_row ?? '—')}</td>
+            <td class="px-3 py-2 text-[11px] text-[#505050] whitespace-nowrap font-mono text-right tabular-nums">${esc(record.excel_col ?? '—')}</td>
+        </tr>`).join('');
+}
+
+function formatDecimal(value, digits = 2) {
+    if (value === null || value === undefined) return '';
+    const num = Number(value);
+    if (Number.isNaN(num)) return '';
+    return num.toLocaleString('zh-CN', {
+        minimumFractionDigits: digits,
+        maximumFractionDigits: digits,
+    });
+}
+
+function formatInteger(value) {
+    if (value === null || value === undefined) return '';
+    const num = Number(value);
+    if (Number.isNaN(num)) return '';
+    return Math.round(num).toString();
+}

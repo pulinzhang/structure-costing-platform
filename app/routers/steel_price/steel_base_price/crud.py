@@ -2,7 +2,9 @@
 钢材基准价格 CRUD 路由
 """
 
-from fastapi import APIRouter, Depends, Query, UploadFile, File, status
+from urllib.parse import quote
+
+from fastapi import APIRouter, Depends, File, Query, UploadFile, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
@@ -21,6 +23,7 @@ from app.schemas.vo.steel_base_price_vo import (
     SteelBasePriceImportResultResponse,
     SteelBasePriceResponse,
 )
+from app.schemas.common import PageResult
 
 
 router = APIRouter(prefix="/api/steel-base-prices", tags=["钢材基准价格"])
@@ -79,7 +82,7 @@ def get_base_price_options(
 
 @router.get(
     "/export-preview",
-    response_model=ApiResponse[list[SteelBasePriceExportRow]],
+    response_model=ApiResponse[PageResult[SteelBasePriceExportRow]],
 )
 def export_preview(
     year: int | None = Query(None, ge=2000, le=2100, description="订单发布年份"),
@@ -90,7 +93,7 @@ def export_preview(
     page: int | None = Query(None, ge=1, description="页码（前端分页用）"),
     size: int | None = Query(None, ge=1, le=5000, description="每页条数"),
     db: Session = Depends(get_db),
-) -> ApiResponse[list[SteelBasePriceExportRow]]:
+) -> ApiResponse[PageResult[SteelBasePriceExportRow]]:
     """导出预览：返回筛选后的基准价格数据（前端分页）。"""
     page_size = size or 5000
     records, total = _steel_base_price_service.list_for_export(
@@ -138,7 +141,7 @@ def export_download(
     return StreamingResponse(
         iter([content]),
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": f'attachment; filename*=UTF-8\'\'{filename}'},
+        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{quote(filename)}"},
     )
 
 
@@ -209,23 +212,22 @@ def delete_base_price(
     response_model=ApiResponse[dict],
 )
 def batch_delete_base_prices(
-    year: int = Query(..., ge=2000, le=2100, description="订单发布年份"),
-    month: int = Query(..., ge=1, le=12, description="订单发布月份"),
-    location: str | None = Query(None, description="采购基地"),
-    steel_mill: str | None = Query(None, description="中标钢厂"),
+    body: SteelBasePriceQuery,
     db: Session = Depends(get_db),
 ) -> ApiResponse[dict]:
     """按条件批量删除基准价格记录（年度+月份必须同时指定）。"""
+    if body.year is None or body.month is None:
+        return ApiResponse.fail(message="year 和 month 不能为空", code=400)
     ok, error = _steel_base_price_service.batch_delete(
         db,
-        year=year,
-        month=month,
-        location=location,
-        steel_mill=steel_mill,
+        year=body.year,
+        month=body.month,
+        location=body.location,
+        steel_mill=body.steel_mill,
     )
     if not ok:
         return ApiResponse.fail(message=error or "批量删除失败", code=400)
-    return ApiResponse.ok(data={"year": year, "month": month}, message="批量删除成功")
+    return ApiResponse.ok(data={"year": body.year, "month": body.month}, message="批量删除成功")
 
 
 @router.post(

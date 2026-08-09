@@ -128,6 +128,7 @@ const BasePriceUploadPage = {
 
         try {
             const url = `/api/steel-base-prices/import?year=${year}&month=${month}`;
+            const response = await HttpClient.post(url, formData);
             const data = response.data || {};
             const created = data.created_count || 0;
             const updated = data.updated_count || 0;

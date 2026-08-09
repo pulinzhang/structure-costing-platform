@@ -96,6 +96,10 @@ class SteelBasePriceExportRow(BaseModel):
     base_price: Optional[float] = None
     processing_fee: Optional[float] = None
     spec: Optional[str] = None
+    excel_filename: Optional[str] = None
+    sheet_name: Optional[str] = None
+    excel_row: Optional[int] = None
+    excel_col: Optional[int] = None
 
     @field_serializer("thick", "width", "base_price", "processing_fee")
     def serialize_decimal(self, value: Decimal | float | None) -> Optional[float]:
