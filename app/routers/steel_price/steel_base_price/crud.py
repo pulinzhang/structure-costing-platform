@@ -2,9 +2,6 @@
 钢材基准价格 CRUD 路由
 """
 
-import math
-from typing import Annotated
-
 from fastapi import APIRouter, Depends, Query, UploadFile, File, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
@@ -20,12 +17,13 @@ from app.schemas.dto.steel_base_price_dto import (
 )
 from app.schemas.vo.steel_base_price_vo import (
     FilterOptionsVO,
+    SteelBasePriceExportRow,
     SteelBasePriceImportResultResponse,
     SteelBasePriceResponse,
 )
 
 
-router = APIRouter(prefix="/steel-base-prices", tags=["钢材基准价格"])
+router = APIRouter(prefix="/api/steel-base-prices", tags=["钢材基准价格"])
 
 _steel_base_price_service = SteelBasePriceService()
 _steel_base_price_export_service = SteelBasePriceExportService()
@@ -34,36 +32,36 @@ _steel_base_price_export_service = SteelBasePriceExportService()
 def _build_filter_options_vo(service: SteelBasePriceService, db: Session) -> FilterOptionsVO:
     """从 Repository 获取 FilterOptions 并转换为 VO"""
     from app.schemas.dto.steel_base_price_dto import FilterOptions
-    from app.schemas.vo.steel_base_price_vo import FilterOptionsVO
-    raw = service.get_filter_options(db)
-    return FilterOptionsVO.model_validate(raw)
+    raw: FilterOptions = service.get_filter_options(db)
+    return FilterOptionsVO(
+        years=raw.years,
+        months=raw.months,
+        locations=raw.locations,
+        steel_mills=raw.steel_mills,
+        category_names=raw.category_names,
+        grades=raw.grades,
+        specs=raw.specs,
+    )
 
 
 @router.get(
     "",
-    response_model=ApiResponse[dict],
+    response_model=ApiResponse[list[SteelBasePriceResponse]],
 )
 def list_base_prices(
     query: SteelBasePriceQuery = Depends(),
     db: Session = Depends(get_db),
-) -> ApiResponse[dict]:
+) -> ApiResponse[list[SteelBasePriceResponse]]:
     """
     分页查询基准价格列表。
-    响应中包含分页元数据（page, page_size, total, filters）。
     """
     items, total = _steel_base_price_service.paginate(db, query)
-    filters = _build_filter_options_vo(_steel_base_price_service, db)
-
-    page = query.page
-    page_size = query.size
-    total_pages = math.ceil(total / page_size) if total > 0 else 0
 
     return ApiResponse.list_(
-        items=[item.model_dump() for item in items],
+        items=items,
         total=total,
-        page=page,
-        page_size=page_size,
-        filters=filters.model_dump(),
+        page=query.page,
+        page_size=query.size,
     )
 
 
@@ -77,6 +75,71 @@ def get_base_price_options(
     """获取筛选下拉选项（年度/月份/基地/钢厂等）。"""
     filters = _build_filter_options_vo(_steel_base_price_service, db)
     return ApiResponse.ok(data=filters)
+
+
+@router.get(
+    "/export-preview",
+    response_model=ApiResponse[list[SteelBasePriceExportRow]],
+)
+def export_preview(
+    year: int | None = Query(None, ge=2000, le=2100, description="订单发布年份"),
+    month: int | None = Query(None, ge=1, le=12, description="订单发布月份"),
+    location: str | None = Query(None, description="采购基地"),
+    steel_mill: str | None = Query(None, description="中标钢厂"),
+    spec: str | None = Query(None, description="规格"),
+    page: int | None = Query(None, ge=1, description="页码（前端分页用）"),
+    size: int | None = Query(None, ge=1, le=5000, description="每页条数"),
+    db: Session = Depends(get_db),
+) -> ApiResponse[list[SteelBasePriceExportRow]]:
+    """导出预览：返回筛选后的基准价格数据（前端分页）。"""
+    page_size = size or 5000
+    records, total = _steel_base_price_service.list_for_export(
+        db,
+        year=year,
+        month=month,
+        location=location,
+        steel_mill=steel_mill,
+        spec=spec,
+        page=page,
+        page_size=page_size,
+    )
+    if page is not None:
+        return ApiResponse.list_(
+            items=records,
+            total=total,
+            page=page,
+            page_size=page_size,
+            message="查询成功",
+        )
+    return ApiResponse.ok(data=records)
+
+
+@router.get(
+    "/export-download",
+    response_model=None,
+)
+def export_download(
+    year: int | None = Query(None, ge=2000, le=2100, description="订单发布年份"),
+    month: int | None = Query(None, ge=1, le=12, description="订单发布月份"),
+    location: str | None = Query(None, description="采购基地"),
+    steel_mill: str | None = Query(None, description="中标钢厂"),
+    spec: str | None = Query(None, description="规格"),
+    db: Session = Depends(get_db),
+) -> StreamingResponse:
+    """下载基准价格 Excel 文件。"""
+    content, filename = _steel_base_price_export_service.export(
+        db,
+        year=year,
+        month=month,
+        location=location,
+        steel_mill=steel_mill,
+        spec=spec,
+    )
+    return StreamingResponse(
+        iter([content]),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename*=UTF-8\'\'{filename}'},
+    )
 
 
 @router.get(
@@ -185,54 +248,3 @@ async def import_base_price(
         month=month,
     )
     return ApiResponse.ok(data=result, message="导入完成")
-
-
-@router.get(
-    "/export/preview",
-    response_model=ApiResponse[list[dict]],
-)
-def export_preview(
-    year: int | None = Query(None, ge=2000, le=2100, description="订单发布年份"),
-    month: int | None = Query(None, ge=1, le=12, description="订单发布月份"),
-    location: str | None = Query(None, description="采购基地"),
-    steel_mill: str | None = Query(None, description="中标钢厂"),
-    spec: str | None = Query(None, description="规格"),
-    db: Session = Depends(get_db),
-) -> ApiResponse[list[dict]]:
-    """导出预览：返回筛选后的基准价格数据（不分页，最多 10000 条）。"""
-    records = _steel_base_price_service.list_for_export(
-        db,
-        year=year,
-        month=month,
-        location=location,
-        steel_mill=steel_mill,
-        spec=spec,
-    )
-    return ApiResponse.ok(data=[r.model_dump() for r in records])
-
-
-@router.get(
-    "/export/download",
-)
-def export_download(
-    year: int | None = Query(None, ge=2000, le=2100, description="订单发布年份"),
-    month: int | None = Query(None, ge=1, le=12, description="订单发布月份"),
-    location: str | None = Query(None, description="采购基地"),
-    steel_mill: str | None = Query(None, description="中标钢厂"),
-    spec: str | None = Query(None, description="规格"),
-    db: Session = Depends(get_db),
-) -> StreamingResponse:
-    """下载基准价格 Excel 文件。"""
-    content, filename = _steel_base_price_export_service.export(
-        db,
-        year=year,
-        month=month,
-        location=location,
-        steel_mill=steel_mill,
-        spec=spec,
-    )
-    return StreamingResponse(
-        iter([content]),
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": f'attachment; filename*=UTF-8\'\'{filename}'},
-    )

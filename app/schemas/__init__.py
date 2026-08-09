@@ -40,7 +40,11 @@ from app.schemas.vo.stamping_tonnage_price_vo import (
     StampingTonnagePriceResponse,
 )
 
-from app.schemas.vo.steel_base_price_vo import SteelBasePriceResponse
+from app.schemas.vo.steel_base_price_vo import (
+    FilterOptionsVO,
+    SteelBasePriceResponse,
+    SteelBasePriceExportRow,
+)
 
 from app.schemas.vo.steel_price_policy_vo import (
     SteelPricePolicyResponse,
@@ -82,7 +86,9 @@ __all__ = [
     "StampingTonnagePriceBulkCreate",
     "StampingTonnagePriceCopyTemplate",
     # VO - 钢材基准价格
+    "FilterOptionsVO",
     "SteelBasePriceResponse",
+    "SteelBasePriceExportRow",
     # VO - 钢价政策
     "SteelPricePolicyResponse",
     "SteelPricePolicyItemResponse",

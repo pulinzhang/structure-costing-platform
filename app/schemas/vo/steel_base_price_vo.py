@@ -11,7 +11,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Optional
 
-from pydantic import BaseModel, Field, field_serializer
+from pydantic import BaseModel, field_serializer
 
 
 def decimal_to_float(value: Decimal | float | None) -> Optional[float]:
@@ -81,12 +81,33 @@ class SteelBasePriceImportResultResponse(BaseModel):
     errors: Optional[list[str]] = None
 
 
+class SteelBasePriceExportRow(BaseModel):
+    """导出预览行 VO"""
+    model_config = {"from_attributes": True}
+
+    year: int
+    month: int
+    location: str
+    steel_mill: str
+    category_name: str
+    grade: str
+    thick: Optional[float] = None
+    width: Optional[float] = None
+    base_price: Optional[float] = None
+    processing_fee: Optional[float] = None
+    spec: Optional[str] = None
+
+    @field_serializer("thick", "width", "base_price", "processing_fee")
+    def serialize_decimal(self, value: Decimal | float | None) -> Optional[float]:
+        return decimal_to_float(value)
+
+
 class FilterOptionsVO(BaseModel):
-    """筛选下拉选项响应 VO"""
-    years: list[int] = Field(default_factory=list)
-    months: list[int] = Field(default_factory=list)
-    locations: list[str] = Field(default_factory=list)
-    steel_mills: list[str] = Field(default_factory=list)
-    category_names: list[str] = Field(default_factory=list)
-    grades: list[str] = Field(default_factory=list)
-    specs: list[str] = Field(default_factory=list)
+    """筛选选项 VO（API 响应用）"""
+    years: list[int] = []
+    months: list[int] = []
+    locations: list[str] = []
+    steel_mills: list[str] = []
+    category_names: list[str] = []
+    grades: list[str] = []
+    specs: list[str] = []

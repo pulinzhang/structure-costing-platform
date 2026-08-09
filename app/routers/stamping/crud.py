@@ -6,6 +6,7 @@
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -17,10 +18,14 @@ from app.schemas.vo.stamping_vo import (
     StampingProcessItemUpdate,
     StampingPartListResponse,
     StampingProcessResponse,
-    BatchUpdateResponse,
 )
 from app.utils.response import ApiResponse
 from app.schemas.common.page_result import PageResult
+
+
+class BatchUpdateResponse(BaseModel):
+    """批量更新响应 VO"""
+    updated: int
 
 
 router = APIRouter(prefix="/api/stamping", tags=["冲压工艺 API"])
@@ -61,6 +66,22 @@ def delete_part(part_id: int, db: Session = Depends(get_db)) -> ApiResponse[None
     return ApiResponse.deleted(message="零件删除成功")
 
 
+@router.get("/parts", response_model=ApiResponse[PageResult[StampingPartListResponse]])
+def list_parts_legacy(
+    query: StampingPartQuery = Depends(),
+    db: Session = Depends(get_db),
+) -> ApiResponse[PageResult[StampingPartListResponse]]:
+    """获取零件列表（兼容旧路径）"""
+    data, total, filter_options = _stamping_service.list_parts(db, query)
+    return ApiResponse.list_(
+        items=data,
+        total=total,
+        page=query.page,
+        page_size=query.size,
+        filters=filter_options,
+    )
+
+
 @router.patch("/processes/{process_id}", response_model=ApiResponse[StampingProcessResponse])
 def update_process(
     process_id: int,
@@ -84,4 +105,4 @@ def batch_update_processes(
     updated = _stamping_service.batch_update_processes(
         db, [item.model_dump() for item in body]
     )
-    return ApiResponse.ok(data=BatchUpdateResponse(updated=updated), message=f"成功更新 {updated} 条工序")
+    return ApiResponse.success(data=BatchUpdateResponse(updated=updated), message=f"成功更新 {updated} 条工序")

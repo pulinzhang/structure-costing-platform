@@ -156,16 +156,16 @@ export function renderBasePriceRows(records) {
     if (!records || !Array.isArray(records) || records.length === 0) {
         return `
             <tr>
-                <td colspan="16" class="px-4 py-8 text-center text-[#616161] text-xs">
-                    无数据
-                </td>
+                                        <td colspan="16" class="px-4 py-8 text-center text-[#616161] text-xs">
+                                            无数据
+                                        </td>
             </tr>
         `;
     }
-    return records.map((record) => {
+    return records.map((record, index) => {
         return `
         <tr class="group border-b border-[#181818] transition-colors duration-150 hover:bg-[#ffffff]/[0.015]">
-            <td class="px-3 py-2 text-[11px] text-[#505050] whitespace-nowrap font-mono text-right tabular-nums">${esc(record.id || '')}</td>
+            <td class="px-3 py-2 text-[11px] text-[#505050] whitespace-nowrap font-mono text-right tabular-nums">${index + 1}</td>
             <td class="px-3 py-2 text-[11px] text-[#606060] whitespace-nowrap font-mono text-right tabular-nums">${esc(record.year || '')}</td>
             <td class="px-3 py-2 text-[11px] text-[#606060] whitespace-nowrap font-mono text-right tabular-nums">${esc(record.month || '')}</td>
             <td class="px-3 py-2 text-[11px] text-[#888888] whitespace-nowrap">${esc(record.location || '')}</td>
@@ -177,10 +177,9 @@ export function renderBasePriceRows(records) {
             <td class="px-3 py-2 text-[11px] text-[#686868] whitespace-nowrap font-mono text-right tabular-nums">${esc(formatInteger(record.width))}</td>
             <td class="px-3 py-2 text-[11px] text-[#888888] whitespace-nowrap font-mono text-right tabular-nums">${esc(formatDecimal(record.base_price, 2))}</td>
             <td class="px-3 py-2 text-[11px] text-[#686868] whitespace-nowrap font-mono text-right tabular-nums">${esc(formatDecimal(record.processing_fee, 2))}</td>
-            <td class="px-3 py-2 text-[11px] text-[#505050] whitespace-nowrap truncate max-w-[200px]">${esc(record.excel_filename || '')}</td>
-            <td class="px-3 py-2 text-[11px] text-[#505050] whitespace-nowrap">${esc(record.sheet_name || '')}</td>
-            <td class="px-3 py-2 text-[11px] text-[#505050] whitespace-nowrap font-mono text-right tabular-nums">${esc(record.excel_row || '')}</td>
-            <td class="px-3 py-2 text-[11px] text-[#505050] whitespace-nowrap font-mono text-right tabular-nums">${esc(record.excel_col || '')}</td>
+            <td class="px-3 py-2 text-[11px] text-[#505050] whitespace-nowrap truncate max-w-[200px]">—</td>
+            <td class="px-3 py-2 text-[11px] text-[#505050] whitespace-nowrap">—</td>
+            <td class="px-3 py-2 text-[11px] text-[#505050] whitespace-nowrap font-mono text-right tabular-nums">—</td>
         </tr>`;
     }).join('');
 }

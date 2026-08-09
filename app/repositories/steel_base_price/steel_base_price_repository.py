@@ -5,7 +5,7 @@
 
 from typing import Any, Optional
 
-from sqlalchemy import distinct
+from sqlalchemy import distinct, func
 from sqlalchemy.orm import Session
 
 from app.models.steel_base_price import SteelBasePrice
@@ -242,8 +242,10 @@ class SteelBasePriceRepository:
         location: str | None = None,
         steel_mill: str | None = None,
         spec: str | None = None,
+        skip: int | None = None,
+        limit: int | None = None,
     ) -> list[SteelBasePrice]:
-        """获取导出所需的数据（供 ExportService 调用）。"""
+        """获取导出所需的数据（供 ExportService 调用），支持分页。"""
         query = db.query(SteelBasePrice)
 
         if year is not None:
@@ -266,4 +268,35 @@ class SteelBasePriceRepository:
             SteelBasePrice.excel_row.asc(),
         )
 
+        if skip is not None:
+            query = query.offset(skip)
+        if limit is not None:
+            query = query.limit(limit)
+
         return query.all()
+
+    def count_for_export(
+        self,
+        db: Session,
+        *,
+        year: int | None = None,
+        month: int | None = None,
+        location: str | None = None,
+        steel_mill: str | None = None,
+        spec: str | None = None,
+    ) -> int:
+        """统计导出数据总量。"""
+        query = db.query(func.count(SteelBasePrice.id))
+
+        if year is not None:
+            query = query.filter(SteelBasePrice.year == year)
+        if month is not None:
+            query = query.filter(SteelBasePrice.month == month)
+        if location:
+            query = query.filter(SteelBasePrice.location == location)
+        if steel_mill:
+            query = query.filter(SteelBasePrice.steel_mill == steel_mill)
+        if spec:
+            query = query.filter(SteelBasePrice.spec.contains(spec))
+
+        return query.scalar() or 0

@@ -10,6 +10,7 @@ from app.repositories.steel_base_price import SteelBasePriceRepository
 from app.schemas.dto.steel_base_price_dto import FilterOptions
 from app.schemas.vo.steel_base_price_vo import (
     FilterOptionsVO,
+    SteelBasePriceExportRow,
     SteelBasePriceImportResultResponse,
     SteelBasePriceResponse,
 )
@@ -204,8 +205,16 @@ class SteelBasePriceService:
         location: str | None = None,
         steel_mill: str | None = None,
         spec: str | None = None,
-    ) -> list[SteelBasePriceResponse]:
-        """导出预览数据（分批）。"""
+        page: int | None = None,
+        page_size: int | None = None,
+    ) -> tuple[list[SteelBasePriceExportRow], int]:
+        """导出预览数据（支持前端分页）。返回 (items, total)。"""
+        skip = None
+        limit = None
+        if page is not None and page_size is not None:
+            skip = (page - 1) * page_size
+            limit = page_size
+
         records = self.repository.list_for_export(
             db,
             year=year,
@@ -213,5 +222,15 @@ class SteelBasePriceService:
             location=location,
             steel_mill=steel_mill,
             spec=spec,
+            skip=skip,
+            limit=limit,
         )
-        return [SteelBasePriceResponse.model_validate(r) for r in records]
+        total = self.repository.count_for_export(
+            db,
+            year=year,
+            month=month,
+            location=location,
+            steel_mill=steel_mill,
+            spec=spec,
+        )
+        return [SteelBasePriceExportRow.model_validate(r) for r in records], total

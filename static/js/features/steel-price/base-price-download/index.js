@@ -189,12 +189,12 @@ async function previewData() {
     if (tableBody) {
         tableBody.innerHTML = `
             <tr>
-                <td colspan="15" class="px-4 py-8 text-center">
-                    <div class="flex items-center justify-center">
-                        <div class="w-4 h-4 border border-[#252525] border-t-[#d32f2f] rounded-full animate-spin mr-2"></div>
-                        <span class="text-[11px] text-[#616161]">加载中...</span>
-                    </div>
-                </td>
+<td colspan="16" class="px-4 py-8 text-center">
+                            <div class="flex items-center justify-center">
+                                <div class="w-4 h-4 border border-[#252525] border-t-[#d32f2f] rounded-full animate-spin mr-2"></div>
+                                <span class="text-[11px] text-[#616161]">加载中...</span>
+                            </div>
+                        </td>
             </tr>
         `;
     }
@@ -206,18 +206,20 @@ async function previewData() {
         if (location) params.location = location;
         if (mill) params.steel_mill = mill;
         params.page = 1;
-        params.size = 1000;
-
+        params.size = 500;
         const response = await HttpClient.get(`${API_BASE}/export-preview`, { params });
-        const data = response.data || {};
-        const records = Array.isArray(data.list) ? data.list : (Array.isArray(data.data) ? data.data : []);
-
+        // 支持分页响应格式 { items: [...], total: N } 或直接数组
+        const payload = response.data;
+        const records = Array.isArray(payload)
+            ? payload
+            : Array.isArray(payload?.items) ? payload.items : [];
+        const total = payload?.total ?? records.length;
         basePriceDownloadState.records = records;
-        basePriceDownloadState.total = data.total || records.length;
+        basePriceDownloadState.total = total;
 
         const recordCount = document.getElementById('basePriceRecordCount');
         if (recordCount) {
-            recordCount.textContent = basePriceDownloadState.total;
+            recordCount.textContent = total;
         }
 
         if (tableBody) {
@@ -228,7 +230,7 @@ async function previewData() {
         if (tableBody) {
             tableBody.innerHTML = `
                 <tr>
-                    <td colspan="15" class="px-4 py-8 text-center text-[#d32f2f] text-xs">
+                    <td colspan="16" class="px-4 py-8 text-center text-[#d32f2f] text-xs">
                         加载失败: ${esc(error.message || '未知错误')}
                     </td>
                 </tr>
@@ -265,25 +267,18 @@ async function exportExcel() {
         if (location) params.append('location', location);
         if (mill) params.append('steel_mill', mill);
 
-        const response = await fetch(`${API_BASE}/export?${params.toString()}`, {
+        const response = await fetch(`${API_BASE}/export-download?${params.toString()}`, {
             method: 'GET',
-            headers: {
-                'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            },
         });
-
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            throw new Error(`导出失败: HTTP ${response.status}`);
         }
 
-        const contentDisposition = response.headers.get('Content-Disposition');
+        const contentDisposition = response.headers.get('Content-Disposition') || '';
         let filename = '基准价格导出.xlsx';
-        if (contentDisposition) {
-            const match = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
-            if (match && match[1]) {
-                filename = match[1].replace(/['"]/g, '');
-                filename = decodeURIComponent(filename);
-            }
+        const match = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+        if (match && match[1]) {
+            filename = decodeURIComponent(match[1].replace(/['"]/g, ''));
         }
 
         const blob = await response.blob();
@@ -338,15 +333,14 @@ async function batchDeleteBasePrices() {
     }
 
     try {
-        const params = { 
-            year: parseInt(year, 10), 
-            month: parseInt(month, 10) 
+        const body = {
+            year: parseInt(year, 10),
+            month: parseInt(month, 10),
         };
-        if (location) params.location = location;
-        if (mill) params.steel_mill = mill;
-        const response = await HttpClient.delete(`${API_BASE}/batch`, { params });
-
-        showToast(response.message || '删除成功', 'success');
+        if (location) body.location = location;
+        if (mill) body.steel_mill = mill;
+        await HttpClient.post(`${API_BASE}/batch-delete`, body);
+        showToast('删除成功', 'success');
 
         basePriceDownloadState.records = [];
         basePriceDownloadState.total = 0;
@@ -356,7 +350,7 @@ async function batchDeleteBasePrices() {
         if (tableBody) {
             tableBody.innerHTML = `
                 <tr>
-                    <td colspan="15" class="px-4 py-8 text-center">
+                    <td colspan="16" class="px-4 py-8 text-center">
                         <div class="flex items-center justify-center">
                             <div class="w-4 h-4 border border-[#252525] border-t-[#d32f2f] rounded-full animate-spin mr-2"></div>
                             <span class="text-[11px] text-[#616161]">正在刷新...</span>
@@ -396,18 +390,20 @@ async function refreshPreview() {
         if (location) params.location = location;
         if (mill) params.steel_mill = mill;
         params.page = 1;
-        params.size = 1000;
-
+        params.size = 500;
         const response = await HttpClient.get(`${API_BASE}/export-preview`, { params });
-        const data = response.data || {};
-        const records = Array.isArray(data.list) ? data.list : (Array.isArray(data.data) ? data.data : []);
+        const payload = response.data;
+        const records = Array.isArray(payload)
+            ? payload
+            : Array.isArray(payload?.items) ? payload.items : [];
+        const total = payload?.total ?? records.length;
 
         basePriceDownloadState.records = records;
-        basePriceDownloadState.total = data.total || records.length;
+        basePriceDownloadState.total = total;
 
         const recordCount = document.getElementById('basePriceRecordCount');
         if (recordCount) {
-            recordCount.textContent = basePriceDownloadState.total;
+            recordCount.textContent = total;
         }
 
         const tableBody = document.getElementById('basePricePreviewBody');
@@ -420,8 +416,8 @@ async function refreshPreview() {
         if (tableBody) {
             tableBody.innerHTML = `
                 <tr>
-                    <td colspan="15" class="px-4 py-8 text-center text-[#d32f2f] text-xs">
-                        刷新失败: ${esc(error.message || '未知错误')}
+                    <td colspan="16" class="px-4 py-8 text-center text-[#d32f2f] text-xs">
+                        刷新预览失败: ${esc(error.message || '未知错误')}
                     </td>
                 </tr>
             `;
