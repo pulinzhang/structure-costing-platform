@@ -57,7 +57,7 @@ async def upload_stamping_file(
             filename=file.filename,
             location=location,
         )
-        return ApiResponse.success(
+        return ApiResponse.ok(
             data=asdict(result),
             message=f"上传成功: {result.parts_count} 个零件, {result.processes_count} 道工序"
         )
