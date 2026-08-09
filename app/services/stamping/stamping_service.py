@@ -58,9 +58,10 @@ class StampingPartService:
         filter_vo = StampingPartListFilterOptions.model_validate(filter_options)
         return rows, total, filter_vo
 
-    def get_filter_options(self, db: Session) -> Dict[str, List[str]]:
+    def get_filter_options(self, db: Session) -> StampingPartListFilterOptions:
         """获取筛选下拉框的可选值"""
-        return self.repository.get_filter_options(db)
+        raw = self.repository.get_filter_options(db)
+        return StampingPartListFilterOptions.model_validate(raw)
 
     def get_by_id(self, db: Session, part_id: int) -> StampingPartWithProcessesResponse:
         """获取单个零件（含工序）"""

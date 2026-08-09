@@ -178,10 +178,10 @@ class StampingPartRepository:
         return part
 
     def delete(self, db: Session, part_id: int) -> bool:
+        """删除零件（关联工序由调用方处理，或依赖数据库外键级联删除）"""
         part = self.get_by_id(db, part_id)
         if not part:
             return False
-        db.query(StampingProcess).filter(StampingProcess.part_id == part_id).delete()
         db.delete(part)
         db.commit()
         logger.info(f"删除零件: id={part_id}")

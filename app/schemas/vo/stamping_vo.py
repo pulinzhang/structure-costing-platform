@@ -7,6 +7,10 @@ from decimal import Decimal
 from typing import Optional, List, Union
 
 from pydantic import BaseModel, Field, field_serializer
+
+from app.schemas.common.page_result import PageResult
+
+
 def datetime_to_str(value: Union[datetime, str, None]) -> Optional[str]:
     """datetime 类型转字符串序列化器"""
     if isinstance(value, datetime):
@@ -177,4 +181,6 @@ class StampingPartListFilterOptions(BaseModel):
     stamping_suppliers: list[str] = []
 
 
-from app.schemas.common.page_result import PageResult
+class BatchUpdateResponse(BaseModel):
+    """批量更新响应 VO"""
+    updated: int
