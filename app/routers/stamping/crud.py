@@ -47,7 +47,7 @@ def get_part(part_id: int, db: Session = Depends(get_db)):
     part = _stamping_service.get_by_id(db, part_id)
     if not part:
         raise HTTPException(status_code=404, detail="零件不存在")
-    return ApiResponse.success(data=StampingPartWithProcessesResponse.model_validate(part).model_dump())
+    return ApiResponse.success(data=part, message="零件更新成功")
 
 
 @router.delete("/parts/{part_id}")

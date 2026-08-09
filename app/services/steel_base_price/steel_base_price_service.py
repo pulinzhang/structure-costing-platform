@@ -50,7 +50,7 @@ class SteelBasePriceService:
         )
         records, total = self.repository.paginate(db, base_filter)
         rows = [
-            SteelBasePriceResponse.model_validate(r).model_dump(mode='json')
+            SteelBasePriceResponse.model_validate(r).model_dump()
             for r in records
         ]
         return rows, total, self.repository.get_filter_options(db)
@@ -60,7 +60,7 @@ class SteelBasePriceService:
         record = self.repository.get_by_id(db, record_id)
         if record is None:
             return None
-        return SteelBasePriceResponse.model_validate(record).model_dump(mode='json')
+        return SteelBasePriceResponse.model_validate(record).model_dump()
 
     def create(self, db: Session, body: SteelBasePriceCreate) -> tuple[dict, str | None]:
         """创建基准价格记录。"""
@@ -68,7 +68,7 @@ class SteelBasePriceService:
             data = body.model_dump()
             record = self.repository.create(db, data)
             db.commit()
-            return SteelBasePriceResponse.model_validate(record).model_dump(mode='json'), None
+            return SteelBasePriceResponse.model_validate(record).model_dump(), None
         except Exception as e:
             db.rollback()
             logger.exception("创建基准价格失败")
@@ -84,7 +84,7 @@ class SteelBasePriceService:
             if record is None:
                 return None, "记录不存在"
             db.commit()
-            return SteelBasePriceResponse.model_validate(record).model_dump(mode='json'), None
+            return SteelBasePriceResponse.model_validate(record).model_dump(), None
         except Exception as e:
             db.rollback()
             logger.exception("更新基准价格失败: id=%s", record_id)
@@ -213,7 +213,7 @@ class SteelBasePriceService:
             spec=spec,
         )
         return [
-            SteelBasePriceResponse.model_validate(r).model_dump(mode='json')
+            SteelBasePriceResponse.model_validate(r).model_dump()
             for r in records
         ]
 

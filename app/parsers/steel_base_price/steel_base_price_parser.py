@@ -239,16 +239,12 @@ def _extract_base_configs(ws) -> List[BaseColumnConfig]:
             if not base_name:
                 continue
 
-            # 排除非基地列
-            if base_name in ("合计", "厚度加减价", "未税合计", "含税合计", "备注"):
-                continue
-
-            # 检查该列是否包含价格关键词（说明这是价格列）
+            # 检查是否包含价格关键词（说明这是价格列）
             if sub_text and ("价格" in sub_text or "承兑" in sub_text):
                 location = base_name.replace("基地", "").strip()
                 configs.append(BaseColumnConfig(
                     location=location,
-                    mill_col=idx,  # mill_col 和 price_col 相同（没有独立钢厂列）
+                    mill_col=idx,  # 复用价格列作为 mill_col（实际数据为空时会跳过）
                     price_col=idx
                 ))
             elif not sub_text and base_name not in ("合计", "厚度加减价", "未税合计", "含税合计"):
