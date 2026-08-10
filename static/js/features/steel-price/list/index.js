@@ -3,7 +3,7 @@
  * 钢材价格计算结果浏览 / 手工维护 / 审核
  */
 
-import { steelPriceListTemplate, renderSteelPricePagination, renderSteelPriceRows } from './template.js';
+import { steelPriceListTemplate, renderSteelPricePagination, renderSteelPriceRows } from './template.js?v=25';
 
 const steelPriceState = {
     records: [],
@@ -230,6 +230,7 @@ function bindEvents() {
     });
     document.getElementById('steelPriceResetFilterButton')?.addEventListener('click', () => resetFilters());
     document.getElementById('steelPriceBatchDeleteButton')?.addEventListener('click', () => batchDeleteByFilters());
+    document.getElementById('steelPriceExportButton')?.addEventListener('click', () => exportExcel());
 
     document.getElementById('steelPricePagination')?.addEventListener('click', event => {
         const btn = event.target.closest('.steel-price-page-btn');
@@ -253,6 +254,97 @@ function collectBatchDeleteFilters() {
         grade: document.getElementById('steelPriceGrade')?.value.trim() || '',
         steel_mill: getFilterValue('steelPriceMill'),
     };
+}
+
+function collectExportFilters() {
+    return {
+        year: getFilterValue('steelPriceYear'),
+        month: getFilterValue('steelPriceMonth'),
+        location: getFilterValue('steelPriceLocation'),
+        category_name: getFilterValue('steelPriceCategory'),
+        grade: document.getElementById('steelPriceGrade')?.value.trim() || '',
+        steel_mill: getFilterValue('steelPriceMill'),
+        audit_status: getFilterValue('steelPriceAuditStatus'),
+    };
+}
+
+async function exportExcel() {
+    const filters = collectExportFilters();
+    if (
+        !filters.year &&
+        !filters.month &&
+        !filters.location &&
+        !filters.category_name &&
+        !filters.grade &&
+        !filters.steel_mill &&
+        !filters.audit_status
+    ) {
+        showToast('请至少选择一个筛选条件后再导出', 'warning');
+        return;
+    }
+
+    const btn = document.getElementById('steelPriceExportButton');
+    const originalHtml = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `
+            <div class="w-3 h-3 border border-[#ef5350] border-t-transparent rounded-full animate-spin"></div>
+            导出中...
+        `;
+    }
+
+    try {
+        const params = new URLSearchParams();
+        if (filters.year) params.append('year', filters.year);
+        if (filters.month) params.append('month', filters.month);
+        if (filters.location) params.append('location', filters.location);
+        if (filters.category_name) params.append('category_name', filters.category_name);
+        if (filters.grade) params.append('grade', filters.grade);
+        if (filters.steel_mill) params.append('steel_mill', filters.steel_mill);
+        if (filters.audit_status) params.append('audit_status', filters.audit_status);
+
+        const response = await fetch(`${API_BASE}/export-download?${params.toString()}`, {
+            method: 'GET',
+        });
+        if (!response.ok) {
+            let message = `导出失败: HTTP ${response.status}`;
+            try {
+                const payload = await response.json();
+                message = payload.detail || payload.message || message;
+            } catch (_) {
+                /* ignore */
+            }
+            throw new Error(message);
+        }
+
+        const contentDisposition = response.headers.get('Content-Disposition') || '';
+        let filename = '钢材联动价格导出.xlsx';
+        const match = contentDisposition.match(/filename\*=UTF-8''([^;]+)|filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/i);
+        if (match) {
+            const raw = match[1] || match[2];
+            if (raw) filename = decodeURIComponent(raw.replace(/['"]/g, ''));
+        }
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = filename;
+        document.body.appendChild(anchor);
+        anchor.click();
+        document.body.removeChild(anchor);
+        window.URL.revokeObjectURL(url);
+
+        showToast(`导出成功: ${filename}`, 'success');
+    } catch (error) {
+        console.error('导出钢材联动价格失败:', error);
+        showToast(error.message || '导出失败', 'error');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+        }
+    }
 }
 
 async function batchDeleteByFilters() {

@@ -39,8 +39,8 @@ export function basePriceDownloadTemplate() {
                     <div class="flex items-end gap-3 flex-wrap">
                         ${filterSelect('basePriceDownloadYear', '年度')}
                         ${filterSelect('basePriceDownloadMonth', '月份')}
-                        ${filterInputWithDatalist('basePriceDownloadLocation', '基地', 'basePriceLocationOptions')}
-                        ${filterInputWithDatalist('basePriceDownloadMill', '钢厂', 'basePriceMillOptions')}
+                        ${filterSelect('basePriceDownloadLocation', '基地')}
+                        ${filterSelect('basePriceDownloadMill', '钢厂')}
                     </div>
                     <div class="flex items-center gap-2">
                         <button id="btnPreviewBasePrice"
@@ -139,15 +139,5 @@ function filterSelect(id, label) {
         <select id="${id}" class="w-36 h-7 pl-2.5 pr-7 text-[11px] bg-[#0d0d0d] border border-[#272727] text-[#909090] appearance-none cursor-pointer focus:outline-none focus:border-[#ff5252] transition-all rounded-sm">
             <option value="">全部</option>
         </select>
-    </label>`;
-}
-
-function filterInputWithDatalist(id, label, datalistId) {
-    return `<label class="space-y-1">
-        <span class="block text-[9px] font-semibold text-[#484848] uppercase tracking-[0.12em] whitespace-nowrap">${label}</span>
-        <input type="text" id="${id}" list="${datalistId}"
-               class="w-44 h-7 pl-2.5 pr-3 text-[11px] bg-[#0d0d0d] border border-[#272727] text-[#909090] placeholder:text-[#505050] focus:outline-none focus:border-[#ff5252] focus:text-[#d0d0d0] transition-all rounded-sm"
-               placeholder="输入搜索或选择">
-        <datalist id="${datalistId}"></datalist>
     </label>`;
 }

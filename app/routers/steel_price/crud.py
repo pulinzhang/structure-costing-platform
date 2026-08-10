@@ -2,7 +2,10 @@
 钢材价格管理 API
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from urllib.parse import quote
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -19,12 +22,14 @@ from app.schemas.vo.steel_price_vo import (
     SteelPriceResponse,
 )
 from app.services.steel_price import SteelPriceService
+from app.services.steel_price.steel_price_export_service import SteelPriceExportService
 from app.utils.response import ApiResponse
 
 
 router = APIRouter(prefix="/api/steel-prices", tags=["钢材价格管理"])
 
 _steel_price_service = SteelPriceService()
+_steel_price_export_service = SteelPriceExportService()
 
 
 def _raise_service_error(error: str | None, not_found_prefix: str = "记录不存在") -> None:
@@ -81,6 +86,45 @@ def batch_delete_steel_prices(
                 else ""
             )
         ),
+    )
+
+
+@router.get("/export-download")
+def export_download(
+    year: int | None = Query(None, ge=2000, le=2100, description="年度"),
+    month: int | None = Query(None, ge=1, le=12, description="月份"),
+    location: str | None = Query(None, description="采购基地"),
+    category_name: str | None = Query(None, description="钢种大类"),
+    grade: str | None = Query(None, description="牌号（模糊）"),
+    steel_mill: str | None = Query(None, description="钢厂"),
+    audit_status: str | None = Query(None, description="审核状态"),
+    db: Session = Depends(get_db),
+) -> StreamingResponse:
+    """
+    按当前筛选条件导出钢材联动价格 Excel。
+
+    含基价/厚度/宽度/锌层完整溯源（ID + 文件名 + 表页 + 行号 + 列号），便于对账扯皮。
+    """
+    if not any([year, month, location, category_name, grade, steel_mill, audit_status]):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="请至少选择一个筛选条件后再导出",
+        )
+
+    content, filename = _steel_price_export_service.export(
+        db,
+        year=year,
+        month=month,
+        location=location.strip() if location else None,
+        category_name=category_name.strip() if category_name else None,
+        grade=grade.strip() if grade else None,
+        steel_mill=steel_mill.strip() if steel_mill else None,
+        audit_status=audit_status.strip() if audit_status else None,
+    )
+    return StreamingResponse(
+        iter([content]),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{quote(filename)}"},
     )
 
 

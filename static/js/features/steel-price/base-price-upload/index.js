@@ -3,7 +3,7 @@
  * 基准价格上传页面逻辑
  */
 
-import { basePriceUploadTemplate } from './template.js';
+import { basePriceUploadTemplate } from './template.js?v=24';
 
 const BasePriceUploadPage = {
     selectedFile: null,
@@ -44,6 +44,21 @@ const BasePriceUploadPage = {
 
         // 暴露 reset 函数到 window
         window.resetBasePriceUploadForm = () => this.reset();
+
+        // SPA 菜单进入时 DOM 重建，需重新写入默认年月
+        this.fillDefaultPeriod();
+    },
+
+    fillDefaultPeriod() {
+        const now = new Date();
+        const yearInput = document.getElementById('basePriceYear');
+        const monthInput = document.getElementById('basePriceMonth');
+        if (yearInput && !yearInput.value) {
+            yearInput.value = String(now.getFullYear());
+        }
+        if (monthInput && !monthInput.value) {
+            monthInput.value = String(now.getMonth() + 1);
+        }
     },
 
     selectFile(file) {
@@ -84,11 +99,12 @@ const BasePriceUploadPage = {
         }
         const title = document.getElementById('basePriceUploadTitle');
         if (title) title.innerHTML = '拖拽文件到此处上传';
-        // 清空年度和月份
+        // 重置后恢复默认年月
         const yearInput = document.getElementById('basePriceYear');
         const monthInput = document.getElementById('basePriceMonth');
         if (yearInput) yearInput.value = '';
         if (monthInput) monthInput.value = '';
+        this.fillDefaultPeriod();
     },
 
     async submit() {

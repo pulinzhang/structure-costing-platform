@@ -96,6 +96,49 @@ class SteelPriceRepository:
         )
         return records, total
 
+    def list_for_export(
+        self,
+        db: Session,
+        *,
+        year: int | None = None,
+        month: int | None = None,
+        location: str | None = None,
+        category_name: str | None = None,
+        grade: str | None = None,
+        steel_mill: str | None = None,
+        audit_status: str | None = None,
+    ) -> list[SteelPrice]:
+        """导出用：按筛选条件取全量记录（含溯源字段）。"""
+        query = db.query(SteelPrice)
+        if year is not None:
+            query = query.filter(SteelPrice.year == year)
+        if month is not None:
+            query = query.filter(SteelPrice.month == month)
+        if location:
+            query = query.filter(SteelPrice.location == location)
+        if category_name:
+            query = query.filter(SteelPrice.category_name == category_name)
+        if grade:
+            query = query.filter(SteelPrice.grade.contains(grade))
+        if steel_mill:
+            query = query.filter(SteelPrice.steel_mill == steel_mill)
+        if audit_status:
+            query = query.filter(SteelPrice.audit_status == audit_status)
+
+        return (
+            query.order_by(
+                SteelPrice.year.desc(),
+                SteelPrice.month.desc(),
+                SteelPrice.location,
+                SteelPrice.category_name,
+                SteelPrice.grade,
+                SteelPrice.steel_mill,
+                SteelPrice.thickness,
+                SteelPrice.width,
+            )
+            .all()
+        )
+
     def get_filter_options(self, db: Session) -> dict[str, list[Any]]:
         years = [
             row[0]

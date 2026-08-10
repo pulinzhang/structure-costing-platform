@@ -3,12 +3,13 @@
  * 基准价格导出页面逻辑
  */
 
-import { basePriceDownloadTemplate } from './template.js';
+import { basePriceDownloadTemplate } from './template.js?v=24';
 
 // 状态管理
 const basePriceDownloadState = {
     records: [],
     total: 0,
+    filterLoadToken: 0,
 };
 
 // API 基础路径
@@ -19,75 +20,57 @@ const API_BASE = '/api/steel-base-prices';
  */
 function init() {
     bindEvents();
+    // DOM 重建后必须重新拉选项；先同步填月份，避免接口返回前下拉空白
+    fillMonthOptions();
     loadFilterOptions();
+}
+
+function buildYearOptions(years) {
+    if (Array.isArray(years) && years.length) {
+        return years.map(y => ({ value: y, label: `${y} 年` }));
+    }
+    const currentYear = new Date().getFullYear();
+    const fallback = [];
+    for (let y = currentYear - 3; y <= currentYear + 1; y++) {
+        fallback.push({ value: y, label: `${y} 年` });
+    }
+    return fallback;
+}
+
+function fillMonthOptions() {
+    const months = Array.from({ length: 12 }, (_, i) => ({
+        value: i + 1,
+        label: `${i + 1} 月`,
+    }));
+    fillSelect('basePriceDownloadMonth', months);
 }
 
 /**
  * 加载筛选下拉选项
  */
 async function loadFilterOptions() {
+    const token = ++basePriceDownloadState.filterLoadToken;
     try {
         const response = await HttpClient.get(`${API_BASE}/options`);
+        if (token !== basePriceDownloadState.filterLoadToken) return;
+
         const data = response.data || {};
-
-        // 填充年度选项
-        if (data.years && Array.isArray(data.years)) {
-            fillSelect('basePriceDownloadYear', data.years.map(y => ({
-                value: y,
-                label: `${y} 年`,
-            })));
-        } else {
-            const currentYear = new Date().getFullYear();
-            const years = [];
-            for (let y = currentYear - 3; y <= currentYear + 1; y++) {
-                years.push({ value: y, label: `${y} 年` });
-            }
-            fillSelect('basePriceDownloadYear', years);
-        }
-
-        // 填充月份
-        const months = Array.from({ length: 12 }, (_, i) => ({
-            value: i + 1,
-            label: `${i + 1} 月`,
-        }));
-        fillSelect('basePriceDownloadMonth', months);
-
-        // 填充基地选项
-        const locationDatalist = document.getElementById('basePriceLocationOptions');
-        if (locationDatalist && data.locations && Array.isArray(data.locations)) {
-            locationDatalist.innerHTML = data.locations
-                .map(m => `<option value="${esc(m)}">`)
-                .join('');
-        }
-
-        // 填充钢厂选项
-        const millDatalist = document.getElementById('basePriceMillOptions');
-        if (millDatalist && data.steel_mills && Array.isArray(data.steel_mills)) {
-            millDatalist.innerHTML = data.steel_mills
-                .map(m => `<option value="${esc(m)}">`)
-                .join('');
-        }
-
+        fillSelect('basePriceDownloadYear', buildYearOptions(data.years));
+        fillMonthOptions();
+        fillSelect('basePriceDownloadLocation', data.locations || []);
+        fillSelect('basePriceDownloadMill', data.steel_mills || []);
     } catch (error) {
+        if (token !== basePriceDownloadState.filterLoadToken) return;
         console.error('加载筛选选项失败:', error);
-        const currentYear = new Date().getFullYear();
-        const years = [];
-        for (let y = currentYear - 3; y <= currentYear + 1; y++) {
-            years.push({ value: y, label: `${y} 年` });
-        }
-        fillSelect('basePriceDownloadYear', years);
-
-        const months = Array.from({ length: 12 }, (_, i) => ({
-            value: i + 1,
-            label: `${i + 1} 月`,
-        }));
-        fillSelect('basePriceDownloadMonth', months);
+        fillSelect('basePriceDownloadYear', buildYearOptions());
+        fillMonthOptions();
     }
 }
 
 function fillSelect(id, options = []) {
     const select = document.getElementById(id);
     if (!select) return;
+    const current = select.value;
     select.innerHTML =
         '<option value="">全部</option>' +
         options.map(opt => {
@@ -95,6 +78,9 @@ function fillSelect(id, options = []) {
             const label = typeof opt === 'object' ? opt.label : opt;
             return `<option value="${esc(value)}">${esc(label)}</option>`;
         }).join('');
+    if (current && Array.from(select.options).some(opt => opt.value === current)) {
+        select.value = current;
+    }
 }
 
 /**
@@ -119,29 +105,11 @@ function bindEvents() {
         btnDelete.addEventListener('click', () => batchDeleteBasePrices());
     }
 
-    // 年度变更时更新条件显示
-    const yearSelect = document.getElementById('basePriceDownloadYear');
-    if (yearSelect) {
-        yearSelect.addEventListener('change', () => updateConditionsDisplay());
-    }
-
-    // 月份变更时更新条件显示
-    const monthSelect = document.getElementById('basePriceDownloadMonth');
-    if (monthSelect) {
-        monthSelect.addEventListener('change', () => updateConditionsDisplay());
-    }
-
-    // 基地变更时更新条件显示
-    const locationInput = document.getElementById('basePriceDownloadLocation');
-    if (locationInput) {
-        locationInput.addEventListener('input', () => updateConditionsDisplay());
-    }
-
-    // 钢厂变更时更新条件显示
-    const millInput = document.getElementById('basePriceDownloadMill');
-    if (millInput) {
-        millInput.addEventListener('input', () => updateConditionsDisplay());
-    }
+    ['basePriceDownloadYear', 'basePriceDownloadMonth', 'basePriceDownloadLocation', 'basePriceDownloadMill']
+        .forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('change', () => updateConditionsDisplay());
+        });
 }
 
 /**
