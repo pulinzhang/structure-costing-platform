@@ -69,6 +69,43 @@ function navigateTo(pageName) {
 }
 
 /**
+ * 根据页面名查找对应的菜单链接并高亮
+ * 同时展开所有父级子菜单，并关闭其他不相关的菜单
+ */
+function highlightMenu(pageName) {
+    // 1. 先移除所有现有的激活状态和展开状态
+    document.querySelectorAll('.sidebar-nav-link.active, .submenu-link.active').forEach(link => {
+        link.classList.remove('active');
+    });
+
+    // 2. 关闭所有子菜单和 has-submenu
+    document.querySelectorAll('.submenu.show, .submenu-nested.show, .has-submenu.open').forEach(el => {
+        el.classList.remove('show', 'open');
+    });
+
+    // 3. 查找匹配的链接（支持多级菜单）
+    const selector = `a[data-page="${pageName}"]`;
+    const activeLink = document.querySelector(selector);
+
+    if (activeLink) {
+        activeLink.classList.add('active');
+
+        // 4. 展开当前链接的所有父级子菜单（包括 .submenu 和 .submenu-nested）
+        let parent = activeLink.closest('.submenu, .submenu-nested');
+        while (parent) {
+            parent.classList.add('show');
+            // 找到父级的 has-submenu 并添加 open
+            const hasSubmenu = parent.closest('.has-submenu');
+            if (hasSubmenu) {
+                hasSubmenu.classList.add('open');
+            }
+            // 继续向上查找父级子菜单
+            parent = parent.parentElement?.closest('.submenu, .submenu-nested');
+        }
+    }
+}
+
+/**
  * 渲染页面（仅渲染，不改 Hash）
  */
 function renderPage(pageName) {
@@ -84,15 +121,8 @@ function renderPage(pageName) {
     const breadcrumb = document.getElementById('breadcrumbItem');
     const topActions = document.getElementById('topActions');
 
-    // 同步侧边栏高亮
-    document.querySelectorAll('.sidebar-nav-link, .submenu-link').forEach(link => {
-        link.classList.remove('active');
-        if (link.dataset.page === pageName) {
-            link.classList.add('active');
-            const parent = link.closest('.submenu');
-            if (parent) parent.classList.add('show');
-        }
-    });
+    // 同步侧边栏高亮（支持多级菜单自动展开）
+    highlightMenu(pageName);
 
     // 更新标题栏
     const meta = pageMeta[pageName] || { title: pageName, breadcrumb: pageName };
@@ -119,8 +149,9 @@ function initRouter() {
 
 // ===== 全局事件 =====
 
-// 点击导航链接 → 改为更新 Hash
+// 点击导航链接 → 改为更新 Hash（支持所有 data-page 链接）
 document.addEventListener('click', function(e) {
+    // 支持所有带 data-page 的链接（一级、二级、三级菜单）
     const link = e.target.closest('a[data-page]');
     if (!link) return;
     e.preventDefault();

@@ -37,7 +37,7 @@
                         <span>冲压工程</span>
                         <svg class="w-5 h-5 shrink-0 ms-auto submenu-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                     </a>
-                    <ul class="submenu show" id="stampingSubmenu">
+                    <ul class="submenu" id="stampingSubmenu">
                         <li>
                             <a href="#/stamping-upload" class="submenu-link" data-page="stamping-upload">
                                 <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
@@ -65,7 +65,7 @@
                         <span>材料管理</span>
                         <svg class="w-5 h-5 shrink-0 ms-auto submenu-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                     </a>
-                    <ul class="submenu show" id="steelPriceSubmenu">
+                    <ul class="submenu" id="steelPriceSubmenu">
                         <!-- 一事一议 - 二级子菜单 -->
                         <li class="submenu-item has-submenu">
                             <a href="javascript:void(0)" class="submenu-link" data-submenu-toggle="yishiyiyiSubmenu">
@@ -83,13 +83,13 @@
                                     </a>
                                     <ul class="submenu submenu-nested" id="thicknessSubmenu">
                                         <li>
-                                            <a href="#/steel-price-policy-upload" class="submenu-link submenu-link-nested">
+                                            <a href="#/steel-price-policy-upload" class="submenu-link submenu-link-nested" data-page="steel-price-policy-upload">
                                                 <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
                                                 <span>上传</span>
                                             </a>
                                         </li>
                                         <li>
-                                            <a href="#/steel-price-policy-download" class="submenu-link submenu-link-nested">
+                                            <a href="#/steel-price-policy-download" class="submenu-link submenu-link-nested" data-page="steel-price-policy-download">
                                                 <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
                                                 <span>厚度加减价列表</span>
                                             </a>
@@ -105,13 +105,13 @@
                                     </a>
                                     <ul class="submenu submenu-nested" id="basePriceSubmenu">
                                         <li>
-                                            <a href="#/base-price-upload" class="submenu-link submenu-link-nested">
+                                            <a href="#/base-price-upload" class="submenu-link submenu-link-nested" data-page="base-price-upload">
                                                 <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
                                                 <span>上传</span>
                                             </a>
                                         </li>
                                         <li>
-                                            <a href="#/base-price-download" class="submenu-link submenu-link-nested">
+                                            <a href="#/base-price-download" class="submenu-link submenu-link-nested" data-page="base-price-download">
                                                 <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
                                                 <span>基准价格列表</span>
                                             </a>
@@ -207,7 +207,7 @@
 
     <!-- Toast 容器由 main.js 动态创建（统一管理生命周期） -->
 
-    <script src="/static/js/main.js?v=8"></script>
-    <script type="module" src="/static/js/app.js?v=15"></script>
+    <script src="/static/js/main.js?v=9"></script>
+    <script type="module" src="/static/js/app.js?v=18"></script>
 </body>
 </html>
