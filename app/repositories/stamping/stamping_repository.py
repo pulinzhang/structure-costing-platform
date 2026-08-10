@@ -273,6 +273,134 @@ class StampingPartRepository:
             "materials": [r[0] for r in materials],
         }
 
+    def get_cascade_filter_options(
+        self,
+        db: Session,
+        *,
+        location: Optional[str] = None,
+        stamping_supplier: Optional[str] = None,
+        vehicle_model: Optional[str] = None,
+    ) -> Dict[str, List[str]]:
+        """
+        级联筛选选项：
+        - 基地：全量
+        - 冲压工厂：按基地过滤
+        - 配套车型：按基地 + 冲压工厂过滤
+        - 版本：按基地 + 冲压工厂 + 车型过滤
+        """
+        locations = self._distinct_string_values(db, StampingPart.location)
+
+        supplier_q = db.query(StampingPart.stamping_supplier).distinct()
+        if location:
+            supplier_q = supplier_q.filter(StampingPart.location == location)
+        stamping_suppliers = self._collect_distinct_strings(supplier_q, StampingPart.stamping_supplier)
+
+        vehicle_q = db.query(StampingPart.vehicle_model).distinct()
+        if location:
+            vehicle_q = vehicle_q.filter(StampingPart.location == location)
+        if stamping_supplier:
+            vehicle_q = vehicle_q.filter(StampingPart.stamping_supplier == stamping_supplier)
+        vehicle_models = self._collect_distinct_strings(vehicle_q, StampingPart.vehicle_model)
+
+        version_q = db.query(StampingPart.version).distinct()
+        if location:
+            version_q = version_q.filter(StampingPart.location == location)
+        if stamping_supplier:
+            version_q = version_q.filter(StampingPart.stamping_supplier == stamping_supplier)
+        if vehicle_model:
+            version_q = version_q.filter(StampingPart.vehicle_model == vehicle_model)
+        versions = self._collect_distinct_strings(version_q, StampingPart.version)
+
+        return {
+            "locations": locations,
+            "stamping_suppliers": stamping_suppliers,
+            "vehicle_models": vehicle_models,
+            "versions": versions,
+        }
+
+    def _distinct_string_values(self, db: Session, column) -> List[str]:
+        query = (
+            db.query(column)
+            .distinct()
+            .filter(column.isnot(None), column != "")
+            .order_by(column)
+        )
+        return [row[0] for row in query.all()]
+
+    def _collect_distinct_strings(self, query, column) -> List[str]:
+        rows = (
+            query.filter(column.isnot(None), column != "")
+            .order_by(column)
+            .all()
+        )
+        return [row[0] for row in rows]
+
+
+    def paginate_materials(
+        self,
+        db: Session,
+        location: Optional[str] = None,
+        stamping_supplier: Optional[str] = None,
+        vehicle_model: Optional[str] = None,
+        version: Optional[str] = None,
+        skip: int = 0,
+        limit: int = 50,
+    ) -> Tuple[List[Dict[str, Any]], int]:
+        """分页查询去重材料信息（distinct material + thickness + sheet_length + sheet_width）"""
+        cols = (
+            StampingPart.material,
+            StampingPart.thickness,
+        )
+        q = db.query(*cols)
+        if location:
+            q = q.filter(StampingPart.location == location)
+        if stamping_supplier:
+            q = q.filter(StampingPart.stamping_supplier == stamping_supplier)
+        if vehicle_model:
+            q = q.filter(StampingPart.vehicle_model == vehicle_model)
+        if version:
+            q = q.filter(StampingPart.version == version)
+
+        q = q.filter(
+            StampingPart.material.isnot(None),
+            StampingPart.material != "",
+        ).distinct()
+
+        total = q.count()
+        rows = q.order_by(StampingPart.material, StampingPart.thickness).offset(skip).limit(limit).all()
+        return [
+            {"material": r[0], "thickness": r[1]}
+            for r in rows
+        ], total
+
+    def count_material_specs(
+        self,
+        db: Session,
+        *,
+        location: Optional[str] = None,
+        stamping_supplier: Optional[str] = None,
+        vehicle_model: Optional[str] = None,
+        version: Optional[str] = None,
+    ) -> int:
+        """统计去重后的材料+厚度规格行数。"""
+        q = db.query(StampingPart.material, StampingPart.thickness)
+        if location:
+            q = q.filter(StampingPart.location == location)
+        if stamping_supplier:
+            q = q.filter(StampingPart.stamping_supplier == stamping_supplier)
+        if vehicle_model:
+            q = q.filter(StampingPart.vehicle_model == vehicle_model)
+        if version:
+            q = q.filter(StampingPart.version == version)
+
+        q = q.filter(
+            StampingPart.material.isnot(None),
+            StampingPart.material != "",
+        ).distinct()
+
+        subquery = q.subquery()
+        return db.query(func.count()).select_from(subquery).scalar() or 0
+
 
 class StampingProcessRepository:
     """工序数据访问"""

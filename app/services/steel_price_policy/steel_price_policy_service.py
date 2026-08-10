@@ -565,6 +565,53 @@ class SteelPricePolicyService:
             steel_mill=steel_mill,
         )
 
+    def count_policies(
+        self,
+        db: Session,
+        *,
+        year: Optional[int] = None,
+        month: Optional[int] = None,
+        steel_mill: Optional[str] = None,
+    ) -> int:
+        """按条件统计政策主表条数。"""
+        return self.repository.count_by_conditions(
+            db,
+            year=year,
+            month=month,
+            steel_mill=steel_mill.strip() if steel_mill else None,
+        )
+
+    def get_filter_options(self, db: Session) -> PolicyOptionsResponse:
+        """获取政策筛选下拉选项。"""
+        filter_options = self.repository.get_filter_options(db)
+        return PolicyOptionsResponse(
+            years=filter_options.years,
+            months=filter_options.months,
+            steel_mills=filter_options.steel_mills,
+            category_names=filter_options.category_names,
+            policy_types=filter_options.policy_types,
+            grade_types=filter_options.grade_types,
+            grade_values=filter_options.grade_values,
+        )
+
+    def count_ladder_items(
+        self,
+        db: Session,
+        *,
+        year: Optional[int] = None,
+        month: Optional[int] = None,
+        steel_mill: Optional[str] = None,
+        policy_type: Optional[str] = None,
+    ) -> int:
+        """按条件统计阶梯明细行数。"""
+        return self.repository.count_items_for_export(
+            db,
+            year=year,
+            month=month,
+            steel_mill=steel_mill.strip() if steel_mill else None,
+            policy_type=policy_type,
+        )
+
     def generate_export_excel_bytes(
         self,
         db: Session,

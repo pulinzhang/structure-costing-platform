@@ -18,6 +18,10 @@ from app.schemas.vo.stamping_vo import (
     StampingProcessItemUpdate,
     StampingPartListResponse,
     StampingProcessResponse,
+    StampingMaterialQuery,
+    StampingMaterialResponse,
+    StampingCascadeFilterQuery,
+    StampingCascadeFilterOptionsVO,
 )
 from app.utils.response import ApiResponse
 from app.schemas.common.page_result import PageResult
@@ -80,6 +84,37 @@ def list_parts_legacy(
         page_size=query.size,
         filters=filter_options,
     )
+
+
+@router.get("/materials", response_model=ApiResponse[PageResult[StampingMaterialResponse]])
+def list_materials(
+    query: StampingMaterialQuery = Depends(),
+    db: Session = Depends(get_db),
+) -> ApiResponse[PageResult[StampingMaterialResponse]]:
+    """获取材料列表（material, thickness, sheet_length, sheet_width）"""
+    data, total, filter_options = _stamping_service.list_materials(db, query)
+    return ApiResponse.list_(
+        items=data,
+        total=total,
+        page=query.page,
+        page_size=query.size,
+        filters=filter_options,
+    )
+
+
+@router.get(
+    "/filters/cascade",
+    response_model=ApiResponse[StampingCascadeFilterOptionsVO],
+)
+def get_cascade_filters(
+    query: StampingCascadeFilterQuery = Depends(),
+    db: Session = Depends(get_db),
+) -> ApiResponse[StampingCascadeFilterOptionsVO]:
+    """
+    冲压级联筛选选项：基地 → 冲压工厂 → 配套车型
+    """
+    options = _stamping_service.get_cascade_filter_options(db, query)
+    return ApiResponse.ok(data=options, message="获取成功")
 
 
 @router.patch("/processes/{process_id}", response_model=ApiResponse[StampingProcessResponse])

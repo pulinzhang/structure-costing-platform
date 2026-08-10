@@ -15,6 +15,8 @@ from app.schemas.vo.stamping_vo import (
     StampingPartWithProcessesResponse,
     StampingProcessResponse,
     StampingPartListFilterOptions,
+    StampingCascadeFilterOptionsVO,
+    StampingCascadeFilterQuery,
 )
 from app.exceptions import NotFoundException
 
@@ -62,6 +64,60 @@ class StampingPartService:
         """获取筛选下拉框的可选值"""
         raw = self.repository.get_filter_options(db)
         return StampingPartListFilterOptions.model_validate(raw)
+
+    def get_cascade_filter_options(
+        self,
+        db: Session,
+        query: StampingCascadeFilterQuery,
+    ) -> StampingCascadeFilterOptionsVO:
+        """获取基地 → 冲压工厂 → 配套车型 级联筛选选项"""
+        raw = self.repository.get_cascade_filter_options(
+            db,
+            location=query.location.strip() if query.location else None,
+            stamping_supplier=query.stamping_supplier.strip() if query.stamping_supplier else None,
+            vehicle_model=query.vehicle_model.strip() if query.vehicle_model else None,
+        )
+        return StampingCascadeFilterOptionsVO.model_validate(raw)
+
+    def list_materials(
+        self, db: Session, query
+    ) -> tuple[list, int, StampingPartListFilterOptions]:
+        """获取材料列表（去重 material + thickness + sheet_length + sheet_width）"""
+        from app.schemas.vo.stamping_vo import StampingMaterialResponse
+
+        skip = (query.page - 1) * query.size
+        parts, total = self.repository.paginate_materials(
+            db,
+            location=query.location,
+            stamping_supplier=query.stamping_supplier,
+            vehicle_model=query.vehicle_model,
+            version=query.version,
+            skip=skip,
+            limit=query.size,
+        )
+
+        rows = [StampingMaterialResponse.model_validate(p) for p in parts]
+        filter_options = self.repository.get_filter_options(db)
+        filter_vo = StampingPartListFilterOptions.model_validate(filter_options)
+        return rows, total, filter_vo
+
+    def count_material_specs(
+        self,
+        db: Session,
+        *,
+        location: str | None = None,
+        stamping_supplier: str | None = None,
+        vehicle_model: str | None = None,
+        version: str | None = None,
+    ) -> int:
+        """统计去重后的材料+厚度规格行数。"""
+        return self.repository.count_material_specs(
+            db,
+            location=location.strip() if location else None,
+            stamping_supplier=stamping_supplier.strip() if stamping_supplier else None,
+            vehicle_model=vehicle_model.strip() if vehicle_model else None,
+            version=version.strip() if version else None,
+        )
 
     def get_by_id(self, db: Session, part_id: int) -> StampingPartWithProcessesResponse:
         """获取单个零件（含工序）"""

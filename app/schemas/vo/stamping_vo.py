@@ -181,6 +181,39 @@ class StampingPartListFilterOptions(BaseModel):
     stamping_suppliers: list[str] = []
 
 
+class StampingCascadeFilterQuery(BaseModel):
+    """冲压级联筛选查询参数"""
+    location: Optional[str] = Field(None, description="采购基地")
+    stamping_supplier: Optional[str] = Field(None, description="冲压工厂")
+    vehicle_model: Optional[str] = Field(None, description="配套车型")
+
+
+class StampingCascadeFilterOptionsVO(BaseModel):
+    """冲压级联筛选下拉选项 VO（基地 → 冲压工厂 → 配套车型）"""
+    locations: list[str] = Field(default_factory=list, description="基地")
+    stamping_suppliers: list[str] = Field(default_factory=list, description="冲压工厂")
+    vehicle_models: list[str] = Field(default_factory=list, description="配套车型")
+    versions: list[str] = Field(default_factory=list, description="版本")
+
+
+class StampingMaterialResponse(BaseModel):
+    """材料信息 VO（去重后的 material + thickness）"""
+
+    material: Optional[str] = None
+    thickness: Optional[float] = None
+    sheet_width: Optional[float] = None
+
+
+class StampingMaterialQuery(BaseModel):
+    """材料查询参数"""
+    location: Optional[str] = Field(None, description="采购基地")
+    stamping_supplier: Optional[str] = Field(None, description="冲压供应商")
+    vehicle_model: Optional[str] = Field(None, description="车型")
+    version: Optional[str] = Field(None, description="版本")
+    page: int = Field(1, ge=1, description="页码")
+    size: int = Field(50, ge=1, le=500, description="每页条数")
+
+
 class BatchUpdateResponse(BaseModel):
     """批量更新响应 VO"""
     updated: int

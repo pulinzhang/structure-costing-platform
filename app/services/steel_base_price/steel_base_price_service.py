@@ -234,3 +234,23 @@ class SteelBasePriceService:
             spec=spec,
         )
         return [SteelBasePriceExportRow.model_validate(r) for r in records], total
+
+    def count_by_conditions(
+        self,
+        db: Session,
+        *,
+        year: int | None = None,
+        month: int | None = None,
+        location: str | None = None,
+        steel_mill: str | None = None,
+        spec: str | None = None,
+    ) -> int:
+        """按条件统计基准价格条数。"""
+        return self.repository.count_for_export(
+            db,
+            year=year,
+            month=month,
+            location=location.strip() if location else None,
+            steel_mill=steel_mill.strip() if steel_mill else None,
+            spec=spec.strip() if spec else None,
+        )

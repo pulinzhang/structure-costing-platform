@@ -488,7 +488,7 @@ class SteelPricePolicyRepository:
         steel_mill: Optional[str] = None,
     ) -> int:
         """统计主表记录数（供 ExportService 调用）。"""
-        query = db.query(SteelPricePolicy)
+        query = db.query(func.count(SteelPricePolicy.id))
 
         if year is not None:
             query = query.filter(SteelPricePolicy.year == year)
@@ -497,7 +497,7 @@ class SteelPricePolicyRepository:
         if steel_mill:
             query = query.filter(SteelPricePolicy.steel_mill == steel_mill)
 
-        return query.count()
+        return query.scalar() or 0
 
     def count_items_for_export(
         self,
@@ -506,12 +506,13 @@ class SteelPricePolicyRepository:
         year: Optional[int] = None,
         month: Optional[int] = None,
         steel_mill: Optional[str] = None,
+        policy_type: Optional[str] = None,
     ) -> int:
         """
-        统计明细总数（供 ExportService 调用）。
+        统计明细总数（供 ExportService / 统计接口调用）。
         通过 JOIN 主表并应用相同的过滤条件来确保一致性。
         """
-        query = db.query(SteelPriceLadderItem).join(
+        query = db.query(func.count(SteelPriceLadderItem.id)).join(
             SteelPricePolicy,
             SteelPricePolicy.id == SteelPriceLadderItem.policy_id,
         )
@@ -522,8 +523,10 @@ class SteelPricePolicyRepository:
             query = query.filter(SteelPricePolicy.month == month)
         if steel_mill:
             query = query.filter(SteelPricePolicy.steel_mill == steel_mill)
+        if policy_type:
+            query = query.filter(SteelPricePolicy.policy_type == policy_type)
 
-        return query.count()
+        return query.scalar() or 0
 
     # ---- 条件批量删除 ----
 
@@ -541,7 +544,7 @@ class SteelPricePolicyRepository:
         Returns:
             符合条件的政策数量
         """
-        query = db.query(SteelPricePolicy)
+        query = db.query(func.count(SteelPricePolicy.id))
 
         if year is not None:
             query = query.filter(SteelPricePolicy.year == year)
@@ -550,7 +553,7 @@ class SteelPricePolicyRepository:
         if steel_mill:
             query = query.filter(SteelPricePolicy.steel_mill == steel_mill)
 
-        return query.count()
+        return query.scalar() or 0
 
     def delete_by_conditions(
         self,
@@ -566,6 +569,12 @@ class SteelPricePolicyRepository:
         返回待删除的政策数量。
         级联删除依赖数据库外键的 CASCADE 配置。
         """
+        count = self.count_by_conditions(
+            db,
+            year=year,
+            month=month,
+            steel_mill=steel_mill,
+        )
         query = db.query(SteelPricePolicy)
 
         if year is not None:
@@ -575,7 +584,6 @@ class SteelPricePolicyRepository:
         if steel_mill:
             query = query.filter(SteelPricePolicy.steel_mill == steel_mill)
 
-        count = query.count()
         query.delete(synchronize_session=False)
         return count
 
