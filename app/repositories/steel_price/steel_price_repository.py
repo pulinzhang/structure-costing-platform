@@ -19,6 +19,35 @@ class SteelPriceRepository:
         """根据 ID 查询单条记录。"""
         return db.query(SteelPrice).filter(SteelPrice.id == record_id).first()
 
+    def get_by_business_key(
+        self,
+        db: Session,
+        *,
+        year: int,
+        month: int,
+        location: str,
+        steel_mill: str,
+        category_name: str,
+        grade: str,
+        thickness,
+        width,
+    ) -> Optional[SteelPrice]:
+        """按业务唯一键查询。"""
+        return (
+            db.query(SteelPrice)
+            .filter(
+                SteelPrice.year == year,
+                SteelPrice.month == month,
+                SteelPrice.location == location,
+                SteelPrice.steel_mill == steel_mill,
+                SteelPrice.category_name == category_name,
+                SteelPrice.grade == grade,
+                SteelPrice.thickness == thickness,
+                SteelPrice.width == width,
+            )
+            .first()
+        )
+
     def paginate(
         self,
         db: Session,

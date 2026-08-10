@@ -2,6 +2,7 @@
 
 from app.models.stamping import StampingPart, StampingProcess, StampingTonnagePrice
 from app.models.steel_price import SteelPrice
+from app.models.steel_price_calc_log import SteelPriceCalcLog
 from app.models.steel_price_policy import SteelPricePolicy, SteelPriceLadderItem
 from app.models.steel_base_price import SteelBasePrice
 
@@ -10,6 +11,7 @@ __all__ = [
     "StampingProcess",
     "StampingTonnagePrice",
     "SteelPrice",
+    "SteelPriceCalcLog",
     "SteelPricePolicy",
     "SteelPriceLadderItem",
     "SteelBasePrice",

@@ -67,3 +67,13 @@ class SteelPriceReverseAuditDTO(BaseModel):
 
     reverse_audited_by: str = Field(..., min_length=1, max_length=50, description="反审核人（经理）")
     reverse_audit_remark: str = Field(..., min_length=1, description="反审核原因（必填）")
+
+
+class SteelPriceCalcDTO(BaseModel):
+    """钢价批量计算请求 DTO"""
+
+    year: int = Field(..., ge=2000, le=2100, description="核价年度")
+    month: int = Field(..., ge=1, le=12, description="核价月份")
+    location: str = Field(..., min_length=1, max_length=50, description="生产基地")
+    stamping_supplier: Optional[str] = Field(None, max_length=50, description="冲压工厂")
+    vehicle_model: Optional[str] = Field(None, max_length=50, description="配套车型")

@@ -13,6 +13,7 @@ const steelPriceState = {
     totalPages: 1,
     filtersLoaded: false,
     currentViewId: null,
+    pendingFilters: null,
 };
 
 const API_BASE = '/api/steel-prices';
@@ -44,7 +45,20 @@ function closeDrawer(drawerId, backdropId) {
 
 function init() {
     bindEvents();
+    steelPriceState.pendingFilters = readHashFilters();
     loadData(1);
+}
+
+function readHashFilters() {
+    const hash = window.location.hash || '';
+    const queryIndex = hash.indexOf('?');
+    if (queryIndex < 0) return null;
+    const qs = new URLSearchParams(hash.slice(queryIndex + 1));
+    const year = qs.get('year') || '';
+    const month = qs.get('month') || '';
+    const location = qs.get('location') || '';
+    if (!year && !month && !location) return null;
+    return { year, month, location };
 }
 
 async function loadData(page = 1) {
@@ -60,9 +74,9 @@ async function loadData(page = 1) {
         const params = {
             page,
             size: steelPriceState.size,
-            year: getFilterValue('steelPriceYear'),
-            month: getFilterValue('steelPriceMonth'),
-            location: getFilterValue('steelPriceLocation'),
+            year: getFilterValue('steelPriceYear') || steelPriceState.pendingFilters?.year || '',
+            month: getFilterValue('steelPriceMonth') || steelPriceState.pendingFilters?.month || '',
+            location: getFilterValue('steelPriceLocation') || steelPriceState.pendingFilters?.location || '',
             category_name: getFilterValue('steelPriceCategory'),
             grade: document.getElementById('steelPriceGrade')?.value.trim(),
             steel_mill: getFilterValue('steelPriceMill'),
@@ -102,6 +116,7 @@ async function loadData(page = 1) {
 
         if (!steelPriceState.filtersLoaded && payload.filters) {
             renderFilters(payload.filters);
+            applyPendingFiltersToSelects();
             steelPriceState.filtersLoaded = true;
         }
     } catch (error) {
@@ -140,6 +155,28 @@ function fillSelect(id, values = [], label = value => value) {
     select.innerHTML =
         '<option value="">全部</option>' +
         values.map(value => `<option value="${esc(value)}">${esc(label(value))}</option>`).join('');
+}
+
+function applyPendingFiltersToSelects() {
+    const pending = steelPriceState.pendingFilters;
+    if (!pending) return;
+    setSelectValue('steelPriceYear', pending.year);
+    setSelectValue('steelPriceMonth', pending.month);
+    setSelectValue('steelPriceLocation', pending.location);
+    steelPriceState.pendingFilters = null;
+}
+
+function setSelectValue(id, value) {
+    const select = document.getElementById(id);
+    if (!select || value == null || value === '') return;
+    const text = String(value);
+    if (![...select.options].some(opt => opt.value === text)) {
+        select.insertAdjacentHTML(
+            'beforeend',
+            `<option value="${esc(text)}">${esc(text)}</option>`
+        );
+    }
+    select.value = text;
 }
 
 function resetFilters() {

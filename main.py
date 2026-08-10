@@ -34,6 +34,7 @@ async def lifespan(app: FastAPI):
     LoggerConfig.configure(force=True)
     ensure_directories()
     # 导入所有模型，确保 Base.metadata 能扫描到表结构
+    import app.models  # noqa: F401
     # 自动迁移：在 create_tables 之前补充缺失的列
     from app.utils.db_migration import run_auto_migration
     run_auto_migration()
@@ -245,6 +246,7 @@ def create_app() -> FastAPI:
     from app.routers.stamping.upload import router as stamping_upload_router
     from app.routers.stamping.tonnage_price import router as stamping_tonnage_price_router
     from app.routers.steel_price.crud import router as steel_price_router
+    from app.routers.steel_price.calc import router as steel_price_calc_router
     from app.routers.steel_price.steel_price_policy.crud import router as steel_price_policy_router
     from app.routers.steel_price.steel_base_price.crud import router as steel_base_price_router
 
@@ -253,6 +255,7 @@ def create_app() -> FastAPI:
     app.include_router(stamping_crud_router)
     app.include_router(stamping_upload_router)
     app.include_router(stamping_tonnage_price_router)
+    app.include_router(steel_price_calc_router)
     app.include_router(steel_price_router)
     app.include_router(steel_price_policy_router)
     app.include_router(steel_base_price_router)

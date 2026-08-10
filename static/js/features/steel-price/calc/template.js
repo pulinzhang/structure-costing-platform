@@ -1,18 +1,16 @@
 /**
  * Steel Price Linked Settlement Template
- * 钢材基准价与加减价联动计算 — 极简降噪版
+ * 钢材基准价与加减价联动计算
  */
 
 export function steelPriceCalcTemplate() {
     return `
         <div class="space-y-4 w-full font-sans antialiased text-[#bbb]">
             
-            <!-- 1. 顶部标题栏 -->
             <div class="flex items-center justify-between pb-2 border-b border-[#222]">
                 <h1 class="text-xs font-bold text-[#e0e0e0] tracking-wider">钢材基准价与加减价联动计算</h1>
             </div>
 
-            <!-- 2. 查询与核算条件栏（与钢材价格表筛选风格一致） -->
             <div class="flex items-center justify-between py-2.5 border-y border-[#1e1e1e]"
                  style="background: linear-gradient(180deg, #181818 0%, #161616 100%);">
                 <div class="flex items-end gap-3 flex-wrap px-1">
@@ -29,10 +27,7 @@ export function steelPriceCalcTemplate() {
                 </div>
             </div>
 
-            <!-- 3. 数据依据与执行栏（扁平化指标展示） -->
             <div class="flex items-center justify-between border-b border-[#222] py-2.5">
-                
-                <!-- 3 项核心指标横排 -->
                 <div class="flex items-center gap-8">
                     <a href="javascript:void(0)" onclick="openDetailModal('basePrice')" class="group">
                         <span class="text-[9px] text-[#666] block group-hover:text-[#888]">中标基价库</span>
@@ -54,10 +49,9 @@ export function steelPriceCalcTemplate() {
                     </a>
                 </div>
 
-                <!-- 右侧动作按钮 -->
                 <div class="flex items-center gap-3">
                     <span id="reCalcNotice" class="text-[9px] text-[#666]">
-                        再次计算将覆盖现有数据
+                        再次计算将覆盖未审核数据；已审核记录跳过
                     </span>
                     <button id="startCalcBtn"
                             class="h-7 px-4 text-[10px] bg-[#b71c1c] hover:bg-[#c62828] text-white font-medium rounded-sm transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
@@ -66,36 +60,46 @@ export function steelPriceCalcTemplate() {
                 </div>
             </div>
 
-            <!-- 缺失数据拦截提示 -->
             <div id="dataReadyErrorBanner" class="hidden text-[10px] text-[#d69e2e] bg-[#1a1710] px-2.5 py-1.5 border-l-2 border-[#d69e2e]">
                 提示：当前所选年月缺失中标基价或调价规则，无法计算。
             </div>
 
-            <!-- 4. 历史计算记录 -->
+            <!-- 计算历史：对齐批次日志字段 -->
             <div class="pt-2">
-                <div class="text-[10px] text-[#666] mb-1.5 font-medium">历史计算记录</div>
-                <table class="w-full text-left border-collapse">
-                    <thead>
-                        <tr class="border-b border-[#222] text-[9px] text-[#555]">
-                            <th class="py-1.5 px-2 font-normal">序号</th>
-                            <th class="py-1.5 px-2 font-normal">计算时间</th>
-                            <th class="py-1.5 px-2 font-normal">生产基地</th>
-                            <th class="py-1.5 px-2 font-normal">核价年月</th>
-                            <th class="py-1.5 px-2 font-normal text-right">基价条数</th>
-                            <th class="py-1.5 px-2 font-normal text-right">规则条数</th>
-                            <th class="py-1.5 px-2 font-normal text-right">规格行数</th>
-                            <th class="py-1.5 px-2 font-normal text-center">状态</th>
-                            <th class="py-1.5 px-2 font-normal text-right">操作</th>
-                        </tr>
-                    </thead>
-                    <tbody class="text-[10px] divide-y divide-[#1a1a1a]">
-                        ${renderLogRow(1, '2026-08-10 14:20', '芜湖基地', '2026-08', '1,280', '42', '156', '成功')}
-                        ${renderLogRow(2, '2026-08-01 09:12', '青岛基地', '2026-08', '960', '38', '120', '成功')}
-                        ${renderLogRow(3, '2026-07-15 16:45', '开封基地', '2026-07', '850', '30', '98', '成功')}
-                        ${renderLogRow(4, '2026-07-02 11:05', '芜湖基地', '2026-07', '1,240', '42', '150', '成功')}
-                        ${renderLogRow(5, '2026-06-30 18:30', '青岛基地', '2026-06', '920', '35', '115', '成功')}
-                    </tbody>
-                </table>
+                <div class="flex items-center justify-between mb-1.5">
+                    <div class="text-[10px] text-[#666] font-medium">计算历史</div>
+                    <button id="calcHistoryRefreshBtn"
+                            class="text-[9px] text-[#616161] hover:text-[#9e9e9e] transition-colors">
+                        刷新
+                    </button>
+                </div>
+                <div class="bg-[#1e1e1e] border border-[#2c2c2c] overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table id="calcHistoryTable" class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-[#0a0a0a] border-b border-[#2c2c2c] text-[9px] text-[#555] uppercase tracking-[0.08em]">
+                                    <th class="py-2 px-2 font-normal whitespace-nowrap">计算时间</th>
+                                    <th class="py-2 px-2 font-normal whitespace-nowrap">核价期</th>
+                                    <th class="py-2 px-2 font-normal whitespace-nowrap">基地</th>
+                                    <th class="py-2 px-2 font-normal whitespace-nowrap">筛选</th>
+                                    <th class="py-2 px-2 font-normal text-center whitespace-nowrap">状态</th>
+                                    <th class="py-2 px-2 font-normal text-right whitespace-nowrap">材料</th>
+                                    <th class="py-2 px-2 font-normal text-right whitespace-nowrap">命中</th>
+                                    <th class="py-2 px-2 font-normal text-right whitespace-nowrap">无基价</th>
+                                    <th class="py-2 px-2 font-normal text-right whitespace-nowrap">新增</th>
+                                    <th class="py-2 px-2 font-normal text-right whitespace-nowrap">更新</th>
+                                    <th class="py-2 px-2 font-normal text-right whitespace-nowrap">失败</th>
+                                    <th class="py-2 px-2 font-normal text-right whitespace-nowrap">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="calcHistoryBody" class="text-[10px] divide-y divide-[#222222]">
+                                <tr>
+                                    <td colspan="12" class="py-8 text-center text-[#555]">加载中...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
 
         </div>
@@ -109,22 +113,4 @@ function filterSelect(id, label) {
             <option value="">全部</option>
         </select>
     </label>`;
-}
-
-function renderLogRow(seq, time, base, period, basePrice, adj, thick, status) {
-    return `
-        <tr class="hover:bg-[#141414] transition-colors text-[#999]">
-            <td class="py-1.5 px-2 font-mono text-[#444]">${seq}</td>
-            <td class="py-1.5 px-2 font-mono text-[#666]">${time}</td>
-            <td class="py-1.5 px-2 text-[#ccc]">${base}</td>
-            <td class="py-1.5 px-2 font-mono text-[#ccc]">${period}</td>
-            <td class="py-1.5 px-2 font-mono text-right text-[#777]">${basePrice}</td>
-            <td class="py-1.5 px-2 font-mono text-right text-[#777]">${adj}</td>
-            <td class="py-1.5 px-2 font-mono text-right text-[#777]">${thick}</td>
-            <td class="py-1.5 px-2 text-center text-[9px] text-[#66bb6a]">${status}</td>
-            <td class="py-1.5 px-2 text-right">
-                <button class="text-[9px] text-[#777] hover:text-[#fff]">查看结果</button>
-            </td>
-        </tr>
-    `;
 }

@@ -125,3 +125,58 @@ class SteelPriceResponse(BaseModel):
     )
     def serialize_datetime(self, value: datetime | None) -> Optional[str]:
         return datetime_to_str(value)
+
+
+class SteelPriceCalcResultVO(BaseModel):
+    """钢价批量计算落库结果摘要 VO"""
+
+    model_config = {"from_attributes": True}
+
+    calc_batch_id: str
+    log_id: Optional[int] = None
+    status: str = "failed"
+    year: Optional[int] = None
+    month: Optional[int] = None
+    location: Optional[str] = None
+    stamping_supplier: Optional[str] = None
+    vehicle_model: Optional[str] = None
+    material_count: int = 0
+    enriched_count: int = 0
+    no_base_count: int = 0
+    created_count: int = 0
+    updated_count: int = 0
+    skipped_approved_count: int = 0
+    failed_count: int = 0
+    detail_text: str = ""
+    started_at: Optional[str] = None
+    finished_at: Optional[str] = None
+
+
+class SteelPriceCalcLogVO(BaseModel):
+    """钢价计算历史记录 VO（含 detail_text 全过程）"""
+
+    model_config = {"from_attributes": True}
+
+    id: int
+    calc_batch_id: str
+    year: int
+    month: int
+    location: str
+    stamping_supplier: Optional[str] = None
+    vehicle_model: Optional[str] = None
+    status: str
+    material_count: int = 0
+    enriched_count: int = 0
+    no_base_count: int = 0
+    created_count: int = 0
+    updated_count: int = 0
+    skipped_approved_count: int = 0
+    failed_count: int = 0
+    detail_text: str = ""
+    started_at: Optional[datetime] = None
+    finished_at: Optional[datetime] = None
+    created_at: Optional[datetime] = None
+
+    @field_serializer("started_at", "finished_at", "created_at")
+    def serialize_datetime(self, value: datetime | None) -> Optional[str]:
+        return datetime_to_str(value)

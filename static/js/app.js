@@ -53,11 +53,17 @@ const DEFAULT_PAGE = 'dashboard';
 
 /**
  * 从 URL Hash 中解析页面名，如 #/stamping-parts → stamping-parts
+ * 支持带查询串：#/steel-price-list?year=2026 → steel-price-list
  */
 function getPageFromHash() {
     const hash = window.location.hash;           // e.g. "#/stamping-parts"
     if (!hash || hash === '#' || hash === '#/') return DEFAULT_PAGE;
-    return hash.replace(/^#\/?/, '') || DEFAULT_PAGE;
+    let pageName = hash.replace(/^#\/?/, '') || DEFAULT_PAGE;
+    const queryIndex = pageName.indexOf('?');
+    if (queryIndex >= 0) {
+        pageName = pageName.slice(0, queryIndex);
+    }
+    return pageName || DEFAULT_PAGE;
 }
 
 /**

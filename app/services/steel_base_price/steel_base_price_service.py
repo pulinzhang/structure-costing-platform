@@ -235,6 +235,25 @@ class SteelBasePriceService:
         )
         return [SteelBasePriceExportRow.model_validate(r) for r in records], total
 
+    def list_for_calc(
+        self,
+        db: Session,
+        *,
+        year: int,
+        month: int,
+        location: str,
+    ):
+        """钢价计算用：按年/月/基地取出全部基价 ORM（含 id 溯源）。"""
+        from app.models.steel_base_price import SteelBasePrice
+
+        records: list[SteelBasePrice] = self.repository.list_for_export(
+            db,
+            year=year,
+            month=month,
+            location=location.strip() if location else None,
+        )
+        return records
+
     def count_by_conditions(
         self,
         db: Session,

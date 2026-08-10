@@ -396,10 +396,40 @@ class StampingPartRepository:
         q = q.filter(
             StampingPart.material.isnot(None),
             StampingPart.material != "",
+            StampingPart.thickness.isnot(None),
         ).distinct()
 
         subquery = q.subquery()
         return db.query(func.count()).select_from(subquery).scalar() or 0
+
+    def list_material_specs(
+        self,
+        db: Session,
+        *,
+        location: Optional[str] = None,
+        stamping_supplier: Optional[str] = None,
+        vehicle_model: Optional[str] = None,
+        version: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        """列出去重后的材料+厚度规格（钢价计算 Step1）。"""
+        q = db.query(StampingPart.material, StampingPart.thickness)
+        if location:
+            q = q.filter(StampingPart.location == location)
+        if stamping_supplier:
+            q = q.filter(StampingPart.stamping_supplier == stamping_supplier)
+        if vehicle_model:
+            q = q.filter(StampingPart.vehicle_model == vehicle_model)
+        if version:
+            q = q.filter(StampingPart.version == version)
+
+        q = q.filter(
+            StampingPart.material.isnot(None),
+            StampingPart.material != "",
+            StampingPart.thickness.isnot(None),
+        ).distinct()
+
+        rows = q.order_by(StampingPart.material, StampingPart.thickness).all()
+        return [{"material": r[0], "thickness": r[1]} for r in rows]
 
 
 class StampingProcessRepository:

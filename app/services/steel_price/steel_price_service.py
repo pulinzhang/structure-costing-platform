@@ -293,3 +293,91 @@ class SteelPriceService:
             db.rollback()
             logger.exception("反审核失败: id=%s, error=%s", record_id, error)
             return None, str(error)
+
+    def save_calc_batch(
+        self,
+        db: Session,
+        *,
+        calc_batch_id: str,
+        rows: list[dict],
+    ) -> dict[str, int]:
+        """
+        批量落库计算结果。
+
+        - 业务键已存在且 audit_status=approved → 跳过（不覆盖）
+        - 业务键已存在且非 approved → 更新计算结果字段，重置为 pending
+        - 业务键不存在 → 新建，audit_status=pending
+        """
+        created_count = 0
+        updated_count = 0
+        skipped_approved_count = 0
+        failed_count = 0
+        now = datetime.now()
+
+        try:
+            for payload in rows:
+                try:
+                    existing = self.repository.get_by_business_key(
+                        db,
+                        year=payload["year"],
+                        month=payload["month"],
+                        location=payload["location"],
+                        steel_mill=payload["steel_mill"],
+                        category_name=payload["category_name"],
+                        grade=payload["grade"],
+                        thickness=payload["thickness"],
+                        width=payload["width"],
+                    )
+                    if existing is not None and existing.audit_status == AUDIT_APPROVED:
+                        skipped_approved_count += 1
+                        continue
+
+                    write_payload = {
+                        **payload,
+                        "calc_batch_id": calc_batch_id,
+                        "formula_version": payload.get("formula_version") or FORMULA_VERSION,
+                        "calculated_at": now,
+                        "audit_status": AUDIT_PENDING,
+                        "audited_by": None,
+                        "audited_at": None,
+                        "audit_remark": None,
+                        "reverse_audited_by": None,
+                        "reverse_audited_at": None,
+                        "reverse_audit_remark": None,
+                    }
+
+                    if existing is None:
+                        self.repository.create(db, write_payload)
+                        created_count += 1
+                    else:
+                        self.repository.update(db, existing.id, write_payload)
+                        updated_count += 1
+                except Exception as row_error:
+                    failed_count += 1
+                    logger.exception(
+                        "计算落库单行失败: batch=%s grade=%s error=%s",
+                        calc_batch_id,
+                        payload.get("grade"),
+                        row_error,
+                    )
+
+            db.commit()
+        except Exception as error:
+            db.rollback()
+            logger.exception("计算批次落库失败: batch=%s error=%s", calc_batch_id, error)
+            raise
+
+        logger.info(
+            "计算批次落库完成: batch=%s created=%s updated=%s skipped_approved=%s failed=%s",
+            calc_batch_id,
+            created_count,
+            updated_count,
+            skipped_approved_count,
+            failed_count,
+        )
+        return {
+            "created_count": created_count,
+            "updated_count": updated_count,
+            "skipped_approved_count": skipped_approved_count,
+            "failed_count": failed_count,
+        }

@@ -57,8 +57,8 @@ class SteelBasePriceResponse(BaseModel):
     excel_row: Optional[int] = None
     excel_col: Optional[int] = None
     remark: Optional[str] = None
-    created_at: Optional[str] = None  # datetime → str
-    updated_at: Optional[str] = None  # datetime → str
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
     @field_serializer("thick", "width", "base_price", "processing_fee")
     def serialize_decimal(self, value: Decimal | float | None) -> Optional[float]:

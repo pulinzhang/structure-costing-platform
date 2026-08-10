@@ -119,6 +119,24 @@ class StampingPartService:
             version=version.strip() if version else None,
         )
 
+    def list_material_specs(
+        self,
+        db: Session,
+        *,
+        location: str | None = None,
+        stamping_supplier: str | None = None,
+        vehicle_model: str | None = None,
+        version: str | None = None,
+    ) -> list[dict]:
+        """列出去重后的材料+厚度规格（钢价计算用）。"""
+        return self.repository.list_material_specs(
+            db,
+            location=location.strip() if location else None,
+            stamping_supplier=stamping_supplier.strip() if stamping_supplier else None,
+            vehicle_model=vehicle_model.strip() if vehicle_model else None,
+            version=version.strip() if version else None,
+        )
+
     def get_by_id(self, db: Session, part_id: int) -> StampingPartWithProcessesResponse:
         """获取单个零件（含工序）"""
         part = self.repository.get_by_id(db, part_id)
