@@ -1,8 +1,9 @@
 """
-钢价政策 DTO - 内部传输数据结构
+钢价政策 DTO - 请求参数数据结构
+仅包含接收前端/内部参数的 Request 类型，不含任何 Response 类型
+Response 类型统一放 vo/steel_price_policy_vo.py
 """
 
-from datetime import datetime
 from decimal import Decimal
 from enum import Enum
 from typing import Optional
@@ -13,6 +14,7 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 # ============================
 # 枚举定义
 # ============================
+
 
 class PolicyType(str, Enum):
     """政策类型枚举"""
@@ -40,6 +42,7 @@ class Operator(str, Enum):
 # 辅助函数
 # ============================
 
+
 def _strip(v: Optional[str]) -> Optional[str]:
     """去除首尾空白，无意义时返回 None"""
     if v is None:
@@ -48,34 +51,10 @@ def _strip(v: Optional[str]) -> Optional[str]:
     return v if v else None
 
 
-def _decimal_str(v: Optional[Decimal | float | int | str]) -> Optional[Decimal]:
-    """将各种输入转为 Decimal，None 时返回 None"""
-    if v is None:
-        return None
-    if isinstance(v, Decimal):
-        return v
-    return Decimal(str(v))
-
-
 # ============================
-# 筛选选项 DTO
+# 阶梯明细 DTO（Request）
 # ============================
 
-class FilterOptions(BaseModel):
-    """筛选选项 DTO"""
-
-    years: list[int] = Field(default_factory=list)
-    months: list[int] = Field(default_factory=list)
-    steel_mills: list[str] = Field(default_factory=list)
-    category_names: list[str] = Field(default_factory=list)
-    policy_types: list[str] = Field(default_factory=list)
-    grade_types: list[str] = Field(default_factory=list)
-    grade_values: list[str] = Field(default_factory=list)
-
-
-# ============================
-# 阶梯明细 DTO
-# ============================
 
 class LadderItemCreate(BaseModel):
     """阶梯明细创建请求"""
@@ -138,40 +117,10 @@ class LadderItemUpdate(BaseModel):
         return _strip(v)
 
 
-class LadderItemResponse(BaseModel):
-    """阶梯明细响应"""
-    id: int
-    policy_id: int
-    target_sub_group: Optional[str] = None
-
-    thick_min: Optional[Decimal] = None
-    thick_min_operator: Optional[str] = None
-    thick_max: Optional[Decimal] = None
-    thick_max_operator: Optional[str] = None
-
-    width_min: Optional[Decimal] = None
-    width_min_operator: Optional[str] = None
-    width_max: Optional[Decimal] = None
-    width_max_operator: Optional[str] = None
-
-    price_adjustment: int = 0
-    is_base: int = 0
-    sort_order: int = 0
-
-    @field_validator(
-        "thick_min", "thick_max", "width_min", "width_max",
-        mode="plain",
-    )
-    @classmethod
-    def keep_decimal(cls, v):
-        return _decimal_str(v)
-
-    model_config = {"from_attributes": True}
-
-
 # ============================
-# 政策主表 DTO
+# 政策主表 DTO（Request）
 # ============================
+
 
 class PolicyCreate(BaseModel):
     """政策创建请求"""
@@ -219,65 +168,10 @@ class PolicyUpdate(BaseModel):
         return self
 
 
-class PolicyListResponse(BaseModel):
-    """政策列表响应（不含明细）"""
-    id: int
-    year: int
-    month: int
-    steel_mill: str
-    category_name: str
-    policy_type: str
-    grade_type: Optional[str] = None
-    grade_value: Optional[str] = None
-    base_thickness: Optional[Decimal] = None
-    item_count: int = 0
-    created_at: datetime
-    updated_at: datetime
-
-    @field_validator("base_thickness", mode="plain")
-    @classmethod
-    def keep_decimal(cls, v):
-        return _decimal_str(v)
-
-    @field_validator("created_at", "updated_at")
-    @classmethod
-    def iso_datetime(cls, v: datetime) -> str:
-        return v.isoformat() if v else None
-
-    model_config = {"from_attributes": True}
-
-
-class PolicyDetailResponse(BaseModel):
-    """政策详情响应（包含完整阶梯明细）"""
-    id: int
-    year: int
-    month: int
-    steel_mill: str
-    category_name: str
-    policy_type: str
-    grade_type: Optional[str] = None
-    grade_value: Optional[str] = None
-    base_thickness: Optional[Decimal] = None
-    items: list[LadderItemResponse] = []
-    created_at: datetime
-    updated_at: datetime
-
-    @field_validator("base_thickness", mode="plain")
-    @classmethod
-    def keep_decimal(cls, v):
-        return _decimal_str(v)
-
-    @field_validator("created_at", "updated_at")
-    @classmethod
-    def iso_datetime(cls, v: datetime) -> str:
-        return v.isoformat() if v else None
-
-    model_config = {"from_attributes": True}
-
-
 # ============================
 # 查询参数 DTO
 # ============================
+
 
 class PolicyQuery(BaseModel):
     """政策分页筛选参数"""
@@ -297,20 +191,10 @@ class PolicyQuery(BaseModel):
         return _strip(v)
 
 
-class PolicyOptionsResponse(BaseModel):
-    """政策筛选下拉选项"""
-    years: list[int] = Field(default_factory=list)
-    months: list[int] = Field(default_factory=list)
-    steel_mills: list[str] = Field(default_factory=list)
-    category_names: list[str] = Field(default_factory=list)
-    policy_types: list[str] = Field(default_factory=list)
-    grade_types: list[str] = Field(default_factory=list)
-    grade_values: list[str] = Field(default_factory=list)
-
-
 # ============================
-# 阶梯匹配 DTO
+# 阶梯匹配 DTO（Request）
 # ============================
+
 
 class PolicyMatchRequest(BaseModel):
     """阶梯匹配请求"""
@@ -368,94 +252,3 @@ class PolicyMatchRequest(BaseModel):
             if self.base_thickness is None:
                 raise ValueError("THICKNESS 政策匹配必须提供 base_thickness")
         return self
-
-
-class MatchedLadderItem(BaseModel):
-    """匹配命中的阶梯明细"""
-    id: int
-    target_sub_group: Optional[str] = None
-
-    thick_min: Optional[Decimal] = None
-    thick_min_operator: Optional[str] = None
-    thick_max: Optional[Decimal] = None
-    thick_max_operator: Optional[str] = None
-
-    width_min: Optional[Decimal] = None
-    width_min_operator: Optional[str] = None
-    width_max: Optional[Decimal] = None
-    width_max_operator: Optional[str] = None
-
-    price_adjustment: int = 0
-    is_base: int = 0
-    sort_order: int = 0
-
-    @field_validator(
-        "thick_min", "thick_max", "width_min", "width_max",
-        mode="plain",
-    )
-    @classmethod
-    def keep_decimal(cls, v):
-        return _decimal_str(v)
-
-    model_config = {"from_attributes": True}
-
-
-class PolicyMatchResponse(BaseModel):
-    """阶梯匹配结果响应"""
-    matched: bool = Field(False, description="是否命中阶梯")
-    policy_id: Optional[int] = Field(None, description="命中的政策 ID")
-    item: Optional[MatchedLadderItem] = Field(None, description="命中的阶梯明细")
-    price_adjustment: Optional[int] = Field(None, description="加减价金额（元/吨）")
-
-
-class ImportResultResponse(BaseModel):
-    """Excel 导入结果响应"""
-    created_count: int = Field(0, description="新增数量")
-    updated_count: int = Field(0, description="更新数量")
-    skipped_count: int = Field(0, description="跳过数量")
-    total: int = Field(0, description="处理总数")
-
-
-# ============================
-# 导出数据行 DTO
-# ============================
-
-class ExportRow(BaseModel):
-    """导出数据行 DTO（主子表扁平化结构）"""
-
-    model_config = {"from_attributes": True}
-
-    # 政策主表字段
-    policy_id: int
-    year: int
-    month: int
-    steel_mill: str
-    category_name: str
-    policy_type: str
-    grade_type: Optional[str] = None
-    grade_value: Optional[str] = None
-    base_thickness: Optional[str] = None
-
-    # 阶梯明细字段
-    item_id: Optional[int] = None
-    target_sub_group: Optional[str] = None
-    thick_min: Optional[str] = None
-    thick_min_operator: Optional[str] = None
-    thick_max: Optional[str] = None
-    thick_max_operator: Optional[str] = None
-    width_min: Optional[str] = None
-    width_min_operator: Optional[str] = None
-    width_max: Optional[str] = None
-    width_max_operator: Optional[str] = None
-    zinc_coating_min: Optional[str] = None
-    zinc_coating_min_operator: Optional[str] = None
-    zinc_coating_max: Optional[str] = None
-    zinc_coating_max_operator: Optional[str] = None
-    price_adjustment: Optional[int] = None
-    is_base: Optional[int] = None
-    sort_order: Optional[int] = None
-
-    # 追溯字段
-    excel_filename: Optional[str] = None
-    excel_row: Optional[int] = None
-    excel_col: Optional[int] = None

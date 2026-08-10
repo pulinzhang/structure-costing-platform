@@ -202,7 +202,7 @@ async function previewData() {
 
         const response = await HttpClient.get(`${API_BASE}/export-preview`, { params });
         const data = response.data || {};
-        const records = Array.isArray(data.list) ? data.list : [];
+        const records = Array.isArray(data.items) ? data.items : [];
 
         policyDownloadState.records = records;
         policyDownloadState.total = data.total || records.length;
@@ -399,7 +399,7 @@ async function refreshPreview() {
 
         const response = await HttpClient.get(`${API_BASE}/export-preview`, { params });
         const data = response.data || {};
-        const records = Array.isArray(data.list) ? data.list : [];
+        const records = Array.isArray(data.items) ? data.items : [];
 
         policyDownloadState.records = records;
         policyDownloadState.total = data.total || records.length;

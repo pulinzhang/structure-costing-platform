@@ -20,23 +20,25 @@ from app.repositories.steel_price_policy.steel_price_policy_repository import (
     PolicyFilter,
 )
 from app.schemas.dto.steel_price_policy_dto import (
+    LadderItemCreate,
+    LadderItemUpdate,
+    PolicyCreate,
+    PolicyMatchRequest,
+    PolicyQuery,
+    PolicyUpdate,
+    PolicyType,
+)
+from app.schemas.vo.steel_price_policy_vo import (
     ExportRow,
     FilterOptions,
     GradeType,
     ImportResultResponse,
-    LadderItemCreate,
-    LadderItemUpdate,
     LadderItemResponse,
-    MatchedLadderItem,
-    PolicyCreate,
+    MatchedLadderItem as MatchedLadderItemVO,
     PolicyDetailResponse,
     PolicyListResponse,
-    PolicyMatchRequest,
     PolicyMatchResponse,
     PolicyOptionsResponse,
-    PolicyQuery,
-    PolicyUpdate,
-    PolicyType,
 )
 from app.services.steel_price_policy.export_service import SteelPricePolicyExportService
 from app.services.steel_price_policy.ladder_matcher import LadderMatcher
@@ -400,7 +402,7 @@ class SteelPricePolicyService:
         return PolicyMatchResponse(
             matched=True,
             policy_id=best_policy_id,
-            item=MatchedLadderItem.model_validate(best_item),
+            item=MatchedLadderItemVO.model_validate(best_item),
             price_adjustment=best_item.price_adjustment,
         )
 

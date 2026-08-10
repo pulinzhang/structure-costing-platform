@@ -10,7 +10,7 @@ from sqlalchemy import distinct, func
 from sqlalchemy.orm import Session, joinedload
 
 from app.models.steel_price_policy import SteelPricePolicy, SteelPriceLadderItem
-from app.schemas.dto.steel_price_policy_dto import FilterOptions
+from app.repositories.steel_price_policy.dto import ExportRow, FilterOptions
 
 
 class PolicyFilter:

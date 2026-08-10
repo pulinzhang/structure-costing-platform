@@ -15,16 +15,21 @@ from urllib.parse import quote
 from app.database import get_db
 from app.schemas.common.page_result import PageResult
 from app.schemas.dto.steel_price_policy_dto import (
-    FilterOptions,
-    ImportResultResponse,
     LadderItemCreate,
     LadderItemUpdate,
     PolicyCreate,
-    PolicyDetailResponse,
-    PolicyListResponse,
     PolicyMatchRequest,
     PolicyQuery,
     PolicyUpdate,
+)
+from app.schemas.vo.steel_price_policy_vo import (
+    ExportRow,
+    ImportResultResponse,
+    LadderItemResponse,
+    PolicyDetailResponse,
+    PolicyListResponse,
+    PolicyMatchResponse,
+    PolicyOptionsResponse,
 )
 from app.services.steel_price_policy import SteelPricePolicyService
 from app.utils.response import ApiResponse
@@ -80,14 +85,14 @@ def list_policies(
 
 @router.get(
     "/options",
-    response_model=ApiResponse[dict],
+    response_model=ApiResponse[PolicyOptionsResponse],
 )
 def get_policy_options(
     db: Session = Depends(get_db),
-) -> ApiResponse[dict]:
+) -> ApiResponse[PolicyOptionsResponse]:
     """获取政策筛选下拉选项"""
     _, _, options = _policy_service.paginate(db, PolicyQuery(page=1, size=1))
-    return ApiResponse.ok(data=options.model_dump())
+    return ApiResponse.ok(data=options)
 
 
 # =============================================================================
@@ -167,7 +172,7 @@ def export_policies_excel(
 
 @router.get(
     "/export-preview",
-    response_model=ApiResponse[PageResult[PolicyDetailResponse]],
+    response_model=ApiResponse[PageResult[ExportRow]],
 )
 def export_policies_preview(
     year: Optional[int] = None,
@@ -176,7 +181,7 @@ def export_policies_preview(
     page: int = 1,
     size: int = 100,
     db: Session = Depends(get_db),
-) -> ApiResponse[PageResult[PolicyDetailResponse]]:
+) -> ApiResponse[PageResult[ExportRow]]:
     """
     预览导出数据（主子表联合查询，分页）
     """
@@ -294,13 +299,13 @@ def delete_policy(
 
 @router.post(
     "/{policy_id}/items",
-    response_model=ApiResponse[object],
+    response_model=ApiResponse[LadderItemResponse],
 )
 def add_ladder_item(
     policy_id: int,
     body: LadderItemCreate,
     db: Session = Depends(get_db),
-) -> ApiResponse[object]:
+) -> ApiResponse[LadderItemResponse]:
     """向指定政策新增一条阶梯明细"""
     record = _map_service_error(_policy_service.add_item(db, policy_id, body), "阶梯明细")
     return ApiResponse.created(data=record, message="阶梯明细新增成功")
@@ -308,14 +313,14 @@ def add_ladder_item(
 
 @router.put(
     "/{policy_id}/items/{item_id}",
-    response_model=ApiResponse[object],
+    response_model=ApiResponse[LadderItemResponse],
 )
 def update_ladder_item(
     policy_id: int,
     item_id: int,
     body: LadderItemUpdate,
     db: Session = Depends(get_db),
-) -> ApiResponse[object]:
+) -> ApiResponse[LadderItemResponse]:
     """更新指定政策下的单条阶梯明细"""
     record = _map_service_error(_policy_service.update_item(db, item_id, body), "阶梯明细")
     return ApiResponse.updated(data=record, message="阶梯明细更新成功")
@@ -344,12 +349,12 @@ def delete_ladder_item(
 
 @router.post(
     "/match",
-    response_model=ApiResponse[object],
+    response_model=ApiResponse[PolicyMatchResponse],
 )
 def match_ladder(
     body: PolicyMatchRequest,
     db: Session = Depends(get_db),
-) -> ApiResponse[object]:
+) -> ApiResponse[PolicyMatchResponse]:
     """
     根据政策维度与尺寸值，匹配阶梯明细并返回加减价金额。
     - 命中多条时以 sort_order 升序、id 升序确定优先级
