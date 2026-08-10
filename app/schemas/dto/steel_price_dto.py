@@ -14,7 +14,7 @@ class SteelPriceQuery(BaseModel):
     month: Optional[int] = Field(None, ge=1, le=12, description="月份")
     location: Optional[str] = Field(None, description="采购基地")
     category_name: Optional[str] = Field(None, description="钢种大类")
-    grade: Optional[str] = Field(None, description="牌号")
+    grade: Optional[str] = Field(None, description="牌号（模糊匹配）")
     steel_mill: Optional[str] = Field(None, description="钢厂")
     audit_status: Optional[str] = Field(None, description="审核状态")
     page: int = Field(1, ge=1, description="页码")
@@ -77,3 +77,14 @@ class SteelPriceCalcDTO(BaseModel):
     location: str = Field(..., min_length=1, max_length=50, description="生产基地")
     stamping_supplier: Optional[str] = Field(None, max_length=50, description="冲压工厂")
     vehicle_model: Optional[str] = Field(None, max_length=50, description="配套车型")
+
+
+class SteelPriceBatchDeleteDTO(BaseModel):
+    """按筛选条件批量删除钢材价格（年度/月份/基地必填；仅删未审核）"""
+
+    year: int = Field(..., ge=2000, le=2100, description="年度")
+    month: int = Field(..., ge=1, le=12, description="月份")
+    location: str = Field(..., min_length=1, max_length=50, description="采购基地")
+    category_name: Optional[str] = Field(None, description="钢种大类")
+    grade: Optional[str] = Field(None, description="牌号（模糊匹配）")
+    steel_mill: Optional[str] = Field(None, description="钢厂")

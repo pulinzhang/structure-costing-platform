@@ -32,6 +32,16 @@ class SteelPriceFilterOptions(BaseModel):
     audit_statuses: list[str] = []
 
 
+class SteelPriceBatchDeleteResultVO(BaseModel):
+    """按条件批量删除结果"""
+
+    deleted_count: int = 0
+    skipped_approved_count: int = 0
+    year: int
+    month: int
+    location: str
+
+
 class SteelPriceResponse(BaseModel):
     """钢材价格响应 VO"""
 

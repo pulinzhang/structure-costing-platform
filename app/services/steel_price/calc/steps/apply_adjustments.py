@@ -1,4 +1,4 @@
-"""Step3：一次加载政策后，在内存中匹配厚/宽加减价。"""
+"""加减价匹配：厚度 / 宽度分步独立执行（政策只加载一次）。"""
 
 from __future__ import annotations
 
@@ -15,42 +15,67 @@ from app.services.steel_price.calc.steps.adjustments.common import (
 from app.services.steel_price.calc.steps.adjustments.thickness import (
     ThicknessAdjustmentMatcher,
 )
+from app.services.steel_price.calc.steps.adjustments.width import (
+    WidthAdjustmentMatcher,
+)
 
 
 class AdjustmentApplier:
-    """加减价编排：一次取政策，再委托各维度匹配器。"""
+    """加减价编排：厚度一步、宽度一步；政策由编排器一次性加载后传入。"""
 
     def __init__(self) -> None:
         self.policy_repository = SteelPricePolicyRepository()
         self.thickness_matcher = ThicknessAdjustmentMatcher()
+        self.width_matcher = WidthAdjustmentMatcher()
 
-    def apply(
+    def load_policies(
         self,
         db: Session,
         request: SteelPriceCalcRequest,
-        rows: list[CalcRow],
-    ) -> list[CalcRow]:
-        policies = self.policy_repository.list_for_period(
+    ) -> list[SteelPricePolicy]:
+        """按核价期加载加减价政策（整次计算只应调用一次）。"""
+        return self.policy_repository.list_for_period(
             db,
             year=request.year,
             month=request.month,
         )
+
+    def apply_thickness(
+        self,
+        rows: list[CalcRow],
+        policies: list[SteelPricePolicy],
+    ) -> list[CalcRow]:
+        """Step：厚度加减价（THICKNESS_WIDTH 组合或纯 THICKNESS）。"""
         for row in rows:
-            self._apply_row(row, policies)
+            self._apply_thickness_row(row, policies)
+        return rows
+
+    def apply_width(
+        self,
+        rows: list[CalcRow],
+        policies: list[SteelPricePolicy],
+    ) -> list[CalcRow]:
+        """Step：宽度加减价（纯 WIDTH；组合政策已在厚度步写入宽度溯源则跳过）。"""
+        for row in rows:
+            self._apply_width_row(row, policies)
             row.finalize_status()
         return rows
 
-    def _apply_row(self, row: CalcRow, policies: list[SteelPricePolicy]) -> None:
+    def _apply_thickness_row(
+        self,
+        row: CalcRow,
+        policies: list[SteelPricePolicy],
+    ) -> None:
         if not row.steel_mill or not row.category_name:
-            row.add_message("缺少基价维度，无法匹配加减价政策")
+            row.add_message("缺少基价维度，无法匹配厚度加减价政策")
             return
 
         candidates = filter_candidates(row, policies)
         if not candidates:
-            row.add_message("无对应钢厂/大类政策")
+            row.add_message("无对应钢厂/大类厚度政策")
             return
 
-        # 1) 厚宽组合政策（后续再拆）
+        # 厚宽组合政策：一次命中同时写入厚度金额 + 宽度溯源 ID
         combo_hit = find_best_hit(
             row,
             candidates,
@@ -69,23 +94,24 @@ class AdjustmentApplier:
             row.width_excel_col = item.excel_col
             return
 
-        # 2) 纯厚度政策
         self.thickness_matcher.apply(row, candidates)
 
-        # 3) 纯宽度政策（后续再拆）
-        if row.width is None:
-            row.add_message("缺少宽度，无法匹配宽度加减价")
+    def _apply_width_row(
+        self,
+        row: CalcRow,
+        policies: list[SteelPricePolicy],
+    ) -> None:
+        # 厚度步已通过 THICKNESS_WIDTH 写入宽度溯源，视为已处理
+        if row.width_policy_id is not None:
             return
 
-        width_hit = find_best_hit(
-            row,
-            candidates,
-            policy_types=("WIDTH",),
-            check_thickness=False,
-            check_width=True,
-            prefer_base_thickness=False,
-        )
-        if width_hit is None:
-            row.add_message("未命中宽度加减价政策")
+        if not row.steel_mill or not row.category_name:
+            row.add_message("缺少基价维度，无法匹配宽度加减价政策")
             return
-        apply_hit(row, width_hit, prefix="width")
+
+        candidates = filter_candidates(row, policies)
+        if not candidates:
+            row.add_message("无对应钢厂/大类宽度政策")
+            return
+
+        self.width_matcher.apply(row, candidates)

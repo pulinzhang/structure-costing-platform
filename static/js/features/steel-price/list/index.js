@@ -78,7 +78,7 @@ async function loadData(page = 1) {
             month: getFilterValue('steelPriceMonth') || steelPriceState.pendingFilters?.month || '',
             location: getFilterValue('steelPriceLocation') || steelPriceState.pendingFilters?.location || '',
             category_name: getFilterValue('steelPriceCategory'),
-            grade: document.getElementById('steelPriceGrade')?.value.trim(),
+            grade: document.getElementById('steelPriceGrade')?.value.trim() || '',
             steel_mill: getFilterValue('steelPriceMill'),
             audit_status: getFilterValue('steelPriceAuditStatus'),
         };
@@ -137,14 +137,14 @@ function getFilterValue(id) {
 }
 
 function renderFilters(filters) {
-    fillSelect('steelPriceYear', filters.years, value => `${value} 年`);
-    fillSelect('steelPriceMonth', filters.months, value => `${value} 月`);
-    fillSelect('steelPriceLocation', filters.locations);
-    fillSelect('steelPriceCategory', filters.category_names);
-    fillSelect('steelPriceMill', filters.steel_mills);
+    fillSelect('steelPriceYear', filters.years || [], value => `${value} 年`);
+    fillSelect('steelPriceMonth', filters.months || [], value => `${value} 月`);
+    fillSelect('steelPriceLocation', filters.locations || []);
+    fillSelect('steelPriceCategory', filters.category_names || []);
+    fillSelect('steelPriceMill', filters.steel_mills || []);
     fillSelect(
         'steelPriceAuditStatus',
-        filters.audit_statuses,
+        filters.audit_statuses || [],
         value => AUDIT_LABEL[value] || value
     );
 }
@@ -228,6 +228,7 @@ function bindEvents() {
         }
     });
     document.getElementById('steelPriceResetFilterButton')?.addEventListener('click', () => resetFilters());
+    document.getElementById('steelPriceBatchDeleteButton')?.addEventListener('click', () => batchDeleteByFilters());
 
     document.getElementById('steelPricePagination')?.addEventListener('click', event => {
         const btn = event.target.closest('.steel-price-page-btn');
@@ -240,6 +241,79 @@ function bindEvents() {
     bindEditDrawerEvents();
     bindViewDrawerEvents();
     bindDeleteDrawerEvents();
+}
+
+function collectBatchDeleteFilters() {
+    return {
+        year: getFilterValue('steelPriceYear'),
+        month: getFilterValue('steelPriceMonth'),
+        location: getFilterValue('steelPriceLocation'),
+        category_name: getFilterValue('steelPriceCategory'),
+        grade: document.getElementById('steelPriceGrade')?.value.trim() || '',
+        steel_mill: getFilterValue('steelPriceMill'),
+    };
+}
+
+async function batchDeleteByFilters() {
+    const filters = collectBatchDeleteFilters();
+    if (!filters.year || !filters.month || !filters.location) {
+        showToast('批量删除须选择年度、月份、基地', 'warning');
+        return;
+    }
+
+    const parts = [
+        `年度: ${filters.year}`,
+        `月份: ${filters.month}`,
+        `基地: ${filters.location}`,
+    ];
+    if (filters.category_name) parts.push(`钢种: ${filters.category_name}`);
+    if (filters.grade) parts.push(`牌号: ${filters.grade}`);
+    if (filters.steel_mill) parts.push(`钢厂: ${filters.steel_mill}`);
+
+    const confirmed = window.confirm(
+        `确定按以下条件批量删除未审核记录吗？\n\n${parts.join(' | ')}\n\n仅删除待审/已驳回；已审核通过的记录会跳过。此操作不可恢复！`
+    );
+    if (!confirmed) return;
+
+    const btn = document.getElementById('steelPriceBatchDeleteButton');
+    const originalHtml = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `
+            <div class="w-3 h-3 border border-[#ef5350] border-t-transparent rounded-full animate-spin"></div>
+            删除中...
+        `;
+    }
+
+    try {
+        const body = {
+            year: parseInt(filters.year, 10),
+            month: parseInt(filters.month, 10),
+            location: filters.location,
+        };
+        if (filters.category_name) body.category_name = filters.category_name;
+        if (filters.grade) body.grade = filters.grade;
+        if (filters.steel_mill) body.steel_mill = filters.steel_mill;
+
+        const response = await HttpClient.post(`${API_BASE}/batch-delete`, body);
+        const result = response.data || {};
+        const deleted = result.deleted_count ?? 0;
+        const skipped = result.skipped_approved_count ?? 0;
+        showToast(
+            response.message ||
+                `已删除 ${deleted} 条` + (skipped ? `，跳过已审核 ${skipped} 条` : ''),
+            deleted > 0 ? 'success' : 'warning'
+        );
+        steelPriceState.filtersLoaded = false;
+        loadData(1);
+    } catch (error) {
+        console.error('批量删除钢材价格失败:', error);
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+        }
+    }
 }
 
 function bindEditDrawerEvents() {

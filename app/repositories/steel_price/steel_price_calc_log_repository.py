@@ -64,3 +64,12 @@ class SteelPriceCalcLogRepository:
             record.id,
         )
         return record
+
+    def delete(self, db: Session, log_id: int) -> bool:
+        record = self.get_by_id(db, log_id)
+        if record is None:
+            return False
+        db.delete(record)
+        db.flush()
+        logger.info("删除计算日志: id=%s batch=%s", log_id, record.calc_batch_id)
+        return True

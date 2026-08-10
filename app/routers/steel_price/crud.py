@@ -9,11 +9,15 @@ from app.database import get_db
 from app.schemas.common.page_result import PageResult
 from app.schemas.dto.steel_price_dto import (
     SteelPriceAuditDTO,
+    SteelPriceBatchDeleteDTO,
     SteelPriceQuery,
     SteelPriceReverseAuditDTO,
     SteelPriceUpdate,
 )
-from app.schemas.vo.steel_price_vo import SteelPriceResponse
+from app.schemas.vo.steel_price_vo import (
+    SteelPriceBatchDeleteResultVO,
+    SteelPriceResponse,
+)
 from app.services.steel_price import SteelPriceService
 from app.utils.response import ApiResponse
 
@@ -46,7 +50,37 @@ def list_steel_prices(
         total=total,
         page=query.page,
         page_size=query.size,
-        filters=filters,
+        filters=filters.model_dump(),
+    )
+
+
+@router.post(
+    "/batch-delete",
+    response_model=ApiResponse[SteelPriceBatchDeleteResultVO],
+)
+def batch_delete_steel_prices(
+    body: SteelPriceBatchDeleteDTO,
+    db: Session = Depends(get_db),
+) -> ApiResponse[SteelPriceBatchDeleteResultVO]:
+    """
+    按筛选条件批量删除未审核钢材价格。
+
+    年度、月份、基地必填；已审核通过的记录跳过。
+    """
+    result, error = _steel_price_service.batch_delete(db, body)
+    if error:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error)
+    assert result is not None
+    return ApiResponse.ok(
+        data=result,
+        message=(
+            f"已删除 {result.deleted_count} 条未审核记录"
+            + (
+                f"，跳过已审核 {result.skipped_approved_count} 条"
+                if result.skipped_approved_count
+                else ""
+            )
+        ),
     )
 
 

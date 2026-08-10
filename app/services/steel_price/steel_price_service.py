@@ -12,12 +12,17 @@ from sqlalchemy.orm import Session
 from app.repositories.steel_price import SteelPriceRepository
 from app.schemas.dto.steel_price_dto import (
     SteelPriceAuditDTO,
+    SteelPriceBatchDeleteDTO,
     SteelPriceCreate,
     SteelPriceQuery,
     SteelPriceReverseAuditDTO,
     SteelPriceUpdate,
 )
-from app.schemas.vo.steel_price_vo import SteelPriceFilterOptions, SteelPriceResponse
+from app.schemas.vo.steel_price_vo import (
+    SteelPriceBatchDeleteResultVO,
+    SteelPriceFilterOptions,
+    SteelPriceResponse,
+)
 
 
 logger = logging.getLogger("service.steel_price")
@@ -205,6 +210,62 @@ class SteelPriceService:
             db.rollback()
             logger.exception("删除钢材价格失败: id=%s, error=%s", record_id, error)
             return False, str(error)
+
+    def batch_delete(
+        self, db: Session, data: SteelPriceBatchDeleteDTO
+    ) -> tuple[Optional[SteelPriceBatchDeleteResultVO], Optional[str]]:
+        """
+        按筛选条件批量删除未审核记录。
+
+        年度 / 月份 / 基地必填；已审核通过的记录跳过不删。
+        """
+        location = data.location.strip()
+        if not location:
+            return None, "基地不能为空"
+
+        category_name = data.category_name.strip() if data.category_name else None
+        grade = data.grade.strip() if data.grade else None
+        steel_mill = data.steel_mill.strip() if data.steel_mill else None
+
+        try:
+            skipped_approved_count = self.repository.count_approved_by_conditions(
+                db,
+                year=data.year,
+                month=data.month,
+                location=location,
+                category_name=category_name,
+                grade=grade,
+                steel_mill=steel_mill,
+            )
+            deleted_count = self.repository.delete_unaudited_by_conditions(
+                db,
+                year=data.year,
+                month=data.month,
+                location=location,
+                category_name=category_name,
+                grade=grade,
+                steel_mill=steel_mill,
+            )
+            db.commit()
+            return (
+                SteelPriceBatchDeleteResultVO(
+                    deleted_count=deleted_count,
+                    skipped_approved_count=skipped_approved_count,
+                    year=data.year,
+                    month=data.month,
+                    location=location,
+                ),
+                None,
+            )
+        except Exception as error:
+            db.rollback()
+            logger.exception(
+                "批量删除钢材价格失败: year=%s month=%s location=%s",
+                data.year,
+                data.month,
+                location,
+            )
+            return None, str(error)
 
     def approve(
         self, db: Session, record_id: int, data: SteelPriceAuditDTO

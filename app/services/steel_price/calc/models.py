@@ -50,7 +50,7 @@ class CalcRow:
     base_excel_row: int | None = None
     base_excel_col: int | None = None
 
-    # Step3 加减价
+    # Step3/4 加减价（厚度 / 宽度独立匹配）
     thickness_adjustment: Decimal = Decimal("0")
     width_adjustment: Decimal = Decimal("0")
     zinc_adjustment: Decimal = Decimal("0")

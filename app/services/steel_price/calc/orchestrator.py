@@ -4,9 +4,10 @@
 计算链：
   1. MaterialThicknessLoader  — 材料厚度
   2. BasePriceEnricher        — 基价补齐
-  3. AdjustmentApplier        — 加减价
-  4. SteelPriceService        — 结果落库
-  5. CalcLogService           — 过程日志（detail_text）
+  3. AdjustmentApplier.apply_thickness — 厚度加减价（共用一次加载的政策）
+  4. AdjustmentApplier.apply_width     — 宽度加减价（共用一次加载的政策）
+  5. SteelPriceService        — 结果落库
+  6. CalcLogService           — 过程日志（detail_text）
 """
 
 from __future__ import annotations
@@ -24,7 +25,12 @@ from app.services.steel_price.calc.models import (
     SteelPriceCalcResult,
 )
 from app.services.steel_price.calc.process_log import ProcessLogBuilder
-from app.services.steel_price.calc.status import resolve_batch_status, summarize_match_status
+from app.services.steel_price.calc.status import (
+    collect_row_warnings,
+    resolve_batch_status,
+    summarize_match_status,
+    summarize_policy_hits,
+)
 from app.services.steel_price.calc.steps import (
     AdjustmentApplier,
     BasePriceEnricher,
@@ -117,23 +123,38 @@ class SteelPriceCalcOrchestrator:
                 "无基价明细", no_base_details, is_error=True
             )
 
-            # Step 3
-            log_builder.section("Step3 加减价匹配")
-            rows = self.adjustment_applier.apply(db, normalized, rows)
-            for key, count in summarize_match_status(rows).items():
-                log_builder.line(f"match_status={key}: {count}")
-            row_warnings = [
-                f"{r.grade} {float(r.thickness):.4f}*{float(r.width):.2f} "
-                f"[{r.match_status}] {r.calc_message}"
-                for r in rows
-                if r.messages
-            ]
+            # Step 3/4 — 加减价政策只查一次，厚度/宽度分步匹配
+            policies = self.adjustment_applier.load_policies(db, normalized)
+
+            # Step 3 — 厚度加减价（独立）
+            log_builder.section("Step3 厚度加减价匹配")
+            log_builder.line(f"加减价政策加载: {len(policies)} 条（厚度/宽度共用，仅此一次）")
+            rows = self.adjustment_applier.apply_thickness(rows, policies)
+            thickness_hit, thickness_miss = summarize_policy_hits(rows, prefix="thickness")
+            log_builder.line(f"厚度政策命中: {thickness_hit}")
+            log_builder.line(f"厚度政策未命中: {thickness_miss}")
             log_builder.append_limited_details(
-                "行级警告/未命中", row_warnings, is_error=True
+                "厚度未命中/警告",
+                collect_row_warnings(rows, keyword="厚度"),
+                is_error=True,
             )
 
-            # Step 4
-            log_builder.section("Step4 结果落库")
+            # Step 4 — 宽度加减价（独立）
+            log_builder.section("Step4 宽度加减价匹配")
+            rows = self.adjustment_applier.apply_width(rows, policies)
+            width_hit, width_miss = summarize_policy_hits(rows, prefix="width")
+            log_builder.line(f"宽度政策命中: {width_hit}")
+            log_builder.line(f"宽度政策未命中: {width_miss}")
+            log_builder.append_limited_details(
+                "宽度未命中/警告",
+                collect_row_warnings(rows, keyword="宽度"),
+                is_error=True,
+            )
+            for key, count in summarize_match_status(rows).items():
+                log_builder.line(f"match_status={key}: {count}")
+
+            # Step 5
+            log_builder.section("Step5 结果落库")
             persist_stats = self.steel_price_service.save_calc_batch(
                 db,
                 calc_batch_id=calc_batch_id,
@@ -209,3 +230,6 @@ class SteelPriceCalcOrchestrator:
 
     def get_log(self, db: Session, log_id: int):
         return self.calc_log_service.get_log(db, log_id)
+
+    def delete_log(self, db: Session, log_id: int) -> bool:
+        return self.calc_log_service.delete_log(db, log_id)

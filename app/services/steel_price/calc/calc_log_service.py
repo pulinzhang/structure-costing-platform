@@ -48,6 +48,18 @@ class CalcLogService:
             return None
         return SteelPriceCalcLogVO.model_validate(record)
 
+    def delete_log(self, db: Session, log_id: int) -> bool:
+        deleted = self.repository.delete(db, log_id)
+        if not deleted:
+            return False
+        try:
+            db.commit()
+        except Exception:
+            db.rollback()
+            logger.exception("删除计算日志失败: id=%s", log_id)
+            raise
+        return True
+
     def persist(
         self,
         db: Session,

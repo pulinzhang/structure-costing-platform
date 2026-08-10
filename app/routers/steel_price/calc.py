@@ -89,6 +89,21 @@ def get_calc_log(
     return ApiResponse.ok(data=record)
 
 
+@router.delete(
+    "/calc/logs/{log_id}",
+    response_model=ApiResponse[None],
+)
+def delete_calc_log(
+    log_id: int,
+    db: Session = Depends(get_db),
+) -> ApiResponse[None]:
+    """删除一条计算历史日志（不影响已落库的钢材价格结果）。"""
+    deleted = _calc_orchestrator.delete_log(db, log_id)
+    if not deleted:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="计算记录不存在")
+    return ApiResponse.deleted(message="删除成功")
+
+
 @router.post(
     "/calc",
     response_model=ApiResponse[SteelPriceCalcResultVO],

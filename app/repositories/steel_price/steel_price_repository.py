@@ -181,3 +181,85 @@ class SteelPriceRepository:
         db.flush()
         logger.info("删除钢材价格: id=%s", record_id)
         return True
+
+    def _build_condition_query(
+        self,
+        db: Session,
+        *,
+        year: int,
+        month: int,
+        location: str,
+        category_name: str | None = None,
+        grade: str | None = None,
+        steel_mill: str | None = None,
+    ):
+        query = db.query(SteelPrice).filter(
+            SteelPrice.year == year,
+            SteelPrice.month == month,
+            SteelPrice.location == location,
+        )
+        if category_name:
+            query = query.filter(SteelPrice.category_name == category_name)
+        if grade:
+            query = query.filter(SteelPrice.grade.contains(grade))
+        if steel_mill:
+            query = query.filter(SteelPrice.steel_mill == steel_mill)
+        return query
+
+    def count_approved_by_conditions(
+        self,
+        db: Session,
+        *,
+        year: int,
+        month: int,
+        location: str,
+        category_name: str | None = None,
+        grade: str | None = None,
+        steel_mill: str | None = None,
+    ) -> int:
+        """统计符合条件且已审核通过的条数。"""
+        return (
+            self._build_condition_query(
+                db,
+                year=year,
+                month=month,
+                location=location,
+                category_name=category_name,
+                grade=grade,
+                steel_mill=steel_mill,
+            )
+            .filter(SteelPrice.audit_status == "approved")
+            .count()
+        )
+
+    def delete_unaudited_by_conditions(
+        self,
+        db: Session,
+        *,
+        year: int,
+        month: int,
+        location: str,
+        category_name: str | None = None,
+        grade: str | None = None,
+        steel_mill: str | None = None,
+    ) -> int:
+        """按条件批量删除未审核记录（pending / rejected），返回删除条数。"""
+        query = self._build_condition_query(
+            db,
+            year=year,
+            month=month,
+            location=location,
+            category_name=category_name,
+            grade=grade,
+            steel_mill=steel_mill,
+        ).filter(SteelPrice.audit_status != "approved")
+        deleted_count = query.delete(synchronize_session=False)
+        db.flush()
+        logger.info(
+            "批量删除未审核钢材价格: year=%s month=%s location=%s count=%s",
+            year,
+            month,
+            location,
+            deleted_count,
+        )
+        return deleted_count

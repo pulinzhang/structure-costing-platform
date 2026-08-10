@@ -3,13 +3,14 @@
  * 钢价计算 — 过滤条件 + 批量计算 + 历史过程日志
  */
 
-import { steelPriceCalcTemplate } from './template.js';
+import { steelPriceCalcTemplate, renderCalcHistoryPagination } from './template.js';
 
 const STAMPING_CASCADE_FILTERS_API = '/api/stamping/filters/cascade';
 const STEEL_PRICE_CALC_STATS_API = '/api/dashboard/stats/steel-price-calc';
 const STEEL_PRICE_CALC_API = '/api/steel-prices/calc';
 const STEEL_PRICE_CALC_LOGS_API = '/api/steel-prices/calc/logs';
 const CALC_TIMEOUT_MS = 180000;
+const HISTORY_PAGE_SIZE = 10;
 
 const STATUS_META = {
     success: { label: '成功', className: 'text-[#66bb6a]' },
@@ -25,6 +26,13 @@ const calcState = {
         thickness_row_count: 0,
     },
     lastResult: null,
+    history: {
+        page: 1,
+        size: HISTORY_PAGE_SIZE,
+        total: 0,
+        totalPages: 1,
+        items: [],
+    },
 };
 
 export function init() {
@@ -56,7 +64,14 @@ function bindEvents() {
     });
 
     document.getElementById('startCalcBtn')?.addEventListener('click', () => startCalculation());
-    document.getElementById('calcHistoryRefreshBtn')?.addEventListener('click', () => loadCalcHistory());
+    document.getElementById('calcHistoryRefreshBtn')?.addEventListener('click', () => loadCalcHistory(1));
+    document.getElementById('calcHistoryPagination')?.addEventListener('click', event => {
+        const btn = event.target.closest('.calc-history-page-btn');
+        if (btn && !btn.disabled) {
+            const page = parseInt(btn.dataset.page, 10);
+            if (page) loadCalcHistory(page);
+        }
+    });
 }
 
 function getSelectedPeriod() {
@@ -90,7 +105,7 @@ function resetFilters() {
     calcState.lastResult = null;
     loadStampingFilters();
     loadCalcStats();
-    loadCalcHistory();
+    loadCalcHistory(1);
 }
 
 async function loadStampingFilters() {
@@ -152,11 +167,14 @@ async function loadCalcStats() {
     }
 }
 
-async function loadCalcHistory() {
+async function loadCalcHistory(page = calcState.history.page) {
     const body = document.getElementById('calcHistoryBody');
     if (!body) return;
 
-    const params = { page: 1, size: 30 };
+    const params = {
+        page,
+        size: calcState.history.size,
+    };
 
     body.innerHTML = `<tr><td colspan="12" class="py-8 text-center text-[#555]">加载中...</td></tr>`;
 
@@ -164,7 +182,23 @@ async function loadCalcHistory() {
         const response = await HttpClient.get(STEEL_PRICE_CALC_LOGS_API, { params });
         const pageData = response.data || {};
         const items = Array.isArray(pageData.items) ? pageData.items : [];
+        calcState.history.page = pageData.page || page;
+        calcState.history.total = pageData.total || 0;
+        calcState.history.totalPages = pageData.total_pages || 1;
+        calcState.history.items = items;
+
         renderHistoryRows(items);
+
+        const totalEl = document.getElementById('calcHistoryTotal');
+        if (totalEl) totalEl.textContent = `共 ${calcState.history.total} 条`;
+
+        const pagination = document.getElementById('calcHistoryPagination');
+        if (pagination) {
+            pagination.innerHTML = renderCalcHistoryPagination(
+                calcState.history.page,
+                calcState.history.totalPages
+            );
+        }
     } catch (error) {
         console.error('加载计算历史失败:', error);
         body.innerHTML = `<tr><td colspan="12" class="py-8 text-center text-[#ef5350]">加载失败</td></tr>`;
@@ -204,15 +238,18 @@ function renderHistoryRows(items) {
                 <td class="py-2 px-2 font-mono text-right tabular-nums ${Number(item.failed_count) > 0 ? 'text-[#ef5350]' : 'text-[#777]'}">${fmtInt(item.failed_count)}</td>
                 <td class="py-2 px-2 text-right whitespace-nowrap">
                     <button type="button"
-                            class="calc-view-process-btn text-[9px] text-[#777] hover:text-white${item.status === 'failed' ? '' : ' mr-2'}"
+                            class="calc-view-process-btn text-[9px] text-[#777] hover:text-white mr-2"
                             data-log-id="${esc(item.id)}">过程</button>
                     ${item.status === 'failed' ? '' : `
                     <button type="button"
-                            class="calc-view-result-btn text-[9px] text-[#777] hover:text-white"
+                            class="calc-view-result-btn text-[9px] text-[#777] hover:text-white mr-2"
                             data-year="${esc(item.year)}"
                             data-month="${esc(item.month)}"
                             data-location="${esc(item.location || '')}">结果</button>
                     `}
+                    <button type="button"
+                            class="calc-delete-log-btn text-[9px] text-[#777] hover:text-[#ef5350]"
+                            data-log-id="${esc(item.id)}">删除</button>
                 </td>
             </tr>
         `;
@@ -231,6 +268,27 @@ function renderHistoryRows(items) {
             window.location.hash = `/steel-price-list${suffix}`;
         });
     });
+    body.querySelectorAll('.calc-delete-log-btn').forEach(btn => {
+        btn.addEventListener('click', () => deleteCalcLog(Number(btn.dataset.logId)));
+    });
+}
+
+async function deleteCalcLog(logId) {
+    if (!logId) return;
+    if (!window.confirm('确定删除这条计算历史？仅删除日志，不影响已落库的钢材价格。')) {
+        return;
+    }
+    try {
+        await HttpClient.delete(`${STEEL_PRICE_CALC_LOGS_API}/${logId}`);
+        showToast('删除成功', 'success');
+        const nextPage =
+            calcState.history.items.length === 1 && calcState.history.page > 1
+                ? calcState.history.page - 1
+                : calcState.history.page;
+        loadCalcHistory(nextPage);
+    } catch (error) {
+        console.error('删除计算历史失败:', error);
+    }
 }
 
 async function openProcessDrawer(logId) {
@@ -378,7 +436,7 @@ async function startCalculation() {
     } finally {
         setCalculating(false);
         loadCalcStats();
-        loadCalcHistory();
+        loadCalcHistory(1);
     }
 }
 

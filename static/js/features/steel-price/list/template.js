@@ -16,6 +16,12 @@ export function steelPriceListTemplate() {
                         <h2 class="text-[12px] font-semibold text-[#c8c8c8] tracking-wide">钢材价格表</h2>
                     </div>
                     <div class="flex items-center gap-2">
+                        <button id="steelPriceBatchDeleteButton"
+                                class="inline-flex items-center gap-1.5 bg-transparent text-[#505050] border border-[#252525] px-3 py-1.5 text-[11px] font-medium rounded-sm hover:bg-[#c62828]/15 hover:border-[#c62828]/60 hover:text-[#d45858] hover:shadow-[0_0_8px_rgba(198,40,40,0.15)] transition-all duration-200"
+                                style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);">
+                            ${window.svgIcon('trash', 'w-3 h-3')}
+                            批量删除
+                        </button>
                     </div>
                 </div>
 
