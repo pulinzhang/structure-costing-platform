@@ -223,14 +223,6 @@ function bindEvents() {
     const btnReset = document.getElementById('steelPriceResetFilterButton');
     if (btnReset) btnReset.addEventListener('click', () => resetFilters());
 
-    // 导入 Excel 按钮：沿用 app.js 通用 data-page 委派跳转
-    const btnImport = document.getElementById('btnImportSteelPrice');
-    if (btnImport) {
-        btnImport.addEventListener('click', () => {
-            window.location.hash = '/steel-price-upload';
-        });
-    }
-
     // 分页
     const pagination = document.getElementById('steelPricePagination');
     if (pagination) {

@@ -26,7 +26,6 @@ export const pageMeta = {
     'stamping-upload': { title: '上传工艺文件', breadcrumb: '上传工艺文件' },
     'stamping-parts': { title: '零件列表', breadcrumb: '零件列表' },
     'stamping-tonnage': { title: '冲次费率', breadcrumb: '冲压 / 冲次费率' },
-    'steel-price-upload': { title: '标准价格上传', breadcrumb: '钢材价格管理 / 标准价格上传' },
     'steel-price-list': { title: '钢材价格表格浏览', breadcrumb: '钢材价格管理 / 表格浏览' },
     'steel-price-policy-upload': { title: '厚度加减价导入', breadcrumb: '钢价政策 / 政策导入' },
     'steel-price-policy-download': { title: '厚度加减价导出', breadcrumb: '钢价政策 / 政策导出' },

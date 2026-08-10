@@ -2,10 +2,7 @@
 钢材价格管理 API
 """
 
-import logging
-from typing import Optional
-
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -15,15 +12,11 @@ from app.schemas.dto.steel_price_dto import (
     SteelPriceQuery,
     SteelPriceUpdate,
 )
-from app.schemas.vo.steel_price_vo import (
-    SteelPriceResponse,
-    SteelPriceImportResultResponse,
-)
+from app.schemas.vo.steel_price_vo import SteelPriceResponse
 from app.services.steel_price import SteelPriceService
 from app.utils.response import ApiResponse
 
 
-logger = logging.getLogger("router.steel_price")
 router = APIRouter(prefix="/api/steel-prices", tags=["钢材价格管理"])
 
 _steel_price_service = SteelPriceService()
@@ -109,34 +102,3 @@ def delete_steel_price(
     if not success:
         raise HTTPException(status_code=404, detail=error or "记录不存在")
     return ApiResponse.deleted(message="删除成功")
-
-
-@router.post(
-    "/upload",
-    response_model=ApiResponse[SteelPriceImportResultResponse],
-    status_code=status.HTTP_201_CREATED,
-)
-async def upload_steel_prices(
-    file: UploadFile = File(...),
-    db: Session = Depends(get_db),
-) -> ApiResponse[SteelPriceImportResultResponse]:
-    """上传钢材价格 Excel，按唯一键执行 upsert。"""
-    if not file.filename:
-        raise HTTPException(status_code=400, detail="未提供文件名")
-    if not file.filename.lower().endswith((".xlsx", ".xls")):
-        raise HTTPException(status_code=400, detail="仅支持 .xlsx, .xls 文件")
-
-    file_content = await file.read()
-    if not file_content:
-        raise HTTPException(status_code=400, detail="上传文件为空")
-
-    try:
-        result = _steel_price_service.import_excel(db, file_content=file_content, filename=file.filename)
-    except Exception as error:
-        logger.exception("处理钢材价格文件失败: filename=%s", file.filename)
-        raise HTTPException(status_code=500, detail="导入失败") from error
-
-    return ApiResponse.ok(
-        data=result,
-        message=f"导入完成，新增 {result.created_count} 条，更新 {result.updated_count} 条",
-    )

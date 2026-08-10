@@ -20,7 +20,6 @@ import { pageConfig as dashboardPage }      from './features/dashboard/index.js'
 import { pageConfig as stampingUploadPage } from './features/stamping/upload/index.js';
 import { pageConfig as stampingPartsPage }  from './features/stamping/parts/index.js';
 import { pageConfig as stampingTonnagePage } from './features/stamping/tonnage/index.js';
-import { pageConfig as steelPriceUploadPage } from './features/steel-price/upload/index.js';
 import { pageConfig as steelPriceListPage }   from './features/steel-price/list/index.js';
 import { pageConfig as steelPricePolicyUploadPage } from './features/steel-price/policy-upload/index.js';
 import { pageConfig as steelPricePolicyDownloadPage } from './features/steel-price/policy-download/index.js';
@@ -36,7 +35,6 @@ const pages = {
     'stamping-upload': stampingUploadPage,
     'stamping-parts':  stampingPartsPage,
     'stamping-tonnage': stampingTonnagePage,
-    'steel-price-upload': steelPriceUploadPage,
     'steel-price-list': steelPriceListPage,
     'steel-price-policy-upload': steelPricePolicyUploadPage,
     'steel-price-policy-download': steelPricePolicyDownloadPage,

@@ -24,11 +24,6 @@ export function steelPriceListTemplate() {
                         <h2 class="text-[12px] font-semibold text-[#c8c8c8] tracking-wide">钢材价格表</h2>
                     </div>
                     <div class="flex items-center gap-2">
-                        <button id="btnImportSteelPrice" data-page="steel-price-upload"
-                                class="inline-flex items-center gap-1.5 bg-transparent text-[#888888] border border-[#2c2c2c] px-3 py-1.5 text-[11px] font-medium rounded-sm hover:border-[#d32f2f] hover:text-[#d32f2f] transition-all duration-150">
-                            ${window.svgIcon('upload', 'w-3 h-3')}
-                            导入 Excel
-                        </button>
                         <button id="btnAddSteelPrice" class="inline-flex items-center gap-1.5 bg-[#d32f2f] text-white px-3 py-1.5 text-[11px] font-semibold rounded-sm hover:bg-[#b71c1c] transition-all duration-150">
                             ${window.svgIcon('plus', 'w-3 h-3')}
                             新增价格
@@ -98,7 +93,7 @@ export function steelPriceListTemplate() {
                         ${window.svgIcon('clipboard-list', 'w-4 h-4 text-[#3a3a3a]')}
                     </div>
                     <h5 class="text-[11px] font-medium text-[#555555] mb-1">暂无钢材价格数据</h5>
-                    <p class="text-[10px] text-[#3a3a3a]">点击上方"新增价格"或"导入 Excel"添加记录</p>
+                    <p class="text-[10px] text-[#3a3a3a]">点击上方"新增价格"添加记录</p>
                 </div>
 
                 <!-- 加载中 -->

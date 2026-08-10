@@ -1,7 +1,6 @@
 """钢材价格 Repository，只负责数据库访问。"""
 
 import logging
-from decimal import Decimal
 from typing import Any, Optional
 
 from sqlalchemy import distinct
@@ -125,75 +124,3 @@ class SteelPriceRepository:
         db.flush()
         logger.info("删除钢材价格: id=%s", record_id)
         return True
-
-    def upsert(
-        self,
-        db: Session,
-        records: list[dict[str, Any]],
-    ) -> dict[str, int]:
-        """按 (year, month, grade, thickness) 唯一键执行插入或更新。
-
-        返回 ``{"created": 新增条数, "updated": 更新条数}``。
-        """
-
-        if not records:
-            return {"created": 0, "updated": 0}
-
-        key_filters = {
-            (record["year"], record["month"], record["grade"], record["thickness"])
-            for record in records
-        }
-        existing_keys: set[tuple[int, int, str, Decimal]] = set()
-        for year, month, grade, thickness in key_filters:
-            row = (
-                db.query(SteelPrice)
-                .filter(
-                    SteelPrice.year == year,
-                    SteelPrice.month == month,
-                    SteelPrice.grade == grade,
-                    SteelPrice.thickness == thickness,
-                )
-                .first()
-            )
-            if row is not None:
-                existing_keys.add((year, month, grade, thickness))
-
-        updatable_columns = (
-            "steel_type",
-            "reference_spec",
-            "steel_mill",
-            "bid_price",
-            "thickness_adjustment",
-            "processing_fee",
-            "final_price_per_ton",
-            "remark",
-        )
-
-        created_count = 0
-        updated_count = 0
-        for record in records:
-            record_key = (
-                record["year"],
-                record["month"],
-                record["grade"],
-                record["thickness"],
-            )
-            existing = (
-                db.query(SteelPrice)
-                .filter(
-                    SteelPrice.year == record_key[0],
-                    SteelPrice.month == record_key[1],
-                    SteelPrice.grade == record_key[2],
-                    SteelPrice.thickness == record_key[3],
-                )
-                .first()
-            )
-            if existing is not None:
-                for column in updatable_columns:
-                    setattr(existing, column, record[column])
-                updated_count += 1
-            else:
-                db.add(SteelPrice(**record))
-                created_count += 1
-        db.flush()
-        return {"created": created_count, "updated": updated_count}

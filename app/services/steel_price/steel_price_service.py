@@ -6,24 +6,20 @@ from typing import Optional
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.parsers.steel_price import parse_steel_price_excel
 from app.repositories.steel_price import SteelPriceRepository
 from app.schemas.dto.steel_price_dto import (
     SteelPriceCreate,
     SteelPriceQuery,
     SteelPriceUpdate,
 )
-from app.schemas.vo.steel_price_vo import (
-    SteelPriceResponse,
-    SteelPriceImportResultResponse,
-)
+from app.schemas.vo.steel_price_vo import SteelPriceResponse
 
 
 logger = logging.getLogger("service.steel_price")
 
 
 class SteelPriceService:
-    """钢材价格查询与导入业务。"""
+    """钢材价格查询业务。"""
 
     def __init__(self) -> None:
         self.repository = SteelPriceRepository()
@@ -128,39 +124,3 @@ class SteelPriceService:
             db.rollback()
             logger.exception("删除钢材价格失败: id=%s, error=%s", record_id, error)
             return False, str(error)
-
-    def import_excel(
-        self,
-        db: Session,
-        *,
-        file_content: bytes,
-        filename: str,
-    ) -> SteelPriceImportResultResponse:
-        parse_result = parse_steel_price_excel(file_content)
-
-        try:
-            counts = self.repository.upsert(db, parse_result.records)
-            db.commit()
-        except Exception:
-            db.rollback()
-            logger.exception("导入钢材价格失败: filename=%s", filename)
-            raise
-
-        period_labels = sorted(
-            {f"{record['year']}-{record['month']:02d}" for record in parse_result.records}
-        )
-        logger.info(
-            "导入钢材价格完成: filename=%s, periods=%s, created=%d, updated=%d",
-            filename,
-            period_labels,
-            counts["created"],
-            counts["updated"],
-        )
-        return SteelPriceImportResultResponse(
-            filename=filename,
-            imported_count=counts["created"] + counts["updated"],
-            created_count=counts["created"],
-            updated_count=counts["updated"],
-            periods=period_labels,
-            warnings=parse_result.warnings,
-        )
