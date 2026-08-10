@@ -4,7 +4,7 @@
 
 目录结构：
 ├── vo/                              # View Object - 返回给前端
-│   ├── stamping_vo.py               # 零件、工序、吨位价格 VO
+│   ├── stamping_vo.py               # 零件、工序、冲次费率 VO
 │   ├── steel_base_price_vo.py
 │   └── steel_price_policy_vo.py
 │
@@ -27,7 +27,7 @@ from app.schemas.vo.stamping_vo import (
     StampingProcessItemUpdate,
 )
 
-# 吨位价格 - DTO（请求参数）
+# 冲次费率 - DTO（请求参数）
 from app.schemas.dto.stamping_tonnage_price_dto import (
     StampingTonnagePriceCreate,
     StampingTonnagePriceUpdate,
@@ -35,7 +35,7 @@ from app.schemas.dto.stamping_tonnage_price_dto import (
     StampingTonnagePriceBulkCreate,
     StampingTonnagePriceCopyTemplate,
 )
-# 吨位价格 - VO（响应数据）
+# 冲次费率 - VO（响应数据）
 from app.schemas.vo.stamping_tonnage_price_vo import (
     StampingTonnagePriceResponse,
 )
@@ -82,9 +82,9 @@ __all__ = [
     "StampingProcessResponse",
     "StampingProcessUpdate",
     "StampingProcessItemUpdate",
-    # VO - 吨位价格（仅响应）
+    # VO - 冲次费率（仅响应）
     "StampingTonnagePriceResponse",
-    # DTO - 吨位价格（请求参数）
+    # DTO - 冲次费率（请求参数）
     "StampingTonnagePriceCreate",
     "StampingTonnagePriceUpdate",
     "StampingTonnagePriceQuery",

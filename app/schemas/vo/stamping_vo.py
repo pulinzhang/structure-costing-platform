@@ -25,7 +25,7 @@ def decimal_to_float(value: Union[Decimal, float, None]) -> Optional[float]:
     return value
 
 
-# ==================== 吨位价格 VO ====================
+# ==================== 冲次费率 VO ====================
 
 class StampingPartResponse(BaseModel):
     """冲压零件响应 VO"""

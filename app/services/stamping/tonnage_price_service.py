@@ -1,5 +1,5 @@
 """
-吨位价格 Service
+冲次费率 Service
 业务逻辑层，处理业务规则和事务
 """
 
@@ -21,7 +21,7 @@ logger = logging.getLogger("service.stamping")
 
 
 class StampingTonnagePriceService:
-    """吨位价格业务逻辑"""
+    """冲次费率业务逻辑"""
 
     def __init__(self):
         self.repository = StampingTonnagePriceRepository()
@@ -29,19 +29,19 @@ class StampingTonnagePriceService:
     def list_by_year(
         self, db: Session, year: int
     ) -> List[StampingTonnagePriceResponse]:
-        """获取指定年份的所有吨位价格"""
+        """获取指定年份的所有冲次费率"""
         records = self.repository.list_by_year(db, year)
         return [StampingTonnagePriceResponse.model_validate(r) for r in records]
 
     def list_all(self, db: Session) -> List[StampingTonnagePriceResponse]:
-        """获取所有吨位价格（按年份、吨位排序）"""
+        """获取所有冲次费率（按年份、吨位排序）"""
         records = self.repository.list_all(db)
         return [StampingTonnagePriceResponse.model_validate(r) for r in records]
 
     def paginate(
         self, db: Session, query: StampingTonnagePriceQuery
     ) -> Tuple[List[StampingTonnagePriceResponse], int, dict]:
-        """分页查询吨位价格"""
+        """分页查询冲次费率"""
         skip = (query.page - 1) * query.size
         records, total = self.repository.paginate(
             db,
@@ -66,7 +66,7 @@ class StampingTonnagePriceService:
     def create(
         self, db: Session, data: StampingTonnagePriceCreate
     ) -> Tuple[Optional[StampingTonnagePriceResponse], Optional[str]]:
-        """创建吨位价格记录，返回 (记录, 错误信息)"""
+        """创建冲次费率记录，返回 (记录, 错误信息)"""
         try:
             record = self.repository.create(db, data.model_dump())
             return StampingTonnagePriceResponse.model_validate(record), None
@@ -77,14 +77,14 @@ class StampingTonnagePriceService:
             return None, error_msg
         except Exception as e:
             db.rollback()
-            logger.error(f"创建吨位价格失败: {e}")
+            logger.error(f"创建冲次费率失败: {e}")
             return None, str(e)
 
     def bulk_create(
         self, db: Session, items: List[StampingTonnagePriceCreate]
     ) -> Tuple[List[StampingTonnagePriceResponse], List[StampingTonnagePriceResponse], List[str]]:
         """
-        批量创建吨位价格记录。
+        批量创建冲次费率记录。
         返回 (成功列表, 跳过列表, 失败错误信息列表)。
         注意：跳过的记录不含详情数据，仅记录错误原因。
         """
@@ -113,7 +113,7 @@ class StampingTonnagePriceService:
     def update(
         self, db: Session, id: int, data: StampingTonnagePriceUpdate
     ) -> Tuple[Optional[StampingTonnagePriceResponse], Optional[str]]:
-        """更新吨位价格记录，返回 (记录, 错误信息)"""
+        """更新冲次费率记录，返回 (记录, 错误信息)"""
         try:
             record = self.repository.update(db, id, data.model_dump())
             if not record:
@@ -121,11 +121,11 @@ class StampingTonnagePriceService:
             return StampingTonnagePriceResponse.model_validate(record), None
         except Exception as e:
             db.rollback()
-            logger.error(f"更新吨位价格失败: {e}")
+            logger.error(f"更新冲次费率失败: {e}")
             return None, str(e)
 
     def delete(self, db: Session, id: int) -> Tuple[bool, Optional[str]]:
-        """删除吨位价格记录，返回 (是否成功, 错误信息)"""
+        """删除冲次费率记录，返回 (是否成功, 错误信息)"""
         success = self.repository.delete(db, id)
         if not success:
             return False, "记录不存在"

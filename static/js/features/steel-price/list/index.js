@@ -2,7 +2,7 @@
  * Steel Price List Page
  * 钢材价格表格浏览页面逻辑
  *
- * 抽屉式交互（与吨位价格 tonnage/index.js 对齐）：
+ * 抽屉式交互（与冲次费率 tonnage/index.js 对齐）：
  * - 新增 / 编辑  → editDrawer
  * - 查看详情     → viewDrawer
  * - 删除确认     → deleteDrawer

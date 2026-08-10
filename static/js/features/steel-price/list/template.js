@@ -2,7 +2,7 @@
  * Steel Price List Template
  * 钢材价格表格浏览页面 — Brabus Carbon & Precision Dark
  *
- * 抽屉式交互（与吨位价格 tonnage/template.js 对齐）：
+ * 抽屉式交互（与冲次费率 tonnage/template.js 对齐）：
  * - 新增 / 编辑  → editDrawer（720px 右侧滑入）
  * - 查看详情     → viewDrawer（520px 右侧滑入）
  * - 删除确认     → deleteDrawer（380px 右侧滑入）

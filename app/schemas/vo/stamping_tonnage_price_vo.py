@@ -1,5 +1,5 @@
 """
-吨位价格 VO - 响应数据结构
+冲次费率 VO - 响应数据结构
 """
 
 from datetime import datetime
@@ -15,7 +15,7 @@ def decimal_to_float(value: Union[Decimal, float, None]) -> float | None:
 
 
 class StampingTonnagePriceResponse(BaseModel):
-    """吨位价格响应 VO（对应 stamping_tonnage_prices 表）"""
+    """冲次费率响应 VO（对应 stamping_tonnage_prices 表）"""
     id: int
     year: int
     tonnage: int
@@ -35,7 +35,7 @@ class StampingTonnagePriceResponse(BaseModel):
 
 
 class StampingTonnagePriceBulkCreateResponse(BaseModel):
-    """吨位价格批量创建响应 VO"""
+    """冲次费率批量创建响应 VO"""
     created: list[StampingTonnagePriceResponse]
     skipped: list[StampingTonnagePriceResponse]
     failed: list[str]
@@ -45,7 +45,7 @@ class StampingTonnagePriceBulkCreateResponse(BaseModel):
 
 
 class StampingTonnagePriceCopyYearResponse(BaseModel):
-    """吨位价格跨年复制响应 VO"""
+    """冲次费率跨年复制响应 VO"""
     source_year: int
     target_year: int
     created_count: int

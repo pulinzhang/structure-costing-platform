@@ -131,7 +131,7 @@ class StampingProcess(Base):
 
 class StampingTonnagePrice(Base):
     """
-    冲压压机吨位单冲次价格表
+    冲压冲次费率表
     用于存储不同年份、不同压机吨位对应的单冲次加工价格
     """
     __tablename__ = "stamping_tonnage_price"

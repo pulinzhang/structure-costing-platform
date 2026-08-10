@@ -1,6 +1,6 @@
 /**
  * Tonnage Price Template
- * 吨位价格维护页面 — Brabus Carbon & Precision Dark
+ * 冲次费率维护页面 — Brabus Carbon & Precision Dark
  *
  * 抽屉式交互（与零件列表 /partDrawer 对齐）：
  * - 编辑/新增  → editDrawer（640px 右侧滑入）
@@ -21,7 +21,7 @@ export function tonnagePriceTemplate() {
                      style="background: linear-gradient(90deg, #1c1c1c 0%, #1e1e1e 60%);">
                     <div class="flex items-center gap-3">
                         <div class="w-[2px] h-4 bg-[#d32f2f] rounded-[1px] shadow-[0_0_6px_rgba(211,47,47,0.3)]"></div>
-                        <h2 class="text-[12px] font-semibold text-[#c8c8c8] tracking-wide">压机吨位单冲次价格</h2>
+                        <h2 class="text-[12px] font-semibold text-[#c8c8c8] tracking-wide">冲次费率</h2>
                     </div>
                     <div class="flex items-center gap-2">
                         <button id="btnCopyTemplate" class="inline-flex items-center gap-1.5 bg-transparent text-[#888888] border border-[#2c2c2c] px-3 py-1.5 text-[11px] font-medium rounded-sm hover:border-[#d32f2f] hover:text-[#d32f2f] transition-all duration-150">

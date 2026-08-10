@@ -1,6 +1,6 @@
 /**
  * Tonnage Price Page
- * 吨位价格维护页面逻辑
+ * 冲次费率维护页面逻辑
  *
  * 抽屉式交互（与零件列表 /partDrawer 对齐）：
  * - 编辑/新增  → editDrawer

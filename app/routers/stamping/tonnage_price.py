@@ -1,5 +1,5 @@
 """
-吨位价格路由
+冲次费率路由
 API 接口定义
 """
 
@@ -24,21 +24,21 @@ from app.schemas.common.page_result import PageResult
 from app.utils.response import ApiResponse
 
 
-router = APIRouter(prefix="/api/stamping/tonnage-price", tags=["吨位价格 API"])
+router = APIRouter(prefix="/api/stamping/tonnage-price", tags=["冲次费率 API"])
 
 _tonnage_price_service = StampingTonnagePriceService()
 
 
 @router.get("/list", response_model=ApiResponse[List[StampingTonnagePriceResponse]])
 def list_all(db: Session = Depends(get_db)):
-    """获取所有吨位价格列表（按年份、吨位排序）"""
+    """获取所有冲次费率列表（按年份、吨位排序）"""
     data = _tonnage_price_service.list_all(db)
     return ApiResponse.ok(data=data, message=f"查询到 {len(data)} 条记录")
 
 
 @router.get("/by-year/{year}", response_model=ApiResponse[List[StampingTonnagePriceResponse]])
 def list_by_year(year: int, db: Session = Depends(get_db)):
-    """获取指定年份的所有吨位价格"""
+    """获取指定年份的所有冲次费率"""
     data = _tonnage_price_service.list_by_year(db, year)
     return ApiResponse.ok(data=data, message=f"查询到 {len(data)} 条记录")
 
@@ -48,7 +48,7 @@ def paginate(
     query: StampingTonnagePriceQuery = Depends(),
     db: Session = Depends(get_db),
 ):
-    """分页查询吨位价格"""
+    """分页查询冲次费率"""
     rows, total, filters = _tonnage_price_service.paginate(db, query)
     return ApiResponse.list_(
         items=rows,
@@ -62,10 +62,10 @@ def paginate(
 
 @router.get("/{id}", response_model=ApiResponse[StampingTonnagePriceResponse])
 def get_by_id(id: int, db: Session = Depends(get_db)):
-    """获取单个吨位价格记录"""
+    """获取单个冲次费率记录"""
     record = _tonnage_price_service.get_by_id(db, id)
     if not record:
-        raise HTTPException(status_code=404, detail=f"吨位价格记录不存在: id={id}")
+        raise HTTPException(status_code=404, detail=f"冲次费率记录不存在: id={id}")
     return ApiResponse.ok(data=record, message="获取成功")
 
 
@@ -74,7 +74,7 @@ def create(
     body: StampingTonnagePriceCreate,
     db: Session = Depends(get_db),
 ):
-    """创建吨位价格记录"""
+    """创建冲次费率记录"""
     record, error = _tonnage_price_service.create(db, body)
     if error:
         raise HTTPException(status_code=400, detail=error)
@@ -86,7 +86,7 @@ def bulk_create(
     items: List[StampingTonnagePriceCreate],
     db: Session = Depends(get_db),
 ):
-    """批量创建吨位价格记录"""
+    """批量创建冲次费率记录"""
     created, skipped, failed = _tonnage_price_service.bulk_create(db, items)
     return ApiResponse.ok(
         data=StampingTonnagePriceBulkCreateResponse(
@@ -107,7 +107,7 @@ def update(
     body: StampingTonnagePriceUpdate,
     db: Session = Depends(get_db),
 ):
-    """更新吨位价格记录"""
+    """更新冲次费率记录"""
     record, error = _tonnage_price_service.update(db, id, body)
     if error:
         raise HTTPException(status_code=404, detail=error)
@@ -116,7 +116,7 @@ def update(
 
 @router.delete("/{id}", response_model=ApiResponse[None])
 def delete(id: int, db: Session = Depends(get_db)):
-    """删除吨位价格记录"""
+    """删除冲次费率记录"""
     success, error = _tonnage_price_service.delete(db, id)
     if not success:
         raise HTTPException(status_code=404, detail=error or "记录不存在")
