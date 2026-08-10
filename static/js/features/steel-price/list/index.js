@@ -1,16 +1,10 @@
 /**
  * Steel Price List Page
- * 钢材价格表格浏览页面逻辑
- *
- * 抽屉式交互（与冲次费率 tonnage/index.js 对齐）：
- * - 新增 / 编辑  → editDrawer
- * - 查看详情     → viewDrawer
- * - 删除确认     → deleteDrawer
+ * 钢材价格计算结果浏览 / 手工维护 / 审核
  */
 
 import { steelPriceListTemplate, renderSteelPricePagination, renderSteelPriceRows } from './template.js';
 
-// 状态管理
 const steelPriceState = {
     records: [],
     total: 0,
@@ -18,32 +12,24 @@ const steelPriceState = {
     size: 20,
     totalPages: 1,
     filtersLoaded: false,
+    currentViewId: null,
 };
 
-// API 基础路径
 const API_BASE = '/api/steel-prices';
-
-// 抽屉动画时长（与 template 中 transition-transform duration-300 保持一致）
 const DRAWER_ANIMATION_MS = 300;
+const AUDIT_LABEL = { pending: '待审', approved: '已通过', rejected: '已驳回' };
 
-/**
- * 打开抽屉 — 先 display:block，下一帧再 translate-x-0 触发滑入
- */
 function openDrawer(drawerId, backdropId) {
     const drawer = document.getElementById(drawerId);
     const backdrop = document.getElementById(backdropId);
     if (!drawer) return;
     drawer.style.display = 'flex';
     if (backdrop) backdrop.style.display = 'block';
-    // 强制 reflow，让 transition 生效
     void drawer.offsetWidth;
     drawer.classList.remove('translate-x-full');
     drawer.classList.add('translate-x-0');
 }
 
-/**
- * 关闭抽屉 — translate-x-full 触发滑出，动画结束后再 display:none
- */
 function closeDrawer(drawerId, backdropId) {
     const drawer = document.getElementById(drawerId);
     const backdrop = document.getElementById(backdropId);
@@ -56,17 +42,11 @@ function closeDrawer(drawerId, backdropId) {
     }, DRAWER_ANIMATION_MS);
 }
 
-/**
- * 页面初始化
- */
 function init() {
     bindEvents();
     loadData(1);
 }
 
-/**
- * 加载数据
- */
 async function loadData(page = 1) {
     const tableBody = document.getElementById('steelPriceTableBody');
     const emptyState = document.getElementById('steelPriceEmpty');
@@ -82,14 +62,16 @@ async function loadData(page = 1) {
             size: steelPriceState.size,
             year: getFilterValue('steelPriceYear'),
             month: getFilterValue('steelPriceMonth'),
-            steel_type: getFilterValue('steelPriceType'),
+            location: getFilterValue('steelPriceLocation'),
+            category_name: getFilterValue('steelPriceCategory'),
             grade: document.getElementById('steelPriceGrade')?.value.trim(),
             steel_mill: getFilterValue('steelPriceMill'),
+            audit_status: getFilterValue('steelPriceAuditStatus'),
         };
 
         const response = await HttpClient.get(API_BASE, { params });
         const payload = response.data || {};
-        const records = Array.isArray(payload.list) ? payload.list : [];
+        const records = Array.isArray(payload.items) ? payload.items : [];
 
         steelPriceState.records = records;
         steelPriceState.total = payload.total || 0;
@@ -127,9 +109,7 @@ async function loadData(page = 1) {
         if (tableBody) {
             tableBody.innerHTML = `
                 <tr>
-                    <td colspan="13" class="px-4 py-8 text-center text-[#9e9e9e] text-xs">
-                        加载数据失败，请重试
-                    </td>
+                    <td colspan="13" class="px-4 py-8 text-center text-[#9e9e9e] text-xs">加载数据失败，请重试</td>
                 </tr>`;
         }
     } finally {
@@ -141,14 +121,17 @@ function getFilterValue(id) {
     return document.getElementById(id)?.value || '';
 }
 
-/**
- * 渲染筛选下拉选项
- */
 function renderFilters(filters) {
     fillSelect('steelPriceYear', filters.years, value => `${value} 年`);
     fillSelect('steelPriceMonth', filters.months, value => `${value} 月`);
-    fillSelect('steelPriceType', filters.steel_types);
+    fillSelect('steelPriceLocation', filters.locations);
+    fillSelect('steelPriceCategory', filters.category_names);
     fillSelect('steelPriceMill', filters.steel_mills);
+    fillSelect(
+        'steelPriceAuditStatus',
+        filters.audit_statuses,
+        value => AUDIT_LABEL[value] || value
+    );
 }
 
 function fillSelect(id, values = [], label = value => value) {
@@ -159,21 +142,22 @@ function fillSelect(id, values = [], label = value => value) {
         values.map(value => `<option value="${esc(value)}">${esc(label(value))}</option>`).join('');
 }
 
-/**
- * 重置筛选
- */
 function resetFilters() {
-    ['steelPriceYear', 'steelPriceMonth', 'steelPriceType', 'steelPriceGrade', 'steelPriceMill']
-        .forEach(id => {
-            const element = document.getElementById(id);
-            if (element) element.value = '';
-        });
+    [
+        'steelPriceYear',
+        'steelPriceMonth',
+        'steelPriceLocation',
+        'steelPriceCategory',
+        'steelPriceGrade',
+        'steelPriceMill',
+        'steelPriceAuditStatus',
+    ].forEach(id => {
+        const element = document.getElementById(id);
+        if (element) element.value = '';
+    });
     loadData(1);
 }
 
-/**
- * 绑定表格行内按钮事件
- */
 function bindRowEvents() {
     document.querySelectorAll('#steelPriceTableBody .view-btn').forEach(btn => {
         btn.addEventListener('click', event => {
@@ -182,7 +166,6 @@ function bindRowEvents() {
             if (record) openViewDrawer(record);
         });
     });
-
     document.querySelectorAll('#steelPriceTableBody .edit-btn').forEach(btn => {
         btn.addEventListener('click', event => {
             const id = Number(event.target.closest('tr').dataset.id);
@@ -190,7 +173,6 @@ function bindRowEvents() {
             if (record) openEditDrawer(record);
         });
     });
-
     document.querySelectorAll('#steelPriceTableBody .delete-btn').forEach(btn => {
         btn.addEventListener('click', event => {
             const id = Number(event.target.closest('tr').dataset.id);
@@ -200,52 +182,31 @@ function bindRowEvents() {
     });
 }
 
-/**
- * 绑定页面事件
- */
 function bindEvents() {
-    const btnAdd = document.getElementById('btnAddSteelPrice');
-    if (btnAdd) btnAdd.addEventListener('click', () => openAddDrawer());
+    document.getElementById('steelPriceSearchButton')?.addEventListener('click', () => loadData(1));
+    document.getElementById('steelPriceGrade')?.addEventListener('keydown', event => {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            loadData(1);
+        }
+    });
+    document.getElementById('steelPriceResetFilterButton')?.addEventListener('click', () => resetFilters());
 
-    const btnSearch = document.getElementById('steelPriceSearchButton');
-    if (btnSearch) btnSearch.addEventListener('click', () => loadData(1));
-
-    const gradeInput = document.getElementById('steelPriceGrade');
-    if (gradeInput) {
-        gradeInput.addEventListener('keydown', event => {
-            if (event.key === 'Enter') {
-                event.preventDefault();
-                loadData(1);
-            }
-        });
-    }
-
-    const btnReset = document.getElementById('steelPriceResetFilterButton');
-    if (btnReset) btnReset.addEventListener('click', () => resetFilters());
-
-    // 分页
-    const pagination = document.getElementById('steelPricePagination');
-    if (pagination) {
-        pagination.addEventListener('click', event => {
-            const btn = event.target.closest('.steel-price-page-btn');
-            if (btn && !btn.disabled) {
-                const page = parseInt(btn.dataset.page);
-                if (page) loadData(page);
-            }
-        });
-    }
+    document.getElementById('steelPricePagination')?.addEventListener('click', event => {
+        const btn = event.target.closest('.steel-price-page-btn');
+        if (btn && !btn.disabled) {
+            const page = parseInt(btn.dataset.page);
+            if (page) loadData(page);
+        }
+    });
 
     bindEditDrawerEvents();
     bindViewDrawerEvents();
     bindDeleteDrawerEvents();
 }
 
-/**
- * 绑定编辑抽屉事件
- */
 function bindEditDrawerEvents() {
     const close = () => closeDrawer('editDrawer', 'editDrawerBackdrop');
-
     document.getElementById('closeEditDrawer')?.addEventListener('click', close);
     document.getElementById('cancelEditBtn')?.addEventListener('click', close);
     document.getElementById('editDrawerBackdrop')?.addEventListener('click', close);
@@ -253,47 +214,26 @@ function bindEditDrawerEvents() {
         event.preventDefault();
         await saveRecord();
     });
-    document.addEventListener('keydown', event => {
-        const drawer = document.getElementById('editDrawer');
-        if (event.key === 'Escape' && drawer && drawer.style.display === 'flex') {
-            close();
-        }
-    });
 }
 
-/**
- * 绑定查看抽屉事件
- */
 function bindViewDrawerEvents() {
     const close = () => closeDrawer('viewDrawer', 'viewDrawerBackdrop');
-
     document.getElementById('closeViewDrawer')?.addEventListener('click', close);
     document.getElementById('viewDrawerBackdrop')?.addEventListener('click', close);
 
-    // 查看抽屉底部"编辑"按钮 → 直接关闭查看、打开编辑
     document.getElementById('viewDrawerEditBtn')?.addEventListener('click', () => {
-        const recordId = Number(document.getElementById('editRecordId')?.value || 0);
+        const record = steelPriceState.records.find(r => r.id === steelPriceState.currentViewId);
         close();
-        const record = steelPriceState.records.find(r => r.id === recordId);
-        if (record) {
-            setTimeout(() => openEditDrawer(record), DRAWER_ANIMATION_MS);
-        }
+        if (record) setTimeout(() => openEditDrawer(record), DRAWER_ANIMATION_MS);
     });
 
-    document.addEventListener('keydown', event => {
-        const drawer = document.getElementById('viewDrawer');
-        if (event.key === 'Escape' && drawer && drawer.style.display === 'flex') {
-            close();
-        }
-    });
+    document.getElementById('viewDrawerApproveBtn')?.addEventListener('click', () => handleApprove());
+    document.getElementById('viewDrawerRejectBtn')?.addEventListener('click', () => handleReject());
+    document.getElementById('viewDrawerReverseBtn')?.addEventListener('click', () => handleReverseAudit());
 }
 
-/**
- * 绑定删除抽屉事件
- */
 function bindDeleteDrawerEvents() {
     const close = () => closeDrawer('deleteDrawer', 'deleteDrawerBackdrop');
-
     document.getElementById('closeDeleteDrawer')?.addEventListener('click', close);
     document.getElementById('cancelDeleteBtn')?.addEventListener('click', close);
     document.getElementById('deleteDrawerBackdrop')?.addEventListener('click', close);
@@ -303,167 +243,154 @@ function bindDeleteDrawerEvents() {
     });
 }
 
-// ===== 抽屉业务函数 =====
 
-/**
- * 打开新增抽屉
- */
-function openAddDrawer() {
-    setEditDrawerTitle('新增钢材价格');
-    document.getElementById('editRecordId').value = '';
-    document.getElementById('editForm').reset();
 
-    // 设置合理默认值
-    const yearInput = document.getElementById('editYear');
-    if (yearInput) yearInput.value = new Date().getFullYear();
-    const monthInput = document.getElementById('editMonth');
-    if (monthInput) monthInput.value = new Date().getMonth() + 1;
-
-    // 业务主键在新增场景可编辑，在编辑场景禁用
-    setBusinessKeyReadonly(false);
-
-    openDrawer('editDrawer', 'editDrawerBackdrop');
-    setTimeout(() => document.getElementById('editSteelType')?.focus(), DRAWER_ANIMATION_MS);
-}
-
-/**
- * 打开编辑抽屉
- */
 function openEditDrawer(record) {
+    if (record.audit_status === 'approved') {
+        showToast('记录已审核通过，请先反审核后再编辑', 'warning');
+        return;
+    }
     setEditDrawerTitle('编辑钢材价格');
     document.getElementById('editRecordId').value = record.id;
-
     document.getElementById('editYear').value = record.year;
     document.getElementById('editMonth').value = record.month;
-    document.getElementById('editSteelType').value = record.steel_type || '';
-    document.getElementById('editGrade').value = record.grade || '';
-    document.getElementById('editReferenceSpec').value = record.reference_spec || '';
+    document.getElementById('editLocation').value = record.location || '';
     document.getElementById('editSteelMill').value = record.steel_mill || '';
+    document.getElementById('editCategoryName').value = record.category_name || '';
+    document.getElementById('editGrade').value = record.grade || '';
     document.getElementById('editThickness').value = record.thickness ?? '';
-    document.getElementById('editBidPrice').value = record.bid_price ?? '';
-    document.getElementById('editThicknessAdjustment').value = record.thickness_adjustment ?? '';
-    document.getElementById('editProcessingFee').value = record.processing_fee ?? '';
-    document.getElementById('editFinalPrice').value = record.final_price_per_ton ?? '';
+    document.getElementById('editWidth').value = record.width ?? '';
+    document.getElementById('editBasePrice').value = record.base_price ?? '';
+    document.getElementById('editThicknessAdjustment').value = record.thickness_adjustment ?? 0;
+    document.getElementById('editWidthAdjustment').value = record.width_adjustment ?? 0;
+    document.getElementById('editZincAdjustment').value = record.zinc_adjustment ?? 0;
+    document.getElementById('editProcessingFee').value = record.processing_fee ?? 0;
+    document.getElementById('editOtherAdjustment').value = record.other_adjustment ?? 0;
+    document.getElementById('editSpec').value = record.spec || '';
     document.getElementById('editRemark').value = record.remark || '';
-
-    // 编辑场景：业务主键禁用
     setBusinessKeyReadonly(true);
-
     openDrawer('editDrawer', 'editDrawerBackdrop');
-    setTimeout(() => document.getElementById('editBidPrice')?.focus(), DRAWER_ANIMATION_MS);
 }
 
-/**
- * 打开查看抽屉
- */
-function openViewDrawer(record) {
-    // 为底部"编辑"按钮预设记录 id
-    document.getElementById('editRecordId').value = record.id;
+function formatTrace(prefix, record) {
+    const filename = record[`${prefix}_excel_filename`];
+    if (!filename && !record[`${prefix}_price_id`] && !record[`${prefix}_policy_id`] && !record[`${prefix}_ladder_item_id`]) {
+        return `<span class="text-[#616161]">${prefixLabel(prefix)}：未匹配</span>`;
+    }
+    const sheet = record[`${prefix}_sheet_name`] || '-';
+    const row = record[`${prefix}_excel_row`] ?? '-';
+    const col = record[`${prefix}_excel_col`] ?? '-';
+    return `<span><span class="text-[#777777]">${prefixLabel(prefix)}：</span>${esc(filename || '-')} / ${esc(sheet)} / 行${esc(row)} 列${esc(col)}</span>`;
+}
 
+function prefixLabel(prefix) {
+    return { base: '基准价', thickness: '厚度政策', width: '宽度政策', zinc: '锌层政策' }[prefix] || prefix;
+}
+
+function openViewDrawer(record) {
+    steelPriceState.currentViewId = record.id;
     fillViewField('view-year', record.year);
     fillViewField('view-month', record.month);
+    fillViewField('view-location', record.location);
+    fillViewField('view-steel-mill', record.steel_mill);
+    fillViewField('view-category-name', record.category_name);
     fillViewField('view-grade', record.grade);
     fillViewField('view-thickness', formatDecimal(record.thickness, 4));
-    fillViewField('view-steel-type', record.steel_type);
-    fillViewField('view-reference-spec', record.reference_spec);
-    fillViewField('view-steel-mill', record.steel_mill);
-    fillViewField('view-bid-price', formatDecimal(record.bid_price));
+    fillViewField('view-width', formatDecimal(record.width, 2));
+    fillViewField('view-spec', record.spec || '—');
+    fillViewField('view-base-price', formatDecimal(record.base_price));
     fillViewField('view-thickness-adjustment', formatDecimal(record.thickness_adjustment));
+    fillViewField('view-width-adjustment', formatDecimal(record.width_adjustment));
+    fillViewField('view-zinc-adjustment', formatDecimal(record.zinc_adjustment));
     fillViewField('view-processing-fee', formatDecimal(record.processing_fee));
+    fillViewField('view-other-adjustment', formatDecimal(record.other_adjustment));
     fillViewField('view-final-price', formatDecimal(record.final_price_per_ton));
-    fillViewField('view-remark', record.remark || '—');
-    fillViewField('view-created-at', formatDateTime(record.created_at));
-    fillViewField('view-updated-at', formatDateTime(record.updated_at));
+    fillViewField('view-audit-status', AUDIT_LABEL[record.audit_status] || record.audit_status);
+    fillViewField('view-audited-by', record.audited_by || '—');
+    fillViewField('view-audited-at', formatDateTime(record.audited_at));
+    fillViewField('view-audit-remark', record.audit_remark || '—');
+    fillViewField('view-reverse-audited-by', record.reverse_audited_by || '—');
+    fillViewField('view-reverse-audited-at', formatDateTime(record.reverse_audited_at));
+    fillViewField('view-reverse-audit-remark', record.reverse_audit_remark || '—');
+    fillViewField('view-match-status', record.match_status);
+    fillViewField('view-calc-batch-id', record.calc_batch_id);
+    fillViewField('view-calculated-at', formatDateTime(record.calculated_at));
+
+    document.getElementById('view-trace-base').innerHTML = formatTrace('base', record);
+    document.getElementById('view-trace-thickness').innerHTML = formatTrace('thickness', record);
+    document.getElementById('view-trace-width').innerHTML = formatTrace('width', record);
+    document.getElementById('view-trace-zinc').innerHTML = formatTrace('zinc', record);
+
+    const approved = record.audit_status === 'approved';
+    const pending = record.audit_status === 'pending';
+    const rejected = record.audit_status === 'rejected';
+    toggleHidden('viewDrawerApproveBtn', !(pending || rejected));
+    toggleHidden('viewDrawerRejectBtn', !pending);
+    toggleHidden('viewDrawerReverseBtn', !approved);
+    toggleHidden('viewDrawerEditBtn', approved);
 
     openDrawer('viewDrawer', 'viewDrawerBackdrop');
 }
 
-/**
- * 打开删除确认抽屉
- */
+function toggleHidden(id, shouldHide) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.toggle('hidden', shouldHide);
+}
+
 function openDeleteDrawer(record) {
+    if (record.audit_status === 'approved') {
+        showToast('记录已审核通过，请先反审核后再删除', 'warning');
+        return;
+    }
     document.getElementById('deleteRecordId').value = record.id;
     const summary = document.getElementById('deleteSummary');
     if (summary) {
         summary.innerHTML = `
-            <span class="text-[#9e9e9e]">记录：</span>
             <span class="text-[#d32f2f] font-mono">${esc(record.year)}-${esc(String(record.month).padStart(2, '0'))}</span>
-            <span class="text-[#9e9e9e]"> / </span>
-            <span class="text-[#cccccc]">${esc(record.steel_type)}</span>
-            <span class="text-[#9e9e9e]"> / </span>
-            <span class="text-[#cccccc]">${esc(record.grade)}</span>
-            <span class="text-[#9e9e9e]"> / </span>
-            <span class="text-[#cccccc] font-mono">${esc(formatDecimal(record.thickness, 4))} mm</span>
+            <span class="text-[#9e9e9e]"> / ${esc(record.location)} / ${esc(record.steel_mill)} / ${esc(record.grade)}</span>
+            <span class="text-[#9e9e9e]"> / ${esc(formatDecimal(record.thickness, 4))}*${esc(formatDecimal(record.width, 2))}</span>
         `;
     }
     openDrawer('deleteDrawer', 'deleteDrawerBackdrop');
 }
 
-/**
- * 保存记录（新增或更新）
- */
 async function saveRecord() {
     const recordId = document.getElementById('editRecordId').value;
-    const isEdit = Boolean(recordId);
+    if (!recordId) return;
 
-    const year = parseInt(document.getElementById('editYear').value);
-    const month = parseInt(document.getElementById('editMonth').value);
-    const steelType = document.getElementById('editSteelType').value.trim();
-    const grade = document.getElementById('editGrade').value.trim();
-    const referenceSpec = document.getElementById('editReferenceSpec').value.trim();
-    const steelMill = document.getElementById('editSteelMill').value.trim();
-    const thickness = parseFloat(document.getElementById('editThickness').value);
-    const bidPrice = parseFloat(document.getElementById('editBidPrice').value);
+    const basePrice = parseFloat(document.getElementById('editBasePrice').value);
     const thicknessAdjustment = parseFloat(document.getElementById('editThicknessAdjustment').value);
+    const widthAdjustment = parseFloat(document.getElementById('editWidthAdjustment').value);
+    const zincAdjustment = parseFloat(document.getElementById('editZincAdjustment').value);
     const processingFee = parseFloat(document.getElementById('editProcessingFee').value);
-    const finalPrice = parseFloat(document.getElementById('editFinalPrice').value);
+    const otherAdjustment = parseFloat(document.getElementById('editOtherAdjustment').value);
+    const spec = document.getElementById('editSpec').value.trim() || null;
     const remark = document.getElementById('editRemark').value.trim() || null;
 
     if (
-        Number.isNaN(year) || Number.isNaN(month) ||
-        Number.isNaN(thickness) || Number.isNaN(bidPrice) ||
-        Number.isNaN(thicknessAdjustment) || Number.isNaN(processingFee) ||
-        Number.isNaN(finalPrice)
+        Number.isNaN(basePrice) ||
+        Number.isNaN(thicknessAdjustment) || Number.isNaN(widthAdjustment) ||
+        Number.isNaN(zincAdjustment) || Number.isNaN(processingFee) ||
+        Number.isNaN(otherAdjustment)
     ) {
         showToast('请填写所有必填数值字段', 'warning');
         return;
     }
-    if (!steelType || !grade || !referenceSpec || !steelMill) {
-        showToast('请填写钢种、牌号、参考规格、钢厂', 'warning');
-        return;
-    }
 
     try {
-        if (isEdit) {
-            // 仅可编辑字段
-            const payload = {
-                bid_price: bidPrice,
-                thickness_adjustment: thicknessAdjustment,
-                processing_fee: processingFee,
-                final_price_per_ton: finalPrice,
-                remark,
-                steel_type: steelType,
-                steel_mill: steelMill,
-                reference_spec: referenceSpec,
-            };
-            await HttpClient.put(`${API_BASE}/${recordId}`, payload);
-            showToast('更新成功', 'success');
-        } else {
-            const payload = {
-                year, month, steel_type: steelType, grade,
-                reference_spec: referenceSpec, steel_mill: steelMill,
-                thickness, bid_price: bidPrice,
-                thickness_adjustment: thicknessAdjustment,
-                processing_fee: processingFee,
-                final_price_per_ton: finalPrice,
-                remark,
-            };
-            await HttpClient.post(API_BASE, payload);
-            showToast('创建成功', 'success');
-        }
-
+        await HttpClient.put(`${API_BASE}/${recordId}`, {
+            base_price: basePrice,
+            thickness_adjustment: thicknessAdjustment,
+            width_adjustment: widthAdjustment,
+            zinc_adjustment: zincAdjustment,
+            processing_fee: processingFee,
+            other_adjustment: otherAdjustment,
+            spec,
+            remark,
+        });
+        showToast('更新成功', 'success');
         closeDrawer('editDrawer', 'editDrawerBackdrop');
-        // 重置筛选下拉的"已加载"标记，避免服务器侧选项变化（新增/删除）未生效
         steelPriceState.filtersLoaded = false;
         loadData(steelPriceState.page);
     } catch (error) {
@@ -471,15 +398,11 @@ async function saveRecord() {
     }
 }
 
-/**
- * 删除记录
- */
 async function deleteRecord(id) {
     try {
         await HttpClient.delete(`${API_BASE}/${id}`);
         showToast('删除成功', 'success');
         closeDrawer('deleteDrawer', 'deleteDrawerBackdrop');
-
         const nextPage = steelPriceState.records.length === 1 && steelPriceState.page > 1
             ? steelPriceState.page - 1
             : steelPriceState.page;
@@ -490,7 +413,69 @@ async function deleteRecord(id) {
     }
 }
 
-// ===== 工具函数 =====
+async function handleApprove() {
+    const id = steelPriceState.currentViewId;
+    if (!id) return;
+    const auditedBy = window.prompt('请输入审核人姓名（经理）');
+    if (!auditedBy || !auditedBy.trim()) return;
+    const auditRemark = window.prompt('审核意见（可选）') || null;
+    try {
+        await HttpClient.post(`${API_BASE}/${id}/approve`, {
+            audited_by: auditedBy.trim(),
+            audit_remark: auditRemark,
+        });
+        showToast('审核通过', 'success');
+        closeDrawer('viewDrawer', 'viewDrawerBackdrop');
+        steelPriceState.filtersLoaded = false;
+        loadData(steelPriceState.page);
+    } catch (error) {
+        console.error('审核通过失败:', error);
+    }
+}
+
+async function handleReject() {
+    const id = steelPriceState.currentViewId;
+    if (!id) return;
+    const auditedBy = window.prompt('请输入审核人姓名（经理）');
+    if (!auditedBy || !auditedBy.trim()) return;
+    const auditRemark = window.prompt('驳回原因（可选）') || null;
+    try {
+        await HttpClient.post(`${API_BASE}/${id}/reject`, {
+            audited_by: auditedBy.trim(),
+            audit_remark: auditRemark,
+        });
+        showToast('已驳回', 'success');
+        closeDrawer('viewDrawer', 'viewDrawerBackdrop');
+        steelPriceState.filtersLoaded = false;
+        loadData(steelPriceState.page);
+    } catch (error) {
+        console.error('审核驳回失败:', error);
+    }
+}
+
+async function handleReverseAudit() {
+    const id = steelPriceState.currentViewId;
+    if (!id) return;
+    const reverseAuditedBy = window.prompt('请输入反审核人姓名（经理）');
+    if (!reverseAuditedBy || !reverseAuditedBy.trim()) return;
+    const reverseAuditRemark = window.prompt('反审核原因（必填）');
+    if (!reverseAuditRemark || !reverseAuditRemark.trim()) {
+        showToast('反审核原因必填', 'warning');
+        return;
+    }
+    try {
+        await HttpClient.post(`${API_BASE}/${id}/reverse-audit`, {
+            reverse_audited_by: reverseAuditedBy.trim(),
+            reverse_audit_remark: reverseAuditRemark.trim(),
+        });
+        showToast('反审核成功', 'success');
+        closeDrawer('viewDrawer', 'viewDrawerBackdrop');
+        steelPriceState.filtersLoaded = false;
+        loadData(steelPriceState.page);
+    } catch (error) {
+        console.error('反审核失败:', error);
+    }
+}
 
 function setEditDrawerTitle(text) {
     const title = document.getElementById('editDrawerTitle');
@@ -498,7 +483,16 @@ function setEditDrawerTitle(text) {
 }
 
 function setBusinessKeyReadonly(readonly) {
-    ['editYear', 'editMonth', 'editGrade', 'editThickness'].forEach(id => {
+    [
+        'editYear',
+        'editMonth',
+        'editLocation',
+        'editSteelMill',
+        'editCategoryName',
+        'editGrade',
+        'editThickness',
+        'editWidth',
+    ].forEach(id => {
         const element = document.getElementById(id);
         if (element) {
             element.readOnly = readonly;
@@ -534,9 +528,6 @@ function formatDateTime(value) {
     }
 }
 
-/**
- * 页面配置导出
- */
 export const pageConfig = {
     render: steelPriceListTemplate,
     init: () => init(),

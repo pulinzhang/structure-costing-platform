@@ -1,11 +1,9 @@
 """
-钢材价格表主键迁移工具
+钢材价格表结构迁移工具
 
-业务主键从 (year, month, steel_type, grade, reference_spec, steel_mill, thickness)
-变更为 (year, month, grade, thickness)。
-
-SQLite 的 UNIQUE 约束无法直接修改；该工具在检测到旧约束时通过临时表重建
-steel_prices 表并保留历史数据（冲突行保留旧记录）。
+旧表（导入价目 / 旧业务主键）无法通过 ADD COLUMN 平滑升级到
+「计算结果 + 溯源 + 审核」新结构。检测到旧结构时直接 DROP，
+由后续 create_tables 按最新 Model 重建空表。
 """
 
 from sqlalchemy import text
@@ -14,121 +12,69 @@ from sqlalchemy.engine import Engine
 from app.utils.logging_config import get_logger
 
 
-logger = get_logger("steel_price_key_migration")
+logger = get_logger("steel_price_schema_migration")
 
-EXPECTED_KEY_COLUMNS = ("year", "month", "grade", "thickness")
-LEGACY_KEY_COLUMNS = (
-    "year",
-    "month",
-    "steel_type",
-    "grade",
-    "reference_spec",
-    "steel_mill",
-    "thickness",
-)
 TABLE_NAME = "steel_prices"
 
+# 新表必备列；缺少任一列即视为旧结构
+NEW_SCHEMA_REQUIRED_COLUMNS = {
+    "location",
+    "category_name",
+    "width",
+    "base_price",
+    "width_adjustment",
+    "zinc_adjustment",
+    "other_adjustment",
+    "calc_batch_id",
+    "match_status",
+    "calc_status",
+    "formula_version",
+    "calculated_at",
+    "audit_status",
+    "reverse_audited_by",
+    "reverse_audited_at",
+    "reverse_audit_remark",
+}
 
-def _existing_unique_columns(conn, table_name: str) -> list[str] | None:
-    """返回业务主键索引对应的列名集合；若不是业务键索引则返回 None。"""
-    result = conn.execute(
+# 旧表特征列（存在则确认是旧结构）
+LEGACY_MARKER_COLUMNS = {"bid_price", "steel_type", "reference_spec"}
+
+
+def _table_exists(conn, table_name: str) -> bool:
+    row = conn.execute(
         text(
-            "SELECT sql FROM sqlite_master WHERE type='table' AND name=:name"
+            "SELECT name FROM sqlite_master WHERE type='table' AND name=:name"
         ),
         {"name": table_name},
     ).fetchone()
-    if not result or not result[0]:
-        return None
-    create_sql = result[0].upper()
-    if "UIX_STEEL_PRICE_BUSINESS_KEY" not in create_sql:
-        return None
-    marker = "UIX_STEEL_PRICE_BUSINESS_KEY"
-    start = create_sql.find(marker)
-    paren_start = create_sql.find("(", start)
-    paren_end = create_sql.find(")", paren_start)
-    if paren_start < 0 or paren_end < 0:
-        return None
-    inside = create_sql[paren_start + 1 : paren_end]
-    return [token.strip().lower() for token in inside.split(",") if token.strip()]
+    return row is not None
 
 
-def _table_columns(conn, table_name: str) -> list[str]:
+def _table_columns(conn, table_name: str) -> set[str]:
     rows = conn.execute(text(f"PRAGMA table_info({table_name})")).fetchall()
-    return [row[1] for row in rows]
-
-
-def _legacy_columns_present(conn, table_name: str) -> bool:
-    actual = set(_table_columns(conn, table_name))
-    return {"reference_spec", "steel_mill", "steel_type"}.issubset(actual)
+    return {row[1] for row in rows}
 
 
 def run_steel_price_key_migration(engine: Engine) -> None:
-    """检测并修复钢材价格表的主键结构。"""
+    """检测并重建钢材价格表（仅 SQLite）。"""
     if engine.dialect.name != "sqlite":
         return
 
     with engine.connect() as conn:
-        cols = _existing_unique_columns(conn, TABLE_NAME)
-        if cols is None:
-            return
-        if cols == list(EXPECTED_KEY_COLUMNS):
-            return
-        if cols != list(LEGACY_KEY_COLUMNS):
-            logger.warning(
-                "steel_prices 业务主键结构与预期不符: existing=%s expected=%s，跳过迁移",
-                cols,
-                list(EXPECTED_KEY_COLUMNS),
-            )
-            return
-        if not _legacy_columns_present(conn, TABLE_NAME):
-            logger.warning("steel_prices 缺少历史字段，跳过主键迁移")
+        if not _table_exists(conn, TABLE_NAME):
             return
 
-        logger.info("检测到钢材价格表旧业务主键，开始重建以切换为 (year, month, grade, thickness)")
+        columns = _table_columns(conn, TABLE_NAME)
+        has_new_schema = NEW_SCHEMA_REQUIRED_COLUMNS.issubset(columns)
+        has_legacy_marker = bool(columns & LEGACY_MARKER_COLUMNS)
 
-        conn.execute(text(
-            "CREATE TABLE steel_prices__new ("
-            "id INTEGER PRIMARY KEY AUTOINCREMENT,"
-            "year INTEGER NOT NULL,"
-            "month INTEGER NOT NULL,"
-            "steel_type VARCHAR(50) NOT NULL,"
-            "grade VARCHAR(100) NOT NULL,"
-            "reference_spec VARCHAR(100) NOT NULL,"
-            "steel_mill VARCHAR(100) NOT NULL,"
-            "bid_price NUMERIC(14, 4) NOT NULL,"
-            "thickness NUMERIC(10, 4) NOT NULL,"
-            "thickness_adjustment NUMERIC(14, 4) NOT NULL,"
-            "processing_fee NUMERIC(14, 4) NOT NULL,"
-            "final_price_per_ton NUMERIC(14, 4) NOT NULL,"
-            "remark TEXT,"
-            "created_at DATETIME NOT NULL,"
-            "updated_at DATETIME NOT NULL,"
-            "CONSTRAINT uix_steel_price_business_key UNIQUE (year, month, grade, thickness)"
-            ")"
-        ))
+        if has_new_schema and not has_legacy_marker:
+            return
 
-        conn.execute(text(
-            "INSERT INTO steel_prices__new ("
-            "id, year, month, steel_type, grade, reference_spec, steel_mill,"
-            " bid_price, thickness, thickness_adjustment, processing_fee, final_price_per_ton,"
-            " remark, created_at, updated_at)"
-            " SELECT id, year, month, steel_type, grade, reference_spec, steel_mill,"
-            " bid_price, thickness, thickness_adjustment, processing_fee, final_price_per_ton,"
-            " remark, created_at, updated_at FROM steel_prices"
-            " WHERE id IN ("
-            "  SELECT MAX(id) FROM steel_prices"
-            "  GROUP BY year, month, grade, thickness"
-            " )"
-        ))
-
-        conn.execute(text("DROP TABLE steel_prices"))
-        conn.execute(text("ALTER TABLE steel_prices__new RENAME TO steel_prices"))
-        conn.execute(text(
-            "CREATE INDEX ix_steel_price_year_month ON steel_prices(year, month)"
-        ))
-        conn.execute(text("CREATE INDEX ix_steel_price_grade ON steel_prices(grade)"))
-        conn.execute(text(
-            "CREATE INDEX ix_steel_price_steel_type ON steel_prices(steel_type)"
-        ))
+        logger.warning(
+            "检测到 steel_prices 旧结构（columns=%s），将 DROP 后由 create_tables 重建",
+            sorted(columns),
+        )
+        conn.execute(text(f"DROP TABLE IF EXISTS {TABLE_NAME}"))
         conn.commit()
-        logger.info("钢材价格表主键迁移完成，新主键为 (year, month, grade, thickness)")
+        logger.info("steel_prices 旧表已删除，等待 create_tables 按新 Model 重建")

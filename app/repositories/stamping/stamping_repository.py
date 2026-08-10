@@ -227,42 +227,50 @@ class StampingPartRepository:
 
     def get_filter_options(self, db: Session) -> Dict[str, List[str]]:
         """
-        获取筛选下拉框的可选值（基地列表、供应商列表、车型列表 & 版本列表）。
-        返回 {'locations': [...], 'suppliers': [...], 'vehicle_models': [...], 'versions': [...]}。
+        获取筛选下拉框的可选值。
+        返回键名与 StampingPartListFilterOptions VO 对齐。
         """
         locations = (
             db.query(StampingPart.location)
             .distinct()
-            .filter(StampingPart.location.isnot(None))
+            .filter(StampingPart.location.isnot(None), StampingPart.location != "")
             .order_by(StampingPart.location)
             .all()
         )
-        suppliers = (
+        stamping_suppliers = (
             db.query(StampingPart.stamping_supplier)
             .distinct()
-            .filter(StampingPart.stamping_supplier.isnot(None))
+            .filter(StampingPart.stamping_supplier.isnot(None), StampingPart.stamping_supplier != "")
             .order_by(StampingPart.stamping_supplier)
             .all()
         )
         vehicle_models = (
             db.query(StampingPart.vehicle_model)
             .distinct()
-            .filter(StampingPart.vehicle_model.isnot(None))
+            .filter(StampingPart.vehicle_model.isnot(None), StampingPart.vehicle_model != "")
             .order_by(StampingPart.vehicle_model)
             .all()
         )
         versions = (
             db.query(StampingPart.version)
             .distinct()
-            .filter(StampingPart.version.isnot(None))
+            .filter(StampingPart.version.isnot(None), StampingPart.version != "")
             .order_by(StampingPart.version)
+            .all()
+        )
+        materials = (
+            db.query(StampingPart.material)
+            .distinct()
+            .filter(StampingPart.material.isnot(None), StampingPart.material != "")
+            .order_by(StampingPart.material)
             .all()
         )
         return {
             "locations": [r[0] for r in locations],
-            "suppliers": [r[0] for r in suppliers],
+            "stamping_suppliers": [r[0] for r in stamping_suppliers],
             "vehicle_models": [r[0] for r in vehicle_models],
             "versions": [r[0] for r in versions],
+            "materials": [r[0] for r in materials],
         }
 
 

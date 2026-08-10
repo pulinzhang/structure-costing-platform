@@ -8,8 +8,9 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.schemas.common.page_result import PageResult
 from app.schemas.dto.steel_price_dto import (
-    SteelPriceCreate,
+    SteelPriceAuditDTO,
     SteelPriceQuery,
+    SteelPriceReverseAuditDTO,
     SteelPriceUpdate,
 )
 from app.schemas.vo.steel_price_vo import SteelPriceResponse
@@ -22,6 +23,14 @@ router = APIRouter(prefix="/api/steel-prices", tags=["钢材价格管理"])
 _steel_price_service = SteelPriceService()
 
 
+def _raise_service_error(error: str | None, not_found_prefix: str = "记录不存在") -> None:
+    if not error:
+        return
+    if error.startswith(not_found_prefix) or "不存在" in error:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error)
+    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error)
+
+
 @router.get(
     "",
     response_model=ApiResponse[PageResult[SteelPriceResponse]],
@@ -31,12 +40,13 @@ def list_steel_prices(
     db: Session = Depends(get_db),
 ) -> ApiResponse[PageResult[SteelPriceResponse]]:
     """分页浏览钢材价格。"""
-    records, total, _ = _steel_price_service.paginate(db, query)
+    records, total, filters = _steel_price_service.paginate(db, query)
     return ApiResponse.list_(
         items=records,
         total=total,
         page=query.page,
         page_size=query.size,
+        filters=filters,
     )
 
 
@@ -51,24 +61,8 @@ def get_steel_price(
     """查看单条钢材价格。"""
     record = _steel_price_service.get_by_id(db, record_id)
     if record is None:
-        raise HTTPException(status_code=404, detail="记录不存在")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="记录不存在")
     return ApiResponse.ok(data=record)
-
-
-@router.post(
-    "",
-    response_model=ApiResponse[SteelPriceResponse],
-    status_code=status.HTTP_201_CREATED,
-)
-def create_steel_price(
-    body: SteelPriceCreate,
-    db: Session = Depends(get_db),
-) -> ApiResponse[SteelPriceResponse]:
-    """新增钢材价格。"""
-    record, error = _steel_price_service.create(db, body)
-    if error:
-        raise HTTPException(status_code=400, detail=error)
-    return ApiResponse.created(data=record, message="新增成功")
 
 
 @router.put(
@@ -80,12 +74,10 @@ def update_steel_price(
     body: SteelPriceUpdate,
     db: Session = Depends(get_db),
 ) -> ApiResponse[SteelPriceResponse]:
-    """更新钢材价格。"""
+    """更新钢材价格（已审核通过不可改）。"""
     record, error = _steel_price_service.update(db, record_id, body)
     if error:
-        if "不存在" in (error or ""):
-            raise HTTPException(status_code=404, detail=error)
-        raise HTTPException(status_code=400, detail=error)
+        _raise_service_error(error)
     return ApiResponse.updated(data=record, message="更新成功")
 
 
@@ -97,8 +89,56 @@ def delete_steel_price(
     record_id: int,
     db: Session = Depends(get_db),
 ) -> ApiResponse[None]:
-    """删除钢材价格。"""
+    """删除钢材价格（已审核通过不可删）。"""
     success, error = _steel_price_service.delete(db, record_id)
     if not success:
-        raise HTTPException(status_code=404, detail=error or "记录不存在")
+        _raise_service_error(error or "记录不存在")
     return ApiResponse.deleted(message="删除成功")
+
+
+@router.post(
+    "/{record_id}/approve",
+    response_model=ApiResponse[SteelPriceResponse],
+)
+def approve_steel_price(
+    record_id: int,
+    body: SteelPriceAuditDTO,
+    db: Session = Depends(get_db),
+) -> ApiResponse[SteelPriceResponse]:
+    """经理审核通过。"""
+    record, error = _steel_price_service.approve(db, record_id, body)
+    if error:
+        _raise_service_error(error)
+    return ApiResponse.updated(data=record, message="审核通过")
+
+
+@router.post(
+    "/{record_id}/reject",
+    response_model=ApiResponse[SteelPriceResponse],
+)
+def reject_steel_price(
+    record_id: int,
+    body: SteelPriceAuditDTO,
+    db: Session = Depends(get_db),
+) -> ApiResponse[SteelPriceResponse]:
+    """经理审核驳回。"""
+    record, error = _steel_price_service.reject(db, record_id, body)
+    if error:
+        _raise_service_error(error)
+    return ApiResponse.updated(data=record, message="已驳回")
+
+
+@router.post(
+    "/{record_id}/reverse-audit",
+    response_model=ApiResponse[SteelPriceResponse],
+)
+def reverse_audit_steel_price(
+    record_id: int,
+    body: SteelPriceReverseAuditDTO,
+    db: Session = Depends(get_db),
+) -> ApiResponse[SteelPriceResponse]:
+    """经理反审核（approved → pending）。"""
+    record, error = _steel_price_service.reverse_audit(db, record_id, body)
+    if error:
+        _raise_service_error(error)
+    return ApiResponse.updated(data=record, message="反审核成功")

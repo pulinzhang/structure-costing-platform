@@ -190,7 +190,7 @@ def create_app() -> FastAPI:
             {"name": "冲压工艺", "description": "冲压件零件与工序管理"},
             {"name": "冲压工艺上传", "description": "冲压工艺文件上传与解析"},
             {"name": "冲压冲次费率", "description": "冲压冲次费率管理"},
-            {"name": "钢材价格管理", "description": "钢材价格计算与表格浏览"},
+            {"name": "钢材价格管理", "description": "钢材价格计算结果浏览、维护与审核"},
             {"name": "钢价政策管理", "description": "钢价政策主表与阶梯明细管理"},
             {"name": "钢材基准价格管理", "description": "钢材基准价格上传导出"},
             {"name": "零件", "description": "通用零件管理"},
