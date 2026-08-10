@@ -124,7 +124,7 @@ async function loadData(page = 1) {
         if (tableBody) {
             tableBody.innerHTML = `
                 <tr>
-                    <td colspan="13" class="px-4 py-8 text-center text-[#9e9e9e] text-xs">加载数据失败，请重试</td>
+                    <td colspan="19" class="px-4 py-8 text-center text-[#9e9e9e] text-xs">加载数据失败，请重试</td>
                 </tr>`;
         }
     } finally {
@@ -311,17 +311,47 @@ function openEditDrawer(record) {
 
 function formatTrace(prefix, record) {
     const filename = record[`${prefix}_excel_filename`];
-    if (!filename && !record[`${prefix}_price_id`] && !record[`${prefix}_policy_id`] && !record[`${prefix}_ladder_item_id`]) {
+    const sheet = record[`${prefix}_sheet_name`];
+    const row = record[`${prefix}_excel_row`];
+    const col = record[`${prefix}_excel_col`];
+    const refId = prefix === 'base' ? record.base_price_id : record[`${prefix}_policy_id`];
+    const ladderId = prefix === 'base' ? null : record[`${prefix}_ladder_item_id`];
+
+    if (filename == null && refId == null && ladderId == null && row == null && col == null) {
         return `<span class="text-[#616161]">${prefixLabel(prefix)}：未匹配</span>`;
     }
-    const sheet = record[`${prefix}_sheet_name`] || '-';
-    const row = record[`${prefix}_excel_row`] ?? '-';
-    const col = record[`${prefix}_excel_col`] ?? '-';
-    return `<span><span class="text-[#777777]">${prefixLabel(prefix)}：</span>${esc(filename || '-')} / ${esc(sheet)} / 行${esc(row)} 列${esc(col)}</span>`;
+
+    const idLines = prefix === 'base'
+        ? [`base_price_id=${esc(refId ?? '—')}`]
+        : [
+            `${prefix}_policy_id=${esc(refId ?? '—')}`,
+            `${prefix}_ladder_item_id=${esc(ladderId ?? '—')}`,
+        ];
+    const excelLine = [
+        `${prefix}_excel_filename=${esc(filename || '—')}`,
+        `${prefix}_sheet_name=${esc(sheet || '—')}`,
+        `${prefix}_excel_row=${esc(row ?? '—')}`,
+        `${prefix}_excel_col=${esc(col ?? '—')}`,
+    ].join(' · ');
+
+    return `
+        <div>
+            <div class="text-[#777777] mb-1">${prefixLabel(prefix)}</div>
+            <div class="font-mono text-[10px] text-[#9e9e9e] space-y-0.5">
+                ${idLines.map(line => `<div>${line}</div>`).join('')}
+                <div>${excelLine}</div>
+            </div>
+        </div>
+    `;
 }
 
 function prefixLabel(prefix) {
-    return { base: '基准价', thickness: '厚度政策', width: '宽度政策', zinc: '锌层政策' }[prefix] || prefix;
+    return {
+        base: '基础价溯源',
+        thickness: '厚度加价溯源',
+        width: '宽度加价溯源',
+        zinc: '锌层加价溯源',
+    }[prefix] || prefix;
 }
 
 function openViewDrawer(record) {
