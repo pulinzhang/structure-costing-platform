@@ -45,6 +45,7 @@ function closeDrawer(drawerId, backdropId) {
 
 function init() {
     bindEvents();
+    steelPriceState.filtersLoaded = false;
     steelPriceState.pendingFilters = readHashFilters();
     loadData(1);
 }
