@@ -4,7 +4,6 @@
 """
 
 import logging
-from dataclasses import asdict
 
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Depends
 from sqlalchemy.orm import Session
@@ -13,6 +12,7 @@ from app.utils.logging_config import get_logger
 from app.config import settings
 from app.database import get_db
 from app.services.stamping.upload import StampingUploadService
+from app.schemas.vo.stamping_upload_vo import UploadResultVO
 from app.utils.response import ApiResponse
 
 
@@ -20,12 +20,12 @@ logger = get_logger("router.stamping.upload")
 router = APIRouter(prefix="/api/stamping/upload", tags=["冲压工艺上传 API"])
 
 
-@router.post("/")
+@router.post("/", response_model=ApiResponse[UploadResultVO])
 async def upload_stamping_file(
     location: str = Form(...),
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
-):
+) -> ApiResponse[UploadResultVO]:
     """上传车型冲压工艺文件，解析并保存到数据库"""
     logger.info(
         f"接收到车型冲压工艺文件上传: 基地={location}, 文件={file.filename}"
@@ -58,7 +58,20 @@ async def upload_stamping_file(
             location=location,
         )
         return ApiResponse.ok(
-            data=asdict(result),
+            data=UploadResultVO(
+                filename=result.filename,
+                new_filename=result.new_filename,
+                size=result.size,
+                path=result.path,
+                location=result.location,
+                vehicle_model=result.vehicle_model,
+                version=result.version,
+                parts_count=result.parts_count,
+                processes_count=result.processes_count,
+                images_count=result.images_count,
+                warnings=result.warnings,
+                parse_time_ms=result.parse_time_ms,
+            ),
             message=f"上传成功: {result.parts_count} 个零件, {result.processes_count} 道工序"
         )
     except HTTPException:

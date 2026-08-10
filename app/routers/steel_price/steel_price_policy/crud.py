@@ -38,6 +38,9 @@ from app.utils.response import ApiResponse
 logger = logging.getLogger("router.steel_price_policy")
 router = APIRouter(prefix="/api/steel-price-policies", tags=["钢价政策管理"])
 
+# 默认分页大小常量
+DEFAULT_PAGE_SIZE = 100
+
 _policy_service = SteelPricePolicyService()
 
 
@@ -179,7 +182,7 @@ def export_policies_preview(
     month: Optional[int] = None,
     steel_mill: Optional[str] = None,
     page: int = 1,
-    size: int = 100,
+    size: int = DEFAULT_PAGE_SIZE,
     db: Session = Depends(get_db),
 ) -> ApiResponse[PageResult[ExportRow]]:
     """

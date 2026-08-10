@@ -4,9 +4,10 @@
 
 from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, File, Query, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
+from pydantic import BaseModel
 
 from app.database import get_db
 from app.utils.response import ApiResponse
@@ -24,6 +25,15 @@ from app.schemas.vo.steel_base_price_vo import (
     SteelBasePriceResponse,
 )
 from app.schemas.common import PageResult
+
+# 默认分页大小常量
+DEFAULT_EXPORT_PAGE_SIZE = 5000
+
+
+class BatchDeleteResponse(BaseModel):
+    """批量删除响应 VO"""
+    year: int
+    month: int
 
 
 router = APIRouter(prefix="/api/steel-base-prices", tags=["钢材基准价格"])
@@ -95,7 +105,7 @@ def export_preview(
     db: Session = Depends(get_db),
 ) -> ApiResponse[PageResult[SteelBasePriceExportRow]]:
     """导出预览：返回筛选后的基准价格数据（前端分页）。"""
-    page_size = size or 5000
+    page_size = size or DEFAULT_EXPORT_PAGE_SIZE
     records, total = _steel_base_price_service.list_for_export(
         db,
         year=year,
@@ -156,7 +166,7 @@ def get_base_price(
     """获取单条基准价格记录。"""
     record = _steel_base_price_service.get_by_id(db, record_id)
     if record is None:
-        return ApiResponse.fail(message="记录不存在", code=404)
+        raise HTTPException(status_code=404, detail="记录不存在")
     return ApiResponse.ok(data=record)
 
 
@@ -203,18 +213,18 @@ def delete_base_price(
     """删除基准价格记录。"""
     ok, error = _steel_base_price_service.delete(db, record_id)
     if not ok:
-        return ApiResponse.fail(message=error or "删除失败", code=404)
+        raise HTTPException(status_code=404, detail=error or "记录不存在")
     return ApiResponse.deleted(message="删除成功")
 
 
 @router.post(
     "/batch-delete",
-    response_model=ApiResponse[dict],
+    response_model=ApiResponse[BatchDeleteResponse],
 )
 def batch_delete_base_prices(
     body: SteelBasePriceQuery,
     db: Session = Depends(get_db),
-) -> ApiResponse[dict]:
+) -> ApiResponse[BatchDeleteResponse]:
     """按条件批量删除基准价格记录（年度+月份必须同时指定）。"""
     if body.year is None or body.month is None:
         return ApiResponse.fail(message="year 和 month 不能为空", code=400)
@@ -227,7 +237,7 @@ def batch_delete_base_prices(
     )
     if not ok:
         return ApiResponse.fail(message=error or "批量删除失败", code=400)
-    return ApiResponse.ok(data={"year": body.year, "month": body.month}, message="批量删除成功")
+    return ApiResponse.ok(data=BatchDeleteResponse(year=body.year, month=body.month), message="批量删除成功")
 
 
 @router.post(

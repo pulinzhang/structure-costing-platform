@@ -220,6 +220,7 @@ body {
 .submenu-link.active {
     color: var(--text-muted);
     background: rgba(255, 255, 255, 0.04);
+    font-weight: 500;
 }
 
 /* Brabus 红左指示条 — 子菜单激活态 */
@@ -227,12 +228,12 @@ body {
     content: '';
     position: absolute;
     left: 0;
-    top: 20%;
-    bottom: 20%;
-    width: 2px;
+    top: 15%;
+    bottom: 15%;
+    width: 3px;
     background: var(--brabus-red);
-    border-radius: 1px;
-    box-shadow: 0 0 6px var(--brabus-red-glow);
+    border-radius: 2px;
+    box-shadow: 0 0 8px var(--brabus-red-glow);
 }
 
 /* 确保嵌套菜单链接也能正确定位指示条 */

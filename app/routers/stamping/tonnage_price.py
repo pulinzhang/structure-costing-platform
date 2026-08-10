@@ -3,7 +3,7 @@
 API 接口定义
 """
 
-from typing import List, Dict, Any
+from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -15,7 +15,11 @@ from app.schemas.dto.stamping_tonnage_price_dto import (
     StampingTonnagePriceUpdate,
     StampingTonnagePriceQuery,
 )
-from app.schemas.vo.stamping_tonnage_price_vo import StampingTonnagePriceResponse
+from app.schemas.vo.stamping_tonnage_price_vo import (
+    StampingTonnagePriceResponse,
+    StampingTonnagePriceBulkCreateResponse,
+    StampingTonnagePriceCopyYearResponse,
+)
 from app.schemas.common.page_result import PageResult
 from app.utils.response import ApiResponse
 
@@ -83,7 +87,7 @@ def create(
     return ApiResponse.created(data=record, message="创建成功")
 
 
-@router.post("/bulk", response_model=ApiResponse[Dict[str, Any]])
+@router.post("/bulk", response_model=ApiResponse[StampingTonnagePriceBulkCreateResponse])
 def bulk_create(
     items: List[StampingTonnagePriceCreate],
     db: Session = Depends(get_db),
@@ -91,14 +95,14 @@ def bulk_create(
     """批量创建吨位价格记录"""
     created, skipped, failed = _tonnage_price_service.bulk_create(db, items)
     return ApiResponse.ok(
-        data={
-            "created": created,
-            "skipped": skipped,
-            "failed": failed,
-            "created_count": len(created),
-            "skipped_count": len(skipped),
-            "failed_count": len(failed),
-        },
+        data=StampingTonnagePriceBulkCreateResponse(
+            created=created,
+            skipped=skipped,
+            failed=failed,
+            created_count=len(created),
+            skipped_count=len(skipped),
+            failed_count=len(failed),
+        ),
         message=f"批量创建完成: 成功 {len(created)}, 跳过 {len(skipped)}, 失败 {len(failed)}",
     )
 
@@ -125,7 +129,7 @@ def delete(id: int, db: Session = Depends(get_db)):
     return ApiResponse.deleted(message="删除成功")
 
 
-@router.post("/copy-year", response_model=ApiResponse[Dict[str, Any]])
+@router.post("/copy-year", response_model=ApiResponse[StampingTonnagePriceCopyYearResponse])
 def copy_from_year(
     source_year: int,
     target_year: int,
@@ -136,13 +140,13 @@ def copy_from_year(
         db, source_year, target_year
     )
     return ApiResponse.ok(
-        data={
-            "source_year": source_year,
-            "target_year": target_year,
-            "created_count": created,
-            "skipped_count": skipped,
-            "failed": failed,
-        },
+        data=StampingTonnagePriceCopyYearResponse(
+            source_year=source_year,
+            target_year=target_year,
+            created_count=created,
+            skipped_count=skipped,
+            failed=failed,
+        ),
         message=f"从 {source_year} 复制到 {target_year}: 成功 {created}, 跳过 {skipped}",
     )
 

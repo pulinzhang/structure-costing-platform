@@ -14,11 +14,14 @@ from app.utils.response import ApiResponse
 logger = get_logger("router.quotation")
 router = APIRouter(prefix="/api/quotation", tags=["报价 API"])
 
+# 默认分页大小常量
+DEFAULT_PAGE_SIZE = 20
+
 
 @router.get("/list")
 async def list_quotations(
     page: int = Query(1, ge=1, description="页码"),
-    page_size: int = Query(20, ge=1, le=500, description="每页条数"),
+    page_size: int = Query(DEFAULT_PAGE_SIZE, ge=1, le=500, description="每页条数"),
     status: str = Query(None, description="状态筛选"),
     db: Session = Depends(get_db),
 ):
