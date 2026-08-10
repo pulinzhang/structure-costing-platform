@@ -50,19 +50,13 @@ def paginate(
 ):
     """分页查询吨位价格"""
     rows, total, filters = _tonnage_price_service.paginate(db, query)
-    page_result = PageResult(
+    return ApiResponse.list_(
         items=rows,
         total=total,
         page=query.page,
         page_size=query.size,
-        total_pages=(total + query.size - 1) // query.size if total > 0 else 0,
-        has_next=query.page * query.size < total,
-        has_prev=query.page > 1,
-    )
-    return ApiResponse.ok(
-        data=page_result,
-        message=f"查询到 {total} 条记录",
         filters=filters,
+        message=f"查询到 {total} 条记录",
     )
 
 

@@ -4,7 +4,7 @@
 
 from datetime import datetime
 from decimal import Decimal
-from typing import Union, Optional
+from typing import Union
 
 from pydantic import BaseModel, field_serializer
 
@@ -20,8 +20,8 @@ class StampingTonnagePriceResponse(BaseModel):
     year: int
     tonnage: int
     price_per_stroke: float
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
 
     @field_serializer("price_per_stroke")
     def serialize_price(self, value: Union[Decimal, float]) -> float:
