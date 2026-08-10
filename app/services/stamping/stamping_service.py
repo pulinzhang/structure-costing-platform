@@ -128,7 +128,7 @@ class StampingPartService:
         vehicle_model: str | None = None,
         version: str | None = None,
     ) -> list[dict]:
-        """列出去重后的材料+厚度规格（钢价计算用）。"""
+        """列出去重后的 基地 + 材料(钢种) + 厚度（钢价计算用）。"""
         return self.repository.list_material_specs(
             db,
             location=location.strip() if location else None,

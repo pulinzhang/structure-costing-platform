@@ -411,8 +411,16 @@ class StampingPartRepository:
         vehicle_model: Optional[str] = None,
         version: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
-        """列出去重后的材料+厚度规格（钢价计算 Step1）。"""
-        q = db.query(StampingPart.material, StampingPart.thickness)
+        """
+        列出去重后的 基地 + 材料(钢种) + 厚度（钢价计算 Step1）。
+
+        必须带 location，避免跨基地材料串用。
+        """
+        q = db.query(
+            StampingPart.location,
+            StampingPart.material,
+            StampingPart.thickness,
+        )
         if location:
             q = q.filter(StampingPart.location == location)
         if stamping_supplier:
@@ -423,13 +431,26 @@ class StampingPartRepository:
             q = q.filter(StampingPart.version == version)
 
         q = q.filter(
+            StampingPart.location.isnot(None),
+            StampingPart.location != "",
             StampingPart.material.isnot(None),
             StampingPart.material != "",
             StampingPart.thickness.isnot(None),
         ).distinct()
 
-        rows = q.order_by(StampingPart.material, StampingPart.thickness).all()
-        return [{"material": r[0], "thickness": r[1]} for r in rows]
+        rows = q.order_by(
+            StampingPart.location,
+            StampingPart.material,
+            StampingPart.thickness,
+        ).all()
+        return [
+            {
+                "location": r[0],
+                "material": r[1],
+                "thickness": r[2],
+            }
+            for r in rows
+        ]
 
 
 class StampingProcessRepository:

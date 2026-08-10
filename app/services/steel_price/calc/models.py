@@ -20,8 +20,9 @@ class SteelPriceCalcRequest:
 
 @dataclass
 class MaterialThicknessRow:
-    """Step1：冲压材料厚度规格。"""
+    """Step1：冲压材料厚度规格（基地 + 钢种 + 厚度，三者缺一不可）。"""
 
+    location: str
     material: str
     thickness: Decimal
 
@@ -196,26 +197,3 @@ class SteelPriceCalcResult:
     vehicle_model: str | None = None
     year: int | None = None
     month: int | None = None
-
-
-class ProcessLogBuilder:
-    """累积计算过程文本（含错误）。"""
-
-    def __init__(self) -> None:
-        self._lines: list[str] = []
-
-    def line(self, message: str) -> None:
-        self._lines.append(message)
-
-    def section(self, title: str) -> None:
-        self._lines.append("")
-        self._lines.append(f"=== {title} ===")
-
-    def error(self, message: str) -> None:
-        self._lines.append(f"[错误] {message}")
-
-    def warn(self, message: str) -> None:
-        self._lines.append(f"[警告] {message}")
-
-    def build(self) -> str:
-        return "\n".join(self._lines).strip() + ("\n" if self._lines else "")

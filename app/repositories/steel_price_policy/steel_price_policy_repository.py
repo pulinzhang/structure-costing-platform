@@ -415,6 +415,25 @@ class SteelPricePolicyRepository:
 
     # ---- 导出查询（原 get_export_data 相关方法已移至 ExportService）----
 
+    def list_for_period(
+        self,
+        db: Session,
+        *,
+        year: int,
+        month: int,
+    ) -> list[SteelPricePolicy]:
+        """按年月一次加载全部政策（含阶梯明细），供计算编排内存匹配。"""
+        return (
+            db.query(SteelPricePolicy)
+            .options(joinedload(SteelPricePolicy.items))
+            .filter(
+                SteelPricePolicy.year == year,
+                SteelPricePolicy.month == month,
+            )
+            .order_by(SteelPricePolicy.id.asc())
+            .all()
+        )
+
     def list_policies_for_export(
         self,
         db: Session,
