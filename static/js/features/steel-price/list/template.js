@@ -69,30 +69,34 @@ export function steelPriceListTemplate() {
                     </div>
                 </div>
 
-                <div class="overflow-x-auto">
-                    <table class="w-full min-w-[2500px]">
+                <div class="overflow-x-auto bg-[#000000]">
+                    <table class="w-full min-w-[2500px] bg-[#000000]">
                         <thead>
-                            <tr style="background: linear-gradient(180deg, #111111 0%, #0e0e0e 100%); border-bottom: 1px solid #222222;">
-                                <th class="px-3 py-2.5 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">核价维度</th>
-                                <th class="px-3 py-2.5 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">钢厂</th>
-                                <th class="px-3 py-2.5 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">钢种</th>
-                                <th class="px-3 py-2.5 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">牌号</th>
-                                <th class="px-3 py-2.5 text-right text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">厚度</th>
-                                <th class="px-3 py-2.5 text-right text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">宽度</th>
-                                <th class="px-3 py-2.5 text-right text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">基础价</th>
-                                <th class="px-3 py-2.5 text-right text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">厚度加价</th>
-                                <th class="px-3 py-2.5 text-right text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">宽度加价</th>
-                                <th class="px-3 py-2.5 text-right text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">加工费</th>
-                                <th class="px-3 py-2.5 text-right text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">最终价/吨</th>
-                                <th class="px-3 py-2.5 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">基价溯源</th>
-                                <th class="px-3 py-2.5 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">厚度溯源</th>
-                                <th class="px-3 py-2.5 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">宽度溯源</th>
-                                <th class="px-3 py-2.5 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">匹配</th>
-                                <th class="px-3 py-2.5 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">审核</th>
-                                <th class="px-3 py-2.5 text-center text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap w-40">操作</th>
+                            <tr class="border-b border-[#17171C]" style="background: #000000;">
+                                <!-- 区块 1：规格区 -->
+                                <th class="px-2.5 py-2.5 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">核价维度</th>
+                                <th class="px-2.5 py-2.5 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">钢厂</th>
+                                <th class="px-2.5 py-2.5 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">钢种</th>
+                                <th class="px-2.5 py-2.5 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#FFFFFF]/50 whitespace-nowrap">牌号</th>
+                                <th class="px-2.5 py-2.5 text-right text-[9px] font-semibold uppercase tracking-[0.15em] text-[#FFFFFF]/50 whitespace-nowrap">厚度</th>
+                                <th class="px-2.5 py-2.5 text-right text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap border-r border-[#22222A]">宽度</th>
+                                <!-- 区块 2：计算拆解区 -->
+                                <th class="px-2.5 py-2.5 text-right text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">基础价</th>
+                                <th class="px-2.5 py-2.5 text-right text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">厚度加价</th>
+                                <th class="px-2.5 py-2.5 text-right text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">宽度加价</th>
+                                <th class="px-2.5 py-2.5 text-right text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap border-r border-[#22222A]">加工费</th>
+                                <!-- 区块 3：暴徒结算区 -->
+                                <th class="px-2.5 py-2.5 text-right text-[9px] font-bold uppercase tracking-[0.15em] text-[#FF1E27]/70 whitespace-nowrap bg-[#FF1E27]/10 border-x border-[#FF1E27]/20">最终价/吨</th>
+                                <!-- 溯源 / 状态 / 操作 -->
+                                <th class="px-2.5 py-2.5 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">基价溯源</th>
+                                <th class="px-2.5 py-2.5 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">厚度溯源</th>
+                                <th class="px-2.5 py-2.5 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">宽度溯源</th>
+                                <th class="px-2.5 py-2.5 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">匹配</th>
+                                <th class="px-2.5 py-2.5 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">审核</th>
+                                <th class="px-2.5 py-2.5 text-center text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap w-40">操作</th>
                             </tr>
                         </thead>
-                        <tbody id="steelPriceTableBody" class="divide-y divide-[#1d1d1d]"></tbody>
+                        <tbody id="steelPriceTableBody" class="bg-[#000000]"></tbody>
                     </table>
                 </div>
 
@@ -363,37 +367,57 @@ export function steelPriceListTemplate() {
 
 export function renderSteelPriceRows(records) {
     if (!records || !Array.isArray(records) || records.length === 0) return '';
-    return records.map((record, idx) => {
-        const isEven = idx % 2 === 1;
+    return records.map((record) => {
         const approved = record.audit_status === 'approved';
-        const cell = 'px-3 py-2.5 text-[11px] border-b border-[#1d1d1d]';
+        /* 公共底边 */
+        const cell = 'p-2.5 border-b border-[#17171C]';
+        /* 第四梯队：沉淀碳灰 */
+        const carbon = 'font-mono text-[#6E6E73]';
+        const carbonNum = 'text-right font-mono tabular-nums text-[#8E8E93]';
+        /* 区块立柱分隔 */
+        const zoneEnd = 'border-r border-[#22222A]';
+        /* 第一梯队：暴徒红最终价 */
+        const finalCell = [
+            'p-2.5 text-right font-mono font-black tabular-nums text-[14px] tracking-[0.02em]',
+            'text-[#FF1E27] bg-[#FF1E27]/10',
+            'border-b border-[#FF1E27]/30 border-l border-r border-[#FF1E27]/20',
+            'group-hover:bg-[#FF1E27]/20 transition-all',
+        ].join(' ');
         return `
-        <tr class="group transition-colors duration-150" data-id="${esc(record.id)}"
-            style="${isEven ? 'background: rgba(255,255,255,0.012);' : ''}">
+        <tr class="group hover:bg-[#121216] transition-colors" data-id="${esc(record.id)}">
+            <!-- 区块 1：规格区 — 维度 / 钢厂 / 钢种 / 牌号(钛白) / 厚度(钛白) / 宽度 -->
             <td class="${cell} whitespace-nowrap">
-                <div class="font-mono tabular-nums text-[#b0b0b0]">${esc(record.year)}-${esc(String(record.month).padStart(2, '0'))}</div>
-                <div class="text-[10px] text-[#686868] mt-0.5">${esc(record.location)}</div>
+                <div class="font-sans font-bold text-[#FFFFFF] text-[12px]">${esc(record.year)}-${esc(String(record.month).padStart(2, '0'))}</div>
+                <div class="text-[#55555C] text-[10px] mt-0.5">${esc(record.location)}</div>
             </td>
-            <td class="${cell} text-[#9e9e9e]">${esc(record.steel_mill)}</td>
-            <td class="${cell} text-[#9e9e9e]">${esc(record.category_name)}</td>
-            <td class="${cell} font-medium text-[#b0b0b0]">${esc(record.grade)}</td>
-            <td class="${cell} text-right font-mono text-[#9e9e9e]">${formatPrice(record.thickness, 2)}</td>
-            <td class="${cell} text-right font-mono text-[#9e9e9e]">${formatWidth(record.width)}</td>
-            <td class="${cell} text-right font-mono text-[#9e9e9e]">${formatPrice(record.base_price, 2)}</td>
-            <td class="${cell} text-right font-mono ${adjustmentToneClass(record.thickness_adjustment)}">${formatAdjustment(record.thickness_adjustment)}</td>
-            <td class="${cell} text-right font-mono ${adjustmentToneClass(record.width_adjustment)}">${formatAdjustment(record.width_adjustment)}</td>
-            <td class="${cell} text-right font-mono text-[#9e9e9e]">${formatPriceOrDash(record.processing_fee)}</td>
-            <td class="${cell} text-right font-mono text-[#d32f2f]">${formatPrice(record.final_price_per_ton, 2)}</td>
-            <td class="${cell} text-[10px] text-[#777777] max-w-[220px]">${formatTraceCell('base', record)}</td>
-            <td class="${cell} text-[10px] text-[#777777] max-w-[220px]">${formatTraceCell('thickness', record)}</td>
-            <td class="${cell} text-[10px] text-[#777777] max-w-[220px]">${formatTraceCell('width', record)}</td>
-            <td class="${cell} text-[#9e9e9e]">${esc(record.match_status)}</td>
+            <td class="${cell} ${carbon} text-[11px]">${esc(record.steel_mill)}</td>
+            <td class="${cell} font-sans text-[#6E6E73] text-[11px]">${esc(record.category_name)}</td>
+            <td class="${cell} font-mono">
+                <span class="font-bold text-[#FFFFFF] text-[13px] bg-[#1A1A20] px-1.5 py-0.5 rounded">${esc(record.grade)}</span>
+            </td>
+            <td class="${cell} text-right font-mono font-bold text-[#FFFFFF] text-[13px] tabular-nums">${formatPrice(record.thickness, 2)}</td>
+            <td class="${cell} ${carbonNum} ${zoneEnd}">${formatWidth(record.width)}</td>
+
+            <!-- 区块 2：计算拆解区 — 基础价 / 厚加价 / 宽加价 / 加工费 -->
+            <td class="${cell} ${carbonNum}">${formatPrice(record.base_price, 2)}</td>
+            <td class="${cell} text-right font-mono tabular-nums">${formatAdjustment(record.thickness_adjustment)}</td>
+            <td class="${cell} text-right font-mono tabular-nums">${formatAdjustment(record.width_adjustment)}</td>
+            <td class="${cell} ${carbonNum} ${zoneEnd}">${formatPriceOrDash(record.processing_fee)}</td>
+
+            <!-- 区块 3：暴徒结算区 -->
+            <td class="${finalCell}">${formatPrice(record.final_price_per_ton, 2)}</td>
+
+            <!-- 溯源 / 状态 / 操作（第四梯队） -->
+            <td class="${cell} text-[10px] ${carbon} max-w-[220px]">${formatTraceCell('base', record)}</td>
+            <td class="${cell} text-[10px] ${carbon} max-w-[220px]">${formatTraceCell('thickness', record)}</td>
+            <td class="${cell} text-[10px] ${carbon} max-w-[220px]">${formatTraceCell('width', record)}</td>
+            <td class="${cell} ${carbon} text-[11px]">${esc(record.match_status)}</td>
             <td class="${cell}">${auditBadge(record.audit_status)}</td>
             <td class="${cell} text-center">
                 <div class="flex items-center justify-center gap-0.5">
-                    <button class="view-btn flex items-center justify-center w-7 h-7 rounded-sm text-[#484848] hover:text-[#d32f2f] hover:bg-[#d32f2f]/10 transition-all" title="查看">${window.svgIcon('eye', 'w-3 h-3')}</button>
-                    <button class="edit-btn flex items-center justify-center w-7 h-7 rounded-sm text-[#484848] hover:text-[#d32f2f] hover:bg-[#d32f2f]/10 transition-all ${approved ? 'opacity-30 pointer-events-none' : ''}" title="${approved ? '已审核，不可编辑' : '编辑'}">${window.svgIcon('pencil', 'w-3 h-3')}</button>
-                    <button class="delete-btn flex items-center justify-center w-7 h-7 rounded-sm text-[#484848] hover:text-[#c62828] hover:bg-[#c62828]/10 transition-all ${approved ? 'opacity-30 pointer-events-none' : ''}" title="${approved ? '已审核，不可删除' : '删除'}">${window.svgIcon('trash', 'w-3 h-3')}</button>
+                    <button class="view-btn flex items-center justify-center w-7 h-7 rounded-sm text-[#555555] hover:text-[#FF1E27] hover:bg-[#FF1E27]/10 transition-all" title="查看">${window.svgIcon('eye', 'w-3 h-3')}</button>
+                    <button class="edit-btn flex items-center justify-center w-7 h-7 rounded-sm text-[#555555] hover:text-[#FF1E27] hover:bg-[#FF1E27]/10 transition-all ${approved ? 'opacity-30 pointer-events-none' : ''}" title="${approved ? '已审核，不可编辑' : '编辑'}">${window.svgIcon('pencil', 'w-3 h-3')}</button>
+                    <button class="delete-btn flex items-center justify-center w-7 h-7 rounded-sm text-[#555555] hover:text-[#c62828] hover:bg-[#c62828]/10 transition-all ${approved ? 'opacity-30 pointer-events-none' : ''}" title="${approved ? '已审核，不可删除' : '删除'}">${window.svgIcon('trash', 'w-3 h-3')}</button>
                 </div>
             </td>
         </tr>`;
@@ -416,7 +440,7 @@ function formatTraceCell(prefix, record) {
     const ladderId = prefix === 'base' ? null : record[`${prefix}_ladder_item_id`];
 
     if (filename == null && refId == null && ladderId == null && row == null && col == null) {
-        return '<span class="text-[#555555]">—</span>';
+        return '<span class="text-[#6E6E73]">—</span>';
     }
 
     const idPart = prefix === 'base'
@@ -512,13 +536,13 @@ function viewRow(label, id, isHighlight = false) {
 
 function auditBadge(status) {
     const map = {
-        pending: 'bg-[#f57f17]/20 text-[#ffb74d]',
-        approved: 'bg-[#2e7d32]/20 text-[#4caf50]',
-        rejected: 'bg-[#c62828]/20 text-[#ef5350]',
+        pending: 'bg-[#1C1C22] text-[#8E8E93] border border-[#2A2A32]',
+        approved: 'bg-[#1C1C22] text-[#8E8E93] border border-[#2A2A32]',
+        rejected: 'bg-[#1C1C22] text-[#8E8E93] border border-[#2A2A32]',
     };
     const label = { pending: '待审', approved: '已通过', rejected: '已驳回' }[status] || status || '-';
-    const cls = map[status] || 'bg-[#262626] text-[#9e9e9e]';
-    return `<span class="inline-flex items-center px-2 py-0.5 text-[10px] font-semibold rounded ${cls}">${esc(label)}</span>`;
+    const cls = map[status] || 'bg-[#1C1C22] text-[#8E8E93] border border-[#2A2A32]';
+    return `<span class="inline-flex items-center px-2 py-0.5 text-[10px] font-sans rounded-sm ${cls}">${esc(label)}</span>`;
 }
 
 function formatPrice(value, digits = 2) {
@@ -537,29 +561,22 @@ function formatPriceOrDash(value, digits = 2) {
 }
 
 /**
- * 厚度/宽度加价（BRABUS 极客风）：
- * >0 → +160.00；<0 → -40.00；0 → --
+ * 厚度/宽度加价（第三梯队功能提亮）：
+ * >0 → 绿 +160.00；<0 → 红 -40.00；0 → 暗灰 -
  */
 function formatAdjustment(value, digits = 2) {
     const numeric = Number(value);
     if (value === null || value === undefined || Number.isNaN(numeric) || numeric === 0) {
-        return '--';
+        return '<span class="text-[#444444]">-</span>';
     }
     const absText = Math.abs(numeric).toLocaleString('zh-CN', {
         minimumFractionDigits: digits,
         maximumFractionDigits: digits,
     });
-    return numeric > 0 ? `+${absText}` : `-${absText}`;
-}
-
-/** 加价色：加→冷钛白，减→暗红，无变动→低饱和灰 */
-function adjustmentToneClass(value) {
-    const numeric = Number(value);
-    if (value === null || value === undefined || Number.isNaN(numeric) || numeric === 0) {
-        return 'text-[#444444]';
+    if (numeric > 0) {
+        return `<span class="font-bold text-[#34C759]">+${absText}</span>`;
     }
-    if (numeric > 0) return 'text-[#E0E0E0]';
-    return 'text-[#C62828]';
+    return `<span class="font-bold text-[#FF3B30]">-${absText}</span>`;
 }
 
 /** 宽度：整数、无千分位 */

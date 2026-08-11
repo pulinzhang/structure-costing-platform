@@ -3,7 +3,7 @@
  * 钢材价格计算结果浏览 / 手工维护 / 审核
  */
 
-import { steelPriceListTemplate, renderSteelPricePagination, renderSteelPriceRows } from './template.js?v=31';
+import { steelPriceListTemplate, renderSteelPricePagination, renderSteelPriceRows } from './template.js?v=34';
 
 const steelPriceState = {
     records: [],
