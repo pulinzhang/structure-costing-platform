@@ -1,0 +1,23 @@
+"""异步任务 Service 导出。"""
+
+from app.services.async_task.async_task_service import (
+    STATUS_COMPLETED,
+    STATUS_FAILED,
+    STATUS_PENDING,
+    STATUS_RUNNING,
+    TASK_TYPE_BASE_PRICE_IMPORT,
+    TASK_TYPE_POLICY_UPLOAD,
+    TASK_TYPE_STAMPING_UPLOAD,
+    AsyncTaskService,
+)
+
+__all__ = [
+    "AsyncTaskService",
+    "STATUS_PENDING",
+    "STATUS_RUNNING",
+    "STATUS_COMPLETED",
+    "STATUS_FAILED",
+    "TASK_TYPE_POLICY_UPLOAD",
+    "TASK_TYPE_STAMPING_UPLOAD",
+    "TASK_TYPE_BASE_PRICE_IMPORT",
+]

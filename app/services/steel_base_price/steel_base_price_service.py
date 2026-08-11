@@ -19,6 +19,10 @@ from app.schemas.dto.steel_base_price_dto import (
     SteelBasePriceQuery,
     SteelBasePriceUpdate,
 )
+from app.utils.steel_price_archive import (
+    FILE_KIND_BASE_PRICE,
+    save_steel_price_upload,
+)
 
 logger = logging.getLogger("service.steel_base_price")
 
@@ -146,10 +150,20 @@ class SteelBasePriceService:
         """
         解析 Excel 并执行 upsert。
         整个导入在单一事务中完成；进度写入独立异步任务库。
+        导入前先按年度/月份归档源文件，便于与政策文件成对核对。
         """
         def _report(progress: int, msg: str) -> None:
             if progress_callback:
                 progress_callback(progress, msg)
+
+        _report(5, "正在归档上传源文件...")
+        save_steel_price_upload(
+            file_content=file_content,
+            filename=filename,
+            year=year,
+            month=month,
+            file_kind=FILE_KIND_BASE_PRICE,
+        )
 
         _report(10, "正在解析基准价格 Excel...")
         parse_result = parse_base_price_excel(file_content)

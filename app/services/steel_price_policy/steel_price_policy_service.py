@@ -19,6 +19,10 @@ from app.repositories.steel_price_policy.steel_price_policy_repository import (
     MatchFilter,
     PolicyFilter,
 )
+from app.utils.steel_price_archive import (
+    FILE_KIND_POLICY,
+    save_steel_price_upload,
+)
 from app.schemas.dto.steel_price_policy_dto import (
     LadderItemCreate,
     LadderItemUpdate,
@@ -450,10 +454,21 @@ class SteelPricePolicyService:
         导入策略：
         - 键存在 → 删除旧政策及阶梯明细，插入新政政策及阶梯明细
         - 键不存在 → 直接插入
+
+        导入前先按年度/月份归档源文件，便于与基准价文件成对核对。
         """
         def _report(progress: int, msg: str) -> None:
             if progress_callback:
                 progress_callback(progress, msg)
+
+        _report(1, "正在归档上传源文件...")
+        save_steel_price_upload(
+            file_content=file_content,
+            filename=filename,
+            year=year,
+            month=month,
+            file_kind=FILE_KIND_POLICY,
+        )
 
         result = parse_steel_price_policy_excel(
             file_content,
