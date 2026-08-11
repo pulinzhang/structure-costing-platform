@@ -12,13 +12,16 @@ from sqlalchemy.orm import Session
 from app.repositories.steel_price import SteelPriceRepository
 from app.schemas.dto.steel_price_dto import (
     SteelPriceAuditDTO,
+    SteelPriceBatchApproveDTO,
     SteelPriceBatchDeleteDTO,
+    SteelPriceBatchReverseAuditDTO,
     SteelPriceCreate,
     SteelPriceQuery,
     SteelPriceReverseAuditDTO,
     SteelPriceUpdate,
 )
 from app.schemas.vo.steel_price_vo import (
+    SteelPriceBatchAuditResultVO,
     SteelPriceBatchDeleteResultVO,
     SteelPriceFilterOptions,
     SteelPriceResponse,
@@ -261,6 +264,116 @@ class SteelPriceService:
             db.rollback()
             logger.exception(
                 "批量删除钢材价格失败: year=%s month=%s location=%s",
+                data.year,
+                data.month,
+                location,
+            )
+            return None, str(error)
+
+    def batch_approve(
+        self, db: Session, data: SteelPriceBatchApproveDTO
+    ) -> tuple[Optional[SteelPriceBatchAuditResultVO], Optional[str]]:
+        """
+        按年度+月份+基地批量审核通过。
+
+        仅更新 pending / rejected；已通过记录计入 skipped。
+        """
+        location = data.location.strip()
+        if not location:
+            return None, "采购基地不能为空"
+        audited_by = data.audited_by.strip()
+        if not audited_by:
+            return None, "审核人不能为空"
+        audit_remark = data.audit_remark.strip() if data.audit_remark else None
+
+        try:
+            skipped_count = self.repository.count_by_conditions_and_statuses(
+                db,
+                year=data.year,
+                month=data.month,
+                location=location,
+                statuses=[AUDIT_APPROVED],
+            )
+            updated_count = self.repository.approve_by_period(
+                db,
+                year=data.year,
+                month=data.month,
+                location=location,
+                audited_by=audited_by,
+                audited_at=datetime.now(),
+                audit_remark=audit_remark,
+            )
+            db.commit()
+            return (
+                SteelPriceBatchAuditResultVO(
+                    updated_count=updated_count,
+                    skipped_count=skipped_count,
+                    year=data.year,
+                    month=data.month,
+                    location=location,
+                ),
+                None,
+            )
+        except Exception as error:
+            db.rollback()
+            logger.exception(
+                "批量审核失败: year=%s month=%s location=%s",
+                data.year,
+                data.month,
+                location,
+            )
+            return None, str(error)
+
+    def batch_reverse_audit(
+        self, db: Session, data: SteelPriceBatchReverseAuditDTO
+    ) -> tuple[Optional[SteelPriceBatchAuditResultVO], Optional[str]]:
+        """
+        按年度+月份+基地批量反审核。
+
+        仅更新 approved → pending；非已通过计入 skipped。
+        """
+        location = data.location.strip()
+        if not location:
+            return None, "采购基地不能为空"
+        reverse_audited_by = data.reverse_audited_by.strip()
+        if not reverse_audited_by:
+            return None, "反审核人不能为空"
+        reverse_audit_remark = data.reverse_audit_remark.strip()
+        if not reverse_audit_remark:
+            return None, "反审核原因必填"
+
+        try:
+            skipped_count = self.repository.count_by_conditions_and_statuses(
+                db,
+                year=data.year,
+                month=data.month,
+                location=location,
+                statuses=[AUDIT_PENDING, AUDIT_REJECTED],
+            )
+            updated_count = self.repository.reverse_audit_by_period(
+                db,
+                year=data.year,
+                month=data.month,
+                location=location,
+                reverse_audited_by=reverse_audited_by,
+                reverse_audited_at=datetime.now(),
+                reverse_audit_remark=reverse_audit_remark,
+            )
+            db.commit()
+            return (
+                SteelPriceBatchAuditResultVO(
+                    updated_count=updated_count,
+                    skipped_count=skipped_count,
+                    year=data.year,
+                    month=data.month,
+                    location=location,
+                ),
+                None,
+            )
+        except Exception as error:
+            db.rollback()
+            logger.exception(
+                "批量反审核失败: year=%s month=%s location=%s",
                 data.year,
                 data.month,
                 location,

@@ -42,6 +42,16 @@ class SteelPriceBatchDeleteResultVO(BaseModel):
     location: str
 
 
+class SteelPriceBatchAuditResultVO(BaseModel):
+    """按条件批量审核 / 反审核结果"""
+
+    updated_count: int = 0
+    skipped_count: int = 0
+    year: int
+    month: int
+    location: str
+
+
 class SteelPriceResponse(BaseModel):
     """钢材价格响应 VO"""
 

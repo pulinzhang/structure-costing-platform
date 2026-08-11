@@ -3,7 +3,7 @@
  * 基准价格上传 — 异步 task_id + 进度轮询
  */
 
-import { basePriceUploadTemplate } from './template.js';
+import { basePriceUploadTemplate } from './template.js?v=35';
 
 const POLL_INTERVAL_MS = 2000;
 
@@ -222,7 +222,7 @@ const BasePriceUploadPage = {
             button.disabled = isUploading || !this.selectedFile;
             button.innerHTML = isUploading
                 ? `${window.svgIcon('spinner', 'w-3.5 h-3.5')} 解析中...`
-                : `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg> 导入基准价格`;
+                : `${window.svgIcon('upload', 'w-3.5 h-3.5')} 导入基准价格`;
         }
         if (resetButton) resetButton.disabled = isUploading;
         if (yearInput) yearInput.disabled = isUploading;

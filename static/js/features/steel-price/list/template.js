@@ -13,9 +13,21 @@ export function steelPriceListTemplate() {
                      style="background: linear-gradient(90deg, #1c1c1c 0%, #1e1e1e 60%);">
                     <div class="flex items-center gap-3">
                         <div class="w-[2px] h-4 bg-[#d32f2f] rounded-[1px] shadow-[0_0_6px_rgba(211,47,47,0.3)]"></div>
-                        <h2 class="text-[12px] font-semibold text-[#c8c8c8] tracking-wide">钢材价格表</h2>
+                        <h2 class="text-[12px] font-semibold text-[#c8c8c8] tracking-wide">钢材联动价格一览表</h2>
                     </div>
                     <div class="flex items-center gap-2">
+                        <button id="steelPriceBatchApproveButton"
+                                class="inline-flex items-center gap-1.5 bg-transparent text-[#505050] border border-[#252525] px-3 py-1.5 text-[11px] font-medium rounded-sm hover:bg-[#d32f2f]/10 hover:border-[#d32f2f]/60 hover:text-[#d32f2f] hover:shadow-[0_0_8px_rgba(211,47,47,0.15)] transition-all duration-200"
+                                style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);">
+                            ${window.svgIcon('check-circle', 'w-3 h-3')}
+                            批量审核
+                        </button>
+                        <button id="steelPriceBatchReverseButton"
+                                class="inline-flex items-center gap-1.5 bg-transparent text-[#505050] border border-[#252525] px-3 py-1.5 text-[11px] font-medium rounded-sm hover:bg-[#d32f2f]/10 hover:border-[#d32f2f]/60 hover:text-[#d32f2f] hover:shadow-[0_0_8px_rgba(211,47,47,0.15)] transition-all duration-200"
+                                style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);">
+                            ${window.svgIcon('refresh', 'w-3 h-3')}
+                            批量反审核
+                        </button>
                         <button id="steelPriceBatchDeleteButton"
                                 class="inline-flex items-center gap-1.5 bg-transparent text-[#505050] border border-[#252525] px-3 py-1.5 text-[11px] font-medium rounded-sm hover:bg-[#c62828]/15 hover:border-[#c62828]/60 hover:text-[#d45858] hover:shadow-[0_0_8px_rgba(198,40,40,0.15)] transition-all duration-200"
                                 style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);">
@@ -23,8 +35,8 @@ export function steelPriceListTemplate() {
                             批量删除
                         </button>
                         <button id="steelPriceExportButton"
-                                class="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium rounded-sm text-[#c8c8c8] border border-[#8a2020] transition-all duration-200 hover:text-white"
-                                style="background: linear-gradient(180deg, #3d1515 0%, #2d0f0f 100%); border-color: #6b1a1a; box-shadow: 0 1px 3px rgba(0,0,0,0.4), inset 0 1px 0 rgba(211,47,47,0.1), 0 0 12px rgba(198,40,40,0.08);">
+                                class="inline-flex items-center gap-1.5 bg-transparent text-[#505050] border border-[#252525] px-3 py-1.5 text-[11px] font-medium rounded-sm hover:bg-[#d32f2f]/10 hover:border-[#d32f2f]/60 hover:text-[#d32f2f] hover:shadow-[0_0_8px_rgba(211,47,47,0.15)] transition-all duration-200"
+                                style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);">
                             ${window.svgIcon('download', 'w-3 h-3')}
                             导出 Excel
                         </button>
@@ -43,24 +55,25 @@ export function steelPriceListTemplate() {
                         ${filterSelect('steelPriceAuditStatus', '审核状态')}
 
                         <button id="steelPriceSearchButton"
-                                class="inline-flex items-center gap-1 h-7 px-3 text-[11px] font-medium bg-[#242424] text-[#787878] border border-[#272727] rounded-sm hover:border-[#d32f2f] hover:text-[#d32f2f] transition-all duration-150">
+                                class="inline-flex items-center gap-1.5 h-7 px-3 text-[11px] font-semibold rounded-sm text-[#c8c8c8] border border-[#8a2020] transition-all duration-200 hover:text-white"
+                                style="background: linear-gradient(180deg, #3d1515 0%, #2d0f0f 100%); border-color: #6b1a1a; box-shadow: 0 1px 3px rgba(0,0,0,0.4), inset 0 1px 0 rgba(211,47,47,0.1), 0 0 12px rgba(198,40,40,0.08);">
                             ${window.svgIcon('search', 'w-3 h-3')}
                             查询
                         </button>
                         <button id="steelPriceResetFilterButton"
-                                class="inline-flex items-center gap-1 h-7 px-3 text-[11px] font-medium text-[#616161] hover:text-[#9e9e9e] transition-all duration-150">
+                                class="inline-flex items-center gap-1.5 h-7 px-3 text-[11px] font-medium rounded-sm bg-transparent text-[#505050] border border-[#252525] hover:bg-[#d32f2f]/10 hover:border-[#d32f2f]/60 hover:text-[#d32f2f] hover:shadow-[0_0_8px_rgba(211,47,47,0.15)] transition-all duration-200"
+                                style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);">
+                            ${window.svgIcon('refresh', 'w-3 h-3')}
                             重置
                         </button>
                     </div>
                 </div>
 
                 <div class="overflow-x-auto">
-                    <table class="w-full min-w-[2800px]">
+                    <table class="w-full min-w-[2500px]">
                         <thead>
                             <tr style="background: linear-gradient(180deg, #111111 0%, #0e0e0e 100%); border-bottom: 1px solid #222222;">
-                                <th class="px-3 py-2.5 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">年度</th>
-                                <th class="px-3 py-2.5 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">月份</th>
-                                <th class="px-3 py-2.5 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">基地</th>
+                                <th class="px-3 py-2.5 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">核价维度</th>
                                 <th class="px-3 py-2.5 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">钢厂</th>
                                 <th class="px-3 py-2.5 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">钢种</th>
                                 <th class="px-3 py-2.5 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">牌号</th>
@@ -103,9 +116,9 @@ export function steelPriceListTemplate() {
         </div>
 
         <!-- 新增 / 编辑抽屉 -->
-        <div class="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm transition-opacity duration-300"
+        <div class="fixed inset-0 z-[80] bg-black/70 backdrop-blur-sm transition-opacity duration-300"
              id="editDrawerBackdrop" style="display:none"></div>
-        <div class="fixed inset-y-0 right-0 z-50 w-[760px] bg-[#1a1a1a] border-l border-[#2a2a2a] transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col"
+        <div class="fixed inset-y-0 right-0 z-[85] w-[760px] bg-[#1a1a1a] border-l border-[#2a2a2a] transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col"
              id="editDrawer" style="display:none; max-height: 100vh; box-shadow: -20px 0 60px rgba(0,0,0,0.95);">
             <div class="px-5 py-3.5 flex items-center justify-between shrink-0"
                  style="background: linear-gradient(180deg, #1f1f1f 0%, #1a1a1a 100%); border-bottom: 1px solid #333333;">
@@ -177,9 +190,9 @@ export function steelPriceListTemplate() {
         </div>
 
         <!-- 查看详情抽屉 -->
-        <div class="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm transition-opacity duration-300"
+        <div class="fixed inset-0 z-[80] bg-black/70 backdrop-blur-sm transition-opacity duration-300"
              id="viewDrawerBackdrop" style="display:none"></div>
-        <div class="fixed inset-y-0 right-0 z-50 w-[560px] bg-[#1a1a1a] border-l border-[#2a2a2a] transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col"
+        <div class="fixed inset-y-0 right-0 z-[85] w-[560px] bg-[#1a1a1a] border-l border-[#2a2a2a] transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col"
              id="viewDrawer" style="display:none; max-height: 100vh; box-shadow: -20px 0 60px rgba(0,0,0,0.95);">
             <div class="px-5 py-3.5 flex items-center justify-between shrink-0"
                  style="background: linear-gradient(180deg, #1f1f1f 0%, #1a1a1a 100%); border-bottom: 1px solid #333333;">
@@ -271,9 +284,9 @@ export function steelPriceListTemplate() {
         </div>
 
         <!-- 删除确认抽屉 -->
-        <div class="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm transition-opacity duration-300"
+        <div class="fixed inset-0 z-[80] bg-black/70 backdrop-blur-sm transition-opacity duration-300"
              id="deleteDrawerBackdrop" style="display:none"></div>
-        <div class="fixed inset-y-0 right-0 z-50 w-[380px] bg-[#1a1a1a] border-l border-[#2a2a2a] transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col"
+        <div class="fixed inset-y-0 right-0 z-[85] w-[380px] bg-[#1a1a1a] border-l border-[#2a2a2a] transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col"
              id="deleteDrawer" style="display:none; max-height: 100vh; box-shadow: -20px 0 60px rgba(0,0,0,0.95);">
             <div class="px-5 py-3.5 flex items-center justify-between shrink-0"
                  style="background: linear-gradient(180deg, #1f1f1f 0%, #1a1a1a 100%); border-bottom: 1px solid #333333;">
@@ -302,6 +315,49 @@ export function steelPriceListTemplate() {
                 </button>
             </div>
         </div>
+
+        <!-- 批量审核 / 反审核抽屉 -->
+        <div class="fixed inset-0 z-[80] bg-black/70 backdrop-blur-sm transition-opacity duration-300"
+             id="batchAuditDrawerBackdrop" style="display:none"></div>
+        <div class="fixed inset-y-0 right-0 z-[85] w-[420px] bg-[#1a1a1a] border-l border-[#2a2a2a] transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col"
+             id="batchAuditDrawer" style="display:none; max-height: 100vh; box-shadow: -20px 0 60px rgba(0,0,0,0.95);">
+            <div class="px-5 py-3.5 flex items-center justify-between shrink-0"
+                 style="background: linear-gradient(180deg, #1f1f1f 0%, #1a1a1a 100%); border-bottom: 1px solid #333333;">
+                <h5 class="text-[11px] font-semibold tracking-wider text-[#b0b0b0] flex items-center gap-2.5 uppercase">
+                    <span style="width:3px;height:14px;background:#d32f2f;border-radius:1px;display:inline-block;box-shadow: 0 0 8px rgba(211,47,47,0.5);"></span>
+                    <span id="batchAuditDrawerTitle">批量审核</span>
+                </h5>
+                <button type="button" id="closeBatchAuditDrawer"
+                        class="flex items-center justify-center w-8 h-8 rounded-md text-[#707070] hover:text-white hover:bg-[#d32f2f] transition-all">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <div class="flex-1 min-h-0 overflow-y-auto p-6 space-y-4">
+                <input type="hidden" id="batchAuditMode" value="approve">
+                <div class="bg-[#0c0c0c] border border-[#1a1a1a] rounded p-3 text-[11px] text-[#9e9e9e]" id="batchAuditFilterSummary"></div>
+                <p id="batchAuditHint" class="text-[11px] text-[#616161]">仅按年度、月份、基地批量处理；三者必须同时选择。</p>
+                <div>
+                    <label class="text-[10px] text-[#777777] mb-1 block" id="batchAuditOperatorLabel">审核人 <span class="text-[#d32f2f]">*</span></label>
+                    <input type="text" id="batchAuditOperator" maxlength="50"
+                           class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#ffffff] placeholder:text-[#616161] focus:outline-none focus:border-[#ff5252] transition-all rounded"
+                           placeholder="请输入经理姓名">
+                </div>
+                <div>
+                    <label class="text-[10px] text-[#777777] mb-1 block" id="batchAuditRemarkLabel">审核意见</label>
+                    <textarea id="batchAuditRemark" rows="4" maxlength="500"
+                              class="w-full px-3 py-2 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#ffffff] placeholder:text-[#616161] focus:outline-none focus:border-[#ff5252] transition-all rounded resize-none"
+                              placeholder="可选填写审核意见"></textarea>
+                </div>
+            </div>
+            <div class="px-6 py-4 border-t border-[#262626] flex items-center justify-end gap-2 shrink-0">
+                <button type="button" id="cancelBatchAuditBtn" class="inline-flex items-center gap-1.5 bg-transparent text-[#9e9e9e] border border-[#2c2c2c] px-4 py-2 text-[11px] font-medium rounded hover:border-[#9e9e9e] hover:text-white transition-all">取消</button>
+                <button type="button" id="confirmBatchAuditBtn" class="inline-flex items-center gap-1.5 bg-[#d32f2f] text-white px-4 py-2 text-[11px] font-semibold rounded hover:bg-[#b71c1c] transition-all">
+                    确认提交
+                </button>
+            </div>
+        </div>
     `;
 }
 
@@ -314,9 +370,10 @@ export function renderSteelPriceRows(records) {
         return `
         <tr class="group transition-colors duration-150" data-id="${esc(record.id)}"
             style="${isEven ? 'background: rgba(255,255,255,0.012);' : ''}">
-            <td class="${cell} text-[#686868] font-mono">${esc(record.year)}</td>
-            <td class="${cell} text-[#686868] font-mono">${esc(record.month)}</td>
-            <td class="${cell} text-[#9e9e9e]">${esc(record.location)}</td>
+            <td class="${cell} whitespace-nowrap">
+                <div class="font-mono tabular-nums text-[#b0b0b0]">${esc(record.year)}-${esc(String(record.month).padStart(2, '0'))}</div>
+                <div class="text-[10px] text-[#686868] mt-0.5">${esc(record.location)}</div>
+            </td>
             <td class="${cell} text-[#9e9e9e]">${esc(record.steel_mill)}</td>
             <td class="${cell} text-[#9e9e9e]">${esc(record.category_name)}</td>
             <td class="${cell} font-medium text-[#b0b0b0]">${esc(record.grade)}</td>

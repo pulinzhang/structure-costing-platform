@@ -12,12 +12,15 @@ from app.database import get_db
 from app.schemas.common.page_result import PageResult
 from app.schemas.dto.steel_price_dto import (
     SteelPriceAuditDTO,
+    SteelPriceBatchApproveDTO,
     SteelPriceBatchDeleteDTO,
+    SteelPriceBatchReverseAuditDTO,
     SteelPriceQuery,
     SteelPriceReverseAuditDTO,
     SteelPriceUpdate,
 )
 from app.schemas.vo.steel_price_vo import (
+    SteelPriceBatchAuditResultVO,
     SteelPriceBatchDeleteResultVO,
     SteelPriceResponse,
 )
@@ -83,6 +86,66 @@ def batch_delete_steel_prices(
             + (
                 f"，跳过已审核 {result.skipped_approved_count} 条"
                 if result.skipped_approved_count
+                else ""
+            )
+        ),
+    )
+
+
+@router.post(
+    "/batch-approve",
+    response_model=ApiResponse[SteelPriceBatchAuditResultVO],
+)
+def batch_approve_steel_prices(
+    body: SteelPriceBatchApproveDTO,
+    db: Session = Depends(get_db),
+) -> ApiResponse[SteelPriceBatchAuditResultVO]:
+    """
+    按年度+月份+基地批量审核通过。
+
+    三者必填；仅处理待审/已驳回，已通过记录跳过。
+    """
+    result, error = _steel_price_service.batch_approve(db, body)
+    if error:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error)
+    assert result is not None
+    return ApiResponse.ok(
+        data=result,
+        message=(
+            f"已审核通过 {result.updated_count} 条"
+            + (
+                f"，跳过 {result.skipped_count} 条"
+                if result.skipped_count
+                else ""
+            )
+        ),
+    )
+
+
+@router.post(
+    "/batch-reverse-audit",
+    response_model=ApiResponse[SteelPriceBatchAuditResultVO],
+)
+def batch_reverse_audit_steel_prices(
+    body: SteelPriceBatchReverseAuditDTO,
+    db: Session = Depends(get_db),
+) -> ApiResponse[SteelPriceBatchAuditResultVO]:
+    """
+    按年度+月份+基地批量反审核。
+
+    三者必填；仅处理已通过记录，其余跳过；反审核意见必填。
+    """
+    result, error = _steel_price_service.batch_reverse_audit(db, body)
+    if error:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error)
+    assert result is not None
+    return ApiResponse.ok(
+        data=result,
+        message=(
+            f"已反审核 {result.updated_count} 条"
+            + (
+                f"，跳过 {result.skipped_count} 条"
+                if result.skipped_count
                 else ""
             )
         ),

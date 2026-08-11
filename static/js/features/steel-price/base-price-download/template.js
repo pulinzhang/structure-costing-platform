@@ -25,8 +25,8 @@ export function basePriceDownloadTemplate() {
                             删除
                         </button>
                         <button id="btnExportBasePrice"
-                                class="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium rounded-sm text-[#c8c8c8] border border-[#8a2020] transition-all duration-200 hover:text-white"
-                                style="background: linear-gradient(180deg, #3d1515 0%, #2d0f0f 100%); border-color: #6b1a1a; box-shadow: 0 1px 3px rgba(0,0,0,0.4), inset 0 1px 0 rgba(211,47,47,0.1), 0 0 12px rgba(198,40,40,0.08);">
+                                class="inline-flex items-center gap-1.5 bg-transparent text-[#505050] border border-[#252525] px-3 py-1.5 text-[11px] font-medium rounded-sm hover:bg-[#d32f2f]/10 hover:border-[#d32f2f]/60 hover:text-[#d32f2f] hover:shadow-[0_0_8px_rgba(211,47,47,0.15)] transition-all duration-200"
+                                style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);">
                             ${window.svgIcon('download', 'w-3 h-3')}
                             导出 Excel
                         </button>
@@ -46,7 +46,8 @@ export function basePriceDownloadTemplate() {
                     </div>
                     <div class="flex items-center gap-2">
                         <button id="btnPreviewBasePrice"
-                                class="inline-flex items-center gap-1.5 bg-transparent text-[#888888] border border-[#2c2c2c] px-3 py-1.5 text-[11px] font-medium rounded-sm hover:border-[#d32f2f] hover:text-[#d32f2f] transition-all duration-150">
+                                class="inline-flex items-center gap-1.5 h-7 px-3 text-[11px] font-semibold rounded-sm text-[#c8c8c8] border border-[#8a2020] transition-all duration-200 hover:text-white"
+                                style="background: linear-gradient(180deg, #3d1515 0%, #2d0f0f 100%); border-color: #6b1a1a; box-shadow: 0 1px 3px rgba(0,0,0,0.4), inset 0 1px 0 rgba(211,47,47,0.1), 0 0 12px rgba(198,40,40,0.08);">
                             ${window.svgIcon('search', 'w-3 h-3')}
                             预览
                         </button>

@@ -3,7 +3,7 @@
  * 钢材价格计算结果浏览 / 手工维护 / 审核
  */
 
-import { steelPriceListTemplate, renderSteelPricePagination, renderSteelPriceRows } from './template.js?v=25';
+import { steelPriceListTemplate, renderSteelPricePagination, renderSteelPriceRows } from './template.js?v=31';
 
 const steelPriceState = {
     records: [],
@@ -14,6 +14,7 @@ const steelPriceState = {
     filtersLoaded: false,
     currentViewId: null,
     pendingFilters: null,
+    batchAuditSubmitting: false,
 };
 
 const API_BASE = '/api/steel-prices';
@@ -230,6 +231,8 @@ function bindEvents() {
     });
     document.getElementById('steelPriceResetFilterButton')?.addEventListener('click', () => resetFilters());
     document.getElementById('steelPriceBatchDeleteButton')?.addEventListener('click', () => batchDeleteByFilters());
+    document.getElementById('steelPriceBatchApproveButton')?.addEventListener('click', () => openBatchAuditDrawer('approve'));
+    document.getElementById('steelPriceBatchReverseButton')?.addEventListener('click', () => openBatchAuditDrawer('reverse'));
     document.getElementById('steelPriceExportButton')?.addEventListener('click', () => exportExcel());
 
     document.getElementById('steelPricePagination')?.addEventListener('click', event => {
@@ -243,6 +246,15 @@ function bindEvents() {
     bindEditDrawerEvents();
     bindViewDrawerEvents();
     bindDeleteDrawerEvents();
+    bindBatchAuditDrawerEvents();
+}
+
+function collectPeriodFilters() {
+    return {
+        year: getFilterValue('steelPriceYear'),
+        month: getFilterValue('steelPriceMonth'),
+        location: getFilterValue('steelPriceLocation'),
+    };
 }
 
 function collectBatchDeleteFilters() {
@@ -405,6 +417,143 @@ async function batchDeleteByFilters() {
         if (btn) {
             btn.disabled = false;
             btn.innerHTML = originalHtml;
+        }
+    }
+}
+
+function bindBatchAuditDrawerEvents() {
+    document.getElementById('closeBatchAuditDrawer')?.addEventListener('click', closeBatchAuditDrawer);
+    document.getElementById('cancelBatchAuditBtn')?.addEventListener('click', closeBatchAuditDrawer);
+    document.getElementById('batchAuditDrawerBackdrop')?.addEventListener('click', closeBatchAuditDrawer);
+    document.getElementById('confirmBatchAuditBtn')?.addEventListener('click', () => submitBatchAudit());
+}
+
+function openBatchAuditDrawer(mode) {
+    const filters = collectPeriodFilters();
+    if (!filters.year || !filters.month || !filters.location) {
+        showToast('批量操作须选择年度、月份、基地', 'warning');
+        return;
+    }
+
+    const isApprove = mode === 'approve';
+    const modeEl = document.getElementById('batchAuditMode');
+    const titleEl = document.getElementById('batchAuditDrawerTitle');
+    const hintEl = document.getElementById('batchAuditHint');
+    const operatorLabel = document.getElementById('batchAuditOperatorLabel');
+    const remarkLabel = document.getElementById('batchAuditRemarkLabel');
+    const operatorEl = document.getElementById('batchAuditOperator');
+    const remarkEl = document.getElementById('batchAuditRemark');
+    const summaryEl = document.getElementById('batchAuditFilterSummary');
+    const confirmBtn = document.getElementById('confirmBatchAuditBtn');
+
+    if (modeEl) modeEl.value = isApprove ? 'approve' : 'reverse';
+    if (titleEl) titleEl.textContent = isApprove ? '批量审核' : '批量反审核';
+    if (hintEl) {
+        hintEl.textContent = isApprove
+            ? '仅按年度、月份、基地处理待审/已驳回记录；已通过记录会跳过。'
+            : '仅按年度、月份、基地处理已通过记录；其余状态会跳过。反审核意见必填。';
+    }
+    if (operatorLabel) {
+        operatorLabel.innerHTML = isApprove
+            ? '审核人 <span class="text-[#d32f2f]">*</span>'
+            : '反审核人 <span class="text-[#d32f2f]">*</span>';
+    }
+    if (remarkLabel) {
+        remarkLabel.innerHTML = isApprove
+            ? '审核意见'
+            : '反审核意见 <span class="text-[#d32f2f]">*</span>';
+    }
+    if (operatorEl) {
+        operatorEl.value = '';
+        operatorEl.placeholder = isApprove ? '请输入经理姓名' : '请输入反审核人姓名';
+    }
+    if (remarkEl) {
+        remarkEl.value = '';
+        remarkEl.placeholder = isApprove ? '可选填写审核意见' : '请填写反审核原因（必填）';
+    }
+    if (summaryEl) {
+        summaryEl.textContent = `年度 ${filters.year} · 月份 ${filters.month} · 基地 ${filters.location}`;
+    }
+    if (confirmBtn) {
+        confirmBtn.textContent = isApprove ? '确认审核通过' : '确认反审核';
+        confirmBtn.className =
+            'inline-flex items-center gap-1.5 bg-[#d32f2f] text-white px-4 py-2 text-[11px] font-semibold rounded hover:bg-[#b71c1c] transition-all';
+    }
+
+    openDrawer('batchAuditDrawer', 'batchAuditDrawerBackdrop');
+}
+
+function closeBatchAuditDrawer() {
+    if (steelPriceState.batchAuditSubmitting) return;
+    closeDrawer('batchAuditDrawer', 'batchAuditDrawerBackdrop');
+}
+
+async function submitBatchAudit() {
+    if (steelPriceState.batchAuditSubmitting) return;
+
+    const mode = document.getElementById('batchAuditMode')?.value || 'approve';
+    const isApprove = mode === 'approve';
+    const filters = collectPeriodFilters();
+    if (!filters.year || !filters.month || !filters.location) {
+        showToast('批量操作须选择年度、月份、基地', 'warning');
+        return;
+    }
+
+    const operator = document.getElementById('batchAuditOperator')?.value.trim() || '';
+    const remark = document.getElementById('batchAuditRemark')?.value.trim() || '';
+    if (!operator) {
+        showToast(isApprove ? '请填写审核人' : '请填写反审核人', 'warning');
+        return;
+    }
+    if (!isApprove && !remark) {
+        showToast('反审核意见必填', 'warning');
+        return;
+    }
+
+    const confirmBtn = document.getElementById('confirmBatchAuditBtn');
+    const originalText = confirmBtn ? confirmBtn.textContent : '';
+    steelPriceState.batchAuditSubmitting = true;
+    if (confirmBtn) {
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = '提交中...';
+    }
+
+    try {
+        const body = {
+            year: parseInt(filters.year, 10),
+            month: parseInt(filters.month, 10),
+            location: filters.location,
+        };
+        let response;
+        if (isApprove) {
+            body.audited_by = operator;
+            if (remark) body.audit_remark = remark;
+            response = await HttpClient.post(`${API_BASE}/batch-approve`, body);
+        } else {
+            body.reverse_audited_by = operator;
+            body.reverse_audit_remark = remark;
+            response = await HttpClient.post(`${API_BASE}/batch-reverse-audit`, body);
+        }
+
+        const result = response.data || {};
+        const updated = result.updated_count ?? 0;
+        const skipped = result.skipped_count ?? 0;
+        showToast(
+            response.message ||
+                `${isApprove ? '已审核通过' : '已反审核'} ${updated} 条` +
+                    (skipped ? `，跳过 ${skipped} 条` : ''),
+            updated > 0 ? 'success' : 'warning'
+        );
+        steelPriceState.batchAuditSubmitting = false;
+        closeBatchAuditDrawer();
+        loadData(steelPriceState.page);
+    } catch (error) {
+        console.error(isApprove ? '批量审核失败:' : '批量反审核失败:', error);
+    } finally {
+        steelPriceState.batchAuditSubmitting = false;
+        if (confirmBtn) {
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = originalText;
         }
     }
 }

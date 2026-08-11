@@ -306,3 +306,98 @@ class SteelPriceRepository:
             deleted_count,
         )
         return deleted_count
+
+    def count_by_conditions_and_statuses(
+        self,
+        db: Session,
+        *,
+        year: int,
+        month: int,
+        location: str,
+        statuses: list[str],
+    ) -> int:
+        """统计指定条件下、指定审核状态的条数。"""
+        return (
+            self._build_condition_query(
+                db,
+                year=year,
+                month=month,
+                location=location,
+            )
+            .filter(SteelPrice.audit_status.in_(statuses))
+            .count()
+        )
+
+    def approve_by_period(
+        self,
+        db: Session,
+        *,
+        year: int,
+        month: int,
+        location: str,
+        audited_by: str,
+        audited_at,
+        audit_remark: str | None,
+    ) -> int:
+        """批量审核通过：pending/rejected → approved。返回更新条数。"""
+        query = self._build_condition_query(
+            db,
+            year=year,
+            month=month,
+            location=location,
+        ).filter(SteelPrice.audit_status.in_(["pending", "rejected"]))
+        updated_count = query.update(
+            {
+                SteelPrice.audit_status: "approved",
+                SteelPrice.audited_by: audited_by,
+                SteelPrice.audited_at: audited_at,
+                SteelPrice.audit_remark: audit_remark,
+            },
+            synchronize_session=False,
+        )
+        db.flush()
+        logger.info(
+            "批量审核通过: year=%s month=%s location=%s count=%s",
+            year,
+            month,
+            location,
+            updated_count,
+        )
+        return int(updated_count or 0)
+
+    def reverse_audit_by_period(
+        self,
+        db: Session,
+        *,
+        year: int,
+        month: int,
+        location: str,
+        reverse_audited_by: str,
+        reverse_audited_at,
+        reverse_audit_remark: str,
+    ) -> int:
+        """批量反审核：approved → pending。返回更新条数。"""
+        query = self._build_condition_query(
+            db,
+            year=year,
+            month=month,
+            location=location,
+        ).filter(SteelPrice.audit_status == "approved")
+        updated_count = query.update(
+            {
+                SteelPrice.audit_status: "pending",
+                SteelPrice.reverse_audited_by: reverse_audited_by,
+                SteelPrice.reverse_audited_at: reverse_audited_at,
+                SteelPrice.reverse_audit_remark: reverse_audit_remark,
+            },
+            synchronize_session=False,
+        )
+        db.flush()
+        logger.info(
+            "批量反审核: year=%s month=%s location=%s count=%s",
+            year,
+            month,
+            location,
+            updated_count,
+        )
+        return int(updated_count or 0)

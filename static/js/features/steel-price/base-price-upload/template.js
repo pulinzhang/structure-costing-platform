@@ -51,7 +51,8 @@ export function basePriceUploadTemplate() {
                                 <input type="file" id="basePriceFileInput" class="hidden" accept=".xlsx,.xls">
                                 <button type="button"
                                         id="basePriceSelectFileBtn"
-                                        class="btn-file-select">
+                                        class="inline-flex items-center gap-1.5 bg-transparent text-[#505050] border border-[#252525] px-3 py-1.5 text-[11px] font-medium rounded-sm hover:bg-[#d32f2f]/10 hover:border-[#d32f2f]/60 hover:text-[#d32f2f] hover:shadow-[0_0_8px_rgba(211,47,47,0.15)] transition-all duration-200"
+                                        style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);">
                                     ${window.svgIcon('folder', 'w-3.5 h-3.5')}
                                     选择文件
                                 </button>
@@ -83,15 +84,17 @@ export function basePriceUploadTemplate() {
                             <button type="button"
                                     id="basePriceResetButton"
                                     onclick="window.resetBasePriceUploadForm()"
-                                    class="btn-ghost">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                                    class="inline-flex items-center gap-1.5 bg-transparent text-[#505050] border border-[#252525] px-3 py-1.5 text-[11px] font-medium rounded-sm hover:bg-[#d32f2f]/10 hover:border-[#d32f2f]/60 hover:text-[#d32f2f] hover:shadow-[0_0_8px_rgba(211,47,47,0.15)] transition-all duration-200"
+                                    style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);">
+                                ${window.svgIcon('refresh', 'w-3.5 h-3.5')}
                                 重置
                             </button>
                             <button type="submit"
                                     id="basePriceSubmitButton"
                                     disabled
-                                    class="btn-upload-submit disabled:opacity-30 disabled:pointer-events-none">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                                    class="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold rounded-sm text-[#c8c8c8] border border-[#8a2020] transition-all duration-200 hover:text-white disabled:opacity-30 disabled:pointer-events-none"
+                                    style="background: linear-gradient(180deg, #3d1515 0%, #2d0f0f 100%); border-color: #6b1a1a; box-shadow: 0 1px 3px rgba(0,0,0,0.4), inset 0 1px 0 rgba(211,47,47,0.1), 0 0 12px rgba(198,40,40,0.08);">
+                                ${window.svgIcon('upload', 'w-3.5 h-3.5')}
                                 导入基准价格
                             </button>
                         </div>

@@ -88,3 +88,23 @@ class SteelPriceBatchDeleteDTO(BaseModel):
     category_name: Optional[str] = Field(None, description="钢种大类")
     grade: Optional[str] = Field(None, description="牌号（模糊匹配）")
     steel_mill: Optional[str] = Field(None, description="钢厂")
+
+
+class SteelPriceBatchApproveDTO(BaseModel):
+    """按条件批量审核通过（仅年度/月份/基地，三者必填）"""
+
+    year: int = Field(..., ge=2000, le=2100, description="年度")
+    month: int = Field(..., ge=1, le=12, description="月份")
+    location: str = Field(..., min_length=1, max_length=50, description="采购基地")
+    audited_by: str = Field(..., min_length=1, max_length=50, description="审核人（经理）")
+    audit_remark: Optional[str] = Field(None, description="审核意见")
+
+
+class SteelPriceBatchReverseAuditDTO(BaseModel):
+    """按条件批量反审核（仅年度/月份/基地，三者必填）"""
+
+    year: int = Field(..., ge=2000, le=2100, description="年度")
+    month: int = Field(..., ge=1, le=12, description="月份")
+    location: str = Field(..., min_length=1, max_length=50, description="采购基地")
+    reverse_audited_by: str = Field(..., min_length=1, max_length=50, description="反审核人（经理）")
+    reverse_audit_remark: str = Field(..., min_length=1, description="反审核原因（必填）")

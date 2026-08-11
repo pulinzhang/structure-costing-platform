@@ -20,12 +20,12 @@ import { pageConfig as dashboardPage }      from './features/dashboard/index.js'
 import { pageConfig as stampingUploadPage } from './features/stamping/upload/index.js?v=34';
 import { pageConfig as stampingPartsPage }  from './features/stamping/parts/index.js';
 import { pageConfig as stampingTonnagePage } from './features/stamping/tonnage/index.js';
-import { pageConfig as steelPriceListPage }   from './features/steel-price/list/index.js?v=25';
+import { pageConfig as steelPriceListPage }   from './features/steel-price/list/index.js?v=31';
 import { pageConfig as steelPriceCalcPage }    from './features/steel-price/calc/index.js?v=3';
 import { pageConfig as steelPricePolicyUploadPage } from './features/steel-price/policy-upload/index.js?v=34';
-import { pageConfig as steelPricePolicyDownloadPage } from './features/steel-price/policy-download/index.js';
-import { pageConfig as basePriceUploadPage } from './features/steel-price/base-price-upload/index.js?v=34';
-import { pageConfig as basePriceDownloadPage } from './features/steel-price/base-price-download/index.js?v=24';
+import { pageConfig as steelPricePolicyDownloadPage } from './features/steel-price/policy-download/index.js?v=25';
+import { pageConfig as basePriceUploadPage } from './features/steel-price/base-price-upload/index.js?v=35';
+import { pageConfig as basePriceDownloadPage } from './features/steel-price/base-price-download/index.js?v=25';
 import { pageConfig as costingPage }        from './features/costing/index.js';
 import { pageConfig as quotationPage }      from './features/quotation/index.js';
 import { pageConfig as settingsPage }       from './features/settings/index.js';
