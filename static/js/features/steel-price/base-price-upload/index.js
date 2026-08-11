@@ -86,6 +86,8 @@ const BasePriceUploadPage = {
         }
         const title = document.getElementById('basePriceUploadTitle');
         if (title) title.innerHTML = `<span class="text-[#2e7d32]">${esc(file.name)}</span> 已选择`;
+        const button = document.getElementById('basePriceSubmitButton');
+        if (button) button.disabled = false;
     },
 
     reset() {
@@ -99,6 +101,8 @@ const BasePriceUploadPage = {
         }
         const title = document.getElementById('basePriceUploadTitle');
         if (title) title.innerHTML = '拖拽文件到此处上传';
+        const button = document.getElementById('basePriceSubmitButton');
+        if (button) button.disabled = true;
         // 重置后恢复默认年月
         const yearInput = document.getElementById('basePriceYear');
         const monthInput = document.getElementById('basePriceMonth');
@@ -158,7 +162,7 @@ const BasePriceUploadPage = {
             showToast(error.message || '导入失败', 'error');
         } finally {
             if (button) {
-                button.disabled = false;
+                button.disabled = !this.selectedFile;
                 button.innerHTML = `${window.svgIcon('upload', 'w-3.5 h-3.5')} 导入基准价格`;
             }
         }

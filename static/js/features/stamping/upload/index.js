@@ -99,6 +99,9 @@ export const UploadPage = {
         uploadZone.classList.add('file-selected');
         document.getElementById('uploadTitle').textContent = '已选择文件';
         document.getElementById('uploadHint').textContent = file.name;
+
+        const submitBtn = document.getElementById('submitBtn');
+        if (submitBtn) submitBtn.disabled = false;
     },
 
     /**
@@ -136,7 +139,8 @@ export const UploadPage = {
                 showToast(error.message || '上传失败', 'error');
             })
             .finally(() => {
-                submitBtn.disabled = false;
+                const hasFile = fileInput.files && fileInput.files.length > 0;
+                submitBtn.disabled = !hasFile;
             });
     },
 };
@@ -154,6 +158,7 @@ window.removeUploadFile = function() {
     const fileInput = document.getElementById('fileInput');
     const preview = document.getElementById('filePreview');
     const uploadZone = document.getElementById('uploadZone');
+    const submitBtn = document.getElementById('submitBtn');
 
     if (fileInput) fileInput.value = '';
     if (preview) preview.classList.add('hidden');
@@ -162,6 +167,7 @@ window.removeUploadFile = function() {
         document.getElementById('uploadTitle').textContent = '拖拽文件到此处';
         document.getElementById('uploadHint').textContent = '或点击下方按钮选择文件';
     }
+    if (submitBtn) submitBtn.disabled = true;
 };
 
 window.resetUploadForm = function() {

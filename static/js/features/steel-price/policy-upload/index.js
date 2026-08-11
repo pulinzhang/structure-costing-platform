@@ -66,6 +66,8 @@ const PolicyUploadPage = {
         }
         const title = document.getElementById('policyUploadTitle');
         if (title) title.innerHTML = `<span class="text-[#2e7d32]">${esc(file.name)}</span> 已选择`;
+        const button = document.getElementById('policySubmitButton');
+        if (button) button.disabled = false;
     },
 
     reset() {
@@ -79,6 +81,8 @@ const PolicyUploadPage = {
         }
         const title = document.getElementById('policyUploadTitle');
         if (title) title.innerHTML = '拖拽文件到此处上传';
+        const button = document.getElementById('policySubmitButton');
+        if (button) button.disabled = true;
     },
 
     async submit() {
@@ -125,7 +129,7 @@ const PolicyUploadPage = {
             showToast(error.message || '导入失败', 'error');
         } finally {
             if (button) {
-                button.disabled = false;
+                button.disabled = !this.selectedFile;
                 button.innerHTML = `${window.svgIcon('upload', 'w-3.5 h-3.5')} 导入政策`;
             }
         }
