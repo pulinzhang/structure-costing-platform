@@ -79,19 +79,21 @@ function navigateTo(pageName) {
  * 同时展开所有父级子菜单，并关闭其他不相关的菜单
  */
 function highlightMenu(pageName) {
-    // 1. 先移除所有现有的激活状态和展开状态
-    document.querySelectorAll('.sidebar-nav-link.active, .submenu-link.active').forEach(link => {
+    const sidebar = document.getElementById('sidebar');
+    if (!sidebar) return;
+
+    // 1. 先移除所有现有的激活状态和展开状态（仅 Overlay 导航 DOM）
+    sidebar.querySelectorAll('.sidebar-nav-link.active, .submenu-link.active').forEach(link => {
         link.classList.remove('active');
     });
 
     // 2. 关闭所有子菜单和 has-submenu
-    document.querySelectorAll('.submenu.show, .submenu-nested.show, .has-submenu.open').forEach(el => {
+    sidebar.querySelectorAll('.submenu.show, .submenu-nested.show, .has-submenu.open').forEach(el => {
         el.classList.remove('show', 'open');
     });
 
     // 3. 查找匹配的链接（支持多级菜单）
-    const selector = `a[data-page="${pageName}"]`;
-    const activeLink = document.querySelector(selector);
+    const activeLink = sidebar.querySelector(`a[data-page="${pageName}"]`);
 
     if (activeLink) {
         activeLink.classList.add('active');
@@ -112,6 +114,42 @@ function highlightMenu(pageName) {
 }
 
 /**
+ * 渲染面包屑：STAMPING // … // 当前页
+ * pageMeta.breadcrumb 为路径段数组（不含品牌根）
+ * pageMeta.en 写入当前页 data-en 英文刻度
+ */
+function renderBreadcrumb(pageName, meta) {
+    const list = document.getElementById('breadcrumbList');
+    if (!list) return;
+
+    const segments = Array.isArray(meta.breadcrumb)
+        ? meta.breadcrumb
+        : String(meta.breadcrumb || pageName).split(/\s*\/\s*/).filter(Boolean);
+
+    const enCode = meta.en || 'PAGE_VIEW';
+    const brand = `
+        <li>
+            <span class="breadcrumb-brand-badge">
+                <span class="w-1.5 h-1.5 rounded-full bg-[#d32f2f] shadow-[0_0_6px_#d32f2f]"></span>
+                STAMPING
+            </span>
+        </li>
+    `;
+
+    const trail = segments.map((label, index) => {
+        const isLast = index === segments.length - 1;
+        const sep = '<li class="breadcrumb-sep" aria-hidden="true">//</li>';
+
+        if (isLast) {
+            return `${sep}<li class="breadcrumb-item active" aria-current="page" id="breadcrumbItem" data-en="${esc(enCode)}">${esc(label)}</li>`;
+        }
+        return `${sep}<li class="breadcrumb-item">${esc(label)}</li>`;
+    }).join('');
+
+    list.innerHTML = brand + trail;
+}
+
+/**
  * 渲染页面（仅渲染，不改 Hash）
  */
 function renderPage(pageName) {
@@ -124,17 +162,15 @@ function renderPage(pageName) {
 
     const content = document.getElementById('pageContent');
     const title   = document.getElementById('pageTitle');
-    const breadcrumb = document.getElementById('breadcrumbItem');
     const topActions = document.getElementById('topActions');
 
-    // 同步侧边栏高亮（支持多级菜单自动展开）
+    // 同步导航高亮（Overlay 复用同一套菜单 DOM）
     highlightMenu(pageName);
 
-    // 更新标题栏
-    const meta = pageMeta[pageName] || { title: pageName, breadcrumb: pageName };
-    if (title)      title.textContent = meta.title;
-    if (breadcrumb) breadcrumb.textContent = meta.breadcrumb;
-    if (topActions)  topActions.innerHTML = '';
+    const meta = pageMeta[pageName] || { title: pageName, breadcrumb: [pageName] };
+    if (title) title.textContent = meta.title;
+    renderBreadcrumb(pageName, meta);
+    if (topActions) topActions.innerHTML = '';
 
     try {
         content.innerHTML = page.render();
@@ -171,51 +207,56 @@ window.addEventListener('hashchange', function() {
     renderPage(pageName);
 });
 
-// 子菜单折叠切换
+// Global Menu → Compact Overlay Menu（复用 #sidebar 菜单 DOM）
 document.addEventListener('DOMContentLoaded', function() {
-    // --- 侧边栏抽屉（响应式：< 1024px） ---
     const sidebar         = document.getElementById('sidebar');
     const sidebarToggle   = document.getElementById('sidebarToggle');
     const sidebarBackdrop = document.getElementById('sidebarBackdrop');
 
-    const closeSidebar = () => {
+    const closeNav = () => {
         if (!sidebar) return;
         sidebar.classList.remove('is-open');
-        if (sidebarBackdrop) sidebarBackdrop.classList.remove('is-visible');
-        if (sidebarToggle)   sidebarToggle.setAttribute('aria-expanded', 'false');
+        sidebar.setAttribute('aria-hidden', 'true');
+        if (sidebarBackdrop) {
+            sidebarBackdrop.classList.remove('is-visible');
+            sidebarBackdrop.setAttribute('aria-hidden', 'true');
+        }
+        if (sidebarToggle) sidebarToggle.setAttribute('aria-expanded', 'false');
+    };
+
+    const openNav = () => {
+        if (!sidebar) return;
+        sidebar.classList.add('is-open');
+        sidebar.setAttribute('aria-hidden', 'false');
+        if (sidebarBackdrop) {
+            sidebarBackdrop.classList.add('is-visible');
+            sidebarBackdrop.setAttribute('aria-hidden', 'false');
+        }
+        if (sidebarToggle) sidebarToggle.setAttribute('aria-expanded', 'true');
     };
 
     if (sidebarToggle && sidebar) {
-        sidebarToggle.addEventListener('click', function() {
+        sidebarToggle.addEventListener('click', function(e) {
+            e.stopPropagation();
             if (sidebar.classList.contains('is-open')) {
-                closeSidebar();
+                closeNav();
             } else {
-                sidebar.classList.add('is-open');
-                if (sidebarBackdrop) sidebarBackdrop.classList.add('is-visible');
-                sidebarToggle.setAttribute('aria-expanded', 'true');
+                openNav();
             }
         });
     }
 
     if (sidebarBackdrop) {
-        sidebarBackdrop.addEventListener('click', closeSidebar);
+        sidebarBackdrop.addEventListener('click', closeNav);
     }
 
-    // 点击侧边栏里的导航链接 → 小屏下自动关闭抽屉
+    // 选择具体页面后关闭 Overlay（子菜单展开不关闭）
     document.querySelectorAll('.sidebar a[data-page]').forEach(link => {
-        link.addEventListener('click', () => {
-            if (window.innerWidth < 1024) closeSidebar();
-        });
+        link.addEventListener('click', () => closeNav());
     });
 
-    // Esc 关闭
     document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') closeSidebar();
-    });
-
-    // 窗口拉大到桌面：自动重置抽屉状态
-    window.addEventListener('resize', function() {
-        if (window.innerWidth >= 1024) closeSidebar();
+        if (e.key === 'Escape') closeNav();
     });
 
     document.querySelectorAll('[data-submenu-toggle]').forEach(toggle => {
@@ -223,13 +264,11 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             const submenuId = this.getAttribute('data-submenu-toggle');
             const submenu = document.getElementById(submenuId);
-            // 找到最近的 has-submenu 父级（可能是 .sidebar-nav-item 或 .submenu-item）
             const parent = this.closest('.has-submenu');
             if (!submenu || !parent) return;
 
             const isOpen = parent.classList.contains('open');
 
-            // 只关闭同一级别的已打开菜单（不包括嵌套的同级菜单）
             const siblings = parent.parentElement.querySelectorAll(':scope > .has-submenu.open');
             siblings.forEach(item => {
                 if (item !== parent) {
@@ -249,6 +288,5 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // 启动路由
     initRouter();
 });
