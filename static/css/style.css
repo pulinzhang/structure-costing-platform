@@ -372,11 +372,11 @@ body {
     box-sizing: border-box;
 }
 
-/* 内容区呼吸感：限制阅读/工作宽度，左右自动留白 */
+/* 内容区呼吸感：黄金最大宽度，宽屏留白聚焦、普通屏充满 */
 .page-content {
     width: 100%;
     min-width: 0;
-    max-width: 1120px;
+    max-width: 1440px;
     margin: 0 auto;
     overflow-x: hidden;
 }
@@ -389,7 +389,7 @@ body {
     align-items: center;
     justify-content: space-between;
     gap: 1.25rem;
-    max-width: 1120px;
+    max-width: 1440px;
     height: 52px;
     margin: 0 auto 1.75rem;
     padding: 0 1.25rem;
@@ -1175,7 +1175,15 @@ tr:focus-within .die-type-select {
 
     .page-content,
     .page-header {
-        max-width: 1200px;
+        max-width: 1440px;
+    }
+}
+
+/* ============ 超宽屏 (>=1920px)：略放宽，避免两侧黑边过大 ============ */
+@media (min-width: 1920px) {
+    .page-content,
+    .page-header {
+        max-width: 1600px;
     }
 }
 
