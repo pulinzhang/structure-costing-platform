@@ -41,6 +41,8 @@ export function policyDownloadTemplate() {
                     <div class="flex items-end gap-3 flex-wrap">
                         ${filterSelect('policyDownloadYear', '年度')}
                         ${filterSelect('policyDownloadMonth', '月份')}
+                        ${filterSelect('policyDownloadCategory', '钢种')}
+                        ${filterInput('policyDownloadGrade', '牌号', '输入牌号（模糊）')}
                         ${filterInputWithDatalist('policyDownloadMill', '钢厂', 'steelMillOptions')}
                     </div>
                     <div class="flex items-center gap-2">
@@ -149,6 +151,13 @@ function filterSelect(id, label) {
         <select id="${id}" class="w-36 h-7 pl-2.5 pr-7 text-[11px] bg-[#0d0d0d] border border-[#272727] text-[#909090] appearance-none cursor-pointer focus:outline-none focus:border-[#ff5252] transition-all rounded-sm">
             <option value="">全部</option>
         </select>
+    </label>`;
+}
+
+function filterInput(id, label, placeholder) {
+    return `<label class="space-y-1">
+        <span class="block text-[9px] font-semibold text-[#484848] uppercase tracking-[0.12em] whitespace-nowrap">${label}</span>
+        <input id="${id}" placeholder="${placeholder}" class="h-7 w-32 px-2.5 text-[11px] bg-[#0d0d0d] border border-[#272727] text-[#ffffff] placeholder:text-[#616161] rounded-sm focus:outline-none focus:border-[#ff5252]">
     </label>`;
 }
 
@@ -321,23 +330,28 @@ function formatDecimal(value, digits = 2) {
 }
 
 /**
- * 获取加减价的颜色类
+ * 加减价色（BRABUS 极客风）：加→冷钛白，减→暗红，无变动→低饱和灰
  */
 function getPriceAdjustClass(value) {
-    if (value === null || value === undefined) return 'text-[#606060]';
     const numeric = Number(value);
-    if (Number.isNaN(numeric)) return 'text-[#606060]';
-    if (numeric > 0) return 'text-[#4caf50]';  // 正数：绿色
-    if (numeric < 0) return 'text-[#d45555]';   // 负数：红色
-    return 'text-[#888888]';                     // 零：正常色
+    if (value === null || value === undefined || Number.isNaN(numeric) || numeric === 0) {
+        return 'text-[#444444]';
+    }
+    if (numeric > 0) return 'text-[#E0E0E0]';
+    return 'text-[#C62828]';
 }
 
 /**
- * 格式化加减价显示值
+ * 加减价显示：>0 → +160.00；<0 → -40.00；0/空 → --
  */
-function formatPriceAdjust(value) {
-    if (value === null || value === undefined) return '-';
+function formatPriceAdjust(value, digits = 2) {
     const numeric = Number(value);
-    if (Number.isNaN(numeric)) return '-';
-    return numeric >= 0 ? `+${numeric}` : `${numeric}`;
+    if (value === null || value === undefined || Number.isNaN(numeric) || numeric === 0) {
+        return '--';
+    }
+    const absText = Math.abs(numeric).toLocaleString('zh-CN', {
+        minimumFractionDigits: digits,
+        maximumFractionDigits: digits,
+    });
+    return numeric > 0 ? `+${absText}` : `-${absText}`;
 }

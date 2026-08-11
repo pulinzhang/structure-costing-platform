@@ -18,6 +18,17 @@ _CATEGORY_ALIASES: dict[str, frozenset[str]] = {
     "酸洗钢": frozenset({"酸洗", "酸洗钢"}),
 }
 
+# 基价钢厂（极简）↔ 政策钢厂（简称 / 带(新) / 集团名）
+# 未列出的钢厂仅做归一化后的精确匹配（如 VAMA、唐钢、宝钢）。
+_STEEL_MILL_ALIASES: dict[str, frozenset[str]] = {
+    "本钢": frozenset({"本钢", "鞍钢集团"}),
+    "鞍钢集团": frozenset({"本钢", "鞍钢集团"}),
+    "马钢": frozenset({"马钢", "马钢(新)"}),
+    "马钢(新)": frozenset({"马钢", "马钢(新)"}),
+    "山钢": frozenset({"山钢", "山钢(新)"}),
+    "山钢(新)": frozenset({"山钢", "山钢(新)"}),
+}
+
 PolicyHit = tuple[SteelPricePolicy, SteelPriceLadderItem]
 
 
@@ -31,6 +42,84 @@ def category_aliases(category_name: str) -> frozenset[str]:
     if name.endswith("钢") and len(name) > 1:
         return frozenset({name, name[:-1]})
     return frozenset({name, f"{name}钢"})
+
+
+def normalize_steel_mill(steel_mill: str | None) -> str:
+    """钢厂名称归一化：去空白、全角括号→半角。"""
+    name = (steel_mill or "").strip()
+    if not name:
+        return ""
+    return name.replace("（", "(").replace("）", ")")
+
+
+def _steel_mill_lookup_key(name: str) -> str:
+    """别名表查找键：ASCII 名忽略大小写（VAMA / vama）。"""
+    if name.isascii():
+        return name.casefold()
+    return name
+
+
+def steel_mill_aliases(steel_mill: str | None) -> frozenset[str]:
+    """
+    返回与基价钢厂可互通的政策钢厂名集合（均已归一化）。
+
+    匹配优先级由 steel_mill_match_rank 决定，本函数只负责「能不能配上」。
+    """
+    name = normalize_steel_mill(steel_mill)
+    if not name:
+        return frozenset()
+
+    aliases = _STEEL_MILL_ALIASES.get(name)
+    if aliases is None:
+        key = _steel_mill_lookup_key(name)
+        for raw, values in _STEEL_MILL_ALIASES.items():
+            if _steel_mill_lookup_key(raw) == key:
+                aliases = values
+                break
+
+    if aliases:
+        return frozenset(normalize_steel_mill(item) for item in aliases)
+    return frozenset({name})
+
+
+def _steel_mills_equal(left: str, right: str) -> bool:
+    if left == right:
+        return True
+    if left.isascii() and right.isascii():
+        return left.casefold() == right.casefold()
+    return False
+
+
+def steel_mill_matches(row_mill: str | None, policy_mill: str | None) -> bool:
+    """判断基价钢厂与政策钢厂是否同一主体（含别名）。"""
+    policy_name = normalize_steel_mill(policy_mill)
+    if not policy_name:
+        return False
+    aliases = steel_mill_aliases(row_mill)
+    if not aliases:
+        return False
+    if policy_name in aliases:
+        return True
+    return any(_steel_mills_equal(policy_name, alias) for alias in aliases)
+
+
+def steel_mill_match_rank(row_mill: str | None, policy_mill: str | None) -> int:
+    """
+    钢厂命中优先级（数值越小越优先）。
+
+    0 = 归一化后精确相等
+    1 = 普通别名（如 本钢 ↔ 鞍钢集团）
+    2 = 基价为普通名、政策为「(新)」变体（如 马钢 → 马钢(新)）
+    """
+    row_name = normalize_steel_mill(row_mill)
+    policy_name = normalize_steel_mill(policy_mill)
+    if not row_name or not policy_name:
+        return 99
+    if _steel_mills_equal(row_name, policy_name):
+        return 0
+    if policy_name.endswith("(新)") and not row_name.endswith("(新)"):
+        return 2
+    return 1
 
 
 def to_decimal(value) -> Optional[Decimal]:
@@ -128,14 +217,27 @@ def filter_candidates(
     row: CalcRow,
     policies: list[SteelPricePolicy],
 ) -> list[SteelPricePolicy]:
-    mill = (row.steel_mill or "").strip()
-    aliases = category_aliases(row.category_name or "")
-    return [
+    """
+    按钢厂别名 + 大类别名筛选候选政策。
+
+    结果按钢厂命中优先级排序：精确名 > 普通别名 > (新) 变体，
+    以便后续厚度/宽度匹配优先落在更贴近基价的政策上。
+    """
+    category_names = category_aliases(row.category_name or "")
+    matched = [
         p
         for p in policies
-        if (p.steel_mill or "").strip() == mill
-        and (p.category_name or "").strip() in aliases
+        if steel_mill_matches(row.steel_mill, p.steel_mill)
+        and (p.category_name or "").strip() in category_names
     ]
+    matched.sort(
+        key=lambda p: (
+            steel_mill_match_rank(row.steel_mill, p.steel_mill),
+            normalize_steel_mill(p.steel_mill),
+            p.id or 0,
+        )
+    )
+    return matched
 
 
 def grade_exact(policy: SteelPricePolicy, row: CalcRow) -> bool:
@@ -168,8 +270,15 @@ def order_by_base_thickness(
     row: CalcRow,
     prefer_base_thickness: bool,
 ) -> list[SteelPricePolicy]:
+    def mill_key(policy: SteelPricePolicy) -> tuple:
+        return (
+            steel_mill_match_rank(row.steel_mill, policy.steel_mill),
+            normalize_steel_mill(policy.steel_mill),
+            policy.id or 0,
+        )
+
     if not prefer_base_thickness:
-        return policies
+        return sorted(policies, key=mill_key)
 
     row_base = row.base_thickness
     exact: list[SteelPricePolicy] = []
@@ -183,6 +292,9 @@ def order_by_base_thickness(
             nullable.append(policy)
         else:
             others.append(policy)
+    exact.sort(key=mill_key)
+    nullable.sort(key=mill_key)
+    others.sort(key=mill_key)
     return exact + nullable + others
 
 

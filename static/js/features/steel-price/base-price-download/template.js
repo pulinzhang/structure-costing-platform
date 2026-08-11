@@ -40,6 +40,8 @@ export function basePriceDownloadTemplate() {
                         ${filterSelect('basePriceDownloadYear', '年度')}
                         ${filterSelect('basePriceDownloadMonth', '月份')}
                         ${filterSelect('basePriceDownloadLocation', '基地')}
+                        ${filterSelect('basePriceDownloadCategory', '钢种')}
+                        ${filterInput('basePriceDownloadGrade', '牌号', '输入牌号（模糊）')}
                         ${filterSelect('basePriceDownloadMill', '钢厂')}
                     </div>
                     <div class="flex items-center gap-2">
@@ -139,5 +141,12 @@ function filterSelect(id, label) {
         <select id="${id}" class="w-36 h-7 pl-2.5 pr-7 text-[11px] bg-[#0d0d0d] border border-[#272727] text-[#909090] appearance-none cursor-pointer focus:outline-none focus:border-[#ff5252] transition-all rounded-sm">
             <option value="">全部</option>
         </select>
+    </label>`;
+}
+
+function filterInput(id, label, placeholder) {
+    return `<label class="space-y-1">
+        <span class="block text-[9px] font-semibold text-[#484848] uppercase tracking-[0.12em] whitespace-nowrap">${label}</span>
+        <input id="${id}" placeholder="${placeholder}" class="h-7 w-32 px-2.5 text-[11px] bg-[#0d0d0d] border border-[#272727] text-[#ffffff] placeholder:text-[#616161] rounded-sm focus:outline-none focus:border-[#ff5252]">
     </label>`;
 }

@@ -55,6 +55,9 @@ async function loadFilterOptions() {
         }));
         fillSelect('policyDownloadMonth', months);
 
+        // 填充钢种
+        fillSelect('policyDownloadCategory', data.category_names || []);
+
         // 填充钢厂选项（使用 datalist 实现输入搜索）
         const datalist = document.getElementById('steelMillOptions');
         if (datalist && data.steel_mills && Array.isArray(data.steel_mills)) {
@@ -122,16 +125,20 @@ function bindEvents() {
         btnDelete.addEventListener('click', () => batchDeletePolicies());
     }
 
-    // 年度变更时更新月份选项
-    const yearSelect = document.getElementById('policyDownloadYear');
-    if (yearSelect) {
-        yearSelect.addEventListener('change', () => updateConditionsDisplay());
-    }
+    ['policyDownloadYear', 'policyDownloadMonth', 'policyDownloadCategory'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('change', () => updateConditionsDisplay());
+    });
 
-    // 月份变更时更新条件显示
-    const monthSelect = document.getElementById('policyDownloadMonth');
-    if (monthSelect) {
-        monthSelect.addEventListener('change', () => updateConditionsDisplay());
+    const gradeInput = document.getElementById('policyDownloadGrade');
+    if (gradeInput) {
+        gradeInput.addEventListener('input', () => updateConditionsDisplay());
+        gradeInput.addEventListener('keydown', event => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                previewData();
+            }
+        });
     }
 
     // 钢厂变更时更新条件显示（支持输入搜索）
@@ -145,14 +152,13 @@ function bindEvents() {
  * 更新已选条件显示
  */
 function updateConditionsDisplay() {
-    const year = getFilterValue('policyDownloadYear');
-    const month = getFilterValue('policyDownloadMonth');
-    const mill = getFilterValue('policyDownloadMill');
-
+    const filters = collectFilters();
     const conditions = [];
-    if (year) conditions.push(`年度: ${year}`);
-    if (month) conditions.push(`月份: ${month}`);
-    if (mill) conditions.push(`钢厂: ${mill}`);
+    if (filters.year) conditions.push(`年度: ${filters.year}`);
+    if (filters.month) conditions.push(`月份: ${filters.month}`);
+    if (filters.category_name) conditions.push(`钢种: ${filters.category_name}`);
+    if (filters.grade_value) conditions.push(`牌号: ${filters.grade_value}`);
+    if (filters.steel_mill) conditions.push(`钢厂: ${filters.steel_mill}`);
 
     const display = document.getElementById('selectedConditions');
     if (display) {
@@ -164,15 +170,35 @@ function getFilterValue(id) {
     return document.getElementById(id)?.value || '';
 }
 
+function collectFilters() {
+    return {
+        year: getFilterValue('policyDownloadYear'),
+        month: getFilterValue('policyDownloadMonth'),
+        category_name: getFilterValue('policyDownloadCategory'),
+        grade_value: document.getElementById('policyDownloadGrade')?.value.trim() || '',
+        steel_mill: getFilterValue('policyDownloadMill'),
+    };
+}
+
+function hasAnyFilter(filters) {
+    return !!(filters.year || filters.month || filters.category_name || filters.grade_value || filters.steel_mill);
+}
+
+function applyFiltersToParams(params, filters) {
+    if (filters.year) params.year = filters.year;
+    if (filters.month) params.month = filters.month;
+    if (filters.category_name) params.category_name = filters.category_name;
+    if (filters.grade_value) params.grade_value = filters.grade_value;
+    if (filters.steel_mill) params.steel_mill = filters.steel_mill;
+}
+
 /**
  * 预览数据
  */
 async function previewData() {
-    const year = getFilterValue('policyDownloadYear');
-    const month = getFilterValue('policyDownloadMonth');
-    const steelMill = getFilterValue('policyDownloadMill');
+    const filters = collectFilters();
 
-    if (!year && !month && !steelMill) {
+    if (!hasAnyFilter(filters)) {
         showToast('请至少选择一个筛选条件', 'warning');
         return;
     }
@@ -181,7 +207,7 @@ async function previewData() {
     if (tableBody) {
         tableBody.innerHTML = `
             <tr>
-                <td colspan="16" class="px-4 py-8 text-center">
+                <td colspan="20" class="px-4 py-8 text-center">
                     <div class="flex items-center justify-center">
                         <div class="w-4 h-4 border border-[#252525] border-t-[#d32f2f] rounded-full animate-spin mr-2"></div>
                         <span class="text-[11px] text-[#616161]">加载中...</span>
@@ -193,9 +219,7 @@ async function previewData() {
 
     try {
         const params = {};
-        if (year) params.year = year;
-        if (month) params.month = month;
-        if (steelMill) params.steel_mill = steelMill;
+        applyFiltersToParams(params, filters);
         // 预览时不分页，获取较多数据
         params.page = 1;
         params.size = 1000;
@@ -222,7 +246,7 @@ async function previewData() {
         if (tableBody) {
             tableBody.innerHTML = `
                 <tr>
-                    <td colspan="16" class="px-4 py-8 text-center text-[#d32f2f] text-xs">
+                    <td colspan="20" class="px-4 py-8 text-center text-[#d32f2f] text-xs">
                         加载失败: ${esc(error.message || '未知错误')}
                     </td>
                 </tr>
@@ -239,11 +263,9 @@ async function previewData() {
  * 导出 Excel
  */
 async function exportExcel() {
-    const year = getFilterValue('policyDownloadYear');
-    const month = getFilterValue('policyDownloadMonth');
-    const steelMill = getFilterValue('policyDownloadMill');
+    const filters = collectFilters();
 
-    if (!year && !month && !steelMill) {
+    if (!hasAnyFilter(filters)) {
         showToast('请至少选择一个筛选条件', 'warning');
         return;
     }
@@ -255,9 +277,11 @@ async function exportExcel() {
     try {
         // 构建查询参数
         const params = new URLSearchParams();
-        if (year) params.append('year', year);
-        if (month) params.append('month', month);
-        if (steelMill) params.append('steel_mill', steelMill);
+        if (filters.year) params.append('year', filters.year);
+        if (filters.month) params.append('month', filters.month);
+        if (filters.category_name) params.append('category_name', filters.category_name);
+        if (filters.grade_value) params.append('grade_value', filters.grade_value);
+        if (filters.steel_mill) params.append('steel_mill', filters.steel_mill);
 
         // 使用 fetch 下载文件
         const response = await fetch(`${API_BASE}/export?${params.toString()}`, {
@@ -385,15 +409,11 @@ async function batchDeletePolicies() {
  * 刷新预览数据（供删除成功后调用）
  */
 async function refreshPreview() {
-    const year = getFilterValue('policyDownloadYear');
-    const month = getFilterValue('policyDownloadMonth');
-    const steelMill = getFilterValue('policyDownloadMill');
+    const filters = collectFilters();
 
     try {
         const params = {};
-        if (year) params.year = year;
-        if (month) params.month = month;
-        if (steelMill) params.steel_mill = steelMill;
+        applyFiltersToParams(params, filters);
         params.page = 1;
         params.size = 1000;
 
@@ -419,7 +439,7 @@ async function refreshPreview() {
         if (tableBody) {
             tableBody.innerHTML = `
                 <tr>
-                    <td colspan="16" class="px-4 py-8 text-center text-[#d32f2f] text-xs">
+                    <td colspan="20" class="px-4 py-8 text-center text-[#d32f2f] text-xs">
                         刷新失败: ${esc(error.message || '未知错误')}
                     </td>
                 </tr>

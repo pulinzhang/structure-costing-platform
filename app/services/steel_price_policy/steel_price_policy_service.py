@@ -571,6 +571,8 @@ class SteelPricePolicyService:
         year: Optional[int] = None,
         month: Optional[int] = None,
         steel_mill: Optional[str] = None,
+        category_name: Optional[str] = None,
+        grade_value: Optional[str] = None,
         skip: int = 0,
         limit: Optional[int] = None,
     ) -> list[ExportRow]:
@@ -582,6 +584,8 @@ class SteelPricePolicyService:
             year=year,
             month=month,
             steel_mill=steel_mill,
+            category_name=category_name,
+            grade_value=grade_value,
             skip=skip,
             limit=limit,
         )
@@ -592,6 +596,8 @@ class SteelPricePolicyService:
         year: Optional[int] = None,
         month: Optional[int] = None,
         steel_mill: Optional[str] = None,
+        category_name: Optional[str] = None,
+        grade_value: Optional[str] = None,
     ) -> int:
         """
         统计导出数据总数。
@@ -601,6 +607,8 @@ class SteelPricePolicyService:
             year=year,
             month=month,
             steel_mill=steel_mill,
+            category_name=category_name,
+            grade_value=grade_value,
         )
 
     def count_policies(
@@ -656,6 +664,8 @@ class SteelPricePolicyService:
         year: Optional[int] = None,
         month: Optional[int] = None,
         steel_mill: Optional[str] = None,
+        category_name: Optional[str] = None,
+        grade_value: Optional[str] = None,
     ) -> tuple[bytes, str]:
         """
         生成导出 Excel 文件，返回 (文件字节数据, 文件名)。
@@ -665,6 +675,8 @@ class SteelPricePolicyService:
             year=year,
             month=month,
             steel_mill=steel_mill,
+            category_name=category_name,
+            grade_value=grade_value,
         )
 
     # ---- 条件批量删除 ----

@@ -1,6 +1,6 @@
 /**
  * Steel Price Calc Page
- * 钢价计算 — 过滤条件 + 批量计算 + 历史过程日志
+ * 钢价计算 — 过滤条件 + 异步后台计算 + 进度轮询 + 历史过程日志
  */
 
 import { steelPriceCalcTemplate, renderCalcHistoryPagination } from './template.js';
@@ -8,11 +8,14 @@ import { steelPriceCalcTemplate, renderCalcHistoryPagination } from './template.
 const STAMPING_CASCADE_FILTERS_API = '/api/stamping/filters/cascade';
 const STEEL_PRICE_CALC_STATS_API = '/api/dashboard/stats/steel-price-calc';
 const STEEL_PRICE_CALC_API = '/api/steel-prices/calc';
+const STEEL_PRICE_CALC_TASK_API = '/api/steel-prices/calc/tasks';
 const STEEL_PRICE_CALC_LOGS_API = '/api/steel-prices/calc/logs';
-const CALC_TIMEOUT_MS = 180000;
+const POLL_INTERVAL_MS = 1500;
 const HISTORY_PAGE_SIZE = 10;
+const DUPLICATE_PERIOD_CALC_MESSAGE = '当前期别正在计算中，请勿重复提交。';
 
 const STATUS_META = {
+    processing: { label: '计算中', className: 'text-[#64b5f6]' },
     success: { label: '成功', className: 'text-[#66bb6a]' },
     partial: { label: '部分成功', className: 'text-[#ffb74d]' },
     failed: { label: '失败', className: 'text-[#ef5350]' },
@@ -20,6 +23,9 @@ const STATUS_META = {
 
 const calcState = {
     isCalculating: false,
+    activeTaskId: null,
+    pollTimer: null,
+    pollInFlight: false,
     stats: {
         base_price_count: 0,
         adjustment_rule_count: 0,
@@ -36,10 +42,23 @@ const calcState = {
 };
 
 export function init() {
+    stopPolling();
     bindEvents();
     loadStampingFilters();
     loadCalcStats();
     loadCalcHistory();
+
+    if (calcState.isCalculating && calcState.activeTaskId) {
+        setCalculating(true);
+        showProgress(0, '正在恢复任务进度...');
+        startPolling(calcState.activeTaskId);
+    } else {
+        hideProgress();
+    }
+}
+
+export function destroy() {
+    stopPolling();
 }
 
 function bindEvents() {
@@ -91,6 +110,11 @@ function resetDependentFilters(ids) {
 }
 
 function resetFilters() {
+    if (calcState.isCalculating) {
+        showToast('计算进行中，请稍候再重置', 'warning');
+        return;
+    }
+
     ['calcLocation', 'calcSupplier', 'calcVehicleModel', 'calcVersion'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.value = '';
@@ -103,6 +127,7 @@ function resetFilters() {
     if (monthEl) monthEl.value = String(now.getMonth() + 1);
 
     calcState.lastResult = null;
+    hideProgress();
     loadStampingFilters();
     loadCalcStats();
     loadCalcHistory(1);
@@ -222,6 +247,7 @@ function renderHistoryRows(items) {
         if (item.vehicle_model) filterParts.push(item.vehicle_model);
         const filterText = filterParts.length ? filterParts.join(' / ') : '全部';
         const started = formatDateTime(item.started_at);
+        const isProcessing = item.status === 'processing';
 
         return `
             <tr class="hover:bg-[#ffffff]/[0.02] transition-colors text-[#999]" data-log-id="${esc(item.id)}">
@@ -237,6 +263,9 @@ function renderHistoryRows(items) {
                 <td class="py-2 px-2 font-mono text-right tabular-nums text-[#777]">${fmtInt(item.updated_count)}</td>
                 <td class="py-2 px-2 font-mono text-right tabular-nums ${Number(item.failed_count) > 0 ? 'text-[#ef5350]' : 'text-[#777]'}">${fmtInt(item.failed_count)}</td>
                 <td class="py-2 px-2 text-right whitespace-nowrap">
+                    ${isProcessing ? `
+                    <span class="text-[9px] text-[#555]">进行中</span>
+                    ` : `
                     <button type="button"
                             class="calc-view-process-btn text-[9px] text-[#777] hover:text-white mr-2"
                             data-log-id="${esc(item.id)}">过程</button>
@@ -250,6 +279,7 @@ function renderHistoryRows(items) {
                     <button type="button"
                             class="calc-delete-log-btn text-[9px] text-[#777] hover:text-[#ef5350]"
                             data-log-id="${esc(item.id)}">删除</button>
+                    `}
                 </td>
             </tr>
         `;
@@ -387,6 +417,19 @@ function fillSelect(id, values = [], label = value => value, preferredValue = nu
         }).join('');
 }
 
+async function isPeriodProcessing(year, month, location) {
+    try {
+        const response = await HttpClient.get(STEEL_PRICE_CALC_LOGS_API, {
+            params: { year, month, location, page: 1, size: 20 },
+        });
+        const items = response.data?.items || [];
+        return items.some(item => item.status === 'processing');
+    } catch (error) {
+        console.error('检查期别计算锁失败:', error);
+        return false;
+    }
+}
+
 async function startCalculation() {
     if (calcState.isCalculating) return;
 
@@ -411,38 +454,192 @@ async function startCalculation() {
         return;
     }
 
+    if (await isPeriodProcessing(year, month, location)) {
+        showToast(DUPLICATE_PERIOD_CALC_MESSAGE, 'warning');
+        loadCalcHistory(1);
+        return;
+    }
+
     const payload = { year, month, location };
     if (stampingSupplier) payload.stamping_supplier = stampingSupplier;
     if (vehicleModel) payload.vehicle_model = vehicleModel;
 
     setCalculating(true);
+    showProgress(0, '已提交计算队列');
+
     try {
-        const response = await HttpClient.post(STEEL_PRICE_CALC_API, payload, {
-            timeout: CALC_TIMEOUT_MS,
-        });
-        const result = response.data || {};
-        calcState.lastResult = result;
-        const status = result.status || 'success';
-        showToast(
-            `计算${STATUS_META[status]?.label || '完成'}：新增 ${fmtInt(result.created_count)}，更新 ${fmtInt(result.updated_count)}，失败 ${fmtInt(result.failed_count)}`,
-            status === 'failed' ? 'error' : status === 'partial' ? 'warning' : 'success'
-        );
-        if (result.log_id) {
-            openProcessDrawer(result.log_id);
+        const response = await HttpClient.post(STEEL_PRICE_CALC_API, payload);
+        const taskId = response.data?.task_id;
+        if (!taskId) {
+            throw new Error('未返回任务 ID');
         }
+        loadCalcHistory(1);
+        startPolling(taskId);
     } catch (error) {
-        console.error('钢价计算失败:', error);
-        // 失败时日志仍可能已落库，刷新历史以便查看过程
-    } finally {
+        console.error('提交钢价计算失败:', error);
+        stopPolling();
+        hideProgress();
+        calcState.activeTaskId = null;
         setCalculating(false);
-        loadCalcStats();
         loadCalcHistory(1);
     }
+}
+
+function showProgress(progress = 0, msg = '已提交计算队列') {
+    const panel = document.getElementById('calcProgressPanel');
+    if (panel) panel.classList.remove('hidden');
+    updateProgress(progress, msg);
+}
+
+function hideProgress() {
+    const panel = document.getElementById('calcProgressPanel');
+    if (panel) panel.classList.add('hidden');
+    updateProgress(0, '已提交计算队列');
+}
+
+function updateProgress(progress, msg, status) {
+    const pct = Math.max(0, Math.min(100, Number(progress) || 0));
+    const bar = document.getElementById('calcProgressBar');
+    const percentEl = document.getElementById('calcProgressPercent');
+    const msgEl = document.getElementById('calcProgressMsg');
+    const titleEl = document.getElementById('calcProgressTitle');
+    const spinner = document.getElementById('calcProgressSpinner');
+
+    if (bar) bar.style.width = `${pct}%`;
+    if (percentEl) percentEl.textContent = `${pct}%`;
+    if (msgEl) msgEl.textContent = msg || '';
+
+    if (spinner) {
+        if (status === 'completed' || status === 'failed') {
+            spinner.classList.add('hidden');
+        } else {
+            spinner.classList.remove('hidden');
+        }
+    }
+
+    if (titleEl) {
+        if (status === 'completed') {
+            titleEl.textContent = '计算完成';
+            titleEl.className = 'text-xs font-medium text-[#4caf50] truncate mb-0';
+        } else if (status === 'failed') {
+            titleEl.textContent = '计算失败';
+            titleEl.className = 'text-xs font-medium text-[#ef5350] truncate mb-0';
+        } else {
+            titleEl.textContent = '正在计算钢价...';
+            titleEl.className = 'text-xs font-medium text-[#ffffff] truncate mb-0';
+        }
+    }
+
+    if (status === 'completed' && bar) {
+        bar.className = 'h-full bg-[#2e7d32] transition-all duration-300';
+        if (percentEl) percentEl.className = 'text-xs font-mono tabular-nums text-[#4caf50] shrink-0';
+    } else if (status === 'failed' && bar) {
+        bar.className = 'h-full bg-[#c62828] transition-all duration-300';
+        if (percentEl) percentEl.className = 'text-xs font-mono tabular-nums text-[#ef5350] shrink-0';
+    } else if (bar) {
+        bar.className = 'h-full bg-[#d32f2f] shadow-[0_0_8px_rgba(211,47,47,0.5)] transition-all duration-300';
+        if (percentEl) percentEl.className = 'text-xs font-mono tabular-nums text-[#d32f2f] shrink-0';
+    }
+}
+
+function stopPolling() {
+    if (calcState.pollTimer) {
+        clearInterval(calcState.pollTimer);
+        calcState.pollTimer = null;
+    }
+    calcState.pollInFlight = false;
+}
+
+async function fetchTaskProgress(taskId) {
+    const response = await fetch(`${STEEL_PRICE_CALC_TASK_API}/${encodeURIComponent(taskId)}`, {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+    });
+    const payload = await response.json().catch(() => null);
+    if (!response.ok || !payload?.success) {
+        const msg = payload?.message || payload?.detail || `查询进度失败 (${response.status})`;
+        const error = new Error(msg);
+        error.status = response.status;
+        throw error;
+    }
+    return payload.data;
+}
+
+function startPolling(taskId) {
+    stopPolling();
+    calcState.activeTaskId = taskId;
+
+    const tick = async () => {
+        if (calcState.pollInFlight) return;
+        calcState.pollInFlight = true;
+        try {
+            const data = await fetchTaskProgress(taskId);
+            const status = data?.status || 'running';
+            const progress = data?.progress ?? 0;
+            const msg = data?.msg || '';
+
+            updateProgress(progress, msg, status);
+
+            if (status === 'completed') {
+                stopPolling();
+                const result = data?.result || {};
+                calcState.lastResult = result;
+                const bizStatus = result.status || 'success';
+                showToast(
+                    `计算${STATUS_META[bizStatus]?.label || '完成'}：新增 ${fmtInt(result.created_count)}，更新 ${fmtInt(result.updated_count)}，失败 ${fmtInt(result.failed_count)}`,
+                    bizStatus === 'failed' ? 'error' : bizStatus === 'partial' ? 'warning' : 'success'
+                );
+                calcState.activeTaskId = null;
+                setCalculating(false);
+                loadCalcStats();
+                loadCalcHistory(1);
+                if (result.log_id) {
+                    openProcessDrawer(result.log_id);
+                }
+                setTimeout(() => {
+                    if (!calcState.isCalculating) hideProgress();
+                }, 1800);
+                return;
+            }
+
+            if (status === 'failed') {
+                stopPolling();
+                const result = data?.result || null;
+                calcState.lastResult = result;
+                showToast(msg || '计算失败', 'error');
+                calcState.activeTaskId = null;
+                setCalculating(false);
+                loadCalcStats();
+                loadCalcHistory(1);
+                if (result?.log_id) {
+                    openProcessDrawer(result.log_id);
+                }
+                return;
+            }
+        } catch (error) {
+            stopPolling();
+            showToast(error.message || '查询进度失败', 'error');
+            calcState.activeTaskId = null;
+            setCalculating(false);
+            loadCalcHistory(1);
+        } finally {
+            calcState.pollInFlight = false;
+        }
+    };
+
+    tick();
+    calcState.pollTimer = setInterval(tick, POLL_INTERVAL_MS);
 }
 
 function setCalculating(isCalculating) {
     calcState.isCalculating = isCalculating;
     const startBtn = document.getElementById('startCalcBtn');
+    const filterIds = ['calcYear', 'calcMonth', 'calcLocation', 'calcSupplier', 'calcVehicleModel', 'calcResetBtn'];
+
+    filterIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.disabled = isCalculating;
+    });
+
     if (!startBtn) return;
     if (isCalculating) {
         startBtn.setAttribute('disabled', 'true');
@@ -495,4 +692,5 @@ function formatDateTime(value) {
 export const pageConfig = {
     render: steelPriceCalcTemplate,
     init: () => init(),
+    destroy: () => destroy(),
 };

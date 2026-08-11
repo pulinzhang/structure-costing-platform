@@ -441,6 +441,8 @@ class SteelPricePolicyRepository:
         year: Optional[int] = None,
         month: Optional[int] = None,
         steel_mill: Optional[str] = None,
+        category_name: Optional[str] = None,
+        grade_value: Optional[str] = None,
         skip: int = 0,
         limit: Optional[int] = None,
     ) -> list[SteelPricePolicy]:
@@ -458,6 +460,10 @@ class SteelPricePolicyRepository:
             query = query.filter(SteelPricePolicy.month == month)
         if steel_mill:
             query = query.filter(SteelPricePolicy.steel_mill == steel_mill)
+        if category_name:
+            query = query.filter(SteelPricePolicy.category_name == category_name)
+        if grade_value:
+            query = query.filter(SteelPricePolicy.grade_value.contains(grade_value))
 
         query = query.order_by(
             SteelPricePolicy.year.asc(),
@@ -505,6 +511,8 @@ class SteelPricePolicyRepository:
         year: Optional[int] = None,
         month: Optional[int] = None,
         steel_mill: Optional[str] = None,
+        category_name: Optional[str] = None,
+        grade_value: Optional[str] = None,
     ) -> int:
         """统计主表记录数（供 ExportService 调用）。"""
         query = db.query(func.count(SteelPricePolicy.id))
@@ -515,6 +523,10 @@ class SteelPricePolicyRepository:
             query = query.filter(SteelPricePolicy.month == month)
         if steel_mill:
             query = query.filter(SteelPricePolicy.steel_mill == steel_mill)
+        if category_name:
+            query = query.filter(SteelPricePolicy.category_name == category_name)
+        if grade_value:
+            query = query.filter(SteelPricePolicy.grade_value.contains(grade_value))
 
         return query.scalar() or 0
 
@@ -525,6 +537,8 @@ class SteelPricePolicyRepository:
         year: Optional[int] = None,
         month: Optional[int] = None,
         steel_mill: Optional[str] = None,
+        category_name: Optional[str] = None,
+        grade_value: Optional[str] = None,
         policy_type: Optional[str] = None,
     ) -> int:
         """
@@ -542,6 +556,10 @@ class SteelPricePolicyRepository:
             query = query.filter(SteelPricePolicy.month == month)
         if steel_mill:
             query = query.filter(SteelPricePolicy.steel_mill == steel_mill)
+        if category_name:
+            query = query.filter(SteelPricePolicy.category_name == category_name)
+        if grade_value:
+            query = query.filter(SteelPricePolicy.grade_value.contains(grade_value))
         if policy_type:
             query = query.filter(SteelPricePolicy.policy_type == policy_type)
 

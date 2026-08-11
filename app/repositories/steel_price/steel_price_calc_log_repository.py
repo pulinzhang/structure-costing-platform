@@ -3,6 +3,7 @@
 import logging
 from typing import Any, Optional
 
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.models.steel_price_calc_log import SteelPriceCalcLog
@@ -10,9 +11,31 @@ from app.models.steel_price_calc_log import SteelPriceCalcLog
 
 logger = logging.getLogger("repository.steel_price_calc_log")
 
+# 与 CalcLog status 约定一致；Repository 不依赖 Service 层常量，避免循环导入
+_STATUS_PROCESSING = "processing"
+
+_PROCESSING_LOCK_INDEX_SQL = """
+CREATE UNIQUE INDEX IF NOT EXISTS uq_steel_price_calc_processing
+ON steel_price_calc_logs(year, month, location)
+WHERE status = 'processing'
+"""
+
 
 class SteelPriceCalcLogRepository:
     """计算批次日志数据访问。"""
+
+    _lock_index_ensured = False
+
+    def ensure_processing_lock_index(self, db: Session) -> None:
+        """确保 SQLite 部分唯一索引存在（独立连接，幂等）。"""
+        if SteelPriceCalcLogRepository._lock_index_ensured:
+            return
+        # DDL 用独立连接，避免与业务事务 rollback 互相干扰
+        bind = db.get_bind()
+        with bind.connect() as conn:
+            conn.execute(text(_PROCESSING_LOCK_INDEX_SQL))
+            conn.commit()
+        SteelPriceCalcLogRepository._lock_index_ensured = True
 
     def get_by_id(self, db: Session, log_id: int) -> Optional[SteelPriceCalcLog]:
         return db.query(SteelPriceCalcLog).filter(SteelPriceCalcLog.id == log_id).first()
@@ -23,6 +46,26 @@ class SteelPriceCalcLogRepository:
         return (
             db.query(SteelPriceCalcLog)
             .filter(SteelPriceCalcLog.calc_batch_id == calc_batch_id)
+            .first()
+        )
+
+    def find_processing(
+        self,
+        db: Session,
+        *,
+        year: int,
+        month: int,
+        location: str,
+    ) -> Optional[SteelPriceCalcLog]:
+        return (
+            db.query(SteelPriceCalcLog)
+            .filter(
+                SteelPriceCalcLog.year == year,
+                SteelPriceCalcLog.month == month,
+                SteelPriceCalcLog.location == location,
+                SteelPriceCalcLog.status == _STATUS_PROCESSING,
+            )
+            .order_by(SteelPriceCalcLog.id.desc())
             .first()
         )
 
@@ -65,6 +108,24 @@ class SteelPriceCalcLogRepository:
         )
         return record
 
+    def update(
+        self, db: Session, log_id: int, data: dict[str, Any]
+    ) -> Optional[SteelPriceCalcLog]:
+        record = self.get_by_id(db, log_id)
+        if record is None:
+            return None
+        for key, value in data.items():
+            if hasattr(record, key):
+                setattr(record, key, value)
+        db.flush()
+        logger.info(
+            "更新计算日志: id=%s batch=%s status=%s",
+            log_id,
+            record.calc_batch_id,
+            getattr(record, "status", None),
+        )
+        return record
+
     def delete(self, db: Session, log_id: int) -> bool:
         record = self.get_by_id(db, log_id)
         if record is None:
@@ -73,3 +134,4 @@ class SteelPriceCalcLogRepository:
         db.flush()
         logger.info("删除计算日志: id=%s batch=%s", log_id, record.calc_batch_id)
         return True
+

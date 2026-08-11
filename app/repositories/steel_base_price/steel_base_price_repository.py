@@ -241,6 +241,8 @@ class SteelBasePriceRepository:
         month: int | None = None,
         location: str | None = None,
         steel_mill: str | None = None,
+        category_name: str | None = None,
+        grade: str | None = None,
         spec: str | None = None,
         skip: int | None = None,
         limit: int | None = None,
@@ -256,6 +258,10 @@ class SteelBasePriceRepository:
             query = query.filter(SteelBasePrice.location == location)
         if steel_mill:
             query = query.filter(SteelBasePrice.steel_mill == steel_mill)
+        if category_name:
+            query = query.filter(SteelBasePrice.category_name == category_name)
+        if grade:
+            query = query.filter(SteelBasePrice.grade.contains(grade))
         if spec:
             query = query.filter(SteelBasePrice.spec.contains(spec))
 
@@ -283,6 +289,8 @@ class SteelBasePriceRepository:
         month: int | None = None,
         location: str | None = None,
         steel_mill: str | None = None,
+        category_name: str | None = None,
+        grade: str | None = None,
         spec: str | None = None,
     ) -> int:
         """统计导出数据总量。"""
@@ -296,6 +304,10 @@ class SteelBasePriceRepository:
             query = query.filter(SteelBasePrice.location == location)
         if steel_mill:
             query = query.filter(SteelBasePrice.steel_mill == steel_mill)
+        if category_name:
+            query = query.filter(SteelBasePrice.category_name == category_name)
+        if grade:
+            query = query.filter(SteelBasePrice.grade.contains(grade))
         if spec:
             query = query.filter(SteelBasePrice.spec.contains(spec))
 

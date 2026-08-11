@@ -31,6 +31,8 @@ class SteelPricePolicyExportService:
         year: Optional[int] = None,
         month: Optional[int] = None,
         steel_mill: Optional[str] = None,
+        category_name: Optional[str] = None,
+        grade_value: Optional[str] = None,
         skip: int = 0,
         limit: Optional[int] = None,
     ) -> list[ExportRow]:
@@ -42,6 +44,8 @@ class SteelPricePolicyExportService:
             year: 筛选 - 年份
             month: 筛选 - 月份
             steel_mill: 筛选 - 钢厂
+            category_name: 筛选 - 钢种大类
+            grade_value: 筛选 - 牌号（模糊）
             skip: 分页偏移
             limit: 分页限制
 
@@ -53,6 +57,8 @@ class SteelPricePolicyExportService:
             year=year,
             month=month,
             steel_mill=steel_mill,
+            category_name=category_name,
+            grade_value=grade_value,
             skip=skip,
             limit=limit,
         )
@@ -129,6 +135,8 @@ class SteelPricePolicyExportService:
         year: Optional[int] = None,
         month: Optional[int] = None,
         steel_mill: Optional[str] = None,
+        category_name: Optional[str] = None,
+        grade_value: Optional[str] = None,
     ) -> int:
         """
         统计导出数据总数（阶梯明细级别）。
@@ -138,6 +146,8 @@ class SteelPricePolicyExportService:
             year: 筛选 - 年份
             month: 筛选 - 月份
             steel_mill: 筛选 - 钢厂
+            category_name: 筛选 - 钢种大类
+            grade_value: 筛选 - 牌号（模糊）
 
         Returns:
             明细总行数
@@ -147,6 +157,8 @@ class SteelPricePolicyExportService:
             year=year,
             month=month,
             steel_mill=steel_mill,
+            category_name=category_name,
+            grade_value=grade_value,
         )
 
     def export_to_excel(
@@ -156,6 +168,8 @@ class SteelPricePolicyExportService:
         year: Optional[int] = None,
         month: Optional[int] = None,
         steel_mill: Optional[str] = None,
+        category_name: Optional[str] = None,
+        grade_value: Optional[str] = None,
     ) -> tuple[bytes, str]:
         """
         生成导出 Excel 文件字节数据。
@@ -165,6 +179,8 @@ class SteelPricePolicyExportService:
             year: 筛选 - 年份
             month: 筛选 - 月份
             steel_mill: 筛选 - 钢厂
+            category_name: 筛选 - 钢种大类
+            grade_value: 筛选 - 牌号（模糊）
 
         Returns:
             (文件字节数据, 文件名)
@@ -174,6 +190,8 @@ class SteelPricePolicyExportService:
             year=year,
             month=month,
             steel_mill=steel_mill,
+            category_name=category_name,
+            grade_value=grade_value,
         )
         return self._exporter.generate(
             records,

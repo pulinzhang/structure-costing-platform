@@ -15,7 +15,9 @@ from __future__ import annotations
 import logging
 import traceback
 import uuid
+from collections.abc import Callable
 from datetime import datetime
+from typing import Optional
 
 from sqlalchemy.orm import Session
 
@@ -26,6 +28,7 @@ from app.services.steel_price.calc.models import (
 )
 from app.services.steel_price.calc.process_log import ProcessLogBuilder
 from app.services.steel_price.calc.status import (
+    STATUS_FAILED,
     collect_row_warnings,
     resolve_batch_status,
     summarize_match_status,
@@ -41,6 +44,8 @@ from app.services.steel_price.steel_price_service import FORMULA_VERSION, SteelP
 
 logger = logging.getLogger("service.steel_price.calc")
 
+ProgressCallback = Callable[[int, str], None]
+
 
 class SteelPriceCalcOrchestrator:
     """钢材价格计算编排器。"""
@@ -52,18 +57,90 @@ class SteelPriceCalcOrchestrator:
         self.steel_price_service = SteelPriceService()
         self.calc_log_service = CalcLogService()
 
+    def begin_processing(
+        self,
+        db: Session,
+        request: SteelPriceCalcRequest,
+    ):
+        """提交前写入 processing 期别锁。"""
+        location = (request.location or "").strip()
+        if not location:
+            raise ValueError("计算钢价必须指定生产基地 location")
+        return self.calc_log_service.begin_processing(
+            db,
+            year=request.year,
+            month=request.month,
+            location=location,
+            stamping_supplier=(
+                request.stamping_supplier.strip() if request.stamping_supplier else None
+            ),
+            vehicle_model=(
+                request.vehicle_model.strip() if request.vehicle_model else None
+            ),
+        )
+
+    def is_period_processing(
+        self,
+        db: Session,
+        *,
+        year: int,
+        month: int,
+        location: str,
+    ) -> bool:
+        return self.calc_log_service.is_period_processing(
+            db, year=year, month=month, location=location.strip()
+        )
+
+    def mark_log_failed(
+        self,
+        db: Session,
+        *,
+        log_id: int,
+        message: str,
+        detail_text: str | None = None,
+    ) -> None:
+        self.calc_log_service.mark_failed(
+            db, log_id=log_id, message=message, detail_text=detail_text
+        )
+
     def calculate(
         self,
         db: Session,
         request: SteelPriceCalcRequest,
+        progress_callback: Optional[ProgressCallback] = None,
+        *,
+        log_id: int | None = None,
+        calc_batch_id: str | None = None,
+        started_at: datetime | None = None,
     ) -> SteelPriceCalcResult:
         """
         执行完整计算编排。
 
-        无论成功或失败，都会尽量写入一条计算日志（detail_text）。
+        若传入 log_id（提交时已写入的 processing 行），结束后更新该行；
+        否则回退为新建终态日志。
+        业务失败返回 status=failed 的结果，不再向外抛出（校验错误 ValueError 除外）。
         """
-        started_at = datetime.now()
-        calc_batch_id = f"calc-{uuid.uuid4().hex[:16]}"
+        def _report(progress: int, msg: str) -> None:
+            if progress_callback:
+                progress_callback(progress, msg)
+
+        def _persist_log(result_obj: SteelPriceCalcResult, finished: datetime) -> int | None:
+            if log_id is not None:
+                return self.calc_log_service.finalize(
+                    db,
+                    log_id=log_id,
+                    result=result_obj,
+                    finished_at=finished,
+                )
+            return self.calc_log_service.persist(
+                db,
+                result=result_obj,
+                started_at=started_at or finished,
+                finished_at=finished,
+            )
+
+        started_at = started_at or datetime.now()
+        calc_batch_id = calc_batch_id or f"calc-{uuid.uuid4().hex[:16]}"
         log_builder = ProcessLogBuilder()
 
         location = request.location.strip() if request.location else None
@@ -82,6 +159,7 @@ class SteelPriceCalcOrchestrator:
             started_at=started_at.isoformat(timespec="seconds"),
         )
 
+        _report(1, "计算任务已启动")
         log_builder.section("计算开始")
         log_builder.line(f"批次号: {calc_batch_id}")
         log_builder.line(f"核价期: {request.year}-{request.month:02d}")
@@ -103,14 +181,17 @@ class SteelPriceCalcOrchestrator:
             )
 
             # Step 1
+            _report(10, "Step1：加载材料厚度规格...")
             log_builder.section("Step1 材料厚度列表")
             materials = self.material_loader.load(db, normalized)
             result.material_count = len(materials)
             log_builder.line(f"去重材料+厚度规格: {result.material_count} 条")
             if result.material_count == 0:
                 log_builder.warn("未取到任何材料厚度规格，后续无法产出结果行")
+            _report(20, f"Step1 完成：材料规格 {result.material_count} 条")
 
             # Step 2
+            _report(25, "Step2：基价表补齐...")
             log_builder.section("Step2 基价表补齐")
             rows, no_base_count, no_base_details = self.base_price_enricher.enrich(
                 db, normalized, materials
@@ -122,11 +203,16 @@ class SteelPriceCalcOrchestrator:
             log_builder.append_limited_details(
                 "无基价明细", no_base_details, is_error=True
             )
+            _report(
+                40,
+                f"Step2 完成：命中 {result.enriched_count} 行，无基价 {result.no_base_count}",
+            )
 
             # Step 3/4 — 加减价政策只查一次，厚度/宽度分步匹配
             policies = self.adjustment_applier.load_policies(db, normalized)
 
             # Step 3 — 厚度加减价（独立）
+            _report(45, "Step3：厚度加减价匹配...")
             log_builder.section("Step3 厚度加减价匹配")
             log_builder.line(f"加减价政策加载: {len(policies)} 条（厚度/宽度共用，仅此一次）")
             rows = self.adjustment_applier.apply_thickness(rows, policies)
@@ -138,8 +224,10 @@ class SteelPriceCalcOrchestrator:
                 collect_row_warnings(rows, keyword="厚度"),
                 is_error=True,
             )
+            _report(55, f"Step3 完成：厚度命中 {thickness_hit}，未命中 {thickness_miss}")
 
             # Step 4 — 宽度加减价（独立）
+            _report(60, "Step4：宽度加减价匹配...")
             log_builder.section("Step4 宽度加减价匹配")
             rows = self.adjustment_applier.apply_width(rows, policies)
             width_hit, width_miss = summarize_policy_hits(rows, prefix="width")
@@ -152,8 +240,10 @@ class SteelPriceCalcOrchestrator:
             )
             for key, count in summarize_match_status(rows).items():
                 log_builder.line(f"match_status={key}: {count}")
+            _report(70, f"Step4 完成：宽度命中 {width_hit}，未命中 {width_miss}")
 
             # Step 5
+            _report(75, "Step5：结果落库...")
             log_builder.section("Step5 结果落库")
             persist_stats = self.steel_price_service.save_calc_batch(
                 db,
@@ -178,9 +268,20 @@ class SteelPriceCalcOrchestrator:
             result.status = resolve_batch_status(result, rows)
             log_builder.section("计算结束")
             log_builder.line(f"批次状态: {result.status}")
+            _report(92, "写入计算过程日志...")
 
+        except ValueError as error:
+            result.status = STATUS_FAILED
+            log_builder.section("计算校验失败")
+            log_builder.error(str(error))
+            finished_at = datetime.now()
+            result.finished_at = finished_at.isoformat(timespec="seconds")
+            result.detail_text = log_builder.build()
+            result.log_id = _persist_log(result, finished_at)
+            _report(100, f"计算失败: {error}")
+            return result
         except Exception as error:
-            result.status = "failed"
+            result.status = STATUS_FAILED
             log_builder.section("计算异常")
             log_builder.error(str(error))
             log_builder.line(traceback.format_exc())
@@ -188,25 +289,17 @@ class SteelPriceCalcOrchestrator:
             finished_at = datetime.now()
             result.finished_at = finished_at.isoformat(timespec="seconds")
             result.detail_text = log_builder.build()
-            result.log_id = self.calc_log_service.persist(
-                db,
-                result=result,
-                started_at=started_at,
-                finished_at=finished_at,
-            )
-            raise
+            result.log_id = _persist_log(result, finished_at)
+            _report(100, f"计算失败: {error}")
+            return result
 
         finished_at = datetime.now()
         result.finished_at = finished_at.isoformat(timespec="seconds")
         log_builder.line(f"结束时间: {result.finished_at}")
         log_builder.line(f"耗时: {(finished_at - started_at).total_seconds():.2f}s")
         result.detail_text = log_builder.build()
-        result.log_id = self.calc_log_service.persist(
-            db,
-            result=result,
-            started_at=started_at,
-            finished_at=finished_at,
-        )
+        result.log_id = _persist_log(result, finished_at)
+        _report(100, f"计算完成：状态 {result.status}")
         return result
 
     def list_logs(

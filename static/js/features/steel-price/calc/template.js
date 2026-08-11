@@ -60,6 +60,23 @@ export function steelPriceCalcTemplate() {
                 </div>
             </div>
 
+            <!-- 后台计算进度 -->
+            <div id="calcProgressPanel" class="hidden border border-[#2c2c2c] bg-[#1a1a1a] px-4 py-3">
+                <div class="flex items-center justify-between gap-3 mb-2.5">
+                    <div class="flex items-center gap-2 min-w-0">
+                        <div id="calcProgressSpinner" class="w-3.5 h-3.5 border-2 border-[#2c2c2c] border-t-[#d32f2f] rounded-full animate-spin shrink-0"></div>
+                        <h5 id="calcProgressTitle" class="text-xs font-medium text-[#ffffff] truncate mb-0">正在计算钢价...</h5>
+                    </div>
+                    <span id="calcProgressPercent" class="text-xs font-mono tabular-nums text-[#d32f2f] shrink-0">0%</span>
+                </div>
+                <div class="h-1.5 w-full bg-[#0a0a0a] border border-[#2c2c2c] overflow-hidden mb-2">
+                    <div id="calcProgressBar"
+                         class="h-full bg-[#d32f2f] shadow-[0_0_8px_rgba(211,47,47,0.5)] transition-all duration-300"
+                         style="width: 0%"></div>
+                </div>
+                <p id="calcProgressMsg" class="text-[11px] text-[#9e9e9e] leading-relaxed mb-0">已提交计算队列</p>
+            </div>
+
             <div id="dataReadyErrorBanner" class="hidden text-[10px] text-[#d69e2e] bg-[#1a1710] px-2.5 py-1.5 border-l-2 border-[#d69e2e]">
                 提示：当前所选年月缺失中标基价或调价规则，无法计算。
             </div>

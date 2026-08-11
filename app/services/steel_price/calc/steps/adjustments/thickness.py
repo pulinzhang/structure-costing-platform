@@ -8,7 +8,7 @@ from app.services.steel_price.calc.steps.adjustments.common import (
     PolicyHit,
     apply_hit,
     item_matches_dims,
-    to_decimal,
+    order_by_base_thickness,
 )
 
 
@@ -57,30 +57,11 @@ class ThicknessAdjustmentMatcher:
         if not policies:
             return None
 
-        for policy in self._order_by_base_thickness(policies, row):
+        for policy in order_by_base_thickness(policies, row, prefer_base_thickness=True):
             item = self._match_thickness_item(policy, row)
             if item is not None:
                 return policy, item
         return None
-
-    @staticmethod
-    def _order_by_base_thickness(
-        policies: list[SteelPricePolicy],
-        row: CalcRow,
-    ) -> list[SteelPricePolicy]:
-        row_base = row.base_thickness
-        exact: list[SteelPricePolicy] = []
-        nullable: list[SteelPricePolicy] = []
-        others: list[SteelPricePolicy] = []
-        for policy in policies:
-            policy_base = to_decimal(policy.base_thickness)
-            if row_base is not None and policy_base is not None and policy_base == row_base:
-                exact.append(policy)
-            elif policy_base is None:
-                nullable.append(policy)
-            else:
-                others.append(policy)
-        return exact + nullable + others
 
     @staticmethod
     def _match_thickness_item(

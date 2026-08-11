@@ -174,6 +174,8 @@ def export_preview(
     month: int | None = Query(None, ge=1, le=12, description="订单发布月份"),
     location: str | None = Query(None, description="采购基地"),
     steel_mill: str | None = Query(None, description="中标钢厂"),
+    category_name: str | None = Query(None, description="钢种大类"),
+    grade: str | None = Query(None, description="牌号（模糊）"),
     spec: str | None = Query(None, description="规格"),
     page: int | None = Query(None, ge=1, description="页码（前端分页用）"),
     size: int | None = Query(None, ge=1, le=5000, description="每页条数"),
@@ -187,6 +189,8 @@ def export_preview(
         month=month,
         location=location,
         steel_mill=steel_mill,
+        category_name=category_name,
+        grade=grade,
         spec=spec,
         page=page,
         page_size=page_size,
@@ -211,6 +215,8 @@ def export_download(
     month: int | None = Query(None, ge=1, le=12, description="订单发布月份"),
     location: str | None = Query(None, description="采购基地"),
     steel_mill: str | None = Query(None, description="中标钢厂"),
+    category_name: str | None = Query(None, description="钢种大类"),
+    grade: str | None = Query(None, description="牌号（模糊）"),
     spec: str | None = Query(None, description="规格"),
     db: Session = Depends(get_db),
 ) -> StreamingResponse:
@@ -221,6 +227,8 @@ def export_download(
         month=month,
         location=location,
         steel_mill=steel_mill,
+        category_name=category_name,
+        grade=grade,
         spec=spec,
     )
     return StreamingResponse(

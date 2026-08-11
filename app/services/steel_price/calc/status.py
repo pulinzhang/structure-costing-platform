@@ -4,21 +4,39 @@ from __future__ import annotations
 
 from app.services.steel_price.calc.models import CalcRow, SteelPriceCalcResult
 
+# 批次状态（落库 steel_price_calc_logs.status）
+STATUS_PROCESSING = "processing"
+STATUS_SUCCESS = "success"
+STATUS_PARTIAL = "partial"
+STATUS_FAILED = "failed"
+
+DUPLICATE_PERIOD_CALC_MESSAGE = "当前期别正在计算中，请勿重复提交。"
+
+# processing 超过此时长视为僵死，允许重新提交
+STALE_PROCESSING_SECONDS = 2 * 3600
+
+
+class DuplicatePeriodCalcError(Exception):
+    """同一年度+月份+基地已有进行中的计算。"""
+
+    def __init__(self, message: str = DUPLICATE_PERIOD_CALC_MESSAGE) -> None:
+        super().__init__(message)
+
 
 def resolve_batch_status(result: SteelPriceCalcResult, rows: list[CalcRow]) -> str:
     if result.failed_count > 0:
-        return "partial"
+        return STATUS_PARTIAL
     if result.material_count == 0:
-        return "failed"
+        return STATUS_FAILED
     if result.enriched_count == 0:
-        return "failed"
+        return STATUS_FAILED
     if result.no_base_count > 0:
-        return "partial"
+        return STATUS_PARTIAL
     if any(r.calc_status != "success" for r in rows):
-        return "partial"
+        return STATUS_PARTIAL
     if result.created_count + result.updated_count == 0 and result.skipped_approved_count == 0:
-        return "failed"
-    return "success"
+        return STATUS_FAILED
+    return STATUS_SUCCESS
 
 
 def summarize_match_status(rows: list[CalcRow]) -> dict[str, int]:

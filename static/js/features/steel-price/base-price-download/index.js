@@ -3,7 +3,7 @@
  * 基准价格导出页面逻辑
  */
 
-import { basePriceDownloadTemplate } from './template.js?v=24';
+import { basePriceDownloadTemplate } from './template.js?v=25';
 
 // 状态管理
 const basePriceDownloadState = {
@@ -58,6 +58,7 @@ async function loadFilterOptions() {
         fillSelect('basePriceDownloadYear', buildYearOptions(data.years));
         fillMonthOptions();
         fillSelect('basePriceDownloadLocation', data.locations || []);
+        fillSelect('basePriceDownloadCategory', data.category_names || []);
         fillSelect('basePriceDownloadMill', data.steel_mills || []);
     } catch (error) {
         if (token !== basePriceDownloadState.filterLoadToken) return;
@@ -105,27 +106,36 @@ function bindEvents() {
         btnDelete.addEventListener('click', () => batchDeleteBasePrices());
     }
 
-    ['basePriceDownloadYear', 'basePriceDownloadMonth', 'basePriceDownloadLocation', 'basePriceDownloadMill']
+    ['basePriceDownloadYear', 'basePriceDownloadMonth', 'basePriceDownloadLocation', 'basePriceDownloadCategory', 'basePriceDownloadMill']
         .forEach(id => {
             const el = document.getElementById(id);
             if (el) el.addEventListener('change', () => updateConditionsDisplay());
         });
+
+    const gradeInput = document.getElementById('basePriceDownloadGrade');
+    if (gradeInput) {
+        gradeInput.addEventListener('input', () => updateConditionsDisplay());
+        gradeInput.addEventListener('keydown', event => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                previewData();
+            }
+        });
+    }
 }
 
 /**
  * 更新已选条件显示
  */
 function updateConditionsDisplay() {
-    const year = getFilterValue('basePriceDownloadYear');
-    const month = getFilterValue('basePriceDownloadMonth');
-    const location = getFilterValue('basePriceDownloadLocation');
-    const mill = getFilterValue('basePriceDownloadMill');
-
+    const filters = collectFilters();
     const conditions = [];
-    if (year) conditions.push(`年度: ${year}`);
-    if (month) conditions.push(`月份: ${month}`);
-    if (location) conditions.push(`基地: ${location}`);
-    if (mill) conditions.push(`钢厂: ${mill}`);
+    if (filters.year) conditions.push(`年度: ${filters.year}`);
+    if (filters.month) conditions.push(`月份: ${filters.month}`);
+    if (filters.location) conditions.push(`基地: ${filters.location}`);
+    if (filters.category_name) conditions.push(`钢种: ${filters.category_name}`);
+    if (filters.grade) conditions.push(`牌号: ${filters.grade}`);
+    if (filters.steel_mill) conditions.push(`钢厂: ${filters.steel_mill}`);
 
     const display = document.getElementById('selectedBasePriceConditions');
     if (display) {
@@ -137,16 +147,37 @@ function getFilterValue(id) {
     return document.getElementById(id)?.value || '';
 }
 
+function collectFilters() {
+    return {
+        year: getFilterValue('basePriceDownloadYear'),
+        month: getFilterValue('basePriceDownloadMonth'),
+        location: getFilterValue('basePriceDownloadLocation'),
+        category_name: getFilterValue('basePriceDownloadCategory'),
+        grade: document.getElementById('basePriceDownloadGrade')?.value.trim() || '',
+        steel_mill: getFilterValue('basePriceDownloadMill'),
+    };
+}
+
+function hasAnyFilter(filters) {
+    return !!(filters.year || filters.month || filters.location || filters.category_name || filters.grade || filters.steel_mill);
+}
+
+function applyFiltersToParams(params, filters) {
+    if (filters.year) params.year = parseInt(filters.year, 10);
+    if (filters.month) params.month = parseInt(filters.month, 10);
+    if (filters.location) params.location = filters.location;
+    if (filters.category_name) params.category_name = filters.category_name;
+    if (filters.grade) params.grade = filters.grade;
+    if (filters.steel_mill) params.steel_mill = filters.steel_mill;
+}
+
 /**
  * 预览数据
  */
 async function previewData() {
-    const year = getFilterValue('basePriceDownloadYear');
-    const month = getFilterValue('basePriceDownloadMonth');
-    const location = getFilterValue('basePriceDownloadLocation');
-    const mill = getFilterValue('basePriceDownloadMill');
+    const filters = collectFilters();
 
-    if (!year && !month && !location && !mill) {
+    if (!hasAnyFilter(filters)) {
         showToast('请至少选择一个筛选条件', 'warning');
         return;
     }
@@ -167,10 +198,7 @@ async function previewData() {
 
     try {
         const params = {};
-        if (year) params.year = parseInt(year, 10);
-        if (month) params.month = parseInt(month, 10);
-        if (location) params.location = location;
-        if (mill) params.steel_mill = mill;
+        applyFiltersToParams(params, filters);
         params.page = 1;
         params.size = 500;
         const response = await HttpClient.get(`${API_BASE}/export-preview`, { params });
@@ -213,12 +241,9 @@ async function previewData() {
  * 导出 Excel
  */
 async function exportExcel() {
-    const year = getFilterValue('basePriceDownloadYear');
-    const month = getFilterValue('basePriceDownloadMonth');
-    const location = getFilterValue('basePriceDownloadLocation');
-    const mill = getFilterValue('basePriceDownloadMill');
+    const filters = collectFilters();
 
-    if (!year && !month && !location && !mill) {
+    if (!hasAnyFilter(filters)) {
         showToast('请至少选择一个筛选条件', 'warning');
         return;
     }
@@ -228,10 +253,12 @@ async function exportExcel() {
 
     try {
         const params = new URLSearchParams();
-        if (year) params.append('year', parseInt(year, 10));
-        if (month) params.append('month', parseInt(month, 10));
-        if (location) params.append('location', location);
-        if (mill) params.append('steel_mill', mill);
+        if (filters.year) params.append('year', parseInt(filters.year, 10));
+        if (filters.month) params.append('month', parseInt(filters.month, 10));
+        if (filters.location) params.append('location', filters.location);
+        if (filters.category_name) params.append('category_name', filters.category_name);
+        if (filters.grade) params.append('grade', filters.grade);
+        if (filters.steel_mill) params.append('steel_mill', filters.steel_mill);
 
         const response = await fetch(`${API_BASE}/export-download?${params.toString()}`, {
             method: 'GET',
@@ -344,17 +371,11 @@ async function batchDeleteBasePrices() {
  * 刷新预览数据
  */
 async function refreshPreview() {
-    const year = getFilterValue('basePriceDownloadYear');
-    const month = getFilterValue('basePriceDownloadMonth');
-    const location = getFilterValue('basePriceDownloadLocation');
-    const mill = getFilterValue('basePriceDownloadMill');
+    const filters = collectFilters();
 
     try {
         const params = {};
-        if (year) params.year = parseInt(year, 10);
-        if (month) params.month = parseInt(month, 10);
-        if (location) params.location = location;
-        if (mill) params.steel_mill = mill;
+        applyFiltersToParams(params, filters);
         params.page = 1;
         params.size = 500;
         const response = await HttpClient.get(`${API_BASE}/export-preview`, { params });

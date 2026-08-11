@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from sqlalchemy import Column, DateTime, Index, Integer, String, Text
+from sqlalchemy import Column, DateTime, Index, Integer, String, Text, text
 
 from app.database import Base
 
@@ -11,7 +11,8 @@ class SteelPriceCalcLog(Base):
     """
     钢价计算批次日志
 
-    一次「开始计算」写入一行；detail_text 记录完整过程（含错误）。
+    一次「开始计算」先写入 processing 行作为期别锁，结束后更新为终态；
+    detail_text 记录完整过程（含错误）。
     """
 
     __tablename__ = "steel_price_calc_logs"
@@ -29,7 +30,7 @@ class SteelPriceCalcLog(Base):
         String(20),
         nullable=False,
         default="failed",
-        comment="批次状态：success / partial / failed",
+        comment="批次状态：processing / success / partial / failed",
     )
 
     material_count = Column(Integer, nullable=False, default=0, comment="材料厚度规格数")
@@ -59,4 +60,13 @@ class SteelPriceCalcLog(Base):
         Index("ix_steel_price_calc_log_location", "location"),
         Index("ix_steel_price_calc_log_status", "status"),
         Index("ix_steel_price_calc_log_started_at", "started_at"),
+        # 同一年度+月份+基地同时只允许一条 processing（SQLite 部分唯一索引）
+        Index(
+            "uq_steel_price_calc_processing",
+            "year",
+            "month",
+            "location",
+            unique=True,
+            sqlite_where=text("status = 'processing'"),
+        ),
     )

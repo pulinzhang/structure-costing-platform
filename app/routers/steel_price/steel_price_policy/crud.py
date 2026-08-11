@@ -262,6 +262,8 @@ def export_policies_excel(
     year: Optional[int] = None,
     month: Optional[int] = None,
     steel_mill: Optional[str] = None,
+    category_name: Optional[str] = None,
+    grade_value: Optional[str] = None,
     db: Session = Depends(get_db),
 ) -> StreamingResponse:
     """
@@ -272,6 +274,8 @@ def export_policies_excel(
         year=year,
         month=month,
         steel_mill=steel_mill,
+        category_name=category_name.strip() if category_name else None,
+        grade_value=grade_value.strip() if grade_value else None,
     )
 
     return StreamingResponse(
@@ -291,6 +295,8 @@ def export_policies_preview(
     year: Optional[int] = None,
     month: Optional[int] = None,
     steel_mill: Optional[str] = None,
+    category_name: Optional[str] = None,
+    grade_value: Optional[str] = None,
     page: int = 1,
     size: int = DEFAULT_PAGE_SIZE,
     db: Session = Depends(get_db),
@@ -298,11 +304,16 @@ def export_policies_preview(
     """
     预览导出数据（主子表联合查询，分页）
     """
+    category = category_name.strip() if category_name else None
+    grade = grade_value.strip() if grade_value else None
+    mill = steel_mill.strip() if steel_mill else None
     records = _policy_service.get_export_data(
         db,
         year=year,
         month=month,
-        steel_mill=steel_mill.strip() if steel_mill else None,
+        steel_mill=mill,
+        category_name=category,
+        grade_value=grade,
         skip=(page - 1) * size,
         limit=size,
     )
@@ -310,7 +321,9 @@ def export_policies_preview(
         db,
         year=year,
         month=month,
-        steel_mill=steel_mill.strip() if steel_mill else None,
+        steel_mill=mill,
+        category_name=category,
+        grade_value=grade,
     )
     return ApiResponse.list_(items=records, total=total, page=page, page_size=size)
 

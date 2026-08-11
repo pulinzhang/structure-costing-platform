@@ -217,6 +217,8 @@ class SteelBasePriceService:
         month: int | None = None,
         location: str | None = None,
         steel_mill: str | None = None,
+        category_name: str | None = None,
+        grade: str | None = None,
         spec: str | None = None,
         page: int | None = None,
         page_size: int | None = None,
@@ -228,12 +230,17 @@ class SteelBasePriceService:
             skip = (page - 1) * page_size
             limit = page_size
 
+        category = category_name.strip() if category_name else None
+        grade_value = grade.strip() if grade else None
+
         records = self.repository.list_for_export(
             db,
             year=year,
             month=month,
             location=location,
             steel_mill=steel_mill,
+            category_name=category,
+            grade=grade_value,
             spec=spec,
             skip=skip,
             limit=limit,
@@ -244,6 +251,8 @@ class SteelBasePriceService:
             month=month,
             location=location,
             steel_mill=steel_mill,
+            category_name=category,
+            grade=grade_value,
             spec=spec,
         )
         return [SteelBasePriceExportRow.model_validate(r) for r in records], total

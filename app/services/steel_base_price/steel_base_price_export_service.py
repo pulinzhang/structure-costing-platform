@@ -29,6 +29,8 @@ class SteelBasePriceExportService:
         month: int | None = None,
         location: str | None = None,
         steel_mill: str | None = None,
+        category_name: str | None = None,
+        grade: str | None = None,
         spec: str | None = None,
     ) -> tuple[bytes, str]:
         """
@@ -43,6 +45,8 @@ class SteelBasePriceExportService:
             month=month,
             location=location,
             steel_mill=steel_mill,
+            category_name=category_name.strip() if category_name else None,
+            grade=grade.strip() if grade else None,
             spec=spec,
         )
 

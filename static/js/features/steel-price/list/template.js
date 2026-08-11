@@ -320,13 +320,13 @@ export function renderSteelPriceRows(records) {
             <td class="${cell} text-[#9e9e9e]">${esc(record.steel_mill)}</td>
             <td class="${cell} text-[#9e9e9e]">${esc(record.category_name)}</td>
             <td class="${cell} font-medium text-[#b0b0b0]">${esc(record.grade)}</td>
-            <td class="${cell} text-right font-mono text-[#9e9e9e]">${formatPrice(record.thickness, 4)}</td>
-            <td class="${cell} text-right font-mono text-[#9e9e9e]">${formatPrice(record.width, 2)}</td>
-            <td class="${cell} text-right font-mono text-[#9e9e9e]">${formatPrice(record.base_price)}</td>
-            <td class="${cell} text-right font-mono text-[#9e9e9e]">${formatPrice(record.thickness_adjustment)}</td>
-            <td class="${cell} text-right font-mono text-[#9e9e9e]">${formatPrice(record.width_adjustment)}</td>
-            <td class="${cell} text-right font-mono text-[#9e9e9e]">${formatPrice(record.processing_fee)}</td>
-            <td class="${cell} text-right font-mono text-[#d32f2f]">${formatPrice(record.final_price_per_ton)}</td>
+            <td class="${cell} text-right font-mono text-[#9e9e9e]">${formatPrice(record.thickness, 2)}</td>
+            <td class="${cell} text-right font-mono text-[#9e9e9e]">${formatWidth(record.width)}</td>
+            <td class="${cell} text-right font-mono text-[#9e9e9e]">${formatPrice(record.base_price, 2)}</td>
+            <td class="${cell} text-right font-mono ${adjustmentToneClass(record.thickness_adjustment)}">${formatAdjustment(record.thickness_adjustment)}</td>
+            <td class="${cell} text-right font-mono ${adjustmentToneClass(record.width_adjustment)}">${formatAdjustment(record.width_adjustment)}</td>
+            <td class="${cell} text-right font-mono text-[#9e9e9e]">${formatPriceOrDash(record.processing_fee)}</td>
+            <td class="${cell} text-right font-mono text-[#d32f2f]">${formatPrice(record.final_price_per_ton, 2)}</td>
             <td class="${cell} text-[10px] text-[#777777] max-w-[220px]">${formatTraceCell('base', record)}</td>
             <td class="${cell} text-[10px] text-[#777777] max-w-[220px]">${formatTraceCell('thickness', record)}</td>
             <td class="${cell} text-[10px] text-[#777777] max-w-[220px]">${formatTraceCell('width', record)}</td>
@@ -468,4 +468,46 @@ function formatPrice(value, digits = 2) {
     const numeric = Number(value);
     if (value === null || value === undefined || Number.isNaN(numeric)) return '-';
     return numeric.toLocaleString('zh-CN', { minimumFractionDigits: digits, maximumFractionDigits: digits });
+}
+
+/** 加工费：为 0 时显示 -- */
+function formatPriceOrDash(value, digits = 2) {
+    const numeric = Number(value);
+    if (value === null || value === undefined || Number.isNaN(numeric) || numeric === 0) {
+        return '--';
+    }
+    return formatPrice(numeric, digits);
+}
+
+/**
+ * 厚度/宽度加价（BRABUS 极客风）：
+ * >0 → +160.00；<0 → -40.00；0 → --
+ */
+function formatAdjustment(value, digits = 2) {
+    const numeric = Number(value);
+    if (value === null || value === undefined || Number.isNaN(numeric) || numeric === 0) {
+        return '--';
+    }
+    const absText = Math.abs(numeric).toLocaleString('zh-CN', {
+        minimumFractionDigits: digits,
+        maximumFractionDigits: digits,
+    });
+    return numeric > 0 ? `+${absText}` : `-${absText}`;
+}
+
+/** 加价色：加→冷钛白，减→暗红，无变动→低饱和灰 */
+function adjustmentToneClass(value) {
+    const numeric = Number(value);
+    if (value === null || value === undefined || Number.isNaN(numeric) || numeric === 0) {
+        return 'text-[#444444]';
+    }
+    if (numeric > 0) return 'text-[#E0E0E0]';
+    return 'text-[#C62828]';
+}
+
+/** 宽度：整数、无千分位 */
+function formatWidth(value) {
+    const numeric = Number(value);
+    if (value === null || value === undefined || Number.isNaN(numeric)) return '-';
+    return String(Math.round(numeric));
 }

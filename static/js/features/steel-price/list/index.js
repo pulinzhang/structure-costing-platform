@@ -529,16 +529,16 @@ function openViewDrawer(record) {
     fillViewField('view-steel-mill', record.steel_mill);
     fillViewField('view-category-name', record.category_name);
     fillViewField('view-grade', record.grade);
-    fillViewField('view-thickness', formatDecimal(record.thickness, 4));
-    fillViewField('view-width', formatDecimal(record.width, 2));
+    fillViewField('view-thickness', formatDecimal(record.thickness, 2));
+    fillViewField('view-width', formatWidthPlain(record.width));
     fillViewField('view-spec', record.spec || '—');
-    fillViewField('view-base-price', formatDecimal(record.base_price));
-    fillViewField('view-thickness-adjustment', formatDecimal(record.thickness_adjustment));
-    fillViewField('view-width-adjustment', formatDecimal(record.width_adjustment));
-    fillViewField('view-zinc-adjustment', formatDecimal(record.zinc_adjustment));
-    fillViewField('view-processing-fee', formatDecimal(record.processing_fee));
-    fillViewField('view-other-adjustment', formatDecimal(record.other_adjustment));
-    fillViewField('view-final-price', formatDecimal(record.final_price_per_ton));
+    fillViewField('view-base-price', formatDecimal(record.base_price, 2));
+    fillAdjustmentViewField('view-thickness-adjustment', record.thickness_adjustment);
+    fillAdjustmentViewField('view-width-adjustment', record.width_adjustment);
+    fillViewField('view-zinc-adjustment', formatDecimal(record.zinc_adjustment, 2));
+    fillViewField('view-processing-fee', formatDecimalOrDash(record.processing_fee));
+    fillViewField('view-other-adjustment', formatDecimal(record.other_adjustment, 2));
+    fillViewField('view-final-price', formatDecimal(record.final_price_per_ton, 2));
     fillViewField('view-audit-status', AUDIT_LABEL[record.audit_status] || record.audit_status);
     fillViewField('view-audited-by', record.audited_by || '—');
     fillViewField('view-audited-at', formatDateTime(record.audited_at));
@@ -583,7 +583,7 @@ function openDeleteDrawer(record) {
         summary.innerHTML = `
             <span class="text-[#d32f2f] font-mono">${esc(record.year)}-${esc(String(record.month).padStart(2, '0'))}</span>
             <span class="text-[#9e9e9e]"> / ${esc(record.location)} / ${esc(record.steel_mill)} / ${esc(record.grade)}</span>
-            <span class="text-[#9e9e9e]"> / ${esc(formatDecimal(record.thickness, 4))}*${esc(formatDecimal(record.width, 2))}</span>
+            <span class="text-[#9e9e9e]"> / ${esc(formatDecimal(record.thickness, 2))}*${esc(formatWidthPlain(record.width))}</span>
         `;
     }
     openDrawer('deleteDrawer', 'deleteDrawerBackdrop');
@@ -741,6 +741,30 @@ function fillViewField(id, value) {
     if (element) element.textContent = value ?? '—';
 }
 
+/** 厚度/宽度加价：BRABUS 极客风（冷钛白 / 暗红 / 低饱和灰） */
+function fillAdjustmentViewField(id, value) {
+    const element = document.getElementById(id);
+    if (!element) return;
+    element.textContent = formatAdjustmentSigned(value);
+    element.classList.remove(
+        'text-[#cccccc]',
+        'text-[#4caf50]',
+        'text-[#ef5350]',
+        'text-[#9e9e9e]',
+        'text-[#E0E0E0]',
+        'text-[#C62828]',
+        'text-[#444444]'
+    );
+    const numeric = Number(value);
+    if (value === null || value === undefined || Number.isNaN(numeric) || numeric === 0) {
+        element.classList.add('text-[#444444]');
+    } else if (numeric > 0) {
+        element.classList.add('text-[#E0E0E0]');
+    } else {
+        element.classList.add('text-[#C62828]');
+    }
+}
+
 function formatDecimal(value, digits = 2) {
     const numeric = Number(value);
     if (value === null || value === undefined || Number.isNaN(numeric)) return '-';
@@ -748,6 +772,35 @@ function formatDecimal(value, digits = 2) {
         minimumFractionDigits: digits,
         maximumFractionDigits: digits,
     });
+}
+
+/** 加工费：为 0 时显示 -- */
+function formatDecimalOrDash(value, digits = 2) {
+    const numeric = Number(value);
+    if (value === null || value === undefined || Number.isNaN(numeric) || numeric === 0) {
+        return '--';
+    }
+    return formatDecimal(numeric, digits);
+}
+
+/** 厚度/宽度加价：显式 +/- 号；0 → -- */
+function formatAdjustmentSigned(value, digits = 2) {
+    const numeric = Number(value);
+    if (value === null || value === undefined || Number.isNaN(numeric) || numeric === 0) {
+        return '--';
+    }
+    const absText = Math.abs(numeric).toLocaleString('zh-CN', {
+        minimumFractionDigits: digits,
+        maximumFractionDigits: digits,
+    });
+    return numeric > 0 ? `+${absText}` : `-${absText}`;
+}
+
+/** 宽度：整数、无千分位 */
+function formatWidthPlain(value) {
+    const numeric = Number(value);
+    if (value === null || value === undefined || Number.isNaN(numeric)) return '-';
+    return String(Math.round(numeric));
 }
 
 function formatDateTime(value) {
