@@ -112,10 +112,10 @@ export function partsTemplate() {
         </div>
 
         <!-- 零件详情抽屉（图纸 + 信息 + 工序，表格保持可见） -->
-        <div class="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm transition-opacity duration-300"
+        <div class="fixed inset-0 z-[80] bg-black/70 backdrop-blur-sm transition-opacity duration-300"
              id="partDrawerBackdrop" style="display:none"></div>
 
-        <div class="fixed inset-y-0 right-0 z-50 w-[640px] bg-[#1a1a1a] border-l border-[#2a2a2a] transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col"
+        <div class="fixed inset-y-0 right-0 z-[85] w-[640px] bg-[#1a1a1a] border-l border-[#2a2a2a] transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col"
              id="partDrawer" style="display:none; max-height: 100vh; box-shadow: -20px 0 60px rgba(0,0,0,0.95), -8px 0 30px rgba(0,0,0,0.8), 0 0 1px rgba(255,255,255,0.05);">
             <!-- 拖拽条 -->
             <div class="absolute left-0 top-0 bottom-0 w-1.5 cursor-ew-resize hover:bg-[#d32f2f]/50 transition-colors z-10"></div>

@@ -396,14 +396,27 @@ showToast('请检查必填项', 'warning');
 
 ### 4.10 抽屉面板
 
+**z-index 层级（全局统一，新增 UI 必须遵守）**：
+
+| 层级 | z-index | 类 | 说明 |
+|------|---------|----|------|
+| 页面 Header | `70` | `.page-header` | 顶栏，抽屉必须压过它 |
+| Drawer 遮罩 | `80` | `z-[80]` | 所有业务抽屉遮罩 |
+| Drawer 面板 | `85` | `z-[85]` | 所有业务抽屉面板 |
+| Sidebar 遮罩 | `90` | `.sidebar-backdrop` | 导航层遮罩 |
+| Sidebar / 抽屉内嵌套弹层 | `100` | `.sidebar` / `z-[100]` | 导航主体；或抽屉内图片放大等 |
+| Toast | `9999` | — | 全局提示，永远最上 |
+
+**禁止**：业务抽屉再使用 `z-40` / `z-50`（会被 Header `70` 盖住）。
+
 **渲染契约**：抽屉由调用方直接 `append` 到 `<body>` 的尾部，由各页面管理生命周期（打开时插入、关闭时移除 + 移除事件监听）。
 
 ```html
 <!-- 背景遮罩 -->
-<div class="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm transition-opacity duration-300" id="drawerBackdrop"></div>
+<div class="fixed inset-0 z-[80] bg-black/70 backdrop-blur-sm transition-opacity duration-300" id="drawerBackdrop"></div>
 
 <!-- 抽屉内容（右侧滑入，宽 640px） -->
-<div class="fixed inset-y-0 right-0 z-50 w-[640px] bg-[#1a1a1a] border-l border-[#2a2a2a] transform translate-x-full transition-transform duration-300 flex flex-col">
+<div class="fixed inset-y-0 right-0 z-[85] w-[640px] bg-[#1a1a1a] border-l border-[#2a2a2a] transform translate-x-full transition-transform duration-300 flex flex-col">
     <!-- 头部 -->
     <div class="px-5 py-3.5 flex items-center justify-between shrink-0 bg-[#1f1f1f] border-b border-[#333333]">
         <h5 class="text-[11px] font-semibold tracking-wider text-[#b0b0b0] flex items-center gap-2.5 uppercase">

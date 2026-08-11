@@ -339,12 +339,12 @@ function showProcessDrawer(log) {
     const period = `${log.year}-${String(log.month).padStart(2, '0')}`;
     const backdrop = document.createElement('div');
     backdrop.id = 'calcProcessBackdrop';
-    backdrop.className = 'fixed inset-0 z-40 bg-black/70 backdrop-blur-sm';
+    backdrop.className = 'fixed inset-0 z-[80] bg-black/70 backdrop-blur-sm';
 
     const drawer = document.createElement('div');
     drawer.id = 'calcProcessDrawer';
     drawer.className =
-        'fixed inset-y-0 right-0 z-50 w-[640px] max-w-[95vw] bg-[#1a1a1a] border-l border-[#2a2a2a] flex flex-col';
+        'fixed inset-y-0 right-0 z-[85] w-[640px] max-w-[95vw] bg-[#1a1a1a] border-l border-[#2a2a2a] flex flex-col';
     drawer.innerHTML = `
         <div class="px-5 py-3.5 flex items-center justify-between shrink-0 bg-[#1f1f1f] border-b border-[#333333]">
             <h5 class="text-[11px] font-semibold tracking-wider text-[#b0b0b0] uppercase">
