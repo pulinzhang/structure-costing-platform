@@ -12,7 +12,7 @@ export function policyUploadTemplate() {
             <div class="bg-[#1e1e1e] border border-[#2c2c2c]">
                 <div class="px-5 py-3 border-b border-[#222222] flex items-center gap-2.5">
                     ${window.svgIcon('file-earmark-excel', 'w-3.5 h-3.5 text-[#616161]')}
-                    <h5 class="text-xs font-semibold text-[#9e9e9e] mb-0">厚度加减价导入</h5>
+                    <h5 class="text-xs font-semibold text-[#9e9e9e] mb-0">厚度、宽度、锌层加减价导入</h5>
                 </div>
                 <div class="p-5">
                     <form id="policyUploadForm">
