@@ -1,7 +1,10 @@
 import { policyUploadTemplate } from './template.js';
 
+const MAX_RECENT_UPLOADS = 8;
+
 const PolicyUploadPage = {
     selectedFile: null,
+    recentUploads: [],
 
     init() {
         this.selectedFile = null;
@@ -39,6 +42,8 @@ const PolicyUploadPage = {
 
         // 暴露 reset 函数到 window
         window.resetPolicyUploadForm = () => this.reset();
+
+        this.renderRecentUploads();
     },
 
     selectFile(file) {
@@ -70,7 +75,10 @@ const PolicyUploadPage = {
         if (button) button.disabled = false;
     },
 
-    reset() {
+    /**
+     * 仅清除已选文件，保留年度/月份，便于连续导入
+     */
+    clearSelectedFile() {
         this.selectedFile = null;
         const input = document.getElementById('policyFileInput');
         if (input) input.value = '';
@@ -83,6 +91,63 @@ const PolicyUploadPage = {
         if (title) title.innerHTML = '拖拽文件到此处上传';
         const button = document.getElementById('policySubmitButton');
         if (button) button.disabled = true;
+    },
+
+    reset() {
+        this.clearSelectedFile();
+        const yearInput = document.getElementById('policyYear');
+        const monthInput = document.getElementById('policyMonth');
+        if (yearInput) yearInput.value = '';
+        if (monthInput) monthInput.value = '';
+    },
+
+    addRecentUpload(fileName, year, month) {
+        const now = new Date();
+        const timeLabel = now.toLocaleTimeString('zh-CN', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+        });
+        this.recentUploads.unshift({
+            fileName,
+            periodLabel: `${year}年${month}月`,
+            timeLabel,
+        });
+        if (this.recentUploads.length > MAX_RECENT_UPLOADS) {
+            this.recentUploads = this.recentUploads.slice(0, MAX_RECENT_UPLOADS);
+        }
+        this.renderRecentUploads();
+    },
+
+    renderRecentUploads() {
+        const container = document.getElementById('recentPolicyUploads');
+        if (!container) return;
+
+        if (this.recentUploads.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-6">
+                    <div class="w-8 h-8 bg-[#262626] flex items-center justify-center mx-auto mb-2.5">
+                        <svg class="w-4 h-4 text-[#616161]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                    </div>
+                    <p class="text-[11px] text-[#616161]">暂无导入记录</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = `
+            <div class="space-y-2">
+                ${this.recentUploads.map((item) => `
+                    <div class="flex items-start gap-2.5 p-2.5 bg-[#121212] border border-[#2c2c2c]">
+                        <span class="text-[#2e7d32] shrink-0 mt-0.5">${window.svgIcon('file-earmark-excel', 'w-4 h-4')}</span>
+                        <div class="min-w-0 flex-1">
+                            <p class="text-[11px] text-[#ffffff] truncate" title="${esc(item.fileName)}">${esc(item.fileName)}</p>
+                            <p class="text-[10px] text-[#616161] mt-0.5">${esc(item.periodLabel)} · ${esc(item.timeLabel)}</p>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
     },
 
     async submit() {
@@ -102,6 +167,7 @@ const PolicyUploadPage = {
             return;
         }
 
+        const fileName = this.selectedFile.name;
         const button = document.getElementById('policySubmitButton');
         if (button) {
             button.disabled = true;
@@ -114,7 +180,9 @@ const PolicyUploadPage = {
         formData.append('file', this.selectedFile);
 
         try {
-            const response = await HttpClient.post('/api/steel-price-policies/upload', formData);
+            const response = await HttpClient.post('/api/steel-price-policies/upload', formData, {
+                timeout: 300000, // 政策 Excel 解析较慢，5 分钟
+            });
             const data = response.data || {};
             const created = data.created_count || 0;
             const updated = data.updated_count || 0;
@@ -124,7 +192,9 @@ const PolicyUploadPage = {
                 `导入完成：新增 ${created} 条，更新 ${updated} 条，跳过 ${skipped} 条，共 ${total} 条`,
                 'success'
             );
-            this.reset();
+            this.addRecentUpload(fileName, year, month);
+            // 保留年度/月份，仅清除文件，便于连续导入
+            this.clearSelectedFile();
         } catch (error) {
             showToast(error.message || '导入失败', 'error');
         } finally {

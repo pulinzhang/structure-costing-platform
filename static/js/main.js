@@ -218,7 +218,7 @@ const HttpClient = (() => {
         } catch (error) {
             clearTimeout(timer);
             if (error.name === 'AbortError') {
-                showToast('请求超时，请重试', 'error');
+                showToast('请求超时（后端可能仍在处理），请稍后刷新确认结果', 'error');
             } else if (!error.status) {
                 showToast(error.message || '网络请求失败', 'error');
             }

@@ -90,7 +90,10 @@ const BasePriceUploadPage = {
         if (button) button.disabled = false;
     },
 
-    reset() {
+    /**
+     * 仅清除已选文件，保留年度/月份，便于连续导入
+     */
+    clearSelectedFile() {
         this.selectedFile = null;
         const input = document.getElementById('basePriceFileInput');
         if (input) input.value = '';
@@ -103,7 +106,11 @@ const BasePriceUploadPage = {
         if (title) title.innerHTML = '拖拽文件到此处上传';
         const button = document.getElementById('basePriceSubmitButton');
         if (button) button.disabled = true;
-        // 重置后恢复默认年月
+    },
+
+    reset() {
+        this.clearSelectedFile();
+        // 手动重置时恢复默认年月
         const yearInput = document.getElementById('basePriceYear');
         const monthInput = document.getElementById('basePriceMonth');
         if (yearInput) yearInput.value = '';
@@ -148,7 +155,9 @@ const BasePriceUploadPage = {
 
         try {
             const url = `/api/steel-base-prices/import?year=${year}&month=${month}`;
-            const response = await HttpClient.post(url, formData);
+            const response = await HttpClient.post(url, formData, {
+                timeout: 300000, // 基准价 Excel 解析较慢，5 分钟
+            });
             const data = response.data || {};
             const created = data.created_count || 0;
             const updated = data.updated_count || 0;
@@ -157,7 +166,8 @@ const BasePriceUploadPage = {
                 `导入完成：新增 ${created} 条，更新 ${updated} 条，共 ${total} 条`,
                 'success'
             );
-            this.reset();
+            // 保留年度/月份，仅清除文件，便于连续导入
+            this.clearSelectedFile();
         } catch (error) {
             showToast(error.message || '导入失败', 'error');
         } finally {
