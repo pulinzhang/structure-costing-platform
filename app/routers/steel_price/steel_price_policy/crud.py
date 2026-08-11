@@ -12,7 +12,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from urllib.parse import quote
 
-from app.database import get_db
+from app.database import DatabaseConfig, get_db
 from app.schemas.common.page_result import PageResult
 from app.schemas.dto.steel_price_policy_dto import (
     LadderItemCreate,
@@ -30,6 +30,16 @@ from app.schemas.vo.steel_price_policy_vo import (
     PolicyListResponse,
     PolicyMatchResponse,
     PolicyOptionsResponse,
+    UploadTaskAcceptedResponse,
+    UploadTaskProgressResponse,
+)
+from app.services.async_task import (
+    STATUS_COMPLETED,
+    STATUS_FAILED,
+    STATUS_PENDING,
+    STATUS_RUNNING,
+    TASK_TYPE_POLICY_UPLOAD,
+    AsyncTaskService,
 )
 from app.services.steel_price_policy import SteelPricePolicyService
 from app.utils.response import ApiResponse
@@ -42,6 +52,7 @@ router = APIRouter(prefix="/api/steel-price-policies", tags=["钢价政策管理
 DEFAULT_PAGE_SIZE = 100
 
 _policy_service = SteelPricePolicyService()
+_async_task_service = AsyncTaskService()
 
 
 def _map_service_error(
@@ -60,6 +71,74 @@ def _map_service_error(
     if "不存在" in (error or ""):
         raise HTTPException(status_code=404, detail=error)
     raise HTTPException(status_code=400, detail=error)
+
+
+def _process_policy_upload_in_background(
+    task_id: str,
+    file_content: bytes,
+    filename: str,
+    year: int,
+    month: int,
+) -> None:
+    """
+    后台线程执行政策 Excel 解析与入库。
+    必须在独立线程中运行，禁止写成 async（否则会阻塞 Event Loop）。
+    进度写入独立异步任务库；主数据使用业务 Session 大事务。
+    """
+    session_factory = DatabaseConfig.get_session_factory()
+    db = session_factory()
+
+    def on_progress(progress: int, msg: str) -> None:
+        _async_task_service.update_task_standalone(
+            task_id,
+            status=STATUS_RUNNING,
+            progress=progress,
+            message=msg,
+        )
+
+    try:
+        _async_task_service.update_task_standalone(
+            task_id,
+            status=STATUS_RUNNING,
+            progress=1,
+            message="后台开始解析...",
+        )
+        result = _policy_service.import_from_parser(
+            db,
+            file_content=file_content,
+            filename=filename,
+            year=year,
+            month=month,
+            progress_callback=on_progress,
+        )
+        _async_task_service.update_task_standalone(
+            task_id,
+            status=STATUS_COMPLETED,
+            progress=100,
+            message=(
+                f"导入完成：新增 {result.created_count} 条，"
+                f"更新 {result.updated_count} 条，共 {result.total} 条"
+            ),
+            result=result.model_dump(),
+        )
+    except ValueError as error:
+        logger.warning("政策导入业务失败: task_id=%s error=%s", task_id, error)
+        _async_task_service.update_task_standalone(
+            task_id,
+            status=STATUS_FAILED,
+            progress=0,
+            message=str(error),
+        )
+    except Exception as error:
+        logger.exception("政策导入异常: task_id=%s filename=%s", task_id, filename)
+        _async_task_service.update_task_standalone(
+            task_id,
+            status=STATUS_FAILED,
+            progress=0,
+            message=f"解析异常: {error}",
+        )
+    finally:
+        db.close()
 
 
 # =============================================================================
@@ -99,22 +178,22 @@ def get_policy_options(
 
 
 # =============================================================================
-# Excel 导入
+# Excel 导入（异步：立即返回 task_id，前端轮询进度）
 # =============================================================================
 
 @router.post(
     "/upload",
-    response_model=ApiResponse[ImportResultResponse],
+    response_model=ApiResponse[UploadTaskAcceptedResponse],
 )
 async def upload_policy_excel(
     year: int = Form(..., ge=2000, le=2100, description="生效年度"),
     month: int = Form(..., ge=1, le=12, description="生效月份（1-12）"),
     file: UploadFile = File(..., description="一事一议价格 Excel 文件"),
-    db: Session = Depends(get_db),
-) -> ApiResponse[ImportResultResponse]:
+) -> ApiResponse[UploadTaskAcceptedResponse]:
     """
-    上传钢价政策 Excel，按年度+月份执行 upsert。
-    同一 (year, month, steel_mill, category, policy_type, grade, base_thickness) 的政策会被替换。
+    上传钢价政策 Excel，立即返回 task_id，后台线程解析入库。
+    任务进度写入独立异步任务库，不复用业务 Session。
+    主数据仍在单一大事务中导入（全部成功或全部回滚）。
     """
     file_content = await file.read()
 
@@ -123,23 +202,54 @@ async def upload_policy_excel(
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
 
-    try:
-        result = _policy_service.import_from_parser(
-            db,
-            file_content=file_content,
-            filename=file.filename,
-            year=year,
-            month=month,
-        )
-    except ValueError as error:
-        raise HTTPException(status_code=400, detail=str(error)) from error
-    except Exception as error:
-        logger.exception("处理钢价政策文件失败: filename=%s", file.filename)
-        raise HTTPException(status_code=500, detail="钢价政策导入失败") from error
+    task = _async_task_service.create_task(
+        task_type=TASK_TYPE_POLICY_UPLOAD,
+        message="已提交解析队列",
+    )
+    AsyncTaskService.submit(
+        _process_policy_upload_in_background,
+        task.task_id,
+        file_content,
+        file.filename or "policy.xlsx",
+        year,
+        month,
+    )
 
     return ApiResponse.ok(
-        data=result,
-        message=f"导入完成，新增 {result.created_count} 条，更新 {result.updated_count} 条，跳过 {result.skipped_count} 条",
+        data=UploadTaskAcceptedResponse(task_id=task.task_id),
+        message="上传成功，后台开始解析",
+    )
+
+
+@router.get(
+    "/tasks/{task_id}",
+    response_model=ApiResponse[UploadTaskProgressResponse],
+)
+def get_upload_task_progress(
+    task_id: str,
+) -> ApiResponse[UploadTaskProgressResponse]:
+    """查询政策上传/解析任务进度（独立异步任务库）"""
+    task = _async_task_service.get_task_snapshot(task_id)
+    if task is None or task.get("task_type") != TASK_TYPE_POLICY_UPLOAD:
+        raise HTTPException(status_code=404, detail="任务不存在或已过期")
+
+    result_raw = AsyncTaskService.parse_result_json(task.get("result_json"))
+    result = ImportResultResponse.model_validate(result_raw) if result_raw else None
+    updated_at_value = task.get("updated_at")
+    updated_at = (
+        updated_at_value.timestamp()
+        if hasattr(updated_at_value, "timestamp")
+        else float(updated_at_value or 0)
+    )
+
+    return ApiResponse.ok(
+        data=UploadTaskProgressResponse(
+            status=task.get("status") or STATUS_PENDING,
+            progress=int(task.get("progress") or 0),
+            msg=task.get("message") or "",
+            result=result,
+            updated_at=updated_at,
+        ),
     )
 
 

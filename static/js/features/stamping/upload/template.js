@@ -55,8 +55,7 @@ export function uploadTemplate() {
                                 </div>
                                 <div class="ml-6">
                                     <div id="uploadZone" class="upload-dropzone mb-4">
-                                        <!-- 内部精密机械层 -->
-                                        <div class="flex flex-col items-center gap-0">
+                                        <div id="stampingDropIdle" class="flex flex-col items-center gap-0">
                                             <!-- 顶部角标线 -->
                                             <div class="flex items-center gap-3 mb-5 w-full px-3">
                                                 <div class="h-px flex-1 bg-[#2a2a2a]"></div>
@@ -79,19 +78,35 @@ export function uploadTemplate() {
                                                 <div class="w-1.5 h-1.5 border border-[#363636] rotate-45"></div>
                                                 <div class="h-px flex-1 bg-[#2a2a2a]"></div>
                                             </div>
+                                            <input type="file" id="fileInput" class="hidden" accept=".xlsx,.xls">
+                                            <button type="button"
+                                                    id="stampingSelectFileBtn"
+                                                    class="btn-file-select">
+                                                ${window.svgIcon('folder', 'w-3.5 h-3.5')}
+                                                浏览文件
+                                            </button>
+                                            <p class="text-[10px] text-[#3a3a3a] mt-4 mb-0">
+                                                .xlsx / .xls
+                                                <span class="mx-2 text-[#2a2a2a]">|</span>
+                                                最大 50MB
+                                            </p>
                                         </div>
-                                        <input type="file" id="fileInput" class="hidden" accept=".xlsx,.xls">
-                                        <button type="button"
-                                                onclick="document.getElementById('fileInput').click()"
-                                                class="btn-file-select">
-                                            ${window.svgIcon('folder', 'w-3.5 h-3.5')}
-                                            浏览文件
-                                        </button>
-                                        <p class="text-[10px] text-[#3a3a3a] mt-4 mb-0">
-                                            .xlsx / .xls
-                                            <span class="mx-2 text-[#2a2a2a]">|</span>
-                                            最大 50MB
-                                        </p>
+
+                                        <div id="stampingProgressPanel" class="hidden text-left w-full">
+                                            <div class="flex items-center justify-between gap-3 mb-3">
+                                                <div class="flex items-center gap-2 min-w-0">
+                                                    ${window.svgIcon('spinner', 'w-4 h-4 text-[#d32f2f]')}
+                                                    <h5 id="stampingProgressTitle" class="text-xs font-medium text-[#ffffff] truncate mb-0">正在解析工艺文件...</h5>
+                                                </div>
+                                                <span id="stampingProgressPercent" class="text-xs font-mono tabular-nums text-[#d32f2f] shrink-0">0%</span>
+                                            </div>
+                                            <div class="h-1.5 w-full bg-[#0a0a0a] border border-[#2c2c2c] overflow-hidden mb-3">
+                                                <div id="stampingProgressBar"
+                                                     class="h-full bg-[#d32f2f] shadow-[0_0_8px_rgba(211,47,47,0.5)] transition-all duration-300"
+                                                     style="width: 0%"></div>
+                                            </div>
+                                            <p id="stampingProgressMsg" class="text-[11px] text-[#9e9e9e] leading-relaxed mb-0">已提交解析队列</p>
+                                        </div>
                                     </div>
 
                                     <!-- 文件预览 -->
@@ -100,6 +115,7 @@ export function uploadTemplate() {
                                     <!-- 操作按钮行 -->
                                     <div class="flex items-center justify-end gap-3">
                                         <button type="button"
+                                                id="stampingResetButton"
                                                 onclick="window.resetUploadForm()"
                                                 class="btn-ghost">
                                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>

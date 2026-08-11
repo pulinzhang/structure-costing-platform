@@ -1,61 +1,103 @@
 import { policyUploadTemplate } from './template.js';
 
 const MAX_RECENT_UPLOADS = 8;
+const POLL_INTERVAL_MS = 2000;
 
 const PolicyUploadPage = {
     selectedFile: null,
     recentUploads: [],
+    pollTimer: null,
+    pollInFlight: false,
+    isUploading: false,
+    activeTaskId: null,
+    activeFileName: null,
+    activeYear: null,
+    activeMonth: null,
 
     init() {
+        this.stopPolling();
+        this.bindEvents();
+        this.renderRecentUploads();
+
+        // 离开页面后再次进入：若任务仍在跑，恢复进度面板与轮询
+        if (this.isUploading && this.activeTaskId) {
+            this.setUploading(true);
+            this.showProgress(0, '正在恢复任务进度...');
+            this.startPolling(
+                this.activeTaskId,
+                this.activeFileName,
+                this.activeYear,
+                this.activeMonth,
+            );
+            return;
+        }
+
         this.selectedFile = null;
+        this.isUploading = false;
+        this.activeTaskId = null;
+        this.hideProgress();
+    },
+
+    destroy() {
+        // 仅停轮询，保留 activeTaskId / isUploading，便于回来继续跟进度
+        this.stopPolling();
+    },
+
+    bindEvents() {
         const zone = document.getElementById('policyUploadZone');
         const input = document.getElementById('policyFileInput');
         const form = document.getElementById('policyUploadForm');
         const resetButton = document.getElementById('policyResetButton');
+        const selectBtn = document.getElementById('policySelectFileBtn');
 
-        // 拖拽区域点击触发文件选择
-        zone?.addEventListener('click', () => input?.click());
+        zone?.addEventListener('click', (event) => {
+            if (this.isUploading) return;
+            if (event.target.closest('button')) return;
+            input?.click();
+        });
+        selectBtn?.addEventListener('click', (event) => {
+            event.stopPropagation();
+            if (this.isUploading) return;
+            input?.click();
+        });
 
-        // 文件选择变化
         input?.addEventListener('change', () => this.selectFile(input.files?.[0]));
 
-        // 拖拽事件
-        zone?.addEventListener('dragover', event => {
+        zone?.addEventListener('dragover', (event) => {
+            if (this.isUploading) return;
             event.preventDefault();
             zone.classList.add('border-[#d32f2f]');
         });
         zone?.addEventListener('dragleave', () => zone.classList.remove('border-[#d32f2f]'));
-        zone?.addEventListener('drop', event => {
+        zone?.addEventListener('drop', (event) => {
             event.preventDefault();
             zone.classList.remove('border-[#d32f2f]');
+            if (this.isUploading) return;
             this.selectFile(event.dataTransfer.files?.[0]);
         });
 
-        // 重置按钮
         resetButton?.addEventListener('click', () => this.reset());
 
-        // 表单提交
-        form?.addEventListener('submit', event => {
+        form?.addEventListener('submit', (event) => {
             event.preventDefault();
             this.submit();
         });
 
-        // 暴露 reset 函数到 window
         window.resetPolicyUploadForm = () => this.reset();
-
-        this.renderRecentUploads();
     },
 
     selectFile(file) {
-        if (!file) return;
-        if (!file.name.toLowerCase().endsWith('.xlsx') && !file.name.toLowerCase().endsWith('.xls')) {
-            showToast('仅支持 .xlsx, .xls 文件', 'warning');
+        if (!file || this.isUploading) return;
+        const name = file.name.toLowerCase();
+        if (!name.endsWith('.xlsx') && !name.endsWith('.xls') && !name.endsWith('.xlsm')) {
+            showToast('仅支持 .xlsx, .xls, .xlsm 文件', 'warning');
             return;
         }
         if (file.size > 50 * 1024 * 1024) {
             showToast('文件过大，最大支持 50MB', 'warning');
             return;
         }
+        this.hideProgress();
         this.selectedFile = file;
         const preview = document.getElementById('policyFilePreview');
         if (preview) {
@@ -75,9 +117,6 @@ const PolicyUploadPage = {
         if (button) button.disabled = false;
     },
 
-    /**
-     * 仅清除已选文件，保留年度/月份，便于连续导入
-     */
     clearSelectedFile() {
         this.selectedFile = null;
         const input = document.getElementById('policyFileInput');
@@ -94,14 +133,21 @@ const PolicyUploadPage = {
     },
 
     reset() {
+        if (this.isUploading) {
+            showToast('解析进行中，请稍候再重置', 'warning');
+            return;
+        }
+        this.stopPolling();
+        this.hideProgress();
         this.clearSelectedFile();
+        this.activeTaskId = null;
         const yearInput = document.getElementById('policyYear');
         const monthInput = document.getElementById('policyMonth');
         if (yearInput) yearInput.value = '';
         if (monthInput) monthInput.value = '';
     },
 
-    addRecentUpload(fileName, year, month) {
+    addRecentUpload(fileName, year, month, summary) {
         const now = new Date();
         const timeLabel = now.toLocaleTimeString('zh-CN', {
             hour: '2-digit',
@@ -112,6 +158,7 @@ const PolicyUploadPage = {
             fileName,
             periodLabel: `${year}年${month}月`,
             timeLabel,
+            summary: summary || '',
         });
         if (this.recentUploads.length > MAX_RECENT_UPLOADS) {
             this.recentUploads = this.recentUploads.slice(0, MAX_RECENT_UPLOADS);
@@ -143,6 +190,7 @@ const PolicyUploadPage = {
                         <div class="min-w-0 flex-1">
                             <p class="text-[11px] text-[#ffffff] truncate" title="${esc(item.fileName)}">${esc(item.fileName)}</p>
                             <p class="text-[10px] text-[#616161] mt-0.5">${esc(item.periodLabel)} · ${esc(item.timeLabel)}</p>
+                            ${item.summary ? `<p class="text-[10px] text-[#9e9e9e] mt-0.5">${esc(item.summary)}</p>` : ''}
                         </div>
                     </div>
                 `).join('')}
@@ -150,7 +198,179 @@ const PolicyUploadPage = {
         `;
     },
 
+    showProgress(progress = 0, msg = '已提交解析队列') {
+        const idle = document.getElementById('policyDropIdle');
+        const panel = document.getElementById('policyProgressPanel');
+        const zone = document.getElementById('policyUploadZone');
+        if (idle) idle.classList.add('hidden');
+        if (panel) panel.classList.remove('hidden');
+        if (zone) {
+            zone.classList.add('pointer-events-none');
+            zone.classList.remove('border-[#d32f2f]');
+        }
+        this.updateProgress(progress, msg);
+    },
+
+    hideProgress() {
+        const idle = document.getElementById('policyDropIdle');
+        const panel = document.getElementById('policyProgressPanel');
+        const zone = document.getElementById('policyUploadZone');
+        if (idle) idle.classList.remove('hidden');
+        if (panel) panel.classList.add('hidden');
+        if (zone) zone.classList.remove('pointer-events-none');
+        this.updateProgress(0, '已提交解析队列');
+    },
+
+    updateProgress(progress, msg, status) {
+        const pct = Math.max(0, Math.min(100, Number(progress) || 0));
+        const bar = document.getElementById('policyProgressBar');
+        const percentEl = document.getElementById('policyProgressPercent');
+        const msgEl = document.getElementById('policyProgressMsg');
+        const titleEl = document.getElementById('policyProgressTitle');
+
+        if (bar) bar.style.width = `${pct}%`;
+        if (percentEl) percentEl.textContent = `${pct}%`;
+        if (msgEl) msgEl.textContent = msg || '';
+
+        if (titleEl) {
+            if (status === 'completed') {
+                titleEl.textContent = '解析成功';
+                titleEl.className = 'text-xs font-medium text-[#4caf50] truncate mb-0';
+            } else if (status === 'failed') {
+                titleEl.textContent = '解析失败';
+                titleEl.className = 'text-xs font-medium text-[#ef5350] truncate mb-0';
+            } else {
+                titleEl.textContent = '正在解析政策文件...';
+                titleEl.className = 'text-xs font-medium text-[#ffffff] truncate mb-0';
+            }
+        }
+
+        if (status === 'completed' && bar) {
+            bar.className = 'h-full bg-[#2e7d32] transition-all duration-300';
+            if (percentEl) percentEl.className = 'text-xs font-mono tabular-nums text-[#4caf50] shrink-0';
+        } else if (status === 'failed' && bar) {
+            bar.className = 'h-full bg-[#c62828] transition-all duration-300';
+            if (percentEl) percentEl.className = 'text-xs font-mono tabular-nums text-[#ef5350] shrink-0';
+        } else if (bar) {
+            bar.className = 'h-full bg-[#d32f2f] shadow-[0_0_8px_rgba(211,47,47,0.5)] transition-all duration-300';
+            if (percentEl) percentEl.className = 'text-xs font-mono tabular-nums text-[#d32f2f] shrink-0';
+        }
+    },
+
+    setUploading(isUploading) {
+        this.isUploading = isUploading;
+        const button = document.getElementById('policySubmitButton');
+        const resetButton = document.getElementById('policyResetButton');
+        const yearInput = document.getElementById('policyYear');
+        const monthInput = document.getElementById('policyMonth');
+
+        if (button) {
+            button.disabled = isUploading || !this.selectedFile;
+            button.innerHTML = isUploading
+                ? `${window.svgIcon('spinner', 'w-3.5 h-3.5')} 解析中...`
+                : `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg> 导入政策`;
+        }
+        if (resetButton) resetButton.disabled = isUploading;
+        if (yearInput) yearInput.disabled = isUploading;
+        if (monthInput) monthInput.disabled = isUploading;
+    },
+
+    stopPolling() {
+        if (this.pollTimer) {
+            clearInterval(this.pollTimer);
+            this.pollTimer = null;
+        }
+        this.pollInFlight = false;
+    },
+
+    clearActiveTask() {
+        this.activeTaskId = null;
+        this.activeFileName = null;
+        this.activeYear = null;
+        this.activeMonth = null;
+    },
+
+    async fetchTaskProgress(taskId) {
+        const response = await fetch(`/api/steel-price-policies/tasks/${encodeURIComponent(taskId)}`, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        });
+        const payload = await response.json().catch(() => null);
+        if (!response.ok || !payload?.success) {
+            const msg = payload?.message || payload?.detail || `查询进度失败 (${response.status})`;
+            const error = new Error(msg);
+            error.status = response.status;
+            throw error;
+        }
+        return payload.data;
+    },
+
+    startPolling(taskId, fileName, year, month) {
+        this.stopPolling();
+        this.activeTaskId = taskId;
+        this.activeFileName = fileName;
+        this.activeYear = year;
+        this.activeMonth = month;
+
+        const tick = async () => {
+            if (this.pollInFlight) return;
+            this.pollInFlight = true;
+            try {
+                const data = await this.fetchTaskProgress(taskId);
+                const status = data?.status || 'running';
+                const progress = data?.progress ?? 0;
+                const msg = data?.msg || '';
+
+                this.updateProgress(progress, msg, status);
+
+                if (status === 'completed') {
+                    this.stopPolling();
+                    const result = data?.result || {};
+                    const created = result.created_count || 0;
+                    const updated = result.updated_count || 0;
+                    const skipped = result.skipped_count || 0;
+                    const total = result.total || 0;
+                    const summary = `新增 ${created} / 更新 ${updated} / 跳过 ${skipped} / 共 ${total}`;
+                    showToast(
+                        `导入完成：新增 ${created} 条，更新 ${updated} 条，跳过 ${skipped} 条，共 ${total} 条`,
+                        'success'
+                    );
+                    this.addRecentUpload(fileName, year, month, summary);
+                    this.clearActiveTask();
+                    this.setUploading(false);
+                    this.clearSelectedFile();
+                    setTimeout(() => {
+                        if (!this.isUploading) this.hideProgress();
+                    }, 1800);
+                    return;
+                }
+
+                if (status === 'failed') {
+                    this.stopPolling();
+                    showToast(msg || '导入失败', 'error');
+                    this.clearActiveTask();
+                    this.setUploading(false);
+                    const button = document.getElementById('policySubmitButton');
+                    if (button) button.disabled = !this.selectedFile;
+                    return;
+                }
+            } catch (error) {
+                this.stopPolling();
+                showToast(error.message || '查询进度失败', 'error');
+                this.clearActiveTask();
+                this.setUploading(false);
+                const button = document.getElementById('policySubmitButton');
+                if (button) button.disabled = !this.selectedFile;
+            } finally {
+                this.pollInFlight = false;
+            }
+        };
+
+        tick();
+        this.pollTimer = setInterval(tick, POLL_INTERVAL_MS);
+    },
+
     async submit() {
+        if (this.isUploading) return;
         if (!this.selectedFile) {
             showToast('请选择政策文件', 'warning');
             return;
@@ -162,46 +382,36 @@ const PolicyUploadPage = {
             showToast('请输入有效的 4 位年度，如 2026', 'warning');
             return;
         }
-        if (!month || !/^\d{1,2}$/.test(month)) {
+        if (!month || !/^\d{1,2}$/.test(month) || Number(month) < 1 || Number(month) > 12) {
             showToast('请输入有效的月份（1-12）', 'warning');
             return;
         }
 
         const fileName = this.selectedFile.name;
-        const button = document.getElementById('policySubmitButton');
-        if (button) {
-            button.disabled = true;
-            button.innerHTML = `${window.svgIcon('upload', 'w-3.5 h-3.5')} 导入中...`;
-        }
-
         const formData = new FormData();
         formData.append('year', year);
         formData.append('month', month);
         formData.append('file', this.selectedFile);
 
+        this.setUploading(true);
+        this.showProgress(0, '已提交解析队列');
+
         try {
             const response = await HttpClient.post('/api/steel-price-policies/upload', formData, {
-                timeout: 300000, // 政策 Excel 解析较慢，5 分钟
+                timeout: 60000,
             });
-            const data = response.data || {};
-            const created = data.created_count || 0;
-            const updated = data.updated_count || 0;
-            const skipped = data.skipped_count || 0;
-            const total = data.total || 0;
-            showToast(
-                `导入完成：新增 ${created} 条，更新 ${updated} 条，跳过 ${skipped} 条，共 ${total} 条`,
-                'success'
-            );
-            this.addRecentUpload(fileName, year, month);
-            // 保留年度/月份，仅清除文件，便于连续导入
-            this.clearSelectedFile();
-        } catch (error) {
-            showToast(error.message || '导入失败', 'error');
-        } finally {
-            if (button) {
-                button.disabled = !this.selectedFile;
-                button.innerHTML = `${window.svgIcon('upload', 'w-3.5 h-3.5')} 导入政策`;
+            const taskId = response.data?.task_id;
+            if (!taskId) {
+                throw new Error('未返回任务 ID');
             }
+            this.startPolling(taskId, fileName, year, month);
+        } catch (error) {
+            this.stopPolling();
+            this.hideProgress();
+            this.clearActiveTask();
+            this.setUploading(false);
+            const button = document.getElementById('policySubmitButton');
+            if (button) button.disabled = !this.selectedFile;
         }
     },
 
@@ -215,4 +425,5 @@ const PolicyUploadPage = {
 export const pageConfig = {
     render: policyUploadTemplate,
     init: () => PolicyUploadPage.init(),
+    destroy: () => PolicyUploadPage.destroy(),
 };

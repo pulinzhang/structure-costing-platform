@@ -17,14 +17,14 @@ import { pageMeta } from './features/index.js';
 
 // 页面导入
 import { pageConfig as dashboardPage }      from './features/dashboard/index.js';
-import { pageConfig as stampingUploadPage } from './features/stamping/upload/index.js';
+import { pageConfig as stampingUploadPage } from './features/stamping/upload/index.js?v=34';
 import { pageConfig as stampingPartsPage }  from './features/stamping/parts/index.js';
 import { pageConfig as stampingTonnagePage } from './features/stamping/tonnage/index.js';
 import { pageConfig as steelPriceListPage }   from './features/steel-price/list/index.js?v=25';
 import { pageConfig as steelPriceCalcPage }    from './features/steel-price/calc/index.js';
-import { pageConfig as steelPricePolicyUploadPage } from './features/steel-price/policy-upload/index.js';
+import { pageConfig as steelPricePolicyUploadPage } from './features/steel-price/policy-upload/index.js?v=34';
 import { pageConfig as steelPricePolicyDownloadPage } from './features/steel-price/policy-download/index.js';
-import { pageConfig as basePriceUploadPage } from './features/steel-price/base-price-upload/index.js?v=24';
+import { pageConfig as basePriceUploadPage } from './features/steel-price/base-price-upload/index.js?v=34';
 import { pageConfig as basePriceDownloadPage } from './features/steel-price/base-price-download/index.js?v=24';
 import { pageConfig as costingPage }        from './features/costing/index.js';
 import { pageConfig as quotationPage }      from './features/quotation/index.js';
@@ -48,6 +48,7 @@ const pages = {
 };
 
 const DEFAULT_PAGE = 'dashboard';
+let currentPageName = null;
 
 // ===== Hash 路由核心 =====
 
@@ -160,6 +161,15 @@ function renderPage(pageName) {
         return;
     }
 
+    // 离开上一页时调用 destroy（停止轮询等），避免后台定时器污染当前页
+    if (currentPageName && pages[currentPageName]?.destroy) {
+        try {
+            pages[currentPageName].destroy();
+        } catch (error) {
+            console.error('页面销毁失败:', error);
+        }
+    }
+
     const content = document.getElementById('pageContent');
     const title   = document.getElementById('pageTitle');
     const topActions = document.getElementById('topActions');
@@ -175,8 +185,10 @@ function renderPage(pageName) {
     try {
         content.innerHTML = page.render();
         page.init();
+        currentPageName = pageName;
     } catch (error) {
         console.error('渲染页面失败:', error);
+        currentPageName = null;
         content.innerHTML = `<div class="p-4 bg-[#0a0a0a] border border-[#2c2c2c] text-[#d32f2f]">加载失败: ${esc(error.message)}</div>`;
     }
 }

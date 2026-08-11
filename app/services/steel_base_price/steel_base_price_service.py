@@ -141,28 +141,25 @@ class SteelBasePriceService:
         filename: str,
         year: int,
         month: int,
+        progress_callback=None,
     ) -> SteelBasePriceImportResultResponse:
         """
         解析 Excel 并执行 upsert。
-
-        Args:
-            db: 数据库会话
-            file_content: Excel 文件字节内容
-            filename: 文件名（注入到 excel_filename 字段）
-            year: 生效年度
-            month: 生效月份
-
-        Returns:
-            导入结果（created/updated/total/warnings）
+        整个导入在单一事务中完成；进度写入独立异步任务库。
         """
+        def _report(progress: int, msg: str) -> None:
+            if progress_callback:
+                progress_callback(progress, msg)
+
+        _report(10, "正在解析基准价格 Excel...")
         parse_result = parse_base_price_excel(file_content)
 
-        # 注入文件名、年度、月份，修正 grade 中的 //
         for record in parse_result.records:
             record["excel_filename"] = filename
             record["year"] = year
             record["month"] = month
         if not parse_result.records:
+            _report(100, "解析完成，无有效数据行")
             return SteelBasePriceImportResultResponse(
                 filename=filename,
                 created_count=0,
@@ -172,8 +169,10 @@ class SteelBasePriceService:
                 errors=parse_result.errors,
             )
 
+        _report(50, f"解析完成，共 {len(parse_result.records)} 条，正在写入数据库...")
         try:
             counts = self.repository.upsert(db, parse_result.records)
+            _report(90, "正在提交事务...")
             db.commit()
         except Exception:
             db.rollback()

@@ -16,7 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings, ensure_directories
 from app.utils.logging_config import LoggerConfig, log_request, log_response, get_logger
-from app.database import DatabaseConfig
+from app.database import AsyncTaskDatabaseConfig, DatabaseConfig
 
 
 # 重要：在导入其他模块之前先配置日志，确保所有模块的 logger 都能正确获取日志器
@@ -42,6 +42,7 @@ async def lifespan(app: FastAPI):
     from app.utils.steel_price_key_migration import run_steel_price_key_migration
     run_steel_price_key_migration(DatabaseConfig.get_engine())
     DatabaseConfig.create_tables()
+    AsyncTaskDatabaseConfig.create_tables()
 
     logger.info("=" * 50)
     logger.info(f"{settings.APP_NAME} 正在启动...")

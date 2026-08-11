@@ -1,52 +1,82 @@
 /**
  * Steel Base Price Upload Page
- * 基准价格上传页面逻辑
+ * 基准价格上传 — 异步 task_id + 进度轮询
  */
 
-import { basePriceUploadTemplate } from './template.js?v=24';
+import { basePriceUploadTemplate } from './template.js';
+
+const POLL_INTERVAL_MS = 2000;
 
 const BasePriceUploadPage = {
     selectedFile: null,
+    pollTimer: null,
+    pollInFlight: false,
+    isUploading: false,
+    activeTaskId: null,
 
     init() {
+        this.stopPolling();
+        this.bindEvents();
+        this.fillDefaultPeriod();
+
+        if (this.isUploading && this.activeTaskId) {
+            this.setUploading(true);
+            this.showProgress(0, '正在恢复任务进度...');
+            this.startPolling(this.activeTaskId);
+            return;
+        }
+
         this.selectedFile = null;
+        this.isUploading = false;
+        this.activeTaskId = null;
+        this.hideProgress();
+    },
+
+    destroy() {
+        this.stopPolling();
+    },
+
+    bindEvents() {
         const zone = document.getElementById('basePriceUploadZone');
         const input = document.getElementById('basePriceFileInput');
         const form = document.getElementById('basePriceUploadForm');
         const resetButton = document.getElementById('basePriceResetButton');
+        const selectBtn = document.getElementById('basePriceSelectFileBtn');
 
-        // 拖拽区域点击触发文件选择
-        zone?.addEventListener('click', () => input?.click());
+        zone?.addEventListener('click', (event) => {
+            if (this.isUploading) return;
+            if (event.target.closest('button')) return;
+            input?.click();
+        });
+        selectBtn?.addEventListener('click', (event) => {
+            event.stopPropagation();
+            if (this.isUploading) return;
+            input?.click();
+        });
 
-        // 文件选择变化
         input?.addEventListener('change', () => this.selectFile(input.files?.[0]));
 
-        // 拖拽事件
-        zone?.addEventListener('dragover', event => {
+        zone?.addEventListener('dragover', (event) => {
+            if (this.isUploading) return;
             event.preventDefault();
             zone.classList.add('border-[#d32f2f]');
         });
         zone?.addEventListener('dragleave', () => zone.classList.remove('border-[#d32f2f]'));
-        zone?.addEventListener('drop', event => {
+        zone?.addEventListener('drop', (event) => {
             event.preventDefault();
             zone.classList.remove('border-[#d32f2f]');
+            if (this.isUploading) return;
             this.selectFile(event.dataTransfer.files?.[0]);
         });
 
-        // 重置按钮
         resetButton?.addEventListener('click', () => this.reset());
 
-        // 表单提交
-        form?.addEventListener('submit', event => {
+        form?.addEventListener('submit', (event) => {
             event.preventDefault();
             this.submit();
         });
 
-        // 暴露 reset 函数到 window
         window.resetBasePriceUploadForm = () => this.reset();
-
-        // SPA 菜单进入时 DOM 重建，需重新写入默认年月
-        this.fillDefaultPeriod();
     },
 
     fillDefaultPeriod() {
@@ -62,7 +92,7 @@ const BasePriceUploadPage = {
     },
 
     selectFile(file) {
-        if (!file) return;
+        if (!file || this.isUploading) return;
         if (!file.name.toLowerCase().endsWith('.xlsx') && !file.name.toLowerCase().endsWith('.xls')) {
             showToast('仅支持 .xlsx, .xls 文件', 'warning');
             return;
@@ -71,6 +101,7 @@ const BasePriceUploadPage = {
             showToast('文件过大，最大支持 50MB', 'warning');
             return;
         }
+        this.hideProgress();
         this.selectedFile = file;
         const preview = document.getElementById('basePriceFilePreview');
         if (preview) {
@@ -90,9 +121,6 @@ const BasePriceUploadPage = {
         if (button) button.disabled = false;
     },
 
-    /**
-     * 仅清除已选文件，保留年度/月份，便于连续导入
-     */
     clearSelectedFile() {
         this.selectedFile = null;
         const input = document.getElementById('basePriceFileInput');
@@ -109,8 +137,14 @@ const BasePriceUploadPage = {
     },
 
     reset() {
+        if (this.isUploading) {
+            showToast('解析进行中，请稍候再重置', 'warning');
+            return;
+        }
+        this.stopPolling();
+        this.hideProgress();
         this.clearSelectedFile();
-        // 手动重置时恢复默认年月
+        this.activeTaskId = null;
         const yearInput = document.getElementById('basePriceYear');
         const monthInput = document.getElementById('basePriceMonth');
         if (yearInput) yearInput.value = '';
@@ -118,7 +152,162 @@ const BasePriceUploadPage = {
         this.fillDefaultPeriod();
     },
 
+    showProgress(progress = 0, msg = '已提交解析队列') {
+        const idle = document.getElementById('basePriceDropIdle');
+        const panel = document.getElementById('basePriceProgressPanel');
+        const zone = document.getElementById('basePriceUploadZone');
+        if (idle) idle.classList.add('hidden');
+        if (panel) panel.classList.remove('hidden');
+        if (zone) {
+            zone.classList.add('pointer-events-none');
+            zone.classList.remove('border-[#d32f2f]');
+        }
+        this.updateProgress(progress, msg);
+    },
+
+    hideProgress() {
+        const idle = document.getElementById('basePriceDropIdle');
+        const panel = document.getElementById('basePriceProgressPanel');
+        const zone = document.getElementById('basePriceUploadZone');
+        if (idle) idle.classList.remove('hidden');
+        if (panel) panel.classList.add('hidden');
+        if (zone) zone.classList.remove('pointer-events-none');
+        this.updateProgress(0, '已提交解析队列');
+    },
+
+    updateProgress(progress, msg, status) {
+        const pct = Math.max(0, Math.min(100, Number(progress) || 0));
+        const bar = document.getElementById('basePriceProgressBar');
+        const percentEl = document.getElementById('basePriceProgressPercent');
+        const msgEl = document.getElementById('basePriceProgressMsg');
+        const titleEl = document.getElementById('basePriceProgressTitle');
+
+        if (bar) bar.style.width = `${pct}%`;
+        if (percentEl) percentEl.textContent = `${pct}%`;
+        if (msgEl) msgEl.textContent = msg || '';
+
+        if (titleEl) {
+            if (status === 'completed') {
+                titleEl.textContent = '解析成功';
+                titleEl.className = 'text-xs font-medium text-[#4caf50] truncate mb-0';
+            } else if (status === 'failed') {
+                titleEl.textContent = '解析失败';
+                titleEl.className = 'text-xs font-medium text-[#ef5350] truncate mb-0';
+            } else {
+                titleEl.textContent = '正在解析基准价格...';
+                titleEl.className = 'text-xs font-medium text-[#ffffff] truncate mb-0';
+            }
+        }
+
+        if (status === 'completed' && bar) {
+            bar.className = 'h-full bg-[#2e7d32] transition-all duration-300';
+            if (percentEl) percentEl.className = 'text-xs font-mono tabular-nums text-[#4caf50] shrink-0';
+        } else if (status === 'failed' && bar) {
+            bar.className = 'h-full bg-[#c62828] transition-all duration-300';
+            if (percentEl) percentEl.className = 'text-xs font-mono tabular-nums text-[#ef5350] shrink-0';
+        } else if (bar) {
+            bar.className = 'h-full bg-[#d32f2f] shadow-[0_0_8px_rgba(211,47,47,0.5)] transition-all duration-300';
+            if (percentEl) percentEl.className = 'text-xs font-mono tabular-nums text-[#d32f2f] shrink-0';
+        }
+    },
+
+    setUploading(isUploading) {
+        this.isUploading = isUploading;
+        const button = document.getElementById('basePriceSubmitButton');
+        const resetButton = document.getElementById('basePriceResetButton');
+        const yearInput = document.getElementById('basePriceYear');
+        const monthInput = document.getElementById('basePriceMonth');
+
+        if (button) {
+            button.disabled = isUploading || !this.selectedFile;
+            button.innerHTML = isUploading
+                ? `${window.svgIcon('spinner', 'w-3.5 h-3.5')} 解析中...`
+                : `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg> 导入基准价格`;
+        }
+        if (resetButton) resetButton.disabled = isUploading;
+        if (yearInput) yearInput.disabled = isUploading;
+        if (monthInput) monthInput.disabled = isUploading;
+    },
+
+    stopPolling() {
+        if (this.pollTimer) {
+            clearInterval(this.pollTimer);
+            this.pollTimer = null;
+        }
+        this.pollInFlight = false;
+    },
+
+    async fetchTaskProgress(taskId) {
+        const response = await fetch(`/api/steel-base-prices/tasks/${encodeURIComponent(taskId)}`, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        });
+        const payload = await response.json().catch(() => null);
+        if (!response.ok || !payload?.success) {
+            const msg = payload?.message || payload?.detail || `查询进度失败 (${response.status})`;
+            const error = new Error(msg);
+            error.status = response.status;
+            throw error;
+        }
+        return payload.data;
+    },
+
+    startPolling(taskId) {
+        this.stopPolling();
+        this.activeTaskId = taskId;
+
+        const tick = async () => {
+            if (this.pollInFlight) return;
+            this.pollInFlight = true;
+            try {
+                const data = await this.fetchTaskProgress(taskId);
+                const status = data?.status || 'running';
+                const progress = data?.progress ?? 0;
+                const msg = data?.msg || '';
+
+                this.updateProgress(progress, msg, status);
+
+                if (status === 'completed') {
+                    this.stopPolling();
+                    const result = data?.result || {};
+                    const created = result.created_count || 0;
+                    const updated = result.updated_count || 0;
+                    const total = result.total || 0;
+                    showToast(
+                        `导入完成：新增 ${created} 条，更新 ${updated} 条，共 ${total} 条`,
+                        'success'
+                    );
+                    this.activeTaskId = null;
+                    this.setUploading(false);
+                    this.clearSelectedFile();
+                    setTimeout(() => {
+                        if (!this.isUploading) this.hideProgress();
+                    }, 1800);
+                    return;
+                }
+
+                if (status === 'failed') {
+                    this.stopPolling();
+                    showToast(msg || '导入失败', 'error');
+                    this.activeTaskId = null;
+                    this.setUploading(false);
+                    return;
+                }
+            } catch (error) {
+                this.stopPolling();
+                showToast(error.message || '查询进度失败', 'error');
+                this.activeTaskId = null;
+                this.setUploading(false);
+            } finally {
+                this.pollInFlight = false;
+            }
+        };
+
+        tick();
+        this.pollTimer = setInterval(tick, POLL_INTERVAL_MS);
+    },
+
     async submit() {
+        if (this.isUploading) return;
         if (!this.selectedFile) {
             showToast('请选择基准价格文件', 'warning');
             return;
@@ -139,42 +328,32 @@ const BasePriceUploadPage = {
             return;
         }
 
-        if (!/^\d{1,2}$/.test(month) || parseInt(month) < 1 || parseInt(month) > 12) {
+        if (!/^\d{1,2}$/.test(month) || parseInt(month, 10) < 1 || parseInt(month, 10) > 12) {
             showToast('月份格式不正确，请填写1-12', 'warning');
             return;
-        }
-
-        const button = document.getElementById('basePriceSubmitButton');
-        if (button) {
-            button.disabled = true;
-            button.innerHTML = `${window.svgIcon('upload', 'w-3.5 h-3.5')} 导入中...`;
         }
 
         const formData = new FormData();
         formData.append('file', this.selectedFile);
 
+        this.setUploading(true);
+        this.showProgress(0, '已提交解析队列');
+
         try {
             const url = `/api/steel-base-prices/import?year=${year}&month=${month}`;
             const response = await HttpClient.post(url, formData, {
-                timeout: 300000, // 基准价 Excel 解析较慢，5 分钟
+                timeout: 60000,
             });
-            const data = response.data || {};
-            const created = data.created_count || 0;
-            const updated = data.updated_count || 0;
-            const total = data.total || 0;
-            showToast(
-                `导入完成：新增 ${created} 条，更新 ${updated} 条，共 ${total} 条`,
-                'success'
-            );
-            // 保留年度/月份，仅清除文件，便于连续导入
-            this.clearSelectedFile();
-        } catch (error) {
-            showToast(error.message || '导入失败', 'error');
-        } finally {
-            if (button) {
-                button.disabled = !this.selectedFile;
-                button.innerHTML = `${window.svgIcon('upload', 'w-3.5 h-3.5')} 导入基准价格`;
+            const taskId = response.data?.task_id;
+            if (!taskId) {
+                throw new Error('未返回任务 ID');
             }
+            this.startPolling(taskId);
+        } catch (error) {
+            this.stopPolling();
+            this.hideProgress();
+            this.activeTaskId = null;
+            this.setUploading(false);
         }
     },
 
@@ -188,4 +367,5 @@ const BasePriceUploadPage = {
 export const pageConfig = {
     render: basePriceUploadTemplate,
     init: () => BasePriceUploadPage.init(),
+    destroy: () => BasePriceUploadPage.destroy(),
 };

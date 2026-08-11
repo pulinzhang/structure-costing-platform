@@ -9,8 +9,17 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
-from app.database import get_db
+from app.config import settings
+from app.database import DatabaseConfig, get_db
 from app.utils.response import ApiResponse
+from app.services.async_task import (
+    STATUS_COMPLETED,
+    STATUS_FAILED,
+    STATUS_PENDING,
+    STATUS_RUNNING,
+    TASK_TYPE_BASE_PRICE_IMPORT,
+    AsyncTaskService,
+)
 from app.services.steel_base_price import SteelBasePriceService
 from app.services.steel_base_price.steel_base_price_export_service import SteelBasePriceExportService
 from app.schemas.dto.steel_base_price_dto import (
@@ -18,6 +27,7 @@ from app.schemas.dto.steel_base_price_dto import (
     SteelBasePriceQuery,
     SteelBasePriceUpdate,
 )
+from app.schemas.vo.async_task_vo import AsyncTaskAcceptedVO, AsyncTaskProgressVO
 from app.schemas.vo.steel_base_price_vo import (
     FilterOptionsVO,
     SteelBasePriceExportRow,
@@ -40,6 +50,7 @@ router = APIRouter(prefix="/api/steel-base-prices", tags=["钢材基准价格"])
 
 _steel_base_price_service = SteelBasePriceService()
 _steel_base_price_export_service = SteelBasePriceExportService()
+_async_task_service = AsyncTaskService()
 
 
 def _build_filter_options_vo(service: SteelBasePriceService, db: Session) -> FilterOptionsVO:
@@ -55,6 +66,70 @@ def _build_filter_options_vo(service: SteelBasePriceService, db: Session) -> Fil
         grades=raw.grades,
         specs=raw.specs,
     )
+
+
+def _process_base_price_import_in_background(
+    task_id: str,
+    file_content: bytes,
+    filename: str,
+    year: int,
+    month: int,
+) -> None:
+    """后台线程解析基准价 Excel；独立 Session，不复用请求 db。"""
+    session_factory = DatabaseConfig.get_session_factory()
+    db = session_factory()
+
+    def on_progress(progress: int, msg: str) -> None:
+        _async_task_service.update_task_standalone(
+            task_id,
+            status=STATUS_RUNNING,
+            progress=progress,
+            message=msg,
+        )
+
+    try:
+        _async_task_service.update_task_standalone(
+            task_id,
+            status=STATUS_RUNNING,
+            progress=1,
+            message="后台开始解析...",
+        )
+        result = _steel_base_price_service.import_excel(
+            db,
+            file_content=file_content,
+            filename=filename,
+            year=year,
+            month=month,
+            progress_callback=on_progress,
+        )
+        _async_task_service.update_task_standalone(
+            task_id,
+            status=STATUS_COMPLETED,
+            progress=100,
+            message=(
+                f"导入完成：新增 {result.created_count} 条，"
+                f"更新 {result.updated_count} 条，共 {result.total} 条"
+            ),
+            result=result.model_dump(),
+        )
+    except ValueError as error:
+        logger.warning("基准价导入业务失败: task_id=%s error=%s", task_id, error)
+        _async_task_service.update_task_standalone(
+            task_id,
+            status=STATUS_FAILED,
+            progress=0,
+            message=str(error),
+        )
+    except Exception as error:
+        logger.exception("基准价导入异常: task_id=%s filename=%s", task_id, filename)
+        _async_task_service.update_task_standalone(
+            task_id,
+            status=STATUS_FAILED,
+            progress=0,
+            message=f"解析异常: {error}",
+        )
+    finally:
+        db.close()
 
 
 @router.get(
@@ -155,6 +230,91 @@ def export_download(
     )
 
 
+@router.post(
+    "/import",
+    response_model=ApiResponse[AsyncTaskAcceptedVO],
+)
+async def import_base_price(
+    file: UploadFile = File(...),
+    year: int = Query(..., ge=2000, le=2100, description="生效年度"),
+    month: int = Query(..., ge=1, le=12, description="生效月份"),
+) -> ApiResponse[AsyncTaskAcceptedVO]:
+    """导入 Excel，立即返回 task_id，后台线程解析入库。"""
+    filename = file.filename or ""
+    if not filename:
+        raise HTTPException(status_code=400, detail="未提供文件名")
+
+    ext = "." + filename.split(".")[-1].lower()
+    if ext not in {".xlsx", ".xls"}:
+        raise HTTPException(
+            status_code=400,
+            detail=f"不支持的文件类型: {ext}，仅支持 .xlsx / .xls",
+        )
+
+    content = await file.read()
+    if not content:
+        raise HTTPException(status_code=400, detail="上传文件为空")
+    if len(content) > settings.MAX_UPLOAD_SIZE:
+        raise HTTPException(
+            status_code=400,
+            detail=f"文件过大，最大支持 {settings.MAX_UPLOAD_SIZE // (1024 * 1024)}MB",
+        )
+
+    task = _async_task_service.create_task(
+        task_type=TASK_TYPE_BASE_PRICE_IMPORT,
+        message="已提交解析队列",
+    )
+    AsyncTaskService.submit(
+        _process_base_price_import_in_background,
+        task.task_id,
+        content,
+        filename,
+        year,
+        month,
+    )
+
+    return ApiResponse.ok(
+        data=AsyncTaskAcceptedVO(task_id=task.task_id),
+        message="上传成功，后台开始解析",
+    )
+
+
+@router.get(
+    "/tasks/{task_id}",
+    response_model=ApiResponse[AsyncTaskProgressVO],
+)
+def get_base_price_import_task_progress(
+    task_id: str,
+) -> ApiResponse[AsyncTaskProgressVO]:
+    """查询基准价格导入任务进度。"""
+    task = _async_task_service.get_task_snapshot(task_id)
+    if task is None or task.get("task_type") != TASK_TYPE_BASE_PRICE_IMPORT:
+        raise HTTPException(status_code=404, detail="任务不存在或已过期")
+
+    result_raw = AsyncTaskService.parse_result_json(task.get("result_json"))
+    result = (
+        SteelBasePriceImportResultResponse.model_validate(result_raw)
+        if result_raw
+        else None
+    )
+    updated_at_value = task.get("updated_at")
+    updated_at = (
+        updated_at_value.timestamp()
+        if hasattr(updated_at_value, "timestamp")
+        else float(updated_at_value or 0)
+    )
+
+    return ApiResponse.ok(
+        data=AsyncTaskProgressVO(
+            status=task.get("status") or STATUS_PENDING,
+            progress=int(task.get("progress") or 0),
+            msg=task.get("message") or "",
+            result=result,
+            updated_at=updated_at,
+        ),
+    )
+
+
 @router.get(
     "/{record_id}",
     response_model=ApiResponse[SteelBasePriceResponse],
@@ -238,25 +398,3 @@ def batch_delete_base_prices(
     if not ok:
         return ApiResponse.fail(message=error or "批量删除失败", code=400)
     return ApiResponse.ok(data=BatchDeleteResponse(year=body.year, month=body.month), message="批量删除成功")
-
-
-@router.post(
-    "/import",
-    response_model=ApiResponse[SteelBasePriceImportResultResponse],
-)
-async def import_base_price(
-    file: UploadFile = File(...),
-    year: int = Query(..., ge=2000, le=2100, description="生效年度"),
-    month: int = Query(..., ge=1, le=12, description="生效月份"),
-    db: Session = Depends(get_db),
-) -> ApiResponse[SteelBasePriceImportResultResponse]:
-    """导入 Excel 文件，upsert 基准价格数据。"""
-    content = await file.read()
-    result = _steel_base_price_service.import_excel(
-        db,
-        file_content=content,
-        filename=file.filename or "unknown.xlsx",
-        year=year,
-        month=month,
-    )
-    return ApiResponse.ok(data=result, message="导入完成")

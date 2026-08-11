@@ -1,14 +1,15 @@
 """
 冲压工艺上传服务
 
-处理 Excel 解析、文件保存、简图保存、数据库存储等业务逻辑
+处理 Excel 解析、文件保存、简图保存、数据库存储等业务逻辑。
+主数据写入使用单一大事务；进度写入独立异步任务库。
 """
 
 import logging
 from dataclasses import asdict
 from decimal import Decimal
 from pathlib import Path
-from typing import Dict, List
+from typing import Callable, Dict, List, Optional
 from sqlalchemy.orm import Session
 
 from app.parsers.stamping.stamping_parser import parse_stamping_excel
@@ -18,6 +19,8 @@ from app.config import settings
 from app.repositories.stamping.stamping_repository import StampingPartRepository, StampingProcessRepository
 from app.schemas.dto.stamping_upload_dto import FileInfo, PartData, ProcessData, UploadResult
 
+# progress_callback(progress: int, msg: str)
+ProgressCallback = Callable[[int, str], None]
 
 logger = logging.getLogger("service.stamping_upload")
 
@@ -35,44 +38,53 @@ class StampingUploadService:
         file_content: bytes,
         filename: str,
         location: str,
+        progress_callback: Optional[ProgressCallback] = None,
     ) -> UploadResult:
         """
-        处理冲压工艺文件上传（完整业务流程）
+        处理冲压工艺文件上传（完整业务流程）。
 
-        Args:
-            file_content: 文件二进制内容
-            filename: 原始文件名
-            location: 采购基地，例：大连、芜湖、鄂尔多斯、青岛
-
-        Returns:
-            UploadResult 处理结果
+        主数据：删除旧数据 + 写入零件/工序在同一事务中，全部成功或全部回滚。
         """
         import tempfile
         import os
 
-        # 1. 先保存到临时文件，解析 Excel 获取车型版本
+        def _report(progress: int, msg: str) -> None:
+            if progress_callback:
+                progress_callback(progress, msg)
+
+        _report(5, "正在读取并解析 Excel...")
         with tempfile.NamedTemporaryFile(delete=False, suffix=filename) as tmp:
             tmp.write(file_content)
             tmp_path = tmp.name
 
         try:
-            # 2. 解析 Excel 文件获取车型版本
             parse_result = parse_stamping_excel(tmp_path)
             vehicle_model = parse_result.vehicle_model or "未知车型"
             version = parse_result.version or "V1"
             stamping_supplier = parse_result.stamping_supplier or ""
 
-            logger.info("解析 Excel 完成：%d 个零件、%d 道工序", len(parse_result.parts), len(parse_result.processes))
+            logger.info(
+                "解析 Excel 完成：%d 个零件、%d 道工序",
+                len(parse_result.parts),
+                len(parse_result.processes),
+            )
+            _report(
+                40,
+                f"解析完成：{len(parse_result.parts)} 个零件、"
+                f"{len(parse_result.processes)} 道工序，正在保存文件...",
+            )
 
-            # 3. 用 location + 车型版本保存文件到正式路径
-            file_info = self._save_file(file_content, filename, location, vehicle_model, version)
+            file_info = self._save_file(
+                file_content, filename, location, vehicle_model, version
+            )
 
-            # 4. 落盘零件简图（文件系统操作，事务外）
-            saved_images = self._save_part_images(parse_result.images_by_part, file_info.upload_subdir)
+            _report(55, "正在保存零件简图...")
+            saved_images = self._save_part_images(
+                parse_result.images_by_part, file_info.upload_subdir
+            )
 
-            # 5-6. 数据库操作在事务中执行（原子性保证）
+            _report(70, "正在写入零件与工序到数据库...")
             with self.db.begin():
-                # 5. 保存零件数据到数据库
                 part_map = self._save_parts(
                     parse_result.parts,
                     vehicle_model,
@@ -82,14 +94,16 @@ class StampingUploadService:
                     stamping_supplier,
                     filename,
                 )
-
-                # 6. 保存工序数据到数据库
                 process_count = self._save_processes(parse_result.processes, part_map)
 
                 logger.info(
-                    f"上传处理完成: 零件 {len(part_map)}, 工序 {process_count}, "
-                    f"简图 {saved_images}, 解析耗时 {parse_result.parse_time_ms:.0f}ms"
+                    "上传处理完成: 零件 %d, 工序 %d, 简图 %d, 解析耗时 %.0fms",
+                    len(part_map),
+                    process_count,
+                    saved_images,
+                    parse_result.parse_time_ms,
                 )
+                _report(95, "正在提交事务...")
 
                 return UploadResult(
                     filename=filename,
@@ -106,7 +120,6 @@ class StampingUploadService:
                     parse_time_ms=parse_result.parse_time_ms,
                 )
         finally:
-            # 删除临时文件
             if os.path.exists(tmp_path):
                 os.unlink(tmp_path)
 
@@ -134,7 +147,7 @@ class StampingUploadService:
         with open(file_path, "wb") as f:
             f.write(file_content)
 
-        logger.info(f"文件保存成功: {file_path}")
+        logger.info("文件保存成功: %s", file_path)
 
         return FileInfo(
             file_path=str(file_path),
@@ -172,9 +185,9 @@ class StampingUploadService:
                     f.write(img_bytes)
                 saved += 1
             except Exception as e:
-                logger.warning(f"保存零件简图失败 {part_number}: {e}")
+                logger.warning("保存零件简图失败 %s: %s", part_number, e)
 
-        logger.info(f"零件简图落盘: {saved}/{len(images_by_part)} -> {target_dir}")
+        logger.info("零件简图落盘: %d/%d -> %s", saved, len(images_by_part), target_dir)
         return saved
 
     def _save_parts(
@@ -188,11 +201,9 @@ class StampingUploadService:
         excel_filename: str = "",
     ) -> Dict[str, int]:
         """保存零件数据到数据库，返回 part_number -> part_id 映射"""
-        # 删除同车型同版本的旧数据
         self.part_repo.delete_by_vehicle_version(self.db, vehicle_model, version)
-        logger.info(f"已删除旧数据: {vehicle_model} {version}")
+        logger.info("已删除旧数据: %s %s", vehicle_model, version)
 
-        # 批量创建零件
         parts_to_create: List[PartData] = []
         for part in parts:
             part_number = part.part_number
@@ -200,7 +211,8 @@ class StampingUploadService:
                 continue
 
             sketch_url = (
-                f"{file_info.safe_location}/{file_info.safe_vehicle}/{file_info.safe_version}/{part_number}.png"
+                f"{file_info.safe_location}/{file_info.safe_vehicle}/"
+                f"{file_info.safe_version}/{part_number}.png"
                 if part_number in images_by_part
                 else None
             )
@@ -229,14 +241,12 @@ class StampingUploadService:
             ))
 
         self.part_repo.bulk_create(self.db, [asdict(p) for p in parts_to_create])
-        # flush 确保数据落库，后续查询可看到新插入的记录
         self.db.flush()
 
-        # 获取 ID 映射
         part_map = self.part_repo.get_id_map_by_vehicle_version(
             self.db, vehicle_model, version
         )
-        logger.info(f"导入零件: {len(parts_to_create)} 个")
+        logger.info("导入零件: %d 个", len(parts_to_create))
         return part_map
 
     def _save_processes(
@@ -252,7 +262,11 @@ class StampingUploadService:
             part_number = process.part_number
             part_id = part_map.get(part_number)
             if not part_id:
-                logger.warning("工序被跳过: part_number=%s, seq=%s", part_number, process.process_seq)
+                logger.warning(
+                    "工序被跳过: part_number=%s, seq=%s",
+                    part_number,
+                    process.process_seq,
+                )
                 continue
 
             order = part_order_counter.get(part_number, 0) + 1

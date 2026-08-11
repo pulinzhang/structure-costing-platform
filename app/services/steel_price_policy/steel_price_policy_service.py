@@ -8,7 +8,7 @@
 
 import logging
 from decimal import Decimal
-from typing import Optional
+from typing import Callable, Optional
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -42,6 +42,9 @@ from app.schemas.vo.steel_price_policy_vo import (
 )
 from app.services.steel_price_policy.export_service import SteelPricePolicyExportService
 from app.services.steel_price_policy.ladder_matcher import LadderMatcher
+
+# progress_callback(progress: int, msg: str)
+ProgressCallback = Callable[[int, str], None]
 
 
 logger = logging.getLogger("service.steel_price_policy")
@@ -437,24 +440,43 @@ class SteelPricePolicyService:
         filename: str,
         year: int,
         month: int,
+        progress_callback: Optional[ProgressCallback] = None,
     ) -> ImportResultResponse:
         """
         解析 Excel 文件并批量导入。
         整个导入过程在单一事务中完成，要么全部成功，要么全部失败。
+        进度写入独立异步任务库，不受本事务写锁影响。
 
         导入策略：
         - 键存在 → 删除旧政策及阶梯明细，插入新政政策及阶梯明细
         - 键不存在 → 直接插入
         """
+        def _report(progress: int, msg: str) -> None:
+            if progress_callback:
+                progress_callback(progress, msg)
+
         result = parse_steel_price_policy_excel(
-            file_content, year=year, month=month, excel_filename=filename
+            file_content,
+            year=year,
+            month=month,
+            excel_filename=filename,
+            progress_callback=progress_callback,
         )
 
         created = 0
         updated = 0
+        policies = result.policies
+        total_policies = len(policies) or 1
 
         try:
-            for policy_data in result.policies:
+            for index, policy_data in enumerate(policies):
+                # 写入阶段占用 70% ~ 98%
+                write_progress = 70 + int((index / total_policies) * 28)
+                _report(
+                    write_progress,
+                    f"正在写入数据库（{index + 1}/{len(policies)}）...",
+                )
+
                 payload = policy_data.model_dump()
                 payload["year"] = year
                 payload["month"] = month
@@ -504,6 +526,7 @@ class SteelPricePolicyService:
                     created += 1
 
             # 整个循环完成后统一提交
+            _report(99, "正在提交事务...")
             db.commit()
 
             logger.info(

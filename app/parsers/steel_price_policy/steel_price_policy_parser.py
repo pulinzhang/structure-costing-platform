@@ -27,7 +27,7 @@
 
 import io
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import Callable, List, Optional, Union
 
 import xlrd
 from openpyxl.worksheet.worksheet import Worksheet
@@ -36,6 +36,9 @@ from app.utils.logging_config import get_logger
 
 from .handlers import find_handler
 from .models import SteelPricePolicyParseResult
+
+# progress_callback(progress: int, msg: str) — 可选进度回调
+ProgressCallback = Callable[[int, str], None]
 
 
 logger = get_logger("parser.steel_price_policy")
@@ -213,6 +216,7 @@ def parse_steel_price_policy_excel(
     year: int,
     month: int,
     excel_filename: Optional[str] = None,
+    progress_callback: Optional[ProgressCallback] = None,
 ) -> SteelPricePolicyParseResult:
     """整张 Excel 解析（便捷 API）。
 
@@ -225,7 +229,12 @@ def parse_steel_price_policy_excel(
             policies = parse_steel_price_policy_sheet(sheet, sheet.name, result.warnings)
             result.policies.extend(policies)
     """
-    parser = SteelPricePolicyExcelParser(year=year, month=month, excel_filename=excel_filename)
+    parser = SteelPricePolicyExcelParser(
+        year=year,
+        month=month,
+        excel_filename=excel_filename,
+        progress_callback=progress_callback,
+    )
     return parser.parse(file)
 
 
@@ -237,11 +246,23 @@ def parse_steel_price_policy_excel(
 class SteelPricePolicyExcelParser:
     """钢价政策 Excel 编排器（按 Sheet 依次解析，聚合结果）。"""
 
-    def __init__(self, *, year: int, month: int, excel_filename: Optional[str] = None):
+    def __init__(
+        self,
+        *,
+        year: int,
+        month: int,
+        excel_filename: Optional[str] = None,
+        progress_callback: Optional[ProgressCallback] = None,
+    ):
         self.year = year
         self.month = month
         self.excel_filename = excel_filename
+        self.progress_callback = progress_callback
         self.result = SteelPricePolicyParseResult()
+
+    def _report(self, progress: int, msg: str) -> None:
+        if self.progress_callback:
+            self.progress_callback(progress, msg)
 
     def parse(self, file: Union[str, Path, bytes]) -> SteelPricePolicyParseResult:
         logger.info(f"开始解析钢价政策 Excel（{self.year}年{self.month}月）")
@@ -249,16 +270,22 @@ class SteelPricePolicyExcelParser:
             year=self.year, month=self.month
         )
 
+        self._report(5, "正在读取 Excel 字节流...")
         wb, _ = _load_workbook_or_bytes(file)
         try:
             self.result.sheet_names = list(wb.sheetnames)
+            total_sheets = len(wb.sheetnames) or 1
             # === 关键：按 Sheet 逐张处理 ===
-            for sheet_name in wb.sheetnames:
+            for index, sheet_name in enumerate(wb.sheetnames):
+                # 解析阶段占用 5% ~ 70%
+                progress = 5 + int((index / total_sheets) * 65)
+                self._report(progress, f"正在解析 Sheet：{sheet_name}（{index + 1}/{total_sheets}）")
                 sheet = wb[sheet_name]
                 policies = parse_steel_price_policy_sheet(
                     sheet, sheet_name, self.result.warnings, excel_filename=self.excel_filename
                 )
                 self.result.policies.extend(policies)
+            self._report(70, f"解析完成，共 {len(self.result.policies)} 条政策，准备写入数据库...")
             self._log_summary()
             return self.result
         finally:

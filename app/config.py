@@ -34,6 +34,8 @@ class Settings(BaseSettings):
 
     # 数据库配置
     DATABASE_URL: str = f"sqlite:///{BASE_DIR}/data/stamping_costing.db"
+    # 异步任务独立库：与主库分离，进度写入不受业务长事务写锁影响
+    ASYNC_TASK_DATABASE_URL: str = f"sqlite:///{BASE_DIR}/data/async_tasks.db"
 
     # 上传配置
     UPLOAD_DIR: Path = BASE_DIR / "uploads"
@@ -80,6 +82,7 @@ class TestSettings(Settings):
     """测试环境配置"""
     DEBUG: bool = True
     DATABASE_URL: str = "sqlite:///:memory:"
+    ASYNC_TASK_DATABASE_URL: str = "sqlite:///:memory:"
 
 
 # 环境配置映射

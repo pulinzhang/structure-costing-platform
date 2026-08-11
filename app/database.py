@@ -1,6 +1,9 @@
 """
 数据库配置模块
 提供 SQLAlchemy 数据库连接和会话管理
+
+主业务库（DatabaseConfig）与异步任务库（AsyncTaskDatabaseConfig）隔离：
+SQLite 使用独立文件，进度写入不会被业务长事务锁死。
 """
 
 from typing import Generator
@@ -16,96 +19,70 @@ from app.utils.logging_config import get_logger
 logger = get_logger("database")
 
 Base = declarative_base()
+AsyncTaskBase = declarative_base()
+
+
+def _configure_sqlite_connection(dbapi_connection, connection_record):
+    """SQLite：外键 + WAL + 写锁等待更友好"""
+    cursor = dbapi_connection.cursor()
+    cursor.execute("PRAGMA foreign_keys=ON")
+    cursor.execute("PRAGMA journal_mode=WAL")
+    cursor.execute("PRAGMA synchronous=NORMAL")
+    cursor.close()
+
+
+def _create_engine_for_url(database_url: str, *, label: str):
+    """按 URL 创建引擎（SQLite / PostgreSQL）。"""
+    if "sqlite" in database_url:
+        connect_args = {
+            "check_same_thread": False,
+            "timeout": 30,
+        }
+        if "mode=memory" in database_url or database_url.endswith(":memory:"):
+            engine = create_engine(
+                database_url,
+                connect_args=connect_args,
+                poolclass=StaticPool,
+                echo=settings.DEBUG,
+            )
+        else:
+            engine = create_engine(
+                database_url,
+                connect_args=connect_args,
+                echo=settings.DEBUG,
+            )
+        event.listen(engine, "connect", _configure_sqlite_connection)
+        logger.info("%s SQLite 引擎创建成功: %s", label, database_url)
+        return engine
+
+    engine = create_engine(
+        database_url,
+        pool_size=10,
+        max_overflow=20,
+        pool_pre_ping=True,
+        echo=settings.DEBUG,
+    )
+    logger.info("%s PostgreSQL 引擎创建成功", label)
+    return engine
 
 
 class DatabaseConfig:
-    """
-    数据库配置类
-    管理数据库连接引擎和会话工厂
-    """
+    """主业务数据库配置"""
 
     _engine = None
     _session_factory = None
 
     @classmethod
     def get_engine(cls):
-        """
-        获取数据库引擎
-        根据配置创建合适的引擎实例
-
-        Returns:
-            SQLAlchemy Engine 实例
-        """
         if cls._engine is None:
-            cls._create_engine()
+            cls._engine = _create_engine_for_url(
+                settings.DATABASE_URL,
+                label="主业务库",
+            )
         return cls._engine
 
     @classmethod
-    def _create_engine(cls) -> None:
-        """
-        创建数据库引擎
-        根据数据库 URL 类型选择合适的配置
-        """
-        if "sqlite" in settings.DATABASE_URL:
-            cls._create_sqlite_engine()
-        else:
-            cls._create_postgres_engine()
-
-    @classmethod
-    def _create_sqlite_engine(cls) -> None:
-        """
-        创建 SQLite 数据库引擎
-        配置外键支持和连接池
-        """
-        connect_args = {"check_same_thread": False}
-
-        if "mode=memory" in settings.DATABASE_URL:
-            cls._engine = create_engine(
-                settings.DATABASE_URL,
-                connect_args=connect_args,
-                poolclass=StaticPool,
-                echo=settings.DEBUG,
-            )
-        else:
-            cls._engine = create_engine(
-                settings.DATABASE_URL,
-                connect_args=connect_args,
-                echo=settings.DEBUG,
-            )
-
-        @event.listens_for(cls._engine, "connect")
-        def set_sqlite_pragma(dbapi_connection, connection_record):
-            """启用 SQLite 外键支持"""
-            cursor = dbapi_connection.cursor()
-            cursor.execute("PRAGMA foreign_keys=ON")
-            cursor.close()
-
-        logger.info(f"SQLite 数据库引擎创建成功: {settings.DATABASE_URL}")
-
-    @classmethod
-    def _create_postgres_engine(cls) -> None:
-        """
-        创建 PostgreSQL 数据库引擎
-        配置连接池参数
-        """
-        cls._engine = create_engine(
-            settings.DATABASE_URL,
-            pool_size=10,
-            max_overflow=20,
-            pool_pre_ping=True,
-            echo=settings.DEBUG,
-        )
-        logger.info("PostgreSQL 数据库引擎创建成功")
-
-    @classmethod
     def get_session_factory(cls) -> sessionmaker:
-        """
-        获取会话工厂
-        用于创建数据库会话
-
-        Returns:
-            SQLAlchemy sessionmaker 实例
-        """
         if cls._session_factory is None:
             engine = cls.get_engine()
             cls._session_factory = sessionmaker(
@@ -118,20 +95,49 @@ class DatabaseConfig:
 
     @classmethod
     def create_tables(cls) -> None:
-        """
-        创建所有数据表
-        在应用启动时调用
-        """
         engine = cls.get_engine()
         Base.metadata.create_all(bind=engine)
-        logger.info("数据库表创建完成")
+        logger.info("主业务库表创建完成")
+
+
+class AsyncTaskDatabaseConfig:
+    """异步任务独立库配置（与主业务库隔离）。"""
+
+    _engine = None
+    _session_factory = None
+
+    @classmethod
+    def get_engine(cls):
+        if cls._engine is None:
+            cls._engine = _create_engine_for_url(
+                settings.ASYNC_TASK_DATABASE_URL,
+                label="异步任务库",
+            )
+        return cls._engine
+
+    @classmethod
+    def get_session_factory(cls) -> sessionmaker:
+        if cls._session_factory is None:
+            engine = cls.get_engine()
+            cls._session_factory = sessionmaker(
+                bind=engine,
+                autocommit=False,
+                autoflush=False,
+                expire_on_commit=False,
+            )
+        return cls._session_factory
+
+    @classmethod
+    def create_tables(cls) -> None:
+        import app.models.async_task  # noqa: F401
+
+        engine = cls.get_engine()
+        AsyncTaskBase.metadata.create_all(bind=engine)
+        logger.info("异步任务库表创建完成")
 
 
 def get_db() -> Generator[Session, None, None]:
-    """
-    FastAPI 依赖项：获取数据库会话
-    自动处理会话的创建和关闭
-    """
+    """FastAPI 依赖：主业务 Session（带事务，供业务导入使用）。"""
     session_factory = DatabaseConfig.get_session_factory()
     session = session_factory()
     try:
