@@ -6,115 +6,172 @@
 export function steelPriceListTemplate() {
     return `
         <div class="space-y-2 w-full max-w-full">
-            <div class="bg-[#1e1e1e] border border-[#2c2c2c] overflow-hidden w-full max-w-full"
-                 style="box-shadow: 0 2px 12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.03);">
+            <div class="bg-[#0A0A0C] border border-[#1A1A22] overflow-hidden w-full max-w-full"
+                 style="box-shadow: 0 4px 24px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.02);">
 
-                <div class="flex items-center justify-between px-5 py-3.5 border-b border-[#222222]"
-                     style="background: linear-gradient(90deg, #1c1c1c 0%, #1e1e1e 60%);">
-                    <div class="flex items-center gap-3">
-                        <div class="w-[2px] h-4 bg-[#d32f2f] rounded-[1px] shadow-[0_0_6px_rgba(211,47,47,0.3)]"></div>
-                        <h2 class="text-[12px] font-semibold text-[#c8c8c8] tracking-wide">钢材联动价格一览表</h2>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <button id="steelPriceBatchApproveButton"
-                                class="inline-flex items-center gap-1.5 bg-transparent text-[#505050] border border-[#252525] px-3 py-1.5 text-[11px] font-medium rounded-sm hover:bg-[#d32f2f]/10 hover:border-[#d32f2f]/60 hover:text-[#d32f2f] hover:shadow-[0_0_8px_rgba(211,47,47,0.15)] transition-all duration-200"
-                                style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);">
-                            ${window.svgIcon('check-circle', 'w-3 h-3')}
-                            批量审核
-                        </button>
-                        <button id="steelPriceBatchReverseButton"
-                                class="inline-flex items-center gap-1.5 bg-transparent text-[#505050] border border-[#252525] px-3 py-1.5 text-[11px] font-medium rounded-sm hover:bg-[#d32f2f]/10 hover:border-[#d32f2f]/60 hover:text-[#d32f2f] hover:shadow-[0_0_8px_rgba(211,47,47,0.15)] transition-all duration-200"
-                                style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);">
-                            ${window.svgIcon('refresh', 'w-3 h-3')}
-                            批量反审核
-                        </button>
-                        <button id="steelPriceBatchDeleteButton"
-                                class="inline-flex items-center gap-1.5 bg-transparent text-[#505050] border border-[#252525] px-3 py-1.5 text-[11px] font-medium rounded-sm hover:bg-[#c62828]/15 hover:border-[#c62828]/60 hover:text-[#d45858] hover:shadow-[0_0_8px_rgba(198,40,40,0.15)] transition-all duration-200"
-                                style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);">
-                            ${window.svgIcon('trash', 'w-3 h-3')}
-                            批量删除
-                        </button>
-                        <button id="steelPriceExportButton"
-                                class="inline-flex items-center gap-1.5 bg-transparent text-[#505050] border border-[#252525] px-3 py-1.5 text-[11px] font-medium rounded-sm hover:bg-[#d32f2f]/10 hover:border-[#d32f2f]/60 hover:text-[#d32f2f] hover:shadow-[0_0_8px_rgba(211,47,47,0.15)] transition-all duration-200"
-                                style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);">
-                            ${window.svgIcon('download', 'w-3 h-3')}
-                            导出 Excel
-                        </button>
+                <!-- HUD 战术数据看板 + 操作 -->
+                <div class="px-5 pt-4 pb-3.5 border-b border-[#14141A]"
+                     style="background: linear-gradient(135deg, #0E0E12 0%, #121218 45%, #0C0C10 100%);">
+                    <div class="flex items-start justify-between gap-4 mb-3">
+                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 font-mono flex-1 min-w-0">
+                            <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3 backdrop-blur-sm"
+                                 style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);">
+                                <div class="text-[#555555] text-[10px] tracking-wider">核价条数</div>
+                                <div class="text-[18px] font-bold text-[#FFFFFF] mt-1 tabular-nums">
+                                    <span id="steelPriceHudTotal">—</span>
+                                    <span class="text-[10px] text-[#555555] ml-1">条</span>
+                                </div>
+                            </div>
+                            <!-- 巴博斯霓虹红光 本期均价 -->
+                            <div class="bg-gradient-to-b from-[#18080A] to-[#0D0708] border border-[#FF1E27]/50 p-3.5 relative overflow-hidden group"
+                                 style="box-shadow: 0 0 30px rgba(255,30,39,0.15), inset 0 1px 0 rgba(255,30,39,0.12);">
+                                <div class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#FF1E27] to-transparent"
+                                     style="box-shadow: 0 0 10px #FF1E27;"></div>
+                                <div class="flex justify-between items-start">
+                                    <span class="text-[#FF1E27] text-[10px] font-bold tracking-widest">本期均价</span>
+                                    <span class="w-2 h-2 rounded-full bg-[#FF1E27] animate-pulse"
+                                          style="box-shadow: 0 0 8px #FF1E27;"></span>
+                                </div>
+                                <div class="text-[26px] font-black text-[#FF1E27] font-mono mt-1 tracking-tight tabular-nums"
+                                     style="text-shadow: 0 0 12px rgba(255,30,39,0.7), 0 0 25px rgba(255,30,39,0.3);">
+                                    ￥<span id="steelPriceHudAvg">—</span>
+                                </div>
+                                <div class="text-[9px] font-mono text-[#FF1E27]/60 mt-1 flex justify-between">
+                                    <span>系统自动计算</span>
+                                    <span id="steelPriceHudSkuCount">— 条</span>
+                                </div>
+                            </div>
+                            <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3 backdrop-blur-sm"
+                                 style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);">
+                                <div class="text-[#555555] text-[10px] tracking-wider">本页待审</div>
+                                <div class="text-[18px] font-bold text-[#FFFFFF] mt-1 tabular-nums">
+                                    <span id="steelPriceHudPending">—</span>
+                                    <span class="text-[10px] text-[#555555] ml-1">条</span>
+                                </div>
+                            </div>
+                            <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3 backdrop-blur-sm"
+                                 style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);">
+                                <div class="text-[#555555] text-[10px] tracking-wider">本页已审</div>
+                                <div class="text-[18px] font-bold text-[#FFFFFF] mt-1 tabular-nums">
+                                    <span id="steelPriceHudApproved">—</span>
+                                    <span class="text-[10px] text-[#555555] ml-1">条</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+                            <button id="steelPriceBatchApproveButton"
+                                    class="inline-flex items-center gap-1.5 bg-transparent text-[#6E6E73] border border-[#2A2A35] px-3 py-1.5 text-[11px] font-medium rounded-md hover:border-[#FF1E27]/50 hover:text-[#FF1E27] hover:bg-[#FF1E27]/10 hover:shadow-[0_0_12px_rgba(255,30,39,0.2)] transition-all duration-200">
+                                ${window.svgIcon('check-circle', 'w-3 h-3')}
+                                批量审核
+                            </button>
+                            <button id="steelPriceBatchReverseButton"
+                                    class="inline-flex items-center gap-1.5 bg-transparent text-[#6E6E73] border border-[#2A2A35] px-3 py-1.5 text-[11px] font-medium rounded-md hover:border-[#FF1E27]/50 hover:text-[#FF1E27] hover:bg-[#FF1E27]/10 hover:shadow-[0_0_12px_rgba(255,30,39,0.2)] transition-all duration-200">
+                                ${window.svgIcon('refresh', 'w-3 h-3')}
+                                批量反审核
+                            </button>
+                            <button id="steelPriceBatchDeleteButton"
+                                    class="inline-flex items-center gap-1.5 bg-transparent text-[#6E6E73] border border-[#2A2A35] px-3 py-1.5 text-[11px] font-medium rounded-md hover:border-[#c62828]/60 hover:text-[#ef5350] hover:bg-[#c62828]/15 hover:shadow-[0_0_12px_rgba(198,40,40,0.2)] transition-all duration-200">
+                                ${window.svgIcon('trash', 'w-3 h-3')}
+                                批量删除
+                            </button>
+                            <button id="steelPriceExportButton"
+                                    class="inline-flex items-center gap-1.5 bg-transparent text-[#6E6E73] border border-[#2A2A35] px-3 py-1.5 text-[11px] font-medium rounded-md hover:border-[#FF1E27]/50 hover:text-[#FF1E27] hover:bg-[#FF1E27]/10 hover:shadow-[0_0_12px_rgba(255,30,39,0.2)] transition-all duration-200">
+                                ${window.svgIcon('download', 'w-3 h-3')}
+                                导出 Excel
+                            </button>
+                        </div>
                     </div>
                 </div>
 
-                <div class="flex items-center justify-between px-5 py-2.5 border-b border-[#1e1e1e]"
-                     style="background: linear-gradient(180deg, #181818 0%, #161616 100%);">
-                    <div class="flex items-end gap-3 flex-wrap">
-                        ${filterSelect('steelPriceYear', '年度')}
-                        ${filterSelect('steelPriceMonth', '月份')}
-                        ${filterSelect('steelPriceLocation', '基地')}
-                        ${filterSelect('steelPriceCategory', '钢种')}
-                        ${filterInput('steelPriceGrade', '牌号', '输入牌号（模糊）')}
-                        ${filterSelect('steelPriceMill', '钢厂')}
-                        ${filterSelect('steelPriceAuditStatus', '审核状态')}
+                <!-- 战术胶囊筛选栏：默认收起，抹平 ERP 模版感 -->
+                <div class="px-5 py-3 border-b border-[#14141A]"
+                     style="background: linear-gradient(180deg, #0C0C10 0%, #0A0A0E 100%);">
+                    <div class="flex items-center justify-between gap-4 bg-[#0C0C10] border border-[#1E1E26] px-4 py-2.5 rounded-xl font-mono text-[11px]"
+                         style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.02), 0 0 20px rgba(0,0,0,0.3);">
+                        <div class="flex items-center gap-3 min-w-0 flex-1">
+                            <span class="text-[#555555] shrink-0 tracking-wider">当前筛选：</span>
+                            <div class="flex items-center gap-2 flex-wrap" id="steelPriceActiveCapsules">
+                                <span id="capsulePeriod" class="bg-[#1A1A22] border border-[#2A2A35] text-white px-2.5 py-1 rounded-md font-bold">全部期间</span>
+                                <span id="capsuleLocation" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部基地</span>
+                                <span id="capsuleMill" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部钢厂</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3 shrink-0">
+                            <button type="button" id="steelPriceToggleAdvancedFilter"
+                                    class="text-[#6E6E73] hover:text-white transition-colors flex items-center gap-1.5 text-[11px]">
+                                <span id="steelPriceAdvancedFilterLabel">展开高级筛选</span>
+                                <span id="steelPriceAdvancedFilterCount" class="text-[#555555]">(0)</span>
+                            </button>
+                            <button type="button" id="steelPriceSearchButton"
+                                    class="bg-[#FF1E27] hover:bg-[#D6131B] text-white font-bold px-4 py-1.5 rounded-lg transition-all text-[11px] tracking-wide"
+                                    style="box-shadow: 0 0 15px rgba(255,30,39,0.4);">
+                                查询
+                            </button>
+                        </div>
+                    </div>
 
-                        <button id="steelPriceSearchButton"
-                                class="inline-flex items-center gap-1.5 h-7 px-3 text-[11px] font-semibold rounded-sm text-[#c8c8c8] border border-[#8a2020] transition-all duration-200 hover:text-white"
-                                style="background: linear-gradient(180deg, #3d1515 0%, #2d0f0f 100%); border-color: #6b1a1a; box-shadow: 0 1px 3px rgba(0,0,0,0.4), inset 0 1px 0 rgba(211,47,47,0.1), 0 0 12px rgba(198,40,40,0.08);">
-                            ${window.svgIcon('search', 'w-3 h-3')}
-                            查询
-                        </button>
-                        <button id="steelPriceResetFilterButton"
-                                class="inline-flex items-center gap-1.5 h-7 px-3 text-[11px] font-medium rounded-sm bg-transparent text-[#505050] border border-[#252525] hover:bg-[#d32f2f]/10 hover:border-[#d32f2f]/60 hover:text-[#d32f2f] hover:shadow-[0_0_8px_rgba(211,47,47,0.15)] transition-all duration-200"
-                                style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);">
-                            ${window.svgIcon('refresh', 'w-3 h-3')}
-                            重置
-                        </button>
+                    <!-- 高级筛选面板（默认折叠） -->
+                    <div id="steelPriceAdvancedFilterPanel" class="hidden mt-3 pt-3 border-t border-[#1A1A22]">
+                        <div class="flex items-end gap-3 flex-wrap">
+                            ${filterSelect('steelPriceYear', '年度')}
+                            ${filterSelect('steelPriceMonth', '月份')}
+                            ${filterSelect('steelPriceLocation', '基地')}
+                            ${filterSelect('steelPriceCategory', '钢种')}
+                            ${filterInput('steelPriceGrade', '牌号', '输入牌号（模糊）')}
+                            ${filterSelect('steelPriceMill', '钢厂')}
+                            <button id="steelPriceResetFilterButton"
+                                    class="inline-flex items-center gap-1.5 h-8 px-3 text-[11px] font-medium rounded-md bg-transparent text-[#6E6E73] border border-[#2A2A35] hover:bg-[#FF1E27]/10 hover:border-[#FF1E27]/50 hover:text-[#FF1E27] transition-all duration-200">
+                                ${window.svgIcon('refresh', 'w-3 h-3')}
+                                重置
+                            </button>
+                        </div>
                     </div>
                 </div>
 
-                <div class="overflow-x-auto bg-[#000000]">
-                    <table class="w-full min-w-[2500px] bg-[#000000]">
+                <div class="overflow-x-auto brabus-bg-grid">
+                    <table class="w-full min-w-[2500px] bg-transparent">
                         <thead>
-                            <tr class="border-b border-[#17171C]" style="background: #000000;">
-                                <!-- 区块 1：规格区 -->
-                                <th class="px-2.5 py-2.5 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">核价维度</th>
-                                <th class="px-2.5 py-2.5 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">钢厂</th>
-                                <th class="px-2.5 py-2.5 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">钢种</th>
-                                <th class="px-2.5 py-2.5 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#FFFFFF]/50 whitespace-nowrap">牌号</th>
-                                <th class="px-2.5 py-2.5 text-right text-[9px] font-semibold uppercase tracking-[0.15em] text-[#FFFFFF]/50 whitespace-nowrap">厚度</th>
-                                <th class="px-2.5 py-2.5 text-right text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap border-r border-[#22222A]">宽度</th>
-                                <!-- 区块 2：计算拆解区 -->
-                                <th class="px-2.5 py-2.5 text-right text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">基础价</th>
-                                <th class="px-2.5 py-2.5 text-right text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">厚度加价</th>
-                                <th class="px-2.5 py-2.5 text-right text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">宽度加价</th>
-                                <th class="px-2.5 py-2.5 text-right text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap border-r border-[#22222A]">加工费</th>
-                                <!-- 区块 3：暴徒结算区 -->
-                                <th class="px-2.5 py-2.5 text-right text-[9px] font-bold uppercase tracking-[0.15em] text-[#FF1E27]/70 whitespace-nowrap bg-[#FF1E27]/10 border-x border-[#FF1E27]/20">最终价/吨</th>
-                                <!-- 溯源 / 状态 / 操作 -->
-                                <th class="px-2.5 py-2.5 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">基价溯源</th>
-                                <th class="px-2.5 py-2.5 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">厚度溯源</th>
-                                <th class="px-2.5 py-2.5 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">宽度溯源</th>
-                                <th class="px-2.5 py-2.5 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">匹配</th>
-                                <th class="px-2.5 py-2.5 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">审核</th>
-                                <th class="px-2.5 py-2.5 text-center text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap w-40">操作</th>
+                            <tr class="border-b border-[#17171C] bg-[#0B0B0D]/95">
+                                <th class="p-0 w-0"></th>
+                                <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">核价维度</th>
+                                <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">钢厂</th>
+                                <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">钢种</th>
+                                <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#A1A1A6] whitespace-nowrap">牌号</th>
+                                <th class="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.18em] text-[#A1A1A6] whitespace-nowrap">厚度</th>
+                                <th class="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap border-r border-[#22222A]">宽度</th>
+                                <th class="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">基础价</th>
+                                <th class="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">厚度加价</th>
+                                <th class="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">宽度加价</th>
+                                <th class="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap border-r border-[#22222A]">加工费</th>
+                                <th class="px-3 py-3 text-right text-[10px] font-bold uppercase tracking-[0.18em] text-[#FFFFFF]/70 whitespace-nowrap bg-[#14141C] border-x border-[#222230]">最终价/吨</th>
+                                <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">基价溯源</th>
+                                <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">厚度溯源</th>
+                                <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">宽度溯源</th>
+                                <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">匹配</th>
+                                <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">审核</th>
+                                <th class="px-3 py-3 text-center text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap w-40">操作</th>
                             </tr>
                         </thead>
-                        <tbody id="steelPriceTableBody" class="bg-[#000000]"></tbody>
+                        <tbody id="steelPriceTableBody" class="bg-transparent"></tbody>
                     </table>
                 </div>
 
-                <div class="flex items-center justify-between px-5 py-2 border-t border-[#1e1e1e] bg-[#141414]">
-                    <span id="steelPriceTotal" class="text-[10px] text-[#484848]"></span>
+                <div class="flex items-center justify-between px-5 py-2.5 border-t border-[#14141A] bg-[#0A0A0E]">
+                    <span id="steelPriceTotal" class="text-[10px] font-mono text-[#555555]"></span>
                     <div class="flex items-center gap-0.5" id="steelPricePagination"></div>
                 </div>
 
-                <div id="steelPriceEmpty" class="hidden flex flex-col items-center justify-center py-10">
-                    <div class="w-8 h-8 flex items-center justify-center mb-3 rounded-sm" style="background:#141414; border: 1px solid #222222;">
-                        ${window.svgIcon('clipboard-list', 'w-4 h-4 text-[#3a3a3a]')}
+                <div id="steelPriceEmpty" class="hidden flex flex-col items-center justify-center py-14">
+                    <div class="w-10 h-10 flex items-center justify-center mb-3 rounded-md bg-[#121218] border border-[#2A2A35]">
+                        ${window.svgIcon('clipboard-list', 'w-4 h-4 text-[#555555]')}
                     </div>
-                    <h5 class="text-[11px] font-medium text-[#555555] mb-1">暂无钢材价格数据</h5>
-                    <p class="text-[10px] text-[#3a3a3a]">数据由系统计算写入，或通过 Excel 导入</p>
+                    <h5 class="text-[11px] font-medium text-[#8E8E93] mb-1">暂无钢材价格数据</h5>
+                    <p class="text-[10px] text-[#555555]">数据由系统计算写入，或通过 Excel 导入</p>
                 </div>
 
-                <div id="steelPriceLoading" class="hidden flex items-center justify-center py-10">
-                    <div class="w-4 h-4 border border-[#252525] border-t-[#d32f2f] rounded-full animate-spin"></div>
+                <div id="steelPriceLoading" class="hidden flex items-center justify-center py-14">
+                    <div class="w-5 h-5 border-2 border-[#2A2A35] border-t-[#FF1E27] rounded-full animate-spin"
+                         style="box-shadow: 0 0 12px rgba(255,30,39,0.35);"></div>
                 </div>
             </div>
         </div>
@@ -369,59 +426,134 @@ export function renderSteelPriceRows(records) {
     if (!records || !Array.isArray(records) || records.length === 0) return '';
     return records.map((record) => {
         const approved = record.audit_status === 'approved';
-        /* 公共底边 */
-        const cell = 'p-2.5 border-b border-[#17171C]';
-        /* 第四梯队：沉淀碳灰 */
-        const carbon = 'font-mono text-[#6E6E73]';
-        const carbonNum = 'text-right font-mono tabular-nums text-[#8E8E93]';
-        /* 区块立柱分隔 */
+        const period = `${esc(record.year)}-${esc(String(record.month).padStart(2, '0'))}`;
+        const mill = esc(record.steel_mill) || '—';
+        const location = esc(record.location) || '—';
+        const cell = 'p-3 border-b border-[#17171C] font-mono text-[11px]';
+        const muted = 'text-[#8E8E93]';
+        const mutedDeep = 'text-[#6E6E73]';
         const zoneEnd = 'border-r border-[#22222A]';
-        /* 第一梯队：暴徒红最终价 */
         const finalCell = [
-            'p-2.5 text-right font-mono font-black tabular-nums text-[14px] tracking-[0.02em]',
-            'text-[#FF1E27] bg-[#FF1E27]/10',
-            'border-b border-[#FF1E27]/30 border-l border-r border-[#FF1E27]/20',
-            'group-hover:bg-[#FF1E27]/20 transition-all',
+            'p-3 text-right font-mono font-bold tabular-nums text-[13px]',
+            'text-[#FFFFFF] bg-[#14141C]',
+            'border-b border-[#17171C] border-l border-r border-[#222230]',
+            'group-hover:bg-[#1A1A26] transition-colors',
         ].join(' ');
         return `
-        <tr class="group hover:bg-[#121216] transition-colors" data-id="${esc(record.id)}">
-            <!-- 区块 1：规格区 — 维度 / 钢厂 / 钢种 / 牌号(钛白) / 厚度(钛白) / 宽度 -->
-            <td class="${cell} whitespace-nowrap">
-                <div class="font-sans font-bold text-[#FFFFFF] text-[12px]">${esc(record.year)}-${esc(String(record.month).padStart(2, '0'))}</div>
-                <div class="text-[#55555C] text-[10px] mt-0.5">${esc(record.location)}</div>
+        <tr class="group relative font-mono text-[11px] border-b border-[#17171C] hover:bg-gradient-to-r hover:from-[#FF1E27]/10 hover:via-[#121218] hover:to-transparent transition-all duration-150 cursor-pointer"
+            data-id="${esc(record.id)}">
+            <td class="p-0 w-0 relative">
+                <div class="absolute left-0 top-0 bottom-0 w-[3px] bg-[#FF1E27] opacity-0 group-hover:opacity-100 transition-all"
+                     style="box-shadow: 0 0 10px #FF1E27;"></div>
             </td>
-            <td class="${cell} ${carbon} text-[11px]">${esc(record.steel_mill)}</td>
-            <td class="${cell} font-sans text-[#6E6E73] text-[11px]">${esc(record.category_name)}</td>
-            <td class="${cell} font-mono">
-                <span class="font-bold text-[#FFFFFF] text-[13px] bg-[#1A1A20] px-1.5 py-0.5 rounded">${esc(record.grade)}</span>
+            <td class="${cell} font-sans whitespace-nowrap">
+                <div class="font-bold text-white text-[12px] group-hover:text-[#FF1E27] transition-colors">${period}</div>
+                <div class="text-[#555555] text-[10px] mt-0.5">${location} · ${mill}</div>
             </td>
-            <td class="${cell} text-right font-mono font-bold text-[#FFFFFF] text-[13px] tabular-nums">${formatPrice(record.thickness, 2)}</td>
-            <td class="${cell} ${carbonNum} ${zoneEnd}">${formatWidth(record.width)}</td>
-
-            <!-- 区块 2：计算拆解区 — 基础价 / 厚加价 / 宽加价 / 加工费 -->
-            <td class="${cell} ${carbonNum}">${formatPrice(record.base_price, 2)}</td>
-            <td class="${cell} text-right font-mono tabular-nums">${formatAdjustment(record.thickness_adjustment)}</td>
-            <td class="${cell} text-right font-mono tabular-nums">${formatAdjustment(record.width_adjustment)}</td>
-            <td class="${cell} ${carbonNum} ${zoneEnd}">${formatPriceOrDash(record.processing_fee)}</td>
-
-            <!-- 区块 3：暴徒结算区 -->
+            <td class="${cell} ${muted} font-sans text-[11px]">${mill}</td>
+            <td class="${cell} ${muted} font-sans text-[11px]">${esc(record.category_name)}</td>
+            <td class="${cell} font-sans">
+                <span class="inline-block bg-[#181820] text-white font-bold border border-[#2E2E3A] px-2 py-1 rounded text-[11px]"
+                      style="box-shadow: 0 1px 2px rgba(0,0,0,0.4);">${esc(record.grade)}</span>
+            </td>
+            <td class="${cell} text-right font-bold text-white text-[13px] tabular-nums">${formatPrice(record.thickness, 2)}</td>
+            <td class="${cell} text-right ${mutedDeep} tabular-nums ${zoneEnd}">${formatWidth(record.width)}</td>
+            <td class="${cell} text-right ${muted} tabular-nums">${formatPrice(record.base_price, 2)}</td>
+            <td class="${cell} text-right tabular-nums">${formatAdjustment(record.thickness_adjustment)}</td>
+            <td class="${cell} text-right tabular-nums">${formatAdjustment(record.width_adjustment)}</td>
+            <td class="${cell} text-right ${muted} tabular-nums ${zoneEnd}">${formatPriceOrDash(record.processing_fee)}</td>
             <td class="${finalCell}">${formatPrice(record.final_price_per_ton, 2)}</td>
-
-            <!-- 溯源 / 状态 / 操作（第四梯队） -->
-            <td class="${cell} text-[10px] ${carbon} max-w-[220px]">${formatTraceCell('base', record)}</td>
-            <td class="${cell} text-[10px] ${carbon} max-w-[220px]">${formatTraceCell('thickness', record)}</td>
-            <td class="${cell} text-[10px] ${carbon} max-w-[220px]">${formatTraceCell('width', record)}</td>
-            <td class="${cell} ${carbon} text-[11px]">${esc(record.match_status)}</td>
+            <td class="${cell} text-[10px] text-[#555555] max-w-[220px]">${formatTraceCell('base', record)}</td>
+            <td class="${cell} text-[10px] text-[#555555] max-w-[220px]">${formatTraceCell('thickness', record)}</td>
+            <td class="${cell} text-[10px] text-[#555555] max-w-[220px]">${formatTraceCell('width', record)}</td>
+            <td class="${cell} ${muted} text-[11px]">${esc(record.match_status)}</td>
             <td class="${cell}">${auditBadge(record.audit_status)}</td>
             <td class="${cell} text-center">
                 <div class="flex items-center justify-center gap-0.5">
-                    <button class="view-btn flex items-center justify-center w-7 h-7 rounded-sm text-[#555555] hover:text-[#FF1E27] hover:bg-[#FF1E27]/10 transition-all" title="查看">${window.svgIcon('eye', 'w-3 h-3')}</button>
-                    <button class="edit-btn flex items-center justify-center w-7 h-7 rounded-sm text-[#555555] hover:text-[#FF1E27] hover:bg-[#FF1E27]/10 transition-all ${approved ? 'opacity-30 pointer-events-none' : ''}" title="${approved ? '已审核，不可编辑' : '编辑'}">${window.svgIcon('pencil', 'w-3 h-3')}</button>
-                    <button class="delete-btn flex items-center justify-center w-7 h-7 rounded-sm text-[#555555] hover:text-[#c62828] hover:bg-[#c62828]/10 transition-all ${approved ? 'opacity-30 pointer-events-none' : ''}" title="${approved ? '已审核，不可删除' : '删除'}">${window.svgIcon('trash', 'w-3 h-3')}</button>
+                    <button class="view-btn flex items-center justify-center w-7 h-7 rounded-sm text-[#555555] hover:text-[#FFFFFF] hover:bg-[#FFFFFF]/5 transition-all" title="查看">${window.svgIcon('eye', 'w-3 h-3')}</button>
+                    <button class="edit-btn flex items-center justify-center w-7 h-7 rounded-sm text-[#555555] hover:text-[#FFFFFF] hover:bg-[#FFFFFF]/5 transition-all ${approved ? 'opacity-30 pointer-events-none' : ''}" title="${approved ? '已审核，不可编辑' : '编辑'}">${window.svgIcon('pencil', 'w-3 h-3')}</button>
+                    <button class="delete-btn flex items-center justify-center w-7 h-7 rounded-sm text-[#555555] hover:text-[#FFFFFF] hover:bg-[#FFFFFF]/5 transition-all ${approved ? 'opacity-30 pointer-events-none' : ''}" title="${approved ? '已审核，不可删除' : '删除'}">${window.svgIcon('trash', 'w-3 h-3')}</button>
                 </div>
             </td>
         </tr>`;
     }).join('');
+}
+
+/** 用已加载列表数据刷新 HUD 战术看板（不改业务逻辑） */
+export function updateSteelPriceHud(total, records) {
+    const setText = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value;
+    };
+    const list = Array.isArray(records) ? records : [];
+    const prices = list
+        .map((r) => Number(r.final_price_per_ton))
+        .filter((n) => !Number.isNaN(n));
+    const avg = prices.length
+        ? (prices.reduce((sum, n) => sum + n, 0) / prices.length)
+        : null;
+    const pending = list.filter((r) => r.audit_status === 'pending').length;
+    const approved = list.filter((r) => r.audit_status === 'approved').length;
+
+    setText('steelPriceHudTotal', Number(total || 0).toLocaleString('zh-CN'));
+    setText(
+        'steelPriceHudAvg',
+        avg == null
+            ? '—'
+            : avg.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    );
+    setText('steelPriceHudSkuCount', `${list.length} 条`);
+    setText('steelPriceHudPending', String(pending));
+    setText('steelPriceHudApproved', String(approved));
+}
+
+/**
+ * 同步战术胶囊：期间 / 基地 / 钢厂 + 高级筛选已启用数量
+ */
+export function updateActiveFilterCapsules() {
+    const year = document.getElementById('steelPriceYear')?.value || '';
+    const month = document.getElementById('steelPriceMonth')?.value || '';
+    const location = document.getElementById('steelPriceLocation')?.value || '';
+    const category = document.getElementById('steelPriceCategory')?.value || '';
+    const grade = document.getElementById('steelPriceGrade')?.value.trim() || '';
+    const mill = document.getElementById('steelPriceMill')?.value || '';
+
+    const periodEl = document.getElementById('capsulePeriod');
+    const locationEl = document.getElementById('capsuleLocation');
+    const millEl = document.getElementById('capsuleMill');
+    const countEl = document.getElementById('steelPriceAdvancedFilterCount');
+
+    const activeCapsule = 'bg-[#1A1A22] border border-[#2A2A35] text-white px-2.5 py-1 rounded-md font-bold';
+    const idleCapsule = 'bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md';
+
+    if (periodEl) {
+        if (year && month) {
+            periodEl.textContent = `${year}-${String(month).padStart(2, '0')}`;
+            periodEl.className = activeCapsule;
+        } else if (year) {
+            periodEl.textContent = `${year}年`;
+            periodEl.className = activeCapsule;
+        } else if (month) {
+            periodEl.textContent = `${month}月`;
+            periodEl.className = activeCapsule;
+        } else {
+            periodEl.textContent = '全部期间';
+            periodEl.className = idleCapsule;
+        }
+    }
+
+    if (locationEl) {
+        locationEl.textContent = location || '全部基地';
+        locationEl.className = location ? activeCapsule : idleCapsule;
+    }
+
+    if (millEl) {
+        millEl.textContent = mill || '全部钢厂';
+        millEl.className = mill ? activeCapsule : idleCapsule;
+    }
+
+    const advancedActive = [category, grade, mill, year, month, location].filter(Boolean).length;
+    if (countEl) countEl.textContent = `(${advancedActive})`;
 }
 
 /**
@@ -440,7 +572,7 @@ function formatTraceCell(prefix, record) {
     const ladderId = prefix === 'base' ? null : record[`${prefix}_ladder_item_id`];
 
     if (filename == null && refId == null && ladderId == null && row == null && col == null) {
-        return '<span class="text-[#6E6E73]">—</span>';
+        return '<span class="text-[#555555]">—</span>';
     }
 
     const idPart = prefix === 'base'
@@ -477,7 +609,7 @@ export function renderSteelPricePagination(currentPage, totalPages) {
     }
     for (let i = startPage; i <= endPage; i++) {
         const isActive = i === currentPage;
-        buttons += `<button class="steel-price-page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] ${isActive ? 'bg-[#d32f2f] text-white' : 'text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]'}" data-page="${i}">${i}</button>`;
+        buttons += `<button class="steel-price-page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] ${isActive ? 'bg-[#FFFFFF] text-[#0a0a0a] font-bold' : 'text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]'}" data-page="${i}">${i}</button>`;
     }
     if (endPage < totalPages) {
         if (endPage < totalPages - 1) buttons += `<span class="px-0.5 text-[#333333] text-[9px]">…</span>`;
@@ -493,8 +625,8 @@ export function renderSteelPricePagination(currentPage, totalPages) {
 
 function filterSelect(id, label) {
     return `<label class="space-y-1">
-        <span class="block text-[9px] font-semibold text-[#484848] uppercase tracking-[0.12em]">${label}</span>
-        <select id="${id}" class="w-32 h-7 pl-2.5 pr-7 text-[11px] bg-[#0d0d0d] border border-[#272727] text-[#909090] appearance-none cursor-pointer focus:outline-none focus:border-[#ff5252] rounded-sm">
+        <span class="block text-[9px] font-semibold text-[#555555] uppercase tracking-[0.14em]">${label}</span>
+        <select id="${id}" class="w-32 h-8 pl-2.5 pr-7 text-[11px] bg-[#0A0A0E] border border-[#2A2A35] text-[#A1A1A6] appearance-none cursor-pointer focus:outline-none focus:border-[#FF1E27] rounded-md transition-colors">
             <option value="">全部</option>
         </select>
     </label>`;
@@ -502,8 +634,8 @@ function filterSelect(id, label) {
 
 function filterInput(id, label, placeholder) {
     return `<label class="space-y-1">
-        <span class="block text-[9px] font-semibold text-[#484848] uppercase tracking-[0.12em]">${label}</span>
-        <input id="${id}" placeholder="${placeholder}" class="h-7 w-32 px-2.5 text-[11px] bg-[#0d0d0d] border border-[#272727] text-[#ffffff] placeholder:text-[#616161] rounded-sm focus:outline-none focus:border-[#ff5252]">
+        <span class="block text-[9px] font-semibold text-[#555555] uppercase tracking-[0.14em]">${label}</span>
+        <input id="${id}" placeholder="${placeholder}" class="h-8 w-32 px-2.5 text-[11px] bg-[#0A0A0E] border border-[#2A2A35] text-[#ffffff] placeholder:text-[#555555] rounded-md focus:outline-none focus:border-[#FF1E27] transition-colors">
     </label>`;
 }
 
@@ -561,8 +693,8 @@ function formatPriceOrDash(value, digits = 2) {
 }
 
 /**
- * 厚度/宽度加价（第三梯队功能提亮）：
- * >0 → 绿 +160.00；<0 → 红 -40.00；0 → 暗灰 -
+ * 厚度/宽度加价（单色冷灰）：
+ * 有值 → #A1A1A6 带正负号；无值 → #444 -
  */
 function formatAdjustment(value, digits = 2) {
     const numeric = Number(value);
@@ -573,10 +705,8 @@ function formatAdjustment(value, digits = 2) {
         minimumFractionDigits: digits,
         maximumFractionDigits: digits,
     });
-    if (numeric > 0) {
-        return `<span class="font-bold text-[#34C759]">+${absText}</span>`;
-    }
-    return `<span class="font-bold text-[#FF3B30]">-${absText}</span>`;
+    const signed = numeric > 0 ? `+${absText}` : `-${absText}`;
+    return `<span class="text-[#A1A1A6]">${signed}</span>`;
 }
 
 /** 宽度：整数、无千分位 */

@@ -3,7 +3,13 @@
  * 钢材价格计算结果浏览 / 手工维护 / 审核
  */
 
-import { steelPriceListTemplate, renderSteelPricePagination, renderSteelPriceRows } from './template.js?v=34';
+import {
+    steelPriceListTemplate,
+    renderSteelPricePagination,
+    renderSteelPriceRows,
+    updateSteelPriceHud,
+    updateActiveFilterCapsules,
+} from './template.js?v=40';
 
 const steelPriceState = {
     records: [],
@@ -15,6 +21,7 @@ const steelPriceState = {
     currentViewId: null,
     pendingFilters: null,
     batchAuditSubmitting: false,
+    advancedFilterOpen: false,
 };
 
 const API_BASE = '/api/steel-prices';
@@ -82,7 +89,6 @@ async function loadData(page = 1) {
             category_name: getFilterValue('steelPriceCategory'),
             grade: document.getElementById('steelPriceGrade')?.value.trim() || '',
             steel_mill: getFilterValue('steelPriceMill'),
-            audit_status: getFilterValue('steelPriceAuditStatus'),
         };
 
         const response = await HttpClient.get(API_BASE, { params });
@@ -107,6 +113,7 @@ async function loadData(page = 1) {
 
         const total = document.getElementById('steelPriceTotal');
         if (total) total.textContent = `共 ${steelPriceState.total} 条`;
+        updateSteelPriceHud(steelPriceState.total, records);
 
         const pagination = document.getElementById('steelPricePagination');
         if (pagination) {
@@ -121,12 +128,13 @@ async function loadData(page = 1) {
             applyPendingFiltersToSelects();
             steelPriceState.filtersLoaded = true;
         }
+        updateActiveFilterCapsules();
     } catch (error) {
         console.error('加载钢材价格失败:', error);
         if (tableBody) {
             tableBody.innerHTML = `
                 <tr>
-                    <td colspan="19" class="px-4 py-8 text-center text-[#9e9e9e] text-xs">加载数据失败，请重试</td>
+                    <td colspan="18" class="px-4 py-8 text-center text-[#9e9e9e] text-xs">加载数据失败，请重试</td>
                 </tr>`;
         }
     } finally {
@@ -144,11 +152,6 @@ function renderFilters(filters) {
     fillSelect('steelPriceLocation', filters.locations || []);
     fillSelect('steelPriceCategory', filters.category_names || []);
     fillSelect('steelPriceMill', filters.steel_mills || []);
-    fillSelect(
-        'steelPriceAuditStatus',
-        filters.audit_statuses || [],
-        value => AUDIT_LABEL[value] || value
-    );
 }
 
 function fillSelect(id, values = [], label = value => value) {
@@ -166,6 +169,9 @@ function applyPendingFiltersToSelects() {
     setSelectValue('steelPriceMonth', pending.month);
     setSelectValue('steelPriceLocation', pending.location);
     steelPriceState.pendingFilters = null;
+    if (pending.year || pending.month || pending.location) {
+        if (!steelPriceState.advancedFilterOpen) toggleAdvancedFilter();
+    }
 }
 
 function setSelectValue(id, value) {
@@ -189,12 +195,26 @@ function resetFilters() {
         'steelPriceCategory',
         'steelPriceGrade',
         'steelPriceMill',
-        'steelPriceAuditStatus',
     ].forEach(id => {
         const element = document.getElementById(id);
         if (element) element.value = '';
     });
+    updateActiveFilterCapsules();
     loadData(1);
+}
+
+function toggleAdvancedFilter() {
+    steelPriceState.advancedFilterOpen = !steelPriceState.advancedFilterOpen;
+    const panel = document.getElementById('steelPriceAdvancedFilterPanel');
+    const label = document.getElementById('steelPriceAdvancedFilterLabel');
+    if (panel) {
+        panel.classList.toggle('hidden', !steelPriceState.advancedFilterOpen);
+    }
+    if (label) {
+        label.textContent = steelPriceState.advancedFilterOpen
+            ? '收起高级筛选'
+            : '展开高级筛选';
+    }
 }
 
 function bindRowEvents() {
@@ -222,12 +242,27 @@ function bindRowEvents() {
 }
 
 function bindEvents() {
-    document.getElementById('steelPriceSearchButton')?.addEventListener('click', () => loadData(1));
+    document.getElementById('steelPriceSearchButton')?.addEventListener('click', () => {
+        updateActiveFilterCapsules();
+        loadData(1);
+    });
+    document.getElementById('steelPriceToggleAdvancedFilter')?.addEventListener('click', () => toggleAdvancedFilter());
     document.getElementById('steelPriceGrade')?.addEventListener('keydown', event => {
         if (event.key === 'Enter') {
             event.preventDefault();
+            updateActiveFilterCapsules();
             loadData(1);
         }
+    });
+    document.getElementById('steelPriceGrade')?.addEventListener('input', () => updateActiveFilterCapsules());
+    [
+        'steelPriceYear',
+        'steelPriceMonth',
+        'steelPriceLocation',
+        'steelPriceCategory',
+        'steelPriceMill',
+    ].forEach(id => {
+        document.getElementById(id)?.addEventListener('change', () => updateActiveFilterCapsules());
     });
     document.getElementById('steelPriceResetFilterButton')?.addEventListener('click', () => resetFilters());
     document.getElementById('steelPriceBatchDeleteButton')?.addEventListener('click', () => batchDeleteByFilters());
@@ -276,7 +311,6 @@ function collectExportFilters() {
         category_name: getFilterValue('steelPriceCategory'),
         grade: document.getElementById('steelPriceGrade')?.value.trim() || '',
         steel_mill: getFilterValue('steelPriceMill'),
-        audit_status: getFilterValue('steelPriceAuditStatus'),
     };
 }
 
@@ -288,8 +322,7 @@ async function exportExcel() {
         !filters.location &&
         !filters.category_name &&
         !filters.grade &&
-        !filters.steel_mill &&
-        !filters.audit_status
+        !filters.steel_mill
     ) {
         showToast('请至少选择一个筛选条件后再导出', 'warning');
         return;
@@ -313,7 +346,6 @@ async function exportExcel() {
         if (filters.category_name) params.append('category_name', filters.category_name);
         if (filters.grade) params.append('grade', filters.grade);
         if (filters.steel_mill) params.append('steel_mill', filters.steel_mill);
-        if (filters.audit_status) params.append('audit_status', filters.audit_status);
 
         const response = await fetch(`${API_BASE}/export-download?${params.toString()}`, {
             method: 'GET',

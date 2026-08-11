@@ -1264,6 +1264,21 @@ tr:focus-within .die-type-select {
     text-shadow: 0 0 10px rgba(211,47,47,0.3);
 }
 
+/* 钢材价格最终价霓虹红晕 */
+.brabus-price-glow {
+    color: #FF1E27;
+    text-shadow: 0 0 10px rgba(255, 30, 39, 0.55), 0 0 20px rgba(255, 30, 39, 0.2);
+}
+
+/* 钢材价格表碳素暗纹底 */
+.brabus-bg-grid {
+    background-color: #0B0B0D;
+    background-image:
+        linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    background-size: 24px 24px;
+}
+
 /* 查看图纸按钮 */
 .btn-view-sketch {
     display: inline-flex;
