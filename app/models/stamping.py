@@ -137,8 +137,8 @@ class StampingTonnagePrice(AuditUserMixin, Base):
     # 压机吨位（T）
     tonnage = Column(Integer, nullable=False, comment="压机吨位(T)")
 
-    # 单冲次价格（元/冲次）
-    price_per_stroke = Column(Numeric(12, 4), nullable=False, comment="单冲次价格(元)")
+    # 单冲次价格（元/冲次），保留 3 位小数
+    price_per_stroke = Column(Numeric(12, 3), nullable=False, comment="单冲次价格(元)")
 
     __table_args__ = (
         Index("ix_tonnage_price_year", "year"),

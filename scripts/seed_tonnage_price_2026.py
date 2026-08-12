@@ -1,11 +1,13 @@
 """
 种子数据脚本：把 2026 年冲压冲次费率写入数据库
+- 价格按四舍五入保留 3 位小数
 - 默认幂等（已存在 (year, tonnage) 跳过）
-- --overwrite 时先删后插
+- --overwrite 时覆盖已有价格，并删除种子中不存在的吨位
 - --dry-run 只打印，不写入
 """
 import argparse
 import sys
+from decimal import Decimal, ROUND_HALF_UP
 from pathlib import Path
 
 # 允许在仓库根目录直接运行：把仓库根加入 sys.path
@@ -20,33 +22,40 @@ from app.database import Base
 from app.models import StampingTonnagePrice
 
 
-# 2026 年真实数据（年度 + 吨位 联合唯一）
-# 注意：400T=0.74 之后 500T=0.73，价格反向回落，已知疑点，待业务侧确认
-SEED_2026 = [
-    (40, 0.05),
-    (60, 0.05),
-    (63, 0.05),
-    (80, 0.07),
-    (100, 0.09),
-    (110, 0.13),
-    (125, 0.13),
-    (160, 0.13),
-    (200, 0.19),
-    (250, 0.25),
-    (315, 0.36),
-    (400, 0.74),
-    (500, 0.73),
-    (630, 0.75),
-    (800, 1.38),
-    (1000, 1.61),
-    (1200, 1.85),
-    (1250, 1.85),
-    (1300, 2.36),
-    (1500, 2.93),
-    (1600, 3.15),
-    (2000, 3.40),
-    (2400, 4.08),
+def _round3(value: float) -> Decimal:
+    """四舍五入保留 3 位小数"""
+    return Decimal(str(value)).quantize(Decimal("0.001"), rounding=ROUND_HALF_UP)
+
+
+# 2026 年冲次费率原始数据（吨位 T → 元/次），导入前统一保留 3 位小数
+SEED_2026_RAW = [
+    (40, 0.046),
+    (60, 0.053),
+    (63, 0.053),
+    (80, 0.069),
+    (100, 0.085),
+    (110, 0.131),
+    (125, 0.131),
+    (160, 0.131),
+    (200, 0.188),
+    (250, 0.253),
+    (315, 0.357),
+    (400, 0.5643),
+    (500, 0.62244),
+    (630, 0.71345),
+    (800, 1.026),
+    (1000, 1.2825),
+    (1200, 1.539),
+    (1250, 1.6036),
+    (1300, 1.66725),
+    (1500, 1.92375),
+    (1600, 2.052),
+    (2000, 2.565),
+    (2400, 3.078),
+    (2500, 3.20625),
 ]
+
+SEED_2026 = [(tonnage, _round3(price)) for tonnage, price in SEED_2026_RAW]
 
 YEAR = 2026
 
@@ -70,7 +79,7 @@ def run(dry_run: bool, overwrite: bool):
     session = make_session()
     try:
         existing = existing_records(session, YEAR)
-        existing_map = {r.tonnage: r.price_per_stroke for r in existing}
+        existing_map = {r.tonnage: Decimal(str(r.price_per_stroke)) for r in existing}
 
         seed_map = dict(SEED_2026)
 
@@ -86,21 +95,21 @@ def run(dry_run: bool, overwrite: bool):
                     StampingTonnagePrice.tonnage.in_([t for t in deleted]),
                 ).delete(synchronize_session=False)
                 session.commit()
-            existing_map = {}
+            # overwrite 模式下已有记录也要更新，清空 map 后按插入/更新逻辑重走
+            existing = existing_records(session, YEAR)
+            existing_map = {r.tonnage: Decimal(str(r.price_per_stroke)) for r in existing}
 
         for tonnage, price in seed_map.items():
             old_price = existing_map.get(tonnage)
             if old_price is None:
-                if dry_run:
-                    inserted.append((tonnage, price))
-                else:
+                if not dry_run:
                     session.add(StampingTonnagePrice(
                         year=YEAR, tonnage=tonnage, price_per_stroke=price,
                     ))
-                    inserted.append((tonnage, price))
+                inserted.append((tonnage, float(price)))
             elif old_price != price:
                 if dry_run:
-                    skipped.append((tonnage, old_price, price, "would update"))
+                    skipped.append((tonnage, float(old_price), float(price), "would update"))
                 elif overwrite:
                     rec = (
                         session.query(StampingTonnagePrice)
@@ -111,21 +120,24 @@ def run(dry_run: bool, overwrite: bool):
                         .first()
                     )
                     rec.price_per_stroke = price
-                    updated.append((tonnage, price))
+                    updated.append((tonnage, float(price)))
                 else:
-                    skipped.append((tonnage, old_price, price, "different price, kept"))
+                    skipped.append((tonnage, float(old_price), float(price), "different price, kept"))
             else:
-                skipped.append((tonnage, old_price, price, "same"))
+                skipped.append((tonnage, float(old_price), float(price), "same"))
 
         if not dry_run:
             session.commit()
 
         mode = "DRY-RUN" if dry_run else "WRITE"
         print(f"[{mode}] year={YEAR} seed_count={len(SEED_2026)} existing={len(existing)}")
-        print(f"  inserted   ({len(inserted)}): {inserted[:5]}{'...' if len(inserted) > 5 else ''}")
+        print(f"  inserted   ({len(inserted)}): {inserted}")
         print(f"  updated    ({len(updated)}):  {updated}")
-        print(f"  skipped    ({len(skipped)}):  {skipped if len(skipped) <= 6 else skipped[:6] + ['...']}")
+        print(f"  skipped    ({len(skipped)}):  {skipped if len(skipped) <= 8 else skipped[:8] + ['...']}")
         print(f"  deleted    ({len(deleted)}):  {deleted}")
+        print("  prices (3dp):")
+        for tonnage, price in SEED_2026:
+            print(f"    {tonnage}T  {price} 元/次")
     finally:
         session.close()
 
