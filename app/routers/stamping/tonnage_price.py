@@ -8,9 +8,9 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
+from app.common.permissions.codes import Perm
 from app.database import get_db
-from app.deps.auth import get_current_user
-from app.common.permissions.checks import require_permission
+from app.deps.permissions import require_perm
 from app.services.stamping.tonnage_price_service import StampingTonnagePriceService
 from app.schemas.dto.stamping_tonnage_price_dto import (
     StampingTonnagePriceCreate,
@@ -35,7 +35,7 @@ _tonnage_price_service = StampingTonnagePriceService()
 @router.get("/list", response_model=ApiResponse[List[StampingTonnagePriceResponse]])
 def list_all(
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_VIEW)),
 ):
     """获取所有冲次费率列表（按年份、吨位排序）"""
     data = _tonnage_price_service.list_all(db)
@@ -46,7 +46,7 @@ def list_all(
 def list_by_year(
     year: int,
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_VIEW)),
 ):
     """获取指定年份的所有冲次费率"""
     data = _tonnage_price_service.list_by_year(db, year)
@@ -57,7 +57,7 @@ def list_by_year(
 def paginate(
     query: StampingTonnagePriceQuery = Depends(),
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_VIEW)),
 ):
     """分页查询冲次费率"""
     rows, total, filters = _tonnage_price_service.paginate(db, query)
@@ -75,7 +75,7 @@ def paginate(
 def get_by_id(
     id: int,
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_VIEW)),
 ):
     """获取单个冲次费率记录"""
     record = _tonnage_price_service.get_by_id(db, id)
@@ -88,10 +88,9 @@ def get_by_id(
 def create(
     body: StampingTonnagePriceCreate,
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_CREATE)),
 ):
     """创建冲次费率记录"""
-    require_permission(current_user, "op:stamping-tonnage:create")
     record, error = _tonnage_price_service.create(db, body, current_user=current_user)
     if error:
         raise HTTPException(status_code=400, detail=error)
@@ -102,10 +101,9 @@ def create(
 def bulk_create(
     items: List[StampingTonnagePriceCreate],
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_CREATE)),
 ):
     """批量创建冲次费率记录"""
-    require_permission(current_user, "op:stamping-tonnage:create")
     created, skipped, failed = _tonnage_price_service.bulk_create(
         db, items, current_user=current_user
     )
@@ -127,10 +125,9 @@ def update(
     id: int,
     body: StampingTonnagePriceUpdate,
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_UPDATE)),
 ):
     """更新冲次费率记录"""
-    require_permission(current_user, "op:stamping-tonnage:update")
     record, error = _tonnage_price_service.update(db, id, body, current_user=current_user)
     if error:
         raise HTTPException(status_code=404, detail=error)
@@ -141,10 +138,9 @@ def update(
 def delete(
     id: int,
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_DELETE)),
 ):
     """删除冲次费率记录"""
-    require_permission(current_user, "op:stamping-tonnage:delete")
     success, error = _tonnage_price_service.delete(db, id)
     if not success:
         raise HTTPException(status_code=404, detail=error or "记录不存在")
@@ -156,10 +152,9 @@ def copy_from_year(
     source_year: int,
     target_year: int,
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_COPY)),
 ):
     """从源年份复制价格到目标年份"""
-    require_permission(current_user, "op:stamping-tonnage:copy")
     created, skipped, failed = _tonnage_price_service.copy_from_year(
         db, source_year, target_year, current_user=current_user
     )
@@ -178,7 +173,7 @@ def copy_from_year(
 @router.get("/filters/years", response_model=ApiResponse[List[int]])
 def get_years(
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_VIEW)),
 ):
     """获取所有年份列表"""
     data = _tonnage_price_service.get_years(db)
@@ -188,7 +183,7 @@ def get_years(
 @router.get("/filters/tonnages", response_model=ApiResponse[List[int]])
 def get_tonnages(
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_VIEW)),
 ):
     """获取所有吨位列表"""
     data = _tonnage_price_service.get_tonnages(db)

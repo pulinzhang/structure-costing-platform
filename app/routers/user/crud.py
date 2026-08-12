@@ -3,9 +3,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.common.permissions.checks import require_permission
+from app.common.permissions.codes import Perm
+from app.deps.permissions import require_perm
 from app.database import get_auxiliary_db, get_db
-from app.deps.auth import get_current_user
 from app.schemas.common.page_result import PageResult
 from app.schemas.dto.user_dto import (
     UserCreateDTO,
@@ -30,10 +30,9 @@ _auth_service = AuthService()
 def list_users(
     query: UserQueryDTO = Depends(),
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.SETTINGS_USERS_VIEW)),
 ) -> ApiResponse[PageResult[UserVO]]:
     """分页查询用户"""
-    require_permission(current_user, "op:settings-users:view")
     rows, total = _user_service.paginate(db, query)
     return ApiResponse.list_(
         items=rows,
@@ -50,10 +49,9 @@ def list_users(
 )
 def list_all_users(
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.SETTINGS_USERS_VIEW)),
 ) -> ApiResponse[list[UserVO]]:
     """获取全部用户（不分页）"""
-    require_permission(current_user, "op:settings-users:view")
     users = _user_service.list_users(db)
     return ApiResponse.ok(data=users, message="查询成功")
 
@@ -65,10 +63,9 @@ def list_all_users(
 def get_user(
     user_id: int,
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.SETTINGS_USERS_VIEW)),
 ) -> ApiResponse[UserVO]:
     """获取单个用户"""
-    require_permission(current_user, "op:settings-users:view")
     user = _user_service.get_by_id(db, user_id)
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="用户不存在")
@@ -83,7 +80,7 @@ def get_user(
 def create_user(
     dto: UserCreateDTO,
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.SETTINGS_USERS_CREATE)),
 ) -> ApiResponse[UserVO]:
     """创建用户"""
     try:
@@ -102,7 +99,7 @@ def update_user(
     dto: UserUpdateDTO,
     db: Session = Depends(get_db),
     token_db: Session = Depends(get_auxiliary_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.SETTINGS_USERS_UPDATE)),
 ) -> ApiResponse[UserVO]:
     """更新用户资料；若停用账号则立即作废其全部登录会话"""
     payload = dto.model_dump(exclude_unset=True)
@@ -126,7 +123,7 @@ def update_password(
     dto: UserPasswordUpdateDTO,
     db: Session = Depends(get_db),
     token_db: Session = Depends(get_auxiliary_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.SETTINGS_USERS_PASSWORD)),
 ) -> ApiResponse[UserVO]:
     """管理员重置密码：改密后作废该用户全部会话，强制重新登录"""
     user = _user_service.update_password(db, user_id, dto, current_user=current_user)
@@ -144,7 +141,7 @@ def delete_user(
     user_id: int,
     db: Session = Depends(get_db),
     token_db: Session = Depends(get_auxiliary_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.SETTINGS_USERS_DELETE)),
 ) -> ApiResponse[None]:
     """删除用户并作废其登录会话"""
     try:

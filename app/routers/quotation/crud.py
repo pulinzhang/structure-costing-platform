@@ -6,9 +6,10 @@ Quotation Router - API 接口
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
+from app.common.permissions.codes import Perm
 from app.utils.logging_config import get_logger
 from app.database import get_db
-from app.deps.auth import get_current_user
+from app.deps.permissions import require_perm
 from app.schemas.vo.user_vo import UserVO
 from app.utils.response import ApiResponse
 
@@ -26,7 +27,7 @@ async def list_quotations(
     page_size: int = Query(DEFAULT_PAGE_SIZE, ge=1, le=500, description="每页条数"),
     status: str = Query(None, description="状态筛选"),
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.QUOTATION_VIEW)),
 ):
     """
     获取报价列表 API

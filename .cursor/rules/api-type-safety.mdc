@@ -1,6 +1,6 @@
 ---
 alwaysApply: true
-description: FastAPI backend type safety, layered architecture, and API contract rules
+description: FastAPI backend type safety, layered architecture, API contract, and permission Depends (require_perm / Perm)
 ---
 
 # Backend Type Safety Rules
@@ -423,6 +423,9 @@ Router must not:
 Required:
 
 ```python
+from app.common.permissions.codes import Perm
+from app.deps.permissions import require_perm
+
 @router.get(
     "/users/{id}",
     response_model=ApiResponse[UserVO]
@@ -430,7 +433,7 @@ Required:
 def get_user(
     id: int,
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.SETTINGS_USERS_VIEW)),
 ) -> ApiResponse[UserVO]:
 
     user = service.get_user(db, id)
@@ -463,34 +466,44 @@ return {
 
 ---
 
-## 7.0 Router Authentication (`current_user`)
+## 7.0 Router Authentication & Permission（登录 + 权限双向）
 
-除登录接口外，每个路由处理函数签名**必须**声明：
+> 完整权限树 / 新增功能清单见 `docs/permission-design.md`。  
+> 本节约定：每个业务 API **必须**同时满足「已登录」+「对应 `op:*` / admin」。
 
-```python
-current_user: UserVO = Depends(get_current_user)
-```
+### 依赖来源
 
-来源：`app.deps.auth.get_current_user`，返回 `UserVO`。
+| 依赖 | 模块 | 作用 |
+|------|------|------|
+| `get_current_user` | `app.deps.auth` | 仅校验登录 / token；返回 `UserVO`（含 `is_admin`、`permissions`） |
+| `require_perm(Perm.XXX)` | `app.deps.permissions` | 登录 + **必须**拥有指定权限码 |
+| `require_any_perm(Perm.A, Perm.B)` | 同上 | 登录 + 任一权限码即可（共享接口） |
+| `require_admin_user` | 同上 | 登录 + 仅 `is_admin`（授权树 / 写授权） |
+| `Perm` | `app.common.permissions.codes` | 权限码常量；**禁止**在路由散落 `"op:…"` 字面量 |
 
 ### Rules
 
 | 场景 | 要求 |
 |------|------|
-| 登录 `POST /api/auth/login` | **唯一例外**，不注入 `current_user` |
-| 其它所有路由（含 logout / me / touch、读、写、删） | 签名必须有 `current_user` |
-| 写操作（create / update / approve 等） | 再以 `current_user=` **显式传给 Service** |
-| 读 / 列表 / 删除 | 注入即可（鉴权），**不必**传给 Service |
-| Service | **禁止**读 ContextVar / 隐式环境用户；只吃参数 |
+| 登录 `POST /api/auth/login` | **唯一例外**：不注入 `current_user` |
+| `GET /api/auth/me`、`POST /api/auth/touch`、`POST /api/auth/logout` | `Depends(get_current_user)` 即可（只需登录） |
+| **其它所有业务路由**（读 / 写 / 删 / 导出 / 上传） | `Depends(require_perm(Perm.…))` 或 `require_any_perm` / `require_admin_user` |
+| 写操作（create / update / approve 等） | 权限依赖注入后，再以 `current_user=` **显式传给 Service** |
+| 读 / 列表 / 删除 | 权限依赖注入即可；删除一般不必把 user 传给 Service（除非要审计） |
+| Service | **禁止**读 ContextVar；可再用 `require_permission(user, Perm.XXX)` 做写操作双保险 |
+| 前端 | 同码双向：侧栏 `canAccessPage` / 按钮 `can('op:…')`；**不能**只藏 UI |
 
-### Correct — 写操作传给 Service
+### Correct — 写操作（权限 + 传 Service）
 
 ```python
+from app.common.permissions.codes import Perm
+from app.deps.permissions import require_perm
+
 @router.post("", response_model=ApiResponse[StampingTonnagePriceResponse])
 def create(
     body: StampingTonnagePriceCreate,
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_CREATE)),
 ) -> ApiResponse[StampingTonnagePriceResponse]:
     record, error = _tonnage_price_service.create(
         db, body, current_user=current_user
@@ -500,14 +513,14 @@ def create(
     return ApiResponse.created(data=record, message="创建成功")
 ```
 
-### Correct — 读 / 删除只鉴权
+### Correct — 读 / 删除（权限拦截）
 
 ```python
 @router.get("/parts/{part_id}", response_model=ApiResponse[StampingPartWithProcessesResponse])
 def get_part(
     part_id: int,
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.STAMPING_PARTS_VIEW)),
 ) -> ApiResponse[StampingPartWithProcessesResponse]:
     vo = _stamping_service.get_by_id(db, part_id)
     if not vo:
@@ -519,15 +532,29 @@ def get_part(
 def delete_part(
     part_id: int,
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.STAMPING_PARTS_DELETE)),
 ) -> ApiResponse[None]:
     _stamping_service.delete(db, part_id)
     return ApiResponse.deleted(message="零件删除成功")
 ```
 
+### Correct — 共享接口（任一权限）
+
+```python
+current_user: UserVO = Depends(
+    require_any_perm(Perm.STAMPING_PARTS_VIEW, Perm.STEEL_PRICE_CALC_VIEW)
+)
+```
+
 ### Forbidden
 
 ```python
+# 业务路由只用 get_current_user、未挂权限码（登录类接口除外）
+current_user: UserVO = Depends(get_current_user)
+
+# 散落魔法字符串
+Depends(require_perm("op:stamping-parts:view"))  # ❌ 用 Perm.STAMPING_PARTS_VIEW
+
 # 缺少 current_user（登录除外）
 def list_parts(db: Session = Depends(get_db)):
     ...
@@ -536,10 +563,6 @@ def list_parts(db: Session = Depends(get_db)):
 def create(...):
     user = current_user()  # ❌ 禁止 ContextVar / 环境用户
     ...
-
-# Router 转成 Snapshot 再传（多余一层）
-operator = OperatorSnapshot.from_user(user)  # ❌ 直接传 UserVO
-service.create(db, body, operator=operator)
 ```
 
 ### Audit helpers
@@ -552,7 +575,9 @@ service.create(db, body, operator=operator)
 
 ### Note
 
-鉴权写在**每个端点签名**上，不要只靠 `include_router(..., dependencies=[...])` 隐藏依赖（教学项目要求可见）。
+- 鉴权写在**每个端点签名**上，不要只靠 `include_router(..., dependencies=[...])` 隐藏依赖。
+- 无权限抛 `PermissionException` → HTTP **403**。
+- 新增功能改权限：见 `docs/permission-design.md`「新增功能标准流程」。
 
 ---
 
@@ -578,7 +603,7 @@ Every HTTP method must follow consistent response patterns:
 def get_user(
     user_id: int,
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.SETTINGS_USERS_VIEW)),
 ) -> ApiResponse[UserVO]:
     service = UserService()
     user = service.get_user(db, user_id)
@@ -596,7 +621,7 @@ def get_user(
 )
 def list_users(
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.SETTINGS_USERS_VIEW)),
 ) -> ApiResponse[list[UserVO]]:
     service = UserService()
     users = service.list_users(db)
@@ -614,7 +639,7 @@ def list_users_paginated(
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.SETTINGS_USERS_VIEW)),
 ) -> ApiResponse[BasePageResponse[UserVO]]:
     service = UserService()
     users, total = service.list_users_paginated(db, skip=skip, limit=limit)
@@ -637,7 +662,7 @@ def list_users_paginated(
 def create_user(
     dto: UserCreateDTO,
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.SETTINGS_USERS_CREATE)),
 ) -> ApiResponse[UserVO]:
     service = UserService()
     user = service.create_user(db, dto, current_user=current_user)
@@ -655,7 +680,7 @@ def update_user(
     user_id: int,
     dto: UserUpdateDTO,
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.SETTINGS_USERS_UPDATE)),
 ) -> ApiResponse[UserVO]:
     service = UserService()
     user = service.update_user(db, user_id, dto, current_user=current_user)
@@ -674,7 +699,7 @@ def update_user(
 def delete_user(
     user_id: int,
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.SETTINGS_USERS_DELETE)),
 ) -> ApiResponse[None]:
     service = UserService()
     service.delete_user(db, user_id)
@@ -994,7 +1019,12 @@ Every endpoint:
     response_model=ApiResponse[T]
 
 Every Router (except login):
-    current_user: UserVO = Depends(get_current_user)
+    current_user via Depends(get_current_user)  # 仅 me/touch/logout
+    OR Depends(require_perm(Perm.XXX)) / require_any_perm / require_admin_user  # 业务路由
+
+Every business Router:
+    no bare get_current_user without Perm
+    no permission string literals — use Perm.*
 
 Every write Router → Service:
     pass current_user=current_user
@@ -1008,4 +1038,8 @@ Every Service:
 
 Every Repository:
     returns SQLAlchemy Model
+
+Frontend (same codes):
+    menu → canAccessPage / applySidebarPermissions
+    button → can('op:…') / hideIfCannot
 ```

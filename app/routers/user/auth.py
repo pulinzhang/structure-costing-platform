@@ -3,8 +3,10 @@
 from fastapi import APIRouter, Depends, File, Header, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
+from app.common.permissions.codes import Perm
 from app.database import get_auxiliary_db, get_db
 from app.deps.auth import extract_token, get_current_user
+from app.deps.permissions import require_perm
 from app.schemas.dto.user_dto import (
     UserLoginDTO,
     UserSelfPasswordUpdateDTO,
@@ -66,7 +68,7 @@ def update_me(
     dto: UserSelfUpdateDTO,
     db: Session = Depends(get_db),
     token_db: Session = Depends(get_auxiliary_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.SETTINGS_PROFILE_UPDATE)),
 ) -> ApiResponse[UserVO]:
     """当前用户更新个人资料，并同步 token 快照"""
     try:
@@ -88,7 +90,7 @@ async def upload_avatar(
     file: UploadFile = File(..., description="头像图片"),
     db: Session = Depends(get_db),
     token_db: Session = Depends(get_auxiliary_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.SETTINGS_PROFILE_UPDATE)),
 ) -> ApiResponse[AvatarUploadVO]:
     """
     上传头像到 uploads/avatars/，写入用户 avatar，并返回相对路径 URL。
@@ -124,7 +126,7 @@ def change_password(
     token_db: Session = Depends(get_auxiliary_db),
     authorization: str | None = Header(default=None, alias="Authorization"),
     x_token: str | None = Header(default=None, alias="X-Token"),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.SETTINGS_PROFILE_PASSWORD)),
 ) -> ApiResponse[UserVO]:
     """当前用户修改密码：必须验证旧密码；默认注销其他设备"""
     try:

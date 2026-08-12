@@ -64,13 +64,32 @@ def load_catalog() -> dict[str, Any]:
         if code not in defaults:
             defaults.append(code)
 
-    return {
+    result = {
         "version": raw.get("version", 1),
         "tree": tree,
         "defaults": defaults,
         "mandatory": mandatory,
         "all_codes": frozenset(all_codes),
     }
+    # 与 codes.Perm 双向校验（延迟 import，避免循环）
+    _assert_codes_match_catalog(result["all_codes"])
+    return result
+
+
+def _assert_codes_match_catalog(catalog_codes: frozenset[str]) -> None:
+    from app.common.permissions.codes import get_perm_code_map
+
+    const_map = get_perm_code_map()
+    const_codes = set(const_map.values())
+    missing_in_catalog = sorted(const_codes - set(catalog_codes))
+    missing_in_codes = sorted(set(catalog_codes) - const_codes)
+    if missing_in_catalog or missing_in_codes:
+        parts: list[str] = []
+        if missing_in_catalog:
+            parts.append(f"codes.py 有但 catalog.json 无: {missing_in_catalog}")
+        if missing_in_codes:
+            parts.append(f"catalog.json 有但 codes.py 无: {missing_in_codes}")
+        raise ValueError("权限码不同步: " + "; ".join(parts))
 
 
 def get_tree() -> list[dict[str, Any]]:
@@ -93,3 +112,8 @@ def get_all_codes() -> frozenset[str]:
 
 def is_valid_code(code: str) -> bool:
     return code in get_all_codes()
+
+
+def assert_codes_synced() -> None:
+    """显式触发 catalog 加载与 codes.Perm 双向校验。"""
+    load_catalog()

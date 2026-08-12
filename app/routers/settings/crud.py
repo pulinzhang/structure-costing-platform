@@ -5,8 +5,9 @@ Settings Router - API 接口
 
 from fastapi import APIRouter, Body, Depends
 
+from app.common.permissions.codes import Perm
 from app.utils.logging_config import get_logger
-from app.deps.auth import get_current_user
+from app.deps.permissions import require_perm
 from app.schemas.vo.settings_vo import ConfigVO
 from app.schemas.vo.user_vo import UserVO
 from app.utils.response import ApiResponse
@@ -18,7 +19,7 @@ router = APIRouter(prefix="/api/settings", tags=["系统设置 API"])
 
 @router.get("/config", response_model=ApiResponse[ConfigVO])
 async def get_config(
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.SETTINGS_SYSTEM_VIEW)),
 ) -> ApiResponse[ConfigVO]:
     """
     获取系统配置
@@ -36,7 +37,7 @@ async def get_config(
 @router.put("/config", response_model=ApiResponse[None])
 async def update_config(
     config_data: ConfigVO = Body(...),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.SETTINGS_SYSTEM_UPDATE)),
 ) -> ApiResponse[None]:
     """
     更新系统配置

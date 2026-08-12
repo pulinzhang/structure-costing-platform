@@ -3,8 +3,8 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
+from app.deps.permissions import require_admin_user
 from app.database import get_db
-from app.deps.auth import get_current_user
 from app.schemas.dto.user_permission_dto import UserPermissionsUpdateDTO
 from app.schemas.vo.permission_vo import PermissionNodeVO
 from app.schemas.vo.user_vo import UserVO
@@ -20,7 +20,7 @@ _permission_service = PermissionService()
     response_model=ApiResponse[list[PermissionNodeVO]],
 )
 def get_permission_tree(
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_admin_user),
 ) -> ApiResponse[list[PermissionNodeVO]]:
     """返回权限目录树（仅管理员）"""
     tree = _permission_service.get_permission_tree(current_user)
@@ -35,7 +35,7 @@ def get_permission_tree(
 def get_user_permissions(
     user_id: int,
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_admin_user),
 ) -> ApiResponse[list[str]]:
     """获取指定用户已授权权限码"""
     codes = _permission_service.get_user_permission_codes(db, user_id, current_user)
@@ -50,7 +50,7 @@ def set_user_permissions(
     user_id: int,
     dto: UserPermissionsUpdateDTO,
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_admin_user),
 ) -> ApiResponse[list[str]]:
     """覆盖保存用户权限（强制合并个人资料必选码）"""
     codes = _permission_service.set_user_permissions(

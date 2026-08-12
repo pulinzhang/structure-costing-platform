@@ -7,12 +7,12 @@ from dataclasses import asdict
 
 from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException
 
+from app.common.permissions.codes import Perm
 from app.utils.logging_config import get_logger
 from app.config import settings
 from app.database import DatabaseConfig
 from app.common.audit import display_name
-from app.common.permissions.checks import require_permission
-from app.deps.auth import get_current_user
+from app.deps.permissions import require_perm
 from app.schemas.vo.user_vo import UserVO
 from app.services.async_task import (
     STATUS_COMPLETED,
@@ -101,10 +101,9 @@ def _process_stamping_upload_in_background(
 async def upload_stamping_file(
     location: str = Form(...),
     file: UploadFile = File(...),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.STAMPING_UPLOAD_UPLOAD)),
 ) -> ApiResponse[AsyncTaskAcceptedVO]:
     """上传车型冲压工艺文件，立即返回 task_id，后台解析入库。"""
-    require_permission(current_user, "op:stamping-upload:upload")
     logger.info(
         "接收到车型冲压工艺文件上传: 基地=%s, 文件=%s",
         location,
@@ -160,7 +159,7 @@ async def upload_stamping_file(
 )
 def get_stamping_upload_task_progress(
     task_id: str,
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.STAMPING_UPLOAD_VIEW)),
 ) -> ApiResponse[AsyncTaskProgressVO]:
     """查询冲压工艺上传任务进度。"""
     task = _async_task_service.get_task_snapshot(task_id)

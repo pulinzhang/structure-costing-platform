@@ -6,9 +6,10 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
+from app.common.permissions.codes import Perm
 from app.database import DatabaseConfig, get_db
 from app.common.audit import display_name
-from app.deps.auth import get_current_user
+from app.deps.permissions import require_perm
 from app.schemas.common.page_result import PageResult
 from app.schemas.dto.steel_price_dto import SteelPriceCalcDTO
 from app.schemas.vo.async_task_vo import AsyncTaskAcceptedVO, AsyncTaskProgressVO
@@ -179,7 +180,7 @@ def list_calc_logs(
     page: int = Query(1, ge=1, description="页码"),
     size: int = Query(20, ge=1, le=100, description="每页条数"),
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.STEEL_PRICE_CALC_VIEW)),
 ) -> ApiResponse[PageResult[SteelPriceCalcLogVO]]:
     """分页查询钢价计算历史（含 detail_text）。"""
     records, total = _calc_orchestrator.list_logs(
@@ -205,7 +206,7 @@ def list_calc_logs(
 def get_calc_log(
     log_id: int,
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.STEEL_PRICE_CALC_VIEW)),
 ) -> ApiResponse[SteelPriceCalcLogVO]:
     """查看单次计算全过程（detail_text）。"""
     record = _calc_orchestrator.get_log(db, log_id)
@@ -221,7 +222,7 @@ def get_calc_log(
 def delete_calc_log(
     log_id: int,
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.STEEL_PRICE_CALC_DELETE)),
 ) -> ApiResponse[None]:
     """删除一条计算历史日志（不影响已落库的钢材价格结果）。"""
     try:
@@ -242,7 +243,7 @@ def delete_calc_log(
 )
 def get_steel_price_calc_task_progress(
     task_id: str,
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.STEEL_PRICE_CALC_VIEW)),
 ) -> ApiResponse[AsyncTaskProgressVO]:
     """查询钢价计算任务进度。"""
     task = _async_task_service.get_task_snapshot(task_id)
@@ -269,7 +270,7 @@ def get_steel_price_calc_task_progress(
 def calculate_steel_prices(
     body: SteelPriceCalcDTO,
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.STEEL_PRICE_CALC_RUN)),
 ) -> ApiResponse[AsyncTaskAcceptedVO]:
     """
     按筛选条件提交钢价联动计算（异步）。

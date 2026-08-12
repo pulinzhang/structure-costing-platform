@@ -7,6 +7,7 @@ from typing import Any
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.common.permissions.codes import Perm
 from app.config import settings
 from app.common.audit import (
     SYSTEM_USER,
@@ -79,7 +80,7 @@ class UserService:
         dto: UserCreateDTO,
         current_user: UserVO,
     ) -> UserVO:
-        require_permission(current_user, "op:settings-users:create")
+        require_permission(current_user, Perm.SETTINGS_USERS_CREATE)
         if self.repository.get_by_username(db, dto.username):
             raise ValueError(f"账号已存在: {dto.username}")
 
@@ -111,7 +112,7 @@ class UserService:
         dto: UserUpdateDTO,
         current_user: UserVO,
     ) -> UserVO | None:
-        require_permission(current_user, "op:settings-users:update")
+        require_permission(current_user, Perm.SETTINGS_USERS_UPDATE)
         data = dto.model_dump(exclude_unset=True)
         if not data:
             return self.get_by_id(db, user_id)
@@ -128,7 +129,7 @@ class UserService:
         dto: UserSelfUpdateDTO,
     ) -> UserVO:
         """当前用户更新自己的资料（不含启用状态）"""
-        require_permission(current_user, "op:settings-profile:update")
+        require_permission(current_user, Perm.SETTINGS_PROFILE_UPDATE)
         data = dto.model_dump(exclude_unset=True)
         data.update(audit_update(current_user))
         user = self.repository.update(db, current_user.id, data)
@@ -145,7 +146,7 @@ class UserService:
         filename: str,
     ) -> UserVO:
         """当前用户上传头像，写入 uploads/avatars/ 并更新 avatar 字段"""
-        require_permission(current_user, "op:settings-profile:update")
+        require_permission(current_user, Perm.SETTINGS_PROFILE_UPDATE)
         existing = self.repository.get_by_id(db, current_user.id)
         if not existing:
             raise ValueError("用户不存在")
@@ -178,7 +179,7 @@ class UserService:
         dto: UserPasswordUpdateDTO,
         current_user: UserVO,
     ) -> UserVO | None:
-        require_permission(current_user, "op:settings-users:password")
+        require_permission(current_user, Perm.SETTINGS_USERS_PASSWORD)
         user = self.repository.update(
             db,
             user_id,
@@ -198,7 +199,7 @@ class UserService:
         dto: UserSelfPasswordUpdateDTO,
     ) -> UserVO:
         """当前用户改密：先校验旧密码，再写入新密码。"""
-        require_permission(current_user, "op:settings-profile:password")
+        require_permission(current_user, Perm.SETTINGS_PROFILE_PASSWORD)
         user = self.repository.get_by_id(db, current_user.id)
         if not user:
             raise ValueError("用户不存在")
@@ -220,7 +221,7 @@ class UserService:
         return self._to_vo(db, updated)
 
     def delete(self, db: Session, user_id: int, current_user: UserVO) -> bool:
-        require_permission(current_user, "op:settings-users:delete")
+        require_permission(current_user, Perm.SETTINGS_USERS_DELETE)
         target = self.repository.get_by_id(db, user_id)
         if not target:
             return False

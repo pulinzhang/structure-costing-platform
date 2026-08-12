@@ -9,9 +9,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
+from app.common.permissions.codes import Perm
 from app.database import get_db
-from app.deps.auth import get_current_user
-from app.common.permissions.checks import require_permission
+from app.deps.permissions import require_any_perm, require_perm
 from app.services import StampingPartService
 from app.schemas.vo.stamping_vo import (
     StampingPartQuery,
@@ -39,11 +39,12 @@ router = APIRouter(prefix="/api/stamping", tags=["冲压工艺 API"])
 
 _stamping_service = StampingPartService()
 
+
 @router.get("/parts/list", response_model=ApiResponse[PageResult[StampingPartListResponse]])
 def list_parts(
     query: StampingPartQuery = Depends(),
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.STAMPING_PARTS_VIEW)),
 ) -> ApiResponse[PageResult[StampingPartListResponse]]:
     """获取零件列表（包含工序）"""
     data, total, filter_options = _stamping_service.list_parts(db, query)
@@ -61,7 +62,7 @@ def list_parts(
 def get_part(
     part_id: int,
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.STAMPING_PARTS_VIEW)),
 ) -> ApiResponse[StampingPartWithProcessesResponse]:
     """获取单个零件（包含工序）"""
     vo = _stamping_service.get_by_id(db, part_id)
@@ -74,10 +75,9 @@ def get_part(
 def delete_part(
     part_id: int,
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.STAMPING_PARTS_DELETE)),
 ) -> ApiResponse[None]:
     """删除零件（同时删除关联工序）"""
-    require_permission(current_user, "op:stamping-parts:delete")
     _stamping_service.delete(db, part_id)
     return ApiResponse.deleted(message="零件删除成功")
 
@@ -86,7 +86,7 @@ def delete_part(
 def list_parts_legacy(
     query: StampingPartQuery = Depends(),
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.STAMPING_PARTS_VIEW)),
 ) -> ApiResponse[PageResult[StampingPartListResponse]]:
     """获取零件列表（兼容旧路径）"""
     data, total, filter_options = _stamping_service.list_parts(db, query)
@@ -103,7 +103,9 @@ def list_parts_legacy(
 def list_materials(
     query: StampingMaterialQuery = Depends(),
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(
+        require_any_perm(Perm.STAMPING_PARTS_VIEW, Perm.STEEL_PRICE_CALC_VIEW)
+    ),
 ) -> ApiResponse[PageResult[StampingMaterialResponse]]:
     """获取材料列表（material, thickness, sheet_length, sheet_width）"""
     data, total, filter_options = _stamping_service.list_materials(db, query)
@@ -123,11 +125,11 @@ def list_materials(
 def get_cascade_filters(
     query: StampingCascadeFilterQuery = Depends(),
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(
+        require_any_perm(Perm.STAMPING_PARTS_VIEW, Perm.STEEL_PRICE_CALC_VIEW, Perm.STEEL_PRICE_LIST_VIEW)
+    ),
 ) -> ApiResponse[StampingCascadeFilterOptionsVO]:
-    """
-    冲压级联筛选选项：基地 → 冲压工厂 → 配套车型
-    """
+    """冲压级联筛选选项：基地 → 冲压工厂 → 配套车型"""
     options = _stamping_service.get_cascade_filter_options(db, query)
     return ApiResponse.ok(data=options, message="获取成功")
 
@@ -137,7 +139,7 @@ def update_process(
     process_id: int,
     body: StampingProcessUpdate,
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.STAMPING_PARTS_UPDATE)),
 ) -> ApiResponse[StampingProcessResponse]:
     """更新工序（如成本系数）"""
     result = _stamping_service.update_process(
@@ -153,10 +155,9 @@ def batch_update_processes(
     part_id: int,
     body: List[StampingProcessItemUpdate],
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.STAMPING_PARTS_UPDATE)),
 ) -> ApiResponse[BatchUpdateResponse]:
     """批量更新零件的所有工序（仅更新 cost_ratio）"""
-    require_permission(current_user, "op:stamping-parts:update")
     updated = _stamping_service.batch_update_processes(
         db, [item.model_dump() for item in body], current_user=current_user
     )

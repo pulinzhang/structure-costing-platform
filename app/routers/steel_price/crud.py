@@ -8,9 +8,9 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
+from app.common.permissions.codes import Perm
 from app.database import get_db
-from app.deps.auth import get_current_user
-from app.common.permissions.checks import require_permission
+from app.deps.permissions import require_perm
 from app.schemas.common.page_result import PageResult
 from app.schemas.dto.steel_price_dto import (
     SteelPriceAuditDTO,
@@ -53,7 +53,7 @@ def _raise_service_error(error: str | None, not_found_prefix: str = "记录不�
 def list_steel_prices(
     query: SteelPriceQuery = Depends(),
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.STEEL_PRICE_LIST_VIEW)),
 ) -> ApiResponse[PageResult[SteelPriceResponse]]:
     """分页浏览钢材价格。"""
     records, total, filters = _steel_price_service.paginate(db, query)
@@ -73,14 +73,13 @@ def list_steel_prices(
 def batch_delete_steel_prices(
     body: SteelPriceBatchDeleteDTO,
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.STEEL_PRICE_LIST_DELETE)),
 ) -> ApiResponse[SteelPriceBatchDeleteResultVO]:
     """
     按筛选条件批量删除未审核钢材价格。
 
     年度、月份、基地必填；已审核通过的记录跳过。
     """
-    require_permission(current_user, "op:steel-price-list:delete")
     result, error = _steel_price_service.batch_delete(db, body)
     if error:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error)
@@ -105,14 +104,13 @@ def batch_delete_steel_prices(
 def batch_approve_steel_prices(
     body: SteelPriceBatchApproveDTO,
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.STEEL_PRICE_LIST_APPROVE)),
 ) -> ApiResponse[SteelPriceBatchAuditResultVO]:
     """
     按年度+月份+基地批量审核通过。
 
     三者必填；仅处理待审/已驳回，已通过记录跳过。
     """
-    require_permission(current_user, "op:steel-price-list:approve")
     result, error = _steel_price_service.batch_approve(db, body, current_user=current_user)
     if error:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error)
@@ -137,14 +135,13 @@ def batch_approve_steel_prices(
 def batch_reverse_audit_steel_prices(
     body: SteelPriceBatchReverseAuditDTO,
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.STEEL_PRICE_LIST_REVERSE)),
 ) -> ApiResponse[SteelPriceBatchAuditResultVO]:
     """
     按年度+月份+基地批量反审核。
 
     三者必填；仅处理已通过记录，其余跳过；反审核意见必填。
     """
-    require_permission(current_user, "op:steel-price-list:reverse")
     result, error = _steel_price_service.batch_reverse_audit(
         db, body, current_user=current_user
     )
@@ -174,7 +171,7 @@ def export_download(
     steel_mill: str | None = Query(None, description="钢厂"),
     audit_status: str | None = Query(None, description="审核状态"),
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.STEEL_PRICE_LIST_EXPORT)),
 ) -> StreamingResponse:
     """
     按当前筛选条件导出钢材联动价格 Excel。
@@ -211,7 +208,7 @@ def export_download(
 def get_steel_price(
     record_id: int,
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.STEEL_PRICE_LIST_VIEW)),
 ) -> ApiResponse[SteelPriceResponse]:
     """查看单条钢材价格。"""
     record = _steel_price_service.get_by_id(db, record_id)
@@ -228,10 +225,9 @@ def update_steel_price(
     record_id: int,
     body: SteelPriceUpdate,
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.STEEL_PRICE_LIST_UPDATE)),
 ) -> ApiResponse[SteelPriceResponse]:
     """更新钢材价格（已审核通过不可改）。"""
-    require_permission(current_user, "op:steel-price-list:update")
     record, error = _steel_price_service.update(
         db, record_id, body, current_user=current_user
     )
@@ -247,10 +243,9 @@ def update_steel_price(
 def delete_steel_price(
     record_id: int,
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.STEEL_PRICE_LIST_DELETE)),
 ) -> ApiResponse[None]:
     """删除钢材价格（已审核通过不可删）。"""
-    require_permission(current_user, "op:steel-price-list:delete")
     success, error = _steel_price_service.delete(db, record_id)
     if not success:
         _raise_service_error(error or "记录不存在")
@@ -265,10 +260,9 @@ def approve_steel_price(
     record_id: int,
     body: SteelPriceAuditDTO,
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.STEEL_PRICE_LIST_APPROVE)),
 ) -> ApiResponse[SteelPriceResponse]:
     """经理审核通过。"""
-    require_permission(current_user, "op:steel-price-list:approve")
     record, error = _steel_price_service.approve(
         db, record_id, body, current_user=current_user
     )
@@ -285,10 +279,9 @@ def reject_steel_price(
     record_id: int,
     body: SteelPriceAuditDTO,
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.STEEL_PRICE_LIST_REJECT)),
 ) -> ApiResponse[SteelPriceResponse]:
     """经理审核驳回。"""
-    require_permission(current_user, "op:steel-price-list:reject")
     record, error = _steel_price_service.reject(
         db, record_id, body, current_user=current_user
     )
@@ -305,10 +298,9 @@ def reverse_audit_steel_price(
     record_id: int,
     body: SteelPriceReverseAuditDTO,
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.STEEL_PRICE_LIST_REVERSE)),
 ) -> ApiResponse[SteelPriceResponse]:
     """经理反审核（approved → pending）。"""
-    require_permission(current_user, "op:steel-price-list:reverse")
     record, error = _steel_price_service.reverse_audit(
         db, record_id, body, current_user=current_user
     )

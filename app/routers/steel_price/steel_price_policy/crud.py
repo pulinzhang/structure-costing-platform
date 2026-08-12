@@ -12,9 +12,10 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from urllib.parse import quote
 
+from app.common.permissions.codes import Perm
+from app.deps.permissions import require_any_perm, require_perm
 from app.common.audit import display_name
 from app.database import DatabaseConfig, get_db
-from app.deps.auth import get_current_user
 from app.schemas.vo.user_vo import UserVO
 from app.schemas.common.page_result import PageResult
 from app.schemas.dto.steel_price_policy_dto import (
@@ -156,7 +157,7 @@ def _process_policy_upload_in_background(
 def list_policies(
     query: PolicyQuery = Depends(),
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_any_perm(Perm.STEEL_PRICE_POLICY_DOWNLOAD_VIEW, Perm.STEEL_PRICE_POLICY_UPLOAD_VIEW)),
 ) -> ApiResponse[PageResult[PolicyListResponse]]:
     """分页筛选政策列表"""
     records, total, options = _policy_service.paginate(db, query)
@@ -176,7 +177,7 @@ def list_policies(
 )
 def get_policy_options(
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_any_perm(Perm.STEEL_PRICE_POLICY_DOWNLOAD_VIEW, Perm.STEEL_PRICE_POLICY_UPLOAD_VIEW)),
 ) -> ApiResponse[PolicyOptionsResponse]:
     """获取政策筛选下拉选项"""
     _, _, options = _policy_service.paginate(db, PolicyQuery(page=1, size=1))
@@ -195,7 +196,7 @@ async def upload_policy_excel(
     year: int = Form(..., ge=2000, le=2100, description="生效年度"),
     month: int = Form(..., ge=1, le=12, description="生效月份（1-12）"),
     file: UploadFile = File(..., description="一事一议价格 Excel 文件"),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.STEEL_PRICE_POLICY_UPLOAD_UPLOAD)),
 ) -> ApiResponse[AsyncTaskAcceptedVO]:
     """
     上传钢价政策 Excel，立即返回 task_id，后台线程解析入库。
@@ -237,7 +238,7 @@ async def upload_policy_excel(
 )
 def get_upload_task_progress(
     task_id: str,
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.STEEL_PRICE_POLICY_UPLOAD_VIEW)),
 ) -> ApiResponse[AsyncTaskProgressVO]:
     """查询政策上传/解析任务进度（辅助库）"""
     task = _async_task_service.get_task_snapshot(task_id)
@@ -267,7 +268,7 @@ def export_policies_excel(
     category_name: Optional[str] = None,
     grade_value: Optional[str] = None,
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.STEEL_PRICE_POLICY_DOWNLOAD_EXPORT)),
 ) -> StreamingResponse:
     """
     导出钢价政策主子表联合数据为 Excel，用于测试部门核对。
@@ -303,7 +304,7 @@ def export_policies_preview(
     page: int = 1,
     size: int = DEFAULT_PAGE_SIZE,
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.STEEL_PRICE_POLICY_DOWNLOAD_VIEW)),
 ) -> ApiResponse[PageResult[ExportRow]]:
     """
     预览导出数据（主子表联合查询，分页）
@@ -345,7 +346,7 @@ def batch_delete_policies(
     month: Optional[int] = None,
     steel_mill: Optional[str] = None,
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.STEEL_PRICE_POLICY_DOWNLOAD_DELETE)),
 ) -> ApiResponse[None]:
     """
     根据条件批量删除政策。
@@ -373,7 +374,7 @@ def batch_delete_policies(
 def get_policy(
     policy_id: int,
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_any_perm(Perm.STEEL_PRICE_POLICY_DOWNLOAD_VIEW, Perm.STEEL_PRICE_POLICY_UPLOAD_VIEW)),
 ) -> ApiResponse[PolicyDetailResponse]:
     """获取政策详情（含完整阶梯明细，按 sort_order + id 排序）"""
     record = _policy_service.get_by_id(db, policy_id)
@@ -389,7 +390,7 @@ def get_policy(
 def create_policy(
     body: PolicyCreate,
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.STEEL_PRICE_POLICY_UPLOAD_UPLOAD)),
 ) -> ApiResponse[PolicyDetailResponse]:
     """原子创建政策（含阶梯明细）"""
     record = _map_service_error(
@@ -406,7 +407,7 @@ def update_policy(
     policy_id: int,
     body: PolicyUpdate,
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.STEEL_PRICE_POLICY_UPLOAD_UPLOAD)),
 ) -> ApiResponse[PolicyDetailResponse]:
     """更新政策（支持更新政策头字段和整组替换阶梯明细）"""
     record = _map_service_error(
@@ -422,7 +423,7 @@ def update_policy(
 def delete_policy(
     policy_id: int,
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.STEEL_PRICE_POLICY_DOWNLOAD_DELETE)),
 ) -> ApiResponse[None]:
     """删除政策（含级联删除全部阶梯明细）"""
     success, error = _policy_service.delete(db, policy_id)
@@ -444,7 +445,7 @@ def add_ladder_item(
     policy_id: int,
     body: LadderItemCreate,
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.STEEL_PRICE_POLICY_UPLOAD_UPLOAD)),
 ) -> ApiResponse[LadderItemResponse]:
     """向指定政策新增一条阶梯明细"""
     record = _map_service_error(
@@ -462,7 +463,7 @@ def update_ladder_item(
     item_id: int,
     body: LadderItemUpdate,
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.STEEL_PRICE_POLICY_UPLOAD_UPLOAD)),
 ) -> ApiResponse[LadderItemResponse]:
     """更新指定政策下的单条阶梯明细"""
     record = _map_service_error(
@@ -479,7 +480,7 @@ def delete_ladder_item(
     policy_id: int,
     item_id: int,
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.STEEL_PRICE_POLICY_DOWNLOAD_DELETE)),
 ) -> ApiResponse[None]:
     """删除指定政策下的单条阶梯明细"""
     success, error = _policy_service.delete_item(db, item_id)
@@ -500,7 +501,7 @@ def delete_ladder_item(
 def match_ladder(
     body: PolicyMatchRequest,
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_any_perm(Perm.STEEL_PRICE_POLICY_DOWNLOAD_VIEW, Perm.STEEL_PRICE_CALC_VIEW, Perm.STEEL_PRICE_LIST_VIEW)),
 ) -> ApiResponse[PolicyMatchResponse]:
     """
     根据政策维度与尺寸值，匹配阶梯明细并返回加减价金额。

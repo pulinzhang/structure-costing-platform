@@ -6,9 +6,10 @@ Costing Router - API 接口
 from fastapi import APIRouter, Depends, Body
 from sqlalchemy.orm import Session
 
+from app.common.permissions.codes import Perm
 from app.utils.logging_config import get_logger
 from app.database import get_db
-from app.deps.auth import get_current_user
+from app.deps.permissions import require_perm
 from app.schemas.vo.user_vo import UserVO
 from app.utils.response import ApiResponse
 
@@ -21,7 +22,7 @@ router = APIRouter(prefix="/api/costing", tags=["核价 API"])
 async def calculate_cost(
     part_ids: list[int] = Body(..., description="零件ID列表"),
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.COSTING_VIEW)),
 ):
     """
     计算成本 API

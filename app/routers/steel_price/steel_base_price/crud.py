@@ -9,10 +9,11 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
+from app.common.permissions.codes import Perm
+from app.deps.permissions import require_any_perm, require_perm
 from app.common.audit import display_name
 from app.config import settings
 from app.database import DatabaseConfig, get_db
-from app.deps.auth import get_current_user
 from app.schemas.vo.user_vo import UserVO
 from app.utils.logging_config import get_logger
 from app.utils.response import ApiResponse
@@ -147,7 +148,7 @@ def _process_base_price_import_in_background(
 def list_base_prices(
     query: SteelBasePriceQuery = Depends(),
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_any_perm(Perm.BASE_PRICE_DOWNLOAD_VIEW, Perm.BASE_PRICE_UPLOAD_VIEW)),
 ) -> ApiResponse[list[SteelBasePriceResponse]]:
     """
     分页查询基准价格列表。
@@ -168,7 +169,7 @@ def list_base_prices(
 )
 def get_base_price_options(
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_any_perm(Perm.BASE_PRICE_DOWNLOAD_VIEW, Perm.BASE_PRICE_UPLOAD_VIEW)),
 ) -> ApiResponse[FilterOptionsVO]:
     """获取筛选下拉选项（年度/月份/基地/钢厂等）。"""
     filters = _build_filter_options_vo(_steel_base_price_service, db)
@@ -190,7 +191,7 @@ def export_preview(
     page: int | None = Query(None, ge=1, description="页码（前端分页用）"),
     size: int | None = Query(None, ge=1, le=5000, description="每页条数"),
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.BASE_PRICE_DOWNLOAD_VIEW)),
 ) -> ApiResponse[PageResult[SteelBasePriceExportRow]]:
     """导出预览：返回筛选后的基准价格数据（前端分页）。"""
     page_size = size or DEFAULT_EXPORT_PAGE_SIZE
@@ -230,7 +231,7 @@ def export_download(
     grade: str | None = Query(None, description="牌号（模糊）"),
     spec: str | None = Query(None, description="规格"),
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.BASE_PRICE_DOWNLOAD_EXPORT)),
 ) -> StreamingResponse:
     """下载基准价格 Excel 文件。"""
     content, filename = _steel_base_price_export_service.export(
@@ -258,7 +259,7 @@ async def import_base_price(
     file: UploadFile = File(...),
     year: int = Query(..., ge=2000, le=2100, description="生效年度"),
     month: int = Query(..., ge=1, le=12, description="生效月份"),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.BASE_PRICE_UPLOAD_UPLOAD)),
 ) -> ApiResponse[AsyncTaskAcceptedVO]:
     """导入 Excel，立即返回 task_id，后台线程解析入库。"""
     filename = file.filename or ""
@@ -309,7 +310,7 @@ async def import_base_price(
 )
 def get_base_price_import_task_progress(
     task_id: str,
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.BASE_PRICE_UPLOAD_VIEW)),
 ) -> ApiResponse[AsyncTaskProgressVO]:
     """查询基准价格导入任务进度。"""
     task = _async_task_service.get_task_snapshot(task_id)
@@ -338,7 +339,7 @@ def get_base_price_import_task_progress(
 def get_base_price(
     record_id: int,
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_any_perm(Perm.BASE_PRICE_DOWNLOAD_VIEW, Perm.BASE_PRICE_UPLOAD_VIEW)),
 ) -> ApiResponse[SteelBasePriceResponse]:
     """获取单条基准价格记录。"""
     record = _steel_base_price_service.get_by_id(db, record_id)
@@ -355,7 +356,7 @@ def get_base_price(
 def create_base_price(
     body: SteelBasePriceCreate,
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.BASE_PRICE_UPLOAD_UPLOAD)),
 ) -> ApiResponse[SteelBasePriceResponse]:
     """创建基准价格记录。"""
     record, error = _steel_base_price_service.create(db, body, current_user=current_user)
@@ -372,7 +373,7 @@ def update_base_price(
     record_id: int,
     body: SteelBasePriceUpdate,
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.BASE_PRICE_UPLOAD_UPLOAD)),
 ) -> ApiResponse[SteelBasePriceResponse]:
     """更新基准价格记录。"""
     record, error = _steel_base_price_service.update(
@@ -390,7 +391,7 @@ def update_base_price(
 def delete_base_price(
     record_id: int,
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.BASE_PRICE_DOWNLOAD_DELETE)),
 ) -> ApiResponse[None]:
     """删除基准价格记录。"""
     ok, error = _steel_base_price_service.delete(db, record_id)
@@ -406,7 +407,7 @@ def delete_base_price(
 def batch_delete_base_prices(
     body: SteelBasePriceQuery,
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(get_current_user),
+    current_user: UserVO = Depends(require_perm(Perm.BASE_PRICE_DOWNLOAD_DELETE)),
 ) -> ApiResponse[BatchDeleteResponse]:
     """按条件批量删除基准价格记录（年度+月份必须同时指定）。"""
     if body.year is None or body.month is None:

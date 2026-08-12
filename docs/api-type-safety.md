@@ -1,9 +1,11 @@
 ---
-alwaysApply: true
-description: FastAPI 后端类型安全、分层架构与 API 契约规范
+description: FastAPI 后端类型安全、分层架构、API 契约与权限拦截规范
 ---
 
 # FastAPI 后端类型安全规范
+
+> 权限目录 / 新增功能前后端双向清单见 [`docs/permission-design.md`](./permission-design.md)。  
+> Cursor 规则同步文件：`.cursor/rules/api-type-safety.mdc`（二者 §7.0 鉴权约定保持一致）。
 
 ## 1. API 响应契约
 
@@ -523,6 +525,73 @@ return {
 }
 ```
 
+---
+
+## 7.0 路由鉴权与权限（前后端双向）
+
+> 完整权限树与「新增功能标准流程」见 `docs/permission-design.md`。
+
+### 依赖来源
+
+| 依赖 | 模块 | 作用 |
+|------|------|------|
+| `get_current_user` | `app.deps.auth` | 仅校验登录；返回 `UserVO`（含 `is_admin`、`permissions`） |
+| `require_perm(Perm.XXX)` | `app.deps.permissions` | 登录 + 必须拥有指定权限码 |
+| `require_any_perm(...)` | 同上 | 登录 + 任一权限码（共享接口） |
+| `require_admin_user` | 同上 | 仅管理员（授权树 / 写授权） |
+| `Perm` | `app.common.permissions.codes` | 权限码常量；禁止路由散落 `"op:…"` 字面量 |
+
+### 规则
+
+| 场景 | 要求 |
+|------|------|
+| `POST /api/auth/login` | **唯一例外**：不注入 `current_user` |
+| `me` / `touch` / `logout` | `Depends(get_current_user)` 即可 |
+| **其它全部业务路由** | `Depends(require_perm(Perm.…))` 等；**禁止**裸 `get_current_user` |
+| 写操作 | 注入后 `current_user=` 显式传给 Service |
+| Service | 禁止 ContextVar；可用 `require_permission(user, Perm.XXX)` 双保险 |
+| 前端（同码） | 菜单 `canAccessPage`；按钮 `can('op:…')` / `hideIfCannot`；不能只藏 UI |
+
+### 正确示例
+
+```python
+from app.common.permissions.codes import Perm
+from app.deps.permissions import require_perm
+
+@router.get("/parts/{part_id}", response_model=ApiResponse[StampingPartWithProcessesResponse])
+def get_part(
+    part_id: int,
+    db: Session = Depends(get_db),
+    current_user: UserVO = Depends(require_perm(Perm.STAMPING_PARTS_VIEW)),
+) -> ApiResponse[StampingPartWithProcessesResponse]:
+    vo = _stamping_service.get_by_id(db, part_id)
+    if not vo:
+        raise HTTPException(status_code=404, detail="零件不存在")
+    return ApiResponse.ok(data=vo)
+
+
+@router.delete("/parts/{part_id}", response_model=ApiResponse[None])
+def delete_part(
+    part_id: int,
+    db: Session = Depends(get_db),
+    current_user: UserVO = Depends(require_perm(Perm.STAMPING_PARTS_DELETE)),
+) -> ApiResponse[None]:
+    _stamping_service.delete(db, part_id)
+    return ApiResponse.deleted(message="零件删除成功")
+```
+
+### 禁止
+
+```python
+# 业务路由只用登录、未挂权限码
+current_user: UserVO = Depends(get_current_user)
+
+# 魔法字符串
+Depends(require_perm("op:stamping-parts:view"))  # ❌ → Perm.STAMPING_PARTS_VIEW
+```
+
+无权限 → `PermissionException` → HTTP **403**。
+
 ### 7.1 Router 层规范（HTTP Facade）
 
 **Router 是 HTTP 门面层，只负责请求接收和响应包装**
@@ -575,6 +644,7 @@ Router 禁止：
 def list_parts(
     query: StampingPartQuery = Depends(),
     db: Session = Depends(get_db),
+    current_user: UserVO = Depends(require_perm(Perm.STAMPING_PARTS_VIEW)),
 ) -> ApiResponse[PageResult[StampingPartListResponse]]:
     """Router 只调用 Service，Service 返回什么就返回什么"""
     return ApiResponse.ok(data=_service.list_parts(db, query))
@@ -621,13 +691,14 @@ return ApiResponse.ok(data=PartVO.model_validate(part))
 )
 def get_part(
     part_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: UserVO = Depends(require_perm(Perm.STAMPING_PARTS_VIEW)),
 ) -> ApiResponse[StampingPartWithProcessesResponse]:
     """获取单个零件（包含工序）"""
     part = _stamping_service.get_by_id(db, part_id)
     if not part:
         raise HTTPException(status_code=404, detail="零件不存在")
-    return ApiResponse.ok(data=part, message="零件更新成功")
+    return ApiResponse.ok(data=part, message="获取成功")
 ```
 
 ### GET - 获取列表（不分页）
@@ -638,7 +709,8 @@ def get_part(
     response_model=ApiResponse[list[StampingProcessResponse]]
 )
 def list_processes(
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: UserVO = Depends(require_perm(Perm.STAMPING_PARTS_VIEW)),
 ) -> ApiResponse[list[StampingProcessResponse]]:
     service = StampingProcessService()
     processes = service.list_processes(db)
@@ -655,6 +727,7 @@ def list_processes(
 def list_parts(
     query: StampingPartQuery = Depends(),
     db: Session = Depends(get_db),
+    current_user: UserVO = Depends(require_perm(Perm.STAMPING_PARTS_VIEW)),
 ) -> ApiResponse[PageResult[StampingPartListResponse]]:
     """获取零件列表（包含工序）"""
     return ApiResponse.ok(data=_stamping_service.list_parts(db, query))
@@ -670,10 +743,11 @@ def list_parts(
 )
 def create_part(
     dto: StampingPartCreateDTO,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: UserVO = Depends(require_perm(Perm.STAMPING_PARTS_UPDATE)),
 ) -> ApiResponse[StampingPartVO]:
     service = StampingPartService()
-    part = service.create_part(db, dto)
+    part = service.create_part(db, dto, current_user=current_user)
     return ApiResponse.created(data=part, message="创建成功")
 ```
 
@@ -687,10 +761,11 @@ def create_part(
 def update_part(
     part_id: int,
     dto: StampingPartUpdateDTO,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: UserVO = Depends(require_perm(Perm.STAMPING_PARTS_UPDATE)),
 ) -> ApiResponse[StampingPartVO]:
     service = StampingPartService()
-    part = service.update_part(db, part_id, dto)
+    part = service.update_part(db, part_id, dto, current_user=current_user)
     if not part:
         raise HTTPException(status_code=404, detail="零件不存在")
     return ApiResponse.updated(data=part, message="更新成功")
@@ -707,10 +782,11 @@ def update_process(
     process_id: int,
     body: StampingProcessUpdate,
     db: Session = Depends(get_db),
+    current_user: UserVO = Depends(require_perm(Perm.STAMPING_PARTS_UPDATE)),
 ) -> ApiResponse[StampingProcessResponse]:
     """更新工序（如成本系数）"""
     result = _stamping_service.update_process(
-        db, process_id, body.model_dump(exclude_unset=True)
+        db, process_id, body.model_dump(exclude_unset=True), current_user=current_user
     )
     if not result:
         raise HTTPException(status_code=404, detail="工序不存在")
@@ -726,7 +802,8 @@ def update_process(
 )
 def delete_part(
     part_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: UserVO = Depends(require_perm(Perm.STAMPING_PARTS_DELETE)),
 ) -> ApiResponse[None]:
     """删除零件（同时删除关联工序）"""
     success = _stamping_service.delete(db, part_id)
@@ -971,16 +1048,30 @@ ApiResponse[Any]（应指定具体类型）
 每个接口：
     response_model=ApiResponse[T]
 
+每个业务 Router（登录除外）：
+    Depends(require_perm(Perm.XXX)) / require_any_perm / require_admin_user
+    禁止裸 get_current_user（me/touch/logout 除外）
+    禁止权限码字面量，用 Perm.*
+
+写操作 Router → Service：
+    pass current_user=current_user
+
 每个 Router：
     使用 ApiResponse.xxx() 方法返回
 
 每个 Service：
     returns VO 或 PageResult
+    无隐式 current_user / ContextVar
 
 每个 Repository：
     returns SQLAlchemy Model
 
 分页接口：
     Service 返回 PageResult[VO]
-    Router 用 ApiResponse.ok(data=page_result) 包装
+    Router 用 ApiResponse.ok(data=page_result) 或 list_ 包装
+
+前端（同权限码双向）：
+    菜单 canAccessPage / applySidebarPermissions
+    按钮 can('op:…') / hideIfCannot
+    详见 docs/permission-design.md
 ```

@@ -32,3 +32,16 @@ def require_permission(
     if has_permission(user, code):
         return
     raise PermissionException(message or f"权限不足: {code}")
+
+
+def require_any_permission(
+    user: UserVO,
+    codes: list[str],
+    message: str | None = None,
+) -> None:
+    """拥有 codes 中任一权限即通过。"""
+    if not codes:
+        raise PermissionException(message or "权限不足")
+    if any(has_permission(user, code) for code in codes):
+        return
+    raise PermissionException(message or f"权限不足: {' / '.join(codes)}")
