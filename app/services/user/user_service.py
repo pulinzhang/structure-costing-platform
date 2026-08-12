@@ -60,6 +60,7 @@ class UserService:
         skip = (query.page - 1) * query.size
         rows, total = self.repository.paginate(
             db,
+            keyword=query.keyword,
             username=query.username,
             real_name=query.real_name,
             is_active=query.is_active,

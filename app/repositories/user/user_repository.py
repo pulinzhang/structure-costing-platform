@@ -2,6 +2,7 @@
 
 from typing import Any
 
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.models.user import User
@@ -19,6 +20,7 @@ class UserRepository:
     def paginate(
         self,
         db: Session,
+        keyword: str | None = None,
         username: str | None = None,
         real_name: str | None = None,
         is_active: bool | None = None,
@@ -26,10 +28,19 @@ class UserRepository:
         limit: int = 20,
     ) -> tuple[list[User], int]:
         q = db.query(User)
-        if username:
-            q = q.filter(User.username.like(f"%{username}%"))
-        if real_name:
-            q = q.filter(User.real_name.like(f"%{real_name}%"))
+        if keyword:
+            pattern = f"%{keyword}%"
+            q = q.filter(
+                or_(
+                    User.username.like(pattern),
+                    User.real_name.like(pattern),
+                )
+            )
+        else:
+            if username:
+                q = q.filter(User.username.like(f"%{username}%"))
+            if real_name:
+                q = q.filter(User.real_name.like(f"%{real_name}%"))
         if is_active is not None:
             q = q.filter(User.is_active == is_active)
 

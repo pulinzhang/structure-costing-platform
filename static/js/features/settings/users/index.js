@@ -16,6 +16,7 @@ const usersState = {
     page: 1,
     pageSize: 20,
     totalPages: 1,
+    keyword: '',
     username: '',
     realName: '',
     isActive: null,
@@ -76,8 +77,9 @@ async function loadData(page = 1) {
             page,
             size: usersState.pageSize,
         };
-        if (usersState.username) params.username = usersState.username;
-        if (usersState.realName) params.real_name = usersState.realName;
+        if (usersState.keyword) params.keyword = usersState.keyword;
+        if (!usersState.keyword && usersState.username) params.username = usersState.username;
+        if (!usersState.keyword && usersState.realName) params.real_name = usersState.realName;
         if (usersState.isActive !== null && usersState.isActive !== '') {
             params.is_active = usersState.isActive;
         }
@@ -101,6 +103,8 @@ async function loadData(page = 1) {
             }
         }
 
+        updateOverviewStats();
+
         if (totalCountPagination) {
             totalCountPagination.textContent = `共 ${usersState.total} 条`;
         }
@@ -112,7 +116,7 @@ async function loadData(page = 1) {
         if (tableBody) {
             tableBody.innerHTML = `
                 <tr>
-                    <td colspan="8" class="px-4 py-8 text-center text-[#9e9e9e] text-xs">
+                    <td colspan="6" class="px-4 py-8 text-center text-[#9e9e9e] text-xs">
                         加载数据失败，请重试
                     </td>
                 </tr>
@@ -121,6 +125,22 @@ async function loadData(page = 1) {
     } finally {
         usersState.isLoading = false;
         if (loadingState) loadingState.classList.add('hidden');
+    }
+}
+
+function updateOverviewStats() {
+    const statTotal = document.getElementById('statTotalUsers');
+    const statActive = document.getElementById('statActiveUsers');
+    const statAdmin = document.getElementById('statAdminUsers');
+
+    if (statTotal) statTotal.textContent = String(usersState.total);
+    if (statActive) {
+        const activeCount = usersState.records.filter((r) => r.is_active !== false).length;
+        statActive.textContent = String(activeCount);
+    }
+    if (statAdmin) {
+        const adminCount = usersState.records.filter((r) => r.is_admin === true).length;
+        statAdmin.textContent = String(adminCount);
     }
 }
 
@@ -176,17 +196,23 @@ function bindEvents() {
         });
     }
 
-    ['filterUsername', 'filterRealName'].forEach((id) => {
-        const input = document.getElementById(id);
-        if (input) {
-            input.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    applyFilters();
-                    loadData(1);
-                }
-            });
-        }
-    });
+    const keywordInput = document.getElementById('filterKeyword');
+    if (keywordInput) {
+        keywordInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                applyFilters();
+                loadData(1);
+            }
+        });
+    }
+
+    const filterIsActive = document.getElementById('filterIsActive');
+    if (filterIsActive) {
+        filterIsActive.addEventListener('change', () => {
+            applyFilters();
+            loadData(1);
+        });
+    }
 
     bindEditDrawerEvents();
     bindPasswordDrawerEvents();
@@ -196,12 +222,12 @@ function bindEvents() {
 }
 
 function applyFilters() {
-    const usernameInput = document.getElementById('filterUsername');
-    const realNameInput = document.getElementById('filterRealName');
+    const keywordInput = document.getElementById('filterKeyword');
     const isActiveSelect = document.getElementById('filterIsActive');
 
-    usersState.username = usernameInput ? usernameInput.value.trim() : '';
-    usersState.realName = realNameInput ? realNameInput.value.trim() : '';
+    usersState.keyword = keywordInput ? keywordInput.value.trim() : '';
+    usersState.username = '';
+    usersState.realName = '';
 
     const activeValue = isActiveSelect ? isActiveSelect.value : '';
     if (activeValue === 'true') usersState.isActive = true;
@@ -291,12 +317,7 @@ function openAddDrawer() {
     const usernameHint = document.getElementById('editUsernameHint');
     const form = document.getElementById('editForm');
 
-    if (title) {
-        title.innerHTML = `
-            <span style="width:3px;height:14px;background:#d32f2f;border-radius:1px;display:inline-block;box-shadow: 0 0 8px rgba(211,47,47,0.5);"></span>
-            新增用户
-        `;
-    }
+    if (title) title.textContent = '新增用户';
     if (userId) userId.value = '';
     if (form) form.reset();
     if (usernameInput) {
@@ -322,12 +343,7 @@ function openEditDrawer(record) {
     const passwordInput = document.getElementById('editPassword');
     const usernameHint = document.getElementById('editUsernameHint');
 
-    if (title) {
-        title.innerHTML = `
-            <span style="width:3px;height:14px;background:#d32f2f;border-radius:1px;display:inline-block;box-shadow: 0 0 8px rgba(211,47,47,0.5);"></span>
-            编辑用户
-        `;
-    }
+    if (title) title.textContent = '编辑用户';
     if (userId) userId.value = record.id;
     if (usernameInput) {
         usernameInput.value = record.username || '';

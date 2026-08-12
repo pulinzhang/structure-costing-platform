@@ -55,6 +55,7 @@ class UserSelfPasswordUpdateDTO(BaseModel):
 class UserQueryDTO(BaseModel):
     """用户分页查询"""
 
+    keyword: str | None = Field(None, description="融合搜索（账号或姓名，模糊 OR）")
     username: str | None = Field(None, description="登录账号（模糊）")
     real_name: str | None = Field(None, description="姓名（模糊）")
     is_active: bool | None = Field(None, description="启用状态")
