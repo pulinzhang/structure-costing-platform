@@ -74,6 +74,14 @@ class BaseRepository:
 class StampingPartRepository:
     """零件数据访问"""
 
+    def count_all(self, db: Session) -> int:
+        """零件总数。"""
+        return db.query(StampingPart).count()
+
+    def count_distinct_vehicle_models(self, db: Session) -> int:
+        """去重车型数量。"""
+        return db.query(StampingPart.vehicle_model).distinct().count()
+
     def get_by_id(self, db: Session, part_id: int) -> Optional[StampingPart]:
         from sqlalchemy.orm import selectinload
         return (
@@ -467,6 +475,10 @@ class StampingPartRepository:
 
 class StampingProcessRepository:
     """工序数据访问"""
+
+    def count_all(self, db: Session) -> int:
+        """工序总数。"""
+        return db.query(StampingProcess).count()
 
     def get_by_id(self, db: Session, process_id: int) -> Optional[StampingProcess]:
         return db.query(StampingProcess).filter(StampingProcess.id == process_id).first()

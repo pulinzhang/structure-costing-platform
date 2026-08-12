@@ -527,70 +527,29 @@ return {
 
 ---
 
-## 7.0 路由鉴权与权限（前后端双向）
+## 7.0 路由鉴权与权限
 
-> 完整权限树与「新增功能标准流程」见 `docs/permission-design.md`。
-
-### 依赖来源
-
-| 依赖 | 模块 | 作用 |
-|------|------|------|
-| `get_current_user` | `app.deps.auth` | 仅校验登录；返回 `UserVO`（含 `is_admin`、`permissions`） |
-| `require_perm(Perm.XXX)` | `app.deps.permissions` | 登录 + 必须拥有指定权限码 |
-| `require_any_perm(...)` | 同上 | 登录 + 任一权限码（共享接口） |
-| `require_admin_user` | 同上 | 仅管理员（授权树 / 写授权） |
-| `Perm` | `app.common.permissions.codes` | 权限码常量；禁止路由散落 `"op:…"` 字面量 |
-
-### 规则
+> **权限细则唯一真相**：[`permission-design.md`](./permission-design.md)（§0 / §10）。  
+> 本节只列类型安全硬约束，不重复权限树与长示例。
 
 | 场景 | 要求 |
 |------|------|
-| `POST /api/auth/login` | **唯一例外**：不注入 `current_user` |
-| `me` / `touch` / `logout` | `Depends(get_current_user)` 即可 |
-| **其它全部业务路由** | `Depends(require_perm(Perm.…))` 等；**禁止**裸 `get_current_user` |
-| 写操作 | 注入后 `current_user=` 显式传给 Service |
-| Service | 禁止 ContextVar；可用 `require_permission(user, Perm.XXX)` 双保险 |
-| 前端（同码） | 菜单 `canAccessPage`；按钮 `can('op:…')` / `hideIfCannot`；不能只藏 UI |
-
-### 正确示例
+| `login` | 不注入 `current_user` |
+| `me` / `touch` / `logout` | `Depends(get_current_user)` |
+| **其它业务路由** | `Depends(require_perm(Perm.XXX))` / `require_any_perm` / `require_admin_user` |
+| 权限码 | 只用 `Perm.*`，禁止 `"op:…"` 字面量 |
+| 写操作 | `current_user=` 传给 Service；禁止 ContextVar |
+| 前端同码 | `canAccessPage` / `can('op:…')`；不能只藏 UI |
+| 失败 | `PermissionException` → HTTP 403 |
 
 ```python
 from app.common.permissions.codes import Perm
 from app.deps.permissions import require_perm
 
-@router.get("/parts/{part_id}", response_model=ApiResponse[StampingPartWithProcessesResponse])
-def get_part(
-    part_id: int,
-    db: Session = Depends(get_db),
-    current_user: UserVO = Depends(require_perm(Perm.STAMPING_PARTS_VIEW)),
-) -> ApiResponse[StampingPartWithProcessesResponse]:
-    vo = _stamping_service.get_by_id(db, part_id)
-    if not vo:
-        raise HTTPException(status_code=404, detail="零件不存在")
-    return ApiResponse.ok(data=vo)
-
-
-@router.delete("/parts/{part_id}", response_model=ApiResponse[None])
-def delete_part(
-    part_id: int,
-    db: Session = Depends(get_db),
-    current_user: UserVO = Depends(require_perm(Perm.STAMPING_PARTS_DELETE)),
-) -> ApiResponse[None]:
-    _stamping_service.delete(db, part_id)
-    return ApiResponse.deleted(message="零件删除成功")
+current_user: UserVO = Depends(require_perm(Perm.STAMPING_PARTS_VIEW))
 ```
 
-### 禁止
-
-```python
-# 业务路由只用登录、未挂权限码
-current_user: UserVO = Depends(get_current_user)
-
-# 魔法字符串
-Depends(require_perm("op:stamping-parts:view"))  # ❌ → Perm.STAMPING_PARTS_VIEW
-```
-
-无权限 → `PermissionException` → HTTP **403**。
+---
 
 ### 7.1 Router 层规范（HTTP Facade）
 
@@ -1072,6 +1031,6 @@ ApiResponse[Any]（应指定具体类型）
 
 前端（同权限码双向）：
     菜单 canAccessPage / applySidebarPermissions
-    按钮 can('op:…') / hideIfCannot
-    详见 docs/permission-design.md
+    按钮 can('op:…')
+    细则见 docs/permission-design.md
 ```

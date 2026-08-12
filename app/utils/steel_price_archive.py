@@ -14,9 +14,9 @@ from __future__ import annotations
 
 import logging
 import re
-from datetime import datetime
 from pathlib import Path
 
+from app.common.timezone import now
 from app.config import settings
 
 logger = logging.getLogger("utils.steel_price_archive")
@@ -59,7 +59,7 @@ def save_steel_price_upload(
         raise ValueError(f"未知归档类型: {file_kind}")
 
     safe_name = _sanitize_filename(filename or "upload.xlsx")
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    timestamp = now().strftime("%Y%m%d_%H%M%S")
     archive_name = f"{timestamp}_{file_kind}_{safe_name}"
 
     target_dir = (

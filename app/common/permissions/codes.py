@@ -98,6 +98,10 @@ class Perm:
     SETTINGS_USERS_DELETE = "op:settings-users:delete"  # 删除
     SETTINGS_USERS_GRANT = "op:settings-users:grant"  # 授权
 
+    MENU_SETTINGS_LOGS = "menu:settings-logs"  # 操作日志
+    SETTINGS_LOGS_VIEW = "op:settings-logs:view"  # 查看
+    SETTINGS_LOGS_EXPORT = "op:settings-logs:export"  # 导出
+
 
 def iter_perm_codes() -> Iterator[str]:
     """遍历 Perm 上全部权限码字符串。"""

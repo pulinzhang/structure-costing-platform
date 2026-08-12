@@ -9,7 +9,10 @@ from typing import Any, List, Dict, Optional
 from sqlalchemy.orm import Session
 
 from app.common.audit import audit_create, audit_update
-from app.repositories.stamping.stamping_repository import StampingPartRepository
+from app.repositories.stamping.stamping_repository import (
+    StampingPartRepository,
+    StampingProcessRepository,
+)
 from app.schemas.vo.stamping_vo import (
     StampingPartQuery,
     StampingPartListResponse,
@@ -30,6 +33,19 @@ class StampingPartService:
 
     def __init__(self):
         self.repository = StampingPartRepository()
+        self.process_repository = StampingProcessRepository()
+
+    def count_parts(self, db: Session) -> int:
+        """零件总数。"""
+        return self.repository.count_all(db)
+
+    def count_processes(self, db: Session) -> int:
+        """工序总数。"""
+        return self.process_repository.count_all(db)
+
+    def count_vehicle_models(self, db: Session) -> int:
+        """去重车型数量。"""
+        return self.repository.count_distinct_vehicle_models(db)
 
     def list_parts(
         self, db: Session, query: StampingPartQuery

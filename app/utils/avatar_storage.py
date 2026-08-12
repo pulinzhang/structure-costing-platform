@@ -13,9 +13,9 @@ from __future__ import annotations
 
 import logging
 import uuid
-from datetime import datetime
 from pathlib import Path
 
+from app.common.timezone import now
 from app.config import settings
 
 logger = logging.getLogger("utils.avatar_storage")
@@ -57,7 +57,7 @@ def save_user_avatar(
         raise ValueError("仅支持 jpg / jpeg / png / webp / gif 格式")
 
     safe_name = (
-        f"u{user_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        f"u{user_id}_{now().strftime('%Y%m%d_%H%M%S')}"
         f"_{uuid.uuid4().hex[:8]}{suffix}"
     )
     target_path = get_avatar_dir() / safe_name

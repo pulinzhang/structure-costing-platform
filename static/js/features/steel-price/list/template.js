@@ -129,7 +129,7 @@ export function steelPriceListTemplate() {
                 </div>
 
                 <div class="overflow-x-auto brabus-bg-grid">
-                    <table class="w-full min-w-[2500px] bg-transparent">
+                    <table class="w-full min-w-[2900px] bg-transparent">
                         <thead>
                             <tr class="border-b border-[#17171C] bg-[#0B0B0D]/95">
                                 <th class="p-0 w-0"></th>
@@ -150,6 +150,10 @@ export function steelPriceListTemplate() {
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">匹配</th>
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">审核</th>
                                 <th class="px-3 py-3 text-center text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap w-40">操作</th>
+                                <th class="px-3 py-3 text-left text-[9px] font-normal tracking-[0.08em] text-[#3a3a3a] whitespace-nowrap">创建人</th>
+                                <th class="px-3 py-3 text-left text-[9px] font-normal tracking-[0.08em] text-[#3a3a3a] whitespace-nowrap">创建时间</th>
+                                <th class="px-3 py-3 text-left text-[9px] font-normal tracking-[0.08em] text-[#3a3a3a] whitespace-nowrap">最后修改人</th>
+                                <th class="px-3 py-3 text-left text-[9px] font-normal tracking-[0.08em] text-[#3a3a3a] whitespace-nowrap">最后修改时间</th>
                             </tr>
                         </thead>
                         <tbody id="steelPriceTableBody" class="bg-transparent"></tbody>
@@ -479,6 +483,10 @@ export function renderSteelPriceRows(records) {
                     <button class="delete-btn flex items-center justify-center w-7 h-7 rounded-sm text-[#555555] hover:text-[#FFFFFF] hover:bg-[#FFFFFF]/5 transition-all ${approved ? 'opacity-30 pointer-events-none' : ''}" title="${approved ? '已审核，不可删除' : '删除'}">${window.svgIcon('trash', 'w-3 h-3')}</button>` : ''}
                 </div>
             </td>
+            <td class="${cell} text-[9px] text-[#484848] whitespace-nowrap">${esc(record.created_by)}</td>
+            <td class="${cell} text-[9px] text-[#3a3a3a] font-mono whitespace-nowrap">${esc(formatAuditDateTime(record.created_at))}</td>
+            <td class="${cell} text-[9px] text-[#484848] whitespace-nowrap">${esc(record.updated_by)}</td>
+            <td class="${cell} text-[9px] text-[#3a3a3a] font-mono whitespace-nowrap">${esc(formatAuditDateTime(record.updated_at))}</td>
         </tr>`;
     }).join('');
 }
@@ -679,6 +687,13 @@ function auditBadge(status) {
     const label = { pending: '待审', approved: '已通过', rejected: '已驳回' }[status] || status || '-';
     const cls = map[status] || 'bg-[#1C1C22] text-[#8E8E93] border border-[#2A2A32]';
     return `<span class="inline-flex items-center px-2 py-0.5 text-[10px] font-sans rounded-sm ${cls}">${esc(label)}</span>`;
+}
+
+function formatAuditDateTime(value) {
+    if (!value) return '-';
+    const text = String(value);
+    if (text.length >= 19) return text.slice(0, 19).replace('T', ' ');
+    return text;
 }
 
 function formatPrice(value, digits = 2) {

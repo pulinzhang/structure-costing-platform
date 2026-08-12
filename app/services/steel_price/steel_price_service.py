@@ -2,7 +2,6 @@
 
 import logging
 import uuid
-from datetime import datetime
 from decimal import Decimal
 from typing import Optional
 
@@ -10,6 +9,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.common.audit import audit_create, audit_update, display_name
+from app.common.timezone import now
 from app.repositories.steel_price import SteelPriceRepository
 from app.schemas.dto.steel_price_dto import (
     SteelPriceAuditDTO,
@@ -106,7 +106,7 @@ class SteelPriceService:
         data: SteelPriceCreate,
         current_user: UserVO,
     ) -> tuple[Optional[SteelPriceResponse], Optional[str]]:
-        now = datetime.now()
+        current_time = now()
         payload = data.model_dump()
         payload["spec"] = self._build_spec(data.thickness, data.width, data.spec)
         payload["final_price_per_ton"] = self._compute_final_price(
@@ -122,7 +122,7 @@ class SteelPriceService:
         payload["calc_status"] = "success"
         payload["calc_message"] = None
         payload["formula_version"] = FORMULA_VERSION
-        payload["calculated_at"] = now
+        payload["calculated_at"] = current_time
         payload["audit_status"] = AUDIT_PENDING
         payload["audited_by"] = None
         payload["audited_at"] = None
@@ -314,7 +314,7 @@ class SteelPriceService:
                 month=data.month,
                 location=location,
                 audited_by=audited_by,
-                audited_at=datetime.now(),
+                audited_at=now(),
                 audit_remark=audit_remark,
                 updated_by=audited_by,
             )
@@ -374,7 +374,7 @@ class SteelPriceService:
                 month=data.month,
                 location=location,
                 reverse_audited_by=reverse_audited_by,
-                reverse_audited_at=datetime.now(),
+                reverse_audited_at=now(),
                 reverse_audit_remark=reverse_audit_remark,
                 updated_by=reverse_audited_by,
             )
@@ -422,7 +422,7 @@ class SteelPriceService:
                 {
                     "audit_status": AUDIT_APPROVED,
                     "audited_by": operator_name,
-                    "audited_at": datetime.now(),
+                    "audited_at": now(),
                     "audit_remark": data.audit_remark,
                     **audit_update(current_user),
                 },
@@ -458,7 +458,7 @@ class SteelPriceService:
                 {
                     "audit_status": AUDIT_REJECTED,
                     "audited_by": operator_name,
-                    "audited_at": datetime.now(),
+                    "audited_at": now(),
                     "audit_remark": data.audit_remark,
                     **audit_update(current_user),
                 },
@@ -491,7 +491,7 @@ class SteelPriceService:
                 {
                     "audit_status": AUDIT_PENDING,
                     "reverse_audited_by": display_name(current_user),
-                    "reverse_audited_at": datetime.now(),
+                    "reverse_audited_at": now(),
                     "reverse_audit_remark": data.reverse_audit_remark.strip(),
                     **audit_update(current_user),
                 },
@@ -525,7 +525,7 @@ class SteelPriceService:
         updated_count = 0
         skipped_approved_count = 0
         failed_count = 0
-        now = datetime.now()
+        current_time = now()
 
         try:
             for payload in rows:
@@ -549,7 +549,7 @@ class SteelPriceService:
                         **payload,
                         "calc_batch_id": calc_batch_id,
                         "formula_version": payload.get("formula_version") or FORMULA_VERSION,
-                        "calculated_at": now,
+                        "calculated_at": current_time,
                         "audit_status": AUDIT_PENDING,
                         "audited_by": None,
                         "audited_at": None,

@@ -1,9 +1,8 @@
 """登录 Token 表 — 落在辅助库（auxiliary.db），与主业务库隔离。"""
 
-from datetime import datetime
-
 from sqlalchemy import Column, DateTime, Index, Integer, String
 
+from app.common.timezone import now
 from app.database import AuxiliaryBase
 from app.models.audit_mixin import AuditUserMixin
 
@@ -23,7 +22,7 @@ class UserToken(AuditUserMixin, AuxiliaryBase):
     department = Column(String(50), nullable=True, comment="部门")
     avatar = Column(String(255), nullable=True, comment="头像")
 
-    last_active_at = Column(DateTime, default=datetime.now, nullable=False, comment="最后活动时间")
+    last_active_at = Column(DateTime, default=now, nullable=False, comment="最后活动时间（东八区墙钟）")
 
     __table_args__ = (
         Index("ix_user_tokens_user_active", "user_id", "last_active_at"),

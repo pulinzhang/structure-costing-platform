@@ -6,6 +6,7 @@ from typing import Any
 from sqlalchemy.orm import Session
 
 from app.common.audit import display_name
+from app.common.timezone import now
 from app.models.user_token import UserToken
 
 # 无活动超时：3 小时
@@ -29,9 +30,9 @@ class UserTokenRepository:
         row = self.get_by_token(db, token)
         if not row:
             return None
-        now = active_at or datetime.now()
-        row.last_active_at = now
-        row.updated_at = now
+        current_time = active_at or now()
+        row.last_active_at = current_time
+        row.updated_at = current_time
         row.updated_by = display_name(row)
         db.commit()
         db.refresh(row)
@@ -79,7 +80,7 @@ class UserTokenRepository:
         payload = {key: value for key, value in snapshot.items() if key in allowed}
         if not payload:
             return 0
-        payload["updated_at"] = datetime.now()
+        payload["updated_at"] = now()
         count = (
             db.query(UserToken)
             .filter(UserToken.user_id == user_id)
@@ -90,7 +91,7 @@ class UserTokenRepository:
 
     def delete_expired(self, db: Session, idle_hours: int = TOKEN_IDLE_HOURS) -> int:
         """删除超过 idle_hours 无活动的 token"""
-        deadline = datetime.now() - timedelta(hours=idle_hours)
+        deadline = now() - timedelta(hours=idle_hours)
         count = (
             db.query(UserToken)
             .filter(UserToken.last_active_at < deadline)

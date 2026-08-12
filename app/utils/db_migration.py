@@ -188,3 +188,76 @@ def run_auto_migration():
             )
         else:
             logger.info("[db_migration] %s 完成，所有表结构已同步", label)
+
+    # 主库一次性数据补丁：operation_logs 早期用 SQLite CURRENT_TIMESTAMP(UTC)
+    _patch_operation_logs_utc_to_china(DatabaseConfig.get_engine())
+
+
+def _patch_operation_logs_utc_to_china(engine: Engine) -> None:
+    """将历史 operation_logs.created_at 从 UTC 纠正为东八区墙钟（仅执行一次）。"""
+    if engine.dialect.name != "sqlite":
+        return
+    patch_id = "operation_logs_created_at_utc_to_china_v1"
+    try:
+        with engine.begin() as conn:
+            conn.execute(
+                text(
+                    """
+                    CREATE TABLE IF NOT EXISTS schema_patches (
+                        patch_id TEXT PRIMARY KEY,
+                        applied_at TEXT NOT NULL
+                    )
+                    """
+                )
+            )
+            existed = conn.execute(
+                text("SELECT 1 FROM schema_patches WHERE patch_id = :pid"),
+                {"pid": patch_id},
+            ).first()
+            if existed:
+                return
+
+            tables = {
+                row[0]
+                for row in conn.execute(
+                    text(
+                        "SELECT name FROM sqlite_master "
+                        "WHERE type='table' AND name='operation_logs'"
+                    )
+                )
+            }
+            if "operation_logs" not in tables:
+                conn.execute(
+                    text(
+                        "INSERT INTO schema_patches(patch_id, applied_at) "
+                        "VALUES (:pid, :ts)"
+                    ),
+                    {"pid": patch_id, "ts": _patch_timestamp()},
+                )
+                return
+
+            result = conn.execute(
+                text(
+                    "UPDATE operation_logs "
+                    "SET created_at = datetime(created_at, '+8 hours')"
+                )
+            )
+            conn.execute(
+                text(
+                    "INSERT INTO schema_patches(patch_id, applied_at) "
+                    "VALUES (:pid, :ts)"
+                ),
+                {"pid": patch_id, "ts": _patch_timestamp()},
+            )
+            logger.info(
+                "[db_migration] 已纠正 operation_logs.created_at UTC→东八区，影响 %s 行",
+                result.rowcount if result.rowcount is not None else "?",
+            )
+    except Exception:
+        logger.exception("[db_migration] operation_logs 时区补丁失败")
+
+
+def _patch_timestamp() -> str:
+    from app.common.timezone import now
+
+    return now().strftime("%Y-%m-%d %H:%M:%S")

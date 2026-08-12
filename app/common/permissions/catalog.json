@@ -205,6 +205,15 @@
             { "code": "op:settings-users:delete", "label": "删除", "type": "op" },
             { "code": "op:settings-users:grant", "label": "授权", "type": "op" }
           ]
+        },
+        {
+          "code": "menu:settings-logs",
+          "label": "操作日志",
+          "type": "menu",
+          "children": [
+            { "code": "op:settings-logs:view", "label": "查看", "type": "op" },
+            { "code": "op:settings-logs:export", "label": "导出", "type": "op" }
+          ]
         }
       ]
     }

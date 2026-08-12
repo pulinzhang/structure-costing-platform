@@ -7,10 +7,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.common.permissions.codes import Perm
-from app.utils.logging_config import get_logger
 from app.database import get_db
 from app.deps.permissions import require_perm
-from app.models.stamping import StampingPart, StampingProcess
 from app.schemas.vo.dashboard_vo import (
     CountResponse,
     DashboardStatsVO,
@@ -18,11 +16,14 @@ from app.schemas.vo.dashboard_vo import (
 )
 from app.schemas.vo.user_vo import UserVO
 from app.services.dashboard.dashboard_service import DashboardService
+from app.utils.logging_config import get_logger
 from app.utils.response import ApiResponse
 
 
 logger = get_logger("router.dashboard")
 router = APIRouter(prefix="/api/dashboard", tags=["仪表盘 API"])
+
+_dashboard_service = DashboardService()
 
 
 @router.get("/stats/parts", response_model=ApiResponse[CountResponse])
@@ -32,8 +33,10 @@ def get_parts_count(
 ) -> ApiResponse[CountResponse]:
     """获取零件总数"""
     try:
-        count = db.query(StampingPart).count()
-        return ApiResponse.ok(data=CountResponse(count=count), message="获取成功")
+        return ApiResponse.ok(
+            data=_dashboard_service.get_parts_count(db),
+            message="获取成功",
+        )
     except Exception as e:
         logger.error(f"获取零件总数失败: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -46,8 +49,10 @@ def get_processes_count(
 ) -> ApiResponse[CountResponse]:
     """获取工序总数"""
     try:
-        count = db.query(StampingProcess).count()
-        return ApiResponse.ok(data=CountResponse(count=count), message="获取成功")
+        return ApiResponse.ok(
+            data=_dashboard_service.get_processes_count(db),
+            message="获取成功",
+        )
     except Exception as e:
         logger.error(f"获取工序总数失败: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -60,8 +65,10 @@ def get_models_count(
 ) -> ApiResponse[CountResponse]:
     """获取车型数量"""
     try:
-        count = db.query(StampingPart.vehicle_model).distinct().count()
-        return ApiResponse.ok(data=CountResponse(count=count), message="获取成功")
+        return ApiResponse.ok(
+            data=_dashboard_service.get_models_count(db),
+            message="获取成功",
+        )
     except Exception as e:
         logger.error(f"获取车型数量失败: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -82,8 +89,7 @@ def get_steel_price_calc_stats(
 ) -> ApiResponse[SteelPriceCalcStatsVO]:
     """钢价联动计算页数据依据统计"""
     try:
-        service = DashboardService()
-        stats = service.get_steel_price_calc_stats(
+        stats = _dashboard_service.get_steel_price_calc_stats(
             db,
             year=year,
             month=month,
@@ -104,17 +110,8 @@ def get_all_stats(
 ) -> ApiResponse[DashboardStatsVO]:
     """获取仪表盘全部统计数据"""
     try:
-        parts_count = db.query(StampingPart).count()
-        processes_count = db.query(StampingProcess).count()
-        models_count = db.query(StampingPart.vehicle_model).distinct().count()
-
         return ApiResponse.ok(
-            data=DashboardStatsVO(
-                total_parts=parts_count,
-                total_processes=processes_count,
-                total_models=models_count,
-                recent_uploads=[],
-            ),
+            data=_dashboard_service.get_all_stats(db),
             message="获取成功",
         )
     except Exception as e:

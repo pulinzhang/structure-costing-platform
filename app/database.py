@@ -15,6 +15,7 @@ from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker, Session, declarative_base
 from sqlalchemy.pool import StaticPool
 
+from app.common.timezone import CHINA_TZ_NAME
 from app.config import settings
 from app.utils.logging_config import get_logger
 
@@ -29,11 +30,18 @@ _AUXILIARY_ONLY_TABLES = ("user_tokens", "async_tasks")
 
 
 def _configure_sqlite_connection(dbapi_connection, connection_record):
-    """SQLite：外键 + WAL + 写锁等待更友好"""
+    """SQLite：外键 + WAL；时间按东八区墙钟由应用层 now() 写入。"""
     cursor = dbapi_connection.cursor()
     cursor.execute("PRAGMA foreign_keys=ON")
     cursor.execute("PRAGMA journal_mode=WAL")
     cursor.execute("PRAGMA synchronous=NORMAL")
+    cursor.close()
+
+
+def _configure_postgres_connection(dbapi_connection, connection_record):
+    """PostgreSQL：会话时区固定为东八区。"""
+    cursor = dbapi_connection.cursor()
+    cursor.execute(f"SET TIME ZONE '{CHINA_TZ_NAME}'")
     cursor.close()
 
 
@@ -58,7 +66,12 @@ def _create_engine_for_url(database_url: str, *, label: str):
                 echo=settings.DEBUG,
             )
         event.listen(engine, "connect", _configure_sqlite_connection)
-        logger.info("%s SQLite 引擎创建成功: %s", label, database_url)
+        logger.info(
+            "%s SQLite 引擎创建成功: %s（业务时区 %s）",
+            label,
+            database_url,
+            CHINA_TZ_NAME,
+        )
         return engine
 
     engine = create_engine(
@@ -68,7 +81,8 @@ def _create_engine_for_url(database_url: str, *, label: str):
         pool_pre_ping=True,
         echo=settings.DEBUG,
     )
-    logger.info("%s PostgreSQL 引擎创建成功", label)
+    event.listen(engine, "connect", _configure_postgres_connection)
+    logger.info("%s PostgreSQL 引擎创建成功（TIME ZONE %s）", label, CHINA_TZ_NAME)
     return engine
 
 

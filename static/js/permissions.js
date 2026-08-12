@@ -69,62 +69,22 @@ export function applySidebarPermissions() {
         }
     });
 
-    // 自内向外隐藏空分组（含嵌套）
     const hideEmptyGroups = (root) => {
         root.querySelectorAll('.has-submenu').forEach((item) => {
             const submenu = item.querySelector(':scope > .submenu, :scope > ul.submenu');
             if (!submenu) return;
-            const visibleChild = Array.from(submenu.children).some((child) => {
-                if (!(child instanceof HTMLElement)) return false;
-                if (child.classList.contains('hidden')) return false;
-                // 嵌套 has-submenu 若自身未 hidden 算可见
-                return true;
-            });
-            // 再精确：子 li 中是否有未 hidden
             const hasVisible = Array.from(submenu.querySelectorAll(':scope > li')).some(
                 (li) => !li.classList.contains('hidden')
             );
             item.classList.toggle('hidden', !hasVisible);
-            void visibleChild;
         });
     };
 
-    // 多扫两轮以处理嵌套分组
     hideEmptyGroups(sidebar);
     hideEmptyGroups(sidebar);
-}
-
-/**
- * 无权限时给元素加 hidden（支持选择器或 HTMLElement）
- * @param {string} code
- * @param {...(string|Element|null|undefined)} targets
- */
-export function hideIfCannot(code, ...targets) {
-    if (can(code)) return;
-    targets.forEach((target) => {
-        const el = typeof target === 'string' ? document.querySelector(target) : target;
-        if (el) el.classList.add('hidden');
-    });
-}
-
-/**
- * 无权限时禁用元素
- * @param {string} code
- * @param {...(string|Element|null|undefined)} targets
- */
-export function disableIfCannot(code, ...targets) {
-    if (can(code)) return;
-    targets.forEach((target) => {
-        const el = typeof target === 'string' ? document.querySelector(target) : target;
-        if (el) {
-            el.disabled = true;
-            el.classList.add('opacity-40', 'pointer-events-none');
-        }
-    });
 }
 
 if (typeof window !== 'undefined') {
     window.can = can;
     window.canAccessPage = canAccessPage;
-    window.hideIfCannot = hideIfCannot;
 }

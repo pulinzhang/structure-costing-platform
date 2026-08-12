@@ -14,12 +14,13 @@ import threading
 import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timedelta
+from datetime import timedelta
 from typing import Any, Callable, Optional
 
 from sqlalchemy import delete, update
 from sqlalchemy.orm import Session
 
+from app.common.timezone import now
 from app.database import AuxiliaryDatabaseConfig
 from app.models.async_task import AsyncTask
 from app.utils.logging_config import get_logger
@@ -97,7 +98,7 @@ class AsyncTaskService:
         """创建 pending 任务（写入辅助库）。"""
         self.clean_expired_tasks()
         task_id = str(uuid.uuid4())
-        now = datetime.now()
+        current_time = now()
         with self._autocommit_connection() as conn:
             conn.execute(
                 AsyncTask.__table__.insert().values(
@@ -111,8 +112,8 @@ class AsyncTaskService:
                     operator_name=operator_name,
                     created_by=operator_name,
                     updated_by=operator_name,
-                    created_at=now,
-                    updated_at=now,
+                    created_at=current_time,
+                    updated_at=current_time,
                 )
             )
         return AsyncTask(
@@ -126,8 +127,8 @@ class AsyncTaskService:
             operator_name=operator_name,
             created_by=operator_name,
             updated_by=operator_name,
-            created_at=now,
-            updated_at=now,
+            created_at=current_time,
+            updated_at=current_time,
         )
 
     def get_by_task_id(self, task_id: str) -> Optional[AsyncTask]:
@@ -168,7 +169,7 @@ class AsyncTaskService:
         result: Any = None,
     ) -> None:
         """AUTOCOMMIT 更新任务（辅助库）。"""
-        values: dict[str, Any] = {"updated_at": datetime.now()}
+        values: dict[str, Any] = {"updated_at": now()}
         if status is not None:
             values["status"] = status
         if progress is not None:
@@ -216,7 +217,7 @@ class AsyncTaskService:
 
     def clean_expired_tasks(self) -> int:
         """清理过期任务（辅助库 AUTOCOMMIT）。"""
-        cutoff = datetime.now() - timedelta(seconds=TASK_TTL_SECONDS)
+        cutoff = now() - timedelta(seconds=TASK_TTL_SECONDS)
         with self._autocommit_connection() as conn:
             result = conn.execute(
                 delete(AsyncTask).where(AsyncTask.updated_at < cutoff)

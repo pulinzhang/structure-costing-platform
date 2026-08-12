@@ -6,6 +6,8 @@
 from sqlalchemy.orm import Session
 
 from app.schemas.vo.dashboard_vo import (
+    CountResponse,
+    DashboardStatsVO,
     SteelPriceCalcFilterOptionsVO,
     SteelPriceCalcStatsVO,
 )
@@ -23,6 +25,27 @@ class DashboardService:
         self.base_price_service = SteelBasePriceService()
         self.policy_service = SteelPricePolicyService()
         self.stamping_service = StampingPartService()
+
+    def get_parts_count(self, db: Session) -> CountResponse:
+        """零件总数。"""
+        return CountResponse(count=self.stamping_service.count_parts(db))
+
+    def get_processes_count(self, db: Session) -> CountResponse:
+        """工序总数。"""
+        return CountResponse(count=self.stamping_service.count_processes(db))
+
+    def get_models_count(self, db: Session) -> CountResponse:
+        """去重车型数量。"""
+        return CountResponse(count=self.stamping_service.count_vehicle_models(db))
+
+    def get_all_stats(self, db: Session) -> DashboardStatsVO:
+        """仪表盘汇总统计。"""
+        return DashboardStatsVO(
+            total_parts=self.stamping_service.count_parts(db),
+            total_processes=self.stamping_service.count_processes(db),
+            total_models=self.stamping_service.count_vehicle_models(db),
+            recent_uploads=[],
+        )
 
     def get_steel_price_calc_stats(
         self,
@@ -55,7 +78,6 @@ class DashboardService:
             month=month,
         )
 
-        # 基地 / 冲压工厂 / 配套车型 全空时，厚度规格行数固定为 0
         if not location and not stamping_supplier and not vehicle_model:
             thickness_row_count = 0
         else:

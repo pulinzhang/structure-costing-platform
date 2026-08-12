@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.common.timezone import now
 from app.models.steel_price_calc_log import SteelPriceCalcLog
 from app.repositories.steel_price import SteelPriceCalcLogRepository
 from app.schemas.vo.steel_price_vo import SteelPriceCalcLogVO
@@ -118,7 +119,7 @@ class CalcLogService:
         if existing is not None:
             raise DuplicatePeriodCalcError(DUPLICATE_PERIOD_CALC_MESSAGE)
 
-        started_at = datetime.now()
+        started_at = now()
         calc_batch_id = f"calc-{uuid.uuid4().hex[:16]}"
         try:
             record = self.repository.create(
@@ -219,7 +220,7 @@ class CalcLogService:
         detail_text: str | None = None,
     ) -> None:
         """异常路径：释放 processing 锁为 failed。"""
-        finished_at = datetime.now()
+        finished_at = now()
         payload = {
             "status": STATUS_FAILED,
             "finished_at": finished_at,
@@ -302,10 +303,10 @@ class CalcLogService:
         )
         if record is None or record.started_at is None:
             return
-        age = datetime.now() - record.started_at
+        age = now() - record.started_at
         if age < timedelta(seconds=STALE_PROCESSING_SECONDS):
             return
-        finished_at = datetime.now()
+        finished_at = now()
         hours = STALE_PROCESSING_SECONDS // 3600
         self.repository.update(
             db,

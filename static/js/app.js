@@ -21,21 +21,22 @@ import {
     applySidebarPermissions,
     canAccessPage,
     fallbackPageName,
-} from './permissions.js?v=3';
+} from './permissions.js?v=4';
 import { pageConfig as dashboardPage }      from './features/dashboard/index.js';
 import { pageConfig as stampingUploadPage } from './features/stamping/upload/index.js?v=35';
 import { pageConfig as stampingPartsPage }  from './features/stamping/parts/index.js?v=2';
 import { pageConfig as stampingTonnagePage } from './features/stamping/tonnage/index.js?v=2';
-import { pageConfig as steelPriceListPage }   from './features/steel-price/list/index.js?v=41';
-import { pageConfig as steelPriceCalcPage }    from './features/steel-price/calc/index.js?v=5';
+import { pageConfig as steelPriceListPage }   from './features/steel-price/list/index.js?v=42';
+import { pageConfig as steelPriceCalcPage }    from './features/steel-price/calc/index.js?v=6';
 import { pageConfig as steelPricePolicyUploadPage } from './features/steel-price/policy-upload/index.js?v=35';
 import { pageConfig as steelPricePolicyDownloadPage } from './features/steel-price/policy-download/index.js?v=26';
 import { pageConfig as basePriceUploadPage } from './features/steel-price/base-price-upload/index.js?v=36';
 import { pageConfig as basePriceDownloadPage } from './features/steel-price/base-price-download/index.js?v=26';
 import { pageConfig as costingPage }        from './features/costing/index.js';
 import { pageConfig as quotationPage }      from './features/quotation/index.js';
-import { pageConfig as settingsPage }       from './features/settings/index.js?v=2';
+import { pageConfig as settingsPage }       from './features/settings/system/index.js?v=3';
 import { pageConfig as settingsUsersPage }  from './features/settings/users/index.js?v=2';
+import { pageConfig as settingsLogsPage }   from './features/settings/logs/index.js?v=1';
 import { pageConfig as settingsProfilePage } from './features/settings/profile/index.js?v=6';
 
 // 未登录禁止进入主应用：不渲染业务页，避免请求 dashboard 等后端
@@ -60,6 +61,7 @@ const pages = {
     quotation:        quotationPage,
     settings:         settingsPage,
     'settings-users': settingsUsersPage,
+    'settings-logs': settingsLogsPage,
     'settings-profile': settingsProfilePage,
 };
 

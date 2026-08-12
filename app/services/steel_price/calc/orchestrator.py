@@ -21,6 +21,7 @@ from typing import Optional
 
 from sqlalchemy.orm import Session
 
+from app.common.timezone import now
 from app.services.steel_price.calc.calc_log_service import CalcLogService
 from app.services.steel_price.calc.models import (
     SteelPriceCalcRequest,
@@ -146,7 +147,7 @@ class SteelPriceCalcOrchestrator:
                 finished_at=finished,
             )
 
-        started_at = started_at or datetime.now()
+        started_at = started_at or now()
         calc_batch_id = calc_batch_id or f"calc-{uuid.uuid4().hex[:16]}"
         log_builder = ProcessLogBuilder()
 
@@ -282,7 +283,7 @@ class SteelPriceCalcOrchestrator:
             result.status = STATUS_FAILED
             log_builder.section("计算校验失败")
             log_builder.error(str(error))
-            finished_at = datetime.now()
+            finished_at = now()
             result.finished_at = finished_at.isoformat(timespec="seconds")
             result.detail_text = log_builder.build()
             result.log_id = _persist_log(result, finished_at)
@@ -294,14 +295,14 @@ class SteelPriceCalcOrchestrator:
             log_builder.error(str(error))
             log_builder.line(traceback.format_exc())
             logger.exception("钢价计算失败: batch=%s error=%s", calc_batch_id, error)
-            finished_at = datetime.now()
+            finished_at = now()
             result.finished_at = finished_at.isoformat(timespec="seconds")
             result.detail_text = log_builder.build()
             result.log_id = _persist_log(result, finished_at)
             _report(100, f"计算失败: {error}")
             return result
 
-        finished_at = datetime.now()
+        finished_at = now()
         result.finished_at = finished_at.isoformat(timespec="seconds")
         log_builder.line(f"结束时间: {result.finished_at}")
         log_builder.line(f"耗时: {(finished_at - started_at).total_seconds():.2f}s")

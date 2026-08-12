@@ -6,8 +6,8 @@
 > - 目录源 `app/common/permissions/catalog.json`  
 > - 常量 `app/common/permissions/codes.py`（`Perm.*`）  
 > - 路由依赖 `app/deps/permissions.py`  
-> - 前端 `static/js/permissions.js`（`can` / `canAccessPage` / `hideIfCannot`）  
-> - API 鉴权约定同步：`docs/api-type-safety.md` §7.0、`.cursor/rules/api-type-safety.mdc` §7.0  
+> - 前端 `static/js/permissions.js`（`can` / `canAccessPage` / `applySidebarPermissions`）  
+> - API 类型安全层只留短约束：`docs/api-type-safety.md` §7.0、`.cursor/rules/api-type-safety.mdc` §7.0（**权限细则以本文为准**）  
 
 ---
 
@@ -22,10 +22,10 @@
 | 1 | 目录 | 在树中增加 `menu:*` / `op:*`（及分组） | `app/common/permissions/catalog.json` |
 | 2 | 常量 | 重新生成 `Perm.*` | `python -X utf8 scripts/generate_perm_codes.py` → `codes.py` |
 | 3 | 后端路由 | 每个业务端点挂权限依赖 | `Depends(require_perm(Perm.XXX))` 等 |
-| 4 | 后端写操作 | Service 收 `current_user`；需要时再 `require_permission(user, Perm.XXX)` | 对应 `*_service.py` |
+| 4 | 后端写操作 | Service 收 `current_user=`；**默认不再二次 `require_permission`**（见 §0.2 例外） | 对应 `*_service.py` |
 | 5 | 前端菜单 | 侧栏增加 `data-page="{page-key}"`；page-key 默认对应 `menu:{page-key}`（系统设置页例外见 §4.1） | `static/index.html` |
 | 6 | 前端路由 | `app.js` 的 `pages` 注册新 page；`canAccessPage` 自动拦无权限直链 | `static/js/app.js` |
-| 7 | 前端按钮 | 同 `op` 码：`can('op:…')` / `hideIfCannot` / 模板条件渲染 | 对应 `features/**/index.js`、`template.js` |
+| 7 | 前端按钮 | 同 `op` 码：`can('op:…')` 或模板条件渲染 | 对应 `features/**/index.js`、`template.js` |
 | 8 | 授权 | admin 在用户授权树勾选后，目标用户重新登录或 `me`/`touch` 刷新会话 | 用户管理「授权」 |
 | 9 | 文档 | 若树结构有评审需要，同步更新本文 §7 可读清单 | `docs/permission-design.md` |
 
@@ -53,17 +53,27 @@ current_user: UserVO = Depends(require_admin_user)
 **禁止**：业务路由裸 `Depends(get_current_user)`；禁止 `require_perm("op:…")` 字面量。  
 **例外**：仅 `login` 无用户；`me` / `touch` / `logout` 可用 `get_current_user`。
 
+**Service 层权限再校验（例外，勿扩散）**：
+
+| 模块 | 行为 |
+|---|---|
+| 默认业务 Service | **只信 Router 已注入的权限**；不再调用 `require_permission` |
+| `UserService` 写操作 | Router 已挂 `Perm.SETTINGS_*`，Service 内再 `require_permission` 一次（用户管理敏感操作双保险） |
+| `PermissionService` | Router 已 `require_admin_user`，Service 内再 `require_admin` |
+
+新增业务模块不要复制「双检」；统一在 Router 用 `require_perm` 拦截即可。
+
 ### 0.3 前端写法（强制）
 
 ```javascript
-import { can, canAccessPage, hideIfCannot } from '../../../permissions.js?v=…';
+import { can, canAccessPage } from '../../../permissions.js?v=…';
 
 // 菜单：侧栏 a[data-page="my-page"] → 默认校验 menu:my-page
 // 路由：app.js 已用 canAccessPage(page) 拦截，无权限跳 fallbackPageName()
 
 // 按钮：与后端同一 op 码
 if (!can('op:my-page:create')) { /* 隐藏或禁用 */ }
-hideIfCannot('op:my-page:export', '#btnExport');
+// 或模板：${can('op:my-page:export') ? `<button…>` : ''}
 ```
 
 会话字段（登录 / `me` / `touch`）：`is_admin`、`permissions[]`。  
@@ -144,6 +154,7 @@ hideIfCannot('op:my-page:export', '#btnExport');
 | 系统设置（叶子页） | `menu:settings-system` |
 | 个人资料 | `menu:settings-profile` |
 | 用户管理 | `menu:settings-users` |
+| 操作日志 | `menu:settings-logs` |
 
 叶子页的 `data-page` / 路由 key 仍可为 `settings`；权限码用 `settings-system` 避免与分组撞名。实现时在「路由 page → menu code」映射表中写死即可。
 
@@ -379,13 +390,16 @@ root
     ├── menu:settings-system
     │   ├── op:settings-system:view
     │   └── op:settings-system:update
-    └── menu:settings-users
-        ├── op:settings-users:view
-        ├── op:settings-users:create
-        ├── op:settings-users:update
-        ├── op:settings-users:password
-        ├── op:settings-users:delete
-        └── op:settings-users:grant            # 授权；实际仅 is_admin 可执行
+    ├── menu:settings-users
+    │   ├── op:settings-users:view
+    │   ├── op:settings-users:create
+    │   ├── op:settings-users:update
+    │   ├── op:settings-users:password
+    │   ├── op:settings-users:delete
+    │   └── op:settings-users:grant            # 授权；实际仅 is_admin 可执行
+    └── menu:settings-logs
+        ├── op:settings-logs:view
+        └── op:settings-logs:export
 ```
 
 ### 7.1 数量汇总
@@ -393,9 +407,9 @@ root
 | 类别 | 数量 |
 |---|---|
 | 分组 `menu` | 6（`stamping` / `yishiyiyi` / `thickness` / `base-price` / `steel-price` / `settings`） |
-| 叶子 `menu` | 15 |
-| 操作 `op` | 44 |
-| 可勾节点合计 | 约 65（`root` 一般不入库） |
+| 叶子 `menu` | 16 |
+| 操作 `op` | 46 |
+| 可勾节点合计 | 约 68（`root` 一般不入库） |
 | 新建默认 | 7 |
 | 强制 | 5（均包含在默认集内） |
 
@@ -419,6 +433,7 @@ root
 | settings-profile | `view` / `update` / `password` | 查看；改资料/头像；改自己密码 |
 | settings-system | `view` / `update` | 查看系统设置；保存设置 |
 | settings-users | `view` / `create` / `update` / `password` / `delete` / `grant` | 查询；新增；编辑；重置他人密码；删除；授权 |
+| settings-logs | `view` / `export` | 查看审计列表；导出 Excel |
 
 批量操作与单条操作共用同一 `op`（例如批量删除与单条删除均校验 `…:delete`）。
 
@@ -474,8 +489,6 @@ canAccessPage(page) => can(menuCodeForPage(page))
 
 ```text
 can('op:{page}:{action}')
-hideIfCannot('op:…', '#btn')
-disableIfCannot('op:…', '#btn')
 ```
 
 模板内亦可：`` ${can('op:…') ? `<button…>` : ''} ``。
@@ -516,18 +529,16 @@ disableIfCannot('op:…', '#btn')
 ### 11.1 校验辅助
 
 ```text
-# Router
-require_perm(Perm.STAMPING_PARTS_DELETE)
-require_any_perm(Perm.A, Perm.B)
-require_admin_user
+# Router（默认拦截点）
+require_perm(Perm.…) / require_any_perm(…) / require_admin_user
 
-# Service（可选双保险）
-require_permission(current_user, Perm.SETTINGS_USERS_CREATE)
-require_admin(current_user)
+# Service（例外，见 §0.2）
+require_admin(current_user)                    # PermissionService
+require_permission(current_user, Perm.…)       # 仅 UserService 写操作双保险
 # is_admin → 放行；否则查 permissions；失败 → PermissionException → 403
 ```
 
-分层：Router 注入带权限的 `current_user` → Service 业务 / 可选再校验 → Repository 只访问数据。
+分层：Router 注入带权限的 `current_user` → Service 业务（用户模块可再校验）→ Repository 只访问数据。
 
 ---
 
@@ -548,7 +559,7 @@ app/repositories/user/user_permission_repository.py
 app/services/user/permission_service.py
 app/routers/user/permissions.py
 
-static/js/permissions.js    # can / canAccessPage / applySidebarPermissions / hideIfCannot
+static/js/permissions.js    # can / canAccessPage / applySidebarPermissions
 static/js/app.js            # 侧栏过滤 + 路由守卫
 static/js/features/**       # 按钮级 can()
 static/index.html           # 侧栏 data-page
@@ -602,3 +613,5 @@ static/index.html           # 侧栏 data-page
 | 2026-08-12 | 首版落地：catalog、is_admin、user_permissions、授权 API/抽屉、侧栏与路由守卫 |
 | 2026-08-12 | 路由统一 `require_perm(Perm.*)`；`codes.py` + 启动双向校验 |
 | 2026-08-12 | 增补 §0「新增功能标准流程」；前后端同码双向写入；对齐 api-type-safety §7.0 |
+| 2026-08-12 | 减熵：api-type-safety §7.0 收短链；删除未用 hideIfCannot/disableIfCannot；明确 UserService 双检为例外 |
+| 2026-08-12 | 新增 `menu:settings-logs` / `op:settings-logs:view|export`；操作日志页与导出审计 |

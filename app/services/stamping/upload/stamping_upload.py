@@ -13,6 +13,7 @@ from typing import Callable, Dict, List, Optional
 from sqlalchemy.orm import Session
 
 from app.common.audit import audit_create, display_name
+from app.common.timezone import now
 from app.parsers.stamping.stamping_parser import parse_stamping_excel
 from app.parsers.stamping.models.part import Part
 from app.parsers.stamping.models.process import Process
@@ -138,12 +139,10 @@ class StampingUploadService:
         version: str,
     ) -> FileInfo:
         """保存上传文件到磁盘，返回文件信息"""
-        import datetime
-
         safe_location = location.replace("/", "_").replace("\\", "_")
         safe_vehicle = vehicle_model.replace("/", "_").replace("\\", "_")
         safe_version = version.replace("/", "_").replace("\\", "_").replace(" ", "_")
-        timestamp_str = datetime.datetime.now().strftime("%H%M%S")
+        timestamp_str = now().strftime("%H%M%S")
         new_filename = f"{safe_location}_{safe_vehicle}_{safe_version}_{timestamp_str}_{filename}"
 
         upload_subdir = settings.UPLOAD_DIR / safe_location / safe_vehicle / safe_version

@@ -211,7 +211,7 @@ async function loadCalcHistory(page = calcState.history.page) {
         size: calcState.history.size,
     };
 
-    body.innerHTML = `<tr><td colspan="12" class="py-8 text-center text-[#555]">加载中...</td></tr>`;
+    body.innerHTML = `<tr><td colspan="13" class="py-8 text-center text-[#555]">加载中...</td></tr>`;
 
     try {
         const response = await HttpClient.get(STEEL_PRICE_CALC_LOGS_API, { params });
@@ -236,7 +236,7 @@ async function loadCalcHistory(page = calcState.history.page) {
         }
     } catch (error) {
         console.error('加载计算历史失败:', error);
-        body.innerHTML = `<tr><td colspan="12" class="py-8 text-center text-[#ef5350]">加载失败</td></tr>`;
+        body.innerHTML = `<tr><td colspan="13" class="py-8 text-center text-[#ef5350]">加载失败</td></tr>`;
     }
 }
 
@@ -245,7 +245,7 @@ function renderHistoryRows(items) {
     if (!body) return;
 
     if (!items.length) {
-        body.innerHTML = `<tr><td colspan="12" class="py-8 text-center text-[#555]">暂无计算记录</td></tr>`;
+        body.innerHTML = `<tr><td colspan="13" class="py-8 text-center text-[#555]">暂无计算记录</td></tr>`;
         return;
     }
 
@@ -257,11 +257,13 @@ function renderHistoryRows(items) {
         if (item.vehicle_model) filterParts.push(item.vehicle_model);
         const filterText = filterParts.length ? filterParts.join(' / ') : '全部';
         const started = formatDateTime(item.started_at);
+        const createdBy = item.created_by || item.operator_name || '-';
         const isProcessing = item.status === 'processing';
 
         return `
             <tr class="hover:bg-[#ffffff]/[0.02] transition-colors text-[#999]" data-log-id="${esc(item.id)}">
                 <td class="py-2 px-2 font-mono text-[#666] whitespace-nowrap">${esc(started)}</td>
+                <td class="py-2 px-2 text-[#ccc] whitespace-nowrap">${esc(createdBy)}</td>
                 <td class="py-2 px-2 font-mono text-[#ccc] whitespace-nowrap">${esc(period)}</td>
                 <td class="py-2 px-2 text-[#ccc] whitespace-nowrap">${esc(item.location || '-')}</td>
                 <td class="py-2 px-2 text-[#777] max-w-[140px] truncate" title="${esc(filterText)}">${esc(filterText)}</td>

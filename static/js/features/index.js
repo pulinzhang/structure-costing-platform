@@ -94,6 +94,11 @@ export const pageMeta = {
         en: 'USER_ADMIN',
         breadcrumb: ['设置', '用户管理'],
     },
+    'settings-logs': {
+        title: '操作日志',
+        en: 'AUDIT_LOGS',
+        breadcrumb: ['设置', '操作日志'],
+    },
     'settings-profile': {
         title: '个人资料',
         en: 'USER_PROFILE',

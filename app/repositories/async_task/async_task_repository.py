@@ -5,6 +5,7 @@ from typing import Optional
 
 from sqlalchemy.orm import Session
 
+from app.common.timezone import now
 from app.models.async_task import AsyncTask
 
 
@@ -23,7 +24,7 @@ class AsyncTaskRepository:
     def update_fields(self, db: Session, record: AsyncTask, fields: dict) -> AsyncTask:
         for key, value in fields.items():
             setattr(record, key, value)
-        record.updated_at = datetime.now()
+        record.updated_at = now()
         db.flush()
         return record
 

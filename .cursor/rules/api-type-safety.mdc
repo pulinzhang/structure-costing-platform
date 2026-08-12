@@ -466,118 +466,29 @@ return {
 
 ---
 
-## 7.0 Router Authentication & Permission（登录 + 权限双向）
+## 7.0 Router Authentication & Permission
 
-> 完整权限树 / 新增功能清单见 `docs/permission-design.md`。  
-> 本节约定：每个业务 API **必须**同时满足「已登录」+「对应 `op:*` / admin」。
-
-### 依赖来源
-
-| 依赖 | 模块 | 作用 |
-|------|------|------|
-| `get_current_user` | `app.deps.auth` | 仅校验登录 / token；返回 `UserVO`（含 `is_admin`、`permissions`） |
-| `require_perm(Perm.XXX)` | `app.deps.permissions` | 登录 + **必须**拥有指定权限码 |
-| `require_any_perm(Perm.A, Perm.B)` | 同上 | 登录 + 任一权限码即可（共享接口） |
-| `require_admin_user` | 同上 | 登录 + 仅 `is_admin`（授权树 / 写授权） |
-| `Perm` | `app.common.permissions.codes` | 权限码常量；**禁止**在路由散落 `"op:…"` 字面量 |
-
-### Rules
+> **权限细则唯一真相**：[`docs/permission-design.md`](../../docs/permission-design.md)（§0 新增流程 / §10 前后端双向）。  
+> 本节只保留类型安全层必须遵守的硬约束；不要在此重复权限树或长示例。
 
 | 场景 | 要求 |
 |------|------|
-| 登录 `POST /api/auth/login` | **唯一例外**：不注入 `current_user` |
-| `GET /api/auth/me`、`POST /api/auth/touch`、`POST /api/auth/logout` | `Depends(get_current_user)` 即可（只需登录） |
-| **其它所有业务路由**（读 / 写 / 删 / 导出 / 上传） | `Depends(require_perm(Perm.…))` 或 `require_any_perm` / `require_admin_user` |
-| 写操作（create / update / approve 等） | 权限依赖注入后，再以 `current_user=` **显式传给 Service** |
-| 读 / 列表 / 删除 | 权限依赖注入即可；删除一般不必把 user 传给 Service（除非要审计） |
-| Service | **禁止**读 ContextVar；可再用 `require_permission(user, Perm.XXX)` 做写操作双保险 |
-| 前端 | 同码双向：侧栏 `canAccessPage` / 按钮 `can('op:…')`；**不能**只藏 UI |
-
-### Correct — 写操作（权限 + 传 Service）
+| `POST /api/auth/login` | 不注入 `current_user` |
+| `me` / `touch` / `logout` | `Depends(get_current_user)` |
+| **其它业务路由** | `Depends(require_perm(Perm.XXX))` / `require_any_perm` / `require_admin_user` |
+| 权限码 | 只用 `Perm.*`（`app.common.permissions.codes`），禁止 `"op:…"` 字面量 |
+| 写操作 | `current_user=` 显式传给 Service；禁止 ContextVar |
+| 前端同码 | `canAccessPage` / `can('op:…')`；不能只藏 UI |
+| 失败 | `PermissionException` → HTTP 403 |
 
 ```python
 from app.common.permissions.codes import Perm
 from app.deps.permissions import require_perm
 
-@router.post("", response_model=ApiResponse[StampingTonnagePriceResponse])
-def create(
-    body: StampingTonnagePriceCreate,
-    db: Session = Depends(get_db),
-    current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_CREATE)),
-) -> ApiResponse[StampingTonnagePriceResponse]:
-    record, error = _tonnage_price_service.create(
-        db, body, current_user=current_user
-    )
-    if error:
-        raise HTTPException(status_code=400, detail=error)
-    return ApiResponse.created(data=record, message="创建成功")
+current_user: UserVO = Depends(require_perm(Perm.STAMPING_PARTS_VIEW))
 ```
 
-### Correct — 读 / 删除（权限拦截）
-
-```python
-@router.get("/parts/{part_id}", response_model=ApiResponse[StampingPartWithProcessesResponse])
-def get_part(
-    part_id: int,
-    db: Session = Depends(get_db),
-    current_user: UserVO = Depends(require_perm(Perm.STAMPING_PARTS_VIEW)),
-) -> ApiResponse[StampingPartWithProcessesResponse]:
-    vo = _stamping_service.get_by_id(db, part_id)
-    if not vo:
-        raise HTTPException(status_code=404, detail="零件不存在")
-    return ApiResponse.ok(data=vo)
-
-
-@router.delete("/parts/{part_id}", response_model=ApiResponse[None])
-def delete_part(
-    part_id: int,
-    db: Session = Depends(get_db),
-    current_user: UserVO = Depends(require_perm(Perm.STAMPING_PARTS_DELETE)),
-) -> ApiResponse[None]:
-    _stamping_service.delete(db, part_id)
-    return ApiResponse.deleted(message="零件删除成功")
-```
-
-### Correct — 共享接口（任一权限）
-
-```python
-current_user: UserVO = Depends(
-    require_any_perm(Perm.STAMPING_PARTS_VIEW, Perm.STEEL_PRICE_CALC_VIEW)
-)
-```
-
-### Forbidden
-
-```python
-# 业务路由只用 get_current_user、未挂权限码（登录类接口除外）
-current_user: UserVO = Depends(get_current_user)
-
-# 散落魔法字符串
-Depends(require_perm("op:stamping-parts:view"))  # ❌ 用 Perm.STAMPING_PARTS_VIEW
-
-# 缺少 current_user（登录除外）
-def list_parts(db: Session = Depends(get_db)):
-    ...
-
-# Service 读隐式上下文
-def create(...):
-    user = current_user()  # ❌ 禁止 ContextVar / 环境用户
-    ...
-```
-
-### Audit helpers
-
-写 Service 用 `app.common.audit`：
-
-* `audit_create(current_user)` → `created_by` / `updated_by`
-* `audit_update(current_user)` → `updated_by`
-* 脚本 / seed 用 `SYSTEM_USER`（也是 `UserVO`）
-
-### Note
-
-- 鉴权写在**每个端点签名**上，不要只靠 `include_router(..., dependencies=[...])` 隐藏依赖。
-- 无权限抛 `PermissionException` → HTTP **403**。
-- 新增功能改权限：见 `docs/permission-design.md`「新增功能标准流程」。
+Audit：`audit_create` / `audit_update` / `SYSTEM_USER`（`app.common.audit`）。
 
 ---
 
@@ -1041,5 +952,6 @@ Every Repository:
 
 Frontend (same codes):
     menu → canAccessPage / applySidebarPermissions
-    button → can('op:…') / hideIfCannot
+    button → can('op:…')
+    details → docs/permission-design.md
 ```

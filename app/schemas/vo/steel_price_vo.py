@@ -197,6 +197,7 @@ class SteelPriceCalcLogVO(BaseModel):
     detail_text: str = ""
     operator_id: Optional[int] = None
     operator_name: Optional[str] = None
+    created_by: Optional[str] = None
     started_at: Optional[datetime] = None
     finished_at: Optional[datetime] = None
     created_at: Optional[datetime] = None

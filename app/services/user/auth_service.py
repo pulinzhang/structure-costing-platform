@@ -1,11 +1,12 @@
 """登录会话 / Token 业务逻辑"""
 
 import secrets
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from sqlalchemy.orm import Session
 
 from app.common.audit import display_name
+from app.common.timezone import now
 from app.models.user import User
 from app.models.user_token import UserToken
 from app.repositories.user.user_repository import UserRepository
@@ -43,7 +44,7 @@ class AuthService:
         self.token_repo.delete_by_user_id(token_db, user.id)
 
         token = secrets.token_hex(32)
-        now = datetime.now()
+        current_time = now()
         name = display_name(user)
         self.token_repo.create(
             token_db,
@@ -55,8 +56,8 @@ class AuthService:
                 "email": user.email,
                 "department": user.department,
                 "avatar": user.avatar,
-                "last_active_at": now,
-                "created_at": now,
+                "last_active_at": current_time,
+                "created_at": current_time,
                 "created_by": name,
                 "updated_by": name,
             },
@@ -124,7 +125,7 @@ class AuthService:
             raise PermissionError("登录已失效，请重新登录")
 
         deadline = row.last_active_at + timedelta(hours=TOKEN_IDLE_HOURS)
-        if datetime.now() > deadline:
+        if now() > deadline:
             self.token_repo.delete_by_token(token_db, token)
             raise PermissionError("登录已超时，请重新登录")
 

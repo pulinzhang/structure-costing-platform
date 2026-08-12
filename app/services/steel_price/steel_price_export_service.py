@@ -157,6 +157,11 @@ class SteelPriceExportService:
             "反审核时间",
             "反审核原因",
             "备注",
+            # 审计（扯皮核对）
+            "创建人",
+            "创建时间",
+            "最后修改人",
+            "最后修改时间",
         ]
 
         # 溯源列区间（1-based）：基价 18-22，厚度 23-28，宽度 29-34，锌层 35-40
@@ -237,6 +242,11 @@ class SteelPriceExportService:
                 _dt(record.reverse_audited_at),
                 record.reverse_audit_remark or "",
                 record.remark or "",
+                # 审计
+                record.created_by or "",
+                _dt(record.created_at),
+                record.updated_by or "",
+                _dt(record.updated_at),
             ]
             ws.append(row_data)
 
@@ -263,6 +273,7 @@ class SteelPriceExportService:
             12, 12, 28, 12, 10, 10,
             14, 10, 24, 20, 10, 18,
             10, 10, 18, 16, 10, 18, 16, 20,
+            12, 18, 12, 18,
         ]
         for col_idx, width in enumerate(column_widths, start=1):
             letter = ws.cell(row=1, column=col_idx).column_letter

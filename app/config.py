@@ -36,6 +36,8 @@ class Settings(BaseSettings):
     DATABASE_URL: str = f"sqlite:///{BASE_DIR}/data/stamping_costing.db"
     # 辅助库（无 Redis）：Token 会话、异步任务进度等，与主库隔离
     AUXILIARY_DATABASE_URL: str = f"sqlite:///{BASE_DIR}/data/auxiliary.db"
+    # 时区真相在 app.common.timezone；此处仅作配置声明/文档对齐
+    TIMEZONE: str = "Asia/Shanghai"
 
     # 密码摘要盐（MD5(salt + password)）；生产环境务必通过环境变量覆盖
     PASSWORD_SALT: str = "chery-stamping-costing-2024"
