@@ -1,0 +1,50 @@
+"""
+车身供货 BOM Excel 解析（编排入口）
+
+流程：
+1. 加载工作簿
+2. 解析头信息 → meta_parser
+3. 解析树节点 → node_parser
+4. 归属图示 → sketch_assigner
+"""
+
+from __future__ import annotations
+
+from io import BytesIO
+from pathlib import Path
+
+from openpyxl import load_workbook
+
+from app.parsers.bom.meta_parser import parse_bom_meta
+from app.parsers.bom.models import BomParseResult, BomParsedMeta, BomParsedNode
+from app.parsers.bom.node_parser import parse_bom_nodes
+from app.parsers.bom.sketch_assigner import assign_sketch_images
+
+__all__ = [
+    "BomParsedMeta",
+    "BomParsedNode",
+    "BomParseResult",
+    "parse_bom_excel",
+]
+
+
+def parse_bom_excel(source: str | Path | bytes) -> BomParseResult:
+    """解析车身件材料清单 Excel，返回头信息 + 扁平节点列表（含 parent_index）。"""
+    if isinstance(source, (bytes, bytearray)):
+        file_bytes = bytes(source)
+        wb = load_workbook(BytesIO(file_bytes), data_only=True)
+    else:
+        path = Path(source)
+        file_bytes = path.read_bytes()
+        wb = load_workbook(str(path), data_only=True)
+
+    ws = wb.active
+    meta = parse_bom_meta(ws)
+    nodes, row_l0, row_part_sketch = parse_bom_nodes(ws)
+    image_count = assign_sketch_images(file_bytes, nodes, row_l0, row_part_sketch)
+    return BomParseResult(
+        meta=meta,
+        nodes=nodes,
+        sheet_name=ws.title,
+        image_count=image_count,
+    )

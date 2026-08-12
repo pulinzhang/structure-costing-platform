@@ -73,6 +73,15 @@ class Perm:
     STEEL_PRICE_LIST_REVERSE = "op:steel-price-list:reverse"  # 反审核
     STEEL_PRICE_LIST_EXPORT = "op:steel-price-list:export"  # 导出
 
+    MENU_BOM = "menu:bom"  # BOM
+
+    MENU_BOM_STRUCTURE = "menu:bom-structure"  # 产品结构
+    BOM_STRUCTURE_VIEW = "op:bom-structure:view"  # 查看
+
+    MENU_BOM_UPLOAD = "menu:bom-upload"  # 上传材料清单
+    BOM_UPLOAD_VIEW = "op:bom-upload:view"  # 查看
+    BOM_UPLOAD_UPLOAD = "op:bom-upload:upload"  # 上传
+
     MENU_COSTING = "menu:costing"  # 核价
     COSTING_VIEW = "op:costing:view"  # 查看
 

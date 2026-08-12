@@ -5,9 +5,10 @@
 
 import { getUserSession } from './features/login/index.js?v=14';
 
-/** 路由 page → 叶子菜单权限码（系统设置页特殊） */
+/** 路由 page → 叶子菜单权限码（系统设置页 / Workspace 共用产品结构权限） */
 const PAGE_MENU_CODE = {
     settings: 'menu:settings-system',
+    'bom-viz': 'menu:bom-structure',
 };
 
 /**

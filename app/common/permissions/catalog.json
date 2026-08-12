@@ -154,6 +154,30 @@
       ]
     },
     {
+      "code": "menu:bom",
+      "label": "BOM",
+      "type": "group",
+      "children": [
+        {
+          "code": "menu:bom-structure",
+          "label": "产品结构",
+          "type": "menu",
+          "children": [
+            { "code": "op:bom-structure:view", "label": "查看", "type": "op" }
+          ]
+        },
+        {
+          "code": "menu:bom-upload",
+          "label": "上传材料清单",
+          "type": "menu",
+          "children": [
+            { "code": "op:bom-upload:view", "label": "查看", "type": "op" },
+            { "code": "op:bom-upload:upload", "label": "上传", "type": "op" }
+          ]
+        }
+      ]
+    },
+    {
       "code": "menu:costing",
       "label": "核价",
       "type": "menu",

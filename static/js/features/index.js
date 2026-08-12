@@ -9,6 +9,10 @@
  *   │   ├── upload/  : 上传工艺文件
  *   │   └── parts/   : 零件列表
  *   ├── quotation/   : 报价
+ *   ├── bom/         : BOM 材料清单
+ *   │   ├── structure/ : 产品结构（Project / Assemblies）
+ *   │   ├── viz/     : Assembly Workspace
+ *   │   └── upload/  : 上传材料清单
  *   ├── costing/     : 核价
  *   └── settings/    : 系统设置
  *
@@ -73,6 +77,21 @@ export const pageMeta = {
         title: '基准价格列表',
         en: 'BASE_PRICE_DATABASE',
         breadcrumb: ['一事一议', '基准价格', '基准价格列表'],
+    },
+    'bom-structure': {
+        title: '产品结构',
+        en: '产品结构',
+        breadcrumb: ['材料清单', '产品结构'],
+    },
+    'bom-viz': {
+        title: '产品结构图',
+        en: '产品结构图',
+        breadcrumb: ['材料清单', '产品结构', '结构图'],
+    },
+    'bom-upload': {
+        title: '上传材料清单',
+        en: 'BOM_UPLOAD',
+        breadcrumb: ['BOM', '上传材料清单'],
     },
     costing: {
         title: '自动核价引擎',

@@ -1,6 +1,7 @@
 """数据模型导出"""
 
 from app.models.async_task import AsyncTask
+from app.models.bom import BomNode, BomSnapshot
 from app.models.operation_log import OperationLog
 from app.models.stamping import StampingPart, StampingProcess, StampingTonnagePrice
 from app.models.steel_price import SteelPrice
@@ -13,6 +14,8 @@ from app.models.user_token import UserToken
 
 __all__ = [
     "AsyncTask",
+    "BomNode",
+    "BomSnapshot",
     "OperationLog",
     "StampingPart",
     "StampingProcess",

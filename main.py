@@ -266,6 +266,8 @@ def create_app() -> FastAPI:
 
     # ========== 导入各个功能模块的路由 ==========
     from app.routers.dashboard.crud import router as dashboard_router
+    from app.routers.bom.crud import router as bom_router
+    from app.routers.bom.upload import router as bom_upload_router
     from app.routers.costing.crud import router as costing_router
     from app.routers.quotation.crud import router as quotation_router
     from app.routers.settings.crud import router as settings_router
@@ -291,6 +293,8 @@ def create_app() -> FastAPI:
     app.include_router(steel_price_router)
     app.include_router(steel_price_policy_router)
     app.include_router(steel_base_price_router)
+    app.include_router(bom_router)
+    app.include_router(bom_upload_router)
     app.include_router(costing_router)
     app.include_router(quotation_router)
     app.include_router(settings_router)

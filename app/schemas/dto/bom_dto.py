@@ -1,0 +1,64 @@
+"""BOM DTO - 请求参数"""
+
+from datetime import date
+
+from pydantic import BaseModel, Field
+
+
+class BomSnapshotCreate(BaseModel):
+    """创建 BOM 清单版本"""
+
+    location: str = Field(..., min_length=1, max_length=50, description="采购基地")
+    vehicle_model: str = Field(..., min_length=1, max_length=50, description="车型")
+    bom_version: str = Field(..., min_length=1, max_length=20, description="清单版本")
+    product_category: str | None = Field(None, max_length=50, description="产品类别")
+    customer_name: str | None = Field(None, max_length=100, description="顾客名称")
+    stage: str = Field("initial", description="阶段：initial / mass")
+    doc_no: str | None = Field(None, max_length=50, description="单据编号")
+    prepare_dept: str | None = Field(None, max_length=100, description="编制部门")
+    doc_date: date | None = Field(None, description="编制日期")
+    revision_date: date | None = Field(None, description="修订日期")
+    title: str | None = Field(None, max_length=200, description="清单标题")
+    source_filename: str = Field(..., min_length=1, max_length=255, description="来源文件名")
+    source_file_hash: str | None = Field(None, max_length=64, description="源文件哈希")
+    status: str = Field("active", description="状态：draft / active / archived")
+    remark: str | None = Field(None, description="备注")
+
+
+class BomSnapshotQuery(BaseModel):
+    """BOM 清单分页查询"""
+
+    location: str | None = Field(None, description="采购基地")
+    vehicle_model: str | None = Field(None, description="车型")
+    status: str | None = Field(None, description="状态")
+    page: int = Field(1, ge=1, description="页码")
+    size: int = Field(20, ge=1, le=200, description="每页条数")
+
+
+class BomNodeCreate(BaseModel):
+    """创建 BOM 树节点（最小手工录入）"""
+
+    parent_id: int | None = Field(None, description="父节点 ID；L0 为空")
+    level: int = Field(..., ge=0, le=2, description="层级 0/1/2")
+    sort_no: int = Field(0, ge=0, description="同级排序")
+    seq_no: int | None = Field(None, description="表头序号")
+    internal_number: str | None = Field(None, max_length=50)
+    part_number: str = Field(..., min_length=1, max_length=50)
+    part_name: str | None = Field(None, max_length=200)
+    qty: float | None = Field(None, description="相对父件用量")
+    qty_unit: str = Field("pcs", max_length=20)
+    qty_text: str | None = Field(None, max_length=50)
+    node_role: str = Field(
+        ...,
+        description="supply / structure / make / buy / consumable（冲焊件域，无电子/电气）",
+    )
+    is_supply_unit: bool = Field(False, description="是否供货总成")
+    material: str | None = Field(None, max_length=50)
+    thickness_mm: float | None = None
+    thickness_text: str | None = Field(None, max_length=50)
+    material_mill: str | None = Field(None, max_length=100)
+    part_weight: float | None = None
+    gauge_developed: str | None = Field(None, max_length=10)
+    weld_info: str | None = None
+    remark: str | None = None
+    sketch_url: str | None = Field(None, max_length=500)

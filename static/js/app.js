@@ -13,7 +13,7 @@
  * 入口 URL 的 query 串驱动整体刷新；每次脚本更新后需要同步递增 ?v= 版本号。
  */
 
-import { pageMeta } from './features/index.js';
+import { pageMeta } from './features/index.js?v=2';
 
 // 页面导入
 import { getUserSession, initUserMenu, startTokenHeartbeat, updateUserSession } from './features/login/index.js?v=14';
@@ -21,7 +21,7 @@ import {
     applySidebarPermissions,
     canAccessPage,
     fallbackPageName,
-} from './permissions.js?v=4';
+} from './permissions.js?v=8';
 import { pageConfig as dashboardPage }      from './features/dashboard/index.js';
 import { pageConfig as stampingUploadPage } from './features/stamping/upload/index.js?v=35';
 import { pageConfig as stampingPartsPage }  from './features/stamping/parts/index.js?v=2';
@@ -32,6 +32,9 @@ import { pageConfig as steelPricePolicyUploadPage } from './features/steel-price
 import { pageConfig as steelPricePolicyDownloadPage } from './features/steel-price/policy-download/index.js?v=26';
 import { pageConfig as basePriceUploadPage } from './features/steel-price/base-price-upload/index.js?v=36';
 import { pageConfig as basePriceDownloadPage } from './features/steel-price/base-price-download/index.js?v=26';
+import { pageConfig as bomStructurePage }  from './features/bom/structure/index.js?v=8';
+import { pageConfig as bomVizPage }        from './features/bom/viz/index.js?v=27';
+import { pageConfig as bomUploadPage }     from './features/bom/upload/index.js?v=2';
 import { pageConfig as costingPage }        from './features/costing/index.js';
 import { pageConfig as quotationPage }      from './features/quotation/index.js';
 import { pageConfig as settingsPage }       from './features/settings/system/index.js?v=3';
@@ -57,6 +60,9 @@ const pages = {
     'steel-price-policy-download': steelPricePolicyDownloadPage,
     'base-price-upload': basePriceUploadPage,
     'base-price-download': basePriceDownloadPage,
+    'bom-structure':  bomStructurePage,
+    'bom-viz':        bomVizPage,
+    'bom-upload':     bomUploadPage,
     costing:          costingPage,
     quotation:        quotationPage,
     settings:         settingsPage,
@@ -89,6 +95,14 @@ function getPageFromHash() {
     if (pageName === 'login') {
         window.location.replace('/login');
         return null;
+    }
+
+    // 旧 BOM 列表 / Phase A 临时路由 → 产品结构 / 上传
+    if (pageName === 'bom') {
+        return 'bom-upload';
+    }
+    if (pageName === 'bom-list') {
+        return 'bom-structure';
     }
 
     return pageName;

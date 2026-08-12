@@ -158,6 +158,9 @@ if (!can('op:my-page:create')) { /* 隐藏或禁用 */ }
 
 叶子页的 `data-page` / 路由 key 仍可为 `settings`；权限码用 `settings-system` 避免与分组撞名。实现时在「路由 page → menu code」映射表中写死即可。
 
+同理：产品结构路由 page 为 `bom-structure`（`#/bom-structure`），与权限码 `menu:bom-structure` 一致。
+旧临时路由 `#/bom-list` 会重定向到 `bom-structure`。
+
 ---
 
 ## 5. 数据模型
@@ -376,6 +379,13 @@ root
 │       ├── op:steel-price-list:reverse
 │       └── op:steel-price-list:export
 │
+├── menu:bom                                   # BOM（分组，可勾）
+│   ├── menu:bom-structure                     # 产品结构（路由 page=bom-structure）
+│   │   └── op:bom-structure:view
+│   └── menu:bom-upload
+│       ├── op:bom-upload:view
+│       └── op:bom-upload:upload
+│
 ├── menu:costing
 │   └── op:costing:view                        # 功能开发中，预留
 │
@@ -406,10 +416,10 @@ root
 
 | 类别 | 数量 |
 |---|---|
-| 分组 `menu` | 6（`stamping` / `yishiyiyi` / `thickness` / `base-price` / `steel-price` / `settings`） |
-| 叶子 `menu` | 16 |
-| 操作 `op` | 46 |
-| 可勾节点合计 | 约 68（`root` 一般不入库） |
+| 分组 `menu` | 7（`stamping` / `yishiyiyi` / `thickness` / `base-price` / `steel-price` / `bom` / `settings`） |
+| 叶子 `menu` | 17 |
+| 操作 `op` | 45 |
+| 可勾节点合计 | 约 67（`root` 一般不入库） |
 | 新建默认 | 7 |
 | 强制 | 5（均包含在默认集内） |
 
@@ -427,6 +437,9 @@ root
 | steel-price-policy-download | `view` / `export` / `delete` | 预览；导出 Excel；批量删除 |
 | base-price-upload | `view` / `upload` | 进入页；导入基准价格 |
 | base-price-download | `view` / `export` / `delete` | 预览；导出；批量删除 |
+| bom-structure | `view` | 产品结构：基地/项目卡片浏览 |
+| bom-viz（权限码同 `menu:bom-structure`） | `view` | Assembly Workspace |
+| bom-upload | `view` / `upload` | 进入页；导入材料清单 |
 | steel-price-calc | `view` / `run` / `delete` | 历史/过程；开始计算；删除日志 |
 | steel-price-list | `view` / `update` / `delete` / `approve` / `reject` / `reverse` / `export` | 查询；编辑；删除（含批量）；通过（含批量）；驳回；反审核（含批量）；导出 |
 | costing / quotation | `view` | 进入占位页 |
