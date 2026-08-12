@@ -34,8 +34,11 @@ class Settings(BaseSettings):
 
     # 数据库配置
     DATABASE_URL: str = f"sqlite:///{BASE_DIR}/data/stamping_costing.db"
-    # 异步任务独立库：与主库分离，进度写入不受业务长事务写锁影响
-    ASYNC_TASK_DATABASE_URL: str = f"sqlite:///{BASE_DIR}/data/async_tasks.db"
+    # 辅助库（无 Redis）：Token 会话、异步任务进度等，与主库隔离
+    AUXILIARY_DATABASE_URL: str = f"sqlite:///{BASE_DIR}/data/auxiliary.db"
+
+    # 密码摘要盐（MD5(salt + password)）；生产环境务必通过环境变量覆盖
+    PASSWORD_SALT: str = "chery-stamping-costing-2024"
 
     # 上传配置
     UPLOAD_DIR: Path = BASE_DIR / "uploads"
@@ -82,7 +85,7 @@ class TestSettings(Settings):
     """测试环境配置"""
     DEBUG: bool = True
     DATABASE_URL: str = "sqlite:///:memory:"
-    ASYNC_TASK_DATABASE_URL: str = "sqlite:///:memory:"
+    AUXILIARY_DATABASE_URL: str = "sqlite:///:memory:"
 
 
 # 环境配置映射

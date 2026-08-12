@@ -9,8 +9,12 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
+from app.common.audit import display_name
 from app.config import settings
 from app.database import DatabaseConfig, get_db
+from app.deps.auth import get_current_user
+from app.schemas.vo.user_vo import UserVO
+from app.utils.logging_config import get_logger
 from app.utils.response import ApiResponse
 from app.services.async_task import (
     STATUS_COMPLETED,
@@ -38,6 +42,8 @@ from app.schemas.common import PageResult
 
 # 默认分页大小常量
 DEFAULT_EXPORT_PAGE_SIZE = 5000
+
+logger = get_logger("router.steel_base_price")
 
 
 class BatchDeleteResponse(BaseModel):
@@ -74,6 +80,7 @@ def _process_base_price_import_in_background(
     filename: str,
     year: int,
     month: int,
+    current_user: UserVO,
 ) -> None:
     """后台线程解析基准价 Excel；独立 Session，不复用请求 db。"""
     session_factory = DatabaseConfig.get_session_factory()
@@ -101,6 +108,7 @@ def _process_base_price_import_in_background(
             year=year,
             month=month,
             progress_callback=on_progress,
+            current_user=current_user,
         )
         _async_task_service.update_task_standalone(
             task_id,
@@ -139,6 +147,7 @@ def _process_base_price_import_in_background(
 def list_base_prices(
     query: SteelBasePriceQuery = Depends(),
     db: Session = Depends(get_db),
+    current_user: UserVO = Depends(get_current_user),
 ) -> ApiResponse[list[SteelBasePriceResponse]]:
     """
     分页查询基准价格列表。
@@ -159,6 +168,7 @@ def list_base_prices(
 )
 def get_base_price_options(
     db: Session = Depends(get_db),
+    current_user: UserVO = Depends(get_current_user),
 ) -> ApiResponse[FilterOptionsVO]:
     """获取筛选下拉选项（年度/月份/基地/钢厂等）。"""
     filters = _build_filter_options_vo(_steel_base_price_service, db)
@@ -180,6 +190,7 @@ def export_preview(
     page: int | None = Query(None, ge=1, description="页码（前端分页用）"),
     size: int | None = Query(None, ge=1, le=5000, description="每页条数"),
     db: Session = Depends(get_db),
+    current_user: UserVO = Depends(get_current_user),
 ) -> ApiResponse[PageResult[SteelBasePriceExportRow]]:
     """导出预览：返回筛选后的基准价格数据（前端分页）。"""
     page_size = size or DEFAULT_EXPORT_PAGE_SIZE
@@ -219,6 +230,7 @@ def export_download(
     grade: str | None = Query(None, description="牌号（模糊）"),
     spec: str | None = Query(None, description="规格"),
     db: Session = Depends(get_db),
+    current_user: UserVO = Depends(get_current_user),
 ) -> StreamingResponse:
     """下载基准价格 Excel 文件。"""
     content, filename = _steel_base_price_export_service.export(
@@ -246,6 +258,7 @@ async def import_base_price(
     file: UploadFile = File(...),
     year: int = Query(..., ge=2000, le=2100, description="生效年度"),
     month: int = Query(..., ge=1, le=12, description="生效月份"),
+    current_user: UserVO = Depends(get_current_user),
 ) -> ApiResponse[AsyncTaskAcceptedVO]:
     """导入 Excel，立即返回 task_id，后台线程解析入库。"""
     filename = file.filename or ""
@@ -271,6 +284,8 @@ async def import_base_price(
     task = _async_task_service.create_task(
         task_type=TASK_TYPE_BASE_PRICE_IMPORT,
         message="已提交解析队列",
+        operator_id=current_user.id,
+        operator_name=display_name(current_user),
     )
     AsyncTaskService.submit(
         _process_base_price_import_in_background,
@@ -279,6 +294,7 @@ async def import_base_price(
         filename,
         year,
         month,
+        current_user,
     )
 
     return ApiResponse.ok(
@@ -293,6 +309,7 @@ async def import_base_price(
 )
 def get_base_price_import_task_progress(
     task_id: str,
+    current_user: UserVO = Depends(get_current_user),
 ) -> ApiResponse[AsyncTaskProgressVO]:
     """查询基准价格导入任务进度。"""
     task = _async_task_service.get_task_snapshot(task_id)
@@ -305,20 +322,11 @@ def get_base_price_import_task_progress(
         if result_raw
         else None
     )
-    updated_at_value = task.get("updated_at")
-    updated_at = (
-        updated_at_value.timestamp()
-        if hasattr(updated_at_value, "timestamp")
-        else float(updated_at_value or 0)
-    )
-
     return ApiResponse.ok(
-        data=AsyncTaskProgressVO(
-            status=task.get("status") or STATUS_PENDING,
-            progress=int(task.get("progress") or 0),
-            msg=task.get("message") or "",
+        data=AsyncTaskProgressVO.from_snapshot(
+            task,
+            default_status=STATUS_PENDING,
             result=result,
-            updated_at=updated_at,
         ),
     )
 
@@ -330,6 +338,7 @@ def get_base_price_import_task_progress(
 def get_base_price(
     record_id: int,
     db: Session = Depends(get_db),
+    current_user: UserVO = Depends(get_current_user),
 ) -> ApiResponse[SteelBasePriceResponse]:
     """获取单条基准价格记录。"""
     record = _steel_base_price_service.get_by_id(db, record_id)
@@ -346,9 +355,10 @@ def get_base_price(
 def create_base_price(
     body: SteelBasePriceCreate,
     db: Session = Depends(get_db),
+    current_user: UserVO = Depends(get_current_user),
 ) -> ApiResponse[SteelBasePriceResponse]:
     """创建基准价格记录。"""
-    record, error = _steel_base_price_service.create(db, body)
+    record, error = _steel_base_price_service.create(db, body, current_user=current_user)
     if error:
         return ApiResponse.fail(message=error, code=400)
     return ApiResponse.created(data=record, message="创建成功")
@@ -362,9 +372,12 @@ def update_base_price(
     record_id: int,
     body: SteelBasePriceUpdate,
     db: Session = Depends(get_db),
+    current_user: UserVO = Depends(get_current_user),
 ) -> ApiResponse[SteelBasePriceResponse]:
     """更新基准价格记录。"""
-    record, error = _steel_base_price_service.update(db, record_id, body)
+    record, error = _steel_base_price_service.update(
+        db, record_id, body, current_user=current_user
+    )
     if error:
         return ApiResponse.fail(message=error, code=400)
     return ApiResponse.updated(data=record, message="更新成功")
@@ -377,6 +390,7 @@ def update_base_price(
 def delete_base_price(
     record_id: int,
     db: Session = Depends(get_db),
+    current_user: UserVO = Depends(get_current_user),
 ) -> ApiResponse[None]:
     """删除基准价格记录。"""
     ok, error = _steel_base_price_service.delete(db, record_id)
@@ -392,6 +406,7 @@ def delete_base_price(
 def batch_delete_base_prices(
     body: SteelBasePriceQuery,
     db: Session = Depends(get_db),
+    current_user: UserVO = Depends(get_current_user),
 ) -> ApiResponse[BatchDeleteResponse]:
     """按条件批量删除基准价格记录（年度+月份必须同时指定）。"""
     if body.year is None or body.month is None:

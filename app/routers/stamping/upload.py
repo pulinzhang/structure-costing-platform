@@ -5,11 +5,14 @@
 
 from dataclasses import asdict
 
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException
+from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException
 
 from app.utils.logging_config import get_logger
 from app.config import settings
 from app.database import DatabaseConfig
+from app.common.audit import display_name
+from app.deps.auth import get_current_user
+from app.schemas.vo.user_vo import UserVO
 from app.services.async_task import (
     STATUS_COMPLETED,
     STATUS_FAILED,
@@ -34,6 +37,7 @@ def _process_stamping_upload_in_background(
     file_content: bytes,
     filename: str,
     location: str,
+    current_user: UserVO,
 ) -> None:
     """后台线程解析冲压工艺 Excel；独立 Session，不复用请求 db。"""
     session_factory = DatabaseConfig.get_session_factory()
@@ -60,6 +64,7 @@ def _process_stamping_upload_in_background(
             filename=filename,
             location=location,
             progress_callback=on_progress,
+            current_user=current_user,
         )
         _async_task_service.update_task_standalone(
             task_id,
@@ -95,6 +100,7 @@ def _process_stamping_upload_in_background(
 async def upload_stamping_file(
     location: str = Form(...),
     file: UploadFile = File(...),
+    current_user: UserVO = Depends(get_current_user),
 ) -> ApiResponse[AsyncTaskAcceptedVO]:
     """上传车型冲压工艺文件，立即返回 task_id，后台解析入库。"""
     logger.info(
@@ -128,6 +134,8 @@ async def upload_stamping_file(
     task = _async_task_service.create_task(
         task_type=TASK_TYPE_STAMPING_UPLOAD,
         message="已提交解析队列",
+        operator_id=current_user.id,
+        operator_name=display_name(current_user),
     )
     AsyncTaskService.submit(
         _process_stamping_upload_in_background,
@@ -135,6 +143,7 @@ async def upload_stamping_file(
         content,
         file.filename,
         location.strip(),
+        current_user,
     )
 
     return ApiResponse.ok(
@@ -149,26 +158,17 @@ async def upload_stamping_file(
 )
 def get_stamping_upload_task_progress(
     task_id: str,
+    current_user: UserVO = Depends(get_current_user),
 ) -> ApiResponse[AsyncTaskProgressVO]:
     """查询冲压工艺上传任务进度。"""
     task = _async_task_service.get_task_snapshot(task_id)
     if task is None or task.get("task_type") != TASK_TYPE_STAMPING_UPLOAD:
         raise HTTPException(status_code=404, detail="任务不存在或已过期")
 
-    result = AsyncTaskService.parse_result_json(task.get("result_json"))
-    updated_at_value = task.get("updated_at")
-    updated_at = (
-        updated_at_value.timestamp()
-        if hasattr(updated_at_value, "timestamp")
-        else float(updated_at_value or 0)
-    )
-
     return ApiResponse.ok(
-        data=AsyncTaskProgressVO(
-            status=task.get("status") or STATUS_PENDING,
-            progress=int(task.get("progress") or 0),
-            msg=task.get("message") or "",
-            result=result,
-            updated_at=updated_at,
+        data=AsyncTaskProgressVO.from_snapshot(
+            task,
+            default_status=STATUS_PENDING,
+            result=AsyncTaskService.parse_result_json(task.get("result_json")),
         ),
     )

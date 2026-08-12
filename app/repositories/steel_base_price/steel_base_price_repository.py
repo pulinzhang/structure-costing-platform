@@ -189,8 +189,17 @@ class SteelBasePriceRepository:
                 .first()
             )
             if existing is not None:
-                # 更新可变更字段
-                for column in ("base_price", "processing_fee", "excel_filename", "sheet_name", "excel_row", "excel_col", "remark"):
+                # 更新可变更字段（含修改人；创建人仅 insert 时写入）
+                for column in (
+                    "base_price",
+                    "processing_fee",
+                    "excel_filename",
+                    "sheet_name",
+                    "excel_row",
+                    "excel_col",
+                    "remark",
+                    "updated_by",
+                ):
                     if column in record_data:
                         setattr(existing, column, record_data[column])
                 updated_count += 1

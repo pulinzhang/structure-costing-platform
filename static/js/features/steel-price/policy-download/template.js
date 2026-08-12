@@ -60,7 +60,7 @@ export function policyDownloadTemplate() {
                     <div class="bg-[#0c0c0c] border border-[#1a1a1a] rounded p-3">
                         <p class="text-[11px] text-[#888888] leading-5">
                             <span class="text-[#9e9e9e] font-medium">说明：</span>
-                            根据所选条件导出钢价政策主子表数据。政策主表（年度、月份、钢厂、大类、类型、牌号等）与阶梯明细表（厚度区间、宽度区间、加减价等）联合查询，结果用于测试部门核对数据。
+                            根据所选条件导出钢价政策主子表数据。政策主表（年度、月份、钢厂、大类、类型、牌号等）与阶梯明细表（厚度区间、宽度区间、加减价等）联合查询，结果用于测试部门核对数据。删除时须选择年度与月份，钢厂可选（不选则删除该年月全部钢厂数据）。
                         </p>
                     </div>
                 </div>

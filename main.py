@@ -16,7 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings, ensure_directories
 from app.utils.logging_config import LoggerConfig, log_request, log_response, get_logger
-from app.database import AsyncTaskDatabaseConfig, DatabaseConfig
+from app.database import AuxiliaryDatabaseConfig, DatabaseConfig
 
 
 # 重要：在导入其他模块之前先配置日志，确保所有模块的 logger 都能正确获取日志器
@@ -42,7 +42,17 @@ async def lifespan(app: FastAPI):
     from app.utils.steel_price_key_migration import run_steel_price_key_migration
     run_steel_price_key_migration(DatabaseConfig.get_engine())
     DatabaseConfig.create_tables()
-    AsyncTaskDatabaseConfig.create_tables()
+    AuxiliaryDatabaseConfig.create_tables()
+
+    # 首次启动：若无用户则创建默认管理员
+    from app.services.user.user_service import UserService
+
+    session_factory = DatabaseConfig.get_session_factory()
+    db = session_factory()
+    try:
+        UserService().ensure_default_admin(db)
+    finally:
+        db.close()
 
     logger.info("=" * 50)
     logger.info(f"{settings.APP_NAME} 正在启动...")
@@ -199,6 +209,8 @@ def create_app() -> FastAPI:
             {"name": "核价", "description": "成本计算与核价"},
             {"name": "报价", "description": "报价单管理"},
             {"name": "系统设置", "description": "系统配置管理"},
+            {"name": "用户管理", "description": "用户账号增删改查"},
+            {"name": "登录认证", "description": "账号密码登录"},
         ]
     )
 
@@ -225,18 +237,25 @@ def create_app() -> FastAPI:
         from fastapi.responses import FileResponse
         return FileResponse("static/index.html")
 
+    # 登录页（账号密码入口，登录成功后再进主系统）
+    @app.get("/login", include_in_schema=False)
+    async def login_page():
+        """打开登录页面"""
+        from fastapi.responses import FileResponse
+        return FileResponse("static/login.html")
+
     # favicon
     @app.get("/favicon.ico", include_in_schema=False)
     async def favicon():
         from fastapi.responses import Response
         return Response(status_code=204)
 
-    # 保留旧路由兼容性（重定向到 /app）
+    # 保留旧路由兼容性（未登录先进鉴权页）
     @app.get("/", include_in_schema=False)
     async def root():
-        """根路径重定向到 SPA"""
+        """根路径重定向到独立登录页"""
         from fastapi.responses import RedirectResponse
-        return RedirectResponse(url="/app", status_code=302)
+        return RedirectResponse(url="/login", status_code=302)
 
     # ========== 导入各个功能模块的路由 ==========
     from app.routers.dashboard.crud import router as dashboard_router
@@ -250,8 +269,11 @@ def create_app() -> FastAPI:
     from app.routers.steel_price.calc import router as steel_price_calc_router
     from app.routers.steel_price.steel_price_policy.crud import router as steel_price_policy_router
     from app.routers.steel_price.steel_base_price.crud import router as steel_base_price_router
+    from app.routers.user.auth import router as auth_router
+    from app.routers.user.crud import router as user_crud_router
 
-    # include_router = 注册路由
+    # include_router = 注册路由（鉴权由各端点 Depends(get_current_user) 声明）
+    app.include_router(auth_router)
     app.include_router(dashboard_router)
     app.include_router(stamping_crud_router)
     app.include_router(stamping_upload_router)
@@ -260,9 +282,10 @@ def create_app() -> FastAPI:
     app.include_router(steel_price_router)
     app.include_router(steel_price_policy_router)
     app.include_router(steel_base_price_router)
-    app.include_router(costing_router) 
+    app.include_router(costing_router)
     app.include_router(quotation_router)
     app.include_router(settings_router)
+    app.include_router(user_crud_router)
 
     # ========== 全局异常处理器 ==========
     from app.exceptions.handlers import (

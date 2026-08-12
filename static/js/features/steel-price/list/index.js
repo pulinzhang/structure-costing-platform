@@ -212,8 +212,8 @@ function toggleAdvancedFilter() {
     }
     if (label) {
         label.textContent = steelPriceState.advancedFilterOpen
-            ? '收起高级筛选'
-            : '展开高级筛选';
+            ? '[-] 收起高级筛选'
+            : '[+] 展开高级筛选';
     }
 }
 
@@ -339,37 +339,18 @@ async function exportExcel() {
     }
 
     try {
-        const params = new URLSearchParams();
-        if (filters.year) params.append('year', filters.year);
-        if (filters.month) params.append('month', filters.month);
-        if (filters.location) params.append('location', filters.location);
-        if (filters.category_name) params.append('category_name', filters.category_name);
-        if (filters.grade) params.append('grade', filters.grade);
-        if (filters.steel_mill) params.append('steel_mill', filters.steel_mill);
-
-        const response = await fetch(`${API_BASE}/export-download?${params.toString()}`, {
-            method: 'GET',
+        const { blob, filename } = await HttpClient.download(`${API_BASE}/export-download`, {
+            params: {
+                year: filters.year,
+                month: filters.month,
+                location: filters.location,
+                category_name: filters.category_name,
+                grade: filters.grade,
+                steel_mill: filters.steel_mill,
+            },
+            defaultFilename: '钢材联动价格导出.xlsx',
         });
-        if (!response.ok) {
-            let message = `导出失败: HTTP ${response.status}`;
-            try {
-                const payload = await response.json();
-                message = payload.detail || payload.message || message;
-            } catch (_) {
-                /* ignore */
-            }
-            throw new Error(message);
-        }
 
-        const contentDisposition = response.headers.get('Content-Disposition') || '';
-        let filename = '钢材联动价格导出.xlsx';
-        const match = contentDisposition.match(/filename\*=UTF-8''([^;]+)|filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/i);
-        if (match) {
-            const raw = match[1] || match[2];
-            if (raw) filename = decodeURIComponent(raw.replace(/['"]/g, ''));
-        }
-
-        const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
         const anchor = document.createElement('a');
         anchor.href = url;
@@ -382,7 +363,9 @@ async function exportExcel() {
         showToast(`导出成功: ${filename}`, 'success');
     } catch (error) {
         console.error('导出钢材联动价格失败:', error);
-        showToast(error.message || '导出失败', 'error');
+        if (!error.status) {
+            showToast(error.message || '导出失败', 'error');
+        }
     } finally {
         if (btn) {
             btn.disabled = false;
@@ -460,6 +443,17 @@ function bindBatchAuditDrawerEvents() {
     document.getElementById('confirmBatchAuditBtn')?.addEventListener('click', () => submitBatchAudit());
 }
 
+function getSessionDisplayName() {
+    try {
+        const raw = localStorage.getItem('brabus_user');
+        if (!raw) return '';
+        const session = JSON.parse(raw);
+        return (session.real_name || session.name || session.username || '').trim();
+    } catch (_) {
+        return '';
+    }
+}
+
 function openBatchAuditDrawer(mode) {
     const filters = collectPeriodFilters();
     if (!filters.year || !filters.month || !filters.location) {
@@ -473,7 +467,7 @@ function openBatchAuditDrawer(mode) {
     const hintEl = document.getElementById('batchAuditHint');
     const operatorLabel = document.getElementById('batchAuditOperatorLabel');
     const remarkLabel = document.getElementById('batchAuditRemarkLabel');
-    const operatorEl = document.getElementById('batchAuditOperator');
+    const operatorDisplay = document.getElementById('batchAuditOperatorDisplay');
     const remarkEl = document.getElementById('batchAuditRemark');
     const summaryEl = document.getElementById('batchAuditFilterSummary');
     const confirmBtn = document.getElementById('confirmBatchAuditBtn');
@@ -486,18 +480,15 @@ function openBatchAuditDrawer(mode) {
             : '仅按年度、月份、基地处理已通过记录；其余状态会跳过。反审核意见必填。';
     }
     if (operatorLabel) {
-        operatorLabel.innerHTML = isApprove
-            ? '审核人 <span class="text-[#d32f2f]">*</span>'
-            : '反审核人 <span class="text-[#d32f2f]">*</span>';
+        operatorLabel.textContent = isApprove ? '审核人' : '反审核人';
+    }
+    if (operatorDisplay) {
+        operatorDisplay.textContent = getSessionDisplayName() || '（当前登录用户）';
     }
     if (remarkLabel) {
         remarkLabel.innerHTML = isApprove
             ? '审核意见'
             : '反审核意见 <span class="text-[#d32f2f]">*</span>';
-    }
-    if (operatorEl) {
-        operatorEl.value = '';
-        operatorEl.placeholder = isApprove ? '请输入经理姓名' : '请输入反审核人姓名';
     }
     if (remarkEl) {
         remarkEl.value = '';
@@ -531,12 +522,7 @@ async function submitBatchAudit() {
         return;
     }
 
-    const operator = document.getElementById('batchAuditOperator')?.value.trim() || '';
     const remark = document.getElementById('batchAuditRemark')?.value.trim() || '';
-    if (!operator) {
-        showToast(isApprove ? '请填写审核人' : '请填写反审核人', 'warning');
-        return;
-    }
     if (!isApprove && !remark) {
         showToast('反审核意见必填', 'warning');
         return;
@@ -558,11 +544,9 @@ async function submitBatchAudit() {
         };
         let response;
         if (isApprove) {
-            body.audited_by = operator;
             if (remark) body.audit_remark = remark;
             response = await HttpClient.post(`${API_BASE}/batch-approve`, body);
         } else {
-            body.reverse_audited_by = operator;
             body.reverse_audit_remark = remark;
             response = await HttpClient.post(`${API_BASE}/batch-reverse-audit`, body);
         }
@@ -831,14 +815,12 @@ async function deleteRecord(id) {
 async function handleApprove() {
     const id = steelPriceState.currentViewId;
     if (!id) return;
-    const auditedBy = window.prompt('请输入审核人姓名（经理）');
-    if (!auditedBy || !auditedBy.trim()) return;
-    const auditRemark = window.prompt('审核意见（可选）') || null;
+    const auditRemark = window.prompt('审核意见（可选，可留空）');
+    if (auditRemark === null) return;
     try {
-        await HttpClient.post(`${API_BASE}/${id}/approve`, {
-            audited_by: auditedBy.trim(),
-            audit_remark: auditRemark,
-        });
+        const body = {};
+        if (auditRemark.trim()) body.audit_remark = auditRemark.trim();
+        await HttpClient.post(`${API_BASE}/${id}/approve`, body);
         showToast('审核通过', 'success');
         closeDrawer('viewDrawer', 'viewDrawerBackdrop');
         steelPriceState.filtersLoaded = false;
@@ -851,14 +833,12 @@ async function handleApprove() {
 async function handleReject() {
     const id = steelPriceState.currentViewId;
     if (!id) return;
-    const auditedBy = window.prompt('请输入审核人姓名（经理）');
-    if (!auditedBy || !auditedBy.trim()) return;
-    const auditRemark = window.prompt('驳回原因（可选）') || null;
+    const auditRemark = window.prompt('驳回原因（可选，可留空）');
+    if (auditRemark === null) return;
     try {
-        await HttpClient.post(`${API_BASE}/${id}/reject`, {
-            audited_by: auditedBy.trim(),
-            audit_remark: auditRemark,
-        });
+        const body = {};
+        if (auditRemark.trim()) body.audit_remark = auditRemark.trim();
+        await HttpClient.post(`${API_BASE}/${id}/reject`, body);
         showToast('已驳回', 'success');
         closeDrawer('viewDrawer', 'viewDrawerBackdrop');
         steelPriceState.filtersLoaded = false;
@@ -871,8 +851,6 @@ async function handleReject() {
 async function handleReverseAudit() {
     const id = steelPriceState.currentViewId;
     if (!id) return;
-    const reverseAuditedBy = window.prompt('请输入反审核人姓名（经理）');
-    if (!reverseAuditedBy || !reverseAuditedBy.trim()) return;
     const reverseAuditRemark = window.prompt('反审核原因（必填）');
     if (!reverseAuditRemark || !reverseAuditRemark.trim()) {
         showToast('反审核原因必填', 'warning');
@@ -880,7 +858,6 @@ async function handleReverseAudit() {
     }
     try {
         await HttpClient.post(`${API_BASE}/${id}/reverse-audit`, {
-            reverse_audited_by: reverseAuditedBy.trim(),
             reverse_audit_remark: reverseAuditRemark.trim(),
         });
         showToast('反审核成功', 'success');

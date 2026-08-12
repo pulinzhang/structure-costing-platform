@@ -8,6 +8,7 @@ from typing import Any, List, Dict, Optional
 
 from sqlalchemy.orm import Session
 
+from app.common.audit import audit_create, audit_update
 from app.repositories.stamping.stamping_repository import StampingPartRepository
 from app.schemas.vo.stamping_vo import (
     StampingPartQuery,
@@ -19,6 +20,7 @@ from app.schemas.vo.stamping_vo import (
     StampingCascadeFilterQuery,
 )
 from app.exceptions import NotFoundException
+from app.schemas.vo.user_vo import UserVO
 
 logger = logging.getLogger("service.stamping")
 
@@ -145,23 +147,44 @@ class StampingPartService:
         return StampingPartWithProcessesResponse.model_validate(part)
 
     def delete(self, db: Session, part_id: int) -> None:
-        """删除零件"""
+        """删除零件（硬删除，不写审计字段）。"""
         self.repository.delete(db, part_id)
 
     def get_id_map(self, db: Session, vehicle_model: str, version: str) -> Dict[str, int]:
         """获取零件号映射"""
         return self.repository.get_id_map_by_vehicle_version(db, vehicle_model, version)
 
-    def create(self, db: Session, part_data: Dict[str, Any]):
-        return self.repository.create(db, part_data)
+    def create(
+        self,
+        db: Session,
+        part_data: Dict[str, Any],
+        current_user: UserVO,
+    ):
+        payload = {**part_data, **audit_create(current_user)}
+        return self.repository.create(db, payload)
 
-    def bulk_create(self, db: Session, parts_data: List[Dict[str, Any]]):
-        return self.repository.bulk_create(db, parts_data)
+    def bulk_create(
+        self,
+        db: Session,
+        parts_data: List[Dict[str, Any]],
+        current_user: UserVO,
+    ):
+        audit = audit_create(current_user)
+        rows = [{**row, **audit} for row in parts_data]
+        return self.repository.bulk_create(db, rows)
 
-    def update(self, db: Session, part_id: int, update_data: Dict[str, Any]):
-        return self.repository.update(db, part_id, update_data)
+    def update(
+        self,
+        db: Session,
+        part_id: int,
+        update_data: Dict[str, Any],
+        current_user: UserVO,
+    ):
+        payload = {**update_data, **audit_update(current_user)}
+        return self.repository.update(db, part_id, payload)
 
     def delete_by_vehicle_version(self, db: Session, vehicle_model: str, version: str) -> int:
+        """按车型+版本硬删除零件（上传覆盖旧数据时使用）。"""
         return self.repository.delete_by_vehicle_version(db, vehicle_model, version)
 
     def update_process(
@@ -169,19 +192,28 @@ class StampingPartService:
         db: Session,
         process_id: int,
         update_data: Dict[str, Any],
+        current_user: UserVO,
     ) -> StampingProcessResponse:
         """更新单个工序"""
         from app.repositories.stamping.stamping_repository import StampingProcessRepository
 
         process_repo = StampingProcessRepository()
-        process = process_repo.update(db, process_id, update_data)
+        payload = {**update_data, **audit_update(current_user)}
+        process = process_repo.update(db, process_id, payload)
         if not process:
             raise NotFoundException(f"工序不存在: id={process_id}")
         return StampingProcessResponse.model_validate(process)
 
-    def batch_update_processes(self, db: Session, items: List[Dict[str, Any]]) -> int:
+    def batch_update_processes(
+        self,
+        db: Session,
+        items: List[Dict[str, Any]],
+        current_user: UserVO,
+    ) -> int:
         """批量更新工序成本系数"""
         from app.repositories.stamping.stamping_repository import StampingProcessRepository
+
+        audit = audit_update(current_user)
         process_repo = StampingProcessRepository()
         count = 0
         for item in items:
@@ -192,6 +224,7 @@ class StampingPartService:
             if not update_data:
                 logger.warning("process_id=%s 的 update_data 为空，跳过", pid)
                 continue
+            update_data.update(audit)
             if process_repo.update(db, int(pid), update_data):
                 count += 1
         logger.info("batch_update_processes 完成，更新了 %s 条", count)

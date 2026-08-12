@@ -8,12 +8,14 @@ from sqlalchemy.orm import Session
 
 from app.utils.logging_config import get_logger
 from app.database import get_db
+from app.deps.auth import get_current_user
 from app.models.stamping import StampingPart, StampingProcess
 from app.schemas.vo.dashboard_vo import (
     CountResponse,
     DashboardStatsVO,
     SteelPriceCalcStatsVO,
 )
+from app.schemas.vo.user_vo import UserVO
 from app.services.dashboard.dashboard_service import DashboardService
 from app.utils.response import ApiResponse
 
@@ -23,7 +25,10 @@ router = APIRouter(prefix="/api/dashboard", tags=["仪表盘 API"])
 
 
 @router.get("/stats/parts", response_model=ApiResponse[CountResponse])
-def get_parts_count(db: Session = Depends(get_db)) -> ApiResponse[CountResponse]:
+def get_parts_count(
+    db: Session = Depends(get_db),
+    current_user: UserVO = Depends(get_current_user),
+) -> ApiResponse[CountResponse]:
     """
     获取零件总数
     """
@@ -36,7 +41,10 @@ def get_parts_count(db: Session = Depends(get_db)) -> ApiResponse[CountResponse]
 
 
 @router.get("/stats/processes", response_model=ApiResponse[CountResponse])
-def get_processes_count(db: Session = Depends(get_db)) -> ApiResponse[CountResponse]:
+def get_processes_count(
+    db: Session = Depends(get_db),
+    current_user: UserVO = Depends(get_current_user),
+) -> ApiResponse[CountResponse]:
     """
     获取工序总数
     """
@@ -49,7 +57,10 @@ def get_processes_count(db: Session = Depends(get_db)) -> ApiResponse[CountRespo
 
 
 @router.get("/stats/models", response_model=ApiResponse[CountResponse])
-def get_models_count(db: Session = Depends(get_db)) -> ApiResponse[CountResponse]:
+def get_models_count(
+    db: Session = Depends(get_db),
+    current_user: UserVO = Depends(get_current_user),
+) -> ApiResponse[CountResponse]:
     """
     获取车型数量
     """
@@ -72,6 +83,7 @@ def get_steel_price_calc_stats(
     stamping_supplier: str | None = Query(None, description="冲压工厂"),
     vehicle_model: str | None = Query(None, description="配套车型"),
     db: Session = Depends(get_db),
+    current_user: UserVO = Depends(get_current_user),
 ) -> ApiResponse[SteelPriceCalcStatsVO]:
     """
     钢价联动计算页数据依据统计：
@@ -94,7 +106,10 @@ def get_steel_price_calc_stats(
 
 
 @router.get("/stats", response_model=ApiResponse[DashboardStatsVO])
-def get_all_stats(db: Session = Depends(get_db)) -> ApiResponse[DashboardStatsVO]:
+def get_all_stats(
+    db: Session = Depends(get_db),
+    current_user: UserVO = Depends(get_current_user),
+) -> ApiResponse[DashboardStatsVO]:
     """
     获取仪表盘全部统计数据
     """

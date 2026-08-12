@@ -1,6 +1,5 @@
 """钢材价格计算结果数据模型。"""
 
-from datetime import datetime
 from decimal import Decimal
 
 from sqlalchemy import (
@@ -16,9 +15,10 @@ from sqlalchemy import (
 )
 
 from app.database import Base
+from app.models.audit_mixin import AuditUserMixin
 
 
-class SteelPrice(Base):
+class SteelPrice(AuditUserMixin, Base):
     """
     钢材价格计算结果表
 
@@ -227,14 +227,6 @@ class SteelPrice(Base):
 
     # 六、辅助与审计
     remark = Column(Text, nullable=True, comment="人工备注（不承担溯源）")
-    created_at = Column(DateTime, default=datetime.now, nullable=False, comment="创建时间")
-    updated_at = Column(
-        DateTime,
-        default=datetime.now,
-        onupdate=datetime.now,
-        nullable=False,
-        comment="更新时间",
-    )
 
     __table_args__ = (
         UniqueConstraint(

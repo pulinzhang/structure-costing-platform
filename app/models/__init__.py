@@ -6,6 +6,8 @@ from app.models.steel_price import SteelPrice
 from app.models.steel_price_calc_log import SteelPriceCalcLog
 from app.models.steel_price_policy import SteelPricePolicy, SteelPriceLadderItem
 from app.models.steel_base_price import SteelBasePrice
+from app.models.user import User
+from app.models.user_token import UserToken
 
 __all__ = [
     "AsyncTask",
@@ -17,4 +19,6 @@ __all__ = [
     "SteelPricePolicy",
     "SteelPriceLadderItem",
     "SteelBasePrice",
+    "User",
+    "UserToken",
 ]

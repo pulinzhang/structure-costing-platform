@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.deps.auth import get_current_user
 from app.services.stamping.tonnage_price_service import StampingTonnagePriceService
 from app.schemas.dto.stamping_tonnage_price_dto import (
     StampingTonnagePriceCreate,
@@ -21,6 +22,7 @@ from app.schemas.vo.stamping_tonnage_price_vo import (
     StampingTonnagePriceCopyYearResponse,
 )
 from app.schemas.common.page_result import PageResult
+from app.schemas.vo.user_vo import UserVO
 from app.utils.response import ApiResponse
 
 
@@ -30,14 +32,21 @@ _tonnage_price_service = StampingTonnagePriceService()
 
 
 @router.get("/list", response_model=ApiResponse[List[StampingTonnagePriceResponse]])
-def list_all(db: Session = Depends(get_db)):
+def list_all(
+    db: Session = Depends(get_db),
+    current_user: UserVO = Depends(get_current_user),
+):
     """获取所有冲次费率列表（按年份、吨位排序）"""
     data = _tonnage_price_service.list_all(db)
     return ApiResponse.ok(data=data, message=f"查询到 {len(data)} 条记录")
 
 
 @router.get("/by-year/{year}", response_model=ApiResponse[List[StampingTonnagePriceResponse]])
-def list_by_year(year: int, db: Session = Depends(get_db)):
+def list_by_year(
+    year: int,
+    db: Session = Depends(get_db),
+    current_user: UserVO = Depends(get_current_user),
+):
     """获取指定年份的所有冲次费率"""
     data = _tonnage_price_service.list_by_year(db, year)
     return ApiResponse.ok(data=data, message=f"查询到 {len(data)} 条记录")
@@ -47,6 +56,7 @@ def list_by_year(year: int, db: Session = Depends(get_db)):
 def paginate(
     query: StampingTonnagePriceQuery = Depends(),
     db: Session = Depends(get_db),
+    current_user: UserVO = Depends(get_current_user),
 ):
     """分页查询冲次费率"""
     rows, total, filters = _tonnage_price_service.paginate(db, query)
@@ -61,7 +71,11 @@ def paginate(
 
 
 @router.get("/{id}", response_model=ApiResponse[StampingTonnagePriceResponse])
-def get_by_id(id: int, db: Session = Depends(get_db)):
+def get_by_id(
+    id: int,
+    db: Session = Depends(get_db),
+    current_user: UserVO = Depends(get_current_user),
+):
     """获取单个冲次费率记录"""
     record = _tonnage_price_service.get_by_id(db, id)
     if not record:
@@ -73,9 +87,10 @@ def get_by_id(id: int, db: Session = Depends(get_db)):
 def create(
     body: StampingTonnagePriceCreate,
     db: Session = Depends(get_db),
+    current_user: UserVO = Depends(get_current_user),
 ):
     """创建冲次费率记录"""
-    record, error = _tonnage_price_service.create(db, body)
+    record, error = _tonnage_price_service.create(db, body, current_user=current_user)
     if error:
         raise HTTPException(status_code=400, detail=error)
     return ApiResponse.created(data=record, message="创建成功")
@@ -85,9 +100,12 @@ def create(
 def bulk_create(
     items: List[StampingTonnagePriceCreate],
     db: Session = Depends(get_db),
+    current_user: UserVO = Depends(get_current_user),
 ):
     """批量创建冲次费率记录"""
-    created, skipped, failed = _tonnage_price_service.bulk_create(db, items)
+    created, skipped, failed = _tonnage_price_service.bulk_create(
+        db, items, current_user=current_user
+    )
     return ApiResponse.ok(
         data=StampingTonnagePriceBulkCreateResponse(
             created=created,
@@ -106,16 +124,21 @@ def update(
     id: int,
     body: StampingTonnagePriceUpdate,
     db: Session = Depends(get_db),
+    current_user: UserVO = Depends(get_current_user),
 ):
     """更新冲次费率记录"""
-    record, error = _tonnage_price_service.update(db, id, body)
+    record, error = _tonnage_price_service.update(db, id, body, current_user=current_user)
     if error:
         raise HTTPException(status_code=404, detail=error)
     return ApiResponse.ok(data=record, message="更新成功")
 
 
 @router.delete("/{id}", response_model=ApiResponse[None])
-def delete(id: int, db: Session = Depends(get_db)):
+def delete(
+    id: int,
+    db: Session = Depends(get_db),
+    current_user: UserVO = Depends(get_current_user),
+):
     """删除冲次费率记录"""
     success, error = _tonnage_price_service.delete(db, id)
     if not success:
@@ -128,10 +151,11 @@ def copy_from_year(
     source_year: int,
     target_year: int,
     db: Session = Depends(get_db),
+    current_user: UserVO = Depends(get_current_user),
 ):
     """从源年份复制价格到目标年份"""
     created, skipped, failed = _tonnage_price_service.copy_from_year(
-        db, source_year, target_year
+        db, source_year, target_year, current_user=current_user
     )
     return ApiResponse.ok(
         data=StampingTonnagePriceCopyYearResponse(
@@ -146,14 +170,20 @@ def copy_from_year(
 
 
 @router.get("/filters/years", response_model=ApiResponse[List[int]])
-def get_years(db: Session = Depends(get_db)):
+def get_years(
+    db: Session = Depends(get_db),
+    current_user: UserVO = Depends(get_current_user),
+):
     """获取所有年份列表"""
     data = _tonnage_price_service.get_years(db)
     return ApiResponse.ok(data=data)
 
 
 @router.get("/filters/tonnages", response_model=ApiResponse[List[int]])
-def get_tonnages(db: Session = Depends(get_db)):
+def get_tonnages(
+    db: Session = Depends(get_db),
+    current_user: UserVO = Depends(get_current_user),
+):
     """获取所有吨位列表"""
     data = _tonnage_price_service.get_tonnages(db)
     return ApiResponse.ok(data=data)

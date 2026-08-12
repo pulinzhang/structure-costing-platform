@@ -195,13 +195,25 @@ class StampingPartRepository:
         ).all()
 
     def delete_by_vehicle_version(self, db: Session, vehicle_model: str, version: str) -> int:
-        """删除指定车型版本的全部零件和工序（不提交事务，由调用方管理）"""
+        """删除指定车型版本的全部零件和工序（不提交事务，由调用方管理）。
+
+        使用 bulk DELETE + flush，确保旧行在后续 INSERT 前已从库中消失，
+        避免唯一键 (location, supplier, model, version, part_number) 冲突。
+        """
         parts = self.get_all_by_vehicle_version(db, vehicle_model, version)
         count = len(parts)
-        for part in parts:
-            db.query(StampingProcess).filter(StampingProcess.part_id == part.id).delete()
-            db.delete(part)
-        logger.info(f"删除车型版本: {vehicle_model}/{version}, 共 {count} 个零件")
+        if not parts:
+            return 0
+
+        part_ids = [part.id for part in parts]
+        db.query(StampingProcess).filter(
+            StampingProcess.part_id.in_(part_ids)
+        ).delete(synchronize_session=False)
+        db.query(StampingPart).filter(
+            StampingPart.id.in_(part_ids)
+        ).delete(synchronize_session=False)
+        db.flush()
+        logger.info("删除车型版本: %s/%s, 共 %s 个零件", vehicle_model, version, count)
         return count
 
     def get_id_map_by_vehicle_version(self, db: Session, vehicle_model: str, version: str) -> Dict[str, int]:

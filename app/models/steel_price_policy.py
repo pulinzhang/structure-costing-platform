@@ -3,19 +3,18 @@
 采用严格主子表架构：政策主表 + 阶梯明细表
 """
 
-from datetime import datetime
-from decimal import Decimal
-from typing import List, Optional
+from typing import List
 
 from sqlalchemy import (
-    Column, DateTime, ForeignKey, Index, Integer, Numeric, String, UniqueConstraint
+    Column, ForeignKey, Index, Integer, Numeric, String, UniqueConstraint
 )
 from sqlalchemy.orm import Mapped, relationship
 
 from app.database import Base
+from app.models.audit_mixin import AuditUserMixin
 
 
-class SteelPricePolicy(Base):
+class SteelPricePolicy(AuditUserMixin, Base):
     """
     政策主表 - 统一的钢价政策头表
     一条政策对应多条阶梯明细
@@ -42,14 +41,6 @@ class SteelPricePolicy(Base):
 
     # 元数据
     excel_filename = Column(String(255), nullable=True, comment="来源 Excel 文件名")
-    created_at = Column(DateTime, default=datetime.now, nullable=False, comment="创建时间")
-    updated_at = Column(
-        DateTime,
-        default=datetime.now,
-        onupdate=datetime.now,
-        nullable=False,
-        comment="更新时间",
-    )
 
     # 关联子表（cascade 确保删除主表时自动删除所有明细）
     items: Mapped[List["SteelPriceLadderItem"]] = relationship(
@@ -82,7 +73,7 @@ class SteelPricePolicy(Base):
     )
 
 
-class SteelPriceLadderItem(Base):
+class SteelPriceLadderItem(AuditUserMixin, Base):
     """
     阶梯明细表 - 采用 min/max 区间设计的加减价阶梯
     """

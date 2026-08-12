@@ -7,10 +7,13 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.database import DatabaseConfig, get_db
+from app.common.audit import display_name
+from app.deps.auth import get_current_user
 from app.schemas.common.page_result import PageResult
 from app.schemas.dto.steel_price_dto import SteelPriceCalcDTO
 from app.schemas.vo.async_task_vo import AsyncTaskAcceptedVO, AsyncTaskProgressVO
 from app.schemas.vo.steel_price_vo import SteelPriceCalcLogVO, SteelPriceCalcResultVO
+from app.schemas.vo.user_vo import UserVO
 from app.services.async_task import (
     STATUS_COMPLETED,
     STATUS_FAILED,
@@ -72,6 +75,7 @@ def _process_steel_price_calc_in_background(
     stamping_supplier: str | None,
     vehicle_model: str | None,
     started_at_iso: str | None,
+    current_user: UserVO,
 ) -> None:
     """后台线程执行钢价计算；独立 Session，不复用请求 db。"""
     from datetime import datetime
@@ -114,6 +118,7 @@ def _process_steel_price_calc_in_background(
             log_id=log_id,
             calc_batch_id=calc_batch_id,
             started_at=started_at,
+            current_user=current_user,
         )
         result_vo = _to_result_vo(result)
         if result.status == "failed":
@@ -174,6 +179,7 @@ def list_calc_logs(
     page: int = Query(1, ge=1, description="页码"),
     size: int = Query(20, ge=1, le=100, description="每页条数"),
     db: Session = Depends(get_db),
+    current_user: UserVO = Depends(get_current_user),
 ) -> ApiResponse[PageResult[SteelPriceCalcLogVO]]:
     """分页查询钢价计算历史（含 detail_text）。"""
     records, total = _calc_orchestrator.list_logs(
@@ -199,6 +205,7 @@ def list_calc_logs(
 def get_calc_log(
     log_id: int,
     db: Session = Depends(get_db),
+    current_user: UserVO = Depends(get_current_user),
 ) -> ApiResponse[SteelPriceCalcLogVO]:
     """查看单次计算全过程（detail_text）。"""
     record = _calc_orchestrator.get_log(db, log_id)
@@ -214,6 +221,7 @@ def get_calc_log(
 def delete_calc_log(
     log_id: int,
     db: Session = Depends(get_db),
+    current_user: UserVO = Depends(get_current_user),
 ) -> ApiResponse[None]:
     """删除一条计算历史日志（不影响已落库的钢材价格结果）。"""
     try:
@@ -234,6 +242,7 @@ def delete_calc_log(
 )
 def get_steel_price_calc_task_progress(
     task_id: str,
+    current_user: UserVO = Depends(get_current_user),
 ) -> ApiResponse[AsyncTaskProgressVO]:
     """查询钢价计算任务进度。"""
     task = _async_task_service.get_task_snapshot(task_id)
@@ -244,20 +253,11 @@ def get_steel_price_calc_task_progress(
     result = (
         SteelPriceCalcResultVO.model_validate(result_raw) if result_raw else None
     )
-    updated_at_value = task.get("updated_at")
-    updated_at = (
-        updated_at_value.timestamp()
-        if hasattr(updated_at_value, "timestamp")
-        else float(updated_at_value or 0)
-    )
-
     return ApiResponse.ok(
-        data=AsyncTaskProgressVO(
-            status=task.get("status") or STATUS_PENDING,
-            progress=int(task.get("progress") or 0),
-            msg=task.get("message") or "",
+        data=AsyncTaskProgressVO.from_snapshot(
+            task,
+            default_status=STATUS_PENDING,
             result=result,
-            updated_at=updated_at,
         ),
     )
 
@@ -269,6 +269,7 @@ def get_steel_price_calc_task_progress(
 def calculate_steel_prices(
     body: SteelPriceCalcDTO,
     db: Session = Depends(get_db),
+    current_user: UserVO = Depends(get_current_user),
 ) -> ApiResponse[AsyncTaskAcceptedVO]:
     """
     按筛选条件提交钢价联动计算（异步）。
@@ -292,7 +293,12 @@ def calculate_steel_prices(
     )
 
     try:
-        lock_log = _calc_orchestrator.begin_processing(db, request)
+        lock_log = _calc_orchestrator.begin_processing(
+            db,
+            request,
+            operator_id=current_user.id,
+            operator_name=display_name(current_user),
+        )
     except DuplicatePeriodCalcError as error:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -307,6 +313,8 @@ def calculate_steel_prices(
     task = _async_task_service.create_task(
         task_type=TASK_TYPE_STEEL_PRICE_CALC,
         message="已提交计算队列",
+        operator_id=current_user.id,
+        operator_name=display_name(current_user),
     )
     started_at_iso = (
         lock_log.started_at.isoformat(timespec="seconds") if lock_log.started_at else None
@@ -322,6 +330,7 @@ def calculate_steel_prices(
         body.stamping_supplier,
         body.vehicle_model,
         started_at_iso,
+        current_user,
     )
 
     return ApiResponse.ok(

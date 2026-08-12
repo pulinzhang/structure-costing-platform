@@ -9,6 +9,7 @@ from typing import Optional
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.common.audit import audit_create, audit_update, display_name
 from app.repositories.steel_price import SteelPriceRepository
 from app.schemas.dto.steel_price_dto import (
     SteelPriceAuditDTO,
@@ -26,6 +27,7 @@ from app.schemas.vo.steel_price_vo import (
     SteelPriceFilterOptions,
     SteelPriceResponse,
 )
+from app.schemas.vo.user_vo import UserVO
 
 
 logger = logging.getLogger("service.steel_price")
@@ -99,7 +101,10 @@ class SteelPriceService:
         return SteelPriceResponse.model_validate(record)
 
     def create(
-        self, db: Session, data: SteelPriceCreate
+        self,
+        db: Session,
+        data: SteelPriceCreate,
+        current_user: UserVO,
     ) -> tuple[Optional[SteelPriceResponse], Optional[str]]:
         now = datetime.now()
         payload = data.model_dump()
@@ -125,6 +130,7 @@ class SteelPriceService:
         payload["reverse_audited_by"] = None
         payload["reverse_audited_at"] = None
         payload["reverse_audit_remark"] = None
+        payload.update(audit_create(current_user))
 
         try:
             record = self.repository.create(db, payload)
@@ -147,7 +153,11 @@ class SteelPriceService:
             return None, str(error)
 
     def update(
-        self, db: Session, record_id: int, data: SteelPriceUpdate
+        self,
+        db: Session,
+        record_id: int,
+        data: SteelPriceUpdate,
+        current_user: UserVO,
     ) -> tuple[Optional[SteelPriceResponse], Optional[str]]:
         record = self.repository.get_by_id(db, record_id)
         if record is None:
@@ -160,6 +170,7 @@ class SteelPriceService:
         payload = data.model_dump(exclude_none=True)
         if not payload:
             return None, "未提供任何可更新字段"
+        payload.update(audit_update(current_user))
 
         base_price = payload.get("base_price", record.base_price)
         thickness_adjustment = payload.get("thickness_adjustment", record.thickness_adjustment)
@@ -271,7 +282,10 @@ class SteelPriceService:
             return None, str(error)
 
     def batch_approve(
-        self, db: Session, data: SteelPriceBatchApproveDTO
+        self,
+        db: Session,
+        data: SteelPriceBatchApproveDTO,
+        current_user: UserVO,
     ) -> tuple[Optional[SteelPriceBatchAuditResultVO], Optional[str]]:
         """
         按年度+月份+基地批量审核通过。
@@ -281,9 +295,9 @@ class SteelPriceService:
         location = data.location.strip()
         if not location:
             return None, "采购基地不能为空"
-        audited_by = data.audited_by.strip()
+        audited_by = display_name(current_user)
         if not audited_by:
-            return None, "审核人不能为空"
+            return None, "无法识别当前登录用户"
         audit_remark = data.audit_remark.strip() if data.audit_remark else None
 
         try:
@@ -302,6 +316,7 @@ class SteelPriceService:
                 audited_by=audited_by,
                 audited_at=datetime.now(),
                 audit_remark=audit_remark,
+                updated_by=audited_by,
             )
             db.commit()
             return (
@@ -325,7 +340,10 @@ class SteelPriceService:
             return None, str(error)
 
     def batch_reverse_audit(
-        self, db: Session, data: SteelPriceBatchReverseAuditDTO
+        self,
+        db: Session,
+        data: SteelPriceBatchReverseAuditDTO,
+        current_user: UserVO,
     ) -> tuple[Optional[SteelPriceBatchAuditResultVO], Optional[str]]:
         """
         按年度+月份+基地批量反审核。
@@ -335,9 +353,9 @@ class SteelPriceService:
         location = data.location.strip()
         if not location:
             return None, "采购基地不能为空"
-        reverse_audited_by = data.reverse_audited_by.strip()
+        reverse_audited_by = display_name(current_user)
         if not reverse_audited_by:
-            return None, "反审核人不能为空"
+            return None, "无法识别当前登录用户"
         reverse_audit_remark = data.reverse_audit_remark.strip()
         if not reverse_audit_remark:
             return None, "反审核原因必填"
@@ -358,6 +376,7 @@ class SteelPriceService:
                 reverse_audited_by=reverse_audited_by,
                 reverse_audited_at=datetime.now(),
                 reverse_audit_remark=reverse_audit_remark,
+                updated_by=reverse_audited_by,
             )
             db.commit()
             return (
@@ -381,7 +400,11 @@ class SteelPriceService:
             return None, str(error)
 
     def approve(
-        self, db: Session, record_id: int, data: SteelPriceAuditDTO
+        self,
+        db: Session,
+        record_id: int,
+        data: SteelPriceAuditDTO,
+        current_user: UserVO,
     ) -> tuple[Optional[SteelPriceResponse], Optional[str]]:
         record = self.repository.get_by_id(db, record_id)
         if record is None:
@@ -392,14 +415,16 @@ class SteelPriceService:
             return None, f"当前状态不允许审核通过: {record.audit_status}"
 
         try:
+            operator_name = display_name(current_user)
             updated = self.repository.update(
                 db,
                 record_id,
                 {
                     "audit_status": AUDIT_APPROVED,
-                    "audited_by": data.audited_by.strip(),
+                    "audited_by": operator_name,
                     "audited_at": datetime.now(),
                     "audit_remark": data.audit_remark,
+                    **audit_update(current_user),
                 },
             )
             db.commit()
@@ -411,7 +436,11 @@ class SteelPriceService:
             return None, str(error)
 
     def reject(
-        self, db: Session, record_id: int, data: SteelPriceAuditDTO
+        self,
+        db: Session,
+        record_id: int,
+        data: SteelPriceAuditDTO,
+        current_user: UserVO,
     ) -> tuple[Optional[SteelPriceResponse], Optional[str]]:
         record = self.repository.get_by_id(db, record_id)
         if record is None:
@@ -422,14 +451,16 @@ class SteelPriceService:
             return None, f"当前状态不允许驳回: {record.audit_status}"
 
         try:
+            operator_name = display_name(current_user)
             updated = self.repository.update(
                 db,
                 record_id,
                 {
                     "audit_status": AUDIT_REJECTED,
-                    "audited_by": data.audited_by.strip(),
+                    "audited_by": operator_name,
                     "audited_at": datetime.now(),
                     "audit_remark": data.audit_remark,
+                    **audit_update(current_user),
                 },
             )
             db.commit()
@@ -441,7 +472,11 @@ class SteelPriceService:
             return None, str(error)
 
     def reverse_audit(
-        self, db: Session, record_id: int, data: SteelPriceReverseAuditDTO
+        self,
+        db: Session,
+        record_id: int,
+        data: SteelPriceReverseAuditDTO,
+        current_user: UserVO,
     ) -> tuple[Optional[SteelPriceResponse], Optional[str]]:
         record = self.repository.get_by_id(db, record_id)
         if record is None:
@@ -455,9 +490,10 @@ class SteelPriceService:
                 record_id,
                 {
                     "audit_status": AUDIT_PENDING,
-                    "reverse_audited_by": data.reverse_audited_by.strip(),
+                    "reverse_audited_by": display_name(current_user),
                     "reverse_audited_at": datetime.now(),
                     "reverse_audit_remark": data.reverse_audit_remark.strip(),
+                    **audit_update(current_user),
                 },
             )
             db.commit()
@@ -474,6 +510,7 @@ class SteelPriceService:
         *,
         calc_batch_id: str,
         rows: list[dict],
+        current_user: UserVO,
     ) -> dict[str, int]:
         """
         批量落库计算结果。
@@ -482,6 +519,8 @@ class SteelPriceService:
         - 业务键已存在且非 approved → 更新计算结果字段，重置为 pending
         - 业务键不存在 → 新建，audit_status=pending
         """
+        create_audit = audit_create(current_user)
+        update_audit = audit_update(current_user)
         created_count = 0
         updated_count = 0
         skipped_approved_count = 0
@@ -521,9 +560,11 @@ class SteelPriceService:
                     }
 
                     if existing is None:
+                        write_payload.update(create_audit)
                         self.repository.create(db, write_payload)
                         created_count += 1
                     else:
+                        write_payload.update(update_audit)
                         self.repository.update(db, existing.id, write_payload)
                         updated_count += 1
                 except Exception as row_error:

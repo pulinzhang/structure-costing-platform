@@ -16,6 +16,7 @@
 import { pageMeta } from './features/index.js';
 
 // 页面导入
+import { getUserSession, initUserMenu, startTokenHeartbeat } from './features/login/index.js';
 import { pageConfig as dashboardPage }      from './features/dashboard/index.js';
 import { pageConfig as stampingUploadPage } from './features/stamping/upload/index.js?v=34';
 import { pageConfig as stampingPartsPage }  from './features/stamping/parts/index.js';
@@ -29,6 +30,12 @@ import { pageConfig as basePriceDownloadPage } from './features/steel-price/base
 import { pageConfig as costingPage }        from './features/costing/index.js';
 import { pageConfig as quotationPage }      from './features/quotation/index.js';
 import { pageConfig as settingsPage }       from './features/settings/index.js';
+
+// 未登录禁止进入主应用：不渲染业务页，避免请求 dashboard 等后端
+const hasSession = !!getUserSession();
+if (!hasSession) {
+    window.location.replace('/login');
+}
 
 // ===== 页面注册 =====
 const pages = {
@@ -55,6 +62,7 @@ let currentPageName = null;
 /**
  * 从 URL Hash 中解析页面名，如 #/stamping-parts → stamping-parts
  * 支持带查询串：#/steel-price-list?year=2026 → steel-price-list
+ * 旧版 #/login 跳转到独立登录页 /login
  */
 function getPageFromHash() {
     const hash = window.location.hash;           // e.g. "#/stamping-parts"
@@ -64,7 +72,15 @@ function getPageFromHash() {
     if (queryIndex >= 0) {
         pageName = pageName.slice(0, queryIndex);
     }
-    return pageName || DEFAULT_PAGE;
+    pageName = pageName || DEFAULT_PAGE;
+
+    // 登录已拆为独立页面，与主应用壳层无关
+    if (pageName === 'login') {
+        window.location.replace('/login');
+        return null;
+    }
+
+    return pageName;
 }
 
 /**
@@ -154,6 +170,8 @@ function renderBreadcrumb(pageName, meta) {
  * 渲染页面（仅渲染，不改 Hash）
  */
 function renderPage(pageName) {
+    if (!pageName) return;
+
     const page = pages[pageName];
     if (!page) {
         document.getElementById('pageContent').innerHTML =
@@ -205,6 +223,7 @@ function initRouter() {
 
 // 点击导航链接 → 改为更新 Hash（支持所有 data-page 链接）
 document.addEventListener('click', function(e) {
+    if (!hasSession) return;
     // 支持所有带 data-page 的链接（一级、二级、三级菜单）
     const link = e.target.closest('a[data-page]');
     if (!link) return;
@@ -215,12 +234,15 @@ document.addEventListener('click', function(e) {
 
 // 监听 Hash 变化（前进/后退 + navigateTo）
 window.addEventListener('hashchange', function() {
+    if (!hasSession) return;
     const pageName = getPageFromHash();
     renderPage(pageName);
 });
 
 // Global Menu → Compact Overlay Menu（复用 #sidebar 菜单 DOM）
 document.addEventListener('DOMContentLoaded', function() {
+    if (!hasSession) return;
+
     const sidebar         = document.getElementById('sidebar');
     const sidebarToggle   = document.getElementById('sidebarToggle');
     const sidebarBackdrop = document.getElementById('sidebarBackdrop');
@@ -300,5 +322,8 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
+    // 顶栏用户头像菜单 + token 心跳续期
+    initUserMenu();
+    startTokenHeartbeat();
     initRouter();
 });

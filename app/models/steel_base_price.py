@@ -3,15 +3,15 @@
 适配多基地、多年份宽表清洗入库
 """
 
-from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import Column, DateTime, Index, Integer, Numeric, String, Text, UniqueConstraint
+from sqlalchemy import Column, Index, Integer, Numeric, String, Text, UniqueConstraint
 
 from app.database import Base
+from app.models.audit_mixin import AuditUserMixin
 
 
-class SteelBasePrice(Base):
+class SteelBasePrice(AuditUserMixin, Base):
     """
     钢材基准价格表（适配多基地、多年份宽表清洗入库）
 
@@ -65,14 +65,6 @@ class SteelBasePrice(Base):
 
     # 【辅助与扩展】
     remark = Column(Text, nullable=True, comment="备注说明")
-    created_at = Column(DateTime, default=datetime.now, nullable=False, comment="创建时间")
-    updated_at = Column(
-        DateTime,
-        default=datetime.now,
-        onupdate=datetime.now,
-        nullable=False,
-        comment="更新时间",
-    )
 
     # 【复合唯一约束 + 高性能组合索引】
     __table_args__ = (

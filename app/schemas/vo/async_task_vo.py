@@ -18,4 +18,31 @@ class AsyncTaskProgressVO(BaseModel):
     progress: int = Field(0, ge=0, le=100, description="进度百分比 0-100")
     msg: str = Field("", description="当前阶段说明")
     result: Optional[Any] = Field(None, description="完成后的业务结果")
+    operator_id: Optional[int] = Field(None, description="提交人用户 ID")
+    operator_name: Optional[str] = Field(None, description="提交人显示名")
     updated_at: float = Field(0, description="最近更新时间戳（秒）")
+
+    @classmethod
+    def from_snapshot(
+        cls,
+        task: dict[str, Any],
+        *,
+        default_status: str = "pending",
+        result: Any = None,
+    ) -> "AsyncTaskProgressVO":
+        """从 AsyncTaskService.get_task_snapshot 组装进度 VO。"""
+        updated_at_value = task.get("updated_at")
+        updated_at = (
+            updated_at_value.timestamp()
+            if hasattr(updated_at_value, "timestamp")
+            else float(updated_at_value or 0)
+        )
+        return cls(
+            status=task.get("status") or default_status,
+            progress=int(task.get("progress") or 0),
+            msg=task.get("message") or "",
+            result=result,
+            operator_id=task.get("operator_id"),
+            operator_name=task.get("operator_name"),
+            updated_at=updated_at,
+        )

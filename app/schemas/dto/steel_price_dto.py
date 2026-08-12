@@ -56,16 +56,14 @@ class SteelPriceUpdate(BaseModel):
 
 
 class SteelPriceAuditDTO(BaseModel):
-    """审核通过 / 驳回请求 DTO"""
+    """审核通过 / 驳回请求 DTO（审核人取自 current_user）"""
 
-    audited_by: str = Field(..., min_length=1, max_length=50, description="审核人（经理）")
     audit_remark: Optional[str] = Field(None, description="审核意见")
 
 
 class SteelPriceReverseAuditDTO(BaseModel):
-    """反审核请求 DTO"""
+    """反审核请求 DTO（反审核人取自 current_user）"""
 
-    reverse_audited_by: str = Field(..., min_length=1, max_length=50, description="反审核人（经理）")
     reverse_audit_remark: str = Field(..., min_length=1, description="反审核原因（必填）")
 
 
@@ -91,20 +89,18 @@ class SteelPriceBatchDeleteDTO(BaseModel):
 
 
 class SteelPriceBatchApproveDTO(BaseModel):
-    """按条件批量审核通过（仅年度/月份/基地，三者必填）"""
+    """按条件批量审核通过（仅年度/月份/基地，三者必填；审核人取自 current_user）"""
 
     year: int = Field(..., ge=2000, le=2100, description="年度")
     month: int = Field(..., ge=1, le=12, description="月份")
     location: str = Field(..., min_length=1, max_length=50, description="采购基地")
-    audited_by: str = Field(..., min_length=1, max_length=50, description="审核人（经理）")
     audit_remark: Optional[str] = Field(None, description="审核意见")
 
 
 class SteelPriceBatchReverseAuditDTO(BaseModel):
-    """按条件批量反审核（仅年度/月份/基地，三者必填）"""
+    """按条件批量反审核（仅年度/月份/基地，三者必填；反审核人取自 current_user）"""
 
     year: int = Field(..., ge=2000, le=2100, description="年度")
     month: int = Field(..., ge=1, le=12, description="月份")
     location: str = Field(..., min_length=1, max_length=50, description="采购基地")
-    reverse_audited_by: str = Field(..., min_length=1, max_length=50, description="反审核人（经理）")
     reverse_audit_remark: str = Field(..., min_length=1, description="反审核原因（必填）")

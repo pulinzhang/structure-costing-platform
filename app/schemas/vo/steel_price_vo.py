@@ -119,6 +119,8 @@ class SteelPriceResponse(BaseModel):
     reverse_audit_remark: Optional[str] = None
 
     remark: Optional[str] = None
+    created_by: Optional[str] = None
+    updated_by: Optional[str] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
@@ -193,6 +195,8 @@ class SteelPriceCalcLogVO(BaseModel):
     skipped_approved_count: int = 0
     failed_count: int = 0
     detail_text: str = ""
+    operator_id: Optional[int] = None
+    operator_name: Optional[str] = None
     started_at: Optional[datetime] = None
     finished_at: Optional[datetime] = None
     created_at: Optional[datetime] = None

@@ -4,17 +4,17 @@
 """
 
 from decimal import Decimal
-from datetime import datetime
 from typing import List
 from sqlalchemy import (
-    Column, Integer, String, DateTime, Numeric, Text, ForeignKey, Index, UniqueConstraint
+    Column, Integer, String, Numeric, Text, ForeignKey, Index, UniqueConstraint
 )
 from sqlalchemy.orm import relationship, Mapped
 
 from app.database import Base
+from app.models.audit_mixin import AuditUserMixin
 
 
-class StampingPart(Base):
+class StampingPart(AuditUserMixin, Base):
     """
     冲压件主表 - 存储零件基本信息
     vehicle_model + version 直接存于此表，不单独建车型表
@@ -68,10 +68,6 @@ class StampingPart(Base):
         comment="来源Excel文件名，例：2025年11月马钢测试.xlsx",
     )
 
-    # 元数据
-    created_at = Column(DateTime, default=datetime.now, comment="创建时间")
-    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now, comment="更新时间")
-
     # 关联
     processes: Mapped[List["StampingProcess"]] = relationship(
         "StampingProcess",
@@ -93,7 +89,7 @@ class StampingPart(Base):
     )
 
 
-class StampingProcess(Base):
+class StampingProcess(AuditUserMixin, Base):
     """
     冲压工序子表 - 存储零件的冲压工序详情
     """
@@ -117,9 +113,6 @@ class StampingProcess(Base):
     # 扩展信息
     remark = Column(Text, nullable=True, comment="备注")
 
-    # 元数据
-    created_at = Column(DateTime, default=datetime.now, comment="创建时间")
-
     # 关联
     part: Mapped["StampingPart"] = relationship("StampingPart", back_populates="processes")
 
@@ -129,7 +122,7 @@ class StampingProcess(Base):
     )
 
 
-class StampingTonnagePrice(Base):
+class StampingTonnagePrice(AuditUserMixin, Base):
     """
     冲压冲次费率表
     用于存储不同年份、不同压机吨位对应的单冲次加工价格
@@ -146,10 +139,6 @@ class StampingTonnagePrice(Base):
 
     # 单冲次价格（元/冲次）
     price_per_stroke = Column(Numeric(12, 4), nullable=False, comment="单冲次价格(元)")
-
-    # 元数据
-    created_at = Column(DateTime, default=datetime.now, comment="创建时间")
-    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now, comment="更新时间")
 
     __table_args__ = (
         Index("ix_tonnage_price_year", "year"),

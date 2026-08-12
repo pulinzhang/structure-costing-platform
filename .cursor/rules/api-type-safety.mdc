@@ -327,6 +327,14 @@ Service is responsible for:
 * calculations
 * ORM to VO conversion
 
+写操作方法签名须接收 Router 传入的用户（不要读隐式上下文）：
+
+```python
+def create(self, db: Session, dto: UserCreateDTO, current_user: UserVO) -> UserVO:
+    payload = {**dto.model_dump(), **audit_create(current_user)}
+    ...
+```
+
 Service must return:
 
 * VO
@@ -420,10 +428,12 @@ Required:
     response_model=ApiResponse[UserVO]
 )
 def get_user(
-    id: int
+    id: int,
+    db: Session = Depends(get_db),
+    current_user: UserVO = Depends(get_current_user),
 ) -> ApiResponse[UserVO]:
 
-    user = service.get_user(id)
+    user = service.get_user(db, id)
 
     return ApiResponse.ok(
         data=user
@@ -453,6 +463,99 @@ return {
 
 ---
 
+## 7.0 Router Authentication (`current_user`)
+
+除登录接口外，每个路由处理函数签名**必须**声明：
+
+```python
+current_user: UserVO = Depends(get_current_user)
+```
+
+来源：`app.deps.auth.get_current_user`，返回 `UserVO`。
+
+### Rules
+
+| 场景 | 要求 |
+|------|------|
+| 登录 `POST /api/auth/login` | **唯一例外**，不注入 `current_user` |
+| 其它所有路由（含 logout / me / touch、读、写、删） | 签名必须有 `current_user` |
+| 写操作（create / update / approve 等） | 再以 `current_user=` **显式传给 Service** |
+| 读 / 列表 / 删除 | 注入即可（鉴权），**不必**传给 Service |
+| Service | **禁止**读 ContextVar / 隐式环境用户；只吃参数 |
+
+### Correct — 写操作传给 Service
+
+```python
+@router.post("", response_model=ApiResponse[StampingTonnagePriceResponse])
+def create(
+    body: StampingTonnagePriceCreate,
+    db: Session = Depends(get_db),
+    current_user: UserVO = Depends(get_current_user),
+) -> ApiResponse[StampingTonnagePriceResponse]:
+    record, error = _tonnage_price_service.create(
+        db, body, current_user=current_user
+    )
+    if error:
+        raise HTTPException(status_code=400, detail=error)
+    return ApiResponse.created(data=record, message="创建成功")
+```
+
+### Correct — 读 / 删除只鉴权
+
+```python
+@router.get("/parts/{part_id}", response_model=ApiResponse[StampingPartWithProcessesResponse])
+def get_part(
+    part_id: int,
+    db: Session = Depends(get_db),
+    current_user: UserVO = Depends(get_current_user),
+) -> ApiResponse[StampingPartWithProcessesResponse]:
+    vo = _stamping_service.get_by_id(db, part_id)
+    if not vo:
+        raise HTTPException(status_code=404, detail="零件不存在")
+    return ApiResponse.ok(data=vo)
+
+
+@router.delete("/parts/{part_id}", response_model=ApiResponse[None])
+def delete_part(
+    part_id: int,
+    db: Session = Depends(get_db),
+    current_user: UserVO = Depends(get_current_user),
+) -> ApiResponse[None]:
+    _stamping_service.delete(db, part_id)
+    return ApiResponse.deleted(message="零件删除成功")
+```
+
+### Forbidden
+
+```python
+# 缺少 current_user（登录除外）
+def list_parts(db: Session = Depends(get_db)):
+    ...
+
+# Service 读隐式上下文
+def create(...):
+    user = current_user()  # ❌ 禁止 ContextVar / 环境用户
+    ...
+
+# Router 转成 Snapshot 再传（多余一层）
+operator = OperatorSnapshot.from_user(user)  # ❌ 直接传 UserVO
+service.create(db, body, operator=operator)
+```
+
+### Audit helpers
+
+写 Service 用 `app.common.audit`：
+
+* `audit_create(current_user)` → `created_by` / `updated_by`
+* `audit_update(current_user)` → `updated_by`
+* 脚本 / seed 用 `SYSTEM_USER`（也是 `UserVO`）
+
+### Note
+
+鉴权写在**每个端点签名**上，不要只靠 `include_router(..., dependencies=[...])` 隐藏依赖（教学项目要求可见）。
+
+---
+
 ## 7.1 HTTP Method Response Rules
 
 Every HTTP method must follow consistent response patterns:
@@ -474,7 +577,8 @@ Every HTTP method must follow consistent response patterns:
 )
 def get_user(
     user_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: UserVO = Depends(get_current_user),
 ) -> ApiResponse[UserVO]:
     service = UserService()
     user = service.get_user(db, user_id)
@@ -491,7 +595,8 @@ def get_user(
     response_model=ApiResponse[list[UserVO]]
 )
 def list_users(
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: UserVO = Depends(get_current_user),
 ) -> ApiResponse[list[UserVO]]:
     service = UserService()
     users = service.list_users(db)
@@ -508,7 +613,8 @@ def list_users(
 def list_users_paginated(
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: UserVO = Depends(get_current_user),
 ) -> ApiResponse[BasePageResponse[UserVO]]:
     service = UserService()
     users, total = service.list_users_paginated(db, skip=skip, limit=limit)
@@ -530,10 +636,11 @@ def list_users_paginated(
 )
 def create_user(
     dto: UserCreateDTO,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: UserVO = Depends(get_current_user),
 ) -> ApiResponse[UserVO]:
     service = UserService()
-    user = service.create_user(db, dto)
+    user = service.create_user(db, dto, current_user=current_user)
     return ApiResponse.created(data=user, message="创建成功")
 ```
 
@@ -547,10 +654,11 @@ def create_user(
 def update_user(
     user_id: int,
     dto: UserUpdateDTO,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: UserVO = Depends(get_current_user),
 ) -> ApiResponse[UserVO]:
     service = UserService()
-    user = service.update_user(db, user_id, dto)
+    user = service.update_user(db, user_id, dto, current_user=current_user)
     if not user:
         raise HTTPException(status_code=404, detail="用户不存在")
     return ApiResponse.updated(data=user, message="更新成功")
@@ -565,7 +673,8 @@ def update_user(
 )
 def delete_user(
     user_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: UserVO = Depends(get_current_user),
 ) -> ApiResponse[None]:
     service = UserService()
     service.delete_user(db, user_id)
@@ -884,11 +993,18 @@ Required:
 Every endpoint:
     response_model=ApiResponse[T]
 
+Every Router (except login):
+    current_user: UserVO = Depends(get_current_user)
+
+Every write Router → Service:
+    pass current_user=current_user
+
 Every Router:
     returns ApiResponse[T]
 
 Every Service:
     returns VO
+    no implicit current_user / ContextVar
 
 Every Repository:
     returns SQLAlchemy Model

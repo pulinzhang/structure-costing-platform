@@ -551,17 +551,10 @@ function stopPolling() {
 }
 
 async function fetchTaskProgress(taskId) {
-    const response = await fetch(`${STEEL_PRICE_CALC_TASK_API}/${encodeURIComponent(taskId)}`, {
-        headers: { 'X-Requested-With': 'XMLHttpRequest' },
-    });
-    const payload = await response.json().catch(() => null);
-    if (!response.ok || !payload?.success) {
-        const msg = payload?.message || payload?.detail || `查询进度失败 (${response.status})`;
-        const error = new Error(msg);
-        error.status = response.status;
-        throw error;
-    }
-    return payload.data;
+    const response = await HttpClient.get(
+        `${STEEL_PRICE_CALC_TASK_API}/${encodeURIComponent(taskId)}`,
+    );
+    return response.data;
 }
 
 function startPolling(taskId) {

@@ -26,6 +26,7 @@ from app.services.steel_price.calc.models import (
     SteelPriceCalcRequest,
     SteelPriceCalcResult,
 )
+from app.schemas.vo.user_vo import UserVO
 from app.services.steel_price.calc.process_log import ProcessLogBuilder
 from app.services.steel_price.calc.status import (
     STATUS_FAILED,
@@ -61,6 +62,9 @@ class SteelPriceCalcOrchestrator:
         self,
         db: Session,
         request: SteelPriceCalcRequest,
+        *,
+        operator_id: int | None = None,
+        operator_name: str | None = None,
     ):
         """提交前写入 processing 期别锁。"""
         location = (request.location or "").strip()
@@ -77,6 +81,8 @@ class SteelPriceCalcOrchestrator:
             vehicle_model=(
                 request.vehicle_model.strip() if request.vehicle_model else None
             ),
+            operator_id=operator_id,
+            operator_name=operator_name,
         )
 
     def is_period_processing(
@@ -112,6 +118,7 @@ class SteelPriceCalcOrchestrator:
         log_id: int | None = None,
         calc_batch_id: str | None = None,
         started_at: datetime | None = None,
+        current_user: UserVO,
     ) -> SteelPriceCalcResult:
         """
         执行完整计算编排。
@@ -255,6 +262,7 @@ class SteelPriceCalcOrchestrator:
                     )
                     for row in rows
                 ],
+                current_user=current_user,
             )
             result.created_count = persist_stats["created_count"]
             result.updated_count = persist_stats["updated_count"]

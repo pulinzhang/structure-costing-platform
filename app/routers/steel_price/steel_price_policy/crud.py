@@ -12,7 +12,10 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from urllib.parse import quote
 
+from app.common.audit import display_name
 from app.database import DatabaseConfig, get_db
+from app.deps.auth import get_current_user
+from app.schemas.vo.user_vo import UserVO
 from app.schemas.common.page_result import PageResult
 from app.schemas.dto.steel_price_policy_dto import (
     LadderItemCreate,
@@ -22,6 +25,7 @@ from app.schemas.dto.steel_price_policy_dto import (
     PolicyQuery,
     PolicyUpdate,
 )
+from app.schemas.vo.async_task_vo import AsyncTaskAcceptedVO, AsyncTaskProgressVO
 from app.schemas.vo.steel_price_policy_vo import (
     ExportRow,
     ImportResultResponse,
@@ -30,8 +34,6 @@ from app.schemas.vo.steel_price_policy_vo import (
     PolicyListResponse,
     PolicyMatchResponse,
     PolicyOptionsResponse,
-    UploadTaskAcceptedResponse,
-    UploadTaskProgressResponse,
 )
 from app.services.async_task import (
     STATUS_COMPLETED,
@@ -79,11 +81,12 @@ def _process_policy_upload_in_background(
     filename: str,
     year: int,
     month: int,
+    current_user: UserVO,
 ) -> None:
     """
     后台线程执行政策 Excel 解析与入库。
     必须在独立线程中运行，禁止写成 async（否则会阻塞 Event Loop）。
-    进度写入独立异步任务库；主数据使用业务 Session 大事务。
+    进度写入辅助库；主数据使用业务 Session 大事务。
     """
     session_factory = DatabaseConfig.get_session_factory()
     db = session_factory()
@@ -110,6 +113,7 @@ def _process_policy_upload_in_background(
             year=year,
             month=month,
             progress_callback=on_progress,
+            current_user=current_user,
         )
         _async_task_service.update_task_standalone(
             task_id,
@@ -152,6 +156,7 @@ def _process_policy_upload_in_background(
 def list_policies(
     query: PolicyQuery = Depends(),
     db: Session = Depends(get_db),
+    current_user: UserVO = Depends(get_current_user),
 ) -> ApiResponse[PageResult[PolicyListResponse]]:
     """分页筛选政策列表"""
     records, total, options = _policy_service.paginate(db, query)
@@ -171,6 +176,7 @@ def list_policies(
 )
 def get_policy_options(
     db: Session = Depends(get_db),
+    current_user: UserVO = Depends(get_current_user),
 ) -> ApiResponse[PolicyOptionsResponse]:
     """获取政策筛选下拉选项"""
     _, _, options = _policy_service.paginate(db, PolicyQuery(page=1, size=1))
@@ -183,16 +189,17 @@ def get_policy_options(
 
 @router.post(
     "/upload",
-    response_model=ApiResponse[UploadTaskAcceptedResponse],
+    response_model=ApiResponse[AsyncTaskAcceptedVO],
 )
 async def upload_policy_excel(
     year: int = Form(..., ge=2000, le=2100, description="生效年度"),
     month: int = Form(..., ge=1, le=12, description="生效月份（1-12）"),
     file: UploadFile = File(..., description="一事一议价格 Excel 文件"),
-) -> ApiResponse[UploadTaskAcceptedResponse]:
+    current_user: UserVO = Depends(get_current_user),
+) -> ApiResponse[AsyncTaskAcceptedVO]:
     """
     上传钢价政策 Excel，立即返回 task_id，后台线程解析入库。
-    任务进度写入独立异步任务库，不复用业务 Session。
+    任务进度写入辅助库，不复用业务 Session。
     主数据仍在单一大事务中导入（全部成功或全部回滚）。
     """
     file_content = await file.read()
@@ -205,6 +212,8 @@ async def upload_policy_excel(
     task = _async_task_service.create_task(
         task_type=TASK_TYPE_POLICY_UPLOAD,
         message="已提交解析队列",
+        operator_id=current_user.id,
+        operator_name=display_name(current_user),
     )
     AsyncTaskService.submit(
         _process_policy_upload_in_background,
@@ -213,42 +222,35 @@ async def upload_policy_excel(
         file.filename or "policy.xlsx",
         year,
         month,
+        current_user,
     )
 
     return ApiResponse.ok(
-        data=UploadTaskAcceptedResponse(task_id=task.task_id),
+        data=AsyncTaskAcceptedVO(task_id=task.task_id),
         message="上传成功，后台开始解析",
     )
 
 
 @router.get(
     "/tasks/{task_id}",
-    response_model=ApiResponse[UploadTaskProgressResponse],
+    response_model=ApiResponse[AsyncTaskProgressVO],
 )
 def get_upload_task_progress(
     task_id: str,
-) -> ApiResponse[UploadTaskProgressResponse]:
-    """查询政策上传/解析任务进度（独立异步任务库）"""
+    current_user: UserVO = Depends(get_current_user),
+) -> ApiResponse[AsyncTaskProgressVO]:
+    """查询政策上传/解析任务进度（辅助库）"""
     task = _async_task_service.get_task_snapshot(task_id)
     if task is None or task.get("task_type") != TASK_TYPE_POLICY_UPLOAD:
         raise HTTPException(status_code=404, detail="任务不存在或已过期")
 
     result_raw = AsyncTaskService.parse_result_json(task.get("result_json"))
     result = ImportResultResponse.model_validate(result_raw) if result_raw else None
-    updated_at_value = task.get("updated_at")
-    updated_at = (
-        updated_at_value.timestamp()
-        if hasattr(updated_at_value, "timestamp")
-        else float(updated_at_value or 0)
-    )
-
     return ApiResponse.ok(
-        data=UploadTaskProgressResponse(
-            status=task.get("status") or STATUS_PENDING,
-            progress=int(task.get("progress") or 0),
-            msg=task.get("message") or "",
+        data=AsyncTaskProgressVO.from_snapshot(
+            task,
+            default_status=STATUS_PENDING,
             result=result,
-            updated_at=updated_at,
         ),
     )
 
@@ -265,6 +267,7 @@ def export_policies_excel(
     category_name: Optional[str] = None,
     grade_value: Optional[str] = None,
     db: Session = Depends(get_db),
+    current_user: UserVO = Depends(get_current_user),
 ) -> StreamingResponse:
     """
     导出钢价政策主子表联合数据为 Excel，用于测试部门核对。
@@ -300,6 +303,7 @@ def export_policies_preview(
     page: int = 1,
     size: int = DEFAULT_PAGE_SIZE,
     db: Session = Depends(get_db),
+    current_user: UserVO = Depends(get_current_user),
 ) -> ApiResponse[PageResult[ExportRow]]:
     """
     预览导出数据（主子表联合查询，分页）
@@ -341,10 +345,11 @@ def batch_delete_policies(
     month: Optional[int] = None,
     steel_mill: Optional[str] = None,
     db: Session = Depends(get_db),
+    current_user: UserVO = Depends(get_current_user),
 ) -> ApiResponse[None]:
     """
-    根据条件批量删除政策（年度、月份、钢厂）。
-    至少需要一个条件，否则返回 400。
+    根据条件批量删除政策。
+    年度、月份必填；钢厂可选（不填则删除该年月下全部钢厂）。
     """
     count, error = _policy_service.delete_by_conditions(
         db,
@@ -368,6 +373,7 @@ def batch_delete_policies(
 def get_policy(
     policy_id: int,
     db: Session = Depends(get_db),
+    current_user: UserVO = Depends(get_current_user),
 ) -> ApiResponse[PolicyDetailResponse]:
     """获取政策详情（含完整阶梯明细，按 sort_order + id 排序）"""
     record = _policy_service.get_by_id(db, policy_id)
@@ -383,9 +389,12 @@ def get_policy(
 def create_policy(
     body: PolicyCreate,
     db: Session = Depends(get_db),
+    current_user: UserVO = Depends(get_current_user),
 ) -> ApiResponse[PolicyDetailResponse]:
     """原子创建政策（含阶梯明细）"""
-    record = _map_service_error(_policy_service.create(db, body), "政策")
+    record = _map_service_error(
+        _policy_service.create(db, body, current_user=current_user), "政策"
+    )
     return ApiResponse.created(data=record, message="政策创建成功")
 
 
@@ -397,9 +406,12 @@ def update_policy(
     policy_id: int,
     body: PolicyUpdate,
     db: Session = Depends(get_db),
+    current_user: UserVO = Depends(get_current_user),
 ) -> ApiResponse[PolicyDetailResponse]:
     """更新政策（支持更新政策头字段和整组替换阶梯明细）"""
-    record = _map_service_error(_policy_service.update(db, policy_id, body), "政策")
+    record = _map_service_error(
+        _policy_service.update(db, policy_id, body, current_user=current_user), "政策"
+    )
     return ApiResponse.updated(data=record, message="政策更新成功")
 
 
@@ -410,6 +422,7 @@ def update_policy(
 def delete_policy(
     policy_id: int,
     db: Session = Depends(get_db),
+    current_user: UserVO = Depends(get_current_user),
 ) -> ApiResponse[None]:
     """删除政策（含级联删除全部阶梯明细）"""
     success, error = _policy_service.delete(db, policy_id)
@@ -431,9 +444,12 @@ def add_ladder_item(
     policy_id: int,
     body: LadderItemCreate,
     db: Session = Depends(get_db),
+    current_user: UserVO = Depends(get_current_user),
 ) -> ApiResponse[LadderItemResponse]:
     """向指定政策新增一条阶梯明细"""
-    record = _map_service_error(_policy_service.add_item(db, policy_id, body), "阶梯明细")
+    record = _map_service_error(
+        _policy_service.add_item(db, policy_id, body, current_user=current_user), "阶梯明细"
+    )
     return ApiResponse.created(data=record, message="阶梯明细新增成功")
 
 
@@ -446,9 +462,12 @@ def update_ladder_item(
     item_id: int,
     body: LadderItemUpdate,
     db: Session = Depends(get_db),
+    current_user: UserVO = Depends(get_current_user),
 ) -> ApiResponse[LadderItemResponse]:
     """更新指定政策下的单条阶梯明细"""
-    record = _map_service_error(_policy_service.update_item(db, item_id, body), "阶梯明细")
+    record = _map_service_error(
+        _policy_service.update_item(db, item_id, body, current_user=current_user), "阶梯明细"
+    )
     return ApiResponse.updated(data=record, message="阶梯明细更新成功")
 
 
@@ -460,6 +479,7 @@ def delete_ladder_item(
     policy_id: int,
     item_id: int,
     db: Session = Depends(get_db),
+    current_user: UserVO = Depends(get_current_user),
 ) -> ApiResponse[None]:
     """删除指定政策下的单条阶梯明细"""
     success, error = _policy_service.delete_item(db, item_id)
@@ -480,6 +500,7 @@ def delete_ladder_item(
 def match_ladder(
     body: PolicyMatchRequest,
     db: Session = Depends(get_db),
+    current_user: UserVO = Depends(get_current_user),
 ) -> ApiResponse[PolicyMatchResponse]:
     """
     根据政策维度与尺寸值，匹配阶梯明细并返回加减价金额。

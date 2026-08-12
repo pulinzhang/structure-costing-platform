@@ -65,7 +65,7 @@ export function steelPriceCalcTemplate() {
                 <div class="flex items-center justify-between gap-3 mb-2.5">
                     <div class="flex items-center gap-2 min-w-0">
                         <div id="calcProgressSpinner" class="w-3.5 h-3.5 border-2 border-[#2c2c2c] border-t-[#d32f2f] rounded-full animate-spin shrink-0"></div>
-                        <h5 id="calcProgressTitle" class="text-xs font-medium text-[#ffffff] truncate mb-0">正在计算钢价...</h5>
+                        <h5 id="calcProgressTitle" class="text-xs font-medium text-[#ffffff] truncate mb-0">正在计算联动钢价...</h5>
                     </div>
                     <span id="calcProgressPercent" class="text-xs font-mono tabular-nums text-[#d32f2f] shrink-0">0%</span>
                 </div>

@@ -1,13 +1,12 @@
 """钢材价格计算批次日志模型。"""
 
-from datetime import datetime
-
 from sqlalchemy import Column, DateTime, Index, Integer, String, Text, text
 
 from app.database import Base
+from app.models.audit_mixin import AuditUserMixin
 
 
-class SteelPriceCalcLog(Base):
+class SteelPriceCalcLog(AuditUserMixin, Base):
     """
     钢价计算批次日志
 
@@ -52,7 +51,8 @@ class SteelPriceCalcLog(Base):
 
     started_at = Column(DateTime, nullable=False, comment="计算开始时间")
     finished_at = Column(DateTime, nullable=True, comment="计算结束时间")
-    created_at = Column(DateTime, default=datetime.now, nullable=False, comment="创建时间")
+    operator_id = Column(Integer, nullable=True, comment="提交人用户 ID")
+    operator_name = Column(String(50), nullable=True, comment="提交人显示名")
 
     __table_args__ = (
         Index("ix_steel_price_calc_log_batch", "calc_batch_id"),

@@ -46,11 +46,9 @@ def _get_model_columns(table) -> Dict[str, dict]:
         col_name = col.name
         sql_type = str(col.type)
         nullable = col.nullable
-        default = col.default.arg if col.default and hasattr(col.default, "arg") else None
-        # datetime.now (no parentheses) has no .arg; treat callables as no default
-        if default is None and col.default is not None:
-            if not hasattr(col.default, "arg"):
-                default = None
+        default = None
+        if col.default is not None and hasattr(col.default, "arg"):
+            default = col.default.arg
         is_primary = col.primary_key
 
         columns[col_name] = {
@@ -84,6 +82,38 @@ def _get_actual_columns(engine: Engine, table_name: str) -> Dict[str, dict]:
         return columns
 
 
+def _build_add_column_sql(table_name: str, col_name: str, model_info: dict) -> str:
+    """
+    生成 SQLite ADD COLUMN。
+
+    SQLite 限制：ADD COLUMN 的 DEFAULT 必须是常量（不能用 CURRENT_TIMESTAMP / 函数）。
+    因此 callable 默认值（如 datetime.now）不加 SQL DEFAULT；
+    若原定义 NOT NULL 且无常量默认值，则退化为可空列，由 ORM 在写入时填充。
+    """
+    col_type = model_info["type"]
+    is_nullable = bool(model_info["nullable"])
+    default_val = model_info["default"]
+
+    default_sql = ""
+    if default_val is not None and not callable(default_val):
+        if isinstance(default_val, str):
+            default_sql = f" DEFAULT '{default_val}'"
+        elif isinstance(default_val, bool):
+            default_sql = f" DEFAULT {1 if default_val else 0}"
+        else:
+            default_sql = f" DEFAULT {default_val}"
+
+    # NOT NULL 新列必须有常量 DEFAULT，否则改为可空
+    if not is_nullable and not default_sql:
+        is_nullable = True
+
+    nullable_sql = "" if is_nullable else " NOT NULL"
+    return (
+        f"ALTER TABLE {table_name} ADD COLUMN {col_name} "
+        f"{col_type}{nullable_sql}{default_sql}"
+    )
+
+
 def _migrate_table(engine: Engine, table) -> List[str]:
     """
     对比单个表的 Model 定义与实际结构，执行必要的 ADD COLUMN
@@ -102,20 +132,11 @@ def _migrate_table(engine: Engine, table) -> List[str]:
         for col_name, model_info in model_cols.items():
             if col_name in actual_cols:
                 continue
-            col_type = model_info["type"]
-            nullable = "" if model_info["nullable"] else "NOT NULL"
-            default = ""
-            if model_info["default"] is not None:
-                default_val = model_info["default"]
-                if isinstance(default_val, str):
-                    default = f" DEFAULT '{default_val}'"
-                else:
-                    default = f" DEFAULT {default_val}"
-            sql = f"ALTER TABLE {table_name} ADD COLUMN {col_name} {col_type}{nullable}{default}"
+            sql = _build_add_column_sql(table_name, col_name, model_info)
             sqls.append(sql)
             try:
                 conn.execute(text(sql))
-                logger.info(f"  + ADD COLUMN {table_name}.{col_name} ({col_type})")
+                logger.info(f"  + ADD COLUMN {table_name}.{col_name} ({model_info['type']})")
             except Exception as ex:
                 logger.warning(f"  ! ADD COLUMN {table_name}.{col_name} 失败: {ex}")
         conn.commit()
@@ -124,32 +145,46 @@ def _migrate_table(engine: Engine, table) -> List[str]:
 
 def run_auto_migration():
     """
-    扫描 Base.metadata 中所有表，对比实际数据库结构
-    自动执行 ADD COLUMN（仅补充缺失列，不删除任何列）
+    扫描主库 Base + 辅助库 AuxiliaryBase，对比实际表结构，
+    自动执行 ADD COLUMN（仅补充缺失列，不删除任何列）。
     """
-    from app.database import DatabaseConfig
+    from app.database import AuxiliaryBase, AuxiliaryDatabaseConfig, DatabaseConfig
 
-    engine = DatabaseConfig.get_engine()
+    # 确保辅助库模型已注册
+    import app.models.async_task  # noqa: F401
+    import app.models.user_token  # noqa: F401
 
-    dialect = engine.dialect.name
-    if dialect != "sqlite":
-        logger.info(f"[db_migration] 当前数据库为 {dialect}，跳过自动迁移")
-        return
+    targets = [
+        ("主业务库", DatabaseConfig.get_engine(), list(Base.metadata.tables.values())),
+        (
+            "辅助库",
+            AuxiliaryDatabaseConfig.get_engine(),
+            list(AuxiliaryBase.metadata.tables.values()),
+        ),
+    ]
 
-    tables = list(Base.metadata.tables.values())
-    if not tables:
-        logger.info("[db_migration] 未发现任何 Model 定义")
-        return
+    for label, engine, tables in targets:
+        dialect = engine.dialect.name
+        if dialect != "sqlite":
+            logger.info("[db_migration] %s 当前为 %s，跳过自动迁移", label, dialect)
+            continue
+        if not tables:
+            logger.info("[db_migration] %s 未发现任何 Model 定义", label)
+            continue
 
-    logger.info(f"[db_migration] 开始扫描 {len(tables)} 张表...")
-    total_sqls = 0
-    for table in tables:
-        sqls = _migrate_table(engine, table)
-        total_sqls += len(sqls)
-        if not sqls:
-            logger.info(f"  ✓ {table.name} 结构一致")
+        logger.info("[db_migration] %s 开始扫描 %s 张表...", label, len(tables))
+        total_sqls = 0
+        for table in tables:
+            sqls = _migrate_table(engine, table)
+            total_sqls += len(sqls)
+            if not sqls:
+                logger.info("  ✓ %s 结构一致", table.name)
 
-    if total_sqls > 0:
-        logger.info(f"[db_migration] 完成，共执行 {total_sqls} 条 ALTER TABLE")
-    else:
-        logger.info("[db_migration] 完成，所有表结构已同步")
+        if total_sqls > 0:
+            logger.info(
+                "[db_migration] %s 完成，共执行 %s 条 ALTER TABLE",
+                label,
+                total_sqls,
+            )
+        else:
+            logger.info("[db_migration] %s 完成，所有表结构已同步", label)

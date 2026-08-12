@@ -13,6 +13,7 @@ from typing import Callable, Optional
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.common.audit import audit_create, audit_update
 from app.parsers.steel_price_policy import parse_steel_price_policy_excel
 from app.repositories.steel_price_policy import SteelPricePolicyRepository
 from app.repositories.steel_price_policy.steel_price_policy_repository import (
@@ -46,6 +47,7 @@ from app.schemas.vo.steel_price_policy_vo import (
 )
 from app.services.steel_price_policy.export_service import SteelPricePolicyExportService
 from app.services.steel_price_policy.ladder_matcher import LadderMatcher
+from app.schemas.vo.user_vo import UserVO
 
 # progress_callback(progress: int, msg: str)
 ProgressCallback = Callable[[int, str], None]
@@ -95,6 +97,8 @@ class SteelPricePolicyService:
                     grade_value=record.grade_value,
                     base_thickness=record.base_thickness,
                     item_count=item_count,
+                    created_by=getattr(record, "created_by", None),
+                    updated_by=getattr(record, "updated_by", None),
                     created_at=record.created_at,
                     updated_at=record.updated_at,
                 )
@@ -132,6 +136,8 @@ class SteelPricePolicyService:
                 LadderItemResponse.model_validate(item)
                 for item in sorted_items
             ],
+            created_by=getattr(record, "created_by", None),
+            updated_by=getattr(record, "updated_by", None),
             created_at=record.created_at,
             updated_at=record.updated_at,
         )
@@ -139,8 +145,12 @@ class SteelPricePolicyService:
     # ---- 创建（原子含明细） ----
 
     def create(
-        self, db: Session, data: PolicyCreate
+        self,
+        db: Session,
+        data: PolicyCreate,
+        current_user: UserVO,
     ) -> tuple[Optional[PolicyDetailResponse], Optional[str]]:
+        create_audit = audit_create(current_user)
         payload = data.model_dump()
 
         # 应用层唯一键检查（兜底 DB 唯一约束）
@@ -163,8 +173,9 @@ class SteelPricePolicyService:
 
         try:
             # 提取主表字段和明细数据
-            items_data = payload.pop("items", [])
+            items_data = [{**item, **create_audit} for item in payload.pop("items", [])]
             policy_data = {k: v for k, v in payload.items() if k != "items"}
+            policy_data.update(create_audit)
             policy_record = self.repository.create_policy(db, policy_data)
             db.flush()  # 生成主键 ID
             self.repository.add_items(db, policy_record.id, items_data)
@@ -204,7 +215,11 @@ class SteelPricePolicyService:
     # ---- 更新政策头 ----
 
     def update(
-        self, db: Session, policy_id: int, data: PolicyUpdate
+        self,
+        db: Session,
+        policy_id: int,
+        data: PolicyUpdate,
+        current_user: UserVO,
     ) -> tuple[Optional[PolicyDetailResponse], Optional[str]]:
         existing = self.repository.get_by_id(db, policy_id, load_items=False)
         if existing is None:
@@ -228,11 +243,16 @@ class SteelPricePolicyService:
             db.rollback()
             return None, "未提供任何可更新字段"
 
+        update_data.update(audit_update(current_user))
         try:
-            if update_data:
-                self.repository.update_policy(db, policy_id, update_data)
+            self.repository.update_policy(db, policy_id, update_data)
             if items_data is not None:
-                self.repository.replace_items(db, policy_id, items_data)
+                create_audit = audit_create(current_user)
+                self.repository.replace_items(
+                    db,
+                    policy_id,
+                    [{**item, **create_audit} for item in items_data],
+                )
             db.commit()
 
             logger.info("更新钢价政策: id=%s", policy_id)
@@ -268,7 +288,11 @@ class SteelPricePolicyService:
     # ---- 明细独立 CRUD ----
 
     def add_item(
-        self, db: Session, policy_id: int, data: LadderItemCreate
+        self,
+        db: Session,
+        policy_id: int,
+        data: LadderItemCreate,
+        current_user: UserVO,
     ) -> tuple[Optional[LadderItemResponse], Optional[str]]:
         policy = self.repository.get_by_id(db, policy_id, load_items=False)
         if policy is None:
@@ -281,6 +305,7 @@ class SteelPricePolicyService:
         op_val2 = item_data.get("max_operator")
         if op_val2 is not None:
             item_data["max_operator"] = op_val2.value
+        item_data.update(audit_create(current_user))
 
         try:
             created = self.repository.add_items(db, policy_id, [item_data])
@@ -295,7 +320,11 @@ class SteelPricePolicyService:
             return None, str(error)
 
     def update_item(
-        self, db: Session, item_id: int, data: LadderItemUpdate
+        self,
+        db: Session,
+        item_id: int,
+        data: LadderItemUpdate,
+        current_user: UserVO,
     ) -> tuple[Optional[LadderItemResponse], Optional[str]]:
         existing = self.repository.get_item_by_id(db, item_id)
         if existing is None:
@@ -309,6 +338,7 @@ class SteelPricePolicyService:
 
         if not update_data:
             return None, "未提供任何可更新字段"
+        update_data.update(audit_update(current_user))
 
         try:
             updated = self.repository.update_item(db, item_id, update_data)
@@ -444,12 +474,13 @@ class SteelPricePolicyService:
         filename: str,
         year: int,
         month: int,
+        current_user: UserVO,
         progress_callback: Optional[ProgressCallback] = None,
     ) -> ImportResultResponse:
         """
         解析 Excel 文件并批量导入。
         整个导入过程在单一事务中完成，要么全部成功，要么全部失败。
-        进度写入独立异步任务库，不受本事务写锁影响。
+        进度写入辅助库，不受本事务写锁影响。
 
         导入策略：
         - 键存在 → 删除旧政策及阶梯明细，插入新政政策及阶梯明细
@@ -457,6 +488,8 @@ class SteelPricePolicyService:
 
         导入前先按年度/月份归档源文件，便于与基准价文件成对核对。
         """
+        create_audit = audit_create(current_user)
+
         def _report(progress: int, msg: str) -> None:
             if progress_callback:
                 progress_callback(progress, msg)
@@ -495,9 +528,10 @@ class SteelPricePolicyService:
                 payload = policy_data.model_dump()
                 payload["year"] = year
                 payload["month"] = month
+                payload.update(create_audit)
 
                 raw_items = payload.pop("items")
-                norm_items = [dict(item) for item in raw_items]
+                norm_items = [{**dict(item), **create_audit} for item in raw_items]
 
                 match_filter = MatchFilter(
                     year=payload["year"],
@@ -691,23 +725,25 @@ class SteelPricePolicyService:
     ) -> tuple[int, Optional[str]]:
         """
         根据条件批量删除政策。
-        年度、月份、钢厂必须同时提供。
+        年度、月份必填；钢厂可选（不填则删除该年月下全部钢厂）。
         """
-        if year is None or month is None or not steel_mill:
-            return 0, "年度、月份、钢厂必须同时选择"
+        if year is None or month is None:
+            return 0, "年度、月份必须选择"
+
+        mill = steel_mill.strip() if steel_mill else None
 
         try:
             count = self.repository.delete_by_conditions(
                 db,
                 year=year,
                 month=month,
-                steel_mill=steel_mill.strip(),
+                steel_mill=mill,
             )
             db.commit()
 
             logger.info(
                 "批量删除钢价政策: year=%s month=%s steel_mill=%s count=%s",
-                year, month, steel_mill, count,
+                year, month, mill or "(全部)", count,
             )
 
             return count, None
@@ -715,6 +751,6 @@ class SteelPricePolicyService:
             db.rollback()
             logger.exception(
                 "批量删除钢价政策失败: year=%s month=%s steel_mill=%s error=%s",
-                year, month, steel_mill, error,
+                year, month, mill, error,
             )
             return 0, str(error)

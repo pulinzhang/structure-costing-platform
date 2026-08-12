@@ -338,6 +338,7 @@ class SteelPriceRepository:
         audited_by: str,
         audited_at,
         audit_remark: str | None,
+        updated_by: str | None = None,
     ) -> int:
         """批量审核通过：pending/rejected → approved。返回更新条数。"""
         query = self._build_condition_query(
@@ -346,13 +347,16 @@ class SteelPriceRepository:
             month=month,
             location=location,
         ).filter(SteelPrice.audit_status.in_(["pending", "rejected"]))
+        values = {
+            SteelPrice.audit_status: "approved",
+            SteelPrice.audited_by: audited_by,
+            SteelPrice.audited_at: audited_at,
+            SteelPrice.audit_remark: audit_remark,
+        }
+        if updated_by is not None:
+            values[SteelPrice.updated_by] = updated_by
         updated_count = query.update(
-            {
-                SteelPrice.audit_status: "approved",
-                SteelPrice.audited_by: audited_by,
-                SteelPrice.audited_at: audited_at,
-                SteelPrice.audit_remark: audit_remark,
-            },
+            values,
             synchronize_session=False,
         )
         db.flush()
@@ -375,6 +379,7 @@ class SteelPriceRepository:
         reverse_audited_by: str,
         reverse_audited_at,
         reverse_audit_remark: str,
+        updated_by: str | None = None,
     ) -> int:
         """批量反审核：approved → pending。返回更新条数。"""
         query = self._build_condition_query(
@@ -383,13 +388,16 @@ class SteelPriceRepository:
             month=month,
             location=location,
         ).filter(SteelPrice.audit_status == "approved")
+        values = {
+            SteelPrice.audit_status: "pending",
+            SteelPrice.reverse_audited_by: reverse_audited_by,
+            SteelPrice.reverse_audited_at: reverse_audited_at,
+            SteelPrice.reverse_audit_remark: reverse_audit_remark,
+        }
+        if updated_by is not None:
+            values[SteelPrice.updated_by] = updated_by
         updated_count = query.update(
-            {
-                SteelPrice.audit_status: "pending",
-                SteelPrice.reverse_audited_by: reverse_audited_by,
-                SteelPrice.reverse_audited_at: reverse_audited_at,
-                SteelPrice.reverse_audit_remark: reverse_audit_remark,
-            },
+            values,
             synchronize_session=False,
         )
         db.flush()

@@ -1,0 +1,257 @@
+/**
+ * 登录页逻辑（对接后端 /api/auth/login）
+ */
+
+const SESSION_KEY = 'brabus_user';
+const REMEMBER_KEY = 'brabus_operator_id';
+
+const BTN_IDLE_HTML = `登录`;
+const BTN_LOADING_HTML = `登录中…`;
+
+/**
+ * 读取本地登录会话
+ * @returns {{ token: string, id: number, username: string, name: string, real_name?: string, department?: string, avatar?: string } | null}
+ */
+export function getUserSession() {
+    try {
+        const raw = localStorage.getItem(SESSION_KEY);
+        if (!raw) return null;
+        const session = JSON.parse(raw);
+        if (!session || typeof session !== 'object' || !session.token) return null;
+        return session;
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * 清除登录状态并回到登录页
+ */
+export function clearUserSession() {
+    const session = getUserSession();
+    const token = session?.token;
+
+    const goLogin = () => {
+        localStorage.removeItem(SESSION_KEY);
+        window.location.href = '/login';
+    };
+
+    if (token && typeof HttpClient !== 'undefined') {
+        HttpClient.post('/api/auth/logout', null, {
+            skipAuth: true,
+            headers: {
+                'X-Token': token,
+                Authorization: `Bearer ${token}`,
+            },
+        }).catch(() => {}).finally(goLogin);
+        return;
+    }
+    goLogin();
+}
+
+/**
+ * 定时心跳：顺延服务端 token（默认每 10 分钟）
+ */
+export function startTokenHeartbeat(intervalMs = 10 * 60 * 1000) {
+    if (window.__tokenHeartbeatTimer) {
+        clearInterval(window.__tokenHeartbeatTimer);
+    }
+
+    const beat = () => {
+        const session = getUserSession();
+        if (!session?.token || typeof HttpClient === 'undefined') return;
+        if (document.hidden) return;
+        HttpClient.post('/api/auth/touch', null).catch(() => {});
+    };
+
+    // 进入系统先续一次
+    beat();
+    window.__tokenHeartbeatTimer = setInterval(beat, intervalMs);
+
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) beat();
+    });
+}
+
+function getDisplayName(session) {
+    if (!session) return '用户';
+    return session.real_name || session.name || session.username || '用户';
+}
+
+function getDisplayInitial(name) {
+    const text = String(name || '').trim();
+    if (!text) return '?';
+    return text.charAt(0).toUpperCase();
+}
+
+/**
+ * 同步顶栏头像菜单（姓名只在下拉里显示）
+ */
+export function syncHeaderUser() {
+    const session = getUserSession();
+    const name = getDisplayName(session);
+    const meta = session?.department || session?.username || '';
+    const initial = getDisplayInitial(name);
+
+    const avatarInitial = document.getElementById('userAvatarInitial');
+    const menuAvatar = document.getElementById('userMenuAvatar');
+    const menuName = document.getElementById('userMenuName');
+    const menuRole = document.getElementById('userMenuRole');
+
+    if (avatarInitial) avatarInitial.textContent = initial;
+    if (menuAvatar) menuAvatar.textContent = initial;
+    if (menuName) menuName.textContent = name;
+    if (menuRole) menuRole.textContent = meta || '—';
+}
+
+function setUserMenuOpen(isOpen) {
+    const btn = document.getElementById('userMenuBtn');
+    const panel = document.getElementById('userMenuPanel');
+    if (!btn || !panel) return;
+
+    btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    panel.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
+    panel.classList.toggle('hidden', !isOpen);
+}
+
+/**
+ * 绑定顶栏用户菜单（只初始化一次）
+ */
+export function initUserMenu() {
+    const root = document.getElementById('userMenuRoot');
+    const btn = document.getElementById('userMenuBtn');
+    const panel = document.getElementById('userMenuPanel');
+    const logoutBtn = document.getElementById('userLogoutBtn');
+    if (!root || !btn || !panel || btn.dataset.bound === '1') return;
+
+    btn.dataset.bound = '1';
+
+    btn.addEventListener('click', (event) => {
+        event.stopPropagation();
+        const isOpen = btn.getAttribute('aria-expanded') === 'true';
+        setUserMenuOpen(!isOpen);
+    });
+
+    panel.addEventListener('click', (event) => {
+        if (event.target.closest('a[href]')) {
+            setUserMenuOpen(false);
+        }
+    });
+
+    document.addEventListener('click', (event) => {
+        if (!root.contains(event.target)) {
+            setUserMenuOpen(false);
+        }
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+            setUserMenuOpen(false);
+        }
+    });
+
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => {
+            clearUserSession();
+        });
+    }
+
+    syncHeaderUser();
+}
+
+function showLoginError(message) {
+    const el = document.getElementById('loginError');
+    if (!el) return;
+    el.textContent = message;
+    el.classList.remove('hidden');
+}
+
+function clearLoginError() {
+    const el = document.getElementById('loginError');
+    if (!el) return;
+    el.textContent = '';
+    el.classList.add('hidden');
+}
+
+function setButtonLoading(btn, isLoading) {
+    if (!btn) return;
+    btn.disabled = isLoading;
+    btn.innerHTML = isLoading ? BTN_LOADING_HTML : BTN_IDLE_HTML;
+}
+
+export const LoginPage = {
+    init() {
+        const form = document.getElementById('loginForm');
+        const usernameInput = document.getElementById('loginUsername');
+        const rememberInput = document.getElementById('loginRememberMe');
+
+        const remembered = localStorage.getItem(REMEMBER_KEY);
+        if (remembered && usernameInput) {
+            usernameInput.value = remembered;
+            if (rememberInput) rememberInput.checked = true;
+        }
+
+        if (form) {
+            form.addEventListener('submit', (event) => this.handleSubmit(event));
+        }
+
+        usernameInput?.focus();
+    },
+
+    async handleSubmit(event) {
+        event.preventDefault();
+        clearLoginError();
+
+        const btn = document.getElementById('btnLogin');
+        const username = (document.getElementById('loginUsername')?.value || '').trim();
+        const password = document.getElementById('loginPassword')?.value || '';
+        const remember = document.getElementById('loginRememberMe')?.checked === true;
+
+        if (!username) {
+            showLoginError('请输入账号');
+            document.getElementById('loginUsername')?.focus();
+            return;
+        }
+        if (!password) {
+            showLoginError('请输入密码');
+            document.getElementById('loginPassword')?.focus();
+            return;
+        }
+
+        setButtonLoading(btn, true);
+
+        try {
+            const res = await HttpClient.post('/api/auth/login', { username, password }, { skipAuth: true });
+            const payload = res.data || {};
+            const user = payload.user || {};
+
+            const userSession = {
+                token: payload.token,
+                id: user.id,
+                username: user.username,
+                real_name: user.real_name || '',
+                name: user.real_name || user.username,
+                email: user.email || '',
+                department: user.department || '',
+                avatar: user.avatar || '',
+            };
+
+            localStorage.setItem(SESSION_KEY, JSON.stringify(userSession));
+
+            if (remember) {
+                localStorage.setItem(REMEMBER_KEY, username);
+            } else {
+                localStorage.removeItem(REMEMBER_KEY);
+            }
+
+            if (typeof showToast === 'function') {
+                showToast('登录成功', 'success');
+            }
+
+            window.location.href = '/app#/dashboard';
+        } catch (error) {
+            showLoginError(error.message || '登录失败');
+            setButtonLoading(btn, false);
+        }
+    },
+};

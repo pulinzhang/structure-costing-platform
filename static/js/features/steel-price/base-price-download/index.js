@@ -252,29 +252,18 @@ async function exportExcel() {
     if (loading) loading.classList.remove('hidden');
 
     try {
-        const params = new URLSearchParams();
-        if (filters.year) params.append('year', parseInt(filters.year, 10));
-        if (filters.month) params.append('month', parseInt(filters.month, 10));
-        if (filters.location) params.append('location', filters.location);
-        if (filters.category_name) params.append('category_name', filters.category_name);
-        if (filters.grade) params.append('grade', filters.grade);
-        if (filters.steel_mill) params.append('steel_mill', filters.steel_mill);
-
-        const response = await fetch(`${API_BASE}/export-download?${params.toString()}`, {
-            method: 'GET',
+        const { blob, filename } = await HttpClient.download(`${API_BASE}/export-download`, {
+            params: {
+                year: filters.year ? parseInt(filters.year, 10) : undefined,
+                month: filters.month ? parseInt(filters.month, 10) : undefined,
+                location: filters.location,
+                category_name: filters.category_name,
+                grade: filters.grade,
+                steel_mill: filters.steel_mill,
+            },
+            defaultFilename: '基准价格导出.xlsx',
         });
-        if (!response.ok) {
-            throw new Error(`导出失败: HTTP ${response.status}`);
-        }
 
-        const contentDisposition = response.headers.get('Content-Disposition') || '';
-        let filename = '基准价格导出.xlsx';
-        const match = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
-        if (match && match[1]) {
-            filename = decodeURIComponent(match[1].replace(/['"]/g, ''));
-        }
-
-        const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -287,7 +276,9 @@ async function exportExcel() {
         showToast(`导出成功: ${filename}`, 'success');
     } catch (error) {
         console.error('导出 Excel 失败:', error);
-        showToast(`导出失败: ${error.message}`, 'error');
+        if (!error.status) {
+            showToast(`导出失败: ${error.message}`, 'error');
+        }
     } finally {
         if (loading) loading.classList.add('hidden');
     }

@@ -400,10 +400,12 @@ export function steelPriceListTemplate() {
                 <div class="bg-[#0c0c0c] border border-[#1a1a1a] rounded p-3 text-[11px] text-[#9e9e9e]" id="batchAuditFilterSummary"></div>
                 <p id="batchAuditHint" class="text-[11px] text-[#616161]">仅按年度、月份、基地批量处理；三者必须同时选择。</p>
                 <div>
-                    <label class="text-[10px] text-[#777777] mb-1 block" id="batchAuditOperatorLabel">审核人 <span class="text-[#d32f2f]">*</span></label>
-                    <input type="text" id="batchAuditOperator" maxlength="50"
-                           class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#ffffff] placeholder:text-[#616161] focus:outline-none focus:border-[#ff5252] transition-all rounded"
-                           placeholder="请输入经理姓名">
+                    <label class="text-[10px] text-[#777777] mb-1 block" id="batchAuditOperatorLabel">操作人</label>
+                    <div id="batchAuditOperatorDisplay"
+                         class="w-full h-9 px-3 flex items-center text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#9e9e9e] rounded">
+                        —
+                    </div>
+                    <p class="text-[10px] text-[#555555] mt-1">取自当前登录用户，无需填写</p>
                 </div>
                 <div>
                     <label class="text-[10px] text-[#777777] mb-1 block" id="batchAuditRemarkLabel">审核意见</label>

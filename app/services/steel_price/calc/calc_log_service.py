@@ -101,6 +101,8 @@ class CalcLogService:
         location: str,
         stamping_supplier: str | None = None,
         vehicle_model: str | None = None,
+        operator_id: int | None = None,
+        operator_name: str | None = None,
     ) -> SteelPriceCalcLog:
         """
         为期别写入 processing 锁行。
@@ -139,6 +141,10 @@ class CalcLogService:
                     "detail_text": "计算进行中...",
                     "started_at": started_at,
                     "finished_at": None,
+                    "operator_id": operator_id,
+                    "operator_name": operator_name,
+                    "created_by": operator_name,
+                    "updated_by": operator_name,
                 },
             )
             db.commit()
@@ -176,6 +182,9 @@ class CalcLogService:
             "finished_at": finished_at,
         }
         try:
+            existing = self.repository.get_by_id(db, log_id)
+            if existing is not None and existing.operator_name:
+                payload["updated_by"] = existing.operator_name
             record = self.repository.update(db, log_id, payload)
             if record is None:
                 logger.warning(
@@ -217,6 +226,13 @@ class CalcLogService:
             "detail_text": detail_text or message,
         }
         try:
+            existing = self.repository.get_by_id(db, log_id)
+            if existing is not None and existing.operator_name:
+                payload["updated_by"] = existing.operator_name
+            elif existing is not None and existing.created_by:
+                payload["updated_by"] = existing.created_by
+            else:
+                payload["updated_by"] = "系统"
             record = self.repository.update(db, log_id, payload)
             if record is None:
                 return
@@ -259,6 +275,8 @@ class CalcLogService:
                     "detail_text": result.detail_text or "",
                     "started_at": started_at,
                     "finished_at": finished_at,
+                    "created_by": "系统",
+                    "updated_by": "系统",
                 },
             )
             db.commit()
@@ -295,6 +313,7 @@ class CalcLogService:
             {
                 "status": STATUS_FAILED,
                 "finished_at": finished_at,
+                "updated_by": record.operator_name or record.created_by or "系统",
                 "detail_text": (
                     f"{record.detail_text or ''}\n\n"
                     f"[系统] processing 超过 {hours} 小时未完成，已自动释放期别锁"

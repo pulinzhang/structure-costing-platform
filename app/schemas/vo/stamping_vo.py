@@ -53,6 +53,8 @@ class StampingPartResponse(BaseModel):
     remark: Optional[str] = None
     sketch_url: Optional[str] = None
     excel_filename: Optional[str] = None
+    created_by: Optional[str] = None
+    updated_by: Optional[str] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
@@ -105,6 +107,8 @@ class StampingProcessResponse(BaseModel):
     tonnage: Optional[int] = None
     cost_ratio: float
     remark: Optional[str] = None
+    created_by: Optional[str] = None
+    updated_by: Optional[str] = None
 
 
 class StampingPartWithProcessesResponse(BaseModel):
@@ -133,6 +137,8 @@ class StampingPartWithProcessesResponse(BaseModel):
     remark: Optional[str] = None
     sketch_url: Optional[str] = None
     excel_filename: Optional[str] = None
+    created_by: Optional[str] = None
+    updated_by: Optional[str] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     processes: list[StampingProcessResponse] = []

@@ -291,17 +291,10 @@ const PolicyUploadPage = {
     },
 
     async fetchTaskProgress(taskId) {
-        const response = await fetch(`/api/steel-price-policies/tasks/${encodeURIComponent(taskId)}`, {
-            headers: { 'X-Requested-With': 'XMLHttpRequest' },
-        });
-        const payload = await response.json().catch(() => null);
-        if (!response.ok || !payload?.success) {
-            const msg = payload?.message || payload?.detail || `查询进度失败 (${response.status})`;
-            const error = new Error(msg);
-            error.status = response.status;
-            throw error;
-        }
-        return payload.data;
+        const response = await HttpClient.get(
+            `/api/steel-price-policies/tasks/${encodeURIComponent(taskId)}`
+        );
+        return response.data;
     },
 
     startPolling(taskId, fileName, year, month) {

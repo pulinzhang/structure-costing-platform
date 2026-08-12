@@ -1,7 +1,7 @@
 """
 异步任务 Service。
 
-进度落在独立异步任务库（AsyncTaskDatabaseConfig）：
+进度落在辅助库（AuxiliaryDatabaseConfig，无 Redis 时的旁路存储）：
 - 与主业务库物理隔离，不受业务长事务写锁影响
 - 写入使用独立 AUTOCOMMIT 连接，每次立即生效
 - 无进程内存态，多 worker 轮询一致
@@ -20,7 +20,7 @@ from typing import Any, Callable, Optional
 from sqlalchemy import delete, update
 from sqlalchemy.orm import Session
 
-from app.database import AsyncTaskDatabaseConfig
+from app.database import AuxiliaryDatabaseConfig
 from app.models.async_task import AsyncTask
 from app.utils.logging_config import get_logger
 
@@ -48,16 +48,16 @@ _progress_throttle_state: dict[str, tuple[float, int]] = {}
 
 
 class AsyncTaskService:
-    """异步任务业务逻辑（独立任务库，多 worker 安全）。"""
+    """异步任务业务逻辑（辅助库，多 worker 安全）。"""
 
     def _autocommit_connection(self):
-        """异步任务库独立连接 + AUTOCOMMIT。"""
-        engine = AsyncTaskDatabaseConfig.get_engine()
+        """辅助库独立连接 + AUTOCOMMIT。"""
+        engine = AuxiliaryDatabaseConfig.get_engine()
         return engine.connect().execution_options(isolation_level="AUTOCOMMIT")
 
     def _read_session(self) -> Session:
         """短生命周期只读 Session（查询进度）。"""
-        return AsyncTaskDatabaseConfig.get_session_factory()()
+        return AuxiliaryDatabaseConfig.get_session_factory()()
 
     def _should_skip_db_write(
         self,
@@ -91,8 +91,10 @@ class AsyncTaskService:
         *,
         task_type: str,
         message: str = "已提交解析队列",
+        operator_id: int | None = None,
+        operator_name: str | None = None,
     ) -> AsyncTask:
-        """创建 pending 任务（写入独立任务库）。"""
+        """创建 pending 任务（写入辅助库）。"""
         self.clean_expired_tasks()
         task_id = str(uuid.uuid4())
         now = datetime.now()
@@ -105,6 +107,10 @@ class AsyncTaskService:
                     progress=0,
                     message=message,
                     result_json=None,
+                    operator_id=operator_id,
+                    operator_name=operator_name,
+                    created_by=operator_name,
+                    updated_by=operator_name,
                     created_at=now,
                     updated_at=now,
                 )
@@ -116,6 +122,10 @@ class AsyncTaskService:
             progress=0,
             message=message,
             result_json=None,
+            operator_id=operator_id,
+            operator_name=operator_name,
+            created_by=operator_name,
+            updated_by=operator_name,
             created_at=now,
             updated_at=now,
         )
@@ -132,7 +142,7 @@ class AsyncTaskService:
             db.close()
 
     def get_task_snapshot(self, task_id: str) -> Optional[dict[str, Any]]:
-        """轮询快照：只读异步任务库。"""
+        """轮询快照：只读辅助库。"""
         record = self.get_by_task_id(task_id)
         if record is None:
             return None
@@ -143,6 +153,8 @@ class AsyncTaskService:
             "progress": int(record.progress or 0),
             "message": record.message or "",
             "result_json": record.result_json,
+            "operator_id": record.operator_id,
+            "operator_name": record.operator_name,
             "updated_at": record.updated_at,
         }
 
@@ -155,7 +167,7 @@ class AsyncTaskService:
         message: Optional[str] = None,
         result: Any = None,
     ) -> None:
-        """AUTOCOMMIT 更新任务（独立任务库）。"""
+        """AUTOCOMMIT 更新任务（辅助库）。"""
         values: dict[str, Any] = {"updated_at": datetime.now()}
         if status is not None:
             values["status"] = status
@@ -182,7 +194,7 @@ class AsyncTaskService:
         message: Optional[str] = None,
         result: Any = None,
     ) -> None:
-        """后台线程专用：写入独立任务库。"""
+        """后台线程专用：写入辅助库。"""
         if self._should_skip_db_write(
             task_id, status=status, progress=progress, result=result
         ):
@@ -203,7 +215,7 @@ class AsyncTaskService:
                 logger.debug("异步任务进度写库失败: task_id=%s", task_id)
 
     def clean_expired_tasks(self) -> int:
-        """清理过期任务（独立任务库 AUTOCOMMIT）。"""
+        """清理过期任务（辅助库 AUTOCOMMIT）。"""
         cutoff = datetime.now() - timedelta(seconds=TASK_TTL_SECONDS)
         with self._autocommit_connection() as conn:
             result = conn.execute(

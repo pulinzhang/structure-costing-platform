@@ -8,6 +8,7 @@ from typing import List, Optional, Tuple
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
+from app.common.audit import audit_create, audit_update
 from app.repositories.stamping.tonnage_price_repository import StampingTonnagePriceRepository
 from app.schemas.vo.stamping_tonnage_price_vo import StampingTonnagePriceResponse
 from app.schemas.dto.stamping_tonnage_price_dto import (
@@ -15,6 +16,7 @@ from app.schemas.dto.stamping_tonnage_price_dto import (
     StampingTonnagePriceUpdate,
     StampingTonnagePriceQuery,
 )
+from app.schemas.vo.user_vo import UserVO
 
 
 logger = logging.getLogger("service.stamping")
@@ -64,11 +66,15 @@ class StampingTonnagePriceService:
         return StampingTonnagePriceResponse.model_validate(record)
 
     def create(
-        self, db: Session, data: StampingTonnagePriceCreate
+        self,
+        db: Session,
+        data: StampingTonnagePriceCreate,
+        current_user: UserVO,
     ) -> Tuple[Optional[StampingTonnagePriceResponse], Optional[str]]:
         """创建冲次费率记录，返回 (记录, 错误信息)"""
         try:
-            record = self.repository.create(db, data.model_dump())
+            payload = {**data.model_dump(), **audit_create(current_user)}
+            record = self.repository.create(db, payload)
             return StampingTonnagePriceResponse.model_validate(record), None
         except IntegrityError:
             db.rollback()
@@ -81,7 +87,10 @@ class StampingTonnagePriceService:
             return None, str(e)
 
     def bulk_create(
-        self, db: Session, items: List[StampingTonnagePriceCreate]
+        self,
+        db: Session,
+        items: List[StampingTonnagePriceCreate],
+        current_user: UserVO,
     ) -> Tuple[List[StampingTonnagePriceResponse], List[StampingTonnagePriceResponse], List[str]]:
         """
         批量创建冲次费率记录。
@@ -93,7 +102,7 @@ class StampingTonnagePriceService:
         failed: List[str] = []
 
         for item in items:
-            record, error = self.create(db, item)
+            record, error = self.create(db, item, current_user=current_user)
             if record:
                 created.append(record)
             elif error and "已存在" in error:
@@ -111,11 +120,16 @@ class StampingTonnagePriceService:
         return created, skipped, failed
 
     def update(
-        self, db: Session, id: int, data: StampingTonnagePriceUpdate
+        self,
+        db: Session,
+        id: int,
+        data: StampingTonnagePriceUpdate,
+        current_user: UserVO,
     ) -> Tuple[Optional[StampingTonnagePriceResponse], Optional[str]]:
         """更新冲次费率记录，返回 (记录, 错误信息)"""
         try:
-            record = self.repository.update(db, id, data.model_dump())
+            payload = {**data.model_dump(), **audit_update(current_user)}
+            record = self.repository.update(db, id, payload)
             if not record:
                 return None, "记录不存在"
             return StampingTonnagePriceResponse.model_validate(record), None
@@ -125,19 +139,24 @@ class StampingTonnagePriceService:
             return None, str(e)
 
     def delete(self, db: Session, id: int) -> Tuple[bool, Optional[str]]:
-        """删除冲次费率记录，返回 (是否成功, 错误信息)"""
+        """删除冲次费率记录（硬删除，不写审计字段）。"""
         success = self.repository.delete(db, id)
         if not success:
             return False, "记录不存在"
         return True, None
 
     def copy_from_year(
-        self, db: Session, source_year: int, target_year: int
+        self,
+        db: Session,
+        source_year: int,
+        target_year: int,
+        current_user: UserVO,
     ) -> Tuple[int, int, List[str]]:
         """
         从源年份复制价格到目标年份。
         返回 (创建数量, 跳过数量, 失败错误信息列表)。
         """
+        audit = audit_create(current_user)
         source_records = self.repository.list_by_year(db, source_year)
         if not source_records:
             return 0, 0, [f"源年份 {source_year} 没有数据"]
@@ -156,6 +175,7 @@ class StampingTonnagePriceService:
                     "year": target_year,
                     "tonnage": source.tonnage,
                     "price_per_stroke": source.price_per_stroke,
+                    **audit,
                 })
                 created += 1
             except IntegrityError:

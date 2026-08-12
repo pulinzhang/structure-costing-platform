@@ -275,40 +275,20 @@ async function exportExcel() {
     if (loading) loading.classList.remove('hidden');
 
     try {
-        // 构建查询参数
-        const params = new URLSearchParams();
-        if (filters.year) params.append('year', filters.year);
-        if (filters.month) params.append('month', filters.month);
-        if (filters.category_name) params.append('category_name', filters.category_name);
-        if (filters.grade_value) params.append('grade_value', filters.grade_value);
-        if (filters.steel_mill) params.append('steel_mill', filters.steel_mill);
-
-        // 使用 fetch 下载文件
-        const response = await fetch(`${API_BASE}/export?${params.toString()}`, {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        const { blob, filename } = await HttpClient.download(`${API_BASE}/export`, {
+            params: {
+                year: filters.year,
+                month: filters.month,
+                category_name: filters.category_name,
+                grade_value: filters.grade_value,
+                steel_mill: filters.steel_mill,
             },
+            headers: {
+                Accept: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            },
+            defaultFilename: '厚度加减价导出.xlsx',
         });
 
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-
-        // 获取文件名
-        const contentDisposition = response.headers.get('Content-Disposition');
-        let filename = '厚度加减价导出.xlsx';
-        if (contentDisposition) {
-            const match = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
-            if (match && match[1]) {
-                filename = match[1].replace(/['"]/g, '');
-                // 解码中文文件名
-                filename = decodeURIComponent(filename);
-            }
-        }
-
-        // 下载文件
-        const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -321,7 +301,9 @@ async function exportExcel() {
         showToast(`导出成功: ${filename}`, 'success');
     } catch (error) {
         console.error('导出 Excel 失败:', error);
-        showToast(`导出失败: ${error.message}`, 'error');
+        if (!error.status) {
+            showToast(`导出失败: ${error.message}`, 'error');
+        }
     } finally {
         // 隐藏加载遮罩
         if (loading) loading.classList.add('hidden');
@@ -336,14 +318,15 @@ async function batchDeletePolicies() {
     const month = getFilterValue('policyDownloadMonth');
     const steelMill = getFilterValue('policyDownloadMill');
 
-    // 年度+月份+钢厂必须同时选择
-    if (!year || !month || !steelMill) {
-        showToast('年度、月份、钢厂必须同时选择', 'warning');
+    // 年度、月份必填；钢厂可选
+    if (!year || !month) {
+        showToast('删除必须选择年度和月份（钢厂可选）', 'warning');
         return;
     }
 
+    const millLabel = steelMill || '全部钢厂';
     const confirmed = window.confirm(
-        `确定要删除以下条件的政策数据吗？\n\n年度: ${year} | 月份: ${month} | 钢厂: ${steelMill}\n\n此操作不可恢复！`
+        `确定要删除以下条件的政策数据吗？\n\n年度: ${year} | 月份: ${month} | 钢厂: ${millLabel}\n\n此操作不可恢复！`
     );
 
     if (!confirmed) {
@@ -362,7 +345,10 @@ async function batchDeletePolicies() {
     }
 
     try {
-        const params = { year, month, steel_mill: steelMill };
+        const params = { year, month };
+        if (steelMill) {
+            params.steel_mill = steelMill;
+        }
         const response = await HttpClient.delete(`${API_BASE}/batch`, { params });
 
         // 先显示成功提示

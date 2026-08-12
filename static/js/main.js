@@ -167,15 +167,67 @@ const HttpClient = (() => {
         try { return JSON.parse(text); } catch { return text; }
     }
 
-    async function request(method, url, { params, body, headers, timeout } = {}) {
-        const fullUrl = buildUrl(url, params);
+    function buildAuthHeaders(skipAuth) {
+        if (skipAuth) return {};
+        try {
+            const raw = localStorage.getItem('brabus_user');
+            if (!raw) return {};
+            const session = JSON.parse(raw);
+            if (session && session.token) {
+                return {
+                    'X-Token': session.token,
+                    Authorization: `Bearer ${session.token}`,
+                };
+            }
+        } catch (_) { /* ignore */ }
+        return {};
+    }
+
+    function redirectOnUnauthorized(fullUrl, skipAuth, message) {
+        if (skipAuth || String(fullUrl).includes('/api/auth/login')) return;
+        try { localStorage.removeItem('brabus_user'); } catch (_) {}
+        if (!window.location.pathname.startsWith('/login')) {
+            showToast(message || '登录已失效，请重新登录', 'error');
+            window.location.href = '/login';
+        }
+    }
+
+    function parseDownloadFilename(contentDisposition, defaultFilename) {
+        if (!contentDisposition) return defaultFilename;
+        const utf8Match = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i);
+        if (utf8Match && utf8Match[1]) {
+            try {
+                return decodeURIComponent(utf8Match[1].trim());
+            } catch (_) { /* fall through */ }
+        }
+        const plainMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/i);
+        if (plainMatch && plainMatch[1]) {
+            const raw = plainMatch[1].replace(/['"]/g, '').trim();
+            try {
+                return decodeURIComponent(raw);
+            } catch (_) {
+                return raw || defaultFilename;
+            }
+        }
+        return defaultFilename;
+    }
+
+    async function request(method, url, { params, body, headers, timeout, skipAuth } = {}) {
+        const methodUpper = String(method || 'GET').toUpperCase();
+        const query = { ...(params || {}) };
+        // GET 加时间戳，避免浏览器/代理缓存旧数据
+        if (methodUpper === 'GET') {
+            query._t = Date.now();
+        }
+        const fullUrl = buildUrl(url, query);
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), timeout || DEFAULT_TIMEOUT);
 
         const init = {
-            method,
+            method: methodUpper,
             headers: {
                 'X-Requested-With': 'XMLHttpRequest',
+                ...buildAuthHeaders(skipAuth),
                 ...(headers || {}),
             },
             signal: controller.signal,
@@ -194,6 +246,15 @@ const HttpClient = (() => {
             const response = await fetch(fullUrl, init);
             clearTimeout(timer);
             const data = await parseResponse(response);
+
+            // token 失效：清本地会话并回登录页
+            if (response.status === 401) {
+                const msg = (data && (data.message || data.detail)) || '未登录';
+                redirectOnUnauthorized(fullUrl, skipAuth, msg);
+                const err = new Error(msg);
+                err.status = 401;
+                throw err;
+            }
 
             if (data && typeof data === 'object' && 'success' in data) {
                 if (data.success) {
@@ -226,12 +287,75 @@ const HttpClient = (() => {
         }
     }
 
+    /**
+     * 文件下载（Excel 等）：带 token，返回 blob，不走 JSON 解包。
+     */
+    async function download(url, { params, headers, timeout, skipAuth, defaultFilename } = {}) {
+        const query = { ...(params || {}), _t: Date.now() };
+        const fullUrl = buildUrl(url, query);
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeout || 120000);
+
+        try {
+            const response = await fetch(fullUrl, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    ...buildAuthHeaders(skipAuth),
+                    ...(headers || {}),
+                },
+                signal: controller.signal,
+            });
+            clearTimeout(timer);
+
+            if (response.status === 401) {
+                let msg = '未登录';
+                try {
+                    const data = await response.json();
+                    msg = (data && (data.message || data.detail)) || msg;
+                } catch (_) { /* ignore */ }
+                redirectOnUnauthorized(fullUrl, skipAuth, msg);
+                const err = new Error(msg);
+                err.status = 401;
+                throw err;
+            }
+
+            if (!response.ok) {
+                let msg = `下载失败 (${response.status})`;
+                try {
+                    const data = await response.json();
+                    msg = (data && (data.message || data.detail)) || msg;
+                } catch (_) { /* ignore */ }
+                showToast(msg, 'error');
+                const err = new Error(msg);
+                err.status = response.status;
+                throw err;
+            }
+
+            const filename = parseDownloadFilename(
+                response.headers.get('Content-Disposition'),
+                defaultFilename || 'download.xlsx',
+            );
+            const blob = await response.blob();
+            return { ok: true, status: response.status, blob, filename };
+        } catch (error) {
+            clearTimeout(timer);
+            if (error.name === 'AbortError') {
+                showToast('下载超时，请稍后重试', 'error');
+            } else if (!error.status) {
+                showToast(error.message || '下载失败', 'error');
+            }
+            throw error;
+        }
+    }
+
     return {
-        get:    (url, opts) => request('GET',    url, opts),
-        post:   (url, body, opts) => request('POST',   url, { ...(opts || {}), body }),
-        put:    (url, body, opts) => request('PUT',    url, { ...(opts || {}), body }),
-        patch:  (url, body, opts) => request('PATCH',  url, { ...(opts || {}), body }),
-        delete: (url, opts) => request('DELETE', url, opts),
+        get:      (url, opts) => request('GET',    url, opts),
+        post:     (url, body, opts) => request('POST',   url, { ...(opts || {}), body }),
+        put:      (url, body, opts) => request('PUT',    url, { ...(opts || {}), body }),
+        patch:    (url, body, opts) => request('PATCH',  url, { ...(opts || {}), body }),
+        delete:   (url, opts) => request('DELETE', url, opts),
+        download: (url, opts) => download(url, opts),
     };
 })();
 

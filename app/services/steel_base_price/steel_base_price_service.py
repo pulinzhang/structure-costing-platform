@@ -5,6 +5,7 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
+from app.common.audit import audit_create, audit_update
 from app.parsers.steel_base_price import parse_base_price_excel
 from app.repositories.steel_base_price import SteelBasePriceRepository
 from app.schemas.dto.steel_base_price_dto import FilterOptions
@@ -19,6 +20,7 @@ from app.schemas.dto.steel_base_price_dto import (
     SteelBasePriceQuery,
     SteelBasePriceUpdate,
 )
+from app.schemas.vo.user_vo import UserVO
 from app.utils.steel_price_archive import (
     FILE_KIND_BASE_PRICE,
     save_steel_price_upload,
@@ -69,10 +71,15 @@ class SteelBasePriceService:
             return None
         return SteelBasePriceResponse.model_validate(record)
 
-    def create(self, db: Session, body: SteelBasePriceCreate) -> tuple[SteelBasePriceResponse | None, str | None]:
+    def create(
+        self,
+        db: Session,
+        body: SteelBasePriceCreate,
+        current_user: UserVO,
+    ) -> tuple[SteelBasePriceResponse | None, str | None]:
         """创建基准价格记录。"""
         try:
-            data = body.model_dump()
+            data = {**body.model_dump(), **audit_create(current_user)}
             record = self.repository.create(db, data)
             db.commit()
             return SteelBasePriceResponse.model_validate(record), None
@@ -81,12 +88,19 @@ class SteelBasePriceService:
             logger.exception("创建基准价格失败")
             return None, str(e)
 
-    def update(self, db: Session, record_id: int, body: SteelBasePriceUpdate) -> tuple[SteelBasePriceResponse | None, str | None]:
+    def update(
+        self,
+        db: Session,
+        record_id: int,
+        body: SteelBasePriceUpdate,
+        current_user: UserVO,
+    ) -> tuple[SteelBasePriceResponse | None, str | None]:
         """更新基准价格记录。"""
         try:
             data = body.model_dump(exclude_unset=True)
             if not data:
                 return None, "没有提供任何更新字段"
+            data.update(audit_update(current_user))
             record = self.repository.update(db, record_id, data)
             if record is None:
                 return None, "记录不存在"
@@ -145,13 +159,17 @@ class SteelBasePriceService:
         filename: str,
         year: int,
         month: int,
+        current_user: UserVO,
         progress_callback=None,
     ) -> SteelBasePriceImportResultResponse:
         """
         解析 Excel 并执行 upsert。
-        整个导入在单一事务中完成；进度写入独立异步任务库。
+        整个导入在单一事务中完成；进度写入辅助库。
         导入前先按年度/月份归档源文件，便于与政策文件成对核对。
         """
+        create_audit = audit_create(current_user)
+        update_audit = audit_update(current_user)
+
         def _report(progress: int, msg: str) -> None:
             if progress_callback:
                 progress_callback(progress, msg)
@@ -172,6 +190,9 @@ class SteelBasePriceService:
             record["excel_filename"] = filename
             record["year"] = year
             record["month"] = month
+            # insert 用 created_by+updated_by；update 仅取 updated_by（repo allowlist）
+            record.update(create_audit)
+            record.update(update_audit)
         if not parse_result.records:
             _report(100, "解析完成，无有效数据行")
             return SteelBasePriceImportResultResponse(
