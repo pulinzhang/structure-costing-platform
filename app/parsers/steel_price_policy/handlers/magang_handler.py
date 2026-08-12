@@ -29,6 +29,7 @@ from app.parsers.steel_price_policy.models.policy import (
     POLICY_TYPE_WIDTH,
     ParsedPolicy,
 )
+from app.parsers.steel_price_policy.value_parser import _to_int_price
 
 
 # ============================================================================
@@ -61,15 +62,6 @@ _THICKNESS_RANGE_MAP = {
 # ============================================================================
 #  辅助函数
 # ============================================================================
-
-def _to_int_price(value: Any) -> int:
-    if value is None:
-        return 0
-    try:
-        return int(float(value))
-    except (TypeError, ValueError):
-        return 0
-
 
 def _parse_thickness_label(label: str) -> Tuple[Optional[float], str, Optional[float], str]:
     """解析厚度范围标签。

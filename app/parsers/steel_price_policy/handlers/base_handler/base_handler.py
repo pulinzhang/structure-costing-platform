@@ -25,6 +25,7 @@ from openpyxl.worksheet.worksheet import Worksheet
 from app.parsers.steel_price_policy.boundary_parser import _Boundary
 from app.parsers.steel_price_policy.handlers.constants import BLANK_LIMIT, GRADE_LABELS
 from app.parsers.steel_price_policy.models.ladder_item import ParsedLadderItem
+from app.parsers.steel_price_policy.value_parser import _to_int_price
 from .policy_assembler import PolicyAssembler
 from .sheet_scanner import SheetScanner
 
@@ -232,14 +233,8 @@ class BaseSheetHandler:
         return (None, None)
 
     def _get_zinc_price(self, sheet: Worksheet, row: int, col: int) -> int:
-        """获取锌层加价价格。"""
-        cell_val = sheet.cell(row=row, column=col).value
-        if cell_val is None:
-            return 0
-        try:
-            return int(float(cell_val))
-        except Exception:
-            return 0
+        """获取锌层加价价格（四舍五入到元）。"""
+        return _to_int_price(sheet.cell(row=row, column=col).value)
 
     # ------------------------------------------------------------------ #
     # 子类复用的默认厚度块查找

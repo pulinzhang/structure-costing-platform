@@ -8,10 +8,11 @@
 - is_decimal_like: 判断字符串是否可解析为数字
 """
 
-from decimal import Decimal, InvalidOperation
+from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 from typing import Any, Optional
 
 _DECIMAL_STRIP_CHARS = " \t\u3000元/吨件mm\t"
+_ONE = Decimal("1")
 
 
 def _to_str(value: Any) -> str:
@@ -62,12 +63,13 @@ def _to_decimal(value: Any) -> Optional[Decimal]:
 
 
 def _to_int_price(value: Any) -> int:
-    """加减价 → int（元/吨）。
+    """加减价 → int（元/吨），四舍五入。
 
     - 不能解析为数字 → 0
     - 接受负号（减价），例如 "-30"
+    - Excel 公式残留小数（如 203.5398...）按 ROUND_HALF_UP 取整
     """
     dec = _to_decimal(value)
     if dec is None:
         return 0
-    return int(dec)
+    return int(dec.quantize(_ONE, rounding=ROUND_HALF_UP))
