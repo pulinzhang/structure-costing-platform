@@ -9,7 +9,7 @@ import {
     renderSteelPriceRows,
     updateSteelPriceHud,
     updateActiveFilterCapsules,
-} from './template.js?v=40';
+} from './template.js?v=41';
 
 const steelPriceState = {
     records: [],
@@ -53,9 +53,26 @@ function closeDrawer(drawerId, backdropId) {
 
 function init() {
     bindEvents();
+    applyPermissionUi();
     steelPriceState.filtersLoaded = false;
     steelPriceState.pendingFilters = readHashFilters();
     loadData(1);
+}
+
+function applyPermissionUi() {
+    if (typeof can !== 'function') return;
+    if (!can('op:steel-price-list:approve')) {
+        document.getElementById('steelPriceBatchApproveButton')?.classList.add('hidden');
+    }
+    if (!can('op:steel-price-list:reverse')) {
+        document.getElementById('steelPriceBatchReverseButton')?.classList.add('hidden');
+    }
+    if (!can('op:steel-price-list:delete')) {
+        document.getElementById('steelPriceBatchDeleteButton')?.classList.add('hidden');
+    }
+    if (!can('op:steel-price-list:export')) {
+        document.getElementById('steelPriceExportButton')?.classList.add('hidden');
+    }
 }
 
 function readHashFilters() {
@@ -723,10 +740,14 @@ function openViewDrawer(record) {
     const approved = record.audit_status === 'approved';
     const pending = record.audit_status === 'pending';
     const rejected = record.audit_status === 'rejected';
-    toggleHidden('viewDrawerApproveBtn', !(pending || rejected));
-    toggleHidden('viewDrawerRejectBtn', !pending);
-    toggleHidden('viewDrawerReverseBtn', !approved);
-    toggleHidden('viewDrawerEditBtn', approved);
+    const canApprove = typeof can === 'function' ? can('op:steel-price-list:approve') : true;
+    const canReject = typeof can === 'function' ? can('op:steel-price-list:reject') : true;
+    const canReverse = typeof can === 'function' ? can('op:steel-price-list:reverse') : true;
+    const canUpdate = typeof can === 'function' ? can('op:steel-price-list:update') : true;
+    toggleHidden('viewDrawerApproveBtn', !(canApprove && (pending || rejected)));
+    toggleHidden('viewDrawerRejectBtn', !(canReject && pending));
+    toggleHidden('viewDrawerReverseBtn', !(canReverse && approved));
+    toggleHidden('viewDrawerEditBtn', !(canUpdate && !approved));
 
     openDrawer('viewDrawer', 'viewDrawerBackdrop');
 }

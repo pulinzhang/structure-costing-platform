@@ -210,6 +210,7 @@ def create_app() -> FastAPI:
             {"name": "报价", "description": "报价单管理"},
             {"name": "系统设置", "description": "系统配置管理"},
             {"name": "用户管理", "description": "用户账号增删改查"},
+            {"name": "权限管理", "description": "权限目录与用户授权"},
             {"name": "登录认证", "description": "账号密码登录"},
         ]
     )
@@ -271,6 +272,7 @@ def create_app() -> FastAPI:
     from app.routers.steel_price.steel_base_price.crud import router as steel_base_price_router
     from app.routers.user.auth import router as auth_router
     from app.routers.user.crud import router as user_crud_router
+    from app.routers.user.permissions import router as permissions_router
 
     # include_router = 注册路由（鉴权由各端点 Depends(get_current_user) 声明）
     app.include_router(auth_router)
@@ -286,6 +288,7 @@ def create_app() -> FastAPI:
     app.include_router(quotation_router)
     app.include_router(settings_router)
     app.include_router(user_crud_router)
+    app.include_router(permissions_router)
 
     # ========== 全局异常处理器 ==========
     from app.exceptions.handlers import (

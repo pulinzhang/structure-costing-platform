@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.deps.auth import get_current_user
+from app.common.permissions.checks import require_permission
 from app.services import StampingPartService
 from app.schemas.vo.stamping_vo import (
     StampingPartQuery,
@@ -76,6 +77,7 @@ def delete_part(
     current_user: UserVO = Depends(get_current_user),
 ) -> ApiResponse[None]:
     """删除零件（同时删除关联工序）"""
+    require_permission(current_user, "op:stamping-parts:delete")
     _stamping_service.delete(db, part_id)
     return ApiResponse.deleted(message="零件删除成功")
 
@@ -154,6 +156,7 @@ def batch_update_processes(
     current_user: UserVO = Depends(get_current_user),
 ) -> ApiResponse[BatchUpdateResponse]:
     """批量更新零件的所有工序（仅更新 cost_ratio）"""
+    require_permission(current_user, "op:stamping-parts:update")
     updated = _stamping_service.batch_update_processes(
         db, [item.model_dump() for item in body], current_user=current_user
     )

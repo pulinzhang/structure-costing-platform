@@ -12,6 +12,7 @@ from app.repositories.user.user_repository import UserRepository
 from app.repositories.user.user_token_repository import TOKEN_IDLE_HOURS, UserTokenRepository
 from app.schemas.dto.user_dto import UserLoginDTO
 from app.schemas.vo.user_vo import LoginVO, UserVO
+from app.services.user.permission_service import PermissionService
 from app.services.user.user_service import hash_password_md5
 
 
@@ -21,6 +22,12 @@ class AuthService:
     def __init__(self) -> None:
         self.user_repo = UserRepository()
         self.token_repo = UserTokenRepository()
+        self.permission_service = PermissionService()
+
+    def _to_vo(self, user_db: Session, user: User) -> UserVO:
+        vo = UserVO.model_validate(user)
+        vo.permissions = self.permission_service.resolve_permissions_for_user(user_db, user)
+        return vo
 
     def login(self, user_db: Session, token_db: Session, dto: UserLoginDTO) -> LoginVO:
         user = self.user_repo.get_by_username(user_db, dto.username.strip())
@@ -57,7 +64,7 @@ class AuthService:
 
         return LoginVO(
             token=token,
-            user=UserVO.model_validate(user),
+            user=self._to_vo(user_db, user),
         )
 
     def logout(self, token_db: Session, token: str) -> None:
@@ -98,7 +105,7 @@ class AuthService:
         _row, user = self._require_valid_token(
             user_db, token_db, token, do_touch=do_touch
         )
-        return UserVO.model_validate(user)
+        return self._to_vo(user_db, user)
 
     def _require_valid_token(
         self,

@@ -27,3 +27,9 @@ class User(AuditUserMixin, Base):
     )
 
     is_active = Column(Boolean, default=True, nullable=False, comment="启用状态")
+    is_admin = Column(
+        Boolean,
+        default=False,
+        nullable=False,
+        comment="超级管理员：拥有全部权限，可授权",
+    )

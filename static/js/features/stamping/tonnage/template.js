@@ -288,12 +288,14 @@ export function renderTableRows(records) {
             </td>
             <td class="px-5 py-2.5 text-center whitespace-nowrap border-b border-[#1d1d1d]">
                 <div class="flex items-center justify-center gap-0.5">
+                    ${(typeof can === 'function' ? can('op:stamping-tonnage:update') : true) ? `
                     <button class="edit-btn flex items-center justify-center w-7 h-7 rounded-sm text-[#484848] hover:text-[#d32f2f] hover:bg-[#d32f2f]/10 transition-all duration-150 opacity-60 hover:opacity-100" title="编辑">
                         ${window.svgIcon('pencil', 'w-3 h-3')}
-                    </button>
+                    </button>` : ''}
+                    ${(typeof can === 'function' ? can('op:stamping-tonnage:delete') : true) ? `
                     <button class="delete-btn flex items-center justify-center w-7 h-7 rounded-sm text-[#484848] hover:text-[#c62828] hover:bg-[#c62828]/10 transition-all duration-150 opacity-60 hover:opacity-100" title="删除">
                         ${window.svgIcon('trash', 'w-3 h-3')}
-                    </button>
+                    </button>` : ''}
                 </div>
             </td>
         </tr>`;

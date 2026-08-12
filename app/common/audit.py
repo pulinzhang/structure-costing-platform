@@ -22,7 +22,7 @@ def display_name(user: Any) -> str:
 
 
 # 无登录上下文时的系统用户（首次 seed、本地脚本）
-SYSTEM_USER = UserVO(id=0, username="system", real_name="系统")
+SYSTEM_USER = UserVO(id=0, username="system", real_name="系统", is_admin=True, permissions=["*"])
 
 
 def audit_create(current_user: UserVO) -> dict[str, Any]:

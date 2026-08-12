@@ -283,6 +283,49 @@ export function usersTemplate() {
                 </button>
             </div>
         </div>
+
+        <!-- 授权抽屉 -->
+        <div class="fixed inset-0 z-[80] bg-black/70 backdrop-blur-sm transition-opacity duration-300"
+             id="grantDrawerBackdrop" style="display:none"></div>
+
+        <div class="fixed inset-y-0 right-0 z-[85] w-[640px] bg-[#1a1a1a] border-l border-[#2a2a2a] transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col"
+             id="grantDrawer" style="display:none; max-height: 100vh; box-shadow: -20px 0 60px rgba(0,0,0,0.95), -8px 0 30px rgba(0,0,0,0.8), 0 0 1px rgba(255,255,255,0.05);">
+            <div class="px-5 py-3.5 flex items-center justify-between shrink-0"
+                 style="background: linear-gradient(180deg, #1f1f1f 0%, #1a1a1a 100%); border-bottom: 1px solid #333333;">
+                <h5 class="text-[11px] font-semibold tracking-wider text-[#b0b0b0] flex items-center gap-2.5 uppercase">
+                    <span style="width:3px;height:14px;background:#d32f2f;border-radius:1px;display:inline-block;box-shadow: 0 0 8px rgba(211,47,47,0.5);"></span>
+                    用户授权
+                </h5>
+                <button type="button" id="closeGrantDrawer"
+                        class="flex items-center justify-center w-8 h-8 rounded-md text-[#707070] hover:text-white hover:bg-[#d32f2f] transition-all duration-200 group">
+                    <svg class="w-4 h-4 transition-transform duration-200 group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="flex-1 min-h-0 overflow-y-auto overscroll-contain p-5" style="scrollbar-width: thin; scrollbar-color: #3a3a3a #1a1a1a;">
+                <input type="hidden" id="grantUserId" value="">
+                <p class="text-[11px] text-[#9e9e9e] mb-4">
+                    用户：<span id="grantUsername" class="text-[#ffffff] font-mono"></span>
+                    <span class="text-[#616161] ml-2">灰色项为必选，不可取消</span>
+                </p>
+                <div id="grantTreeContainer" class="space-y-1 text-xs text-[#9e9e9e]">
+                    <div class="flex items-center justify-center py-10">
+                        <div class="w-4 h-4 border border-[#252525] border-t-[#d32f2f] rounded-full animate-spin"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="px-6 py-4 border-t border-[#262626] flex items-center justify-end gap-2 shrink-0" style="background: linear-gradient(0deg, #1a1a1a 0%, #161616 100%);">
+                <button type="button" id="cancelGrantBtn" class="inline-flex items-center gap-1.5 bg-transparent text-[#9e9e9e] border border-[#2c2c2c] px-4 py-2 text-[11px] font-medium rounded hover:border-[#9e9e9e] hover:text-white transition-all">
+                    取消
+                </button>
+                <button type="button" id="submitGrantBtn" class="inline-flex items-center gap-1.5 bg-[#d32f2f] text-white px-4 py-2 text-[11px] font-semibold rounded hover:bg-[#b71c1c] transition-all">
+                    保存授权
+                </button>
+            </div>
+        </div>
     `;
 }
 
@@ -301,11 +344,25 @@ export function renderTableRows(records) {
             : '<span class="inline-flex items-center px-2 py-0.5 text-[10px] font-semibold bg-[#c62828]/20 text-[#ef5350] rounded">停用</span>';
         const createdAt = formatDateTime(record.created_at);
 
+        const isAdminUser = record.is_admin === true;
+        const canEdit = typeof can === 'function' ? can('op:settings-users:update') : true;
+        const canPassword = typeof can === 'function' ? can('op:settings-users:password') : true;
+        const canDelete = typeof can === 'function' ? can('op:settings-users:delete') : true;
+        const canGrant = typeof can === 'function'
+            ? (can('op:settings-users:grant') || (getUserSessionSafe()?.is_admin === true))
+            : false;
+        // 仅管理员显示授权；管理员用户本身不展示授权（全量权限）
+        const showGrant = canGrant && !isAdminUser && (getUserSessionSafe()?.is_admin === true);
+
+        const adminBadge = isAdminUser
+            ? '<span class="ml-1.5 inline-flex items-center px-1.5 py-0.5 text-[9px] font-semibold bg-[#d32f2f]/20 text-[#d32f2f] rounded">ADMIN</span>'
+            : '';
+
         return `
         <tr class="group transition-colors duration-150 cursor-default"
             data-id="${esc(record.id)}"
             style="${isEven ? 'background: rgba(255,255,255,0.012);' : ''}">
-            <td class="px-5 py-2.5 text-[11px] text-[#b0b0b0] whitespace-nowrap font-mono tracking-wide border-b border-[#1d1d1d]">${esc(record.username)}</td>
+            <td class="px-5 py-2.5 text-[11px] text-[#b0b0b0] whitespace-nowrap font-mono tracking-wide border-b border-[#1d1d1d]">${esc(record.username)}${adminBadge}</td>
             <td class="px-5 py-2.5 text-[11px] text-[#9e9e9e] whitespace-nowrap border-b border-[#1d1d1d]">${esc(record.real_name)}</td>
             <td class="px-5 py-2.5 text-[11px] text-[#686868] whitespace-nowrap border-b border-[#1d1d1d]">${esc(record.department)}</td>
             <td class="px-5 py-2.5 text-[11px] text-[#686868] whitespace-nowrap border-b border-[#1d1d1d]">${esc(record.email)}</td>
@@ -314,19 +371,31 @@ export function renderTableRows(records) {
             <td class="px-5 py-2.5 text-[11px] text-[#484848] whitespace-nowrap font-mono border-b border-[#1d1d1d]">${esc(createdAt)}</td>
             <td class="px-5 py-2.5 text-center whitespace-nowrap border-b border-[#1d1d1d]">
                 <div class="flex items-center justify-center gap-0.5">
-                    <button class="edit-btn flex items-center justify-center w-7 h-7 rounded-sm text-[#484848] hover:text-[#d32f2f] hover:bg-[#d32f2f]/10 transition-all duration-150 opacity-60 hover:opacity-100" title="编辑">
+                    ${canEdit ? `<button class="edit-btn flex items-center justify-center w-7 h-7 rounded-sm text-[#484848] hover:text-[#d32f2f] hover:bg-[#d32f2f]/10 transition-all duration-150 opacity-60 hover:opacity-100" title="编辑">
                         ${window.svgIcon('pencil', 'w-3 h-3')}
-                    </button>
-                    <button class="password-btn flex items-center justify-center w-7 h-7 rounded-sm text-[#484848] hover:text-[#ffb74d] hover:bg-[#f57f17]/10 transition-all duration-150 opacity-60 hover:opacity-100" title="修改密码">
+                    </button>` : ''}
+                    ${showGrant ? `<button class="grant-btn flex items-center justify-center w-7 h-7 rounded-sm text-[#484848] hover:text-[#4caf50] hover:bg-[#2e7d32]/10 transition-all duration-150 opacity-60 hover:opacity-100" title="授权">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                    </button>` : ''}
+                    ${canPassword ? `<button class="password-btn flex items-center justify-center w-7 h-7 rounded-sm text-[#484848] hover:text-[#ffb74d] hover:bg-[#f57f17]/10 transition-all duration-150 opacity-60 hover:opacity-100" title="修改密码">
                         ${window.svgIcon('gear', 'w-3 h-3')}
-                    </button>
-                    <button class="delete-btn flex items-center justify-center w-7 h-7 rounded-sm text-[#484848] hover:text-[#c62828] hover:bg-[#c62828]/10 transition-all duration-150 opacity-60 hover:opacity-100" title="删除">
+                    </button>` : ''}
+                    ${canDelete ? `<button class="delete-btn flex items-center justify-center w-7 h-7 rounded-sm text-[#484848] hover:text-[#c62828] hover:bg-[#c62828]/10 transition-all duration-150 opacity-60 hover:opacity-100" title="删除">
                         ${window.svgIcon('trash', 'w-3 h-3')}
-                    </button>
+                    </button>` : ''}
                 </div>
             </td>
         </tr>`;
     }).join('');
+}
+
+function getUserSessionSafe() {
+    try {
+        const raw = localStorage.getItem('brabus_user');
+        return raw ? JSON.parse(raw) : null;
+    } catch {
+        return null;
+    }
 }
 
 function formatDateTime(value) {

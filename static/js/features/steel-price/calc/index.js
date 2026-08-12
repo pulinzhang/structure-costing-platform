@@ -44,6 +44,7 @@ const calcState = {
 export function init() {
     stopPolling();
     bindEvents();
+    applyPermissionUi();
     loadStampingFilters();
     loadCalcStats();
     loadCalcHistory();
@@ -59,6 +60,15 @@ export function init() {
 
 export function destroy() {
     stopPolling();
+}
+
+function applyPermissionUi() {
+    const canRun = typeof can === 'function' ? can('op:steel-price-calc:run') : true;
+    calcState.canRun = canRun;
+    calcState.canDelete = typeof can === 'function' ? can('op:steel-price-calc:delete') : true;
+    if (!canRun) {
+        document.getElementById('startCalcBtn')?.classList.add('hidden');
+    }
 }
 
 function bindEvents() {
@@ -276,9 +286,10 @@ function renderHistoryRows(items) {
                             data-month="${esc(item.month)}"
                             data-location="${esc(item.location || '')}">结果</button>
                     `}
+                    ${calcState.canDelete !== false ? `
                     <button type="button"
                             class="calc-delete-log-btn text-[9px] text-[#777] hover:text-[#ef5350]"
-                            data-log-id="${esc(item.id)}">删除</button>
+                            data-log-id="${esc(item.id)}">删除</button>` : ''}
                     `}
                 </td>
             </tr>
@@ -305,6 +316,10 @@ function renderHistoryRows(items) {
 
 async function deleteCalcLog(logId) {
     if (!logId) return;
+    if (calcState.canDelete === false) {
+        showToast('无删除权限', 'warning');
+        return;
+    }
     if (!window.confirm('确定删除这条计算历史？仅删除日志，不影响已落库的钢材价格。')) {
         return;
     }
@@ -431,6 +446,10 @@ async function isPeriodProcessing(year, month, location) {
 }
 
 async function startCalculation() {
+    if (calcState.canRun === false) {
+        showToast('无计算权限', 'warning');
+        return;
+    }
     if (calcState.isCalculating) return;
 
     const year = parseInt(document.getElementById('calcYear')?.value, 10);

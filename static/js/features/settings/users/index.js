@@ -51,6 +51,10 @@ function closeDrawer(drawerId, backdropId) {
 function init() {
     loadData();
     bindEvents();
+    const btnAdd = document.getElementById('btnAddUser');
+    if (btnAdd && typeof can === 'function' && !can('op:settings-users:create')) {
+        btnAdd.classList.add('hidden');
+    }
 }
 
 async function loadData(page = 1) {
@@ -147,6 +151,15 @@ function bindTableRowEvents() {
             if (record) openDeleteDrawer(record);
         });
     });
+
+    document.querySelectorAll('.grant-btn').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+            const row = e.target.closest('tr');
+            const id = parseInt(row.dataset.id, 10);
+            const record = usersState.records.find((r) => r.id === id);
+            if (record) openGrantDrawer(record);
+        });
+    });
 }
 
 function bindEvents() {
@@ -178,6 +191,7 @@ function bindEvents() {
     bindEditDrawerEvents();
     bindPasswordDrawerEvents();
     bindDeleteDrawerEvents();
+    bindGrantDrawerEvents();
     bindPaginationEvents();
 }
 
@@ -456,6 +470,131 @@ async function deleteUser(id) {
         loadData(nextPage);
     } catch (error) {
         console.error('删除用户失败:', error);
+    }
+}
+
+function bindGrantDrawerEvents() {
+    const closeBtn = document.getElementById('closeGrantDrawer');
+    const cancelBtn = document.getElementById('cancelGrantBtn');
+    const backdrop = document.getElementById('grantDrawerBackdrop');
+    const submitBtn = document.getElementById('submitGrantBtn');
+    const close = () => closeDrawer('grantDrawer', 'grantDrawerBackdrop');
+
+    if (closeBtn) closeBtn.addEventListener('click', close);
+    if (cancelBtn) cancelBtn.addEventListener('click', close);
+    if (backdrop) backdrop.addEventListener('click', close);
+    if (submitBtn) {
+        submitBtn.addEventListener('click', async () => {
+            await saveGrant();
+        });
+    }
+}
+
+async function openGrantDrawer(record) {
+    const userIdInput = document.getElementById('grantUserId');
+    const nameEl = document.getElementById('grantUsername');
+    const container = document.getElementById('grantTreeContainer');
+    if (userIdInput) userIdInput.value = String(record.id);
+    if (nameEl) nameEl.textContent = record.username || '';
+    if (container) {
+        container.innerHTML = `
+            <div class="flex items-center justify-center py-10">
+                <div class="w-4 h-4 border border-[#252525] border-t-[#d32f2f] rounded-full animate-spin"></div>
+            </div>`;
+    }
+    openDrawer('grantDrawer', 'grantDrawerBackdrop');
+
+    try {
+        const [treeRes, codesRes] = await Promise.all([
+            HttpClient.get('/api/permissions/tree'),
+            HttpClient.get(`${API_BASE}/${record.id}/permissions`),
+        ]);
+        const tree = treeRes.data || [];
+        const checked = new Set(codesRes.data || []);
+        if (container) {
+            container.innerHTML = renderPermissionTree(tree, checked);
+            bindGrantTreeEvents(container);
+        }
+    } catch (error) {
+        console.error('加载权限树失败:', error);
+        if (container) {
+            container.innerHTML = `<p class="text-[11px] text-[#ef5350]">加载权限树失败</p>`;
+        }
+    }
+}
+
+function renderPermissionTree(nodes, checked, depth = 0) {
+    if (!Array.isArray(nodes) || nodes.length === 0) return '';
+    return nodes.map((node) => {
+        const code = node.code || '';
+        const isMandatory = node.mandatory === true;
+        const isChecked = isMandatory || checked.has(code);
+        const pad = depth * 16;
+        const childrenHtml = renderPermissionTree(node.children || [], checked, depth + 1);
+        const typeHint = node.type === 'op' ? '操作' : (node.type === 'group' ? '分组' : '菜单');
+        return `
+            <div class="grant-node" data-code="${esc(code)}" data-mandatory="${isMandatory ? '1' : '0'}">
+                <label class="flex items-center gap-2 py-1.5 hover:bg-[#ffffff]/[0.02] cursor-pointer ${isMandatory ? 'opacity-70' : ''}"
+                       style="padding-left:${pad}px">
+                    <input type="checkbox" class="grant-check accent-[#d32f2f]"
+                           data-code="${esc(code)}"
+                           ${isChecked ? 'checked' : ''}
+                           ${isMandatory ? 'disabled' : ''}>
+                    <span class="text-[11px] ${isMandatory ? 'text-[#888888]' : 'text-[#c0c0c0]'}">${esc(node.label || code)}</span>
+                    <span class="text-[9px] text-[#484848] uppercase tracking-wider">${typeHint}${isMandatory ? ' · 必选' : ''}</span>
+                </label>
+                ${childrenHtml}
+            </div>`;
+    }).join('');
+}
+
+function bindGrantTreeEvents(container) {
+    container.querySelectorAll('.grant-check').forEach((checkbox) => {
+        checkbox.addEventListener('change', () => {
+            const node = checkbox.closest('.grant-node');
+            if (!node) return;
+            if (checkbox.checked) {
+                checkAncestors(node);
+                checkDescendants(node, true);
+            } else {
+                checkDescendants(node, false);
+            }
+        });
+    });
+}
+
+function checkAncestors(node) {
+    let parent = node.parentElement?.closest('.grant-node');
+    while (parent) {
+        const box = parent.querySelector(':scope > label > .grant-check');
+        if (box && !box.disabled) box.checked = true;
+        parent = parent.parentElement?.closest('.grant-node');
+    }
+}
+
+function checkDescendants(node, checked) {
+    node.querySelectorAll('.grant-node .grant-check').forEach((box) => {
+        if (box.disabled) return;
+        box.checked = checked;
+    });
+}
+
+async function saveGrant() {
+    const userId = parseInt(document.getElementById('grantUserId')?.value, 10);
+    if (!userId) return;
+    const codes = [];
+    document.querySelectorAll('#grantTreeContainer .grant-check').forEach((box) => {
+        if (box.checked || box.disabled) {
+            const code = box.getAttribute('data-code');
+            if (code) codes.push(code);
+        }
+    });
+    try {
+        await HttpClient.put(`${API_BASE}/${userId}/permissions`, { codes });
+        showToast('授权已保存', 'success');
+        closeDrawer('grantDrawer', 'grantDrawerBackdrop');
+    } catch (error) {
+        console.error('保存授权失败:', error);
     }
 }
 

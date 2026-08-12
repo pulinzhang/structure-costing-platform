@@ -24,7 +24,7 @@ export function settingsTemplate() {
                     </div>
                 </div>
                 <div class="px-5 py-4 border-t border-[#222222]">
-                    <button class="inline-flex items-center gap-2 bg-[#262626] text-white border border-[#2c2c2c] rounded-sm px-4 py-2 text-xs font-medium active:scale-[0.98] transition-all duration-150 hover:bg-[#d32f2f] hover:border-[#b71c1c]">
+                    <button id="btnSaveSettings" class="inline-flex items-center gap-2 bg-[#262626] text-white border border-[#2c2c2c] rounded-sm px-4 py-2 text-xs font-medium active:scale-[0.98] transition-all duration-150 hover:bg-[#d32f2f] hover:border-[#b71c1c]">
                         ${window.svgIcon('check', 'w-3.5 h-3.5')}
                         保存设置
                     </button>

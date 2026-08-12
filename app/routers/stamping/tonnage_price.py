@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.deps.auth import get_current_user
+from app.common.permissions.checks import require_permission
 from app.services.stamping.tonnage_price_service import StampingTonnagePriceService
 from app.schemas.dto.stamping_tonnage_price_dto import (
     StampingTonnagePriceCreate,
@@ -90,6 +91,7 @@ def create(
     current_user: UserVO = Depends(get_current_user),
 ):
     """创建冲次费率记录"""
+    require_permission(current_user, "op:stamping-tonnage:create")
     record, error = _tonnage_price_service.create(db, body, current_user=current_user)
     if error:
         raise HTTPException(status_code=400, detail=error)
@@ -103,6 +105,7 @@ def bulk_create(
     current_user: UserVO = Depends(get_current_user),
 ):
     """批量创建冲次费率记录"""
+    require_permission(current_user, "op:stamping-tonnage:create")
     created, skipped, failed = _tonnage_price_service.bulk_create(
         db, items, current_user=current_user
     )
@@ -127,6 +130,7 @@ def update(
     current_user: UserVO = Depends(get_current_user),
 ):
     """更新冲次费率记录"""
+    require_permission(current_user, "op:stamping-tonnage:update")
     record, error = _tonnage_price_service.update(db, id, body, current_user=current_user)
     if error:
         raise HTTPException(status_code=404, detail=error)
@@ -140,6 +144,7 @@ def delete(
     current_user: UserVO = Depends(get_current_user),
 ):
     """删除冲次费率记录"""
+    require_permission(current_user, "op:stamping-tonnage:delete")
     success, error = _tonnage_price_service.delete(db, id)
     if not success:
         raise HTTPException(status_code=404, detail=error or "记录不存在")
@@ -154,6 +159,7 @@ def copy_from_year(
     current_user: UserVO = Depends(get_current_user),
 ):
     """从源年份复制价格到目标年份"""
+    require_permission(current_user, "op:stamping-tonnage:copy")
     created, skipped, failed = _tonnage_price_service.copy_from_year(
         db, source_year, target_year, current_user=current_user
     )

@@ -3,7 +3,7 @@
  * 基准价格导出页面逻辑
  */
 
-import { basePriceDownloadTemplate } from './template.js?v=25';
+import { basePriceDownloadTemplate } from './template.js?v=26';
 
 // 状态管理
 const basePriceDownloadState = {
@@ -23,6 +23,17 @@ function init() {
     // DOM 重建后必须重新拉选项；先同步填月份，避免接口返回前下拉空白
     fillMonthOptions();
     loadFilterOptions();
+    applyPermissionUi();
+}
+
+function applyPermissionUi() {
+    if (typeof can !== 'function') return;
+    if (!can('op:base-price-download:export')) {
+        document.getElementById('btnExportBasePrice')?.classList.add('hidden');
+    }
+    if (!can('op:base-price-download:delete')) {
+        document.getElementById('btnDeleteBasePrice')?.classList.add('hidden');
+    }
 }
 
 function buildYearOptions(years) {
@@ -241,6 +252,10 @@ async function previewData() {
  * 导出 Excel
  */
 async function exportExcel() {
+    if (typeof can === 'function' && !can('op:base-price-download:export')) {
+        showToast('无导出权限', 'warning');
+        return;
+    }
     const filters = collectFilters();
 
     if (!hasAnyFilter(filters)) {
@@ -288,6 +303,10 @@ async function exportExcel() {
  * 批量删除基准价格
  */
 async function batchDeleteBasePrices() {
+    if (typeof can === 'function' && !can('op:base-price-download:delete')) {
+        showToast('无删除权限', 'warning');
+        return;
+    }
     const year = getFilterValue('basePriceDownloadYear');
     const month = getFilterValue('basePriceDownloadMonth');
     const location = getFilterValue('basePriceDownloadLocation');

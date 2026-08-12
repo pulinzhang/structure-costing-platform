@@ -3,6 +3,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.common.permissions.checks import require_permission
 from app.database import get_auxiliary_db, get_db
 from app.deps.auth import get_current_user
 from app.schemas.common.page_result import PageResult
@@ -32,6 +33,7 @@ def list_users(
     current_user: UserVO = Depends(get_current_user),
 ) -> ApiResponse[PageResult[UserVO]]:
     """分页查询用户"""
+    require_permission(current_user, "op:settings-users:view")
     rows, total = _user_service.paginate(db, query)
     return ApiResponse.list_(
         items=rows,
@@ -51,6 +53,7 @@ def list_all_users(
     current_user: UserVO = Depends(get_current_user),
 ) -> ApiResponse[list[UserVO]]:
     """获取全部用户（不分页）"""
+    require_permission(current_user, "op:settings-users:view")
     users = _user_service.list_users(db)
     return ApiResponse.ok(data=users, message="查询成功")
 
@@ -65,6 +68,7 @@ def get_user(
     current_user: UserVO = Depends(get_current_user),
 ) -> ApiResponse[UserVO]:
     """获取单个用户"""
+    require_permission(current_user, "op:settings-users:view")
     user = _user_service.get_by_id(db, user_id)
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="用户不存在")
@@ -143,7 +147,10 @@ def delete_user(
     current_user: UserVO = Depends(get_current_user),
 ) -> ApiResponse[None]:
     """删除用户并作废其登录会话"""
-    ok = _user_service.delete(db, user_id)
+    try:
+        ok = _user_service.delete(db, user_id, current_user=current_user)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     if not ok:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="用户不存在")
     _auth_service.revoke_all_sessions(token_db, user_id)

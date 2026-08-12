@@ -16,22 +16,27 @@
 import { pageMeta } from './features/index.js';
 
 // 页面导入
-import { getUserSession, initUserMenu, startTokenHeartbeat } from './features/login/index.js?v=13';
+import { getUserSession, initUserMenu, startTokenHeartbeat, updateUserSession } from './features/login/index.js?v=14';
+import {
+    applySidebarPermissions,
+    canAccessPage,
+    fallbackPageName,
+} from './permissions.js?v=3';
 import { pageConfig as dashboardPage }      from './features/dashboard/index.js';
-import { pageConfig as stampingUploadPage } from './features/stamping/upload/index.js?v=34';
-import { pageConfig as stampingPartsPage }  from './features/stamping/parts/index.js';
-import { pageConfig as stampingTonnagePage } from './features/stamping/tonnage/index.js';
-import { pageConfig as steelPriceListPage }   from './features/steel-price/list/index.js?v=40';
-import { pageConfig as steelPriceCalcPage }    from './features/steel-price/calc/index.js?v=4';
-import { pageConfig as steelPricePolicyUploadPage } from './features/steel-price/policy-upload/index.js?v=34';
-import { pageConfig as steelPricePolicyDownloadPage } from './features/steel-price/policy-download/index.js?v=25';
-import { pageConfig as basePriceUploadPage } from './features/steel-price/base-price-upload/index.js?v=35';
-import { pageConfig as basePriceDownloadPage } from './features/steel-price/base-price-download/index.js?v=25';
+import { pageConfig as stampingUploadPage } from './features/stamping/upload/index.js?v=35';
+import { pageConfig as stampingPartsPage }  from './features/stamping/parts/index.js?v=2';
+import { pageConfig as stampingTonnagePage } from './features/stamping/tonnage/index.js?v=2';
+import { pageConfig as steelPriceListPage }   from './features/steel-price/list/index.js?v=41';
+import { pageConfig as steelPriceCalcPage }    from './features/steel-price/calc/index.js?v=5';
+import { pageConfig as steelPricePolicyUploadPage } from './features/steel-price/policy-upload/index.js?v=35';
+import { pageConfig as steelPricePolicyDownloadPage } from './features/steel-price/policy-download/index.js?v=26';
+import { pageConfig as basePriceUploadPage } from './features/steel-price/base-price-upload/index.js?v=36';
+import { pageConfig as basePriceDownloadPage } from './features/steel-price/base-price-download/index.js?v=26';
 import { pageConfig as costingPage }        from './features/costing/index.js';
 import { pageConfig as quotationPage }      from './features/quotation/index.js';
-import { pageConfig as settingsPage }       from './features/settings/index.js';
-import { pageConfig as settingsUsersPage }  from './features/settings/users/index.js?v=1';
-import { pageConfig as settingsProfilePage } from './features/settings/profile/index.js?v=5';
+import { pageConfig as settingsPage }       from './features/settings/index.js?v=2';
+import { pageConfig as settingsUsersPage }  from './features/settings/users/index.js?v=2';
+import { pageConfig as settingsProfilePage } from './features/settings/profile/index.js?v=6';
 
 // 未登录禁止进入主应用：不渲染业务页，避免请求 dashboard 等后端
 const hasSession = !!getUserSession();
@@ -176,12 +181,28 @@ function renderBreadcrumb(pageName, meta) {
 function renderPage(pageName) {
     if (!pageName) return;
 
-    const page = pages[pageName];
-    if (!page) {
+    let targetPage = pageName;
+    if (!pages[targetPage]) {
         document.getElementById('pageContent').innerHTML =
             '<div class="text-center text-[#616161] py-12">页面不存在</div>';
         return;
     }
+
+    if (!canAccessPage(targetPage)) {
+        const fallback = fallbackPageName();
+        if (fallback !== targetPage && pages[fallback]) {
+            if (typeof showToast === 'function') {
+                showToast('无访问权限', 'warning');
+            }
+            window.location.hash = '/' + fallback;
+            return;
+        }
+        document.getElementById('pageContent').innerHTML =
+            '<div class="text-center text-[#616161] py-12">无访问权限</div>';
+        return;
+    }
+
+    const page = pages[targetPage];
 
     // 离开上一页时调用 destroy（停止轮询等），避免后台定时器污染当前页
     if (currentPageName && pages[currentPageName]?.destroy) {
@@ -197,17 +218,17 @@ function renderPage(pageName) {
     const topActions = document.getElementById('topActions');
 
     // 同步导航高亮（Overlay 复用同一套菜单 DOM）
-    highlightMenu(pageName);
+    highlightMenu(targetPage);
 
-    const meta = pageMeta[pageName] || { title: pageName, breadcrumb: [pageName] };
+    const meta = pageMeta[targetPage] || { title: targetPage, breadcrumb: [targetPage] };
     if (title) title.textContent = meta.title;
-    renderBreadcrumb(pageName, meta);
+    renderBreadcrumb(targetPage, meta);
     if (topActions) topActions.innerHTML = '';
 
     try {
         content.innerHTML = page.render();
         page.init();
-        currentPageName = pageName;
+        currentPageName = targetPage;
     } catch (error) {
         console.error('渲染页面失败:', error);
         currentPageName = null;
@@ -329,5 +350,26 @@ document.addEventListener('DOMContentLoaded', function() {
     // 顶栏用户头像菜单 + token 心跳续期
     initUserMenu();
     startTokenHeartbeat();
-    initRouter();
+
+    // 启动时拉一次 me，刷新权限后再过滤侧栏与路由
+    HttpClient.get('/api/auth/me')
+        .then((res) => {
+            const user = res?.data;
+            if (user) {
+                updateUserSession({
+                    is_admin: user.is_admin === true,
+                    permissions: Array.isArray(user.permissions) ? user.permissions : [],
+                    real_name: user.real_name,
+                    username: user.username,
+                    avatar: user.avatar,
+                    department: user.department,
+                    email: user.email,
+                });
+            }
+        })
+        .catch(() => {})
+        .finally(() => {
+            applySidebarPermissions();
+            initRouter();
+        });
 });

@@ -49,7 +49,25 @@ function mountProfile(user) {
     profileState.user = user;
     pageContent.innerHTML = profileTemplate(user);
     bindEvents();
+    applyPermissionUi();
     syncSession(user);
+}
+
+function applyPermissionUi() {
+    if (typeof can !== 'function') return;
+    if (!can('op:settings-profile:update')) {
+        document.getElementById('btnSaveProfile')?.classList.add('hidden');
+        document.getElementById('btnPickAvatar')?.classList.add('hidden');
+        document.getElementById('avatarFileInput')?.setAttribute('disabled', 'disabled');
+        ['profileRealName', 'profileEmail', 'profilePhone', 'profileDepartment'].forEach((id) => {
+            const el = document.getElementById(id);
+            if (el) el.disabled = true;
+        });
+    }
+    if (!can('op:settings-profile:password')) {
+        document.getElementById('btnChangePassword')?.classList.add('hidden');
+        document.getElementById('profilePasswordForm')?.classList.add('opacity-40', 'pointer-events-none');
+    }
 }
 
 async function loadProfile() {

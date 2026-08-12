@@ -16,6 +16,7 @@ const BasePriceUploadPage = {
 
     init() {
         this.stopPolling();
+        this.applyPermissionUi();
         this.bindEvents();
         this.fillDefaultPeriod();
 
@@ -32,6 +33,27 @@ const BasePriceUploadPage = {
         this.hideProgress();
     },
 
+    applyPermissionUi() {
+        const canUpload = typeof can === 'function'
+            ? can('op:base-price-upload:upload')
+            : true;
+        this.canUpload = canUpload;
+        if (canUpload) return;
+
+        document.getElementById('basePriceSelectFileBtn')?.classList.add('hidden');
+        document.getElementById('basePriceSubmitButton')?.classList.add('hidden');
+        document.querySelector('#basePriceUploadForm button[type="submit"]')?.classList.add('hidden');
+        document.getElementById('basePriceResetButton')?.classList.add('hidden');
+        const input = document.getElementById('basePriceFileInput');
+        if (input) input.disabled = true;
+        const zone = document.getElementById('basePriceUploadZone');
+        if (zone) zone.classList.add('pointer-events-none', 'opacity-60');
+        ['basePriceYear', 'basePriceMonth'].forEach((id) => {
+            const el = document.getElementById(id);
+            if (el) el.disabled = true;
+        });
+    },
+
     destroy() {
         this.stopPolling();
     },
@@ -44,13 +66,13 @@ const BasePriceUploadPage = {
         const selectBtn = document.getElementById('basePriceSelectFileBtn');
 
         zone?.addEventListener('click', (event) => {
-            if (this.isUploading) return;
+            if (this.canUpload === false || this.isUploading) return;
             if (event.target.closest('button')) return;
             input?.click();
         });
         selectBtn?.addEventListener('click', (event) => {
             event.stopPropagation();
-            if (this.isUploading) return;
+            if (this.canUpload === false || this.isUploading) return;
             input?.click();
         });
 
@@ -300,6 +322,10 @@ const BasePriceUploadPage = {
     },
 
     async submit() {
+        if (this.canUpload === false) {
+            showToast('无导入权限', 'warning');
+            return;
+        }
         if (this.isUploading) return;
         if (!this.selectedFile) {
             showToast('请选择基准价格文件', 'warning');

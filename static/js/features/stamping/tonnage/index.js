@@ -8,7 +8,7 @@
  * - 删除确认  → deleteDrawer
  */
 
-import { tonnagePriceTemplate, renderTableRows, renderPagination } from './template.js';
+import { tonnagePriceTemplate, renderTableRows, renderPagination } from './template.js?v=2';
 
 // 状态管理
 const tonnagePriceState = {
@@ -65,6 +65,14 @@ function init() {
     loadYearOptions();
     loadData();
     bindEvents();
+    applyPermissionUi();
+}
+
+function applyPermissionUi() {
+    const canCreate = typeof can === 'function' ? can('op:stamping-tonnage:create') : true;
+    const canCopy = typeof can === 'function' ? can('op:stamping-tonnage:copy') : true;
+    if (!canCreate) document.getElementById('btnAddTonnagePrice')?.classList.add('hidden');
+    if (!canCopy) document.getElementById('btnCopyTemplate')?.classList.add('hidden');
 }
 
 /**

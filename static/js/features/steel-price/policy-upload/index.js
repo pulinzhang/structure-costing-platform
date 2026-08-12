@@ -16,6 +16,7 @@ const PolicyUploadPage = {
 
     init() {
         this.stopPolling();
+        this.applyPermissionUi();
         this.bindEvents();
         this.renderRecentUploads();
 
@@ -38,6 +39,28 @@ const PolicyUploadPage = {
         this.hideProgress();
     },
 
+    applyPermissionUi() {
+        const canUpload = typeof can === 'function'
+            ? can('op:steel-price-policy-upload:upload')
+            : true;
+        this.canUpload = canUpload;
+        if (canUpload) return;
+
+        document.getElementById('policySelectFileBtn')?.classList.add('hidden');
+        document.getElementById('policySubmitButton')?.classList.add('hidden');
+        document.getElementById('policyResetButton')?.classList.add('hidden');
+        const input = document.getElementById('policyFileInput');
+        if (input) input.disabled = true;
+        const zone = document.getElementById('policyUploadZone');
+        if (zone) zone.classList.add('pointer-events-none', 'opacity-60');
+        ['policyYear', 'policyMonth'].forEach((id) => {
+            const el = document.getElementById(id);
+            if (el) el.disabled = true;
+        });
+        const title = document.getElementById('policyUploadTitle');
+        if (title) title.textContent = '无导入权限';
+    },
+
     destroy() {
         // 仅停轮询，保留 activeTaskId / isUploading，便于回来继续跟进度
         this.stopPolling();
@@ -51,13 +74,13 @@ const PolicyUploadPage = {
         const selectBtn = document.getElementById('policySelectFileBtn');
 
         zone?.addEventListener('click', (event) => {
-            if (this.isUploading) return;
+            if (this.canUpload === false || this.isUploading) return;
             if (event.target.closest('button')) return;
             input?.click();
         });
         selectBtn?.addEventListener('click', (event) => {
             event.stopPropagation();
-            if (this.isUploading) return;
+            if (this.canUpload === false || this.isUploading) return;
             input?.click();
         });
 
@@ -363,6 +386,10 @@ const PolicyUploadPage = {
     },
 
     async submit() {
+        if (this.canUpload === false) {
+            showToast('无导入权限', 'warning');
+            return;
+        }
         if (this.isUploading) return;
         if (!this.selectedFile) {
             showToast('请选择政策文件', 'warning');

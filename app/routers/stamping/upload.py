@@ -11,6 +11,7 @@ from app.utils.logging_config import get_logger
 from app.config import settings
 from app.database import DatabaseConfig
 from app.common.audit import display_name
+from app.common.permissions.checks import require_permission
 from app.deps.auth import get_current_user
 from app.schemas.vo.user_vo import UserVO
 from app.services.async_task import (
@@ -103,6 +104,7 @@ async def upload_stamping_file(
     current_user: UserVO = Depends(get_current_user),
 ) -> ApiResponse[AsyncTaskAcceptedVO]:
     """上传车型冲压工艺文件，立即返回 task_id，后台解析入库。"""
+    require_permission(current_user, "op:stamping-upload:upload")
     logger.info(
         "接收到车型冲压工艺文件上传: 基地=%s, 文件=%s",
         location,

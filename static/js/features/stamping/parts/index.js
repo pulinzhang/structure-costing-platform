@@ -28,7 +28,14 @@ export const PartsPage = {
         this.initState();
         this.bindEvents();
         this.bindDrawerEvents();
+        this.applyPermissionUi();
         this.loadParts(1);
+    },
+
+    applyPermissionUi() {
+        const canUpdate = typeof can === 'function' ? can('op:stamping-parts:update') : true;
+        this.canUpdate = canUpdate;
+        this.canDelete = typeof can === 'function' ? can('op:stamping-parts:delete') : true;
     },
 
     /**
@@ -294,9 +301,10 @@ export const PartsPage = {
                         <button class="table-action-btn" data-action="detail" data-id="${part.id}" title="查看详情">
                             ${window.svgIcon('eye')}
                         </button>
+                        ${this.canDelete !== false ? `
                         <button class="table-action-btn" data-action="delete" data-id="${part.id}" title="删除">
                             ${window.svgIcon('trash')}
-                        </button>
+                        </button>` : ''}
                     </div>
                 </td>
             </tr>
@@ -472,6 +480,18 @@ export const PartsPage = {
         const tbody = document.getElementById('processTableBody');
         if (!tbody) return;
 
+        const canUpdate = this.canUpdate !== false;
+
+        if (!canUpdate) {
+            tbody.querySelectorAll('.die-type-select').forEach((sel) => {
+                sel.disabled = true;
+            });
+            document.getElementById('applyBatchDieType')?.classList.add('hidden');
+            document.getElementById('batchDieTypeSelect')?.closest('div')?.classList.add('opacity-40', 'pointer-events-none');
+            document.getElementById('saveProcessBtn')?.classList.add('hidden');
+            return;
+        }
+
         // 模具类型下拉变化 → 激活保存按钮
         tbody.addEventListener('change', (e) => {
             const sel = e.target.closest('.die-type-select');
@@ -526,6 +546,10 @@ export const PartsPage = {
      * 保存工序修改
      */
     async _saveProcessEdits(partId) {
+        if (this.canUpdate === false) {
+            showToast('无编辑权限', 'warning');
+            return;
+        }
         const btn = document.getElementById('saveProcessBtn');
         const processes = this._collectProcessEdits();
         if (processes.length === 0) return;
@@ -553,6 +577,10 @@ export const PartsPage = {
      * 删除零件
      */
     async deletePart(partId) {
+        if (this.canDelete === false) {
+            showToast('无删除权限', 'warning');
+            return;
+        }
         if (!confirm('确定要删除这个零件吗？')) return;
         try {
             await HttpClient.delete(`/api/stamping/parts/${partId}`);

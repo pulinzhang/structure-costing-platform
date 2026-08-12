@@ -10,7 +10,9 @@ export const SettingsPage = {
      * 初始化页面
      */
     init() {
-        // 预留扩展
+        if (typeof can === 'function' && !can('op:settings-system:update')) {
+            document.getElementById('btnSaveSettings')?.classList.add('hidden');
+        }
     },
 };
 

@@ -19,6 +19,7 @@ export const UploadPage = {
 
     init() {
         this.stopPolling();
+        this.applyPermissionUi();
         this.bindEvents();
         this.renderRecentUploads();
 
@@ -34,6 +35,49 @@ export const UploadPage = {
         this.hideProgress();
     },
 
+    /**
+     * 无 op:stamping-upload:upload 时隐藏选文件 / 上传操作
+     */
+    applyPermissionUi() {
+        const canUpload = typeof can === 'function'
+            ? can('op:stamping-upload:upload')
+            : true;
+        this.canUpload = canUpload;
+        if (canUpload) return;
+
+        const selectBtn = document.getElementById('stampingSelectFileBtn');
+        const submitBtn = document.getElementById('submitBtn');
+        const resetBtn = document.getElementById('stampingResetButton');
+        const fileInput = document.getElementById('fileInput');
+        const uploadZone = document.getElementById('uploadZone');
+        const location = document.getElementById('location');
+        const title = document.getElementById('uploadTitle');
+        const hint = document.getElementById('uploadHint');
+        const actionsRow = submitBtn?.parentElement;
+
+        if (selectBtn) selectBtn.classList.add('hidden');
+        if (submitBtn) submitBtn.classList.add('hidden');
+        if (resetBtn) resetBtn.classList.add('hidden');
+        if (fileInput) {
+            fileInput.disabled = true;
+            fileInput.value = '';
+        }
+        if (location) location.disabled = true;
+        if (uploadZone) {
+            uploadZone.classList.add('pointer-events-none', 'opacity-60');
+        }
+        if (title) title.textContent = '无上传权限';
+        if (hint) hint.textContent = '当前账号仅可查看本页，无法选择或上传文件';
+
+        if (actionsRow && !document.getElementById('stampingUploadNoPermHint')) {
+            const tip = document.createElement('p');
+            tip.id = 'stampingUploadNoPermHint';
+            tip.className = 'text-[11px] text-[#616161] w-full text-right';
+            tip.textContent = '无「上传」权限，请联系管理员授权';
+            actionsRow.appendChild(tip);
+        }
+    },
+
     destroy() {
         this.stopPolling();
     },
@@ -47,14 +91,14 @@ export const UploadPage = {
         if (!uploadZone || !fileInput) return;
 
         uploadZone.addEventListener('click', (e) => {
-            if (this.isUploading) return;
+            if (this.canUpload === false || this.isUploading) return;
             if (e.target.tagName === 'BUTTON' || e.target.closest('button')) return;
             fileInput.click();
         });
 
         selectBtn?.addEventListener('click', (e) => {
             e.stopPropagation();
-            if (this.isUploading) return;
+            if (this.canUpload === false || this.isUploading) return;
             fileInput.click();
         });
 
@@ -63,7 +107,7 @@ export const UploadPage = {
         });
 
         uploadZone.addEventListener('dragover', (e) => {
-            if (this.isUploading) return;
+            if (this.canUpload === false || this.isUploading) return;
             e.preventDefault();
             uploadZone.classList.add('drag-active');
         });
@@ -76,7 +120,7 @@ export const UploadPage = {
         uploadZone.addEventListener('drop', (e) => {
             e.preventDefault();
             uploadZone.classList.remove('drag-active');
-            if (this.isUploading) return;
+            if (this.canUpload === false || this.isUploading) return;
             this.handleFiles(e.dataTransfer.files);
         });
 
@@ -87,6 +131,10 @@ export const UploadPage = {
     },
 
     handleFiles(files) {
+        if (this.canUpload === false) {
+            showToast('无上传权限', 'warning');
+            return;
+        }
         if (!files || files.length === 0 || this.isUploading) return;
 
         const file = files[0];
@@ -356,6 +404,10 @@ export const UploadPage = {
     },
 
     async handleSubmit() {
+        if (this.canUpload === false) {
+            showToast('无上传权限', 'warning');
+            return;
+        }
         if (this.isUploading) return;
 
         const location = document.getElementById('location');

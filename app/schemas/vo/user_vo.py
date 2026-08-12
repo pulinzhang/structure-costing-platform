@@ -16,6 +16,8 @@ class UserVO(BaseModel):
     department: str | None = None
     avatar: str | None = None
     is_active: bool = True
+    is_admin: bool = False
+    permissions: list[str] = []
     created_by: str | None = None
     updated_by: str | None = None
     created_at: datetime | None = None

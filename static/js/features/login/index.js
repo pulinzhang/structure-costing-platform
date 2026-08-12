@@ -77,7 +77,21 @@ export function startTokenHeartbeat(intervalMs = 10 * 60 * 1000) {
         const session = getUserSession();
         if (!session?.token || typeof HttpClient === 'undefined') return;
         if (document.hidden) return;
-        HttpClient.post('/api/auth/touch', null).catch(() => {});
+        HttpClient.post('/api/auth/touch', null)
+            .then((res) => {
+                const user = res?.data;
+                if (!user) return;
+                updateUserSession({
+                    is_admin: user.is_admin === true,
+                    permissions: Array.isArray(user.permissions) ? user.permissions : [],
+                    real_name: user.real_name,
+                    username: user.username,
+                    avatar: user.avatar,
+                    department: user.department,
+                    email: user.email,
+                });
+            })
+            .catch(() => {});
     };
 
     // 进入系统先续一次
@@ -269,6 +283,8 @@ export const LoginPage = {
                 email: user.email || '',
                 department: user.department || '',
                 avatar: user.avatar || '',
+                is_admin: user.is_admin === true,
+                permissions: Array.isArray(user.permissions) ? user.permissions : [],
             };
 
             localStorage.setItem(SESSION_KEY, JSON.stringify(userSession));

@@ -4,7 +4,7 @@
  * 用于测试部门核对数据，主子表联合查询导出 Excel
  */
 
-import { policyDownloadTemplate, renderPolicyRows } from './template.js?v=25';
+import { policyDownloadTemplate, renderPolicyRows } from './template.js?v=26';
 
 // 状态管理
 const policyDownloadState = {
@@ -22,6 +22,18 @@ const API_BASE = '/api/steel-price-policies';
 function init() {
     bindEvents();
     loadFilterOptions();
+    applyPermissionUi();
+}
+
+function applyPermissionUi() {
+    if (typeof can !== 'function') return;
+    if (!can('op:steel-price-policy-download:export')) {
+        document.getElementById('btnExportPolicy')?.classList.add('hidden');
+        document.getElementById('btnExport')?.classList.add('hidden');
+    }
+    if (!can('op:steel-price-policy-download:delete')) {
+        document.getElementById('btnDeletePolicy')?.classList.add('hidden');
+    }
 }
 
 /**
@@ -263,6 +275,10 @@ async function previewData() {
  * 导出 Excel
  */
 async function exportExcel() {
+    if (typeof can === 'function' && !can('op:steel-price-policy-download:export')) {
+        showToast('无导出权限', 'warning');
+        return;
+    }
     const filters = collectFilters();
 
     if (!hasAnyFilter(filters)) {
@@ -314,6 +330,10 @@ async function exportExcel() {
  * 批量删除政策
  */
 async function batchDeletePolicies() {
+    if (typeof can === 'function' && !can('op:steel-price-policy-download:delete')) {
+        showToast('无删除权限', 'warning');
+        return;
+    }
     const year = getFilterValue('policyDownloadYear');
     const month = getFilterValue('policyDownloadMonth');
     const steelMill = getFilterValue('policyDownloadMill');

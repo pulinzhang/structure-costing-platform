@@ -473,8 +473,10 @@ export function renderSteelPriceRows(records) {
             <td class="${cell} text-center">
                 <div class="flex items-center justify-center gap-0.5">
                     <button class="view-btn flex items-center justify-center w-7 h-7 rounded-sm text-[#555555] hover:text-[#FFFFFF] hover:bg-[#FFFFFF]/5 transition-all" title="查看">${window.svgIcon('eye', 'w-3 h-3')}</button>
-                    <button class="edit-btn flex items-center justify-center w-7 h-7 rounded-sm text-[#555555] hover:text-[#FFFFFF] hover:bg-[#FFFFFF]/5 transition-all ${approved ? 'opacity-30 pointer-events-none' : ''}" title="${approved ? '已审核，不可编辑' : '编辑'}">${window.svgIcon('pencil', 'w-3 h-3')}</button>
-                    <button class="delete-btn flex items-center justify-center w-7 h-7 rounded-sm text-[#555555] hover:text-[#FFFFFF] hover:bg-[#FFFFFF]/5 transition-all ${approved ? 'opacity-30 pointer-events-none' : ''}" title="${approved ? '已审核，不可删除' : '删除'}">${window.svgIcon('trash', 'w-3 h-3')}</button>
+                    ${(typeof can === 'function' ? can('op:steel-price-list:update') : true) ? `
+                    <button class="edit-btn flex items-center justify-center w-7 h-7 rounded-sm text-[#555555] hover:text-[#FFFFFF] hover:bg-[#FFFFFF]/5 transition-all ${approved ? 'opacity-30 pointer-events-none' : ''}" title="${approved ? '已审核，不可编辑' : '编辑'}">${window.svgIcon('pencil', 'w-3 h-3')}</button>` : ''}
+                    ${(typeof can === 'function' ? can('op:steel-price-list:delete') : true) ? `
+                    <button class="delete-btn flex items-center justify-center w-7 h-7 rounded-sm text-[#555555] hover:text-[#FFFFFF] hover:bg-[#FFFFFF]/5 transition-all ${approved ? 'opacity-30 pointer-events-none' : ''}" title="${approved ? '已审核，不可删除' : '删除'}">${window.svgIcon('trash', 'w-3 h-3')}</button>` : ''}
                 </div>
             </td>
         </tr>`;
