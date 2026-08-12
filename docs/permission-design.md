@@ -348,7 +348,7 @@ root
 │       └── op:stamping-tonnage:copy
 │
 ├── menu:yishiyiyi                             # 一事一议（分组，可勾）
-│   ├── menu:thickness                         # 厚度加减价（二级分组，可勾）
+│   ├── menu:thickness                         # 加减价政策（二级分组，可勾）
 │   │   ├── menu:steel-price-policy-upload
 │   │   │   ├── op:steel-price-policy-upload:view
 │   │   │   └── op:steel-price-policy-upload:upload

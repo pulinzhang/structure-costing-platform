@@ -302,7 +302,7 @@ async function exportExcel() {
             headers: {
                 Accept: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             },
-            defaultFilename: '厚度加减价导出.xlsx',
+            defaultFilename: '加减价政策导出.xlsx',
         });
 
         const url = window.URL.createObjectURL(blob);

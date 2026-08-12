@@ -18,7 +18,7 @@ _MODULE_RULES: list[tuple[str, str]] = [
     ("/api/stamping", "冲压工程"),
     ("/api/steel-prices/calc", "钢材联动计算"),
     ("/api/steel-prices", "钢材联动价格"),
-    ("/api/steel-price-policies", "厚度加减价"),
+    ("/api/steel-price-policies", "加减价政策"),
     ("/api/steel-base-prices", "基准价格"),
     ("/api/users", "用户管理"),
     ("/api/permissions", "权限管理"),

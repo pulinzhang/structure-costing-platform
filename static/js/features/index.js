@@ -59,14 +59,14 @@ export const pageMeta = {
         breadcrumb: ['钢材联动价', '钢材联动计算'],
     },
     'steel-price-policy-upload': {
-        title: '厚度加减价上传',
-        en: 'THICKNESS_POLICY_UPLOAD',
-        breadcrumb: ['一事一议', '厚度加减价', '上传'],
+        title: '加减价政策上传',
+        en: 'PRICE_POLICY_UPLOAD',
+        breadcrumb: ['一事一议', '加减价政策', '上传'],
     },
     'steel-price-policy-download': {
-        title: '厚度加减价列表',
-        en: 'THICKNESS_POLICY_LIST',
-        breadcrumb: ['一事一议', '厚度加减价', '厚度加减价列表'],
+        title: '加减价政策列表',
+        en: 'PRICE_POLICY_LIST',
+        breadcrumb: ['一事一议', '加减价政策', '加减价政策列表'],
     },
     'base-price-upload': {
         title: '基准价格上传',

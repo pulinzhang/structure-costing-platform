@@ -70,7 +70,7 @@
       "children": [
         {
           "code": "menu:thickness",
-          "label": "厚度加减价",
+          "label": "加减价政策",
           "type": "group",
           "children": [
             {
@@ -84,7 +84,7 @@
             },
             {
               "code": "menu:steel-price-policy-download",
-              "label": "厚度加减价列表",
+              "label": "加减价政策列表",
               "type": "menu",
               "children": [
                 { "code": "op:steel-price-policy-download:view", "label": "预览", "type": "op" },

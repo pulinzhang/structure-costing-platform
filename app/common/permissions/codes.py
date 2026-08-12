@@ -35,13 +35,13 @@ class Perm:
 
     MENU_YISHIYIYI = "menu:yishiyiyi"  # 一事一议
 
-    MENU_THICKNESS = "menu:thickness"  # 厚度加减价
+    MENU_THICKNESS = "menu:thickness"  # 加减价政策（厚度/宽度/其它条件）
 
     MENU_STEEL_PRICE_POLICY_UPLOAD = "menu:steel-price-policy-upload"  # 上传
     STEEL_PRICE_POLICY_UPLOAD_VIEW = "op:steel-price-policy-upload:view"  # 查看
     STEEL_PRICE_POLICY_UPLOAD_UPLOAD = "op:steel-price-policy-upload:upload"  # 导入
 
-    MENU_STEEL_PRICE_POLICY_DOWNLOAD = "menu:steel-price-policy-download"  # 厚度加减价列表
+    MENU_STEEL_PRICE_POLICY_DOWNLOAD = "menu:steel-price-policy-download"  # 加减价政策列表
     STEEL_PRICE_POLICY_DOWNLOAD_VIEW = "op:steel-price-policy-download:view"  # 预览
     STEEL_PRICE_POLICY_DOWNLOAD_EXPORT = "op:steel-price-policy-download:export"  # 导出
     STEEL_PRICE_POLICY_DOWNLOAD_DELETE = "op:steel-price-policy-download:delete"  # 批量删除
