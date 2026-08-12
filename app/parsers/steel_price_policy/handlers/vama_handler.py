@@ -31,7 +31,7 @@ from ..models import ParsedPolicy
 from ..models.policy import GRADE_TYPE_GRADE
 from ..value_parser import _to_int_price
 from app.parsers.steel_price_policy.handlers.base_handler import BaseSheetHandler
-from ..boundary_parser import _Boundary
+from ..boundary_parser import _Boundary, is_strict_gt
 from .constants import GRADE_LABELS
 
 from ..models.ladder_item import ParsedLadderItem
@@ -282,14 +282,13 @@ class VamaSheetHandler(BaseSheetHandler):
                     next_boundary = boundaries[next_c]
                     if next_boundary.min_val is not None:
                         max_val = next_boundary.min_val
-                        # 判断上界操作符：
+                        # 判断上界操作符（全角/半角均识别）：
                         # 1. 显式终结档（≥X-Y 格式）：已在 boundary_parser 中用 <=，此处不会被触发
-                        # 2. 下一档 min_operator = ">"（如 "＞0.5"）：闭区间 ≤
-                        # 3. 下一档 min_operator = ">="（如 "≥0.6"）：开区间 <
-                        if next_boundary.min_operator == ">=":
-                            max_operator = "<"
+                        # 2. 下一档 min_operator = ">" / "＞"（如 "＞2.0"）：闭区间 ≤
+                        # 3. 下一档 min_operator = ">=" / "≥"：开区间 <
+                        if is_strict_gt(next_boundary.min_operator):
+                            max_operator = "<="
                         else:
-                            # ">="（标准厚度值）或其它情况 → 开区间
                             max_operator = "<"
                         boundary = _Boundary(
                             min_val=boundary.min_val,

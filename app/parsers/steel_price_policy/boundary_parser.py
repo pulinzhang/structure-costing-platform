@@ -36,8 +36,9 @@ _PATTERN_PURE_NUM = re.compile(r"^\s*(-?\d+(?:\.\d+)?)\s*(?:mm)?\s*$", re.IGNORE
 
 # ---------- 1.2 单边符号 ----------
 _PATTERN_GT = re.compile(r"^[>＞](?!=)\s*(-?\d+(?:\.\d+)?)\s*[a-zA-Z]*$")   # >0.5 / ＞0.5
-_PATTERN_GTE = re.compile(r"^(?:[≥]|>=)\s*(-?\d+(?:\.\d+)?)\s*[a-zA-Z]*$") # ≥0.5 / >=0.5
-_PATTERN_LTE = re.compile(r"^[≤<＜]=?\s*(-?\d+(?:\.\d+)?)\s*[a-zA-Z]*$")   # ≤800 / <=800 / ＜1000
+_PATTERN_GTE = re.compile(r"^(?:[≥≧]|>=|＞=)\s*(-?\d+(?:\.\d+)?)\s*[a-zA-Z]*$")  # ≥0.5 / >=0.5 / ≧0.5
+_PATTERN_LTE = re.compile(r"^[≤≦<＜]=?\s*(-?\d+(?:\.\d+)?)\s*[a-zA-Z]*$")  # ≤800 / <=800 / ＜1000 / ≦800
+
 
 # ---------- 1.3 简单区间（不含变量） ----------
 _PATTERN_SIMPLE_RANGE = re.compile(
@@ -51,8 +52,9 @@ _PATTERN_SIMPLE_RANGE_WITH_UNIT = re.compile(
 # 格式：≥2.0-2.3 → min=2.0 (>=), max=2.3 (<=)
 # 注意：必须放在简单区间之前，因为 ≥ 前缀会干扰普通 X-Y 匹配
 _PATTERN_GTE_RANGE = re.compile(
-    r"^\s*(?:≥|>=\s*)\s*(-?\d+(?:\.\d+)?)\s*[-–—]\s*(-?\d+(?:\.\d+)?)\s*$"
+    r"^\s*(?:[≥≧]|>=|＞=)\s*(-?\d+(?:\.\d+)?)\s*[-–—]\s*(-?\d+(?:\.\d+)?)\s*$"
 )
+
 
 # ---------- 1.4 特殊 "1000-T<1600" 格式 ----------
 # 注意：此处变量为 T/t，不是 W/宽，需保留原有逻辑
@@ -96,6 +98,43 @@ class _Boundary:
     min_operator: Optional[str] = None
     max_val: Optional[Decimal] = None
     max_operator: Optional[str] = None
+
+
+# 全角/半角操作符 → 半角规范形式
+_OPERATOR_NORMALIZE = {
+    ">": ">",
+    "＞": ">",
+    ">=": ">=",
+    "≥": ">=",
+    "≧": ">=",
+    "＞=": ">=",
+    "<": "<",
+    "＜": "<",
+    "<=": "<=",
+    "≤": "<=",
+    "≦": "<=",
+    "＜=": "<=",
+}
+
+
+def normalize_operator(op: Optional[str]) -> Optional[str]:
+    """将比较操作符规范为半角：> / >= / < / <=。无法识别则原样返回。"""
+    if op is None:
+        return None
+    text = str(op).strip()
+    if not text:
+        return op
+    return _OPERATOR_NORMALIZE.get(text, text)
+
+
+def is_strict_gt(op: Optional[str]) -> bool:
+    """是否为严格大于（> / ＞）。"""
+    return normalize_operator(op) == ">"
+
+
+def is_lte(op: Optional[str]) -> bool:
+    """是否为小于等于（<= / ≤ / ≦ / ＜=）。"""
+    return normalize_operator(op) == "<="
 
 
 # ===========================================================================
@@ -169,8 +208,8 @@ def _parse_boundary(header: Any) -> Optional[_Boundary]:
     match_lte = _PATTERN_LTE.match(text)
     if match_lte:
         raw = text.strip()
-        # 根据首部符号判断操作符
-        if raw.startswith(("≤", "<=", "＜=")):
+        # 根据首部符号判断操作符（全角/半角）
+        if raw.startswith(("≤", "≦", "<=", "＜=")):
             op = "<="
         else:  # 以 "<" 或 "＜" 开头
             op = "<"
@@ -202,7 +241,7 @@ def _parse_boundary_thickness(text: str) -> Optional[_Boundary]:
     if match_gte:
         return _Boundary(min_val=Decimal(match_gte.group(1)), min_operator=">=")
 
-    # ---------- > 区间（严格大于，如 "＞0.5"）----------
+    # ---------- > 区间（严格大于，如 "＞0.5" / ">0.5"）----------
     match_gt = _PATTERN_GT.match(text)
     if match_gt:
         return _Boundary(min_val=Decimal(match_gt.group(1)), min_operator=">")
@@ -211,7 +250,7 @@ def _parse_boundary_thickness(text: str) -> Optional[_Boundary]:
     match_lte = _PATTERN_LTE.match(text)
     if match_lte:
         raw = text.strip()
-        if raw.startswith(("≤", "<=", "＜=")):
+        if raw.startswith(("≤", "≦", "<=", "＜=")):
             op = "<="
         else:
             op = "<"

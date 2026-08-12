@@ -16,7 +16,12 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from openpyxl.worksheet.worksheet import Worksheet
 
-from app.parsers.steel_price_policy.boundary_parser import _Boundary, _parse_boundary
+from app.parsers.steel_price_policy.boundary_parser import (
+    _Boundary,
+    _parse_boundary,
+    is_lte,
+    is_strict_gt,
+)
 from app.parsers.steel_price_policy.models import ParsedLadderItem, ParsedPolicy
 from app.parsers.steel_price_policy.models.policy import (
     GRADE_TYPE_CATEGORY,
@@ -197,7 +202,7 @@ class PolicyAssembler:
         # 1. 推断下界
         if min_val is None:
             if col_idx == 0:
-                if policy_type == "THICKNESS" and boundary.max_operator == "<=":
+                if policy_type == "THICKNESS" and is_lte(boundary.max_operator):
                     # 厚度纯数字列（如 "0.5"）：隐含 0 < t <= 0.5
                     min_val = Decimal("0")
                     min_op = ">"
@@ -213,18 +218,24 @@ class PolicyAssembler:
                     if prev_boundary.max_val is not None:
                         min_val = prev_boundary.max_val
                         # 操作符：若前一列是 <=，则 min 用 >；若是 <，则 min 用 >=
-                        min_op = ">" if prev_boundary.max_operator == "<=" else ">="
+                        min_op = ">" if is_lte(prev_boundary.max_operator) else ">="
 
         # 2. 推断上界
         if max_val is None:
             if col_idx < len(sorted_cols) - 1:
-                # 有下一列，从下一列的 min_val 推断
+                # 有下一列，从下一列的 min_val / min_operator 推断
+                # 例：≥1.0 | ＞2.0 → 当前 1.0≤t≤2.0（下一档严格大于，本档闭上界）
+                # 例：≥0.9 | ≥1.0 → 当前 0.9≤t<1.0（下一档含等号，本档开上界）
+                # 全角/半角（＞/>、≥/>=）均通过 is_strict_gt 识别
                 next_c = sorted_cols[col_idx + 1]
                 if next_c in boundaries:
                     next_boundary = boundaries[next_c]
                     if next_boundary.min_val is not None:
                         max_val = next_boundary.min_val
-                        max_op = "<"
+                        if is_strict_gt(next_boundary.min_operator):
+                            max_op = "<="
+                        else:
+                            max_op = "<"
             # else: 最后一列且无上界，max_val 保持 None（表示 ∞）
 
         return _Boundary(
