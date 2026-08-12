@@ -16,7 +16,7 @@
 import { pageMeta } from './features/index.js';
 
 // 页面导入
-import { getUserSession, initUserMenu, startTokenHeartbeat } from './features/login/index.js';
+import { getUserSession, initUserMenu, startTokenHeartbeat } from './features/login/index.js?v=13';
 import { pageConfig as dashboardPage }      from './features/dashboard/index.js';
 import { pageConfig as stampingUploadPage } from './features/stamping/upload/index.js?v=34';
 import { pageConfig as stampingPartsPage }  from './features/stamping/parts/index.js';
@@ -30,6 +30,8 @@ import { pageConfig as basePriceDownloadPage } from './features/steel-price/base
 import { pageConfig as costingPage }        from './features/costing/index.js';
 import { pageConfig as quotationPage }      from './features/quotation/index.js';
 import { pageConfig as settingsPage }       from './features/settings/index.js';
+import { pageConfig as settingsUsersPage }  from './features/settings/users/index.js?v=1';
+import { pageConfig as settingsProfilePage } from './features/settings/profile/index.js?v=5';
 
 // 未登录禁止进入主应用：不渲染业务页，避免请求 dashboard 等后端
 const hasSession = !!getUserSession();
@@ -52,6 +54,8 @@ const pages = {
     costing:          costingPage,
     quotation:        quotationPage,
     settings:         settingsPage,
+    'settings-users': settingsUsersPage,
+    'settings-profile': settingsProfilePage,
 };
 
 const DEFAULT_PAGE = 'dashboard';

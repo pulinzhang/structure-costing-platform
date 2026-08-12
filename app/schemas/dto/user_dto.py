@@ -17,7 +17,7 @@ class UserCreateDTO(BaseModel):
 
 
 class UserUpdateDTO(BaseModel):
-    """更新用户（不含密码）"""
+    """更新用户（不含密码）——管理员可用"""
 
     real_name: str | None = Field(None, max_length=50, description="姓名")
     email: str | None = Field(None, max_length=100, description="邮箱")
@@ -27,11 +27,30 @@ class UserUpdateDTO(BaseModel):
     is_active: bool | None = Field(None, description="启用状态")
 
 
+class UserSelfUpdateDTO(BaseModel):
+    """当前用户自行更新资料（不可改账号/启用状态）"""
+
+    real_name: str | None = Field(None, max_length=50, description="姓名")
+    email: str | None = Field(None, max_length=100, description="邮箱")
+    phone: str | None = Field(None, max_length=20, description="电话")
+    department: str | None = Field(None, max_length=50, description="部门")
+
+
 class UserPasswordUpdateDTO(BaseModel):
-    """修改密码"""
+    """管理员重置密码（无需旧密码）"""
 
     password: str = Field(..., min_length=4, max_length=64, description="新密码")
 
+
+class UserSelfPasswordUpdateDTO(BaseModel):
+    """当前用户自行修改密码（必须验证旧密码）"""
+
+    old_password: str = Field(..., min_length=1, max_length=64, description="当前密码")
+    password: str = Field(..., min_length=6, max_length=64, description="新密码")
+    logout_other_sessions: bool = Field(
+        True,
+        description="改密成功后是否注销其他设备登录",
+    )
 
 class UserQueryDTO(BaseModel):
     """用户分页查询"""

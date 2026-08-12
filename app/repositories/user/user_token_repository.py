@@ -54,6 +54,40 @@ class UserTokenRepository:
         db.commit()
         return count
 
+    def delete_other_tokens(self, db: Session, user_id: int, keep_token: str) -> int:
+        """注销该用户除 keep_token 以外的全部会话"""
+        count = (
+            db.query(UserToken)
+            .filter(
+                UserToken.user_id == user_id,
+                UserToken.token != keep_token,
+            )
+            .delete(synchronize_session=False)
+        )
+        db.commit()
+        return count
+
+    def sync_user_snapshot(self, db: Session, user_id: int, snapshot: dict[str, Any]) -> int:
+        """资料变更后，同步该用户所有 token 上的展示字段"""
+        allowed = {
+            "username",
+            "real_name",
+            "email",
+            "department",
+            "avatar",
+        }
+        payload = {key: value for key, value in snapshot.items() if key in allowed}
+        if not payload:
+            return 0
+        payload["updated_at"] = datetime.now()
+        count = (
+            db.query(UserToken)
+            .filter(UserToken.user_id == user_id)
+            .update(payload, synchronize_session=False)
+        )
+        db.commit()
+        return count
+
     def delete_expired(self, db: Session, idle_hours: int = TOKEN_IDLE_HOURS) -> int:
         """删除超过 idle_hours 无活动的 token"""
         deadline = datetime.now() - timedelta(hours=idle_hours)

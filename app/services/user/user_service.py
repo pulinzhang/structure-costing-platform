@@ -18,13 +18,17 @@ from app.schemas.dto.user_dto import (
     UserCreateDTO,
     UserPasswordUpdateDTO,
     UserQueryDTO,
+    UserSelfPasswordUpdateDTO,
+    UserSelfUpdateDTO,
     UserUpdateDTO,
 )
 from app.schemas.vo.user_vo import UserVO
 
+from app.utils.avatar_storage import delete_avatar_file, save_user_avatar
+
 logger = logging.getLogger("service.user")
 
-DEFAULT_AVATAR = "/static/avatars/default.png"
+DEFAULT_AVATAR: str | None = None
 
 
 def hash_password_md5(password: str) -> str:
@@ -108,6 +112,54 @@ class UserService:
             return None
         return self._to_vo(user)
 
+    def update_own_profile(
+        self,
+        db: Session,
+        current_user: UserVO,
+        dto: UserSelfUpdateDTO,
+    ) -> UserVO:
+        """当前用户更新自己的资料（不含启用状态）"""
+        data = dto.model_dump(exclude_unset=True)
+        data.update(audit_update(current_user))
+        user = self.repository.update(db, current_user.id, data)
+        if not user:
+            raise ValueError("用户不存在")
+        return self._to_vo(user)
+
+    def update_own_avatar(
+        self,
+        db: Session,
+        current_user: UserVO,
+        *,
+        file_content: bytes,
+        filename: str,
+    ) -> UserVO:
+        """当前用户上传头像，写入 uploads/avatars/ 并更新 avatar 字段"""
+        existing = self.repository.get_by_id(db, current_user.id)
+        if not existing:
+            raise ValueError("用户不存在")
+
+        avatar_url = save_user_avatar(
+            user_id=current_user.id,
+            file_content=file_content,
+            filename=filename,
+        )
+        # 新文件落盘成功后再删旧文件，避免上传失败导致丢头像
+        old_avatar = existing.avatar
+        updated = self.repository.update(
+            db,
+            current_user.id,
+            {
+                "avatar": avatar_url,
+                **audit_update(current_user),
+            },
+        )
+        if not updated:
+            delete_avatar_file(avatar_url)
+            raise ValueError("用户不存在")
+        delete_avatar_file(old_avatar)
+        return self._to_vo(updated)
+
     def update_password(
         self,
         db: Session,
@@ -126,6 +178,33 @@ class UserService:
         if not user:
             return None
         return self._to_vo(user)
+
+    def change_own_password(
+        self,
+        db: Session,
+        current_user: UserVO,
+        dto: UserSelfPasswordUpdateDTO,
+    ) -> UserVO:
+        """当前用户改密：先校验旧密码，再写入新密码。"""
+        user = self.repository.get_by_id(db, current_user.id)
+        if not user:
+            raise ValueError("用户不存在")
+        if user.password_hash != hash_password_md5(dto.old_password):
+            raise ValueError("当前密码不正确")
+        if dto.old_password == dto.password:
+            raise ValueError("新密码不能与当前密码相同")
+
+        updated = self.repository.update(
+            db,
+            current_user.id,
+            {
+                "password_hash": hash_password_md5(dto.password),
+                **audit_update(current_user),
+            },
+        )
+        if not updated:
+            raise ValueError("用户不存在")
+        return self._to_vo(updated)
 
     def delete(self, db: Session, user_id: int) -> bool:
         return self.repository.delete(db, user_id)

@@ -87,6 +87,16 @@ export const pageMeta = {
     settings: {
         title: '系统设置',
         en: 'SYSTEM_CONFIG',
-        breadcrumb: ['设置'],
+        breadcrumb: ['设置', '系统设置'],
+    },
+    'settings-users': {
+        title: '用户管理',
+        en: 'USER_ADMIN',
+        breadcrumb: ['设置', '用户管理'],
+    },
+    'settings-profile': {
+        title: '个人资料',
+        en: 'USER_PROFILE',
+        breadcrumb: ['设置', '个人资料'],
     },
 };

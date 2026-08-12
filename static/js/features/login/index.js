@@ -25,6 +25,22 @@ export function getUserSession() {
 }
 
 /**
+ * 合并更新本地会话（保留 token），并同步顶栏显示
+ * @param {Record<string, unknown>} patch
+ */
+export function updateUserSession(patch) {
+    const session = getUserSession();
+    if (!session) return null;
+    const next = { ...session, ...patch };
+    if (patch.real_name !== undefined || patch.username !== undefined) {
+        next.name = next.real_name || next.username || next.name;
+    }
+    localStorage.setItem(SESSION_KEY, JSON.stringify(next));
+    syncHeaderUser();
+    return next;
+}
+
+/**
  * 清除登录状态并回到登录页
  */
 export function clearUserSession() {
@@ -92,14 +108,33 @@ export function syncHeaderUser() {
     const name = getDisplayName(session);
     const meta = session?.department || session?.username || '';
     const initial = getDisplayInitial(name);
+    const avatarUrl = typeof session?.avatar === 'string' ? session.avatar : '';
+    const hasCustomAvatar = avatarUrl.startsWith('/uploads/avatars/');
 
     const avatarInitial = document.getElementById('userAvatarInitial');
     const menuAvatar = document.getElementById('userMenuAvatar');
     const menuName = document.getElementById('userMenuName');
     const menuRole = document.getElementById('userMenuRole');
 
-    if (avatarInitial) avatarInitial.textContent = initial;
-    if (menuAvatar) menuAvatar.textContent = initial;
+    if (avatarInitial) {
+        if (hasCustomAvatar) {
+            avatarInitial.innerHTML = `<img src="${avatarUrl.replace(/"/g, '')}" alt="" class="w-full h-full object-cover rounded-full">`;
+            avatarInitial.classList.add('w-full', 'h-full', 'overflow-hidden', 'flex', 'items-center', 'justify-center');
+        } else {
+            avatarInitial.textContent = initial;
+        }
+    }
+
+    if (menuAvatar) {
+        if (hasCustomAvatar) {
+            menuAvatar.innerHTML = `<img src="${avatarUrl.replace(/"/g, '')}" alt="" class="w-full h-full object-cover rounded-full">`;
+            menuAvatar.classList.add('overflow-hidden', 'p-0');
+        } else {
+            menuAvatar.textContent = initial;
+            menuAvatar.classList.remove('p-0');
+        }
+    }
+
     if (menuName) menuName.textContent = name;
     if (menuRole) menuRole.textContent = meta || '—';
 }

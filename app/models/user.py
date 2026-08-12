@@ -22,8 +22,8 @@ class User(AuditUserMixin, Base):
     avatar = Column(
         String(255),
         nullable=True,
-        default="/static/avatars/default.png",
-        comment="头像路径/URL",
+        default=None,
+        comment="头像相对路径，如 /uploads/avatars/xxx.png；空则前端显示首字母",
     )
 
     is_active = Column(Boolean, default=True, nullable=False, comment="启用状态")

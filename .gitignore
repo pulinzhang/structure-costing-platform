@@ -42,3 +42,6 @@ logs/
 #uploads
 uploads/*
 !uploads/.gitkeep
+!uploads/avatars/
+uploads/avatars/*
+!uploads/avatars/.gitkeep
