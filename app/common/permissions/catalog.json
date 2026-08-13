@@ -58,7 +58,8 @@
             { "code": "op:stamping-tonnage:create", "label": "新增", "type": "op" },
             { "code": "op:stamping-tonnage:update", "label": "编辑", "type": "op" },
             { "code": "op:stamping-tonnage:delete", "label": "删除", "type": "op" },
-            { "code": "op:stamping-tonnage:copy", "label": "复制年度模板", "type": "op" }
+            { "code": "op:stamping-tonnage:copy", "label": "复制年度模板", "type": "op" },
+            { "code": "op:stamping-tonnage:export", "label": "导出", "type": "op" }
           ]
         },
         {

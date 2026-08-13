@@ -345,7 +345,8 @@ root
 │   │   ├── op:stamping-tonnage:create
 │   │   ├── op:stamping-tonnage:update
 │   │   ├── op:stamping-tonnage:delete
-│   │   └── op:stamping-tonnage:copy
+│   │   ├── op:stamping-tonnage:copy
+│   │   └── op:stamping-tonnage:export
 │   ├── menu:stamping-process-fee-calc
 │   │   ├── op:stamping-process-fee-calc:view
 │   │   ├── op:stamping-process-fee-calc:run
@@ -450,7 +451,7 @@ root
 | dashboard | `view` | 查看 KPI / 统计 |
 | stamping-upload | `view` / `upload` | 进入页；「上传」 |
 | stamping-parts | `view` / `update` / `delete` | 查询详情；保存工序；删除零件 |
-| stamping-tonnage | `view` / `create` / `update` / `delete` / `copy` | 查询；新增；编辑；删除；复制年度模板 |
+| stamping-tonnage | `view` / `create` / `update` / `delete` / `copy` / `export` | 查询；新增；编辑；删除；复制年度模板；导出 Excel |
 | stamping-process-fee-calc | `view` / `run` / `delete` | 查看；执行计算；删除计算日志 |
 | stamping-process-fee | `view` / `update` / `delete` / `approve` / `reverse` / `export` | 查询；手工调整；批量删除；审核；反审核；导出 |
 | scrap-price | `view` / `create` / `update` / `delete` / `copy` / `export` | 查询；整月保存；删除本月；复制月度；导出 Excel |

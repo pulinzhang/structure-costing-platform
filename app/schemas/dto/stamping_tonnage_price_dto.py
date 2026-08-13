@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field
 class StampingTonnagePriceCreate(BaseModel):
     """冲次费率创建请求"""
 
+    location: str = Field(..., min_length=1, max_length=50, description="采购基地")
     year: int = Field(..., ge=2000, le=2100, description="年份")
     tonnage: int = Field(..., ge=1, description="压机吨位(T)")
     price_per_stroke: float = Field(..., ge=0, description="单冲次价格(元)")
@@ -24,6 +25,7 @@ class StampingTonnagePriceUpdate(BaseModel):
 class StampingTonnagePriceQuery(BaseModel):
     """冲次费率查询参数"""
 
+    location: str | None = Field(None, description="采购基地")
     year: int | None = Field(None, description="年份")
     page: int = Field(1, ge=1, description="页码")
     size: int = Field(100, ge=1, le=500, description="每页条数")
@@ -36,7 +38,8 @@ class StampingTonnagePriceBulkCreate(BaseModel):
 
 
 class StampingTonnagePriceCopyTemplate(BaseModel):
-    """从指定年份复制价格模板"""
+    """从指定年份复制价格模板（同一基地内）"""
 
+    location: str = Field(..., min_length=1, max_length=50, description="采购基地")
     source_year: int = Field(..., ge=2000, le=2100, description="源年份")
     target_year: int = Field(..., ge=2000, le=2100, description="目标年份")

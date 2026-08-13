@@ -25,7 +25,7 @@ import {
 import { pageConfig as dashboardPage }      from './features/dashboard/index.js';
 import { pageConfig as stampingUploadPage } from './features/stamping/upload/index.js?v=35';
 import { pageConfig as stampingPartsPage }  from './features/stamping/parts/index.js?v=2';
-import { pageConfig as stampingTonnagePage } from './features/stamping/tonnage/index.js?v=2';
+import { pageConfig as stampingTonnagePage } from './features/stamping/tonnage/index.js?v=4';
 import { pageConfig as stampingProcessFeeCalcPage } from './features/stamping/process-fee-calc/index.js?v=12';
 import { pageConfig as stampingProcessFeePage } from './features/stamping/process-fee/index.js?v=11';
 import { pageConfig as steelPriceListPage }   from './features/steel-price/list/index.js?v=42';

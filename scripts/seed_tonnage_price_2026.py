@@ -1,7 +1,8 @@
 """
 种子数据脚本：把 2026 年冲压冲次费率写入数据库
+- 默认基地：青岛
 - 价格按四舍五入保留 3 位小数
-- 默认幂等（已存在 (year, tonnage) 跳过）
+- 默认幂等（已存在 (location, year, tonnage) 跳过）
 - --overwrite 时覆盖已有价格，并删除种子中不存在的吨位
 - --dry-run 只打印，不写入
 """
@@ -58,6 +59,7 @@ SEED_2026_RAW = [
 SEED_2026 = [(tonnage, _round3(price)) for tonnage, price in SEED_2026_RAW]
 
 YEAR = 2026
+LOCATION = "青岛"
 
 
 def make_session():
@@ -66,19 +68,22 @@ def make_session():
     return sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)()
 
 
-def existing_records(session, year):
+def existing_records(session, location, year):
     return (
         session.query(StampingTonnagePrice)
-        .filter(StampingTonnagePrice.year == year)
+        .filter(
+            StampingTonnagePrice.location == location,
+            StampingTonnagePrice.year == year,
+        )
         .order_by(StampingTonnagePrice.tonnage)
         .all()
     )
 
 
-def run(dry_run: bool, overwrite: bool):
+def run(dry_run: bool, overwrite: bool, location: str):
     session = make_session()
     try:
-        existing = existing_records(session, YEAR)
+        existing = existing_records(session, location, YEAR)
         existing_map = {r.tonnage: Decimal(str(r.price_per_stroke)) for r in existing}
 
         seed_map = dict(SEED_2026)
@@ -91,12 +96,12 @@ def run(dry_run: bool, overwrite: bool):
                     deleted.append(r.tonnage)
             if deleted:
                 session.query(StampingTonnagePrice).filter(
+                    StampingTonnagePrice.location == location,
                     StampingTonnagePrice.year == YEAR,
                     StampingTonnagePrice.tonnage.in_([t for t in deleted]),
                 ).delete(synchronize_session=False)
                 session.commit()
-            # overwrite 模式下已有记录也要更新，清空 map 后按插入/更新逻辑重走
-            existing = existing_records(session, YEAR)
+            existing = existing_records(session, location, YEAR)
             existing_map = {r.tonnage: Decimal(str(r.price_per_stroke)) for r in existing}
 
         for tonnage, price in seed_map.items():
@@ -104,7 +109,10 @@ def run(dry_run: bool, overwrite: bool):
             if old_price is None:
                 if not dry_run:
                     session.add(StampingTonnagePrice(
-                        year=YEAR, tonnage=tonnage, price_per_stroke=price,
+                        location=location,
+                        year=YEAR,
+                        tonnage=tonnage,
+                        price_per_stroke=price,
                     ))
                 inserted.append((tonnage, float(price)))
             elif old_price != price:
@@ -114,6 +122,7 @@ def run(dry_run: bool, overwrite: bool):
                     rec = (
                         session.query(StampingTonnagePrice)
                         .filter(
+                            StampingTonnagePrice.location == location,
                             StampingTonnagePrice.year == YEAR,
                             StampingTonnagePrice.tonnage == tonnage,
                         )
@@ -130,7 +139,10 @@ def run(dry_run: bool, overwrite: bool):
             session.commit()
 
         mode = "DRY-RUN" if dry_run else "WRITE"
-        print(f"[{mode}] year={YEAR} seed_count={len(SEED_2026)} existing={len(existing)}")
+        print(
+            f"[{mode}] location={location} year={YEAR} "
+            f"seed_count={len(SEED_2026)} existing={len(existing)}"
+        )
         print(f"  inserted   ({len(inserted)}): {inserted}")
         print(f"  updated    ({len(updated)}):  {updated}")
         print(f"  skipped    ({len(skipped)}):  {skipped if len(skipped) <= 8 else skipped[:8] + ['...']}")
@@ -146,5 +158,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--overwrite", action="store_true")
+    parser.add_argument("--location", default=LOCATION, help="采购基地，默认青岛")
     args = parser.parse_args()
-    run(dry_run=args.dry_run, overwrite=args.overwrite)
+    run(dry_run=args.dry_run, overwrite=args.overwrite, location=args.location)

@@ -6,10 +6,12 @@
 - 零件加工费 = 各工序之和（保留 3 位小数）
 - 「摆剪」工序不使用冲压设备，加工费固定为 0（不查吨位）
 
+冲次费率匹配：年度相等 + 基地相等 + 吨位相等。
+
 合并/双槽工艺（工艺方法含「合并」或「双槽」）缺吨位时：
 - Excel 按顺序导入，上一零件为 id-1
 - 表示与上一零件共模同冲（一次冲次出两种件）
-- 继承上一零件对应工序的吨位再计算
+- 须与上一零件基地相同，才可继承上一零件对应工序的吨位再计算
 """
 
 from __future__ import annotations
@@ -93,7 +95,10 @@ class StampingProcessFeeService:
         vehicle_model: str | None = None,
         version: str | None = None,
     ) -> StampingProcessFeeCalcReadyVO:
-        rates = self.tonnage_repo.list_by_year(db, year)
+        if location:
+            rates = self.tonnage_repo.list_by_location_year(db, location, year)
+        else:
+            rates = self.tonnage_repo.list_by_year(db, year)
         parts = []
         if location and stamping_supplier:
             parts = self.part_repo.list_with_processes(
@@ -203,9 +208,11 @@ class StampingProcessFeeService:
             f"supplier={dto.stamping_supplier}"
         ]
         report(5, "加载冲次费率...")
-        rates = self.tonnage_repo.list_by_year(db, dto.year)
+        rates = self.tonnage_repo.list_by_location_year(db, dto.location, dto.year)
         if not rates:
-            raise BusinessException(f"年度 {dto.year} 无冲次费率数据，请先维护冲次费率")
+            raise BusinessException(
+                f"基地「{dto.location}」年度 {dto.year} 无冲次费率数据，请先维护冲次费率"
+            )
 
         rate_map: dict[int, Decimal] = {
             int(r.tonnage): Decimal(str(r.price_per_stroke)) for r in rates
@@ -634,7 +641,8 @@ class StampingProcessFeeService:
     ) -> int | str:
         """
         解析工序吨位。
-        缺吨位且工艺方法为合并/双槽时，继承上一零件(id-1)对应工序吨位。
+        缺吨位且工艺方法为合并/双槽时，继承上一零件(id-1)对应工序吨位；
+        上一零件须与当前零件基地相同。
         成功返回 int；失败返回原因字符串。
         """
         if process.tonnage is not None:
@@ -654,6 +662,17 @@ class StampingProcessFeeService:
                 f"当前工序 {process_label} 缺少吨位；"
                 f"工艺方法「{method_label}」应继承上一件，"
                 f"但找不到上一零件(id-1)"
+            )
+
+        current_location = (part.location or "").strip()
+        previous_location = (previous_part.location or "").strip()
+        if not current_location or current_location != previous_location:
+            prev_no = previous_part.part_number or str(previous_part.id)
+            return (
+                f"当前工序 {process_label} 缺少吨位；"
+                f"工艺方法「{method_label}」应继承上一件，"
+                f"但基地不一致（当前「{current_location or '(空)'}」，"
+                f"上一件 {prev_no} 为「{previous_location or '(空)'}」），不可继承"
             )
 
         previous_processes = list(previous_part.processes or [])
@@ -679,8 +698,10 @@ class StampingProcessFeeService:
             )
 
         logger.info(
-            "共模件继承吨位: part=%s method=%s process=%s from_part=%s from_process=%s tonnage=%s",
+            "共模件继承吨位: part=%s location=%s method=%s process=%s "
+            "from_part=%s from_process=%s tonnage=%s",
             part.part_number,
+            current_location,
             method_label,
             process_label,
             previous_part.part_number,
@@ -722,9 +743,12 @@ class StampingProcessFeeService:
             price = rate_map.get(tonnage)
             if price is None:
                 process_label = self._format_process_label(process)
+                location = (part.location or "").strip() or "(空)"
                 return self._build_failed_item(
                     part,
-                    f"当前工序 {process_label} 吨位 {tonnage}T 在 {year} 年无冲次费率",
+                    f"当前工序 {process_label} 吨位 {tonnage}T "
+                    f"在基地「{location}」{year} 年无冲次费率"
+                    f"（须年度、基地、吨位均匹配）",
                     process,
                 )
 

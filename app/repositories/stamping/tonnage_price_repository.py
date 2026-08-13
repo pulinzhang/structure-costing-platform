@@ -8,7 +8,7 @@ from typing import List, Optional, Dict, Any, Tuple
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
 
-from app.models import StampingTonnagePrice
+from app.models.stamping_tonnage_price import StampingTonnagePrice
 
 
 logger = logging.getLogger("repository.stamping")
@@ -21,14 +21,15 @@ class StampingTonnagePriceRepository:
         """根据 ID 查询单条记录"""
         return db.query(StampingTonnagePrice).filter(StampingTonnagePrice.id == id).first()
 
-    def get_by_year_tonnage(
-        self, db: Session, year: int, tonnage: int
+    def get_by_location_year_tonnage(
+        self, db: Session, location: str, year: int, tonnage: int
     ) -> Optional[StampingTonnagePrice]:
-        """根据年份和吨位查询记录"""
+        """根据基地、年份和吨位查询记录"""
         return (
             db.query(StampingTonnagePrice)
             .filter(
                 and_(
+                    StampingTonnagePrice.location == location,
                     StampingTonnagePrice.year == year,
                     StampingTonnagePrice.tonnage == tonnage,
                 )
@@ -36,43 +37,101 @@ class StampingTonnagePriceRepository:
             .first()
         )
 
+    def list_by_location_year(
+        self, db: Session, location: str, year: int
+    ) -> List[StampingTonnagePrice]:
+        """查询指定基地+年份的所有记录"""
+        return (
+            db.query(StampingTonnagePrice)
+            .filter(
+                and_(
+                    StampingTonnagePrice.location == location,
+                    StampingTonnagePrice.year == year,
+                )
+            )
+            .order_by(StampingTonnagePrice.tonnage)
+            .all()
+        )
+
     def list_by_year(self, db: Session, year: int) -> List[StampingTonnagePrice]:
-        """查询指定年份的所有记录"""
+        """查询指定年份的所有记录（跨基地）"""
         return (
             db.query(StampingTonnagePrice)
             .filter(StampingTonnagePrice.year == year)
-            .order_by(StampingTonnagePrice.tonnage)
+            .order_by(StampingTonnagePrice.location, StampingTonnagePrice.tonnage)
             .all()
         )
 
     def paginate(
         self,
         db: Session,
+        location: Optional[str] = None,
         year: Optional[int] = None,
         skip: int = 0,
         limit: int = 100,
     ) -> Tuple[List[StampingTonnagePrice], int]:
         """分页查询"""
         q = db.query(StampingTonnagePrice)
+        if location is not None:
+            q = q.filter(StampingTonnagePrice.location == location)
         if year is not None:
             q = q.filter(StampingTonnagePrice.year == year)
 
         total = q.count()
         records = (
-            q.order_by(StampingTonnagePrice.year, StampingTonnagePrice.tonnage)
+            q.order_by(
+                StampingTonnagePrice.location,
+                StampingTonnagePrice.year,
+                StampingTonnagePrice.tonnage,
+            )
             .offset(skip)
             .limit(limit)
             .all()
         )
         return records, total
 
+    def list_for_export(
+        self,
+        db: Session,
+        location: Optional[str] = None,
+        year: Optional[int] = None,
+    ) -> List[StampingTonnagePrice]:
+        """按筛选条件导出全量记录（不分页）"""
+        q = db.query(StampingTonnagePrice)
+        if location is not None:
+            q = q.filter(StampingTonnagePrice.location == location)
+        if year is not None:
+            q = q.filter(StampingTonnagePrice.year == year)
+        return (
+            q.order_by(
+                StampingTonnagePrice.location,
+                StampingTonnagePrice.year,
+                StampingTonnagePrice.tonnage,
+            )
+            .all()
+        )
+
     def list_all(self, db: Session) -> List[StampingTonnagePrice]:
         """查询所有记录"""
         return (
             db.query(StampingTonnagePrice)
-            .order_by(StampingTonnagePrice.year, StampingTonnagePrice.tonnage)
+            .order_by(
+                StampingTonnagePrice.location,
+                StampingTonnagePrice.year,
+                StampingTonnagePrice.tonnage,
+            )
             .all()
         )
+
+    def get_distinct_locations(self, db: Session) -> List[str]:
+        """获取所有基地列表"""
+        results = (
+            db.query(StampingTonnagePrice.location)
+            .distinct()
+            .order_by(StampingTonnagePrice.location)
+            .all()
+        )
+        return [r[0] for r in results]
 
     def get_distinct_years(self, db: Session) -> List[int]:
         """获取所有年份列表"""
@@ -100,7 +159,13 @@ class StampingTonnagePriceRepository:
         db.add(record)
         db.commit()
         db.refresh(record)
-        logger.info(f"创建冲次费率: year={data.get('year')}, tonnage={data.get('tonnage')}, id={record.id}")
+        logger.info(
+            "创建冲次费率: location=%s, year=%s, tonnage=%s, id=%s",
+            data.get("location"),
+            data.get("year"),
+            data.get("tonnage"),
+            record.id,
+        )
         return record
 
     def bulk_create(self, db: Session, data_list: List[Dict[str, Any]]) -> List[StampingTonnagePrice]:
@@ -110,7 +175,7 @@ class StampingTonnagePriceRepository:
         db.commit()
         for record in records:
             db.refresh(record)
-        logger.info(f"批量创建冲次费率: {len(records)} 条")
+        logger.info("批量创建冲次费率: %s 条", len(records))
         return records
 
     def update(
@@ -125,7 +190,7 @@ class StampingTonnagePriceRepository:
                 setattr(record, key, value)
         db.commit()
         db.refresh(record)
-        logger.info(f"更新冲次费率: id={id}")
+        logger.info("更新冲次费率: id=%s", id)
         return record
 
     def delete(self, db: Session, id: int) -> bool:
@@ -135,16 +200,21 @@ class StampingTonnagePriceRepository:
             return False
         db.delete(record)
         db.commit()
-        logger.info(f"删除冲次费率: id={id}")
+        logger.info("删除冲次费率: id=%s", id)
         return True
 
-    def delete_by_year(self, db: Session, year: int) -> int:
-        """删除指定年份的所有记录"""
+    def delete_by_location_year(self, db: Session, location: str, year: int) -> int:
+        """删除指定基地+年份的所有记录"""
         count = (
             db.query(StampingTonnagePrice)
-            .filter(StampingTonnagePrice.year == year)
+            .filter(
+                and_(
+                    StampingTonnagePrice.location == location,
+                    StampingTonnagePrice.year == year,
+                )
+            )
             .delete(synchronize_session=False)
         )
         db.commit()
-        logger.info(f"删除年份 {year} 的冲次费率: {count} 条")
+        logger.info("删除基地 %s 年份 %s 的冲次费率: %s 条", location, year, count)
         return count

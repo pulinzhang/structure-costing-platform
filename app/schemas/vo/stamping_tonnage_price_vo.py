@@ -15,8 +15,10 @@ def decimal_to_float(value: Union[Decimal, float, None]) -> float | None:
 
 
 class StampingTonnagePriceResponse(BaseModel):
-    """冲次费率响应 VO（对应 stamping_tonnage_prices 表）"""
+    """冲次费率响应 VO（对应 stamping_tonnage_price 表）"""
+
     id: int
+    location: str
     year: int
     tonnage: int
     price_per_stroke: float
@@ -38,6 +40,7 @@ class StampingTonnagePriceResponse(BaseModel):
 
 class StampingTonnagePriceBulkCreateResponse(BaseModel):
     """冲次费率批量创建响应 VO"""
+
     created: list[StampingTonnagePriceResponse]
     skipped: list[StampingTonnagePriceResponse]
     failed: list[str]
@@ -48,6 +51,8 @@ class StampingTonnagePriceBulkCreateResponse(BaseModel):
 
 class StampingTonnagePriceCopyYearResponse(BaseModel):
     """冲次费率跨年复制响应 VO"""
+
+    location: str
     source_year: int
     target_year: int
     created_count: int

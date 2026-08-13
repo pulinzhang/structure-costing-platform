@@ -24,6 +24,10 @@ export function tonnagePriceTemplate() {
                         <h2 class="text-[12px] font-semibold text-[#c8c8c8] tracking-wide">冲次费率</h2>
                     </div>
                     <div class="flex items-center gap-2">
+                        <button id="btnExportTonnagePrice" class="inline-flex items-center gap-1.5 bg-transparent text-[#888888] border border-[#2c2c2c] px-3 py-1.5 text-[11px] font-medium rounded-sm hover:border-[#d32f2f] hover:text-[#d32f2f] transition-all duration-150">
+                            ${window.svgIcon('download', 'w-3 h-3')}
+                            导出 Excel
+                        </button>
                         <button id="btnCopyTemplate" class="inline-flex items-center gap-1.5 bg-transparent text-[#888888] border border-[#2c2c2c] px-3 py-1.5 text-[11px] font-medium rounded-sm hover:border-[#d32f2f] hover:text-[#d32f2f] transition-all duration-150">
                             ${window.svgIcon('copy', 'w-3 h-3')}
                             复制模板
@@ -40,6 +44,14 @@ export function tonnagePriceTemplate() {
                      style="background: linear-gradient(180deg, #181818 0%, #161616 100%);">
                     <!-- 左侧：筛选控件 -->
                     <div class="flex items-center gap-3">
+                        <div class="flex items-center gap-1.5">
+                            <label class="text-[9px] font-semibold text-[#484848] uppercase tracking-[0.12em] whitespace-nowrap">基地</label>
+                            <select id="locationFilter"
+                                    class="w-36 h-7 pl-2.5 pr-7 text-[11px] bg-[#0d0d0d] border border-[#272727] text-[#909090] appearance-none cursor-pointer focus:outline-none focus:border-[#ff5252] transition-all rounded-sm">
+                                <option value="">全部</option>
+                            </select>
+                        </div>
+
                         <div class="flex items-center gap-1.5">
                             <label class="text-[9px] font-semibold text-[#484848] uppercase tracking-[0.12em] whitespace-nowrap">年份</label>
                             <select id="yearFilter"
@@ -61,6 +73,7 @@ export function tonnagePriceTemplate() {
                     <table class="w-full">
                         <thead>
                             <tr style="background: linear-gradient(180deg, #111111 0%, #0e0e0e 100%); border-bottom: 1px solid #222222;">
+                                <th class="px-5 py-2.5 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">基地</th>
                                 <th class="px-5 py-2.5 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">年份</th>
                                 <th class="px-5 py-2.5 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">压机吨位 (T)</th>
                                 <th class="px-5 py-2.5 text-right text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">单冲次价格 (元)</th>
@@ -120,6 +133,18 @@ export function tonnagePriceTemplate() {
             <div class="flex-1 min-h-0 overflow-y-auto overscroll-contain" id="editDrawerContent" style="scrollbar-width: thin; scrollbar-color: #3a3a3a #1a1a1a;">
                 <form id="editForm" class="p-6 space-y-5">
                     <input type="hidden" id="editRecordId" value="">
+
+                    <div>
+                        <label class="text-[10px] font-semibold text-[#616161] uppercase tracking-[0.1em] mb-1.5 block">基地 <span class="text-[#d32f2f]">*</span></label>
+                        <select id="editLocation" required
+                                class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#9e9e9e] appearance-none cursor-pointer focus:outline-none focus:border-[#ff5252] transition-all rounded">
+                            <option value="">请选择基地</option>
+                            <option value="大连">大连</option>
+                            <option value="芜湖">芜湖</option>
+                            <option value="鄂尔多斯">鄂尔多斯</option>
+                            <option value="青岛">青岛</option>
+                        </select>
+                    </div>
 
                     <div>
                         <label class="text-[10px] font-semibold text-[#616161] uppercase tracking-[0.1em] mb-1.5 block">年份 <span class="text-[#d32f2f]">*</span></label>
@@ -185,6 +210,18 @@ export function tonnagePriceTemplate() {
             <div class="flex-1 min-h-0 overflow-y-auto overscroll-contain" id="copyDrawerContent" style="scrollbar-width: thin; scrollbar-color: #3a3a3a #1a1a1a;">
                 <form id="copyForm" class="p-6 space-y-5">
                     <div>
+                        <label class="text-[10px] font-semibold text-[#616161] uppercase tracking-[0.1em] mb-1.5 block">基地 <span class="text-[#d32f2f]">*</span></label>
+                        <select id="copyLocation" required
+                                class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#9e9e9e] appearance-none cursor-pointer focus:outline-none focus:border-[#ff5252] transition-all rounded">
+                            <option value="">请选择基地</option>
+                            <option value="大连">大连</option>
+                            <option value="芜湖">芜湖</option>
+                            <option value="鄂尔多斯">鄂尔多斯</option>
+                            <option value="青岛">青岛</option>
+                        </select>
+                    </div>
+
+                    <div>
                         <label class="text-[10px] font-semibold text-[#616161] uppercase tracking-[0.1em] mb-1.5 block">源年份 <span class="text-[#d32f2f]">*</span></label>
                         <select id="sourceYear" required
                                 class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#9e9e9e] appearance-none cursor-pointer focus:outline-none focus:border-[#ff5252] transition-all rounded">
@@ -206,7 +243,7 @@ export function tonnagePriceTemplate() {
                     <div class="bg-[#0c0c0c] border border-[#1a1a1a] rounded p-3">
                         <p class="text-[11px] text-[#616161]">
                             <span class="text-[#f57f17]">提示：</span>
-                            复制操作将<strong class="text-[#9e9e9e]">覆盖</strong>目标年份的现有数据，请谨慎操作。
+                            复制仅作用于所选基地，将<strong class="text-[#9e9e9e]">覆盖</strong>该基地目标年份的现有数据，请谨慎操作。
                         </p>
                     </div>
                 </form>
@@ -281,6 +318,7 @@ export function renderTableRows(records) {
         <tr class="group transition-colors duration-150 cursor-default ${isEven ? '' : ''}"
             data-id="${esc(record.id)}"
             style="${isEven ? 'background: rgba(255,255,255,0.012);' : ''}">
+            <td class="px-5 py-2.5 text-[11px] text-[#b0b0b0] whitespace-nowrap font-medium tracking-wide border-b border-[#1d1d1d]">${esc(record.location)}</td>
             <td class="px-5 py-2.5 text-[11px] text-[#686868] whitespace-nowrap font-mono tracking-wide border-b border-[#1d1d1d]">${esc(record.year)}</td>
             <td class="px-5 py-2.5 text-[11px] text-[#b0b0b0] whitespace-nowrap font-medium tracking-wide border-b border-[#1d1d1d]">${esc(record.tonnage)} T</td>
             <td class="px-5 py-2.5 text-[11px] text-right font-mono tabular-nums text-[#d32f2f] whitespace-nowrap tracking-wide border-b border-[#1d1d1d]">

@@ -32,11 +32,12 @@ class Perm:
     STAMPING_TONNAGE_UPDATE = "op:stamping-tonnage:update"  # 编辑
     STAMPING_TONNAGE_DELETE = "op:stamping-tonnage:delete"  # 删除
     STAMPING_TONNAGE_COPY = "op:stamping-tonnage:copy"  # 复制年度模板
+    STAMPING_TONNAGE_EXPORT = "op:stamping-tonnage:export"  # 导出
 
     MENU_STAMPING_PROCESS_FEE_CALC = "menu:stamping-process-fee-calc"  # 冲压加工费计算
     STAMPING_PROCESS_FEE_CALC_VIEW = "op:stamping-process-fee-calc:view"  # 查看
     STAMPING_PROCESS_FEE_CALC_RUN = "op:stamping-process-fee-calc:run"  # 计算
-    STAMPING_PROCESS_FEE_CALC_DELETE = "op:stamping-process-fee-calc:delete"  # 删除计算日志
+    STAMPING_PROCESS_FEE_CALC_DELETE = "op:stamping-process-fee-calc:delete"  # 删除日志
 
     MENU_STAMPING_PROCESS_FEE = "menu:stamping-process-fee"  # 冲压加工费列表
     STAMPING_PROCESS_FEE_VIEW = "op:stamping-process-fee:view"  # 查询

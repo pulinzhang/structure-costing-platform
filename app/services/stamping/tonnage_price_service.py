@@ -31,12 +31,19 @@ class StampingTonnagePriceService:
     def list_by_year(
         self, db: Session, year: int
     ) -> List[StampingTonnagePriceResponse]:
-        """获取指定年份的所有冲次费率"""
+        """获取指定年份的所有冲次费率（跨基地）"""
         records = self.repository.list_by_year(db, year)
         return [StampingTonnagePriceResponse.model_validate(r) for r in records]
 
+    def list_by_location_year(
+        self, db: Session, location: str, year: int
+    ) -> List[StampingTonnagePriceResponse]:
+        """获取指定基地+年份的所有冲次费率"""
+        records = self.repository.list_by_location_year(db, location, year)
+        return [StampingTonnagePriceResponse.model_validate(r) for r in records]
+
     def list_all(self, db: Session) -> List[StampingTonnagePriceResponse]:
-        """获取所有冲次费率（按年份、吨位排序）"""
+        """获取所有冲次费率（按基地、年份、吨位排序）"""
         records = self.repository.list_all(db)
         return [StampingTonnagePriceResponse.model_validate(r) for r in records]
 
@@ -47,15 +54,17 @@ class StampingTonnagePriceService:
         skip = (query.page - 1) * query.size
         records, total = self.repository.paginate(
             db,
+            location=query.location,
             year=query.year,
             skip=skip,
             limit=query.size,
         )
         rows = [StampingTonnagePriceResponse.model_validate(r) for r in records]
 
+        locations = self.repository.get_distinct_locations(db)
         years = self.repository.get_distinct_years(db)
         tonnages = self.repository.get_distinct_tonnages(db)
-        filters = {"years": years, "tonnages": tonnages}
+        filters = {"locations": locations, "years": years, "tonnages": tonnages}
         return rows, total, filters
 
     def get_by_id(self, db: Session, id: int) -> Optional[StampingTonnagePriceResponse]:
@@ -78,7 +87,9 @@ class StampingTonnagePriceService:
             return StampingTonnagePriceResponse.model_validate(record), None
         except IntegrityError:
             db.rollback()
-            error_msg = f"该年份({data.year})和吨位({data.tonnage})的记录已存在"
+            error_msg = (
+                f"该基地({data.location})、年份({data.year})和吨位({data.tonnage})的记录已存在"
+            )
             logger.warning(error_msg)
             return None, error_msg
         except Exception as e:
@@ -95,7 +106,6 @@ class StampingTonnagePriceService:
         """
         批量创建冲次费率记录。
         返回 (成功列表, 跳过列表, 失败错误信息列表)。
-        注意：跳过的记录不含详情数据，仅记录错误原因。
         """
         created: List[StampingTonnagePriceResponse] = []
         skipped: List[StampingTonnagePriceResponse] = []
@@ -109,6 +119,7 @@ class StampingTonnagePriceService:
                 skipped.append(
                     StampingTonnagePriceResponse(
                         id=0,
+                        location=item.location,
                         year=item.year,
                         tonnage=item.tonnage,
                         price_per_stroke=0.0,
@@ -148,22 +159,23 @@ class StampingTonnagePriceService:
     def copy_from_year(
         self,
         db: Session,
+        location: str,
         source_year: int,
         target_year: int,
         current_user: UserVO,
     ) -> Tuple[int, int, List[str]]:
         """
-        从源年份复制价格到目标年份。
+        在同一基地下，从源年份复制价格到目标年份。
         返回 (创建数量, 跳过数量, 失败错误信息列表)。
         """
         audit = audit_create(current_user)
-        source_records = self.repository.list_by_year(db, source_year)
+        source_records = self.repository.list_by_location_year(db, location, source_year)
         if not source_records:
-            return 0, 0, [f"源年份 {source_year} 没有数据"]
+            return 0, 0, [f"基地「{location}」源年份 {source_year} 没有数据"]
 
-        target_records = self.repository.list_by_year(db, target_year)
+        target_records = self.repository.list_by_location_year(db, location, target_year)
         if target_records:
-            self.repository.delete_by_year(db, target_year)
+            self.repository.delete_by_location_year(db, location, target_year)
 
         created = 0
         skipped = 0
@@ -172,6 +184,7 @@ class StampingTonnagePriceService:
         for source in source_records:
             try:
                 self.repository.create(db, {
+                    "location": location,
                     "year": target_year,
                     "tonnage": source.tonnage,
                     "price_per_stroke": source.price_per_stroke,
@@ -186,10 +199,19 @@ class StampingTonnagePriceService:
                 failed.append(f"吨位 {source.tonnage}: {str(e)}")
 
         logger.info(
-            f"从 {source_year} 复制到 {target_year}: "
-            f"创建 {created}, 跳过 {skipped}, 失败 {len(failed)}"
+            "基地 %s 从 %s 复制到 %s: 创建 %s, 跳过 %s, 失败 %s",
+            location,
+            source_year,
+            target_year,
+            created,
+            skipped,
+            len(failed),
         )
         return created, skipped, failed
+
+    def get_locations(self, db: Session) -> List[str]:
+        """获取所有基地列表"""
+        return self.repository.get_distinct_locations(db)
 
     def get_years(self, db: Session) -> List[int]:
         """获取所有年份列表"""
