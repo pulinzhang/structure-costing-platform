@@ -8,7 +8,9 @@ import {
     renderScrapRows,
     renderMonthChips,
     fmtTelemetry,
-} from './template.js?v=9';
+    fmtPrice,
+    parsePriceInput,
+} from './template.js?v=15';
 
 const API_BASE = '/api/stamping/scrap-prices';
 const DRAWER_ANIMATION_MS = 300;
@@ -132,6 +134,39 @@ function setMoreMenuOpen(isOpen) {
     menu.classList.toggle('hidden', !isOpen);
 }
 
+function setYearMenuOpen(isOpen) {
+    const menu = document.getElementById('scrapYearMenu');
+    const trigger = document.getElementById('scrapYearTrigger');
+    if (!menu || !trigger) return;
+    menu.classList.toggle('hidden', !isOpen);
+    trigger.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+}
+
+/** 同步深色年度选择器与隐藏 select */
+function syncYearPicker() {
+    const yearSelect = document.getElementById('scrapYearSelect');
+    const label = document.getElementById('scrapYearLabel');
+    const menu = document.getElementById('scrapYearMenu');
+    if (!yearSelect || !label || !menu) return;
+
+    label.textContent = String(scrapState.year);
+    yearSelect.value = String(scrapState.year);
+
+    const itemClass =
+        'w-full px-3 py-1.5 text-left text-[12px] font-mono tabular-nums transition-colors ';
+    const idleClass = 'text-[#9e9e9e] hover:bg-[#1e1e1e] hover:text-[#ffffff]';
+    const activeClass = 'bg-[#1e1e1e] text-[#ffffff]';
+
+    menu.innerHTML = Array.from(yearSelect.options)
+        .map((opt) => {
+            const y = Number(opt.value);
+            const isActive = y === scrapState.year;
+            return `<button type="button" role="option" data-year="${y}" aria-selected="${isActive}"
+                class="${itemClass}${isActive ? activeClass : idleClass}">${y}</button>`;
+        })
+        .join('');
+}
+
 function applyPermissionUi() {
     const canSave =
         canOp('op:scrap-price:create') || canOp('op:scrap-price:update');
@@ -214,6 +249,8 @@ function fillYearMonthSelects() {
                 `<option value="${m}" ${m === scrapState.month ? 'selected' : ''}>${m} 月</option>`
         )
         .join('');
+
+    syncYearPicker();
 }
 
 function renderChips() {
@@ -231,8 +268,9 @@ function recalcRowNet(rowEl) {
     const netEl = rowEl.querySelector('.scrap-net');
     if (!marketInput || !deductionInput || !netEl) return;
 
-    const market = parseFloat(marketInput.value);
-    const deduction = parseFloat(deductionInput.value || '0');
+    const market = parsePriceInput(marketInput.value);
+    const deductionRaw = deductionInput.value?.trim() ?? '';
+    const deduction = deductionRaw === '' ? 0 : parsePriceInput(deductionRaw);
     if (Number.isNaN(market) || Number.isNaN(deduction)) {
         netEl.textContent = '—';
         return;
@@ -240,12 +278,88 @@ function recalcRowNet(rowEl) {
     netEl.textContent = fmtTelemetry(market - deduction);
 }
 
+/** 录入中只保留数字与最多一个小数点，小数最多 2 位 */
+function sanitizePriceTyping(raw) {
+    let cleaned = String(raw ?? '').replace(/[^\d.]/g, '');
+    const dotIndex = cleaned.indexOf('.');
+    if (dotIndex !== -1) {
+        cleaned =
+            cleaned.slice(0, dotIndex + 1) +
+            cleaned.slice(dotIndex + 1).replace(/\./g, '');
+        const [integerPart, fractionPart = ''] = cleaned.split('.');
+        cleaned = `${integerPart}.${fractionPart.slice(0, 2)}`;
+    }
+    return cleaned;
+}
+
+function applyPriceTypingSanitize(input) {
+    const before = input.value;
+    const cleaned = sanitizePriceTyping(before);
+    if (cleaned === before) return;
+    const cursor = input.selectionStart;
+    input.value = cleaned;
+    if (typeof cursor === 'number') {
+        const delta = before.length - cleaned.length;
+        const nextPos = Math.max(0, cursor - delta);
+        input.setSelectionRange(nextPos, nextPos);
+    }
+}
+
+function formatPriceFieldOnBlur(input) {
+    const raw = input.value?.trim() ?? '';
+    if (raw === '' || raw === '.') {
+        input.value = '';
+        return;
+    }
+    const n = parsePriceInput(raw);
+    if (Number.isNaN(n) || n < 0) {
+        input.value = '';
+        showToast('请输入有效金额（仅数字）', 'warning');
+        return;
+    }
+    input.value = fmtPrice(n);
+}
+
+function formatPriceFieldOnFocus(input) {
+    const n = parsePriceInput(input.value);
+    if (Number.isNaN(n)) return;
+    // 编辑时去掉千分位，保留两位小数，便于输入
+    input.value = n.toFixed(2);
+}
+
 function bindRowInputEvents() {
     const tbody = document.getElementById('scrapPriceTableBody');
     if (!tbody) return;
     tbody.querySelectorAll('tr[data-location]').forEach((rowEl) => {
         rowEl.querySelectorAll('.scrap-market, .scrap-deduction').forEach((input) => {
-            input.addEventListener('input', () => recalcRowNet(rowEl));
+            input.addEventListener('beforeinput', (e) => {
+                if (e.inputType === 'insertText' && e.data && /[^\d.]/.test(e.data)) {
+                    e.preventDefault();
+                }
+            });
+            input.addEventListener('focus', () => formatPriceFieldOnFocus(input));
+            input.addEventListener('blur', () => {
+                formatPriceFieldOnBlur(input);
+                recalcRowNet(rowEl);
+            });
+            input.addEventListener('input', () => {
+                applyPriceTypingSanitize(input);
+                recalcRowNet(rowEl);
+            });
+            input.addEventListener('paste', (e) => {
+                e.preventDefault();
+                const text = e.clipboardData?.getData('text') ?? '';
+                const cleaned = sanitizePriceTyping(text);
+                const start = input.selectionStart ?? input.value.length;
+                const end = input.selectionEnd ?? input.value.length;
+                const next = sanitizePriceTyping(
+                    input.value.slice(0, start) + cleaned + input.value.slice(end)
+                );
+                input.value = next;
+                const pos = Math.min(start + cleaned.length, next.length);
+                input.setSelectionRange(pos, pos);
+                recalcRowNet(rowEl);
+            });
         });
     });
 }
@@ -267,8 +381,9 @@ function collectItemsFromDom() {
             errors.push(`${location}: 请填写大盘价`);
             return;
         }
-        const market_price = Number(marketRaw);
-        const deduction_fee = deductionRaw === '' ? 0 : Number(deductionRaw);
+        const market_price = parsePriceInput(marketRaw);
+        const deduction_fee =
+            deductionRaw === '' ? 0 : parsePriceInput(deductionRaw);
         if (Number.isNaN(market_price) || market_price < 0) {
             errors.push(`${location}: 大盘价无效`);
             return;
@@ -469,6 +584,33 @@ function bindEvents() {
 
     document.getElementById('scrapYearSelect')?.addEventListener('change', async () => {
         readSelectorsIntoState();
+        syncYearPicker();
+        await loadMonthList();
+        await loadMonthSheet();
+    });
+
+    document.getElementById('scrapYearTrigger')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        setMoreMenuOpen(false);
+        const menu = document.getElementById('scrapYearMenu');
+        const isOpen = menu && !menu.classList.contains('hidden');
+        setYearMenuOpen(!isOpen);
+    });
+
+    document.getElementById('scrapYearMenu')?.addEventListener('click', async (e) => {
+        const item = e.target.closest('[data-year]');
+        if (!item) return;
+        e.stopPropagation();
+        const year = Number(item.dataset.year);
+        if (!year || year === scrapState.year) {
+            setYearMenuOpen(false);
+            return;
+        }
+        scrapState.year = year;
+        const yearSelect = document.getElementById('scrapYearSelect');
+        if (yearSelect) yearSelect.value = String(year);
+        setYearMenuOpen(false);
+        syncYearPicker();
         await loadMonthList();
         await loadMonthSheet();
     });
@@ -490,15 +632,20 @@ function bindEvents() {
 
     document.getElementById('btnScrapMore')?.addEventListener('click', (e) => {
         e.stopPropagation();
+        setYearMenuOpen(false);
         const menu = document.getElementById('scrapMoreMenu');
         const isOpen = menu && !menu.classList.contains('hidden');
         setMoreMenuOpen(!isOpen);
     });
 
     document.addEventListener('click', (e) => {
-        const wrap = document.getElementById('scrapMoreWrap');
-        if (wrap && !wrap.contains(e.target)) {
+        const moreWrap = document.getElementById('scrapMoreWrap');
+        if (moreWrap && !moreWrap.contains(e.target)) {
             setMoreMenuOpen(false);
+        }
+        const yearPicker = document.getElementById('scrapYearPicker');
+        if (yearPicker && !yearPicker.contains(e.target)) {
+            setYearMenuOpen(false);
         }
     });
 

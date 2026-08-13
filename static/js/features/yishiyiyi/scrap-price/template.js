@@ -4,34 +4,52 @@
  * DOM ID / 字段 / 事件契约保持不变
  */
 
-/** 数字：千分位 + 2 位小数 */
-export function fmtTelemetry(value) {
-    if (value === null || value === undefined || value === '' || Number.isNaN(Number(value))) {
-        return '—';
-    }
-    return Number(value).toLocaleString('zh-CN', {
+/** 金额展示：千分位 + 固定 2 位小数（输入框用，空值返回 ''） */
+export function fmtPrice(value) {
+    if (value === null || value === undefined || value === '') return '';
+    const n = Number(value);
+    if (Number.isNaN(n)) return '';
+    return n.toLocaleString('zh-CN', {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
     });
 }
 
+/** 金额展示：千分位 + 固定 2 位小数（只读净价用，空/无效返回 —） */
+export function fmtTelemetry(value) {
+    if (value === null || value === undefined || value === '' || Number.isNaN(Number(value))) {
+        return '—';
+    }
+    return fmtPrice(value) || '—';
+}
+
+/** 解析金额输入：去掉千分位逗号后转 Number */
+export function parsePriceInput(raw) {
+    if (raw === null || raw === undefined) return NaN;
+    const cleaned = String(raw)
+        .trim()
+        .replace(/,/g, '')
+        .replace(/，/g, '')
+        .replace(/\s/g, '');
+    if (cleaned === '') return NaN;
+    return Number(cleaned);
+}
+
 const MONTH_LABELS = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
 
-/** 大盘价：次级数字 */
+/** 大盘价：次级数字，右对齐 */
 const MARKET_INPUT =
-    'scrap-cell-input w-full max-w-[8.5rem] ml-auto block bg-transparent border-0 border-b border-transparent ' +
+    'scrap-cell-input w-full max-w-[9.5rem] ml-auto block bg-transparent border-0 border-b border-transparent ' +
     'text-right text-[12px] font-mono tabular-nums text-[#9e9e9e] placeholder:text-[#333333] ' +
     'focus:outline-none focus:border-[#d32f2f] focus:text-[#c8c8c8] ' +
-    'disabled:opacity-40 transition-[border-color,color] duration-150 px-0 py-0.5 ' +
-    '[&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none';
+    'disabled:opacity-40 transition-[border-color,color] duration-150 px-0 py-0.5';
 
-/** 扣费：更弱，一眼看出是减项 */
+/** 扣费：更弱，一眼看出是减项，右对齐；聚焦下划线与大盘价同为红色 */
 const DEDUCTION_INPUT =
-    'scrap-cell-input w-full max-w-[7.5rem] ml-auto block bg-transparent border-0 border-b border-transparent ' +
+    'scrap-cell-input w-full max-w-[8.5rem] ml-auto block bg-transparent border-0 border-b border-transparent ' +
     'text-right text-[12px] font-mono tabular-nums text-[#555555] placeholder:text-[#2e2e2e] ' +
-    'focus:outline-none focus:border-[#616161] focus:text-[#8a8a8a] ' +
-    'disabled:opacity-40 transition-[border-color,color] duration-150 px-0 py-0.5 ' +
-    '[&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none';
+    'focus:outline-none focus:border-[#d32f2f] focus:text-[#c8c8c8] ' +
+    'disabled:opacity-40 transition-[border-color,color] duration-150 px-0 py-0.5';
 
 /** 备注：默认隐藏，悬停/聚焦/有内容时显现 */
 const REMARK_INPUT =
@@ -46,12 +64,10 @@ export function scrapPriceTemplate() {
 
             <!-- 顶栏 -->
             <div class="flex items-start justify-between gap-6 mb-10">
-                <div class="min-w-0">
-                    <h2 class="text-[14px] font-medium text-[#ffffff]">废料月度销售价</h2>
-                    <div class="mt-2 flex items-baseline gap-3 flex-wrap">
-                        <p id="scrapMonthBadge" class="text-[15px] font-mono tabular-nums text-[#c8c8c8] tracking-wide">—</p>
-                        <span id="scrapMonthStatus" class="text-[11px] text-[#484848] tracking-[0.12em]"></span>
-                    </div>
+                <div class="min-w-0 flex items-baseline gap-3 flex-wrap">
+                    <h2 class="text-[14px] font-medium text-[#ffffff] shrink-0">废料月度销售价</h2>
+                    <p id="scrapMonthBadge" class="text-[12px] font-mono tabular-nums text-[#616161] tracking-wide">—</p>
+                    <span id="scrapMonthStatus" class="text-[11px] text-[#484848]"></span>
                 </div>
                 <div class="flex items-center gap-2 shrink-0 pt-0.5">
                     <div class="relative" id="scrapMoreWrap">
@@ -88,9 +104,21 @@ export function scrapPriceTemplate() {
             <!-- 年份 + 月份时间轴 -->
             <div class="mb-10">
                 <div class="flex items-center gap-3 mb-4">
-                    <select id="scrapYearSelect"
-                            class="h-7 pl-0 pr-5 text-[13px] font-mono tabular-nums bg-transparent border-0 text-[#ffffff] appearance-none cursor-pointer focus:outline-none">
-                    </select>
+                    <!-- 原生 select 隐藏：供逻辑读写；可见层为深色自定义下拉 -->
+                    <select id="scrapYearSelect" class="hidden" aria-hidden="true" tabindex="-1"></select>
+                    <div class="relative" id="scrapYearPicker">
+                        <button type="button" id="scrapYearTrigger"
+                                class="inline-flex items-center gap-1.5 h-7 pl-0 pr-1 text-[13px] font-mono tabular-nums text-[#ffffff] hover:text-[#d32f2f] transition-colors focus:outline-none"
+                                aria-haspopup="listbox" aria-expanded="false" aria-controls="scrapYearMenu">
+                            <span id="scrapYearLabel">—</span>
+                            <svg class="w-3 h-3 text-[#616161] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+                        <div id="scrapYearMenu" role="listbox"
+                             class="hidden absolute left-0 top-full mt-1 z-[50] min-w-[88px] max-h-56 overflow-y-auto py-1 bg-[#161616] border border-[#2c2c2c] shadow-[0_8px_24px_rgba(0,0,0,0.55)]">
+                        </div>
+                    </div>
                     <select id="scrapMonthSelect" class="hidden" aria-hidden="true"></select>
                     <button id="btnScrapLoad" type="button" class="hidden" tabindex="-1" aria-hidden="true">加载</button>
                 </div>
@@ -232,11 +260,11 @@ export function renderScrapRows(items, { editable }) {
             const market =
                 item.market_price === null || item.market_price === undefined
                     ? ''
-                    : String(item.market_price);
+                    : fmtPrice(item.market_price);
             const deduction =
                 item.deduction_fee === null || item.deduction_fee === undefined
                     ? ''
-                    : String(item.deduction_fee);
+                    : fmtPrice(item.deduction_fee);
             const net =
                 item.net_price === null || item.net_price === undefined
                     ? '—'
@@ -257,16 +285,16 @@ export function renderScrapRows(items, { editable }) {
                             <span class="text-[15px] font-medium text-[#eeeeee] tracking-wide">${location}</span>
                         </div>
                     </td>
-                    <td class="py-5 px-4 align-middle">
-                        <input type="number" step="0.01" min="0"
+                    <td class="py-5 px-4 text-right align-middle">
+                        <input type="text" inputmode="decimal" autocomplete="off"
                                class="scrap-market ${MARKET_INPUT}"
                                data-field="market_price"
                                value="${market}"
                                placeholder="—"
                                ${disabledAttr}>
                     </td>
-                    <td class="py-5 px-4 align-middle">
-                        <input type="number" step="0.01" min="0"
+                    <td class="py-5 px-4 text-right align-middle">
+                        <input type="text" inputmode="decimal" autocomplete="off"
                                class="scrap-deduction ${DEDUCTION_INPUT}"
                                data-field="deduction_fee"
                                value="${deduction}"
@@ -274,7 +302,7 @@ export function renderScrapRows(items, { editable }) {
                                ${disabledAttr}>
                     </td>
                     <td class="py-5 px-4 text-right align-middle">
-                        <span class="scrap-net inline-block min-w-[6.5rem] text-[17px] leading-none font-mono font-semibold tabular-nums text-[#ffffff] tracking-wide">
+                        <span class="scrap-net inline-block min-w-[7rem] text-right text-[17px] leading-none font-mono font-semibold tabular-nums text-[#ffffff] tracking-wide">
                             ${net}
                         </span>
                     </td>
