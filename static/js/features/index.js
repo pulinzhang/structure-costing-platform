@@ -48,6 +48,16 @@ export const pageMeta = {
         en: 'TONNAGE_RATES_MATRIX',
         breadcrumb: ['冲压工程', '冲次费', '冲次费率列表'],
     },
+    'stamping-process-fee-calc': {
+        title: '冲压加工费计算',
+        en: 'PROCESS_FEE_CALC',
+        breadcrumb: ['冲压工程', '冲次费', '冲压加工费计算'],
+    },
+    'stamping-process-fee': {
+        title: '冲压加工费列表',
+        en: 'PROCESS_FEE_LIST',
+        breadcrumb: ['冲压工程', '冲次费', '冲压加工费列表'],
+    },
     'steel-price-list': {
         title: '钢材联动价格一览',
         en: 'STEEL_LINKAGE_LIST',

@@ -126,7 +126,13 @@ def get_cascade_filters(
     query: StampingCascadeFilterQuery = Depends(),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(
-        require_any_perm(Perm.STAMPING_PARTS_VIEW, Perm.STEEL_PRICE_CALC_VIEW, Perm.STEEL_PRICE_LIST_VIEW)
+        require_any_perm(
+            Perm.STAMPING_PARTS_VIEW,
+            Perm.STEEL_PRICE_CALC_VIEW,
+            Perm.STEEL_PRICE_LIST_VIEW,
+            Perm.STAMPING_PROCESS_FEE_CALC_VIEW,
+            Perm.STAMPING_PROCESS_FEE_VIEW,
+        )
     ),
 ) -> ApiResponse[StampingCascadeFilterOptionsVO]:
     """冲压级联筛选选项：基地 → 冲压工厂 → 配套车型"""

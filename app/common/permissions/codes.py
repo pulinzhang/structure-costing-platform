@@ -33,6 +33,19 @@ class Perm:
     STAMPING_TONNAGE_DELETE = "op:stamping-tonnage:delete"  # 删除
     STAMPING_TONNAGE_COPY = "op:stamping-tonnage:copy"  # 复制年度模板
 
+    MENU_STAMPING_PROCESS_FEE_CALC = "menu:stamping-process-fee-calc"  # 冲压加工费计算
+    STAMPING_PROCESS_FEE_CALC_VIEW = "op:stamping-process-fee-calc:view"  # 查看
+    STAMPING_PROCESS_FEE_CALC_RUN = "op:stamping-process-fee-calc:run"  # 计算
+    STAMPING_PROCESS_FEE_CALC_DELETE = "op:stamping-process-fee-calc:delete"  # 删除计算日志
+
+    MENU_STAMPING_PROCESS_FEE = "menu:stamping-process-fee"  # 冲压加工费列表
+    STAMPING_PROCESS_FEE_VIEW = "op:stamping-process-fee:view"  # 查询
+    STAMPING_PROCESS_FEE_UPDATE = "op:stamping-process-fee:update"  # 手工调整
+    STAMPING_PROCESS_FEE_DELETE = "op:stamping-process-fee:delete"  # 删除
+    STAMPING_PROCESS_FEE_APPROVE = "op:stamping-process-fee:approve"  # 审核通过
+    STAMPING_PROCESS_FEE_REVERSE = "op:stamping-process-fee:reverse"  # 反审核
+    STAMPING_PROCESS_FEE_EXPORT = "op:stamping-process-fee:export"  # 导出
+
     MENU_YISHIYIYI = "menu:yishiyiyi"  # 一事一议
 
     MENU_THICKNESS = "menu:thickness"  # 加减价政策

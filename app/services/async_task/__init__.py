@@ -9,6 +9,7 @@ from app.services.async_task.async_task_service import (
     TASK_TYPE_POLICY_UPLOAD,
     TASK_TYPE_STAMPING_UPLOAD,
     TASK_TYPE_STEEL_PRICE_CALC,
+    TASK_TYPE_STAMPING_PROCESS_FEE_CALC,
     AsyncTaskService,
 )
 
@@ -22,4 +23,5 @@ __all__ = [
     "TASK_TYPE_STAMPING_UPLOAD",
     "TASK_TYPE_BASE_PRICE_IMPORT",
     "TASK_TYPE_STEEL_PRICE_CALC",
+    "TASK_TYPE_STAMPING_PROCESS_FEE_CALC",
 ]

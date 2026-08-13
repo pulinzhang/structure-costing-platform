@@ -340,12 +340,23 @@ root
 │   │   ├── op:stamping-parts:view
 │   │   ├── op:stamping-parts:update
 │   │   └── op:stamping-parts:delete
-│   └── menu:stamping-tonnage
-│       ├── op:stamping-tonnage:view
-│       ├── op:stamping-tonnage:create
-│       ├── op:stamping-tonnage:update
-│       ├── op:stamping-tonnage:delete
-│       └── op:stamping-tonnage:copy
+│   ├── menu:stamping-tonnage
+│   │   ├── op:stamping-tonnage:view
+│   │   ├── op:stamping-tonnage:create
+│   │   ├── op:stamping-tonnage:update
+│   │   ├── op:stamping-tonnage:delete
+│   │   └── op:stamping-tonnage:copy
+│   ├── menu:stamping-process-fee-calc
+│   │   ├── op:stamping-process-fee-calc:view
+│   │   ├── op:stamping-process-fee-calc:run
+│   │   └── op:stamping-process-fee-calc:delete
+│   └── menu:stamping-process-fee
+│       ├── op:stamping-process-fee:view
+│       ├── op:stamping-process-fee:update
+│       ├── op:stamping-process-fee:delete
+│       ├── op:stamping-process-fee:approve
+│       ├── op:stamping-process-fee:reverse
+│       └── op:stamping-process-fee:export
 │
 ├── menu:yishiyiyi                             # 一事一议（分组，可勾）
 │   ├── menu:thickness                         # 加减价政策（二级分组，可勾）
@@ -440,6 +451,8 @@ root
 | stamping-upload | `view` / `upload` | 进入页；「上传」 |
 | stamping-parts | `view` / `update` / `delete` | 查询详情；保存工序；删除零件 |
 | stamping-tonnage | `view` / `create` / `update` / `delete` / `copy` | 查询；新增；编辑；删除；复制年度模板 |
+| stamping-process-fee-calc | `view` / `run` / `delete` | 查看；执行计算；删除计算日志 |
+| stamping-process-fee | `view` / `update` / `delete` / `approve` / `reverse` / `export` | 查询；手工调整；批量删除；审核；反审核；导出 |
 | scrap-price | `view` / `create` / `update` / `delete` / `copy` / `export` | 查询；整月保存；删除本月；复制月度；导出 Excel |
 | steel-price-policy-upload | `view` / `upload` | 进入页；导入政策 |
 | steel-price-policy-download | `view` / `export` / `delete` | 预览；导出 Excel；批量删除 |

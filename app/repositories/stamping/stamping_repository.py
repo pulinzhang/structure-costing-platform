@@ -156,6 +156,31 @@ class StampingPartRepository:
         parts = q.order_by(StampingPart.id).offset(skip).limit(limit).all()
         return parts, total
 
+    def list_with_processes(
+        self,
+        db: Session,
+        location: str,
+        stamping_supplier: Optional[str] = None,
+        vehicle_model: Optional[str] = None,
+        version: Optional[str] = None,
+    ) -> List[StampingPart]:
+        """按基地等条件加载零件及工序（加工费计算用，不分页）"""
+        from sqlalchemy.orm import selectinload
+
+        q = db.query(StampingPart).filter(StampingPart.location == location)
+        if stamping_supplier is not None:
+            q = q.filter(StampingPart.stamping_supplier == stamping_supplier)
+        if vehicle_model is not None:
+            q = q.filter(StampingPart.vehicle_model == vehicle_model)
+        if version is not None:
+            q = q.filter(StampingPart.version == version)
+
+        return (
+            q.options(selectinload(StampingPart.processes))
+            .order_by(StampingPart.seq_no, StampingPart.id)
+            .all()
+        )
+
     def list_all(self, db: Session, skip: int = 0, limit: int = 100) -> List[StampingPart]:
         return db.query(StampingPart).offset(skip).limit(limit).all()
 

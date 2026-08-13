@@ -37,6 +37,7 @@ TASK_TYPE_POLICY_UPLOAD = "steel_price_policy_upload"
 TASK_TYPE_STAMPING_UPLOAD = "stamping_upload"
 TASK_TYPE_BASE_PRICE_IMPORT = "steel_base_price_import"
 TASK_TYPE_STEEL_PRICE_CALC = "steel_price_calc"
+TASK_TYPE_STAMPING_PROCESS_FEE_CALC = "stamping_process_fee_calc"
 
 TASK_TTL_SECONDS = 3600
 

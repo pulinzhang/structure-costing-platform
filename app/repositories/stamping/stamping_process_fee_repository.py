@@ -1,0 +1,333 @@
+"""
+冲压加工费结果 Repository
+"""
+
+import logging
+from typing import Any, Dict, List, Optional, Tuple
+
+from sqlalchemy.orm import Session
+
+from app.models.stamping_process_fee import StampingProcessFee
+
+
+logger = logging.getLogger("repository.stamping")
+
+AUDIT_APPROVED = "approved"
+AUDIT_PENDING = "pending"
+AUDIT_REJECTED = "rejected"
+
+
+class StampingProcessFeeRepository:
+    """冲压加工费结果数据访问"""
+
+    def get_by_id(self, db: Session, fee_id: int) -> Optional[StampingProcessFee]:
+        return (
+            db.query(StampingProcessFee)
+            .filter(StampingProcessFee.id == fee_id)
+            .first()
+        )
+
+    def get_by_business_key(
+        self,
+        db: Session,
+        year: int,
+        location: str,
+        stamping_supplier: str,
+        vehicle_model: str,
+        version: str,
+        part_number: str,
+    ) -> Optional[StampingProcessFee]:
+        q = db.query(StampingProcessFee).filter(
+            StampingProcessFee.year == year,
+            StampingProcessFee.location == location,
+            StampingProcessFee.stamping_supplier == stamping_supplier,
+            StampingProcessFee.vehicle_model == vehicle_model,
+            StampingProcessFee.version == version,
+            StampingProcessFee.part_number == part_number,
+        )
+        return q.first()
+
+    def upsert(self, db: Session, data: Dict[str, Any]) -> StampingProcessFee:
+        existing = self.get_by_business_key(
+            db,
+            year=data["year"],
+            location=data["location"],
+            stamping_supplier=data.get("stamping_supplier"),
+            vehicle_model=data["vehicle_model"],
+            version=data["version"],
+            part_number=data["part_number"],
+        )
+        if existing:
+            for key, value in data.items():
+                if key in ("created_by", "created_at"):
+                    continue
+                if hasattr(existing, key):
+                    setattr(existing, key, value)
+            db.flush()
+            return existing
+
+        if "audit_status" not in data:
+            data = {**data, "audit_status": AUDIT_PENDING}
+        record = StampingProcessFee(**data)
+        db.add(record)
+        db.flush()
+        return record
+
+    def update_fields(
+        self, db: Session, fee_id: int, update_data: Dict[str, Any]
+    ) -> Optional[StampingProcessFee]:
+        record = self.get_by_id(db, fee_id)
+        if not record:
+            return None
+        for key, value in update_data.items():
+            if hasattr(record, key):
+                setattr(record, key, value)
+        db.commit()
+        db.refresh(record)
+        return record
+
+    def bulk_upsert(self, db: Session, data_list: List[Dict[str, Any]]) -> List[StampingProcessFee]:
+        records = [self.upsert(db, data) for data in data_list]
+        db.commit()
+        for record in records:
+            db.refresh(record)
+        logger.info("批量 upsert 冲压加工费: %s 条", len(records))
+        return records
+
+    def _scope_query(
+        self,
+        db: Session,
+        *,
+        year: int,
+        location: str,
+        stamping_supplier: str,
+    ):
+        return db.query(StampingProcessFee).filter(
+            StampingProcessFee.year == year,
+            StampingProcessFee.location == location,
+            StampingProcessFee.stamping_supplier == stamping_supplier,
+        )
+
+    def paginate(
+        self,
+        db: Session,
+        year: Optional[int] = None,
+        location: Optional[str] = None,
+        stamping_supplier: Optional[str] = None,
+        vehicle_model: Optional[str] = None,
+        version: Optional[str] = None,
+        part_number: Optional[str] = None,
+        audit_status: Optional[str] = None,
+        skip: int = 0,
+        limit: int = 20,
+    ) -> Tuple[List[StampingProcessFee], int]:
+        q = db.query(StampingProcessFee)
+        if year is not None:
+            q = q.filter(StampingProcessFee.year == year)
+        if location is not None:
+            q = q.filter(StampingProcessFee.location == location)
+        if stamping_supplier is not None:
+            q = q.filter(StampingProcessFee.stamping_supplier == stamping_supplier)
+        if vehicle_model is not None:
+            q = q.filter(StampingProcessFee.vehicle_model == vehicle_model)
+        if version is not None:
+            q = q.filter(StampingProcessFee.version == version)
+        if part_number:
+            q = q.filter(StampingProcessFee.part_number.like(f"%{part_number}%"))
+        if audit_status:
+            q = q.filter(StampingProcessFee.audit_status == audit_status)
+
+        total = q.count()
+        rows = (
+            q.order_by(
+                StampingProcessFee.year.desc(),
+                StampingProcessFee.location,
+                StampingProcessFee.part_number,
+            )
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
+        return rows, total
+
+    def list_for_export(
+        self,
+        db: Session,
+        year: Optional[int] = None,
+        location: Optional[str] = None,
+        stamping_supplier: Optional[str] = None,
+        vehicle_model: Optional[str] = None,
+        version: Optional[str] = None,
+        part_number: Optional[str] = None,
+        audit_status: Optional[str] = None,
+    ) -> List[StampingProcessFee]:
+        q = db.query(StampingProcessFee)
+        if year is not None:
+            q = q.filter(StampingProcessFee.year == year)
+        if location is not None:
+            q = q.filter(StampingProcessFee.location == location)
+        if stamping_supplier is not None:
+            q = q.filter(StampingProcessFee.stamping_supplier == stamping_supplier)
+        if vehicle_model is not None:
+            q = q.filter(StampingProcessFee.vehicle_model == vehicle_model)
+        if version is not None:
+            q = q.filter(StampingProcessFee.version == version)
+        if part_number:
+            q = q.filter(StampingProcessFee.part_number.like(f"%{part_number}%"))
+        if audit_status:
+            q = q.filter(StampingProcessFee.audit_status == audit_status)
+        return (
+            q.order_by(
+                StampingProcessFee.year.desc(),
+                StampingProcessFee.location,
+                StampingProcessFee.stamping_supplier,
+                StampingProcessFee.part_number,
+            )
+            .all()
+        )
+
+    def count_by_scope_and_statuses(
+        self,
+        db: Session,
+        *,
+        year: int,
+        location: str,
+        stamping_supplier: str,
+        statuses: List[str],
+    ) -> int:
+        return (
+            self._scope_query(
+                db,
+                year=year,
+                location=location,
+                stamping_supplier=stamping_supplier,
+            )
+            .filter(StampingProcessFee.audit_status.in_(statuses))
+            .count()
+        )
+
+    def delete_unaudited_by_scope(
+        self,
+        db: Session,
+        *,
+        year: int,
+        location: str,
+        stamping_supplier: str,
+    ) -> int:
+        count = (
+            self._scope_query(
+                db,
+                year=year,
+                location=location,
+                stamping_supplier=stamping_supplier,
+            )
+            .filter(StampingProcessFee.audit_status != AUDIT_APPROVED)
+            .delete(synchronize_session=False)
+        )
+        db.flush()
+        logger.info(
+            "批量删除未审核冲压加工费: year=%s location=%s supplier=%s count=%s",
+            year,
+            location,
+            stamping_supplier,
+            count,
+        )
+        return count
+
+    def approve_by_scope(
+        self,
+        db: Session,
+        *,
+        year: int,
+        location: str,
+        stamping_supplier: str,
+        audited_by: str,
+        audited_at,
+        audit_remark: Optional[str],
+        updated_by: Optional[str] = None,
+    ) -> int:
+        values: Dict[Any, Any] = {
+            StampingProcessFee.audit_status: AUDIT_APPROVED,
+            StampingProcessFee.audited_by: audited_by,
+            StampingProcessFee.audited_at: audited_at,
+            StampingProcessFee.audit_remark: audit_remark,
+        }
+        if updated_by is not None:
+            values[StampingProcessFee.updated_by] = updated_by
+        count = (
+            self._scope_query(
+                db,
+                year=year,
+                location=location,
+                stamping_supplier=stamping_supplier,
+            )
+            .filter(
+                StampingProcessFee.audit_status.in_([AUDIT_PENDING, AUDIT_REJECTED])
+            )
+            .update(values, synchronize_session=False)
+        )
+        db.flush()
+        return count
+
+    def reverse_by_scope(
+        self,
+        db: Session,
+        *,
+        year: int,
+        location: str,
+        stamping_supplier: str,
+        reverse_audited_by: str,
+        reverse_audited_at,
+        reverse_audit_remark: str,
+        updated_by: Optional[str] = None,
+    ) -> int:
+        values: Dict[Any, Any] = {
+            StampingProcessFee.audit_status: AUDIT_PENDING,
+            StampingProcessFee.reverse_audited_by: reverse_audited_by,
+            StampingProcessFee.reverse_audited_at: reverse_audited_at,
+            StampingProcessFee.reverse_audit_remark: reverse_audit_remark,
+        }
+        if updated_by is not None:
+            values[StampingProcessFee.updated_by] = updated_by
+        count = (
+            self._scope_query(
+                db,
+                year=year,
+                location=location,
+                stamping_supplier=stamping_supplier,
+            )
+            .filter(StampingProcessFee.audit_status == AUDIT_APPROVED)
+            .update(values, synchronize_session=False)
+        )
+        db.flush()
+        return count
+
+    def get_distinct_years(self, db: Session) -> List[int]:
+        results = (
+            db.query(StampingProcessFee.year)
+            .distinct()
+            .order_by(StampingProcessFee.year.desc())
+            .all()
+        )
+        return [r[0] for r in results]
+
+    def get_distinct_locations(self, db: Session, year: Optional[int] = None) -> List[str]:
+        q = db.query(StampingProcessFee.location).distinct()
+        if year is not None:
+            q = q.filter(StampingProcessFee.year == year)
+        results = q.order_by(StampingProcessFee.location).all()
+        return [r[0] for r in results if r[0]]
+
+    def get_distinct_suppliers(
+        self,
+        db: Session,
+        year: Optional[int] = None,
+        location: Optional[str] = None,
+    ) -> List[str]:
+        q = db.query(StampingProcessFee.stamping_supplier).distinct()
+        if year is not None:
+            q = q.filter(StampingProcessFee.year == year)
+        if location is not None:
+            q = q.filter(StampingProcessFee.location == location)
+        results = q.order_by(StampingProcessFee.stamping_supplier).all()
+        return [r[0] for r in results if r[0]]

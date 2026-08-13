@@ -205,6 +205,7 @@ def create_app() -> FastAPI:
             {"name": "冲压工艺", "description": "冲压件零件与工序管理"},
             {"name": "冲压工艺上传", "description": "冲压工艺文件上传与解析"},
             {"name": "冲压冲次费率", "description": "冲压冲次费率管理"},
+            {"name": "冲压加工费 API", "description": "冲压加工费计算与结果查询"},
             {"name": "钢材价格管理", "description": "钢材价格计算结果浏览、维护与审核"},
             {"name": "钢价政策管理", "description": "钢价政策主表与阶梯明细管理"},
             {"name": "钢材基准价格管理", "description": "钢材基准价格上传导出"},
@@ -278,6 +279,7 @@ def create_app() -> FastAPI:
     from app.routers.stamping.upload import router as stamping_upload_router
     from app.routers.stamping.tonnage_price import router as stamping_tonnage_price_router
     from app.routers.stamping.scrap_price import router as stamping_scrap_price_router
+    from app.routers.stamping.stamping_process_fee import router as stamping_process_fee_router
     from app.routers.steel_price.crud import router as steel_price_router
     from app.routers.steel_price.calc import router as steel_price_calc_router
     from app.routers.steel_price.steel_price_policy.crud import router as steel_price_policy_router
@@ -294,6 +296,7 @@ def create_app() -> FastAPI:
     app.include_router(stamping_upload_router)
     app.include_router(stamping_tonnage_price_router)
     app.include_router(stamping_scrap_price_router)
+    app.include_router(stamping_process_fee_router)
     app.include_router(steel_price_calc_router)
     app.include_router(steel_price_router)
     app.include_router(steel_price_policy_router)
