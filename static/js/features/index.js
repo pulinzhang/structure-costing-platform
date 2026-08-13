@@ -93,6 +93,11 @@ export const pageMeta = {
         en: 'BASE_PRICE_DATABASE',
         breadcrumb: ['一事一议', '基准价格', '基准价格列表'],
     },
+    'winning-thickness-download': {
+        title: '中标厚度价格',
+        en: 'WINNING_THICKNESS_PRICE',
+        breadcrumb: ['一事一议', '基准价格', '中标厚度价格'],
+    },
     'scrap-price': {
         title: '废料月度销售价',
         en: 'SCRAP_MONTH_MATRIX',

@@ -171,6 +171,15 @@
                 { "code": "op:base-price-download:export", "label": "导出", "type": "op" },
                 { "code": "op:base-price-download:delete", "label": "批量删除", "type": "op" }
               ]
+            },
+            {
+              "code": "menu:winning-thickness-download",
+              "label": "中标厚度价格",
+              "type": "menu",
+              "children": [
+                { "code": "op:winning-thickness-download:view", "label": "预览", "type": "op" },
+                { "code": "op:winning-thickness-download:export", "label": "导出", "type": "op" }
+              ]
             }
           ]
         },

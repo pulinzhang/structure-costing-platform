@@ -284,6 +284,7 @@ def create_app() -> FastAPI:
     from app.routers.steel_price.calc import router as steel_price_calc_router
     from app.routers.steel_price.steel_price_policy.crud import router as steel_price_policy_router
     from app.routers.steel_price.steel_base_price.crud import router as steel_base_price_router
+    from app.routers.steel_price.winning_thickness.crud import router as winning_thickness_router
     from app.routers.user.auth import router as auth_router
     from app.routers.user.crud import router as user_crud_router
     from app.routers.user.permissions import router as permissions_router
@@ -301,6 +302,7 @@ def create_app() -> FastAPI:
     app.include_router(steel_price_router)
     app.include_router(steel_price_policy_router)
     app.include_router(steel_base_price_router)
+    app.include_router(winning_thickness_router)
     app.include_router(bom_router)
     app.include_router(bom_upload_router)
     app.include_router(costing_router)

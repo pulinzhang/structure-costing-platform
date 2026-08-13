@@ -81,6 +81,10 @@ class Perm:
     BASE_PRICE_DOWNLOAD_EXPORT = "op:base-price-download:export"  # 导出
     BASE_PRICE_DOWNLOAD_DELETE = "op:base-price-download:delete"  # 批量删除
 
+    MENU_WINNING_THICKNESS_DOWNLOAD = "menu:winning-thickness-download"  # 中标厚度价格
+    WINNING_THICKNESS_DOWNLOAD_VIEW = "op:winning-thickness-download:view"  # 预览
+    WINNING_THICKNESS_DOWNLOAD_EXPORT = "op:winning-thickness-download:export"  # 导出
+
     MENU_SCRAP_PRICE = "menu:scrap-price"  # 废料月度销售价
     SCRAP_PRICE_VIEW = "op:scrap-price:view"  # 查询
     SCRAP_PRICE_CREATE = "op:scrap-price:create"  # 新增
