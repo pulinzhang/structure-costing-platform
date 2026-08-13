@@ -1,5 +1,5 @@
 """
-种子数据脚本：把 2026 年冲压冲次费率写入数据库
+种子数据脚本：把 2026 年冲压冲次单价写入数据库
 - 默认基地：青岛
 - 价格按四舍五入保留 3 位小数
 - 默认幂等（已存在 (location, year, tonnage) 跳过）
@@ -28,7 +28,7 @@ def _round3(value: float) -> Decimal:
     return Decimal(str(value)).quantize(Decimal("0.001"), rounding=ROUND_HALF_UP)
 
 
-# 2026 年冲次费率原始数据（吨位 T → 元/次），导入前统一保留 3 位小数
+# 2026 年冲次单价原始数据（吨位 T → 元/次），导入前统一保留 3 位小数
 SEED_2026_RAW = [
     (40, 0.046),
     (60, 0.053),

@@ -1,5 +1,5 @@
 """
-冲次费率 Service
+冲次单价 Service
 业务逻辑层，处理业务规则和事务
 """
 
@@ -23,7 +23,7 @@ logger = logging.getLogger("service.stamping")
 
 
 class StampingTonnagePriceService:
-    """冲次费率业务逻辑"""
+    """冲次单价业务逻辑"""
 
     def __init__(self):
         self.repository = StampingTonnagePriceRepository()
@@ -31,26 +31,26 @@ class StampingTonnagePriceService:
     def list_by_year(
         self, db: Session, year: int
     ) -> List[StampingTonnagePriceResponse]:
-        """获取指定年份的所有冲次费率（跨基地）"""
+        """获取指定年份的所有冲次单价（跨基地）"""
         records = self.repository.list_by_year(db, year)
         return [StampingTonnagePriceResponse.model_validate(r) for r in records]
 
     def list_by_location_year(
         self, db: Session, location: str, year: int
     ) -> List[StampingTonnagePriceResponse]:
-        """获取指定基地+年份的所有冲次费率"""
+        """获取指定基地+年份的所有冲次单价"""
         records = self.repository.list_by_location_year(db, location, year)
         return [StampingTonnagePriceResponse.model_validate(r) for r in records]
 
     def list_all(self, db: Session) -> List[StampingTonnagePriceResponse]:
-        """获取所有冲次费率（按基地、年份、吨位排序）"""
+        """获取所有冲次单价（按基地、年份、吨位排序）"""
         records = self.repository.list_all(db)
         return [StampingTonnagePriceResponse.model_validate(r) for r in records]
 
     def paginate(
         self, db: Session, query: StampingTonnagePriceQuery
     ) -> Tuple[List[StampingTonnagePriceResponse], int, dict]:
-        """分页查询冲次费率"""
+        """分页查询冲次单价"""
         skip = (query.page - 1) * query.size
         records, total = self.repository.paginate(
             db,
@@ -80,7 +80,7 @@ class StampingTonnagePriceService:
         data: StampingTonnagePriceCreate,
         current_user: UserVO,
     ) -> Tuple[Optional[StampingTonnagePriceResponse], Optional[str]]:
-        """创建冲次费率记录，返回 (记录, 错误信息)"""
+        """创建冲次单价记录，返回 (记录, 错误信息)"""
         try:
             payload = {**data.model_dump(), **audit_create(current_user)}
             record = self.repository.create(db, payload)
@@ -94,41 +94,50 @@ class StampingTonnagePriceService:
             return None, error_msg
         except Exception as e:
             db.rollback()
-            logger.error(f"创建冲次费率失败: {e}")
+            logger.error(f"创建冲次单价失败: {e}")
             return None, str(e)
 
-    def bulk_create(
+    def bulk_upsert(
         self,
         db: Session,
         items: List[StampingTonnagePriceCreate],
         current_user: UserVO,
     ) -> Tuple[List[StampingTonnagePriceResponse], List[StampingTonnagePriceResponse], List[str]]:
         """
-        批量创建冲次费率记录。
-        返回 (成功列表, 跳过列表, 失败错误信息列表)。
+        批量写入冲次单价（与 Excel 导入一致：存在则更新单价）。
+        返回 (新增列表, 更新列表, 失败错误信息列表)。
         """
         created: List[StampingTonnagePriceResponse] = []
-        skipped: List[StampingTonnagePriceResponse] = []
+        updated: List[StampingTonnagePriceResponse] = []
         failed: List[str] = []
 
         for item in items:
+            existing = self.repository.get_by_location_year_tonnage(
+                db, item.location, item.year, item.tonnage
+            )
+            if existing:
+                record, error = self.update(
+                    db,
+                    existing.id,
+                    StampingTonnagePriceUpdate(price_per_stroke=item.price_per_stroke),
+                    current_user=current_user,
+                )
+                if record:
+                    updated.append(record)
+                else:
+                    failed.append(
+                        error
+                        or f"{item.location}/{item.year}/{item.tonnage}T 更新失败"
+                    )
+                continue
+
             record, error = self.create(db, item, current_user=current_user)
             if record:
                 created.append(record)
-            elif error and "已存在" in error:
-                skipped.append(
-                    StampingTonnagePriceResponse(
-                        id=0,
-                        location=item.location,
-                        year=item.year,
-                        tonnage=item.tonnage,
-                        price_per_stroke=0.0,
-                    )
-                )
             else:
                 failed.append(error or "未知错误")
 
-        return created, skipped, failed
+        return created, updated, failed
 
     def update(
         self,
@@ -137,7 +146,7 @@ class StampingTonnagePriceService:
         data: StampingTonnagePriceUpdate,
         current_user: UserVO,
     ) -> Tuple[Optional[StampingTonnagePriceResponse], Optional[str]]:
-        """更新冲次费率记录，返回 (记录, 错误信息)"""
+        """更新冲次单价记录，返回 (记录, 错误信息)"""
         try:
             payload = {**data.model_dump(), **audit_update(current_user)}
             record = self.repository.update(db, id, payload)
@@ -146,15 +155,42 @@ class StampingTonnagePriceService:
             return StampingTonnagePriceResponse.model_validate(record), None
         except Exception as e:
             db.rollback()
-            logger.error(f"更新冲次费率失败: {e}")
+            logger.error(f"更新冲次单价失败: {e}")
             return None, str(e)
 
     def delete(self, db: Session, id: int) -> Tuple[bool, Optional[str]]:
-        """删除冲次费率记录（硬删除，不写审计字段）。"""
+        """删除冲次单价记录（硬删除，不写审计字段）。"""
         success = self.repository.delete(db, id)
         if not success:
             return False, "记录不存在"
         return True, None
+
+    def batch_delete_by_location_year(
+        self,
+        db: Session,
+        *,
+        location: str,
+        year: int,
+    ) -> Tuple[int, Optional[str]]:
+        """按基地 + 年度批量删除。返回 (删除条数, 错误信息)。"""
+        location = (location or "").strip()
+        if not location:
+            return 0, "请选择采购基地"
+        if year < 2000 or year > 2100:
+            return 0, "请选择正确的年度"
+
+        existing = self.repository.list_by_location_year(db, location, year)
+        if not existing:
+            return 0, f"基地「{location}」{year} 年没有可删除的数据"
+
+        deleted_count = self.repository.delete_by_location_year(db, location, year)
+        logger.info(
+            "批量删除冲次单价: location=%s year=%s count=%s",
+            location,
+            year,
+            deleted_count,
+        )
+        return deleted_count, None
 
     def copy_from_year(
         self,

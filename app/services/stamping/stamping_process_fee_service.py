@@ -6,7 +6,7 @@
 - 零件加工费 = 各工序之和（保留 3 位小数）
 - 「摆剪」工序不使用冲压设备，加工费固定为 0（不查吨位）
 
-冲次费率匹配：年度相等 + 基地相等 + 吨位相等。
+冲次单价匹配：年度相等 + 基地相等 + 吨位相等。
 
 合并/双槽工艺（工艺方法含「合并」或「双槽」）缺吨位时：
 - Excel 按顺序导入，上一零件为 id-1
@@ -207,17 +207,17 @@ class StampingProcessFeeService:
             f"开始计算 year={dto.year} location={dto.location} "
             f"supplier={dto.stamping_supplier}"
         ]
-        report(5, "加载冲次费率...")
+        report(5, "加载冲次单价...")
         rates = self.tonnage_repo.list_by_location_year(db, dto.location, dto.year)
         if not rates:
             raise BusinessException(
-                f"基地「{dto.location}」年度 {dto.year} 无冲次费率数据，请先维护冲次费率"
+                f"基地「{dto.location}」年度 {dto.year} 无冲次单价数据，请先维护冲次单价"
             )
 
         rate_map: dict[int, Decimal] = {
             int(r.tonnage): Decimal(str(r.price_per_stroke)) for r in rates
         }
-        detail_lines.append(f"冲次费率 {len(rates)} 条")
+        detail_lines.append(f"冲次单价 {len(rates)} 条")
 
         report(10, "加载冲压零件...")
         parts = self.part_repo.list_with_processes(
@@ -747,7 +747,7 @@ class StampingProcessFeeService:
                 return self._build_failed_item(
                     part,
                     f"当前工序 {process_label} 吨位 {tonnage}T "
-                    f"在基地「{location}」{year} 年无冲次费率"
+                    f"在基地「{location}」{year} 年无冲次单价"
                     f"（须年度、基地、吨位均匹配）",
                     process,
                 )

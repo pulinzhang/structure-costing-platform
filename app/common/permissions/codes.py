@@ -30,6 +30,10 @@ class Perm:
 
     MENU_STAMPING_STROKE_UNIT_PRICE = "menu:stamping-stroke-unit-price"  # 冲次单价
 
+    MENU_STAMPING_TONNAGE_UPLOAD = "menu:stamping-tonnage-upload"  # 上传
+    STAMPING_TONNAGE_UPLOAD_VIEW = "op:stamping-tonnage-upload:view"  # 查看
+    STAMPING_TONNAGE_UPLOAD_UPLOAD = "op:stamping-tonnage-upload:upload"  # 上传
+
     MENU_STAMPING_TONNAGE = "menu:stamping-tonnage"  # 冲次单价列表
     STAMPING_TONNAGE_VIEW = "op:stamping-tonnage:view"  # 查询
     STAMPING_TONNAGE_CREATE = "op:stamping-tonnage:create"  # 新增

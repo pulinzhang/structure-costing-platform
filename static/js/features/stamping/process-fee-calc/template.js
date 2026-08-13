@@ -35,7 +35,7 @@ export function processFeeCalcTemplate() {
                     </div>
                     <div class="w-px h-5 bg-[#222]"></div>
                     <div>
-                        <span class="text-[9px] text-[#666] block">冲次费率</span>
+                        <span class="text-[9px] text-[#666] block">冲次单价</span>
                         <span id="cntTonnageRates" class="text-xs font-mono font-bold text-[#dddddd]">- <span class="text-[9px] font-normal text-[#555]">条</span></span>
                     </div>
                 </div>
@@ -68,7 +68,7 @@ export function processFeeCalcTemplate() {
             </div>
 
             <div id="dataReadyErrorBanner" class="hidden text-[10px] text-[#d69e2e] bg-[#1a1710] px-2.5 py-1.5 border-l-2 border-[#d69e2e]">
-                提示：请选定年度、基地、冲压工厂；并确保存在冲次费率与匹配零件。
+                提示：请选定年度、基地、冲压工厂；并确保存在冲次单价与匹配零件。
             </div>
 
             <div class="pt-2">

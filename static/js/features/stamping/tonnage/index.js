@@ -1,6 +1,6 @@
 /**
  * Tonnage Price Page
- * 冲次费率维护页面逻辑
+ * 冲次单价维护页面逻辑
  *
  * 抽屉式交互（与零件列表 /partDrawer 对齐）：
  * - 编辑/新增  → editDrawer
@@ -8,7 +8,7 @@
  * - 删除确认  → deleteDrawer
  */
 
-import { tonnagePriceTemplate, renderTableRows, renderPagination } from './template.js?v=4';
+import { tonnagePriceTemplate, renderTableRows, renderPagination } from './template.js?v=6';
 
 // 状态管理
 const tonnagePriceState = {
@@ -22,6 +22,7 @@ const tonnagePriceState = {
     locations: [],
     years: [],
     isLoading: false,
+    isBatchDeleting: false,
 };
 
 const DEFAULT_LOCATION = '青岛';
@@ -76,9 +77,11 @@ function applyPermissionUi() {
     const canCreate = typeof can === 'function' ? can('op:stamping-tonnage:create') : true;
     const canCopy = typeof can === 'function' ? can('op:stamping-tonnage:copy') : true;
     const canExport = typeof can === 'function' ? can('op:stamping-tonnage:export') : true;
+    const canDelete = typeof can === 'function' ? can('op:stamping-tonnage:delete') : true;
     if (!canCreate) document.getElementById('btnAddTonnagePrice')?.classList.add('hidden');
     if (!canCopy) document.getElementById('btnCopyTemplate')?.classList.add('hidden');
     if (!canExport) document.getElementById('btnExportTonnagePrice')?.classList.add('hidden');
+    if (!canDelete) document.getElementById('btnBatchDeleteTonnagePrice')?.classList.add('hidden');
 }
 
 /**
@@ -95,7 +98,7 @@ async function loadFilterOptions() {
 
         const locationFilter = document.getElementById('locationFilter');
         if (locationFilter) {
-            let options = `<option value="">全部基地</option>`;
+            let options = `<option value="">请选择基地</option>`;
             const known = ['大连', '芜湖', '鄂尔多斯', '青岛'];
             const merged = [...new Set([...known, ...tonnagePriceState.locations])];
             merged.forEach(loc => {
@@ -110,7 +113,7 @@ async function loadFilterOptions() {
         const yearFilter = document.getElementById('yearFilter');
         if (yearFilter) {
             const currentYear = new Date().getFullYear();
-            let options = `<option value="">全部年份</option>`;
+            let options = `<option value="">请选择年份</option>`;
             tonnagePriceState.years.forEach(year => {
                 options += `<option value="${year}">${year} 年</option>`;
             });
@@ -252,6 +255,11 @@ function bindEvents() {
     const btnExport = document.getElementById('btnExportTonnagePrice');
     if (btnExport) {
         btnExport.addEventListener('click', () => exportExcel());
+    }
+
+    const btnBatchDelete = document.getElementById('btnBatchDeleteTonnagePrice');
+    if (btnBatchDelete) {
+        btnBatchDelete.addEventListener('click', () => batchDeleteByFilters());
     }
 
     const btnFilter = document.getElementById('btnFilter');
@@ -490,7 +498,7 @@ async function exportExcel() {
                 location: tonnagePriceState.selectedLocation || undefined,
                 year: tonnagePriceState.selectedYear || undefined,
             },
-            defaultFilename: '冲次费率导出.xlsx',
+            defaultFilename: '冲次单价导出.xlsx',
         });
 
         const url = window.URL.createObjectURL(blob);
@@ -503,11 +511,81 @@ async function exportExcel() {
         window.URL.revokeObjectURL(url);
         showToast(`导出成功: ${filename}`, 'success');
     } catch (error) {
-        console.error('导出冲次费率失败:', error);
+        console.error('导出冲次单价失败:', error);
         if (!error.status) {
             showToast(error.message || '导出失败', 'error');
         }
     } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+        }
+    }
+}
+
+/**
+ * 按基地 + 年度批量删除（两者必选）
+ */
+async function batchDeleteByFilters() {
+    if (typeof can === 'function' && !can('op:stamping-tonnage:delete')) {
+        showToast('无删除权限', 'warning');
+        return;
+    }
+    if (tonnagePriceState.isBatchDeleting) return;
+
+    const locationFilter = document.getElementById('locationFilter');
+    const yearFilter = document.getElementById('yearFilter');
+    const location = locationFilter?.value?.trim() || '';
+    const yearRaw = yearFilter?.value?.trim() || '';
+
+    if (!location || !yearRaw) {
+        showToast('批量删除须同时选择基地和年度', 'warning');
+        return;
+    }
+
+    const year = parseInt(yearRaw, 10);
+    if (!year || year < 2000 || year > 2100) {
+        showToast('请选择正确的年度', 'warning');
+        return;
+    }
+
+    const confirmed = window.confirm(
+        `确定批量删除以下冲次单价吗？\n\n基地: ${location} | 年度: ${year}\n\n将删除该基地该年全部记录，此操作不可恢复！`
+    );
+    if (!confirmed) return;
+
+    const btn = document.getElementById('btnBatchDeleteTonnagePrice');
+    const originalHtml = btn ? btn.innerHTML : '';
+    tonnagePriceState.isBatchDeleting = true;
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `
+            <div class="w-3 h-3 border border-[#ef5350] border-t-transparent rounded-full animate-spin"></div>
+            删除中...
+        `;
+    }
+
+    try {
+        const res = await HttpClient.post(`${API_BASE}/batch-delete`, {
+            location,
+            year,
+        });
+        const data = res.data || {};
+        showToast(
+            res.message || data.message || `已删除 ${data.deleted_count ?? 0} 条`,
+            'success'
+        );
+        tonnagePriceState.selectedLocation = location;
+        tonnagePriceState.selectedYear = String(year);
+        await loadData(1);
+        await loadFilterOptions();
+    } catch (error) {
+        console.error('批量删除冲次单价失败:', error);
+        if (!error.status) {
+            showToast(error.message || '批量删除失败', 'error');
+        }
+    } finally {
+        tonnagePriceState.isBatchDeleting = false;
         if (btn) {
             btn.disabled = false;
             btn.innerHTML = originalHtml;

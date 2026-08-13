@@ -62,6 +62,15 @@
           "type": "group",
           "children": [
             {
+              "code": "menu:stamping-tonnage-upload",
+              "label": "上传",
+              "type": "menu",
+              "children": [
+                { "code": "op:stamping-tonnage-upload:view", "label": "查看", "type": "op" },
+                { "code": "op:stamping-tonnage-upload:upload", "label": "上传", "type": "op" }
+              ]
+            },
+            {
               "code": "menu:stamping-tonnage",
               "label": "冲次单价列表",
               "type": "menu",

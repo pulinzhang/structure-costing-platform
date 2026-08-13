@@ -43,6 +43,11 @@ export const pageMeta = {
         en: 'PARTS_MASTER',
         breadcrumb: ['冲压工程', '冲压工艺', '冲压零件列表'],
     },
+    'stamping-tonnage-upload': {
+        title: '冲次单价上传',
+        en: 'TONNAGE_RATE_UPLOAD',
+        breadcrumb: ['冲压工程', '冲次单价', '上传'],
+    },
     'stamping-tonnage': {
         title: '冲次单价列表',
         en: 'TONNAGE_RATES_MATRIX',

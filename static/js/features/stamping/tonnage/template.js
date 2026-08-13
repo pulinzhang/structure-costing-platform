@@ -1,6 +1,6 @@
 /**
  * Tonnage Price Template
- * 冲次费率维护页面 — Brabus Carbon & Precision Dark
+ * 冲次单价维护页面 — Brabus Carbon & Precision Dark
  *
  * 抽屉式交互（与零件列表 /partDrawer 对齐）：
  * - 编辑/新增  → editDrawer（640px 右侧滑入）
@@ -21,9 +21,13 @@ export function tonnagePriceTemplate() {
                      style="background: linear-gradient(90deg, #1c1c1c 0%, #1e1e1e 60%);">
                     <div class="flex items-center gap-3">
                         <div class="w-[2px] h-4 bg-[#d32f2f] rounded-[1px] shadow-[0_0_6px_rgba(211,47,47,0.3)]"></div>
-                        <h2 class="text-[12px] font-semibold text-[#c8c8c8] tracking-wide">冲次费率</h2>
+                        <h2 class="text-[12px] font-semibold text-[#c8c8c8] tracking-wide">冲次单价</h2>
                     </div>
                     <div class="flex items-center gap-2">
+                        <button id="btnBatchDeleteTonnagePrice" class="inline-flex items-center gap-1.5 bg-transparent text-[#888888] border border-[#2c2c2c] px-3 py-1.5 text-[11px] font-medium rounded-sm hover:border-[#c62828] hover:text-[#ef5350] transition-all duration-150">
+                            ${window.svgIcon('trash', 'w-3 h-3')}
+                            批量删除
+                        </button>
                         <button id="btnExportTonnagePrice" class="inline-flex items-center gap-1.5 bg-transparent text-[#888888] border border-[#2c2c2c] px-3 py-1.5 text-[11px] font-medium rounded-sm hover:border-[#d32f2f] hover:text-[#d32f2f] transition-all duration-150">
                             ${window.svgIcon('download', 'w-3 h-3')}
                             导出 Excel
@@ -48,7 +52,7 @@ export function tonnagePriceTemplate() {
                             <label class="text-[9px] font-semibold text-[#484848] uppercase tracking-[0.12em] whitespace-nowrap">基地</label>
                             <select id="locationFilter"
                                     class="w-36 h-7 pl-2.5 pr-7 text-[11px] bg-[#0d0d0d] border border-[#272727] text-[#909090] appearance-none cursor-pointer focus:outline-none focus:border-[#ff5252] transition-all rounded-sm">
-                                <option value="">全部</option>
+                                <option value="">请选择基地</option>
                             </select>
                         </div>
 
@@ -56,7 +60,7 @@ export function tonnagePriceTemplate() {
                             <label class="text-[9px] font-semibold text-[#484848] uppercase tracking-[0.12em] whitespace-nowrap">年份</label>
                             <select id="yearFilter"
                                     class="w-36 h-7 pl-2.5 pr-7 text-[11px] bg-[#0d0d0d] border border-[#272727] text-[#909090] appearance-none cursor-pointer focus:outline-none focus:border-[#ff5252] transition-all rounded-sm">
-                                <option value="">全部</option>
+                                <option value="">请选择年份</option>
                             </select>
                         </div>
 
@@ -65,6 +69,7 @@ export function tonnagePriceTemplate() {
                             ${window.svgIcon('search', 'w-3 h-3')}
                             查询
                         </button>
+                        <span class="text-[10px] text-[#484848]">批量删除须同时选择基地和年度</span>
                     </div>
                 </div>
 

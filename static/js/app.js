@@ -13,7 +13,7 @@
  * 入口 URL 的 query 串驱动整体刷新；每次脚本更新后需要同步递增 ?v= 版本号。
  */
 
-import { pageMeta } from './features/index.js?v=5';
+import { pageMeta } from './features/index.js?v=6';
 
 // 页面导入
 import { getUserSession, initUserMenu, startTokenHeartbeat, updateUserSession } from './features/login/index.js?v=14';
@@ -25,7 +25,8 @@ import {
 import { pageConfig as dashboardPage }      from './features/dashboard/index.js';
 import { pageConfig as stampingUploadPage } from './features/stamping/upload/index.js?v=35';
 import { pageConfig as stampingPartsPage }  from './features/stamping/parts/index.js?v=2';
-import { pageConfig as stampingTonnagePage } from './features/stamping/tonnage/index.js?v=4';
+import { pageConfig as stampingTonnagePage } from './features/stamping/tonnage/index.js?v=6';
+import { pageConfig as stampingTonnageUploadPage } from './features/stamping/tonnage-upload/index.js?v=1';
 import { pageConfig as stampingProcessFeeCalcPage } from './features/stamping/process-fee-calc/index.js?v=12';
 import { pageConfig as stampingProcessFeePage } from './features/stamping/process-fee/index.js?v=11';
 import { pageConfig as steelPriceListPage }   from './features/steel-price/list/index.js?v=42';
@@ -56,6 +57,7 @@ const pages = {
     dashboard:        dashboardPage,
     'stamping-upload': stampingUploadPage,
     'stamping-parts':  stampingPartsPage,
+    'stamping-tonnage-upload': stampingTonnageUploadPage,
     'stamping-tonnage': stampingTonnagePage,
     'stamping-process-fee-calc': stampingProcessFeeCalcPage,
     'stamping-process-fee': stampingProcessFeePage,

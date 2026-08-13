@@ -342,6 +342,9 @@ root
 │   │       ├── op:stamping-parts:update
 │   │       └── op:stamping-parts:delete
 │   ├── menu:stamping-stroke-unit-price        # 冲次单价（二级分组，可勾）
+│   │   ├── menu:stamping-tonnage-upload
+│   │   │   ├── op:stamping-tonnage-upload:view
+│   │   │   └── op:stamping-tonnage-upload:upload
 │   │   └── menu:stamping-tonnage
 │   │       ├── op:stamping-tonnage:view
 │   │       ├── op:stamping-tonnage:create
@@ -454,6 +457,7 @@ root
 | dashboard | `view` | 查看 KPI / 统计 |
 | stamping-upload | `view` / `upload` | 进入页；「上传」 |
 | stamping-parts | `view` / `update` / `delete` | 查询详情；保存工序；删除零件 |
+| stamping-tonnage-upload | `view` / `upload` | 查看上传页；导入冲次单价 Excel |
 | stamping-tonnage | `view` / `create` / `update` / `delete` / `copy` / `export` | 查询；新增；编辑；删除；复制年度模板；导出 Excel |
 | stamping-process-fee-calc | `view` / `run` / `delete` | 查看；执行计算；删除计算日志 |
 | stamping-process-fee | `view` / `update` / `delete` / `approve` / `reverse` / `export` | 查询；手工调整；批量删除；审核；反审核；导出 |

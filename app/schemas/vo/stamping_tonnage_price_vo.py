@@ -1,5 +1,5 @@
 """
-冲次费率 VO - 响应数据结构
+冲次单价 VO - 响应数据结构
 """
 
 from datetime import datetime
@@ -15,7 +15,7 @@ def decimal_to_float(value: Union[Decimal, float, None]) -> float | None:
 
 
 class StampingTonnagePriceResponse(BaseModel):
-    """冲次费率响应 VO（对应 stamping_tonnage_price 表）"""
+    """冲次单价响应 VO（对应 stamping_tonnage_price 表）"""
 
     id: int
     location: str
@@ -38,19 +38,19 @@ class StampingTonnagePriceResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
-class StampingTonnagePriceBulkCreateResponse(BaseModel):
-    """冲次费率批量创建响应 VO"""
+class StampingTonnagePriceBulkUpsertResponse(BaseModel):
+    """冲次单价批量写入响应 VO（与 Excel 导入一致：存在则更新）"""
 
     created: list[StampingTonnagePriceResponse]
-    skipped: list[StampingTonnagePriceResponse]
+    updated: list[StampingTonnagePriceResponse]
     failed: list[str]
     created_count: int
-    skipped_count: int
+    updated_count: int
     failed_count: int
 
 
 class StampingTonnagePriceCopyYearResponse(BaseModel):
-    """冲次费率跨年复制响应 VO"""
+    """冲次单价跨年复制响应 VO"""
 
     location: str
     source_year: int
@@ -58,3 +58,25 @@ class StampingTonnagePriceCopyYearResponse(BaseModel):
     created_count: int
     skipped_count: int
     failed: list[str]
+
+
+class StampingTonnagePriceImportResultVO(BaseModel):
+    """冲次单价 Excel 导入结果 VO"""
+
+    location: str
+    year: int
+    created_count: int
+    updated_count: int
+    total_count: int
+    skipped_count: int = 0
+    warnings: list[str] = []
+    message: str = ""
+
+
+class StampingTonnagePriceBatchDeleteResultVO(BaseModel):
+    """冲次单价按基地+年度批量删除结果 VO"""
+
+    location: str
+    year: int
+    deleted_count: int
+    message: str = ""

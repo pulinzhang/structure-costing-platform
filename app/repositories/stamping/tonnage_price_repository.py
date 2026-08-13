@@ -1,5 +1,5 @@
 """
-冲次费率 Repository
+冲次单价 Repository
 数据访问层，只负责与数据库交互
 """
 
@@ -15,7 +15,7 @@ logger = logging.getLogger("repository.stamping")
 
 
 class StampingTonnagePriceRepository:
-    """冲次费率数据访问"""
+    """冲次单价数据访问"""
 
     def get_by_id(self, db: Session, id: int) -> Optional[StampingTonnagePrice]:
         """根据 ID 查询单条记录"""
@@ -153,14 +153,19 @@ class StampingTonnagePriceRepository:
         )
         return [r[0] for r in results]
 
-    def create(self, db: Session, data: Dict[str, Any]) -> StampingTonnagePrice:
+    def create(
+        self, db: Session, data: Dict[str, Any], *, commit: bool = True
+    ) -> StampingTonnagePrice:
         """创建单条记录"""
         record = StampingTonnagePrice(**data)
         db.add(record)
-        db.commit()
+        if commit:
+            db.commit()
+        else:
+            db.flush()
         db.refresh(record)
         logger.info(
-            "创建冲次费率: location=%s, year=%s, tonnage=%s, id=%s",
+            "创建冲次单价: location=%s, year=%s, tonnage=%s, id=%s",
             data.get("location"),
             data.get("year"),
             data.get("tonnage"),
@@ -175,11 +180,16 @@ class StampingTonnagePriceRepository:
         db.commit()
         for record in records:
             db.refresh(record)
-        logger.info("批量创建冲次费率: %s 条", len(records))
+        logger.info("批量创建冲次单价: %s 条", len(records))
         return records
 
     def update(
-        self, db: Session, id: int, update_data: Dict[str, Any]
+        self,
+        db: Session,
+        id: int,
+        update_data: Dict[str, Any],
+        *,
+        commit: bool = True,
     ) -> Optional[StampingTonnagePrice]:
         """更新记录"""
         record = self.get_by_id(db, id)
@@ -188,9 +198,12 @@ class StampingTonnagePriceRepository:
         for key, value in update_data.items():
             if hasattr(record, key):
                 setattr(record, key, value)
-        db.commit()
+        if commit:
+            db.commit()
+        else:
+            db.flush()
         db.refresh(record)
-        logger.info("更新冲次费率: id=%s", id)
+        logger.info("更新冲次单价: id=%s", id)
         return record
 
     def delete(self, db: Session, id: int) -> bool:
@@ -200,7 +213,7 @@ class StampingTonnagePriceRepository:
             return False
         db.delete(record)
         db.commit()
-        logger.info("删除冲次费率: id=%s", id)
+        logger.info("删除冲次单价: id=%s", id)
         return True
 
     def delete_by_location_year(self, db: Session, location: str, year: int) -> int:
@@ -216,5 +229,5 @@ class StampingTonnagePriceRepository:
             .delete(synchronize_session=False)
         )
         db.commit()
-        logger.info("删除基地 %s 年份 %s 的冲次费率: %s 条", location, year, count)
+        logger.info("删除基地 %s 年份 %s 的冲次单价: %s 条", location, year, count)
         return count
