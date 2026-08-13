@@ -333,31 +333,34 @@ root
 │   └── op:dashboard:view
 │
 ├── menu:stamping                              # 冲压工程（分组，可勾）
-│   ├── menu:stamping-upload
-│   │   ├── op:stamping-upload:view
-│   │   └── op:stamping-upload:upload
-│   ├── menu:stamping-parts
-│   │   ├── op:stamping-parts:view
-│   │   ├── op:stamping-parts:update
-│   │   └── op:stamping-parts:delete
-│   ├── menu:stamping-tonnage
-│   │   ├── op:stamping-tonnage:view
-│   │   ├── op:stamping-tonnage:create
-│   │   ├── op:stamping-tonnage:update
-│   │   ├── op:stamping-tonnage:delete
-│   │   ├── op:stamping-tonnage:copy
-│   │   └── op:stamping-tonnage:export
-│   ├── menu:stamping-process-fee-calc
-│   │   ├── op:stamping-process-fee-calc:view
-│   │   ├── op:stamping-process-fee-calc:run
-│   │   └── op:stamping-process-fee-calc:delete
-│   └── menu:stamping-process-fee
-│       ├── op:stamping-process-fee:view
-│       ├── op:stamping-process-fee:update
-│       ├── op:stamping-process-fee:delete
-│       ├── op:stamping-process-fee:approve
-│       ├── op:stamping-process-fee:reverse
-│       └── op:stamping-process-fee:export
+│   ├── menu:stamping-process                  # 冲压工艺（二级分组，可勾）
+│   │   ├── menu:stamping-upload
+│   │   │   ├── op:stamping-upload:view
+│   │   │   └── op:stamping-upload:upload
+│   │   └── menu:stamping-parts
+│   │       ├── op:stamping-parts:view
+│   │       ├── op:stamping-parts:update
+│   │       └── op:stamping-parts:delete
+│   ├── menu:stamping-stroke-unit-price        # 冲次单价（二级分组，可勾）
+│   │   └── menu:stamping-tonnage
+│   │       ├── op:stamping-tonnage:view
+│   │       ├── op:stamping-tonnage:create
+│   │       ├── op:stamping-tonnage:update
+│   │       ├── op:stamping-tonnage:delete
+│   │       ├── op:stamping-tonnage:copy
+│   │       └── op:stamping-tonnage:export
+│   └── menu:stamping-processing-fee           # 冲压加工费（二级分组，可勾）
+│       ├── menu:stamping-process-fee-calc
+│       │   ├── op:stamping-process-fee-calc:view
+│       │   ├── op:stamping-process-fee-calc:run
+│       │   └── op:stamping-process-fee-calc:delete
+│       └── menu:stamping-process-fee
+│           ├── op:stamping-process-fee:view
+│           ├── op:stamping-process-fee:update
+│           ├── op:stamping-process-fee:delete
+│           ├── op:stamping-process-fee:approve
+│           ├── op:stamping-process-fee:reverse
+│           └── op:stamping-process-fee:export
 │
 ├── menu:yishiyiyi                             # 一事一议（分组，可勾）
 │   ├── menu:thickness                         # 加减价政策（二级分组，可勾）
@@ -435,10 +438,10 @@ root
 
 | 类别 | 数量 |
 |---|---|
-| 分组 `menu` | 7（`stamping` / `yishiyiyi` / `thickness` / `base-price` / `steel-price` / `bom` / `settings`） |
+| 分组 `menu` | 10（`stamping` / `stamping-process` / `stamping-stroke-unit-price` / `stamping-processing-fee` / `yishiyiyi` / `thickness` / `base-price` / `steel-price` / `bom` / `settings`） |
 | 叶子 `menu` | 18 |
 | 操作 `op` | 50 |
-| 可勾节点合计 | 约 67（`root` 一般不入库） |
+| 可勾节点合计 | 约 70（`root` 一般不入库） |
 | 新建默认 | 7 |
 | 强制 | 5（均包含在默认集内） |
 
@@ -652,3 +655,4 @@ static/index.html           # 侧栏 data-page
 | 2026-08-12 | 新增 `menu:settings-logs` / `op:settings-logs:view|export`；操作日志页与导出审计 |
 | 2026-08-13 | 新增 `menu:scrap-price` / `op:scrap-price:view|create|update|delete|copy`；废料月度销售价后端 |
 | 2026-08-13 | 废料销售价增加 `op:scrap-price:export` 与宽表 Excel 导出 |
+| 2026-08-13 | 冲压工程侧栏拆分：`menu:stamping-process` / `menu:stamping-stroke-unit-price` / `menu:stamping-processing-fee` 二级分组对齐 UI |

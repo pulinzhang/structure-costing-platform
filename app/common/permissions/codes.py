@@ -17,6 +17,8 @@ class Perm:
 
     MENU_STAMPING = "menu:stamping"  # 冲压工程
 
+    MENU_STAMPING_PROCESS = "menu:stamping-process"  # 冲压工艺
+
     MENU_STAMPING_UPLOAD = "menu:stamping-upload"  # 上传工艺文件
     STAMPING_UPLOAD_VIEW = "op:stamping-upload:view"  # 查看
     STAMPING_UPLOAD_UPLOAD = "op:stamping-upload:upload"  # 上传
@@ -26,13 +28,17 @@ class Perm:
     STAMPING_PARTS_UPDATE = "op:stamping-parts:update"  # 编辑工序
     STAMPING_PARTS_DELETE = "op:stamping-parts:delete"  # 删除
 
-    MENU_STAMPING_TONNAGE = "menu:stamping-tonnage"  # 冲次费率
+    MENU_STAMPING_STROKE_UNIT_PRICE = "menu:stamping-stroke-unit-price"  # 冲次单价
+
+    MENU_STAMPING_TONNAGE = "menu:stamping-tonnage"  # 冲次单价列表
     STAMPING_TONNAGE_VIEW = "op:stamping-tonnage:view"  # 查询
     STAMPING_TONNAGE_CREATE = "op:stamping-tonnage:create"  # 新增
     STAMPING_TONNAGE_UPDATE = "op:stamping-tonnage:update"  # 编辑
     STAMPING_TONNAGE_DELETE = "op:stamping-tonnage:delete"  # 删除
     STAMPING_TONNAGE_COPY = "op:stamping-tonnage:copy"  # 复制年度模板
     STAMPING_TONNAGE_EXPORT = "op:stamping-tonnage:export"  # 导出
+
+    MENU_STAMPING_PROCESSING_FEE = "menu:stamping-processing-fee"  # 冲压加工费
 
     MENU_STAMPING_PROCESS_FEE_CALC = "menu:stamping-process-fee-calc"  # 冲压加工费计算
     STAMPING_PROCESS_FEE_CALC_VIEW = "op:stamping-process-fee-calc:view"  # 查看

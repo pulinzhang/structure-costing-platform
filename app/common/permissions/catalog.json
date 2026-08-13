@@ -31,58 +31,79 @@
       "type": "group",
       "children": [
         {
-          "code": "menu:stamping-upload",
-          "label": "上传工艺文件",
-          "type": "menu",
+          "code": "menu:stamping-process",
+          "label": "冲压工艺",
+          "type": "group",
           "children": [
-            { "code": "op:stamping-upload:view", "label": "查看", "type": "op" },
-            { "code": "op:stamping-upload:upload", "label": "上传", "type": "op" }
+            {
+              "code": "menu:stamping-upload",
+              "label": "上传工艺文件",
+              "type": "menu",
+              "children": [
+                { "code": "op:stamping-upload:view", "label": "查看", "type": "op" },
+                { "code": "op:stamping-upload:upload", "label": "上传", "type": "op" }
+              ]
+            },
+            {
+              "code": "menu:stamping-parts",
+              "label": "冲压零件列表",
+              "type": "menu",
+              "children": [
+                { "code": "op:stamping-parts:view", "label": "查询", "type": "op" },
+                { "code": "op:stamping-parts:update", "label": "编辑工序", "type": "op" },
+                { "code": "op:stamping-parts:delete", "label": "删除", "type": "op" }
+              ]
+            }
           ]
         },
         {
-          "code": "menu:stamping-parts",
-          "label": "冲压零件列表",
-          "type": "menu",
+          "code": "menu:stamping-stroke-unit-price",
+          "label": "冲次单价",
+          "type": "group",
           "children": [
-            { "code": "op:stamping-parts:view", "label": "查询", "type": "op" },
-            { "code": "op:stamping-parts:update", "label": "编辑工序", "type": "op" },
-            { "code": "op:stamping-parts:delete", "label": "删除", "type": "op" }
+            {
+              "code": "menu:stamping-tonnage",
+              "label": "冲次单价列表",
+              "type": "menu",
+              "children": [
+                { "code": "op:stamping-tonnage:view", "label": "查询", "type": "op" },
+                { "code": "op:stamping-tonnage:create", "label": "新增", "type": "op" },
+                { "code": "op:stamping-tonnage:update", "label": "编辑", "type": "op" },
+                { "code": "op:stamping-tonnage:delete", "label": "删除", "type": "op" },
+                { "code": "op:stamping-tonnage:copy", "label": "复制年度模板", "type": "op" },
+                { "code": "op:stamping-tonnage:export", "label": "导出", "type": "op" }
+              ]
+            }
           ]
         },
         {
-          "code": "menu:stamping-tonnage",
-          "label": "冲次费率",
-          "type": "menu",
+          "code": "menu:stamping-processing-fee",
+          "label": "冲压加工费",
+          "type": "group",
           "children": [
-            { "code": "op:stamping-tonnage:view", "label": "查询", "type": "op" },
-            { "code": "op:stamping-tonnage:create", "label": "新增", "type": "op" },
-            { "code": "op:stamping-tonnage:update", "label": "编辑", "type": "op" },
-            { "code": "op:stamping-tonnage:delete", "label": "删除", "type": "op" },
-            { "code": "op:stamping-tonnage:copy", "label": "复制年度模板", "type": "op" },
-            { "code": "op:stamping-tonnage:export", "label": "导出", "type": "op" }
-          ]
-        },
-        {
-          "code": "menu:stamping-process-fee-calc",
-          "label": "冲压加工费计算",
-          "type": "menu",
-          "children": [
-            { "code": "op:stamping-process-fee-calc:view", "label": "查看", "type": "op" },
-            { "code": "op:stamping-process-fee-calc:run", "label": "计算", "type": "op" },
-            { "code": "op:stamping-process-fee-calc:delete", "label": "删除日志", "type": "op" }
-          ]
-        },
-        {
-          "code": "menu:stamping-process-fee",
-          "label": "冲压加工费列表",
-          "type": "menu",
-          "children": [
-            { "code": "op:stamping-process-fee:view", "label": "查询", "type": "op" },
-            { "code": "op:stamping-process-fee:update", "label": "手工调整", "type": "op" },
-            { "code": "op:stamping-process-fee:delete", "label": "删除", "type": "op" },
-            { "code": "op:stamping-process-fee:approve", "label": "审核通过", "type": "op" },
-            { "code": "op:stamping-process-fee:reverse", "label": "反审核", "type": "op" },
-            { "code": "op:stamping-process-fee:export", "label": "导出", "type": "op" }
+            {
+              "code": "menu:stamping-process-fee-calc",
+              "label": "冲压加工费计算",
+              "type": "menu",
+              "children": [
+                { "code": "op:stamping-process-fee-calc:view", "label": "查看", "type": "op" },
+                { "code": "op:stamping-process-fee-calc:run", "label": "计算", "type": "op" },
+                { "code": "op:stamping-process-fee-calc:delete", "label": "删除日志", "type": "op" }
+              ]
+            },
+            {
+              "code": "menu:stamping-process-fee",
+              "label": "冲压加工费列表",
+              "type": "menu",
+              "children": [
+                { "code": "op:stamping-process-fee:view", "label": "查询", "type": "op" },
+                { "code": "op:stamping-process-fee:update", "label": "手工调整", "type": "op" },
+                { "code": "op:stamping-process-fee:delete", "label": "删除", "type": "op" },
+                { "code": "op:stamping-process-fee:approve", "label": "审核通过", "type": "op" },
+                { "code": "op:stamping-process-fee:reverse", "label": "反审核", "type": "op" },
+                { "code": "op:stamping-process-fee:export", "label": "导出", "type": "op" }
+              ]
+            }
           ]
         }
       ]
