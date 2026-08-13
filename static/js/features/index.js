@@ -7,7 +7,7 @@
  *   ├── dashboard/    : 仪表盘
  *   ├── stamping/    : 冲压相关功能
  *   │   ├── upload/  : 上传工艺文件
- *   │   └── parts/   : 零件列表
+ *   │   └── parts/   : 冲压零件列表
  *   ├── quotation/   : 报价
  *   ├── bom/         : BOM 材料清单
  *   │   ├── structure/ : 产品结构（Project / Assemblies）
@@ -36,17 +36,17 @@ export const pageMeta = {
     'stamping-upload': {
         title: '上传工艺文件',
         en: 'PROCESS_FILE_UPLOAD',
-        breadcrumb: ['冲压工程', '上传工艺文件'],
+        breadcrumb: ['冲压工程', '冲压工艺', '上传工艺文件'],
     },
     'stamping-parts': {
-        title: '零件列表',
+        title: '冲压零件列表',
         en: 'PARTS_MASTER',
-        breadcrumb: ['冲压工程', '零件列表'],
+        breadcrumb: ['冲压工程', '冲压工艺', '冲压零件列表'],
     },
     'stamping-tonnage': {
-        title: '冲次费率',
+        title: '冲次费率列表',
         en: 'TONNAGE_RATES_MATRIX',
-        breadcrumb: ['冲压工程', '冲次费率'],
+        breadcrumb: ['冲压工程', '冲次费', '冲次费率列表'],
     },
     'steel-price-list': {
         title: '钢材联动价格一览',

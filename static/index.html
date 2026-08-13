@@ -33,29 +33,38 @@
                     </a>
                 </li>
                 <li class="sidebar-nav-item has-submenu">
-                    <a href="#/stamping" class="sidebar-nav-link" data-submenu-toggle="stampingSubmenu">
+                    <a href="javascript:void(0)" class="sidebar-nav-link" data-submenu-toggle="stampingSubmenu">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
                         <span>冲压工程</span>
                         <svg class="w-3.5 h-3.5 ms-auto submenu-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7"></path></svg>
                     </a>
                     <ul class="submenu" id="stampingSubmenu">
-                        <li>
-                            <a href="#/stamping-upload" class="submenu-link" data-page="stamping-upload">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
-                                <span>上传工艺文件</span>
+                        <li class="submenu-item has-submenu">
+                            <a href="javascript:void(0)" class="submenu-link" data-submenu-toggle="stampingProcessSubmenu">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                                <span>冲压工艺</span>
+                                <svg class="w-3.5 h-3.5 ms-auto submenu-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7"></path></svg>
                             </a>
+                            <ul class="submenu submenu-nested" id="stampingProcessSubmenu">
+                                <li>
+                                    <a href="#/stamping-upload" class="submenu-link submenu-link-nested" data-page="stamping-upload"><span>上传工艺文件</span></a>
+                                </li>
+                                <li>
+                                    <a href="#/stamping-parts" class="submenu-link submenu-link-nested" data-page="stamping-parts"><span>冲压零件列表</span></a>
+                                </li>
+                            </ul>
                         </li>
-                        <li>
-                            <a href="#/stamping-parts" class="submenu-link" data-page="stamping-parts">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
-                                <span>零件列表</span>
-                            </a>
-                        </li>
-                        <li>
-                            <a href="#/stamping-tonnage" class="submenu-link" data-page="stamping-tonnage">
+                        <li class="submenu-item has-submenu">
+                            <a href="javascript:void(0)" class="submenu-link" data-submenu-toggle="stampingTonnageSubmenu">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
-                                <span>冲次费率</span>
+                                <span>冲次费</span>
+                                <svg class="w-3.5 h-3.5 ms-auto submenu-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7"></path></svg>
                             </a>
+                            <ul class="submenu submenu-nested" id="stampingTonnageSubmenu">
+                                <li>
+                                    <a href="#/stamping-tonnage" class="submenu-link submenu-link-nested" data-page="stamping-tonnage"><span>冲次费率列表</span></a>
+                                </li>
+                            </ul>
                         </li>
                     </ul>
                 </li>
@@ -256,6 +265,6 @@
     <!-- Toast 容器由 main.js 动态创建（统一管理生命周期） -->
 
     <script src="/static/js/main.js?v=11"></script>
-    <script type="module" src="/static/js/app.js?v=109"></script>
+    <script type="module" src="/static/js/app.js?v=110"></script>
 </body>
 </html>

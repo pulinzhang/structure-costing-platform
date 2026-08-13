@@ -41,7 +41,7 @@
         },
         {
           "code": "menu:stamping-parts",
-          "label": "零件列表",
+          "label": "冲压零件列表",
           "type": "menu",
           "children": [
             { "code": "op:stamping-parts:view", "label": "查询", "type": "op" },

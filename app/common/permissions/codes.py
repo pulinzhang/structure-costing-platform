@@ -21,7 +21,7 @@ class Perm:
     STAMPING_UPLOAD_VIEW = "op:stamping-upload:view"  # 查看
     STAMPING_UPLOAD_UPLOAD = "op:stamping-upload:upload"  # 上传
 
-    MENU_STAMPING_PARTS = "menu:stamping-parts"  # 零件列表
+    MENU_STAMPING_PARTS = "menu:stamping-parts"  # 冲压零件列表
     STAMPING_PARTS_VIEW = "op:stamping-parts:view"  # 查询
     STAMPING_PARTS_UPDATE = "op:stamping-parts:update"  # 编辑工序
     STAMPING_PARTS_DELETE = "op:stamping-parts:delete"  # 删除

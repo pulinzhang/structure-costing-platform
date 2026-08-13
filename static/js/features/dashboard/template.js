@@ -72,7 +72,7 @@ export function dashboardTemplate() {
                 <!-- 次要操作 -->
                 <a href="#" class="inline-flex items-center gap-2 text-xs font-medium active:scale-[0.98] transition-all duration-150 overview-cta" data-page="stamping-parts">
                     ${svgIcon('box', 'w-3.5 h-3.5')}
-                    查看零件列表
+                    查看冲压零件列表
                 </a>
             </div>
         </div>
