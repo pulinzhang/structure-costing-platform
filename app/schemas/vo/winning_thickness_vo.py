@@ -1,4 +1,4 @@
-"""中标材料厚度价格一览 VO。"""
+"""中标钢厂厚度价格一览表 VO。"""
 
 from typing import Optional
 

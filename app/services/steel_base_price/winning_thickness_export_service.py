@@ -1,7 +1,7 @@
-"""中标材料厚度价格一览导出服务。
+"""中标钢厂厚度价格一览表导出服务。
 
-按基地 + 年 + 月，取该期中标基准价，匹配厚度加减价政策（钢厂别名与算价一致），
-展开全部厚度区间，输出：最终价 = 基准价 + 加减价。
+按基地 + 年 + 月，取该期中标钢厂基准价，匹配厚度加减价政策（钢厂别名与算价一致），
+展开全部厚度区间，输出：最终价 = 基准价 + 厚度加减价 + 加工费。
 """
 
 from __future__ import annotations
@@ -51,7 +51,7 @@ _COLUMN_WIDTHS = [18, 14, 12, 18, 14, 14, 14, 14, 36, 36]
 
 
 class WinningThicknessExportService:
-    """中标钢材各厚度价格一览（仅厚度加价）。"""
+    """中标钢厂厚度价格一览表：基价 × 厚度阶梯，含加工费。"""
 
     def __init__(self) -> None:
         self.base_repository = SteelBasePriceRepository()
@@ -99,7 +99,7 @@ class WinningThicknessExportService:
             )
         )
         logger.info(
-            "中标厚度一览组装完成: year=%s month=%s location=%s bases=%d rows=%d",
+            "中标钢厂厚度价格一览组装完成: year=%s month=%s location=%s bases=%d rows=%d",
             year,
             month,
             location,
@@ -358,7 +358,7 @@ class WinningThicknessExportService:
     ) -> tuple[bytes, str]:
         wb = Workbook()
         ws = wb.active
-        ws.title = "中标厚度价格"
+        ws.title = "厚度价格一览"
 
         header_font = Font(name="微软雅黑", size=10, bold=True, color="FFFFFF")
         header_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
@@ -418,8 +418,8 @@ class WinningThicknessExportService:
 
         ws.freeze_panes = "A2"
 
-        filename = f"中标厚度价格_{year}年_{month}月_{location}.xlsx"
+        filename = f"中标钢厂厚度价格一览表_{year}年_{month}月_{location}.xlsx"
         output = BytesIO()
         wb.save(output)
-        logger.info("导出中标厚度价格完成: filename=%s rows=%d", filename, len(rows))
+        logger.info("导出中标钢厂厚度价格一览表完成: filename=%s rows=%d", filename, len(rows))
         return output.getvalue(), filename

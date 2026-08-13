@@ -1,11 +1,11 @@
 /**
- * 中标厚度价格导出页面逻辑
+ * 中标钢厂厚度价格一览表 — 页面逻辑
  */
 
 import {
     winningThicknessDownloadTemplate,
     renderWinningThicknessRows,
-} from './template.js?v=5';
+} from './template.js?v=7';
 
 const winningThicknessState = {
     records: [],
@@ -227,7 +227,7 @@ async function exportExcel() {
         applyFiltersToParams(params, filters);
         const { blob, filename } = await HttpClient.download(`${API_BASE}/export-download`, {
             params,
-            defaultFilename: `中标厚度价格_${filters.year}年_${filters.month}月_${filters.location}.xlsx`,
+            defaultFilename: `中标钢厂厚度价格一览表_${filters.year}年_${filters.month}月_${filters.location}.xlsx`,
         });
 
         const url = window.URL.createObjectURL(blob);

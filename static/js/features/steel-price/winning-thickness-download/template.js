@@ -1,6 +1,6 @@
 /**
- * 中标厚度价格导出页面模板
- * 必填：基地、年、月；输出基准价+厚度加减价一览（外发）
+ * 中标钢厂厚度价格一览表 — 页面模板
+ * 必填基地/年/月；中标基价叠厚度加减价后外发
  */
 
 export function winningThicknessDownloadTemplate() {
@@ -13,7 +13,7 @@ export function winningThicknessDownloadTemplate() {
                      style="background: linear-gradient(90deg, #1c1c1c 0%, #1e1e1e 60%);">
                     <div class="flex items-center gap-3">
                         <div class="w-[2px] h-4 bg-[#d32f2f] rounded-[1px] shadow-[0_0_6px_rgba(211,47,47,0.3)]"></div>
-                        <h2 class="text-[12px] font-semibold text-[#c8c8c8] tracking-wide">中标厚度价格导出</h2>
+                        <h2 class="text-[12px] font-semibold text-[#c8c8c8] tracking-wide">中标钢厂厚度价格一览表</h2>
                     </div>
                     <div class="flex items-center gap-2">
                         <button id="btnExportWinningThickness"
@@ -49,8 +49,8 @@ export function winningThicknessDownloadTemplate() {
                     <div class="bg-[#0c0c0c] border border-[#1a1a1a] rounded p-3">
                         <p class="text-[11px] text-[#888888] leading-5">
                             <span class="text-[#9e9e9e] font-medium">说明：</span>
-                            必选基地、年度、月份。按该期中标钢材（基准价）匹配厚度加减价政策，展开全部厚度区间，
-                            最终价 = 基准价 + 加减价 + 加工费。钢厂匹配规则与钢材联动计算一致。导出表供外发；溯源信息以小字弱化列展示。
+                            必选基地、年度、月份。取该期中标钢厂基准价，按算价同规则匹配厚度加减价政策并展开各厚度区间，
+                            形成外发用价格一览：最终价 = 基准价 + 厚度加减价 + 加工费。基地/钢种与溯源列弱化展示。
                         </p>
                     </div>
                 </div>

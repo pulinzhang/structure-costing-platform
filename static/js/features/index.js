@@ -94,9 +94,9 @@ export const pageMeta = {
         breadcrumb: ['一事一议', '基准价格', '基准价格列表'],
     },
     'winning-thickness-download': {
-        title: '中标厚度价格',
-        en: 'WINNING_THICKNESS_PRICE',
-        breadcrumb: ['一事一议', '基准价格', '中标厚度价格'],
+        title: '中标钢厂厚度价格一览表',
+        en: 'WINNING_MILL_THICKNESS_PRICE_LIST',
+        breadcrumb: ['一事一议', '中标钢厂厚度价格一览表'],
     },
     'scrap-price': {
         title: '废料月度销售价',

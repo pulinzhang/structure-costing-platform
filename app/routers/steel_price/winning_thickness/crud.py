@@ -1,6 +1,6 @@
 """
-中标材料厚度价格一览路由
-必填：基地、年度、月份；仅厚度加价；钢厂匹配与算价一致。
+中标钢厂厚度价格一览表路由
+必填：基地、年度、月份；中标基价叠厚度加减价；钢厂匹配与算价一致。
 """
 
 from urllib.parse import quote
@@ -27,7 +27,7 @@ logger = get_logger("router.winning_thickness")
 
 DEFAULT_PREVIEW_PAGE_SIZE = 500
 
-router = APIRouter(prefix="/api/winning-thickness-prices", tags=["中标厚度价格"])
+router = APIRouter(prefix="/api/winning-thickness-prices", tags=["中标钢厂厚度价格一览表"])
 
 _export_service = WinningThicknessExportService()
 _base_price_service = SteelBasePriceService()
@@ -81,7 +81,7 @@ def export_preview(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.WINNING_THICKNESS_DOWNLOAD_VIEW)),
 ) -> ApiResponse[PageResult[WinningThicknessRowVO]]:
-    """预览中标厚度价格一览。"""
+    """预览中标钢厂厚度价格一览。"""
     try:
         items, total = _export_service.preview(
             db,
@@ -120,7 +120,7 @@ def export_download(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.WINNING_THICKNESS_DOWNLOAD_EXPORT)),
 ) -> StreamingResponse:
-    """下载中标厚度价格 Excel（外发用；溯源列小字弱化）。"""
+    """下载中标钢厂厚度价格一览表 Excel（外发用；溯源列小字弱化）。"""
     try:
         content, filename = _export_service.export(
             db,
