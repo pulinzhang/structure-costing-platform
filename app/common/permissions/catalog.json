@@ -119,6 +119,19 @@
               ]
             }
           ]
+        },
+        {
+          "code": "menu:scrap-price",
+          "label": "废料月度销售价",
+          "type": "menu",
+          "children": [
+            { "code": "op:scrap-price:view", "label": "查询", "type": "op" },
+            { "code": "op:scrap-price:create", "label": "新增", "type": "op" },
+            { "code": "op:scrap-price:update", "label": "编辑", "type": "op" },
+            { "code": "op:scrap-price:delete", "label": "删除", "type": "op" },
+            { "code": "op:scrap-price:copy", "label": "复制月度模板", "type": "op" },
+            { "code": "op:scrap-price:export", "label": "导出", "type": "op" }
+          ]
         }
       ]
     },

@@ -78,6 +78,11 @@ export const pageMeta = {
         en: 'BASE_PRICE_DATABASE',
         breadcrumb: ['一事一议', '基准价格', '基准价格列表'],
     },
+    'scrap-price': {
+        title: '废料月度销售价',
+        en: 'SCRAP_MONTH_MATRIX',
+        breadcrumb: ['一事一议', '废料月度销售价'],
+    },
     'bom-structure': {
         title: '产品结构',
         en: '产品结构',

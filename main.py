@@ -41,6 +41,9 @@ async def lifespan(app: FastAPI):
     # 钢材价格表业务主键变更迁移：在 create_tables 之前完成表重建
     from app.utils.steel_price_key_migration import run_steel_price_key_migration
     run_steel_price_key_migration(DatabaseConfig.get_engine())
+    # 废料销售价 base_name → location：在 create_tables 之前完成表重建
+    from app.utils.scrap_price_location_migration import run_scrap_price_location_migration
+    run_scrap_price_location_migration(DatabaseConfig.get_engine())
     DatabaseConfig.create_tables()
     AuxiliaryDatabaseConfig.create_tables()
 
@@ -274,6 +277,7 @@ def create_app() -> FastAPI:
     from app.routers.stamping.crud import router as stamping_crud_router
     from app.routers.stamping.upload import router as stamping_upload_router
     from app.routers.stamping.tonnage_price import router as stamping_tonnage_price_router
+    from app.routers.stamping.scrap_price import router as stamping_scrap_price_router
     from app.routers.steel_price.crud import router as steel_price_router
     from app.routers.steel_price.calc import router as steel_price_calc_router
     from app.routers.steel_price.steel_price_policy.crud import router as steel_price_policy_router
@@ -289,6 +293,7 @@ def create_app() -> FastAPI:
     app.include_router(stamping_crud_router)
     app.include_router(stamping_upload_router)
     app.include_router(stamping_tonnage_price_router)
+    app.include_router(stamping_scrap_price_router)
     app.include_router(steel_price_calc_router)
     app.include_router(steel_price_router)
     app.include_router(steel_price_policy_router)

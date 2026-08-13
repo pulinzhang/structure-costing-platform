@@ -35,7 +35,7 @@ class Perm:
 
     MENU_YISHIYIYI = "menu:yishiyiyi"  # 一事一议
 
-    MENU_THICKNESS = "menu:thickness"  # 加减价政策（厚度/宽度/其它条件）
+    MENU_THICKNESS = "menu:thickness"  # 加减价政策
 
     MENU_STEEL_PRICE_POLICY_UPLOAD = "menu:steel-price-policy-upload"  # 上传
     STEEL_PRICE_POLICY_UPLOAD_VIEW = "op:steel-price-policy-upload:view"  # 查看
@@ -56,6 +56,14 @@ class Perm:
     BASE_PRICE_DOWNLOAD_VIEW = "op:base-price-download:view"  # 预览
     BASE_PRICE_DOWNLOAD_EXPORT = "op:base-price-download:export"  # 导出
     BASE_PRICE_DOWNLOAD_DELETE = "op:base-price-download:delete"  # 批量删除
+
+    MENU_SCRAP_PRICE = "menu:scrap-price"  # 废料月度销售价
+    SCRAP_PRICE_VIEW = "op:scrap-price:view"  # 查询
+    SCRAP_PRICE_CREATE = "op:scrap-price:create"  # 新增
+    SCRAP_PRICE_UPDATE = "op:scrap-price:update"  # 编辑
+    SCRAP_PRICE_DELETE = "op:scrap-price:delete"  # 删除
+    SCRAP_PRICE_COPY = "op:scrap-price:copy"  # 复制月度模板
+    SCRAP_PRICE_EXPORT = "op:scrap-price:export"  # 导出
 
     MENU_STEEL_PRICE = "menu:steel-price"  # 钢材联动价
 

@@ -13,7 +13,7 @@
  * 入口 URL 的 query 串驱动整体刷新；每次脚本更新后需要同步递增 ?v= 版本号。
  */
 
-import { pageMeta } from './features/index.js?v=2';
+import { pageMeta } from './features/index.js?v=3';
 
 // 页面导入
 import { getUserSession, initUserMenu, startTokenHeartbeat, updateUserSession } from './features/login/index.js?v=14';
@@ -32,6 +32,7 @@ import { pageConfig as steelPricePolicyUploadPage } from './features/steel-price
 import { pageConfig as steelPricePolicyDownloadPage } from './features/steel-price/policy-download/index.js?v=26';
 import { pageConfig as basePriceUploadPage } from './features/steel-price/base-price-upload/index.js?v=36';
 import { pageConfig as basePriceDownloadPage } from './features/steel-price/base-price-download/index.js?v=26';
+import { pageConfig as scrapPricePage } from './features/yishiyiyi/scrap-price/index.js?v=2';
 import { pageConfig as bomStructurePage }  from './features/bom/structure/index.js?v=8';
 import { pageConfig as bomVizPage }        from './features/bom/viz/index.js?v=27';
 import { pageConfig as bomUploadPage }     from './features/bom/upload/index.js?v=2';
@@ -60,6 +61,7 @@ const pages = {
     'steel-price-policy-download': steelPricePolicyDownloadPage,
     'base-price-upload': basePriceUploadPage,
     'base-price-download': basePriceDownloadPage,
+    'scrap-price': scrapPricePage,
     'bom-structure':  bomStructurePage,
     'bom-viz':        bomVizPage,
     'bom-upload':     bomUploadPage,

@@ -364,6 +364,13 @@ root
 │           ├── op:base-price-download:view
 │           ├── op:base-price-download:export
 │           └── op:base-price-download:delete
+│   └── menu:scrap-price                       # 废料月度销售价
+│       ├── op:scrap-price:view
+│       ├── op:scrap-price:create
+│       ├── op:scrap-price:update
+│       ├── op:scrap-price:delete
+│       ├── op:scrap-price:copy
+│       └── op:scrap-price:export
 │
 ├── menu:steel-price                           # 钢材联动价（分组，可勾）
 │   ├── menu:steel-price-calc
@@ -417,8 +424,8 @@ root
 | 类别 | 数量 |
 |---|---|
 | 分组 `menu` | 7（`stamping` / `yishiyiyi` / `thickness` / `base-price` / `steel-price` / `bom` / `settings`） |
-| 叶子 `menu` | 17 |
-| 操作 `op` | 45 |
+| 叶子 `menu` | 18 |
+| 操作 `op` | 50 |
 | 可勾节点合计 | 约 67（`root` 一般不入库） |
 | 新建默认 | 7 |
 | 强制 | 5（均包含在默认集内） |
@@ -433,6 +440,7 @@ root
 | stamping-upload | `view` / `upload` | 进入页；「上传」 |
 | stamping-parts | `view` / `update` / `delete` | 查询详情；保存工序；删除零件 |
 | stamping-tonnage | `view` / `create` / `update` / `delete` / `copy` | 查询；新增；编辑；删除；复制年度模板 |
+| scrap-price | `view` / `create` / `update` / `delete` / `copy` / `export` | 查询；整月保存；删除本月；复制月度；导出 Excel |
 | steel-price-policy-upload | `view` / `upload` | 进入页；导入政策 |
 | steel-price-policy-download | `view` / `export` / `delete` | 预览；导出 Excel；批量删除 |
 | base-price-upload | `view` / `upload` | 进入页；导入基准价格 |
@@ -628,3 +636,5 @@ static/index.html           # 侧栏 data-page
 | 2026-08-12 | 增补 §0「新增功能标准流程」；前后端同码双向写入；对齐 api-type-safety §7.0 |
 | 2026-08-12 | 减熵：api-type-safety §7.0 收短链；删除未用 hideIfCannot/disableIfCannot；明确 UserService 双检为例外 |
 | 2026-08-12 | 新增 `menu:settings-logs` / `op:settings-logs:view|export`；操作日志页与导出审计 |
+| 2026-08-13 | 新增 `menu:scrap-price` / `op:scrap-price:view|create|update|delete|copy`；废料月度销售价后端 |
+| 2026-08-13 | 废料销售价增加 `op:scrap-price:export` 与宽表 Excel 导出 |
