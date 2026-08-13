@@ -9,7 +9,8 @@ import {
     renderFeePagination,
     updateFeeHud,
     updateFeeFilterCapsules,
-} from './template.js?v=11';
+    shortPartNumber,
+} from './template.js?v=12';
 
 const API_BASE = '/api/stamping/process-fees';
 const DRAWER_ANIMATION_MS = 300;
@@ -373,6 +374,24 @@ async function loadData(page = 1) {
     }
 }
 
+function fillPartNumberFields(prefix, partNumber) {
+    const shortEl = document.getElementById(`${prefix}-part-short`);
+    const fullEl = document.getElementById(`${prefix}-part-number`);
+    const full = partNumber || '';
+    const shortNo = shortPartNumber(full);
+    if (shortEl) {
+        shortEl.textContent = shortNo || (full || '—');
+        shortEl.classList.toggle('text-xl', Boolean(shortNo));
+        shortEl.classList.toggle('text-xs', !shortNo);
+        shortEl.classList.toggle('text-[#cccccc]', !shortNo);
+        shortEl.classList.toggle('text-white', Boolean(shortNo));
+    }
+    if (fullEl) {
+        fullEl.textContent = shortNo ? full : '';
+        fullEl.classList.toggle('hidden', !shortNo);
+    }
+}
+
 function fillViewField(id, value) {
     const el = document.getElementById(id);
     if (el) el.textContent = value == null || value === '' ? '—' : String(value);
@@ -404,7 +423,7 @@ function openViewDrawer(record) {
     fillViewField('fee-view-supplier', record.stamping_supplier);
     fillViewField('fee-view-vehicle', record.vehicle_model);
     fillViewField('fee-view-version', record.version);
-    fillViewField('fee-view-part-number', record.part_number);
+    fillPartNumberFields('fee-view', record.part_number);
     fillViewField('fee-view-part-name', record.part_name);
     fillViewField('fee-view-seq-no', record.seq_no);
     fillViewField('fee-view-material', record.material);
@@ -458,7 +477,7 @@ function openEditDrawer(record) {
     fillViewField('fee-edit-year', record.year);
     fillViewField('fee-edit-location', record.location);
     fillViewField('fee-edit-supplier', record.stamping_supplier);
-    fillViewField('fee-edit-part-number', record.part_number);
+    fillPartNumberFields('fee-edit', record.part_number);
     fillViewField('fee-edit-vehicle', record.vehicle_model);
     fillViewField('fee-edit-version', record.version);
     fillViewField('fee-edit-processing-fee', formatDecimal(record.processing_fee, 3));

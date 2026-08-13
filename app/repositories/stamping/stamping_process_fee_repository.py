@@ -142,7 +142,8 @@ class StampingProcessFeeRepository:
             q.order_by(
                 StampingProcessFee.year.desc(),
                 StampingProcessFee.location,
-                StampingProcessFee.part_number,
+                StampingProcessFee.stamping_supplier,
+                StampingProcessFee.id.asc(),
             )
             .offset(skip)
             .limit(limit)
@@ -181,7 +182,7 @@ class StampingProcessFeeRepository:
                 StampingProcessFee.year.desc(),
                 StampingProcessFee.location,
                 StampingProcessFee.stamping_supplier,
-                StampingProcessFee.part_number,
+                StampingProcessFee.id.asc(),
             )
             .all()
         )
