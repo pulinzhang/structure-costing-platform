@@ -6,9 +6,9 @@
 from datetime import datetime
 from decimal import Decimal
 from enum import Enum
-from typing import Optional
+from typing import Optional, Union
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_serializer
 
 
 # ============================
@@ -43,13 +43,13 @@ class Operator(str, Enum):
 # ============================
 
 
-def _decimal_str(v: Optional[Decimal | float | int | str]) -> Optional[Decimal]:
-    """将各种输入转为 Decimal，None 时返回 None"""
-    if v is None:
+def decimal_to_float(value: Union[Decimal, float, None]) -> float | None:
+    """Decimal → float，供 JSON / OpenAPI 序列化"""
+    if value is None:
         return None
-    if isinstance(v, Decimal):
-        return v
-    return Decimal(str(v))
+    if isinstance(value, Decimal):
+        return float(value)
+    return value
 
 
 # ============================
@@ -111,15 +111,13 @@ class LadderItemResponse(BaseModel):
     created_by: Optional[str] = None
     updated_by: Optional[str] = None
 
-    @field_validator(
+    @field_serializer(
         "thick_min", "thick_max",
         "width_min", "width_max",
         "zinc_coating_min", "zinc_coating_max",
-        mode="plain",
     )
-    @classmethod
-    def keep_decimal(cls, v):
-        return _decimal_str(v)
+    def serialize_decimal(self, value: Union[Decimal, float, None]) -> float | None:
+        return decimal_to_float(value)
 
     model_config = {"from_attributes": True}
 
@@ -146,15 +144,13 @@ class PolicyListResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    @field_validator("base_thickness", mode="plain")
-    @classmethod
-    def keep_decimal(cls, v):
-        return _decimal_str(v)
+    @field_serializer("base_thickness")
+    def serialize_base_thickness(self, value: Union[Decimal, float, None]) -> float | None:
+        return decimal_to_float(value)
 
-    @field_validator("created_at", "updated_at")
-    @classmethod
-    def iso_datetime(cls, v: datetime) -> str:
-        return v.isoformat() if v else None
+    @field_serializer("created_at", "updated_at")
+    def serialize_datetime(self, value: Optional[datetime]) -> Optional[str]:
+        return value.isoformat() if value else None
 
     model_config = {"from_attributes": True}
 
@@ -176,15 +172,13 @@ class PolicyDetailResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    @field_validator("base_thickness", mode="plain")
-    @classmethod
-    def keep_decimal(cls, v):
-        return _decimal_str(v)
+    @field_serializer("base_thickness")
+    def serialize_base_thickness(self, value: Union[Decimal, float, None]) -> float | None:
+        return decimal_to_float(value)
 
-    @field_validator("created_at", "updated_at")
-    @classmethod
-    def iso_datetime(cls, v: datetime) -> str:
-        return v.isoformat() if v else None
+    @field_serializer("created_at", "updated_at")
+    def serialize_datetime(self, value: Optional[datetime]) -> Optional[str]:
+        return value.isoformat() if value else None
 
     model_config = {"from_attributes": True}
 
@@ -218,15 +212,13 @@ class MatchedLadderItem(BaseModel):
     is_base: int = 0
     sort_order: int = 0
 
-    @field_validator(
+    @field_serializer(
         "thick_min", "thick_max",
         "width_min", "width_max",
         "zinc_coating_min", "zinc_coating_max",
-        mode="plain",
     )
-    @classmethod
-    def keep_decimal(cls, v):
-        return _decimal_str(v)
+    def serialize_decimal(self, value: Union[Decimal, float, None]) -> float | None:
+        return decimal_to_float(value)
 
     model_config = {"from_attributes": True}
 
