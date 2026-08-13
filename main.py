@@ -347,11 +347,14 @@ if __name__ == "__main__":
 
     # uvicorn.run() 内部是一个【无限循环】
     # 程序会一直运行，直到手动按 Ctrl+C 停止
+    # reload 默认监视整个项目目录；logs/、data/ 等运行时文件一写盘就会刷
+    # "N change detected"。只监视业务代码目录，避免日志/SQLite 触发误报。
     uvicorn.run(
         "main:app",  # "文件名:变量名" 的格式
         host=settings.HOST,
         port=settings.PORT,
         reload=settings.DEBUG,
+        reload_dirs=["app"] if settings.DEBUG else None,
         log_level="info",
         access_log=False,  # 禁用 uvicorn 访问日志，使用我们自己的请求日志中间件
     )
