@@ -1,6 +1,6 @@
 /**
  * Steel Price Linked Settlement Template
- * 钢材基准价与加减价联动计算
+ * 冲压钢材：基准价与加减价联动计算
  */
 
 export function steelPriceCalcTemplate() {
@@ -8,7 +8,7 @@ export function steelPriceCalcTemplate() {
         <div class="space-y-4 w-full font-sans antialiased text-[#bbb]">
             
             <div class="flex items-center justify-between pb-2 border-b border-[#222]">
-                <h1 class="text-xs font-bold text-[#e0e0e0] tracking-wider">钢材基准价与加减价联动计算</h1>
+                <h1 class="text-xs font-bold text-[#e0e0e0] tracking-wider">冲压钢材基准价与加减价联动计算</h1>
             </div>
 
             <div class="flex items-center justify-between py-2.5 border-y border-[#1e1e1e]"

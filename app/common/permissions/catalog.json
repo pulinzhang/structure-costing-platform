@@ -199,37 +199,6 @@
       ]
     },
     {
-      "code": "menu:steel-price",
-      "label": "钢材联动价",
-      "type": "group",
-      "children": [
-        {
-          "code": "menu:steel-price-calc",
-          "label": "钢材联动计算",
-          "type": "menu",
-          "children": [
-            { "code": "op:steel-price-calc:view", "label": "查看", "type": "op" },
-            { "code": "op:steel-price-calc:run", "label": "开始计算", "type": "op" },
-            { "code": "op:steel-price-calc:delete", "label": "删除日志", "type": "op" }
-          ]
-        },
-        {
-          "code": "menu:steel-price-list",
-          "label": "钢材联动价格一览",
-          "type": "menu",
-          "children": [
-            { "code": "op:steel-price-list:view", "label": "查询", "type": "op" },
-            { "code": "op:steel-price-list:update", "label": "编辑", "type": "op" },
-            { "code": "op:steel-price-list:delete", "label": "删除", "type": "op" },
-            { "code": "op:steel-price-list:approve", "label": "审核通过", "type": "op" },
-            { "code": "op:steel-price-list:reject", "label": "驳回", "type": "op" },
-            { "code": "op:steel-price-list:reverse", "label": "反审核", "type": "op" },
-            { "code": "op:steel-price-list:export", "label": "导出", "type": "op" }
-          ]
-        }
-      ]
-    },
-    {
       "code": "menu:bom",
       "label": "BOM",
       "type": "group",
@@ -256,9 +225,47 @@
     {
       "code": "menu:costing",
       "label": "核价",
-      "type": "menu",
+      "type": "group",
       "children": [
-        { "code": "op:costing:view", "label": "查看", "type": "op" }
+        {
+          "code": "menu:steel-price",
+          "label": "冲压钢材联动价",
+          "type": "group",
+          "children": [
+            {
+              "code": "menu:steel-price-calc",
+              "label": "冲压钢材联动计算",
+              "type": "menu",
+              "children": [
+                { "code": "op:steel-price-calc:view", "label": "查看", "type": "op" },
+                { "code": "op:steel-price-calc:run", "label": "开始计算", "type": "op" },
+                { "code": "op:steel-price-calc:delete", "label": "删除日志", "type": "op" }
+              ]
+            },
+            {
+              "code": "menu:steel-price-list",
+              "label": "冲压钢材联动价一览",
+              "type": "menu",
+              "children": [
+                { "code": "op:steel-price-list:view", "label": "查询", "type": "op" },
+                { "code": "op:steel-price-list:update", "label": "编辑", "type": "op" },
+                { "code": "op:steel-price-list:delete", "label": "删除", "type": "op" },
+                { "code": "op:steel-price-list:approve", "label": "审核通过", "type": "op" },
+                { "code": "op:steel-price-list:reject", "label": "驳回", "type": "op" },
+                { "code": "op:steel-price-list:reverse", "label": "反审核", "type": "op" },
+                { "code": "op:steel-price-list:export", "label": "导出", "type": "op" }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "menu:costing-engine",
+          "label": "自动核价引擎",
+          "type": "menu",
+          "children": [
+            { "code": "op:costing:view", "label": "查看", "type": "op" }
+          ]
+        }
       ]
     },
     {

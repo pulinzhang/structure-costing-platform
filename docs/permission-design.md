@@ -374,14 +374,17 @@ root
 │   │       ├── op:steel-price-policy-download:view
 │   │       ├── op:steel-price-policy-download:export
 │   │       └── op:steel-price-policy-download:delete
-│   └── menu:base-price                        # 基准价格（二级分组，可勾）
-│       ├── menu:base-price-upload
-│       │   ├── op:base-price-upload:view
-│       │   └── op:base-price-upload:upload
-│       └── menu:base-price-download
-│           ├── op:base-price-download:view
-│           ├── op:base-price-download:export
-│           └── op:base-price-download:delete
+│   ├── menu:base-price                        # 基准价格（二级分组，可勾）
+│   │   ├── menu:base-price-upload
+│   │   │   ├── op:base-price-upload:view
+│   │   │   └── op:base-price-upload:upload
+│   │   └── menu:base-price-download
+│   │       ├── op:base-price-download:view
+│   │       ├── op:base-price-download:export
+│   │       └── op:base-price-download:delete
+│   ├── menu:winning-thickness-download        # 中标钢厂厚度价格一览表
+│   │   ├── op:winning-thickness-download:view
+│   │   └── op:winning-thickness-download:export
 │   └── menu:scrap-price                       # 废料月度销售价
 │       ├── op:scrap-price:view
 │       ├── op:scrap-price:create
@@ -390,20 +393,6 @@ root
 │       ├── op:scrap-price:copy
 │       └── op:scrap-price:export
 │
-├── menu:steel-price                           # 钢材联动价（分组，可勾）
-│   ├── menu:steel-price-calc
-│   │   ├── op:steel-price-calc:view
-│   │   ├── op:steel-price-calc:run
-│   │   └── op:steel-price-calc:delete
-│   └── menu:steel-price-list
-│       ├── op:steel-price-list:view
-│       ├── op:steel-price-list:update
-│       ├── op:steel-price-list:delete
-│       ├── op:steel-price-list:approve
-│       ├── op:steel-price-list:reject
-│       ├── op:steel-price-list:reverse
-│       └── op:steel-price-list:export
-│
 ├── menu:bom                                   # BOM（分组，可勾）
 │   ├── menu:bom-structure                     # 产品结构（路由 page=bom-structure）
 │   │   └── op:bom-structure:view
@@ -411,8 +400,22 @@ root
 │       ├── op:bom-upload:view
 │       └── op:bom-upload:upload
 │
-├── menu:costing
-│   └── op:costing:view                        # 功能开发中，预留
+├── menu:costing                               # 核价（分组，可勾）
+│   ├── menu:steel-price                       # 冲压钢材联动价（核价第一步）
+│   │   ├── menu:steel-price-calc
+│   │   │   ├── op:steel-price-calc:view
+│   │   │   ├── op:steel-price-calc:run
+│   │   │   └── op:steel-price-calc:delete
+│   │   └── menu:steel-price-list
+│   │       ├── op:steel-price-list:view
+│   │       ├── op:steel-price-list:update
+│   │       ├── op:steel-price-list:delete
+│   │       ├── op:steel-price-list:approve
+│   │       ├── op:steel-price-list:reject
+│   │       ├── op:steel-price-list:reverse
+│   │       └── op:steel-price-list:export
+│   └── menu:costing-engine                    # 自动核价引擎（路由 page=costing）
+│       └── op:costing:view
 │
 ├── menu:quotation
 │   └── op:quotation:view                      # 功能开发中，预留
@@ -441,10 +444,10 @@ root
 
 | 类别 | 数量 |
 |---|---|
-| 分组 `menu` | 10（`stamping` / `stamping-process` / `stamping-stroke-unit-price` / `stamping-processing-fee` / `yishiyiyi` / `thickness` / `base-price` / `steel-price` / `bom` / `settings`） |
-| 叶子 `menu` | 18 |
-| 操作 `op` | 50 |
-| 可勾节点合计 | 约 70（`root` 一般不入库） |
+| 分组 `type=group` | 11（`stamping` / `stamping-process` / `stamping-stroke-unit-price` / `stamping-processing-fee` / `yishiyiyi` / `thickness` / `base-price` / `bom` / `costing` / `steel-price` / `settings`） |
+| 叶子 `type=menu` | 23 |
+| 操作 `op` | 69 |
+| 可勾节点合计 | 103（`root` 一般不入库） |
 | 新建默认 | 7 |
 | 强制 | 5（均包含在默认集内） |
 
@@ -466,12 +469,14 @@ root
 | steel-price-policy-download | `view` / `export` / `delete` | 预览；导出 Excel；批量删除 |
 | base-price-upload | `view` / `upload` | 进入页；导入基准价格 |
 | base-price-download | `view` / `export` / `delete` | 预览；导出；批量删除 |
+| winning-thickness-download | `view` / `export` | 预览；导出 Excel |
 | bom-structure | `view` | 产品结构：基地/项目卡片浏览 |
 | bom-viz（权限码同 `menu:bom-structure`） | `view` | Assembly Workspace |
 | bom-upload | `view` / `upload` | 进入页；导入材料清单 |
 | steel-price-calc | `view` / `run` / `delete` | 历史/过程；开始计算；删除日志 |
 | steel-price-list | `view` / `update` / `delete` / `approve` / `reject` / `reverse` / `export` | 查询；编辑；删除（含批量）；通过（含批量）；驳回；反审核（含批量）；导出 |
-| costing / quotation | `view` | 进入占位页 |
+| costing（菜单码 `menu:costing-engine`） | `view`（`op:costing:view`） | 自动核价引擎 |
+| quotation | `view` | 进入占位页 |
 | settings-profile | `view` / `update` / `password` | 查看；改资料/头像；改自己密码 |
 | settings-system | `view` / `update` | 查看系统设置；保存设置 |
 | settings-users | `view` / `create` / `update` / `password` / `delete` / `grant` | 查询；新增；编辑；重置他人密码；删除；授权 |
@@ -510,12 +515,23 @@ permissions: string[]   # is_admin 时可 ["*"] 或全量；前端统一用 can(
 前端封装（`static/js/permissions.js`）：
 
 ```text
+PAGE_MENU_CODE = {
+  settings: 'menu:settings-system',   # 路由 key 与分组码撞名
+  'bom-viz': 'menu:bom-structure',    # Workspace 与产品结构同权
+  costing: 'menu:costing-engine',     # 分组为 menu:costing，叶子为引擎
+}
+
 can(code) => is_admin || permissions.includes("*") || permissions.includes(code)
 menuCodeForPage(page) => PAGE_MENU_CODE[page] || `menu:${page}`
-canAccessPage(page) => can(menuCodeForPage(page))
+canAccessPage(page) =>
+  page === 'costing'
+    ? can('menu:costing-engine') || can('menu:costing')   # 兼容旧授权只勾分组
+    : can(menuCodeForPage(page))
 ```
 
 会话（localStorage）同步保存 `is_admin`、`permissions`；授权变更后目标用户需重新登录或下次 `me`/`touch` 刷新。
+
+**授权注意**：`menu:costing` 现为分组；进入自动核价引擎应勾选叶子 `menu:costing-engine`（及 `op:costing:view`）。旧数据仅有 `menu:costing` 时前端仍可进页，但建议补授叶子码。
 
 ### 10.2 侧边栏与路由（前端 menu）
 

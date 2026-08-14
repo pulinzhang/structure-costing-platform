@@ -6,11 +6,42 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Union
 
-from pydantic import BaseModel, field_serializer
+from pydantic import BaseModel, Field, field_serializer
 
 
 def decimal_to_float(value: Union[Decimal, float, None]) -> float | None:
     return float(value) if isinstance(value, Decimal) else value
+
+
+class StampingProcessFeeItemVO(BaseModel):
+    """加工费工序分项（单价计算依据）"""
+
+    id: int | None = None
+    source_process_id: int | None = None
+    process_seq: str | None = None
+    process_order: int | None = None
+    process_code: str | None = None
+    original_tonnage: int | None = None
+    resolved_tonnage: int | None = None
+    tonnage_source: str = "self"
+    inherited_from_part_id: int | None = None
+    inherited_from_part_number: str | None = None
+    inherited_from_process_seq: str | None = None
+    inherited_from_process_code: str | None = None
+    cost_ratio: float | None = None
+    tonnage_price_id: int | None = None
+    price_per_stroke: float | None = None
+    line_fee: float | None = None
+    basis_text: str | None = None
+    remark: str | None = None
+
+    @field_serializer("cost_ratio", "price_per_stroke", "line_fee")
+    def serialize_item_decimal(
+        self, value: Union[Decimal, float, None]
+    ) -> float | None:
+        return decimal_to_float(value)
+
+    model_config = {"from_attributes": True}
 
 
 class StampingProcessFeeVO(BaseModel):
@@ -56,6 +87,7 @@ class StampingProcessFeeVO(BaseModel):
     updated_by: str | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
+    process_items: list[StampingProcessFeeItemVO] = Field(default_factory=list)
 
     @field_serializer(
         "processing_fee",

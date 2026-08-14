@@ -9,6 +9,8 @@
   须先反审核为 pending。
 """
 
+from typing import List
+
 from sqlalchemy import (
     Column,
     Integer,
@@ -19,6 +21,7 @@ from sqlalchemy import (
     Index,
     UniqueConstraint,
 )
+from sqlalchemy.orm import Mapped, relationship
 
 from app.database import Base
 from app.models.audit_mixin import AuditUserMixin
@@ -30,6 +33,13 @@ class StampingProcessFee(AuditUserMixin, Base):
     __tablename__ = "stamping_process_fees"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
+
+    process_items: Mapped[List["StampingProcessFeeItem"]] = relationship(
+        "StampingProcessFeeItem",
+        back_populates="fee",
+        cascade="all, delete-orphan",
+        order_by="StampingProcessFeeItem.process_order, StampingProcessFeeItem.id",
+    )
 
     year = Column(Integer, nullable=False, comment="计算年度")
     location = Column(String(50), nullable=False, comment="采购基地")

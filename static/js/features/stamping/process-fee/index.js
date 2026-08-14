@@ -10,10 +10,16 @@ import {
     updateFeeHud,
     updateFeeFilterCapsules,
     shortPartNumber,
-} from './template.js?v=12';
+} from './template.js?v=13';
 
 const API_BASE = '/api/stamping/process-fees';
 const DRAWER_ANIMATION_MS = 300;
+
+const TONNAGE_SOURCE_LABEL = {
+    self: '自有',
+    inherited: '继承',
+    swing_shear: '摆剪',
+};
 
 const feeState = {
     records: [],
@@ -418,6 +424,19 @@ function auditStatusLabel(status) {
 
 function openViewDrawer(record) {
     feeState.viewingId = record.id;
+    fillViewFieldsFromRecord(record);
+    renderProcessItems(record.process_items || []);
+
+    const approved = record.audit_status === 'approved';
+    const editBtn = document.getElementById('feeViewDrawerEditBtn');
+    if (editBtn) {
+        editBtn.classList.toggle('hidden', !(feeState.canUpdate && !approved));
+    }
+    openDrawer('feeViewDrawer', 'feeViewDrawerBackdrop');
+    loadFeeDetail(record.id);
+}
+
+function fillViewFieldsFromRecord(record) {
     fillViewField('fee-view-year', record.year);
     fillViewField('fee-view-location', record.location);
     fillViewField('fee-view-supplier', record.stamping_supplier);
@@ -455,13 +474,66 @@ function openViewDrawer(record) {
     fillViewField('fee-view-created-at', formatDateTime(record.created_at));
     fillViewField('fee-view-updated-by', record.updated_by);
     fillViewField('fee-view-updated-at', formatDateTime(record.updated_at));
+}
 
-    const approved = record.audit_status === 'approved';
-    const editBtn = document.getElementById('feeViewDrawerEditBtn');
-    if (editBtn) {
-        editBtn.classList.toggle('hidden', !(feeState.canUpdate && !approved));
+async function loadFeeDetail(feeId) {
+    const container = document.getElementById('feeViewProcessItems');
+    if (container) {
+        container.innerHTML = '<div class="px-4 py-6 text-[11px] text-[#616161]">加载中...</div>';
     }
-    openDrawer('feeViewDrawer', 'feeViewDrawerBackdrop');
+    try {
+        const res = await HttpClient.get(`${API_BASE}/${feeId}`);
+        const detail = res?.data || res;
+        if (!detail || feeState.viewingId !== feeId) return;
+        fillViewFieldsFromRecord(detail);
+        renderProcessItems(detail.process_items || []);
+    } catch (error) {
+        if (container && feeState.viewingId === feeId) {
+            container.innerHTML = `<div class="px-4 py-6 text-[11px] text-[#ef5350]">${esc(error.message || '加载溯源失败')}</div>`;
+        }
+    }
+}
+
+function renderProcessItems(items) {
+    const container = document.getElementById('feeViewProcessItems');
+    if (!container) return;
+    if (!items || !items.length) {
+        container.innerHTML = '<div class="px-4 py-6 text-[11px] text-[#616161]">暂无工序溯源（请重新计算后生成）</div>';
+        return;
+    }
+    const rows = items.map((item) => {
+        const sourceLabel = TONNAGE_SOURCE_LABEL[item.tonnage_source] || item.tonnage_source || '—';
+        const inheritHint = item.tonnage_source === 'inherited'
+            ? `${esc(item.inherited_from_part_number || '')} / ${esc(item.inherited_from_process_seq || '')}`
+            : '—';
+        return `
+            <tr class="hover:bg-[#ffffff]/[0.02] transition-colors">
+                <td class="px-3 py-2 text-[11px] font-mono text-[#9e9e9e] whitespace-nowrap">${esc(item.process_seq || '—')}</td>
+                <td class="px-3 py-2 text-[11px] text-[#cccccc] whitespace-nowrap">${esc(item.process_code || '—')}</td>
+                <td class="px-3 py-2 text-[11px] text-right font-mono tabular-nums text-[#9e9e9e]">${esc(item.resolved_tonnage != null ? `${item.resolved_tonnage}T` : '—')}</td>
+                <td class="px-3 py-2 text-[11px] text-[#9e9e9e] whitespace-nowrap">${esc(sourceLabel)}</td>
+                <td class="px-3 py-2 text-[11px] text-right font-mono tabular-nums text-[#9e9e9e]">${formatDecimal(item.cost_ratio, 2)}</td>
+                <td class="px-3 py-2 text-[11px] text-right font-mono tabular-nums text-[#9e9e9e]">${formatDecimal(item.price_per_stroke, 3)}</td>
+                <td class="px-3 py-2 text-[11px] text-right font-mono tabular-nums text-[#ffffff]">${formatDecimal(item.line_fee, 3)}</td>
+                <td class="px-3 py-2 text-[11px] text-[#888888] min-w-[180px]">${esc(item.basis_text || inheritHint)}</td>
+            </tr>`;
+    }).join('');
+    container.innerHTML = `
+        <table class="w-full">
+            <thead>
+                <tr class="bg-[#0a0a0a] border-b border-[#2c2c2c]">
+                    <th class="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161]">工序</th>
+                    <th class="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161]">代码</th>
+                    <th class="px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161]">吨位</th>
+                    <th class="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161]">来源</th>
+                    <th class="px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161]">比例</th>
+                    <th class="px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161]">冲次单价</th>
+                    <th class="px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161]">本序费</th>
+                    <th class="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161]">计算依据</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-[#222222]">${rows}</tbody>
+        </table>`;
 }
 
 function openEditDrawer(record) {

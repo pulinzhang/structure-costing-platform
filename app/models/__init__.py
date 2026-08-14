@@ -5,6 +5,7 @@ from app.models.bom import BomNode, BomSnapshot
 from app.models.operation_log import OperationLog
 from app.models.stamping import StampingPart, StampingProcess
 from app.models.stamping_process_fee import StampingProcessFee
+from app.models.stamping_process_fee_item import StampingProcessFeeItem
 from app.models.stamping_process_fee_calc_log import StampingProcessFeeCalcLog
 from app.models.stamping_scrap_price import StampingScrapPrice
 from app.models.stamping_tonnage_price import StampingTonnagePrice
@@ -25,6 +26,7 @@ __all__ = [
     "StampingProcess",
     "StampingTonnagePrice",
     "StampingProcessFee",
+    "StampingProcessFeeItem",
     "StampingProcessFeeCalcLog",
     "StampingScrapPrice",
     "SteelPrice",

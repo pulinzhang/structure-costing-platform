@@ -64,14 +64,14 @@ export const pageMeta = {
         breadcrumb: ['冲压工程', '冲压加工费', '冲压加工费列表'],
     },
     'steel-price-list': {
-        title: '钢材联动价格一览',
-        en: 'STEEL_LINKAGE_LIST',
-        breadcrumb: ['钢材联动价', '钢材联动价格一览'],
+        title: '冲压钢材联动价一览',
+        en: 'STAMPING_STEEL_LINKAGE_LIST',
+        breadcrumb: ['核价', '冲压钢材联动价', '冲压钢材联动价一览'],
     },
     'steel-price-calc': {
-        title: '钢材联动计算',
-        en: 'STEEL_LINKAGE_CALC',
-        breadcrumb: ['钢材联动价', '钢材联动计算'],
+        title: '冲压钢材联动计算',
+        en: 'STAMPING_STEEL_LINKAGE_CALC',
+        breadcrumb: ['核价', '冲压钢材联动价', '冲压钢材联动计算'],
     },
     'steel-price-policy-upload': {
         title: '加减价政策上传',
@@ -121,7 +121,7 @@ export const pageMeta = {
     costing: {
         title: '自动核价引擎',
         en: 'AUTOMATED_COSTING',
-        breadcrumb: ['核价'],
+        breadcrumb: ['核价', '自动核价引擎'],
     },
     quotation: {
         title: '报价单管理',

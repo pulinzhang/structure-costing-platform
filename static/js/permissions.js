@@ -9,6 +9,8 @@ import { getUserSession } from './features/login/index.js?v=14';
 const PAGE_MENU_CODE = {
     settings: 'menu:settings-system',
     'bom-viz': 'menu:bom-structure',
+    // 核价分组下的引擎页（分组码为 menu:costing）
+    costing: 'menu:costing-engine',
 };
 
 /**
@@ -40,6 +42,10 @@ export function menuCodeForPage(pageName) {
  * @returns {boolean}
  */
 export function canAccessPage(pageName) {
+    if (pageName === 'costing') {
+        // 兼容旧授权仅勾选 menu:costing 的情况
+        return can('menu:costing-engine') || can('menu:costing');
+    }
     return can(menuCodeForPage(pageName));
 }
 

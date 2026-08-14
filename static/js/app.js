@@ -13,7 +13,7 @@
  * 入口 URL 的 query 串驱动整体刷新；每次脚本更新后需要同步递增 ?v= 版本号。
  */
 
-import { pageMeta } from './features/index.js?v=7';
+import { pageMeta } from './features/index.js?v=9';
 
 // 页面导入
 import { getUserSession, initUserMenu, startTokenHeartbeat, updateUserSession } from './features/login/index.js?v=14';
@@ -21,16 +21,16 @@ import {
     applySidebarPermissions,
     canAccessPage,
     fallbackPageName,
-} from './permissions.js?v=8';
+} from './permissions.js?v=9';
 import { pageConfig as dashboardPage }      from './features/dashboard/index.js';
 import { pageConfig as stampingUploadPage } from './features/stamping/upload/index.js?v=35';
 import { pageConfig as stampingPartsPage }  from './features/stamping/parts/index.js?v=2';
 import { pageConfig as stampingTonnagePage } from './features/stamping/tonnage/index.js?v=6';
 import { pageConfig as stampingTonnageUploadPage } from './features/stamping/tonnage-upload/index.js?v=1';
 import { pageConfig as stampingProcessFeeCalcPage } from './features/stamping/process-fee-calc/index.js?v=12';
-import { pageConfig as stampingProcessFeePage } from './features/stamping/process-fee/index.js?v=11';
+import { pageConfig as stampingProcessFeePage } from './features/stamping/process-fee/index.js?v=12';
 import { pageConfig as steelPriceListPage }   from './features/steel-price/list/index.js?v=42';
-import { pageConfig as steelPriceCalcPage }    from './features/steel-price/calc/index.js?v=6';
+import { pageConfig as steelPriceCalcPage }    from './features/steel-price/calc/index.js?v=8';
 import { pageConfig as steelPricePolicyUploadPage } from './features/steel-price/policy-upload/index.js?v=35';
 import { pageConfig as steelPricePolicyDownloadPage } from './features/steel-price/policy-download/index.js?v=26';
 import { pageConfig as basePriceUploadPage } from './features/steel-price/base-price-upload/index.js?v=36';

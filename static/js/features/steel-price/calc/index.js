@@ -3,7 +3,7 @@
  * 钢价计算 — 过滤条件 + 异步后台计算 + 进度轮询 + 历史过程日志
  */
 
-import { steelPriceCalcTemplate, renderCalcHistoryPagination } from './template.js';
+import { steelPriceCalcTemplate, renderCalcHistoryPagination } from './template.js?v=2';
 
 const STAMPING_CASCADE_FILTERS_API = '/api/stamping/filters/cascade';
 const STEEL_PRICE_CALC_STATS_API = '/api/dashboard/stats/steel-price-calc';

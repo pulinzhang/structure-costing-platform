@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import logging
 import uuid
+from dataclasses import dataclass
 from datetime import timedelta
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Callable, Optional
@@ -36,6 +37,7 @@ from app.repositories.stamping.stamping_process_fee_calc_log_repository import (
 from app.repositories.stamping.stamping_process_fee_repository import (
     AUDIT_APPROVED,
     AUDIT_PENDING,
+    PROCESS_ITEMS_KEY,
     StampingProcessFeeRepository,
 )
 from app.repositories.stamping.stamping_repository import StampingPartRepository
@@ -70,6 +72,30 @@ STALE_PROCESSING_SECONDS = 2 * 60 * 60
 DUPLICATE_SCOPE_CALC_MESSAGE = "当前年度/基地/工厂正在计算中，请勿重复提交。"
 
 ProgressCallback = Callable[[int, str], None]
+
+TONNAGE_SOURCE_SELF = "self"
+TONNAGE_SOURCE_INHERITED = "inherited"
+TONNAGE_SOURCE_SWING_SHEAR = "swing_shear"
+
+
+@dataclass
+class ProcessTonnageResolveResult:
+    """工序吨位解析结果（成功时）"""
+
+    tonnage: int
+    source: str
+    inherited_from_part_id: int | None = None
+    inherited_from_part_number: str | None = None
+    inherited_from_process_seq: str | None = None
+    inherited_from_process_code: str | None = None
+
+
+@dataclass
+class TonnageRateInfo:
+    """冲次单价快照"""
+
+    price_per_stroke: Decimal
+    tonnage_price_id: int | None = None
 
 
 class DuplicateScopeCalcError(Exception):
@@ -214,8 +240,12 @@ class StampingProcessFeeService:
                 f"基地「{dto.location}」年度 {dto.year} 无冲次单价数据，请先维护冲次单价"
             )
 
-        rate_map: dict[int, Decimal] = {
-            int(r.tonnage): Decimal(str(r.price_per_stroke)) for r in rates
+        rate_map: dict[int, TonnageRateInfo] = {
+            int(r.tonnage): TonnageRateInfo(
+                price_per_stroke=Decimal(str(r.price_per_stroke)),
+                tonnage_price_id=r.id,
+            )
+            for r in rates
         }
         detail_lines.append(f"冲次单价 {len(rates)} 条")
 
@@ -268,8 +298,9 @@ class StampingProcessFeeService:
                 processing_fee = None
                 process_count = len(part.processes or [])
                 calc_fail_reason = fee_or_error.reason
+                process_items: list[dict] = []
             else:
-                processing_fee, process_count = fee_or_error
+                processing_fee, process_count, process_items = fee_or_error
                 calc_fail_reason = None
                 success_count += 1
                 if processing_fee is not None and Decimal(str(processing_fee)) == 0:
@@ -301,6 +332,7 @@ class StampingProcessFeeService:
                 "final_processing_fee": final_fee,
                 "calc_fail_reason": calc_fail_reason,
                 "audit_status": AUDIT_PENDING,
+                PROCESS_ITEMS_KEY: process_items,
             }
             if existing:
                 row.update(update_audit)
@@ -638,15 +670,18 @@ class StampingProcessFeeService:
         part: StampingPart,
         process: StampingProcess,
         prev_part_cache: dict[int, StampingPart | None],
-    ) -> int | str:
+    ) -> ProcessTonnageResolveResult | str:
         """
         解析工序吨位。
         缺吨位且工艺方法为合并/双槽时，继承上一零件(id-1)对应工序吨位；
         上一零件须与当前零件基地相同。
-        成功返回 int；失败返回原因字符串。
+        成功返回 ProcessTonnageResolveResult；失败返回原因字符串。
         """
         if process.tonnage is not None:
-            return int(process.tonnage)
+            return ProcessTonnageResolveResult(
+                tonnage=int(process.tonnage),
+                source=TONNAGE_SOURCE_SELF,
+            )
 
         process_label = self._format_process_label(process)
         method_label = self._format_process_method(part.process_method)
@@ -708,28 +743,111 @@ class StampingProcessFeeService:
             self._format_process_label(matched),
             matched.tonnage,
         )
-        return int(matched.tonnage)
+        return ProcessTonnageResolveResult(
+            tonnage=int(matched.tonnage),
+            source=TONNAGE_SOURCE_INHERITED,
+            inherited_from_part_id=previous_part.id,
+            inherited_from_part_number=previous_part.part_number,
+            inherited_from_process_seq=matched.process_seq,
+            inherited_from_process_code=matched.process_code,
+        )
+
+    @staticmethod
+    def _build_process_basis_text(
+        *,
+        process_label: str,
+        tonnage_source: str,
+        resolved_tonnage: int | None,
+        cost_ratio: Decimal | None,
+        price_per_stroke: Decimal | None,
+        line_fee: Decimal,
+        inherited_from_part_number: str | None = None,
+        inherited_from_process_seq: str | None = None,
+        inherited_from_process_code: str | None = None,
+    ) -> str:
+        """生成单道工序人可读计算依据。"""
+        if tonnage_source == TONNAGE_SOURCE_SWING_SHEAR:
+            return f"{process_label}: 摆剪不计费 = 0"
+
+        ratio_text = (
+            f"{cost_ratio:.2f}" if cost_ratio is not None else "1.00"
+        )
+        price_text = (
+            f"{price_per_stroke:.3f}" if price_per_stroke is not None else "-"
+        )
+        fee_text = f"{line_fee:.3f}"
+        tonnage_text = f"{resolved_tonnage}T" if resolved_tonnage is not None else "-"
+
+        if tonnage_source == TONNAGE_SOURCE_INHERITED:
+            from_seq = (inherited_from_process_seq or "").strip() or "?"
+            from_code = (inherited_from_process_code or "").strip()
+            from_label = f"{from_seq}/{from_code}" if from_code else from_seq
+            from_part = inherited_from_part_number or "?"
+            return (
+                f"{process_label}: 继承上一件{from_part}/{from_label} "
+                f"{tonnage_text} × 比例{ratio_text} × 单价{price_text} = {fee_text}"
+            )
+
+        return (
+            f"{process_label}: 自有 {tonnage_text} × 比例{ratio_text} "
+            f"× 单价{price_text} = {fee_text}"
+        )
 
     def _calc_part_fee(
         self,
         db: Session,
         part: StampingPart,
-        rate_map: dict[int, Decimal],
+        rate_map: dict[int, TonnageRateInfo],
         year: int,
         prev_part_cache: dict[int, StampingPart | None],
-    ) -> tuple[Decimal, int] | StampingProcessFeeFailedItemVO:
+    ) -> tuple[Decimal, int, list[dict]] | StampingProcessFeeFailedItemVO:
         processes = list(part.processes or [])
         if not processes:
             return self._build_failed_item(part, "无工序数据")
 
         total = Decimal("0")
+        process_items: list[dict] = []
         for process in sorted(processes, key=lambda p: (p.process_order or 0, p.id or 0)):
+            process_label = self._format_process_label(process)
+            original_tonnage = (
+                int(process.tonnage) if process.tonnage is not None else None
+            )
+
             # 摆剪不使用冲压设备，加工费固定为 0
             if self._is_swing_shear_process(process):
                 logger.info(
                     "摆剪工序加工费计 0: part=%s process=%s",
                     part.part_number,
-                    self._format_process_label(process),
+                    process_label,
+                )
+                line_fee = Decimal("0").quantize(FEE_QUANTIZE, rounding=ROUND_HALF_UP)
+                process_items.append(
+                    {
+                        "source_process_id": process.id,
+                        "process_seq": process.process_seq,
+                        "process_order": process.process_order,
+                        "process_code": process.process_code,
+                        "original_tonnage": original_tonnage,
+                        "resolved_tonnage": None,
+                        "tonnage_source": TONNAGE_SOURCE_SWING_SHEAR,
+                        "inherited_from_part_id": None,
+                        "inherited_from_part_number": None,
+                        "inherited_from_process_seq": None,
+                        "inherited_from_process_code": None,
+                        "cost_ratio": None,
+                        "tonnage_price_id": None,
+                        "price_per_stroke": None,
+                        "line_fee": line_fee,
+                        "basis_text": self._build_process_basis_text(
+                            process_label=process_label,
+                            tonnage_source=TONNAGE_SOURCE_SWING_SHEAR,
+                            resolved_tonnage=None,
+                            cost_ratio=None,
+                            price_per_stroke=None,
+                            line_fee=line_fee,
+                        ),
+                        "remark": process.remark,
+                    }
                 )
                 continue
 
@@ -739,14 +857,13 @@ class StampingProcessFeeService:
             if isinstance(tonnage_or_error, str):
                 return self._build_failed_item(part, tonnage_or_error, process)
 
-            tonnage = tonnage_or_error
-            price = rate_map.get(tonnage)
-            if price is None:
-                process_label = self._format_process_label(process)
+            resolved = tonnage_or_error
+            rate_info = rate_map.get(resolved.tonnage)
+            if rate_info is None:
                 location = (part.location or "").strip() or "(空)"
                 return self._build_failed_item(
                     part,
-                    f"当前工序 {process_label} 吨位 {tonnage}T "
+                    f"当前工序 {process_label} 吨位 {resolved.tonnage}T "
                     f"在基地「{location}」{year} 年无冲次单价"
                     f"（须年度、基地、吨位均匹配）",
                     process,
@@ -755,9 +872,48 @@ class StampingProcessFeeService:
             cost_ratio = Decimal(
                 str(process.cost_ratio if process.cost_ratio is not None else 1)
             )
-            total += cost_ratio * price
+            price = rate_info.price_per_stroke
+            line_raw = cost_ratio * price
+            line_fee = line_raw.quantize(FEE_QUANTIZE, rounding=ROUND_HALF_UP)
+            total += line_raw
 
-        return total.quantize(FEE_QUANTIZE, rounding=ROUND_HALF_UP), len(processes)
+            process_items.append(
+                {
+                    "source_process_id": process.id,
+                    "process_seq": process.process_seq,
+                    "process_order": process.process_order,
+                    "process_code": process.process_code,
+                    "original_tonnage": original_tonnage,
+                    "resolved_tonnage": resolved.tonnage,
+                    "tonnage_source": resolved.source,
+                    "inherited_from_part_id": resolved.inherited_from_part_id,
+                    "inherited_from_part_number": resolved.inherited_from_part_number,
+                    "inherited_from_process_seq": resolved.inherited_from_process_seq,
+                    "inherited_from_process_code": resolved.inherited_from_process_code,
+                    "cost_ratio": cost_ratio,
+                    "tonnage_price_id": rate_info.tonnage_price_id,
+                    "price_per_stroke": price,
+                    "line_fee": line_fee,
+                    "basis_text": self._build_process_basis_text(
+                        process_label=process_label,
+                        tonnage_source=resolved.source,
+                        resolved_tonnage=resolved.tonnage,
+                        cost_ratio=cost_ratio,
+                        price_per_stroke=price,
+                        line_fee=line_fee,
+                        inherited_from_part_number=resolved.inherited_from_part_number,
+                        inherited_from_process_seq=resolved.inherited_from_process_seq,
+                        inherited_from_process_code=resolved.inherited_from_process_code,
+                    ),
+                    "remark": process.remark,
+                }
+            )
+
+        return (
+            total.quantize(FEE_QUANTIZE, rounding=ROUND_HALF_UP),
+            len(processes),
+            process_items,
+        )
 
     def paginate(
         self,

@@ -299,7 +299,7 @@ export function processFeeListTemplate() {
         <!-- 查看详情抽屉 -->
         <div class="fixed inset-0 z-[80] bg-black/70 backdrop-blur-sm transition-opacity duration-300"
              id="feeViewDrawerBackdrop" style="display:none"></div>
-        <div class="fixed inset-y-0 right-0 z-[85] w-[560px] bg-[#1a1a1a] border-l border-[#2a2a2a] transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col"
+        <div class="fixed inset-y-0 right-0 z-[85] w-[640px] bg-[#1a1a1a] border-l border-[#2a2a2a] transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col"
              id="feeViewDrawer" style="display:none; max-height: 100vh; box-shadow: -20px 0 60px rgba(0,0,0,0.95);">
             <div class="px-5 py-3.5 flex items-center justify-between shrink-0"
                  style="background: linear-gradient(180deg, #1f1f1f 0%, #1a1a1a 100%); border-bottom: 1px solid #333333;">
@@ -344,6 +344,15 @@ export function processFeeListTemplate() {
                         ${viewRow('最终加工费', 'fee-view-final-fee', true)}
                         ${viewRow('计算失败原因', 'fee-view-fail-reason')}
                         ${viewRow('备注', 'fee-view-remark')}
+                    </div>
+                </div>
+                <div class="bg-[#111111] border border-[#262626]">
+                    <div class="px-4 py-3 bg-[#0c0c0c] border-b border-[#181818] flex items-center gap-2">
+                        <span class="w-0.5 h-3 bg-[#d32f2f] rounded-sm shadow-[0_0_8px_rgba(211,47,47,0.5)]"></span>
+                        <h6 class="text-[10px] font-semibold text-[#d32f2f] tracking-wider uppercase">工序单价溯源</h6>
+                    </div>
+                    <div class="overflow-x-auto" id="feeViewProcessItems">
+                        <div class="px-4 py-6 text-[11px] text-[#616161]">加载中...</div>
                     </div>
                 </div>
                 <!-- 次要：材料 / 工艺 / 审核 -->

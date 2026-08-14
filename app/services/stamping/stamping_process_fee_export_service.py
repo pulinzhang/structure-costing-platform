@@ -40,6 +40,32 @@ def _dt(value: Any) -> str:
     return value.strftime("%Y-%m-%d %H:%M:%S") if hasattr(value, "strftime") else str(value)
 
 
+def _format_process_basis_column(record: Any) -> str:
+    """多工序溯源合并为一列（换行分隔）。"""
+    items = list(getattr(record, "process_items", None) or [])
+    if not items:
+        return ""
+    items = sorted(
+        items,
+        key=lambda item: (
+            item.process_order if item.process_order is not None else 10**9,
+            item.id or 0,
+        ),
+    )
+    lines: list[str] = []
+    for item in items:
+        text = (item.basis_text or "").strip()
+        if text:
+            lines.append(text)
+            continue
+        seq = (item.process_seq or "").strip() or "?"
+        code = (item.process_code or "").strip()
+        label = f"{seq}/{code}" if code else seq
+        fee = _num(item.line_fee, 3)
+        lines.append(f"{label}: {fee}")
+    return "\n".join(lines)
+
+
 class StampingProcessFeeExportService:
     """冲压加工费 Excel 导出。"""
 
@@ -112,6 +138,7 @@ class StampingProcessFeeExportService:
             "系统计算加工费",
             "手工调整单价",
             "最终加工费",
+            "工序单价溯源",
             "计算失败原因",
             "备注",
             "审核状态",
@@ -161,6 +188,7 @@ class StampingProcessFeeExportService:
                 _num(record.processing_fee, 3),
                 _num(record.manual_unit_price, 3),
                 _num(record.final_processing_fee, 3),
+                _format_process_basis_column(record),
                 record.calc_fail_reason,
                 record.remark,
                 _AUDIT_LABEL.get(record.audit_status, record.audit_status or ""),
@@ -179,10 +207,20 @@ class StampingProcessFeeExportService:
                 cell = ws.cell(row=row_idx, column=col, value="" if value is None else value)
                 cell.font = data_font
                 cell.border = thin_border
-                cell.alignment = align_right if col in {1, 2, 7, 11, 12, 13, 14, 15, 22, 23, 24, 25} else align_left
+                if col == 26:
+                    cell.alignment = Alignment(
+                        horizontal="left", vertical="center", wrap_text=True
+                    )
+                else:
+                    cell.alignment = (
+                        align_right
+                        if col in {1, 2, 7, 11, 12, 13, 14, 15, 22, 23, 24, 25}
+                        else align_left
+                    )
 
         for col in range(1, len(headers) + 1):
-            ws.column_dimensions[ws.cell(row=1, column=col).column_letter].width = 14
+            letter = ws.cell(row=1, column=col).column_letter
+            ws.column_dimensions[letter].width = 36 if col == 26 else 14
         ws.freeze_panes = "A2"
 
         buffer = BytesIO()

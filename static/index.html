@@ -138,18 +138,6 @@
                         </li>
                     </ul>
                 </li>
-                <!-- 钢材联动价 -->
-                <li class="sidebar-nav-item has-submenu">
-                    <a href="#/steel-price" class="sidebar-nav-link" data-submenu-toggle="steelPriceSubmenu">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 7h16M6 3h12a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V5a2 2 0 012-2zm2 8h8m-8 4h5"></path></svg>
-                        <span>钢材联动价</span>
-                        <svg class="w-3.5 h-3.5 ms-auto submenu-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7"></path></svg>
-                    </a>
-                    <ul class="submenu" id="steelPriceSubmenu">
-                        <li><a href="#/steel-price-calc" class="submenu-link" data-page="steel-price-calc"><span>钢材联动计算</span></a></li>
-                        <li><a href="#/steel-price-list" class="submenu-link" data-page="steel-price-list"><span>钢材联动价格一览</span></a></li>
-                    </ul>
-                </li>
                 <li class="sidebar-nav-item has-submenu">
                     <a href="javascript:void(0)" class="sidebar-nav-link" data-submenu-toggle="bomSubmenu">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 10h16M4 14h10M4 18h7"></path></svg>
@@ -172,11 +160,35 @@
                         
                     </ul>
                 </li>
-                <li class="sidebar-nav-item">
-                    <a href="#/costing" class="sidebar-nav-link" data-page="costing">
+                <li class="sidebar-nav-item has-submenu">
+                    <a href="javascript:void(0)" class="sidebar-nav-link" data-submenu-toggle="costingSubmenu">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
                         <span>核价</span>
+                        <svg class="w-3.5 h-3.5 ms-auto submenu-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7"></path></svg>
                     </a>
+                    <ul class="submenu" id="costingSubmenu">
+                        <li class="submenu-item has-submenu">
+                            <a href="javascript:void(0)" class="submenu-link" data-submenu-toggle="steelPriceSubmenu">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 7h16M6 3h12a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V5a2 2 0 012-2zm2 8h8m-8 4h5"></path></svg>
+                                <span>冲压钢材联动价</span>
+                                <svg class="w-3.5 h-3.5 ms-auto submenu-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7"></path></svg>
+                            </a>
+                            <ul class="submenu submenu-nested" id="steelPriceSubmenu">
+                                <li>
+                                    <a href="#/steel-price-calc" class="submenu-link submenu-link-nested" data-page="steel-price-calc"><span>冲压钢材联动计算</span></a>
+                                </li>
+                                <li>
+                                    <a href="#/steel-price-list" class="submenu-link submenu-link-nested" data-page="steel-price-list"><span>冲压钢材联动价一览</span></a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li>
+                            <a href="#/costing" class="submenu-link" data-page="costing">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                                <span>自动核价引擎</span>
+                            </a>
+                        </li>
+                    </ul>
                 </li>
                 <li class="sidebar-nav-item">
                     <a href="#/quotation" class="sidebar-nav-link" data-page="quotation">
@@ -289,6 +301,6 @@
     <!-- Toast 容器由 main.js 动态创建（统一管理生命周期） -->
 
     <script src="/static/js/main.js?v=11"></script>
-    <script type="module" src="/static/js/app.js?v=142"></script>
+    <script type="module" src="/static/js/app.js?v=143"></script>
 </body>
 </html>

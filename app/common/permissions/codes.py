@@ -93,22 +93,6 @@ class Perm:
     SCRAP_PRICE_COPY = "op:scrap-price:copy"  # 复制月度模板
     SCRAP_PRICE_EXPORT = "op:scrap-price:export"  # 导出
 
-    MENU_STEEL_PRICE = "menu:steel-price"  # 钢材联动价
-
-    MENU_STEEL_PRICE_CALC = "menu:steel-price-calc"  # 钢材联动计算
-    STEEL_PRICE_CALC_VIEW = "op:steel-price-calc:view"  # 查看
-    STEEL_PRICE_CALC_RUN = "op:steel-price-calc:run"  # 开始计算
-    STEEL_PRICE_CALC_DELETE = "op:steel-price-calc:delete"  # 删除日志
-
-    MENU_STEEL_PRICE_LIST = "menu:steel-price-list"  # 钢材联动价格一览
-    STEEL_PRICE_LIST_VIEW = "op:steel-price-list:view"  # 查询
-    STEEL_PRICE_LIST_UPDATE = "op:steel-price-list:update"  # 编辑
-    STEEL_PRICE_LIST_DELETE = "op:steel-price-list:delete"  # 删除
-    STEEL_PRICE_LIST_APPROVE = "op:steel-price-list:approve"  # 审核通过
-    STEEL_PRICE_LIST_REJECT = "op:steel-price-list:reject"  # 驳回
-    STEEL_PRICE_LIST_REVERSE = "op:steel-price-list:reverse"  # 反审核
-    STEEL_PRICE_LIST_EXPORT = "op:steel-price-list:export"  # 导出
-
     MENU_BOM = "menu:bom"  # BOM
 
     MENU_BOM_STRUCTURE = "menu:bom-structure"  # 产品结构
@@ -119,6 +103,24 @@ class Perm:
     BOM_UPLOAD_UPLOAD = "op:bom-upload:upload"  # 上传
 
     MENU_COSTING = "menu:costing"  # 核价
+
+    MENU_STEEL_PRICE = "menu:steel-price"  # 冲压钢材联动价
+
+    MENU_STEEL_PRICE_CALC = "menu:steel-price-calc"  # 冲压钢材联动计算
+    STEEL_PRICE_CALC_VIEW = "op:steel-price-calc:view"  # 查看
+    STEEL_PRICE_CALC_RUN = "op:steel-price-calc:run"  # 开始计算
+    STEEL_PRICE_CALC_DELETE = "op:steel-price-calc:delete"  # 删除日志
+
+    MENU_STEEL_PRICE_LIST = "menu:steel-price-list"  # 冲压钢材联动价一览
+    STEEL_PRICE_LIST_VIEW = "op:steel-price-list:view"  # 查询
+    STEEL_PRICE_LIST_UPDATE = "op:steel-price-list:update"  # 编辑
+    STEEL_PRICE_LIST_DELETE = "op:steel-price-list:delete"  # 删除
+    STEEL_PRICE_LIST_APPROVE = "op:steel-price-list:approve"  # 审核通过
+    STEEL_PRICE_LIST_REJECT = "op:steel-price-list:reject"  # 驳回
+    STEEL_PRICE_LIST_REVERSE = "op:steel-price-list:reverse"  # 反审核
+    STEEL_PRICE_LIST_EXPORT = "op:steel-price-list:export"  # 导出
+
+    MENU_COSTING_ENGINE = "menu:costing-engine"  # 自动核价引擎
     COSTING_VIEW = "op:costing:view"  # 查看
 
     MENU_QUOTATION = "menu:quotation"  # 报价
