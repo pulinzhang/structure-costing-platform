@@ -56,6 +56,7 @@ from app.schemas.dto.stamping_part_cost_dto import (
     StampingPartCostBatchReverseAuditDTO,
     StampingPartCostCalcDTO,
     StampingPartCostDeleteDTO,
+    StampingPartCostManualUnitCostDTO,
     StampingPartCostQuery,
     StampingPartCostScopeDTO,
 )
@@ -871,6 +872,42 @@ class StampingPartCostService:
         if record is None:
             return None
         return StampingPartCostVO.model_validate(record)
+
+    def update_manual_unit_cost(
+        self,
+        db: Session,
+        cost_id: int,
+        dto: StampingPartCostManualUnitCostDTO,
+        current_user: UserVO,
+    ) -> StampingPartCostVO:
+        """仅允许对计算失败且未审核的记录手工录入最终单件成本。"""
+        record = self.cost_repo.get_by_id(db, cost_id)
+        if not record:
+            raise BusinessException(f"核算记录不存在: id={cost_id}")
+        if record.calc_status != STATUS_FAILED:
+            raise BusinessException("仅计算失败的记录允许手工改价")
+        if record.audit_status == AUDIT_APPROVED:
+            raise BusinessException("已审核通过，请先反审核后再改价")
+
+        remark = (dto.remark or "").strip()
+        if not remark:
+            raise BusinessException("备注不能为空")
+
+        unit_cost = Decimal(str(dto.unit_cost)).quantize(
+            AMOUNT_QUANTIZE, rounding=ROUND_HALF_UP
+        )
+        updated = self.cost_repo.update_fields(
+            db,
+            cost_id,
+            {
+                "unit_cost": unit_cost,
+                "remark": remark,
+                **audit_update(current_user),
+            },
+        )
+        if not updated:
+            raise BusinessException(f"核算记录不存在: id={cost_id}")
+        return StampingPartCostVO.model_validate(updated)
 
     def list_years(self, db: Session) -> list[int]:
         years = set(self.cost_repo.get_distinct_years(db))

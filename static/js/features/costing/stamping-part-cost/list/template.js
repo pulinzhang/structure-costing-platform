@@ -121,7 +121,7 @@ export function partCostListTemplate() {
 
                 <!-- 表体：无竖线 · 仅极细横线 · 靠对齐呼吸 -->
                 <div class="overflow-x-auto bg-[#0A0A0E]">
-                    <table id="costDataTable" class="w-full table-fixed bg-transparent border-collapse" style="min-width: 1080px;">
+                    <table id="costDataTable" class="w-full table-fixed bg-transparent border-collapse" style="min-width: 1116px;">
                         <colgroup id="costColgroup">
                             <col style="width:3px">
                             <col style="width:72px">
@@ -142,6 +142,7 @@ export function partCostListTemplate() {
                             <col style="width:86px">
                             <col style="width:44px">
                             <col style="width:44px">
+                            <col style="width:36px">
                         </colgroup>
                         <thead>
                             <tr class="border-b border-[#1A1A24] bg-[#121218]">
@@ -169,6 +170,7 @@ export function partCostListTemplate() {
                                 <th class="px-2 py-2 text-right text-[9px] font-semibold tracking-[0.06em] text-[#FF1E27]/90 bg-[#1A080A]" title="单件成本 = 原材料 R + 加工费">单件成本</th>
                                 <th class="px-1 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-[#555555]">核算</th>
                                 <th class="px-1 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-[#555555]">审核</th>
+                                <th class="p-0 w-9" aria-label="操作"></th>
                             </tr>
                         </thead>
                         <tbody id="costTableBody" class="bg-transparent"></tbody>
@@ -205,9 +207,23 @@ export function renderCostRows(records, breakdownOpen = false) {
         const location = esc(row.location) || '—';
         const supplier = esc(row.stamping_supplier) || '—';
         const num = 'px-2 py-2 font-mono text-[10px] text-right tabular-nums text-[#8E8E93]';
+        const actionTitle = fail ? '手工干预' : '查看详情';
+        const actionIcon = fail
+            ? window.svgIcon('pencil', 'w-3.5 h-3.5')
+            : window.svgIcon('eye', 'w-3.5 h-3.5');
+        const actionTone = fail
+            ? 'text-[#8A3030] hover:text-[#FF1E27]'
+            : 'text-[#555555] hover:text-[#C8C8D0]';
+        const actionBtn = `
+            <button type="button"
+                    class="btn-open-detail inline-flex items-center justify-center w-7 h-7 rounded-sm
+                           opacity-0 group-hover:opacity-100 focus:opacity-100
+                           ${actionTone} hover:bg-[#161620] transition-all duration-100"
+                    data-id="${esc(row.id)}" title="${actionTitle}" aria-label="${actionTitle}">
+                ${actionIcon}
+            </button>`;
         return `
-        <tr class="cost-row group relative font-mono text-[11px] border-b border-[#141418] cursor-pointer hover:bg-[#161620] transition-colors duration-100"
-            data-id="${esc(row.id)}" title="点击查看详情">
+        <tr class="cost-row group relative font-mono text-[11px] border-b border-[#141418] hover:bg-[#161620] transition-colors duration-100">
             <td class="p-0 relative">
                 <div class="absolute left-0 top-0 bottom-0 w-[2px] bg-[#FF1E27] opacity-0 group-hover:opacity-70 transition-opacity"></div>
             </td>
@@ -238,6 +254,7 @@ export function renderCostRows(records, breakdownOpen = false) {
             </td>
             <td class="px-1 py-2 text-center">${calcStatusBadge(fail)}</td>
             <td class="px-1 py-2 text-center">${auditBadge(row.audit_status)}</td>
+            <td class="px-1 py-2 text-center align-middle">${actionBtn}</td>
         </tr>`;
     }).join('');
 }
@@ -259,7 +276,7 @@ export function syncBreakdownColumnVisibility(isOpen) {
     }
     const table = document.getElementById('costDataTable');
     if (table) {
-        table.style.minWidth = isOpen ? '1340px' : '1080px';
+        table.style.minWidth = isOpen ? '1376px' : '1116px';
     }
 }
 

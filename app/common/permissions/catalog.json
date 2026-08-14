@@ -286,6 +286,7 @@
               "type": "menu",
               "children": [
                 { "code": "op:stamping-part-cost:view", "label": "查询", "type": "op" },
+                { "code": "op:stamping-part-cost:update", "label": "失败手工改价", "type": "op" },
                 { "code": "op:stamping-part-cost:delete", "label": "删除", "type": "op" },
                 { "code": "op:stamping-part-cost:approve", "label": "审核通过", "type": "op" },
                 { "code": "op:stamping-part-cost:reverse", "label": "反审核", "type": "op" },

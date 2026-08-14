@@ -48,3 +48,10 @@ class StampingPartCostBatchReverseAuditDTO(StampingPartCostScopeDTO):
     """批量反审核。"""
 
     reverse_audit_remark: str = Field(..., min_length=1, description="反审核原因")
+
+
+class StampingPartCostManualUnitCostDTO(BaseModel):
+    """失败记录手工录入最终单件成本。"""
+
+    unit_cost: float = Field(..., ge=0, description="最终单件成本（元）")
+    remark: str = Field(..., min_length=1, description="改价备注（必填）")

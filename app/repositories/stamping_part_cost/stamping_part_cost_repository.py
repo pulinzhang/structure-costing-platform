@@ -80,6 +80,19 @@ class StampingPartCostRepository:
         db.flush()
         return record
 
+    def update_fields(
+        self, db: Session, cost_id: int, update_data: Dict[str, Any]
+    ) -> Optional[StampingPartCost]:
+        record = self.get_by_id(db, cost_id)
+        if not record:
+            return None
+        for key, value in update_data.items():
+            if hasattr(record, key):
+                setattr(record, key, value)
+        db.commit()
+        db.refresh(record)
+        return record
+
     def bulk_upsert(
         self, db: Session, data_list: List[Dict[str, Any]]
     ) -> List[StampingPartCost]:

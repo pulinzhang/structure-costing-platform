@@ -131,6 +131,7 @@ class Perm:
 
     MENU_STAMPING_PART_COST_LIST = "menu:stamping-part-cost"  # 冲压零件价格一览
     STAMPING_PART_COST_VIEW = "op:stamping-part-cost:view"  # 查询
+    STAMPING_PART_COST_UPDATE = "op:stamping-part-cost:update"  # 失败手工改价
     STAMPING_PART_COST_DELETE = "op:stamping-part-cost:delete"  # 删除
     STAMPING_PART_COST_APPROVE = "op:stamping-part-cost:approve"  # 审核通过
     STAMPING_PART_COST_REVERSE = "op:stamping-part-cost:reverse"  # 反审核

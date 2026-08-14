@@ -422,6 +422,7 @@ root
 │   │   │   └── op:stamping-part-cost-calc:delete
 │   │   └── menu:stamping-part-cost
 │   │       ├── op:stamping-part-cost:view
+│   │       ├── op:stamping-part-cost:update
 │   │       ├── op:stamping-part-cost:delete
 │   │       ├── op:stamping-part-cost:approve
 │   │       ├── op:stamping-part-cost:reverse

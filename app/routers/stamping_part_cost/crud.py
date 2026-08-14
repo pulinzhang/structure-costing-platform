@@ -21,6 +21,7 @@ from app.schemas.dto.stamping_part_cost_dto import (
     StampingPartCostBatchReverseAuditDTO,
     StampingPartCostCalcDTO,
     StampingPartCostDeleteDTO,
+    StampingPartCostManualUnitCostDTO,
     StampingPartCostQuery,
 )
 from app.schemas.vo.async_task_vo import AsyncTaskAcceptedVO, AsyncTaskProgressVO
@@ -425,6 +426,25 @@ def get_cost(
     if not row:
         raise HTTPException(status_code=404, detail="核算记录不存在")
     return ApiResponse.ok(data=row)
+
+
+@router.patch(
+    "/{cost_id}",
+    response_model=ApiResponse[StampingPartCostVO],
+)
+def update_manual_unit_cost(
+    cost_id: int,
+    dto: StampingPartCostManualUnitCostDTO,
+    db: Session = Depends(get_db),
+    current_user: UserVO = Depends(require_perm(Perm.STAMPING_PART_COST_UPDATE)),
+) -> ApiResponse[StampingPartCostVO]:
+    try:
+        row = _service.update_manual_unit_cost(
+            db, cost_id, dto, current_user=current_user
+        )
+    except BusinessException as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    return ApiResponse.updated(data=row, message="最终成本已保存")
 
 
 @router.post(
