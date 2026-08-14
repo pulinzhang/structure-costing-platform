@@ -5,12 +5,17 @@
 from pydantic import BaseModel, Field
 
 
-class StampingProcessFeeCalcDTO(BaseModel):
-    """冲压加工费计算请求（按工厂计算，工厂必填）"""
+class StampingProcessFeeScopeDTO(BaseModel):
+    """范围必填：年度 + 基地 + 冲压工厂（计算 / 删除 / 审核 / 反审核共用）"""
 
-    year: int = Field(..., ge=2000, le=2100, description="计算年度")
-    location: str = Field(..., min_length=1, description="采购基地")
+    year: int = Field(..., ge=2000, le=2100, description="年度")
+    location: str = Field(..., min_length=1, description="基地")
     stamping_supplier: str = Field(..., min_length=1, description="冲压工厂")
+
+
+class StampingProcessFeeCalcDTO(StampingProcessFeeScopeDTO):
+    """冲压加工费计算请求（车型/版本可选，用于缩小计算范围）"""
+
     vehicle_model: str | None = Field(None, description="车型")
     version: str | None = Field(None, description="版本")
 
@@ -40,25 +45,17 @@ class StampingProcessFeeUpdateDTO(BaseModel):
     )
 
 
-class StampingProcessFeeBatchScopeDTO(BaseModel):
-    """批量操作范围（年度+基地+冲压工厂均必填）"""
-
-    year: int = Field(..., ge=2000, le=2100, description="年度")
-    location: str = Field(..., min_length=1, description="基地")
-    stamping_supplier: str = Field(..., min_length=1, description="冲压工厂")
-
-
-class StampingProcessFeeDeleteDTO(StampingProcessFeeBatchScopeDTO):
+class StampingProcessFeeDeleteDTO(StampingProcessFeeScopeDTO):
     """批量删除（仅删未审核；已通过跳过）"""
 
 
-class StampingProcessFeeBatchApproveDTO(StampingProcessFeeBatchScopeDTO):
+class StampingProcessFeeBatchApproveDTO(StampingProcessFeeScopeDTO):
     """批量审核通过"""
 
     audit_remark: str | None = Field(None, description="审核意见")
 
 
-class StampingProcessFeeBatchReverseAuditDTO(StampingProcessFeeBatchScopeDTO):
+class StampingProcessFeeBatchReverseAuditDTO(StampingProcessFeeScopeDTO):
     """批量反审核"""
 
     reverse_audit_remark: str = Field(..., min_length=1, description="反审核原因（必填）")

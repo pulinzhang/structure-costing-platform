@@ -1,6 +1,6 @@
 /**
  * 冲压加工费计算页模板
- * 布局对齐钢材价计算页：筛选栏 + 就绪统计 + 进度条 + 计算历史
+ * 布局：筛选栏 + 就绪统计 + 进度条 + 计算历史
  */
 
 export function processFeeCalcTemplate() {
@@ -14,9 +14,9 @@ export function processFeeCalcTemplate() {
             <div class="flex items-center justify-between py-2.5 border-y border-[#1e1e1e]"
                  style="background: linear-gradient(180deg, #181818 0%, #161616 100%);">
                 <div class="flex items-end gap-3 flex-wrap px-1">
-                    ${filterSelect('calcYear', '年度')}
-                    ${filterSelect('calcLocation', '基地')}
-                    ${filterSelect('calcSupplier', '冲压工厂')}
+                    ${filterSelect('calcYear', '年度', true)}
+                    ${filterSelect('calcLocation', '基地', true)}
+                    ${filterSelect('calcSupplier', '冲压工厂', true)}
                     ${filterSelect('calcVehicleModel', '配套车型')}
                     ${filterSelect('calcVersion', '版本')}
 
@@ -68,7 +68,7 @@ export function processFeeCalcTemplate() {
             </div>
 
             <div id="dataReadyErrorBanner" class="hidden text-[10px] text-[#d69e2e] bg-[#1a1710] px-2.5 py-1.5 border-l-2 border-[#d69e2e]">
-                提示：请选定年度、基地、冲压工厂；并确保存在冲次单价与匹配零件。
+                提示：须选定年度、基地、冲压工厂；并确保存在冲次单价与匹配零件。
             </div>
 
             <div class="pt-2">
@@ -117,11 +117,13 @@ export function processFeeCalcTemplate() {
     `;
 }
 
-function filterSelect(id, label) {
+function filterSelect(id, label, required = false) {
+    const mark = required ? '<span class="text-[#d32f2f]">*</span>' : '';
+    const emptyLabel = required ? '请选择' : '全部';
     return `<label class="space-y-1">
-        <span class="block text-[9px] font-semibold text-[#484848] uppercase tracking-[0.12em]">${label}</span>
+        <span class="block text-[9px] font-semibold text-[#484848] uppercase tracking-[0.12em]">${label}${mark}</span>
         <select id="${id}" class="w-32 h-7 pl-2.5 pr-7 text-[11px] bg-[#0d0d0d] border border-[#272727] text-[#909090] appearance-none cursor-pointer focus:outline-none focus:border-[#ff5252] rounded-sm">
-            <option value="">全部</option>
+            <option value="">${emptyLabel}</option>
         </select>
     </label>`;
 }

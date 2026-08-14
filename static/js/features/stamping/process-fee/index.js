@@ -10,10 +10,11 @@ import {
     updateFeeHud,
     updateFeeFilterCapsules,
     shortPartNumber,
-} from './template.js?v=16';
+} from './template.js?v=19';
 
 const API_BASE = '/api/stamping/process-fees';
 const DRAWER_ANIMATION_MS = 300;
+const SCOPE_REQUIRED_MESSAGE = '须选定年度、基地、冲压工厂';
 
 const TONNAGE_SOURCE_LABEL = {
     self: '自有',
@@ -320,13 +321,11 @@ function collectScopeFilters() {
     };
 }
 
-function collectExportFilters() {
+function collectListFilters() {
     return {
-        year: document.getElementById('feeYearFilter')?.value || '',
-        location: document.getElementById('feeLocationFilter')?.value || '',
-        stamping_supplier: document.getElementById('feeSupplierFilter')?.value || '',
+        ...collectScopeFilters(),
         audit_status: document.getElementById('feeAuditStatusFilter')?.value || '',
-        part_number: document.getElementById('feePartNumberFilter')?.value.trim() || '',
+        part_number: (document.getElementById('feePartNumberFilter')?.value || '').trim(),
     };
 }
 
@@ -340,14 +339,15 @@ async function loadData(page = 1) {
     updateFeeFilterCapsules();
 
     try {
+        const filters = collectListFilters();
         const params = {
             page,
             size: feeState.pageSize,
-            year: document.getElementById('feeYearFilter')?.value || undefined,
-            location: document.getElementById('feeLocationFilter')?.value || undefined,
-            stamping_supplier: document.getElementById('feeSupplierFilter')?.value || undefined,
-            part_number: document.getElementById('feePartNumberFilter')?.value || undefined,
-            audit_status: document.getElementById('feeAuditStatusFilter')?.value || undefined,
+            year: filters.year || undefined,
+            location: filters.location || undefined,
+            stamping_supplier: filters.stamping_supplier || undefined,
+            part_number: filters.part_number || undefined,
+            audit_status: filters.audit_status || undefined,
         };
         const res = await HttpClient.get(API_BASE, { params });
         const data = res.data || {};
@@ -597,7 +597,7 @@ async function saveEdit() {
 }
 
 async function exportExcel() {
-    const filters = collectExportFilters();
+    const filters = collectListFilters();
     if (
         !filters.year
         && !filters.location
@@ -657,7 +657,7 @@ async function batchDelete() {
     const filters = collectScopeFilters();
     if (!filters.year || !filters.location || !filters.stamping_supplier) {
         setAdvancedOpen(true);
-        showToast('批量删除须同时选择年度、基地和冲压工厂', 'warning');
+        showToast(SCOPE_REQUIRED_MESSAGE, 'warning');
         return;
     }
     if (!window.confirm(
@@ -716,7 +716,7 @@ function openBatchAuditDrawer(mode) {
     const filters = collectScopeFilters();
     if (!filters.year || !filters.location || !filters.stamping_supplier) {
         setAdvancedOpen(true);
-        showToast('批量操作须同时选择年度、基地和冲压工厂', 'warning');
+        showToast(SCOPE_REQUIRED_MESSAGE, 'warning');
         return;
     }
 

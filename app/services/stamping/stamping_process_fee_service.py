@@ -48,6 +48,7 @@ from app.schemas.dto.stamping_process_fee_dto import (
     StampingProcessFeeCalcDTO,
     StampingProcessFeeDeleteDTO,
     StampingProcessFeeQuery,
+    StampingProcessFeeScopeDTO,
     StampingProcessFeeUpdateDTO,
 )
 from app.schemas.vo.stamping_process_fee_vo import (
@@ -70,8 +71,19 @@ STATUS_PARTIAL = "partial"
 STATUS_FAILED = "failed"
 STALE_PROCESSING_SECONDS = 2 * 60 * 60
 DUPLICATE_SCOPE_CALC_MESSAGE = "当前年度/基地/工厂正在计算中，请勿重复提交。"
+SCOPE_REQUIRED_MESSAGE = "须选定年度、基地、冲压工厂"
 
 ProgressCallback = Callable[[int, str], None]
+
+
+def _require_scope(dto: StampingProcessFeeScopeDTO) -> tuple[str, str]:
+    """规范化并校验范围字段（strip 后仍须齐全）。"""
+    location = (dto.location or "").strip()
+    supplier = (dto.stamping_supplier or "").strip()
+    if not dto.year or not location or not supplier:
+        raise BusinessException(SCOPE_REQUIRED_MESSAGE)
+    return location, supplier
+
 
 TONNAGE_SOURCE_SELF = "self"
 TONNAGE_SOURCE_INHERITED = "inherited"
@@ -152,18 +164,19 @@ class StampingProcessFeeService:
         operator_id: int | None,
         operator_name: str | None,
     ) -> StampingProcessFeeCalcLog:
+        location, supplier = _require_scope(dto)
         self.calc_log_repo.ensure_processing_lock_index(db)
         self._expire_stale_processing(
             db,
             year=dto.year,
-            location=dto.location,
-            stamping_supplier=dto.stamping_supplier,
+            location=location,
+            stamping_supplier=supplier,
         )
         existing = self.calc_log_repo.find_processing(
             db,
             year=dto.year,
-            location=dto.location,
-            stamping_supplier=dto.stamping_supplier,
+            location=location,
+            stamping_supplier=supplier,
         )
         if existing is not None:
             raise DuplicateScopeCalcError(DUPLICATE_SCOPE_CALC_MESSAGE)
@@ -176,8 +189,8 @@ class StampingProcessFeeService:
                 {
                     "calc_batch_id": calc_batch_id,
                     "year": dto.year,
-                    "location": dto.location,
-                    "stamping_supplier": dto.stamping_supplier,
+                    "location": location,
+                    "stamping_supplier": supplier,
                     "vehicle_model": dto.vehicle_model,
                     "version": dto.version,
                     "status": STATUS_PROCESSING,
@@ -228,16 +241,17 @@ class StampingProcessFeeService:
             if progress_callback:
                 progress_callback(progress, message)
 
+        location, supplier = _require_scope(dto)
         started_at = now()
         detail_lines: list[str] = [
-            f"开始计算 year={dto.year} location={dto.location} "
-            f"supplier={dto.stamping_supplier}"
+            f"开始计算 year={dto.year} location={location} "
+            f"supplier={supplier}"
         ]
         report(5, "加载冲次单价...")
-        rates = self.tonnage_repo.list_by_location_year(db, dto.location, dto.year)
+        rates = self.tonnage_repo.list_by_location_year(db, location, dto.year)
         if not rates:
             raise BusinessException(
-                f"基地「{dto.location}」年度 {dto.year} 无冲次单价数据，请先维护冲次单价"
+                f"基地「{location}」年度 {dto.year} 无冲次单价数据，请先维护冲次单价"
             )
 
         rate_map: dict[int, TonnageRateInfo] = {
@@ -252,14 +266,14 @@ class StampingProcessFeeService:
         report(10, "加载冲压零件...")
         parts = self.part_repo.list_with_processes(
             db,
-            location=dto.location,
-            stamping_supplier=dto.stamping_supplier,
+            location=location,
+            stamping_supplier=supplier,
             vehicle_model=dto.vehicle_model,
             version=dto.version,
         )
         if not parts:
             raise BusinessException(
-                f"基地「{dto.location}」工厂「{dto.stamping_supplier}」下未找到匹配的冲压零件"
+                f"基地「{location}」工厂「{supplier}」下未找到匹配的冲压零件"
             )
         detail_lines.append(f"匹配零件 {len(parts)} 件")
 
@@ -279,7 +293,7 @@ class StampingProcessFeeService:
                 db,
                 year=dto.year,
                 location=part.location,
-                stamping_supplier=dto.stamping_supplier,
+                stamping_supplier=supplier,
                 vehicle_model=part.vehicle_model,
                 version=part.version,
                 part_number=part.part_number,
@@ -323,7 +337,7 @@ class StampingProcessFeeService:
             row = {
                 "year": dto.year,
                 "location": part.location,
-                "stamping_supplier": dto.stamping_supplier,
+                "stamping_supplier": supplier,
                 "vehicle_model": part.vehicle_model,
                 "version": part.version,
                 **self._part_snapshot(part),
@@ -369,8 +383,8 @@ class StampingProcessFeeService:
         finished_at = now()
         result = StampingProcessFeeCalcResultVO(
             year=dto.year,
-            location=dto.location,
-            stamping_supplier=dto.stamping_supplier,
+            location=location,
+            stamping_supplier=supplier,
             vehicle_model=dto.vehicle_model,
             version=dto.version,
             calc_batch_id=calc_batch_id,
@@ -411,8 +425,8 @@ class StampingProcessFeeService:
             "冲压加工费计算完成: year=%s location=%s supplier=%s "
             "success=%s failed=%s zero_fee=%s skipped_approved=%s",
             dto.year,
-            dto.location,
-            dto.stamping_supplier,
+            location,
+            supplier,
             result.success_count,
             result.failed_count,
             result.zero_fee_count,
@@ -950,10 +964,7 @@ class StampingProcessFeeService:
         db: Session,
         dto: StampingProcessFeeDeleteDTO,
     ) -> StampingProcessFeeBatchDeleteResultVO:
-        location = dto.location.strip()
-        supplier = dto.stamping_supplier.strip()
-        if not location or not supplier:
-            raise BusinessException("基地和冲压工厂不能为空")
+        location, supplier = _require_scope(dto)
 
         skipped = self.fee_repo.count_by_scope_and_statuses(
             db,
@@ -983,10 +994,7 @@ class StampingProcessFeeService:
         dto: StampingProcessFeeBatchApproveDTO,
         current_user: UserVO,
     ) -> StampingProcessFeeBatchAuditResultVO:
-        location = dto.location.strip()
-        supplier = dto.stamping_supplier.strip()
-        if not location or not supplier:
-            raise BusinessException("基地和冲压工厂不能为空")
+        location, supplier = _require_scope(dto)
         operator = display_name(current_user)
         if not operator:
             raise BusinessException("无法识别当前登录用户")
@@ -1023,10 +1031,7 @@ class StampingProcessFeeService:
         dto: StampingProcessFeeBatchReverseAuditDTO,
         current_user: UserVO,
     ) -> StampingProcessFeeBatchAuditResultVO:
-        location = dto.location.strip()
-        supplier = dto.stamping_supplier.strip()
-        if not location or not supplier:
-            raise BusinessException("基地和冲压工厂不能为空")
+        location, supplier = _require_scope(dto)
         remark = (dto.reverse_audit_remark or "").strip()
         if not remark:
             raise BusinessException("反审核原因必填")

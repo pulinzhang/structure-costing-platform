@@ -10,7 +10,7 @@ import {
     updatePartsFilterCapsules,
     updatePartsHud,
     renderPartsPagination,
-} from './template.js?v=9';
+} from './template.js?v=10';
 
 const CASCADE_API = '/api/stamping/filters/cascade';
 const PARTS_API = '/api/stamping/parts';
@@ -34,8 +34,6 @@ export const PartsPage = {
         this.bindEvents();
         this.bindDrawerEvents();
         this.applyPermissionUi();
-        this.setAdvancedOpen(false);
-        updatePartsFilterCapsules();
         this.loadCascadeFilters().then(() => this.loadParts(1));
     },
 
@@ -75,18 +73,13 @@ export const PartsPage = {
         document.getElementById('partsBatchDeleteBtn')?.addEventListener('click', () => this.batchDelete());
 
         pageContent?.addEventListener('change', (e) => {
-            if (e.target.id === 'locationFilter') {
-                this.resetDependentFilters(['supplierFilter', 'vehicleModelFilter', 'versionFilter']);
-                this.loadCascadeFilters().then(() => this.loadParts(1));
-                return;
-            }
-            if (e.target.id === 'supplierFilter') {
-                this.resetDependentFilters(['vehicleModelFilter', 'versionFilter']);
-                this.loadCascadeFilters().then(() => this.loadParts(1));
-                return;
-            }
-            if (e.target.id === 'vehicleModelFilter') {
-                this.resetDependentFilters(['versionFilter']);
+            const cascadeResets = {
+                locationFilter: ['supplierFilter', 'vehicleModelFilter', 'versionFilter'],
+                supplierFilter: ['vehicleModelFilter', 'versionFilter'],
+                vehicleModelFilter: ['versionFilter'],
+            };
+            if (cascadeResets[e.target.id]) {
+                this.resetDependentFilters(cascadeResets[e.target.id]);
                 this.loadCascadeFilters().then(() => this.loadParts(1));
                 return;
             }
@@ -229,7 +222,6 @@ export const PartsPage = {
         if (body) body.innerHTML = '';
         empty?.classList.add('hidden');
         loading?.classList.remove('hidden');
-        updatePartsFilterCapsules();
 
         const scope = this.collectScopeFilters();
         const partNumber = document.getElementById('searchInput')?.value.trim();

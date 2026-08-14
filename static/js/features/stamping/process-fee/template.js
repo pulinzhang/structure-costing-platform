@@ -124,6 +124,7 @@ export function processFeeListTemplate() {
                                 重置
                             </button>
                         </div>
+                        <p class="mt-2 text-[10px] text-[#555555]">批量删除 / 审核 / 反审核须选定年度、基地、冲压工厂。</p>
                     </div>
                 </div>
 
@@ -203,7 +204,7 @@ export function processFeeListTemplate() {
             <div class="flex-1 min-h-0 overflow-y-auto p-6 space-y-4">
                 <input type="hidden" id="feeBatchAuditMode" value="approve">
                 <div class="bg-[#0c0c0c] border border-[#1a1a1a] rounded p-3 text-[11px] text-[#9e9e9e]" id="feeBatchAuditFilterSummary"></div>
-                <p id="feeBatchAuditHint" class="text-[11px] text-[#616161]">须选定年度、基地、冲压工厂。</p>
+                <p id="feeBatchAuditHint" class="text-[11px] text-[#616161]"></p>
                 <div>
                     <label class="text-[10px] text-[#777777] mb-1 block" id="feeBatchAuditOperatorLabel">操作人</label>
                     <div id="feeBatchAuditOperatorDisplay"

@@ -6,7 +6,7 @@
 import {
     processFeeCalcTemplate,
     renderCalcHistoryPagination,
-} from './template.js?v=12';
+} from './template.js?v=14';
 
 const CASCADE_API = '/api/stamping/filters/cascade';
 const API_BASE = '/api/stamping/process-fees';
@@ -17,6 +17,7 @@ const CALC_LOGS_API = `${API_BASE}/calc/logs`;
 const POLL_INTERVAL_MS = 1500;
 const HISTORY_PAGE_SIZE = 10;
 const DUPLICATE_SCOPE_CALC_MESSAGE = '当前年度/基地/工厂正在计算中，请勿重复提交。';
+const SCOPE_REQUIRED_MESSAGE = '须选定年度、基地、冲压工厂';
 
 const STATUS_META = {
     processing: { label: '计算中', className: 'text-[#64b5f6]' },
@@ -120,8 +121,9 @@ function fillSelect(id, values = [], preferredValue = null) {
     const select = document.getElementById(id);
     if (!select) return;
     const current = preferredValue != null ? preferredValue : select.value;
+    const emptyLabel = select.querySelector('option[value=""]')?.textContent || '全部';
     select.innerHTML =
-        '<option value="">全部</option>' +
+        `<option value="">${emptyLabel}</option>` +
         values.map((value) => {
             const text = String(value);
             return `<option value="${esc(text)}"${text === String(current) ? ' selected' : ''}>${esc(text)}</option>`;
@@ -487,12 +489,8 @@ async function startCalculation() {
     const vehicleModel = document.getElementById('calcVehicleModel')?.value || '';
     const version = document.getElementById('calcVersion')?.value || '';
 
-    if (Number.isNaN(year)) {
-        showToast('请选择计算年度', 'warning');
-        return;
-    }
-    if (!location || !supplier) {
-        showToast('请选择基地和冲压工厂（须逐厂计算）', 'warning');
+    if (Number.isNaN(year) || !location || !supplier) {
+        showToast(SCOPE_REQUIRED_MESSAGE, 'warning');
         return;
     }
 

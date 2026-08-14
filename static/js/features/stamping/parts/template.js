@@ -58,7 +58,7 @@ export function partsTemplate() {
                          style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.02), 0 0 20px rgba(0,0,0,0.3);">
                         <div class="flex items-center gap-3 min-w-0 flex-1">
                             <span class="text-[#555555] shrink-0 tracking-wider">当前筛选：</span>
-                            <div class="flex items-center gap-2 flex-wrap" id="partsActiveCapsules">
+                            <div class="flex items-center gap-2 flex-wrap">
                                 <span id="capsuleLocation" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部基地</span>
                                 <span id="capsuleSupplier" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部工厂</span>
                                 <span id="capsuleVehicle" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部车型</span>
@@ -236,16 +236,8 @@ export function updatePartsFilterCapsules() {
     if (countEl) countEl.textContent = `(${advancedActive})`;
 
     if (scopeEl) {
-        if (location || supplier || vehicle || version) {
-            const parts = [];
-            if (location) parts.push(location);
-            if (supplier) parts.push(supplier);
-            if (vehicle) parts.push(vehicle);
-            if (version) parts.push(version);
-            scopeEl.textContent = parts.join(' · ');
-        } else {
-            scopeEl.textContent = '全部范围';
-        }
+        const parts = [location, supplier, vehicle, version].filter(Boolean);
+        scopeEl.textContent = parts.length ? parts.join(' · ') : '全部范围';
     }
 }
 

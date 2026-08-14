@@ -24,11 +24,11 @@ import {
 } from './permissions.js?v=9';
 import { pageConfig as dashboardPage }      from './features/dashboard/index.js';
 import { pageConfig as stampingUploadPage } from './features/stamping/upload/index.js?v=35';
-import { pageConfig as stampingPartsPage }  from './features/stamping/parts/index.js?v=10';
+import { pageConfig as stampingPartsPage }  from './features/stamping/parts/index.js?v=11';
 import { pageConfig as stampingTonnagePage } from './features/stamping/tonnage/index.js?v=6';
 import { pageConfig as stampingTonnageUploadPage } from './features/stamping/tonnage-upload/index.js?v=1';
-import { pageConfig as stampingProcessFeeCalcPage } from './features/stamping/process-fee-calc/index.js?v=12';
-import { pageConfig as stampingProcessFeePage } from './features/stamping/process-fee/index.js?v=15';
+import { pageConfig as stampingProcessFeeCalcPage } from './features/stamping/process-fee-calc/index.js?v=14';
+import { pageConfig as stampingProcessFeePage } from './features/stamping/process-fee/index.js?v=18';
 import { pageConfig as steelPriceListPage }   from './features/steel-price/list/index.js?v=42';
 import { pageConfig as steelPriceCalcPage }    from './features/steel-price/calc/index.js?v=8';
 import { pageConfig as steelPricePolicyUploadPage } from './features/steel-price/policy-upload/index.js?v=35';
