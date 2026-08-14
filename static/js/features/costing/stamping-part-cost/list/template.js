@@ -1,109 +1,464 @@
 /**
- * 冲压零件价格一览模板
+ * Stamping Part Cost List Template
+ * 冲压零件价格一览 — Brabus Carbon & Precision Dark（对齐钢材价格列表风格）
  */
 
 export function partCostListTemplate() {
     return `
-        <div class="space-y-3 w-full font-sans antialiased text-[#bbb]">
-            <div class="bg-[#1e1e1e] border border-[#2c2c2c]">
-                <div class="px-4 py-3 border-b border-[#222222] flex items-center justify-between gap-3 flex-wrap">
-                    <div class="flex items-end gap-3 flex-wrap">
-                        ${filterSelect('costYearFilter', '年度')}
-                        ${filterSelect('costMonthFilter', '月份')}
-                        ${filterSelect('costLocationFilter', '基地')}
-                        ${filterSelect('costSupplierFilter', '冲压工厂')}
-                        ${filterSelect('costAuditFilter', '审核状态')}
-                        ${filterInput('costPartNumberFilter', '零件号')}
-                        <button id="costSearchBtn" type="button"
-                                class="h-8 px-3 text-[11px] bg-[#d32f2f] hover:bg-[#b71c1c] text-white rounded transition-colors">查询</button>
-                        <button id="costResetBtn" type="button"
-                                class="h-8 px-3 text-[11px] text-[#9e9e9e] border border-[#2c2c2c] rounded hover:text-white hover:border-[#9e9e9e] transition-colors">重置</button>
+        <div class="space-y-2 w-full max-w-full">
+            <div class="bg-[#0A0A0C] border border-[#1A1A22] overflow-hidden w-full max-w-full"
+                 style="box-shadow: 0 4px 24px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.02);">
+
+                <!-- HUD 战术数据看板 + 操作 -->
+                <div class="px-5 pt-4 pb-3.5 border-b border-[#14141A]"
+                     style="background: linear-gradient(135deg, #0E0E12 0%, #121218 45%, #0C0C10 100%);">
+                    <div class="flex items-start justify-between gap-4 mb-3">
+                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 font-mono flex-1 min-w-0">
+                            <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3 backdrop-blur-sm"
+                                 style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);">
+                                <div class="text-[#555555] text-[10px] tracking-wider">核价条数</div>
+                                <div class="text-[18px] font-bold text-[#FFFFFF] mt-1 tabular-nums">
+                                    <span id="costHudTotal">—</span>
+                                    <span class="text-[10px] text-[#555555] ml-1">条</span>
+                                </div>
+                            </div>
+                            <!-- 巴博斯霓虹红光 本页均单价 -->
+                            <div class="bg-gradient-to-b from-[#18080A] to-[#0D0708] border border-[#FF1E27]/50 p-3.5 relative overflow-hidden group"
+                                 style="box-shadow: 0 0 30px rgba(255,30,39,0.15), inset 0 1px 0 rgba(255,30,39,0.12);">
+                                <div class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#FF1E27] to-transparent"
+                                     style="box-shadow: 0 0 10px #FF1E27;"></div>
+                                <div class="flex justify-between items-start">
+                                    <span class="text-[#FF1E27] text-[10px] font-bold tracking-widest">本页均单件成本</span>
+                                    <span class="w-2 h-2 rounded-full bg-[#FF1E27] animate-pulse"
+                                          style="box-shadow: 0 0 8px #FF1E27;"></span>
+                                </div>
+                                <div class="text-[26px] font-black text-[#FF1E27] font-mono mt-1 tracking-tight tabular-nums"
+                                     style="text-shadow: 0 0 12px rgba(255,30,39,0.7), 0 0 25px rgba(255,30,39,0.3);">
+                                    ￥<span id="costHudAvg">—</span>
+                                </div>
+                                <div class="text-[9px] font-mono text-[#FF1E27]/60 mt-1 flex justify-between">
+                                    <span>系统自动计算</span>
+                                    <span id="costHudSkuCount">— 条</span>
+                                </div>
+                            </div>
+                            <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3 backdrop-blur-sm"
+                                 style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);">
+                                <div class="text-[#555555] text-[10px] tracking-wider">本页待审</div>
+                                <div class="text-[18px] font-bold text-[#FFFFFF] mt-1 tabular-nums">
+                                    <span id="costHudPending">—</span>
+                                    <span class="text-[10px] text-[#555555] ml-1">条</span>
+                                </div>
+                            </div>
+                            <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3 backdrop-blur-sm"
+                                 style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);">
+                                <div class="text-[#555555] text-[10px] tracking-wider">本页已审</div>
+                                <div class="text-[18px] font-bold text-[#FFFFFF] mt-1 tabular-nums">
+                                    <span id="costHudApproved">—</span>
+                                    <span class="text-[10px] text-[#555555] ml-1">条</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+                            <button id="costBatchApproveBtn" type="button"
+                                    class="inline-flex items-center gap-1.5 bg-transparent text-[#6E6E73] border border-[#2A2A35] px-3 py-1.5 text-[11px] font-medium rounded-md hover:border-[#FF1E27]/50 hover:text-[#FF1E27] hover:bg-[#FF1E27]/10 hover:shadow-[0_0_12px_rgba(255,30,39,0.2)] transition-all duration-200">
+                                ${window.svgIcon('check-circle', 'w-3 h-3')}
+                                批量审核
+                            </button>
+                            <button id="costBatchReverseBtn" type="button"
+                                    class="inline-flex items-center gap-1.5 bg-transparent text-[#6E6E73] border border-[#2A2A35] px-3 py-1.5 text-[11px] font-medium rounded-md hover:border-[#FF1E27]/50 hover:text-[#FF1E27] hover:bg-[#FF1E27]/10 hover:shadow-[0_0_12px_rgba(255,30,39,0.2)] transition-all duration-200">
+                                ${window.svgIcon('refresh', 'w-3 h-3')}
+                                批量反审核
+                            </button>
+                            <button id="costBatchDeleteBtn" type="button"
+                                    class="inline-flex items-center gap-1.5 bg-transparent text-[#6E6E73] border border-[#2A2A35] px-3 py-1.5 text-[11px] font-medium rounded-md hover:border-[#c62828]/60 hover:text-[#ef5350] hover:bg-[#c62828]/15 hover:shadow-[0_0_12px_rgba(198,40,40,0.2)] transition-all duration-200">
+                                ${window.svgIcon('trash', 'w-3 h-3')}
+                                批量删除
+                            </button>
+                            <button id="costExportBtn" type="button"
+                                    class="inline-flex items-center gap-1.5 bg-transparent text-[#6E6E73] border border-[#2A2A35] px-3 py-1.5 text-[11px] font-medium rounded-md hover:border-[#FF1E27]/50 hover:text-[#FF1E27] hover:bg-[#FF1E27]/10 hover:shadow-[0_0_12px_rgba(255,30,39,0.2)] transition-all duration-200"
+                                    title="工艺清单格式：业务列至最终价，末尾弱化溯源列">
+                                ${window.svgIcon('download', 'w-3 h-3')}
+                                导出工艺清单
+                            </button>
+                            <button id="costExportDetailBtn" type="button"
+                                    class="inline-flex items-center gap-1.5 bg-transparent text-[#6E6E73] border border-[#2A2A35] px-3 py-1.5 text-[11px] font-medium rounded-md hover:border-[#FF1E27]/50 hover:text-[#FF1E27] hover:bg-[#FF1E27]/10 hover:shadow-[0_0_12px_rgba(255,30,39,0.2)] transition-all duration-200"
+                                    title="明细表：业务字段 + 溯源/关联ID + 审核元数据">
+                                ${window.svgIcon('download', 'w-3 h-3')}
+                                导出明细
+                            </button>
+                        </div>
                     </div>
-                    <div class="flex items-center gap-2 flex-wrap">
-                        <button id="costBatchApproveBtn" type="button"
-                                class="h-8 px-3 text-[11px] text-[#9e9e9e] border border-[#2c2c2c] rounded hover:border-[#d32f2f] hover:text-[#d32f2f] transition-colors">批量审核</button>
-                        <button id="costBatchReverseBtn" type="button"
-                                class="h-8 px-3 text-[11px] text-[#9e9e9e] border border-[#2c2c2c] rounded hover:border-[#d32f2f] hover:text-[#d32f2f] transition-colors">批量反审核</button>
-                        <button id="costBatchDeleteBtn" type="button"
-                                class="h-8 px-3 text-[11px] text-[#9e9e9e] border border-[#2c2c2c] rounded hover:border-[#ef5350] hover:text-[#ef5350] transition-colors">批量删除</button>
-                        <button id="costExportBtn" type="button"
-                                class="h-8 px-3 text-[11px] text-[#9e9e9e] border border-[#2c2c2c] rounded hover:border-[#d32f2f] hover:text-[#d32f2f] transition-colors"
-                                title="工艺清单格式：业务列至最终价，末尾弱化溯源列">导出工艺清单</button>
-                        <button id="costExportDetailBtn" type="button"
-                                class="h-8 px-3 text-[11px] text-[#9e9e9e] border border-[#2c2c2c] rounded hover:border-[#d32f2f] hover:text-[#d32f2f] transition-colors"
-                                title="明细表：业务字段 + 溯源/关联ID + 审核元数据">导出明细</button>
+                    <div class="flex items-center justify-between gap-3 flex-wrap font-mono text-[10px] text-[#555555]">
+                        <span>共 <span id="costTotalCount" class="text-[#8E8E93]">0</span> 条 · 批量操作须选定年度、月份、基地、冲压工厂</span>
+                        <span title="ρ_steel=钢材密度；λ=材料损耗率；η=废料回收率；P/Q=元/kg">
+                            R = M×P×(1+λ) − M×λ×η×Q − O×η×Q
+                        </span>
                     </div>
                 </div>
-                <div class="px-4 py-2 text-[10px] text-[#616161] border-b border-[#222222] flex items-center justify-between gap-3 flex-wrap">
-                    <span>共 <span id="costTotalCount" class="text-[#9e9e9e] font-mono">0</span> 条 · 批量操作须选定年度、月份、基地、冲压工厂</span>
-                    <span class="font-mono text-[10px] text-[#555555]"
-                          title="ρ_steel=钢材密度；λ=材料损耗率；η=废料回收率；P/Q=元/kg">
-                        R = M×P×(1+λ) − M×λ×η×Q − O×η×Q
-                    </span>
+
+                <!-- 战术胶囊筛选栏：默认收起，抹平 ERP 模版感 -->
+                <div class="px-5 py-3 border-b border-[#14141A]"
+                     style="background: linear-gradient(180deg, #0C0C10 0%, #0A0A0E 100%);">
+                    <div class="flex items-center justify-between gap-4 bg-[#0C0C10] border border-[#1E1E26] px-4 py-2.5 rounded-xl font-mono text-[11px]"
+                         style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.02), 0 0 20px rgba(0,0,0,0.3);">
+                        <div class="flex items-center gap-3 min-w-0 flex-1">
+                            <span class="text-[#555555] shrink-0 tracking-wider">当前筛选：</span>
+                            <div class="flex items-center gap-2 flex-wrap" id="costActiveCapsules">
+                                <span id="capsulePeriod" class="bg-[#1A1A22] border border-[#2A2A35] text-white px-2.5 py-1 rounded-md font-bold">全部期间</span>
+                                <span id="capsuleLocation" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部基地</span>
+                                <span id="capsuleSupplier" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部工厂</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3 shrink-0">
+                            <button type="button" id="costToggleAdvancedFilter"
+                                    class="text-[#6E6E73] hover:text-white transition-colors flex items-center gap-1.5 text-[11px]">
+                                <span id="costAdvancedFilterLabel">展开高级筛选</span>
+                                <span id="costAdvancedFilterCount" class="text-[#555555]">(0)</span>
+                            </button>
+                            <button type="button" id="costSearchBtn"
+                                    class="bg-[#FF1E27] hover:bg-[#D6131B] text-white font-bold px-4 py-1.5 rounded-lg transition-all text-[11px] tracking-wide"
+                                    style="box-shadow: 0 0 15px rgba(255,30,39,0.4);">
+                                查询
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 高级筛选面板（默认折叠） -->
+                    <div id="costAdvancedFilterPanel" class="hidden mt-3 pt-3 border-t border-[#1A1A22]">
+                        <div class="flex items-end gap-3 flex-wrap">
+                            ${filterSelect('costYearFilter', '年度')}
+                            ${filterSelect('costMonthFilter', '月份')}
+                            ${filterSelect('costLocationFilter', '基地')}
+                            ${filterSelect('costSupplierFilter', '冲压工厂')}
+                            ${filterSelect('costAuditFilter', '审核状态')}
+                            ${filterInput('costPartNumberFilter', '零件号', '短号或完整零件号')}
+                            <button id="costResetBtn" type="button"
+                                    class="inline-flex items-center gap-1.5 h-8 px-3 text-[11px] font-medium rounded-md bg-transparent text-[#6E6E73] border border-[#2A2A35] hover:bg-[#FF1E27]/10 hover:border-[#FF1E27]/50 hover:text-[#FF1E27] transition-all duration-200">
+                                ${window.svgIcon('refresh', 'w-3 h-3')}
+                                重置
+                            </button>
+                        </div>
+                    </div>
                 </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full min-w-[1800px]">
+
+                <div class="overflow-x-auto brabus-bg-grid">
+                    <table id="costDataTable" class="w-full table-fixed bg-transparent" style="min-width: 1180px;">
+                        <colgroup id="costColgroup">
+                            <col style="width:3px">
+                            <col style="width:72px">
+                            <col style="width:118px">
+                            <col style="width:88px">
+                            <col style="width:68px">
+                            <col style="width:58px">
+                            <col style="width:58px">
+                            <col style="width:54px">
+                            <col style="width:64px">
+                            <col style="width:64px">
+                            <col class="cost-breakdown-col hidden" style="width:64px">
+                            <col class="cost-breakdown-col hidden" style="width:64px">
+                            <col class="cost-breakdown-col hidden" style="width:64px">
+                            <col class="cost-breakdown-col hidden" style="width:68px">
+                            <col style="width:76px">
+                            <col style="width:58px">
+                            <col style="width:78px">
+                            <col style="width:52px">
+                            <col style="width:52px">
+                            <col style="width:44px">
+                        </colgroup>
                         <thead>
-                            <tr class="bg-[#0a0a0a] border-b border-[#2c2c2c]">
-                                <th class="px-3 py-2.5 text-left text-[10px] text-[#616161] uppercase tracking-wider">年月/基地</th>
-                                <th class="px-3 py-2.5 text-left text-[10px] text-[#616161] uppercase tracking-wider">零件号</th>
-                                <th class="px-3 py-2.5 text-left text-[10px] text-[#616161] uppercase tracking-wider">零件名</th>
-                                <th class="px-3 py-2.5 text-left text-[10px] text-[#616161] uppercase tracking-wider">材质/料厚</th>
-                                <th class="px-3 py-2.5 text-right text-[10px] text-[#616161] uppercase tracking-wider" title="预估单件材料消耗(kg)">材料消耗kg</th>
-                                <th class="px-3 py-2.5 text-right text-[10px] text-[#616161] uppercase tracking-wider" title="废料重量=材料消耗−净重">废料kg</th>
-                                <th class="px-3 py-2.5 text-right text-[10px] text-[#616161] uppercase tracking-wider">利用率%</th>
-                                <th class="px-3 py-2.5 text-right text-[10px] text-[#616161] uppercase tracking-wider" title="钢材吨价；P=吨价/1000 元/kg">钢材吨价</th>
-                                <th class="px-3 py-2.5 text-right text-[10px] text-[#616161] uppercase tracking-wider" title="废料吨价；Q=吨价/1000 元/kg">废料吨价</th>
-                                <th class="px-3 py-2.5 text-right text-[10px] text-[#ffffff]/70 uppercase tracking-wider bg-[#141414]" title="R = M×P×(1+λ) − M×λ×η×Q − O×η×Q">原材料成本 R</th>
-                                <th class="px-3 py-2.5 text-right text-[10px] text-[#616161] uppercase tracking-wider">加工费</th>
-                                <th class="px-3 py-2.5 text-right text-[10px] text-[#ffffff]/70 uppercase tracking-wider bg-[#141414]">单件成本</th>
-                                <th class="px-3 py-2.5 text-center text-[10px] text-[#616161] uppercase tracking-wider">状态</th>
-                                <th class="px-3 py-2.5 text-center text-[10px] text-[#616161] uppercase tracking-wider">审核</th>
-                                <th class="px-3 py-2.5 text-right text-[10px] text-[#616161] uppercase tracking-wider">操作</th>
+                            <tr class="border-b border-[#17171C] bg-[#0B0B0D]/95">
+                                <th class="p-0"></th>
+                                <th class="px-1 py-2.5 text-left text-[9px] font-semibold uppercase tracking-[0.1em] text-[#6E6E73]">年月/基地</th>
+                                <th class="px-1.5 py-2.5 text-left text-[9px] font-semibold uppercase tracking-[0.1em] text-[#A1A1A6]">零件信息</th>
+                                <th class="px-1 py-2.5 text-left text-[9px] font-semibold uppercase tracking-[0.1em] text-[#6E6E73] border-r border-[#22222A]">材质/料厚</th>
+                                <th class="px-1 py-2.5 text-right text-[9px] font-semibold uppercase tracking-[0.08em] text-[#6E6E73]" title="预估单件材料消耗 M (kg)">材料消耗</th>
+                                <th class="px-1 py-2.5 text-right text-[9px] font-semibold uppercase tracking-[0.08em] text-[#6E6E73]" title="零件净重">净重</th>
+                                <th class="px-1 py-2.5 text-right text-[9px] font-semibold uppercase tracking-[0.08em] text-[#6E6E73]" title="废料重量 O = 材料消耗−净重">废料</th>
+                                <th class="px-1 py-2.5 text-right text-[9px] font-semibold uppercase tracking-[0.08em] text-[#6E6E73] border-r border-[#22222A]">利用率%</th>
+                                <th class="px-1 py-2.5 text-right text-[9px] font-semibold uppercase tracking-[0.08em] text-[#6E6E73]" title="钢材吨价；P=吨价/1000 元/kg">钢材吨价</th>
+                                <th class="px-1 py-2.5 text-right text-[9px] font-semibold uppercase tracking-[0.08em] text-[#6E6E73] border-r border-[#22222A]" title="废料吨价；Q=吨价/1000 元/kg">废料吨价</th>
+                                <th class="cost-breakdown-col hidden px-1 py-2.5 text-right text-[9px] font-semibold uppercase tracking-[0.08em] text-[#6E6E73]" title="① 钢材采购（含损耗）">①采购</th>
+                                <th class="cost-breakdown-col hidden px-1 py-2.5 text-right text-[9px] font-semibold uppercase tracking-[0.08em] text-[#6E6E73]" title="② 损耗废料扣除（回收率）">②损耗扣</th>
+                                <th class="cost-breakdown-col hidden px-1 py-2.5 text-right text-[9px] font-semibold uppercase tracking-[0.08em] text-[#6E6E73]" title="③ 边角废料扣除（回收率）">③边角扣</th>
+                                <th class="cost-breakdown-col hidden px-1 py-2.5 text-right text-[9px] font-semibold uppercase tracking-[0.08em] text-[#6E6E73]" title="废料扣除合计 ②+③">废料扣合计</th>
+                                <th class="px-1 py-2.5 text-right text-[9px] font-semibold uppercase tracking-[0.08em] text-[#A1A1A6] border-r border-[#22222A]" title="R = ①−②−③">
+                                    <button type="button" id="costToggleBreakdownCols"
+                                            class="inline-flex items-center justify-center w-3.5 h-3.5 mr-0.5 align-middle rounded-sm border border-[#2A2A35] text-[#6E6E73] hover:text-[#FF1E27] hover:border-[#FF1E27]/50 transition-colors"
+                                            title="展开成本分项（①采购 / ②损耗扣 / ③边角扣 / 废料扣合计）">+</button>
+                                    原材料R
+                                </th>
+                                <th class="px-1 py-2.5 text-right text-[9px] font-semibold uppercase tracking-[0.08em] text-[#6E6E73]">加工费</th>
+                                <th class="px-1.5 py-2.5 text-right text-[9px] font-black uppercase tracking-[0.1em] text-[#FF1E27] bg-[#18080A] border-x border-[#FF1E27]/30" title="单件成本 = 原材料 R + 加工费">单件成本</th>
+                                <th class="px-1 py-2.5 text-center text-[9px] font-semibold uppercase tracking-[0.08em] text-[#6E6E73]">状态</th>
+                                <th class="px-1 py-2.5 text-center text-[9px] font-semibold uppercase tracking-[0.08em] text-[#6E6E73]">审核</th>
+                                <th class="px-1 py-2.5 text-center text-[9px] font-semibold uppercase tracking-[0.08em] text-[#6E6E73]">操作</th>
                             </tr>
                         </thead>
-                        <tbody id="costTableBody" class="divide-y divide-[#222222]">
-                            <tr><td colspan="15" class="py-14 text-center text-[#616161]">加载中...</td></tr>
-                        </tbody>
+                        <tbody id="costTableBody" class="bg-transparent"></tbody>
                     </table>
                 </div>
-                <div class="flex items-center justify-between px-4 py-2 border-t border-[#222222]">
-                    <span id="costPageInfo" class="text-[10px] text-[#616161]"></span>
-                    <div id="costPagination" class="flex items-center gap-0.5"></div>
+
+                <div class="flex items-center justify-between px-5 py-2.5 border-t border-[#14141A] bg-[#0A0A0E]">
+                    <span id="costPageInfo" class="text-[10px] font-mono text-[#555555]"></span>
+                    <div class="flex items-center gap-0.5" id="costPagination"></div>
+                </div>
+
+                <div id="costEmpty" class="hidden flex flex-col items-center justify-center py-14">
+                    <div class="w-10 h-10 flex items-center justify-center mb-3 rounded-md bg-[#121218] border border-[#2A2A35]">
+                        ${window.svgIcon('clipboard-list', 'w-4 h-4 text-[#555555]')}
+                    </div>
+                    <h5 class="text-[11px] font-medium text-[#8E8E93] mb-1">暂无零件价格数据</h5>
+                    <p class="text-[10px] text-[#555555]">请先完成零件价格计算，或调整筛选条件</p>
+                </div>
+
+                <div id="costLoading" class="hidden flex items-center justify-center py-14">
+                    <div class="w-5 h-5 border-2 border-[#2A2A35] border-t-[#FF1E27] rounded-full animate-spin"
+                         style="box-shadow: 0 0 12px rgba(255,30,39,0.35);"></div>
                 </div>
             </div>
         </div>
     `;
 }
 
-function filterSelect(id, label) {
-    return `<label class="space-y-1">
-        <span class="block text-[9px] font-semibold text-[#484848] uppercase tracking-[0.12em]">${label}</span>
-        <select id="${id}" class="w-28 h-8 pl-2.5 pr-7 text-[11px] bg-[#0a0a0a] border border-[#2c2c2c] text-[#9e9e9e] appearance-none cursor-pointer focus:outline-none focus:border-[#ff5252] rounded">
-            <option value="">全部</option>
-        </select>
-    </label>`;
+export function renderCostRows(records, breakdownOpen = false) {
+    if (!records || !Array.isArray(records) || records.length === 0) return '';
+    const breakdownHidden = breakdownOpen ? '' : 'hidden';
+    return records.map((row) => {
+        const fail = row.calc_status === 'failed';
+        const ym = `${esc(row.year)}-${esc(String(row.month).padStart(2, '0'))}`;
+        const location = esc(row.location) || '—';
+        const supplier = esc(row.stamping_supplier) || '—';
+        const num = 'px-1 py-2 border-b border-[#17171C] font-mono text-[10px] text-right tabular-nums text-[#8E8E93]';
+        const unitCostCell = [
+            'px-1.5 py-2 text-right font-mono font-black tabular-nums text-[12px]',
+            'text-[#FF1E27] bg-[#18080A]',
+            'border-b border-[#17171C] border-l border-r border-[#FF1E27]/30',
+            'group-hover:bg-[#220A0C] transition-colors',
+        ].join(' ');
+        return `
+        <tr class="group relative font-mono text-[11px] border-b border-[#17171C] hover:bg-gradient-to-r hover:from-[#FF1E27]/10 hover:via-[#121218] hover:to-transparent transition-all duration-150"
+            data-id="${esc(row.id)}">
+            <td class="p-0 relative">
+                <div class="absolute left-0 top-0 bottom-0 w-[3px] bg-[#FF1E27] opacity-0 group-hover:opacity-100 transition-all"
+                     style="box-shadow: 0 0 10px #FF1E27;"></div>
+            </td>
+            <td class="px-1 py-2 border-b border-[#17171C] font-sans overflow-hidden">
+                <div class="font-mono font-bold text-white text-[11px] tabular-nums group-hover:text-[#FF1E27] transition-colors">${ym}</div>
+                <div class="text-[#555555] text-[9px] mt-0.5 leading-tight truncate" title="${location}">${location}</div>
+                <div class="text-[#555555] text-[9px] leading-tight truncate" title="${supplier}">${supplier}</div>
+            </td>
+            <td class="px-1.5 py-2 border-b border-[#17171C] font-sans overflow-hidden">${partInfoCell(row.part_number, row.part_name)}</td>
+            <td class="px-1 py-2 border-b border-[#17171C] font-sans border-r border-[#22222A] overflow-hidden">
+                <div class="text-[#8E8E93] text-[10px] truncate" title="${esc(row.material || '')}">${esc(row.material || '—')}</div>
+                <div class="text-[#555555] text-[9px] mt-0.5 tabular-nums">${fmtNum(row.thickness, 3)}</div>
+            </td>
+            <td class="${num}" title="${esc(fmtNum(row.blank_weight_kg, 7))}">${fmtNum(row.blank_weight_kg, 3)}</td>
+            <td class="${num}" title="${esc(fmtNum(row.finished_total_kg, 7))}">${fmtNum(row.finished_total_kg, 3)}</td>
+            <td class="${num}" title="${esc(fmtNum(row.scrap_weight_kg, 7))}">${fmtNum(row.scrap_weight_kg, 3)}</td>
+            <td class="${num} border-r border-[#22222A]">${fmtNum(row.material_utilization_pct, 1)}</td>
+            <td class="${num}">${fmtNum(row.steel_ton_price, 0)}</td>
+            <td class="${num} border-r border-[#22222A]">${fmtNum(row.scrap_ton_price, 0)}</td>
+            <td class="cost-breakdown-col ${breakdownHidden} ${num}">${fmtNum(row.material_amount_sheet, 2)}</td>
+            <td class="cost-breakdown-col ${breakdownHidden} ${num}">${fmtNum(row.loss_scrap_deduction, 2)}</td>
+            <td class="cost-breakdown-col ${breakdownHidden} ${num}">${fmtNum(row.process_scrap_deduction, 2)}</td>
+            <td class="cost-breakdown-col ${breakdownHidden} ${num}">${fmtNum(row.scrap_amount_sheet, 2)}</td>
+            <td class="${num} text-white font-bold border-r border-[#22222A]">${fmtNum(row.material_net_per_part, 2)}</td>
+            <td class="${num}">${fmtNum(row.process_fee_amount, 2)}</td>
+            <td class="${unitCostCell}" style="text-shadow: 0 0 10px rgba(255,30,39,0.5);">${fmtNum(row.unit_cost, 4)}</td>
+            <td class="px-1 py-2 border-b border-[#17171C] text-center">${calcStatusBadge(fail)}</td>
+            <td class="px-1 py-2 border-b border-[#17171C] text-center">${auditBadge(row.audit_status)}</td>
+            <td class="px-1 py-2 border-b border-[#17171C] text-center">
+                <button type="button" class="cost-detail-btn inline-flex items-center justify-center w-6 h-6 rounded-sm text-[#555555] hover:text-[#FFFFFF] hover:bg-[#FFFFFF]/5 transition-all"
+                        data-id="${esc(row.id)}" title="详情">${window.svgIcon('eye', 'w-3 h-3')}</button>
+            </td>
+        </tr>`;
+    }).join('');
 }
 
-function filterInput(id, label) {
-    return `<label class="space-y-1">
-        <span class="block text-[9px] font-semibold text-[#484848] uppercase tracking-[0.12em]">${label}</span>
-        <input id="${id}" type="text" placeholder="零件号"
-               class="w-36 h-8 px-2.5 text-[11px] bg-[#0a0a0a] border border-[#2c2c2c] text-[#ffffff] placeholder:text-[#616161] focus:outline-none focus:border-[#ff5252] rounded">
-    </label>`;
+/**
+ * 同步成本分项列显隐（①采购 / ②损耗扣 / ③边角扣 / 废料扣合计）
+ * @param {boolean} isOpen
+ */
+export function syncBreakdownColumnVisibility(isOpen) {
+    document.querySelectorAll('.cost-breakdown-col').forEach((el) => {
+        el.classList.toggle('hidden', !isOpen);
+    });
+    const btn = document.getElementById('costToggleBreakdownCols');
+    if (btn) {
+        btn.textContent = isOpen ? '−' : '+';
+        btn.title = isOpen
+            ? '收起成本分项'
+            : '展开成本分项（①采购 / ②损耗扣 / ③边角扣 / 废料扣合计）';
+    }
+    const table = document.getElementById('costDataTable');
+    if (table) {
+        table.style.minWidth = isOpen ? '1440px' : '1180px';
+    }
+}
+
+/**
+ * 企业口语短号：取零件号数字段末 4 位（与 BOM / 加工费一致）。
+ * 例：554002087AA → 2087；501006873AA → 6873
+ */
+export function shortPartNumber(partNumber) {
+    if (!partNumber) return null;
+    const digits = String(partNumber).replace(/\D/g, '');
+    if (digits.length < 4) return null;
+    return digits.slice(-4);
+}
+
+/** 列表单元格：短号主角，完整号 + 零件名次要 */
+function partInfoCell(partNumber, partName) {
+    const full = partNumber || '';
+    const shortNo = shortPartNumber(full);
+    const name = partName || '';
+    const nameLine = name
+        ? `<div class="text-[9px] font-sans text-[#8E8E93] mt-0.5 truncate" title="${esc(name)}">${esc(name)}</div>`
+        : '';
+    if (shortNo) {
+        return `
+            <div class="text-[15px] font-mono font-bold tabular-nums text-white tracking-[0.1em] leading-none
+                        drop-shadow-[0_0_12px_rgba(211,47,47,0.18)] group-hover:text-[#FF1E27] transition-colors"
+                 title="${esc(full)}">${esc(shortNo)}</div>
+            <div class="text-[9px] font-mono text-[#555555] tracking-wide mt-0.5 truncate" title="${esc(full)}">${esc(full)}</div>
+            ${nameLine}`;
+    }
+    return `
+        <div class="text-[10px] font-mono text-[#8E8E93] tracking-wide truncate" title="${esc(full)}">${esc(full) || '—'}</div>
+        ${nameLine}`;
+}
+
+/** 用已加载列表数据刷新 HUD 战术看板（不改业务逻辑） */
+export function updatePartCostHud(total, records) {
+    const setText = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value;
+    };
+    const list = Array.isArray(records) ? records : [];
+    const prices = list
+        .map((r) => Number(r.unit_cost))
+        .filter((n) => !Number.isNaN(n));
+    const avg = prices.length
+        ? prices.reduce((sum, n) => sum + n, 0) / prices.length
+        : null;
+    const pending = list.filter((r) => r.audit_status === 'pending').length;
+    const approved = list.filter((r) => r.audit_status === 'approved').length;
+
+    setText('costHudTotal', Number(total || 0).toLocaleString('zh-CN'));
+    setText(
+        'costHudAvg',
+        avg == null
+            ? '—'
+            : avg.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 4 })
+    );
+    setText('costHudSkuCount', `${list.length} 条`);
+    setText('costHudPending', String(pending));
+    setText('costHudApproved', String(approved));
+}
+
+/**
+ * 同步战术胶囊：期间 / 基地 / 冲压工厂 + 高级筛选已启用数量
+ */
+export function updateActiveFilterCapsules() {
+    const year = document.getElementById('costYearFilter')?.value || '';
+    const month = document.getElementById('costMonthFilter')?.value || '';
+    const location = document.getElementById('costLocationFilter')?.value || '';
+    const supplier = document.getElementById('costSupplierFilter')?.value || '';
+    const audit = document.getElementById('costAuditFilter')?.value || '';
+    const partNumber = document.getElementById('costPartNumberFilter')?.value.trim() || '';
+
+    const periodEl = document.getElementById('capsulePeriod');
+    const locationEl = document.getElementById('capsuleLocation');
+    const supplierEl = document.getElementById('capsuleSupplier');
+    const countEl = document.getElementById('costAdvancedFilterCount');
+
+    const activeCapsule = 'bg-[#1A1A22] border border-[#2A2A35] text-white px-2.5 py-1 rounded-md font-bold';
+    const idleCapsule = 'bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md';
+
+    if (periodEl) {
+        if (year && month) {
+            periodEl.textContent = `${year}-${String(month).padStart(2, '0')}`;
+            periodEl.className = activeCapsule;
+        } else if (year) {
+            periodEl.textContent = `${year}年`;
+            periodEl.className = activeCapsule;
+        } else if (month) {
+            periodEl.textContent = `${month}月`;
+            periodEl.className = activeCapsule;
+        } else {
+            periodEl.textContent = '全部期间';
+            periodEl.className = idleCapsule;
+        }
+    }
+
+    if (locationEl) {
+        locationEl.textContent = location || '全部基地';
+        locationEl.className = location ? activeCapsule : idleCapsule;
+    }
+
+    if (supplierEl) {
+        supplierEl.textContent = supplier || '全部工厂';
+        supplierEl.className = supplier ? activeCapsule : idleCapsule;
+    }
+
+    const advancedActive = [year, month, location, supplier, audit, partNumber].filter(Boolean).length;
+    if (countEl) countEl.textContent = `(${advancedActive})`;
 }
 
 export function renderCostPagination(currentPage, totalPages) {
     if (totalPages <= 1) return '';
     let buttons = `
-        <button class="cost-page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] ${currentPage === 1 ? 'text-[#333] cursor-not-allowed' : 'text-[#585858] hover:text-[#c0c0c0]'}"
-                data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}>‹</button>`;
-    for (let i = 1; i <= totalPages && i <= 8; i++) {
-        const active = i === currentPage;
-        buttons += `<button class="cost-page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] ${active ? 'bg-[#d32f2f] text-white' : 'text-[#585858] hover:text-[#c0c0c0]'}" data-page="${i}">${i}</button>`;
+        <button class="cost-page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] ${currentPage === 1 ? 'text-[#333333] cursor-not-allowed' : 'text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]'} transition-all"
+                data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}>
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+        </button>`;
+    const maxVisible = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+    if (endPage - startPage < maxVisible - 1) startPage = Math.max(1, endPage - maxVisible + 1);
+    if (startPage > 1) {
+        buttons += `<button class="cost-page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]" data-page="1">1</button>`;
+        if (startPage > 2) buttons += `<span class="px-0.5 text-[#333333] text-[9px]">…</span>`;
+    }
+    for (let i = startPage; i <= endPage; i++) {
+        const isActive = i === currentPage;
+        buttons += `<button class="cost-page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] ${isActive ? 'bg-[#FFFFFF] text-[#0a0a0a] font-bold' : 'text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]'}" data-page="${i}">${i}</button>`;
+    }
+    if (endPage < totalPages) {
+        if (endPage < totalPages - 1) buttons += `<span class="px-0.5 text-[#333333] text-[9px]">…</span>`;
+        buttons += `<button class="cost-page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]" data-page="${totalPages}">${totalPages}</button>`;
     }
     buttons += `
-        <button class="cost-page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] ${currentPage === totalPages ? 'text-[#333] cursor-not-allowed' : 'text-[#585858] hover:text-[#c0c0c0]'}"
-                data-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''}>›</button>`;
+        <button class="cost-page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] ${currentPage === totalPages ? 'text-[#333333] cursor-not-allowed' : 'text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]'}"
+                data-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''}>
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+        </button>`;
     return buttons;
+}
+
+function filterSelect(id, label) {
+    return `<label class="space-y-1">
+        <span class="block text-[9px] font-semibold text-[#555555] uppercase tracking-[0.14em]">${label}</span>
+        <select id="${id}" class="w-32 h-8 pl-2.5 pr-7 text-[11px] bg-[#0A0A0E] border border-[#2A2A35] text-[#A1A1A6] appearance-none cursor-pointer focus:outline-none focus:border-[#FF1E27] rounded-md transition-colors">
+            <option value="">全部</option>
+        </select>
+    </label>`;
+}
+
+function filterInput(id, label, placeholder) {
+    return `<label class="space-y-1">
+        <span class="block text-[9px] font-semibold text-[#555555] uppercase tracking-[0.14em]">${label}</span>
+        <input id="${id}" type="text" placeholder="${placeholder}"
+               class="h-8 w-36 px-2.5 text-[11px] bg-[#0A0A0E] border border-[#2A2A35] text-[#ffffff] placeholder:text-[#555555] rounded-md focus:outline-none focus:border-[#FF1E27] transition-colors">
+    </label>`;
+}
+
+function calcStatusBadge(isFailed) {
+    const label = isFailed ? '失败' : '成功';
+    return `<span class="inline-flex items-center px-2 py-0.5 text-[10px] font-sans rounded-sm bg-[#1C1C22] text-[#8E8E93] border border-[#2A2A32]">${label}</span>`;
+}
+
+function auditBadge(status) {
+    const label = { pending: '待审', approved: '已通过', rejected: '已驳回' }[status] || status || '-';
+    return `<span class="inline-flex items-center px-2 py-0.5 text-[10px] font-sans rounded-sm bg-[#1C1C22] text-[#8E8E93] border border-[#2A2A32]">${esc(label)}</span>`;
 }

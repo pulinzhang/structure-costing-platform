@@ -2,17 +2,19 @@
  * 冲压零件价格一览
  */
 
-import { partCostListTemplate, renderCostPagination } from './template.js?v=11';
+import {
+    partCostListTemplate,
+    renderCostPagination,
+    renderCostRows,
+    updatePartCostHud,
+    updateActiveFilterCapsules,
+    shortPartNumber,
+    syncBreakdownColumnVisibility,
+} from './template.js?v=18';
 
 const API_BASE = '/api/stamping/part-costs';
 const CASCADE_API = '/api/stamping/filters/cascade';
 const PAGE_SIZE = 20;
-
-const AUDIT_META = {
-    pending: { label: '待审', className: 'text-[#ffb74d]' },
-    approved: { label: '已通过', className: 'text-[#66bb6a]' },
-    rejected: { label: '已驳回', className: 'text-[#ef5350]' },
-};
 
 const listState = {
     page: 1,
@@ -23,6 +25,8 @@ const listState = {
     canApprove: true,
     canReverse: true,
     canExport: true,
+    advancedFilterOpen: false,
+    breakdownColsOpen: false,
 };
 
 function init() {
@@ -31,8 +35,10 @@ function init() {
     fillMonthOptions();
     fillAuditOptions();
     applyQueryFromHash();
+    updateActiveFilterCapsules();
+    syncBreakdownColumnVisibility(false);
     loadYearOptions().then(() => {
-        loadCascadeFilters();
+        loadCascadeFilters().then(() => updateActiveFilterCapsules());
         loadList(1);
     });
 }
@@ -66,23 +72,85 @@ function applyQueryFromHash() {
         location: 'costLocationFilter',
         stamping_supplier: 'costSupplierFilter',
     };
+    let hasQuery = false;
     Object.entries(map).forEach(([key, id]) => {
         const value = params.get(key);
         if (value) {
             const el = document.getElementById(id);
-            if (el) el.value = value;
+            if (el) {
+                el.value = value;
+                hasQuery = true;
+            }
         }
     });
+    if (hasQuery && !listState.advancedFilterOpen) {
+        toggleAdvancedFilter();
+    }
+}
+
+function toggleAdvancedFilter() {
+    listState.advancedFilterOpen = !listState.advancedFilterOpen;
+    const panel = document.getElementById('costAdvancedFilterPanel');
+    const label = document.getElementById('costAdvancedFilterLabel');
+    if (panel) {
+        panel.classList.toggle('hidden', !listState.advancedFilterOpen);
+    }
+    if (label) {
+        label.textContent = listState.advancedFilterOpen
+            ? '[-] 收起高级筛选'
+            : '[+] 展开高级筛选';
+    }
+}
+
+function toggleBreakdownColumns() {
+    listState.breakdownColsOpen = !listState.breakdownColsOpen;
+    syncBreakdownColumnVisibility(listState.breakdownColsOpen);
+}
+
+function setListLoading(isLoading) {
+    const loading = document.getElementById('costLoading');
+    const empty = document.getElementById('costEmpty');
+    if (loading) loading.classList.toggle('hidden', !isLoading);
+    if (isLoading && empty) empty.classList.add('hidden');
+}
+
+function setListEmpty(isEmpty) {
+    const empty = document.getElementById('costEmpty');
+    if (empty) empty.classList.toggle('hidden', !isEmpty);
 }
 
 function bindEvents() {
-    document.getElementById('costSearchBtn')?.addEventListener('click', () => loadList(1));
+    document.getElementById('costSearchBtn')?.addEventListener('click', () => {
+        updateActiveFilterCapsules();
+        loadList(1);
+    });
+    document.getElementById('costToggleAdvancedFilter')?.addEventListener('click', () => toggleAdvancedFilter());
+    document.getElementById('costToggleBreakdownCols')?.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        toggleBreakdownColumns();
+    });
     document.getElementById('costResetBtn')?.addEventListener('click', () => resetFilters());
     document.getElementById('costYearFilter')?.addEventListener('change', () => {
-        loadCascadeFilters();
+        loadCascadeFilters().then(() => updateActiveFilterCapsules());
     });
     document.getElementById('costLocationFilter')?.addEventListener('change', () => {
-        loadCascadeFilters();
+        loadCascadeFilters().then(() => updateActiveFilterCapsules());
+    });
+    [
+        'costMonthFilter',
+        'costSupplierFilter',
+        'costAuditFilter',
+    ].forEach((id) => {
+        document.getElementById(id)?.addEventListener('change', () => updateActiveFilterCapsules());
+    });
+    document.getElementById('costPartNumberFilter')?.addEventListener('input', () => updateActiveFilterCapsules());
+    document.getElementById('costPartNumberFilter')?.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            updateActiveFilterCapsules();
+            loadList(1);
+        }
     });
     document.getElementById('costBatchApproveBtn')?.addEventListener('click', () => batchApprove());
     document.getElementById('costBatchReverseBtn')?.addEventListener('click', () => batchReverse());
@@ -166,7 +234,8 @@ function resetFilters() {
         const el = document.getElementById(id);
         if (el) el.value = '';
     });
-    loadCascadeFilters();
+    updateActiveFilterCapsules();
+    loadCascadeFilters().then(() => updateActiveFilterCapsules());
     loadList(1);
 }
 
@@ -200,7 +269,8 @@ function requireScope() {
 async function loadList(page = 1) {
     const body = document.getElementById('costTableBody');
     if (!body) return;
-    body.innerHTML = `<tr><td colspan="15" class="py-14 text-center text-[#616161]">加载中...</td></tr>`;
+    setListLoading(true);
+    body.innerHTML = '';
     try {
         const filters = getFilters();
         const res = await HttpClient.get(API_BASE, {
@@ -211,7 +281,10 @@ async function loadList(page = 1) {
         listState.total = pageData.total || 0;
         listState.totalPages = pageData.total_pages || 1;
         listState.items = Array.isArray(pageData.items) ? pageData.items : [];
+        setListLoading(false);
         renderRows(listState.items);
+        updatePartCostHud(listState.total, listState.items);
+        updateActiveFilterCapsules();
         const totalEl = document.getElementById('costTotalCount');
         if (totalEl) totalEl.textContent = String(listState.total);
         const pageInfo = document.getElementById('costPageInfo');
@@ -230,9 +303,13 @@ async function loadList(page = 1) {
             if (pageData.filters.suppliers) {
                 fillSelect('costSupplierFilter', pageData.filters.suppliers, filters.stamping_supplier);
             }
+            updateActiveFilterCapsules();
         }
     } catch (error) {
-        body.innerHTML = `<tr><td colspan="15" class="py-14 text-center text-[#ef5350]">${esc(error.message || '加载失败')}</td></tr>`;
+        setListLoading(false);
+        setListEmpty(false);
+        body.innerHTML = `<tr><td colspan="20" class="py-14 text-center text-[#ef5350]">${esc(error.message || '加载失败')}</td></tr>`;
+        updatePartCostHud(0, []);
     }
 }
 
@@ -240,43 +317,13 @@ function renderRows(items) {
     const body = document.getElementById('costTableBody');
     if (!body) return;
     if (!items.length) {
-        body.innerHTML = `<tr><td colspan="15" class="py-14 text-center text-[#616161]">暂无数据</td></tr>`;
+        body.innerHTML = '';
+        setListEmpty(true);
         return;
     }
-    body.innerHTML = items
-        .map((row) => {
-            const audit = AUDIT_META[row.audit_status] || AUDIT_META.pending;
-            const ym = `${row.year}-${String(row.month).padStart(2, '0')}`;
-            const fail = row.calc_status === 'failed';
-            return `
-            <tr class="hover:bg-[#ffffff]/[0.02] transition-colors">
-                <td class="px-3 py-2.5 text-[11px] text-[#9e9e9e]">
-                    <div class="font-mono">${esc(ym)}</div>
-                    <div class="text-[10px] text-[#616161]">${esc(row.location)} · ${esc(row.stamping_supplier)}</div>
-                </td>
-                <td class="px-3 py-2.5 text-[11px] text-[#ffffff] font-mono">${esc(row.part_number)}</td>
-                <td class="px-3 py-2.5 text-[11px] text-[#9e9e9e] max-w-[160px] truncate" title="${esc(row.part_name || '')}">${esc(row.part_name || '-')}</td>
-                <td class="px-3 py-2.5 text-[11px] text-[#9e9e9e]">
-                    <div>${esc(row.material || '-')}</div>
-                    <div class="font-mono text-[10px] text-[#616161]">${fmtNum(row.thickness, 3)} mm</div>
-                </td>
-                <td class="px-3 py-2.5 text-[11px] text-right font-mono tabular-nums text-[#9e9e9e]">${fmtNum(row.blank_weight_kg, 7)}</td>
-                <td class="px-3 py-2.5 text-[11px] text-right font-mono tabular-nums text-[#9e9e9e]">${fmtNum(row.scrap_weight_kg, 7)}</td>
-                <td class="px-3 py-2.5 text-[11px] text-right font-mono tabular-nums text-[#9e9e9e]">${fmtNum(row.material_utilization_pct, 2)}</td>
-                <td class="px-3 py-2.5 text-[11px] text-right font-mono tabular-nums text-[#9e9e9e]">${fmtNum(row.steel_ton_price, 2)}</td>
-                <td class="px-3 py-2.5 text-[11px] text-right font-mono tabular-nums text-[#9e9e9e]">${fmtNum(row.scrap_ton_price, 2)}</td>
-                <td class="px-3 py-2.5 text-[11px] text-right font-mono tabular-nums text-[#ffffff] bg-[#141414]">${fmtNum(row.material_net_per_part, 4)}</td>
-                <td class="px-3 py-2.5 text-[11px] text-right font-mono tabular-nums text-[#9e9e9e]">${fmtNum(row.process_fee_amount, 3)}</td>
-                <td class="px-3 py-2.5 text-[11px] text-right font-mono tabular-nums text-[#ffffff] bg-[#141414]">${fmtNum(row.unit_cost, 4)}</td>
-                <td class="px-3 py-2.5 text-center text-[10px] ${fail ? 'text-[#ef5350]' : 'text-[#66bb6a]'}">${fail ? '失败' : '成功'}</td>
-                <td class="px-3 py-2.5 text-center text-[10px] ${audit.className}">${audit.label}</td>
-                <td class="px-3 py-2.5 text-right">
-                    <button type="button" class="cost-detail-btn text-[10px] text-[#777] hover:text-white" data-id="${esc(row.id)}">详情</button>
-                </td>
-            </tr>`;
-        })
-        .join('');
-
+    setListEmpty(false);
+    body.innerHTML = renderCostRows(items, listState.breakdownColsOpen);
+    syncBreakdownColumnVisibility(listState.breakdownColsOpen);
     body.querySelectorAll('.cost-detail-btn').forEach((btn) => {
         btn.addEventListener('click', () => openDetail(Number(btn.dataset.id)));
     });
@@ -293,6 +340,10 @@ async function openDetail(costId) {
 
 function showDetailDrawer(row) {
     closeDetailDrawer();
+    const shortNo = shortPartNumber(row.part_number);
+    const titlePart = shortNo
+        ? `${shortNo} · ${row.part_number || ''}`
+        : (row.part_number || '');
     const backdrop = document.createElement('div');
     backdrop.id = 'costDetailBackdrop';
     backdrop.className = 'fixed inset-0 z-[80] bg-black/70 backdrop-blur-sm';
@@ -302,11 +353,16 @@ function showDetailDrawer(row) {
         'fixed inset-y-0 right-0 z-[85] w-[640px] max-w-[95vw] bg-[#1a1a1a] border-l border-[#2a2a2a] flex flex-col';
     drawer.innerHTML = `
         <div class="px-5 py-3.5 flex items-center justify-between shrink-0 bg-[#1f1f1f] border-b border-[#333]">
-            <h5 class="text-[11px] font-semibold tracking-wider text-[#b0b0b0] uppercase">核算详情 · ${esc(row.part_number || '')}</h5>
+            <h5 class="text-[11px] font-semibold tracking-wider text-[#b0b0b0] uppercase flex items-center gap-2">
+                <span class="text-[#FF1E27] font-mono text-sm tracking-[0.14em]">${esc(shortNo || '')}</span>
+                <span>核算详情 · ${esc(titlePart)}</span>
+            </h5>
             <button type="button" id="closeCostDetailDrawer" class="w-8 h-8 text-[#707070] hover:text-white hover:bg-[#d32f2f] rounded-md">×</button>
         </div>
         <div class="flex-1 overflow-y-auto p-5 space-y-4 text-[11px] text-[#9e9e9e]">
             ${detailBlock('基础信息', [
+                ['零件号', row.part_number || '-'],
+                ['短号', shortNo || '-'],
                 ['基地/工厂', `${row.location || '-'} / ${row.stamping_supplier || '-'}`],
                 ['年月', `${row.year}-${String(row.month).padStart(2, '0')}`],
                 ['车型/版本', `${row.vehicle_model || '-'} / ${row.version || '-'}`],
@@ -335,10 +391,18 @@ function showDetailDrawer(row) {
                 ['② 损耗废料扣除（回收率）', fmtNum(row.loss_scrap_deduction, 6)],
                 ['③ 边角废料扣除（回收率）', fmtNum(row.process_scrap_deduction, 6)],
                 ['废料扣除合计 ②+③', fmtNum(row.scrap_amount_sheet, 6)],
-                ['原材料成本', fmtNum(row.material_net_per_part, 6)],
+                ['原材料成本 R', fmtNum(row.material_net_per_part, 6)],
                 ['加工费', fmtNum(row.process_fee_amount, 3)],
-                ['单件成本（原材料+加工费）', fmtNum(row.unit_cost, 4)],
             ])}
+            <div class="bg-[#18080A] border border-[#FF1E27]/40 overflow-hidden"
+                 style="box-shadow: 0 0 24px rgba(255,30,39,0.12);">
+                <div class="px-3 py-2 bg-[#120608] border-b border-[#FF1E27]/20 text-[10px] text-[#FF1E27] uppercase tracking-wider font-bold">单件成本</div>
+                <div class="px-3 py-4 flex items-baseline justify-between gap-3">
+                    <span class="text-[#8E8E93]">原材料 R + 加工费</span>
+                    <span class="text-[22px] font-mono font-black tabular-nums text-[#FF1E27]"
+                          style="text-shadow: 0 0 12px rgba(255,30,39,0.55);">￥${esc(fmtNum(row.unit_cost, 4))}</span>
+                </div>
+            </div>
             ${detailBlock('溯源', [
                 ['Excel', row.excel_filename || '-'],
                 ['Sheet/行', `${row.excel_sheet_name || '-'} / ${row.excel_row ?? '-'}`],
