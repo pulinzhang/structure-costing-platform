@@ -10,11 +10,11 @@ import {
     updateActiveFilterCapsules,
     shortPartNumber,
     syncBreakdownColumnVisibility,
-} from './template.js?v=18';
+} from './template.js?v=19';
 
 const API_BASE = '/api/stamping/part-costs';
 const CASCADE_API = '/api/stamping/filters/cascade';
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 10;
 
 const listState = {
     page: 1,
@@ -283,7 +283,7 @@ async function loadList(page = 1) {
         listState.items = Array.isArray(pageData.items) ? pageData.items : [];
         setListLoading(false);
         renderRows(listState.items);
-        updatePartCostHud(listState.total, listState.items);
+        updatePartCostHud(listState.total, pageData.filters?.summary || null);
         updateActiveFilterCapsules();
         const totalEl = document.getElementById('costTotalCount');
         if (totalEl) totalEl.textContent = String(listState.total);
@@ -309,7 +309,7 @@ async function loadList(page = 1) {
         setListLoading(false);
         setListEmpty(false);
         body.innerHTML = `<tr><td colspan="20" class="py-14 text-center text-[#ef5350]">${esc(error.message || '加载失败')}</td></tr>`;
-        updatePartCostHud(0, []);
+        updatePartCostHud(0, null);
     }
 }
 

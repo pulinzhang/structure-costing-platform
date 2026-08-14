@@ -40,7 +40,7 @@ export function winningThicknessDownloadTemplate() {
                                 class="inline-flex items-center gap-1.5 h-7 px-3 text-[11px] font-semibold rounded-sm text-[#c8c8c8] border border-[#8a2020] transition-all duration-200 hover:text-white"
                                 style="background: linear-gradient(180deg, #3d1515 0%, #2d0f0f 100%); border-color: #6b1a1a; box-shadow: 0 1px 3px rgba(0,0,0,0.4), inset 0 1px 0 rgba(211,47,47,0.1), 0 0 12px rgba(198,40,40,0.08);">
                             ${window.svgIcon('search', 'w-3 h-3')}
-                            预览
+                            查询
                         </button>
                     </div>
                 </div>
@@ -87,7 +87,7 @@ export function winningThicknessDownloadTemplate() {
                                 <tbody id="winningThicknessPreviewBody" class="divide-y divide-[#1a1a1a]">
                                     <tr>
                                         <td colspan="10" class="px-4 py-8 text-center text-[#616161] text-xs">
-                                            请选择基地、年度、月份后点击「预览」
+                                            请选择基地、年度、月份后点击「查询」
                                         </td>
                                     </tr>
                                 </tbody>

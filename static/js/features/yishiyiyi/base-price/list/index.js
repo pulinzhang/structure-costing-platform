@@ -414,7 +414,7 @@ async function refreshPreview() {
             tableBody.innerHTML = `
                 <tr>
                     <td colspan="16" class="px-4 py-8 text-center text-[#d32f2f] text-xs">
-                        刷新预览失败: ${esc(error.message || '未知错误')}
+                        刷新查询失败: ${esc(error.message || '未知错误')}
                     </td>
                 </tr>
             `;

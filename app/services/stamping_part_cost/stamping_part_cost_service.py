@@ -848,6 +848,17 @@ class StampingPartCostService:
                 month=query.month,
                 location=query.location,
             ),
+            "summary": self.cost_repo.summarize_by_filters(
+                db,
+                year=query.year,
+                month=query.month,
+                location=query.location,
+                stamping_supplier=query.stamping_supplier,
+                vehicle_model=query.vehicle_model,
+                version=query.version,
+                part_number=query.part_number,
+                audit_status=query.audit_status,
+            ),
         }
         return (
             [StampingPartCostVO.model_validate(r) for r in rows],

@@ -22,13 +22,13 @@ export function partCostListTemplate() {
                                     <span class="text-[10px] text-[#555555] ml-1">条</span>
                                 </div>
                             </div>
-                            <!-- 巴博斯霓虹红光 本页均单价 -->
+                            <!-- 巴博斯霓虹红光：筛选条件下均单价 -->
                             <div class="bg-gradient-to-b from-[#18080A] to-[#0D0708] border border-[#FF1E27]/50 p-3.5 relative overflow-hidden group"
                                  style="box-shadow: 0 0 30px rgba(255,30,39,0.15), inset 0 1px 0 rgba(255,30,39,0.12);">
                                 <div class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#FF1E27] to-transparent"
                                      style="box-shadow: 0 0 10px #FF1E27;"></div>
                                 <div class="flex justify-between items-start">
-                                    <span class="text-[#FF1E27] text-[10px] font-bold tracking-widest">本页均单件成本</span>
+                                    <span class="text-[#FF1E27] text-[10px] font-bold tracking-widest">筛选均单件成本</span>
                                     <span class="w-2 h-2 rounded-full bg-[#FF1E27] animate-pulse"
                                           style="box-shadow: 0 0 8px #FF1E27;"></span>
                                 </div>
@@ -37,13 +37,13 @@ export function partCostListTemplate() {
                                     ￥<span id="costHudAvg">—</span>
                                 </div>
                                 <div class="text-[9px] font-mono text-[#FF1E27]/60 mt-1 flex justify-between">
-                                    <span>系统自动计算</span>
+                                    <span>满足当前筛选</span>
                                     <span id="costHudSkuCount">— 条</span>
                                 </div>
                             </div>
                             <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3 backdrop-blur-sm"
                                  style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);">
-                                <div class="text-[#555555] text-[10px] tracking-wider">本页待审</div>
+                                <div class="text-[#555555] text-[10px] tracking-wider">待审</div>
                                 <div class="text-[18px] font-bold text-[#FFFFFF] mt-1 tabular-nums">
                                     <span id="costHudPending">—</span>
                                     <span class="text-[10px] text-[#555555] ml-1">条</span>
@@ -51,7 +51,7 @@ export function partCostListTemplate() {
                             </div>
                             <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3 backdrop-blur-sm"
                                  style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);">
-                                <div class="text-[#555555] text-[10px] tracking-wider">本页已审</div>
+                                <div class="text-[#555555] text-[10px] tracking-wider">已审</div>
                                 <div class="text-[18px] font-bold text-[#FFFFFF] mt-1 tabular-nums">
                                     <span id="costHudApproved">—</span>
                                     <span class="text-[10px] text-[#555555] ml-1">条</span>
@@ -116,8 +116,9 @@ export function partCostListTemplate() {
                                 <span id="costAdvancedFilterCount" class="text-[#555555]">(0)</span>
                             </button>
                             <button type="button" id="costSearchBtn"
-                                    class="bg-[#FF1E27] hover:bg-[#D6131B] text-white font-bold px-4 py-1.5 rounded-lg transition-all text-[11px] tracking-wide"
-                                    style="box-shadow: 0 0 15px rgba(255,30,39,0.4);">
+                                    class="inline-flex items-center gap-1.5 h-7 px-3 text-[11px] font-semibold rounded-sm text-[#c8c8c8] border border-[#8a2020] transition-all duration-200 hover:text-white"
+                                    style="background: linear-gradient(180deg, #3d1515 0%, #2d0f0f 100%); border-color: #6b1a1a; box-shadow: 0 1px 3px rgba(0,0,0,0.4), inset 0 1px 0 rgba(211,47,47,0.1), 0 0 12px rgba(198,40,40,0.08);">
+                                ${window.svgIcon('search', 'w-3 h-3')}
                                 查询
                             </button>
                         </div>
@@ -328,32 +329,29 @@ function partInfoCell(partNumber, partName) {
         ${nameLine}`;
 }
 
-/** 用已加载列表数据刷新 HUD 战术看板（不改业务逻辑） */
-export function updatePartCostHud(total, records) {
+/** 用筛选汇总刷新 HUD（均价 / 待审 / 已审均为全量筛选结果，非本页） */
+export function updatePartCostHud(total, summary) {
     const setText = (id, value) => {
         const el = document.getElementById(id);
         if (el) el.textContent = value;
     };
-    const list = Array.isArray(records) ? records : [];
-    const prices = list
-        .map((r) => Number(r.unit_cost))
-        .filter((n) => !Number.isNaN(n));
-    const avg = prices.length
-        ? prices.reduce((sum, n) => sum + n, 0) / prices.length
-        : null;
-    const pending = list.filter((r) => r.audit_status === 'pending').length;
-    const approved = list.filter((r) => r.audit_status === 'approved').length;
+    const data = summary && typeof summary === 'object' ? summary : {};
+    const avg = data.avg_unit_cost;
+    const avgNumber = avg == null || avg === '' ? NaN : Number(avg);
 
     setText('costHudTotal', Number(total || 0).toLocaleString('zh-CN'));
     setText(
         'costHudAvg',
-        avg == null
+        Number.isNaN(avgNumber)
             ? '—'
-            : avg.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 4 })
+            : avgNumber.toLocaleString('zh-CN', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 4,
+            })
     );
-    setText('costHudSkuCount', `${list.length} 条`);
-    setText('costHudPending', String(pending));
-    setText('costHudApproved', String(approved));
+    setText('costHudSkuCount', `${Number(total || 0).toLocaleString('zh-CN')} 条`);
+    setText('costHudPending', String(data.pending_count ?? 0));
+    setText('costHudApproved', String(data.approved_count ?? 0));
 }
 
 /**

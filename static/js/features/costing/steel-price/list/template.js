@@ -103,8 +103,9 @@ export function steelPriceListTemplate() {
                                 <span id="steelPriceAdvancedFilterCount" class="text-[#555555]">(0)</span>
                             </button>
                             <button type="button" id="steelPriceSearchButton"
-                                    class="bg-[#FF1E27] hover:bg-[#D6131B] text-white font-bold px-4 py-1.5 rounded-lg transition-all text-[11px] tracking-wide"
-                                    style="box-shadow: 0 0 15px rgba(255,30,39,0.4);">
+                                    class="inline-flex items-center gap-1.5 h-7 px-3 text-[11px] font-semibold rounded-sm text-[#c8c8c8] border border-[#8a2020] transition-all duration-200 hover:text-white"
+                                    style="background: linear-gradient(180deg, #3d1515 0%, #2d0f0f 100%); border-color: #6b1a1a; box-shadow: 0 1px 3px rgba(0,0,0,0.4), inset 0 1px 0 rgba(211,47,47,0.1), 0 0 12px rgba(198,40,40,0.08);">
+                                ${window.svgIcon('search', 'w-3 h-3')}
                                 查询
                             </button>
                         </div>

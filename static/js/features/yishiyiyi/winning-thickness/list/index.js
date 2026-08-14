@@ -198,8 +198,8 @@ async function previewData() {
         }
         updateConditionsDisplay();
     } catch (error) {
-        console.error('预览失败:', error);
-        showToast(error.message || '预览失败', 'error');
+        console.error('查询失败:', error);
+        showToast(error.message || '查询失败', 'error');
         if (tableBody) {
             tableBody.innerHTML = `
                 <tr>

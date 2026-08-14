@@ -3,6 +3,7 @@
 import logging
 from typing import Any, Dict, List, Optional, Tuple
 
+from sqlalchemy import case, func
 from sqlalchemy.orm import Session
 
 from app.models.stamping_part_cost import StampingPartCost
@@ -105,9 +106,10 @@ class StampingPartCostRepository:
             StampingPartCost.stamping_supplier == stamping_supplier,
         )
 
-    def paginate(
+    def _build_list_query(
         self,
         db: Session,
+        *,
         year: Optional[int] = None,
         month: Optional[int] = None,
         location: Optional[str] = None,
@@ -116,9 +118,7 @@ class StampingPartCostRepository:
         version: Optional[str] = None,
         part_number: Optional[str] = None,
         audit_status: Optional[str] = None,
-        skip: int = 0,
-        limit: int = 20,
-    ) -> Tuple[List[StampingPartCost], int]:
+    ):
         q = db.query(StampingPartCost)
         if year is not None:
             q = q.filter(StampingPartCost.year == year)
@@ -136,7 +136,33 @@ class StampingPartCostRepository:
             q = q.filter(StampingPartCost.part_number.like(f"%{part_number}%"))
         if audit_status:
             q = q.filter(StampingPartCost.audit_status == audit_status)
+        return q
 
+    def paginate(
+        self,
+        db: Session,
+        year: Optional[int] = None,
+        month: Optional[int] = None,
+        location: Optional[str] = None,
+        stamping_supplier: Optional[str] = None,
+        vehicle_model: Optional[str] = None,
+        version: Optional[str] = None,
+        part_number: Optional[str] = None,
+        audit_status: Optional[str] = None,
+        skip: int = 0,
+        limit: int = 20,
+    ) -> Tuple[List[StampingPartCost], int]:
+        q = self._build_list_query(
+            db,
+            year=year,
+            month=month,
+            location=location,
+            stamping_supplier=stamping_supplier,
+            vehicle_model=vehicle_model,
+            version=version,
+            part_number=part_number,
+            audit_status=audit_status,
+        )
         total = q.count()
         rows = (
             q.order_by(
@@ -151,6 +177,47 @@ class StampingPartCostRepository:
             .all()
         )
         return rows, total
+
+    def summarize_by_filters(
+        self,
+        db: Session,
+        *,
+        year: Optional[int] = None,
+        month: Optional[int] = None,
+        location: Optional[str] = None,
+        stamping_supplier: Optional[str] = None,
+        vehicle_model: Optional[str] = None,
+        version: Optional[str] = None,
+        part_number: Optional[str] = None,
+        audit_status: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """按与列表相同的筛选条件汇总：均单价 / 待审 / 已审。"""
+        q = self._build_list_query(
+            db,
+            year=year,
+            month=month,
+            location=location,
+            stamping_supplier=stamping_supplier,
+            vehicle_model=vehicle_model,
+            version=version,
+            part_number=part_number,
+            audit_status=audit_status,
+        )
+        row = q.with_entities(
+            func.avg(StampingPartCost.unit_cost).label("avg_unit_cost"),
+            func.sum(
+                case((StampingPartCost.audit_status == AUDIT_PENDING, 1), else_=0)
+            ).label("pending_count"),
+            func.sum(
+                case((StampingPartCost.audit_status == AUDIT_APPROVED, 1), else_=0)
+            ).label("approved_count"),
+        ).one()
+        avg_value = row.avg_unit_cost
+        return {
+            "avg_unit_cost": float(avg_value) if avg_value is not None else None,
+            "pending_count": int(row.pending_count or 0),
+            "approved_count": int(row.approved_count or 0),
+        }
 
     def list_for_export(
         self,
