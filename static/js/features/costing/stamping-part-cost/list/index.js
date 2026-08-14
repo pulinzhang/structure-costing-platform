@@ -7,14 +7,21 @@ import {
     renderCostPagination,
     renderCostRows,
     updatePartCostHud,
-    updateActiveFilterCapsules,
     shortPartNumber,
     syncBreakdownColumnVisibility,
-} from './template.js?v=19';
+} from './template.js?v=25';
 
 const API_BASE = '/api/stamping/part-costs';
 const CASCADE_API = '/api/stamping/filters/cascade';
 const PAGE_SIZE = 10;
+
+const FILTER_IDS = [
+    'costYearFilter',
+    'costMonthFilter',
+    'costLocationFilter',
+    'costSupplierFilter',
+    'costAuditFilter',
+];
 
 const listState = {
     page: 1,
@@ -25,8 +32,8 @@ const listState = {
     canApprove: true,
     canReverse: true,
     canExport: true,
-    advancedFilterOpen: false,
     breakdownColsOpen: false,
+    _onDocClick: null,
 };
 
 function init() {
@@ -35,16 +42,23 @@ function init() {
     fillMonthOptions();
     fillAuditOptions();
     applyQueryFromHash();
-    updateActiveFilterCapsules();
+    FILTER_IDS.forEach((id) => syncFilterChip(id));
+    syncBatchBarVisibility();
     syncBreakdownColumnVisibility(false);
     loadYearOptions().then(() => {
-        loadCascadeFilters().then(() => updateActiveFilterCapsules());
+        loadCascadeFilters().then(() => syncBatchBarVisibility());
         loadList(1);
     });
 }
 
 function destroy() {
     closeDetailDrawer();
+    setExportMenuOpen(false);
+    closeAllFilterMenus();
+    if (listState._onDocClick) {
+        document.removeEventListener('click', listState._onDocClick);
+        listState._onDocClick = null;
+    }
 }
 
 function applyPermissionUi() {
@@ -56,9 +70,35 @@ function applyPermissionUi() {
     if (!listState.canApprove) document.getElementById('costBatchApproveBtn')?.classList.add('hidden');
     if (!listState.canReverse) document.getElementById('costBatchReverseBtn')?.classList.add('hidden');
     if (!listState.canExport) {
-        document.getElementById('costExportBtn')?.classList.add('hidden');
-        document.getElementById('costExportDetailBtn')?.classList.add('hidden');
+        document.getElementById('costExportWrap')?.classList.add('hidden');
     }
+}
+
+function hasBatchScope() {
+    const f = getFilters();
+    return Boolean(f.year && f.month && f.location && f.stamping_supplier);
+}
+
+function hasAnyBatchPermission() {
+    return listState.canApprove || listState.canReverse || listState.canDelete;
+}
+
+/** 年/月/基地/工厂齐全时才露出批量条（本页批量为「按范围」，非勾选行） */
+function syncBatchBarVisibility() {
+    const bar = document.getElementById('costBatchBar');
+    const show = hasBatchScope() && hasAnyBatchPermission();
+    if (bar) {
+        bar.classList.toggle('hidden', !show);
+        bar.classList.toggle('flex', show);
+    }
+}
+
+function setExportMenuOpen(isOpen) {
+    const menu = document.getElementById('costExportMenu');
+    const trigger = document.getElementById('costExportMenuBtn');
+    if (!menu) return;
+    menu.classList.toggle('hidden', !isOpen);
+    if (trigger) trigger.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
 }
 
 function applyQueryFromHash() {
@@ -72,34 +112,16 @@ function applyQueryFromHash() {
         location: 'costLocationFilter',
         stamping_supplier: 'costSupplierFilter',
     };
-    let hasQuery = false;
     Object.entries(map).forEach(([key, id]) => {
         const value = params.get(key);
         if (value) {
             const el = document.getElementById(id);
             if (el) {
                 el.value = value;
-                hasQuery = true;
+                syncFilterChip(id);
             }
         }
     });
-    if (hasQuery && !listState.advancedFilterOpen) {
-        toggleAdvancedFilter();
-    }
-}
-
-function toggleAdvancedFilter() {
-    listState.advancedFilterOpen = !listState.advancedFilterOpen;
-    const panel = document.getElementById('costAdvancedFilterPanel');
-    const label = document.getElementById('costAdvancedFilterLabel');
-    if (panel) {
-        panel.classList.toggle('hidden', !listState.advancedFilterOpen);
-    }
-    if (label) {
-        label.textContent = listState.advancedFilterOpen
-            ? '[-] 收起高级筛选'
-            : '[+] 展开高级筛选';
-    }
 }
 
 function toggleBreakdownColumns() {
@@ -119,44 +141,133 @@ function setListEmpty(isEmpty) {
     if (empty) empty.classList.toggle('hidden', !isEmpty);
 }
 
+function closeAllFilterMenus(exceptChip = null) {
+    document.querySelectorAll('.cost-filter-chip').forEach((chip) => {
+        if (exceptChip && chip === exceptChip) return;
+        const menu = chip.querySelector('.cost-filter-menu');
+        const trigger = chip.querySelector('.cost-filter-trigger');
+        menu?.classList.add('hidden');
+        trigger?.setAttribute('aria-expanded', 'false');
+    });
+}
+
+/** 根据隐藏 select 同步暗色菜单与触发器文案 */
+function syncFilterChip(selectId) {
+    const select = document.getElementById(selectId);
+    const chip = document.querySelector(`.cost-filter-chip[data-filter-id="${selectId}"]`);
+    if (!select || !chip) return;
+
+    const labelEl = chip.querySelector('.cost-filter-label');
+    const menu = chip.querySelector('.cost-filter-menu');
+    if (!labelEl || !menu) return;
+
+    const current = String(select.value ?? '');
+    const selectedOpt = Array.from(select.options).find((opt) => opt.value === current);
+    labelEl.textContent = selectedOpt ? selectedOpt.textContent : (select.dataset.emptyLabel || '全部');
+    labelEl.classList.toggle('text-[#E8E8ED]', Boolean(current));
+    labelEl.classList.toggle('text-[#8E8E93]', !current);
+
+    const idleClass =
+        'w-full px-3 py-1.5 text-left text-[11px] font-mono transition-colors text-[#9e9e9e] hover:bg-[#161620] hover:text-[#ffffff]';
+    const activeClass =
+        'w-full px-3 py-1.5 text-left text-[11px] font-mono transition-colors bg-[#161620] text-[#ffffff]';
+
+    menu.innerHTML = Array.from(select.options)
+        .map((opt) => {
+            const value = opt.value;
+            const isActive = value === current;
+            return `<button type="button" role="option" data-value="${esc(value)}" aria-selected="${isActive}"
+                class="${isActive ? activeClass : idleClass}">${esc(opt.textContent || '')}</button>`;
+        })
+        .join('');
+}
+
+function onFilterValueChange(selectId) {
+    syncFilterChip(selectId);
+    syncBatchBarVisibility();
+    if (selectId === 'costYearFilter' || selectId === 'costLocationFilter') {
+        loadCascadeFilters().then(() => syncBatchBarVisibility());
+    }
+}
+
 function bindEvents() {
     document.getElementById('costSearchBtn')?.addEventListener('click', () => {
-        updateActiveFilterCapsules();
+        syncBatchBarVisibility();
         loadList(1);
     });
-    document.getElementById('costToggleAdvancedFilter')?.addEventListener('click', () => toggleAdvancedFilter());
     document.getElementById('costToggleBreakdownCols')?.addEventListener('click', (event) => {
         event.preventDefault();
         event.stopPropagation();
         toggleBreakdownColumns();
     });
     document.getElementById('costResetBtn')?.addEventListener('click', () => resetFilters());
-    document.getElementById('costYearFilter')?.addEventListener('change', () => {
-        loadCascadeFilters().then(() => updateActiveFilterCapsules());
-    });
-    document.getElementById('costLocationFilter')?.addEventListener('change', () => {
-        loadCascadeFilters().then(() => updateActiveFilterCapsules());
-    });
-    [
-        'costMonthFilter',
-        'costSupplierFilter',
-        'costAuditFilter',
-    ].forEach((id) => {
-        document.getElementById(id)?.addEventListener('change', () => updateActiveFilterCapsules());
-    });
-    document.getElementById('costPartNumberFilter')?.addEventListener('input', () => updateActiveFilterCapsules());
     document.getElementById('costPartNumberFilter')?.addEventListener('keydown', (event) => {
         if (event.key === 'Enter') {
             event.preventDefault();
-            updateActiveFilterCapsules();
+            syncBatchBarVisibility();
             loadList(1);
         }
     });
+
+    document.querySelectorAll('.cost-filter-chip').forEach((chip) => {
+        const selectId = chip.dataset.filterId;
+        const trigger = chip.querySelector('.cost-filter-trigger');
+        const menu = chip.querySelector('.cost-filter-menu');
+        trigger?.addEventListener('click', (event) => {
+            event.stopPropagation();
+            setExportMenuOpen(false);
+            const isOpen = menu && !menu.classList.contains('hidden');
+            closeAllFilterMenus();
+            if (!isOpen && menu) {
+                menu.classList.remove('hidden');
+                trigger.setAttribute('aria-expanded', 'true');
+            }
+        });
+        menu?.addEventListener('click', (event) => {
+            const item = event.target.closest('[data-value]');
+            if (!item || !selectId) return;
+            event.stopPropagation();
+            const select = document.getElementById(selectId);
+            if (!select) return;
+            const nextValue = item.getAttribute('data-value') ?? '';
+            if (select.value !== nextValue) {
+                select.value = nextValue;
+                onFilterValueChange(selectId);
+            } else {
+                syncFilterChip(selectId);
+            }
+            closeAllFilterMenus();
+        });
+    });
+
     document.getElementById('costBatchApproveBtn')?.addEventListener('click', () => batchApprove());
     document.getElementById('costBatchReverseBtn')?.addEventListener('click', () => batchReverse());
     document.getElementById('costBatchDeleteBtn')?.addEventListener('click', () => batchDelete());
-    document.getElementById('costExportBtn')?.addEventListener('click', () => exportExcel('process_sheet'));
-    document.getElementById('costExportDetailBtn')?.addEventListener('click', () => exportExcel('detail'));
+    document.getElementById('costExportMenuBtn')?.addEventListener('click', (event) => {
+        event.stopPropagation();
+        closeAllFilterMenus();
+        const menu = document.getElementById('costExportMenu');
+        const isOpen = menu && !menu.classList.contains('hidden');
+        setExportMenuOpen(!isOpen);
+    });
+    document.getElementById('costExportBtn')?.addEventListener('click', () => {
+        setExportMenuOpen(false);
+        exportExcel('process_sheet');
+    });
+    document.getElementById('costExportDetailBtn')?.addEventListener('click', () => {
+        setExportMenuOpen(false);
+        exportExcel('detail');
+    });
+    listState._onDocClick = (event) => {
+        const exportWrap = document.getElementById('costExportWrap');
+        if (exportWrap && !exportWrap.contains(event.target)) {
+            setExportMenuOpen(false);
+        }
+        if (!event.target.closest('.cost-filter-chip')) {
+            closeAllFilterMenus();
+        }
+    };
+    document.addEventListener('click', listState._onDocClick);
     document.getElementById('costPagination')?.addEventListener('click', (event) => {
         const btn = event.target.closest('.cost-page-btn');
         if (btn && !btn.disabled) {
@@ -166,37 +277,48 @@ function bindEvents() {
     });
 }
 
+function emptyOptionLabel(select) {
+    return select?.dataset?.emptyLabel || '全部';
+}
+
 function fillMonthOptions() {
     const select = document.getElementById('costMonthFilter');
     if (!select) return;
+    const emptyLabel = emptyOptionLabel(select);
     select.innerHTML =
-        '<option value="">全部</option>' +
+        `<option value="">${esc(emptyLabel)}</option>` +
         Array.from({ length: 12 }, (_, i) => `<option value="${i + 1}">${i + 1}</option>`).join('');
+    syncFilterChip('costMonthFilter');
 }
 
 function fillAuditOptions() {
     const select = document.getElementById('costAuditFilter');
     if (!select) return;
+    const emptyLabel = emptyOptionLabel(select);
     select.innerHTML = `
-        <option value="">全部</option>
+        <option value="">${esc(emptyLabel)}</option>
         <option value="pending">待审</option>
         <option value="approved">已通过</option>
         <option value="rejected">已驳回</option>
     `;
+    syncFilterChip('costAuditFilter');
 }
 
 function fillSelect(id, values = [], preferredValue = null) {
     const select = document.getElementById(id);
     if (!select) return;
     const current = preferredValue != null ? preferredValue : select.value;
+    const emptyLabel = emptyOptionLabel(select);
     select.innerHTML =
-        '<option value="">全部</option>' +
+        `<option value="">${esc(emptyLabel)}</option>` +
         values
             .map((value) => {
                 const text = String(value);
                 return `<option value="${esc(text)}"${text === String(current) ? ' selected' : ''}>${esc(text)}</option>`;
             })
             .join('');
+    if (preferredValue != null) select.value = String(preferredValue);
+    syncFilterChip(id);
 }
 
 async function loadYearOptions() {
@@ -223,19 +345,15 @@ async function loadCascadeFilters() {
 }
 
 function resetFilters() {
-    [
-        'costYearFilter',
-        'costMonthFilter',
-        'costLocationFilter',
-        'costSupplierFilter',
-        'costAuditFilter',
-        'costPartNumberFilter',
-    ].forEach((id) => {
+    FILTER_IDS.forEach((id) => {
         const el = document.getElementById(id);
         if (el) el.value = '';
+        syncFilterChip(id);
     });
-    updateActiveFilterCapsules();
-    loadCascadeFilters().then(() => updateActiveFilterCapsules());
+    const partEl = document.getElementById('costPartNumberFilter');
+    if (partEl) partEl.value = '';
+    syncBatchBarVisibility();
+    loadCascadeFilters().then(() => syncBatchBarVisibility());
     loadList(1);
 }
 
@@ -284,12 +402,9 @@ async function loadList(page = 1) {
         setListLoading(false);
         renderRows(listState.items);
         updatePartCostHud(listState.total, pageData.filters?.summary || null);
-        updateActiveFilterCapsules();
-        const totalEl = document.getElementById('costTotalCount');
-        if (totalEl) totalEl.textContent = String(listState.total);
         const pageInfo = document.getElementById('costPageInfo');
         if (pageInfo) {
-            pageInfo.textContent = `第 ${listState.page} / ${Math.max(listState.totalPages, 1)} 页`;
+            pageInfo.textContent = `第 ${listState.page} / ${Math.max(listState.totalPages, 1)} 页 · ${listState.total} 条`;
         }
         const pagination = document.getElementById('costPagination');
         if (pagination) {
@@ -303,13 +418,15 @@ async function loadList(page = 1) {
             if (pageData.filters.suppliers) {
                 fillSelect('costSupplierFilter', pageData.filters.suppliers, filters.stamping_supplier);
             }
-            updateActiveFilterCapsules();
         }
+        syncBatchBarVisibility();
     } catch (error) {
         setListLoading(false);
-        setListEmpty(false);
-        body.innerHTML = `<tr><td colspan="20" class="py-14 text-center text-[#ef5350]">${esc(error.message || '加载失败')}</td></tr>`;
+        body.innerHTML = '';
+        setListEmpty(true);
         updatePartCostHud(0, null);
+        syncBatchBarVisibility();
+        showToast(error.message || '加载失败', 'error');
     }
 }
 
@@ -324,8 +441,11 @@ function renderRows(items) {
     setListEmpty(false);
     body.innerHTML = renderCostRows(items, listState.breakdownColsOpen);
     syncBreakdownColumnVisibility(listState.breakdownColsOpen);
-    body.querySelectorAll('.cost-detail-btn').forEach((btn) => {
-        btn.addEventListener('click', () => openDetail(Number(btn.dataset.id)));
+    body.querySelectorAll('.cost-row').forEach((row) => {
+        row.addEventListener('click', () => {
+            const costId = Number(row.dataset.id);
+            if (costId) openDetail(costId);
+        });
     });
 }
 
@@ -394,13 +514,12 @@ function showDetailDrawer(row) {
                 ['原材料成本 R', fmtNum(row.material_net_per_part, 6)],
                 ['加工费', fmtNum(row.process_fee_amount, 3)],
             ])}
-            <div class="bg-[#18080A] border border-[#FF1E27]/40 overflow-hidden"
-                 style="box-shadow: 0 0 24px rgba(255,30,39,0.12);">
-                <div class="px-3 py-2 bg-[#120608] border-b border-[#FF1E27]/20 text-[10px] text-[#FF1E27] uppercase tracking-wider font-bold">单件成本</div>
+            <div class="bg-[#111] border border-[#262626] overflow-hidden">
+                <div class="px-3 py-2 bg-[#0c0c0c] border-b border-[#181818] text-[10px] text-[#777] uppercase tracking-wider">单件成本</div>
                 <div class="px-3 py-4 flex items-baseline justify-between gap-3">
                     <span class="text-[#8E8E93]">原材料 R + 加工费</span>
                     <span class="text-[22px] font-mono font-black tabular-nums text-[#FF1E27]"
-                          style="text-shadow: 0 0 12px rgba(255,30,39,0.55);">￥${esc(fmtNum(row.unit_cost, 4))}</span>
+                          style="text-shadow: 0 0 10px rgba(255,30,39,0.4);">￥${esc(fmtNum(row.unit_cost, 4))}</span>
                 </div>
             </div>
             ${detailBlock('溯源', [
