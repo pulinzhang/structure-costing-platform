@@ -122,6 +122,20 @@ class Perm:
     STEEL_PRICE_LIST_REVERSE = "op:steel-price-list:reverse"  # 反审核
     STEEL_PRICE_LIST_EXPORT = "op:steel-price-list:export"  # 导出
 
+    MENU_STAMPING_PART_COST = "menu:stamping-part-cost-group"  # 冲压零件价格核算
+
+    MENU_STAMPING_PART_COST_CALC = "menu:stamping-part-cost-calc"  # 冲压零件价格计算
+    STAMPING_PART_COST_CALC_VIEW = "op:stamping-part-cost-calc:view"  # 查看
+    STAMPING_PART_COST_CALC_RUN = "op:stamping-part-cost-calc:run"  # 计算
+    STAMPING_PART_COST_CALC_DELETE = "op:stamping-part-cost-calc:delete"  # 删除日志
+
+    MENU_STAMPING_PART_COST_LIST = "menu:stamping-part-cost"  # 冲压零件价格一览
+    STAMPING_PART_COST_VIEW = "op:stamping-part-cost:view"  # 查询
+    STAMPING_PART_COST_DELETE = "op:stamping-part-cost:delete"  # 删除
+    STAMPING_PART_COST_APPROVE = "op:stamping-part-cost:approve"  # 审核通过
+    STAMPING_PART_COST_REVERSE = "op:stamping-part-cost:reverse"  # 反审核
+    STAMPING_PART_COST_EXPORT = "op:stamping-part-cost:export"  # 导出
+
     MENU_COSTING_ENGINE = "menu:costing-engine"  # 自动核价引擎
     COSTING_VIEW = "op:costing:view"  # 查看
 

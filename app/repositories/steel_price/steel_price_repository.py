@@ -409,3 +409,45 @@ class SteelPriceRepository:
             updated_count,
         )
         return int(updated_count or 0)
+
+    def count_by_year_month_location(
+        self,
+        db: Session,
+        *,
+        year: int,
+        month: int,
+        location: str,
+    ) -> int:
+        """统计某基地某月钢材联动价条数。"""
+        return (
+            db.query(SteelPrice)
+            .filter(
+                SteelPrice.year == year,
+                SteelPrice.month == month,
+                SteelPrice.location == location,
+            )
+            .count()
+        )
+
+    def list_by_grade_thickness(
+        self,
+        db: Session,
+        *,
+        year: int,
+        month: int,
+        location: str,
+        grade: str,
+        thickness,
+    ) -> list[SteelPrice]:
+        """按年月/基地/牌号/料厚精确匹配（中标唯一钢厂场景）。"""
+        return (
+            db.query(SteelPrice)
+            .filter(
+                SteelPrice.year == year,
+                SteelPrice.month == month,
+                SteelPrice.location == location,
+                SteelPrice.grade == grade,
+                SteelPrice.thickness == thickness,
+            )
+            .all()
+        )

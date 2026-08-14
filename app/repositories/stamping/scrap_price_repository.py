@@ -35,6 +35,24 @@ class StampingScrapPriceRepository:
             .all()
         )
 
+    def get_by_location_year_month(
+        self,
+        db: Session,
+        *,
+        location: str,
+        year: int,
+        month: int,
+    ) -> Optional[StampingScrapPrice]:
+        return (
+            db.query(StampingScrapPrice)
+            .filter(
+                StampingScrapPrice.location == location,
+                StampingScrapPrice.year == year,
+                StampingScrapPrice.month == month,
+            )
+            .first()
+        )
+
     def list_by_year(
         self,
         db: Session,

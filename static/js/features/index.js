@@ -73,6 +73,16 @@ export const pageMeta = {
         en: 'STAMPING_STEEL_LINKAGE_CALC',
         breadcrumb: ['核价', '冲压钢材联动价', '冲压钢材联动计算'],
     },
+    'stamping-part-cost-calc': {
+        title: '冲压零件价格计算',
+        en: 'PART_COST_CALC',
+        breadcrumb: ['核价', '冲压零件价格核算', '冲压零件价格计算'],
+    },
+    'stamping-part-cost': {
+        title: '冲压零件价格一览',
+        en: 'PART_COST_LIST',
+        breadcrumb: ['核价', '冲压零件价格核算', '冲压零件价格一览'],
+    },
     'steel-price-policy-upload': {
         title: '加减价政策上传',
         en: 'PRICE_POLICY_UPLOAD',

@@ -280,6 +280,7 @@ def create_app() -> FastAPI:
     from app.routers.stamping.tonnage_price import router as stamping_tonnage_price_router
     from app.routers.stamping.scrap_price import router as stamping_scrap_price_router
     from app.routers.stamping.stamping_process_fee import router as stamping_process_fee_router
+    from app.routers.stamping_part_cost.crud import router as stamping_part_cost_router
     from app.routers.steel_price.crud import router as steel_price_router
     from app.routers.steel_price.calc import router as steel_price_calc_router
     from app.routers.steel_price.steel_price_policy.crud import router as steel_price_policy_router
@@ -298,6 +299,7 @@ def create_app() -> FastAPI:
     app.include_router(stamping_tonnage_price_router)
     app.include_router(stamping_scrap_price_router)
     app.include_router(stamping_process_fee_router)
+    app.include_router(stamping_part_cost_router)
     app.include_router(steel_price_calc_router)
     app.include_router(steel_price_router)
     app.include_router(steel_price_policy_router)

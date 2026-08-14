@@ -415,6 +415,17 @@ root
 │   │       ├── op:steel-price-list:reject
 │   │       ├── op:steel-price-list:reverse
 │   │       └── op:steel-price-list:export
+│   ├── menu:stamping-part-cost-group          # 冲压零件价格核算
+│   │   ├── menu:stamping-part-cost-calc
+│   │   │   ├── op:stamping-part-cost-calc:view
+│   │   │   ├── op:stamping-part-cost-calc:run
+│   │   │   └── op:stamping-part-cost-calc:delete
+│   │   └── menu:stamping-part-cost
+│   │       ├── op:stamping-part-cost:view
+│   │       ├── op:stamping-part-cost:delete
+│   │       ├── op:stamping-part-cost:approve
+│   │       ├── op:stamping-part-cost:reverse
+│   │       └── op:stamping-part-cost:export
 │   └── menu:costing-engine                    # 自动核价引擎（路由 page=costing）
 │       └── op:costing:view
 │
@@ -476,6 +487,8 @@ root
 | bom-upload | `view` / `upload` | 进入页；导入材料清单 |
 | steel-price-calc | `view` / `run` / `delete` | 历史/过程；开始计算；删除日志 |
 | steel-price-list | `view` / `update` / `delete` / `approve` / `reject` / `reverse` / `export` | 查询；编辑；删除（含批量）；通过（含批量）；驳回；反审核（含批量）；导出 |
+| stamping-part-cost-calc | `view` / `run` / `delete` | 历史/过程；开始计算；删除日志 |
+| stamping-part-cost | `view` / `delete` / `approve` / `reverse` / `export` | 查询；删除（含批量）；审核（含批量）；反审核；导出 |
 | costing（菜单码 `menu:costing-engine`） | `view`（`op:costing:view`） | 自动核价引擎 |
 | quotation | `view` | 进入占位页 |
 | settings-profile | `view` / `update` / `password` | 查看；改资料/头像；改自己密码 |

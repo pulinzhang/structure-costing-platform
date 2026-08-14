@@ -266,6 +266,35 @@
           ]
         },
         {
+          "code": "menu:stamping-part-cost-group",
+          "label": "冲压零件价格核算",
+          "type": "group",
+          "children": [
+            {
+              "code": "menu:stamping-part-cost-calc",
+              "label": "冲压零件价格计算",
+              "type": "menu",
+              "children": [
+                { "code": "op:stamping-part-cost-calc:view", "label": "查看", "type": "op" },
+                { "code": "op:stamping-part-cost-calc:run", "label": "计算", "type": "op" },
+                { "code": "op:stamping-part-cost-calc:delete", "label": "删除日志", "type": "op" }
+              ]
+            },
+            {
+              "code": "menu:stamping-part-cost",
+              "label": "冲压零件价格一览",
+              "type": "menu",
+              "children": [
+                { "code": "op:stamping-part-cost:view", "label": "查询", "type": "op" },
+                { "code": "op:stamping-part-cost:delete", "label": "删除", "type": "op" },
+                { "code": "op:stamping-part-cost:approve", "label": "审核通过", "type": "op" },
+                { "code": "op:stamping-part-cost:reverse", "label": "反审核", "type": "op" },
+                { "code": "op:stamping-part-cost:export", "label": "导出", "type": "op" }
+              ]
+            }
+          ]
+        },
+        {
           "code": "menu:costing-engine",
           "label": "自动核价引擎",
           "type": "menu",

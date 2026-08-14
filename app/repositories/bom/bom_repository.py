@@ -31,6 +31,23 @@ class BomSnapshotRepository:
             .first()
         )
 
+    def list_by_location_model(
+        self,
+        db: Session,
+        location: str,
+        vehicle_model: str,
+    ) -> list[BomSnapshot]:
+        """同基地+车型下的全部 BOM 版本（新→旧）。"""
+        return (
+            db.query(BomSnapshot)
+            .filter(
+                BomSnapshot.location == location,
+                BomSnapshot.vehicle_model == vehicle_model,
+            )
+            .order_by(BomSnapshot.id.desc())
+            .all()
+        )
+
     def paginate(
         self,
         db: Session,
