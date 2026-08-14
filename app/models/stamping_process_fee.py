@@ -63,13 +63,26 @@ class StampingProcessFee(AuditUserMixin, Base):
     sheet_width = Column(Numeric(10, 2), nullable=True, comment="料片宽/卷料步距(mm)")
 
     # 生产信息
-    parts_per_sheet = Column(Integer, nullable=True, comment="可制件数")
+    # 一张钢板/料片单独冲本零件可出的件数（快照自零件主表）
+    # 例：1出2记2；左右共模同冲按单侧零件计则为2。非「利用率百分比」。
+    parts_per_sheet = Column(
+        Integer,
+        nullable=True,
+        comment=(
+            "可制件数：一张钢板/料片单独冲本零件可出的件数"
+            "（例：1出2记2；左右共模按单侧计则为2）"
+        ),
+    )
     sheet_type = Column(String(50), nullable=True, comment="料片式样")
 
     # 工艺信息
     die_type = Column(String(50), nullable=True, comment="模具类型")
     process_method = Column(String(50), nullable=True, comment="工艺方法")
-    automation = Column(String(20), nullable=True, comment="自动化")
+    automation = Column(
+        String(20),
+        nullable=True,
+        comment="自动化：工艺文件原文快照（如自动/手动/半自动），非布尔是/否",
+    )
 
     # 扩展 / 溯源
     part_remark = Column(Text, nullable=True, comment="零件主表备注快照")

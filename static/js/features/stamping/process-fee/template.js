@@ -355,24 +355,35 @@ export function processFeeListTemplate() {
                         <div class="px-4 py-6 text-[11px] text-[#616161]">加载中...</div>
                     </div>
                 </div>
-                <!-- 次要：材料 / 工艺 / 审核 -->
+                <!-- 材料 / 工艺快照：自动化着重显示 -->
                 <div class="bg-[#111111] border border-[#262626]">
                     <div class="px-4 py-3 bg-[#0c0c0c] border-b border-[#181818]">
                         <h6 class="text-[10px] font-semibold text-[#9e9e9e] tracking-wider uppercase">材料 / 工艺快照</h6>
                     </div>
-                    <div class="p-4 grid grid-cols-2 gap-x-6 gap-y-3">
-                        ${viewRow('材质', 'fee-view-material')}
-                        ${viewRow('料厚', 'fee-view-thickness')}
-                        ${viewRow('零件重量', 'fee-view-part-weight')}
-                        ${viewRow('料片长', 'fee-view-sheet-length')}
-                        ${viewRow('料片宽', 'fee-view-sheet-width')}
-                        ${viewRow('出件率', 'fee-view-parts-per-sheet')}
-                        ${viewRow('板料类型', 'fee-view-sheet-type')}
-                        ${viewRow('模具类型', 'fee-view-die-type')}
-                        ${viewRow('工艺方法', 'fee-view-process-method')}
-                        ${viewRow('自动化', 'fee-view-automation')}
-                        ${viewRow('来源文件', 'fee-view-excel-filename')}
-                        ${viewRow('零件备注', 'fee-view-part-remark')}
+                    <div class="p-4 space-y-4">
+                        <div class="border border-[#d32f2f]/35 bg-[#0c0c0c] p-3"
+                             style="box-shadow: 0 0 20px rgba(211,47,47,0.08), inset 0 1px 0 rgba(211,47,47,0.06);">
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="w-0.5 h-3 bg-[#d32f2f] rounded-sm shadow-[0_0_8px_rgba(211,47,47,0.5)]"></span>
+                                <span class="text-[9px] font-semibold text-[#d32f2f] uppercase tracking-[0.12em]">关键工艺</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-x-6 gap-y-3">
+                                ${viewRow('工艺方法', 'fee-view-process-method')}
+                                ${viewRow('自动化', 'fee-view-automation', true)}
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-x-6 gap-y-3">
+                            ${viewRow('材质', 'fee-view-material')}
+                            ${viewRow('料厚', 'fee-view-thickness')}
+                            ${viewRow('零件重量', 'fee-view-part-weight')}
+                            ${viewRow('料片长', 'fee-view-sheet-length')}
+                            ${viewRow('料片宽', 'fee-view-sheet-width')}
+                            ${viewRow('可制件数', 'fee-view-parts-per-sheet')}
+                            ${viewRow('板料类型', 'fee-view-sheet-type')}
+                            ${viewRow('模具类型', 'fee-view-die-type')}
+                            ${viewRow('来源文件', 'fee-view-excel-filename')}
+                            ${viewRow('零件备注', 'fee-view-part-remark')}
+                        </div>
                     </div>
                 </div>
                 <div class="bg-[#111111] border border-[#262626]">

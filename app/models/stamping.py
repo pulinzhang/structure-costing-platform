@@ -49,23 +49,51 @@ class StampingPart(AuditUserMixin, Base):
     sheet_width = Column(Numeric(10, 2), nullable=True, comment="料片宽/卷料步距(mm)")
 
     # 生产信息
-    parts_per_sheet = Column(Integer, nullable=True, comment="可制件数")
+    # parts_per_sheet：一张钢板/料片单独冲压「本零件」时可出的件数。
+    # 例：1 张料出 2 件 → 2；出 1 件 → 1；左右件共模同冲时按单侧零件计则为 2。
+    parts_per_sheet = Column(
+        Integer,
+        nullable=True,
+        comment=(
+            "可制件数：一张钢板/料片单独冲本零件可出的件数"
+            "（例：1出2记2；左右共模按单侧计则为2）"
+        ),
+    )
     sheet_type = Column(String(50), nullable=True, comment="料片式样")
 
     # 工艺信息
     die_type = Column(String(50), nullable=True, comment="模具类型")
     process_method = Column(String(50), nullable=True, comment="工艺方法")
-    automation = Column(String(20), nullable=True, comment="自动化")
+    automation = Column(
+        String(20),
+        nullable=True,
+        comment="自动化：工艺文件原文（如自动/手动/半自动），非布尔是/否",
+    )
 
     # 扩展信息
     remark = Column(Text, nullable=True, comment="备注")
     sketch_url = Column(String(500), nullable=True, comment="零件简图URL（相对于上传目录，格式：车型/日期/零件号.png）")
 
-    # 【防扯皮与溯源铁证字段（核心亮点）】
+    # 【防扯皮与溯源铁证字段（与 BOM / 钢价对齐：文件 + 表页 + 行 + 零件号列）】
     excel_filename = Column(
         String(255),
         nullable=False,
         comment="来源Excel文件名，例：2025年11月马钢测试.xlsx",
+    )
+    excel_sheet_name = Column(
+        String(100),
+        nullable=True,
+        comment="来源工作表名。例：工艺卡",
+    )
+    excel_row = Column(
+        Integer,
+        nullable=True,
+        comment="来源 Excel 行号（1-based，与 Excel 界面行号一致）",
+    )
+    excel_part_col = Column(
+        Integer,
+        nullable=True,
+        comment="零件号所在列号（1-based，对应表头解析出的 part_no 列）",
     )
 
     # 关联

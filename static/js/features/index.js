@@ -106,17 +106,17 @@ export const pageMeta = {
     'bom-structure': {
         title: '产品结构',
         en: '产品结构',
-        breadcrumb: ['材料清单', '产品结构'],
+        breadcrumb: ['BOM', '材料清单', '产品结构'],
     },
     'bom-viz': {
         title: '产品结构图',
         en: '产品结构图',
-        breadcrumb: ['材料清单', '产品结构', '结构图'],
+        breadcrumb: ['BOM', '材料清单', '产品结构', '结构图'],
     },
     'bom-upload': {
         title: '上传材料清单',
         en: 'BOM_UPLOAD',
-        breadcrumb: ['BOM', '上传材料清单'],
+        breadcrumb: ['BOM', '材料清单', '上传材料清单'],
     },
     costing: {
         title: '自动核价引擎',

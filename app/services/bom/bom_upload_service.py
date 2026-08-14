@@ -18,6 +18,9 @@ from app.schemas.vo.user_vo import UserVO
 
 logger = logging.getLogger("service.bom.upload")
 
+# Excel 列号（1-based）：各层级「零件号」列，与 node_parser 一致
+_EXCEL_PART_COL_BY_LEVEL = {0: 3, 1: 9, 2: 14}
+
 
 class BomUploadService:
     """BOM Excel 导入：必须指定基地；Excel + 简图必须落盘。"""
@@ -93,6 +96,7 @@ class BomUploadService:
                 "revision_date": meta.revision_date,
                 "title": meta.title,
                 "source_filename": original_name,
+                "source_sheet_name": parse_result.sheet_name,
                 "source_file_path": relative_path,
                 "source_file_hash": file_hash,
                 "status": "active",
@@ -100,6 +104,7 @@ class BomUploadService:
             }
             snapshot = self.snapshot_repo.create(db, snapshot_payload, commit=False)
 
+            sheet_name = parse_result.sheet_name
             index_to_id: dict[int, int] = {}
             for index, parsed in enumerate(parse_result.nodes):
                 parent_id = None
@@ -136,6 +141,10 @@ class BomUploadService:
                         "weld_info": parsed.weld_info,
                         "remark": parsed.remark,
                         "sketch_url": saved_images.get(index),
+                        "excel_filename": original_name,
+                        "excel_sheet_name": sheet_name,
+                        "excel_row": parsed.source_row,
+                        "excel_part_col": _EXCEL_PART_COL_BY_LEVEL.get(parsed.level),
                         **audit_create(current_user),
                     },
                     commit=False,

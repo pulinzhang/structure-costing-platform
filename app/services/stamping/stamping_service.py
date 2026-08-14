@@ -13,6 +13,7 @@ from app.repositories.stamping.stamping_repository import (
     StampingPartRepository,
     StampingProcessRepository,
 )
+from app.schemas.dto.stamping_part_dto import StampingPartBatchDeleteDTO
 from app.schemas.vo.stamping_vo import (
     StampingPartQuery,
     StampingPartListResponse,
@@ -21,8 +22,9 @@ from app.schemas.vo.stamping_vo import (
     StampingPartListFilterOptions,
     StampingCascadeFilterOptionsVO,
     StampingCascadeFilterQuery,
+    StampingPartBatchDeleteResultVO,
 )
-from app.exceptions import NotFoundException
+from app.exceptions import BusinessException, NotFoundException
 from app.schemas.vo.user_vo import UserVO
 
 logger = logging.getLogger("service.stamping")
@@ -202,6 +204,35 @@ class StampingPartService:
     def delete_by_vehicle_version(self, db: Session, vehicle_model: str, version: str) -> int:
         """按车型+版本硬删除零件（上传覆盖旧数据时使用）。"""
         return self.repository.delete_by_vehicle_version(db, vehicle_model, version)
+
+    def batch_delete(
+        self,
+        db: Session,
+        dto: StampingPartBatchDeleteDTO,
+    ) -> StampingPartBatchDeleteResultVO:
+        """按基地 + 冲压工厂 + 车型（版本可选）批量删除零件。"""
+        location = dto.location.strip()
+        supplier = dto.stamping_supplier.strip()
+        vehicle_model = dto.vehicle_model.strip()
+        version = dto.version.strip() if dto.version else None
+        if not location or not supplier or not vehicle_model:
+            raise BusinessException("基地、冲压工厂和车型不能为空")
+
+        deleted = self.repository.delete_by_scope(
+            db,
+            location=location,
+            stamping_supplier=supplier,
+            vehicle_model=vehicle_model,
+            version=version,
+        )
+        db.commit()
+        return StampingPartBatchDeleteResultVO(
+            location=location,
+            stamping_supplier=supplier,
+            vehicle_model=vehicle_model,
+            version=version,
+            deleted_count=deleted,
+        )
 
     def update_process(
         self,

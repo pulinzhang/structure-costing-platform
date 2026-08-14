@@ -251,6 +251,9 @@ class StampingUploadService:
                 remark=part.remark,
                 sketch_url=sketch_url,
                 excel_filename=excel_filename,
+                excel_sheet_name=part.excel_sheet_name,
+                excel_row=part.excel_row,
+                excel_part_col=part.excel_part_col,
             ))
 
         rows = []

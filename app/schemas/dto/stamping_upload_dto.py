@@ -42,13 +42,33 @@ class PartData:
     part_weight: Decimal | float | None = field(default=None, metadata={"description": "零件重量(kg)"})
     sheet_length: Decimal | float | None = field(default=None, metadata={"description": "料长(mm)"})
     sheet_width: Decimal | float | None = field(default=None, metadata={"description": "料宽(mm)"})
-    parts_per_sheet: int | None = field(default=None, metadata={"description": "单张数量"})
+    parts_per_sheet: int | None = field(
+        default=None,
+        metadata={
+            "description": (
+                "可制件数：一张钢板/料片单独冲本零件可出的件数"
+                "（例：1出2记2；左右共模按单侧计则为2）"
+            )
+        },
+    )
     sheet_type: str | None = field(default=None, metadata={"description": "板料类型"})
     die_type: str | None = field(default=None, metadata={"description": "模具类型"})
     process_method: str | None = field(default=None, metadata={"description": "工序方式"})
-    automation: str | None = field(default=None, metadata={"description": "自动化程度"})
+    automation: str | None = field(
+        default=None,
+        metadata={"description": "自动化：工艺文件原文（如自动/手动/半自动），非布尔"},
+    )
     remark: str | None = field(default=None, metadata={"description": "备注"})
     sketch_url: str | None = field(default=None, metadata={"description": "零件简图URL"})
+    excel_sheet_name: str | None = field(
+        default=None, metadata={"description": "来源 Excel 工作表名"}
+    )
+    excel_row: int | None = field(
+        default=None, metadata={"description": "来源 Excel 行号（1-based）"}
+    )
+    excel_part_col: int | None = field(
+        default=None, metadata={"description": "零件号所在列号（1-based）"}
+    )
 
 
 @dataclass(slots=True)

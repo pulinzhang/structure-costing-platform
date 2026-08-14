@@ -329,6 +329,42 @@ function formatQtyLabel(node) {
     return '×1';
 }
 
+/** Excel 单元格溯源：文件 + 表页 + 行 + 零件号列 */
+function renderExcelProvenance(node) {
+    const filename = node?.excel_filename || '';
+    const sheet = node?.excel_sheet_name || '';
+    const row = node?.excel_row;
+    const col = node?.excel_part_col;
+    if (!filename && !sheet && row == null && col == null) {
+        return `
+            <div class="border border-[#262626] bg-[#111111] p-3">
+                <p class="text-[10px] uppercase tracking-[0.14em] text-[#d32f2f] mb-1.5">Excel 溯源</p>
+                <p class="text-[12px] text-[#616161]">无单元格溯源（请重新上传材料清单生成）</p>
+            </div>
+        `;
+    }
+    const colHint = col != null ? `第 ${col} 列（零件号）` : '—';
+    const rowHint = row != null ? `第 ${row} 行` : '—';
+    const locator = [
+        sheet ? `表「${sheet}」` : null,
+        row != null ? rowHint : null,
+        col != null ? colHint : null,
+    ]
+        .filter(Boolean)
+        .join(' · ');
+    return `
+        <div class="border border-[#d32f2f]/25 bg-[#111111] p-3"
+             style="box-shadow: 0 0 20px rgba(211,47,47,0.06), inset 0 1px 0 rgba(211,47,47,0.05);">
+            <p class="text-[10px] uppercase tracking-[0.14em] text-[#d32f2f] mb-2 flex items-center gap-2">
+                <span class="w-0.5 h-3 bg-[#d32f2f] rounded-sm shadow-[0_0_8px_rgba(211,47,47,0.5)]"></span>
+                Excel 溯源
+            </p>
+            <p class="text-[12px] text-[#cfcfcf] font-mono break-all mb-1">${esc(filename || '—')}</p>
+            <p class="text-[11px] text-[#888888]">${esc(locator || '—')}</p>
+        </div>
+    `;
+}
+
 function findNodeById(nodes, id) {
     const list = Array.isArray(nodes) ? nodes : [];
     for (const node of list) {
@@ -1061,6 +1097,7 @@ const BomVizPage = {
                     `
                             : ''
                     }
+                    ${renderExcelProvenance(node)}
                 </div>
             `;
 

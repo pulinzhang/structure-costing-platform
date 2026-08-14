@@ -95,12 +95,14 @@ class Perm:
 
     MENU_BOM = "menu:bom"  # BOM
 
-    MENU_BOM_STRUCTURE = "menu:bom-structure"  # 产品结构
-    BOM_STRUCTURE_VIEW = "op:bom-structure:view"  # 查看
+    MENU_BOM_MATERIAL_LIST = "menu:bom-material-list"  # 材料清单
 
     MENU_BOM_UPLOAD = "menu:bom-upload"  # 上传材料清单
     BOM_UPLOAD_VIEW = "op:bom-upload:view"  # 查看
     BOM_UPLOAD_UPLOAD = "op:bom-upload:upload"  # 上传
+
+    MENU_BOM_STRUCTURE = "menu:bom-structure"  # 产品结构
+    BOM_STRUCTURE_VIEW = "op:bom-structure:view"  # 查看
 
     MENU_COSTING = "menu:costing"  # 核价
 

@@ -84,7 +84,7 @@ if (!can('op:my-page:create')) { /* 隐藏或禁用 */ }
 | 能力 | 前端判断 | 后端判断 |
 |---|---|---|
 | 进入页面 | `canAccessPage('stamping-parts')` → `menu:stamping-parts` | 该页所有读 API → `Perm.STAMPING_PARTS_VIEW` |
-| 显示「删除」按钮 | `can('op:stamping-parts:delete')` | `DELETE` → `Perm.STAMPING_PARTS_DELETE` |
+| 显示「删除」/「批量删除」按钮 | `can('op:stamping-parts:delete')` | `DELETE` / `POST …/batch-delete` → `Perm.STAMPING_PARTS_DELETE` |
 | 显示「上传」 | `can('op:stamping-upload:upload')` | `POST` 上传 → `Perm.STAMPING_UPLOAD_UPLOAD` |
 | 授权抽屉 | 仅 `is_admin` 见按钮 | `require_admin_user` |
 
@@ -394,12 +394,13 @@ root
 │       └── op:scrap-price:export
 │
 ├── menu:bom                                   # BOM（分组，可勾）
-│   ├── menu:bom-structure                     # 产品结构（路由 page=bom-structure）
-│   │   └── op:bom-structure:view
-│   └── menu:bom-upload
-│       ├── op:bom-upload:view
-│       └── op:bom-upload:upload
-│
+│   └── menu:bom-material-list                 # 材料清单（二级分组）
+│       ├── menu:bom-upload
+│       │   ├── op:bom-upload:view
+│       │   └── op:bom-upload:upload
+│       └── menu:bom-structure                 # 产品结构（路由 page=bom-structure）
+│           └── op:bom-structure:view
+
 ├── menu:costing                               # 核价（分组，可勾）
 │   ├── menu:steel-price                       # 冲压钢材联动价（核价第一步）
 │   │   ├── menu:steel-price-calc
@@ -444,10 +445,10 @@ root
 
 | 类别 | 数量 |
 |---|---|
-| 分组 `type=group` | 11（`stamping` / `stamping-process` / `stamping-stroke-unit-price` / `stamping-processing-fee` / `yishiyiyi` / `thickness` / `base-price` / `bom` / `costing` / `steel-price` / `settings`） |
+| 分组 `type=group` | 12（`stamping` / `stamping-process` / `stamping-stroke-unit-price` / `stamping-processing-fee` / `yishiyiyi` / `thickness` / `base-price` / `bom` / `bom-material-list` / `costing` / `steel-price` / `settings`） |
 | 叶子 `type=menu` | 23 |
 | 操作 `op` | 69 |
-| 可勾节点合计 | 103（`root` 一般不入库） |
+| 可勾节点合计 | 104（`root` 一般不入库） |
 | 新建默认 | 7 |
 | 强制 | 5（均包含在默认集内） |
 
@@ -459,7 +460,7 @@ root
 |---|---|---|
 | dashboard | `view` | 查看 KPI / 统计 |
 | stamping-upload | `view` / `upload` | 进入页；「上传」 |
-| stamping-parts | `view` / `update` / `delete` | 查询详情；保存工序；删除零件 |
+| stamping-parts | `view` / `update` / `delete` | 查询详情；保存工序；单条删除 / 批量删除 |
 | stamping-tonnage-upload | `view` / `upload` | 查看上传页；导入冲次单价 Excel |
 | stamping-tonnage | `view` / `create` / `update` / `delete` / `copy` / `export` | 查询；新增；编辑；删除；复制年度模板；导出 Excel |
 | stamping-process-fee-calc | `view` / `run` / `delete` | 查看；执行计算；删除计算日志 |

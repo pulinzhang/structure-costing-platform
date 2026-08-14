@@ -249,6 +249,46 @@ class StampingPartRepository:
         logger.info("删除车型版本: %s/%s, 共 %s 个零件", vehicle_model, version, count)
         return count
 
+    def delete_by_scope(
+        self,
+        db: Session,
+        *,
+        location: str,
+        stamping_supplier: str,
+        vehicle_model: str,
+        version: Optional[str] = None,
+    ) -> int:
+        """按基地 + 冲压工厂 + 车型（版本可选）批量删除零件及工序。不提交事务。"""
+        q = db.query(StampingPart).filter(
+            StampingPart.location == location,
+            StampingPart.stamping_supplier == stamping_supplier,
+            StampingPart.vehicle_model == vehicle_model,
+        )
+        if version:
+            q = q.filter(StampingPart.version == version)
+        parts = q.all()
+        count = len(parts)
+        if not parts:
+            return 0
+
+        part_ids = [part.id for part in parts]
+        db.query(StampingProcess).filter(
+            StampingProcess.part_id.in_(part_ids)
+        ).delete(synchronize_session=False)
+        db.query(StampingPart).filter(
+            StampingPart.id.in_(part_ids)
+        ).delete(synchronize_session=False)
+        db.flush()
+        logger.info(
+            "批量删除零件: %s/%s/%s/%s, 共 %s 个",
+            location,
+            stamping_supplier,
+            vehicle_model,
+            version or "*",
+            count,
+        )
+        return count
+
     def get_id_map_by_vehicle_version(self, db: Session, vehicle_model: str, version: str) -> Dict[str, int]:
         """获取零件号到 ID 的映射"""
         parts = self.get_all_by_vehicle_version(db, vehicle_model, version)

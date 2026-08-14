@@ -45,14 +45,32 @@ class StampingPartResponse(BaseModel):
     part_weight: Optional[float] = None
     sheet_length: Optional[float] = None
     sheet_width: Optional[float] = None
-    parts_per_sheet: Optional[int] = None
+    parts_per_sheet: Optional[int] = Field(
+        default=None,
+        description=(
+            "可制件数：一张钢板/料片单独冲本零件可出的件数"
+            "（例：1出2记2；左右共模按单侧计则为2；非利用率百分比）"
+        ),
+    )
     sheet_type: Optional[str] = None
     die_type: Optional[str] = None
     process_method: Optional[str] = None
-    automation: Optional[str] = None
+    automation: Optional[str] = Field(
+        default=None,
+        description="自动化：工艺文件原文（如自动/手动/半自动），非布尔是/否",
+    )
     remark: Optional[str] = None
     sketch_url: Optional[str] = None
     excel_filename: Optional[str] = None
+    excel_sheet_name: Optional[str] = Field(
+        default=None, description="来源 Excel 工作表名"
+    )
+    excel_row: Optional[int] = Field(
+        default=None, description="来源 Excel 行号（1-based）"
+    )
+    excel_part_col: Optional[int] = Field(
+        default=None, description="零件号所在列号（1-based）"
+    )
     created_by: Optional[str] = None
     updated_by: Optional[str] = None
     created_at: Optional[datetime] = None
@@ -85,6 +103,9 @@ class StampingPartListResponse(BaseModel):
     process_method: Optional[str] = None
     location: Optional[str] = None
     excel_filename: Optional[str] = None
+    excel_sheet_name: Optional[str] = None
+    excel_row: Optional[int] = None
+    excel_part_col: Optional[int] = None
     sketch_url: Optional[str] = None
     process_count: int = Field(default=0, description="工序数量")
 
@@ -129,14 +150,32 @@ class StampingPartWithProcessesResponse(BaseModel):
     part_weight: Optional[float] = None
     sheet_length: Optional[float] = None
     sheet_width: Optional[float] = None
-    parts_per_sheet: Optional[int] = None
+    parts_per_sheet: Optional[int] = Field(
+        default=None,
+        description=(
+            "可制件数：一张钢板/料片单独冲本零件可出的件数"
+            "（例：1出2记2；左右共模按单侧计则为2；非利用率百分比）"
+        ),
+    )
     sheet_type: Optional[str] = None
     die_type: Optional[str] = None
     process_method: Optional[str] = None
-    automation: Optional[str] = None
+    automation: Optional[str] = Field(
+        default=None,
+        description="自动化：工艺文件原文（如自动/手动/半自动），非布尔是/否",
+    )
     remark: Optional[str] = None
     sketch_url: Optional[str] = None
     excel_filename: Optional[str] = None
+    excel_sheet_name: Optional[str] = Field(
+        default=None, description="来源 Excel 工作表名"
+    )
+    excel_row: Optional[int] = Field(
+        default=None, description="来源 Excel 行号（1-based）"
+    )
+    excel_part_col: Optional[int] = Field(
+        default=None, description="零件号所在列号（1-based）"
+    )
     created_by: Optional[str] = None
     updated_by: Optional[str] = None
     created_at: Optional[datetime] = None
@@ -223,3 +262,14 @@ class StampingMaterialQuery(BaseModel):
 class BatchUpdateResponse(BaseModel):
     """批量更新响应 VO"""
     updated: int
+
+
+class StampingPartBatchDeleteResultVO(BaseModel):
+    """零件批量删除结果 VO"""
+
+    location: str
+    stamping_supplier: str
+    vehicle_model: str
+    version: str | None = None
+    deleted_count: int = 0
+

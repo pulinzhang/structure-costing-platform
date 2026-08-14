@@ -117,6 +117,11 @@ class BomSnapshot(AuditUserMixin, Base):
         nullable=False,
         comment="上传时的原始 Excel 文件名（用户侧名称）",
     )
+    source_sheet_name = Column(
+        String(100),
+        nullable=True,
+        comment="解析所用工作表名（Excel 表页）。例：材料清单",
+    )
     source_file_path = Column(
         String(500),
         nullable=True,
@@ -324,6 +329,28 @@ class BomNode(AuditUserMixin, Base):
             "P列单件图示→有L2归L2，无L2时归L1（一级零件图）；"
             "例：bom/青岛/T28/D_00/sketches/12_501006875AA.png；访问 /uploads/{sketch_url}"
         ),
+    )
+
+    # ---------- Excel 单元格溯源（防扯皮；与钢价四件套对齐） ----------
+    excel_filename = Column(
+        String(255),
+        nullable=True,
+        comment="导入时原始 Excel 文件名快照（与清单头 source_filename 一致）",
+    )
+    excel_sheet_name = Column(
+        String(100),
+        nullable=True,
+        comment="来源工作表名。例：材料清单",
+    )
+    excel_row = Column(
+        Integer,
+        nullable=True,
+        comment="来源 Excel 行号（1-based，与 Excel 界面行号一致）",
+    )
+    excel_part_col = Column(
+        Integer,
+        nullable=True,
+        comment="本节点零件号所在列号（1-based）。L0=3，L1=9，L2=14",
     )
 
     snapshot: Mapped["BomSnapshot"] = relationship("BomSnapshot", back_populates="nodes")

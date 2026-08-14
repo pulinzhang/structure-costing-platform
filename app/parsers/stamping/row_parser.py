@@ -55,6 +55,8 @@ class RowParser:
             process_method=self._get_value(row_idx, col_map.get("method", 17)),
             automation=self._get_value(row_idx, col_map.get("auto", 18)),
             remark=self._get_value(row_idx, col_map.get("remark", 19)),
+            excel_row=row_idx,
+            excel_part_col=col_map.get("part_no", 2),
         )
 
     def parse_process_row(self, row_idx: int, part_number: str) -> Optional[Process]:

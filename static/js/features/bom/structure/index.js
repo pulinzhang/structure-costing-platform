@@ -508,6 +508,11 @@ const BomStructurePage = {
                             ? `<p class="text-[11px] text-[#616161] mt-1 line-clamp-2">${esc(category || title)}</p>`
                             : ''
                     }
+                    ${
+                        row.source_filename
+                            ? `<p class="text-[10px] text-[#555555] mt-2 font-mono truncate" title="${esc(row.source_filename)}${row.source_sheet_name ? ` / ${esc(row.source_sheet_name)}` : ''}">来源 ${esc(row.source_filename)}${row.source_sheet_name ? ` · ${esc(row.source_sheet_name)}` : ''}</p>`
+                            : ''
+                    }
 
                     <div class="mt-auto pt-6">
                         ${
@@ -545,7 +550,14 @@ const BomStructurePage = {
                     snapshot.vehicle_model,
                     snapshot.bom_version,
                 ].filter(Boolean);
-                pathEl.textContent = parts.join(' / ');
+                let text = parts.join(' / ');
+                if (snapshot.source_filename) {
+                    const sheet = snapshot.source_sheet_name
+                        ? ` · ${snapshot.source_sheet_name}`
+                        : '';
+                    text += `  ·  来源 ${snapshot.source_filename}${sheet}`;
+                }
+                pathEl.textContent = text;
             }
         }
 

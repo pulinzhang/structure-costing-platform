@@ -6,13 +6,13 @@
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.common.permissions.codes import Perm
 from app.database import get_db
 from app.deps.permissions import require_any_perm, require_perm
 from app.services import StampingPartService
+from app.schemas.dto.stamping_part_dto import StampingPartBatchDeleteDTO
 from app.schemas.vo.stamping_vo import (
     StampingPartQuery,
     StampingPartWithProcessesResponse,
@@ -24,15 +24,12 @@ from app.schemas.vo.stamping_vo import (
     StampingMaterialResponse,
     StampingCascadeFilterQuery,
     StampingCascadeFilterOptionsVO,
+    StampingPartBatchDeleteResultVO,
+    BatchUpdateResponse,
 )
 from app.schemas.vo.user_vo import UserVO
 from app.utils.response import ApiResponse
 from app.schemas.common.page_result import PageResult
-
-
-class BatchUpdateResponse(BaseModel):
-    """批量更新响应 VO"""
-    updated: int
 
 
 router = APIRouter(prefix="/api/stamping", tags=["冲压工艺 API"])
@@ -55,6 +52,26 @@ def list_parts(
         page_size=query.size,
         message=f"查询到 {total} 个零件",
         filters=filter_options,
+    )
+
+
+@router.post(
+    "/parts/batch-delete",
+    response_model=ApiResponse[StampingPartBatchDeleteResultVO],
+)
+def batch_delete_parts(
+    body: StampingPartBatchDeleteDTO,
+    db: Session = Depends(get_db),
+    current_user: UserVO = Depends(require_perm(Perm.STAMPING_PARTS_DELETE)),
+) -> ApiResponse[StampingPartBatchDeleteResultVO]:
+    """按基地 + 冲压工厂 + 车型批量删除零件（版本可选）。"""
+    result = _stamping_service.batch_delete(db, body)
+    scope = f"{result.location} / {result.stamping_supplier} / {result.vehicle_model}"
+    if result.version:
+        scope += f" / {result.version}"
+    return ApiResponse.ok(
+        data=result,
+        message=f"已删除 {result.deleted_count} 个零件（{scope}）",
     )
 
 

@@ -165,6 +165,7 @@ class StampingExcelParser:
 
                     # 解析零件行，直接存储 Part 对象
                     part: Part = self._row_parser.parse_part_row(row_idx)
+                    part.excel_sheet_name = self.result.sheet_name or None
                     self.result.parts.append(part)
 
                     # 图片归属（传入完整零件范围，确保覆盖合并行的所有可能位置）

@@ -27,6 +27,7 @@ class BomSnapshotVO(BaseModel):
     revision_date: date | None = None
     title: str | None = None
     source_filename: str
+    source_sheet_name: str | None = None
     source_file_path: str | None = None
     source_file_hash: str | None = None
     status: str
@@ -75,6 +76,10 @@ class BomNodeVO(BaseModel):
     weld_info: str | None = None
     remark: str | None = None
     sketch_url: str | None = None
+    excel_filename: str | None = None
+    excel_sheet_name: str | None = None
+    excel_row: int | None = None
+    excel_part_col: int | None = None
     created_by: str | None = None
     updated_by: str | None = None
     created_at: datetime | None = None

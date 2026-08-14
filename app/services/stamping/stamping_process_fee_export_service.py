@@ -127,7 +127,7 @@ class StampingProcessFeeExportService:
             "零件重量",
             "料片长",
             "料片宽",
-            "出件率",
+            "可制件数",
             "板料类型",
             "模具类型",
             "工艺方法",

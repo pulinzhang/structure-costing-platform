@@ -62,11 +62,20 @@ class StampingProcessFeeVO(BaseModel):
     part_weight: float | None = None
     sheet_length: float | None = None
     sheet_width: float | None = None
-    parts_per_sheet: int | None = None
+    parts_per_sheet: int | None = Field(
+        default=None,
+        description=(
+            "可制件数：一张钢板/料片单独冲本零件可出的件数"
+            "（例：1出2记2；左右共模按单侧计则为2；非利用率百分比）"
+        ),
+    )
     sheet_type: str | None = None
     die_type: str | None = None
     process_method: str | None = None
-    automation: str | None = None
+    automation: str | None = Field(
+        default=None,
+        description="自动化：工艺文件原文快照（如自动/手动/半自动），非布尔是/否",
+    )
     part_remark: str | None = None
     sketch_url: str | None = None
     excel_filename: str | None = None

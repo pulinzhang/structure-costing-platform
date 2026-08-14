@@ -13,7 +13,7 @@
  * 入口 URL 的 query 串驱动整体刷新；每次脚本更新后需要同步递增 ?v= 版本号。
  */
 
-import { pageMeta } from './features/index.js?v=9';
+import { pageMeta } from './features/index.js?v=10';
 
 // 页面导入
 import { getUserSession, initUserMenu, startTokenHeartbeat, updateUserSession } from './features/login/index.js?v=14';
@@ -24,11 +24,11 @@ import {
 } from './permissions.js?v=9';
 import { pageConfig as dashboardPage }      from './features/dashboard/index.js';
 import { pageConfig as stampingUploadPage } from './features/stamping/upload/index.js?v=35';
-import { pageConfig as stampingPartsPage }  from './features/stamping/parts/index.js?v=2';
+import { pageConfig as stampingPartsPage }  from './features/stamping/parts/index.js?v=10';
 import { pageConfig as stampingTonnagePage } from './features/stamping/tonnage/index.js?v=6';
 import { pageConfig as stampingTonnageUploadPage } from './features/stamping/tonnage-upload/index.js?v=1';
 import { pageConfig as stampingProcessFeeCalcPage } from './features/stamping/process-fee-calc/index.js?v=12';
-import { pageConfig as stampingProcessFeePage } from './features/stamping/process-fee/index.js?v=12';
+import { pageConfig as stampingProcessFeePage } from './features/stamping/process-fee/index.js?v=15';
 import { pageConfig as steelPriceListPage }   from './features/steel-price/list/index.js?v=42';
 import { pageConfig as steelPriceCalcPage }    from './features/steel-price/calc/index.js?v=8';
 import { pageConfig as steelPricePolicyUploadPage } from './features/steel-price/policy-upload/index.js?v=35';
@@ -37,8 +37,8 @@ import { pageConfig as basePriceUploadPage } from './features/steel-price/base-p
 import { pageConfig as basePriceDownloadPage } from './features/steel-price/base-price-download/index.js?v=26';
 import { pageConfig as winningThicknessDownloadPage } from './features/steel-price/winning-thickness-download/index.js?v=7';
 import { pageConfig as scrapPricePage } from './features/yishiyiyi/scrap-price/index.js?v=15';
-import { pageConfig as bomStructurePage }  from './features/bom/structure/index.js?v=8';
-import { pageConfig as bomVizPage }        from './features/bom/viz/index.js?v=27';
+import { pageConfig as bomStructurePage }  from './features/bom/structure/index.js?v=9';
+import { pageConfig as bomVizPage }        from './features/bom/viz/index.js?v=29';
 import { pageConfig as bomUploadPage }     from './features/bom/upload/index.js?v=2';
 import { pageConfig as costingPage }        from './features/costing/index.js';
 import { pageConfig as quotationPage }      from './features/quotation/index.js';

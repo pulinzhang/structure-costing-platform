@@ -1,113 +1,152 @@
 /**
  * Parts Template
  * 零件列表页面 — Brabus Carbon & Precision Dark
+ * 布局对齐加工费列表：HUD + 胶囊筛选（默认收起）+ 级联查询
  *
- * 熵增管控规则：
- * - detailTableRow(valueClass) 的 valueClass 参数已被 CORE_COST_FIELDS 接管，传值无意义，已移除
- * - 所有面板使用 CSS 类（brabus-panel / brabus-panel-header / brabus-table-wrapper）
- * - SVG 统一使用 window.svgIcon 工具函数
- * - CORE_COST_FIELDS 定义在 renderDetailContent 之前，detailTableRow 中引用
+ * 明细抽屉 / renderDetailContent 保持不变
  */
 
 export function partsTemplate() {
     return `
-        <!-- 筛选栏 -->
-        <div class="bg-[#1e1e1e] border border-[#2c2c2c] p-3 mb-3">
-            <div class="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center">
-                <div class="flex-1 min-w-0">
-                    <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <svg class="w-3.5 h-3.5 text-[#616161]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                        </div>
-                        <input type="text"
-                               id="searchInput"
-                               placeholder="搜索零件号或名称..."
-                               class="w-full h-9 pl-9 pr-4 text-xs bg-[#0a0a0a] border border-[#2c2c2c] placeholder:text-[#616161] text-[#ffffff] focus:outline-none focus:border-[#ff5252] transition-all">
-                    </div>
-                </div>
+        <div class="space-y-2 w-full max-w-full">
+            <div class="bg-[#0A0A0C] border border-[#1A1A22] overflow-hidden w-full max-w-full"
+                 style="box-shadow: 0 4px 24px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.02);">
 
-                <div class="flex flex-row flex-wrap gap-2 items-center">
-                    <select id="locationFilter"
-                            class="w-32 h-9 pl-3 pr-8 text-xs bg-[#0a0a0a] border border-[#2c2c2c] appearance-none cursor-pointer text-[#9e9e9e] focus:outline-none focus:border-[#ff5252] transition-all">
-                        <option value="">全部基地</option>
-                    </select>
-
-                    <select id="supplierFilter"
-                            class="w-36 h-9 pl-3 pr-8 text-xs bg-[#0a0a0a] border border-[#2c2c2c] appearance-none cursor-pointer text-[#9e9e9e] focus:outline-none focus:border-[#ff5252] transition-all">
-                        <option value="">全部供应商</option>
-                    </select>
-
-                    <select id="vehicleModelFilter"
-                            class="w-36 h-9 pl-3 pr-8 text-xs bg-[#0a0a0a] border border-[#2c2c2c] appearance-none cursor-pointer text-[#9e9e9e] focus:outline-none focus:border-[#ff5252] transition-all">
-                        <option value="">全部车型</option>
-                    </select>
-
-                    <select id="versionFilter"
-                            class="w-28 h-9 pl-3 pr-8 text-xs bg-[#0a0a0a] border border-[#2c2c2c] appearance-none cursor-pointer text-[#9e9e9e] focus:outline-none focus:border-[#ff5252] transition-all">
-                        <option value="">全部版本</option>
-                    </select>
-
-                    <div class="hidden lg:block w-px h-6 bg-[#222222]"></div>
-
-                    <div class="flex items-center gap-1.5">
-                        <label class="text-[10px] text-[#616161] whitespace-nowrap">每页</label>
-                        <select id="pageSizeSelect"
-                                class="w-16 h-9 px-2 text-xs bg-[#0a0a0a] border border-[#2c2c2c] appearance-none cursor-pointer text-[#9e9e9e] focus:outline-none focus:border-[#ff5252] transition-all">
-                            <option value="10">10</option>
-                            <option value="20">20</option>
-                            <option value="50">50</option>
-                            <option value="100">100</option>
-                        </select>
-                    </div>
-
-                    <div class="text-[10px] text-[#616161] whitespace-nowrap" id="totalCount">
-                        共 0 个零件
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 表格面板 -->
-        <div class="bg-[#1e1e1e] border border-[#2c2c2c]">
-            <div class="overflow-x-auto">
-                <table class="w-full" id="partsTable">
-                    <thead>
-                        <tr class="bg-[#0a0a0a] border-b border-[#2c2c2c]">
-                            <th class="px-4 py-3 text-center text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161] whitespace-nowrap w-14">图纸</th>
-                            <th class="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161] whitespace-nowrap">零件号</th>
-                            <th class="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161] whitespace-nowrap">零件名称</th>
-                            <th class="px-4 py-3 text-center text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161] whitespace-nowrap">基地</th>
-                            <th class="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161] whitespace-nowrap">供应商</th>
-                            <th class="px-4 py-3 text-center text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161] whitespace-nowrap">车型</th>
-                            <th class="px-4 py-3 text-center text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161] whitespace-nowrap">版本</th>
-                            <th class="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161] whitespace-nowrap">材料</th>
-                            <th class="px-4 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161] whitespace-nowrap">厚度</th>
-                            <th class="px-4 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161] whitespace-nowrap">重量</th>
-                            <th class="px-4 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161] whitespace-nowrap">工序</th>
-                            <th class="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161] whitespace-nowrap">来源文件</th>
-                            <th class="px-4 py-3 text-center text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161] whitespace-nowrap">操作</th>
-                        </tr>
-                    </thead>
-                    <tbody id="partsTableBody" class="divide-y divide-[#222222]">
-                        <tr>
-                            <td colspan="13">
-                                <div class="flex flex-col items-center justify-center py-14">
-                                    <div class="w-10 h-10 bg-[#262626] flex items-center justify-center mb-3">
-                                        <svg class="w-5 h-5 text-[#616161]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path></svg>
-                                    </div>
-                                    <h5 class="text-xs font-medium text-[#9e9e9e] mb-1">暂无零件数据</h5>
-                                    <p class="text-[11px] text-[#616161]">请先上传工艺文件</p>
+                <!-- HUD + 操作 -->
+                <div class="px-5 pt-4 pb-3.5 border-b border-[#14141A]"
+                     style="background: linear-gradient(135deg, #0E0E12 0%, #121218 45%, #0C0C10 100%);">
+                    <div class="flex items-start justify-between gap-4 mb-3">
+                        <div class="grid grid-cols-2 lg:grid-cols-3 gap-3 font-mono flex-1 min-w-0">
+                            <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3 backdrop-blur-sm"
+                                 style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);">
+                                <div class="text-[#555555] text-[10px] tracking-wider">零件条数</div>
+                                <div class="text-[18px] font-bold text-[#FFFFFF] mt-1 tabular-nums">
+                                    <span id="partsHudTotal">—</span>
+                                    <span class="text-[10px] text-[#555555] ml-1">件</span>
                                 </div>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            <div class="flex items-center justify-between px-4 py-3 border-t border-[#222222]">
-                <div></div>
-                <nav>
-                    <ul class="flex justify-center mb-0" id="pagination"></ul>
-                </nav>
+                            </div>
+                            <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3 backdrop-blur-sm"
+                                 style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);">
+                                <div class="text-[#555555] text-[10px] tracking-wider">本页条数</div>
+                                <div class="text-[18px] font-bold text-[#FFFFFF] mt-1 tabular-nums">
+                                    <span id="partsHudPageCount">—</span>
+                                    <span class="text-[10px] text-[#555555] ml-1">件</span>
+                                </div>
+                            </div>
+                            <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3 backdrop-blur-sm col-span-2 lg:col-span-1"
+                                 style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);">
+                                <div class="text-[#555555] text-[10px] tracking-wider">查询范围</div>
+                                <div class="text-[12px] font-medium text-[#8E8E93] mt-1.5 truncate" id="partsHudScope">
+                                    全部范围
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+                            <button id="partsBatchDeleteBtn" type="button"
+                                    class="inline-flex items-center gap-1.5 bg-transparent text-[#6E6E73] border border-[#2A2A35] px-3 py-1.5 text-[11px] font-medium rounded-md hover:border-[#c62828]/60 hover:text-[#ef5350] hover:bg-[#c62828]/15 hover:shadow-[0_0_12px_rgba(198,40,40,0.2)] transition-all duration-200">
+                                ${window.svgIcon('trash', 'w-3 h-3')}
+                                批量删除
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 战术胶囊筛选栏：默认收起 -->
+                <div class="px-5 py-3 border-b border-[#14141A]"
+                     style="background: linear-gradient(180deg, #0C0C10 0%, #0A0A0E 100%);">
+                    <div class="flex items-center justify-between gap-4 bg-[#0C0C10] border border-[#1E1E26] px-4 py-2.5 rounded-xl font-mono text-[11px]"
+                         style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.02), 0 0 20px rgba(0,0,0,0.3);">
+                        <div class="flex items-center gap-3 min-w-0 flex-1">
+                            <span class="text-[#555555] shrink-0 tracking-wider">当前筛选：</span>
+                            <div class="flex items-center gap-2 flex-wrap" id="partsActiveCapsules">
+                                <span id="capsuleLocation" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部基地</span>
+                                <span id="capsuleSupplier" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部工厂</span>
+                                <span id="capsuleVehicle" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部车型</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3 shrink-0">
+                            <button type="button" id="partsToggleAdvancedFilter"
+                                    class="text-[#6E6E73] hover:text-white transition-colors flex items-center gap-1.5 text-[11px]">
+                                <span id="partsAdvancedFilterLabel">展开高级筛选</span>
+                                <span id="partsAdvancedFilterCount" class="text-[#555555]">(0)</span>
+                            </button>
+                            <button type="button" id="partsSearchBtn"
+                                    class="bg-[#FF1E27] hover:bg-[#D6131B] text-white font-bold px-4 py-1.5 rounded-lg transition-all text-[11px] tracking-wide"
+                                    style="box-shadow: 0 0 15px rgba(255,30,39,0.4);">
+                                查询
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 高级筛选面板（默认折叠；级联：基地 → 冲压工厂 → 车型） -->
+                    <div id="partsAdvancedFilterPanel" class="hidden mt-3 pt-3 border-t border-[#1A1A22]">
+                        <div class="flex items-end gap-3 flex-wrap">
+                            ${filterSelect('locationFilter', '基地')}
+                            ${filterSelect('supplierFilter', '冲压工厂')}
+                            ${filterSelect('vehicleModelFilter', '车型')}
+                            ${filterSelect('versionFilter', '版本')}
+                            ${filterInput('searchInput', '零件号', '短号或完整零件号')}
+                            <label class="space-y-1">
+                                <span class="block text-[9px] font-semibold text-[#555555] uppercase tracking-[0.14em]">每页</span>
+                                <select id="pageSizeSelect"
+                                        class="w-20 h-8 pl-2.5 pr-7 text-[11px] bg-[#0A0A0E] border border-[#2A2A35] text-[#A1A1A6] appearance-none cursor-pointer focus:outline-none focus:border-[#FF1E27] rounded-md transition-colors">
+                                    <option value="10">10</option>
+                                    <option value="20">20</option>
+                                    <option value="50">50</option>
+                                    <option value="100">100</option>
+                                </select>
+                            </label>
+                            <button id="partsResetBtn" type="button"
+                                    class="inline-flex items-center gap-1.5 h-8 px-3 text-[11px] font-medium rounded-md bg-transparent text-[#6E6E73] border border-[#2A2A35] hover:bg-[#FF1E27]/10 hover:border-[#FF1E27]/50 hover:text-[#FF1E27] transition-all duration-200">
+                                ${window.svgIcon('refresh', 'w-3 h-3')}
+                                重置
+                            </button>
+                        </div>
+                        <p class="mt-2 text-[10px] text-[#555555]">筛选均可选；级联联动。批量删除须选定基地、冲压工厂和车型。</p>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto brabus-bg-grid">
+                    <table class="w-full min-w-[1400px] bg-transparent" id="partsTable">
+                        <thead>
+                            <tr class="border-b border-[#17171C] bg-[#0B0B0D]/95">
+                                <th class="p-0 w-0"></th>
+                                <th class="px-3 py-3 text-center text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap w-14">图纸</th>
+                                <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#A1A1A6] whitespace-nowrap">零件号</th>
+                                <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">零件名称</th>
+                                <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">基地</th>
+                                <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">冲压工厂</th>
+                                <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">车型</th>
+                                <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap border-r border-[#22222A]">版本</th>
+                                <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">材料</th>
+                                <th class="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">厚度</th>
+                                <th class="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">重量</th>
+                                <th class="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">工序</th>
+                                <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">来源文件</th>
+                                <th class="px-3 py-3 text-center text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap w-28">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="partsTableBody" class="bg-transparent"></tbody>
+                    </table>
+                </div>
+
+                <div class="flex items-center justify-between px-5 py-2.5 border-t border-[#14141A] bg-[#0A0A0E]">
+                    <span id="partsTotalLabel" class="text-[10px] font-mono text-[#555555]"></span>
+                    <div class="flex items-center gap-0.5" id="pagination"></div>
+                </div>
+
+                <div id="partsEmpty" class="hidden flex flex-col items-center justify-center py-14">
+                    <div class="w-10 h-10 flex items-center justify-center mb-3 rounded-md bg-[#121218] border border-[#2A2A35]">
+                        ${window.svgIcon('clipboard-list', 'w-4 h-4 text-[#555555]')}
+                    </div>
+                    <h5 class="text-[11px] font-medium text-[#8E8E93] mb-1">暂无零件数据</h5>
+                    <p class="text-[10px] text-[#555555]">请先上传工艺文件</p>
+                </div>
+
+                <div id="partsLoading" class="hidden flex items-center justify-center py-14">
+                    <div class="w-5 h-5 border-2 border-[#2A2A35] border-t-[#FF1E27] rounded-full animate-spin"
+                         style="box-shadow: 0 0 12px rgba(255,30,39,0.35);"></div>
+                </div>
             </div>
         </div>
 
@@ -142,11 +181,116 @@ export function partsTemplate() {
                 </div>
             </div>
         </div>
-
     `;
 }
 
-// CORE_COST_FIELDS 已在文件顶部定义
+function filterSelect(id, label) {
+    return `<label class="space-y-1">
+        <span class="block text-[9px] font-semibold text-[#555555] uppercase tracking-[0.14em]">${label}</span>
+        <select id="${id}" class="w-32 h-8 pl-2.5 pr-7 text-[11px] bg-[#0A0A0E] border border-[#2A2A35] text-[#A1A1A6] appearance-none cursor-pointer focus:outline-none focus:border-[#FF1E27] rounded-md transition-colors">
+            <option value="">全部</option>
+        </select>
+    </label>`;
+}
+
+function filterInput(id, label, placeholder) {
+    return `<label class="space-y-1">
+        <span class="block text-[9px] font-semibold text-[#555555] uppercase tracking-[0.14em]">${label}</span>
+        <input id="${id}" placeholder="${placeholder}" class="h-8 w-36 px-2.5 text-[11px] bg-[#0A0A0E] border border-[#2A2A35] text-[#ffffff] placeholder:text-[#555555] rounded-md focus:outline-none focus:border-[#FF1E27] transition-colors">
+    </label>`;
+}
+
+/**
+ * 同步战术胶囊：基地 / 工厂 / 车型 + 高级筛选已启用数量
+ */
+export function updatePartsFilterCapsules() {
+    const location = document.getElementById('locationFilter')?.value || '';
+    const supplier = document.getElementById('supplierFilter')?.value || '';
+    const vehicle = document.getElementById('vehicleModelFilter')?.value || '';
+    const version = document.getElementById('versionFilter')?.value || '';
+    const part = document.getElementById('searchInput')?.value.trim() || '';
+
+    const activeCapsule = 'bg-[#1A1A22] border border-[#2A2A35] text-white px-2.5 py-1 rounded-md font-bold';
+    const idleCapsule = 'bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md';
+
+    const locationEl = document.getElementById('capsuleLocation');
+    const supplierEl = document.getElementById('capsuleSupplier');
+    const vehicleEl = document.getElementById('capsuleVehicle');
+    const countEl = document.getElementById('partsAdvancedFilterCount');
+    const scopeEl = document.getElementById('partsHudScope');
+
+    if (locationEl) {
+        locationEl.textContent = location || '全部基地';
+        locationEl.className = location ? activeCapsule : idleCapsule;
+    }
+    if (supplierEl) {
+        supplierEl.textContent = supplier || '全部工厂';
+        supplierEl.className = supplier ? activeCapsule : idleCapsule;
+    }
+    if (vehicleEl) {
+        vehicleEl.textContent = vehicle || '全部车型';
+        vehicleEl.className = vehicle ? activeCapsule : idleCapsule;
+    }
+
+    const advancedActive = [location, supplier, vehicle, version, part].filter(Boolean).length;
+    if (countEl) countEl.textContent = `(${advancedActive})`;
+
+    if (scopeEl) {
+        if (location || supplier || vehicle || version) {
+            const parts = [];
+            if (location) parts.push(location);
+            if (supplier) parts.push(supplier);
+            if (vehicle) parts.push(vehicle);
+            if (version) parts.push(version);
+            scopeEl.textContent = parts.join(' · ');
+        } else {
+            scopeEl.textContent = '全部范围';
+        }
+    }
+}
+
+export function updatePartsHud(total, pageCount) {
+    const setText = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value;
+    };
+    setText('partsHudTotal', Number(total || 0).toLocaleString('zh-CN'));
+    setText('partsHudPageCount', String(pageCount ?? '—'));
+}
+
+export function renderPartsPagination(currentPage, totalPages) {
+    if (totalPages <= 1) return '';
+    let buttons = `
+        <button type="button" data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}
+                class="flex items-center justify-center w-6 h-6 rounded-sm text-[10px] ${currentPage === 1 ? 'text-[#333333] cursor-not-allowed' : 'text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]'} transition-all">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+        </button>`;
+    const maxVisible = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+    if (endPage - startPage < maxVisible - 1) startPage = Math.max(1, endPage - maxVisible + 1);
+    if (startPage > 1) {
+        buttons += `<button type="button" data-page="1" class="flex items-center justify-center w-6 h-6 rounded-sm text-[10px] text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]">1</button>`;
+        if (startPage > 2) buttons += `<span class="px-0.5 text-[#333333] text-[9px]">…</span>`;
+    }
+    for (let i = startPage; i <= endPage; i++) {
+        const isActive = i === currentPage;
+        buttons += `<button type="button" data-page="${i}"
+            class="flex items-center justify-center w-6 h-6 rounded-sm text-[10px] ${isActive ? 'bg-[#FFFFFF] text-[#0a0a0a] font-bold' : 'text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]'}">${i}</button>`;
+    }
+    if (endPage < totalPages) {
+        if (endPage < totalPages - 1) buttons += `<span class="px-0.5 text-[#333333] text-[9px]">…</span>`;
+        buttons += `<button type="button" data-page="${totalPages}" class="flex items-center justify-center w-6 h-6 rounded-sm text-[10px] text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]">${totalPages}</button>`;
+    }
+    buttons += `
+        <button type="button" data-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''}
+                class="flex items-center justify-center w-6 h-6 rounded-sm text-[10px] ${currentPage === totalPages ? 'text-[#333333] cursor-not-allowed' : 'text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]'} transition-all">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+        </button>`;
+    return buttons;
+}
+
+// CORE_COST_FIELDS 决定详情表强调样式
 const CORE_COST_FIELDS = new Set(['材料', '重量', '可制件数', '模具类型']);
 
 const DIE_TYPE_OPTIONS = [
@@ -156,13 +300,8 @@ const DIE_TYPE_OPTIONS = [
     { value: 'progressive_shared', label: '级进共模（40%）' },
 ];
 
-// 数据库只存 cost_ratio，反查 die_type
-const RATIO_TO_DIE_TYPE = { 0.8: 'progressive', 1.0: 'single', 0.5: 'shared', 0.4: 'progressive_shared' };
-const deriveDieType = (p) => p.die_type || RATIO_TO_DIE_TYPE[p.cost_ratio] || 'single';
-
 /**
  * 详情表格行 — 由 CORE_COST_FIELDS 决定强调样式
- * valueClass 参数已废弃（由 CORE_COST_FIELDS 全权接管）
  */
 function detailTableRow([label, value]) {
     const isCore = CORE_COST_FIELDS.has(label);
@@ -177,12 +316,53 @@ function detailTableRow([label, value]) {
             </tr>`;
 }
 
-function renderProcessRow(p, idx, derivedDieType) {
+/**
+ * Excel 单元格溯源：文件 + 表页 + 行 + 零件号列（与 BOM 防扯皮对齐）
+ */
+function renderExcelProvenance(part) {
+    const filename = part?.excel_filename || '';
+    const sheet = part?.excel_sheet_name || '';
+    const row = part?.excel_row;
+    const col = part?.excel_part_col;
+    const hasCell = Boolean(sheet) || row != null || col != null;
+    if (!filename && !hasCell) {
+        return `
+            <div class="mx-4 mb-4 border border-[#262626] bg-[#111111] p-3">
+                <p class="text-[10px] uppercase tracking-[0.14em] text-[#d32f2f] mb-1.5 flex items-center gap-2">
+                    <span class="w-0.5 h-3 bg-[#d32f2f] rounded-sm shadow-[0_0_8px_rgba(211,47,47,0.5)]"></span>
+                    Excel 溯源
+                </p>
+                <p class="text-[12px] text-[#616161]">无单元格溯源（请重新上传工艺文件生成）</p>
+            </div>
+        `;
+    }
+    const colHint = col != null ? `第 ${col} 列（零件号）` : null;
+    const rowHint = row != null ? `第 ${row} 行` : null;
+    const locator = [
+        sheet ? `表「${sheet}」` : null,
+        rowHint,
+        colHint,
+    ].filter(Boolean).join(' · ');
+    const cellHint = hasCell
+        ? `<p class="text-[11px] text-[#888888]">${esc(locator || '—')}</p>`
+        : `<p class="text-[11px] text-[#616161]">仅有文件名（该批数据上传时尚未落表页/行列；请再上传一次工艺文件，或已由运维回填）</p>`;
+    return `
+        <div class="mx-4 mb-4 border border-[#d32f2f]/25 bg-[#111111] p-3"
+             style="box-shadow: 0 0 20px rgba(211,47,47,0.06), inset 0 1px 0 rgba(211,47,47,0.05);">
+            <p class="text-[10px] uppercase tracking-[0.14em] text-[#d32f2f] mb-2 flex items-center gap-2">
+                <span class="w-0.5 h-3 bg-[#d32f2f] rounded-sm shadow-[0_0_8px_rgba(211,47,47,0.5)]"></span>
+                Excel 溯源
+            </p>
+            <p class="text-[12px] text-[#cfcfcf] font-mono break-all mb-1">${esc(filename || '—')}</p>
+            ${cellHint}
+        </div>
+    `;
+}
+
+function renderProcessRow(p, idx) {
     const processId = p.id ?? idx;
-    // 根据 cost_ratio 推导出 die_type 值，用于选中下拉框
     const ratioMap = { 0.8: 'progressive', 1.0: 'single', 0.5: 'shared', 0.4: 'progressive_shared' };
     const currentDieType = p.die_type || ratioMap[p.cost_ratio] || 'single';
-    const currentLabel = derivedDieType(p);
 
     return `
                 <tr class="border-b border-[#161616] last:border-b-0 group hover:bg-[#0e0e0e] transition-colors duration-200 process-row" data-process-id="${processId}">
@@ -214,17 +394,8 @@ export function renderDetailContent(part) {
         ['版本', esc(part.version)],
         ['材料', esc(part.material)],
         ['工艺方法', esc(part.process_method ?? '-')],
-        ['自动化', part.automation ? '是' : '否'],
+        ['自动化', esc(part.automation ?? '-')],
     ];
-    // 右侧面板字段 — CORE_COST_FIELDS 会在 detailTableRow 中自动生效（材料/重量/模具类型）
-    const derivedDieType = (p) => {
-        const ratio = p.cost_ratio;
-        if (ratio === 0.8) return '级进模（80%）';
-        if (ratio === 1.0) return '单干模具（100%）';
-        if (ratio === 0.5) return '共模（50%）';
-        if (ratio === 0.4) return '级进共模（40%）';
-        return part.die_type || '单干模具（100%）';
-    };
     const rowsRight = [
         ['厚度', part.thickness != null ? `${part.thickness} mm` : '-'],
         ['重量', part.part_weight != null ? `${part.part_weight} kg` : '-'],
@@ -237,7 +408,7 @@ export function renderDetailContent(part) {
 
     const processes = part.processes || [];
     const processRows = processes.length
-        ? processes.map((p, idx) => renderProcessRow(p, idx, derivedDieType)).join('')
+        ? processes.map((p, idx) => renderProcessRow(p, idx)).join('')
         : `<tr><td colspan="6" class="px-4 py-12 text-center text-[11px] text-[#333333] tracking-[0.15em]">暂无工序数据</td></tr>`;
 
     return `
@@ -268,6 +439,8 @@ export function renderDetailContent(part) {
                     <table class="w-full">${rowsRight.map(detailTableRow).join('')}</table>
                 </div>
             </div>
+
+            ${renderExcelProvenance(part)}
 
             <!-- 工序列表 -->
             <div class="mx-4 mb-4 flex flex-col shrink-0">
