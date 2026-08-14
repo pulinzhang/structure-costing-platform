@@ -13,9 +13,9 @@
  * 入口 URL 的 query 串驱动整体刷新；每次脚本更新后需要同步递增 ?v= 版本号。
  */
 
-import { pageMeta } from './features/index.js?v=11';
+import { pageMeta } from './features/index.js?v=12';
 
-// 页面导入
+// 页面导入（路径与 index.html 菜单树 / features 目录对齐）
 import { getUserSession, initUserMenu, startTokenHeartbeat, updateUserSession } from './features/login/index.js?v=14';
 import {
     applySidebarPermissions,
@@ -23,26 +23,26 @@ import {
     fallbackPageName,
 } from './permissions.js?v=9';
 import { pageConfig as dashboardPage }      from './features/dashboard/index.js';
-import { pageConfig as stampingUploadPage } from './features/stamping/upload/index.js?v=35';
-import { pageConfig as stampingPartsPage }  from './features/stamping/parts/index.js?v=11';
-import { pageConfig as stampingTonnagePage } from './features/stamping/tonnage/index.js?v=6';
-import { pageConfig as stampingTonnageUploadPage } from './features/stamping/tonnage-upload/index.js?v=1';
-import { pageConfig as stampingProcessFeeCalcPage } from './features/stamping/process-fee-calc/index.js?v=14';
-import { pageConfig as stampingProcessFeePage } from './features/stamping/process-fee/index.js?v=18';
-import { pageConfig as steelPriceListPage }   from './features/steel-price/list/index.js?v=42';
-import { pageConfig as steelPriceCalcPage }    from './features/steel-price/calc/index.js?v=8';
-import { pageConfig as stampingPartCostCalcPage } from './features/stamping-part-cost/calc/index.js?v=1';
-import { pageConfig as stampingPartCostPage } from './features/stamping-part-cost/list/index.js?v=14';
-import { pageConfig as steelPricePolicyUploadPage } from './features/steel-price/policy-upload/index.js?v=35';
-import { pageConfig as steelPricePolicyDownloadPage } from './features/steel-price/policy-download/index.js?v=26';
-import { pageConfig as basePriceUploadPage } from './features/steel-price/base-price-upload/index.js?v=36';
-import { pageConfig as basePriceDownloadPage } from './features/steel-price/base-price-download/index.js?v=26';
-import { pageConfig as winningThicknessDownloadPage } from './features/steel-price/winning-thickness-download/index.js?v=7';
+import { pageConfig as stampingUploadPage } from './features/stamping/process/upload/index.js?v=35';
+import { pageConfig as stampingPartsPage }  from './features/stamping/process/parts/index.js?v=11';
+import { pageConfig as stampingTonnagePage } from './features/stamping/tonnage/list/index.js?v=6';
+import { pageConfig as stampingTonnageUploadPage } from './features/stamping/tonnage/upload/index.js?v=1';
+import { pageConfig as stampingProcessFeeCalcPage } from './features/stamping/process-fee/calc/index.js?v=14';
+import { pageConfig as stampingProcessFeePage } from './features/stamping/process-fee/list/index.js?v=18';
+import { pageConfig as steelPriceListPage }   from './features/costing/steel-price/list/index.js?v=42';
+import { pageConfig as steelPriceCalcPage }    from './features/costing/steel-price/calc/index.js?v=8';
+import { pageConfig as stampingPartCostCalcPage } from './features/costing/stamping-part-cost/calc/index.js?v=1';
+import { pageConfig as stampingPartCostPage } from './features/costing/stamping-part-cost/list/index.js?v=16';
+import { pageConfig as steelPricePolicyUploadPage } from './features/yishiyiyi/policy/upload/index.js?v=35';
+import { pageConfig as steelPricePolicyDownloadPage } from './features/yishiyiyi/policy/list/index.js?v=26';
+import { pageConfig as basePriceUploadPage } from './features/yishiyiyi/base-price/upload/index.js?v=36';
+import { pageConfig as basePriceDownloadPage } from './features/yishiyiyi/base-price/list/index.js?v=26';
+import { pageConfig as winningThicknessDownloadPage } from './features/yishiyiyi/winning-thickness/list/index.js?v=7';
 import { pageConfig as scrapPricePage } from './features/yishiyiyi/scrap-price/index.js?v=15';
-import { pageConfig as bomStructurePage }  from './features/bom/structure/index.js?v=9';
-import { pageConfig as bomVizPage }        from './features/bom/viz/index.js?v=29';
-import { pageConfig as bomUploadPage }     from './features/bom/upload/index.js?v=2';
-import { pageConfig as costingPage }        from './features/costing/index.js';
+import { pageConfig as bomStructurePage }  from './features/bom/material/structure/index.js?v=9';
+import { pageConfig as bomVizPage }        from './features/bom/material/viz/index.js?v=29';
+import { pageConfig as bomUploadPage }     from './features/bom/material/upload/index.js?v=2';
+import { pageConfig as costingPage }        from './features/costing/engine/index.js';
 import { pageConfig as quotationPage }      from './features/quotation/index.js';
 import { pageConfig as settingsPage }       from './features/settings/system/index.js?v=8';
 import { pageConfig as settingsUsersPage }  from './features/settings/users/index.js?v=2';

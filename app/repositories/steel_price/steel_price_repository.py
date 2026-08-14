@@ -19,6 +19,28 @@ class SteelPriceRepository:
         """根据 ID 查询单条记录。"""
         return db.query(SteelPrice).filter(SteelPrice.id == record_id).first()
 
+    def list_by_ids(self, db: Session, record_ids: list[int]) -> list[SteelPrice]:
+        """按主键批量查询。"""
+        if not record_ids:
+            return []
+        return (
+            db.query(SteelPrice)
+            .filter(SteelPrice.id.in_(record_ids))
+            .all()
+        )
+
+    def list_distinct_years(self, db: Session) -> list[int]:
+        """去重年度，降序。"""
+        return [
+            row[0]
+            for row in (
+                db.query(distinct(SteelPrice.year))
+                .order_by(SteelPrice.year.desc())
+                .all()
+            )
+            if row[0] is not None
+        ]
+
     def get_by_business_key(
         self,
         db: Session,

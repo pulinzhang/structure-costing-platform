@@ -28,10 +28,10 @@ export function partCostListTemplate() {
                                 class="h-8 px-3 text-[11px] text-[#9e9e9e] border border-[#2c2c2c] rounded hover:border-[#ef5350] hover:text-[#ef5350] transition-colors">批量删除</button>
                         <button id="costExportBtn" type="button"
                                 class="h-8 px-3 text-[11px] text-[#9e9e9e] border border-[#2c2c2c] rounded hover:border-[#d32f2f] hover:text-[#d32f2f] transition-colors"
-                                title="工艺清单格式：至R列公式 + 加工费 + 最终价">导出工艺清单</button>
+                                title="工艺清单格式：业务列至最终价，末尾弱化溯源列">导出工艺清单</button>
                         <button id="costExportDetailBtn" type="button"
                                 class="h-8 px-3 text-[11px] text-[#9e9e9e] border border-[#2c2c2c] rounded hover:border-[#d32f2f] hover:text-[#d32f2f] transition-colors"
-                                title="含溯源/审核字段的明细表">导出明细</button>
+                                title="明细表：业务字段 + 溯源/关联ID + 审核元数据">导出明细</button>
                     </div>
                 </div>
                 <div class="px-4 py-2 text-[10px] text-[#616161] border-b border-[#222222] flex items-center justify-between gap-3 flex-wrap">

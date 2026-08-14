@@ -53,6 +53,18 @@ class StampingScrapPriceRepository:
             .first()
         )
 
+    def list_by_ids(
+        self, db: Session, record_ids: list[int]
+    ) -> List[StampingScrapPrice]:
+        """按主键批量查询。"""
+        if not record_ids:
+            return []
+        return (
+            db.query(StampingScrapPrice)
+            .filter(StampingScrapPrice.id.in_(record_ids))
+            .all()
+        )
+
     def list_by_year(
         self,
         db: Session,

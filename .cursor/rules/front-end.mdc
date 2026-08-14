@@ -75,6 +75,8 @@ alwaysApply: true
 
 ## 二、目录结构
 
+> 与 `static/index.html` 侧栏菜单树对齐；页面元数据见 `features/index.js` 的 `pageMeta`。
+
 ```
 static/
 ├── index.html                       # SPA 入口（含 Tailwind CDN、全局脚本挂载点）
@@ -83,28 +85,27 @@ static/
 └── js/
     ├── main.js                      # 全局工具（HttpClient、esc、fmtNum、svgIcon、showToast）
     ├── app.js                       # SPA 入口（启动 Router、注册页面）
-    ├── router.js                    # 轻量 Hash 路由（基于 Router 类）
-    └── features/                    # 业务功能模块（页面 = 一个目录）
-        ├── index.js                 # 导出 pageMeta（页面标题、面包屑元数据）
-        ├── dashboard/
-        │   ├── index.js             # 页面逻辑（导出具名对象，如 DashboardPage）
-        │   └── template.js          # HTML 模板字符串
-        ├── stamping/
-        │   ├── upload/
-        │   │   ├── index.js
-        │   │   └── template.js
-        │   └── parts/
-        │       ├── index.js
-        │       └── template.js
-        ├── costing/
-        │   ├── index.js
-        │   └── template.js
+    ├── permissions.js               # can / canAccessPage / 侧栏过滤
+    └── features/                    # 业务功能模块（对齐菜单树）
+        ├── index.js                 # 导出 pageMeta
+        ├── dashboard/               # 仪表盘
+        ├── stamping/                # 冲压工程
+        │   ├── process/{upload,parts}
+        │   ├── tonnage/{upload,list}
+        │   └── process-fee/{calc,list}
+        ├── yishiyiyi/               # 一事一议
+        │   ├── policy/{upload,list}
+        │   ├── base-price/{upload,list}
+        │   ├── winning-thickness/list/
+        │   └── scrap-price/
+        ├── bom/material/{upload,structure,viz}
+        ├── costing/                 # 核价
+        │   ├── steel-price/{calc,list}
+        │   ├── stamping-part-cost/{calc,list}
+        │   └── engine/              # 自动核价引擎
         ├── quotation/
-        │   ├── index.js
-        │   └── template.js
-        └── settings/
-            ├── index.js
-            └── template.js
+        ├── settings/{profile,system,users,logs}
+        └── login/                   # 独立登录页（不在侧栏）
 ```
 
 ### 2.1 路由名 → 页面映射
@@ -112,11 +113,27 @@ static/
 | Hash | 标题 | 对应模块 |
 |------|------|----------|
 | `#/dashboard` | 仪表盘 | `features/dashboard` |
-| `#/stamping/upload` | 上传工艺文件 | `features/stamping/upload` |
-| `#/stamping/parts` | 零件列表 | `features/stamping/parts` |
-| `#/costing` | 核价 | `features/costing` |
+| `#/stamping-upload` | 上传工艺文件 | `features/stamping/process/upload` |
+| `#/stamping-parts` | 冲压零件列表 | `features/stamping/process/parts` |
+| `#/stamping-tonnage-upload` | 冲次单价上传 | `features/stamping/tonnage/upload` |
+| `#/stamping-tonnage` | 冲次单价列表 | `features/stamping/tonnage/list` |
+| `#/stamping-process-fee-calc` | 冲压加工费计算 | `features/stamping/process-fee/calc` |
+| `#/stamping-process-fee` | 冲压加工费列表 | `features/stamping/process-fee/list` |
+| `#/steel-price-policy-upload` | 加减价政策上传 | `features/yishiyiyi/policy/upload` |
+| `#/steel-price-policy-download` | 加减价政策列表 | `features/yishiyiyi/policy/list` |
+| `#/base-price-upload` | 基准价格上传 | `features/yishiyiyi/base-price/upload` |
+| `#/base-price-download` | 基准价格列表 | `features/yishiyiyi/base-price/list` |
+| `#/winning-thickness-download` | 中标厚度一览 | `features/yishiyiyi/winning-thickness/list` |
+| `#/scrap-price` | 废料月度销售价 | `features/yishiyiyi/scrap-price` |
+| `#/bom-upload` | 上传材料清单 | `features/bom/material/upload` |
+| `#/bom-structure` | 产品结构 | `features/bom/material/structure` |
+| `#/steel-price-calc` | 钢材联动计算 | `features/costing/steel-price/calc` |
+| `#/steel-price-list` | 钢材联动价一览 | `features/costing/steel-price/list` |
+| `#/stamping-part-cost-calc` | 零件价格计算 | `features/costing/stamping-part-cost/calc` |
+| `#/stamping-part-cost` | 零件价格一览 | `features/costing/stamping-part-cost/list` |
+| `#/costing` | 自动核价引擎 | `features/costing/engine` |
 | `#/quotation` | 报价 | `features/quotation` |
-| `#/settings` | 系统设置 | `features/settings` |
+| `#/settings` | 系统设置 | `features/settings/system` |
 
 页面标题/面包屑唯一维护点在 `features/index.js` 的 `pageMeta`。`app.js` 渲染时读取并写入 `#pageTitle` / `#breadcrumbItem`。
 

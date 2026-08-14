@@ -1,15 +1,14 @@
 /**
- * 冲次单价上传页
- * 同步导入：基地 + 年度必选，仅 .xlsx
+ * BOM 材料清单上传页
+ * 仅负责 Excel 导入，不含列表 / 删除 / 树
  */
 
-import { tonnageUploadTemplate } from './template.js';
-import { can } from '../../../permissions.js?v=8';
+import { bomUploadTemplate } from './template.js';
+import { can } from '../../../../permissions.js?v=6';
 
-const API_BASE = '/api/stamping/tonnage-price';
-const MAX_FILE_SIZE = 5 * 1024 * 1024;
+const MAX_FILE_SIZE = 50 * 1024 * 1024;
 
-const TonnageUploadPage = {
+const BomUploadPage = {
     selectedFile: null,
     isUploading: false,
     canUpload: true,
@@ -21,47 +20,40 @@ const TonnageUploadPage = {
         this.bindEvents();
         this.hideProgress();
         this.clearSelectedFile(false);
-        this.fillDefaultYear();
     },
 
     applyPermissionUi() {
-        const canUpload = typeof can === 'function'
-            ? can('op:stamping-tonnage-upload:upload')
-            : true;
+        const canUpload = typeof can === 'function' ? can('op:bom-upload:upload') : true;
         this.canUpload = canUpload;
         if (canUpload) return;
 
-        document.getElementById('tonnageUploadSelectFileBtn')?.classList.add('hidden');
-        document.getElementById('tonnageUploadSubmitBtn')?.classList.add('hidden');
-        document.getElementById('tonnageUploadResetBtn')?.classList.add('hidden');
-        document.getElementById('tonnageUploadTemplateBtn')?.classList.add('hidden');
+        document.getElementById('bomUploadSelectFileBtn')?.classList.add('hidden');
+        document.getElementById('bomUploadSubmitBtn')?.classList.add('hidden');
+        document.getElementById('bomUploadResetBtn')?.classList.add('hidden');
 
-        const fileInput = document.getElementById('tonnageUploadFileInput');
+        const fileInput = document.getElementById('bomUploadFileInput');
         if (fileInput) {
             fileInput.disabled = true;
             fileInput.value = '';
         }
-        ['tonnageUploadLocation', 'tonnageUploadYear'].forEach((id) => {
-            const el = document.getElementById(id);
-            if (el) el.disabled = true;
-        });
+        const location = document.getElementById('bomUploadLocation');
+        if (location) location.disabled = true;
 
-        const zone = document.getElementById('tonnageUploadZone');
+        const zone = document.getElementById('bomUploadZone');
         if (zone) zone.classList.add('pointer-events-none', 'opacity-60');
 
-        const title = document.getElementById('tonnageUploadTitle');
-        const hint = document.getElementById('tonnageUploadHint');
+        const title = document.getElementById('bomUploadTitle');
+        const hint = document.getElementById('bomUploadHint');
         if (title) title.textContent = '无上传权限';
         if (hint) hint.textContent = '当前账号仅可查看本页，无法选择或上传文件';
     },
 
     bindEvents() {
-        const zone = document.getElementById('tonnageUploadZone');
-        const fileInput = document.getElementById('tonnageUploadFileInput');
-        const form = document.getElementById('tonnageUploadForm');
-        const selectBtn = document.getElementById('tonnageUploadSelectFileBtn');
-        const resetBtn = document.getElementById('tonnageUploadResetBtn');
-        const templateBtn = document.getElementById('tonnageUploadTemplateBtn');
+        const zone = document.getElementById('bomUploadZone');
+        const fileInput = document.getElementById('bomUploadFileInput');
+        const form = document.getElementById('bomUploadForm');
+        const selectBtn = document.getElementById('bomUploadSelectFileBtn');
+        const resetBtn = document.getElementById('bomUploadResetBtn');
 
         zone?.addEventListener('click', (event) => {
             if (this.canUpload === false || this.isUploading) return;
@@ -95,7 +87,6 @@ const TonnageUploadPage = {
         });
 
         resetBtn?.addEventListener('click', () => this.reset());
-        templateBtn?.addEventListener('click', () => this.downloadTemplate());
 
         form?.addEventListener('submit', (event) => {
             event.preventDefault();
@@ -103,28 +94,22 @@ const TonnageUploadPage = {
         });
     },
 
-    fillDefaultYear() {
-        const yearInput = document.getElementById('tonnageUploadYear');
-        if (yearInput && !yearInput.value) {
-            yearInput.value = String(new Date().getFullYear());
-        }
-    },
-
     selectFile(file) {
         if (!file || this.isUploading) return;
-        if (!file.name.toLowerCase().endsWith('.xlsx')) {
-            showToast('仅支持 .xlsx 文件', 'warning');
+        const lower = file.name.toLowerCase();
+        if (!lower.endsWith('.xlsx') && !lower.endsWith('.xls')) {
+            showToast('仅支持 .xlsx / .xls 文件', 'warning');
             return;
         }
         if (file.size > MAX_FILE_SIZE) {
-            showToast('文件过大，最大支持 5MB', 'warning');
+            showToast('文件过大，最大支持 50MB', 'warning');
             return;
         }
 
         this.hideProgress();
         this.selectedFile = file;
 
-        const preview = document.getElementById('tonnageUploadFilePreview');
+        const preview = document.getElementById('bomUploadFilePreview');
         if (preview) {
             preview.classList.remove('hidden');
             preview.innerHTML = `
@@ -137,30 +122,30 @@ const TonnageUploadPage = {
                 </div>`;
         }
 
-        const title = document.getElementById('tonnageUploadTitle');
+        const title = document.getElementById('bomUploadTitle');
         if (title) title.innerHTML = `<span class="text-[#2e7d32]">${esc(file.name)}</span> 已选择`;
 
-        const submitBtn = document.getElementById('tonnageUploadSubmitBtn');
+        const submitBtn = document.getElementById('bomUploadSubmitBtn');
         if (submitBtn) submitBtn.disabled = false;
     },
 
     clearSelectedFile(resetTitle = true) {
         this.selectedFile = null;
-        const input = document.getElementById('tonnageUploadFileInput');
+        const input = document.getElementById('bomUploadFileInput');
         if (input) input.value = '';
 
-        const preview = document.getElementById('tonnageUploadFilePreview');
+        const preview = document.getElementById('bomUploadFilePreview');
         if (preview) {
             preview.classList.add('hidden');
             preview.innerHTML = '';
         }
 
         if (resetTitle) {
-            const title = document.getElementById('tonnageUploadTitle');
+            const title = document.getElementById('bomUploadTitle');
             if (title) title.textContent = '拖拽文件到此处';
         }
 
-        const submitBtn = document.getElementById('tonnageUploadSubmitBtn');
+        const submitBtn = document.getElementById('bomUploadSubmitBtn');
         if (submitBtn) submitBtn.disabled = true;
     },
 
@@ -171,18 +156,15 @@ const TonnageUploadPage = {
         }
         this.hideProgress();
         this.clearSelectedFile(true);
-        const location = document.getElementById('tonnageUploadLocation');
-        const year = document.getElementById('tonnageUploadYear');
+        const location = document.getElementById('bomUploadLocation');
         if (location) location.value = '';
-        if (year) year.value = '';
-        this.fillDefaultYear();
     },
 
-    showProgress(msg = '解析并写入数据库，请稍候') {
-        const idle = document.getElementById('tonnageUploadDropIdle');
-        const panel = document.getElementById('tonnageUploadProgressPanel');
-        const zone = document.getElementById('tonnageUploadZone');
-        const progressMsg = document.getElementById('tonnageUploadProgressMsg');
+    showProgress(msg = '解析三级树并落盘简图，请稍候') {
+        const idle = document.getElementById('bomUploadDropIdle');
+        const panel = document.getElementById('bomUploadProgressPanel');
+        const zone = document.getElementById('bomUploadZone');
+        const progressMsg = document.getElementById('bomUploadProgressMsg');
         if (idle) idle.classList.add('hidden');
         if (panel) panel.classList.remove('hidden');
         if (zone) {
@@ -193,9 +175,9 @@ const TonnageUploadPage = {
     },
 
     hideProgress() {
-        const idle = document.getElementById('tonnageUploadDropIdle');
-        const panel = document.getElementById('tonnageUploadProgressPanel');
-        const zone = document.getElementById('tonnageUploadZone');
+        const idle = document.getElementById('bomUploadDropIdle');
+        const panel = document.getElementById('bomUploadProgressPanel');
+        const zone = document.getElementById('bomUploadZone');
         if (idle) idle.classList.remove('hidden');
         if (panel) panel.classList.add('hidden');
         if (zone) zone.classList.remove('pointer-events-none');
@@ -203,37 +185,12 @@ const TonnageUploadPage = {
 
     setUploading(isUploading) {
         this.isUploading = isUploading;
-        const submitBtn = document.getElementById('tonnageUploadSubmitBtn');
-        const resetBtn = document.getElementById('tonnageUploadResetBtn');
-        const templateBtn = document.getElementById('tonnageUploadTemplateBtn');
-        const location = document.getElementById('tonnageUploadLocation');
-        const year = document.getElementById('tonnageUploadYear');
+        const submitBtn = document.getElementById('bomUploadSubmitBtn');
+        const resetBtn = document.getElementById('bomUploadResetBtn');
+        const location = document.getElementById('bomUploadLocation');
         if (submitBtn) submitBtn.disabled = isUploading || !this.selectedFile;
         if (resetBtn) resetBtn.disabled = isUploading;
-        if (templateBtn) templateBtn.disabled = isUploading;
         if (location && this.canUpload) location.disabled = isUploading;
-        if (year && this.canUpload) year.disabled = isUploading;
-    },
-
-    async downloadTemplate() {
-        try {
-            const { blob, filename } = await HttpClient.download(`${API_BASE}/template`, {
-                defaultFilename: '冲次单价导入模板.xlsx',
-            });
-            const url = window.URL.createObjectURL(blob);
-            const anchor = document.createElement('a');
-            anchor.href = url;
-            anchor.download = filename;
-            document.body.appendChild(anchor);
-            anchor.click();
-            document.body.removeChild(anchor);
-            window.URL.revokeObjectURL(url);
-            showToast('模板已下载', 'success');
-        } catch (error) {
-            if (!error.status) {
-                showToast(error.message || '模板下载失败', 'error');
-            }
-        }
     },
 
     async submit() {
@@ -243,15 +200,9 @@ const TonnageUploadPage = {
         }
         if (this.isUploading) return;
 
-        const location = document.getElementById('tonnageUploadLocation')?.value?.trim();
-        const yearRaw = document.getElementById('tonnageUploadYear')?.value?.trim();
-
+        const location = document.getElementById('bomUploadLocation')?.value?.trim();
         if (!location) {
             showToast('请选择采购基地', 'warning');
-            return;
-        }
-        if (!yearRaw || !/^\d{4}$/.test(yearRaw)) {
-            showToast('请填写正确的年度（4位年份）', 'warning');
             return;
         }
         if (!this.selectedFile) {
@@ -261,21 +212,22 @@ const TonnageUploadPage = {
 
         const formData = new FormData();
         formData.append('location', location);
-        formData.append('year', yearRaw);
         formData.append('file', this.selectedFile);
 
         this.setUploading(true);
         this.showProgress();
 
         try {
-            const res = await HttpClient.post(`${API_BASE}/upload`, formData);
+            const res = await HttpClient.post('/api/bom/upload', formData);
             const data = res.data || {};
             const msg = res.message
                 || data.message
-                || `导入成功：新增 ${data.created_count ?? 0}，更新 ${data.updated_count ?? 0}`;
+                || `导入成功：${data.node_count ?? '-'} 个节点`;
             showToast(msg, 'success');
             this.hideProgress();
             this.clearSelectedFile(true);
+            const loc = document.getElementById('bomUploadLocation');
+            if (loc) loc.value = location;
         } catch (err) {
             this.hideProgress();
             showToast(err.message || '导入失败', 'error');
@@ -293,6 +245,6 @@ const TonnageUploadPage = {
 };
 
 export const pageConfig = {
-    render: tonnageUploadTemplate,
-    init: () => TonnageUploadPage.init(),
+    render: bomUploadTemplate,
+    init: () => BomUploadPage.init(),
 };

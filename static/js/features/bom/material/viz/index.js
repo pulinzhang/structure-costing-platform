@@ -5,7 +5,7 @@
  * 自上而下层级树：父子关系 + 用量 + 制造类别。
  */
 
-import { can } from '../../../permissions.js?v=8';
+import { can } from '../../../../permissions.js?v=8';
 import { bomVizTemplate } from './template.js?v=3';
 
 /** 布局常量（保证同层不重叠、标签不挤） */

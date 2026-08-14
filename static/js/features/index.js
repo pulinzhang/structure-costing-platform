@@ -1,22 +1,53 @@
 /**
  * Features Module Index
- * 功能模块导出
+ * 功能模块导出 / 页面元数据
  *
- * 目录结构说明：
- * features/           : 功能模块目录
- *   ├── dashboard/    : 仪表盘
- *   ├── stamping/    : 冲压相关功能
- *   │   ├── upload/  : 上传工艺文件
- *   │   └── parts/   : 冲压零件列表
- *   ├── quotation/   : 报价
- *   ├── bom/         : BOM 材料清单
- *   │   ├── structure/ : 产品结构（Project / Assemblies）
- *   │   ├── viz/     : Assembly Workspace
- *   │   └── upload/  : 上传材料清单
- *   ├── costing/     : 核价
- *   └── settings/    : 系统设置
+ * 目录结构与 static/index.html 左侧菜单树对齐：
  *
- * 每个功能目录下：
+ * features/
+ * ├── dashboard/                 # 仪表盘
+ * ├── stamping/                  # 冲压工程
+ * │   ├── process/               # 冲压工艺
+ * │   │   ├── upload/            # 上传工艺文件
+ * │   │   └── parts/             # 冲压零件列表
+ * │   ├── tonnage/               # 冲次单价
+ * │   │   ├── upload/
+ * │   │   └── list/
+ * │   └── process-fee/           # 冲压加工费
+ * │       ├── calc/
+ * │       └── list/
+ * ├── yishiyiyi/                 # 一事一议
+ * │   ├── policy/                # 加减价政策
+ * │   │   ├── upload/
+ * │   │   └── list/
+ * │   ├── base-price/            # 基准价格
+ * │   │   ├── upload/
+ * │   │   └── list/
+ * │   ├── winning-thickness/     # 中标钢厂厚度价格一览表
+ * │   │   └── list/
+ * │   └── scrap-price/           # 废料月度销售价
+ * ├── bom/                       # BOM
+ * │   └── material/              # 材料清单
+ * │       ├── upload/
+ * │       ├── structure/
+ * │       └── viz/
+ * ├── costing/                   # 核价
+ * │   ├── steel-price/           # 冲压钢材联动价
+ * │   │   ├── calc/
+ * │   │   └── list/
+ * │   ├── stamping-part-cost/    # 冲压零件价格核算
+ * │   │   ├── calc/
+ * │   │   └── list/
+ * │   └── engine/                # 自动核价引擎
+ * ├── quotation/                 # 报价
+ * ├── settings/                  # 设置
+ * │   ├── profile/
+ * │   ├── system/
+ * │   ├── users/
+ * │   └── logs/
+ * └── login/                     # 登录（独立页，不在侧栏）
+ *
+ * 每个页面目录：
  *   ├── template.js  : HTML 模板
  *   └── index.js     : 页面逻辑 + pageConfig 导出
  */

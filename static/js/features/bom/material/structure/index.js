@@ -4,7 +4,7 @@
  * Phase B：L0 Assembly Selection（#/bom-structure?snapshot_id=）
  */
 
-import { can } from '../../../permissions.js?v=8';
+import { can } from '../../../../permissions.js?v=8';
 import { bomStructureTemplate } from './template.js?v=3';
 
 const bomStructureState = {

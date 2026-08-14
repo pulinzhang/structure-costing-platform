@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal
 from io import BytesIO
 from typing import Any, Literal
 
@@ -13,8 +13,25 @@ from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from sqlalchemy.orm import Session
 
 from app.repositories.bom.bom_repository import BomNodeRepository, BomSnapshotRepository
+from app.repositories.stamping.scrap_price_repository import StampingScrapPriceRepository
+from app.repositories.stamping.stamping_process_fee_repository import (
+    StampingProcessFeeRepository,
+)
 from app.repositories.stamping_part_cost.stamping_part_cost_repository import (
     StampingPartCostRepository,
+)
+from app.repositories.steel_price.steel_price_repository import SteelPriceRepository
+from app.services.stamping_part_cost.helpers import (
+    DEFAULT_MATERIAL_LOSS_RATE,
+    DEFAULT_SCRAP_RECOVERY_RATE,
+    DEFAULT_STEEL_DENSITY,
+    format_number as _num,
+    format_process_fee_trace,
+    format_scrap_price_trace,
+    format_steel_price_excel_trace,
+    location_candidates,
+    part_excel_row_col,
+    to_decimal,
 )
 
 
@@ -35,14 +52,9 @@ _THIN = Border(
     bottom=Side(style="thin", color="333333"),
 )
 
-
-def _num(value: Any, digits: int | None = None):
-    if value is None:
-        return ""
-    number = float(value)
-    if digits is None:
-        return number
-    return round(number, digits)
+_WEAK_HEADER_FILL = PatternFill("solid", fgColor="455A64")
+_WEAK_HEADER_FONT = Font(name="微软雅黑", size=8, bold=True, color="B0BEC5")
+_WEAK_DATA_FONT = Font(name="微软雅黑", size=8, color="9E9E9E")
 
 
 def _dt(value: Any) -> str:
@@ -51,34 +63,12 @@ def _dt(value: Any) -> str:
     return value.strftime("%Y-%m-%d %H:%M:%S") if hasattr(value, "strftime") else str(value)
 
 
-def _to_decimal(value: Any) -> Decimal | None:
-    if value is None or value == "":
-        return None
-    try:
-        return Decimal(str(value))
-    except (InvalidOperation, ValueError, TypeError):
-        return None
-
-
 def _formula_number(value: Decimal) -> str:
     """写入公式的小数，去掉多余尾零。"""
     text = format(value, "f")
     if "." in text:
         text = text.rstrip("0").rstrip(".")
     return text or "0"
-
-
-def _location_candidates(location: str) -> list[str]:
-    """兼容「青岛」与「青岛基地」。"""
-    loc = (location or "").strip()
-    if not loc:
-        return []
-    candidates = [loc]
-    if loc.endswith("基地"):
-        candidates.append(loc[:-2])
-    else:
-        candidates.append(f"{loc}基地")
-    return list(dict.fromkeys(candidates))
 
 
 def _build_part_to_l0_map(nodes: list) -> dict[str, str]:
@@ -123,6 +113,9 @@ class StampingPartCostExportService:
         self.repository = StampingPartCostRepository()
         self.bom_snapshot_repo = BomSnapshotRepository()
         self.bom_node_repo = BomNodeRepository()
+        self.steel_price_repo = SteelPriceRepository()
+        self.scrap_price_repo = StampingScrapPriceRepository()
+        self.process_fee_repo = StampingProcessFeeRepository()
 
     def export(
         self,
@@ -150,7 +143,7 @@ class StampingPartCostExportService:
             audit_status=audit_status,
         )
         if export_format == "detail":
-            return self._export_detail(rows)
+            return self._export_detail(db, rows)
         return self._export_process_sheet(db, rows)
 
     def _resolve_assembly_supply_no(
@@ -183,7 +176,7 @@ class StampingPartCostExportService:
 
         # 1) 精确版本
         if bom_version:
-            for candidate_location in _location_candidates(loc):
+            for candidate_location in location_candidates(loc):
                 key = (candidate_location, model, bom_version)
                 if key in snapshot_l0_cache:
                     part_to_l0 = snapshot_l0_cache[key]
@@ -206,7 +199,7 @@ class StampingPartCostExportService:
 
         # 2) 同车型最新 BOM 回退
         if part_to_l0 is None or (part_to_l0 is not None and pn not in part_to_l0):
-            for candidate_location in _location_candidates(loc):
+            for candidate_location in location_candidates(loc):
                 fallback_key = (candidate_location, model, "__latest__")
                 if fallback_key in snapshot_l0_cache:
                     fallback_map = snapshot_l0_cache[fallback_key]
@@ -253,13 +246,21 @@ class StampingPartCostExportService:
 
     def _export_process_sheet(self, db: Session, rows: list) -> tuple[bytes, str]:
         """
-        工艺清单口径（无溯源）：对齐样例至 R 列 + 加工费 + 最终价。
+        工艺清单口径：对齐样例至 R 列 + 加工费 + 最终价。
         一行一个零件，M/N/O/I/R/最终价保留 Excel 公式。
         总成供货号：同基地 BOM 上溯 L0；多总成时逗号分隔。
+        末尾 U~Z 为人可读溯源（核对/手工补填），AA~AC 为关联 ID（钢材/废料/加工费）。
         """
         workbook = Workbook()
         sheet = workbook.active
         sheet.title = "单件"
+
+        last_col = 29  # AC
+        last_col_letter = "AC"
+        trace_cols = frozenset(
+            {"U", "V", "W", "X", "Y", "Z", "AA", "AB", "AC"}
+        )
+        id_cols = frozenset({"AA", "AB", "AC"})
 
         # —— 样式 ——
         thin = Border(
@@ -272,7 +273,9 @@ class StampingPartCostExportService:
         meta_font = Font(name="微软雅黑", size=9, color="666666")
         group_font = Font(name="微软雅黑", size=10, bold=True, color="FFFFFF")
         header_font = Font(name="微软雅黑", size=9, bold=True, color="1F1F1F")
+        weak_header_font = Font(name="微软雅黑", size=8, bold=True, color="757575")
         data_font = Font(name="微软雅黑", size=9, color="000000")
+        weak_data_font = Font(name="微软雅黑", size=8, color="9E9E9E")
         accent_font = Font(name="微软雅黑", size=9, bold=True, color="C62828")
 
         fill_title = PatternFill("solid", fgColor="F5F5F5")
@@ -281,8 +284,11 @@ class StampingPartCostExportService:
         fill_group_process = PatternFill("solid", fgColor="1565C0")
         fill_group_fee = PatternFill("solid", fgColor="2E7D32")
         fill_group_final = PatternFill("solid", fgColor="C62828")
+        fill_group_trace = PatternFill("solid", fgColor="78909C")
         fill_header = PatternFill("solid", fgColor="ECEFF1")
+        fill_header_trace = PatternFill("solid", fgColor="ECEFF1")
         fill_zebra = PatternFill("solid", fgColor="FAFAFA")
+        fill_zebra_trace = PatternFill("solid", fgColor="F5F5F5")
         fill_result = PatternFill("solid", fgColor="FFF3E0")
         fill_final = PatternFill("solid", fgColor="FFEBEE")
 
@@ -305,9 +311,9 @@ class StampingPartCostExportService:
                 meta_parts.append(str(sample.location))
             if sample.stamping_supplier:
                 meta_parts.append(str(sample.stamping_supplier))
-            density = _to_decimal(getattr(sample, "density", None))
-            loss_rate = _to_decimal(getattr(sample, "material_loss_rate", None))
-            recovery = _to_decimal(getattr(sample, "scrap_recovery_rate", None))
+            density = to_decimal(getattr(sample, "density", None))
+            loss_rate = to_decimal(getattr(sample, "material_loss_rate", None))
+            recovery = to_decimal(getattr(sample, "scrap_recovery_rate", None))
             if density is not None:
                 density_text = _formula_number(density)
             if loss_rate is not None:
@@ -331,24 +337,27 @@ class StampingPartCostExportService:
         )
 
         # Row 1 标题
-        sheet.merge_cells("A1:T1")
+        sheet.merge_cells(f"A1:{last_col_letter}1")
         title_cell = sheet["A1"]
         title_cell.value = "冲压零件工艺清单核价"
         title_cell.font = title_font
         title_cell.fill = fill_title
         title_cell.alignment = Alignment(horizontal="left", vertical="center")
-        for col in range(1, 21):
+        for col in range(1, last_col + 1):
             sheet.cell(1, col).fill = fill_title
             sheet.cell(1, col).border = thin
         sheet.row_dimensions[1].height = 28
 
         # Row 2 说明
-        sheet.merge_cells("A2:T2")
+        sheet.merge_cells(f"A2:{last_col_letter}2")
         meta_cell = sheet["A2"]
-        meta_cell.value = f"{meta_text}　|　共 {len(rows)} 件　|　{formula_hint}"
+        meta_cell.value = (
+            f"{meta_text}　|　共 {len(rows)} 件　|　{formula_hint}"
+            f"　|　U~Z 人可读溯源可核对/补填；AA~AC 为关联 ID"
+        )
         meta_cell.font = meta_font
         meta_cell.alignment = Alignment(horizontal="left", vertical="center", wrap_text=True)
-        for col in range(1, 21):
+        for col in range(1, last_col + 1):
             sheet.cell(2, col).fill = fill_title
             sheet.cell(2, col).border = thin
         sheet.row_dimensions[2].height = 48
@@ -360,6 +369,8 @@ class StampingPartCostExportService:
             range(10, 19): fill_group_process,
             range(19, 20): fill_group_fee,
             range(20, 21): fill_group_final,
+            range(21, 27): fill_group_trace,
+            range(27, 30): fill_group_trace,
         }
         for merge_range, label in (
             ("A3:B3", "标识"),
@@ -367,13 +378,15 @@ class StampingPartCostExportService:
             ("J3:R3", "工艺清单（材料）"),
             ("S3:S3", "加工费"),
             ("T3:T3", "最终价"),
+            ("U3:Z3", "溯源"),
+            ("AA3:AC3", "关联ID"),
         ):
             sheet.merge_cells(merge_range)
             cell = sheet[merge_range.split(":")[0]]
             cell.value = label
             cell.font = group_font
             cell.alignment = center
-        for col in range(1, 21):
+        for col in range(1, last_col + 1):
             cell = sheet.cell(3, col)
             cell.border = thin
             cell.font = group_font
@@ -406,12 +419,22 @@ class StampingPartCostExportService:
             ("R", "原材料成本"),
             ("S", "加工费"),
             ("T", "最终价"),
+            ("U", "来源Excel"),
+            ("V", "工作表"),
+            ("W", "行/列"),
+            ("X", "钢材价溯源"),
+            ("Y", "废料价溯源"),
+            ("Z", "加工费溯源"),
+            ("AA", "钢材价ID"),
+            ("AB", "废料价ID"),
+            ("AC", "加工费ID"),
         ]
         for col_letter, title in headers:
             cell = sheet[f"{col_letter}4"]
             cell.value = title
-            cell.font = header_font
-            cell.fill = fill_header
+            is_trace = col_letter in trace_cols
+            cell.font = weak_header_font if is_trace else header_font
+            cell.fill = fill_header_trace if is_trace else fill_header
             cell.alignment = center
             cell.border = thin
         sheet.row_dimensions[4].height = 40
@@ -424,17 +447,52 @@ class StampingPartCostExportService:
         text_left_cols = {"B", "C", "D", "E", "F", "I"}
         snapshot_l0_cache: dict[tuple[str, str, str], dict[str, str]] = {}
 
+        steel_ids = sorted(
+            {
+                int(row.steel_price_id)
+                for row in rows
+                if row.steel_price_id is not None
+            }
+        )
+        steel_by_id = {
+            steel.id: steel
+            for steel in self.steel_price_repo.list_by_ids(db, steel_ids)
+        }
+        scrap_ids = sorted(
+            {
+                int(row.scrap_price_id)
+                for row in rows
+                if row.scrap_price_id is not None
+            }
+        )
+        scrap_by_id = {
+            scrap.id: scrap
+            for scrap in self.scrap_price_repo.list_by_ids(db, scrap_ids)
+        }
+        fee_ids = sorted(
+            {
+                int(row.process_fee_id)
+                for row in rows
+                if row.process_fee_id is not None
+            }
+        )
+        fee_by_id = {
+            fee.id: fee for fee in self.process_fee_repo.list_by_ids(db, fee_ids)
+        }
+
         for offset, row in enumerate(rows):
             excel_row = data_start + offset
-            density = _to_decimal(getattr(row, "density", None)) or Decimal("7.85")
-            loss_rate = _to_decimal(getattr(row, "material_loss_rate", None)) or Decimal(
-                "0.003"
+            density = to_decimal(getattr(row, "density", None)) or DEFAULT_STEEL_DENSITY
+            loss_rate = (
+                to_decimal(getattr(row, "material_loss_rate", None))
+                or DEFAULT_MATERIAL_LOSS_RATE
             )
-            recovery = _to_decimal(getattr(row, "scrap_recovery_rate", None)) or Decimal(
-                "0.97"
+            recovery = (
+                to_decimal(getattr(row, "scrap_recovery_rate", None))
+                or DEFAULT_SCRAP_RECOVERY_RATE
             )
-            steel_ton = _to_decimal(row.steel_ton_price)
-            scrap_ton = _to_decimal(row.scrap_ton_price)
+            steel_ton = to_decimal(row.steel_ton_price)
+            scrap_ton = to_decimal(row.scrap_ton_price)
             steel_kg = (steel_ton / Decimal("1000")) if steel_ton is not None else None
             scrap_kg = (scrap_ton / Decimal("1000")) if scrap_ton is not None else None
             assembly_supply_no = self._resolve_assembly_supply_no(
@@ -480,24 +538,73 @@ class StampingPartCostExportService:
                     else ""
                 ),
                 "T": f"=R{excel_row}+S{excel_row}",
+                "U": row.excel_filename or "",
+                "V": row.excel_sheet_name or "",
+                "W": part_excel_row_col(row),
+                "X": format_steel_price_excel_trace(
+                    steel_by_id.get(row.steel_price_id)
+                    if row.steel_price_id is not None
+                    else None
+                ),
+                "Y": format_scrap_price_trace(
+                    scrap_by_id.get(row.scrap_price_id)
+                    if row.scrap_price_id is not None
+                    else None
+                ),
+                "Z": format_process_fee_trace(
+                    fee_by_id.get(row.process_fee_id)
+                    if row.process_fee_id is not None
+                    else None
+                ),
+                "AA": (
+                    row.steel_price_id
+                    if row.steel_price_id is not None
+                    else ""
+                ),
+                "AB": (
+                    row.scrap_price_id
+                    if row.scrap_price_id is not None
+                    else ""
+                ),
+                "AC": (
+                    row.process_fee_id
+                    if row.process_fee_id is not None
+                    else ""
+                ),
             }
 
             zebra = offset % 2 == 1
             for col_letter, value in values.items():
                 cell = sheet[f"{col_letter}{excel_row}"]
                 cell.value = value
-                cell.font = (
-                    accent_font if col_letter in final_cols else data_font
-                )
+                is_trace = col_letter in trace_cols
+                if is_trace:
+                    cell.font = weak_data_font
+                elif col_letter in final_cols:
+                    cell.font = accent_font
+                else:
+                    cell.font = data_font
                 cell.border = thin
                 if col_letter in final_cols:
                     cell.fill = fill_final
                 elif col_letter in result_cols:
                     cell.fill = fill_result
+                elif is_trace:
+                    cell.fill = (
+                        fill_zebra_trace
+                        if zebra
+                        else PatternFill("solid", fgColor="FFFFFF")
+                    )
                 elif zebra:
                     cell.fill = fill_zebra
 
-                if col_letter in text_left_cols:
+                if col_letter in {"X", "Y", "Z"}:
+                    cell.alignment = Alignment(
+                        horizontal="left", vertical="center", wrap_text=True
+                    )
+                elif col_letter in id_cols:
+                    cell.alignment = center
+                elif col_letter in text_left_cols or col_letter in {"U", "V"}:
                     cell.alignment = left
                 elif col_letter in number_cols or col_letter == "A":
                     cell.alignment = right if col_letter != "A" else center
@@ -515,8 +622,14 @@ class StampingPartCostExportService:
                     cell.number_format = "0.0000"
                 elif col_letter == "L":
                     cell.number_format = "0"
+                elif col_letter in id_cols:
+                    cell.number_format = "0"
 
-            sheet.row_dimensions[excel_row].height = 18
+            multi_line = any(
+                isinstance(values.get(col), str) and "\n" in values[col]
+                for col in ("X", "Y", "Z")
+            )
+            sheet.row_dimensions[excel_row].height = 52 if multi_line else 18
 
         widths = {
             "A": 6,
@@ -539,6 +652,15 @@ class StampingPartCostExportService:
             "R": 12,
             "S": 10,
             "T": 11,
+            "U": 28,
+            "V": 14,
+            "W": 8,
+            "X": 42,
+            "Y": 28,
+            "Z": 36,
+            "AA": 10,
+            "AB": 10,
+            "AC": 10,
         }
         for col, width in widths.items():
             sheet.column_dimensions[col].width = width
@@ -546,7 +668,7 @@ class StampingPartCostExportService:
         last_data_row = data_start + len(rows) - 1 if rows else 4
         sheet.freeze_panes = "D5"  # 冻结至零件号列（A~C：序号/总成供货号/零件号）
         if rows:
-            sheet.auto_filter.ref = f"A4:T{last_data_row}"
+            sheet.auto_filter.ref = f"A4:{last_col_letter}{last_data_row}"
         sheet.print_title_rows = "1:4"
         sheet.page_setup.orientation = "landscape"
         sheet.page_setup.fitToPage = True
@@ -599,6 +721,17 @@ class StampingPartCostExportService:
             ("R", "原材料成本", "R = ① − ② − ③"),
             ("S", "加工费", "元/件；取自加工费核算结果"),
             ("最终价", "单件制件价格", "R + S"),
+            (
+                "U~Z",
+                "溯源（弱化）",
+                "按文件/表/行定位核对；钢材含基价·厚度·宽度·锌层；废料为基地年月净价；"
+                "加工费为工艺文件+工序依据。单元格可手工补填。",
+            ),
+            (
+                "AA~AC",
+                "关联ID（弱化）",
+                "钢材价ID / 废料价ID / 加工费ID，供系统回链关联展示。",
+            ),
         ]
         for idx, (symbol, name, desc) in enumerate(note_rows, start=5):
             note.cell(idx, 1, symbol).font = note_font
@@ -622,8 +755,8 @@ class StampingPartCostExportService:
         logger.info("导出工艺清单格式 %s 条 → %s", len(rows), filename)
         return buffer.getvalue(), filename
 
-    def _export_detail(self, rows: list) -> tuple[bytes, str]:
-        """明细导出（含溯源/审核字段）。"""
+    def _export_detail(self, db: Session, rows: list) -> tuple[bytes, str]:
+        """明细导出：业务字段 + 末尾弱化溯源/关联 ID + 审核元数据。"""
         workbook = Workbook()
         sheet = workbook.active
         sheet.title = "零件价格核算"
@@ -643,9 +776,9 @@ class StampingPartCostExportService:
             "料片长",
             "料片宽",
             "可制件数",
-            "密度",
-            "材料损耗率",
-            "废料回收率",
+            "密度ρ_steel",
+            "材料损耗率λ",
+            "废料回收率η",
             "材料消耗M kg",
             "净重H kg",
             "废料重量O kg",
@@ -654,8 +787,8 @@ class StampingPartCostExportService:
             "钢材吨价",
             "废料吨价",
             "①钢材采购 M×P×(1+λ)",
-            "②损耗废料扣除 M×λ×ρ×Q",
-            "③边角废料扣除 O×ρ×Q",
+            "②损耗废料扣除 M×λ×η×Q",
+            "③边角废料扣除 O×η×Q",
             "废料扣除合计 ②+③",
             "原材料成本R ①−②−③",
             "加工费",
@@ -666,15 +799,63 @@ class StampingPartCostExportService:
             "计算批次",
             "公式版本",
             "计算时间",
+            # 溯源（弱化）
+            "来源Excel",
+            "工作表",
+            "行/列",
+            "钢材价溯源",
+            "废料价溯源",
+            "加工费溯源",
+            "钢材价ID",
+            "废料价ID",
+            "加工费ID",
         ]
+        weak_from_col = 38  # 来源Excel 起
         header_fill = PatternFill("solid", fgColor="1E1E1E")
         header_font = Font(color="FFFFFF", bold=True, size=10)
         for col, title in enumerate(headers, start=1):
             cell = sheet.cell(1, col, title)
-            cell.fill = header_fill
-            cell.font = header_font
-            cell.alignment = Alignment(horizontal="center")
+            if col >= weak_from_col:
+                cell.fill = _WEAK_HEADER_FILL
+                cell.font = _WEAK_HEADER_FONT
+            else:
+                cell.fill = header_fill
+                cell.font = header_font
+            cell.alignment = Alignment(horizontal="center", wrap_text=True)
             cell.border = _THIN
+
+        steel_ids = sorted(
+            {
+                int(row.steel_price_id)
+                for row in rows
+                if row.steel_price_id is not None
+            }
+        )
+        steel_by_id = {
+            steel.id: steel
+            for steel in self.steel_price_repo.list_by_ids(db, steel_ids)
+        }
+        scrap_ids = sorted(
+            {
+                int(row.scrap_price_id)
+                for row in rows
+                if row.scrap_price_id is not None
+            }
+        )
+        scrap_by_id = {
+            scrap.id: scrap
+            for scrap in self.scrap_price_repo.list_by_ids(db, scrap_ids)
+        }
+        fee_ids = sorted(
+            {
+                int(row.process_fee_id)
+                for row in rows
+                if row.process_fee_id is not None
+            }
+        )
+        fee_by_id = {
+            fee.id: fee for fee in self.process_fee_repo.list_by_ids(db, fee_ids)
+        }
 
         for row_index, row in enumerate(rows, start=2):
             values = [
@@ -715,12 +896,42 @@ class StampingPartCostExportService:
                 row.calc_batch_id or "",
                 row.formula_version or "",
                 _dt(row.calculated_at),
+                row.excel_filename or "",
+                row.excel_sheet_name or "",
+                part_excel_row_col(row),
+                format_steel_price_excel_trace(
+                    steel_by_id.get(row.steel_price_id)
+                    if row.steel_price_id is not None
+                    else None
+                ),
+                format_scrap_price_trace(
+                    scrap_by_id.get(row.scrap_price_id)
+                    if row.scrap_price_id is not None
+                    else None
+                ),
+                format_process_fee_trace(
+                    fee_by_id.get(row.process_fee_id)
+                    if row.process_fee_id is not None
+                    else None
+                ),
+                row.steel_price_id if row.steel_price_id is not None else "",
+                row.scrap_price_id if row.scrap_price_id is not None else "",
+                row.process_fee_id if row.process_fee_id is not None else "",
             ]
             for col, value in enumerate(values, start=1):
                 cell = sheet.cell(row_index, col, value)
                 cell.border = _THIN
-                cell.alignment = Alignment(vertical="center")
+                if col >= weak_from_col:
+                    cell.font = _WEAK_DATA_FONT
+                    cell.alignment = Alignment(
+                        vertical="center",
+                        wrap_text=col in {41, 42, 43},
+                    )
+                else:
+                    cell.alignment = Alignment(vertical="center")
 
+        sheet.freeze_panes = "A2"
+        sheet.row_dimensions[1].height = 32
         buffer = BytesIO()
         workbook.save(buffer)
         stamp = datetime.now().strftime("%Y%m%d_%H%M%S")

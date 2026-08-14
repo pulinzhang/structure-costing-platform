@@ -2,7 +2,7 @@
  * 冲压零件价格一览
  */
 
-import { partCostListTemplate, renderCostPagination } from './template.js?v=9';
+import { partCostListTemplate, renderCostPagination } from './template.js?v=11';
 
 const API_BASE = '/api/stamping/part-costs';
 const CASCADE_API = '/api/stamping/filters/cascade';

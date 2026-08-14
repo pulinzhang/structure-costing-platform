@@ -2,21 +2,20 @@
 冲压零件价格核算服务
 
 奇瑞核价口径（对齐工艺清单「单件」表 M/O/R 列）：
-  M  blank_kg   = L × W × T × density / 1e6 / parts_per_sheet
+  M  blank_kg   = L × W × T × ρ_steel / 1e6 / parts_per_sheet
   O  scrap_kg   = M − part_weight
   N  util_%     = part_weight / M × 100
 
   R  原材料成本（单件）=
       ① M×(steel_ton/1000)×(1+λ)
-    − ② M×λ×ρ×(scrap_ton/1000)
-    − ③ O×ρ×(scrap_ton/1000)
+    − ② M×λ×η×(scrap_ton/1000)
+    − ③ O×η×(scrap_ton/1000)
 
-  即：M×P×(1+λ) − M×λ×ρ×Q − O×ρ×Q（P/Q 为元/kg）
+  即：M×P×(1+λ) − M×λ×η×Q − O×η×Q（P/Q 为元/kg）
   unit_cost = R + process_fee
 
 三项分列落库：material_amount_sheet / loss_scrap_deduction / process_scrap_deduction。
-密度 / 损耗率 / 废料回收率从系统配置读取；
-缺失时回退 7.85 / 0.003 / 0.97。
+ρ_steel / λ / η 从系统配置读取；缺失时回退 7.85 / 0.003 / 0.97。
 重量过程量不做中间四舍五入，与 Excel 公式结果一致。
 """
 
@@ -71,6 +70,10 @@ from app.schemas.vo.stamping_part_cost_vo import (
 )
 from app.schemas.vo.user_vo import UserVO
 from app.services.settings.settings_service import SettingsService
+from app.services.stamping_part_cost.helpers import (
+    location_candidates,
+    to_decimal,
+)
 
 logger = logging.getLogger("service.stamping_part_cost")
 
@@ -96,28 +99,6 @@ def _require_scope(dto: StampingPartCostScopeDTO) -> tuple[str, str]:
     if not dto.year or not dto.month or not location or not supplier:
         raise BusinessException(SCOPE_REQUIRED_MESSAGE)
     return location, supplier
-
-
-def _location_candidates(location: str) -> list[str]:
-    """兼容「芜湖」与「芜湖基地」两种写法。"""
-    loc = (location or "").strip()
-    if not loc:
-        return []
-    candidates = [loc]
-    if loc.endswith("基地"):
-        candidates.append(loc[:-2])
-    else:
-        candidates.append(f"{loc}基地")
-    return list(dict.fromkeys(candidates))
-
-
-def _to_decimal(value) -> Decimal | None:
-    if value is None:
-        return None
-    try:
-        return Decimal(str(value))
-    except Exception:
-        return None
 
 
 def _quantize(value: Decimal, quant: Decimal) -> Decimal:
@@ -170,7 +151,7 @@ class StampingPartCostService:
         process_fee_count = 0
 
         if year and month and location_value:
-            for candidate in _location_candidates(location_value):
+            for candidate in location_candidates(location_value):
                 count = self.steel_repo.count_by_year_month_location(
                     db, year=year, month=month, location=candidate
                 )
@@ -525,7 +506,7 @@ class StampingPartCostService:
         year: int,
         month: int,
     ) -> StampingScrapPrice | None:
-        for candidate in _location_candidates(location):
+        for candidate in location_candidates(location):
             # 废料表通常存短名（芜湖）；优先短名
             short = candidate[:-2] if candidate.endswith("基地") else candidate
             record = self.scrap_repo.get_by_location_year_month(
@@ -551,7 +532,7 @@ class StampingPartCostService:
         thickness: Decimal,
     ) -> list[SteelPrice]:
         rows: list[SteelPrice] = []
-        for candidate in _location_candidates(location):
+        for candidate in location_candidates(location):
             matched = self.steel_repo.list_by_grade_thickness(
                 db,
                 year=year,
@@ -587,10 +568,10 @@ class StampingPartCostService:
                 reason="材质为空，无法匹配钢材联动价",
             )
 
-        sheet_length = _to_decimal(part.sheet_length)
-        sheet_width = _to_decimal(part.sheet_width)
-        thickness = _to_decimal(part.thickness)
-        part_weight = _to_decimal(part.part_weight)
+        sheet_length = to_decimal(part.sheet_length)
+        sheet_width = to_decimal(part.sheet_width)
+        thickness = to_decimal(part.thickness)
+        part_weight = to_decimal(part.part_weight)
         parts_per_sheet = part.parts_per_sheet
 
         if (
@@ -688,7 +669,7 @@ class StampingPartCostService:
         )
 
         # 对齐 Excel R 三项分列：
-        # ① M×P×(1+λ)  ② M×λ×ρ×Q  ③ O×ρ×Q   （P/Q=元/kg=吨价/1000）
+        # ① M×P×(1+λ)  ② M×λ×η×Q  ③ O×η×Q   （P/Q=元/kg=吨价/1000）
         kg_scale = Decimal("1000")
         steel_kg_price = steel_ton_price / kg_scale
         scrap_kg_price = scrap_ton_price / kg_scale
@@ -882,16 +863,7 @@ class StampingPartCostService:
 
     def list_years(self, db: Session) -> list[int]:
         years = set(self.cost_repo.get_distinct_years(db))
-        steel_years = [
-            r[0]
-            for r in (
-                db.query(SteelPrice.year)
-                .distinct()
-                .order_by(SteelPrice.year.desc())
-                .all()
-            )
-        ]
-        years.update(steel_years)
+        years.update(self.steel_repo.list_distinct_years(db))
         return sorted(years, reverse=True)
 
     def list_locations(self, db: Session, year: int | None = None) -> list[str]:

@@ -363,7 +363,7 @@ def export_download(
     audit_status: str | None = Query(None, description="审核状态"),
     export_format: str = Query(
         "process_sheet",
-        description="process_sheet=工艺清单公式格式；detail=含溯源明细",
+        description="process_sheet=工艺清单公式格式；detail=明细（含溯源与关联ID）",
     ),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_PART_COST_EXPORT)),

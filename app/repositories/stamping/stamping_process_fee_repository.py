@@ -32,6 +32,17 @@ class StampingProcessFeeRepository:
             .first()
         )
 
+    def list_by_ids(self, db: Session, fee_ids: list[int]) -> list[StampingProcessFee]:
+        """按主键批量查询（含工序分项，供导出溯源）。"""
+        if not fee_ids:
+            return []
+        return (
+            db.query(StampingProcessFee)
+            .options(joinedload(StampingProcessFee.process_items))
+            .filter(StampingProcessFee.id.in_(fee_ids))
+            .all()
+        )
+
     def replace_items(
         self,
         db: Session,

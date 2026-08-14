@@ -2,13 +2,13 @@
 冲压零件价格核算结果表
 
 原材料净成本对齐工艺清单 R 列，三项严格分列存储：
-  R = M×P×(1+λ) − M×λ×ρ×Q − O×ρ×Q
+  R = M×P×(1+λ) − M×λ×η×Q − O×η×Q
   ① material_amount_sheet      = M×P×(1+λ)     钢材采购
-  ② loss_scrap_deduction      = M×λ×ρ×Q       损耗废料扣除
-  ③ process_scrap_deduction   = O×ρ×Q         边角废料扣除
+  ② loss_scrap_deduction      = M×λ×η×Q       损耗废料扣除
+  ③ process_scrap_deduction   = O×η×Q         边角废料扣除
   scrap_amount_sheet = ②+③（合计，便于兼容）
   material_net_per_part = ①−②−③
-密度 / 损耗率 / 废料回收率来自系统配置快照（默认 7.85 / 0.003 / 0.97）。
+ρ_steel / λ / η 来自系统配置快照（默认 7.85 / 0.003 / 0.97）。
 """
 
 from sqlalchemy import (
@@ -124,12 +124,12 @@ class StampingPartCost(AuditUserMixin, Base):
     loss_scrap_deduction = Column(
         Numeric(14, 6),
         nullable=True,
-        comment="②损耗废料扣除=M×λ×ρ×Q（单件，元）",
+        comment="②损耗废料扣除=M×λ×η×Q（单件，元）",
     )
     process_scrap_deduction = Column(
         Numeric(14, 6),
         nullable=True,
-        comment="③边角废料扣除=O×ρ×Q（单件，元）",
+        comment="③边角废料扣除=O×η×Q（单件，元）",
     )
     scrap_amount_sheet = Column(
         Numeric(14, 6),
