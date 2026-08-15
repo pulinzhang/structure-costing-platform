@@ -952,10 +952,12 @@ class StampingProcessFeeService:
         rows, total = self.fee_repo.paginate(
             db,
             **filter_kwargs,
+            only_zero=bool(query.only_zero),
             skip=skip,
             limit=query.size,
         )
         vos = [StampingProcessFeeVO.model_validate(r) for r in rows]
+        # HUD 汇总不含 only_zero，避免点进待办筛选后大盘数字被掏空
         filters = {
             "year": query.year,
             "location": query.location,
@@ -964,6 +966,7 @@ class StampingProcessFeeService:
             "version": query.version,
             "part_number": query.part_number,
             "audit_status": query.audit_status,
+            "only_zero": bool(query.only_zero),
             "summary": self.fee_repo.summarize_by_filters(db, **filter_kwargs),
         }
         return vos, total, filters

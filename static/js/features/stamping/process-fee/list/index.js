@@ -10,7 +10,7 @@ import {
     updateFeeHud,
     updateFeeFilterCapsules,
     shortPartNumber,
-} from './template.js?v=25';
+} from './template.js?v=26';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -34,6 +34,8 @@ const feeState = {
     totalPages: 1,
     canUpdate: true,
     advancedOpen: false,
+    onlyZero: false,
+    zeroCount: 0,
     batchAuditSubmitting: false,
     editingId: null,
     viewingId: null,
@@ -140,6 +142,19 @@ function bindEvents() {
     document.getElementById('feeResetBtn')?.addEventListener('click', resetFilters);
     document.getElementById('feeToggleAdvancedFilter')?.addEventListener('click', () => {
         setAdvancedOpen(!feeState.advancedOpen);
+    });
+    document.getElementById('feeHudZeroCard')?.addEventListener('click', () => {
+        if (feeState.onlyZero) {
+            feeState.onlyZero = false;
+            loadData(1);
+            return;
+        }
+        if (feeState.zeroCount <= 0) {
+            showToast('当前无算费失败待办，规则运行完备', 'success');
+            return;
+        }
+        feeState.onlyZero = true;
+        loadData(1);
     });
     document.getElementById('feeExportBtn')?.addEventListener('click', () => exportExcel());
     document.getElementById('feeBatchDeleteBtn')?.addEventListener('click', batchDelete);
@@ -310,6 +325,7 @@ function resetFilters() {
     });
     const partEl = document.getElementById('feePartNumberFilter');
     if (partEl) partEl.value = '';
+    feeState.onlyZero = false;
     loadLocationOptions().then(() => loadSupplierOptions().then(() => {
         updateFeeFilterCapsules();
         loadData(1);
@@ -329,6 +345,7 @@ function collectListFilters() {
         ...collectScopeFilters(),
         audit_status: document.getElementById('feeAuditStatusFilter')?.value || '',
         part_number: (document.getElementById('feePartNumberFilter')?.value || '').trim(),
+        only_zero: feeState.onlyZero,
     };
 }
 
@@ -351,6 +368,7 @@ async function loadData(page = 1) {
             stamping_supplier: filters.stamping_supplier || undefined,
             part_number: filters.part_number || undefined,
             audit_status: filters.audit_status || undefined,
+            only_zero: filters.only_zero || undefined,
         };
         const res = await HttpClient.get(API_BASE, { params });
         const data = res.data || {};
@@ -361,8 +379,13 @@ async function loadData(page = 1) {
         feeState.totalPages = data.total_pages || Math.ceil(feeState.total / feeState.pageSize) || 1;
 
         const totalLabel = document.getElementById('feeTotalLabel');
-        if (totalLabel) totalLabel.textContent = `全${feeState.total} 条`;
-        updateFeeHud(feeState.total, data.filters?.summary || null);
+        if (totalLabel) {
+            totalLabel.textContent = feeState.onlyZero
+                ? `待补价 ${feeState.total} 条`
+                : `全${feeState.total} 条`;
+        }
+        updateFeeHud(feeState.total, data.filters?.summary || null, feeState.onlyZero);
+        feeState.zeroCount = Number(data.filters?.summary?.zero_count ?? 0);
 
         if (!feeState.records.length) {
             empty?.classList.remove('hidden');
@@ -378,7 +401,7 @@ async function loadData(page = 1) {
     } catch (error) {
         showToast(error.message || '加载失败', 'error');
         empty?.classList.remove('hidden');
-        updateFeeHud(0, null);
+        updateFeeHud(0, null, feeState.onlyZero);
     } finally {
         loading?.classList.add('hidden');
     }

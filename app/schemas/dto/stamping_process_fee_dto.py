@@ -30,6 +30,10 @@ class StampingProcessFeeQuery(BaseModel):
     version: str | None = Field(None, description="版本")
     part_number: str | None = Field(None, description="零件号")
     audit_status: str | None = Field(None, description="审核状态")
+    only_zero: bool = Field(
+        False,
+        description="仅看算费失败/零价待补价（最终加工费为空或为 0）",
+    )
     page: int = Field(1, ge=1, description="页码")
     size: int = Field(20, ge=1, le=500, description="每页条数")
 

@@ -16,47 +16,65 @@ export function processFeeListTemplate() {
                      style="background: linear-gradient(135deg, #0E0E12 0%, #121218 45%, #0C0C10 100%);">
                     <div class="flex items-start justify-between gap-4 mb-3">
                         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 font-mono flex-1 min-w-0">
-                            <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3 backdrop-blur-sm"
+                            <!-- 1. 整体加工费：管理者成本大盘 -->
+                            <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3.5 backdrop-blur-sm"
                                  style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);">
-                                <div class="text-[#555555] text-[10px] tracking-wider">加工费条数</div>
-                                <div class="text-[18px] font-bold text-[#FFFFFF] mt-1 tabular-nums">
-                                    <span id="feeHudTotal">—</span>
-                                    <span class="text-[10px] text-[#555555] ml-1">条</span>
+                                <div class="text-[#555555] text-[10px] tracking-wider">整体加工费</div>
+                                <div class="text-[22px] font-black text-[#FFFFFF] mt-1 tracking-tight tabular-nums leading-none">
+                                    ¥ <span id="feeHudTotalFee">—</span>
+                                </div>
+                                <div class="text-[9px] font-mono text-[#6E6E73] mt-2 flex items-center justify-between gap-2">
+                                    <span>件均</span>
+                                    <span class="text-[#A1A1A6] tabular-nums">¥ <span id="feeHudAvgFee">—</span> / 件</span>
                                 </div>
                             </div>
-                            <!-- 巴博斯霓虹红光：计算价为 0 -->
-                            <div class="bg-gradient-to-b from-[#18080A] to-[#0D0708] border border-[#FF1E27]/50 p-3.5 relative overflow-hidden group"
-                                 style="box-shadow: 0 0 30px rgba(255,30,39,0.15), inset 0 1px 0 rgba(255,30,39,0.12);">
-                                <div class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#FF1E27] to-transparent"
+                            <!-- 2. 零件总条数：批次规模 -->
+                            <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3.5 backdrop-blur-sm"
+                                 style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);">
+                                <div class="text-[#555555] text-[10px] tracking-wider">零件总条数</div>
+                                <div class="text-[22px] font-black text-[#FFFFFF] mt-1 tracking-tight tabular-nums leading-none">
+                                    <span id="feeHudTotal">—</span>
+                                    <span class="text-[10px] text-[#555555] ml-1 font-bold">条</span>
+                                </div>
+                                <div class="text-[9px] font-mono text-[#6E6E73] mt-2 flex items-center justify-between gap-2">
+                                    <span>当前版本</span>
+                                    <span id="feeHudVersion" class="text-[#A1A1A6] tabular-nums">—</span>
+                                </div>
+                            </div>
+                            <!-- 3. 算费失败待办：操作员核心工作台（有待办才红晕） -->
+                            <button type="button" id="feeHudZeroCard"
+                                    class="text-left w-full p-3.5 relative overflow-hidden group transition-all duration-200 cursor-pointer
+                                           bg-[#0D0D11]/80 border border-[#1E1E26] backdrop-blur-sm
+                                           hover:border-[#2A2A35] focus:outline-none focus-visible:border-[#FF1E27]/60"
+                                    style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);"
+                                    title="点击筛选算费失败 / 零价待补价行"
+                                    aria-pressed="false">
+                                <div id="feeHudZeroGlow" class="hidden absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#FF1E27] to-transparent"
                                      style="box-shadow: 0 0 10px #FF1E27;"></div>
                                 <div class="flex justify-between items-start">
-                                    <span class="text-[#FF1E27] text-[10px] font-bold tracking-widest">计算价为 0</span>
-                                    <span class="w-2 h-2 rounded-full bg-[#FF1E27] animate-pulse"
+                                    <span id="feeHudZeroLabel" class="text-[#555555] text-[10px] font-bold tracking-widest">算费失败待办</span>
+                                    <span id="feeHudZeroDot" class="hidden w-2 h-2 rounded-full bg-[#FF1E27] animate-pulse"
                                           style="box-shadow: 0 0 8px #FF1E27;"></span>
                                 </div>
-                                <div class="text-[26px] font-black text-[#FF1E27] font-mono mt-1 tracking-tight tabular-nums"
-                                     style="text-shadow: 0 0 12px rgba(255,30,39,0.7), 0 0 25px rgba(255,30,39,0.3);">
+                                <div id="feeHudZeroValue" class="text-[26px] font-black text-[#6E6E73] font-mono mt-1 tracking-tight tabular-nums leading-none">
                                     <span id="feeHudZero">—</span>
+                                    <span class="text-[10px] ml-1 font-bold opacity-70">条</span>
                                 </div>
-                                <div class="text-[9px] font-mono text-[#FF1E27]/60 mt-1 flex justify-between">
-                                    <span>请手工调价</span>
-                                    <span id="feeHudMatchCount">— 条</span>
+                                <div id="feeHudZeroHint" class="text-[9px] font-mono text-[#555555] mt-2">
+                                    规则运行完备
                                 </div>
-                            </div>
-                            <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3 backdrop-blur-sm"
+                            </button>
+                            <!-- 4. 审核进度：出账 / 封盘条件 -->
+                            <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3.5 backdrop-blur-sm"
                                  style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);">
-                                <div class="text-[#555555] text-[10px] tracking-wider">待审</div>
-                                <div class="text-[18px] font-bold text-[#FFFFFF] mt-1 tabular-nums">
+                                <div class="text-[#555555] text-[10px] tracking-wider">审核进度</div>
+                                <div class="text-[22px] font-black text-[#FFFFFF] mt-1 tracking-tight tabular-nums leading-none">
                                     <span id="feeHudPending">—</span>
-                                    <span class="text-[10px] text-[#555555] ml-1">条</span>
+                                    <span class="text-[10px] text-[#555555] ml-1 font-bold">条待审</span>
                                 </div>
-                            </div>
-                            <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3 backdrop-blur-sm"
-                                 style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);">
-                                <div class="text-[#555555] text-[10px] tracking-wider">已审</div>
-                                <div class="text-[18px] font-bold text-[#FFFFFF] mt-1 tabular-nums">
-                                    <span id="feeHudApproved">—</span>
-                                    <span class="text-[10px] text-[#555555] ml-1">条</span>
+                                <div class="text-[9px] font-mono text-[#6E6E73] mt-2 flex items-center justify-between gap-2">
+                                    <span>已审核</span>
+                                    <span class="text-[#A1A1A6] tabular-nums"><span id="feeHudApproved">—</span> 条</span>
                                 </div>
                             </div>
                         </div>
@@ -96,6 +114,7 @@ export function processFeeListTemplate() {
                                 <span id="feeCapsuleYear" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部年度</span>
                                 <span id="feeCapsuleLocation" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部基地</span>
                                 <span id="feeCapsuleSupplier" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部工厂</span>
+                                <span id="feeCapsuleFailTodo" class="hidden bg-[#FF1E27]/15 border border-[#FF1E27]/40 text-[#FF1E27] px-2.5 py-1 rounded-md font-bold">待补价筛选中</span>
                             </div>
                         </div>
                         <div class="flex items-center gap-3 shrink-0">
@@ -491,19 +510,99 @@ export function renderFeeRows(records) {
     }).join('');
 }
 
-/** 用筛选汇总刷新HUD（零价/ 待审 / 已审均为全量筛选结果，非本页） */
-export function updateFeeHud(total, summary) {
+/**
+ * 用筛选汇总刷新 HUD（总金额 / 件均 / 条数 / 待补价 / 待审 / 已审均为全量筛选结果，非本页）
+ * @param {number} total 当前列表匹配条数（仅作兜底；条数优先用 summary.total_count）
+ * @param {object|null} summary API filters.summary
+ * @param {boolean} [onlyZeroActive=false] 是否已激活「算费失败待办」筛选
+ */
+export function updateFeeHud(total, summary, onlyZeroActive = false) {
     const setText = (id, value) => {
         const el = document.getElementById(id);
         if (el) el.textContent = value;
     };
     const data = summary && typeof summary === 'object' ? summary : {};
+    const totalCount = Number(data.total_count ?? total ?? 0);
+    const zeroCount = Number(data.zero_count ?? 0);
+    const hasFailTodo = zeroCount > 0;
 
-    setText('feeHudTotal', Number(total || 0).toLocaleString('zh-CN'));
-    setText('feeHudZero', String(data.zero_count ?? 0));
-    setText('feeHudMatchCount', `${Number(total || 0).toLocaleString('zh-CN')} 条`);
-    setText('feeHudPending', String(data.pending_count ?? 0));
-    setText('feeHudApproved', String(data.approved_count ?? 0));
+    const fmtMoney = (value) => {
+        const numeric = Number(value);
+        if (value === null || value === undefined || Number.isNaN(numeric)) return '—';
+        return numeric.toLocaleString('zh-CN', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        });
+    };
+
+    setText('feeHudTotalFee', fmtMoney(data.total_fee));
+    setText('feeHudAvgFee', fmtMoney(data.avg_fee));
+    setText('feeHudTotal', totalCount.toLocaleString('zh-CN'));
+    setText('feeHudVersion', data.version_label || '—');
+    setText('feeHudZero', zeroCount.toLocaleString('zh-CN'));
+    setText('feeHudPending', Number(data.pending_count ?? 0).toLocaleString('zh-CN'));
+    setText('feeHudApproved', Number(data.approved_count ?? 0).toLocaleString('zh-CN'));
+
+    const card = document.getElementById('feeHudZeroCard');
+    const glow = document.getElementById('feeHudZeroGlow');
+    const dot = document.getElementById('feeHudZeroDot');
+    const label = document.getElementById('feeHudZeroLabel');
+    const valueEl = document.getElementById('feeHudZeroValue');
+    const hint = document.getElementById('feeHudZeroHint');
+
+    if (card) {
+        card.setAttribute('aria-pressed', onlyZeroActive ? 'true' : 'false');
+        if (hasFailTodo) {
+            card.className = [
+                'text-left w-full p-3.5 relative overflow-hidden group transition-all duration-200 cursor-pointer',
+                'bg-gradient-to-b from-[#18080A] to-[#0D0708] border border-[#FF1E27]/50',
+                onlyZeroActive ? 'ring-1 ring-[#FF1E27]/40' : '',
+                'hover:border-[#FF1E27]/80 focus:outline-none focus-visible:border-[#FF1E27]',
+            ].filter(Boolean).join(' ');
+            card.style.boxShadow = '0 0 30px rgba(255,30,39,0.15), inset 0 1px 0 rgba(255,30,39,0.12)';
+        } else {
+            card.className = [
+                'text-left w-full p-3.5 relative overflow-hidden group transition-all duration-200 cursor-pointer',
+                'bg-[#0D0D11]/80 border border-[#1E1E26] backdrop-blur-sm',
+                'hover:border-[#2A2A35] focus:outline-none focus-visible:border-[#2e7d32]/50',
+            ].join(' ');
+            card.style.boxShadow = 'inset 0 1px 0 rgba(255,255,255,0.03)';
+        }
+    }
+
+    glow?.classList.toggle('hidden', !hasFailTodo);
+    dot?.classList.toggle('hidden', !hasFailTodo);
+
+    if (label) {
+        label.className = hasFailTodo
+            ? 'text-[#FF1E27] text-[10px] font-bold tracking-widest'
+            : 'text-[#2e7d32] text-[10px] font-bold tracking-widest';
+        label.textContent = '算费失败待办';
+    }
+    if (valueEl) {
+        valueEl.className = hasFailTodo
+            ? 'text-[26px] font-black text-[#FF1E27] font-mono mt-1 tracking-tight tabular-nums leading-none'
+            : 'text-[26px] font-black text-[#2e7d32] font-mono mt-1 tracking-tight tabular-nums leading-none';
+        if (hasFailTodo) {
+            valueEl.style.textShadow = '0 0 12px rgba(255,30,39,0.7), 0 0 25px rgba(255,30,39,0.3)';
+        } else {
+            valueEl.style.textShadow = 'none';
+        }
+    }
+    if (hint) {
+        if (hasFailTodo) {
+            hint.className = 'text-[9px] font-mono text-[#FF1E27]/60 mt-2';
+            hint.textContent = onlyZeroActive ? '已定位异常行 · 再点取消' : '点击一键定位';
+        } else {
+            hint.className = 'text-[9px] font-mono text-[#2e7d32]/70 mt-2';
+            hint.textContent = '规则运行完备';
+        }
+    }
+
+    const failCapsule = document.getElementById('feeCapsuleFailTodo');
+    if (failCapsule) {
+        failCapsule.classList.toggle('hidden', !onlyZeroActive);
+    }
 }
 
 /**

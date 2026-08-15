@@ -5,12 +5,20 @@
 import logging
 from typing import Any, Dict, List, Optional, Tuple
 
-from sqlalchemy import case, func
+from sqlalchemy import case, func, or_
 from sqlalchemy.orm import Session, joinedload, noload
 
 from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING, AUDIT_REJECTED
 from app.models.stamping_process_fee import StampingProcessFee
 from app.models.stamping_process_fee_item import StampingProcessFeeItem
+
+
+def _needs_manual_fix_clause():
+    """最终加工费为空或为 0：算费失败 / 零价且尚未补价。"""
+    return or_(
+        StampingProcessFee.final_processing_fee.is_(None),
+        StampingProcessFee.final_processing_fee == 0,
+    )
 
 
 logger = logging.getLogger("repository.stamping")
@@ -159,6 +167,7 @@ class StampingProcessFeeRepository:
         version: Optional[str] = None,
         part_number: Optional[str] = None,
         audit_status: Optional[str] = None,
+        only_zero: bool = False,
     ):
         q = db.query(StampingProcessFee)
         if year is not None:
@@ -175,6 +184,8 @@ class StampingProcessFeeRepository:
             q = q.filter(StampingProcessFee.part_number.like(f"%{part_number}%"))
         if audit_status:
             q = q.filter(StampingProcessFee.audit_status == audit_status)
+        if only_zero:
+            q = q.filter(_needs_manual_fix_clause())
         return q
 
     def paginate(
@@ -187,6 +198,7 @@ class StampingProcessFeeRepository:
         version: Optional[str] = None,
         part_number: Optional[str] = None,
         audit_status: Optional[str] = None,
+        only_zero: bool = False,
         skip: int = 0,
         limit: int = 20,
     ) -> Tuple[List[StampingProcessFee], int]:
@@ -199,6 +211,7 @@ class StampingProcessFeeRepository:
             version=version,
             part_number=part_number,
             audit_status=audit_status,
+            only_zero=only_zero,
         )
         total = q.count()
         rows = (
@@ -226,7 +239,7 @@ class StampingProcessFeeRepository:
         part_number: Optional[str] = None,
         audit_status: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """按与列表相同的筛选条件汇总：零价 / 待审 / 已审。"""
+        """按筛选条件汇总：总金额 / 件均 / 待补价 / 待审 / 已审 / 版本标签。"""
         q = self._build_list_query(
             db,
             year=year,
@@ -236,10 +249,16 @@ class StampingProcessFeeRepository:
             version=version,
             part_number=part_number,
             audit_status=audit_status,
+            only_zero=False,
         )
         row = q.with_entities(
+            func.count(StampingProcessFee.id).label("total_count"),
+            func.coalesce(func.sum(StampingProcessFee.final_processing_fee), 0).label(
+                "total_fee"
+            ),
+            func.avg(StampingProcessFee.final_processing_fee).label("avg_fee"),
             func.sum(
-                case((StampingProcessFee.processing_fee == 0, 1), else_=0)
+                case((_needs_manual_fix_clause(), 1), else_=0)
             ).label("zero_count"),
             func.sum(
                 case((StampingProcessFee.audit_status == AUDIT_PENDING, 1), else_=0)
@@ -251,10 +270,44 @@ class StampingProcessFeeRepository:
                 )
             ).label("approved_count"),
         ).one()
+
+        avg_value = row.avg_fee
+
+        version_q = self._build_list_query(
+            db,
+            year=year,
+            location=location,
+            stamping_supplier=stamping_supplier,
+            vehicle_model=vehicle_model,
+            version=version,
+            part_number=part_number,
+            audit_status=audit_status,
+            only_zero=False,
+        )
+        version_rows = (
+            version_q.with_entities(StampingProcessFee.version)
+            .distinct()
+            .order_by(StampingProcessFee.version.asc())
+            .all()
+        )
+        versions = [r[0] for r in version_rows if r[0]]
+        if version:
+            version_label = version
+        elif len(versions) == 0:
+            version_label = "—"
+        elif len(versions) == 1:
+            version_label = versions[0]
+        else:
+            version_label = f"{len(versions)} 个版本"
+
         return {
+            "total_count": int(row.total_count or 0),
+            "total_fee": float(row.total_fee or 0),
+            "avg_fee": float(avg_value) if avg_value is not None else None,
             "zero_count": int(row.zero_count or 0),
             "pending_count": int(row.pending_count or 0),
             "approved_count": int(row.approved_count or 0),
+            "version_label": version_label,
         }
 
     def list_for_export(
