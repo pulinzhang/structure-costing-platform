@@ -10,7 +10,7 @@ import {
     updatePartsFilterCapsules,
     updatePartsHud,
     renderPartsPagination,
-} from './template.js?v=14';
+} from './template.js?v=15';
 import {
     DEFAULT_PAGE_SIZE,
     PAGE_SIZE_OPTIONS,
@@ -239,10 +239,14 @@ export const PartsPage = {
             const total = pageInfo.total ?? 0;
             const totalPages = pageInfo.total_pages ?? 1;
 
-            updatePartsHud(total);
+            updatePartsHud(pageInfo.filters?.summary || null);
 
             const totalLabel = document.getElementById('partsTotalLabel');
-            if (totalLabel) totalLabel.textContent = `全${total} 个零件`;
+            if (totalLabel) {
+                const partCount = pageInfo.filters?.summary?.part_number_count;
+                const displayCount = partCount != null ? partCount : total;
+                totalLabel.textContent = `全${displayCount} 个零件（去重）`;
+            }
 
             if (!items.length) {
                 this.showEmptyHint('暂无零件数据', '请先上传工艺文件');
@@ -258,7 +262,7 @@ export const PartsPage = {
             console.error('加载零件列表失败:', error);
             showToast(error.message || '加载失败', 'error');
             this.showEmptyHint('加载失败', esc(error.message) || '请稍后重试');
-            updatePartsHud(0);
+            updatePartsHud(null);
         } finally {
             loading?.classList.add('hidden');
             partsState.isLoading = false;

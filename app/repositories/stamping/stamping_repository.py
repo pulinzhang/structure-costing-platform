@@ -125,19 +125,18 @@ class StampingPartRepository:
         )
         return parts, total
 
-    def paginate(
+    def _build_list_query(
         self,
         db: Session,
+        *,
         location: Optional[str] = None,
         vehicle_model: Optional[str] = None,
         version: Optional[str] = None,
         part_number: Optional[str] = None,
         part_name: Optional[str] = None,
         stamping_supplier: Optional[str] = None,
-        skip: int = 0,
-        limit: int = 100,
-    ) -> Tuple[List[StampingPart], int]:
-        """分页查询零件"""
+    ):
+        """构建与列表相同的筛选查询（不含排序/分页）。"""
         q = db.query(StampingPart)
         if location is not None:
             q = q.filter(StampingPart.location == location)
@@ -151,10 +150,75 @@ class StampingPartRepository:
             q = q.filter(StampingPart.part_number.like(f"%{part_number}%"))
         if part_name:
             q = q.filter(StampingPart.part_name.like(f"%{part_name}%"))
+        return q
 
+    def paginate(
+        self,
+        db: Session,
+        location: Optional[str] = None,
+        vehicle_model: Optional[str] = None,
+        version: Optional[str] = None,
+        part_number: Optional[str] = None,
+        part_name: Optional[str] = None,
+        stamping_supplier: Optional[str] = None,
+        skip: int = 0,
+        limit: int = 100,
+    ) -> Tuple[List[StampingPart], int]:
+        """分页查询零件"""
+        q = self._build_list_query(
+            db,
+            location=location,
+            vehicle_model=vehicle_model,
+            version=version,
+            part_number=part_number,
+            part_name=part_name,
+            stamping_supplier=stamping_supplier,
+        )
         total = q.count()
         parts = q.order_by(StampingPart.id).offset(skip).limit(limit).all()
         return parts, total
+
+    def summarize_by_filters(
+        self,
+        db: Session,
+        *,
+        location: Optional[str] = None,
+        vehicle_model: Optional[str] = None,
+        version: Optional[str] = None,
+        part_number: Optional[str] = None,
+        part_name: Optional[str] = None,
+        stamping_supplier: Optional[str] = None,
+    ) -> Dict[str, int]:
+        """按与列表相同的筛选条件汇总去重维度数量。"""
+        q = self._build_list_query(
+            db,
+            location=location,
+            vehicle_model=vehicle_model,
+            version=version,
+            part_number=part_number,
+            part_name=part_name,
+            stamping_supplier=stamping_supplier,
+        )
+        row = q.with_entities(
+            func.count(func.distinct(StampingPart.location)).label("location_count"),
+            func.count(func.distinct(StampingPart.stamping_supplier)).label(
+                "stamping_supplier_count"
+            ),
+            func.count(func.distinct(StampingPart.vehicle_model)).label(
+                "vehicle_model_count"
+            ),
+            func.count(func.distinct(StampingPart.part_number)).label(
+                "part_number_count"
+            ),
+            func.count(func.distinct(StampingPart.version)).label("version_count"),
+        ).one()
+        return {
+            "location_count": int(row.location_count or 0),
+            "stamping_supplier_count": int(row.stamping_supplier_count or 0),
+            "vehicle_model_count": int(row.vehicle_model_count or 0),
+            "part_number_count": int(row.part_number_count or 0),
+            "version_count": int(row.version_count or 0),
+        }
 
     def list_with_processes(
         self,

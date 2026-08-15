@@ -18,20 +18,53 @@ export function partsTemplate() {
                 <div class="px-5 pt-4 pb-3.5 border-b border-[#14141A]"
                      style="background: linear-gradient(135deg, #0E0E12 0%, #121218 45%, #0C0C10 100%);">
                     <div class="flex items-start justify-between gap-4 mb-3">
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 font-mono flex-1 min-w-0">
+                        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 font-mono flex-1 min-w-0">
                             <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3 backdrop-blur-sm"
                                  style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);">
-                                <div class="text-[#555555] text-[10px] tracking-wider">零件条数</div>
+                                <div class="text-[#555555] text-[10px] tracking-wider">基地</div>
                                 <div class="text-[18px] font-bold text-[#FFFFFF] mt-1 tabular-nums">
-                                    <span id="partsHudTotal">—</span>
-                                    <span class="text-[10px] text-[#555555] ml-1">件</span>
+                                    <span id="partsHudLocation">—</span>
+                                    <span class="text-[10px] text-[#555555] ml-1">个</span>
                                 </div>
                             </div>
                             <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3 backdrop-blur-sm"
                                  style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);">
-                                <div class="text-[#555555] text-[10px] tracking-wider">查询范围</div>
-                                <div class="text-[12px] font-medium text-[#8E8E93] mt-1.5 truncate" id="partsHudScope">
-                                    全部范围
+                                <div class="text-[#555555] text-[10px] tracking-wider">冲压工厂</div>
+                                <div class="text-[18px] font-bold text-[#FFFFFF] mt-1 tabular-nums">
+                                    <span id="partsHudSupplier">—</span>
+                                    <span class="text-[10px] text-[#555555] ml-1">个</span>
+                                </div>
+                            </div>
+                            <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3 backdrop-blur-sm"
+                                 style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);">
+                                <div class="text-[#555555] text-[10px] tracking-wider">车型</div>
+                                <div class="text-[18px] font-bold text-[#FFFFFF] mt-1 tabular-nums">
+                                    <span id="partsHudVehicle">—</span>
+                                    <span class="text-[10px] text-[#555555] ml-1">种</span>
+                                </div>
+                            </div>
+                            <!-- 零件号：重点指标 -->
+                            <div class="bg-gradient-to-b from-[#18080A] to-[#0D0708] border border-[#FF1E27]/50 p-3.5 relative overflow-hidden"
+                                 style="box-shadow: 0 0 30px rgba(255,30,39,0.15), inset 0 1px 0 rgba(255,30,39,0.12);">
+                                <div class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#FF1E27] to-transparent"
+                                     style="box-shadow: 0 0 10px #FF1E27;"></div>
+                                <div class="flex justify-between items-start">
+                                    <span class="text-[#FF1E27] text-[10px] font-bold tracking-widest">零件号</span>
+                                    <span class="w-2 h-2 rounded-full bg-[#FF1E27] animate-pulse"
+                                          style="box-shadow: 0 0 8px #FF1E27;"></span>
+                                </div>
+                                <div class="text-[26px] font-black text-[#FF1E27] font-mono mt-1 tracking-tight tabular-nums"
+                                     style="text-shadow: 0 0 12px rgba(255,30,39,0.7), 0 0 25px rgba(255,30,39,0.3);">
+                                    <span id="partsHudPartNumber">—</span>
+                                </div>
+                                <div class="text-[9px] font-mono text-[#FF1E27]/60 mt-1">去重后件数</div>
+                            </div>
+                            <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3 backdrop-blur-sm"
+                                 style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);">
+                                <div class="text-[#555555] text-[10px] tracking-wider">版本</div>
+                                <div class="text-[18px] font-bold text-[#FFFFFF] mt-1 tabular-nums">
+                                    <span id="partsHudVersion">—</span>
+                                    <span class="text-[10px] text-[#555555] ml-1">个</span>
                                 </div>
                             </div>
                         </div>
@@ -42,6 +75,9 @@ export function partsTemplate() {
                                 批量删除
                             </button>
                         </div>
+                    </div>
+                    <div class="text-[11px] font-mono text-[#555555] truncate">
+                        查询范围：<span id="partsHudScope" class="text-[#8E8E93]">全部范围</span>
                     </div>
                 </div>
 
@@ -229,12 +265,18 @@ export function updatePartsFilterCapsules() {
     }
 }
 
-export function updatePartsHud(total) {
+export function updatePartsHud(summary) {
     const setText = (id, value) => {
         const el = document.getElementById(id);
         if (el) el.textContent = value;
     };
-    setText('partsHudTotal', Number(total || 0).toLocaleString('zh-CN'));
+    const data = summary && typeof summary === 'object' ? summary : {};
+    const fmt = (value) => Number(value || 0).toLocaleString('zh-CN');
+    setText('partsHudLocation', fmt(data.location_count));
+    setText('partsHudSupplier', fmt(data.stamping_supplier_count));
+    setText('partsHudVehicle', fmt(data.vehicle_model_count));
+    setText('partsHudPartNumber', fmt(data.part_number_count));
+    setText('partsHudVersion', fmt(data.version_count));
 }
 
 export function renderPartsPagination(currentPage, totalPages) {

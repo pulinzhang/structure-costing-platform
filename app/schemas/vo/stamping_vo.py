@@ -217,6 +217,16 @@ class StampingProcessItemUpdate(BaseModel):
     remark: Optional[str] = None
 
 
+class StampingPartListSummaryVO(BaseModel):
+    """列表筛选汇总（去重：基地 / 冲压工厂 / 车型 / 零件号 / 版本）"""
+
+    location_count: int = 0
+    stamping_supplier_count: int = 0
+    vehicle_model_count: int = 0
+    part_number_count: int = 0
+    version_count: int = 0
+
+
 class StampingPartListFilterOptions(BaseModel):
     """零件列表筛选下拉选项 VO"""
     locations: list[str] = []
@@ -224,6 +234,7 @@ class StampingPartListFilterOptions(BaseModel):
     versions: list[str] = []
     materials: list[str] = []
     stamping_suppliers: list[str] = []
+    summary: Optional[StampingPartListSummaryVO] = None
 
 
 class StampingCascadeFilterQuery(BaseModel):

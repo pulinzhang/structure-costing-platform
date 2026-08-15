@@ -54,14 +54,17 @@ class StampingPartService:
     ) -> tuple[List[StampingPartListResponse], int, StampingPartListFilterOptions]:
         """获取零件列表（不含工序详情，含工序统计数 process_count）"""
         skip = (query.page - 1) * query.size
-        parts, total = self.repository.paginate(
-            db,
+        filter_kwargs = dict(
             location=query.location,
             vehicle_model=query.vehicle_model,
             version=query.version,
             part_number=query.part_number,
             part_name=query.part_name,
             stamping_supplier=query.stamping_supplier,
+        )
+        parts, total = self.repository.paginate(
+            db,
+            **filter_kwargs,
             skip=skip,
             limit=query.size,
         )
@@ -75,8 +78,11 @@ class StampingPartService:
             row.process_count = process_counts.get(p.id, 0)
             rows.append(row)
 
-        # 筛选下拉框选项
+        # 筛选下拉框选项 + 当前筛选下去重维度汇总
         filter_options = self.repository.get_filter_options(db)
+        filter_options["summary"] = self.repository.summarize_by_filters(
+            db, **filter_kwargs
+        )
         filter_vo = StampingPartListFilterOptions.model_validate(filter_options)
         return rows, total, filter_vo
 
