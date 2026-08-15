@@ -24,7 +24,7 @@ class UserRepository:
         username: str | None = None,
         real_name: str | None = None,
         is_active: bool | None = None,
-    ):
+    ) -> Any:
         q = db.query(User)
         if keyword:
             pattern = f"%{keyword}%"

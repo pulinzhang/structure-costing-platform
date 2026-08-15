@@ -25,8 +25,10 @@ from app.services.async_task import (
     TASK_TYPE_BASE_PRICE_IMPORT,
     AsyncTaskService,
 )
-from app.services.yishiyiyi.base_price import SteelBasePriceService
-from app.services.yishiyiyi.base_price.steel_base_price_export_service import SteelBasePriceExportService
+from app.services.yishiyiyi.base_price import (
+    SteelBasePriceExportService,
+    SteelBasePriceService,
+)
 from app.schemas.dto.steel_base_price_dto import (
     SteelBasePriceCreate,
     SteelBasePriceQuery,
@@ -178,7 +180,7 @@ def get_base_price_options(
 
 @router.get(
     "/export-preview",
-    response_model=ApiResponse[PageResult[SteelBasePriceExportRow]],
+    response_model=ApiResponse[PageResult[SteelBasePriceExportRow] | list[SteelBasePriceExportRow]],
 )
 def export_preview(
     year: int | None = Query(None, ge=2000, le=2100, description="订单发布年份"),
@@ -192,7 +194,7 @@ def export_preview(
     size: int | None = Query(None, ge=1, le=5000, description="每页条数"),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BASE_PRICE_DOWNLOAD_VIEW)),
-) -> ApiResponse[PageResult[SteelBasePriceExportRow]]:
+) -> ApiResponse[PageResult[SteelBasePriceExportRow] | list[SteelBasePriceExportRow]]:
     """导出预览：返回筛选后的基准价格数据（前端分页）。"""
     page_size = size or DEFAULT_EXPORT_PAGE_SIZE
     records, total = _steel_base_price_service.list_for_export(

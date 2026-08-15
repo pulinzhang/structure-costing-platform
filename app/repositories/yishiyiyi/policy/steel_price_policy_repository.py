@@ -4,13 +4,13 @@
 """
 
 from decimal import Decimal
-from typing import Optional
+from typing import Any, Optional, cast
 
 from sqlalchemy import distinct, func
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Query, Session, joinedload
 
 from app.models.steel_price_policy import SteelPricePolicy, SteelPriceLadderItem
-from app.repositories.yishiyiyi.policy.dto import ExportRow, FilterOptions
+from app.repositories.yishiyiyi.policy.dto import FilterOptions
 
 
 class PolicyFilter:
@@ -153,13 +153,13 @@ class SteelPricePolicyRepository:
     def _distinct_values(
         self,
         db: Session,
-        column,
+        column: Any,
         *,
         filter_none: bool = False,
         descending: bool = False,
-    ) -> list:
+    ) -> list[Any]:
         """通用 distinct 值查询。"""
-        query = db.query(distinct(column))
+        query: Query[Any] = db.query(distinct(column))
         if filter_none:
             query = query.filter(column.isnot(None))
         order_col = column.desc() if descending else column.asc()
@@ -189,7 +189,7 @@ class SteelPricePolicyRepository:
 
     # ---- 主表写操作 ----
 
-    def create_policy(self, db: Session, data: dict) -> SteelPricePolicy:
+    def create_policy(self, db: Session, data: dict[str, Any]) -> SteelPricePolicy:
         """
         创建政策主表记录（不含明细）。
         注意：此方法不 flush，由调用方（Service）控制事务。
@@ -202,7 +202,7 @@ class SteelPricePolicyRepository:
         self,
         db: Session,
         policy_id: int,
-        update_data: dict,
+        update_data: dict[str, Any],
     ) -> Optional[SteelPricePolicy]:
         """
         按主键更新政策主表字段，返回更新后记录或 None（不存在）。
@@ -229,12 +229,12 @@ class SteelPricePolicyRepository:
 
     def _apply_optional_policy_filters(
         self,
-        query,
+        query: Any,
         *,
         grade_type: Optional[str] = None,
         grade_value: Optional[str] = None,
         base_thickness: Optional[Decimal] = None,
-    ):
+    ) -> Any:
         """对 policy 的可选过滤字段应用条件（支持 NULL 精确匹配）。"""
         if grade_type is not None:
             query = query.filter(SteelPricePolicy.grade_type == grade_type)
@@ -308,7 +308,7 @@ class SteelPricePolicyRepository:
         self,
         db: Session,
         policy_id: int,
-        items_data: list[dict],
+        items_data: list[dict[str, Any]],
     ) -> list[SteelPriceLadderItem]:
         """
         批量新增明细。
@@ -325,7 +325,7 @@ class SteelPricePolicyRepository:
         self,
         db: Session,
         item_id: int,
-        update_data: dict,
+        update_data: dict[str, Any],
     ) -> Optional[SteelPriceLadderItem]:
         """
         更新单条明细。
@@ -367,7 +367,7 @@ class SteelPricePolicyRepository:
         self,
         db: Session,
         policy_id: int,
-        new_items_data: list[dict],
+        new_items_data: list[dict[str, Any]],
     ) -> list[SteelPriceLadderItem]:
         """
         整组替换政策下的全部明细（旧明细级联删除）。
@@ -411,7 +411,7 @@ class SteelPricePolicyRepository:
             grade_value=match_filter.grade_value,
             base_thickness=match_filter.base_thickness,
         )
-        return query.all()
+        return cast(list[SteelPricePolicy], query.all())
 
     # ---- 导出查询（原 get_export_data 相关方法已移至 ExportService）----
 

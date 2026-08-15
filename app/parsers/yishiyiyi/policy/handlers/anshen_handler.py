@@ -28,7 +28,7 @@ from .constants import parse_thickness_label
 class AnshenSheetHandler(BaseSheetHandler):
     """鞍神 Sheet 处理器（厚度-宽度组合加价）。"""
 
-    def parse(self, sheet: Worksheet, steel_mill: str, warnings: list) -> list:
+    def parse(self, sheet: Worksheet, steel_mill: str, warnings: list[Any]) -> list[Any]:
         """鞍神：厚度-宽度组合加价，只走 THICKNESS_WIDTH 通道。"""
         return self._parse_blocks(sheet, steel_mill, "THICKNESS_WIDTH")
 
@@ -51,7 +51,6 @@ class AnshenSheetHandler(BaseSheetHandler):
         """
         blocks: List[Dict[str, Any]] = []
         max_row = self.row_max(sheet)
-        max_col = self.col_max(sheet)
 
         # 找"鞍神规格加价"关键字所在行
         header_row: Optional[int] = None
@@ -124,11 +123,11 @@ class AnshenSheetHandler(BaseSheetHandler):
         sheet: Worksheet,
         steel_mill: str,
         policy_type: str,
-    ) -> List:
+    ) -> List[Any]:
         """鞍神定制：所有政策走专用解析。"""
         if policy_type == "THICKNESS_WIDTH":
             blocks = self.find_width_blocks(sheet, steel_mill)
-            policies: List = []
+            policies: List[Any] = []
             for block in blocks:
                 policies.extend(self._parse_anshen_block(sheet, steel_mill, block))
             return policies
@@ -139,7 +138,7 @@ class AnshenSheetHandler(BaseSheetHandler):
         sheet: Worksheet,
         steel_mill: str,
         block: Dict[str, Any],
-    ) -> List:
+    ) -> List[Any]:
         """解析鞍神宽度块：每行厚度范围生成一条政策。
 
         鞍神不分钢种，同一宽度范围内按厚度范围分行。
@@ -160,7 +159,7 @@ class AnshenSheetHandler(BaseSheetHandler):
         header_row = block["header_row"]
         width_boundary = self.text(sheet, header_row, 2) or "750＜W≤1250"
 
-        policies: List = []
+        policies: List[Any] = []
 
         for r in range(data_start, data_end + 1):
             thickness_label = self.text(sheet, r, 1)
@@ -189,7 +188,7 @@ class AnshenSheetHandler(BaseSheetHandler):
             price = _to_int_price(price_raw)
 
             # 构建 LadderItem
-            from ..models.policy import ParsedLadderItem
+            from ..models.ladder_item import ParsedLadderItem
 
             item = ParsedLadderItem(
                 width_min=width_min,
@@ -222,7 +221,7 @@ class AnshenSheetHandler(BaseSheetHandler):
 
         return policies
 
-    def _parse_width_boundary(self, boundary: str) -> tuple:
+    def _parse_width_boundary(self, boundary: str) -> tuple[Any, ...]:
         """解析宽度边界字符串，返回 (min, min_op, max, max_op)。
 
         支持格式：

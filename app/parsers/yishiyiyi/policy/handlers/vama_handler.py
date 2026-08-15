@@ -121,9 +121,9 @@ class VamaSheetHandler(BaseSheetHandler):
         sheet: Worksheet,
         steel_mill: str,
         warnings: List[str],
-    ) -> List:
+    ) -> List[Any]:
         """VAMA override：调用 VAMA 专用 _parse_one_block，直接注入 width_range。"""
-        policies: List = []
+        policies: List[Any] = []
         for block in self.find_thickness_blocks(sheet, steel_mill):
             policies.extend(self._parse_one_block(sheet, steel_mill, "THICKNESS", block))
         for block in self.find_width_blocks(sheet, steel_mill):
@@ -143,54 +143,6 @@ class VamaSheetHandler(BaseSheetHandler):
     ) -> List[ParsedPolicy]:
         """VAMA override：处理 THICKNESS_WIDTH 类型，在每条 item 上注入 block 的宽度范围。"""
         grade_col = block.get("grade_col")
-        header_row = block["header_row"]
-        price_cols: List[int] = list(block["price_cols"])
-        data_start = block["data_row_start"]
-        data_end = block["data_row_end"]
-        category_name = block.get("category_name", "冷轧钢")
-        base_thickness = block.get("base_thickness")
-        grade_blacklist = block.get("grade_blacklist", GRADE_LABELS)
-        block_policy_type = block.get("policy_type", policy_type)
-        width_range = block.get("width_range")  # VAMA 特有
-
-        boundaries = self._collect_thickness_boundaries(sheet, header_row, price_cols)
-        if not boundaries:
-            return []
-
-        sorted_price_cols = sorted(price_cols)
-
-        policies: List[ParsedPolicy] = []
-        last_grade: Optional[str] = None
-        for r in range(data_start, data_end + 1):
-            if grade_col is None:
-                continue
-            grade = self.text_or_none(sheet, r, grade_col)
-            if not grade:
-                grade = last_grade
-            else:
-                last_grade = grade
-            if not grade:
-                continue
-            if grade in grade_blacklist:
-                continue
-            grade_type = self._infer_grade_type_vama(grade, block_policy_type)
-            items = self._build_items_for_row_vama(
-                sheet, r, sorted_price_cols, boundaries, width_range, sort_order=r
-            )
-            if not items:
-                continue
-            policies.append(
-                ParsedPolicy(
-                    steel_mill=steel_mill,
-                    category_name=category_name,
-                    grade_type=grade_type,
-                    grade_value=grade,
-                    policy_type=block_policy_type,
-                    base_thickness=base_thickness,
-                    items=items,
-                )
-            )
-        return policies
         header_row = block["header_row"]
         price_cols: List[int] = list(block["price_cols"])
         data_start = block["data_row_start"]

@@ -17,13 +17,13 @@ from app.repositories.stamping.tonnage_price_repository import StampingTonnagePr
 logger = logging.getLogger("service.stamping_tonnage_price_export")
 
 
-def _num(value: Any, digits: int = 3):
+def _num(value: Any, digits: int = 3) -> Any:
     if value is None:
         return ""
     return round(float(value), digits)
 
 
-def _dt(value: Any) -> str:
+def _dt(value: Any) -> Any:
     if value is None:
         return ""
     return value.strftime("%Y-%m-%d %H:%M:%S") if hasattr(value, "strftime") else str(value)

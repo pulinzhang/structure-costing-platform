@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from typing import Any
+
+
 import logging
 from decimal import Decimal, ROUND_HALF_UP
 
@@ -100,7 +103,7 @@ class PartFeeCalculator:
         rate_map: dict[int, TonnageRateInfo],
         year: int,
         prev_part_cache: dict[int, StampingPart | None],
-    ) -> tuple[Decimal, int, list[dict]] | StampingProcessFeeFailedItemVO:
+    ) -> tuple[Decimal, int, list[dict[str, Any]]] | StampingProcessFeeFailedItemVO:
         processes = list(part.processes or [])
         if not processes:
             return self.build_failed_item(part, "无工序数据")
@@ -114,7 +117,7 @@ class PartFeeCalculator:
             )
 
         total = Decimal("0")
-        process_items: list[dict] = []
+        process_items: list[dict[str, Any]] = []
         for process in sorted(
             processes, key=lambda p: (p.process_order or 0, p.id or 0)
         ):

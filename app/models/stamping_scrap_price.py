@@ -4,7 +4,8 @@
 
 from decimal import Decimal
 
-from sqlalchemy import Column, Index, Integer, Numeric, String, Text, UniqueConstraint
+from sqlalchemy import Index, Integer, Numeric, String, Text, UniqueConstraint
+from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
 from app.models.audit_mixin import AuditUserMixin
@@ -24,36 +25,36 @@ class StampingScrapPrice(AuditUserMixin, Base):
 
     __tablename__ = "stamping_scrap_prices"
 
-    id = Column(Integer, primary_key=True, autoincrement=True, comment="主键 ID")
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True, comment="主键 ID")
 
     # 【维度】
-    location = Column(
+    location: Mapped[str] = mapped_column(
         String(50),
         nullable=False,
         comment="基地/物料名称，例：芜湖、大连、青岛、福州、鄂尔多斯、铝板",
     )
-    year = Column(Integer, nullable=False, comment="年份，例：2025")
-    month = Column(Integer, nullable=False, comment="月份（1-12）")
+    year: Mapped[int] = mapped_column(Integer, nullable=False, comment="年份，例：2025")
+    month: Mapped[int] = mapped_column(Integer, nullable=False, comment="月份（1-12）")
 
     # 【核心价格】
-    market_price = Column(
+    market_price: Mapped[Decimal] = mapped_column(
         Numeric(12, 2),
         nullable=False,
         comment="大盘价（元/吨，含杂费的账面价）",
     )
-    deduction_fee = Column(
+    deduction_fee: Mapped[Decimal] = mapped_column(
         Numeric(12, 2),
         nullable=False,
         default=Decimal("0.00"),
         comment="扣费（元/吨，运费/扣水/扣杂/打包费等，无则 0）",
     )
-    net_price = Column(
+    net_price: Mapped[Decimal] = mapped_column(
         Numeric(12, 2),
         nullable=False,
         comment="净价（元/吨）= 大盘价 - 扣费，由业务层写入",
     )
 
-    remark = Column(Text, nullable=True, comment="备注说明")
+    remark: Mapped[str | None] = mapped_column(Text, nullable=True, comment="备注说明")
 
     __table_args__ = (
         UniqueConstraint(

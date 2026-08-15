@@ -3,7 +3,7 @@
 """
 
 from decimal import Decimal
-from typing import Optional
+from typing import Any, Optional
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
@@ -32,26 +32,26 @@ class StampingScrapPriceMonthRowInput(BaseModel):
     """月度矩阵中单行（基地）录入项"""
 
     location: str = Field(..., min_length=1, max_length=50, description="基地/物料名称")
-    market_price: Decimal = Field(..., ge=Decimal("0"), description="大盘价（元/吨）")
+    market_price: Decimal = Field(..., ge=0, description="大盘价（元/吨）")
     deduction_fee: Decimal = Field(
         default=Decimal("0.00"),
-        ge=Decimal("0"),
+        ge=0,
         description="扣费（元/吨）",
     )
     remark: Optional[str] = Field(None, description="备注")
 
     @field_validator("location", "remark", mode="before")
     @classmethod
-    def strip_strings(cls, value):
+    def strip_strings(cls, value: Any) -> Any:
         return _strip(value)
 
     @field_validator("market_price", "deduction_fee", mode="before")
     @classmethod
-    def coerce_decimals(cls, value):
+    def coerce_decimals(cls, value: Any) -> Any:
         return _to_decimal(value)
 
     @model_validator(mode="after")
-    def validate_deduction_not_exceed_market(self):
+    def validate_deduction_not_exceed_market(self) -> Any:
         if self.deduction_fee > self.market_price:
             raise ValueError(f"{self.location}: 扣费不能大于大盘价")
         return self
@@ -70,7 +70,7 @@ class StampingScrapPriceMonthSaveDTO(BaseModel):
     )
 
     @model_validator(mode="after")
-    def validate_fixed_locations(self):
+    def validate_fixed_locations(self) -> Any:
         expected = list(SCRAP_PRICE_LOCATIONS)
         actual = [row.location for row in self.items]
         if sorted(actual) != sorted(expected):

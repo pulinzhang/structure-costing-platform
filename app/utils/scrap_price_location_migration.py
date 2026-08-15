@@ -5,18 +5,17 @@
 该表为新功能，无生产数据依赖。
 """
 
+from typing import Any
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
-
 from app.utils.logging_config import get_logger
-
 
 logger = get_logger("scrap_price_location_migration")
 
 TABLE_NAME = "stamping_scrap_prices"
 
 
-def _table_exists(conn, table_name: str) -> bool:
+def _table_exists(conn: Any, table_name: str) -> bool:
     row = conn.execute(
         text(
             "SELECT name FROM sqlite_master WHERE type='table' AND name=:name"
@@ -26,7 +25,7 @@ def _table_exists(conn, table_name: str) -> bool:
     return row is not None
 
 
-def _column_names(conn, table_name: str) -> set[str]:
+def _column_names(conn: Any, table_name: str) -> set[str]:
     rows = conn.execute(text(f"PRAGMA table_info({table_name})")).fetchall()
     return {row[1] for row in rows}
 

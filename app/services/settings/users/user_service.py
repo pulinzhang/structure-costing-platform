@@ -47,7 +47,7 @@ class UserService:
         self.repository = UserRepository()
         self.permission_service = PermissionService()
 
-    def _to_vo(self, db: Session, user) -> UserVO:
+    def _to_vo(self, db: Session, user: Any) -> UserVO:
         vo = UserVO.model_validate(user)
         vo.permissions = self.permission_service.resolve_permissions_for_user(db, user)
         return vo
@@ -58,22 +58,25 @@ class UserService:
 
     def paginate(
         self, db: Session, query: UserQueryDTO
-    ) -> tuple[list[UserVO], int, dict]:
+    ) -> tuple[list[UserVO], int, dict[str, Any]]:
         skip = (query.page - 1) * query.size
-        filter_kwargs = dict(
+        rows, total = self.repository.paginate(
+            db,
             keyword=query.keyword,
             username=query.username,
             real_name=query.real_name,
             is_active=query.is_active,
-        )
-        rows, total = self.repository.paginate(
-            db,
-            **filter_kwargs,
             skip=skip,
             limit=query.size,
         )
         filters = {
-            "summary": self.repository.summarize_by_filters(db, **filter_kwargs),
+            "summary": self.repository.summarize_by_filters(
+                db,
+                keyword=query.keyword,
+                username=query.username,
+                real_name=query.real_name,
+                is_active=query.is_active,
+            ),
         }
         return [self._to_vo(db, u) for u in rows], total, filters
 

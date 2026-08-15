@@ -11,8 +11,8 @@ from pathlib import Path
 from typing import Generator
 from urllib.parse import unquote, urlparse
 
-from sqlalchemy import create_engine, event
-from sqlalchemy.orm import sessionmaker, Session, declarative_base
+from sqlalchemy import Engine, create_engine, event
+from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.common.timezone import CHINA_TZ_NAME
@@ -22,30 +22,35 @@ from app.utils.logging_config import get_logger
 
 logger = get_logger("database")
 
-Base = declarative_base()
-AuxiliaryBase = declarative_base()
+
+class Base(DeclarativeBase):
+    """主业务库 ORM 基类。"""
+
+
+class AuxiliaryBase(DeclarativeBase):
+    """辅助库 ORM 基类（Token / 异步任务等）。"""
 
 # 仅属于辅助库的表；若误出现在主库则启动时删除
 _AUXILIARY_ONLY_TABLES = ("user_tokens", "async_tasks")
 
 
-def _configure_sqlite_connection(dbapi_connection, connection_record):
+def _configure_sqlite_connection(dbapi_connection: object, connection_record: object) -> None:
     """SQLite：外键 + WAL；时间按东八区墙钟由应用层 now() 写入。"""
-    cursor = dbapi_connection.cursor()
+    cursor = dbapi_connection.cursor()  # type: ignore[attr-defined]
     cursor.execute("PRAGMA foreign_keys=ON")
     cursor.execute("PRAGMA journal_mode=WAL")
     cursor.execute("PRAGMA synchronous=NORMAL")
     cursor.close()
 
 
-def _configure_postgres_connection(dbapi_connection, connection_record):
+def _configure_postgres_connection(dbapi_connection: object, connection_record: object) -> None:
     """PostgreSQL：会话时区固定为东八区。"""
-    cursor = dbapi_connection.cursor()
+    cursor = dbapi_connection.cursor()  # type: ignore[attr-defined]
     cursor.execute(f"SET TIME ZONE '{CHINA_TZ_NAME}'")
     cursor.close()
 
 
-def _create_engine_for_url(database_url: str, *, label: str):
+def _create_engine_for_url(database_url: str, *, label: str) -> Engine:
     """按 URL 创建引擎（SQLite / PostgreSQL）。"""
     if "sqlite" in database_url:
         connect_args = {
@@ -125,11 +130,11 @@ def _migrate_legacy_async_tasks_db(target_url: str) -> None:
 class DatabaseConfig:
     """主业务数据库配置"""
 
-    _engine = None
-    _session_factory = None
+    _engine: Engine | None = None
+    _session_factory: sessionmaker[Session] | None = None
 
     @classmethod
-    def get_engine(cls):
+    def get_engine(cls) -> Engine:
         if cls._engine is None:
             cls._engine = _create_engine_for_url(
                 settings.DATABASE_URL,
@@ -138,7 +143,7 @@ class DatabaseConfig:
         return cls._engine
 
     @classmethod
-    def get_session_factory(cls) -> sessionmaker:
+    def get_session_factory(cls) -> sessionmaker[Session]:
         if cls._session_factory is None:
             engine = cls.get_engine()
             cls._session_factory = sessionmaker(
@@ -150,7 +155,7 @@ class DatabaseConfig:
         return cls._session_factory
 
     @classmethod
-    def _drop_misplaced_auxiliary_tables(cls, engine) -> None:
+    def _drop_misplaced_auxiliary_tables(cls, engine: Engine) -> None:
         """主库不应存在辅助表；历史 create_all 误建时启动清理。"""
         from sqlalchemy import inspect, text
 
@@ -185,11 +190,11 @@ class AuxiliaryDatabaseConfig:
     承载：异步任务进度、登录 Token 等短生命周期数据。
     """
 
-    _engine = None
-    _session_factory = None
+    _engine: Engine | None = None
+    _session_factory: sessionmaker[Session] | None = None
 
     @classmethod
-    def get_engine(cls):
+    def get_engine(cls) -> Engine:
         if cls._engine is None:
             _migrate_legacy_async_tasks_db(settings.AUXILIARY_DATABASE_URL)
             cls._engine = _create_engine_for_url(
@@ -199,7 +204,7 @@ class AuxiliaryDatabaseConfig:
         return cls._engine
 
     @classmethod
-    def get_session_factory(cls) -> sessionmaker:
+    def get_session_factory(cls) -> sessionmaker[Session]:
         if cls._session_factory is None:
             engine = cls.get_engine()
             cls._session_factory = sessionmaker(

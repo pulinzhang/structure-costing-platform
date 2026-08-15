@@ -4,7 +4,7 @@
 """
 
 import logging
-from typing import List, Optional, Tuple
+from typing import Any, List, Optional, Tuple
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
@@ -25,7 +25,7 @@ logger = logging.getLogger("service.stamping")
 class StampingTonnagePriceService:
     """冲次单价业务逻辑"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.repository = StampingTonnagePriceRepository()
 
     def list_by_year(
@@ -49,7 +49,7 @@ class StampingTonnagePriceService:
 
     def paginate(
         self, db: Session, query: StampingTonnagePriceQuery
-    ) -> Tuple[List[StampingTonnagePriceResponse], int, dict]:
+    ) -> Tuple[List[StampingTonnagePriceResponse], int, dict[str, Any]]:
         """分页查询冲次单价"""
         skip = (query.page - 1) * query.size
         records, total = self.repository.paginate(

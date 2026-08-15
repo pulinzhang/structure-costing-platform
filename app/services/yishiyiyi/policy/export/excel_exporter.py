@@ -5,7 +5,7 @@
 
 from io import BytesIO
 from decimal import Decimal
-from typing import Optional
+from typing import Any, Optional
 
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
@@ -51,7 +51,7 @@ COLUMN_WIDTHS = [10, 8, 8, 12, 12, 12, 10, 15, 10, 10, 15, 18, 18, 14, 8, 8, 30,
 # 格式化辅助函数
 # =============================================================================
 
-def format_decimal(value, digits=2) -> str:
+def format_decimal(value: Any, digits: Any =2) -> str:
     if value is None:
         return ""
     if isinstance(value, Decimal):
@@ -68,9 +68,9 @@ def format_decimal(value, digits=2) -> str:
 
 def format_interval(
     variable: str,
-    min_val,
+    min_val: Any,
     min_op: Optional[str],
-    max_val,
+    max_val: Any,
     max_op: Optional[str],
     decimals: int = 2,
 ) -> str:
@@ -88,7 +88,7 @@ def format_interval(
     Returns:
         格式化后的条件字符串
     """
-    def fmt(v):
+    def fmt(v: Any) -> Any:
         if v is None:
             return ""
         if isinstance(v, Decimal):
@@ -197,7 +197,7 @@ class SteelPricePolicyExporter:
         wb.save(output)
         return output.getvalue(), filename
 
-    def _write_headers(self, ws) -> None:
+    def _write_headers(self, ws: Any) -> None:
         """写入表头行"""
         ws.append(HEADERS)
         for col_idx, _ in enumerate(HEADERS, start=1):
@@ -207,7 +207,7 @@ class SteelPricePolicyExporter:
             cell.alignment = HEADER_ALIGNMENT
             cell.border = THIN_BORDER
 
-    def _write_rows(self, ws, records: list[ExportRow]) -> None:
+    def _write_rows(self, ws: Any, records: list[ExportRow]) -> None:
         """写入数据行"""
         for row_idx, row in enumerate(records, start=2):
             row_data = [
@@ -247,7 +247,7 @@ class SteelPricePolicyExporter:
                 else:
                     cell.alignment = DATA_ALIGNMENT
 
-    def _set_column_widths(self, ws) -> None:
+    def _set_column_widths(self, ws: Any) -> None:
         """设置列宽"""
         for col_idx, width in enumerate(COLUMN_WIDTHS, start=1):
             letter = ws.cell(row=1, column=col_idx).column_letter

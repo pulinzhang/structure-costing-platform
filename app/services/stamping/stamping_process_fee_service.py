@@ -8,7 +8,7 @@
 from __future__ import annotations
 
 from decimal import Decimal, ROUND_HALF_UP
-from typing import Optional
+from typing import Any, Optional
 
 from sqlalchemy.orm import Session
 
@@ -94,9 +94,10 @@ class StampingProcessFeeService:
         self,
         db: Session,
         query: StampingProcessFeeQuery,
-    ) -> tuple[list[StampingProcessFeeVO], int, dict]:
+    ) -> tuple[list[StampingProcessFeeVO], int, dict[str, Any]]:
         skip = (query.page - 1) * query.size
-        filter_kwargs = dict(
+        rows, total = self.fee_repo.paginate(
+            db,
             year=query.year,
             location=query.location,
             stamping_supplier=query.stamping_supplier,
@@ -104,10 +105,6 @@ class StampingProcessFeeService:
             version=query.version,
             part_number=query.part_number,
             audit_status=query.audit_status,
-        )
-        rows, total = self.fee_repo.paginate(
-            db,
-            **filter_kwargs,
             only_zero=bool(query.only_zero),
             skip=skip,
             limit=query.size,
@@ -123,7 +120,16 @@ class StampingProcessFeeService:
             "part_number": query.part_number,
             "audit_status": query.audit_status,
             "only_zero": bool(query.only_zero),
-            "summary": self.fee_repo.summarize_by_filters(db, **filter_kwargs),
+            "summary": self.fee_repo.summarize_by_filters(
+                db,
+                year=query.year,
+                location=query.location,
+                stamping_supplier=query.stamping_supplier,
+                vehicle_model=query.vehicle_model,
+                version=query.version,
+                part_number=query.part_number,
+                audit_status=query.audit_status,
+            ),
         }
         return vos, total, filters
 

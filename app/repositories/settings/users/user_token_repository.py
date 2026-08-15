@@ -1,7 +1,7 @@
 """Token Repository"""
 
 from datetime import datetime, timedelta
-from typing import Any
+from typing import Any, cast
 
 from sqlalchemy.orm import Session
 
@@ -84,7 +84,7 @@ class UserTokenRepository:
         count = (
             db.query(UserToken)
             .filter(UserToken.user_id == user_id)
-            .update(payload, synchronize_session=False)
+            .update(cast(Any, payload), synchronize_session=False)
         )
         db.commit()
         return count

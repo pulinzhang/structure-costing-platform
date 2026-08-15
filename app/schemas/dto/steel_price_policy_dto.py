@@ -6,7 +6,7 @@ Response 类型统一放 vo/steel_price_policy_vo.py
 
 from decimal import Decimal
 from enum import Enum
-from typing import Optional
+from typing import Any, Optional
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
@@ -81,11 +81,11 @@ class LadderItemCreate(BaseModel):
 
     @field_validator("target_sub_group", mode="before")
     @classmethod
-    def strip_target_sub_group(cls, v):
+    def strip_target_sub_group(cls, v: Any) -> Any:
         return _strip(v)
 
     @model_validator(mode="after")
-    def check_at_least_one_dimension(self):
+    def check_at_least_one_dimension(self) -> Any:
         has_thick = self.thick_min is not None or self.thick_max is not None
         has_width = self.width_min is not None or self.width_max is not None
         if not has_thick and not has_width:
@@ -113,7 +113,7 @@ class LadderItemUpdate(BaseModel):
 
     @field_validator("target_sub_group", mode="before")
     @classmethod
-    def strip_target_sub_group(cls, v):
+    def strip_target_sub_group(cls, v: Any) -> Any:
         return _strip(v)
 
 
@@ -136,11 +136,11 @@ class PolicyCreate(BaseModel):
 
     @field_validator("steel_mill", "category_name", "grade_value", mode="before")
     @classmethod
-    def strip_strings(cls, v):
+    def strip_strings(cls, v: Any) -> Any:
         return _strip(v)
 
     @model_validator(mode="after")
-    def check_thickness_policy_requires_base(self):
+    def check_thickness_policy_requires_base(self) -> Any:
         if self.policy_type == PolicyType.THICKNESS:
             if not self.grade_value:
                 raise ValueError("THICKNESS 政策必须指定 grade_value（牌号）")
@@ -158,11 +158,11 @@ class PolicyUpdate(BaseModel):
 
     @field_validator("grade_value", mode="before")
     @classmethod
-    def strip_grade_value(cls, v):
+    def strip_grade_value(cls, v: Any) -> Any:
         return _strip(v)
 
     @model_validator(mode="after")
-    def check_base_thickness_for_thickness_policy(self):
+    def check_base_thickness_for_thickness_policy(self) -> Any:
         if self.base_thickness is not None and self.base_thickness < 0:
             raise ValueError("base_thickness 不能为负数")
         return self
@@ -187,7 +187,7 @@ class PolicyQuery(BaseModel):
 
     @field_validator("steel_mill", "category_name", "grade_value", mode="before")
     @classmethod
-    def strip_query_strings(cls, v):
+    def strip_query_strings(cls, v: Any) -> Any:
         return _strip(v)
 
 
@@ -213,12 +213,12 @@ class PolicyMatchRequest(BaseModel):
 
     @field_validator("steel_mill", "category_name", "grade_value", "target_sub_group", mode="before")
     @classmethod
-    def strip_strings(cls, v):
+    def strip_strings(cls, v: Any) -> Any:
         return _strip(v)
 
     @field_validator("thickness", "width", mode="before")
     @classmethod
-    def coerce_dimensions(cls, v):
+    def coerce_dimensions(cls, v: Any) -> Any:
         if v is None:
             return None
         if isinstance(v, Decimal):
@@ -229,7 +229,7 @@ class PolicyMatchRequest(BaseModel):
 
     @field_validator("zinc_coating", mode="before")
     @classmethod
-    def coerce_zinc_coating(cls, v):
+    def coerce_zinc_coating(cls, v: Any) -> Any:
         if v is None:
             return None
         if isinstance(v, int):
@@ -239,13 +239,13 @@ class PolicyMatchRequest(BaseModel):
         raise ValueError("zinc_coating 必须是整数")
 
     @model_validator(mode="after")
-    def check_at_least_one_dimension(self):
+    def check_at_least_one_dimension(self) -> Any:
         if self.thickness is None and self.width is None and self.zinc_coating is None:
             raise ValueError("至少需要提供 thickness、width 或 zinc_coating 之一")
         return self
 
     @model_validator(mode="after")
-    def check_thickness_requires(self):
+    def check_thickness_requires(self) -> Any:
         if self.policy_type == PolicyType.THICKNESS:
             if not self.grade_value:
                 raise ValueError("THICKNESS 政策匹配必须提供 grade_value")

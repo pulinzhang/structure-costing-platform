@@ -69,7 +69,7 @@ def save_user_avatar(
 
 def delete_avatar_file(avatar_url: str | None) -> None:
     """删除 uploads/avatars 下的旧头像（忽略默认/外部路径）"""
-    if not is_custom_avatar_url(avatar_url):
+    if not avatar_url or not is_custom_avatar_url(avatar_url):
         return
     filename = Path(avatar_url).name
     if not filename or filename in {".", ".."}:

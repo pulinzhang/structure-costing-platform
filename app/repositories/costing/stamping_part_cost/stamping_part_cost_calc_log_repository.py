@@ -1,9 +1,10 @@
 """冲压零件价格核算计算批次日志 Repository。"""
 
 import logging
-from typing import Any, Optional
+from typing import Any, Optional, cast
 
 from sqlalchemy import text
+from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
 from app.models.stamping_part_cost_calc_log import StampingPartCostCalcLog
@@ -28,7 +29,7 @@ class StampingPartCostCalcLogRepository:
     def ensure_processing_lock_index(self, db: Session) -> None:
         if StampingPartCostCalcLogRepository._lock_index_ensured:
             return
-        bind = db.get_bind()
+        bind = cast(Engine, db.get_bind())
         with bind.connect() as conn:
             conn.execute(text(_PROCESSING_LOCK_INDEX_SQL))
             conn.commit()

@@ -1,4 +1,6 @@
-"""钢材基准价格导出服务。"""
+"""钢材基准价格 Excel 生成。"""
+
+from __future__ import annotations
 
 import logging
 from io import BytesIO
@@ -6,56 +8,30 @@ from typing import Any
 
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
-from sqlalchemy.orm import Session
 
-from app.repositories.yishiyiyi.base_price import SteelBasePriceRepository
-from app.schemas.vo.steel_base_price_vo import SteelBasePriceResponse
+logger = logging.getLogger("service.steel_base_price.export.excel")
 
 
-logger = logging.getLogger("service.steel_base_price_export")
+class SteelBasePriceExporter:
+    """将基准价格记录写成 xlsx 字节。"""
 
-
-class SteelBasePriceExportService:
-    """钢材基准价格导出业务。"""
-
-    def __init__(self) -> None:
-        self.repository = SteelBasePriceRepository()
-
-    def export(
+    def generate(
         self,
-        db: Session,
+        records: list[Any],
         *,
         year: int | None = None,
         month: int | None = None,
         location: str | None = None,
         steel_mill: str | None = None,
-        category_name: str | None = None,
-        grade: str | None = None,
-        spec: str | None = None,
     ) -> tuple[bytes, str]:
-        """
-        生成基准价格 Excel 导出文件。
-
-        Returns:
-            (文件字节数据, 文件名)
-        """
-        records = self.repository.list_for_export(
-            db,
-            year=year,
-            month=month,
-            location=location,
-            steel_mill=steel_mill,
-            category_name=category_name.strip() if category_name else None,
-            grade=grade.strip() if grade else None,
-            spec=spec,
-        )
-
         wb = Workbook()
         ws = wb.active
         ws.title = "基准价格导出"
 
         header_font = Font(name="微软雅黑", size=10, bold=True, color="FFFFFF")
-        header_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
+        header_fill = PatternFill(
+            start_color="4472C4", end_color="4472C4", fill_type="solid"
+        )
         header_alignment = Alignment(horizontal="center", vertical="center")
 
         data_font = Font(name="微软雅黑", size=10, color="000000")
@@ -70,9 +46,23 @@ class SteelBasePriceExportService:
         )
 
         headers = [
-            "ID", "年度", "月份", "基地", "钢厂", "钢种大类",
-            "牌号", "规格", "厚度(mm)", "宽度(mm)", "基准价格(元/吨)", "加工费(元/吨)",
-            "文件名", "表页", "行号", "列号", "备注",
+            "ID",
+            "年度",
+            "月份",
+            "基地",
+            "钢厂",
+            "钢种大类",
+            "牌号",
+            "规格",
+            "厚度(mm)",
+            "宽度(mm)",
+            "基准价格(元/吨)",
+            "加工费(元/吨)",
+            "文件名",
+            "表页",
+            "行号",
+            "列号",
+            "备注",
         ]
 
         ws.append(headers)
@@ -120,7 +110,25 @@ class SteelBasePriceExportService:
                 else:
                     cell.alignment = data_alignment_left
 
-        column_widths = [8, 8, 8, 12, 12, 10, 15, 15, 12, 12, 14, 14, 30, 15, 8, 8, 20]
+        column_widths = [
+            8,
+            8,
+            8,
+            12,
+            12,
+            10,
+            15,
+            15,
+            12,
+            12,
+            14,
+            14,
+            30,
+            15,
+            8,
+            8,
+            20,
+        ]
         for col_idx, width in enumerate(column_widths, start=1):
             letter = ws.cell(row=1, column=col_idx).column_letter
             ws.column_dimensions[letter].width = width
@@ -140,5 +148,9 @@ class SteelBasePriceExportService:
 
         output = BytesIO()
         wb.save(output)
-        logger.info("导出基准价格 Excel 完成: filename=%s, records=%d", filename, len(records))
+        logger.info(
+            "导出基准价格 Excel 完成: filename=%s, records=%d",
+            filename,
+            len(records),
+        )
         return output.getvalue(), filename

@@ -62,20 +62,20 @@ class ApiResponse(BaseModel, Generic[T]):
         cls,
         message: str = "系统错误",
         code: int = 500,
-    ) -> "ApiResponse[None]":
+    ) -> "ApiResponse[Any]":
         """系统错误响应（5xx）"""
         return cls(code=code, success=False, message=message, data=None)
 
     @classmethod
-    def created(cls, data: T, message: str = "创建成功") -> "ApiResponse[T]":
+    def created(cls, data: T | None, message: str = "创建成功") -> "ApiResponse[T]":
         return cls(code=201, success=True, message=message, data=data)
 
     @classmethod
-    def updated(cls, data: T, message: str = "更新成功") -> "ApiResponse[T]":
+    def updated(cls, data: T | None, message: str = "更新成功") -> "ApiResponse[T]":
         return cls(code=200, success=True, message=message, data=data)
 
     @classmethod
-    def deleted(cls, message: str = "删除成功") -> "ApiResponse[None]":
+    def deleted(cls, message: str = "删除成功") -> "ApiResponse[Any]":
         return cls(code=200, success=True, message=message, data=None)
 
     @classmethod
@@ -95,7 +95,7 @@ class ApiResponse(BaseModel, Generic[T]):
         page_size = max(page_size, 1)
         total_pages = (total + page_size - 1) // page_size if total > 0 else 0
 
-        page_result = PageResult(
+        page_result: PageResult[Any] = PageResult(
             items=items,
             total=total,
             page=page,
@@ -105,4 +105,4 @@ class ApiResponse(BaseModel, Generic[T]):
             has_prev=page > 1,
             filters=filters,
         )
-        return cls(code=200, success=True, message=message, data=page_result)
+        return ApiResponse[Any](code=200, success=True, message=message, data=page_result)

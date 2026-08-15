@@ -6,11 +6,10 @@
 由后续 create_tables 按最新 Model 重建空表。
 """
 
+from typing import Any
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
-
 from app.utils.logging_config import get_logger
-
 
 logger = get_logger("steel_price_schema_migration")
 
@@ -40,7 +39,7 @@ NEW_SCHEMA_REQUIRED_COLUMNS = {
 LEGACY_MARKER_COLUMNS = {"bid_price", "steel_type", "reference_spec"}
 
 
-def _table_exists(conn, table_name: str) -> bool:
+def _table_exists(conn: Any, table_name: str) -> bool:
     row = conn.execute(
         text(
             "SELECT name FROM sqlite_master WHERE type='table' AND name=:name"
@@ -50,7 +49,7 @@ def _table_exists(conn, table_name: str) -> bool:
     return row is not None
 
 
-def _table_columns(conn, table_name: str) -> set[str]:
+def _table_columns(conn: Any, table_name: str) -> set[str]:
     rows = conn.execute(text(f"PRAGMA table_info({table_name})")).fetchall()
     return {row[1] for row in rows}
 

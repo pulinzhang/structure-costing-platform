@@ -24,7 +24,7 @@ class ImageHandler:
         """
         self._header_row = header_row
 
-    def collect_images(self, sheet) -> Dict[int, bytes]:
+    def collect_images(self, sheet: Any) -> Dict[int, bytes]:
         """
         预扫描 Sheet 中的零件简图
 
@@ -51,8 +51,12 @@ class ImageHandler:
             try:
                 # 起始 col / row（0-indexed → 转 1-indexed）
                 if isinstance(anchor, (OneCellAnchor, TwoCellAnchor)):
-                    col = anchor._from.col
-                    start_row = anchor._from.row
+                    marker = anchor._from
+                    if marker is None or marker.col is None or marker.row is None:
+                        skipped += 1
+                        continue
+                    col = int(marker.col)
+                    start_row = int(marker.row)
                 else:
                     skipped += 1
                     continue
@@ -63,7 +67,7 @@ class ImageHandler:
                     continue
 
                 # 必须起始于数据区附近（≥ header_row）
-                if self._header_row and start_row < self._header_row:
+                if self._header_row is not None and start_row < self._header_row:
                     skipped += 1
                     continue
 

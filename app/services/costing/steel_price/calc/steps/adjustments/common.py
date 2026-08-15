@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from decimal import Decimal
-from typing import Optional
+from typing import Any, Optional
 
 from app.models.steel_price_policy import SteelPriceLadderItem, SteelPricePolicy
 from app.services.costing.steel_price.calc.models import CalcRow
@@ -122,7 +122,7 @@ def steel_mill_match_rank(row_mill: str | None, policy_mill: str | None) -> int:
     return 1
 
 
-def to_decimal(value) -> Optional[Decimal]:
+def to_decimal(value: Any) -> Optional[Decimal]:
     if value is None:
         return None
     text = str(value).strip()
@@ -270,7 +270,7 @@ def order_by_base_thickness(
     row: CalcRow,
     prefer_base_thickness: bool,
 ) -> list[SteelPricePolicy]:
-    def mill_key(policy: SteelPricePolicy) -> tuple:
+    def mill_key(policy: SteelPricePolicy) -> tuple[Any, ...]:
         return (
             steel_mill_match_rank(row.steel_mill, policy.steel_mill),
             normalize_steel_mill(policy.steel_mill),

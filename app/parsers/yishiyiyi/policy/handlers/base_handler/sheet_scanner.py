@@ -15,7 +15,7 @@ from typing import Any, List, Optional, Tuple
 
 from openpyxl.worksheet.worksheet import Worksheet
 
-from app.parsers.yishiyiyi.policy.boundary_parser import _Boundary, _parse_boundary
+from app.parsers.yishiyiyi.policy.boundary_parser import _parse_boundary
 from app.parsers.yishiyiyi.policy.value_parser import _to_int_price, _to_str, _to_str_or_none
 from app.parsers.yishiyiyi.policy.handlers.constants import (
     BENCH_PATTERN,
@@ -80,11 +80,19 @@ class SheetScanner:
         其他被合并的单元格值为 None。
         """
         for merged_range in sheet.merged_cells:
+            min_row = merged_range.min_row
+            max_row = merged_range.max_row
+            min_col = merged_range.min_col
+            max_col = merged_range.max_col
             if (
-                merged_range.min_row <= r <= merged_range.max_row
-                and merged_range.min_col <= c <= merged_range.max_col
+                min_row is None
+                or max_row is None
+                or min_col is None
+                or max_col is None
             ):
-                return merged_range.min_row
+                continue
+            if min_row <= r <= max_row and min_col <= c <= max_col:
+                return int(min_row)
         return None
 
     @staticmethod
@@ -231,7 +239,7 @@ class SheetScanner:
             elif isinstance(raw, str) and _PURE_NUM_RE.match(raw):
                 normalized = "<=" + raw.strip()
             else:
-                normalized = raw
+                normalized = str(raw)
             if _parse_boundary_thickness(normalized) is not None:
                 cols.append(c)
         return cols

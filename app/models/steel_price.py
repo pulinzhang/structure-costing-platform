@@ -1,9 +1,9 @@
 """钢材价格计算结果数据模型。"""
 
+from datetime import datetime
 from decimal import Decimal
-
 from sqlalchemy import (
-    Column,
+
     DateTime,
     ForeignKey,
     Index,
@@ -11,8 +11,8 @@ from sqlalchemy import (
     Numeric,
     String,
     Text,
-    UniqueConstraint,
-)
+    UniqueConstraint)
+from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
 from app.models.audit_mixin import AuditUserMixin
@@ -48,147 +48,147 @@ class SteelPrice(AuditUserMixin, Base):
 
     __tablename__ = "steel_prices"
 
-    id = Column(Integer, primary_key=True, autoincrement=True, comment="主键 ID")
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True, comment="主键 ID")
 
     # 一、时间与匹配维度（业务主键）
-    year = Column(Integer, nullable=False, comment="订单/生效年份，例：2025")
-    month = Column(Integer, nullable=False, comment="订单/生效月份，例：11")
-    location = Column(
+    year: Mapped[int] = mapped_column(Integer, nullable=False, comment="订单/生效年份，例：2025")
+    month: Mapped[int] = mapped_column(Integer, nullable=False, comment="订单/生效月份，例：11")
+    location: Mapped[str] = mapped_column(
         String(50),
         nullable=False,
         comment="采购基地，例：芜湖基地、大连基地、青岛基地、鄂尔多斯基地",
     )
-    steel_mill = Column(
+    steel_mill: Mapped[str] = mapped_column(
         String(100),
         nullable=False,
         comment="中标钢厂，例：马钢、首钢、唐钢、VAMA",
     )
-    category_name = Column(
+    category_name: Mapped[str] = mapped_column(
         String(50),
         nullable=False,
         comment="钢种大类，例：镀锌、冷轧、酸洗",
     )
-    grade = Column(
+    grade: Mapped[str] = mapped_column(
         String(100),
         nullable=False,
         comment="钢材牌号，例：DC01、DC51D+Z",
     )
-    thickness = Column(Numeric(10, 4), nullable=False, comment="实际料厚(mm)")
-    width = Column(
+    thickness: Mapped[Decimal] = mapped_column(Numeric(10, 4), nullable=False, comment="实际料厚(mm)")
+    width: Mapped[Decimal] = mapped_column(
         Numeric(10, 4),
         nullable=False,
         comment="实际宽度(mm)，用于宽度加减价匹配",
     )
-    spec = Column(String(100), nullable=True, comment="展示用规格，例：1.00*1250.00")
+    spec: Mapped[str | None] = mapped_column(String(100), nullable=True, comment="展示用规格，例：1.00*1250.00")
 
     # 二、价格分项
-    base_price = Column(
+    base_price: Mapped[Decimal] = mapped_column(
         Numeric(14, 4),
         nullable=False,
         comment="基准到厂价(元/吨)，来自 steel_base_prices.base_price",
     )
-    thickness_adjustment = Column(
+    thickness_adjustment: Mapped[Decimal] = mapped_column(
         Numeric(14, 4),
         nullable=False,
         default=Decimal("0"),
         comment="厚度加减价(元/吨)",
     )
-    width_adjustment = Column(
+    width_adjustment: Mapped[Decimal] = mapped_column(
         Numeric(14, 4),
         nullable=False,
         default=Decimal("0"),
         comment="宽度加减价(元/吨)",
     )
-    zinc_adjustment = Column(
+    zinc_adjustment: Mapped[Decimal] = mapped_column(
         Numeric(14, 4),
         nullable=False,
         default=Decimal("0"),
         comment="锌层加减价(元/吨)，无则 0",
     )
-    processing_fee = Column(
+    processing_fee: Mapped[Decimal] = mapped_column(
         Numeric(14, 4),
         nullable=False,
         default=Decimal("0"),
         comment="原卷加工费(元/吨)",
     )
-    other_adjustment = Column(
+    other_adjustment: Mapped[Decimal] = mapped_column(
         Numeric(14, 4),
         nullable=False,
         default=Decimal("0"),
         comment="其他/人工临时调整(元/吨)，默认 0",
     )
-    final_price_per_ton = Column(
+    final_price_per_ton: Mapped[Decimal] = mapped_column(
         Numeric(14, 4),
         nullable=False,
         comment="最终吨价(元/吨) = 上述分项之和",
     )
 
     # 三、溯源 FK + Excel 四件套
-    base_price_id = Column(
+    base_price_id: Mapped[int | None] = mapped_column(
         Integer,
         ForeignKey("steel_base_prices.id", ondelete="SET NULL"),
         nullable=True,
         comment="命中的基准价记录 ID",
     )
-    base_excel_filename = Column(String(255), nullable=True, comment="基准价来源 Excel 文件名")
-    base_sheet_name = Column(String(100), nullable=True, comment="基准价来源 Excel 表页名")
-    base_excel_row = Column(Integer, nullable=True, comment="基准价来源 Excel 行号（1-based）")
-    base_excel_col = Column(Integer, nullable=True, comment="基准价来源 Excel 列号（1-based）")
+    base_excel_filename: Mapped[str | None] = mapped_column(String(255), nullable=True, comment="基准价来源 Excel 文件名")
+    base_sheet_name: Mapped[str | None] = mapped_column(String(100), nullable=True, comment="基准价来源 Excel 表页名")
+    base_excel_row: Mapped[int | None] = mapped_column(Integer, nullable=True, comment="基准价来源 Excel 行号（1-based）")
+    base_excel_col: Mapped[int | None] = mapped_column(Integer, nullable=True, comment="基准价来源 Excel 列号（1-based）")
 
-    thickness_policy_id = Column(
+    thickness_policy_id: Mapped[int | None] = mapped_column(
         Integer,
         ForeignKey("steel_price_policies.id", ondelete="SET NULL"),
         nullable=True,
         comment="命中的厚度政策头 ID",
     )
-    thickness_ladder_item_id = Column(
+    thickness_ladder_item_id: Mapped[int | None] = mapped_column(
         Integer,
         ForeignKey("steel_price_ladder_items.id", ondelete="SET NULL"),
         nullable=True,
         comment="命中的厚度阶梯明细 ID",
     )
-    thickness_excel_filename = Column(String(255), nullable=True, comment="厚度政策来源 Excel 文件名")
-    thickness_sheet_name = Column(String(100), nullable=True, comment="厚度政策来源 Excel 表页名")
-    thickness_excel_row = Column(Integer, nullable=True, comment="厚度加减价来源 Excel 行号（1-based）")
-    thickness_excel_col = Column(Integer, nullable=True, comment="厚度加减价来源 Excel 列号（1-based）")
+    thickness_excel_filename: Mapped[str | None] = mapped_column(String(255), nullable=True, comment="厚度政策来源 Excel 文件名")
+    thickness_sheet_name: Mapped[str | None] = mapped_column(String(100), nullable=True, comment="厚度政策来源 Excel 表页名")
+    thickness_excel_row: Mapped[int | None] = mapped_column(Integer, nullable=True, comment="厚度加减价来源 Excel 行号（1-based）")
+    thickness_excel_col: Mapped[int | None] = mapped_column(Integer, nullable=True, comment="厚度加减价来源 Excel 列号（1-based）")
 
-    width_policy_id = Column(
+    width_policy_id: Mapped[int | None] = mapped_column(
         Integer,
         ForeignKey("steel_price_policies.id", ondelete="SET NULL"),
         nullable=True,
         comment="命中的宽度政策头 ID",
     )
-    width_ladder_item_id = Column(
+    width_ladder_item_id: Mapped[int | None] = mapped_column(
         Integer,
         ForeignKey("steel_price_ladder_items.id", ondelete="SET NULL"),
         nullable=True,
         comment="命中的宽度阶梯明细 ID",
     )
-    width_excel_filename = Column(String(255), nullable=True, comment="宽度政策来源 Excel 文件名")
-    width_sheet_name = Column(String(100), nullable=True, comment="宽度政策来源 Excel 表页名")
-    width_excel_row = Column(Integer, nullable=True, comment="宽度加减价来源 Excel 行号（1-based）")
-    width_excel_col = Column(Integer, nullable=True, comment="宽度加减价来源 Excel 列号（1-based）")
+    width_excel_filename: Mapped[str | None] = mapped_column(String(255), nullable=True, comment="宽度政策来源 Excel 文件名")
+    width_sheet_name: Mapped[str | None] = mapped_column(String(100), nullable=True, comment="宽度政策来源 Excel 表页名")
+    width_excel_row: Mapped[int | None] = mapped_column(Integer, nullable=True, comment="宽度加减价来源 Excel 行号（1-based）")
+    width_excel_col: Mapped[int | None] = mapped_column(Integer, nullable=True, comment="宽度加减价来源 Excel 列号（1-based）")
 
-    zinc_policy_id = Column(
+    zinc_policy_id: Mapped[int | None] = mapped_column(
         Integer,
         ForeignKey("steel_price_policies.id", ondelete="SET NULL"),
         nullable=True,
         comment="命中的锌层政策头 ID",
     )
-    zinc_ladder_item_id = Column(
+    zinc_ladder_item_id: Mapped[int | None] = mapped_column(
         Integer,
         ForeignKey("steel_price_ladder_items.id", ondelete="SET NULL"),
         nullable=True,
         comment="命中的锌层阶梯明细 ID",
     )
-    zinc_excel_filename = Column(String(255), nullable=True, comment="锌层政策来源 Excel 文件名")
-    zinc_sheet_name = Column(String(100), nullable=True, comment="锌层政策来源 Excel 表页名")
-    zinc_excel_row = Column(Integer, nullable=True, comment="锌层加减价来源 Excel 行号（1-based）")
-    zinc_excel_col = Column(Integer, nullable=True, comment="锌层加减价来源 Excel 列号（1-based）")
+    zinc_excel_filename: Mapped[str | None] = mapped_column(String(255), nullable=True, comment="锌层政策来源 Excel 文件名")
+    zinc_sheet_name: Mapped[str | None] = mapped_column(String(100), nullable=True, comment="锌层政策来源 Excel 表页名")
+    zinc_excel_row: Mapped[int | None] = mapped_column(Integer, nullable=True, comment="锌层加减价来源 Excel 行号（1-based）")
+    zinc_excel_col: Mapped[int | None] = mapped_column(Integer, nullable=True, comment="锌层加减价来源 Excel 列号（1-based）")
 
     # 四、计算元数据
-    calc_batch_id = Column(String(64), nullable=False, comment="计算批次号（同一次重算共用）")
-    match_status = Column(
+    calc_batch_id: Mapped[str] = mapped_column(String(64), nullable=False, comment="计算批次号（同一次重算共用）")
+    match_status: Mapped[str] = mapped_column(
         String(30),
         nullable=False,
         comment=(
@@ -196,37 +196,37 @@ class SteelPrice(AuditUserMixin, Base):
             "no_thickness_policy / no_width_policy / partial / failed / manual"
         ),
     )
-    calc_status = Column(
+    calc_status: Mapped[str] = mapped_column(
         String(20),
         nullable=False,
         default="success",
         comment="计算状态：success / partial / failed",
     )
-    calc_message = Column(Text, nullable=True, comment="匹配失败或部分匹配原因")
-    formula_version = Column(
+    calc_message: Mapped[str | None] = mapped_column(Text, nullable=True, comment="匹配失败或部分匹配原因")
+    formula_version: Mapped[str] = mapped_column(
         String(20),
         nullable=False,
         default="v1",
         comment="计价公式版本",
     )
-    calculated_at = Column(DateTime, nullable=False, comment="本次计算完成时间")
+    calculated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, comment="本次计算完成时间")
 
     # 五、审核锁定 + 反审核留痕
-    audit_status = Column(
+    audit_status: Mapped[str] = mapped_column(
         String(20),
         nullable=False,
         default="pending",
         comment="审核状态：pending=待审，approved=已通过，rejected=已驳回",
     )
-    audited_by = Column(String(50), nullable=True, comment="最近一次审核人（经理）")
-    audited_at = Column(DateTime, nullable=True, comment="最近一次审核时间")
-    audit_remark = Column(Text, nullable=True, comment="最近一次审核意见（通过/驳回）")
-    reverse_audited_by = Column(String(50), nullable=True, comment="反审核人（经理）")
-    reverse_audited_at = Column(DateTime, nullable=True, comment="反审核时间")
-    reverse_audit_remark = Column(Text, nullable=True, comment="反审核原因")
+    audited_by: Mapped[str | None] = mapped_column(String(50), nullable=True, comment="最近一次审核人（经理）")
+    audited_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, comment="最近一次审核时间")
+    audit_remark: Mapped[str | None] = mapped_column(Text, nullable=True, comment="最近一次审核意见（通过/驳回）")
+    reverse_audited_by: Mapped[str | None] = mapped_column(String(50), nullable=True, comment="反审核人（经理）")
+    reverse_audited_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, comment="反审核时间")
+    reverse_audit_remark: Mapped[str | None] = mapped_column(Text, nullable=True, comment="反审核原因")
 
     # 六、辅助与审计
-    remark = Column(Text, nullable=True, comment="人工备注（不承担溯源）")
+    remark: Mapped[str | None] = mapped_column(Text, nullable=True, comment="人工备注（不承担溯源）")
 
     __table_args__ = (
         UniqueConstraint(

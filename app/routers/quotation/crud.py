@@ -3,16 +3,15 @@
 Quotation Router - API 接口
 """
 
+from typing import Any
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
-
 from app.common.permissions.codes import Perm
 from app.utils.logging_config import get_logger
 from app.database import get_db
 from app.deps.permissions import require_perm
 from app.schemas.vo.user_vo import UserVO
 from app.utils.response import ApiResponse
-
 
 logger = get_logger("router.quotation")
 router = APIRouter(prefix="/api/quotation", tags=["报价 API"])
@@ -28,7 +27,7 @@ async def list_quotations(
     status: str = Query(None, description="状态筛选"),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.QUOTATION_VIEW)),
-):
+) -> Any:
     """
     获取报价列表 API
     """

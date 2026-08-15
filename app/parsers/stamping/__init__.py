@@ -4,7 +4,6 @@
 from app.parsers.stamping.stamping_parser import (
     StampingExcelParser,
     parse_stamping_excel,
-    ParserResult,
 )
 
 # Excel 上下文

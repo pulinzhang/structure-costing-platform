@@ -15,7 +15,7 @@ from typing import Any
 _EMPTY_MARKERS = {"", "/", "／", "-", "—", "无"}
 
 
-def cell_value(ws, row: int, col: int) -> Any:
+def cell_value(ws: Any, row: int, col: int) -> Any:
     return ws.cell(row, col).value
 
 

@@ -1,10 +1,9 @@
 """BOM Service - 业务逻辑"""
 
+from typing import Any
 import logging
-
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
-
 from app.common.audit import audit_create
 from app.common.bom.manufacturing_category import resolve_manufacturing_category
 from app.repositories.bom.bom_repository import BomNodeRepository, BomSnapshotRepository
@@ -23,12 +22,12 @@ _ALLOWED_ROLES = {"supply", "structure", "make", "buy", "consumable"}
 class BomService:
     """BOM 清单与树节点业务（冲焊件供应商域）"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.snapshot_repo = BomSnapshotRepository()
         self.node_repo = BomNodeRepository()
 
     @staticmethod
-    def _to_node_vo(row, *, has_children: bool = False) -> BomNodeVO:
+    def _to_node_vo(row: Any, *, has_children: bool = False) -> BomNodeVO:
         vo = BomNodeVO.model_validate(row)
         vo.manufacturing_category = resolve_manufacturing_category(
             node_role=vo.node_role,
@@ -54,7 +53,7 @@ class BomService:
 
     def paginate_snapshots(
         self, db: Session, query: BomSnapshotQuery
-    ) -> tuple[list[BomSnapshotVO], int, dict]:
+    ) -> tuple[list[BomSnapshotVO], int, dict[str, Any]]:
         skip = (query.page - 1) * query.size
         rows, total = self.snapshot_repo.paginate(
             db,

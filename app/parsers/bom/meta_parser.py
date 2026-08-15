@@ -2,13 +2,16 @@
 
 from __future__ import annotations
 
+from typing import Any
+
+
 import re
 
 from app.parsers.bom.models import BomParsedMeta
 from app.parsers.bom.value_parser import cell_value, parse_date, to_text
 
 
-def parse_bom_meta(ws) -> BomParsedMeta:
+def parse_bom_meta(ws: Any) -> BomParsedMeta:
     """从工作表前几行解析清单头信息。"""
     meta = BomParsedMeta()
     meta.title = to_text(cell_value(ws, 1, 1))

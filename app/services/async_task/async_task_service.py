@@ -17,7 +17,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
 from typing import Any, Callable, Optional
 
-from sqlalchemy import delete, update
+from sqlalchemy import delete, insert, update
 from sqlalchemy.orm import Session
 
 from app.common.timezone import now
@@ -53,7 +53,7 @@ _progress_throttle_state: dict[str, tuple[float, int]] = {}
 class AsyncTaskService:
     """异步任务业务逻辑（辅助库，多 worker 安全）。"""
 
-    def _autocommit_connection(self):
+    def _autocommit_connection(self) -> Any:
         """辅助库独立连接 + AUTOCOMMIT。"""
         engine = AuxiliaryDatabaseConfig.get_engine()
         return engine.connect().execution_options(isolation_level="AUTOCOMMIT")
@@ -103,7 +103,7 @@ class AsyncTaskService:
         current_time = now()
         with self._autocommit_connection() as conn:
             conn.execute(
-                AsyncTask.__table__.insert().values(
+                insert(AsyncTask).values(
                     task_id=task_id,
                     task_type=task_type,
                     status=STATUS_PENDING,

@@ -1,10 +1,10 @@
 """冲压零件价格核算计算批次日志。"""
 
-from sqlalchemy import Column, DateTime, Index, Integer, String, Text, text
-
+from datetime import datetime
+from sqlalchemy import DateTime, Index, Integer, String, Text, text
+from sqlalchemy.orm import Mapped, mapped_column
 from app.database import Base
 from app.models.audit_mixin import AuditUserMixin
-
 
 class StampingPartCostCalcLog(AuditUserMixin, Base):
     """
@@ -15,36 +15,36 @@ class StampingPartCostCalcLog(AuditUserMixin, Base):
 
     __tablename__ = "stamping_part_cost_calc_logs"
 
-    id = Column(Integer, primary_key=True, autoincrement=True, comment="主键 ID")
-    calc_batch_id = Column(String(64), nullable=False, unique=True, comment="计算批次号")
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True, comment="主键 ID")
+    calc_batch_id: Mapped[str] = mapped_column(String(64), nullable=False, unique=True, comment="计算批次号")
 
-    year = Column(Integer, nullable=False, comment="计算年度")
-    month = Column(Integer, nullable=False, comment="计算月份")
-    location = Column(String(50), nullable=False, comment="采购基地")
-    stamping_supplier = Column(String(50), nullable=False, comment="冲压工厂")
-    vehicle_model = Column(String(50), nullable=True, comment="车型（筛选）")
-    version = Column(String(20), nullable=True, comment="版本（筛选）")
+    year: Mapped[int] = mapped_column(Integer, nullable=False, comment="计算年度")
+    month: Mapped[int] = mapped_column(Integer, nullable=False, comment="计算月份")
+    location: Mapped[str] = mapped_column(String(50), nullable=False, comment="采购基地")
+    stamping_supplier: Mapped[str] = mapped_column(String(50), nullable=False, comment="冲压工厂")
+    vehicle_model: Mapped[str | None] = mapped_column(String(50), nullable=True, comment="车型（筛选）")
+    version: Mapped[str | None] = mapped_column(String(20), nullable=True, comment="版本（筛选）")
 
-    status = Column(
+    status: Mapped[str] = mapped_column(
         String(20),
         nullable=False,
         default="failed",
         comment="批次状态：processing / success / partial / failed",
     )
 
-    total_parts = Column(Integer, nullable=False, default=0, comment="匹配零件数")
-    success_count = Column(Integer, nullable=False, default=0, comment="计算成功数")
-    failed_count = Column(Integer, nullable=False, default=0, comment="计算失败数")
-    skipped_approved_count = Column(
+    total_parts: Mapped[int] = mapped_column(Integer, nullable=False, default=0, comment="匹配零件数")
+    success_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, comment="计算成功数")
+    failed_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, comment="计算失败数")
+    skipped_approved_count: Mapped[int] = mapped_column(
         Integer, nullable=False, default=0, comment="跳过已审核数"
     )
 
-    detail_text = Column(Text, nullable=False, default="", comment="计算过程全文")
+    detail_text: Mapped[str] = mapped_column(Text, nullable=False, default="", comment="计算过程全文")
 
-    started_at = Column(DateTime, nullable=False, comment="计算开始时间")
-    finished_at = Column(DateTime, nullable=True, comment="计算结束时间")
-    operator_id = Column(Integer, nullable=True, comment="提交人用户 ID")
-    operator_name = Column(String(50), nullable=True, comment="提交人显示名")
+    started_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, comment="计算开始时间")
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, comment="计算结束时间")
+    operator_id: Mapped[int | None] = mapped_column(Integer, nullable=True, comment="提交人用户 ID")
+    operator_name: Mapped[str | None] = mapped_column(String(50), nullable=True, comment="提交人显示名")
 
     __table_args__ = (
         Index("ix_spc_calc_log_batch", "calc_batch_id"),

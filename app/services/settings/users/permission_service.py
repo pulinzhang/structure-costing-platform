@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from typing import Any
+
+
 from sqlalchemy.orm import Session
 
 from app.common.permissions.catalog import (
@@ -25,7 +28,7 @@ class PermissionService:
         self.user_repo = UserRepository()
         self.perm_repo = UserPermissionRepository()
 
-    def get_permission_tree(self, current_user: UserVO) -> list[dict]:
+    def get_permission_tree(self, current_user: UserVO) -> list[dict[str, Any]]:
         require_admin(current_user)
         return get_tree()
 
@@ -72,7 +75,7 @@ class PermissionService:
             db.commit()
         return result
 
-    def resolve_permissions_for_user(self, db: Session, user) -> list[str]:
+    def resolve_permissions_for_user(self, db: Session, user: Any) -> list[str]:
         """组装 UserVO.permissions：admin → ['*']，否则读表。"""
         if getattr(user, "is_admin", False):
             return ["*"]

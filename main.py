@@ -288,9 +288,16 @@ def create_app() -> FastAPI:
     from app.routers.stamping.upload import router as stamping_upload_router
     from app.routers.stamping.tonnage_price import router as stamping_tonnage_price_router
     from app.routers.stamping.stamping_process_fee import router as stamping_process_fee_router
-    from app.routers.costing.stamping_part_cost.crud import router as costing_stamping_part_cost_router
+    from app.routers.costing.stamping_part_cost.calc import (
+        router as costing_stamping_part_cost_calc_router,
+    )
+    from app.routers.costing.stamping_part_cost.crud import (
+        router as costing_stamping_part_cost_router,
+    )
     from app.routers.costing.steel_price.crud import router as costing_steel_price_router
     from app.routers.costing.steel_price.calc import router as costing_steel_price_calc_router
+    from app.routers.yishiyiyi.policy.upload import router as yishiyiyi_policy_upload_router
+    from app.routers.yishiyiyi.policy.export import router as yishiyiyi_policy_export_router
     from app.routers.yishiyiyi.policy.crud import router as yishiyiyi_policy_router
     from app.routers.yishiyiyi.base_price.crud import router as yishiyiyi_base_price_router
     from app.routers.yishiyiyi.winning_thickness.crud import router as yishiyiyi_winning_thickness_router
@@ -307,9 +314,12 @@ def create_app() -> FastAPI:
     app.include_router(stamping_upload_router)
     app.include_router(stamping_tonnage_price_router)
     app.include_router(stamping_process_fee_router)
+    app.include_router(costing_stamping_part_cost_calc_router)
     app.include_router(costing_stamping_part_cost_router)
     app.include_router(costing_steel_price_calc_router)
     app.include_router(costing_steel_price_router)
+    app.include_router(yishiyiyi_policy_upload_router)
+    app.include_router(yishiyiyi_policy_export_router)
     app.include_router(yishiyiyi_policy_router)
     app.include_router(yishiyiyi_base_price_router)
     app.include_router(yishiyiyi_winning_thickness_router)

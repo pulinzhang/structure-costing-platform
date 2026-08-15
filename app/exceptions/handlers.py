@@ -15,7 +15,7 @@ from app.utils.response import ApiResponse
 
 
 async def http_exception_handler(
-    request, exc: HTTPException
+    request: Request, exc: HTTPException
 ) -> JSONResponse:
     """处理 HTTPException
 
@@ -31,7 +31,7 @@ async def http_exception_handler(
 
 
 async def validation_exception_handler(
-    request, exc: Union[RequestValidationError, ValidationError]
+    request: Request, exc: Union[RequestValidationError, ValidationError]
 ) -> JSONResponse:
     """处理 Pydantic 验证错误"""
     errors = []
@@ -50,7 +50,7 @@ async def validation_exception_handler(
 
 
 async def business_exception_handler(
-    request, exc: BusinessException
+    request: Request, exc: BusinessException
 ) -> JSONResponse:
     """处理业务异常
 
@@ -65,7 +65,7 @@ async def business_exception_handler(
     )
 
 
-async def generic_exception_handler(request, exc: Exception) -> JSONResponse:
+async def generic_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """处理未捕获的通用异常"""
     # TODO: 添加日志记录
     return JSONResponse(

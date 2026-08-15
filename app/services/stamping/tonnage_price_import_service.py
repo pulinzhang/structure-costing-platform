@@ -61,7 +61,7 @@ class StampingTonnagePriceImportService:
             cell.border = thin_border
 
         for row_idx, (name, unit, price) in enumerate(TEMPLATE_SAMPLE_ROWS, start=2):
-            values = [name, unit, price]
+            values: list[str | float] = [name, unit, price]
             for col, value in enumerate(values, start=1):
                 cell = sheet.cell(row=row_idx, column=col, value=value)
                 cell.font = data_font

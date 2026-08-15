@@ -384,8 +384,8 @@ class MagangSheetHandler(BaseSheetHandler):
         sheet: Worksheet,
         steel_mill: str,
         warnings: List[str],
-    ) -> List:
-        policies: List = []
+    ) -> List[Any]:
+        policies: List[Any] = []
         policies.extend(self._parse_thickness_fixed(sheet, steel_mill))
         policies.extend(self._parse_width_fixed(sheet, steel_mill, warnings))
         policies.extend(self.parse_zinc_coating_blocks(sheet, steel_mill))
@@ -397,8 +397,8 @@ class MagangSheetHandler(BaseSheetHandler):
 
     def _parse_width_fixed(
         self, sheet: Worksheet, steel_mill: str, warnings: List[str]
-    ) -> List:
-        policies: List = []
+    ) -> List[Any]:
+        policies: List[Any] = []
         for region in _WIDTH_REGIONS:
             policies.extend(self._parse_one_region(sheet, steel_mill, region, warnings))
         return policies
@@ -409,7 +409,7 @@ class MagangSheetHandler(BaseSheetHandler):
         steel_mill: str,
         region: _WidthRegion,
         warnings: List[str],
-    ) -> List:
+    ) -> List[Any]:
         """分两步处理：
         对于grades为空的，说明是冷轧卷类
         对于grades不为空的，说明是板类。grades里的每一个都是一个policy
@@ -458,7 +458,7 @@ class MagangSheetHandler(BaseSheetHandler):
             use_row_grade = True
 
         # Step 4: 对每个钢种构建 policy
-        policies: List = []
+        policies: List[Any] = []
         if use_row_grade:
             # 冷轧卷类：使用行数据中的 grade_value
             for r, grade_value in grade_rows_with_value:
@@ -479,6 +479,7 @@ class MagangSheetHandler(BaseSheetHandler):
         else:
             # 板类：外层是行（每行代表一个厚度范围），里层是该行对应的钢种；
             # 同一行的价格数据被所有钢种共用
+            assert steel_grades is not None
             for data_row, _ in grade_rows_with_value:
                 for grade_value in steel_grades:
                     items = self._build_width_items(sheet, data_row, price_cols, boundaries)
@@ -553,9 +554,9 @@ class MagangSheetHandler(BaseSheetHandler):
 
     def _parse_thickness_fixed(
         self, sheet: Worksheet, steel_mill: str
-    ) -> List:
+    ) -> List[Any]:
         blocks = self.find_default_thickness_blocks(sheet, steel_mill)
-        policies: List = []
+        policies: List[Any] = []
         for block in blocks:
             policies.extend(
                 self.assembler.build_policies_from_block(sheet, steel_mill, block)

@@ -83,7 +83,7 @@ def _parse_price(value: Any) -> Decimal | None:
     return _round3(number)
 
 
-def _find_header_row(sheet) -> tuple[int, dict[str, int]] | None:
+def _find_header_row(sheet: Any) -> tuple[int, dict[str, int]] | None:
     """定位表头行，返回 (行号, 列名→列号)。"""
     aliases = {
         HEADER_NAME: {HEADER_NAME, "名称", "吨位", "压机吨位", "吨位名称"},

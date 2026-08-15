@@ -16,7 +16,6 @@ raise NotFoundException(f"零件不存在: id={part_id}")
 ```
 """
 
-from typing import Optional
 
 
 class BusinessException(Exception):

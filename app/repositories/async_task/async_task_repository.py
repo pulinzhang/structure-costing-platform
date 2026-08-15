@@ -1,7 +1,7 @@
 """异步任务 Repository。"""
 
 from datetime import datetime
-from typing import Optional
+from typing import Any, Optional
 
 from sqlalchemy.orm import Session
 
@@ -15,13 +15,13 @@ class AsyncTaskRepository:
     def get_by_task_id(self, db: Session, task_id: str) -> Optional[AsyncTask]:
         return db.query(AsyncTask).filter(AsyncTask.task_id == task_id).first()
 
-    def create(self, db: Session, data: dict) -> AsyncTask:
+    def create(self, db: Session, data: dict[str, Any]) -> AsyncTask:
         record = AsyncTask(**data)
         db.add(record)
         db.flush()
         return record
 
-    def update_fields(self, db: Session, record: AsyncTask, fields: dict) -> AsyncTask:
+    def update_fields(self, db: Session, record: AsyncTask, fields: dict[str, Any]) -> AsyncTask:
         for key, value in fields.items():
             setattr(record, key, value)
         record.updated_at = now()

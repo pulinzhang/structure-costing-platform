@@ -9,7 +9,7 @@ import io
 import re
 from dataclasses import dataclass, field
 from decimal import Decimal
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple
 
 import openpyxl
 import xlrd
@@ -168,7 +168,7 @@ def _parse_sheet2(wb: openpyxl.Workbook) -> Dict[str, Dict[str, str]]:
 # 第3层：表头解析器（元数据提取）
 # ============================================================
 
-def _extract_year_month_from_sheet(ws) -> Tuple[Optional[int], Optional[int]]:
+def _extract_year_month_from_sheet(ws: Any) -> Tuple[Optional[int], Optional[int]]:
     """从工作表前3行提取年月"""
     for row in ws.iter_rows(min_row=1, max_row=3, values_only=True):
         for cell in row:
@@ -179,7 +179,7 @@ def _extract_year_month_from_sheet(ws) -> Tuple[Optional[int], Optional[int]]:
     return None, None
 
 
-def _extract_base_configs(ws) -> List[BaseColumnConfig]:
+def _extract_base_configs(ws: Any) -> List[BaseColumnConfig]:
     """
     从第4行(基地名)和第5行(子标题)动态识别所有基地列对。
     支持：
@@ -262,7 +262,7 @@ def _extract_base_configs(ws) -> List[BaseColumnConfig]:
 
     return configs
 
-def _extract_processing_fee_col(ws) -> Optional[int]:
+def _extract_processing_fee_col(ws: Any) -> Optional[int]:
     """
     从第4行或第5行查找"加工费"列的索引（0-based）
     返回列索引，找不到返回 None
@@ -282,7 +282,7 @@ def _extract_processing_fee_col(ws) -> Optional[int]:
     return None
 
 
-def _find_spec_column(ws) -> Optional[int]:
+def _find_spec_column(ws: Any) -> Optional[int]:
     """
     从表头行（第4行或第5行）查找"参考规格"或"规格"列的索引。
     返回列索引（0-based），找不到返回 None。
@@ -314,7 +314,7 @@ def _find_spec_column(ws) -> Optional[int]:
 # ============================================================
 
 def _map_row_to_records(
-    row: tuple,
+    row: tuple[Any, ...],
     context: ParsedContext,
     excel_row_num: int,
     processing_fee: Decimal
@@ -365,7 +365,7 @@ def _map_row_to_records(
 
     return records
 
-def _find_data_sheet(wb) -> Optional[Any]:
+def _find_data_sheet(wb: Any) -> Optional[Any]:
     """
     自动查找包含数据的工作表。
     识别规则：在第4行或第5行能找到"钢种"、"牌号"、"规格"等关键列名。
@@ -430,7 +430,7 @@ class _XlsSheetWrapper:
         self._sheet = sheet
 
     @property
-    def title(self) -> str:
+    def title(self) -> Any:
         return self._sheet.name
 
     def iter_rows(self, min_row: int = 1, max_row: Optional[int] = None,

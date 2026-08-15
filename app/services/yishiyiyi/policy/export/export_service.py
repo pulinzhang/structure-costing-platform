@@ -5,13 +5,13 @@
 """
 
 import logging
-from typing import Optional
+from typing import Any, Optional
 
 from sqlalchemy.orm import Session
 
 from app.repositories.yishiyiyi.policy import SteelPricePolicyRepository
 from app.repositories.yishiyiyi.policy.dto import ExportRow
-from app.services.yishiyiyi.policy.excel_exporter import SteelPricePolicyExporter
+from app.services.yishiyiyi.policy.export.excel_exporter import SteelPricePolicyExporter
 
 
 logger = logging.getLogger("service.steel_price_policy.export")
@@ -67,7 +67,7 @@ class SteelPricePolicyExportService:
             return []
 
         policy_ids = [p.id for p in policies]
-        items_map: dict[int, list] = {}
+        items_map: dict[int, list[Any]] = {}
         items = self.repository.list_items_for_export(db, policy_ids)
         for item in items:
             items_map.setdefault(item.policy_id, []).append(item)

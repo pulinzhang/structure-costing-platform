@@ -4,11 +4,10 @@
 
 from datetime import datetime
 from decimal import Decimal
-from typing import Optional, List, Union
+from typing import Any, Optional, Union
 
 from pydantic import BaseModel, Field, field_serializer
 
-from app.schemas.common.page_result import PageResult
 
 
 def datetime_to_str(value: Union[datetime, str, None]) -> Optional[str]:
@@ -77,11 +76,11 @@ class StampingPartResponse(BaseModel):
     updated_at: Optional[datetime] = None
 
     @field_serializer("created_at", "updated_at")
-    def serialize_datetime(self, value):
+    def serialize_datetime(self, value: Any) -> Any:
         return datetime_to_str(value)
 
     @field_serializer("thickness", "part_weight", "sheet_length", "sheet_width")
-    def serialize_decimal(self, value):
+    def serialize_decimal(self, value: Any) -> Any:
         return decimal_to_float(value)
 
 
@@ -110,7 +109,7 @@ class StampingPartListResponse(BaseModel):
     process_count: int = Field(default=0, description="工序数量")
 
     @field_serializer("thickness", "part_weight")
-    def serialize_decimal(self, value):
+    def serialize_decimal(self, value: Any) -> Any:
         return decimal_to_float(value)
 
 
@@ -183,11 +182,11 @@ class StampingPartWithProcessesResponse(BaseModel):
     processes: list[StampingProcessResponse] = []
 
     @field_serializer("created_at", "updated_at")
-    def serialize_datetime(self, value):
+    def serialize_datetime(self, value: Any) -> Any:
         return datetime_to_str(value)
 
     @field_serializer("thickness", "part_weight", "sheet_length", "sheet_width")
-    def serialize_decimal(self, value):
+    def serialize_decimal(self, value: Any) -> Any:
         return decimal_to_float(value)
 
 

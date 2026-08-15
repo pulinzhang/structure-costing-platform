@@ -10,10 +10,9 @@
 4. 比 Pydantic 轻量，比 dict 严格
 """
 
+from typing import Any
 from dataclasses import dataclass, field
 from decimal import Decimal
-from typing import Optional
-
 
 @dataclass(slots=True)
 class FileInfo:
@@ -98,5 +97,5 @@ class UploadResult:
     parts_count: int = field(metadata={"description": "零件数量"})
     processes_count: int = field(metadata={"description": "工序数量"})
     images_count: int = field(metadata={"description": "简图数量"})
-    warnings: list = field(default_factory=list, metadata={"description": "警告信息"})
+    warnings: list[Any] = field(default_factory=list, metadata={"description": "警告信息"})
     parse_time_ms: float = field(default=0.0, metadata={"description": "解析耗时(ms)"})

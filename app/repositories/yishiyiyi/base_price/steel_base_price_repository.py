@@ -6,7 +6,7 @@
 from typing import Any, Optional
 
 from sqlalchemy import distinct, func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Query, Session
 
 from app.models.steel_base_price import SteelBasePrice
 from app.schemas.dto.steel_base_price_dto import FilterOptions
@@ -92,13 +92,13 @@ class SteelBasePriceRepository:
     def _distinct_values(
         self,
         db: Session,
-        column,
+        column: Any,
         *,
         filter_none: bool = False,
         descending: bool = False,
-    ) -> list:
+    ) -> list[Any]:
         """通用 distinct 值查询。"""
-        query = db.query(distinct(column))
+        query: Query[Any] = db.query(distinct(column))
         if filter_none:
             query = query.filter(column.isnot(None))
         order_col = column.desc() if descending else column.asc()

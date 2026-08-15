@@ -17,9 +17,11 @@ Excel 对照（材料清单典型列）：
        | 材料 | 料厚 | 厂家 | 重量 | 检具 | 备注
 """
 
+from typing import Any
+from decimal import Decimal
 from sqlalchemy import (
+
     Boolean,
-    Column,
     Date,
     ForeignKey,
     Index,
@@ -28,9 +30,8 @@ from sqlalchemy import (
     SmallInteger,
     String,
     Text,
-    UniqueConstraint,
-)
-from sqlalchemy.orm import Mapped, relationship
+    UniqueConstraint)
+from sqlalchemy.orm import Mapped, relationship, mapped_column
 
 from app.database import Base
 from app.models.audit_mixin import AuditUserMixin
@@ -49,98 +50,98 @@ class BomSnapshot(AuditUserMixin, Base):
 
     __tablename__ = "bom_snapshots"
 
-    id = Column(Integer, primary_key=True, autoincrement=True, comment="主键")
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True, comment="主键")
 
     # ---------- 业务主键维度（核价/钢价匹配必用） ----------
-    location = Column(
+    location: Mapped[str] = mapped_column(
         String(50),
         nullable=False,
         comment="采购基地（导入必选，非 Excel 字段）。例：大连、芜湖、鄂尔多斯、青岛。与钢价/冲压零件基地对齐",
     )
-    vehicle_model = Column(
+    vehicle_model: Mapped[str] = mapped_column(
         String(50),
         nullable=False,
         comment="项目/车型代号。来自 Excel 头「项目代号」，例：T28",
     )
-    bom_version = Column(
+    bom_version: Mapped[str] = mapped_column(
         String(20),
         nullable=False,
         comment="材料清单版本号。来自 Excel 头「版本」，例：D/00；解析不到时默认 V1",
     )
 
     # ---------- Excel 文档头信息（展示/溯源，不参与钢价匹配） ----------
-    product_category = Column(
+    product_category: Mapped[str | None] = mapped_column(
         String(50),
         nullable=True,
         comment="产品类别。来自 Excel 头「产品类别」，例：车身件",
     )
-    customer_name = Column(
+    customer_name: Mapped[str | None] = mapped_column(
         String(100),
         nullable=True,
         comment="顾客/主机厂名称。来自 Excel 头「顾客名称」，例：奇瑞公司",
     )
-    stage = Column(
+    stage: Mapped[str] = mapped_column(
         String(30),
         nullable=False,
         default="initial",
         comment="清单阶段。initial=初始清单，mass=批量生产清单（Excel 勾选框解析）",
     )
-    doc_no = Column(
+    doc_no: Mapped[str | None] = mapped_column(
         String(50),
         nullable=True,
         comment="单据编号。来自 Excel 头「编号」，可空",
     )
-    prepare_dept = Column(
+    prepare_dept: Mapped[str | None] = mapped_column(
         String(100),
         nullable=True,
         comment="编制部门。来自 Excel 头「编制部门」，例：技术中心",
     )
-    doc_date = Column(
+    doc_date: Mapped[Any | None] = mapped_column(
         Date,
         nullable=True,
         comment="编制日期。来自 Excel 头「编制日期」",
     )
-    revision_date = Column(
+    revision_date: Mapped[Any | None] = mapped_column(
         Date,
         nullable=True,
         comment="修订日期。来自 Excel 头「修订日期」",
     )
-    title = Column(
+    title: Mapped[str | None] = mapped_column(
         String(200),
         nullable=True,
         comment="清单标题。来自 Excel 第 1 行，例：T28项目产品材料清单",
     )
 
     # ---------- 源文件落盘（防扯皮） ----------
-    source_filename = Column(
+    source_filename: Mapped[str] = mapped_column(
         String(255),
         nullable=False,
         comment="上传时的原始 Excel 文件名（用户侧名称）",
     )
-    source_sheet_name = Column(
+    source_sheet_name: Mapped[str | None] = mapped_column(
         String(100),
         nullable=True,
         comment="解析所用工作表名（Excel 表页）。例：材料清单",
     )
-    source_file_path = Column(
+    source_file_path: Mapped[str | None] = mapped_column(
         String(500),
         nullable=True,
         comment="服务器落盘相对路径（相对 UPLOAD_DIR）。例：bom/青岛/T28/D_00/青岛_T28_D_00_时间戳_原名.xlsx；通过 /uploads/ 访问",
     )
-    source_file_hash = Column(
+    source_file_hash: Mapped[str | None] = mapped_column(
         String(64),
         nullable=True,
         comment="源 Excel 文件内容 SHA256（64 位 hex），用于完整性校验/去重比对",
     )
 
     # ---------- 状态 ----------
-    status = Column(
+    status: Mapped[str] = mapped_column(
         String(20),
         nullable=False,
         default="active",
         comment="清单状态：draft=草稿，active=生效，archived=归档。导入默认为 active",
     )
-    remark = Column(
+    remark: Mapped[str | None] = mapped_column(
         Text,
         nullable=True,
         comment="清单级备注（人工备注，非 Excel 行备注）",
@@ -188,45 +189,45 @@ class BomNode(AuditUserMixin, Base):
 
     __tablename__ = "bom_nodes"
 
-    id = Column(Integer, primary_key=True, autoincrement=True, comment="主键")
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True, comment="主键")
 
     # ---------- 树结构 ----------
-    snapshot_id = Column(
+    snapshot_id: Mapped[int] = mapped_column(
         Integer,
         ForeignKey("bom_snapshots.id", ondelete="CASCADE"),
         nullable=False,
         comment="所属清单版本（外键 → bom_snapshots.id）。删清单时级联删节点",
     )
-    parent_id = Column(
+    parent_id: Mapped[int | None] = mapped_column(
         Integer,
         ForeignKey("bom_nodes.id", ondelete="CASCADE"),
         nullable=True,
         comment="父节点 ID（外键 → bom_nodes.id）。L0 供货总成为 NULL；删父节点时级联删子树",
     )
-    level = Column(
+    level: Mapped[Any] = mapped_column(
         SmallInteger,
         nullable=False,
         comment="树层级。0=供货总成，1=一级子件，2=二级子件（对应 Excel 三级列组）",
     )
-    sort_no = Column(
+    sort_no: Mapped[int] = mapped_column(
         Integer,
         nullable=False,
         default=0,
         comment="导入顺序号（全局递增，用于还原 Excel 行序/同级排序）",
     )
-    seq_no = Column(
+    seq_no: Mapped[int | None] = mapped_column(
         Integer,
         nullable=True,
         comment="Excel「序号」列。通常仅 L0 有值，例：1、2、3",
     )
 
     # ---------- 零件标识（来自 Excel 对应层级列） ----------
-    internal_number = Column(
+    internal_number: Mapped[str | None] = mapped_column(
         String(50),
         nullable=True,
         comment="内部号。L0←总成内部号，L1←一级内部号，L2←二级内部号。例：ACA610、ACA610001",
     )
-    part_number = Column(
+    part_number: Mapped[str] = mapped_column(
         String(50),
         nullable=False,
         comment=(
@@ -235,32 +236,32 @@ class BomNode(AuditUserMixin, Base):
             "L0←总成零件号，L1←一级零件号，L2←二级零件号。例：501006873AA"
         ),
     )
-    part_name = Column(
+    part_name: Mapped[str | None] = mapped_column(
         String(200),
         nullable=True,
         comment="零件名称。对应各层级「零件名称」列。例：流水槽加强梁总成",
     )
 
     # ---------- 用量（相对父件；单车用量需沿树连乘） ----------
-    qty = Column(
+    qty: Mapped[Decimal | None] = mapped_column(
         Numeric(12, 4),
         nullable=True,
         comment="相对父件用量数值。板料/件多为整数；胶可能为长度数值。缺省解析为 1",
     )
-    qty_unit = Column(
+    qty_unit: Mapped[str] = mapped_column(
         String(20),
         nullable=False,
         default="pcs",
         comment="用量单位。pcs=件数；mm=长度（结构胶等）。影响核价是否走钢价公式",
     )
-    qty_text = Column(
+    qty_text: Mapped[str | None] = mapped_column(
         String(50),
         nullable=True,
         comment="用量原文（保留 Excel 写法）。例：1、2、1550mm",
     )
 
     # ---------- 角色 / 报价边界 ----------
-    node_role = Column(
+    node_role: Mapped[str] = mapped_column(
         String(20),
         nullable=False,
         comment=(
@@ -270,7 +271,7 @@ class BomNode(AuditUserMixin, Base):
             "冲焊件业务域不含电子/电气品类。"
         ),
     )
-    is_supply_unit = Column(
+    is_supply_unit: Mapped[bool] = mapped_column(
         Boolean,
         nullable=False,
         default=False,
@@ -278,49 +279,49 @@ class BomNode(AuditUserMixin, Base):
     )
 
     # ---------- 材料属性（主要挂在叶子；有二级时属性在二级） ----------
-    material = Column(
+    material: Mapped[str | None] = mapped_column(
         String(50),
         nullable=True,
         comment="材质/牌号。来自 Excel「材料」列。例：DC01、HC180YD+Z、SWRCH22A。自制件用于匹配钢价",
     )
-    thickness_mm = Column(
+    thickness_mm: Mapped[Decimal | None] = mapped_column(
         Numeric(10, 4),
         nullable=True,
         comment="料厚毫米数（解析值）。从「料厚」列 T=1.2 解析；标准件 M6 等无法解析则为空",
     )
-    thickness_text = Column(
+    thickness_text: Mapped[str | None] = mapped_column(
         String(50),
         nullable=True,
         comment="料厚/规格原文。例：T=1.2、M6、M6x16、发泡料（环氧树脂等）",
     )
-    material_mill = Column(
+    material_mill: Mapped[str | None] = mapped_column(
         String(100),
         nullable=True,
         comment="材料厂家。来自 Excel「材料厂家」列，可空",
     )
-    part_weight = Column(
+    part_weight: Mapped[Decimal | None] = mapped_column(
         Numeric(12, 4),
         nullable=True,
         comment="单件重量(kg)。来自 Excel「单件重量」。Phase1 材料费可用净重估算",
     )
-    gauge_developed = Column(
+    gauge_developed: Mapped[str | None] = mapped_column(
         String(10),
         nullable=True,
         comment="检具是否开发。来自 Excel「检具是否开发」，例：是/否",
     )
 
     # ---------- 工艺/商务附属 ----------
-    weld_info = Column(
+    weld_info: Mapped[str | None] = mapped_column(
         Text,
         nullable=True,
         comment="焊接/涂胶等信息原文。L0←总成焊接信息列，L1←一级焊接信息列。例：焊点：4 / 凸焊：2",
     )
-    remark = Column(
+    remark: Mapped[str | None] = mapped_column(
         Text,
         nullable=True,
         comment="行备注。来自 Excel「备注」。例：沿用T26、凸焊总成供货",
     )
-    sketch_url = Column(
+    sketch_url: Mapped[str | None] = mapped_column(
         String(500),
         nullable=True,
         comment=(
@@ -332,22 +333,22 @@ class BomNode(AuditUserMixin, Base):
     )
 
     # ---------- Excel 单元格溯源（防扯皮；与钢价四件套对齐） ----------
-    excel_filename = Column(
+    excel_filename: Mapped[str | None] = mapped_column(
         String(255),
         nullable=True,
         comment="导入时原始 Excel 文件名快照（与清单头 source_filename 一致）",
     )
-    excel_sheet_name = Column(
+    excel_sheet_name: Mapped[str | None] = mapped_column(
         String(100),
         nullable=True,
         comment="来源工作表名。例：材料清单",
     )
-    excel_row = Column(
+    excel_row: Mapped[int | None] = mapped_column(
         Integer,
         nullable=True,
         comment="来源 Excel 行号（1-based，与 Excel 界面行号一致）",
     )
-    excel_part_col = Column(
+    excel_part_col: Mapped[int | None] = mapped_column(
         Integer,
         nullable=True,
         comment="本节点零件号所在列号（1-based）。L0=3，L1=9，L2=14",

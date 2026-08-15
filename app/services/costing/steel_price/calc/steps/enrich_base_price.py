@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from typing import Any
+
+
 from decimal import Decimal
 
 from sqlalchemy.orm import Session
@@ -35,7 +38,7 @@ class BasePriceEnricher:
             locations = [request.location]
 
         # 按基地分别加载基价，索引键 = (location, grade)
-        grade_index: dict[tuple[str, str], list] = {}
+        grade_index: dict[tuple[str, str], list[Any]] = {}
         for location in locations:
             base_records = self.base_price_service.list_for_calc(
                 db,

@@ -32,11 +32,12 @@ class AsyncTaskProgressVO(BaseModel):
     ) -> "AsyncTaskProgressVO":
         """从 AsyncTaskService.get_task_snapshot 组装进度 VO。"""
         updated_at_value = task.get("updated_at")
-        updated_at = (
-            updated_at_value.timestamp()
-            if hasattr(updated_at_value, "timestamp")
-            else float(updated_at_value or 0)
-        )
+        if updated_at_value is None:
+            updated_at = 0.0
+        elif hasattr(updated_at_value, "timestamp"):
+            updated_at = float(updated_at_value.timestamp())
+        else:
+            updated_at = float(updated_at_value)
         return cls(
             status=task.get("status") or default_status,
             progress=int(task.get("progress") or 0),

@@ -27,7 +27,7 @@
 
 import io
 from pathlib import Path
-from typing import Callable, List, Optional, Union
+from typing import Any, Callable, List, Optional, Union
 
 import xlrd
 from openpyxl.worksheet.worksheet import Worksheet
@@ -69,22 +69,22 @@ class _XlrdSheetWrapper:
         self.name = xlrd_sheet.name
 
     @property
-    def merged_cells(self):
+    def merged_cells(self) -> Any:
         """返回空集合，与 openpyxl 合并单元格接口兼容。"""
         return set()
 
-    def cell(self, row: int, column: int):
+    def cell(self, row: int, column: int) -> Any:
         """返回单元格值（与 openpyxl sheet.cell(row, col) 接口兼容）。"""
         return _XlrdCellWrapper(self._sheet, row - 1, column - 1)
 
-    def __iter__(self):
+    def __iter__(self) -> Any:
         for row_idx in range(self.max_row):
             yield _XlrdRowWrapper(self._sheet, row_idx)
 
-    def __getitem__(self, coord: str):
+    def __getitem__(self, coord: str) -> Any:
         return self._sheet.cell_by_addr(*self._parse_coord(coord))
 
-    def _parse_coord(self, coord: str):
+    def _parse_coord(self, coord: str) -> Any:
         col_str, row_str = "", ""
         for ch in coord:
             if ch.isalpha():
@@ -102,11 +102,11 @@ class _XlrdRowWrapper:
         self._sheet = sheet
         self.row_idx = row_idx
 
-    def __iter__(self):
+    def __iter__(self) -> Any:
         for col in range(self._sheet.ncols):
             yield _XlrdCellWrapper(self._sheet, self.row_idx, col)
 
-    def __getitem__(self, col_idx: int):
+    def __getitem__(self, col_idx: int) -> Any:
         return _XlrdCellWrapper(self._sheet, self.row_idx, col_idx)
 
 
@@ -119,11 +119,11 @@ class _XlrdCellWrapper:
         self.value = _unwrap_xlrd_cell(cell)
 
     @property
-    def ctype(self) -> int:
+    def ctype(self) -> Any:
         return self._sheet.cell(self.row_idx, self.col_idx).ctype
 
 
-def _unwrap_xlrd_cell(cell) -> Union[str, float, int, None]:
+def _unwrap_xlrd_cell(cell: Any) -> Any:
     """将 xlrd 单元格值转为 Python 原生类型（str/float/int/None）。"""
     ctype, value = cell.ctype, cell.value
     if ctype == xlrd.XL_CELL_EMPTY:
@@ -162,7 +162,7 @@ def parse_steel_price_policy_sheet(
     sheet_name: str,
     warnings: List[str],
     excel_filename: Optional[str] = None,
-) -> List:
+) -> Any:
     """解析一张 Sheet，返回 ParsedPolicy 列表。
 
     设计要点：
@@ -317,18 +317,18 @@ class _WorkbookWrapper:
         close()      → 关闭资源
     """
 
-    def __init__(self, wb, is_xls: bool = False) -> None:
+    def __init__(self, wb: Any, is_xls: bool = False) -> None:
         self._wb = wb
         self.is_xls = is_xls
 
     @property
-    def sheetnames(self) -> List[str]:
+    def sheetnames(self) -> Any:
         return self._wb.sheet_names() if self.is_xls else self._wb.sheetnames
 
-    def __iter__(self):
+    def __iter__(self) -> Any:
         return iter(self.sheetnames)
 
-    def __getitem__(self, name: str):
+    def __getitem__(self, name: str) -> Any:
         raw = self._wb.sheet_by_name(name) if self.is_xls else self._wb[name]
         if self.is_xls:
             return _XlrdSheetWrapper(raw)
@@ -338,7 +338,7 @@ class _WorkbookWrapper:
         self._wb.release_resources() if self.is_xls else self._wb.close()
 
 
-def _load_workbook_or_bytes(file) -> tuple:
+def _load_workbook_or_bytes(file: Any) -> tuple[Any, ...]:
     """加载 workbook，自动识别 .xlsx / .xls 格式。
 
     Returns:

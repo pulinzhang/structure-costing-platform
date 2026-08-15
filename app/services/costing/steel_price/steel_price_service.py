@@ -3,7 +3,7 @@
 import logging
 import uuid
 from decimal import Decimal
-from typing import Optional
+from typing import Any, Optional
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -73,7 +73,7 @@ class SteelPriceService:
             return spec.strip()
         return f"{thickness:.2f}*{width:.2f}"
 
-    def _ensure_not_approved(self, record) -> Optional[str]:
+    def _ensure_not_approved(self, record: Any) -> Optional[str]:
         if record.audit_status == AUDIT_APPROVED:
             return "记录已审核通过，请先反审核后再修改/删除/重算"
         return None
@@ -82,24 +82,37 @@ class SteelPriceService:
         self, db: Session, query: SteelPriceQuery
     ) -> tuple[list[SteelPriceResponse], int, SteelPriceFilterOptions]:
         skip = (query.page - 1) * query.size
-        filter_kwargs = dict(
-            year=query.year,
-            month=query.month,
-            location=query.location.strip() if query.location else None,
-            category_name=query.category_name.strip() if query.category_name else None,
-            grade=query.grade.strip() if query.grade else None,
-            steel_mill=query.steel_mill.strip() if query.steel_mill else None,
-            audit_status=query.audit_status.strip() if query.audit_status else None,
-        )
+        year = query.year
+        month = query.month
+        location = query.location.strip() if query.location else None
+        category_name = query.category_name.strip() if query.category_name else None
+        grade = query.grade.strip() if query.grade else None
+        steel_mill = query.steel_mill.strip() if query.steel_mill else None
+        audit_status = query.audit_status.strip() if query.audit_status else None
         records, total = self.repository.paginate(
             db,
-            **filter_kwargs,
+            year=year,
+            month=month,
+            location=location,
+            category_name=category_name,
+            grade=grade,
+            steel_mill=steel_mill,
+            audit_status=audit_status,
             skip=skip,
             limit=query.size,
         )
         rows = [SteelPriceResponse.model_validate(record) for record in records]
-        options = self.repository.get_filter_options(db)
-        options["summary"] = self.repository.summarize_by_filters(db, **filter_kwargs)
+        options: dict[str, Any] = self.repository.get_filter_options(db)
+        options["summary"] = self.repository.summarize_by_filters(
+            db,
+            year=year,
+            month=month,
+            location=location,
+            category_name=category_name,
+            grade=grade,
+            steel_mill=steel_mill,
+            audit_status=audit_status,
+        )
         filters = SteelPriceFilterOptions.model_validate(options)
         return rows, total, filters
 
@@ -518,7 +531,7 @@ class SteelPriceService:
         db: Session,
         *,
         calc_batch_id: str,
-        rows: list[dict],
+        rows: list[dict[str, Any]],
         current_user: UserVO,
     ) -> dict[str, int]:
         """

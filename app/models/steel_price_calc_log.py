@@ -1,10 +1,10 @@
 """钢材价格计算批次日志模型。"""
 
-from sqlalchemy import Column, DateTime, Index, Integer, String, Text, text
-
+from datetime import datetime
+from sqlalchemy import DateTime, Index, Integer, String, Text, text
+from sqlalchemy.orm import Mapped, mapped_column
 from app.database import Base
 from app.models.audit_mixin import AuditUserMixin
-
 
 class SteelPriceCalcLog(AuditUserMixin, Base):
     """
@@ -16,43 +16,43 @@ class SteelPriceCalcLog(AuditUserMixin, Base):
 
     __tablename__ = "steel_price_calc_logs"
 
-    id = Column(Integer, primary_key=True, autoincrement=True, comment="主键 ID")
-    calc_batch_id = Column(String(64), nullable=False, unique=True, comment="计算批次号")
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True, comment="主键 ID")
+    calc_batch_id: Mapped[str] = mapped_column(String(64), nullable=False, unique=True, comment="计算批次号")
 
-    year = Column(Integer, nullable=False, comment="核价年度")
-    month = Column(Integer, nullable=False, comment="核价月份")
-    location = Column(String(50), nullable=False, comment="生产基地")
-    stamping_supplier = Column(String(50), nullable=True, comment="冲压工厂（筛选）")
-    vehicle_model = Column(String(50), nullable=True, comment="配套车型（筛选）")
+    year: Mapped[int] = mapped_column(Integer, nullable=False, comment="核价年度")
+    month: Mapped[int] = mapped_column(Integer, nullable=False, comment="核价月份")
+    location: Mapped[str] = mapped_column(String(50), nullable=False, comment="生产基地")
+    stamping_supplier: Mapped[str | None] = mapped_column(String(50), nullable=True, comment="冲压工厂（筛选）")
+    vehicle_model: Mapped[str | None] = mapped_column(String(50), nullable=True, comment="配套车型（筛选）")
 
-    status = Column(
+    status: Mapped[str] = mapped_column(
         String(20),
         nullable=False,
         default="failed",
         comment="批次状态：processing / success / partial / failed",
     )
 
-    material_count = Column(Integer, nullable=False, default=0, comment="材料厚度规格数")
-    enriched_count = Column(Integer, nullable=False, default=0, comment="命中基价展开行数")
-    no_base_count = Column(Integer, nullable=False, default=0, comment="无基价规格数")
-    created_count = Column(Integer, nullable=False, default=0, comment="新增结果条数")
-    updated_count = Column(Integer, nullable=False, default=0, comment="更新结果条数")
-    skipped_approved_count = Column(
+    material_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, comment="材料厚度规格数")
+    enriched_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, comment="命中基价展开行数")
+    no_base_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, comment="无基价规格数")
+    created_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, comment="新增结果条数")
+    updated_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, comment="更新结果条数")
+    skipped_approved_count: Mapped[int] = mapped_column(
         Integer, nullable=False, default=0, comment="跳过已审核条数"
     )
-    failed_count = Column(Integer, nullable=False, default=0, comment="落库失败条数")
+    failed_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, comment="落库失败条数")
 
-    detail_text = Column(
+    detail_text: Mapped[str] = mapped_column(
         Text,
         nullable=False,
         default="",
         comment="计算过程全文（步骤、命中、错误均记录）",
     )
 
-    started_at = Column(DateTime, nullable=False, comment="计算开始时间")
-    finished_at = Column(DateTime, nullable=True, comment="计算结束时间")
-    operator_id = Column(Integer, nullable=True, comment="提交人用户 ID")
-    operator_name = Column(String(50), nullable=True, comment="提交人显示名")
+    started_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, comment="计算开始时间")
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, comment="计算结束时间")
+    operator_id: Mapped[int | None] = mapped_column(Integer, nullable=True, comment="提交人用户 ID")
+    operator_name: Mapped[str | None] = mapped_column(String(50), nullable=True, comment="提交人显示名")
 
     __table_args__ = (
         Index("ix_steel_price_calc_log_batch", "calc_batch_id"),

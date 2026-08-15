@@ -29,7 +29,8 @@ class StampingTonnagePriceResponse(BaseModel):
 
     @field_serializer("price_per_stroke")
     def serialize_price(self, value: Union[Decimal, float]) -> float:
-        return decimal_to_float(value)
+        result = decimal_to_float(value)
+        return 0.0 if result is None else result
 
     @field_serializer("created_at", "updated_at")
     def serialize_datetime(self, value: datetime | None) -> str | None:

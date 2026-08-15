@@ -106,7 +106,7 @@ def get_mandatory() -> list[str]:
     return list(load_catalog()["mandatory"])
 
 
-def get_all_codes() -> frozenset[str]:
+def get_all_codes() -> Any:
     return load_catalog()["all_codes"]
 
 

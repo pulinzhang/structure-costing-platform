@@ -17,7 +17,7 @@ import traceback
 import uuid
 from collections.abc import Callable
 from datetime import datetime
-from typing import Optional
+from typing import Any, Optional
 
 from sqlalchemy.orm import Session
 
@@ -66,7 +66,7 @@ class SteelPriceCalcOrchestrator:
         *,
         operator_id: int | None = None,
         operator_name: str | None = None,
-    ):
+    ) -> Any:
         """提交前写入 processing 期别锁。"""
         location = (request.location or "").strip()
         if not location:
@@ -320,7 +320,7 @@ class SteelPriceCalcOrchestrator:
         location: str | None = None,
         page: int = 1,
         size: int = 20,
-    ):
+    ) -> Any:
         return self.calc_log_service.list_logs(
             db,
             year=year,
@@ -330,7 +330,7 @@ class SteelPriceCalcOrchestrator:
             size=size,
         )
 
-    def get_log(self, db: Session, log_id: int):
+    def get_log(self, db: Session, log_id: int) -> Any:
         return self.calc_log_service.get_log(db, log_id)
 
     def delete_log(self, db: Session, log_id: int) -> bool:

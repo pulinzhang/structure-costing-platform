@@ -26,10 +26,8 @@ from app.parsers.yishiyiyi.policy.models import ParsedLadderItem, ParsedPolicy
 from app.parsers.yishiyiyi.policy.models.policy import (
     GRADE_TYPE_CATEGORY,
     GRADE_TYPE_GRADE,
-    GRADE_TYPE_THICKNESS_RANGE,
     GRADE_TYPE_WIDTH_RANGE,
     POLICY_TYPE_THICKNESS,
-    POLICY_TYPE_WIDTH,
 )
 from app.parsers.yishiyiyi.policy.value_parser import _to_int_price
 from app.parsers.yishiyiyi.policy.handlers.constants import GRADE_LABELS
@@ -174,7 +172,7 @@ class PolicyAssembler:
             elif isinstance(raw, str) and _PURE_NUM_RE.match(raw):
                 normalized = "<=" + raw.strip()
             else:
-                normalized = raw
+                normalized = str(raw) if raw is not None else ""
             b = _parse_boundary_thickness(normalized)
             if b is not None:
                 result[c] = b
@@ -493,7 +491,6 @@ class PolicyAssembler:
         block: Dict[str, Any],
     ) -> str:
         """综合'字面 hint'与'grade 后缀'推断块的 category。"""
-        label_row = block.get("header_row", 0) - 1
         literal_cat = block.get("category_name") or "冷轧钢"
         if literal_cat != "冷轧钢":
             return literal_cat

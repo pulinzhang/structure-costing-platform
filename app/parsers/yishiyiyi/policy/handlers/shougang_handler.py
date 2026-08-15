@@ -68,7 +68,7 @@ class ShougangSheetHandler(BaseSheetHandler):
                     return r
         return None
 
-    def _get_merge_end_col(self, sheet: Worksheet, row: int, col: int) -> int:
+    def _get_merge_end_col(self, sheet: Worksheet, row: int, col: int) -> Any:
         """返回合并单元格的结束列号；若非合并单元格则返回传入的列号。"""
         for merged in sheet.merged_cells.ranges:
             if merged.min_row <= row <= merged.max_row and merged.min_col <= col <= merged.max_col:

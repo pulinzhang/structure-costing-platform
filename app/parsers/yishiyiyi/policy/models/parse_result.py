@@ -1,7 +1,7 @@
 """解析结果聚合。"""
 
 from dataclasses import dataclass, field
-from typing import List
+from typing import Any, List
 
 from .policy import ParsedPolicy
 
@@ -16,7 +16,7 @@ class SteelPricePolicyParseResult:
     year: int = 0
     month: int = 0
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "year": self.year,
             "month": self.month,

@@ -17,7 +17,7 @@ from app.repositories.costing.steel_price.steel_price_repository import SteelPri
 logger = logging.getLogger("service.steel_price_export")
 
 
-def _num(value: Any, digits: int | None = None):
+def _num(value: Any, digits: int | None = None) -> Any:
     if value is None:
         return ""
     number = float(value)
@@ -26,7 +26,7 @@ def _num(value: Any, digits: int | None = None):
     return round(number, digits)
 
 
-def _dt(value: Any) -> str:
+def _dt(value: Any) -> Any:
     if value is None:
         return ""
     return value.strftime("%Y-%m-%d %H:%M:%S") if hasattr(value, "strftime") else str(value)

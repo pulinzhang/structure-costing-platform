@@ -2,9 +2,8 @@
 钢材基准价格 DTO - 内部传输数据结构
 """
 
-from datetime import datetime
 from decimal import Decimal
-from typing import Optional
+from typing import Any, Optional
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -38,10 +37,10 @@ class SteelBasePriceCreate(BaseModel):
     steel_mill: str = Field(..., min_length=1, max_length=50, description="中标钢厂")
     category_name: str = Field(..., min_length=1, max_length=50, description="钢种大类")
     grade: str = Field(..., min_length=1, max_length=50, description="钢材牌号")
-    thick: Decimal = Field(..., ge=Decimal("0"), description="参考厚度(mm)")
-    width: Decimal = Field(..., ge=Decimal("0"), description="参考宽度(mm)")
-    base_price: Decimal = Field(..., ge=Decimal("0"), description="到厂原卷承兑价格(元/吨)")
-    processing_fee: Decimal = Field(..., ge=Decimal("0"), description="原卷加工费(元/吨)")
+    thick: Decimal = Field(..., ge=0, description="参考厚度(mm)")
+    width: Decimal = Field(..., ge=0, description="参考宽度(mm)")
+    base_price: Decimal = Field(..., ge=0, description="到厂原卷承兑价格(元/吨)")
+    processing_fee: Decimal = Field(..., ge=0, description="原卷加工费(元/吨)")
     excel_filename: str = Field(..., min_length=1, max_length=255, description="来源Excel文件名")
     sheet_name: str = Field(..., min_length=1, max_length=100, description="Excel表页名称")
     excel_row: int = Field(..., ge=1, description="源数据在Excel中的行号")
@@ -50,19 +49,19 @@ class SteelBasePriceCreate(BaseModel):
 
     @field_validator("location", "steel_mill", "category_name", "grade", "excel_filename", "sheet_name", "spec", mode="before")
     @classmethod
-    def strip_strings(cls, v):
+    def strip_strings(cls, v: Any) -> Any:
         return _strip(v)
 
     @field_validator("thick", "width", "base_price", "processing_fee", mode="before")
     @classmethod
-    def coerce_decimals(cls, v):
+    def coerce_decimals(cls, v: Any) -> Any:
         return _decimal_str(v)
 
 
 class SteelBasePriceUpdate(BaseModel):
     """基准价格更新请求"""
-    base_price: Optional[Decimal] = Field(None, ge=Decimal("0"), description="到厂原卷承兑价格(元/吨)")
-    processing_fee: Optional[Decimal] = Field(None, ge=Decimal("0"), description="原卷加工费(元/吨)")
+    base_price: Optional[Decimal] = Field(None, ge=0, description="到厂原卷承兑价格(元/吨)")
+    processing_fee: Optional[Decimal] = Field(None, ge=0, description="原卷加工费(元/吨)")
     excel_filename: Optional[str] = Field(None, max_length=255, description="来源Excel文件名")
     sheet_name: Optional[str] = Field(None, max_length=100, description="Excel表页名称")
     excel_row: Optional[int] = Field(None, ge=1, description="源数据在Excel中的行号")
@@ -70,12 +69,12 @@ class SteelBasePriceUpdate(BaseModel):
 
     @field_validator("excel_filename", "sheet_name", mode="before")
     @classmethod
-    def strip_strings(cls, v):
+    def strip_strings(cls, v: Any) -> Any:
         return _strip(v)
 
     @field_validator("base_price", "processing_fee", mode="before")
     @classmethod
-    def coerce_decimals(cls, v):
+    def coerce_decimals(cls, v: Any) -> Any:
         return _decimal_str(v)
 
 
@@ -97,7 +96,7 @@ class SteelBasePriceQuery(BaseModel):
 
     @field_validator("location", "steel_mill", "category_name", "grade", "spec", mode="before")
     @classmethod
-    def strip_query_strings(cls, v):
+    def strip_query_strings(cls, v: Any) -> Any:
         return _strip(v)
 
 

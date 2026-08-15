@@ -175,7 +175,7 @@ def _to_png_bytes(raw: bytes, media_path: str) -> bytes | None:
     if raw[:8] == b"\x89PNG\r\n\x1a\n":
         return raw
     try:
-        image = Image.open(BytesIO(raw))
+        image: Image.Image = Image.open(BytesIO(raw))
         if image.mode not in ("RGB", "RGBA"):
             image = image.convert("RGBA" if "A" in image.getbands() else "RGB")
         elif image.mode == "RGBA":

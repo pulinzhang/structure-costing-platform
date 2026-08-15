@@ -3,9 +3,9 @@
 触发编排（异步任务）+ 计算历史（含 detail_text 全过程）
 """
 
+from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
-
 from app.common.permissions.codes import Perm
 from app.database import DatabaseConfig, get_db
 from app.common.audit import display_name
@@ -16,6 +16,7 @@ from app.schemas.vo.async_task_vo import AsyncTaskAcceptedVO, AsyncTaskProgressV
 from app.schemas.vo.steel_price_vo import SteelPriceCalcLogVO, SteelPriceCalcResultVO
 from app.schemas.vo.user_vo import UserVO
 from app.services.async_task import (
+
     STATUS_COMPLETED,
     STATUS_FAILED,
     STATUS_PENDING,
@@ -43,7 +44,7 @@ _calc_orchestrator = SteelPriceCalcOrchestrator()
 _async_task_service = AsyncTaskService()
 
 
-def _to_result_vo(result) -> SteelPriceCalcResultVO:
+def _to_result_vo(result: Any) -> SteelPriceCalcResultVO:
     return SteelPriceCalcResultVO(
         calc_batch_id=result.calc_batch_id,
         log_id=result.log_id,

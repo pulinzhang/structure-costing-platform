@@ -7,7 +7,7 @@
 
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import Optional
+from typing import Any, Optional
 
 
 @dataclass
@@ -64,7 +64,7 @@ class ParsedLadderItem:
         """是否有任一维度条件"""
         return self.has_thickness_condition or self.has_width_condition or self.has_zinc_coating_condition
 
-    def model_dump(self) -> dict:
+    def model_dump(self) -> dict[str, Any]:
         """返回字典格式，兼容 Pydantic 接口"""
         return {
             "target_sub_group": self.target_sub_group,
@@ -92,5 +92,5 @@ class ParsedLadderItem:
             "excel_col": self.excel_col,
         }
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         return self.model_dump()

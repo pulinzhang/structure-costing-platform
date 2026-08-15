@@ -13,6 +13,9 @@
 
 from __future__ import annotations
 
+from typing import Any
+
+
 import logging
 from decimal import Decimal
 
@@ -205,7 +208,7 @@ class StampingProcessFeeCalcOrchestrator:
         detail_lines.append(f"匹配零件 {len(parts)} 件")
 
         prev_part_cache: dict[int, StampingPart | None] = {}
-        upsert_rows: list[dict] = []
+        upsert_rows: list[dict[str, Any]] = []
         failed_items: list[StampingProcessFeeFailedItemVO] = []
         zero_fee_items: list[StampingProcessFeeFailedItemVO] = []
         success_count = 0
@@ -239,7 +242,7 @@ class StampingProcessFeeCalcOrchestrator:
                 processing_fee = None
                 process_count = len(part.processes or [])
                 calc_fail_reason = fee_or_error.reason
-                process_items: list[dict] = []
+                process_items: list[dict[str, Any]] = []
             else:
                 processing_fee, process_count, process_items = fee_or_error
                 calc_fail_reason = None

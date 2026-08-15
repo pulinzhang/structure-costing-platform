@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+from typing import Any
+
+
 from app.models.stamping import StampingPart
 
 
-def part_snapshot(part: StampingPart) -> dict:
+def part_snapshot(part: StampingPart) -> dict[str, Any]:
     """从零件主表快照业务字段到加工费结果行。"""
     return {
         "source_part_id": part.id,

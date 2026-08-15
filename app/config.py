@@ -3,12 +3,12 @@
 统一的配置入口，支持多环境配置
 """
 
+from typing import Any
 import os
 from pathlib import Path
 from pydantic_settings import BaseSettings
-
-
 # 项目根目录 (app/config.py -> app/ -> 项目根目录)
+
 BASE_DIR: Path = Path(__file__).resolve().parent.parent
 
 # 获取环境变量，默认为 development
@@ -45,7 +45,7 @@ class Settings(BaseSettings):
     # 上传配置
     UPLOAD_DIR: Path = BASE_DIR / "uploads"
     MAX_UPLOAD_SIZE: int = 50 * 1024 * 1024  # 50MB
-    ALLOWED_EXTENSIONS: set = {".xlsx", ".xls", ".csv"}
+    ALLOWED_EXTENSIONS: set[Any] = {".xlsx", ".xls", ".csv"}
 
     # 日志配置
     LOG_DIR: Path = BASE_DIR / "logs"
@@ -53,7 +53,7 @@ class Settings(BaseSettings):
     LOG_FORMAT: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
     # CORS 配置
-    CORS_ORIGINS: list = ["*"]
+    CORS_ORIGINS: list[Any] = ["*"]
 
     # 分页配置
     DEFAULT_PAGE_SIZE: int = 20
@@ -76,7 +76,7 @@ class ProductionSettings(Settings):
     """生产环境配置"""
     DEBUG: bool = False
     LOG_LEVEL: str = "WARNING"
-    CORS_ORIGINS: list = [
+    CORS_ORIGINS: list[Any] = [
         "http://localhost:3000",
         "http://127.0.0.1:3000",
         "http://localhost:5500",

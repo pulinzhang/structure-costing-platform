@@ -1,9 +1,10 @@
 """钢价计算批次日志 Repository。"""
 
 import logging
-from typing import Any, Optional
+from typing import Any, Optional, cast
 
 from sqlalchemy import text
+from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
 from app.models.steel_price_calc_log import SteelPriceCalcLog
@@ -31,7 +32,7 @@ class SteelPriceCalcLogRepository:
         if SteelPriceCalcLogRepository._lock_index_ensured:
             return
         # DDL 用独立连接，避免与业务事务 rollback 互相干扰
-        bind = db.get_bind()
+        bind = cast(Engine, db.get_bind())
         with bind.connect() as conn:
             conn.execute(text(_PROCESSING_LOCK_INDEX_SQL))
             conn.commit()

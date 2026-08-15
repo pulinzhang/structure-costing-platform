@@ -52,8 +52,8 @@ class SteelPriceRepository:
         steel_mill: str,
         category_name: str,
         grade: str,
-        thickness,
-        width,
+        thickness: Any,
+        width: Any,
     ) -> Optional[SteelPrice]:
         """按业务唯一键查询。"""
         return (
@@ -82,7 +82,7 @@ class SteelPriceRepository:
         grade: str | None = None,
         steel_mill: str | None = None,
         audit_status: str | None = None,
-    ):
+    ) -> Any:
         query = db.query(SteelPrice)
         if year is not None:
             query = query.filter(SteelPrice.year == year)
@@ -192,7 +192,7 @@ class SteelPriceRepository:
         grade: str | None = None,
         steel_mill: str | None = None,
         audit_status: str | None = None,
-    ) -> list[SteelPrice]:
+    ) -> Any:
         """导出用：按筛选条件取全量记录（含溯源字段）。"""
         query = self._build_list_query(
             db,
@@ -218,7 +218,7 @@ class SteelPriceRepository:
             .all()
         )
 
-    def get_filter_options(self, db: Session) -> dict[str, list[Any]]:
+    def get_filter_options(self, db: Session) -> dict[str, Any]:
         years = [
             row[0]
             for row in db.query(distinct(SteelPrice.year)).order_by(SteelPrice.year.desc()).all()
@@ -314,7 +314,7 @@ class SteelPriceRepository:
         category_name: str | None = None,
         grade: str | None = None,
         steel_mill: str | None = None,
-    ):
+    ) -> Any:
         query = db.query(SteelPrice).filter(
             SteelPrice.year == year,
             SteelPrice.month == month,
@@ -338,7 +338,7 @@ class SteelPriceRepository:
         category_name: str | None = None,
         grade: str | None = None,
         steel_mill: str | None = None,
-    ) -> int:
+    ) -> Any:
         """统计符合条件且已审核通过的条数。"""
         return (
             self._build_condition_query(
@@ -364,7 +364,7 @@ class SteelPriceRepository:
         category_name: str | None = None,
         grade: str | None = None,
         steel_mill: str | None = None,
-    ) -> int:
+    ) -> Any:
         """按条件批量删除未审核记录（pending / rejected），返回删除条数。"""
         query = self._build_condition_query(
             db,
@@ -394,7 +394,7 @@ class SteelPriceRepository:
         month: int,
         location: str,
         statuses: list[str],
-    ) -> int:
+    ) -> Any:
         """统计指定条件下、指定审核状态的条数。"""
         return (
             self._build_condition_query(
@@ -415,7 +415,7 @@ class SteelPriceRepository:
         month: int,
         location: str,
         audited_by: str,
-        audited_at,
+        audited_at: Any,
         audit_remark: str | None,
         updated_by: str | None = None,
     ) -> int:
@@ -456,7 +456,7 @@ class SteelPriceRepository:
         month: int,
         location: str,
         reverse_audited_by: str,
-        reverse_audited_at,
+        reverse_audited_at: Any,
         reverse_audit_remark: str,
         updated_by: str | None = None,
     ) -> int:
@@ -516,7 +516,7 @@ class SteelPriceRepository:
         month: int,
         location: str,
         grade: str,
-        thickness,
+        thickness: Any,
     ) -> list[SteelPrice]:
         """按年月/基地/牌号/料厚精确匹配（中标唯一钢厂场景）。"""
         return (

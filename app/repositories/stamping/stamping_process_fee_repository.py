@@ -13,7 +13,7 @@ from app.models.stamping_process_fee import StampingProcessFee
 from app.models.stamping_process_fee_item import StampingProcessFeeItem
 
 
-def _needs_manual_fix_clause():
+def _needs_manual_fix_clause() -> Any:
     """最终加工费为空或为 0：算费失败 / 零价且尚未补价。"""
     return or_(
         StampingProcessFee.final_processing_fee.is_(None),
@@ -97,7 +97,7 @@ class StampingProcessFeeRepository:
             db,
             year=payload["year"],
             location=payload["location"],
-            stamping_supplier=payload.get("stamping_supplier"),
+            stamping_supplier=payload.get("stamping_supplier") or "",
             vehicle_model=payload["vehicle_model"],
             version=payload["version"],
             part_number=payload["part_number"],
@@ -150,7 +150,7 @@ class StampingProcessFeeRepository:
         year: int,
         location: str,
         stamping_supplier: str,
-    ):
+    ) -> Any:
         return db.query(StampingProcessFee).filter(
             StampingProcessFee.year == year,
             StampingProcessFee.location == location,
@@ -168,7 +168,7 @@ class StampingProcessFeeRepository:
         part_number: Optional[str] = None,
         audit_status: Optional[str] = None,
         only_zero: bool = False,
-    ):
+    ) -> Any:
         q = db.query(StampingProcessFee)
         if year is not None:
             q = q.filter(StampingProcessFee.year == year)
@@ -320,7 +320,7 @@ class StampingProcessFeeRepository:
         version: Optional[str] = None,
         part_number: Optional[str] = None,
         audit_status: Optional[str] = None,
-    ) -> List[StampingProcessFee]:
+    ) -> Any:
         q = self._build_list_query(
             db,
             year=year,
@@ -350,7 +350,7 @@ class StampingProcessFeeRepository:
         location: str,
         stamping_supplier: str,
         statuses: List[str],
-    ) -> int:
+    ) -> Any:
         return (
             self._scope_query(
                 db,
@@ -369,7 +369,7 @@ class StampingProcessFeeRepository:
         year: int,
         location: str,
         stamping_supplier: str,
-    ) -> int:
+    ) -> Any:
         fee_ids = [
             row.id
             for row in (
@@ -418,10 +418,10 @@ class StampingProcessFeeRepository:
         location: str,
         stamping_supplier: str,
         audited_by: str,
-        audited_at,
+        audited_at: Any,
         audit_remark: Optional[str],
         updated_by: Optional[str] = None,
-    ) -> int:
+    ) -> Any:
         values: Dict[Any, Any] = {
             StampingProcessFee.audit_status: AUDIT_APPROVED,
             StampingProcessFee.audited_by: audited_by,
@@ -453,10 +453,10 @@ class StampingProcessFeeRepository:
         location: str,
         stamping_supplier: str,
         reverse_audited_by: str,
-        reverse_audited_at,
+        reverse_audited_at: Any,
         reverse_audit_remark: str,
         updated_by: Optional[str] = None,
-    ) -> int:
+    ) -> Any:
         values: Dict[Any, Any] = {
             StampingProcessFee.audit_status: AUDIT_PENDING,
             StampingProcessFee.reverse_audited_by: reverse_audited_by,

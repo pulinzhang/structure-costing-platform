@@ -38,7 +38,7 @@ class TanggangSheetHandler(BaseSheetHandler):
         sheet: Worksheet,
         steel_mill: str,
         block: Dict[str, Any],
-    ) -> List:
+    ) -> List[Any]:
         """唐钢宽度块解析：逐行构建政策。
 
         - 钢种行（DC01、DC03、"DC04及以上"）：grade_type = GRADE
@@ -62,7 +62,7 @@ class TanggangSheetHandler(BaseSheetHandler):
             return []
 
         sorted_price_cols = sorted(price_cols)
-        policies: List = []
+        policies: List[Any] = []
 
         for r in range(data_start, data_end + 1):
             grade_raw = self.text_or_none(sheet, r, 1)
@@ -113,7 +113,7 @@ class TanggangSheetHandler(BaseSheetHandler):
         sheet: Worksheet,
         steel_mill: str,
         policy_type: str,
-    ) -> List:
+    ) -> List[Any]:
         """唐钢定制：WIDTH 政策走专用解析。"""
         if policy_type == "WIDTH":
             blocks = self.find_width_blocks(sheet, steel_mill)
@@ -226,8 +226,9 @@ class TanggangSheetHandler(BaseSheetHandler):
             text = str(raw) if raw is not None else ""
 
             # 纯数字：表示等号区间 1000 <= W <= 1000
-            if _PURE_NUM_RE.match(text):
-                num_str = _PURE_NUM_RE.match(text).group(1)
+            pure_match = _PURE_NUM_RE.match(text)
+            if pure_match:
+                num_str = pure_match.group(1)
                 num = Decimal(num_str)
                 result[c] = _Boundary(
                     min_val=num,

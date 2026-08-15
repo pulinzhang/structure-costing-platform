@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+from typing import Any
+
+
 import logging
 
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
-from starlette.responses import Response
 
 from app.common.operation_log.context import get_request_user
 from app.common.operation_log.rules import should_record
@@ -28,7 +30,7 @@ def _client_ip(request: Request) -> str | None:
 class OperationLogMiddleware(BaseHTTPMiddleware):
     """请求结束后按规则写入 operation_logs。"""
 
-    async def dispatch(self, request: Request, call_next) -> Response:
+    async def dispatch(self, request: Request, call_next: Any) -> Any:
         response = await call_next(request)
 
         try:

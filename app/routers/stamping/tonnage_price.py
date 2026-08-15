@@ -3,7 +3,7 @@
 API 接口定义
 """
 
-from typing import List
+from typing import Any, List
 from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
@@ -49,7 +49,7 @@ _import_service = StampingTonnagePriceImportService()
 def list_all(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_VIEW)),
-):
+) -> Any:
     """获取所有冲次单价列表（按年份、吨位排序）"""
     data = _tonnage_price_service.list_all(db)
     return ApiResponse.ok(data=data, message=f"查询到 {len(data)} 条记录")
@@ -61,7 +61,7 @@ def list_by_year(
     location: str | None = None,
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_VIEW)),
-):
+) -> Any:
     """获取指定年份的冲次单价；传入 location 时按基地过滤"""
     if location:
         data = _tonnage_price_service.list_by_location_year(db, location, year)
@@ -75,7 +75,7 @@ def paginate(
     query: StampingTonnagePriceQuery = Depends(),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_VIEW)),
-):
+) -> Any:
     """分页查询冲次单价"""
     rows, total, filters = _tonnage_price_service.paginate(db, query)
     return ApiResponse.list_(
@@ -92,7 +92,7 @@ def paginate(
 def get_locations(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_VIEW)),
-):
+) -> Any:
     """获取所有基地列表"""
     data = _tonnage_price_service.get_locations(db)
     return ApiResponse.ok(data=data)
@@ -102,7 +102,7 @@ def get_locations(
 def get_years(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_VIEW)),
-):
+) -> Any:
     """获取所有年份列表"""
     data = _tonnage_price_service.get_years(db)
     return ApiResponse.ok(data=data)
@@ -112,7 +112,7 @@ def get_years(
 def get_tonnages(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_VIEW)),
-):
+) -> Any:
     """获取所有吨位列表"""
     data = _tonnage_price_service.get_tonnages(db)
     return ApiResponse.ok(data=data)
@@ -233,7 +233,7 @@ def copy_from_year(
     target_year: int,
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_COPY)),
-):
+) -> Any:
     """在同一基地下，从源年份复制价格到目标年份"""
     created, skipped, failed = _tonnage_price_service.copy_from_year(
         db, location, source_year, target_year, current_user=current_user
@@ -259,7 +259,7 @@ def bulk_upsert(
     items: List[StampingTonnagePriceCreate],
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_CREATE)),
-):
+) -> Any:
     """批量写入冲次单价（存在则更新，与 Excel 导入一致）"""
     created, updated, failed = _tonnage_price_service.bulk_upsert(
         db, items, current_user=current_user
@@ -284,7 +284,7 @@ def create(
     body: StampingTonnagePriceCreate,
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_CREATE)),
-):
+) -> Any:
     """创建冲次单价记录"""
     record, error = _tonnage_price_service.create(db, body, current_user=current_user)
     if error:
@@ -297,7 +297,7 @@ def get_by_id(
     id: int,
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_VIEW)),
-):
+) -> Any:
     """获取单个冲次单价记录"""
     record = _tonnage_price_service.get_by_id(db, id)
     if not record:
@@ -311,7 +311,7 @@ def update(
     body: StampingTonnagePriceUpdate,
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_UPDATE)),
-):
+) -> Any:
     """更新冲次单价记录"""
     record, error = _tonnage_price_service.update(db, id, body, current_user=current_user)
     if error:
@@ -324,7 +324,7 @@ def delete(
     id: int,
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_DELETE)),
-):
+) -> Any:
     """删除冲次单价记录"""
     success, error = _tonnage_price_service.delete(db, id)
     if not success:

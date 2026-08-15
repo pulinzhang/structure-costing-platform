@@ -4,6 +4,7 @@
 没有匹配的处理器 → DefaultSheetHandler。
 """
 
+from typing import Any
 from .angang_handler import AngangSheetHandler
 from .anshen_handler import AnshenSheetHandler
 from .default_handler import DefaultSheetHandler
@@ -13,8 +14,7 @@ from .shougang_handler import ShougangSheetHandler
 from .tanggang_handler import TanggangSheetHandler
 from .vama_handler import VamaSheetHandler
 
-
-def find_handler(sheet_name: str):
+def find_handler(sheet_name: str) -> Any:
     """根据 sheet 名字找到合适的处理器（大小写不敏感）。"""
     sheet_lower = sheet_name.lower()
     for handler_cls, keywords in _HANDLERS:

@@ -4,7 +4,7 @@
 """
 
 import logging
-from typing import Any, List, Dict, Optional
+from typing import Any, List, Dict
 
 from sqlalchemy.orm import Session
 
@@ -33,7 +33,7 @@ logger = logging.getLogger("service.stamping")
 class StampingPartService:
     """零件业务逻辑"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.repository = StampingPartRepository()
         self.process_repository = StampingProcessRepository()
 
@@ -54,17 +54,20 @@ class StampingPartService:
     ) -> tuple[List[StampingPartListResponse], int, StampingPartListFilterOptions]:
         """获取零件列表（不含工序详情，含工序统计数 process_count）"""
         skip = (query.page - 1) * query.size
-        filter_kwargs = dict(
-            location=query.location,
-            vehicle_model=query.vehicle_model,
-            version=query.version,
-            part_number=query.part_number,
-            part_name=query.part_name,
-            stamping_supplier=query.stamping_supplier,
-        )
+        location = query.location
+        vehicle_model = query.vehicle_model
+        version = query.version
+        part_number = query.part_number
+        part_name = query.part_name
+        stamping_supplier = query.stamping_supplier
         parts, total = self.repository.paginate(
             db,
-            **filter_kwargs,
+            location=location,
+            vehicle_model=vehicle_model,
+            version=version,
+            part_number=part_number,
+            part_name=part_name,
+            stamping_supplier=stamping_supplier,
             skip=skip,
             limit=query.size,
         )
@@ -79,9 +82,15 @@ class StampingPartService:
             rows.append(row)
 
         # 筛选下拉框选项 + 当前筛选下去重维度汇总
-        filter_options = self.repository.get_filter_options(db)
+        filter_options: dict[str, Any] = self.repository.get_filter_options(db)
         filter_options["summary"] = self.repository.summarize_by_filters(
-            db, **filter_kwargs
+            db,
+            location=location,
+            vehicle_model=vehicle_model,
+            version=version,
+            part_number=part_number,
+            part_name=part_name,
+            stamping_supplier=stamping_supplier,
         )
         filter_vo = StampingPartListFilterOptions.model_validate(filter_options)
         return rows, total, filter_vo
@@ -106,8 +115,8 @@ class StampingPartService:
         return StampingCascadeFilterOptionsVO.model_validate(raw)
 
     def list_materials(
-        self, db: Session, query
-    ) -> tuple[list, int, StampingPartListFilterOptions]:
+        self, db: Session, query: Any
+    ) -> tuple[list[Any], int, StampingPartListFilterOptions]:
         """获取材料列表（去重 material + thickness + sheet_length + sheet_width）"""
         from app.schemas.vo.stamping_vo import StampingMaterialResponse
 
@@ -153,7 +162,7 @@ class StampingPartService:
         stamping_supplier: str | None = None,
         vehicle_model: str | None = None,
         version: str | None = None,
-    ) -> list[dict]:
+    ) -> list[dict[str, Any]]:
         """列出去重后的 基地 + 材料(钢种) + 厚度（钢价计算用）。"""
         return self.repository.list_material_specs(
             db,
@@ -183,7 +192,7 @@ class StampingPartService:
         db: Session,
         part_data: Dict[str, Any],
         current_user: UserVO,
-    ):
+    ) -> Any:
         payload = {**part_data, **audit_create(current_user)}
         return self.repository.create(db, payload)
 
@@ -192,7 +201,7 @@ class StampingPartService:
         db: Session,
         parts_data: List[Dict[str, Any]],
         current_user: UserVO,
-    ):
+    ) -> Any:
         audit = audit_create(current_user)
         rows = [{**row, **audit} for row in parts_data]
         return self.repository.bulk_create(db, rows)
@@ -203,7 +212,7 @@ class StampingPartService:
         part_id: int,
         update_data: Dict[str, Any],
         current_user: UserVO,
-    ):
+    ) -> Any:
         payload = {**update_data, **audit_update(current_user)}
         return self.repository.update(db, part_id, payload)
 

@@ -4,8 +4,8 @@
 仅支持 SQLite，且只做 ADD COLUMN，不做 DROP COLUMN（防止数据丢失）
 """
 
-from typing import Dict, List
-from sqlalchemy import text, inspect
+from typing import Any, Dict, List
+from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
 from app.database import Base
@@ -39,7 +39,7 @@ def _sqlite_type(sqlalchemy_type: str) -> str:
     return SQLITE_TYPE_MAP.get(base, "TEXT")
 
 
-def _get_model_columns(table) -> Dict[str, dict]:
+def _get_model_columns(table: Any) -> Dict[str, dict[str, Any]]:
     """从 Model 的 Table 对象提取列信息"""
     columns = {}
     for col in table.columns:
@@ -60,7 +60,7 @@ def _get_model_columns(table) -> Dict[str, dict]:
     return columns
 
 
-def _get_actual_columns(engine: Engine, table_name: str) -> Dict[str, dict]:
+def _get_actual_columns(engine: Engine, table_name: str) -> Dict[str, dict[str, Any]]:
     """从 SQLite 实际表结构提取列信息"""
     with engine.connect() as conn:
         result = conn.execute(
@@ -82,7 +82,7 @@ def _get_actual_columns(engine: Engine, table_name: str) -> Dict[str, dict]:
         return columns
 
 
-def _build_add_column_sql(table_name: str, col_name: str, model_info: dict) -> str:
+def _build_add_column_sql(table_name: str, col_name: str, model_info: dict[str, Any]) -> str:
     """
     生成 SQLite ADD COLUMN。
 
@@ -114,7 +114,7 @@ def _build_add_column_sql(table_name: str, col_name: str, model_info: dict) -> s
     )
 
 
-def _migrate_table(engine: Engine, table) -> List[str]:
+def _migrate_table(engine: Engine, table: Any) -> List[str]:
     """
     对比单个表的 Model 定义与实际结构，执行必要的 ADD COLUMN
     返回本次执行的 SQL 语句列表
@@ -143,7 +143,7 @@ def _migrate_table(engine: Engine, table) -> List[str]:
     return sqls
 
 
-def run_auto_migration():
+def run_auto_migration() -> None:
     """
     扫描主库 Base + 辅助库 AuxiliaryBase，对比实际表结构，
     自动执行 ADD COLUMN（仅补充缺失列，不删除任何列）。

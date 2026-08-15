@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from typing import Any
+
+
 from decimal import Decimal, InvalidOperation
 
 from sqlalchemy.orm import Session
@@ -110,7 +113,7 @@ class SettingsService:
         )
 
     @staticmethod
-    def _normalize_density(value) -> float:
+    def _normalize_density(value: Any) -> float:
         try:
             density = Decimal(str(value))
         except (InvalidOperation, TypeError, ValueError):
@@ -120,7 +123,7 @@ class SettingsService:
         return float(density)
 
     @staticmethod
-    def _normalize_loss_rate(value) -> float:
+    def _normalize_loss_rate(value: Any) -> float:
         try:
             rate = Decimal(str(value))
         except (InvalidOperation, TypeError, ValueError):
@@ -130,7 +133,7 @@ class SettingsService:
         return float(rate)
 
     @staticmethod
-    def _normalize_recovery_rate(value) -> float:
+    def _normalize_recovery_rate(value: Any) -> float:
         try:
             rate = Decimal(str(value))
         except (InvalidOperation, TypeError, ValueError):

@@ -108,7 +108,7 @@ class StampingPartCostRepository:
         month: int,
         location: str,
         stamping_supplier: str,
-    ):
+    ) -> Any:
         return db.query(StampingPartCost).filter(
             StampingPartCost.year == year,
             StampingPartCost.month == month,
@@ -128,7 +128,7 @@ class StampingPartCostRepository:
         version: Optional[str] = None,
         part_number: Optional[str] = None,
         audit_status: Optional[str] = None,
-    ):
+    ) -> Any:
         q = db.query(StampingPartCost)
         if year is not None:
             q = q.filter(StampingPartCost.year == year)
@@ -277,7 +277,7 @@ class StampingPartCostRepository:
         location: str,
         stamping_supplier: str,
         statuses: List[str],
-    ) -> int:
+    ) -> Any:
         return (
             self._scope_query(
                 db,
@@ -298,7 +298,7 @@ class StampingPartCostRepository:
         month: int,
         location: str,
         stamping_supplier: str,
-    ) -> int:
+    ) -> Any:
         count = (
             self._scope_query(
                 db,
@@ -330,10 +330,10 @@ class StampingPartCostRepository:
         location: str,
         stamping_supplier: str,
         audited_by: str,
-        audited_at,
+        audited_at: Any,
         audit_remark: Optional[str],
         updated_by: Optional[str] = None,
-    ) -> int:
+    ) -> Any:
         values: Dict[Any, Any] = {
             StampingPartCost.audit_status: AUDIT_APPROVED,
             StampingPartCost.audited_by: audited_by,
@@ -367,10 +367,10 @@ class StampingPartCostRepository:
         location: str,
         stamping_supplier: str,
         reverse_audited_by: str,
-        reverse_audited_at,
+        reverse_audited_at: Any,
         reverse_audit_remark: str,
         updated_by: Optional[str] = None,
-    ) -> int:
+    ) -> Any:
         values: Dict[Any, Any] = {
             StampingPartCost.audit_status: AUDIT_PENDING,
             StampingPartCost.reverse_audited_by: reverse_audited_by,

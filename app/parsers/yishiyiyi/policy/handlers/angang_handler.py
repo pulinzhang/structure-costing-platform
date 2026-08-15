@@ -53,7 +53,7 @@ class AngangSheetHandler(BaseSheetHandler):
         sheet: Worksheet,
         steel_mill: str,
         block: Dict[str, Any],
-    ) -> List:
+    ) -> List[Any]:
         """鞍钢宽度块解析：每个类别块生成一条政策，grade_value = category_name。
 
         鞍钢宽度加价按钢材类别（冷轧钢/镀锌钢/酸洗钢）划分，不区分钢种牌号。
@@ -66,7 +66,6 @@ class AngangSheetHandler(BaseSheetHandler):
         header_row = block["header_row"]
         price_cols = list(block["price_cols"])
         data_start = block["data_row_start"]
-        data_end = block["data_row_end"]
         category_name = block.get("category_name", "冷轧钢")
 
         boundaries = self._collect_boundaries(sheet, header_row, price_cols)
@@ -100,7 +99,7 @@ class AngangSheetHandler(BaseSheetHandler):
         sheet: Worksheet,
         steel_mill: str,
         policy_type: str,
-    ) -> List:
+    ) -> List[Any]:
         """鞍钢定制：WIDTH 政策走专用解析（按类别生成，每类别一条）。"""
         if policy_type == "WIDTH":
             blocks = self.find_width_blocks(sheet, steel_mill)
@@ -116,14 +115,14 @@ class AngangSheetHandler(BaseSheetHandler):
         sheet: Worksheet,
         steel_mill: str,
         policy_type: str,
-    ) -> List:
+    ) -> List[Any]:
         """THICKNESS 政策的通用解析（复用基类逻辑）。"""
         blocks = (
             self.find_thickness_blocks(sheet, steel_mill)
             if policy_type == "THICKNESS"
             else self.find_width_blocks(sheet, steel_mill)
         )
-        policies: List = []
+        policies: List[Any] = []
         for block in blocks:
             policies.extend(
                 self._parse_one_block(sheet, steel_mill, policy_type, block)

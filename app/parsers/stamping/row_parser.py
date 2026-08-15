@@ -22,7 +22,7 @@ from app.parsers.stamping.models.process import Process
 class RowParser:
     """行数据解析器"""
 
-    def __init__(self, get_value_fn: Callable, col_map: Dict[str, int]):
+    def __init__(self, get_value_fn: Callable[..., Any], col_map: Dict[str, int]):
         """
         Args:
             get_value_fn: 单元格值获取函数 (row, col) -> Any
@@ -41,7 +41,7 @@ class RowParser:
         col_map = self._col_map
 
         return Part(
-            seq_no=parse_int(self._get_value(row_idx, col_map.get("seq", 1))),
+            seq_no=parse_int(self._get_value(row_idx, col_map.get("seq", 1))) or 0,
             part_number=self._get_value(row_idx, col_map.get("part_no", 2)),
             part_name=self._get_value(row_idx, col_map.get("part_name", 3)),
             material=self._get_value(row_idx, col_map.get("material", 5)),
@@ -49,7 +49,7 @@ class RowParser:
             part_weight=parse_decimal(self._get_value(row_idx, col_map.get("weight", 7))),
             sheet_length=parse_decimal(self._get_value(row_idx, col_map.get("length", 8))),
             sheet_width=parse_decimal(self._get_value(row_idx, col_map.get("width", 9))),
-            parts_per_sheet=parse_int(self._get_value(row_idx, col_map.get("count", 10))),
+            parts_per_sheet=parse_int(self._get_value(row_idx, col_map.get("count", 10))) or 0,
             sheet_type=self._get_value(row_idx, col_map.get("sheet_type", 11)),
             die_type=self._get_value(row_idx, col_map.get("die_type", 16)),
             process_method=self._get_value(row_idx, col_map.get("method", 17)),
@@ -84,8 +84,8 @@ class RowParser:
             part_number=part_number,
             process_seq=process_seq,
             process_code=self._get_value(row_idx, col_map.get("code", 13)),
-            die_sets=parse_int(self._get_value(row_idx, col_map.get("die_set", 14))),
-            tonnage=parse_int(self._get_value(row_idx, col_map.get("tonnage", 15))),
+            die_sets=parse_int(self._get_value(row_idx, col_map.get("die_set", 14))) or 1,
+            tonnage=parse_int(self._get_value(row_idx, col_map.get("tonnage", 15))) or 0,
             remark=self._get_value(row_idx, col_map.get("remark", 19)),
         )
 
@@ -93,10 +93,10 @@ class RowParser:
 class PartSaver:
     """零件保存器（处理警告逻辑）"""
 
-    def __init__(self):
-        self._warned_parts: set = set()
+    def __init__(self) -> None:
+        self._warned_parts: set[Any] = set()
 
-    def save_part(self, part_number: str, process_count: int, warnings: list) -> None:
+    def save_part(self, part_number: str, process_count: int, warnings: list[Any]) -> None:
         """
         保存零件（生成警告）
 

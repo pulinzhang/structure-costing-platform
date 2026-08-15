@@ -11,7 +11,6 @@
 import re
 from typing import Any, Dict, List, Optional, Tuple
 
-import openpyxl
 
 from app.utils.logging_config import get_logger
 from app.parsers.stamping.models.header import HeaderContext
@@ -92,14 +91,14 @@ COLUMN_PATTERNS: Dict[str, List[Tuple[str, int]]] = {
 class HeaderResolver:
     """表头解析器"""
 
-    def __init__(self, get_value_fn):
+    def __init__(self, get_value_fn: Any) -> None:
         self._get_value = get_value_fn
         self.header_row: int = 0
         self.data_start_row: int = 0
         self.header_paths: Dict[str, str] = {} 
         self.col_map: Dict[str, int] = {} 
 
-    def find_stamping_sheet(self, workbook) -> Optional[openpyxl.worksheet.worksheet.Worksheet]:
+    def find_stamping_sheet(self, workbook: Any) -> Any:
         """识别冲压数据Sheet"""
         for sheet in workbook.worksheets:
             for row_idx in range(1, min(16, sheet.max_row + 1)):
@@ -115,7 +114,7 @@ class HeaderResolver:
 
         return workbook.active
 
-    def find_stamping_supplier(self, sheet) -> Optional[str]:
+    def find_stamping_supplier(self, sheet: Any) -> Optional[str]:
         """从表头区域提取冲压供应商名称（冲压承制公司）"""
         for row_idx in range(1, min(10, sheet.max_row + 1)):
             # 1. 先找标签所在列
@@ -152,7 +151,7 @@ class HeaderResolver:
         
         return None
 
-    def find_stamping_vehicle_model(self, sheet) -> Optional[str]:
+    def find_stamping_vehicle_model(self, sheet: Any) -> Optional[str]:
         """从表头区域提取冲压车型/项目名称"""
         for row_idx in range(1, min(12, sheet.max_row + 1)):
             for col in range(1, min(20, sheet.max_column + 1)):
@@ -180,7 +179,7 @@ class HeaderResolver:
                         return keyword
         return None
 
-    def find_stamping_project_version(self, sheet) -> Optional[str]:
+    def find_stamping_project_version(self, sheet: Any) -> Optional[str]:
         """从表头区域提取项目版本信息"""
         version_pattern = re.compile(
             r"^(V?v?\d+(?:\.\d+)?|第?\d+版|Rev\.?\s*\d+|[A-Z]版)$",
@@ -204,7 +203,7 @@ class HeaderResolver:
                     return text
         return None
 
-    def find_header_row(self, sheet) -> int:
+    def find_header_row(self, sheet: Any) -> int:
         """找到表头起始行"""
         for row_idx in range(1, 20):
             for col in range(1, min(30, sheet.max_column + 1)):
@@ -214,7 +213,7 @@ class HeaderResolver:
                     return row_idx
         return 4
 
-    def build_header_context(self, sheet, header_row: int) -> None:
+    def build_header_context(self, sheet: Any, header_row: int) -> None:
         """
         构建 Header Context：支持合并单元格、隐式向右扩散填充及换行符清洗
         """
@@ -305,7 +304,7 @@ class HeaderResolver:
         3. 优先使用高优先级（score 高）的匹配
         """
         col_map: Dict[str, int] = {}
-        used_cols: set = set()
+        used_cols: set[Any] = set()
         all_matches: List[Tuple[int, str, int, str]] = []
 
         for col_str, path in self.header_paths.items():
@@ -331,7 +330,7 @@ class HeaderResolver:
         logger.info(f"生成的字段列映射 (col_map): {self.col_map}")
         return col_map
 
-    def resolve(self, sheet) -> HeaderContext:
+    def resolve(self, sheet: Any) -> HeaderContext:
         """
         执行完整的表头解析流程。
         """

@@ -15,7 +15,7 @@
 """
 
 import time
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from app.parsers.stamping.excel_context import ExcelContext
 from app.parsers.stamping.header_resolver import HeaderResolver
@@ -53,12 +53,12 @@ class StampingExcelParser:
     ParserResult（最终结果）
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.result = ParserResult()
         self._excel_ctx: Optional[ExcelContext] = None
         self._header_resolver: Optional[HeaderResolver] = None
         self._row_parser: Optional[RowParser] = None
-        self._processed_images: set = set()  # 已处理图片集合，避免重复
+        self._processed_images: set[Any] = set()  # 已处理图片集合，避免重复
 
     def parse(self, file_path: str) -> ParserResult:
         """解析冲压工艺 Excel 文件"""
@@ -236,8 +236,11 @@ class StampingExcelParser:
             try:
                 from openpyxl.drawing.spreadsheet_drawing import OneCellAnchor, TwoCellAnchor
                 if isinstance(anchor, (OneCellAnchor, TwoCellAnchor)):
-                    col_0idx = anchor._from.col
-                    start_row_0idx = anchor._from.row
+                    marker = anchor._from
+                    if marker is None or marker.col is None or marker.row is None:
+                        continue
+                    col_0idx = int(marker.col)
+                    start_row_0idx = int(marker.row)
                 else:
                     continue
 
@@ -278,7 +281,7 @@ class StampingExcelParser:
 
     def _log_summary(self) -> None:
         """输出解析摘要"""
-        logger.info(f"=== 解析完成 ===")
+        logger.info("=== 解析完成 ===")
         logger.info(f"Sheet: {self.result.sheet_name}")
         logger.info(f"表头行: {self.result.header_row}, 数据起始行: {self.result.data_start_row}")
         logger.info(f"零件数: {self.result.part_count}, 工序数: {self.result.process_count}, 简图: {self.result.image_count}")
