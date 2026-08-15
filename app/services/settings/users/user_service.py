@@ -15,7 +15,7 @@ from app.common.audit import (
     audit_update,
 )
 from app.common.permissions.checks import require_permission
-from app.repositories.user.user_repository import UserRepository
+from app.repositories.settings.users.user_repository import UserRepository
 from app.schemas.dto.user_dto import (
     UserCreateDTO,
     UserPasswordUpdateDTO,
@@ -25,7 +25,7 @@ from app.schemas.dto.user_dto import (
     UserUpdateDTO,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.services.user.permission_service import PermissionService
+from app.services.settings.users.permission_service import PermissionService
 
 from app.utils.avatar_storage import delete_avatar_file, save_user_avatar
 

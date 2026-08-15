@@ -1,6 +1,6 @@
 /**
  * Users Page
- * 用户管理 —对接 /api/users CRUD
+ * 用户管理 —对接 /api/settings/users CRUD
  *
  * 抽屉式交互：
  * - 编辑/新增  →editDrawer
@@ -27,7 +27,7 @@ const usersState = {
     isLoading: false,
 };
 
-const API_BASE = '/api/users';
+const API_BASE = '/api/settings/users';
 const DRAWER_ANIMATION_MS = 300;
 
 function openDrawer(drawerId, backdropId) {
@@ -531,7 +531,7 @@ async function openGrantDrawer(record) {
 
     try {
         const [treeRes, codesRes] = await Promise.all([
-            HttpClient.get('/api/permissions/tree'),
+            HttpClient.get('/api/settings/permissions/tree'),
             HttpClient.get(`${API_BASE}/${record.id}/permissions`),
         ]);
         const tree = treeRes.data || [];

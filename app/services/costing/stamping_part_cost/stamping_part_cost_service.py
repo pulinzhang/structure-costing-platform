@@ -75,7 +75,7 @@ from app.schemas.vo.stamping_part_cost_vo import (
     StampingPartCostVO,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.services.settings.settings_service import SettingsService
+from app.services.settings.system.settings_service import SettingsService
 from app.services.costing.stamping_part_cost.helpers import (
     location_candidates,
     to_decimal,

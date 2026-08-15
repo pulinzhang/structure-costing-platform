@@ -13,8 +13,8 @@ from app.common.permissions.catalog import (
 )
 from app.common.permissions.checks import require_admin
 from app.exceptions.base import NotFoundException, ValidationException
-from app.repositories.user.user_permission_repository import UserPermissionRepository
-from app.repositories.user.user_repository import UserRepository
+from app.repositories.settings.users.user_permission_repository import UserPermissionRepository
+from app.repositories.settings.users.user_repository import UserRepository
 from app.schemas.vo.user_vo import UserVO
 
 

@@ -48,7 +48,7 @@ async def lifespan(app: FastAPI):
     AuxiliaryDatabaseConfig.create_tables()
 
     # 首次启动：若无用户则创建默认管理员
-    from app.services.user.user_service import UserService
+    from app.services.settings.users.user_service import UserService
 
     session_factory = DatabaseConfig.get_session_factory()
     db = session_factory()
@@ -283,7 +283,7 @@ def create_app() -> FastAPI:
     from app.routers.bom.upload import router as bom_upload_router
     from app.routers.costing.engine.crud import router as costing_engine_router
     from app.routers.quotation.crud import router as quotation_router
-    from app.routers.settings.crud import router as settings_router
+    from app.routers.settings.system.crud import router as settings_router
     from app.routers.stamping.crud import router as stamping_crud_router
     from app.routers.stamping.upload import router as stamping_upload_router
     from app.routers.stamping.tonnage_price import router as stamping_tonnage_price_router
@@ -295,10 +295,10 @@ def create_app() -> FastAPI:
     from app.routers.yishiyiyi.base_price.crud import router as yishiyiyi_base_price_router
     from app.routers.yishiyiyi.winning_thickness.crud import router as yishiyiyi_winning_thickness_router
     from app.routers.yishiyiyi.scrap_price.crud import router as yishiyiyi_scrap_price_router
-    from app.routers.user.auth import router as auth_router
-    from app.routers.user.crud import router as user_crud_router
-    from app.routers.user.permissions import router as permissions_router
-    from app.routers.operation_log.crud import router as operation_log_router
+    from app.routers.settings.auth.crud import router as auth_router
+    from app.routers.settings.users.crud import router as user_crud_router
+    from app.routers.settings.users.permissions import router as permissions_router
+    from app.routers.settings.logs.crud import router as operation_log_router
 
     # include_router = 注册路由（鉴权由各端点 Depends(get_current_user) 声明）
     app.include_router(auth_router)

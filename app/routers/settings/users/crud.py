@@ -14,11 +14,11 @@ from app.schemas.dto.user_dto import (
     UserUpdateDTO,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.services.user.auth_service import AuthService
-from app.services.user.user_service import UserService
+from app.services.settings.users.auth_service import AuthService
+from app.services.settings.users.user_service import UserService
 from app.utils.response import ApiResponse
 
-router = APIRouter(prefix="/api/users", tags=["用户管理"])
+router = APIRouter(prefix="/api/settings/users", tags=["用户管理"])
 _user_service = UserService()
 _auth_service = AuthService()
 

@@ -14,10 +14,10 @@ from app.schemas.common.page_result import PageResult
 from app.schemas.dto.operation_log_dto import OperationLogQuery
 from app.schemas.vo.operation_log_vo import OperationLogVO
 from app.schemas.vo.user_vo import UserVO
-from app.services.operation_log.operation_log_service import OperationLogService
+from app.services.settings.logs.operation_log_service import OperationLogService
 from app.utils.response import ApiResponse
 
-router = APIRouter(prefix="/api/operation-logs", tags=["操作日志"])
+router = APIRouter(prefix="/api/settings/logs", tags=["操作日志"])
 _service = OperationLogService()
 
 

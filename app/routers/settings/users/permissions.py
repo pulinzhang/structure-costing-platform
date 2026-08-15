@@ -8,7 +8,7 @@ from app.database import get_db
 from app.schemas.dto.user_permission_dto import UserPermissionsUpdateDTO
 from app.schemas.vo.permission_vo import PermissionNodeVO
 from app.schemas.vo.user_vo import UserVO
-from app.services.user.permission_service import PermissionService
+from app.services.settings.users.permission_service import PermissionService
 from app.utils.response import ApiResponse
 
 router = APIRouter(tags=["权限管理"])
@@ -16,7 +16,7 @@ _permission_service = PermissionService()
 
 
 @router.get(
-    "/api/permissions/tree",
+    "/api/settings/permissions/tree",
     response_model=ApiResponse[list[PermissionNodeVO]],
 )
 def get_permission_tree(
@@ -29,7 +29,7 @@ def get_permission_tree(
 
 
 @router.get(
-    "/api/users/{user_id}/permissions",
+    "/api/settings/users/{user_id}/permissions",
     response_model=ApiResponse[list[str]],
 )
 def get_user_permissions(
@@ -43,7 +43,7 @@ def get_user_permissions(
 
 
 @router.put(
-    "/api/users/{user_id}/permissions",
+    "/api/settings/users/{user_id}/permissions",
     response_model=ApiResponse[list[str]],
 )
 def set_user_permissions(

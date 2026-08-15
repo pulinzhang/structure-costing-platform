@@ -13,8 +13,8 @@ from app.schemas.dto.user_dto import (
     UserSelfUpdateDTO,
 )
 from app.schemas.vo.user_vo import AvatarUploadVO, LoginVO, UserVO
-from app.services.user.auth_service import AuthService
-from app.services.user.user_service import UserService
+from app.services.settings.users.auth_service import AuthService
+from app.services.settings.users.user_service import UserService
 from app.utils.response import ApiResponse
 
 router = APIRouter(prefix="/api/auth", tags=["登录认证"])

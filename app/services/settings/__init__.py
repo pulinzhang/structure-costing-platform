@@ -1,5 +1,1 @@
-"""系统设置服务。"""
-
-from app.services.settings.settings_service import SettingsService
-
-__all__ = ["SettingsService"]
+﻿"""设置垂直切片（系统配置 / 用户权限 / 操作日志 / 认证）"""

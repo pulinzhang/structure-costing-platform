@@ -9,12 +9,12 @@ from app.common.audit import display_name
 from app.common.timezone import now
 from app.models.user import User
 from app.models.user_token import UserToken
-from app.repositories.user.user_repository import UserRepository
-from app.repositories.user.user_token_repository import TOKEN_IDLE_HOURS, UserTokenRepository
+from app.repositories.settings.users.user_repository import UserRepository
+from app.repositories.settings.users.user_token_repository import TOKEN_IDLE_HOURS, UserTokenRepository
 from app.schemas.dto.user_dto import UserLoginDTO
 from app.schemas.vo.user_vo import LoginVO, UserVO
-from app.services.user.permission_service import PermissionService
-from app.services.user.user_service import hash_password_md5
+from app.services.settings.users.permission_service import PermissionService
+from app.services.settings.users.user_service import hash_password_md5
 
 
 class AuthService:

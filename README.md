@@ -141,8 +141,8 @@ python main.py
 | **冲压工艺上传** | POST | `/api/stamping/upload/` | 上传工艺文件 |
 | **核价** | POST | `/api/costing/calculate` | 成本计算 |
 | **报价** | GET | `/api/quotation/list` | 报价列表 |
-| **系统设置** | GET | `/api/settings/config` | 获取配置 |
-| | PUT | `/api/settings/config` | 更新配置 |
+| **系统设置** | GET | `/api/settings/system/config` | 获取配置 |
+| | PUT | `/api/settings/system/config` | 更新配置 |
 
 ---
 

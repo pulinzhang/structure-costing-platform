@@ -5,7 +5,7 @@
 
 import { settingsTemplate } from './template.js?v=8';
 
-const API = '/api/settings/config';
+const API = '/api/settings/system/config';
 const DEFAULT_DENSITY = 7.85;
 const DEFAULT_LOSS_PERMILLE = 3;
 const DEFAULT_RECOVERY_PERCENT = 97;

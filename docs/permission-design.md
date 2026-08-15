@@ -214,7 +214,7 @@ scripts/generate_perm_codes.py  # 从 catalog.json 重新生成 codes.py
 - 进程启动（或首次访问）时读入 JSON 并缓存；热改文件需重启进程才生效（可接受，跟发版走）。
 - 加载时断言 `codes.Perm` ⊆ / ⊇ catalog 全量 code，不一致则启动失败。
 - 路由写 `Depends(require_perm(Perm.DASHBOARD_VIEW))`，不写 `"op:dashboard:view"`。
-- `GET /api/permissions/tree` 返回该树（可附带 `mandatory` 标记），前端授权抽屉不另维护一份树。
+- `GET /api/settings/permissions/tree` 返回该树（可附带 `mandatory` 标记），前端授权抽屉不另维护一份树。
 - 保存用户权限时：提交的 code 必须 ∈ JSON 派生的全量集合；非法 code 拒绝或丢弃。
 - **不做**权限节点业务表；将来若真要在线改菜单，再把 JSON 当种子导入表即可。
 - 新增权限：先改 `catalog.json`，再跑 `python -X utf8 scripts/generate_perm_codes.py`，路由引用新 `Perm.*`。
@@ -592,9 +592,9 @@ can('op:{page}:{action}')
 
 | 方法 | 路径 | 权限 | 说明 |
 |---|---|---|---|
-| `GET` | `/api/permissions/tree` | `require_admin_user` | 返回 catalog 树（含 mandatory 标记） |
-| `GET` | `/api/users/{id}/permissions` | `require_admin_user` | 已授权 code 列表 |
-| `PUT` | `/api/users/{id}/permissions` | `require_admin_user` | `{ codes: string[] }`，覆盖 + 合并必选码 |
+| `GET` | `/api/settings/permissions/tree` | `require_admin_user` | 返回 catalog 树（含 mandatory 标记） |
+| `GET` | `/api/settings/users/{id}/permissions` | `require_admin_user` | 已授权 code 列表 |
+| `PUT` | `/api/settings/users/{id}/permissions` | `require_admin_user` | `{ codes: string[] }`，覆盖 + 合并必选码 |
 | `GET` | `/api/auth/me` | 登录 | 含 `is_admin`、`permissions` |
 
 用户 CRUD：`op:settings-users:*`（`Perm.SETTINGS_USERS_*`）；授权执行仍以 `is_admin` 为准。

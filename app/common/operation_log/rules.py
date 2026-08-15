@@ -13,7 +13,7 @@ _SKIP_EXACT = {
 _WRITE_METHODS = frozenset({"POST", "PUT", "PATCH", "DELETE"})
 
 _MODULE_RULES: list[tuple[str, str]] = [
-    ("/api/operation-logs", "操作日志"),
+    ("/api/settings/logs", "操作日志"),
     ("/api/stamping/process-fees", "冲压加工费"),
     ("/api/yishiyiyi/scrap-price", "废料月度销售价"),
     ("/api/stamping/tonnage-price", "冲次单价"),
@@ -25,9 +25,10 @@ _MODULE_RULES: list[tuple[str, str]] = [
     ("/api/yishiyiyi/policy", "加减价政策"),
     ("/api/yishiyiyi/base-price", "基准价格"),
     ("/api/yishiyiyi/winning-thickness", "中标钢厂厚度价格一览表"),
-    ("/api/users", "用户管理"),
-    ("/api/permissions", "权限管理"),
+    ("/api/settings/users", "用户管理"),
+    ("/api/settings/permissions", "权限管理"),
     ("/api/auth", "登录认证"),
+    ("/api/settings/system", "系统设置"),
     ("/api/settings", "系统设置"),
     ("/api/dashboard", "仪表盘"),
     ("/api/costing", "核价"),
@@ -43,8 +44,8 @@ def should_record(method: str, path: str) -> bool:
     if path_only in _SKIP_EXACT:
         return False
     # 操作日志列表本身不记（避免噪声）；导出走记录
-    if path_only == "/api/operation-logs" or path_only.rstrip("/").endswith(
-        "/operation-logs"
+    if path_only == "/api/settings/logs" or path_only.rstrip("/").endswith(
+        "/settings/logs"
     ):
         if method == "GET" and "export" not in path_only:
             return False

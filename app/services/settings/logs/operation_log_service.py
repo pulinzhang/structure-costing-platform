@@ -20,7 +20,7 @@ from app.common.operation_log.rules import (
 )
 from app.common.timezone import now
 from app.database import DatabaseConfig
-from app.repositories.operation_log.operation_log_repository import (
+from app.repositories.settings.logs.operation_log_repository import (
     OperationLogRepository,
 )
 from app.schemas.dto.operation_log_dto import OperationLogQuery

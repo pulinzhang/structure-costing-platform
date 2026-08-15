@@ -12,13 +12,13 @@ from app.deps.permissions import require_perm
 from app.schemas.dto.settings_dto import SystemConfigUpdateDTO
 from app.schemas.vo.settings_vo import ConfigVO
 from app.schemas.vo.user_vo import UserVO
-from app.services.settings.settings_service import SettingsService
+from app.services.settings.system.settings_service import SettingsService
 from app.utils.logging_config import get_logger
 from app.utils.response import ApiResponse
 
 
-logger = get_logger("router.settings")
-router = APIRouter(prefix="/api/settings", tags=["系统设置 API"])
+logger = get_logger("router.settings.system")
+router = APIRouter(prefix="/api/settings/system", tags=["系统设置 API"])
 _service = SettingsService()
 
 

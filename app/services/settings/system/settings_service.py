@@ -11,7 +11,7 @@ from app.config import settings as app_settings
 from app.schemas.dto.settings_dto import SystemConfigUpdateDTO
 from app.schemas.vo.settings_vo import ConfigVO
 from app.schemas.vo.user_vo import UserVO
-from app.repositories.settings.system_config_repository import SystemConfigRepository
+from app.repositories.settings.system.system_config_repository import SystemConfigRepository
 
 DEFAULT_APP_NAME = "汽车冲压件自动核价平台"
 DEFAULT_STEEL_DENSITY = Decimal("7.85")
