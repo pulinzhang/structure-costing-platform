@@ -386,7 +386,7 @@ function showProcessDrawer(log) {
             </button>
         </div>
         <div class="px-5 py-3 border-b border-[#222] text-[10px] text-[#777] space-y-1 shrink-0">
-            <div>批次（span class="font-mono text-[#999]">${esc(log.calc_batch_id || '-')}</span></div>
+            <div>批次<span class="font-mono text-[#999]">${esc(log.calc_batch_id || '-')}</span></div>
             <div>时间：${esc(formatDateTime(log.started_at))} → ${esc(formatDateTime(log.finished_at))}</div>
             <div>汇总：材料 ${fmtInt(log.material_count)} · 命中 ${fmtInt(log.enriched_count)} · 无基价${fmtInt(log.no_base_count)} · 新增 ${fmtInt(log.created_count)} · 更新 ${fmtInt(log.updated_count)} · 失败 ${fmtInt(log.failed_count)}</div>
         </div>
@@ -420,9 +420,9 @@ function renderPeriodFilters(filters, year, month) {
 
 function renderCalcStats(stats) {
     calcState.stats = stats;
-    setCountHtml('cntBasePrice', stats.base_price_count, '条);
-    setCountHtml('cntAdjustment', stats.adjustment_rule_count, '条);
-    setCountHtml('cntThicknessRows', stats.thickness_row_count, '表);
+    setCountHtml('cntBasePrice', stats.base_price_count, '条');
+    setCountHtml('cntAdjustment', stats.adjustment_rule_count, '条');
+    setCountHtml('cntThicknessRows', stats.thickness_row_count, '表');
 }
 
 function setCountHtml(id, count, unit) {
@@ -486,7 +486,7 @@ async function startCalculation() {
     }
 
     if (await isPeriodProcessing(year, month, location)) {
-        showToast(DUPLICATE_PERIOD_CALC_MESSAGE', 'warning');
+        showToast(DUPLICATE_PERIOD_CALC_MESSAGE, 'warning');
         loadCalcHistory(1);
         return;
     }
@@ -496,7 +496,7 @@ async function startCalculation() {
     if (vehicleModel) payload.vehicle_model = vehicleModel;
 
     setCalculating(true);
-    showProgress(0, '已提交计算队列);
+    showProgress(0, '已提交计算队列');
 
     try {
         const response = await HttpClient.post(STEEL_PRICE_CALC_API, payload);
@@ -525,7 +525,7 @@ function showProgress(progress = 0, msg = '已提交计算队列) {
 function hideProgress() {
     const panel = document.getElementById('calcProgressPanel');
     if (panel) panel.classList.add('hidden');
-    updateProgress(0, '已提交计算队列);
+    updateProgress(0, '已提交计算队列');
 }
 
 function updateProgress(progress, msg, status) {

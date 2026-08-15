@@ -284,10 +284,10 @@ function validateDataPreparation() {
 }
 
 function setReadyCounts(ready) {
-    setCountHtml('cntParts', ready.part_count, '价);
-    setCountHtml('cntSteel', ready.steel_price_count, '条);
-    setCountHtml('cntScrap', ready.scrap_price_count, '条);
-    setCountHtml('cntFee', ready.process_fee_count, '条);
+    setCountHtml('cntParts', ready.part_count, '件');
+    setCountHtml('cntSteel', ready.steel_price_count, '条');
+    setCountHtml('cntScrap', ready.scrap_price_count, '条');
+    setCountHtml('cntFee', ready.process_fee_count, '条');
 }
 
 function setCountHtml(id, count, unit) {
@@ -456,7 +456,7 @@ function showProcessDrawer(log) {
             </button>
         </div>
         <div class="px-5 py-3 border-b border-[#222] text-[10px] text-[#777] space-y-1 shrink-0">
-            <div>批次（span class="font-mono text-[#999]">${esc(log.calc_batch_id || '-')}</span></div>
+            <div>批次<span class="font-mono text-[#999]">${esc(log.calc_batch_id || '-')}</span></div>
             <div>时间：${esc(formatDateTime(log.started_at))} → ${esc(formatDateTime(log.finished_at))}</div>
             <div>汇总：零件 ${fmtInt(log.total_parts)} · 成功 ${fmtInt(log.success_count)} · 失败 ${fmtInt(log.failed_count)} · 跳过 ${fmtInt(log.skipped_approved_count)}</div>
         </div>
@@ -490,7 +490,7 @@ async function startCalculation() {
     const version = document.getElementById('calcVersion')?.value || '';
 
     if (Number.isNaN(year) || Number.isNaN(month) || !location || !supplier) {
-        showToast(SCOPE_REQUIRED_MESSAGE', 'warning');
+        showToast(SCOPE_REQUIRED_MESSAGE, 'warning');
         return;
     }
     if (!calcState.ready.can_calculate) {
@@ -509,7 +509,7 @@ async function startCalculation() {
     if (version) payload.version = version;
 
     setCalculating(true);
-    showProgress(0, '已提交计算队列);
+    showProgress(0, '已提交计算队列');
 
     try {
         const response = await HttpClient.post(CALC_API, payload);
@@ -519,7 +519,7 @@ async function startCalculation() {
         startPolling(taskId);
     } catch (error) {
         const msg = error.message || '提交计算失败';
-        showToast(msg.includes('正在计算') ? DUPLICATE_SCOPE_CALC_MESSAGE : msg', 'warning');
+        showToast(msg.includes('正在计算') ? DUPLICATE_SCOPE_CALC_MESSAGE : msg, 'warning');
         stopPolling();
         hideProgress();
         calcState.activeTaskId = null;
@@ -535,7 +535,7 @@ function showProgress(progress = 0, msg = '已提交计算队列) {
 
 function hideProgress() {
     document.getElementById('calcProgressPanel')?.classList.add('hidden');
-    updateProgress(0, '已提交计算队列);
+    updateProgress(0, '已提交计算队列');
 }
 
 function updateProgress(progress, msg, status) {

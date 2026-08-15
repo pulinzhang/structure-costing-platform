@@ -258,7 +258,7 @@ export function usersTemplate() {
                     <span class="w-1 h-3.5 bg-[#4caf50]"></span>
                     <div>
                         <h5 class="text-xs font-semibold text-white tracking-wider">用户授权</h5>
-                        <p class="text-[11px] text-[#616161] mt-0.5">用户（span id="grantUsername" class="text-[#ffffff] font-mono font-semibold"></span></p>
+                        <p class="text-[11px] text-[#616161] mt-0.5">用户<span id="grantUsername" class="text-[#ffffff] font-mono font-semibold"></span></p>
                     </div>
                 </div>
                 <button type="button" id="closeGrantDrawer" class="text-[#616161] hover:text-white">✕</button>
@@ -305,10 +305,10 @@ export function renderTableRows(records) {
         const canEdit = hasPermission('op:settings-users:update');
         const canPassword = hasPermission('op:settings-users:password');
         const canDelete = hasPermission('op:settings-users:delete');
-        // 管理员账号本身拥有全量权限，不对管理员展示授权入史
+        // 管理员账号本身拥有全量权限，不对管理员展示授权入口
         const showGrant = !isAdminUser && hasPermission('op:settings-users:grant');
 
-        const firstLetter = (record.username || '用).charAt(0).toUpperCase();
+        const firstLetter = (record.username || '用户').charAt(0).toUpperCase();
         const adminBadge = isAdminUser
             ? `<span class="ml-2 px-1.5 py-0.5 text-[9px] font-semibold bg-[#d32f2f]/20 text-[#d32f2f] border border-[#d32f2f]/40">管理员</span>`
             : '';

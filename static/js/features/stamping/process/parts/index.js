@@ -257,7 +257,7 @@ export const PartsPage = {
         } catch (error) {
             console.error('加载零件列表失败:', error);
             showToast(error.message || '加载失败', 'error');
-            this.showEmptyHint('加载失败', esc(error.message) || '请稍后重询);
+            this.showEmptyHint('加载失败', esc(error.message) || '请稍后重试');
             updatePartsHud(0);
         } finally {
             loading?.classList.add('hidden');
@@ -384,7 +384,7 @@ export const PartsPage = {
         const titleEl = document.getElementById('partDrawerTitle');
 
         if (!drawer || !contentEl) {
-            console.error('抽屉元素不存地);
+            console.error('抽屉元素不存在');
             return;
         }
 

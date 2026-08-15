@@ -250,8 +250,8 @@ function validateDataPreparation(location, year, supplier, partCount, rateCount)
 }
 
 function setReadyCounts(parts, rates) {
-    setCountHtml('cntParts', parts, '价);
-    setCountHtml('cntTonnageRates', rates, '条);
+    setCountHtml('cntParts', parts, '件');
+    setCountHtml('cntTonnageRates', rates, '条');
 }
 
 function setCountHtml(id, count, unit) {
@@ -447,7 +447,7 @@ function showProcessDrawer(log) {
             </button>
         </div>
         <div class="px-5 py-3 border-b border-[#222] text-[10px] text-[#777] space-y-1 shrink-0">
-            <div>批次（span class="font-mono text-[#999]">${esc(log.calc_batch_id || '-')}</span></div>
+            <div>批次<span class="font-mono text-[#999]">${esc(log.calc_batch_id || '-')}</span></div>
             <div>时间：${esc(formatDateTime(log.started_at))} → ${esc(formatDateTime(log.finished_at))}</div>
             <div>汇总：零件 ${fmtInt(log.total_parts)} · 成功 ${fmtInt(log.success_count)} · 失败 ${fmtInt(log.failed_count)} · 零价 ${fmtInt(log.zero_fee_count)} · 跳过 ${fmtInt(log.skipped_approved_count)}</div>
         </div>
@@ -500,7 +500,7 @@ async function startCalculation() {
     const version = document.getElementById('calcVersion')?.value || '';
 
     if (Number.isNaN(year) || !location || !supplier) {
-        showToast(SCOPE_REQUIRED_MESSAGE', 'warning');
+        showToast(SCOPE_REQUIRED_MESSAGE, 'warning');
         return;
     }
 
@@ -512,7 +512,7 @@ async function startCalculation() {
     }
 
     if (await isScopeProcessing(year, location, supplier)) {
-        showToast(DUPLICATE_SCOPE_CALC_MESSAGE', 'warning');
+        showToast(DUPLICATE_SCOPE_CALC_MESSAGE, 'warning');
         loadCalcHistory(1);
         return;
     }
@@ -526,7 +526,7 @@ async function startCalculation() {
     if (version) payload.version = version;
 
     setCalculating(true);
-    showProgress(0, '已提交计算队列);
+    showProgress(0, '已提交计算队列');
 
     try {
         const response = await HttpClient.post(CALC_API, payload);
@@ -538,9 +538,9 @@ async function startCalculation() {
         console.error('提交加工费计算失败', error);
         const msg = error.message || '提交计算失败';
         if (msg.includes('正在计算')) {
-            showToast(DUPLICATE_SCOPE_CALC_MESSAGE', 'warning');
+            showToast(DUPLICATE_SCOPE_CALC_MESSAGE, 'warning');
         } else {
-            showToast(msg', 'error');
+            showToast(msg, 'error');
         }
         stopPolling();
         hideProgress();
@@ -557,7 +557,7 @@ function showProgress(progress = 0, msg = '已提交计算队列) {
 
 function hideProgress() {
     document.getElementById('calcProgressPanel')?.classList.add('hidden');
-    updateProgress(0, '已提交计算队列);
+    updateProgress(0, '已提交计算队列');
 }
 
 function updateProgress(progress, msg, status) {

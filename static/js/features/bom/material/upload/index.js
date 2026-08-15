@@ -223,7 +223,7 @@ const BomUploadPage = {
             const msg = res.message
                 || data.message
                 || `导入成功：${data.node_count ?? '-'} 个节点`;
-            showToast(msg', 'success');
+            showToast(msg, 'success');
             this.hideProgress();
             this.clearSelectedFile(true);
             const loc = document.getElementById('bomUploadLocation');

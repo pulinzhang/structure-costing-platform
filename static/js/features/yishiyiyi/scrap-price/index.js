@@ -455,7 +455,7 @@ async function saveMonth() {
     if (scrapState.isSaving) return;
     const { items, errors } = collectItemsFromDom();
     if (errors.length) {
-        showToast(errors[0]', 'warning');
+        showToast(errors[0], 'warning');
         return;
     }
     if (items.length !== 6) {

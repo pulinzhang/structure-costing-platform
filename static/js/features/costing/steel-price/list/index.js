@@ -887,7 +887,7 @@ async function handleReject() {
 async function handleReverseAudit() {
     const id = steelPriceState.currentViewId;
     if (!id) return;
-    const reverseAuditRemark = window.prompt('反审核原因（必填）);
+    const reverseAuditRemark = window.prompt('反审核原因（必填）');
     if (!reverseAuditRemark || !reverseAuditRemark.trim()) {
         showToast('反审核原因必填', 'warning');
         return;

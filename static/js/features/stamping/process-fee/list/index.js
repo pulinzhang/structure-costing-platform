@@ -661,7 +661,7 @@ async function batchDelete() {
     const filters = collectScopeFilters();
     if (!filters.year || !filters.location || !filters.stamping_supplier) {
         setAdvancedOpen(true);
-        showToast(SCOPE_REQUIRED_MESSAGE', 'warning');
+        showToast(SCOPE_REQUIRED_MESSAGE, 'warning');
         return;
     }
     if (!window.confirm(
@@ -720,7 +720,7 @@ function openBatchAuditDrawer(mode) {
     const filters = collectScopeFilters();
     if (!filters.year || !filters.location || !filters.stamping_supplier) {
         setAdvancedOpen(true);
-        showToast(SCOPE_REQUIRED_MESSAGE', 'warning');
+        showToast(SCOPE_REQUIRED_MESSAGE, 'warning');
         return;
     }
 

@@ -273,7 +273,7 @@ const TonnageUploadPage = {
             const msg = res.message
                 || data.message
                 || `导入成功：新增 ${data.created_count ?? 0}，更新 ${data.updated_count ?? 0}`;
-            showToast(msg', 'success');
+            showToast(msg, 'success');
             this.hideProgress();
             this.clearSelectedFile(true);
         } catch (err) {
