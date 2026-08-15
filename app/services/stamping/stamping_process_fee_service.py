@@ -26,7 +26,14 @@ from typing import Callable, Optional
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.common.audit import audit_create, audit_update, display_name
+from app.common.audit import (
+    AUDIT_APPROVED,
+    AUDIT_PENDING,
+    AUDIT_REJECTED,
+    audit_create,
+    audit_update,
+    display_name,
+)
 from app.common.timezone import now
 from app.exceptions.base import BusinessException
 from app.models.stamping import StampingPart, StampingProcess
@@ -35,8 +42,6 @@ from app.repositories.stamping.stamping_process_fee_calc_log_repository import (
     StampingProcessFeeCalcLogRepository,
 )
 from app.repositories.stamping.stamping_process_fee_repository import (
-    AUDIT_APPROVED,
-    AUDIT_PENDING,
     PROCESS_ITEMS_KEY,
     StampingProcessFeeRepository,
 )
@@ -1048,7 +1053,7 @@ class StampingProcessFeeService:
             year=dto.year,
             location=location,
             stamping_supplier=supplier,
-            statuses=[AUDIT_PENDING, "rejected"],
+            statuses=[AUDIT_PENDING, AUDIT_REJECTED],
         )
         updated = self.fee_repo.reverse_by_scope(
             db,

@@ -6,14 +6,11 @@ from typing import Any, Dict, List, Optional, Tuple
 from sqlalchemy import case, func
 from sqlalchemy.orm import Session
 
+from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING, AUDIT_REJECTED
 from app.models.stamping_part_cost import StampingPartCost
 
 
 logger = logging.getLogger("repository.stamping_part_cost")
-
-AUDIT_APPROVED = "approved"
-AUDIT_PENDING = "pending"
-AUDIT_REJECTED = "rejected"
 
 
 class StampingPartCostRepository:

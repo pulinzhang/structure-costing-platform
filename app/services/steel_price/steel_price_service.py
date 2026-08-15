@@ -8,7 +8,14 @@ from typing import Optional
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.common.audit import audit_create, audit_update, display_name
+from app.common.audit import (
+    AUDIT_APPROVED,
+    AUDIT_PENDING,
+    AUDIT_REJECTED,
+    audit_create,
+    audit_update,
+    display_name,
+)
 from app.common.timezone import now
 from app.repositories.steel_price import SteelPriceRepository
 from app.schemas.dto.steel_price_dto import (
@@ -32,9 +39,6 @@ from app.schemas.vo.user_vo import UserVO
 
 logger = logging.getLogger("service.steel_price")
 
-AUDIT_PENDING = "pending"
-AUDIT_APPROVED = "approved"
-AUDIT_REJECTED = "rejected"
 FORMULA_VERSION = "v1"
 
 

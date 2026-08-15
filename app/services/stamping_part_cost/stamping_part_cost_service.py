@@ -30,7 +30,14 @@ from typing import Callable, Optional
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.common.audit import audit_create, audit_update, display_name
+from app.common.audit import (
+    AUDIT_APPROVED,
+    AUDIT_PENDING,
+    AUDIT_REJECTED,
+    audit_create,
+    audit_update,
+    display_name,
+)
 from app.common.timezone import now
 from app.exceptions.base import BusinessException
 from app.models.stamping import StampingPart
@@ -46,8 +53,6 @@ from app.repositories.stamping_part_cost.stamping_part_cost_calc_log_repository 
     StampingPartCostCalcLogRepository,
 )
 from app.repositories.stamping_part_cost.stamping_part_cost_repository import (
-    AUDIT_APPROVED,
-    AUDIT_PENDING,
     StampingPartCostRepository,
 )
 from app.repositories.steel_price.steel_price_repository import SteelPriceRepository
@@ -170,7 +175,7 @@ class StampingPartCostService:
                 year=year,
                 location=location_value,
                 stamping_supplier=supplier_value,
-                statuses=[AUDIT_PENDING, AUDIT_APPROVED, "rejected"],
+                statuses=[AUDIT_PENDING, AUDIT_APPROVED, AUDIT_REJECTED],
             )
 
         can_calculate = bool(

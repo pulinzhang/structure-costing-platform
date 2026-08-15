@@ -6,13 +6,11 @@ from typing import Any, Optional
 from sqlalchemy import case, distinct, func
 from sqlalchemy.orm import Session
 
+from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING
 from app.models.steel_price import SteelPrice
 
 
 logger = logging.getLogger("repository.steel_price")
-
-AUDIT_APPROVED = "approved"
-AUDIT_PENDING = "pending"
 
 
 class SteelPriceRepository:

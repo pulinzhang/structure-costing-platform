@@ -8,15 +8,12 @@ from typing import Any, Dict, List, Optional, Tuple
 from sqlalchemy import case, func
 from sqlalchemy.orm import Session, joinedload, noload
 
+from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING, AUDIT_REJECTED
 from app.models.stamping_process_fee import StampingProcessFee
 from app.models.stamping_process_fee_item import StampingProcessFeeItem
 
 
 logger = logging.getLogger("repository.stamping")
-
-AUDIT_APPROVED = "approved"
-AUDIT_PENDING = "pending"
-AUDIT_REJECTED = "rejected"
 
 # upsert 行内携带的工序分项键（非主表列）
 PROCESS_ITEMS_KEY = "_process_items"
