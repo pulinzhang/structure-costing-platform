@@ -33,22 +33,22 @@ export function partCostCalcTemplate() {
                 <div class="flex items-center gap-6 flex-wrap">
                     <div>
                         <span class="text-[9px] text-[#666] block">匹配零件</span>
-                        <span id="cntParts" class="text-xs font-mono font-bold text-[#dddddd]">- <span class="text-[9px] font-normal text-[#555]">价/span></span>
+                        <span id="cntParts" class="text-xs font-mono font-bold text-[#dddddd]">- <span class="text-[9px] font-normal text-[#555]">件</span></span>
                     </div>
                     <div class="w-px h-5 bg-[#222]"></div>
                     <div>
-                        <span class="text-[9px] text-[#666] block">钢材联动价/span>
-                        <span id="cntSteel" class="text-xs font-mono font-bold text-[#dddddd]">- <span class="text-[9px] font-normal text-[#555]">条/span></span>
+                        <span class="text-[9px] text-[#666] block">钢材联动价</span>
+                        <span id="cntSteel" class="text-xs font-mono font-bold text-[#dddddd]">- <span class="text-[9px] font-normal text-[#555]">条</span></span>
                     </div>
                     <div class="w-px h-5 bg-[#222]"></div>
                     <div>
-                        <span class="text-[9px] text-[#666] block">废料月度价/span>
-                        <span id="cntScrap" class="text-xs font-mono font-bold text-[#dddddd]">- <span class="text-[9px] font-normal text-[#555]">条/span></span>
+                        <span class="text-[9px] text-[#666] block">废料月度价</span>
+                        <span id="cntScrap" class="text-xs font-mono font-bold text-[#dddddd]">- <span class="text-[9px] font-normal text-[#555]">条</span></span>
                     </div>
                     <div class="w-px h-5 bg-[#222]"></div>
                     <div>
-                        <span class="text-[9px] text-[#666] block">加工费/span>
-                        <span id="cntFee" class="text-xs font-mono font-bold text-[#dddddd]">- <span class="text-[9px] font-normal text-[#555]">条/span></span>
+                        <span class="text-[9px] text-[#666] block">加工费</span>
+                        <span id="cntFee" class="text-xs font-mono font-bold text-[#dddddd]">- <span class="text-[9px] font-normal text-[#555]">条</span></span>
                     </div>
                 </div>
 
@@ -76,7 +76,7 @@ export function partCostCalcTemplate() {
                          class="h-full bg-[#d32f2f] shadow-[0_0_8px_rgba(211,47,47,0.5)] transition-all duration-300"
                          style="width: 0%"></div>
                 </div>
-                <p id="calcProgressMsg" class="text-[11px] text-[#9e9e9e] leading-relaxed mb-0">已提交计算队删/p>
+                <p id="calcProgressMsg" class="text-[11px] text-[#9e9e9e] leading-relaxed mb-0">已提交计算队列</p>
             </div>
 
             <div id="dataReadyErrorBanner" class="hidden text-[10px] text-[#d69e2e] bg-[#1a1710] px-2.5 py-1.5 border-l-2 border-[#d69e2e]">
@@ -97,12 +97,12 @@ export function partCostCalcTemplate() {
                             <thead>
                                 <tr class="bg-[#0a0a0a] border-b border-[#2c2c2c] text-[9px] text-[#555] uppercase tracking-[0.08em]">
                                     <th class="py-2 px-2 font-normal whitespace-nowrap">计算时间</th>
-                                    <th class="py-2 px-2 font-normal whitespace-nowrap">创建交/th>
+                                    <th class="py-2 px-2 font-normal whitespace-nowrap">创建交</th>
                                     <th class="py-2 px-2 font-normal whitespace-nowrap">年月</th>
                                     <th class="py-2 px-2 font-normal whitespace-nowrap">基地</th>
                                     <th class="py-2 px-2 font-normal whitespace-nowrap">工厂</th>
-                                    <th class="py-2 px-2 font-normal whitespace-nowrap">筛选/th>
-                                    <th class="py-2 px-2 font-normal text-center whitespace-nowrap">状总/th>
+                                    <th class="py-2 px-2 font-normal whitespace-nowrap">筛选</th>
+                                    <th class="py-2 px-2 font-normal text-center whitespace-nowrap">状态</th>
                                     <th class="py-2 px-2 font-normal text-right whitespace-nowrap">零件</th>
                                     <th class="py-2 px-2 font-normal text-right whitespace-nowrap">成功</th>
                                     <th class="py-2 px-2 font-normal text-right whitespace-nowrap">失败</th>
@@ -155,14 +155,14 @@ export function renderCalcHistoryPagination(currentPage, totalPages) {
     if (endPage - startPage < maxVisible - 1) startPage = Math.max(1, endPage - maxVisible + 1);
     if (startPage > 1) {
         buttons += `<button class="calc-history-page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]" data-page="1">1</button>`;
-        if (startPage > 2) buttons += `<span class="px-0.5 text-[#333333] text-[9px]">—/span>`;
+        if (startPage > 2) buttons += `<span class="px-0.5 text-[#333333] text-[9px]">—</span>`;
     }
     for (let i = startPage; i <= endPage; i++) {
         const isActive = i === currentPage;
         buttons += `<button class="calc-history-page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] ${isActive ? 'bg-[#d32f2f] text-white' : 'text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]'}" data-page="${i}">${i}</button>`;
     }
     if (endPage < totalPages) {
-        if (endPage < totalPages - 1) buttons += `<span class="px-0.5 text-[#333333] text-[9px]">—/span>`;
+        if (endPage < totalPages - 1) buttons += `<span class="px-0.5 text-[#333333] text-[9px]">—</span>`;
         buttons += `<button class="calc-history-page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]" data-page="${totalPages}">${totalPages}</button>`;
     }
     buttons += `

@@ -24,15 +24,15 @@ import {
 } from './permissions.js?v=9';
 import { pageConfig as dashboardPage }      from './features/dashboard/index.js';
 import { pageConfig as stampingUploadPage } from './features/stamping/process/upload/index.js?v=35';
-import { pageConfig as stampingPartsPage }  from './features/stamping/process/parts/index.js?v=16';
-import { pageConfig as stampingTonnagePage } from './features/stamping/tonnage/list/index.js?v=9';
+import { pageConfig as stampingPartsPage }  from './features/stamping/process/parts/index.js?v=17';
+import { pageConfig as stampingTonnagePage } from './features/stamping/tonnage/list/index.js?v=10';
 import { pageConfig as stampingTonnageUploadPage } from './features/stamping/tonnage/upload/index.js?v=1';
-import { pageConfig as stampingProcessFeeCalcPage } from './features/stamping/process-fee/calc/index.js?v=16';
-import { pageConfig as stampingProcessFeePage } from './features/stamping/process-fee/list/index.js?v=26';
-import { pageConfig as steelPriceListPage }   from './features/costing/steel-price/list/index.js?v=48';
-import { pageConfig as steelPriceCalcPage }    from './features/costing/steel-price/calc/index.js?v=10';
-import { pageConfig as stampingPartCostCalcPage } from './features/costing/stamping-part-cost/calc/index.js?v=3';
-import { pageConfig as stampingPartCostPage } from './features/costing/stamping-part-cost/list/index.js?v=37';
+import { pageConfig as stampingProcessFeeCalcPage } from './features/stamping/process-fee/calc/index.js?v=17';
+import { pageConfig as stampingProcessFeePage } from './features/stamping/process-fee/list/index.js?v=27';
+import { pageConfig as steelPriceListPage }   from './features/costing/steel-price/list/index.js?v=49';
+import { pageConfig as steelPriceCalcPage }    from './features/costing/steel-price/calc/index.js?v=11';
+import { pageConfig as stampingPartCostCalcPage } from './features/costing/stamping-part-cost/calc/index.js?v=4';
+import { pageConfig as stampingPartCostPage } from './features/costing/stamping-part-cost/list/index.js?v=38';
 import { pageConfig as steelPricePolicyUploadPage } from './features/yishiyiyi/policy/upload/index.js?v=35';
 import { pageConfig as steelPricePolicyDownloadPage } from './features/yishiyiyi/policy/list/index.js?v=28';
 import { pageConfig as basePriceUploadPage } from './features/yishiyiyi/base-price/upload/index.js?v=36';
@@ -45,7 +45,7 @@ import { pageConfig as bomUploadPage }     from './features/bom/material/upload/
 import { pageConfig as costingPage }        from './features/costing/engine/index.js';
 import { pageConfig as quotationPage }      from './features/quotation/index.js';
 import { pageConfig as settingsPage }       from './features/settings/system/index.js?v=8';
-import { pageConfig as settingsUsersPage }  from './features/settings/users/index.js?v=7';
+import { pageConfig as settingsUsersPage }  from './features/settings/users/index.js?v=8';
 import { pageConfig as settingsLogsPage }   from './features/settings/logs/index.js?v=1';
 import { pageConfig as settingsProfilePage } from './features/settings/profile/index.js?v=6';
 

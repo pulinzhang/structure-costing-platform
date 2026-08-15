@@ -543,7 +543,7 @@ async function openGrantDrawer(record) {
     } catch (error) {
         console.error('加载权限树失败', error);
         if (container) {
-            container.innerHTML = `<p class="text-[11px] text-[#ef5350]">加载权限树失败/p>`;
+            container.innerHTML = `<p class="text-[11px] text-[#ef5350]">加载权限树失败</p>`;
         }
     }
 }

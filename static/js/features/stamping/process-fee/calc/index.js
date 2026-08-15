@@ -345,7 +345,7 @@ function renderHistoryRows(items) {
                 <td class="py-2 px-2 font-mono text-right tabular-nums text-[#777]">${fmtInt(item.skipped_approved_count)}</td>
                 <td class="py-2 px-2 text-right whitespace-nowrap">
                     ${isProcessing ? `
-                    <span class="text-[9px] text-[#555]">进行中/span>
+                    <span class="text-[9px] text-[#555]">进行中</span>
                     ` : `
                     <button type="button"
                             class="calc-view-process-btn text-[9px] text-[#777] hover:text-white mr-2"
@@ -448,7 +448,7 @@ function showProcessDrawer(log) {
         </div>
         <div class="px-5 py-3 border-b border-[#222] text-[10px] text-[#777] space-y-1 shrink-0">
             <div>批次（span class="font-mono text-[#999]">${esc(log.calc_batch_id || '-')}</span></div>
-            <div>时间（{esc(formatDateTime(log.started_at))} →${esc(formatDateTime(log.finished_at))}</div>
+            <div>时间（${esc(formatDateTime(log.started_at))} →${esc(formatDateTime(log.finished_at))}</div>
             <div>汇总：零件 ${fmtInt(log.total_parts)} · 成功 ${fmtInt(log.success_count)} · 失败 ${fmtInt(log.failed_count)} · 零价 ${fmtInt(log.zero_fee_count)} · 跳过 ${fmtInt(log.skipped_approved_count)}</div>
         </div>
         <div class="flex-1 overflow-y-auto overscroll-contain p-5">
@@ -526,7 +526,7 @@ async function startCalculation() {
     if (version) payload.version = version;
 
     setCalculating(true);
-    showProgress(0, '已提交计算队删);
+    showProgress(0, '已提交计算队列);
 
     try {
         const response = await HttpClient.post(CALC_API, payload);
@@ -550,14 +550,14 @@ async function startCalculation() {
     }
 }
 
-function showProgress(progress = 0, msg = '已提交计算队删) {
+function showProgress(progress = 0, msg = '已提交计算队列) {
     document.getElementById('calcProgressPanel')?.classList.remove('hidden');
     updateProgress(progress, msg);
 }
 
 function hideProgress() {
     document.getElementById('calcProgressPanel')?.classList.add('hidden');
-    updateProgress(0, '已提交计算队删);
+    updateProgress(0, '已提交计算队列);
 }
 
 function updateProgress(progress, msg, status) {

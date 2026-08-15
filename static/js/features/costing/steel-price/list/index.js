@@ -686,16 +686,16 @@ function formatTrace(prefix, record) {
     }
 
     const idLines = prefix === 'base'
-        ? [`base_price_id=${esc(refId ?? '—)}`]
+        ? [`base_price_id=${esc(refId ?? '—')}`]
         : [
-            `${prefix}_policy_id=${esc(refId ?? '—)}`,
-            `${prefix}_ladder_item_id=${esc(ladderId ?? '—)}`,
+            `${prefix}_policy_id=${esc(refId ?? '—')}`,
+            `${prefix}_ladder_item_id=${esc(ladderId ?? '—')}`,
         ];
     const excelLine = [
-        `${prefix}_excel_filename=${esc(filename || '—)}`,
-        `${prefix}_sheet_name=${esc(sheet || '—)}`,
-        `${prefix}_excel_row=${esc(row ?? '—)}`,
-        `${prefix}_excel_col=${esc(col ?? '—)}`,
+        `${prefix}_excel_filename=${esc(filename || '—')}`,
+        `${prefix}_sheet_name=${esc(sheet || '—')}`,
+        `${prefix}_excel_row=${esc(row ?? '—')}`,
+        `${prefix}_excel_col=${esc(col ?? '—')}`,
     ].join(' · ');
 
     return `
@@ -728,7 +728,7 @@ function openViewDrawer(record) {
     fillViewField('view-grade', record.grade);
     fillViewField('view-thickness', formatDecimal(record.thickness, 2));
     fillViewField('view-width', formatWidthPlain(record.width));
-    fillViewField('view-spec', record.spec || '—);
+    fillViewField('view-spec', record.spec || '—');
     fillViewField('view-base-price', formatDecimal(record.base_price, 2));
     fillAdjustmentViewField('view-thickness-adjustment', record.thickness_adjustment);
     fillAdjustmentViewField('view-width-adjustment', record.width_adjustment);
@@ -737,12 +737,12 @@ function openViewDrawer(record) {
     fillViewField('view-other-adjustment', formatDecimal(record.other_adjustment, 2));
     fillViewField('view-final-price', formatDecimal(record.final_price_per_ton, 2));
     fillViewField('view-audit-status', AUDIT_LABEL[record.audit_status] || record.audit_status);
-    fillViewField('view-audited-by', record.audited_by || '—);
+    fillViewField('view-audited-by', record.audited_by || '—');
     fillViewField('view-audited-at', formatDateTime(record.audited_at));
-    fillViewField('view-audit-remark', record.audit_remark || '—);
-    fillViewField('view-reverse-audited-by', record.reverse_audited_by || '—);
+    fillViewField('view-audit-remark', record.audit_remark || '—');
+    fillViewField('view-reverse-audited-by', record.reverse_audited_by || '—');
     fillViewField('view-reverse-audited-at', formatDateTime(record.reverse_audited_at));
-    fillViewField('view-reverse-audit-remark', record.reverse_audit_remark || '—);
+    fillViewField('view-reverse-audit-remark', record.reverse_audit_remark || '—');
     fillViewField('view-match-status', record.match_status);
     fillViewField('view-calc-batch-id', record.calc_batch_id);
     fillViewField('view-calculated-at', formatDateTime(record.calculated_at));
@@ -932,7 +932,7 @@ function setBusinessKeyReadonly(readonly) {
 
 function fillViewField(id, value) {
     const element = document.getElementById(id);
-    if (element) element.textContent = value ?? '—;
+    if (element) element.textContent = value ?? '—';
 }
 
 /** 厚度/宽度加价：BRABUS 极客风（冷钛登/ 暗红 / 低饱和灰）*/
@@ -998,7 +998,7 @@ function formatWidthPlain(value) {
 }
 
 function formatDateTime(value) {
-    if (!value) return '—;
+    if (!value) return '—';
     try {
         const date = new Date(value);
         if (Number.isNaN(date.getTime())) return value;

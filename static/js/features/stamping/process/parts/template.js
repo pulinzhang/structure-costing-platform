@@ -23,8 +23,8 @@ export function partsTemplate() {
                                  style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);">
                                 <div class="text-[#555555] text-[10px] tracking-wider">零件条数</div>
                                 <div class="text-[18px] font-bold text-[#FFFFFF] mt-1 tabular-nums">
-                                    <span id="partsHudTotal">—/span>
-                                    <span class="text-[10px] text-[#555555] ml-1">价/span>
+                                    <span id="partsHudTotal">—</span>
+                                    <span class="text-[10px] text-[#555555] ml-1">件</span>
                                 </div>
                             </div>
                             <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3 backdrop-blur-sm"
@@ -61,7 +61,7 @@ export function partsTemplate() {
                         <div class="flex items-center gap-3 shrink-0">
                             <button type="button" id="partsToggleAdvancedFilter"
                                     class="text-[#6E6E73] hover:text-white transition-colors flex items-center gap-1.5 text-[11px]">
-                                <span id="partsAdvancedFilterLabel">展开高级筛选/span>
+                                <span id="partsAdvancedFilterLabel">展开高级筛选</span>
                                 <span id="partsAdvancedFilterCount" class="text-[#555555]">(0)</span>
                             </button>
                             <button type="button" id="partsSearchBtn"
@@ -87,7 +87,7 @@ export function partsTemplate() {
                                 重置
                             </button>
                         </div>
-                        <p class="mt-2 text-[10px] text-[#555555]">筛选均可选；级联联动。批量删除须选定基地、冲压工厂和车型。/p>
+                        <p class="mt-2 text-[10px] text-[#555555]">筛选均可选；级联联动。批量删除须选定基地、冲压工厂和车型。</p>
                     </div>
                 </div>
 
@@ -97,7 +97,7 @@ export function partsTemplate() {
                             <tr class="border-b border-[#17171C] bg-[#0B0B0D]/95">
                                 <th class="p-0 w-0"></th>
                                 <th class="px-3 py-3 text-center text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap w-14">图纸</th>
-                                <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#A1A1A6] whitespace-nowrap">零件号/th>
+                                <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#A1A1A6] whitespace-nowrap">零件号</th>
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">零件名称</th>
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">基地</th>
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">冲压工厂</th>
@@ -250,7 +250,7 @@ export function renderPartsPagination(currentPage, totalPages) {
     if (endPage - startPage < maxVisible - 1) startPage = Math.max(1, endPage - maxVisible + 1);
     if (startPage > 1) {
         buttons += `<button type="button" data-page="1" class="flex items-center justify-center w-6 h-6 rounded-sm text-[10px] text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]">1</button>`;
-        if (startPage > 2) buttons += `<span class="px-0.5 text-[#333333] text-[9px]">—/span>`;
+        if (startPage > 2) buttons += `<span class="px-0.5 text-[#333333] text-[9px]">—</span>`;
     }
     for (let i = startPage; i <= endPage; i++) {
         const isActive = i === currentPage;
@@ -258,7 +258,7 @@ export function renderPartsPagination(currentPage, totalPages) {
             class="flex items-center justify-center w-6 h-6 rounded-sm text-[10px] ${isActive ? 'bg-[#FFFFFF] text-[#0a0a0a] font-bold' : 'text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]'}">${i}</button>`;
     }
     if (endPage < totalPages) {
-        if (endPage < totalPages - 1) buttons += `<span class="px-0.5 text-[#333333] text-[9px]">—/span>`;
+        if (endPage < totalPages - 1) buttons += `<span class="px-0.5 text-[#333333] text-[9px]">—</span>`;
         buttons += `<button type="button" data-page="${totalPages}" class="flex items-center justify-center w-6 h-6 rounded-sm text-[10px] text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]">${totalPages}</button>`;
     }
     buttons += `
@@ -311,7 +311,7 @@ function renderExcelProvenance(part) {
                     <span class="w-0.5 h-3 bg-[#d32f2f] rounded-sm shadow-[0_0_8px_rgba(211,47,47,0.5)]"></span>
                     Excel 溯源
                 </p>
-                <p class="text-[12px] text-[#616161]">无单元格溯源（请重新上传工艺文件生成）/p>
+                <p class="text-[12px] text-[#616161]">无单元格溯源（请重新上传工艺文件生成）</p>
             </div>
         `;
     }
@@ -323,7 +323,7 @@ function renderExcelProvenance(part) {
         colHint,
     ].filter(Boolean).join(' · ');
     const cellHint = hasCell
-        ? `<p class="text-[11px] text-[#888888]">${esc(locator || '—)}</p>`
+        ? `<p class="text-[11px] text-[#888888]">${esc(locator || '—')}</p>`
         : `<p class="text-[11px] text-[#616161]">仅有文件名（该批数据上传时尚未落表页/行列；请再上传一次工艺文件，或已由运维回填）</p>`;
     return `
         <div class="mx-4 mb-4 border border-[#d32f2f]/25 bg-[#111111] p-3"
@@ -332,7 +332,7 @@ function renderExcelProvenance(part) {
                 <span class="w-0.5 h-3 bg-[#d32f2f] rounded-sm shadow-[0_0_8px_rgba(211,47,47,0.5)]"></span>
                 Excel 溯源
             </p>
-            <p class="text-[12px] text-[#cfcfcf] font-mono break-all mb-1">${esc(filename || '—)}</p>
+            <p class="text-[12px] text-[#cfcfcf] font-mono break-all mb-1">${esc(filename || '—')}</p>
             ${cellHint}
         </div>
     `;
@@ -345,17 +345,17 @@ function renderProcessRow(p, idx) {
 
     return `
                 <tr class="border-b border-[#161616] last:border-b-0 group hover:bg-[#0e0e0e] transition-colors duration-200 process-row" data-process-id="${processId}">
-                    <td class="px-4 py-4 text-[10px] text-[#4a4a4a] font-mono tracking-[0.06em]">${p.process_order ?? '—}</td>
+                    <td class="px-4 py-4 text-[10px] text-[#4a4a4a] font-mono tracking-[0.06em]">${p.process_order ?? '—'}</td>
                     <td class="px-4 py-4 text-[11px] text-[#888888] font-mono tracking-[0.06em]">${esc(p.process_seq)}</td>
                     <td class="px-4 py-4 text-[11px] text-[#888888] font-medium tracking-[0.05em]">${esc(p.process_code)}</td>
-                    <td class="px-4 py-4 text-right text-[11px] font-mono text-[#777777] tracking-[0.06em]">${p.die_sets ?? '—}</td>
-                    <td class="px-4 py-4 text-right text-[11px] font-mono text-[#777777] tracking-[0.06em]">${p.tonnage ? `${p.tonnage}T` : '—}</td>
+                    <td class="px-4 py-4 text-right text-[11px] font-mono text-[#777777] tracking-[0.06em]">${p.die_sets ?? '—'}</td>
+                    <td class="px-4 py-4 text-right text-[11px] font-mono text-[#777777] tracking-[0.06em]">${p.tonnage ? `${p.tonnage}T` : '—'}</td>
                     <td class="px-4 py-4">
                         <div class="flex items-center gap-2">
                             <select class="die-type-select h-7 px-2 text-[10px] bg-[#0a0a0a] border border-[#2c2c2c] appearance-none cursor-pointer text-[#9e9e9e] focus:outline-none focus:border-[#ff5252] transition-all rounded-sm" data-original-die-type="${currentDieType}">
                                 ${DIE_TYPE_OPTIONS.map(o => `<option value="${o.value}" ${o.value === currentDieType ? 'selected' : ''}>${o.label}</option>`).join('')}
                             </select>
-                            <span class="text-[9px] font-mono text-[#555555] tracking-[0.05em]" title="模具成本比例">${p.cost_ratio != null ? `${(p.cost_ratio * 100).toFixed(0)}%` : '—}</span>
+                            <span class="text-[9px] font-mono text-[#555555] tracking-[0.05em]" title="模具成本比例">${p.cost_ratio != null ? `${(p.cost_ratio * 100).toFixed(0)}%` : '—'}</span>
                         </div>
                     </td>
                 </tr>`;
@@ -442,8 +442,8 @@ export function renderDetailContent(part) {
                     <table class="w-full">
                         <thead class="shrink-0">
                             <tr style="background:#0c0c0c; border-bottom:1px solid #1a1a1a;">
-                                <th class="px-4 py-2.5 text-left text-[8px] font-semibold uppercase tracking-[0.22em] text-[#353535]">度/th>
-                                <th class="px-4 py-2.5 text-left text-[8px] font-semibold uppercase tracking-[0.22em] text-[#353535]">工序史/th>
+                                <th class="px-4 py-2.5 text-left text-[8px] font-semibold uppercase tracking-[0.22em] text-[#353535]">度</th>
+                                <th class="px-4 py-2.5 text-left text-[8px] font-semibold uppercase tracking-[0.22em] text-[#353535]">工序史</th>
                                 <th class="px-4 py-2.5 text-left text-[8px] font-semibold uppercase tracking-[0.22em] text-[#353535]">代号</th>
                                 <th class="px-4 py-2.5 text-right text-[8px] font-semibold uppercase tracking-[0.22em] text-[#353535]">模数</th>
                                 <th class="px-4 py-2.5 text-right text-[8px] font-semibold uppercase tracking-[0.22em] text-[#353535]">吨位</th>
@@ -462,7 +462,7 @@ export function renderDetailContent(part) {
                 <div class="flex items-center justify-center gap-4 py-2 mb-3 bg-[#0a0a0a] border border-[#1a1a1a] rounded-sm">
                     <span class="text-[7px] text-[#2a2a2a] tracking-[0.15em] uppercase">成本规则</span>
                     <span class="text-[7px] text-[#1e1e1e]">·</span>
-                    <span class="text-[9px] text-[#3a3a3a]"><span class="text-[#555555]">级进模/span> <span class="text-[#8a3030] font-medium">80%</span></span>
+                    <span class="text-[9px] text-[#3a3a3a]"><span class="text-[#555555]">级进模</span> <span class="text-[#8a3030] font-medium">80%</span></span>
                     <span class="text-[7px] text-[#1e1e1e]">·</span>
                     <span class="text-[9px] text-[#3a3a3a]"><span class="text-[#555555]">单干模具</span> <span class="text-[#8a3030] font-medium">100%</span></span>
                     <span class="text-[7px] text-[#1e1e1e]">·</span>

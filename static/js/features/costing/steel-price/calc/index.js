@@ -286,7 +286,7 @@ function renderHistoryRows(items) {
                 <td class="py-2 px-2 font-mono text-right tabular-nums ${Number(item.failed_count) > 0 ? 'text-[#ef5350]' : 'text-[#777]'}">${fmtInt(item.failed_count)}</td>
                 <td class="py-2 px-2 text-right whitespace-nowrap">
                     ${isProcessing ? `
-                    <span class="text-[9px] text-[#555]">进行中/span>
+                    <span class="text-[9px] text-[#555]">进行中</span>
                     ` : `
                     <button type="button"
                             class="calc-view-process-btn text-[9px] text-[#777] hover:text-white mr-2"
@@ -387,7 +387,7 @@ function showProcessDrawer(log) {
         </div>
         <div class="px-5 py-3 border-b border-[#222] text-[10px] text-[#777] space-y-1 shrink-0">
             <div>批次（span class="font-mono text-[#999]">${esc(log.calc_batch_id || '-')}</span></div>
-            <div>时间（{esc(formatDateTime(log.started_at))} →${esc(formatDateTime(log.finished_at))}</div>
+            <div>时间（${esc(formatDateTime(log.started_at))} →${esc(formatDateTime(log.finished_at))}</div>
             <div>汇总：材料 ${fmtInt(log.material_count)} · 命中 ${fmtInt(log.enriched_count)} · 无基价${fmtInt(log.no_base_count)} · 新增 ${fmtInt(log.created_count)} · 更新 ${fmtInt(log.updated_count)} · 失败 ${fmtInt(log.failed_count)}</div>
         </div>
         <div class="flex-1 overflow-y-auto overscroll-contain p-5">
@@ -496,7 +496,7 @@ async function startCalculation() {
     if (vehicleModel) payload.vehicle_model = vehicleModel;
 
     setCalculating(true);
-    showProgress(0, '已提交计算队删);
+    showProgress(0, '已提交计算队列);
 
     try {
         const response = await HttpClient.post(STEEL_PRICE_CALC_API, payload);
@@ -516,7 +516,7 @@ async function startCalculation() {
     }
 }
 
-function showProgress(progress = 0, msg = '已提交计算队删) {
+function showProgress(progress = 0, msg = '已提交计算队列) {
     const panel = document.getElementById('calcProgressPanel');
     if (panel) panel.classList.remove('hidden');
     updateProgress(progress, msg);
@@ -525,7 +525,7 @@ function showProgress(progress = 0, msg = '已提交计算队删) {
 function hideProgress() {
     const panel = document.getElementById('calcProgressPanel');
     if (panel) panel.classList.add('hidden');
-    updateProgress(0, '已提交计算队删);
+    updateProgress(0, '已提交计算队列);
 }
 
 function updateProgress(progress, msg, status) {

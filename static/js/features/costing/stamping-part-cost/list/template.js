@@ -20,8 +20,8 @@ export function partCostListTemplate() {
                                  style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);">
                                 <div class="text-[#555555] text-[10px] tracking-wider">核价条数</div>
                                 <div class="text-[18px] font-bold text-[#FFFFFF] mt-1 tabular-nums">
-                                    <span id="costHudTotal">—/span>
-                                    <span class="text-[10px] text-[#555555] ml-1">条/span>
+                            <span id="costHudTotal" class="text-[#F0F0F2] font-bold tabular-nums">—</span>
+                                    <span class="text-[10px] text-[#555555] ml-1">条</span>
                                 </div>
                             </div>
                             <!-- 巴博斯霓虹红全本期均价 -->
@@ -36,27 +36,27 @@ export function partCostListTemplate() {
                                 </div>
                                 <div class="text-[26px] font-black text-[#FF1E27] font-mono mt-1 tracking-tight tabular-nums"
                                      style="text-shadow: 0 0 12px rgba(255,30,39,0.7), 0 0 25px rgba(255,30,39,0.3);">
-                                    ￥span id="costHudAvg">—/span>
+                                ￥<span id="costHudAvg">—</span>
                                 </div>
                                 <div class="text-[9px] font-mono text-[#FF1E27]/60 mt-1 flex justify-between">
                                     <span>系统自动计算</span>
-                                    <span id="costHudSkuCount">—板/span>
+                                    <span id="costHudSkuCount">— 条</span>
                                 </div>
                             </div>
                             <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3 backdrop-blur-sm"
                                  style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);">
                                 <div class="text-[#555555] text-[10px] tracking-wider">待审</div>
                                 <div class="text-[18px] font-bold text-[#FFFFFF] mt-1 tabular-nums">
-                                    <span id="costHudPending">—/span>
-                                    <span class="text-[10px] text-[#555555] ml-1">条/span>
+                                    <span id="costHudPending">—</span>
+                                    <span class="text-[10px] text-[#555555] ml-1">条</span>
                                 </div>
                             </div>
                             <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3 backdrop-blur-sm"
                                  style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);">
                                 <div class="text-[#555555] text-[10px] tracking-wider">已审</div>
                                 <div class="text-[18px] font-bold text-[#FFFFFF] mt-1 tabular-nums">
-                                    <span id="costHudApproved">—/span>
-                                    <span class="text-[10px] text-[#555555] ml-1">条/span>
+                                    <span id="costHudApproved">—</span>
+                                    <span class="text-[10px] text-[#555555] ml-1">条</span>
                                 </div>
                             </div>
                         </div>
@@ -118,7 +118,7 @@ export function partCostListTemplate() {
                         <div class="flex items-center gap-3 shrink-0">
                             <button type="button" id="costToggleAdvancedFilter"
                                     class="text-[#6E6E73] hover:text-white transition-colors flex items-center gap-1.5 text-[11px]">
-                                <span id="costAdvancedFilterLabel">展开高级筛选/span>
+                                <span id="costAdvancedFilterLabel">展开高级筛选</span>
                                 <span id="costAdvancedFilterCount" class="text-[#555555]">(0)</span>
                             </button>
                             <button type="button" id="costSearchBtn"
@@ -137,7 +137,7 @@ export function partCostListTemplate() {
                             ${filterSelect('costMonthFilter', '月份')}
                             ${filterSelect('costLocationFilter', '基地')}
                             ${filterSelect('costSupplierFilter', '冲压工厂')}
-                            ${filterSelect('costAuditFilter', '审核状总)}
+                            ${filterSelect('costAuditFilter', '审核状态')}
                             ${filterInput('costPartNumberFilter', '零件史, '短号或完整零件号')}
                             <button id="costResetBtn" type="button"
                                     class="inline-flex items-center gap-1.5 h-8 px-3 text-[11px] font-medium rounded-md bg-transparent text-[#6E6E73] border border-[#2A2A35] hover:bg-[#FF1E27]/10 hover:border-[#FF1E27]/50 hover:text-[#FF1E27] transition-all duration-200">
@@ -145,7 +145,7 @@ export function partCostListTemplate() {
                                 重置
                             </button>
                         </div>
-                        <p class="mt-2 text-[10px] text-[#555555]">批量删除 / 审核 / 反审核须选定年度、月份、基地、冲压工厂。/p>
+                        <p class="mt-2 text-[10px] text-[#555555]">批量删除 / 审核 / 反审核须选定年度、月份、基地、冲压工厂。</p>
                     </div>
                 </div>
 
@@ -178,25 +178,25 @@ export function partCostListTemplate() {
                                 <th class="p-0"></th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">年月/基地</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#6E6E73]">零件</th>
-                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">材质/压/th>
-                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]" title="预估单件材料消耗M (kg)">消耗/th>
-                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]" title="零件净量>净量/th>
+                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">材质/压</th>
+                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]" title="预估单件材料消耗M (kg)">消耗</th>
+                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]" title="零件净量>净量</th>
                                 <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]" title="废料重量 O = 材料消耗−净量>废料</th>
                                 <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]">利用率</th>
                                 <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]" title="钢材吨价；P=吨价/1000 全kg">钢材吨价</th>
                                 <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]" title="废料吨价；Q=吨价/1000 全kg">废料吨价</th>
-                                <th class="cost-breakdown-col hidden px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]" title="③钢材采购（含损耗）">①采败/th>
+                                <th class="cost-breakdown-col hidden px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]" title="③钢材采购（含损耗）">①采败</th>
                                 <th class="cost-breakdown-col hidden px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]" title="③损耗废料扣除（回收率）">②损耗扣</th>
                                 <th class="cost-breakdown-col hidden px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]" title="③边角废料扣除（回收率）>③边角扣</th>
-                                <th class="cost-breakdown-col hidden px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]" title="废料扣除合计 ②③>废料扣合计/th>
+                                <th class="cost-breakdown-col hidden px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]" title="废料扣除合计 ②③>废料扣合计</th>
                                 <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#6E6E73]" title="R = ①−②−③>
                                     <button type="button" id="costToggleBreakdownCols"
                                             class="inline-flex items-center justify-center w-3.5 h-3.5 mr-0.5 align-middle border border-[#22222A] text-[#555555] hover:text-[#FF1E27] hover:border-[#FF1E27]/40 transition-colors"
                                             title="展开成本分项（①采购 / ②损耗扣 / ③边角扣 / 废料扣合计）">+</button>
                                     原材料R
                                 </th>
-                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]">加工费/th>
-                                <th class="px-2 py-2 text-right text-[9px] font-semibold tracking-[0.06em] text-[#FF1E27]/90 bg-[#1A080A]" title="单件成本 = 原材新R + 加工费>单件成本</th>
+                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]">加工费</th>
+                                <th class="px-2 py-2 text-right text-[9px] font-semibold tracking-[0.06em] text-[#FF1E27]/90 bg-[#1A080A]" title="单件成本 = 原材料 R + 加工费>单件成本</th>
                                 <th class="px-1 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-[#555555]">核算</th>
                                 <th class="px-1 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-[#555555]">审核</th>
                                 <th class="p-0 w-9" aria-label="操作"></th>
@@ -219,7 +219,7 @@ export function partCostListTemplate() {
                         ${window.svgIcon('clipboard-list', 'w-4 h-4 text-[#555555]')}
                     </div>
                     <h5 class="text-[11px] font-medium text-[#8E8E93] mb-1">暂无零件价格数据</h5>
-                    <p class="text-[10px] text-[#555555]">请先完成零件价格计算，或调整筛选条件/p>
+                    <p class="text-[10px] text-[#555555]">请先完成零件价格计算，或调整筛选条件</p>
                 </div>
 
                 <div id="costLoading" class="hidden flex items-center justify-center py-14">
@@ -253,8 +253,8 @@ export function renderCostRows(records, breakdownOpen = false) {
     return records.map((row) => {
         const fail = row.calc_status === 'failed';
         const ym = `${esc(row.year)}-${esc(String(row.month).padStart(2, '0'))}`;
-        const location = esc(row.location) || '—;
-        const supplier = esc(row.stamping_supplier) || '—;
+        const location = esc(row.location) || '—';
+        const supplier = esc(row.stamping_supplier) || '—';
         const num = 'px-2 py-2 font-mono text-[10px] text-right tabular-nums text-[#8E8E93]';
         const actionTitle = fail ? '手工干预' : '查看详情';
         const actionIcon = fail
@@ -283,7 +283,7 @@ export function renderCostRows(records, breakdownOpen = false) {
             </td>
             <td class="px-2 py-2 overflow-hidden">${partInfoCell(row.part_number, row.part_name)}</td>
             <td class="px-2 py-2 overflow-hidden">
-                <div class="text-[#8E8E93] text-[10px] truncate" title="${esc(row.material || '')}">${esc(row.material || '—)}</div>
+                <div class="text-[#8E8E93] text-[10px] truncate" title="${esc(row.material || '')}">${esc(row.material || '—')}</div>
                 <div class="text-[#555555] text-[9px] mt-0.5 tabular-nums">${fmtNum(row.thickness, 3)}</div>
             </td>
             <td class="${num}" title="${esc(fmtNum(row.blank_weight_kg, 7))}">${fmtNum(row.blank_weight_kg, 3)}</td>
@@ -356,7 +356,7 @@ function partInfoCell(partNumber, partName) {
             ${nameLine}`;
     }
     return `
-        <div class="text-[10px] font-mono text-[#8E8E93] tracking-wide truncate" title="${esc(full)}">${esc(full) || '—}</div>
+        <div class="text-[10px] font-mono text-[#8E8E93] tracking-wide truncate" title="${esc(full)}">${esc(full) || '—'}</div>
         ${nameLine}`;
 }
 
@@ -374,7 +374,7 @@ export function updatePartCostHud(total, summary) {
     setText(
         'costHudAvg',
         Number.isNaN(avgNumber)
-            ? '—
+            ? '—'
             : avgNumber.toLocaleString('zh-CN', {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 4,
@@ -442,14 +442,14 @@ export function renderCostPagination(currentPage, totalPages) {
     if (endPage - startPage < maxVisible - 1) startPage = Math.max(1, endPage - maxVisible + 1);
     if (startPage > 1) {
         buttons += `<button class="cost-page-btn flex items-center justify-center w-6 h-6 text-[10px] text-[#555555] hover:text-[#C8C8D0] hover:bg-[#161620]" data-page="1">1</button>`;
-        if (startPage > 2) buttons += `<span class="px-0.5 text-[#2E2E36] text-[9px]">—/span>`;
+        if (startPage > 2) buttons += `<span class="px-0.5 text-[#2E2E36] text-[9px]">—</span>`;
     }
     for (let i = startPage; i <= endPage; i++) {
         const isActive = i === currentPage;
         buttons += `<button class="cost-page-btn flex items-center justify-center w-6 h-6 text-[10px] ${isActive ? 'bg-[#E8E8ED] text-[#0A0A0C] font-bold' : 'text-[#555555] hover:text-[#C8C8D0] hover:bg-[#161620]'}" data-page="${i}">${i}</button>`;
     }
     if (endPage < totalPages) {
-        if (endPage < totalPages - 1) buttons += `<span class="px-0.5 text-[#2E2E36] text-[9px]">—/span>`;
+        if (endPage < totalPages - 1) buttons += `<span class="px-0.5 text-[#2E2E36] text-[9px]">—</span>`;
         buttons += `<button class="cost-page-btn flex items-center justify-center w-6 h-6 text-[10px] text-[#555555] hover:text-[#C8C8D0] hover:bg-[#161620]" data-page="${totalPages}">${totalPages}</button>`;
     }
     buttons += `

@@ -126,10 +126,10 @@ async function loadFilterOptions() {
             const currentYear = new Date().getFullYear();
             let options = `<option value="">请选择年份</option>`;
             tonnagePriceState.years.forEach(year => {
-                options += `<option value="${year}">${year} 年/option>`;
+                options += `<option value="${year}">${year} 年</option>`;
             });
             if (!tonnagePriceState.years.includes(currentYear)) {
-                options += `<option value="${currentYear}">${currentYear} 年/option>`;
+                options += `<option value="${currentYear}">${currentYear} 年</option>`;
             }
             yearFilter.innerHTML = options;
             if (tonnagePriceState.selectedYear) {
@@ -139,9 +139,9 @@ async function loadFilterOptions() {
 
         const sourceYearSelect = document.getElementById('sourceYear');
         if (sourceYearSelect) {
-            let options = `<option value="">请选择源年价/option>`;
+            let options = `<option value="">请选择源年价</option>`;
             tonnagePriceState.years.forEach(year => {
-                options += `<option value="${year}">${year} 年/option>`;
+                options += `<option value="${year}">${year} 年</option>`;
             });
             sourceYearSelect.innerHTML = options;
         }

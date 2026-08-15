@@ -274,7 +274,7 @@ export const PartsPage = {
     renderRow(part) {
         const thickness = fmtNum(part.thickness, 2);
         const partWeight = fmtNum(part.part_weight, 3);
-        const processCount = part.process_count != null ? part.process_count : '—;
+        const processCount = part.process_count != null ? part.process_count : '—';
         const sketchUrl = part.sketch_url || '';
         const cell = 'px-3 py-3 border-b border-[#17171C] font-mono text-[11px]';
         const muted = 'text-[#8E8E93]';
@@ -301,16 +301,16 @@ export const PartsPage = {
                 <td class="${cell} font-sans whitespace-nowrap">
                     <span class="text-[12px] font-semibold text-white font-mono tracking-wide group-hover:text-[#FF1E27] transition-colors">${esc(part.part_number)}</span>
                 </td>
-                <td class="${cell} ${muted} font-sans">${esc(part.part_name) || '—}</td>
-                <td class="${cell} ${muted}">${esc(part.location) || '—}</td>
-                <td class="${cell} ${muted} font-sans">${esc(part.stamping_supplier) || '—}</td>
-                <td class="${cell} ${muted}">${esc(part.vehicle_model) || '—}</td>
-                <td class="${cell} ${muted} border-r border-[#22222A]">${esc(part.version) || '—}</td>
-                <td class="${cell} ${muted} font-sans">${esc(part.material) || '—}</td>
+                <td class="${cell} ${muted} font-sans">${esc(part.part_name) || '—'}</td>
+                <td class="${cell} ${muted}">${esc(part.location) || '—'}</td>
+                <td class="${cell} ${muted} font-sans">${esc(part.stamping_supplier) || '—'}</td>
+                <td class="${cell} ${muted}">${esc(part.vehicle_model) || '—'}</td>
+                <td class="${cell} ${muted} border-r border-[#22222A]">${esc(part.version) || '—'}</td>
+                <td class="${cell} ${muted} font-sans">${esc(part.material) || '—'}</td>
                 <td class="${cell} text-right tabular-nums ${muted}">${thickness}</td>
                 <td class="${cell} text-right tabular-nums ${muted}">${partWeight}</td>
                 <td class="${cell} text-right tabular-nums ${muted}">${processCount}</td>
-                <td class="${cell} text-[10px] text-[#555555] max-w-[160px] truncate" title="${esc(part.excel_filename || '')}">${esc(part.excel_filename) || '—}</td>
+                <td class="${cell} text-[10px] text-[#555555] max-w-[160px] truncate" title="${esc(part.excel_filename || '')}">${esc(part.excel_filename) || '—'}</td>
                 <td class="px-1 py-2 text-center align-middle">
                     <div class="inline-flex items-center justify-center gap-0.5 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto focus-within:opacity-100 focus-within:pointer-events-auto transition-opacity duration-100">
                         <button type="button" class="inline-flex items-center justify-center w-7 h-7 rounded-sm text-[#555555] hover:text-[#C8C8D0] hover:bg-[#161620] transition-all" data-action="detail" data-id="${part.id}" title="查看详情" aria-label="查看详情">

@@ -20,8 +20,8 @@ export function steelPriceListTemplate() {
                                  style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);">
                                 <div class="text-[#555555] text-[10px] tracking-wider">核价条数</div>
                                 <div class="text-[18px] font-bold text-[#FFFFFF] mt-1 tabular-nums">
-                                    <span id="steelPriceHudTotal">—/span>
-                                    <span class="text-[10px] text-[#555555] ml-1">条/span>
+                                    <span id="steelPriceHudTotal">—</span>
+                                    <span class="text-[10px] text-[#555555] ml-1">条</span>
                                 </div>
                             </div>
                             <!-- 巴博斯霓虹红全本期均价 -->
@@ -36,27 +36,27 @@ export function steelPriceListTemplate() {
                                 </div>
                                 <div class="text-[26px] font-black text-[#FF1E27] font-mono mt-1 tracking-tight tabular-nums"
                                      style="text-shadow: 0 0 12px rgba(255,30,39,0.7), 0 0 25px rgba(255,30,39,0.3);">
-                                    ￥span id="steelPriceHudAvg">—/span>
+                                    ￥<span id="steelPriceHudAvg">—</span>
                                 </div>
                                 <div class="text-[9px] font-mono text-[#FF1E27]/60 mt-1 flex justify-between">
                                     <span>系统自动计算</span>
-                                    <span id="steelPriceHudSkuCount">—板/span>
+                                    <span id="steelPriceHudSkuCount">— 条</span>
                                 </div>
                             </div>
                             <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3 backdrop-blur-sm"
                                  style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);">
                                 <div class="text-[#555555] text-[10px] tracking-wider">待审</div>
                                 <div class="text-[18px] font-bold text-[#FFFFFF] mt-1 tabular-nums">
-                                    <span id="steelPriceHudPending">—/span>
-                                    <span class="text-[10px] text-[#555555] ml-1">条/span>
+                                    <span id="steelPriceHudPending">—</span>
+                                    <span class="text-[10px] text-[#555555] ml-1">条</span>
                                 </div>
                             </div>
                             <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3 backdrop-blur-sm"
                                  style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);">
                                 <div class="text-[#555555] text-[10px] tracking-wider">已审</div>
                                 <div class="text-[18px] font-bold text-[#FFFFFF] mt-1 tabular-nums">
-                                    <span id="steelPriceHudApproved">—/span>
-                                    <span class="text-[10px] text-[#555555] ml-1">条/span>
+                                    <span id="steelPriceHudApproved">—</span>
+                                    <span class="text-[10px] text-[#555555] ml-1">条</span>
                                 </div>
                             </div>
                         </div>
@@ -100,7 +100,7 @@ export function steelPriceListTemplate() {
                         <div class="flex items-center gap-3 shrink-0">
                             <button type="button" id="steelPriceToggleAdvancedFilter"
                                     class="text-[#6E6E73] hover:text-white transition-colors flex items-center gap-1.5 text-[11px]">
-                                <span id="steelPriceAdvancedFilterLabel">展开高级筛选/span>
+                                <span id="steelPriceAdvancedFilterLabel">展开高级筛选</span>
                                 <span id="steelPriceAdvancedFilterCount" class="text-[#555555]">(0)</span>
                             </button>
                             <button type="button" id="steelPriceSearchButton"
@@ -141,21 +141,21 @@ export function steelPriceListTemplate() {
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#A1A1A6] whitespace-nowrap">牌号</th>
                                 <th class="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.18em] text-[#A1A1A6] whitespace-nowrap">厚度</th>
                                 <th class="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap border-r border-[#22222A]">宽度</th>
-                                <th class="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">基础价/th>
+                                <th class="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">基础价</th>
                                 <th class="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">厚度加价</th>
                                 <th class="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">宽度加价</th>
-                                <th class="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap border-r border-[#22222A]">加工费/th>
-                                <th class="px-3 py-3 text-right text-[10px] font-bold uppercase tracking-[0.18em] text-[#FFFFFF]/70 whitespace-nowrap bg-[#14141C] border-x border-[#222230]">最终价/启/th>
+                                <th class="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap border-r border-[#22222A]">加工费</th>
+                                <th class="px-3 py-3 text-right text-[10px] font-bold uppercase tracking-[0.18em] text-[#FFFFFF]/70 whitespace-nowrap bg-[#14141C] border-x border-[#222230]">最终价/启</th>
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">基价溯源</th>
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">厚度溯源</th>
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">宽度溯源</th>
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">匹配</th>
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">审核</th>
                                 <th class="p-0 w-9" aria-label="操作"></th>
-                                <th class="px-3 py-3 text-left text-[9px] font-normal tracking-[0.08em] text-[#3a3a3a] whitespace-nowrap">创建交/th>
+                                <th class="px-3 py-3 text-left text-[9px] font-normal tracking-[0.08em] text-[#3a3a3a] whitespace-nowrap">创建交</th>
                                 <th class="px-3 py-3 text-left text-[9px] font-normal tracking-[0.08em] text-[#3a3a3a] whitespace-nowrap">创建时间</th>
                                 <th class="px-3 py-3 text-left text-[9px] font-normal tracking-[0.08em] text-[#3a3a3a] whitespace-nowrap">最后修改人</th>
-                                <th class="px-3 py-3 text-left text-[9px] font-normal tracking-[0.08em] text-[#3a3a3a] whitespace-nowrap">最后修改时间/th>
+                                <th class="px-3 py-3 text-left text-[9px] font-normal tracking-[0.08em] text-[#3a3a3a] whitespace-nowrap">最后修改时间</th>
                             </tr>
                         </thead>
                         <tbody id="steelPriceTableBody" class="bg-transparent"></tbody>
@@ -232,7 +232,7 @@ export function steelPriceListTemplate() {
                             ${editNumber('editProcessingFee', '加工费processing_fee', '0', null, '全, '0.0001')}
                             ${editNumber('editOtherAdjustment', '其他调整 other_adjustment', null, null, '全, '0.0001')}
                         </div>
-                        <p class="text-[10px] text-[#616161] mt-2">最终价由服务端按分项自动汇总，无需手工填写。/p>
+                        <p class="text-[10px] text-[#616161] mt-2">最终价由服务端按分项自动汇总，无需手工填写。</p>
                     </div>
 
                     <div>
@@ -298,7 +298,7 @@ export function steelPriceListTemplate() {
 
                 <div class="bg-[#111111] border border-[#262626]">
                     <div class="px-4 py-3 bg-[#0c0c0c] border-b border-[#181818]">
-                        <h6 class="text-[10px] font-semibold text-[#9e9e9e] tracking-wider uppercase">价格分项（对齐VO）/h6>
+                        <h6 class="text-[10px] font-semibold text-[#9e9e9e] tracking-wider uppercase">价格分项（对齐VO）</h6>
                     </div>
                     <div class="p-4 grid grid-cols-2 gap-x-6 gap-y-3">
                         ${viewRow('基础价base_price', 'view-base-price')}
@@ -313,7 +313,7 @@ export function steelPriceListTemplate() {
 
                 <div class="bg-[#111111] border border-[#262626]">
                     <div class="px-4 py-3 bg-[#0c0c0c] border-b border-[#181818]">
-                        <h6 class="text-[10px] font-semibold text-[#9e9e9e] tracking-wider uppercase">溯源信息（Excel / 政策 ID）/h6>
+                        <h6 class="text-[10px] font-semibold text-[#9e9e9e] tracking-wider uppercase">溯源信息（Excel / 政策 ID）</h6>
                     </div>
                     <div class="p-4 space-y-3 text-[11px] text-[#9e9e9e]">
                         <div id="view-trace-base" class="leading-relaxed"></div>
@@ -328,14 +328,14 @@ export function steelPriceListTemplate() {
                         <h6 class="text-[10px] font-semibold text-[#9e9e9e] tracking-wider uppercase">审核 / 计算</h6>
                     </div>
                     <div class="p-4 grid grid-cols-2 gap-x-6 gap-y-3">
-                        ${viewRow('审核状总, 'view-audit-status')}
-                        ${viewRow('审核交, 'view-audited-by')}
+                        ${viewRow('审核状态', 'view-audit-status')}
+                        ${viewRow('审核交', 'view-audited-by')}
                         ${viewRow('审核时间', 'view-audited-at')}
                         ${viewRow('审核意见', 'view-audit-remark')}
                         ${viewRow('反审核人', 'view-reverse-audited-by')}
-                        ${viewRow('反审核时间, 'view-reverse-audited-at')}
-                        ${viewRow('反审核原回, 'view-reverse-audit-remark')}
-                        ${viewRow('匹配状总, 'view-match-status')}
+                        ${viewRow('反审核时间', 'view-reverse-audited-at')}
+                        ${viewRow('反审核原回', 'view-reverse-audit-remark')}
+                        ${viewRow('匹配状态', 'view-match-status')}
                         ${viewRow('计算批次', 'view-calc-batch-id')}
                         ${viewRow('计算时间', 'view-calculated-at')}
                     </div>
@@ -345,7 +345,7 @@ export function steelPriceListTemplate() {
             <div class="px-6 py-4 border-t border-[#262626] flex items-center justify-end gap-2 shrink-0 flex-wrap">
                 <button type="button" id="viewDrawerApproveBtn" class="hidden inline-flex items-center gap-1.5 bg-[#2e7d32] text-white px-3 py-2 text-[11px] font-semibold rounded hover:bg-[#1b5e20] transition-all">通过</button>
                 <button type="button" id="viewDrawerRejectBtn" class="hidden inline-flex items-center gap-1.5 bg-transparent text-[#ffb74d] border border-[#f57f17]/40 px-3 py-2 text-[11px] font-medium rounded hover:border-[#f57f17] transition-all">驳回</button>
-                <button type="button" id="viewDrawerReverseBtn" class="hidden inline-flex items-center gap-1.5 bg-transparent text-[#9e9e9e] border border-[#2c2c2c] px-3 py-2 text-[11px] font-medium rounded hover:border-[#d32f2f] hover:text-[#d32f2f] transition-all">反审核/button>
+                <button type="button" id="viewDrawerReverseBtn" class="hidden inline-flex items-center gap-1.5 bg-transparent text-[#9e9e9e] border border-[#2c2c2c] px-3 py-2 text-[11px] font-medium rounded hover:border-[#d32f2f] hover:text-[#d32f2f] transition-all">反审核</button>
                 <button type="button" id="viewDrawerEditBtn" class="inline-flex items-center gap-1.5 bg-[#d32f2f] text-white px-4 py-2 text-[11px] font-semibold rounded hover:bg-[#b71c1c] transition-all">
                     ${window.svgIcon('pencil', 'w-3.5 h-3.5')}
                     编辑
@@ -373,9 +373,9 @@ export function steelPriceListTemplate() {
             </div>
             <div class="flex-1 min-h-0 overflow-y-auto p-6">
                 <input type="hidden" id="deleteRecordId" value="">
-                <p class="text-[12px] text-[#9e9e9e] mb-3">确定要删除这条价格记录吗（/p>
+                <p class="text-[12px] text-[#9e9e9e] mb-3">确定要删除这条价格记录吗（</p>
                 <div class="bg-[#0c0c0c] border border-[#1a1a1a] rounded p-3 text-[11px] text-[#616161]" id="deleteSummary"></div>
-                <p class="text-[11px] text-[#c62828] mt-3">已审核通过的记录不可删除，须先反审核。/p>
+                <p class="text-[11px] text-[#c62828] mt-3">已审核通过的记录不可删除，须先反审核。</p>
             </div>
             <div class="px-6 py-4 border-t border-[#262626] flex items-center justify-end gap-2 shrink-0">
                 <button type="button" id="cancelDeleteBtn" class="inline-flex items-center gap-1.5 bg-transparent text-[#9e9e9e] border border-[#2c2c2c] px-4 py-2 text-[11px] font-medium rounded hover:border-[#9e9e9e] hover:text-white transition-all">取消</button>
@@ -407,9 +407,9 @@ export function steelPriceListTemplate() {
             <div class="flex-1 min-h-0 overflow-y-auto p-6 space-y-4">
                 <input type="hidden" id="batchAuditMode" value="approve">
                 <div class="bg-[#0c0c0c] border border-[#1a1a1a] rounded p-3 text-[11px] text-[#9e9e9e]" id="batchAuditFilterSummary"></div>
-                <p id="batchAuditHint" class="text-[11px] text-[#616161]">仅按年度、月份、基地批量处理；三者必须同时选择。/p>
+                <p id="batchAuditHint" class="text-[11px] text-[#616161]">仅按年度、月份、基地批量处理；三者必须同时选择。</p>
                 <div>
-                    <label class="text-[10px] text-[#777777] mb-1 block" id="batchAuditOperatorLabel">操作交/label>
+                    <label class="text-[10px] text-[#777777] mb-1 block" id="batchAuditOperatorLabel">操作人</label>
                     <div id="batchAuditOperatorDisplay"
                          class="w-full h-9 px-3 flex items-center text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#9e9e9e] rounded">
                         —                    </div>
@@ -437,8 +437,8 @@ export function renderSteelPriceRows(records) {
     return records.map((record) => {
         const approved = record.audit_status === 'approved';
         const period = `${esc(record.year)}-${esc(String(record.month).padStart(2, '0'))}`;
-        const mill = esc(record.steel_mill) || '—;
-        const location = esc(record.location) || '—;
+        const mill = esc(record.steel_mill) || '—';
+        const location = esc(record.location) || '—';
         const cell = 'p-3 border-b border-[#17171C] font-mono text-[11px]';
         const muted = 'text-[#8E8E93]';
         const mutedDeep = 'text-[#6E6E73]';
@@ -509,7 +509,7 @@ export function updateSteelPriceHud(total, summary) {
     setText(
         'steelPriceHudAvg',
         Number.isNaN(avgNumber)
-            ? '—
+            ? '—'
             : avgNumber.toLocaleString('zh-CN', {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
@@ -584,7 +584,7 @@ function formatTraceCell(prefix, record) {
     const ladderId = prefix === 'base' ? null : record[`${prefix}_ladder_item_id`];
 
     if (filename == null && refId == null && ladderId == null && row == null && col == null) {
-        return '<span class="text-[#555555]">—/span>';
+        return '<span class="text-[#555555]">—</span>';
     }
 
     const idPart = prefix === 'base'
@@ -600,7 +600,7 @@ function formatTraceCell(prefix, record) {
         row != null || col != null ? `R${row ?? '-'}C${col ?? '-'}` : '',
     ].filter(Boolean).join(' / ');
 
-    const text = [idPart, excelPart].filter(Boolean).join(' · ') || '—;
+    const text = [idPart, excelPart].filter(Boolean).join(' · ') || '—';
     return `<span class="block truncate" title="${esc(text)}">${text}</span>`;
 }
 
@@ -617,14 +617,14 @@ export function renderSteelPricePagination(currentPage, totalPages) {
     if (endPage - startPage < maxVisible - 1) startPage = Math.max(1, endPage - maxVisible + 1);
     if (startPage > 1) {
         buttons += `<button class="steel-price-page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]" data-page="1">1</button>`;
-        if (startPage > 2) buttons += `<span class="px-0.5 text-[#333333] text-[9px]">—/span>`;
+        if (startPage > 2) buttons += `<span class="px-0.5 text-[#333333] text-[9px]">—</span>`;
     }
     for (let i = startPage; i <= endPage; i++) {
         const isActive = i === currentPage;
         buttons += `<button class="steel-price-page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] ${isActive ? 'bg-[#FFFFFF] text-[#0a0a0a] font-bold' : 'text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]'}" data-page="${i}">${i}</button>`;
     }
     if (endPage < totalPages) {
-        if (endPage < totalPages - 1) buttons += `<span class="px-0.5 text-[#333333] text-[9px]">—/span>`;
+        if (endPage < totalPages - 1) buttons += `<span class="px-0.5 text-[#333333] text-[9px]">—</span>`;
         buttons += `<button class="steel-price-page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]" data-page="${totalPages}">${totalPages}</button>`;
     }
     buttons += `

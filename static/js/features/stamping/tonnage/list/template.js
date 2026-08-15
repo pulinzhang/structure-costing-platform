@@ -72,7 +72,7 @@ export function tonnagePriceTemplate() {
                             ${window.svgIcon('search', 'w-3 h-3')}
                             查询
                         </button>
-                        <span class="text-[10px] text-[#484848]">批量删除须同时选择基地和年度/span>
+                        <span class="text-[10px] text-[#484848]">批量删除须同时选择基地和年度</span>
                     </div>
                 </div>
 
@@ -105,7 +105,7 @@ export function tonnagePriceTemplate() {
                     </div>
                 </div>
 
-                <!-- 空状总-->
+                <!-- 空状态-->
                 <div id="emptyState" class="hidden flex flex-col items-center justify-center py-10">
                     <div class="w-8 h-8 flex items-center justify-center mb-3 rounded-sm" style="background:#141414; border: 1px solid #222222;">
                         ${window.svgIcon('clipboard-list', 'w-4 h-4 text-[#3a3a3a]')}
@@ -180,7 +180,7 @@ export function tonnagePriceTemplate() {
 
                     <div class="bg-[#0c0c0c] border border-[#1a1a1a] rounded p-3">
                         <p class="text-[11px] text-[#616161]">
-                            <span class="text-[#616161]">说明（/span>
+                            <span class="text-[#616161]">说明（</span>
                             单冲次价格为该吨位压机每一次冲程的加工费用，单位：全次。
                         </p>
                     </div>
@@ -236,7 +236,7 @@ export function tonnagePriceTemplate() {
                         <label class="text-[10px] font-semibold text-[#616161] uppercase tracking-[0.1em] mb-1.5 block">源年价<span class="text-[#d32f2f]">*</span></label>
                         <select id="sourceYear" required
                                 class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#9e9e9e] appearance-none cursor-pointer focus:outline-none focus:border-[#ff5252] transition-all rounded">
-                            <option value="">请选择源年价/option>
+                            <option value="">请选择源年价</option>
                         </select>
                     </div>
 
@@ -253,7 +253,7 @@ export function tonnagePriceTemplate() {
 
                     <div class="bg-[#0c0c0c] border border-[#1a1a1a] rounded p-3">
                         <p class="text-[11px] text-[#616161]">
-                            <span class="text-[#f57f17]">提示（/span>
+                            <span class="text-[#f57f17]">提示（</span>
                             复制仅作用于所选基地，将strong class="text-[#9e9e9e]">覆盖</strong>该基地目标年份的现有数据，请谨慎操作。
                         </p>
                     </div>
@@ -297,7 +297,7 @@ export function tonnagePriceTemplate() {
                     <p class="text-[12px] text-[#9e9e9e] mb-3">
                         确定要删除这条价格记录吗）
                     </p>
-                    <p class="text-[11px] text-[#616161]">此操作不可撤销。/p>
+                    <p class="text-[11px] text-[#616161]">此操作不可撤销。</p>
                 </div>
             </div>
 
@@ -379,7 +379,7 @@ export function renderPagination(currentPage, totalPages, total) {
 
     if (startPage > 1) {
         buttons += `<button class="page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323] transition-all duration-150" data-page="1">1</button>`;
-        if (startPage > 2) buttons += `<span class="px-0.5 text-[#333333] leading-6 text-[9px]">—/span>`;
+        if (startPage > 2) buttons += `<span class="px-0.5 text-[#333333] leading-6 text-[9px]">—</span>`;
     }
 
     for (let i = startPage; i <= endPage; i++) {
@@ -391,7 +391,7 @@ export function renderPagination(currentPage, totalPages, total) {
     }
 
     if (endPage < totalPages) {
-        if (endPage < totalPages - 1) buttons += `<span class="px-0.5 text-[#333333] leading-6 text-[9px]">—/span>`;
+        if (endPage < totalPages - 1) buttons += `<span class="px-0.5 text-[#333333] leading-6 text-[9px]">—</span>`;
         buttons += `<button class="page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323] transition-all duration-150" data-page="${totalPages}">${totalPages}</button>`;
     }
 

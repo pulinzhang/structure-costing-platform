@@ -18,10 +18,10 @@ export function processFeeListTemplate() {
                         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 font-mono flex-1 min-w-0">
                             <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3 backdrop-blur-sm"
                                  style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);">
-                                <div class="text-[#555555] text-[10px] tracking-wider">加工费条数/div>
+                                <div class="text-[#555555] text-[10px] tracking-wider">加工费条数</div>
                                 <div class="text-[18px] font-bold text-[#FFFFFF] mt-1 tabular-nums">
-                                    <span id="feeHudTotal">—/span>
-                                    <span class="text-[10px] text-[#555555] ml-1">条/span>
+                                    <span id="feeHudTotal">—</span>
+                                    <span class="text-[10px] text-[#555555] ml-1">条</span>
                                 </div>
                             </div>
                             <!-- 巴博斯霓虹红光：计算价为 0 -->
@@ -36,27 +36,27 @@ export function processFeeListTemplate() {
                                 </div>
                                 <div class="text-[26px] font-black text-[#FF1E27] font-mono mt-1 tracking-tight tabular-nums"
                                      style="text-shadow: 0 0 12px rgba(255,30,39,0.7), 0 0 25px rgba(255,30,39,0.3);">
-                                    <span id="feeHudZero">—/span>
+                                    <span id="feeHudZero">—</span>
                                 </div>
                                 <div class="text-[9px] font-mono text-[#FF1E27]/60 mt-1 flex justify-between">
-                                    <span>请手工调数/span>
-                                    <span id="feeHudMatchCount">—板/span>
+                                    <span>请手工调价</span>
+                                    <span id="feeHudMatchCount">— 条</span>
                                 </div>
                             </div>
                             <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3 backdrop-blur-sm"
                                  style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);">
                                 <div class="text-[#555555] text-[10px] tracking-wider">待审</div>
                                 <div class="text-[18px] font-bold text-[#FFFFFF] mt-1 tabular-nums">
-                                    <span id="feeHudPending">—/span>
-                                    <span class="text-[10px] text-[#555555] ml-1">条/span>
+                                    <span id="feeHudPending">—</span>
+                                    <span class="text-[10px] text-[#555555] ml-1">条</span>
                                 </div>
                             </div>
                             <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3 backdrop-blur-sm"
                                  style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);">
                                 <div class="text-[#555555] text-[10px] tracking-wider">已审</div>
                                 <div class="text-[18px] font-bold text-[#FFFFFF] mt-1 tabular-nums">
-                                    <span id="feeHudApproved">—/span>
-                                    <span class="text-[10px] text-[#555555] ml-1">条/span>
+                                    <span id="feeHudApproved">—</span>
+                                    <span class="text-[10px] text-[#555555] ml-1">条</span>
                                 </div>
                             </div>
                         </div>
@@ -101,7 +101,7 @@ export function processFeeListTemplate() {
                         <div class="flex items-center gap-3 shrink-0">
                             <button type="button" id="feeToggleAdvancedFilter"
                                     class="text-[#6E6E73] hover:text-white transition-colors flex items-center gap-1.5 text-[11px]">
-                                <span id="feeAdvancedFilterLabel">展开高级筛选/span>
+                                <span id="feeAdvancedFilterLabel">展开高级筛选</span>
                                 <span id="feeAdvancedFilterCount" class="text-[#555555]">(0)</span>
                             </button>
                             <button type="button" id="feeSearchBtn"
@@ -119,7 +119,7 @@ export function processFeeListTemplate() {
                             ${filterSelect('feeYearFilter', '年度')}
                             ${filterSelect('feeLocationFilter', '基地')}
                             ${filterSelect('feeSupplierFilter', '冲压工厂')}
-                            ${filterSelect('feeAuditStatusFilter', '审核状总)}
+                            ${filterSelect('feeAuditStatusFilter', '审核状态')}
                             ${filterInput('feePartNumberFilter', '零件号, '短号或完整零件号')}
                             <button id="feeResetBtn" type="button"
                                     class="inline-flex items-center gap-1.5 h-8 px-3 text-[11px] font-medium rounded-md bg-transparent text-[#6E6E73] border border-[#2A2A35] hover:bg-[#FF1E27]/10 hover:border-[#FF1E27]/50 hover:text-[#FF1E27] transition-all duration-200">
@@ -127,7 +127,7 @@ export function processFeeListTemplate() {
                                 重置
                             </button>
                         </div>
-                        <p class="mt-2 text-[10px] text-[#555555]">批量删除 / 审核 / 反审核须选定年度、基地、冲压工厂。/p>
+                        <p class="mt-2 text-[10px] text-[#555555]">批量删除 / 审核 / 反审核须选定年度、基地、冲压工厂。</p>
                     </div>
                 </div>
 
@@ -138,10 +138,10 @@ export function processFeeListTemplate() {
                                 <th class="p-0 w-0"></th>
                                 <!-- 关注区：零件标识 + 计算结果 / 手工调整 / 最终价 -->
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">核价维度</th>
-                                <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#A1A1A6] whitespace-nowrap">零件号/th>
+                                <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#A1A1A6] whitespace-nowrap">零件号</th>
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">零件名称</th>
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap border-r border-[#22222A]">车型/版本</th>
-                                <th class="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">工序数/th>
+                                <th class="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">工序数</th>
                                 <th class="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">系统计算</th>
                                 <th class="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap border-r border-[#22222A]">手工调整</th>
                                 <th class="px-3 py-3 text-right text-[10px] font-bold uppercase tracking-[0.18em] text-[#FFFFFF]/70 whitespace-nowrap bg-[#14141C] border-x border-[#222230]">最终加工费</th>
@@ -149,17 +149,17 @@ export function processFeeListTemplate() {
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">材质</th>
                                 <th class="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">料厚</th>
                                 <th class="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">重量</th>
-                                <th class="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">料片长/th>
-                                <th class="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">料片审/th>
+                                <th class="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">料片长</th>
+                                <th class="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">料片审</th>
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">模具/工艺</th>
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">备注</th>
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">审核</th>
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">说明</th>
                                 <th class="p-0 w-9" aria-label="操作"></th>
-                                <th class="px-3 py-3 text-left text-[9px] font-normal tracking-[0.08em] text-[#3a3a3a] whitespace-nowrap">创建交/th>
+                                <th class="px-3 py-3 text-left text-[9px] font-normal tracking-[0.08em] text-[#3a3a3a] whitespace-nowrap">创建交</th>
                                 <th class="px-3 py-3 text-left text-[9px] font-normal tracking-[0.08em] text-[#3a3a3a] whitespace-nowrap">创建时间</th>
                                 <th class="px-3 py-3 text-left text-[9px] font-normal tracking-[0.08em] text-[#3a3a3a] whitespace-nowrap">最后修改人</th>
-                                <th class="px-3 py-3 text-left text-[9px] font-normal tracking-[0.08em] text-[#3a3a3a] whitespace-nowrap">最后修改时间/th>
+                                <th class="px-3 py-3 text-left text-[9px] font-normal tracking-[0.08em] text-[#3a3a3a] whitespace-nowrap">最后修改时间</th>
                             </tr>
                         </thead>
                         <tbody id="feeTableBody" class="bg-transparent"></tbody>
@@ -178,7 +178,7 @@ export function processFeeListTemplate() {
                     <div class="w-10 h-10 flex items-center justify-center mb-3 rounded-md bg-[#121218] border border-[#2A2A35]">
                         ${window.svgIcon('clipboard-list', 'w-4 h-4 text-[#555555]')}
                     </div>
-                    <h5 class="text-[11px] font-medium text-[#8E8E93] mb-1">暂无加工费数据/h5>
+                    <h5 class="text-[11px] font-medium text-[#8E8E93] mb-1">暂无加工费数据</h5>
                     <p class="text-[10px] text-[#555555]">请先在「冲压加工费计算」中执行计算</p>
                 </div>
 
@@ -212,7 +212,7 @@ export function processFeeListTemplate() {
                 <div class="bg-[#0c0c0c] border border-[#1a1a1a] rounded p-3 text-[11px] text-[#9e9e9e]" id="feeBatchAuditFilterSummary"></div>
                 <p id="feeBatchAuditHint" class="text-[11px] text-[#616161]"></p>
                 <div>
-                    <label class="text-[10px] text-[#777777] mb-1 block" id="feeBatchAuditOperatorLabel">操作交/label>
+                    <label class="text-[10px] text-[#777777] mb-1 block" id="feeBatchAuditOperatorLabel">操作人</label>
                     <div id="feeBatchAuditOperatorDisplay"
                          class="w-full h-9 px-3 flex items-center text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#9e9e9e] rounded">
                         —
@@ -234,7 +234,7 @@ export function processFeeListTemplate() {
             </div>
         </div>
 
-        <!-- 编辑抽屉：手工调数-->
+        <!-- 编辑抽屉：手工调价-->
         <div class="fixed inset-0 z-[80] bg-black/70 backdrop-blur-sm transition-opacity duration-300"
              id="feeEditDrawerBackdrop" style="display:none"></div>
         <div class="fixed inset-y-0 right-0 z-[85] w-[560px] bg-[#1a1a1a] border-l border-[#2a2a2a] transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col"
@@ -243,7 +243,7 @@ export function processFeeListTemplate() {
                  style="background: linear-gradient(180deg, #1f1f1f 0%, #1a1a1a 100%); border-bottom: 1px solid #333333;">
                 <h5 class="text-[11px] font-semibold tracking-wider text-[#b0b0b0] flex items-center gap-2.5 uppercase">
                     <span style="width:3px;height:14px;background:#d32f2f;border-radius:1px;display:inline-block;box-shadow: 0 0 8px rgba(211,47,47,0.5);"></span>
-                    <span id="feeEditDrawerTitle">编辑加工费/span>
+                    <span id="feeEditDrawerTitle">编辑加工费</span>
                 </h5>
                 <button type="button" id="closeFeeEditDrawer"
                         class="flex items-center justify-center w-8 h-8 rounded-md text-[#707070] hover:text-white hover:bg-[#d32f2f] transition-all">
@@ -263,12 +263,12 @@ export function processFeeListTemplate() {
                             计算结果 / 手工调整 / 最终价
                         </label>
                         <div class="grid grid-cols-2 gap-3 mb-3">
-                            ${viewRow('系统计算加工费, 'fee-edit-processing-fee')}
-                            ${viewRow('最终加工费（保存后刷新）, 'fee-edit-final-fee', true)}
+                            ${viewRow('系统计算加工费', 'fee-edit-processing-fee')}
+                            ${viewRow('最终加工费（保存后刷新）', 'fee-edit-final-fee', true)}
                         </div>
                         <div class="grid grid-cols-1 gap-3">
                             <div>
-                                <label class="text-[10px] text-[#777777] mb-1 block">手工调整单价 <span class="text-[#616161]">（留空则回退系统计算）/span></label>
+                                <label class="text-[10px] text-[#777777] mb-1 block">手工调整单价 <span class="text-[#616161]">（留空则回退系统计算）</span></label>
                                 <input type="number" id="feeEditManualPrice" step="0.001" min="0"
                                        class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#ffffff] placeholder:text-[#616161] focus:outline-none focus:border-[#ff5252] rounded"
                                        placeholder="可空">
@@ -345,7 +345,7 @@ export function processFeeListTemplate() {
                         <h6 class="text-[10px] font-semibold text-[#d32f2f] tracking-wider uppercase">计算结果 / 手工调整 / 最终价</h6>
                     </div>
                     <div class="p-4 grid grid-cols-2 gap-x-6 gap-y-3">
-                        ${viewRow('工序数, 'fee-view-process-count')}
+                        ${viewRow('工序数', 'fee-view-process-count')}
                         ${viewRow('系统计算', 'fee-view-processing-fee')}
                         ${viewRow('手工调整', 'fee-view-manual-price')}
                         ${viewRow('最终加工费', 'fee-view-final-fee', true)}
@@ -376,15 +376,15 @@ export function processFeeListTemplate() {
                             </div>
                             <div class="grid grid-cols-2 gap-x-6 gap-y-3">
                                 ${viewRow('工艺方法', 'fee-view-process-method')}
-                                ${viewRow('自动匹, 'fee-view-automation', true)}
+                                ${viewRow('自动匹', 'fee-view-automation', true)}
                             </div>
                         </div>
                         <div class="grid grid-cols-2 gap-x-6 gap-y-3">
                             ${viewRow('材质', 'fee-view-material')}
                             ${viewRow('料厚', 'fee-view-thickness')}
                             ${viewRow('零件重量', 'fee-view-part-weight')}
-                            ${viewRow('料片长, 'fee-view-sheet-length')}
-                            ${viewRow('料片审, 'fee-view-sheet-width')}
+                            ${viewRow('料片长', 'fee-view-sheet-length')}
+                            ${viewRow('料片审', 'fee-view-sheet-width')}
                             ${viewRow('可制件数', 'fee-view-parts-per-sheet')}
                             ${viewRow('板料类型', 'fee-view-sheet-type')}
                             ${viewRow('模具类型', 'fee-view-die-type')}
@@ -395,19 +395,19 @@ export function processFeeListTemplate() {
                 </div>
                 <div class="bg-[#111111] border border-[#262626]">
                     <div class="px-4 py-3 bg-[#0c0c0c] border-b border-[#181818]">
-                        <h6 class="text-[10px] font-semibold text-[#9e9e9e] tracking-wider uppercase">审核 / 元数据/h6>
+                        <h6 class="text-[10px] font-semibold text-[#9e9e9e] tracking-wider uppercase">审核 / 元数据</h6>
                     </div>
                     <div class="p-4 grid grid-cols-2 gap-x-6 gap-y-3">
-                        ${viewRow('审核状总, 'fee-view-audit-status')}
-                        ${viewRow('审核交, 'fee-view-audited-by')}
+                        ${viewRow('审核状态', 'fee-view-audit-status')}
+                        ${viewRow('审核交', 'fee-view-audited-by')}
                         ${viewRow('审核时间', 'fee-view-audited-at')}
                         ${viewRow('审核意见', 'fee-view-audit-remark')}
                         ${viewRow('反审核人', 'fee-view-reverse-by')}
-                        ${viewRow('反审核时间, 'fee-view-reverse-at')}
-                        ${viewRow('反审核意览, 'fee-view-reverse-remark')}
-                        ${viewRow('创建交, 'fee-view-created-by')}
+                        ${viewRow('反审核时间', 'fee-view-reverse-at')}
+                        ${viewRow('反审核意览', 'fee-view-reverse-remark')}
+                        ${viewRow('创建交', 'fee-view-created-by')}
                         ${viewRow('创建时间', 'fee-view-created-at')}
-                        ${viewRow('修改交, 'fee-view-updated-by')}
+                        ${viewRow('修改交', 'fee-view-updated-by')}
                         ${viewRow('修改时间', 'fee-view-updated-at')}
                     </div>
                 </div>
@@ -431,7 +431,7 @@ export function renderFeeRows(records) {
             ? `<span class="text-[#FF1E27]" title="${esc(row.calc_fail_reason)}">计算失败</span>`
             : (isZero
                 ? '<span class="text-[#FF1E27]">计算价为 0</span>'
-                : '<span class="text-[#555555]">—/span>');
+                : '<span class="text-[#555555]">—</span>');
         const cell = 'p-3 border-b border-[#17171C] font-mono text-[11px]';
         const muted = 'text-[#8E8E93]';
         const mutedDeep = 'text-[#6E6E73]';
@@ -554,7 +554,7 @@ export function renderFeePagination(currentPage, totalPages) {
     if (endPage - startPage < maxVisible - 1) startPage = Math.max(1, endPage - maxVisible + 1);
     if (startPage > 1) {
         buttons += `<button type="button" data-fee-page="1" class="fee-page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]">1</button>`;
-        if (startPage > 2) buttons += `<span class="px-0.5 text-[#333333] text-[9px]">—/span>`;
+        if (startPage > 2) buttons += `<span class="px-0.5 text-[#333333] text-[9px]">—</span>`;
     }
     for (let i = startPage; i <= endPage; i++) {
         const isActive = i === currentPage;
@@ -562,7 +562,7 @@ export function renderFeePagination(currentPage, totalPages) {
             class="fee-page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] ${isActive ? 'bg-[#FFFFFF] text-[#0a0a0a] font-bold' : 'text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]'}">${i}</button>`;
     }
     if (endPage < totalPages) {
-        if (endPage < totalPages - 1) buttons += `<span class="px-0.5 text-[#333333] text-[9px]">—/span>`;
+        if (endPage < totalPages - 1) buttons += `<span class="px-0.5 text-[#333333] text-[9px]">—</span>`;
         buttons += `<button type="button" data-fee-page="${totalPages}" class="fee-page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]">${totalPages}</button>`;
     }
     buttons += `
@@ -618,13 +618,13 @@ function partNumberCell(partNumber) {
                  title="${esc(full)}">${esc(shortNo)}</div>
             <div class="text-[10px] font-mono text-[#555555] tracking-wider mt-1">${esc(full)}</div>`;
     }
-    return `<div class="text-xs font-mono text-[#8E8E93] tracking-wider" title="${esc(full)}">${esc(full) || '—}</div>`;
+    return `<div class="text-xs font-mono text-[#8E8E93] tracking-wider" title="${esc(full)}">${esc(full) || '—'}</div>`;
 }
 
 /** 抽屉：短史+ 完整零件号*/
 function partNumberViewBlock(prefix) {
     return `<div class="min-w-0">
-        <span class="block text-[9px] font-semibold text-[#555555] uppercase tracking-[0.1em] mb-1">零件号/span>
+        <span class="block text-[9px] font-semibold text-[#555555] uppercase tracking-[0.1em] mb-1">零件号</span>
         <span id="${prefix}-part-short"
               class="block text-xl font-mono font-bold tabular-nums text-white tracking-[0.14em] drop-shadow-[0_0_16px_rgba(211,47,47,0.18)]"></span>
         <span id="${prefix}-part-number" class="block text-[11px] font-mono text-[#616161] tracking-wider mt-0.5 truncate"></span>

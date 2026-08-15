@@ -1,6 +1,6 @@
 /**
  * 冲压加工费列表页
- * 对齐钢材价格列表：HUD + 胶囊筛选+ 查看/编辑抽屉 + 批量审核/反审核删除 + Excel 导出
+ * 对齐钢材价格列表：HUD + 胶囊筛选+ 查看/编辑抽屉 + 批量审核/反审核 / 删除 + Excel 导出
  */
 
 import {
@@ -124,7 +124,7 @@ function fillAuditStatusOptions() {
         <option value="">全部</option>
         <option value="pending">待审</option>
         <option value="approved">已通过</option>
-        <option value="rejected">已驳回/option>
+        <option value="rejected">已驳回</option>
     `;
 }
 
@@ -390,7 +390,7 @@ function fillPartNumberFields(prefix, partNumber) {
     const full = partNumber || '';
     const shortNo = shortPartNumber(full);
     if (shortEl) {
-        shortEl.textContent = shortNo || (full || '—);
+        shortEl.textContent = shortNo || (full || '—');
         shortEl.classList.toggle('text-xl', Boolean(shortNo));
         shortEl.classList.toggle('text-xs', !shortNo);
         shortEl.classList.toggle('text-[#cccccc]', !shortNo);
@@ -404,12 +404,12 @@ function fillPartNumberFields(prefix, partNumber) {
 
 function fillViewField(id, value) {
     const el = document.getElementById(id);
-    if (el) el.textContent = value == null || value === '' ? '— : String(value);
+    if (el) el.textContent = value == null || value === '' ? '—' : String(value);
 }
 
 function formatDecimal(value, digits = 3) {
     const numeric = Number(value);
-    if (value === null || value === undefined || Number.isNaN(numeric)) return '—;
+    if (value === null || value === undefined || Number.isNaN(numeric)) return '—';
     return numeric.toLocaleString('zh-CN', {
         minimumFractionDigits: digits,
         maximumFractionDigits: digits,
@@ -417,13 +417,13 @@ function formatDecimal(value, digits = 3) {
 }
 
 function formatDateTime(value) {
-    if (!value) return '—;
+    if (!value) return '—';
     const text = String(value).replace('T', ' ');
     return text.length >= 19 ? text.slice(0, 19) : text;
 }
 
 function auditStatusLabel(status) {
-    return { pending: '待审', approved: '已通过', rejected: '已驳回 }[status] || status || '—;
+    return { pending: '待审', approved: '已通过', rejected: '已驳回 }[status] || status || '—';
 }
 
 function openViewDrawer(record) {
@@ -506,15 +506,15 @@ function renderProcessItems(items) {
         return;
     }
     const rows = items.map((item) => {
-        const sourceLabel = TONNAGE_SOURCE_LABEL[item.tonnage_source] || item.tonnage_source || '—;
+        const sourceLabel = TONNAGE_SOURCE_LABEL[item.tonnage_source] || item.tonnage_source || '—';
         const inheritHint = item.tonnage_source === 'inherited'
             ? `${esc(item.inherited_from_part_number || '')} / ${esc(item.inherited_from_process_seq || '')}`
-            : '—;
+            : '—';
         return `
             <tr class="hover:bg-[#ffffff]/[0.02] transition-colors">
-                <td class="px-3 py-2 text-[11px] font-mono text-[#9e9e9e] whitespace-nowrap">${esc(item.process_seq || '—)}</td>
-                <td class="px-3 py-2 text-[11px] text-[#cccccc] whitespace-nowrap">${esc(item.process_code || '—)}</td>
-                <td class="px-3 py-2 text-[11px] text-right font-mono tabular-nums text-[#9e9e9e]">${esc(item.resolved_tonnage != null ? `${item.resolved_tonnage}T` : '—)}</td>
+                <td class="px-3 py-2 text-[11px] font-mono text-[#9e9e9e] whitespace-nowrap">${esc(item.process_seq || '—')}</td>
+                <td class="px-3 py-2 text-[11px] text-[#cccccc] whitespace-nowrap">${esc(item.process_code || '—')}</td>
+                <td class="px-3 py-2 text-[11px] text-right font-mono tabular-nums text-[#9e9e9e]">${esc(item.resolved_tonnage != null ? `${item.resolved_tonnage}T` : '—')}</td>
                 <td class="px-3 py-2 text-[11px] text-[#9e9e9e] whitespace-nowrap">${esc(sourceLabel)}</td>
                 <td class="px-3 py-2 text-[11px] text-right font-mono tabular-nums text-[#9e9e9e]">${formatDecimal(item.cost_ratio, 2)}</td>
                 <td class="px-3 py-2 text-[11px] text-right font-mono tabular-nums text-[#9e9e9e]">${formatDecimal(item.price_per_stroke, 3)}</td>
@@ -532,7 +532,7 @@ function renderProcessItems(items) {
                     <th class="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161]">来源</th>
                     <th class="px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161]">比例</th>
                     <th class="px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161]">冲次单价</th>
-                    <th class="px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161]">本序败/th>
+                    <th class="px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161]">本序败</th>
                     <th class="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161]">计算依据</th>
                 </tr>
             </thead>
