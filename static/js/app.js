@@ -27,11 +27,11 @@ import { pageConfig as stampingUploadPage } from './features/stamping/process/up
 import { pageConfig as stampingPartsPage }  from './features/stamping/process/parts/index.js?v=17';
 import { pageConfig as stampingTonnagePage } from './features/stamping/tonnage/list/index.js?v=10';
 import { pageConfig as stampingTonnageUploadPage } from './features/stamping/tonnage/upload/index.js?v=1';
-import { pageConfig as stampingProcessFeeCalcPage } from './features/stamping/process-fee/calc/index.js?v=17';
+import { pageConfig as stampingProcessFeeCalcPage } from './features/stamping/process-fee/calc/index.js?v=18';
 import { pageConfig as stampingProcessFeePage } from './features/stamping/process-fee/list/index.js?v=27';
 import { pageConfig as steelPriceListPage }   from './features/costing/steel-price/list/index.js?v=49';
-import { pageConfig as steelPriceCalcPage }    from './features/costing/steel-price/calc/index.js?v=11';
-import { pageConfig as stampingPartCostCalcPage } from './features/costing/stamping-part-cost/calc/index.js?v=4';
+import { pageConfig as steelPriceCalcPage }    from './features/costing/steel-price/calc/index.js?v=12';
+import { pageConfig as stampingPartCostCalcPage } from './features/costing/stamping-part-cost/calc/index.js?v=5';
 import { pageConfig as stampingPartCostPage } from './features/costing/stamping-part-cost/list/index.js?v=38';
 import { pageConfig as steelPricePolicyUploadPage } from './features/yishiyiyi/policy/upload/index.js?v=35';
 import { pageConfig as steelPricePolicyDownloadPage } from './features/yishiyiyi/policy/list/index.js?v=28';

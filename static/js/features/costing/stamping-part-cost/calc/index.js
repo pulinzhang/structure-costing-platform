@@ -457,7 +457,7 @@ function showProcessDrawer(log) {
         </div>
         <div class="px-5 py-3 border-b border-[#222] text-[10px] text-[#777] space-y-1 shrink-0">
             <div>批次（span class="font-mono text-[#999]">${esc(log.calc_batch_id || '-')}</span></div>
-            <div>时间（${esc(formatDateTime(log.started_at))} →${esc(formatDateTime(log.finished_at))}</div>
+            <div>时间：${esc(formatDateTime(log.started_at))} → ${esc(formatDateTime(log.finished_at))}</div>
             <div>汇总：零件 ${fmtInt(log.total_parts)} · 成功 ${fmtInt(log.success_count)} · 失败 ${fmtInt(log.failed_count)} · 跳过 ${fmtInt(log.skipped_approved_count)}</div>
         </div>
         <div class="flex-1 overflow-y-auto overscroll-contain p-5">
