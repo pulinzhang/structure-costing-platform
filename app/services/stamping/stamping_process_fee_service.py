@@ -5,13 +5,16 @@
 - 单序加工费 = cost_ratio × price_per_stroke
 - 零件加工费 = 各工序之和（保留 3 位小数）
 - 「摆剪」工序不使用冲压设备，加工费固定为 0（不查吨位）
+- 共模件对应工序若上一件为摆剪，同样计 0
 
 冲次单价匹配：年度相等 + 基地相等 + 吨位相等。
 
-合并/双槽工艺（工艺方法含「合并」或「双槽」）缺吨位时：
+合并/双槽工艺缺吨位时（零件工艺方法，或任一道工序代码含「合并」/「双槽」，
+如工序代码「左右合并」）：
 - Excel 按顺序导入，上一零件为 id-1
 - 表示与上一零件共模同冲（一次冲次出两种件）
 - 须与上一零件基地相同，才可继承上一零件对应工序的吨位再计算
+- 若上一件对应工序为摆剪，则本工序同样按摆剪计 0
 """
 
 from __future__ import annotations
@@ -99,7 +102,7 @@ TONNAGE_SOURCE_SWING_SHEAR = "swing_shear"
 class ProcessTonnageResolveResult:
     """工序吨位解析结果（成功时）"""
 
-    tonnage: int
+    tonnage: int | None
     source: str
     inherited_from_part_id: int | None = None
     inherited_from_part_number: str | None = None
@@ -588,12 +591,53 @@ class StampingProcessFeeService:
         return StampingProcessFeeVO.model_validate(record)
 
     @staticmethod
-    def _is_merged_process_method(process_method: str | None) -> bool:
-        """工艺方法含「合并」或「双槽」：与上一零件共模同冲。"""
-        if not process_method:
+    def _is_merged_process_method(text: str | None) -> bool:
+        """文本含「合并」或「双槽」：与上一零件共模同冲。"""
+        if not text:
             return False
-        text = str(process_method).strip()
-        return "合并" in text or "双槽" in text
+        value = str(text).strip()
+        return "合并" in value or "双槽" in value
+
+    def _can_inherit_previous_tonnage(
+        self,
+        part: StampingPart,
+        process: StampingProcess,
+    ) -> bool:
+        """
+        共模件判定：零件工艺方法，或当前/同件任一道工序代码含「合并」「双槽」。
+        Excel 常把「左右合并」写在 OP10 工序代码而非零件工艺方法字段。
+        """
+        if self._is_merged_process_method(part.process_method):
+            return True
+        if self._is_merged_process_method(process.process_code):
+            return True
+        for sibling in part.processes or []:
+            if self._is_merged_process_method(sibling.process_code):
+                return True
+        return False
+
+    def _format_merge_signal_label(
+        self,
+        part: StampingPart,
+        process: StampingProcess,
+    ) -> str:
+        """错误/日志用：展示触发共模继承的文本来源。"""
+        method = (part.process_method or "").strip()
+        if self._is_merged_process_method(method):
+            return method
+        code = (process.process_code or "").strip()
+        if self._is_merged_process_method(code):
+            return code
+        for sibling in part.processes or []:
+            sibling_code = (sibling.process_code or "").strip()
+            if self._is_merged_process_method(sibling_code):
+                seq = (sibling.process_seq or "").strip() or "?"
+                return f"{seq}/{sibling_code}"
+        if method:
+            return method
+        if code:
+            return code
+        return "(空)"
 
     @staticmethod
     def _is_swing_shear_process(process: StampingProcess) -> bool:
@@ -601,12 +645,6 @@ class StampingProcessFeeService:
         code = (process.process_code or "").strip()
         seq = (process.process_seq or "").strip()
         return "摆剪" in code or "摆剪" in seq
-
-    @staticmethod
-    def _format_process_method(process_method: str | None) -> str:
-        """错误提示用：展示实际工艺方法文本。"""
-        text = (process_method or "").strip()
-        return text if text else "(空)"
 
     @staticmethod
     def _format_process_label(process: StampingProcess | None) -> str:
@@ -692,7 +730,8 @@ class StampingProcessFeeService:
     ) -> ProcessTonnageResolveResult | str:
         """
         解析工序吨位。
-        缺吨位且工艺方法为合并/双槽时，继承上一零件(id-1)对应工序吨位；
+        缺吨位且判定为合并/双槽共模件时，继承上一零件(id-1)对应工序吨位；
+        若上一件对应工序为摆剪（无冲压吨位），则本工序同样按摆剪计 0。
         上一零件须与当前零件基地相同。
         成功返回 ProcessTonnageResolveResult；失败返回原因字符串。
         """
@@ -703,18 +742,18 @@ class StampingProcessFeeService:
             )
 
         process_label = self._format_process_label(process)
-        method_label = self._format_process_method(part.process_method)
-        if not self._is_merged_process_method(part.process_method):
+        method_label = self._format_merge_signal_label(part, process)
+        if not self._can_inherit_previous_tonnage(part, process):
             return (
                 f"当前工序 {process_label} 缺少吨位；"
-                f"工艺方法「{method_label}」不可继承上一件吨位"
+                f"工艺方法/工序「{method_label}」不可继承上一件吨位"
             )
 
         previous_part = self._get_previous_part(db, part, prev_part_cache)
         if previous_part is None:
             return (
                 f"当前工序 {process_label} 缺少吨位；"
-                f"工艺方法「{method_label}」应继承上一件，"
+                f"共模标记「{method_label}」应继承上一件，"
                 f"但找不到上一零件(id-1)"
             )
 
@@ -724,7 +763,7 @@ class StampingProcessFeeService:
             prev_no = previous_part.part_number or str(previous_part.id)
             return (
                 f"当前工序 {process_label} 缺少吨位；"
-                f"工艺方法「{method_label}」应继承上一件，"
+                f"共模标记「{method_label}」应继承上一件，"
                 f"但基地不一致（当前「{current_location or '(空)'}」，"
                 f"上一件 {prev_no} 为「{previous_location or '(空)'}」），不可继承"
             )
@@ -736,16 +775,37 @@ class StampingProcessFeeService:
         if matched is None:
             return (
                 f"当前工序 {process_label} 缺少吨位；"
-                f"工艺方法「{method_label}」应继承上一件 "
+                f"共模标记「{method_label}」应继承上一件 "
                 f"{prev_no}(id={previous_part.id})，"
                 f"但未匹配到对应工序。"
                 f"上一件工序清单：{prev_summary}"
             )
+
+        # 上一件对应工序为摆剪：共模件同样不计冲压加工费
+        if self._is_swing_shear_process(matched):
+            logger.info(
+                "共模件继承摆剪(计0): part=%s method=%s process=%s "
+                "from_part=%s from_process=%s",
+                part.part_number,
+                method_label,
+                process_label,
+                previous_part.part_number,
+                self._format_process_label(matched),
+            )
+            return ProcessTonnageResolveResult(
+                tonnage=None,
+                source=TONNAGE_SOURCE_SWING_SHEAR,
+                inherited_from_part_id=previous_part.id,
+                inherited_from_part_number=previous_part.part_number,
+                inherited_from_process_seq=matched.process_seq,
+                inherited_from_process_code=matched.process_code,
+            )
+
         if matched.tonnage is None:
             matched_label = self._format_process_label(matched)
             return (
                 f"当前工序 {process_label} 缺少吨位；"
-                f"工艺方法「{method_label}」已匹配上一件 "
+                f"共模标记「{method_label}」已匹配上一件 "
                 f"{prev_no}(id={previous_part.id}) 工序 {matched_label}，"
                 f"但该工序吨位为空。"
                 f"上一件工序清单：{prev_summary}"
@@ -786,6 +846,15 @@ class StampingProcessFeeService:
     ) -> str:
         """生成单道工序人可读计算依据。"""
         if tonnage_source == TONNAGE_SOURCE_SWING_SHEAR:
+            from_part = (inherited_from_part_number or "").strip()
+            if from_part:
+                from_seq = (inherited_from_process_seq or "").strip() or "?"
+                from_code = (inherited_from_process_code or "").strip()
+                from_label = f"{from_seq}/{from_code}" if from_code else from_seq
+                return (
+                    f"{process_label}: 继承上一件{from_part}/{from_label} "
+                    f"摆剪不计费 = 0"
+                )
             return f"{process_label}: 摆剪不计费 = 0"
 
         ratio_text = (
@@ -877,6 +946,50 @@ class StampingProcessFeeService:
                 return self._build_failed_item(part, tonnage_or_error, process)
 
             resolved = tonnage_or_error
+
+            # 共模继承到上一件摆剪：不计冲压加工费
+            if resolved.source == TONNAGE_SOURCE_SWING_SHEAR:
+                line_fee = Decimal("0").quantize(FEE_QUANTIZE, rounding=ROUND_HALF_UP)
+                process_items.append(
+                    {
+                        "source_process_id": process.id,
+                        "process_seq": process.process_seq,
+                        "process_order": process.process_order,
+                        "process_code": process.process_code,
+                        "original_tonnage": original_tonnage,
+                        "resolved_tonnage": None,
+                        "tonnage_source": TONNAGE_SOURCE_SWING_SHEAR,
+                        "inherited_from_part_id": resolved.inherited_from_part_id,
+                        "inherited_from_part_number": resolved.inherited_from_part_number,
+                        "inherited_from_process_seq": resolved.inherited_from_process_seq,
+                        "inherited_from_process_code": resolved.inherited_from_process_code,
+                        "cost_ratio": None,
+                        "tonnage_price_id": None,
+                        "price_per_stroke": None,
+                        "line_fee": line_fee,
+                        "basis_text": self._build_process_basis_text(
+                            process_label=process_label,
+                            tonnage_source=TONNAGE_SOURCE_SWING_SHEAR,
+                            resolved_tonnage=None,
+                            cost_ratio=None,
+                            price_per_stroke=None,
+                            line_fee=line_fee,
+                            inherited_from_part_number=resolved.inherited_from_part_number,
+                            inherited_from_process_seq=resolved.inherited_from_process_seq,
+                            inherited_from_process_code=resolved.inherited_from_process_code,
+                        ),
+                        "remark": process.remark,
+                    }
+                )
+                continue
+
+            if resolved.tonnage is None:
+                return self._build_failed_item(
+                    part,
+                    f"当前工序 {process_label} 缺少吨位",
+                    process,
+                )
+
             rate_info = rate_map.get(resolved.tonnage)
             if rate_info is None:
                 location = (part.location or "").strip() or "(空)"
