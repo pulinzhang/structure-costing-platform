@@ -28,6 +28,16 @@ env/
 *.db
 data/*.db
 *.sqlite
+*.db-wal
+*.db-shm
+data/*.db-wal
+data/*.db-shm
+
+# Local Excel samples / scratch (large, not for VCS)
+excel_sample/
+tmp_*.xlsx
+tmp_*.xls
+tmp_*.csv
 
 # OS
 .DS_Store
