@@ -87,7 +87,7 @@ export function processFeeCalcTemplate() {
                             <thead>
                                 <tr class="bg-[#0a0a0a] border-b border-[#2c2c2c] text-[9px] text-[#555] uppercase tracking-[0.08em]">
                                     <th class="py-2 px-2 font-normal whitespace-nowrap">计算时间</th>
-                                    <th class="py-2 px-2 font-normal whitespace-nowrap">创建交</th>
+                                    <th class="py-2 px-2 font-normal whitespace-nowrap">创建人</th>
                                     <th class="py-2 px-2 font-normal whitespace-nowrap">年度</th>
                                     <th class="py-2 px-2 font-normal whitespace-nowrap">基地</th>
                                     <th class="py-2 px-2 font-normal whitespace-nowrap">工厂</th>

@@ -156,7 +156,7 @@ export function processFeeListTemplate() {
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">审核</th>
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">说明</th>
                                 <th class="p-0 w-9" aria-label="操作"></th>
-                                <th class="px-3 py-3 text-left text-[9px] font-normal tracking-[0.08em] text-[#3a3a3a] whitespace-nowrap">创建交</th>
+                                <th class="px-3 py-3 text-left text-[9px] font-normal tracking-[0.08em] text-[#3a3a3a] whitespace-nowrap">创建人</th>
                                 <th class="px-3 py-3 text-left text-[9px] font-normal tracking-[0.08em] text-[#3a3a3a] whitespace-nowrap">创建时间</th>
                                 <th class="px-3 py-3 text-left text-[9px] font-normal tracking-[0.08em] text-[#3a3a3a] whitespace-nowrap">最后修改人</th>
                                 <th class="px-3 py-3 text-left text-[9px] font-normal tracking-[0.08em] text-[#3a3a3a] whitespace-nowrap">最后修改时间</th>
@@ -223,7 +223,7 @@ export function processFeeListTemplate() {
                     <label class="text-[10px] text-[#777777] mb-1 block" id="feeBatchAuditRemarkLabel">审核意见</label>
                     <textarea id="feeBatchAuditRemark" rows="4" maxlength="500"
                               class="w-full px-3 py-2 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#ffffff] placeholder:text-[#616161] focus:outline-none focus:border-[#ff5252] transition-all rounded resize-none"
-                              placeholder="可选填写审核意览></textarea>
+                              placeholder="可选填写审核意见"></textarea>
                 </div>
             </div>
             <div class="px-6 py-4 border-t border-[#262626] flex items-center justify-end gap-2 shrink-0">
@@ -399,13 +399,13 @@ export function processFeeListTemplate() {
                     </div>
                     <div class="p-4 grid grid-cols-2 gap-x-6 gap-y-3">
                         ${viewRow('审核状态', 'fee-view-audit-status')}
-                        ${viewRow('审核交', 'fee-view-audited-by')}
+                        ${viewRow('审核人', 'fee-view-audited-by')}
                         ${viewRow('审核时间', 'fee-view-audited-at')}
                         ${viewRow('审核意见', 'fee-view-audit-remark')}
                         ${viewRow('反审核人', 'fee-view-reverse-by')}
                         ${viewRow('反审核时间', 'fee-view-reverse-at')}
-                        ${viewRow('反审核意览', 'fee-view-reverse-remark')}
-                        ${viewRow('创建交', 'fee-view-created-by')}
+                        ${viewRow('反审核意见', 'fee-view-reverse-remark')}
+                        ${viewRow('创建人', 'fee-view-created-by')}
                         ${viewRow('创建时间', 'fee-view-created-at')}
                         ${viewRow('修改交', 'fee-view-updated-by')}
                         ${viewRow('修改时间', 'fee-view-updated-at')}

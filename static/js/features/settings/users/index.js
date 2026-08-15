@@ -566,7 +566,7 @@ function renderPermissionTree(nodes, checked, depth = 0) {
                            ${isChecked ? 'checked' : ''}
                            ${isMandatory ? 'disabled' : ''}>
                     <span class="text-[11px] ${isMandatory ? 'text-[#888888]' : 'text-[#c0c0c0]'}">${esc(node.label || code)}</span>
-                    <span class="text-[9px] text-[#484848] uppercase tracking-wider">${typeHint}${isMandatory ? ' · 必选 : ''}</span>
+                    <span class="text-[9px] text-[#484848] uppercase tracking-wider">${typeHint}${isMandatory ? ' · 必选' : ''}</span>
                 </label>
                 ${childrenHtml}
             </div>`;

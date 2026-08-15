@@ -94,7 +94,7 @@ function applyPermissionUi() {
 
 function applyHashFilters() {
     const hash = window.location.hash || '';
-    const queryIndex = hash.indexOf('?');
+    const queryIndex = hash.indexOf('?');'
     if (queryIndex < 0) return;
     const qs = new URLSearchParams(hash.slice(queryIndex + 1));
     const year = qs.get('year') || '';
@@ -132,7 +132,7 @@ function setAdvancedOpen(isOpen) {
     feeState.advancedOpen = isOpen;
     document.getElementById('feeAdvancedFilterPanel')?.classList.toggle('hidden', !isOpen);
     const label = document.getElementById('feeAdvancedFilterLabel');
-    if (label) label.textContent = isOpen ? '收起高级筛选 : '展开高级筛选;
+    if (label) label.textContent = isOpen ? '收起高级筛选' : '展开高级筛选';
 }
 
 function bindEvents() {
@@ -423,7 +423,7 @@ function formatDateTime(value) {
 }
 
 function auditStatusLabel(status) {
-    return { pending: '待审', approved: '已通过', rejected: '已驳回 }[status] || status || '—';
+    return { pending: '待审', approved: '已通过', rejected: '已驳回' }[status] || status || '—';
 }
 
 function openViewDrawer(record) {
@@ -735,24 +735,24 @@ function openBatchAuditDrawer(mode) {
     const summaryEl = document.getElementById('feeBatchAuditFilterSummary');
 
     if (modeEl) modeEl.value = isApprove ? 'approve' : 'reverse';
-    if (titleEl) titleEl.textContent = isApprove ? '批量审核' : '批量反审核;
+    if (titleEl) titleEl.textContent = isApprove ? '批量审核' : '批量反审核';
     if (hintEl) {
         hintEl.textContent = isApprove
-            ? '仅处理待审已驳回；已通过记录会跳过。
-            : '仅处理已通过记录；其余状态会跳过。反审核意见必填。;
+            ? '仅处理待审已驳回；已通过记录会跳过。'
+            : '仅处理已通过记录；其余状态会跳过。反审核意见必填。';
     }
-    if (operatorLabel) operatorLabel.textContent = isApprove ? '审核交 : '反审核人';
+    if (operatorLabel) operatorLabel.textContent = isApprove ? '审核人' : '反审核人';
     if (operatorDisplay) {
         operatorDisplay.textContent = getSessionDisplayName() || '（当前登录用户）';
     }
     if (remarkLabel) {
         remarkLabel.innerHTML = isApprove
             ? '审核意见'
-            : '反审核意览<span class="text-[#d32f2f]">*</span>';
+            : '反审核意见<span class="text-[#d32f2f]">*</span>';
     }
     if (remarkEl) {
         remarkEl.value = '';
-        remarkEl.placeholder = isApprove ? '可选填写审核意览 : '必填反审核原回;
+        remarkEl.placeholder = isApprove ? '可选填写审核意见' : '必填反审核原因';
     }
     if (summaryEl) {
         summaryEl.textContent = `年度 ${filters.year} · 基地 ${filters.location} · 工厂 ${filters.stamping_supplier}`;

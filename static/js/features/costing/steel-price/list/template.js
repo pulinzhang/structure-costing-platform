@@ -152,7 +152,7 @@ export function steelPriceListTemplate() {
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">匹配</th>
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">审核</th>
                                 <th class="p-0 w-9" aria-label="操作"></th>
-                                <th class="px-3 py-3 text-left text-[9px] font-normal tracking-[0.08em] text-[#3a3a3a] whitespace-nowrap">创建交</th>
+                                <th class="px-3 py-3 text-left text-[9px] font-normal tracking-[0.08em] text-[#3a3a3a] whitespace-nowrap">创建人</th>
                                 <th class="px-3 py-3 text-left text-[9px] font-normal tracking-[0.08em] text-[#3a3a3a] whitespace-nowrap">创建时间</th>
                                 <th class="px-3 py-3 text-left text-[9px] font-normal tracking-[0.08em] text-[#3a3a3a] whitespace-nowrap">最后修改人</th>
                                 <th class="px-3 py-3 text-left text-[9px] font-normal tracking-[0.08em] text-[#3a3a3a] whitespace-nowrap">最后修改时间</th>
@@ -329,12 +329,12 @@ export function steelPriceListTemplate() {
                     </div>
                     <div class="p-4 grid grid-cols-2 gap-x-6 gap-y-3">
                         ${viewRow('审核状态', 'view-audit-status')}
-                        ${viewRow('审核交', 'view-audited-by')}
+                        ${viewRow('审核人', 'view-audited-by')}
                         ${viewRow('审核时间', 'view-audited-at')}
                         ${viewRow('审核意见', 'view-audit-remark')}
                         ${viewRow('反审核人', 'view-reverse-audited-by')}
                         ${viewRow('反审核时间', 'view-reverse-audited-at')}
-                        ${viewRow('反审核原回', 'view-reverse-audit-remark')}
+                        ${viewRow('反审核原因', 'view-reverse-audit-remark')}
                         ${viewRow('匹配状态', 'view-match-status')}
                         ${viewRow('计算批次', 'view-calc-batch-id')}
                         ${viewRow('计算时间', 'view-calculated-at')}
@@ -419,7 +419,7 @@ export function steelPriceListTemplate() {
                     <label class="text-[10px] text-[#777777] mb-1 block" id="batchAuditRemarkLabel">审核意见</label>
                     <textarea id="batchAuditRemark" rows="4" maxlength="500"
                               class="w-full px-3 py-2 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#ffffff] placeholder:text-[#616161] focus:outline-none focus:border-[#ff5252] transition-all rounded resize-none"
-                              placeholder="可选填写审核意览></textarea>
+                              placeholder="可选填写审核意见"></textarea>
                 </div>
             </div>
             <div class="px-6 py-4 border-t border-[#262626] flex items-center justify-end gap-2 shrink-0">

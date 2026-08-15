@@ -30,7 +30,7 @@ const steelPriceState = {
 
 const API_BASE = '/api/steel-prices';
 const DRAWER_ANIMATION_MS = 300;
-const AUDIT_LABEL = { pending: '待审', approved: '已通过', rejected: '已驳回 };
+const AUDIT_LABEL = { pending: '待审', approved: '已通过', rejected: '已驳回' }';
 
 function openDrawer(drawerId, backdropId) {
     const drawer = document.getElementById(drawerId);
@@ -88,7 +88,7 @@ function applyPermissionUi() {
 
 function readHashFilters() {
     const hash = window.location.hash || '';
-    const queryIndex = hash.indexOf('?');
+    const queryIndex = hash.indexOf('?');'
     if (queryIndex < 0) return null;
     const qs = new URLSearchParams(hash.slice(queryIndex + 1));
     const year = qs.get('year') || '';
@@ -158,7 +158,7 @@ async function loadData(page = 1) {
         }
         updateActiveFilterCapsules();
     } catch (error) {
-        console.error('加载钢材价格失败:', error);
+        console.error('加载钢材价格失败:', error)';
         updateSteelPriceHud(0, null);
         if (tableBody) {
             tableBody.innerHTML = `
@@ -241,8 +241,8 @@ function toggleAdvancedFilter() {
     }
     if (label) {
         label.textContent = steelPriceState.advancedFilterOpen
-            ? '[-] 收起高级筛选
-            : '[+] 展开高级筛选;
+            ? '[-] 收起高级筛选'
+            : '[+] 展开高级筛选';
     }
 }
 
@@ -394,7 +394,7 @@ async function exportExcel() {
 
         showToast(`导出成功: ${filename}`, 'success');
     } catch (error) {
-        console.error('导出钢材联动价格失败:', error);
+        console.error('导出钢材联动价格失败:', error)';
         if (!error.status) {
             showToast(error.message || '导出失败', 'error');
         }
@@ -459,7 +459,7 @@ async function batchDeleteByFilters() {
         steelPriceState.filtersLoaded = false;
         loadData(1);
     } catch (error) {
-        console.error('批量删除钢材价格失败:', error);
+        console.error('批量删除钢材价格失败:', error)';
     } finally {
         if (btn) {
             btn.disabled = false;
@@ -505,14 +505,14 @@ function openBatchAuditDrawer(mode) {
     const confirmBtn = document.getElementById('confirmBatchAuditBtn');
 
     if (modeEl) modeEl.value = isApprove ? 'approve' : 'reverse';
-    if (titleEl) titleEl.textContent = isApprove ? '批量审核' : '批量反审核;
+    if (titleEl) titleEl.textContent = isApprove ? '批量审核' : '批量反审核';
     if (hintEl) {
         hintEl.textContent = isApprove
-            ? '仅按年度、月份、基地处理待审已驳回记录；已通过记录会跳过。
-            : '仅按年度、月份、基地处理已通过记录；其余状态会跳过。反审核意见必填。;
+            ? '仅按年度、月份、基地处理待审/已驳回记录；已通过记录会跳过。'
+            : '仅按年度、月份、基地处理已通过记录；其余状态会跳过。反审核意见必填。';
     }
     if (operatorLabel) {
-        operatorLabel.textContent = isApprove ? '审核交 : '反审核人';
+        operatorLabel.textContent = isApprove ? '审核人' : '反审核人';
     }
     if (operatorDisplay) {
         operatorDisplay.textContent = getSessionDisplayName() || '（当前登录用户）';
@@ -520,17 +520,17 @@ function openBatchAuditDrawer(mode) {
     if (remarkLabel) {
         remarkLabel.innerHTML = isApprove
             ? '审核意见'
-            : '反审核意览<span class="text-[#d32f2f]">*</span>';
+            : '反审核意见<span class="text-[#d32f2f]">*</span>';
     }
     if (remarkEl) {
         remarkEl.value = '';
-        remarkEl.placeholder = isApprove ? '可选填写审核意览 : '请填写反审核原因（必填）';
+        remarkEl.placeholder = isApprove ? '可选填写审核意见' : '请填写反审核原因（必填）';
     }
     if (summaryEl) {
         summaryEl.textContent = `年度 ${filters.year} · 月份 ${filters.month} · 基地 ${filters.location}`;
     }
     if (confirmBtn) {
-        confirmBtn.textContent = isApprove ? '确认审核通过' : '确认反审核;
+        confirmBtn.textContent = isApprove ? '确认审核通过' : '确认反审核';
         confirmBtn.className =
             'inline-flex items-center gap-1.5 bg-[#d32f2f] text-white px-4 py-2 text-[11px] font-semibold rounded hover:bg-[#b71c1c] transition-all';
     }
@@ -829,7 +829,7 @@ async function saveRecord() {
         steelPriceState.filtersLoaded = false;
         loadData(steelPriceState.page);
     } catch (error) {
-        console.error('保存钢材价格失败:', error);
+        console.error('保存钢材价格失败:', error)';
     }
 }
 
@@ -844,7 +844,7 @@ async function deleteRecord(id) {
         steelPriceState.filtersLoaded = false;
         loadData(nextPage);
     } catch (error) {
-        console.error('删除钢材价格失败:', error);
+        console.error('删除钢材价格失败:', error)';
     }
 }
 
@@ -862,7 +862,7 @@ async function handleApprove() {
         steelPriceState.filtersLoaded = false;
         loadData(steelPriceState.page);
     } catch (error) {
-        console.error('审核通过失败:', error);
+        console.error('审核通过失败:', error)';
     }
 }
 
@@ -880,7 +880,7 @@ async function handleReject() {
         steelPriceState.filtersLoaded = false;
         loadData(steelPriceState.page);
     } catch (error) {
-        console.error('审核驳回失败:', error);
+        console.error('审核驳回失败:', error)';
     }
 }
 

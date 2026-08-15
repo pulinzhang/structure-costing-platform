@@ -69,7 +69,7 @@ export const PartsPage = {
         partsState.advancedOpen = isOpen;
         document.getElementById('partsAdvancedFilterPanel')?.classList.toggle('hidden', !isOpen);
         const label = document.getElementById('partsAdvancedFilterLabel');
-        if (label) label.textContent = isOpen ? '收起高级筛选 : '展开高级筛选;
+        if (label) label.textContent = isOpen ? '收起高级筛选' : '展开高级筛选';
     },
 
     bindEvents() {

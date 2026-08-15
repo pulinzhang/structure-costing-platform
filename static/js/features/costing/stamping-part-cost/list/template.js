@@ -318,7 +318,7 @@ export function syncBreakdownColumnVisibility(isOpen) {
     });
     const btn = document.getElementById('costToggleBreakdownCols');
     if (btn) {
-        btn.textContent = isOpen ? '− : '+';
+        btn.textContent = isOpen ? '−' : '+';
         btn.title = isOpen
             ? '收起成本分项'
             : '展开成本分项（①采购 / ②损耗扣 / ③边角扣 / 废料扣合计）';

@@ -92,7 +92,7 @@ function setAdvancedOpen(isOpen) {
     listState.advancedOpen = isOpen;
     document.getElementById('costAdvancedFilterPanel')?.classList.toggle('hidden', !isOpen);
     const label = document.getElementById('costAdvancedFilterLabel');
-    if (label) label.textContent = isOpen ? '收起高级筛选 : '展开高级筛选;
+    if (label) label.textContent = isOpen ? '收起高级筛选' : '展开高级筛选';
 }
 
 function setExportMenuOpen(isOpen) {
@@ -105,7 +105,7 @@ function setExportMenuOpen(isOpen) {
 
 function applyQueryFromHash() {
     const hash = window.location.hash || '';
-    const qIndex = hash.indexOf('?');
+    const qIndex = hash.indexOf('?');'
     if (qIndex < 0) return;
     const params = new URLSearchParams(hash.slice(qIndex + 1));
     const map = {
@@ -422,10 +422,10 @@ function showDetailDrawer(row) {
     const canEditUnitCost = failStatus && listState.canUpdate && !isApproved;
     const auditText =
         row.audit_status === 'approved'
-            ? '已审核
+            ? '已审核'
             : row.audit_status === 'rejected'
-              ? '已驳回
-              : '待审核;
+              ? '已驳回'
+              : '待审核';
     const auditBadgeColor =
         row.audit_status === 'approved'
             ? 'text-[#8E8E93] bg-[#161620] border-[#2A2A38]'
