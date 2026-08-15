@@ -706,7 +706,7 @@ async function batchApprove() {
     if (!listState.canApprove) return showToast('无审核权限', 'warning');
     const scope = requireScope();
     if (!scope) return;
-    if (!window.confirm('确认批量审核通过当前范围（)) return;
+    if (!window.confirm('确认批量审核通过当前范围？')) return;
     try {
         const res = await HttpClient.post(`${API_BASE}/batch-approve`, scope);
         showToast(res.message || '审核完成', 'success');
@@ -741,7 +741,7 @@ async function batchDelete() {
     if (!listState.canDelete) return showToast('无删除权限', 'warning');
     const scope = requireScope();
     if (!scope) return;
-    if (!window.confirm('确认删除当前范围未审核记录？已审核将跳过。)) return;
+    if (!window.confirm('确认删除当前范围未审核记录？已审核将跳过。')) return;
     try {
         const res = await HttpClient.post(`${API_BASE}/batch-delete`, scope);
         showToast(res.message || '删除完成', 'success');

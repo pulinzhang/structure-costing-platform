@@ -232,8 +232,11 @@ def create_app() -> FastAPI:
 
     # 操作审计：写操作 + 导出（须在 CORS 之后添加，以便作为外层拿到最终响应）
     from app.middleware.operation_log_middleware import OperationLogMiddleware
+    from app.middleware.no_cache_frontend import NoCacheFrontendMiddleware
 
     app.add_middleware(OperationLogMiddleware)
+    # 前端 JS/CSS/入口页禁止强缓存，避免修复后仍命中旧坏脚本
+    app.add_middleware(NoCacheFrontendMiddleware)
 
     # ========== 静态资源挂载 ==========
     app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -246,14 +249,20 @@ def create_app() -> FastAPI:
     async def spa_index():
         """单页应用入口"""
         from fastapi.responses import FileResponse
-        return FileResponse("static/index.html")
+        return FileResponse(
+            "static/index.html",
+            headers={"Cache-Control": "no-cache, must-revalidate"},
+        )
 
     # 登录页（账号密码入口，登录成功后再进主系统）
     @app.get("/login", include_in_schema=False)
     async def login_page():
         """打开登录页面"""
         from fastapi.responses import FileResponse
-        return FileResponse("static/login.html")
+        return FileResponse(
+            "static/login.html",
+            headers={"Cache-Control": "no-cache, must-revalidate"},
+        )
 
     # favicon
     @app.get("/favicon.ico", include_in_schema=False)

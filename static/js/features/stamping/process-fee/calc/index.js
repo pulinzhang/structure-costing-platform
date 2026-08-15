@@ -391,7 +391,7 @@ async function deleteCalcLog(logId) {
         showToast('无删除权限', 'warning');
         return;
     }
-    if (!window.confirm('确定删除这条计算历史？仅删除日志，不影响已落库的加工费。)) {
+    if (!window.confirm('确定删除这条计算历史？仅删除日志，不影响已落库的加工费。')) {
         return;
     }
     try {

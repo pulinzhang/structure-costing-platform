@@ -553,7 +553,7 @@ export const PartsPage = {
             showToast('无删除权限', 'warning');
             return;
         }
-        if (!confirm('确定要删除这个零件吗（)) return;
+        if (!confirm('确定要删除这个零件吗？')) return;
         try {
             await HttpClient.delete(`${PARTS_API}/${partId}`);
             showToast('删除成功', 'success');
