@@ -3,11 +3,11 @@
 from app.services.stamping.process_fee.calc import (
     DUPLICATE_SCOPE_CALC_MESSAGE,
     DuplicateScopeCalcError,
-    StampingProcessFeeCalcService,
+    StampingProcessFeeCalcOrchestrator,
 )
 
 __all__ = [
     "DUPLICATE_SCOPE_CALC_MESSAGE",
     "DuplicateScopeCalcError",
-    "StampingProcessFeeCalcService",
+    "StampingProcessFeeCalcOrchestrator",
 ]

@@ -1,21 +1,14 @@
 """
-冲压加工费计算服务（编排）
+冲压加工费计算编排器（只负责串联步骤，不含吨位解析/单件计费细节）
 
-公式：
-- 单序加工费 = cost_ratio × price_per_stroke
-- 零件加工费 = 各工序之和（保留 3 位小数）
-- 「摆剪」工序不使用冲压设备，加工费固定为 0（不查吨位）
-- 共模件对应工序若上一件为摆剪，同样计 0
+计算链：
+  1. 加载冲次单价 / 冲压零件
+  2. PartFeeCalculator      — 单零件工序加工费
+  3. TonnageResolver        — 吨位解析（共模/摆剪，由 PartFeeCalculator 调用）
+  4. fee_repo.bulk_upsert   — 结果落库
+  5. ProcessFeeCalcLogService — 计算锁与过程日志
 
-冲次单价匹配：年度相等 + 基地相等 + 吨位相等。
-
-合并/双槽/共用工艺缺吨位时（零件工艺方法，或任一道工序代码含「合并」/「双槽」/「共用」，
-如工序代码「左右合并」「双槽」）：
-- Excel 按顺序导入，上一零件为 id-1
-- 表示与上一零件共模同冲（一次冲次出两种件）
-- 须与上一零件基地相同，才可继承上一零件对应工序的吨位再计算
-- 若上一件对应工序为摆剪，则本工序同样按摆剪计 0
-- 工序数量以上一件为准；当前多出的工序视为录入错误，跳过不计费
+公式与共模规则见 PartFeeCalculator / TonnageResolver 文档。
 """
 
 from __future__ import annotations
@@ -65,8 +58,8 @@ from app.services.stamping.process_fee.scope import require_scope
 logger = logging.getLogger("service.stamping.process_fee.calc")
 
 
-class StampingProcessFeeCalcService:
-    """冲压加工费计算编排：就绪检查、并发锁、批量计算、计算日志。"""
+class StampingProcessFeeCalcOrchestrator:
+    """冲压加工费计算编排器。"""
 
     def __init__(self) -> None:
         self.fee_repo = StampingProcessFeeRepository()
