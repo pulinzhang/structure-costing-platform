@@ -388,7 +388,7 @@ function renderHistoryRows(items) {
 async function deleteCalcLog(logId) {
     if (!logId) return;
     if (calcState.canDelete === false) {
-        showToast('无删除权除, 'warning');
+        showToast('无删除权限', 'warning');
         return;
     }
     if (!window.confirm('确定删除这条计算历史？仅删除日志，不影响已落库的加工费。)) {
@@ -488,7 +488,7 @@ async function isScopeProcessing(year, location, supplier) {
 
 async function startCalculation() {
     if (calcState.canRun === false) {
-        showToast('无计算权除, 'warning');
+        showToast('无计算权限', 'warning');
         return;
     }
     if (calcState.isCalculating) return;
@@ -500,19 +500,19 @@ async function startCalculation() {
     const version = document.getElementById('calcVersion')?.value || '';
 
     if (Number.isNaN(year) || !location || !supplier) {
-        showToast(SCOPE_REQUIRED_MESSAGE, 'warning');
+        showToast(SCOPE_REQUIRED_MESSAGE', 'warning');
         return;
     }
 
     const { part_count, tonnage_rate_count } = calcState.ready;
     if (part_count <= 0 || tonnage_rate_count <= 0) {
-        showToast('当前所选条件数据未就绪，无法计算, 'warning');
+        showToast('当前所选条件数据未就绪，无法计算', 'warning');
         document.getElementById('dataReadyErrorBanner')?.classList.remove('hidden');
         return;
     }
 
     if (await isScopeProcessing(year, location, supplier)) {
-        showToast(DUPLICATE_SCOPE_CALC_MESSAGE, 'warning');
+        showToast(DUPLICATE_SCOPE_CALC_MESSAGE', 'warning');
         loadCalcHistory(1);
         return;
     }
@@ -538,9 +538,9 @@ async function startCalculation() {
         console.error('提交加工费计算失败', error);
         const msg = error.message || '提交计算失败';
         if (msg.includes('正在计算')) {
-            showToast(DUPLICATE_SCOPE_CALC_MESSAGE, 'warning');
+            showToast(DUPLICATE_SCOPE_CALC_MESSAGE', 'warning');
         } else {
-            showToast(msg, 'error');
+            showToast(msg', 'error');
         }
         stopPolling();
         hideProgress();
@@ -643,12 +643,12 @@ function startPolling(taskId) {
                 const zero = result.zero_fee_count || 0;
                 if (zero > 0) {
                     showToast(
-                        `计算${STATUS_META[bizStatus]?.label || '完成'}：成加${fmtInt(result.success_count)}，零价${fmtInt(zero)}，请到列表手工调整`,
+                        `计算${STATUS_META[bizStatus]?.label || '完成'}：成功${fmtInt(result.success_count)}，零价${fmtInt(zero)}，请到列表手工调整`,
                         'warning',
                     );
                 } else {
                     showToast(
-                        `计算${STATUS_META[bizStatus]?.label || '完成'}：成加${fmtInt(result.success_count)}，失败${fmtInt(result.failed_count)}`,
+                        `计算${STATUS_META[bizStatus]?.label || '完成'}：成功${fmtInt(result.success_count)}，失败${fmtInt(result.failed_count)}`,
                         bizStatus === 'failed' ? 'error' : bizStatus === 'partial' ? 'warning' : 'success',
                     );
                 }

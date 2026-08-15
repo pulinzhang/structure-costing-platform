@@ -254,7 +254,7 @@ async function loadFilterOptions() {
         await loadLocationOptions();
         await loadSupplierOptions();
     } catch (error) {
-        showToast(error.message || '加载筛选失败, 'error');
+        showToast(error.message || '加载筛选失败', 'error');
     }
 }
 
@@ -542,7 +542,7 @@ function renderProcessItems(items) {
 
 function openEditDrawer(record) {
     if (!feeState.canUpdate) {
-        showToast('无编辑权除, 'warning');
+        showToast('无编辑权限', 'warning');
         return;
     }
     if (record.audit_status === 'approved') {
@@ -609,7 +609,7 @@ async function exportExcel() {
         && !filters.audit_status
         && !filters.part_number
     ) {
-        showToast('请至少选择一个筛选条件后再导出, 'warning');
+        showToast('请至少选择一个筛选条件后再导出', 'warning');
         return;
     }
 
@@ -643,7 +643,7 @@ async function exportExcel() {
         anchor.click();
         document.body.removeChild(anchor);
         window.URL.revokeObjectURL(url);
-        showToast(`导出成功: ${filename}`, 'success');
+        showToast(`导出成功: ${filename}`', 'success');
     } catch (error) {
         console.error('导出冲压加工费失败', error);
         if (!error.status) {
@@ -661,7 +661,7 @@ async function batchDelete() {
     const filters = collectScopeFilters();
     if (!filters.year || !filters.location || !filters.stamping_supplier) {
         setAdvancedOpen(true);
-        showToast(SCOPE_REQUIRED_MESSAGE, 'warning');
+        showToast(SCOPE_REQUIRED_MESSAGE', 'warning');
         return;
     }
     if (!window.confirm(
@@ -720,7 +720,7 @@ function openBatchAuditDrawer(mode) {
     const filters = collectScopeFilters();
     if (!filters.year || !filters.location || !filters.stamping_supplier) {
         setAdvancedOpen(true);
-        showToast(SCOPE_REQUIRED_MESSAGE, 'warning');
+        showToast(SCOPE_REQUIRED_MESSAGE', 'warning');
         return;
     }
 
@@ -771,7 +771,7 @@ async function submitBatchAudit() {
     const filters = collectScopeFilters();
     const remark = document.getElementById('feeBatchAuditRemark')?.value.trim() || '';
     if (mode === 'reverse' && !remark) {
-        showToast('反审核意见必填, 'warning');
+        showToast('反审核意见必填', 'warning');
         return;
     }
 

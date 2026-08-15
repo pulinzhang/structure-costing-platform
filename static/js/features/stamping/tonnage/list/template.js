@@ -233,10 +233,10 @@ export function tonnagePriceTemplate() {
                     </div>
 
                     <div>
-                        <label class="text-[10px] font-semibold text-[#616161] uppercase tracking-[0.1em] mb-1.5 block">源年价<span class="text-[#d32f2f]">*</span></label>
+                        <label class="text-[10px] font-semibold text-[#616161] uppercase tracking-[0.1em] mb-1.5 block">源年份<span class="text-[#d32f2f]">*</span></label>
                         <select id="sourceYear" required
                                 class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#9e9e9e] appearance-none cursor-pointer focus:outline-none focus:border-[#ff5252] transition-all rounded">
-                            <option value="">请选择源年价</option>
+                            <option value="">请选择源年份</option>
                         </select>
                     </div>
 

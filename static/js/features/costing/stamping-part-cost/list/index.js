@@ -317,7 +317,7 @@ function getFilters() {
 function requireScope() {
     const f = getFilters();
     if (!f.year || !f.month || !f.location || !f.stamping_supplier) {
-        showToast('批量操作须选定年度、月份、基地、冲压工厂, 'warning');
+        showToast('批量操作须选定年度、月份、基地、冲压工厂', 'warning');
         return null;
     }
     return {
@@ -621,7 +621,7 @@ function showDetailDrawer(row) {
 
 async function saveManualUnitCost(costId) {
     if (!listState.canUpdate) {
-        showToast('无改价权除, 'warning');
+        showToast('无改价权限', 'warning');
         return;
     }
     const unitCostEl = document.getElementById('costManualUnitCost');
@@ -630,13 +630,13 @@ async function saveManualUnitCost(costId) {
     const remark = (remarkEl?.value || '').trim();
 
     if (!unitCostRaw) {
-        showToast('请录入最终成本, 'warning');
+        showToast('请录入最终成本', 'warning');
         unitCostEl?.focus();
         return;
     }
     const unitCost = Number(unitCostRaw);
     if (!Number.isFinite(unitCost) || unitCost < 0) {
-        showToast('最终成本须为非负数存, 'warning');
+        showToast('最终成本须为非负数', 'warning');
         unitCostEl?.focus();
         return;
     }
@@ -703,7 +703,7 @@ function closeDetailDrawer() {
 }
 
 async function batchApprove() {
-    if (!listState.canApprove) return showToast('无审核权除, 'warning');
+    if (!listState.canApprove) return showToast('无审核权限', 'warning');
     const scope = requireScope();
     if (!scope) return;
     if (!window.confirm('确认批量审核通过当前范围（)) return;
@@ -722,7 +722,7 @@ async function batchReverse() {
     if (!scope) return;
     const remark = window.prompt('请输入反审核原因');
     if (!remark || !remark.trim()) {
-        showToast('反审核原因必填, 'warning');
+        showToast('反审核原因必填', 'warning');
         return;
     }
     try {
@@ -730,15 +730,15 @@ async function batchReverse() {
             ...scope,
             reverse_audit_remark: remark.trim(),
         });
-        showToast(res.message || '反审核完成, 'success');
+        showToast(res.message || '反审核完成', 'success');
         loadList(listState.page);
     } catch (error) {
-        showToast(error.message || '反审核失败, 'error');
+        showToast(error.message || '反审核失败', 'error');
     }
 }
 
 async function batchDelete() {
-    if (!listState.canDelete) return showToast('无删除权除, 'warning');
+    if (!listState.canDelete) return showToast('无删除权限', 'warning');
     const scope = requireScope();
     if (!scope) return;
     if (!window.confirm('确认删除当前范围未审核记录？已审核将跳过。)) return;
@@ -752,10 +752,10 @@ async function batchDelete() {
 }
 
 async function exportExcel(exportFormat = 'process_sheet') {
-    if (!listState.canExport) return showToast('无导出权除, 'warning');
+    if (!listState.canExport) return showToast('无导出权限', 'warning');
     const filters = getFilters();
     if (!Object.values(filters).some(Boolean)) {
-        showToast('请至少选择一个筛选条件后再导出, 'warning');
+        showToast('请至少选择一个筛选条件后再导出', 'warning');
         return;
     }
     try {
@@ -781,7 +781,7 @@ async function exportExcel(exportFormat = 'process_sheet') {
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-        showToast(`导出成功: ${filename}`, 'success');
+        showToast(`导出成功: ${filename}`', 'success');
     } catch (error) {
         if (!error.status) {
             showToast(error.message || '导出失败', 'error');

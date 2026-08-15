@@ -466,17 +466,17 @@ async function savePassword() {
 
     if (!userId) return;
     if (!password || password.length < 4) {
-        showToast('新密码至少4 个字符, 'warning');
+        showToast('新密码至少4 个字符', 'warning');
         return;
     }
     if (password !== confirm) {
-        showToast('两次输入的密码不一自, 'warning');
+        showToast('两次输入的密码不一致', 'warning');
         return;
     }
 
     try {
         await HttpClient.put(`${API_BASE}/${userId}/password`, { password });
-        showToast('密码已更新, 'success');
+        showToast('密码已更新', 'success');
         closeDrawer('passwordDrawer', 'passwordDrawerBackdrop');
     } catch (error) {
         console.error('修改密码失败:', error);
@@ -616,7 +616,7 @@ async function saveGrant() {
     });
     try {
         await HttpClient.put(`${API_BASE}/${userId}/permissions`, { codes });
-        showToast('授权已保存, 'success');
+        showToast('授权已保存', 'success');
         closeDrawer('grantDrawer', 'grantDrawerBackdrop');
     } catch (error) {
         console.error('保存授权失败:', error);

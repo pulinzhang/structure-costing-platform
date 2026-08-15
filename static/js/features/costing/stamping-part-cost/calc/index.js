@@ -404,7 +404,7 @@ function renderHistoryRows(items) {
 async function deleteCalcLog(logId) {
     if (!logId) return;
     if (calcState.canDelete === false) {
-        showToast('无删除权除, 'warning');
+        showToast('无删除权限', 'warning');
         return;
     }
     if (!window.confirm('确定删除这条计算历史？仅删除日志，不影响已落库结果。)) return;
@@ -477,7 +477,7 @@ function closeProcessDrawer() {
 
 async function startCalculation() {
     if (calcState.canRun === false) {
-        showToast('无计算权除, 'warning');
+        showToast('无计算权限', 'warning');
         return;
     }
     if (calcState.isCalculating) return;
@@ -490,11 +490,11 @@ async function startCalculation() {
     const version = document.getElementById('calcVersion')?.value || '';
 
     if (Number.isNaN(year) || Number.isNaN(month) || !location || !supplier) {
-        showToast(SCOPE_REQUIRED_MESSAGE, 'warning');
+        showToast(SCOPE_REQUIRED_MESSAGE', 'warning');
         return;
     }
     if (!calcState.ready.can_calculate) {
-        showToast('当前所选条件数据未就绪，无法计算, 'warning');
+        showToast('当前所选条件数据未就绪，无法计算', 'warning');
         document.getElementById('dataReadyErrorBanner')?.classList.remove('hidden');
         return;
     }
@@ -519,7 +519,7 @@ async function startCalculation() {
         startPolling(taskId);
     } catch (error) {
         const msg = error.message || '提交计算失败';
-        showToast(msg.includes('正在计算') ? DUPLICATE_SCOPE_CALC_MESSAGE : msg, 'warning');
+        showToast(msg.includes('正在计算') ? DUPLICATE_SCOPE_CALC_MESSAGE : msg', 'warning');
         stopPolling();
         hideProgress();
         calcState.activeTaskId = null;
@@ -595,7 +595,7 @@ function startPolling(taskId) {
                 showToast(
                     status === 'failed'
                         ? data?.msg || '计算失败'
-                        : `计算${STATUS_META[bizStatus]?.label || '完成'}：成加${fmtInt(result.success_count)}，失败${fmtInt(result.failed_count)}`,
+                        : `计算${STATUS_META[bizStatus]?.label || '完成'}：成功${fmtInt(result.success_count)}，失败${fmtInt(result.failed_count)}`,
                     status === 'failed' || bizStatus === 'failed'
                         ? 'error'
                         : bizStatus === 'partial'

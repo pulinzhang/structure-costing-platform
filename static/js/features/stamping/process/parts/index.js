@@ -164,7 +164,7 @@ export const PartsPage = {
             updatePartsFilterCapsules();
         } catch (error) {
             console.error('加载级联筛选失败', error);
-            showToast(error.message || '加载筛选失败, 'error');
+            showToast(error.message || '加载筛选失败', 'error');
         }
     },
 
@@ -328,7 +328,7 @@ export const PartsPage = {
 
     async batchDelete() {
         if (this.canDelete === false) {
-            showToast('无删除权除, 'warning');
+            showToast('无删除权限', 'warning');
             return;
         }
         const filters = this.requireScopeForBatchDelete();
@@ -522,7 +522,7 @@ export const PartsPage = {
 
     async _saveProcessEdits(partId) {
         if (this.canUpdate === false) {
-            showToast('无编辑权除, 'warning');
+            showToast('无编辑权限', 'warning');
             return;
         }
         const btn = document.getElementById('saveProcessBtn');
@@ -532,7 +532,7 @@ export const PartsPage = {
         btn.innerHTML = `<span class="inline-flex items-center gap-2">${window.svgIcon('spinner', 'w-3.5 h-3.5 animate-spin')}保存中..</span>`;
         try {
             await HttpClient.put(`${PARTS_API}/${partId}/processes`, processes);
-            showToast('工序参数已保存, 'success');
+            showToast('工序参数已保存', 'success');
             const saveBtn = document.getElementById('saveProcessBtn');
             if (saveBtn) {
                 saveBtn.dataset.active = 'false';
@@ -550,7 +550,7 @@ export const PartsPage = {
 
     async deletePart(partId) {
         if (this.canDelete === false) {
-            showToast('无删除权除, 'warning');
+            showToast('无删除权限', 'warning');
             return;
         }
         if (!confirm('确定要删除这个零件吗（)) return;

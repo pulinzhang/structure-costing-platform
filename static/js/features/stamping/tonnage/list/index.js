@@ -139,7 +139,7 @@ async function loadFilterOptions() {
 
         const sourceYearSelect = document.getElementById('sourceYear');
         if (sourceYearSelect) {
-            let options = `<option value="">请选择源年价</option>`;
+            let options = `<option value="">请选择源年份</option>`;
             tonnagePriceState.years.forEach(year => {
                 options += `<option value="${year}">${year} 年</option>`;
             });
@@ -522,7 +522,7 @@ async function exportExcel() {
         anchor.click();
         document.body.removeChild(anchor);
         window.URL.revokeObjectURL(url);
-        showToast(`导出成功: ${filename}`, 'success');
+        showToast(`导出成功: ${filename}`', 'success');
     } catch (error) {
         console.error('导出冲次单价失败:', error);
         if (!error.status) {
@@ -541,7 +541,7 @@ async function exportExcel() {
  */
 async function batchDeleteByFilters() {
     if (typeof can === 'function' && !can('op:stamping-tonnage:delete')) {
-        showToast('无删除权除, 'warning');
+        showToast('无删除权限', 'warning');
         return;
     }
     if (tonnagePriceState.isBatchDeleting) return;
@@ -552,13 +552,13 @@ async function batchDeleteByFilters() {
     const yearRaw = yearFilter?.value?.trim() || '';
 
     if (!location || !yearRaw) {
-        showToast('批量删除须同时选择基地和年度, 'warning');
+        showToast('批量删除须同时选择基地和年度', 'warning');
         return;
     }
 
     const year = parseInt(yearRaw, 10);
     if (!year || year < 2000 || year > 2100) {
-        showToast('请选择正确的年度, 'warning');
+        showToast('请选择正确的年度', 'warning');
         return;
     }
 
@@ -673,7 +673,7 @@ async function copyTemplate() {
     const targetYear = parseInt(document.getElementById('targetYear')?.value);
 
     if (!location || !sourceYear || !targetYear) {
-        showToast('请选择基地、源年份和目标年价, 'warning');
+        showToast('请选择基地、源年份和目标年份', 'warning');
         return;
     }
 
@@ -687,7 +687,7 @@ async function copyTemplate() {
             `${API_BASE}/copy-year?location=${encodeURIComponent(location)}&source_year=${sourceYear}&target_year=${targetYear}`
         );
 
-        showToast(`成功将。{location}」从 ${sourceYear} 年复制到 ${targetYear} 年`, 'success');
+        showToast(`成功将。{location}」从 ${sourceYear} 年复制到 ${targetYear} 年`', 'success');
 
         closeDrawer('copyDrawer', 'copyDrawerBackdrop');
         loadData(1);

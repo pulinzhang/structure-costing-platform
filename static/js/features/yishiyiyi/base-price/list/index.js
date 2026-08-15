@@ -327,11 +327,11 @@ async function exportExcel() {
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
 
-        showToast(`导出成功: ${filename}`, 'success');
+        showToast(`导出成功: ${filename}`', 'success');
     } catch (error) {
         console.error('导出 Excel 失败:', error);
         if (!error.status) {
-            showToast(`导出失败: ${error.message}`, 'error');
+            showToast(`导出失败: ${error.message}`', 'error');
         }
     } finally {
         if (loading) loading.classList.add('hidden');
@@ -407,7 +407,7 @@ async function batchDeleteBasePrices() {
 
     } catch (error) {
         console.error('删除基准价格失败:', error);
-        showToast(`删除失败: ${error.message}`, 'error');
+        showToast(`删除失败: ${error.message}`', 'error');
     } finally {
         if (btnDelete) {
             btnDelete.disabled = false;

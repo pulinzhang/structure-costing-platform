@@ -329,7 +329,7 @@ function renderHistoryRows(items) {
 async function deleteCalcLog(logId) {
     if (!logId) return;
     if (calcState.canDelete === false) {
-        showToast('无删除权除, 'warning');
+        showToast('无删除权限', 'warning');
         return;
     }
     if (!window.confirm('确定删除这条计算历史？仅删除日志，不影响已落库的钢材价格。)) {
@@ -459,7 +459,7 @@ async function isPeriodProcessing(year, month, location) {
 
 async function startCalculation() {
     if (calcState.canRun === false) {
-        showToast('无计算权除, 'warning');
+        showToast('无计算权限', 'warning');
         return;
     }
     if (calcState.isCalculating) return;
@@ -471,7 +471,7 @@ async function startCalculation() {
     const vehicleModel = document.getElementById('calcVehicleModel')?.value || '';
 
     if (Number.isNaN(year) || Number.isNaN(month)) {
-        showToast('请填写完整的计算年度与月价, 'warning');
+        showToast('请填写完整的计算年度与月份', 'warning');
         return;
     }
     if (!location) {
@@ -481,12 +481,12 @@ async function startCalculation() {
 
     const { base_price_count, adjustment_rule_count, thickness_row_count } = calcState.stats;
     if (base_price_count <= 0 || adjustment_rule_count <= 0 || thickness_row_count <= 0) {
-        showToast('当前所选条件数据未就绪，无法计算, 'warning');
+        showToast('当前所选条件数据未就绪，无法计算', 'warning');
         return;
     }
 
     if (await isPeriodProcessing(year, month, location)) {
-        showToast(DUPLICATE_PERIOD_CALC_MESSAGE, 'warning');
+        showToast(DUPLICATE_PERIOD_CALC_MESSAGE', 'warning');
         loadCalcHistory(1);
         return;
     }

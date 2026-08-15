@@ -356,7 +356,7 @@ async function exportExcel() {
         !filters.grade &&
         !filters.steel_mill
     ) {
-        showToast('请至少选择一个筛选条件后再导出, 'warning');
+        showToast('请至少选择一个筛选条件后再导出', 'warning');
         return;
     }
 
@@ -392,7 +392,7 @@ async function exportExcel() {
         document.body.removeChild(anchor);
         window.URL.revokeObjectURL(url);
 
-        showToast(`导出成功: ${filename}`, 'success');
+        showToast(`导出成功: ${filename}`', 'success');
     } catch (error) {
         console.error('导出钢材联动价格失败:', error)';
         if (!error.status) {
@@ -409,7 +409,7 @@ async function exportExcel() {
 async function batchDeleteByFilters() {
     const filters = collectBatchDeleteFilters();
     if (!filters.year || !filters.month || !filters.location) {
-        showToast('批量删除须选择年度、月份、基地, 'warning');
+        showToast('批量删除须选择年度、月份、基地', 'warning');
         return;
     }
 
@@ -489,7 +489,7 @@ function getSessionDisplayName() {
 function openBatchAuditDrawer(mode) {
     const filters = collectPeriodFilters();
     if (!filters.year || !filters.month || !filters.location) {
-        showToast('批量操作须选择年度、月份、基地, 'warning');
+        showToast('批量操作须选择年度、月份、基地', 'warning');
         return;
     }
 
@@ -550,13 +550,13 @@ async function submitBatchAudit() {
     const isApprove = mode === 'approve';
     const filters = collectPeriodFilters();
     if (!filters.year || !filters.month || !filters.location) {
-        showToast('批量操作须选择年度、月份、基地, 'warning');
+        showToast('批量操作须选择年度、月份、基地', 'warning');
         return;
     }
 
     const remark = document.getElementById('batchAuditRemark')?.value.trim() || '';
     if (!isApprove && !remark) {
-        showToast('反审核意见必填, 'warning');
+        showToast('反审核意见必填', 'warning');
         return;
     }
 
@@ -809,7 +809,7 @@ async function saveRecord() {
         Number.isNaN(zincAdjustment) || Number.isNaN(processingFee) ||
         Number.isNaN(otherAdjustment)
     ) {
-        showToast('请填写所有必填数值字段, 'warning');
+        showToast('请填写所有必填数值字段', 'warning');
         return;
     }
 
@@ -875,7 +875,7 @@ async function handleReject() {
         const body = {};
         if (auditRemark.trim()) body.audit_remark = auditRemark.trim();
         await HttpClient.post(`${API_BASE}/${id}/reject`, body);
-        showToast('已驳回, 'success');
+        showToast('已驳回', 'success');
         closeDrawer('viewDrawer', 'viewDrawerBackdrop');
         steelPriceState.filtersLoaded = false;
         loadData(steelPriceState.page);
@@ -889,14 +889,14 @@ async function handleReverseAudit() {
     if (!id) return;
     const reverseAuditRemark = window.prompt('反审核原因（必填）);
     if (!reverseAuditRemark || !reverseAuditRemark.trim()) {
-        showToast('反审核原因必填, 'warning');
+        showToast('反审核原因必填', 'warning');
         return;
     }
     try {
         await HttpClient.post(`${API_BASE}/${id}/reverse-audit`, {
             reverse_audit_remark: reverseAuditRemark.trim(),
         });
-        showToast('反审核成加, 'success');
+        showToast('反审核成功', 'success');
         closeDrawer('viewDrawer', 'viewDrawerBackdrop');
         steelPriceState.filtersLoaded = false;
         loadData(steelPriceState.page);
