@@ -281,16 +281,16 @@ def create_app() -> FastAPI:
     from app.routers.dashboard.crud import router as dashboard_router
     from app.routers.bom.crud import router as bom_router
     from app.routers.bom.upload import router as bom_upload_router
-    from app.routers.costing.crud import router as costing_router
+    from app.routers.costing.engine.crud import router as costing_engine_router
     from app.routers.quotation.crud import router as quotation_router
     from app.routers.settings.crud import router as settings_router
     from app.routers.stamping.crud import router as stamping_crud_router
     from app.routers.stamping.upload import router as stamping_upload_router
     from app.routers.stamping.tonnage_price import router as stamping_tonnage_price_router
     from app.routers.stamping.stamping_process_fee import router as stamping_process_fee_router
-    from app.routers.stamping_part_cost.crud import router as stamping_part_cost_router
-    from app.routers.steel_price.crud import router as steel_price_router
-    from app.routers.steel_price.calc import router as steel_price_calc_router
+    from app.routers.costing.stamping_part_cost.crud import router as costing_stamping_part_cost_router
+    from app.routers.costing.steel_price.crud import router as costing_steel_price_router
+    from app.routers.costing.steel_price.calc import router as costing_steel_price_calc_router
     from app.routers.yishiyiyi.policy.crud import router as yishiyiyi_policy_router
     from app.routers.yishiyiyi.base_price.crud import router as yishiyiyi_base_price_router
     from app.routers.yishiyiyi.winning_thickness.crud import router as yishiyiyi_winning_thickness_router
@@ -307,16 +307,16 @@ def create_app() -> FastAPI:
     app.include_router(stamping_upload_router)
     app.include_router(stamping_tonnage_price_router)
     app.include_router(stamping_process_fee_router)
-    app.include_router(stamping_part_cost_router)
-    app.include_router(steel_price_calc_router)
-    app.include_router(steel_price_router)
+    app.include_router(costing_stamping_part_cost_router)
+    app.include_router(costing_steel_price_calc_router)
+    app.include_router(costing_steel_price_router)
     app.include_router(yishiyiyi_policy_router)
     app.include_router(yishiyiyi_base_price_router)
     app.include_router(yishiyiyi_winning_thickness_router)
     app.include_router(yishiyiyi_scrap_price_router)
     app.include_router(bom_router)
     app.include_router(bom_upload_router)
-    app.include_router(costing_router)
+    app.include_router(costing_engine_router)
     app.include_router(quotation_router)
     app.include_router(settings_router)
     app.include_router(user_crud_router)

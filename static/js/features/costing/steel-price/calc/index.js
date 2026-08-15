@@ -11,9 +11,9 @@ import {
 
 const STAMPING_CASCADE_FILTERS_API = '/api/stamping/filters/cascade';
 const STEEL_PRICE_CALC_STATS_API = '/api/dashboard/stats/steel-price-calc';
-const STEEL_PRICE_CALC_API = '/api/steel-prices/calc';
-const STEEL_PRICE_CALC_TASK_API = '/api/steel-prices/calc/tasks';
-const STEEL_PRICE_CALC_LOGS_API = '/api/steel-prices/calc/logs';
+const STEEL_PRICE_CALC_API = '/api/costing/steel-price/calc';
+const STEEL_PRICE_CALC_TASK_API = '/api/costing/steel-price/calc/tasks';
+const STEEL_PRICE_CALC_LOGS_API = '/api/costing/steel-price/calc/logs';
 const POLL_INTERVAL_MS = 1500;
 const DUPLICATE_PERIOD_CALC_MESSAGE = '当前期别正在计算中，请勿重复提交。'
 

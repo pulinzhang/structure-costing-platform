@@ -12,7 +12,7 @@ import {
 } from '../../../../page-size.js?v=2';
 
 const CASCADE_API = '/api/stamping/filters/cascade';
-const API_BASE = '/api/stamping/part-costs';
+const API_BASE = '/api/costing/stamping-part-cost';
 const CALC_API = `${API_BASE}/calc`;
 const CALC_READY_API = `${API_BASE}/calc/ready`;
 const CALC_TASK_API = `${API_BASE}/calc/tasks`;

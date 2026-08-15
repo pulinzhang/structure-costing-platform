@@ -28,7 +28,7 @@ const steelPriceState = {
     advancedFilterOpen: false,
 };
 
-const API_BASE = '/api/steel-prices';
+const API_BASE = '/api/costing/steel-price';
 const DRAWER_ANIMATION_MS = 300;
 const AUDIT_LABEL = { pending: '待审', approved: '已通过', rejected: '已驳回' };
 

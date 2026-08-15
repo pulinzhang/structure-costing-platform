@@ -16,7 +16,7 @@ import {
     bindPageSizeSelect,
 } from '../../../../page-size.js?v=2';
 
-const API_BASE = '/api/stamping/part-costs';
+const API_BASE = '/api/costing/stamping-part-cost';
 const CASCADE_API = '/api/stamping/filters/cascade';
 
 const FILTER_IDS = [
