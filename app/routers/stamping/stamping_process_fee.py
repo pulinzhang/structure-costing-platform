@@ -42,12 +42,15 @@ from app.services.async_task import (
     TASK_TYPE_STAMPING_PROCESS_FEE_CALC,
     AsyncTaskService,
 )
+from app.services.stamping.process_fee import (
+    DUPLICATE_SCOPE_CALC_MESSAGE,
+    DuplicateScopeCalcError,
+    StampingProcessFeeCalcService,
+)
 from app.services.stamping.stamping_process_fee_export_service import (
     StampingProcessFeeExportService,
 )
 from app.services.stamping.stamping_process_fee_service import (
-    DUPLICATE_SCOPE_CALC_MESSAGE,
-    DuplicateScopeCalcError,
     StampingProcessFeeService,
 )
 from app.utils.response import ApiResponse
@@ -56,6 +59,7 @@ from app.utils.response import ApiResponse
 router = APIRouter(prefix="/api/stamping/process-fees", tags=["冲压加工费 API"])
 
 _service = StampingProcessFeeService()
+_calc_service = StampingProcessFeeCalcService()
 _export_service = StampingProcessFeeExportService()
 _async_task_service = AsyncTaskService()
 
@@ -96,7 +100,7 @@ def _process_calc_in_background(
             vehicle_model=vehicle_model,
             version=version,
         )
-        result = _service.calculate(
+        result = _calc_service.calculate(
             db,
             dto,
             current_user=current_user,
@@ -130,7 +134,7 @@ def _process_calc_in_background(
             )
     except Exception as error:
         try:
-            _service.mark_log_failed(
+            _calc_service.mark_log_failed(
                 db,
                 log_id=log_id,
                 detail_text=f"计算失败: {error}",
@@ -214,7 +218,7 @@ def get_calc_ready(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_PROCESS_FEE_CALC_VIEW)),
 ) -> ApiResponse[StampingProcessFeeCalcReadyVO]:
-    data = _service.get_calc_ready(
+    data = _calc_service.get_calc_ready(
         db,
         year=year,
         location=location or None,
@@ -238,7 +242,7 @@ def list_calc_logs(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_PROCESS_FEE_CALC_VIEW)),
 ) -> ApiResponse[PageResult[StampingProcessFeeCalcLogVO]]:
-    rows, total = _service.list_calc_logs(
+    rows, total = _calc_service.list_calc_logs(
         db,
         year=year,
         location=location,
@@ -264,7 +268,7 @@ def get_calc_log(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_PROCESS_FEE_CALC_VIEW)),
 ) -> ApiResponse[StampingProcessFeeCalcLogVO]:
-    record = _service.get_calc_log(db, log_id)
+    record = _calc_service.get_calc_log(db, log_id)
     if not record:
         raise HTTPException(status_code=404, detail="计算日志不存在")
     return ApiResponse.ok(data=record)
@@ -280,7 +284,7 @@ def delete_calc_log(
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_PROCESS_FEE_CALC_DELETE)),
 ) -> ApiResponse[None]:
     try:
-        deleted = _service.delete_calc_log(db, log_id)
+        deleted = _calc_service.delete_calc_log(db, log_id)
     except BusinessException as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
     if not deleted:
@@ -325,7 +329,7 @@ def calculate(
 ) -> ApiResponse[AsyncTaskAcceptedVO]:
     """提交异步计算；立即返回 task_id，前端轮询进度。"""
     try:
-        lock_log = _service.begin_processing(
+        lock_log = _calc_service.begin_processing(
             db,
             dto,
             operator_id=current_user.id,
