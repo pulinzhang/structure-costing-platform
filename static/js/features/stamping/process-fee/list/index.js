@@ -18,7 +18,7 @@ import {
 
 const API_BASE = '/api/stamping/process-fees';
 const DRAWER_ANIMATION_MS = 300;
-const SCOPE_REQUIRED_MESSAGE = '须选定年度、基地、冲压工厂;
+const SCOPE_REQUIRED_MESSAGE = '须选定年度、基地、冲压工厂'
 
 const TONNAGE_SOURCE_LABEL = {
     self: '自有',
@@ -94,7 +94,7 @@ function applyPermissionUi() {
 
 function applyHashFilters() {
     const hash = window.location.hash || '';
-    const queryIndex = hash.indexOf('?');'
+    const queryIndex = hash.indexOf('?');
     if (queryIndex < 0) return;
     const qs = new URLSearchParams(hash.slice(queryIndex + 1));
     const year = qs.get('year') || '';
@@ -793,7 +793,7 @@ async function submitBatchAudit() {
     feeState.batchAuditSubmitting = true;
     if (btn) {
         btn.disabled = true;
-        btn.textContent = '提交中—;
+        btn.textContent = '提交中—'
     }
 
     try {

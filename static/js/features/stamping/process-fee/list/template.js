@@ -120,7 +120,7 @@ export function processFeeListTemplate() {
                             ${filterSelect('feeLocationFilter', '基地')}
                             ${filterSelect('feeSupplierFilter', '冲压工厂')}
                             ${filterSelect('feeAuditStatusFilter', '审核状态')}
-                            ${filterInput('feePartNumberFilter', '零件号, '短号或完整零件号')}
+                            ${filterInput('feePartNumberFilter', '零件号', '短号或完整零件号')}
                             <button id="feeResetBtn" type="button"
                                     class="inline-flex items-center gap-1.5 h-8 px-3 text-[11px] font-medium rounded-md bg-transparent text-[#6E6E73] border border-[#2A2A35] hover:bg-[#FF1E27]/10 hover:border-[#FF1E27]/50 hover:text-[#FF1E27] transition-all duration-200">
                                 ${window.svgIcon('refresh', 'w-3 h-3')}
@@ -637,7 +637,7 @@ function auditBadge(status) {
         approved: 'bg-[#1C1C22] text-[#8E8E93] border border-[#2A2A32]',
         rejected: 'bg-[#1C1C22] text-[#8E8E93] border border-[#2A2A32]',
     };
-    const label = { pending: '待审', approved: '已通过', rejected: '已驳回 }[status] || status || '-';
+    const label = { pending: '待审', approved: '已通过', rejected: '已驳回' }[status] || status || '-';
     const cls = map[status] || 'bg-[#1C1C22] text-[#8E8E93] border border-[#2A2A32]';
     return `<span class="inline-flex items-center px-2 py-0.5 text-[10px] font-sans rounded-sm ${cls}">${esc(label)}</span>`;
 }

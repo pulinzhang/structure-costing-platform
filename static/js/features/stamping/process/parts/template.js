@@ -80,7 +80,7 @@ export function partsTemplate() {
                             ${filterSelect('supplierFilter', '冲压工厂')}
                             ${filterSelect('vehicleModelFilter', '车型')}
                             ${filterSelect('versionFilter', '版本')}
-                            ${filterInput('searchInput', '零件号, '短号或完整零件号')}
+                            ${filterInput('searchInput', '零件号', '短号或完整零件号')}
                             <button id="partsResetBtn" type="button"
                                     class="inline-flex items-center gap-1.5 h-8 px-3 text-[11px] font-medium rounded-md bg-transparent text-[#6E6E73] border border-[#2A2A35] hover:bg-[#FF1E27]/10 hover:border-[#FF1E27]/50 hover:text-[#FF1E27] transition-all duration-200">
                                 ${window.svgIcon('refresh', 'w-3 h-3')}
@@ -273,10 +273,10 @@ export function renderPartsPagination(currentPage, totalPages) {
 const CORE_COST_FIELDS = new Set(['材料', '重量', '可制件数', '模具类型']);
 
 const DIE_TYPE_OPTIONS = [
-    { value: 'progressive', label: '级进模（80%） },
-    { value: 'single', label: '单干模具（00%） },
-    { value: 'shared', label: '共模（0%） },
-    { value: 'progressive_shared', label: '级进共模（0%） },
+    { value: 'progressive', label: '级进模（80%）'},
+    { value: 'single', label: '单干模具（00%）' },
+    { value: 'shared', label: '共模（0%）' },
+    { value: 'progressive_shared', label: '级进共模（0%）' },
 ];
 
 /**
@@ -365,15 +365,15 @@ export function renderDetailContent(part) {
     const sketchUrl = part.sketch_url || '';
 
     const rows = [
-        ['零件号, esc(part.part_number)],
+        ['零件号', esc(part.part_number)],
         ['零件名称', esc(part.part_name)],
         ['采购基地', esc(part.location)],
-        ['冲压供应商, esc(part.stamping_supplier)],
+        ['冲压供应商', esc(part.stamping_supplier)],
         ['车型', esc(part.vehicle_model)],
         ['版本', esc(part.version)],
         ['材料', esc(part.material)],
         ['工艺方法', esc(part.process_method ?? '-')],
-        ['自动匹, esc(part.automation ?? '-')],
+        ['自动匹配', esc(part.automation ?? '-')],
     ];
     const rowsRight = [
         ['厚度', part.thickness != null ? `${part.thickness} mm` : '-'],

@@ -18,11 +18,11 @@ const CALC_READY_API = `${API_BASE}/calc/ready`;
 const CALC_TASK_API = `${API_BASE}/calc/tasks`;
 const CALC_LOGS_API = `${API_BASE}/calc/logs`;
 const POLL_INTERVAL_MS = 1500;
-const DUPLICATE_SCOPE_CALC_MESSAGE = '当前年度/月份/基地/工厂正在计算中，请勿重复提交。;
-const SCOPE_REQUIRED_MESSAGE = '须选定年度、月份、基地、冲压工厂;
+const DUPLICATE_SCOPE_CALC_MESSAGE = '当前年度/月份/基地/工厂正在计算中，请勿重复提交。'
+const SCOPE_REQUIRED_MESSAGE = '须选定年度、月份、基地、冲压工厂。';
 
 const STATUS_META = {
-    processing: { label: '计算中, className: 'text-[#64b5f6]' },
+    processing: { label: '计算中', className: 'text-[#64b5f6]' },
     success: { label: '成功', className: 'text-[#66bb6a]' },
     partial: { label: '部分成功', className: 'text-[#ffb74d]' },
     failed: { label: '失败', className: 'text-[#ef5350]' },
@@ -461,7 +461,8 @@ function showProcessDrawer(log) {
             <div>汇总：零件 ${fmtInt(log.total_parts)} · 成功 ${fmtInt(log.success_count)} · 失败 ${fmtInt(log.failed_count)} · 跳过 ${fmtInt(log.skipped_approved_count)}</div>
         </div>
         <div class="flex-1 overflow-y-auto overscroll-contain p-5">
-            <pre class="text-[11px] leading-5 font-mono text-[#9e9e9e] whitespace-pre-wrap break-words bg-[#111111] border border-[#262626] p-4">${esc(log.detail_text || '（无过程文本）)}</pre>
+            <pre class="text-[11px] leading-5 font-mono text-[#9e9e9e] whitespace-pre-wrap break-words bg-[#111111] border border-[#262626] p-4">${esc(log.detail_text || '（无过程文本）')}
+</pre>
         </div>
     `;
     document.body.appendChild(backdrop);
@@ -528,7 +529,7 @@ async function startCalculation() {
     }
 }
 
-function showProgress(progress = 0, msg = '已提交计算队列) {
+function showProgress(progress = 0, msg = '已提交计算队列') {
     document.getElementById('calcProgressPanel')?.classList.remove('hidden');
     updateProgress(progress, msg);
 }
@@ -650,7 +651,7 @@ function setCalculating(isCalculating) {
     } else {
         startBtn.removeAttribute('disabled');
         startBtn.classList.remove('opacity-50', 'pointer-events-none');
-        startBtn.textContent = '开始计算;
+        startBtn.textContent = '开始计算';
         validateDataPreparation();
     }
 }

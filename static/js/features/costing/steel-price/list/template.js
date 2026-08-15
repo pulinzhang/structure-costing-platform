@@ -225,12 +225,12 @@ export function steelPriceListTemplate() {
                     <div>
                         <label class="text-[10px] font-semibold text-[#616161] uppercase tracking-[0.1em] mb-2 block">价格分项</label>
                         <div class="grid grid-cols-3 gap-3">
-                            ${editNumber('editBasePrice', '基础价base_price', '0', null, '全, '0.0001')}
-                            ${editNumber('editThicknessAdjustment', '厚度加价 thickness_adjustment', null, null, '全, '0.0001')}
-                            ${editNumber('editWidthAdjustment', '宽度加价 width_adjustment', null, null, '全, '0.0001')}
-                            ${editNumber('editZincAdjustment', '锌层加价 zinc_adjustment', null, null, '全, '0.0001')}
-                            ${editNumber('editProcessingFee', '加工费processing_fee', '0', null, '全, '0.0001')}
-                            ${editNumber('editOtherAdjustment', '其他调整 other_adjustment', null, null, '全, '0.0001')}
+                            ${editNumber('editBasePrice', '基础价base_price', '0', null, '全', '0.0001')}
+                            ${editNumber('editThicknessAdjustment', '厚度加价 thickness_adjustment', null, null, '全', '0.0001')}
+                            ${editNumber('editWidthAdjustment', '宽度加价 width_adjustment', null, null, '全', '0.0001')}
+                            ${editNumber('editZincAdjustment', '锌层加价 zinc_adjustment', null, null, '全', '0.0001')}
+                            ${editNumber('editProcessingFee', '加工费processing_fee', '0', null, '全', '0.0001')}
+                            ${editNumber('editOtherAdjustment', '其他调整 other_adjustment', null, null, '全', '0.0001')}
                         </div>
                         <p class="text-[10px] text-[#616161] mt-2">最终价由服务端按分项自动汇总，无需手工填写。</p>
                     </div>
@@ -684,7 +684,7 @@ function auditBadge(status) {
         approved: 'bg-[#1C1C22] text-[#8E8E93] border border-[#2A2A32]',
         rejected: 'bg-[#1C1C22] text-[#8E8E93] border border-[#2A2A32]',
     };
-    const label = { pending: '待审', approved: '已通过', rejected: '已驳回 }[status] || status || '-';
+    const label = { pending: '待审', approved: '已通过', rejected: '已驳回' }[status] || status || '-';
     const cls = map[status] || 'bg-[#1C1C22] text-[#8E8E93] border border-[#2A2A32]';
     return `<span class="inline-flex items-center px-2 py-0.5 text-[10px] font-sans rounded-sm ${cls}">${esc(label)}</span>`;
 }

@@ -10,7 +10,7 @@ import {
     updateCostFilterCapsules,
     shortPartNumber,
     syncBreakdownColumnVisibility,
-} from './template.js?v=34';
+} from './template.js?v=35';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -105,7 +105,7 @@ function setExportMenuOpen(isOpen) {
 
 function applyQueryFromHash() {
     const hash = window.location.hash || '';
-    const qIndex = hash.indexOf('?');'
+    const qIndex = hash.indexOf('?');
     if (qIndex < 0) return;
     const params = new URLSearchParams(hash.slice(qIndex + 1));
     const map = {
@@ -541,8 +541,8 @@ function showDetailDrawer(row) {
         ${editPanelHtml}
 
         <div class="flex-1 overflow-y-auto p-6 space-y-4 text-[#8E8E93] bg-[#0A0A0E]">
-            ${detailBlock('基础属总, [
-                ['零件史, row.part_number || '—'],
+            ${detailBlock('基础属总', [
+                ['零件号', row.part_number || '—'],
                 ['短号', shortNo || '—'],
                 ['零件名称', row.part_name || '—'],
                 ['基地 / 工厂', `${row.location || '—'} / ${row.stamping_supplier || '—'}`],
@@ -554,7 +554,7 @@ function showDetailDrawer(row) {
                 ['成品单重', `${fmtNum(row.part_weight, 4)} kg`],
             ])}
 
-            ${detailBlock('过程计算量, [
+            ${detailBlock('过程计算量', [
                 [
                     '密度 / 损耗/ 回收',
                     `${fmtNum(row.density, 2)} g/cm³ · ${fmtNum((Number(row.material_loss_rate) || 0) * 1000, 2)}—· ${fmtNum((Number(row.scrap_recovery_rate) || 0) * 100, 1)}%`,
@@ -563,12 +563,12 @@ function showDetailDrawer(row) {
                 ['零件净量', `${fmtNum(row.finished_total_kg, 7)} kg`],
                 ['废料重量 O', `${fmtNum(row.scrap_weight_kg, 7)} kg`],
                 [
-                    '材料利用率,
+                    '材料利用率',
                     `<span class="text-[#F0F0F2] font-bold">${fmtNum(row.material_utilization_pct, 2)} %</span>`,
                 ],
             ])}
 
-            ${detailBlock('价格与吨价, [
+            ${detailBlock('价格与吨价', [
                 ['钢厂', row.steel_mill || '—'],
                 ['钢材吨价 P', `￥${fmtNum(row.steel_ton_price, 2)} /t`],
                 ['废料吨价 Q', `￥${fmtNum(row.scrap_ton_price, 2)} /t`],
@@ -595,7 +595,7 @@ function showDetailDrawer(row) {
                 ],
                 ['备注', row.remark || '—'],
                 ['来源文件', row.excel_filename || '—'],
-                ['工作表, row.excel_sheet_name || '—'],
+                ['工作表', row.excel_sheet_name || '—'],
                 ['行号', row.excel_row != null ? `第${row.excel_row} 行` : '—'],
             ])}
         </div>
@@ -649,7 +649,7 @@ async function saveManualUnitCost(costId) {
     const saveBtn = document.getElementById('costManualSaveBtn');
     if (saveBtn) {
         saveBtn.disabled = true;
-        saveBtn.textContent = '保存中—;
+        saveBtn.textContent = '保存中...'
     }
     try {
         const res = await HttpClient.patch(`${API_BASE}/${costId}`, {
@@ -663,7 +663,7 @@ async function saveManualUnitCost(costId) {
         showToast(error.message || '保存失败', 'error');
         if (saveBtn) {
             saveBtn.disabled = false;
-            saveBtn.textContent = '保存最终成本;
+            saveBtn.textContent = '保存最终成本'
         }
     }
 }

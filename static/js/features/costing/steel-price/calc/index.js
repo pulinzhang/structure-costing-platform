@@ -15,10 +15,10 @@ const STEEL_PRICE_CALC_API = '/api/steel-prices/calc';
 const STEEL_PRICE_CALC_TASK_API = '/api/steel-prices/calc/tasks';
 const STEEL_PRICE_CALC_LOGS_API = '/api/steel-prices/calc/logs';
 const POLL_INTERVAL_MS = 1500;
-const DUPLICATE_PERIOD_CALC_MESSAGE = '当前期别正在计算中，请勿重复提交。;
+const DUPLICATE_PERIOD_CALC_MESSAGE = '当前期别正在计算中，请勿重复提交。'
 
 const STATUS_META = {
-    processing: { label: '计算中, className: 'text-[#64b5f6]' },
+    processing: { label: '计算中', className: 'text-[#64b5f6]' },
     success: { label: '成功', className: 'text-[#66bb6a]' },
     partial: { label: '部分成功', className: 'text-[#ffb74d]' },
     failed: { label: '失败', className: 'text-[#ef5350]' },
@@ -391,7 +391,7 @@ function showProcessDrawer(log) {
             <div>汇总：材料 ${fmtInt(log.material_count)} · 命中 ${fmtInt(log.enriched_count)} · 无基价${fmtInt(log.no_base_count)} · 新增 ${fmtInt(log.created_count)} · 更新 ${fmtInt(log.updated_count)} · 失败 ${fmtInt(log.failed_count)}</div>
         </div>
         <div class="flex-1 overflow-y-auto overscroll-contain p-5">
-            <pre class="text-[11px] leading-5 font-mono text-[#9e9e9e] whitespace-pre-wrap break-words bg-[#111111] border border-[#262626] p-4">${esc(log.detail_text || '（无过程文本）)}</pre>
+            <pre class="text-[11px] leading-5 font-mono text-[#9e9e9e] whitespace-pre-wrap break-words bg-[#111111] border border-[#262626] p-4">${esc(log.detail_text || '（无过程文本）')}</pre>
         </div>
     `;
 
@@ -516,7 +516,7 @@ async function startCalculation() {
     }
 }
 
-function showProgress(progress = 0, msg = '已提交计算队列) {
+function showProgress(progress = 0, msg = '已提交计算队列') {
     const panel = document.getElementById('calcProgressPanel');
     if (panel) panel.classList.remove('hidden');
     updateProgress(progress, msg);
@@ -672,7 +672,7 @@ function setCalculating(isCalculating) {
     } else {
         startBtn.removeAttribute('disabled');
         startBtn.classList.remove('opacity-50', 'pointer-events-none');
-        startBtn.textContent = '开始计算;
+        startBtn.textContent = '开始计算';
         validateDataPreparation(
             document.getElementById('calcLocation')?.value || '',
             parseInt(document.getElementById('calcYear')?.value, 10),
