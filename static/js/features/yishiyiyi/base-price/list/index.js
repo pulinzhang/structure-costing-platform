@@ -22,7 +22,7 @@ const basePriceDownloadState = {
 };
 
 // API 基础路径
-const API_BASE = '/api/steel-base-prices';
+const API_BASE = '/api/yishiyiyi/base-price';
 
 /**
  * 页面初始化

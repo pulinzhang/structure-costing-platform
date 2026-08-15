@@ -23,7 +23,7 @@ const policyDownloadState = {
 };
 
 // API 基础路径
-const API_BASE = '/api/steel-price-policies';
+const API_BASE = '/api/yishiyiyi/policy';
 
 /**
  * 页面初始化

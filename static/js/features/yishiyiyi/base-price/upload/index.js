@@ -261,7 +261,7 @@ const BasePriceUploadPage = {
 
     async fetchTaskProgress(taskId) {
         const response = await HttpClient.get(
-            `/api/steel-base-prices/tasks/${encodeURIComponent(taskId)}`
+            `/api/yishiyiyi/base-price/tasks/${encodeURIComponent(taskId)}`
         );
         return response.data;
     },
@@ -359,7 +359,7 @@ const BasePriceUploadPage = {
         this.showProgress(0, '已提交解析队列');
 
         try {
-            const url = `/api/steel-base-prices/import?year=${year}&month=${month}`;
+            const url = `/api/yishiyiyi/base-price/import?year=${year}&month=${month}`;
             const response = await HttpClient.post(url, formData, {
                 timeout: 60000,
             });

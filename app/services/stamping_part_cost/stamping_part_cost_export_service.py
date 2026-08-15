@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 
 from app.common.audit import audit_status_label
 from app.repositories.bom.bom_repository import BomNodeRepository, BomSnapshotRepository
-from app.repositories.stamping.scrap_price_repository import StampingScrapPriceRepository
+from app.repositories.yishiyiyi.scrap_price.scrap_price_repository import StampingScrapPriceRepository
 from app.repositories.stamping.stamping_process_fee_repository import (
     StampingProcessFeeRepository,
 )

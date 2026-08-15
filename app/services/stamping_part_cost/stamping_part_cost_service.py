@@ -44,7 +44,7 @@ from app.models.stamping import StampingPart
 from app.models.stamping_part_cost_calc_log import StampingPartCostCalcLog
 from app.models.stamping_scrap_price import StampingScrapPrice
 from app.models.steel_price import SteelPrice
-from app.repositories.stamping.scrap_price_repository import StampingScrapPriceRepository
+from app.repositories.yishiyiyi.scrap_price.scrap_price_repository import StampingScrapPriceRepository
 from app.repositories.stamping.stamping_process_fee_repository import (
     StampingProcessFeeRepository,
 )

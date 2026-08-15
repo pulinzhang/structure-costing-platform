@@ -315,7 +315,7 @@ const PolicyUploadPage = {
 
     async fetchTaskProgress(taskId) {
         const response = await HttpClient.get(
-            `/api/steel-price-policies/tasks/${encodeURIComponent(taskId)}`
+            `/api/yishiyiyi/policy/tasks/${encodeURIComponent(taskId)}`
         );
         return response.data;
     },
@@ -417,7 +417,7 @@ const PolicyUploadPage = {
         this.showProgress(0, '已提交解析队列');
 
         try {
-            const response = await HttpClient.post('/api/steel-price-policies/upload', formData, {
+            const response = await HttpClient.post('/api/yishiyiyi/policy/upload', formData, {
                 timeout: 60000,
             });
             const taskId = response.data?.task_id;

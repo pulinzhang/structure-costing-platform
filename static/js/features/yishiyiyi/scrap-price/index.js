@@ -12,7 +12,7 @@ import {
     parsePriceInput,
 } from './template.js?v=15';
 
-const API_BASE = '/api/stamping/scrap-prices';
+const API_BASE = '/api/yishiyiyi/scrap-price';
 const DRAWER_ANIMATION_MS = 300;
 
 const scrapState = {

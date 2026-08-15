@@ -11,8 +11,8 @@ from app.schemas.vo.dashboard_vo import (
     SteelPriceCalcFilterOptionsVO,
     SteelPriceCalcStatsVO,
 )
-from app.services.steel_base_price.steel_base_price_service import SteelBasePriceService
-from app.services.steel_price_policy.steel_price_policy_service import (
+from app.services.yishiyiyi.base_price.steel_base_price_service import SteelBasePriceService
+from app.services.yishiyiyi.policy.steel_price_policy_service import (
     SteelPricePolicyService,
 )
 from app.services.stamping.stamping_service import StampingPartService

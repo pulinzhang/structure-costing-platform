@@ -5,7 +5,7 @@ from __future__ import annotations
 from sqlalchemy.orm import Session
 
 from app.models.steel_price_policy import SteelPricePolicy
-from app.repositories.steel_price_policy import SteelPricePolicyRepository
+from app.repositories.yishiyiyi.policy import SteelPricePolicyRepository
 from app.services.steel_price.calc.models import CalcRow, SteelPriceCalcRequest
 from app.services.steel_price.calc.steps.adjustments.common import (
     apply_hit,

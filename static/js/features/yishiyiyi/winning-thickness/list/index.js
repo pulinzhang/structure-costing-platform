@@ -13,7 +13,7 @@ const winningThicknessState = {
     filterLoadToken: 0,
 };
 
-const API_BASE = '/api/winning-thickness-prices';
+const API_BASE = '/api/yishiyiyi/winning-thickness';
 
 function init() {
     bindEvents();
