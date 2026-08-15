@@ -352,11 +352,11 @@ async function exportExcel() {
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
 
-        showToast(`导出成功: ${filename}`', 'success');
+        showToast(`导出成功: ${filename}`, 'success');
     } catch (error) {
         console.error('导出 Excel 失败:', error);
         if (!error.status) {
-            showToast(`导出失败: ${error.message}`', 'error');
+            showToast(`导出失败: ${error.message}`, 'error');
         }
     } finally {
         // 隐藏加载遮罩
@@ -439,7 +439,7 @@ async function batchDeletePolicies() {
 
     } catch (error) {
         console.error('删除政策失败:', error);
-        showToast(`删除失败: ${error.message}`', 'error');
+        showToast(`删除失败: ${error.message}`, 'error');
     } finally {
         // 恢复按钮状态
         if (btnDelete) {

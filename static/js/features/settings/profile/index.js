@@ -189,7 +189,7 @@ async function savePassword() {
         return;
     }
     if (password.length < MIN_PASSWORD_LENGTH) {
-        showToast(`新密码至少 ${MIN_PASSWORD_LENGTH} 个字符`', 'warning');
+        showToast(`新密码至少 ${MIN_PASSWORD_LENGTH} 个字符`, 'warning');
         document.getElementById('profileNewPassword')?.focus();
         return;
     }

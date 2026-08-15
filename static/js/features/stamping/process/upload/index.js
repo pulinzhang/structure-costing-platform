@@ -371,7 +371,7 @@ export const UploadPage = {
                     const parts = result.parts_count || 0;
                     const processes = result.processes_count || 0;
                     const summary = `${parts} 零件 / ${processes} 工序`;
-                    showToast(msg || `上传成功: ${parts} 个零件, ${processes} 道工序`', 'success');
+                    showToast(msg || `上传成功: ${parts} 个零件, ${processes} 道工序`, 'success');
                     this.addRecentUpload(fileName, locationValue, summary);
                     this.clearActiveTask();
                     this.setUploading(false);

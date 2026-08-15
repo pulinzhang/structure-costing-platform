@@ -522,7 +522,7 @@ async function exportExcel() {
         anchor.click();
         document.body.removeChild(anchor);
         window.URL.revokeObjectURL(url);
-        showToast(`导出成功: ${filename}`', 'success');
+        showToast(`导出成功: ${filename}`, 'success');
     } catch (error) {
         console.error('导出冲次单价失败:', error);
         if (!error.status) {
@@ -687,7 +687,7 @@ async function copyTemplate() {
             `${API_BASE}/copy-year?location=${encodeURIComponent(location)}&source_year=${sourceYear}&target_year=${targetYear}`
         );
 
-        showToast(`成功将。{location}」从 ${sourceYear} 年复制到 ${targetYear} 年`', 'success');
+        showToast(`成功将「${location}」从 ${sourceYear} 年复制到 ${targetYear} 年`, 'success');
 
         closeDrawer('copyDrawer', 'copyDrawerBackdrop');
         loadData(1);

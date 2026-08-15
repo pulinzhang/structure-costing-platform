@@ -781,7 +781,7 @@ async function exportExcel(exportFormat = 'process_sheet') {
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-        showToast(`导出成功: ${filename}`', 'success');
+        showToast(`导出成功: ${filename}`, 'success');
     } catch (error) {
         if (!error.status) {
             showToast(error.message || '导出失败', 'error');
