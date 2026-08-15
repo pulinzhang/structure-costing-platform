@@ -1,6 +1,6 @@
 /**
  * 冲压加工费列表页
- * 对齐钢材价格列表：HUD + 胶囊筛选 + 查看/编辑抽屉 + 批量审核/反审核/删除 + Excel 导出
+ * 对齐钢材价格列表：HUD + 胶囊筛�?+ 查看/编辑抽屉 + 批量审核/反审�?删除 + Excel 导出
  */
 
 import {
@@ -10,11 +10,15 @@ import {
     updateFeeHud,
     updateFeeFilterCapsules,
     shortPartNumber,
-} from './template.js?v=19';
+} from './template.js?v=25';
+import {
+    DEFAULT_PAGE_SIZE,
+    bindPageSizeSelect,
+} from '../../../../page-size.js?v=2';
 
 const API_BASE = '/api/stamping/process-fees';
 const DRAWER_ANIMATION_MS = 300;
-const SCOPE_REQUIRED_MESSAGE = '须选定年度、基地、冲压工厂';
+const SCOPE_REQUIRED_MESSAGE = '须选定年度、基地、冲压工�?;
 
 const TONNAGE_SOURCE_LABEL = {
     self: '自有',
@@ -26,7 +30,7 @@ const feeState = {
     records: [],
     total: 0,
     page: 1,
-    pageSize: 20,
+    pageSize: DEFAULT_PAGE_SIZE,
     totalPages: 1,
     canUpdate: true,
     advancedOpen: false,
@@ -60,6 +64,13 @@ function closeDrawer(drawerId, backdropId) {
 
 function init() {
     bindEvents();
+    bindPageSizeSelect('feePageSize', {
+        getSize: () => feeState.pageSize,
+        setSize: (size) => {
+            feeState.pageSize = size;
+        },
+        onChange: () => loadData(1),
+    });
     applyPermissionUi();
     applyHashFilters();
     fillAuditStatusOptions();
@@ -113,7 +124,7 @@ function fillAuditStatusOptions() {
         <option value="">全部</option>
         <option value="pending">待审</option>
         <option value="approved">已通过</option>
-        <option value="rejected">已驳回</option>
+        <option value="rejected">已驳�?/option>
     `;
 }
 
@@ -121,7 +132,7 @@ function setAdvancedOpen(isOpen) {
     feeState.advancedOpen = isOpen;
     document.getElementById('feeAdvancedFilterPanel')?.classList.toggle('hidden', !isOpen);
     const label = document.getElementById('feeAdvancedFilterLabel');
-    if (label) label.textContent = isOpen ? '收起高级筛选' : '展开高级筛选';
+    if (label) label.textContent = isOpen ? '收起高级筛�? : '展开高级筛�?;
 }
 
 function bindEvents() {
@@ -196,14 +207,6 @@ function bindRowEvents() {
             if (record) openEditDrawer(record);
         });
     });
-    document.querySelectorAll('#feeTableBody tr[data-id]').forEach((tr) => {
-        tr.addEventListener('click', (event) => {
-            if (event.target.closest('button')) return;
-            const id = Number(tr.dataset.id);
-            const record = feeState.records.find((item) => item.id === id);
-            if (record) openViewDrawer(record);
-        });
-    });
 }
 
 function bindEditDrawerEvents() {
@@ -251,7 +254,7 @@ async function loadFilterOptions() {
         await loadLocationOptions();
         await loadSupplierOptions();
     } catch (error) {
-        showToast(error.message || '加载筛选失败', 'error');
+        showToast(error.message || '加载筛选失�?, 'error');
     }
 }
 
@@ -358,8 +361,8 @@ async function loadData(page = 1) {
         feeState.totalPages = data.total_pages || Math.ceil(feeState.total / feeState.pageSize) || 1;
 
         const totalLabel = document.getElementById('feeTotalLabel');
-        if (totalLabel) totalLabel.textContent = `共 ${feeState.total} 条`;
-        updateFeeHud(feeState.total, feeState.records);
+        if (totalLabel) totalLabel.textContent = `�?${feeState.total} 条`;
+        updateFeeHud(feeState.total, data.filters?.summary || null);
 
         if (!feeState.records.length) {
             empty?.classList.remove('hidden');
@@ -375,6 +378,7 @@ async function loadData(page = 1) {
     } catch (error) {
         showToast(error.message || '加载失败', 'error');
         empty?.classList.remove('hidden');
+        updateFeeHud(0, null);
     } finally {
         loading?.classList.add('hidden');
     }
@@ -386,7 +390,7 @@ function fillPartNumberFields(prefix, partNumber) {
     const full = partNumber || '';
     const shortNo = shortPartNumber(full);
     if (shortEl) {
-        shortEl.textContent = shortNo || (full || '—');
+        shortEl.textContent = shortNo || (full || '�?);
         shortEl.classList.toggle('text-xl', Boolean(shortNo));
         shortEl.classList.toggle('text-xs', !shortNo);
         shortEl.classList.toggle('text-[#cccccc]', !shortNo);
@@ -400,12 +404,12 @@ function fillPartNumberFields(prefix, partNumber) {
 
 function fillViewField(id, value) {
     const el = document.getElementById(id);
-    if (el) el.textContent = value == null || value === '' ? '—' : String(value);
+    if (el) el.textContent = value == null || value === '' ? '�? : String(value);
 }
 
 function formatDecimal(value, digits = 3) {
     const numeric = Number(value);
-    if (value === null || value === undefined || Number.isNaN(numeric)) return '—';
+    if (value === null || value === undefined || Number.isNaN(numeric)) return '�?;
     return numeric.toLocaleString('zh-CN', {
         minimumFractionDigits: digits,
         maximumFractionDigits: digits,
@@ -413,13 +417,13 @@ function formatDecimal(value, digits = 3) {
 }
 
 function formatDateTime(value) {
-    if (!value) return '—';
+    if (!value) return '�?;
     const text = String(value).replace('T', ' ');
     return text.length >= 19 ? text.slice(0, 19) : text;
 }
 
 function auditStatusLabel(status) {
-    return { pending: '待审', approved: '已通过', rejected: '已驳回' }[status] || status || '—';
+    return { pending: '待审', approved: '已通过', rejected: '已驳�? }[status] || status || '�?;
 }
 
 function openViewDrawer(record) {
@@ -479,7 +483,7 @@ function fillViewFieldsFromRecord(record) {
 async function loadFeeDetail(feeId) {
     const container = document.getElementById('feeViewProcessItems');
     if (container) {
-        container.innerHTML = '<div class="px-4 py-6 text-[11px] text-[#616161]">加载中...</div>';
+        container.innerHTML = '<div class="px-4 py-6 text-[11px] text-[#616161]">加载�?..</div>';
     }
     try {
         const res = await HttpClient.get(`${API_BASE}/${feeId}`);
@@ -502,15 +506,15 @@ function renderProcessItems(items) {
         return;
     }
     const rows = items.map((item) => {
-        const sourceLabel = TONNAGE_SOURCE_LABEL[item.tonnage_source] || item.tonnage_source || '—';
+        const sourceLabel = TONNAGE_SOURCE_LABEL[item.tonnage_source] || item.tonnage_source || '�?;
         const inheritHint = item.tonnage_source === 'inherited'
             ? `${esc(item.inherited_from_part_number || '')} / ${esc(item.inherited_from_process_seq || '')}`
-            : '—';
+            : '�?;
         return `
             <tr class="hover:bg-[#ffffff]/[0.02] transition-colors">
-                <td class="px-3 py-2 text-[11px] font-mono text-[#9e9e9e] whitespace-nowrap">${esc(item.process_seq || '—')}</td>
-                <td class="px-3 py-2 text-[11px] text-[#cccccc] whitespace-nowrap">${esc(item.process_code || '—')}</td>
-                <td class="px-3 py-2 text-[11px] text-right font-mono tabular-nums text-[#9e9e9e]">${esc(item.resolved_tonnage != null ? `${item.resolved_tonnage}T` : '—')}</td>
+                <td class="px-3 py-2 text-[11px] font-mono text-[#9e9e9e] whitespace-nowrap">${esc(item.process_seq || '�?)}</td>
+                <td class="px-3 py-2 text-[11px] text-[#cccccc] whitespace-nowrap">${esc(item.process_code || '�?)}</td>
+                <td class="px-3 py-2 text-[11px] text-right font-mono tabular-nums text-[#9e9e9e]">${esc(item.resolved_tonnage != null ? `${item.resolved_tonnage}T` : '�?)}</td>
                 <td class="px-3 py-2 text-[11px] text-[#9e9e9e] whitespace-nowrap">${esc(sourceLabel)}</td>
                 <td class="px-3 py-2 text-[11px] text-right font-mono tabular-nums text-[#9e9e9e]">${formatDecimal(item.cost_ratio, 2)}</td>
                 <td class="px-3 py-2 text-[11px] text-right font-mono tabular-nums text-[#9e9e9e]">${formatDecimal(item.price_per_stroke, 3)}</td>
@@ -528,7 +532,7 @@ function renderProcessItems(items) {
                     <th class="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161]">来源</th>
                     <th class="px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161]">比例</th>
                     <th class="px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161]">冲次单价</th>
-                    <th class="px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161]">本序费</th>
+                    <th class="px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161]">本序�?/th>
                     <th class="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161]">计算依据</th>
                 </tr>
             </thead>
@@ -538,7 +542,7 @@ function renderProcessItems(items) {
 
 function openEditDrawer(record) {
     if (!feeState.canUpdate) {
-        showToast('无编辑权限', 'warning');
+        showToast('无编辑权�?, 'warning');
         return;
     }
     if (record.audit_status === 'approved') {
@@ -605,7 +609,7 @@ async function exportExcel() {
         && !filters.audit_status
         && !filters.part_number
     ) {
-        showToast('请至少选择一个筛选条件后再导出', 'warning');
+        showToast('请至少选择一个筛选条件后再导�?, 'warning');
         return;
     }
 
@@ -615,7 +619,7 @@ async function exportExcel() {
         btn.disabled = true;
         btn.innerHTML = `
             <div class="w-3 h-3 border border-[#ef5350] border-t-transparent rounded-full animate-spin"></div>
-            导出中...
+            导出�?..
         `;
     }
 
@@ -628,7 +632,7 @@ async function exportExcel() {
                 audit_status: filters.audit_status || undefined,
                 part_number: filters.part_number || undefined,
             },
-            defaultFilename: '冲压加工费导出.xlsx',
+            defaultFilename: '冲压加工费导�?xlsx',
         });
 
         const url = window.URL.createObjectURL(blob);
@@ -641,7 +645,7 @@ async function exportExcel() {
         window.URL.revokeObjectURL(url);
         showToast(`导出成功: ${filename}`, 'success');
     } catch (error) {
-        console.error('导出冲压加工费失败:', error);
+        console.error('导出冲压加工费失�?', error);
         if (!error.status) {
             showToast(error.message || '导出失败', 'error');
         }
@@ -661,7 +665,7 @@ async function batchDelete() {
         return;
     }
     if (!window.confirm(
-        `确定批量删除未审核记录吗？\n\n年度: ${filters.year} | 基地: ${filters.location} | 工厂: ${filters.stamping_supplier}\n\n仅删除待审/已驳回；已审核通过会跳过。此操作不可恢复！`,
+        `确定批量删除未审核记录吗？\n\n年度: ${filters.year} | 基地: ${filters.location} | 工厂: ${filters.stamping_supplier}\n\n仅删除待�?已驳回；已审核通过会跳过。此操作不可恢复！`,
     )) {
         return;
     }
@@ -672,7 +676,7 @@ async function batchDelete() {
         btn.disabled = true;
         btn.innerHTML = `
             <div class="w-3 h-3 border border-[#ef5350] border-t-transparent rounded-full animate-spin"></div>
-            删除中...
+            删除�?..
         `;
     }
 
@@ -686,7 +690,7 @@ async function batchDelete() {
         const deleted = result.deleted_count ?? 0;
         const skipped = result.skipped_approved_count ?? 0;
         showToast(
-            res.message || `已删除 ${deleted} 条` + (skipped ? `，跳过已审核 ${skipped} 条` : ''),
+            res.message || `已删�?${deleted} 条` + (skipped ? `，跳过已审核 ${skipped} 条` : ''),
             deleted > 0 ? 'success' : 'warning',
         );
         await loadFilterOptions();
@@ -731,24 +735,24 @@ function openBatchAuditDrawer(mode) {
     const summaryEl = document.getElementById('feeBatchAuditFilterSummary');
 
     if (modeEl) modeEl.value = isApprove ? 'approve' : 'reverse';
-    if (titleEl) titleEl.textContent = isApprove ? '批量审核' : '批量反审核';
+    if (titleEl) titleEl.textContent = isApprove ? '批量审核' : '批量反审�?;
     if (hintEl) {
         hintEl.textContent = isApprove
-            ? '仅处理待审/已驳回；已通过记录会跳过。'
-            : '仅处理已通过记录；其余状态会跳过。反审核意见必填。';
+            ? '仅处理待�?已驳回；已通过记录会跳过�?
+            : '仅处理已通过记录；其余状态会跳过。反审核意见必填�?;
     }
-    if (operatorLabel) operatorLabel.textContent = isApprove ? '审核人' : '反审核人';
+    if (operatorLabel) operatorLabel.textContent = isApprove ? '审核�? : '反审核人';
     if (operatorDisplay) {
         operatorDisplay.textContent = getSessionDisplayName() || '（当前登录用户）';
     }
     if (remarkLabel) {
         remarkLabel.innerHTML = isApprove
             ? '审核意见'
-            : '反审核意见 <span class="text-[#d32f2f]">*</span>';
+            : '反审核意�?<span class="text-[#d32f2f]">*</span>';
     }
     if (remarkEl) {
         remarkEl.value = '';
-        remarkEl.placeholder = isApprove ? '可选填写审核意见' : '必填反审核原因';
+        remarkEl.placeholder = isApprove ? '可选填写审核意�? : '必填反审核原�?;
     }
     if (summaryEl) {
         summaryEl.textContent = `年度 ${filters.year} · 基地 ${filters.location} · 工厂 ${filters.stamping_supplier}`;
@@ -767,7 +771,7 @@ async function submitBatchAudit() {
     const filters = collectScopeFilters();
     const remark = document.getElementById('feeBatchAuditRemark')?.value.trim() || '';
     if (mode === 'reverse' && !remark) {
-        showToast('反审核意见必填', 'warning');
+        showToast('反审核意见必�?, 'warning');
         return;
     }
 
@@ -789,7 +793,7 @@ async function submitBatchAudit() {
     feeState.batchAuditSubmitting = true;
     if (btn) {
         btn.disabled = true;
-        btn.textContent = '提交中…';
+        btn.textContent = '提交中�?;
     }
 
     try {

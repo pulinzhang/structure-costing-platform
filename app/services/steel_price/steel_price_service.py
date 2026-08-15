@@ -78,8 +78,7 @@ class SteelPriceService:
         self, db: Session, query: SteelPriceQuery
     ) -> tuple[list[SteelPriceResponse], int, SteelPriceFilterOptions]:
         skip = (query.page - 1) * query.size
-        records, total = self.repository.paginate(
-            db,
+        filter_kwargs = dict(
             year=query.year,
             month=query.month,
             location=query.location.strip() if query.location else None,
@@ -87,11 +86,17 @@ class SteelPriceService:
             grade=query.grade.strip() if query.grade else None,
             steel_mill=query.steel_mill.strip() if query.steel_mill else None,
             audit_status=query.audit_status.strip() if query.audit_status else None,
+        )
+        records, total = self.repository.paginate(
+            db,
+            **filter_kwargs,
             skip=skip,
             limit=query.size,
         )
         rows = [SteelPriceResponse.model_validate(record) for record in records]
-        filters = SteelPriceFilterOptions.model_validate(self.repository.get_filter_options(db))
+        options = self.repository.get_filter_options(db)
+        options["summary"] = self.repository.summarize_by_filters(db, **filter_kwargs)
+        filters = SteelPriceFilterOptions.model_validate(options)
         return rows, total, filters
 
     def get_by_id(self, db: Session, record_id: int) -> Optional[SteelPriceResponse]:

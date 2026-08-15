@@ -4,12 +4,21 @@
  * 用于测试部门核对数据，主子表联合查询导出 Excel
  */
 
-import { policyDownloadTemplate, renderPolicyRows } from './template.js?v=26';
+import { policyDownloadTemplate, renderPolicyRows } from './template.js?v=28';
+import {
+    DEFAULT_PREVIEW_PAGE_SIZE,
+    PREVIEW_PAGE_SIZE_OPTIONS,
+    bindPageSizeSelect,
+    renderPageButtons,
+} from '../../../../page-size.js?v=2';
 
 // 状态管理
 const policyDownloadState = {
     records: [],
     total: 0,
+    page: 1,
+    pageSize: DEFAULT_PREVIEW_PAGE_SIZE,
+    totalPages: 1,
     filtersLoaded: false,
 };
 
@@ -21,6 +30,15 @@ const API_BASE = '/api/steel-price-policies';
  */
 function init() {
     bindEvents();
+    bindPageSizeSelect('policyPageSize', {
+        getSize: () => policyDownloadState.pageSize,
+        setSize: (size) => {
+            policyDownloadState.pageSize = size;
+        },
+        onChange: () => previewData(1),
+        options: PREVIEW_PAGE_SIZE_OPTIONS,
+        defaultSize: DEFAULT_PREVIEW_PAGE_SIZE,
+    });
     loadFilterOptions();
     applyPermissionUi();
 }
@@ -116,7 +134,7 @@ function bindEvents() {
     // 预览按钮
     const btnPreview = document.getElementById('btnPreview');
     if (btnPreview) {
-        btnPreview.addEventListener('click', () => previewData());
+        btnPreview.addEventListener('click', () => previewData(1));
     }
 
     // 导出按钮
@@ -148,7 +166,7 @@ function bindEvents() {
         gradeInput.addEventListener('keydown', event => {
             if (event.key === 'Enter') {
                 event.preventDefault();
-                previewData();
+                previewData(1);
             }
         });
     }
@@ -158,6 +176,13 @@ function bindEvents() {
     if (millSelect) {
         millSelect.addEventListener('input', () => updateConditionsDisplay());
     }
+
+    document.getElementById('policyPagination')?.addEventListener('click', (event) => {
+        const btn = event.target.closest('.policy-page-btn');
+        if (!btn || btn.disabled) return;
+        const page = Number(btn.getAttribute('data-page'));
+        if (Number.isFinite(page) && page >= 1) previewData(page);
+    });
 }
 
 /**
@@ -207,7 +232,7 @@ function applyFiltersToParams(params, filters) {
 /**
  * 预览数据
  */
-async function previewData() {
+async function previewData(page = 1) {
     const filters = collectFilters();
 
     if (!hasAnyFilter(filters)) {
@@ -232,16 +257,19 @@ async function previewData() {
     try {
         const params = {};
         applyFiltersToParams(params, filters);
-        // 预览时不分页，获取较多数据
-        params.page = 1;
-        params.size = 1000;
+        params.page = page;
+        params.size = policyDownloadState.pageSize;
 
         const response = await HttpClient.get(`${API_BASE}/export-preview`, { params });
         const data = response.data || {};
         const records = Array.isArray(data.items) ? data.items : [];
 
+        policyDownloadState.page = data.page || page;
         policyDownloadState.records = records;
         policyDownloadState.total = data.total || records.length;
+        policyDownloadState.totalPages =
+            data.total_pages ||
+            Math.max(1, Math.ceil(policyDownloadState.total / policyDownloadState.pageSize));
 
         // 更新记录数
         const recordCount = document.getElementById('recordCount');
@@ -252,6 +280,14 @@ async function previewData() {
         // 渲染预览表格
         if (tableBody) {
             tableBody.innerHTML = renderPolicyRows(records);
+        }
+        const pagination = document.getElementById('policyPagination');
+        if (pagination) {
+            pagination.innerHTML = renderPageButtons(
+                policyDownloadState.page,
+                policyDownloadState.totalPages,
+                'policy-page-btn',
+            );
         }
     } catch (error) {
         console.error('预览数据失败:', error);
@@ -268,6 +304,8 @@ async function previewData() {
         if (recordCount) {
             recordCount.textContent = '0';
         }
+        const pagination = document.getElementById('policyPagination');
+        if (pagination) pagination.innerHTML = '';
     }
 }
 
@@ -415,43 +453,7 @@ async function batchDeletePolicies() {
  * 刷新预览数据（供删除成功后调用）
  */
 async function refreshPreview() {
-    const filters = collectFilters();
-
-    try {
-        const params = {};
-        applyFiltersToParams(params, filters);
-        params.page = 1;
-        params.size = 1000;
-
-        const response = await HttpClient.get(`${API_BASE}/export-preview`, { params });
-        const data = response.data || {};
-        const records = Array.isArray(data.items) ? data.items : [];
-
-        policyDownloadState.records = records;
-        policyDownloadState.total = data.total || records.length;
-
-        const recordCount = document.getElementById('recordCount');
-        if (recordCount) {
-            recordCount.textContent = policyDownloadState.total;
-        }
-
-        const tableBody = document.getElementById('policyPreviewBody');
-        if (tableBody) {
-            tableBody.innerHTML = renderPolicyRows(records);
-        }
-    } catch (error) {
-        console.error('刷新预览失败:', error);
-        const tableBody = document.getElementById('policyPreviewBody');
-        if (tableBody) {
-            tableBody.innerHTML = `
-                <tr>
-                    <td colspan="20" class="px-4 py-8 text-center text-[#d32f2f] text-xs">
-                        刷新失败: ${esc(error.message || '未知错误')}
-                    </td>
-                </tr>
-            `;
-        }
-    }
+    await previewData(1);
 }
 
 /**

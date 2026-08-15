@@ -2,8 +2,10 @@
  * Users Template
  * 用户管理
  *
- * 抽屉：编辑/新增、修改密码、删除确认、授权
+ * 抽屉：编�?新增、修改密码、删除确认、授�?
  */
+
+import { pageSizeSelectHtml } from '../../../page-size.js?v=2';
 
 export function usersTemplate() {
     return `
@@ -23,7 +25,7 @@ export function usersTemplate() {
                 <div class="bg-[#121215] border border-[#2c2c2c] p-3.5 flex items-center justify-between relative overflow-hidden hover:border-[#2e7d32]/50 transition-colors">
                     <div class="absolute left-0 top-0 bottom-0 w-[3px] bg-[#4caf50] shadow-[0_0_8px_rgba(76,175,80,0.4)]"></div>
                     <div class="pl-2 space-y-0.5">
-                        <div class="text-[10px] font-semibold text-[#4caf50]/90 tracking-wider">本页启用</div>
+                        <div class="text-[10px] font-semibold text-[#4caf50]/90 tracking-wider">启用</div>
                         <div class="text-2xl font-mono font-bold text-[#4caf50] tracking-tight" id="statActiveUsers">-</div>
                     </div>
                     <div class="flex items-center gap-1.5 px-2 py-0.5 bg-[#2e7d32]/20 border border-[#2e7d32]/40 text-[#4caf50] text-[10px]">
@@ -35,7 +37,7 @@ export function usersTemplate() {
                 <div class="bg-[#121215] border border-[#2c2c2c] p-3.5 flex items-center justify-between relative overflow-hidden hover:border-[#d32f2f]/50 transition-colors">
                     <div class="absolute left-0 top-0 bottom-0 w-[3px] bg-[#d32f2f] shadow-[0_0_8px_rgba(211,47,47,0.5)]"></div>
                     <div class="pl-2 space-y-0.5">
-                        <div class="text-[10px] font-semibold text-[#d32f2f]/90 tracking-wider">本页管理员</div>
+                        <div class="text-[10px] font-semibold text-[#d32f2f]/90 tracking-wider">管理�?/div>
                         <div class="text-2xl font-mono font-bold text-[#d32f2f] tracking-tight" id="statAdminUsers">-</div>
                     </div>
                     <div class="p-1.5 bg-[#d32f2f]/15 border border-[#d32f2f]/30 text-[#d32f2f]">
@@ -44,7 +46,7 @@ export function usersTemplate() {
                 </div>
             </div>
 
-            <!-- 主面板 -->
+            <!-- 主面�?-->
             <div class="bg-[#121215] border border-[#2c2c2c]">
 
                 <div class="p-3 border-b border-[#222222] flex flex-wrap items-center justify-between gap-3 bg-[#16161a]">
@@ -59,7 +61,7 @@ export function usersTemplate() {
 
                         <select id="filterIsActive"
                                 class="h-8 px-3 text-xs bg-[#0a0a0c] border border-[#2c2c2c] text-[#9e9e9e] cursor-pointer focus:outline-none focus:border-[#ff5252] transition-colors">
-                            <option value="">全部状态</option>
+                            <option value="">全部状�?/option>
                             <option value="true">启用</option>
                             <option value="false">停用</option>
                         </select>
@@ -85,9 +87,9 @@ export function usersTemplate() {
                                 <th class="px-4 py-3 text-[10px] font-semibold tracking-wider">用户信息</th>
                                 <th class="px-4 py-3 text-[10px] font-semibold tracking-wider">部门</th>
                                 <th class="px-4 py-3 text-[10px] font-semibold tracking-wider">联系方式</th>
-                                <th class="px-4 py-3 text-[10px] font-semibold tracking-wider text-center">状态</th>
+                                <th class="px-4 py-3 text-[10px] font-semibold tracking-wider text-center">状�?/th>
                                 <th class="px-4 py-3 text-[10px] font-semibold tracking-wider">创建时间</th>
-                                <th class="px-4 py-3 text-[10px] font-semibold tracking-wider text-right pr-6 w-36">操作</th>
+                                <th class="p-0 w-9" aria-label="操作"></th>
                             </tr>
                         </thead>
                         <tbody id="usersTableBody" class="divide-y divide-[#222222]">
@@ -96,7 +98,10 @@ export function usersTemplate() {
                 </div>
 
                 <div class="flex items-center justify-between px-4 py-2.5 border-t border-[#222222] bg-[#0e0e11]" id="paginationContainer">
-                    <span id="totalCountPagination" class="text-xs text-[#616161] font-mono"></span>
+                    <div class="flex items-center gap-3 min-w-0">
+                        <span id="totalCountPagination" class="text-xs text-[#616161] font-mono"></span>
+                        ${pageSizeSelectHtml('usersPageSize')}
+                    </div>
                     <div class="flex items-center gap-1" id="paginationBtns"></div>
                 </div>
 
@@ -110,7 +115,7 @@ export function usersTemplate() {
 
                 <div id="loadingState" class="hidden flex flex-col items-center justify-center py-16 gap-2">
                     <div class="w-5 h-5 border-2 border-[#2c2c2c] border-t-[#d32f2f] rounded-full animate-spin"></div>
-                    <span class="text-[11px] text-[#616161]">加载中...</span>
+                    <span class="text-[11px] text-[#616161]">加载�?..</span>
                 </div>
             </div>
         </div>
@@ -125,7 +130,7 @@ export function usersTemplate() {
                     <span class="w-1 h-3.5 bg-[#d32f2f]"></span>
                     <h5 class="text-xs font-semibold text-white tracking-wider" id="editDrawerTitle">编辑用户</h5>
                 </div>
-                <button type="button" id="closeEditDrawer" class="text-[#616161] hover:text-white w-6 h-6 flex items-center justify-center">✕</button>
+                <button type="button" id="closeEditDrawer" class="text-[#616161] hover:text-white w-6 h-6 flex items-center justify-center">�?/button>
             </div>
 
             <div class="flex-1 min-h-0 overflow-y-auto p-5" id="editDrawerContent">
@@ -135,7 +140,7 @@ export function usersTemplate() {
                         <label class="text-[10px] font-semibold text-[#616161] tracking-wider mb-1 block">登录账号 <span class="text-[#d32f2f]">*</span></label>
                         <input type="text" id="editUsername" required minlength="2" maxlength="50"
                                class="w-full h-8 px-3 text-xs bg-[#0a0a0c] border border-[#2c2c2c] text-white placeholder:text-[#616161] focus:outline-none focus:border-[#ff5252] transition-colors">
-                        <p id="editUsernameHint" class="hidden text-[10px] text-[#616161] mt-1">编辑时账号不可修改</p>
+                        <p id="editUsernameHint" class="hidden text-[10px] text-[#616161] mt-1">编辑时账号不可修�?/p>
                     </div>
                     <div id="editPasswordGroup">
                         <label class="text-[10px] font-semibold text-[#616161] tracking-wider mb-1 block">登录密码 <span class="text-[#d32f2f]">*</span></label>
@@ -149,7 +154,7 @@ export function usersTemplate() {
                                    class="w-full h-8 px-3 text-xs bg-[#0a0a0c] border border-[#2c2c2c] text-white focus:outline-none focus:border-[#ff5252] transition-colors">
                         </div>
                         <div>
-                            <label class="text-[10px] font-semibold text-[#616161] tracking-wider mb-1 block">所属部门</label>
+                            <label class="text-[10px] font-semibold text-[#616161] tracking-wider mb-1 block">所属部�?/label>
                             <input type="text" id="editDepartment" maxlength="50"
                                    class="w-full h-8 px-3 text-xs bg-[#0a0a0c] border border-[#2c2c2c] text-white focus:outline-none focus:border-[#ff5252] transition-colors">
                         </div>
@@ -167,7 +172,7 @@ export function usersTemplate() {
                         </div>
                     </div>
                     <div>
-                        <label class="text-[10px] font-semibold text-[#616161] tracking-wider mb-1 block">账号状态</label>
+                        <label class="text-[10px] font-semibold text-[#616161] tracking-wider mb-1 block">账号状�?/label>
                         <select id="editIsActive" class="w-full h-8 px-3 text-xs bg-[#0a0a0c] border border-[#2c2c2c] text-[#9e9e9e] focus:outline-none focus:border-[#ff5252] transition-colors">
                             <option value="true">启用</option>
                             <option value="false">停用</option>
@@ -191,22 +196,22 @@ export function usersTemplate() {
                     <span class="w-1 h-3.5 bg-[#f57f17]"></span>
                     <h5 class="text-xs font-semibold text-white tracking-wider">修改密码</h5>
                 </div>
-                <button type="button" id="closePasswordDrawer" class="text-[#616161] hover:text-white">✕</button>
+                <button type="button" id="closePasswordDrawer" class="text-[#616161] hover:text-white">�?/button>
             </div>
             <div class="flex-1 p-5 space-y-4">
                 <form id="passwordForm" class="space-y-4">
                     <input type="hidden" id="passwordUserId" value="">
                     <div class="p-3 bg-[#0a0a0c] border border-[#2c2c2c] text-xs">
-                        <span class="text-[#616161]">目标账号：</span>
+                        <span class="text-[#616161]">目标账号�?/span>
                         <span id="passwordUsername" class="text-[#d32f2f] font-mono font-semibold ml-1"></span>
                     </div>
                     <div>
-                        <label class="text-[10px] font-semibold text-[#616161] tracking-wider mb-1 block">新密码 <span class="text-[#d32f2f]">*</span></label>
+                        <label class="text-[10px] font-semibold text-[#616161] tracking-wider mb-1 block">新密�?<span class="text-[#d32f2f]">*</span></label>
                         <input type="password" id="newPassword" required minlength="4" maxlength="64"
                                class="w-full h-8 px-3 text-xs bg-[#0a0a0c] border border-[#2c2c2c] text-white focus:outline-none focus:border-[#ff5252] transition-colors" autocomplete="new-password">
                     </div>
                     <div>
-                        <label class="text-[10px] font-semibold text-[#616161] tracking-wider mb-1 block">确认新密码 <span class="text-[#d32f2f]">*</span></label>
+                        <label class="text-[10px] font-semibold text-[#616161] tracking-wider mb-1 block">确认新密�?<span class="text-[#d32f2f]">*</span></label>
                         <input type="password" id="confirmPassword" required minlength="4" maxlength="64"
                                class="w-full h-8 px-3 text-xs bg-[#0a0a0c] border border-[#2c2c2c] text-white focus:outline-none focus:border-[#ff5252] transition-colors" autocomplete="new-password">
                     </div>
@@ -227,16 +232,16 @@ export function usersTemplate() {
                     <span class="w-1 h-3.5 bg-[#c62828]"></span>
                     <h5 class="text-xs font-semibold text-white tracking-wider">确认删除</h5>
                 </div>
-                <button type="button" id="closeDeleteDrawer" class="text-[#616161] hover:text-white">✕</button>
+                <button type="button" id="closeDeleteDrawer" class="text-[#616161] hover:text-white">�?/button>
             </div>
             <div class="flex-1 p-5">
                 <input type="hidden" id="deleteUserId" value="">
                 <div class="p-3 bg-[#c62828]/15 border border-[#c62828]/40 mb-3">
                     <p class="text-xs text-[#9e9e9e]">
-                        确认删除用户 <span id="deleteUsername" class="text-[#d32f2f] font-mono font-bold"></span> ？
+                        确认删除用户 <span id="deleteUsername" class="text-[#d32f2f] font-mono font-bold"></span> �?
                     </p>
                 </div>
-                <p class="text-[11px] text-[#616161]">此操作不可恢复。</p>
+                <p class="text-[11px] text-[#616161]">此操作不可恢复�?/p>
             </div>
             <div class="px-5 py-3 border-t border-[#2c2c2c] flex items-center justify-end gap-2 bg-[#16161a]">
                 <button type="button" id="cancelDeleteBtn" class="px-4 py-1.5 text-xs text-[#9e9e9e] hover:text-white border border-[#2c2c2c]">取消</button>
@@ -253,10 +258,10 @@ export function usersTemplate() {
                     <span class="w-1 h-3.5 bg-[#4caf50]"></span>
                     <div>
                         <h5 class="text-xs font-semibold text-white tracking-wider">用户授权</h5>
-                        <p class="text-[11px] text-[#616161] mt-0.5">用户：<span id="grantUsername" class="text-[#ffffff] font-mono font-semibold"></span></p>
+                        <p class="text-[11px] text-[#616161] mt-0.5">用户�?span id="grantUsername" class="text-[#ffffff] font-mono font-semibold"></span></p>
                     </div>
                 </div>
-                <button type="button" id="closeGrantDrawer" class="text-[#616161] hover:text-white">✕</button>
+                <button type="button" id="closeGrantDrawer" class="text-[#616161] hover:text-white">�?/button>
             </div>
 
             <div class="flex-1 min-h-0 overflow-y-auto p-5">
@@ -278,7 +283,7 @@ export function usersTemplate() {
 }
 
 /**
- * 渲染表格行
+ * 渲染表格�?
  */
 export function renderTableRows(records) {
     if (!records || !Array.isArray(records) || records.length === 0) {
@@ -300,12 +305,12 @@ export function renderTableRows(records) {
         const canEdit = hasPermission('op:settings-users:update');
         const canPassword = hasPermission('op:settings-users:password');
         const canDelete = hasPermission('op:settings-users:delete');
-        // 管理员账号本身拥有全量权限，不对管理员展示授权入口
+        // 管理员账号本身拥有全量权限，不对管理员展示授权入�?
         const showGrant = !isAdminUser && hasPermission('op:settings-users:grant');
 
-        const firstLetter = (record.username || '用').charAt(0).toUpperCase();
+        const firstLetter = (record.username || '�?).charAt(0).toUpperCase();
         const adminBadge = isAdminUser
-            ? `<span class="ml-2 px-1.5 py-0.5 text-[9px] font-semibold bg-[#d32f2f]/20 text-[#d32f2f] border border-[#d32f2f]/40">管理员</span>`
+            ? `<span class="ml-2 px-1.5 py-0.5 text-[9px] font-semibold bg-[#d32f2f]/20 text-[#d32f2f] border border-[#d32f2f]/40">管理�?/span>`
             : '';
 
         const deptDisplay = record.department
@@ -361,7 +366,7 @@ function hasPermission(code) {
     if (typeof window.can === 'function') {
         return window.can(code);
     }
-    // can 尚未挂载时：管理员会话仍可操作；否则与编辑等按钮一致默认放行
+    // can 尚未挂载时：管理员会话仍可操作；否则与编辑等按钮一致默认放�?
     try {
         const raw = localStorage.getItem('brabus_user');
         const session = raw ? JSON.parse(raw) : null;
@@ -404,7 +409,7 @@ export function renderPagination(currentPage, totalPages) {
 
     buttons += `
         <button class="page-btn px-2 h-6 text-[11px] border ${currentPage === 1 ? 'border-[#2c2c2c]/50 text-[#333333] cursor-not-allowed' : 'border-[#2c2c2c] text-[#9e9e9e] hover:text-white hover:bg-[#262626]'} transition-all"
-                data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}>上一页</button>
+                data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}>上一�?/button>
     `;
 
     const maxVisible = 5;
@@ -416,7 +421,7 @@ export function renderPagination(currentPage, totalPages) {
 
     if (startPage > 1) {
         buttons += `<button class="page-btn w-6 h-6 text-[11px] border border-[#2c2c2c] text-[#9e9e9e] hover:text-white hover:bg-[#262626] transition-all" data-page="1">1</button>`;
-        if (startPage > 2) buttons += `<span class="px-1 text-[#616161] text-xs">…</span>`;
+        if (startPage > 2) buttons += `<span class="px-1 text-[#616161] text-xs">�?/span>`;
     }
 
     for (let i = startPage; i <= endPage; i++) {
@@ -428,13 +433,13 @@ export function renderPagination(currentPage, totalPages) {
     }
 
     if (endPage < totalPages) {
-        if (endPage < totalPages - 1) buttons += `<span class="px-1 text-[#616161] text-xs">…</span>`;
+        if (endPage < totalPages - 1) buttons += `<span class="px-1 text-[#616161] text-xs">�?/span>`;
         buttons += `<button class="page-btn w-6 h-6 text-[11px] border border-[#2c2c2c] text-[#9e9e9e] hover:text-white hover:bg-[#262626] transition-all" data-page="${totalPages}">${totalPages}</button>`;
     }
 
     buttons += `
         <button class="page-btn px-2 h-6 text-[11px] border ${currentPage === totalPages ? 'border-[#2c2c2c]/50 text-[#333333] cursor-not-allowed' : 'border-[#2c2c2c] text-[#9e9e9e] hover:text-white hover:bg-[#262626]'} transition-all"
-                data-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''}>下一页</button>
+                data-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''}>下一�?/button>
     `;
 
     return buttons;

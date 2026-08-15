@@ -1,22 +1,24 @@
 /**
  * Tonnage Price Template
- * 冲次单价维护页面 — Brabus Carbon & Precision Dark
+ * 冲次单价维护页面 �?Brabus Carbon & Precision Dark
  *
- * 抽屉式交互（与零件列表 /partDrawer 对齐）：
- * - 编辑/新增  → editDrawer（640px 右侧滑入）
- * - 复制模板  → copyDrawer（480px 右侧滑入）
- * - 删除确认  → deleteDrawer（380px 右侧滑入）
+ * 抽屉式交互（与零件列�?/partDrawer 对齐）：
+ * - 编辑/新增  �?editDrawer�?40px 右侧滑入�?
+ * - 复制模板  �?copyDrawer�?80px 右侧滑入�?
+ * - 删除确认  �?deleteDrawer�?80px 右侧滑入�?
  */
+
+import { pageSizeSelectHtml } from '../../../../page-size.js?v=2';
 
 export function tonnagePriceTemplate() {
     return `
         <div class="space-y-2 w-full max-w-full">
 
-            <!-- 页面主面板：面板头部（标题+按钮） + 表格 -->
+            <!-- 页面主面板：面板头部（标�?按钮�?+ 表格 -->
             <div class="bg-[#1e1e1e] border border-[#2c2c2c] overflow-hidden w-full max-w-full"
                  style="box-shadow: 0 2px 12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.03);">
 
-                <!-- 面板头部：标题 + 操作按钮 -->
+                <!-- 面板头部：标�?+ 操作按钮 -->
                 <div class="flex items-center justify-between px-5 py-3.5 border-b border-[#222222]"
                      style="background: linear-gradient(90deg, #1c1c1c 0%, #1e1e1e 60%);">
                     <div class="flex items-center gap-3">
@@ -43,10 +45,10 @@ export function tonnagePriceTemplate() {
                     </div>
                 </div>
 
-                <!-- 工具栏：筛选 -->
+                <!-- 工具栏：筛�?-->
                 <div class="flex items-center justify-between px-5 py-2.5 border-b border-[#1e1e1e]"
                      style="background: linear-gradient(180deg, #181818 0%, #161616 100%);">
-                    <!-- 左侧：筛选控件 -->
+                    <!-- 左侧：筛选控�?-->
                     <div class="flex items-center gap-3">
                         <div class="flex items-center gap-1.5">
                             <label class="text-[9px] font-semibold text-[#484848] uppercase tracking-[0.12em] whitespace-nowrap">基地</label>
@@ -70,11 +72,11 @@ export function tonnagePriceTemplate() {
                             ${window.svgIcon('search', 'w-3 h-3')}
                             查询
                         </button>
-                        <span class="text-[10px] text-[#484848]">批量删除须同时选择基地和年度</span>
+                        <span class="text-[10px] text-[#484848]">批量删除须同时选择基地和年�?/span>
                     </div>
                 </div>
 
-                <!-- 表格区 -->
+                <!-- 表格�?-->
                 <div class="overflow-x-auto">
                     <table class="w-full">
                         <thead>
@@ -82,25 +84,28 @@ export function tonnagePriceTemplate() {
                                 <th class="px-5 py-2.5 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">基地</th>
                                 <th class="px-5 py-2.5 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">年份</th>
                                 <th class="px-5 py-2.5 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">压机吨位 (T)</th>
-                                <th class="px-5 py-2.5 text-right text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">单冲次价格 (元)</th>
-                                <th class="px-5 py-2.5 text-center text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap w-24">操作</th>
+                                <th class="px-5 py-2.5 text-right text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">单冲次价�?(�?</th>
+                                <th class="p-0 w-9" aria-label="操作"></th>
                             </tr>
                         </thead>
                         <tbody id="tonnagePriceTableBody" class="divide-y divide-[#1d1d1d]">
-                            <!-- 动态渲染 -->
+                            <!-- 动态渲�?-->
                         </tbody>
                     </table>
                 </div>
 
                 <!-- 分页：右下角 -->
                 <div class="flex items-center justify-between px-5 py-2 border-t border-[#1e1e1e] bg-[#141414]" id="paginationContainer">
-                    <span id="totalCountPagination" class="text-[10px] text-[#484848]"></span>
+                    <div class="flex items-center gap-3 min-w-0">
+                        <span id="totalCountPagination" class="text-[10px] text-[#484848]"></span>
+                        ${pageSizeSelectHtml('tonnagePageSize')}
+                    </div>
                     <div class="flex items-center gap-0.5" id="paginationBtns">
-                        <!-- 动态渲染 -->
+                        <!-- 动态渲�?-->
                     </div>
                 </div>
 
-                <!-- 空状态 -->
+                <!-- 空状�?-->
                 <div id="emptyState" class="hidden flex flex-col items-center justify-center py-10">
                     <div class="w-8 h-8 flex items-center justify-center mb-3 rounded-sm" style="background:#141414; border: 1px solid #222222;">
                         ${window.svgIcon('clipboard-list', 'w-4 h-4 text-[#3a3a3a]')}
@@ -109,7 +114,7 @@ export function tonnagePriceTemplate() {
                     <p class="text-[10px] text-[#3a3a3a]">点击上方"新增价格"添加记录</p>
                 </div>
 
-                <!-- 加载中 -->
+                <!-- 加载�?-->
                 <div id="loadingState" class="hidden flex items-center justify-center py-10">
                     <div class="w-4 h-4 border border-[#252525] border-t-[#d32f2f] rounded-full animate-spin"></div>
                 </div>
@@ -156,27 +161,27 @@ export function tonnagePriceTemplate() {
                         <label class="text-[10px] font-semibold text-[#616161] uppercase tracking-[0.1em] mb-1.5 block">年份 <span class="text-[#d32f2f]">*</span></label>
                         <input type="number" id="editYear" min="2000" max="2100" required
                                class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#ffffff] placeholder:text-[#616161] focus:outline-none focus:border-[#ff5252] transition-all rounded"
-                               placeholder="如: 2026">
+                               placeholder="�? 2026">
                     </div>
 
                     <div>
                         <label class="text-[10px] font-semibold text-[#616161] uppercase tracking-[0.1em] mb-1.5 block">压机吨位 (T) <span class="text-[#d32f2f]">*</span></label>
                         <input type="number" id="editTonnage" min="1" required
                                class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#ffffff] placeholder:text-[#616161] focus:outline-none focus:border-[#ff5252] transition-all rounded"
-                               placeholder="如: 800">
+                               placeholder="�? 800">
                     </div>
 
                     <div>
-                        <label class="text-[10px] font-semibold text-[#616161] uppercase tracking-[0.1em] mb-1.5 block">单冲次价格 (元) <span class="text-[#d32f2f]">*</span></label>
+                        <label class="text-[10px] font-semibold text-[#616161] uppercase tracking-[0.1em] mb-1.5 block">单冲次价�?(�? <span class="text-[#d32f2f]">*</span></label>
                         <input type="number" id="editPrice" min="0" step="0.001" required
                                class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#ffffff] placeholder:text-[#616161] focus:outline-none focus:border-[#ff5252] transition-all rounded"
-                               placeholder="如: 0.850">
+                               placeholder="�? 0.850">
                     </div>
 
                     <div class="bg-[#0c0c0c] border border-[#1a1a1a] rounded p-3">
                         <p class="text-[11px] text-[#616161]">
-                            <span class="text-[#616161]">说明：</span>
-                            单冲次价格为该吨位压机每一次冲程的加工费用，单位：元/次。
+                            <span class="text-[#616161]">说明�?/span>
+                            单冲次价格为该吨位压机每一次冲程的加工费用，单位：�?次�?
                         </p>
                     </div>
                 </form>
@@ -228,10 +233,10 @@ export function tonnagePriceTemplate() {
                     </div>
 
                     <div>
-                        <label class="text-[10px] font-semibold text-[#616161] uppercase tracking-[0.1em] mb-1.5 block">源年份 <span class="text-[#d32f2f]">*</span></label>
+                        <label class="text-[10px] font-semibold text-[#616161] uppercase tracking-[0.1em] mb-1.5 block">源年�?<span class="text-[#d32f2f]">*</span></label>
                         <select id="sourceYear" required
                                 class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#9e9e9e] appearance-none cursor-pointer focus:outline-none focus:border-[#ff5252] transition-all rounded">
-                            <option value="">请选择源年份</option>
+                            <option value="">请选择源年�?/option>
                         </select>
                     </div>
 
@@ -243,13 +248,13 @@ export function tonnagePriceTemplate() {
                         <label class="text-[10px] font-semibold text-[#616161] uppercase tracking-[0.1em] mb-1.5 block">目标年份 <span class="text-[#d32f2f]">*</span></label>
                         <input type="number" id="targetYear" min="2000" max="2100" required
                                class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#ffffff] placeholder:text-[#616161] focus:outline-none focus:border-[#ff5252] transition-all rounded"
-                               placeholder="如: 2027">
+                               placeholder="�? 2027">
                     </div>
 
                     <div class="bg-[#0c0c0c] border border-[#1a1a1a] rounded p-3">
                         <p class="text-[11px] text-[#616161]">
-                            <span class="text-[#f57f17]">提示：</span>
-                            复制仅作用于所选基地，将<strong class="text-[#9e9e9e]">覆盖</strong>该基地目标年份的现有数据，请谨慎操作。
+                            <span class="text-[#f57f17]">提示�?/span>
+                            复制仅作用于所选基地，�?strong class="text-[#9e9e9e]">覆盖</strong>该基地目标年份的现有数据，请谨慎操作�?
                         </p>
                     </div>
                 </form>
@@ -290,9 +295,9 @@ export function tonnagePriceTemplate() {
                 <input type="hidden" id="deleteRecordId" value="">
                 <div class="p-6">
                     <p class="text-[12px] text-[#9e9e9e] mb-3">
-                        确定要删除这条价格记录吗？
+                        确定要删除这条价格记录吗�?
                     </p>
-                    <p class="text-[11px] text-[#616161]">此操作不可撤销。</p>
+                    <p class="text-[11px] text-[#616161]">此操作不可撤销�?/p>
                 </div>
             </div>
 
@@ -310,7 +315,7 @@ export function tonnagePriceTemplate() {
 }
 
 /**
- * 渲染表格行
+ * 渲染表格�?
  * - 偶数行微调背景色，形成精致斑马纹
  * - 编辑图标：pencil
  */
@@ -319,7 +324,7 @@ export function renderTableRows(records) {
         return '';
     }
     return records.map((record, idx) => {
-        const isEven = idx % 2 === 1; // 偶数行（idx 1,3,5...）略深
+        const isEven = idx % 2 === 1; // 偶数行（idx 1,3,5...）略�?
         return `
         <tr class="group transition-colors duration-150 cursor-default ${isEven ? '' : ''}"
             data-id="${esc(record.id)}"
@@ -331,14 +336,14 @@ export function renderTableRows(records) {
                 <span class="shadow-[0_0_8px_rgba(211,47,47,0.2)]">${fmtNum(record.price_per_stroke, 3)}</span>
             </td>
             <td class="px-5 py-2.5 text-center whitespace-nowrap border-b border-[#1d1d1d]">
-                <div class="flex items-center justify-center gap-0.5">
+                <div class="inline-flex items-center justify-center gap-0.5 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto focus-within:opacity-100 focus-within:pointer-events-auto transition-opacity duration-100">
                     ${(typeof can === 'function' ? can('op:stamping-tonnage:update') : true) ? `
-                    <button class="edit-btn flex items-center justify-center w-7 h-7 rounded-sm text-[#484848] hover:text-[#d32f2f] hover:bg-[#d32f2f]/10 transition-all duration-150 opacity-60 hover:opacity-100" title="编辑">
-                        ${window.svgIcon('pencil', 'w-3 h-3')}
+                    <button type="button" class="edit-btn inline-flex items-center justify-center w-7 h-7 rounded-sm text-[#555555] hover:text-[#C8C8D0] hover:bg-[#161620] transition-all" title="编辑" aria-label="编辑">
+                        ${window.svgIcon('pencil', 'w-3.5 h-3.5')}
                     </button>` : ''}
                     ${(typeof can === 'function' ? can('op:stamping-tonnage:delete') : true) ? `
-                    <button class="delete-btn flex items-center justify-center w-7 h-7 rounded-sm text-[#484848] hover:text-[#c62828] hover:bg-[#c62828]/10 transition-all duration-150 opacity-60 hover:opacity-100" title="删除">
-                        ${window.svgIcon('trash', 'w-3 h-3')}
+                    <button type="button" class="delete-btn inline-flex items-center justify-center w-7 h-7 rounded-sm text-[#555555] hover:text-[#ef5350] hover:bg-[#161620] transition-all" title="删除" aria-label="删除">
+                        ${window.svgIcon('trash', 'w-3.5 h-3.5')}
                     </button>` : ''}
                 </div>
             </td>
@@ -374,7 +379,7 @@ export function renderPagination(currentPage, totalPages, total) {
 
     if (startPage > 1) {
         buttons += `<button class="page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323] transition-all duration-150" data-page="1">1</button>`;
-        if (startPage > 2) buttons += `<span class="px-0.5 text-[#333333] leading-6 text-[9px]">…</span>`;
+        if (startPage > 2) buttons += `<span class="px-0.5 text-[#333333] leading-6 text-[9px]">�?/span>`;
     }
 
     for (let i = startPage; i <= endPage; i++) {
@@ -386,7 +391,7 @@ export function renderPagination(currentPage, totalPages, total) {
     }
 
     if (endPage < totalPages) {
-        if (endPage < totalPages - 1) buttons += `<span class="px-0.5 text-[#333333] leading-6 text-[9px]">…</span>`;
+        if (endPage < totalPages - 1) buttons += `<span class="px-0.5 text-[#333333] leading-6 text-[9px]">�?/span>`;
         buttons += `<button class="page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323] transition-all duration-150" data-page="${totalPages}">${totalPages}</button>`;
     }
 

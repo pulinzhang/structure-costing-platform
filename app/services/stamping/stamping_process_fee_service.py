@@ -935,8 +935,7 @@ class StampingProcessFeeService:
         query: StampingProcessFeeQuery,
     ) -> tuple[list[StampingProcessFeeVO], int, dict]:
         skip = (query.page - 1) * query.size
-        rows, total = self.fee_repo.paginate(
-            db,
+        filter_kwargs = dict(
             year=query.year,
             location=query.location,
             stamping_supplier=query.stamping_supplier,
@@ -944,6 +943,10 @@ class StampingProcessFeeService:
             version=query.version,
             part_number=query.part_number,
             audit_status=query.audit_status,
+        )
+        rows, total = self.fee_repo.paginate(
+            db,
+            **filter_kwargs,
             skip=skip,
             limit=query.size,
         )
@@ -956,6 +959,7 @@ class StampingProcessFeeService:
             "version": query.version,
             "part_number": query.part_number,
             "audit_status": query.audit_status,
+            "summary": self.fee_repo.summarize_by_filters(db, **filter_kwargs),
         }
         return vos, total, filters
 

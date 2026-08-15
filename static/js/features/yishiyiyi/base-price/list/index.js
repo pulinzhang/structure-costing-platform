@@ -3,12 +3,21 @@
  * 基准价格导出页面逻辑
  */
 
-import { basePriceDownloadTemplate } from './template.js?v=26';
+import { basePriceDownloadTemplate } from './template.js?v=28';
+import {
+    DEFAULT_PREVIEW_PAGE_SIZE,
+    PREVIEW_PAGE_SIZE_OPTIONS,
+    bindPageSizeSelect,
+    renderPageButtons,
+} from '../../../../page-size.js?v=2';
 
 // 状态管理
 const basePriceDownloadState = {
     records: [],
     total: 0,
+    page: 1,
+    pageSize: DEFAULT_PREVIEW_PAGE_SIZE,
+    totalPages: 1,
     filterLoadToken: 0,
 };
 
@@ -20,6 +29,15 @@ const API_BASE = '/api/steel-base-prices';
  */
 function init() {
     bindEvents();
+    bindPageSizeSelect('basePricePageSize', {
+        getSize: () => basePriceDownloadState.pageSize,
+        setSize: (size) => {
+            basePriceDownloadState.pageSize = size;
+        },
+        onChange: () => previewData(1),
+        options: PREVIEW_PAGE_SIZE_OPTIONS,
+        defaultSize: DEFAULT_PREVIEW_PAGE_SIZE,
+    });
     // DOM 重建后必须重新拉选项；先同步填月份，避免接口返回前下拉空白
     fillMonthOptions();
     loadFilterOptions();
@@ -102,7 +120,7 @@ function bindEvents() {
     // 预览按钮
     const btnPreview = document.getElementById('btnPreviewBasePrice');
     if (btnPreview) {
-        btnPreview.addEventListener('click', () => previewData());
+        btnPreview.addEventListener('click', () => previewData(1));
     }
 
     // 导出按钮
@@ -129,10 +147,17 @@ function bindEvents() {
         gradeInput.addEventListener('keydown', event => {
             if (event.key === 'Enter') {
                 event.preventDefault();
-                previewData();
+                previewData(1);
             }
         });
     }
+
+    document.getElementById('basePricePagination')?.addEventListener('click', (event) => {
+        const btn = event.target.closest('.base-price-page-btn');
+        if (!btn || btn.disabled) return;
+        const page = Number(btn.getAttribute('data-page'));
+        if (Number.isFinite(page) && page >= 1) previewData(page);
+    });
 }
 
 /**
@@ -185,7 +210,7 @@ function applyFiltersToParams(params, filters) {
 /**
  * 预览数据
  */
-async function previewData() {
+async function previewData(page = 1) {
     const filters = collectFilters();
 
     if (!hasAnyFilter(filters)) {
@@ -210,8 +235,8 @@ async function previewData() {
     try {
         const params = {};
         applyFiltersToParams(params, filters);
-        params.page = 1;
-        params.size = 500;
+        params.page = page;
+        params.size = basePriceDownloadState.pageSize;
         const response = await HttpClient.get(`${API_BASE}/export-preview`, { params });
         // 支持分页响应格式 { items: [...], total: N } 或直接数组
         const payload = response.data;
@@ -219,8 +244,12 @@ async function previewData() {
             ? payload
             : Array.isArray(payload?.items) ? payload.items : [];
         const total = payload?.total ?? records.length;
+        basePriceDownloadState.page = payload?.page || page;
         basePriceDownloadState.records = records;
         basePriceDownloadState.total = total;
+        basePriceDownloadState.totalPages =
+            payload?.total_pages ||
+            Math.max(1, Math.ceil(total / basePriceDownloadState.pageSize));
 
         const recordCount = document.getElementById('basePriceRecordCount');
         if (recordCount) {
@@ -229,6 +258,14 @@ async function previewData() {
 
         if (tableBody) {
             tableBody.innerHTML = renderBasePriceRows(records);
+        }
+        const pagination = document.getElementById('basePricePagination');
+        if (pagination) {
+            pagination.innerHTML = renderPageButtons(
+                basePriceDownloadState.page,
+                basePriceDownloadState.totalPages,
+                'base-price-page-btn',
+            );
         }
     } catch (error) {
         console.error('预览数据失败:', error);
@@ -245,6 +282,8 @@ async function previewData() {
         if (recordCount) {
             recordCount.textContent = '0';
         }
+        const pagination = document.getElementById('basePricePagination');
+        if (pagination) pagination.innerHTML = '';
     }
 }
 
@@ -381,45 +420,7 @@ async function batchDeleteBasePrices() {
  * 刷新预览数据
  */
 async function refreshPreview() {
-    const filters = collectFilters();
-
-    try {
-        const params = {};
-        applyFiltersToParams(params, filters);
-        params.page = 1;
-        params.size = 500;
-        const response = await HttpClient.get(`${API_BASE}/export-preview`, { params });
-        const payload = response.data;
-        const records = Array.isArray(payload)
-            ? payload
-            : Array.isArray(payload?.items) ? payload.items : [];
-        const total = payload?.total ?? records.length;
-
-        basePriceDownloadState.records = records;
-        basePriceDownloadState.total = total;
-
-        const recordCount = document.getElementById('basePriceRecordCount');
-        if (recordCount) {
-            recordCount.textContent = total;
-        }
-
-        const tableBody = document.getElementById('basePricePreviewBody');
-        if (tableBody) {
-            tableBody.innerHTML = renderBasePriceRows(records);
-        }
-    } catch (error) {
-        console.error('刷新预览失败:', error);
-        const tableBody = document.getElementById('basePricePreviewBody');
-        if (tableBody) {
-            tableBody.innerHTML = `
-                <tr>
-                    <td colspan="16" class="px-4 py-8 text-center text-[#d32f2f] text-xs">
-                        刷新查询失败: ${esc(error.message || '未知错误')}
-                    </td>
-                </tr>
-            `;
-        }
-    }
+    await previewData(1);
 }
 
 /**

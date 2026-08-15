@@ -1,9 +1,13 @@
 /**
  * Steel Price Calc Page
- * 钢价计算 — 过滤条件 + 异步后台计算 + 进度轮询 + 历史过程日志
+ * 钢价计算 �?过滤条件 + 异步后台计算 + 进度轮询 + 历史过程日志
  */
 
-import { steelPriceCalcTemplate, renderCalcHistoryPagination } from './template.js?v=2';
+import { steelPriceCalcTemplate, renderCalcHistoryPagination } from './template.js?v=3';
+import {
+    DEFAULT_PAGE_SIZE,
+    bindPageSizeSelect,
+} from '../../../../page-size.js?v=2';
 
 const STAMPING_CASCADE_FILTERS_API = '/api/stamping/filters/cascade';
 const STEEL_PRICE_CALC_STATS_API = '/api/dashboard/stats/steel-price-calc';
@@ -11,11 +15,10 @@ const STEEL_PRICE_CALC_API = '/api/steel-prices/calc';
 const STEEL_PRICE_CALC_TASK_API = '/api/steel-prices/calc/tasks';
 const STEEL_PRICE_CALC_LOGS_API = '/api/steel-prices/calc/logs';
 const POLL_INTERVAL_MS = 1500;
-const HISTORY_PAGE_SIZE = 10;
-const DUPLICATE_PERIOD_CALC_MESSAGE = '当前期别正在计算中，请勿重复提交。';
+const DUPLICATE_PERIOD_CALC_MESSAGE = '当前期别正在计算中，请勿重复提交�?;
 
 const STATUS_META = {
-    processing: { label: '计算中', className: 'text-[#64b5f6]' },
+    processing: { label: '计算�?, className: 'text-[#64b5f6]' },
     success: { label: '成功', className: 'text-[#66bb6a]' },
     partial: { label: '部分成功', className: 'text-[#ffb74d]' },
     failed: { label: '失败', className: 'text-[#ef5350]' },
@@ -34,7 +37,7 @@ const calcState = {
     lastResult: null,
     history: {
         page: 1,
-        size: HISTORY_PAGE_SIZE,
+        size: DEFAULT_PAGE_SIZE,
         total: 0,
         totalPages: 1,
         items: [],
@@ -44,6 +47,13 @@ const calcState = {
 export function init() {
     stopPolling();
     bindEvents();
+    bindPageSizeSelect('steelCalcHistoryPageSize', {
+        getSize: () => calcState.history.size,
+        setSize: (size) => {
+            calcState.history.size = size;
+        },
+        onChange: () => loadCalcHistory(1),
+    });
     applyPermissionUi();
     loadStampingFilters();
     loadCalcStats();
@@ -211,7 +221,7 @@ async function loadCalcHistory(page = calcState.history.page) {
         size: calcState.history.size,
     };
 
-    body.innerHTML = `<tr><td colspan="13" class="py-8 text-center text-[#555]">加载中...</td></tr>`;
+    body.innerHTML = `<tr><td colspan="13" class="py-8 text-center text-[#555]">加载�?..</td></tr>`;
 
     try {
         const response = await HttpClient.get(STEEL_PRICE_CALC_LOGS_API, { params });
@@ -225,7 +235,7 @@ async function loadCalcHistory(page = calcState.history.page) {
         renderHistoryRows(items);
 
         const totalEl = document.getElementById('calcHistoryTotal');
-        if (totalEl) totalEl.textContent = `共 ${calcState.history.total} 条`;
+        if (totalEl) totalEl.textContent = `�?${calcState.history.total} 条`;
 
         const pagination = document.getElementById('calcHistoryPagination');
         if (pagination) {
@@ -276,7 +286,7 @@ function renderHistoryRows(items) {
                 <td class="py-2 px-2 font-mono text-right tabular-nums ${Number(item.failed_count) > 0 ? 'text-[#ef5350]' : 'text-[#777]'}">${fmtInt(item.failed_count)}</td>
                 <td class="py-2 px-2 text-right whitespace-nowrap">
                     ${isProcessing ? `
-                    <span class="text-[9px] text-[#555]">进行中</span>
+                    <span class="text-[9px] text-[#555]">进行�?/span>
                     ` : `
                     <button type="button"
                             class="calc-view-process-btn text-[9px] text-[#777] hover:text-white mr-2"
@@ -319,10 +329,10 @@ function renderHistoryRows(items) {
 async function deleteCalcLog(logId) {
     if (!logId) return;
     if (calcState.canDelete === false) {
-        showToast('无删除权限', 'warning');
+        showToast('无删除权�?, 'warning');
         return;
     }
-    if (!window.confirm('确定删除这条计算历史？仅删除日志，不影响已落库的钢材价格。')) {
+    if (!window.confirm('确定删除这条计算历史？仅删除日志，不影响已落库的钢材价格�?)) {
         return;
     }
     try {
@@ -376,12 +386,12 @@ function showProcessDrawer(log) {
             </button>
         </div>
         <div class="px-5 py-3 border-b border-[#222] text-[10px] text-[#777] space-y-1 shrink-0">
-            <div>批次：<span class="font-mono text-[#999]">${esc(log.calc_batch_id || '-')}</span></div>
-            <div>时间：${esc(formatDateTime(log.started_at))} → ${esc(formatDateTime(log.finished_at))}</div>
-            <div>汇总：材料 ${fmtInt(log.material_count)} · 命中 ${fmtInt(log.enriched_count)} · 无基价 ${fmtInt(log.no_base_count)} · 新增 ${fmtInt(log.created_count)} · 更新 ${fmtInt(log.updated_count)} · 失败 ${fmtInt(log.failed_count)}</div>
+            <div>批次�?span class="font-mono text-[#999]">${esc(log.calc_batch_id || '-')}</span></div>
+            <div>时间�?{esc(formatDateTime(log.started_at))} �?${esc(formatDateTime(log.finished_at))}</div>
+            <div>汇总：材料 ${fmtInt(log.material_count)} · 命中 ${fmtInt(log.enriched_count)} · 无基�?${fmtInt(log.no_base_count)} · 新增 ${fmtInt(log.created_count)} · 更新 ${fmtInt(log.updated_count)} · 失败 ${fmtInt(log.failed_count)}</div>
         </div>
         <div class="flex-1 overflow-y-auto overscroll-contain p-5">
-            <pre class="text-[11px] leading-5 font-mono text-[#9e9e9e] whitespace-pre-wrap break-words bg-[#111111] border border-[#262626] p-4">${esc(log.detail_text || '（无过程文本）')}</pre>
+            <pre class="text-[11px] leading-5 font-mono text-[#9e9e9e] whitespace-pre-wrap break-words bg-[#111111] border border-[#262626] p-4">${esc(log.detail_text || '（无过程文本�?)}</pre>
         </div>
     `;
 
@@ -410,9 +420,9 @@ function renderPeriodFilters(filters, year, month) {
 
 function renderCalcStats(stats) {
     calcState.stats = stats;
-    setCountHtml('cntBasePrice', stats.base_price_count, '条');
-    setCountHtml('cntAdjustment', stats.adjustment_rule_count, '条');
-    setCountHtml('cntThicknessRows', stats.thickness_row_count, '行');
+    setCountHtml('cntBasePrice', stats.base_price_count, '�?);
+    setCountHtml('cntAdjustment', stats.adjustment_rule_count, '�?);
+    setCountHtml('cntThicknessRows', stats.thickness_row_count, '�?);
 }
 
 function setCountHtml(id, count, unit) {
@@ -449,7 +459,7 @@ async function isPeriodProcessing(year, month, location) {
 
 async function startCalculation() {
     if (calcState.canRun === false) {
-        showToast('无计算权限', 'warning');
+        showToast('无计算权�?, 'warning');
         return;
     }
     if (calcState.isCalculating) return;
@@ -461,7 +471,7 @@ async function startCalculation() {
     const vehicleModel = document.getElementById('calcVehicleModel')?.value || '';
 
     if (Number.isNaN(year) || Number.isNaN(month)) {
-        showToast('请填写完整的计算年度与月份', 'warning');
+        showToast('请填写完整的计算年度与月�?, 'warning');
         return;
     }
     if (!location) {
@@ -471,7 +481,7 @@ async function startCalculation() {
 
     const { base_price_count, adjustment_rule_count, thickness_row_count } = calcState.stats;
     if (base_price_count <= 0 || adjustment_rule_count <= 0 || thickness_row_count <= 0) {
-        showToast('当前所选条件数据未就绪，无法计算', 'warning');
+        showToast('当前所选条件数据未就绪，无法计�?, 'warning');
         return;
     }
 
@@ -486,13 +496,13 @@ async function startCalculation() {
     if (vehicleModel) payload.vehicle_model = vehicleModel;
 
     setCalculating(true);
-    showProgress(0, '已提交计算队列');
+    showProgress(0, '已提交计算队�?);
 
     try {
         const response = await HttpClient.post(STEEL_PRICE_CALC_API, payload);
         const taskId = response.data?.task_id;
         if (!taskId) {
-            throw new Error('未返回任务 ID');
+            throw new Error('未返回任�?ID');
         }
         loadCalcHistory(1);
         startPolling(taskId);
@@ -506,7 +516,7 @@ async function startCalculation() {
     }
 }
 
-function showProgress(progress = 0, msg = '已提交计算队列') {
+function showProgress(progress = 0, msg = '已提交计算队�?) {
     const panel = document.getElementById('calcProgressPanel');
     if (panel) panel.classList.remove('hidden');
     updateProgress(progress, msg);
@@ -515,7 +525,7 @@ function showProgress(progress = 0, msg = '已提交计算队列') {
 function hideProgress() {
     const panel = document.getElementById('calcProgressPanel');
     if (panel) panel.classList.add('hidden');
-    updateProgress(0, '已提交计算队列');
+    updateProgress(0, '已提交计算队�?);
 }
 
 function updateProgress(progress, msg, status) {
@@ -599,7 +609,7 @@ function startPolling(taskId) {
                 calcState.lastResult = result;
                 const bizStatus = result.status || 'success';
                 showToast(
-                    `计算${STATUS_META[bizStatus]?.label || '完成'}：新增 ${fmtInt(result.created_count)}，更新 ${fmtInt(result.updated_count)}，失败 ${fmtInt(result.failed_count)}`,
+                    `计算${STATUS_META[bizStatus]?.label || '完成'}：新�?${fmtInt(result.created_count)}，更�?${fmtInt(result.updated_count)}，失�?${fmtInt(result.failed_count)}`,
                     bizStatus === 'failed' ? 'error' : bizStatus === 'partial' ? 'warning' : 'success'
                 );
                 calcState.activeTaskId = null;
@@ -658,11 +668,11 @@ function setCalculating(isCalculating) {
     if (isCalculating) {
         startBtn.setAttribute('disabled', 'true');
         startBtn.classList.add('opacity-50', 'pointer-events-none');
-        startBtn.textContent = '计算中...';
+        startBtn.textContent = '计算�?..';
     } else {
         startBtn.removeAttribute('disabled');
         startBtn.classList.remove('opacity-50', 'pointer-events-none');
-        startBtn.textContent = '开始计算';
+        startBtn.textContent = '开始计�?;
         validateDataPreparation(
             document.getElementById('calcLocation')?.value || '',
             parseInt(document.getElementById('calcYear')?.value, 10),

@@ -9,13 +9,17 @@ import {
     renderSteelPriceRows,
     updateSteelPriceHud,
     updateActiveFilterCapsules,
-} from './template.js?v=41';
+} from './template.js?v=46';
+import {
+    DEFAULT_PAGE_SIZE,
+    bindPageSizeSelect,
+} from '../../../../page-size.js?v=2';
 
 const steelPriceState = {
     records: [],
     total: 0,
     page: 1,
-    size: 20,
+    size: DEFAULT_PAGE_SIZE,
     totalPages: 1,
     filtersLoaded: false,
     currentViewId: null,
@@ -26,7 +30,7 @@ const steelPriceState = {
 
 const API_BASE = '/api/steel-prices';
 const DRAWER_ANIMATION_MS = 300;
-const AUDIT_LABEL = { pending: '待审', approved: '已通过', rejected: '已驳回' };
+const AUDIT_LABEL = { pending: '待审', approved: '已通过', rejected: '已驳�? };
 
 function openDrawer(drawerId, backdropId) {
     const drawer = document.getElementById(drawerId);
@@ -53,6 +57,13 @@ function closeDrawer(drawerId, backdropId) {
 
 function init() {
     bindEvents();
+    bindPageSizeSelect('steelPricePageSize', {
+        getSize: () => steelPriceState.size,
+        setSize: (size) => {
+            steelPriceState.size = size;
+        },
+        onChange: () => loadData(1),
+    });
     applyPermissionUi();
     steelPriceState.filtersLoaded = false;
     steelPriceState.pendingFilters = readHashFilters();
@@ -129,8 +140,8 @@ async function loadData(page = 1) {
         }
 
         const total = document.getElementById('steelPriceTotal');
-        if (total) total.textContent = `共 ${steelPriceState.total} 条`;
-        updateSteelPriceHud(steelPriceState.total, records);
+        if (total) total.textContent = `�?${steelPriceState.total} 条`;
+        updateSteelPriceHud(steelPriceState.total, payload.filters?.summary || null);
 
         const pagination = document.getElementById('steelPricePagination');
         if (pagination) {
@@ -148,6 +159,7 @@ async function loadData(page = 1) {
         updateActiveFilterCapsules();
     } catch (error) {
         console.error('加载钢材价格失败:', error);
+        updateSteelPriceHud(0, null);
         if (tableBody) {
             tableBody.innerHTML = `
                 <tr>
@@ -229,14 +241,15 @@ function toggleAdvancedFilter() {
     }
     if (label) {
         label.textContent = steelPriceState.advancedFilterOpen
-            ? '[-] 收起高级筛选'
-            : '[+] 展开高级筛选';
+            ? '[-] 收起高级筛�?
+            : '[+] 展开高级筛�?;
     }
 }
 
 function bindRowEvents() {
     document.querySelectorAll('#steelPriceTableBody .view-btn').forEach(btn => {
         btn.addEventListener('click', event => {
+            event.stopPropagation();
             const id = Number(event.target.closest('tr').dataset.id);
             const record = steelPriceState.records.find(r => r.id === id);
             if (record) openViewDrawer(record);
@@ -244,6 +257,7 @@ function bindRowEvents() {
     });
     document.querySelectorAll('#steelPriceTableBody .edit-btn').forEach(btn => {
         btn.addEventListener('click', event => {
+            event.stopPropagation();
             const id = Number(event.target.closest('tr').dataset.id);
             const record = steelPriceState.records.find(r => r.id === id);
             if (record) openEditDrawer(record);
@@ -251,6 +265,7 @@ function bindRowEvents() {
     });
     document.querySelectorAll('#steelPriceTableBody .delete-btn').forEach(btn => {
         btn.addEventListener('click', event => {
+            event.stopPropagation();
             const id = Number(event.target.closest('tr').dataset.id);
             const record = steelPriceState.records.find(r => r.id === id);
             if (record) openDeleteDrawer(record);
@@ -341,7 +356,7 @@ async function exportExcel() {
         !filters.grade &&
         !filters.steel_mill
     ) {
-        showToast('请至少选择一个筛选条件后再导出', 'warning');
+        showToast('请至少选择一个筛选条件后再导�?, 'warning');
         return;
     }
 
@@ -351,7 +366,7 @@ async function exportExcel() {
         btn.disabled = true;
         btn.innerHTML = `
             <div class="w-3 h-3 border border-[#ef5350] border-t-transparent rounded-full animate-spin"></div>
-            导出中...
+            导出�?..
         `;
     }
 
@@ -394,7 +409,7 @@ async function exportExcel() {
 async function batchDeleteByFilters() {
     const filters = collectBatchDeleteFilters();
     if (!filters.year || !filters.month || !filters.location) {
-        showToast('批量删除须选择年度、月份、基地', 'warning');
+        showToast('批量删除须选择年度、月份、基�?, 'warning');
         return;
     }
 
@@ -408,7 +423,7 @@ async function batchDeleteByFilters() {
     if (filters.steel_mill) parts.push(`钢厂: ${filters.steel_mill}`);
 
     const confirmed = window.confirm(
-        `确定按以下条件批量删除未审核记录吗？\n\n${parts.join(' | ')}\n\n仅删除待审/已驳回；已审核通过的记录会跳过。此操作不可恢复！`
+        `确定按以下条件批量删除未审核记录吗？\n\n${parts.join(' | ')}\n\n仅删除待�?已驳回；已审核通过的记录会跳过。此操作不可恢复！`
     );
     if (!confirmed) return;
 
@@ -418,7 +433,7 @@ async function batchDeleteByFilters() {
         btn.disabled = true;
         btn.innerHTML = `
             <div class="w-3 h-3 border border-[#ef5350] border-t-transparent rounded-full animate-spin"></div>
-            删除中...
+            删除�?..
         `;
     }
 
@@ -438,7 +453,7 @@ async function batchDeleteByFilters() {
         const skipped = result.skipped_approved_count ?? 0;
         showToast(
             response.message ||
-                `已删除 ${deleted} 条` + (skipped ? `，跳过已审核 ${skipped} 条` : ''),
+                `已删�?${deleted} 条` + (skipped ? `，跳过已审核 ${skipped} 条` : ''),
             deleted > 0 ? 'success' : 'warning'
         );
         steelPriceState.filtersLoaded = false;
@@ -474,7 +489,7 @@ function getSessionDisplayName() {
 function openBatchAuditDrawer(mode) {
     const filters = collectPeriodFilters();
     if (!filters.year || !filters.month || !filters.location) {
-        showToast('批量操作须选择年度、月份、基地', 'warning');
+        showToast('批量操作须选择年度、月份、基�?, 'warning');
         return;
     }
 
@@ -490,14 +505,14 @@ function openBatchAuditDrawer(mode) {
     const confirmBtn = document.getElementById('confirmBatchAuditBtn');
 
     if (modeEl) modeEl.value = isApprove ? 'approve' : 'reverse';
-    if (titleEl) titleEl.textContent = isApprove ? '批量审核' : '批量反审核';
+    if (titleEl) titleEl.textContent = isApprove ? '批量审核' : '批量反审�?;
     if (hintEl) {
         hintEl.textContent = isApprove
-            ? '仅按年度、月份、基地处理待审/已驳回记录；已通过记录会跳过。'
-            : '仅按年度、月份、基地处理已通过记录；其余状态会跳过。反审核意见必填。';
+            ? '仅按年度、月份、基地处理待�?已驳回记录；已通过记录会跳过�?
+            : '仅按年度、月份、基地处理已通过记录；其余状态会跳过。反审核意见必填�?;
     }
     if (operatorLabel) {
-        operatorLabel.textContent = isApprove ? '审核人' : '反审核人';
+        operatorLabel.textContent = isApprove ? '审核�? : '反审核人';
     }
     if (operatorDisplay) {
         operatorDisplay.textContent = getSessionDisplayName() || '（当前登录用户）';
@@ -505,17 +520,17 @@ function openBatchAuditDrawer(mode) {
     if (remarkLabel) {
         remarkLabel.innerHTML = isApprove
             ? '审核意见'
-            : '反审核意见 <span class="text-[#d32f2f]">*</span>';
+            : '反审核意�?<span class="text-[#d32f2f]">*</span>';
     }
     if (remarkEl) {
         remarkEl.value = '';
-        remarkEl.placeholder = isApprove ? '可选填写审核意见' : '请填写反审核原因（必填）';
+        remarkEl.placeholder = isApprove ? '可选填写审核意�? : '请填写反审核原因（必填）';
     }
     if (summaryEl) {
         summaryEl.textContent = `年度 ${filters.year} · 月份 ${filters.month} · 基地 ${filters.location}`;
     }
     if (confirmBtn) {
-        confirmBtn.textContent = isApprove ? '确认审核通过' : '确认反审核';
+        confirmBtn.textContent = isApprove ? '确认审核通过' : '确认反审�?;
         confirmBtn.className =
             'inline-flex items-center gap-1.5 bg-[#d32f2f] text-white px-4 py-2 text-[11px] font-semibold rounded hover:bg-[#b71c1c] transition-all';
     }
@@ -535,13 +550,13 @@ async function submitBatchAudit() {
     const isApprove = mode === 'approve';
     const filters = collectPeriodFilters();
     if (!filters.year || !filters.month || !filters.location) {
-        showToast('批量操作须选择年度、月份、基地', 'warning');
+        showToast('批量操作须选择年度、月份、基�?, 'warning');
         return;
     }
 
     const remark = document.getElementById('batchAuditRemark')?.value.trim() || '';
     if (!isApprove && !remark) {
-        showToast('反审核意见必填', 'warning');
+        showToast('反审核意见必�?, 'warning');
         return;
     }
 
@@ -550,7 +565,7 @@ async function submitBatchAudit() {
     steelPriceState.batchAuditSubmitting = true;
     if (confirmBtn) {
         confirmBtn.disabled = true;
-        confirmBtn.textContent = '提交中...';
+        confirmBtn.textContent = '提交�?..';
     }
 
     try {
@@ -574,14 +589,14 @@ async function submitBatchAudit() {
         showToast(
             response.message ||
                 `${isApprove ? '已审核通过' : '已反审核'} ${updated} 条` +
-                    (skipped ? `，跳过 ${skipped} 条` : ''),
+                    (skipped ? `，跳�?${skipped} 条` : ''),
             updated > 0 ? 'success' : 'warning'
         );
         steelPriceState.batchAuditSubmitting = false;
         closeBatchAuditDrawer();
         loadData(steelPriceState.page);
     } catch (error) {
-        console.error(isApprove ? '批量审核失败:' : '批量反审核失败:', error);
+        console.error(isApprove ? '批量审核失败:' : '批量反审核失�?', error);
     } finally {
         steelPriceState.batchAuditSubmitting = false;
         if (confirmBtn) {
@@ -671,16 +686,16 @@ function formatTrace(prefix, record) {
     }
 
     const idLines = prefix === 'base'
-        ? [`base_price_id=${esc(refId ?? '—')}`]
+        ? [`base_price_id=${esc(refId ?? '�?)}`]
         : [
-            `${prefix}_policy_id=${esc(refId ?? '—')}`,
-            `${prefix}_ladder_item_id=${esc(ladderId ?? '—')}`,
+            `${prefix}_policy_id=${esc(refId ?? '�?)}`,
+            `${prefix}_ladder_item_id=${esc(ladderId ?? '�?)}`,
         ];
     const excelLine = [
-        `${prefix}_excel_filename=${esc(filename || '—')}`,
-        `${prefix}_sheet_name=${esc(sheet || '—')}`,
-        `${prefix}_excel_row=${esc(row ?? '—')}`,
-        `${prefix}_excel_col=${esc(col ?? '—')}`,
+        `${prefix}_excel_filename=${esc(filename || '�?)}`,
+        `${prefix}_sheet_name=${esc(sheet || '�?)}`,
+        `${prefix}_excel_row=${esc(row ?? '�?)}`,
+        `${prefix}_excel_col=${esc(col ?? '�?)}`,
     ].join(' · ');
 
     return `
@@ -696,7 +711,7 @@ function formatTrace(prefix, record) {
 
 function prefixLabel(prefix) {
     return {
-        base: '基础价溯源',
+        base: '基础价溯�?,
         thickness: '厚度加价溯源',
         width: '宽度加价溯源',
         zinc: '锌层加价溯源',
@@ -713,7 +728,7 @@ function openViewDrawer(record) {
     fillViewField('view-grade', record.grade);
     fillViewField('view-thickness', formatDecimal(record.thickness, 2));
     fillViewField('view-width', formatWidthPlain(record.width));
-    fillViewField('view-spec', record.spec || '—');
+    fillViewField('view-spec', record.spec || '�?);
     fillViewField('view-base-price', formatDecimal(record.base_price, 2));
     fillAdjustmentViewField('view-thickness-adjustment', record.thickness_adjustment);
     fillAdjustmentViewField('view-width-adjustment', record.width_adjustment);
@@ -722,12 +737,12 @@ function openViewDrawer(record) {
     fillViewField('view-other-adjustment', formatDecimal(record.other_adjustment, 2));
     fillViewField('view-final-price', formatDecimal(record.final_price_per_ton, 2));
     fillViewField('view-audit-status', AUDIT_LABEL[record.audit_status] || record.audit_status);
-    fillViewField('view-audited-by', record.audited_by || '—');
+    fillViewField('view-audited-by', record.audited_by || '�?);
     fillViewField('view-audited-at', formatDateTime(record.audited_at));
-    fillViewField('view-audit-remark', record.audit_remark || '—');
-    fillViewField('view-reverse-audited-by', record.reverse_audited_by || '—');
+    fillViewField('view-audit-remark', record.audit_remark || '�?);
+    fillViewField('view-reverse-audited-by', record.reverse_audited_by || '�?);
     fillViewField('view-reverse-audited-at', formatDateTime(record.reverse_audited_at));
-    fillViewField('view-reverse-audit-remark', record.reverse_audit_remark || '—');
+    fillViewField('view-reverse-audit-remark', record.reverse_audit_remark || '�?);
     fillViewField('view-match-status', record.match_status);
     fillViewField('view-calc-batch-id', record.calc_batch_id);
     fillViewField('view-calculated-at', formatDateTime(record.calculated_at));
@@ -794,7 +809,7 @@ async function saveRecord() {
         Number.isNaN(zincAdjustment) || Number.isNaN(processingFee) ||
         Number.isNaN(otherAdjustment)
     ) {
-        showToast('请填写所有必填数值字段', 'warning');
+        showToast('请填写所有必填数值字�?, 'warning');
         return;
     }
 
@@ -860,7 +875,7 @@ async function handleReject() {
         const body = {};
         if (auditRemark.trim()) body.audit_remark = auditRemark.trim();
         await HttpClient.post(`${API_BASE}/${id}/reject`, body);
-        showToast('已驳回', 'success');
+        showToast('已驳�?, 'success');
         closeDrawer('viewDrawer', 'viewDrawerBackdrop');
         steelPriceState.filtersLoaded = false;
         loadData(steelPriceState.page);
@@ -872,21 +887,21 @@ async function handleReject() {
 async function handleReverseAudit() {
     const id = steelPriceState.currentViewId;
     if (!id) return;
-    const reverseAuditRemark = window.prompt('反审核原因（必填）');
+    const reverseAuditRemark = window.prompt('反审核原因（必填�?);
     if (!reverseAuditRemark || !reverseAuditRemark.trim()) {
-        showToast('反审核原因必填', 'warning');
+        showToast('反审核原因必�?, 'warning');
         return;
     }
     try {
         await HttpClient.post(`${API_BASE}/${id}/reverse-audit`, {
             reverse_audit_remark: reverseAuditRemark.trim(),
         });
-        showToast('反审核成功', 'success');
+        showToast('反审核成�?, 'success');
         closeDrawer('viewDrawer', 'viewDrawerBackdrop');
         steelPriceState.filtersLoaded = false;
         loadData(steelPriceState.page);
     } catch (error) {
-        console.error('反审核失败:', error);
+        console.error('反审核失�?', error);
     }
 }
 
@@ -917,10 +932,10 @@ function setBusinessKeyReadonly(readonly) {
 
 function fillViewField(id, value) {
     const element = document.getElementById(id);
-    if (element) element.textContent = value ?? '—';
+    if (element) element.textContent = value ?? '�?;
 }
 
-/** 厚度/宽度加价：BRABUS 极客风（冷钛白 / 暗红 / 低饱和灰） */
+/** 厚度/宽度加价：BRABUS 极客风（冷钛�?/ 暗红 / 低饱和灰�?*/
 function fillAdjustmentViewField(id, value) {
     const element = document.getElementById(id);
     if (!element) return;
@@ -953,7 +968,7 @@ function formatDecimal(value, digits = 2) {
     });
 }
 
-/** 加工费：为 0 时显示 -- */
+/** 加工费：�?0 时显�?-- */
 function formatDecimalOrDash(value, digits = 2) {
     const numeric = Number(value);
     if (value === null || value === undefined || Number.isNaN(numeric) || numeric === 0) {
@@ -962,7 +977,7 @@ function formatDecimalOrDash(value, digits = 2) {
     return formatDecimal(numeric, digits);
 }
 
-/** 厚度/宽度加价：显式 +/- 号；0 → -- */
+/** 厚度/宽度加价：显�?+/- 号；0 �?-- */
 function formatAdjustmentSigned(value, digits = 2) {
     const numeric = Number(value);
     if (value === null || value === undefined || Number.isNaN(numeric) || numeric === 0) {
@@ -975,7 +990,7 @@ function formatAdjustmentSigned(value, digits = 2) {
     return numeric > 0 ? `+${absText}` : `-${absText}`;
 }
 
-/** 宽度：整数、无千分位 */
+/** 宽度：整数、无千分�?*/
 function formatWidthPlain(value) {
     const numeric = Number(value);
     if (value === null || value === undefined || Number.isNaN(numeric)) return '-';
@@ -983,7 +998,7 @@ function formatWidthPlain(value) {
 }
 
 function formatDateTime(value) {
-    if (!value) return '—';
+    if (!value) return '�?;
     try {
         const date = new Date(value);
         if (Number.isNaN(date.getTime())) return value;

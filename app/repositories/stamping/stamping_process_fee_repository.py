@@ -5,6 +5,7 @@
 import logging
 from typing import Any, Dict, List, Optional, Tuple
 
+from sqlalchemy import case, func
 from sqlalchemy.orm import Session, joinedload, noload
 
 from app.models.stamping_process_fee import StampingProcessFee
@@ -151,7 +152,7 @@ class StampingProcessFeeRepository:
             StampingProcessFee.stamping_supplier == stamping_supplier,
         )
 
-    def paginate(
+    def _build_list_query(
         self,
         db: Session,
         year: Optional[int] = None,
@@ -161,9 +162,7 @@ class StampingProcessFeeRepository:
         version: Optional[str] = None,
         part_number: Optional[str] = None,
         audit_status: Optional[str] = None,
-        skip: int = 0,
-        limit: int = 20,
-    ) -> Tuple[List[StampingProcessFee], int]:
+    ):
         q = db.query(StampingProcessFee)
         if year is not None:
             q = q.filter(StampingProcessFee.year == year)
@@ -179,7 +178,31 @@ class StampingProcessFeeRepository:
             q = q.filter(StampingProcessFee.part_number.like(f"%{part_number}%"))
         if audit_status:
             q = q.filter(StampingProcessFee.audit_status == audit_status)
+        return q
 
+    def paginate(
+        self,
+        db: Session,
+        year: Optional[int] = None,
+        location: Optional[str] = None,
+        stamping_supplier: Optional[str] = None,
+        vehicle_model: Optional[str] = None,
+        version: Optional[str] = None,
+        part_number: Optional[str] = None,
+        audit_status: Optional[str] = None,
+        skip: int = 0,
+        limit: int = 20,
+    ) -> Tuple[List[StampingProcessFee], int]:
+        q = self._build_list_query(
+            db,
+            year=year,
+            location=location,
+            stamping_supplier=stamping_supplier,
+            vehicle_model=vehicle_model,
+            version=version,
+            part_number=part_number,
+            audit_status=audit_status,
+        )
         total = q.count()
         rows = (
             q.options(noload(StampingProcessFee.process_items))
@@ -195,6 +218,48 @@ class StampingProcessFeeRepository:
         )
         return rows, total
 
+    def summarize_by_filters(
+        self,
+        db: Session,
+        year: Optional[int] = None,
+        location: Optional[str] = None,
+        stamping_supplier: Optional[str] = None,
+        vehicle_model: Optional[str] = None,
+        version: Optional[str] = None,
+        part_number: Optional[str] = None,
+        audit_status: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """按与列表相同的筛选条件汇总：零价 / 待审 / 已审。"""
+        q = self._build_list_query(
+            db,
+            year=year,
+            location=location,
+            stamping_supplier=stamping_supplier,
+            vehicle_model=vehicle_model,
+            version=version,
+            part_number=part_number,
+            audit_status=audit_status,
+        )
+        row = q.with_entities(
+            func.sum(
+                case((StampingProcessFee.processing_fee == 0, 1), else_=0)
+            ).label("zero_count"),
+            func.sum(
+                case((StampingProcessFee.audit_status == AUDIT_PENDING, 1), else_=0)
+            ).label("pending_count"),
+            func.sum(
+                case(
+                    (StampingProcessFee.audit_status == AUDIT_APPROVED, 1),
+                    else_=0,
+                )
+            ).label("approved_count"),
+        ).one()
+        return {
+            "zero_count": int(row.zero_count or 0),
+            "pending_count": int(row.pending_count or 0),
+            "approved_count": int(row.approved_count or 0),
+        }
+
     def list_for_export(
         self,
         db: Session,
@@ -206,21 +271,16 @@ class StampingProcessFeeRepository:
         part_number: Optional[str] = None,
         audit_status: Optional[str] = None,
     ) -> List[StampingProcessFee]:
-        q = db.query(StampingProcessFee)
-        if year is not None:
-            q = q.filter(StampingProcessFee.year == year)
-        if location is not None:
-            q = q.filter(StampingProcessFee.location == location)
-        if stamping_supplier is not None:
-            q = q.filter(StampingProcessFee.stamping_supplier == stamping_supplier)
-        if vehicle_model is not None:
-            q = q.filter(StampingProcessFee.vehicle_model == vehicle_model)
-        if version is not None:
-            q = q.filter(StampingProcessFee.version == version)
-        if part_number:
-            q = q.filter(StampingProcessFee.part_number.like(f"%{part_number}%"))
-        if audit_status:
-            q = q.filter(StampingProcessFee.audit_status == audit_status)
+        q = self._build_list_query(
+            db,
+            year=year,
+            location=location,
+            stamping_supplier=stamping_supplier,
+            vehicle_model=vehicle_model,
+            version=version,
+            part_number=part_number,
+            audit_status=audit_status,
+        )
         return (
             q.options(joinedload(StampingProcessFee.process_items))
             .order_by(

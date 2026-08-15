@@ -1,6 +1,6 @@
 /**
  * Parts Page
- * 零件列表 — 对齐加工费计算结果列表：进入即加载、筛选均可选、级联联动、批量删除
+ * 零件列表 �?对齐加工费计算结果列表：进入即加载、筛选均可选、级联联动、批量删�?
  * 明细抽屉逻辑保持不变
  */
 
@@ -10,20 +10,26 @@ import {
     updatePartsFilterCapsules,
     updatePartsHud,
     renderPartsPagination,
-} from './template.js?v=10';
+} from './template.js?v=14';
+import {
+    DEFAULT_PAGE_SIZE,
+    PAGE_SIZE_OPTIONS,
+    bindPageSizeSelect,
+    normalizePageSize,
+} from '../../../../page-size.js?v=2';
 
 const CASCADE_API = '/api/stamping/filters/cascade';
 const PARTS_API = '/api/stamping/parts';
 
 const PARTS_CONFIG = {
-    DEFAULT_PAGE_SIZE: 20,
-    PAGE_SIZE_OPTIONS: [10, 20, 50, 100],
+    DEFAULT_PAGE_SIZE,
+    PAGE_SIZE_OPTIONS,
     STORAGE_KEY: 'parts_page_size',
 };
 
 const partsState = {
     currentPage: 1,
-    pageSize: 20,
+    pageSize: DEFAULT_PAGE_SIZE,
     isLoading: false,
     advancedOpen: false,
 };
@@ -47,19 +53,23 @@ export const PartsPage = {
 
     initState() {
         const savedSize = localStorage.getItem(PARTS_CONFIG.STORAGE_KEY);
-        partsState.pageSize = PARTS_CONFIG.PAGE_SIZE_OPTIONS.includes(parseInt(savedSize, 10))
-            ? parseInt(savedSize, 10)
-            : PARTS_CONFIG.DEFAULT_PAGE_SIZE;
+        partsState.pageSize = normalizePageSize(savedSize);
 
-        const pageSizeSelect = document.getElementById('pageSizeSelect');
-        if (pageSizeSelect) pageSizeSelect.value = String(partsState.pageSize);
+        bindPageSizeSelect('partsPageSize', {
+            getSize: () => partsState.pageSize,
+            setSize: (size) => {
+                partsState.pageSize = size;
+                localStorage.setItem(PARTS_CONFIG.STORAGE_KEY, String(size));
+            },
+            onChange: () => this.loadParts(1),
+        });
     },
 
     setAdvancedOpen(isOpen) {
         partsState.advancedOpen = isOpen;
         document.getElementById('partsAdvancedFilterPanel')?.classList.toggle('hidden', !isOpen);
         const label = document.getElementById('partsAdvancedFilterLabel');
-        if (label) label.textContent = isOpen ? '收起高级筛选' : '展开高级筛选';
+        if (label) label.textContent = isOpen ? '收起高级筛�? : '展开高级筛�?;
     },
 
     bindEvents() {
@@ -88,14 +98,6 @@ export const PartsPage = {
                 this.loadParts(1);
                 return;
             }
-            if (e.target.id === 'pageSizeSelect') {
-                const newSize = parseInt(e.target.value, 10);
-                if (newSize && PARTS_CONFIG.PAGE_SIZE_OPTIONS.includes(newSize)) {
-                    partsState.pageSize = newSize;
-                    localStorage.setItem(PARTS_CONFIG.STORAGE_KEY, String(newSize));
-                    this.loadParts(1);
-                }
-            }
         });
 
         pageContent?.addEventListener('input', (e) => {
@@ -123,12 +125,7 @@ export const PartsPage = {
             if (pageBtn && !pageBtn.disabled) {
                 const targetPage = parseInt(pageBtn.getAttribute('data-page'), 10);
                 if (!Number.isNaN(targetPage) && targetPage >= 1) this.loadParts(targetPage);
-                return;
             }
-            const row = e.target.closest('#partsTableBody tr[data-id]');
-            if (!row) return;
-            const id = Number(row.dataset.id);
-            if (id) this.showDetail(id);
         });
     },
 
@@ -166,8 +163,8 @@ export const PartsPage = {
             this.fillSelect('versionFilter', filters.versions || []);
             updatePartsFilterCapsules();
         } catch (error) {
-            console.error('加载级联筛选失败:', error);
-            showToast(error.message || '加载筛选失败', 'error');
+            console.error('加载级联筛选失�?', error);
+            showToast(error.message || '加载筛选失�?, 'error');
         }
     },
 
@@ -242,9 +239,10 @@ export const PartsPage = {
             const total = pageInfo.total ?? 0;
             const totalPages = pageInfo.total_pages ?? 1;
 
-            updatePartsHud(total, items.length);
+            updatePartsHud(total);
+
             const totalLabel = document.getElementById('partsTotalLabel');
-            if (totalLabel) totalLabel.textContent = `共 ${total} 个零件`;
+            if (totalLabel) totalLabel.textContent = `�?${total} 个零件`;
 
             if (!items.length) {
                 this.showEmptyHint('暂无零件数据', '请先上传工艺文件');
@@ -259,8 +257,8 @@ export const PartsPage = {
         } catch (error) {
             console.error('加载零件列表失败:', error);
             showToast(error.message || '加载失败', 'error');
-            this.showEmptyHint('加载失败', esc(error.message) || '请稍后重试');
-            updatePartsHud('—', '—');
+            this.showEmptyHint('加载失败', esc(error.message) || '请稍后重�?);
+            updatePartsHud(0);
         } finally {
             loading?.classList.add('hidden');
             partsState.isLoading = false;
@@ -276,23 +274,23 @@ export const PartsPage = {
     renderRow(part) {
         const thickness = fmtNum(part.thickness, 2);
         const partWeight = fmtNum(part.part_weight, 3);
-        const processCount = part.process_count != null ? part.process_count : '—';
+        const processCount = part.process_count != null ? part.process_count : '�?;
         const sketchUrl = part.sketch_url || '';
         const cell = 'px-3 py-3 border-b border-[#17171C] font-mono text-[11px]';
         const muted = 'text-[#8E8E93]';
 
         const thumbnailCell = sketchUrl
-            ? `<div class="sketch-thumbnail" title="点击查看详情">
+            ? `<div class="sketch-thumbnail" title="图纸预览">
                     <img src="/uploads/${esc(sketchUrl)}" alt="零件图纸" onerror="this.style.display='none';this.nextElementSibling&&(this.nextElementSibling.style.display='flex')">
                     <div class="zoom-overlay">${window.svgIcon('search')}</div>
                </div>`
-            : `<div class="sketch-thumbnail-placeholder" title="点击查看详情">
+            : `<div class="sketch-thumbnail-placeholder" title="无图�?>
                     ${window.svgIcon('file-earmark')}
                </div>`;
 
         return `
-            <tr class="group relative font-mono text-[11px] border-b border-[#17171C] hover:bg-gradient-to-r hover:from-[#FF1E27]/10 hover:via-[#121218] hover:to-transparent transition-all duration-150 cursor-pointer"
-                data-id="${esc(part.id)}" title="点击查看明细">
+            <tr class="group relative font-mono text-[11px] border-b border-[#17171C] hover:bg-gradient-to-r hover:from-[#FF1E27]/10 hover:via-[#121218] hover:to-transparent transition-all duration-150"
+                data-id="${esc(part.id)}">
                 <td class="p-0 w-0 relative">
                     <div class="absolute left-0 top-0 bottom-0 w-[3px] bg-[#FF1E27] opacity-0 group-hover:opacity-100 transition-all"
                          style="box-shadow: 0 0 10px #FF1E27;"></div>
@@ -303,24 +301,24 @@ export const PartsPage = {
                 <td class="${cell} font-sans whitespace-nowrap">
                     <span class="text-[12px] font-semibold text-white font-mono tracking-wide group-hover:text-[#FF1E27] transition-colors">${esc(part.part_number)}</span>
                 </td>
-                <td class="${cell} ${muted} font-sans">${esc(part.part_name) || '—'}</td>
-                <td class="${cell} ${muted}">${esc(part.location) || '—'}</td>
-                <td class="${cell} ${muted} font-sans">${esc(part.stamping_supplier) || '—'}</td>
-                <td class="${cell} ${muted}">${esc(part.vehicle_model) || '—'}</td>
-                <td class="${cell} ${muted} border-r border-[#22222A]">${esc(part.version) || '—'}</td>
-                <td class="${cell} ${muted} font-sans">${esc(part.material) || '—'}</td>
+                <td class="${cell} ${muted} font-sans">${esc(part.part_name) || '�?}</td>
+                <td class="${cell} ${muted}">${esc(part.location) || '�?}</td>
+                <td class="${cell} ${muted} font-sans">${esc(part.stamping_supplier) || '�?}</td>
+                <td class="${cell} ${muted}">${esc(part.vehicle_model) || '�?}</td>
+                <td class="${cell} ${muted} border-r border-[#22222A]">${esc(part.version) || '�?}</td>
+                <td class="${cell} ${muted} font-sans">${esc(part.material) || '�?}</td>
                 <td class="${cell} text-right tabular-nums ${muted}">${thickness}</td>
                 <td class="${cell} text-right tabular-nums ${muted}">${partWeight}</td>
                 <td class="${cell} text-right tabular-nums ${muted}">${processCount}</td>
-                <td class="${cell} text-[10px] text-[#555555] max-w-[160px] truncate" title="${esc(part.excel_filename || '')}">${esc(part.excel_filename) || '—'}</td>
-                <td class="${cell} text-center">
-                    <div class="flex items-center justify-center gap-0.5">
-                        <button type="button" class="flex items-center justify-center w-7 h-7 rounded-sm text-[#555555] hover:text-[#FFFFFF] hover:bg-[#FFFFFF]/5 transition-all" data-action="detail" data-id="${part.id}" title="查看详情">
-                            ${window.svgIcon('eye', 'w-3 h-3')}
+                <td class="${cell} text-[10px] text-[#555555] max-w-[160px] truncate" title="${esc(part.excel_filename || '')}">${esc(part.excel_filename) || '�?}</td>
+                <td class="px-1 py-2 text-center align-middle">
+                    <div class="inline-flex items-center justify-center gap-0.5 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto focus-within:opacity-100 focus-within:pointer-events-auto transition-opacity duration-100">
+                        <button type="button" class="inline-flex items-center justify-center w-7 h-7 rounded-sm text-[#555555] hover:text-[#C8C8D0] hover:bg-[#161620] transition-all" data-action="detail" data-id="${part.id}" title="查看详情" aria-label="查看详情">
+                            ${window.svgIcon('eye', 'w-3.5 h-3.5')}
                         </button>
                         ${this.canDelete !== false ? `
-                        <button type="button" class="flex items-center justify-center w-7 h-7 rounded-sm text-[#555555] hover:text-[#ef5350] hover:bg-[#c62828]/15 transition-all" data-action="delete" data-id="${part.id}" title="删除">
-                            ${window.svgIcon('trash', 'w-3 h-3')}
+                        <button type="button" class="inline-flex items-center justify-center w-7 h-7 rounded-sm text-[#555555] hover:text-[#ef5350] hover:bg-[#161620] transition-all" data-action="delete" data-id="${part.id}" title="删除" aria-label="删除">
+                            ${window.svgIcon('trash', 'w-3.5 h-3.5')}
                         </button>` : ''}
                     </div>
                 </td>
@@ -330,7 +328,7 @@ export const PartsPage = {
 
     async batchDelete() {
         if (this.canDelete === false) {
-            showToast('无删除权限', 'warning');
+            showToast('无删除权�?, 'warning');
             return;
         }
         const filters = this.requireScopeForBatchDelete();
@@ -349,7 +347,7 @@ export const PartsPage = {
             btn.disabled = true;
             btn.innerHTML = `
                 <div class="w-3 h-3 border border-[#ef5350] border-t-transparent rounded-full animate-spin"></div>
-                删除中...
+                删除�?..
             `;
         }
 
@@ -364,7 +362,7 @@ export const PartsPage = {
             const res = await HttpClient.post(`${PARTS_API}/batch-delete`, body);
             const result = res.data || {};
             const deleted = result.deleted_count ?? 0;
-            showToast(res.message || `已删除 ${deleted} 个零件`, deleted > 0 ? 'success' : 'warning');
+            showToast(res.message || `已删�?${deleted} 个零件`, deleted > 0 ? 'success' : 'warning');
             await this.loadCascadeFilters();
             if (deleted > 0) {
                 await this.loadParts(1);
@@ -386,7 +384,7 @@ export const PartsPage = {
         const titleEl = document.getElementById('partDrawerTitle');
 
         if (!drawer || !contentEl) {
-            console.error('抽屉元素不存在');
+            console.error('抽屉元素不存�?);
             return;
         }
 
@@ -524,17 +522,17 @@ export const PartsPage = {
 
     async _saveProcessEdits(partId) {
         if (this.canUpdate === false) {
-            showToast('无编辑权限', 'warning');
+            showToast('无编辑权�?, 'warning');
             return;
         }
         const btn = document.getElementById('saveProcessBtn');
         const processes = this._collectProcessEdits();
         if (processes.length === 0) return;
         btn.disabled = true;
-        btn.innerHTML = `<span class="inline-flex items-center gap-2">${window.svgIcon('spinner', 'w-3.5 h-3.5 animate-spin')}保存中...</span>`;
+        btn.innerHTML = `<span class="inline-flex items-center gap-2">${window.svgIcon('spinner', 'w-3.5 h-3.5 animate-spin')}保存�?..</span>`;
         try {
             await HttpClient.put(`${PARTS_API}/${partId}/processes`, processes);
-            showToast('工序参数已保存', 'success');
+            showToast('工序参数已保�?, 'success');
             const saveBtn = document.getElementById('saveProcessBtn');
             if (saveBtn) {
                 saveBtn.dataset.active = 'false';
@@ -552,10 +550,10 @@ export const PartsPage = {
 
     async deletePart(partId) {
         if (this.canDelete === false) {
-            showToast('无删除权限', 'warning');
+            showToast('无删除权�?, 'warning');
             return;
         }
-        if (!confirm('确定要删除这个零件吗？')) return;
+        if (!confirm('确定要删除这个零件吗�?)) return;
         try {
             await HttpClient.delete(`${PARTS_API}/${partId}`);
             showToast('删除成功', 'success');

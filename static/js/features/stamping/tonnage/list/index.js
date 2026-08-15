@@ -2,20 +2,24 @@
  * Tonnage Price Page
  * 冲次单价维护页面逻辑
  *
- * 抽屉式交互（与零件列表 /partDrawer 对齐）：
- * - 编辑/新增  → editDrawer
- * - 复制模板  → copyDrawer
- * - 删除确认  → deleteDrawer
+ * 抽屉式交互（与零件列�?/partDrawer 对齐）：
+ * - 编辑/新增  �?editDrawer
+ * - 复制模板  �?copyDrawer
+ * - 删除确认  �?deleteDrawer
  */
 
-import { tonnagePriceTemplate, renderTableRows, renderPagination } from './template.js?v=6';
+import { tonnagePriceTemplate, renderTableRows, renderPagination } from './template.js?v=8';
+import {
+    DEFAULT_PAGE_SIZE,
+    bindPageSizeSelect,
+} from '../../../../page-size.js?v=2';
 
-// 状态管理
+// 状态管�?
 const tonnagePriceState = {
     records: [],
     total: 0,
     page: 1,
-    pageSize: 10,
+    pageSize: DEFAULT_PAGE_SIZE,
     totalPages: 1,
     selectedLocation: null,
     selectedYear: null,
@@ -30,11 +34,11 @@ const DEFAULT_LOCATION = '青岛';
 // API 基础路径
 const API_BASE = '/api/stamping/tonnage-price';
 
-// 抽屉动画时长（与 template 中 transition-transform duration-300 保持一致）
+// 抽屉动画时长（与 template �?transition-transform duration-300 保持一致）
 const DRAWER_ANIMATION_MS = 300;
 
 /**
- * 打开抽屉 — 先 display:block，下一帧再 translate-x-0 触发滑入
+ * 打开抽屉 �?�?display:block，下一帧再 translate-x-0 触发滑入
  */
 function openDrawer(drawerId, backdropId) {
     const drawer = document.getElementById(drawerId);
@@ -49,7 +53,7 @@ function openDrawer(drawerId, backdropId) {
 }
 
 /**
- * 关闭抽屉 — translate-x-full 触发滑出，动画结束后再 display:none
+ * 关闭抽屉 �?translate-x-full 触发滑出，动画结束后�?display:none
  */
 function closeDrawer(drawerId, backdropId) {
     const drawer = document.getElementById(drawerId);
@@ -64,12 +68,19 @@ function closeDrawer(drawerId, backdropId) {
 }
 
 /**
- * 页面初始化
+ * 页面初始�?
  */
 function init() {
     loadFilterOptions();
     loadData();
     bindEvents();
+    bindPageSizeSelect('tonnagePageSize', {
+        getSize: () => tonnagePriceState.pageSize,
+        setSize: (size) => {
+            tonnagePriceState.pageSize = size;
+        },
+        onChange: () => loadData(1),
+    });
     applyPermissionUi();
 }
 
@@ -115,10 +126,10 @@ async function loadFilterOptions() {
             const currentYear = new Date().getFullYear();
             let options = `<option value="">请选择年份</option>`;
             tonnagePriceState.years.forEach(year => {
-                options += `<option value="${year}">${year} 年</option>`;
+                options += `<option value="${year}">${year} �?/option>`;
             });
             if (!tonnagePriceState.years.includes(currentYear)) {
-                options += `<option value="${currentYear}">${currentYear} 年</option>`;
+                options += `<option value="${currentYear}">${currentYear} �?/option>`;
             }
             yearFilter.innerHTML = options;
             if (tonnagePriceState.selectedYear) {
@@ -128,9 +139,9 @@ async function loadFilterOptions() {
 
         const sourceYearSelect = document.getElementById('sourceYear');
         if (sourceYearSelect) {
-            let options = `<option value="">请选择源年份</option>`;
+            let options = `<option value="">请选择源年�?/option>`;
             tonnagePriceState.years.forEach(year => {
-                options += `<option value="${year}">${year} 年</option>`;
+                options += `<option value="${year}">${year} �?/option>`;
             });
             sourceYearSelect.innerHTML = options;
         }
@@ -170,7 +181,7 @@ async function loadData(page = 1) {
             params.year = tonnagePriceState.selectedYear;
         }
 
-        // 分页接口：使用 /paginate 端点
+        // 分页接口：使�?/paginate 端点
         const res = await HttpClient.get(`${API_BASE}/paginate`, { params });
         const pageResult = res.data || {};
 
@@ -191,7 +202,7 @@ async function loadData(page = 1) {
         }
 
         if (totalCountPagination) {
-            totalCountPagination.textContent = `共 ${tonnagePriceState.total} 条`;
+            totalCountPagination.textContent = `�?${tonnagePriceState.total} 条`;
         }
 
         if (paginationBtns) {
@@ -225,6 +236,7 @@ async function loadData(page = 1) {
 function bindTableRowEvents() {
     document.querySelectorAll('.edit-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
+            e.stopPropagation();
             const row = e.target.closest('tr');
             const id = parseInt(row.dataset.id);
             const record = tonnagePriceState.records.find(r => r.id === id);
@@ -236,6 +248,7 @@ function bindTableRowEvents() {
 
     document.querySelectorAll('.delete-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
+            e.stopPropagation();
             const row = e.target.closest('tr');
             const id = parseInt(row.dataset.id);
             openDeleteDrawer(id);
@@ -479,7 +492,7 @@ function openCopyDrawer() {
 }
 
 /**
- * 按当前筛选条件导出 Excel
+ * 按当前筛选条件导�?Excel
  */
 async function exportExcel() {
     const btn = document.getElementById('btnExportTonnagePrice');
@@ -488,7 +501,7 @@ async function exportExcel() {
         btn.disabled = true;
         btn.innerHTML = `
             <div class="w-3 h-3 border border-[#ef5350] border-t-transparent rounded-full animate-spin"></div>
-            导出中...
+            导出�?..
         `;
     }
 
@@ -524,11 +537,11 @@ async function exportExcel() {
 }
 
 /**
- * 按基地 + 年度批量删除（两者必选）
+ * 按基�?+ 年度批量删除（两者必选）
  */
 async function batchDeleteByFilters() {
     if (typeof can === 'function' && !can('op:stamping-tonnage:delete')) {
-        showToast('无删除权限', 'warning');
+        showToast('无删除权�?, 'warning');
         return;
     }
     if (tonnagePriceState.isBatchDeleting) return;
@@ -539,13 +552,13 @@ async function batchDeleteByFilters() {
     const yearRaw = yearFilter?.value?.trim() || '';
 
     if (!location || !yearRaw) {
-        showToast('批量删除须同时选择基地和年度', 'warning');
+        showToast('批量删除须同时选择基地和年�?, 'warning');
         return;
     }
 
     const year = parseInt(yearRaw, 10);
     if (!year || year < 2000 || year > 2100) {
-        showToast('请选择正确的年度', 'warning');
+        showToast('请选择正确的年�?, 'warning');
         return;
     }
 
@@ -561,7 +574,7 @@ async function batchDeleteByFilters() {
         btn.disabled = true;
         btn.innerHTML = `
             <div class="w-3 h-3 border border-[#ef5350] border-t-transparent rounded-full animate-spin"></div>
-            删除中...
+            删除�?..
         `;
     }
 
@@ -572,7 +585,7 @@ async function batchDeleteByFilters() {
         });
         const data = res.data || {};
         showToast(
-            res.message || data.message || `已删除 ${data.deleted_count ?? 0} 条`,
+            res.message || data.message || `已删�?${data.deleted_count ?? 0} 条`,
             'success'
         );
         tonnagePriceState.selectedLocation = location;
@@ -594,7 +607,7 @@ async function batchDeleteByFilters() {
 }
 
 /**
- * 保存记录（新增或更新）
+ * 保存记录（新增或更新�?
  */
 async function saveRecord() {
     const recordId = document.getElementById('editRecordId')?.value;
@@ -660,7 +673,7 @@ async function copyTemplate() {
     const targetYear = parseInt(document.getElementById('targetYear')?.value);
 
     if (!location || !sourceYear || !targetYear) {
-        showToast('请选择基地、源年份和目标年份', 'warning');
+        showToast('请选择基地、源年份和目标年�?, 'warning');
         return;
     }
 
@@ -674,7 +687,7 @@ async function copyTemplate() {
             `${API_BASE}/copy-year?location=${encodeURIComponent(location)}&source_year=${sourceYear}&target_year=${targetYear}`
         );
 
-        showToast(`成功将「${location}」从 ${sourceYear} 年复制到 ${targetYear} 年`, 'success');
+        showToast(`成功将�?{location}」从 ${sourceYear} 年复制到 ${targetYear} 年`, 'success');
 
         closeDrawer('copyDrawer', 'copyDrawerBackdrop');
         loadData(1);

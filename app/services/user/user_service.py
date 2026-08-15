@@ -56,18 +56,26 @@ class UserService:
         users = self.repository.list_all(db)
         return [self._to_vo(db, u) for u in users]
 
-    def paginate(self, db: Session, query: UserQueryDTO) -> tuple[list[UserVO], int]:
+    def paginate(
+        self, db: Session, query: UserQueryDTO
+    ) -> tuple[list[UserVO], int, dict]:
         skip = (query.page - 1) * query.size
-        rows, total = self.repository.paginate(
-            db,
+        filter_kwargs = dict(
             keyword=query.keyword,
             username=query.username,
             real_name=query.real_name,
             is_active=query.is_active,
+        )
+        rows, total = self.repository.paginate(
+            db,
+            **filter_kwargs,
             skip=skip,
             limit=query.size,
         )
-        return [self._to_vo(db, u) for u in rows], total
+        filters = {
+            "summary": self.repository.summarize_by_filters(db, **filter_kwargs),
+        }
+        return [self._to_vo(db, u) for u in rows], total, filters
 
     def get_by_id(self, db: Session, user_id: int) -> UserVO | None:
         user = self.repository.get_by_id(db, user_id)

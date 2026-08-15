@@ -3,13 +3,16 @@
 import logging
 from typing import Any, Optional
 
-from sqlalchemy import distinct
+from sqlalchemy import case, distinct, func
 from sqlalchemy.orm import Session
 
 from app.models.steel_price import SteelPrice
 
 
 logger = logging.getLogger("repository.steel_price")
+
+AUDIT_APPROVED = "approved"
+AUDIT_PENDING = "pending"
 
 
 class SteelPriceRepository:
@@ -70,7 +73,7 @@ class SteelPriceRepository:
             .first()
         )
 
-    def paginate(
+    def _build_list_query(
         self,
         db: Session,
         *,
@@ -81,9 +84,7 @@ class SteelPriceRepository:
         grade: str | None = None,
         steel_mill: str | None = None,
         audit_status: str | None = None,
-        skip: int = 0,
-        limit: int = 20,
-    ) -> tuple[list[SteelPrice], int]:
+    ):
         query = db.query(SteelPrice)
         if year is not None:
             query = query.filter(SteelPrice.year == year)
@@ -99,7 +100,32 @@ class SteelPriceRepository:
             query = query.filter(SteelPrice.steel_mill == steel_mill)
         if audit_status:
             query = query.filter(SteelPrice.audit_status == audit_status)
+        return query
 
+    def paginate(
+        self,
+        db: Session,
+        *,
+        year: int | None = None,
+        month: int | None = None,
+        location: str | None = None,
+        category_name: str | None = None,
+        grade: str | None = None,
+        steel_mill: str | None = None,
+        audit_status: str | None = None,
+        skip: int = 0,
+        limit: int = 20,
+    ) -> tuple[list[SteelPrice], int]:
+        query = self._build_list_query(
+            db,
+            year=year,
+            month=month,
+            location=location,
+            category_name=category_name,
+            grade=grade,
+            steel_mill=steel_mill,
+            audit_status=audit_status,
+        )
         total = query.count()
         records = (
             query.order_by(
@@ -118,6 +144,45 @@ class SteelPriceRepository:
         )
         return records, total
 
+    def summarize_by_filters(
+        self,
+        db: Session,
+        *,
+        year: int | None = None,
+        month: int | None = None,
+        location: str | None = None,
+        category_name: str | None = None,
+        grade: str | None = None,
+        steel_mill: str | None = None,
+        audit_status: str | None = None,
+    ) -> dict[str, Any]:
+        """按与列表相同的筛选条件汇总：均价 / 待审 / 已审。"""
+        query = self._build_list_query(
+            db,
+            year=year,
+            month=month,
+            location=location,
+            category_name=category_name,
+            grade=grade,
+            steel_mill=steel_mill,
+            audit_status=audit_status,
+        )
+        row = query.with_entities(
+            func.avg(SteelPrice.final_price_per_ton).label("avg_final_price"),
+            func.sum(
+                case((SteelPrice.audit_status == AUDIT_PENDING, 1), else_=0)
+            ).label("pending_count"),
+            func.sum(
+                case((SteelPrice.audit_status == AUDIT_APPROVED, 1), else_=0)
+            ).label("approved_count"),
+        ).one()
+        avg_value = row.avg_final_price
+        return {
+            "avg_final_price": float(avg_value) if avg_value is not None else None,
+            "pending_count": int(row.pending_count or 0),
+            "approved_count": int(row.approved_count or 0),
+        }
+
     def list_for_export(
         self,
         db: Session,
@@ -131,22 +196,16 @@ class SteelPriceRepository:
         audit_status: str | None = None,
     ) -> list[SteelPrice]:
         """导出用：按筛选条件取全量记录（含溯源字段）。"""
-        query = db.query(SteelPrice)
-        if year is not None:
-            query = query.filter(SteelPrice.year == year)
-        if month is not None:
-            query = query.filter(SteelPrice.month == month)
-        if location:
-            query = query.filter(SteelPrice.location == location)
-        if category_name:
-            query = query.filter(SteelPrice.category_name == category_name)
-        if grade:
-            query = query.filter(SteelPrice.grade.contains(grade))
-        if steel_mill:
-            query = query.filter(SteelPrice.steel_mill == steel_mill)
-        if audit_status:
-            query = query.filter(SteelPrice.audit_status == audit_status)
-
+        query = self._build_list_query(
+            db,
+            year=year,
+            month=month,
+            location=location,
+            category_name=category_name,
+            grade=grade,
+            steel_mill=steel_mill,
+            audit_status=audit_status,
+        )
         return (
             query.order_by(
                 SteelPrice.year.desc(),

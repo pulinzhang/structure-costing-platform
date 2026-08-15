@@ -21,6 +21,14 @@ def datetime_to_str(value: datetime | None) -> Optional[str]:
     return value
 
 
+class SteelPriceListSummaryVO(BaseModel):
+    """列表筛选汇总（均价 / 待审 / 已审，按过滤条件全量）"""
+
+    avg_final_price: Optional[float] = None
+    pending_count: int = 0
+    approved_count: int = 0
+
+
 class SteelPriceFilterOptions(BaseModel):
     """列表筛选选项"""
 
@@ -30,6 +38,7 @@ class SteelPriceFilterOptions(BaseModel):
     category_names: list[str] = []
     steel_mills: list[str] = []
     audit_statuses: list[str] = []
+    summary: Optional[SteelPriceListSummaryVO] = None
 
 
 class SteelPriceBatchDeleteResultVO(BaseModel):

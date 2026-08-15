@@ -3,12 +3,14 @@
  * 冲压钢材：基准价与加减价联动计算
  */
 
+import { pageSizeSelectHtml } from '../../../../page-size.js?v=2';
+
 export function steelPriceCalcTemplate() {
     return `
         <div class="space-y-4 w-full font-sans antialiased text-[#bbb]">
             
             <div class="flex items-center justify-between pb-2 border-b border-[#222]">
-                <h1 class="text-xs font-bold text-[#e0e0e0] tracking-wider">冲压钢材基准价与加减价联动计算</h1>
+                <h1 class="text-xs font-bold text-[#e0e0e0] tracking-wider">冲压钢材基准价与加减价联动计�?/h1>
             </div>
 
             <div class="flex items-center justify-between py-2.5 border-y border-[#1e1e1e]"
@@ -30,22 +32,22 @@ export function steelPriceCalcTemplate() {
             <div class="flex items-center justify-between border-b border-[#222] py-2.5">
                 <div class="flex items-center gap-8">
                     <a href="javascript:void(0)" onclick="openDetailModal('basePrice')" class="group">
-                        <span class="text-[9px] text-[#666] block group-hover:text-[#888]">中标基价库</span>
-                        <span id="cntBasePrice" class="text-xs font-mono font-bold text-[#dddddd] group-hover:text-[#fff]">- <span class="text-[9px] font-normal text-[#555]">条</span></span>
+                        <span class="text-[9px] text-[#666] block group-hover:text-[#888]">中标基价�?/span>
+                        <span id="cntBasePrice" class="text-xs font-mono font-bold text-[#dddddd] group-hover:text-[#fff]">- <span class="text-[9px] font-normal text-[#555]">�?/span></span>
                     </a>
                     
                     <div class="w-px h-5 bg-[#222]"></div>
 
                     <a href="javascript:void(0)" onclick="openDetailModal('adjustRule')" class="group">
-                        <span class="text-[9px] text-[#666] block group-hover:text-[#888]">厚/宽调价规则</span>
-                        <span id="cntAdjustment" class="text-xs font-mono font-bold text-[#dddddd] group-hover:text-[#fff]">- <span class="text-[9px] font-normal text-[#555]">条</span></span>
+                        <span class="text-[9px] text-[#666] block group-hover:text-[#888]">�?宽调价规�?/span>
+                        <span id="cntAdjustment" class="text-xs font-mono font-bold text-[#dddddd] group-hover:text-[#fff]">- <span class="text-[9px] font-normal text-[#555]">�?/span></span>
                     </a>
 
                     <div class="w-px h-5 bg-[#222]"></div>
 
                     <a href="javascript:void(0)" onclick="openDetailModal('specs')" class="group">
                         <span class="text-[9px] text-[#666] block group-hover:text-[#888]">厚度规格行数</span>
-                        <span id="cntThicknessRows" class="text-xs font-mono font-bold text-[#dddddd] group-hover:text-[#fff]">- <span class="text-[9px] font-normal text-[#555]">行</span></span>
+                        <span id="cntThicknessRows" class="text-xs font-mono font-bold text-[#dddddd] group-hover:text-[#fff]">- <span class="text-[9px] font-normal text-[#555]">�?/span></span>
                     </a>
                 </div>
 
@@ -55,7 +57,7 @@ export function steelPriceCalcTemplate() {
                     </span>
                     <button id="startCalcBtn"
                             class="h-7 px-4 text-[10px] bg-[#b71c1c] hover:bg-[#c62828] text-white font-medium rounded-sm transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
-                        开始计算
+                        开始计�?
                     </button>
                 </div>
             </div>
@@ -74,14 +76,14 @@ export function steelPriceCalcTemplate() {
                          class="h-full bg-[#d32f2f] shadow-[0_0_8px_rgba(211,47,47,0.5)] transition-all duration-300"
                          style="width: 0%"></div>
                 </div>
-                <p id="calcProgressMsg" class="text-[11px] text-[#9e9e9e] leading-relaxed mb-0">已提交计算队列</p>
+                <p id="calcProgressMsg" class="text-[11px] text-[#9e9e9e] leading-relaxed mb-0">已提交计算队�?/p>
             </div>
 
             <div id="dataReadyErrorBanner" class="hidden text-[10px] text-[#d69e2e] bg-[#1a1710] px-2.5 py-1.5 border-l-2 border-[#d69e2e]">
-                提示：当前所选年月缺失中标基价或调价规则，无法计算。
+                提示：当前所选年月缺失中标基价或调价规则，无法计算�?
             </div>
 
-            <!-- 计算历史：对齐批次日志字段 -->
+            <!-- 计算历史：对齐批次日志字�?-->
             <div class="pt-2">
                 <div class="flex items-center justify-between mb-1.5">
                     <div class="text-[10px] text-[#666] font-medium">计算历史</div>
@@ -96,14 +98,14 @@ export function steelPriceCalcTemplate() {
                             <thead>
                                 <tr class="bg-[#0a0a0a] border-b border-[#2c2c2c] text-[9px] text-[#555] uppercase tracking-[0.08em]">
                                     <th class="py-2 px-2 font-normal whitespace-nowrap">计算时间</th>
-                                    <th class="py-2 px-2 font-normal whitespace-nowrap">创建人</th>
-                                    <th class="py-2 px-2 font-normal whitespace-nowrap">核价期</th>
+                                    <th class="py-2 px-2 font-normal whitespace-nowrap">创建�?/th>
+                                    <th class="py-2 px-2 font-normal whitespace-nowrap">核价�?/th>
                                     <th class="py-2 px-2 font-normal whitespace-nowrap">基地</th>
-                                    <th class="py-2 px-2 font-normal whitespace-nowrap">筛选</th>
-                                    <th class="py-2 px-2 font-normal text-center whitespace-nowrap">状态</th>
+                                    <th class="py-2 px-2 font-normal whitespace-nowrap">筛�?/th>
+                                    <th class="py-2 px-2 font-normal text-center whitespace-nowrap">状�?/th>
                                     <th class="py-2 px-2 font-normal text-right whitespace-nowrap">材料</th>
                                     <th class="py-2 px-2 font-normal text-right whitespace-nowrap">命中</th>
-                                    <th class="py-2 px-2 font-normal text-right whitespace-nowrap">无基价</th>
+                                    <th class="py-2 px-2 font-normal text-right whitespace-nowrap">无基�?/th>
                                     <th class="py-2 px-2 font-normal text-right whitespace-nowrap">新增</th>
                                     <th class="py-2 px-2 font-normal text-right whitespace-nowrap">更新</th>
                                     <th class="py-2 px-2 font-normal text-right whitespace-nowrap">失败</th>
@@ -112,13 +114,16 @@ export function steelPriceCalcTemplate() {
                             </thead>
                             <tbody id="calcHistoryBody" class="text-[10px] divide-y divide-[#222222]">
                                 <tr>
-                                    <td colspan="13" class="py-8 text-center text-[#555]">加载中...</td>
+                                    <td colspan="13" class="py-8 text-center text-[#555]">加载�?..</td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
                     <div class="flex items-center justify-between px-3 py-2 border-t border-[#1e1e1e] bg-[#141414]">
-                        <span id="calcHistoryTotal" class="text-[10px] text-[#484848]"></span>
+                        <div class="flex items-center gap-3 min-w-0">
+                            <span id="calcHistoryTotal" class="text-[10px] text-[#484848]"></span>
+                            ${pageSizeSelectHtml('steelCalcHistoryPageSize')}
+                        </div>
                         <div class="flex items-center gap-0.5" id="calcHistoryPagination"></div>
                     </div>
                 </div>
@@ -150,14 +155,14 @@ export function renderCalcHistoryPagination(currentPage, totalPages) {
     if (endPage - startPage < maxVisible - 1) startPage = Math.max(1, endPage - maxVisible + 1);
     if (startPage > 1) {
         buttons += `<button class="calc-history-page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]" data-page="1">1</button>`;
-        if (startPage > 2) buttons += `<span class="px-0.5 text-[#333333] text-[9px]">…</span>`;
+        if (startPage > 2) buttons += `<span class="px-0.5 text-[#333333] text-[9px]">�?/span>`;
     }
     for (let i = startPage; i <= endPage; i++) {
         const isActive = i === currentPage;
         buttons += `<button class="calc-history-page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] ${isActive ? 'bg-[#d32f2f] text-white' : 'text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]'}" data-page="${i}">${i}</button>`;
     }
     if (endPage < totalPages) {
-        if (endPage < totalPages - 1) buttons += `<span class="px-0.5 text-[#333333] text-[9px]">…</span>`;
+        if (endPage < totalPages - 1) buttons += `<span class="px-0.5 text-[#333333] text-[9px]">�?/span>`;
         buttons += `<button class="calc-history-page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]" data-page="${totalPages}">${totalPages}</button>`;
     }
     buttons += `

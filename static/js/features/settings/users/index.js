@@ -1,20 +1,24 @@
 /**
  * Users Page
- * 用户管理 — 对接 /api/users CRUD
+ * 用户管理 �?对接 /api/users CRUD
  *
  * 抽屉式交互：
- * - 编辑/新增  → editDrawer
- * - 修改密码  → passwordDrawer
- * - 删除确认  → deleteDrawer
+ * - 编辑/新增  �?editDrawer
+ * - 修改密码  �?passwordDrawer
+ * - 删除确认  �?deleteDrawer
  */
 
-import { usersTemplate, renderTableRows, renderPagination } from './template.js';
+import { usersTemplate, renderTableRows, renderPagination } from './template.js?v=3';
+import {
+    DEFAULT_PAGE_SIZE,
+    bindPageSizeSelect,
+} from '../../../page-size.js?v=2';
 
 const usersState = {
     records: [],
     total: 0,
     page: 1,
-    pageSize: 20,
+    pageSize: DEFAULT_PAGE_SIZE,
     totalPages: 1,
     keyword: '',
     username: '',
@@ -52,6 +56,13 @@ function closeDrawer(drawerId, backdropId) {
 function init() {
     loadData();
     bindEvents();
+    bindPageSizeSelect('usersPageSize', {
+        getSize: () => usersState.pageSize,
+        setSize: (size) => {
+            usersState.pageSize = size;
+        },
+        onChange: () => loadData(1),
+    });
     const btnAdd = document.getElementById('btnAddUser');
     if (btnAdd && typeof can === 'function' && !can('op:settings-users:create')) {
         btnAdd.classList.add('hidden');
@@ -103,10 +114,10 @@ async function loadData(page = 1) {
             }
         }
 
-        updateOverviewStats();
+        updateOverviewStats(pageResult.filters?.summary || null);
 
         if (totalCountPagination) {
-            totalCountPagination.textContent = `共 ${usersState.total} 条`;
+            totalCountPagination.textContent = `�?${usersState.total} 条`;
         }
         if (paginationBtns) {
             paginationBtns.innerHTML = renderPagination(usersState.page, usersState.totalPages);
@@ -122,26 +133,24 @@ async function loadData(page = 1) {
                 </tr>
             `;
         }
+        usersState.total = 0;
+        usersState.records = [];
+        updateOverviewStats(null);
     } finally {
         usersState.isLoading = false;
         if (loadingState) loadingState.classList.add('hidden');
     }
 }
 
-function updateOverviewStats() {
+function updateOverviewStats(summary) {
     const statTotal = document.getElementById('statTotalUsers');
     const statActive = document.getElementById('statActiveUsers');
     const statAdmin = document.getElementById('statAdminUsers');
+    const data = summary && typeof summary === 'object' ? summary : {};
 
-    if (statTotal) statTotal.textContent = String(usersState.total);
-    if (statActive) {
-        const activeCount = usersState.records.filter((r) => r.is_active !== false).length;
-        statActive.textContent = String(activeCount);
-    }
-    if (statAdmin) {
-        const adminCount = usersState.records.filter((r) => r.is_admin === true).length;
-        statAdmin.textContent = String(adminCount);
-    }
+    if (statTotal) statTotal.textContent = String(usersState.total || 0);
+    if (statActive) statActive.textContent = String(data.active_count ?? 0);
+    if (statAdmin) statAdmin.textContent = String(data.admin_count ?? 0);
 }
 
 function bindTableRowEvents() {
@@ -457,17 +466,17 @@ async function savePassword() {
 
     if (!userId) return;
     if (!password || password.length < 4) {
-        showToast('新密码至少 4 个字符', 'warning');
+        showToast('新密码至�?4 个字�?, 'warning');
         return;
     }
     if (password !== confirm) {
-        showToast('两次输入的密码不一致', 'warning');
+        showToast('两次输入的密码不一�?, 'warning');
         return;
     }
 
     try {
         await HttpClient.put(`${API_BASE}/${userId}/password`, { password });
-        showToast('密码已更新', 'success');
+        showToast('密码已更�?, 'success');
         closeDrawer('passwordDrawer', 'passwordDrawerBackdrop');
     } catch (error) {
         console.error('修改密码失败:', error);
@@ -532,9 +541,9 @@ async function openGrantDrawer(record) {
             bindGrantTreeEvents(container);
         }
     } catch (error) {
-        console.error('加载权限树失败:', error);
+        console.error('加载权限树失�?', error);
         if (container) {
-            container.innerHTML = `<p class="text-[11px] text-[#ef5350]">加载权限树失败</p>`;
+            container.innerHTML = `<p class="text-[11px] text-[#ef5350]">加载权限树失�?/p>`;
         }
     }
 }
@@ -557,7 +566,7 @@ function renderPermissionTree(nodes, checked, depth = 0) {
                            ${isChecked ? 'checked' : ''}
                            ${isMandatory ? 'disabled' : ''}>
                     <span class="text-[11px] ${isMandatory ? 'text-[#888888]' : 'text-[#c0c0c0]'}">${esc(node.label || code)}</span>
-                    <span class="text-[9px] text-[#484848] uppercase tracking-wider">${typeHint}${isMandatory ? ' · 必选' : ''}</span>
+                    <span class="text-[9px] text-[#484848] uppercase tracking-wider">${typeHint}${isMandatory ? ' · 必�? : ''}</span>
                 </label>
                 ${childrenHtml}
             </div>`;
@@ -607,7 +616,7 @@ async function saveGrant() {
     });
     try {
         await HttpClient.put(`${API_BASE}/${userId}/permissions`, { codes });
-        showToast('授权已保存', 'success');
+        showToast('授权已保�?, 'success');
         closeDrawer('grantDrawer', 'grantDrawerBackdrop');
     } catch (error) {
         console.error('保存授权失败:', error);

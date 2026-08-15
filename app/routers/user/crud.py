@@ -33,12 +33,13 @@ def list_users(
     current_user: UserVO = Depends(require_perm(Perm.SETTINGS_USERS_VIEW)),
 ) -> ApiResponse[PageResult[UserVO]]:
     """分页查询用户"""
-    rows, total = _user_service.paginate(db, query)
+    rows, total, filters = _user_service.paginate(db, query)
     return ApiResponse.list_(
         items=rows,
         total=total,
         page=query.page,
         page_size=query.size,
+        filters=filters,
         message="查询成功",
     )
 

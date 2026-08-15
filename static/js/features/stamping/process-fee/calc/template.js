@@ -1,14 +1,16 @@
 /**
  * 冲压加工费计算页模板
- * 布局：筛选栏 + 就绪统计 + 进度条 + 计算历史
+ * 布局：筛选栏 + 就绪统计 + 进度�?+ 计算历史
  */
+
+import { pageSizeSelectHtml } from '../../../../page-size.js?v=2';
 
 export function processFeeCalcTemplate() {
     return `
         <div class="space-y-4 w-full font-sans antialiased text-[#bbb]">
 
             <div class="flex items-center justify-between pb-2 border-b border-[#222]">
-                <h1 class="text-xs font-bold text-[#e0e0e0] tracking-wider">冲压加工费计算</h1>
+                <h1 class="text-xs font-bold text-[#e0e0e0] tracking-wider">冲压加工费计�?/h1>
             </div>
 
             <div class="flex items-center justify-between py-2.5 border-y border-[#1e1e1e]"
@@ -31,12 +33,12 @@ export function processFeeCalcTemplate() {
                 <div class="flex items-center gap-8">
                     <div>
                         <span class="text-[9px] text-[#666] block">匹配零件</span>
-                        <span id="cntParts" class="text-xs font-mono font-bold text-[#dddddd]">- <span class="text-[9px] font-normal text-[#555]">件</span></span>
+                        <span id="cntParts" class="text-xs font-mono font-bold text-[#dddddd]">- <span class="text-[9px] font-normal text-[#555]">�?/span></span>
                     </div>
                     <div class="w-px h-5 bg-[#222]"></div>
                     <div>
                         <span class="text-[9px] text-[#666] block">冲次单价</span>
-                        <span id="cntTonnageRates" class="text-xs font-mono font-bold text-[#dddddd]">- <span class="text-[9px] font-normal text-[#555]">条</span></span>
+                        <span id="cntTonnageRates" class="text-xs font-mono font-bold text-[#dddddd]">- <span class="text-[9px] font-normal text-[#555]">�?/span></span>
                     </div>
                 </div>
 
@@ -46,7 +48,7 @@ export function processFeeCalcTemplate() {
                     </span>
                     <button id="startCalcBtn"
                             class="h-7 px-4 text-[10px] bg-[#b71c1c] hover:bg-[#c62828] text-white font-medium rounded-sm transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
-                        开始计算
+                        开始计�?
                     </button>
                 </div>
             </div>
@@ -55,7 +57,7 @@ export function processFeeCalcTemplate() {
                 <div class="flex items-center justify-between gap-3 mb-2.5">
                     <div class="flex items-center gap-2 min-w-0">
                         <div id="calcProgressSpinner" class="w-3.5 h-3.5 border-2 border-[#2c2c2c] border-t-[#d32f2f] rounded-full animate-spin shrink-0"></div>
-                        <h5 id="calcProgressTitle" class="text-xs font-medium text-[#ffffff] truncate mb-0">正在计算加工费...</h5>
+                        <h5 id="calcProgressTitle" class="text-xs font-medium text-[#ffffff] truncate mb-0">正在计算加工�?..</h5>
                     </div>
                     <span id="calcProgressPercent" class="text-xs font-mono tabular-nums text-[#d32f2f] shrink-0">0%</span>
                 </div>
@@ -64,11 +66,11 @@ export function processFeeCalcTemplate() {
                          class="h-full bg-[#d32f2f] shadow-[0_0_8px_rgba(211,47,47,0.5)] transition-all duration-300"
                          style="width: 0%"></div>
                 </div>
-                <p id="calcProgressMsg" class="text-[11px] text-[#9e9e9e] leading-relaxed mb-0">已提交计算队列</p>
+                <p id="calcProgressMsg" class="text-[11px] text-[#9e9e9e] leading-relaxed mb-0">已提交计算队�?/p>
             </div>
 
             <div id="dataReadyErrorBanner" class="hidden text-[10px] text-[#d69e2e] bg-[#1a1710] px-2.5 py-1.5 border-l-2 border-[#d69e2e]">
-                提示：须选定年度、基地、冲压工厂；并确保存在冲次单价与匹配零件。
+                提示：须选定年度、基地、冲压工厂；并确保存在冲次单价与匹配零件�?
             </div>
 
             <div class="pt-2">
@@ -85,12 +87,12 @@ export function processFeeCalcTemplate() {
                             <thead>
                                 <tr class="bg-[#0a0a0a] border-b border-[#2c2c2c] text-[9px] text-[#555] uppercase tracking-[0.08em]">
                                     <th class="py-2 px-2 font-normal whitespace-nowrap">计算时间</th>
-                                    <th class="py-2 px-2 font-normal whitespace-nowrap">创建人</th>
+                                    <th class="py-2 px-2 font-normal whitespace-nowrap">创建�?/th>
                                     <th class="py-2 px-2 font-normal whitespace-nowrap">年度</th>
                                     <th class="py-2 px-2 font-normal whitespace-nowrap">基地</th>
                                     <th class="py-2 px-2 font-normal whitespace-nowrap">工厂</th>
-                                    <th class="py-2 px-2 font-normal whitespace-nowrap">筛选</th>
-                                    <th class="py-2 px-2 font-normal text-center whitespace-nowrap">状态</th>
+                                    <th class="py-2 px-2 font-normal whitespace-nowrap">筛�?/th>
+                                    <th class="py-2 px-2 font-normal text-center whitespace-nowrap">状�?/th>
                                     <th class="py-2 px-2 font-normal text-right whitespace-nowrap">零件</th>
                                     <th class="py-2 px-2 font-normal text-right whitespace-nowrap">成功</th>
                                     <th class="py-2 px-2 font-normal text-right whitespace-nowrap">失败</th>
@@ -101,13 +103,16 @@ export function processFeeCalcTemplate() {
                             </thead>
                             <tbody id="calcHistoryBody" class="text-[10px] divide-y divide-[#222222]">
                                 <tr>
-                                    <td colspan="13" class="py-8 text-center text-[#555]">加载中...</td>
+                                    <td colspan="13" class="py-8 text-center text-[#555]">加载�?..</td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
                     <div class="flex items-center justify-between px-3 py-2 border-t border-[#1e1e1e] bg-[#141414]">
-                        <span id="calcHistoryTotal" class="text-[10px] text-[#484848]"></span>
+                        <div class="flex items-center gap-3 min-w-0">
+                            <span id="calcHistoryTotal" class="text-[10px] text-[#484848]"></span>
+                            ${pageSizeSelectHtml('feeCalcHistoryPageSize')}
+                        </div>
                         <div class="flex items-center gap-0.5" id="calcHistoryPagination"></div>
                     </div>
                 </div>
@@ -141,14 +146,14 @@ export function renderCalcHistoryPagination(currentPage, totalPages) {
     if (endPage - startPage < maxVisible - 1) startPage = Math.max(1, endPage - maxVisible + 1);
     if (startPage > 1) {
         buttons += `<button class="calc-history-page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]" data-page="1">1</button>`;
-        if (startPage > 2) buttons += `<span class="px-0.5 text-[#333333] text-[9px]">…</span>`;
+        if (startPage > 2) buttons += `<span class="px-0.5 text-[#333333] text-[9px]">�?/span>`;
     }
     for (let i = startPage; i <= endPage; i++) {
         const isActive = i === currentPage;
         buttons += `<button class="calc-history-page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] ${isActive ? 'bg-[#d32f2f] text-white' : 'text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]'}" data-page="${i}">${i}</button>`;
     }
     if (endPage < totalPages) {
-        if (endPage < totalPages - 1) buttons += `<span class="px-0.5 text-[#333333] text-[9px]">…</span>`;
+        if (endPage < totalPages - 1) buttons += `<span class="px-0.5 text-[#333333] text-[9px]">�?/span>`;
         buttons += `<button class="calc-history-page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]" data-page="${totalPages}">${totalPages}</button>`;
     }
     buttons += `
