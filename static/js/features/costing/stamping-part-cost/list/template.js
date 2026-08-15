@@ -1,6 +1,6 @@
 /**
  * Stamping Part Cost List Template
- * 冲压零件价格一�?�?Brabus Carbon & Precision Dark（HUD 与加工费列表一致）
+ * 冲压零件价格一览—Brabus Carbon & Precision Dark（HUD 与加工费列表一致）
  */
 
 import { pageSizeSelectHtml } from '../../../../page-size.js?v=2';
@@ -20,11 +20,11 @@ export function partCostListTemplate() {
                                  style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);">
                                 <div class="text-[#555555] text-[10px] tracking-wider">核价条数</div>
                                 <div class="text-[18px] font-bold text-[#FFFFFF] mt-1 tabular-nums">
-                                    <span id="costHudTotal">�?/span>
-                                    <span class="text-[10px] text-[#555555] ml-1">�?/span>
+                                    <span id="costHudTotal">—/span>
+                                    <span class="text-[10px] text-[#555555] ml-1">条/span>
                                 </div>
                             </div>
-                            <!-- 巴博斯霓虹红�?本期均价 -->
+                            <!-- 巴博斯霓虹红全本期均价 -->
                             <div class="bg-gradient-to-b from-[#18080A] to-[#0D0708] border border-[#FF1E27]/50 p-3.5 relative overflow-hidden group"
                                  style="box-shadow: 0 0 30px rgba(255,30,39,0.15), inset 0 1px 0 rgba(255,30,39,0.12);">
                                 <div class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#FF1E27] to-transparent"
@@ -36,27 +36,27 @@ export function partCostListTemplate() {
                                 </div>
                                 <div class="text-[26px] font-black text-[#FF1E27] font-mono mt-1 tracking-tight tabular-nums"
                                      style="text-shadow: 0 0 12px rgba(255,30,39,0.7), 0 0 25px rgba(255,30,39,0.3);">
-                                    �?span id="costHudAvg">�?/span>
+                                    ￥span id="costHudAvg">—/span>
                                 </div>
                                 <div class="text-[9px] font-mono text-[#FF1E27]/60 mt-1 flex justify-between">
                                     <span>系统自动计算</span>
-                                    <span id="costHudSkuCount">�?�?/span>
+                                    <span id="costHudSkuCount">—板/span>
                                 </div>
                             </div>
                             <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3 backdrop-blur-sm"
                                  style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);">
                                 <div class="text-[#555555] text-[10px] tracking-wider">待审</div>
                                 <div class="text-[18px] font-bold text-[#FFFFFF] mt-1 tabular-nums">
-                                    <span id="costHudPending">�?/span>
-                                    <span class="text-[10px] text-[#555555] ml-1">�?/span>
+                                    <span id="costHudPending">—/span>
+                                    <span class="text-[10px] text-[#555555] ml-1">条/span>
                                 </div>
                             </div>
                             <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3 backdrop-blur-sm"
                                  style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);">
                                 <div class="text-[#555555] text-[10px] tracking-wider">已审</div>
                                 <div class="text-[18px] font-bold text-[#FFFFFF] mt-1 tabular-nums">
-                                    <span id="costHudApproved">�?/span>
-                                    <span class="text-[10px] text-[#555555] ml-1">�?/span>
+                                    <span id="costHudApproved">—/span>
+                                    <span class="text-[10px] text-[#555555] ml-1">条/span>
                                 </div>
                             </div>
                         </div>
@@ -69,7 +69,7 @@ export function partCostListTemplate() {
                             <button id="costBatchReverseBtn" type="button"
                                     class="inline-flex items-center gap-1.5 bg-transparent text-[#6E6E73] border border-[#2A2A35] px-3 py-1.5 text-[11px] font-medium rounded-md hover:border-[#FF1E27]/50 hover:text-[#FF1E27] hover:bg-[#FF1E27]/10 hover:shadow-[0_0_12px_rgba(255,30,39,0.2)] transition-all duration-200">
                                 ${window.svgIcon('refresh', 'w-3 h-3')}
-                                批量反审�?
+                                批量反审核
                             </button>
                             <button id="costBatchDeleteBtn" type="button"
                                     class="inline-flex items-center gap-1.5 bg-transparent text-[#6E6E73] border border-[#2A2A35] px-3 py-1.5 text-[11px] font-medium rounded-md hover:border-[#c62828]/60 hover:text-[#ef5350] hover:bg-[#c62828]/15 hover:shadow-[0_0_12px_rgba(198,40,40,0.2)] transition-all duration-200">
@@ -93,7 +93,7 @@ export function partCostListTemplate() {
                                     </button>
                                     <button type="button" id="costExportDetailBtn" role="menuitem"
                                             class="w-full px-3.5 py-2 text-left text-[12px] text-[#9e9e9e] hover:bg-[#161620] hover:text-[#ffffff] transition-colors"
-                                            title="明细表：业务字段 + 溯源/关联ID + 审核元数�?>
+                                            title="明细表：业务字段 + 溯源/关联ID + 审核元数据>
                                         核算明细
                                     </button>
                                 </div>
@@ -102,7 +102,7 @@ export function partCostListTemplate() {
                     </div>
                 </div>
 
-                <!-- 战术胶囊筛选栏：默认收�?-->
+                <!-- 战术胶囊筛选栏：默认收起-->
                 <div class="px-5 py-3 border-b border-[#14141A]"
                      style="background: linear-gradient(180deg, #0C0C10 0%, #0A0A0E 100%);">
                     <div class="flex items-center justify-between gap-4 bg-[#0C0C10] border border-[#1E1E26] px-4 py-2.5 rounded-xl font-mono text-[11px]"
@@ -118,7 +118,7 @@ export function partCostListTemplate() {
                         <div class="flex items-center gap-3 shrink-0">
                             <button type="button" id="costToggleAdvancedFilter"
                                     class="text-[#6E6E73] hover:text-white transition-colors flex items-center gap-1.5 text-[11px]">
-                                <span id="costAdvancedFilterLabel">展开高级筛�?/span>
+                                <span id="costAdvancedFilterLabel">展开高级筛选/span>
                                 <span id="costAdvancedFilterCount" class="text-[#555555]">(0)</span>
                             </button>
                             <button type="button" id="costSearchBtn"
@@ -130,22 +130,22 @@ export function partCostListTemplate() {
                         </div>
                     </div>
 
-                    <!-- 高级筛选面板（默认折叠�?-->
+                    <!-- 高级筛选面板（默认折叠（-->
                     <div id="costAdvancedFilterPanel" class="hidden mt-3 pt-3 border-t border-[#1A1A22]">
                         <div class="flex items-end gap-3 flex-wrap">
                             ${filterSelect('costYearFilter', '年度')}
                             ${filterSelect('costMonthFilter', '月份')}
                             ${filterSelect('costLocationFilter', '基地')}
                             ${filterSelect('costSupplierFilter', '冲压工厂')}
-                            ${filterSelect('costAuditFilter', '审核状�?)}
-                            ${filterInput('costPartNumberFilter', '零件�?, '短号或完整零件号')}
+                            ${filterSelect('costAuditFilter', '审核状总)}
+                            ${filterInput('costPartNumberFilter', '零件史, '短号或完整零件号')}
                             <button id="costResetBtn" type="button"
                                     class="inline-flex items-center gap-1.5 h-8 px-3 text-[11px] font-medium rounded-md bg-transparent text-[#6E6E73] border border-[#2A2A35] hover:bg-[#FF1E27]/10 hover:border-[#FF1E27]/50 hover:text-[#FF1E27] transition-all duration-200">
                                 ${window.svgIcon('refresh', 'w-3 h-3')}
                                 重置
                             </button>
                         </div>
-                        <p class="mt-2 text-[10px] text-[#555555]">批量删除 / 审核 / 反审核须选定年度、月份、基地、冲压工厂�?/p>
+                        <p class="mt-2 text-[10px] text-[#555555]">批量删除 / 审核 / 反审核须选定年度、月份、基地、冲压工厂。/p>
                     </div>
                 </div>
 
@@ -178,25 +178,25 @@ export function partCostListTemplate() {
                                 <th class="p-0"></th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">年月/基地</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#6E6E73]">零件</th>
-                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">材质/�?/th>
-                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]" title="预估单件材料消�?M (kg)">消�?/th>
-                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]" title="零件净�?>净�?/th>
-                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]" title="废料重量 O = 材料消耗−净�?>废料</th>
-                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]">利用�?</th>
-                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]" title="钢材吨价；P=吨价/1000 �?kg">钢材吨价</th>
-                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]" title="废料吨价；Q=吨价/1000 �?kg">废料吨价</th>
-                                <th class="cost-breakdown-col hidden px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]" title="�?钢材采购（含损耗）">①采�?/th>
-                                <th class="cost-breakdown-col hidden px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]" title="�?损耗废料扣除（回收率）">②损耗扣</th>
-                                <th class="cost-breakdown-col hidden px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]" title="�?边角废料扣除（回收率�?>③边角扣</th>
-                                <th class="cost-breakdown-col hidden px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]" title="废料扣除合计 �?�?>废料扣合�?/th>
-                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#6E6E73]" title="R = ①−②−�?>
+                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">材质/压/th>
+                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]" title="预估单件材料消耗M (kg)">消耗/th>
+                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]" title="零件净量>净量/th>
+                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]" title="废料重量 O = 材料消耗−净量>废料</th>
+                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]">利用率</th>
+                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]" title="钢材吨价；P=吨价/1000 全kg">钢材吨价</th>
+                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]" title="废料吨价；Q=吨价/1000 全kg">废料吨价</th>
+                                <th class="cost-breakdown-col hidden px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]" title="③钢材采购（含损耗）">①采败/th>
+                                <th class="cost-breakdown-col hidden px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]" title="③损耗废料扣除（回收率）">②损耗扣</th>
+                                <th class="cost-breakdown-col hidden px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]" title="③边角废料扣除（回收率）>③边角扣</th>
+                                <th class="cost-breakdown-col hidden px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]" title="废料扣除合计 ②③>废料扣合计/th>
+                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#6E6E73]" title="R = ①−②−③>
                                     <button type="button" id="costToggleBreakdownCols"
                                             class="inline-flex items-center justify-center w-3.5 h-3.5 mr-0.5 align-middle border border-[#22222A] text-[#555555] hover:text-[#FF1E27] hover:border-[#FF1E27]/40 transition-colors"
                                             title="展开成本分项（①采购 / ②损耗扣 / ③边角扣 / 废料扣合计）">+</button>
                                     原材料R
                                 </th>
-                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]">加工�?/th>
-                                <th class="px-2 py-2 text-right text-[9px] font-semibold tracking-[0.06em] text-[#FF1E27]/90 bg-[#1A080A]" title="单件成本 = 原材�?R + 加工�?>单件成本</th>
+                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]">加工费/th>
+                                <th class="px-2 py-2 text-right text-[9px] font-semibold tracking-[0.06em] text-[#FF1E27]/90 bg-[#1A080A]" title="单件成本 = 原材新R + 加工费>单件成本</th>
                                 <th class="px-1 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-[#555555]">核算</th>
                                 <th class="px-1 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-[#555555]">审核</th>
                                 <th class="p-0 w-9" aria-label="操作"></th>
@@ -219,7 +219,7 @@ export function partCostListTemplate() {
                         ${window.svgIcon('clipboard-list', 'w-4 h-4 text-[#555555]')}
                     </div>
                     <h5 class="text-[11px] font-medium text-[#8E8E93] mb-1">暂无零件价格数据</h5>
-                    <p class="text-[10px] text-[#555555]">请先完成零件价格计算，或调整筛选条�?/p>
+                    <p class="text-[10px] text-[#555555]">请先完成零件价格计算，或调整筛选条件/p>
                 </div>
 
                 <div id="costLoading" class="hidden flex items-center justify-center py-14">
@@ -253,8 +253,8 @@ export function renderCostRows(records, breakdownOpen = false) {
     return records.map((row) => {
         const fail = row.calc_status === 'failed';
         const ym = `${esc(row.year)}-${esc(String(row.month).padStart(2, '0'))}`;
-        const location = esc(row.location) || '�?;
-        const supplier = esc(row.stamping_supplier) || '�?;
+        const location = esc(row.location) || '—;
+        const supplier = esc(row.stamping_supplier) || '—;
         const num = 'px-2 py-2 font-mono text-[10px] text-right tabular-nums text-[#8E8E93]';
         const actionTitle = fail ? '手工干预' : '查看详情';
         const actionIcon = fail
@@ -283,7 +283,7 @@ export function renderCostRows(records, breakdownOpen = false) {
             </td>
             <td class="px-2 py-2 overflow-hidden">${partInfoCell(row.part_number, row.part_name)}</td>
             <td class="px-2 py-2 overflow-hidden">
-                <div class="text-[#8E8E93] text-[10px] truncate" title="${esc(row.material || '')}">${esc(row.material || '�?)}</div>
+                <div class="text-[#8E8E93] text-[10px] truncate" title="${esc(row.material || '')}">${esc(row.material || '—)}</div>
                 <div class="text-[#555555] text-[9px] mt-0.5 tabular-nums">${fmtNum(row.thickness, 3)}</div>
             </td>
             <td class="${num}" title="${esc(fmtNum(row.blank_weight_kg, 7))}">${fmtNum(row.blank_weight_kg, 3)}</td>
@@ -309,7 +309,7 @@ export function renderCostRows(records, breakdownOpen = false) {
 }
 
 /**
- * 同步成本分项列显隐（①采�?/ ②损耗扣 / ③边角扣 / 废料扣合计）
+ * 同步成本分项列显隐（①采败/ ②损耗扣 / ③边角扣 / 废料扣合计）
  * @param {boolean} isOpen
  */
 export function syncBreakdownColumnVisibility(isOpen) {
@@ -318,7 +318,7 @@ export function syncBreakdownColumnVisibility(isOpen) {
     });
     const btn = document.getElementById('costToggleBreakdownCols');
     if (btn) {
-        btn.textContent = isOpen ? '�? : '+';
+        btn.textContent = isOpen ? '− : '+';
         btn.title = isOpen
             ? '收起成本分项'
             : '展开成本分项（①采购 / ②损耗扣 / ③边角扣 / 废料扣合计）';
@@ -330,8 +330,8 @@ export function syncBreakdownColumnVisibility(isOpen) {
 }
 
 /**
- * 企业口语短号：取零件号数字段�?4 位（�?BOM / 加工费一致）�?
- * 例：554002087AA �?2087�?01006873AA �?6873
+ * 企业口语短号：取零件号数字段术4 位（中BOM / 加工费一致）。
+ * 例：554002087AA →2087（01006873AA →6873
  */
 export function shortPartNumber(partNumber) {
     if (!partNumber) return null;
@@ -340,7 +340,7 @@ export function shortPartNumber(partNumber) {
     return digits.slice(-4);
 }
 
-/** 列表单元格：短号主角，完整号 + 零件名次�?*/
+/** 列表单元格：短号主角，完整号 + 零件名次要*/
 function partInfoCell(partNumber, partName) {
     const full = partNumber || '';
     const shortNo = shortPartNumber(full);
@@ -356,11 +356,11 @@ function partInfoCell(partNumber, partName) {
             ${nameLine}`;
     }
     return `
-        <div class="text-[10px] font-mono text-[#8E8E93] tracking-wide truncate" title="${esc(full)}">${esc(full) || '�?}</div>
+        <div class="text-[10px] font-mono text-[#8E8E93] tracking-wide truncate" title="${esc(full)}">${esc(full) || '—}</div>
         ${nameLine}`;
 }
 
-/** 用筛选汇总刷�?HUD（均�?/ 待审 / 已审均为全量筛选结果，非本页） */
+/** 用筛选汇总刷新HUD（均价/ 待审 / 已审均为全量筛选结果，非本页） */
 export function updatePartCostHud(total, summary) {
     const setText = (id, value) => {
         const el = document.getElementById(id);
@@ -374,7 +374,7 @@ export function updatePartCostHud(total, summary) {
     setText(
         'costHudAvg',
         Number.isNaN(avgNumber)
-            ? '�?
+            ? '—
             : avgNumber.toLocaleString('zh-CN', {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 4,
@@ -386,7 +386,7 @@ export function updatePartCostHud(total, summary) {
 }
 
 /**
- * 同步战术胶囊：期�?/ 基地 / 工厂 + 高级筛选已启用数量
+ * 同步战术胶囊：期间/ 基地 / 工厂 + 高级筛选已启用数量
  */
 export function updateCostFilterCapsules() {
     const year = document.getElementById('costYearFilter')?.value || '';
@@ -442,14 +442,14 @@ export function renderCostPagination(currentPage, totalPages) {
     if (endPage - startPage < maxVisible - 1) startPage = Math.max(1, endPage - maxVisible + 1);
     if (startPage > 1) {
         buttons += `<button class="cost-page-btn flex items-center justify-center w-6 h-6 text-[10px] text-[#555555] hover:text-[#C8C8D0] hover:bg-[#161620]" data-page="1">1</button>`;
-        if (startPage > 2) buttons += `<span class="px-0.5 text-[#2E2E36] text-[9px]">�?/span>`;
+        if (startPage > 2) buttons += `<span class="px-0.5 text-[#2E2E36] text-[9px]">—/span>`;
     }
     for (let i = startPage; i <= endPage; i++) {
         const isActive = i === currentPage;
         buttons += `<button class="cost-page-btn flex items-center justify-center w-6 h-6 text-[10px] ${isActive ? 'bg-[#E8E8ED] text-[#0A0A0C] font-bold' : 'text-[#555555] hover:text-[#C8C8D0] hover:bg-[#161620]'}" data-page="${i}">${i}</button>`;
     }
     if (endPage < totalPages) {
-        if (endPage < totalPages - 1) buttons += `<span class="px-0.5 text-[#2E2E36] text-[9px]">�?/span>`;
+        if (endPage < totalPages - 1) buttons += `<span class="px-0.5 text-[#2E2E36] text-[9px]">—/span>`;
         buttons += `<button class="cost-page-btn flex items-center justify-center w-6 h-6 text-[10px] text-[#555555] hover:text-[#C8C8D0] hover:bg-[#161620]" data-page="${totalPages}">${totalPages}</button>`;
     }
     buttons += `
@@ -460,13 +460,13 @@ export function renderCostPagination(currentPage, totalPages) {
     return buttons;
 }
 
-/** 无错即隐：成功不占视觉；失败才露「失败�?*/
+/** 无错即隐：成功不占视觉；失败才露「失败。*/
 function calcStatusBadge(isFailed) {
     if (!isFailed) return '';
     return `<span class="text-[#FF1E27] font-bold text-[9px] px-1 bg-[#FF1E27]/10 border border-[#FF1E27]/25">失败</span>`;
 }
 
-/** 待审留白；已通过/驳回才轻�?*/
+/** 待审留白；已通过/驳回才轻核*/
 function auditBadge(status) {
     if (!status || status === 'pending') return '';
     if (status === 'approved') {

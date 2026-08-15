@@ -12,6 +12,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from sqlalchemy.orm import Session
 
+from app.common.audit import audit_status_label
 from app.repositories.bom.bom_repository import BomNodeRepository, BomSnapshotRepository
 from app.repositories.stamping.scrap_price_repository import StampingScrapPriceRepository
 from app.repositories.stamping.stamping_process_fee_repository import (
@@ -39,11 +40,6 @@ logger = logging.getLogger("service.stamping_part_cost_export")
 
 ExportFormat = Literal["detail", "process_sheet"]
 
-_AUDIT_LABEL = {
-    "pending": "待审",
-    "approved": "已通过",
-    "rejected": "已驳回",
-}
 
 _THIN = Border(
     left=Side(style="thin", color="333333"),
@@ -892,7 +888,7 @@ class StampingPartCostExportService:
                 _num(row.unit_cost, 4),
                 row.calc_status or "",
                 row.calc_fail_reason or "",
-                _AUDIT_LABEL.get(row.audit_status, row.audit_status or ""),
+                audit_status_label(row.audit_status),
                 row.calc_batch_id or "",
                 row.formula_version or "",
                 _dt(row.calculated_at),

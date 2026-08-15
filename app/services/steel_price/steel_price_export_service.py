@@ -10,17 +10,11 @@ from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from sqlalchemy.orm import Session
 
+from app.common.audit import audit_status_label
 from app.repositories.steel_price.steel_price_repository import SteelPriceRepository
 
 
 logger = logging.getLogger("service.steel_price_export")
-
-# 审核状态中文
-_AUDIT_LABEL = {
-    "pending": "待审",
-    "approved": "已通过",
-    "rejected": "已驳回",
-}
 
 
 def _num(value: Any, digits: int | None = None):
@@ -234,7 +228,7 @@ class SteelPriceExportService:
                 record.calc_batch_id or "",
                 record.formula_version or "",
                 _dt(record.calculated_at),
-                _AUDIT_LABEL.get(record.audit_status, record.audit_status or ""),
+                audit_status_label(record.audit_status),
                 record.audited_by or "",
                 _dt(record.audited_at),
                 record.audit_remark or "",
@@ -295,7 +289,7 @@ class SteelPriceExportService:
         if grade:
             parts.append(grade)
         if audit_status:
-            parts.append(_AUDIT_LABEL.get(audit_status, audit_status))
+            parts.append(audit_status_label(audit_status))
         filename = "_".join(parts) + ".xlsx"
 
         output = BytesIO()

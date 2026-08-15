@@ -1,5 +1,5 @@
 /**
- * 冲压零件价格计算�?
+ * 冲压零件价格计算页
  */
 
 import {
@@ -18,11 +18,11 @@ const CALC_READY_API = `${API_BASE}/calc/ready`;
 const CALC_TASK_API = `${API_BASE}/calc/tasks`;
 const CALC_LOGS_API = `${API_BASE}/calc/logs`;
 const POLL_INTERVAL_MS = 1500;
-const DUPLICATE_SCOPE_CALC_MESSAGE = '当前年度/月份/基地/工厂正在计算中，请勿重复提交�?;
-const SCOPE_REQUIRED_MESSAGE = '须选定年度、月份、基地、冲压工�?;
+const DUPLICATE_SCOPE_CALC_MESSAGE = '当前年度/月份/基地/工厂正在计算中，请勿重复提交。;
+const SCOPE_REQUIRED_MESSAGE = '须选定年度、月份、基地、冲压工厂;
 
 const STATUS_META = {
-    processing: { label: '计算�?, className: 'text-[#64b5f6]' },
+    processing: { label: '计算中, className: 'text-[#64b5f6]' },
     success: { label: '成功', className: 'text-[#66bb6a]' },
     partial: { label: '部分成功', className: 'text-[#ffb74d]' },
     failed: { label: '失败', className: 'text-[#ef5350]' },
@@ -284,10 +284,10 @@ function validateDataPreparation() {
 }
 
 function setReadyCounts(ready) {
-    setCountHtml('cntParts', ready.part_count, '�?);
-    setCountHtml('cntSteel', ready.steel_price_count, '�?);
-    setCountHtml('cntScrap', ready.scrap_price_count, '�?);
-    setCountHtml('cntFee', ready.process_fee_count, '�?);
+    setCountHtml('cntParts', ready.part_count, '价);
+    setCountHtml('cntSteel', ready.steel_price_count, '条);
+    setCountHtml('cntScrap', ready.scrap_price_count, '条);
+    setCountHtml('cntFee', ready.process_fee_count, '条);
 }
 
 function setCountHtml(id, count, unit) {
@@ -300,7 +300,7 @@ function setCountHtml(id, count, unit) {
 async function loadCalcHistory(page = calcState.history.page) {
     const body = document.getElementById('calcHistoryBody');
     if (!body) return;
-    body.innerHTML = `<tr><td colspan="12" class="py-8 text-center text-[#555]">加载�?..</td></tr>`;
+    body.innerHTML = `<tr><td colspan="12" class="py-8 text-center text-[#555]">加载中..</td></tr>`;
     try {
         const res = await HttpClient.get(CALC_LOGS_API, {
             params: { page, size: calcState.history.size },
@@ -313,7 +313,7 @@ async function loadCalcHistory(page = calcState.history.page) {
         calcState.history.items = items;
         renderHistoryRows(items);
         const totalEl = document.getElementById('calcHistoryTotal');
-        if (totalEl) totalEl.textContent = `�?${calcState.history.total} 条`;
+        if (totalEl) totalEl.textContent = `全${calcState.history.total} 条`;
         const pagination = document.getElementById('calcHistoryPagination');
         if (pagination) {
             pagination.innerHTML = renderCalcHistoryPagination(
@@ -368,7 +368,7 @@ function renderHistoryRows(items) {
                 <td class="py-2 px-2 font-mono text-right tabular-nums ${Number(item.failed_count) > 0 ? 'text-[#ef5350]' : 'text-[#777]'}">${fmtInt(item.failed_count)}</td>
                 <td class="py-2 px-2 font-mono text-right tabular-nums text-[#777]">${fmtInt(item.skipped_approved_count)}</td>
                 <td class="py-2 px-2 text-right whitespace-nowrap">
-                    ${isProcessing ? `<span class="text-[9px] text-[#555]">进行�?/span>` : `
+                    ${isProcessing ? `<span class="text-[9px] text-[#555]">进行中/span>` : `
                     <button type="button" class="calc-view-process-btn text-[9px] text-[#777] hover:text-white mr-2" data-log-id="${esc(item.id)}">过程</button>
                     ${item.status === 'failed' ? '' : `
                     <button type="button" class="calc-view-result-btn text-[9px] text-[#777] hover:text-white mr-2"
@@ -404,10 +404,10 @@ function renderHistoryRows(items) {
 async function deleteCalcLog(logId) {
     if (!logId) return;
     if (calcState.canDelete === false) {
-        showToast('无删除权�?, 'warning');
+        showToast('无删除权除, 'warning');
         return;
     }
-    if (!window.confirm('确定删除这条计算历史？仅删除日志，不影响已落库结果�?)) return;
+    if (!window.confirm('确定删除这条计算历史？仅删除日志，不影响已落库结果。)) return;
     try {
         await HttpClient.delete(`${CALC_LOGS_API}/${logId}`);
         showToast('删除成功', 'success');
@@ -456,12 +456,12 @@ function showProcessDrawer(log) {
             </button>
         </div>
         <div class="px-5 py-3 border-b border-[#222] text-[10px] text-[#777] space-y-1 shrink-0">
-            <div>批次�?span class="font-mono text-[#999]">${esc(log.calc_batch_id || '-')}</span></div>
-            <div>时间�?{esc(formatDateTime(log.started_at))} �?${esc(formatDateTime(log.finished_at))}</div>
+            <div>批次（span class="font-mono text-[#999]">${esc(log.calc_batch_id || '-')}</span></div>
+            <div>时间（{esc(formatDateTime(log.started_at))} →${esc(formatDateTime(log.finished_at))}</div>
             <div>汇总：零件 ${fmtInt(log.total_parts)} · 成功 ${fmtInt(log.success_count)} · 失败 ${fmtInt(log.failed_count)} · 跳过 ${fmtInt(log.skipped_approved_count)}</div>
         </div>
         <div class="flex-1 overflow-y-auto overscroll-contain p-5">
-            <pre class="text-[11px] leading-5 font-mono text-[#9e9e9e] whitespace-pre-wrap break-words bg-[#111111] border border-[#262626] p-4">${esc(log.detail_text || '（无过程文本�?)}</pre>
+            <pre class="text-[11px] leading-5 font-mono text-[#9e9e9e] whitespace-pre-wrap break-words bg-[#111111] border border-[#262626] p-4">${esc(log.detail_text || '（无过程文本）)}</pre>
         </div>
     `;
     document.body.appendChild(backdrop);
@@ -477,7 +477,7 @@ function closeProcessDrawer() {
 
 async function startCalculation() {
     if (calcState.canRun === false) {
-        showToast('无计算权�?, 'warning');
+        showToast('无计算权除, 'warning');
         return;
     }
     if (calcState.isCalculating) return;
@@ -494,7 +494,7 @@ async function startCalculation() {
         return;
     }
     if (!calcState.ready.can_calculate) {
-        showToast('当前所选条件数据未就绪，无法计�?, 'warning');
+        showToast('当前所选条件数据未就绪，无法计算, 'warning');
         document.getElementById('dataReadyErrorBanner')?.classList.remove('hidden');
         return;
     }
@@ -509,12 +509,12 @@ async function startCalculation() {
     if (version) payload.version = version;
 
     setCalculating(true);
-    showProgress(0, '已提交计算队�?);
+    showProgress(0, '已提交计算队删);
 
     try {
         const response = await HttpClient.post(CALC_API, payload);
         const taskId = response.data?.task_id;
-        if (!taskId) throw new Error('未返回任�?ID');
+        if (!taskId) throw new Error('未返回任加ID');
         loadCalcHistory(1);
         startPolling(taskId);
     } catch (error) {
@@ -528,14 +528,14 @@ async function startCalculation() {
     }
 }
 
-function showProgress(progress = 0, msg = '已提交计算队�?) {
+function showProgress(progress = 0, msg = '已提交计算队删) {
     document.getElementById('calcProgressPanel')?.classList.remove('hidden');
     updateProgress(progress, msg);
 }
 
 function hideProgress() {
     document.getElementById('calcProgressPanel')?.classList.add('hidden');
-    updateProgress(0, '已提交计算队�?);
+    updateProgress(0, '已提交计算队删);
 }
 
 function updateProgress(progress, msg, status) {
@@ -595,7 +595,7 @@ function startPolling(taskId) {
                 showToast(
                     status === 'failed'
                         ? data?.msg || '计算失败'
-                        : `计算${STATUS_META[bizStatus]?.label || '完成'}：成�?${fmtInt(result.success_count)}，失�?${fmtInt(result.failed_count)}`,
+                        : `计算${STATUS_META[bizStatus]?.label || '完成'}：成加${fmtInt(result.success_count)}，失败${fmtInt(result.failed_count)}`,
                     status === 'failed' || bizStatus === 'failed'
                         ? 'error'
                         : bizStatus === 'partial'
@@ -646,11 +646,11 @@ function setCalculating(isCalculating) {
     if (isCalculating) {
         startBtn.setAttribute('disabled', 'true');
         startBtn.classList.add('opacity-50', 'pointer-events-none');
-        startBtn.textContent = '计算�?..';
+        startBtn.textContent = '计算中..';
     } else {
         startBtn.removeAttribute('disabled');
         startBtn.classList.remove('opacity-50', 'pointer-events-none');
-        startBtn.textContent = '开始计�?;
+        startBtn.textContent = '开始计算;
         validateDataPreparation();
     }
 }

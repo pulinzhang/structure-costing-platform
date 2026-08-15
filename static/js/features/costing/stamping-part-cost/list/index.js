@@ -1,5 +1,5 @@
 /**
- * 冲压零件价格一�?
+ * 冲压零件价格一览
  */
 
 import {
@@ -92,7 +92,7 @@ function setAdvancedOpen(isOpen) {
     listState.advancedOpen = isOpen;
     document.getElementById('costAdvancedFilterPanel')?.classList.toggle('hidden', !isOpen);
     const label = document.getElementById('costAdvancedFilterLabel');
-    if (label) label.textContent = isOpen ? '收起高级筛�? : '展开高级筛�?;
+    if (label) label.textContent = isOpen ? '收起高级筛选 : '展开高级筛选;
 }
 
 function setExportMenuOpen(isOpen) {
@@ -247,7 +247,7 @@ function fillAuditOptions() {
         <option value="">全部</option>
         <option value="pending">待审</option>
         <option value="approved">已通过</option>
-        <option value="rejected">已驳�?/option>
+        <option value="rejected">已驳回/option>
     `;
 }
 
@@ -317,7 +317,7 @@ function getFilters() {
 function requireScope() {
     const f = getFilters();
     if (!f.year || !f.month || !f.location || !f.stamping_supplier) {
-        showToast('批量操作须选定年度、月份、基地、冲压工�?, 'warning');
+        showToast('批量操作须选定年度、月份、基地、冲压工厂, 'warning');
         return null;
     }
     return {
@@ -349,7 +349,7 @@ async function loadList(page = 1) {
         updatePartCostHud(listState.total, pageData.filters?.summary || null);
         const pageInfo = document.getElementById('costPageInfo');
         if (pageInfo) {
-            pageInfo.textContent = `�?${listState.page} / ${Math.max(listState.totalPages, 1)} �?· ${listState.total} 条`;
+            pageInfo.textContent = `第${listState.page} / ${Math.max(listState.totalPages, 1)} 页· ${listState.total} 条`;
         }
         const pagination = document.getElementById('costPagination');
         if (pagination) {
@@ -422,10 +422,10 @@ function showDetailDrawer(row) {
     const canEditUnitCost = failStatus && listState.canUpdate && !isApproved;
     const auditText =
         row.audit_status === 'approved'
-            ? '已审�?
+            ? '已审核
             : row.audit_status === 'rejected'
-              ? '已驳�?
-              : '待审�?;
+              ? '已驳回
+              : '待审核;
     const auditBadgeColor =
         row.audit_status === 'approved'
             ? 'text-[#8E8E93] bg-[#161620] border-[#2A2A38]'
@@ -435,15 +435,15 @@ function showDetailDrawer(row) {
 
     const unitCostDisplay =
         row.unit_cost == null || row.unit_cost === ''
-            ? '�?
-            : `�?{esc(fmtNum(row.unit_cost, 4))}`;
+            ? '—
+            : `￥{esc(fmtNum(row.unit_cost, 4))}`;
 
     const heroCostHtml = canEditUnitCost
         ? `
             <div class="text-right shrink-0 w-[200px]">
                 <label class="block text-[9px] text-[#6E6E73] mb-1 tracking-wider">最终成本（元）</label>
                 <div class="flex items-center justify-end gap-1">
-                    <span class="text-[#FF1E27] text-sm font-bold">�?/span>
+                    <span class="text-[#FF1E27] text-sm font-bold">￥/span>
                     <input type="number" id="costManualUnitCost" min="0" step="0.000001"
                            value="${row.unit_cost == null ? '' : esc(String(row.unit_cost))}"
                            class="w-full h-9 px-2 text-right text-[16px] font-black tabular-nums bg-[#0A0A0E] border border-[#FF1E27]/40 text-[#FF1E27] placeholder:text-[#3A3A42] focus:outline-none focus:border-[#FF1E27] rounded-sm"
@@ -465,11 +465,11 @@ function showDetailDrawer(row) {
         <div class="px-6 py-4 border-b border-[#1A1A24] bg-[#0C0C10] shrink-0 space-y-3">
             <div class="flex items-center gap-2 text-[10px] text-[#FF1E27]">
                 <span class="w-1.5 h-1.5 bg-[#FF1E27] rounded-full"></span>
-                <span class="font-bold tracking-wider">计算失败 · 可手工录入最终成�?/span>
+                <span class="font-bold tracking-wider">计算失败 · 可手工录入最终成术/span>
             </div>
             ${row.calc_fail_reason ? `
                 <div class="text-[10px] text-[#8E8E93] leading-relaxed bg-[#1A080A] border border-[#FF1E27]/20 px-3 py-2 rounded-sm">
-                    失败原因�?{esc(row.calc_fail_reason)}
+                    失败原因（{esc(row.calc_fail_reason)}
                 </div>
             ` : ''}
             <div>
@@ -478,12 +478,12 @@ function showDetailDrawer(row) {
                 </label>
                 <textarea id="costManualRemark" rows="3" maxlength="500"
                           class="w-full px-3 py-2 text-[11px] bg-[#0A0A0E] border border-[#2A2A38] text-[#E8E8ED] placeholder:text-[#555555] focus:outline-none focus:border-[#FF1E27] rounded-sm resize-none"
-                          placeholder="必填：说明手工改价原�?>${esc(row.remark || '')}</textarea>
+                          placeholder="必填：说明手工改价原回>${esc(row.remark || '')}</textarea>
             </div>
             <div class="flex items-center justify-end gap-2">
                 <button type="button" id="costManualSaveBtn"
                         class="inline-flex items-center justify-center gap-1.5 bg-[#d32f2f] text-white px-4 py-2 text-[11px] font-semibold rounded hover:bg-[#b71c1c] transition-all">
-                    保存最终成�?
+                    保存最终成本
                 </button>
             </div>
         </div>
@@ -491,7 +491,7 @@ function showDetailDrawer(row) {
         : failStatus && isApproved
           ? `
         <div class="px-6 py-3 border-b border-[#1A1A24] bg-[#0C0C10] shrink-0 text-[10px] text-[#8E8E93]">
-            已审核通过，请先反审核后再手工改价�?
+            已审核通过，请先反审核后再手工改价。
         </div>
         `
           : '';
@@ -510,13 +510,13 @@ function showDetailDrawer(row) {
                         <h5 class="text-[13px] font-bold tracking-wide text-[#F0F0F2] truncate">${esc(row.part_name || '零件核算详情')}</h5>
                         <span class="text-[9px] px-1.5 py-0.5 border ${auditBadgeColor} rounded-sm shrink-0">${auditText}</span>
                     </div>
-                    <div class="text-[10px] text-[#555555] tracking-wide mt-0.5 truncate">${esc(row.part_number || '�?)}</div>
+                    <div class="text-[10px] text-[#555555] tracking-wide mt-0.5 truncate">${esc(row.part_number || '—)}</div>
                 </div>
             </div>
             <button type="button" id="closeCostDetailDrawer"
                     class="w-7 h-7 flex items-center justify-center bg-[#121216] border border-[#22222A] text-[#6E6E73] hover:text-[#F0F0F2] hover:border-[#FF1E27]/50 hover:bg-[#1A080A] rounded-sm transition-all shrink-0 ml-4"
                     title="关闭">
-                �?
+                ✕
             </button>
         </div>
 
@@ -529,9 +529,9 @@ function showDetailDrawer(row) {
                         单件核算成本
                     </div>
                     <div class="text-[10px] text-[#6E6E73] font-mono">
-                        原材�?R <span class="text-[#E8E8ED]">�?{fmtNum(row.material_net_per_part, 2)}</span>
+                        原材新R <span class="text-[#E8E8ED]">￥{fmtNum(row.material_net_per_part, 2)}</span>
                         <span class="text-[#3A3A42] mx-1">+</span>
-                        加工�?<span class="text-[#E8E8ED]">�?{fmtNum(row.process_fee_amount, 2)}</span>
+                        加工费<span class="text-[#E8E8ED]">￥{fmtNum(row.process_fee_amount, 2)}</span>
                     </div>
                 </div>
                 ${heroCostHtml}
@@ -541,62 +541,62 @@ function showDetailDrawer(row) {
         ${editPanelHtml}
 
         <div class="flex-1 overflow-y-auto p-6 space-y-4 text-[#8E8E93] bg-[#0A0A0E]">
-            ${detailBlock('基础属�?, [
-                ['零件�?, row.part_number || '�?],
-                ['短号', shortNo || '�?],
-                ['零件名称', row.part_name || '�?],
-                ['基地 / 工厂', `${row.location || '�?} / ${row.stamping_supplier || '�?}`],
+            ${detailBlock('基础属总, [
+                ['零件史, row.part_number || '—],
+                ['短号', shortNo || '—],
+                ['零件名称', row.part_name || '—],
+                ['基地 / 工厂', `${row.location || '—} / ${row.stamping_supplier || '—}`],
                 ['核算年月', `${row.year}-${String(row.month).padStart(2, '0')}`],
-                ['车型 / 版本', `${row.vehicle_model || '�?} / ${row.version || '�?}`],
-                ['材质 / 厚度', `${row.material || '�?} / ${fmtNum(row.thickness, 3)} mm`],
+                ['车型 / 版本', `${row.vehicle_model || '—} / ${row.version || '—}`],
+                ['材质 / 厚度', `${row.material || '—} / ${fmtNum(row.thickness, 3)} mm`],
                 ['料片尺寸', `${fmtNum(row.sheet_length, 2)} × ${fmtNum(row.sheet_width, 2)} mm`],
-                ['可制件数', row.parts_per_sheet ?? '�?],
+                ['可制件数', row.parts_per_sheet ?? '—],
                 ['成品单重', `${fmtNum(row.part_weight, 4)} kg`],
             ])}
 
-            ${detailBlock('过程计算�?, [
+            ${detailBlock('过程计算量, [
                 [
-                    '密度 / 损�?/ 回收',
-                    `${fmtNum(row.density, 2)} g/cm³ · ${fmtNum((Number(row.material_loss_rate) || 0) * 1000, 2)}�?· ${fmtNum((Number(row.scrap_recovery_rate) || 0) * 100, 1)}%`,
+                    '密度 / 损耗/ 回收',
+                    `${fmtNum(row.density, 2)} g/cm³ · ${fmtNum((Number(row.material_loss_rate) || 0) * 1000, 2)}—· ${fmtNum((Number(row.scrap_recovery_rate) || 0) * 100, 1)}%`,
                 ],
-                ['预估单件材料消�?M', `${fmtNum(row.blank_weight_kg, 7)} kg`],
-                ['零件净�?, `${fmtNum(row.finished_total_kg, 7)} kg`],
+                ['预估单件材料消耗M', `${fmtNum(row.blank_weight_kg, 7)} kg`],
+                ['零件净量, `${fmtNum(row.finished_total_kg, 7)} kg`],
                 ['废料重量 O', `${fmtNum(row.scrap_weight_kg, 7)} kg`],
                 [
-                    '材料利用�?,
+                    '材料利用率,
                     `<span class="text-[#F0F0F2] font-bold">${fmtNum(row.material_utilization_pct, 2)} %</span>`,
                 ],
             ])}
 
-            ${detailBlock('价格与吨�?, [
-                ['钢厂', row.steel_mill || '�?],
-                ['钢材吨价 P', `�?{fmtNum(row.steel_ton_price, 2)} /t`],
-                ['废料吨价 Q', `�?{fmtNum(row.scrap_ton_price, 2)} /t`],
+            ${detailBlock('价格与吨价, [
+                ['钢厂', row.steel_mill || '—],
+                ['钢材吨价 P', `￥{fmtNum(row.steel_ton_price, 2)} /t`],
+                ['废料吨价 Q', `￥{fmtNum(row.scrap_ton_price, 2)} /t`],
             ])}
 
-            ${detailBlock('原材料成本拆解（R = �?�?�?�?③）', [
-                ['�?钢材采购成本（含损耗）', `�?{fmtNum(row.material_amount_sheet, 4)}`],
-                ['�?损耗废料扣除（回收率）', `�?{fmtNum(row.loss_scrap_deduction, 4)}`],
-                ['�?边角废料扣除（回收率�?, `�?{fmtNum(row.process_scrap_deduction, 4)}`],
-                ['废料扣除小计（② + ③）', `�?{fmtNum(row.scrap_amount_sheet, 4)}`],
+            ${detailBlock('原材料成本拆解（R = ①−③−③）', [
+                ['③钢材采购成本（含损耗）', `￥{fmtNum(row.material_amount_sheet, 4)}`],
+                ['③损耗废料扣除（回收率）', `￥{fmtNum(row.loss_scrap_deduction, 4)}`],
+                ['③边角废料扣除（回收率）, `￥{fmtNum(row.process_scrap_deduction, 4)}`],
+                ['废料扣除小计（② + ③）', `￥{fmtNum(row.scrap_amount_sheet, 4)}`],
                 [
                     '原材料净成本 R',
-                    `<span class="text-[#FF1E27] font-semibold">�?{fmtNum(row.material_net_per_part, 4)}</span>`,
+                    `<span class="text-[#FF1E27] font-semibold">￥{fmtNum(row.material_net_per_part, 4)}</span>`,
                 ],
-                ['加工�?, `�?{fmtNum(row.process_fee_amount, 3)}`],
+                ['加工费, `￥{fmtNum(row.process_fee_amount, 3)}`],
             ])}
 
             ${detailBlock('状态与来源', [
                 [
-                    '计算状�?,
+                    '计算状总,
                     failStatus
-                        ? `<span class="text-[#FF1E27] font-bold bg-[#FF1E27]/10 px-1.5 py-0.5 border border-[#FF1E27]/30">失败�?{esc(row.calc_fail_reason || '未知原因')}�?/span>`
+                        ? `<span class="text-[#FF1E27] font-bold bg-[#FF1E27]/10 px-1.5 py-0.5 border border-[#FF1E27]/30">失败（{esc(row.calc_fail_reason || '未知原因')}）/span>`
                         : '<span class="text-[#E8E8ED]">正常</span>',
                 ],
-                ['备注', row.remark || '�?],
-                ['来源文件', row.excel_filename || '�?],
-                ['工作�?, row.excel_sheet_name || '�?],
-                ['行号', row.excel_row != null ? `�?${row.excel_row} 行` : '�?],
+                ['备注', row.remark || '—],
+                ['来源文件', row.excel_filename || '—],
+                ['工作表, row.excel_sheet_name || '—],
+                ['行号', row.excel_row != null ? `第${row.excel_row} 行` : '—],
             ])}
         </div>
     `;
@@ -621,7 +621,7 @@ function showDetailDrawer(row) {
 
 async function saveManualUnitCost(costId) {
     if (!listState.canUpdate) {
-        showToast('无改价权�?, 'warning');
+        showToast('无改价权除, 'warning');
         return;
     }
     const unitCostEl = document.getElementById('costManualUnitCost');
@@ -630,13 +630,13 @@ async function saveManualUnitCost(costId) {
     const remark = (remarkEl?.value || '').trim();
 
     if (!unitCostRaw) {
-        showToast('请录入最终成�?, 'warning');
+        showToast('请录入最终成术, 'warning');
         unitCostEl?.focus();
         return;
     }
     const unitCost = Number(unitCostRaw);
     if (!Number.isFinite(unitCost) || unitCost < 0) {
-        showToast('最终成本须为非负数�?, 'warning');
+        showToast('最终成本须为非负数存, 'warning');
         unitCostEl?.focus();
         return;
     }
@@ -649,7 +649,7 @@ async function saveManualUnitCost(costId) {
     const saveBtn = document.getElementById('costManualSaveBtn');
     if (saveBtn) {
         saveBtn.disabled = true;
-        saveBtn.textContent = '保存中�?;
+        saveBtn.textContent = '保存中—;
     }
     try {
         const res = await HttpClient.patch(`${API_BASE}/${costId}`, {
@@ -663,7 +663,7 @@ async function saveManualUnitCost(costId) {
         showToast(error.message || '保存失败', 'error');
         if (saveBtn) {
             saveBtn.disabled = false;
-            saveBtn.textContent = '保存最终成�?;
+            saveBtn.textContent = '保存最终成术;
         }
     }
 }
@@ -703,10 +703,10 @@ function closeDetailDrawer() {
 }
 
 async function batchApprove() {
-    if (!listState.canApprove) return showToast('无审核权�?, 'warning');
+    if (!listState.canApprove) return showToast('无审核权除, 'warning');
     const scope = requireScope();
     if (!scope) return;
-    if (!window.confirm('确认批量审核通过当前范围�?)) return;
+    if (!window.confirm('确认批量审核通过当前范围（)) return;
     try {
         const res = await HttpClient.post(`${API_BASE}/batch-approve`, scope);
         showToast(res.message || '审核完成', 'success');
@@ -722,7 +722,7 @@ async function batchReverse() {
     if (!scope) return;
     const remark = window.prompt('请输入反审核原因');
     if (!remark || !remark.trim()) {
-        showToast('反审核原因必�?, 'warning');
+        showToast('反审核原因必填, 'warning');
         return;
     }
     try {
@@ -730,18 +730,18 @@ async function batchReverse() {
             ...scope,
             reverse_audit_remark: remark.trim(),
         });
-        showToast(res.message || '反审核完�?, 'success');
+        showToast(res.message || '反审核完成, 'success');
         loadList(listState.page);
     } catch (error) {
-        showToast(error.message || '反审核失�?, 'error');
+        showToast(error.message || '反审核失败, 'error');
     }
 }
 
 async function batchDelete() {
-    if (!listState.canDelete) return showToast('无删除权�?, 'warning');
+    if (!listState.canDelete) return showToast('无删除权除, 'warning');
     const scope = requireScope();
     if (!scope) return;
-    if (!window.confirm('确认删除当前范围未审核记录？已审核将跳过�?)) return;
+    if (!window.confirm('确认删除当前范围未审核记录？已审核将跳过。)) return;
     try {
         const res = await HttpClient.post(`${API_BASE}/batch-delete`, scope);
         showToast(res.message || '删除完成', 'success');
@@ -752,10 +752,10 @@ async function batchDelete() {
 }
 
 async function exportExcel(exportFormat = 'process_sheet') {
-    if (!listState.canExport) return showToast('无导出权�?, 'warning');
+    if (!listState.canExport) return showToast('无导出权除, 'warning');
     const filters = getFilters();
     if (!Object.values(filters).some(Boolean)) {
-        showToast('请至少选择一个筛选条件后再导�?, 'warning');
+        showToast('请至少选择一个筛选条件后再导出, 'warning');
         return;
     }
     try {

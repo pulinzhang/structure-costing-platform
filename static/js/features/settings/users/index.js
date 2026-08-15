@@ -1,11 +1,11 @@
 /**
  * Users Page
- * 用户管理 �?对接 /api/users CRUD
+ * 用户管理 —对接 /api/users CRUD
  *
  * 抽屉式交互：
- * - 编辑/新增  �?editDrawer
- * - 修改密码  �?passwordDrawer
- * - 删除确认  �?deleteDrawer
+ * - 编辑/新增  →editDrawer
+ * - 修改密码  →passwordDrawer
+ * - 删除确认  →deleteDrawer
  */
 
 import { usersTemplate, renderTableRows, renderPagination } from './template.js?v=3';
@@ -117,7 +117,7 @@ async function loadData(page = 1) {
         updateOverviewStats(pageResult.filters?.summary || null);
 
         if (totalCountPagination) {
-            totalCountPagination.textContent = `�?${usersState.total} 条`;
+            totalCountPagination.textContent = `全${usersState.total} 条`;
         }
         if (paginationBtns) {
             paginationBtns.innerHTML = renderPagination(usersState.page, usersState.totalPages);
@@ -466,17 +466,17 @@ async function savePassword() {
 
     if (!userId) return;
     if (!password || password.length < 4) {
-        showToast('新密码至�?4 个字�?, 'warning');
+        showToast('新密码至少4 个字符, 'warning');
         return;
     }
     if (password !== confirm) {
-        showToast('两次输入的密码不一�?, 'warning');
+        showToast('两次输入的密码不一自, 'warning');
         return;
     }
 
     try {
         await HttpClient.put(`${API_BASE}/${userId}/password`, { password });
-        showToast('密码已更�?, 'success');
+        showToast('密码已更新, 'success');
         closeDrawer('passwordDrawer', 'passwordDrawerBackdrop');
     } catch (error) {
         console.error('修改密码失败:', error);
@@ -541,9 +541,9 @@ async function openGrantDrawer(record) {
             bindGrantTreeEvents(container);
         }
     } catch (error) {
-        console.error('加载权限树失�?', error);
+        console.error('加载权限树失败', error);
         if (container) {
-            container.innerHTML = `<p class="text-[11px] text-[#ef5350]">加载权限树失�?/p>`;
+            container.innerHTML = `<p class="text-[11px] text-[#ef5350]">加载权限树失败/p>`;
         }
     }
 }
@@ -566,7 +566,7 @@ function renderPermissionTree(nodes, checked, depth = 0) {
                            ${isChecked ? 'checked' : ''}
                            ${isMandatory ? 'disabled' : ''}>
                     <span class="text-[11px] ${isMandatory ? 'text-[#888888]' : 'text-[#c0c0c0]'}">${esc(node.label || code)}</span>
-                    <span class="text-[9px] text-[#484848] uppercase tracking-wider">${typeHint}${isMandatory ? ' · 必�? : ''}</span>
+                    <span class="text-[9px] text-[#484848] uppercase tracking-wider">${typeHint}${isMandatory ? ' · 必选 : ''}</span>
                 </label>
                 ${childrenHtml}
             </div>`;
@@ -616,7 +616,7 @@ async function saveGrant() {
     });
     try {
         await HttpClient.put(`${API_BASE}/${userId}/permissions`, { codes });
-        showToast('授权已保�?, 'success');
+        showToast('授权已保存, 'success');
         closeDrawer('grantDrawer', 'grantDrawerBackdrop');
     } catch (error) {
         console.error('保存授权失败:', error);

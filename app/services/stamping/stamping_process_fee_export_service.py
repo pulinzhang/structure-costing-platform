@@ -11,6 +11,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from sqlalchemy.orm import Session
 
+from app.common.audit import audit_status_label
 from app.repositories.stamping.stamping_process_fee_repository import (
     StampingProcessFeeRepository,
 )
@@ -18,11 +19,6 @@ from app.repositories.stamping.stamping_process_fee_repository import (
 
 logger = logging.getLogger("service.stamping_process_fee_export")
 
-_AUDIT_LABEL = {
-    "pending": "待审",
-    "approved": "已通过",
-    "rejected": "已驳回",
-}
 
 
 def _num(value: Any, digits: int | None = None):
@@ -191,7 +187,7 @@ class StampingProcessFeeExportService:
                 _format_process_basis_column(record),
                 record.calc_fail_reason,
                 record.remark,
-                _AUDIT_LABEL.get(record.audit_status, record.audit_status or ""),
+                audit_status_label(record.audit_status),
                 record.audited_by,
                 _dt(record.audited_at),
                 record.audit_remark,

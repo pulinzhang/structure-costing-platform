@@ -6,7 +6,7 @@ from typing import Any, Optional
 from sqlalchemy import case, distinct, func
 from sqlalchemy.orm import Session
 
-from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING
+from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING, AUDIT_REJECTED
 from app.models.steel_price import SteelPrice
 
 
@@ -350,7 +350,7 @@ class SteelPriceRepository:
                 grade=grade,
                 steel_mill=steel_mill,
             )
-            .filter(SteelPrice.audit_status == "approved")
+            .filter(SteelPrice.audit_status == AUDIT_APPROVED)
             .count()
         )
 
@@ -374,7 +374,7 @@ class SteelPriceRepository:
             category_name=category_name,
             grade=grade,
             steel_mill=steel_mill,
-        ).filter(SteelPrice.audit_status != "approved")
+        ).filter(SteelPrice.audit_status != AUDIT_APPROVED)
         deleted_count = query.delete(synchronize_session=False)
         db.flush()
         logger.info(
@@ -425,9 +425,9 @@ class SteelPriceRepository:
             year=year,
             month=month,
             location=location,
-        ).filter(SteelPrice.audit_status.in_(["pending", "rejected"]))
+        ).filter(SteelPrice.audit_status.in_([AUDIT_PENDING, AUDIT_REJECTED]))
         values = {
-            SteelPrice.audit_status: "approved",
+            SteelPrice.audit_status: AUDIT_APPROVED,
             SteelPrice.audited_by: audited_by,
             SteelPrice.audited_at: audited_at,
             SteelPrice.audit_remark: audit_remark,
@@ -466,9 +466,9 @@ class SteelPriceRepository:
             year=year,
             month=month,
             location=location,
-        ).filter(SteelPrice.audit_status == "approved")
+        ).filter(SteelPrice.audit_status == AUDIT_APPROVED)
         values = {
-            SteelPrice.audit_status: "pending",
+            SteelPrice.audit_status: AUDIT_PENDING,
             SteelPrice.reverse_audited_by: reverse_audited_by,
             SteelPrice.reverse_audited_at: reverse_audited_at,
             SteelPrice.reverse_audit_remark: reverse_audit_remark,

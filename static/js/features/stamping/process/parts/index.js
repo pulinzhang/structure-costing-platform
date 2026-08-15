@@ -1,6 +1,6 @@
 /**
  * Parts Page
- * 零件列表 �?对齐加工费计算结果列表：进入即加载、筛选均可选、级联联动、批量删�?
+ * 零件列表 —对齐加工费计算结果列表：进入即加载、筛选均可选、级联联动、批量删除
  * 明细抽屉逻辑保持不变
  */
 
@@ -69,7 +69,7 @@ export const PartsPage = {
         partsState.advancedOpen = isOpen;
         document.getElementById('partsAdvancedFilterPanel')?.classList.toggle('hidden', !isOpen);
         const label = document.getElementById('partsAdvancedFilterLabel');
-        if (label) label.textContent = isOpen ? '收起高级筛�? : '展开高级筛�?;
+        if (label) label.textContent = isOpen ? '收起高级筛选 : '展开高级筛选;
     },
 
     bindEvents() {
@@ -163,8 +163,8 @@ export const PartsPage = {
             this.fillSelect('versionFilter', filters.versions || []);
             updatePartsFilterCapsules();
         } catch (error) {
-            console.error('加载级联筛选失�?', error);
-            showToast(error.message || '加载筛选失�?, 'error');
+            console.error('加载级联筛选失败', error);
+            showToast(error.message || '加载筛选失败, 'error');
         }
     },
 
@@ -242,7 +242,7 @@ export const PartsPage = {
             updatePartsHud(total);
 
             const totalLabel = document.getElementById('partsTotalLabel');
-            if (totalLabel) totalLabel.textContent = `�?${total} 个零件`;
+            if (totalLabel) totalLabel.textContent = `全${total} 个零件`;
 
             if (!items.length) {
                 this.showEmptyHint('暂无零件数据', '请先上传工艺文件');
@@ -257,7 +257,7 @@ export const PartsPage = {
         } catch (error) {
             console.error('加载零件列表失败:', error);
             showToast(error.message || '加载失败', 'error');
-            this.showEmptyHint('加载失败', esc(error.message) || '请稍后重�?);
+            this.showEmptyHint('加载失败', esc(error.message) || '请稍后重询);
             updatePartsHud(0);
         } finally {
             loading?.classList.add('hidden');
@@ -274,7 +274,7 @@ export const PartsPage = {
     renderRow(part) {
         const thickness = fmtNum(part.thickness, 2);
         const partWeight = fmtNum(part.part_weight, 3);
-        const processCount = part.process_count != null ? part.process_count : '�?;
+        const processCount = part.process_count != null ? part.process_count : '—;
         const sketchUrl = part.sketch_url || '';
         const cell = 'px-3 py-3 border-b border-[#17171C] font-mono text-[11px]';
         const muted = 'text-[#8E8E93]';
@@ -284,7 +284,7 @@ export const PartsPage = {
                     <img src="/uploads/${esc(sketchUrl)}" alt="零件图纸" onerror="this.style.display='none';this.nextElementSibling&&(this.nextElementSibling.style.display='flex')">
                     <div class="zoom-overlay">${window.svgIcon('search')}</div>
                </div>`
-            : `<div class="sketch-thumbnail-placeholder" title="无图�?>
+            : `<div class="sketch-thumbnail-placeholder" title="无图级>
                     ${window.svgIcon('file-earmark')}
                </div>`;
 
@@ -301,16 +301,16 @@ export const PartsPage = {
                 <td class="${cell} font-sans whitespace-nowrap">
                     <span class="text-[12px] font-semibold text-white font-mono tracking-wide group-hover:text-[#FF1E27] transition-colors">${esc(part.part_number)}</span>
                 </td>
-                <td class="${cell} ${muted} font-sans">${esc(part.part_name) || '�?}</td>
-                <td class="${cell} ${muted}">${esc(part.location) || '�?}</td>
-                <td class="${cell} ${muted} font-sans">${esc(part.stamping_supplier) || '�?}</td>
-                <td class="${cell} ${muted}">${esc(part.vehicle_model) || '�?}</td>
-                <td class="${cell} ${muted} border-r border-[#22222A]">${esc(part.version) || '�?}</td>
-                <td class="${cell} ${muted} font-sans">${esc(part.material) || '�?}</td>
+                <td class="${cell} ${muted} font-sans">${esc(part.part_name) || '—}</td>
+                <td class="${cell} ${muted}">${esc(part.location) || '—}</td>
+                <td class="${cell} ${muted} font-sans">${esc(part.stamping_supplier) || '—}</td>
+                <td class="${cell} ${muted}">${esc(part.vehicle_model) || '—}</td>
+                <td class="${cell} ${muted} border-r border-[#22222A]">${esc(part.version) || '—}</td>
+                <td class="${cell} ${muted} font-sans">${esc(part.material) || '—}</td>
                 <td class="${cell} text-right tabular-nums ${muted}">${thickness}</td>
                 <td class="${cell} text-right tabular-nums ${muted}">${partWeight}</td>
                 <td class="${cell} text-right tabular-nums ${muted}">${processCount}</td>
-                <td class="${cell} text-[10px] text-[#555555] max-w-[160px] truncate" title="${esc(part.excel_filename || '')}">${esc(part.excel_filename) || '�?}</td>
+                <td class="${cell} text-[10px] text-[#555555] max-w-[160px] truncate" title="${esc(part.excel_filename || '')}">${esc(part.excel_filename) || '—}</td>
                 <td class="px-1 py-2 text-center align-middle">
                     <div class="inline-flex items-center justify-center gap-0.5 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto focus-within:opacity-100 focus-within:pointer-events-auto transition-opacity duration-100">
                         <button type="button" class="inline-flex items-center justify-center w-7 h-7 rounded-sm text-[#555555] hover:text-[#C8C8D0] hover:bg-[#161620] transition-all" data-action="detail" data-id="${part.id}" title="查看详情" aria-label="查看详情">
@@ -328,7 +328,7 @@ export const PartsPage = {
 
     async batchDelete() {
         if (this.canDelete === false) {
-            showToast('无删除权�?, 'warning');
+            showToast('无删除权除, 'warning');
             return;
         }
         const filters = this.requireScopeForBatchDelete();
@@ -347,7 +347,7 @@ export const PartsPage = {
             btn.disabled = true;
             btn.innerHTML = `
                 <div class="w-3 h-3 border border-[#ef5350] border-t-transparent rounded-full animate-spin"></div>
-                删除�?..
+                删除中..
             `;
         }
 
@@ -362,7 +362,7 @@ export const PartsPage = {
             const res = await HttpClient.post(`${PARTS_API}/batch-delete`, body);
             const result = res.data || {};
             const deleted = result.deleted_count ?? 0;
-            showToast(res.message || `已删�?${deleted} 个零件`, deleted > 0 ? 'success' : 'warning');
+            showToast(res.message || `已删除${deleted} 个零件`, deleted > 0 ? 'success' : 'warning');
             await this.loadCascadeFilters();
             if (deleted > 0) {
                 await this.loadParts(1);
@@ -384,7 +384,7 @@ export const PartsPage = {
         const titleEl = document.getElementById('partDrawerTitle');
 
         if (!drawer || !contentEl) {
-            console.error('抽屉元素不存�?);
+            console.error('抽屉元素不存地);
             return;
         }
 
@@ -522,17 +522,17 @@ export const PartsPage = {
 
     async _saveProcessEdits(partId) {
         if (this.canUpdate === false) {
-            showToast('无编辑权�?, 'warning');
+            showToast('无编辑权除, 'warning');
             return;
         }
         const btn = document.getElementById('saveProcessBtn');
         const processes = this._collectProcessEdits();
         if (processes.length === 0) return;
         btn.disabled = true;
-        btn.innerHTML = `<span class="inline-flex items-center gap-2">${window.svgIcon('spinner', 'w-3.5 h-3.5 animate-spin')}保存�?..</span>`;
+        btn.innerHTML = `<span class="inline-flex items-center gap-2">${window.svgIcon('spinner', 'w-3.5 h-3.5 animate-spin')}保存中..</span>`;
         try {
             await HttpClient.put(`${PARTS_API}/${partId}/processes`, processes);
-            showToast('工序参数已保�?, 'success');
+            showToast('工序参数已保存, 'success');
             const saveBtn = document.getElementById('saveProcessBtn');
             if (saveBtn) {
                 saveBtn.dataset.active = 'false';
@@ -550,10 +550,10 @@ export const PartsPage = {
 
     async deletePart(partId) {
         if (this.canDelete === false) {
-            showToast('无删除权�?, 'warning');
+            showToast('无删除权除, 'warning');
             return;
         }
-        if (!confirm('确定要删除这个零件吗�?)) return;
+        if (!confirm('确定要删除这个零件吗（)) return;
         try {
             await HttpClient.delete(`${PARTS_API}/${partId}`);
             showToast('删除成功', 'success');

@@ -29,6 +29,19 @@ AUDIT_PENDING = "pending"
 AUDIT_APPROVED = "approved"
 AUDIT_REJECTED = "rejected"
 
+AUDIT_STATUS_LABELS: dict[str, str] = {
+    AUDIT_PENDING: "待审",
+    AUDIT_APPROVED: "已通过",
+    AUDIT_REJECTED: "已驳回",
+}
+
+
+def audit_status_label(status: str | None) -> str:
+    """审核状态码 → 中文展示；未知码原样返回。"""
+    if status is None:
+        return ""
+    return AUDIT_STATUS_LABELS.get(status, status)
+
 
 def audit_create(current_user: UserVO) -> dict[str, Any]:
     """新建记录时写入创建人 + 修改人。"""
