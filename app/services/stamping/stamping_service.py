@@ -49,6 +49,29 @@ class StampingPartService:
         """去重车型数量。"""
         return self.repository.count_distinct_vehicle_models(db)
 
+    def summarize_master(
+        self,
+        db: Session,
+        *,
+        location: str | None = None,
+    ) -> dict[str, int]:
+        """按基地汇总主数据：零件数 / 工序数 / 车型数。"""
+        location_clean = location.strip() if location else None
+        _rows, parts = self.repository.paginate(
+            db,
+            location=location_clean,
+            skip=0,
+            limit=1,
+        )
+        summary = self.repository.summarize_by_filters(db, location=location_clean)
+        return {
+            "parts": int(parts),
+            "processes": self.process_repository.count_by_part_location(
+                db, location_clean
+            ),
+            "models": int(summary.get("vehicle_model_count") or 0),
+        }
+
     def list_parts(
         self, db: Session, query: StampingPartQuery
     ) -> tuple[List[StampingPartListResponse], int, StampingPartListFilterOptions]:

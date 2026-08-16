@@ -61,7 +61,7 @@
 export const pageMeta = {
     dashboard: {
         title: '仪表盘',
-        en: 'DASHBOARD_OVERVIEW',
+        en: 'MGMT_COSTING_BOARD',
         breadcrumb: ['仪表盘'],
     },
     'stamping-upload': {

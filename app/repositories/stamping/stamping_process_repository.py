@@ -17,6 +17,17 @@ class StampingProcessRepository:
         """工序总数。"""
         return db.query(StampingProcess).count()
 
+    def count_by_part_location(self, db: Session, location: str | None = None) -> int:
+        """按零件生产基地统计工序数；location 为空则全库。"""
+        from app.models import StampingPart
+
+        q = db.query(StampingProcess).join(
+            StampingPart, StampingProcess.part_id == StampingPart.id
+        )
+        if location:
+            q = q.filter(StampingPart.location == location)
+        return int(q.count())
+
     def get_by_id(self, db: Session, process_id: int) -> Optional[StampingProcess]:
         return db.query(StampingProcess).filter(StampingProcess.id == process_id).first()
 

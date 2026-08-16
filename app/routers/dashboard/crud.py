@@ -1,6 +1,9 @@
 """
 仪表盘路由
 Dashboard Router - API 接口
+
+- GET /stats                 仪表盘汇总 KPI
+- GET /stats/steel-price-calc 钢价联动计算页数据依据（计算页专用）
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -10,7 +13,6 @@ from app.common.permissions.codes import Perm
 from app.database import get_db
 from app.deps.permissions import require_perm
 from app.schemas.vo.dashboard_vo import (
-    CountResponse,
     DashboardStatsVO,
     SteelPriceCalcStatsVO,
 )
@@ -26,51 +28,27 @@ router = APIRouter(prefix="/api/dashboard", tags=["仪表盘 API"])
 _dashboard_service = DashboardService()
 
 
-@router.get("/stats/parts", response_model=ApiResponse[CountResponse])
-def get_parts_count(
+@router.get("/stats", response_model=ApiResponse[DashboardStatsVO])
+def get_all_stats(
+    year: int | None = Query(None, ge=2000, le=2100, description="核价年度"),
+    month: int | None = Query(None, ge=1, le=12, description="核价月份"),
+    location: str | None = Query(None, description="生产基地（空=全部）"),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.DASHBOARD_VIEW)),
-) -> ApiResponse[CountResponse]:
-    """获取零件总数"""
+) -> ApiResponse[DashboardStatsVO]:
+    """获取仪表盘汇总：作用域 KPI + 核价流水线就绪度"""
     try:
         return ApiResponse.ok(
-            data=_dashboard_service.get_parts_count(db),
+            data=_dashboard_service.get_all_stats(
+                db,
+                year=year,
+                month=month,
+                location=location,
+            ),
             message="获取成功",
         )
     except Exception as e:
-        logger.error(f"获取零件总数失败: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.get("/stats/processes", response_model=ApiResponse[CountResponse])
-def get_processes_count(
-    db: Session = Depends(get_db),
-    current_user: UserVO = Depends(require_perm(Perm.DASHBOARD_VIEW)),
-) -> ApiResponse[CountResponse]:
-    """获取工序总数"""
-    try:
-        return ApiResponse.ok(
-            data=_dashboard_service.get_processes_count(db),
-            message="获取成功",
-        )
-    except Exception as e:
-        logger.error(f"获取工序总数失败: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.get("/stats/models", response_model=ApiResponse[CountResponse])
-def get_models_count(
-    db: Session = Depends(get_db),
-    current_user: UserVO = Depends(require_perm(Perm.DASHBOARD_VIEW)),
-) -> ApiResponse[CountResponse]:
-    """获取车型数量"""
-    try:
-        return ApiResponse.ok(
-            data=_dashboard_service.get_models_count(db),
-            message="获取成功",
-        )
-    except Exception as e:
-        logger.error(f"获取车型数量失败: {e}")
+        logger.error(f"获取统计数据失败: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -100,20 +78,4 @@ def get_steel_price_calc_stats(
         return ApiResponse.ok(data=stats, message="获取成功")
     except Exception as e:
         logger.error(f"获取钢价计算统计失败: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.get("/stats", response_model=ApiResponse[DashboardStatsVO])
-def get_all_stats(
-    db: Session = Depends(get_db),
-    current_user: UserVO = Depends(require_perm(Perm.DASHBOARD_VIEW)),
-) -> ApiResponse[DashboardStatsVO]:
-    """获取仪表盘全部统计数据"""
-    try:
-        return ApiResponse.ok(
-            data=_dashboard_service.get_all_stats(db),
-            message="获取成功",
-        )
-    except Exception as e:
-        logger.error(f"获取统计数据失败: {e}")
         raise HTTPException(status_code=500, detail=str(e))

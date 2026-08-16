@@ -529,80 +529,6 @@ textarea:-webkit-autofill:active {
     z-index: 9999;
 }
 
-/* ====== Dashboard 卡片系统 ====== */
-
-/* 仪表盘统计卡片 */
-.dashboard-card {
-    background-color: var(--bg-surface);
-    border: 1px solid var(--border-color);
-    transition: border-color 0.2s ease;
-    cursor: default;
-}
-
-.dashboard-card:hover {
-    border-color: var(--border-active);
-}
-
-/* 极客精密数字 — Brabus 红微光 */
-.stat-number {
-    color: var(--text-main);
-    font-family: 'Inter', monospace;
-    letter-spacing: 0.04em;
-    text-shadow: 0 0 20px rgba(211, 47, 47, 0.18);
-    transition: text-shadow 0.2s ease;
-}
-
-.dashboard-card:hover .stat-number {
-    text-shadow: 0 0 28px rgba(211, 47, 47, 0.32);
-}
-
-/* 统计数字旁图标 */
-.stat-icon {
-    background: var(--bg-elevated);
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-/* 概览面板左红条 */
-.overview-bar {
-    display: inline-block;
-    width: 2px;
-    height: 1rem;
-    background: var(--brabus-red);
-    border-radius: 1px;
-    box-shadow: 0 0 6px var(--brabus-red-glow);
-    flex-shrink: 0;
-}
-
-/* ====== 仪表盘 CTA 按钮 ====== */
-.upload-cta {
-    background: var(--bg-elevated);
-    color: #fff;
-    border: 1px solid var(--border-color);
-    border-radius: 0.25rem;
-    padding: 0.5rem 1rem;
-}
-
-.upload-cta:hover {
-    background: var(--brabus-red);
-    border-color: var(--brabus-red-hover);
-}
-
-.overview-cta {
-    background: transparent;
-    color: var(--text-disabled);
-    border: 1px solid var(--border-subtle);
-    border-radius: 0.25rem;
-    padding: 0.5rem 1rem;
-}
-
-.overview-cta:hover {
-    color: var(--text-muted);
-    border-color: var(--border-color);
-}
-
 /* ====== 上传表单 ====== */
 
 /* 表单标签：精密小号灰色 */
@@ -1164,11 +1090,6 @@ tr:focus-within .die-type-select {
     border-left: 1px solid #252525;
     border-right: 1px solid #161616;
     border-bottom: 1px solid #0f0f0f;
-}
-
-/* stat-icon 中的 SVG 默认颜色（继承父级颜色） */
-.stat-icon svg {
-    color: var(--text-disabled);
 }
 
 /* 抽屉面板红色指示条 */
