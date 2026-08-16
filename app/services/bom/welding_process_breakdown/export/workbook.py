@@ -44,7 +44,6 @@ from app.services.bom.welding_process_breakdown.export.columns import (
 from app.services.bom.welding_process_breakdown.export.styles import (
     MAP_TONE,
     PARSE_TONE,
-    SheetStyle,
     build_sheet_style,
     fill,
     font,
