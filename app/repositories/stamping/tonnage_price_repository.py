@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from sqlalchemy import and_, case, func
 from sqlalchemy.orm import Query, Session
 
-from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING, AUDIT_REJECTED
+from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING
 from app.models.stamping_tonnage_price import StampingTonnagePrice
 
 logger = logging.getLogger("repository.stamping")
@@ -328,7 +328,7 @@ class StampingTonnagePriceRepository:
             .filter(
                 StampingTonnagePrice.location == location,
                 StampingTonnagePrice.year == year,
-                StampingTonnagePrice.audit_status.in_([AUDIT_PENDING, AUDIT_REJECTED]),
+                StampingTonnagePrice.audit_status == AUDIT_PENDING,
             )
             .update(values, synchronize_session=False)
         )

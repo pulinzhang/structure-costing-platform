@@ -11,7 +11,7 @@ import {
     parseUnitPriceInput,
     updateWeldingHud,
     updateWeldingFilterCapsules,
-} from './template.js?v=10';
+} from './template.js?v=11';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -139,7 +139,6 @@ async function loadFilterOptions() {
                 <option value="">全部</option>
                 <option value="pending">待审</option>
                 <option value="approved">已通过</option>
-                <option value="rejected">已驳回</option>
             `;
             if (weldingUnitPriceState.selectedAuditStatus) {
                 auditFilter.value = weldingUnitPriceState.selectedAuditStatus;
@@ -377,7 +376,7 @@ function openBatchAuditDrawer(mode) {
     document.getElementById('weldingBatchAuditMode').value = isApprove ? 'approve' : 'reverse';
     document.getElementById('weldingBatchAuditDrawerTitle').textContent = isApprove ? '批量审核' : '批量反审核';
     document.getElementById('weldingBatchAuditHint').textContent = isApprove
-        ? '仅处理待审/已驳回；已通过记录会跳过。'
+        ? '仅处理待审记录；已通过会跳过。'
         : '仅处理已通过记录；其余状态会跳过。反审核意见必填。';
     document.getElementById('weldingBatchAuditOperatorLabel').textContent = isApprove ? '审核人' : '反审核人';
     document.getElementById('weldingBatchAuditOperatorDisplay').textContent =
@@ -494,7 +493,7 @@ async function batchDeleteByFilters() {
         return;
     }
     if (!window.confirm(
-        `确定批量删除未审核焊接单价吗？\n\n基地: ${filters.location} | 年度: ${year}\n\n仅删除待审/已驳回；已审核通过会跳过。此操作不可恢复！`,
+        `确定批量删除未审核焊接单价吗？\n\n基地: ${filters.location} | 年度: ${year}\n\n仅删除待审记录；已审核通过会跳过。此操作不可恢复！`,
     )) return;
 
     const btn = document.getElementById('btnBatchDeleteWeldingUnitPrice');

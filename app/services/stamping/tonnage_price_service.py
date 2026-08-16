@@ -12,7 +12,6 @@ from sqlalchemy.orm import Session
 from app.common.audit import (
     AUDIT_APPROVED,
     AUDIT_PENDING,
-    AUDIT_REJECTED,
     audit_create,
     audit_update,
     display_name,
@@ -306,7 +305,7 @@ class StampingTonnagePriceService:
             db,
             location=location,
             year=dto.year,
-            statuses=[AUDIT_PENDING, AUDIT_REJECTED],
+            statuses=[AUDIT_PENDING],
         )
         updated = self.repository.reverse_by_location_year(
             db,

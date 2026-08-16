@@ -364,7 +364,7 @@ export function updateWeldingFilterCapsules() {
     const audit = document.getElementById('auditStatusFilter')?.value || '';
     const active = 'bg-[#1A1A22] border border-[#2A2A35] text-white px-2.5 py-1 rounded-md font-bold';
     const idle = 'bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md';
-    const auditLabel = { pending: '待审', approved: '已通过', rejected: '已驳回' }[audit] || '全部审核';
+    const auditLabel = { pending: '待审', approved: '已通过' }[audit] || '全部审核';
 
     const locEl = document.getElementById('weldingCapsuleLocation');
     const yearEl = document.getElementById('weldingCapsuleYear');
@@ -464,7 +464,7 @@ export function renderPagination(currentPage, totalPages) {
 }
 
 function auditBadge(status) {
-    const label = { pending: '待审', approved: '已通过', rejected: '已驳回' }[status] || status || '-';
+    const label = { pending: '待审', approved: '已通过' }[status] || status || '-';
     return `<span class="inline-flex items-center px-2 py-0.5 text-[10px] font-sans rounded-sm bg-[#1C1C22] text-[#8E8E93] border border-[#2A2A32]">${esc(label)}</span>`;
 }
 

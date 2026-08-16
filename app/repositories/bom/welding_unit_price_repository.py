@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from sqlalchemy import and_, case, func
 from sqlalchemy.orm import Query, Session
 
-from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING, AUDIT_REJECTED
+from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING
 from app.models.bom_welding_unit_price import BomWeldingUnitPrice
 
 logger = logging.getLogger("repository.bom")
@@ -289,7 +289,7 @@ class BomWeldingUnitPriceRepository:
             .filter(
                 BomWeldingUnitPrice.location == location,
                 BomWeldingUnitPrice.year == year,
-                BomWeldingUnitPrice.audit_status.in_([AUDIT_PENDING, AUDIT_REJECTED]),
+                BomWeldingUnitPrice.audit_status == AUDIT_PENDING,
             )
             .update(values, synchronize_session=False)
         )
