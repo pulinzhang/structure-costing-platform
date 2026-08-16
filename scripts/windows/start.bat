@@ -2,8 +2,8 @@
 chcp 65001 >nul
 setlocal EnableExtensions EnableDelayedExpansion
 
-REM 生产启动：APP_ENV=production，多 worker，无 reload
-REM 默认 4 进程；可在 .env 写 UVICORN_WORKERS=2 等覆盖
+REM 生产启动：走 run_prod.py（先 Schema 升级，失败则不启动；再多 Worker）
+REM workers / port 由 run_prod.py 读环境变量与 .env
 cd /d "%~dp0..\.."
 
 if not exist ".venv\Scripts\python.exe" (
@@ -26,29 +26,28 @@ if not exist ".env" (
 set "APP_ENV=production"
 set "PYTHONUTF8=1"
 set "PYTHONIOENCODING=utf-8"
+
+REM 从 .env 粗读，仅用于启动横幅展示（真正启服由 run_prod.py 再读一遍）
 set "UVICORN_WORKERS=4"
 set "PORT=8000"
-
-REM 从 .env 粗读（忽略注释行）
 for /f "usebackq eol=# tokens=1,* delims==" %%A in (".env") do (
   if /I "%%A"=="UVICORN_WORKERS" set "UVICORN_WORKERS=%%B"
   if /I "%%A"=="PORT" set "PORT=%%B"
 )
-
-REM 去掉可能的空格
 set "UVICORN_WORKERS=!UVICORN_WORKERS: =!"
 set "PORT=!PORT: =!"
 
 echo.
 echo ============================================================
 echo   生产启动  APP_ENV=%APP_ENV%  workers=!UVICORN_WORKERS!  port=!PORT!
+echo   入口: run_prod.py （升级失败则不启动）
 echo   登录页: http://127.0.0.1:!PORT!/login
 echo   主应用: http://127.0.0.1:!PORT!/app
 echo   按 Ctrl+C 结束
 echo ============================================================
 echo.
 
-".venv\Scripts\python.exe" -m uvicorn main:app --host 0.0.0.0 --port !PORT! --workers !UVICORN_WORKERS! --log-level warning
+".venv\Scripts\python.exe" run_prod.py
 set "EC=%ERRORLEVEL%"
 echo.
 echo 进程已退出，代码 %EC%

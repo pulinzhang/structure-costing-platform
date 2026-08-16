@@ -14,9 +14,8 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.config import settings, ensure_directories
+from app.config import settings
 from app.utils.logging_config import LoggerConfig, log_request, log_response, get_logger
-from app.database import AuxiliaryDatabaseConfig, DatabaseConfig
 
 
 # 重要：在导入其他模块之前先配置日志，确保所有模块的 logger 都能正确获取日志器
@@ -32,30 +31,11 @@ async def lifespan(app: FastAPI):
     # 注意：日志配置应该在 uvicorn 启动前完成，这里只做保障
     from app.utils.logging_config import LoggerConfig
     LoggerConfig.configure(force=True)
-    ensure_directories()
-    # 导入所有模型，确保 Base.metadata 能扫描到表结构
-    import app.models  # noqa: F401
-    # 自动迁移：在 create_tables 之前补充缺失的列
-    from app.utils.db_migration import run_auto_migration
-    run_auto_migration()
-    # 钢材价格表业务主键变更迁移：在 create_tables 之前完成表重建
-    from app.utils.steel_price_key_migration import run_steel_price_key_migration
-    run_steel_price_key_migration(DatabaseConfig.get_engine())
-    # 废料销售价 base_name → location：在 create_tables 之前完成表重建
-    from app.utils.scrap_price_location_migration import run_scrap_price_location_migration
-    run_scrap_price_location_migration(DatabaseConfig.get_engine())
-    DatabaseConfig.create_tables()
-    AuxiliaryDatabaseConfig.create_tables()
 
-    # 首次启动：若无用户则创建默认管理员
-    from app.services.settings.users.user_service import UserService
+    # Schema 升级：与 run_prod.py 同源；多 Worker 下靠文件锁串行，幂等可重复执行
+    from app.bootstrap.schema_upgrade import run_schema_upgrade
 
-    session_factory = DatabaseConfig.get_session_factory()
-    db = session_factory()
-    try:
-        UserService().ensure_default_admin(db)
-    finally:
-        db.close()
+    run_schema_upgrade(ensure_admin=True)
 
     logger.info("=" * 50)
     logger.info(f"{settings.APP_NAME} 正在启动...")

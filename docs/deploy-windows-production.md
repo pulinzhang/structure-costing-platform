@@ -132,16 +132,35 @@ scripts\windows\start.bat
 scripts\windows\stop.bat
 ```
 
-`start.bat` 会设置 `APP_ENV=production`、`PYTHONUTF8=1`，默认 **`--workers 4`**（无 `--reload`）。  
-进程数读 `.env` 的 `UVICORN_WORKERS`（没有则 4）。关掉黑窗口即停服。
+`start.bat` 调用仓库根目录的 **`run_prod.py`**：先做数据库 Schema 升级（失败则**不启动**），再按 `.env` 的 `UVICORN_WORKERS` / `PORT` 拉起多 Worker（无 `--reload`）。关掉黑窗口即停服。
 
-### 7.2 多 Worker 说明（内网 / 涉密机）
+### 7.2 生产入口与 Schema 升级（设计说明）
 
-本项目按**内网部署、不连外网**设计即可；多 worker 与是否联网无关。
+本仓库**没有 Alembic**。表结构对齐走自研脚本（补列 + 个别破坏性重建），统一入口：
 
 ```text
+python run_prod.py
+  └─ 1) python -m app.bootstrap.schema_upgrade   # 失败 → 非零退出，不启服
+  └─ 2) compileall app（可选，失败仅警告）
+  └─ 3) uvicorn main:app --workers N
+```
+
+| 点 | 说明 |
+|----|------|
+| 为何先升级再启服 | 多 Worker 时每个进程都会跑 FastAPI `lifespan`；若只在 lifespan 里迁库，易并发 ALTER SQLite |
+| `run_prod` 职责 | **单进程**先升级；升级失败阻断启动（与「先 alembic upgrade 再 uvicorn」同思路，只是实现换成自研） |
+| lifespan 再调一次 | 幂等兜底（开发直接 `uvicorn main:app` 时也需要）；`data\.schema_upgrade.lock` 文件锁串行 |
+| 仅升级不启服 | `python -m app.bootstrap.schema_upgrade` |
+| 跳过升级（慎用） | 环境变量 `SKIP_SCHEMA_UPGRADE=1` |
+
+```text
+# 等价于手工多 worker（不推荐绕过 run_prod，会失去「升级失败不启动」）
 uvicorn main:app --host 0.0.0.0 --port 8000 --workers 4
 ```
+
+### 7.3 多 Worker 说明（内网 / 涉密机）
+
+本项目按**内网部署、不连外网**设计即可；多 worker 与是否联网无关。
 
 | 项 | 说明 |
 |----|------|
@@ -149,12 +168,12 @@ uvicorn main:app --host 0.0.0.0 --port 8000 --workers 4
 | 修改 | 改 `.env` 后：窗口版重开 `start.bat`；服务版需**重新**管理员运行 `install-service.bat` |
 | 建议范围 | 一般 **2～4**；机器核数少可设 2 |
 | SQLite | 多进程会争用同一库文件。读多写少通常可接受；核价/上传高峰若出现 `database is locked`，先降到 `2`，并保证 `data\` 在本地磁盘（勿放网盘） |
-| Windows | 使用 uvicorn 自带 `--workers`（勿用 Linux 专用的 gunicorn） |
+| Windows | 使用 uvicorn 自带 `--workers`（勿用 Linux 专用的 gunicorn）；生产请走 `run_prod.py` |
 | 涉密离线 | 服务安装用的 NSSM 请预先放到 `scripts\windows\vendor\nssm\win64\nssm.exe`，不要依赖外网下载 |
 
-### 7.3 注册为 Windows 服务（推荐）
+### 7.4 注册为 Windows 服务（推荐）
 
-可以。装好 `setup.bat` 并配好 `.env` 后，用 **NSSM** 把 uvicorn 包成系统服务：开机自启、崩溃自动拉起、不依赖登录桌面。
+可以。装好 `setup.bat` 并配好 `.env` 后，用 **NSSM** 把 **`run_prod.py`** 包成系统服务：开机自启、崩溃自动拉起、不依赖登录桌面。
 
 **一键安装（管理员）：**
 
@@ -167,14 +186,15 @@ scripts\windows\install-service.bat
 1. 确认已有 `.venv` 与 `.env`
 2. 优先使用本地 `scripts\windows\vendor\nssm\`（**涉密机请离线放好**）；没有才尝试下载
 3. 注册服务名：**`StampingCostingPlatform`**
-4. 工作目录 = 仓库根；启动参数含 `.env` 中的 `UVICORN_WORKERS` / `PORT`，例如：  
-   `.venv\Scripts\python.exe -m uvicorn main:app --host 0.0.0.0 --port 8000 --workers 4`
-5. 环境变量：`APP_ENV=production`、`PYTHONUTF8=1`
+4. 工作目录 = 仓库根；启动命令：  
+   `.venv\Scripts\python.exe run_prod.py`  
+   （内部先 Schema 升级，再 uvicorn；`UVICORN_WORKERS` / `PORT` 写入服务环境，与 `.env` 一致）
+5. 环境变量：`APP_ENV=production`、`PYTHONUTF8=1` 等
 6. 标准输出/错误写入 `logs\service-stdout.log`、`logs\service-stderr.log`
 7. 启动类型：自动；异常退出约 5 秒后重启
 8. 立即 `start` 服务
 
-### 7.4 卸载与日常管理
+### 7.5 卸载与日常管理
 
 ```bat
 scripts\windows\uninstall-service.bat
@@ -204,12 +224,12 @@ scripts\windows\vendor\nssm\win64\nssm.exe
 | 点 | 说明 |
 |----|------|
 | 必须管理员 | 注册/删除服务需要提权 |
-| 先改 `.env` | 服务进程读的是项目根 `.env`；改完后 `net stop` 再 `net start` |
-| 改代码/依赖后 | 重启服务即可；大版本升级建议先 `stop` 再更新文件 |
+| 先改 `.env` | 服务进程读的是项目根 `.env`；改完后 `net stop` 再 `net start`；改 `UVICORN_WORKERS` 后需重跑 `install-service.bat` |
+| 改代码/依赖后 | 重启服务即可；大版本升级建议先 `stop` 再更新文件（`run_prod` 启动时会再跑 Schema 升级） |
 | 与 `start.bat` | 不要同时用窗口版和系统服务占同一端口 |
 | 备份 | `data\`、`uploads\` 仍需自行备份；服务本身不负责备份 |
 
-### 7.5 备选：任务计划程序（非真正服务）
+### 7.6 备选：任务计划程序（非真正服务）
 
 不想装 NSSM 时：
 
@@ -217,11 +237,11 @@ scripts\windows\vendor\nssm\win64\nssm.exe
 2. 创建基本任务 → 触发器选「计算机启动时」或「用户登录时」
 3. 操作：启动程序  
    - 程序：`D:\...\仓库\.venv\Scripts\python.exe`  
-   - 参数：`-m uvicorn main:app --host 0.0.0.0 --port 8000 --workers 4 --log-level warning`  
+   - 参数：`run_prod.py`  
    - 起始于：仓库根目录  
 4. 在「常规」勾选「不管用户是否登录都要运行」（需管理员），并配置环境变量较麻烦  
 
-更推荐 §7.3 的正式服务方式。
+更推荐 §7.4 的正式服务方式。
 
 ---
 

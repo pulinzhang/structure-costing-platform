@@ -1,9 +1,10 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-  将本平台注册为 Windows 服务（通过 NSSM 包装 uvicorn）。
+  将本平台注册为 Windows 服务（通过 NSSM 包装 run_prod.py）。
 .NOTES
   需管理员运行。首次会尝试下载 nssm 到 scripts\windows\vendor\nssm\
+  run_prod.py：先 Schema 升级（失败则退出），再拉起多 Worker Uvicorn。
 #>
 $ErrorActionPreference = "Stop"
 
@@ -89,17 +90,17 @@ Get-Content $envFile -Encoding UTF8 | ForEach-Object {
     if ($line -match '^\s*PORT\s*=\s*(\d+)') { $port = [int]$Matches[1] }
 }
 
-Write-Host "==> 安装服务 $serviceName （workers=$workers, port=$port）..." -ForegroundColor Cyan
+Write-Host "==> 安装服务 $serviceName （via run_prod.py；.env workers=$workers, port=$port）..." -ForegroundColor Cyan
 & $nssmExe install $serviceName $venvPython
 if ($LASTEXITCODE -ne 0) { throw "nssm install 失败" }
 
-# Application
-$appParams = "-m uvicorn main:app --host 0.0.0.0 --port $port --workers $workers --log-level warning"
+# Application：run_prod.py 内先 Schema 升级再 uvicorn；workers/port 由 .env / 环境变量决定
+$appParams = "run_prod.py"
 & $nssmExe set $serviceName Application $venvPython
 & $nssmExe set $serviceName AppDirectory $repoRoot
 & $nssmExe set $serviceName AppParameters $appParams
 & $nssmExe set $serviceName DisplayName $displayName
-& $nssmExe set $serviceName Description "Stamping Costing Platform (FastAPI / Uvicorn, workers=$workers)"
+& $nssmExe set $serviceName Description "Stamping Costing Platform (run_prod.py → schema upgrade → uvicorn workers)"
 & $nssmExe set $serviceName Start SERVICE_AUTO_START
 & $nssmExe set $serviceName AppStdout (Join-Path $repoRoot "logs\service-stdout.log")
 & $nssmExe set $serviceName AppStderr (Join-Path $repoRoot "logs\service-stderr.log")
@@ -108,8 +109,8 @@ $appParams = "-m uvicorn main:app --host 0.0.0.0 --port $port --workers $workers
 & $nssmExe set $serviceName AppExit Default Restart
 & $nssmExe set $serviceName AppRestartDelay 5000
 
-# 环境变量（生产）
-& $nssmExe set $serviceName AppEnvironmentExtra "APP_ENV=production" "PYTHONUTF8=1" "PYTHONIOENCODING=utf-8"
+# 环境变量（生产）；UVICORN_WORKERS/PORT 写入服务环境，与 .env 一致
+& $nssmExe set $serviceName AppEnvironmentExtra "APP_ENV=production" "PYTHONUTF8=1" "PYTHONIOENCODING=utf-8" "UVICORN_WORKERS=$workers" "PORT=$port"
 
 New-Item -ItemType Directory -Force -Path (Join-Path $repoRoot "logs") | Out-Null
 
