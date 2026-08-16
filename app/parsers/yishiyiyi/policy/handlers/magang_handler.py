@@ -447,46 +447,18 @@ class MagangSheetHandler(BaseSheetHandler):
         if not boundaries:
             return []
 
-        # Step 3: 确定钢种列表
-        # grades 不为空 -> 使用 region.grades 中的钢种列表（板类）
-        # grades 为空 -> 使用行数据中的 grade_value（冷轧卷类）
-        if region.grades:
-            steel_grades = region.grades
-            use_row_grade = False
-        else:
-            steel_grades = None
-            use_row_grade = True
-
-        # Step 4: 对每个钢种构建 policy
+        # Step 3/4: 构建 policy
+        # grades 不为空 -> 板类：使用 region.grades；为空 -> 冷轧卷类：用行内 grade_value
         policies: List[Any] = []
-        if use_row_grade:
-            # 冷轧卷类：使用行数据中的 grade_value
-            for r, grade_value in grade_rows_with_value:
-                items = self._build_width_items(sheet, r, price_cols, boundaries)
-                if not items:
-                    continue
-                
-                    
-                policies.append(ParsedPolicy(
-                    steel_mill=steel_mill,
-                    category_name=region.category,
-                    grade_type=GRADE_TYPE_THICKNESS_RANGE,
-                    grade_value=grade_value,
-                    policy_type=POLICY_TYPE_WIDTH,
-                    base_thickness=None,
-                    items=items,
-                ))
-        else:
+        if region.grades:
             # 板类：外层是行（每行代表一个厚度范围），里层是该行对应的钢种；
             # 同一行的价格数据被所有钢种共用
-            assert steel_grades is not None
             for data_row, _ in grade_rows_with_value:
-                for grade_value in steel_grades:
+                for grade_value in region.grades:
                     items = self._build_width_items(sheet, data_row, price_cols, boundaries)
                     if not items:
                         continue
                     # Block 2: 行 10 → 厚度<0.8，行 11 → 厚度≥0.8
-                    
                     if data_row in (10, 11):
                         thick_range_label = "厚度<0.8" if data_row == 10 else "厚度≥0.8"
                         category_name = region.category + thick_range_label
@@ -501,6 +473,21 @@ class MagangSheetHandler(BaseSheetHandler):
                         base_thickness=None,
                         items=items,
                     ))
+        else:
+            # 冷轧卷类：使用行数据中的 grade_value
+            for r, grade_value in grade_rows_with_value:
+                items = self._build_width_items(sheet, r, price_cols, boundaries)
+                if not items:
+                    continue
+                policies.append(ParsedPolicy(
+                    steel_mill=steel_mill,
+                    category_name=region.category,
+                    grade_type=GRADE_TYPE_THICKNESS_RANGE,
+                    grade_value=grade_value,
+                    policy_type=POLICY_TYPE_WIDTH,
+                    base_thickness=None,
+                    items=items,
+                ))
 
         return policies
     def _build_width_items(

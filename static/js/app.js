@@ -13,7 +13,7 @@
  * 入口 URL 的 query 串驱动整体刷新；每次脚本更新后需要同步递增 ?v= 版本号。
  */
 
-import { pageMeta } from './features/index.js?v=14';
+import { pageMeta } from './features/index.js?v=16';
 
 // 页面导入（路径与 index.html 菜单树 / features 目录对齐）
 import { getUserSession, initUserMenu, startTokenHeartbeat, updateUserSession } from './features/login/index.js?v=14';
@@ -42,6 +42,8 @@ import { pageConfig as scrapPricePage } from './features/yishiyiyi/scrap-price/i
 import { pageConfig as bomStructurePage }  from './features/bom/material/structure/index.js?v=9';
 import { pageConfig as bomVizPage }        from './features/bom/material/viz/index.js?v=29';
 import { pageConfig as bomUploadPage }     from './features/bom/material/upload/index.js?v=4';
+import { pageConfig as bomWeldingUnitPriceUploadPage } from './features/bom/welding-unit-price/upload/index.js?v=4';
+import { pageConfig as bomWeldingUnitPricePage } from './features/bom/welding-unit-price/list/index.js?v=3';
 import { pageConfig as costingPage }        from './features/costing/engine/index.js';
 import { pageConfig as quotationPage }      from './features/quotation/index.js';
 import { pageConfig as settingsPage }       from './features/settings/system/index.js?v=8';
@@ -77,6 +79,8 @@ const pages = {
     'bom-structure':  bomStructurePage,
     'bom-viz':        bomVizPage,
     'bom-upload':     bomUploadPage,
+    'bom-welding-unit-price-upload': bomWeldingUnitPriceUploadPage,
+    'bom-welding-unit-price': bomWeldingUnitPricePage,
     costing:          costingPage,
     quotation:        quotationPage,
     settings:         settingsPage,

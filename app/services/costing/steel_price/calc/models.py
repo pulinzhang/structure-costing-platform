@@ -110,15 +110,34 @@ class CalcRow:
 
         self.calc_message = "；".join(self.messages) if self.messages else None
 
+    def can_persist(self) -> bool:
+        """是否具备落库必填字段（钢厂 / 大类 / 宽度 / 基价）。"""
+        return (
+            self.steel_mill is not None
+            and self.category_name is not None
+            and self.width is not None
+            and self.base_price is not None
+        )
+
     def to_persist_payload(self, *, calc_batch_id: str, formula_version: str) -> dict[str, Any]:
         """转为 SteelPriceService 落库 payload（仅可落库行）。"""
-        assert self.steel_mill is not None
-        assert self.category_name is not None
-        assert self.width is not None
-        assert self.base_price is not None
+        steel_mill = self.steel_mill
+        category_name = self.category_name
+        width = self.width
+        base_price = self.base_price
+        if (
+            steel_mill is None
+            or category_name is None
+            or width is None
+            or base_price is None
+        ):
+            raise ValueError(
+                "不可落库行缺少必填字段: "
+                f"location={self.location} grade={self.grade} thickness={self.thickness}"
+            )
 
         final_price = (
-            Decimal(str(self.base_price))
+            Decimal(str(base_price))
             + Decimal(str(self.thickness_adjustment))
             + Decimal(str(self.width_adjustment))
             + Decimal(str(self.zinc_adjustment))
@@ -126,18 +145,18 @@ class CalcRow:
             + Decimal(str(self.other_adjustment))
         )
         thickness_f = float(self.thickness)
-        width_f = float(self.width)
+        width_f = float(width)
         return {
             "year": self.year,
             "month": self.month,
             "location": self.location,
-            "steel_mill": self.steel_mill,
-            "category_name": self.category_name,
+            "steel_mill": steel_mill,
+            "category_name": category_name,
             "grade": self.grade,
             "thickness": self.thickness,
-            "width": self.width,
+            "width": width,
             "spec": f"{thickness_f:.2f}*{width_f:.2f}",
-            "base_price": self.base_price,
+            "base_price": base_price,
             "thickness_adjustment": self.thickness_adjustment,
             "width_adjustment": self.width_adjustment,
             "zinc_adjustment": self.zinc_adjustment,

@@ -27,10 +27,13 @@
  * │   │   └── list/
  * │   └── scrap-price/           # 废料月度销售价
  * ├── bom/                       # BOM
- * │   └── material/              # 材料清单
+ * │   ├── material/              # 材料清单
+ * │   │   ├── upload/
+ * │   │   ├── structure/
+ * │   │   └── viz/
+ * │   └── welding-unit-price/    # 焊接单价
  * │       ├── upload/
- * │       ├── structure/
- * │       └── viz/
+ * │       └── list/
  * ├── costing/                   # 核价
  * │   ├── steel-price/           # 冲压钢材联动价
  * │   │   ├── calc/
@@ -158,6 +161,16 @@ export const pageMeta = {
         title: '上传材料清单',
         en: 'BOM_UPLOAD',
         breadcrumb: ['BOM', '材料清单', '上传材料清单'],
+    },
+    'bom-welding-unit-price-upload': {
+        title: '焊接单价上传',
+        en: 'WELDING_UNIT_PRICE_UPLOAD',
+        breadcrumb: ['BOM', '焊接单价', '上传'],
+    },
+    'bom-welding-unit-price': {
+        title: '焊接单价列表',
+        en: 'WELDING_UNIT_PRICE_MATRIX',
+        breadcrumb: ['BOM', '焊接单价', '焊接单价列表'],
     },
     costing: {
         title: '自动核价引擎',

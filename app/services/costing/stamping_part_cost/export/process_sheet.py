@@ -59,7 +59,7 @@ def export_process_sheet(
     末尾 U~Z 为人可读溯源（核对/手工补填），AA~AC 为关联 ID（钢材/废料/加工费）。
     """
     workbook = Workbook()
-    sheet = workbook.active
+    sheet = workbook.worksheets[0]
     sheet.title = "单件"
 
     last_col = 29  # AC
@@ -528,9 +528,6 @@ def export_process_sheet(
     note.column_dimensions["A"].width = 14
     note.column_dimensions["B"].width = 18
     note.column_dimensions["C"].width = 52
-
-    # 确保打开文件时激活「单件」
-    workbook.active = sheet
 
     buffer = BytesIO()
     workbook.save(buffer)

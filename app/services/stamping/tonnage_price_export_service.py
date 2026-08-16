@@ -49,7 +49,7 @@ class StampingTonnagePriceExportService:
         )
 
         wb = Workbook()
-        ws = wb.active
+        ws = wb.worksheets[0]
         ws.title = "冲次单价"
 
         header_font = Font(name="微软雅黑", size=10, bold=True, color="FFFFFF")

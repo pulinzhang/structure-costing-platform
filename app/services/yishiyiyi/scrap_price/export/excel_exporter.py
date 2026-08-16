@@ -120,7 +120,7 @@ class StampingScrapPriceExporter:
         year_filter: int | None = None,
     ) -> tuple[bytes, str]:
         wb = Workbook()
-        ws = wb.active
+        ws = wb.worksheets[0]
         ws.title = "废料销售价"
 
         current_row = 1

@@ -38,7 +38,9 @@ def parse_bom_excel(source: str | Path | bytes) -> BomParseResult:
         file_bytes = path.read_bytes()
         wb = load_workbook(str(path), data_only=True)
 
-    ws = wb.active
+    if not wb.worksheets:
+        raise ValueError("Excel 中没有工作表")
+    ws = wb.worksheets[0]
     meta = parse_bom_meta(ws)
     nodes, row_l0, row_part_sketch = parse_bom_nodes(ws)
     image_count = assign_sketch_images(file_bytes, nodes, row_l0, row_part_sketch)

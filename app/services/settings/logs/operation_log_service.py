@@ -140,7 +140,7 @@ class OperationLogService:
             created_to=created_to,
         )
         wb = Workbook()
-        ws = wb.active
+        ws = wb.worksheets[0]
         ws.title = "操作日志"
         headers = [
             "ID",

@@ -184,7 +184,7 @@ class SteelPricePolicyExporter:
         返回 (文件字节数据, 文件名)
         """
         wb = Workbook()
-        ws = wb.active
+        ws = wb.worksheets[0]
         ws.title = "厚度加减价导出"
 
         self._write_headers(ws)

@@ -81,9 +81,11 @@ def batch_delete_steel_prices(
     年度、月份、基地必填；已审核通过的记录跳过。
     """
     result, error = _steel_price_service.batch_delete(db, body)
-    if error:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error)
-    assert result is not None
+    if error is not None or result is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=error or "批量删除失败",
+        )
     return ApiResponse.ok(
         data=result,
         message=(
@@ -112,9 +114,11 @@ def batch_approve_steel_prices(
     三者必填；仅处理待审/已驳回，已通过记录跳过。
     """
     result, error = _steel_price_service.batch_approve(db, body, current_user=current_user)
-    if error:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error)
-    assert result is not None
+    if error is not None or result is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=error or "批量审核失败",
+        )
     return ApiResponse.ok(
         data=result,
         message=(
@@ -145,9 +149,11 @@ def batch_reverse_audit_steel_prices(
     result, error = _steel_price_service.batch_reverse_audit(
         db, body, current_user=current_user
     )
-    if error:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error)
-    assert result is not None
+    if error is not None or result is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=error or "批量反审核失败",
+        )
     return ApiResponse.ok(
         data=result,
         message=(

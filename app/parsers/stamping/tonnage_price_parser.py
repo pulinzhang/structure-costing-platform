@@ -121,9 +121,9 @@ def parse_tonnage_price_excel(file_content: bytes) -> TonnagePriceParseResult:
         return TonnagePriceParseResult(rows=[], errors=[f"无法读取 Excel：{exc}"])
 
     try:
-        sheet = workbook.active
-        if sheet is None:
+        if not workbook.worksheets:
             return TonnagePriceParseResult(rows=[], errors=["Excel 中没有工作表"])
+        sheet = workbook.worksheets[0]
 
         header = _find_header_row(sheet)
         if not header:

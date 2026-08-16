@@ -112,7 +112,9 @@ class HeaderResolver:
                     logger.info(f"找到数据Sheet: {sheet.title}, 行{row_idx}")
                     return sheet
 
-        return workbook.active
+        if not workbook.worksheets:
+            return None
+        return workbook.worksheets[0]
 
     def find_stamping_supplier(self, sheet: Any) -> Optional[str]:
         """从表头区域提取冲压供应商名称（冲压承制公司）"""

@@ -104,6 +104,20 @@ class Perm:
     MENU_BOM_STRUCTURE = "menu:bom-structure"  # 产品结构
     BOM_STRUCTURE_VIEW = "op:bom-structure:view"  # 查看
 
+    MENU_BOM_WELDING_UNIT_PRICE_GROUP = "menu:bom-welding-unit-price-group"  # 焊接单价
+
+    MENU_BOM_WELDING_UNIT_PRICE_UPLOAD = "menu:bom-welding-unit-price-upload"  # 上传
+    BOM_WELDING_UNIT_PRICE_UPLOAD_VIEW = "op:bom-welding-unit-price-upload:view"  # 查看
+    BOM_WELDING_UNIT_PRICE_UPLOAD_UPLOAD = "op:bom-welding-unit-price-upload:upload"  # 上传
+
+    MENU_BOM_WELDING_UNIT_PRICE = "menu:bom-welding-unit-price"  # 焊接单价列表
+    BOM_WELDING_UNIT_PRICE_VIEW = "op:bom-welding-unit-price:view"  # 查询
+    BOM_WELDING_UNIT_PRICE_CREATE = "op:bom-welding-unit-price:create"  # 新增
+    BOM_WELDING_UNIT_PRICE_UPDATE = "op:bom-welding-unit-price:update"  # 编辑
+    BOM_WELDING_UNIT_PRICE_DELETE = "op:bom-welding-unit-price:delete"  # 删除
+    BOM_WELDING_UNIT_PRICE_COPY = "op:bom-welding-unit-price:copy"  # 复制年度模板
+    BOM_WELDING_UNIT_PRICE_EXPORT = "op:bom-welding-unit-price:export"  # 导出
+
     MENU_COSTING = "menu:costing"  # 核价
 
     MENU_STEEL_PRICE = "menu:steel-price"  # 冲压钢材联动价

@@ -25,7 +25,7 @@ class SteelBasePriceExporter:
         steel_mill: str | None = None,
     ) -> tuple[bytes, str]:
         wb = Workbook()
-        ws = wb.active
+        ws = wb.worksheets[0]
         ws.title = "基准价格导出"
 
         header_font = Font(name="微软雅黑", size=10, bold=True, color="FFFFFF")

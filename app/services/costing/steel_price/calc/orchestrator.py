@@ -262,6 +262,7 @@ class SteelPriceCalcOrchestrator:
                         formula_version=FORMULA_VERSION,
                     )
                     for row in rows
+                    if row.can_persist()
                 ],
                 current_user=current_user,
             )

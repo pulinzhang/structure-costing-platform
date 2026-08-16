@@ -394,12 +394,23 @@ root
 │       └── op:scrap-price:export
 │
 ├── menu:bom                                   # BOM（分组，可勾）
-│   └── menu:bom-material-list                 # 材料清单（二级分组）
-│       ├── menu:bom-upload
-│       │   ├── op:bom-upload:view
-│       │   └── op:bom-upload:upload
-│       └── menu:bom-structure                 # 产品结构（路由 page=bom-structure）
-│           └── op:bom-structure:view
+│   ├── menu:bom-material-list                 # 材料清单（二级分组）
+│   │   ├── menu:bom-upload
+│   │   │   ├── op:bom-upload:view
+│   │   │   └── op:bom-upload:upload
+│   │   └── menu:bom-structure                 # 产品结构（路由 page=bom-structure）
+│   │       └── op:bom-structure:view
+│   └── menu:bom-welding-unit-price-group      # 焊接单价（二级分组）
+│       ├── menu:bom-welding-unit-price-upload
+│       │   ├── op:bom-welding-unit-price-upload:view
+│       │   └── op:bom-welding-unit-price-upload:upload
+│       └── menu:bom-welding-unit-price
+│           ├── op:bom-welding-unit-price:view
+│           ├── op:bom-welding-unit-price:create
+│           ├── op:bom-welding-unit-price:update
+│           ├── op:bom-welding-unit-price:delete
+│           ├── op:bom-welding-unit-price:copy
+│           └── op:bom-welding-unit-price:export
 
 ├── menu:costing                               # 核价（分组，可勾）
 │   ├── menu:steel-price                       # 冲压钢材联动价（核价第一步）
@@ -457,10 +468,10 @@ root
 
 | 类别 | 数量 |
 |---|---|
-| 分组 `type=group` | 12（`stamping` / `stamping-process` / `stamping-stroke-unit-price` / `stamping-processing-fee` / `yishiyiyi` / `thickness` / `base-price` / `bom` / `bom-material-list` / `costing` / `steel-price` / `settings`） |
-| 叶子 `type=menu` | 23 |
-| 操作 `op` | 69 |
-| 可勾节点合计 | 104（`root` 一般不入库） |
+| 分组 `type=group` | 14（含 `bom-welding-unit-price-group` 等） |
+| 叶子 `type=menu` | 27 |
+| 操作 `op` | 86 |
+| 可勾节点合计 | 127（`root` 一般不入库） |
 | 新建默认 | 7 |
 | 强制 | 5（均包含在默认集内） |
 
@@ -486,6 +497,8 @@ root
 | bom-structure | `view` | 产品结构：基地/项目卡片浏览 |
 | bom-viz（权限码同 `menu:bom-structure`） | `view` | Assembly Workspace |
 | bom-upload | `view` / `upload` | 进入页；导入材料清单 |
+| bom-welding-unit-price-upload | `view` / `upload` | 查看上传页；导入焊接单价 Excel |
+| bom-welding-unit-price | `view` / `create` / `update` / `delete` / `copy` / `export` | 查询；新增；编辑；删除；复制年度模板；导出 Excel |
 | steel-price-calc | `view` / `run` / `delete` | 历史/过程；开始计算；删除日志 |
 | steel-price-list | `view` / `update` / `delete` / `approve` / `reject` / `reverse` / `export` | 查询；编辑；删除（含批量）；通过（含批量）；驳回；反审核（含批量）；导出 |
 | stamping-part-cost-calc | `view` / `run` / `delete` | 历史/过程；开始计算；删除日志 |

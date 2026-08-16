@@ -38,7 +38,7 @@ class StampingTonnagePriceImportService:
     def build_template(self) -> tuple[bytes, str]:
         """生成三列模板：名称 / 单位 / 单价。"""
         workbook = Workbook()
-        sheet = workbook.active
+        sheet = workbook.worksheets[0]
         sheet.title = "冲次单价"
 
         header_font = Font(name="微软雅黑", size=10, bold=True, color="FFFFFF")

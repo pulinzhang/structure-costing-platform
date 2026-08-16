@@ -50,7 +50,7 @@ def export_detail(
 ) -> tuple[bytes, str]:
     """明细导出：业务字段 + 末尾弱化溯源/关联 ID + 审核元数据。"""
     workbook = Workbook()
-    sheet = workbook.active
+    sheet = workbook.worksheets[0]
     sheet.title = "零件价格核算"
 
     headers = [

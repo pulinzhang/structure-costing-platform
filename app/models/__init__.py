@@ -2,6 +2,7 @@
 
 from app.models.async_task import AsyncTask
 from app.models.bom import BomNode, BomSnapshot
+from app.models.bom_welding_unit_price import BomWeldingUnitPrice
 from app.models.operation_log import OperationLog
 from app.models.stamping import StampingPart, StampingProcess
 from app.models.stamping_process_fee import StampingProcessFee
@@ -24,6 +25,7 @@ __all__ = [
     "AsyncTask",
     "BomNode",
     "BomSnapshot",
+    "BomWeldingUnitPrice",
     "OperationLog",
     "StampingPart",
     "StampingProcess",

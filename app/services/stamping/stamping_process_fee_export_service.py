@@ -92,7 +92,7 @@ class StampingProcessFeeExportService:
         )
 
         wb = Workbook()
-        ws = wb.active
+        ws = wb.worksheets[0]
         ws.title = "冲压加工费"
 
         header_font = Font(name="微软雅黑", size=10, bold=True, color="FFFFFF")

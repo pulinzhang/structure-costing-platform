@@ -44,8 +44,8 @@ class ExcelContext:
             self.sheet = self.workbook[sheet_title]
         else:
             self.sheet = self._find_stamping_sheet()
-            if not self.sheet:
-                self.sheet = self.workbook.active
+            if self.sheet is None and self.workbook.worksheets:
+                self.sheet = self.workbook.worksheets[0]
 
         if self.sheet is None:
             raise ValueError("未找到可用 Sheet")

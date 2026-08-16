@@ -117,6 +117,7 @@ static/
         │   ├── winning-thickness/list/
         │   └── scrap-price/
         ├── bom/material/{upload,structure,viz}
+        ├── bom/welding-unit-price/{upload,list}
         ├── costing/
         │   ├── steel-price/{calc,list}
         │   ├── stamping-part-cost/{calc,list}
@@ -150,6 +151,8 @@ static/
 | `#/bom-upload` | 上传材料清单 | `bom/material/upload` |
 | `#/bom-structure` | 产品结构 | `bom/material/structure` |
 | `#/bom-viz` | 产品结构图 | `bom/material/viz` |
+| `#/bom-welding-unit-price-upload` | 焊接单价上传 | `bom/welding-unit-price/upload` |
+| `#/bom-welding-unit-price` | 焊接单价列表 | `bom/welding-unit-price/list` |
 | `#/steel-price-calc` | 冲压钢材联动计算 | `costing/steel-price/calc` |
 | `#/steel-price-list` | 冲压钢材联动价一览 | `costing/steel-price/list` |
 | `#/stamping-part-cost-calc` | 冲压零件价格计算 | `costing/stamping-part-cost/calc` |

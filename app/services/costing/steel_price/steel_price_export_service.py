@@ -71,7 +71,7 @@ class SteelPriceExportService:
         )
 
         wb = Workbook()
-        ws = wb.active
+        ws = wb.worksheets[0]
         ws.title = "钢材联动价格"
 
         header_font = Font(name="微软雅黑", size=10, bold=True, color="FFFFFF")

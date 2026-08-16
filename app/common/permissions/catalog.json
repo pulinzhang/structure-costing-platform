@@ -226,6 +226,35 @@
               ]
             }
           ]
+        },
+        {
+          "code": "menu:bom-welding-unit-price-group",
+          "label": "焊接单价",
+          "type": "group",
+          "children": [
+            {
+              "code": "menu:bom-welding-unit-price-upload",
+              "label": "上传",
+              "type": "menu",
+              "children": [
+                { "code": "op:bom-welding-unit-price-upload:view", "label": "查看", "type": "op" },
+                { "code": "op:bom-welding-unit-price-upload:upload", "label": "上传", "type": "op" }
+              ]
+            },
+            {
+              "code": "menu:bom-welding-unit-price",
+              "label": "焊接单价列表",
+              "type": "menu",
+              "children": [
+                { "code": "op:bom-welding-unit-price:view", "label": "查询", "type": "op" },
+                { "code": "op:bom-welding-unit-price:create", "label": "新增", "type": "op" },
+                { "code": "op:bom-welding-unit-price:update", "label": "编辑", "type": "op" },
+                { "code": "op:bom-welding-unit-price:delete", "label": "删除", "type": "op" },
+                { "code": "op:bom-welding-unit-price:copy", "label": "复制年度模板", "type": "op" },
+                { "code": "op:bom-welding-unit-price:export", "label": "导出", "type": "op" }
+              ]
+            }
+          ]
         }
       ]
     },
