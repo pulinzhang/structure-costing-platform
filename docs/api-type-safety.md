@@ -4,15 +4,23 @@ description: FastAPI 后端类型安全、分层架构、API 契约与权限拦�
 
 # FastAPI 后端类型安全规范
 
-> 权限目录 / 新增功能前后端双向清单见 [`docs/permission-design.md`](./permission-design.md)。  
-> Cursor 规则同步文件：`.cursor/rules/api-type-safety.mdc`（二者 §7.0 鉴权约定保持一致）。
+> **实现真相**：`app/utils/response.py`、`app/schemas/common/page_result.py`。  
+> **Cursor 规则**：`.cursor/rules/api-type-safety.mdc`（与本文应对齐；改一处须改两处）。  
+> 分层与切片依赖见 [`architecture.md`](./architecture.md) / [`architecture-constitution.mdc`](./architecture-constitution.mdc)。  
+> 权限目录 / 新增功能清单见 [`permission-design.md`](./permission-design.md)。
 
 ## 1. API 响应契约
 
-每个 API 接口必须定义 `response_model`：
+每个 API 接口必须同时定义：
 
 ```python
 response_model=ApiResponse[T]
+```
+
+以及匹配的返回注解：
+
+```python
+-> ApiResponse[T]
 ```
 
 示例：
@@ -22,12 +30,12 @@ response_model=ApiResponse[T]
 ApiResponse[StampingPartWithProcessesResponse]
 ```
 
-列表：
+列表（不分页）：
 ```python
 ApiResponse[list[StampingProcessResponse]]
 ```
 
-分页：
+分页（**只用** `PageResult`；`BasePageResponse` 为其别名，新代码写 `PageResult`）：
 ```python
 ApiResponse[PageResult[StampingPartListResponse]]
 ```
@@ -36,8 +44,6 @@ ApiResponse[PageResult[StampingPartListResponse]]
 ```python
 ApiResponse[DashboardStatsVO]
 ```
-
-> **返回值注解**：推荐添加 `-> ApiResponse[T]`，便于类型检查，但 FastAPI 实际运行不强制要求。
 
 ---
 
@@ -106,6 +112,19 @@ class ApiResponse(BaseModel, Generic[T]):
     def deleted(cls, message: str = "删除成功") -> "ApiResponse[None]":
         """删除成功响应"""
         return cls(code=200, success=True, message=message, data=None)
+
+    @classmethod
+    def list_(
+        cls,
+        items: list[Any],
+        total: int,
+        page: int = 1,
+        page_size: int = 20,
+        message: str = "查询成功",
+        filters: Any = None,
+    ) -> "ApiResponse[Any]":
+        """分页列表：内部构造 PageResult 放入 data（实现见 app/utils/response.py）"""
+        ...
 ```
 
 ### 2.2 方法选择规则
@@ -114,6 +133,7 @@ class ApiResponse(BaseModel, Generic[T]):
 |------|------|------|------|
 | 正常返回（无 data） | `ApiResponse.ok()` | 200 | |
 | 正常返回（有 data） | `ApiResponse.ok(data=vo)` | 200 | |
+| **分页列表** | **`ApiResponse.list_(items=..., total=..., page=..., page_size=..., filters=...)`** | 200 | data 为 `PageResult` |
 | 创建资源 | `ApiResponse.created(data=vo)` | 201 | |
 | 更新资源 | `ApiResponse.updated(data=vo)` | 200 | |
 | 删除资源 | `ApiResponse.deleted()` | 200 | |
@@ -122,44 +142,54 @@ class ApiResponse(BaseModel, Generic[T]):
 | 资源不存在 | `HTTPException(status_code=404)` | - | 用 FastAPI 异常，不用 fail() |
 | 系统异常 | `ApiResponse.error(message=..., code=500)` | 500 | |
 
-### 2.3 分页组装模式
+### 2.3 分页组装模式（现网约定）
 
-**必须：Service 组装 PageResult，Router 仅包装**
+**推荐（与现有 Router 一致）**：Service 返回 VO 列表 + total（+ 可选 filters），Router 用 `ApiResponse.list_()` 组装 `PageResult`。
 
 ```python
-# ✅ Service：构造 PageResult
-def list_parts(self, db, query) -> PageResult[StampingPartListResponse]:
-    parts, total = self.repository.paginate(db, ...)
-    vo_list = [StampingPartListResponse.model_validate(p) for p in parts]
-    total_pages = (total + query.size - 1) // query.size if total > 0 else 0
-    return PageResult(
-        items=vo_list,
+# ✅ Service：ORM→VO，返回列表与总数（及筛选元数据）
+def paginate(
+    self, db: Session, query: SteelPriceQuery,
+) -> tuple[list[SteelPriceResponse], int, FilterOptionsVO]:
+    rows, total = self.repository.paginate(db, ...)
+    vos = [SteelPriceResponse.model_validate(r) for r in rows]
+    return vos, total, self._filter_options(db, query)
+
+# ✅ Router：list_() 计算 total_pages / has_next / has_prev 并包进 data
+@router.get("", response_model=ApiResponse[PageResult[SteelPriceResponse]])
+def list_steel_prices(
+    query: SteelPriceQuery = Depends(),
+    db: Session = Depends(get_db),
+    current_user: UserVO = Depends(require_perm(Perm.STEEL_PRICE_LIST_VIEW)),
+) -> ApiResponse[PageResult[SteelPriceResponse]]:
+    records, total, filters = _service.paginate(db, query)
+    return ApiResponse.list_(
+        items=records,
         total=total,
         page=query.page,
         page_size=query.size,
-        total_pages=total_pages,
-        has_next=query.page < total_pages,
-        has_prev=query.page > 1,
-        filters=filter_options,
+        filters=filters,  # 或 filters.model_dump()，视 VO 而定
     )
-
-# ✅ Router：仅包装 ApiResponse
-@router.get("/parts/list", response_model=ApiResponse[PageResult[StampingPartListResponse]])
-def list_parts(...) -> ApiResponse[PageResult[StampingPartListResponse]]:
-    return ApiResponse.ok(data=_service.list_parts(db, query))
 ```
 
-**禁止**：Router 组装 PageResult。
+**亦允许**：Service 自行构造完整 `PageResult[VO]`，Router 用 `ApiResponse.ok(data=page_result)`。两种勿在同一接口混用。
 
 ```python
-# ❌ 禁止：Router 组装
-@router.get("/parts/list")
-def list_parts(...):
-    data, total, filters = _service.list_parts(db, query)  # Service 返回 tuple
-    return ApiResponse.list_(items=data, total=total, ...)  # Router 组装
+# ✅ 备选：Service 返回 PageResult
+return ApiResponse.ok(data=_service.list_as_page(db, query))
 ```
 
-> **为什么禁止 `ApiResponse.list_()`**：`list_()` 方法内部构造 PageResult，导致分页逻辑分散在两处。统一由 Service 构造，便于维护和测试。
+**禁止**：
+
+```python
+# ❌ 把 total/page 摊在 ApiResponse 根上
+return {"success": True, "data": [], "total": 100}
+
+# ❌ 不用 list_/PageResult，手写裸 dict 当 data
+return ApiResponse.ok(data={"items": ..., "total": ...})
+```
+
+> `ApiResponse.list_()` **允许且推荐**用于分页。旧文档曾禁止 `list_()`，已与实现不符，作废。
 
 ### 2.4 方法选择规则
 
@@ -214,11 +244,11 @@ class StampingPartListData(BaseModel):
     page: int
     ...
 
-# ✅ 必须：使用公共 PageResult
+# ✅ 必须：使用公共 PageResult（新代码优先此名；BasePageResponse 仅为别名）
 from app.schemas.common.page_result import PageResult
 
-@router.get("/parts", response_model=ApiResponse[PageResult[Any]])
-def list_parts(...) -> ApiResponse[PageResult[Any]]:
+@router.get("/parts", response_model=ApiResponse[PageResult[StampingPartListResponse]])
+def list_parts(...) -> ApiResponse[PageResult[StampingPartListResponse]]:
     ...
 ```
 
@@ -321,22 +351,15 @@ def update_part(self, db: Session, part_id: int, update_data: dict):
 
 ## 5. 分层架构规范
 
-项目遵循以下架构：
+项目遵循：
 
 ```
-Router（路由层）
-   │
-   ▼
-Service（服务层）
-   │
-   ▼
-Repository（仓库层）
-   │
-   ▼
-Database（数据库）
+Router → Service → Repository → Database
 ```
 
-每层有严格的职责划分。
+Parser 仅由 Service 调用。切片依赖为**有向无环**（下游 costing/dashboard 可组合上游），详见架构宪法。
+
+每层职责划分见架构说明；本节只约束**类型与返回形态**。
 
 ---
 
@@ -372,24 +395,22 @@ Repository 只做：
 Repository 必须返回：
 
 * SQLAlchemy Model
-* list[SQLAlchemy Model]
-* tuple[list[SQLAlchemy Model], int]  # paginate 返回
-* Optional[SQLAlchemy Model]
+* `list[SQLAlchemy Model]`
+* `tuple[list[SQLAlchemy Model], int]`（paginate）
+* `Optional[SQLAlchemy Model]`
+* **允许**：SQL 聚合/去重的 `dict`、命名元组或轻量 read-model（如 `summarize_*`、`get_filter_options`）——见架构宪法 Repository 边界
 
 Repository 不知道：
 
-* VO 是什么
-* PageResult 是什么
-* JSON 结构
-* 前端字段
+* VO / `PageResult` / API JSON 结构
+* 前端字段命名
 
 Repository 禁止：
 
-* 创建 API 响应
+* 创建 `ApiResponse`
 * 转换为 VO
-* 序列化字段
-* 格式化 datetime / Decimal
-* 处理前端结构
+* 格式化 datetime / Decimal 给前端
+* 权限/角色业务策略判断
 
 ```python
 def paginate(
@@ -441,7 +462,7 @@ Service 职责：
 2. **权限检查** - 业务层面的权限控制
 3. **数据计算** - 价格计算、数量汇总等
 4. **ORM → VO 转换** - SQLAlchemy Model 转为 Pydantic VO
-5. **分页构造** - 计算 total、total_pages、filters
+5. **分页数据准备** - 查询 total、准备 filters；**推荐**返回 `(list[VO], total[, filters])`，由 Router `list_()` 组装 `PageResult`
 
 ```
 Repository
@@ -452,46 +473,32 @@ Service
     |
     | ORM → VO
     | 业务计算
-    | 分页计算
     v
-VO / PageResult[VO]
+list[VO], total[, filters]   或   PageResult[VO]（备选）
     |
     v
-Router
+Router → ApiResponse.list_(...) 或 ApiResponse.ok(data=page)
 ```
 
 Service 必须返回：
 
 * `VO`
 * `list[VO]`
-* `PageResult[VO]`  # 分页场景，必须由 Service 构造
+* `tuple[list[VO], int]` / `tuple[list[VO], int, Filters]`  # **推荐分页形态**
+* `PageResult[VO]`  # 备选：Service 自行组装分页体
 
-**分页规范**：所有分页方法必须返回 `PageResult[VO]`
+**分页推荐写法**：
 
 ```python
-def list_parts(
+def paginate(
     self,
     db: Session,
     query: StampingPartQuery,
-) -> PageResult[StampingPartListResponse]:
-    """Service 负责：ORM→VO、计算分页、构造 PageResult"""
-    # 1. Repository 返回 Model + total
+) -> tuple[list[StampingPartListResponse], int, PartFilterVO]:
+    """Service：ORM→VO；Router 再 list_()"""
     parts, total = self.repository.paginate(...)
-    # 2. ORM → VO
     vo_list = [StampingPartListResponse.model_validate(p) for p in parts]
-    # 3. 分页计算
-    total_pages = (total + query.size - 1) // query.size if total > 0 else 0
-    # 4. 构造 PageResult
-    return PageResult(
-        items=vo_list,
-        total=total,
-        page=query.page,
-        page_size=query.size,
-        total_pages=total_pages,
-        has_next=query.page < total_pages,
-        has_prev=query.page > 1,
-        filters=self._build_filter_options(db, query),
-    )
+    return vo_list, total, self._build_filter_options(db, query)
 ```
 
 禁止：
@@ -577,23 +584,24 @@ Router 只负责：
 2. 参数校验（FastAPI + DTO）
 3. 权限 / 依赖注入（Depends）
 4. 调用 Service
-5. 包装统一响应 `ApiResponse.ok(data=result)`
+5. 包装统一响应：`ApiResponse.ok` / `created` / `updated` / `deleted` / **`list_`（分页）**
 
 Router **不知道**：
 
-* `total` 怎么计算
-* `page` 怎么计算
-* `filters` 怎么生成
-* ORM 怎么转换为 VO
-* Decimal 怎么格式化
+* ORM 怎么查
+* Decimal / datetime 怎么格式化（在 VO 内）
+* 业务规则（通过/驳回等）
+
+Router **可以**：
+
+* 调用 `ApiResponse.list_(items, total, page, page_size, filters=...)` 组装分页壳
+* 将 `page` / `page_size` 从 Query/DTO 传入 `list_`（纯 HTTP 适配）
 
 Router 禁止：
 
-* 创建 PageResult
-* 计算分页
-* 转换 ORM → VO
-* 序列化字段
-* 组装响应数据结构
+* 访问数据库 / 操作 ORM Model
+* 在 Router 内 `Model → VO`
+* 返回裸 dict / `JSONResponse`
 
 ```python
 @router.get(
@@ -605,25 +613,25 @@ def list_parts(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_PARTS_VIEW)),
 ) -> ApiResponse[PageResult[StampingPartListResponse]]:
-    """Router 只调用 Service，Service 返回什么就返回什么"""
-    return ApiResponse.ok(data=_service.list_parts(db, query))
+    records, total, filters = _service.paginate(db, query)
+    return ApiResponse.list_(
+        items=records,
+        total=total,
+        page=query.page,
+        page_size=query.size,
+        filters=filters,
+    )
 ```
 
 禁止：
 
 ```python
-# ❌ 禁止：Router 计算分页
-data, total = _service.list_parts(db, query)
-return ApiResponse.ok(data=PageResult(
-    items=data,
-    total=total,
-    page=query.page,
-    ...
-))
-
-# ❌ 禁止：Router 转换 VO
+# ❌ Router 转换 VO
 part = _repository.get(db, part_id)
 return ApiResponse.ok(data=PartVO.model_validate(part))
+
+# ❌ 绕过 ApiResponse
+return {"items": ..., "total": total}
 ```
 
 ---
@@ -636,7 +644,7 @@ return ApiResponse.ok(data=PartVO.model_validate(part))
 |------|------|-------------|-------------|------|----------------|
 | `GET`（单个） | 获取单个资源 | `VO` 或 `None` | `ApiResponse.ok(data=vo)` 或 `HTTPException(404)` | 200 / 404 | `ApiResponse[StampingPartVO]` |
 | `GET`（列表） | 获取资源列表（不分页） | `list[VO]` | `ApiResponse.ok(data=list)` | 200 | `ApiResponse[list[StampingProcessResponse]]` |
-| `GET`（列表） | 获取资源列表（分页） | `PageResult[VO]` | `ApiResponse.ok(data=page_result)` | 200 | `ApiResponse[PageResult[StampingPartVO]]` |
+| `GET`（列表） | 获取资源列表（分页） | `list[VO], total[, filters]` 或 `PageResult[VO]` | **`ApiResponse.list_(...)`** 或 `ok(data=page)` | 200 | `ApiResponse[PageResult[…]]` |
 | `POST` | 创建资源 | `VO` | `ApiResponse.created(data=vo)` | 201 | `ApiResponse[StampingPartVO]` |
 | `PUT` / `PATCH` | 更新资源 | `VO` 或 `None` | `ApiResponse.updated(data=vo)` 或 `HTTPException(404)` | 200 / 404 | `ApiResponse[StampingProcessResponse]` |
 | `DELETE` | 删除资源 | `bool` 或 `None` | `ApiResponse.deleted()` 或 `HTTPException(404)` | 200 / 404 | `ApiResponse[None]` |
@@ -688,8 +696,14 @@ def list_parts(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_PARTS_VIEW)),
 ) -> ApiResponse[PageResult[StampingPartListResponse]]:
-    """获取零件列表（包含工序）"""
-    return ApiResponse.ok(data=_stamping_service.list_parts(db, query))
+    records, total, filters = _stamping_service.paginate(db, query)
+    return ApiResponse.list_(
+        items=records,
+        total=total,
+        page=query.page,
+        page_size=query.size,
+        filters=filters,
+    )
 ```
 
 ### POST - 创建资源
@@ -1019,15 +1033,15 @@ ApiResponse[Any]（应指定具体类型）
     使用 ApiResponse.xxx() 方法返回
 
 每个 Service：
-    returns VO 或 PageResult
+    returns VO / list[VO] / (list, total[, filters]) / PageResult
     无隐式 current_user / ContextVar
 
 每个 Repository：
-    returns SQLAlchemy Model
+    returns SQLAlchemy Model（聚合接口可返回 dict / 轻量结构）
 
 分页接口：
-    Service 返回 PageResult[VO]
-    Router 用 ApiResponse.ok(data=page_result) 或 list_ 包装
+    推荐 Service 返回 list[VO] + total；Router 用 ApiResponse.list_()
+    response_model=ApiResponse[PageResult[VO]]（勿再发明 XXXListData）
 
 前端（同权限码双向）：
     菜单 canAccessPage / applySidebarPermissions

@@ -1,5 +1,5 @@
 repos:
-  # 1. Ruff 代码检查与格式化 (使用官方高能 Hook)
+  # 1. Ruff 代码检查与格式化
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.5.0
     hooks:
@@ -7,13 +7,13 @@ repos:
         args: [--fix, --exit-non-zero-on-fix]
       - id: ruff-format
 
-  # 2. Mypy 静态类型检查 (直接使用项目的 uv 环境，规避缺少依赖问题)
+  # 2. Mypy 静态类型检查（使用当前 PATH / venv 中的 python，兼容 PyCharm）
   - repo: local
     hooks:
       - id: mypy
         name: mypy (strict type check)
-        entry: uv run mypy
+        entry: python -m mypy
         language: system
         types: [python]
-        args: [--config-file=pyproject.toml]
+        args: [--config-file=pyproject.toml, app]
         pass_filenames: false

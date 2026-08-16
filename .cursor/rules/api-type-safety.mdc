@@ -5,6 +5,8 @@ description: FastAPI backend type safety, layered architecture, API contract, an
 
 # Backend Type Safety Rules
 
+> Readable Chinese guide (keep in sync): `docs/api-type-safety.md`
+
 ## 1. API Response Contract
 
 Every API endpoint must define:
@@ -33,7 +35,7 @@ ApiResponse[list[UserVO]]
 
 Pagination:
 ```python
-ApiResponse[BasePageResponse[UserVO]]
+ApiResponse[PageResult[UserVO]]
 ```
 
 Statistics:
@@ -188,6 +190,8 @@ Required:
 ApiResponse[PageResult[T]]
 ```
 
+`BasePageResponse` 是 `PageResult` 的别名（`app/schemas/common/__init__.py`）；**新代码请写 `PageResult`**。
+
 Example:
 
 ```python
@@ -213,9 +217,9 @@ Example:
 ```python
 @router.get(
     "/users",
-    response_model=ApiResponse[BasePageResponse[UserVO]]
+    response_model=ApiResponse[PageResult[UserVO]]
 )
-def list_users() -> ApiResponse[BasePageResponse[UserVO]]:
+def list_users() -> ApiResponse[PageResult[UserVO]]:
     ...
 ```
 
@@ -337,9 +341,10 @@ def create(self, db: Session, dto: UserCreateDTO, current_user: UserVO) -> UserV
 
 Service must return:
 
-* VO
-* list[VO]
-* PageResult[VO]  # 仅用于分页接口
+* `VO`
+* `list[VO]`
+* `tuple[list[VO], int]` / 带 filters 的 tuple  # 分页推荐
+* `PageResult[VO]`  # 分页备选
 
 Allowed:
 
@@ -352,12 +357,18 @@ list[UserVO]
 ```
 
 ```python
-PageResult[UserVO]  # 分页接口返回 PageResult，由 Router 用 ApiResponse.list_() 包装
+# 分页推荐：交给 Router list_()
+list[UserVO], int  # 或 + filters
+```
+
+```python
+PageResult[UserVO]  # 备选：Service 已组装完整分页体时用 ok(data=…)
 ```
 
 Note:
-- 分页接口：Service 返回 `PageResult[VO]`，Router 使用 `ApiResponse.list_(items=vo_list, total=total, ...)` 包装
-- 非分页接口：Service 返回 `list[VO]`，Router 使用 `ApiResponse.ok(data=vo_list)` 包装
+- 分页接口（现网推荐）：Service 返回 `list[VO], total[, filters]`，Router 使用 `ApiResponse.list_(items=..., total=..., page=..., page_size=..., filters=...)`
+- 分页备选：Service 返回 `PageResult[VO]`，Router 使用 `ApiResponse.ok(data=page_result)`
+- 非分页列表：Service 返回 `list[VO]`，Router 使用 `ApiResponse.ok(data=vo_list)`
 
 Forbidden:
 
@@ -499,7 +510,7 @@ Every HTTP method must follow consistent response patterns:
 | Method | Purpose | Service Return | Router Return | Response Model |
 |--------|---------|----------------|---------------|----------------|
 | `GET` (single) | 获取单个资源 | `VO` | `ApiResponse.ok(data=vo)` | `ApiResponse[UserVO]` |
-| `GET` (list) | 获取资源列表 | `list[VO]` 或 `PageResult[VO]` | `ApiResponse.ok(data=list)` 或 `ApiResponse.list_(items=...)` | `ApiResponse[list[UserVO]]` 或 `ApiResponse[BasePageResponse[UserVO]]` |
+| `GET` (list) | 获取资源列表 | `list[VO]` 或 `(list[VO], total[, filters])` | `ApiResponse.ok(data=list)` 或 `ApiResponse.list_(items=...)` | `ApiResponse[list[UserVO]]` 或 `ApiResponse[PageResult[UserVO]]` |
 | `POST` | 创建资源 | `VO` | `ApiResponse.created(data=vo)` | `ApiResponse[UserVO]` |
 | `PUT` / `PATCH` | 更新资源 | `VO` | `ApiResponse.updated(data=vo)` | `ApiResponse[UserVO]` |
 | `DELETE` | 删除资源 | `None` | `ApiResponse.deleted(message="删除成功")` | `ApiResponse[None]` |
@@ -544,14 +555,14 @@ def list_users(
 ```python
 @router.get(
     "/users",
-    response_model=ApiResponse[BasePageResponse[UserVO]]
+    response_model=ApiResponse[PageResult[UserVO]]
 )
 def list_users_paginated(
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.SETTINGS_USERS_VIEW)),
-) -> ApiResponse[BasePageResponse[UserVO]]:
+) -> ApiResponse[PageResult[UserVO]]:
     service = UserService()
     users, total = service.list_users_paginated(db, skip=skip, limit=limit)
     return ApiResponse.list_(
