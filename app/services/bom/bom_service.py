@@ -8,7 +8,13 @@ from app.common.audit import audit_create
 from app.common.bom.manufacturing_category import resolve_manufacturing_category
 from app.repositories.bom.bom_repository import BomNodeRepository, BomSnapshotRepository
 from app.schemas.dto.bom_dto import BomNodeCreate, BomSnapshotCreate, BomSnapshotQuery
-from app.schemas.vo.bom_vo import BomNodeTreeVO, BomNodeVO, BomSnapshotVO
+from app.schemas.vo.bom_vo import (
+    BomCascadeFilterOptionsVO,
+    BomCascadeFilterQuery,
+    BomNodeTreeVO,
+    BomNodeVO,
+    BomSnapshotVO,
+)
 from app.schemas.vo.user_vo import UserVO
 
 logger = logging.getLogger("service.bom")
@@ -74,6 +80,19 @@ class BomService:
             "vehicle_models": self.snapshot_repo.list_vehicle_models(db),
         }
         return items, total, filters
+
+    def get_cascade_filter_options(
+        self,
+        db: Session,
+        query: BomCascadeFilterQuery,
+    ) -> BomCascadeFilterOptionsVO:
+        raw = self.snapshot_repo.get_cascade_filter_options(
+            db,
+            location=query.location,
+            vehicle_model=query.vehicle_model,
+            status=query.status,
+        )
+        return BomCascadeFilterOptionsVO.model_validate(raw)
 
     def get_snapshot(self, db: Session, snapshot_id: int) -> BomSnapshotVO | None:
         row = self.snapshot_repo.get_by_id(db, snapshot_id)

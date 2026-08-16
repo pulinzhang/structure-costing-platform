@@ -257,6 +257,35 @@
               ]
             }
           ]
+        },
+        {
+          "code": "menu:bom-welding-process-breakdown-group",
+          "label": "焊接工艺拆解",
+          "type": "group",
+          "children": [
+            {
+              "code": "menu:bom-welding-process-breakdown",
+              "label": "拆解",
+              "type": "menu",
+              "children": [
+                { "code": "op:bom-welding-process-breakdown:generate", "label": "从BOM生成", "type": "op" },
+                { "code": "op:bom-welding-process-breakdown:delete-log", "label": "删除拆解日志", "type": "op" }
+              ]
+            },
+            {
+              "code": "menu:bom-welding-process-breakdown-list",
+              "label": "拆解列表",
+              "type": "menu",
+              "children": [
+                { "code": "op:bom-welding-process-breakdown:view", "label": "查询", "type": "op" },
+                { "code": "op:bom-welding-process-breakdown:update", "label": "编辑明细", "type": "op" },
+                { "code": "op:bom-welding-process-breakdown:delete", "label": "删除", "type": "op" },
+                { "code": "op:bom-welding-process-breakdown:approve", "label": "审核通过", "type": "op" },
+                { "code": "op:bom-welding-process-breakdown:reverse", "label": "反审核", "type": "op" },
+                { "code": "op:bom-welding-process-breakdown:export", "label": "导出L0核对", "type": "op" }
+              ]
+            }
+          ]
         }
       ]
     },

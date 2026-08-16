@@ -121,6 +121,63 @@ class BomSnapshotRepository:
         )
         return [r[0] for r in rows if r[0]]
 
+    def get_cascade_filter_options(
+        self,
+        db: Session,
+        *,
+        location: str | None = None,
+        vehicle_model: str | None = None,
+        status: str | None = "active",
+    ) -> dict[str, list[str]]:
+        """
+        材料清单级联：
+        - 基地：全量
+        - 项目：按基地过滤
+        - 版本：按基地 + 项目过滤
+        """
+        location = (location or "").strip() or None
+        vehicle_model = (vehicle_model or "").strip() or None
+        status = (status or "").strip() or None
+
+        loc_q = db.query(BomSnapshot.location).distinct()
+        if status:
+            loc_q = loc_q.filter(BomSnapshot.status == status)
+        locations = [
+            row[0]
+            for row in loc_q.order_by(BomSnapshot.location).all()
+            if row[0]
+        ]
+
+        model_q = db.query(BomSnapshot.vehicle_model).distinct()
+        if status:
+            model_q = model_q.filter(BomSnapshot.status == status)
+        if location:
+            model_q = model_q.filter(BomSnapshot.location == location)
+        vehicle_models = [
+            row[0]
+            for row in model_q.order_by(BomSnapshot.vehicle_model).all()
+            if row[0]
+        ]
+
+        version_q = db.query(BomSnapshot.bom_version).distinct()
+        if status:
+            version_q = version_q.filter(BomSnapshot.status == status)
+        if location:
+            version_q = version_q.filter(BomSnapshot.location == location)
+        if vehicle_model:
+            version_q = version_q.filter(BomSnapshot.vehicle_model == vehicle_model)
+        bom_versions = [
+            row[0]
+            for row in version_q.order_by(BomSnapshot.bom_version.desc()).all()
+            if row[0]
+        ]
+
+        return {
+            "locations": locations,
+            "vehicle_models": vehicle_models,
+            "bom_versions": bom_versions,
+        }
+
 
 class BomNodeRepository:
     """BOM 树节点数据访问"""

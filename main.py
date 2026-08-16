@@ -305,6 +305,9 @@ def create_app() -> FastAPI:
     from app.routers.bom.crud import router as bom_router
     from app.routers.bom.upload import router as bom_upload_router
     from app.routers.bom.welding_unit_price import router as bom_welding_unit_price_router
+    from app.routers.bom.welding_process_breakdown import (
+        router as bom_welding_process_breakdown_router,
+    )
     from app.routers.costing.engine.crud import router as costing_engine_router
     from app.routers.quotation.crud import router as quotation_router
     from app.routers.settings.system.crud import router as settings_router
@@ -351,6 +354,7 @@ def create_app() -> FastAPI:
     app.include_router(bom_router)
     app.include_router(bom_upload_router)
     app.include_router(bom_welding_unit_price_router)
+    app.include_router(bom_welding_process_breakdown_router)
     app.include_router(costing_engine_router)
     app.include_router(quotation_router)
     app.include_router(settings_router)

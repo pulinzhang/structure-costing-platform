@@ -3,6 +3,13 @@
 from app.models.async_task import AsyncTask
 from app.models.bom import BomNode, BomSnapshot
 from app.models.bom_welding_unit_price import BomWeldingUnitPrice
+from app.models.bom_welding_process_breakdown import (
+    BomWeldingProcessBreakdownLine,
+    BomWeldingProcessBreakdownNode,
+)
+from app.models.bom_welding_process_breakdown_generate_log import (
+    BomWeldingProcessBreakdownGenerateLog,
+)
 from app.models.operation_log import OperationLog
 from app.models.stamping import StampingPart, StampingProcess
 from app.models.stamping_process_fee import StampingProcessFee
@@ -26,6 +33,9 @@ __all__ = [
     "BomNode",
     "BomSnapshot",
     "BomWeldingUnitPrice",
+    "BomWeldingProcessBreakdownNode",
+    "BomWeldingProcessBreakdownLine",
+    "BomWeldingProcessBreakdownGenerateLog",
     "OperationLog",
     "StampingPart",
     "StampingProcess",

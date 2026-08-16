@@ -120,6 +120,20 @@ class Perm:
     BOM_WELDING_UNIT_PRICE_REVERSE = "op:bom-welding-unit-price:reverse"  # 反审核
     BOM_WELDING_UNIT_PRICE_EXPORT = "op:bom-welding-unit-price:export"  # 导出
 
+    MENU_BOM_WELDING_PROCESS_BREAKDOWN_GROUP = "menu:bom-welding-process-breakdown-group"  # 焊接工艺拆解
+
+    MENU_BOM_WELDING_PROCESS_BREAKDOWN = "menu:bom-welding-process-breakdown"  # 拆解
+    BOM_WELDING_PROCESS_BREAKDOWN_GENERATE = "op:bom-welding-process-breakdown:generate"  # 从BOM生成
+    BOM_WELDING_PROCESS_BREAKDOWN_DELETE_LOG = "op:bom-welding-process-breakdown:delete-log"  # 删除拆解日志
+
+    MENU_BOM_WELDING_PROCESS_BREAKDOWN_LIST = "menu:bom-welding-process-breakdown-list"  # 拆解列表
+    BOM_WELDING_PROCESS_BREAKDOWN_VIEW = "op:bom-welding-process-breakdown:view"  # 查询
+    BOM_WELDING_PROCESS_BREAKDOWN_UPDATE = "op:bom-welding-process-breakdown:update"  # 编辑明细
+    BOM_WELDING_PROCESS_BREAKDOWN_DELETE = "op:bom-welding-process-breakdown:delete"  # 删除
+    BOM_WELDING_PROCESS_BREAKDOWN_APPROVE = "op:bom-welding-process-breakdown:approve"  # 审核通过
+    BOM_WELDING_PROCESS_BREAKDOWN_REVERSE = "op:bom-welding-process-breakdown:reverse"  # 反审核
+    BOM_WELDING_PROCESS_BREAKDOWN_EXPORT = "op:bom-welding-process-breakdown:export"  # 导出L0核对
+
     MENU_COSTING = "menu:costing"  # 核价
 
     MENU_STEEL_PRICE = "menu:steel-price"  # 冲压钢材联动价
@@ -138,14 +152,14 @@ class Perm:
     STEEL_PRICE_LIST_REVERSE = "op:steel-price-list:reverse"  # 反审核
     STEEL_PRICE_LIST_EXPORT = "op:steel-price-list:export"  # 导出
 
-    MENU_STAMPING_PART_COST = "menu:stamping-part-cost-group"  # 冲压零件价格核算
+    MENU_STAMPING_PART_COST_GROUP = "menu:stamping-part-cost-group"  # 冲压零件价格核算
 
     MENU_STAMPING_PART_COST_CALC = "menu:stamping-part-cost-calc"  # 冲压零件价格计算
     STAMPING_PART_COST_CALC_VIEW = "op:stamping-part-cost-calc:view"  # 查看
     STAMPING_PART_COST_CALC_RUN = "op:stamping-part-cost-calc:run"  # 计算
     STAMPING_PART_COST_CALC_DELETE = "op:stamping-part-cost-calc:delete"  # 删除日志
 
-    MENU_STAMPING_PART_COST_LIST = "menu:stamping-part-cost"  # 冲压零件价格一览
+    MENU_STAMPING_PART_COST = "menu:stamping-part-cost"  # 冲压零件价格一览
     STAMPING_PART_COST_VIEW = "op:stamping-part-cost:view"  # 查询
     STAMPING_PART_COST_UPDATE = "op:stamping-part-cost:update"  # 失败手工改价
     STAMPING_PART_COST_DELETE = "op:stamping-part-cost:delete"  # 删除

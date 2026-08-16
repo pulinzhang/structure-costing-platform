@@ -172,6 +172,16 @@ export const pageMeta = {
         en: 'WELDING_UNIT_PRICE_MATRIX',
         breadcrumb: ['BOM', '焊接单价', '焊接单价列表'],
     },
+    'bom-welding-process-breakdown': {
+        title: '焊接工艺拆解',
+        en: 'WELDING_PROCESS_BREAKDOWN',
+        breadcrumb: ['BOM', '焊接工艺拆解', '拆解'],
+    },
+    'bom-welding-process-breakdown-list': {
+        title: '焊接工艺拆解列表',
+        en: 'WELDING_PROCESS_BREAKDOWN_LIST',
+        breadcrumb: ['BOM', '焊接工艺拆解', '拆解列表'],
+    },
     costing: {
         title: '自动核价引擎',
         en: 'AUTOMATED_COSTING',

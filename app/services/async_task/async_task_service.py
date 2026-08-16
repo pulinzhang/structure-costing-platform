@@ -39,6 +39,9 @@ TASK_TYPE_BASE_PRICE_IMPORT = "steel_base_price_import"
 TASK_TYPE_STEEL_PRICE_CALC = "steel_price_calc"
 TASK_TYPE_STAMPING_PROCESS_FEE_CALC = "stamping_process_fee_calc"
 TASK_TYPE_STAMPING_PART_COST_CALC = "stamping_part_cost_calc"
+TASK_TYPE_BOM_WELDING_PROCESS_BREAKDOWN_GENERATE = (
+    "bom_welding_process_breakdown_generate"
+)
 
 TASK_TTL_SECONDS = 3600
 

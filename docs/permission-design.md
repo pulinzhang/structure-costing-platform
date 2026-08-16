@@ -706,3 +706,4 @@ static/index.html           # 侧栏 data-page
 | 2026-08-13 | 新增 `menu:scrap-price` / `op:scrap-price:view|create|update|delete|copy`；废料月度销售价后端 |
 | 2026-08-13 | 废料销售价增加 `op:scrap-price:export` 与宽表 Excel 导出 |
 | 2026-08-13 | 冲压工程侧栏拆分：`menu:stamping-process` / `menu:stamping-stroke-unit-price` / `menu:stamping-processing-fee` 二级分组对齐 UI |
+| 2026-08-16 | 焊接工艺拆解列表增加 `op:bom-welding-process-breakdown:export`（L0 主子表打平核对 Excel，不含审核） |

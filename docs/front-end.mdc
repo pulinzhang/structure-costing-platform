@@ -118,6 +118,7 @@ static/
         │   └── scrap-price/
         ├── bom/material/{upload,structure,viz}
         ├── bom/welding-unit-price/{upload,list}
+        ├── bom/welding-process-breakdown/{generate,list}
         ├── costing/
         │   ├── steel-price/{calc,list}
         │   ├── stamping-part-cost/{calc,list}
@@ -153,6 +154,8 @@ static/
 | `#/bom-viz` | 产品结构图 | `bom/material/viz` |
 | `#/bom-welding-unit-price-upload` | 焊接单价上传 | `bom/welding-unit-price/upload` |
 | `#/bom-welding-unit-price` | 焊接单价列表 | `bom/welding-unit-price/list` |
+| `#/bom-welding-process-breakdown` | 焊接工艺拆解 | `bom/welding-process-breakdown/generate` |
+| `#/bom-welding-process-breakdown-list` | 焊接工艺拆解列表 | `bom/welding-process-breakdown/list` |
 | `#/steel-price-calc` | 冲压钢材联动计算 | `costing/steel-price/calc` |
 | `#/steel-price-list` | 冲压钢材联动价一览 | `costing/steel-price/list` |
 | `#/stamping-part-cost-calc` | 冲压零件价格计算 | `costing/stamping-part-cost/calc` |
@@ -366,6 +369,14 @@ const numCell = 'px-2 py-2 font-mono text-[10px] text-right tabular-nums text-[#
 | 状态徽章 | 居中；成功/警告/失败色见 §3.4 |
 | 行内操作 | 图标按钮 `w-7 h-7`；默认 `opacity-0 group-hover:opacity-100`（键盘 `focus:opacity-100`） |
 
+**操作列唯一入口（硬约束）**：
+
+- ❌ 禁止整行 `tr` / 单元格点击打开明细、编辑、删除等业务操作（用户划选复制文本时会误触发）
+- ✅ 明细 / 编辑 / 删除等只能通过**操作列**内的按钮（或明确的 `data-action` 控件）触发
+- ✅ `tbody` 委托点击时须 `closest('[data-action=…]')` / `.btn-open-detail` 等操作控件；命中后 `return`，**不得**再回落到 `closest('tr')` 进明细
+- ✅ 行上可保留 `hover:bg-*` / 左侧红条等视觉反馈，但**不要**给数据行加 `cursor-pointer` 暗示可点
+- 例外：筛选胶囊、HUD KPI、分页按钮等**非表体数据行**的点击筛选仍允许
+
 #### 4.4.5 表底分页栏
 
 ```html
@@ -538,6 +549,7 @@ ES Module 导出：`PAGE_SIZE_OPTIONS`、`DEFAULT_PAGE_SIZE`、`PREVIEW_*`、`pa
 - [ ] 抽屉 z-index ≥ 80/85，不被 header 盖住
 - [ ] 业务数据表默认对齐 §4.4 HUD 密表；例外见 §4.4.6
 - [ ] 同一表内强调红只用一种（`#FF1E27` 或 `#d32f2f`）
+- [ ] 表体操作仅经操作列按钮；禁止整行点击进明细/编辑
 
 ---
 

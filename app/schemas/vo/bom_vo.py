@@ -4,7 +4,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Union
 
-from pydantic import BaseModel, field_serializer
+from pydantic import BaseModel, Field, field_serializer
 
 from app.common.money import Q4, optional_format_money
 
@@ -108,6 +108,22 @@ class BomImportResultVO(BaseModel):
     image_count: int = 0
     replaced: bool = False
     message: str = "导入成功"
+
+
+class BomCascadeFilterQuery(BaseModel):
+    """材料清单级联筛选查询参数：基地 → 项目 → 版本"""
+
+    location: str | None = Field(None, description="采购基地")
+    vehicle_model: str | None = Field(None, description="项目/车型")
+    status: str | None = Field("active", description="清单状态，默认 active")
+
+
+class BomCascadeFilterOptionsVO(BaseModel):
+    """材料清单级联下拉选项"""
+
+    locations: list[str] = Field(default_factory=list, description="基地")
+    vehicle_models: list[str] = Field(default_factory=list, description="项目")
+    bom_versions: list[str] = Field(default_factory=list, description="版本")
 
 
 BomNodeTreeVO.model_rebuild()
