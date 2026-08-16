@@ -10,11 +10,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+from decimal import Decimal, InvalidOperation
 from io import BytesIO
 from typing import Any
 
 from openpyxl import load_workbook
+
+from app.common.money import Q4, quantize_money
 
 
 HEADER_NAME = "名称"
@@ -51,7 +53,7 @@ def _cell_text(value: Any) -> str:
 
 
 def _round4(value: Decimal) -> Decimal:
-    return value.quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+    return quantize_money(value, Q4)
 
 
 def _parse_unit_price(value: Any) -> Decimal | None:

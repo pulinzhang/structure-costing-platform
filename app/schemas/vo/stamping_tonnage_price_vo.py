@@ -4,14 +4,16 @@
 
 from datetime import datetime
 from decimal import Decimal
-from typing import Union
+from typing import Any
 
 from pydantic import BaseModel, field_serializer
 
+from app.common.money import Q3, format_money
 
-def decimal_to_float(value: Union[Decimal, float, None]) -> float | None:
-    """Decimal 类型转 float 序列化器"""
-    return float(value) if isinstance(value, Decimal) else value
+
+def format_price_per_stroke(value: Any) -> str:
+    """单价序列化为固定 3 位小数字符串，避免 JSON float 精度丢失。"""
+    return format_money(value if value is not None else Decimal("0"), Q3, 3)
 
 
 class StampingTonnagePriceResponse(BaseModel):
@@ -21,16 +23,15 @@ class StampingTonnagePriceResponse(BaseModel):
     location: str
     year: int
     tonnage: int
-    price_per_stroke: float
+    price_per_stroke: Decimal
     created_by: str | None = None
     updated_by: str | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
 
     @field_serializer("price_per_stroke")
-    def serialize_price(self, value: Union[Decimal, float]) -> float:
-        result = decimal_to_float(value)
-        return 0.0 if result is None else result
+    def serialize_price(self, value: Decimal) -> str:
+        return format_price_per_stroke(value)
 
     @field_serializer("created_at", "updated_at")
     def serialize_datetime(self, value: datetime | None) -> str | None:

@@ -69,10 +69,135 @@ const esc = (value) => {
     }[ch]));
 };
 
-/** 数字格式化 — 默认 2 位小数 */
+/**
+ * 固定小数位字符串（不经 Number）；非法返回 null。
+ * @param {unknown} value
+ * @param {number} digits
+ * @param {{ allowNegative?: boolean }} [options]
+ */
+const formatDecimalFixed = (value, digits = 2, options = {}) => {
+    const allowNegative = Boolean(options.allowNegative);
+    if (value == null || value === '') return null;
+    if (typeof value === 'number' && Number.isNaN(value)) return null;
+    let text = String(value).trim().replace(/,/g, '').replace(/，/g, '');
+    if (!text) return null;
+    const negative = text.startsWith('-');
+    if (negative) {
+        if (!allowNegative) return null;
+        text = text.slice(1);
+    }
+    if (!/^\d+(\.\d+)?$/.test(text)) return null;
+    const places = Math.max(0, Number(digits) || 0);
+    const [intPart, frac = ''] = text.split('.');
+    const padded = `${frac}${'0'.repeat(places + 1)}`.slice(0, places + 1);
+    let fracN = places > 0 ? Number.parseInt(padded.slice(0, places) || '0', 10) : 0;
+    let carry = 0;
+    if (places > 0 && padded.charAt(places) >= '5') {
+        fracN += 1;
+        const limit = 10 ** places;
+        if (fracN >= limit) {
+            fracN = 0;
+            carry = 1;
+        }
+    }
+    const intValue = BigInt(intPart || '0') + BigInt(carry);
+    const sign = negative && intValue !== 0n ? '-' : '';
+    if (places === 0) return `${sign}${intValue.toString()}`;
+    return `${sign}${intValue.toString()}.${String(fracN).padStart(places, '0')}`;
+};
+
+/**
+ * 解析表单金额/费率输入为固定小数位字符串；空串返回 null。
+ * @param {unknown} raw
+ * @param {number} digits
+ * @param {{ allowNegative?: boolean }} [options]
+ */
+const parseDecimalInput = (raw, digits = 2, options = {}) => {
+    const text = String(raw ?? '').trim().replace(/,/g, '').replace(/，/g, '');
+    if (!text) return null;
+    return formatDecimalFixed(text, digits, { allowNegative: Boolean(options.allowNegative) });
+};
+
+/**
+ * 十进制字符串乘以 10^exp（exp 可为负，表示除以 10^|exp|），再量化到 outDigits。
+ * 用于 ‰→小数、%→小数等换算，不经 Number。
+ * @param {string} value
+ * @param {number} exp
+ * @param {number} outDigits
+ * @param {{ allowNegative?: boolean }} [options]
+ */
+const scaleDecimalByPow10 = (value, exp, outDigits, options = {}) => {
+    const workDigits = Math.max(0, Number(outDigits) || 0) + Math.abs(Number(exp) || 0) + 2;
+    const normalized = formatDecimalFixed(value, workDigits, {
+        allowNegative: Boolean(options.allowNegative),
+    });
+    if (normalized == null) return null;
+    const negative = normalized.startsWith('-');
+    const body = negative ? normalized.slice(1) : normalized;
+    const [intPart, frac = ''] = body.split('.');
+    const digitText = `${intPart}${frac}`;
+    let work = BigInt(digitText || '0');
+    let scale = frac.length - Number(exp);
+    const places = Math.max(0, Number(outDigits) || 0);
+    if (scale < places) {
+        work *= 10n ** BigInt(places - scale);
+        scale = places;
+    }
+    if (scale > places) {
+        const extra = scale - places;
+        const div = 10n ** BigInt(extra);
+        const rem = work % div;
+        work = work / div + (rem * 2n >= div ? 1n : 0n);
+    }
+    const sign = negative && work !== 0n ? '-' : '';
+    if (places === 0) return `${sign}${work.toString()}`;
+    const pow = 10n ** BigInt(places);
+    const i = work / pow;
+    const f = work % pow;
+    return `${sign}${i.toString()}.${f.toString().padStart(places, '0')}`;
+};
+
+/** 数字格式化 — 默认 2 位小数；十进制字符串不经 Number，避免金额尾差 */
 const fmtNum = (value, digits = 2) => {
-    if (value == null || Number.isNaN(value)) return '-';
-    return Number(value).toFixed(digits);
+    const formatted = formatDecimalFixed(value, digits, { allowNegative: true });
+    return formatted == null ? '-' : formatted;
+};
+
+/** 给已规范的固定小数字符串加千分位（仅展示用） */
+const withThousandsSep = (fixedDecimalStr) => {
+    if (fixedDecimalStr == null || fixedDecimalStr === '') return fixedDecimalStr;
+    const text = String(fixedDecimalStr);
+    const negative = text.startsWith('-');
+    const body = negative ? text.slice(1) : text;
+    const [intPart, frac] = body.split('.');
+    const withSep = String(intPart || '0').replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    const sign = negative ? '-' : '';
+    return frac != null ? `${sign}${withSep}.${frac}` : `${sign}${withSep}`;
+};
+
+/**
+ * 比较两个十进制字符串；a>b → 1，相等 → 0，a<b → -1；非法 → null。
+ * @param {unknown} a
+ * @param {unknown} b
+ * @param {number} [digits=6]
+ */
+const compareDecimalStrings = (a, b, digits = 6) => {
+    const left = formatDecimalFixed(a, digits, { allowNegative: true });
+    const right = formatDecimalFixed(b, digits, { allowNegative: true });
+    if (left == null || right == null) return null;
+    const toScaled = (s) => {
+        const negative = s.startsWith('-');
+        const body = negative ? s.slice(1) : s;
+        const [i, f = ''] = body.split('.');
+        const scaled = BigInt(i || '0') * (10n ** BigInt(digits))
+            + BigInt((f + '0'.repeat(digits)).slice(0, digits));
+        return negative ? -scaled : scaled;
+    };
+    const l = toScaled(left);
+    const r = toScaled(right);
+    if (l > r) return 1;
+    if (l < r) return -1;
+    return 0;
 };
 
 /** 文件大小格式化 */
@@ -369,6 +494,11 @@ const HttpClient = (() => {
 window.HttpClient = HttpClient;
 window.esc = esc;
 window.fmtNum = fmtNum;
+window.formatDecimalFixed = formatDecimalFixed;
+window.parseDecimalInput = parseDecimalInput;
+window.scaleDecimalByPow10 = scaleDecimalByPow10;
+window.withThousandsSep = withThousandsSep;
+window.compareDecimalStrings = compareDecimalStrings;
 window.formatFileSize = formatFileSize;
 window.showToast = showToast;
 window.svgIcon = svgIcon;

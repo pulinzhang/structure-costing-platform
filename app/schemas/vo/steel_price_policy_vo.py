@@ -10,6 +10,8 @@ from typing import Optional, Union
 
 from pydantic import BaseModel, Field, field_serializer
 
+from app.common.money import Q2, optional_format_money
+
 
 # ============================
 # 枚举定义（与 DTO 共享一份）
@@ -36,20 +38,6 @@ class Operator(str, Enum):
     GT = ">"
     LTE = "<="
     LT = "<"
-
-
-# ============================
-# 辅助函数
-# ============================
-
-
-def decimal_to_float(value: Union[Decimal, float, None]) -> float | None:
-    """Decimal → float，供 JSON / OpenAPI 序列化"""
-    if value is None:
-        return None
-    if isinstance(value, Decimal):
-        return float(value)
-    return value
 
 
 # ============================
@@ -116,8 +104,8 @@ class LadderItemResponse(BaseModel):
         "width_min", "width_max",
         "zinc_coating_min", "zinc_coating_max",
     )
-    def serialize_decimal(self, value: Union[Decimal, float, None]) -> float | None:
-        return decimal_to_float(value)
+    def serialize_decimal(self, value: Union[Decimal, float, None]) -> str | None:
+        return optional_format_money(value, Q2, 2, allow_negative=True)
 
     model_config = {"from_attributes": True}
 
@@ -145,8 +133,8 @@ class PolicyListResponse(BaseModel):
     updated_at: datetime
 
     @field_serializer("base_thickness")
-    def serialize_base_thickness(self, value: Union[Decimal, float, None]) -> float | None:
-        return decimal_to_float(value)
+    def serialize_base_thickness(self, value: Union[Decimal, float, None]) -> str | None:
+        return optional_format_money(value, Q2, 2, allow_negative=True)
 
     @field_serializer("created_at", "updated_at")
     def serialize_datetime(self, value: Optional[datetime]) -> Optional[str]:
@@ -173,8 +161,8 @@ class PolicyDetailResponse(BaseModel):
     updated_at: datetime
 
     @field_serializer("base_thickness")
-    def serialize_base_thickness(self, value: Union[Decimal, float, None]) -> float | None:
-        return decimal_to_float(value)
+    def serialize_base_thickness(self, value: Union[Decimal, float, None]) -> str | None:
+        return optional_format_money(value, Q2, 2, allow_negative=True)
 
     @field_serializer("created_at", "updated_at")
     def serialize_datetime(self, value: Optional[datetime]) -> Optional[str]:
@@ -217,8 +205,8 @@ class MatchedLadderItem(BaseModel):
         "width_min", "width_max",
         "zinc_coating_min", "zinc_coating_max",
     )
-    def serialize_decimal(self, value: Union[Decimal, float, None]) -> float | None:
-        return decimal_to_float(value)
+    def serialize_decimal(self, value: Union[Decimal, float, None]) -> str | None:
+        return optional_format_money(value, Q2, 2, allow_negative=True)
 
     model_config = {"from_attributes": True}
 

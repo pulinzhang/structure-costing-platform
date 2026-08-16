@@ -766,19 +766,68 @@ Do not serialize in:
 
 ### Decimal Serialization
 
-Use:
+#### Money / unit price / fee / rate（金额 · 单价 · 费用 · 费率）
+
+这些字段是**精确十进制量**，禁止把 `float` 当作业务类型（DTO / VO / Service / Model / 计算中间态）。
+
+| 层 | 要求 |
+|----|------|
+| Model | `Numeric(p, s)` + `Mapped[Decimal]` |
+| DTO | 字段类型 `Decimal`；`mode="before"` 用 `Decimal(str(value))` 再 `quantize`（JSON number 可能先变成 float，必须立刻经 `str` 转回） |
+| Service / Parser / 计算 | 只用 `Decimal` 运算与量化；禁止 `float(x)` 参与金额计算 |
+| VO | 字段类型 `Decimal`；`@field_serializer` **输出固定小数位的字符串**（如 `"0.0999"`），禁止序列化为 JSON number / `float` |
+| Excel 导入导出 | 单元格读写保持 `Decimal`，不要 `round(float(...))` |
+
+Allowed (money):
 ```python
-@field_serializer
+from decimal import Decimal, ROUND_HALF_UP
+
+_UNIT_PRICE_QUANT = Decimal("0.0001")
+
+
+def quantize_unit_price(value: object) -> Decimal:
+    number = value if isinstance(value, Decimal) else Decimal(str(value).strip())
+    if number < 0:
+        raise ValueError("单价不能为负")
+    return number.quantize(_UNIT_PRICE_QUANT, rounding=ROUND_HALF_UP)
+
+
+class PriceCreateDTO(BaseModel):
+    unit_price: Decimal = Field(..., ge=0)
+
+    @field_validator("unit_price", mode="before")
+    @classmethod
+    def _coerce(cls, value: object) -> Decimal:
+        return quantize_unit_price(value)
+
+
+class PriceVO(BaseModel):
+    unit_price: Decimal
+
+    @field_serializer("unit_price")
+    def serialize_unit_price(self, value: Decimal) -> str:
+        quantized = value.quantize(_UNIT_PRICE_QUANT, rounding=ROUND_HALF_UP)
+        return f"{quantized:.4f}"
 ```
 
-Example:
+Forbidden (money):
 ```python
-@field_serializer("price")
-def serialize_price(
-    self,
-    value
-):
-    return float(value)
+unit_price: float
+return float(value)          # VO 序列化
+price = float(row.unit_price)  # Service / 计算
+round(float(value), 4)       # 导出
+```
+
+> JSON 没有 Decimal 类型：传输用**字符串**（推荐，单价/金额），或 JSON number 进入后立刻 `Decimal(str(...))`。业务层长期持有的类型必须是 `Decimal`。
+
+#### Non-money Decimal（料厚、重量等物理量）
+
+Model / DTO 仍优先 `Decimal`。若历史 VO 将物理量序列化为 JSON number，可继续；**新建金额类字段不得沿用 float 序列化**。
+
+```python
+@field_serializer("thickness", "part_weight")
+def serialize_physical_decimal(self, value: Decimal | None) -> float | None:
+    return float(value) if isinstance(value, Decimal) else value
 ```
 
 ---
@@ -933,6 +982,7 @@ VO.model_dump() for API output
 __dict__
 dict(model)
 ApiResponse[Any]
+money/unit_price/fee as float (use Decimal; JSON string for money)
 ```
 
 Required:

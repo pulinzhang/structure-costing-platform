@@ -8,11 +8,7 @@ from typing import Optional
 
 from pydantic import BaseModel, field_serializer
 
-
-def decimal_to_float(value: Decimal | float | None) -> Optional[float]:
-    if isinstance(value, Decimal):
-        return float(value)
-    return value
+from app.common.money import Q4, format_money, optional_format_money
 
 
 def datetime_to_str(value: datetime | None) -> Optional[str]:
@@ -24,9 +20,13 @@ def datetime_to_str(value: datetime | None) -> Optional[str]:
 class SteelPriceListSummaryVO(BaseModel):
     """列表筛选汇总（均价 / 待审 / 已审，按过滤条件全量）"""
 
-    avg_final_price: Optional[float] = None
+    avg_final_price: Optional[Decimal] = None
     pending_count: int = 0
     approved_count: int = 0
+
+    @field_serializer("avg_final_price")
+    def serialize_avg_final_price(self, value: Decimal | None) -> str | None:
+        return optional_format_money(value, Q4, 4)
 
 
 class SteelPriceFilterOptions(BaseModel):
@@ -73,17 +73,17 @@ class SteelPriceResponse(BaseModel):
     steel_mill: str
     category_name: str
     grade: str
-    thickness: float
-    width: float
+    thickness: Decimal
+    width: Decimal
     spec: Optional[str] = None
 
-    base_price: float
-    thickness_adjustment: float
-    width_adjustment: float
-    zinc_adjustment: float
-    processing_fee: float
-    other_adjustment: float
-    final_price_per_ton: float
+    base_price: Decimal
+    thickness_adjustment: Decimal
+    width_adjustment: Decimal
+    zinc_adjustment: Decimal
+    processing_fee: Decimal
+    other_adjustment: Decimal
+    final_price_per_ton: Decimal
 
     base_price_id: Optional[int] = None
     base_excel_filename: Optional[str] = None
@@ -133,19 +133,26 @@ class SteelPriceResponse(BaseModel):
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
+    @field_serializer("thickness")
+    def serialize_thickness(self, value: Decimal) -> str:
+        return format_money(value, Q4, 4)
+
+    @field_serializer("width")
+    def serialize_width(self, value: Decimal) -> str:
+        return format_money(value, Q4, 4)
+
+    @field_serializer("base_price", "processing_fee", "final_price_per_ton")
+    def serialize_price(self, value: Decimal) -> str:
+        return format_money(value, Q4, 4)
+
     @field_serializer(
-        "thickness",
-        "width",
-        "base_price",
         "thickness_adjustment",
         "width_adjustment",
         "zinc_adjustment",
-        "processing_fee",
         "other_adjustment",
-        "final_price_per_ton",
     )
-    def serialize_decimal(self, value: Decimal | float | None) -> Optional[float]:
-        return decimal_to_float(value)
+    def serialize_adjustment(self, value: Decimal) -> str:
+        return format_money(value, Q4, 4, allow_negative=True)
 
     @field_serializer(
         "calculated_at",

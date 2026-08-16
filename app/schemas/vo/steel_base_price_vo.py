@@ -13,12 +13,7 @@ from typing import Optional
 
 from pydantic import BaseModel, field_serializer
 
-
-def decimal_to_float(value: Decimal | float | None) -> Optional[float]:
-    """Decimal 类型转 float 序列化器"""
-    if isinstance(value, Decimal):
-        return float(value)
-    return value
+from app.common.money import Q2, optional_format_money
 
 
 def datetime_to_str(value: datetime | None) -> Optional[str]:
@@ -29,14 +24,7 @@ def datetime_to_str(value: datetime | None) -> Optional[str]:
 
 
 class SteelBasePriceResponse(BaseModel):
-    """
-    钢材基准价格响应 VO
-
-    最佳实践要点：
-    1. model_config = {"from_attributes": True} 启用 ORM 集成
-    2. 使用 @field_serializer 替代 @property 或 to_dict
-    3. Decimal → float, datetime → str 由序列化器处理
-    """
+    """钢材基准价格响应 VO"""
 
     model_config = {"from_attributes": True}
 
@@ -47,10 +35,10 @@ class SteelBasePriceResponse(BaseModel):
     steel_mill: str
     category_name: str
     grade: str
-    thick: Optional[float] = None  # Decimal → float
-    width: Optional[float] = None  # Decimal → float
-    base_price: Optional[float] = None  # Decimal → float
-    processing_fee: Optional[float] = None  # Decimal → float
+    thick: Optional[Decimal] = None
+    width: Optional[Decimal] = None
+    base_price: Optional[Decimal] = None
+    processing_fee: Optional[Decimal] = None
     spec: Optional[str] = None
     excel_filename: Optional[str] = None
     sheet_name: Optional[str] = None
@@ -62,14 +50,16 @@ class SteelBasePriceResponse(BaseModel):
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
-    @field_serializer("thick", "width", "base_price", "processing_fee")
-    def serialize_decimal(self, value: Decimal | float | None) -> Optional[float]:
-        """Decimal → float 序列化"""
-        return decimal_to_float(value)
+    @field_serializer("thick", "width")
+    def serialize_dim(self, value: Decimal | None) -> str | None:
+        return optional_format_money(value, Q2, 2)
+
+    @field_serializer("base_price", "processing_fee")
+    def serialize_price(self, value: Decimal | None) -> str | None:
+        return optional_format_money(value, Q2, 2)
 
     @field_serializer("created_at", "updated_at")
     def serialize_datetime(self, value: datetime | None) -> Optional[str]:
-        """datetime → ISO 字符串序列化"""
         return datetime_to_str(value)
 
 
@@ -93,19 +83,23 @@ class SteelBasePriceExportRow(BaseModel):
     steel_mill: str
     category_name: str
     grade: str
-    thick: Optional[float] = None
-    width: Optional[float] = None
-    base_price: Optional[float] = None
-    processing_fee: Optional[float] = None
+    thick: Optional[Decimal] = None
+    width: Optional[Decimal] = None
+    base_price: Optional[Decimal] = None
+    processing_fee: Optional[Decimal] = None
     spec: Optional[str] = None
     excel_filename: Optional[str] = None
     sheet_name: Optional[str] = None
     excel_row: Optional[int] = None
     excel_col: Optional[int] = None
 
-    @field_serializer("thick", "width", "base_price", "processing_fee")
-    def serialize_decimal(self, value: Decimal | float | None) -> Optional[float]:
-        return decimal_to_float(value)
+    @field_serializer("thick", "width")
+    def serialize_dim(self, value: Decimal | None) -> str | None:
+        return optional_format_money(value, Q2, 2)
+
+    @field_serializer("base_price", "processing_fee")
+    def serialize_price(self, value: Decimal | None) -> str | None:
+        return optional_format_money(value, Q2, 2)
 
 
 class FilterOptionsVO(BaseModel):

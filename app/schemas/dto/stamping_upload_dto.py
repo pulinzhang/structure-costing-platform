@@ -37,10 +37,10 @@ class PartData:
     seq_no: int | None = field(default=None, metadata={"description": "顺序号"})
     part_name: str | None = field(default=None, metadata={"description": "零件名称"})
     material: str | None = field(default=None, metadata={"description": "材质"})
-    thickness: Decimal | float | None = field(default=None, metadata={"description": "料厚(mm)"})
-    part_weight: Decimal | float | None = field(default=None, metadata={"description": "零件重量(kg)"})
-    sheet_length: Decimal | float | None = field(default=None, metadata={"description": "料长(mm)"})
-    sheet_width: Decimal | float | None = field(default=None, metadata={"description": "料宽(mm)"})
+    thickness: Decimal | None = field(default=None, metadata={"description": "料厚(mm)"})
+    part_weight: Decimal | None = field(default=None, metadata={"description": "零件重量(kg)"})
+    sheet_length: Decimal | None = field(default=None, metadata={"description": "料长(mm)"})
+    sheet_width: Decimal | None = field(default=None, metadata={"description": "料宽(mm)"})
     parts_per_sheet: int | None = field(
         default=None,
         metadata={
@@ -80,7 +80,7 @@ class ProcessData:
     # 以下字段有默认值，放在后面
     process_code: str | None = field(default=None, metadata={"description": "工序代码"})
     tonnage: int | None = field(default=None, metadata={"description": "吨位(T)"})
-    cost_ratio: Decimal | float = field(default=Decimal("1.00"), metadata={"description": "费用比例"})
+    cost_ratio: Decimal = field(default=Decimal("1.00"), metadata={"description": "费用比例"})
     remark: str | None = field(default=None, metadata={"description": "备注"})
 
 

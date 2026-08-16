@@ -4,13 +4,10 @@
 
 from datetime import datetime
 from decimal import Decimal
-from typing import Union
 
 from pydantic import BaseModel, Field, field_serializer
 
-
-def decimal_to_float(value: Union[Decimal, float, None]) -> float | None:
-    return float(value) if isinstance(value, Decimal) else value
+from app.common.money import Q2, Q3, Q4, optional_format_money
 
 
 class StampingProcessFeeItemVO(BaseModel):
@@ -28,18 +25,20 @@ class StampingProcessFeeItemVO(BaseModel):
     inherited_from_part_number: str | None = None
     inherited_from_process_seq: str | None = None
     inherited_from_process_code: str | None = None
-    cost_ratio: float | None = None
+    cost_ratio: Decimal | None = None
     tonnage_price_id: int | None = None
-    price_per_stroke: float | None = None
-    line_fee: float | None = None
+    price_per_stroke: Decimal | None = None
+    line_fee: Decimal | None = None
     basis_text: str | None = None
     remark: str | None = None
 
-    @field_serializer("cost_ratio", "price_per_stroke", "line_fee")
-    def serialize_item_decimal(
-        self, value: Union[Decimal, float, None]
-    ) -> float | None:
-        return decimal_to_float(value)
+    @field_serializer("cost_ratio")
+    def serialize_cost_ratio(self, value: Decimal | None) -> str | None:
+        return optional_format_money(value, Q2, 2)
+
+    @field_serializer("price_per_stroke", "line_fee")
+    def serialize_fee(self, value: Decimal | None) -> str | None:
+        return optional_format_money(value, Q3, 3)
 
     model_config = {"from_attributes": True}
 
@@ -58,10 +57,10 @@ class StampingProcessFeeVO(BaseModel):
     part_number: str
     part_name: str | None = None
     material: str | None = None
-    thickness: float | None = None
-    part_weight: float | None = None
-    sheet_length: float | None = None
-    sheet_width: float | None = None
+    thickness: Decimal | None = None
+    part_weight: Decimal | None = None
+    sheet_length: Decimal | None = None
+    sheet_width: Decimal | None = None
     parts_per_sheet: int | None = Field(
         default=None,
         description=(
@@ -79,10 +78,10 @@ class StampingProcessFeeVO(BaseModel):
     part_remark: str | None = None
     sketch_url: str | None = None
     excel_filename: str | None = None
-    processing_fee: float | None = None
+    processing_fee: Decimal | None = None
     process_count: int
-    manual_unit_price: float | None = None
-    final_processing_fee: float | None = None
+    manual_unit_price: Decimal | None = None
+    final_processing_fee: Decimal | None = None
     calc_fail_reason: str | None = None
     remark: str | None = None
     audit_status: str = "pending"
@@ -98,17 +97,17 @@ class StampingProcessFeeVO(BaseModel):
     updated_at: datetime | None = None
     process_items: list[StampingProcessFeeItemVO] = Field(default_factory=list)
 
-    @field_serializer(
-        "processing_fee",
-        "manual_unit_price",
-        "final_processing_fee",
-        "thickness",
-        "part_weight",
-        "sheet_length",
-        "sheet_width",
-    )
-    def serialize_fee(self, value: Union[Decimal, float, None]) -> float | None:
-        return decimal_to_float(value)
+    @field_serializer("processing_fee", "manual_unit_price", "final_processing_fee")
+    def serialize_fee(self, value: Decimal | None) -> str | None:
+        return optional_format_money(value, Q3, 3)
+
+    @field_serializer("thickness", "part_weight")
+    def serialize_physical(self, value: Decimal | None) -> str | None:
+        return optional_format_money(value, Q4, 4)
+
+    @field_serializer("sheet_length", "sheet_width")
+    def serialize_sheet_dim(self, value: Decimal | None) -> str | None:
+        return optional_format_money(value, Q2, 2)
 
     @field_serializer(
         "created_at",

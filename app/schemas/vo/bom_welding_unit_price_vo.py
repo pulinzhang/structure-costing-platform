@@ -4,14 +4,16 @@
 
 from datetime import datetime
 from decimal import Decimal
-from typing import Union
+from typing import Any
 
 from pydantic import BaseModel, field_serializer
 
+from app.common.money import Q4, format_money
 
-def decimal_to_float(value: Union[Decimal, float, None]) -> float | None:
-    """Decimal 类型转 float 序列化器"""
-    return float(value) if isinstance(value, Decimal) else value
+
+def format_unit_price_decimal(value: Any) -> str:
+    """单价序列化为固定 4 位小数字符串，避免 JSON float 精度丢失。"""
+    return format_money(value if value is not None else Decimal("0"), Q4, 4)
 
 
 class BomWeldingUnitPriceResponse(BaseModel):
@@ -22,7 +24,7 @@ class BomWeldingUnitPriceResponse(BaseModel):
     year: int
     item_name: str
     unit: str
-    unit_price: float
+    unit_price: Decimal
     remark: str | None = None
     created_by: str | None = None
     updated_by: str | None = None
@@ -30,9 +32,8 @@ class BomWeldingUnitPriceResponse(BaseModel):
     updated_at: datetime | None = None
 
     @field_serializer("unit_price")
-    def serialize_unit_price(self, value: Union[Decimal, float]) -> float:
-        result = decimal_to_float(value)
-        return 0.0 if result is None else result
+    def serialize_unit_price(self, value: Decimal) -> str:
+        return format_unit_price_decimal(value)
 
     @field_serializer("created_at", "updated_at")
     def serialize_datetime(self, value: datetime | None) -> str | None:

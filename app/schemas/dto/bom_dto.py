@@ -1,8 +1,12 @@
 """BOM DTO - 请求参数"""
 
 from datetime import date
+from decimal import Decimal
+from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+from app.common.money import Q4, optional_quantize_money
 
 
 class BomSnapshotCreate(BaseModel):
@@ -45,7 +49,7 @@ class BomNodeCreate(BaseModel):
     internal_number: str | None = Field(None, max_length=50)
     part_number: str = Field(..., min_length=1, max_length=50)
     part_name: str | None = Field(None, max_length=200)
-    qty: float | None = Field(None, description="相对父件用量")
+    qty: Decimal | None = Field(None, description="相对父件用量")
     qty_unit: str = Field("pcs", max_length=20)
     qty_text: str | None = Field(None, max_length=50)
     node_role: str = Field(
@@ -54,11 +58,16 @@ class BomNodeCreate(BaseModel):
     )
     is_supply_unit: bool = Field(False, description="是否供货总成")
     material: str | None = Field(None, max_length=50)
-    thickness_mm: float | None = None
+    thickness_mm: Decimal | None = None
     thickness_text: str | None = Field(None, max_length=50)
     material_mill: str | None = Field(None, max_length=100)
-    part_weight: float | None = None
+    part_weight: Decimal | None = None
     gauge_developed: str | None = Field(None, max_length=10)
     weld_info: str | None = None
     remark: str | None = None
     sketch_url: str | None = Field(None, max_length=500)
+
+    @field_validator("qty", "thickness_mm", "part_weight", mode="before")
+    @classmethod
+    def _coerce_q4(cls, value: Any) -> Decimal | None:
+        return optional_quantize_money(value, Q4, allow_negative=True)

@@ -1,6 +1,7 @@
 """冲压零件价格核算结果 Repository。"""
 
 import logging
+from decimal import Decimal
 from typing import Any, Dict, List, Optional, Tuple
 
 from sqlalchemy import case, func
@@ -224,7 +225,9 @@ class StampingPartCostRepository:
         ).one()
         avg_value = row.avg_unit_cost
         return {
-            "avg_unit_cost": float(avg_value) if avg_value is not None else None,
+            "avg_unit_cost": (
+                Decimal(str(avg_value)) if avg_value is not None else None
+            ),
             "pending_count": int(row.pending_count or 0),
             "approved_count": int(row.approved_count or 0),
         }

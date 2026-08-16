@@ -12,6 +12,7 @@ from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from sqlalchemy.orm import Session
 
 from app.common.audit import audit_status_label
+from app.common.money import Q2, Q3, Q4, excel_money_cell
 from app.repositories.stamping.stamping_process_fee_repository import (
     StampingProcessFeeRepository,
 )
@@ -20,14 +21,8 @@ from app.repositories.stamping.stamping_process_fee_repository import (
 logger = logging.getLogger("service.stamping_process_fee_export")
 
 
-
-def _num(value: Any, digits: int | None = None) -> Any:
-    if value is None:
-        return ""
-    number = float(value)
-    if digits is None:
-        return number
-    return round(number, digits)
+def _num(value: Any, quant: Any = Q3) -> Any:
+    return excel_money_cell(value, quant)
 
 
 def _dt(value: Any) -> Any:
@@ -57,7 +52,7 @@ def _format_process_basis_column(record: Any) -> str:
         seq = (item.process_seq or "").strip() or "?"
         code = (item.process_code or "").strip()
         label = f"{seq}/{code}" if code else seq
-        fee = _num(item.line_fee, 3)
+        fee = _num(item.line_fee, Q3)
         lines.append(f"{label}: {fee}")
     return "\n".join(lines)
 
@@ -169,10 +164,10 @@ class StampingProcessFeeExportService:
                 record.part_number,
                 record.part_name,
                 record.material,
-                _num(record.thickness, 4),
-                _num(record.part_weight, 4),
-                _num(record.sheet_length, 2),
-                _num(record.sheet_width, 2),
+                _num(record.thickness, Q4),
+                _num(record.part_weight, Q4),
+                _num(record.sheet_length, Q2),
+                _num(record.sheet_width, Q2),
                 record.parts_per_sheet,
                 record.sheet_type,
                 record.die_type,
@@ -181,9 +176,9 @@ class StampingProcessFeeExportService:
                 record.part_remark,
                 record.excel_filename,
                 record.process_count,
-                _num(record.processing_fee, 3),
-                _num(record.manual_unit_price, 3),
-                _num(record.final_processing_fee, 3),
+                _num(record.processing_fee, Q3),
+                _num(record.manual_unit_price, Q3),
+                _num(record.final_processing_fee, Q3),
                 _format_process_basis_column(record),
                 record.calc_fail_reason,
                 record.remark,

@@ -14,18 +14,19 @@ from sqlalchemy.orm import Session
 from app.common.audit import audit_create, audit_update
 from app.parsers.stamping.tonnage_price_parser import parse_tonnage_price_excel
 from app.repositories.stamping.tonnage_price_repository import StampingTonnagePriceRepository
+from app.schemas.dto.stamping_tonnage_price_dto import quantize_price_per_stroke
 from app.schemas.vo.stamping_tonnage_price_vo import StampingTonnagePriceImportResultVO
 from app.schemas.vo.user_vo import UserVO
 
 logger = logging.getLogger("service.stamping_tonnage_price_import")
 
-TEMPLATE_SAMPLE_ROWS = [
-    ("400T", "次", 0.564),
-    ("500T", "次", 0.622),
-    ("630T", "次", 0.713),
-    ("800T", "次", 1.026),
-    ("1000T", "次", 1.283),
-    ("1200T", "次", 1.539),
+TEMPLATE_SAMPLE_ROWS: list[tuple[str, str, Decimal]] = [
+    ("400T", "次", Decimal("0.564")),
+    ("500T", "次", Decimal("0.622")),
+    ("630T", "次", Decimal("0.713")),
+    ("800T", "次", Decimal("1.026")),
+    ("1000T", "次", Decimal("1.283")),
+    ("1200T", "次", Decimal("1.539")),
 ]
 
 
@@ -61,7 +62,7 @@ class StampingTonnagePriceImportService:
             cell.border = thin_border
 
         for row_idx, (name, unit, price) in enumerate(TEMPLATE_SAMPLE_ROWS, start=2):
-            values: list[str | float] = [name, unit, price]
+            values: list[str | Decimal] = [name, unit, price]
             for col, value in enumerate(values, start=1):
                 cell = sheet.cell(row=row_idx, column=col, value=value)
                 cell.font = data_font
@@ -117,7 +118,7 @@ class StampingTonnagePriceImportService:
 
         try:
             for row in parse_result.rows:
-                price = Decimal(str(row.price_per_stroke))
+                price = quantize_price_per_stroke(row.price_per_stroke)
                 existing = self.repository.get_by_location_year_tonnage(
                     db, location, year, row.tonnage
                 )

@@ -2,7 +2,7 @@
  * 焊接单价维护页面逻辑
  */
 
-import { weldingUnitPriceTemplate, renderTableRows, renderPagination } from './template.js';
+import { weldingUnitPriceTemplate, renderTableRows, renderPagination, unitPriceInputValue, parseUnitPriceInput } from './template.js?v=4';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -348,7 +348,7 @@ function openEditDrawer(record) {
         itemNameInput.disabled = true;
     }
     if (unitInput) unitInput.value = record.unit || '';
-    if (unitPriceInput) unitPriceInput.value = record.unit_price;
+    if (unitPriceInput) unitPriceInput.value = unitPriceInputValue(record.unit_price);
     if (remarkInput) remarkInput.value = record.remark || '';
 
     openDrawer('editDrawer', 'editDrawerBackdrop');
@@ -493,15 +493,15 @@ async function saveRecord() {
     const year = parseInt(document.getElementById('editYear')?.value, 10);
     const itemName = document.getElementById('editItemName')?.value?.trim();
     const unit = document.getElementById('editUnit')?.value?.trim();
-    const unitPrice = parseFloat(document.getElementById('editUnitPrice')?.value);
+    const unitPrice = parseUnitPriceInput(document.getElementById('editUnitPrice')?.value);
     const remark = document.getElementById('editRemark')?.value?.trim() || null;
 
-    if (!recordId && (!location || !year || !itemName || !unit || isNaN(unitPrice))) {
-        showToast('请填写所有必填项', 'warning');
+    if (!recordId && (!location || !year || !itemName || !unit || !unitPrice)) {
+        showToast('请填写所有必填项（费用须为最多4位小数的数字）', 'warning');
         return;
     }
-    if (recordId && (!unit || isNaN(unitPrice))) {
-        showToast('请填写单位和费用', 'warning');
+    if (recordId && (!unit || !unitPrice)) {
+        showToast('请填写单位和费用（费用须为最多4位小数的数字）', 'warning');
         return;
     }
 

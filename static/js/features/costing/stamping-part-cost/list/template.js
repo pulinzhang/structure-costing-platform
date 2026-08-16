@@ -368,17 +368,12 @@ export function updatePartCostHud(total, summary) {
     };
     const data = summary && typeof summary === 'object' ? summary : {};
     const avg = data.avg_unit_cost;
-    const avgNumber = avg == null || avg === '' ? NaN : Number(avg);
+    const avgFixed = formatDecimalFixed(avg, 4, { allowNegative: true });
 
     setText('costHudTotal', Number(total || 0).toLocaleString('zh-CN'));
     setText(
         'costHudAvg',
-        Number.isNaN(avgNumber)
-            ? '—'
-            : avgNumber.toLocaleString('zh-CN', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 4,
-            })
+        avgFixed == null ? '—' : withThousandsSep(avgFixed),
     );
     setText('costHudSkuCount', `${Number(total || 0).toLocaleString('zh-CN')} 条`);
     setText('costHudPending', String(data.pending_count ?? 0));

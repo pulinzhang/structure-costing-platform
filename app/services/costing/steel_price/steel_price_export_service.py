@@ -11,19 +11,15 @@ from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from sqlalchemy.orm import Session
 
 from app.common.audit import audit_status_label
+from app.common.money import Q4, excel_money_cell
 from app.repositories.costing.steel_price.steel_price_repository import SteelPriceRepository
 
 
 logger = logging.getLogger("service.steel_price_export")
 
 
-def _num(value: Any, digits: int | None = None) -> Any:
-    if value is None:
-        return ""
-    number = float(value)
-    if digits is None:
-        return number
-    return round(number, digits)
+def _num(value: Any, quant: Any = Q4, *, allow_negative: bool = True) -> Any:
+    return excel_money_cell(value, quant, allow_negative=allow_negative)
 
 
 def _dt(value: Any) -> Any:
@@ -184,16 +180,16 @@ class SteelPriceExportService:
                 record.steel_mill or "",
                 record.category_name or "",
                 record.grade or "",
-                _num(record.thickness, 4),
-                _num(record.width, 2),
+                _num(record.thickness, Q4),
+                _num(record.width, Q4),
                 record.spec or "",
-                _num(record.base_price, 4),
-                _num(record.thickness_adjustment, 4),
-                _num(record.width_adjustment, 4),
-                _num(record.zinc_adjustment, 4),
-                _num(record.processing_fee, 4),
-                _num(record.other_adjustment, 4),
-                _num(record.final_price_per_ton, 4),
+                _num(record.base_price, Q4),
+                _num(record.thickness_adjustment, Q4, allow_negative=True),
+                _num(record.width_adjustment, Q4, allow_negative=True),
+                _num(record.zinc_adjustment, Q4, allow_negative=True),
+                _num(record.processing_fee, Q4),
+                _num(record.other_adjustment, Q4, allow_negative=True),
+                _num(record.final_price_per_ton, Q4),
                 # 基价溯源
                 record.base_price_id or "",
                 record.base_excel_filename or "",

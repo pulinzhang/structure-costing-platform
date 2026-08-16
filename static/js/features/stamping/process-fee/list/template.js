@@ -445,7 +445,10 @@ export function renderFeeRows(records) {
     if (!records || !Array.isArray(records) || records.length === 0) return '';
     return records.map((row) => {
         const approved = row.audit_status === 'approved';
-        const isZero = Number(row.processing_fee) === 0;
+        const feeText = typeof formatDecimalFixed === 'function'
+            ? formatDecimalFixed(row.processing_fee, 3)
+            : null;
+        const isZero = feeText == null || feeText === '0.000';
         const failHint = row.calc_fail_reason
             ? `<span class="text-[#FF1E27]" title="${esc(row.calc_fail_reason)}">计算失败</span>`
             : (isZero
@@ -527,12 +530,8 @@ export function updateFeeHud(total, summary, onlyZeroActive = false) {
     const hasFailTodo = zeroCount > 0;
 
     const fmtMoney = (value) => {
-        const numeric = Number(value);
-        if (value === null || value === undefined || Number.isNaN(numeric)) return '—';
-        return numeric.toLocaleString('zh-CN', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-        });
+        const fixed = formatDecimalFixed(value, 2, { allowNegative: true });
+        return fixed == null ? '—' : withThousandsSep(fixed);
     };
 
     setText('feeHudTotalFee', fmtMoney(data.total_fee));
@@ -749,10 +748,6 @@ function formatAuditDateTime(value) {
 }
 
 function formatNum(value, digits = 2) {
-    const numeric = Number(value);
-    if (value === null || value === undefined || Number.isNaN(numeric)) return '-';
-    return numeric.toLocaleString('zh-CN', {
-        minimumFractionDigits: digits,
-        maximumFractionDigits: digits,
-    });
+    const fixed = formatDecimalFixed(value, digits, { allowNegative: true });
+    return fixed == null ? '-' : withThousandsSep(fixed);
 }

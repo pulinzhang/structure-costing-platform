@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from decimal import Decimal
 from io import BytesIO
 from typing import Any
 
@@ -10,6 +11,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from sqlalchemy.orm import Session
 
+from app.common.money import Q3, excel_money_cell
 from app.common.timezone import now
 from app.repositories.stamping.tonnage_price_repository import StampingTonnagePriceRepository
 
@@ -17,16 +19,16 @@ from app.repositories.stamping.tonnage_price_repository import StampingTonnagePr
 logger = logging.getLogger("service.stamping_tonnage_price_export")
 
 
-def _num(value: Any, digits: int = 3) -> Any:
-    if value is None:
-        return ""
-    return round(float(value), digits)
+def _price_cell(value: Any) -> Decimal | str:
+    """导出单价：保持 Decimal，不经 float。"""
+    return excel_money_cell(value, Q3)
 
 
 def _dt(value: Any) -> Any:
     if value is None:
         return ""
     return value.strftime("%Y-%m-%d %H:%M:%S") if hasattr(value, "strftime") else str(value)
+
 
 
 class StampingTonnagePriceExportService:
@@ -88,7 +90,7 @@ class StampingTonnagePriceExportService:
                 record.location,
                 record.year,
                 record.tonnage,
-                _num(record.price_per_stroke, 3),
+                _price_cell(record.price_per_stroke),
                 record.created_by or "",
                 _dt(record.created_at),
                 record.updated_by or "",

@@ -1,6 +1,23 @@
 ﻿/**
  * 焊接单价列表 — 模板
+ *
+ * 单价一律按十进制字符串处理（不经 Number/parseFloat）。
  */
+
+/** 格式化为固定 4 位小数字符串；非法值返回 '-'。 */
+export function formatUnitPrice4(value) {
+    return formatDecimalFixed(value, 4) ?? '-';
+}
+
+export function unitPriceInputValue(value) {
+    return formatDecimalFixed(value, 4) ?? '';
+}
+
+/** 校验并规范输入为 4 位小数字符串；失败返回 null。 */
+export function parseUnitPriceInput(raw) {
+    return parseDecimalInput(raw, 4);
+}
+
 
 import { pageSizeSelectHtml } from '../../../../page-size.js?v=2';
 
@@ -164,9 +181,10 @@ export function weldingUnitPriceTemplate() {
 
                     <div>
                         <label class="text-[10px] font-semibold text-[#616161] uppercase tracking-[0.1em] mb-1.5 block">费用 <span class="text-[#d32f2f]">*</span></label>
-                        <input type="number" id="editUnitPrice" min="0" step="0.0001" required
-                               class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#ffffff] placeholder:text-[#616161] focus:outline-none focus:border-[#ff5252] transition-all rounded"
-                               placeholder="如 0.0999">
+                        <input type="text" id="editUnitPrice" inputmode="decimal" required
+                               class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#ffffff] placeholder:text-[#616161] focus:outline-none focus:border-[#ff5252] transition-all rounded font-mono"
+                               placeholder="保留4位小数，如 0.0999"
+                               autocomplete="off">
                     </div>
 
                     <div>
@@ -316,7 +334,7 @@ export function renderTableRows(records) {
             <td class="px-5 py-2.5 text-[11px] text-[#b0b0b0] whitespace-nowrap font-medium tracking-wide border-b border-[#1d1d1d]" title="${esc(record.item_name)}">${esc(record.item_name)}</td>
             <td class="px-5 py-2.5 text-[11px] text-[#686868] whitespace-nowrap border-b border-[#1d1d1d]">${esc(record.unit)}</td>
             <td class="px-5 py-2.5 text-[11px] text-right font-mono tabular-nums text-[#d32f2f] whitespace-nowrap tracking-wide border-b border-[#1d1d1d]">
-                <span class="shadow-[0_0_8px_rgba(211,47,47,0.2)]">${fmtNum(record.unit_price, 4)}</span>
+                <span class="shadow-[0_0_8px_rgba(211,47,47,0.2)]">${esc(formatUnitPrice4(record.unit_price))}</span>
             </td>
             <td class="px-5 py-2.5 text-[11px] text-[#555555] whitespace-nowrap border-b border-[#1d1d1d] max-w-[160px] truncate" title="${esc(record.remark || '')}">${esc(record.remark || '—')}</td>
             <td class="px-5 py-2.5 text-center whitespace-nowrap border-b border-[#1d1d1d]">

@@ -160,7 +160,7 @@ export function tonnageUploadTemplate() {
                             <ul class="list-disc list-inside text-xs text-[#616161] space-y-1.5">
                                 <li><span class="text-[#9e9e9e]">名称</span>：吨位，如 400T</li>
                                 <li><span class="text-[#9e9e9e]">单位</span>：固定为「次」</li>
-                                <li><span class="text-[#9e9e9e]">单价</span>：元/次，保留三位小数</li>
+                                <li><span class="text-[#9e9e9e]">单价</span>：元/次，固定保留三位小数</li>
                             </ul>
                         </div>
                         <div>

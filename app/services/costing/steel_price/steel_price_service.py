@@ -51,24 +51,24 @@ class SteelPriceService:
     @staticmethod
     def _compute_final_price(
         *,
-        base_price: float | Decimal,
-        thickness_adjustment: float | Decimal,
-        width_adjustment: float | Decimal,
-        zinc_adjustment: float | Decimal,
-        processing_fee: float | Decimal,
-        other_adjustment: float | Decimal,
+        base_price: Decimal,
+        thickness_adjustment: Decimal,
+        width_adjustment: Decimal,
+        zinc_adjustment: Decimal,
+        processing_fee: Decimal,
+        other_adjustment: Decimal,
     ) -> Decimal:
         return (
-            Decimal(str(base_price))
-            + Decimal(str(thickness_adjustment))
-            + Decimal(str(width_adjustment))
-            + Decimal(str(zinc_adjustment))
-            + Decimal(str(processing_fee))
-            + Decimal(str(other_adjustment))
+            base_price
+            + thickness_adjustment
+            + width_adjustment
+            + zinc_adjustment
+            + processing_fee
+            + other_adjustment
         )
 
     @staticmethod
-    def _build_spec(thickness: float, width: float, spec: str | None) -> str | None:
+    def _build_spec(thickness: Decimal, width: Decimal, spec: str | None) -> str | None:
         if spec and spec.strip():
             return spec.strip()
         return f"{thickness:.2f}*{width:.2f}"

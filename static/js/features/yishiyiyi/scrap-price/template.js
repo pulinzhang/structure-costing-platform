@@ -4,35 +4,57 @@
  * DOM ID / 字段 / 事件契约保持不变
  */
 
-/** 金额展示：千分位 + 固定 2 位小数（输入框用，空值返回 ''） */
+/** 金额展示：固定 2 位小数 + 千分位（输入框用，空值返回 ''） */
 export function fmtPrice(value) {
     if (value === null || value === undefined || value === '') return '';
-    const n = Number(value);
-    if (Number.isNaN(n)) return '';
-    return n.toLocaleString('zh-CN', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    });
+    const fixed = formatDecimalFixed(value, 2, { allowNegative: true });
+    return fixed == null ? '' : withThousandsSep(fixed);
 }
 
-/** 金额展示：千分位 + 固定 2 位小数（只读净价用，空/无效返回 —） */
+/** 金额展示：固定 2 位小数（只读净价用，空/无效返回 —） */
 export function fmtTelemetry(value) {
-    if (value === null || value === undefined || value === '' || Number.isNaN(Number(value))) {
-        return '—';
-    }
-    return fmtPrice(value) || '—';
+    const formatted = fmtPrice(value);
+    return formatted === '' ? '—' : formatted;
 }
 
-/** 解析金额输入：去掉千分位逗号后转 Number */
+/**
+ * 解析金额输入：去掉千分位后规范为 2 位小数字符串；失败返回 null。
+ * 提交给后端用字符串，避免 JS Number 尾差。
+ */
 export function parsePriceInput(raw) {
-    if (raw === null || raw === undefined) return NaN;
+    if (raw === null || raw === undefined) return null;
     const cleaned = String(raw)
         .trim()
         .replace(/,/g, '')
         .replace(/，/g, '')
         .replace(/\s/g, '');
-    if (cleaned === '') return NaN;
-    return Number(cleaned);
+    if (cleaned === '') return null;
+    return parseDecimalInput(cleaned, 2);
+}
+
+/** 比较两个金额字符串（已规范为两位小数）；a>b 返回 1，相等 0，否则 -1 */
+export function comparePriceStrings(a, b) {
+    return compareDecimalStrings(a, b, 2) ?? 0;
+}
+
+/** a - b，返回两位小数字符串（可为负） */
+export function subtractPriceStrings(a, b) {
+    const left = formatDecimalFixed(a, 2, { allowNegative: true });
+    const right = formatDecimalFixed(b, 2, { allowNegative: true });
+    if (left == null || right == null) return '0.00';
+    const toScaled = (s) => {
+        const negative = s.startsWith('-');
+        const body = negative ? s.slice(1) : s;
+        const [i, f = ''] = body.split('.');
+        const scaled = BigInt(i || '0') * 100n + BigInt((f + '00').slice(0, 2));
+        return negative ? -scaled : scaled;
+    };
+    const diff = toScaled(left) - toScaled(right);
+    const neg = diff < 0n;
+    const abs = neg ? -diff : diff;
+    const intPart = abs / 100n;
+    const frac = abs % 100n;
+    return `${neg ? '-' : ''}${intPart.toString()}.${frac.toString().padStart(2, '0')}`;
 }
 
 const MONTH_LABELS = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];

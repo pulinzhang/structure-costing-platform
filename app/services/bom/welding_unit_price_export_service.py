@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from decimal import Decimal
 from io import BytesIO
 from typing import Any
 
@@ -11,22 +12,23 @@ from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 from sqlalchemy.orm import Session
 
+from app.common.money import Q4, excel_money_cell
 from app.common.timezone import now
 from app.repositories.bom.welding_unit_price_repository import BomWeldingUnitPriceRepository
 
 logger = logging.getLogger("service.bom_welding_unit_price_export")
 
 
-def _num(value: Any, digits: int = 4) -> Any:
-    if value is None:
-        return ""
-    return round(float(value), digits)
+def _unit_price_cell(value: Any) -> Decimal | str:
+    """导出单价：保持 Decimal，不经 float。"""
+    return excel_money_cell(value, Q4)
 
 
 def _dt(value: Any) -> Any:
     if value is None:
         return ""
     return value.strftime("%Y-%m-%d %H:%M:%S") if hasattr(value, "strftime") else str(value)
+
 
 
 class BomWeldingUnitPriceExportService:
@@ -91,7 +93,7 @@ class BomWeldingUnitPriceExportService:
                 record.year,
                 record.item_name,
                 record.unit,
-                _num(record.unit_price, 4),
+                _unit_price_cell(record.unit_price),
                 record.remark or "",
                 record.created_by or "",
                 _dt(record.created_at),
@@ -106,7 +108,7 @@ class BomWeldingUnitPriceExportService:
                     cell.alignment = align_center
                 elif col == 5:
                     cell.alignment = align_right
-                    cell.number_format = "0.####"
+                    cell.number_format = "0.0000"
                 else:
                     cell.alignment = align_left
 

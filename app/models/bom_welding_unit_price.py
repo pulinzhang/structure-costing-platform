@@ -42,7 +42,7 @@ class BomWeldingUnitPrice(AuditUserMixin, Base):
     unit_price: Mapped[Decimal] = mapped_column(
         Numeric(12, 4),
         nullable=False,
-        comment="工费单价(元/单位)",
+        comment="工费单价(元/单位)，Numeric(12,4) 固定4位小数",
     )
 
     remark: Mapped[str | None] = mapped_column(

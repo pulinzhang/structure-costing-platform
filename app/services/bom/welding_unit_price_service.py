@@ -15,6 +15,7 @@ from app.schemas.dto.bom_welding_unit_price_dto import (
     BomWeldingUnitPriceCreate,
     BomWeldingUnitPriceQuery,
     BomWeldingUnitPriceUpdate,
+    quantize_unit_price,
 )
 from app.schemas.vo.bom_welding_unit_price_vo import BomWeldingUnitPriceResponse
 from app.schemas.vo.user_vo import UserVO
@@ -74,6 +75,7 @@ class BomWeldingUnitPriceService:
     ) -> Tuple[Optional[BomWeldingUnitPriceResponse], Optional[str]]:
         try:
             payload = {**data.model_dump(), **audit_create(current_user)}
+            payload["unit_price"] = quantize_unit_price(payload["unit_price"])
             record = self.repository.create(db, payload)
             return BomWeldingUnitPriceResponse.model_validate(record), None
         except IntegrityError:
@@ -147,6 +149,8 @@ class BomWeldingUnitPriceService:
                 **data.model_dump(exclude_unset=True),
                 **audit_update(current_user),
             }
+            if "unit_price" in payload:
+                payload["unit_price"] = quantize_unit_price(payload["unit_price"])
             record = self.repository.update(db, id, payload)
             if not record:
                 return None, "记录不存在"
@@ -218,7 +222,7 @@ class BomWeldingUnitPriceService:
                         "year": target_year,
                         "item_name": source.item_name,
                         "unit": source.unit,
-                        "unit_price": source.unit_price,
+                        "unit_price": quantize_unit_price(source.unit_price),
                         "remark": source.remark,
                         **audit,
                     },

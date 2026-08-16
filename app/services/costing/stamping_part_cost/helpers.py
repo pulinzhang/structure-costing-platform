@@ -5,10 +5,19 @@ from __future__ import annotations
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
+from app.common.money import Q2, Q3, Q4, Q6, excel_money_cell, format_money
+
 # 与 SettingsService / 系统配置缺省一致
 DEFAULT_STEEL_DENSITY = Decimal("7.85")
 DEFAULT_MATERIAL_LOSS_RATE = Decimal("0.003")
 DEFAULT_SCRAP_RECOVERY_RATE = Decimal("0.97")
+
+_DIGITS_TO_QUANT = {
+    2: Q2,
+    3: Q3,
+    4: Q4,
+    6: Q6,
+}
 
 
 def location_candidates(location: str) -> list[str]:
@@ -33,13 +42,14 @@ def to_decimal(value: Any) -> Decimal | None:
         return None
 
 
-def format_number(value: Any, digits: int | None = None) -> float | str:
+def format_number(value: Any, digits: int | None = None) -> Decimal | str:
+    """Excel 单元格 / 溯源文本用：保持 Decimal，空则空串。"""
     if value is None:
         return ""
-    number = float(value)
     if digits is None:
-        return number
-    return round(number, digits)
+        return excel_money_cell(value, Q6)
+    quant = _DIGITS_TO_QUANT.get(digits, Decimal(10) ** -digits)
+    return excel_money_cell(value, quant)
 
 
 def format_excel_cell_trace(
@@ -103,11 +113,11 @@ def format_scrap_price_trace(scrap: Any) -> str:
     deduction = getattr(scrap, "deduction_fee", None)
     net = getattr(scrap, "net_price", None)
     if net is not None:
-        parts.append(f"净价{format_number(net, 2)}")
+        parts.append(f"净价{format_money(net, Q2, 2)}")
     if market is not None:
-        parts.append(f"大盘{format_number(market, 2)}")
+        parts.append(f"大盘{format_money(market, Q2, 2)}")
     if deduction is not None:
-        parts.append(f"扣费{format_number(deduction, 2)}")
+        parts.append(f"扣费{format_money(deduction, Q2, 2)}")
     remark = (getattr(scrap, "remark", None) or "").strip()
     if remark:
         parts.append(remark)
@@ -140,7 +150,7 @@ def format_process_fee_trace(fee: Any) -> str:
         label = f"{seq}/{code}" if code else seq
         fee_val = getattr(item, "line_fee", None)
         if fee_val is not None:
-            lines.append(f"{label}: {format_number(fee_val, 3)}")
+            lines.append(f"{label}: {format_money(fee_val, Q3, 3)}")
         else:
             lines.append(label)
     return "\n".join(lines)

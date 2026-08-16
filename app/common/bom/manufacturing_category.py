@@ -126,7 +126,7 @@ def resolve_manufacturing_category(
     part_name: str | None = None,
     material: str | None = None,
     part_number: str | None = None,
-    thickness_mm: Decimal | float | None = None,
+    thickness_mm: Decimal | None = None,
     qty_unit: str | None = None,
 ) -> str:
     """

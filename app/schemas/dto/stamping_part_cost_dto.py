@@ -1,6 +1,11 @@
 """冲压零件价格核算 DTO。"""
 
-from pydantic import BaseModel, Field
+from typing import Any
+
+from decimal import Decimal
+from pydantic import BaseModel, Field, field_validator
+
+from app.common.money import Q6, quantize_money
 
 
 class StampingPartCostScopeDTO(BaseModel):
@@ -53,5 +58,10 @@ class StampingPartCostBatchReverseAuditDTO(StampingPartCostScopeDTO):
 class StampingPartCostManualUnitCostDTO(BaseModel):
     """失败记录手工录入最终单件成本。"""
 
-    unit_cost: float = Field(..., ge=0, description="最终单件成本（元）")
+    unit_cost: Decimal = Field(..., ge=0, description="最终单件成本（元）")
     remark: str = Field(..., min_length=1, description="改价备注（必填）")
+
+    @field_validator("unit_cost", mode="before")
+    @classmethod
+    def _coerce_unit_cost(cls, value: Any) -> Decimal:
+        return quantize_money(value, Q6)

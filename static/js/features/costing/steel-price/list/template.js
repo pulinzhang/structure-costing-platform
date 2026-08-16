@@ -503,17 +503,12 @@ export function updateSteelPriceHud(total, summary) {
     };
     const data = summary && typeof summary === 'object' ? summary : {};
     const avg = data.avg_final_price;
-    const avgNumber = avg == null || avg === '' ? NaN : Number(avg);
+    const avgFixed = formatDecimalFixed(avg, 2, { allowNegative: true });
 
     setText('steelPriceHudTotal', Number(total || 0).toLocaleString('zh-CN'));
     setText(
         'steelPriceHudAvg',
-        Number.isNaN(avgNumber)
-            ? '—'
-            : avgNumber.toLocaleString('zh-CN', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-            })
+        avgFixed == null ? '—' : withThousandsSep(avgFixed),
     );
     setText('steelPriceHudSkuCount', `${Number(total || 0).toLocaleString('zh-CN')} 条`);
     setText('steelPriceHudPending', String(data.pending_count ?? 0));
@@ -697,39 +692,34 @@ function formatAuditDateTime(value) {
 }
 
 function formatPrice(value, digits = 2) {
-    const numeric = Number(value);
-    if (value === null || value === undefined || Number.isNaN(numeric)) return '-';
-    return numeric.toLocaleString('zh-CN', { minimumFractionDigits: digits, maximumFractionDigits: digits });
+    const fixed = formatDecimalFixed(value, digits, { allowNegative: true });
+    return fixed == null ? '-' : withThousandsSep(fixed);
 }
 
-/** 加工费：中0 时显示-- */
+/** 加工费：为 0 时显示 -- */
 function formatPriceOrDash(value, digits = 2) {
-    const numeric = Number(value);
-    if (value === null || value === undefined || Number.isNaN(numeric) || numeric === 0) {
+    const fixed = formatDecimalFixed(value, digits, { allowNegative: true });
+    if (fixed == null || compareDecimalStrings(fixed, '0', digits) === 0) {
         return '--';
     }
-    return formatPrice(numeric, digits);
+    return withThousandsSep(fixed);
 }
 
 /**
- * 厚度/宽度加价（单色冷灰）） * 有值→#A1A1A6 带正负号；无值→#444 -
+ * 厚度/宽度加价（单色冷灰）
+ * 有值→#A1A1A6 带正负号；无值→#444 -
  */
 function formatAdjustment(value, digits = 2) {
-    const numeric = Number(value);
-    if (value === null || value === undefined || Number.isNaN(numeric) || numeric === 0) {
+    const fixed = formatDecimalFixed(value, digits, { allowNegative: true });
+    if (fixed == null || compareDecimalStrings(fixed, '0', digits) === 0) {
         return '<span class="text-[#444444]">-</span>';
     }
-    const absText = Math.abs(numeric).toLocaleString('zh-CN', {
-        minimumFractionDigits: digits,
-        maximumFractionDigits: digits,
-    });
-    const signed = numeric > 0 ? `+${absText}` : `-${absText}`;
+    const absText = withThousandsSep(fixed.startsWith('-') ? fixed.slice(1) : fixed);
+    const signed = fixed.startsWith('-') ? `-${absText}` : `+${absText}`;
     return `<span class="text-[#A1A1A6]">${signed}</span>`;
 }
 
-/** 宽度：整数、无千分作*/
+/** 宽度：整数、无千分位 */
 function formatWidth(value) {
-    const numeric = Number(value);
-    if (value === null || value === undefined || Number.isNaN(numeric)) return '-';
-    return String(Math.round(numeric));
+    return formatDecimalFixed(value, 0) ?? '-';
 }

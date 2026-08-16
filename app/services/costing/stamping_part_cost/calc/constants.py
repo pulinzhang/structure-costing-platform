@@ -4,10 +4,12 @@ from __future__ import annotations
 
 from decimal import Decimal, ROUND_HALF_UP
 
+from app.common.money import Q3
+
 FORMULA_VERSION = "part-cost-v5"
 AMOUNT_QUANTIZE = Decimal("0.000001")
 UTIL_QUANTIZE = Decimal("0.01")
-FEE_QUANTIZE = Decimal("0.001")
+FEE_QUANTIZE = Q3
 
 STATUS_PROCESSING = "processing"
 STATUS_SUCCESS = "success"

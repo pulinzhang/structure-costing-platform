@@ -6,9 +6,25 @@
  * - 编辑/新增  →editDrawer（40px 右侧滑入）
  * - 复制模板  →copyDrawer（80px 右侧滑入）
  * - 删除确认  →deleteDrawer（80px 右侧滑入）
+ *
+ * 单价一律按十进制字符串处理（不经 Number/parseFloat），固定 3 位小数。
  */
 
 import { pageSizeSelectHtml } from '../../../../page-size.js?v=2';
+
+/** 格式化为固定 3 位小数字符串；非法值返回 '-'。 */
+export function formatPricePerStroke3(value) {
+    return formatDecimalFixed(value, 3) ?? '-';
+}
+
+export function pricePerStrokeInputValue(value) {
+    return formatDecimalFixed(value, 3) ?? '';
+}
+
+/** 校验并规范输入为 3 位小数字符串；失败返回 null。 */
+export function parsePricePerStrokeInput(raw) {
+    return parseDecimalInput(raw, 3);
+}
 
 export function tonnagePriceTemplate() {
     return `
@@ -173,9 +189,10 @@ export function tonnagePriceTemplate() {
 
                     <div>
                         <label class="text-[10px] font-semibold text-[#616161] uppercase tracking-[0.1em] mb-1.5 block">单冲次价格(全 <span class="text-[#d32f2f]">*</span></label>
-                        <input type="number" id="editPrice" min="0" step="0.001" required
-                               class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#ffffff] placeholder:text-[#616161] focus:outline-none focus:border-[#ff5252] transition-all rounded"
-                               placeholder="如 0.850">
+                        <input type="text" id="editPrice" inputmode="decimal" required
+                               class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#ffffff] placeholder:text-[#616161] focus:outline-none focus:border-[#ff5252] transition-all rounded font-mono"
+                               placeholder="保留3位小数，如 0.564"
+                               autocomplete="off">
                     </div>
 
                     <div class="bg-[#0c0c0c] border border-[#1a1a1a] rounded p-3">
@@ -333,7 +350,7 @@ export function renderTableRows(records) {
             <td class="px-5 py-2.5 text-[11px] text-[#686868] whitespace-nowrap font-mono tracking-wide border-b border-[#1d1d1d]">${esc(record.year)}</td>
             <td class="px-5 py-2.5 text-[11px] text-[#b0b0b0] whitespace-nowrap font-medium tracking-wide border-b border-[#1d1d1d]">${esc(record.tonnage)} T</td>
             <td class="px-5 py-2.5 text-[11px] text-right font-mono tabular-nums text-[#d32f2f] whitespace-nowrap tracking-wide border-b border-[#1d1d1d]">
-                <span class="shadow-[0_0_8px_rgba(211,47,47,0.2)]">${fmtNum(record.price_per_stroke, 3)}</span>
+                <span class="shadow-[0_0_8px_rgba(211,47,47,0.2)]">${esc(formatPricePerStroke3(record.price_per_stroke))}</span>
             </td>
             <td class="px-5 py-2.5 text-center whitespace-nowrap border-b border-[#1d1d1d]">
                 <div class="inline-flex items-center justify-center gap-0.5 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto focus-within:opacity-100 focus-within:pointer-events-auto transition-opacity duration-100">

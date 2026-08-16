@@ -7,6 +7,7 @@ from typing import Any, Optional
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
+from app.common.money import Q2, optional_quantize_money, quantize_money
 from app.common.scrap_price_locations import (
     SCRAP_PRICE_LOCATION_COUNT,
     SCRAP_PRICE_LOCATIONS,
@@ -18,14 +19,6 @@ def _strip(value: Optional[str]) -> Optional[str]:
         return None
     value = value.strip()
     return value if value else None
-
-
-def _to_decimal(value: Optional[Decimal | float | int | str]) -> Optional[Decimal]:
-    if value is None:
-        return None
-    if isinstance(value, Decimal):
-        return value
-    return Decimal(str(value))
 
 
 class StampingScrapPriceMonthRowInput(BaseModel):
@@ -45,10 +38,17 @@ class StampingScrapPriceMonthRowInput(BaseModel):
     def strip_strings(cls, value: Any) -> Any:
         return _strip(value)
 
-    @field_validator("market_price", "deduction_fee", mode="before")
+    @field_validator("market_price", mode="before")
     @classmethod
-    def coerce_decimals(cls, value: Any) -> Any:
-        return _to_decimal(value)
+    def coerce_market_price(cls, value: Any) -> Decimal:
+        return quantize_money(value, Q2)
+
+    @field_validator("deduction_fee", mode="before")
+    @classmethod
+    def coerce_deduction_fee(cls, value: Any) -> Decimal:
+        if value is None or (isinstance(value, str) and not str(value).strip()):
+            return Decimal("0.00")
+        return optional_quantize_money(value, Q2) or Decimal("0.00")
 
     @model_validator(mode="after")
     def validate_deduction_not_exceed_market(self) -> Any:

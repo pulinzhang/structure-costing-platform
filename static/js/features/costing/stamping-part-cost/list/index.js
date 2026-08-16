@@ -10,7 +10,7 @@ import {
     updateCostFilterCapsules,
     shortPartNumber,
     syncBreakdownColumnVisibility,
-} from './template.js?v=35';
+} from './template.js?v=36';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -557,7 +557,7 @@ function showDetailDrawer(row) {
             ${detailBlock('过程计算量', [
                 [
                     '密度 / 损耗/ 回收',
-                    `${fmtNum(row.density, 2)} g/cm³ · ${fmtNum((Number(row.material_loss_rate) || 0) * 1000, 2)}—· ${fmtNum((Number(row.scrap_recovery_rate) || 0) * 100, 1)}%`,
+                    `${fmtNum(row.density, 2)} g/cm³ · ${fmtNum(scaleDecimalByPow10(row.material_loss_rate, 3, 2) ?? '0', 2)}‰ · ${fmtNum(scaleDecimalByPow10(row.scrap_recovery_rate, 2, 1) ?? '0', 1)}%`,
                 ],
                 ['预估单件材料消耗M', `${fmtNum(row.blank_weight_kg, 7)} kg`],
                 ['零件净量', `${fmtNum(row.finished_total_kg, 7)} kg`],
@@ -634,8 +634,8 @@ async function saveManualUnitCost(costId) {
         unitCostEl?.focus();
         return;
     }
-    const unitCost = Number(unitCostRaw);
-    if (!Number.isFinite(unitCost) || unitCost < 0) {
+    const unitCost = parseDecimalInput(unitCostRaw, 6);
+    if (unitCost == null) {
         showToast('最终成本须为非负数', 'warning');
         unitCostEl?.focus();
         return;

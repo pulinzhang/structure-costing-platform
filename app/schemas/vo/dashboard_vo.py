@@ -2,7 +2,11 @@
 仪表盘 VO - 管理者看板响应结构
 """
 
-from pydantic import BaseModel, Field
+from decimal import Decimal
+
+from pydantic import BaseModel, Field, field_serializer
+
+from app.common.money import Q2, Q3, Q4, Q6, optional_format_money
 
 
 class DashboardScopeVO(BaseModel):
@@ -34,7 +38,11 @@ class DashboardYishiyiyiStatsVO(BaseModel):
     scrap_is_complete: bool = False
     scrap_location: str | None = None
     scrap_location_filled: bool | None = None
-    scrap_location_net_price: float | None = None
+    scrap_location_net_price: Decimal | None = None
+
+    @field_serializer("scrap_location_net_price")
+    def serialize_net_price(self, value: Decimal | None) -> str | None:
+        return optional_format_money(value, Q2, 2)
 
 
 class DashboardAuditBucketVO(BaseModel):
@@ -44,7 +52,12 @@ class DashboardAuditBucketVO(BaseModel):
     approved_count: int = 0
     zero_count: int | None = None
     total_count: int | None = None
-    avg_value: float | None = None
+    avg_value: Decimal | None = None
+
+    @field_serializer("avg_value")
+    def serialize_avg_value(self, value: Decimal | None) -> str | None:
+        # 桶内均价可能是加工费(Q3) / 钢价(Q4) / 零件价(Q6)，统一按较高精度输出
+        return optional_format_money(value, Q6, 6)
 
 
 class DashboardBomStatsVO(BaseModel):
@@ -87,9 +100,21 @@ class DashboardOutcomeVO(BaseModel):
     part_cost_pending: int = 0
     process_fee_zero: int = 0
     part_cost_approved: int = 0
-    part_cost_avg: float | None = None
-    steel_price_avg: float | None = None
-    process_fee_avg: float | None = None
+    part_cost_avg: Decimal | None = None
+    steel_price_avg: Decimal | None = None
+    process_fee_avg: Decimal | None = None
+
+    @field_serializer("part_cost_avg")
+    def serialize_part_cost_avg(self, value: Decimal | None) -> str | None:
+        return optional_format_money(value, Q6, 6)
+
+    @field_serializer("steel_price_avg")
+    def serialize_steel_price_avg(self, value: Decimal | None) -> str | None:
+        return optional_format_money(value, Q4, 4)
+
+    @field_serializer("process_fee_avg")
+    def serialize_process_fee_avg(self, value: Decimal | None) -> str | None:
+        return optional_format_money(value, Q3, 3)
 
 
 class DashboardStatsVO(BaseModel):

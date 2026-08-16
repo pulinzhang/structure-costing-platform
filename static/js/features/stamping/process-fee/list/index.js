@@ -10,7 +10,7 @@ import {
     updateFeeHud,
     updateFeeFilterCapsules,
     shortPartNumber,
-} from './template.js?v=26';
+} from './template.js?v=28';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -431,12 +431,8 @@ function fillViewField(id, value) {
 }
 
 function formatDecimal(value, digits = 3) {
-    const numeric = Number(value);
-    if (value === null || value === undefined || Number.isNaN(numeric)) return '—';
-    return numeric.toLocaleString('zh-CN', {
-        minimumFractionDigits: digits,
-        maximumFractionDigits: digits,
-    });
+    const fixed = formatDecimalFixed(value, digits, { allowNegative: true });
+    return fixed == null ? '—' : withThousandsSep(fixed);
 }
 
 function formatDateTime(value) {
@@ -601,8 +597,8 @@ async function saveEdit() {
     const raw = String(document.getElementById('feeEditManualPrice')?.value || '').trim();
     let manualUnitPrice = null;
     if (raw !== '') {
-        const parsed = Number(raw);
-        if (!Number.isFinite(parsed) || parsed < 0) {
+        const parsed = parseDecimalInput(raw, 3);
+        if (parsed == null) {
             showToast('手工调整单价须为非负数字', 'warning');
             return;
         }

@@ -10,7 +10,9 @@ import {
     fmtTelemetry,
     fmtPrice,
     parsePriceInput,
-} from './template.js?v=15';
+    comparePriceStrings,
+    subtractPriceStrings,
+} from './template.js?v=17';
 
 const API_BASE = '/api/yishiyiyi/scrap-price';
 const DRAWER_ANIMATION_MS = 300;
@@ -270,12 +272,12 @@ function recalcRowNet(rowEl) {
 
     const market = parsePriceInput(marketInput.value);
     const deductionRaw = deductionInput.value?.trim() ?? '';
-    const deduction = deductionRaw === '' ? 0 : parsePriceInput(deductionRaw);
-    if (Number.isNaN(market) || Number.isNaN(deduction)) {
+    const deduction = deductionRaw === '' ? '0.00' : parsePriceInput(deductionRaw);
+    if (market == null || deduction == null) {
         netEl.textContent = '—';
         return;
     }
-    netEl.textContent = fmtTelemetry(market - deduction);
+    netEl.textContent = fmtTelemetry(subtractPriceStrings(market, deduction));
 }
 
 /** 录入中只保留数字与最多一个小数点，小数最多 2 位 */
@@ -312,7 +314,7 @@ function formatPriceFieldOnBlur(input) {
         return;
     }
     const n = parsePriceInput(raw);
-    if (Number.isNaN(n) || n < 0) {
+    if (n == null) {
         input.value = '';
         showToast('请输入有效金额（仅数字）', 'warning');
         return;
@@ -322,9 +324,9 @@ function formatPriceFieldOnBlur(input) {
 
 function formatPriceFieldOnFocus(input) {
     const n = parsePriceInput(input.value);
-    if (Number.isNaN(n)) return;
+    if (n == null) return;
     // 编辑时去掉千分位，保留两位小数，便于输入
-    input.value = n.toFixed(2);
+    input.value = n;
 }
 
 function bindRowInputEvents() {
@@ -383,16 +385,16 @@ function collectItemsFromDom() {
         }
         const market_price = parsePriceInput(marketRaw);
         const deduction_fee =
-            deductionRaw === '' ? 0 : parsePriceInput(deductionRaw);
-        if (Number.isNaN(market_price) || market_price < 0) {
+            deductionRaw === '' ? '0.00' : parsePriceInput(deductionRaw);
+        if (market_price == null) {
             errors.push(`${location}: 大盘价无效`);
             return;
         }
-        if (Number.isNaN(deduction_fee) || deduction_fee < 0) {
+        if (deduction_fee == null) {
             errors.push(`${location}: 扣费无效`);
             return;
         }
-        if (deduction_fee > market_price) {
+        if (comparePriceStrings(deduction_fee, market_price) > 0) {
             errors.push(`${location}: 扣费不能大于大盘价`);
             return;
         }

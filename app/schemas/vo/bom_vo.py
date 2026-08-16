@@ -6,9 +6,7 @@ from typing import Union
 
 from pydantic import BaseModel, field_serializer
 
-
-def decimal_to_float(value: Union[Decimal, float, None]) -> float | None:
-    return float(value) if isinstance(value, Decimal) else value
+from app.common.money import Q4, optional_format_money
 
 
 class BomSnapshotVO(BaseModel):
@@ -61,17 +59,17 @@ class BomNodeVO(BaseModel):
     internal_number: str | None = None
     part_number: str
     part_name: str | None = None
-    qty: float | None = None
+    qty: Decimal | None = None
     qty_unit: str
     qty_text: str | None = None
     node_role: str
     is_supply_unit: bool
     manufacturing_category: str | None = None
     material: str | None = None
-    thickness_mm: float | None = None
+    thickness_mm: Decimal | None = None
     thickness_text: str | None = None
     material_mill: str | None = None
-    part_weight: float | None = None
+    part_weight: Decimal | None = None
     gauge_developed: str | None = None
     weld_info: str | None = None
     remark: str | None = None
@@ -86,8 +84,8 @@ class BomNodeVO(BaseModel):
     updated_at: datetime | None = None
 
     @field_serializer("qty", "thickness_mm", "part_weight")
-    def serialize_decimal(self, value: Union[Decimal, float, None]) -> float | None:
-        return decimal_to_float(value)
+    def serialize_decimal(self, value: Union[Decimal, None]) -> str | None:
+        return optional_format_money(value, Q4, 4, allow_negative=True)
 
     @field_serializer("created_at", "updated_at")
     def serialize_datetime(self, value: datetime | None) -> str | None:

@@ -8,7 +8,7 @@
  * - 删除确认  →deleteDrawer
  */
 
-import { tonnagePriceTemplate, renderTableRows, renderPagination } from './template.js?v=8';
+import { tonnagePriceTemplate, renderTableRows, renderPagination, pricePerStrokeInputValue, parsePricePerStrokeInput } from './template.js?v=10';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -453,7 +453,7 @@ function openEditDrawer(record) {
         tonnageInput.value = record.tonnage;
         tonnageInput.disabled = true;
     }
-    if (priceInput) priceInput.value = record.price_per_stroke;
+    if (priceInput) priceInput.value = pricePerStrokeInputValue(record.price_per_stroke);
 
     openDrawer('editDrawer', 'editDrawerBackdrop');
     if (priceInput) setTimeout(() => priceInput.focus(), DRAWER_ANIMATION_MS);
@@ -613,15 +613,15 @@ async function saveRecord() {
     const recordId = document.getElementById('editRecordId')?.value;
     const location = document.getElementById('editLocation')?.value?.trim();
     const year = parseInt(document.getElementById('editYear')?.value);
-    const tonnage = parseInt(document.getElementById('editTonnage')?.value);
-    const price = parseFloat(document.getElementById('editPrice')?.value);
+    const tonnage = parseInt(document.getElementById('editTonnage')?.value, 10);
+    const price = parsePricePerStrokeInput(document.getElementById('editPrice')?.value);
 
-    if (!recordId && (!location || !year || !tonnage || isNaN(price))) {
-        showToast('请填写所有必填项', 'warning');
+    if (!recordId && (!location || !year || !tonnage || !price)) {
+        showToast('请填写所有必填项（单价须为最多3位小数的数字）', 'warning');
         return;
     }
-    if (recordId && isNaN(price)) {
-        showToast('请填写单冲次价格', 'warning');
+    if (recordId && !price) {
+        showToast('请填写单冲次价格（最多3位小数）', 'warning');
         return;
     }
 

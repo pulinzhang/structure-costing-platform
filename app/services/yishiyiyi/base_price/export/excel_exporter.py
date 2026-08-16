@@ -9,6 +9,8 @@ from typing import Any
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 
+from app.common.money import Q2, excel_money_cell, quantize_money
+
 logger = logging.getLogger("service.steel_base_price.export.excel")
 
 
@@ -83,10 +85,12 @@ class SteelBasePriceExporter:
                 record.category_name,
                 record.grade,
                 record.spec or "",
-                float(record.thick) if record.thick else "",
-                int(float(record.width)) if record.width else "",
-                float(record.base_price) if record.base_price else "",
-                float(record.processing_fee) if record.processing_fee else "",
+                excel_money_cell(record.thick, Q2) if record.thick else "",
+                int(quantize_money(record.width, Q2)) if record.width else "",
+                excel_money_cell(record.base_price, Q2) if record.base_price else "",
+                excel_money_cell(record.processing_fee, Q2)
+                if record.processing_fee
+                else "",
                 record.excel_filename,
                 record.sheet_name,
                 record.excel_row,

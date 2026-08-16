@@ -2,13 +2,10 @@
 
 from datetime import datetime
 from decimal import Decimal
-from typing import Union
 
 from pydantic import BaseModel, Field, field_serializer
 
-
-def decimal_to_float(value: Union[Decimal, float, None]) -> float | None:
-    return float(value) if isinstance(value, Decimal) else value
+from app.common.money import Q2, Q3, Q4, Q6, optional_format_money
 
 
 class StampingPartCostVO(BaseModel):
@@ -26,10 +23,10 @@ class StampingPartCostVO(BaseModel):
     part_number: str
     part_name: str | None = None
     material: str | None = None
-    thickness: float | None = None
-    part_weight: float | None = None
-    sheet_length: float | None = None
-    sheet_width: float | None = None
+    thickness: Decimal | None = None
+    part_weight: Decimal | None = None
+    sheet_length: Decimal | None = None
+    sheet_width: Decimal | None = None
     parts_per_sheet: int | None = None
     sheet_type: str | None = None
     die_type: str | None = None
@@ -42,28 +39,28 @@ class StampingPartCostVO(BaseModel):
     excel_row: int | None = None
     excel_part_col: int | None = None
 
-    density: float | None = None
-    material_loss_rate: float | None = None
-    scrap_recovery_rate: float | None = None
-    blank_weight_kg: float | None = None
-    finished_total_kg: float | None = None
-    scrap_weight_kg: float | None = None
-    material_utilization_pct: float | None = None
+    density: Decimal | None = None
+    material_loss_rate: Decimal | None = None
+    scrap_recovery_rate: Decimal | None = None
+    blank_weight_kg: Decimal | None = None
+    finished_total_kg: Decimal | None = None
+    scrap_weight_kg: Decimal | None = None
+    material_utilization_pct: Decimal | None = None
 
     steel_price_id: int | None = None
     steel_mill: str | None = None
-    steel_ton_price: float | None = None
+    steel_ton_price: Decimal | None = None
     scrap_price_id: int | None = None
-    scrap_ton_price: float | None = None
+    scrap_ton_price: Decimal | None = None
     process_fee_id: int | None = None
-    process_fee_amount: float | None = None
+    process_fee_amount: Decimal | None = None
 
-    material_amount_sheet: float | None = None
-    loss_scrap_deduction: float | None = None
-    process_scrap_deduction: float | None = None
-    scrap_amount_sheet: float | None = None
-    material_net_per_part: float | None = None
-    unit_cost: float | None = None
+    material_amount_sheet: Decimal | None = None
+    loss_scrap_deduction: Decimal | None = None
+    process_scrap_deduction: Decimal | None = None
+    scrap_amount_sheet: Decimal | None = None
+    material_net_per_part: Decimal | None = None
+    unit_cost: Decimal | None = None
 
     calc_batch_id: str | None = None
     calc_status: str = "success"
@@ -84,21 +81,31 @@ class StampingPartCostVO(BaseModel):
     created_at: datetime | None = None
     updated_at: datetime | None = None
 
+    @field_serializer("thickness", "part_weight", "density", "material_utilization_pct")
+    def serialize_q4(self, value: Decimal | None) -> str | None:
+        return optional_format_money(value, Q4, 4)
+
+    @field_serializer("sheet_length", "sheet_width")
+    def serialize_sheet_dim(self, value: Decimal | None) -> str | None:
+        return optional_format_money(value, Q2, 2)
+
+    @field_serializer("material_loss_rate", "scrap_recovery_rate")
+    def serialize_rate(self, value: Decimal | None) -> str | None:
+        return optional_format_money(value, Q6, 6)
+
+    @field_serializer("blank_weight_kg", "finished_total_kg", "scrap_weight_kg")
+    def serialize_weight(self, value: Decimal | None) -> str | None:
+        return optional_format_money(value, Q6, 6)
+
+    @field_serializer("steel_ton_price", "scrap_ton_price")
+    def serialize_ton_price(self, value: Decimal | None) -> str | None:
+        return optional_format_money(value, Q4, 4)
+
+    @field_serializer("process_fee_amount")
+    def serialize_process_fee(self, value: Decimal | None) -> str | None:
+        return optional_format_money(value, Q3, 3)
+
     @field_serializer(
-        "thickness",
-        "part_weight",
-        "sheet_length",
-        "sheet_width",
-        "density",
-        "material_loss_rate",
-        "scrap_recovery_rate",
-        "blank_weight_kg",
-        "finished_total_kg",
-        "scrap_weight_kg",
-        "material_utilization_pct",
-        "steel_ton_price",
-        "scrap_ton_price",
-        "process_fee_amount",
         "material_amount_sheet",
         "loss_scrap_deduction",
         "process_scrap_deduction",
@@ -106,8 +113,8 @@ class StampingPartCostVO(BaseModel):
         "material_net_per_part",
         "unit_cost",
     )
-    def serialize_decimal(self, value: Union[Decimal, float, None]) -> float | None:
-        return decimal_to_float(value)
+    def serialize_amount(self, value: Decimal | None) -> str | None:
+        return optional_format_money(value, Q6, 6)
 
     @field_serializer(
         "created_at",

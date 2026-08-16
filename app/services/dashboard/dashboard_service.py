@@ -7,9 +7,12 @@ from __future__ import annotations
 
 from typing import NamedTuple
 
+from decimal import Decimal
+
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from app.common.money import parse_decimal
 from app.common.scrap_price_locations import (
     SCRAP_PRICE_LOCATION_COUNT,
     SCRAP_PRICE_LOCATIONS,
@@ -58,7 +61,7 @@ class _ScrapStatus(NamedTuple):
     is_complete: bool
     scrap_location: str | None
     scrap_location_filled: bool | None
-    scrap_location_net_price: float | None
+    scrap_location_net_price: Decimal | None
 
 
 class DashboardService:
@@ -549,13 +552,13 @@ class DashboardService:
 
         scrap_location: str | None = None
         scrap_location_filled: bool | None = None
-        scrap_location_net_price: float | None = None
+        scrap_location_net_price: Decimal | None = None
         if location and location in SCRAP_PRICE_LOCATIONS:
             scrap_location = location
             row = next((r for r in sheet.items if r.location == location), None)
             if row is not None and row.net_price is not None:
                 scrap_location_filled = True
-                scrap_location_net_price = float(row.net_price)
+                scrap_location_net_price = parse_decimal(row.net_price)
             else:
                 scrap_location_filled = False
 

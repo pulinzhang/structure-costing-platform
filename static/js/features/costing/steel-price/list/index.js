@@ -9,7 +9,7 @@ import {
     renderSteelPriceRows,
     updateSteelPriceHud,
     updateActiveFilterCapsules,
-} from './template.js?v=46';
+} from './template.js?v=47';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -794,20 +794,26 @@ async function saveRecord() {
     const recordId = document.getElementById('editRecordId').value;
     if (!recordId) return;
 
-    const basePrice = parseFloat(document.getElementById('editBasePrice').value);
-    const thicknessAdjustment = parseFloat(document.getElementById('editThicknessAdjustment').value);
-    const widthAdjustment = parseFloat(document.getElementById('editWidthAdjustment').value);
-    const zincAdjustment = parseFloat(document.getElementById('editZincAdjustment').value);
-    const processingFee = parseFloat(document.getElementById('editProcessingFee').value);
-    const otherAdjustment = parseFloat(document.getElementById('editOtherAdjustment').value);
+    const basePrice = parseDecimalInput(document.getElementById('editBasePrice').value, 4);
+    const thicknessAdjustment = parseDecimalInput(
+        document.getElementById('editThicknessAdjustment').value, 4, { allowNegative: true },
+    );
+    const widthAdjustment = parseDecimalInput(
+        document.getElementById('editWidthAdjustment').value, 4, { allowNegative: true },
+    );
+    const zincAdjustment = parseDecimalInput(
+        document.getElementById('editZincAdjustment').value, 4, { allowNegative: true },
+    );
+    const processingFee = parseDecimalInput(document.getElementById('editProcessingFee').value, 4);
+    const otherAdjustment = parseDecimalInput(
+        document.getElementById('editOtherAdjustment').value, 4, { allowNegative: true },
+    );
     const spec = document.getElementById('editSpec').value.trim() || null;
     const remark = document.getElementById('editRemark').value.trim() || null;
 
     if (
-        Number.isNaN(basePrice) ||
-        Number.isNaN(thicknessAdjustment) || Number.isNaN(widthAdjustment) ||
-        Number.isNaN(zincAdjustment) || Number.isNaN(processingFee) ||
-        Number.isNaN(otherAdjustment)
+        basePrice == null || thicknessAdjustment == null || widthAdjustment == null
+        || zincAdjustment == null || processingFee == null || otherAdjustment == null
     ) {
         showToast('请填写所有必填数值字段', 'warning');
         return;
@@ -949,10 +955,10 @@ function fillAdjustmentViewField(id, value) {
         'text-[#C62828]',
         'text-[#444444]'
     );
-    const numeric = Number(value);
-    if (value === null || value === undefined || Number.isNaN(numeric) || numeric === 0) {
+    const cmp = compareDecimalStrings(value, '0', 4);
+    if (value === null || value === undefined || value === '' || cmp == null || cmp === 0) {
         element.classList.add('text-[#444444]');
-    } else if (numeric > 0) {
+    } else if (cmp > 0) {
         element.classList.add('text-[#E0E0E0]');
     } else {
         element.classList.add('text-[#C62828]');
@@ -960,41 +966,32 @@ function fillAdjustmentViewField(id, value) {
 }
 
 function formatDecimal(value, digits = 2) {
-    const numeric = Number(value);
-    if (value === null || value === undefined || Number.isNaN(numeric)) return '-';
-    return numeric.toLocaleString('zh-CN', {
-        minimumFractionDigits: digits,
-        maximumFractionDigits: digits,
-    });
+    const fixed = formatDecimalFixed(value, digits, { allowNegative: true });
+    return fixed == null ? '-' : withThousandsSep(fixed);
 }
 
-/** 加工费：中0 时显示-- */
+/** 加工费：为 0 时显示 -- */
 function formatDecimalOrDash(value, digits = 2) {
-    const numeric = Number(value);
-    if (value === null || value === undefined || Number.isNaN(numeric) || numeric === 0) {
+    const fixed = formatDecimalFixed(value, digits, { allowNegative: true });
+    if (fixed == null || compareDecimalStrings(fixed, '0', digits) === 0) {
         return '--';
     }
-    return formatDecimal(numeric, digits);
+    return withThousandsSep(fixed);
 }
 
-/** 厚度/宽度加价：显开+/- 号；0 →-- */
+/** 厚度/宽度加价：显示 +/- 号；0 → -- */
 function formatAdjustmentSigned(value, digits = 2) {
-    const numeric = Number(value);
-    if (value === null || value === undefined || Number.isNaN(numeric) || numeric === 0) {
+    const fixed = formatDecimalFixed(value, digits, { allowNegative: true });
+    if (fixed == null || compareDecimalStrings(fixed, '0', digits) === 0) {
         return '--';
     }
-    const absText = Math.abs(numeric).toLocaleString('zh-CN', {
-        minimumFractionDigits: digits,
-        maximumFractionDigits: digits,
-    });
-    return numeric > 0 ? `+${absText}` : `-${absText}`;
+    const absText = withThousandsSep(fixed.startsWith('-') ? fixed.slice(1) : fixed);
+    return fixed.startsWith('-') ? `-${absText}` : `+${absText}`;
 }
 
-/** 宽度：整数、无千分作*/
+/** 宽度：整数、无千分位 */
 function formatWidthPlain(value) {
-    const numeric = Number(value);
-    if (value === null || value === undefined || Number.isNaN(numeric)) return '-';
-    return String(Math.round(numeric));
+    return formatDecimalFixed(value, 0) ?? '-';
 }
 
 function formatDateTime(value) {

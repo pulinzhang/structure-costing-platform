@@ -3,6 +3,7 @@
 """
 
 import logging
+from decimal import Decimal
 from typing import Any, Dict, List, Optional, Tuple
 
 from sqlalchemy import case, func, or_
@@ -302,8 +303,8 @@ class StampingProcessFeeRepository:
 
         return {
             "total_count": int(row.total_count or 0),
-            "total_fee": float(row.total_fee or 0),
-            "avg_fee": float(avg_value) if avg_value is not None else None,
+            "total_fee": Decimal(str(row.total_fee or 0)),
+            "avg_fee": Decimal(str(avg_value)) if avg_value is not None else None,
             "zero_count": int(row.zero_count or 0),
             "pending_count": int(row.pending_count or 0),
             "approved_count": int(row.approved_count or 0),

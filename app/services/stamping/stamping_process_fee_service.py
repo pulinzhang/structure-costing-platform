@@ -7,7 +7,6 @@
 
 from __future__ import annotations
 
-from decimal import Decimal, ROUND_HALF_UP
 from typing import Any, Optional
 
 from sqlalchemy.orm import Session
@@ -38,7 +37,7 @@ from app.schemas.vo.stamping_process_fee_vo import (
     StampingProcessFeeVO,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.services.stamping.process_fee.fee_math import FEE_QUANTIZE, resolve_final_fee
+from app.services.stamping.process_fee.fee_math import resolve_final_fee
 from app.services.stamping.process_fee.scope import require_scope
 
 
@@ -62,12 +61,7 @@ class StampingProcessFeeService:
         if record.audit_status == AUDIT_APPROVED:
             raise BusinessException("已审核通过，请先反审核后再调整")
 
-        manual_price = None
-        if dto.manual_unit_price is not None:
-            manual_price = Decimal(str(dto.manual_unit_price)).quantize(
-                FEE_QUANTIZE, rounding=ROUND_HALF_UP
-            )
-
+        manual_price = dto.manual_unit_price
         final_fee = resolve_final_fee(record.processing_fee, manual_price)
         remark = (dto.remark or "").strip() or None
         updated = self.fee_repo.update_fields(

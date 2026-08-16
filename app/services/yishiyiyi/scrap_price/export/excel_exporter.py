@@ -22,6 +22,7 @@ from openpyxl.comments import Comment
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 
+from app.common.money import Q2, excel_money_cell, parse_decimal
 from app.common.scrap_price_locations import SCRAP_PRICE_LOCATIONS
 from app.common.timezone import now
 
@@ -51,21 +52,19 @@ _THREE_ROW_COMMENT = (
 )
 
 
-def _to_number(value: Any) -> float | None:
+def _to_decimal(value: Any) -> Decimal | None:
     if value is None:
         return None
-    if isinstance(value, Decimal):
-        return float(value)
     try:
-        return float(value)
+        return parse_decimal(value)
     except (TypeError, ValueError):
         return None
 
 
-def _set_price(cell: Any, value: float | int | None) -> None:
+def _set_price(cell: Any, value: Any) -> None:
     if value is None:
         return
-    cell.value = float(value)
+    cell.value = excel_money_cell(value, Q2)
     cell.number_format = _PRICE_FORMAT
 
 
@@ -182,7 +181,8 @@ class StampingScrapPriceExporter:
         for location in SCRAP_PRICE_LOCATIONS:
             month_map = by_location.get(location, {})
             has_deduction = any(
-                (_to_number(r.deduction_fee) or 0) > 0 for r in month_map.values()
+                (_to_decimal(r.deduction_fee) or Decimal("0")) > 0
+                for r in month_map.values()
             )
             if has_deduction:
                 row = self._write_deduction_location(ws, row, location, month_map)
@@ -207,7 +207,7 @@ class StampingScrapPriceExporter:
             cell.font = _DATA_FONT
             if record is None:
                 continue
-            market = _to_number(record.market_price)
+            market = _to_decimal(record.market_price)
             if market is not None:
                 _set_price(cell, market)
         return row + 1
@@ -258,11 +258,11 @@ class StampingScrapPriceExporter:
             if record is None:
                 continue
 
-            market = _to_number(record.market_price)
+            market = _to_decimal(record.market_price)
             if market is None or market == 0:
                 continue
 
-            deduction = _to_number(record.deduction_fee) or 0.0
+            deduction = _to_decimal(record.deduction_fee) or Decimal("0")
             _set_price(market_cell, market)
             if deduction != 0:
                 _set_price(deduction_cell, deduction)

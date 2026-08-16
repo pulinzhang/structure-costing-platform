@@ -4,15 +4,11 @@
 
 from datetime import datetime
 from decimal import Decimal
-from typing import Union
 
 from pydantic import BaseModel, Field, field_serializer
 
+from app.common.money import Q2, optional_format_money
 from app.common.scrap_price_locations import SCRAP_PRICE_LOCATIONS
-
-
-def _decimal_to_float(value: Union[Decimal, float, None]) -> float | None:
-    return float(value) if isinstance(value, Decimal) else value
 
 
 class StampingScrapPriceMonthRowVO(BaseModel):
@@ -20,9 +16,9 @@ class StampingScrapPriceMonthRowVO(BaseModel):
 
     location: str
     id: int | None = None
-    market_price: float | None = None
-    deduction_fee: float | None = None
-    net_price: float | None = None
+    market_price: Decimal | None = None
+    deduction_fee: Decimal | None = None
+    net_price: Decimal | None = None
     remark: str | None = None
     created_by: str | None = None
     updated_by: str | None = None
@@ -30,8 +26,8 @@ class StampingScrapPriceMonthRowVO(BaseModel):
     updated_at: datetime | None = None
 
     @field_serializer("market_price", "deduction_fee", "net_price")
-    def serialize_price(self, value: Union[Decimal, float, None]) -> float | None:
-        return _decimal_to_float(value)
+    def serialize_price(self, value: Decimal | None) -> str | None:
+        return optional_format_money(value, Q2, 2)
 
     @field_serializer("created_at", "updated_at")
     def serialize_datetime(self, value: datetime | None) -> str | None:

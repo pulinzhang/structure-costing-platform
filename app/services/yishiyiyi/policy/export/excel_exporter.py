@@ -4,12 +4,13 @@
 """
 
 from io import BytesIO
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from typing import Any, Optional
 
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 
+from app.common.money import Q2, format_money
 from app.repositories.yishiyiyi.policy.dto import ExportRow
 
 
@@ -51,19 +52,15 @@ COLUMN_WIDTHS = [10, 8, 8, 12, 12, 12, 10, 15, 10, 10, 15, 18, 18, 14, 8, 8, 30,
 # 格式化辅助函数
 # =============================================================================
 
-def format_decimal(value: Any, digits: Any =2) -> str:
+def format_decimal(value: Any, digits: Any = 2) -> str:
     if value is None:
         return ""
-    if isinstance(value, Decimal):
-        return f"{float(value):.{digits}f}"
-    if isinstance(value, str):
-        try:
-            return f"{float(value):.{digits}f}"
-        except ValueError:
-            return value
-    if isinstance(value, (int, float)):
-        return f"{value:.{digits}f}"
-    return str(value)
+    places = int(digits) if digits is not None else 2
+    quant = Q2 if places == 2 else Decimal(10) ** -places
+    try:
+        return format_money(value, quant, places, allow_negative=True)
+    except (InvalidOperation, ValueError, TypeError):
+        return value if isinstance(value, str) else str(value)
 
 
 def format_interval(
@@ -91,14 +88,7 @@ def format_interval(
     def fmt(v: Any) -> Any:
         if v is None:
             return ""
-        if isinstance(v, Decimal):
-            v = float(v)
-        elif isinstance(v, str):
-            try:
-                v = float(v)
-            except ValueError:
-                return v
-        return f"{v:.{decimals}f}"
+        return format_decimal(v, decimals)
 
     def min_symbol(op: Optional[str]) -> str:
         if op == ">=":

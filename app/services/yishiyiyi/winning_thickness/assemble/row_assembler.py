@@ -190,10 +190,10 @@ class WinningThicknessRowAssembler:
         processing_fee = Decimal(str(base.processing_fee or 0))
         final_price = base_price + adjustment + processing_fee
         return WinningThicknessRowVO(
-            base_price=float(base_price),
-            thickness_adjustment=float(adjustment),
-            processing_fee=float(processing_fee),
-            final_price=float(final_price),
+            base_price=base_price,
+            thickness_adjustment=adjustment,
+            processing_fee=processing_fee,
+            final_price=final_price,
             category_name=base.category_name or "",
             steel_mill=base.steel_mill or "",
             thickness_range=thickness_range,
@@ -202,7 +202,7 @@ class WinningThicknessRowAssembler:
             month=int(base.month),
             location=base.location or "",
             spec=base.spec,
-            base_thickness=float(base.thick) if base.thick is not None else None,
+            base_thickness=base.thick if base.thick is not None else None,
             base_price_id=base.id,
             base_excel_filename=base.excel_filename,
             base_sheet_name=base.sheet_name,

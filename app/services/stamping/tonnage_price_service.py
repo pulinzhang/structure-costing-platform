@@ -15,6 +15,7 @@ from app.schemas.dto.stamping_tonnage_price_dto import (
     StampingTonnagePriceCreate,
     StampingTonnagePriceUpdate,
     StampingTonnagePriceQuery,
+    quantize_price_per_stroke,
 )
 from app.schemas.vo.user_vo import UserVO
 
@@ -83,6 +84,9 @@ class StampingTonnagePriceService:
         """创建冲次单价记录，返回 (记录, 错误信息)"""
         try:
             payload = {**data.model_dump(), **audit_create(current_user)}
+            payload["price_per_stroke"] = quantize_price_per_stroke(
+                payload["price_per_stroke"]
+            )
             record = self.repository.create(db, payload)
             return StampingTonnagePriceResponse.model_validate(record), None
         except IntegrityError:
@@ -149,6 +153,10 @@ class StampingTonnagePriceService:
         """更新冲次单价记录，返回 (记录, 错误信息)"""
         try:
             payload = {**data.model_dump(), **audit_update(current_user)}
+            if "price_per_stroke" in payload:
+                payload["price_per_stroke"] = quantize_price_per_stroke(
+                    payload["price_per_stroke"]
+                )
             record = self.repository.update(db, id, payload)
             if not record:
                 return None, "记录不存在"
@@ -223,7 +231,7 @@ class StampingTonnagePriceService:
                     "location": location,
                     "year": target_year,
                     "tonnage": source.tonnage,
-                    "price_per_stroke": source.price_per_stroke,
+                    "price_per_stroke": quantize_price_per_stroke(source.price_per_stroke),
                     **audit,
                 })
                 created += 1

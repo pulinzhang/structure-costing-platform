@@ -2,7 +2,12 @@
 冲压加工费 DTO - 请求参数
 """
 
-from pydantic import BaseModel, Field
+from typing import Any
+
+from decimal import Decimal
+from pydantic import BaseModel, Field, field_validator
+
+from app.common.money import Q3, optional_quantize_money
 
 
 class StampingProcessFeeScopeDTO(BaseModel):
@@ -41,12 +46,17 @@ class StampingProcessFeeQuery(BaseModel):
 class StampingProcessFeeUpdateDTO(BaseModel):
     """手工调整单价与备注"""
 
-    manual_unit_price: float | None = Field(
+    manual_unit_price: Decimal | None = Field(
         None, ge=0, description="手工调整单价(元)；传 null 表示清空，回退到系统计算值"
     )
     remark: str | None = Field(
         None, max_length=1000, description="备注（调整理由/原因）"
     )
+
+    @field_validator("manual_unit_price", mode="before")
+    @classmethod
+    def _coerce_manual_unit_price(cls, value: Any) -> Decimal | None:
+        return optional_quantize_money(value, Q3)
 
 
 class StampingProcessFeeDeleteDTO(StampingProcessFeeScopeDTO):

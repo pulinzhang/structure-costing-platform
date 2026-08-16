@@ -14,25 +14,26 @@ from sqlalchemy.orm import Session
 from app.common.audit import audit_create, audit_update
 from app.parsers.bom.welding_unit_price_parser import parse_welding_unit_price_excel
 from app.repositories.bom.welding_unit_price_repository import BomWeldingUnitPriceRepository
+from app.schemas.dto.bom_welding_unit_price_dto import quantize_unit_price
 from app.schemas.vo.bom_welding_unit_price_vo import BomWeldingUnitPriceImportResultVO
 from app.schemas.vo.user_vo import UserVO
 
 logger = logging.getLogger("service.bom_welding_unit_price_import")
 
-TEMPLATE_SAMPLE_ROWS = [
-    ("焊点", "个", 0.0999, ""),
-    ("植/螺柱/凸焊", "个", 0.1053, ""),
-    ("铆接", "个", 0.1053, ""),
-    ("CO2焊缝", "CM", 0.07, ""),
-    ("折边/点焊胶", "MM", 0.0009, ""),
-    ("电镀", "平方", 12, ""),
-    ("电泳（盐雾试验要求≤244H）", "平方", 12, ""),
-    ("电泳（盐雾试验要求244H-720H）", "平方", 15, ""),
-    ("电泳（盐雾试验要求＞720H）", "平方", 18, ""),
-    ("压铆", "个", 0.18, ""),
-    ("打铆钉", "个", 0.45, ""),
-    ("二维码", "个", 0.18, ""),
-    ("套袋", "个", 0.09, ""),
+TEMPLATE_SAMPLE_ROWS: list[tuple[str, str, Decimal, str]] = [
+    ("焊点", "个", Decimal("0.0999"), ""),
+    ("植/螺柱/凸焊", "个", Decimal("0.1053"), ""),
+    ("铆接", "个", Decimal("0.1053"), ""),
+    ("CO2焊缝", "CM", Decimal("0.0700"), ""),
+    ("折边/点焊胶", "MM", Decimal("0.0009"), ""),
+    ("电镀", "平方", Decimal("12.0000"), ""),
+    ("电泳（盐雾试验要求≤244H）", "平方", Decimal("12.0000"), ""),
+    ("电泳（盐雾试验要求244H-720H）", "平方", Decimal("15.0000"), ""),
+    ("电泳（盐雾试验要求＞720H）", "平方", Decimal("18.0000"), ""),
+    ("压铆", "个", Decimal("0.1800"), ""),
+    ("打铆钉", "个", Decimal("0.4500"), ""),
+    ("二维码", "个", Decimal("0.1800"), ""),
+    ("套袋", "个", Decimal("0.0900"), ""),
 ]
 
 
@@ -70,7 +71,7 @@ class BomWeldingUnitPriceImportService:
         for row_idx, (name, unit, unit_price, remark) in enumerate(
             TEMPLATE_SAMPLE_ROWS, start=2
         ):
-            values: list[str | float] = [name, unit, unit_price, remark]
+            values: list[str | Decimal] = [name, unit, unit_price, remark]
             for col, value in enumerate(values, start=1):
                 cell = sheet.cell(row=row_idx, column=col, value=value)
                 cell.font = data_font
@@ -80,7 +81,7 @@ class BomWeldingUnitPriceImportService:
                     vertical="center",
                 )
                 if col == 3:
-                    cell.number_format = "0.####"
+                    cell.number_format = "0.0000"
 
         sheet.column_dimensions["A"].width = 36
         sheet.column_dimensions["B"].width = 10
@@ -127,7 +128,7 @@ class BomWeldingUnitPriceImportService:
 
         try:
             for row in parse_result.rows:
-                unit_price = Decimal(str(row.unit_price))
+                unit_price = quantize_unit_price(row.unit_price)
                 existing = self.repository.get_by_location_year_item(
                     db, location, year, row.item_name
                 )

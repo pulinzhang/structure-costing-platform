@@ -6,21 +6,15 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Any, Optional, Union
 
-from pydantic import BaseModel, Field, field_serializer
+from pydantic import BaseModel, Field, field_serializer, field_validator
 
+from app.common.money import Q2, Q4, format_money, optional_format_money, quantize_money
 
 
 def datetime_to_str(value: Union[datetime, str, None]) -> Optional[str]:
     """datetime 类型转字符串序列化器"""
     if isinstance(value, datetime):
         return value.strftime("%Y-%m-%d %H:%M:%S")
-    return value
-
-
-def decimal_to_float(value: Union[Decimal, float, None]) -> Optional[float]:
-    """Decimal 或 float 类型转 float"""
-    if isinstance(value, Decimal):
-        return float(value)
     return value
 
 
@@ -40,10 +34,10 @@ class StampingPartResponse(BaseModel):
     part_number: str
     part_name: Optional[str] = None
     material: Optional[str] = None
-    thickness: Optional[float] = None
-    part_weight: Optional[float] = None
-    sheet_length: Optional[float] = None
-    sheet_width: Optional[float] = None
+    thickness: Optional[Decimal] = None
+    part_weight: Optional[Decimal] = None
+    sheet_length: Optional[Decimal] = None
+    sheet_width: Optional[Decimal] = None
     parts_per_sheet: Optional[int] = Field(
         default=None,
         description=(
@@ -79,9 +73,13 @@ class StampingPartResponse(BaseModel):
     def serialize_datetime(self, value: Any) -> Any:
         return datetime_to_str(value)
 
-    @field_serializer("thickness", "part_weight", "sheet_length", "sheet_width")
-    def serialize_decimal(self, value: Any) -> Any:
-        return decimal_to_float(value)
+    @field_serializer("thickness", "part_weight")
+    def serialize_physical(self, value: Decimal | None) -> str | None:
+        return optional_format_money(value, Q4, 4)
+
+    @field_serializer("sheet_length", "sheet_width")
+    def serialize_sheet_dim(self, value: Decimal | None) -> str | None:
+        return optional_format_money(value, Q2, 2)
 
 
 class StampingPartListResponse(BaseModel):
@@ -95,8 +93,8 @@ class StampingPartListResponse(BaseModel):
     part_number: str
     part_name: Optional[str] = None
     material: Optional[str] = None
-    thickness: Optional[float] = None
-    part_weight: Optional[float] = None
+    thickness: Optional[Decimal] = None
+    part_weight: Optional[Decimal] = None
     stamping_supplier: str
     die_type: Optional[str] = None
     process_method: Optional[str] = None
@@ -109,8 +107,8 @@ class StampingPartListResponse(BaseModel):
     process_count: int = Field(default=0, description="工序数量")
 
     @field_serializer("thickness", "part_weight")
-    def serialize_decimal(self, value: Any) -> Any:
-        return decimal_to_float(value)
+    def serialize_physical(self, value: Decimal | None) -> str | None:
+        return optional_format_money(value, Q4, 4)
 
 
 class StampingProcessResponse(BaseModel):
@@ -125,10 +123,14 @@ class StampingProcessResponse(BaseModel):
     process_code: Optional[str] = None
     die_sets: int
     tonnage: Optional[int] = None
-    cost_ratio: float
+    cost_ratio: Decimal
     remark: Optional[str] = None
     created_by: Optional[str] = None
     updated_by: Optional[str] = None
+
+    @field_serializer("cost_ratio")
+    def serialize_cost_ratio(self, value: Decimal) -> str:
+        return format_money(value, Q2, 2)
 
 
 class StampingPartWithProcessesResponse(BaseModel):
@@ -145,10 +147,10 @@ class StampingPartWithProcessesResponse(BaseModel):
     part_number: str
     part_name: Optional[str] = None
     material: Optional[str] = None
-    thickness: Optional[float] = None
-    part_weight: Optional[float] = None
-    sheet_length: Optional[float] = None
-    sheet_width: Optional[float] = None
+    thickness: Optional[Decimal] = None
+    part_weight: Optional[Decimal] = None
+    sheet_length: Optional[Decimal] = None
+    sheet_width: Optional[Decimal] = None
     parts_per_sheet: Optional[int] = Field(
         default=None,
         description=(
@@ -185,9 +187,13 @@ class StampingPartWithProcessesResponse(BaseModel):
     def serialize_datetime(self, value: Any) -> Any:
         return datetime_to_str(value)
 
-    @field_serializer("thickness", "part_weight", "sheet_length", "sheet_width")
-    def serialize_decimal(self, value: Any) -> Any:
-        return decimal_to_float(value)
+    @field_serializer("thickness", "part_weight")
+    def serialize_physical(self, value: Decimal | None) -> str | None:
+        return optional_format_money(value, Q4, 4)
+
+    @field_serializer("sheet_length", "sheet_width")
+    def serialize_sheet_dim(self, value: Decimal | None) -> str | None:
+        return optional_format_money(value, Q2, 2)
 
 
 class StampingPartQuery(BaseModel):
@@ -205,15 +211,33 @@ class StampingPartQuery(BaseModel):
 
 class StampingProcessUpdate(BaseModel):
     """工序更新请求"""
-    cost_ratio: Optional[float] = Field(None, ge=0, le=10, description="成本系数（0~10，即0%~1000%）")
+    cost_ratio: Optional[Decimal] = Field(
+        None, ge=0, le=10, description="成本系数（0~10，即0%~1000%）"
+    )
     remark: Optional[str] = None
+
+    @field_validator("cost_ratio", mode="before")
+    @classmethod
+    def _coerce_cost_ratio(cls, value: Any) -> Decimal | None:
+        if value is None or (isinstance(value, str) and not value.strip()):
+            return None
+        return quantize_money(value, Q2)
 
 
 class StampingProcessItemUpdate(BaseModel):
     """单个工序更新项"""
     id: int
-    cost_ratio: Optional[float] = Field(None, ge=0, le=10, description="成本系数（0~10，即0%~1000%）")
+    cost_ratio: Optional[Decimal] = Field(
+        None, ge=0, le=10, description="成本系数（0~10，即0%~1000%）"
+    )
     remark: Optional[str] = None
+
+    @field_validator("cost_ratio", mode="before")
+    @classmethod
+    def _coerce_cost_ratio(cls, value: Any) -> Decimal | None:
+        if value is None or (isinstance(value, str) and not value.strip()):
+            return None
+        return quantize_money(value, Q2)
 
 
 class StampingPartListSummaryVO(BaseModel):
@@ -255,8 +279,16 @@ class StampingMaterialResponse(BaseModel):
     """材料信息 VO（去重后的 material + thickness）"""
 
     material: Optional[str] = None
-    thickness: Optional[float] = None
-    sheet_width: Optional[float] = None
+    thickness: Optional[Decimal] = None
+    sheet_width: Optional[Decimal] = None
+
+    @field_serializer("thickness")
+    def serialize_thickness(self, value: Decimal | None) -> str | None:
+        return optional_format_money(value, Q4, 4)
+
+    @field_serializer("sheet_width")
+    def serialize_sheet_width(self, value: Decimal | None) -> str | None:
+        return optional_format_money(value, Q2, 2)
 
 
 class StampingMaterialQuery(BaseModel):
@@ -282,4 +314,3 @@ class StampingPartBatchDeleteResultVO(BaseModel):
     vehicle_model: str
     version: str | None = None
     deleted_count: int = 0
-

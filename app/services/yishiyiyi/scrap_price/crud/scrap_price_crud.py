@@ -40,10 +40,10 @@ class StampingScrapPriceCrudService:
 
     @staticmethod
     def _compute_net_price(
-        market_price: Decimal | float,
-        deduction_fee: Decimal | float,
+        market_price: Decimal,
+        deduction_fee: Decimal,
     ) -> Decimal:
-        return Decimal(str(market_price)) - Decimal(str(deduction_fee))
+        return market_price - deduction_fee
 
     def _build_month_sheet(
         self,
