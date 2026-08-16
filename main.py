@@ -8,6 +8,7 @@ FastAPI 应用入口
 """
 
 from contextlib import asynccontextmanager
+import socket
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
@@ -22,6 +23,30 @@ from app.utils.logging_config import LoggerConfig, log_request, log_response, ge
 # 这解决了模块导入顺序导致的日志器配置问题
 logger = get_logger("main")
 LoggerConfig.configure(force=True)
+
+
+def _local_ipv4_addresses() -> list[str]:
+    """本机非回环 IPv4，供启动日志打印局域网访问地址。"""
+    addresses: list[str] = []
+    try:
+        hostname = socket.gethostname()
+        for info in socket.getaddrinfo(hostname, None, socket.AF_INET, socket.SOCK_STREAM):
+            ip = info[4][0]
+            if ip.startswith("127.") or ip in addresses:
+                continue
+            addresses.append(ip)
+    except OSError:
+        pass
+    if not addresses:
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+                sock.connect(("8.8.8.8", 80))
+                ip = sock.getsockname()[0]
+                if not ip.startswith("127."):
+                    addresses.append(ip)
+        except OSError:
+            pass
+    return addresses
 
 
 @asynccontextmanager
@@ -56,7 +81,12 @@ async def lifespan(app: FastAPI):
     logger.info(f"环境: {settings.ENV}")
     logger.info("=" * 50)
     logger.info("API 服务启动完成")
-    logger.info(f"API 访问地址: http://{settings.HOST}:{settings.PORT}")
+    # 监听仍是 settings.HOST（常为 0.0.0.0）；日志打印可点开的本机与局域网地址
+    display_host = "127.0.0.1" if settings.HOST in {"0.0.0.0", "::"} else settings.HOST
+    logger.info(f"本机访问: http://{display_host}:{settings.PORT}")
+    if settings.HOST in {"0.0.0.0", "::"}:
+        for lan_ip in _local_ipv4_addresses():
+            logger.info(f"局域网访问: http://{lan_ip}:{settings.PORT}")
     logger.info("前端静态页面: 使用 Live Server 打开 static/index.html")
 
     yield  # 详见 docs/fastapi-guide.md 第8节

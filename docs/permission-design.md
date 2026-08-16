@@ -20,7 +20,7 @@
 | # | 层 | 动作 | 文件 / 位置 |
 |---|---|---|---|
 | 1 | 目录 | 在树中增加 `menu:*` / `op:*`（及分组） | `app/common/permissions/catalog.json` |
-| 2 | 常量 | 重新生成 `Perm.*` | `python -X utf8 scripts/generate_perm_codes.py` → `codes.py` |
+| 2 | 常量 | 重新生成 `Perm.*` | `python -X utf8 -m scripts.generate_perm_codes` → `codes.py` |
 | 3 | 后端路由 | 每个业务端点挂权限依赖 | `Depends(require_perm(Perm.XXX))` 等 |
 | 4 | 后端写操作 | Service 收 `current_user=`；**默认不再二次 `require_permission`**（见 §0.2 例外） | 对应 `*_service.py` |
 | 5 | 前端菜单 | 侧栏增加 `data-page="{page-key}"`；page-key 默认对应 `menu:{page-key}`（系统设置页例外见 §4.1） | `static/index.html` |
@@ -92,7 +92,7 @@ if (!can('op:my-page:create')) { /* 隐藏或禁用 */ }
 
 ### 0.5 自检
 
-- [ ] `catalog.json` 有新 code；跑过 `generate_perm_codes.py`；启动无「权限码不同步」
+- [ ] `catalog.json` 有新 code；跑过 `python -m scripts.generate_perm_codes`；启动无「权限码不同步」
 - [ ] 每个新/改 API 均有 `require_perm(Perm.…)`（或 any / admin）
 - [ ] 每个新按钮 / 菜单有对应 `can` / `data-page`
 - [ ] 非授权用户：侧栏无入口、直链被拦、按钮不可见、curl API 返回 403
@@ -208,7 +208,7 @@ app/common/permissions/
   codes.py        # Perm.* 常量（路由/Service 禁止散落字面量）
   checks.py       # require_admin / require_permission / has_permission
 app/deps/permissions.py   # require_perm(Perm.XXX) / require_any_perm / require_admin_user
-scripts/generate_perm_codes.py  # 从 catalog.json 重新生成 codes.py
+scripts/generate_perm_codes.py  # python -m scripts.generate_perm_codes
 ```
 
 - 进程启动（或首次访问）时读入 JSON 并缓存；热改文件需重启进程才生效（可接受，跟发版走）。
@@ -217,7 +217,7 @@ scripts/generate_perm_codes.py  # 从 catalog.json 重新生成 codes.py
 - `GET /api/settings/permissions/tree` 返回该树（可附带 `mandatory` 标记），前端授权抽屉不另维护一份树。
 - 保存用户权限时：提交的 code 必须 ∈ JSON 派生的全量集合；非法 code 拒绝或丢弃。
 - **不做**权限节点业务表；将来若真要在线改菜单，再把 JSON 当种子导入表即可。
-- 新增权限：先改 `catalog.json`，再跑 `python -X utf8 scripts/generate_perm_codes.py`，路由引用新 `Perm.*`。
+- 新增权限：先改 `catalog.json`，再跑 `python -X utf8 -m scripts.generate_perm_codes`，路由引用新 `Perm.*`。
 
 **JSON 结构约定：**
 
@@ -624,7 +624,7 @@ app/common/permissions/
   codes.py                  # Perm.*（禁止路由字面量）
   checks.py                 # has_permission / require_*
 app/deps/permissions.py     # require_perm / require_any_perm / require_admin_user
-scripts/generate_perm_codes.py
+scripts/generate_perm_codes.py  # -m scripts.generate_perm_codes
 
 app/models/user.py          # is_admin
 app/models/user_permission.py
