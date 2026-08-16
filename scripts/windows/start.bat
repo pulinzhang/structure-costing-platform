@@ -2,7 +2,7 @@
 chcp 65001 >nul
 setlocal EnableExtensions EnableDelayedExpansion
 
-REM 生产启动：走 run_prod.py（先 Schema 升级，失败则不启动；再多 Worker）
+REM 生产启动：走 run_prod.py（多 Worker，无 reload）
 REM workers / port 由 run_prod.py 读环境变量与 .env
 cd /d "%~dp0..\.."
 
@@ -40,7 +40,7 @@ set "PORT=!PORT: =!"
 echo.
 echo ============================================================
 echo   生产启动  APP_ENV=%APP_ENV%  workers=!UVICORN_WORKERS!  port=!PORT!
-echo   入口: run_prod.py （升级失败则不启动）
+echo   入口: run_prod.py
 echo   登录页: http://127.0.0.1:!PORT!/login
 echo   主应用: http://127.0.0.1:!PORT!/app
 echo   按 Ctrl+C 结束

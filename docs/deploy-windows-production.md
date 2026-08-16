@@ -132,29 +132,22 @@ scripts\windows\start.bat
 scripts\windows\stop.bat
 ```
 
-`start.bat` 调用仓库根目录的 **`run_prod.py`**：先做数据库 Schema 升级（失败则**不启动**），再按 `.env` 的 `UVICORN_WORKERS` / `PORT` 拉起多 Worker（无 `--reload`）。关掉黑窗口即停服。
+`start.bat` 调用仓库根目录的 **`run_prod.py`**：按 `.env` 的 `UVICORN_WORKERS` / `PORT` 拉起多 Worker（无 `--reload`）。关掉黑窗口即停服。
 
-### 7.2 生产入口与 Schema 升级（设计说明）
+表结构由应用启动时 `create_all` 创建（空库）；**不做历史 Schema 升库**。模型变更后请删除 `data\` 下旧库文件再启动，或使用全新目录。
 
-本仓库**没有 Alembic**。表结构对齐走自研脚本（补列 + 个别破坏性重建），统一入口：
+### 7.2 生产入口说明
 
 ```text
 python run_prod.py
-  └─ 1) python -m app.bootstrap.schema_upgrade   # 失败 → 非零退出，不启服
-  └─ 2) compileall app（可选，失败仅警告）
-  └─ 3) uvicorn main:app --workers N
+  └─ 1) compileall app（可选，失败仅警告）
+  └─ 2) uvicorn main:app --workers N
 ```
 
-| 点 | 说明 |
-|----|------|
-| 为何先升级再启服 | 多 Worker 时每个进程都会跑 FastAPI `lifespan`；若只在 lifespan 里迁库，易并发 ALTER SQLite |
-| `run_prod` 职责 | **单进程**先升级；升级失败阻断启动（与「先 alembic upgrade 再 uvicorn」同思路，只是实现换成自研） |
-| lifespan 再调一次 | 幂等兜底（开发直接 `uvicorn main:app` 时也需要）；`data\.schema_upgrade.lock` 文件锁串行 |
-| 仅升级不启服 | `python -m app.bootstrap.schema_upgrade` |
-| 跳过升级（慎用） | 环境变量 `SKIP_SCHEMA_UPGRADE=1` |
+教学/开发交付场景：随包发布空库或首次启动建表即可，发行后不维护「旧库 ALTER」路径。
 
 ```text
-# 等价于手工多 worker（不推荐绕过 run_prod，会失去「升级失败不启动」）
+# 亦可直接多 worker（与 run_prod 等价，仅少预编译）
 uvicorn main:app --host 0.0.0.0 --port 8000 --workers 4
 ```
 
@@ -188,7 +181,7 @@ scripts\windows\install-service.bat
 3. 注册服务名：**`StampingCostingPlatform`**
 4. 工作目录 = 仓库根；启动命令：  
    `.venv\Scripts\python.exe run_prod.py`  
-   （内部先 Schema 升级，再 uvicorn；`UVICORN_WORKERS` / `PORT` 写入服务环境，与 `.env` 一致）
+   （`UVICORN_WORKERS` / `PORT` 写入服务环境，与 `.env` 一致）
 5. 环境变量：`APP_ENV=production`、`PYTHONUTF8=1` 等
 6. 标准输出/错误写入 `logs\service-stdout.log`、`logs\service-stderr.log`
 7. 启动类型：自动；异常退出约 5 秒后重启
@@ -225,7 +218,7 @@ scripts\windows\vendor\nssm\win64\nssm.exe
 |----|------|
 | 必须管理员 | 注册/删除服务需要提权 |
 | 先改 `.env` | 服务进程读的是项目根 `.env`；改完后 `net stop` 再 `net start`；改 `UVICORN_WORKERS` 后需重跑 `install-service.bat` |
-| 改代码/依赖后 | 重启服务即可；大版本升级建议先 `stop` 再更新文件（`run_prod` 启动时会再跑 Schema 升级） |
+| 改代码/依赖后 | 重启服务即可；模型变更后建议换新库或清空 `data\` 再启（不做升库） |
 | 与 `start.bat` | 不要同时用窗口版和系统服务占同一端口 |
 | 备份 | `data\`、`uploads\` 仍需自行备份；服务本身不负责备份 |
 

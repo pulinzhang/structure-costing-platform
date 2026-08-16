@@ -1,5 +1,5 @@
 """
-生产启动入口：先 Schema 升级（失败则不启动）→ 可选字节码预编译 → 多 Worker Uvicorn。
+生产启动入口：可选字节码预编译 → 多 Worker Uvicorn。
 
 用法（仓库根目录、已激活 venv）：
   set APP_ENV=production
@@ -8,8 +8,8 @@
 Windows 脚本 ``scripts/windows/start.bat`` / 服务安装亦指向本文件。
 
 说明：
-- 本仓库无 Alembic；升级走 ``app.bootstrap.schema_upgrade``（与 main lifespan 同源）。
-- 多 Worker 前先单进程升级，避免 N 个 worker 同时 ALTER SQLite。
+- 本项目为教学/开发交付；空库由 ``main`` lifespan 中 ``create_all`` 建表，不做 Schema 升库。
+- 结构变更时请删库或换新库文件后重启（见部署文档）。
 """
 
 from __future__ import annotations
@@ -17,14 +17,6 @@ from __future__ import annotations
 import os
 import subprocess
 import sys
-
-
-def run_step(cmd: list[str], description: str) -> None:
-    print(f"[生产前置] {description} ...")
-    result = subprocess.run(cmd)
-    if result.returncode != 0:
-        print(f"\n[失败] {description}，阻断生产服务启动（exit={result.returncode}）\n")
-        sys.exit(result.returncode)
 
 
 def _resolve_workers() -> int:
@@ -67,13 +59,7 @@ if __name__ == "__main__":
     os.environ.setdefault("APP_ENV", "production")
     os.environ.setdefault("PYTHONUTF8", "1")
 
-    # 1. Schema 升级（失败则不启动）
-    run_step(
-        [sys.executable, "-m", "app.bootstrap.schema_upgrade"],
-        "数据库 Schema 自动升级",
-    )
-
-    # 2. 预编译字节码（可选加速冷启动；失败不阻断）
+    # 1. 预编译字节码（可选加速冷启动；失败不阻断）
     compile_result = subprocess.run(
         [sys.executable, "-m", "compileall", "-q", "app"],
     )
@@ -90,7 +76,7 @@ if __name__ == "__main__":
         f"(host={host}, port={port}, workers={workers}, APP_ENV={os.environ.get('APP_ENV')})...\n"
     )
 
-    # 3. 多进程服务（无 --reload）
+    # 2. 多进程服务（无 --reload）
     result = subprocess.run(
         [
             sys.executable,

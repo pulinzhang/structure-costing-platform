@@ -32,10 +32,23 @@ async def lifespan(app: FastAPI):
     from app.utils.logging_config import LoggerConfig
     LoggerConfig.configure(force=True)
 
-    # Schema 升级：与 run_prod.py 同源；多 Worker 下靠文件锁串行，幂等可重复执行
-    from app.bootstrap.schema_upgrade import run_schema_upgrade
+    # 教学/开发交付：空库用 create_all 建表即可，不做历史库 Schema 升级
+    from app.config import ensure_directories
+    from app.database import AuxiliaryDatabaseConfig, DatabaseConfig
 
-    run_schema_upgrade(ensure_admin=True)
+    ensure_directories()
+    from app import models as _orm_models  # noqa: F401
+    DatabaseConfig.create_tables()
+    AuxiliaryDatabaseConfig.create_tables()
+
+    from app.services.settings.users.user_service import UserService
+
+    session_factory = DatabaseConfig.get_session_factory()
+    db = session_factory()
+    try:
+        UserService().ensure_default_admin(db)
+    finally:
+        db.close()
 
     logger.info("=" * 50)
     logger.info(f"{settings.APP_NAME} 正在启动...")

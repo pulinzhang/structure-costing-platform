@@ -4,7 +4,7 @@
 """
 
 from decimal import Decimal
-from typing import Any, Optional, cast
+from typing import Any, Optional
 
 from sqlalchemy import distinct, func
 from sqlalchemy.orm import Query, Session, joinedload
@@ -411,7 +411,7 @@ class SteelPricePolicyRepository:
             grade_value=match_filter.grade_value,
             base_thickness=match_filter.base_thickness,
         )
-        return cast(list[SteelPricePolicy], query.all())
+        return query.all()
 
     # ---- 导出查询（原 get_export_data 相关方法已移至 ExportService）----
 
