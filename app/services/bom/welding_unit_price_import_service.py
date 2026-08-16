@@ -123,6 +123,7 @@ class BomWeldingUnitPriceImportService:
 
         created_count = 0
         updated_count = 0
+        skipped_approved = 0
         create_audit = audit_create(current_user)
         update_audit = audit_update(current_user)
 
@@ -133,6 +134,9 @@ class BomWeldingUnitPriceImportService:
                     db, location, year, row.item_name
                 )
                 if existing:
+                    if existing.audit_status == "approved":
+                        skipped_approved += 1
+                        continue
                     self.repository.update(
                         db,
                         existing.id,
@@ -155,6 +159,7 @@ class BomWeldingUnitPriceImportService:
                             "unit": row.unit,
                             "unit_price": unit_price,
                             "remark": row.remark,
+                            "audit_status": "pending",
                             **create_audit,
                         },
                         commit=False,
@@ -166,19 +171,24 @@ class BomWeldingUnitPriceImportService:
             raise
 
         warnings = list(parse_result.errors)
+        if skipped_approved:
+            warnings.append(f"跳过已审核 {skipped_approved} 条（未覆盖）")
         message = (
             f"导入完成：基地「{location}」{year} 年，"
             f"新增 {created_count} 条，更新 {updated_count} 条"
         )
-        if warnings:
-            message += f"；有 {len(warnings)} 行跳过"
+        if skipped_approved:
+            message += f"，跳过已审核 {skipped_approved} 条"
+        if parse_result.errors:
+            message += f"；有 {len(parse_result.errors)} 行解析跳过"
 
         logger.info(
-            "%s file=%s created=%s updated=%s warnings=%s",
+            "%s file=%s created=%s updated=%s skipped_approved=%s warnings=%s",
             message,
             original_name,
             created_count,
             updated_count,
+            skipped_approved,
             len(warnings),
         )
         return BomWeldingUnitPriceImportResultVO(
@@ -187,7 +197,7 @@ class BomWeldingUnitPriceImportService:
             created_count=created_count,
             updated_count=updated_count,
             total_count=created_count + updated_count,
-            skipped_count=len(warnings),
+            skipped_count=len(parse_result.errors) + skipped_approved,
             warnings=warnings,
             message=message,
         )

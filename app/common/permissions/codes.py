@@ -39,6 +39,8 @@ class Perm:
     STAMPING_TONNAGE_CREATE = "op:stamping-tonnage:create"  # 新增
     STAMPING_TONNAGE_UPDATE = "op:stamping-tonnage:update"  # 编辑
     STAMPING_TONNAGE_DELETE = "op:stamping-tonnage:delete"  # 删除
+    STAMPING_TONNAGE_APPROVE = "op:stamping-tonnage:approve"  # 审核通过
+    STAMPING_TONNAGE_REVERSE = "op:stamping-tonnage:reverse"  # 反审核
     STAMPING_TONNAGE_COPY = "op:stamping-tonnage:copy"  # 复制年度模板
     STAMPING_TONNAGE_EXPORT = "op:stamping-tonnage:export"  # 导出
 
@@ -115,6 +117,8 @@ class Perm:
     BOM_WELDING_UNIT_PRICE_CREATE = "op:bom-welding-unit-price:create"  # 新增
     BOM_WELDING_UNIT_PRICE_UPDATE = "op:bom-welding-unit-price:update"  # 编辑
     BOM_WELDING_UNIT_PRICE_DELETE = "op:bom-welding-unit-price:delete"  # 删除
+    BOM_WELDING_UNIT_PRICE_APPROVE = "op:bom-welding-unit-price:approve"  # 审核通过
+    BOM_WELDING_UNIT_PRICE_REVERSE = "op:bom-welding-unit-price:reverse"  # 反审核
     BOM_WELDING_UNIT_PRICE_COPY = "op:bom-welding-unit-price:copy"  # 复制年度模板
     BOM_WELDING_UNIT_PRICE_EXPORT = "op:bom-welding-unit-price:export"  # 导出
 

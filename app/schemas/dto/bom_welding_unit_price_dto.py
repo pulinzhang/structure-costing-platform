@@ -49,12 +49,29 @@ class BomWeldingUnitPriceQuery(BaseModel):
 
     location: str | None = Field(None, description="采购基地")
     year: int | None = Field(None, description="年份")
+    audit_status: str | None = Field(None, description="审核状态")
     page: int = Field(1, ge=1, description="页码")
     size: int = Field(100, ge=1, le=500, description="每页条数")
 
 
-class BomWeldingUnitPriceBatchDeleteDTO(BaseModel):
-    """按基地 + 年度批量删除"""
+class BomWeldingUnitPriceScopeDTO(BaseModel):
+    """范围必填：基地 + 年度（上传 / 删除 / 审核 / 反审核共用）"""
 
     location: str = Field(..., min_length=1, max_length=50, description="采购基地（必填）")
     year: int = Field(..., ge=2000, le=2100, description="年度（必填）")
+
+
+class BomWeldingUnitPriceBatchDeleteDTO(BomWeldingUnitPriceScopeDTO):
+    """按基地 + 年度批量删除（仅删未审核；已通过跳过）"""
+
+
+class BomWeldingUnitPriceBatchApproveDTO(BomWeldingUnitPriceScopeDTO):
+    """批量审核通过"""
+
+    audit_remark: str | None = Field(None, description="审核意见")
+
+
+class BomWeldingUnitPriceBatchReverseAuditDTO(BomWeldingUnitPriceScopeDTO):
+    """批量反审核"""
+
+    reverse_audit_remark: str = Field(..., min_length=1, description="反审核原因（必填）")

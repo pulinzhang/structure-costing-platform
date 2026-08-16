@@ -1,8 +1,12 @@
 ﻿/**
- * 焊接单价列表 — 模板
+ * Welding Unit Price List Template
+ * 焊接单价列表 — Brabus HUD（与冲次单价列表对齐）
+ * 数据来自上传，无「新增」入口；批量操作范围 = 上传条件（基地 + 年度）
  *
  * 单价一律按十进制字符串处理（不经 Number/parseFloat）。
  */
+
+import { pageSizeSelectHtml } from '../../../../page-size.js?v=2';
 
 /** 格式化为固定 4 位小数字符串；非法值返回 '-'。 */
 export function formatUnitPrice4(value) {
@@ -18,116 +22,229 @@ export function parseUnitPriceInput(raw) {
     return parseDecimalInput(raw, 4);
 }
 
-
-import { pageSizeSelectHtml } from '../../../../page-size.js?v=2';
-
 export function weldingUnitPriceTemplate() {
     return `
         <div class="space-y-2 w-full max-w-full">
-            <div class="bg-[#1e1e1e] border border-[#2c2c2c] overflow-hidden w-full max-w-full"
-                 style="box-shadow: 0 2px 12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.03);">
+            <div class="bg-[#0A0A0C] border border-[#1A1A22] overflow-hidden w-full max-w-full"
+                 style="box-shadow: 0 4px 24px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.02);">
 
-                <div class="flex items-center justify-between px-5 py-3.5 border-b border-[#222222]"
-                     style="background: linear-gradient(90deg, #1c1c1c 0%, #1e1e1e 60%);">
-                    <div class="flex items-center gap-3">
-                        <div class="w-[2px] h-4 bg-[#d32f2f] rounded-[1px] shadow-[0_0_6px_rgba(211,47,47,0.3)]"></div>
-                        <h2 class="text-[12px] font-semibold text-[#c8c8c8] tracking-wide">焊接单价</h2>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <button id="btnBatchDeleteWeldingUnitPrice" class="inline-flex items-center gap-1.5 bg-transparent text-[#888888] border border-[#2c2c2c] px-3 py-1.5 text-[11px] font-medium rounded-sm hover:border-[#c62828] hover:text-[#ef5350] transition-all duration-150">
-                            ${window.svgIcon('trash', 'w-3 h-3')}
-                            批量删除
-                        </button>
-                        <button id="btnExportWeldingUnitPrice" class="inline-flex items-center gap-1.5 bg-transparent text-[#888888] border border-[#2c2c2c] px-3 py-1.5 text-[11px] font-medium rounded-sm hover:border-[#d32f2f] hover:text-[#d32f2f] transition-all duration-150">
-                            ${window.svgIcon('download', 'w-3 h-3')}
-                            导出 Excel
-                        </button>
-                        <button id="btnCopyTemplate" class="inline-flex items-center gap-1.5 bg-transparent text-[#888888] border border-[#2c2c2c] px-3 py-1.5 text-[11px] font-medium rounded-sm hover:border-[#d32f2f] hover:text-[#d32f2f] transition-all duration-150">
-                            ${window.svgIcon('copy', 'w-3 h-3')}
-                            复制模板
-                        </button>
-                        <button id="btnAddWeldingUnitPrice" class="inline-flex items-center gap-1.5 bg-[#d32f2f] text-white px-3 py-1.5 text-[11px] font-semibold rounded-sm hover:bg-[#b71c1c] transition-all duration-150">
-                            ${window.svgIcon('plus', 'w-3 h-3')}
-                            新增费用
-                        </button>
+                <div class="px-5 pt-4 pb-3.5 border-b border-[#14141A]"
+                     style="background: linear-gradient(135deg, #0E0E12 0%, #121218 45%, #0C0C10 100%);">
+                    <div class="flex items-start justify-between gap-4 mb-3">
+                        <div class="grid grid-cols-2 lg:grid-cols-3 gap-3 font-mono flex-1 min-w-0">
+                            <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3 backdrop-blur-sm"
+                                 style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);">
+                                <div class="text-[#555555] text-[10px] tracking-wider">记录条数</div>
+                                <div class="text-[18px] font-bold text-[#FFFFFF] mt-1 tabular-nums">
+                                    <span id="weldingHudTotal">—</span>
+                                    <span class="text-[10px] text-[#555555] ml-1">条</span>
+                                </div>
+                            </div>
+                            <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3 backdrop-blur-sm"
+                                 style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);">
+                                <div class="text-[#555555] text-[10px] tracking-wider">待审</div>
+                                <div class="text-[18px] font-bold text-[#FFFFFF] mt-1 tabular-nums">
+                                    <span id="weldingHudPending">—</span>
+                                    <span class="text-[10px] text-[#555555] ml-1">条</span>
+                                </div>
+                            </div>
+                            <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3 backdrop-blur-sm"
+                                 style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);">
+                                <div class="text-[#555555] text-[10px] tracking-wider">已审</div>
+                                <div class="text-[18px] font-bold text-[#FFFFFF] mt-1 tabular-nums">
+                                    <span id="weldingHudApproved">—</span>
+                                    <span class="text-[10px] text-[#555555] ml-1">条</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+                            <button id="btnBatchApproveWelding" type="button"
+                                    class="inline-flex items-center gap-1.5 bg-transparent text-[#6E6E73] border border-[#2A2A35] px-3 py-1.5 text-[11px] font-medium rounded-md hover:border-[#FF1E27]/50 hover:text-[#FF1E27] hover:bg-[#FF1E27]/10 hover:shadow-[0_0_12px_rgba(255,30,39,0.2)] transition-all duration-200">
+                                ${window.svgIcon('check-circle', 'w-3 h-3')}
+                                批量审核
+                            </button>
+                            <button id="btnBatchReverseWelding" type="button"
+                                    class="inline-flex items-center gap-1.5 bg-transparent text-[#6E6E73] border border-[#2A2A35] px-3 py-1.5 text-[11px] font-medium rounded-md hover:border-[#FF1E27]/50 hover:text-[#FF1E27] hover:bg-[#FF1E27]/10 hover:shadow-[0_0_12px_rgba(255,30,39,0.2)] transition-all duration-200">
+                                ${window.svgIcon('refresh', 'w-3 h-3')}
+                                批量反审核
+                            </button>
+                            <button id="btnBatchDeleteWeldingUnitPrice" type="button"
+                                    class="inline-flex items-center gap-1.5 bg-transparent text-[#6E6E73] border border-[#2A2A35] px-3 py-1.5 text-[11px] font-medium rounded-md hover:border-[#c62828]/60 hover:text-[#ef5350] hover:bg-[#c62828]/15 hover:shadow-[0_0_12px_rgba(198,40,40,0.2)] transition-all duration-200">
+                                ${window.svgIcon('trash', 'w-3 h-3')}
+                                批量删除
+                            </button>
+                            <button id="btnExportWeldingUnitPrice" type="button"
+                                    class="inline-flex items-center gap-1.5 bg-transparent text-[#6E6E73] border border-[#2A2A35] px-3 py-1.5 text-[11px] font-medium rounded-md hover:border-[#FF1E27]/50 hover:text-[#FF1E27] hover:bg-[#FF1E27]/10 hover:shadow-[0_0_12px_rgba(255,30,39,0.2)] transition-all duration-200">
+                                ${window.svgIcon('download', 'w-3 h-3')}
+                                导出 Excel
+                            </button>
+                            <button id="btnCopyTemplate" type="button"
+                                    class="inline-flex items-center gap-1.5 bg-transparent text-[#6E6E73] border border-[#2A2A35] px-3 py-1.5 text-[11px] font-medium rounded-md hover:border-[#FF1E27]/50 hover:text-[#FF1E27] hover:bg-[#FF1E27]/10 hover:shadow-[0_0_12px_rgba(255,30,39,0.2)] transition-all duration-200">
+                                ${window.svgIcon('copy', 'w-3 h-3')}
+                                复制模板
+                            </button>
+                        </div>
                     </div>
                 </div>
 
-                <div class="flex items-center justify-between px-5 py-2.5 border-b border-[#1e1e1e]"
-                     style="background: linear-gradient(180deg, #181818 0%, #161616 100%);">
-                    <div class="flex items-center gap-3">
-                        <div class="flex items-center gap-1.5">
-                            <label class="text-[9px] font-semibold text-[#484848] uppercase tracking-[0.12em] whitespace-nowrap">基地</label>
-                            <select id="locationFilter"
-                                    class="w-36 h-7 pl-2.5 pr-7 text-[11px] bg-[#0d0d0d] border border-[#272727] text-[#909090] appearance-none cursor-pointer focus:outline-none focus:border-[#ff5252] transition-all rounded-sm">
-                                <option value="">请选择基地</option>
-                            </select>
+                <div class="px-5 py-3 border-b border-[#14141A]"
+                     style="background: linear-gradient(180deg, #0C0C10 0%, #0A0A0E 100%);">
+                    <div class="flex items-center justify-between gap-4 bg-[#0C0C10] border border-[#1E1E26] px-4 py-2.5 rounded-xl font-mono text-[11px]"
+                         style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.02), 0 0 20px rgba(0,0,0,0.3);">
+                        <div class="flex items-center gap-3 min-w-0 flex-1">
+                            <span class="text-[#555555] shrink-0 tracking-wider">当前筛选：</span>
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <span id="weldingCapsuleLocation" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部基地</span>
+                                <span id="weldingCapsuleYear" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部年度</span>
+                                <span id="weldingCapsuleAudit" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部审核</span>
+                            </div>
                         </div>
-
-                        <div class="flex items-center gap-1.5">
-                            <label class="text-[9px] font-semibold text-[#484848] uppercase tracking-[0.12em] whitespace-nowrap">年份</label>
-                            <select id="yearFilter"
-                                    class="w-36 h-7 pl-2.5 pr-7 text-[11px] bg-[#0d0d0d] border border-[#272727] text-[#909090] appearance-none cursor-pointer focus:outline-none focus:border-[#ff5252] transition-all rounded-sm">
-                                <option value="">请选择年份</option>
-                            </select>
+                        <div class="flex items-center gap-3 shrink-0">
+                            <button type="button" id="weldingToggleAdvancedFilter"
+                                    class="text-[#6E6E73] hover:text-white transition-colors flex items-center gap-1.5 text-[11px]">
+                                <span id="weldingAdvancedFilterLabel">展开高级筛选</span>
+                                <span id="weldingAdvancedFilterCount" class="text-[#555555]">(0)</span>
+                            </button>
+                            <button type="button" id="btnFilter"
+                                    class="inline-flex items-center gap-1.5 h-7 px-3 text-[11px] font-semibold rounded-sm text-[#c8c8c8] border border-[#8a2020] transition-all duration-200 hover:text-white"
+                                    style="background: linear-gradient(180deg, #3d1515 0%, #2d0f0f 100%); border-color: #6b1a1a; box-shadow: 0 1px 3px rgba(0,0,0,0.4), inset 0 1px 0 rgba(211,47,47,0.1), 0 0 12px rgba(198,40,40,0.08);">
+                                ${window.svgIcon('search', 'w-3 h-3')}
+                                查询
+                            </button>
                         </div>
+                    </div>
 
-                        <button id="btnFilter"
-                                class="inline-flex items-center gap-1.5 h-7 px-3 text-[11px] font-semibold rounded-sm text-[#c8c8c8] border border-[#8a2020] transition-all duration-200 hover:text-white"
-                                style="background: linear-gradient(180deg, #3d1515 0%, #2d0f0f 100%); border-color: #6b1a1a; box-shadow: 0 1px 3px rgba(0,0,0,0.4), inset 0 1px 0 rgba(211,47,47,0.1), 0 0 12px rgba(198,40,40,0.08);">
-                            ${window.svgIcon('search', 'w-3 h-3')}
-                            查询
-                        </button>
-                        <span class="text-[10px] text-[#484848]">批量删除须同时选择基地和年度</span>
+                    <div id="weldingAdvancedFilterPanel" class="hidden mt-3 pt-3 border-t border-[#1A1A22]">
+                        <div class="flex items-end gap-3 flex-wrap">
+                            ${filterSelect('locationFilter', '基地')}
+                            ${filterSelect('yearFilter', '年度')}
+                            ${filterSelect('auditStatusFilter', '审核状态')}
+                            <button id="weldingResetFilterBtn" type="button"
+                                    class="inline-flex items-center gap-1.5 h-8 px-3 text-[11px] font-medium rounded-md bg-transparent text-[#6E6E73] border border-[#2A2A35] hover:bg-[#FF1E27]/10 hover:border-[#FF1E27]/50 hover:text-[#FF1E27] transition-all duration-200">
+                                ${window.svgIcon('refresh', 'w-3 h-3')}
+                                重置
+                            </button>
+                        </div>
+                        <p class="mt-2 text-[10px] text-[#555555]">批量删除 / 审核 / 反审核须同时选定基地和年度（与上传条件对等）。已审核记录不可删除、不可修改。</p>
                     </div>
                 </div>
 
-                <div class="overflow-x-auto">
-                    <table class="w-full">
+                <div class="overflow-x-auto brabus-bg-grid">
+                    <table class="w-full min-w-[1280px] bg-transparent table-fixed border-collapse">
+                        <colgroup>
+                            <col style="width:2px">
+                            <col style="width:9%">
+                            <col style="width:7%">
+                            <col style="width:12%">
+                            <col style="width:8%">
+                            <col style="width:11%">
+                            <col style="width:10%">
+                            <col style="width:8%">
+                            <col style="width:7%">
+                            <col style="width:9%">
+                            <col style="width:11%">
+                            <col style="width:8%">
+                        </colgroup>
                         <thead>
-                            <tr style="background: linear-gradient(180deg, #111111 0%, #0e0e0e 100%); border-bottom: 1px solid #222222;">
-                                <th class="px-5 py-2.5 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">基地</th>
-                                <th class="px-5 py-2.5 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">年份</th>
-                                <th class="px-5 py-2.5 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">名称</th>
-                                <th class="px-5 py-2.5 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">单位</th>
-                                <th class="px-5 py-2.5 text-right text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">费用</th>
-                                <th class="px-5 py-2.5 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">备注</th>
+                            <tr class="border-b border-[#17171C] bg-[#0B0B0D]/95">
+                                <th class="p-0"></th>
+                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">基地</th>
+                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">年份</th>
+                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">名称</th>
+                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">单位</th>
+                                <th class="px-2 py-2 text-right text-[9px] font-semibold tracking-[0.06em] text-[#FF1E27]/90 bg-[#1A080A]">费用</th>
+                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">备注</th>
+                                <th class="px-2 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-[#555555]">审核</th>
                                 <th class="p-0 w-9" aria-label="操作"></th>
+                                <th class="px-2 py-2 text-left text-[9px] font-normal tracking-[0.08em] text-[#3a3a3a]">创建人</th>
+                                <th class="px-2 py-2 text-left text-[9px] font-normal tracking-[0.08em] text-[#3a3a3a]">创建时间</th>
+                                <th class="px-2 py-2 text-left text-[9px] font-normal tracking-[0.08em] text-[#3a3a3a]">修改人</th>
                             </tr>
                         </thead>
-                        <tbody id="weldingUnitPriceTableBody" class="divide-y divide-[#1d1d1d]">
-                        </tbody>
+                        <tbody id="weldingUnitPriceTableBody" class="bg-transparent"></tbody>
                     </table>
                 </div>
 
-                <div class="flex items-center justify-between px-5 py-2 border-t border-[#1e1e1e] bg-[#141414]" id="paginationContainer">
+                <div class="flex items-center justify-between px-5 py-2.5 border-t border-[#14141A] bg-[#0A0A0E]" id="paginationContainer">
                     <div class="flex items-center gap-3 min-w-0">
-                        <span id="totalCountPagination" class="text-[10px] text-[#484848]"></span>
+                        <span id="totalCountPagination" class="text-[10px] font-mono text-[#555555]"></span>
                         ${pageSizeSelectHtml('weldingUnitPricePageSize')}
                     </div>
-                    <div class="flex items-center gap-0.5" id="paginationBtns">
-                    </div>
+                    <div class="flex items-center gap-0.5" id="paginationBtns"></div>
                 </div>
 
-                <div id="emptyState" class="hidden flex flex-col items-center justify-center py-10">
-                    <div class="w-8 h-8 flex items-center justify-center mb-3 rounded-sm" style="background:#141414; border: 1px solid #222222;">
-                        ${window.svgIcon('clipboard-list', 'w-4 h-4 text-[#3a3a3a]')}
+                <div id="emptyState" class="hidden flex flex-col items-center justify-center py-14">
+                    <div class="w-10 h-10 flex items-center justify-center mb-3 rounded-md bg-[#121218] border border-[#2A2A35]">
+                        ${window.svgIcon('clipboard-list', 'w-4 h-4 text-[#555555]')}
                     </div>
-                    <h5 class="text-[11px] font-medium text-[#555555] mb-1">暂无数据</h5>
-                    <p class="text-[10px] text-[#3a3a3a]">点击上方「新增费用」或上传 Excel</p>
+                    <h5 class="text-[11px] font-medium text-[#8E8E93] mb-1">暂无焊接单价数据</h5>
+                    <p class="text-[10px] text-[#555555]">请先在「焊接单价上传」中导入 Excel</p>
                 </div>
 
-                <div id="loadingState" class="hidden flex items-center justify-center py-10">
-                    <div class="w-4 h-4 border border-[#252525] border-t-[#d32f2f] rounded-full animate-spin"></div>
+                <div id="loadingState" class="hidden flex items-center justify-center py-14">
+                    <div class="w-5 h-5 border-2 border-[#2A2A35] border-t-[#FF1E27] rounded-full animate-spin"
+                         style="box-shadow: 0 0 12px rgba(255,30,39,0.35);"></div>
                 </div>
             </div>
         </div>
 
+        ${batchAuditDrawerHtml('welding')}
+        ${editDrawerHtml()}
+        ${copyDrawerHtml()}
+        ${deleteDrawerHtml()}
+    `;
+}
+
+function batchAuditDrawerHtml(prefix) {
+    return `
+        <div class="fixed inset-0 z-[80] bg-black/70 backdrop-blur-sm transition-opacity duration-300"
+             id="${prefix}BatchAuditDrawerBackdrop" style="display:none"></div>
+        <div class="fixed inset-y-0 right-0 z-[85] w-[420px] bg-[#1a1a1a] border-l border-[#2a2a2a] transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col"
+             id="${prefix}BatchAuditDrawer" style="display:none; max-height: 100vh; box-shadow: -20px 0 60px rgba(0,0,0,0.95);">
+            <div class="px-5 py-3.5 flex items-center justify-between shrink-0"
+                 style="background: linear-gradient(180deg, #1f1f1f 0%, #1a1a1a 100%); border-bottom: 1px solid #333333;">
+                <h5 class="text-[11px] font-semibold tracking-wider text-[#b0b0b0] flex items-center gap-2.5 uppercase">
+                    <span style="width:3px;height:14px;background:#d32f2f;border-radius:1px;display:inline-block;box-shadow: 0 0 8px rgba(211,47,47,0.5);"></span>
+                    <span id="${prefix}BatchAuditDrawerTitle">批量审核</span>
+                </h5>
+                <button type="button" id="close${prefix.charAt(0).toUpperCase() + prefix.slice(1)}BatchAuditDrawer"
+                        class="flex items-center justify-center w-8 h-8 rounded-md text-[#707070] hover:text-white hover:bg-[#d32f2f] transition-all">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <div class="flex-1 min-h-0 overflow-y-auto p-6 space-y-4">
+                <input type="hidden" id="${prefix}BatchAuditMode" value="approve">
+                <div class="bg-[#0c0c0c] border border-[#1a1a1a] rounded p-3 text-[11px] text-[#9e9e9e]" id="${prefix}BatchAuditFilterSummary"></div>
+                <p id="${prefix}BatchAuditHint" class="text-[11px] text-[#616161]"></p>
+                <div>
+                    <label class="text-[10px] text-[#777777] mb-1 block" id="${prefix}BatchAuditOperatorLabel">操作人</label>
+                    <div id="${prefix}BatchAuditOperatorDisplay"
+                         class="w-full h-9 px-3 flex items-center text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#9e9e9e] rounded">—</div>
+                    <p class="text-[10px] text-[#555555] mt-1">取自当前登录用户，无需填写</p>
+                </div>
+                <div>
+                    <label class="text-[10px] text-[#777777] mb-1 block" id="${prefix}BatchAuditRemarkLabel">审核意见</label>
+                    <textarea id="${prefix}BatchAuditRemark" rows="4" maxlength="500"
+                              class="w-full px-3 py-2 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#ffffff] placeholder:text-[#616161] focus:outline-none focus:border-[#ff5252] transition-all rounded resize-none"
+                              placeholder="可选填写审核意见"></textarea>
+                </div>
+            </div>
+            <div class="px-6 py-4 border-t border-[#262626] flex items-center justify-end gap-2 shrink-0">
+                <button type="button" id="cancel${prefix.charAt(0).toUpperCase() + prefix.slice(1)}BatchAuditBtn" class="inline-flex items-center gap-1.5 bg-transparent text-[#9e9e9e] border border-[#2c2c2c] px-4 py-2 text-[11px] font-medium rounded hover:border-[#9e9e9e] hover:text-white transition-all">取消</button>
+                <button type="button" id="confirm${prefix.charAt(0).toUpperCase() + prefix.slice(1)}BatchAuditBtn" class="inline-flex items-center gap-1.5 bg-[#d32f2f] text-white px-4 py-2 text-[11px] font-semibold rounded hover:bg-[#b71c1c] transition-all">确认提交</button>
+            </div>
+        </div>
+    `;
+}
+
+function editDrawerHtml() {
+    return `
         <div class="fixed inset-0 z-[80] bg-black/70 backdrop-blur-sm transition-opacity duration-300"
              id="editDrawerBackdrop" style="display:none"></div>
-
-        <div class="fixed inset-y-0 right-0 z-[85] w-[640px] bg-[#1a1a1a] border-l border-[#2a2a2a] transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col"
-             id="editDrawer" style="display:none; max-height: 100vh; box-shadow: -20px 0 60px rgba(0,0,0,0.95), -8px 0 30px rgba(0,0,0,0.8), 0 0 1px rgba(255,255,255,0.05);">
+        <div class="fixed inset-y-0 right-0 z-[85] w-[560px] bg-[#1a1a1a] border-l border-[#2a2a2a] transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col"
+             id="editDrawer" style="display:none; max-height: 100vh; box-shadow: -20px 0 60px rgba(0,0,0,0.95);">
             <div class="px-5 py-3.5 flex items-center justify-between shrink-0"
                  style="background: linear-gradient(180deg, #1f1f1f 0%, #1a1a1a 100%); border-bottom: 1px solid #333333;">
                 <h5 class="text-[11px] font-semibold tracking-wider text-[#b0b0b0] flex items-center gap-2.5 uppercase" id="editDrawerTitle">
@@ -135,83 +252,69 @@ export function weldingUnitPriceTemplate() {
                     编辑费用
                 </h5>
                 <button type="button" id="closeEditDrawer"
-                        class="flex items-center justify-center w-8 h-8 rounded-md text-[#707070] hover:text-white hover:bg-[#d32f2f] transition-all duration-200 group">
-                    <svg class="w-4 h-4 transition-transform duration-200 group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        class="flex items-center justify-center w-8 h-8 rounded-md text-[#707070] hover:text-white hover:bg-[#d32f2f] transition-all">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                     </svg>
                 </button>
             </div>
-
-            <div class="flex-1 min-h-0 overflow-y-auto overscroll-contain" id="editDrawerContent" style="scrollbar-width: thin; scrollbar-color: #3a3a3a #1a1a1a;">
+            <div class="flex-1 min-h-0 overflow-y-auto" id="editDrawerContent">
                 <form id="editForm" class="p-6 space-y-5">
                     <input type="hidden" id="editRecordId" value="">
-
-                    <div>
-                        <label class="text-[10px] font-semibold text-[#616161] uppercase tracking-[0.1em] mb-1.5 block">基地 <span class="text-[#d32f2f]">*</span></label>
-                        <select id="editLocation" required
-                                class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#9e9e9e] appearance-none cursor-pointer focus:outline-none focus:border-[#ff5252] transition-all rounded">
-                            <option value="">请选择基地</option>
-                            <option value="大连">大连</option>
-                            <option value="芜湖">芜湖</option>
-                            <option value="鄂尔多斯">鄂尔多斯</option>
-                            <option value="青岛">青岛</option>
-                        </select>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-[10px] text-[#777777] mb-1 block">基地</label>
+                            <input type="text" id="editLocation" disabled
+                                   class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#9e9e9e] rounded">
+                        </div>
+                        <div>
+                            <label class="text-[10px] text-[#777777] mb-1 block">年份</label>
+                            <input type="number" id="editYear" disabled
+                                   class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#9e9e9e] rounded">
+                        </div>
                     </div>
-
                     <div>
-                        <label class="text-[10px] font-semibold text-[#616161] uppercase tracking-[0.1em] mb-1.5 block">年份 <span class="text-[#d32f2f]">*</span></label>
-                        <input type="number" id="editYear" min="2000" max="2100" required
-                               class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#ffffff] placeholder:text-[#616161] focus:outline-none focus:border-[#ff5252] transition-all rounded"
-                               placeholder="如 2026">
+                        <label class="text-[10px] text-[#777777] mb-1 block">名称</label>
+                        <input type="text" id="editItemName" disabled
+                               class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#9e9e9e] rounded">
                     </div>
-
                     <div>
-                        <label class="text-[10px] font-semibold text-[#616161] uppercase tracking-[0.1em] mb-1.5 block">名称 <span class="text-[#d32f2f]">*</span></label>
-                        <input type="text" id="editItemName" required maxlength="100"
-                               class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#ffffff] placeholder:text-[#616161] focus:outline-none focus:border-[#ff5252] transition-all rounded"
-                               placeholder="如 焊点">
-                    </div>
-
-                    <div>
-                        <label class="text-[10px] font-semibold text-[#616161] uppercase tracking-[0.1em] mb-1.5 block">单位 <span class="text-[#d32f2f]">*</span></label>
+                        <label class="text-[10px] text-[#777777] mb-1 block">单位 <span class="text-[#d32f2f]">*</span></label>
                         <input type="text" id="editUnit" required maxlength="20"
-                               class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#ffffff] placeholder:text-[#616161] focus:outline-none focus:border-[#ff5252] transition-all rounded"
-                               placeholder="如 个 / CM / MM / 平方">
+                               class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#ffffff] rounded focus:outline-none focus:border-[#ff5252]"
+                               placeholder="如 个 / CM / MM / 平方" autocomplete="off">
                     </div>
-
                     <div>
-                        <label class="text-[10px] font-semibold text-[#616161] uppercase tracking-[0.1em] mb-1.5 block">费用 <span class="text-[#d32f2f]">*</span></label>
+                        <label class="text-[10px] text-[#777777] mb-1 block">费用 <span class="text-[#d32f2f]">*</span></label>
                         <input type="text" id="editUnitPrice" inputmode="decimal" required
-                               class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#ffffff] placeholder:text-[#616161] focus:outline-none focus:border-[#ff5252] transition-all rounded font-mono"
-                               placeholder="保留4位小数，如 0.0999"
-                               autocomplete="off">
+                               class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#ffffff] font-mono rounded focus:outline-none focus:border-[#ff5252]"
+                               placeholder="保留4位小数，如 0.0999" autocomplete="off">
                     </div>
-
                     <div>
-                        <label class="text-[10px] font-semibold text-[#616161] uppercase tracking-[0.1em] mb-1.5 block">备注</label>
+                        <label class="text-[10px] text-[#777777] mb-1 block">备注</label>
                         <input type="text" id="editRemark" maxlength="500"
-                               class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#ffffff] placeholder:text-[#616161] focus:outline-none focus:border-[#ff5252] transition-all rounded"
-                               placeholder="可选">
+                               class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#ffffff] rounded focus:outline-none focus:border-[#ff5252]"
+                               placeholder="可选" autocomplete="off">
                     </div>
                 </form>
             </div>
-
-            <div class="px-6 py-4 border-t border-[#262626] flex items-center justify-end gap-2 shrink-0" style="background: linear-gradient(0deg, #1a1a1a 0%, #161616 100%);">
-                <button type="button" id="cancelEditBtn" class="inline-flex items-center gap-1.5 bg-transparent text-[#9e9e9e] border border-[#2c2c2c] px-4 py-2 text-[11px] font-medium rounded hover:border-[#9e9e9e] hover:text-white transition-all">
-                    取消
-                </button>
+            <div class="px-6 py-4 border-t border-[#262626] flex items-center justify-end gap-2 shrink-0">
+                <button type="button" id="cancelEditBtn" class="inline-flex items-center gap-1.5 bg-transparent text-[#9e9e9e] border border-[#2c2c2c] px-4 py-2 text-[11px] font-medium rounded hover:border-[#9e9e9e] hover:text-white transition-all">取消</button>
                 <button type="button" id="submitEditBtn" class="inline-flex items-center gap-1.5 bg-[#d32f2f] text-white px-4 py-2 text-[11px] font-semibold rounded hover:bg-[#b71c1c] transition-all">
                     ${window.svgIcon('archive', 'w-3.5 h-3.5')}
                     保存
                 </button>
             </div>
         </div>
+    `;
+}
 
+function copyDrawerHtml() {
+    return `
         <div class="fixed inset-0 z-[80] bg-black/70 backdrop-blur-sm transition-opacity duration-300"
              id="copyDrawerBackdrop" style="display:none"></div>
-
-        <div class="fixed inset-y-0 right-0 z-[85] w-[480px] bg-[#1a1a1a] border-l border-[#2a2a2a] transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col"
-             id="copyDrawer" style="display:none; max-height: 100vh; box-shadow: -20px 0 60px rgba(0,0,0,0.95), -8px 0 30px rgba(0,0,0,0.8), 0 0 1px rgba(255,255,255,0.05);">
+        <div class="fixed inset-y-0 right-0 z-[85] w-[420px] bg-[#1a1a1a] border-l border-[#2a2a2a] transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col"
+             id="copyDrawer" style="display:none; max-height: 100vh; box-shadow: -20px 0 60px rgba(0,0,0,0.95);">
             <div class="px-5 py-3.5 flex items-center justify-between shrink-0"
                  style="background: linear-gradient(180deg, #1f1f1f 0%, #1a1a1a 100%); border-bottom: 1px solid #333333;">
                 <h5 class="text-[11px] font-semibold tracking-wider text-[#b0b0b0] flex items-center gap-2.5 uppercase">
@@ -219,19 +322,18 @@ export function weldingUnitPriceTemplate() {
                     复制价格模板
                 </h5>
                 <button type="button" id="closeCopyDrawer"
-                        class="flex items-center justify-center w-8 h-8 rounded-md text-[#707070] hover:text-white hover:bg-[#d32f2f] transition-all duration-200 group">
-                    <svg class="w-4 h-4 transition-transform duration-200 group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        class="flex items-center justify-center w-8 h-8 rounded-md text-[#707070] hover:text-white hover:bg-[#d32f2f] transition-all">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                     </svg>
                 </button>
             </div>
-
-            <div class="flex-1 min-h-0 overflow-y-auto overscroll-contain" id="copyDrawerContent" style="scrollbar-width: thin; scrollbar-color: #3a3a3a #1a1a1a;">
-                <form id="copyForm" class="p-6 space-y-5">
+            <div class="flex-1 min-h-0 overflow-y-auto p-6 space-y-5">
+                <form id="copyForm" class="space-y-5">
                     <div>
-                        <label class="text-[10px] font-semibold text-[#616161] uppercase tracking-[0.1em] mb-1.5 block">基地 <span class="text-[#d32f2f]">*</span></label>
+                        <label class="text-[10px] text-[#777777] mb-1 block">基地 <span class="text-[#d32f2f]">*</span></label>
                         <select id="copyLocation" required
-                                class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#9e9e9e] appearance-none cursor-pointer focus:outline-none focus:border-[#ff5252] transition-all rounded">
+                                class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#9e9e9e] appearance-none rounded focus:outline-none focus:border-[#ff5252]">
                             <option value="">请选择基地</option>
                             <option value="大连">大连</option>
                             <option value="芜湖">芜湖</option>
@@ -239,77 +341,59 @@ export function weldingUnitPriceTemplate() {
                             <option value="青岛">青岛</option>
                         </select>
                     </div>
-
                     <div>
-                        <label class="text-[10px] font-semibold text-[#616161] uppercase tracking-[0.1em] mb-1.5 block">源年份 <span class="text-[#d32f2f]">*</span></label>
+                        <label class="text-[10px] text-[#777777] mb-1 block">源年份 <span class="text-[#d32f2f]">*</span></label>
                         <select id="sourceYear" required
-                                class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#9e9e9e] appearance-none cursor-pointer focus:outline-none focus:border-[#ff5252] transition-all rounded">
+                                class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#9e9e9e] appearance-none rounded focus:outline-none focus:border-[#ff5252]">
                             <option value="">请选择源年份</option>
                         </select>
                     </div>
-
-                    <div class="flex items-center justify-center py-1">
-                        ${window.svgIcon('chevron-right', 'w-4 h-4 text-[#616161]')}
-                    </div>
-
                     <div>
-                        <label class="text-[10px] font-semibold text-[#616161] uppercase tracking-[0.1em] mb-1.5 block">目标年份 <span class="text-[#d32f2f]">*</span></label>
+                        <label class="text-[10px] text-[#777777] mb-1 block">目标年份 <span class="text-[#d32f2f]">*</span></label>
                         <input type="number" id="targetYear" min="2000" max="2100" required
-                               class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#ffffff] placeholder:text-[#616161] focus:outline-none focus:border-[#ff5252] transition-all rounded"
+                               class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#ffffff] rounded focus:outline-none focus:border-[#ff5252]"
                                placeholder="如 2027">
                     </div>
-
-                    <div class="bg-[#0c0c0c] border border-[#1a1a1a] rounded p-3">
-                        <p class="text-[11px] text-[#616161]">
-                            <span class="text-[#f57f17]">提示：</span>
-                            复制仅作用于所选基地，将<strong class="text-[#9e9e9e]">覆盖</strong>该基地目标年份的现有数据，请谨慎操作。
-                        </p>
-                    </div>
+                    <p class="text-[11px] text-[#616161]"><span class="text-[#f57f17]">提示：</span>仅覆盖目标年未审核数据；已审核记录会跳过。</p>
                 </form>
             </div>
-
-            <div class="px-6 py-4 border-t border-[#262626] flex items-center justify-end gap-2 shrink-0" style="background: linear-gradient(0deg, #1a1a1a 0%, #161616 100%);">
-                <button type="button" id="cancelCopyBtn" class="inline-flex items-center gap-1.5 bg-transparent text-[#9e9e9e] border border-[#2c2c2c] px-4 py-2 text-[11px] font-medium rounded hover:border-[#9e9e9e] hover:text-white transition-all">
-                    取消
-                </button>
+            <div class="px-6 py-4 border-t border-[#262626] flex items-center justify-end gap-2 shrink-0">
+                <button type="button" id="cancelCopyBtn" class="inline-flex items-center gap-1.5 bg-transparent text-[#9e9e9e] border border-[#2c2c2c] px-4 py-2 text-[11px] font-medium rounded hover:border-[#9e9e9e] hover:text-white transition-all">取消</button>
                 <button type="button" id="submitCopyBtn" class="inline-flex items-center gap-1.5 bg-[#d32f2f] text-white px-4 py-2 text-[11px] font-semibold rounded hover:bg-[#b71c1c] transition-all">
                     ${window.svgIcon('arrows-split', 'w-3.5 h-3.5')}
                     复制
                 </button>
             </div>
         </div>
+    `;
+}
 
+function deleteDrawerHtml() {
+    return `
         <div class="fixed inset-0 z-[80] bg-black/70 backdrop-blur-sm transition-opacity duration-300"
              id="deleteDrawerBackdrop" style="display:none"></div>
-
         <div class="fixed inset-y-0 right-0 z-[85] w-[380px] bg-[#1a1a1a] border-l border-[#2a2a2a] transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col"
-             id="deleteDrawer" style="display:none; max-height: 100vh; box-shadow: -20px 0 60px rgba(0,0,0,0.95), -8px 0 30px rgba(0,0,0,0.8), 0 0 1px rgba(255,255,255,0.05);">
+             id="deleteDrawer" style="display:none; max-height: 100vh; box-shadow: -20px 0 60px rgba(0,0,0,0.95);">
             <div class="px-5 py-3.5 flex items-center justify-between shrink-0"
                  style="background: linear-gradient(180deg, #1f1f1f 0%, #1a1a1a 100%); border-bottom: 1px solid #333333;">
                 <h5 class="text-[11px] font-semibold tracking-wider text-[#b0b0b0] flex items-center gap-2.5 uppercase">
-                    <span style="width:3px;height:14px;background:#c62828;border-radius:1px;display:inline-block;box-shadow: 0 0 8px rgba(198,40,40,0.5);"></span>
+                    <span style="width:3px;height:14px;background:#c62828;border-radius:1px;display:inline-block;"></span>
                     确认删除
                 </h5>
                 <button type="button" id="closeDeleteDrawer"
-                        class="flex items-center justify-center w-8 h-8 rounded-md text-[#707070] hover:text-white hover:bg-[#d32f2f] transition-all duration-200 group">
-                    <svg class="w-4 h-4 transition-transform duration-200 group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        class="flex items-center justify-center w-8 h-8 rounded-md text-[#707070] hover:text-white hover:bg-[#d32f2f] transition-all">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                     </svg>
                 </button>
             </div>
-
-            <div class="flex-1 min-h-0 overflow-y-auto overscroll-contain" id="deleteDrawerContent" style="scrollbar-width: thin; scrollbar-color: #3a3a3a #1a1a1a;">
+            <div class="flex-1 p-6">
                 <input type="hidden" id="deleteRecordId" value="">
-                <div class="p-6">
-                    <p class="text-[12px] text-[#9e9e9e] mb-3">确定要删除这条费用记录吗？</p>
-                    <p class="text-[11px] text-[#616161]">此操作不可撤销。</p>
-                </div>
+                <p class="text-[12px] text-[#9e9e9e] mb-3">确定删除这条未审核记录吗？</p>
+                <p class="text-[11px] text-[#616161]">已审核记录不可删除。此操作不可撤销。</p>
             </div>
-
-            <div class="px-6 py-4 border-t border-[#262626] flex items-center justify-end gap-2 shrink-0" style="background: linear-gradient(0deg, #1a1a1a 0%, #161616 100%);">
-                <button type="button" id="cancelDeleteBtn" class="inline-flex items-center gap-1.5 bg-transparent text-[#9e9e9e] border border-[#2c2c2c] px-4 py-2 text-[11px] font-medium rounded hover:border-[#9e9e9e] hover:text-white transition-all">
-                    取消
-                </button>
+            <div class="px-6 py-4 border-t border-[#262626] flex items-center justify-end gap-2 shrink-0">
+                <button type="button" id="cancelDeleteBtn" class="inline-flex items-center gap-1.5 bg-transparent text-[#9e9e9e] border border-[#2c2c2c] px-4 py-2 text-[11px] font-medium rounded hover:border-[#9e9e9e] hover:text-white transition-all">取消</button>
                 <button type="button" id="confirmDeleteBtn" class="inline-flex items-center gap-1.5 bg-[#c62828] text-white px-4 py-2 text-[11px] font-semibold rounded hover:bg-[#b71c1c] transition-all">
                     ${window.svgIcon('trash', 'w-3.5 h-3.5')}
                     删除
@@ -319,89 +403,139 @@ export function weldingUnitPriceTemplate() {
     `;
 }
 
-export function renderTableRows(records) {
-    if (!records || !Array.isArray(records) || records.length === 0) {
-        return '';
+function filterSelect(id, label) {
+    return `<label class="space-y-1">
+        <span class="block text-[9px] font-semibold text-[#555555] uppercase tracking-[0.14em]">${label}</span>
+        <select id="${id}" class="w-36 h-8 pl-2.5 pr-7 text-[11px] bg-[#0A0A0E] border border-[#2A2A35] text-[#A1A1A6] appearance-none cursor-pointer focus:outline-none focus:border-[#FF1E27] rounded-md transition-colors">
+            <option value="">全部</option>
+        </select>
+    </label>`;
+}
+
+export function updateWeldingHud(summary) {
+    const data = summary && typeof summary === 'object' ? summary : {};
+    const setText = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value;
+    };
+    setText('weldingHudTotal', String(data.total_count ?? '—'));
+    setText('weldingHudPending', String(data.pending_count ?? '—'));
+    setText('weldingHudApproved', String(data.approved_count ?? '—'));
+}
+
+export function updateWeldingFilterCapsules() {
+    const location = document.getElementById('locationFilter')?.value || '';
+    const year = document.getElementById('yearFilter')?.value || '';
+    const audit = document.getElementById('auditStatusFilter')?.value || '';
+    const active = 'bg-[#1A1A22] border border-[#2A2A35] text-white px-2.5 py-1 rounded-md font-bold';
+    const idle = 'bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md';
+    const auditLabel = { pending: '待审', approved: '已通过', rejected: '已驳回' }[audit] || '全部审核';
+
+    const locEl = document.getElementById('weldingCapsuleLocation');
+    const yearEl = document.getElementById('weldingCapsuleYear');
+    const auditEl = document.getElementById('weldingCapsuleAudit');
+    const countEl = document.getElementById('weldingAdvancedFilterCount');
+    if (locEl) {
+        locEl.textContent = location || '全部基地';
+        locEl.className = location ? active : idle;
     }
-    return records.map((record, idx) => {
-        const isEven = idx % 2 === 1;
+    if (yearEl) {
+        yearEl.textContent = year ? `${year}年` : '全部年度';
+        yearEl.className = year ? active : idle;
+    }
+    if (auditEl) {
+        auditEl.textContent = auditLabel;
+        auditEl.className = audit ? active : idle;
+    }
+    if (countEl) countEl.textContent = `(${[location, year, audit].filter(Boolean).length})`;
+}
+
+export function renderTableRows(records) {
+    if (!records || !Array.isArray(records) || records.length === 0) return '';
+    const canUpdate = typeof can === 'function' ? can('op:bom-welding-unit-price:update') : true;
+    const canDelete = typeof can === 'function' ? can('op:bom-welding-unit-price:delete') : true;
+
+    return records.map((record) => {
+        const approved = record.audit_status === 'approved';
         return `
-        <tr class="group transition-colors duration-150 cursor-default"
-            data-id="${esc(record.id)}"
-            style="${isEven ? 'background: rgba(255,255,255,0.012);' : ''}">
-            <td class="px-5 py-2.5 text-[11px] text-[#b0b0b0] whitespace-nowrap font-medium tracking-wide border-b border-[#1d1d1d]">${esc(record.location)}</td>
-            <td class="px-5 py-2.5 text-[11px] text-[#686868] whitespace-nowrap font-mono tracking-wide border-b border-[#1d1d1d]">${esc(record.year)}</td>
-            <td class="px-5 py-2.5 text-[11px] text-[#b0b0b0] whitespace-nowrap font-medium tracking-wide border-b border-[#1d1d1d]" title="${esc(record.item_name)}">${esc(record.item_name)}</td>
-            <td class="px-5 py-2.5 text-[11px] text-[#686868] whitespace-nowrap border-b border-[#1d1d1d]">${esc(record.unit)}</td>
-            <td class="px-5 py-2.5 text-[11px] text-right font-mono tabular-nums text-[#d32f2f] whitespace-nowrap tracking-wide border-b border-[#1d1d1d]">
-                <span class="shadow-[0_0_8px_rgba(211,47,47,0.2)]">${esc(formatUnitPrice4(record.unit_price))}</span>
+        <tr class="group relative font-mono text-[11px] border-b border-[#141418] hover:bg-[#161620] transition-colors duration-100"
+            data-id="${esc(record.id)}">
+            <td class="p-0 relative">
+                <div class="absolute left-0 top-0 bottom-0 w-[2px] bg-[#FF1E27] opacity-0 group-hover:opacity-70 transition-opacity"></div>
             </td>
-            <td class="px-5 py-2.5 text-[11px] text-[#555555] whitespace-nowrap border-b border-[#1d1d1d] max-w-[160px] truncate" title="${esc(record.remark || '')}">${esc(record.remark || '—')}</td>
-            <td class="px-5 py-2.5 text-center whitespace-nowrap border-b border-[#1d1d1d]">
+            <td class="px-2 py-2 overflow-hidden">
+                <div class="font-semibold text-[#F0F0F2]">${esc(record.location)}</div>
+            </td>
+            <td class="px-2 py-2 text-[#8E8E93] tabular-nums">${esc(record.year)}</td>
+            <td class="px-2 py-2 overflow-hidden">
+                <div class="text-[#C8C8D0] truncate" title="${esc(record.item_name)}">${esc(record.item_name)}</div>
+            </td>
+            <td class="px-2 py-2 text-[#8E8E93] overflow-hidden truncate">${esc(record.unit)}</td>
+            <td class="px-2 py-1.5 text-right font-mono font-black tabular-nums text-[12px] text-[#FF1E27] bg-[#1A080A] border-x border-[#FF1E27]/20">
+                ${esc(formatUnitPrice4(record.unit_price))}
+            </td>
+            <td class="px-2 py-2 text-[10px] text-[#555555] overflow-hidden truncate" title="${esc(record.remark || '')}">${esc(record.remark || '—')}</td>
+            <td class="px-2 py-2 text-center">${auditBadge(record.audit_status)}</td>
+            <td class="px-1 py-2 text-center">
                 <div class="inline-flex items-center justify-center gap-0.5 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto focus-within:opacity-100 focus-within:pointer-events-auto transition-opacity duration-100">
-                    ${(typeof window.can === 'function' ? window.can('op:bom-welding-unit-price:update') : true) ? `
-                    <button type="button" class="edit-btn inline-flex items-center justify-center w-7 h-7 rounded-sm text-[#555555] hover:text-[#C8C8D0] hover:bg-[#161620] transition-all" title="编辑" aria-label="编辑">
+                    ${canUpdate ? `
+                    <button type="button" class="edit-btn inline-flex items-center justify-center w-7 h-7 rounded-sm text-[#555555] hover:text-[#C8C8D0] hover:bg-[#161620] transition-all ${approved ? 'opacity-30 pointer-events-none' : ''}"
+                            title="${approved ? '已审核，不可编辑' : '编辑'}" aria-label="${approved ? '已审核，不可编辑' : '编辑'}">
                         ${window.svgIcon('pencil', 'w-3.5 h-3.5')}
                     </button>` : ''}
-                    ${(typeof window.can === 'function' ? window.can('op:bom-welding-unit-price:delete') : true) ? `
-                    <button type="button" class="delete-btn inline-flex items-center justify-center w-7 h-7 rounded-sm text-[#555555] hover:text-[#ef5350] hover:bg-[#161620] transition-all" title="删除" aria-label="删除">
+                    ${canDelete && !approved ? `
+                    <button type="button" class="delete-btn inline-flex items-center justify-center w-7 h-7 rounded-sm text-[#555555] hover:text-[#ef5350] hover:bg-[#161620] transition-all"
+                            title="删除" aria-label="删除">
                         ${window.svgIcon('trash', 'w-3.5 h-3.5')}
                     </button>` : ''}
                 </div>
             </td>
+            <td class="px-2 py-2 text-[9px] text-[#484848] whitespace-nowrap overflow-hidden">${esc(record.created_by)}</td>
+            <td class="px-2 py-2 text-[9px] text-[#3a3a3a] whitespace-nowrap overflow-hidden">${esc(formatAuditDateTime(record.created_at))}</td>
+            <td class="px-2 py-2 text-[9px] text-[#484848] whitespace-nowrap overflow-hidden">${esc(record.updated_by)}</td>
         </tr>`;
     }).join('');
 }
 
-export function renderPagination(currentPage, totalPages, total) {
-    if (totalPages <= 1) {
-        return '';
-    }
-
-    let buttons = '';
-
-    buttons += `
-        <button class="page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] ${currentPage === 1 ? 'text-[#333333] cursor-not-allowed' : 'text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]'} transition-all duration-150"
+export function renderPagination(currentPage, totalPages) {
+    if (totalPages <= 1) return '';
+    let buttons = `
+        <button class="page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] ${currentPage === 1 ? 'text-[#333333] cursor-not-allowed' : 'text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]'} transition-all"
                 data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}>
-            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-            </svg>
-        </button>
-    `;
-
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+        </button>`;
     const maxVisible = 5;
     let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
     let endPage = Math.min(totalPages, startPage + maxVisible - 1);
-    if (endPage - startPage < maxVisible - 1) {
-        startPage = Math.max(1, endPage - maxVisible + 1);
-    }
-
+    if (endPage - startPage < maxVisible - 1) startPage = Math.max(1, endPage - maxVisible + 1);
     if (startPage > 1) {
-        buttons += `<button class="page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323] transition-all duration-150" data-page="1">1</button>`;
-        if (startPage > 2) buttons += `<span class="px-0.5 text-[#333333] leading-6 text-[9px]">—</span>`;
+        buttons += `<button class="page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]" data-page="1">1</button>`;
+        if (startPage > 2) buttons += `<span class="px-0.5 text-[#333333] text-[9px]">—</span>`;
     }
-
     for (let i = startPage; i <= endPage; i++) {
         const isActive = i === currentPage;
-        buttons += `
-            <button class="page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] ${isActive ? 'bg-[#d32f2f] text-white shadow-[0_0_8px_rgba(211,47,47,0.25)]' : 'text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]'} transition-all duration-150"
-                    data-page="${i}">${i}</button>
-        `;
+        buttons += `<button class="page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] ${isActive ? 'bg-[#FF1E27] text-white' : 'text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]'}" data-page="${i}">${i}</button>`;
     }
-
     if (endPage < totalPages) {
-        if (endPage < totalPages - 1) buttons += `<span class="px-0.5 text-[#333333] leading-6 text-[9px]">—</span>`;
-        buttons += `<button class="page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323] transition-all duration-150" data-page="${totalPages}">${totalPages}</button>`;
+        if (endPage < totalPages - 1) buttons += `<span class="px-0.5 text-[#333333] text-[9px]">—</span>`;
+        buttons += `<button class="page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]" data-page="${totalPages}">${totalPages}</button>`;
     }
-
     buttons += `
-        <button class="page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] ${currentPage === totalPages ? 'text-[#333333] cursor-not-allowed' : 'text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]'} transition-all duration-150"
+        <button class="page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] ${currentPage === totalPages ? 'text-[#333333] cursor-not-allowed' : 'text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]'} transition-all"
                 data-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''}>
-            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-            </svg>
-        </button>
-    `;
-
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+        </button>`;
     return buttons;
+}
+
+function auditBadge(status) {
+    const label = { pending: '待审', approved: '已通过', rejected: '已驳回' }[status] || status || '-';
+    return `<span class="inline-flex items-center px-2 py-0.5 text-[10px] font-sans rounded-sm bg-[#1C1C22] text-[#8E8E93] border border-[#2A2A32]">${esc(label)}</span>`;
+}
+
+function formatAuditDateTime(value) {
+    if (!value) return '-';
+    const text = String(value);
+    if (text.length >= 19) return text.slice(0, 19).replace('T', ' ');
+    return text;
 }

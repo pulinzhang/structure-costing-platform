@@ -9,15 +9,28 @@ from typing import Any, List, Optional, Tuple
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.common.audit import audit_create, audit_update
+from app.common.audit import (
+    AUDIT_APPROVED,
+    AUDIT_PENDING,
+    AUDIT_REJECTED,
+    audit_create,
+    audit_update,
+    display_name,
+)
+from app.common.timezone import now
 from app.repositories.bom.welding_unit_price_repository import BomWeldingUnitPriceRepository
 from app.schemas.dto.bom_welding_unit_price_dto import (
+    BomWeldingUnitPriceBatchApproveDTO,
+    BomWeldingUnitPriceBatchReverseAuditDTO,
     BomWeldingUnitPriceCreate,
     BomWeldingUnitPriceQuery,
     BomWeldingUnitPriceUpdate,
     quantize_unit_price,
 )
-from app.schemas.vo.bom_welding_unit_price_vo import BomWeldingUnitPriceResponse
+from app.schemas.vo.bom_welding_unit_price_vo import (
+    BomWeldingUnitPriceBatchAuditResultVO,
+    BomWeldingUnitPriceResponse,
+)
 from app.schemas.vo.user_vo import UserVO
 
 logger = logging.getLogger("service.bom")
@@ -47,10 +60,12 @@ class BomWeldingUnitPriceService:
         self, db: Session, query: BomWeldingUnitPriceQuery
     ) -> Tuple[List[BomWeldingUnitPriceResponse], int, dict[str, Any]]:
         skip = (query.page - 1) * query.size
+        audit_status = query.audit_status.strip() if query.audit_status else None
         records, total = self.repository.paginate(
             db,
             location=query.location,
             year=query.year,
+            audit_status=audit_status,
             skip=skip,
             limit=query.size,
         )
@@ -58,6 +73,13 @@ class BomWeldingUnitPriceService:
         filters = {
             "locations": self.repository.get_distinct_locations(db),
             "years": self.repository.get_distinct_years(db),
+            "audit_status": audit_status,
+            "summary": self.repository.summarize_by_filters(
+                db,
+                location=query.location,
+                year=query.year,
+                audit_status=audit_status,
+            ),
         }
         return rows, total, filters
 
@@ -74,7 +96,11 @@ class BomWeldingUnitPriceService:
         current_user: UserVO,
     ) -> Tuple[Optional[BomWeldingUnitPriceResponse], Optional[str]]:
         try:
-            payload = {**data.model_dump(), **audit_create(current_user)}
+            payload = {
+                **data.model_dump(),
+                **audit_create(current_user),
+                "audit_status": AUDIT_PENDING,
+            }
             payload["unit_price"] = quantize_unit_price(payload["unit_price"])
             record = self.repository.create(db, payload)
             return BomWeldingUnitPriceResponse.model_validate(record), None
@@ -100,16 +126,21 @@ class BomWeldingUnitPriceService:
         List[BomWeldingUnitPriceResponse],
         List[BomWeldingUnitPriceResponse],
         List[str],
+        int,
     ]:
         created: List[BomWeldingUnitPriceResponse] = []
         updated: List[BomWeldingUnitPriceResponse] = []
         failed: List[str] = []
+        skipped_approved = 0
 
         for item in items:
             existing = self.repository.get_by_location_year_item(
                 db, item.location, item.year, item.item_name
             )
             if existing:
+                if existing.audit_status == AUDIT_APPROVED:
+                    skipped_approved += 1
+                    continue
                 record, error = self.update(
                     db,
                     existing.id,
@@ -135,7 +166,7 @@ class BomWeldingUnitPriceService:
             else:
                 failed.append(error or "未知错误")
 
-        return created, updated, failed
+        return created, updated, failed, skipped_approved
 
     def update(
         self,
@@ -145,6 +176,12 @@ class BomWeldingUnitPriceService:
         current_user: UserVO,
     ) -> Tuple[Optional[BomWeldingUnitPriceResponse], Optional[str]]:
         try:
+            existing = self.repository.get_by_id(db, id)
+            if not existing:
+                return None, "记录不存在"
+            if existing.audit_status == AUDIT_APPROVED:
+                return None, "已审核通过，请先反审核后再修改"
+
             payload = {
                 **data.model_dump(exclude_unset=True),
                 **audit_update(current_user),
@@ -161,6 +198,11 @@ class BomWeldingUnitPriceService:
             return None, str(e)
 
     def delete(self, db: Session, id: int) -> Tuple[bool, Optional[str]]:
+        record = self.repository.get_by_id(db, id)
+        if not record:
+            return False, "记录不存在"
+        if record.audit_status == AUDIT_APPROVED:
+            return False, "已审核通过，请先反审核后再删除"
         success = self.repository.delete(db, id)
         if not success:
             return False, "记录不存在"
@@ -172,25 +214,113 @@ class BomWeldingUnitPriceService:
         *,
         location: str,
         year: int,
-    ) -> Tuple[int, Optional[str]]:
+    ) -> Tuple[int, int, Optional[str]]:
         location = (location or "").strip()
         if not location:
-            return 0, "请选择采购基地"
+            return 0, 0, "请选择采购基地"
         if year < 2000 or year > 2100:
-            return 0, "请选择正确的年度"
+            return 0, 0, "请选择正确的年度"
 
         existing = self.repository.list_by_location_year(db, location, year)
         if not existing:
-            return 0, f"基地「{location}」{year} 年没有可删除的数据"
+            return 0, 0, f"基地「{location}」{year} 年没有可删除的数据"
 
-        deleted_count = self.repository.delete_by_location_year(db, location, year)
+        skipped = self.repository.count_by_location_year_and_statuses(
+            db,
+            location=location,
+            year=year,
+            statuses=[AUDIT_APPROVED],
+        )
+        deleted_count = self.repository.delete_unaudited_by_location_year(
+            db, location, year
+        )
         logger.info(
-            "批量删除焊接工费单价: location=%s year=%s count=%s",
+            "批量删除焊接工费单价: location=%s year=%s deleted=%s skipped=%s",
             location,
             year,
             deleted_count,
+            skipped,
         )
-        return deleted_count, None
+        return deleted_count, skipped, None
+
+    def batch_approve(
+        self,
+        db: Session,
+        dto: BomWeldingUnitPriceBatchApproveDTO,
+        current_user: UserVO,
+    ) -> Tuple[Optional[BomWeldingUnitPriceBatchAuditResultVO], Optional[str]]:
+        location = (dto.location or "").strip()
+        if not location:
+            return None, "请选择采购基地"
+        operator = display_name(current_user)
+        if not operator:
+            return None, "无法识别当前登录用户"
+
+        skipped = self.repository.count_by_location_year_and_statuses(
+            db,
+            location=location,
+            year=dto.year,
+            statuses=[AUDIT_APPROVED],
+        )
+        updated = self.repository.approve_by_location_year(
+            db,
+            location=location,
+            year=dto.year,
+            audited_by=operator,
+            audited_at=now(),
+            audit_remark=(dto.audit_remark or "").strip() or None,
+            updated_by=operator,
+        )
+        return (
+            BomWeldingUnitPriceBatchAuditResultVO(
+                updated_count=updated,
+                skipped_count=skipped,
+                location=location,
+                year=dto.year,
+            ),
+            None,
+        )
+
+    def batch_reverse_audit(
+        self,
+        db: Session,
+        dto: BomWeldingUnitPriceBatchReverseAuditDTO,
+        current_user: UserVO,
+    ) -> Tuple[Optional[BomWeldingUnitPriceBatchAuditResultVO], Optional[str]]:
+        location = (dto.location or "").strip()
+        if not location:
+            return None, "请选择采购基地"
+        remark = (dto.reverse_audit_remark or "").strip()
+        if not remark:
+            return None, "反审核原因必填"
+        operator = display_name(current_user)
+        if not operator:
+            return None, "无法识别当前登录用户"
+
+        skipped = self.repository.count_by_location_year_and_statuses(
+            db,
+            location=location,
+            year=dto.year,
+            statuses=[AUDIT_PENDING, AUDIT_REJECTED],
+        )
+        updated = self.repository.reverse_by_location_year(
+            db,
+            location=location,
+            year=dto.year,
+            reverse_audited_by=operator,
+            reverse_audited_at=now(),
+            reverse_audit_remark=remark,
+            updated_by=operator,
+        )
+        return (
+            BomWeldingUnitPriceBatchAuditResultVO(
+                updated_count=updated,
+                skipped_count=skipped,
+                location=location,
+                year=dto.year,
+            ),
+            None,
+        )
 
     def copy_from_year(
         self,
@@ -205,29 +335,45 @@ class BomWeldingUnitPriceService:
         if not source_records:
             return 0, 0, [f"基地「{location}」源年份 {source_year} 没有数据"]
 
-        target_records = self.repository.list_by_location_year(db, location, target_year)
-        if target_records:
-            self.repository.delete_by_location_year(db, location, target_year)
+        self.repository.delete_unaudited_by_location_year(db, location, target_year)
 
         created = 0
         skipped = 0
         failed: List[str] = []
 
         for source in source_records:
+            existing = self.repository.get_by_location_year_item(
+                db, location, target_year, source.item_name
+            )
+            if existing is not None and existing.audit_status == AUDIT_APPROVED:
+                skipped += 1
+                continue
             try:
-                self.repository.create(
-                    db,
-                    {
-                        "location": location,
-                        "year": target_year,
-                        "item_name": source.item_name,
-                        "unit": source.unit,
-                        "unit_price": quantize_unit_price(source.unit_price),
-                        "remark": source.remark,
-                        **audit,
-                    },
-                )
-                created += 1
+                payload = {
+                    "unit": source.unit,
+                    "unit_price": quantize_unit_price(source.unit_price),
+                    "remark": source.remark,
+                    "audit_status": AUDIT_PENDING,
+                    **audit_update(current_user),
+                }
+                if existing is not None:
+                    self.repository.update(db, existing.id, payload)
+                    created += 1
+                else:
+                    self.repository.create(
+                        db,
+                        {
+                            "location": location,
+                            "year": target_year,
+                            "item_name": source.item_name,
+                            "unit": source.unit,
+                            "unit_price": quantize_unit_price(source.unit_price),
+                            "remark": source.remark,
+                            "audit_status": AUDIT_PENDING,
+                            **audit,
+                        },
+                    )
+                    created += 1
             except IntegrityError:
                 db.rollback()
                 skipped += 1
@@ -236,7 +382,7 @@ class BomWeldingUnitPriceService:
                 failed.append(f"{source.item_name}: {str(e)}")
 
         logger.info(
-            "基地 %s 从 %s 复制到 %s: 创建 %s, 跳过 %s, 失败 %s",
+            "基地 %s 从 %s 复制到 %s: 创建/更新 %s, 跳过 %s, 失败 %s",
             location,
             source_year,
             target_year,

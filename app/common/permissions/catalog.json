@@ -79,6 +79,8 @@
                 { "code": "op:stamping-tonnage:create", "label": "新增", "type": "op" },
                 { "code": "op:stamping-tonnage:update", "label": "编辑", "type": "op" },
                 { "code": "op:stamping-tonnage:delete", "label": "删除", "type": "op" },
+                { "code": "op:stamping-tonnage:approve", "label": "审核通过", "type": "op" },
+                { "code": "op:stamping-tonnage:reverse", "label": "反审核", "type": "op" },
                 { "code": "op:stamping-tonnage:copy", "label": "复制年度模板", "type": "op" },
                 { "code": "op:stamping-tonnage:export", "label": "导出", "type": "op" }
               ]
@@ -250,6 +252,8 @@
                 { "code": "op:bom-welding-unit-price:create", "label": "新增", "type": "op" },
                 { "code": "op:bom-welding-unit-price:update", "label": "编辑", "type": "op" },
                 { "code": "op:bom-welding-unit-price:delete", "label": "删除", "type": "op" },
+                { "code": "op:bom-welding-unit-price:approve", "label": "审核通过", "type": "op" },
+                { "code": "op:bom-welding-unit-price:reverse", "label": "反审核", "type": "op" },
                 { "code": "op:bom-welding-unit-price:copy", "label": "复制年度模板", "type": "op" },
                 { "code": "op:bom-welding-unit-price:export", "label": "导出", "type": "op" }
               ]

@@ -1,20 +1,22 @@
 /**
  * Tonnage Price Page
- * 冲次单价维护页面逻辑
- *
- * 抽屉式交互（与零件列表/partDrawer 对齐）：
- * - 编辑/新增  →editDrawer
- * - 复制模板  →copyDrawer
- * - 删除确认  →deleteDrawer
+ * 冲次单价列表：HUD + 批量审核/反审核/删除（范围=基地+年度，与上传对等）
  */
 
-import { tonnagePriceTemplate, renderTableRows, renderPagination, pricePerStrokeInputValue, parsePricePerStrokeInput } from './template.js?v=10';
+import {
+    tonnagePriceTemplate,
+    renderTableRows,
+    renderPagination,
+    pricePerStrokeInputValue,
+    parsePricePerStrokeInput,
+    updateTonnageHud,
+    updateTonnageFilterCapsules,
+} from './template.js?v=16';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
 } from '../../../../page-size.js?v=2';
 
-// 状态管理
 const tonnagePriceState = {
     records: [],
     total: 0,
@@ -23,38 +25,31 @@ const tonnagePriceState = {
     totalPages: 1,
     selectedLocation: null,
     selectedYear: null,
+    selectedAuditStatus: null,
     locations: [],
     years: [],
     isLoading: false,
     isBatchDeleting: false,
+    batchAuditSubmitting: false,
+    advancedOpen: false,
 };
 
 const DEFAULT_LOCATION = '青岛';
-
-// API 基础路径
 const API_BASE = '/api/stamping/tonnage-price';
-
-// 抽屉动画时长（与 template 中transition-transform duration-300 保持一致）
 const DRAWER_ANIMATION_MS = 300;
+const SCOPE_REQUIRED_MESSAGE = '批量操作须同时选择基地和年度';
 
-/**
- * 打开抽屉 —全display:block，下一帧再 translate-x-0 触发滑入
- */
 function openDrawer(drawerId, backdropId) {
     const drawer = document.getElementById(drawerId);
     const backdrop = document.getElementById(backdropId);
     if (!drawer) return;
     drawer.style.display = 'flex';
     if (backdrop) backdrop.style.display = 'block';
-    // 强制 reflow，让 transition 生效
     void drawer.offsetWidth;
     drawer.classList.remove('translate-x-full');
     drawer.classList.add('translate-x-0');
 }
 
-/**
- * 关闭抽屉 —translate-x-full 触发滑出，动画结束后冲display:none
- */
 function closeDrawer(drawerId, backdropId) {
     const drawer = document.getElementById(drawerId);
     const backdrop = document.getElementById(backdropId);
@@ -67,12 +62,8 @@ function closeDrawer(drawerId, backdropId) {
     }, DRAWER_ANIMATION_MS);
 }
 
-/**
- * 页面初始化
- */
 function init() {
-    loadFilterOptions();
-    loadData();
+    loadFilterOptions().then(() => loadData());
     bindEvents();
     bindPageSizeSelect('tonnagePageSize', {
         getSize: () => tonnagePriceState.pageSize,
@@ -82,22 +73,30 @@ function init() {
         onChange: () => loadData(1),
     });
     applyPermissionUi();
+    updateTonnageFilterCapsules();
 }
 
 function applyPermissionUi() {
-    const canCreate = typeof can === 'function' ? can('op:stamping-tonnage:create') : true;
     const canCopy = typeof can === 'function' ? can('op:stamping-tonnage:copy') : true;
     const canExport = typeof can === 'function' ? can('op:stamping-tonnage:export') : true;
     const canDelete = typeof can === 'function' ? can('op:stamping-tonnage:delete') : true;
-    if (!canCreate) document.getElementById('btnAddTonnagePrice')?.classList.add('hidden');
+    const canApprove = typeof can === 'function' ? can('op:stamping-tonnage:approve') : true;
+    const canReverse = typeof can === 'function' ? can('op:stamping-tonnage:reverse') : true;
     if (!canCopy) document.getElementById('btnCopyTemplate')?.classList.add('hidden');
     if (!canExport) document.getElementById('btnExportTonnagePrice')?.classList.add('hidden');
     if (!canDelete) document.getElementById('btnBatchDeleteTonnagePrice')?.classList.add('hidden');
+    if (!canApprove) document.getElementById('btnBatchApproveTonnage')?.classList.add('hidden');
+    if (!canReverse) document.getElementById('btnBatchReverseTonnage')?.classList.add('hidden');
 }
 
-/**
- * 加载基地 / 年份下拉选项
- */
+function setAdvancedOpen(open) {
+    tonnagePriceState.advancedOpen = open;
+    const panel = document.getElementById('tonnageAdvancedFilterPanel');
+    const label = document.getElementById('tonnageAdvancedFilterLabel');
+    if (panel) panel.classList.toggle('hidden', !open);
+    if (label) label.textContent = open ? '收起高级筛选' : '展开高级筛选';
+}
+
 async function loadFilterOptions() {
     try {
         const [locRes, yearRes] = await Promise.all([
@@ -109,10 +108,10 @@ async function loadFilterOptions() {
 
         const locationFilter = document.getElementById('locationFilter');
         if (locationFilter) {
-            let options = `<option value="">请选择基地</option>`;
             const known = ['大连', '芜湖', '鄂尔多斯', '青岛'];
             const merged = [...new Set([...known, ...tonnagePriceState.locations])];
-            merged.forEach(loc => {
+            let options = `<option value="">全部</option>`;
+            merged.forEach((loc) => {
                 options += `<option value="${esc(loc)}">${esc(loc)}</option>`;
             });
             locationFilter.innerHTML = options;
@@ -124,8 +123,8 @@ async function loadFilterOptions() {
         const yearFilter = document.getElementById('yearFilter');
         if (yearFilter) {
             const currentYear = new Date().getFullYear();
-            let options = `<option value="">请选择年份</option>`;
-            tonnagePriceState.years.forEach(year => {
+            let options = `<option value="">全部</option>`;
+            tonnagePriceState.years.forEach((year) => {
                 options += `<option value="${year}">${year} 年</option>`;
             });
             if (!tonnagePriceState.years.includes(currentYear)) {
@@ -137,10 +136,23 @@ async function loadFilterOptions() {
             }
         }
 
+        const auditFilter = document.getElementById('auditStatusFilter');
+        if (auditFilter) {
+            auditFilter.innerHTML = `
+                <option value="">全部</option>
+                <option value="pending">待审</option>
+                <option value="approved">已通过</option>
+                <option value="rejected">已驳回</option>
+            `;
+            if (tonnagePriceState.selectedAuditStatus) {
+                auditFilter.value = tonnagePriceState.selectedAuditStatus;
+            }
+        }
+
         const sourceYearSelect = document.getElementById('sourceYear');
         if (sourceYearSelect) {
             let options = `<option value="">请选择源年份</option>`;
-            tonnagePriceState.years.forEach(year => {
+            tonnagePriceState.years.forEach((year) => {
                 options += `<option value="${year}">${year} 年</option>`;
             });
             sourceYearSelect.innerHTML = options;
@@ -150,9 +162,23 @@ async function loadFilterOptions() {
     }
 }
 
-/**
- * 加载数据
- */
+function readFiltersFromDom() {
+    const locationFilter = document.getElementById('locationFilter');
+    const yearFilter = document.getElementById('yearFilter');
+    const auditFilter = document.getElementById('auditStatusFilter');
+    tonnagePriceState.selectedLocation = locationFilter ? (locationFilter.value || null) : null;
+    tonnagePriceState.selectedYear = yearFilter ? (yearFilter.value || null) : null;
+    tonnagePriceState.selectedAuditStatus = auditFilter ? (auditFilter.value || null) : null;
+    updateTonnageFilterCapsules();
+}
+
+function collectScopeFilters() {
+    return {
+        location: (document.getElementById('locationFilter')?.value || '').trim(),
+        year: (document.getElementById('yearFilter')?.value || '').trim(),
+    };
+}
+
 async function loadData(page = 1) {
     if (tonnagePriceState.isLoading) return;
     tonnagePriceState.isLoading = true;
@@ -169,19 +195,15 @@ async function loadData(page = 1) {
 
     try {
         const params = {
-            page: page,
+            page,
             size: tonnagePriceState.pageSize,
         };
-
-        if (tonnagePriceState.selectedLocation) {
-            params.location = tonnagePriceState.selectedLocation;
+        if (tonnagePriceState.selectedLocation) params.location = tonnagePriceState.selectedLocation;
+        if (tonnagePriceState.selectedYear) params.year = tonnagePriceState.selectedYear;
+        if (tonnagePriceState.selectedAuditStatus) {
+            params.audit_status = tonnagePriceState.selectedAuditStatus;
         }
 
-        if (tonnagePriceState.selectedYear) {
-            params.year = tonnagePriceState.selectedYear;
-        }
-
-        // 分页接口：使用/paginate 端点
         const res = await HttpClient.get(`${API_BASE}/paginate`, { params });
         const pageResult = res.data || {};
 
@@ -189,6 +211,9 @@ async function loadData(page = 1) {
         tonnagePriceState.total = pageResult.total || 0;
         tonnagePriceState.page = pageResult.page || page;
         tonnagePriceState.totalPages = pageResult.total_pages || 1;
+
+        const filters = pageResult.filters || {};
+        updateTonnageHud(filters.summary || {});
 
         if (tableBody) {
             if (tonnagePriceState.records.length === 0) {
@@ -202,27 +227,21 @@ async function loadData(page = 1) {
         }
 
         if (totalCountPagination) {
-            totalCountPagination.textContent = `全${tonnagePriceState.total} 条`;
+            totalCountPagination.textContent = `共 ${tonnagePriceState.total} 条`;
         }
-
         if (paginationBtns) {
             paginationBtns.innerHTML = renderPagination(
                 tonnagePriceState.page,
-                tonnagePriceState.totalPages,
-                tonnagePriceState.total
+                tonnagePriceState.totalPages
             );
         }
-
     } catch (error) {
         console.error('加载数据失败:', error);
         if (tableBody) {
             tableBody.innerHTML = `
                 <tr>
-                    <td colspan="5" class="px-4 py-8 text-center text-[#9e9e9e] text-xs">
-                        加载数据失败，请重试
-                    </td>
-                </tr>
-            `;
+                    <td colspan="10" class="px-4 py-8 text-center text-[#9e9e9e] text-xs">加载数据失败，请重试</td>
+                </tr>`;
         }
     } finally {
         tonnagePriceState.isLoading = false;
@@ -230,281 +249,245 @@ async function loadData(page = 1) {
     }
 }
 
-/**
- * 绑定表格行内按钮事件
- */
 function bindTableRowEvents() {
-    document.querySelectorAll('.edit-btn').forEach(btn => {
+    document.querySelectorAll('.edit-btn').forEach((btn) => {
         btn.addEventListener('click', (e) => {
             e.stopPropagation();
             const row = e.target.closest('tr');
-            const id = parseInt(row.dataset.id);
-            const record = tonnagePriceState.records.find(r => r.id === id);
+            const id = parseInt(row.dataset.id, 10);
+            const record = tonnagePriceState.records.find((r) => r.id === id);
             if (record) {
+                if (record.audit_status === 'approved') {
+                    showToast('已审核通过，请先反审核后再修改', 'warning');
+                    return;
+                }
                 openEditDrawer(record);
             }
         });
     });
-
-    document.querySelectorAll('.delete-btn').forEach(btn => {
+    document.querySelectorAll('.delete-btn').forEach((btn) => {
         btn.addEventListener('click', (e) => {
             e.stopPropagation();
             const row = e.target.closest('tr');
-            const id = parseInt(row.dataset.id);
+            const id = parseInt(row.dataset.id, 10);
+            const record = tonnagePriceState.records.find((r) => r.id === id);
+            if (record?.audit_status === 'approved') {
+                showToast('已审核通过，请先反审核后再删除', 'warning');
+                return;
+            }
             openDeleteDrawer(id);
         });
     });
 }
 
-/**
- * 绑定事件
- */
 function bindEvents() {
-    const btnAdd = document.getElementById('btnAddTonnagePrice');
-    if (btnAdd) {
-        btnAdd.addEventListener('click', () => openAddDrawer());
-    }
-
-    const btnExport = document.getElementById('btnExportTonnagePrice');
-    if (btnExport) {
-        btnExport.addEventListener('click', () => exportExcel());
-    }
-
-    const btnBatchDelete = document.getElementById('btnBatchDeleteTonnagePrice');
-    if (btnBatchDelete) {
-        btnBatchDelete.addEventListener('click', () => batchDeleteByFilters());
-    }
-
-    const btnFilter = document.getElementById('btnFilter');
-    if (btnFilter) {
-        btnFilter.addEventListener('click', () => {
-            const locationFilter = document.getElementById('locationFilter');
-            const yearFilter = document.getElementById('yearFilter');
-            tonnagePriceState.selectedLocation = locationFilter ? (locationFilter.value || null) : null;
-            tonnagePriceState.selectedYear = yearFilter ? (yearFilter.value || null) : null;
-            loadData(1);
+    document.getElementById('btnExportTonnagePrice')?.addEventListener('click', () => exportExcel());
+    document.getElementById('btnBatchDeleteTonnagePrice')?.addEventListener('click', () => batchDeleteByFilters());
+    document.getElementById('btnBatchApproveTonnage')?.addEventListener('click', () => openBatchAuditDrawer('approve'));
+    document.getElementById('btnBatchReverseTonnage')?.addEventListener('click', () => openBatchAuditDrawer('reverse'));
+    document.getElementById('btnCopyTemplate')?.addEventListener('click', () => openCopyDrawer());
+    document.getElementById('btnFilter')?.addEventListener('click', () => {
+        readFiltersFromDom();
+        loadData(1);
+    });
+    document.getElementById('tonnageToggleAdvancedFilter')?.addEventListener('click', () => {
+        setAdvancedOpen(!tonnagePriceState.advancedOpen);
+    });
+    document.getElementById('tonnageResetFilterBtn')?.addEventListener('click', () => {
+        ['locationFilter', 'yearFilter', 'auditStatusFilter'].forEach((id) => {
+            const el = document.getElementById(id);
+            if (el) el.value = '';
         });
-    }
-
-    const btnCopy = document.getElementById('btnCopyTemplate');
-    if (btnCopy) {
-        btnCopy.addEventListener('click', () => openCopyDrawer());
-    }
+        readFiltersFromDom();
+        loadData(1);
+    });
 
     bindEditDrawerEvents();
     bindCopyDrawerEvents();
     bindDeleteDrawerEvents();
+    bindBatchAuditDrawerEvents();
     bindPaginationEvents();
 }
 
-/**
- * 绑定编辑抽屉事件
- */
 function bindEditDrawerEvents() {
-    const closeBtn = document.getElementById('closeEditDrawer');
-    const cancelBtn = document.getElementById('cancelEditBtn');
-    const backdrop = document.getElementById('editDrawerBackdrop');
-    const submitBtn = document.getElementById('submitEditBtn');
-
     const close = () => closeDrawer('editDrawer', 'editDrawerBackdrop');
+    document.getElementById('closeEditDrawer')?.addEventListener('click', close);
+    document.getElementById('cancelEditBtn')?.addEventListener('click', close);
+    document.getElementById('editDrawerBackdrop')?.addEventListener('click', close);
+    document.getElementById('submitEditBtn')?.addEventListener('click', async (e) => {
+        e.preventDefault();
+        await saveRecord();
+    });
+}
 
-    if (closeBtn) closeBtn.addEventListener('click', close);
-    if (cancelBtn) cancelBtn.addEventListener('click', close);
-    if (backdrop) backdrop.addEventListener('click', close);
+function bindCopyDrawerEvents() {
+    const close = () => closeDrawer('copyDrawer', 'copyDrawerBackdrop');
+    document.getElementById('closeCopyDrawer')?.addEventListener('click', close);
+    document.getElementById('cancelCopyBtn')?.addEventListener('click', close);
+    document.getElementById('copyDrawerBackdrop')?.addEventListener('click', close);
+    document.getElementById('submitCopyBtn')?.addEventListener('click', async (e) => {
+        e.preventDefault();
+        await copyTemplate();
+    });
+}
 
-    // 保存按钮（form submit 由按钮点击触发，等价于表单提交）
-    if (submitBtn) {
-        submitBtn.addEventListener('click', async (e) => {
-            e.preventDefault();
-            await saveRecord();
-        });
-    }
+function bindDeleteDrawerEvents() {
+    const close = () => closeDrawer('deleteDrawer', 'deleteDrawerBackdrop');
+    document.getElementById('closeDeleteDrawer')?.addEventListener('click', close);
+    document.getElementById('cancelDeleteBtn')?.addEventListener('click', close);
+    document.getElementById('deleteDrawerBackdrop')?.addEventListener('click', close);
+    document.getElementById('confirmDeleteBtn')?.addEventListener('click', async () => {
+        const id = parseInt(document.getElementById('deleteRecordId')?.value, 10);
+        if (id) await deleteRecord(id);
+    });
+}
 
-    // Esc 关闭
-    document.addEventListener('keydown', (e) => {
-        const drawer = document.getElementById('editDrawer');
-        if (e.key === 'Escape' && drawer && drawer.style.display === 'flex') {
-            close();
+function bindBatchAuditDrawerEvents() {
+    const close = () => {
+        if (tonnagePriceState.batchAuditSubmitting) return;
+        closeDrawer('tonnageBatchAuditDrawer', 'tonnageBatchAuditDrawerBackdrop');
+    };
+    document.getElementById('closeTonnageBatchAuditDrawer')?.addEventListener('click', close);
+    document.getElementById('cancelTonnageBatchAuditBtn')?.addEventListener('click', close);
+    document.getElementById('tonnageBatchAuditDrawerBackdrop')?.addEventListener('click', close);
+    document.getElementById('confirmTonnageBatchAuditBtn')?.addEventListener('click', submitBatchAudit);
+}
+
+function bindPaginationEvents() {
+    document.getElementById('paginationBtns')?.addEventListener('click', (e) => {
+        const btn = e.target.closest('.page-btn');
+        if (btn && !btn.disabled) {
+            const page = parseInt(btn.dataset.page, 10);
+            if (page) loadData(page);
         }
     });
 }
 
-/**
- * 绑定复制抽屉事件
- */
-function bindCopyDrawerEvents() {
-    const closeBtn = document.getElementById('closeCopyDrawer');
-    const cancelBtn = document.getElementById('cancelCopyBtn');
-    const backdrop = document.getElementById('copyDrawerBackdrop');
-    const submitBtn = document.getElementById('submitCopyBtn');
-
-    const close = () => closeDrawer('copyDrawer', 'copyDrawerBackdrop');
-
-    if (closeBtn) closeBtn.addEventListener('click', close);
-    if (cancelBtn) cancelBtn.addEventListener('click', close);
-    if (backdrop) backdrop.addEventListener('click', close);
-
-    if (submitBtn) {
-        submitBtn.addEventListener('click', async (e) => {
-            e.preventDefault();
-            await copyTemplate();
-        });
-    }
-}
-
-/**
- * 绑定删除抽屉事件
- */
-function bindDeleteDrawerEvents() {
-    const closeBtn = document.getElementById('closeDeleteDrawer');
-    const cancelBtn = document.getElementById('cancelDeleteBtn');
-    const backdrop = document.getElementById('deleteDrawerBackdrop');
-    const confirmBtn = document.getElementById('confirmDeleteBtn');
-
-    const close = () => closeDrawer('deleteDrawer', 'deleteDrawerBackdrop');
-
-    if (closeBtn) closeBtn.addEventListener('click', close);
-    if (cancelBtn) cancelBtn.addEventListener('click', close);
-    if (backdrop) backdrop.addEventListener('click', close);
-
-    if (confirmBtn) {
-        confirmBtn.addEventListener('click', async () => {
-            const id = parseInt(document.getElementById('deleteRecordId')?.value);
-            if (id) {
-                await deleteRecord(id);
-            }
-        });
-    }
-}
-
-/**
- * 绑定分页事件
- */
-function bindPaginationEvents() {
-    const container = document.getElementById('paginationBtns');
-    if (container) {
-        container.addEventListener('click', (e) => {
-            const btn = e.target.closest('.page-btn');
-            if (btn && !btn.disabled) {
-                const page = parseInt(btn.dataset.page);
-                if (page) {
-                    loadData(page);
-                }
-            }
-        });
-    }
-}
-
-/**
- * 打开新增抽屉
- */
-function openAddDrawer() {
-    const title = document.getElementById('editDrawerTitle');
-    const recordId = document.getElementById('editRecordId');
-    const locationInput = document.getElementById('editLocation');
-    const yearInput = document.getElementById('editYear');
-    const tonnageInput = document.getElementById('editTonnage');
-    const priceInput = document.getElementById('editPrice');
-    const form = document.getElementById('editForm');
-
-    if (title) title.textContent = '新增价格';
-    if (recordId) recordId.value = '';
-    if (form) form.reset();
-    if (locationInput) {
-        locationInput.value = tonnagePriceState.selectedLocation || DEFAULT_LOCATION;
-        locationInput.disabled = false;
-    }
-    if (yearInput) {
-        yearInput.value = new Date().getFullYear();
-        yearInput.disabled = false;
-    }
-    if (tonnageInput) {
-        tonnageInput.value = '';
-        tonnageInput.disabled = false;
-    }
-    if (priceInput) priceInput.value = '';
-
-    openDrawer('editDrawer', 'editDrawerBackdrop');
-    if (locationInput) setTimeout(() => locationInput.focus(), DRAWER_ANIMATION_MS);
-}
-
-/**
- * 打开编辑抽屉
- */
 function openEditDrawer(record) {
-    const title = document.getElementById('editDrawerTitle');
-    const recordId = document.getElementById('editRecordId');
-    const locationInput = document.getElementById('editLocation');
-    const yearInput = document.getElementById('editYear');
-    const tonnageInput = document.getElementById('editTonnage');
-    const priceInput = document.getElementById('editPrice');
-
-    if (title) title.textContent = '编辑价格';
-    if (recordId) recordId.value = record.id;
-    if (locationInput) {
-        locationInput.value = record.location;
-        locationInput.disabled = true;
-    }
-    if (yearInput) {
-        yearInput.value = record.year;
-        yearInput.disabled = true;
-    }
-    if (tonnageInput) {
-        tonnageInput.value = record.tonnage;
-        tonnageInput.disabled = true;
-    }
-    if (priceInput) priceInput.value = pricePerStrokeInputValue(record.price_per_stroke);
-
+    document.getElementById('editDrawerTitle').textContent = '编辑价格';
+    document.getElementById('editRecordId').value = record.id;
+    document.getElementById('editLocation').value = record.location;
+    document.getElementById('editYear').value = record.year;
+    document.getElementById('editTonnage').value = record.tonnage;
+    document.getElementById('editPrice').value = pricePerStrokeInputValue(record.price_per_stroke);
     openDrawer('editDrawer', 'editDrawerBackdrop');
-    if (priceInput) setTimeout(() => priceInput.focus(), DRAWER_ANIMATION_MS);
 }
 
-/**
- * 打开删除确认抽屉
- */
 function openDeleteDrawer(id) {
-    const recordIdInput = document.getElementById('deleteRecordId');
-    if (recordIdInput) recordIdInput.value = id;
+    document.getElementById('deleteRecordId').value = id;
     openDrawer('deleteDrawer', 'deleteDrawerBackdrop');
 }
 
-/**
- * 打开复制模板抽屉
- */
 function openCopyDrawer() {
-    const copyLocation = document.getElementById('copyLocation');
-    const sourceYearSelect = document.getElementById('sourceYear');
-    const targetYearInput = document.getElementById('targetYear');
     const form = document.getElementById('copyForm');
-
     if (form) form.reset();
+    const copyLocation = document.getElementById('copyLocation');
     if (copyLocation) {
         copyLocation.value = tonnagePriceState.selectedLocation || DEFAULT_LOCATION;
     }
+    const sourceYearSelect = document.getElementById('sourceYear');
     if (sourceYearSelect && tonnagePriceState.years.length > 0) {
         sourceYearSelect.value = tonnagePriceState.years[0] || '';
     }
-    if (targetYearInput) {
-        targetYearInput.value = new Date().getFullYear() + 1;
-    }
-
+    const targetYearInput = document.getElementById('targetYear');
+    if (targetYearInput) targetYearInput.value = new Date().getFullYear() + 1;
     openDrawer('copyDrawer', 'copyDrawerBackdrop');
 }
 
-/**
- * 按当前筛选条件导出Excel
- */
+function getSessionDisplayName() {
+    try {
+        const raw = localStorage.getItem('brabus_user');
+        if (!raw) return '';
+        const session = JSON.parse(raw);
+        return (session.real_name || session.name || session.username || '').trim();
+    } catch (_) {
+        return '';
+    }
+}
+
+function openBatchAuditDrawer(mode) {
+    const filters = collectScopeFilters();
+    if (!filters.year || !filters.location) {
+        setAdvancedOpen(true);
+        showToast(SCOPE_REQUIRED_MESSAGE, 'warning');
+        return;
+    }
+    const isApprove = mode === 'approve';
+    document.getElementById('tonnageBatchAuditMode').value = isApprove ? 'approve' : 'reverse';
+    document.getElementById('tonnageBatchAuditDrawerTitle').textContent = isApprove ? '批量审核' : '批量反审核';
+    document.getElementById('tonnageBatchAuditHint').textContent = isApprove
+        ? '仅处理待审/已驳回；已通过记录会跳过。'
+        : '仅处理已通过记录；其余状态会跳过。反审核意见必填。';
+    document.getElementById('tonnageBatchAuditOperatorLabel').textContent = isApprove ? '审核人' : '反审核人';
+    document.getElementById('tonnageBatchAuditOperatorDisplay').textContent =
+        getSessionDisplayName() || '（当前登录用户）';
+    const remarkLabel = document.getElementById('tonnageBatchAuditRemarkLabel');
+    remarkLabel.innerHTML = isApprove
+        ? '审核意见'
+        : '反审核意见<span class="text-[#d32f2f]">*</span>';
+    const remarkEl = document.getElementById('tonnageBatchAuditRemark');
+    remarkEl.value = '';
+    remarkEl.placeholder = isApprove ? '可选填写审核意见' : '必填反审核原因';
+    document.getElementById('tonnageBatchAuditFilterSummary').textContent =
+        `基地 ${filters.location} · 年度 ${filters.year}`;
+    openDrawer('tonnageBatchAuditDrawer', 'tonnageBatchAuditDrawerBackdrop');
+}
+
+async function submitBatchAudit() {
+    if (tonnagePriceState.batchAuditSubmitting) return;
+    const mode = document.getElementById('tonnageBatchAuditMode')?.value || 'approve';
+    const filters = collectScopeFilters();
+    const remark = document.getElementById('tonnageBatchAuditRemark')?.value.trim() || '';
+    if (mode === 'reverse' && !remark) {
+        showToast('反审核意见必填', 'warning');
+        return;
+    }
+    const body = {
+        location: filters.location,
+        year: Number(filters.year),
+    };
+    const url = mode === 'approve'
+        ? `${API_BASE}/batch-approve`
+        : `${API_BASE}/batch-reverse-audit`;
+    if (mode === 'approve') body.audit_remark = remark || null;
+    else body.reverse_audit_remark = remark;
+
+    const btn = document.getElementById('confirmTonnageBatchAuditBtn');
+    tonnagePriceState.batchAuditSubmitting = true;
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = '提交中…';
+    }
+    try {
+        const res = await HttpClient.post(url, body);
+        const result = res.data || {};
+        showToast(
+            res.message
+                || (mode === 'approve'
+                    ? `已审核通过 ${result.updated_count || 0} 条`
+                    : `已反审核 ${result.updated_count || 0} 条`),
+            (result.updated_count || 0) > 0 ? 'success' : 'warning',
+        );
+        closeDrawer('tonnageBatchAuditDrawer', 'tonnageBatchAuditDrawerBackdrop');
+        await loadData(tonnagePriceState.page);
+    } catch (error) {
+        if (!error.status) showToast(error.message || '操作失败', 'error');
+    } finally {
+        tonnagePriceState.batchAuditSubmitting = false;
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = '确认提交';
+        }
+    }
+}
+
 async function exportExcel() {
     const btn = document.getElementById('btnExportTonnagePrice');
     const originalHtml = btn ? btn.innerHTML : '';
     if (btn) {
         btn.disabled = true;
-        btn.innerHTML = `
-            <div class="w-3 h-3 border border-[#ef5350] border-t-transparent rounded-full animate-spin"></div>
-            导出中..
-        `;
+        btn.innerHTML = `<div class="w-3 h-3 border border-[#ef5350] border-t-transparent rounded-full animate-spin"></div>导出中..`;
     }
-
     try {
         const { blob, filename } = await HttpClient.download(`${API_BASE}/export`, {
             params: {
@@ -513,7 +496,6 @@ async function exportExcel() {
             },
             defaultFilename: '冲次单价导出.xlsx',
         });
-
         const url = window.URL.createObjectURL(blob);
         const anchor = document.createElement('a');
         anchor.href = url;
@@ -524,10 +506,7 @@ async function exportExcel() {
         window.URL.revokeObjectURL(url);
         showToast(`导出成功: ${filename}`, 'success');
     } catch (error) {
-        console.error('导出冲次单价失败:', error);
-        if (!error.status) {
-            showToast(error.message || '导出失败', 'error');
-        }
+        if (!error.status) showToast(error.message || '导出失败', 'error');
     } finally {
         if (btn) {
             btn.disabled = false;
@@ -536,67 +515,52 @@ async function exportExcel() {
     }
 }
 
-/**
- * 按基地+ 年度批量删除（两者必选）
- */
 async function batchDeleteByFilters() {
     if (typeof can === 'function' && !can('op:stamping-tonnage:delete')) {
         showToast('无删除权限', 'warning');
         return;
     }
     if (tonnagePriceState.isBatchDeleting) return;
-
-    const locationFilter = document.getElementById('locationFilter');
-    const yearFilter = document.getElementById('yearFilter');
-    const location = locationFilter?.value?.trim() || '';
-    const yearRaw = yearFilter?.value?.trim() || '';
-
-    if (!location || !yearRaw) {
-        showToast('批量删除须同时选择基地和年度', 'warning');
+    const filters = collectScopeFilters();
+    if (!filters.location || !filters.year) {
+        setAdvancedOpen(true);
+        showToast(SCOPE_REQUIRED_MESSAGE, 'warning');
         return;
     }
-
-    const year = parseInt(yearRaw, 10);
+    const year = parseInt(filters.year, 10);
     if (!year || year < 2000 || year > 2100) {
         showToast('请选择正确的年度', 'warning');
         return;
     }
-
-    const confirmed = window.confirm(
-        `确定批量删除以下冲次单价吗？\n\n基地: ${location} | 年度: ${year}\n\n将删除该基地该年全部记录，此操作不可恢复！`
-    );
-    if (!confirmed) return;
+    if (!window.confirm(
+        `确定批量删除未审核冲次单价吗？\n\n基地: ${filters.location} | 年度: ${year}\n\n仅删除待审/已驳回；已审核通过会跳过。此操作不可恢复！`,
+    )) return;
 
     const btn = document.getElementById('btnBatchDeleteTonnagePrice');
     const originalHtml = btn ? btn.innerHTML : '';
     tonnagePriceState.isBatchDeleting = true;
     if (btn) {
         btn.disabled = true;
-        btn.innerHTML = `
-            <div class="w-3 h-3 border border-[#ef5350] border-t-transparent rounded-full animate-spin"></div>
-            删除中..
-        `;
+        btn.innerHTML = `<div class="w-3 h-3 border border-[#ef5350] border-t-transparent rounded-full animate-spin"></div>删除中..`;
     }
-
     try {
         const res = await HttpClient.post(`${API_BASE}/batch-delete`, {
-            location,
+            location: filters.location,
             year,
         });
         const data = res.data || {};
+        const deleted = data.deleted_count ?? 0;
+        const skipped = data.skipped_approved_count ?? 0;
         showToast(
-            res.message || data.message || `已删除${data.deleted_count ?? 0} 条`,
-            'success'
+            res.message || `已删除 ${deleted} 条` + (skipped ? `，跳过已审核 ${skipped} 条` : ''),
+            deleted > 0 ? 'success' : 'warning',
         );
-        tonnagePriceState.selectedLocation = location;
+        tonnagePriceState.selectedLocation = filters.location;
         tonnagePriceState.selectedYear = String(year);
         await loadData(1);
         await loadFilterOptions();
     } catch (error) {
-        console.error('批量删除冲次单价失败:', error);
-        if (!error.status) {
-            showToast(error.message || '批量删除失败', 'error');
-        }
+        if (!error.status) showToast(error.message || '批量删除失败', 'error');
     } finally {
         tonnagePriceState.isBatchDeleting = false;
         if (btn) {
@@ -606,57 +570,27 @@ async function batchDeleteByFilters() {
     }
 }
 
-/**
- * 保存记录（新增或更新）
- */
 async function saveRecord() {
     const recordId = document.getElementById('editRecordId')?.value;
-    const location = document.getElementById('editLocation')?.value?.trim();
-    const year = parseInt(document.getElementById('editYear')?.value);
-    const tonnage = parseInt(document.getElementById('editTonnage')?.value, 10);
     const price = parsePricePerStrokeInput(document.getElementById('editPrice')?.value);
-
-    if (!recordId && (!location || !year || !tonnage || !price)) {
-        showToast('请填写所有必填项（单价须为最多3位小数的数字）', 'warning');
-        return;
-    }
-    if (recordId && !price) {
+    if (!recordId || !price) {
         showToast('请填写单冲次价格（最多3位小数）', 'warning');
         return;
     }
-
     try {
-        if (recordId) {
-            await HttpClient.put(`${API_BASE}/${recordId}`, {
-                price_per_stroke: price,
-            });
-            showToast('更新成功', 'success');
-        } else {
-            await HttpClient.post(API_BASE, {
-                location,
-                year,
-                tonnage,
-                price_per_stroke: price,
-            });
-            showToast('创建成功', 'success');
-        }
-
+        await HttpClient.put(`${API_BASE}/${recordId}`, { price_per_stroke: price });
+        showToast('更新成功', 'success');
         closeDrawer('editDrawer', 'editDrawerBackdrop');
         loadData(tonnagePriceState.page);
-        loadFilterOptions();
     } catch (error) {
         console.error('保存失败:', error);
     }
 }
 
-/**
- * 删除记录
- */
 async function deleteRecord(id) {
     try {
         await HttpClient.delete(`${API_BASE}/${id}`);
         showToast('删除成功', 'success');
-
         closeDrawer('deleteDrawer', 'deleteDrawerBackdrop');
         loadData(tonnagePriceState.page);
     } catch (error) {
@@ -664,31 +598,23 @@ async function deleteRecord(id) {
     }
 }
 
-/**
- * 复制价格模板
- */
 async function copyTemplate() {
     const location = document.getElementById('copyLocation')?.value?.trim();
-    const sourceYear = parseInt(document.getElementById('sourceYear')?.value);
-    const targetYear = parseInt(document.getElementById('targetYear')?.value);
-
+    const sourceYear = parseInt(document.getElementById('sourceYear')?.value, 10);
+    const targetYear = parseInt(document.getElementById('targetYear')?.value, 10);
     if (!location || !sourceYear || !targetYear) {
         showToast('请选择基地、源年份和目标年份', 'warning');
         return;
     }
-
     if (sourceYear === targetYear) {
         showToast('源年份和目标年份不能相同', 'warning');
         return;
     }
-
     try {
         await HttpClient.post(
             `${API_BASE}/copy-year?location=${encodeURIComponent(location)}&source_year=${sourceYear}&target_year=${targetYear}`
         );
-
         showToast(`成功将「${location}」从 ${sourceYear} 年复制到 ${targetYear} 年`, 'success');
-
         closeDrawer('copyDrawer', 'copyDrawerBackdrop');
         loadData(1);
         loadFilterOptions();
@@ -696,9 +622,7 @@ async function copyTemplate() {
         console.error('复制失败:', error);
     }
 }
-/**
- * 页面配置导出
- */
+
 export const pageConfig = {
     render: tonnagePriceTemplate,
     init: () => init(),

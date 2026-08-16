@@ -24,6 +24,13 @@ class StampingTonnagePriceResponse(BaseModel):
     year: int
     tonnage: int
     price_per_stroke: Decimal
+    audit_status: str = "pending"
+    audited_by: str | None = None
+    audited_at: datetime | None = None
+    audit_remark: str | None = None
+    reverse_audited_by: str | None = None
+    reverse_audited_at: datetime | None = None
+    reverse_audit_remark: str | None = None
     created_by: str | None = None
     updated_by: str | None = None
     created_at: datetime | None = None
@@ -33,7 +40,7 @@ class StampingTonnagePriceResponse(BaseModel):
     def serialize_price(self, value: Decimal) -> str:
         return format_price_per_stroke(value)
 
-    @field_serializer("created_at", "updated_at")
+    @field_serializer("created_at", "updated_at", "audited_at", "reverse_audited_at")
     def serialize_datetime(self, value: datetime | None) -> str | None:
         return value.isoformat() if value else None
 
@@ -49,6 +56,7 @@ class StampingTonnagePriceBulkUpsertResponse(BaseModel):
     created_count: int
     updated_count: int
     failed_count: int
+    skipped_approved_count: int = 0
 
 
 class StampingTonnagePriceCopyYearResponse(BaseModel):
@@ -81,4 +89,14 @@ class StampingTonnagePriceBatchDeleteResultVO(BaseModel):
     location: str
     year: int
     deleted_count: int
+    skipped_approved_count: int = 0
     message: str = ""
+
+
+class StampingTonnagePriceBatchAuditResultVO(BaseModel):
+    """按基地+年度批量审核 / 反审核结果"""
+
+    updated_count: int = 0
+    skipped_count: int = 0
+    location: str
+    year: int

@@ -15,12 +15,15 @@ from app.database import get_db
 from app.deps.permissions import require_perm
 from app.schemas.common.page_result import PageResult
 from app.schemas.dto.bom_welding_unit_price_dto import (
+    BomWeldingUnitPriceBatchApproveDTO,
     BomWeldingUnitPriceBatchDeleteDTO,
+    BomWeldingUnitPriceBatchReverseAuditDTO,
     BomWeldingUnitPriceCreate,
     BomWeldingUnitPriceQuery,
     BomWeldingUnitPriceUpdate,
 )
 from app.schemas.vo.bom_welding_unit_price_vo import (
+    BomWeldingUnitPriceBatchAuditResultVO,
     BomWeldingUnitPriceBatchDeleteResultVO,
     BomWeldingUnitPriceBulkUpsertResponse,
     BomWeldingUnitPriceCopyYearResponse,
@@ -204,8 +207,8 @@ def batch_delete(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BOM_WELDING_UNIT_PRICE_DELETE)),
 ) -> ApiResponse[BomWeldingUnitPriceBatchDeleteResultVO]:
-    """按基地 + 年度批量删除焊接单价（两者必填）。"""
-    deleted_count, error = _welding_unit_price_service.batch_delete_by_location_year(
+    """按基地 + 年度批量删除焊接单价（仅删未审核；已通过跳过）。"""
+    deleted_count, skipped, error = _welding_unit_price_service.batch_delete_by_location_year(
         db,
         location=body.location,
         year=body.year,
@@ -214,15 +217,62 @@ def batch_delete(
         raise HTTPException(status_code=400, detail=error)
 
     message = f"已删除基地「{body.location}」{body.year} 年共 {deleted_count} 条"
+    if skipped:
+        message += f"，跳过已审核 {skipped} 条"
     return ApiResponse.ok(
         data=BomWeldingUnitPriceBatchDeleteResultVO(
             location=body.location.strip(),
             year=body.year,
             deleted_count=deleted_count,
+            skipped_approved_count=skipped,
             message=message,
         ),
         message=message,
     )
+
+
+@router.post(
+    "/batch-approve",
+    response_model=ApiResponse[BomWeldingUnitPriceBatchAuditResultVO],
+)
+def batch_approve(
+    body: BomWeldingUnitPriceBatchApproveDTO,
+    db: Session = Depends(get_db),
+    current_user: UserVO = Depends(require_perm(Perm.BOM_WELDING_UNIT_PRICE_APPROVE)),
+) -> ApiResponse[BomWeldingUnitPriceBatchAuditResultVO]:
+    """按基地 + 年度批量审核通过。"""
+    result, error = _welding_unit_price_service.batch_approve(
+        db, body, current_user=current_user
+    )
+    if error:
+        raise HTTPException(status_code=400, detail=error)
+    assert result is not None
+    message = f"已审核通过 {result.updated_count} 条"
+    if result.skipped_count:
+        message += f"，跳过已审核 {result.skipped_count} 条"
+    return ApiResponse.ok(data=result, message=message)
+
+
+@router.post(
+    "/batch-reverse-audit",
+    response_model=ApiResponse[BomWeldingUnitPriceBatchAuditResultVO],
+)
+def batch_reverse_audit(
+    body: BomWeldingUnitPriceBatchReverseAuditDTO,
+    db: Session = Depends(get_db),
+    current_user: UserVO = Depends(require_perm(Perm.BOM_WELDING_UNIT_PRICE_REVERSE)),
+) -> ApiResponse[BomWeldingUnitPriceBatchAuditResultVO]:
+    """按基地 + 年度批量反审核。"""
+    result, error = _welding_unit_price_service.batch_reverse_audit(
+        db, body, current_user=current_user
+    )
+    if error:
+        raise HTTPException(status_code=400, detail=error)
+    assert result is not None
+    message = f"已反审核 {result.updated_count} 条"
+    if result.skipped_count:
+        message += f"，跳过非已审 {result.skipped_count} 条"
+    return ApiResponse.ok(data=result, message=message)
 
 
 @router.post(
@@ -266,7 +316,7 @@ def bulk_upsert(
     current_user: UserVO = Depends(require_perm(Perm.BOM_WELDING_UNIT_PRICE_CREATE)),
 ) -> Any:
     """批量写入焊接单价（存在则更新）"""
-    created, updated, failed = _welding_unit_price_service.bulk_upsert(
+    created, updated, failed, skipped_approved = _welding_unit_price_service.bulk_upsert(
         db, items, current_user=current_user
     )
     return ApiResponse.ok(
@@ -277,9 +327,11 @@ def bulk_upsert(
             created_count=len(created),
             updated_count=len(updated),
             failed_count=len(failed),
+            skipped_approved_count=skipped_approved,
         ),
         message=(
-            f"批量写入完成: 新增 {len(created)}, 更新 {len(updated)}, 失败 {len(failed)}"
+            f"批量写入完成: 新增 {len(created)}, 更新 {len(updated)}, "
+            f"失败 {len(failed)}, 跳过已审核 {skipped_approved}"
         ),
     )
 
@@ -328,7 +380,8 @@ def update(
         db, id, body, current_user=current_user
     )
     if error:
-        raise HTTPException(status_code=404, detail=error)
+        status_code = 404 if error == "记录不存在" else 400
+        raise HTTPException(status_code=status_code, detail=error)
     return ApiResponse.updated(data=record, message="更新成功")
 
 
@@ -341,5 +394,6 @@ def delete(
     """删除焊接单价记录"""
     success, error = _welding_unit_price_service.delete(db, id)
     if not success:
-        raise HTTPException(status_code=404, detail=error or "记录不存在")
+        status_code = 404 if error == "记录不存在" else 400
+        raise HTTPException(status_code=status_code, detail=error or "记录不存在")
     return ApiResponse.deleted(message="删除成功")

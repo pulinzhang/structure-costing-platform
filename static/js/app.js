@@ -25,7 +25,7 @@ import {
 import { pageConfig as dashboardPage }      from './features/dashboard/index.js?v=5';
 import { pageConfig as stampingUploadPage } from './features/stamping/process/upload/index.js?v=38';
 import { pageConfig as stampingPartsPage }  from './features/stamping/process/parts/index.js?v=24';
-import { pageConfig as stampingTonnagePage } from './features/stamping/tonnage/list/index.js?v=15';
+import { pageConfig as stampingTonnagePage } from './features/stamping/tonnage/list/index.js?v=16';
 import { pageConfig as stampingTonnageUploadPage } from './features/stamping/tonnage/upload/index.js?v=4';
 import { pageConfig as stampingProcessFeeCalcPage } from './features/stamping/process-fee/calc/index.js?v=22';
 import { pageConfig as stampingProcessFeePage } from './features/stamping/process-fee/list/index.js?v=34';
@@ -43,7 +43,7 @@ import { pageConfig as bomStructurePage }  from './features/bom/material/structu
 import { pageConfig as bomVizPage }        from './features/bom/material/viz/index.js?v=29';
 import { pageConfig as bomUploadPage }     from './features/bom/material/upload/index.js?v=4';
 import { pageConfig as bomWeldingUnitPriceUploadPage } from './features/bom/welding-unit-price/upload/index.js?v=6';
-import { pageConfig as bomWeldingUnitPricePage } from './features/bom/welding-unit-price/list/index.js?v=6';
+import { pageConfig as bomWeldingUnitPricePage } from './features/bom/welding-unit-price/list/index.js?v=8';
 import { pageConfig as costingPage }        from './features/costing/engine/index.js';
 import { pageConfig as quotationPage }      from './features/quotation/index.js';
 import { pageConfig as settingsPage }       from './features/settings/system/index.js?v=10';

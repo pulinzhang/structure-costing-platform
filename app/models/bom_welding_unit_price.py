@@ -1,11 +1,16 @@
 """
 焊接单价数据模型
 用于存储不同基地、不同年份的焊接/铆接等操作的单位工费单价
+
+审核锁定：
+  audit_status == 'approved' 时，禁止修改、删除、导入覆盖；
+  须先反审核为 pending。
 """
 
+from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import Index, Integer, Numeric, String, Text, UniqueConstraint
+from sqlalchemy import DateTime, Index, Integer, Numeric, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -51,10 +56,37 @@ class BomWeldingUnitPrice(AuditUserMixin, Base):
         comment="备注",
     )
 
+    # 审核锁定 + 反审核留痕
+    audit_status: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default="pending",
+        comment="审核状态：pending=待审，approved=已通过，rejected=已驳回",
+    )
+    audited_by: Mapped[str | None] = mapped_column(
+        String(50), nullable=True, comment="最近一次审核人"
+    )
+    audited_at: Mapped[datetime | None] = mapped_column(
+        DateTime, nullable=True, comment="最近一次审核时间"
+    )
+    audit_remark: Mapped[str | None] = mapped_column(
+        Text, nullable=True, comment="最近一次审核意见"
+    )
+    reverse_audited_by: Mapped[str | None] = mapped_column(
+        String(50), nullable=True, comment="反审核人"
+    )
+    reverse_audited_at: Mapped[datetime | None] = mapped_column(
+        DateTime, nullable=True, comment="反审核时间"
+    )
+    reverse_audit_remark: Mapped[str | None] = mapped_column(
+        Text, nullable=True, comment="反审核原因"
+    )
+
     __table_args__ = (
         Index("ix_welding_unit_price_location", "location"),
         Index("ix_welding_unit_price_year", "year"),
         Index("ix_welding_unit_price_item_name", "item_name"),
+        Index("ix_welding_unit_price_audit_status", "audit_status"),
         UniqueConstraint(
             "location",
             "year",

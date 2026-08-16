@@ -24,7 +24,7 @@ def display_name(user: Any) -> str:
 # 无登录上下文时的系统用户（首次 seed、本地脚本）
 SYSTEM_USER = UserVO(id=0, username="system", real_name="系统", is_admin=True, permissions=["*"])
 
-# 业务审核状态（钢材价 / 加工费 / 零件核价等共用）
+# 业务审核状态（钢材价 / 加工费 / 零件核价 / 冲次单价 / 焊接单价等共用）
 AUDIT_PENDING = "pending"
 AUDIT_APPROVED = "approved"
 AUDIT_REJECTED = "rejected"

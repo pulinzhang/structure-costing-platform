@@ -1,8 +1,17 @@
 ﻿/**
- * 焊接单价维护页面逻辑
+ * Welding Unit Price Page
+ * 焊接单价列表：HUD + 批量审核/反审核/删除（范围=基地+年度，与上传对等）
  */
 
-import { weldingUnitPriceTemplate, renderTableRows, renderPagination, unitPriceInputValue, parseUnitPriceInput } from './template.js?v=4';
+import {
+    weldingUnitPriceTemplate,
+    renderTableRows,
+    renderPagination,
+    unitPriceInputValue,
+    parseUnitPriceInput,
+    updateWeldingHud,
+    updateWeldingFilterCapsules,
+} from './template.js?v=5';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -16,15 +25,19 @@ const weldingUnitPriceState = {
     totalPages: 1,
     selectedLocation: null,
     selectedYear: null,
+    selectedAuditStatus: null,
     locations: [],
     years: [],
     isLoading: false,
     isBatchDeleting: false,
+    batchAuditSubmitting: false,
+    advancedOpen: false,
 };
 
 const DEFAULT_LOCATION = '青岛';
 const API_BASE = '/api/bom/welding-unit-price';
 const DRAWER_ANIMATION_MS = 300;
+const SCOPE_REQUIRED_MESSAGE = '批量操作须同时选择基地和年度';
 
 function openDrawer(drawerId, backdropId) {
     const drawer = document.getElementById(drawerId);
@@ -50,8 +63,7 @@ function closeDrawer(drawerId, backdropId) {
 }
 
 function init() {
-    loadFilterOptions();
-    loadData();
+    loadFilterOptions().then(() => loadData());
     bindEvents();
     bindPageSizeSelect('weldingUnitPricePageSize', {
         getSize: () => weldingUnitPriceState.pageSize,
@@ -61,17 +73,28 @@ function init() {
         onChange: () => loadData(1),
     });
     applyPermissionUi();
+    updateWeldingFilterCapsules();
 }
 
 function applyPermissionUi() {
-    const canCreate = typeof window.can === 'function' ? window.can('op:bom-welding-unit-price:create') : true;
-    const canCopy = typeof window.can === 'function' ? window.can('op:bom-welding-unit-price:copy') : true;
-    const canExport = typeof window.can === 'function' ? window.can('op:bom-welding-unit-price:export') : true;
-    const canDelete = typeof window.can === 'function' ? window.can('op:bom-welding-unit-price:delete') : true;
-    if (!canCreate) document.getElementById('btnAddWeldingUnitPrice')?.classList.add('hidden');
+    const canCopy = typeof can === 'function' ? can('op:bom-welding-unit-price:copy') : true;
+    const canExport = typeof can === 'function' ? can('op:bom-welding-unit-price:export') : true;
+    const canDelete = typeof can === 'function' ? can('op:bom-welding-unit-price:delete') : true;
+    const canApprove = typeof can === 'function' ? can('op:bom-welding-unit-price:approve') : true;
+    const canReverse = typeof can === 'function' ? can('op:bom-welding-unit-price:reverse') : true;
     if (!canCopy) document.getElementById('btnCopyTemplate')?.classList.add('hidden');
     if (!canExport) document.getElementById('btnExportWeldingUnitPrice')?.classList.add('hidden');
     if (!canDelete) document.getElementById('btnBatchDeleteWeldingUnitPrice')?.classList.add('hidden');
+    if (!canApprove) document.getElementById('btnBatchApproveWelding')?.classList.add('hidden');
+    if (!canReverse) document.getElementById('btnBatchReverseWelding')?.classList.add('hidden');
+}
+
+function setAdvancedOpen(open) {
+    weldingUnitPriceState.advancedOpen = open;
+    const panel = document.getElementById('weldingAdvancedFilterPanel');
+    const label = document.getElementById('weldingAdvancedFilterLabel');
+    if (panel) panel.classList.toggle('hidden', !open);
+    if (label) label.textContent = open ? '收起高级筛选' : '展开高级筛选';
 }
 
 async function loadFilterOptions() {
@@ -85,9 +108,9 @@ async function loadFilterOptions() {
 
         const locationFilter = document.getElementById('locationFilter');
         if (locationFilter) {
-            let options = `<option value="">请选择基地</option>`;
             const known = ['大连', '芜湖', '鄂尔多斯', '青岛'];
             const merged = [...new Set([...known, ...weldingUnitPriceState.locations])];
+            let options = `<option value="">全部</option>`;
             merged.forEach((loc) => {
                 options += `<option value="${esc(loc)}">${esc(loc)}</option>`;
             });
@@ -100,7 +123,7 @@ async function loadFilterOptions() {
         const yearFilter = document.getElementById('yearFilter');
         if (yearFilter) {
             const currentYear = new Date().getFullYear();
-            let options = `<option value="">请选择年份</option>`;
+            let options = `<option value="">全部</option>`;
             weldingUnitPriceState.years.forEach((year) => {
                 options += `<option value="${year}">${year} 年</option>`;
             });
@@ -110,6 +133,19 @@ async function loadFilterOptions() {
             yearFilter.innerHTML = options;
             if (weldingUnitPriceState.selectedYear) {
                 yearFilter.value = weldingUnitPriceState.selectedYear;
+            }
+        }
+
+        const auditFilter = document.getElementById('auditStatusFilter');
+        if (auditFilter) {
+            auditFilter.innerHTML = `
+                <option value="">全部</option>
+                <option value="pending">待审</option>
+                <option value="approved">已通过</option>
+                <option value="rejected">已驳回</option>
+            `;
+            if (weldingUnitPriceState.selectedAuditStatus) {
+                auditFilter.value = weldingUnitPriceState.selectedAuditStatus;
             }
         }
 
@@ -124,6 +160,23 @@ async function loadFilterOptions() {
     } catch (error) {
         console.error('加载筛选项失败:', error);
     }
+}
+
+function readFiltersFromDom() {
+    const locationFilter = document.getElementById('locationFilter');
+    const yearFilter = document.getElementById('yearFilter');
+    const auditFilter = document.getElementById('auditStatusFilter');
+    weldingUnitPriceState.selectedLocation = locationFilter ? (locationFilter.value || null) : null;
+    weldingUnitPriceState.selectedYear = yearFilter ? (yearFilter.value || null) : null;
+    weldingUnitPriceState.selectedAuditStatus = auditFilter ? (auditFilter.value || null) : null;
+    updateWeldingFilterCapsules();
+}
+
+function collectScopeFilters() {
+    return {
+        location: (document.getElementById('locationFilter')?.value || '').trim(),
+        year: (document.getElementById('yearFilter')?.value || '').trim(),
+    };
 }
 
 async function loadData(page = 1) {
@@ -145,12 +198,10 @@ async function loadData(page = 1) {
             page,
             size: weldingUnitPriceState.pageSize,
         };
-
-        if (weldingUnitPriceState.selectedLocation) {
-            params.location = weldingUnitPriceState.selectedLocation;
-        }
-        if (weldingUnitPriceState.selectedYear) {
-            params.year = weldingUnitPriceState.selectedYear;
+        if (weldingUnitPriceState.selectedLocation) params.location = weldingUnitPriceState.selectedLocation;
+        if (weldingUnitPriceState.selectedYear) params.year = weldingUnitPriceState.selectedYear;
+        if (weldingUnitPriceState.selectedAuditStatus) {
+            params.audit_status = weldingUnitPriceState.selectedAuditStatus;
         }
 
         const res = await HttpClient.get(`${API_BASE}/paginate`, { params });
@@ -160,6 +211,9 @@ async function loadData(page = 1) {
         weldingUnitPriceState.total = pageResult.total || 0;
         weldingUnitPriceState.page = pageResult.page || page;
         weldingUnitPriceState.totalPages = pageResult.total_pages || 1;
+
+        const filters = pageResult.filters || {};
+        updateWeldingHud(filters.summary || {});
 
         if (tableBody) {
             if (weldingUnitPriceState.records.length === 0) {
@@ -175,12 +229,10 @@ async function loadData(page = 1) {
         if (totalCountPagination) {
             totalCountPagination.textContent = `共 ${weldingUnitPriceState.total} 条`;
         }
-
         if (paginationBtns) {
             paginationBtns.innerHTML = renderPagination(
                 weldingUnitPriceState.page,
-                weldingUnitPriceState.totalPages,
-                weldingUnitPriceState.total
+                weldingUnitPriceState.totalPages
             );
         }
     } catch (error) {
@@ -188,11 +240,8 @@ async function loadData(page = 1) {
         if (tableBody) {
             tableBody.innerHTML = `
                 <tr>
-                    <td colspan="7" class="px-4 py-8 text-center text-[#9e9e9e] text-xs">
-                        加载数据失败，请重试
-                    </td>
-                </tr>
-            `;
+                    <td colspan="12" class="px-4 py-8 text-center text-[#9e9e9e] text-xs">加载数据失败，请重试</td>
+                </tr>`;
         }
     } finally {
         weldingUnitPriceState.isLoading = false;
@@ -207,36 +256,56 @@ function bindTableRowEvents() {
             const row = e.target.closest('tr');
             const id = parseInt(row.dataset.id, 10);
             const record = weldingUnitPriceState.records.find((r) => r.id === id);
-            if (record) openEditDrawer(record);
+            if (record) {
+                if (record.audit_status === 'approved') {
+                    showToast('已审核通过，请先反审核后再修改', 'warning');
+                    return;
+                }
+                openEditDrawer(record);
+            }
         });
     });
-
     document.querySelectorAll('.delete-btn').forEach((btn) => {
         btn.addEventListener('click', (e) => {
             e.stopPropagation();
             const row = e.target.closest('tr');
             const id = parseInt(row.dataset.id, 10);
+            const record = weldingUnitPriceState.records.find((r) => r.id === id);
+            if (record?.audit_status === 'approved') {
+                showToast('已审核通过，请先反审核后再删除', 'warning');
+                return;
+            }
             openDeleteDrawer(id);
         });
     });
 }
 
 function bindEvents() {
-    document.getElementById('btnAddWeldingUnitPrice')?.addEventListener('click', () => openAddDrawer());
     document.getElementById('btnExportWeldingUnitPrice')?.addEventListener('click', () => exportExcel());
     document.getElementById('btnBatchDeleteWeldingUnitPrice')?.addEventListener('click', () => batchDeleteByFilters());
+    document.getElementById('btnBatchApproveWelding')?.addEventListener('click', () => openBatchAuditDrawer('approve'));
+    document.getElementById('btnBatchReverseWelding')?.addEventListener('click', () => openBatchAuditDrawer('reverse'));
+    document.getElementById('btnCopyTemplate')?.addEventListener('click', () => openCopyDrawer());
     document.getElementById('btnFilter')?.addEventListener('click', () => {
-        const locationFilter = document.getElementById('locationFilter');
-        const yearFilter = document.getElementById('yearFilter');
-        weldingUnitPriceState.selectedLocation = locationFilter ? (locationFilter.value || null) : null;
-        weldingUnitPriceState.selectedYear = yearFilter ? (yearFilter.value || null) : null;
+        readFiltersFromDom();
         loadData(1);
     });
-    document.getElementById('btnCopyTemplate')?.addEventListener('click', () => openCopyDrawer());
+    document.getElementById('weldingToggleAdvancedFilter')?.addEventListener('click', () => {
+        setAdvancedOpen(!weldingUnitPriceState.advancedOpen);
+    });
+    document.getElementById('weldingResetFilterBtn')?.addEventListener('click', () => {
+        ['locationFilter', 'yearFilter', 'auditStatusFilter'].forEach((id) => {
+            const el = document.getElementById(id);
+            if (el) el.value = '';
+        });
+        readFiltersFromDom();
+        loadData(1);
+    });
 
     bindEditDrawerEvents();
     bindCopyDrawerEvents();
     bindDeleteDrawerEvents();
+    bindBatchAuditDrawerEvents();
     bindPaginationEvents();
 }
 
@@ -248,12 +317,6 @@ function bindEditDrawerEvents() {
     document.getElementById('submitEditBtn')?.addEventListener('click', async (e) => {
         e.preventDefault();
         await saveRecord();
-    });
-    document.addEventListener('keydown', (e) => {
-        const drawer = document.getElementById('editDrawer');
-        if (e.key === 'Escape' && drawer && drawer.style.display === 'flex') {
-            close();
-        }
     });
 }
 
@@ -279,6 +342,17 @@ function bindDeleteDrawerEvents() {
     });
 }
 
+function bindBatchAuditDrawerEvents() {
+    const close = () => {
+        if (weldingUnitPriceState.batchAuditSubmitting) return;
+        closeDrawer('weldingBatchAuditDrawer', 'weldingBatchAuditDrawerBackdrop');
+    };
+    document.getElementById('closeWeldingBatchAuditDrawer')?.addEventListener('click', close);
+    document.getElementById('cancelWeldingBatchAuditBtn')?.addEventListener('click', close);
+    document.getElementById('weldingBatchAuditDrawerBackdrop')?.addEventListener('click', close);
+    document.getElementById('confirmWeldingBatchAuditBtn')?.addEventListener('click', submitBatchAudit);
+}
+
 function bindPaginationEvents() {
     document.getElementById('paginationBtns')?.addEventListener('click', (e) => {
         const btn = e.target.closest('.page-btn');
@@ -289,96 +363,124 @@ function bindPaginationEvents() {
     });
 }
 
-function openAddDrawer() {
-    const title = document.getElementById('editDrawerTitle');
-    const recordId = document.getElementById('editRecordId');
-    const locationInput = document.getElementById('editLocation');
-    const yearInput = document.getElementById('editYear');
-    const itemNameInput = document.getElementById('editItemName');
-    const unitInput = document.getElementById('editUnit');
-    const unitPriceInput = document.getElementById('editUnitPrice');
-    const remarkInput = document.getElementById('editRemark');
-    const form = document.getElementById('editForm');
-
-    if (title) title.textContent = '新增费用';
-    if (recordId) recordId.value = '';
-    if (form) form.reset();
-    if (locationInput) {
-        locationInput.value = weldingUnitPriceState.selectedLocation || DEFAULT_LOCATION;
-        locationInput.disabled = false;
-    }
-    if (yearInput) {
-        yearInput.value = new Date().getFullYear();
-        yearInput.disabled = false;
-    }
-    if (itemNameInput) {
-        itemNameInput.value = '';
-        itemNameInput.disabled = false;
-    }
-    if (unitInput) unitInput.value = '';
-    if (unitPriceInput) unitPriceInput.value = '';
-    if (remarkInput) remarkInput.value = '';
-
-    openDrawer('editDrawer', 'editDrawerBackdrop');
-    if (itemNameInput) setTimeout(() => itemNameInput.focus(), DRAWER_ANIMATION_MS);
-}
-
 function openEditDrawer(record) {
-    const title = document.getElementById('editDrawerTitle');
-    const recordId = document.getElementById('editRecordId');
-    const locationInput = document.getElementById('editLocation');
-    const yearInput = document.getElementById('editYear');
-    const itemNameInput = document.getElementById('editItemName');
-    const unitInput = document.getElementById('editUnit');
-    const unitPriceInput = document.getElementById('editUnitPrice');
-    const remarkInput = document.getElementById('editRemark');
-
-    if (title) title.textContent = '编辑费用';
-    if (recordId) recordId.value = record.id;
-    if (locationInput) {
-        locationInput.value = record.location;
-        locationInput.disabled = true;
-    }
-    if (yearInput) {
-        yearInput.value = record.year;
-        yearInput.disabled = true;
-    }
-    if (itemNameInput) {
-        itemNameInput.value = record.item_name;
-        itemNameInput.disabled = true;
-    }
-    if (unitInput) unitInput.value = record.unit || '';
-    if (unitPriceInput) unitPriceInput.value = unitPriceInputValue(record.unit_price);
-    if (remarkInput) remarkInput.value = record.remark || '';
-
+    document.getElementById('editDrawerTitle').textContent = '编辑费用';
+    document.getElementById('editRecordId').value = record.id;
+    document.getElementById('editLocation').value = record.location;
+    document.getElementById('editYear').value = record.year;
+    document.getElementById('editItemName').value = record.item_name;
+    document.getElementById('editUnit').value = record.unit || '';
+    document.getElementById('editUnitPrice').value = unitPriceInputValue(record.unit_price);
+    document.getElementById('editRemark').value = record.remark || '';
     openDrawer('editDrawer', 'editDrawerBackdrop');
-    if (unitPriceInput) setTimeout(() => unitPriceInput.focus(), DRAWER_ANIMATION_MS);
 }
 
 function openDeleteDrawer(id) {
-    const recordIdInput = document.getElementById('deleteRecordId');
-    if (recordIdInput) recordIdInput.value = id;
+    document.getElementById('deleteRecordId').value = id;
     openDrawer('deleteDrawer', 'deleteDrawerBackdrop');
 }
 
 function openCopyDrawer() {
-    const copyLocation = document.getElementById('copyLocation');
-    const sourceYearSelect = document.getElementById('sourceYear');
-    const targetYearInput = document.getElementById('targetYear');
     const form = document.getElementById('copyForm');
-
     if (form) form.reset();
+    const copyLocation = document.getElementById('copyLocation');
     if (copyLocation) {
         copyLocation.value = weldingUnitPriceState.selectedLocation || DEFAULT_LOCATION;
     }
+    const sourceYearSelect = document.getElementById('sourceYear');
     if (sourceYearSelect && weldingUnitPriceState.years.length > 0) {
         sourceYearSelect.value = weldingUnitPriceState.years[0] || '';
     }
-    if (targetYearInput) {
-        targetYearInput.value = new Date().getFullYear() + 1;
-    }
-
+    const targetYearInput = document.getElementById('targetYear');
+    if (targetYearInput) targetYearInput.value = new Date().getFullYear() + 1;
     openDrawer('copyDrawer', 'copyDrawerBackdrop');
+}
+
+function getSessionDisplayName() {
+    try {
+        const raw = localStorage.getItem('brabus_user');
+        if (!raw) return '';
+        const session = JSON.parse(raw);
+        return (session.real_name || session.name || session.username || '').trim();
+    } catch (_) {
+        return '';
+    }
+}
+
+function openBatchAuditDrawer(mode) {
+    const filters = collectScopeFilters();
+    if (!filters.year || !filters.location) {
+        setAdvancedOpen(true);
+        showToast(SCOPE_REQUIRED_MESSAGE, 'warning');
+        return;
+    }
+    const isApprove = mode === 'approve';
+    document.getElementById('weldingBatchAuditMode').value = isApprove ? 'approve' : 'reverse';
+    document.getElementById('weldingBatchAuditDrawerTitle').textContent = isApprove ? '批量审核' : '批量反审核';
+    document.getElementById('weldingBatchAuditHint').textContent = isApprove
+        ? '仅处理待审/已驳回；已通过记录会跳过。'
+        : '仅处理已通过记录；其余状态会跳过。反审核意见必填。';
+    document.getElementById('weldingBatchAuditOperatorLabel').textContent = isApprove ? '审核人' : '反审核人';
+    document.getElementById('weldingBatchAuditOperatorDisplay').textContent =
+        getSessionDisplayName() || '（当前登录用户）';
+    const remarkLabel = document.getElementById('weldingBatchAuditRemarkLabel');
+    remarkLabel.innerHTML = isApprove
+        ? '审核意见'
+        : '反审核意见<span class="text-[#d32f2f]">*</span>';
+    const remarkEl = document.getElementById('weldingBatchAuditRemark');
+    remarkEl.value = '';
+    remarkEl.placeholder = isApprove ? '可选填写审核意见' : '必填反审核原因';
+    document.getElementById('weldingBatchAuditFilterSummary').textContent =
+        `基地 ${filters.location} · 年度 ${filters.year}`;
+    openDrawer('weldingBatchAuditDrawer', 'weldingBatchAuditDrawerBackdrop');
+}
+
+async function submitBatchAudit() {
+    if (weldingUnitPriceState.batchAuditSubmitting) return;
+    const mode = document.getElementById('weldingBatchAuditMode')?.value || 'approve';
+    const filters = collectScopeFilters();
+    const remark = document.getElementById('weldingBatchAuditRemark')?.value.trim() || '';
+    if (mode === 'reverse' && !remark) {
+        showToast('反审核意见必填', 'warning');
+        return;
+    }
+    const body = {
+        location: filters.location,
+        year: Number(filters.year),
+    };
+    const url = mode === 'approve'
+        ? `${API_BASE}/batch-approve`
+        : `${API_BASE}/batch-reverse-audit`;
+    if (mode === 'approve') body.audit_remark = remark || null;
+    else body.reverse_audit_remark = remark;
+
+    const btn = document.getElementById('confirmWeldingBatchAuditBtn');
+    weldingUnitPriceState.batchAuditSubmitting = true;
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = '提交中…';
+    }
+    try {
+        const res = await HttpClient.post(url, body);
+        const result = res.data || {};
+        showToast(
+            res.message
+                || (mode === 'approve'
+                    ? `已审核通过 ${result.updated_count || 0} 条`
+                    : `已反审核 ${result.updated_count || 0} 条`),
+            (result.updated_count || 0) > 0 ? 'success' : 'warning',
+        );
+        closeDrawer('weldingBatchAuditDrawer', 'weldingBatchAuditDrawerBackdrop');
+        await loadData(weldingUnitPriceState.page);
+    } catch (error) {
+        if (!error.status) showToast(error.message || '操作失败', 'error');
+    } finally {
+        weldingUnitPriceState.batchAuditSubmitting = false;
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = '确认提交';
+        }
+    }
 }
 
 async function exportExcel() {
@@ -386,12 +488,8 @@ async function exportExcel() {
     const originalHtml = btn ? btn.innerHTML : '';
     if (btn) {
         btn.disabled = true;
-        btn.innerHTML = `
-            <div class="w-3 h-3 border border-[#ef5350] border-t-transparent rounded-full animate-spin"></div>
-            导出中..
-        `;
+        btn.innerHTML = `<div class="w-3 h-3 border border-[#ef5350] border-t-transparent rounded-full animate-spin"></div>导出中..`;
     }
-
     try {
         const { blob, filename } = await HttpClient.download(`${API_BASE}/export`, {
             params: {
@@ -400,7 +498,6 @@ async function exportExcel() {
             },
             defaultFilename: '焊接单价导出.xlsx',
         });
-
         const url = window.URL.createObjectURL(blob);
         const anchor = document.createElement('a');
         anchor.href = url;
@@ -411,10 +508,7 @@ async function exportExcel() {
         window.URL.revokeObjectURL(url);
         showToast(`导出成功: ${filename}`, 'success');
     } catch (error) {
-        console.error('导出焊接单价失败:', error);
-        if (!error.status) {
-            showToast(error.message || '导出失败', 'error');
-        }
+        if (!error.status) showToast(error.message || '导出失败', 'error');
     } finally {
         if (btn) {
             btn.disabled = false;
@@ -424,60 +518,51 @@ async function exportExcel() {
 }
 
 async function batchDeleteByFilters() {
-    if (typeof window.can === 'function' && !window.can('op:bom-welding-unit-price:delete')) {
+    if (typeof can === 'function' && !can('op:bom-welding-unit-price:delete')) {
         showToast('无删除权限', 'warning');
         return;
     }
     if (weldingUnitPriceState.isBatchDeleting) return;
-
-    const locationFilter = document.getElementById('locationFilter');
-    const yearFilter = document.getElementById('yearFilter');
-    const location = locationFilter?.value?.trim() || '';
-    const yearRaw = yearFilter?.value?.trim() || '';
-
-    if (!location || !yearRaw) {
-        showToast('批量删除须同时选择基地和年度', 'warning');
+    const filters = collectScopeFilters();
+    if (!filters.location || !filters.year) {
+        setAdvancedOpen(true);
+        showToast(SCOPE_REQUIRED_MESSAGE, 'warning');
         return;
     }
-
-    const year = parseInt(yearRaw, 10);
+    const year = parseInt(filters.year, 10);
     if (!year || year < 2000 || year > 2100) {
         showToast('请选择正确的年度', 'warning');
         return;
     }
-
-    const confirmed = window.confirm(
-        `确定批量删除以下焊接单价吗？\n\n基地: ${location} | 年度: ${year}\n\n将删除该基地该年全部记录，此操作不可恢复！`
-    );
-    if (!confirmed) return;
+    if (!window.confirm(
+        `确定批量删除未审核焊接单价吗？\n\n基地: ${filters.location} | 年度: ${year}\n\n仅删除待审/已驳回；已审核通过会跳过。此操作不可恢复！`,
+    )) return;
 
     const btn = document.getElementById('btnBatchDeleteWeldingUnitPrice');
     const originalHtml = btn ? btn.innerHTML : '';
     weldingUnitPriceState.isBatchDeleting = true;
     if (btn) {
         btn.disabled = true;
-        btn.innerHTML = `
-            <div class="w-3 h-3 border border-[#ef5350] border-t-transparent rounded-full animate-spin"></div>
-            删除中..
-        `;
+        btn.innerHTML = `<div class="w-3 h-3 border border-[#ef5350] border-t-transparent rounded-full animate-spin"></div>删除中..`;
     }
-
     try {
-        const res = await HttpClient.post(`${API_BASE}/batch-delete`, { location, year });
+        const res = await HttpClient.post(`${API_BASE}/batch-delete`, {
+            location: filters.location,
+            year,
+        });
         const data = res.data || {};
+        const deleted = data.deleted_count ?? 0;
+        const skipped = data.skipped_approved_count ?? 0;
         showToast(
-            res.message || data.message || `已删除 ${data.deleted_count ?? 0} 条`,
-            'success'
+            res.message || `已删除 ${deleted} 条` + (skipped ? `，跳过已审核 ${skipped} 条` : ''),
+            deleted > 0 ? 'success' : 'warning',
         );
-        weldingUnitPriceState.selectedLocation = location;
+        weldingUnitPriceState.selectedLocation = filters.location;
         weldingUnitPriceState.selectedYear = String(year);
         await loadData(1);
         await loadFilterOptions();
     } catch (error) {
-        console.error('批量删除焊接单价失败:', error);
-        if (!error.status) {
-            showToast(error.message || '批量删除失败', 'error');
-        }
+        if (!error.status) showToast(error.message || '批量删除失败', 'error');
     } finally {
         weldingUnitPriceState.isBatchDeleting = false;
         if (btn) {
@@ -489,45 +574,22 @@ async function batchDeleteByFilters() {
 
 async function saveRecord() {
     const recordId = document.getElementById('editRecordId')?.value;
-    const location = document.getElementById('editLocation')?.value?.trim();
-    const year = parseInt(document.getElementById('editYear')?.value, 10);
-    const itemName = document.getElementById('editItemName')?.value?.trim();
     const unit = document.getElementById('editUnit')?.value?.trim();
     const unitPrice = parseUnitPriceInput(document.getElementById('editUnitPrice')?.value);
     const remark = document.getElementById('editRemark')?.value?.trim() || null;
-
-    if (!recordId && (!location || !year || !itemName || !unit || !unitPrice)) {
-        showToast('请填写所有必填项（费用须为最多4位小数的数字）', 'warning');
-        return;
-    }
-    if (recordId && (!unit || !unitPrice)) {
+    if (!recordId || !unit || !unitPrice) {
         showToast('请填写单位和费用（费用须为最多4位小数的数字）', 'warning');
         return;
     }
-
     try {
-        if (recordId) {
-            await HttpClient.put(`${API_BASE}/${recordId}`, {
-                unit,
-                unit_price: unitPrice,
-                remark,
-            });
-            showToast('更新成功', 'success');
-        } else {
-            await HttpClient.post(API_BASE, {
-                location,
-                year,
-                item_name: itemName,
-                unit,
-                unit_price: unitPrice,
-                remark,
-            });
-            showToast('创建成功', 'success');
-        }
-
+        await HttpClient.put(`${API_BASE}/${recordId}`, {
+            unit,
+            unit_price: unitPrice,
+            remark,
+        });
+        showToast('更新成功', 'success');
         closeDrawer('editDrawer', 'editDrawerBackdrop');
         loadData(weldingUnitPriceState.page);
-        loadFilterOptions();
     } catch (error) {
         console.error('保存失败:', error);
     }
@@ -548,7 +610,6 @@ async function copyTemplate() {
     const location = document.getElementById('copyLocation')?.value?.trim();
     const sourceYear = parseInt(document.getElementById('sourceYear')?.value, 10);
     const targetYear = parseInt(document.getElementById('targetYear')?.value, 10);
-
     if (!location || !sourceYear || !targetYear) {
         showToast('请选择基地、源年份和目标年份', 'warning');
         return;
@@ -557,7 +618,6 @@ async function copyTemplate() {
         showToast('源年份和目标年份不能相同', 'warning');
         return;
     }
-
     try {
         await HttpClient.post(
             `${API_BASE}/copy-year?location=${encodeURIComponent(location)}&source_year=${sourceYear}&target_year=${targetYear}`

@@ -4,12 +4,13 @@
 """
 
 import logging
-from typing import List, Optional, Dict, Any, Tuple
+from typing import Any, Dict, List, Optional, Tuple
+
+from sqlalchemy import and_, case, func
 from sqlalchemy.orm import Session
-from sqlalchemy import and_
 
+from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING, AUDIT_REJECTED
 from app.models.stamping_tonnage_price import StampingTonnagePrice
-
 
 logger = logging.getLogger("repository.stamping")
 
@@ -62,21 +63,35 @@ class StampingTonnagePriceRepository:
             .all()
         )
 
-    def paginate(
+    def _build_list_query(
         self,
         db: Session,
         location: Optional[str] = None,
         year: Optional[int] = None,
-        skip: int = 0,
-        limit: int = 100,
-    ) -> Tuple[List[StampingTonnagePrice], int]:
-        """分页查询"""
+        audit_status: Optional[str] = None,
+    ):
         q = db.query(StampingTonnagePrice)
         if location is not None:
             q = q.filter(StampingTonnagePrice.location == location)
         if year is not None:
             q = q.filter(StampingTonnagePrice.year == year)
+        if audit_status:
+            q = q.filter(StampingTonnagePrice.audit_status == audit_status)
+        return q
 
+    def paginate(
+        self,
+        db: Session,
+        location: Optional[str] = None,
+        year: Optional[int] = None,
+        audit_status: Optional[str] = None,
+        skip: int = 0,
+        limit: int = 100,
+    ) -> Tuple[List[StampingTonnagePrice], int]:
+        """分页查询"""
+        q = self._build_list_query(
+            db, location=location, year=year, audit_status=audit_status
+        )
         total = q.count()
         records = (
             q.order_by(
@@ -90,18 +105,43 @@ class StampingTonnagePriceRepository:
         )
         return records, total
 
+    def summarize_by_filters(
+        self,
+        db: Session,
+        location: Optional[str] = None,
+        year: Optional[int] = None,
+        audit_status: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """按筛选条件汇总条数 / 待审 / 已审。"""
+        q = self._build_list_query(
+            db, location=location, year=year, audit_status=audit_status
+        )
+        row = q.with_entities(
+            func.count(StampingTonnagePrice.id).label("total_count"),
+            func.sum(
+                case((StampingTonnagePrice.audit_status == AUDIT_PENDING, 1), else_=0)
+            ).label("pending_count"),
+            func.sum(
+                case((StampingTonnagePrice.audit_status == AUDIT_APPROVED, 1), else_=0)
+            ).label("approved_count"),
+        ).one()
+        return {
+            "total_count": int(row.total_count or 0),
+            "pending_count": int(row.pending_count or 0),
+            "approved_count": int(row.approved_count or 0),
+        }
+
     def list_for_export(
         self,
         db: Session,
         location: Optional[str] = None,
         year: Optional[int] = None,
+        audit_status: Optional[str] = None,
     ) -> List[StampingTonnagePrice]:
         """按筛选条件导出全量记录（不分页）"""
-        q = db.query(StampingTonnagePrice)
-        if location is not None:
-            q = q.filter(StampingTonnagePrice.location == location)
-        if year is not None:
-            q = q.filter(StampingTonnagePrice.year == year)
+        q = self._build_list_query(
+            db, location=location, year=year, audit_status=audit_status
+        )
         return (
             q.order_by(
                 StampingTonnagePrice.location,
@@ -153,11 +193,32 @@ class StampingTonnagePriceRepository:
         )
         return [r[0] for r in results]
 
+    def count_by_location_year_and_statuses(
+        self,
+        db: Session,
+        *,
+        location: str,
+        year: int,
+        statuses: List[str],
+    ) -> int:
+        return (
+            db.query(StampingTonnagePrice)
+            .filter(
+                StampingTonnagePrice.location == location,
+                StampingTonnagePrice.year == year,
+                StampingTonnagePrice.audit_status.in_(statuses),
+            )
+            .count()
+        )
+
     def create(
         self, db: Session, data: Dict[str, Any], *, commit: bool = True
     ) -> StampingTonnagePrice:
         """创建单条记录"""
-        record = StampingTonnagePrice(**data)
+        payload = dict(data)
+        if "audit_status" not in payload:
+            payload["audit_status"] = AUDIT_PENDING
+        record = StampingTonnagePrice(**payload)
         db.add(record)
         if commit:
             db.commit()
@@ -166,16 +227,21 @@ class StampingTonnagePriceRepository:
         db.refresh(record)
         logger.info(
             "创建冲次单价: location=%s, year=%s, tonnage=%s, id=%s",
-            data.get("location"),
-            data.get("year"),
-            data.get("tonnage"),
+            payload.get("location"),
+            payload.get("year"),
+            payload.get("tonnage"),
             record.id,
         )
         return record
 
     def bulk_create(self, db: Session, data_list: List[Dict[str, Any]]) -> List[StampingTonnagePrice]:
         """批量创建记录"""
-        records = [StampingTonnagePrice(**data) for data in data_list]
+        records = []
+        for data in data_list:
+            payload = dict(data)
+            if "audit_status" not in payload:
+                payload["audit_status"] = AUDIT_PENDING
+            records.append(StampingTonnagePrice(**payload))
         db.add_all(records)
         db.commit()
         for record in records:
@@ -217,7 +283,7 @@ class StampingTonnagePriceRepository:
         return True
 
     def delete_by_location_year(self, db: Session, location: str, year: int) -> int:
-        """删除指定基地+年份的所有记录"""
+        """删除指定基地+年份的所有记录（含已审核，仅内部复制等场景慎用）"""
         count = (
             db.query(StampingTonnagePrice)
             .filter(
@@ -230,4 +296,88 @@ class StampingTonnagePriceRepository:
         )
         db.commit()
         logger.info("删除基地 %s 年份 %s 的冲次单价: %s 条", location, year, count)
+        return count
+
+    def delete_unaudited_by_location_year(
+        self, db: Session, location: str, year: int
+    ) -> int:
+        """仅删除未审核通过的记录（已通过跳过）"""
+        count = (
+            db.query(StampingTonnagePrice)
+            .filter(
+                StampingTonnagePrice.location == location,
+                StampingTonnagePrice.year == year,
+                StampingTonnagePrice.audit_status != AUDIT_APPROVED,
+            )
+            .delete(synchronize_session=False)
+        )
+        db.commit()
+        logger.info(
+            "删除未审核冲次单价: location=%s year=%s count=%s",
+            location,
+            year,
+            count,
+        )
+        return count
+
+    def approve_by_location_year(
+        self,
+        db: Session,
+        *,
+        location: str,
+        year: int,
+        audited_by: str,
+        audited_at: Any,
+        audit_remark: Optional[str],
+        updated_by: Optional[str] = None,
+    ) -> int:
+        values: Dict[Any, Any] = {
+            StampingTonnagePrice.audit_status: AUDIT_APPROVED,
+            StampingTonnagePrice.audited_by: audited_by,
+            StampingTonnagePrice.audited_at: audited_at,
+            StampingTonnagePrice.audit_remark: audit_remark,
+        }
+        if updated_by is not None:
+            values[StampingTonnagePrice.updated_by] = updated_by
+        count = (
+            db.query(StampingTonnagePrice)
+            .filter(
+                StampingTonnagePrice.location == location,
+                StampingTonnagePrice.year == year,
+                StampingTonnagePrice.audit_status.in_([AUDIT_PENDING, AUDIT_REJECTED]),
+            )
+            .update(values, synchronize_session=False)
+        )
+        db.commit()
+        return count
+
+    def reverse_by_location_year(
+        self,
+        db: Session,
+        *,
+        location: str,
+        year: int,
+        reverse_audited_by: str,
+        reverse_audited_at: Any,
+        reverse_audit_remark: str,
+        updated_by: Optional[str] = None,
+    ) -> int:
+        values: Dict[Any, Any] = {
+            StampingTonnagePrice.audit_status: AUDIT_PENDING,
+            StampingTonnagePrice.reverse_audited_by: reverse_audited_by,
+            StampingTonnagePrice.reverse_audited_at: reverse_audited_at,
+            StampingTonnagePrice.reverse_audit_remark: reverse_audit_remark,
+        }
+        if updated_by is not None:
+            values[StampingTonnagePrice.updated_by] = updated_by
+        count = (
+            db.query(StampingTonnagePrice)
+            .filter(
+                StampingTonnagePrice.location == location,
+                StampingTonnagePrice.year == year,
+                StampingTonnagePrice.audit_status == AUDIT_APPROVED,
+            )
+            .update(values, synchronize_session=False)
+        )
+        db.commit()
         return count
