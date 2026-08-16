@@ -7,7 +7,7 @@ import logging
 from typing import Any, Dict, List, Optional, Tuple
 
 from sqlalchemy import and_, case, func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Query, Session
 
 from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING, AUDIT_REJECTED
 from app.models.stamping_tonnage_price import StampingTonnagePrice
@@ -69,7 +69,7 @@ class StampingTonnagePriceRepository:
         location: Optional[str] = None,
         year: Optional[int] = None,
         audit_status: Optional[str] = None,
-    ):
+    ) -> Query[StampingTonnagePrice]:
         q = db.query(StampingTonnagePrice)
         if location is not None:
             q = q.filter(StampingTonnagePrice.location == location)

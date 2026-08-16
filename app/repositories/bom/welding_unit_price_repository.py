@@ -7,7 +7,7 @@ import logging
 from typing import Any, Dict, List, Optional, Tuple
 
 from sqlalchemy import and_, case, func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Query, Session
 
 from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING, AUDIT_REJECTED
 from app.models.bom_welding_unit_price import BomWeldingUnitPrice
@@ -65,7 +65,7 @@ class BomWeldingUnitPriceRepository:
         location: Optional[str] = None,
         year: Optional[int] = None,
         audit_status: Optional[str] = None,
-    ):
+    ) -> Query[BomWeldingUnitPrice]:
         q = db.query(BomWeldingUnitPrice)
         if location is not None:
             q = q.filter(BomWeldingUnitPrice.location == location)

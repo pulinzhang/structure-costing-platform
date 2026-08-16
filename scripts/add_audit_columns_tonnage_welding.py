@@ -3,21 +3,17 @@
 
 教学交付默认 create_all 不升级旧表；若本地已有数据文件，启动前可执行：
 
-  python -X utf8 scripts/add_audit_columns_tonnage_welding.py
+  python -X utf8 -m scripts.add_audit_columns_tonnage_welding
 """
 
 from __future__ import annotations
 
 import sqlite3
-import sys
 from pathlib import Path
-
-ROOT = Path(__file__).resolve().parents[1]
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
 
 from app.config import settings
 
+ROOT = Path(__file__).resolve().parents[1]
 
 COLUMNS = [
     ("audit_status", "VARCHAR(20) NOT NULL DEFAULT 'pending'"),
