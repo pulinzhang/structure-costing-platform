@@ -113,7 +113,6 @@ module = [
     "app.services.costing.stamping_part_cost.export.*",
     "app.parsers.stamping.stamping_parser",
     "app.parsers.stamping.excel_context",
-    "app.parsers.stamping.image_handler",
     "app.parsers.bom.bom_parser",
 ]
 disable_error_code = ["union-attr", "index"]
