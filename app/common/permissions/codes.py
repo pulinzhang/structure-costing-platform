@@ -41,7 +41,6 @@ class Perm:
     STAMPING_TONNAGE_DELETE = "op:stamping-tonnage:delete"  # 删除
     STAMPING_TONNAGE_APPROVE = "op:stamping-tonnage:approve"  # 审核通过
     STAMPING_TONNAGE_REVERSE = "op:stamping-tonnage:reverse"  # 反审核
-    STAMPING_TONNAGE_COPY = "op:stamping-tonnage:copy"  # 复制年度模板
     STAMPING_TONNAGE_EXPORT = "op:stamping-tonnage:export"  # 导出
 
     MENU_STAMPING_PROCESSING_FEE = "menu:stamping-processing-fee"  # 冲压加工费
@@ -119,7 +118,6 @@ class Perm:
     BOM_WELDING_UNIT_PRICE_DELETE = "op:bom-welding-unit-price:delete"  # 删除
     BOM_WELDING_UNIT_PRICE_APPROVE = "op:bom-welding-unit-price:approve"  # 审核通过
     BOM_WELDING_UNIT_PRICE_REVERSE = "op:bom-welding-unit-price:reverse"  # 反审核
-    BOM_WELDING_UNIT_PRICE_COPY = "op:bom-welding-unit-price:copy"  # 复制年度模板
     BOM_WELDING_UNIT_PRICE_EXPORT = "op:bom-welding-unit-price:export"  # 导出
 
     MENU_COSTING = "menu:costing"  # 核价

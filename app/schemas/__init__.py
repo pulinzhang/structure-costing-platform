@@ -38,7 +38,6 @@ from app.schemas.dto.stamping_tonnage_price_dto import (
 from app.schemas.vo.stamping_tonnage_price_vo import (
     StampingTonnagePriceResponse,
     StampingTonnagePriceBulkUpsertResponse,
-    StampingTonnagePriceCopyYearResponse,
     StampingTonnagePriceImportResultVO,
     StampingTonnagePriceBatchDeleteResultVO,
 )
@@ -88,7 +87,6 @@ __all__ = [
     # VO - 冲次单价（仅响应）
     "StampingTonnagePriceResponse",
     "StampingTonnagePriceBulkUpsertResponse",
-    "StampingTonnagePriceCopyYearResponse",
     "StampingTonnagePriceImportResultVO",
     "StampingTonnagePriceBatchDeleteResultVO",
     # DTO - 冲次单价（请求参数）

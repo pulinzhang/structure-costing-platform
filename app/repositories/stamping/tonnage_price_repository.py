@@ -282,22 +282,6 @@ class StampingTonnagePriceRepository:
         logger.info("删除冲次单价: id=%s", id)
         return True
 
-    def delete_by_location_year(self, db: Session, location: str, year: int) -> int:
-        """删除指定基地+年份的所有记录（含已审核，仅内部复制等场景慎用）"""
-        count = (
-            db.query(StampingTonnagePrice)
-            .filter(
-                and_(
-                    StampingTonnagePrice.location == location,
-                    StampingTonnagePrice.year == year,
-                )
-            )
-            .delete(synchronize_session=False)
-        )
-        db.commit()
-        logger.info("删除基地 %s 年份 %s 的冲次单价: %s 条", location, year, count)
-        return count
-
     def delete_unaudited_by_location_year(
         self, db: Session, location: str, year: int
     ) -> int:

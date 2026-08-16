@@ -244,21 +244,6 @@ class BomWeldingUnitPriceRepository:
         logger.info("删除焊接工费单价: id=%s", id)
         return True
 
-    def delete_by_location_year(self, db: Session, location: str, year: int) -> int:
-        count = (
-            db.query(BomWeldingUnitPrice)
-            .filter(
-                and_(
-                    BomWeldingUnitPrice.location == location,
-                    BomWeldingUnitPrice.year == year,
-                )
-            )
-            .delete(synchronize_session=False)
-        )
-        db.commit()
-        logger.info("删除基地 %s 年份 %s 的焊接工费单价: %s 条", location, year, count)
-        return count
-
     def delete_unaudited_by_location_year(
         self, db: Session, location: str, year: int
     ) -> int:

@@ -26,7 +26,6 @@ from app.schemas.vo.bom_welding_unit_price_vo import (
     BomWeldingUnitPriceBatchAuditResultVO,
     BomWeldingUnitPriceBatchDeleteResultVO,
     BomWeldingUnitPriceBulkUpsertResponse,
-    BomWeldingUnitPriceCopyYearResponse,
     BomWeldingUnitPriceImportResultVO,
     BomWeldingUnitPriceResponse,
 )
@@ -273,37 +272,6 @@ def batch_reverse_audit(
     if result.skipped_count:
         message += f"，跳过非已审 {result.skipped_count} 条"
     return ApiResponse.ok(data=result, message=message)
-
-
-@router.post(
-    "/copy-year",
-    response_model=ApiResponse[BomWeldingUnitPriceCopyYearResponse],
-)
-def copy_from_year(
-    location: str,
-    source_year: int,
-    target_year: int,
-    db: Session = Depends(get_db),
-    current_user: UserVO = Depends(require_perm(Perm.BOM_WELDING_UNIT_PRICE_COPY)),
-) -> Any:
-    """在同一基地下，从源年份复制单价到目标年份"""
-    created, skipped, failed = _welding_unit_price_service.copy_from_year(
-        db, location, source_year, target_year, current_user=current_user
-    )
-    return ApiResponse.ok(
-        data=BomWeldingUnitPriceCopyYearResponse(
-            location=location,
-            source_year=source_year,
-            target_year=target_year,
-            created_count=created,
-            skipped_count=skipped,
-            failed=failed,
-        ),
-        message=(
-            f"基地「{location}」从 {source_year} 复制到 {target_year}: "
-            f"成功 {created}, 跳过 {skipped}"
-        ),
-    )
 
 
 @router.post(

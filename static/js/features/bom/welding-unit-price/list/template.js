@@ -78,11 +78,6 @@ export function weldingUnitPriceTemplate() {
                                 ${window.svgIcon('download', 'w-3 h-3')}
                                 导出 Excel
                             </button>
-                            <button id="btnCopyTemplate" type="button"
-                                    class="inline-flex items-center gap-1.5 bg-transparent text-[#6E6E73] border border-[#2A2A35] px-3 py-1.5 text-[11px] font-medium rounded-md hover:border-[#FF1E27]/50 hover:text-[#FF1E27] hover:bg-[#FF1E27]/10 hover:shadow-[0_0_12px_rgba(255,30,39,0.2)] transition-all duration-200">
-                                ${window.svgIcon('copy', 'w-3 h-3')}
-                                复制模板
-                            </button>
                         </div>
                     </div>
                 </div>
@@ -94,8 +89,8 @@ export function weldingUnitPriceTemplate() {
                         <div class="flex items-center gap-3 min-w-0 flex-1">
                             <span class="text-[#555555] shrink-0 tracking-wider">当前筛选：</span>
                             <div class="flex items-center gap-2 flex-wrap">
-                                <span id="weldingCapsuleLocation" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部基地</span>
                                 <span id="weldingCapsuleYear" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部年度</span>
+                                <span id="weldingCapsuleLocation" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部基地</span>
                                 <span id="weldingCapsuleAudit" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部审核</span>
                             </div>
                         </div>
@@ -116,8 +111,8 @@ export function weldingUnitPriceTemplate() {
 
                     <div id="weldingAdvancedFilterPanel" class="hidden mt-3 pt-3 border-t border-[#1A1A22]">
                         <div class="flex items-end gap-3 flex-wrap">
-                            ${filterSelect('locationFilter', '基地')}
                             ${filterSelect('yearFilter', '年度')}
+                            ${filterSelect('locationFilter', '基地')}
                             ${filterSelect('auditStatusFilter', '审核状态')}
                             <button id="weldingResetFilterBtn" type="button"
                                     class="inline-flex items-center gap-1.5 h-8 px-3 text-[11px] font-medium rounded-md bg-transparent text-[#6E6E73] border border-[#2A2A35] hover:bg-[#FF1E27]/10 hover:border-[#FF1E27]/50 hover:text-[#FF1E27] transition-all duration-200">
@@ -190,7 +185,6 @@ export function weldingUnitPriceTemplate() {
 
         ${batchAuditDrawerHtml('welding')}
         ${editDrawerHtml()}
-        ${copyDrawerHtml()}
         ${deleteDrawerHtml()}
     `;
 }
@@ -303,65 +297,6 @@ function editDrawerHtml() {
                 <button type="button" id="submitEditBtn" class="inline-flex items-center gap-1.5 bg-[#d32f2f] text-white px-4 py-2 text-[11px] font-semibold rounded hover:bg-[#b71c1c] transition-all">
                     ${window.svgIcon('archive', 'w-3.5 h-3.5')}
                     保存
-                </button>
-            </div>
-        </div>
-    `;
-}
-
-function copyDrawerHtml() {
-    return `
-        <div class="fixed inset-0 z-[80] bg-black/70 backdrop-blur-sm transition-opacity duration-300"
-             id="copyDrawerBackdrop" style="display:none"></div>
-        <div class="fixed inset-y-0 right-0 z-[85] w-[420px] bg-[#1a1a1a] border-l border-[#2a2a2a] transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col"
-             id="copyDrawer" style="display:none; max-height: 100vh; box-shadow: -20px 0 60px rgba(0,0,0,0.95);">
-            <div class="px-5 py-3.5 flex items-center justify-between shrink-0"
-                 style="background: linear-gradient(180deg, #1f1f1f 0%, #1a1a1a 100%); border-bottom: 1px solid #333333;">
-                <h5 class="text-[11px] font-semibold tracking-wider text-[#b0b0b0] flex items-center gap-2.5 uppercase">
-                    <span style="width:3px;height:14px;background:#d32f2f;border-radius:1px;display:inline-block;box-shadow: 0 0 8px rgba(211,47,47,0.5);"></span>
-                    复制价格模板
-                </h5>
-                <button type="button" id="closeCopyDrawer"
-                        class="flex items-center justify-center w-8 h-8 rounded-md text-[#707070] hover:text-white hover:bg-[#d32f2f] transition-all">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                </button>
-            </div>
-            <div class="flex-1 min-h-0 overflow-y-auto p-6 space-y-5">
-                <form id="copyForm" class="space-y-5">
-                    <div>
-                        <label class="text-[10px] text-[#777777] mb-1 block">基地 <span class="text-[#d32f2f]">*</span></label>
-                        <select id="copyLocation" required
-                                class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#9e9e9e] appearance-none rounded focus:outline-none focus:border-[#ff5252]">
-                            <option value="">请选择基地</option>
-                            <option value="大连">大连</option>
-                            <option value="芜湖">芜湖</option>
-                            <option value="鄂尔多斯">鄂尔多斯</option>
-                            <option value="青岛">青岛</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="text-[10px] text-[#777777] mb-1 block">源年份 <span class="text-[#d32f2f]">*</span></label>
-                        <select id="sourceYear" required
-                                class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#9e9e9e] appearance-none rounded focus:outline-none focus:border-[#ff5252]">
-                            <option value="">请选择源年份</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="text-[10px] text-[#777777] mb-1 block">目标年份 <span class="text-[#d32f2f]">*</span></label>
-                        <input type="number" id="targetYear" min="2000" max="2100" required
-                               class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#ffffff] rounded focus:outline-none focus:border-[#ff5252]"
-                               placeholder="如 2027">
-                    </div>
-                    <p class="text-[11px] text-[#616161]"><span class="text-[#f57f17]">提示：</span>仅覆盖目标年未审核数据；已审核记录会跳过。</p>
-                </form>
-            </div>
-            <div class="px-6 py-4 border-t border-[#262626] flex items-center justify-end gap-2 shrink-0">
-                <button type="button" id="cancelCopyBtn" class="inline-flex items-center gap-1.5 bg-transparent text-[#9e9e9e] border border-[#2c2c2c] px-4 py-2 text-[11px] font-medium rounded hover:border-[#9e9e9e] hover:text-white transition-all">取消</button>
-                <button type="button" id="submitCopyBtn" class="inline-flex items-center gap-1.5 bg-[#d32f2f] text-white px-4 py-2 text-[11px] font-semibold rounded hover:bg-[#b71c1c] transition-all">
-                    ${window.svgIcon('arrows-split', 'w-3.5 h-3.5')}
-                    复制
                 </button>
             </div>
         </div>

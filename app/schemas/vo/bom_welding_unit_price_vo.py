@@ -61,17 +61,6 @@ class BomWeldingUnitPriceBulkUpsertResponse(BaseModel):
     skipped_approved_count: int = 0
 
 
-class BomWeldingUnitPriceCopyYearResponse(BaseModel):
-    """焊接工费单价跨年复制响应 VO"""
-
-    location: str
-    source_year: int
-    target_year: int
-    created_count: int
-    skipped_count: int
-    failed: list[str]
-
-
 class BomWeldingUnitPriceImportResultVO(BaseModel):
     """焊接工费单价 Excel 导入结果 VO"""
 
