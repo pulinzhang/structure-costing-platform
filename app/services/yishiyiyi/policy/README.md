@@ -64,8 +64,9 @@ app/services/yishiyiyi/policy/
 │   └── import_service.py             # 上传校验 + 批量导入
 ├── match/
 │   ├── __init__.py
-│   ├── match_service.py              # 查候选 + fallback 编排
-│   └── ladder_matcher.py             # 纯区间匹配（无 DB）
+│   ├── match_service.py              # 查候选 + fallback 编排（API 匹配）
+│   ├── ladder_matcher.py             # 纯区间匹配（无 DB）
+│   └── adjustment_common.py          # 钢厂/大类别名 + 加减价候选筛选（供本切片与 costing）
 └── export/
     ├── __init__.py
     ├── export_service.py             # 主子表扁平化、调导出器
@@ -117,6 +118,9 @@ parsers.yishiyiyi.policy         （仅 importing 调用）
 
 - 全程 Decimal 比较；多命中按 `sort_order`、`id` 取最优。
 - **Fallback**：精确 `grade_value` 无命中时，再查 `grade_value/grade_type` 为空的通用政策（多钢种共用一行价格的场景）。
+- **加减价别名与候选筛选**（`adjustment_common`）：钢厂/大类别名、`filter_candidates` /
+  `order_by_base_thickness` 等为上游稳定 API；`winning_thickness` 与下游
+  `costing/steel_price` 共用，禁止再把匹配逻辑放进 costing 后反向依赖。
 
 ### 5.3 导出（`export`）
 
@@ -133,6 +137,7 @@ parsers.yishiyiyi.policy         （仅 importing 调用）
 | 列表字段 / 写操作审计 | `crud/policy_crud.py` |
 | 导入替换策略或进度分段 | `importing/import_service.py` |
 | 区间运算符或命中维度 | `match/ladder_matcher.py` |
+| 钢厂别名 / 加减价候选排序 | `match/adjustment_common.py` |
 | fallback 策略 | `match/match_service.py` |
 | 导出列或 Excel 样式 | `export/excel_exporter.py` 或 `export_service.py` |
 | 新增对外能力 | 先在对应子服务实现，再在门面加一行委托 |

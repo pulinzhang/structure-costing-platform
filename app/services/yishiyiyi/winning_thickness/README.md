@@ -37,8 +37,10 @@ from app.services.yishiyiyi.winning_thickness import WinningThicknessExportServi
 2. **门面只做委托**  
    `WinningThicknessExportService` 提供 `build_rows` / `preview` / `export`，细节在子包。
 
-3. **复用算价公共匹配**  
-   钢厂/大类别名、base_thickness 优先顺序与 `costing/steel_price` 厚度加减价一致（`filter_candidates` / `order_by_base_thickness`）。
+3. **复用上游政策匹配**  
+   钢厂/大类别名、base_thickness 优先顺序与钢材联动加减价一致，统一走
+   `yishiyiyi.policy.match.adjustment_common`（`filter_candidates` /
+   `order_by_base_thickness`），不反向依赖 costing。
 
 4. **仍遵守项目分层**  
    只读 Repository；不写主数据；Router 经门面取数。

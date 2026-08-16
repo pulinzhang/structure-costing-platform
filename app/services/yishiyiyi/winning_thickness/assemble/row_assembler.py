@@ -12,13 +12,13 @@ from app.models.steel_price_policy import SteelPriceLadderItem, SteelPricePolicy
 from app.repositories.yishiyiyi.base_price import SteelBasePriceRepository
 from app.repositories.yishiyiyi.policy import SteelPricePolicyRepository
 from app.schemas.vo.winning_thickness_vo import WinningThicknessRowVO
-from app.services.costing.steel_price.calc.models import CalcRow
-from app.services.costing.steel_price.calc.steps.adjustments.common import (
+from app.services.yishiyiyi.policy.export.excel_exporter import format_interval
+from app.services.yishiyiyi.policy.match.adjustment_common import (
+    PolicyMatchContext,
     filter_candidates,
     normalize_steel_mill,
     order_by_base_thickness,
 )
-from app.services.yishiyiyi.policy.export.excel_exporter import format_interval
 
 logger = logging.getLogger("service.winning_thickness.assemble")
 
@@ -147,21 +147,18 @@ class WinningThicknessRowAssembler:
         if not grade or not base.steel_mill or not base.category_name:
             return None
 
-        calc_row = CalcRow(
-            year=int(base.year),
-            month=int(base.month),
-            location=base.location or "",
+        match_row = PolicyMatchContext(
             grade=grade,
-            thickness=Decimal(str(base.thick)) if base.thick is not None else Decimal("0"),
+            thickness=(
+                Decimal(str(base.thick)) if base.thick is not None else Decimal("0")
+            ),
             steel_mill=base.steel_mill,
             category_name=base.category_name,
             base_thickness=(
                 Decimal(str(base.thick)) if base.thick is not None else None
             ),
-            base_price=Decimal(str(base.base_price or 0)),
-            base_price_id=base.id,
         )
-        candidates = filter_candidates(calc_row, policies)
+        candidates = filter_candidates(match_row, policies)
         thickness_policies = [
             p
             for p in candidates
@@ -173,7 +170,7 @@ class WinningThicknessRowAssembler:
 
         ordered = order_by_base_thickness(
             thickness_policies,
-            calc_row,
+            match_row,
             prefer_base_thickness=True,
         )
         return ordered[0] if ordered else None
