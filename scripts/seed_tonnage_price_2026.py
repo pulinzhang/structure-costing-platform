@@ -5,18 +5,20 @@
 - 默认幂等（已存在 (location, year, tonnage) 跳过）
 - --overwrite 时覆盖已有价格，并删除种子中不存在的吨位
 - --dry-run 只打印，不写入
-"""
-import argparse
-import sys
-from decimal import Decimal, ROUND_HALF_UP
-from pathlib import Path
 
-# 允许在仓库根目录直接运行：把仓库根加入 sys.path
-ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT))
+用法（仓库根目录）::
+
+    python -X utf8 -m scripts.seed_tonnage_price_2026
+    python -X utf8 -m scripts.seed_tonnage_price_2026 --dry-run
+"""
+
+from __future__ import annotations
+
+import argparse
+from decimal import ROUND_HALF_UP, Decimal
 
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import Session, sessionmaker
 
 from app.config import settings
 from app.database import Base
@@ -62,13 +64,13 @@ YEAR = 2026
 LOCATION = "青岛"
 
 
-def make_session():
+def make_session() -> Session:
     engine = create_engine(settings.DATABASE_URL, future=True)
     Base.metadata.create_all(bind=engine)
     return sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)()
 
 
-def existing_records(session, location, year):
+def existing_records(session: Session, location: str, year: int) -> list[StampingTonnagePrice]:
     return (
         session.query(StampingTonnagePrice)
         .filter(
@@ -80,7 +82,7 @@ def existing_records(session, location, year):
     )
 
 
-def run(dry_run: bool, overwrite: bool, location: str):
+def run(*, dry_run: bool, overwrite: bool, location: str) -> None:
     session = make_session()
     try:
         existing = existing_records(session, location, YEAR)
@@ -88,7 +90,10 @@ def run(dry_run: bool, overwrite: bool, location: str):
 
         seed_map = dict(SEED_2026)
 
-        inserted, updated, skipped, deleted = [], [], [], []
+        inserted: list[tuple[int, float]] = []
+        updated: list[tuple[int, float]] = []
+        skipped: list[tuple] = []
+        deleted: list[int] = []
 
         if overwrite and existing and not dry_run:
             for r in existing:
@@ -98,7 +103,7 @@ def run(dry_run: bool, overwrite: bool, location: str):
                 session.query(StampingTonnagePrice).filter(
                     StampingTonnagePrice.location == location,
                     StampingTonnagePrice.year == YEAR,
-                    StampingTonnagePrice.tonnage.in_([t for t in deleted]),
+                    StampingTonnagePrice.tonnage.in_(list(deleted)),
                 ).delete(synchronize_session=False)
                 session.commit()
             existing = existing_records(session, location, YEAR)
@@ -128,10 +133,13 @@ def run(dry_run: bool, overwrite: bool, location: str):
                         )
                         .first()
                     )
+                    assert rec is not None
                     rec.price_per_stroke = price
                     updated.append((tonnage, float(price)))
                 else:
-                    skipped.append((tonnage, float(old_price), float(price), "different price, kept"))
+                    skipped.append(
+                        (tonnage, float(old_price), float(price), "different price, kept")
+                    )
             else:
                 skipped.append((tonnage, float(old_price), float(price), "same"))
 
@@ -145,7 +153,8 @@ def run(dry_run: bool, overwrite: bool, location: str):
         )
         print(f"  inserted   ({len(inserted)}): {inserted}")
         print(f"  updated    ({len(updated)}):  {updated}")
-        print(f"  skipped    ({len(skipped)}):  {skipped if len(skipped) <= 8 else skipped[:8] + ['...']}")
+        skipped_preview = skipped if len(skipped) <= 8 else skipped[:8] + ["..."]
+        print(f"  skipped    ({len(skipped)}):  {skipped_preview}")
         print(f"  deleted    ({len(deleted)}):  {deleted}")
         print("  prices (3dp):")
         for tonnage, price in SEED_2026:

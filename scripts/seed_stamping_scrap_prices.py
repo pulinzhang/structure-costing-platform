@@ -1,23 +1,18 @@
 """
 种子数据：冲压废料月度销售价格（2025 全年 + 2026 年 1-6 月）
 
-用法（在仓库根目录）：
-  python -X utf8 scripts/seed_stamping_scrap_prices.py
+用法（仓库根目录）::
+
+    python -X utf8 -m scripts.seed_stamping_scrap_prices
 """
 
 from __future__ import annotations
 
-import sys
 from decimal import Decimal
-from pathlib import Path
-
-ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT))
 
 from app.common.audit import SYSTEM_USER, audit_create, audit_update
 from app.database import DatabaseConfig
 from app.models.stamping_scrap_price import StampingScrapPrice
-
 
 DEDUCTIONS = {
     "芜湖": Decimal("149.39"),

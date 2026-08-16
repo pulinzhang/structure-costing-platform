@@ -1,12 +1,13 @@
-"""一次性回填 stamping_parts 的 Excel 单元格溯源字段。"""
+"""一次性回填 stamping_parts 的 Excel 单元格溯源字段。
+
+用法（仓库根目录）::
+
+    python -X utf8 -m scripts.backfill_stamping_part_excel_provenance
+"""
 
 from __future__ import annotations
 
-import sys
 from pathlib import Path
-
-ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT))
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker

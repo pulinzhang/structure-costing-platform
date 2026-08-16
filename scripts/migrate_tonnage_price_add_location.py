@@ -3,14 +3,14 @@
 - 若缺列 / 值为空 / 唯一约束仍是旧的 (year, tonnage)：重建表
 - 存量空 location 回填为「青岛」
 - 唯一约束改为 (location, year, tonnage)
-"""
-import sys
-from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT))
+用法（仓库根目录）::
+
+    python -X utf8 -m scripts.migrate_tonnage_price_add_location
+"""
 
 from sqlalchemy import text
+from sqlalchemy.engine import Connection
 
 from app.config import settings
 from app.database import DatabaseConfig
@@ -18,7 +18,7 @@ from app.database import DatabaseConfig
 DEFAULT_LOCATION = "青岛"
 
 
-def _needs_migrate(conn) -> bool:
+def _needs_migrate(conn: Connection) -> bool:
     cols = conn.execute(text("PRAGMA table_info(stamping_tonnage_price)")).fetchall()
     if not cols:
         print("表 stamping_tonnage_price 不存在，跳过（create_all 会按新模型建表）")
@@ -59,7 +59,7 @@ def _needs_migrate(conn) -> bool:
     return False
 
 
-def migrate():
+def migrate() -> None:
     engine = DatabaseConfig.get_engine()
     print(f"DATABASE_URL={settings.DATABASE_URL}")
 
