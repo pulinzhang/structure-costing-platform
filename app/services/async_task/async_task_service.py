@@ -3,8 +3,10 @@
 
 进度落在辅助库（AuxiliaryDatabaseConfig，无 Redis 时的旁路存储）：
 - 与主业务库物理隔离，不受业务长事务写锁影响
-- 写入使用独立 AUTOCOMMIT 连接，每次立即生效
+- 写入使用独立 AUTOCOMMIT 连接，每次立即生效（类 Redis 可见性）
 - 无进程内存态，多 worker 轮询一致
+
+分层：Service 管连接策略 / 节流 / 线程池；SQL 经 AsyncTaskRepository。
 """
 
 from __future__ import annotations
@@ -17,12 +19,12 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
 from typing import Any, Callable, Optional
 
-from sqlalchemy import delete, insert, update
 from sqlalchemy.orm import Session
 
 from app.common.timezone import now
 from app.database import AuxiliaryDatabaseConfig
 from app.models.async_task import AsyncTask
+from app.repositories.async_task import AsyncTaskRepository
 from app.utils.logging_config import get_logger
 
 
@@ -56,8 +58,11 @@ _progress_throttle_state: dict[str, tuple[float, int]] = {}
 class AsyncTaskService:
     """异步任务业务逻辑（辅助库，多 worker 安全）。"""
 
+    def __init__(self) -> None:
+        self.repository = AsyncTaskRepository()
+
     def _autocommit_connection(self) -> Any:
-        """辅助库独立连接 + AUTOCOMMIT。"""
+        """辅助库独立连接 + AUTOCOMMIT（进度立即对轮询可见）。"""
         engine = AuxiliaryDatabaseConfig.get_engine()
         return engine.connect().execution_options(isolation_level="AUTOCOMMIT")
 
@@ -77,19 +82,19 @@ class AsyncTaskService:
             with _progress_throttle_lock:
                 _progress_throttle_state.pop(task_id, None)
             return False
-        now = time.time()
+        now_ts = time.time()
         prog = 0 if progress is None else int(progress)
         with _progress_throttle_lock:
             last = _progress_throttle_state.get(task_id)
             if last is not None:
                 last_ts, last_prog = last
                 if (
-                    now - last_ts < _PROGRESS_MIN_INTERVAL_SECONDS
+                    now_ts - last_ts < _PROGRESS_MIN_INTERVAL_SECONDS
                     and abs(prog - last_prog) < _PROGRESS_MIN_DELTA
                     and prog < 100
                 ):
                     return True
-            _progress_throttle_state[task_id] = (now, prog)
+            _progress_throttle_state[task_id] = (now_ts, prog)
         return False
 
     def create_task(
@@ -104,46 +109,28 @@ class AsyncTaskService:
         self.clean_expired_tasks()
         task_id = str(uuid.uuid4())
         current_time = now()
+        values = {
+            "task_id": task_id,
+            "task_type": task_type,
+            "status": STATUS_PENDING,
+            "progress": 0,
+            "message": message,
+            "result_json": None,
+            "operator_id": operator_id,
+            "operator_name": operator_name,
+            "created_by": operator_name,
+            "updated_by": operator_name,
+            "created_at": current_time,
+            "updated_at": current_time,
+        }
         with self._autocommit_connection() as conn:
-            conn.execute(
-                insert(AsyncTask).values(
-                    task_id=task_id,
-                    task_type=task_type,
-                    status=STATUS_PENDING,
-                    progress=0,
-                    message=message,
-                    result_json=None,
-                    operator_id=operator_id,
-                    operator_name=operator_name,
-                    created_by=operator_name,
-                    updated_by=operator_name,
-                    created_at=current_time,
-                    updated_at=current_time,
-                )
-            )
-        return AsyncTask(
-            task_id=task_id,
-            task_type=task_type,
-            status=STATUS_PENDING,
-            progress=0,
-            message=message,
-            result_json=None,
-            operator_id=operator_id,
-            operator_name=operator_name,
-            created_by=operator_name,
-            updated_by=operator_name,
-            created_at=current_time,
-            updated_at=current_time,
-        )
+            self.repository.insert_task(conn, values)
+        return AsyncTask(**values)
 
     def get_by_task_id(self, task_id: str) -> Optional[AsyncTask]:
         db = self._read_session()
         try:
-            return (
-                db.query(AsyncTask)
-                .filter(AsyncTask.task_id == task_id)
-                .first()
-            )
+            return self.repository.get_by_task_id(db, task_id)
         finally:
             db.close()
 
@@ -185,11 +172,7 @@ class AsyncTaskService:
             values["result_json"] = json.dumps(result, ensure_ascii=False)
 
         with self._autocommit_connection() as conn:
-            conn.execute(
-                update(AsyncTask)
-                .where(AsyncTask.task_id == task_id)
-                .values(**values)
-            )
+            self.repository.update_by_task_id(conn, task_id, values)
 
     def update_task_standalone(
         self,
@@ -224,10 +207,7 @@ class AsyncTaskService:
         """清理过期任务（辅助库 AUTOCOMMIT）。"""
         cutoff = now() - timedelta(seconds=TASK_TTL_SECONDS)
         with self._autocommit_connection() as conn:
-            result = conn.execute(
-                delete(AsyncTask).where(AsyncTask.updated_at < cutoff)
-            )
-            count = result.rowcount or 0
+            count = self.repository.delete_older_than(conn, cutoff)
         if count:
             logger.info("清理过期异步任务: count=%s", count)
         return count
