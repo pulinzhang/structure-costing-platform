@@ -10,7 +10,7 @@ from urllib.parse import quote
 from app.common.audit import display_name
 from app.common.permissions.codes import Perm
 from app.database import DatabaseConfig, get_db
-from app.deps.permissions import require_perm
+from app.deps.permissions import require_any_perm, require_perm
 from app.schemas.common.page_result import PageResult
 from app.schemas.dto.bom_welding_process_breakdown_dto import (
     BomWeldingProcessBreakdownBatchApproveDTO,
@@ -18,6 +18,7 @@ from app.schemas.dto.bom_welding_process_breakdown_dto import (
     BomWeldingProcessBreakdownBatchReverseAuditDTO,
     BomWeldingProcessBreakdownGenerateDTO,
     BomWeldingProcessBreakdownLineUpdateDTO,
+    BomWeldingProcessBreakdownNodeLinesUpdateDTO,
     BomWeldingProcessBreakdownQuery,
 )
 from app.schemas.vo.async_task_vo import AsyncTaskAcceptedVO, AsyncTaskProgressVO
@@ -262,6 +263,13 @@ def get_generate_prep_stats(
     return ApiResponse.ok(data=stats)
 
 
+# 生成页可读：有「从BOM生成」或「列表查询」均可看日志 / 任务进度
+_generate_read = require_any_perm(
+    Perm.BOM_WELDING_PROCESS_BREAKDOWN_GENERATE,
+    Perm.BOM_WELDING_PROCESS_BREAKDOWN_VIEW,
+)
+
+
 @router.get(
     "/generate/logs",
     response_model=ApiResponse[PageResult[BomWeldingProcessBreakdownGenerateLogVO]],
@@ -273,9 +281,7 @@ def list_generate_logs(
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(
-        require_perm(Perm.BOM_WELDING_PROCESS_BREAKDOWN_VIEW)
-    ),
+    current_user: UserVO = Depends(_generate_read),
 ) -> ApiResponse[PageResult[BomWeldingProcessBreakdownGenerateLogVO]]:
     records, total = _service.list_generate_logs(
         db,
@@ -300,9 +306,7 @@ def list_generate_logs(
 def get_generate_log(
     log_id: int,
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(
-        require_perm(Perm.BOM_WELDING_PROCESS_BREAKDOWN_VIEW)
-    ),
+    current_user: UserVO = Depends(_generate_read),
 ) -> ApiResponse[BomWeldingProcessBreakdownGenerateLogVO]:
     record = _service.get_generate_log(db, log_id)
     if record is None:
@@ -339,9 +343,7 @@ def delete_generate_log(
 )
 def get_generate_task_progress(
     task_id: str,
-    current_user: UserVO = Depends(
-        require_perm(Perm.BOM_WELDING_PROCESS_BREAKDOWN_VIEW)
-    ),
+    current_user: UserVO = Depends(_generate_read),
 ) -> ApiResponse[AsyncTaskProgressVO]:
     task = _async_task_service.get_task_snapshot(task_id)
     if (
@@ -434,7 +436,7 @@ def update_line(
     dto: BomWeldingProcessBreakdownLineUpdateDTO,
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(
-        require_perm(Perm.BOM_WELDING_PROCESS_BREAKDOWN_UPDATE)
+        require_perm(Perm.BOM_WELDING_PROCESS_BREAKDOWN_SAVE_LINES)
     ),
 ) -> ApiResponse[BomWeldingProcessBreakdownLineVO]:
     """修改明细（过程量/标准工艺）；map/rollup/qty_check 由服务侧重算"""
@@ -443,6 +445,28 @@ def update_line(
         code = 404 if "不存在" in error else 400
         raise HTTPException(status_code=code, detail=error)
     return ApiResponse.updated(data=row, message="更新成功")
+
+
+@router.patch(
+    "/nodes/{node_id}/lines",
+    response_model=ApiResponse[BomWeldingProcessBreakdownNodeVO],
+)
+def update_node_lines(
+    node_id: int,
+    dto: BomWeldingProcessBreakdownNodeLinesUpdateDTO,
+    db: Session = Depends(get_db),
+    current_user: UserVO = Depends(
+        require_perm(Perm.BOM_WELDING_PROCESS_BREAKDOWN_SAVE_LINES)
+    ),
+) -> ApiResponse[BomWeldingProcessBreakdownNodeVO]:
+    """一次保存节点下全部工艺明细"""
+    row, error = _service.update_node_lines(
+        db, node_id, dto, current_user=current_user
+    )
+    if error:
+        code = 404 if "不存在" in error else 400
+        raise HTTPException(status_code=code, detail=error)
+    return ApiResponse.updated(data=row, message="全部工艺已保存")
 
 
 @router.post(

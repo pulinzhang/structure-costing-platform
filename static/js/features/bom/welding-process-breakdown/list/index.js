@@ -9,7 +9,8 @@ import {
     renderWpbPagination,
     updateWpbHud,
     updateWpbCapsules,
-} from './template.js?v=24';
+    refreshWpbLineDerived,
+} from './template.js?v=36';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -36,7 +37,9 @@ const wpbState = {
     batchSubmitting: false,
     saving: false,
     advancedOpen: false,
+    canView: false,
     canEdit: false,
+    detailEditMode: false,
     currentNodeId: null,
     standardProcessNames: [],
 };
@@ -58,6 +61,9 @@ function closeDrawer(drawerId, backdropId) {
     if (!drawer) return;
     drawer.classList.remove('translate-x-0');
     drawer.classList.add('translate-x-full');
+    if (drawerId === 'wpbDetailDrawer') {
+        wpbState.currentNodeId = null;
+    }
     setTimeout(() => {
         drawer.style.display = 'none';
         if (backdrop) backdrop.style.display = 'none';
@@ -66,6 +72,7 @@ function closeDrawer(drawerId, backdropId) {
 
 function init() {
     applyHashQuery();
+    mountDrawersToBody();
     bindEvents();
     bindPageSizeSelect('wpbPageSize', {
         getSize: () => wpbState.pageSize,
@@ -84,6 +91,37 @@ function init() {
     updateWpbCapsules(wpbState);
 }
 
+/** 抽屉挂到 body，避免被主内容区 overflow 裁切；清掉重复 id */
+function mountDrawersToBody() {
+    const ids = [
+        'wpbDetailBackdrop',
+        'wpbDetailDrawer',
+        'wpbBatchBackdrop',
+        'wpbBatchDrawer',
+    ];
+    for (const id of ids) {
+        const matches = [...document.querySelectorAll(`#${id}`)];
+        // 保留最后一个（本次 render），其余丢弃
+        const keep = matches.pop();
+        matches.forEach((el) => el.remove());
+        if (keep && keep.parentElement !== document.body) {
+            document.body.appendChild(keep);
+        }
+    }
+}
+
+function destroy() {
+    wpbState.currentNodeId = null;
+    for (const id of [
+        'wpbDetailBackdrop',
+        'wpbDetailDrawer',
+        'wpbBatchBackdrop',
+        'wpbBatchDrawer',
+    ]) {
+        document.querySelectorAll(`#${id}`).forEach((el) => el.remove());
+    }
+}
+
 function applyHashQuery() {
     const hash = window.location.hash || '';
     const queryIndex = hash.indexOf('?');
@@ -99,7 +137,8 @@ function applyHashQuery() {
 
 function applyPermissionUi() {
     const canFn = typeof can === 'function' ? can : () => true;
-    wpbState.canEdit = canFn('op:bom-welding-process-breakdown:update');
+    wpbState.canView = canFn('op:bom-welding-process-breakdown:view');
+    wpbState.canEdit = canFn('op:bom-welding-process-breakdown:save-lines');
     const hide = (id, allowed) => {
         if (!allowed) document.getElementById(id)?.classList.add('hidden');
     };
@@ -149,17 +188,30 @@ function bindEvents() {
     document.getElementById('wpbConfirmBatch')?.addEventListener('click', confirmBatch);
 
     document.getElementById('wpbTableBody')?.addEventListener('click', (event) => {
-        const btn = event.target.closest('[data-action="detail"]');
-        if (!btn) return;
-        const id = Number(btn.getAttribute('data-node-id'));
-        if (id) openDetail(id);
+        const viewBtn = event.target.closest('[data-action="view-detail"]');
+        if (viewBtn) {
+            const id = Number(viewBtn.getAttribute('data-node-id'));
+            if (id) openDetail(id, { edit: false });
+            return;
+        }
+        const editBtn = event.target.closest('[data-action="edit-detail"]');
+        if (editBtn) {
+            const id = Number(editBtn.getAttribute('data-node-id'));
+            if (id) openDetail(id, { edit: true });
+        }
     });
 
-    document.getElementById('wpbDetailBody')?.addEventListener('click', async (event) => {
-        const lineBtn = event.target.closest('[data-action="save-line"]');
-        if (lineBtn) {
-            const lineId = Number(lineBtn.getAttribute('data-line-id'));
-            if (lineId) await saveLine(lineId);
+    document.getElementById('wpbDetailBody')?.addEventListener('input', (event) => {
+        const card = event.target.closest('[data-line-card]');
+        if (card) refreshWpbLineDerived(card);
+    });
+    document.getElementById('wpbDetailBody')?.addEventListener('change', (event) => {
+        const card = event.target.closest('[data-line-card]');
+        if (card) refreshWpbLineDerived(card);
+    });
+    document.getElementById('wpbDetailBody')?.addEventListener('click', (event) => {
+        if (event.target.closest('[data-action="save-all-lines"]')) {
+            saveAllLines();
         }
     });
 
@@ -270,7 +322,12 @@ async function loadData(page = 1) {
         updateWpbHud(wpbState.summary);
         updateWpbCapsules(wpbState);
 
-        if (tbody) tbody.innerHTML = renderWpbTableRows(wpbState.records);
+        if (tbody) {
+            tbody.innerHTML = renderWpbTableRows(wpbState.records, {
+                canView: wpbState.canView,
+                canEdit: wpbState.canEdit,
+            });
+        }
         const totalEl = document.getElementById('wpbTotalCount');
         if (totalEl) totalEl.textContent = `共 ${wpbState.total} 条`;
         const pager = document.getElementById('wpbPaginationBtns');
@@ -286,8 +343,10 @@ async function loadData(page = 1) {
     }
 }
 
-async function openDetail(nodeId) {
+async function openDetail(nodeId, { edit = false } = {}) {
+    if (edit ? !wpbState.canEdit : !wpbState.canView) return;
     wpbState.currentNodeId = nodeId;
+    wpbState.detailEditMode = !!(edit && wpbState.canEdit);
     let node = wpbState.records.find((r) => r.id === nodeId);
     try {
         const res = await HttpClient.get(`${API_BASE}/nodes/${nodeId}`);
@@ -296,48 +355,82 @@ async function openDetail(nodeId) {
         console.error(error);
     }
     const title = document.getElementById('wpbDetailTitle');
-    if (title) title.textContent = node ? `${node.part_number}` : '拆解明细';
+    if (title) {
+        if (!node) {
+            title.textContent = '拆解明细';
+        } else {
+            const n = Array.isArray(node.lines) ? node.lines.length : (Number(node.process_line_count) || 0);
+            title.textContent = `${node.part_number} · L${node.level} · ${n}种`;
+        }
+    }
     const body = document.getElementById('wpbDetailBody');
     if (body) {
         body.innerHTML = renderWpbDetailBody(node, {
-            canEdit: wpbState.canEdit,
+            canEdit: wpbState.detailEditMode,
             standardProcessNames: wpbState.standardProcessNames,
         });
     }
     openDrawer('wpbDetailDrawer', 'wpbDetailBackdrop');
 }
 
-async function saveLine(lineId) {
-    if (wpbState.saving || !wpbState.canEdit) return;
-    const card = document.querySelector(`[data-line-card="${lineId}"]`);
-    if (!card) return;
-    const processQty = card.querySelector('[data-field="process_qty"]')?.value?.trim();
-    const processQtyUnit = card.querySelector('[data-field="process_qty_unit"]')?.value?.trim();
-    const processQtySecondary = card.querySelector('[data-field="process_qty_secondary"]')?.value?.trim();
-    const processQtySecondaryUnit = card.querySelector('[data-field="process_qty_secondary_unit"]')?.value?.trim();
-    const standardProcessName = card.querySelector('[data-field="standard_process_name"]')?.value?.trim();
-    if (!processQty) {
-        showToast('过程量不能为空', 'warning');
+async function saveAllLines() {
+    if (wpbState.saving || !wpbState.detailEditMode || !wpbState.currentNodeId) return;
+    const cards = [...document.querySelectorAll('#wpbDetailBody [data-line-card]')];
+    if (!cards.length) {
+        showToast('无工艺可保存', 'warning');
         return;
     }
-    wpbState.saving = true;
-    try {
-        const body = {
+    const lines = [];
+    for (const card of cards) {
+        const lineId = Number(card.getAttribute('data-line-card'));
+        const processQty = card.querySelector('[data-field="process_qty"]')?.value?.trim();
+        const processQtyUnit = card.querySelector('[data-field="process_qty_unit"]')?.value?.trim();
+        const processQtySecondary = card.querySelector('[data-field="process_qty_secondary"]')?.value?.trim();
+        const processQtySecondaryUnit = card.querySelector('[data-field="process_qty_secondary_unit"]')?.value?.trim();
+        const standardProcessName = card.querySelector('[data-field="standard_process_name"]')?.value?.trim();
+        if (!processQty) {
+            showToast('过程量不能为空', 'warning');
+            return;
+        }
+        lines.push({
+            line_id: lineId,
             process_qty: processQty,
             process_qty_unit: processQtyUnit || null,
             process_qty_secondary: processQtySecondary || null,
             process_qty_secondary_unit: processQtySecondaryUnit || null,
             standard_process_name: standardProcessName || null,
-        };
-        await HttpClient.patch(`${API_BASE}/lines/${lineId}`, body);
-        showToast('明细已保存', 'success');
+        });
+    }
+    wpbState.saving = true;
+    const saveBtn = document.getElementById('wpbSaveAllLines');
+    if (saveBtn) saveBtn.disabled = true;
+    try {
+        const res = await HttpClient.patch(
+            `${API_BASE}/nodes/${wpbState.currentNodeId}/lines`,
+            { lines },
+        );
+        showToast('全部工艺已保存', 'success');
         const nodeId = wpbState.currentNodeId;
         await loadData(wpbState.page);
-        if (nodeId) await openDetail(nodeId);
+        if (res.data) {
+            const title = document.getElementById('wpbDetailTitle');
+            const n = Array.isArray(res.data.lines) ? res.data.lines.length : 0;
+            if (title) title.textContent = `${res.data.part_number} · L${res.data.level} · ${n}种`;
+            const body = document.getElementById('wpbDetailBody');
+            if (body) {
+                body.innerHTML = renderWpbDetailBody(res.data, {
+                    canEdit: wpbState.detailEditMode,
+                    standardProcessNames: wpbState.standardProcessNames,
+                });
+            }
+        } else if (nodeId) {
+            await openDetail(nodeId, { edit: wpbState.detailEditMode });
+        }
     } catch (error) {
         console.error(error);
     } finally {
         wpbState.saving = false;
+        if (saveBtn) saveBtn.disabled = false;
     }
 }
 
@@ -466,4 +559,5 @@ async function exportL0Excel() {
 export const pageConfig = {
     render: weldingProcessBreakdownListTemplate,
     init: () => init(),
+    destroy: () => destroy(),
 };

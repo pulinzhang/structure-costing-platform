@@ -28,7 +28,9 @@ from app.schemas.dto.bom_welding_process_breakdown_dto import (
     BomWeldingProcessBreakdownBatchApproveDTO,
     BomWeldingProcessBreakdownBatchReverseAuditDTO,
     BomWeldingProcessBreakdownGenerateDTO,
+    BomWeldingProcessBreakdownLineBatchItemDTO,
     BomWeldingProcessBreakdownLineUpdateDTO,
+    BomWeldingProcessBreakdownNodeLinesUpdateDTO,
     BomWeldingProcessBreakdownQuery,
 )
 from app.schemas.vo.bom_welding_process_breakdown_vo import (
@@ -280,6 +282,32 @@ class BomWeldingProcessBreakdownService:
 
     # ---------- 修改明细（须未审核；主表来自 BOM，不可改） ----------
 
+    def _prepare_line_fields(
+        self,
+        fields: dict[str, Any],
+        *,
+        fallback_token: str,
+    ) -> tuple[dict[str, Any], str | None]:
+        """校验并补齐标准工艺/单位/map_status；失败返回 (payload, error)。"""
+        if "standard_process_name" in fields:
+            name = fields.get("standard_process_name")
+            if name:
+                if name not in _STANDARD_PROCESS_NAMES:
+                    return fields, f"未知标准工艺名称：{name}"
+                fields["standard_process_name"] = name
+                fields["map_status"] = "ready"
+                fields["standard_process_unit"] = resolve_standard_process_unit(name)
+            else:
+                auto_name, map_status = resolve_standard_process_name(
+                    fields.get("process_token") or fallback_token
+                )
+                fields["standard_process_name"] = auto_name
+                fields["map_status"] = map_status
+                fields["standard_process_unit"] = resolve_standard_process_unit(
+                    auto_name
+                )
+        return fields, None
+
     def update_line(
         self,
         db: Session,
@@ -297,23 +325,11 @@ class BomWeldingProcessBreakdownService:
             return None, "已审核通过，请先反审核后再修改"
 
         fields = dto.model_dump(exclude_unset=True)
-        if "standard_process_name" in fields:
-            name = fields.get("standard_process_name")
-            if name:
-                if name not in _STANDARD_PROCESS_NAMES:
-                    return None, f"未知标准工艺名称：{name}"
-                fields["standard_process_name"] = name
-                fields["map_status"] = "ready"
-                fields["standard_process_unit"] = resolve_standard_process_unit(name)
-            else:
-                auto_name, map_status = resolve_standard_process_name(
-                    fields.get("process_token") or line.process_token
-                )
-                fields["standard_process_name"] = auto_name
-                fields["map_status"] = map_status
-                fields["standard_process_unit"] = resolve_standard_process_unit(
-                    auto_name
-                )
+        fields, err = self._prepare_line_fields(
+            fields, fallback_token=line.process_token
+        )
+        if err:
+            return None, err
 
         need_recompute = "process_qty" in fields or "process_token" in fields
         payload = {**fields, **audit_update(current_user)}
@@ -339,6 +355,80 @@ class BomWeldingProcessBreakdownService:
             db.commit()
             db.refresh(row)
             return BomWeldingProcessBreakdownLineVO.model_validate(row), None
+        except Exception:
+            db.rollback()
+            raise
+
+    def update_node_lines(
+        self,
+        db: Session,
+        node_id: int,
+        dto: BomWeldingProcessBreakdownNodeLinesUpdateDTO,
+        current_user: UserVO,
+    ) -> tuple[BomWeldingProcessBreakdownNodeVO | None, str | None]:
+        """一次保存节点下全部工艺；单事务，派生字段只重算一次。"""
+        node = self.repository.get_node_by_id(db, node_id)
+        if not node:
+            return None, "主表不存在"
+        if node.audit_status == AUDIT_APPROVED:
+            return None, "已审核通过，请先反审核后再修改"
+
+        lines_by_id = {ln.id: ln for ln in (node.lines or [])}
+        if not lines_by_id:
+            return None, "无明细行可保存"
+
+        seen: set[int] = set()
+        need_recompute = False
+        audit_fields = audit_update(current_user)
+
+        try:
+            for item in dto.lines:
+                item_dto: BomWeldingProcessBreakdownLineBatchItemDTO = item
+                if item_dto.line_id in seen:
+                    db.rollback()
+                    return None, f"明细行重复：{item_dto.line_id}"
+                seen.add(item_dto.line_id)
+
+                line = lines_by_id.get(item_dto.line_id)
+                if not line:
+                    db.rollback()
+                    return None, f"明细不属于本节点：{item_dto.line_id}"
+
+                fields = item_dto.model_dump(exclude_unset=True, exclude={"line_id"})
+                if not fields:
+                    continue
+                fields, err = self._prepare_line_fields(
+                    fields, fallback_token=line.process_token
+                )
+                if err:
+                    db.rollback()
+                    return None, err
+
+                if "process_qty" in fields or "process_token" in fields:
+                    need_recompute = True
+
+                payload = {**fields, **audit_fields}
+                row = self.repository.update_line(
+                    db, item_dto.line_id, payload, commit=False
+                )
+                if not row:
+                    db.rollback()
+                    return None, f"明细不存在：{item_dto.line_id}"
+
+            self.repository.update_node(db, node.id, audit_fields, commit=False)
+
+            if need_recompute:
+                recompute_scope_derived_fields(
+                    db,
+                    repository=self.repository,
+                    location=node.location,
+                    vehicle_model=node.vehicle_model,
+                    bom_version=node.bom_version,
+                    snapshot_id=node.snapshot_id,
+                )
+
+            db.commit()
+            return self.get_node(db, node_id), None
         except Exception:
             db.rollback()
             raise

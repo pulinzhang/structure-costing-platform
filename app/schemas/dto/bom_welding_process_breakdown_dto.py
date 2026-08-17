@@ -68,6 +68,19 @@ class BomWeldingProcessBreakdownLineUpdateDTO(BaseModel):
         return value if isinstance(value, Decimal) else Decimal(str(value).strip())
 
 
+class BomWeldingProcessBreakdownLineBatchItemDTO(BomWeldingProcessBreakdownLineUpdateDTO):
+    """节点内批量保存的一行（须带 line_id）"""
+
+    line_id: int = Field(..., ge=1, description="明细行 id")
+
+
+class BomWeldingProcessBreakdownNodeLinesUpdateDTO(BaseModel):
+    """一次保存某节点下全部工艺明细"""
+
+    lines: list[BomWeldingProcessBreakdownLineBatchItemDTO] = Field(
+        ..., min_length=1, description="待保存的明细行"
+    )
+
 class BomWeldingProcessBreakdownQuery(BaseModel):
     """分页查询"""
 

@@ -18,6 +18,7 @@ env/
 # IDE
 .idea/
 .vscode/
+.run/
 *.swp
 *.swo
 
@@ -32,6 +33,7 @@ data/*.db
 *.db-shm
 data/*.db-wal
 data/*.db-shm
+data/*.lock
 
 # Local Excel samples / scratch (large, not for VCS)
 excel_sample/

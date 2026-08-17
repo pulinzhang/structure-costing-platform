@@ -278,7 +278,7 @@
               "type": "menu",
               "children": [
                 { "code": "op:bom-welding-process-breakdown:view", "label": "查询", "type": "op" },
-                { "code": "op:bom-welding-process-breakdown:update", "label": "编辑明细", "type": "op" },
+                { "code": "op:bom-welding-process-breakdown:save-lines", "label": "编辑明细", "type": "op" },
                 { "code": "op:bom-welding-process-breakdown:delete", "label": "删除", "type": "op" },
                 { "code": "op:bom-welding-process-breakdown:approve", "label": "审核通过", "type": "op" },
                 { "code": "op:bom-welding-process-breakdown:reverse", "label": "反审核", "type": "op" },

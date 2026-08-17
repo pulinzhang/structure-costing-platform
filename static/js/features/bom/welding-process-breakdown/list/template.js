@@ -9,25 +9,19 @@ const AUDIT_LABEL = {
     approved: { text: '已审', cls: 'text-[#4caf50] bg-[#4caf50]/15' },
 };
 
-const MAP_LABEL = {
-    ready: { text: '已对齐', cls: 'text-[#4caf50]' },
-    ambiguous: { text: '待定', cls: 'text-[#ffb74d]' },
-    unmapped: { text: '未映射', cls: 'text-[#ef5350]' },
-};
-
-const ROLLUP_LABEL = {
-    own: '本节点',
-    rolled_in_parent: '已计入父级',
-    orphan_child: '父级缺失',
-};
-
 const EVIDENCE_STATUS_LABEL = {
     match: { text: '一致', cls: 'text-[#4caf50]' },
-    mismatch: { text: '差额', cls: 'text-[#ef5350]' },
-    no_child: { text: '无旁证', cls: 'text-[#8E8E93]' },
-    skipped: { text: '跳过', cls: 'text-[#555555]' },
-    l0_only: { text: '仅L0', cls: 'text-[#ffb74d]' },
-    orphan_only: { text: '仅下级', cls: 'text-[#ffb74d]' },
+    mismatch: { text: '有差额', cls: 'text-[#ef5350]' },
+    no_child: { text: '无可比对象', cls: 'text-[#8E8E93]' },
+    skipped: { text: '本链不适用', cls: 'text-[#555555]' },
+    l0_only: { text: '仅本节点有量', cls: 'text-[#ffb74d]' },
+    orphan_only: { text: '仅下级有量', cls: 'text-[#ffb74d]' },
+};
+
+const EVIDENCE_CHAIN_LABEL = {
+    child: '子件紧固件',
+    l1: 'L1 用量滚乘',
+    l2: 'L2 路径汇总',
 };
 
 /** 兜底；优先用接口 filters.standard_process_names */
@@ -177,7 +171,7 @@ export function weldingProcessBreakdownListTemplate() {
                                 <th class="px-2 py-2 text-center text-[9px] font-semibold tracking-[0.06em] text-[#FF1E27]/90 bg-[#1A080A]" title="有效工艺明细行数">工艺数</th>
                                 <th class="px-2 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-[#555555]">解析</th>
                                 <th class="px-2 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-[#555555]">审核</th>
-                                <th class="px-1 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-[#555555]">核对</th>
+                                <th class="px-1 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-[#555555]">操作</th>
                             </tr>
                         </thead>
                         <tbody id="wpbTableBody" class="bg-transparent"></tbody>
@@ -274,8 +268,9 @@ function processCountFilterSelect() {
 function detailDrawerHtml() {
     return `
         <div class="fixed inset-0 z-[80] bg-black/70 backdrop-blur-sm" id="wpbDetailBackdrop" style="display:none"></div>
-        <div class="fixed inset-y-0 right-0 z-[85] w-[600px] max-w-full bg-[#1a1a1a] border-l border-[#2a2a2a] transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col"
-             id="wpbDetailDrawer" style="display:none; max-height:100vh; box-shadow:-20px 0 60px rgba(0,0,0,0.95);">
+        <div id="wpbDetailDrawer"
+             class="fixed top-0 right-0 z-[85] w-[720px] max-w-full bg-[#1a1a1a] border-l border-[#2a2a2a] transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col"
+             style="display:none; height:100vh; height:100dvh; box-shadow:-20px 0 60px rgba(0,0,0,0.95);">
             <div class="px-5 py-3.5 flex items-center justify-between shrink-0 border-b border-[#333]">
                 <h5 class="text-[11px] font-semibold tracking-wider text-[#b0b0b0] flex items-center gap-2.5 uppercase min-w-0">
                     <span class="w-0.5 h-3.5 bg-[#d32f2f] shrink-0 shadow-[0_0_8px_rgba(211,47,47,0.5)]"></span>
@@ -286,7 +281,7 @@ function detailDrawerHtml() {
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
-            <div class="flex-1 min-h-0 overflow-y-auto p-5 space-y-4" id="wpbDetailBody"></div>
+            <div class="flex-1 min-h-0 overflow-y-auto overscroll-contain p-5" id="wpbDetailBody"></div>
         </div>
     `;
 }
@@ -376,12 +371,15 @@ export function updateWpbCapsules(state) {
     setCap('wpbCapsuleAudit', '全部审核', auditMap[state.auditStatus] || state.auditStatus);
 }
 
-export function renderWpbTableRows(records) {
+export function renderWpbTableRows(records, options = {}) {
     if (!records.length) return '';
+    const canView = !!options.canView;
+    const canEdit = !!options.canEdit;
     return records.map((row) => {
         const audit = AUDIT_LABEL[row.audit_status] || { text: row.audit_status || '-', cls: 'text-[#8E8E93]' };
         const lineCount = Number(row.process_line_count) || 0;
         const isZeroProcess = lineCount === 0;
+        const approved = row.audit_status === 'approved';
         const weld = row.weld_info_raw || '';
         // 关键列：对齐零件价格「单件成本」KPI 格；0 仍红字警示
         const countCell =
@@ -389,6 +387,23 @@ export function renderWpbTableRows(records) {
         const countTitle = isZeroProcess
             ? (row.level === 0 ? 'L0 工艺数=0，计费异常' : '工艺数=0')
             : `工艺数 ${lineCount}`;
+        const viewBtn = canView ? `
+                    <button type="button" data-action="view-detail" data-node-id="${row.id}"
+                            class="inline-flex items-center justify-center w-7 h-7 rounded-sm text-[#555555] hover:text-[#FF1E27] hover:bg-[#FF1E27]/10 transition-all"
+                            title="查看明细" aria-label="查看明细">
+                        ${window.svgIcon('eye', 'w-3.5 h-3.5')}
+                    </button>` : '';
+        const editBtn = canEdit ? `
+                    <button type="button" data-action="edit-detail" data-node-id="${row.id}"
+                            class="inline-flex items-center justify-center w-7 h-7 rounded-sm text-[#555555] hover:text-[#C8C8D0] hover:bg-[#161620] transition-all ${approved ? 'opacity-30 pointer-events-none' : ''}"
+                            title="${approved ? '已审核，不可编辑' : '编辑明细'}"
+                            aria-label="${approved ? '已审核，不可编辑' : '编辑明细'}">
+                        ${window.svgIcon('pencil', 'w-3.5 h-3.5')}
+                    </button>` : '';
+        const ops = (viewBtn || editBtn) ? `
+                <div class="inline-flex items-center justify-center gap-0.5 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto focus-within:opacity-100 focus-within:pointer-events-auto transition-opacity duration-100">
+                    ${viewBtn}${editBtn}
+                </div>` : '<span class="text-[#3A3A42]">—</span>';
         return `
             <tr class="group relative font-mono text-[11px] border-b border-[#141418] hover:bg-[#161620] transition-colors duration-100"
                 data-node-id="${row.id}">
@@ -411,13 +426,7 @@ export function renderWpbTableRows(records) {
                 <td class="px-2 py-2 text-center">
                     <span class="inline-flex px-1.5 py-0.5 text-[9px] rounded-sm ${audit.cls}">${audit.text}</span>
                 </td>
-                <td class="px-1 py-2 text-center">
-                    <button type="button" data-action="detail" data-node-id="${row.id}"
-                            class="inline-flex items-center justify-center w-7 h-7 rounded text-[#6E6E73] hover:text-[#FF1E27] hover:bg-[#FF1E27]/10 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all"
-                            title="查看 / 编辑">
-                        ${window.svgIcon('eye', 'w-3.5 h-3.5')}
-                    </button>
-                </td>
+                <td class="px-1 py-2 text-center">${ops}</td>
             </tr>
         `;
     }).join('');
@@ -478,6 +487,23 @@ function wpbPartInfoCell(row) {
         ${nameLine}`;
 }
 
+/** 与导出 Excel 标准单位目录对齐（仅前端即时展示） */
+const STANDARD_PROCESS_UNIT = {
+    焊点: '个',
+    '植/螺柱/凸焊': '个',
+    铆接: '个',
+    CO2焊缝: 'CM',
+    '折边/点焊胶': 'MM',
+    电镀: '平方',
+    '电泳（盐雾试验要求≤244H）': '平方',
+    '电泳（盐雾试验要求244H-720H）': '平方',
+    '电泳（盐雾试验要求＞720H）': '平方',
+    压铆: '个',
+    打铆钉: '个',
+    二维码: '个',
+    套袋: '个',
+};
+
 export function renderWpbDetailBody(node, {
     canEdit = false,
     standardProcessNames = FALLBACK_STANDARD_PROCESS_NAMES,
@@ -489,51 +515,150 @@ export function renderWpbDetailBody(node, {
     const processNames = (Array.isArray(standardProcessNames) && standardProcessNames.length)
         ? standardProcessNames
         : FALLBACK_STANDARD_PROCESS_NAMES;
-
-    const nodeReadonly = `
-            <div class="text-[10px] text-[#555555] font-mono mt-2">
-                装配用量 ${esc(fmtQty(node.assembly_qty))}${node.assembly_qty_unit ? ' ' + esc(node.assembly_qty_unit) : ''}
-                <span class="text-[#3A3A42]"> · 主表来自 BOM，只读</span>
-                ${!isPending ? ' · 已审锁定，明细须反审核后可编辑' : ''}
-            </div>
-            ${Number(node.level) === 0 ? `
-            <p class="text-[10px] text-[#ffb74d] mt-2 leading-relaxed border border-[#ffb74d]/25 bg-[#1A1710] px-2.5 py-1.5">
-                本行为 L0 供货总成：焊接加工费以此处过程量为准，请仔细核对原文与明细。旁证不可信。
-            </p>` : `
-            <p class="text-[10px] text-[#555555] mt-2 leading-relaxed">
-                本行为 L${esc(node.level)}：不计费真相；加工费请以所属 L0 为准。
-            </p>`}
-            ${node.qa_note ? `<p class="text-[10px] text-[#ffb74d] mt-2">${esc(node.qa_note)}</p>` : ''}
-        `;
-
-    const linesHtml = lines.length
-        ? lines.map((ln) => renderLineCard(ln, editable, processNames)).join('')
-        : '<p class="text-[11px] text-[#616161]">无明细行</p>';
-
-    const evidenceHtml = renderEvidencePanel(node.evidence);
+    const level = Number(node.level);
+    const audit = AUDIT_LABEL[node.audit_status] || { text: node.audit_status || '—', cls: 'text-[#8E8E93]' };
+    const qtyUnit = node.assembly_qty_unit ? ` ${esc(node.assembly_qty_unit)}` : '';
+    const showSave = isPending && lines.length > 0;
 
     return `
-        <div class="space-y-3">
-            <div class="bg-[#0c0c0c] border border-[#1a1a1a] p-3 space-y-2">
-                <div class="text-[14px] font-bold text-[#F0F0F2] font-mono">${esc(node.part_number)}</div>
-                <div class="text-[12px] text-[#9e9e9e]">${esc(node.part_name)}</div>
-                <div class="text-[10px] text-[#555555] font-mono">
-                    ${esc(node.location)} · ${esc(node.customer_name || '—')} · ${esc(node.vehicle_model)} · ${esc(node.bom_version)}
-                    · L${esc(node.level)}
+        <div class="flex flex-col gap-3" id="wpbDetailRoot" data-editable="${editable ? '1' : '0'}">
+            <div class="flex flex-col gap-1.5">
+                <div class="flex items-center justify-between gap-2 min-w-0">
+                    <div class="text-[12px] text-[#C8C8D0] truncate min-w-0">${esc(node.part_name || '—')}</div>
+                    <div class="flex items-center gap-1.5 shrink-0">
+                        <span class="text-[10px] font-mono text-[#F0F0F2]">L${esc(level)}</span>
+                        <span class="inline-flex px-1.5 py-0.5 text-[9px] rounded-sm ${audit.cls}">${esc(audit.text)}</span>
+                        <span class="text-[10px] font-mono text-[#8E8E93]">装配 ${esc(fmtInt(node.assembly_qty))}${qtyUnit}</span>
+                    </div>
                 </div>
-                <div>
-                    <div class="text-[9px] tracking-[0.08em] text-[#555555] mb-1">焊接原文</div>
-                    <p class="text-[12px] text-[#C8C8D0] leading-relaxed whitespace-pre-wrap break-words">${esc(node.weld_info_raw)}</p>
+                <p class="text-[11px] text-[#9e9e9e] leading-relaxed whitespace-pre-wrap break-words">${esc(node.weld_info_raw || '—')}</p>
+                ${node.qa_note ? `<p class="text-[10px] text-[#ffb74d]">${esc(node.qa_note)}</p>` : ''}
+                ${!isPending ? '<p class="text-[9px] text-[#555555]">已审锁定；反审核后可改</p>' : ''}
+            </div>
+            ${renderProcessSection(lines, level, editable, processNames)}
+            ${renderEvidencePanel(node.evidence)}
+            ${showSave ? renderSaveBar(canEdit) : ''}
+        </div>
+    `;
+}
+
+function renderSaveBar(canSave) {
+    return `
+        <div class="flex items-center justify-end gap-3 pt-3 pb-1 border-t border-[#262626]">
+            <p class="text-[9px] text-[#555555] mr-auto">有辅助量则核价用辅助量，否则用过程量</p>
+            <button type="button" id="wpbSaveAllLines" data-action="save-all-lines"
+                    ${canSave ? '' : 'disabled'}
+                    title="${canSave ? '' : '无编辑权限'}"
+                    class="inline-flex items-center gap-1.5 bg-[#d32f2f] text-white px-4 py-2 text-[11px] font-semibold rounded hover:bg-[#b71c1c] transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+                保存全部工艺
+            </button>
+        </div>
+    `;
+}
+
+/** 标准工艺变更时刷新标准单位展示 */
+export function refreshWpbLineDerived(card) {
+    if (!card) return;
+    const stdName = card.querySelector('[data-field="standard_process_name"]')?.value?.trim();
+    const unitEl = card.querySelector('[data-standard-unit]');
+    if (unitEl) {
+        const fromSelect = stdName ? (STANDARD_PROCESS_UNIT[stdName] || '') : '';
+        unitEl.textContent = fromSelect || unitEl.dataset.fallbackUnit || '—';
+    }
+}
+
+function renderProcessSection(lines, level, editable, processNames) {
+    const count = lines.length;
+    const title = `L${level} 工艺`;
+
+    if (!count) {
+        return `
+            <div class="flex items-center justify-between px-1 py-1">
+                <span class="text-[10px] tracking-[0.12em] text-[#F0F0F2]">${esc(title)}</span>
+                <span class="text-[11px] font-mono font-bold text-[#ef5350]">0 种</span>
+            </div>
+        `;
+    }
+
+    const cards = lines.map((ln) => renderProcessCard(ln, editable, processNames)).join('');
+    return `
+        <div class="flex flex-col gap-2">
+            <div class="flex items-center justify-between gap-2 px-0.5">
+                <span class="text-[10px] tracking-[0.12em] text-[#F0F0F2]">${esc(title)}</span>
+                <span class="text-[12px] font-mono font-bold tabular-nums text-[#F0F0F2]">
+                    ${count}<span class="text-[10px] font-medium text-[#8E8E93] ml-1">种</span>
+                </span>
+            </div>
+            <div class="flex flex-col gap-2">${cards}</div>
+        </div>
+    `;
+}
+
+function renderProcessCard(ln, editable, processNames) {
+    const token = ln.process_token || '—';
+    const stdName = ln.standard_process_name || '';
+    const stdUnit = ln.standard_process_unit
+        || (stdName ? STANDARD_PROCESS_UNIT[stdName] : '')
+        || '—';
+
+    if (!editable) {
+        return `
+            <div class="border border-[#1E1E26] bg-[#0c0c0c] px-3 py-2 flex flex-col gap-1.5">
+                <div class="flex items-baseline justify-between gap-2">
+                    <span class="text-[12px] font-semibold text-[#F0F0F2]">${esc(token)}</span>
+                    <span class="text-[9px] font-mono text-[#555555]">#${esc(ln.line_no)}</span>
                 </div>
-                ${nodeReadonly}
+                <div class="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] font-mono">
+                    <div class="text-[#555555]">过程量</div>
+                    <div class="text-right text-[#C8C8D0]">${esc(fmtInt(ln.process_qty))} ${esc(ln.process_qty_unit || '')}</div>
+                    <div class="text-[#555555]">辅助量</div>
+                    <div class="text-right text-[#C8C8D0]">${ln.process_qty_secondary != null ? `${esc(fmtInt(ln.process_qty_secondary))} ${esc(ln.process_qty_secondary_unit || '')}` : '—'}</div>
+                    <div class="text-[#555555]">标准工艺</div>
+                    <div class="text-right text-[#C8C8D0]">
+                        ${esc(stdName || '—')}<span class="text-[#8E8E93] ml-1">${esc(stdUnit)}</span>
+                    </div>
+                </div>
             </div>
-            ${evidenceHtml}
-            <div class="flex items-center gap-2">
-                <span class="w-0.5 h-3 bg-[#d32f2f]"></span>
-                <span class="text-[10px] tracking-[0.12em] text-[#9e9e9e]">明细 · 单件过程量</span>
-                <span class="text-[10px] font-mono text-[#484848]">${lines.length}</span>
+        `;
+    }
+
+    const stdOptions = ['<option value="">自动（按原文）</option>']
+        .concat(processNames.map((name) => {
+            const selected = ln.standard_process_name === name ? ' selected' : '';
+            return `<option value="${esc(name)}"${selected}>${esc(name)}</option>`;
+        }))
+        .join('');
+
+    const inputCls = 'h-7 px-1.5 text-xs font-mono bg-[#0a0a0a] border border-[#2c2c2c] text-white focus:outline-none focus:border-[#ff5252]';
+    return `
+        <div class="border border-[#1E1E26] bg-[#0c0c0c] px-3 py-2 flex flex-col gap-1.5" data-line-card="${ln.id}">
+            <div class="flex items-baseline justify-between gap-2">
+                <span class="text-[12px] font-semibold text-[#F0F0F2]">${esc(token)}</span>
+                <span class="text-[9px] font-mono text-[#555555]">#${esc(ln.line_no)}</span>
             </div>
-            <div class="space-y-2">${linesHtml}</div>
+            <div class="grid grid-cols-[4rem_1fr_3rem] gap-x-2 gap-y-1.5 items-center text-[10px]">
+                <span class="text-[#555555]">过程量</span>
+                <input data-field="process_qty" type="text" inputmode="numeric" value="${esc(fmtInt(ln.process_qty))}"
+                       class="${inputCls} w-full text-right text-[#C8C8D0]">
+                <input data-field="process_qty_unit" type="text" value="${esc(ln.process_qty_unit || '')}"
+                       class="${inputCls} w-full text-center text-[#8E8E93]" placeholder="单位" title="过程量单位">
+
+                <span class="text-[#555555]">辅助量</span>
+                <input data-field="process_qty_secondary" type="text" inputmode="numeric"
+                       value="${esc(ln.process_qty_secondary != null ? fmtInt(ln.process_qty_secondary) : '')}"
+                       class="${inputCls} w-full text-right text-[#C8C8D0]" placeholder="无则空">
+                <input data-field="process_qty_secondary_unit" type="text"
+                       value="${esc(ln.process_qty_secondary_unit || '')}"
+                       class="${inputCls} w-full text-center text-[#8E8E93]" placeholder="单位" title="辅助量单位">
+
+                <span class="text-[#555555]">标准工艺</span>
+                <select data-field="standard_process_name"
+                        class="h-7 px-1.5 text-[10px] bg-[#0a0a0a] border border-[#2c2c2c] text-[#C8C8D0] focus:outline-none focus:border-[#ff5252] w-full">
+                    ${stdOptions}
+                </select>
+                <span class="text-center font-mono text-[10px] text-[#8E8E93]"
+                      data-standard-unit data-fallback-unit="${esc(ln.standard_process_unit || '')}">${esc(stdUnit)}</span>
+            </div>
         </div>
     `;
 }
@@ -543,172 +668,91 @@ function evidenceStatusBadge(status) {
     return `<span class="text-[10px] font-medium ${meta.cls}">${esc(meta.text)}</span>`;
 }
 
-function renderEvidencePanel(evidence) {
-    if (!evidence || !Array.isArray(evidence.items) || !evidence.items.length) {
-        return `
-            <div class="bg-[#0c0c0c] border border-[#1a1a1a] p-3">
-                <div class="flex items-center gap-2 mb-1">
-                    <span class="w-0.5 h-3 bg-[#ffb74d]"></span>
-                    <span class="text-[10px] tracking-[0.12em] text-[#9e9e9e]">旁证核对（仅参考）</span>
-                </div>
-                <p class="text-[10px] text-[#555555]">暂无旁证展示。计费仍以 L0 为准，请人工核对 L0 原文。</p>
-            </div>
-        `;
-    }
-    const summaryCls = evidence.has_mismatch ? 'text-[#ef5350]' : 'text-[#8E8E93]';
-    const itemsHtml = evidence.items.map((item) => {
-        const rows = [];
-        if (item.child_status && item.child_status !== 'skipped') {
-            rows.push(`
-                <div class="border-t border-[#1A1A22] pt-1.5 mt-1.5">
-                    <div class="flex items-center justify-between gap-2">
-                        <span class="text-[10px] text-[#6E6E73]">子件紧固件</span>
-                        ${evidenceStatusBadge(item.child_status)}
-                    </div>
-                    <p class="text-[10px] text-[#8E8E93] leading-relaxed mt-0.5 break-words">${esc(item.child_detail || '—')}</p>
-                </div>
-            `);
-        }
-        if (item.l1_status) {
-            rows.push(`
-                <div class="border-t border-[#1A1A22] pt-1.5 mt-1.5">
-                    <div class="flex items-center justify-between gap-2">
-                        <span class="text-[10px] text-[#6E6E73]">L1 滚乘旁证</span>
-                        ${evidenceStatusBadge(item.l1_status)}
-                    </div>
-                    <p class="text-[10px] text-[#8E8E93] leading-relaxed mt-0.5 break-words">${esc(item.l1_detail || '—')}</p>
-                </div>
-            `);
-        }
-        if (item.l2_status && item.l2_status !== 'skipped') {
-            rows.push(`
-                <div class="border-t border-[#1A1A22] pt-1.5 mt-1.5">
-                    <div class="flex items-center justify-between gap-2">
-                        <span class="text-[10px] text-[#6E6E73]">L2 路径旁证</span>
-                        ${evidenceStatusBadge(item.l2_status)}
-                    </div>
-                    <p class="text-[10px] text-[#8E8E93] leading-relaxed mt-0.5 break-words">${esc(item.l2_detail || '—')}</p>
-                </div>
-            `);
-        }
-        const qtyLabel = item.source_process_qty != null
-            ? `原文 ${_fmtEvidenceQty(item.source_process_qty)}`
-            : '原文无此工艺';
-        return `
-            <div class="border border-[#1E1E26] bg-[#0A0A0E] p-2.5 space-y-1">
-                <div class="flex items-center justify-between gap-2">
-                    <span class="text-[12px] font-semibold text-[#F0F0F2]">${esc(item.process_token)}</span>
-                    <span class="text-[10px] font-mono text-[#8E8E93]">${esc(qtyLabel)}</span>
-                </div>
-                ${rows.join('') || '<p class="text-[10px] text-[#555555]">无可展示旁证链</p>'}
-            </div>
-        `;
-    }).join('');
-
+function evidenceChainRow(label, status, detail) {
+    if (!status || status === 'skipped') return '';
+    const detailHtml = detail
+        ? `<p class="text-[9px] text-[#555555] leading-relaxed mt-0.5 break-words">${esc(detail)}</p>`
+        : '';
     return `
-        <div class="bg-[#0c0c0c] border border-[#1a1a1a] p-3 space-y-2">
+        <div class="flex flex-col gap-0.5 py-1.5 border-t border-[#141418] first:border-0 first:pt-0">
             <div class="flex items-center justify-between gap-2">
-                <div class="flex items-center gap-2">
-                    <span class="w-0.5 h-3 bg-[#ffb74d]"></span>
-                    <span class="text-[10px] tracking-[0.12em] text-[#9e9e9e]">旁证核对（仅参考 · 不可信）</span>
-                </div>
-                <span class="text-[10px] ${summaryCls}">${esc(evidence.summary || '')}</span>
+                <span class="text-[10px] text-[#6E6E73]">${esc(label)}</span>
+                ${evidenceStatusBadge(status)}
             </div>
-            <p class="text-[9px] text-[#ffb74d]/90 leading-relaxed">
-                原始清单中 L1 口径不严谨，旁证差额常见且不能用于计费。焊接加工费必须按 L0 过程量计算；请仔细核对 L0 原文与明细。
-            </p>
-            <p class="text-[9px] text-[#555555] leading-relaxed">
-                差额说明 = 原文 − 旁证，仅作抽检提示，不改正文过程量。
-            </p>
-            <div class="space-y-2">${itemsHtml}</div>
+            ${detailHtml}
         </div>
     `;
 }
 
-function _fmtEvidenceQty(value) {
-    if (value == null || value === '') return '—';
-    const n = Number(value);
-    if (Number.isFinite(n)) return String(n);
-    return String(value);
-}
+/**
+ * 结构旁证：默认折叠。
+ * 用途=抽检提示；不计费，不改正文过程量。详细核对请导出。
+ */
+function renderEvidencePanel(evidence) {
+    const hasItems = evidence && Array.isArray(evidence.items) && evidence.items.length;
+    const mismatchCount = hasItems
+        ? evidence.items.filter((item) => (
+            item.child_status === 'mismatch'
+            || item.l1_status === 'mismatch'
+            || item.l2_status === 'mismatch'
+        )).length
+        : 0;
+    const summaryRight = !hasItems
+        ? '<span class="text-[#555555]">暂无数据</span>'
+        : (evidence.has_mismatch || mismatchCount > 0)
+            ? `<span class="text-[#ef5350]">${mismatchCount || '存在'} 项差额</span>`
+            : '<span class="text-[#4caf50]">抽检一致</span>';
 
-function renderLineCard(ln, editable, processNames) {
-    const mapMeta = MAP_LABEL[ln.map_status] || { text: ln.map_status || '-', cls: 'text-[#8E8E93]' };
-    const mapText = esc(mapMeta.text);
-    const rollup = ROLLUP_LABEL[ln.rollup_flag] || ln.rollup_flag;
-    if (!editable) {
-        const qtySec = ln.process_qty_secondary != null
-            ? ` / ${esc(fmtQty(ln.process_qty_secondary))}${esc(ln.process_qty_secondary_unit || '')}`
-            : '';
-        return `
-            <div class="border border-[#1E1E26] bg-[#0c0c0c] p-3 space-y-1.5">
-                <div class="flex items-center justify-between gap-2">
-                    <span class="text-[12px] font-semibold text-[#F0F0F2]">#${esc(ln.line_no)} ${esc(ln.process_token)}</span>
-                    <span class="text-[10px] ${mapMeta.cls}">${mapText}</span>
+    let body;
+    if (!hasItems) {
+        body = `
+            <p class="text-[10px] text-[#555555] leading-relaxed">
+                当前节点无可展示的结构旁证。计费仍以本节点过程量 / 辅助量为准；需要全量核对时请使用「导出L0核对」。
+            </p>
+        `;
+    } else {
+        const rows = evidence.items.map((item) => {
+            const chains = [
+                evidenceChainRow(EVIDENCE_CHAIN_LABEL.child, item.child_status, item.child_detail),
+                evidenceChainRow(EVIDENCE_CHAIN_LABEL.l1, item.l1_status, item.l1_detail),
+                evidenceChainRow(EVIDENCE_CHAIN_LABEL.l2, item.l2_status, item.l2_detail),
+            ].filter(Boolean).join('');
+            const srcQty = item.source_process_qty != null
+                ? `<span class="font-mono tabular-nums text-[#8E8E93]">原文 ${esc(fmtInt(item.source_process_qty))}</span>`
+                : '<span class="text-[#555555]">原文无此工艺</span>';
+            return `
+                <div class="border border-[#1E1E26] bg-[#0A0A0E] px-2.5 py-2">
+                    <div class="flex items-center justify-between gap-2 mb-1">
+                        <span class="text-[11px] font-medium text-[#C8C8D0]">${esc(item.process_token)}</span>
+                        ${srcQty}
+                    </div>
+                    ${chains || '<p class="text-[9px] text-[#555555]">无可比链路</p>'}
                 </div>
-                <div class="text-[10px] text-[#555555] font-mono truncate" title="${esc(ln.matched_span)}">${esc(ln.matched_span)}</div>
-                <div class="grid grid-cols-2 gap-2 text-[11px] font-mono">
-                    <div><span class="text-[#555555]">单件过程量</span><div class="text-[#C8C8D0]">${esc(fmtQty(ln.process_qty))} ${esc(ln.process_qty_unit)}${qtySec}</div></div>
-                    <div><span class="text-[#555555]">标准工艺</span><div class="text-[#FF1E27]/90">${esc(ln.standard_process_name || '—')}${ln.standard_process_unit ? ` <span class="text-[#8E8E93]">· ${esc(ln.standard_process_unit)}</span>` : ''}</div></div>
-                    <div><span class="text-[#555555]">rollup</span><div class="text-[#8E8E93]">${esc(rollup)}</div></div>
-                    <div><span class="text-[#555555]">子件校验</span><div class="text-[#8E8E93]">${esc(ln.qty_check_status)}${ln.qty_check_detail ? ' · ' + esc(ln.qty_check_detail) : ''}</div></div>
-                </div>
-            </div>
+            `;
+        }).join('');
+        body = `
+            <p class="text-[9px] text-[#555555] leading-relaxed mb-2">
+                旁证由 BOM 结构推算，用于抽检；<span class="text-[#8E8E93]">不计费、不改正文</span>。
+                差额 = 原文过程量 − 旁证推算值。L1 口径常见不严谨，差额需人工判断。
+            </p>
+            <div class="flex flex-col gap-2">${rows}</div>
         `;
     }
 
-    const stdOptions = ['<option value="">自动（按原文 token）</option>']
-        .concat(processNames.map((name) => {
-            const selected = ln.standard_process_name === name ? ' selected' : '';
-            return `<option value="${esc(name)}"${selected}>${esc(name)}</option>`;
-        }))
-        .join('');
-
     return `
-        <div class="border border-[#1E1E26] bg-[#0c0c0c] p-3 space-y-2" data-line-card="${ln.id}">
-            <div class="flex items-center justify-between gap-2">
-                <span class="text-[12px] font-semibold text-[#F0F0F2]">#${esc(ln.line_no)} ${esc(ln.process_token)}</span>
-                <span class="text-[10px] ${mapMeta.cls}">${mapText}</span>
-            </div>
-            <div class="text-[10px] text-[#555555] font-mono truncate">${esc(ln.matched_span)}</div>
-            <div class="grid grid-cols-2 gap-2">
-                <div>
-                    <label class="text-[9px] text-[#555555] mb-1 block">过程量</label>
-                    <input data-field="process_qty" type="text" value="${esc(ln.process_qty)}"
-                           class="w-full h-8 px-2 text-xs font-mono bg-[#0a0a0a] border border-[#2c2c2c] text-white focus:outline-none focus:border-[#ff5252]">
-                </div>
-                <div>
-                    <label class="text-[9px] text-[#555555] mb-1 block">单位</label>
-                    <input data-field="process_qty_unit" type="text" value="${esc(ln.process_qty_unit || '')}"
-                           class="w-full h-8 px-2 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-white focus:outline-none focus:border-[#ff5252]">
-                </div>
-                <div>
-                    <label class="text-[9px] text-[#555555] mb-1 block">副过程量</label>
-                    <input data-field="process_qty_secondary" type="text" value="${esc(ln.process_qty_secondary ?? '')}"
-                           class="w-full h-8 px-2 text-xs font-mono bg-[#0a0a0a] border border-[#2c2c2c] text-white focus:outline-none focus:border-[#ff5252]">
-                </div>
-                <div>
-                    <label class="text-[9px] text-[#555555] mb-1 block">副单位</label>
-                    <input data-field="process_qty_secondary_unit" type="text" value="${esc(ln.process_qty_secondary_unit || '')}"
-                           class="w-full h-8 px-2 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-white focus:outline-none focus:border-[#ff5252]">
-                </div>
-                <div class="col-span-2">
-                    <label class="text-[9px] text-[#555555] mb-1 block">标准工艺</label>
-                    <select data-field="standard_process_name"
-                            class="w-full h-8 px-2 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#9e9e9e] focus:outline-none focus:border-[#ff5252]">
-                        ${stdOptions}
-                    </select>
-                    <div class="mt-1 text-[10px] font-mono text-[#8E8E93]">标准单位 ${esc(ln.standard_process_unit || '—')}（与过程量单位对照）</div>
-                </div>
-            </div>
-            <div class="text-[10px] text-[#555555]">rollup ${esc(rollup)} · 子件 ${esc(ln.qty_check_status)}${ln.qty_check_detail ? ' · ' + esc(ln.qty_check_detail) : ''}</div>
-            <div class="flex justify-end">
-                <button type="button" data-action="save-line" data-line-id="${ln.id}"
-                        class="inline-flex items-center gap-1.5 bg-transparent text-[#9e9e9e] border border-[#2c2c2c] px-3 py-1 text-[10px] font-medium rounded hover:border-[#FF1E27]/50 hover:text-[#FF1E27] transition-all">
-                    保存明细
-                </button>
-            </div>
-        </div>
+        <details class="border border-[#1a1a1a] group">
+            <summary class="cursor-pointer list-none px-3 py-2.5 flex items-center justify-between gap-2 select-none
+                            text-[10px] text-[#6E6E73] hover:text-[#C8C8D0] transition-colors
+                            [&::-webkit-details-marker]:hidden">
+                <span class="flex items-center gap-2 min-w-0">
+                    <span class="text-[#3A3A42] group-open:rotate-90 transition-transform inline-block shrink-0">▸</span>
+                    <span class="text-[#8E8E93]">结构旁证</span>
+                    <span class="text-[#3A3A42] truncate">· 抽检用 · 不计费</span>
+                </span>
+                <span class="shrink-0 font-mono">${summaryRight}</span>
+            </summary>
+            <div class="px-3 pb-3 pt-0">${body}</div>
+        </details>
     `;
 }
 
@@ -738,4 +782,12 @@ function fmtQty(value) {
     if (value == null || value === '') return '-';
     if (typeof fmtNum === 'function') return fmtNum(value, 4).replace(/\.?0+$/, '') || '0';
     return String(value);
+}
+
+/** 弹框内过程量 / 装配用量统一按整数展示 */
+function fmtInt(value) {
+    if (value == null || value === '') return '—';
+    const n = Number(value);
+    if (!Number.isFinite(n)) return String(value);
+    return String(Math.round(n));
 }

@@ -707,3 +707,6 @@ static/index.html           # 侧栏 data-page
 | 2026-08-13 | 废料销售价增加 `op:scrap-price:export` 与宽表 Excel 导出 |
 | 2026-08-13 | 冲压工程侧栏拆分：`menu:stamping-process` / `menu:stamping-stroke-unit-price` / `menu:stamping-processing-fee` 二级分组对齐 UI |
 | 2026-08-16 | 焊接工艺拆解列表增加 `op:bom-welding-process-breakdown:export`（L0 主子表打平核对 Excel，不含审核） |
+| 2026-08-17 | 焊接工艺拆解：生成日志 / 任务进度改为 `GENERATE|VIEW` 任一即可（修复仅有生成权无法看日志/轮询的问题） |
+| 2026-08-17 | 焊接工艺拆解列表：`update/编辑明细` 改为独立码 `op:bom-welding-process-breakdown:save-lines`（保存明细）；已授权用户库内旧码自动迁移 |
+| 2026-08-17 | 焊接工艺拆解列表：操作列分开展示查看/编辑；减熵收回 `view-detail`——`view`=只读明细，`save-lines`=编辑明细；清理库内废弃码 |

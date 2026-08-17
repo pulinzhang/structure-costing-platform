@@ -128,7 +128,7 @@ class Perm:
 
     MENU_BOM_WELDING_PROCESS_BREAKDOWN_LIST = "menu:bom-welding-process-breakdown-list"  # 拆解列表
     BOM_WELDING_PROCESS_BREAKDOWN_VIEW = "op:bom-welding-process-breakdown:view"  # 查询
-    BOM_WELDING_PROCESS_BREAKDOWN_UPDATE = "op:bom-welding-process-breakdown:update"  # 编辑明细
+    BOM_WELDING_PROCESS_BREAKDOWN_SAVE_LINES = "op:bom-welding-process-breakdown:save-lines"  # 编辑明细
     BOM_WELDING_PROCESS_BREAKDOWN_DELETE = "op:bom-welding-process-breakdown:delete"  # 删除
     BOM_WELDING_PROCESS_BREAKDOWN_APPROVE = "op:bom-welding-process-breakdown:approve"  # 审核通过
     BOM_WELDING_PROCESS_BREAKDOWN_REVERSE = "op:bom-welding-process-breakdown:reverse"  # 反审核
