@@ -99,7 +99,7 @@ export function weldingProcessBreakdownListTemplate() {
                                 <span id="wpbCapsuleLocation" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部基地</span>
                                 <span id="wpbCapsuleModel" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部项目</span>
                                 <span id="wpbCapsuleVersion" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部版本</span>
-                                <span id="wpbCapsuleLevel" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部层级</span>
+                                <span id="wpbCapsuleLevel" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">L0 供货总成</span>
                                 <span id="wpbCapsuleProcessCount" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部工艺数</span>
                                 <span id="wpbCapsuleAudit" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部审核</span>
                             </div>
@@ -245,7 +245,7 @@ function levelFilterSelect() {
             <select id="wpbLevelFilter"
                     class="h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#9e9e9e] appearance-none cursor-pointer focus:outline-none focus:border-[#ff5252] transition-all min-w-[9rem]">
                 <option value="">全部</option>
-                <option value="0">L0 供货总成</option>
+                <option value="0" selected>L0 供货总成</option>
                 <option value="1">L1 分总成</option>
             </select>
         </div>

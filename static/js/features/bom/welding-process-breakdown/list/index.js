@@ -10,7 +10,7 @@ import {
     updateWpbHud,
     updateWpbCapsules,
     refreshWpbLineDerived,
-} from './template.js?v=36';
+} from './template.js?v=37';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -29,7 +29,7 @@ const wpbState = {
     vehicleModel: null,
     bomVersion: null,
     auditStatus: null,
-    level: null,
+    level: 0,
     processLineCountEq: null,
     partNumber: null,
     summary: null,
@@ -241,11 +241,13 @@ function val(id) {
 }
 
 function resetFilters() {
-    ['wpbLocationFilter', 'wpbModelFilter', 'wpbVersionFilter', 'wpbAuditFilter', 'wpbLevelFilter', 'wpbProcessCountFilter', 'wpbPartNumberFilter']
+    ['wpbLocationFilter', 'wpbModelFilter', 'wpbVersionFilter', 'wpbAuditFilter', 'wpbProcessCountFilter', 'wpbPartNumberFilter']
         .forEach((id) => {
             const el = document.getElementById(id);
             if (el) el.value = '';
         });
+    const levelEl = document.getElementById('wpbLevelFilter');
+    if (levelEl) levelEl.value = '0';
     readFiltersFromDom();
     loadData(1);
 }
