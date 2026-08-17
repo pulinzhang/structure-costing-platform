@@ -6,7 +6,7 @@
 import {
     l0WeldingFeeCalcTemplate,
     renderCalcHistoryPagination,
-} from './template.js?v=5';
+} from './template.js?v=6';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -433,7 +433,7 @@ function showProcessDrawer(log) {
         <div class="px-5 py-3 border-b border-[#222] text-[10px] text-[#777] space-y-1 shrink-0">
             <div>批次 <span class="font-mono text-[#999]">${esc(log.calc_batch_id || '-')}</span></div>
             <div>时间：${esc(formatDateTime(log.started_at))} → ${esc(formatDateTime(log.finished_at))}</div>
-            <div>汇总：L0 ${fmtInt(log.l0_count)} · 新增 ${fmtInt(log.created_count)} · 更新 ${fmtInt(log.updated_count)} · 失败 ${fmtInt(log.failed_count)} · 缺单价 ${fmtInt(log.missing_price_count)} · 跳过 ${fmtInt(log.skipped_approved_count)}</div>
+            <div>汇总：成品 ${fmtInt(log.l0_count)} · 新增 ${fmtInt(log.created_count)} · 更新 ${fmtInt(log.updated_count)} · 失败 ${fmtInt(log.failed_count)} · 缺单价 ${fmtInt(log.missing_price_count)} · 跳过 ${fmtInt(log.skipped_approved_count)}</div>
         </div>
         <div class="flex-1 overflow-y-auto overscroll-contain p-5">
             <pre class="text-[11px] leading-5 font-mono text-[#9e9e9e] whitespace-pre-wrap break-words bg-[#111111] border border-[#262626] p-4">${esc(log.detail_text || '（无过程文本）')}</pre>
@@ -524,7 +524,7 @@ function updateProgress(progress, msg, status) {
             titleEl.textContent = '计算失败';
             titleEl.className = 'text-xs font-medium text-[#ef5350] truncate mb-0';
         } else {
-            titleEl.textContent = '正在计算 L0焊接费…';
+            titleEl.textContent = '正在计算成品焊接费…';
             titleEl.className = 'text-xs font-medium text-[#ffffff] truncate mb-0';
         }
     }

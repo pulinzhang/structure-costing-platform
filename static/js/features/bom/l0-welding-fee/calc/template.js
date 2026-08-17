@@ -10,8 +10,8 @@ export function l0WeldingFeeCalcTemplate() {
         <div class="space-y-4 w-full font-sans antialiased text-[#bbb]">
 
             <div class="flex items-center justify-between pb-2 border-b border-[#222]">
-                <h1 class="text-xs font-bold text-[#e0e0e0] tracking-wider">L0焊接费计算（完工产品）</h1>
-                <p class="text-[10px] text-[#555555]">仅完工产品 / L0：有辅助量用辅助量，否则用过程量；长度 mm↔cm，面积 平方≡m2</p>
+                <h1 class="text-xs font-bold text-[#e0e0e0] tracking-wider">成品焊接费计算</h1>
+                <p class="text-[10px] text-[#555555]">仅成品：有辅助量用辅助量，否则用过程量；长度 mm↔cm，面积 平方≡m2</p>
             </div>
 
             <div class="flex items-center justify-between py-2.5 border-y border-[#1e1e1e]"
@@ -32,7 +32,7 @@ export function l0WeldingFeeCalcTemplate() {
             <div class="flex items-center justify-between border-b border-[#222] py-2.5">
                 <div class="flex items-center gap-8">
                     <div>
-                        <span class="text-[9px] text-[#666] block">完工产品（L0）</span>
+                        <span class="text-[9px] text-[#666] block">成品</span>
                         <span id="l0wfCntL0" class="text-xs font-mono font-bold text-[#dddddd]">- <span class="text-[9px] font-normal text-[#555]">条</span></span>
                     </div>
                     <div class="w-px h-5 bg-[#222]"></div>
@@ -42,19 +42,19 @@ export function l0WeldingFeeCalcTemplate() {
                     </div>
                     <div class="w-px h-5 bg-[#222]"></div>
                     <div>
-                        <span class="text-[9px] text-[#666] block">L0 工艺行</span>
+                        <span class="text-[9px] text-[#666] block">成品工艺行</span>
                         <span id="l0wfCntProcessLines" class="text-xs font-mono font-bold text-[#dddddd]">- <span class="text-[9px] font-normal text-[#555]">行</span></span>
                     </div>
                     <div class="w-px h-5 bg-[#222]"></div>
-                    <div title="完工产品中 process_line_count=0 的条数（异常）；0 表示无此类异常">
-                        <span class="text-[9px] text-[#666] block">无工艺 L0（异常）</span>
+                    <div title="成品中工艺数为 0 的条数（异常）；0 表示无此类异常">
+                        <span class="text-[9px] text-[#666] block">无工艺成品（异常）</span>
                         <span id="l0wfCntZeroProcess" class="text-xs font-mono font-bold text-[#dddddd]">- <span class="text-[9px] font-normal text-[#555]">条</span></span>
                     </div>
                 </div>
 
                 <div class="flex items-center gap-3">
                     <span id="l0wfReCalcNotice" class="text-[9px] text-[#666]">
-                        仅算 L0；再次计算覆盖未审核数据，已审核跳过
+                        仅算成品；再次计算覆盖未审核数据，已审核跳过
                     </span>
                     <button id="l0wfStartCalcBtn"
                             class="h-7 px-4 text-[10px] bg-[#b71c1c] hover:bg-[#c62828] text-white font-medium rounded-sm transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
@@ -67,7 +67,7 @@ export function l0WeldingFeeCalcTemplate() {
                 <div class="flex items-center justify-between gap-3 mb-2.5">
                     <div class="flex items-center gap-2 min-w-0">
                         <div id="l0wfCalcProgressSpinner" class="w-3.5 h-3.5 border-2 border-[#2c2c2c] border-t-[#d32f2f] rounded-full animate-spin shrink-0"></div>
-                        <h5 id="l0wfCalcProgressTitle" class="text-xs font-medium text-[#ffffff] truncate mb-0">正在计算 L0焊接费…</h5>
+                        <h5 id="l0wfCalcProgressTitle" class="text-xs font-medium text-[#ffffff] truncate mb-0">正在计算成品焊接费…</h5>
                     </div>
                     <span id="l0wfCalcProgressPercent" class="text-xs font-mono tabular-nums text-[#d32f2f] shrink-0">0%</span>
                 </div>
@@ -80,7 +80,7 @@ export function l0WeldingFeeCalcTemplate() {
             </div>
 
             <div id="l0wfDataReadyErrorBanner" class="hidden text-[10px] text-[#d69e2e] bg-[#1a1710] px-2.5 py-1.5 border-l-2 border-[#d69e2e]">
-                提示：须选定年度、基地、项目、版本；并确保存在完工产品（L0）拆解与该年焊接单价。
+                提示：须选定年度、基地、项目、版本；并确保存在成品拆解与该年焊接单价。
             </div>
 
             <div class="pt-2">
@@ -103,7 +103,7 @@ export function l0WeldingFeeCalcTemplate() {
                                     <th class="py-2 px-2 font-normal whitespace-nowrap">项目</th>
                                     <th class="py-2 px-2 font-normal whitespace-nowrap">版本</th>
                                     <th class="py-2 px-2 font-normal text-center whitespace-nowrap">状态</th>
-                                    <th class="py-2 px-2 font-normal text-right whitespace-nowrap">L0</th>
+                                    <th class="py-2 px-2 font-normal text-right whitespace-nowrap">成品</th>
                                     <th class="py-2 px-2 font-normal text-right whitespace-nowrap">新增</th>
                                     <th class="py-2 px-2 font-normal text-right whitespace-nowrap">更新</th>
                                     <th class="py-2 px-2 font-normal text-right whitespace-nowrap">失败</th>

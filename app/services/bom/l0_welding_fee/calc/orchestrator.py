@@ -211,7 +211,7 @@ class BomL0WeldingFeeCalcOrchestrator:
         price_map: dict[str, Any] = {p.item_name: p for p in prices}
         detail_lines.append(f"焊接单价 {len(prices)} 条")
 
-        report(10, "加载 L0 焊接工艺拆解...")
+        report(10, "加载成品焊接工艺拆解...")
         all_nodes = self.breakdown_repo.list_by_scope(
             db,
             location=location,
@@ -222,9 +222,9 @@ class BomL0WeldingFeeCalcOrchestrator:
         if not l0_nodes:
             raise BusinessException(
                 f"基地「{location}」车型「{vehicle_model}」版本「{bom_version}」"
-                f"下未找到 L0 焊接工艺拆解"
+                f"下未找到成品焊接工艺拆解"
             )
-        detail_lines.append(f"L0 节点 {len(l0_nodes)} 个")
+        detail_lines.append(f"成品节点 {len(l0_nodes)} 个")
 
         upsert_rows: list[dict[str, Any]] = []
         skipped_approved_count = 0
