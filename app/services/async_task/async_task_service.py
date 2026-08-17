@@ -44,6 +44,7 @@ TASK_TYPE_STAMPING_PART_COST_CALC = "stamping_part_cost_calc"
 TASK_TYPE_BOM_WELDING_PROCESS_BREAKDOWN_GENERATE = (
     "bom_welding_process_breakdown_generate"
 )
+TASK_TYPE_BOM_L0_WELDING_FEE_CALC = "bom_l0_welding_fee_calc"
 
 TASK_TTL_SECONDS = 3600
 

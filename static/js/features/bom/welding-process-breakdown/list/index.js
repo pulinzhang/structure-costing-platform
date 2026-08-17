@@ -10,7 +10,7 @@ import {
     updateWpbHud,
     updateWpbCapsules,
     refreshWpbLineDerived,
-} from './template.js?v=37';
+} from './template.js?v=38';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,

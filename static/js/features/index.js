@@ -31,8 +31,14 @@
  * │   │   ├── upload/
  * │   │   ├── structure/
  * │   │   └── viz/
- * │   └── welding-unit-price/    # 焊接单价
- * │       ├── upload/
+ * │   ├── welding-unit-price/    # 焊接单价
+ * │   │   ├── upload/
+ * │   │   └── list/
+ * │   ├── welding-process-breakdown/  # 焊接工艺拆解
+ * │   │   ├── generate/
+ * │   │   └── list/
+ * │   └── l0-welding-fee/        # L0焊接费（完工产品）
+ * │       ├── calc/
  * │       └── list/
  * ├── costing/                   # 核价
  * │   ├── steel-price/           # 冲压钢材联动价
@@ -181,6 +187,16 @@ export const pageMeta = {
         title: '焊接工艺拆解列表',
         en: 'WELDING_PROCESS_BREAKDOWN_LIST',
         breadcrumb: ['BOM', '焊接工艺拆解', '拆解列表'],
+    },
+    'bom-l0-welding-fee-calc': {
+        title: 'L0焊接费计算（完工产品）',
+        en: 'L0_WELDING_FEE_CALC',
+        breadcrumb: ['BOM', 'L0焊接费', '计算'],
+    },
+    'bom-l0-welding-fee-list': {
+        title: 'L0焊接费列表（完工产品）',
+        en: 'L0_WELDING_FEE_LIST',
+        breadcrumb: ['BOM', 'L0焊接费', '列表'],
     },
     costing: {
         title: '自动核价引擎',

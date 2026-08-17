@@ -10,6 +10,9 @@ from app.models.bom_welding_process_breakdown import (
 from app.models.bom_welding_process_breakdown_generate_log import (
     BomWeldingProcessBreakdownGenerateLog,
 )
+from app.models.bom_l0_welding_fee import BomL0WeldingFee
+from app.models.bom_l0_welding_fee_item import BomL0WeldingFeeItem
+from app.models.bom_l0_welding_fee_calc_log import BomL0WeldingFeeCalcLog
 from app.models.operation_log import OperationLog
 from app.models.stamping import StampingPart, StampingProcess
 from app.models.stamping_process_fee import StampingProcessFee
@@ -36,6 +39,9 @@ __all__ = [
     "BomWeldingProcessBreakdownNode",
     "BomWeldingProcessBreakdownLine",
     "BomWeldingProcessBreakdownGenerateLog",
+    "BomL0WeldingFee",
+    "BomL0WeldingFeeItem",
+    "BomL0WeldingFeeCalcLog",
     "OperationLog",
     "StampingPart",
     "StampingProcess",

@@ -117,7 +117,27 @@ class DatabaseConfig:
     def create_tables(cls) -> None:
         engine = cls.get_engine()
         Base.metadata.create_all(bind=engine)
+        cls._ensure_sqlite_columns(engine)
         logger.info("主业务库表创建完成")
+
+    @classmethod
+    def _ensure_sqlite_columns(cls, engine: Engine) -> None:
+        """为已有 SQLite 库补齐 create_all 不会添加的新列。"""
+        if not str(engine.url).startswith("sqlite"):
+            return
+        from sqlalchemy import inspect, text
+
+        inspector = inspect(engine)
+        table_name = "bom_l0_welding_fees"
+        if table_name not in inspector.get_table_names():
+            return
+        existing = {col["name"] for col in inspector.get_columns(table_name)}
+        if "weld_info_raw" not in existing:
+            with engine.begin() as conn:
+                conn.execute(
+                    text(f"ALTER TABLE {table_name} ADD COLUMN weld_info_raw TEXT")
+                )
+            logger.info("已为 %s 追加列 weld_info_raw", table_name)
 
 
 class AuxiliaryDatabaseConfig:

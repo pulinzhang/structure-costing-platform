@@ -413,6 +413,28 @@ root
 │           ├── op:bom-welding-unit-price:approve
 │           ├── op:bom-welding-unit-price:reverse
 │           └── op:bom-welding-unit-price:export
+│   ├── menu:bom-welding-process-breakdown-group  # 焊接工艺拆解
+│   │   ├── menu:bom-welding-process-breakdown
+│   │   │   ├── op:bom-welding-process-breakdown:generate
+│   │   │   └── op:bom-welding-process-breakdown:delete-log
+│   │   └── menu:bom-welding-process-breakdown-list
+│   │       ├── op:bom-welding-process-breakdown:view
+│   │       ├── op:bom-welding-process-breakdown:save-lines
+│   │       ├── op:bom-welding-process-breakdown:delete
+│   │       ├── op:bom-welding-process-breakdown:approve
+│   │       ├── op:bom-welding-process-breakdown:reverse
+│   │       └── op:bom-welding-process-breakdown:export
+│   └── menu:bom-l0-welding-fee-group             # L0焊接费（完工产品）
+│       ├── menu:bom-l0-welding-fee-calc          # L0焊接费计算
+│       │   ├── op:bom-l0-welding-fee-calc:view
+│       │   ├── op:bom-l0-welding-fee-calc:run
+│       │   └── op:bom-l0-welding-fee-calc:delete
+│       └── menu:bom-l0-welding-fee-list          # L0焊接费列表
+│           ├── op:bom-l0-welding-fee-list:view
+│           ├── op:bom-l0-welding-fee-list:delete
+│           ├── op:bom-l0-welding-fee-list:approve
+│           ├── op:bom-l0-welding-fee-list:reverse
+│           └── op:bom-l0-welding-fee-list:export
 
 ├── menu:costing                               # 核价（分组，可勾）
 │   ├── menu:steel-price                       # 冲压钢材联动价（核价第一步）
@@ -470,10 +492,10 @@ root
 
 | 类别 | 数量 |
 |---|---|
-| 分组 `type=group` | 14（含 `bom-welding-unit-price-group` 等） |
-| 叶子 `type=menu` | 27 |
-| 操作 `op` | 86 |
-| 可勾节点合计 | 127（`root` 一般不入库） |
+| 分组 `type=group` | 16（含 `bom-l0-welding-fee-group` 等） |
+| 叶子 `type=menu` | 31 |
+| 操作 `op` | 104 |
+| 可勾节点合计 | 151（`root` 一般不入库） |
 | 新建默认 | 7 |
 | 强制 | 5（均包含在默认集内） |
 
@@ -501,6 +523,8 @@ root
 | bom-upload | `view` / `upload` | 进入页；导入材料清单 |
 | bom-welding-unit-price-upload | `view` / `upload` | 查看上传页；导入焊接单价 Excel |
 | bom-welding-unit-price | `view` / `create` / `update` / `delete` / `approve` / `reverse` / `export` | 查询；新增（API）；编辑；删除（含批量，已审跳过）；审核（含批量）；反审核；导出 Excel |
+| bom-l0-welding-fee-calc | `view` / `run` / `delete` | 历史/过程；开始计算；删除计算日志 |
+| bom-l0-welding-fee-list | `view` / `delete` / `approve` / `reverse` / `export` | 查询；删除（含批量）；审核（含批量）；反审核；导出 Excel |
 | steel-price-calc | `view` / `run` / `delete` | 历史/过程；开始计算；删除日志 |
 | steel-price-list | `view` / `update` / `delete` / `approve` / `reject` / `reverse` / `export` | 查询；编辑；删除（含批量）；通过（含批量）；驳回；反审核（含批量）；导出 |
 | stamping-part-cost-calc | `view` / `run` / `delete` | 历史/过程；开始计算；删除日志 |
@@ -710,3 +734,7 @@ static/index.html           # 侧栏 data-page
 | 2026-08-17 | 焊接工艺拆解：生成日志 / 任务进度改为 `GENERATE|VIEW` 任一即可（修复仅有生成权无法看日志/轮询的问题） |
 | 2026-08-17 | 焊接工艺拆解列表：`update/编辑明细` 改为独立码 `op:bom-welding-process-breakdown:save-lines`（保存明细）；已授权用户库内旧码自动迁移 |
 | 2026-08-17 | 焊接工艺拆解列表：操作列分开展示查看/编辑；减熵收回 `view-detail`——`view`=只读明细，`save-lines`=编辑明细；清理库内废弃码 |
+| 2026-08-17 | 新增 `menu:bom-l0-welding-fee-group` L0焊接费（完工产品；计算 / 列表及审核删除操作码） |
+| 2026-08-17 | 技术命名统一为 L0：`menu/op:bom-welding-fee*` 全部替换为 `menu/op:bom-l0-welding-fee*`（功能新建未上线，无需 DB 权限 remap） |
+| 2026-08-17 | 去掉预留空码 `op:bom-l0-welding-fee-list:export`（尚无导出接口/按钮，避免权限树熵增） |
+| 2026-08-17 | 恢复并落地 `op:bom-l0-welding-fee-list:export`：列表弱化展示焊接信息原文 + Excel 导出 |

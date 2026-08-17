@@ -32,6 +32,27 @@ class BomWeldingProcessBreakdownRepository:
             .first()
         )
 
+    def map_weld_info_by_ids(
+        self, db: Session, node_ids: list[int]
+    ) -> dict[int, str]:
+        """批量取焊接信息原文（仅 id + weld_info_raw）。"""
+        ids = sorted({int(n) for n in node_ids if n})
+        if not ids:
+            return {}
+        rows = (
+            db.query(
+                BomWeldingProcessBreakdownNode.id,
+                BomWeldingProcessBreakdownNode.weld_info_raw,
+            )
+            .filter(BomWeldingProcessBreakdownNode.id.in_(ids))
+            .all()
+        )
+        return {
+            int(row.id): (row.weld_info_raw or "").strip()
+            for row in rows
+            if (row.weld_info_raw or "").strip()
+        }
+
     def get_line_by_id(
         self, db: Session, line_id: int
     ) -> BomWeldingProcessBreakdownLine | None:
@@ -281,6 +302,39 @@ class BomWeldingProcessBreakdownRepository:
             process_line_count_eq=process_line_count_eq,
             load_lines=False,
         ).count()
+
+    def sum_process_line_count_by_filters(
+        self,
+        db: Session,
+        *,
+        location: str | None = None,
+        customer_name: str | None = None,
+        vehicle_model: str | None = None,
+        bom_version: str | None = None,
+        part_number: str | None = None,
+        level: int | None = None,
+        audit_status: str | None = None,
+        parse_status: str | None = None,
+        process_line_count_eq: int | None = None,
+    ) -> int:
+        """按过滤条件对 process_line_count 求和（列表冗余字段，不扫明细表）。"""
+        q = self._build_list_query(
+            db,
+            location=location,
+            customer_name=customer_name,
+            vehicle_model=vehicle_model,
+            bom_version=bom_version,
+            part_number=part_number,
+            level=level,
+            audit_status=audit_status,
+            parse_status=parse_status,
+            process_line_count_eq=process_line_count_eq,
+            load_lines=False,
+        )
+        total = q.with_entities(
+            func.coalesce(func.sum(BomWeldingProcessBreakdownNode.process_line_count), 0)
+        ).scalar()
+        return int(total or 0)
 
     def summarize_by_filters(
         self,

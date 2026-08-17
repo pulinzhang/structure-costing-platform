@@ -528,7 +528,7 @@ export function renderWpbDetailBody(node, {
                     <div class="flex items-center gap-1.5 shrink-0">
                         <span class="text-[10px] font-mono text-[#F0F0F2]">L${esc(level)}</span>
                         <span class="inline-flex px-1.5 py-0.5 text-[9px] rounded-sm ${audit.cls}">${esc(audit.text)}</span>
-                        <span class="text-[10px] font-mono text-[#8E8E93]">装配 ${esc(fmtInt(node.assembly_qty))}${qtyUnit}</span>
+                        <span class="text-[10px] font-mono text-[#8E8E93]">装配 ${esc(fmtQty(node.assembly_qty))}${qtyUnit}</span>
                     </div>
                 </div>
                 <p class="text-[11px] text-[#9e9e9e] leading-relaxed whitespace-pre-wrap break-words">${esc(node.weld_info_raw || '—')}</p>
@@ -545,7 +545,7 @@ export function renderWpbDetailBody(node, {
 function renderSaveBar(canSave) {
     return `
         <div class="flex items-center justify-end gap-3 pt-3 pb-1 border-t border-[#262626]">
-            <p class="text-[9px] text-[#555555] mr-auto">有辅助量则核价用辅助量，否则用过程量</p>
+            <p class="text-[9px] text-[#555555] mr-auto">有辅助量则核价用辅助量，否则用过程量；长度 mm↔cm，面积 平方≡m2/平方米</p>
             <button type="button" id="wpbSaveAllLines" data-action="save-all-lines"
                     ${canSave ? '' : 'disabled'}
                     title="${canSave ? '' : '无编辑权限'}"
@@ -610,9 +610,9 @@ function renderProcessCard(ln, editable, processNames) {
                 </div>
                 <div class="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] font-mono">
                     <div class="text-[#555555]">过程量</div>
-                    <div class="text-right text-[#C8C8D0]">${esc(fmtInt(ln.process_qty))} ${esc(ln.process_qty_unit || '')}</div>
+                    <div class="text-right text-[#C8C8D0]">${esc(fmtQty(ln.process_qty))} ${esc(ln.process_qty_unit || '')}</div>
                     <div class="text-[#555555]">辅助量</div>
-                    <div class="text-right text-[#C8C8D0]">${ln.process_qty_secondary != null ? `${esc(fmtInt(ln.process_qty_secondary))} ${esc(ln.process_qty_secondary_unit || '')}` : '—'}</div>
+                    <div class="text-right text-[#C8C8D0]">${ln.process_qty_secondary != null ? `${esc(fmtQty(ln.process_qty_secondary))} ${esc(ln.process_qty_secondary_unit || '')}` : '—'}</div>
                     <div class="text-[#555555]">标准工艺</div>
                     <div class="text-right text-[#C8C8D0]">
                         ${esc(stdName || '—')}<span class="text-[#8E8E93] ml-1">${esc(stdUnit)}</span>
@@ -638,14 +638,14 @@ function renderProcessCard(ln, editable, processNames) {
             </div>
             <div class="grid grid-cols-[4rem_1fr_3rem] gap-x-2 gap-y-1.5 items-center text-[10px]">
                 <span class="text-[#555555]">过程量</span>
-                <input data-field="process_qty" type="text" inputmode="numeric" value="${esc(fmtInt(ln.process_qty))}"
+                <input data-field="process_qty" type="text" inputmode="decimal" value="${esc(fmtQty(ln.process_qty))}"
                        class="${inputCls} w-full text-right text-[#C8C8D0]">
                 <input data-field="process_qty_unit" type="text" value="${esc(ln.process_qty_unit || '')}"
                        class="${inputCls} w-full text-center text-[#8E8E93]" placeholder="单位" title="过程量单位">
 
                 <span class="text-[#555555]">辅助量</span>
-                <input data-field="process_qty_secondary" type="text" inputmode="numeric"
-                       value="${esc(ln.process_qty_secondary != null ? fmtInt(ln.process_qty_secondary) : '')}"
+                <input data-field="process_qty_secondary" type="text" inputmode="decimal"
+                       value="${esc(ln.process_qty_secondary != null ? fmtQty(ln.process_qty_secondary) : '')}"
                        class="${inputCls} w-full text-right text-[#C8C8D0]" placeholder="无则空">
                 <input data-field="process_qty_secondary_unit" type="text"
                        value="${esc(ln.process_qty_secondary_unit || '')}"
@@ -718,7 +718,7 @@ function renderEvidencePanel(evidence) {
                 evidenceChainRow(EVIDENCE_CHAIN_LABEL.l2, item.l2_status, item.l2_detail),
             ].filter(Boolean).join('');
             const srcQty = item.source_process_qty != null
-                ? `<span class="font-mono tabular-nums text-[#8E8E93]">原文 ${esc(fmtInt(item.source_process_qty))}</span>`
+                ? `<span class="font-mono tabular-nums text-[#8E8E93]">原文 ${esc(fmtQty(item.source_process_qty))}</span>`
                 : '<span class="text-[#555555]">原文无此工艺</span>';
             return `
                 <div class="border border-[#1E1E26] bg-[#0A0A0E] px-2.5 py-2">
@@ -779,15 +779,7 @@ export function renderWpbPagination(page, totalPages) {
 }
 
 function fmtQty(value) {
-    if (value == null || value === '') return '-';
-    if (typeof fmtNum === 'function') return fmtNum(value, 4).replace(/\.?0+$/, '') || '0';
-    return String(value);
-}
-
-/** 弹框内过程量 / 装配用量统一按整数展示 */
-function fmtInt(value) {
     if (value == null || value === '') return '—';
-    const n = Number(value);
-    if (!Number.isFinite(n)) return String(value);
-    return String(Math.round(n));
+    if (typeof fmtNum === 'function') return fmtNum(value, 4);
+    return String(value);
 }

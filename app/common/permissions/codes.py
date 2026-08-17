@@ -134,6 +134,20 @@ class Perm:
     BOM_WELDING_PROCESS_BREAKDOWN_REVERSE = "op:bom-welding-process-breakdown:reverse"  # 反审核
     BOM_WELDING_PROCESS_BREAKDOWN_EXPORT = "op:bom-welding-process-breakdown:export"  # 导出L0核对
 
+    MENU_BOM_L0_WELDING_FEE_GROUP = "menu:bom-l0-welding-fee-group"  # L0焊接费（完工产品）
+
+    MENU_BOM_L0_WELDING_FEE_CALC = "menu:bom-l0-welding-fee-calc"  # L0焊接费计算
+    BOM_L0_WELDING_FEE_CALC_VIEW = "op:bom-l0-welding-fee-calc:view"  # 查看
+    BOM_L0_WELDING_FEE_CALC_RUN = "op:bom-l0-welding-fee-calc:run"  # 计算
+    BOM_L0_WELDING_FEE_CALC_DELETE = "op:bom-l0-welding-fee-calc:delete"  # 删除计算日志
+
+    MENU_BOM_L0_WELDING_FEE_LIST = "menu:bom-l0-welding-fee-list"  # L0焊接费列表
+    BOM_L0_WELDING_FEE_LIST_VIEW = "op:bom-l0-welding-fee-list:view"  # 查询
+    BOM_L0_WELDING_FEE_LIST_DELETE = "op:bom-l0-welding-fee-list:delete"  # 删除
+    BOM_L0_WELDING_FEE_LIST_APPROVE = "op:bom-l0-welding-fee-list:approve"  # 审核通过
+    BOM_L0_WELDING_FEE_LIST_REVERSE = "op:bom-l0-welding-fee-list:reverse"  # 反审核
+    BOM_L0_WELDING_FEE_LIST_EXPORT = "op:bom-l0-welding-fee-list:export"  # 导出
+
     MENU_COSTING = "menu:costing"  # 核价
 
     MENU_STEEL_PRICE = "menu:steel-price"  # 冲压钢材联动价
