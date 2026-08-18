@@ -24,7 +24,7 @@ usage() {
 
 可反复执行：每次发版都会强制重建并换掉旧容器，SQLite / 上传 / 日志目录不动。
 首次：clone 后把 .env.production.example 复制为 .env，改 PASSWORD_SALT 与 CORS_ORIGINS。
-Nginx 反代到 127.0.0.1:8000。改宿主机端口可在 .env 设 STAMPING_PUBLISH_PORT。
+宿主机映射 :8000。Nginx 在 Docker 内时 proxy_pass 用 172.17.0.1:8000（勿用容器内 127.0.0.1）。
 EOF
 }
 
