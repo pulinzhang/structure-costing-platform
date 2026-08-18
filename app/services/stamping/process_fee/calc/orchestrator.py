@@ -235,7 +235,7 @@ class StampingProcessFeeCalcOrchestrator:
                 skipped_approved_count += 1
                 continue
 
-            calculator = (
+            calculator: PartFeeCalculator | TailorWeldFeeCalculator = (
                 self.tailor_weld_calculator
                 if part.is_tailor_welded
                 else self.part_calculator

@@ -168,7 +168,7 @@ class StampingPartService:
         vehicle_model: str | None = None,
         version: str | None = None,
     ) -> int:
-        """统计去重后的材料+厚度规格行数。"""
+        """统计去重后的材料+厚度规格行数（含拼焊子片）。"""
         return self.repository.count_material_specs(
             db,
             location=location.strip() if location else None,
@@ -186,7 +186,7 @@ class StampingPartService:
         vehicle_model: str | None = None,
         version: str | None = None,
     ) -> list[dict[str, Any]]:
-        """列出去重后的 基地 + 材料(钢种) + 厚度（钢价计算用）。"""
+        """列出去重后的 基地 + 材料(钢种) + 厚度（含拼焊子片，钢价计算用）。"""
         return self.repository.list_material_specs(
             db,
             location=location.strip() if location else None,

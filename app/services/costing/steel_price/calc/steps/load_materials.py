@@ -11,7 +11,7 @@ from app.services.costing.steel_price.calc.models import MaterialThicknessRow, S
 
 
 class MaterialThicknessLoader:
-    """从冲压件规格去重得到 基地 + 材料(钢种) + 厚度。"""
+    """从冲压件规格去重得到 基地 + 材料(钢种) + 厚度（含拼焊子片）。"""
 
     def __init__(self) -> None:
         self.stamping_service = StampingPartService()

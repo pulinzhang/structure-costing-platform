@@ -2,7 +2,7 @@
 钢价计算编排器（只负责串联步骤，不含具体匹配/落库细节）
 
 计算链：
-  1. MaterialThicknessLoader  — 材料厚度
+  1. MaterialThicknessLoader  — 材料厚度（主表 ∪ 拼焊子片）
   2. BasePriceEnricher        — 基价补齐
   3. AdjustmentApplier.apply_thickness — 厚度加减价（共用一次加载的政策）
   4. AdjustmentApplier.apply_width     — 宽度加减价（共用一次加载的政策）

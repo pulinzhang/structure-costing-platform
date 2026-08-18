@@ -3,7 +3,7 @@
 
 计算链：
   1. get_calc_ready / PriceResolver — 前置数据
-  2. PartCostCalculator             — 单零件核价
+  2. 单件核价：拼焊件 TailorWeldPartCostCalculator，其余 PartCostCalculator
   3. cost_repo.bulk_upsert          — 结果落库
   4. PartCostCalcLogService         — 计算锁与过程日志
 """
@@ -66,6 +66,9 @@ from app.services.costing.stamping_part_cost.calc.part_calculator import (
 )
 from app.services.costing.stamping_part_cost.calc.resolvers import PriceResolver
 from app.services.costing.stamping_part_cost.calc.scope import require_scope
+from app.services.costing.stamping_part_cost.calc.tailor_weld_calculator import (
+    TailorWeldPartCostCalculator,
+)
 from app.services.costing.stamping_part_cost.helpers import location_candidates
 from app.services.settings.system.settings_service import SettingsService
 
@@ -88,6 +91,10 @@ class StampingPartCostCalcOrchestrator:
             scrap_repo=self.scrap_repo,
         )
         self.part_calculator = PartCostCalculator(
+            price_resolver=self.price_resolver,
+            fee_repo=self.fee_repo,
+        )
+        self.tailor_weld_calculator = TailorWeldPartCostCalculator(
             price_resolver=self.price_resolver,
             fee_repo=self.fee_repo,
         )
@@ -291,7 +298,12 @@ class StampingPartCostCalcOrchestrator:
                 skipped_approved_count += 1
                 continue
 
-            row_or_error = self.part_calculator.calc_part_cost(
+            calculator: PartCostCalculator | TailorWeldPartCostCalculator = (
+                self.tailor_weld_calculator
+                if part.is_tailor_welded
+                else self.part_calculator
+            )
+            row_or_error = calculator.calc_part_cost(
                 db,
                 part=part,
                 year=dto.year,
