@@ -20,6 +20,18 @@ def is_swing_shear_process(process: StampingProcess) -> bool:
     return "摆剪" in code or "摆剪" in seq
 
 
+def self_tonnage(process: StampingProcess) -> int | None:
+    """
+    工序自有吨位。0 与空均视为未填。
+
+    Excel 共模右件吨位格常为空；解析曾把空写成 0，不能当 0T 压机。
+    """
+    if process.tonnage is None:
+        return None
+    value = int(process.tonnage)
+    return value if value > 0 else None
+
+
 def can_inherit_previous_tonnage(
     part: StampingPart,
     process: StampingProcess,
@@ -81,10 +93,8 @@ def summarize_processes(processes: list[StampingProcess]) -> str:
         processes, key=lambda p: (p.process_order or 0, p.id or 0)
     ):
         label = format_process_label(process)
-        if process.tonnage is None:
-            tonnage_text = "无吨位"
-        else:
-            tonnage_text = f"{int(process.tonnage)}T"
+        own = self_tonnage(process)
+        tonnage_text = "无吨位" if own is None else f"{own}T"
         items.append(f"{label}={tonnage_text}")
     return "；".join(items)
 

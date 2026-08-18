@@ -1,7 +1,8 @@
 """
 工序吨位解析。
 
-缺吨位且判定为合并/双槽共模件时，继承上一零件(id-1)对应工序吨位；
+缺吨位（含 Excel 空格被写成 0）且判定为合并/双槽共模件时，
+继承上一零件(id-1)对应工序吨位；
 若上一件对应工序为摆剪（无冲压吨位），则本工序同样按摆剪计 0。
 """
 
@@ -24,6 +25,7 @@ from app.services.stamping.process_fee.calc.labels import (
     format_process_label,
     is_swing_shear_process,
     match_previous_process,
+    self_tonnage,
     summarize_processes,
 )
 from app.services.stamping.process_fee.calc.models import ProcessTonnageResolveResult
@@ -61,9 +63,10 @@ class TonnageResolver:
         """
         成功返回 ProcessTonnageResolveResult；失败返回原因字符串。
         """
-        if process.tonnage is not None:
+        own_tonnage = self_tonnage(process)
+        if own_tonnage is not None:
             return ProcessTonnageResolveResult(
-                tonnage=int(process.tonnage),
+                tonnage=own_tonnage,
                 source=TONNAGE_SOURCE_SELF,
             )
 
@@ -126,7 +129,8 @@ class TonnageResolver:
                 inherited_from_process_code=matched.process_code,
             )
 
-        if matched.tonnage is None:
+        inherited_tonnage = self_tonnage(matched)
+        if inherited_tonnage is None:
             matched_label = format_process_label(matched)
             return (
                 f"当前工序 {process_label} 缺少吨位；"
@@ -145,10 +149,10 @@ class TonnageResolver:
             process_label,
             previous_part.part_number,
             format_process_label(matched),
-            matched.tonnage,
+            inherited_tonnage,
         )
         return ProcessTonnageResolveResult(
-            tonnage=int(matched.tonnage),
+            tonnage=inherited_tonnage,
             source=TONNAGE_SOURCE_INHERITED,
             inherited_from_part_id=previous_part.id,
             inherited_from_part_number=previous_part.part_number,

@@ -34,8 +34,8 @@ class Process:
     # 模具套数
     die_sets: int = 1
 
-    # 吨位（吨）
-    tonnage: int = 0
+    # 吨位（吨）。Excel 空格为 None，不写成 0（0 会被当成 0T 压机）。
+    tonnage: int | None = None
 
     # 备注
     remark: str = ""

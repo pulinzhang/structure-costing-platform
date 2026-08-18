@@ -85,7 +85,7 @@ class RowParser:
             process_seq=process_seq,
             process_code=self._get_value(row_idx, col_map.get("code", 13)),
             die_sets=parse_int(self._get_value(row_idx, col_map.get("die_set", 14))) or 1,
-            tonnage=parse_int(self._get_value(row_idx, col_map.get("tonnage", 15))) or 0,
+            tonnage=parse_int(self._get_value(row_idx, col_map.get("tonnage", 15))),
             remark=self._get_value(row_idx, col_map.get("remark", 19)),
         )
 

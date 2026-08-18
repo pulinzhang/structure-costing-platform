@@ -19,6 +19,7 @@ from app.services.stamping.process_fee.calc.labels import (
     format_process_label,
     is_swing_shear_process,
     match_previous_process,
+    self_tonnage,
     summarize_processes,
 )
 from app.services.stamping.process_fee.calc.models import TonnageRateInfo
@@ -122,9 +123,7 @@ class PartFeeCalculator:
             processes, key=lambda p: (p.process_order or 0, p.id or 0)
         ):
             process_label = format_process_label(process)
-            original_tonnage = (
-                int(process.tonnage) if process.tonnage is not None else None
-            )
+            original_tonnage = self_tonnage(process)
 
             if is_swing_shear_process(process):
                 logger.info(
