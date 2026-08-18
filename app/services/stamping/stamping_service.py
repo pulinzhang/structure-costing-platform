@@ -9,6 +9,7 @@ from typing import Any, List, Dict
 from sqlalchemy.orm import Session
 
 from app.common.audit import audit_create, audit_update
+from app.common.money import Q2, Q4, optional_format_money
 from app.repositories.stamping.stamping_repository import (
     StampingPartRepository,
     StampingProcessRepository,
@@ -23,11 +24,59 @@ from app.schemas.vo.stamping_vo import (
     StampingCascadeFilterOptionsVO,
     StampingCascadeFilterQuery,
     StampingPartBatchDeleteResultVO,
+    StampingMaterialResponse,
 )
 from app.exceptions import BusinessException, NotFoundException
+from app.models.stamping import StampingPart
 from app.schemas.vo.user_vo import UserVO
 
 logger = logging.getLogger("service.stamping")
+
+
+def _join_formatted_numbers(
+    values: list[Any],
+    quant: Any,
+    places: int,
+) -> str | None:
+    """按顺序把数值格式化后用 / 拼接；全空则 None。"""
+    texts: list[str] = []
+    for value in values:
+        text = optional_format_money(value, quant, places)
+        if text is not None:
+            texts.append(text)
+    if not texts:
+        return None
+    return "/".join(texts)
+
+
+def _material_row_from_part(part: StampingPart) -> StampingMaterialResponse:
+    """普通件用主表尺寸；拼焊件用各子片料厚/长/宽拼接。"""
+    blanks = sorted(
+        list(part.tailor_weld_blanks or []),
+        key=lambda blank: (blank.blank_seq or 0, blank.id or 0),
+    )
+    material = (part.material or "").strip() or None
+    if part.is_tailor_welded and len(blanks) >= 2:
+        if not material:
+            material = (blanks[0].material or "").strip() or None
+        return StampingMaterialResponse(
+            material=material,
+            thickness=_join_formatted_numbers(
+                [blank.thickness for blank in blanks], Q2, 2
+            ),
+            sheet_length=_join_formatted_numbers(
+                [blank.sheet_length for blank in blanks], Q2, 2
+            ),
+            sheet_width=_join_formatted_numbers(
+                [blank.sheet_width for blank in blanks], Q2, 2
+            ),
+        )
+    return StampingMaterialResponse(
+        material=material,
+        thickness=optional_format_money(part.thickness, Q4, 4),
+        sheet_length=optional_format_money(part.sheet_length, Q2, 2),
+        sheet_width=optional_format_money(part.sheet_width, Q2, 2),
+    )
 
 
 class StampingPartService:
@@ -139,25 +188,40 @@ class StampingPartService:
 
     def list_materials(
         self, db: Session, query: Any
-    ) -> tuple[list[Any], int, StampingPartListFilterOptions]:
-        """获取材料列表（去重 material + thickness + sheet_length + sheet_width）"""
-        from app.schemas.vo.stamping_vo import StampingMaterialResponse
-
+    ) -> tuple[list[StampingMaterialResponse], int, StampingPartListFilterOptions]:
+        """获取材料列表（去重；拼焊件厚度/长/宽为子片拼接）。"""
         skip = (query.page - 1) * query.size
-        parts, total = self.repository.paginate_materials(
+        parts = self.repository.list_parts_for_materials(
             db,
             location=query.location,
             stamping_supplier=query.stamping_supplier,
             vehicle_model=query.vehicle_model,
             version=query.version,
-            skip=skip,
-            limit=query.size,
         )
 
-        rows = [StampingMaterialResponse.model_validate(p) for p in parts]
+        unique_rows: list[StampingMaterialResponse] = []
+        seen: set[tuple[str | None, str | None, str | None, str | None]] = set()
+        for part in parts:
+            row = _material_row_from_part(part)
+            key = (row.material, row.thickness, row.sheet_length, row.sheet_width)
+            if key in seen:
+                continue
+            seen.add(key)
+            unique_rows.append(row)
+
+        unique_rows.sort(
+            key=lambda row: (
+                row.material or "",
+                row.thickness or "",
+                row.sheet_length or "",
+                row.sheet_width or "",
+            )
+        )
+        total = len(unique_rows)
+        page_rows = unique_rows[skip : skip + query.size]
         filter_options = self.repository.get_filter_options(db)
         filter_vo = StampingPartListFilterOptions.model_validate(filter_options)
-        return rows, total, filter_vo
+        return page_rows, total, filter_vo
 
     def count_material_specs(
         self,

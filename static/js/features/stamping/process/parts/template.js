@@ -69,6 +69,11 @@ export function partsTemplate() {
                             </div>
                         </div>
                         <div class="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+                            <button id="partsExportBtn" type="button"
+                                    class="inline-flex items-center gap-1.5 bg-transparent text-[#6E6E73] border border-[#2A2A35] px-3 py-1.5 text-[11px] font-medium rounded-md hover:border-[#FF1E27]/50 hover:text-[#FF1E27] hover:bg-[#FF1E27]/10 hover:shadow-[0_0_12px_rgba(255,30,39,0.2)] transition-all duration-200">
+                                ${window.svgIcon('download', 'w-3 h-3')}
+                                导出 Excel
+                            </button>
                             <button id="partsBatchDeleteBtn" type="button"
                                     class="inline-flex items-center gap-1.5 bg-transparent text-[#6E6E73] border border-[#2A2A35] px-3 py-1.5 text-[11px] font-medium rounded-md hover:border-[#c62828]/60 hover:text-[#ef5350] hover:bg-[#c62828]/15 hover:shadow-[0_0_12px_rgba(198,40,40,0.2)] transition-all duration-200">
                                 ${window.svgIcon('trash', 'w-3 h-3')}
@@ -124,7 +129,7 @@ export function partsTemplate() {
                                 重置
                             </button>
                         </div>
-                        <p class="mt-2 text-[10px] text-[#555555]">筛选均可选；级联联动。批量删除须同时选定基地、冲压工厂、车型和版本。</p>
+                        <p class="mt-2 text-[10px] text-[#555555]">筛选均可选；级联联动。导出 / 批量删除须同时选定基地、冲压工厂、车型和版本。</p>
                     </div>
                 </div>
 

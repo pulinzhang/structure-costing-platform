@@ -189,6 +189,38 @@ class StampingPartRepository:
             .all()
         )
 
+    def list_for_export(
+        self,
+        db: Session,
+        *,
+        location: Optional[str] = None,
+        stamping_supplier: Optional[str] = None,
+        vehicle_model: Optional[str] = None,
+        version: Optional[str] = None,
+        part_number: Optional[str] = None,
+        part_name: Optional[str] = None,
+    ) -> List[StampingPart]:
+        """按列表筛选加载零件 + 工序 + 拼焊子片（导出用，不分页）。"""
+        from sqlalchemy.orm import selectinload
+
+        q = self._build_list_query(
+            db,
+            location=location,
+            stamping_supplier=stamping_supplier,
+            vehicle_model=vehicle_model,
+            version=version,
+            part_number=part_number,
+            part_name=part_name,
+        )
+        return (
+            q.options(
+                selectinload(StampingPart.processes),
+                selectinload(StampingPart.tailor_weld_blanks),
+            )
+            .order_by(StampingPart.seq_no, StampingPart.id)
+            .all()
+        )
+
     def list_all(self, db: Session, skip: int = 0, limit: int = 100) -> List[StampingPart]:
         return db.query(StampingPart).offset(skip).limit(limit).all()
 
@@ -433,22 +465,18 @@ class StampingPartRepository:
         return [row[0] for row in rows]
 
 
-    def paginate_materials(
+    def list_parts_for_materials(
         self,
         db: Session,
         location: Optional[str] = None,
         stamping_supplier: Optional[str] = None,
         vehicle_model: Optional[str] = None,
         version: Optional[str] = None,
-        skip: int = 0,
-        limit: int = 50,
-    ) -> Tuple[List[Dict[str, Any]], int]:
-        """分页查询去重材料信息（distinct material + thickness + sheet_length + sheet_width）"""
-        cols = (
-            StampingPart.material,
-            StampingPart.thickness,
-        )
-        q = db.query(*cols)
+    ) -> List[StampingPart]:
+        """材料列表用：范围内有材质的零件（含拼焊子片）。"""
+        from sqlalchemy.orm import selectinload
+
+        q = db.query(StampingPart)
         if location:
             q = q.filter(StampingPart.location == location)
         if stamping_supplier:
@@ -461,24 +489,22 @@ class StampingPartRepository:
         q = q.filter(
             StampingPart.material.isnot(None),
             StampingPart.material != "",
-        ).distinct()
-
-        total = q.count()
-        rows = q.order_by(StampingPart.material, StampingPart.thickness).offset(skip).limit(limit).all()
-        return [
-            {"material": r[0], "thickness": r[1]}
-            for r in rows
-        ], total
+        )
+        return (
+            q.options(selectinload(StampingPart.tailor_weld_blanks))
+            .order_by(StampingPart.material, StampingPart.seq_no, StampingPart.id)
+            .all()
+        )
 
     def _material_spec_filters(
         self,
-        q,
+        q: Any,
         *,
         location: Optional[str],
         stamping_supplier: Optional[str],
         vehicle_model: Optional[str],
         version: Optional[str],
-    ):
+    ) -> Any:
         """材料规格查询共用的零件范围过滤。"""
         if location:
             q = q.filter(StampingPart.location == location)
@@ -498,7 +524,7 @@ class StampingPartRepository:
         stamping_supplier: Optional[str] = None,
         vehicle_model: Optional[str] = None,
         version: Optional[str] = None,
-    ):
+    ) -> Any:
         """
         主表零件材质/料厚 ∪ 拼焊子片材质/料厚。
 

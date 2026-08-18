@@ -51,7 +51,8 @@
               "children": [
                 { "code": "op:stamping-parts:view", "label": "查询", "type": "op" },
                 { "code": "op:stamping-parts:update", "label": "编辑工序", "type": "op" },
-                { "code": "op:stamping-parts:delete", "label": "删除", "type": "op" }
+                { "code": "op:stamping-parts:delete", "label": "删除", "type": "op" },
+                { "code": "op:stamping-parts:export", "label": "导出", "type": "op" }
               ]
             }
           ]

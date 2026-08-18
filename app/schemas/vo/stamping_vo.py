@@ -276,19 +276,23 @@ class StampingCascadeFilterOptionsVO(BaseModel):
 
 
 class StampingMaterialResponse(BaseModel):
-    """材料信息 VO（去重后的 material + thickness）"""
+    """
+    材料信息 VO（去重后的 material + 料厚 + 长/宽）。
+
+    普通件为格式化数值字符串；拼焊件按子片顺序用 ``/`` 拼接，
+    如厚度 ``0.70/1.00``、长 ``550.00/555.00``。
+    """
 
     material: Optional[str] = None
-    thickness: Optional[Decimal] = None
-    sheet_width: Optional[Decimal] = None
-
-    @field_serializer("thickness")
-    def serialize_thickness(self, value: Decimal | None) -> str | None:
-        return optional_format_money(value, Q4, 4)
-
-    @field_serializer("sheet_width")
-    def serialize_sheet_width(self, value: Decimal | None) -> str | None:
-        return optional_format_money(value, Q2, 2)
+    thickness: Optional[str] = Field(
+        default=None, description="料厚(mm)；拼焊件为各子片拼接，如 0.70/1.00"
+    )
+    sheet_length: Optional[str] = Field(
+        default=None, description="料片长/卷料宽(mm)；拼焊件为各子片拼接"
+    )
+    sheet_width: Optional[str] = Field(
+        default=None, description="料片宽/卷料步距(mm)；拼焊件为各子片拼接"
+    )
 
 
 class StampingMaterialQuery(BaseModel):

@@ -27,6 +27,7 @@ class Perm:
     STAMPING_PARTS_VIEW = "op:stamping-parts:view"  # 查询
     STAMPING_PARTS_UPDATE = "op:stamping-parts:update"  # 编辑工序
     STAMPING_PARTS_DELETE = "op:stamping-parts:delete"  # 删除
+    STAMPING_PARTS_EXPORT = "op:stamping-parts:export"  # 导出
 
     MENU_STAMPING_STROKE_UNIT_PRICE = "menu:stamping-stroke-unit-price"  # 冲次单价
 

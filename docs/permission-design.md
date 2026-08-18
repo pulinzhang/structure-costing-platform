@@ -85,6 +85,7 @@ if (!can('op:my-page:create')) { /* 隐藏或禁用 */ }
 |---|---|---|
 | 进入页面 | `canAccessPage('stamping-parts')` → `menu:stamping-parts` | 该页所有读 API → `Perm.STAMPING_PARTS_VIEW` |
 | 显示「删除」/「批量删除」按钮 | `can('op:stamping-parts:delete')` | `DELETE` / `POST …/batch-delete` → `Perm.STAMPING_PARTS_DELETE` |
+| 显示「导出 Excel」 | `can('op:stamping-parts:export')` | `GET …/parts/export-download` → `Perm.STAMPING_PARTS_EXPORT` |
 | 显示「上传」 | `can('op:stamping-upload:upload')` | `POST` 上传 → `Perm.STAMPING_UPLOAD_UPLOAD` |
 | 授权抽屉 | 仅 `is_admin` 见按钮 | `require_admin_user` |
 
@@ -340,7 +341,8 @@ root
 │   │   └── menu:stamping-parts
 │   │       ├── op:stamping-parts:view
 │   │       ├── op:stamping-parts:update
-│   │       └── op:stamping-parts:delete
+│   │       ├── op:stamping-parts:delete
+│   │       └── op:stamping-parts:export
 │   ├── menu:stamping-stroke-unit-price        # 冲次单价（二级分组，可勾）
 │   │   ├── menu:stamping-tonnage-upload
 │   │   │   ├── op:stamping-tonnage-upload:view
@@ -507,7 +509,7 @@ root
 |---|---|---|
 | dashboard | `view` | 查看 KPI / 统计 |
 | stamping-upload | `view` / `upload` | 进入页；「上传」 |
-| stamping-parts | `view` / `update` / `delete` | 查询详情；保存工序；单条删除 / 批量删除 |
+| stamping-parts | `view` / `update` / `delete` / `export` | 查询详情；保存工序；单条删除 / 批量删除；导出工艺确认表 |
 | stamping-tonnage-upload | `view` / `upload` | 查看上传页；导入冲次单价 Excel |
 | stamping-tonnage | `view` / `create` / `update` / `delete` / `approve` / `reverse` / `export` | 查询；新增（API）；编辑；删除（含批量，已审跳过）；审核（含批量）；反审核；导出 Excel |
 | stamping-process-fee-calc | `view` / `run` / `delete` | 查看；执行计算；删除计算日志 |
@@ -737,4 +739,4 @@ static/index.html           # 侧栏 data-page
 | 2026-08-17 | 新增 `menu:bom-l0-welding-fee-group` 成品焊接费（计算 / 列表及审核删除操作码） |
 | 2026-08-17 | 技术命名统一为 L0：`menu/op:bom-welding-fee*` 全部替换为 `menu/op:bom-l0-welding-fee*`（功能新建未上线，无需 DB 权限 remap） |
 | 2026-08-17 | 去掉预留空码 `op:bom-l0-welding-fee-list:export`（尚无导出接口/按钮，避免权限树熵增） |
-| 2026-08-17 | 恢复并落地 `op:bom-l0-welding-fee-list:export`：列表弱化展示焊接信息原文 + Excel 导出 |
+| 2026-08-18 | 冲压零件列表增加 `op:stamping-parts:export`：工艺确认表主子表 Excel（工序 + 拼焊子片） |

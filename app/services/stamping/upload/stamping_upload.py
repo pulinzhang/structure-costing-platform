@@ -109,6 +109,7 @@ class StampingUploadService:
                 self.cost_ratio_preserver.apply(
                     parse_result.processes,
                     existing_processes,
+                    parse_result.parts,
                 )
                 part_map = self._save_parts(
                     parse_result.parts,
