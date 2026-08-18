@@ -7,6 +7,7 @@ from decimal import Decimal
 from app.services.stamping.process_fee.calc.constants import (
     TONNAGE_SOURCE_INHERITED,
     TONNAGE_SOURCE_SWING_SHEAR,
+    TONNAGE_SOURCE_TAILOR_WELD,
 )
 
 
@@ -34,6 +35,9 @@ def build_process_basis_text(
                 f"摆剪不计费 = 0"
             )
         return f"{process_label}: 摆剪不计费 = 0"
+
+    if tonnage_source == TONNAGE_SOURCE_TAILOR_WELD:
+        return f"{process_label}: 拼焊不计费 = 0"
 
     ratio_text = f"{cost_ratio:.2f}" if cost_ratio is not None else "1.00"
     price_text = (

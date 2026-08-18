@@ -20,6 +20,13 @@ def is_swing_shear_process(process: StampingProcess) -> bool:
     return "摆剪" in code or "摆剪" in seq
 
 
+def is_tailor_weld_describe_process(process: StampingProcess) -> bool:
+    """拼焊描述工序（如「两块方料&拼焊」），不使用冲压，加工费为 0。"""
+    code = (process.process_code or "").strip()
+    seq = (process.process_seq or "").strip()
+    return "拼焊" in code or "拼焊" in seq
+
+
 def self_tonnage(process: StampingProcess) -> int | None:
     """
     工序自有吨位。0 与空均视为未填。

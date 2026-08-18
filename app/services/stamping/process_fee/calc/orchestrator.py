@@ -3,12 +3,12 @@
 
 计算链：
   1. 加载冲次单价 / 冲压零件
-  2. PartFeeCalculator      — 单零件工序加工费
-  3. TonnageResolver        — 吨位解析（共模/摆剪，由 PartFeeCalculator 调用）
+  2. 单件计费：拼焊件 TailorWeldFeeCalculator，其余 PartFeeCalculator
+  3. TonnageResolver        — 吨位解析（共模/摆剪，由计算器调用）
   4. fee_repo.bulk_upsert   — 结果落库
   5. ProcessFeeCalcLogService — 计算锁与过程日志
 
-公式与共模规则见 PartFeeCalculator / TonnageResolver 文档。
+公式与共模规则见 PartFeeCalculator / TailorWeldFeeCalculator / TonnageResolver。
 """
 
 from __future__ import annotations
@@ -54,6 +54,9 @@ from app.services.stamping.process_fee.calc.models import (
 )
 from app.services.stamping.process_fee.calc.part_calculator import PartFeeCalculator
 from app.services.stamping.process_fee.calc.snapshot import part_snapshot
+from app.services.stamping.process_fee.calc.tailor_weld_calculator import (
+    TailorWeldFeeCalculator,
+)
 from app.services.stamping.process_fee.fee_math import resolve_final_fee
 from app.services.stamping.process_fee.scope import require_scope
 
@@ -69,6 +72,7 @@ class StampingProcessFeeCalcOrchestrator:
         self.tonnage_repo = StampingTonnagePriceRepository()
         self.calc_log_service = ProcessFeeCalcLogService()
         self.part_calculator = PartFeeCalculator()
+        self.tailor_weld_calculator = TailorWeldFeeCalculator()
 
     def get_calc_ready(
         self,
@@ -231,7 +235,12 @@ class StampingProcessFeeCalcOrchestrator:
                 skipped_approved_count += 1
                 continue
 
-            fee_or_error = self.part_calculator.calc_part_fee(
+            calculator = (
+                self.tailor_weld_calculator
+                if part.is_tailor_welded
+                else self.part_calculator
+            )
+            fee_or_error = calculator.calc_part_fee(
                 db, part, rate_map, dto.year, prev_part_cache
             )
             manual_price = existing.manual_unit_price if existing else None
