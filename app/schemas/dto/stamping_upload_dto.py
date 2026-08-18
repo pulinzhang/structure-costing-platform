@@ -59,6 +59,9 @@ class PartData:
     )
     remark: str | None = field(default=None, metadata={"description": "备注"})
     sketch_url: str | None = field(default=None, metadata={"description": "零件简图URL"})
+    is_tailor_welded: bool = field(
+        default=False, metadata={"description": "是否拼焊总成"}
+    )
     excel_sheet_name: str | None = field(
         default=None, metadata={"description": "来源 Excel 工作表名"}
     )
@@ -97,5 +100,11 @@ class UploadResult:
     parts_count: int = field(metadata={"description": "零件数量"})
     processes_count: int = field(metadata={"description": "工序数量"})
     images_count: int = field(metadata={"description": "简图数量"})
+    tailor_weld_assembly_count: int = field(
+        default=0, metadata={"description": "拼焊总成数量"}
+    )
+    tailor_weld_blank_count: int = field(
+        default=0, metadata={"description": "拼焊子片数量"}
+    )
     warnings: list[Any] = field(default_factory=list, metadata={"description": "警告信息"})
     parse_time_ms: float = field(default=0.0, metadata={"description": "解析耗时(ms)"})

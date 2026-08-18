@@ -14,13 +14,15 @@ from sqlalchemy.orm import Session
 
 from app.common.audit import audit_create, display_name
 from app.common.timezone import now
-from app.parsers.stamping.stamping_parser import parse_stamping_excel
 from app.parsers.stamping.models.part import Part
 from app.parsers.stamping.models.process import Process
+from app.parsers.stamping.stamping_parser import parse_stamping_excel
+from app.parsers.stamping.tailor_weld_parser import parse_tailor_weld_excel
 from app.config import settings
 from app.repositories.stamping.stamping_repository import StampingPartRepository, StampingProcessRepository
 from app.schemas.dto.stamping_upload_dto import FileInfo, PartData, ProcessData, UploadResult
 from app.schemas.vo.user_vo import UserVO
+from app.services.stamping.tailor_weld_blank_service import StampingTailorWeldBlankService
 from app.services.stamping.upload.cost_ratio_preserver import ProcessCostRatioPreserver
 
 # progress_callback(progress: int, msg: str)
@@ -37,6 +39,7 @@ class StampingUploadService:
         self.part_repo = StampingPartRepository()
         self.process_repo = StampingProcessRepository()
         self.cost_ratio_preserver = ProcessCostRatioPreserver()
+        self.tailor_weld_service = StampingTailorWeldBlankService()
 
     def process_upload(
         self,
@@ -66,19 +69,23 @@ class StampingUploadService:
 
         try:
             parse_result = parse_stamping_excel(tmp_path)
+            tailor_result = parse_tailor_weld_excel(tmp_path)
             vehicle_model = parse_result.vehicle_model or "未知车型"
             version = parse_result.version or "V1"
             stamping_supplier = parse_result.stamping_supplier or ""
+            tailor_parent_numbers = set(tailor_result.parent_part_numbers)
 
             logger.info(
-                "解析 Excel 完成：%d 个零件、%d 道工序",
+                "解析 Excel 完成：%d 个零件、%d 道工序、%d 个拼焊总成",
                 len(parse_result.parts),
                 len(parse_result.processes),
+                tailor_result.assembly_count,
             )
             _report(
                 40,
                 f"解析完成：{len(parse_result.parts)} 个零件、"
-                f"{len(parse_result.processes)} 道工序，正在保存文件...",
+                f"{len(parse_result.processes)} 道工序、"
+                f"{tailor_result.assembly_count} 个拼焊件，正在保存文件...",
             )
 
             file_info = self._save_file(
@@ -90,7 +97,7 @@ class StampingUploadService:
                 parse_result.images_by_part, file_info.upload_subdir
             )
 
-            _report(70, "正在写入零件与工序到数据库...")
+            _report(70, "正在写入零件、工序与拼焊子片到数据库...")
             with self.db.begin():
                 existing_processes = self.process_repo.list_by_scope(
                     self.db,
@@ -111,18 +118,33 @@ class StampingUploadService:
                     parse_result.images_by_part,
                     stamping_supplier,
                     filename,
+                    tailor_parent_numbers=tailor_parent_numbers,
                     current_user=current_user,
+                )
+                tailor_assemblies, tailor_blanks, tailor_warnings = (
+                    self.tailor_weld_service.save_parsed_for_upload(
+                        self.db,
+                        tailor_result.assemblies,
+                        part_map,
+                        current_user,
+                    )
                 )
                 process_count = self._save_processes(
                     parse_result.processes, part_map, current_user=current_user
                 )
 
+                warnings = list(parse_result.warnings) + list(tailor_result.warnings)
+                warnings.extend(tailor_warnings)
+                parse_time_ms = parse_result.parse_time_ms + tailor_result.parse_time_ms
+
                 logger.info(
-                    "上传处理完成: 零件 %d, 工序 %d, 简图 %d, 解析耗时 %.0fms",
+                    "上传处理完成: 零件 %d, 工序 %d, 简图 %d, 拼焊 %d/%d, 解析耗时 %.0fms",
                     len(part_map),
                     process_count,
                     saved_images,
-                    parse_result.parse_time_ms,
+                    tailor_assemblies,
+                    tailor_blanks,
+                    parse_time_ms,
                 )
                 _report(95, "正在提交事务...")
 
@@ -137,8 +159,10 @@ class StampingUploadService:
                     parts_count=len(part_map),
                     processes_count=process_count,
                     images_count=saved_images,
-                    warnings=parse_result.warnings,
-                    parse_time_ms=parse_result.parse_time_ms,
+                    tailor_weld_assembly_count=tailor_assemblies,
+                    tailor_weld_blank_count=tailor_blanks,
+                    warnings=warnings,
+                    parse_time_ms=parse_time_ms,
                 )
         finally:
             if os.path.exists(tmp_path):
@@ -218,11 +242,13 @@ class StampingUploadService:
         images_by_part: Dict[str, bytes],
         stamping_supplier: str = "",
         excel_filename: str = "",
+        tailor_parent_numbers: Optional[set[str]] = None,
         *,
         current_user: UserVO,
     ) -> Dict[str, int]:
         """保存零件数据到数据库，返回 part_number -> part_id 映射"""
         audit = audit_create(current_user)
+        tailor_parents = tailor_parent_numbers or set()
         self.part_repo.delete_by_vehicle_version(self.db, vehicle_model, version)
         logger.info(
             "已删除旧数据: %s %s operator=%s",
@@ -264,6 +290,7 @@ class StampingUploadService:
                 automation=part.automation,
                 remark=part.remark,
                 sketch_url=sketch_url,
+                is_tailor_welded=part_number in tailor_parents,
                 excel_filename=excel_filename,
                 excel_sheet_name=part.excel_sheet_name,
                 excel_row=part.excel_row,

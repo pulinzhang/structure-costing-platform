@@ -1,0 +1,142 @@
+"""
+拼焊子片 DTO - 请求参数
+
+子片材料侧录入；工序仍挂父件。blank_part_number / parent_part_number
+一般由 Service 按父零件号自动填写，DTO 可不传。
+"""
+
+from __future__ import annotations
+
+from decimal import Decimal
+from typing import Any, Optional
+
+from pydantic import BaseModel, Field, field_validator, model_validator
+
+from app.common.money import Q2, Q4, optional_quantize_money
+
+
+def _strip(value: Any) -> Any:
+    if value is None:
+        return None
+    if isinstance(value, str):
+        text = value.strip()
+        return text if text else None
+    return value
+
+
+class StampingTailorWeldBlankItemDTO(BaseModel):
+    """单片子片录入项（用于新增或整组替换）。"""
+
+    blank_seq: Optional[int] = Field(
+        default=None,
+        ge=1,
+        description="子片序号，从 1 起；整组替换时可省略，按列表顺序自动 1..N",
+    )
+    blank_part_number: Optional[str] = Field(
+        default=None,
+        max_length=60,
+        description="子件零件号；省略则自动生成「父零件号-序号」",
+    )
+    material: Optional[str] = Field(default=None, max_length=50, description="材质")
+    thickness: Optional[Decimal] = Field(default=None, description="料厚(mm)")
+    part_weight: Optional[Decimal] = Field(default=None, description="子片重量(kg)")
+    sheet_length: Optional[Decimal] = Field(
+        default=None, description="料片长/卷料宽(mm)"
+    )
+    sheet_width: Optional[Decimal] = Field(
+        default=None, description="料片宽/卷料步距(mm)"
+    )
+    parts_per_sheet: Optional[int] = Field(
+        default=None, ge=1, description="可制件数"
+    )
+    sheet_type: Optional[str] = Field(default=None, max_length=50, description="料片式样")
+    remark: Optional[str] = Field(default=None, description="备注")
+
+    @field_validator(
+        "blank_part_number",
+        "material",
+        "sheet_type",
+        "remark",
+        mode="before",
+    )
+    @classmethod
+    def strip_strings(cls, value: Any) -> Any:
+        return _strip(value)
+
+    @field_validator("thickness", "part_weight", mode="before")
+    @classmethod
+    def coerce_physical(cls, value: Any) -> Decimal | None:
+        return optional_quantize_money(value, Q4)
+
+    @field_validator("sheet_length", "sheet_width", mode="before")
+    @classmethod
+    def coerce_sheet_dim(cls, value: Any) -> Decimal | None:
+        return optional_quantize_money(value, Q2)
+
+
+class StampingTailorWeldBlankCreateDTO(StampingTailorWeldBlankItemDTO):
+    """新增单片子片；blank_seq 必填。"""
+
+    blank_seq: int = Field(..., ge=1, description="子片序号，从 1 起")
+
+
+class StampingTailorWeldBlankUpdateDTO(BaseModel):
+    """更新单片子片（部分字段）。"""
+
+    blank_seq: Optional[int] = Field(default=None, ge=1, description="子片序号")
+    blank_part_number: Optional[str] = Field(
+        default=None, max_length=60, description="子件零件号"
+    )
+    material: Optional[str] = Field(default=None, max_length=50)
+    thickness: Optional[Decimal] = None
+    part_weight: Optional[Decimal] = None
+    sheet_length: Optional[Decimal] = None
+    sheet_width: Optional[Decimal] = None
+    parts_per_sheet: Optional[int] = Field(default=None, ge=1)
+    sheet_type: Optional[str] = Field(default=None, max_length=50)
+    remark: Optional[str] = None
+
+    @field_validator(
+        "blank_part_number",
+        "material",
+        "sheet_type",
+        "remark",
+        mode="before",
+    )
+    @classmethod
+    def strip_strings(cls, value: Any) -> Any:
+        return _strip(value)
+
+    @field_validator("thickness", "part_weight", mode="before")
+    @classmethod
+    def coerce_physical(cls, value: Any) -> Decimal | None:
+        return optional_quantize_money(value, Q4)
+
+    @field_validator("sheet_length", "sheet_width", mode="before")
+    @classmethod
+    def coerce_sheet_dim(cls, value: Any) -> Decimal | None:
+        return optional_quantize_money(value, Q2)
+
+
+class StampingTailorWeldBlankReplaceDTO(BaseModel):
+    """按父件整组替换子片（至少两片）。"""
+
+    items: list[StampingTailorWeldBlankItemDTO] = Field(
+        ...,
+        min_length=2,
+        description="子片列表，至少 2 片",
+    )
+
+    @model_validator(mode="after")
+    def validate_unique_seq(self) -> StampingTailorWeldBlankReplaceDTO:
+        seqs = [item.blank_seq for item in self.items if item.blank_seq is not None]
+        if len(seqs) != len(set(seqs)):
+            raise ValueError("blank_seq 不能重复")
+        numbers = [
+            item.blank_part_number
+            for item in self.items
+            if item.blank_part_number is not None
+        ]
+        if len(numbers) != len(set(numbers)):
+            raise ValueError("blank_part_number 不能重复")
+        return self

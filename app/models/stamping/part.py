@@ -3,20 +3,37 @@
 使用主从表结构存储冲压件工艺信息（零件主表 + 工序子表）
 """
 
+from __future__ import annotations
+
 from decimal import Decimal
-from typing import List
+from typing import TYPE_CHECKING, List
+
 from sqlalchemy import (
-    Integer, String, Numeric, Text, ForeignKey, Index, UniqueConstraint)
-from sqlalchemy.orm import relationship, Mapped, mapped_column
+    Boolean,
+    ForeignKey,
+    Index,
+    Integer,
+    Numeric,
+    String,
+    Text,
+    UniqueConstraint,
+)
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
 from app.models.common.audit_mixin import AuditUserMixin
+
+if TYPE_CHECKING:
+    from app.models.stamping.tailor_weld_blank import StampingTailorWeldBlank
 
 
 class StampingPart(AuditUserMixin, Base):
     """
     冲压件主表 - 存储零件基本信息
     vehicle_model + version 直接存于此表，不单独建车型表
+
+    拼焊总成：is_tailor_welded=True，各片子片见 StampingTailorWeldBlank；
+    工序仍挂本表（StampingProcess），核价时按子片算后汇总到父。
     """
     __tablename__ = "stamping_parts"
 
@@ -38,7 +55,15 @@ class StampingPart(AuditUserMixin, Base):
     part_number: Mapped[str] = mapped_column(String(50), nullable=False, comment="零件号")
     part_name: Mapped[str | None] = mapped_column(String(200), nullable=True, comment="零件名称")
 
-    # 材料信息
+    # 拼焊标识（总成）；子片材料侧见 stamping_tailor_weld_blanks
+    is_tailor_welded: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        comment="是否拼焊件（对外总成）；默认否。为是时各片材料在子表，工序仍挂本表",
+    )
+
+    # 材料信息（普通件使用；拼焊总成可空，以各子片为准）
     material: Mapped[str | None] = mapped_column(String(50), nullable=True, comment="材质")
     thickness: Mapped[Decimal | None] = mapped_column(Numeric(10, 4), nullable=True, comment="料厚(mm)")
     part_weight: Mapped[Decimal | None] = mapped_column(Numeric(12, 4), nullable=True, comment="零件重量(kg)")
@@ -101,6 +126,12 @@ class StampingPart(AuditUserMixin, Base):
         back_populates="part",
         cascade="all, delete-orphan"
     )
+    tailor_weld_blanks: Mapped[List["StampingTailorWeldBlank"]] = relationship(
+        "StampingTailorWeldBlank",
+        back_populates="part",
+        cascade="all, delete-orphan",
+        order_by="StampingTailorWeldBlank.blank_seq",
+    )
 
     __table_args__ = (
         Index("ix_part_location_supplier_model_version_number",
@@ -108,6 +139,7 @@ class StampingPart(AuditUserMixin, Base):
         Index("ix_part_vehicle_model", "vehicle_model"),
         Index("ix_part_version", "version"),
         Index("ix_part_number", "part_number"),
+        Index("ix_part_is_tailor_welded", "is_tailor_welded"),
         # 唯一键：基地 + 供应商 + 车型 + 版本 + 零件号
         UniqueConstraint(
             "location", "stamping_supplier", "vehicle_model", "version", "part_number",

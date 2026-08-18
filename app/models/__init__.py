@@ -41,6 +41,7 @@ from app.models.stamping import (
     StampingProcessFee,
     StampingProcessFeeCalcLog,
     StampingProcessFeeItem,
+    StampingTailorWeldBlank,
     StampingTonnagePrice,
 )
 from app.models.yishiyiyi import (
@@ -71,6 +72,7 @@ __all__ = [
     "StampingProcessFeeCalcLog",
     "StampingProcessFeeItem",
     "StampingScrapPrice",
+    "StampingTailorWeldBlank",
     "StampingTonnagePrice",
     "SteelBasePrice",
     "SteelPrice",

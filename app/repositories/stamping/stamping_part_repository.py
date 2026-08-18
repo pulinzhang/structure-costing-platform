@@ -7,6 +7,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.models import StampingPart, StampingProcess
+from app.models.stamping.tailor_weld_blank import StampingTailorWeldBlank
 
 logger = logging.getLogger("repository.stamping.part")
 
@@ -246,6 +247,9 @@ class StampingPartRepository:
         db.query(StampingProcess).filter(
             StampingProcess.part_id.in_(part_ids)
         ).delete(synchronize_session=False)
+        db.query(StampingTailorWeldBlank).filter(
+            StampingTailorWeldBlank.part_id.in_(part_ids)
+        ).delete(synchronize_session=False)
         db.query(StampingPart).filter(
             StampingPart.id.in_(part_ids)
         ).delete(synchronize_session=False)
@@ -276,6 +280,9 @@ class StampingPartRepository:
         part_ids = [part.id for part in parts]
         db.query(StampingProcess).filter(
             StampingProcess.part_id.in_(part_ids)
+        ).delete(synchronize_session=False)
+        db.query(StampingTailorWeldBlank).filter(
+            StampingTailorWeldBlank.part_id.in_(part_ids)
         ).delete(synchronize_session=False)
         db.query(StampingPart).filter(
             StampingPart.id.in_(part_ids)

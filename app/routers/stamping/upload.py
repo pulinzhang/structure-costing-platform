@@ -74,6 +74,8 @@ def _process_stamping_upload_in_background(
             message=(
                 f"上传成功：{result.parts_count} 个零件，"
                 f"{result.processes_count} 道工序"
+                f"（拼焊 {result.tailor_weld_assembly_count} 件 / "
+                f"{result.tailor_weld_blank_count} 片）"
             ),
             result=asdict(result),
         )
