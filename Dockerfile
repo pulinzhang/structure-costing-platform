@@ -1,27 +1,58 @@
 # 多阶段构建：编译依赖与运行时分离，减小镜像体积
 # 容器内工作目录固定为本项目路径，避免与其它服务的 /app 混淆
+# 国内 ECS：apt / pip 默认走阿里云镜像，显著加快首次构建
 FROM python:3.12-slim AS builder
 
 ARG APP_HOME=/opt/stamping-costing-platform
+ARG APT_MIRROR=mirrors.aliyun.com
+ARG PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple/
+ARG PIP_TRUSTED_HOST=mirrors.aliyun.com
 WORKDIR ${APP_HOME}
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    && rm -rf /var/lib/apt/lists/*
+RUN set -eux; \
+    if [ -f /etc/apt/sources.list.d/debian.sources ]; then \
+      sed -i \
+        -e "s|deb.debian.org|${APT_MIRROR}|g" \
+        -e "s|security.debian.org|${APT_MIRROR}|g" \
+        /etc/apt/sources.list.d/debian.sources; \
+    elif [ -f /etc/apt/sources.list ]; then \
+      sed -i \
+        -e "s|deb.debian.org|${APT_MIRROR}|g" \
+        -e "s|security.debian.org|${APT_MIRROR}|g" \
+        /etc/apt/sources.list; \
+    fi; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends build-essential; \
+    rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir --user -r requirements.txt
+RUN pip install --no-cache-dir --user \
+    -i "${PIP_INDEX_URL}" \
+    --trusted-host "${PIP_TRUSTED_HOST}" \
+    -r requirements.txt
 
 FROM python:3.12-slim
 
 ARG APP_HOME=/opt/stamping-costing-platform
+ARG APT_MIRROR=mirrors.aliyun.com
 WORKDIR ${APP_HOME}
 
 # tzdata：app.common.timezone 使用 ZoneInfo("Asia/Shanghai")，slim 默认没有时区数据
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl \
-    tzdata \
-    && rm -rf /var/lib/apt/lists/*
+RUN set -eux; \
+    if [ -f /etc/apt/sources.list.d/debian.sources ]; then \
+      sed -i \
+        -e "s|deb.debian.org|${APT_MIRROR}|g" \
+        -e "s|security.debian.org|${APT_MIRROR}|g" \
+        /etc/apt/sources.list.d/debian.sources; \
+    elif [ -f /etc/apt/sources.list ]; then \
+      sed -i \
+        -e "s|deb.debian.org|${APT_MIRROR}|g" \
+        -e "s|security.debian.org|${APT_MIRROR}|g" \
+        /etc/apt/sources.list; \
+    fi; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends curl tzdata; \
+    rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /root/.local /root/.local
 LABEL com.stamping-costing.platform="true"
