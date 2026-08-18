@@ -10,11 +10,10 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
 
 from sqlalchemy.orm import Session
 
-from app.common.audit import audit_create, audit_update
+from app.common.audit import audit_create, audit_update, display_name
 from app.exceptions import BusinessException, NotFoundException
 from app.models.stamping import StampingPart
 from app.parsers.stamping.models.tailor_weld import TailorWeldAssemblyParsed
@@ -27,8 +26,11 @@ from app.schemas.dto.stamping_tailor_weld_blank_dto import (
     StampingTailorWeldBlankItemDTO,
     StampingTailorWeldBlankReplaceDTO,
     StampingTailorWeldBlankUpdateDTO,
+    TailorWeldBlankPatch,
+    TailorWeldBlankWrite,
 )
 from app.schemas.vo.stamping_tailor_weld_blank_vo import StampingTailorWeldBlankVO
+from app.schemas.dto.stamping_upload_dto import StampingPartPatch
 from app.schemas.vo.user_vo import UserVO
 
 logger = logging.getLogger("service.stamping.tailor_weld_blank")
@@ -61,14 +63,11 @@ class StampingTailorWeldBlankService:
     ) -> None:
         if part.is_tailor_welded == is_tailor_welded:
             return
-        self.part_repository.update(
-            db,
-            part.id,
-            {
-                "is_tailor_welded": is_tailor_welded,
-                **audit_update(current_user),
-            },
-        )
+        payload: StampingPartPatch = {
+            "is_tailor_welded": is_tailor_welded,
+            "updated_by": display_name(current_user),
+        }
+        self.part_repository.update(db, part.id, payload)
 
     def _assign_seqs(
         self,
@@ -96,27 +95,29 @@ class StampingTailorWeldBlankService:
         part: StampingPart,
         blank_seq: int,
         item: StampingTailorWeldBlankItemDTO | StampingTailorWeldBlankCreateDTO,
-        audit: dict[str, Any],
-    ) -> dict[str, Any]:
+        created_by: str,
+        updated_by: str,
+    ) -> TailorWeldBlankWrite:
         blank_part_number = item.blank_part_number or self.build_blank_part_number(
             part.part_number,
             blank_seq,
         )
-        return {
-            "part_id": part.id,
-            "parent_part_number": part.part_number,
-            "blank_seq": blank_seq,
-            "blank_part_number": blank_part_number,
-            "material": item.material,
-            "thickness": item.thickness,
-            "part_weight": item.part_weight,
-            "sheet_length": item.sheet_length,
-            "sheet_width": item.sheet_width,
-            "parts_per_sheet": item.parts_per_sheet,
-            "sheet_type": item.sheet_type,
-            "remark": item.remark,
-            **audit,
-        }
+        return TailorWeldBlankWrite(
+            part_id=part.id,
+            parent_part_number=part.part_number,
+            blank_seq=blank_seq,
+            blank_part_number=blank_part_number,
+            material=item.material,
+            thickness=item.thickness,
+            part_weight=item.part_weight,
+            sheet_length=item.sheet_length,
+            sheet_width=item.sheet_width,
+            parts_per_sheet=item.parts_per_sheet,
+            sheet_type=item.sheet_type,
+            remark=item.remark,
+            created_by=created_by,
+            updated_by=updated_by,
+        )
 
     def list_by_part_id(
         self,
@@ -143,14 +144,15 @@ class StampingTailorWeldBlankService:
         """整组替换父件下子片，并标记父件为拼焊件。"""
         part = self._require_parent(db, part_id)
         audit = audit_create(current_user)
-        payloads: list[dict[str, Any]] = []
+        payloads: list[TailorWeldBlankWrite] = []
         for blank_seq, item in self._assign_seqs(dto.items):
             payloads.append(
                 self._item_to_payload(
                     part=part,
                     blank_seq=blank_seq,
                     item=item,
-                    audit=audit,
+                    created_by=audit["created_by"],
+                    updated_by=audit["updated_by"],
                 )
             )
 
@@ -182,11 +184,13 @@ class StampingTailorWeldBlankService:
                 f"子片序号已存在: blank_seq={dto.blank_seq}（part_id={part_id}）"
             )
 
+        audit = audit_create(current_user)
         payload = self._item_to_payload(
             part=part,
             blank_seq=dto.blank_seq,
             item=dto,
-            audit=audit_create(current_user),
+            created_by=audit["created_by"],
+            updated_by=audit["updated_by"],
         )
         try:
             blank = self.repository.create(db, payload)
@@ -214,35 +218,51 @@ class StampingTailorWeldBlankService:
             raise NotFoundException(f"拼焊子片不存在: id={blank_id}")
 
         part = self._require_parent(db, blank.part_id)
-        update_data = dto.model_dump(exclude_unset=True)
+        patch: TailorWeldBlankPatch = {}
+        if "blank_seq" in dto.model_fields_set and dto.blank_seq is not None:
+            patch["blank_seq"] = dto.blank_seq
+        if "blank_part_number" in dto.model_fields_set and dto.blank_part_number is not None:
+            patch["blank_part_number"] = dto.blank_part_number
+        if "material" in dto.model_fields_set:
+            patch["material"] = dto.material
+        if "thickness" in dto.model_fields_set:
+            patch["thickness"] = dto.thickness
+        if "part_weight" in dto.model_fields_set:
+            patch["part_weight"] = dto.part_weight
+        if "sheet_length" in dto.model_fields_set:
+            patch["sheet_length"] = dto.sheet_length
+        if "sheet_width" in dto.model_fields_set:
+            patch["sheet_width"] = dto.sheet_width
+        if "parts_per_sheet" in dto.model_fields_set:
+            patch["parts_per_sheet"] = dto.parts_per_sheet
+        if "sheet_type" in dto.model_fields_set:
+            patch["sheet_type"] = dto.sheet_type
+        if "remark" in dto.model_fields_set:
+            patch["remark"] = dto.remark
 
-        if "blank_seq" in update_data and update_data["blank_seq"] != blank.blank_seq:
+        if "blank_seq" in patch and patch["blank_seq"] != blank.blank_seq:
             conflict = self.repository.get_by_part_and_seq(
                 db,
                 blank.part_id,
-                update_data["blank_seq"],
+                patch["blank_seq"],
             )
             if conflict is not None and conflict.id != blank.id:
                 raise BusinessException(
-                    f"子片序号已存在: blank_seq={update_data['blank_seq']}"
+                    f"子片序号已存在: blank_seq={patch['blank_seq']}"
                 )
 
         # 改序号且未显式传子件号时，按约定重算「父号-N」
-        if (
-            "blank_seq" in update_data
-            and "blank_part_number" not in update_data
-        ):
-            update_data["blank_part_number"] = self.build_blank_part_number(
+        if "blank_seq" in patch and "blank_part_number" not in patch:
+            patch["blank_part_number"] = self.build_blank_part_number(
                 part.part_number,
-                update_data["blank_seq"],
+                patch["blank_seq"],
             )
 
-        # 冗余父零件号始终与当前父件对齐
-        update_data["parent_part_number"] = part.part_number
-        update_data.update(audit_update(current_user))
+        patch["parent_part_number"] = part.part_number
+        patch["updated_by"] = audit_update(current_user)["updated_by"]
 
         try:
-            updated = self.repository.update(db, blank_id, update_data)
+            updated = self.repository.update(db, blank_id, patch)
             if updated is None:
                 raise NotFoundException(f"拼焊子片不存在: id={blank_id}")
             return StampingTailorWeldBlankVO.model_validate(updated)
@@ -306,7 +326,7 @@ class StampingTailorWeldBlankService:
 
         audit = audit_create(current_user)
         warnings: list[str] = []
-        payloads: list[dict[str, Any]] = []
+        payloads: list[TailorWeldBlankWrite] = []
         saved_assemblies = 0
 
         for assembly in assemblies:
@@ -327,26 +347,27 @@ class StampingTailorWeldBlankService:
             for blank in assembly.blanks:
                 blank_seq = blank.blank_seq
                 payloads.append(
-                    {
-                        "part_id": part_id,
-                        "parent_part_number": parent_part_number,
-                        "blank_seq": blank_seq,
-                        "blank_part_number": (
+                    TailorWeldBlankWrite(
+                        part_id=part_id,
+                        parent_part_number=parent_part_number,
+                        blank_seq=blank_seq,
+                        blank_part_number=(
                             blank.blank_part_number
                             or self.build_blank_part_number(
                                 parent_part_number, blank_seq
                             )
                         ),
-                        "material": blank.material,
-                        "thickness": blank.thickness,
-                        "part_weight": None,
-                        "sheet_length": blank.sheet_length,
-                        "sheet_width": blank.sheet_width,
-                        "parts_per_sheet": blank.parts_per_sheet,
-                        "sheet_type": blank.sheet_type,
-                        "remark": blank.remark,
-                        **audit,
-                    }
+                        material=blank.material,
+                        thickness=blank.thickness,
+                        part_weight=None,
+                        sheet_length=blank.sheet_length,
+                        sheet_width=blank.sheet_width,
+                        parts_per_sheet=blank.parts_per_sheet,
+                        sheet_type=blank.sheet_type,
+                        remark=blank.remark,
+                        created_by=audit["created_by"],
+                        updated_by=audit["updated_by"],
+                    )
                 )
 
         if payloads:

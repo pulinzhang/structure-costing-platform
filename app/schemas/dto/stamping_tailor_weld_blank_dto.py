@@ -7,8 +7,9 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from decimal import Decimal
-from typing import Any, Optional
+from typing import Any, Optional, TypedDict
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
@@ -140,3 +141,40 @@ class StampingTailorWeldBlankReplaceDTO(BaseModel):
         if len(numbers) != len(set(numbers)):
             raise ValueError("blank_part_number 不能重复")
         return self
+
+
+@dataclass(slots=True)
+class TailorWeldBlankWrite:
+    """拼焊子片新建（含父件与审计人）。"""
+
+    part_id: int
+    parent_part_number: str
+    blank_seq: int
+    blank_part_number: str
+    material: str | None = None
+    thickness: Decimal | None = None
+    part_weight: Decimal | None = None
+    sheet_length: Decimal | None = None
+    sheet_width: Decimal | None = None
+    parts_per_sheet: int | None = None
+    sheet_type: str | None = None
+    remark: str | None = None
+    created_by: str | None = None
+    updated_by: str | None = None
+
+
+class TailorWeldBlankPatch(TypedDict, total=False):
+    """拼焊子片部分更新。"""
+
+    blank_seq: int
+    blank_part_number: str
+    material: str | None
+    thickness: Decimal | None
+    part_weight: Decimal | None
+    sheet_length: Decimal | None
+    sheet_width: Decimal | None
+    parts_per_sheet: int | None
+    sheet_type: str | None
+    remark: str | None
+    parent_part_number: str
+    updated_by: str

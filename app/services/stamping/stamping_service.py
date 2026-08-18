@@ -4,17 +4,23 @@
 """
 
 import logging
-from typing import Any, List, Dict
+from decimal import Decimal
 
 from sqlalchemy.orm import Session
 
-from app.common.audit import audit_create, audit_update
+from app.common.audit import audit_create, display_name
 from app.common.money import Q2, Q4, optional_format_money
+from app.repositories.stamping.stamping_part_repository import MaterialSpecRow
 from app.repositories.stamping.stamping_repository import (
     StampingPartRepository,
     StampingProcessRepository,
 )
 from app.schemas.dto.stamping_part_dto import StampingPartBatchDeleteDTO
+from app.schemas.dto.stamping_upload_dto import (
+    PartData,
+    StampingPartPatch,
+    StampingProcessPatch,
+)
 from app.schemas.vo.stamping_vo import (
     StampingPartQuery,
     StampingPartListResponse,
@@ -24,7 +30,11 @@ from app.schemas.vo.stamping_vo import (
     StampingCascadeFilterOptionsVO,
     StampingCascadeFilterQuery,
     StampingPartBatchDeleteResultVO,
+    StampingMaterialQuery,
     StampingMaterialResponse,
+    StampingPartListSummaryVO,
+    StampingProcessItemUpdate,
+    StampingProcessUpdate,
 )
 from app.exceptions import BusinessException, NotFoundException
 from app.models.stamping import StampingPart
@@ -34,8 +44,8 @@ logger = logging.getLogger("service.stamping")
 
 
 def _join_formatted_numbers(
-    values: list[Any],
-    quant: Any,
+    values: list[Decimal | None],
+    quant: Decimal,
     places: int,
 ) -> str | None:
     """按顺序把数值格式化后用 / 拼接；全空则 None。"""
@@ -123,7 +133,7 @@ class StampingPartService:
 
     def list_parts(
         self, db: Session, query: StampingPartQuery
-    ) -> tuple[List[StampingPartListResponse], int, StampingPartListFilterOptions]:
+    ) -> tuple[list[StampingPartListResponse], int, StampingPartListFilterOptions]:
         """获取零件列表（不含工序详情，含工序统计数 process_count）"""
         skip = (query.page - 1) * query.size
         location = query.location
@@ -154,17 +164,25 @@ class StampingPartService:
             rows.append(row)
 
         # 筛选下拉框选项 + 当前筛选下去重维度汇总
-        filter_options: dict[str, Any] = self.repository.get_filter_options(db)
-        filter_options["summary"] = self.repository.summarize_by_filters(
-            db,
-            location=location,
-            vehicle_model=vehicle_model,
-            version=version,
-            part_number=part_number,
-            part_name=part_name,
-            stamping_supplier=stamping_supplier,
+        raw = self.repository.get_filter_options(db)
+        filter_vo = StampingPartListFilterOptions(
+            locations=list(raw["locations"]),
+            vehicle_models=list(raw["vehicle_models"]),
+            versions=list(raw["versions"]),
+            materials=list(raw["materials"]),
+            stamping_suppliers=list(raw["stamping_suppliers"]),
+            summary=StampingPartListSummaryVO.model_validate(
+                self.repository.summarize_by_filters(
+                    db,
+                    location=location,
+                    vehicle_model=vehicle_model,
+                    version=version,
+                    part_number=part_number,
+                    part_name=part_name,
+                    stamping_supplier=stamping_supplier,
+                )
+            ),
         )
-        filter_vo = StampingPartListFilterOptions.model_validate(filter_options)
         return rows, total, filter_vo
 
     def get_filter_options(self, db: Session) -> StampingPartListFilterOptions:
@@ -187,7 +205,7 @@ class StampingPartService:
         return StampingCascadeFilterOptionsVO.model_validate(raw)
 
     def list_materials(
-        self, db: Session, query: Any
+        self, db: Session, query: StampingMaterialQuery
     ) -> tuple[list[StampingMaterialResponse], int, StampingPartListFilterOptions]:
         """获取材料列表（去重；拼焊件厚度/长/宽为子片拼接）。"""
         skip = (query.page - 1) * query.size
@@ -249,7 +267,7 @@ class StampingPartService:
         stamping_supplier: str | None = None,
         vehicle_model: str | None = None,
         version: str | None = None,
-    ) -> list[dict[str, Any]]:
+    ) -> list[MaterialSpecRow]:
         """列出去重后的 基地 + 材料(钢种) + 厚度（含拼焊子片，钢价计算用）。"""
         return self.repository.list_material_specs(
             db,
@@ -270,37 +288,42 @@ class StampingPartService:
         """删除零件（硬删除，不写审计字段）。"""
         self.repository.delete(db, part_id)
 
-    def get_id_map(self, db: Session, vehicle_model: str, version: str) -> Dict[str, int]:
+    def get_id_map(self, db: Session, vehicle_model: str, version: str) -> dict[str, int]:
         """获取零件号映射"""
         return self.repository.get_id_map_by_vehicle_version(db, vehicle_model, version)
 
     def create(
         self,
         db: Session,
-        part_data: Dict[str, Any],
+        part_data: PartData,
         current_user: UserVO,
-    ) -> Any:
-        payload = {**part_data, **audit_create(current_user)}
-        return self.repository.create(db, payload)
+    ) -> StampingPart:
+        audit = audit_create(current_user)
+        part_data.created_by = audit["created_by"]
+        part_data.updated_by = audit["updated_by"]
+        return self.repository.create(db, part_data)
 
     def bulk_create(
         self,
         db: Session,
-        parts_data: List[Dict[str, Any]],
+        parts_data: list[PartData],
         current_user: UserVO,
-    ) -> Any:
+    ) -> list[StampingPart]:
         audit = audit_create(current_user)
-        rows = [{**row, **audit} for row in parts_data]
-        return self.repository.bulk_create(db, rows)
+        for row in parts_data:
+            row.created_by = audit["created_by"]
+            row.updated_by = audit["updated_by"]
+        return self.repository.bulk_create(db, parts_data)
 
     def update(
         self,
         db: Session,
         part_id: int,
-        update_data: Dict[str, Any],
+        update_data: StampingPartPatch,
         current_user: UserVO,
-    ) -> Any:
-        payload = {**update_data, **audit_update(current_user)}
+    ) -> StampingPart | None:
+        payload: StampingPartPatch = {**update_data}
+        payload["updated_by"] = display_name(current_user)
         return self.repository.update(db, part_id, payload)
 
     def delete_by_vehicle_version(self, db: Session, vehicle_model: str, version: str) -> int:
@@ -340,14 +363,20 @@ class StampingPartService:
         self,
         db: Session,
         process_id: int,
-        update_data: Dict[str, Any],
+        dto: StampingProcessUpdate,
         current_user: UserVO,
     ) -> StampingProcessResponse:
         """更新单个工序"""
-        from app.repositories.stamping.stamping_repository import StampingProcessRepository
-
         process_repo = StampingProcessRepository()
-        payload = {**update_data, **audit_update(current_user)}
+        payload: StampingProcessPatch = {
+            "updated_by": display_name(current_user),
+        }
+        if "cost_ratio" in dto.model_fields_set and dto.cost_ratio is not None:
+            payload["cost_ratio"] = dto.cost_ratio
+        if "remark" in dto.model_fields_set:
+            payload["remark"] = dto.remark
+        if len(payload) == 1:
+            logger.warning("process_id=%s 的更新字段为空", process_id)
         process = process_repo.update(db, process_id, payload)
         if not process:
             raise NotFoundException(f"工序不存在: id={process_id}")
@@ -356,25 +385,25 @@ class StampingPartService:
     def batch_update_processes(
         self,
         db: Session,
-        items: List[Dict[str, Any]],
+        items: list[StampingProcessItemUpdate],
         current_user: UserVO,
     ) -> int:
         """批量更新工序成本系数"""
-        from app.repositories.stamping.stamping_repository import StampingProcessRepository
-
-        audit = audit_update(current_user)
+        operator_name = display_name(current_user)
         process_repo = StampingProcessRepository()
         count = 0
         for item in items:
-            pid = item.get("id")
-            if not pid:
+            payload: StampingProcessPatch = {
+                "updated_by": operator_name,
+            }
+            if "cost_ratio" in item.model_fields_set and item.cost_ratio is not None:
+                payload["cost_ratio"] = item.cost_ratio
+            if "remark" in item.model_fields_set:
+                payload["remark"] = item.remark
+            if len(payload) == 1:
+                logger.warning("process_id=%s 的 update_data 为空，跳过", item.id)
                 continue
-            update_data = {k: v for k, v in item.items() if k != "id"}
-            if not update_data:
-                logger.warning("process_id=%s 的 update_data 为空，跳过", pid)
-                continue
-            update_data.update(audit)
-            if process_repo.update(db, int(pid), update_data):
+            if process_repo.update(db, item.id, payload):
                 count += 1
         logger.info("batch_update_processes 完成，更新了 %s 条", count)
         return count

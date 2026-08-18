@@ -1,13 +1,25 @@
 """BOM Service - 业务逻辑"""
 
-from typing import Any
 import logging
+
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
+
 from app.common.audit import audit_create
 from app.common.bom.manufacturing_category import resolve_manufacturing_category
-from app.repositories.bom.bom_repository import BomNodeRepository, BomSnapshotRepository
-from app.schemas.dto.bom_dto import BomNodeCreate, BomSnapshotCreate, BomSnapshotQuery
+from app.models.bom import BomNode
+from app.repositories.bom.bom_repository import (
+    BomNodeRepository,
+    BomSnapshotListFilters,
+    BomSnapshotRepository,
+)
+from app.schemas.dto.bom_dto import (
+    BomNodeCreate,
+    BomNodeWrite,
+    BomSnapshotCreate,
+    BomSnapshotQuery,
+    BomSnapshotWrite,
+)
 from app.schemas.vo.bom_vo import (
     BomCascadeFilterOptionsVO,
     BomCascadeFilterQuery,
@@ -33,7 +45,7 @@ class BomService:
         self.node_repo = BomNodeRepository()
 
     @staticmethod
-    def _to_node_vo(row: Any, *, has_children: bool = False) -> BomNodeVO:
+    def _to_node_vo(row: BomNode, *, has_children: bool = False) -> BomNodeVO:
         vo = BomNodeVO.model_validate(row)
         vo.manufacturing_category = resolve_manufacturing_category(
             node_role=vo.node_role,
@@ -59,7 +71,7 @@ class BomService:
 
     def paginate_snapshots(
         self, db: Session, query: BomSnapshotQuery
-    ) -> tuple[list[BomSnapshotVO], int, dict[str, Any]]:
+    ) -> tuple[list[BomSnapshotVO], int, BomSnapshotListFilters]:
         skip = (query.page - 1) * query.size
         rows, total = self.snapshot_repo.paginate(
             db,
@@ -75,7 +87,7 @@ class BomService:
             vo.node_count = self.snapshot_repo.count_nodes(db, row.id)
             items.append(vo)
 
-        filters = {
+        filters: BomSnapshotListFilters = {
             "locations": self.snapshot_repo.list_locations(db),
             "vehicle_models": self.snapshot_repo.list_vehicle_models(db),
         }
@@ -122,8 +134,29 @@ class BomService:
             )
 
         try:
-            payload = {**data.model_dump(), **audit_create(current_user)}
-            row = self.snapshot_repo.create(db, payload)
+            audit = audit_create(current_user)
+            row = self.snapshot_repo.create(
+                db,
+                BomSnapshotWrite(
+                    location=data.location,
+                    vehicle_model=data.vehicle_model,
+                    bom_version=data.bom_version,
+                    source_filename=data.source_filename,
+                    created_by=audit["created_by"],
+                    updated_by=audit["updated_by"],
+                    product_category=data.product_category,
+                    customer_name=data.customer_name,
+                    stage=data.stage,
+                    doc_no=data.doc_no,
+                    prepare_dept=data.prepare_dept,
+                    doc_date=data.doc_date,
+                    revision_date=data.revision_date,
+                    title=data.title,
+                    source_file_hash=data.source_file_hash,
+                    status=data.status,
+                    remark=data.remark,
+                ),
+            )
             vo = BomSnapshotVO.model_validate(row)
             vo.node_count = 0
             return vo, None
@@ -177,12 +210,36 @@ class BomService:
                 return None, f"子节点 level 应为 {parent.level + 1}"
 
         try:
-            payload = {
-                **data.model_dump(),
-                "snapshot_id": snapshot_id,
-                **audit_create(current_user),
-            }
-            row = self.node_repo.create(db, payload)
+            audit = audit_create(current_user)
+            row = self.node_repo.create(
+                db,
+                BomNodeWrite(
+                    snapshot_id=snapshot_id,
+                    level=data.level,
+                    part_number=data.part_number,
+                    node_role=data.node_role,
+                    created_by=audit["created_by"],
+                    updated_by=audit["updated_by"],
+                    parent_id=data.parent_id,
+                    sort_no=data.sort_no,
+                    seq_no=data.seq_no,
+                    internal_number=data.internal_number,
+                    part_name=data.part_name,
+                    qty=data.qty,
+                    qty_unit=data.qty_unit,
+                    qty_text=data.qty_text,
+                    is_supply_unit=data.is_supply_unit,
+                    material=data.material,
+                    thickness_mm=data.thickness_mm,
+                    thickness_text=data.thickness_text,
+                    material_mill=data.material_mill,
+                    part_weight=data.part_weight,
+                    gauge_developed=data.gauge_developed,
+                    weld_info=data.weld_info,
+                    remark=data.remark,
+                    sketch_url=data.sketch_url,
+                ),
+            )
             return self._to_node_vo(row), None
         except Exception as exc:
             db.rollback()

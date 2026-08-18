@@ -1,11 +1,13 @@
 """冲压工序数据访问。"""
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
 from sqlalchemy.orm import Session
 
 from app.models import StampingProcess
+from app.repositories.persist import apply_payload_fields, model_from_payload
+from app.schemas.dto.stamping_upload_dto import ProcessData, StampingProcessPatch
 
 logger = logging.getLogger("repository.stamping.process")
 
@@ -69,30 +71,34 @@ class StampingProcessRepository:
             .all()
         )
 
-    def create(self, db: Session, process_data: Dict[str, Any]) -> StampingProcess:
-        process = StampingProcess(**process_data)
+    def create(self, db: Session, process_data: ProcessData) -> StampingProcess:
+        process = model_from_payload(StampingProcess, process_data)
         db.add(process)
         db.commit()
         db.refresh(process)
-        logger.info(f"创建工序: id={process.id}")
+        logger.info("创建工序: id=%s", process.id)
         return process
 
-    def bulk_create(self, db: Session, processes_data: List[Dict[str, Any]]) -> List[StampingProcess]:
-        processes = [StampingProcess(**data) for data in processes_data]
+    def bulk_create(self, db: Session, processes_data: List[ProcessData]) -> List[StampingProcess]:
+        processes = [model_from_payload(StampingProcess, data) for data in processes_data]
         db.add_all(processes)
-        logger.info(f"批量创建工序: {len(processes)} 个")
+        logger.info("批量创建工序: %s 个", len(processes))
         return processes
 
-    def update(self, db: Session, process_id: int, update_data: Dict[str, Any]) -> Optional[StampingProcess]:
+    def update(
+        self, db: Session, process_id: int, update_data: StampingProcessPatch
+    ) -> Optional[StampingProcess]:
         process = self.get_by_id(db, process_id)
         if not process:
             return None
-        for key, value in update_data.items():
-            if hasattr(process, key):
-                setattr(process, key, value)
+        apply_payload_fields(
+            process,
+            update_data,
+            skip=frozenset({"id", "created_by", "created_at"}),
+        )
         db.commit()
         db.refresh(process)
-        logger.info(f"更新工序: id={process_id}")
+        logger.info("更新工序: id=%s", process_id)
         return process
 
     def delete(self, db: Session, process_id: int) -> bool:

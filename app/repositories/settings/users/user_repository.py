@@ -1,11 +1,26 @@
 """用户 Repository - 仅数据库访问"""
 
-from typing import Any
+from typing import TypedDict
 
 from sqlalchemy import case, func, or_
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Query, Session
 
 from app.models.settings import User
+from app.repositories.persist import apply_payload_fields, model_from_payload
+from app.schemas.dto.user_dto import UserInsertPayload, UserPatchPayload
+
+
+class UserFilterSummary(TypedDict):
+    """用户列表筛选汇总。"""
+
+    active_count: int
+    admin_count: int
+
+
+class UserListFilters(TypedDict):
+    """用户分页接口附带的筛选体。"""
+
+    summary: UserFilterSummary
 
 
 class UserRepository:
@@ -24,7 +39,7 @@ class UserRepository:
         username: str | None = None,
         real_name: str | None = None,
         is_active: bool | None = None,
-    ) -> Any:
+    ) -> Query[User]:
         q = db.query(User)
         if keyword:
             pattern = f"%{keyword}%"
@@ -71,7 +86,7 @@ class UserRepository:
         username: str | None = None,
         real_name: str | None = None,
         is_active: bool | None = None,
-    ) -> dict[str, int]:
+    ) -> UserFilterSummary:
         """按与列表相同的筛选条件汇总：启用 / 管理员。"""
         q = self._build_list_query(
             db,
@@ -96,19 +111,18 @@ class UserRepository:
     def list_all(self, db: Session) -> list[User]:
         return db.query(User).order_by(User.id.asc()).all()
 
-    def create(self, db: Session, data: dict[str, Any]) -> User:
-        user = User(**data)
+    def create(self, db: Session, data: UserInsertPayload) -> User:
+        user = model_from_payload(User, data)
         db.add(user)
         db.commit()
         db.refresh(user)
         return user
 
-    def update(self, db: Session, user_id: int, data: dict[str, Any]) -> User | None:
+    def update(self, db: Session, user_id: int, data: UserPatchPayload) -> User | None:
         user = self.get_by_id(db, user_id)
         if not user:
             return None
-        for key, value in data.items():
-            setattr(user, key, value)
+        apply_payload_fields(user, data, skip=frozenset({"id", "created_by", "created_at"}))
         db.commit()
         db.refresh(user)
         return user

@@ -1,13 +1,15 @@
 """钢价计算批次日志 Repository。"""
 
 import logging
-from typing import Any, Optional, cast
+from typing import Optional, cast
 
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
 from app.models.costing import SteelPriceCalcLog
+from app.repositories.persist import apply_payload_fields, model_from_payload
+from app.schemas.dto.steel_price_dto import SteelPriceCalcLogCreate, SteelPriceCalcLogPatch
 
 
 logger = logging.getLogger("repository.steel_price_calc_log")
@@ -97,33 +99,31 @@ class SteelPriceCalcLogRepository:
         )
         return records, total
 
-    def create(self, db: Session, data: dict[str, Any]) -> SteelPriceCalcLog:
-        record = SteelPriceCalcLog(**data)
+    def create(self, db: Session, data: SteelPriceCalcLogCreate) -> SteelPriceCalcLog:
+        record = model_from_payload(SteelPriceCalcLog, data)
         db.add(record)
         db.flush()
         logger.info(
             "创建计算日志: batch=%s status=%s id=%s",
-            data.get("calc_batch_id"),
-            data.get("status"),
+            data.calc_batch_id,
+            data.status,
             record.id,
         )
         return record
 
     def update(
-        self, db: Session, log_id: int, data: dict[str, Any]
+        self, db: Session, log_id: int, data: SteelPriceCalcLogPatch
     ) -> Optional[SteelPriceCalcLog]:
         record = self.get_by_id(db, log_id)
         if record is None:
             return None
-        for key, value in data.items():
-            if hasattr(record, key):
-                setattr(record, key, value)
+        apply_payload_fields(record, data)
         db.flush()
         logger.info(
             "更新计算日志: id=%s batch=%s status=%s",
             log_id,
             record.calc_batch_id,
-            getattr(record, "status", None),
+            record.status,
         )
         return record
 

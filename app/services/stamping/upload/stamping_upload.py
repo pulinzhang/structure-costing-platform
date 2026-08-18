@@ -6,7 +6,6 @@
 """
 
 import logging
-from dataclasses import asdict
 from decimal import Decimal
 from pathlib import Path
 from typing import Callable, Dict, List, Optional
@@ -298,12 +297,11 @@ class StampingUploadService:
                 excel_part_col=part.excel_part_col,
             ))
 
-        rows = []
-        for p in parts_to_create:
-            d = asdict(p)
-            d.update(audit)
-            rows.append(d)
-        self.part_repo.bulk_create(self.db, rows)
+        audit = audit_create(current_user)
+        for part_row in parts_to_create:
+            part_row.created_by = audit["created_by"]
+            part_row.updated_by = audit["updated_by"]
+        self.part_repo.bulk_create(self.db, parts_to_create)
         self.db.flush()
 
         part_map = self.part_repo.get_id_map_by_vehicle_version(
@@ -349,12 +347,10 @@ class StampingUploadService:
             ))
 
         if processes_to_create:
-            rows = []
-            for p in processes_to_create:
-                d = asdict(p)
-                d.update(audit)
-                rows.append(d)
-            self.process_repo.bulk_create(self.db, rows)
+            for process_row in processes_to_create:
+                process_row.created_by = audit["created_by"]
+                process_row.updated_by = audit["updated_by"]
+            self.process_repo.bulk_create(self.db, processes_to_create)
 
         logger.info("导入工序: %d 个", len(processes_to_create))
         return len(processes_to_create)

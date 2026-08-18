@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from app.common.timezone import now
 from app.models.costing import SteelPriceCalcLog
 from app.repositories.costing.steel_price import SteelPriceCalcLogRepository
+from app.schemas.dto.steel_price_dto import SteelPriceCalcLogCreate, SteelPriceCalcLogPatch
 from app.schemas.vo.steel_price_vo import SteelPriceCalcLogVO
 from app.services.costing.steel_price.calc.models import SteelPriceCalcResult
 from app.services.costing.steel_price.calc.status import (
@@ -124,29 +125,29 @@ class CalcLogService:
         try:
             record = self.repository.create(
                 db,
-                {
-                    "calc_batch_id": calc_batch_id,
-                    "year": year,
-                    "month": month,
-                    "location": location,
-                    "stamping_supplier": stamping_supplier,
-                    "vehicle_model": vehicle_model,
-                    "status": STATUS_PROCESSING,
-                    "material_count": 0,
-                    "enriched_count": 0,
-                    "no_base_count": 0,
-                    "created_count": 0,
-                    "updated_count": 0,
-                    "skipped_approved_count": 0,
-                    "failed_count": 0,
-                    "detail_text": "计算进行中...",
-                    "started_at": started_at,
-                    "finished_at": None,
-                    "operator_id": operator_id,
-                    "operator_name": operator_name,
-                    "created_by": operator_name,
-                    "updated_by": operator_name,
-                },
+                SteelPriceCalcLogCreate(
+                    calc_batch_id=calc_batch_id,
+                    year=year,
+                    month=month,
+                    location=location,
+                    stamping_supplier=stamping_supplier,
+                    vehicle_model=vehicle_model,
+                    status=STATUS_PROCESSING,
+                    material_count=0,
+                    enriched_count=0,
+                    no_base_count=0,
+                    created_count=0,
+                    updated_count=0,
+                    skipped_approved_count=0,
+                    failed_count=0,
+                    detail_text="计算进行中...",
+                    started_at=started_at,
+                    finished_at=None,
+                    operator_id=operator_id,
+                    operator_name=operator_name,
+                    created_by=operator_name,
+                    updated_by=operator_name,
+                ),
             )
             db.commit()
             db.refresh(record)
@@ -170,7 +171,7 @@ class CalcLogService:
         finished_at: datetime,
     ) -> int | None:
         """将 processing 行更新为终态；若行不存在则回退创建。"""
-        payload = {
+        payload: SteelPriceCalcLogPatch = {
             "status": result.status,
             "material_count": result.material_count,
             "enriched_count": result.enriched_count,
@@ -221,7 +222,7 @@ class CalcLogService:
     ) -> None:
         """异常路径：释放 processing 锁为 failed。"""
         finished_at = now()
-        payload = {
+        payload: SteelPriceCalcLogPatch = {
             "status": STATUS_FAILED,
             "finished_at": finished_at,
             "detail_text": detail_text or message,
@@ -258,27 +259,27 @@ class CalcLogService:
         try:
             record = self.repository.create(
                 db,
-                {
-                    "calc_batch_id": result.calc_batch_id,
-                    "year": int(result.year),
-                    "month": int(result.month),
-                    "location": result.location or "",
-                    "stamping_supplier": result.stamping_supplier,
-                    "vehicle_model": result.vehicle_model,
-                    "status": result.status,
-                    "material_count": result.material_count,
-                    "enriched_count": result.enriched_count,
-                    "no_base_count": result.no_base_count,
-                    "created_count": result.created_count,
-                    "updated_count": result.updated_count,
-                    "skipped_approved_count": result.skipped_approved_count,
-                    "failed_count": result.failed_count,
-                    "detail_text": result.detail_text or "",
-                    "started_at": started_at,
-                    "finished_at": finished_at,
-                    "created_by": "系统",
-                    "updated_by": "系统",
-                },
+                SteelPriceCalcLogCreate(
+                    calc_batch_id=result.calc_batch_id,
+                    year=int(result.year),
+                    month=int(result.month),
+                    location=result.location or "",
+                    stamping_supplier=result.stamping_supplier,
+                    vehicle_model=result.vehicle_model,
+                    status=result.status,
+                    material_count=result.material_count,
+                    enriched_count=result.enriched_count,
+                    no_base_count=result.no_base_count,
+                    created_count=result.created_count,
+                    updated_count=result.updated_count,
+                    skipped_approved_count=result.skipped_approved_count,
+                    failed_count=result.failed_count,
+                    detail_text=result.detail_text or "",
+                    started_at=started_at,
+                    finished_at=finished_at,
+                    created_by="系统",
+                    updated_by="系统",
+                ),
             )
             db.commit()
             db.refresh(record)
@@ -311,15 +312,15 @@ class CalcLogService:
         self.repository.update(
             db,
             record.id,
-            {
-                "status": STATUS_FAILED,
-                "finished_at": finished_at,
-                "updated_by": record.operator_name or record.created_by or "系统",
-                "detail_text": (
+            SteelPriceCalcLogPatch(
+                status=STATUS_FAILED,
+                finished_at=finished_at,
+                updated_by=record.operator_name or record.created_by or "系统",
+                detail_text=(
                     f"{record.detail_text or ''}\n\n"
                     f"[系统] processing 超过 {hours} 小时未完成，已自动释放期别锁"
                 ).strip(),
-            },
+            ),
         )
         try:
             db.commit()

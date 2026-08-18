@@ -10,9 +10,9 @@
 4. 比 Pydantic 轻量，比 dict 严格
 """
 
-from typing import Any
 from dataclasses import dataclass, field
 from decimal import Decimal
+from typing import TypedDict
 
 @dataclass(slots=True)
 class FileInfo:
@@ -71,6 +71,8 @@ class PartData:
     excel_part_col: int | None = field(
         default=None, metadata={"description": "零件号所在列号（1-based）"}
     )
+    created_by: str | None = field(default=None, metadata={"description": "创建人"})
+    updated_by: str | None = field(default=None, metadata={"description": "修改人"})
 
 
 @dataclass(slots=True)
@@ -85,6 +87,8 @@ class ProcessData:
     tonnage: int | None = field(default=None, metadata={"description": "吨位(T)"})
     cost_ratio: Decimal = field(default=Decimal("1.00"), metadata={"description": "费用比例"})
     remark: str | None = field(default=None, metadata={"description": "备注"})
+    created_by: str | None = field(default=None, metadata={"description": "创建人"})
+    updated_by: str | None = field(default=None, metadata={"description": "修改人"})
 
 
 @dataclass(slots=True)
@@ -106,5 +110,49 @@ class UploadResult:
     tailor_weld_blank_count: int = field(
         default=0, metadata={"description": "拼焊子片数量"}
     )
-    warnings: list[Any] = field(default_factory=list, metadata={"description": "警告信息"})
+    warnings: list[str] = field(default_factory=list, metadata={"description": "警告信息"})
     parse_time_ms: float = field(default=0.0, metadata={"description": "解析耗时(ms)"})
+
+
+class StampingPartPatch(TypedDict, total=False):
+    """零件部分更新（只含要改的列）。"""
+
+    location: str
+    stamping_supplier: str | None
+    vehicle_model: str
+    version: str
+    seq_no: int | None
+    part_number: str
+    part_name: str | None
+    is_tailor_welded: bool
+    material: str | None
+    thickness: Decimal | None
+    part_weight: Decimal | None
+    sheet_length: Decimal | None
+    sheet_width: Decimal | None
+    parts_per_sheet: int | None
+    sheet_type: str | None
+    die_type: str | None
+    process_method: str | None
+    automation: str | None
+    remark: str | None
+    sketch_url: str | None
+    excel_filename: str
+    excel_sheet_name: str | None
+    excel_row: int | None
+    excel_part_col: int | None
+    updated_by: str
+    created_by: str
+
+
+class StampingProcessPatch(TypedDict, total=False):
+    """工序部分更新（只含要改的列）。"""
+
+    process_seq: str
+    process_order: int
+    process_code: str | None
+    die_sets: int | None
+    tonnage: int | None
+    cost_ratio: Decimal
+    remark: str | None
+    updated_by: str

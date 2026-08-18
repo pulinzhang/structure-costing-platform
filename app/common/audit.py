@@ -9,16 +9,29 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TypedDict
 
 from app.schemas.vo.user_vo import UserVO
 
 
-def display_name(user: Any) -> str:
+class AuditCreateFields(TypedDict):
+    """新建时写入的操作人。"""
+
+    created_by: str
+    updated_by: str
+
+
+class AuditUpdateFields(TypedDict):
+    """更新时写入的操作人。"""
+
+    updated_by: str
+
+
+def display_name(user: object) -> str:
     """展示名：真实姓名优先，否则用户名（UserVO / ORM 行均可）。"""
-    username = getattr(user, "username", None) or ""
-    real_name = getattr(user, "real_name", None)
-    return (real_name or username or "").strip() or str(username)
+    username = str(getattr(user, "username", None) or "").strip()
+    real_name = str(getattr(user, "real_name", None) or "").strip()
+    return real_name or username
 
 
 # 无登录上下文时的系统用户（首次 seed、本地脚本）
@@ -43,7 +56,7 @@ def audit_status_label(status: str | None) -> str:
     return AUDIT_STATUS_LABELS.get(status, status)
 
 
-def audit_create(current_user: UserVO) -> dict[str, Any]:
+def audit_create(current_user: UserVO) -> AuditCreateFields:
     """新建记录时写入创建人 + 修改人。"""
     name = display_name(current_user)
     return {
@@ -52,7 +65,7 @@ def audit_create(current_user: UserVO) -> dict[str, Any]:
     }
 
 
-def audit_update(current_user: UserVO) -> dict[str, Any]:
+def audit_update(current_user: UserVO) -> AuditUpdateFields:
     """更新记录时写入修改人。"""
     return {
         "updated_by": display_name(current_user),

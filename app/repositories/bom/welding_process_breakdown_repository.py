@@ -5,18 +5,49 @@ BOM 焊接工艺拆解 Repository
 from __future__ import annotations
 
 import logging
-from typing import Any
+from datetime import datetime
+from typing import NotRequired, TypedDict
 
 from sqlalchemy import and_, case, func
 from sqlalchemy.orm import Query, Session, joinedload
+from sqlalchemy.sql.elements import ColumnElement
 
 from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING
 from app.models.bom import (
     BomWeldingProcessBreakdownLine,
     BomWeldingProcessBreakdownNode,
 )
+from app.repositories.persist import apply_payload_fields, model_from_payload, query_update
+from app.schemas.dto.bom_welding_process_breakdown_dto import (
+    BomWeldingProcessBreakdownLinePatch,
+    BomWeldingProcessBreakdownLineWrite,
+    BomWeldingProcessBreakdownNodePatch,
+    BomWeldingProcessBreakdownNodeWrite,
+)
 
 logger = logging.getLogger("repository.bom.welding_process_breakdown")
+
+
+class WeldingBreakdownFilterSummary(TypedDict):
+    """列表筛选汇总。"""
+
+    total_count: int
+    pending_count: int
+    approved_count: int
+    l0_count: int
+    l0_zero_process_count: NotRequired[int]
+
+
+class WeldingBreakdownListFilters(TypedDict):
+    """焊接工艺拆解列表筛选体。"""
+
+    locations: list[str]
+    customer_names: list[str]
+    vehicle_models: list[str]
+    bom_versions: list[str]
+    standard_process_names: list[str]
+    audit_status: str | None
+    summary: WeldingBreakdownFilterSummary
 
 
 class BomWeldingProcessBreakdownRepository:
@@ -68,7 +99,7 @@ class BomWeldingProcessBreakdownRepository:
         location: str,
         vehicle_model: str,
         bom_version: str,
-    ) -> list[Any]:
+    ) -> list[ColumnElement[bool]]:
         return [
             BomWeldingProcessBreakdownNode.location == location,
             BomWeldingProcessBreakdownNode.vehicle_model == vehicle_model,
@@ -77,7 +108,7 @@ class BomWeldingProcessBreakdownRepository:
 
     def _apply_list_filters(
         self,
-        q: Query[Any],
+        q: Query[BomWeldingProcessBreakdownNode],
         *,
         location: str | None = None,
         customer_name: str | None = None,
@@ -88,7 +119,7 @@ class BomWeldingProcessBreakdownRepository:
         audit_status: str | None = None,
         parse_status: str | None = None,
         process_line_count_eq: int | None = None,
-    ) -> Query[Any]:
+    ) -> Query[BomWeldingProcessBreakdownNode]:
         if location:
             q = q.filter(BomWeldingProcessBreakdownNode.location == location)
         if customer_name:
@@ -349,7 +380,7 @@ class BomWeldingProcessBreakdownRepository:
         audit_status: str | None = None,
         parse_status: str | None = None,
         process_line_count_eq: int | None = None,
-    ) -> dict[str, Any]:
+    ) -> WeldingBreakdownFilterSummary:
         q = self._build_list_query(
             db,
             location=location,
@@ -458,14 +489,13 @@ class BomWeldingProcessBreakdownRepository:
     def create_node(
         self,
         db: Session,
-        data: dict[str, Any],
+        data: BomWeldingProcessBreakdownNodeWrite,
         *,
         commit: bool = False,
     ) -> BomWeldingProcessBreakdownNode:
-        payload = dict(data)
-        if "audit_status" not in payload:
-            payload["audit_status"] = AUDIT_PENDING
-        row = BomWeldingProcessBreakdownNode(**payload)
+        row = model_from_payload(BomWeldingProcessBreakdownNode, data)
+        if not row.audit_status:
+            row.audit_status = AUDIT_PENDING
         db.add(row)
         if commit:
             db.commit()
@@ -477,11 +507,11 @@ class BomWeldingProcessBreakdownRepository:
     def create_line(
         self,
         db: Session,
-        data: dict[str, Any],
+        data: BomWeldingProcessBreakdownLineWrite,
         *,
         commit: bool = False,
     ) -> BomWeldingProcessBreakdownLine:
-        row = BomWeldingProcessBreakdownLine(**data)
+        row = model_from_payload(BomWeldingProcessBreakdownLine, data)
         db.add(row)
         if commit:
             db.commit()
@@ -494,16 +524,14 @@ class BomWeldingProcessBreakdownRepository:
         self,
         db: Session,
         node_id: int,
-        update_data: dict[str, Any],
+        update_data: BomWeldingProcessBreakdownNodePatch,
         *,
         commit: bool = True,
     ) -> BomWeldingProcessBreakdownNode | None:
         row = self.get_node_by_id(db, node_id)
         if not row:
             return None
-        for key, value in update_data.items():
-            if hasattr(row, key):
-                setattr(row, key, value)
+        apply_payload_fields(row, update_data)
         if commit:
             db.commit()
         else:
@@ -515,16 +543,14 @@ class BomWeldingProcessBreakdownRepository:
         self,
         db: Session,
         line_id: int,
-        update_data: dict[str, Any],
+        update_data: BomWeldingProcessBreakdownLinePatch,
         *,
         commit: bool = True,
     ) -> BomWeldingProcessBreakdownLine | None:
         row = self.get_line_by_id(db, line_id)
         if not row:
             return None
-        for key, value in update_data.items():
-            if hasattr(row, key):
-                setattr(row, key, value)
+        apply_payload_fields(row, update_data)
         if commit:
             db.commit()
         else:
@@ -574,28 +600,27 @@ class BomWeldingProcessBreakdownRepository:
         vehicle_model: str,
         bom_version: str,
         audited_by: str,
-        audited_at: Any,
+        audited_at: datetime,
         audit_remark: str | None,
         updated_by: str | None = None,
     ) -> int:
-        values: dict[Any, Any] = {
-            BomWeldingProcessBreakdownNode.audit_status: AUDIT_APPROVED,
-            BomWeldingProcessBreakdownNode.audited_by: audited_by,
-            BomWeldingProcessBreakdownNode.audited_at: audited_at,
-            BomWeldingProcessBreakdownNode.audit_remark: audit_remark,
-            BomWeldingProcessBreakdownNode.updated_by: updated_by or audited_by,
+        values: dict[str, str | datetime | None] = {
+            "audit_status": AUDIT_APPROVED,
+            "audited_by": audited_by,
+            "audited_at": audited_at,
+            "audit_remark": audit_remark,
+            "updated_by": updated_by or audited_by,
         }
-        count = (
-            db.query(BomWeldingProcessBreakdownNode)
-            .filter(
+        count = query_update(
+            db.query(BomWeldingProcessBreakdownNode).filter(
                 and_(*self._scope_filter(
                     location=location,
                     vehicle_model=vehicle_model,
                     bom_version=bom_version,
                 )),
                 BomWeldingProcessBreakdownNode.audit_status != AUDIT_APPROVED,
-            )
-            .update(values, synchronize_session=False)
+            ),
+            values,
         )
         db.commit()
         return count
@@ -608,28 +633,27 @@ class BomWeldingProcessBreakdownRepository:
         vehicle_model: str,
         bom_version: str,
         reverse_audited_by: str,
-        reverse_audited_at: Any,
+        reverse_audited_at: datetime,
         reverse_audit_remark: str,
         updated_by: str | None = None,
     ) -> int:
-        values: dict[Any, Any] = {
-            BomWeldingProcessBreakdownNode.audit_status: AUDIT_PENDING,
-            BomWeldingProcessBreakdownNode.reverse_audited_by: reverse_audited_by,
-            BomWeldingProcessBreakdownNode.reverse_audited_at: reverse_audited_at,
-            BomWeldingProcessBreakdownNode.reverse_audit_remark: reverse_audit_remark,
-            BomWeldingProcessBreakdownNode.updated_by: updated_by or reverse_audited_by,
+        values: dict[str, str | datetime | None] = {
+            "audit_status": AUDIT_PENDING,
+            "reverse_audited_by": reverse_audited_by,
+            "reverse_audited_at": reverse_audited_at,
+            "reverse_audit_remark": reverse_audit_remark,
+            "updated_by": updated_by or reverse_audited_by,
         }
-        count = (
-            db.query(BomWeldingProcessBreakdownNode)
-            .filter(
+        count = query_update(
+            db.query(BomWeldingProcessBreakdownNode).filter(
                 and_(*self._scope_filter(
                     location=location,
                     vehicle_model=vehicle_model,
                     bom_version=bom_version,
                 )),
                 BomWeldingProcessBreakdownNode.audit_status == AUDIT_APPROVED,
-            )
-            .update(values, synchronize_session=False)
+            ),
+            values,
         )
         db.commit()
         return count

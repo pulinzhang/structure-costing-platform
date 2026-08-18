@@ -195,7 +195,7 @@ def update_process(
 ) -> ApiResponse[StampingProcessResponse]:
     """更新工序（如成本系数）"""
     result = _stamping_service.update_process(
-        db, process_id, body.model_dump(exclude_unset=True), current_user=current_user
+        db, process_id, body, current_user=current_user
     )
     if not result:
         raise HTTPException(status_code=404, detail="工序不存在")
@@ -211,7 +211,7 @@ def batch_update_processes(
 ) -> ApiResponse[BatchUpdateResponse]:
     """批量更新零件的所有工序（仅更新 cost_ratio）"""
     updated = _stamping_service.batch_update_processes(
-        db, [item.model_dump() for item in body], current_user=current_user
+        db, body, current_user=current_user
     )
     return ApiResponse.ok(
         data=BatchUpdateResponse(updated=updated),

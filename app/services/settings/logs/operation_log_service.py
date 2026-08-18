@@ -23,7 +23,7 @@ from app.database import DatabaseConfig
 from app.repositories.settings.logs.operation_log_repository import (
     OperationLogRepository,
 )
-from app.schemas.dto.operation_log_dto import OperationLogQuery
+from app.schemas.dto.operation_log_dto import OperationLogCreate, OperationLogQuery
 from app.schemas.vo.operation_log_vo import (
     OperationLogFilterOptionsVO,
     OperationLogVO,
@@ -69,21 +69,20 @@ class OperationLogService:
 
             self.repository.create(
                 db,
-                {
-                    "user_id": user.id if user else None,
-                    "username": user.username if user else None,
-                    "operator_name": display_name(user) if user else None,
-                    "method": method.upper(),
-                    "path": path.split("?", 1)[0][:255],
-                    "module": module,
-                    "action": action,
-                    "summary": summary[:255],
-                    "status_code": status_code,
-                    "success": status_code < 400,
-                    "client_ip": (client_ip or "")[:64] or None,
-                    "detail": detail,
-                    "created_at": now(),
-                },
+                OperationLogCreate(
+                    user_id=user.id if user else None,
+                    username=user.username if user else None,
+                    operator_name=display_name(user) if user else None,
+                    method=method.upper(),
+                    path=path.split("?", 1)[0][:255],
+                    module=module,
+                    action=action,
+                    summary=summary[:255],
+                    status_code=status_code,
+                    success=status_code < 400,
+                    client_ip=(client_ip or "")[:64] or None,
+                    detail=detail,
+                ),
             )
         except Exception:
             logger.exception("写入操作日志失败: %s %s", method, path)

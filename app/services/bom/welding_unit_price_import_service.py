@@ -14,7 +14,11 @@ from sqlalchemy.orm import Session
 from app.common.audit import audit_create, audit_update
 from app.parsers.bom.welding_unit_price_parser import parse_welding_unit_price_excel
 from app.repositories.bom.welding_unit_price_repository import BomWeldingUnitPriceRepository
-from app.schemas.dto.bom_welding_unit_price_dto import quantize_unit_price
+from app.schemas.dto.bom_welding_unit_price_dto import (
+    BomWeldingUnitPriceCreate,
+    BomWeldingUnitPriceUpdate,
+    quantize_unit_price,
+)
 from app.schemas.vo.bom_welding_unit_price_vo import BomWeldingUnitPriceImportResultVO
 from app.schemas.vo.user_vo import UserVO
 
@@ -140,28 +144,28 @@ class BomWeldingUnitPriceImportService:
                     self.repository.update(
                         db,
                         existing.id,
-                        {
-                            "unit": row.unit,
-                            "unit_price": unit_price,
-                            "remark": row.remark,
-                            **update_audit,
-                        },
+                        BomWeldingUnitPriceUpdate(
+                            unit=row.unit,
+                            unit_price=unit_price,
+                            remark=row.remark,
+                        ),
+                        updated_by=update_audit["updated_by"],
                         commit=False,
                     )
                     updated_count += 1
                 else:
                     self.repository.create(
                         db,
-                        {
-                            "location": location,
-                            "year": year,
-                            "item_name": row.item_name,
-                            "unit": row.unit,
-                            "unit_price": unit_price,
-                            "remark": row.remark,
-                            "audit_status": "pending",
-                            **create_audit,
-                        },
+                        BomWeldingUnitPriceCreate(
+                            location=location,
+                            year=year,
+                            item_name=row.item_name,
+                            unit=row.unit,
+                            unit_price=unit_price,
+                            remark=row.remark,
+                        ),
+                        created_by=create_audit["created_by"],
+                        updated_by=create_audit["updated_by"],
                         commit=False,
                     )
                     created_count += 1

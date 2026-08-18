@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Optional, cast
+from typing import Optional, cast
 
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
@@ -11,6 +11,11 @@ from sqlalchemy.orm import Session
 
 from app.models.bom import (
     BomWeldingProcessBreakdownGenerateLog,
+)
+from app.repositories.persist import apply_payload_fields, model_from_payload
+from app.schemas.dto.bom_welding_process_breakdown_dto import (
+    BomWeldingProcessBreakdownGenerateLogCreate,
+    BomWeldingProcessBreakdownGenerateLogPatch,
 )
 
 logger = logging.getLogger("repository.bom.welding_process_breakdown_generate_log")
@@ -100,22 +105,20 @@ class BomWeldingProcessBreakdownGenerateLogRepository:
         return records, total
 
     def create(
-        self, db: Session, data: dict[str, Any]
+        self, db: Session, data: BomWeldingProcessBreakdownGenerateLogCreate
     ) -> BomWeldingProcessBreakdownGenerateLog:
-        record = BomWeldingProcessBreakdownGenerateLog(**data)
+        record = model_from_payload(BomWeldingProcessBreakdownGenerateLog, data)
         db.add(record)
         db.flush()
         return record
 
     def update(
-        self, db: Session, log_id: int, data: dict[str, Any]
+        self, db: Session, log_id: int, data: BomWeldingProcessBreakdownGenerateLogPatch
     ) -> Optional[BomWeldingProcessBreakdownGenerateLog]:
         record = self.get_by_id(db, log_id)
         if record is None:
             return None
-        for key, value in data.items():
-            if hasattr(record, key):
-                setattr(record, key, value)
+        apply_payload_fields(record, data)
         db.flush()
         return record
 

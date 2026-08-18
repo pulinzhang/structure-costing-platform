@@ -7,7 +7,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Optional
 
 from sqlalchemy.orm import Session
 
@@ -21,10 +21,12 @@ from app.common.audit import (
 from app.common.timezone import now
 from app.exceptions.base import BusinessException
 from app.repositories.stamping.stamping_process_fee_repository import (
+    ProcessFeeListFilters,
     StampingProcessFeeRepository,
 )
 from app.repositories.stamping.tonnage_price_repository import StampingTonnagePriceRepository
 from app.schemas.dto.stamping_process_fee_dto import (
+    ProcessFeePatch,
     StampingProcessFeeBatchApproveDTO,
     StampingProcessFeeBatchReverseAuditDTO,
     StampingProcessFeeDeleteDTO,
@@ -67,12 +69,12 @@ class StampingProcessFeeService:
         updated = self.fee_repo.update_fields(
             db,
             fee_id,
-            {
-                "manual_unit_price": manual_price,
-                "final_processing_fee": final_fee,
-                "remark": remark,
-                **audit_update(current_user),
-            },
+            ProcessFeePatch(
+                manual_unit_price=manual_price,
+                final_processing_fee=final_fee,
+                remark=remark,
+                updated_by=audit_update(current_user)["updated_by"],
+            ),
         )
         if not updated:
             raise BusinessException(f"加工费记录不存在: id={fee_id}")
@@ -88,7 +90,7 @@ class StampingProcessFeeService:
         self,
         db: Session,
         query: StampingProcessFeeQuery,
-    ) -> tuple[list[StampingProcessFeeVO], int, dict[str, Any]]:
+    ) -> tuple[list[StampingProcessFeeVO], int, ProcessFeeListFilters]:
         skip = (query.page - 1) * query.size
         rows, total = self.fee_repo.paginate(
             db,
@@ -105,7 +107,7 @@ class StampingProcessFeeService:
         )
         vos = [StampingProcessFeeVO.model_validate(r) for r in rows]
         # HUD 汇总不含 only_zero，避免点进待办筛选后大盘数字被掏空
-        filters = {
+        filters: ProcessFeeListFilters = {
             "year": query.year,
             "location": query.location,
             "stamping_supplier": query.stamping_supplier,

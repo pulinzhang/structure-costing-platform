@@ -13,6 +13,7 @@ from app.common.timezone import now
 from app.config import settings
 from app.parsers.bom.bom_parser import BomParsedNode, parse_bom_excel
 from app.repositories.bom.bom_repository import BomNodeRepository, BomSnapshotRepository
+from app.schemas.dto.bom_dto import BomNodeWrite, BomSnapshotWrite
 from app.schemas.vo.bom_vo import BomImportResultVO, BomSnapshotVO
 from app.schemas.vo.user_vo import UserVO
 
@@ -83,26 +84,31 @@ class BomUploadService:
                 self.snapshot_repo.delete(db, existing, commit=False)
                 replaced = True
 
-            snapshot_payload = {
-                "location": location,
-                "vehicle_model": vehicle_model,
-                "bom_version": bom_version,
-                "product_category": meta.product_category,
-                "customer_name": meta.customer_name,
-                "stage": meta.stage or "initial",
-                "doc_no": meta.doc_no,
-                "prepare_dept": meta.prepare_dept,
-                "doc_date": meta.doc_date,
-                "revision_date": meta.revision_date,
-                "title": meta.title,
-                "source_filename": original_name,
-                "source_sheet_name": parse_result.sheet_name,
-                "source_file_path": relative_path,
-                "source_file_hash": file_hash,
-                "status": "active",
-                **audit_create(current_user),
-            }
-            snapshot = self.snapshot_repo.create(db, snapshot_payload, commit=False)
+            audit = audit_create(current_user)
+            snapshot = self.snapshot_repo.create(
+                db,
+                BomSnapshotWrite(
+                    location=location,
+                    vehicle_model=vehicle_model,
+                    bom_version=bom_version,
+                    product_category=meta.product_category,
+                    customer_name=meta.customer_name,
+                    stage=meta.stage or "initial",
+                    doc_no=meta.doc_no,
+                    prepare_dept=meta.prepare_dept,
+                    doc_date=meta.doc_date,
+                    revision_date=meta.revision_date,
+                    title=meta.title,
+                    source_filename=original_name,
+                    source_sheet_name=parse_result.sheet_name,
+                    source_file_path=relative_path,
+                    source_file_hash=file_hash,
+                    status="active",
+                    created_by=audit["created_by"],
+                    updated_by=audit["updated_by"],
+                ),
+                commit=False,
+            )
 
             sheet_name = parse_result.sheet_name
             index_to_id: dict[int, int] = {}
@@ -118,35 +124,36 @@ class BomUploadService:
 
                 row = self.node_repo.create(
                     db,
-                    {
-                        "snapshot_id": snapshot.id,
-                        "parent_id": parent_id,
-                        "level": parsed.level,
-                        "sort_no": parsed.sort_no,
-                        "seq_no": parsed.seq_no,
-                        "internal_number": parsed.internal_number,
-                        "part_number": parsed.part_number,
-                        "part_name": parsed.part_name,
-                        "qty": parsed.qty,
-                        "qty_unit": parsed.qty_unit or "pcs",
-                        "qty_text": parsed.qty_text,
-                        "node_role": parsed.node_role,
-                        "is_supply_unit": bool(parsed.is_supply_unit),
-                        "material": parsed.material,
-                        "thickness_mm": parsed.thickness_mm,
-                        "thickness_text": parsed.thickness_text,
-                        "material_mill": parsed.material_mill,
-                        "part_weight": parsed.part_weight,
-                        "gauge_developed": parsed.gauge_developed,
-                        "weld_info": parsed.weld_info,
-                        "remark": parsed.remark,
-                        "sketch_url": saved_images.get(index),
-                        "excel_filename": original_name,
-                        "excel_sheet_name": sheet_name,
-                        "excel_row": parsed.source_row,
-                        "excel_part_col": _EXCEL_PART_COL_BY_LEVEL.get(parsed.level),
-                        **audit_create(current_user),
-                    },
+                    BomNodeWrite(
+                        snapshot_id=snapshot.id,
+                        parent_id=parent_id,
+                        level=parsed.level,
+                        sort_no=parsed.sort_no,
+                        seq_no=parsed.seq_no,
+                        internal_number=parsed.internal_number,
+                        part_number=parsed.part_number,
+                        part_name=parsed.part_name,
+                        qty=parsed.qty,
+                        qty_unit=parsed.qty_unit or "pcs",
+                        qty_text=parsed.qty_text,
+                        node_role=parsed.node_role,
+                        is_supply_unit=bool(parsed.is_supply_unit),
+                        material=parsed.material,
+                        thickness_mm=parsed.thickness_mm,
+                        thickness_text=parsed.thickness_text,
+                        material_mill=parsed.material_mill,
+                        part_weight=parsed.part_weight,
+                        gauge_developed=parsed.gauge_developed,
+                        weld_info=parsed.weld_info,
+                        remark=parsed.remark,
+                        sketch_url=saved_images.get(index),
+                        excel_filename=original_name,
+                        excel_sheet_name=sheet_name,
+                        excel_row=parsed.source_row,
+                        excel_part_col=_EXCEL_PART_COL_BY_LEVEL.get(parsed.level),
+                        created_by=audit["created_by"],
+                        updated_by=audit["updated_by"],
+                    ),
                     commit=False,
                 )
                 index_to_id[index] = row.id

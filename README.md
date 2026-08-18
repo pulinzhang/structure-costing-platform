@@ -112,6 +112,7 @@ copy .env.example .env
 
 > **为什么要拴死？**  
 > Python 默认太自由：无注解也能跑、`Any` 到处飞、风格各写各的——问题往往拖到运行时才爆。  
+> **`Any` 不得出现在函数参数/返回值上**（函数体内可暂时接住第三方无类型结果，走出函数前必须收窄）——见 [API 类型安全 §5.1](docs/api-type-safety.md)。  
 > 本仓库用 **Ruff（风格/低级错误）+ Mypy `strict`（类型契约）+ pre-commit（提交门禁）** 把自由度压住：  
 > **过不了检查的代码，不许进 Git。** 这是刻意设计，不是可选装饰。
 
@@ -338,7 +339,7 @@ await HttpClient.post('/api/stamping/upload/', formData);
 | [架构说明](docs/architecture.md) | 分层 + 垂直切片导读 |
 | [架构宪法](docs/architecture-constitution.mdc) | 分层与切片依赖硬规则 |
 | [前端规范](docs/front-end.mdc) | SPA、Brabus、HUD 数据表 |
-| [API 类型安全](docs/api-type-safety.md) | `ApiResponse` / `PageResult` / 权限 Depends |
+| [API 类型安全](docs/api-type-safety.md) | `ApiResponse` / `PageResult` / 权限 Depends / `Any` 不进函数签名 |
 | [权限设计](docs/permission-design.md) | 前后端权限码 |
 | [生产安装（Windows 一键）](docs/deploy-windows-production.md) | 无 Python 环境用 `scripts/windows/setup.bat` |
 | 云主机 Docker 手工发版 | 仓库根目录 `bash deploy.sh`（拉代码、构建、启动） |

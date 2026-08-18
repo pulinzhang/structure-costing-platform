@@ -1,6 +1,40 @@
 """用户 DTO - 请求参数"""
 
+from dataclasses import dataclass
+from datetime import datetime
+
 from pydantic import BaseModel, Field
+from typing import TypedDict
+
+
+@dataclass(slots=True)
+class UserInsertPayload:
+    """Repository 写入用户（密码已哈希，含审计人）。"""
+
+    username: str
+    password_hash: str
+    real_name: str | None = None
+    email: str | None = None
+    phone: str | None = None
+    department: str | None = None
+    avatar: str | None = None
+    is_active: bool = True
+    is_admin: bool = False
+    created_by: str | None = None
+    updated_by: str | None = None
+
+
+class UserPatchPayload(TypedDict, total=False):
+    """用户部分更新（只含要改的列）。"""
+
+    real_name: str | None
+    email: str | None
+    phone: str | None
+    department: str | None
+    avatar: str | None
+    is_active: bool
+    password_hash: str
+    updated_by: str
 
 
 class UserCreateDTO(BaseModel):
@@ -68,3 +102,30 @@ class UserLoginDTO(BaseModel):
 
     username: str = Field(..., min_length=1, max_length=50, description="登录账号")
     password: str = Field(..., min_length=1, max_length=64, description="登录密码")
+
+
+@dataclass(slots=True)
+class UserTokenCreate:
+    """登录会话写入。"""
+
+    token: str
+    user_id: int
+    username: str
+    last_active_at: datetime
+    created_at: datetime
+    created_by: str
+    updated_by: str
+    real_name: str | None = None
+    email: str | None = None
+    department: str | None = None
+    avatar: str | None = None
+
+
+class UserTokenSnapshot(TypedDict):
+    """资料变更后同步到会话表的展示字段。"""
+
+    username: str
+    real_name: str | None
+    email: str | None
+    department: str | None
+    avatar: str | None

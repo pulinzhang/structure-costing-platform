@@ -3,17 +3,51 @@
 """
 
 import logging
+from datetime import datetime
 from decimal import Decimal
-from typing import Any, Dict, List, Optional, Tuple
+from typing import List, Optional, Tuple, TypedDict
 
 from sqlalchemy import case, func, or_
-from sqlalchemy.orm import Session, joinedload, noload
+from sqlalchemy.orm import Query, Session, joinedload, noload
+from sqlalchemy.sql.elements import ColumnElement
 
 from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING, AUDIT_REJECTED
 from app.models.stamping import StampingProcessFee, StampingProcessFeeItem
+from app.repositories.persist import apply_payload_fields, model_from_payload, query_update
+from app.schemas.dto.stamping_process_fee_dto import (
+    ProcessFeeItemPayload,
+    ProcessFeePatch,
+    ProcessFeeUpsertPayload,
+)
 
 
-def _needs_manual_fix_clause() -> Any:
+class ProcessFeeFilterSummary(TypedDict):
+    """列表筛选汇总：总金额 / 件均 / 待补价 / 待审 / 已审 / 版本标签。"""
+
+    total_count: int
+    total_fee: Decimal
+    avg_fee: Decimal | None
+    zero_count: int
+    pending_count: int
+    approved_count: int
+    version_label: str
+
+
+class ProcessFeeListFilters(TypedDict):
+    """冲压加工费列表筛选体。"""
+
+    year: int | None
+    location: str | None
+    stamping_supplier: str | None
+    vehicle_model: str | None
+    version: str | None
+    part_number: str | None
+    audit_status: str | None
+    only_zero: bool
+    summary: ProcessFeeFilterSummary
+
+
+def _needs_manual_fix_clause() -> ColumnElement[bool]:
     """最终加工费为空或为 0：算费失败 / 零价且尚未补价。"""
     return or_(
         StampingProcessFee.final_processing_fee.is_(None),
@@ -23,8 +57,7 @@ def _needs_manual_fix_clause() -> Any:
 
 logger = logging.getLogger("repository.stamping")
 
-# upsert 行内携带的工序分项键（非主表列）
-PROCESS_ITEMS_KEY = "_process_items"
+_UPSERT_SKIP = frozenset({"id", "created_by", "created_at"})
 
 
 class StampingProcessFeeRepository:
@@ -53,7 +86,7 @@ class StampingProcessFeeRepository:
         self,
         db: Session,
         fee_id: int,
-        items_data: List[Dict[str, Any]],
+        items_data: list[ProcessFeeItemPayload],
     ) -> None:
         """整表替换某加工费行的工序分项。"""
         record = (
@@ -66,7 +99,9 @@ class StampingProcessFeeRepository:
             return
         record.process_items.clear()
         for item in items_data:
-            record.process_items.append(StampingProcessFeeItem(**item))
+            record.process_items.append(
+                model_from_payload(StampingProcessFeeItem, item)
+            )
         db.flush()
 
     def get_by_business_key(
@@ -89,53 +124,46 @@ class StampingProcessFeeRepository:
         )
         return q.first()
 
-    def upsert(self, db: Session, data: Dict[str, Any]) -> StampingProcessFee:
-        payload = dict(data)
-        items_data = payload.pop(PROCESS_ITEMS_KEY, None)
-
+    def upsert(self, db: Session, data: ProcessFeeUpsertPayload) -> StampingProcessFee:
         existing = self.get_by_business_key(
             db,
-            year=payload["year"],
-            location=payload["location"],
-            stamping_supplier=payload.get("stamping_supplier") or "",
-            vehicle_model=payload["vehicle_model"],
-            version=payload["version"],
-            part_number=payload["part_number"],
+            year=data.year,
+            location=data.location,
+            stamping_supplier=data.stamping_supplier or "",
+            vehicle_model=data.vehicle_model,
+            version=data.version,
+            part_number=data.snapshot.part_number,
         )
         if existing:
-            for key, value in payload.items():
-                if key in ("created_by", "created_at"):
-                    continue
-                if hasattr(existing, key):
-                    setattr(existing, key, value)
+            apply_payload_fields(existing, data, skip=_UPSERT_SKIP)
+            apply_payload_fields(existing, data.snapshot)
             db.flush()
-            if items_data is not None:
-                self.replace_items(db, existing.id, items_data)
+            self.replace_items(db, existing.id, data.process_items)
             return existing
 
-        if "audit_status" not in payload:
-            payload = {**payload, "audit_status": AUDIT_PENDING}
-        record = StampingProcessFee(**payload)
+        record = model_from_payload(StampingProcessFee, data)
+        apply_payload_fields(record, data.snapshot)
+        if not record.audit_status:
+            record.audit_status = AUDIT_PENDING
         db.add(record)
         db.flush()
-        if items_data is not None:
-            self.replace_items(db, record.id, items_data)
+        self.replace_items(db, record.id, data.process_items)
         return record
 
     def update_fields(
-        self, db: Session, fee_id: int, update_data: Dict[str, Any]
+        self, db: Session, fee_id: int, update_data: ProcessFeePatch
     ) -> Optional[StampingProcessFee]:
         record = self.get_by_id(db, fee_id)
         if not record:
             return None
-        for key, value in update_data.items():
-            if hasattr(record, key):
-                setattr(record, key, value)
+        apply_payload_fields(record, update_data)
         db.commit()
         db.refresh(record)
         return record
 
-    def bulk_upsert(self, db: Session, data_list: List[Dict[str, Any]]) -> List[StampingProcessFee]:
+    def bulk_upsert(
+        self, db: Session, data_list: list[ProcessFeeUpsertPayload]
+    ) -> list[StampingProcessFee]:
         records = [self.upsert(db, data) for data in data_list]
         db.commit()
         for record in records:
@@ -150,7 +178,7 @@ class StampingProcessFeeRepository:
         year: int,
         location: str,
         stamping_supplier: str,
-    ) -> Any:
+    ) -> Query[StampingProcessFee]:
         return db.query(StampingProcessFee).filter(
             StampingProcessFee.year == year,
             StampingProcessFee.location == location,
@@ -168,7 +196,7 @@ class StampingProcessFeeRepository:
         part_number: Optional[str] = None,
         audit_status: Optional[str] = None,
         only_zero: bool = False,
-    ) -> Any:
+    ) -> Query[StampingProcessFee]:
         q = db.query(StampingProcessFee)
         if year is not None:
             q = q.filter(StampingProcessFee.year == year)
@@ -238,7 +266,7 @@ class StampingProcessFeeRepository:
         version: Optional[str] = None,
         part_number: Optional[str] = None,
         audit_status: Optional[str] = None,
-    ) -> Dict[str, Any]:
+    ) -> ProcessFeeFilterSummary:
         """按筛选条件汇总：总金额 / 件均 / 待补价 / 待审 / 已审 / 版本标签。"""
         q = self._build_list_query(
             db,
@@ -320,7 +348,7 @@ class StampingProcessFeeRepository:
         version: Optional[str] = None,
         part_number: Optional[str] = None,
         audit_status: Optional[str] = None,
-    ) -> Any:
+    ) -> List[StampingProcessFee]:
         q = self._build_list_query(
             db,
             year=year,
@@ -350,7 +378,7 @@ class StampingProcessFeeRepository:
         location: str,
         stamping_supplier: str,
         statuses: List[str],
-    ) -> Any:
+    ) -> int:
         return (
             self._scope_query(
                 db,
@@ -369,7 +397,7 @@ class StampingProcessFeeRepository:
         year: int,
         location: str,
         stamping_supplier: str,
-    ) -> Any:
+    ) -> int:
         fee_ids = [
             row.id
             for row in (
@@ -418,29 +446,28 @@ class StampingProcessFeeRepository:
         location: str,
         stamping_supplier: str,
         audited_by: str,
-        audited_at: Any,
+        audited_at: datetime,
         audit_remark: Optional[str],
         updated_by: Optional[str] = None,
-    ) -> Any:
-        values: Dict[Any, Any] = {
-            StampingProcessFee.audit_status: AUDIT_APPROVED,
-            StampingProcessFee.audited_by: audited_by,
-            StampingProcessFee.audited_at: audited_at,
-            StampingProcessFee.audit_remark: audit_remark,
+    ) -> int:
+        values: dict[str, str | datetime | None] = {
+            "audit_status": AUDIT_APPROVED,
+            "audited_by": audited_by,
+            "audited_at": audited_at,
+            "audit_remark": audit_remark,
         }
         if updated_by is not None:
-            values[StampingProcessFee.updated_by] = updated_by
-        count = (
+            values["updated_by"] = updated_by
+        count = query_update(
             self._scope_query(
                 db,
                 year=year,
                 location=location,
                 stamping_supplier=stamping_supplier,
-            )
-            .filter(
+            ).filter(
                 StampingProcessFee.audit_status.in_([AUDIT_PENDING, AUDIT_REJECTED])
-            )
-            .update(values, synchronize_session=False)
+            ),
+            values,
         )
         db.flush()
         return count
@@ -453,27 +480,26 @@ class StampingProcessFeeRepository:
         location: str,
         stamping_supplier: str,
         reverse_audited_by: str,
-        reverse_audited_at: Any,
+        reverse_audited_at: datetime,
         reverse_audit_remark: str,
         updated_by: Optional[str] = None,
-    ) -> Any:
-        values: Dict[Any, Any] = {
-            StampingProcessFee.audit_status: AUDIT_PENDING,
-            StampingProcessFee.reverse_audited_by: reverse_audited_by,
-            StampingProcessFee.reverse_audited_at: reverse_audited_at,
-            StampingProcessFee.reverse_audit_remark: reverse_audit_remark,
+    ) -> int:
+        values: dict[str, str | datetime | None] = {
+            "audit_status": AUDIT_PENDING,
+            "reverse_audited_by": reverse_audited_by,
+            "reverse_audited_at": reverse_audited_at,
+            "reverse_audit_remark": reverse_audit_remark,
         }
         if updated_by is not None:
-            values[StampingProcessFee.updated_by] = updated_by
-        count = (
+            values["updated_by"] = updated_by
+        count = query_update(
             self._scope_query(
                 db,
                 year=year,
                 location=location,
                 stamping_supplier=stamping_supplier,
-            )
-            .filter(StampingProcessFee.audit_status == AUDIT_APPROVED)
-            .update(values, synchronize_session=False)
+            ).filter(StampingProcessFee.audit_status == AUDIT_APPROVED),
+            values,
         )
         db.flush()
         return count

@@ -1,11 +1,20 @@
 """BOM Repository - 数据访问"""
 
-from typing import Any
+from typing import TypedDict
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.models.bom import BomNode, BomSnapshot
+from app.repositories.persist import model_from_payload
+from app.schemas.dto.bom_dto import BomNodeWrite, BomSnapshotWrite
+
+
+class BomSnapshotListFilters(TypedDict):
+    """BOM 清单列表筛选体。"""
+
+    locations: list[str]
+    vehicle_models: list[str]
 
 
 class BomSnapshotRepository:
@@ -86,8 +95,10 @@ class BomSnapshotRepository:
             or 0
         )
 
-    def create(self, db: Session, data: dict[str, Any], *, commit: bool = True) -> BomSnapshot:
-        row = BomSnapshot(**data)
+    def create(
+        self, db: Session, data: BomSnapshotWrite, *, commit: bool = True
+    ) -> BomSnapshot:
+        row = model_from_payload(BomSnapshot, data)
         db.add(row)
         if commit:
             db.commit()
@@ -193,8 +204,10 @@ class BomNodeRepository:
             .all()
         )
 
-    def create(self, db: Session, data: dict[str, Any], *, commit: bool = True) -> BomNode:
-        row = BomNode(**data)
+    def create(
+        self, db: Session, data: BomNodeWrite, *, commit: bool = True
+    ) -> BomNode:
+        row = model_from_payload(BomNode, data)
         db.add(row)
         if commit:
             db.commit()

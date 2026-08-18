@@ -1,17 +1,43 @@
 """冲压零件价格核算结果 Repository。"""
 
 import logging
+from datetime import datetime
 from decimal import Decimal
-from typing import Any, Dict, List, Optional, Tuple
+from typing import List, Optional, Tuple, TypedDict
 
 from sqlalchemy import case, func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Query, Session
 
 from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING, AUDIT_REJECTED
 from app.models.costing import StampingPartCost
+from app.repositories.persist import apply_payload_fields, model_from_payload, query_update
+from app.schemas.dto.stamping_part_cost_dto import (
+    StampingPartCostPatch,
+    StampingPartCostUpsertPayload,
+)
+
+
+class PartCostFilterSummary(TypedDict):
+    """列表筛选汇总：均单价 / 待审 / 已审。"""
+
+    avg_unit_cost: Decimal | None
+    pending_count: int
+    approved_count: int
+
+
+class PartCostListFilters(TypedDict):
+    """零件核价列表筛选体。"""
+
+    years: list[int]
+    months: list[int]
+    locations: list[str]
+    suppliers: list[str]
+    summary: PartCostFilterSummary
 
 
 logger = logging.getLogger("repository.stamping_part_cost")
+
+_UPSERT_SKIP = frozenset({"id", "created_by", "created_at"})
 
 
 class StampingPartCostRepository:
@@ -50,50 +76,45 @@ class StampingPartCostRepository:
             .first()
         )
 
-    def upsert(self, db: Session, data: Dict[str, Any]) -> StampingPartCost:
-        payload = dict(data)
+    def upsert(self, db: Session, data: StampingPartCostUpsertPayload) -> StampingPartCost:
         existing = self.get_by_business_key(
             db,
-            year=payload["year"],
-            month=payload["month"],
-            location=payload["location"],
-            stamping_supplier=payload["stamping_supplier"],
-            vehicle_model=payload["vehicle_model"],
-            version=payload["version"],
-            part_number=payload["part_number"],
+            year=data.year,
+            month=data.month,
+            location=data.location,
+            stamping_supplier=data.stamping_supplier,
+            vehicle_model=data.vehicle_model,
+            version=data.version,
+            part_number=data.snapshot.part_number,
         )
         if existing:
-            for key, value in payload.items():
-                if key in ("created_by", "created_at"):
-                    continue
-                if hasattr(existing, key):
-                    setattr(existing, key, value)
+            apply_payload_fields(existing, data, skip=_UPSERT_SKIP)
+            apply_payload_fields(existing, data.snapshot)
             db.flush()
             return existing
 
-        if "audit_status" not in payload:
-            payload = {**payload, "audit_status": AUDIT_PENDING}
-        record = StampingPartCost(**payload)
+        record = model_from_payload(StampingPartCost, data)
+        apply_payload_fields(record, data.snapshot)
+        if not record.audit_status:
+            record.audit_status = AUDIT_PENDING
         db.add(record)
         db.flush()
         return record
 
     def update_fields(
-        self, db: Session, cost_id: int, update_data: Dict[str, Any]
+        self, db: Session, cost_id: int, update_data: StampingPartCostPatch
     ) -> Optional[StampingPartCost]:
         record = self.get_by_id(db, cost_id)
         if not record:
             return None
-        for key, value in update_data.items():
-            if hasattr(record, key):
-                setattr(record, key, value)
+        apply_payload_fields(record, update_data)
         db.commit()
         db.refresh(record)
         return record
 
     def bulk_upsert(
-        self, db: Session, data_list: List[Dict[str, Any]]
-    ) -> List[StampingPartCost]:
+        self, db: Session, data_list: list[StampingPartCostUpsertPayload]
+    ) -> list[StampingPartCost]:
         records = [self.upsert(db, data) for data in data_list]
         db.commit()
         for record in records:
@@ -109,7 +130,7 @@ class StampingPartCostRepository:
         month: int,
         location: str,
         stamping_supplier: str,
-    ) -> Any:
+    ) -> Query[StampingPartCost]:
         return db.query(StampingPartCost).filter(
             StampingPartCost.year == year,
             StampingPartCost.month == month,
@@ -129,7 +150,7 @@ class StampingPartCostRepository:
         version: Optional[str] = None,
         part_number: Optional[str] = None,
         audit_status: Optional[str] = None,
-    ) -> Any:
+    ) -> Query[StampingPartCost]:
         q = db.query(StampingPartCost)
         if year is not None:
             q = q.filter(StampingPartCost.year == year)
@@ -201,7 +222,7 @@ class StampingPartCostRepository:
         version: Optional[str] = None,
         part_number: Optional[str] = None,
         audit_status: Optional[str] = None,
-    ) -> Dict[str, Any]:
+    ) -> PartCostFilterSummary:
         """按与列表相同的筛选条件汇总：均单价 / 待审 / 已审。"""
         q = self._build_list_query(
             db,
@@ -280,7 +301,7 @@ class StampingPartCostRepository:
         location: str,
         stamping_supplier: str,
         statuses: List[str],
-    ) -> Any:
+    ) -> int:
         return (
             self._scope_query(
                 db,
@@ -301,7 +322,7 @@ class StampingPartCostRepository:
         month: int,
         location: str,
         stamping_supplier: str,
-    ) -> Any:
+    ) -> int:
         count = (
             self._scope_query(
                 db,
@@ -333,30 +354,29 @@ class StampingPartCostRepository:
         location: str,
         stamping_supplier: str,
         audited_by: str,
-        audited_at: Any,
+        audited_at: datetime,
         audit_remark: Optional[str],
         updated_by: Optional[str] = None,
-    ) -> Any:
-        values: Dict[Any, Any] = {
-            StampingPartCost.audit_status: AUDIT_APPROVED,
-            StampingPartCost.audited_by: audited_by,
-            StampingPartCost.audited_at: audited_at,
-            StampingPartCost.audit_remark: audit_remark,
+    ) -> int:
+        values: dict[str, str | datetime | None] = {
+            "audit_status": AUDIT_APPROVED,
+            "audited_by": audited_by,
+            "audited_at": audited_at,
+            "audit_remark": audit_remark,
         }
         if updated_by is not None:
-            values[StampingPartCost.updated_by] = updated_by
-        count = (
+            values["updated_by"] = updated_by
+        count = query_update(
             self._scope_query(
                 db,
                 year=year,
                 month=month,
                 location=location,
                 stamping_supplier=stamping_supplier,
-            )
-            .filter(
+            ).filter(
                 StampingPartCost.audit_status.in_([AUDIT_PENDING, AUDIT_REJECTED])
-            )
-            .update(values, synchronize_session=False)
+            ),
+            values,
         )
         db.flush()
         return count
@@ -370,28 +390,27 @@ class StampingPartCostRepository:
         location: str,
         stamping_supplier: str,
         reverse_audited_by: str,
-        reverse_audited_at: Any,
+        reverse_audited_at: datetime,
         reverse_audit_remark: str,
         updated_by: Optional[str] = None,
-    ) -> Any:
-        values: Dict[Any, Any] = {
-            StampingPartCost.audit_status: AUDIT_PENDING,
-            StampingPartCost.reverse_audited_by: reverse_audited_by,
-            StampingPartCost.reverse_audited_at: reverse_audited_at,
-            StampingPartCost.reverse_audit_remark: reverse_audit_remark,
+    ) -> int:
+        values: dict[str, str | datetime | None] = {
+            "audit_status": AUDIT_PENDING,
+            "reverse_audited_by": reverse_audited_by,
+            "reverse_audited_at": reverse_audited_at,
+            "reverse_audit_remark": reverse_audit_remark,
         }
         if updated_by is not None:
-            values[StampingPartCost.updated_by] = updated_by
-        count = (
+            values["updated_by"] = updated_by
+        count = query_update(
             self._scope_query(
                 db,
                 year=year,
                 month=month,
                 location=location,
                 stamping_supplier=stamping_supplier,
-            )
-            .filter(StampingPartCost.audit_status == AUDIT_APPROVED)
-            .update(values, synchronize_session=False)
+            ).filter(StampingPartCost.audit_status == AUDIT_APPROVED),
+            values,
         )
         db.flush()
         return count

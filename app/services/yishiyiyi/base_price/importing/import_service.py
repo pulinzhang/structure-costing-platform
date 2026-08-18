@@ -11,9 +11,10 @@ from typing import Callable, Optional
 
 from sqlalchemy.orm import Session
 
-from app.common.audit import audit_create, audit_update
+from app.common.audit import audit_create
 from app.parsers.yishiyiyi.base_price import parse_base_price_excel
 from app.repositories.yishiyiyi.base_price import SteelBasePriceRepository
+from app.schemas.dto.steel_base_price_dto import SteelBasePriceWrite
 from app.schemas.vo.steel_base_price_vo import SteelBasePriceImportResultResponse
 from app.schemas.vo.user_vo import UserVO
 from app.utils.steel_price_archive import (
@@ -24,6 +25,57 @@ from app.utils.steel_price_archive import (
 ProgressCallback = Callable[[int, str], None]
 
 logger = logging.getLogger("service.steel_base_price.import")
+
+
+def _base_price_write_from_record(
+    record: dict[str, object],
+    *,
+    year: int,
+    month: int,
+    filename: str,
+    created_by: str,
+    updated_by: str,
+) -> SteelBasePriceWrite:
+    from decimal import Decimal
+
+    thick = record.get("thick")
+    width = record.get("width")
+    base_price = record["base_price"]
+    processing_fee = record.get("processing_fee")
+    if not isinstance(base_price, Decimal):
+        base_price = Decimal(str(base_price))
+    if processing_fee is None:
+        processing_fee = Decimal("0")
+    elif not isinstance(processing_fee, Decimal):
+        processing_fee = Decimal(str(processing_fee))
+    if thick is not None and not isinstance(thick, Decimal):
+        thick = Decimal(str(thick))
+    if width is not None and not isinstance(width, Decimal):
+        width = Decimal(str(width))
+    excel_row_raw = record["excel_row"]
+    excel_col_raw = record.get("excel_col")
+    excel_row = int(str(excel_row_raw)) if excel_row_raw is not None else 0
+    excel_col = int(str(excel_col_raw)) if excel_col_raw is not None else None
+    return SteelBasePriceWrite(
+        year=year,
+        month=month,
+        location=str(record["location"]),
+        steel_mill=str(record["steel_mill"]),
+        category_name=str(record["category_name"]),
+        grade=str(record["grade"]),
+        thick=thick if isinstance(thick, Decimal) or thick is None else Decimal(str(thick)),
+        width=width if isinstance(width, Decimal) or width is None else Decimal(str(width)),
+        base_price=base_price,
+        processing_fee=processing_fee,
+        excel_filename=filename,
+        sheet_name=str(record["sheet_name"]),
+        excel_row=excel_row,
+        spec=str(record["spec"]) if record.get("spec") is not None else None,
+        excel_col=excel_col,
+        remark=str(record["remark"]) if record.get("remark") is not None else None,
+        created_by=created_by,
+        updated_by=updated_by,
+    )
 
 
 class SteelBasePriceImportService:
@@ -49,7 +101,6 @@ class SteelBasePriceImportService:
         导入前先按年度/月份归档源文件，便于与政策文件成对核对。
         """
         create_audit = audit_create(current_user)
-        update_audit = audit_update(current_user)
 
         def _report(progress: int, msg: str) -> None:
             if progress_callback:
@@ -67,14 +118,18 @@ class SteelBasePriceImportService:
         _report(10, "正在解析基准价格 Excel...")
         parse_result = parse_base_price_excel(file_content)
 
-        for record in parse_result.records:
-            record["excel_filename"] = filename
-            record["year"] = year
-            record["month"] = month
-            # insert 用 created_by+updated_by；update 仅取 updated_by（repo allowlist）
-            record.update(create_audit)
-            record.update(update_audit)
-        if not parse_result.records:
+        writes = [
+            _base_price_write_from_record(
+                record,
+                year=year,
+                month=month,
+                filename=filename,
+                created_by=create_audit["created_by"],
+                updated_by=create_audit["updated_by"],
+            )
+            for record in parse_result.records
+        ]
+        if not writes:
             _report(100, "解析完成，无有效数据行")
             return SteelBasePriceImportResultResponse(
                 filename=filename,
@@ -85,9 +140,9 @@ class SteelBasePriceImportService:
                 errors=parse_result.errors,
             )
 
-        _report(50, f"解析完成，共 {len(parse_result.records)} 条，正在写入数据库...")
+        _report(50, f"解析完成，共 {len(writes)} 条，正在写入数据库...")
         try:
-            counts = self.repository.upsert(db, parse_result.records)
+            counts = self.repository.upsert(db, writes)
             _report(90, "正在提交事务...")
             db.commit()
         except Exception:

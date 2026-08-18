@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import uuid
 from datetime import timedelta
-from typing import Any
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -15,7 +14,11 @@ from app.models.bom import BomL0WeldingFeeCalcLog
 from app.repositories.bom.l0_welding_fee_calc_log_repository import (
     BomL0WeldingFeeCalcLogRepository,
 )
-from app.schemas.dto.bom_l0_welding_fee_dto import BomL0WeldingFeeCalcDTO
+from app.schemas.dto.bom_l0_welding_fee_dto import (
+    BomL0WeldingFeeCalcDTO,
+    BomL0WeldingFeeCalcLogCreate,
+    BomL0WeldingFeeCalcLogPatch,
+)
 from app.schemas.vo.bom_l0_welding_fee_vo import BomL0WeldingFeeCalcLogVO
 
 STATUS_PROCESSING = "processing"
@@ -74,20 +77,20 @@ class BomL0WeldingFeeCalcLogService:
         try:
             record = self.calc_log_repo.create(
                 db,
-                {
-                    "calc_batch_id": calc_batch_id,
-                    "year": dto.year,
-                    "location": location,
-                    "vehicle_model": vehicle_model,
-                    "bom_version": bom_version,
-                    "status": STATUS_PROCESSING,
-                    "detail_text": "计算进行中...",
-                    "started_at": started_at,
-                    "operator_id": operator_id,
-                    "operator_name": operator_name,
-                    "created_by": operator_name,
-                    "updated_by": operator_name,
-                },
+                BomL0WeldingFeeCalcLogCreate(
+                    calc_batch_id=calc_batch_id,
+                    year=dto.year,
+                    location=location,
+                    vehicle_model=vehicle_model,
+                    bom_version=bom_version,
+                    status=STATUS_PROCESSING,
+                    detail_text="计算进行中...",
+                    started_at=started_at,
+                    operator_id=operator_id,
+                    operator_name=operator_name,
+                    created_by=operator_name,
+                    updated_by=operator_name,
+                ),
             )
             db.commit()
             db.refresh(record)
@@ -101,7 +104,7 @@ class BomL0WeldingFeeCalcLogService:
         db: Session,
         *,
         log_id: int,
-        data: dict[str, Any],
+        data: BomL0WeldingFeeCalcLogPatch,
     ) -> None:
         self.calc_log_repo.update(db, log_id, data)
         db.commit()

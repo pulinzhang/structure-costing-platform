@@ -302,7 +302,7 @@ class StampingPartExportService:
                 if fill is not None:
                     cell.fill = fill
 
-        part_cols = (1, 2, 3, 4, 5, 7, 10, 11, 16, 17, 18, 19)
+        part_cols: tuple[int, ...] = (1, 2, 3, 4, 5, 7, 10, 11, 16, 17, 18, 19)
         if not blanks:
             part_cols = part_cols + (6, 8, 9)
         for col in part_cols:

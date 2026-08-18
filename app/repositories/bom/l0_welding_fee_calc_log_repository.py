@@ -3,13 +3,18 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, cast
+from typing import cast
 
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
 from app.models.bom import BomL0WeldingFeeCalcLog
+from app.repositories.persist import apply_payload_fields, model_from_payload
+from app.schemas.dto.bom_l0_welding_fee_dto import (
+    BomL0WeldingFeeCalcLogCreate,
+    BomL0WeldingFeeCalcLogPatch,
+)
 
 logger = logging.getLogger("repository.bom.l0_welding_fee_calc_log")
 
@@ -94,21 +99,21 @@ class BomL0WeldingFeeCalcLogRepository:
         )
         return records, total
 
-    def create(self, db: Session, data: dict[str, Any]) -> BomL0WeldingFeeCalcLog:
-        record = BomL0WeldingFeeCalcLog(**data)
+    def create(
+        self, db: Session, data: BomL0WeldingFeeCalcLogCreate
+    ) -> BomL0WeldingFeeCalcLog:
+        record = model_from_payload(BomL0WeldingFeeCalcLog, data)
         db.add(record)
         db.flush()
         return record
 
     def update(
-        self, db: Session, log_id: int, data: dict[str, Any]
+        self, db: Session, log_id: int, data: BomL0WeldingFeeCalcLogPatch
     ) -> BomL0WeldingFeeCalcLog | None:
         record = self.get_by_id(db, log_id)
         if record is None:
             return None
-        for key, value in data.items():
-            if hasattr(record, key):
-                setattr(record, key, value)
+        apply_payload_fields(record, data)
         db.flush()
         return record
 

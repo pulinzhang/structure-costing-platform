@@ -1,13 +1,40 @@
 """冲压零件数据访问。"""
 
 import logging
-from typing import Any, Dict, List, Optional, Tuple
+from collections.abc import Sequence
+from decimal import Decimal
+from typing import Dict, List, Optional, Tuple, TypeVar, TypedDict
 
 from sqlalchemy import func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import InstrumentedAttribute, Query, Session
+from sqlalchemy.sql.selectable import Subquery
 
 from app.models import StampingPart, StampingProcess
 from app.models.stamping.tailor_weld_blank import StampingTailorWeldBlank
+from app.repositories.persist import apply_payload_fields, model_from_payload
+from app.schemas.dto.stamping_upload_dto import PartData, StampingPartPatch
+
+_T = TypeVar("_T")
+_StringColumn = InstrumentedAttribute[str] | InstrumentedAttribute[str | None]
+
+
+class StampingPartFilterOptionValues(TypedDict):
+    """筛选下拉选项（不含列表汇总，汇总由 Service 拼入）。"""
+
+    locations: list[str]
+    stamping_suppliers: list[str]
+    vehicle_models: list[str]
+    versions: list[str]
+    materials: list[str]
+
+
+class MaterialSpecRow(TypedDict):
+    """去重后的材料规格行（钢价 Step1）。"""
+
+    location: str
+    material: str
+    thickness: Decimal
+
 
 logger = logging.getLogger("repository.stamping.part")
 
@@ -76,7 +103,7 @@ class StampingPartRepository:
         part_number: Optional[str] = None,
         part_name: Optional[str] = None,
         stamping_supplier: Optional[str] = None,
-    ) -> Any:
+    ) -> Query[StampingPart]:
         """构建与列表相同的筛选查询（不含排序/分页）。"""
         q = db.query(StampingPart)
         if location is not None:
@@ -224,30 +251,32 @@ class StampingPartRepository:
     def list_all(self, db: Session, skip: int = 0, limit: int = 100) -> List[StampingPart]:
         return db.query(StampingPart).offset(skip).limit(limit).all()
 
-    def create(self, db: Session, part_data: Dict[str, Any]) -> StampingPart:
-        part = StampingPart(**part_data)
+    def create(self, db: Session, part_data: PartData) -> StampingPart:
+        part = model_from_payload(StampingPart, part_data)
         db.add(part)
         db.commit()
         db.refresh(part)
-        logger.info(f"创建零件: {part.part_number} (id={part.id})")
+        logger.info("创建零件: %s (id=%s)", part.part_number, part.id)
         return part
 
-    def bulk_create(self, db: Session, parts_data: List[Dict[str, Any]]) -> List[StampingPart]:
-        parts = [StampingPart(**data) for data in parts_data]
+    def bulk_create(self, db: Session, parts_data: List[PartData]) -> List[StampingPart]:
+        parts = [model_from_payload(StampingPart, data) for data in parts_data]
         db.add_all(parts)
-        logger.info(f"批量创建零件: {len(parts)} 个")
+        logger.info("批量创建零件: %s 个", len(parts))
         return parts
 
-    def update(self, db: Session, part_id: int, update_data: Dict[str, Any]) -> Optional[StampingPart]:
+    def update(self, db: Session, part_id: int, update_data: StampingPartPatch) -> Optional[StampingPart]:
         part = self.get_by_id(db, part_id)
         if not part:
             return None
-        for key, value in update_data.items():
-            if hasattr(part, key):
-                setattr(part, key, value)
+        apply_payload_fields(
+            part,
+            update_data,
+            skip=frozenset({"id", "created_by", "created_at"}),
+        )
         db.commit()
         db.refresh(part)
-        logger.info(f"更新零件: id={part_id}")
+        logger.info("更新零件: id=%s", part_id)
         return part
 
     def delete(self, db: Session, part_id: int) -> bool:
@@ -354,7 +383,7 @@ class StampingPartRepository:
         counts = {pid: cnt for pid, cnt in rows}
         return {pid: counts.get(pid, 0) for pid in part_ids}
 
-    def get_filter_options(self, db: Session) -> Dict[str, Any]:
+    def get_filter_options(self, db: Session) -> StampingPartFilterOptionValues:
         """
         获取筛选下拉框的可选值。
         返回键名与 StampingPartListFilterOptions VO 对齐。
@@ -447,22 +476,40 @@ class StampingPartRepository:
             "versions": versions,
         }
 
-    def _distinct_string_values(self, db: Session, column: Any) -> List[str]:
+    def _distinct_string_values(
+        self, db: Session, column: _StringColumn
+    ) -> List[str]:
         query = (
             db.query(column)
             .distinct()
             .filter(column.isnot(None), column != "")
             .order_by(column)
         )
-        return [row[0] for row in query.all()]
+        values: List[str] = []
+        for row in query.all():
+            value = row[0]
+            if isinstance(value, str) and value:
+                values.append(value)
+        return values
 
-    def _collect_distinct_strings(self, query: Any, column: Any) -> List[str]:
+    def _collect_distinct_strings(
+        self,
+        query: Query[_T],
+        column: _StringColumn,
+    ) -> List[str]:
         rows = (
             query.filter(column.isnot(None), column != "")
             .order_by(column)
             .all()
         )
-        return [row[0] for row in rows]
+        values: List[str] = []
+        for row in rows:
+            if not isinstance(row, Sequence) or isinstance(row, (str, bytes)):
+                continue
+            value = row[0]
+            if isinstance(value, str) and value:
+                values.append(value)
+        return values
 
 
     def list_parts_for_materials(
@@ -498,13 +545,13 @@ class StampingPartRepository:
 
     def _material_spec_filters(
         self,
-        q: Any,
+        q: Query[_T],
         *,
         location: Optional[str],
         stamping_supplier: Optional[str],
         vehicle_model: Optional[str],
         version: Optional[str],
-    ) -> Any:
+    ) -> Query[_T]:
         """材料规格查询共用的零件范围过滤。"""
         if location:
             q = q.filter(StampingPart.location == location)
@@ -524,26 +571,24 @@ class StampingPartRepository:
         stamping_supplier: Optional[str] = None,
         vehicle_model: Optional[str] = None,
         version: Optional[str] = None,
-    ) -> Any:
+    ) -> Subquery:
         """
         主表零件材质/料厚 ∪ 拼焊子片材质/料厚。
 
         拼焊总成主表常只落一段料厚（如 0.70），另一段只在子片上；
         钢价 Step1 必须把子片规格一并纳入去重。
         """
-        part_q = db.query(
-            StampingPart.location.label("location"),
-            StampingPart.material.label("material"),
-            StampingPart.thickness.label("thickness"),
-        )
         part_q = self._material_spec_filters(
-            part_q,
+            db.query(
+                StampingPart.location.label("location"),
+                StampingPart.material.label("material"),
+                StampingPart.thickness.label("thickness"),
+            ),
             location=location,
             stamping_supplier=stamping_supplier,
             vehicle_model=vehicle_model,
             version=version,
-        )
-        part_q = part_q.filter(
+        ).filter(
             StampingPart.location.isnot(None),
             StampingPart.location != "",
             StampingPart.material.isnot(None),
@@ -551,25 +596,20 @@ class StampingPartRepository:
             StampingPart.thickness.isnot(None),
         )
 
-        blank_q = (
+        blank_q = self._material_spec_filters(
             db.query(
                 StampingPart.location.label("location"),
                 StampingTailorWeldBlank.material.label("material"),
                 StampingTailorWeldBlank.thickness.label("thickness"),
-            )
-            .join(
+            ).join(
                 StampingTailorWeldBlank,
                 StampingTailorWeldBlank.part_id == StampingPart.id,
-            )
-        )
-        blank_q = self._material_spec_filters(
-            blank_q,
+            ),
             location=location,
             stamping_supplier=stamping_supplier,
             vehicle_model=vehicle_model,
             version=version,
-        )
-        blank_q = blank_q.filter(
+        ).filter(
             StampingPart.location.isnot(None),
             StampingPart.location != "",
             StampingTailorWeldBlank.material.isnot(None),
@@ -606,7 +646,7 @@ class StampingPartRepository:
         stamping_supplier: Optional[str] = None,
         vehicle_model: Optional[str] = None,
         version: Optional[str] = None,
-    ) -> List[Dict[str, Any]]:
+    ) -> List[MaterialSpecRow]:
         """
         列出去重后的 基地 + 材料(钢种) + 厚度（钢价计算 Step1）。
 

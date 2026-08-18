@@ -4,15 +4,38 @@
 """
 
 import logging
-from typing import Any, Dict, List, Optional, Tuple
+from datetime import datetime
+from typing import List, Optional, Tuple, TypedDict
 
 from sqlalchemy import and_, case, func
 from sqlalchemy.orm import Query, Session
 
 from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING
 from app.models.bom import BomWeldingUnitPrice
+from app.repositories.persist import apply_dto_fields, model_from_payload, query_update
+from app.schemas.dto.bom_welding_unit_price_dto import (
+    BomWeldingUnitPriceCreate,
+    BomWeldingUnitPriceUpdate,
+)
 
 logger = logging.getLogger("repository.bom")
+
+
+class AuditCountSummary(TypedDict):
+    """列表筛选汇总：总条数 / 待审 / 已审。"""
+
+    total_count: int
+    pending_count: int
+    approved_count: int
+
+
+class WeldingUnitPriceListFilters(TypedDict):
+    """焊接工费单价列表筛选体。"""
+
+    locations: list[str]
+    years: list[int]
+    audit_status: str | None
+    summary: AuditCountSummary
 
 
 class BomWeldingUnitPriceRepository:
@@ -106,7 +129,7 @@ class BomWeldingUnitPriceRepository:
         location: Optional[str] = None,
         year: Optional[int] = None,
         audit_status: Optional[str] = None,
-    ) -> Dict[str, Any]:
+    ) -> AuditCountSummary:
         q = self._build_list_query(
             db, location=location, year=year, audit_status=audit_status
         )
@@ -192,12 +215,18 @@ class BomWeldingUnitPriceRepository:
         )
 
     def create(
-        self, db: Session, data: Dict[str, Any], *, commit: bool = True
+        self,
+        db: Session,
+        data: BomWeldingUnitPriceCreate,
+        *,
+        created_by: str,
+        updated_by: str,
+        commit: bool = True,
     ) -> BomWeldingUnitPrice:
-        payload = dict(data)
-        if "audit_status" not in payload:
-            payload["audit_status"] = AUDIT_PENDING
-        record = BomWeldingUnitPrice(**payload)
+        record = model_from_payload(BomWeldingUnitPrice, data)
+        record.created_by = created_by
+        record.updated_by = updated_by
+        record.audit_status = AUDIT_PENDING
         db.add(record)
         if commit:
             db.commit()
@@ -206,9 +235,9 @@ class BomWeldingUnitPriceRepository:
         db.refresh(record)
         logger.info(
             "创建焊接工费单价: location=%s, year=%s, item=%s, id=%s",
-            payload.get("location"),
-            payload.get("year"),
-            payload.get("item_name"),
+            data.location,
+            data.year,
+            data.item_name,
             record.id,
         )
         return record
@@ -217,16 +246,16 @@ class BomWeldingUnitPriceRepository:
         self,
         db: Session,
         id: int,
-        update_data: Dict[str, Any],
+        update_data: BomWeldingUnitPriceUpdate,
         *,
+        updated_by: str,
         commit: bool = True,
     ) -> Optional[BomWeldingUnitPrice]:
         record = self.get_by_id(db, id)
         if not record:
             return None
-        for key, value in update_data.items():
-            if hasattr(record, key):
-                setattr(record, key, value)
+        apply_dto_fields(record, update_data)
+        record.updated_by = updated_by
         if commit:
             db.commit()
         else:
@@ -272,26 +301,25 @@ class BomWeldingUnitPriceRepository:
         location: str,
         year: int,
         audited_by: str,
-        audited_at: Any,
+        audited_at: datetime,
         audit_remark: Optional[str],
         updated_by: Optional[str] = None,
     ) -> int:
-        values: Dict[Any, Any] = {
-            BomWeldingUnitPrice.audit_status: AUDIT_APPROVED,
-            BomWeldingUnitPrice.audited_by: audited_by,
-            BomWeldingUnitPrice.audited_at: audited_at,
-            BomWeldingUnitPrice.audit_remark: audit_remark,
+        values: dict[str, str | datetime | None] = {
+            "audit_status": AUDIT_APPROVED,
+            "audited_by": audited_by,
+            "audited_at": audited_at,
+            "audit_remark": audit_remark,
         }
         if updated_by is not None:
-            values[BomWeldingUnitPrice.updated_by] = updated_by
-        count = (
-            db.query(BomWeldingUnitPrice)
-            .filter(
+            values["updated_by"] = updated_by
+        count = query_update(
+            db.query(BomWeldingUnitPrice).filter(
                 BomWeldingUnitPrice.location == location,
                 BomWeldingUnitPrice.year == year,
                 BomWeldingUnitPrice.audit_status == AUDIT_PENDING,
-            )
-            .update(values, synchronize_session=False)
+            ),
+            values,
         )
         db.commit()
         return count
@@ -303,26 +331,25 @@ class BomWeldingUnitPriceRepository:
         location: str,
         year: int,
         reverse_audited_by: str,
-        reverse_audited_at: Any,
+        reverse_audited_at: datetime,
         reverse_audit_remark: str,
         updated_by: Optional[str] = None,
     ) -> int:
-        values: Dict[Any, Any] = {
-            BomWeldingUnitPrice.audit_status: AUDIT_PENDING,
-            BomWeldingUnitPrice.reverse_audited_by: reverse_audited_by,
-            BomWeldingUnitPrice.reverse_audited_at: reverse_audited_at,
-            BomWeldingUnitPrice.reverse_audit_remark: reverse_audit_remark,
+        values: dict[str, str | datetime | None] = {
+            "audit_status": AUDIT_PENDING,
+            "reverse_audited_by": reverse_audited_by,
+            "reverse_audited_at": reverse_audited_at,
+            "reverse_audit_remark": reverse_audit_remark,
         }
         if updated_by is not None:
-            values[BomWeldingUnitPrice.updated_by] = updated_by
-        count = (
-            db.query(BomWeldingUnitPrice)
-            .filter(
+            values["updated_by"] = updated_by
+        count = query_update(
+            db.query(BomWeldingUnitPrice).filter(
                 BomWeldingUnitPrice.location == location,
                 BomWeldingUnitPrice.year == year,
                 BomWeldingUnitPrice.audit_status == AUDIT_APPROVED,
-            )
-            .update(values, synchronize_session=False)
+            ),
+            values,
         )
         db.commit()
         return count

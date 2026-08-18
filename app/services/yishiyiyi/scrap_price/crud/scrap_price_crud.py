@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from decimal import Decimal
-from typing import Any, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 from sqlalchemy.orm import Session
 
@@ -13,10 +13,12 @@ from app.common.scrap_price_locations import (
     SCRAP_PRICE_LOCATION_COUNT,
     SCRAP_PRICE_LOCATIONS,
 )
+from app.models.yishiyiyi import StampingScrapPrice
 from app.repositories.yishiyiyi.scrap_price.scrap_price_repository import (
     StampingScrapPriceRepository,
 )
 from app.schemas.dto.stamping_scrap_price_dto import (
+    ScrapPriceWrite,
     StampingScrapPriceCopyMonth,
     StampingScrapPriceMonthSaveDTO,
 )
@@ -49,7 +51,7 @@ class StampingScrapPriceCrudService:
         self,
         year: int,
         month: int,
-        records: Any,
+        records: list[StampingScrapPrice],
     ) -> StampingScrapPriceMonthSheetVO:
         by_location = {r.location: r for r in records}
         items: List[StampingScrapPriceMonthRowVO] = []
@@ -112,22 +114,23 @@ class StampingScrapPriceCrudService:
     ) -> Tuple[Optional[StampingScrapPriceMonthSheetVO], Optional[str]]:
         try:
             audit = audit_create(current_user)
-            payloads = []
+            payloads: list[ScrapPriceWrite] = []
             for row in data.items:
                 payloads.append(
-                    {
-                        "location": row.location,
-                        "year": data.year,
-                        "month": data.month,
-                        "market_price": row.market_price,
-                        "deduction_fee": row.deduction_fee,
-                        "net_price": self._compute_net_price(
+                    ScrapPriceWrite(
+                        location=row.location,
+                        year=data.year,
+                        month=data.month,
+                        market_price=row.market_price,
+                        deduction_fee=row.deduction_fee,
+                        net_price=self._compute_net_price(
                             row.market_price,
                             row.deduction_fee,
                         ),
-                        "remark": row.remark,
-                        **audit,
-                    }
+                        remark=row.remark,
+                        created_by=audit["created_by"],
+                        updated_by=audit["updated_by"],
+                    )
                 )
 
             records = self.repository.replace_year_month(
@@ -184,20 +187,21 @@ class StampingScrapPriceCrudService:
             )
 
         audit = audit_create(current_user)
-        payloads = []
+        payloads: list[ScrapPriceWrite] = []
         for location in SCRAP_PRICE_LOCATIONS:
             source = by_location[location]
             payloads.append(
-                {
-                    "location": location,
-                    "year": body.target_year,
-                    "month": body.target_month,
-                    "market_price": source.market_price,
-                    "deduction_fee": source.deduction_fee,
-                    "net_price": source.net_price,
-                    "remark": source.remark,
-                    **audit,
-                }
+                ScrapPriceWrite(
+                    location=location,
+                    year=body.target_year,
+                    month=body.target_month,
+                    market_price=source.market_price,
+                    deduction_fee=source.deduction_fee,
+                    net_price=source.net_price,
+                    remark=source.remark,
+                    created_by=audit["created_by"],
+                    updated_by=audit["updated_by"],
+                )
             )
 
         try:

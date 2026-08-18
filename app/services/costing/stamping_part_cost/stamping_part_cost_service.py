@@ -6,18 +6,16 @@
 
 from __future__ import annotations
 
-from typing import Any
-
-
 from decimal import Decimal, ROUND_HALF_UP
 
 from sqlalchemy.orm import Session
 
-from app.common.audit import AUDIT_APPROVED, audit_update, display_name
+from app.common.audit import AUDIT_APPROVED, display_name
 from app.common.timezone import now
 from app.exceptions.base import BusinessException
 from app.models.costing import StampingPartCostCalcLog
 from app.repositories.costing.stamping_part_cost.stamping_part_cost_repository import (
+    PartCostListFilters,
     StampingPartCostRepository,
 )
 from app.repositories.costing.steel_price.steel_price_repository import SteelPriceRepository
@@ -165,7 +163,7 @@ class StampingPartCostService:
 
     def paginate(
         self, db: Session, query: StampingPartCostQuery
-    ) -> tuple[list[StampingPartCostVO], int, dict[str, Any]]:
+    ) -> tuple[list[StampingPartCostVO], int, PartCostListFilters]:
         skip = (query.page - 1) * query.size
         rows, total = self.cost_repo.paginate(
             db,
@@ -180,7 +178,7 @@ class StampingPartCostService:
             skip=skip,
             limit=query.size,
         )
-        filters = {
+        filters: PartCostListFilters = {
             "years": self.cost_repo.get_distinct_years(db),
             "months": self.cost_repo.get_distinct_months(db, year=query.year),
             "locations": self.cost_repo.get_distinct_locations(
@@ -245,7 +243,7 @@ class StampingPartCostService:
             {
                 "unit_cost": unit_cost,
                 "remark": remark,
-                **audit_update(current_user),
+                "updated_by": display_name(current_user),
             },
         )
         if not updated:

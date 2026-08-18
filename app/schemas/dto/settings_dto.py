@@ -1,6 +1,7 @@
-"""系统设置 DTO - 请求参数"""
+"""系统设置 DTO - 请求参数 / Repository 写入载荷"""
 
-from typing import Any
+from dataclasses import dataclass
+from typing import Any, TypedDict
 
 from decimal import Decimal
 from pydantic import BaseModel, Field, field_validator
@@ -40,3 +41,25 @@ class SystemConfigUpdateDTO(BaseModel):
     @classmethod
     def _coerce_rate(cls, value: Any) -> Decimal:
         return quantize_money(value, Q6)
+
+
+@dataclass(slots=True)
+class SystemConfigWrite:
+    """系统配置单例新建。"""
+
+    app_name: str
+    steel_density: Decimal
+    material_loss_rate: Decimal
+    scrap_recovery_rate: Decimal
+    created_by: str
+    updated_by: str
+
+
+class SystemConfigPatch(TypedDict, total=False):
+    """系统配置部分更新。"""
+
+    app_name: str
+    steel_density: Decimal
+    material_loss_rate: Decimal
+    scrap_recovery_rate: Decimal
+    updated_by: str

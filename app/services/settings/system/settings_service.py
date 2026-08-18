@@ -11,7 +11,11 @@ from sqlalchemy.orm import Session
 from app.common.audit import audit_create, audit_update
 from app.common.money import Q4, Q6, quantize_money
 from app.config import settings as app_settings
-from app.schemas.dto.settings_dto import SystemConfigUpdateDTO
+from app.schemas.dto.settings_dto import (
+    SystemConfigPatch,
+    SystemConfigUpdateDTO,
+    SystemConfigWrite,
+)
 from app.schemas.vo.settings_vo import ConfigVO
 from app.schemas.vo.user_vo import UserVO
 from app.repositories.settings.system.system_config_repository import SystemConfigRepository
@@ -58,23 +62,31 @@ class SettingsService:
         current_user: UserVO,
     ) -> ConfigVO:
         app_name = dto.app_name.strip() or DEFAULT_APP_NAME
-        payload_fields = {
-            "app_name": app_name,
-            "steel_density": quantize_money(dto.steel_density, Q4),
-            "material_loss_rate": quantize_money(dto.material_loss_rate, Q6),
-            "scrap_recovery_rate": quantize_money(dto.scrap_recovery_rate, Q6),
-        }
+        audit = audit_create(current_user)
         row = self.repository.get_singleton(db)
         if row is None:
             self.repository.create_singleton(
                 db,
-                {**payload_fields, **audit_create(current_user)},
+                SystemConfigWrite(
+                    app_name=app_name,
+                    steel_density=quantize_money(dto.steel_density, Q4),
+                    material_loss_rate=quantize_money(dto.material_loss_rate, Q6),
+                    scrap_recovery_rate=quantize_money(dto.scrap_recovery_rate, Q6),
+                    created_by=audit["created_by"],
+                    updated_by=audit["updated_by"],
+                ),
             )
         else:
             self.repository.update_singleton(
                 db,
                 row,
-                {**payload_fields, **audit_update(current_user)},
+                SystemConfigPatch(
+                    app_name=app_name,
+                    steel_density=quantize_money(dto.steel_density, Q4),
+                    material_loss_rate=quantize_money(dto.material_loss_rate, Q6),
+                    scrap_recovery_rate=quantize_money(dto.scrap_recovery_rate, Q6),
+                    updated_by=audit_update(current_user)["updated_by"],
+                ),
             )
         db.commit()
         return self.get_config(db)

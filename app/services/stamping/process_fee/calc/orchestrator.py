@@ -13,9 +13,6 @@
 
 from __future__ import annotations
 
-from typing import Any
-
-
 import logging
 from decimal import Decimal
 
@@ -27,12 +24,16 @@ from app.common.timezone import now
 from app.exceptions.base import BusinessException
 from app.models.stamping import StampingPart, StampingProcessFeeCalcLog
 from app.repositories.stamping.stamping_process_fee_repository import (
-    PROCESS_ITEMS_KEY,
     StampingProcessFeeRepository,
 )
 from app.repositories.stamping.stamping_repository import StampingPartRepository
 from app.repositories.stamping.tonnage_price_repository import StampingTonnagePriceRepository
-from app.schemas.dto.stamping_process_fee_dto import StampingProcessFeeCalcDTO
+from app.schemas.dto.stamping_process_fee_dto import (
+    ProcessFeeCalcLogPatch,
+    ProcessFeeItemPayload,
+    ProcessFeeUpsertPayload,
+    StampingProcessFeeCalcDTO,
+)
 from app.schemas.vo.stamping_process_fee_vo import (
     StampingProcessFeeCalcLogVO,
     StampingProcessFeeCalcReadyVO,
@@ -211,7 +212,7 @@ class StampingProcessFeeCalcOrchestrator:
         detail_lines.append(f"匹配零件 {len(parts)} 件")
 
         prev_part_cache: dict[int, StampingPart | None] = {}
-        upsert_rows: list[dict[str, Any]] = []
+        upsert_rows: list[ProcessFeeUpsertPayload] = []
         failed_items: list[StampingProcessFeeFailedItemVO] = []
         zero_fee_items: list[StampingProcessFeeFailedItemVO] = []
         success_count = 0
@@ -250,7 +251,7 @@ class StampingProcessFeeCalcOrchestrator:
                 processing_fee = None
                 process_count = len(part.processes or [])
                 calc_fail_reason = fee_or_error.reason
-                process_items: list[dict[str, Any]] = []
+                process_items: list[ProcessFeeItemPayload] = []
             else:
                 processing_fee, process_count, process_items = fee_or_error
                 calc_fail_reason = None
@@ -270,25 +271,26 @@ class StampingProcessFeeCalcOrchestrator:
                         )
 
             final_fee = resolve_final_fee(processing_fee, manual_price)
-            row = {
-                "year": dto.year,
-                "location": part.location,
-                "stamping_supplier": supplier,
-                "vehicle_model": part.vehicle_model,
-                "version": part.version,
-                **part_snapshot(part),
-                "processing_fee": processing_fee,
-                "process_count": process_count,
-                "final_processing_fee": final_fee,
-                "calc_fail_reason": calc_fail_reason,
-                "audit_status": AUDIT_PENDING,
-                PROCESS_ITEMS_KEY: process_items,
-            }
-            if existing:
-                row.update(update_audit)
-            else:
-                row.update(audit)
-            upsert_rows.append(row)
+            upsert_rows.append(
+                ProcessFeeUpsertPayload(
+                    year=dto.year,
+                    location=part.location,
+                    stamping_supplier=supplier,
+                    vehicle_model=part.vehicle_model,
+                    version=part.version,
+                    snapshot=part_snapshot(part),
+                    processing_fee=processing_fee,
+                    process_count=process_count,
+                    final_processing_fee=final_fee,
+                    calc_fail_reason=calc_fail_reason,
+                    audit_status=AUDIT_PENDING,
+                    created_by=None if existing else audit["created_by"],
+                    updated_by=(
+                        update_audit["updated_by"] if existing else audit["updated_by"]
+                    ),
+                    process_items=process_items,
+                )
+            )
 
             if index == total or index % 20 == 0:
                 pct = 10 + int(80 * index / max(total, 1))
@@ -344,17 +346,17 @@ class StampingProcessFeeCalcOrchestrator:
             self.calc_log_service.calc_log_repo.update(
                 db,
                 log_id,
-                {
-                    "status": status,
-                    "total_parts": result.total_parts,
-                    "success_count": result.success_count,
-                    "failed_count": result.failed_count,
-                    "zero_fee_count": result.zero_fee_count,
-                    "skipped_approved_count": result.skipped_approved_count,
-                    "detail_text": result.detail_text,
-                    "finished_at": finished_at,
-                    "updated_by": display_name(current_user) or None,
-                },
+                ProcessFeeCalcLogPatch(
+                    status=status,
+                    total_parts=result.total_parts,
+                    success_count=result.success_count,
+                    failed_count=result.failed_count,
+                    zero_fee_count=result.zero_fee_count,
+                    skipped_approved_count=result.skipped_approved_count,
+                    detail_text=result.detail_text,
+                    finished_at=finished_at,
+                    updated_by=display_name(current_user) or None,
+                ),
             )
             db.commit()
 

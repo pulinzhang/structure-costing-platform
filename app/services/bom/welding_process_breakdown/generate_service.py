@@ -11,13 +11,12 @@ import logging
 from collections.abc import Callable
 from datetime import datetime
 from decimal import Decimal
-from typing import Any
 
 from sqlalchemy.orm import Session
 
 from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING, audit_create
 from app.common.timezone import now
-from app.models.bom import BomSnapshot
+from app.models.bom import BomNode, BomSnapshot, BomWeldingProcessBreakdownNode
 from app.parsers.bom.welding_process_breakdown_parser import parse_welding_info_text
 from app.repositories.bom.bom_repository import BomNodeRepository, BomSnapshotRepository
 from app.repositories.bom.welding_process_breakdown_repository import (
@@ -25,6 +24,8 @@ from app.repositories.bom.welding_process_breakdown_repository import (
 )
 from app.schemas.dto.bom_welding_process_breakdown_dto import (
     BomWeldingProcessBreakdownGenerateDTO,
+    BomWeldingProcessBreakdownLineWrite,
+    BomWeldingProcessBreakdownNodeWrite,
 )
 from app.schemas.vo.bom_welding_process_breakdown_vo import (
     BomWeldingProcessBreakdownGeneratePrepStatsVO,
@@ -212,9 +213,9 @@ class BomWeldingProcessBreakdownGenerateService:
             )
             process_log.line(f"删除未审核旧数据：{deleted} 条主表")
 
-            created_nodes: list[Any] = []
+            created_nodes: list[BomWeldingProcessBreakdownNode] = []
             line_count = 0
-            source_to_breakdown: dict[int, Any] = {}
+            source_to_breakdown: dict[int, BomWeldingProcessBreakdownNode] = {}
             total = max(len(weld_candidates), 1)
 
             process_log.section("拆解")
@@ -229,7 +230,8 @@ class BomWeldingProcessBreakdownGenerateService:
                     by_id=by_id,
                     children_map=children_map,
                     weld_raw=weld_raw,
-                    audit_fields=audit_fields,
+                    created_by=audit_fields["created_by"],
+                    updated_by=audit_fields["updated_by"],
                 )
                 created_nodes.append(breakdown_node)
                 source_to_breakdown[bom_node.id] = breakdown_node
@@ -355,12 +357,13 @@ class BomWeldingProcessBreakdownGenerateService:
         db: Session,
         *,
         snapshot: BomSnapshot,
-        bom_node: Any,
-        by_id: dict[int, Any],
-        children_map: dict[int | None, list[Any]],
+        bom_node: BomNode,
+        by_id: dict[int, BomNode],
+        children_map: dict[int | None, list[BomNode]],
         weld_raw: str,
-        audit_fields: dict[str, Any],
-    ) -> tuple[Any, int]:
+        created_by: str,
+        updated_by: str,
+    ) -> tuple[BomWeldingProcessBreakdownNode, int]:
         parent = by_id.get(bom_node.parent_id) if bom_node.parent_id else None
         supply = resolve_supply_root(bom_node, by_id)
         children = children_map.get(bom_node.id, [])
@@ -375,31 +378,32 @@ class BomWeldingProcessBreakdownGenerateService:
 
         breakdown_node = self.repository.create_node(
             db,
-            {
-                "location": snapshot.location,
-                "customer_name": snapshot.customer_name,
-                "vehicle_model": snapshot.vehicle_model,
-                "bom_version": snapshot.bom_version,
-                "snapshot_id": snapshot.id,
-                "source_node_id": bom_node.id,
-                "part_number": bom_node.part_number,
-                "part_name": bom_node.part_name,
-                "level": int(bom_node.level),
-                "node_role": bom_node.node_role,
-                "parent_part_number": parent.part_number if parent else None,
-                "parent_part_name": parent.part_name if parent else None,
-                "supply_part_number": supply.part_number,
-                "supply_part_name": supply.part_name,
-                "assembly_qty": assembly_qty,
-                "assembly_qty_unit": bom_node.qty_unit,
-                "weld_info_raw": weld_raw,
-                "excel_row": bom_node.excel_row,
-                "parse_status": parse_status,
-                "process_line_count": process_line_count,
-                "qa_note": qa_note,
-                "audit_status": AUDIT_PENDING,
-                **audit_fields,
-            },
+            BomWeldingProcessBreakdownNodeWrite(
+                location=snapshot.location,
+                customer_name=snapshot.customer_name,
+                vehicle_model=snapshot.vehicle_model,
+                bom_version=snapshot.bom_version,
+                snapshot_id=snapshot.id,
+                source_node_id=bom_node.id,
+                part_number=bom_node.part_number,
+                part_name=bom_node.part_name,
+                level=int(bom_node.level),
+                node_role=bom_node.node_role,
+                parent_part_number=parent.part_number if parent else None,
+                parent_part_name=parent.part_name if parent else None,
+                supply_part_number=supply.part_number,
+                supply_part_name=supply.part_name,
+                assembly_qty=assembly_qty,
+                assembly_qty_unit=bom_node.qty_unit,
+                weld_info_raw=weld_raw,
+                excel_row=bom_node.excel_row,
+                parse_status=parse_status,
+                process_line_count=process_line_count,
+                qa_note=qa_note,
+                audit_status=AUDIT_PENDING,
+                created_by=created_by,
+                updated_by=updated_by,
+            ),
             commit=False,
         )
 
@@ -411,25 +415,26 @@ class BomWeldingProcessBreakdownGenerateService:
             )
             self.repository.create_line(
                 db,
-                {
-                    "breakdown_node_id": breakdown_node.id,
-                    "part_number": bom_node.part_number,
-                    "line_no": index,
-                    "process_token": item.process_token,
-                    "matched_span": item.matched_span,
-                    "process_qty": item.process_qty,
-                    "process_qty_unit": item.process_qty_unit,
-                    "process_qty_secondary": item.process_qty_secondary,
-                    "process_qty_secondary_unit": item.process_qty_secondary_unit,
-                    "standard_process_name": item.standard_process_name,
-                    "standard_process_unit": item.standard_process_unit,
-                    "map_status": item.map_status,
-                    "rollup_flag": "own",
-                    "child_fastener_qty_sum": qty_check.child_fastener_qty_sum,
-                    "qty_check_status": qty_check.qty_check_status,
-                    "qty_check_detail": qty_check.qty_check_detail,
-                    **audit_fields,
-                },
+                BomWeldingProcessBreakdownLineWrite(
+                    breakdown_node_id=breakdown_node.id,
+                    part_number=bom_node.part_number,
+                    line_no=index,
+                    process_token=item.process_token,
+                    matched_span=item.matched_span,
+                    process_qty=item.process_qty,
+                    process_qty_unit=item.process_qty_unit,
+                    process_qty_secondary=item.process_qty_secondary,
+                    process_qty_secondary_unit=item.process_qty_secondary_unit,
+                    standard_process_name=item.standard_process_name,
+                    standard_process_unit=item.standard_process_unit,
+                    map_status=item.map_status,
+                    rollup_flag="own",
+                    child_fastener_qty_sum=qty_check.child_fastener_qty_sum,
+                    qty_check_status=qty_check.qty_check_status,
+                    qty_check_detail=qty_check.qty_check_detail,
+                    created_by=created_by,
+                    updated_by=updated_by,
+                ),
                 commit=False,
             )
 

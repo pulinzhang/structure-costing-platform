@@ -3,11 +3,15 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
 
 from sqlalchemy.orm import Session
 
 from app.models.stamping import StampingTailorWeldBlank
+from app.repositories.persist import apply_payload_fields, model_from_payload
+from app.schemas.dto.stamping_tailor_weld_blank_dto import (
+    TailorWeldBlankPatch,
+    TailorWeldBlankWrite,
+)
 
 logger = logging.getLogger("repository.stamping.tailor_weld_blank")
 
@@ -56,8 +60,8 @@ class StampingTailorWeldBlankRepository:
             .first()
         )
 
-    def create(self, db: Session, data: dict[str, Any]) -> StampingTailorWeldBlank:
-        blank = StampingTailorWeldBlank(**data)
+    def create(self, db: Session, data: TailorWeldBlankWrite) -> StampingTailorWeldBlank:
+        blank = model_from_payload(StampingTailorWeldBlank, data)
         db.add(blank)
         db.commit()
         db.refresh(blank)
@@ -73,14 +77,12 @@ class StampingTailorWeldBlankRepository:
         self,
         db: Session,
         blank_id: int,
-        update_data: dict[str, Any],
+        update_data: TailorWeldBlankPatch,
     ) -> StampingTailorWeldBlank | None:
         blank = self.get_by_id(db, blank_id)
         if blank is None:
             return None
-        for key, value in update_data.items():
-            if hasattr(blank, key):
-                setattr(blank, key, value)
+        apply_payload_fields(blank, update_data)
         db.commit()
         db.refresh(blank)
         logger.info("更新拼焊子片: id=%s", blank_id)
@@ -110,13 +112,13 @@ class StampingTailorWeldBlankRepository:
         self,
         db: Session,
         part_id: int,
-        payloads: list[dict[str, Any]],
+        payloads: list[TailorWeldBlankWrite],
     ) -> list[StampingTailorWeldBlank]:
         """删除父件下旧子片后批量写入新子片（单事务提交）。"""
         db.query(StampingTailorWeldBlank).filter(
             StampingTailorWeldBlank.part_id == part_id
         ).delete(synchronize_session=False)
-        blanks = [StampingTailorWeldBlank(**row) for row in payloads]
+        blanks = [model_from_payload(StampingTailorWeldBlank, row) for row in payloads]
         db.add_all(blanks)
         db.commit()
         for blank in blanks:
@@ -132,10 +134,10 @@ class StampingTailorWeldBlankRepository:
     def bulk_create(
         self,
         db: Session,
-        data_list: list[dict[str, Any]],
+        data_list: list[TailorWeldBlankWrite],
     ) -> list[StampingTailorWeldBlank]:
         """批量创建（不提交事务，由调用方管理）。"""
-        blanks = [StampingTailorWeldBlank(**row) for row in data_list]
+        blanks = [model_from_payload(StampingTailorWeldBlank, row) for row in data_list]
         db.add_all(blanks)
         logger.info("批量创建拼焊子片: %s", len(blanks))
         return blanks

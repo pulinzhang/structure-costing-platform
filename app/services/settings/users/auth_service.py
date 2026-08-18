@@ -10,7 +10,7 @@ from app.common.timezone import now
 from app.models.settings import User, UserToken
 from app.repositories.settings.users.user_repository import UserRepository
 from app.repositories.settings.users.user_token_repository import TOKEN_IDLE_HOURS, UserTokenRepository
-from app.schemas.dto.user_dto import UserLoginDTO
+from app.schemas.dto.user_dto import UserLoginDTO, UserTokenCreate, UserTokenSnapshot
 from app.schemas.vo.user_vo import LoginVO, UserVO
 from app.services.settings.users.permission_service import PermissionService
 from app.services.settings.users.user_service import hash_password_md5
@@ -47,19 +47,19 @@ class AuthService:
         name = display_name(user)
         self.token_repo.create(
             token_db,
-            {
-                "token": token,
-                "user_id": user.id,
-                "username": user.username,
-                "real_name": user.real_name,
-                "email": user.email,
-                "department": user.department,
-                "avatar": user.avatar,
-                "last_active_at": current_time,
-                "created_at": current_time,
-                "created_by": name,
-                "updated_by": name,
-            },
+            UserTokenCreate(
+                token=token,
+                user_id=user.id,
+                username=user.username,
+                real_name=user.real_name,
+                email=user.email,
+                department=user.department,
+                avatar=user.avatar,
+                last_active_at=current_time,
+                created_at=current_time,
+                created_by=name,
+                updated_by=name,
+            ),
         )
 
         return LoginVO(
@@ -82,13 +82,13 @@ class AuthService:
         self.token_repo.sync_user_snapshot(
             token_db,
             user.id,
-            {
-                "username": user.username,
-                "real_name": user.real_name,
-                "email": user.email,
-                "department": user.department,
-                "avatar": user.avatar,
-            },
+            UserTokenSnapshot(
+                username=user.username,
+                real_name=user.real_name,
+                email=user.email,
+                department=user.department,
+                avatar=user.avatar,
+            ),
         )
 
     def touch(self, user_db: Session, token_db: Session, token: str) -> UserVO:

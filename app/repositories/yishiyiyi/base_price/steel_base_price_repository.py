@@ -3,13 +3,40 @@
 只负责数据库访问，事务由 Service 层管理
 """
 
-from typing import Any, Optional
+from typing import Optional, TypeVar
 
 from sqlalchemy import distinct, func
-from sqlalchemy.orm import Query, Session
+from sqlalchemy.orm import InstrumentedAttribute, Session
 
 from app.models.yishiyiyi import SteelBasePrice
-from app.schemas.dto.steel_base_price_dto import FilterOptions
+from app.repositories.persist import apply_dto_fields, apply_payload_fields, model_from_payload
+from app.schemas.dto.steel_base_price_dto import (
+    BasePriceUpsertCounts,
+    FilterOptions,
+    SteelBasePriceCreate,
+    SteelBasePriceUpdate,
+    SteelBasePriceWrite,
+)
+
+TValue = TypeVar("TValue")
+
+_UPSERT_UPDATE_SKIP = frozenset(
+    {
+        "id",
+        "year",
+        "month",
+        "location",
+        "steel_mill",
+        "category_name",
+        "grade",
+        "thick",
+        "width",
+        "spec",
+        "created_by",
+        "created_at",
+        "updated_at",
+    }
+)
 
 
 class BasePriceFilter:
@@ -92,13 +119,13 @@ class SteelBasePriceRepository:
     def _distinct_values(
         self,
         db: Session,
-        column: Any,
+        column: InstrumentedAttribute[TValue],
         *,
         filter_none: bool = False,
         descending: bool = False,
-    ) -> list[Any]:
+    ) -> list[TValue]:
         """通用 distinct 值查询。"""
-        query: Query[Any] = db.query(distinct(column))
+        query = db.query(distinct(column))
         if filter_none:
             query = query.filter(column.isnot(None))
         order_col = column.desc() if descending else column.asc()
@@ -125,9 +152,18 @@ class SteelBasePriceRepository:
 
     # ---- 写操作 ----
 
-    def create(self, db: Session, data: dict[str, Any]) -> SteelBasePrice:
+    def create(
+        self,
+        db: Session,
+        data: SteelBasePriceCreate,
+        *,
+        created_by: str,
+        updated_by: str,
+    ) -> SteelBasePrice:
         """创建基准价格记录。"""
-        record = SteelBasePrice(**data)
+        record = model_from_payload(SteelBasePrice, data)
+        record.created_by = created_by
+        record.updated_by = updated_by
         db.add(record)
         return record
 
@@ -135,15 +171,16 @@ class SteelBasePriceRepository:
         self,
         db: Session,
         record_id: int,
-        update_data: dict[str, Any],
+        update_data: SteelBasePriceUpdate,
+        *,
+        updated_by: str,
     ) -> Optional[SteelBasePrice]:
         """按主键更新记录，返回更新后记录或 None（不存在）。"""
         record = self.get_by_id(db, record_id)
         if record is None:
             return None
-        for column, value in update_data.items():
-            if hasattr(record, column):
-                setattr(record, column, value)
+        apply_dto_fields(record, update_data)
+        record.updated_by = updated_by
         return record
 
     def delete(self, db: Session, record_id: int) -> bool:
@@ -159,8 +196,8 @@ class SteelBasePriceRepository:
     def upsert(
         self,
         db: Session,
-        records: list[dict[str, Any]],
-    ) -> dict[str, int]:
+        records: list[SteelBasePriceWrite],
+    ) -> BasePriceUpsertCounts:
         """
         按复合唯一键 (year, month, location, steel_mill, category_name, grade, thick, width)
         执行插入或更新。
@@ -177,34 +214,23 @@ class SteelBasePriceRepository:
             existing = (
                 db.query(SteelBasePrice)
                 .filter(
-                    SteelBasePrice.year == record_data["year"],
-                    SteelBasePrice.month == record_data["month"],
-                    SteelBasePrice.location == record_data["location"],
-                    SteelBasePrice.steel_mill == record_data["steel_mill"],
-                    SteelBasePrice.category_name == record_data["category_name"],
-                    SteelBasePrice.grade == record_data["grade"],
-                    SteelBasePrice.thick == record_data["thick"],
-                    SteelBasePrice.width == record_data["width"],
+                    SteelBasePrice.year == record_data.year,
+                    SteelBasePrice.month == record_data.month,
+                    SteelBasePrice.location == record_data.location,
+                    SteelBasePrice.steel_mill == record_data.steel_mill,
+                    SteelBasePrice.category_name == record_data.category_name,
+                    SteelBasePrice.grade == record_data.grade,
+                    SteelBasePrice.thick == record_data.thick,
+                    SteelBasePrice.width == record_data.width,
                 )
                 .first()
             )
             if existing is not None:
                 # 更新可变更字段（含修改人；创建人仅 insert 时写入）
-                for column in (
-                    "base_price",
-                    "processing_fee",
-                    "excel_filename",
-                    "sheet_name",
-                    "excel_row",
-                    "excel_col",
-                    "remark",
-                    "updated_by",
-                ):
-                    if column in record_data:
-                        setattr(existing, column, record_data[column])
+                apply_payload_fields(existing, record_data, skip=_UPSERT_UPDATE_SKIP)
                 updated_count += 1
             else:
-                db.add(SteelBasePrice(**record_data))
+                db.add(model_from_payload(SteelBasePrice, record_data))
                 created_count += 1
 
         return {"created": created_count, "updated": updated_count}

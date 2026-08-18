@@ -4,6 +4,7 @@
 Response 类型统一放 vo/steel_price_policy_vo.py
 """
 
+from dataclasses import dataclass
 from decimal import Decimal
 from enum import Enum
 from typing import Any, Optional
@@ -252,3 +253,51 @@ class PolicyMatchRequest(BaseModel):
             if self.base_thickness is None:
                 raise ValueError("THICKNESS 政策匹配必须提供 base_thickness")
         return self
+
+
+# ============================
+# Repository 写入载荷
+# ============================
+
+
+@dataclass(slots=True)
+class SteelPricePolicyWrite:
+    """政策主表新建（含 Excel 文件名与审计人；不含阶梯明细）。"""
+
+    year: int
+    month: int
+    steel_mill: str
+    category_name: str
+    policy_type: str
+    grade_type: str | None = None
+    grade_value: str | None = None
+    base_thickness: Decimal | None = None
+    excel_filename: str | None = None
+    created_by: str | None = None
+    updated_by: str | None = None
+
+
+@dataclass(slots=True)
+class SteelPriceLadderItemWrite:
+    """阶梯明细新建（policy_id 由 Repository 写入）。"""
+
+    target_sub_group: str | None = None
+    thick_min: Decimal | None = None
+    thick_min_operator: str | None = None
+    thick_max: Decimal | None = None
+    thick_max_operator: str | None = None
+    width_min: Decimal | None = None
+    width_min_operator: str | None = None
+    width_max: Decimal | None = None
+    width_max_operator: str | None = None
+    zinc_coating_min: Decimal | None = None
+    zinc_coating_min_operator: str | None = None
+    zinc_coating_max: Decimal | None = None
+    zinc_coating_max_operator: str | None = None
+    price_adjustment: int = 0
+    is_base: int = 0
+    sort_order: int = 0
+    excel_row: int | None = None
+    excel_col: int | None = None
+    created_by: str | None = None
+    updated_by: str | None = None

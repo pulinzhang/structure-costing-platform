@@ -4,15 +4,39 @@
 """
 
 import logging
-from typing import Any, Dict, List, Optional, Tuple
+from datetime import datetime
+from typing import List, Optional, Tuple, TypedDict
 
 from sqlalchemy import and_, case, func
 from sqlalchemy.orm import Query, Session
 
 from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING
 from app.models.stamping import StampingTonnagePrice
+from app.repositories.persist import apply_dto_fields, model_from_payload, query_update
+from app.schemas.dto.stamping_tonnage_price_dto import (
+    StampingTonnagePriceCreate,
+    StampingTonnagePriceUpdate,
+)
 
 logger = logging.getLogger("repository.stamping")
+
+
+class AuditCountSummary(TypedDict):
+    """列表筛选汇总：总条数 / 待审 / 已审。"""
+
+    total_count: int
+    pending_count: int
+    approved_count: int
+
+
+class TonnagePriceListFilters(TypedDict):
+    """冲次单价列表筛选体。"""
+
+    locations: list[str]
+    years: list[int]
+    tonnages: list[int]
+    audit_status: str | None
+    summary: AuditCountSummary
 
 
 class StampingTonnagePriceRepository:
@@ -111,7 +135,7 @@ class StampingTonnagePriceRepository:
         location: Optional[str] = None,
         year: Optional[int] = None,
         audit_status: Optional[str] = None,
-    ) -> Dict[str, Any]:
+    ) -> AuditCountSummary:
         """按筛选条件汇总条数 / 待审 / 已审。"""
         q = self._build_list_query(
             db, location=location, year=year, audit_status=audit_status
@@ -212,13 +236,19 @@ class StampingTonnagePriceRepository:
         )
 
     def create(
-        self, db: Session, data: Dict[str, Any], *, commit: bool = True
+        self,
+        db: Session,
+        data: StampingTonnagePriceCreate,
+        *,
+        created_by: str,
+        updated_by: str,
+        commit: bool = True,
     ) -> StampingTonnagePrice:
         """创建单条记录"""
-        payload = dict(data)
-        if "audit_status" not in payload:
-            payload["audit_status"] = AUDIT_PENDING
-        record = StampingTonnagePrice(**payload)
+        record = model_from_payload(StampingTonnagePrice, data)
+        record.created_by = created_by
+        record.updated_by = updated_by
+        record.audit_status = AUDIT_PENDING
         db.add(record)
         if commit:
             db.commit()
@@ -227,21 +257,29 @@ class StampingTonnagePriceRepository:
         db.refresh(record)
         logger.info(
             "创建冲次单价: location=%s, year=%s, tonnage=%s, id=%s",
-            payload.get("location"),
-            payload.get("year"),
-            payload.get("tonnage"),
+            data.location,
+            data.year,
+            data.tonnage,
             record.id,
         )
         return record
 
-    def bulk_create(self, db: Session, data_list: List[Dict[str, Any]]) -> List[StampingTonnagePrice]:
+    def bulk_create(
+        self,
+        db: Session,
+        data_list: list[StampingTonnagePriceCreate],
+        *,
+        created_by: str,
+        updated_by: str,
+    ) -> list[StampingTonnagePrice]:
         """批量创建记录"""
-        records = []
+        records: list[StampingTonnagePrice] = []
         for data in data_list:
-            payload = dict(data)
-            if "audit_status" not in payload:
-                payload["audit_status"] = AUDIT_PENDING
-            records.append(StampingTonnagePrice(**payload))
+            record = model_from_payload(StampingTonnagePrice, data)
+            record.created_by = created_by
+            record.updated_by = updated_by
+            record.audit_status = AUDIT_PENDING
+            records.append(record)
         db.add_all(records)
         db.commit()
         for record in records:
@@ -253,17 +291,17 @@ class StampingTonnagePriceRepository:
         self,
         db: Session,
         id: int,
-        update_data: Dict[str, Any],
+        update_data: StampingTonnagePriceUpdate,
         *,
+        updated_by: str,
         commit: bool = True,
     ) -> Optional[StampingTonnagePrice]:
         """更新记录"""
         record = self.get_by_id(db, id)
         if not record:
             return None
-        for key, value in update_data.items():
-            if hasattr(record, key):
-                setattr(record, key, value)
+        apply_dto_fields(record, update_data)
+        record.updated_by = updated_by
         if commit:
             db.commit()
         else:
@@ -311,26 +349,25 @@ class StampingTonnagePriceRepository:
         location: str,
         year: int,
         audited_by: str,
-        audited_at: Any,
+        audited_at: datetime,
         audit_remark: Optional[str],
         updated_by: Optional[str] = None,
     ) -> int:
-        values: Dict[Any, Any] = {
-            StampingTonnagePrice.audit_status: AUDIT_APPROVED,
-            StampingTonnagePrice.audited_by: audited_by,
-            StampingTonnagePrice.audited_at: audited_at,
-            StampingTonnagePrice.audit_remark: audit_remark,
+        values: dict[str, str | datetime | None] = {
+            "audit_status": AUDIT_APPROVED,
+            "audited_by": audited_by,
+            "audited_at": audited_at,
+            "audit_remark": audit_remark,
         }
         if updated_by is not None:
-            values[StampingTonnagePrice.updated_by] = updated_by
-        count = (
-            db.query(StampingTonnagePrice)
-            .filter(
+            values["updated_by"] = updated_by
+        count = query_update(
+            db.query(StampingTonnagePrice).filter(
                 StampingTonnagePrice.location == location,
                 StampingTonnagePrice.year == year,
                 StampingTonnagePrice.audit_status == AUDIT_PENDING,
-            )
-            .update(values, synchronize_session=False)
+            ),
+            values,
         )
         db.commit()
         return count
@@ -342,26 +379,25 @@ class StampingTonnagePriceRepository:
         location: str,
         year: int,
         reverse_audited_by: str,
-        reverse_audited_at: Any,
+        reverse_audited_at: datetime,
         reverse_audit_remark: str,
         updated_by: Optional[str] = None,
     ) -> int:
-        values: Dict[Any, Any] = {
-            StampingTonnagePrice.audit_status: AUDIT_PENDING,
-            StampingTonnagePrice.reverse_audited_by: reverse_audited_by,
-            StampingTonnagePrice.reverse_audited_at: reverse_audited_at,
-            StampingTonnagePrice.reverse_audit_remark: reverse_audit_remark,
+        values: dict[str, str | datetime | None] = {
+            "audit_status": AUDIT_PENDING,
+            "reverse_audited_by": reverse_audited_by,
+            "reverse_audited_at": reverse_audited_at,
+            "reverse_audit_remark": reverse_audit_remark,
         }
         if updated_by is not None:
-            values[StampingTonnagePrice.updated_by] = updated_by
-        count = (
-            db.query(StampingTonnagePrice)
-            .filter(
+            values["updated_by"] = updated_by
+        count = query_update(
+            db.query(StampingTonnagePrice).filter(
                 StampingTonnagePrice.location == location,
                 StampingTonnagePrice.year == year,
                 StampingTonnagePrice.audit_status == AUDIT_APPROVED,
-            )
-            .update(values, synchronize_session=False)
+            ),
+            values,
         )
         db.commit()
         return count

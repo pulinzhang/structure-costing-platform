@@ -1,17 +1,41 @@
 """钢材价格 Repository，只负责数据库访问。"""
 
 import logging
+from datetime import datetime
 from decimal import Decimal
-from typing import Any, Optional
+from typing import Optional, TypedDict
 
 from sqlalchemy import case, distinct, func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Query, Session
 
 from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING, AUDIT_REJECTED
 from app.models.costing import SteelPrice
+from app.repositories.persist import apply_payload_fields, model_from_payload, query_update
+from app.schemas.dto.steel_price_dto import SteelPricePatch, SteelPriceWrite
+
+
+class SteelPriceFilterSummary(TypedDict):
+    """列表筛选汇总：均价 / 待审 / 已审。"""
+
+    avg_final_price: Decimal | None
+    pending_count: int
+    approved_count: int
+
+
+class SteelPriceFilterOptionValues(TypedDict):
+    """筛选下拉选项（不含列表汇总，汇总由 Service 拼入）。"""
+
+    years: list[int]
+    months: list[int]
+    locations: list[str]
+    category_names: list[str]
+    steel_mills: list[str]
+    audit_statuses: list[str]
 
 
 logger = logging.getLogger("repository.steel_price")
+
+_UPDATE_SKIP = frozenset({"id", "created_by", "created_at"})
 
 
 class SteelPriceRepository:
@@ -53,8 +77,8 @@ class SteelPriceRepository:
         steel_mill: str,
         category_name: str,
         grade: str,
-        thickness: Any,
-        width: Any,
+        thickness: Decimal,
+        width: Decimal,
     ) -> Optional[SteelPrice]:
         """按业务唯一键查询。"""
         return (
@@ -83,7 +107,7 @@ class SteelPriceRepository:
         grade: str | None = None,
         steel_mill: str | None = None,
         audit_status: str | None = None,
-    ) -> Any:
+    ) -> Query[SteelPrice]:
         query = db.query(SteelPrice)
         if year is not None:
             query = query.filter(SteelPrice.year == year)
@@ -154,7 +178,7 @@ class SteelPriceRepository:
         grade: str | None = None,
         steel_mill: str | None = None,
         audit_status: str | None = None,
-    ) -> dict[str, Any]:
+    ) -> SteelPriceFilterSummary:
         """按与列表相同的筛选条件汇总：均价 / 待审 / 已审。"""
         query = self._build_list_query(
             db,
@@ -195,7 +219,7 @@ class SteelPriceRepository:
         grade: str | None = None,
         steel_mill: str | None = None,
         audit_status: str | None = None,
-    ) -> Any:
+    ) -> list[SteelPrice]:
         """导出用：按筛选条件取全量记录（含溯源字段）。"""
         query = self._build_list_query(
             db,
@@ -221,7 +245,7 @@ class SteelPriceRepository:
             .all()
         )
 
-    def get_filter_options(self, db: Session) -> dict[str, Any]:
+    def get_filter_options(self, db: Session) -> SteelPriceFilterOptionValues:
         years = [
             row[0]
             for row in db.query(distinct(SteelPrice.year)).order_by(SteelPrice.year.desc()).all()
@@ -263,19 +287,19 @@ class SteelPriceRepository:
             "audit_statuses": audit_statuses,
         }
 
-    def create(self, db: Session, data: dict[str, Any]) -> SteelPrice:
+    def create(self, db: Session, data: SteelPriceWrite) -> SteelPrice:
         """插入新记录。"""
-        record = SteelPrice(**data)
+        record = model_from_payload(SteelPrice, data)
         db.add(record)
         db.flush()
         logger.info(
             "创建钢材价格: year=%s month=%s location=%s grade=%s thickness=%s width=%s id=%s",
-            data.get("year"),
-            data.get("month"),
-            data.get("location"),
-            data.get("grade"),
-            data.get("thickness"),
-            data.get("width"),
+            data.year,
+            data.month,
+            data.location,
+            data.grade,
+            data.thickness,
+            data.width,
             record.id,
         )
         return record
@@ -284,15 +308,13 @@ class SteelPriceRepository:
         self,
         db: Session,
         record_id: int,
-        update_data: dict[str, Any],
+        update_data: SteelPriceWrite | SteelPricePatch,
     ) -> Optional[SteelPrice]:
         """按主键更新记录，记录不存在时返回 None。"""
         record = self.get_by_id(db, record_id)
         if record is None:
             return None
-        for column, value in update_data.items():
-            if hasattr(record, column):
-                setattr(record, column, value)
+        apply_payload_fields(record, update_data, skip=_UPDATE_SKIP)
         db.flush()
         logger.info("更新钢材价格: id=%s", record_id)
         return record
@@ -317,7 +339,7 @@ class SteelPriceRepository:
         category_name: str | None = None,
         grade: str | None = None,
         steel_mill: str | None = None,
-    ) -> Any:
+    ) -> Query[SteelPrice]:
         query = db.query(SteelPrice).filter(
             SteelPrice.year == year,
             SteelPrice.month == month,
@@ -341,7 +363,7 @@ class SteelPriceRepository:
         category_name: str | None = None,
         grade: str | None = None,
         steel_mill: str | None = None,
-    ) -> Any:
+    ) -> int:
         """统计符合条件且已审核通过的条数。"""
         return (
             self._build_condition_query(
@@ -367,7 +389,7 @@ class SteelPriceRepository:
         category_name: str | None = None,
         grade: str | None = None,
         steel_mill: str | None = None,
-    ) -> Any:
+    ) -> int:
         """按条件批量删除未审核记录（pending / rejected），返回删除条数。"""
         query = self._build_condition_query(
             db,
@@ -397,7 +419,7 @@ class SteelPriceRepository:
         month: int,
         location: str,
         statuses: list[str],
-    ) -> Any:
+    ) -> int:
         """统计指定条件下、指定审核状态的条数。"""
         return (
             self._build_condition_query(
@@ -418,7 +440,7 @@ class SteelPriceRepository:
         month: int,
         location: str,
         audited_by: str,
-        audited_at: Any,
+        audited_at: datetime,
         audit_remark: str | None,
         updated_by: str | None = None,
     ) -> int:
@@ -429,18 +451,15 @@ class SteelPriceRepository:
             month=month,
             location=location,
         ).filter(SteelPrice.audit_status.in_([AUDIT_PENDING, AUDIT_REJECTED]))
-        values = {
-            SteelPrice.audit_status: AUDIT_APPROVED,
-            SteelPrice.audited_by: audited_by,
-            SteelPrice.audited_at: audited_at,
-            SteelPrice.audit_remark: audit_remark,
+        values: dict[str, str | datetime | None] = {
+            "audit_status": AUDIT_APPROVED,
+            "audited_by": audited_by,
+            "audited_at": audited_at,
+            "audit_remark": audit_remark,
         }
         if updated_by is not None:
-            values[SteelPrice.updated_by] = updated_by
-        updated_count = query.update(
-            values,
-            synchronize_session=False,
-        )
+            values["updated_by"] = updated_by
+        updated_count = query_update(query, values)
         db.flush()
         logger.info(
             "批量审核通过: year=%s month=%s location=%s count=%s",
@@ -459,7 +478,7 @@ class SteelPriceRepository:
         month: int,
         location: str,
         reverse_audited_by: str,
-        reverse_audited_at: Any,
+        reverse_audited_at: datetime,
         reverse_audit_remark: str,
         updated_by: str | None = None,
     ) -> int:
@@ -470,18 +489,15 @@ class SteelPriceRepository:
             month=month,
             location=location,
         ).filter(SteelPrice.audit_status == AUDIT_APPROVED)
-        values = {
-            SteelPrice.audit_status: AUDIT_PENDING,
-            SteelPrice.reverse_audited_by: reverse_audited_by,
-            SteelPrice.reverse_audited_at: reverse_audited_at,
-            SteelPrice.reverse_audit_remark: reverse_audit_remark,
+        values: dict[str, str | datetime | None] = {
+            "audit_status": AUDIT_PENDING,
+            "reverse_audited_by": reverse_audited_by,
+            "reverse_audited_at": reverse_audited_at,
+            "reverse_audit_remark": reverse_audit_remark,
         }
         if updated_by is not None:
-            values[SteelPrice.updated_by] = updated_by
-        updated_count = query.update(
-            values,
-            synchronize_session=False,
-        )
+            values["updated_by"] = updated_by
+        updated_count = query_update(query, values)
         db.flush()
         logger.info(
             "批量反审核: year=%s month=%s location=%s count=%s",
@@ -519,7 +535,7 @@ class SteelPriceRepository:
         month: int,
         location: str,
         grade: str,
-        thickness: Any,
+        thickness: Decimal,
     ) -> list[SteelPrice]:
         """按年月/基地/牌号/料厚精确匹配（中标唯一钢厂场景）。"""
         return (

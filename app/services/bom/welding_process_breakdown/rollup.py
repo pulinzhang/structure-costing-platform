@@ -13,17 +13,16 @@ from __future__ import annotations
 
 from collections import defaultdict
 from decimal import Decimal
-from typing import Any
 
-from app.models.bom import BomNode
+from app.models.bom import BomNode, BomWeldingProcessBreakdownLine, BomWeldingProcessBreakdownNode
 
 
 def apply_rollup_flags(
-    breakdown_nodes: list[Any],
-    source_to_breakdown: dict[int, Any],
+    breakdown_nodes: list[BomWeldingProcessBreakdownNode],
+    source_to_breakdown: dict[int, BomWeldingProcessBreakdownNode],
     children_map: dict[int | None, list[BomNode]],
 ) -> None:
-    """就地修改明细行的 rollup_flag（调用方负责 flush/commit）。"""
+    """就地修改明细行的 rollup 标记（调用方负责 flush/commit）。"""
     for node in breakdown_nodes:
         if node.level != 0 or node.source_node_id is None:
             continue
@@ -33,7 +32,7 @@ def apply_rollup_flags(
         }
         child_bom_nodes = children_map.get(node.source_node_id, [])
         child_token_totals: dict[str, Decimal] = defaultdict(lambda: Decimal("0"))
-        child_lines_by_token: dict[str, list[Any]] = defaultdict(list)
+        child_lines_by_token: dict[str, list[BomWeldingProcessBreakdownLine]] = defaultdict(list)
 
         for child_bom in child_bom_nodes:
             child_breakdown = source_to_breakdown.get(child_bom.id)

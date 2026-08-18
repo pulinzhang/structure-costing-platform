@@ -14,7 +14,11 @@ from app.models.stamping import StampingProcessFeeCalcLog
 from app.repositories.stamping.stamping_process_fee_calc_log_repository import (
     StampingProcessFeeCalcLogRepository,
 )
-from app.schemas.dto.stamping_process_fee_dto import StampingProcessFeeCalcDTO
+from app.schemas.dto.stamping_process_fee_dto import (
+    ProcessFeeCalcLogCreate,
+    ProcessFeeCalcLogPatch,
+    StampingProcessFeeCalcDTO,
+)
 from app.schemas.vo.stamping_process_fee_vo import StampingProcessFeeCalcLogVO
 from app.services.stamping.process_fee.calc.constants import (
     DUPLICATE_SCOPE_CALC_MESSAGE,
@@ -65,21 +69,21 @@ class ProcessFeeCalcLogService:
         try:
             record = self.calc_log_repo.create(
                 db,
-                {
-                    "calc_batch_id": calc_batch_id,
-                    "year": dto.year,
-                    "location": location,
-                    "stamping_supplier": supplier,
-                    "vehicle_model": dto.vehicle_model,
-                    "version": dto.version,
-                    "status": STATUS_PROCESSING,
-                    "detail_text": "计算进行中...",
-                    "started_at": started_at,
-                    "operator_id": operator_id,
-                    "operator_name": operator_name,
-                    "created_by": operator_name,
-                    "updated_by": operator_name,
-                },
+                ProcessFeeCalcLogCreate(
+                    calc_batch_id=calc_batch_id,
+                    year=dto.year,
+                    location=location,
+                    stamping_supplier=supplier,
+                    vehicle_model=dto.vehicle_model,
+                    version=dto.version,
+                    status=STATUS_PROCESSING,
+                    detail_text="计算进行中...",
+                    started_at=started_at,
+                    operator_id=operator_id,
+                    operator_name=operator_name,
+                    created_by=operator_name,
+                    updated_by=operator_name,
+                ),
             )
             db.commit()
             db.refresh(record)
@@ -98,11 +102,11 @@ class ProcessFeeCalcLogService:
         self.calc_log_repo.update(
             db,
             log_id,
-            {
-                "status": STATUS_FAILED,
-                "detail_text": detail_text,
-                "finished_at": now(),
-            },
+            ProcessFeeCalcLogPatch(
+                status=STATUS_FAILED,
+                detail_text=detail_text,
+                finished_at=now(),
+            ),
         )
         db.commit()
 
@@ -127,12 +131,11 @@ class ProcessFeeCalcLogService:
         self.calc_log_repo.update(
             db,
             record.id,
-            {
-                "status": STATUS_FAILED,
-                "detail_text": (record.detail_text or "")
-                + "\n超时自动释放计算锁",
-                "finished_at": now(),
-            },
+            ProcessFeeCalcLogPatch(
+                status=STATUS_FAILED,
+                detail_text=(record.detail_text or "") + "\n超时自动释放计算锁",
+                finished_at=now(),
+            ),
         )
         db.commit()
 

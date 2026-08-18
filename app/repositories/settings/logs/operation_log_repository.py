@@ -3,18 +3,19 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
 
 from sqlalchemy.orm import Session
 
 from app.models.settings import OperationLog
+from app.repositories.persist import model_from_payload
+from app.schemas.dto.operation_log_dto import OperationLogCreate
 
 
 class OperationLogRepository:
     """操作日志数据访问。"""
 
-    def create(self, db: Session, data: dict[str, Any]) -> OperationLog:
-        row = OperationLog(**data)
+    def create(self, db: Session, data: OperationLogCreate) -> OperationLog:
+        row = model_from_payload(OperationLog, data)
         db.add(row)
         db.commit()
         db.refresh(row)

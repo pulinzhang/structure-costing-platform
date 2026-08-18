@@ -25,6 +25,8 @@ from app.common.timezone import now
 from app.database import AuxiliaryDatabaseConfig
 from app.models.async_task import AsyncTask
 from app.repositories.async_task import AsyncTaskRepository
+from app.repositories.persist import model_from_payload
+from app.schemas.dto.async_task_dto import AsyncTaskInsert, AsyncTaskPatch
 from app.utils.logging_config import get_logger
 
 
@@ -110,23 +112,23 @@ class AsyncTaskService:
         self.clean_expired_tasks()
         task_id = str(uuid.uuid4())
         current_time = now()
-        values = {
-            "task_id": task_id,
-            "task_type": task_type,
-            "status": STATUS_PENDING,
-            "progress": 0,
-            "message": message,
-            "result_json": None,
-            "operator_id": operator_id,
-            "operator_name": operator_name,
-            "created_by": operator_name,
-            "updated_by": operator_name,
-            "created_at": current_time,
-            "updated_at": current_time,
-        }
+        payload = AsyncTaskInsert(
+            task_id=task_id,
+            task_type=task_type,
+            status=STATUS_PENDING,
+            progress=0,
+            message=message,
+            result_json=None,
+            operator_id=operator_id,
+            operator_name=operator_name,
+            created_by=operator_name,
+            updated_by=operator_name,
+            created_at=current_time,
+            updated_at=current_time,
+        )
         with self._autocommit_connection() as conn:
-            self.repository.insert_task(conn, values)
-        return AsyncTask(**values)
+            self.repository.insert_task(conn, payload)
+        return model_from_payload(AsyncTask, payload)
 
     def get_by_task_id(self, task_id: str) -> Optional[AsyncTask]:
         db = self._read_session()
@@ -162,7 +164,7 @@ class AsyncTaskService:
         result: Any = None,
     ) -> None:
         """AUTOCOMMIT 更新任务（辅助库）。"""
-        values: dict[str, Any] = {"updated_at": now()}
+        values: AsyncTaskPatch = {"updated_at": now()}
         if status is not None:
             values["status"] = status
         if progress is not None:

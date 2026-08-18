@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Generic, Protocol, TypeVar
+from typing import Generic, Protocol, TypeVar
 
 from sqlalchemy.orm import Session
+
+from app.repositories.persist import apply_payload_fields, model_from_payload
 
 logger = logging.getLogger("repository.stamping")
 
@@ -17,10 +19,11 @@ class HasId(Protocol):
 
 
 T = TypeVar("T", bound=HasId)
+TPayload = TypeVar("TPayload")
 
 
-class BaseRepository(Generic[T]):
-    """Repository 基类，封装通用 CRUD 操作"""
+class BaseRepository(Generic[T, TPayload]):
+    """Repository 基类，封装通用 CRUD 操作。"""
 
     def __init__(self, model: type[T]) -> None:
         self.model = model
@@ -33,30 +36,32 @@ class BaseRepository(Generic[T]):
         """查询所有记录（分页）"""
         return db.query(self.model).offset(skip).limit(limit).all()
 
-    def create(self, db: Session, data: dict[str, Any]) -> T:
+    def create(self, db: Session, payload: TPayload) -> T:
         """创建单条记录"""
-        instance = self.model(**data)
+        instance = model_from_payload(self.model, payload)
         db.add(instance)
         db.commit()
         db.refresh(instance)
         logger.info("创建记录: %s (id=%s)", self.model.__name__, instance.id)
         return instance
 
-    def bulk_create(self, db: Session, data_list: list[dict[str, Any]]) -> list[T]:
+    def bulk_create(self, db: Session, payloads: list[TPayload]) -> list[T]:
         """批量创建记录（不提交事务，由调用方管理）"""
-        instances = [self.model(**data) for data in data_list]
+        instances = [model_from_payload(self.model, payload) for payload in payloads]
         db.add_all(instances)
         logger.info("批量创建: %s x%s", self.model.__name__, len(instances))
         return instances
 
-    def update(self, db: Session, id: int, update_data: dict[str, Any]) -> T | None:
+    def update(self, db: Session, id: int, payload: TPayload) -> T | None:
         """更新记录"""
         instance = self.get_by_id(db, id)
         if instance is None:
             return None
-        for key, value in update_data.items():
-            if hasattr(instance, key):
-                setattr(instance, key, value)
+        apply_payload_fields(
+            instance,
+            payload,
+            skip=frozenset({"id", "created_by", "created_at"}),
+        )
         db.commit()
         db.refresh(instance)
         logger.info("更新记录: %s (id=%s)", self.model.__name__, id)

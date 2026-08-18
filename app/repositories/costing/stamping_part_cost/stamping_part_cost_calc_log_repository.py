@@ -1,13 +1,18 @@
 """冲压零件价格核算计算批次日志 Repository。"""
 
 import logging
-from typing import Any, Optional, cast
+from typing import Optional, cast
 
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
 from app.models.costing import StampingPartCostCalcLog
+from app.repositories.persist import apply_payload_fields, model_from_payload
+from app.schemas.dto.stamping_part_cost_dto import (
+    StampingPartCostCalcLogCreate,
+    StampingPartCostCalcLogPatch,
+)
 
 
 logger = logging.getLogger("repository.stamping_part_cost_calc_log")
@@ -97,21 +102,21 @@ class StampingPartCostCalcLogRepository:
         )
         return records, total
 
-    def create(self, db: Session, data: dict[str, Any]) -> StampingPartCostCalcLog:
-        record = StampingPartCostCalcLog(**data)
+    def create(
+        self, db: Session, data: StampingPartCostCalcLogCreate
+    ) -> StampingPartCostCalcLog:
+        record = model_from_payload(StampingPartCostCalcLog, data)
         db.add(record)
         db.flush()
         return record
 
     def update(
-        self, db: Session, log_id: int, data: dict[str, Any]
+        self, db: Session, log_id: int, data: StampingPartCostCalcLogPatch
     ) -> Optional[StampingPartCostCalcLog]:
         record = self.get_by_id(db, log_id)
         if record is None:
             return None
-        for key, value in data.items():
-            if hasattr(record, key):
-                setattr(record, key, value)
+        apply_payload_fields(record, data)
         db.flush()
         return record
 

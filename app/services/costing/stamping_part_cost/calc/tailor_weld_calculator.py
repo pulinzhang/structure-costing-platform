@@ -12,7 +12,6 @@
 from __future__ import annotations
 
 from decimal import Decimal
-from typing import Any
 
 from sqlalchemy.orm import Session
 
@@ -23,6 +22,7 @@ from app.models.yishiyiyi import StampingScrapPrice
 from app.repositories.stamping.stamping_process_fee_repository import (
     StampingProcessFeeRepository,
 )
+from app.schemas.dto.stamping_part_cost_dto import StampingPartCostCalcAmounts
 from app.schemas.vo.stamping_part_cost_vo import StampingPartCostFailedItemVO
 from app.services.costing.stamping_part_cost.calc.constants import (
     AMOUNT_QUANTIZE,
@@ -58,7 +58,7 @@ class TailorWeldPartCostCalculator:
         density: Decimal,
         loss_rate: Decimal,
         recovery_rate: Decimal,
-    ) -> dict[str, Any] | StampingPartCostFailedItemVO:
+    ) -> StampingPartCostCalcAmounts | StampingPartCostFailedItemVO:
         blanks = list(part.tailor_weld_blanks or [])
         blanks = sorted(blanks, key=lambda b: (b.blank_seq or 0, b.id or 0))
         if len(blanks) < 2:
@@ -170,28 +170,28 @@ class TailorWeldPartCostCalculator:
             steel_ids, steel_mills, steel_ton_prices
         )
 
-        return {
-            "density": density,
-            "material_loss_rate": loss_rate,
-            "scrap_recovery_rate": recovery_rate,
-            "blank_weight_kg": blank_kg_total,
-            "finished_total_kg": finished_total_kg,
-            "scrap_weight_kg": scrap_kg,
-            "material_utilization_pct": utilization,
-            "steel_price_id": steel_price_id,
-            "steel_mill": steel_mill,
-            "steel_ton_price": steel_ton_price,
-            "scrap_price_id": scrap.id,
-            "scrap_ton_price": scrap_ton_price,
-            "process_fee_id": fee.id,
-            "process_fee_amount": process_fee_amount,
-            "material_amount_sheet": material_amount_sheet,
-            "loss_scrap_deduction": loss_scrap_deduction,
-            "process_scrap_deduction": process_scrap_deduction,
-            "scrap_amount_sheet": scrap_amount_sheet,
-            "material_net_per_part": material_net_per_part,
-            "unit_cost": unit_cost,
-        }
+        return StampingPartCostCalcAmounts(
+            density=density,
+            material_loss_rate=loss_rate,
+            scrap_recovery_rate=recovery_rate,
+            blank_weight_kg=blank_kg_total,
+            finished_total_kg=finished_total_kg,
+            scrap_weight_kg=scrap_kg,
+            material_utilization_pct=utilization,
+            steel_price_id=steel_price_id,
+            steel_mill=steel_mill,
+            steel_ton_price=steel_ton_price,
+            scrap_price_id=scrap.id,
+            scrap_ton_price=scrap_ton_price,
+            process_fee_id=fee.id,
+            process_fee_amount=process_fee_amount,
+            material_amount_sheet=material_amount_sheet,
+            loss_scrap_deduction=loss_scrap_deduction,
+            process_scrap_deduction=process_scrap_deduction,
+            scrap_amount_sheet=scrap_amount_sheet,
+            material_net_per_part=material_net_per_part,
+            unit_cost=unit_cost,
+        )
 
     def _calc_blank_material(
         self,

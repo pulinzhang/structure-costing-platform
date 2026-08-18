@@ -1,10 +1,12 @@
 """
-冲压加工费 DTO - 请求参数
+冲压加工费 DTO - 请求参数 / Repository 写入载荷
 """
 
-from typing import Any
-
+from dataclasses import dataclass, field
+from datetime import datetime
 from decimal import Decimal
+from typing import Any, TypedDict
+
 from pydantic import BaseModel, Field, field_validator
 
 from app.common.money import Q3, optional_quantize_money
@@ -73,3 +75,111 @@ class StampingProcessFeeBatchReverseAuditDTO(StampingProcessFeeScopeDTO):
     """批量反审核"""
 
     reverse_audit_remark: str = Field(..., min_length=1, description="反审核原因（必填）")
+
+
+@dataclass(slots=True)
+class ProcessFeePartSnapshot:
+    """零件主表快照到加工费结果行。"""
+
+    source_part_id: int | None
+    seq_no: int | None
+    part_number: str
+    part_name: str | None
+    material: str | None
+    thickness: Decimal | None
+    part_weight: Decimal | None
+    sheet_length: Decimal | None
+    sheet_width: Decimal | None
+    parts_per_sheet: int | None
+    sheet_type: str | None
+    die_type: str | None
+    process_method: str | None
+    automation: str | None
+    part_remark: str | None
+    sketch_url: str | None
+    excel_filename: str | None
+
+
+@dataclass(slots=True)
+class ProcessFeeItemPayload:
+    """加工费工序分项写入。"""
+
+    source_process_id: int | None = None
+    process_seq: str | None = None
+    process_order: int | None = None
+    process_code: str | None = None
+    original_tonnage: int | None = None
+    resolved_tonnage: int | None = None
+    tonnage_source: str = "self"
+    inherited_from_part_id: int | None = None
+    inherited_from_part_number: str | None = None
+    inherited_from_process_seq: str | None = None
+    inherited_from_process_code: str | None = None
+    cost_ratio: Decimal | None = None
+    tonnage_price_id: int | None = None
+    price_per_stroke: Decimal | None = None
+    line_fee: Decimal = Decimal("0")
+    basis_text: str | None = None
+    remark: str | None = None
+
+
+@dataclass(slots=True)
+class ProcessFeeUpsertPayload:
+    """加工费主表 upsert（含快照与工序分项）。"""
+
+    year: int
+    location: str
+    stamping_supplier: str
+    vehicle_model: str
+    version: str
+    snapshot: ProcessFeePartSnapshot
+    processing_fee: Decimal | None
+    process_count: int
+    final_processing_fee: Decimal | None
+    calc_fail_reason: str | None
+    audit_status: str
+    updated_by: str | None
+    created_by: str | None = None
+    process_items: list[ProcessFeeItemPayload] = field(default_factory=list)
+
+
+class ProcessFeePatch(TypedDict, total=False):
+    """加工费部分更新（手工调价等）。"""
+
+    manual_unit_price: Decimal | None
+    final_processing_fee: Decimal | None
+    remark: str | None
+    updated_by: str
+
+
+@dataclass(slots=True)
+class ProcessFeeCalcLogCreate:
+    """加工费计算日志新建。"""
+
+    calc_batch_id: str
+    year: int
+    location: str
+    stamping_supplier: str
+    status: str
+    detail_text: str
+    started_at: datetime
+    vehicle_model: str | None = None
+    version: str | None = None
+    operator_id: int | None = None
+    operator_name: str | None = None
+    created_by: str | None = None
+    updated_by: str | None = None
+
+
+class ProcessFeeCalcLogPatch(TypedDict, total=False):
+    """加工费计算日志部分更新。"""
+
+    status: str
+    total_parts: int
+    success_count: int
+    failed_count: int
+    zero_fee_count: int
+    skipped_approved_count: int
+    detail_text: str
+    finished_at: datetime
+    updated_by: str | None

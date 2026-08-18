@@ -4,7 +4,7 @@
 """
 
 import logging
-from typing import Any, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -13,18 +13,19 @@ from app.common.audit import (
     AUDIT_APPROVED,
     AUDIT_PENDING,
     audit_create,
-    audit_update,
     display_name,
 )
 from app.common.timezone import now
-from app.repositories.bom.welding_unit_price_repository import BomWeldingUnitPriceRepository
+from app.repositories.bom.welding_unit_price_repository import (
+    BomWeldingUnitPriceRepository,
+    WeldingUnitPriceListFilters,
+)
 from app.schemas.dto.bom_welding_unit_price_dto import (
     BomWeldingUnitPriceBatchApproveDTO,
     BomWeldingUnitPriceBatchReverseAuditDTO,
     BomWeldingUnitPriceCreate,
     BomWeldingUnitPriceQuery,
     BomWeldingUnitPriceUpdate,
-    quantize_unit_price,
 )
 from app.schemas.vo.bom_welding_unit_price_vo import (
     BomWeldingUnitPriceBatchAuditResultVO,
@@ -57,7 +58,7 @@ class BomWeldingUnitPriceService:
 
     def paginate(
         self, db: Session, query: BomWeldingUnitPriceQuery
-    ) -> Tuple[List[BomWeldingUnitPriceResponse], int, dict[str, Any]]:
+    ) -> Tuple[List[BomWeldingUnitPriceResponse], int, WeldingUnitPriceListFilters]:
         skip = (query.page - 1) * query.size
         audit_status = query.audit_status.strip() if query.audit_status else None
         records, total = self.repository.paginate(
@@ -69,7 +70,7 @@ class BomWeldingUnitPriceService:
             limit=query.size,
         )
         rows = [BomWeldingUnitPriceResponse.model_validate(r) for r in records]
-        filters = {
+        filters: WeldingUnitPriceListFilters = {
             "locations": self.repository.get_distinct_locations(db),
             "years": self.repository.get_distinct_years(db),
             "audit_status": audit_status,
@@ -95,13 +96,13 @@ class BomWeldingUnitPriceService:
         current_user: UserVO,
     ) -> Tuple[Optional[BomWeldingUnitPriceResponse], Optional[str]]:
         try:
-            payload = {
-                **data.model_dump(),
-                **audit_create(current_user),
-                "audit_status": AUDIT_PENDING,
-            }
-            payload["unit_price"] = quantize_unit_price(payload["unit_price"])
-            record = self.repository.create(db, payload)
+            audit = audit_create(current_user)
+            record = self.repository.create(
+                db,
+                data,
+                created_by=audit["created_by"],
+                updated_by=audit["updated_by"],
+            )
             return BomWeldingUnitPriceResponse.model_validate(record), None
         except IntegrityError:
             db.rollback()
@@ -181,13 +182,12 @@ class BomWeldingUnitPriceService:
             if existing.audit_status == AUDIT_APPROVED:
                 return None, "已审核通过，请先反审核后再修改"
 
-            payload = {
-                **data.model_dump(exclude_unset=True),
-                **audit_update(current_user),
-            }
-            if "unit_price" in payload:
-                payload["unit_price"] = quantize_unit_price(payload["unit_price"])
-            record = self.repository.update(db, id, payload)
+            record = self.repository.update(
+                db,
+                id,
+                data,
+                updated_by=display_name(current_user),
+            )
             if not record:
                 return None, "记录不存在"
             return BomWeldingUnitPriceResponse.model_validate(record), None
