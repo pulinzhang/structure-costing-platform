@@ -1,5 +1,7 @@
 # 云主机手工发版：在仓库根目录反复执行 bash deploy.sh 即可
-# Nginx 反代到 127.0.0.1:8000（可用环境变量 STAMPING_PUBLISH_PORT 改宿主机端口）
+# 映射宿主机 8000（可用 STAMPING_PUBLISH_PORT 改端口）
+# Nginx 若也在 Docker 内：proxy_pass 用宿主机网关，例如 http://172.17.0.1:8000
+# （不要用容器内的 127.0.0.1）。同网络也可用 http://stamping-costing-platform:8000
 # 每次发版替换容器；./data ./uploads ./logs 挂卷保留，不会被重建清空
 
 name: stamping-costing-platform
@@ -15,7 +17,7 @@ services:
     init: true
     stop_grace_period: 30s
     ports:
-      - "127.0.0.1:${STAMPING_PUBLISH_PORT:-8000}:8000"
+      - "${STAMPING_PUBLISH_PORT:-8000}:8000"
     env_file:
       - .env
     environment:
