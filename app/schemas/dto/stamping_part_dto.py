@@ -6,9 +6,9 @@ from pydantic import BaseModel, Field
 
 
 class StampingPartBatchDeleteDTO(BaseModel):
-    """按基地 + 冲压工厂 + 车型批量删除（版本可选）"""
+    """按基地 + 冲压工厂 + 车型 + 版本批量删除（四者同时必填）"""
 
     location: str = Field(..., min_length=1, description="采购基地（必填）")
     stamping_supplier: str = Field(..., min_length=1, description="冲压工厂（必填）")
     vehicle_model: str = Field(..., min_length=1, description="车型（必填）")
-    version: str | None = Field(None, description="版本（可选；不传则删除该车型全部版本）")
+    version: str = Field(..., min_length=1, description="版本（必填）")

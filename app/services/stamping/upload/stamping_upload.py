@@ -21,6 +21,7 @@ from app.config import settings
 from app.repositories.stamping.stamping_repository import StampingPartRepository, StampingProcessRepository
 from app.schemas.dto.stamping_upload_dto import FileInfo, PartData, ProcessData, UploadResult
 from app.schemas.vo.user_vo import UserVO
+from app.services.stamping.upload.cost_ratio_preserver import ProcessCostRatioPreserver
 
 # progress_callback(progress: int, msg: str)
 ProgressCallback = Callable[[int, str], None]
@@ -35,6 +36,7 @@ class StampingUploadService:
         self.db = db
         self.part_repo = StampingPartRepository()
         self.process_repo = StampingProcessRepository()
+        self.cost_ratio_preserver = ProcessCostRatioPreserver()
 
     def process_upload(
         self,
@@ -47,7 +49,8 @@ class StampingUploadService:
         """
         处理冲压工艺文件上传（完整业务流程）。
 
-        主数据：删除旧数据 + 写入零件/工序在同一事务中，全部成功或全部回滚。
+        主数据：解析完成后用库中已设比率回写工序，再删除旧数据并写入；
+        删除与写入在同一事务中，全部成功或全部回滚。
         """
         import tempfile
         import os
@@ -89,6 +92,17 @@ class StampingUploadService:
 
             _report(70, "正在写入零件与工序到数据库...")
             with self.db.begin():
+                existing_processes = self.process_repo.list_by_scope(
+                    self.db,
+                    location=file_info.safe_location,
+                    stamping_supplier=stamping_supplier,
+                    vehicle_model=vehicle_model,
+                    version=version,
+                )
+                self.cost_ratio_preserver.apply(
+                    parse_result.processes,
+                    existing_processes,
+                )
                 part_map = self._save_parts(
                     parse_result.parts,
                     vehicle_model,
@@ -302,7 +316,7 @@ class StampingUploadService:
                 process_code=process.process_code,
                 die_sets=process.die_sets,
                 tonnage=process.tonnage,
-                cost_ratio=Decimal("1.00"),
+                cost_ratio=process.cost_ratio if process.cost_ratio is not None else Decimal("1.00"),
                 remark=process.remark,
             ))
 

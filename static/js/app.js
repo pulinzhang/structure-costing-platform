@@ -24,7 +24,7 @@ import {
 } from './permissions.js?v=9';
 import { pageConfig as dashboardPage }      from './features/dashboard/index.js?v=5';
 import { pageConfig as stampingUploadPage } from './features/stamping/process/upload/index.js?v=38';
-import { pageConfig as stampingPartsPage }  from './features/stamping/process/parts/index.js?v=24';
+import { pageConfig as stampingPartsPage }  from './features/stamping/process/parts/index.js?v=26';
 import { pageConfig as stampingTonnagePage } from './features/stamping/tonnage/list/index.js?v=19';
 import { pageConfig as stampingTonnageUploadPage } from './features/stamping/tonnage/upload/index.js?v=4';
 import { pageConfig as stampingProcessFeeCalcPage } from './features/stamping/process-fee/calc/index.js?v=22';

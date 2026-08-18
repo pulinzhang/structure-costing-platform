@@ -8,6 +8,7 @@
 """
 
 from dataclasses import dataclass
+from decimal import Decimal
 
 
 @dataclass(slots=True)
@@ -38,3 +39,6 @@ class Process:
 
     # 备注
     remark: str = ""
+
+    # 单次冲压费用比例。Excel 不含此列；默认 1.00，上传时由 Service 用库中已设值回写。
+    cost_ratio: Decimal = Decimal("1.00")

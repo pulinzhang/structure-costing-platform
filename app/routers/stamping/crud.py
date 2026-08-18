@@ -64,11 +64,12 @@ def batch_delete_parts(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_PARTS_DELETE)),
 ) -> ApiResponse[StampingPartBatchDeleteResultVO]:
-    """按基地 + 冲压工厂 + 车型批量删除零件（版本可选）。"""
+    """按基地 + 冲压工厂 + 车型 + 版本批量删除零件（四者同时必填）。"""
     result = _stamping_service.batch_delete(db, body)
-    scope = f"{result.location} / {result.stamping_supplier} / {result.vehicle_model}"
-    if result.version:
-        scope += f" / {result.version}"
+    scope = (
+        f"{result.location} / {result.stamping_supplier} / "
+        f"{result.vehicle_model} / {result.version}"
+    )
     return ApiResponse.ok(
         data=result,
         message=f"已删除 {result.deleted_count} 个零件（{scope}）",

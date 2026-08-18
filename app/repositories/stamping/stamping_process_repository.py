@@ -42,6 +42,33 @@ class StampingProcessRepository:
     def list_all(self, db: Session, skip: int = 0, limit: int = 100) -> List[StampingProcess]:
         return db.query(StampingProcess).offset(skip).limit(limit).all()
 
+    def list_by_scope(
+        self,
+        db: Session,
+        *,
+        location: str,
+        stamping_supplier: str,
+        vehicle_model: str,
+        version: str,
+    ) -> List[StampingProcess]:
+        """按基地 + 冲压工厂 + 车型 + 版本查询工序（含所属零件）。"""
+        from sqlalchemy.orm import contains_eager
+
+        from app.models import StampingPart
+
+        return (
+            db.query(StampingProcess)
+            .join(StampingPart, StampingProcess.part_id == StampingPart.id)
+            .options(contains_eager(StampingProcess.part))
+            .filter(
+                StampingPart.location == location,
+                StampingPart.stamping_supplier == stamping_supplier,
+                StampingPart.vehicle_model == vehicle_model,
+                StampingPart.version == version,
+            )
+            .all()
+        )
+
     def create(self, db: Session, process_data: Dict[str, Any]) -> StampingProcess:
         process = StampingProcess(**process_data)
         db.add(process)

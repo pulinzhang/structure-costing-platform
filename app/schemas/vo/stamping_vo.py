@@ -312,5 +312,5 @@ class StampingPartBatchDeleteResultVO(BaseModel):
     location: str
     stamping_supplier: str
     vehicle_model: str
-    version: str | None = None
+    version: str
     deleted_count: int = 0

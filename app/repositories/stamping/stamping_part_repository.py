@@ -260,17 +260,15 @@ class StampingPartRepository:
         location: str,
         stamping_supplier: str,
         vehicle_model: str,
-        version: Optional[str] = None,
+        version: str,
     ) -> int:
-        """按基地 + 冲压工厂 + 车型（版本可选）批量删除零件及工序。不提交事务。"""
-        q = db.query(StampingPart).filter(
+        """按基地 + 冲压工厂 + 车型 + 版本批量删除零件及工序。不提交事务。"""
+        parts = db.query(StampingPart).filter(
             StampingPart.location == location,
             StampingPart.stamping_supplier == stamping_supplier,
             StampingPart.vehicle_model == vehicle_model,
-        )
-        if version:
-            q = q.filter(StampingPart.version == version)
-        parts = q.all()
+            StampingPart.version == version,
+        ).all()
         count = len(parts)
         if not parts:
             return 0
@@ -288,7 +286,7 @@ class StampingPartRepository:
             location,
             stamping_supplier,
             vehicle_model,
-            version or "*",
+            version,
             count,
         )
         return count

@@ -248,13 +248,13 @@ class StampingPartService:
         db: Session,
         dto: StampingPartBatchDeleteDTO,
     ) -> StampingPartBatchDeleteResultVO:
-        """按基地 + 冲压工厂 + 车型（版本可选）批量删除零件。"""
+        """按基地 + 冲压工厂 + 车型 + 版本批量删除零件（四者同时必填）。"""
         location = dto.location.strip()
         supplier = dto.stamping_supplier.strip()
         vehicle_model = dto.vehicle_model.strip()
-        version = dto.version.strip() if dto.version else None
-        if not location or not supplier or not vehicle_model:
-            raise BusinessException("基地、冲压工厂和车型不能为空")
+        version = dto.version.strip()
+        if not location or not supplier or not vehicle_model or not version:
+            raise BusinessException("基地、冲压工厂、车型和版本不能为空")
 
         deleted = self.repository.delete_by_scope(
             db,

@@ -10,7 +10,7 @@ import {
     updatePartsFilterCapsules,
     updatePartsHud,
     renderPartsPagination,
-} from './template.js?v=15';
+} from './template.js?v=17';
 import {
     DEFAULT_PAGE_SIZE,
     PAGE_SIZE_OPTIONS,
@@ -189,9 +189,9 @@ export const PartsPage = {
 
     requireScopeForBatchDelete() {
         const filters = this.collectScopeFilters();
-        if (!filters.location || !filters.stamping_supplier || !filters.vehicle_model) {
+        if (!filters.location || !filters.stamping_supplier || !filters.vehicle_model || !filters.version) {
             this.setAdvancedOpen(true);
-            showToast('批量删除须同时选择基地、冲压工厂和车型', 'warning');
+            showToast('批量删除须同时选择基地、冲压工厂、车型和版本', 'warning');
             return null;
         }
         return filters;
@@ -338,9 +338,8 @@ export const PartsPage = {
         const filters = this.requireScopeForBatchDelete();
         if (!filters) return;
 
-        const versionHint = filters.version ? `\n版本: ${filters.version}` : '\n版本: 全部';
         if (!window.confirm(
-            `确定批量删除零件吗？\n\n基地: ${filters.location}\n工厂: ${filters.stamping_supplier}\n车型: ${filters.vehicle_model}${versionHint}\n\n将同时删除关联工序，此操作不可恢复！`,
+            `确定批量删除零件吗？\n\n基地: ${filters.location}\n工厂: ${filters.stamping_supplier}\n车型: ${filters.vehicle_model}\n版本: ${filters.version}\n\n将同时删除关联工序，此操作不可恢复！`,
         )) {
             return;
         }
@@ -360,8 +359,8 @@ export const PartsPage = {
                 location: filters.location,
                 stamping_supplier: filters.stamping_supplier,
                 vehicle_model: filters.vehicle_model,
+                version: filters.version,
             };
-            if (filters.version) body.version = filters.version;
 
             const res = await HttpClient.post(`${PARTS_API}/batch-delete`, body);
             const result = res.data || {};
