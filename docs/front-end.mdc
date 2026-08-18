@@ -157,8 +157,8 @@ static/
 | `#/bom-welding-unit-price` | 焊接单价列表 | `bom/welding-unit-price/list` |
 | `#/bom-welding-process-breakdown` | 焊接工艺拆解 | `bom/welding-process-breakdown/generate` |
 | `#/bom-welding-process-breakdown-list` | 焊接工艺拆解列表 | `bom/welding-process-breakdown/list` |
-| `#/bom-l0-welding-fee-calc` | L0焊接费计算（完工产品） | `bom/l0-welding-fee/calc` |
-| `#/bom-l0-welding-fee-list` | L0焊接费列表（完工产品） | `bom/l0-welding-fee/list` |
+| `#/bom-l0-welding-fee-calc` | 成品焊接费计算 | `bom/l0-welding-fee/calc` |
+| `#/bom-l0-welding-fee-list` | 成品焊接费列表 | `bom/l0-welding-fee/list` |
 | `#/steel-price-calc` | 冲压钢材联动计算 | `costing/steel-price/calc` |
 | `#/steel-price-list` | 冲压钢材联动价一览 | `costing/steel-price/list` |
 | `#/stamping-part-cost-calc` | 冲压零件价格计算 | `costing/stamping-part-cost/calc` |

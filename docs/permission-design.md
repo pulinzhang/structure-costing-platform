@@ -424,12 +424,12 @@ root
 │   │       ├── op:bom-welding-process-breakdown:approve
 │   │       ├── op:bom-welding-process-breakdown:reverse
 │   │       └── op:bom-welding-process-breakdown:export
-│   └── menu:bom-l0-welding-fee-group             # L0焊接费（完工产品）
-│       ├── menu:bom-l0-welding-fee-calc          # L0焊接费计算
+│   └── menu:bom-l0-welding-fee-group             # 成品焊接费
+│       ├── menu:bom-l0-welding-fee-calc          # 成品焊接费计算
 │       │   ├── op:bom-l0-welding-fee-calc:view
 │       │   ├── op:bom-l0-welding-fee-calc:run
 │       │   └── op:bom-l0-welding-fee-calc:delete
-│       └── menu:bom-l0-welding-fee-list          # L0焊接费列表
+│       └── menu:bom-l0-welding-fee-list          # 成品焊接费列表
 │           ├── op:bom-l0-welding-fee-list:view
 │           ├── op:bom-l0-welding-fee-list:delete
 │           ├── op:bom-l0-welding-fee-list:approve
@@ -734,7 +734,7 @@ static/index.html           # 侧栏 data-page
 | 2026-08-17 | 焊接工艺拆解：生成日志 / 任务进度改为 `GENERATE|VIEW` 任一即可（修复仅有生成权无法看日志/轮询的问题） |
 | 2026-08-17 | 焊接工艺拆解列表：`update/编辑明细` 改为独立码 `op:bom-welding-process-breakdown:save-lines`（保存明细）；已授权用户库内旧码自动迁移 |
 | 2026-08-17 | 焊接工艺拆解列表：操作列分开展示查看/编辑；减熵收回 `view-detail`——`view`=只读明细，`save-lines`=编辑明细；清理库内废弃码 |
-| 2026-08-17 | 新增 `menu:bom-l0-welding-fee-group` L0焊接费（完工产品；计算 / 列表及审核删除操作码） |
+| 2026-08-17 | 新增 `menu:bom-l0-welding-fee-group` 成品焊接费（计算 / 列表及审核删除操作码） |
 | 2026-08-17 | 技术命名统一为 L0：`menu/op:bom-welding-fee*` 全部替换为 `menu/op:bom-l0-welding-fee*`（功能新建未上线，无需 DB 权限 remap） |
 | 2026-08-17 | 去掉预留空码 `op:bom-l0-welding-fee-list:export`（尚无导出接口/按钮，避免权限树熵增） |
 | 2026-08-17 | 恢复并落地 `op:bom-l0-welding-fee-list:export`：列表弱化展示焊接信息原文 + Excel 导出 |

@@ -289,12 +289,12 @@
         },
         {
           "code": "menu:bom-l0-welding-fee-group",
-          "label": "L0焊接费（完工产品）",
+          "label": "成品焊接费",
           "type": "group",
           "children": [
             {
               "code": "menu:bom-l0-welding-fee-calc",
-              "label": "L0焊接费计算",
+              "label": "成品焊接费计算",
               "type": "menu",
               "children": [
                 { "code": "op:bom-l0-welding-fee-calc:view", "label": "查看", "type": "op" },
@@ -304,7 +304,7 @@
             },
             {
               "code": "menu:bom-l0-welding-fee-list",
-              "label": "L0焊接费列表",
+              "label": "成品焊接费列表",
               "type": "menu",
               "children": [
                 { "code": "op:bom-l0-welding-fee-list:view", "label": "查询", "type": "op" },

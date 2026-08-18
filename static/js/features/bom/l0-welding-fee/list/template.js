@@ -27,11 +27,11 @@ export function l0WeldingFeeListTemplate() {
                     <div class="flex items-start justify-between gap-4 mb-3">
                         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 font-mono flex-1 min-w-0">
                             <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3.5">
-                                <div class="text-[#555555] text-[10px] tracking-wider">L0焊接费合计</div>
+                                <div class="text-[#555555] text-[10px] tracking-wider">成品焊接费合计</div>
                                 <div class="text-[22px] font-black text-[#FFFFFF] mt-1 tracking-tight tabular-nums leading-none">
                                     ¥ <span id="l0wfHudTotalFee">—</span>
                                 </div>
-                                <div class="text-[9px] font-mono text-[#6E6E73] mt-2">仅完工产品 / L0 供货总成</div>
+                                <div class="text-[9px] font-mono text-[#6E6E73] mt-2">仅成品 / 供货总成</div>
                             </div>
                             <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3.5">
                                 <div class="text-[#555555] text-[10px] tracking-wider">结果条数</div>
@@ -170,7 +170,7 @@ export function l0WeldingFeeListTemplate() {
                                 <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]">工艺数</th>
                                 <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]">命中</th>
                                 <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]">缺单价</th>
-                                <th class="px-2 py-2 text-right text-[9px] font-semibold tracking-[0.06em] text-[#FF1E27]/90 bg-[#1A080A]">L0焊接费</th>
+                                <th class="px-2 py-2 text-right text-[9px] font-semibold tracking-[0.06em] text-[#FF1E27]/90 bg-[#1A080A]">成品焊接费</th>
                                 <th class="px-1 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-[#555555]">计算</th>
                                 <th class="px-1 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-[#555555]">审核</th>
                                 <th class="px-1 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-[#555555]">操作</th>
@@ -192,8 +192,8 @@ export function l0WeldingFeeListTemplate() {
                     <div class="w-10 h-10 flex items-center justify-center mb-3 rounded-md bg-[#121218] border border-[#2A2A35]">
                         ${window.svgIcon('clipboard-list', 'w-4 h-4 text-[#555555]')}
                     </div>
-                    <h5 class="text-[11px] font-medium text-[#8E8E93] mb-1">暂无 L0焊接费（完工产品）数据</h5>
-                    <p class="text-[10px] text-[#555555]">请先在计算页按年 / 基地 / 项目 / 版本生成；仅含 L0，不含下级工艺</p>
+                    <h5 class="text-[11px] font-medium text-[#8E8E93] mb-1">暂无成品焊接费数据</h5>
+                    <p class="text-[10px] text-[#555555]">请先在计算页按年 / 基地 / 项目 / 版本生成；仅含成品，不含下级工艺</p>
                 </div>
             </div>
 
@@ -255,7 +255,7 @@ export function shortPartNumber(partNumber) {
 }
 
 /**
- * 与 BOM viz 分总成/焊接件一致（L0 供货总成一般只用 shortPartNumber）：
+ * 与 BOM viz 分总成/焊接件一致（成品供货总成一般只用 shortPartNumber）：
  * - 无 -N → 数字末四位
  * - 有 -N → 末四位 + 字母尾 + -N（501005123AA-1 → 5123AA-1）
  */
@@ -273,7 +273,7 @@ export function shortWeldPartNumber(partNumber) {
     return shortPartNumber(raw);
 }
 
-/** L0 完工产品 / 供货总成：与 viz 交付客户一致 → 数字末四位 */
+/** 成品 / 供货总成：与 viz 交付客户一致 → 数字末四位 */
 export function resolveL0ShortPartNumber(partNumber) {
     const full = String(partNumber || '').trim();
     if (!full) return '—';

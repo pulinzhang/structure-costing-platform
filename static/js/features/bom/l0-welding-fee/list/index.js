@@ -10,7 +10,7 @@ import {
     updateL0WeldingFeeFilterCapsules,
     renderFeeDetailItems,
     resolveL0ShortPartNumber,
-} from './template.js?v=7';
+} from './template.js?v=8';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -415,7 +415,7 @@ function showDetailDrawer(fee) {
     drawer.innerHTML = `
         <div class="px-5 py-3.5 flex items-center justify-between shrink-0 bg-[#1f1f1f] border-b border-[#333]">
             <div>
-                <h5 class="text-[11px] font-semibold tracking-wider text-[#b0b0b0] uppercase">L0焊接费明细（完工产品）</h5>
+                <h5 class="text-[11px] font-semibold tracking-wider text-[#b0b0b0] uppercase">成品焊接费明细</h5>
                 <p class="text-[12px] text-[#F0F0F2] mt-1 font-mono">
                     ${esc(shortNo)}
                     <span class="text-[10px] text-[#555] ml-2">${esc(fee.part_number || '')}</span>
@@ -428,7 +428,7 @@ function showDetailDrawer(fee) {
         </div>
         <div class="px-5 py-3 border-b border-[#222] text-[10px] text-[#777] grid grid-cols-2 gap-2 shrink-0">
             <div>范围：${esc(fee.year)} · ${esc(fee.location)} · ${esc(fee.vehicle_model)} · ${esc(fee.bom_version)}</div>
-            <div class="text-right">L0焊接费 <span class="font-mono text-[#FF1E27] text-[12px] font-bold">${esc(fmtNum(fee.total_l0_welding_fee, 4))}</span></div>
+            <div class="text-right">成品焊接费 <span class="font-mono text-[#FF1E27] text-[12px] font-bold">${esc(fmtNum(fee.total_l0_welding_fee, 4))}</span></div>
             <div>工艺 ${esc(fee.process_line_count ?? 0)} · 命中 ${esc(fee.matched_line_count ?? 0)} · 缺单价 ${esc(fee.missing_price_count ?? 0)}</div>
             <div class="text-right">${esc(fee.part_name || '-')}</div>
         </div>
@@ -516,7 +516,7 @@ async function submitBatchAudit() {
 async function batchDelete() {
     const scope = requireScope();
     if (!scope) return;
-    if (!window.confirm(`确定删除未审核的 L0焊接费（完工产品）？\n${scope.year} · ${scope.location} · ${scope.vehicle_model} · ${scope.bom_version}\n已审核记录将跳过。`)) {
+    if (!window.confirm(`确定删除未审核的成品焊接费？\n${scope.year} · ${scope.location} · ${scope.vehicle_model} · ${scope.bom_version}\n已审核记录将跳过。`)) {
         return;
     }
     try {
@@ -559,7 +559,7 @@ async function exportExcel() {
     try {
         const { blob, filename } = await HttpClient.download(`${API_BASE}/export-download`, {
             params,
-            defaultFilename: 'L0焊接费导出.xlsx',
+            defaultFilename: '成品焊接费导出.xlsx',
         });
         const url = window.URL.createObjectURL(blob);
         const anchor = document.createElement('a');

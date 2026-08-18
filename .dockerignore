@@ -15,9 +15,11 @@ venv/
 env/
 .env
 
-# IDE
+# IDE / 本地工具
 .vscode/
 .idea/
+.cursor/
+.run/
 *.swp
 *.swo
 
@@ -25,17 +27,28 @@ env/
 .git/
 .gitignore
 
-# 日志
+# 日志与运行时数据（由 compose 挂卷，勿打进镜像）
 logs/
 *.log
+data/
+uploads/
 
-# 测试
+# 测试与缓存
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
 .coverage
 htmlcov/
 
-# 其他
+# 不进镜像的仓库附属文件
+docs/
 *.md
 !requirements.txt
 .env.local
 .env.*.local
+excel_sample/
+dump_all.txt
+*.db
+*.sqlite
+*.db-wal
+*.db-shm

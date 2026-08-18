@@ -13,7 +13,7 @@
  * 入口 URL 的 query 串驱动整体刷新；每次脚本更新后需要同步递增 ?v= 版本号。
  */
 
-import { pageMeta } from './features/index.js?v=19';
+import { pageMeta } from './features/index.js?v=20';
 
 // 页面导入（路径与 index.html 菜单树 / features 目录对齐）
 import { getUserSession, initUserMenu, startTokenHeartbeat, updateUserSession } from './features/login/index.js?v=14';
@@ -46,8 +46,8 @@ import { pageConfig as bomWeldingUnitPriceUploadPage } from './features/bom/weld
 import { pageConfig as bomWeldingUnitPricePage } from './features/bom/welding-unit-price/list/index.js?v=11';
 import { pageConfig as bomWeldingProcessBreakdownGeneratePage } from './features/bom/welding-process-breakdown/generate/index.js?v=5';
 import { pageConfig as bomWeldingProcessBreakdownListPage } from './features/bom/welding-process-breakdown/list/index.js?v=38';
-import { pageConfig as bomL0WeldingFeeCalcPage } from './features/bom/l0-welding-fee/calc/index.js?v=5';
-import { pageConfig as bomL0WeldingFeeListPage } from './features/bom/l0-welding-fee/list/index.js?v=8';
+import { pageConfig as bomL0WeldingFeeCalcPage } from './features/bom/l0-welding-fee/calc/index.js?v=6';
+import { pageConfig as bomL0WeldingFeeListPage } from './features/bom/l0-welding-fee/list/index.js?v=9';
 import { pageConfig as costingPage }        from './features/costing/engine/index.js';
 import { pageConfig as quotationPage }      from './features/quotation/index.js';
 import { pageConfig as settingsPage }       from './features/settings/system/index.js?v=10';

@@ -1,7 +1,7 @@
 # Windows 生产环境安装说明
 
 > 适用于内网 / 单机 Windows 服务器部署。  
-> 开发环境见根目录 [README.md](../README.md)；云部署另见 [deploy-zeabur.md](./deploy-zeabur.md)。
+> 开发环境见根目录 [README.md](../README.md)；云主机 Docker 发版见仓库根目录 `deploy.sh`。
 
 ---
 

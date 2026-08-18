@@ -23,6 +23,8 @@
 
 **生产环境（Windows，可无 Python）**：见 [docs/deploy-windows-production.md](docs/deploy-windows-production.md)，一键脚本 `scripts\windows\setup.bat`。
 
+**云主机 Docker 手工发版**：clone 后配置 `.env`，在仓库根目录执行 `bash deploy.sh`（拉代码、构建镜像、启动容器）。
+
 ---
 
 ## 架构
@@ -339,7 +341,7 @@ await HttpClient.post('/api/stamping/upload/', formData);
 | [API 类型安全](docs/api-type-safety.md) | `ApiResponse` / `PageResult` / 权限 Depends |
 | [权限设计](docs/permission-design.md) | 前后端权限码 |
 | [生产安装（Windows 一键）](docs/deploy-windows-production.md) | 无 Python 环境用 `scripts/windows/setup.bat` |
-| [Zeabur 部署](docs/deploy-zeabur.md) | 云端 Docker 部署 |
+| 云主机 Docker 手工发版 | 仓库根目录 `bash deploy.sh`（拉代码、构建、启动） |
 | [命名规范](docs/naming-convention.mdc) | 标识符命名 |
 
 要点：

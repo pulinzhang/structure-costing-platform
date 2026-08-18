@@ -1,39 +1,48 @@
-# 使用多阶段构建减小镜像体积
-FROM python:3.11-slim as builder
+# 多阶段构建：编译依赖与运行时分离，减小镜像体积
+# 容器内工作目录固定为本项目路径，避免与其它服务的 /app 混淆
+FROM python:3.12-slim AS builder
 
-WORKDIR /app
+ARG APP_HOME=/opt/stamping-costing-platform
+WORKDIR ${APP_HOME}
 
-# 安装构建依赖
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# 复制依赖文件并安装
 COPY requirements.txt .
 RUN pip install --no-cache-dir --user -r requirements.txt
 
-# 生产镜像
-FROM python:3.11-slim
+FROM python:3.12-slim
 
-WORKDIR /app
+ARG APP_HOME=/opt/stamping-costing-platform
+WORKDIR ${APP_HOME}
 
-# 安装运行时依赖
+# tzdata：app.common.timezone 使用 ZoneInfo("Asia/Shanghai")，slim 默认没有时区数据
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
+    tzdata \
     && rm -rf /var/lib/apt/lists/*
 
-# 从 builder 复制安装的包
 COPY --from=builder /root/.local /root/.local
-ENV PATH=/root/.local/bin:$PATH
+LABEL com.stamping-costing.platform="true"
+ENV PATH=/root/.local/bin:$PATH \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUTF8=1 \
+    APP_ENV=production \
+    TZ=Asia/Shanghai \
+    LANG=C.UTF-8 \
+    LC_ALL=C.UTF-8
 
-# 复制应用代码
 COPY . .
 
-# 创建上传目录
-RUN mkdir -p /app/uploads /app/logs
+RUN mkdir -p \
+    ${APP_HOME}/data \
+    ${APP_HOME}/uploads \
+    ${APP_HOME}/uploads/avatars \
+    ${APP_HOME}/logs
 
-# 暴露端口
 EXPOSE 8000
 
-# 启动命令
+# SQLite 场景用单进程；勿在镜像内盲目加 --workers
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

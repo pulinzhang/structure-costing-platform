@@ -1,5 +1,5 @@
 """
-BOM L0焊接费（完工产品）路由
+BOM 成品焊接费路由（技术路径仍用 l0）
 异步计算 + 计算日志 + 列表审核删除
 """
 
@@ -51,7 +51,7 @@ from app.services.bom.l0_welding_fee.export_service import BomL0WeldingFeeExport
 from app.utils.response import ApiResponse
 
 
-router = APIRouter(prefix="/api/bom/l0-welding-fees", tags=["BOM L0焊接费（完工产品） API"])
+router = APIRouter(prefix="/api/bom/l0-welding-fees", tags=["BOM 成品焊接费 API"])
 
 _service = BomL0WeldingFeeService()
 _calc_orchestrator = BomL0WeldingFeeCalcOrchestrator()
@@ -413,7 +413,7 @@ def export_download(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BOM_L0_WELDING_FEE_LIST_EXPORT)),
 ) -> StreamingResponse:
-    """按当前筛选条件导出 L0焊接费 Excel（主表字段打平到工艺明细行）。"""
+    """按当前筛选条件导出成品焊接费 Excel（主表字段打平到工艺明细行）。"""
     if not any([year, location, vehicle_model, bom_version, part_number, audit_status, calc_status]):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -447,7 +447,7 @@ def get_fee(
 ) -> ApiResponse[BomL0WeldingFeeVO]:
     row = _service.get_by_id(db, fee_id)
     if not row:
-        raise HTTPException(status_code=404, detail="L0焊接费记录不存在")
+        raise HTTPException(status_code=404, detail="成品焊接费记录不存在")
     return ApiResponse.ok(data=row)
 
 

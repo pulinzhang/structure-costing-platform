@@ -1,4 +1,4 @@
-"""BOM L0焊接费 Excel 导出（核对风排版）。"""
+"""BOM 成品焊接费 Excel 导出（核对风排版）。"""
 
 from __future__ import annotations
 
@@ -50,7 +50,7 @@ HEADERS = [
     "工艺数",
     "命中",
     "缺单价",
-    "L0焊接费合计",
+    "成品焊接费",
     "计算状态",
     "审核状态",
     "标准工艺",
@@ -90,7 +90,7 @@ FILTER_H = 20
 NOTE_H = 20
 GROUP_H = 18
 HEADER_H = 22
-DATA_H = 18
+DATA_H = 26
 
 
 def _fill(hex_color: str) -> PatternFill:
@@ -116,7 +116,7 @@ def _num(value: Any) -> Any:
 
 
 class BomL0WeldingFeeExportService:
-    """按筛选导出 L0焊接费（主表合并 + 工艺明细分行）。"""
+    """按筛选导出成品焊接费（主表合并 + 工艺明细分行）。"""
 
     def __init__(self) -> None:
         self.fee_repo = BomL0WeldingFeeRepository()
@@ -154,7 +154,7 @@ class BomL0WeldingFeeExportService:
 
         wb = Workbook()
         ws = wb.worksheets[0]
-        ws.title = "L0焊接费"
+        ws.title = "成品焊接费"
 
         filter_text = self._filter_text(
             year=year,
@@ -240,9 +240,9 @@ class BomL0WeldingFeeExportService:
         ]
         scope = "_".join(p for p in scope_parts if p) or "全部"
         stamp = now().strftime("%Y%m%d_%H%M%S")
-        filename = f"L0焊接费_{scope}_{stamp}.xlsx"
+        filename = f"成品焊接费_{scope}_{stamp}.xlsx"
         logger.info(
-            "导出 L0焊接费 %s 条主表 / %s 行明细 / 文件 %s",
+            "导出成品焊接费 %s 条主表 / %s 行明细 / 文件 %s",
             len(records),
             export_row_count,
             filename,
@@ -253,7 +253,7 @@ class BomL0WeldingFeeExportService:
         indent = Alignment(horizontal="left", vertical="center", indent=1)
 
         ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=COL_COUNT)
-        c1 = ws.cell(row=1, column=1, value="L0焊接费核对表（完工产品）")
+        c1 = ws.cell(row=1, column=1, value="成品焊接费核对表")
         c1.font = _font(size=15, bold=True, color="FFFFFF")
         c1.fill = _fill("1A237E")
         c1.alignment = indent
@@ -264,7 +264,7 @@ class BomL0WeldingFeeExportService:
             row=2,
             column=1,
             value=(
-                f"{filter_text} · 共 {fee_count} 个 L0"
+                f"{filter_text} · 共 {fee_count} 个成品"
                 f"　　导出 {now().strftime('%Y-%m-%d %H:%M')}"
             ),
         )
@@ -277,7 +277,7 @@ class BomL0WeldingFeeExportService:
         c3 = ws.cell(
             row=3,
             column=1,
-            value="说明：左侧主表按 L0 合并；右侧为工艺明细。行费 = 过程量 × 分年单价；仅完工产品（L0）计费。",
+            value="说明：左侧主表按成品合并；右侧为工艺明细。行费 = 计费量 × 分年单价；仅成品计费。",
         )
         c3.font = _font(size=9, color="B71C1C")
         c3.fill = _fill("FFF3E0")
@@ -302,7 +302,7 @@ class BomL0WeldingFeeExportService:
             end_row=group_row,
             end_column=COL_COUNT,
         )
-        main_group = ws.cell(row=group_row, column=1, value="L0 主表")
+        main_group = ws.cell(row=group_row, column=1, value="成品主表")
         main_group.font = white
         main_group.fill = _fill("37474F")
         main_group.alignment = self._center
