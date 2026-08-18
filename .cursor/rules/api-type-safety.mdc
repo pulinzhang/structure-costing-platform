@@ -1,0 +1,1018 @@
+---
+alwaysApply: true
+description: FastAPI backend type safety, layered architecture, API contract, and permission Depends (require_perm / Perm)
+---
+
+# Backend Type Safety Rules
+
+> Readable Chinese guide (keep in sync): `docs/api-type-safety.md`
+
+## 1. API Response Contract
+
+Every API endpoint must define:
+
+```python
+response_model=ApiResponse[T]
+```
+
+The function return annotation must match:
+
+```python
+-> ApiResponse[T]
+```
+
+Examples:
+
+Single object:
+```python
+ApiResponse[UserVO]
+```
+
+List:
+```python
+ApiResponse[list[UserVO]]
+```
+
+Pagination:
+```python
+ApiResponse[PageResult[UserVO]]
+```
+
+Statistics:
+```python
+ApiResponse[DashboardStatsVO]
+```
+
+---
+
+## 2. ApiResponse Definition Rules
+
+`ApiResponse` must be a Pydantic Generic Model.
+
+Required structure:
+
+```python
+from typing import Generic, TypeVar, Optional, Any
+from pydantic import BaseModel
+
+T = TypeVar("T")
+
+
+class ApiResponse(BaseModel, Generic[T]):
+    """统一 API 响应"""
+
+    code: int = 200
+    success: bool = True
+    message: str = "操作成功"
+    data: T | None = None
+
+    @classmethod
+    def ok(cls, data: Optional[T] = None, message: str = "操作成功") -> "ApiResponse[T]":
+        """成功响应（2xx）"""
+        return cls(code=200, success=True, message=message, data=data)
+
+    @classmethod
+    def fail(
+        cls,
+        message: str = "操作失败",
+        code: int = 400,
+        data: Any = None,
+    ) -> "ApiResponse[Any]":
+        """业务错误响应（4xx）"""
+        return cls(code=code, success=False, message=message, data=data)
+
+    @classmethod
+    def error(
+        cls,
+        message: str = "系统错误",
+        code: int = 500,
+    ) -> "ApiResponse[None]":
+        """系统错误响应（5xx）"""
+        return cls(code=code, success=False, message=message, data=None)
+
+    @classmethod
+    def created(cls, data: T, message: str = "创建成功") -> "ApiResponse[T]":
+        """创建成功响应"""
+        return cls(code=201, success=True, message=message, data=data)
+
+    @classmethod
+    def updated(cls, data: T, message: str = "更新成功") -> "ApiResponse[T]":
+        """更新成功响应"""
+        return cls(code=200, success=True, message=message, data=data)
+
+    @classmethod
+    def deleted(cls, message: str = "删除成功") -> "ApiResponse[None]":
+        """删除成功响应"""
+        return cls(code=200, success=True, message=message, data=None)
+
+    @classmethod
+    def list_(
+        cls,
+        items: list[Any],
+        total: int,
+        page: int = 1,
+        page_size: int = 20,
+        message: str = "查询成功",
+        filters: Any = None,
+    ) -> "ApiResponse[Any]":
+        """分页列表响应"""
+        page = max(page, 1)
+        page_size = max(page_size, 1)
+        total_pages = (total + page_size - 1) // page_size if total > 0 else 0
+
+        page_result = PageResult(
+            items=items,
+            total=total,
+            page=page,
+            page_size=page_size,
+            total_pages=total_pages,
+            has_next=page < total_pages,
+            has_prev=page > 1,
+            filters=filters,
+        )
+        return cls(code=200, success=True, message=message, data=page_result)
+```
+
+Rules:
+
+* `ApiResponse` is the unified API response schema.
+* It must support `ApiResponse[T]`.
+* It must participate in FastAPI `response_model` validation.
+* It must not bypass Pydantic serialization.
+
+Allowed:
+
+```python
+return ApiResponse.ok(
+    data=user_vo,
+    message="success"
+)
+```
+
+`ApiResponse.ok()` and `ApiResponse.error()` must return `ApiResponse[T]` instances.
+
+Forbidden:
+
+```python
+return JSONResponse(...)
+```
+
+```python
+return {
+    "success": True,
+    "message": "success",
+    "data": data
+}
+```
+
+---
+
+## 3. Pagination Response Rules
+
+Pagination must use a dedicated generic model.
+
+Do not put pagination fields directly into `ApiResponse`.
+
+Forbidden:
+```json
+{
+    "success": true,
+    "data": [],
+    "total": 100,
+    "page": 1,
+    "page_size": 20
+}
+```
+
+Required:
+
+```python
+ApiResponse[PageResult[T]]
+```
+
+`BasePageResponse` 是 `PageResult` 的别名（`app/schemas/common/__init__.py`）；**新代码请写 `PageResult`**。
+
+Example:
+
+```python
+from typing import Generic, TypeVar
+from pydantic import BaseModel
+
+T = TypeVar("T")
+
+
+class PageResult(BaseModel, Generic[T]):
+    items: list[T]
+    total: int
+    page: int
+    page_size: int
+    total_pages: int = 0
+    has_next: bool = False
+    has_prev: bool = False
+    filters: dict | None = None
+```
+
+Example:
+
+```python
+@router.get(
+    "/users",
+    response_model=ApiResponse[PageResult[UserVO]]
+)
+def list_users() -> ApiResponse[PageResult[UserVO]]:
+    ...
+```
+
+---
+
+## 4. Layer Architecture Rules
+
+The project follows:
+
+```
+Router
+   |
+   v
+Service
+   |
+   v
+Repository
+   |
+   v
+Database
+```
+
+Each layer has a strict responsibility.
+
+---
+
+## 5. Repository Layer Rules
+
+Repository is responsible only for database access.
+
+Repository returns:
+
+* SQLAlchemy Model
+* list[SQLAlchemy Model]
+* Optional[SQLAlchemy Model]
+
+Allowed:
+
+```python
+User
+```
+
+```python
+list[User]
+```
+
+```python
+Optional[User]
+```
+
+Forbidden:
+
+```python
+dict
+```
+
+```python
+dict[str, Any]
+```
+
+```python
+model_dump()
+```
+
+```python
+JSONResponse
+```
+
+Repository must not:
+
+* create API response
+* convert to VO
+* serialize fields
+* format datetime
+* format Decimal
+* handle frontend structure
+
+Example:
+
+Correct:
+```python
+def get_by_id(
+    self,
+    db: Session,
+    user_id: int
+) -> User | None:
+    return db.query(User).filter(
+        User.id == user_id
+    ).first()
+```
+
+Incorrect:
+```python
+def get_by_id(...):
+    return {
+        "id": user.id,
+        "name": user.name
+    }
+```
+
+---
+
+## 6. Service Layer Rules
+
+Service is responsible for:
+
+* business logic
+* permission checks
+* calculations
+* ORM to VO conversion
+
+写操作方法签名须接收 Router 传入的用户（不要读隐式上下文）：
+
+```python
+def create(self, db: Session, dto: UserCreateDTO, current_user: UserVO) -> UserVO:
+    payload = {**dto.model_dump(), **audit_create(current_user)}
+    ...
+```
+
+Service must return:
+
+* `VO`
+* `list[VO]`
+* `tuple[list[VO], int]` / 带 filters 的 tuple  # 分页推荐
+* `PageResult[VO]`  # 分页备选
+
+Allowed:
+
+```python
+UserVO
+```
+
+```python
+list[UserVO]
+```
+
+```python
+# 分页推荐：交给 Router list_()
+list[UserVO], int  # 或 + filters
+```
+
+```python
+PageResult[UserVO]  # 备选：Service 已组装完整分页体时用 ok(data=…)
+```
+
+Note:
+- 分页接口（现网推荐）：Service 返回 `list[VO], total[, filters]`，Router 使用 `ApiResponse.list_(items=..., total=..., page=..., page_size=..., filters=...)`
+- 分页备选：Service 返回 `PageResult[VO]`，Router 使用 `ApiResponse.ok(data=page_result)`
+- 非分页列表：Service 返回 `list[VO]`，Router 使用 `ApiResponse.ok(data=vo_list)`
+
+Forbidden:
+
+```python
+dict
+```
+
+```python
+dict[str, Any]
+```
+
+```python
+model_dump()
+```
+
+Example:
+
+Correct:
+```python
+def get_user(
+    self,
+    db: Session,
+    user_id: int
+) -> UserVO | None:
+
+    user = self.repository.get_by_id(
+        db,
+        user_id
+    )
+
+    if not user:
+        return None
+
+    return UserVO.model_validate(user)
+```
+
+Incorrect:
+```python
+return {
+    "id": user.id,
+    "name": user.name
+}
+```
+
+---
+
+## 7. Router Layer Rules
+
+Router is responsible for:
+
+* request validation
+* dependency injection
+* calling Service
+* returning ApiResponse[T]
+
+Router must not:
+
+* access database directly
+* manipulate SQLAlchemy Model
+* convert ORM to dict
+* serialize VO manually
+
+Required:
+
+```python
+from app.common.permissions.codes import Perm
+from app.deps.permissions import require_perm
+
+@router.get(
+    "/users/{id}",
+    response_model=ApiResponse[UserVO]
+)
+def get_user(
+    id: int,
+    db: Session = Depends(get_db),
+    current_user: UserVO = Depends(require_perm(Perm.SETTINGS_USERS_VIEW)),
+) -> ApiResponse[UserVO]:
+
+    user = service.get_user(db, id)
+
+    return ApiResponse.ok(
+        data=user
+    )
+```
+
+Forbidden:
+
+```python
+return user.__dict__
+```
+
+```python
+return user.model_dump()
+```
+
+```python
+return dict(user)
+```
+
+```python
+return {
+    "success": True,
+    "data": user
+}
+```
+
+---
+
+## 7.0 Router Authentication & Permission
+
+> **权限细则唯一真相**：[`docs/permission-design.md`](../../docs/permission-design.md)（§0 新增流程 / §10 前后端双向）。  
+> 本节只保留类型安全层必须遵守的硬约束；不要在此重复权限树或长示例。
+
+| 场景 | 要求 |
+|------|------|
+| `POST /api/auth/login` | 不注入 `current_user` |
+| `me` / `touch` / `logout` | `Depends(get_current_user)` |
+| **其它业务路由** | `Depends(require_perm(Perm.XXX))` / `require_any_perm` / `require_admin_user` |
+| 权限码 | 只用 `Perm.*`（`app.common.permissions.codes`），禁止 `"op:…"` 字面量 |
+| 写操作 | `current_user=` 显式传给 Service；禁止 ContextVar |
+| 前端同码 | `canAccessPage` / `can('op:…')`；不能只藏 UI |
+| 失败 | `PermissionException` → HTTP 403 |
+
+```python
+from app.common.permissions.codes import Perm
+from app.deps.permissions import require_perm
+
+current_user: UserVO = Depends(require_perm(Perm.STAMPING_PARTS_VIEW))
+```
+
+Audit：`audit_create` / `audit_update` / `SYSTEM_USER`（`app.common.audit`）。
+
+---
+
+## 7.1 HTTP Method Response Rules
+
+Every HTTP method must follow consistent response patterns:
+
+| Method | Purpose | Service Return | Router Return | Response Model |
+|--------|---------|----------------|---------------|----------------|
+| `GET` (single) | 获取单个资源 | `VO` | `ApiResponse.ok(data=vo)` | `ApiResponse[UserVO]` |
+| `GET` (list) | 获取资源列表 | `list[VO]` 或 `(list[VO], total[, filters])` | `ApiResponse.ok(data=list)` 或 `ApiResponse.list_(items=...)` | `ApiResponse[list[UserVO]]` 或 `ApiResponse[PageResult[UserVO]]` |
+| `POST` | 创建资源 | `VO` | `ApiResponse.created(data=vo)` | `ApiResponse[UserVO]` |
+| `PUT` / `PATCH` | 更新资源 | `VO` | `ApiResponse.updated(data=vo)` | `ApiResponse[UserVO]` |
+| `DELETE` | 删除资源 | `None` | `ApiResponse.deleted(message="删除成功")` | `ApiResponse[None]` |
+
+### GET - 获取单个资源
+
+```python
+@router.get(
+    "/users/{user_id}",
+    response_model=ApiResponse[UserVO]
+)
+def get_user(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: UserVO = Depends(require_perm(Perm.SETTINGS_USERS_VIEW)),
+) -> ApiResponse[UserVO]:
+    service = UserService()
+    user = service.get_user(db, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="用户不存在")
+    return ApiResponse.ok(data=user)
+```
+
+### GET - 获取列表（不分页）
+
+```python
+@router.get(
+    "/users",
+    response_model=ApiResponse[list[UserVO]]
+)
+def list_users(
+    db: Session = Depends(get_db),
+    current_user: UserVO = Depends(require_perm(Perm.SETTINGS_USERS_VIEW)),
+) -> ApiResponse[list[UserVO]]:
+    service = UserService()
+    users = service.list_users(db)
+    return ApiResponse.ok(data=users)
+```
+
+### GET - 获取列表（分页）
+
+```python
+@router.get(
+    "/users",
+    response_model=ApiResponse[PageResult[UserVO]]
+)
+def list_users_paginated(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=100),
+    db: Session = Depends(get_db),
+    current_user: UserVO = Depends(require_perm(Perm.SETTINGS_USERS_VIEW)),
+) -> ApiResponse[PageResult[UserVO]]:
+    service = UserService()
+    users, total = service.list_users_paginated(db, skip=skip, limit=limit)
+    return ApiResponse.list_(
+        items=users,
+        total=total,
+        page=(skip // limit) + 1,
+        page_size=limit
+    )
+```
+
+### POST - 创建资源
+
+```python
+@router.post(
+    "/users",
+    response_model=ApiResponse[UserVO],
+    status_code=status.HTTP_201_CREATED
+)
+def create_user(
+    dto: UserCreateDTO,
+    db: Session = Depends(get_db),
+    current_user: UserVO = Depends(require_perm(Perm.SETTINGS_USERS_CREATE)),
+) -> ApiResponse[UserVO]:
+    service = UserService()
+    user = service.create_user(db, dto, current_user=current_user)
+    return ApiResponse.created(data=user, message="创建成功")
+```
+
+### PUT - 更新资源
+
+```python
+@router.put(
+    "/users/{user_id}",
+    response_model=ApiResponse[UserVO]
+)
+def update_user(
+    user_id: int,
+    dto: UserUpdateDTO,
+    db: Session = Depends(get_db),
+    current_user: UserVO = Depends(require_perm(Perm.SETTINGS_USERS_UPDATE)),
+) -> ApiResponse[UserVO]:
+    service = UserService()
+    user = service.update_user(db, user_id, dto, current_user=current_user)
+    if not user:
+        raise HTTPException(status_code=404, detail="用户不存在")
+    return ApiResponse.updated(data=user, message="更新成功")
+```
+
+### DELETE - 删除资源
+
+```python
+@router.delete(
+    "/users/{user_id}",
+    response_model=ApiResponse[None]
+)
+def delete_user(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: UserVO = Depends(require_perm(Perm.SETTINGS_USERS_DELETE)),
+) -> ApiResponse[None]:
+    service = UserService()
+    service.delete_user(db, user_id)
+    return ApiResponse.deleted(message="删除成功")
+```
+
+### Error Response Pattern
+
+All endpoints should handle errors consistently:
+
+```python
+from fastapi import HTTPException, status
+
+@router.get("/users/{user_id}", ...)
+def get_user(...):
+    try:
+        user = service.get_user(db, user_id)
+        if not user:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="用户不存在")
+        return ApiResponse.ok(data=user)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+```
+
+Note: Use `HTTPException` for error handling. The `detail` will be included in the response `message` field via FastAPI exception handler.
+
+---
+
+## 8. DTO Rules
+
+DTO is only for request input.
+
+Example:
+```python
+class UserCreateDTO(BaseModel):
+    name: str
+```
+
+DTO may use:
+
+```python
+dto.model_dump(
+    exclude_unset=True
+)
+```
+
+Allowed scenarios:
+
+* database update parameters
+* repository method parameters
+* internal command parameters
+
+Example:
+```python
+service.update(
+    db,
+    dto.model_dump(
+        exclude_unset=True
+    )
+)
+```
+
+---
+
+## 9. VO Rules
+
+VO is only for API output.
+
+Every VO must support ORM conversion.
+
+Required:
+```python
+class UserVO(BaseModel):
+
+    model_config = {
+        "from_attributes": True
+    }
+```
+
+VO is responsible for:
+
+* API field definition
+* output naming
+* data formatting
+* serialization
+
+VO must not contain:
+
+* database operations
+* business logic
+* SQL queries
+
+---
+
+## 10. ORM To VO Conversion Rules
+
+SQLAlchemy Model:
+```python
+UserModel
+```
+
+must convert using:
+
+```python
+UserVO.model_validate(
+    user_model
+)
+```
+
+Required:
+```python
+model_config = {
+    "from_attributes": True
+}
+```
+
+Forbidden:
+```python
+UserVO(
+    **user_model.__dict__
+)
+```
+
+Forbidden:
+```python
+dict(user_model)
+```
+
+---
+
+## 11. Serialization Rules
+
+All special type conversion must happen inside VO.
+
+Do not serialize in:
+
+* Router
+* Service
+* Repository
+
+---
+
+### Decimal Serialization
+
+#### Money / unit price / fee / rate（金额 · 单价 · 费用 · 费率）
+
+这些字段是**精确十进制量**，禁止把 `float` 当作业务类型（DTO / VO / Service / Model / 计算中间态）。
+
+| 层 | 要求 |
+|----|------|
+| Model | `Numeric(p, s)` + `Mapped[Decimal]` |
+| DTO | 字段类型 `Decimal`；`mode="before"` 用 `Decimal(str(value))` 再 `quantize`（JSON number 可能先变成 float，必须立刻经 `str` 转回） |
+| Service / Parser / 计算 | 只用 `Decimal` 运算与量化；禁止 `float(x)` 参与金额计算 |
+| VO | 字段类型 `Decimal`；`@field_serializer` **输出固定小数位的字符串**（如 `"0.0999"`），禁止序列化为 JSON number / `float` |
+| Excel 导入导出 | 单元格读写保持 `Decimal`，不要 `round(float(...))` |
+
+Allowed (money):
+```python
+from decimal import Decimal, ROUND_HALF_UP
+
+_UNIT_PRICE_QUANT = Decimal("0.0001")
+
+
+def quantize_unit_price(value: object) -> Decimal:
+    number = value if isinstance(value, Decimal) else Decimal(str(value).strip())
+    if number < 0:
+        raise ValueError("单价不能为负")
+    return number.quantize(_UNIT_PRICE_QUANT, rounding=ROUND_HALF_UP)
+
+
+class PriceCreateDTO(BaseModel):
+    unit_price: Decimal = Field(..., ge=0)
+
+    @field_validator("unit_price", mode="before")
+    @classmethod
+    def _coerce(cls, value: object) -> Decimal:
+        return quantize_unit_price(value)
+
+
+class PriceVO(BaseModel):
+    unit_price: Decimal
+
+    @field_serializer("unit_price")
+    def serialize_unit_price(self, value: Decimal) -> str:
+        quantized = value.quantize(_UNIT_PRICE_QUANT, rounding=ROUND_HALF_UP)
+        return f"{quantized:.4f}"
+```
+
+Forbidden (money):
+```python
+unit_price: float
+return float(value)          # VO 序列化
+price = float(row.unit_price)  # Service / 计算
+round(float(value), 4)       # 导出
+```
+
+> JSON 没有 Decimal 类型：传输用**字符串**（推荐，单价/金额），或 JSON number 进入后立刻 `Decimal(str(...))`。业务层长期持有的类型必须是 `Decimal`。
+
+#### Non-money Decimal（料厚、重量等物理量）
+
+Model / DTO 仍优先 `Decimal`。若历史 VO 将物理量序列化为 JSON number，可继续；**新建金额类字段不得沿用 float 序列化**。
+
+```python
+@field_serializer("thickness", "part_weight")
+def serialize_physical_decimal(self, value: Decimal | None) -> float | None:
+    return float(value) if isinstance(value, Decimal) else value
+```
+
+---
+
+### datetime Serialization
+
+Use:
+```python
+@field_serializer
+```
+
+Example:
+```python
+@field_serializer("created_at")
+def serialize_datetime(
+    self,
+    value
+):
+    return value.isoformat()
+```
+
+---
+
+### Enum Serialization
+
+Use:
+```python
+@field_serializer
+```
+
+Do not convert Enum values manually in Router or Service.
+
+---
+
+## 12. model_dump Rules
+
+`model_dump()` is not forbidden globally.
+
+Allowed:
+
+DTO:
+```python
+dto.model_dump()
+```
+
+Use for:
+
+* update parameters
+* repository parameters
+* internal transformation
+
+Forbidden:
+
+VO:
+```python
+vo.model_dump()
+```
+
+before API response.
+
+Forbidden in Router:
+```python
+return ApiResponse.ok(
+    data=vo.model_dump()
+)
+```
+
+Correct:
+```python
+return ApiResponse.ok(
+    data=vo
+)
+```
+
+---
+
+## 13. API Data Flow
+
+The required data flow:
+
+```
+Database
+   |
+   v
+SQLAlchemy Model
+   |
+   v
+Service
+   |
+   v
+Pydantic VO
+   |
+   v
+ApiResponse[T]
+   |
+   v
+FastAPI JSON Response
+```
+
+Never:
+
+```
+Database
+   |
+   v
+dict
+   |
+   v
+Router
+   |
+   v
+JSON
+```
+
+---
+
+## 14. Refactoring Rules
+
+When modifying existing code:
+
+1. Do not refactor the whole project at once.
+2. Modify one module at a time.
+3. Preserve existing JSON structure.
+4. Add response_model before changing implementation.
+5. Run type checking after every module.
+
+Recommended order:
+
+```
+1. app/utils/response.py
+
+2. app/schemas/vo
+
+3. app/services
+
+4. app/routers
+```
+
+---
+
+## 15. Code Review Checklist
+
+Before commit, check:
+
+Forbidden:
+```
+return dict
+return JSONResponse
+return ORM Model from Router
+model_dump() in Router
+VO.model_dump() for API output
+__dict__
+dict(model)
+ApiResponse[Any]
+money/unit_price/fee as float (use Decimal; JSON string for money)
+```
+
+Required:
+```
+Every endpoint:
+    response_model=ApiResponse[T]
+
+Every Router (except login):
+    current_user via Depends(get_current_user)  # 仅 me/touch/logout
+    OR Depends(require_perm(Perm.XXX)) / require_any_perm / require_admin_user  # 业务路由
+
+Every business Router:
+    no bare get_current_user without Perm
+    no permission string literals — use Perm.*
+
+Every write Router → Service:
+    pass current_user=current_user
+
+Every Router:
+    returns ApiResponse[T]
+
+Every Service:
+    returns VO
+    no implicit current_user / ContextVar
+
+Every Repository:
+    returns SQLAlchemy Model
+
+Frontend (same codes):
+    menu → canAccessPage / applySidebarPermissions
+    button → can('op:…')
+    details → docs/permission-design.md
+```

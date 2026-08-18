@@ -1,0 +1,277 @@
+"""
+废料月度销售价格 Excel 生成。
+
+版式对齐业务原表：
+- 每年一块：首列「{year}年」+ 1~12 月
+- 有扣费的基地：3 行（大盘价 / 扣费 / 净价公式），首列合并，净价行浅蓝底
+- 净价单元格使用公式：=大盘价单元格-扣费单元格
+- 无扣费的基地：仅 1 行
+- 跨年之间空一行
+"""
+
+from __future__ import annotations
+
+import logging
+from decimal import Decimal
+from io import BytesIO
+from typing import Any
+
+from openpyxl import Workbook
+from openpyxl.cell.cell import MergedCell
+from openpyxl.comments import Comment
+from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+from openpyxl.utils import get_column_letter
+
+from app.common.money import Q2, excel_money_cell, parse_decimal
+from app.common.scrap_price_locations import SCRAP_PRICE_LOCATIONS
+from app.common.timezone import now
+
+logger = logging.getLogger("service.stamping_scrap_price.export.excel")
+
+_NET_FILL = PatternFill(start_color="BDD7EE", end_color="BDD7EE", fill_type="solid")
+_YEAR_FONT = Font(name="宋体", size=10, bold=True)
+_MONTH_FONT = Font(name="宋体", size=10, bold=False)
+_DATA_FONT = Font(name="宋体", size=10)
+_CENTER = Alignment(horizontal="center", vertical="center")
+_RIGHT = Alignment(horizontal="right", vertical="center")
+_THIN_SIDE = Side(style="thin", color="000000")
+_THICK_SIDE = Side(style="medium", color="000000")
+_THIN = Border(
+    left=_THIN_SIDE,
+    right=_THIN_SIDE,
+    top=_THIN_SIDE,
+    bottom=_THIN_SIDE,
+)
+_PRICE_FORMAT = "#,##0.00"
+_ROW_HEIGHT = 19
+_BLOCK_LAST_COL = 13
+_THREE_ROW_COMMENT = (
+    "第1行：大盘价（含杂费账面价）\n"
+    "第2行：扣费（运费/扣水/扣杂等）\n"
+    "第3行：净价 = 大盘价 − 扣费"
+)
+
+
+def _to_decimal(value: Any) -> Decimal | None:
+    if value is None:
+        return None
+    try:
+        return parse_decimal(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _set_price(cell: Any, value: Any) -> None:
+    if value is None:
+        return
+    cell.value = excel_money_cell(value, Q2)
+    cell.number_format = _PRICE_FORMAT
+
+
+def _set_row_height(ws: Any, row: int) -> None:
+    ws.row_dimensions[row].height = _ROW_HEIGHT
+
+
+def _apply_block_outer_border(
+    ws: Any,
+    min_row: int,
+    max_row: int,
+    *,
+    min_col: int = 1,
+    max_col: int = _BLOCK_LAST_COL,
+) -> None:
+    for row in range(min_row, max_row + 1):
+        for col in range(min_col, max_col + 1):
+            cell = ws.cell(row=row, column=col)
+            if isinstance(cell, MergedCell):
+                continue
+            cell.border = Border(
+                left=_THICK_SIDE if col == min_col else _THIN_SIDE,
+                right=_THICK_SIDE if col == max_col else _THIN_SIDE,
+                top=_THICK_SIDE if row == min_row else _THIN_SIDE,
+                bottom=_THICK_SIDE if row == max_row else _THIN_SIDE,
+            )
+
+    for merged in ws.merged_cells.ranges:
+        mr_min_row, mr_min_col = merged.min_row, merged.min_col
+        mr_max_row, mr_max_col = merged.max_row, merged.max_col
+        if mr_max_row < min_row or mr_min_row > max_row:
+            continue
+        if mr_max_col < min_col or mr_min_col > max_col:
+            continue
+        master = ws.cell(row=mr_min_row, column=mr_min_col)
+        master.border = Border(
+            left=_THICK_SIDE if mr_min_col == min_col else _THIN_SIDE,
+            right=_THICK_SIDE if mr_max_col == max_col else _THIN_SIDE,
+            top=_THICK_SIDE if mr_min_row == min_row else _THIN_SIDE,
+            bottom=_THICK_SIDE if mr_max_row == max_row else _THIN_SIDE,
+        )
+
+
+class StampingScrapPriceExporter:
+    """将按年分组的废料价记录写成宽表 xlsx。"""
+
+    def generate(
+        self,
+        years: list[int],
+        records_by_year: dict[int, list[Any]],
+        *,
+        year_filter: int | None = None,
+    ) -> tuple[bytes, str]:
+        wb = Workbook()
+        ws = wb.worksheets[0]
+        ws.title = "废料销售价"
+
+        current_row = 1
+        for index, year_value in enumerate(years):
+            if index > 0:
+                current_row += 1
+            current_row = self._write_year_block(
+                ws,
+                year_value,
+                records_by_year.get(year_value, []),
+                current_row,
+            )
+
+        if not years:
+            ws.cell(row=1, column=1, value="暂无数据")
+
+        ws.column_dimensions["A"].width = 12
+        for col in range(2, 14):
+            ws.column_dimensions[get_column_letter(col)].width = 11
+
+        buffer = BytesIO()
+        wb.save(buffer)
+        content = buffer.getvalue()
+
+        stamp = now().strftime("%Y%m%d_%H%M%S")
+        if year_filter is not None:
+            filename = f"废料月度销售价_{year_filter}年_{stamp}.xlsx"
+        else:
+            filename = f"废料月度销售价_汇总_{stamp}.xlsx"
+
+        logger.info("导出废料销售价: years=%s bytes=%s", years, len(content))
+        return content, filename
+
+    def _write_year_block(
+        self,
+        ws: Any,
+        year: int,
+        records: list[Any],
+        start_row: int,
+    ) -> int:
+        by_location: dict[str, dict[int, Any]] = {
+            name: {} for name in SCRAP_PRICE_LOCATIONS
+        }
+        for record in records:
+            if record.location not in by_location:
+                by_location[record.location] = {}
+            by_location[record.location][int(record.month)] = record
+
+        row = start_row
+        headers = [f"{year}年"] + [f"{m}月" for m in range(1, 13)]
+        for col, text in enumerate(headers, start=1):
+            cell = ws.cell(row=row, column=col, value=text)
+            cell.font = _YEAR_FONT if col == 1 else _MONTH_FONT
+            cell.alignment = _CENTER
+            cell.border = _THIN
+        _set_row_height(ws, row)
+        row += 1
+
+        for location in SCRAP_PRICE_LOCATIONS:
+            month_map = by_location.get(location, {})
+            has_deduction = any(
+                (_to_decimal(r.deduction_fee) or Decimal("0")) > 0
+                for r in month_map.values()
+            )
+            if has_deduction:
+                row = self._write_deduction_location(ws, row, location, month_map)
+            else:
+                row = self._write_plain_location(ws, row, location, month_map)
+
+        _apply_block_outer_border(ws, start_row, row - 1)
+        return row
+
+    def _write_plain_location(self, ws: Any, row: int, location: str, month_map: dict[int, Any]) -> int:
+        name_cell = ws.cell(row=row, column=1, value=location)
+        name_cell.font = _DATA_FONT
+        name_cell.alignment = _CENTER
+        name_cell.border = _THIN
+        _set_row_height(ws, row)
+
+        for month in range(1, 13):
+            record = month_map.get(month)
+            cell = ws.cell(row=row, column=month + 1)
+            cell.border = _THIN
+            cell.alignment = _RIGHT
+            cell.font = _DATA_FONT
+            if record is None:
+                continue
+            market = _to_decimal(record.market_price)
+            if market is not None:
+                _set_price(cell, market)
+        return row + 1
+
+    def _write_deduction_location(
+        self,
+        ws: Any,
+        row: int,
+        location: str,
+        month_map: dict[int, Any],
+    ) -> int:
+        market_row = row
+        deduction_row = row + 1
+        net_row = row + 2
+
+        ws.merge_cells(
+            start_row=market_row,
+            start_column=1,
+            end_row=net_row,
+            end_column=1,
+        )
+        name_cell = ws.cell(row=market_row, column=1, value=location)
+        name_cell.font = _DATA_FONT
+        name_cell.alignment = _CENTER
+        comment = Comment(_THREE_ROW_COMMENT, "系统")
+        comment.width = 220
+        comment.height = 70
+        name_cell.comment = comment
+
+        for r in (market_row, deduction_row, net_row):
+            ws.cell(row=r, column=1).border = _THIN
+            _set_row_height(ws, r)
+
+        for month in range(1, 13):
+            col = month + 1
+            col_letter = get_column_letter(col)
+            record = month_map.get(month)
+            market_cell = ws.cell(row=market_row, column=col)
+            deduction_cell = ws.cell(row=deduction_row, column=col)
+            net_cell = ws.cell(row=net_row, column=col)
+
+            for cell in (market_cell, deduction_cell, net_cell):
+                cell.border = _THIN
+                cell.alignment = _RIGHT
+                cell.font = _DATA_FONT
+            net_cell.fill = _NET_FILL
+
+            if record is None:
+                continue
+
+            market = _to_decimal(record.market_price)
+            if market is None or market == 0:
+                continue
+
+            deduction = _to_decimal(record.deduction_fee) or Decimal("0")
+            _set_price(market_cell, market)
+            if deduction != 0:
+                _set_price(deduction_cell, deduction)
+
+            net = market - deduction
+            if net == 0:
+                continue
+
+            net_cell.value = f"={col_letter}{market_row}-{col_letter}{deduction_row}"
+            net_cell.number_format = _PRICE_FORMAT
+
+        return row + 3

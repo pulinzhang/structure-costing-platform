@@ -5,7 +5,7 @@
 """
 
 from dataclasses import dataclass, field
-from typing import List, Dict
+from typing import Any, List, Dict
 
 from app.parsers.stamping.models.part import Part
 from app.parsers.stamping.models.process import Process
@@ -45,10 +45,10 @@ class ParserResult:
     data_start_row: int = 0
 
     # 列映射
-    col_map: dict = field(default_factory=dict)
+    col_map: dict[str, Any] = field(default_factory=dict)
 
     # Header 路径
-    header_paths: dict = field(default_factory=dict)
+    header_paths: dict[str, Any] = field(default_factory=dict)
 
     # 总行数
     total_rows: int = 0
@@ -58,6 +58,15 @@ class ParserResult:
 
     # 零件简图：零件号 -> 图片二进制
     images_by_part: Dict[str, bytes] = field(default_factory=dict)
+
+    # 冲压供应商名称
+    stamping_supplier: str = ""
+
+    # 车型（从Excel表头"项目"字段提取）
+    vehicle_model: str = ""
+
+    # 版本（从Excel表头"版本"字段提取）
+    version: str = ""
 
     @property
     def part_count(self) -> int:

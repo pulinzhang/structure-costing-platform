@@ -21,7 +21,7 @@ logger = get_logger("parser.stamping.excel")
 class ExcelContext:
     """Excel 工作表上下文"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.workbook: Optional[openpyxl.Workbook] = None
         self.sheet: Optional[openpyxl.worksheet.worksheet.Worksheet] = None
         self.max_row: int = 0
@@ -35,7 +35,7 @@ class ExcelContext:
         self.max_row = 0
         self.max_column = 0
 
-    def find_sheet(self, sheet_title: str = None) -> openpyxl.worksheet.worksheet.Worksheet:
+    def find_sheet(self, sheet_title: str | None = None) -> openpyxl.worksheet.worksheet.Worksheet:
         """查找指定 Sheet 或自动识别"""
         if self.workbook is None:
             raise ValueError("Workbook not loaded")
@@ -44,8 +44,11 @@ class ExcelContext:
             self.sheet = self.workbook[sheet_title]
         else:
             self.sheet = self._find_stamping_sheet()
-            if not self.sheet:
-                self.sheet = self.workbook.active
+            if self.sheet is None and self.workbook.worksheets:
+                self.sheet = self.workbook.worksheets[0]
+
+        if self.sheet is None:
+            raise ValueError("未找到可用 Sheet")
 
         self.max_row = self.sheet.max_row
         self.max_column = self.sheet.max_column

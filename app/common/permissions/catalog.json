@@ -1,0 +1,454 @@
+{
+  "version": 1,
+  "defaults": [
+    "menu:dashboard",
+    "op:dashboard:view",
+    "menu:settings",
+    "menu:settings-profile",
+    "op:settings-profile:view",
+    "op:settings-profile:update",
+    "op:settings-profile:password"
+  ],
+  "mandatory": [
+    "menu:settings",
+    "menu:settings-profile",
+    "op:settings-profile:view",
+    "op:settings-profile:update",
+    "op:settings-profile:password"
+  ],
+  "tree": [
+    {
+      "code": "menu:dashboard",
+      "label": "仪表盘",
+      "type": "menu",
+      "children": [
+        { "code": "op:dashboard:view", "label": "查看", "type": "op" }
+      ]
+    },
+    {
+      "code": "menu:stamping",
+      "label": "冲压工程",
+      "type": "group",
+      "children": [
+        {
+          "code": "menu:stamping-process",
+          "label": "冲压工艺",
+          "type": "group",
+          "children": [
+            {
+              "code": "menu:stamping-upload",
+              "label": "上传工艺文件",
+              "type": "menu",
+              "children": [
+                { "code": "op:stamping-upload:view", "label": "查看", "type": "op" },
+                { "code": "op:stamping-upload:upload", "label": "上传", "type": "op" }
+              ]
+            },
+            {
+              "code": "menu:stamping-parts",
+              "label": "冲压零件列表",
+              "type": "menu",
+              "children": [
+                { "code": "op:stamping-parts:view", "label": "查询", "type": "op" },
+                { "code": "op:stamping-parts:update", "label": "编辑工序", "type": "op" },
+                { "code": "op:stamping-parts:delete", "label": "删除", "type": "op" }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "menu:stamping-stroke-unit-price",
+          "label": "冲次单价",
+          "type": "group",
+          "children": [
+            {
+              "code": "menu:stamping-tonnage-upload",
+              "label": "上传",
+              "type": "menu",
+              "children": [
+                { "code": "op:stamping-tonnage-upload:view", "label": "查看", "type": "op" },
+                { "code": "op:stamping-tonnage-upload:upload", "label": "上传", "type": "op" }
+              ]
+            },
+            {
+              "code": "menu:stamping-tonnage",
+              "label": "冲次单价列表",
+              "type": "menu",
+              "children": [
+                { "code": "op:stamping-tonnage:view", "label": "查询", "type": "op" },
+                { "code": "op:stamping-tonnage:create", "label": "新增", "type": "op" },
+                { "code": "op:stamping-tonnage:update", "label": "编辑", "type": "op" },
+                { "code": "op:stamping-tonnage:delete", "label": "删除", "type": "op" },
+                { "code": "op:stamping-tonnage:approve", "label": "审核通过", "type": "op" },
+                { "code": "op:stamping-tonnage:reverse", "label": "反审核", "type": "op" },
+                { "code": "op:stamping-tonnage:export", "label": "导出", "type": "op" }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "menu:stamping-processing-fee",
+          "label": "冲压加工费",
+          "type": "group",
+          "children": [
+            {
+              "code": "menu:stamping-process-fee-calc",
+              "label": "冲压加工费计算",
+              "type": "menu",
+              "children": [
+                { "code": "op:stamping-process-fee-calc:view", "label": "查看", "type": "op" },
+                { "code": "op:stamping-process-fee-calc:run", "label": "计算", "type": "op" },
+                { "code": "op:stamping-process-fee-calc:delete", "label": "删除日志", "type": "op" }
+              ]
+            },
+            {
+              "code": "menu:stamping-process-fee",
+              "label": "冲压加工费列表",
+              "type": "menu",
+              "children": [
+                { "code": "op:stamping-process-fee:view", "label": "查询", "type": "op" },
+                { "code": "op:stamping-process-fee:update", "label": "手工调整", "type": "op" },
+                { "code": "op:stamping-process-fee:delete", "label": "删除", "type": "op" },
+                { "code": "op:stamping-process-fee:approve", "label": "审核通过", "type": "op" },
+                { "code": "op:stamping-process-fee:reverse", "label": "反审核", "type": "op" },
+                { "code": "op:stamping-process-fee:export", "label": "导出", "type": "op" }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "menu:yishiyiyi",
+      "label": "一事一议",
+      "type": "group",
+      "children": [
+        {
+          "code": "menu:thickness",
+          "label": "加减价政策",
+          "type": "group",
+          "children": [
+            {
+              "code": "menu:steel-price-policy-upload",
+              "label": "上传",
+              "type": "menu",
+              "children": [
+                { "code": "op:steel-price-policy-upload:view", "label": "查看", "type": "op" },
+                { "code": "op:steel-price-policy-upload:upload", "label": "导入", "type": "op" }
+              ]
+            },
+            {
+              "code": "menu:steel-price-policy-download",
+              "label": "加减价政策列表",
+              "type": "menu",
+              "children": [
+                { "code": "op:steel-price-policy-download:view", "label": "预览", "type": "op" },
+                { "code": "op:steel-price-policy-download:export", "label": "导出", "type": "op" },
+                { "code": "op:steel-price-policy-download:delete", "label": "批量删除", "type": "op" }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "menu:base-price",
+          "label": "基准价格",
+          "type": "group",
+          "children": [
+            {
+              "code": "menu:base-price-upload",
+              "label": "上传",
+              "type": "menu",
+              "children": [
+                { "code": "op:base-price-upload:view", "label": "查看", "type": "op" },
+                { "code": "op:base-price-upload:upload", "label": "导入", "type": "op" }
+              ]
+            },
+            {
+              "code": "menu:base-price-download",
+              "label": "基准价格列表",
+              "type": "menu",
+              "children": [
+                { "code": "op:base-price-download:view", "label": "预览", "type": "op" },
+                { "code": "op:base-price-download:export", "label": "导出", "type": "op" },
+                { "code": "op:base-price-download:delete", "label": "批量删除", "type": "op" }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "menu:winning-thickness-download",
+          "label": "中标钢厂厚度价格一览表",
+          "type": "menu",
+          "children": [
+            { "code": "op:winning-thickness-download:view", "label": "预览", "type": "op" },
+            { "code": "op:winning-thickness-download:export", "label": "导出", "type": "op" }
+          ]
+        },
+        {
+          "code": "menu:scrap-price",
+          "label": "废料月度销售价",
+          "type": "menu",
+          "children": [
+            { "code": "op:scrap-price:view", "label": "查询", "type": "op" },
+            { "code": "op:scrap-price:create", "label": "新增", "type": "op" },
+            { "code": "op:scrap-price:update", "label": "编辑", "type": "op" },
+            { "code": "op:scrap-price:delete", "label": "删除", "type": "op" },
+            { "code": "op:scrap-price:copy", "label": "复制月度模板", "type": "op" },
+            { "code": "op:scrap-price:export", "label": "导出", "type": "op" }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "menu:bom",
+      "label": "BOM",
+      "type": "group",
+      "children": [
+        {
+          "code": "menu:bom-material-list",
+          "label": "材料清单",
+          "type": "group",
+          "children": [
+            {
+              "code": "menu:bom-upload",
+              "label": "上传材料清单",
+              "type": "menu",
+              "children": [
+                { "code": "op:bom-upload:view", "label": "查看", "type": "op" },
+                { "code": "op:bom-upload:upload", "label": "上传", "type": "op" }
+              ]
+            },
+            {
+              "code": "menu:bom-structure",
+              "label": "产品结构",
+              "type": "menu",
+              "children": [
+                { "code": "op:bom-structure:view", "label": "查看", "type": "op" }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "menu:bom-welding-unit-price-group",
+          "label": "焊接单价",
+          "type": "group",
+          "children": [
+            {
+              "code": "menu:bom-welding-unit-price-upload",
+              "label": "上传",
+              "type": "menu",
+              "children": [
+                { "code": "op:bom-welding-unit-price-upload:view", "label": "查看", "type": "op" },
+                { "code": "op:bom-welding-unit-price-upload:upload", "label": "上传", "type": "op" }
+              ]
+            },
+            {
+              "code": "menu:bom-welding-unit-price",
+              "label": "焊接单价列表",
+              "type": "menu",
+              "children": [
+                { "code": "op:bom-welding-unit-price:view", "label": "查询", "type": "op" },
+                { "code": "op:bom-welding-unit-price:create", "label": "新增", "type": "op" },
+                { "code": "op:bom-welding-unit-price:update", "label": "编辑", "type": "op" },
+                { "code": "op:bom-welding-unit-price:delete", "label": "删除", "type": "op" },
+                { "code": "op:bom-welding-unit-price:approve", "label": "审核通过", "type": "op" },
+                { "code": "op:bom-welding-unit-price:reverse", "label": "反审核", "type": "op" },
+                { "code": "op:bom-welding-unit-price:export", "label": "导出", "type": "op" }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "menu:bom-welding-process-breakdown-group",
+          "label": "焊接工艺拆解",
+          "type": "group",
+          "children": [
+            {
+              "code": "menu:bom-welding-process-breakdown",
+              "label": "拆解",
+              "type": "menu",
+              "children": [
+                { "code": "op:bom-welding-process-breakdown:generate", "label": "从BOM生成", "type": "op" },
+                { "code": "op:bom-welding-process-breakdown:delete-log", "label": "删除拆解日志", "type": "op" }
+              ]
+            },
+            {
+              "code": "menu:bom-welding-process-breakdown-list",
+              "label": "拆解列表",
+              "type": "menu",
+              "children": [
+                { "code": "op:bom-welding-process-breakdown:view", "label": "查询", "type": "op" },
+                { "code": "op:bom-welding-process-breakdown:save-lines", "label": "编辑明细", "type": "op" },
+                { "code": "op:bom-welding-process-breakdown:delete", "label": "删除", "type": "op" },
+                { "code": "op:bom-welding-process-breakdown:approve", "label": "审核通过", "type": "op" },
+                { "code": "op:bom-welding-process-breakdown:reverse", "label": "反审核", "type": "op" },
+                { "code": "op:bom-welding-process-breakdown:export", "label": "导出L0核对", "type": "op" }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "menu:bom-l0-welding-fee-group",
+          "label": "L0焊接费（完工产品）",
+          "type": "group",
+          "children": [
+            {
+              "code": "menu:bom-l0-welding-fee-calc",
+              "label": "L0焊接费计算",
+              "type": "menu",
+              "children": [
+                { "code": "op:bom-l0-welding-fee-calc:view", "label": "查看", "type": "op" },
+                { "code": "op:bom-l0-welding-fee-calc:run", "label": "计算", "type": "op" },
+                { "code": "op:bom-l0-welding-fee-calc:delete", "label": "删除计算日志", "type": "op" }
+              ]
+            },
+            {
+              "code": "menu:bom-l0-welding-fee-list",
+              "label": "L0焊接费列表",
+              "type": "menu",
+              "children": [
+                { "code": "op:bom-l0-welding-fee-list:view", "label": "查询", "type": "op" },
+                { "code": "op:bom-l0-welding-fee-list:delete", "label": "删除", "type": "op" },
+                { "code": "op:bom-l0-welding-fee-list:approve", "label": "审核通过", "type": "op" },
+                { "code": "op:bom-l0-welding-fee-list:reverse", "label": "反审核", "type": "op" },
+                { "code": "op:bom-l0-welding-fee-list:export", "label": "导出", "type": "op" }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "menu:costing",
+      "label": "核价",
+      "type": "group",
+      "children": [
+        {
+          "code": "menu:steel-price",
+          "label": "冲压钢材联动价",
+          "type": "group",
+          "children": [
+            {
+              "code": "menu:steel-price-calc",
+              "label": "冲压钢材联动计算",
+              "type": "menu",
+              "children": [
+                { "code": "op:steel-price-calc:view", "label": "查看", "type": "op" },
+                { "code": "op:steel-price-calc:run", "label": "开始计算", "type": "op" },
+                { "code": "op:steel-price-calc:delete", "label": "删除日志", "type": "op" }
+              ]
+            },
+            {
+              "code": "menu:steel-price-list",
+              "label": "冲压钢材联动价一览",
+              "type": "menu",
+              "children": [
+                { "code": "op:steel-price-list:view", "label": "查询", "type": "op" },
+                { "code": "op:steel-price-list:update", "label": "编辑", "type": "op" },
+                { "code": "op:steel-price-list:delete", "label": "删除", "type": "op" },
+                { "code": "op:steel-price-list:approve", "label": "审核通过", "type": "op" },
+                { "code": "op:steel-price-list:reject", "label": "驳回", "type": "op" },
+                { "code": "op:steel-price-list:reverse", "label": "反审核", "type": "op" },
+                { "code": "op:steel-price-list:export", "label": "导出", "type": "op" }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "menu:stamping-part-cost-group",
+          "label": "冲压零件价格核算",
+          "type": "group",
+          "children": [
+            {
+              "code": "menu:stamping-part-cost-calc",
+              "label": "冲压零件价格计算",
+              "type": "menu",
+              "children": [
+                { "code": "op:stamping-part-cost-calc:view", "label": "查看", "type": "op" },
+                { "code": "op:stamping-part-cost-calc:run", "label": "计算", "type": "op" },
+                { "code": "op:stamping-part-cost-calc:delete", "label": "删除日志", "type": "op" }
+              ]
+            },
+            {
+              "code": "menu:stamping-part-cost",
+              "label": "冲压零件价格一览",
+              "type": "menu",
+              "children": [
+                { "code": "op:stamping-part-cost:view", "label": "查询", "type": "op" },
+                { "code": "op:stamping-part-cost:update", "label": "失败手工改价", "type": "op" },
+                { "code": "op:stamping-part-cost:delete", "label": "删除", "type": "op" },
+                { "code": "op:stamping-part-cost:approve", "label": "审核通过", "type": "op" },
+                { "code": "op:stamping-part-cost:reverse", "label": "反审核", "type": "op" },
+                { "code": "op:stamping-part-cost:export", "label": "导出", "type": "op" }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "menu:costing-engine",
+          "label": "自动核价引擎",
+          "type": "menu",
+          "children": [
+            { "code": "op:costing:view", "label": "查看", "type": "op" }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "menu:quotation",
+      "label": "报价",
+      "type": "menu",
+      "children": [
+        { "code": "op:quotation:view", "label": "查看", "type": "op" }
+      ]
+    },
+    {
+      "code": "menu:settings",
+      "label": "设置",
+      "type": "group",
+      "children": [
+        {
+          "code": "menu:settings-profile",
+          "label": "个人资料",
+          "type": "menu",
+          "children": [
+            { "code": "op:settings-profile:view", "label": "查看", "type": "op" },
+            { "code": "op:settings-profile:update", "label": "改资料/头像", "type": "op" },
+            { "code": "op:settings-profile:password", "label": "修改密码", "type": "op" }
+          ]
+        },
+        {
+          "code": "menu:settings-system",
+          "label": "系统设置",
+          "type": "menu",
+          "children": [
+            { "code": "op:settings-system:view", "label": "查看", "type": "op" },
+            { "code": "op:settings-system:update", "label": "保存设置", "type": "op" }
+          ]
+        },
+        {
+          "code": "menu:settings-users",
+          "label": "用户管理",
+          "type": "menu",
+          "children": [
+            { "code": "op:settings-users:view", "label": "查询", "type": "op" },
+            { "code": "op:settings-users:create", "label": "新增", "type": "op" },
+            { "code": "op:settings-users:update", "label": "编辑", "type": "op" },
+            { "code": "op:settings-users:password", "label": "重置密码", "type": "op" },
+            { "code": "op:settings-users:delete", "label": "删除", "type": "op" },
+            { "code": "op:settings-users:grant", "label": "授权", "type": "op" }
+          ]
+        },
+        {
+          "code": "menu:settings-logs",
+          "label": "操作日志",
+          "type": "menu",
+          "children": [
+            { "code": "op:settings-logs:view", "label": "查看", "type": "op" },
+            { "code": "op:settings-logs:export", "label": "导出", "type": "op" }
+          ]
+        }
+      ]
+    }
+  ]
+}

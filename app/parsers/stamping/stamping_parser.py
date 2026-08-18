@@ -15,7 +15,7 @@
 """
 
 import time
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from app.parsers.stamping.excel_context import ExcelContext
 from app.parsers.stamping.header_resolver import HeaderResolver
@@ -53,11 +53,12 @@ class StampingExcelParser:
     ParserResult（最终结果）
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.result = ParserResult()
         self._excel_ctx: Optional[ExcelContext] = None
         self._header_resolver: Optional[HeaderResolver] = None
         self._row_parser: Optional[RowParser] = None
+        self._processed_images: set[Any] = set()  # 已处理图片集合，避免重复
 
     def parse(self, file_path: str) -> ParserResult:
         """解析冲压工艺 Excel 文件"""
@@ -96,8 +97,26 @@ class StampingExcelParser:
         self._excel_ctx.find_sheet()
         self.result.sheet_name = self._excel_ctx.sheet.title
 
-        # 解析表头
+        # 初始化 HeaderResolver（需要先创建才能使用）
         self._header_resolver = HeaderResolver(self._excel_ctx.get_value)
+
+        # 提取冲压供应商名称
+        stamping_supplier = self._header_resolver.find_stamping_supplier(self._excel_ctx.sheet)
+        if stamping_supplier:
+            self.result.stamping_supplier = stamping_supplier
+            logger.info(f"冲压供应商: {stamping_supplier}")
+        # 提取车型信息,即项目名称
+        vehicle_model = self._header_resolver.find_stamping_vehicle_model(self._excel_ctx.sheet)
+        if vehicle_model:
+            self.result.vehicle_model = vehicle_model
+            logger.info(f"从Excel提取车型: {vehicle_model}")
+
+        # 提取版本
+        version = self._header_resolver.find_stamping_project_version(self._excel_ctx.sheet)
+        if version:
+            self.result.version = version
+            logger.info(f"从Excel提取版本: {version}")
+        # 解析表头
         header_ctx: HeaderContext = self._header_resolver.resolve(self._excel_ctx.sheet)
 
         self.result.header_row = header_ctx.header_row
@@ -146,10 +165,11 @@ class StampingExcelParser:
 
                     # 解析零件行，直接存储 Part 对象
                     part: Part = self._row_parser.parse_part_row(row_idx)
+                    part.excel_sheet_name = self.result.sheet_name or None
                     self.result.parts.append(part)
 
-                    # 图片归属
-                    self._handle_image_for_row(row_idx, part_no)
+                    # 图片归属（传入完整零件范围，确保覆盖合并行的所有可能位置）
+                    self._handle_image_for_row(row_idx, part_no, part_range.end_row)
 
                 # 该行属于零件范围，检查是否有工序（只用 op 列判断）
                 op_val = excel_ctx.get_value(row_idx, col_map.get("op", 12))
@@ -183,8 +203,17 @@ class StampingExcelParser:
             part_number, process_count.get(part_number, 0), warnings
         )
 
-    def _handle_image_for_row(self, row_idx: int, part_number: Optional[str]) -> None:
-        """处理该行的图片归属"""
+    def _handle_image_for_row(self, row_idx: int, part_number: Optional[str], end_row: int) -> None:
+        """处理该行的图片归属
+
+        Excel 排版规则（基于 excel_sample 样本）：
+        - 简图固定在 D 列（0-indexed col=3）
+        - 图片锚点可能在零件起始行、零件范围中间任意行、或零件结束行的下一行
+          （因为合并单元格会导致图片锚点偏移）
+
+        openpyxl 的 anchor._from.col / _from.row 都是 0-indexed，
+        调用方 row_idx 是 1-indexed 的 Excel 行号。
+        """
         if not part_number:
             return
 
@@ -192,8 +221,14 @@ class StampingExcelParser:
         if not hasattr(sheet, "_images"):
             return
 
-        sketch_col = self.result.col_map.get("part_name", 3)
+        # 0-indexed：Excel 的 D 列（"零件简图"列固定位置）
+        sketch_col_0idx = 3
+
         for img in sheet._images:
+            # 跳过已有归属的图片
+            if img in getattr(self, '_processed_images', set()):
+                continue
+
             anchor = getattr(img, "anchor", None)
             if anchor is None:
                 continue
@@ -201,33 +236,52 @@ class StampingExcelParser:
             try:
                 from openpyxl.drawing.spreadsheet_drawing import OneCellAnchor, TwoCellAnchor
                 if isinstance(anchor, (OneCellAnchor, TwoCellAnchor)):
-                    col = anchor._from.col
-                    start_row = anchor._from.row
+                    marker = anchor._from
+                    if marker is None or marker.col is None or marker.row is None:
+                        continue
+                    col_0idx = int(marker.col)
+                    start_row_0idx = int(marker.row)
                 else:
                     continue
 
-                if col == sketch_col and start_row == row_idx - 1:
-                    img_bytes = None
-                    if hasattr(img, "_data") and callable(img._data):
-                        data = img._data()
+                if col_0idx != sketch_col_0idx:
+                    continue
+
+                # 行匹配：0-indexed 图片行 与 1-indexed 范围的比较
+                # 图片行 8 (0-indexed) -> Excel row 9
+                # 零件范围 7-13 -> 0-indexed: 6-12
+                # 允许匹配：图片行在零件范围内（start_row-1 <= img_row < end_row）
+                img_row_0idx = start_row_0idx
+                part_start_0idx = row_idx - 1
+                part_end_0idx = end_row - 1
+
+                if not (part_start_0idx <= img_row_0idx <= part_end_0idx):
+                    continue
+
+                img_bytes = None
+                if hasattr(img, "_data") and callable(img._data):
+                    data = img._data()
+                    if isinstance(data, bytes):
+                        img_bytes = data
+                if not img_bytes:
+                    ref = getattr(img, "ref", None)
+                    if ref and hasattr(ref, "read"):
+                        data = ref.read()
                         if isinstance(data, bytes):
                             img_bytes = data
-                    if not img_bytes:
-                        ref = getattr(img, "ref", None)
-                        if ref and hasattr(ref, "read"):
-                            data = ref.read()
-                            if isinstance(data, bytes):
-                                img_bytes = data
 
-                    if img_bytes:
-                        self.result.images_by_part[part_number] = img_bytes
-                        break
+                if img_bytes:
+                    self.result.images_by_part[part_number] = img_bytes
+                    # 标记为已处理，避免重复
+                    if not hasattr(self, '_processed_images'):
+                        self._processed_images = set()
+                    self._processed_images.add(img)
             except Exception:
                 continue
 
     def _log_summary(self) -> None:
         """输出解析摘要"""
-        logger.info(f"=== 解析完成 ===")
+        logger.info("=== 解析完成 ===")
         logger.info(f"Sheet: {self.result.sheet_name}")
         logger.info(f"表头行: {self.result.header_row}, 数据起始行: {self.result.data_start_row}")
         logger.info(f"零件数: {self.result.part_count}, 工序数: {self.result.process_count}, 简图: {self.result.image_count}")

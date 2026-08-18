@@ -54,14 +54,13 @@ class Part:
     # 料片宽度（mm）
     sheet_width: Optional[Decimal] = None
 
-    # 可制件数（一张料片能冲几个零件）
+    # 可制件数：一张钢板/料片单独冲压本零件时可出的件数。
+    # 例：1 张料出 2 件 → 2；出 1 件 → 1；左右件共模同冲时按单侧零件计则为 2。
+    # 注意：不是利用率百分比，也不是左右件合计件数。
     parts_per_sheet: int = 0
 
     # 料片式样（卷料/板料）
     sheet_type: Optional[str] = None
-
-    # 冲压吨位（吨）
-    tonnage: int = 0
 
     # 模具类型（单动/双动）
     die_type: Optional[str] = None
@@ -69,8 +68,16 @@ class Part:
     # 成形方法（冲裁/拉伸/翻边...）
     process_method: Optional[str] = None
 
-    # 自动化程度（自动/手动）
+    # 自动化：Excel「自动化」列原文（如自动/手动/半自动），原样落库，勿转成布尔
     automation: Optional[str] = None
 
     # 备注
     remark: Optional[str] = None
+
+    # 冲压供应商（从Excel表头提取，如"烟台海众汽车零部件有限公司"）
+    stamping_supplier: Optional[str] = None
+
+    # Excel 单元格溯源（防扯皮）
+    excel_sheet_name: Optional[str] = None
+    excel_row: Optional[int] = None
+    excel_part_col: Optional[int] = None

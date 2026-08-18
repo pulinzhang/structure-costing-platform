@@ -21,6 +21,9 @@
     --text-main: #ffffff;
     --text-muted: #9e9e9e;
     --text-disabled: #616161;
+    /* 历史别名（部分模板曾使用） */
+    --text-secondary: #b0b0b0;
+    --text-dim: #616161;
 
     /* --- 4. 边框、分割线与高精度线条 --- */
     --border-subtle: #222222;
@@ -49,6 +52,39 @@ body {
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    display: block;
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
+}
+
+/* Chrome / WebKit 自动填充：压住默认浅色底，保持暗色主题 */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+textarea:-webkit-autofill:active {
+    -webkit-text-fill-color: var(--text-main);
+    caret-color: var(--text-main);
+    -webkit-box-shadow: 0 0 0 1000px var(--bg-deep) inset;
+    box-shadow: 0 0 0 1000px var(--bg-deep) inset;
+    transition: background-color 5000s ease-in-out 0s;
+}
+
+/* 仅用于无障碍：保留 pageTitle 节点但不占视觉空间 */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
 }
 
 /* 全局滚动条 */
@@ -72,427 +108,425 @@ body {
     color: var(--text-main);
 }
 
-/* ====== 侧边栏 — 钛灰面板 ====== */
+/* ====== BRABUS Carbon & Precision Navigation Layer ====== */
+
+/* 1. 遮罩层 z-index 提升至 90 */
+.sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 90;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.sidebar-backdrop.is-visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* 2. Sidebar 侧边栏主体：z-index 设为 100，避免被 Header 穿透 */
 .sidebar {
     position: fixed;
     top: 0;
     left: 0;
+    width: 320px;
+    max-width: 85vw;
     height: 100vh;
-    width: 256px;
-    background: var(--bg-surface);
-    border-right: 1px solid var(--border-subtle);
-    color: #fff;
-    padding: 1.25rem 0;
-    z-index: 1000;
+    height: 100dvh;
+    /* 碳素炭黑渐变 + 极细钛金边框 */
+    background: linear-gradient(180deg, #121214 0%, #080809 100%);
+    color: #ffffff;
+    padding: 2rem 1.25rem;
+    z-index: 100;
     display: flex;
     flex-direction: column;
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 20px 0 50px rgba(0, 0, 0, 0.8), inset -1px 0 0 rgba(255, 255, 255, 0.03);
+    transform: translateX(-100%);
+    visibility: hidden;
+    pointer-events: none;
+    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.28s ease;
+    overflow: hidden;
 }
 
+.sidebar.is-open {
+    transform: translateX(0);
+    visibility: visible;
+    pointer-events: auto;
+}
+
+/* 3. 重塑 BRABUS 铭牌头部（唤醒品牌仪式感） */
 .sidebar-brand {
-    padding: 0.75rem 1.25rem 1.25rem;
-    border-bottom: 1px solid var(--border-subtle);
-    margin-bottom: 0.75rem;
-    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 1.5rem;
+    margin-bottom: 1.25rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    position: relative;
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
+    transition: opacity 0.15s ease;
+}
+
+.sidebar-brand:hover {
+    opacity: 0.88;
+}
+
+/* 标志性 BRABUS 红线指示器 */
+.sidebar-brand::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    width: 32px;
+    height: 1px;
+    background: var(--brabus-red);
+    box-shadow: 0 0 8px var(--brabus-red);
 }
 
 .sidebar-brand h1 {
-    font-size: 0.8125rem;
-    font-weight: 600;
-    margin: 0 0 0.375rem 0;
-    line-height: 1.35;
-    color: var(--text-main);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.sidebar-brand span {
-    display: block;
-    font-size: 0.625rem;
-    font-weight: 500;
-    letter-spacing: 0.1em;
+    font-size: 0.875rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
     text-transform: uppercase;
-    color: var(--text-disabled);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    color: #ffffff;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 
+.sidebar-brand > span {
+    font-size: 0.625rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    letter-spacing: 0.18em;
+    color: rgba(255, 255, 255, 0.35);
+    text-transform: uppercase;
+    margin-top: 0.25rem;
+}
+
+/* 4. 导航列表与精密微交互 */
 .sidebar nav {
     flex: 1;
     overflow-y: auto;
+    padding-right: 0.25rem;
 }
 
 .sidebar-nav {
     list-style: none;
     padding: 0;
     margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
 }
 
 .sidebar-nav-item {
-    margin: 0.125rem 0;
+    margin: 0;
 }
 
-/* 导航链接 — 极简无边框，Brabus 红激活态 */
+/* 一级菜单样式 */
 .sidebar-nav-link {
     display: flex;
     align-items: center;
-    padding: 0.5rem 1.25rem;
-    color: var(--text-muted);
+    gap: 0.85rem;
+    padding: 0.65rem 0.75rem;
+    color: rgba(255, 255, 255, 0.45);
     text-decoration: none;
-    transition: color 0.15s ease;
     font-size: 0.8125rem;
-    letter-spacing: 0.01em;
-    position: relative;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    border-radius: 2px;
+    border-left: 2px solid transparent;
+    transition: all 0.18s ease;
+    background: transparent;
 }
 
 .sidebar-nav-link:hover {
-    color: var(--text-main);
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.03);
+    border-left-color: rgba(255, 255, 255, 0.3);
 }
 
+/* 激活选中态：BRABUS 红激光条 + 极低暗红发光 */
 .sidebar-nav-link.active {
-    color: var(--text-main);
-    background: rgba(255, 255, 255, 0.04);
+    color: #ffffff;
+    background: linear-gradient(90deg, rgba(211, 47, 47, 0.12) 0%, transparent 100%);
+    border-left-color: var(--brabus-red);
+    box-shadow: inset 1px 0 0 var(--brabus-red);
 }
 
-/* Brabus 红左指示条 — 激活态 */
-.sidebar-nav-link.active::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 20%;
-    bottom: 20%;
-    width: 2px;
-    background: var(--brabus-red);
-    border-radius: 1px;
-    box-shadow: 0 0 6px var(--brabus-red-glow);
+.sidebar-nav-link.active > svg:not(.submenu-arrow) {
+    color: var(--brabus-red);
+    filter: drop-shadow(0 0 6px rgba(211, 47, 47, 0.6));
 }
 
-/* 子菜单 */
-.has-submenu .submenu {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    overflow: hidden;
-    max-height: 0;
-    transition: max-height 0.2s ease;
-}
-
-.has-submenu .submenu.show {
-    max-height: 200px;
+.sidebar-nav-link > span,
+.submenu-link > span {
+    flex: 1;
+    min-width: 0;
 }
 
 .submenu-arrow {
-    transition: transform 0.2s ease;
-    color: var(--text-disabled);
+    display: block;
+    flex-shrink: 0;
+    width: 0.85rem;
+    height: 0.85rem;
+    margin-left: auto;
+    opacity: 0.45;
+    transition: transform 0.18s ease-out, opacity 0.15s ease;
 }
 
-.has-submenu.open .submenu-arrow {
+.has-submenu.open > .sidebar-nav-link .submenu-arrow,
+.has-submenu.open > .submenu-link .submenu-arrow {
     transform: rotate(180deg);
+    opacity: 0.7;
+}
+
+/* 5. 子菜单（Accordion）精细化调整；兼容 JS 的 .open / .show */
+.has-submenu > .submenu {
+    list-style: none;
+    padding: 0 0 0 1.25rem;
+    margin: 0.2rem 0;
+    border-left: 1px solid rgba(255, 255, 255, 0.05);
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height 0.25s cubic-bezier(0, 1, 0, 1);
+}
+
+.has-submenu.open > .submenu,
+.has-submenu > .submenu.show {
+    max-height: 500px;
+    transition: max-height 0.35s ease-in-out;
 }
 
 .submenu-link {
     display: flex;
     align-items: center;
-    padding: 0.4375rem 1.25rem 0.4375rem 3rem;
-    color: var(--text-disabled);
+    gap: 0.6rem;
+    padding: 0.45rem 0.75rem;
+    color: rgba(255, 255, 255, 0.35);
     text-decoration: none;
     font-size: 0.75rem;
-    transition: color 0.15s ease;
+    letter-spacing: 0.04em;
+    transition: all 0.15s ease;
 }
 
 .submenu-link:hover {
-    color: var(--text-muted);
+    color: rgba(255, 255, 255, 0.85);
 }
 
 .submenu-link.active {
-    color: var(--text-muted);
-    background: rgba(255, 255, 255, 0.04);
+    color: var(--brabus-red);
+    font-weight: 600;
 }
 
-.sidebar-nav-link svg,
-.submenu-link svg {
+/* 嵌套三级菜单（加减价政策 / 基准价格） */
+.submenu-nested {
+    list-style: none;
+    max-height: 0;
+    overflow: hidden;
+    padding: 0 0 0 1.1rem;
+    margin: 0.15rem 0;
+    border-left: 1px solid rgba(255, 255, 255, 0.04);
+    transition: max-height 0.25s cubic-bezier(0, 1, 0, 1);
+}
+
+.submenu-item.has-submenu.open > .submenu-nested,
+.submenu-nested.show {
+    max-height: 240px;
+    transition: max-height 0.35s ease-in-out;
+}
+
+.submenu-nested .submenu-link {
+    font-size: 0.6875rem;
+    color: rgba(255, 255, 255, 0.28);
+    padding: 0.4rem 0.65rem;
+}
+
+.submenu-nested .submenu-link:hover,
+.submenu-nested .submenu-link.active {
+    color: var(--brabus-red);
+}
+
+/* 图标微调：精密 1.5px 视角 */
+.sidebar-nav-link > svg,
+.submenu-link > svg {
     flex-shrink: 0;
-    margin-right: 0.625rem;
+    opacity: 0.7;
+    transition: opacity 0.15s ease, color 0.15s ease;
+}
+
+.sidebar-nav-link:hover > svg {
+    opacity: 1;
 }
 
 .sidebar-nav-divider {
-    padding: 0.375rem 1.25rem;
+    display: none;
 }
 
-.sidebar-nav-divider hr {
-    border-color: var(--border-subtle);
-    margin: 0.375rem 0;
-}
-
+/* 6. 页脚版本号刻度 */
 .sidebar-footer {
-    flex-shrink: 0;
-    padding: 0.75rem 1.25rem;
-    border-top: 1px solid var(--border-subtle);
-    color: var(--text-disabled);
-    font-size: 0.625rem;
-    letter-spacing: 0.08em;
-}
-
-/* ====== 主内容区 ====== */
-.main-content {
-    margin-left: 256px;
-    min-height: 100vh;
-    padding: 2rem;
-}
-
-/* 极简页头 — 取消大黑框，干净悬浮 */
-.page-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 1.75rem;
-    padding-bottom: 1.25rem;
-    border-bottom: 1px solid var(--border-subtle);
+    padding-top: 1rem;
+    margin-top: auto;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.625rem;
+    color: rgba(255, 255, 255, 0.2);
+    letter-spacing: 0.1em;
 }
 
-.page-header h2 {
-    margin: 0;
-    font-size: 0.875rem;
-    font-weight: 600;
-    letter-spacing: -0.01em;
-    color: var(--text-main);
+/* ====== 主内容区（全宽，无 Sidebar 占位） ====== */
+.main-content {
+    min-width: 0;
+    min-height: 100vh;
+    width: 100%;
+    padding: 1.5rem clamp(1.25rem, 4vw, 3.5rem) 3rem;
+    max-width: 100%;
+    overflow-x: hidden;
+    box-sizing: border-box;
+}
+
+/* 内容区呼吸感：黄金最大宽度，宽屏留白聚焦、普通屏充满 */
+.page-content {
+    width: 100%;
+    min-width: 0;
+    max-width: 1440px;
+    margin: 0 auto;
+    overflow-x: hidden;
+}
+
+/* Header：BRABUS Tactical Cockpit 顶梁卡槽；Menu Icon 始终可点 */
+.page-header {
+    position: relative;
+    z-index: 70;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.25rem;
+    max-width: 1440px;
+    height: 52px;
+    margin: 0 auto 1.75rem;
+    padding: 0 1.25rem;
+    background: #111114;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 2px;
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.03) inset,
+        0 8px 24px rgba(0, 0, 0, 0.35);
+    box-sizing: border-box;
+}
+
+.page-header-left {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    min-width: 0;
+    flex: 1;
+}
+
+.page-header-right {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    flex-shrink: 0;
 }
 
 .breadcrumb {
     background: transparent;
     padding: 0;
-    margin: 0.25rem 0 0 0;
-    font-size: 0.6875rem;
+    margin: 0;
+    font-size: 0.75rem;
+    min-width: 0;
 }
 
+.breadcrumb-list {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+/* 钛金微型品牌徽章 */
+.breadcrumb-brand-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.2rem 0.5rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.72);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.625rem;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    line-height: 1;
+    text-transform: uppercase;
+    user-select: none;
+}
+
+/* 红色双斜线分隔符 */
+.breadcrumb-sep {
+    color: rgba(211, 47, 47, 0.55);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.6875rem;
+    letter-spacing: 0.02em;
+    user-select: none;
+}
+
+.breadcrumb-item,
 .breadcrumb-item a {
-    color: var(--text-muted);
+    color: rgba(255, 255, 255, 0.42);
     text-decoration: none;
     transition: color 0.15s ease;
+    letter-spacing: 0.04em;
+    font-size: 0.75rem;
 }
 
 .breadcrumb-item a:hover {
-    color: var(--text-secondary);
+    color: rgba(255, 255, 255, 0.85);
 }
 
 .breadcrumb-item.active {
-    color: var(--text-secondary);
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #ffffff;
 }
 
-/* 废弃旧 top-nav */
-.top-nav {
-    display: none;
+/* 英文代号：系统代号微型标签（System Sub-Tag） */
+.breadcrumb-item.active[data-en]::after {
+    content: attr(data-en);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.625rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    color: rgba(255, 255, 255, 0.35);
+    background: rgba(255, 255, 255, 0.04);
+    padding: 0.15rem 0.4rem;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 2px;
+    text-transform: uppercase;
 }
 
 /* ====== Toast ====== */
 .toast-container {
     z-index: 9999;
-}
-
-/* ====== 加载遮罩 ====== */
-.loading-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: var(--bg-deep);
-    backdrop-filter: blur(6px);
-    align-items: center;
-    justify-content: center;
-    z-index: 9999;
-    display: none;
-}
-
-.loading-overlay.visible {
-    display: flex;
-}
-
-.spinner {
-    width: 1.75rem;
-    height: 1.75rem;
-    border: 1.5px solid var(--border-subtle);
-    border-top-color: var(--brabus-red);
-    border-radius: 50%;
-    animation: spin 0.75s linear infinite;
-}
-
-@keyframes spin {
-    to { transform: rotate(360deg); }
-}
-
-/* ====== Modal ====== */
-.modal-backdrop {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: var(--bg-deep);
-    backdrop-filter: blur(4px);
-    z-index: 1040;
-}
-
-.modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 1050;
-    display: none;
-    overflow-x: hidden;
-    overflow-y: auto;
-}
-
-.modal.show {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.modal-dialog {
-    max-width: 500px;
-    margin: 1.75rem auto;
-    width: 100%;
-}
-
-.modal-content {
-    background: var(--bg-surface);
-    border: 1px solid var(--border-color);
-    border-radius: 0.375rem;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
-}
-
-.modal-header {
-    border-bottom: 1px solid var(--border-subtle);
-    padding: 1rem 1.5rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-
-.modal-title {
-    font-size: 0.875rem;
-    font-weight: 600;
-    margin: 0;
-    color: var(--text-main);
-}
-
-.modal-body {
-    padding: 1.5rem;
-}
-
-.modal-footer {
-    border-top: 1px solid var(--border-subtle);
-    padding: 1rem 1.5rem;
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.625rem;
-}
-
-/* ====== 工具类 ====== */
-.text-truncate-2 {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-}
-
-.fw-semibold {
-    font-weight: 600;
-}
-
-/* ====== Dashboard 卡片系统 ====== */
-
-/* 仪表盘统计卡片 */
-.dashboard-card {
-    background-color: var(--bg-surface);
-    border: 1px solid var(--border-color);
-    transition: border-color 0.2s ease;
-    cursor: default;
-}
-
-.dashboard-card:hover {
-    border-color: var(--border-active);
-}
-
-/* Brabus 红左上指示条 */
-.card-red-bar {
-    position: relative;
-}
-
-.card-red-bar::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 12px;
-    bottom: 12px;
-    width: 2px;
-    background: var(--brabus-red);
-    border-radius: 1px;
-    box-shadow: 0 0 8px var(--brabus-red-glow);
-}
-
-/* 极客精密数字 — Brabus 红微光 */
-.stat-number {
-    color: var(--text-main);
-    font-family: 'Inter', monospace;
-    letter-spacing: 0.04em;
-    text-shadow: 0 0 20px rgba(211, 47, 47, 0.18);
-    transition: text-shadow 0.2s ease;
-}
-
-.dashboard-card:hover .stat-number {
-    text-shadow: 0 0 28px rgba(211, 47, 47, 0.32);
-}
-
-/* 统计数字旁图标 */
-.stat-icon {
-    background: var(--bg-elevated);
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-/* 概览面板左红条 */
-.overview-bar {
-    display: inline-block;
-    width: 2px;
-    height: 1rem;
-    background: var(--brabus-red);
-    border-radius: 1px;
-    box-shadow: 0 0 6px var(--brabus-red-glow);
-    flex-shrink: 0;
-}
-
-/* ====== 仪表盘 CTA 按钮 ====== */
-.upload-cta {
-    background: var(--bg-elevated);
-    color: #fff;
-    border: 1px solid var(--border-color);
-    border-radius: 0.25rem;
-    padding: 0.5rem 1rem;
-}
-
-.upload-cta:hover {
-    background: var(--brabus-red);
-    border-color: var(--brabus-red-hover);
-}
-
-.overview-cta {
-    background: transparent;
-    color: var(--text-disabled);
-    border: 1px solid var(--border-subtle);
-    border-radius: 0.25rem;
-    padding: 0.5rem 1rem;
-}
-
-.overview-cta:hover {
-    color: var(--text-muted);
-    border-color: var(--border-color);
 }
 
 /* ====== 上传表单 ====== */
@@ -508,48 +542,100 @@ body {
     color: var(--text-disabled);
 }
 
-/* 表单输入框：内凹质感 */
+/* Brabus Select — 仪表台配置项 */
 .upload-input {
+    appearance: none;
+    -webkit-appearance: none;
     width: 100%;
-    background-color: var(--bg-deep, #0a0a0a);
-    border: 1px solid var(--border-color, #2c2c2c);
-    color: var(--text-main, #ffffff);
-    border-radius: 4px;
-    padding: 0.65rem 0.85rem;
-    font-size: 0.875rem;
-    transition: all 0.2s ease;
+    height: 42px;
+    padding: 0 2.75rem 0 14px;
+    background-color: #050505;
+    background-image:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23777777' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"),
+        none;
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    background-size: 12px;
+    border: 1px solid #2d2d2d;
+    border-radius: 3px;
+    color: #b0b0b0;
+    font-size: 11px;
+    font-weight: 400;
+    font-family: inherit;
+    cursor: pointer;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background-image 0.15s ease;
+}
+
+.upload-input:hover {
+    border-color: #404040;
 }
 
 .upload-input:focus {
     outline: none;
-    border-color: var(--brabus-red, #d32f2f);
-    box-shadow: 0 0 0 2px rgba(211, 47, 47, 0.15);
+    border-color: #d32f2f;
+    box-shadow: 0 0 0 1px rgba(211, 47, 47, 0.15);
+    background-image:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23d32f2f' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"),
+        none;
+    color: #ffffff;
+}
+
+/* 下拉选项 */
+.upload-input option {
+    background-color: #111111;
+    color: #b0b0b0;
+    font-size: 11px;
+    font-weight: 400;
+    padding: 8px 12px;
+}
+
+.upload-input option:hover,
+.upload-input option:focus {
+    background-color: #3d1515;
+    color: #ff6b6b;
+}
+
+.upload-input option:checked {
+    background-color: #2a1010;
+    color: #d32f2f;
+    font-weight: 500;
 }
 
 .upload-input::placeholder {
-    color: var(--text-disabled, #616161);
+    color: #555555;
 }
 
-/* 拖拽上传区 */
+/* 拖拽上传区 — Brabus 精密机械舱 */
 .upload-dropzone {
-    border: 2px dashed var(--border-color, #2c2c2c);
-    background-color: rgba(255, 255, 255, 0.01);
-    border-radius: 6px;
-    padding: 2.5rem 1.5rem;
+    border: 1px dashed #282828;
+    background-color: #080808;
+    box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.5);
+    border-radius: 2px;
+    padding: 1.75rem 1.5rem;
     text-align: center;
-    transition: all 0.2s ease;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
     cursor: pointer;
 }
 
 .upload-dropzone:hover {
-    border-color: var(--brabus-red, #d32f2f);
-    background-color: rgba(211, 47, 47, 0.02);
+    border-color: #3a3a3a;
+    background-color: #0b0b0b;
+    box-shadow: inset 0 1px 6px rgba(0, 0, 0, 0.55);
 }
 
 .upload-dropzone.drag-active {
-    border-color: var(--brabus-red, #d32f2f);
-    background-color: rgba(211, 47, 47, 0.03);
-    box-shadow: 0 0 16px rgba(211, 47, 47, 0.12);
+    border-color: #d32f2f;
+    border-style: solid;
+    background-color: #100808;
+    box-shadow: inset 0 1px 8px rgba(211, 47, 47, 0.1), 0 0 0 1px rgba(211, 47, 47, 0.2), 0 0 14px rgba(211, 47, 47, 0.07);
+}
+
+/* 文件已选中态 */
+.upload-dropzone.file-selected {
+    border-color: #d32f2f;
+    border-style: solid;
+    background-color: #100808;
+    box-shadow: inset 0 1px 6px rgba(211, 47, 47, 0.07), 0 0 0 1px rgba(211, 47, 47, 0.12);
 }
 
 /* Ghost 次要按钮 — 边框幽灵型 */
@@ -592,25 +678,27 @@ body {
     border-color: var(--text-muted, #9e9e9e);
 }
 
-/* 核心提交按钮 — Brabus 红 */
+/* 核心提交按钮 — Brabus 赛车红 */
 .btn-upload-submit {
     display: inline-flex;
     align-items: center;
-    gap: 0.4rem;
-    background-color: var(--brabus-red, #d32f2f);
+    gap: 0.5rem;
+    background-color: #d32f2f;
     color: #ffffff;
-    border: 1px solid var(--brabus-red, #d32f2f);
-    padding: 0.5rem 1.5rem;
-    border-radius: 4px;
-    font-size: 0.8rem;
-    font-weight: 600;
-    transition: all 0.2s ease;
+    border: 1px solid #d32f2f;
+    padding: 0 1.75rem;
+    height: 44px;
+    border-radius: 2px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    transition: all 0.15s ease;
 }
 
 .btn-upload-submit:hover {
-    background-color: var(--brabus-red-hover, #b71c1c);
-    border-color: var(--brabus-red-hover, #b71c1c);
-    box-shadow: 0 0 12px rgba(211, 47, 47, 0.4);
+    background-color: #b71c1c;
+    border-color: #b71c1c;
+    box-shadow: 0 0 16px rgba(211, 47, 47, 0.5), 0 0 0 1px rgba(211, 47, 47, 0.15);
 }
 
 .btn-upload-submit:disabled {
@@ -625,20 +713,22 @@ body {
 .btn-file-select {
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
-    background-color: var(--bg-surface, #1e1e1e);
-    color: var(--text-main, #ffffff);
-    border: 1px solid var(--border-color, #2c2c2c);
-    padding: 0.45rem 1rem;
-    border-radius: 4px;
-    font-size: 0.75rem;
-    font-weight: 500;
-    transition: all 0.2s ease;
+    gap: 0.4rem;
+    background-color: #0d0d0d;
+    color: #707070;
+    border: 1px solid #2a2a2a;
+    padding: 0 1rem;
+    height: 36px;
+    border-radius: 2px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    transition: all 0.15s ease;
 }
 
 .btn-file-select:hover {
-    border-color: var(--brabus-red, #d32f2f);
-    color: var(--brabus-red, #d32f2f);
+    border-color: #d32f2f;
+    color: #d32f2f;
 }
 
 /* ====== 零件列表 — 数值列 ====== */
@@ -671,11 +761,6 @@ body {
 
 tr:hover .table-action-btn {
     opacity: 0.8;
-}
-
-.btn-file-select:hover {
-    background: var(--brabus-red);
-    border-color: var(--brabus-red-hover);
 }
 
 /* ====== 零件详情抽屉 — 保存按钮 ====== */
@@ -855,140 +940,239 @@ tr:focus-within .die-type-select {
 }
 
 /* =====================================================================
-   响应式布局 — 平板 / 手机
-   断点：
-     >= 1024px 桌面：维持现有 sidebar 固定展开 + margin-left
-                  面包屑隐藏（大屏左侧已高亮，避免冗余）
-     <  1024px 平板 / 手机：侧边栏隐藏为抽屉，汉堡按钮触发
-                  面包屑显示（弥补侧边栏收起后的导航缺失）
-     <   640px 手机：进一步压缩 padding / 字号
+   临时 Navigation Layer
+   - 非常驻 Sidebar；覆盖工作区，不挤压 main-content
+   - Breadcrumb 常显；Menu 仅 Icon
    ===================================================================== */
 
-/* --- 面包屑：桌面端默认隐藏（视觉冗余） --- */
-.breadcrumb-mobile-only {
-    display: none;
-}
-
-/* --- 汉堡按钮：默认隐藏（小屏通过媒体查询显示） --- */
+/* Menu 按钮：微型钛金物理按键 */
 .sidebar-toggle {
-    display: none;
-    width: 36px;
-    height: 36px;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    background: transparent;
-    border: 1px solid var(--border-color);
-    color: var(--text-muted);
-    border-radius: 4px;
+    width: 34px;
+    height: 34px;
+    margin: 0;
+    padding: 0;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    box-shadow: none;
+    color: rgba(255, 255, 255, 0.65);
     cursor: pointer;
-    transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+    transition: all 0.15s ease;
     flex-shrink: 0;
 }
-.sidebar-toggle:hover {
-    color: var(--text-main);
-    border-color: var(--text-muted);
-    background: var(--bg-elevated);
-}
-.sidebar-toggle:focus-visible {
-    outline: none;
-    border-color: var(--brabus-red);
-    box-shadow: 0 0 0 2px var(--brabus-red-glow);
+
+.sidebar-toggle-label {
+    display: none;
 }
 
-/* --- 抽屉遮罩：默认隐藏 --- */
-.sidebar-backdrop {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(2px);
-    z-index: 40;
-    opacity: 0;
-    transition: opacity 0.2s ease;
-    pointer-events: none;
+.sidebar-toggle:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.25);
+    color: #ffffff;
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.05);
 }
-.sidebar-backdrop.is-visible {
-    opacity: 1;
-    pointer-events: auto;
+
+.sidebar-toggle:focus-visible {
+    outline: none;
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.3);
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.08);
+}
+
+.sidebar-toggle[aria-expanded="true"] {
+    color: #ffffff;
+    border-color: rgba(211, 47, 47, 0.45);
+    background: rgba(211, 47, 47, 0.08);
 }
 
 /* ============ 平板及以下 (<1024px) ============ */
 @media (max-width: 1023.98px) {
-
-    /* 显示汉堡按钮 */
-    .sidebar-toggle {
-        display: inline-flex;
-    }
-
-    /* 允许遮罩显示 */
-    .sidebar-backdrop {
-        display: block;
-    }
-
-    /* 侧边栏变成抽屉 */
-    .sidebar {
-        transform: translateX(-100%);
-        transition: transform 0.25s ease;
-        z-index: 50;
-        background: var(--bg-surface);
-    }
-    .sidebar.is-open {
-        transform: translateX(0);
-        box-shadow: 4px 0 24px rgba(0, 0, 0, 0.6);
-    }
-
-    /* 主内容区取消左侧偏移 */
     .main-content {
-        margin-left: 0;
-        padding: 1.25rem;
+        padding: 1.25rem 1.25rem 2.5rem;
     }
 
-    /* 压缩页头 */
     .page-header {
-        flex-wrap: wrap;
+        height: 52px;
         gap: 0.75rem;
-        margin-bottom: 1.25rem;
-        padding-bottom: 0.875rem;
+        margin-bottom: 1.5rem;
+        padding: 0 1rem;
+        max-width: 100%;
     }
-    .page-header h2 {
-        font-size: 0.8125rem;
-    }
+
     .breadcrumb {
         font-size: 0.6875rem;
     }
 
-    /* 小屏：显示面包屑（弥补侧边栏收起后的导航缺失） */
-    .breadcrumb-mobile-only {
-        display: block;
+    .page-content {
+        max-width: 100%;
+    }
+
+    .sidebar {
+        width: min(320px, 85vw);
     }
 }
 
 /* ============ 手机 (<640px) ============ */
 @media (max-width: 639.98px) {
     .main-content {
-        padding: 0.875rem;
+        padding: 0.875rem 0.875rem 2rem;
     }
-    .sidebar-brand h1 {
-        font-size: 0.75rem;
+
+    .sidebar {
+        left: 0;
+        top: 0;
+        width: min(320px, 88vw);
+        padding: 1.5rem 1.1rem 1.25rem;
     }
-    .sidebar-brand span {
-        font-size: 0.5625rem;
-    }
+
     .breadcrumb {
         font-size: 0.625rem;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 100%;
     }
-    .page-header h2 {
-        font-size: 0.75rem;
+
+    .breadcrumb-list {
+        flex-wrap: nowrap;
+        overflow: hidden;
     }
 }
 
 /* ============ 大屏 (>=1280px) ============ */
 @media (min-width: 1280px) {
     .main-content {
-        padding: 2.25rem 2.5rem;
+        padding: 1.75rem clamp(2rem, 5vw, 4rem) 3.5rem;
     }
+
+    .page-content,
+    .page-header {
+        max-width: 1440px;
+    }
+}
+
+/* ============ 超宽屏 (>=1920px)：略放宽，避免两侧黑边过大 ============ */
+@media (min-width: 1920px) {
+    .page-content,
+    .page-header {
+        max-width: 1600px;
+    }
+}
+
+/* ============ 详情抽屉面板系统（Brabus 工业精密风格） ============ */
+.brabus-panel {
+    background: #111111;
+    border-top: 1px solid #282828;
+    border-left: 1px solid #262626;
+    border-right: 1px solid #181818;
+    border-bottom: 1px solid #101010;
+    box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.5), -1px -1px 0 rgba(255, 255, 255, 0.015) inset;
+    overflow: hidden;
+}
+
+.brabus-panel-header {
+    padding: 0.625rem 1rem;
+    background: #0c0c0c;
+    border-bottom: 1px solid #181818;
+}
+
+.brabus-section-header {
+    padding: 0.625rem 1rem;
+    background: #0c0c0c;
+    border-top: 1px solid #262626;
+    border-left: 1px solid #282828;
+    border-right: 1px solid #181818;
+    border-bottom: 1px solid #161616;
+    box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.4), -1px 0 0 rgba(255, 255, 255, 0.012) inset;
+}
+
+.brabus-table-wrapper {
+    background: #111111;
+    border-left: 1px solid #252525;
+    border-right: 1px solid #161616;
+    border-bottom: 1px solid #0f0f0f;
+}
+
+/* 抽屉面板红色指示条 */
+.brabus-red-indicator {
+    width: 3px;
+    height: 14px;
+    background: #d32f2f;
+    border-radius: 1px;
+    display: inline-block;
+    box-shadow: 0 0 8px rgba(211,47,47,0.5);
+}
+
+/* 工序表头行 */
+.brabus-thead-row {
+    background: #0c0c0c;
+    border-bottom: 1px solid #1a1a1a;
+}
+
+/* 详情抽屉头部 */
+.part-drawer-header {
+    background: linear-gradient(180deg, #1f1f1f 0%, #1a1a1a 100%);
+    border-bottom: 1px solid #333333;
+}
+
+/* 详情内容区背景 */
+.part-drawer-content {
+    background: linear-gradient(175deg, #0a0a0a 0%, #090909 100%);
+}
+
+/* 工序抽屉滚动区 */
+.part-drawer-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: #3a3a3a #1a1a1a;
+}
+
+/* 详情表格核心字段发光文字（仅 Core Cost Fields: 材料/重量/模具类型） */
+.brabus-core-value {
+    text-shadow: 0 0 10px rgba(211,47,47,0.3);
+}
+
+/* 钢材价格最终价霓虹红晕 */
+.brabus-price-glow {
+    color: #FF1E27;
+    text-shadow: 0 0 10px rgba(255, 30, 39, 0.55), 0 0 20px rgba(255, 30, 39, 0.2);
+}
+
+/* 钢材价格表碳素暗纹底 */
+.brabus-bg-grid {
+    background-color: #0B0B0D;
+    background-image:
+        linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    background-size: 24px 24px;
+}
+
+/* 查看图纸按钮 */
+.btn-view-sketch {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 2px;
+    font-size: 9px;
+    color: #333333;
+    border: 1px solid #1c1c1c;
+    transition: all 0.2s;
+    font-weight: 400;
+    letter-spacing: 0.02em;
+}
+.btn-view-sketch:hover {
+    color: #888888;
+    border-color: #2e2e2e;
+}
+.btn-view-sketch svg {
+    color: #2d2d2d;
+    transition: color 0.2s;
+}
+.btn-view-sketch:hover svg {
+    color: #888888;
+}
+
+/* 进度条动画 */
+@keyframes brabus-progress {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 100% 50%; }
 }

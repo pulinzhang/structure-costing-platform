@@ -7,22 +7,46 @@ FastAPI 应用入口
 - 前端：静态 HTML + JavaScript (通过 Live Server 或 nginx)
 """
 
-import logging
 from contextlib import asynccontextmanager
+import socket
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.config import settings, ensure_directories
+from app.config import settings
 from app.utils.logging_config import LoggerConfig, log_request, log_response, get_logger
-from app.database import DatabaseConfig
 
 
 # 重要：在导入其他模块之前先配置日志，确保所有模块的 logger 都能正确获取日志器
 # 这解决了模块导入顺序导致的日志器配置问题
 logger = get_logger("main")
 LoggerConfig.configure(force=True)
+
+
+def _local_ipv4_addresses() -> list[str]:
+    """本机非回环 IPv4，供启动日志打印局域网访问地址。"""
+    addresses: list[str] = []
+    try:
+        hostname = socket.gethostname()
+        for info in socket.getaddrinfo(hostname, None, socket.AF_INET, socket.SOCK_STREAM):
+            ip = info[4][0]
+            if ip.startswith("127.") or ip in addresses:
+                continue
+            addresses.append(ip)
+    except OSError:
+        pass
+    if not addresses:
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+                sock.connect(("8.8.8.8", 80))
+                ip = sock.getsockname()[0]
+                if not ip.startswith("127."):
+                    addresses.append(ip)
+        except OSError:
+            pass
+    return addresses
 
 
 @asynccontextmanager
@@ -32,13 +56,24 @@ async def lifespan(app: FastAPI):
     # 注意：日志配置应该在 uvicorn 启动前完成，这里只做保障
     from app.utils.logging_config import LoggerConfig
     LoggerConfig.configure(force=True)
+
+    # 教学/开发交付：空库用 create_all 建表即可，不做历史库 Schema 升级
+    from app.config import ensure_directories
+    from app.database import AuxiliaryDatabaseConfig, DatabaseConfig
+
     ensure_directories()
-    # 导入所有模型，确保 Base.metadata 能扫描到表结构
-    from app.models import StampingPart, StampingProcess
-    # 自动迁移：在 create_tables 之前补充缺失的列
-    from app.utils.db_migration import run_auto_migration
-    run_auto_migration()
+    from app import models as _orm_models  # noqa: F401
     DatabaseConfig.create_tables()
+    AuxiliaryDatabaseConfig.create_tables()
+
+    from app.services.settings.users.user_service import UserService
+
+    session_factory = DatabaseConfig.get_session_factory()
+    db = session_factory()
+    try:
+        UserService().ensure_default_admin(db)
+    finally:
+        db.close()
 
     logger.info("=" * 50)
     logger.info(f"{settings.APP_NAME} 正在启动...")
@@ -46,7 +81,12 @@ async def lifespan(app: FastAPI):
     logger.info(f"环境: {settings.ENV}")
     logger.info("=" * 50)
     logger.info("API 服务启动完成")
-    logger.info(f"API 访问地址: http://{settings.HOST}:{settings.PORT}")
+    # 监听仍是 settings.HOST（常为 0.0.0.0）；日志打印可点开的本机与局域网地址
+    display_host = "127.0.0.1" if settings.HOST in {"0.0.0.0", "::"} else settings.HOST
+    logger.info(f"本机访问: http://{display_host}:{settings.PORT}")
+    if settings.HOST in {"0.0.0.0", "::"}:
+        for lan_ip in _local_ipv4_addresses():
+            logger.info(f"局域网访问: http://{lan_ip}:{settings.PORT}")
     logger.info("前端静态页面: 使用 Live Server 打开 static/index.html")
 
     yield  # 详见 docs/fastapi-guide.md 第8节
@@ -187,10 +227,19 @@ def create_app() -> FastAPI:
             {"name": "仪表盘", "description": "数据统计与看板"},
             {"name": "冲压工艺", "description": "冲压件零件与工序管理"},
             {"name": "冲压工艺上传", "description": "冲压工艺文件上传与解析"},
+            {"name": "冲压冲次单价", "description": "冲压冲次单价管理"},
+            {"name": "冲压加工费 API", "description": "冲压加工费计算与结果查询"},
+            {"name": "钢材价格管理", "description": "钢材价格计算结果浏览、维护与审核"},
+            {"name": "钢价政策管理", "description": "钢价政策主表与阶梯明细管理"},
+            {"name": "钢材基准价格管理", "description": "钢材基准价格上传导出"},
             {"name": "零件", "description": "通用零件管理"},
             {"name": "核价", "description": "成本计算与核价"},
             {"name": "报价", "description": "报价单管理"},
             {"name": "系统设置", "description": "系统配置管理"},
+            {"name": "用户管理", "description": "用户账号增删改查"},
+            {"name": "权限管理", "description": "权限目录与用户授权"},
+            {"name": "操作日志", "description": "业务写操作与导出审计"},
+            {"name": "登录认证", "description": "账号密码登录"},
         ]
     )
 
@@ -204,6 +253,14 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
+    # 操作审计：写操作 + 导出（须在 CORS 之后添加，以便作为外层拿到最终响应）
+    from app.middleware.operation_log_middleware import OperationLogMiddleware
+    from app.middleware.no_cache_frontend import NoCacheFrontendMiddleware
+
+    app.add_middleware(OperationLogMiddleware)
+    # 前端 JS/CSS/入口页禁止强缓存，避免修复后仍命中旧坏脚本
+    app.add_middleware(NoCacheFrontendMiddleware)
+
     # ========== 静态资源挂载 ==========
     app.mount("/static", StaticFiles(directory="static"), name="static")
     # 简图访问路径: http://host/uploads/T28/1.0/501008901AA.png
@@ -215,7 +272,20 @@ def create_app() -> FastAPI:
     async def spa_index():
         """单页应用入口"""
         from fastapi.responses import FileResponse
-        return FileResponse("static/index.html")
+        return FileResponse(
+            "static/index.html",
+            headers={"Cache-Control": "no-cache, must-revalidate"},
+        )
+
+    # 登录页（账号密码入口，登录成功后再进主系统）
+    @app.get("/login", include_in_schema=False)
+    async def login_page():
+        """打开登录页面"""
+        from fastapi.responses import FileResponse
+        return FileResponse(
+            "static/login.html",
+            headers={"Cache-Control": "no-cache, must-revalidate"},
+        )
 
     # favicon
     @app.get("/favicon.ico", include_in_schema=False)
@@ -223,30 +293,89 @@ def create_app() -> FastAPI:
         from fastapi.responses import Response
         return Response(status_code=204)
 
-    # 保留旧路由兼容性（重定向到 /app）
+    # 保留旧路由兼容性（未登录先进鉴权页）
     @app.get("/", include_in_schema=False)
     async def root():
-        """根路径重定向到 SPA"""
+        """根路径重定向到独立登录页"""
         from fastapi.responses import RedirectResponse
-        return RedirectResponse(url="/app", status_code=302)
+        return RedirectResponse(url="/login", status_code=302)
 
     # ========== 导入各个功能模块的路由 ==========
     from app.routers.dashboard.crud import router as dashboard_router
-    from app.routers.costing.crud import router as costing_router
+    from app.routers.bom.crud import router as bom_router
+    from app.routers.bom.upload import router as bom_upload_router
+    from app.routers.bom.welding_unit_price import router as bom_welding_unit_price_router
+    from app.routers.bom.welding_process_breakdown import (
+        router as bom_welding_process_breakdown_router,
+    )
+    from app.routers.bom.l0_welding_fee import router as bom_l0_welding_fee_router
+    from app.routers.costing.engine.crud import router as costing_engine_router
     from app.routers.quotation.crud import router as quotation_router
-    from app.routers.parts.crud import router as parts_router
-    from app.routers.settings.crud import router as settings_router
+    from app.routers.settings.system.crud import router as settings_router
     from app.routers.stamping.crud import router as stamping_crud_router
     from app.routers.stamping.upload import router as stamping_upload_router
+    from app.routers.stamping.tonnage_price import router as stamping_tonnage_price_router
+    from app.routers.stamping.stamping_process_fee import router as stamping_process_fee_router
+    from app.routers.costing.stamping_part_cost.calc import (
+        router as costing_stamping_part_cost_calc_router,
+    )
+    from app.routers.costing.stamping_part_cost.crud import (
+        router as costing_stamping_part_cost_router,
+    )
+    from app.routers.costing.steel_price.crud import router as costing_steel_price_router
+    from app.routers.costing.steel_price.calc import router as costing_steel_price_calc_router
+    from app.routers.yishiyiyi.policy.upload import router as yishiyiyi_policy_upload_router
+    from app.routers.yishiyiyi.policy.export import router as yishiyiyi_policy_export_router
+    from app.routers.yishiyiyi.policy.crud import router as yishiyiyi_policy_router
+    from app.routers.yishiyiyi.base_price.crud import router as yishiyiyi_base_price_router
+    from app.routers.yishiyiyi.winning_thickness.crud import router as yishiyiyi_winning_thickness_router
+    from app.routers.yishiyiyi.scrap_price.crud import router as yishiyiyi_scrap_price_router
+    from app.routers.settings.auth.crud import router as auth_router
+    from app.routers.settings.users.crud import router as user_crud_router
+    from app.routers.settings.users.permissions import router as permissions_router
+    from app.routers.settings.logs.crud import router as operation_log_router
 
-    # include_router = 注册路由
+    # include_router = 注册路由（鉴权由各端点 Depends(get_current_user) 声明）
+    app.include_router(auth_router)
     app.include_router(dashboard_router)
     app.include_router(stamping_crud_router)
     app.include_router(stamping_upload_router)
-    app.include_router(parts_router)
-    app.include_router(costing_router)
+    app.include_router(stamping_tonnage_price_router)
+    app.include_router(stamping_process_fee_router)
+    app.include_router(costing_stamping_part_cost_calc_router)
+    app.include_router(costing_stamping_part_cost_router)
+    app.include_router(costing_steel_price_calc_router)
+    app.include_router(costing_steel_price_router)
+    app.include_router(yishiyiyi_policy_upload_router)
+    app.include_router(yishiyiyi_policy_export_router)
+    app.include_router(yishiyiyi_policy_router)
+    app.include_router(yishiyiyi_base_price_router)
+    app.include_router(yishiyiyi_winning_thickness_router)
+    app.include_router(yishiyiyi_scrap_price_router)
+    app.include_router(bom_router)
+    app.include_router(bom_upload_router)
+    app.include_router(bom_welding_unit_price_router)
+    app.include_router(bom_welding_process_breakdown_router)
+    app.include_router(bom_l0_welding_fee_router)
+    app.include_router(costing_engine_router)
     app.include_router(quotation_router)
     app.include_router(settings_router)
+    app.include_router(user_crud_router)
+    app.include_router(permissions_router)
+    app.include_router(operation_log_router)
+
+    # ========== 全局异常处理器 ==========
+    from app.exceptions.handlers import (
+        http_exception_handler,
+        validation_exception_handler,
+        business_exception_handler,
+        generic_exception_handler,
+    )
+    from app.exceptions.base import BusinessException
+    app.add_exception_handler(HTTPException, http_exception_handler)
+    app.add_exception_handler(RequestValidationError, validation_exception_handler)
+    app.add_exception_handler(BusinessException, business_exception_handler)
+    app.add_exception_handler(Exception, generic_exception_handler)
 
     # ========== 请求日志中间件 ==========
     @app.middleware("http")
@@ -280,11 +409,14 @@ if __name__ == "__main__":
 
     # uvicorn.run() 内部是一个【无限循环】
     # 程序会一直运行，直到手动按 Ctrl+C 停止
+    # reload 默认监视整个项目目录；logs/、data/ 等运行时文件一写盘就会刷
+    # "N change detected"。只监视业务代码目录，避免日志/SQLite 触发误报。
     uvicorn.run(
         "main:app",  # "文件名:变量名" 的格式
         host=settings.HOST,
         port=settings.PORT,
         reload=settings.DEBUG,
+        reload_dirs=["app"] if settings.DEBUG else None,
         log_level="info",
         access_log=False,  # 禁用 uvicorn 访问日志，使用我们自己的请求日志中间件
     )

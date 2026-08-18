@@ -1,0 +1,13 @@
+"""加工费计算常量。"""
+
+STATUS_PROCESSING = "processing"
+STATUS_SUCCESS = "success"
+STATUS_PARTIAL = "partial"
+STATUS_FAILED = "failed"
+
+STALE_PROCESSING_SECONDS = 2 * 60 * 60
+DUPLICATE_SCOPE_CALC_MESSAGE = "当前年度/基地/工厂正在计算中，请勿重复提交。"
+
+TONNAGE_SOURCE_SELF = "self"
+TONNAGE_SOURCE_INHERITED = "inherited"
+TONNAGE_SOURCE_SWING_SHEAR = "swing_shear"

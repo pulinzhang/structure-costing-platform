@@ -1,0 +1,465 @@
+/**
+ * Steel Price Policy Download Page
+ * 钢价政策下载页面逻辑
+ * 用于测试部门核对数据，主子表联合查询导出 Excel
+ */
+
+import { policyDownloadTemplate, renderPolicyRows } from './template.js?v=28';
+import {
+    DEFAULT_PREVIEW_PAGE_SIZE,
+    PREVIEW_PAGE_SIZE_OPTIONS,
+    bindPageSizeSelect,
+    renderPageButtons,
+} from '../../../../page-size.js?v=2';
+
+// 状态管理
+const policyDownloadState = {
+    records: [],
+    total: 0,
+    page: 1,
+    pageSize: DEFAULT_PREVIEW_PAGE_SIZE,
+    totalPages: 1,
+    filtersLoaded: false,
+};
+
+// API 基础路径
+const API_BASE = '/api/yishiyiyi/policy';
+
+/**
+ * 页面初始化
+ */
+function init() {
+    bindEvents();
+    bindPageSizeSelect('policyPageSize', {
+        getSize: () => policyDownloadState.pageSize,
+        setSize: (size) => {
+            policyDownloadState.pageSize = size;
+        },
+        onChange: () => previewData(1),
+        options: PREVIEW_PAGE_SIZE_OPTIONS,
+        defaultSize: DEFAULT_PREVIEW_PAGE_SIZE,
+    });
+    loadFilterOptions();
+    applyPermissionUi();
+}
+
+function applyPermissionUi() {
+    if (typeof can !== 'function') return;
+    if (!can('op:steel-price-policy-download:export')) {
+        document.getElementById('btnExportPolicy')?.classList.add('hidden');
+        document.getElementById('btnExport')?.classList.add('hidden');
+    }
+    if (!can('op:steel-price-policy-download:delete')) {
+        document.getElementById('btnDeletePolicy')?.classList.add('hidden');
+    }
+}
+
+/**
+ * 加载筛选下拉选项
+ */
+async function loadFilterOptions() {
+    try {
+        const response = await HttpClient.get(`${API_BASE}/options`);
+        const data = response.data || {};
+
+        // 填充年度选项（从后端获取）
+        if (data.years && Array.isArray(data.years)) {
+            fillSelect('policyDownloadYear', data.years.map(y => ({
+                value: y,
+                label: `${y} 年`,
+            })));
+        } else {
+            // Fallback: 当前年份前后3年
+            const currentYear = new Date().getFullYear();
+            const years = [];
+            for (let y = currentYear - 3; y <= currentYear + 1; y++) {
+                years.push({ value: y, label: `${y} 年` });
+            }
+            fillSelect('policyDownloadYear', years);
+        }
+
+        // 填充月份
+        const months = Array.from({ length: 12 }, (_, i) => ({
+            value: i + 1,
+            label: `${i + 1} 月`,
+        }));
+        fillSelect('policyDownloadMonth', months);
+
+        // 填充钢种
+        fillSelect('policyDownloadCategory', data.category_names || []);
+
+        // 填充钢厂选项（使用 datalist 实现输入搜索）
+        const datalist = document.getElementById('steelMillOptions');
+        if (datalist && data.steel_mills && Array.isArray(data.steel_mills)) {
+            datalist.innerHTML = data.steel_mills
+                .map(m => `<option value="${esc(m)}">`)
+                .join('');
+        }
+
+        policyDownloadState.filtersLoaded = true;
+    } catch (error) {
+        console.error('加载筛选选项失败:', error);
+        // Fallback: 当前年份前后3年
+        const currentYear = new Date().getFullYear();
+        const years = [];
+        for (let y = currentYear - 3; y <= currentYear + 1; y++) {
+            years.push({ value: y, label: `${y} 年` });
+        }
+        fillSelect('policyDownloadYear', years);
+
+        const months = Array.from({ length: 12 }, (_, i) => ({
+            value: i + 1,
+            label: `${i + 1} 月`,
+        }));
+        fillSelect('policyDownloadMonth', months);
+    }
+}
+
+function fillSelect(id, options = []) {
+    const select = document.getElementById(id);
+    if (!select) return;
+    select.innerHTML =
+        '<option value="">全部</option>' +
+        options.map(opt => {
+            const value = typeof opt === 'object' ? opt.value : opt;
+            const label = typeof opt === 'object' ? opt.label : opt;
+            return `<option value="${esc(value)}">${esc(label)}</option>`;
+        }).join('');
+}
+
+/**
+ * 绑定事件
+ */
+function bindEvents() {
+    // 预览按钮
+    const btnPreview = document.getElementById('btnPreview');
+    if (btnPreview) {
+        btnPreview.addEventListener('click', () => previewData(1));
+    }
+
+    // 导出按钮
+    const btnExport = document.getElementById('btnExport');
+    if (btnExport) {
+        btnExport.addEventListener('click', () => exportExcel());
+    }
+
+    // 查找实际绑定的导出按钮
+    const btnExportPolicy = document.getElementById('btnExportPolicy');
+    if (btnExportPolicy) {
+        btnExportPolicy.addEventListener('click', () => exportExcel());
+    }
+
+    // 删除按钮
+    const btnDelete = document.getElementById('btnDeletePolicy');
+    if (btnDelete) {
+        btnDelete.addEventListener('click', () => batchDeletePolicies());
+    }
+
+    ['policyDownloadYear', 'policyDownloadMonth', 'policyDownloadCategory'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('change', () => updateConditionsDisplay());
+    });
+
+    const gradeInput = document.getElementById('policyDownloadGrade');
+    if (gradeInput) {
+        gradeInput.addEventListener('input', () => updateConditionsDisplay());
+        gradeInput.addEventListener('keydown', event => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                previewData(1);
+            }
+        });
+    }
+
+    // 钢厂变更时更新条件显示（支持输入搜索）
+    const millSelect = document.getElementById('policyDownloadMill');
+    if (millSelect) {
+        millSelect.addEventListener('input', () => updateConditionsDisplay());
+    }
+
+    document.getElementById('policyPagination')?.addEventListener('click', (event) => {
+        const btn = event.target.closest('.policy-page-btn');
+        if (!btn || btn.disabled) return;
+        const page = Number(btn.getAttribute('data-page'));
+        if (Number.isFinite(page) && page >= 1) previewData(page);
+    });
+}
+
+/**
+ * 更新已选条件显示
+ */
+function updateConditionsDisplay() {
+    const filters = collectFilters();
+    const conditions = [];
+    if (filters.year) conditions.push(`年度: ${filters.year}`);
+    if (filters.month) conditions.push(`月份: ${filters.month}`);
+    if (filters.category_name) conditions.push(`钢种: ${filters.category_name}`);
+    if (filters.grade_value) conditions.push(`牌号: ${filters.grade_value}`);
+    if (filters.steel_mill) conditions.push(`钢厂: ${filters.steel_mill}`);
+
+    const display = document.getElementById('selectedConditions');
+    if (display) {
+        display.textContent = conditions.length > 0 ? conditions.join(' | ') : '请选择筛选条件';
+    }
+}
+
+function getFilterValue(id) {
+    return document.getElementById(id)?.value || '';
+}
+
+function collectFilters() {
+    return {
+        year: getFilterValue('policyDownloadYear'),
+        month: getFilterValue('policyDownloadMonth'),
+        category_name: getFilterValue('policyDownloadCategory'),
+        grade_value: document.getElementById('policyDownloadGrade')?.value.trim() || '',
+        steel_mill: getFilterValue('policyDownloadMill'),
+    };
+}
+
+function hasAnyFilter(filters) {
+    return !!(filters.year || filters.month || filters.category_name || filters.grade_value || filters.steel_mill);
+}
+
+function applyFiltersToParams(params, filters) {
+    if (filters.year) params.year = filters.year;
+    if (filters.month) params.month = filters.month;
+    if (filters.category_name) params.category_name = filters.category_name;
+    if (filters.grade_value) params.grade_value = filters.grade_value;
+    if (filters.steel_mill) params.steel_mill = filters.steel_mill;
+}
+
+/**
+ * 预览数据
+ */
+async function previewData(page = 1) {
+    const filters = collectFilters();
+
+    if (!hasAnyFilter(filters)) {
+        showToast('请至少选择一个筛选条件', 'warning');
+        return;
+    }
+
+    const tableBody = document.getElementById('policyPreviewBody');
+    if (tableBody) {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="20" class="px-4 py-8 text-center">
+                    <div class="flex items-center justify-center">
+                        <div class="w-4 h-4 border border-[#252525] border-t-[#d32f2f] rounded-full animate-spin mr-2"></div>
+                        <span class="text-[11px] text-[#616161]">加载中...</span>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }
+
+    try {
+        const params = {};
+        applyFiltersToParams(params, filters);
+        params.page = page;
+        params.size = policyDownloadState.pageSize;
+
+        const response = await HttpClient.get(`${API_BASE}/export-preview`, { params });
+        const data = response.data || {};
+        const records = Array.isArray(data.items) ? data.items : [];
+
+        policyDownloadState.page = data.page || page;
+        policyDownloadState.records = records;
+        policyDownloadState.total = data.total || records.length;
+        policyDownloadState.totalPages =
+            data.total_pages ||
+            Math.max(1, Math.ceil(policyDownloadState.total / policyDownloadState.pageSize));
+
+        // 更新记录数
+        const recordCount = document.getElementById('recordCount');
+        if (recordCount) {
+            recordCount.textContent = policyDownloadState.total;
+        }
+
+        // 渲染预览表格
+        if (tableBody) {
+            tableBody.innerHTML = renderPolicyRows(records);
+        }
+        const pagination = document.getElementById('policyPagination');
+        if (pagination) {
+            pagination.innerHTML = renderPageButtons(
+                policyDownloadState.page,
+                policyDownloadState.totalPages,
+                'policy-page-btn',
+            );
+        }
+    } catch (error) {
+        console.error('预览数据失败:', error);
+        if (tableBody) {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="20" class="px-4 py-8 text-center text-[#d32f2f] text-xs">
+                        加载失败: ${esc(error.message || '未知错误')}
+                    </td>
+                </tr>
+            `;
+        }
+        const recordCount = document.getElementById('recordCount');
+        if (recordCount) {
+            recordCount.textContent = '0';
+        }
+        const pagination = document.getElementById('policyPagination');
+        if (pagination) pagination.innerHTML = '';
+    }
+}
+
+/**
+ * 导出 Excel
+ */
+async function exportExcel() {
+    if (typeof can === 'function' && !can('op:steel-price-policy-download:export')) {
+        showToast('无导出权限', 'warning');
+        return;
+    }
+    const filters = collectFilters();
+
+    if (!hasAnyFilter(filters)) {
+        showToast('请至少选择一个筛选条件', 'warning');
+        return;
+    }
+
+    // 显示加载遮罩
+    const loading = document.getElementById('downloadLoading');
+    if (loading) loading.classList.remove('hidden');
+
+    try {
+        const { blob, filename } = await HttpClient.download(`${API_BASE}/export`, {
+            params: {
+                year: filters.year,
+                month: filters.month,
+                category_name: filters.category_name,
+                grade_value: filters.grade_value,
+                steel_mill: filters.steel_mill,
+            },
+            headers: {
+                Accept: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            },
+            defaultFilename: '加减价政策导出.xlsx',
+        });
+
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+
+        showToast(`导出成功: ${filename}`, 'success');
+    } catch (error) {
+        console.error('导出 Excel 失败:', error);
+        if (!error.status) {
+            showToast(`导出失败: ${error.message}`, 'error');
+        }
+    } finally {
+        // 隐藏加载遮罩
+        if (loading) loading.classList.add('hidden');
+    }
+}
+
+/**
+ * 批量删除政策
+ */
+async function batchDeletePolicies() {
+    if (typeof can === 'function' && !can('op:steel-price-policy-download:delete')) {
+        showToast('无删除权限', 'warning');
+        return;
+    }
+    const year = getFilterValue('policyDownloadYear');
+    const month = getFilterValue('policyDownloadMonth');
+    const steelMill = getFilterValue('policyDownloadMill');
+
+    // 年度、月份必填；钢厂可选
+    if (!year || !month) {
+        showToast('删除必须选择年度和月份（钢厂可选）', 'warning');
+        return;
+    }
+
+    const millLabel = steelMill || '全部钢厂';
+    const confirmed = window.confirm(
+        `确定要删除以下条件的政策数据吗？\n\n年度: ${year} | 月份: ${month} | 钢厂: ${millLabel}\n\n此操作不可恢复！`
+    );
+
+    if (!confirmed) {
+        return;
+    }
+
+    // 显示删除中的加载状态
+    const btnDelete = document.getElementById('btnDeletePolicy');
+    const originalText = btnDelete ? btnDelete.innerHTML : '';
+    if (btnDelete) {
+        btnDelete.disabled = true;
+        btnDelete.innerHTML = `
+            <div class="w-3 h-3 border border-[#ef5350] border-t-transparent rounded-full animate-spin"></div>
+            删除中...
+        `;
+    }
+
+    try {
+        const params = { year, month };
+        if (steelMill) {
+            params.steel_mill = steelMill;
+        }
+        const response = await HttpClient.delete(`${API_BASE}/batch`, { params });
+
+        // 先显示成功提示
+        showToast(response.message || '删除成功', 'success');
+
+        // 清空当前预览数据，立即给用户视觉反馈
+        policyDownloadState.records = [];
+        policyDownloadState.total = 0;
+        const tableBody = document.getElementById('policyPreviewBody');
+        const recordCount = document.getElementById('recordCount');
+        if (recordCount) recordCount.textContent = '0';
+        if (tableBody) {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="16" class="px-4 py-8 text-center">
+                        <div class="flex items-center justify-center">
+                            <div class="w-4 h-4 border border-[#252525] border-t-[#d32f2f] rounded-full animate-spin mr-2"></div>
+                            <span class="text-[11px] text-[#616161]">正在刷新...</span>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
+
+        // 短暂延迟后重新加载预览，确保用户看到刷新过程
+        await new Promise(resolve => setTimeout(resolve, 300));
+
+        // 重新获取预览数据
+        await refreshPreview();
+
+    } catch (error) {
+        console.error('删除政策失败:', error);
+        showToast(`删除失败: ${error.message}`, 'error');
+    } finally {
+        // 恢复按钮状态
+        if (btnDelete) {
+            btnDelete.disabled = false;
+            btnDelete.innerHTML = originalText;
+        }
+    }
+}
+
+/**
+ * 刷新预览数据（供删除成功后调用）
+ */
+async function refreshPreview() {
+    await previewData(1);
+}
+
+/**
+ * 页面配置导出
+ */
+export const pageConfig = {
+    render: policyDownloadTemplate,
+    init: () => init(),
+};

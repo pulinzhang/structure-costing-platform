@@ -32,6 +32,11 @@ dev = [
     "isort>=5.13.0",
     "ruff>=0.1.15",
     "mypy>=1.8.0",
+    # 补充第三方库的类型存根
+    "types-openpyxl>=3.1.0",
+    "types-Pillow>=10.0.0",
+    "types-python-multipart>=0.0.6",
+    "pandas-stubs>=2.2.0",
 ]
 
 [build-system]
@@ -58,9 +63,59 @@ target-version = "py312"
 
 [tool.mypy]
 python_version = "3.12"
+plugins = ["sqlalchemy.ext.mypy.plugin", "pydantic.mypy"]
+# 开启所有核心严格检查开关
+strict = true
+
+# 强制要求所有函数和方法必须有明确的类型定义（哪怕返回 None 也必须写 -> None）
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+
+# 禁止隐式的 Any 类型（防止类型退化成动态类型）
 warn_return_any = true
-warn_unused_configs = true
-disallow_untyped_defs = false
+warn_unreachable = true
+
+# 严格禁止漏掉类型注解的函数调用
+disallow_untyped_calls = true
+
+# 允许针对第三方库无类型声明时的提示配置
+ignore_missing_imports = true
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true
+
+# 针对特定第三方库做容错（须用双括号数组）
+[[tool.mypy.overrides]]
+module = [
+    "openpyxl",
+    "openpyxl.*",
+    "pandas",
+    "pandas.*",
+    "xlrd",
+    "xlrd.*",
+]
+ignore_missing_imports = true
+
+# Excel / openpyxl：Worksheet 常被标成 Optional，union-attr 噪音极大
+[[tool.mypy.overrides]]
+module = [
+    "app.services.yishiyiyi.scrap_price.export.*",
+    "app.services.yishiyiyi.base_price.export.*",
+    "app.services.yishiyiyi.policy.export.*",
+    "app.services.yishiyiyi.winning_thickness.export.*",
+    "app.services.stamping.stamping_process_fee_export_service",
+    "app.services.stamping.tonnage_price_export_service",
+    "app.services.stamping.tonnage_price_import_service",
+    "app.services.costing.steel_price.steel_price_export_service",
+    "app.services.settings.logs.operation_log_service",
+    "app.services.costing.stamping_part_cost.export.*",
+    "app.parsers.stamping.stamping_parser",
+    "app.parsers.stamping.excel_context",
+    "app.parsers.bom.bom_parser",
+]
+disable_error_code = ["union-attr", "index"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

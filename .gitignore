@@ -18,6 +18,7 @@ env/
 # IDE
 .idea/
 .vscode/
+.run/
 *.swp
 *.swo
 
@@ -26,7 +27,19 @@ env/
 
 # Database
 *.db
+data/*.db
 *.sqlite
+*.db-wal
+*.db-shm
+data/*.db-wal
+data/*.db-shm
+data/*.lock
+
+# Local Excel samples / scratch (large, not for VCS)
+excel_sample/
+tmp_*.xlsx
+tmp_*.xls
+tmp_*.csv
 
 # OS
 .DS_Store
@@ -34,7 +47,13 @@ Thumbs.db
 
 # Logs
 *.log
+*.log.*
+*.log.[0-9]
+/logs/
 
 #uploads
 uploads/*
 !uploads/.gitkeep
+!uploads/avatars/
+uploads/avatars/*
+!uploads/avatars/.gitkeep

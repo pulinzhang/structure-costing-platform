@@ -6,7 +6,11 @@ alwaysApply: true
 # 汽车冲压件核价平台 - 架构宪法
 
 > 基于垂直切片的模块化架构（Feature-based Vertical Slice Architecture）
-> 所有代码必须遵循的分层架构规范
+> 分层严格（Router → Service → Repository）；切片依赖有向无环（下游可组合上游）
+> 所有代码必须遵循的分层与依赖规范
+>
+> 可读导读：`docs/architecture.md`（与本文同步维护）
+> 本文副本：`docs/architecture-constitution.mdc`（改规则时两处一起改）
 
 ---
 
@@ -24,12 +28,12 @@ alwaysApply: true
 
 | 层级 | 职责 | 禁止事项 |
 |------|------|----------|
-| **Router** | 接收请求、参数验证、调用 Service、返回响应 | 禁止写业务逻辑；禁止直接查数据库 |
-| **Service** | 业务逻辑、数据转换、事务管理、异常处理 | 禁止直接写 SQL；禁止调用 Parser |
-| **Repository** | 数据库 CRUD 操作（基础查询构建） | 禁止写业务逻辑；禁止包含 if/else 业务判断 |
-| **Model** | 定义数据库表结构 | 禁止写任何逻辑方法 |
-| **Schema** | 请求验证、响应序列化（DTO） | 禁止写业务逻辑 |
-| **Parser** | 解析文件（纯函数，工具层） | 禁止写业务逻辑；禁止依赖其他层 |
+| **Router** | 接收请求、参数验证、调用 Service、返回响应 | 禁止写业务逻辑；禁止直接查数据库；禁止直接调用 Parser |
+| **Service** | 业务逻辑、数据转换、事务管理、异常处理；**唯一可调用 Parser** | 禁止直接写 SQL（须经 Repository） |
+| **Repository** | 数据库 CRUD / 聚合查询构建 | 禁止权限/角色等业务策略判断 |
+| **Model** | 定义数据库表结构 | 禁止写业务方法（如 `to_dict`、业务 `@property`） |
+| **Schema** | 请求验证、响应序列化（DTO/VO） | 禁止写业务流程逻辑 |
+| **Parser** | 解析文件（纯函数，工具层） | 禁止写业务逻辑；禁止依赖 Router/Service/Repository |
 
 **Parser 特殊说明**：
 - Parser 是**横向工具层**，不属于分层体系
@@ -116,7 +120,8 @@ class StampingPartService:
 
 **职责清单：**
 - 业务规则判断（权限、状态机、业务约束）
-- 组合多个 Repository 调用
+- 组合多个 Repository 调用（本切片 + 按依赖方向允许的上游切片）
+- 组合上游切片 Service（下游编排/核价场景，见「四、依赖方向」）
 - **事务管理**（使用 `db.begin()` 或装饰器）
 - **抛出业务异常**（由 Router 统一捕获）
 - 调用 Parser（**唯一能调用 Parser 的层级**）
@@ -126,7 +131,7 @@ class StampingPartService:
 
 ### 2.3 Repository 层（仓库层）
 
-**职责：数据库操作（CRUD），只负责构建基础查询**
+**职责：数据库操作（CRUD / 聚合查询），只负责构建查询与持久化**
 
 ```python
 class StampingPartRepository:
@@ -171,11 +176,12 @@ def get_active_parts(self, db: Session, user_id: int):
 ```
 
 **Repository 边界原则：**
-- 只接收**明确的基础查询参数**（字段值、排序、分页）
-- 不接收**业务状态**（如 `is_active`、`user_role`）
-- **禁止**：业务策略/规则判断（角色判断、状态流转、权限校验）
-- **允许**：技术性判空构建动态查询（如 `if value is not None` 拼接过滤条件）
-- 所有业务规则判断必须在 Service 层完成
+- 只接收**明确的查询/写入参数**（字段值、排序、分页、目标状态值）
+- **禁止**：权限/角色判断、按用户身份分支的业务策略
+- **允许**：技术性判空拼接过滤条件（如 `if value is not None`）
+- **允许**：SQL 聚合/去重结果返回 `dict`、命名元组或轻量 read-model（如 `summarize_*`、`get_filter_options`）
+- **允许**：按 Service 传入的明确状态值做过滤/批量更新（如 `audit_status=AUDIT_APPROVED`）；**谁决定状态**仍在 Service
+- 所有「该不该通过 / 下一步状态是什么」的决策必须在 Service 层完成
 
 ---
 
@@ -326,9 +332,11 @@ app/
 **common/ 公共层说明：**
 | 目录 | 内容 | 示例 |
 |------|------|------|
-| `common/services/` | 真正通用的基础能力 | 材料利用率计算、文件存储、邮件发送 |
-| `common/models/` | 多功能共用的表结构 | 用户、审计日志、系统配置 |
-| `common/repositories/` | 跨功能的数据访问 | 通用 CRUD 封装 |
+| `common/`（横切） | 权限、审计、时区等基础设施 | `permissions/`、`audit/` |
+| `common/services/`（可选） | 无切片归属的纯技术能力 | 文件存储、邮件 |
+| `common/repositories/`（可选） | 无业务归属的共享查询辅助 | 通用分页基类 |
+
+> 领域数据访问（零件、基价、政策、BOM）**留在各自切片**；由下游核价/仪表盘按依赖方向组合，不必强行搬进 `common/`。
 
 **命名规则：**
 - Router：`app/routers/{feature}/crud.py`、`app/routers/{feature}/upload.py`
@@ -342,6 +350,8 @@ app/
 ---
 
 ## 四、依赖方向
+
+### 4.1 分层依赖（外 → 内）
 
 **依赖只能从外向内，不能从内向外：**
 
@@ -358,10 +368,10 @@ app/
 │          │ Parser   │ ← 横向工具，无依赖│
 │          └─────────┘                 │
 │               │                     │
-│               │ 调用 Common Service  │
+│               │ 可调用 Common        │
 │          ┌────▼────┐                 │
-│          │  Common  │ ← 基础设施层   │
-│          └─────────┘  无依赖（纯工具）│
+│          │  Common  │ ← 横切基础设施 │
+│          └─────────┘                 │
 ├──────────────┬───────────────────────┤
 │               │ 调用
 ┌──────────────▼───────────────────────┐
@@ -373,26 +383,48 @@ app/
 └──────────────────────────────────────┘
 ```
 
-**依赖规则（扩展 common 层后）：**
 | 调用方 | 可调用 | 禁止调用 |
 |--------|--------|----------|
-| Router | Service | Repository、Model、Parser |
-| Service | Repository、Parser、**Common Service** | Router |
-| Repository | Model、**Common Repository** | Service、Router、Parser |
+| Router | 本切片 Service（及任务编排所需的本切片/公共 Service） | Repository、Model、Parser |
+| Service | Repository、Parser、Common、**按 4.2 允许的上游切片** | Router；直接 SQL |
+| Repository | Model、Common 中的共享查询辅助 | Service、Router、Parser |
 | Parser | 无 | 任何层 |
 | Model | 无 | 任何层 |
-| **切片 Service** | **切片 Repository**、**Common Service** | 其他切片 Service |
-| **切片之间** | **禁止互相依赖** | 只能依赖 Common |
 
-**common/ 公共层规则：**
+### 4.2 切片依赖（有向无环，允许下游组合上游）
+
+本平台是**核价组合系统**：钢材联动、零件核价、仪表盘等天然要消费冲压件、BOM、一事一议、系统配置等上游数据。  
+因此 **「切片之间一律禁止依赖」不适用**；改为 **有向依赖，禁止成环**。
+
+```
+上游 / 基础数据切片（被消费，不依赖下游）
+  settings · stamping · bom · yishiyiyi
+
+下游 / 编排与核价切片（可组合上游）
+  costing · dashboard · quotation
+```
+
+| 规则 | 说明 |
+|------|------|
+| **下游 → 上游** | ✅ 允许。如 `costing` 调用 `StampingPartService` / `SteelBasePriceService`，或只读调用上游 Repository |
+| **上游 → 下游** | ❌ 禁止。如 `stamping` 不得依赖 `costing` |
+| **同层互依** | ❌ 禁止成环。同层确需共享算法时：抽到 `common/`，或明确归属一方、另一方单向依赖 |
+| **调用形态优先序** | ① 上游 Service 的稳定查询 API → ② 只读上游 Repository（批量/导出/计算热路径）→ ③ 抽到 `common/`（真正多切片复用的无领域编排逻辑） |
+
 ```
 ✅ 正确：
-  stamping/services/ → common/services/material_service.py
-  injection/services/ → common/services/material_service.py
+  costing/services → stamping/services（读零件/材料规格）
+  costing/services → yishiyiyi repositories（只读政策/废料价）
+  dashboard/services → 多个上游 Service（聚合 KPI）
+  yishiyiyi/winning_thickness → costing 内可复用的纯计算模型（若归属 costing；或抽 common）
 
 ❌ 错误：
-  stamping/services/ → injection/services/  ❌（切片间禁止互相依赖）
+  stamping/services → costing/services     （上游依赖下游）
+  base_price ↔ steel_price 互相 import     （成环）
+  Router → 任意切片 Repository / Parser
 ```
+
+**原则**：切片目录仍按 feature 垂直组织；跨切片是**显式、单向的业务组合**，不是随意耦合。
 
 ---
 
@@ -425,7 +457,7 @@ class StampingUploadService:
 
         except Exception as e:
             db.rollback()  # 失败回滚
-            raise BusinessError(f"上传失败: {e}")  # 抛出业务异常
+            raise BusinessException(f"上传失败: {e}")  # 抛出业务异常
 ```
 
 ### 5.2 异常处理
@@ -438,7 +470,7 @@ class StampingPartService:
     def get_part(self, db: Session, part_id: int):
         part = self.repository.get_by_id(db, part_id)
         if not part:
-            raise NotFoundError(f"零件不存在: id={part_id}")
+            raise NotFoundException(f"零件不存在: id={part_id}")
         return part
 
 # Router 层：统一捕获处理
@@ -446,17 +478,17 @@ class StampingPartService:
 def get_part(part_id: int, db: Session = Depends(get_db)):
     try:
         service = StampingPartService()
-        return ApiResponse.success(service.get_part(db, part_id))
-    except NotFoundError as e:
+        return ApiResponse.ok(service.get_part(db, part_id))
+    except NotFoundException as e:
         raise HTTPException(status_code=404, detail=str(e))
 ```
 
 **异常分类：**
 | 异常类型 | 抛出层 | 说明 |
 |----------|--------|------|
-| `NotFoundError` | Service | 资源不存在 |
-| `ValidationError` | Service | 业务校验失败 |
-| `BusinessError` | Service | 通用业务异常 |
+| `NotFoundException` | Service | 资源不存在 |
+| `ValidationException` | Service | 业务校验失败 |
+| `BusinessException` | Service | 通用业务异常 |
 | `HTTPException` | Router | HTTP 层异常（404、400 等） |
 
 ---
@@ -471,8 +503,9 @@ def get_part(part_id: int, db: Session = Depends(get_db)):
 - [ ] 这段代码是**表结构定义**吗？ → 放到 **Model**
 - [ ] 这段代码是**数据转换**吗？ → 放到 **Schema**
 - [ ] 这段代码是**文件解析**吗？ → 放到 **Parser**（只能被 Service 调用）
-- [ ] 我在 Repository 里写 `if` 判断了吗？ → **禁止**，移到 Service
+- [ ] 我在 Repository 里写**权限/角色**判断了吗？ → **禁止**，移到 Service
 - [ ] 我在 Model 里写 `to_dict` 了吗？ → **禁止**，用 Schema 序列化
+- [ ] 跨切片依赖是**下游 → 上游**且无环吗？ → 上游不得依赖下游
 
 ---
 
@@ -481,37 +514,36 @@ def get_part(part_id: int, db: Session = Depends(get_db)):
 | 错误 | 问题 | 正确做法 |
 |------|------|----------|
 | Router 里写 SQL | 难以测试、逻辑分散 | Router → Service → Repository |
-| Service 里直接查数据库 | 违反单一职责 | Service 调用 Repository |
+| Service 里直接写 SQL / `db.query` | 绕过 Repository | Service 调用 Repository |
 | Model 里有业务方法 | 耦合数据库和业务 | Model 只定义结构，用 Schema 序列化 |
 | 多层都写同一份逻辑 | 代码重复、难以维护 | 各层各司其职 |
 | Router 直接调用 Parser | 绕过 Service 业务逻辑 | Router → Service → Parser |
-| Repository 包含业务判断 | 违反职责边界 | 业务判断放 Service |
-| 切片间互相依赖 | 违反依赖方向 | 用 common/ 共享公共代码 |
+| Repository 做权限/角色分支 | 违反职责边界 | 策略判断放 Service |
+| **上游切片依赖下游** | 依赖倒置、易成环 | 只允许下游组合上游；共享算法放 common 或归属唯一切片 |
 
 ---
 
 ## 八、common/ 公共层
 
-**问题**：跨功能复用（如冲压/注塑都需材料计算）时，传统分层可直接调用，但垂直切片禁止切片间互相依赖。
+**定位**：横切基础设施与真正无业务编排归属的共享能力；**不是**「所有跨切片调用的唯一出路」。
 
-**解决方案**：创建 `common/` 层，所有切片都可依赖它。
+核价/仪表盘消费上游数据时，**优先直接依赖上游切片**（见 4.2），不必为每次跨切片读取都先搬进 `common/`。
 
 ```text
 app/
 ├── common/
-│   ├── services/material_service.py  # 纯粹技术能力（材料计算、文件存储）
-│   ├── models/                       # 共享领域模型（User、AuditLog）
-│   └── repositories/                 # 公共数据访问
-└── stamping/                         # 功能切片
-    ├── services/
-    ├── repositories/
-    └── models/
+│   ├── permissions/                  # 权限码、鉴权辅助
+│   ├── audit/                        # 审计字段填充
+│   ├── timezone/                     # 时区等横切工具
+│   ├── services/                     # 可选：无切片归属的纯技术能力
+│   └── repositories/                 # 可选：跨表但无业务归属的查询辅助
+└── services/{feature}/               # 业务仍按切片垂直组织
 ```
 
 **规则**：
-- `common/` 是基础设施层，所有切片都可以依赖
-- 切片之间**禁止互相依赖**，只能依赖 `common/`
-- 通用技术能力（材料计算、文件存储、邮件）放在 `common/services/`
-- 共享领域模型（User、AuditLog）放在 `common/models/`
+- 所有切片都可以依赖 `common/`；`common/` **不得**依赖任何业务切片
+- 权限、审计、时区、通用文件存储等放 `common/`
+- 领域数据（零件、基价、政策、BOM）**留在所属切片**；由下游 Service 组合调用
+- 仅当算法/查询**没有自然归属切片**且被多方复用时，再抽到 `common/`
 
-**例外说明**：`common/` 是本架构中**唯一按技术层水平组织的目录**（models/services/repositories），因为它不属于任何单一业务切片。这是刻意设计的例外，而非混乱。
+**例外说明**：`common/` 是本架构中**唯一按技术层水平组织的目录**，因为它不属于任何单一业务切片。

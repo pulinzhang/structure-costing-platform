@@ -11,7 +11,6 @@
 import re
 from typing import Any, Dict, List, Optional, Tuple
 
-import openpyxl
 
 from app.utils.logging_config import get_logger
 from app.parsers.stamping.models.header import HeaderContext
@@ -70,7 +69,9 @@ COLUMN_PATTERNS: Dict[str, List[Tuple[str, int]]] = {
         ("套数", 1000),
     ],
     "tonnage": [
-        ("吨位", 1000), ("使用冲压设备吨位", 900),
+        ("吨位", 1000),
+        ("冲压设备", 950),
+        ("使用冲压设备吨位", 900),
     ],
     "die_type": [
         ("模具类型", 1000),
@@ -90,14 +91,14 @@ COLUMN_PATTERNS: Dict[str, List[Tuple[str, int]]] = {
 class HeaderResolver:
     """表头解析器"""
 
-    def __init__(self, get_value_fn):
+    def __init__(self, get_value_fn: Any) -> None:
         self._get_value = get_value_fn
         self.header_row: int = 0
         self.data_start_row: int = 0
         self.header_paths: Dict[str, str] = {} 
         self.col_map: Dict[str, int] = {} 
 
-    def find_stamping_sheet(self, workbook) -> Optional[openpyxl.worksheet.worksheet.Worksheet]:
+    def find_stamping_sheet(self, workbook: Any) -> Any:
         """识别冲压数据Sheet"""
         for sheet in workbook.worksheets:
             for row_idx in range(1, min(16, sheet.max_row + 1)):
@@ -111,9 +112,100 @@ class HeaderResolver:
                     logger.info(f"找到数据Sheet: {sheet.title}, 行{row_idx}")
                     return sheet
 
-        return workbook.active
+        if not workbook.worksheets:
+            return None
+        return workbook.worksheets[0]
 
-    def find_header_row(self, sheet) -> int:
+    def find_stamping_supplier(self, sheet: Any) -> Optional[str]:
+        """从表头区域提取冲压供应商名称（冲压承制公司）"""
+        for row_idx in range(1, min(10, sheet.max_row + 1)):
+            # 1. 先找标签所在列
+            label_col = None
+            for col in range(1, min(25, sheet.max_column + 1)):
+                val = self._get_value(row_idx, col)
+                if val and "冲压承制公司" in str(val):
+                    label_col = col
+                    break
+            
+            if label_col is None:
+                continue
+            
+            # 2. 尝试从同一单元格内解析值（格式：标签：值 或 标签:值）
+            text = str(self._get_value(row_idx, label_col))
+            if "：" in text:
+                supplier = text.split("：", 1)[1].strip()
+            elif ":" in text:
+                supplier = text.split(":", 1)[1].strip()
+            else:
+                supplier = text.replace("冲压承制公司", "").strip()
+            
+            if supplier:
+                logger.info(f"找到冲压供应商(同格): {supplier}")
+                return supplier
+            
+            # 3. 跨列查找：向右搜索标签后面的非空单元格作为值
+            for col in range(label_col + 1, min(label_col + 10, sheet.max_column + 1)):
+                val = self._get_value(row_idx, col)
+                if val and str(val).strip():
+                    supplier = str(val).strip()
+                    logger.info(f"找到冲压供应商(跨列): {supplier}")
+                    return supplier
+        
+        return None
+
+    def find_stamping_vehicle_model(self, sheet: Any) -> Optional[str]:
+        """从表头区域提取冲压车型/项目名称"""
+        for row_idx in range(1, min(12, sheet.max_row + 1)):
+            for col in range(1, min(20, sheet.max_column + 1)):
+                val = self._get_value(row_idx, col)
+                if not val:
+                    continue
+                text = str(val).strip()
+                if any(label in text for label in ["项目名称", "项目", "车型", "车型号", "车型代号"]):
+                    sep = "：" if "：" in text else ":" if ":" in text else None
+                    if sep:
+                        model = text.split(sep, 1)[1].strip()
+                        if model:
+                            logger.info(f"从表头找到车型: {model}")
+                            return model
+        vehicle_keywords = ["T28", "T28L", "T28EV", "T13J", "T13J-BEV", "M1", "M2", "S32", "S32EV"]
+        for row_idx in range(1, min(12, sheet.max_row + 1)):
+            for col in range(1, min(25, sheet.max_column + 1)):
+                val = self._get_value(row_idx, col)
+                if not val:
+                    continue
+                text = str(val).strip()
+                for keyword in vehicle_keywords:
+                    if keyword in text:
+                        logger.info(f"从单元格找到车型关键词: {keyword}, 原始值: {text}")
+                        return keyword
+        return None
+
+    def find_stamping_project_version(self, sheet: Any) -> Optional[str]:
+        """从表头区域提取项目版本信息"""
+        version_pattern = re.compile(
+            r"^(V?v?\d+(?:\.\d+)?|第?\d+版|Rev\.?\s*\d+|[A-Z]版)$",
+            re.IGNORECASE
+        )
+        for row_idx in range(1, min(12, sheet.max_row + 1)):
+            for col in range(1, min(25, sheet.max_column + 1)):
+                val = self._get_value(row_idx, col)
+                if not val:
+                    continue
+                text = str(val).strip()
+                if any(label in text for label in ["版本", "版次", "版本号"]):
+                    sep = "：" if "：" in text else ":" if ":" in text else None
+                    if sep:
+                        version = text.split(sep, 1)[1].strip()
+                        if version and version_pattern.match(version):
+                            logger.info(f"从表头找到版本: {version}")
+                            return version
+                if version_pattern.match(text):
+                    logger.info(f"找到版本号: {text}")
+                    return text
+        return None
+
+    def find_header_row(self, sheet: Any) -> int:
         """找到表头起始行"""
         for row_idx in range(1, 20):
             for col in range(1, min(30, sheet.max_column + 1)):
@@ -123,7 +215,7 @@ class HeaderResolver:
                     return row_idx
         return 4
 
-    def build_header_context(self, sheet, header_row: int) -> None:
+    def build_header_context(self, sheet: Any, header_row: int) -> None:
         """
         构建 Header Context：支持合并单元格、隐式向右扩散填充及换行符清洗
         """
@@ -188,7 +280,13 @@ class HeaderResolver:
                 secondary = secondary_headers[col]
                 # 如果一级和二级标题文本一样（如单行表头），则直接用二级名称
                 if primary and primary != secondary:
-                    path = f"{primary}/{secondary}"
+                    # 二级标题可能本身用 "/" 分隔多个概念（如 "长/卷料宽"），
+                    # 此时第一个 token 才是真正的列含义，后续都是注释。
+                    # 截取第一个 token 避免后续 endswith 匹配到注释里的字符（例如 "宽"）。
+                    secondary_meaning = secondary.split("/", 1)[0].strip()
+                    if not secondary_meaning:
+                        secondary_meaning = secondary
+                    path = f"{primary}/{secondary_meaning}"
                 else:
                     path = secondary
                 header_paths[col] = path
@@ -208,7 +306,7 @@ class HeaderResolver:
         3. 优先使用高优先级（score 高）的匹配
         """
         col_map: Dict[str, int] = {}
-        used_cols: set = set()
+        used_cols: set[Any] = set()
         all_matches: List[Tuple[int, str, int, str]] = []
 
         for col_str, path in self.header_paths.items():
@@ -234,7 +332,7 @@ class HeaderResolver:
         logger.info(f"生成的字段列映射 (col_map): {self.col_map}")
         return col_map
 
-    def resolve(self, sheet) -> HeaderContext:
+    def resolve(self, sheet: Any) -> HeaderContext:
         """
         执行完整的表头解析流程。
         """

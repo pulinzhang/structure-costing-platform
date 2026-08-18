@@ -1,6 +1,7 @@
-# 汽车冲压件自动核价平台 - 架构设计
+# 汽车冲压件自动核价平台 - 架构说明
 
-> 适合初学者的分层架构指南
+> 面向开发者的架构导读。  
+> **硬约束以 Cursor Rules / docs 规范为准**（见文末「规范索引」）；本文解释「为什么」与「长什么样」。
 
 ---
 
@@ -9,483 +10,222 @@
 | 项目 | 说明 |
 |------|------|
 | 名称 | 汽车冲压件自动核价平台 |
-| 技术栈 | FastAPI + SQLAlchemy + SQLite |
-| 做什么 | 接收冲压工艺 Excel 文件，自动解析、存储并提供查询 |
-| 核心流程 | 上传 Excel → 解析工序数据 → 保存简图 → 落库 → 返回结果 |
+| 后端 | FastAPI + SQLAlchemy + SQLite |
+| 前端 | `static/` SPA（无构建：原生 ES Module + Tailwind CDN） |
+| 做什么 | 工艺/政策/BOM 等数据入库 → 钢材联动与零件核价 → 查询、审核、导出 |
+| 典型流程 | 上传 Excel → Parser 解析 → Service 落库 → 下游 costing 组合计算 |
 
 ---
 
-## 2. 分层架构（核心概念）
+## 2. 两套正交结构
 
-### 什么是"分层"？
+本项目同时用两套组织方式，不要混为一谈：
 
-就像一家餐厅：
-- **服务员（Router）**：接收顾客点餐，只负责传话
-- **厨师（Service）**：决定怎么做菜，处理具体业务
-- **仓库管理员（Repository）**：从冰箱（数据库）取食材、存食材
-- **冰箱（Database）**：真正存放数据的地方
-
-### 架构图
+| 维度 | 是什么 | 作用 |
+|------|--------|------|
+| **分层** | Router → Service → Repository → Model | 请求怎么走、谁能碰数据库 / Parser |
+| **垂直切片** | `stamping` / `yishiyiyi` / `bom` / `costing` / … | 按业务功能切目录，每层对齐 |
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│  用户浏览器 / Postman / 前端                               │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────┐
-│  Router（路由层）← 门卫                                    │
-│  • 接收请求                                                │
-│  • 验证参数                                                 │
-│  • 调用 Service                                             │
-│  • 返回响应                                                │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────┐
-│  Service（服务层）← 厨师                                   │
-│  • 处理业务逻辑                                             │
-│  • 协调多个操作                                             │
-│  • 数据转换                                                │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────┐
-│  Repository（仓库层）← 仓库管理员                          │
-│  • 数据库 CRUD 操作                                        │
-│  • 增删改查                                                │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────┐
-│  Database（数据库）← 冰箱                                  │
-│  • 存储数据                                                │
-│  • SQLite 文件                                              │
-└─────────────────────────────────────────────────────────────┘
+请求：  Router ──► Service ──► Repository ──► Database
+响应：  Database ──► Repository ──► Service ──► Router（ApiResponse[T]）
 ```
+
+Parser 是**横向工具**：只被 Service 调用，不依赖其它层。
 
 ---
 
-## 3. 目录结构
+## 3. 分层职责（摘要）
+
+| 层 | 做什么 | 不要做什么 |
+|----|--------|------------|
+| **Router** | 鉴权依赖、参数、调 Service、返回 `ApiResponse` | 业务逻辑、`db.query`、调 Parser |
+| **Service** | 业务规则、事务、调 Parser/Repo、ORM→VO | 直接写 SQL |
+| **Repository** | CRUD / 聚合查询；返回 Model 或聚合结果 | 权限/角色分支决策 |
+| **Model** | 表字段 + `relationship` | `to_dict`、业务 `@property` |
+| **Schema** | DTO（入）/ VO（出） | 业务流程 |
+| **Parser** | 纯解析，无副作用 | 依赖 Router/Service/Repository |
+
+餐厅类比：Router=服务员，Service=厨师，Repository=仓管，Database=冰箱。
+
+详细正反例见 [架构宪法](architecture-constitution.mdc)。
+
+---
+
+## 4. 垂直切片与依赖方向
+
+### 4.1 切片一览
+
+| 角色 | 切片 | 典型内容 |
+|------|------|----------|
+| **上游 / 基础数据** | `settings` · `stamping` · `bom` · `yishiyiyi` | 用户配置、工艺零件、BOM、基价/政策/废料价 |
+| **下游 / 编排核价** | `costing` · `dashboard` · `quotation` | 钢材联动、零件核价、KPI、报价 |
+| **横切** | `app/common/` | 权限、审计、时区等（**不**依赖业务切片） |
+
+目录按 feature 对齐，例如：
+
+```
+app/routers/stamping/     app/services/stamping/     app/repositories/stamping/
+app/routers/costing/      app/services/costing/      app/repositories/costing/
+app/routers/yishiyiyi/    …
+app/parsers/stamping/     # 仅上传类切片有 Parser
+```
+
+前端 `static/js/features/` 与侧栏菜单树同样按功能对齐（见 [前端规范](front-end.mdc)）。
+
+### 4.2 有向依赖（禁止成环）
+
+核价平台天然要「下游组合上游数据」。规则：
+
+```
+✅ costing / dashboard  →  调用 stamping、yishiyiyi、bom、settings（Service 或只读 Repository）
+❌ stamping / yishiyiyi →  依赖 costing、dashboard（上游不得依赖下游）
+❌ 同层互相 import 成环
+```
+
+优先序：上游稳定查询 API → 只读上游 Repository（批量/导出/热路径）→ 真正无归属的算法再进 `common/`。
+
+> 旧版「切片一律禁止互依、只能走 common」已废弃；以宪法 §四 为准。
+
+---
+
+## 5. 目录结构（现状）
 
 ```
 stamping-costing-platform/
-│
-├── main.py                    # 程序入口，启动 FastAPI 服务器
-│
+├── main.py                      # FastAPI 入口
 ├── app/
-│   ├── config.py              # 程序配置（环境变量、路径等）
-│   ├── database.py            # 数据库连接配置
-│   │
-│   ├── models/                # 模型层（数据库表结构）
-│   │   └── stamping.py        # 定义零件、工序表结构
-│   │
-│   ├── schemas/               # Schema 层（请求/响应格式）
-│   │   └── stamping.py        # 定义 API 参数和返回值格式
-│   │
-│   ├── repositories/          # 仓库层（数据库操作）
-│   │   └── stamping/
-│   │       └── stamping_repository.py # 零件/工序数据库操作
-│   │
-│   ├── services/              # 服务层（业务逻辑）
-│   │   └── stamping/
-│   │       ├── stamping_service.py    # 零件业务逻辑
-│   │       └── upload/                # 上传相关
-│   │           └── stamping_upload.py # 上传业务逻辑
-│   │
-│   ├── routers/               # 路由层（HTTP 接口入口）
-│   │   ├── dashboard.py       # 仪表盘
-│   │   ├── parts/            # 零件管理
-│   │   ├── costing/          # 核价
-│   │   ├── quotation/        # 报价
-│   │   ├── settings/         # 设置
-│   │   └── stamping/         # 冲压工艺
-│   │       ├── crud.py       # 零件查询接口
-│   │       └── upload.py     # 文件上传接口
-│   │
-│   ├── parsers/               # 解析层（读文件）
-│   │   └── stamping/
-│   │       └── stamping_parser.py # 解析冲压工艺 Excel
-│   │
-│   └── utils/                 # 工具函数
-│       ├── logging_config.py   # 日志配置
-│       └── response.py        # 统一响应格式
-│
-├── uploads/                   # 上传文件存放
-│   └── T28/                   # 按车型分目录
-│       └── 1.0/              # 按版本分目录
-│           ├── *.xlsx         # 上传的 Excel 文件
-│           └── *.png          # 零件简图
-│
-├── data/                      # SQLite 数据库文件
-│   └── stamping_costing.db    # 冲压核价数据库
-│
-└── logs/                      # 日志文件
-│   └── app.log               # 应用运行日志
+│   ├── config.py / database.py
+│   ├── common/                  # 横切：permissions / audit / timezone …
+│   ├── models/                  # ORM（按表文件扁平组织）
+│   ├── schemas/                 # dto/ + vo/
+│   ├── repositories/{feature}/
+│   ├── services/{feature}/
+│   ├── routers/{feature}/
+│   ├── parsers/{feature}/       # 有文件解析的切片
+│   └── utils/                   # 日志、ApiResponse 等
+├── static/                      # 前端 SPA
+│   ├── index.html / login.html
+│   ├── css/style.css
+│   └── js/
+│       ├── main.js / app.js / permissions.js / page-size.js
+│       └── features/…           # 与菜单对齐的页面模块
+├── docs/                        # 规范与说明（含本文件）
+├── .cursor/rules/               # Cursor 始终应用的规则副本
+├── data/                        # SQLite
+├── uploads/                     # 上传与简图
+└── logs/
 ```
 
 ---
 
-## 4. 为什么要分层？
+## 6. API 契约要点
 
-### 初学者的困惑：为什么不把所有代码写在一起？
+- 统一包装：`ApiResponse[T]`（`code` / `success` / `message` / `data`）
+- 分页：`data` 内为 `PageResult`（`items` / `total` / `page` / …），不要把 `total` 摊在根上
+- 业务路由：`Depends(require_perm(Perm.…))`；写操作把 `current_user` 显式传给 Service
+- Service 返回 VO；Repository 返回 Model（聚合接口可返回 dict / 轻量结构）
+- **禁止** Model.`to_dict`；序列化用 VO + `@field_serializer`
 
-假设你要写一个查询零件的功能：
+细则：[架构宪法](architecture-constitution.mdc) + 项目内 `api-type-safety` 规则。
 
-**方式 A：全部写在一起（不推荐）**
-
-```python
-@router.get("/parts")
-def get_parts():
-    # 1. 连接数据库
-    engine = create_engine("sqlite:///...")
-    Session = sessionmaker(bind=engine)
-    db = Session()
-
-    # 2. 查询数据
-    parts = db.query(Part).all()
-
-    # 3. 转换成字典
-    result = [{"id": p.id, "name": p.name} for p in parts]
-
-    # 4. 返回 JSON
-    return {"data": result}
-```
-
-问题：
-- 测试困难（无法单独测试查询逻辑）
-- 代码复用困难
-- 如果有多个接口都要查询 parts，代码要重复写
-- 数据库配置散落在各处
-
-**方式 B：分层（推荐）**
+### Router 示例（示意）
 
 ```python
-# routers/stamping/crud.py
-@router.get("/parts")
-def get_parts():
-    service = StampingPartService()
-    return service.list_parts()  # 一行代码搞定
-```
-
-```python
-# services/stamping_service.py
-class StampingPartService:
-    def list_parts(self):
-        repo = StampingPartRepository()
-        return repo.find_all()  # 只关心业务，不关心数据库细节
-```
-
-```python
-# repositories/stamping_repository.py
-class StampingPartRepository:
-    def find_all(self):
-        return db.query(Part).all()  # 只关心数据库操作
-```
-
-好处：
-- 每层只做一件事
-- 可以单独测试每层
-- 代码可以复用
-- 改数据库不影响业务逻辑
-
----
-
-## 5. 各层详解
-
-### 5.1 Router（路由层）
-
-**职责：接收请求，返回响应**
-
-```
-用户请求 ──► Router ──► Service ──► Repository ──► Database
-                │
-                └──────────────────► 响应
-```
-
-**Router 的工作：**
-1. 接收请求参数
-2. 调用 Service
-3. 把结果包装成 JSON 返回
-
-**示例：**
-
-```python
-# app/routers/stamping/crud.py
-
-from fastapi import APIRouter, Depends
-
-router = APIRouter(prefix="/stamping", tags=["冲压"])
-
-# 查询零件列表
-@router.get("/parts")
+@router.get("/parts", response_model=ApiResponse[PageResult[PartVO]])
 def list_parts(
-    vehicle_model: str,  # 接收参数
-    version: str,
-):
-    # 调用 Service
-    service = StampingPartService()
-    data, total = service.list_parts(vehicle_model, version)
-
-    # 返回响应
-    return {
-        "code": 0,
-        "message": f"查询到 {total} 个零件",
-        "data": data,
-        "total": total,
-    }
-```
-
-### 5.2 Service（服务层）
-
-**职责：处理业务逻辑**
-
-**Service 的工作：**
-1. 组合多个 Repository 操作
-2. 数据格式转换
-3. 业务规则验证
-
-**示例：**
-
-```python
-# app/services/stamping_service.py
-
-class StampingPartService:
-    """零件业务逻辑"""
-
-    def __init__(self):
-        self.repository = StampingPartRepository()
-
-    def list_parts(self, vehicle_model, version):
-        """
-        获取零件列表
-        这里可以加业务逻辑，比如：
-        - 权限验证
-        - 数据筛选
-        - 格式转换
-        """
-        # 调用 Repository 查询数据
-        parts, total = self.repository.paginate(
-            vehicle_model=vehicle_model,
-            version=version,
-        )
-
-        # 转换成字典格式返回
-        return [p.to_dict() for p in parts], total
-```
-
-### 5.3 Repository（仓库层）
-
-**职责：数据库操作（CRUD）**
-
-> CRUD = Create（创建）、Read（读取）、Update（更新）、Delete（删除）
-
-**Repository 的工作：**
-1. 执行 SQL 查询
-2. 增删改数据库记录
-
-**示例：**
-
-```python
-# app/repositories/stamping_repository.py
-
-class StampingPartRepository:
-    """零件数据库操作"""
-
-    def get_by_id(self, db, part_id):
-        """查询单个零件"""
-        return db.query(Part).filter(Part.id == part_id).first()
-
-    def paginate(self, vehicle_model, version, skip=0, limit=100):
-        """分页查询零件"""
-        q = db.query(Part).filter(
-            Part.vehicle_model == vehicle_model,
-            Part.version == version,
-        )
-        total = q.count()
-        parts = q.offset(skip).limit(limit).all()
-        return parts, total
-```
-
-### 5.4 Model（模型层）
-
-**职责：定义数据库表结构**
-
-```python
-# app/models/stamping.py
-
-from sqlalchemy import Column, Integer, String, Numeric, ForeignKey, Text
-from sqlalchemy.orm import relationship
-
-class StampingPart(Base):
-    """零件表"""
-    __tablename__ = "stamping_parts"
-
-    id = Column(Integer, primary_key=True)        # 主键
-    part_number = Column(String(50), unique=True) # 零件号
-    vehicle_model = Column(String(50))           # 车型
-    version = Column(String(50))                 # 版本
-    part_name = Column(String(200))              # 零件名称
-    material = Column(String(50))                 # 材质
-    thickness = Column(Numeric(10, 3))           # 料厚(mm)
-    tonnage = Column(Numeric(10, 1))             # 冲压吨位(T)
-
-    # 关联工序（一个零件有多个工序）
-    processes = relationship("StampingProcess", back_populates="part")
-
-class StampingProcess(Base):
-    """工序表"""
-    __tablename__ = "stamping_processes"
-
-    id = Column(Integer, primary_key=True)
-    part_id = Column(Integer, ForeignKey("stamping_parts.id"))  # 外键
-    process_seq = Column(String(20))         # 工序序号（OP10、OP20...）
-    process_order = Column(Integer)           # 顺序
-    tonnage = Column(Integer)                 # 吨位
-    remark = Column(Text)                      # 备注
-
-    # 关联零件
-    part = relationship("StampingPart", back_populates="processes")
-```
-
-**Model 就像：建筑图纸**，只定义有哪些字段，不包含任何操作。
-
-**注意**：
-- Model 里面可以有 `relationship`，表示表与表之间的关系
-- 但不能有增删改查的代码，那些属于 Repository
-
-### 5.5 Parser（解析层）
-
-**职责：解析文件（如 Excel）**
-
-**特点：纯函数，无副作用**
-
-```python
-# app/parsers/stamping_parser.py
-
-def parse_stamping_excel(file_path):
-    """
-    输入：Excel 文件路径
-    输出：解析后的数据
-    """
-    # 读取 Excel
-    # 提取数据
-    # 返回结构化结果
-    return {
-        "parts": [...],
-        "processes": [...],
-        "images": {...},
-    }
+    db: Session = Depends(get_db),
+    query: StampingPartQuery = Depends(),
+    current_user: UserVO = Depends(require_perm(Perm.STAMPING_PARTS_VIEW)),
+) -> ApiResponse[PageResult[PartVO]]:
+    records, total = StampingPartService().paginate(db, query)
+    return ApiResponse.list_(
+        items=records,
+        total=total,
+        page=query.page,
+        page_size=query.size,
+    )
 ```
 
 ---
 
-## 6. 数据流向示例
+## 7. 前端架构（摘要）
 
-以"上传冲压工艺 Excel"为例：
+| 项 | 说明 |
+|----|------|
+| 入口 | 主应用 `index.html`；登录独立 `login.html` → `/login` |
+| 路由 | Hash：`#/stamping-parts`；内容挂 `#pageContent` |
+| 页面协议 | `pageConfig = { render, init, destroy? }` + `pageMeta` |
+| 全局 | `main.js`（非 module）暴露 `HttpClient` / `esc` / `showToast` … |
+| 列表表 | 默认对齐 HUD 密表（零件价格一览为参照）；允许例外 |
 
-```
-1. 用户上传 Excel
-       │
-       ▼
-2. Router 接收请求
-   • 验证文件类型
-   • 提取车型、版本参数
-       │
-       ▼
-3. Service 处理业务
-   • 保存文件到磁盘
-   • 解析 Excel
-   • 保存简图
-   • 调用 Repository 保存数据
-       │
-       ├──► Repository.save_parts() ──► Database
-       │
-       └──► Repository.save_processes() ──► Database
-       │
-       ▼
-4. Router 返回结果
-   {"success": true, "parts_count": 100, ...}
-```
+完整约定：[前端规范](front-end.mdc)（与 `.cursor/rules/front-end.mdc` 同步）。
 
 ---
 
-## 7. 快速导航
+## 8. 数据流示例：上传工艺 Excel
 
-| 文件 | 层 | 做什么 |
-|------|-----|--------|
-| `app/routers/stamping/crud.py` | Router | 冲压工艺 HTTP 接口 |
-| `app/routers/stamping/upload.py` | Router | 文件上传接口 |
-| `app/services/stamping/stamping_service.py` | Service | 零件业务逻辑 |
-| `app/services/stamping/upload/stamping_upload.py` | Service | 上传业务逻辑 |
-| `app/repositories/stamping/stamping_repository.py` | Repository | 数据库增删改查 |
-| `app/models/stamping.py` | Model | 数据库表定义 |
-| `app/schemas/stamping.py` | Schema | 请求/响应格式 |
-| `app/parsers/stamping/stamping_parser.py` | Parser | Excel 解析 |
-| `app/database.py` | Database | 数据库连接 |
-| `main.py` | - | 程序入口 |
+```
+浏览器 POST /api/stamping/…upload
+        │
+        ▼
+Router（权限 + 参数）──► Upload Service
+        │                    │
+        │                    ├── Parser.parse_stamping_excel(...)
+        │                    ├── 存文件 / 简图
+        │                    └── Part/Process Repository 写入
+        ▼
+ApiResponse（任务 id 或结果摘要）
+```
+
+核价计算则是下游 Service **组合**上游零件、政策、基价、废料价等，再写入 costing 表。
 
 ---
 
-## 8. 添加新功能的步骤
+## 9. 添加功能的推荐顺序
 
-假设要添加"查询工序"功能：
+1. **Schema**：DTO / VO  
+2. **Model**（若新表）+ 迁移/建表策略按项目惯例  
+3. **Repository**  
+4. **Service**（含权限相关业务判断、事务）  
+5. **Router**（`response_model` + `require_perm`）  
+6. **前端**：`pageMeta` + `app.js` 注册 + 侧栏 `data-page` + 权限码  
+7. 递增前端脚本 `?v=`
 
-```
-Step 1: 定义 Schema（请求/响应格式）
-    └── app/schemas/stamping.py
-        └── class StampingProcessResponse(BaseModel): ...
-
-Step 2: 扩展 Repository（数据库操作）
-    └── app/repositories/stamping/stamping_repository.py
-        └── class StampingProcessRepository:
-            └── def get_by_part_id(...): ...
-
-Step 3: 扩展 Service（业务逻辑）
-    └── app/services/stamping/stamping_service.py
-        └── class StampingProcessService:
-            └── def get_by_part_id(...): ...
-
-Step 4: 添加 Router（接口）
-    └── app/routers/stamping/crud.py
-        └── @router.get("/parts/{part_id}/processes"): ...
-
-Step 5: 注册路由（已在 main.py 中通过 include_router 自动完成）
-```
+跨切片读取时确认依赖方向（§4.2），不要引入上游→下游环。
 
 ---
 
-## 9. 常见问题
+## 10. 常见问题
 
-### Q: Service 和 Repository 有什么区别？
+### Service 和 Repository 区别？
 
-```
-Service（服务层）：
-• 包含业务逻辑
-• 决定"做什么"
-• 可以组合多个 Repository 操作
+- Service：做什么（规则、组合、事务、Parser）  
+- Repository：怎么查/写库（无角色 if）
 
-Repository（仓库层）：
-• 只负责数据库操作
-• 决定"怎么查"
-• 单一职责：增删改查
-```
+### 简单查询也要 Service 吗？
 
-### Q: 什么时候该加 Service？
+要。保持 Router 永不直连 Repository，便于统一权限与响应形态。
 
-- 需要组合多个数据库操作
-- 需要做数据转换
-- 需要验证业务规则
-- 多个 Router 需要复用同一段逻辑
+### 跨切片该不该抽到 common？
 
-### Q: 什么时候该加 Repository？
+领域数据留在所属切片；下游直接组合上游即可。只有**无自然归属**且多方复用的横切能力才进 `common/`。
 
-- 任何需要操作数据库的时候
-- 把 SQL 相关代码隔离在这里
+### Model 可以有 relationship 吗？
 
-### Q: 简单查询需要 Service 吗？
+可以。禁止的是业务方法与 `to_dict`。
 
-如果只有简单的单表查询，可以：
-- Router → Repository → Database
+---
 
-但为了保持一致性和可扩展性，建议都加上 Service。
+## 11. 规范索引
+
+| 文档 | 位置 | 用途 |
+|------|------|------|
+| **架构宪法** | [architecture-constitution.mdc](architecture-constitution.mdc) · `.cursor/rules/architecture-constitution.mdc` | 分层 + 切片依赖硬规则 |
+| **前端规范** | [front-end.mdc](front-end.mdc) · `.cursor/rules/front-end.mdc` | SPA / Brabus / 表格风格 |
+| **命名规范** | [naming-convention.mdc](naming-convention.mdc) · `.cursor/rules/…` | 标识符命名 |
+| **API 类型安全** | [api-type-safety.md](api-type-safety.md) · `.cursor/rules/api-type-safety.mdc` | `ApiResponse` / `PageResult` / 权限 Depends |
+| **Python 执行** | `.cursor/rules/python-execution.mdc` | Windows/UTF-8 跑脚本约定 |
+| **权限设计** | [permission-design.md](permission-design.md) | 前后端权限码 |
+
+`docs/*.mdc` 与 `.cursor/rules/*.mdc` 应对齐；改规范时两处一起改。

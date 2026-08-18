@@ -3,12 +3,12 @@
 统一的配置入口，支持多环境配置
 """
 
+from typing import Any
 import os
 from pathlib import Path
 from pydantic_settings import BaseSettings
-
-
 # 项目根目录 (app/config.py -> app/ -> 项目根目录)
+
 BASE_DIR: Path = Path(__file__).resolve().parent.parent
 
 # 获取环境变量，默认为 development
@@ -34,11 +34,18 @@ class Settings(BaseSettings):
 
     # 数据库配置
     DATABASE_URL: str = f"sqlite:///{BASE_DIR}/data/stamping_costing.db"
+    # 辅助库（无 Redis）：Token 会话、异步任务进度等，与主库隔离
+    AUXILIARY_DATABASE_URL: str = f"sqlite:///{BASE_DIR}/data/auxiliary.db"
+    # 时区真相在 app.common.timezone；此处仅作配置声明/文档对齐
+    TIMEZONE: str = "Asia/Shanghai"
+
+    # 密码摘要盐（MD5(salt + password)）；生产环境务必通过环境变量覆盖
+    PASSWORD_SALT: str = "chery-stamping-costing-2024"
 
     # 上传配置
     UPLOAD_DIR: Path = BASE_DIR / "uploads"
     MAX_UPLOAD_SIZE: int = 50 * 1024 * 1024  # 50MB
-    ALLOWED_EXTENSIONS: set = {".xlsx", ".xls", ".csv"}
+    ALLOWED_EXTENSIONS: set[Any] = {".xlsx", ".xls", ".csv"}
 
     # 日志配置
     LOG_DIR: Path = BASE_DIR / "logs"
@@ -46,7 +53,7 @@ class Settings(BaseSettings):
     LOG_FORMAT: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
     # CORS 配置
-    CORS_ORIGINS: list = ["*"]
+    CORS_ORIGINS: list[Any] = ["*"]
 
     # 分页配置
     DEFAULT_PAGE_SIZE: int = 20
@@ -69,7 +76,7 @@ class ProductionSettings(Settings):
     """生产环境配置"""
     DEBUG: bool = False
     LOG_LEVEL: str = "WARNING"
-    CORS_ORIGINS: list = [
+    CORS_ORIGINS: list[Any] = [
         "http://localhost:3000",
         "http://127.0.0.1:3000",
         "http://localhost:5500",
@@ -80,6 +87,7 @@ class TestSettings(Settings):
     """测试环境配置"""
     DEBUG: bool = True
     DATABASE_URL: str = "sqlite:///:memory:"
+    AUXILIARY_DATABASE_URL: str = "sqlite:///:memory:"
 
 
 # 环境配置映射

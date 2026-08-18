@@ -1,111 +1,108 @@
 """
 数据库配置模块
 提供 SQLAlchemy 数据库连接和会话管理
+
+主业务库（DatabaseConfig）与辅助库（AuxiliaryDatabaseConfig）隔离：
+无 Redis 时，辅助库承载会话 Token、异步任务进度等短生命周期数据，
+SQLite 使用独立文件，写入不受主业务长事务锁影响。
 """
 
 from typing import Generator
 
-from sqlalchemy import create_engine, event
-from sqlalchemy.orm import sessionmaker, Session, declarative_base
+from sqlalchemy import Engine, create_engine, event
+from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from app.common.timezone import CHINA_TZ_NAME
 from app.config import settings
 from app.utils.logging_config import get_logger
 
 
 logger = get_logger("database")
 
-Base = declarative_base()
+
+class Base(DeclarativeBase):
+    """主业务库 ORM 基类。"""
 
 
-class DatabaseConfig:
-    """
-    数据库配置类
-    管理数据库连接引擎和会话工厂
-    """
+class AuxiliaryBase(DeclarativeBase):
+    """辅助库 ORM 基类（Token / 异步任务等）。"""
 
-    _engine = None
-    _session_factory = None
 
-    @classmethod
-    def get_engine(cls):
-        """
-        获取数据库引擎
-        根据配置创建合适的引擎实例
+def _configure_sqlite_connection(dbapi_connection: object, connection_record: object) -> None:
+    """SQLite：外键 + WAL；时间按东八区墙钟由应用层 now() 写入。"""
+    cursor = dbapi_connection.cursor()  # type: ignore[attr-defined]
+    cursor.execute("PRAGMA foreign_keys=ON")
+    cursor.execute("PRAGMA journal_mode=WAL")
+    cursor.execute("PRAGMA synchronous=NORMAL")
+    cursor.close()
 
-        Returns:
-            SQLAlchemy Engine 实例
-        """
-        if cls._engine is None:
-            cls._create_engine()
-        return cls._engine
 
-    @classmethod
-    def _create_engine(cls) -> None:
-        """
-        创建数据库引擎
-        根据数据库 URL 类型选择合适的配置
-        """
-        if "sqlite" in settings.DATABASE_URL:
-            cls._create_sqlite_engine()
-        else:
-            cls._create_postgres_engine()
+def _configure_postgres_connection(dbapi_connection: object, connection_record: object) -> None:
+    """PostgreSQL：会话时区固定为东八区。"""
+    cursor = dbapi_connection.cursor()  # type: ignore[attr-defined]
+    cursor.execute(f"SET TIME ZONE '{CHINA_TZ_NAME}'")
+    cursor.close()
 
-    @classmethod
-    def _create_sqlite_engine(cls) -> None:
-        """
-        创建 SQLite 数据库引擎
-        配置外键支持和连接池
-        """
-        connect_args = {"check_same_thread": False}
 
-        if "mode=memory" in settings.DATABASE_URL:
-            cls._engine = create_engine(
-                settings.DATABASE_URL,
+def _create_engine_for_url(database_url: str, *, label: str) -> Engine:
+    """按 URL 创建引擎（SQLite / PostgreSQL）。"""
+    if "sqlite" in database_url:
+        connect_args = {
+            "check_same_thread": False,
+            "timeout": 30,
+        }
+        if "mode=memory" in database_url or database_url.endswith(":memory:"):
+            engine = create_engine(
+                database_url,
                 connect_args=connect_args,
                 poolclass=StaticPool,
                 echo=settings.DEBUG,
             )
         else:
-            cls._engine = create_engine(
-                settings.DATABASE_URL,
+            engine = create_engine(
+                database_url,
                 connect_args=connect_args,
                 echo=settings.DEBUG,
             )
-
-        @event.listens_for(cls._engine, "connect")
-        def set_sqlite_pragma(dbapi_connection, connection_record):
-            """启用 SQLite 外键支持"""
-            cursor = dbapi_connection.cursor()
-            cursor.execute("PRAGMA foreign_keys=ON")
-            cursor.close()
-
-        logger.info(f"SQLite 数据库引擎创建成功: {settings.DATABASE_URL}")
-
-    @classmethod
-    def _create_postgres_engine(cls) -> None:
-        """
-        创建 PostgreSQL 数据库引擎
-        配置连接池参数
-        """
-        cls._engine = create_engine(
-            settings.DATABASE_URL,
-            pool_size=10,
-            max_overflow=20,
-            pool_pre_ping=True,
-            echo=settings.DEBUG,
+        event.listen(engine, "connect", _configure_sqlite_connection)
+        logger.info(
+            "%s SQLite 引擎创建成功: %s（业务时区 %s）",
+            label,
+            database_url,
+            CHINA_TZ_NAME,
         )
-        logger.info("PostgreSQL 数据库引擎创建成功")
+        return engine
+
+    engine = create_engine(
+        database_url,
+        pool_size=10,
+        max_overflow=20,
+        pool_pre_ping=True,
+        echo=settings.DEBUG,
+    )
+    event.listen(engine, "connect", _configure_postgres_connection)
+    logger.info("%s PostgreSQL 引擎创建成功（TIME ZONE %s）", label, CHINA_TZ_NAME)
+    return engine
+
+
+class DatabaseConfig:
+    """主业务数据库配置"""
+
+    _engine: Engine | None = None
+    _session_factory: sessionmaker[Session] | None = None
 
     @classmethod
-    def get_session_factory(cls) -> sessionmaker:
-        """
-        获取会话工厂
-        用于创建数据库会话
+    def get_engine(cls) -> Engine:
+        if cls._engine is None:
+            cls._engine = _create_engine_for_url(
+                settings.DATABASE_URL,
+                label="主业务库",
+            )
+        return cls._engine
 
-        Returns:
-            SQLAlchemy sessionmaker 实例
-        """
+    @classmethod
+    def get_session_factory(cls) -> sessionmaker[Session]:
         if cls._session_factory is None:
             engine = cls.get_engine()
             cls._session_factory = sessionmaker(
@@ -118,21 +115,85 @@ class DatabaseConfig:
 
     @classmethod
     def create_tables(cls) -> None:
-        """
-        创建所有数据表
-        在应用启动时调用
-        """
         engine = cls.get_engine()
         Base.metadata.create_all(bind=engine)
-        logger.info("数据库表创建完成")
+        cls._ensure_sqlite_columns(engine)
+        logger.info("主业务库表创建完成")
+
+    @classmethod
+    def _ensure_sqlite_columns(cls, engine: Engine) -> None:
+        """为已有 SQLite 库补齐 create_all 不会添加的新列。"""
+        if not str(engine.url).startswith("sqlite"):
+            return
+        from sqlalchemy import inspect, text
+
+        inspector = inspect(engine)
+        table_name = "bom_l0_welding_fees"
+        if table_name not in inspector.get_table_names():
+            return
+        existing = {col["name"] for col in inspector.get_columns(table_name)}
+        if "weld_info_raw" not in existing:
+            with engine.begin() as conn:
+                conn.execute(
+                    text(f"ALTER TABLE {table_name} ADD COLUMN weld_info_raw TEXT")
+                )
+            logger.info("已为 %s 追加列 weld_info_raw", table_name)
+
+
+class AuxiliaryDatabaseConfig:
+    """
+    辅助数据库配置（无 Redis 时的旁路存储）。
+
+    承载：异步任务进度、登录 Token 等短生命周期数据。
+    """
+
+    _engine: Engine | None = None
+    _session_factory: sessionmaker[Session] | None = None
+
+    @classmethod
+    def get_engine(cls) -> Engine:
+        if cls._engine is None:
+            cls._engine = _create_engine_for_url(
+                settings.AUXILIARY_DATABASE_URL,
+                label="辅助库",
+            )
+        return cls._engine
+
+    @classmethod
+    def get_session_factory(cls) -> sessionmaker[Session]:
+        if cls._session_factory is None:
+            engine = cls.get_engine()
+            cls._session_factory = sessionmaker(
+                bind=engine,
+                autocommit=False,
+                autoflush=False,
+                expire_on_commit=False,
+            )
+        return cls._session_factory
+
+    @classmethod
+    def create_tables(cls) -> None:
+        import app.models.async_task  # noqa: F401
+        import app.models.user_token  # noqa: F401
+
+        engine = cls.get_engine()
+        AuxiliaryBase.metadata.create_all(bind=engine)
+        logger.info("辅助库表创建完成")
 
 
 def get_db() -> Generator[Session, None, None]:
-    """
-    FastAPI 依赖项：获取数据库会话
-    自动处理会话的创建和关闭
-    """
+    """FastAPI 依赖：主业务 Session。"""
     session_factory = DatabaseConfig.get_session_factory()
+    session = session_factory()
+    try:
+        yield session
+    finally:
+        session.close()
+
+
+def get_auxiliary_db() -> Generator[Session, None, None]:
+    """FastAPI 依赖：辅助库 Session（async_tasks / user_tokens 等）。"""
+    session_factory = AuxiliaryDatabaseConfig.get_session_factory()
     session = session_factory()
     try:
         yield session

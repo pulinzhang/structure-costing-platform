@@ -1,123 +1,108 @@
-"""
-统一响应工具
-提供标准化的 API 响应格式
-"""
+from typing import Generic, TypeVar, Any, Optional
+from pydantic import BaseModel
 
-from typing import Any, Dict
-from fastapi.responses import JSONResponse
+T = TypeVar("T")
 
 
-class ApiResponse:
-    """统一 API 响应"""
+class ApiResponse(BaseModel, Generic[T]):
+    """统一 API 响应
 
-    @staticmethod
-    def success(data: Any = None, message: str = "操作成功") -> JSONResponse:
+    使用示例：
+    ```python
+    # 单个对象
+    ApiResponse[UserVO]
+
+    # 列表
+    ApiResponse[list[UserVO]]
+
+    # 分页
+    ApiResponse[PageResult[UserVO]]
+
+    # 无 data（删除成功等）
+    ApiResponse[None]
+    ```
+    """
+
+    code: int = 200
+    success: bool = True
+    message: str = "操作成功"
+    data: T | None = None
+
+    @classmethod
+    def ok(cls, data: Optional[T] = None, message: str = "操作成功") -> "ApiResponse[T]":
+        """成功响应（2xx）
+
+        注意：data 默认 None，允许无返回值场景（如 DELETE 成功）
         """
-        成功响应
+        return cls(code=200, success=True, message=message, data=data)
 
-        Args:
-            data: 响应数据
-            message: 成功消息
+    @classmethod
+    def fail(
+        cls,
+        message: str = "操作失败",
+        code: int = 400,
+        data: Any = None,
+    ) -> "ApiResponse[Any]":
+        """业务错误响应（4xx）
 
-        Returns:
-            JSONResponse
+        使用场景：
+        - 业务规则冲突（如库存不足、余额不足）
+        - 数据冲突（如重复提交）
+        - 详细校验错误信息（通过 data 参数返回）
+
+        注意：
+        - 禁止用于 HTTP 参数校验（由 RequestValidationError 处理）
+        - 禁止用于资源不存在（由 HTTPException 或 NotFoundException 处理）
+        - 禁止用于权限失败（由 PermissionException 处理）
         """
-        return JSONResponse({
-            "success": True,
-            "message": message,
-            "data": data,
-        })
+        return cls(code=code, success=False, message=message, data=data)
 
-    @staticmethod
-    def error(message: str = "操作失败", code: int = 400, data: Any = None) -> JSONResponse:
-        """
-        错误响应
+    @classmethod
+    def error(
+        cls,
+        message: str = "系统错误",
+        code: int = 500,
+    ) -> "ApiResponse[Any]":
+        """系统错误响应（5xx）"""
+        return cls(code=code, success=False, message=message, data=None)
 
-        Args:
-            message: 错误消息
-            code: 错误码（HTTP 状态码）
-            data: 附加数据
+    @classmethod
+    def created(cls, data: T | None, message: str = "创建成功") -> "ApiResponse[T]":
+        return cls(code=201, success=True, message=message, data=data)
 
-        Returns:
-            JSONResponse
-        """
-        return JSONResponse(
-            status_code=code,
-            content={
-                "success": False,
-                "message": message,
-                "data": data,
-            }
-        )
+    @classmethod
+    def updated(cls, data: T | None, message: str = "更新成功") -> "ApiResponse[T]":
+        return cls(code=200, success=True, message=message, data=data)
 
-    @staticmethod
-    def created(data: Any, message: str = "创建成功") -> JSONResponse:
-        """创建成功响应"""
-        return ApiResponse.success(data=data, message=message)
+    @classmethod
+    def deleted(cls, message: str = "删除成功") -> "ApiResponse[Any]":
+        return cls(code=200, success=True, message=message, data=None)
 
-    @staticmethod
-    def updated(data: Any, message: str = "更新成功") -> JSONResponse:
-        """更新成功响应"""
-        return ApiResponse.success(data=data, message=message)
-
-    @staticmethod
-    def deleted(message: str = "删除成功") -> JSONResponse:
-        """删除成功响应"""
-        return ApiResponse.success(message=message)
-
-    @staticmethod
+    @classmethod
     def list_(
-        data: list,
+        cls,
+        items: list[Any],
         total: int,
         page: int = 1,
         page_size: int = 20,
         message: str = "查询成功",
-        filters: dict = None,
-    ) -> JSONResponse:
-        """
-        列表响应（标准分页格式）
+        filters: Any = None,
+    ) -> "ApiResponse[Any]":
+        """分页列表响应"""
+        from app.schemas.common.page_result import PageResult
 
-        Args:
-            data: 数据列表
-            total: 总记录数
-            page: 当前页码（从 1 开始）
-            page_size: 每页条数
-            message: 消息
-            filters: 可选，筛选下拉选项 {'vehicle_models': [...], 'versions': [...]}
-
-        Returns:
-            JSONResponse: 标准分页结构
-                {
-                    "success": true,
-                    "message": "...",
-                    "data": {
-                        "list": [...],
-                        "total": int,
-                        "page": int,
-                        "page_size": int,
-                        "total_pages": int,
-                        "has_next": bool,
-                        "has_prev": bool,
-                        "filters": {...}   # 可选
-                    }
-                }
-        """
         page = max(page, 1)
         page_size = max(page_size, 1)
         total_pages = (total + page_size - 1) // page_size if total > 0 else 0
-        body = {
-            "success": True,
-            "message": message,
-            "data": {
-                "list": data,
-                "total": total,
-                "page": page,
-                "page_size": page_size,
-                "total_pages": total_pages,
-                "has_next": page < total_pages,
-                "has_prev": page > 1,
-            },
-        }
-        if filters is not None:
-            body["data"]["filters"] = filters
-        return JSONResponse(body)
+
+        page_result: PageResult[Any] = PageResult(
+            items=items,
+            total=total,
+            page=page,
+            page_size=page_size,
+            total_pages=total_pages,
+            has_next=page < total_pages,
+            has_prev=page > 1,
+            filters=filters,
+        )
+        return ApiResponse[Any](code=200, success=True, message=message, data=page_result)

@@ -5,8 +5,7 @@
 
 import logging
 import sys
-from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 from logging.handlers import RotatingFileHandler
 
 from app.config import settings
@@ -85,11 +84,11 @@ class LoggerConfig:
         
         # 自定义 Handler，确保每次写入后立即刷新到磁盘
         class SafeRotatingFileHandler(RotatingFileHandler):
-            def emit(self, record):
+            def emit(self, record: Any) -> Any:
                 try:
                     super().emit(record)
                     self.flush()
-                except Exception as e:
+                except Exception:
                     pass  # 静默忽略日志写入错误，避免干扰主流程
         
         try:
@@ -176,7 +175,7 @@ def log_error(logger: logging.Logger, error: Exception, context: Optional[str] =
         logger.error(f"错误: {type(error).__name__}: {str(error)}", exc_info=True)
 
 
-def log_business_operation(logger: logging.Logger, operation: str, details: dict) -> None:
+def log_business_operation(logger: logging.Logger, operation: str, details: dict[str, Any]) -> None:
     """记录业务操作日志"""
     detail_str = " | ".join([f"{k}={v}" for k, v in details.items()])
     logger.info(f"业务操作: {operation} | {detail_str}")

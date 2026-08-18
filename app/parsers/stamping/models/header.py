@@ -9,7 +9,9 @@
 - 每一列对应什么字段
 """
 
-from dataclasses import dataclass
+from __future__ import annotations
+
+from dataclasses import dataclass, field
 
 
 @dataclass(slots=True)
@@ -33,6 +35,7 @@ class HeaderContext:
         context.data_start_row    # 语义清晰
         context.col_map           # 语义清晰
     """
+
     # 表头行号（Excel 行号，1-based）
     header_row: int
 
@@ -41,18 +44,14 @@ class HeaderContext:
 
     # 列映射：字段名 -> 列号
     # 例如：{"part_no": 2, "part_name": 3, "op": 12, ...}
-    col_map: dict
+    col_map: dict[str, int]
 
-    # Header 路径：列号 -> 完整路径
+    # Header 路径：列号(字符串) -> 完整路径
     # 格式："一级/二级"，例如 "工艺/工序号"
-    # 例如：{2: "通用/零件号", 12: "工艺/工序号", ...}
-    header_paths: dict = None
+    # 例如：{"2": "通用/零件号", "12": "工艺/工序号", ...}
+    header_paths: dict[str, str] = field(default_factory=dict)
 
-    def __post_init__(self):
-        if self.header_paths is None:
-            self.header_paths = {}
-
-    def get_col(self, field_name: str, default: int = None) -> int:
+    def get_col(self, field_name: str, default: int | None = None) -> int | None:
         """
         获取字段对应的列号
 
