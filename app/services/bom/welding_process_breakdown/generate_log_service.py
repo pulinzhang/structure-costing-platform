@@ -10,7 +10,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.common.timezone import now
-from app.models.bom_welding_process_breakdown_generate_log import (
+from app.models.bom import (
     BomWeldingProcessBreakdownGenerateLog,
 )
 from app.repositories.bom.welding_process_breakdown_generate_log_repository import (

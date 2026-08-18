@@ -6,7 +6,7 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
-from app.models.system_config import SystemConfig
+from app.models.settings import SystemConfig
 
 SINGLETON_ID = 1
 

@@ -7,7 +7,7 @@ from sqlalchemy import text
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
-from app.models.stamping_part_cost_calc_log import StampingPartCostCalcLog
+from app.models.costing import StampingPartCostCalcLog
 
 
 logger = logging.getLogger("repository.stamping_part_cost_calc_log")

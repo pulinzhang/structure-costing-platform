@@ -10,7 +10,7 @@ from typing import Optional
 
 from sqlalchemy.orm import Session
 
-from app.models.steel_base_price import SteelBasePrice
+from app.models.yishiyiyi import SteelBasePrice
 from app.schemas.dto.steel_base_price_dto import (
     FilterOptions,
     SteelBasePriceCreate,

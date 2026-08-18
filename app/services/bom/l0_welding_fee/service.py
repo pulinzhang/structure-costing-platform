@@ -16,7 +16,7 @@ from app.common.audit import (
 )
 from app.common.timezone import now
 from app.exceptions.base import BusinessException
-from app.models.bom_l0_welding_fee import BomL0WeldingFee
+from app.models.bom import BomL0WeldingFee
 from app.repositories.bom.l0_welding_fee_repository import BomL0WeldingFeeRepository
 from app.repositories.bom.welding_process_breakdown_repository import (
     BomWeldingProcessBreakdownRepository,

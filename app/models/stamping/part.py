@@ -10,7 +10,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 
 from app.database import Base
-from app.models.audit_mixin import AuditUserMixin
+from app.models.common.audit_mixin import AuditUserMixin
 
 
 class StampingPart(AuditUserMixin, Base):

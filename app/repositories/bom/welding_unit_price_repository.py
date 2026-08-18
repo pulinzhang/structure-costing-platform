@@ -10,7 +10,7 @@ from sqlalchemy import and_, case, func
 from sqlalchemy.orm import Query, Session
 
 from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING
-from app.models.bom_welding_unit_price import BomWeldingUnitPrice
+from app.models.bom import BomWeldingUnitPrice
 
 logger = logging.getLogger("repository.bom")
 

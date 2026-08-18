@@ -7,7 +7,7 @@ import logging
 from sqlalchemy.orm import Session
 
 from app.common.audit import audit_create, audit_update
-from app.models.steel_base_price import SteelBasePrice
+from app.models.yishiyiyi import SteelBasePrice
 from app.repositories.yishiyiyi.base_price import SteelBasePriceRepository
 from app.repositories.yishiyiyi.base_price.steel_base_price_repository import (
     BasePriceFilter,

@@ -17,7 +17,7 @@ from app.common.bom.welding_standard_process import (
     resolve_standard_process_name,
     resolve_standard_process_unit,
 )
-from app.models.bom_welding_process_breakdown_generate_log import (
+from app.models.bom import (
     BomWeldingProcessBreakdownGenerateLog,
 )
 from app.repositories.bom.bom_repository import BomNodeRepository

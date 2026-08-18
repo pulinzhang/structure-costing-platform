@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.common.audit import display_name
 from app.common.timezone import now
-from app.models.user_token import UserToken
+from app.models.settings import UserToken
 
 # 无活动超时：3 小时
 TOKEN_IDLE_HOURS = 3

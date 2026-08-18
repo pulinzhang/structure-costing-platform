@@ -10,7 +10,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.common.timezone import now
-from app.models.steel_price_calc_log import SteelPriceCalcLog
+from app.models.costing import SteelPriceCalcLog
 from app.repositories.costing.steel_price import SteelPriceCalcLogRepository
 from app.schemas.vo.steel_price_vo import SteelPriceCalcLogVO
 from app.services.costing.steel_price.calc.models import SteelPriceCalcResult

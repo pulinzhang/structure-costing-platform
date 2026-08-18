@@ -9,7 +9,7 @@ from sqlalchemy import text
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
-from app.models.bom_l0_welding_fee_calc_log import BomL0WeldingFeeCalcLog
+from app.models.bom import BomL0WeldingFeeCalcLog
 
 logger = logging.getLogger("repository.bom.l0_welding_fee_calc_log")
 

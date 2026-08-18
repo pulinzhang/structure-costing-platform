@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.models.stamping_scrap_price import StampingScrapPrice
+from app.models.yishiyiyi import StampingScrapPrice
 from app.schemas.dto.stamping_scrap_price_dto import FilterOptions
 
 

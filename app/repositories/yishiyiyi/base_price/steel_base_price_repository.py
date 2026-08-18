@@ -8,7 +8,7 @@ from typing import Any, Optional
 from sqlalchemy import distinct, func
 from sqlalchemy.orm import Query, Session
 
-from app.models.steel_base_price import SteelBasePrice
+from app.models.yishiyiyi import SteelBasePrice
 from app.schemas.dto.steel_base_price_dto import FilterOptions
 
 

@@ -174,7 +174,7 @@ class AuxiliaryDatabaseConfig:
     @classmethod
     def create_tables(cls) -> None:
         import app.models.async_task  # noqa: F401
-        import app.models.user_token  # noqa: F401
+        import app.models.settings  # noqa: F401
 
         engine = cls.get_engine()
         AuxiliaryBase.metadata.create_all(bind=engine)

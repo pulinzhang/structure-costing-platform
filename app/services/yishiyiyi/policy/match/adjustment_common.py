@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 from typing import Any, Optional, Protocol, runtime_checkable
 
-from app.models.steel_price_policy import SteelPriceLadderItem, SteelPricePolicy
+from app.models.yishiyiyi import SteelPriceLadderItem, SteelPricePolicy
 
 # 基价大类（冷轧/镀锌/酸洗）↔ 政策大类（冷轧钢/镀锌钢/酸洗钢）
 _CATEGORY_ALIASES: dict[str, frozenset[str]] = {

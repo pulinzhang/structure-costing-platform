@@ -7,7 +7,7 @@ from sqlalchemy import text
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
-from app.models.steel_price_calc_log import SteelPriceCalcLog
+from app.models.costing import SteelPriceCalcLog
 
 
 logger = logging.getLogger("repository.steel_price_calc_log")

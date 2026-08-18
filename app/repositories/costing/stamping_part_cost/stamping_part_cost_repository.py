@@ -8,7 +8,7 @@ from sqlalchemy import case, func
 from sqlalchemy.orm import Session
 
 from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING, AUDIT_REJECTED
-from app.models.stamping_part_cost import StampingPartCost
+from app.models.costing import StampingPartCost
 
 
 logger = logging.getLogger("repository.stamping_part_cost")

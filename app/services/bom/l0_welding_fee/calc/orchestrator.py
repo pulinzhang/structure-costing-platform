@@ -27,8 +27,7 @@ from app.common.bom.welding_billing_qty import resolve_billing_qty_for_price
 from app.common.money import Q4, quantize_money
 from app.common.timezone import now
 from app.exceptions.base import BusinessException
-from app.models.bom_l0_welding_fee_calc_log import BomL0WeldingFeeCalcLog
-from app.models.bom_welding_process_breakdown import BomWeldingProcessBreakdownNode
+from app.models.bom import BomL0WeldingFeeCalcLog, BomWeldingProcessBreakdownNode
 from app.repositories.bom.l0_welding_fee_repository import (
     FEE_ITEMS_KEY,
     BomL0WeldingFeeRepository,

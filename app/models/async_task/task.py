@@ -4,7 +4,7 @@ from sqlalchemy import Index, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import AuxiliaryBase
-from app.models.audit_mixin import AuditUserMixin
+from app.models.common.audit_mixin import AuditUserMixin
 
 
 class AsyncTask(AuditUserMixin, AuxiliaryBase):

@@ -10,7 +10,7 @@ from decimal import Decimal
 from sqlalchemy.orm import Session
 
 from app.models.stamping import StampingPart
-from app.models.stamping_scrap_price import StampingScrapPrice
+from app.models.yishiyiyi import StampingScrapPrice
 from app.repositories.stamping.stamping_process_fee_repository import (
     StampingProcessFeeRepository,
 )

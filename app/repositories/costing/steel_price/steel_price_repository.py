@@ -8,7 +8,7 @@ from sqlalchemy import case, distinct, func
 from sqlalchemy.orm import Session
 
 from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING, AUDIT_REJECTED
-from app.models.steel_price import SteelPrice
+from app.models.costing import SteelPrice
 
 
 logger = logging.getLogger("repository.steel_price")

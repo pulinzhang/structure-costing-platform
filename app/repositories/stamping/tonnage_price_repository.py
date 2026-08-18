@@ -10,7 +10,7 @@ from sqlalchemy import and_, case, func
 from sqlalchemy.orm import Query, Session
 
 from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING
-from app.models.stamping_tonnage_price import StampingTonnagePrice
+from app.models.stamping import StampingTonnagePrice
 
 logger = logging.getLogger("repository.stamping")
 

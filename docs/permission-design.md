@@ -665,8 +665,8 @@ app/common/permissions/
 app/deps/permissions.py     # require_perm / require_any_perm / require_admin_user
 scripts/generate_perm_codes.py  # -m scripts.generate_perm_codes
 
-app/models/user.py          # is_admin
-app/models/user_permission.py
+app/models/settings/user.py          # is_admin
+app/models/settings/user_permission.py
 app/repositories/user/user_permission_repository.py
 app/services/user/permission_service.py
 app/routers/user/permissions.py

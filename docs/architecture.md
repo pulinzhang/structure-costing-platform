@@ -65,9 +65,9 @@ Parser 是**横向工具**：只被 Service 调用，不依赖其它层。
 目录按 feature 对齐，例如：
 
 ```
-app/routers/stamping/     app/services/stamping/     app/repositories/stamping/
-app/routers/costing/      app/services/costing/      app/repositories/costing/
-app/routers/yishiyiyi/    …
+app/models/stamping/      app/routers/stamping/     app/services/stamping/     app/repositories/stamping/
+app/models/costing/       app/routers/costing/      app/services/costing/      app/repositories/costing/
+app/models/yishiyiyi/     …
 app/parsers/stamping/     # 仅上传类切片有 Parser
 ```
 
@@ -97,7 +97,7 @@ stamping-costing-platform/
 ├── app/
 │   ├── config.py / database.py
 │   ├── common/                  # 横切：permissions / audit / timezone …
-│   ├── models/                  # ORM（按表文件扁平组织）
+│   ├── models/{feature}/        # ORM（按垂直切片）；根 __init__ 仅供 main 注册表
 │   ├── schemas/                 # dto/ + vo/
 │   ├── repositories/{feature}/
 │   ├── services/{feature}/

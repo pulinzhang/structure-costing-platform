@@ -7,8 +7,7 @@ from decimal import Decimal
 
 from sqlalchemy.orm import Session
 
-from app.models.steel_base_price import SteelBasePrice
-from app.models.steel_price_policy import SteelPriceLadderItem, SteelPricePolicy
+from app.models.yishiyiyi import SteelBasePrice, SteelPriceLadderItem, SteelPricePolicy
 from app.repositories.yishiyiyi.base_price import SteelBasePriceRepository
 from app.repositories.yishiyiyi.policy import SteelPricePolicyRepository
 from app.schemas.vo.winning_thickness_vo import WinningThicknessRowVO

@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 from app.common.audit import audit_status_label
 from app.common.money import Q4, excel_money_cell
 from app.common.timezone import now
-from app.models.bom_l0_welding_fee import BomL0WeldingFee
+from app.models.bom import BomL0WeldingFee
 from app.repositories.bom.l0_welding_fee_repository import BomL0WeldingFeeRepository
 from app.repositories.bom.welding_process_breakdown_repository import (
     BomWeldingProcessBreakdownRepository,

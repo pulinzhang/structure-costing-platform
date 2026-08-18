@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from app.common.permissions.codes import Perm
 from app.database import get_db
 from app.deps.permissions import require_any_perm, require_perm
-from app.services import StampingPartService
+from app.services.stamping.stamping_service import StampingPartService
 from app.schemas.dto.stamping_part_dto import StampingPartBatchDeleteDTO
 from app.schemas.vo.stamping_vo import (
     StampingPartQuery,

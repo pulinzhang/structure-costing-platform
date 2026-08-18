@@ -7,7 +7,7 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
-from app.models.operation_log import OperationLog
+from app.models.settings import OperationLog
 
 
 class OperationLogRepository:

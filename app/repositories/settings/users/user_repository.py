@@ -5,7 +5,7 @@ from typing import Any
 from sqlalchemy import case, func, or_
 from sqlalchemy.orm import Session
 
-from app.models.user import User
+from app.models.settings import User
 
 
 class UserRepository:

@@ -27,10 +27,10 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
-from app.models.audit_mixin import AuditUserMixin
+from app.models.common.audit_mixin import AuditUserMixin
 
 if TYPE_CHECKING:
-    from app.models.stamping_process_fee_item import StampingProcessFeeItem
+    from app.models.stamping.process_fee_item import StampingProcessFeeItem
 
 
 class StampingProcessFee(AuditUserMixin, Base):

@@ -14,7 +14,7 @@ from sqlalchemy import DateTime, Index, Integer, Numeric, String, Text, UniqueCo
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
-from app.models.audit_mixin import AuditUserMixin
+from app.models.common.audit_mixin import AuditUserMixin
 
 
 class StampingTonnagePrice(AuditUserMixin, Base):

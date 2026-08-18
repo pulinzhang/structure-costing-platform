@@ -10,8 +10,7 @@ from sqlalchemy import case, func, or_
 from sqlalchemy.orm import Session, joinedload, noload
 
 from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING, AUDIT_REJECTED
-from app.models.stamping_process_fee import StampingProcessFee
-from app.models.stamping_process_fee_item import StampingProcessFeeItem
+from app.models.stamping import StampingProcessFee, StampingProcessFeeItem
 
 
 def _needs_manual_fix_clause() -> Any:

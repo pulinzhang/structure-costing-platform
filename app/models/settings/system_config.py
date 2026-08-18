@@ -4,7 +4,7 @@ from decimal import Decimal
 from sqlalchemy import Integer, Numeric, String
 from sqlalchemy.orm import Mapped, mapped_column
 from app.database import Base
-from app.models.audit_mixin import AuditUserMixin
+from app.models.common.audit_mixin import AuditUserMixin
 
 class SystemConfig(AuditUserMixin, Base):
     """系统配置表（仅维护 id=1 单例行）"""

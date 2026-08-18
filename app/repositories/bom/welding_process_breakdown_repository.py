@@ -11,7 +11,7 @@ from sqlalchemy import and_, case, func
 from sqlalchemy.orm import Query, Session, joinedload
 
 from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING
-from app.models.bom_welding_process_breakdown import (
+from app.models.bom import (
     BomWeldingProcessBreakdownLine,
     BomWeldingProcessBreakdownNode,
 )

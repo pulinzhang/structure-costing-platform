@@ -9,7 +9,7 @@ from sqlalchemy import text
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
-from app.models.bom_welding_process_breakdown_generate_log import (
+from app.models.bom import (
     BomWeldingProcessBreakdownGenerateLog,
 )
 

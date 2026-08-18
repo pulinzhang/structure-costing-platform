@@ -22,7 +22,7 @@ import sys
 from app.common.permissions.catalog import get_all_codes
 from app.config import settings
 from app.database import DatabaseConfig
-from app.models.user_permission import UserPermission
+from app.models.settings import UserPermission
 from app.repositories.settings.users.user_permission_repository import (
     UserPermissionRepository,
 )

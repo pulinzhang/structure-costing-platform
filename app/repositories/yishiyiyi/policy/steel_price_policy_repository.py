@@ -9,7 +9,7 @@ from typing import Any, Optional
 from sqlalchemy import distinct, func
 from sqlalchemy.orm import Query, Session, joinedload
 
-from app.models.steel_price_policy import SteelPricePolicy, SteelPriceLadderItem
+from app.models.yishiyiyi import SteelPricePolicy, SteelPriceLadderItem
 from app.repositories.yishiyiyi.policy.dto import FilterOptions
 
 

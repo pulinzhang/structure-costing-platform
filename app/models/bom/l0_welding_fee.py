@@ -24,10 +24,10 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
-from app.models.audit_mixin import AuditUserMixin
+from app.models.common.audit_mixin import AuditUserMixin
 
 if TYPE_CHECKING:
-    from app.models.bom_l0_welding_fee_item import BomL0WeldingFeeItem
+    from app.models.bom.l0_welding_fee_item import BomL0WeldingFeeItem
 
 
 class BomL0WeldingFee(AuditUserMixin, Base):

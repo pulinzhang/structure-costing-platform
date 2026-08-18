@@ -7,8 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.common.audit import display_name
 from app.common.timezone import now
-from app.models.user import User
-from app.models.user_token import UserToken
+from app.models.settings import User, UserToken
 from app.repositories.settings.users.user_repository import UserRepository
 from app.repositories.settings.users.user_token_repository import TOKEN_IDLE_HOURS, UserTokenRepository
 from app.schemas.dto.user_dto import UserLoginDTO

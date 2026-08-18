@@ -12,8 +12,7 @@ from sqlalchemy import case, func
 from sqlalchemy.orm import Session, joinedload, noload
 
 from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING, AUDIT_REJECTED
-from app.models.bom_l0_welding_fee import BomL0WeldingFee
-from app.models.bom_l0_welding_fee_item import BomL0WeldingFeeItem
+from app.models.bom import BomL0WeldingFee, BomL0WeldingFeeItem
 
 logger = logging.getLogger("repository.bom.l0_welding_fee")
 

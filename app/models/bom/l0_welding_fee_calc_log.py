@@ -6,7 +6,7 @@ from sqlalchemy import DateTime, Index, Integer, String, Text, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
-from app.models.audit_mixin import AuditUserMixin
+from app.models.common.audit_mixin import AuditUserMixin
 
 
 class BomL0WeldingFeeCalcLog(AuditUserMixin, Base):

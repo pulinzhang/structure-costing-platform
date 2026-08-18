@@ -25,8 +25,7 @@ from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING, audit_create, audit_
 from app.common.audit import display_name
 from app.common.timezone import now
 from app.exceptions.base import BusinessException
-from app.models.stamping import StampingPart
-from app.models.stamping_process_fee_calc_log import StampingProcessFeeCalcLog
+from app.models.stamping import StampingPart, StampingProcessFeeCalcLog
 from app.repositories.stamping.stamping_process_fee_repository import (
     PROCESS_ITEMS_KEY,
     StampingProcessFeeRepository,
