@@ -408,6 +408,7 @@ root
 │       │   └── op:bom-l0-welding-fee-calc:delete
 │       └── menu:bom-l0-welding-fee-list          # 成品焊接费列表
 │           ├── op:bom-l0-welding-fee-list:view
+│           ├── op:bom-l0-welding-fee-list:update
 │           ├── op:bom-l0-welding-fee-list:delete
 │           ├── op:bom-l0-welding-fee-list:approve
 │           ├── op:bom-l0-welding-fee-list:reverse
@@ -530,7 +531,7 @@ root
 | bom-welding-unit-price-upload | `view` / `upload` | 查看上传页；导入焊接单价 Excel |
 | bom-welding-unit-price | `view` / `create` / `update` / `delete` / `approve` / `reverse` / `export` | 查询；新增（API）；编辑；删除（含批量，已审跳过）；审核（含批量）；反审核；导出 Excel |
 | bom-l0-welding-fee-calc | `view` / `run` / `delete` | 历史/过程；开始计算；删除计算日志 |
-| bom-l0-welding-fee-list | `view` / `delete` / `approve` / `reverse` / `export` | 查询；删除（含批量）；审核（含批量）；反审核；导出 Excel |
+| bom-l0-welding-fee-list | `view` / `update` / `delete` / `approve` / `reverse` / `export` | 查询；编辑其它费用；删除（含批量）；审核（含批量）；反审核；导出 Excel |
 | steel-price-calc | `view` / `run` / `delete` | 历史/过程；开始计算；删除日志 |
 | steel-price-list | `view` / `update` / `delete` / `approve` / `reject` / `reverse` / `export` | 查询；编辑；删除（含批量）；通过（含批量）；驳回；反审核（含批量）；导出 |
 | stamping-part-cost-calc | `view` / `run` / `delete` | 历史/过程；开始计算；删除日志 |
@@ -745,3 +746,4 @@ static/index.html           # 侧栏 data-page
 | 2026-08-17 | 技术命名统一为 L0：`menu/op:bom-welding-fee*` 全部替换为 `menu/op:bom-l0-welding-fee*`（功能新建未上线，无需 DB 权限 remap） |
 | 2026-08-17 | 去掉预留空码 `op:bom-l0-welding-fee-list:export`（尚无导出接口/按钮，避免权限树熵增） |
 | 2026-08-19 | 冲压零件价格一览下线「核算明细」Excel；仅保留工艺清单导出（`op:stamping-part-cost:export`） |
+| 2026-08-19 | 成品焊接费列表：恢复 `export`（导出已落地）并增加 `update`（编辑其它费用 / 备注） |

@@ -442,6 +442,11 @@
                   "type": "op"
                 },
                 {
+                  "code": "op:bom-l0-welding-fee-list:update",
+                  "label": "编辑其它费用",
+                  "type": "op"
+                },
+                {
                   "code": "op:bom-l0-welding-fee-list:delete",
                   "label": "删除",
                   "type": "op"

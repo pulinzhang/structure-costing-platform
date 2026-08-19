@@ -22,6 +22,7 @@ from app.schemas.dto.bom_l0_welding_fee_dto import (
     BomL0WeldingFeeBatchReverseAuditDTO,
     BomL0WeldingFeeCalcDTO,
     BomL0WeldingFeeQuery,
+    BomL0WeldingFeeUpdateDTO,
 )
 from app.schemas.vo.async_task_vo import AsyncTaskAcceptedVO, AsyncTaskProgressVO
 from app.schemas.vo.bom_l0_welding_fee_vo import (
@@ -449,6 +450,23 @@ def get_fee(
     if not row:
         raise HTTPException(status_code=404, detail="成品焊接费记录不存在")
     return ApiResponse.ok(data=row)
+
+
+@router.patch(
+    "/{fee_id}",
+    response_model=ApiResponse[BomL0WeldingFeeVO],
+)
+def update_other_fee(
+    fee_id: int,
+    dto: BomL0WeldingFeeUpdateDTO,
+    db: Session = Depends(get_db),
+    current_user: UserVO = Depends(require_perm(Perm.BOM_L0_WELDING_FEE_LIST_UPDATE)),
+) -> ApiResponse[BomL0WeldingFeeVO]:
+    try:
+        row = _service.update_other_fee(db, fee_id, dto, current_user=current_user)
+    except BusinessException as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    return ApiResponse.updated(data=row, message="成品焊接费已保存")
 
 
 @router.post(

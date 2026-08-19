@@ -139,6 +139,37 @@ class DatabaseConfig:
                         text(f"ALTER TABLE {weld_table} ADD COLUMN weld_info_raw TEXT")
                     )
                 logger.info("已为 %s 追加列 weld_info_raw", weld_table)
+            if "other_fee" not in weld_cols:
+                with engine.begin() as conn:
+                    conn.execute(
+                        text(
+                            f"ALTER TABLE {weld_table} "
+                            "ADD COLUMN other_fee NUMERIC(14, 4)"
+                        )
+                    )
+                logger.info("已为 %s 追加列 other_fee", weld_table)
+            if "final_l0_welding_fee" not in weld_cols:
+                with engine.begin() as conn:
+                    conn.execute(
+                        text(
+                            f"ALTER TABLE {weld_table} "
+                            "ADD COLUMN final_l0_welding_fee NUMERIC(14, 4)"
+                        )
+                    )
+                    conn.execute(
+                        text(
+                            f"UPDATE {weld_table} SET final_l0_welding_fee = "
+                            "total_l0_welding_fee "
+                            "WHERE final_l0_welding_fee IS NULL"
+                        )
+                    )
+                logger.info("已为 %s 追加列 final_l0_welding_fee 并回填", weld_table)
+            if "remark" not in weld_cols:
+                with engine.begin() as conn:
+                    conn.execute(
+                        text(f"ALTER TABLE {weld_table} ADD COLUMN remark TEXT")
+                    )
+                logger.info("已为 %s 追加列 remark", weld_table)
 
         fee_table = "stamping_process_fees"
         if fee_table in table_names:

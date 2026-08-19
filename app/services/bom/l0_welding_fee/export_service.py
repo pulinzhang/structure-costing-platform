@@ -36,8 +36,8 @@ _CALC_LABEL = {
 }
 
 # 主表列（纵向合并）+ 明细分隔
-MAIN_COLS = 14
-COL_COUNT = 21
+MAIN_COLS = 17
+COL_COUNT = 24
 HEADERS = [
     "序号",
     "年度",
@@ -50,7 +50,10 @@ HEADERS = [
     "工艺数",
     "命中",
     "缺单价",
-    "成品焊接费",
+    "系统计算",
+    "其它费用",
+    "确认单价",
+    "备注",
     "计算状态",
     "审核状态",
     "标准工艺",
@@ -74,6 +77,9 @@ WIDTHS = [
     8,
     8,
     14,
+    12,
+    14,
+    24,
     10,
     10,
     18,
@@ -321,7 +327,7 @@ class BomL0WeldingFeeExportService:
             cell.border = self._split_detail if col == MAIN_COLS + 1 else self._thin
         ws.row_dimensions[group_row].height = GROUP_H
 
-        fee_cols = {12, 20}  # L0合计、行费
+        fee_cols = {12, 13, 14, 23}  # 系统计算、其它费用、确认单价、行费
         for col, title in enumerate(HEADERS, start=1):
             cell = ws.cell(row=header_row, column=col, value=title)
             cell.font = header_font
@@ -371,6 +377,9 @@ class BomL0WeldingFeeExportService:
                 record.matched_line_count,
                 record.missing_price_count,
                 _num(record.total_l0_welding_fee),
+                _num(record.other_fee),
+                _num(record.final_l0_welding_fee),
+                (record.remark or "").strip(),
                 _CALC_LABEL.get(calc_status, calc_status),
                 audit_status_label(record.audit_status),
             ]
@@ -388,21 +397,30 @@ class BomL0WeldingFeeExportService:
                     cell.font = _font(size=9, color="607D8B")
                     cell.alignment = self._left
                 elif col == 12:
+                    cell.font = _font(size=11, bold=True, color="546E7A")
+                    cell.alignment = self._right
+                elif col == 13:
+                    cell.font = _font(size=11, color="37474F")
+                    cell.alignment = self._right
+                elif col == 14:
                     cell.font = _font(size=11, bold=True, color="E65100")
                     cell.alignment = self._right
                     cell.fill = _fill("FFF3E0")
+                elif col == 15:
+                    cell.font = _font(size=9, color="607D8B")
+                    cell.alignment = self._left
                 elif col in {9, 10, 11}:
                     cell.font = _font(bold=True, color="C62828") if (col == 11 and missing) else _font()
                     cell.alignment = self._center
-                elif col == 13:
+                elif col == 16:
                     cell.font, cell.fill = self._status_tone(calc_status)
                     cell.alignment = self._center
-                elif col == 14:
+                elif col == 17:
                     cell.font, cell.fill = self._audit_tone(record.audit_status)
                     cell.alignment = self._center
                 else:
                     cell.font = _font()
-                    cell.alignment = self._left if col in {3, 4, 5, 7} else self._center
+                    cell.alignment = self._left if col in {3, 4, 5, 7, 15} else self._center
 
         detail_values: list[Any] = [
             (item.standard_process_name or item.process_token or "") if item else "",

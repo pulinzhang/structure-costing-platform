@@ -148,6 +148,7 @@ class Perm:
 
     MENU_BOM_L0_WELDING_FEE_LIST = "menu:bom-l0-welding-fee-list"  # 成品焊接费列表
     BOM_L0_WELDING_FEE_LIST_VIEW = "op:bom-l0-welding-fee-list:view"  # 查询
+    BOM_L0_WELDING_FEE_LIST_UPDATE = "op:bom-l0-welding-fee-list:update"  # 编辑其它费用 / 确认单价
     BOM_L0_WELDING_FEE_LIST_DELETE = "op:bom-l0-welding-fee-list:delete"  # 删除
     BOM_L0_WELDING_FEE_LIST_APPROVE = "op:bom-l0-welding-fee-list:approve"  # 审核通过
     BOM_L0_WELDING_FEE_LIST_REVERSE = "op:bom-l0-welding-fee-list:reverse"  # 反审核

@@ -48,7 +48,7 @@ import { pageConfig as bomWeldingUnitPricePage } from './features/bom/welding-un
 import { pageConfig as bomWeldingProcessBreakdownGeneratePage } from './features/bom/welding-process-breakdown/generate/index.js?v=5';
 import { pageConfig as bomWeldingProcessBreakdownListPage } from './features/bom/welding-process-breakdown/list/index.js?v=38';
 import { pageConfig as bomL0WeldingFeeCalcPage } from './features/bom/l0-welding-fee/calc/index.js?v=6';
-import { pageConfig as bomL0WeldingFeeListPage } from './features/bom/l0-welding-fee/list/index.js?v=9';
+import { pageConfig as bomL0WeldingFeeListPage } from './features/bom/l0-welding-fee/list/index.js?v=12';
 import { pageConfig as costingPage }        from './features/costing/engine/index.js';
 import { pageConfig as quotationPage }      from './features/quotation/index.js';
 import { pageConfig as settingsPage }       from './features/settings/system/index.js?v=15';

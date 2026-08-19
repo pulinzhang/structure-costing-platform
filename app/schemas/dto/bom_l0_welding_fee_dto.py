@@ -5,9 +5,11 @@ BOM 焊接费 DTO - 请求参数 / 仓库写入载荷
 from dataclasses import dataclass, field
 from datetime import datetime
 from decimal import Decimal
-from typing import TypedDict
+from typing import Any, TypedDict
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+from app.common.money import Q4, optional_quantize_money
 
 
 class BomL0WeldingFeeScopeDTO(BaseModel):
@@ -53,6 +55,23 @@ class BomL0WeldingFeeBatchDeleteDTO(BomL0WeldingFeeScopeDTO):
     """批量删除（仅删未审核；已通过跳过）"""
 
 
+class BomL0WeldingFeeUpdateDTO(BaseModel):
+    """其它费用与备注"""
+
+    other_fee: Decimal | None = Field(
+        None,
+        description="其它费用(元)；可正可负；传 null 表示无其它费用",
+    )
+    remark: str | None = Field(
+        None, max_length=1000, description="备注（调整理由/原因）"
+    )
+
+    @field_validator("other_fee", mode="before")
+    @classmethod
+    def _coerce_other_fee(cls, value: Any) -> Decimal | None:
+        return optional_quantize_money(value, Q4)
+
+
 @dataclass(slots=True)
 class BomL0WeldingFeeItemPayload:
     """焊接费工艺明细写入。"""
@@ -87,6 +106,7 @@ class BomL0WeldingFeeUpsertPayload:
     matched_line_count: int
     missing_price_count: int
     total_l0_welding_fee: Decimal
+    final_l0_welding_fee: Decimal | None
     calc_batch_id: str | None
     calc_status: str
     calc_message: str | None
@@ -127,4 +147,13 @@ class BomL0WeldingFeeCalcLogPatch(TypedDict, total=False):
     detail_text: str
     finished_at: datetime
     updated_by: str | None
+
+
+class L0WeldingFeePatch(TypedDict, total=False):
+    """成品焊接费部分更新（其它费用等）。"""
+
+    other_fee: Decimal | None
+    final_l0_welding_fee: Decimal | None
+    remark: str | None
+    updated_by: str
 
