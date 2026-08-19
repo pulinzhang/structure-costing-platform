@@ -1,7 +1,7 @@
 """
 冲压加工费 CRUD / 统计服务
 
-列表、手工调价、审核、删除、筛选维度。
+列表、其它费用编辑、审核、删除、筛选维度。
 计算逻辑见 app.services.stamping.process_fee.calc。
 """
 
@@ -50,7 +50,7 @@ class StampingProcessFeeService:
         self.fee_repo = StampingProcessFeeRepository()
         self.tonnage_repo = StampingTonnagePriceRepository()
 
-    def update_manual_price(
+    def update_other_fee(
         self,
         db: Session,
         fee_id: int,
@@ -63,16 +63,16 @@ class StampingProcessFeeService:
         if record.audit_status == AUDIT_APPROVED:
             raise BusinessException("已审核通过，请先反审核后再调整")
 
-        manual_price = dto.manual_unit_price
-        if record.is_tailor_welded and manual_price is None:
-            raise BusinessException("拼焊件须录入手工调整单价（系统计算不含拼焊费）")
-        final_fee = resolve_final_fee(record.processing_fee, manual_price)
+        other_fee = dto.other_fee
+        if record.is_tailor_welded and other_fee is None:
+            raise BusinessException("拼焊件须录入其它费用（如拼焊费）")
+        final_fee = resolve_final_fee(record.processing_fee, other_fee)
         remark = (dto.remark or "").strip() or None
         updated = self.fee_repo.update_fields(
             db,
             fee_id,
             ProcessFeePatch(
-                manual_unit_price=manual_price,
+                other_fee=other_fee,
                 final_processing_fee=final_fee,
                 remark=remark,
                 updated_by=audit_update(current_user)["updated_by"],
@@ -178,18 +178,18 @@ class StampingProcessFeeService:
             stamping_supplier=supplier,
             statuses=[AUDIT_APPROVED],
         )
-        missing_manual = self.fee_repo.list_tailor_weld_missing_manual_part_numbers(
+        missing_other_fee = self.fee_repo.list_tailor_weld_missing_other_fee_part_numbers(
             db,
             year=dto.year,
             location=location,
             stamping_supplier=supplier,
             statuses=[AUDIT_PENDING, AUDIT_REJECTED],
         )
-        if missing_manual:
-            preview = "、".join(missing_manual[:10])
-            extra = f" 等 {len(missing_manual)} 件" if len(missing_manual) > 10 else ""
+        if missing_other_fee:
+            preview = "、".join(missing_other_fee[:10])
+            extra = f" 等 {len(missing_other_fee)} 件" if len(missing_other_fee) > 10 else ""
             raise BusinessException(
-                f"拼焊件须先录入手工调整单价后再审核：{preview}{extra}"
+                f"拼焊件须先录入其它费用（如拼焊费）后再审核：{preview}{extra}"
             )
         updated = self.fee_repo.approve_by_scope(
             db,

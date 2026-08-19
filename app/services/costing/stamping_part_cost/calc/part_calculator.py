@@ -172,7 +172,7 @@ class PartCostCalculator:
             return StampingPartCostFailedItemVO(
                 part_number=part.part_number,
                 part_name=part.part_name,
-                reason="加工费最终金额为空，请先完成加工费计算或手工调整",
+                reason="加工费确认单价为空，请先完成加工费计算或录入其它费用",
             )
         process_fee_amount = quantize(
             Decimal(str(fee.final_processing_fee)), FEE_QUANTIZE

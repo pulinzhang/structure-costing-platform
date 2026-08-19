@@ -39,25 +39,26 @@ class StampingProcessFeeQuery(BaseModel):
     audit_status: str | None = Field(None, description="审核状态")
     only_zero: bool = Field(
         False,
-        description="仅看算费失败/零价待补价（最终加工费为空或为 0）",
+        description="仅看算费失败/零价待补价（确认单价为空或为 0）",
     )
     page: int = Field(1, ge=1, description="页码")
     size: int = Field(20, ge=1, le=500, description="每页条数")
 
 
 class StampingProcessFeeUpdateDTO(BaseModel):
-    """手工调整单价与备注"""
+    """其它费用与备注"""
 
-    manual_unit_price: Decimal | None = Field(
-        None, ge=0, description="手工调整单价(元)；传 null 表示清空，回退到系统计算值"
+    other_fee: Decimal | None = Field(
+        None,
+        description="其它费用(元)，如拼焊费；可正可负；传 null 表示无其它费用",
     )
     remark: str | None = Field(
         None, max_length=1000, description="备注（调整理由/原因）"
     )
 
-    @field_validator("manual_unit_price", mode="before")
+    @field_validator("other_fee", mode="before")
     @classmethod
-    def _coerce_manual_unit_price(cls, value: Any) -> Decimal | None:
+    def _coerce_other_fee(cls, value: Any) -> Decimal | None:
         return optional_quantize_money(value, Q3)
 
 
@@ -145,9 +146,9 @@ class ProcessFeeUpsertPayload:
 
 
 class ProcessFeePatch(TypedDict, total=False):
-    """加工费部分更新（手工调价等）。"""
+    """加工费部分更新（其它费用等）。"""
 
-    manual_unit_price: Decimal | None
+    other_fee: Decimal | None
     final_processing_fee: Decimal | None
     remark: str | None
     updated_by: str

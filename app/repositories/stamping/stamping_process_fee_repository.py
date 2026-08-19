@@ -47,8 +47,8 @@ class ProcessFeeListFilters(TypedDict):
     summary: ProcessFeeFilterSummary
 
 
-def _needs_manual_fix_clause() -> ColumnElement[bool]:
-    """最终加工费为空或为 0：算费失败 / 零价且尚未补价。"""
+def _needs_price_fix_clause() -> ColumnElement[bool]:
+    """确认单价为空或为 0：算费失败 / 零价且尚未补价。"""
     return or_(
         StampingProcessFee.final_processing_fee.is_(None),
         StampingProcessFee.final_processing_fee == 0,
@@ -213,7 +213,7 @@ class StampingProcessFeeRepository:
         if audit_status:
             q = q.filter(StampingProcessFee.audit_status == audit_status)
         if only_zero:
-            q = q.filter(_needs_manual_fix_clause())
+            q = q.filter(_needs_price_fix_clause())
         return q
 
     def paginate(
@@ -286,7 +286,7 @@ class StampingProcessFeeRepository:
             ),
             func.avg(StampingProcessFee.final_processing_fee).label("avg_fee"),
             func.sum(
-                case((_needs_manual_fix_clause(), 1), else_=0)
+                case((_needs_price_fix_clause(), 1), else_=0)
             ).label("zero_count"),
             func.sum(
                 case((StampingProcessFee.audit_status == AUDIT_PENDING, 1), else_=0)
@@ -370,7 +370,7 @@ class StampingProcessFeeRepository:
             .all()
         )
 
-    def list_tailor_weld_missing_manual_part_numbers(
+    def list_tailor_weld_missing_other_fee_part_numbers(
         self,
         db: Session,
         *,
@@ -379,7 +379,7 @@ class StampingProcessFeeRepository:
         stamping_supplier: str,
         statuses: List[str],
     ) -> list[str]:
-        """范围内待审拼焊件且未录入手工调整单价的零件号（用结算快照）。"""
+        """范围内待审拼焊件且未录入其它费用的零件号（用结算快照）。"""
         rows = (
             self._scope_query(
                 db,
@@ -389,7 +389,7 @@ class StampingProcessFeeRepository:
             )
             .filter(
                 StampingProcessFee.audit_status.in_(statuses),
-                StampingProcessFee.manual_unit_price.is_(None),
+                StampingProcessFee.other_fee.is_(None),
                 StampingProcessFee.is_tailor_welded.is_(True),
             )
             .with_entities(StampingProcessFee.part_number)

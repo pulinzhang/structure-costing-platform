@@ -190,7 +190,7 @@
                 },
                 {
                   "code": "op:stamping-process-fee:update",
-                  "label": "手工调整",
+                  "label": "编辑其它费用",
                   "type": "op"
                 },
                 {

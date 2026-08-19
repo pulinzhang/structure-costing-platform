@@ -80,12 +80,18 @@ class StampingProcessFeeVO(BaseModel):
     excel_filename: str | None = None
     is_tailor_welded: bool = Field(
         default=False,
-        description="是否拼焊件（结算快照；拼焊费须手工挂在父件）",
+        description="是否拼焊件（结算快照；拼焊费录入其它费用）",
     )
     processing_fee: Decimal | None = None
     process_count: int
-    manual_unit_price: Decimal | None = None
-    final_processing_fee: Decimal | None = None
+    other_fee: Decimal | None = Field(
+        default=None,
+        description="其它费用(元)，如拼焊费；可正可负",
+    )
+    final_processing_fee: Decimal | None = Field(
+        default=None,
+        description="确认单价(元) = 系统计算 + 其它费用",
+    )
     calc_fail_reason: str | None = None
     remark: str | None = None
     audit_status: str = "pending"
@@ -101,7 +107,11 @@ class StampingProcessFeeVO(BaseModel):
     updated_at: datetime | None = None
     process_items: list[StampingProcessFeeItemVO] = Field(default_factory=list)
 
-    @field_serializer("processing_fee", "manual_unit_price", "final_processing_fee")
+    @field_serializer(
+        "processing_fee",
+        "other_fee",
+        "final_processing_fee",
+    )
     def serialize_fee(self, value: Decimal | None) -> str | None:
         return optional_format_money(value, Q3, 3)
 

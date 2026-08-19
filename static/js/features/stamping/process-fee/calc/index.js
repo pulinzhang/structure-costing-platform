@@ -647,7 +647,7 @@ function startPolling(taskId) {
                 const zero = result.zero_fee_count || 0;
                 if (zero > 0) {
                     showToast(
-                        `计算${STATUS_META[bizStatus]?.label || '完成'}：成功${fmtInt(result.success_count)}，零价${fmtInt(zero)}，请到列表手工调整`,
+                        `计算${STATUS_META[bizStatus]?.label || '完成'}：成功${fmtInt(result.success_count)}，零价${fmtInt(zero)}，请到列表录入其它费用`,
                         'warning',
                     );
                 } else {

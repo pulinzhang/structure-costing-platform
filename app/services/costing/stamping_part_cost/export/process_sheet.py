@@ -135,6 +135,19 @@ def _unique_row_value(rows: list[Any], attr: str) -> object | None:
     return next(iter(values))
 
 
+def _unique_row_int(rows: list[Any], attr: str) -> int | None:
+    raw = _unique_row_value(rows, attr)
+    if isinstance(raw, bool):
+        return None
+    if isinstance(raw, int):
+        return raw
+    if isinstance(raw, str):
+        text = raw.strip()
+        if text.isdigit():
+            return int(text)
+    return None
+
+
 def build_process_sheet_filename(
     rows: list[Any],
     *,
@@ -146,8 +159,8 @@ def build_process_sheet_filename(
     version: str | None = None,
 ) -> str:
     """冲压零件核价结果导出文件名：年月 + 基地 + 工厂 + 车型版本（有则带上）。"""
-    year_value = year if year is not None else _unique_row_value(rows, "year")
-    month_value = month if month is not None else _unique_row_value(rows, "month")
+    year_value = year if year is not None else _unique_row_int(rows, "year")
+    month_value = month if month is not None else _unique_row_int(rows, "month")
     location_value = location or _unique_row_value(rows, "location")
     supplier_value = stamping_supplier or _unique_row_value(
         rows, "stamping_supplier"
@@ -157,9 +170,9 @@ def build_process_sheet_filename(
 
     parts = ["冲压零件核价结果"]
     if year_value is not None and month_value is not None:
-        parts.append(f"{int(year_value)}年{int(month_value)}月")
+        parts.append(f"{year_value}年{month_value}月")
     elif year_value is not None:
-        parts.append(f"{int(year_value)}年")
+        parts.append(f"{year_value}年")
     for token in (
         _filename_token(location_value),
         _filename_token(supplier_value),

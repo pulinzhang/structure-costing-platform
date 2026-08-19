@@ -492,14 +492,14 @@ def get_fee(
     "/{fee_id}",
     response_model=ApiResponse[StampingProcessFeeVO],
 )
-def update_manual_price(
+def update_other_fee(
     fee_id: int,
     dto: StampingProcessFeeUpdateDTO,
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_PROCESS_FEE_UPDATE)),
 ) -> ApiResponse[StampingProcessFeeVO]:
-    row = _service.update_manual_price(db, fee_id, dto, current_user=current_user)
-    return ApiResponse.updated(data=row, message="手工调整已保存")
+    row = _service.update_other_fee(db, fee_id, dto, current_user=current_user)
+    return ApiResponse.updated(data=row, message="加工费已保存")
 
 
 @router.post(

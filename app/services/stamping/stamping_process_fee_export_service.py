@@ -51,8 +51,8 @@ HEADERS = [
     "料厚",
     "工序数",
     "系统计算加工费",
-    "手工调整单价",
-    "最终加工费",
+    "其它费用",
+    "确认单价",
     "工序序号",
     "工序代码",
     "吨位(T)",
@@ -331,7 +331,7 @@ class StampingProcessFeeExportService:
             cell.border = self._split_detail if col == MAIN_COLS + 1 else self._thin
         ws.row_dimensions[group_row].height = GROUP_H
 
-        fee_cols = {12, 13, 14, 20, 21}  # 系统/手工/最终、冲次单价、单序费用
+        fee_cols = {12, 13, 14, 20, 21}  # 系统/其它/确认、冲次单价、单序费用
         for col, title in enumerate(HEADERS, start=1):
             cell = ws.cell(row=header_row, column=col, value=title)
             cell.font = header_font
@@ -378,7 +378,7 @@ class StampingProcessFeeExportService:
                 _num(record.thickness, Q4),
                 record.process_count,
                 _num(record.processing_fee, Q3),
-                _num(record.manual_unit_price, Q3),
+                _num(record.other_fee, Q3),
                 _num(record.final_processing_fee, Q3),
             ]
             for col, value in enumerate(main_values, start=1):

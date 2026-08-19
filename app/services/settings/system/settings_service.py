@@ -87,28 +87,30 @@ class SettingsService:
     ) -> ConfigVO:
         app_name = dto.app_name.strip() or DEFAULT_APP_NAME
         audit = audit_create(current_user)
-        rate_fields = {
-            "steel_density": quantize_money(dto.steel_density, Q4),
-            "material_loss_rate": quantize_money(dto.material_loss_rate, Q6),
-            "scrap_recovery_rate": quantize_money(dto.scrap_recovery_rate, Q6),
-            "finished_finance_rate": quantize_money(dto.finished_finance_rate, Q6),
-            "finished_management_rate": quantize_money(
-                dto.finished_management_rate, Q6
-            ),
-            "finished_scrap_rate": quantize_money(dto.finished_scrap_rate, Q6),
-            "finished_pretax_profit_rate": quantize_money(
-                dto.finished_pretax_profit_rate, Q6
-            ),
-        }
+        steel_density = quantize_money(dto.steel_density, Q4)
+        material_loss_rate = quantize_money(dto.material_loss_rate, Q6)
+        scrap_recovery_rate = quantize_money(dto.scrap_recovery_rate, Q6)
+        finished_finance_rate = quantize_money(dto.finished_finance_rate, Q6)
+        finished_management_rate = quantize_money(dto.finished_management_rate, Q6)
+        finished_scrap_rate = quantize_money(dto.finished_scrap_rate, Q6)
+        finished_pretax_profit_rate = quantize_money(
+            dto.finished_pretax_profit_rate, Q6
+        )
         row = self.repository.get_singleton(db)
         if row is None:
             self.repository.create_singleton(
                 db,
                 SystemConfigWrite(
                     app_name=app_name,
+                    steel_density=steel_density,
+                    material_loss_rate=material_loss_rate,
+                    scrap_recovery_rate=scrap_recovery_rate,
+                    finished_finance_rate=finished_finance_rate,
+                    finished_management_rate=finished_management_rate,
+                    finished_scrap_rate=finished_scrap_rate,
+                    finished_pretax_profit_rate=finished_pretax_profit_rate,
                     created_by=audit["created_by"],
                     updated_by=audit["updated_by"],
-                    **rate_fields,
                 ),
             )
         else:
@@ -117,8 +119,14 @@ class SettingsService:
                 row,
                 SystemConfigPatch(
                     app_name=app_name,
+                    steel_density=steel_density,
+                    material_loss_rate=material_loss_rate,
+                    scrap_recovery_rate=scrap_recovery_rate,
+                    finished_finance_rate=finished_finance_rate,
+                    finished_management_rate=finished_management_rate,
+                    finished_scrap_rate=finished_scrap_rate,
+                    finished_pretax_profit_rate=finished_pretax_profit_rate,
                     updated_by=audit_update(current_user)["updated_by"],
-                    **rate_fields,
                 ),
             )
         db.commit()

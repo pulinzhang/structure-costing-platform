@@ -8,7 +8,7 @@
 ③边角废料扣除按总成 O 一次计算。
 落库吨价 P：单片（或各片同价）用该价；多片不同价时按子片消耗量加权，
 使 M×P×(1+λ) 与分片合计一致。列表 VO 再按子片用 / 展示料厚、长、宽、吨价。
-加工费取父件已算结果一行（不 × 片数）；拼焊费仍手工挂父，本层不加。
+加工费取父件已算结果一行（不 × 片数）；拼焊费在加工费列表其它费用录入，本层不加。
 """
 
 from __future__ import annotations
@@ -147,7 +147,7 @@ class TailorWeldPartCostCalculator:
             return StampingPartCostFailedItemVO(
                 part_number=part.part_number,
                 part_name=part.part_name,
-                reason="加工费最终金额为空，请先完成加工费计算或手工调整",
+                reason="加工费确认单价为空，请先完成加工费计算或录入其它费用",
             )
         process_fee_amount = quantize(
             Decimal(str(fee.final_processing_fee)), FEE_QUANTIZE

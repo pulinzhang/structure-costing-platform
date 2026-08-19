@@ -516,7 +516,7 @@ root
 | stamping-tonnage-upload | `view` / `upload` | 查看上传页；导入冲次单价 Excel |
 | stamping-tonnage | `view` / `create` / `update` / `delete` / `approve` / `reverse` / `export` | 查询；新增（API）；编辑；删除（含批量，已审跳过）；审核（含批量）；反审核；导出 Excel |
 | stamping-process-fee-calc | `view` / `run` / `delete` | 查看；执行计算；删除计算日志 |
-| stamping-process-fee | `view` / `update` / `delete` / `approve` / `reverse` / `export` | 查询；手工调整；批量删除；审核；反审核；导出 |
+| stamping-process-fee | `view` / `update` / `delete` / `approve` / `reverse` / `export` | 查询；编辑其它费用；批量删除；审核；反审核；导出 |
 | scrap-price | `view` / `create` / `update` / `delete` / `copy` / `export` | 查询；整月保存；删除本月；复制月度；导出 Excel |
 | steel-price-policy-upload | `view` / `upload` | 进入页；导入政策 |
 | steel-price-policy-download | `view` / `export` / `delete` | 预览；导出 Excel；批量删除 |

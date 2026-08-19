@@ -245,7 +245,7 @@ class StampingProcessFeeCalcOrchestrator:
             fee_or_error = calculator.calc_part_fee(
                 db, part, rate_map, dto.year, prev_part_cache
             )
-            manual_price = existing.manual_unit_price if existing else None
+            other_fee = existing.other_fee if existing else None
 
             if isinstance(fee_or_error, StampingProcessFeeFailedItemVO):
                 failed_items.append(fee_or_error)
@@ -261,9 +261,9 @@ class StampingProcessFeeCalcOrchestrator:
                     zero_fee_count += 1
                     if len(zero_fee_items) < 50:
                         zero_reason = (
-                            "拼焊件系统计算不含拼焊费，请到列表录入手工调整单价"
+                            "拼焊件系统计算不含拼焊费，请到列表录入其它费用"
                             if part.is_tailor_welded
-                            else "系统计算加工费为 0，请到列表手工调整单价"
+                            else "系统计算加工费为 0，请到列表核对或录入其它费用"
                         )
                         zero_fee_items.append(
                             StampingProcessFeeFailedItemVO(
@@ -276,7 +276,7 @@ class StampingProcessFeeCalcOrchestrator:
                             )
                         )
 
-            final_fee = resolve_final_fee(processing_fee, manual_price)
+            final_fee = resolve_final_fee(processing_fee, other_fee)
             upsert_rows.append(
                 ProcessFeeUpsertPayload(
                     year=dto.year,
@@ -319,7 +319,7 @@ class StampingProcessFeeCalcOrchestrator:
         )
         if zero_fee_count:
             detail_lines.append(
-                "提醒：存在计算价为 0 的零件，请到列表手工调整单价"
+                "提醒：存在计算价为 0 的零件，请到列表核对或录入其它费用"
             )
         for item in failed_items[:20]:
             detail_lines.append(

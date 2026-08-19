@@ -183,6 +183,23 @@ class DatabaseConfig:
                         )
                     )
                 logger.info("已为 %s 追加列 is_tailor_welded 并回填", fee_table)
+            if "other_fee" not in fee_cols:
+                with engine.begin() as conn:
+                    conn.execute(
+                        text(
+                            f"ALTER TABLE {fee_table} "
+                            "ADD COLUMN other_fee NUMERIC(12, 3)"
+                        )
+                    )
+                logger.info("已为 %s 追加列 other_fee", fee_table)
+            if "manual_unit_price" in fee_cols:
+                with engine.begin() as conn:
+                    conn.execute(
+                        text(
+                            f"ALTER TABLE {fee_table} DROP COLUMN manual_unit_price"
+                        )
+                    )
+                logger.info("已从 %s 删除列 manual_unit_price", fee_table)
 
         config_table = "system_configs"
         if config_table in table_names:

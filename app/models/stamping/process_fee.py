@@ -5,7 +5,7 @@
 零件主表字段在计算时快照写入，便于列表展示与溯源（不依赖原表后续变更）。
 
 审核锁定：
-  audit_status == 'approved' 时，禁止手工调整、删除、重算覆盖；
+  audit_status == 'approved' 时，禁止编辑其它费用、删除、重算覆盖；
   须先反审核为 pending。
 """
 
@@ -103,22 +103,22 @@ class StampingProcessFee(AuditUserMixin, Base):
         Boolean,
         nullable=False,
         default=False,
-        comment="是否拼焊件（计算时快照自零件主表；拼焊费须手工挂在父件）",
+        comment="是否拼焊件（计算时快照自零件主表；拼焊费录入其它费用）",
     )
 
-    # 系统计算值；算不出时可为空，由手工调整单价补齐
+    # 系统计算值；算不出时可为空，由其它费用补齐
     processing_fee: Mapped[Decimal | None] = mapped_column(
         Numeric(12, 3), nullable=True, comment="系统计算加工费(元)"
     )
     process_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, comment="参与汇总的工序数")
-    manual_unit_price: Mapped[Decimal | None] = mapped_column(
-        Numeric(12, 3), nullable=True, comment="手工调整单价(元)"
+    other_fee: Mapped[Decimal | None] = mapped_column(
+        Numeric(12, 3), nullable=True, comment="其它费用(元)，如拼焊费；可正可负"
     )
     final_processing_fee: Mapped[Decimal | None] = mapped_column(
-        Numeric(12, 3), nullable=True, comment="最终加工费(元)"
+        Numeric(12, 3), nullable=True, comment="确认单价(元) = 系统计算 + 其它费用"
     )
     calc_fail_reason: Mapped[str | None] = mapped_column(Text, nullable=True, comment="计算失败原因")
-    remark: Mapped[str | None] = mapped_column(Text, nullable=True, comment="备注（手工调整理由等）")
+    remark: Mapped[str | None] = mapped_column(Text, nullable=True, comment="备注（其它费用说明等）")
 
     # 审核锁定 + 反审核留痕
     audit_status: Mapped[str] = mapped_column(

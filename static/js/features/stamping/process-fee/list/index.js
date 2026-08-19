@@ -10,7 +10,7 @@ import {
     updateFeeHud,
     updateFeeFilterCapsules,
     shortPartNumber,
-} from './template.js?v=30';
+} from './template.js?v=35';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -37,9 +37,9 @@ const feeState = {
     onlyZero: false,
     zeroCount: 0,
     batchAuditSubmitting: false,
-    editingId: null,
     viewingId: null,
     editingIsTailorWelded: false,
+    editingProcessingFee: null,
 };
 
 function openDrawer(drawerId, backdropId) {
@@ -259,6 +259,7 @@ function bindEditDrawerEvents() {
     document.getElementById('cancelFeeEditBtn')?.addEventListener('click', close);
     document.getElementById('feeEditDrawerBackdrop')?.addEventListener('click', close);
     document.getElementById('submitFeeEditBtn')?.addEventListener('click', () => saveEdit());
+    document.getElementById('feeEditOtherFee')?.addEventListener('input', updateFinalFeePreview);
 }
 
 function bindViewDrawerEvents() {
@@ -574,7 +575,7 @@ function fillViewFieldsFromRecord(record) {
     fillViewField('fee-view-part-remark', record.part_remark);
     fillViewField('fee-view-process-count', record.process_count);
     fillViewField('fee-view-processing-fee', formatDecimal(record.processing_fee, 3));
-    fillViewField('fee-view-manual-price', formatDecimal(record.manual_unit_price, 3));
+    fillViewField('fee-view-other-fee', formatDecimal(record.other_fee, 3));
     fillViewField('fee-view-final-fee', formatDecimal(record.final_processing_fee, 3));
     fillViewField('fee-view-fail-reason', record.calc_fail_reason);
     fillViewField('fee-view-remark', record.remark);
@@ -660,8 +661,8 @@ function openEditDrawer(record) {
         showToast('已审核通过，请先反审核后再调整', 'warning');
         return;
     }
-    feeState.editingId = record.id;
     feeState.editingIsTailorWelded = Boolean(record.is_tailor_welded);
+    feeState.editingProcessingFee = record.processing_fee;
     fillViewField('fee-edit-year', record.year);
     fillViewField('fee-edit-location', record.location);
     fillViewField('fee-edit-supplier', record.stamping_supplier);
@@ -670,33 +671,80 @@ function openEditDrawer(record) {
     fillViewField('fee-edit-vehicle', record.vehicle_model);
     fillViewField('fee-edit-version', record.version);
     fillViewField('fee-edit-processing-fee', formatDecimal(record.processing_fee, 3));
-    fillViewField('fee-edit-final-fee', formatDecimal(record.final_processing_fee, 3));
 
     const idEl = document.getElementById('feeEditRecordId');
     if (idEl) idEl.value = String(record.id);
-    const manualEl = document.getElementById('feeEditManualPrice');
-    if (manualEl) {
-        manualEl.value = record.manual_unit_price == null ? '' : String(record.manual_unit_price);
+    const otherEl = document.getElementById('feeEditOtherFee');
+    if (otherEl) {
+        otherEl.value = record.other_fee == null ? '' : String(record.other_fee);
     }
     const remarkEl = document.getElementById('feeEditRemark');
     if (remarkEl) remarkEl.value = record.remark || '';
-    applyManualPriceUi(feeState.editingIsTailorWelded);
+    applyEditPriceUi(feeState.editingIsTailorWelded);
+    updateFinalFeePreview();
 
     openDrawer('feeEditDrawer', 'feeEditDrawerBackdrop');
 }
 
-function applyManualPriceUi(isTailorWelded) {
-    const hint = document.getElementById('feeEditTailorWeldHint');
-    const hintText = document.getElementById('feeEditManualPriceHint');
-    const input = document.getElementById('feeEditManualPrice');
-    if (hint) hint.classList.toggle('hidden', !isTailorWelded);
-    if (hintText) {
-        hintText.textContent = isTailorWelded ? '（必填，须含拼焊费）' : '（留空则回退系统计算）';
-        hintText.className = isTailorWelded ? 'text-[#FF1E27]' : 'text-[#616161]';
+function updateFinalFeePreview() {
+    const finalEl = document.getElementById('fee-edit-final-fee');
+    const otherEl = document.getElementById('feeEditOtherFee');
+    if (!finalEl) return;
+
+    const baseText = feeState.editingProcessingFee == null || feeState.editingProcessingFee === ''
+        ? null
+        : formatDecimal(feeState.editingProcessingFee, 3);
+    const otherRaw = String(otherEl?.value || '').trim();
+    let otherText = null;
+    if (otherRaw !== '') {
+        otherText = parseDecimalInput(otherRaw, 3, { allowNegative: true });
+        if (otherText == null) {
+            finalEl.textContent = '—';
+            return;
+        }
     }
-    if (input) {
-        input.required = Boolean(isTailorWelded);
-        input.placeholder = isTailorWelded ? '必填' : '可空';
+
+    if (baseText == null) {
+        finalEl.textContent = otherText == null ? '—' : otherText;
+        return;
+    }
+    finalEl.textContent = addFixedDecimalStrings(baseText, otherText || '0.000', 3) || '—';
+}
+
+/** 固定小数位字符串相加（不经 Number，避免金额精度漂移）。 */
+function addFixedDecimalStrings(left, right, digits = 3) {
+    const leftText = formatDecimal(left, digits);
+    const rightText = formatDecimal(right, digits);
+    if (leftText == null || rightText == null) return null;
+    const toScaled = (text) => {
+        const negative = text.startsWith('-');
+        const body = negative ? text.slice(1) : text;
+        const [intPart, frac = ''] = body.split('.');
+        const padded = `${frac}${'0'.repeat(digits)}`.slice(0, digits);
+        const scaled = BigInt(`${intPart || '0'}${padded}`);
+        return negative ? -scaled : scaled;
+    };
+    const sum = toScaled(leftText) + toScaled(rightText);
+    const negative = sum < 0n;
+    const abs = negative ? -sum : sum;
+    const raw = abs.toString().padStart(digits + 1, '0');
+    const intPart = raw.slice(0, -digits) || '0';
+    const frac = raw.slice(-digits);
+    return `${negative ? '-' : ''}${intPart}.${frac}`;
+}
+
+function applyEditPriceUi(isTailorWelded) {
+    const hint = document.getElementById('feeEditTailorWeldHint');
+    const otherHint = document.getElementById('feeEditOtherFeeHint');
+    const otherInput = document.getElementById('feeEditOtherFee');
+    if (hint) hint.classList.toggle('hidden', !isTailorWelded);
+    if (otherHint) {
+        otherHint.textContent = isTailorWelded ? '（必填，如拼焊费）' : '（可正可负，留空视为 0）';
+        otherHint.className = isTailorWelded ? 'text-[#FF1E27]' : 'text-[#616161]';
+    }
+    if (otherInput) {
+        otherInput.required = Boolean(isTailorWelded);
+        otherInput.placeholder = isTailorWelded ? '必填' : '0.000';
     }
 }
 
@@ -704,24 +752,25 @@ async function saveEdit() {
     const feeId = Number(document.getElementById('feeEditRecordId')?.value);
     if (!Number.isFinite(feeId)) return;
 
-    const raw = String(document.getElementById('feeEditManualPrice')?.value || '').trim();
-    let manualUnitPrice = null;
-    if (raw !== '') {
-        const parsed = parseDecimalInput(raw, 3);
+    const otherRaw = String(document.getElementById('feeEditOtherFee')?.value || '').trim();
+    let otherFee = null;
+    if (otherRaw !== '') {
+        const parsed = parseDecimalInput(otherRaw, 3, { allowNegative: true });
         if (parsed == null) {
-            showToast('手工调整单价须为非负数字', 'warning');
+            showToast('其它费用须为有效数字（可正可负）', 'warning');
             return;
         }
-        manualUnitPrice = parsed;
+        otherFee = parsed;
     } else if (feeState.editingIsTailorWelded) {
-        showToast('拼焊件必须录入手工调整单价（系统计算不含拼焊费）', 'warning');
+        showToast('拼焊件必须录入其它费用（如拼焊费）', 'warning');
         return;
     }
+
     const remark = String(document.getElementById('feeEditRemark')?.value || '').trim() || null;
 
     try {
         const res = await HttpClient.patch(`${API_BASE}/${feeId}`, {
-            manual_unit_price: manualUnitPrice,
+            other_fee: otherFee,
             remark,
         });
         showToast(res.message || '保存成功', 'success');

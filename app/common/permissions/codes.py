@@ -53,7 +53,7 @@ class Perm:
 
     MENU_STAMPING_PROCESS_FEE = "menu:stamping-process-fee"  # 冲压加工费列表
     STAMPING_PROCESS_FEE_VIEW = "op:stamping-process-fee:view"  # 查询
-    STAMPING_PROCESS_FEE_UPDATE = "op:stamping-process-fee:update"  # 手工调整
+    STAMPING_PROCESS_FEE_UPDATE = "op:stamping-process-fee:update"  # 编辑其它费用 / 确认单价
     STAMPING_PROCESS_FEE_DELETE = "op:stamping-process-fee:delete"  # 删除
     STAMPING_PROCESS_FEE_APPROVE = "op:stamping-process-fee:approve"  # 审核通过
     STAMPING_PROCESS_FEE_REVERSE = "op:stamping-process-fee:reverse"  # 反审核
