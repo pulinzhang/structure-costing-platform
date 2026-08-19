@@ -2,7 +2,7 @@
 
 from sqlalchemy.orm import Session
 
-from app.models.user_permission import UserPermission
+from app.models.settings import UserPermission
 
 
 class UserPermissionRepository:

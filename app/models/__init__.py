@@ -1,62 +1,84 @@
-"""数据模型导出"""
+"""
+ORM 全量注册入口，只给 main.py 启动用。
+
+main.py 里 `from app import models` 会执行本文件，从而把各切片实体
+import 一遍，SQLAlchemy 才能在 create_all 时发现全部表。
+
+业务代码不要从这里 import。请从对应切片包导入，例如：
+    from app.models.stamping import StampingPart
+    from app.models.settings import User
+"""
 
 from app.models.async_task import AsyncTask
-from app.models.bom import BomNode, BomSnapshot
-from app.models.bom_welding_unit_price import BomWeldingUnitPrice
-from app.models.bom_welding_process_breakdown import (
+from app.models.bom import (
+    BomL0WeldingFee,
+    BomL0WeldingFeeCalcLog,
+    BomL0WeldingFeeItem,
+    BomNode,
+    BomSnapshot,
+    BomWeldingProcessBreakdownGenerateLog,
     BomWeldingProcessBreakdownLine,
     BomWeldingProcessBreakdownNode,
+    BomWeldingUnitPrice,
 )
-from app.models.bom_welding_process_breakdown_generate_log import (
-    BomWeldingProcessBreakdownGenerateLog,
+from app.models.common import AuditUserMixin
+from app.models.costing import (
+    StampingPartCost,
+    StampingPartCostCalcLog,
+    SteelPrice,
+    SteelPriceCalcLog,
 )
-from app.models.bom_l0_welding_fee import BomL0WeldingFee
-from app.models.bom_l0_welding_fee_item import BomL0WeldingFeeItem
-from app.models.bom_l0_welding_fee_calc_log import BomL0WeldingFeeCalcLog
-from app.models.operation_log import OperationLog
-from app.models.stamping import StampingPart, StampingProcess
-from app.models.stamping_process_fee import StampingProcessFee
-from app.models.stamping_process_fee_item import StampingProcessFeeItem
-from app.models.stamping_process_fee_calc_log import StampingProcessFeeCalcLog
-from app.models.stamping_part_cost import StampingPartCost
-from app.models.stamping_part_cost_calc_log import StampingPartCostCalcLog
-from app.models.stamping_scrap_price import StampingScrapPrice
-from app.models.stamping_tonnage_price import StampingTonnagePrice
-from app.models.steel_price import SteelPrice
-from app.models.steel_price_calc_log import SteelPriceCalcLog
-from app.models.steel_price_policy import SteelPricePolicy, SteelPriceLadderItem
-from app.models.steel_base_price import SteelBasePrice
-from app.models.system_config import SystemConfig
-from app.models.user import User
-from app.models.user_permission import UserPermission
-from app.models.user_token import UserToken
+from app.models.settings import (
+    OperationLog,
+    SystemConfig,
+    User,
+    UserPermission,
+    UserToken,
+)
+from app.models.stamping import (
+    StampingPart,
+    StampingProcess,
+    StampingProcessFee,
+    StampingProcessFeeCalcLog,
+    StampingProcessFeeItem,
+    StampingTailorWeldBlank,
+    StampingTonnagePrice,
+)
+from app.models.yishiyiyi import (
+    StampingScrapPrice,
+    SteelBasePrice,
+    SteelPriceLadderItem,
+    SteelPricePolicy,
+)
 
 __all__ = [
     "AsyncTask",
+    "AuditUserMixin",
+    "BomL0WeldingFee",
+    "BomL0WeldingFeeCalcLog",
+    "BomL0WeldingFeeItem",
     "BomNode",
     "BomSnapshot",
-    "BomWeldingUnitPrice",
-    "BomWeldingProcessBreakdownNode",
-    "BomWeldingProcessBreakdownLine",
     "BomWeldingProcessBreakdownGenerateLog",
-    "BomL0WeldingFee",
-    "BomL0WeldingFeeItem",
-    "BomL0WeldingFeeCalcLog",
+    "BomWeldingProcessBreakdownLine",
+    "BomWeldingProcessBreakdownNode",
+    "BomWeldingUnitPrice",
     "OperationLog",
     "StampingPart",
-    "StampingProcess",
-    "StampingTonnagePrice",
-    "StampingProcessFee",
-    "StampingProcessFeeItem",
-    "StampingProcessFeeCalcLog",
     "StampingPartCost",
     "StampingPartCostCalcLog",
+    "StampingProcess",
+    "StampingProcessFee",
+    "StampingProcessFeeCalcLog",
+    "StampingProcessFeeItem",
     "StampingScrapPrice",
+    "StampingTailorWeldBlank",
+    "StampingTonnagePrice",
+    "SteelBasePrice",
     "SteelPrice",
     "SteelPriceCalcLog",
-    "SteelPricePolicy",
     "SteelPriceLadderItem",
-    "SteelBasePrice",
+    "SteelPricePolicy",
     "SystemConfig",
     "User",
     "UserPermission",

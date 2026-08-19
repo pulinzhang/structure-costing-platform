@@ -31,6 +31,13 @@ class RowParser:
         self._get_value = get_value_fn
         self._col_map = col_map
 
+    def _cell(self, row_idx: int, key: str, default_col: int | None = None) -> Any:
+        """按 col_map 取单元格；未映射且无默认列时返回 None，避免串列。"""
+        col = self._col_map.get(key, default_col)
+        if col is None:
+            return None
+        return self._get_value(row_idx, col)
+
     def parse_part_row(self, row_idx: int) -> Part:
         """
         解析零件行。
@@ -38,25 +45,23 @@ class RowParser:
         Returns:
             Part 对象，包含该零件的所有字段。
         """
-        col_map = self._col_map
-
         return Part(
-            seq_no=parse_int(self._get_value(row_idx, col_map.get("seq", 1))) or 0,
-            part_number=self._get_value(row_idx, col_map.get("part_no", 2)),
-            part_name=self._get_value(row_idx, col_map.get("part_name", 3)),
-            material=self._get_value(row_idx, col_map.get("material", 5)),
-            thickness=parse_decimal(self._get_value(row_idx, col_map.get("thickness", 6))),
-            part_weight=parse_decimal(self._get_value(row_idx, col_map.get("weight", 7))),
-            sheet_length=parse_decimal(self._get_value(row_idx, col_map.get("length", 8))),
-            sheet_width=parse_decimal(self._get_value(row_idx, col_map.get("width", 9))),
-            parts_per_sheet=parse_int(self._get_value(row_idx, col_map.get("count", 10))) or 0,
-            sheet_type=self._get_value(row_idx, col_map.get("sheet_type", 11)),
-            die_type=self._get_value(row_idx, col_map.get("die_type", 16)),
-            process_method=self._get_value(row_idx, col_map.get("method", 17)),
-            automation=self._get_value(row_idx, col_map.get("auto", 18)),
-            remark=self._get_value(row_idx, col_map.get("remark", 19)),
+            seq_no=parse_int(self._cell(row_idx, "seq", 1)) or 0,
+            part_number=self._cell(row_idx, "part_no", 2),
+            part_name=self._cell(row_idx, "part_name", 3),
+            material=self._cell(row_idx, "material", 5),
+            thickness=parse_decimal(self._cell(row_idx, "thickness", 6)),
+            part_weight=parse_decimal(self._cell(row_idx, "weight", 7)),
+            sheet_length=parse_decimal(self._cell(row_idx, "length", 8)),
+            sheet_width=parse_decimal(self._cell(row_idx, "width", 9)),
+            parts_per_sheet=parse_int(self._cell(row_idx, "count", 10)) or 0,
+            sheet_type=self._cell(row_idx, "sheet_type"),
+            die_type=self._cell(row_idx, "die_type"),
+            process_method=self._cell(row_idx, "method"),
+            automation=self._cell(row_idx, "auto"),
+            remark=self._cell(row_idx, "remark"),
             excel_row=row_idx,
-            excel_part_col=col_map.get("part_no", 2),
+            excel_part_col=self._col_map.get("part_no", 2),
         )
 
     def parse_process_row(self, row_idx: int, part_number: str) -> Optional[Process]:
@@ -74,8 +79,7 @@ class RowParser:
         Returns:
             Process 对象，或 None（如果工序号为空）
         """
-        col_map = self._col_map
-        process_seq = self._get_value(row_idx, col_map.get("op", 12))
+        process_seq = self._cell(row_idx, "op", 12)
 
         if not process_seq:
             return None
@@ -83,10 +87,10 @@ class RowParser:
         return Process(
             part_number=part_number,
             process_seq=process_seq,
-            process_code=self._get_value(row_idx, col_map.get("code", 13)),
-            die_sets=parse_int(self._get_value(row_idx, col_map.get("die_set", 14))) or 1,
-            tonnage=parse_int(self._get_value(row_idx, col_map.get("tonnage", 15))) or 0,
-            remark=self._get_value(row_idx, col_map.get("remark", 19)),
+            process_code=self._cell(row_idx, "code", 13),
+            die_sets=parse_int(self._cell(row_idx, "die_set", 14)) or 1,
+            tonnage=parse_int(self._cell(row_idx, "tonnage", 15)),
+            remark=self._cell(row_idx, "remark"),
         )
 
 

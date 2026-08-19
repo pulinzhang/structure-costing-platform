@@ -26,12 +26,14 @@
 
         <nav>
             <ul class="sidebar-nav">
+                <!-- 仪表盘   -->
                 <li class="sidebar-nav-item">
                     <a href="#/dashboard" class="sidebar-nav-link active" data-page="dashboard">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
                         <span>仪表盘</span>
                     </a>
                 </li>
+                <!-- 冲压工程 -->
                 <li class="sidebar-nav-item has-submenu">
                     <a href="javascript:void(0)" class="sidebar-nav-link" data-submenu-toggle="stampingSubmenu">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
@@ -81,6 +83,79 @@
                                 </li>
                                 <li>
                                     <a href="#/stamping-process-fee" class="submenu-link submenu-link-nested" data-page="stamping-process-fee"><span>冲压加工费列表</span></a>
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+                </li>
+                <!-- 焊接工程（技术目录仍为 bom）：与冲压工程同为年度核算，紧挨冲压、排在一事一议之前 -->
+                <li class="sidebar-nav-item has-submenu">
+                    <a href="javascript:void(0)" class="sidebar-nav-link" data-submenu-toggle="bomSubmenu">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 10h16M4 14h10M4 18h7"></path></svg>
+                        <span>焊接工程</span>
+                        <svg class="w-3.5 h-3.5 ms-auto submenu-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7"></path></svg>
+                    </a>
+                    <ul class="submenu" id="bomSubmenu">
+                        <li class="submenu-item has-submenu">
+                            <a href="javascript:void(0)" class="submenu-link" data-submenu-toggle="bomMaterialListSubmenu">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 10h16M4 14h10M4 18h7"></path></svg>
+                                <span>材料清单</span>
+                                <svg class="w-3.5 h-3.5 ms-auto submenu-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7"></path></svg>
+                            </a>
+                            <ul class="submenu submenu-nested" id="bomMaterialListSubmenu">
+                                <li>
+                                    <a href="#/bom-upload" class="submenu-link submenu-link-nested" data-page="bom-upload"><span>上传材料清单</span></a>
+                                </li>
+                                <li>
+                                    <a href="#/bom-material" class="submenu-link submenu-link-nested" data-page="bom-material"><span>材料清单列表</span></a>
+                                </li>
+                                <li>
+                                    <a href="#/bom-structure" class="submenu-link submenu-link-nested" data-page="bom-structure"><span>产品结构</span></a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="submenu-item has-submenu">
+                            <a href="javascript:void(0)" class="submenu-link" data-submenu-toggle="bomWeldingUnitPriceSubmenu">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+                                <span>焊接单价</span>
+                                <svg class="w-3.5 h-3.5 ms-auto submenu-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7"></path></svg>
+                            </a>
+                            <ul class="submenu submenu-nested" id="bomWeldingUnitPriceSubmenu">
+                                <li>
+                                    <a href="#/bom-welding-unit-price-upload" class="submenu-link submenu-link-nested" data-page="bom-welding-unit-price-upload"><span>上传</span></a>
+                                </li>
+                                <li>
+                                    <a href="#/bom-welding-unit-price" class="submenu-link submenu-link-nested" data-page="bom-welding-unit-price"><span>焊接单价列表</span></a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="submenu-item has-submenu">
+                            <a href="javascript:void(0)" class="submenu-link" data-submenu-toggle="bomWeldingProcessBreakdownSubmenu">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+                                <span>焊接工艺拆解</span>
+                                <svg class="w-3.5 h-3.5 ms-auto submenu-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7"></path></svg>
+                            </a>
+                            <ul class="submenu submenu-nested" id="bomWeldingProcessBreakdownSubmenu">
+                                <li>
+                                    <a href="#/bom-welding-process-breakdown" class="submenu-link submenu-link-nested" data-page="bom-welding-process-breakdown"><span>拆解</span></a>
+                                </li>
+                                <li>
+                                    <a href="#/bom-welding-process-breakdown-list" class="submenu-link submenu-link-nested" data-page="bom-welding-process-breakdown-list"><span>拆解列表</span></a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="submenu-item has-submenu">
+                            <a href="javascript:void(0)" class="submenu-link" data-submenu-toggle="bomL0WeldingFeeSubmenu">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                <span>成品焊接费</span>
+                                <svg class="w-3.5 h-3.5 ms-auto submenu-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7"></path></svg>
+                            </a>
+                            <ul class="submenu submenu-nested" id="bomL0WeldingFeeSubmenu">
+                                <li>
+                                    <a href="#/bom-l0-welding-fee-calc" class="submenu-link submenu-link-nested" data-page="bom-l0-welding-fee-calc"><span>成品焊接费计算</span></a>
+                                </li>
+                                <li>
+                                    <a href="#/bom-l0-welding-fee-list" class="submenu-link submenu-link-nested" data-page="bom-l0-welding-fee-list"><span>成品焊接费列表</span></a>
                                 </li>
                             </ul>
                         </li>
@@ -138,75 +213,8 @@
                         </li>
                     </ul>
                 </li>
-                <li class="sidebar-nav-item has-submenu">
-                    <a href="javascript:void(0)" class="sidebar-nav-link" data-submenu-toggle="bomSubmenu">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 10h16M4 14h10M4 18h7"></path></svg>
-                        <span>BOM</span>
-                        <svg class="w-3.5 h-3.5 ms-auto submenu-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7"></path></svg>
-                    </a>
-                    <ul class="submenu" id="bomSubmenu">
-                        <li class="submenu-item has-submenu">
-                            <a href="javascript:void(0)" class="submenu-link" data-submenu-toggle="bomMaterialListSubmenu">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 10h16M4 14h10M4 18h7"></path></svg>
-                                <span>材料清单</span>
-                                <svg class="w-3.5 h-3.5 ms-auto submenu-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7"></path></svg>
-                            </a>
-                            <ul class="submenu submenu-nested" id="bomMaterialListSubmenu">
-                                <li>
-                                    <a href="#/bom-upload" class="submenu-link submenu-link-nested" data-page="bom-upload"><span>上传材料清单</span></a>
-                                </li>
-                                <li>
-                                    <a href="#/bom-structure" class="submenu-link submenu-link-nested" data-page="bom-structure"><span>产品结构</span></a>
-                                </li>
-                            </ul>
-                        </li>
-                        <li class="submenu-item has-submenu">
-                            <a href="javascript:void(0)" class="submenu-link" data-submenu-toggle="bomWeldingUnitPriceSubmenu">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
-                                <span>焊接单价</span>
-                                <svg class="w-3.5 h-3.5 ms-auto submenu-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7"></path></svg>
-                            </a>
-                            <ul class="submenu submenu-nested" id="bomWeldingUnitPriceSubmenu">
-                                <li>
-                                    <a href="#/bom-welding-unit-price-upload" class="submenu-link submenu-link-nested" data-page="bom-welding-unit-price-upload"><span>上传</span></a>
-                                </li>
-                                <li>
-                                    <a href="#/bom-welding-unit-price" class="submenu-link submenu-link-nested" data-page="bom-welding-unit-price"><span>焊接单价列表</span></a>
-                                </li>
-                            </ul>
-                        </li>
-                        <li class="submenu-item has-submenu">
-                            <a href="javascript:void(0)" class="submenu-link" data-submenu-toggle="bomWeldingProcessBreakdownSubmenu">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
-                                <span>焊接工艺拆解</span>
-                                <svg class="w-3.5 h-3.5 ms-auto submenu-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7"></path></svg>
-                            </a>
-                            <ul class="submenu submenu-nested" id="bomWeldingProcessBreakdownSubmenu">
-                                <li>
-                                    <a href="#/bom-welding-process-breakdown" class="submenu-link submenu-link-nested" data-page="bom-welding-process-breakdown"><span>拆解</span></a>
-                                </li>
-                                <li>
-                                    <a href="#/bom-welding-process-breakdown-list" class="submenu-link submenu-link-nested" data-page="bom-welding-process-breakdown-list"><span>拆解列表</span></a>
-                                </li>
-                            </ul>
-                        </li>
-                        <li class="submenu-item has-submenu">
-                            <a href="javascript:void(0)" class="submenu-link" data-submenu-toggle="bomL0WeldingFeeSubmenu">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                <span>成品焊接费</span>
-                                <svg class="w-3.5 h-3.5 ms-auto submenu-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7"></path></svg>
-                            </a>
-                            <ul class="submenu submenu-nested" id="bomL0WeldingFeeSubmenu">
-                                <li>
-                                    <a href="#/bom-l0-welding-fee-calc" class="submenu-link submenu-link-nested" data-page="bom-l0-welding-fee-calc"><span>成品焊接费计算</span></a>
-                                </li>
-                                <li>
-                                    <a href="#/bom-l0-welding-fee-list" class="submenu-link submenu-link-nested" data-page="bom-l0-welding-fee-list"><span>成品焊接费列表</span></a>
-                                </li>
-                            </ul>
-                        </li>
-                    </ul>
-                </li>
+                
+                <!-- 核价 -->
                 <li class="sidebar-nav-item has-submenu">
                     <a href="javascript:void(0)" class="sidebar-nav-link" data-submenu-toggle="costingSubmenu">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
@@ -253,12 +261,14 @@
                         </li>
                     </ul>
                 </li>
+                <!-- 报价 -->
                 <li class="sidebar-nav-item">
                     <a href="#/quotation" class="sidebar-nav-link" data-page="quotation">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                         <span>报价</span>
                     </a>
                 </li>
+                <!-- 设置 -->
                 <li class="sidebar-nav-item has-submenu">
                     <a href="#/settings" class="sidebar-nav-link" data-submenu-toggle="settingsSubmenu">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
@@ -364,6 +374,6 @@
     <!-- Toast 容器由 main.js 动态创建（统一管理生命周期） -->
 
     <script src="/static/js/main.js?v=14"></script>
-    <script type="module" src="/static/js/app.js?v=262"></script>
+    <script type="module" src="/static/js/app.js?v=287"></script>
 </body>
 </html>

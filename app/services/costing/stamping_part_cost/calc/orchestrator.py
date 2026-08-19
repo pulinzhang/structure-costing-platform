@@ -3,17 +3,15 @@
 
 计算链：
   1. get_calc_ready / PriceResolver — 前置数据
-  2. PartCostCalculator             — 单零件核价
+  2. 单件核价：拼焊件 TailorWeldPartCostCalculator，其余 PartCostCalculator
   3. cost_repo.bulk_upsert          — 结果落库
   4. PartCostCalcLogService         — 计算锁与过程日志
 """
 
 from __future__ import annotations
 
-from typing import Any
-
-
 import logging
+from datetime import datetime
 from decimal import Decimal
 
 from sqlalchemy.orm import Session
@@ -28,7 +26,7 @@ from app.common.audit import (
 )
 from app.common.timezone import now
 from app.exceptions.base import BusinessException
-from app.models.stamping_part_cost_calc_log import StampingPartCostCalcLog
+from app.models.costing import StampingPartCostCalcLog
 from app.repositories.costing.stamping_part_cost.stamping_part_cost_calc_log_repository import (
     StampingPartCostCalcLogRepository,
 )
@@ -43,7 +41,14 @@ from app.repositories.stamping.stamping_repository import StampingPartRepository
 from app.repositories.yishiyiyi.scrap_price.scrap_price_repository import (
     StampingScrapPriceRepository,
 )
-from app.schemas.dto.stamping_part_cost_dto import StampingPartCostCalcDTO
+from app.models.stamping import StampingPart
+from app.schemas.dto.stamping_part_cost_dto import (
+    StampingPartCostCalcAmounts,
+    StampingPartCostCalcDTO,
+    StampingPartCostCalcLogPatch,
+    StampingPartCostPartSnapshot,
+    StampingPartCostUpsertPayload,
+)
 from app.schemas.vo.stamping_part_cost_vo import (
     StampingPartCostCalcReadyVO,
     StampingPartCostCalcResultVO,
@@ -66,10 +71,76 @@ from app.services.costing.stamping_part_cost.calc.part_calculator import (
 )
 from app.services.costing.stamping_part_cost.calc.resolvers import PriceResolver
 from app.services.costing.stamping_part_cost.calc.scope import require_scope
+from app.services.costing.stamping_part_cost.calc.tailor_weld_calculator import (
+    TailorWeldPartCostCalculator,
+)
 from app.services.costing.stamping_part_cost.helpers import location_candidates
 from app.services.settings.system.settings_service import SettingsService
 
 logger = logging.getLogger("service.stamping_part_cost.calc")
+
+
+def _part_cost_upsert(
+    *,
+    year: int,
+    month: int,
+    location: str,
+    supplier: str,
+    part: StampingPart,
+    snapshot: StampingPartCostPartSnapshot,
+    density: Decimal,
+    loss_rate: Decimal,
+    recovery_rate: Decimal,
+    amounts: StampingPartCostCalcAmounts | None,
+    calc_batch_id: str | None,
+    calculated_at: datetime,
+    calc_status: str,
+    calc_fail_reason: str | None,
+    created_by: str | None,
+    updated_by: str | None,
+) -> StampingPartCostUpsertPayload:
+    payload = StampingPartCostUpsertPayload(
+        year=year,
+        month=month,
+        location=location,
+        stamping_supplier=supplier,
+        vehicle_model=part.vehicle_model,
+        version=part.version,
+        snapshot=snapshot,
+        density=density,
+        material_loss_rate=loss_rate,
+        scrap_recovery_rate=recovery_rate,
+        calc_status=calc_status,
+        audit_status=AUDIT_PENDING,
+        updated_by=updated_by,
+        created_by=created_by,
+        calc_batch_id=calc_batch_id,
+        calc_fail_reason=calc_fail_reason,
+        formula_version=FORMULA_VERSION,
+        calculated_at=calculated_at,
+    )
+    if amounts is not None:
+        payload.density = amounts.density
+        payload.material_loss_rate = amounts.material_loss_rate
+        payload.scrap_recovery_rate = amounts.scrap_recovery_rate
+        payload.blank_weight_kg = amounts.blank_weight_kg
+        payload.finished_total_kg = amounts.finished_total_kg
+        payload.scrap_weight_kg = amounts.scrap_weight_kg
+        payload.material_utilization_pct = amounts.material_utilization_pct
+        payload.steel_price_id = amounts.steel_price_id
+        payload.steel_mill = amounts.steel_mill
+        payload.steel_ton_price = amounts.steel_ton_price
+        payload.scrap_price_id = amounts.scrap_price_id
+        payload.scrap_ton_price = amounts.scrap_ton_price
+        payload.process_fee_id = amounts.process_fee_id
+        payload.process_fee_amount = amounts.process_fee_amount
+        payload.material_amount_sheet = amounts.material_amount_sheet
+        payload.loss_scrap_deduction = amounts.loss_scrap_deduction
+        payload.process_scrap_deduction = amounts.process_scrap_deduction
+        payload.scrap_amount_sheet = amounts.scrap_amount_sheet
+        payload.material_net_per_part = amounts.material_net_per_part
+        payload.unit_cost = amounts.unit_cost
+    return payload
 
 
 class StampingPartCostCalcOrchestrator:
@@ -88,6 +159,10 @@ class StampingPartCostCalcOrchestrator:
             scrap_repo=self.scrap_repo,
         )
         self.part_calculator = PartCostCalculator(
+            price_resolver=self.price_resolver,
+            fee_repo=self.fee_repo,
+        )
+        self.tailor_weld_calculator = TailorWeldPartCostCalculator(
             price_resolver=self.price_resolver,
             fee_repo=self.fee_repo,
         )
@@ -267,7 +342,7 @@ class StampingPartCostCalcOrchestrator:
             )
         detail_lines.append(f"匹配零件 {len(parts)} 件")
 
-        upsert_rows: list[dict[str, Any]] = []
+        upsert_rows: list[StampingPartCostUpsertPayload] = []
         failed_items: list[StampingPartCostFailedItemVO] = []
         success_count = 0
         skipped_approved_count = 0
@@ -291,7 +366,12 @@ class StampingPartCostCalcOrchestrator:
                 skipped_approved_count += 1
                 continue
 
-            row_or_error = self.part_calculator.calc_part_cost(
+            calculator: PartCostCalculator | TailorWeldPartCostCalculator = (
+                self.tailor_weld_calculator
+                if part.is_tailor_welded
+                else self.part_calculator
+            )
+            row_or_error = calculator.calc_part_cost(
                 db,
                 part=part,
                 year=dto.year,
@@ -304,51 +384,55 @@ class StampingPartCostCalcOrchestrator:
                 recovery_rate=recovery_rate,
             )
 
+            created_by = None if existing else audit["created_by"]
+            updated_by = (
+                update_audit["updated_by"] if existing else audit["updated_by"]
+            )
+            snapshot = part_snapshot(part)
             if isinstance(row_or_error, StampingPartCostFailedItemVO):
                 failed_items.append(row_or_error)
-                row = {
-                    "year": dto.year,
-                    "month": dto.month,
-                    "location": part.location,
-                    "stamping_supplier": supplier,
-                    "vehicle_model": part.vehicle_model,
-                    "version": part.version,
-                    **part_snapshot(part),
-                    "density": density,
-                    "material_loss_rate": loss_rate,
-                    "scrap_recovery_rate": recovery_rate,
-                    "calc_batch_id": calc_batch_id,
-                    "calc_status": STATUS_FAILED,
-                    "calc_fail_reason": row_or_error.reason,
-                    "formula_version": FORMULA_VERSION,
-                    "calculated_at": calculated_at,
-                    "unit_cost": None,
-                    "audit_status": AUDIT_PENDING,
-                }
+                upsert_rows.append(
+                    _part_cost_upsert(
+                        year=dto.year,
+                        month=dto.month,
+                        location=part.location,
+                        supplier=supplier,
+                        part=part,
+                        snapshot=snapshot,
+                        density=density,
+                        loss_rate=loss_rate,
+                        recovery_rate=recovery_rate,
+                        amounts=None,
+                        calc_batch_id=calc_batch_id,
+                        calculated_at=calculated_at,
+                        calc_status=STATUS_FAILED,
+                        calc_fail_reason=row_or_error.reason,
+                        created_by=created_by,
+                        updated_by=updated_by,
+                    )
+                )
             else:
                 success_count += 1
-                row = {
-                    "year": dto.year,
-                    "month": dto.month,
-                    "location": part.location,
-                    "stamping_supplier": supplier,
-                    "vehicle_model": part.vehicle_model,
-                    "version": part.version,
-                    **part_snapshot(part),
-                    **row_or_error,
-                    "calc_batch_id": calc_batch_id,
-                    "calc_status": STATUS_SUCCESS,
-                    "calc_fail_reason": None,
-                    "formula_version": FORMULA_VERSION,
-                    "calculated_at": calculated_at,
-                    "audit_status": AUDIT_PENDING,
-                }
-
-            if existing:
-                row.update(update_audit)
-            else:
-                row.update(audit)
-            upsert_rows.append(row)
+                upsert_rows.append(
+                    _part_cost_upsert(
+                        year=dto.year,
+                        month=dto.month,
+                        location=part.location,
+                        supplier=supplier,
+                        part=part,
+                        snapshot=snapshot,
+                        density=density,
+                        loss_rate=loss_rate,
+                        recovery_rate=recovery_rate,
+                        amounts=row_or_error,
+                        calc_batch_id=calc_batch_id,
+                        calculated_at=calculated_at,
+                        calc_status=STATUS_SUCCESS,
+                        calc_fail_reason=None,
+                        created_by=created_by,
+                        updated_by=updated_by,
+                    )
+                )
 
             if index == total or index % 20 == 0:
                 pct = 10 + int(80 * index / max(total, 1))
@@ -397,16 +481,16 @@ class StampingPartCostCalcOrchestrator:
             self.calc_log_repo.update(
                 db,
                 log_id,
-                {
-                    "status": status,
-                    "total_parts": result.total_parts,
-                    "success_count": result.success_count,
-                    "failed_count": result.failed_count,
-                    "skipped_approved_count": result.skipped_approved_count,
-                    "detail_text": result.detail_text,
-                    "finished_at": finished_at,
-                    "updated_by": display_name(current_user) or None,
-                },
+                StampingPartCostCalcLogPatch(
+                    status=status,
+                    total_parts=result.total_parts,
+                    success_count=result.success_count,
+                    failed_count=result.failed_count,
+                    skipped_approved_count=result.skipped_approved_count,
+                    detail_text=result.detail_text,
+                    finished_at=finished_at,
+                    updated_by=display_name(current_user) or None,
+                ),
             )
             db.commit()
 

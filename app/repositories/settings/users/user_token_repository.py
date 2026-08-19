@@ -1,13 +1,13 @@
 """Token Repository"""
 
 from datetime import datetime, timedelta
-from typing import Any, cast
 
 from sqlalchemy.orm import Session
 
-from app.common.audit import display_name
 from app.common.timezone import now
-from app.models.user_token import UserToken
+from app.models.settings import UserToken
+from app.repositories.persist import model_from_payload, query_update
+from app.schemas.dto.user_dto import UserTokenCreate, UserTokenSnapshot
 
 # 无活动超时：3 小时
 TOKEN_IDLE_HOURS = 3
@@ -19,8 +19,8 @@ class UserTokenRepository:
     def get_by_token(self, db: Session, token: str) -> UserToken | None:
         return db.query(UserToken).filter(UserToken.token == token).first()
 
-    def create(self, db: Session, data: dict[str, Any]) -> UserToken:
-        row = UserToken(**data)
+    def create(self, db: Session, data: UserTokenCreate) -> UserToken:
+        row = model_from_payload(UserToken, data)
         db.add(row)
         db.commit()
         db.refresh(row)
@@ -33,7 +33,9 @@ class UserTokenRepository:
         current_time = active_at or now()
         row.last_active_at = current_time
         row.updated_at = current_time
-        row.updated_by = display_name(row)
+        username = str(row.username or "")
+        real_name = str(row.real_name) if row.real_name else None
+        row.updated_by = (real_name or username).strip() or username
         db.commit()
         db.refresh(row)
         return row
@@ -68,23 +70,21 @@ class UserTokenRepository:
         db.commit()
         return count
 
-    def sync_user_snapshot(self, db: Session, user_id: int, snapshot: dict[str, Any]) -> int:
+    def sync_user_snapshot(
+        self, db: Session, user_id: int, snapshot: UserTokenSnapshot
+    ) -> int:
         """资料变更后，同步该用户所有 token 上的展示字段"""
-        allowed = {
-            "username",
-            "real_name",
-            "email",
-            "department",
-            "avatar",
+        values: dict[str, str | datetime | None] = {
+            "username": snapshot["username"],
+            "real_name": snapshot["real_name"],
+            "email": snapshot["email"],
+            "department": snapshot["department"],
+            "avatar": snapshot["avatar"],
+            "updated_at": now(),
         }
-        payload = {key: value for key, value in snapshot.items() if key in allowed}
-        if not payload:
-            return 0
-        payload["updated_at"] = now()
-        count = (
-            db.query(UserToken)
-            .filter(UserToken.user_id == user_id)
-            .update(cast(Any, payload), synchronize_session=False)
+        count = query_update(
+            db.query(UserToken).filter(UserToken.user_id == user_id),
+            values,
         )
         db.commit()
         return count

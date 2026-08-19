@@ -13,7 +13,7 @@
  * 入口 URL 的 query 串驱动整体刷新；每次脚本更新后需要同步递增 ?v= 版本号。
  */
 
-import { pageMeta } from './features/index.js?v=20';
+import { pageMeta } from './features/index.js?v=22';
 
 // 页面导入（路径与 index.html 菜单树 / features 目录对齐）
 import { getUserSession, initUserMenu, startTokenHeartbeat, updateUserSession } from './features/login/index.js?v=14';
@@ -24,15 +24,15 @@ import {
 } from './permissions.js?v=9';
 import { pageConfig as dashboardPage }      from './features/dashboard/index.js?v=5';
 import { pageConfig as stampingUploadPage } from './features/stamping/process/upload/index.js?v=38';
-import { pageConfig as stampingPartsPage }  from './features/stamping/process/parts/index.js?v=24';
+import { pageConfig as stampingPartsPage }  from './features/stamping/process/parts/index.js?v=28';
 import { pageConfig as stampingTonnagePage } from './features/stamping/tonnage/list/index.js?v=19';
 import { pageConfig as stampingTonnageUploadPage } from './features/stamping/tonnage/upload/index.js?v=4';
-import { pageConfig as stampingProcessFeeCalcPage } from './features/stamping/process-fee/calc/index.js?v=22';
-import { pageConfig as stampingProcessFeePage } from './features/stamping/process-fee/list/index.js?v=34';
+import { pageConfig as stampingProcessFeeCalcPage } from './features/stamping/process-fee/calc/index.js?v=24';
+import { pageConfig as stampingProcessFeePage } from './features/stamping/process-fee/list/index.js?v=41';
 import { pageConfig as steelPriceListPage }   from './features/costing/steel-price/list/index.js?v=56';
 import { pageConfig as steelPriceCalcPage }    from './features/costing/steel-price/calc/index.js?v=16';
 import { pageConfig as stampingPartCostCalcPage } from './features/costing/stamping-part-cost/calc/index.js?v=9';
-import { pageConfig as stampingPartCostPage } from './features/costing/stamping-part-cost/list/index.js?v=45';
+import { pageConfig as stampingPartCostPage } from './features/costing/stamping-part-cost/list/index.js?v=50';
 import { pageConfig as steelPricePolicyUploadPage } from './features/yishiyiyi/policy/upload/index.js?v=36';
 import { pageConfig as steelPricePolicyDownloadPage } from './features/yishiyiyi/policy/list/index.js?v=30';
 import { pageConfig as basePriceUploadPage } from './features/yishiyiyi/base-price/upload/index.js?v=37';
@@ -42,6 +42,7 @@ import { pageConfig as scrapPricePage } from './features/yishiyiyi/scrap-price/i
 import { pageConfig as bomStructurePage }  from './features/bom/material/structure/index.js?v=9';
 import { pageConfig as bomVizPage }        from './features/bom/material/viz/index.js?v=29';
 import { pageConfig as bomUploadPage }     from './features/bom/material/upload/index.js?v=4';
+import { pageConfig as bomMaterialListPage } from './features/bom/material/list/index.js?v=3';
 import { pageConfig as bomWeldingUnitPriceUploadPage } from './features/bom/welding-unit-price/upload/index.js?v=6';
 import { pageConfig as bomWeldingUnitPricePage } from './features/bom/welding-unit-price/list/index.js?v=11';
 import { pageConfig as bomWeldingProcessBreakdownGeneratePage } from './features/bom/welding-process-breakdown/generate/index.js?v=5';
@@ -50,7 +51,7 @@ import { pageConfig as bomL0WeldingFeeCalcPage } from './features/bom/l0-welding
 import { pageConfig as bomL0WeldingFeeListPage } from './features/bom/l0-welding-fee/list/index.js?v=9';
 import { pageConfig as costingPage }        from './features/costing/engine/index.js';
 import { pageConfig as quotationPage }      from './features/quotation/index.js';
-import { pageConfig as settingsPage }       from './features/settings/system/index.js?v=10';
+import { pageConfig as settingsPage }       from './features/settings/system/index.js?v=15';
 import { pageConfig as settingsUsersPage }  from './features/settings/users/index.js?v=12';
 import { pageConfig as settingsLogsPage }   from './features/settings/logs/index.js?v=3';
 import { pageConfig as settingsProfilePage } from './features/settings/profile/index.js?v=9';
@@ -83,6 +84,7 @@ const pages = {
     'bom-structure':  bomStructurePage,
     'bom-viz':        bomVizPage,
     'bom-upload':     bomUploadPage,
+    'bom-material':   bomMaterialListPage,
     'bom-welding-unit-price-upload': bomWeldingUnitPriceUploadPage,
     'bom-welding-unit-price': bomWeldingUnitPricePage,
     'bom-welding-process-breakdown': bomWeldingProcessBreakdownGeneratePage,

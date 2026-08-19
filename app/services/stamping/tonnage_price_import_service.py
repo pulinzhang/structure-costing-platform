@@ -14,7 +14,11 @@ from sqlalchemy.orm import Session
 from app.common.audit import audit_create, audit_update
 from app.parsers.stamping.tonnage_price_parser import parse_tonnage_price_excel
 from app.repositories.stamping.tonnage_price_repository import StampingTonnagePriceRepository
-from app.schemas.dto.stamping_tonnage_price_dto import quantize_price_per_stroke
+from app.schemas.dto.stamping_tonnage_price_dto import (
+    StampingTonnagePriceCreate,
+    StampingTonnagePriceUpdate,
+    quantize_price_per_stroke,
+)
 from app.schemas.vo.stamping_tonnage_price_vo import StampingTonnagePriceImportResultVO
 from app.schemas.vo.user_vo import UserVO
 
@@ -130,21 +134,22 @@ class StampingTonnagePriceImportService:
                     self.repository.update(
                         db,
                         existing.id,
-                        {"price_per_stroke": price, **update_audit},
+                        StampingTonnagePriceUpdate(price_per_stroke=price),
+                        updated_by=update_audit["updated_by"],
                         commit=False,
                     )
                     updated_count += 1
                 else:
                     self.repository.create(
                         db,
-                        {
-                            "location": location,
-                            "year": year,
-                            "tonnage": row.tonnage,
-                            "price_per_stroke": price,
-                            "audit_status": "pending",
-                            **create_audit,
-                        },
+                        StampingTonnagePriceCreate(
+                            location=location,
+                            year=year,
+                            tonnage=row.tonnage,
+                            price_per_stroke=price,
+                        ),
+                        created_by=create_audit["created_by"],
+                        updated_by=create_audit["updated_by"],
                         commit=False,
                     )
                     created_count += 1

@@ -85,6 +85,7 @@ if (!can('op:my-page:create')) { /* 隐藏或禁用 */ }
 |---|---|---|
 | 进入页面 | `canAccessPage('stamping-parts')` → `menu:stamping-parts` | 该页所有读 API → `Perm.STAMPING_PARTS_VIEW` |
 | 显示「删除」/「批量删除」按钮 | `can('op:stamping-parts:delete')` | `DELETE` / `POST …/batch-delete` → `Perm.STAMPING_PARTS_DELETE` |
+| 显示「导出 Excel」 | `can('op:stamping-parts:export')` | `GET …/parts/export-download` → `Perm.STAMPING_PARTS_EXPORT` |
 | 显示「上传」 | `can('op:stamping-upload:upload')` | `POST` 上传 → `Perm.STAMPING_UPLOAD_UPLOAD` |
 | 授权抽屉 | 仅 `is_admin` 见按钮 | `require_admin_user` |
 
@@ -119,7 +120,7 @@ if (!can('op:my-page:create')) { /* 隐藏或禁用 */ }
 | # | 议题 | 结论 |
 |---|---|---|
 | 1 | 新建用户默认权限 | **仪表盘 + 个人资料**（见 §6） |
-| 2 | 分组节点（冲压工程、一事一议等） | **可勾选**，授权更直观 |
+| 2 | 分组节点（冲压工程、焊接工程、一事一议等） | **可勾选**，授权更直观 |
 | 3 | 个人资料 | **强制权限，人人必有，授权时不可取消** |
 | 4 | 谁能授权 | 仅 `is_admin == true` |
 | 5 | 角色模板 | 本期不做；用户直接勾选权限码 |
@@ -340,7 +341,8 @@ root
 │   │   └── menu:stamping-parts
 │   │       ├── op:stamping-parts:view
 │   │       ├── op:stamping-parts:update
-│   │       └── op:stamping-parts:delete
+│   │       ├── op:stamping-parts:delete
+│   │       └── op:stamping-parts:export
 │   ├── menu:stamping-stroke-unit-price        # 冲次单价（二级分组，可勾）
 │   │   ├── menu:stamping-tonnage-upload
 │   │   │   ├── op:stamping-tonnage-upload:view
@@ -366,39 +368,14 @@ root
 │           ├── op:stamping-process-fee:reverse
 │           └── op:stamping-process-fee:export
 │
-├── menu:yishiyiyi                             # 一事一议（分组，可勾）
-│   ├── menu:thickness                         # 加减价政策（二级分组，可勾）
-│   │   ├── menu:steel-price-policy-upload
-│   │   │   ├── op:steel-price-policy-upload:view
-│   │   │   └── op:steel-price-policy-upload:upload
-│   │   └── menu:steel-price-policy-download
-│   │       ├── op:steel-price-policy-download:view
-│   │       ├── op:steel-price-policy-download:export
-│   │       └── op:steel-price-policy-download:delete
-│   ├── menu:base-price                        # 基准价格（二级分组，可勾）
-│   │   ├── menu:base-price-upload
-│   │   │   ├── op:base-price-upload:view
-│   │   │   └── op:base-price-upload:upload
-│   │   └── menu:base-price-download
-│   │       ├── op:base-price-download:view
-│   │       ├── op:base-price-download:export
-│   │       └── op:base-price-download:delete
-│   ├── menu:winning-thickness-download        # 中标钢厂厚度价格一览表
-│   │   ├── op:winning-thickness-download:view
-│   │   └── op:winning-thickness-download:export
-│   └── menu:scrap-price                       # 废料月度销售价
-│       ├── op:scrap-price:view
-│       ├── op:scrap-price:create
-│       ├── op:scrap-price:update
-│       ├── op:scrap-price:delete
-│       ├── op:scrap-price:copy
-│       └── op:scrap-price:export
-│
-├── menu:bom                                   # BOM（分组，可勾）
+├── menu:bom                                   # 焊接工程（分组，可勾；技术码仍为 bom）
 │   ├── menu:bom-material-list                 # 材料清单（二级分组）
 │   │   ├── menu:bom-upload
 │   │   │   ├── op:bom-upload:view
 │   │   │   └── op:bom-upload:upload
+│   │   ├── menu:bom-material                  # 材料清单列表
+│   │   │   ├── op:bom-material:view
+│   │   │   └── op:bom-material:delete
 │   │   └── menu:bom-structure                 # 产品结构（路由 page=bom-structure）
 │   │       └── op:bom-structure:view
 │   └── menu:bom-welding-unit-price-group      # 焊接单价（二级分组）
@@ -435,7 +412,35 @@ root
 │           ├── op:bom-l0-welding-fee-list:approve
 │           ├── op:bom-l0-welding-fee-list:reverse
 │           └── op:bom-l0-welding-fee-list:export
-
+│
+├── menu:yishiyiyi                             # 一事一议（分组，可勾）
+│   ├── menu:thickness                         # 加减价政策（二级分组，可勾）
+│   │   ├── menu:steel-price-policy-upload
+│   │   │   ├── op:steel-price-policy-upload:view
+│   │   │   └── op:steel-price-policy-upload:upload
+│   │   └── menu:steel-price-policy-download
+│   │       ├── op:steel-price-policy-download:view
+│   │       ├── op:steel-price-policy-download:export
+│   │       └── op:steel-price-policy-download:delete
+│   ├── menu:base-price                        # 基准价格（二级分组，可勾）
+│   │   ├── menu:base-price-upload
+│   │   │   ├── op:base-price-upload:view
+│   │   │   └── op:base-price-upload:upload
+│   │   └── menu:base-price-download
+│   │       ├── op:base-price-download:view
+│   │       ├── op:base-price-download:export
+│   │       └── op:base-price-download:delete
+│   ├── menu:winning-thickness-download        # 中标钢厂厚度价格一览表
+│   │   ├── op:winning-thickness-download:view
+│   │   └── op:winning-thickness-download:export
+│   └── menu:scrap-price                       # 废料月度销售价
+│       ├── op:scrap-price:view
+│       ├── op:scrap-price:create
+│       ├── op:scrap-price:update
+│       ├── op:scrap-price:delete
+│       ├── op:scrap-price:copy
+│       └── op:scrap-price:export
+│
 ├── menu:costing                               # 核价（分组，可勾）
 │   ├── menu:steel-price                       # 冲压钢材联动价（核价第一步）
 │   │   ├── menu:steel-price-calc
@@ -507,11 +512,11 @@ root
 |---|---|---|
 | dashboard | `view` | 查看 KPI / 统计 |
 | stamping-upload | `view` / `upload` | 进入页；「上传」 |
-| stamping-parts | `view` / `update` / `delete` | 查询详情；保存工序；单条删除 / 批量删除 |
+| stamping-parts | `view` / `update` / `delete` / `export` | 查询详情；保存工序；单条删除 / 批量删除；导出工艺确认表 |
 | stamping-tonnage-upload | `view` / `upload` | 查看上传页；导入冲次单价 Excel |
 | stamping-tonnage | `view` / `create` / `update` / `delete` / `approve` / `reverse` / `export` | 查询；新增（API）；编辑；删除（含批量，已审跳过）；审核（含批量）；反审核；导出 Excel |
 | stamping-process-fee-calc | `view` / `run` / `delete` | 查看；执行计算；删除计算日志 |
-| stamping-process-fee | `view` / `update` / `delete` / `approve` / `reverse` / `export` | 查询；手工调整；批量删除；审核；反审核；导出 |
+| stamping-process-fee | `view` / `update` / `delete` / `approve` / `reverse` / `export` | 查询；编辑其它费用；批量删除；审核；反审核；导出 |
 | scrap-price | `view` / `create` / `update` / `delete` / `copy` / `export` | 查询；整月保存；删除本月；复制月度；导出 Excel |
 | steel-price-policy-upload | `view` / `upload` | 进入页；导入政策 |
 | steel-price-policy-download | `view` / `export` / `delete` | 预览；导出 Excel；批量删除 |
@@ -521,6 +526,7 @@ root
 | bom-structure | `view` | 产品结构：基地/项目卡片浏览 |
 | bom-viz（权限码同 `menu:bom-structure`） | `view` | Assembly Workspace |
 | bom-upload | `view` / `upload` | 进入页；导入材料清单 |
+| bom-material | `view` / `delete` | 材料清单列表；单行删除清单（含树节点） |
 | bom-welding-unit-price-upload | `view` / `upload` | 查看上传页；导入焊接单价 Excel |
 | bom-welding-unit-price | `view` / `create` / `update` / `delete` / `approve` / `reverse` / `export` | 查询；新增（API）；编辑；删除（含批量，已审跳过）；审核（含批量）；反审核；导出 Excel |
 | bom-l0-welding-fee-calc | `view` / `run` / `delete` | 历史/过程；开始计算；删除计算日志 |
@@ -528,7 +534,7 @@ root
 | steel-price-calc | `view` / `run` / `delete` | 历史/过程；开始计算；删除日志 |
 | steel-price-list | `view` / `update` / `delete` / `approve` / `reject` / `reverse` / `export` | 查询；编辑；删除（含批量）；通过（含批量）；驳回；反审核（含批量）；导出 |
 | stamping-part-cost-calc | `view` / `run` / `delete` | 历史/过程；开始计算；删除日志 |
-| stamping-part-cost | `view` / `delete` / `approve` / `reverse` / `export` | 查询；删除（含批量）；审核（含批量）；反审核；导出 |
+| stamping-part-cost | `view` / `delete` / `approve` / `reverse` / `export` | 查询；删除（含批量）；审核（含批量）；反审核；导出工艺清单 Excel |
 | costing（菜单码 `menu:costing-engine`） | `view`（`op:costing:view`） | 自动核价引擎 |
 | quotation | `view` | 进入占位页 |
 | settings-profile | `view` / `update` / `password` | 查看；改资料/头像；改自己密码 |
@@ -665,8 +671,8 @@ app/common/permissions/
 app/deps/permissions.py     # require_perm / require_any_perm / require_admin_user
 scripts/generate_perm_codes.py  # -m scripts.generate_perm_codes
 
-app/models/user.py          # is_admin
-app/models/user_permission.py
+app/models/settings/user.py          # is_admin
+app/models/settings/user_permission.py
 app/repositories/user/user_permission_repository.py
 app/services/user/permission_service.py
 app/routers/user/permissions.py
@@ -729,6 +735,7 @@ static/index.html           # 侧栏 data-page
 | 2026-08-12 | 新增 `menu:settings-logs` / `op:settings-logs:view|export`；操作日志页与导出审计 |
 | 2026-08-13 | 新增 `menu:scrap-price` / `op:scrap-price:view|create|update|delete|copy`；废料月度销售价后端 |
 | 2026-08-13 | 废料销售价增加 `op:scrap-price:export` 与宽表 Excel 导出 |
+| 2026-08-19 | 侧栏：menu:bom 展示名改为「焊接工程」，顺序紧挨冲压工程、位于一事一议之前（同为年度核算） |
 | 2026-08-13 | 冲压工程侧栏拆分：`menu:stamping-process` / `menu:stamping-stroke-unit-price` / `menu:stamping-processing-fee` 二级分组对齐 UI |
 | 2026-08-16 | 焊接工艺拆解列表增加 `op:bom-welding-process-breakdown:export`（L0 主子表打平核对 Excel，不含审核） |
 | 2026-08-17 | 焊接工艺拆解：生成日志 / 任务进度改为 `GENERATE|VIEW` 任一即可（修复仅有生成权无法看日志/轮询的问题） |
@@ -737,4 +744,4 @@ static/index.html           # 侧栏 data-page
 | 2026-08-17 | 新增 `menu:bom-l0-welding-fee-group` 成品焊接费（计算 / 列表及审核删除操作码） |
 | 2026-08-17 | 技术命名统一为 L0：`menu/op:bom-welding-fee*` 全部替换为 `menu/op:bom-l0-welding-fee*`（功能新建未上线，无需 DB 权限 remap） |
 | 2026-08-17 | 去掉预留空码 `op:bom-l0-welding-fee-list:export`（尚无导出接口/按钮，避免权限树熵增） |
-| 2026-08-17 | 恢复并落地 `op:bom-l0-welding-fee-list:export`：列表弱化展示焊接信息原文 + Excel 导出 |
+| 2026-08-19 | 冲压零件价格一览下线「核算明细」Excel；仅保留工艺清单导出（`op:stamping-part-cost:export`） |

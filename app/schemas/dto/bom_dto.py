@@ -1,5 +1,6 @@
-"""BOM DTO - 请求参数"""
+"""BOM DTO - 请求参数 / 仓库写入载荷"""
 
+from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
 from typing import Any
@@ -34,6 +35,7 @@ class BomSnapshotQuery(BaseModel):
 
     location: str | None = Field(None, description="采购基地")
     vehicle_model: str | None = Field(None, description="车型")
+    bom_version: str | None = Field(None, description="材料清单版本")
     status: str | None = Field(None, description="状态")
     page: int = Field(1, ge=1, description="页码")
     size: int = Field(20, ge=1, le=200, description="每页条数")
@@ -71,3 +73,63 @@ class BomNodeCreate(BaseModel):
     @classmethod
     def _coerce_q4(cls, value: Any) -> Decimal | None:
         return optional_quantize_money(value, Q4, allow_negative=True)
+
+
+@dataclass(slots=True)
+class BomSnapshotWrite:
+    """BOM 清单版本落库（HTTP 创建 + Excel 导入共用）。"""
+
+    location: str
+    vehicle_model: str
+    bom_version: str
+    source_filename: str
+    created_by: str
+    updated_by: str
+    product_category: str | None = None
+    customer_name: str | None = None
+    stage: str = "initial"
+    doc_no: str | None = None
+    prepare_dept: str | None = None
+    doc_date: date | None = None
+    revision_date: date | None = None
+    title: str | None = None
+    source_sheet_name: str | None = None
+    source_file_path: str | None = None
+    source_file_hash: str | None = None
+    status: str = "active"
+    remark: str | None = None
+
+
+@dataclass(slots=True)
+class BomNodeWrite:
+    """BOM 树节点落库（HTTP 创建 + Excel 导入共用）。"""
+
+    snapshot_id: int
+    level: int
+    part_number: str
+    node_role: str
+    created_by: str
+    updated_by: str
+    parent_id: int | None = None
+    sort_no: int = 0
+    seq_no: int | None = None
+    internal_number: str | None = None
+    part_name: str | None = None
+    qty: Decimal | None = None
+    qty_unit: str = "pcs"
+    qty_text: str | None = None
+    is_supply_unit: bool = False
+    material: str | None = None
+    thickness_mm: Decimal | None = None
+    thickness_text: str | None = None
+    material_mill: str | None = None
+    part_weight: Decimal | None = None
+    gauge_developed: str | None = None
+    weld_info: str | None = None
+    remark: str | None = None
+    sketch_url: str | None = None
+    excel_filename: str | None = None
+    excel_sheet_name: str | None = None
+    excel_row: int | None = None
+    excel_part_col: int | None = None
+

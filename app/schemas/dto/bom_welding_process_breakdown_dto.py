@@ -2,8 +2,10 @@
 BOM 焊接工艺拆解 DTO
 """
 
+from dataclasses import dataclass
+from datetime import datetime
 from decimal import Decimal
-from typing import Any
+from typing import Any, TypedDict
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -98,3 +100,113 @@ class BomWeldingProcessBreakdownQuery(BaseModel):
     )
     page: int = Field(1, ge=1)
     size: int = Field(50, ge=1, le=500)
+
+
+@dataclass(slots=True)
+class BomWeldingProcessBreakdownNodeWrite:
+    """焊接工艺拆解主表新建。"""
+
+    location: str
+    vehicle_model: str
+    bom_version: str
+    part_number: str
+    level: int
+    node_role: str
+    assembly_qty: Decimal
+    weld_info_raw: str
+    parse_status: str
+    process_line_count: int
+    created_by: str
+    updated_by: str
+    customer_name: str | None = None
+    snapshot_id: int | None = None
+    source_node_id: int | None = None
+    part_name: str | None = None
+    parent_part_number: str | None = None
+    parent_part_name: str | None = None
+    supply_part_number: str | None = None
+    supply_part_name: str | None = None
+    assembly_qty_unit: str | None = None
+    excel_row: int | None = None
+    qa_note: str | None = None
+    audit_status: str = "pending"
+
+
+@dataclass(slots=True)
+class BomWeldingProcessBreakdownLineWrite:
+    """焊接工艺拆解明细新建。"""
+
+    breakdown_node_id: int
+    part_number: str
+    line_no: int
+    process_token: str
+    process_qty: Decimal
+    process_qty_unit: str
+    created_by: str
+    updated_by: str
+    matched_span: str | None = None
+    process_qty_secondary: Decimal | None = None
+    process_qty_secondary_unit: str | None = None
+    standard_process_name: str | None = None
+    standard_process_unit: str | None = None
+    map_status: str = "unmapped"
+    rollup_flag: str = "own"
+    child_fastener_qty_sum: Decimal | None = None
+    qty_check_status: str = "skipped"
+    qty_check_detail: str | None = None
+
+
+class BomWeldingProcessBreakdownLinePatch(TypedDict, total=False):
+    """焊接工艺拆解明细部分更新（含 Service 重算字段）。"""
+
+    process_token: str | None
+    process_qty: Decimal | None
+    process_qty_unit: str | None
+    process_qty_secondary: Decimal | None
+    process_qty_secondary_unit: str | None
+    standard_process_name: str | None
+    standard_process_unit: str | None
+    map_status: str
+    updated_by: str
+
+
+class BomWeldingProcessBreakdownNodePatch(TypedDict, total=False):
+    """焊接工艺拆解主表部分更新。"""
+
+    updated_by: str
+
+
+@dataclass(slots=True)
+class BomWeldingProcessBreakdownGenerateLogCreate:
+    """焊接工艺拆解生成日志新建。"""
+
+    calc_batch_id: str
+    location: str
+    vehicle_model: str
+    bom_version: str
+    status: str
+    detail_text: str
+    started_at: datetime
+    customer_name: str | None = None
+    snapshot_id: int | None = None
+    node_count: int = 0
+    line_count: int = 0
+    finished_at: datetime | None = None
+    operator_id: int | None = None
+    operator_name: str | None = None
+    created_by: str | None = None
+    updated_by: str | None = None
+
+
+class BomWeldingProcessBreakdownGenerateLogPatch(TypedDict, total=False):
+    """焊接工艺拆解生成日志部分更新。"""
+
+    status: str
+    customer_name: str | None
+    snapshot_id: int | None
+    node_count: int
+    line_count: int
+    detail_text: str
+    finished_at: datetime
+    updated_by: str
+

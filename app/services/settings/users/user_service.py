@@ -2,7 +2,6 @@
 
 import hashlib
 import logging
-from typing import Any
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -15,10 +14,16 @@ from app.common.audit import (
     audit_update,
 )
 from app.common.permissions.checks import require_permission
-from app.repositories.settings.users.user_repository import UserRepository
+from app.models.settings import User
+from app.repositories.settings.users.user_repository import (
+    UserListFilters,
+    UserRepository,
+)
 from app.schemas.dto.user_dto import (
     UserCreateDTO,
+    UserInsertPayload,
     UserPasswordUpdateDTO,
+    UserPatchPayload,
     UserQueryDTO,
     UserSelfPasswordUpdateDTO,
     UserSelfUpdateDTO,
@@ -34,6 +39,29 @@ logger = logging.getLogger("service.user")
 DEFAULT_AVATAR: str | None = None
 
 
+def _user_patch_from_dto(
+    dto: UserUpdateDTO | UserSelfUpdateDTO,
+    *,
+    updated_by: str,
+) -> UserPatchPayload:
+    patch: UserPatchPayload = {"updated_by": updated_by}
+    fields_set = dto.model_fields_set
+    if "real_name" in fields_set:
+        patch["real_name"] = dto.real_name
+    if "email" in fields_set:
+        patch["email"] = dto.email
+    if "phone" in fields_set:
+        patch["phone"] = dto.phone
+    if "department" in fields_set:
+        patch["department"] = dto.department
+    if isinstance(dto, UserUpdateDTO):
+        if "avatar" in fields_set:
+            patch["avatar"] = dto.avatar
+        if "is_active" in fields_set and dto.is_active is not None:
+            patch["is_active"] = dto.is_active
+    return patch
+
+
 def hash_password_md5(password: str) -> str:
     """MD5(salt + password)，输出 32 位 hex。"""
     raw = f"{settings.PASSWORD_SALT}{password}"
@@ -47,7 +75,7 @@ class UserService:
         self.repository = UserRepository()
         self.permission_service = PermissionService()
 
-    def _to_vo(self, db: Session, user: Any) -> UserVO:
+    def _to_vo(self, db: Session, user: User) -> UserVO:
         vo = UserVO.model_validate(user)
         vo.permissions = self.permission_service.resolve_permissions_for_user(db, user)
         return vo
@@ -58,7 +86,7 @@ class UserService:
 
     def paginate(
         self, db: Session, query: UserQueryDTO
-    ) -> tuple[list[UserVO], int, dict[str, Any]]:
+    ) -> tuple[list[UserVO], int, UserListFilters]:
         skip = (query.page - 1) * query.size
         rows, total = self.repository.paginate(
             db,
@@ -69,7 +97,7 @@ class UserService:
             skip=skip,
             limit=query.size,
         )
-        filters = {
+        filters: UserListFilters = {
             "summary": self.repository.summarize_by_filters(
                 db,
                 keyword=query.keyword,
@@ -96,20 +124,22 @@ class UserService:
         if self.repository.get_by_username(db, dto.username):
             raise ValueError(f"账号已存在: {dto.username}")
 
-        data: dict[str, Any] = {
-            "username": dto.username.strip(),
-            "password_hash": hash_password_md5(dto.password),
-            "real_name": dto.real_name,
-            "email": dto.email,
-            "phone": dto.phone,
-            "department": dto.department,
-            "avatar": dto.avatar or DEFAULT_AVATAR,
-            "is_active": dto.is_active,
-            "is_admin": False,
-            **audit_create(current_user),
-        }
+        audit = audit_create(current_user)
+        payload = UserInsertPayload(
+            username=dto.username.strip(),
+            password_hash=hash_password_md5(dto.password),
+            real_name=dto.real_name,
+            email=dto.email,
+            phone=dto.phone,
+            department=dto.department,
+            avatar=dto.avatar or DEFAULT_AVATAR,
+            is_active=dto.is_active,
+            is_admin=False,
+            created_by=audit["created_by"],
+            updated_by=audit["updated_by"],
+        )
         try:
-            user = self.repository.create(db, data)
+            user = self.repository.create(db, payload)
             self.permission_service.assign_defaults(db, user.id, commit=True)
             return self._to_vo(db, user)
         except IntegrityError as exc:
@@ -125,11 +155,13 @@ class UserService:
         current_user: UserVO,
     ) -> UserVO | None:
         require_permission(current_user, Perm.SETTINGS_USERS_UPDATE)
-        data = dto.model_dump(exclude_unset=True)
-        if not data:
+        if not dto.model_fields_set:
             return self.get_by_id(db, user_id)
-        data.update(audit_update(current_user))
-        user = self.repository.update(db, user_id, data)
+        user = self.repository.update(
+            db,
+            user_id,
+            _user_patch_from_dto(dto, updated_by=audit_update(current_user)["updated_by"]),
+        )
         if not user:
             return None
         return self._to_vo(db, user)
@@ -142,9 +174,11 @@ class UserService:
     ) -> UserVO:
         """当前用户更新自己的资料（不含启用状态）"""
         require_permission(current_user, Perm.SETTINGS_PROFILE_UPDATE)
-        data = dto.model_dump(exclude_unset=True)
-        data.update(audit_update(current_user))
-        user = self.repository.update(db, current_user.id, data)
+        user = self.repository.update(
+            db,
+            current_user.id,
+            _user_patch_from_dto(dto, updated_by=audit_update(current_user)["updated_by"]),
+        )
         if not user:
             raise ValueError("用户不存在")
         return self._to_vo(db, user)
@@ -175,7 +209,7 @@ class UserService:
             current_user.id,
             {
                 "avatar": avatar_url,
-                **audit_update(current_user),
+                "updated_by": audit_update(current_user)["updated_by"],
             },
         )
         if not updated:
@@ -197,7 +231,7 @@ class UserService:
             user_id,
             {
                 "password_hash": hash_password_md5(dto.password),
-                **audit_update(current_user),
+                "updated_by": audit_update(current_user)["updated_by"],
             },
         )
         if not user:
@@ -225,7 +259,7 @@ class UserService:
             current_user.id,
             {
                 "password_hash": hash_password_md5(dto.password),
-                **audit_update(current_user),
+                "updated_by": audit_update(current_user)["updated_by"],
             },
         )
         if not updated:
@@ -248,16 +282,18 @@ class UserService:
         if self.repository.count(db) > 0:
             self.permission_service.ensure_bootstrap(db)
             return
-        data: dict[str, Any] = {
-            "username": "admin",
-            "password_hash": hash_password_md5("admin123"),
-            "real_name": "系统管理员",
-            "department": "系统",
-            "avatar": DEFAULT_AVATAR,
-            "is_active": True,
-            "is_admin": True,
-            **audit_create(SYSTEM_USER),
-        }
-        self.repository.create(db, data)
+        audit = audit_create(SYSTEM_USER)
+        payload = UserInsertPayload(
+            username="admin",
+            password_hash=hash_password_md5("admin123"),
+            real_name="系统管理员",
+            department="系统",
+            avatar=DEFAULT_AVATAR,
+            is_active=True,
+            is_admin=True,
+            created_by=audit["created_by"],
+            updated_by=audit["updated_by"],
+        )
+        self.repository.create(db, payload)
         logger.info("已创建默认管理员账号: admin / admin123")
         self.permission_service.ensure_bootstrap(db)

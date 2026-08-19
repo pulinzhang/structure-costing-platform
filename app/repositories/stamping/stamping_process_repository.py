@@ -1,11 +1,13 @@
 """冲压工序数据访问。"""
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
 from sqlalchemy.orm import Session
 
 from app.models import StampingProcess
+from app.repositories.persist import apply_payload_fields, model_from_payload
+from app.schemas.dto.stamping_upload_dto import ProcessData, StampingProcessPatch
 
 logger = logging.getLogger("repository.stamping.process")
 
@@ -42,30 +44,61 @@ class StampingProcessRepository:
     def list_all(self, db: Session, skip: int = 0, limit: int = 100) -> List[StampingProcess]:
         return db.query(StampingProcess).offset(skip).limit(limit).all()
 
-    def create(self, db: Session, process_data: Dict[str, Any]) -> StampingProcess:
-        process = StampingProcess(**process_data)
+    def list_by_scope(
+        self,
+        db: Session,
+        *,
+        location: str,
+        stamping_supplier: str,
+        vehicle_model: str,
+        version: str,
+    ) -> List[StampingProcess]:
+        """按基地 + 冲压工厂 + 车型 + 版本查询工序（含所属零件）。"""
+        from sqlalchemy.orm import contains_eager
+
+        from app.models import StampingPart
+
+        return (
+            db.query(StampingProcess)
+            .join(StampingPart, StampingProcess.part_id == StampingPart.id)
+            .options(contains_eager(StampingProcess.part))
+            .filter(
+                StampingPart.location == location,
+                StampingPart.stamping_supplier == stamping_supplier,
+                StampingPart.vehicle_model == vehicle_model,
+                StampingPart.version == version,
+            )
+            .all()
+        )
+
+    def create(self, db: Session, process_data: ProcessData) -> StampingProcess:
+        process = model_from_payload(StampingProcess, process_data)
         db.add(process)
         db.commit()
         db.refresh(process)
-        logger.info(f"创建工序: id={process.id}")
+        logger.info("创建工序: id=%s", process.id)
         return process
 
-    def bulk_create(self, db: Session, processes_data: List[Dict[str, Any]]) -> List[StampingProcess]:
-        processes = [StampingProcess(**data) for data in processes_data]
+    def bulk_create(self, db: Session, processes_data: List[ProcessData]) -> List[StampingProcess]:
+        processes = [model_from_payload(StampingProcess, data) for data in processes_data]
         db.add_all(processes)
-        logger.info(f"批量创建工序: {len(processes)} 个")
+        logger.info("批量创建工序: %s 个", len(processes))
         return processes
 
-    def update(self, db: Session, process_id: int, update_data: Dict[str, Any]) -> Optional[StampingProcess]:
+    def update(
+        self, db: Session, process_id: int, update_data: StampingProcessPatch
+    ) -> Optional[StampingProcess]:
         process = self.get_by_id(db, process_id)
         if not process:
             return None
-        for key, value in update_data.items():
-            if hasattr(process, key):
-                setattr(process, key, value)
+        apply_payload_fields(
+            process,
+            update_data,
+            skip=frozenset({"id", "created_by", "created_at"}),
+        )
         db.commit()
         db.refresh(process)
-        logger.info(f"更新工序: id={process_id}")
+        logger.info("更新工序: id=%s", process_id)
         return process
 
     def delete(self, db: Session, process_id: int) -> bool:

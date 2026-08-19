@@ -4,7 +4,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from decimal import Decimal
-from typing import Any, Optional
+from typing import Optional
+
+from app.common.timezone import now
+from app.schemas.dto.steel_price_dto import SteelPriceWrite
 
 
 @dataclass
@@ -119,8 +122,8 @@ class CalcRow:
             and self.base_price is not None
         )
 
-    def to_persist_payload(self, *, calc_batch_id: str, formula_version: str) -> dict[str, Any]:
-        """转为 SteelPriceService 落库 payload（仅可落库行）。"""
+    def to_persist_payload(self, *, calc_batch_id: str, formula_version: str) -> SteelPriceWrite:
+        """转为钢材价格落库载荷（仅可落库行）。"""
         steel_mill = self.steel_mill
         category_name = self.category_name
         width = self.width
@@ -146,52 +149,53 @@ class CalcRow:
         )
         thickness_f = float(self.thickness)
         width_f = float(width)
-        return {
-            "year": self.year,
-            "month": self.month,
-            "location": self.location,
-            "steel_mill": steel_mill,
-            "category_name": category_name,
-            "grade": self.grade,
-            "thickness": self.thickness,
-            "width": width,
-            "spec": f"{thickness_f:.2f}*{width_f:.2f}",
-            "base_price": base_price,
-            "thickness_adjustment": self.thickness_adjustment,
-            "width_adjustment": self.width_adjustment,
-            "zinc_adjustment": self.zinc_adjustment,
-            "processing_fee": self.processing_fee,
-            "other_adjustment": self.other_adjustment,
-            "final_price_per_ton": final_price,
-            "base_price_id": self.base_price_id,
-            "base_excel_filename": self.base_excel_filename,
-            "base_sheet_name": self.base_sheet_name,
-            "base_excel_row": self.base_excel_row,
-            "base_excel_col": self.base_excel_col,
-            "thickness_policy_id": self.thickness_policy_id,
-            "thickness_ladder_item_id": self.thickness_ladder_item_id,
-            "thickness_excel_filename": self.thickness_excel_filename,
-            "thickness_sheet_name": self.thickness_sheet_name,
-            "thickness_excel_row": self.thickness_excel_row,
-            "thickness_excel_col": self.thickness_excel_col,
-            "width_policy_id": self.width_policy_id,
-            "width_ladder_item_id": self.width_ladder_item_id,
-            "width_excel_filename": self.width_excel_filename,
-            "width_sheet_name": self.width_sheet_name,
-            "width_excel_row": self.width_excel_row,
-            "width_excel_col": self.width_excel_col,
-            "zinc_policy_id": self.zinc_policy_id,
-            "zinc_ladder_item_id": self.zinc_ladder_item_id,
-            "zinc_excel_filename": self.zinc_excel_filename,
-            "zinc_sheet_name": self.zinc_sheet_name,
-            "zinc_excel_row": self.zinc_excel_row,
-            "zinc_excel_col": self.zinc_excel_col,
-            "calc_batch_id": calc_batch_id,
-            "match_status": self.match_status,
-            "calc_status": self.calc_status,
-            "calc_message": self.calc_message,
-            "formula_version": formula_version,
-        }
+        return SteelPriceWrite(
+            year=self.year,
+            month=self.month,
+            location=self.location,
+            steel_mill=steel_mill,
+            category_name=category_name,
+            grade=self.grade,
+            thickness=self.thickness,
+            width=width,
+            spec=f"{thickness_f:.2f}*{width_f:.2f}",
+            base_price=base_price,
+            thickness_adjustment=self.thickness_adjustment,
+            width_adjustment=self.width_adjustment,
+            zinc_adjustment=self.zinc_adjustment,
+            processing_fee=self.processing_fee,
+            other_adjustment=self.other_adjustment,
+            final_price_per_ton=final_price,
+            base_price_id=self.base_price_id,
+            base_excel_filename=self.base_excel_filename,
+            base_sheet_name=self.base_sheet_name,
+            base_excel_row=self.base_excel_row,
+            base_excel_col=self.base_excel_col,
+            thickness_policy_id=self.thickness_policy_id,
+            thickness_ladder_item_id=self.thickness_ladder_item_id,
+            thickness_excel_filename=self.thickness_excel_filename,
+            thickness_sheet_name=self.thickness_sheet_name,
+            thickness_excel_row=self.thickness_excel_row,
+            thickness_excel_col=self.thickness_excel_col,
+            width_policy_id=self.width_policy_id,
+            width_ladder_item_id=self.width_ladder_item_id,
+            width_excel_filename=self.width_excel_filename,
+            width_sheet_name=self.width_sheet_name,
+            width_excel_row=self.width_excel_row,
+            width_excel_col=self.width_excel_col,
+            zinc_policy_id=self.zinc_policy_id,
+            zinc_ladder_item_id=self.zinc_ladder_item_id,
+            zinc_excel_filename=self.zinc_excel_filename,
+            zinc_sheet_name=self.zinc_sheet_name,
+            zinc_excel_row=self.zinc_excel_row,
+            zinc_excel_col=self.zinc_excel_col,
+            calc_batch_id=calc_batch_id,
+            match_status=self.match_status,
+            calc_status=self.calc_status,
+            calc_message=self.calc_message,
+            formula_version=formula_version,
+            calculated_at=now(),
+        )
 
 
 @dataclass

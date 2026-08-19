@@ -111,15 +111,15 @@ static/
         │   ├── process/{upload,parts}
         │   ├── tonnage/{upload,list}
         │   └── process-fee/{calc,list}
+        ├── bom/material/{upload,list,structure,viz}   # 侧栏名「焊接工程」
+        ├── bom/welding-unit-price/{upload,list}
+        ├── bom/welding-process-breakdown/{generate,list}
+        ├── bom/l0-welding-fee/{calc,list}
         ├── yishiyiyi/
         │   ├── policy/{upload,list}
         │   ├── base-price/{upload,list}
         │   ├── winning-thickness/list/
         │   └── scrap-price/
-        ├── bom/material/{upload,structure,viz}
-        ├── bom/welding-unit-price/{upload,list}
-        ├── bom/welding-process-breakdown/{generate,list}
-        ├── bom/l0-welding-fee/{calc,list}
         ├── costing/
         │   ├── steel-price/{calc,list}
         │   ├── stamping-part-cost/{calc,list}
@@ -132,6 +132,8 @@ static/
 每个业务页目录约定：`template.js`（骨架 HTML）+ `index.js`（逻辑 + `pageConfig`）。
 
 > 注释里若出现 `ui/` 可复用组件目录：当前仓库**未落地**；新共享逻辑优先 `page-size.js` / `main.js` / 页面内私有模块，勿假设存在 `ui/`。
+>
+> **侧栏顺序**：仪表盘 → 冲压工程 → 焊接工程（`bom`）→ 一事一议 → 核价…。冲压与焊接同为年度核算（加工费 / 焊接费），故焊接工程紧挨冲压、排在一事一议之前。
 
 ### 2.1 路由名 → 页面映射
 
@@ -144,13 +146,8 @@ static/
 | `#/stamping-tonnage` | 冲次单价列表 | `stamping/tonnage/list` |
 | `#/stamping-process-fee-calc` | 冲压加工费计算 | `stamping/process-fee/calc` |
 | `#/stamping-process-fee` | 冲压加工费列表 | `stamping/process-fee/list` |
-| `#/steel-price-policy-upload` | 加减价政策上传 | `yishiyiyi/policy/upload` |
-| `#/steel-price-policy-download` | 加减价政策列表 | `yishiyiyi/policy/list` |
-| `#/base-price-upload` | 基准价格上传 | `yishiyiyi/base-price/upload` |
-| `#/base-price-download` | 基准价格列表 | `yishiyiyi/base-price/list` |
-| `#/winning-thickness-download` | 中标钢厂厚度价格一览表 | `yishiyiyi/winning-thickness/list` |
-| `#/scrap-price` | 废料月度销售价 | `yishiyiyi/scrap-price` |
 | `#/bom-upload` | 上传材料清单 | `bom/material/upload` |
+| `#/bom-material` | 材料清单列表 | `bom/material/list` |
 | `#/bom-structure` | 产品结构 | `bom/material/structure` |
 | `#/bom-viz` | 产品结构图 | `bom/material/viz` |
 | `#/bom-welding-unit-price-upload` | 焊接单价上传 | `bom/welding-unit-price/upload` |
@@ -159,6 +156,12 @@ static/
 | `#/bom-welding-process-breakdown-list` | 焊接工艺拆解列表 | `bom/welding-process-breakdown/list` |
 | `#/bom-l0-welding-fee-calc` | 成品焊接费计算 | `bom/l0-welding-fee/calc` |
 | `#/bom-l0-welding-fee-list` | 成品焊接费列表 | `bom/l0-welding-fee/list` |
+| `#/steel-price-policy-upload` | 加减价政策上传 | `yishiyiyi/policy/upload` |
+| `#/steel-price-policy-download` | 加减价政策列表 | `yishiyiyi/policy/list` |
+| `#/base-price-upload` | 基准价格上传 | `yishiyiyi/base-price/upload` |
+| `#/base-price-download` | 基准价格列表 | `yishiyiyi/base-price/list` |
+| `#/winning-thickness-download` | 中标钢厂厚度价格一览表 | `yishiyiyi/winning-thickness/list` |
+| `#/scrap-price` | 废料月度销售价 | `yishiyiyi/scrap-price` |
 | `#/steel-price-calc` | 冲压钢材联动计算 | `costing/steel-price/calc` |
 | `#/steel-price-list` | 冲压钢材联动价一览 | `costing/steel-price/list` |
 | `#/stamping-part-cost-calc` | 冲压零件价格计算 | `costing/stamping-part-cost/calc` |

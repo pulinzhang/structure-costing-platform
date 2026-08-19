@@ -27,6 +27,7 @@ class Perm:
     STAMPING_PARTS_VIEW = "op:stamping-parts:view"  # 查询
     STAMPING_PARTS_UPDATE = "op:stamping-parts:update"  # 编辑工序
     STAMPING_PARTS_DELETE = "op:stamping-parts:delete"  # 删除
+    STAMPING_PARTS_EXPORT = "op:stamping-parts:export"  # 导出
 
     MENU_STAMPING_STROKE_UNIT_PRICE = "menu:stamping-stroke-unit-price"  # 冲次单价
 
@@ -52,7 +53,7 @@ class Perm:
 
     MENU_STAMPING_PROCESS_FEE = "menu:stamping-process-fee"  # 冲压加工费列表
     STAMPING_PROCESS_FEE_VIEW = "op:stamping-process-fee:view"  # 查询
-    STAMPING_PROCESS_FEE_UPDATE = "op:stamping-process-fee:update"  # 手工调整
+    STAMPING_PROCESS_FEE_UPDATE = "op:stamping-process-fee:update"  # 编辑其它费用 / 确认单价
     STAMPING_PROCESS_FEE_DELETE = "op:stamping-process-fee:delete"  # 删除
     STAMPING_PROCESS_FEE_APPROVE = "op:stamping-process-fee:approve"  # 审核通过
     STAMPING_PROCESS_FEE_REVERSE = "op:stamping-process-fee:reverse"  # 反审核
@@ -94,13 +95,17 @@ class Perm:
     SCRAP_PRICE_COPY = "op:scrap-price:copy"  # 复制月度模板
     SCRAP_PRICE_EXPORT = "op:scrap-price:export"  # 导出
 
-    MENU_BOM = "menu:bom"  # BOM
+    MENU_BOM = "menu:bom"  # 焊接工程（技术码仍为 bom）
 
     MENU_BOM_MATERIAL_LIST = "menu:bom-material-list"  # 材料清单
 
     MENU_BOM_UPLOAD = "menu:bom-upload"  # 上传材料清单
     BOM_UPLOAD_VIEW = "op:bom-upload:view"  # 查看
     BOM_UPLOAD_UPLOAD = "op:bom-upload:upload"  # 上传
+
+    MENU_BOM_MATERIAL = "menu:bom-material"  # 材料清单列表
+    BOM_MATERIAL_VIEW = "op:bom-material:view"  # 查看
+    BOM_MATERIAL_DELETE = "op:bom-material:delete"  # 删除
 
     MENU_BOM_STRUCTURE = "menu:bom-structure"  # 产品结构
     BOM_STRUCTURE_VIEW = "op:bom-structure:view"  # 查看
@@ -179,7 +184,7 @@ class Perm:
     STAMPING_PART_COST_DELETE = "op:stamping-part-cost:delete"  # 删除
     STAMPING_PART_COST_APPROVE = "op:stamping-part-cost:approve"  # 审核通过
     STAMPING_PART_COST_REVERSE = "op:stamping-part-cost:reverse"  # 反审核
-    STAMPING_PART_COST_EXPORT = "op:stamping-part-cost:export"  # 导出
+    STAMPING_PART_COST_EXPORT = "op:stamping-part-cost:export"  # 导出核价结果
 
     MENU_COSTING_ENGINE = "menu:costing-engine"  # 自动核价引擎
     COSTING_VIEW = "op:costing:view"  # 查看

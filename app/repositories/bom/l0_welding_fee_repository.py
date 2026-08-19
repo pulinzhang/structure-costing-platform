@@ -5,19 +5,49 @@ BOM 焊接费结果 Repository
 from __future__ import annotations
 
 import logging
+from datetime import datetime
 from decimal import Decimal
-from typing import Any
+from typing import TypedDict
 
 from sqlalchemy import case, func
-from sqlalchemy.orm import Session, joinedload, noload
+from sqlalchemy.orm import Query, Session, joinedload, noload
 
 from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING, AUDIT_REJECTED
-from app.models.bom_l0_welding_fee import BomL0WeldingFee
-from app.models.bom_l0_welding_fee_item import BomL0WeldingFeeItem
+from app.models.bom import BomL0WeldingFee, BomL0WeldingFeeItem
+from app.repositories.persist import apply_payload_fields, model_from_payload, query_update
+from app.schemas.dto.bom_l0_welding_fee_dto import (
+    BomL0WeldingFeeItemPayload,
+    BomL0WeldingFeeUpsertPayload,
+)
 
 logger = logging.getLogger("repository.bom.l0_welding_fee")
 
-FEE_ITEMS_KEY = "_fee_items"
+_UPSERT_SKIP = frozenset({"id", "created_by", "created_at"})
+
+
+class L0WeldingFeeFilterSummary(TypedDict):
+    """列表筛选汇总。"""
+
+    total_count: int
+    total_fee: Decimal
+    pending_count: int
+    approved_count: int
+    partial_count: int
+    failed_count: int
+    missing_price_count: int
+
+
+class L0WeldingFeeListFilters(TypedDict):
+    """成品焊接费列表筛选体。"""
+
+    year: int | None
+    location: str | None
+    vehicle_model: str | None
+    bom_version: str | None
+    part_number: str | None
+    audit_status: str | None
+    calc_status: str | None
+    summary: L0WeldingFeeFilterSummary
 
 
 class BomL0WeldingFeeRepository:
@@ -57,7 +87,7 @@ class BomL0WeldingFeeRepository:
         self,
         db: Session,
         fee_id: int,
-        items_data: list[dict[str, Any]],
+        items_data: list[BomL0WeldingFeeItemPayload],
     ) -> None:
         record = (
             db.query(BomL0WeldingFee)
@@ -69,44 +99,37 @@ class BomL0WeldingFeeRepository:
             return
         record.items.clear()
         for item in items_data:
-            record.items.append(BomL0WeldingFeeItem(**item))
+            record.items.append(model_from_payload(BomL0WeldingFeeItem, item))
         db.flush()
 
-    def upsert(self, db: Session, data: dict[str, Any]) -> tuple[BomL0WeldingFee, bool]:
+    def upsert(
+        self, db: Session, data: BomL0WeldingFeeUpsertPayload
+    ) -> tuple[BomL0WeldingFee, bool]:
         """返回 (record, created)。"""
-        payload = dict(data)
-        items_data = payload.pop(FEE_ITEMS_KEY, None)
-
         existing = self.get_by_business_key(
             db,
-            year=payload["year"],
-            location=payload["location"],
-            vehicle_model=payload["vehicle_model"],
-            bom_version=payload["bom_version"],
-            source_breakdown_node_id=payload.get("source_breakdown_node_id"),
+            year=data.year,
+            location=data.location,
+            vehicle_model=data.vehicle_model,
+            bom_version=data.bom_version,
+            source_breakdown_node_id=data.source_breakdown_node_id,
         )
         if existing:
-            for key, value in payload.items():
-                if key in ("created_by", "created_at"):
-                    continue
-                if hasattr(existing, key):
-                    setattr(existing, key, value)
+            apply_payload_fields(existing, data, skip=_UPSERT_SKIP)
             db.flush()
-            if items_data is not None:
-                self.replace_items(db, existing.id, items_data)
+            self.replace_items(db, existing.id, data.items)
             return existing, False
 
-        if "audit_status" not in payload:
-            payload = {**payload, "audit_status": AUDIT_PENDING}
-        record = BomL0WeldingFee(**payload)
+        record = model_from_payload(BomL0WeldingFee, data)
+        if not record.audit_status:
+            record.audit_status = AUDIT_PENDING
         db.add(record)
         db.flush()
-        if items_data is not None:
-            self.replace_items(db, record.id, items_data)
+        self.replace_items(db, record.id, data.items)
         return record, True
 
     def bulk_upsert(
-        self, db: Session, data_list: list[dict[str, Any]]
+        self, db: Session, data_list: list[BomL0WeldingFeeUpsertPayload]
     ) -> tuple[list[BomL0WeldingFee], int, int]:
         """批量 upsert，返回 (records, created_count, updated_count)。"""
         records: list[BomL0WeldingFee] = []
@@ -138,7 +161,7 @@ class BomL0WeldingFeeRepository:
         location: str,
         vehicle_model: str,
         bom_version: str,
-    ) -> Any:
+    ) -> Query[BomL0WeldingFee]:
         return db.query(BomL0WeldingFee).filter(
             BomL0WeldingFee.year == year,
             BomL0WeldingFee.location == location,
@@ -157,7 +180,7 @@ class BomL0WeldingFeeRepository:
         part_number: str | None = None,
         audit_status: str | None = None,
         calc_status: str | None = None,
-    ) -> Any:
+    ) -> Query[BomL0WeldingFee]:
         q = db.query(BomL0WeldingFee)
         if year is not None:
             q = q.filter(BomL0WeldingFee.year == year)
@@ -263,7 +286,7 @@ class BomL0WeldingFeeRepository:
         part_number: str | None = None,
         audit_status: str | None = None,
         calc_status: str | None = None,
-    ) -> dict[str, Any]:
+    ) -> L0WeldingFeeFilterSummary:
         q = self._build_list_query(
             db,
             year=year,
@@ -385,30 +408,29 @@ class BomL0WeldingFeeRepository:
         vehicle_model: str,
         bom_version: str,
         audited_by: str,
-        audited_at: Any,
+        audited_at: datetime,
         audit_remark: str | None,
         updated_by: str | None = None,
     ) -> int:
-        values: dict[Any, Any] = {
-            BomL0WeldingFee.audit_status: AUDIT_APPROVED,
-            BomL0WeldingFee.audited_by: audited_by,
-            BomL0WeldingFee.audited_at: audited_at,
-            BomL0WeldingFee.audit_remark: audit_remark,
+        values: dict[str, str | datetime | None] = {
+            "audit_status": AUDIT_APPROVED,
+            "audited_by": audited_by,
+            "audited_at": audited_at,
+            "audit_remark": audit_remark,
         }
         if updated_by is not None:
-            values[BomL0WeldingFee.updated_by] = updated_by
-        count = (
+            values["updated_by"] = updated_by
+        count = query_update(
             self._scope_query(
                 db,
                 year=year,
                 location=location,
                 vehicle_model=vehicle_model,
                 bom_version=bom_version,
-            )
-            .filter(
+            ).filter(
                 BomL0WeldingFee.audit_status.in_([AUDIT_PENDING, AUDIT_REJECTED])
-            )
-            .update(values, synchronize_session=False)
+            ),
+            values,
         )
         db.flush()
         return int(count)
@@ -422,28 +444,27 @@ class BomL0WeldingFeeRepository:
         vehicle_model: str,
         bom_version: str,
         reverse_audited_by: str,
-        reverse_audited_at: Any,
+        reverse_audited_at: datetime,
         reverse_audit_remark: str,
         updated_by: str | None = None,
     ) -> int:
-        values: dict[Any, Any] = {
-            BomL0WeldingFee.audit_status: AUDIT_PENDING,
-            BomL0WeldingFee.reverse_audited_by: reverse_audited_by,
-            BomL0WeldingFee.reverse_audited_at: reverse_audited_at,
-            BomL0WeldingFee.reverse_audit_remark: reverse_audit_remark,
+        values: dict[str, str | datetime | None] = {
+            "audit_status": AUDIT_PENDING,
+            "reverse_audited_by": reverse_audited_by,
+            "reverse_audited_at": reverse_audited_at,
+            "reverse_audit_remark": reverse_audit_remark,
         }
         if updated_by is not None:
-            values[BomL0WeldingFee.updated_by] = updated_by
-        count = (
+            values["updated_by"] = updated_by
+        count = query_update(
             self._scope_query(
                 db,
                 year=year,
                 location=location,
                 vehicle_model=vehicle_model,
                 bom_version=bom_version,
-            )
-            .filter(BomL0WeldingFee.audit_status == AUDIT_APPROVED)
-            .update(values, synchronize_session=False)
+            ).filter(BomL0WeldingFee.audit_status == AUDIT_APPROVED),
+            values,
         )
         db.flush()
         return int(count)

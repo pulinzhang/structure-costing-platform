@@ -114,6 +114,8 @@ export function processFeeListTemplate() {
                                 <span id="feeCapsuleYear" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部年度</span>
                                 <span id="feeCapsuleLocation" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部基地</span>
                                 <span id="feeCapsuleSupplier" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部工厂</span>
+                                <span id="feeCapsuleVehicle" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部车型</span>
+                                <span id="feeCapsuleVersion" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部版本</span>
                                 <span id="feeCapsuleFailTodo" class="hidden bg-[#FF1E27]/15 border border-[#FF1E27]/40 text-[#FF1E27] px-2.5 py-1 rounded-md font-bold">待补价筛选中</span>
                             </div>
                         </div>
@@ -138,6 +140,8 @@ export function processFeeListTemplate() {
                             ${filterSelect('feeYearFilter', '年度')}
                             ${filterSelect('feeLocationFilter', '基地')}
                             ${filterSelect('feeSupplierFilter', '冲压工厂')}
+                            ${filterSelect('feeVehicleFilter', '车型')}
+                            ${filterSelect('feeVersionFilter', '版本')}
                             ${filterSelect('feeAuditStatusFilter', '审核状态')}
                             ${filterInput('feePartNumberFilter', '零件号', '短号或完整零件号')}
                             <button id="feeResetBtn" type="button"
@@ -151,19 +155,19 @@ export function processFeeListTemplate() {
                 </div>
 
                 <div class="overflow-x-auto brabus-bg-grid">
-                    <table class="w-full min-w-[2400px] bg-transparent">
+                    <table class="w-full min-w-[2280px] bg-transparent">
                         <thead>
                             <tr class="border-b border-[#17171C] bg-[#0B0B0D]/95">
                                 <th class="p-0 w-0"></th>
-                                <!-- 关注区：零件标识 + 计算结果 / 手工调整 / 最终价 -->
+                                <!-- 关注区：零件标识 + 系统计算 / 其它费用 / 确认单价 -->
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">核价维度</th>
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#A1A1A6] whitespace-nowrap">零件号</th>
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">零件名称</th>
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap border-r border-[#22222A]">车型/版本</th>
                                 <th class="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">工序数</th>
                                 <th class="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">系统计算</th>
-                                <th class="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap border-r border-[#22222A]">手工调整</th>
-                                <th class="px-3 py-3 text-right text-[10px] font-bold uppercase tracking-[0.18em] text-[#FFFFFF]/70 whitespace-nowrap bg-[#14141C] border-x border-[#222230]">最终加工费</th>
+                                <th class="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap border-r border-[#22222A]">其它费用</th>
+                                <th class="px-3 py-3 text-right text-[10px] font-bold uppercase tracking-[0.18em] text-[#FFFFFF]/70 whitespace-nowrap bg-[#14141C] border-x border-[#222230]">确认单价</th>
                                 <!-- 次要：材新/ 工艺明细 -->
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">材质</th>
                                 <th class="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">料厚</th>
@@ -253,7 +257,7 @@ export function processFeeListTemplate() {
             </div>
         </div>
 
-        <!-- 编辑抽屉：手工调价-->
+        <!-- 编辑抽屉：其它费用 / 确认单价 -->
         <div class="fixed inset-0 z-[80] bg-black/70 backdrop-blur-sm transition-opacity duration-300"
              id="feeEditDrawerBackdrop" style="display:none"></div>
         <div class="fixed inset-y-0 right-0 z-[85] w-[560px] bg-[#1a1a1a] border-l border-[#2a2a2a] transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col"
@@ -274,30 +278,47 @@ export function processFeeListTemplate() {
             <div class="flex-1 min-h-0 overflow-y-auto overscroll-contain" id="feeEditDrawerContent">
                 <form id="feeEditForm" class="p-6 space-y-5">
                     <input type="hidden" id="feeEditRecordId" value="">
-                    <!-- 关注区：计算价/ 手工调整 / 最终价 置顶 -->
+                    <!-- 关注区：系统计算 + 其它费用 = 确认单价 -->
                     <div class="bg-[#111111] border border-[#d32f2f]/30 p-4"
                          style="box-shadow: 0 0 24px rgba(211,47,47,0.08), inset 0 1px 0 rgba(211,47,47,0.06);">
                         <label class="text-[10px] font-semibold text-[#d32f2f] uppercase tracking-[0.1em] mb-3 flex items-center gap-2">
                             <span class="w-0.5 h-3 bg-[#d32f2f] rounded-sm shadow-[0_0_8px_rgba(211,47,47,0.5)]"></span>
-                            计算结果 / 手工调整 / 最终价
+                            单价构成
                         </label>
-                        <div class="grid grid-cols-2 gap-3 mb-3">
-                            ${viewRow('系统计算加工费', 'fee-edit-processing-fee')}
-                            ${viewRow('最终加工费（保存后刷新）', 'fee-edit-final-fee', true)}
+                        <div id="feeEditTailorWeldHint"
+                             class="hidden mb-3 px-3 py-2 border border-[#FF1E27]/30 bg-[#1A080A]">
+                            <div class="text-[10px] font-semibold tracking-[0.08em] text-[#FF1E27]">拼焊件</div>
+                            <div class="text-[10px] text-[#C8C8D0] mt-1 leading-relaxed">
+                                系统计算不含拼焊费，请在「其它费用」录入拼焊费（可正可负）。
+                            </div>
                         </div>
-                        <div class="grid grid-cols-1 gap-3">
-                            <div>
-                                <label class="text-[10px] text-[#777777] mb-1 block">手工调整单价 <span class="text-[#616161]">（留空则回退系统计算）</span></label>
-                                <input type="number" id="feeEditManualPrice" step="0.001" min="0"
-                                       class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#ffffff] placeholder:text-[#616161] focus:outline-none focus:border-[#ff5252] rounded"
-                                       placeholder="可空">
+                        <div class="grid grid-cols-[1fr_auto_1fr_auto_1fr] gap-2 items-end mb-4">
+                            <div class="bg-[#0a0a0a] border border-[#2c2c2c] px-3 py-2.5">
+                                <div class="text-[9px] text-[#555555] tracking-[0.08em] uppercase mb-1">系统计算</div>
+                                <div id="fee-edit-processing-fee" class="text-[15px] font-mono font-bold tabular-nums text-[#C8C8D0] text-right">—</div>
                             </div>
+                            <div class="pb-3 text-[#555555] font-mono text-lg font-bold">+</div>
                             <div>
-                                <label class="text-[10px] text-[#777777] mb-1 block">备注</label>
-                                <textarea id="feeEditRemark" rows="3" maxlength="1000"
-                                          class="w-full px-3 py-2 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#ffffff] placeholder:text-[#616161] focus:outline-none focus:border-[#ff5252] transition-all rounded resize-none"
-                                          placeholder="调整理由 / 原因"></textarea>
+                                <label class="text-[9px] text-[#555555] tracking-[0.08em] uppercase mb-1 block">
+                                    其它费用
+                                    <span id="feeEditOtherFeeHint" class="text-[#616161] normal-case">（可正可负）</span>
+                                </label>
+                                <input type="number" id="feeEditOtherFee" step="0.001"
+                                       class="w-full h-10 px-3 text-sm font-mono bg-[#0a0a0a] border border-[#2c2c2c] text-[#ffffff] placeholder:text-[#616161] focus:outline-none focus:border-[#ff5252] rounded tabular-nums text-right"
+                                       placeholder="0.000">
                             </div>
+                            <div class="pb-3 text-[#555555] font-mono text-lg font-bold">=</div>
+                            <div class="bg-[#1A080A] border border-[#FF1E27]/30 px-3 py-2.5"
+                                 style="box-shadow: 0 0 16px rgba(255,30,39,0.12);">
+                                <div class="text-[9px] text-[#FF1E27]/90 tracking-[0.08em] uppercase mb-1">确认单价</div>
+                                <div id="fee-edit-final-fee" class="text-[16px] font-mono font-black tabular-nums text-[#FF1E27] text-right">—</div>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="text-[10px] text-[#777777] mb-1 block">备注</label>
+                            <textarea id="feeEditRemark" rows="3" maxlength="1000"
+                                      class="w-full px-3 py-2 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#ffffff] placeholder:text-[#616161] focus:outline-none focus:border-[#ff5252] transition-all rounded resize-none"
+                                      placeholder="调整理由 / 原因"></textarea>
                         </div>
                     </div>
                     <div>
@@ -307,6 +328,7 @@ export function processFeeListTemplate() {
                             ${viewRow('基地', 'fee-edit-location')}
                             ${viewRow('冲压工厂', 'fee-edit-supplier')}
                             ${partNumberViewBlock('fee-edit')}
+                            ${viewRow('零件类型', 'fee-edit-part-type')}
                             ${viewRow('车型', 'fee-edit-vehicle')}
                             ${viewRow('版本', 'fee-edit-version')}
                         </div>
@@ -352,6 +374,7 @@ export function processFeeListTemplate() {
                         ${viewRow('冲压工厂', 'fee-view-supplier')}
                         ${partNumberViewBlock('fee-view')}
                         ${viewRow('零件名称', 'fee-view-part-name')}
+                        ${viewRow('零件类型', 'fee-view-part-type')}
                         ${viewRow('车型', 'fee-view-vehicle')}
                         ${viewRow('版本', 'fee-view-version')}
                         ${viewRow('序号', 'fee-view-seq-no')}
@@ -361,15 +384,28 @@ export function processFeeListTemplate() {
                      style="box-shadow: 0 0 24px rgba(211,47,47,0.08), inset 0 1px 0 rgba(211,47,47,0.06);">
                     <div class="px-4 py-3 bg-[#0c0c0c] border-b border-[#181818] flex items-center gap-2">
                         <span class="w-0.5 h-3 bg-[#d32f2f] rounded-sm shadow-[0_0_8px_rgba(211,47,47,0.5)]"></span>
-                        <h6 class="text-[10px] font-semibold text-[#d32f2f] tracking-wider uppercase">计算结果 / 手工调整 / 最终价</h6>
+                        <h6 class="text-[10px] font-semibold text-[#d32f2f] tracking-wider uppercase">单价构成</h6>
                     </div>
-                    <div class="p-4 grid grid-cols-2 gap-x-6 gap-y-3">
+                    <div class="p-4">
+                        <div class="grid grid-cols-3 gap-3 mb-4">
+                            <div class="bg-[#0a0a0a] border border-[#2c2c2c] px-3 py-2.5">
+                                <div class="text-[9px] text-[#555555] tracking-[0.08em] uppercase mb-1">系统计算</div>
+                                <div id="fee-view-processing-fee" class="text-[14px] font-mono font-bold tabular-nums text-[#C8C8D0] text-right">—</div>
+                            </div>
+                            <div class="bg-[#0a0a0a] border border-[#2c2c2c] px-3 py-2.5">
+                                <div class="text-[9px] text-[#555555] tracking-[0.08em] uppercase mb-1">其它费用</div>
+                                <div id="fee-view-other-fee" class="text-[14px] font-mono font-bold tabular-nums text-[#C8C8D0] text-right">—</div>
+                            </div>
+                            <div class="bg-[#1A080A] border border-[#FF1E27]/30 px-3 py-2.5">
+                                <div class="text-[9px] text-[#FF1E27]/90 tracking-[0.08em] uppercase mb-1">确认单价</div>
+                                <div id="fee-view-final-fee" class="text-[15px] font-mono font-black tabular-nums text-[#FF1E27] text-right">—</div>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-x-6 gap-y-3">
                         ${viewRow('工序数', 'fee-view-process-count')}
-                        ${viewRow('系统计算', 'fee-view-processing-fee')}
-                        ${viewRow('手工调整', 'fee-view-manual-price')}
-                        ${viewRow('最终加工费', 'fee-view-final-fee', true)}
                         ${viewRow('计算失败原因', 'fee-view-fail-reason')}
                         ${viewRow('备注', 'fee-view-remark')}
+                        </div>
                     </div>
                 </div>
                 <div class="bg-[#111111] border border-[#262626]">
@@ -449,11 +485,14 @@ export function renderFeeRows(records) {
             ? formatDecimalFixed(row.processing_fee, 3)
             : null;
         const isZero = feeText == null || feeText === '0.000';
+        const isTailor = Boolean(row.is_tailor_welded);
         const failHint = row.calc_fail_reason
             ? `<span class="text-[#FF1E27]" title="${esc(row.calc_fail_reason)}">计算失败</span>`
-            : (isZero
-                ? '<span class="text-[#FF1E27]">计算价为 0</span>'
-                : '<span class="text-[#555555]">—</span>');
+            : (isTailor && (row.other_fee == null || row.other_fee === '')
+                ? '<span class="text-[#FF1E27]">拼焊件待补价</span>'
+                : (isZero
+                    ? '<span class="text-[#FF1E27]">计算价为 0</span>'
+                    : '<span class="text-[#555555]">—</span>'));
         const cell = 'p-3 border-b border-[#17171C] font-mono text-[11px]';
         const muted = 'text-[#8E8E93]';
         const mutedDeep = 'text-[#6E6E73]';
@@ -478,13 +517,13 @@ export function renderFeeRows(records) {
                 <div class="text-[#555555] text-[10px] mt-0.5">${esc(row.location)} · ${esc(row.stamping_supplier)}</div>
             </td>
             <td class="${cell} font-sans whitespace-nowrap">
-                ${partNumberCell(row.part_number)}
+                ${partNumberCell(row.part_number, row.is_tailor_welded)}
             </td>
             <td class="${cell} ${muted} font-sans">${esc(row.part_name)}</td>
             <td class="${cell} ${muted} font-sans ${zoneEnd}">${esc(row.vehicle_model)} / ${esc(row.version)}</td>
             <td class="${cell} text-right ${muted} tabular-nums">${esc(row.process_count)}</td>
             <td class="${cell} text-right tabular-nums ${isZero ? 'text-[#FF1E27]' : muted}">${formatNum(row.processing_fee, 3)}</td>
-            <td class="${cell} text-right ${muted} tabular-nums ${zoneEnd}">${formatNum(row.manual_unit_price, 3)}</td>
+            <td class="${cell} text-right ${muted} tabular-nums ${zoneEnd}">${formatNum(row.other_fee, 3)}</td>
             <td class="${finalCell}">${formatNum(row.final_processing_fee, 3)}</td>
             <td class="${cell} ${muted} font-sans">${esc(row.material)}</td>
             <td class="${cell} text-right ${mutedDeep} tabular-nums">${formatNum(row.thickness, 4)}</td>
@@ -611,6 +650,8 @@ export function updateFeeFilterCapsules() {
     const year = document.getElementById('feeYearFilter')?.value || '';
     const location = document.getElementById('feeLocationFilter')?.value || '';
     const supplier = document.getElementById('feeSupplierFilter')?.value || '';
+    const vehicle = document.getElementById('feeVehicleFilter')?.value || '';
+    const version = document.getElementById('feeVersionFilter')?.value || '';
     const audit = document.getElementById('feeAuditStatusFilter')?.value || '';
     const part = document.getElementById('feePartNumberFilter')?.value.trim() || '';
 
@@ -620,6 +661,8 @@ export function updateFeeFilterCapsules() {
     const yearEl = document.getElementById('feeCapsuleYear');
     const locationEl = document.getElementById('feeCapsuleLocation');
     const supplierEl = document.getElementById('feeCapsuleSupplier');
+    const vehicleEl = document.getElementById('feeCapsuleVehicle');
+    const versionEl = document.getElementById('feeCapsuleVersion');
     const countEl = document.getElementById('feeAdvancedFilterCount');
 
     if (yearEl) {
@@ -634,8 +677,16 @@ export function updateFeeFilterCapsules() {
         supplierEl.textContent = supplier || '全部工厂';
         supplierEl.className = supplier ? activeCapsule : idleCapsule;
     }
+    if (vehicleEl) {
+        vehicleEl.textContent = vehicle || '全部车型';
+        vehicleEl.className = vehicle ? activeCapsule : idleCapsule;
+    }
+    if (versionEl) {
+        versionEl.textContent = version || '全部版本';
+        versionEl.className = version ? activeCapsule : idleCapsule;
+    }
 
-    const advancedActive = [year, location, supplier, audit, part].filter(Boolean).length;
+    const advancedActive = [year, location, supplier, vehicle, version, audit, part].filter(Boolean).length;
     if (countEl) countEl.textContent = `(${advancedActive})`;
 }
 
@@ -705,18 +756,22 @@ export function shortPartNumber(partNumber) {
     return digits.slice(-4);
 }
 
-/** 列表单元格：短号主角，完整号次要 */
-function partNumberCell(partNumber) {
+/** 列表单元格：短号主角，完整号次要；拼焊件加徽章 */
+function partNumberCell(partNumber, isTailorWelded) {
     const full = partNumber || '';
     const shortNo = shortPartNumber(full);
+    const badge = isTailorWelded
+        ? `<span class="mt-1 inline-block text-[9px] font-sans tracking-[0.08em] text-[#FF1E27] border border-[#FF1E27]/30 bg-[#1A080A] px-1.5 py-0.5">拼焊件</span>`
+        : '';
     if (shortNo) {
         return `
             <div class="text-[18px] font-mono font-bold tabular-nums text-white tracking-[0.14em] leading-none
                         drop-shadow-[0_0_16px_rgba(211,47,47,0.18)] group-hover:text-[#FF1E27] transition-colors"
                  title="${esc(full)}">${esc(shortNo)}</div>
-            <div class="text-[10px] font-mono text-[#555555] tracking-wider mt-1">${esc(full)}</div>`;
+            <div class="text-[10px] font-mono text-[#555555] tracking-wider mt-1">${esc(full)}</div>
+            ${badge}`;
     }
-    return `<div class="text-xs font-mono text-[#8E8E93] tracking-wider" title="${esc(full)}">${esc(full) || '—'}</div>`;
+    return `<div class="text-xs font-mono text-[#8E8E93] tracking-wider" title="${esc(full)}">${esc(full) || '—'}</div>${badge}`;
 }
 
 /** 抽屉：短史+ 完整零件号*/

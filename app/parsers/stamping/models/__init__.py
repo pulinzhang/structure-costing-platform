@@ -35,6 +35,11 @@ from app.parsers.stamping.models.part import Part
 from app.parsers.stamping.models.process import Process
 from app.parsers.stamping.models.parse_result import ParserResult
 from app.parsers.stamping.models.part_no_range import PartNoRange
+from app.parsers.stamping.models.tailor_weld import (
+    TailorWeldAssemblyParsed,
+    TailorWeldBlankParsed,
+    TailorWeldParseResult,
+)
 
 __all__ = [
     "HeaderContext",
@@ -42,4 +47,7 @@ __all__ = [
     "Process",
     "ParserResult",
     "PartNoRange",
+    "TailorWeldBlankParsed",
+    "TailorWeldAssemblyParsed",
+    "TailorWeldParseResult",
 ]

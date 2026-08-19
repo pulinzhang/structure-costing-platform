@@ -10,11 +10,15 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.common.timezone import now
-from app.models.bom_welding_process_breakdown_generate_log import (
+from app.models.bom import (
     BomWeldingProcessBreakdownGenerateLog,
 )
 from app.repositories.bom.welding_process_breakdown_generate_log_repository import (
     BomWeldingProcessBreakdownGenerateLogRepository,
+)
+from app.schemas.dto.bom_welding_process_breakdown_dto import (
+    BomWeldingProcessBreakdownGenerateLogCreate,
+    BomWeldingProcessBreakdownGenerateLogPatch,
 )
 from app.schemas.vo.bom_welding_process_breakdown_vo import (
     BomWeldingProcessBreakdownGenerateLogVO,
@@ -144,24 +148,24 @@ class BomWeldingProcessBreakdownGenerateLogService:
         try:
             record = self.repository.create(
                 db,
-                {
-                    "calc_batch_id": calc_batch_id,
-                    "location": location,
-                    "vehicle_model": vehicle_model,
-                    "bom_version": bom_version,
-                    "customer_name": customer_name,
-                    "snapshot_id": None,
-                    "status": STATUS_PROCESSING,
-                    "node_count": 0,
-                    "line_count": 0,
-                    "detail_text": "拆解进行中...",
-                    "started_at": started_at,
-                    "finished_at": None,
-                    "operator_id": operator_id,
-                    "operator_name": operator_name,
-                    "created_by": operator_name,
-                    "updated_by": operator_name,
-                },
+                BomWeldingProcessBreakdownGenerateLogCreate(
+                    calc_batch_id=calc_batch_id,
+                    location=location,
+                    vehicle_model=vehicle_model,
+                    bom_version=bom_version,
+                    customer_name=customer_name,
+                    snapshot_id=None,
+                    status=STATUS_PROCESSING,
+                    node_count=0,
+                    line_count=0,
+                    detail_text="拆解进行中...",
+                    started_at=started_at,
+                    finished_at=None,
+                    operator_id=operator_id,
+                    operator_name=operator_name,
+                    created_by=operator_name,
+                    updated_by=operator_name,
+                ),
             )
             db.commit()
             db.refresh(record)
@@ -178,7 +182,7 @@ class BomWeldingProcessBreakdownGenerateLogService:
         result: BomWeldingProcessBreakdownGenerateResultVO,
         finished_at: datetime,
     ) -> int | None:
-        payload = {
+        payload: BomWeldingProcessBreakdownGenerateLogPatch = {
             "status": result.status or STATUS_SUCCESS,
             "customer_name": result.customer_name,
             "snapshot_id": result.snapshot_id,
@@ -211,7 +215,7 @@ class BomWeldingProcessBreakdownGenerateLogService:
         detail_text: str | None = None,
     ) -> None:
         finished_at = now()
-        payload = {
+        payload: BomWeldingProcessBreakdownGenerateLogPatch = {
             "status": STATUS_FAILED,
             "finished_at": finished_at,
             "detail_text": detail_text or message,

@@ -62,7 +62,7 @@ async def lifespan(app: FastAPI):
     from app.database import AuxiliaryDatabaseConfig, DatabaseConfig
 
     ensure_directories()
-    from app import models as _orm_models  # noqa: F401
+    from app import models as _orm_models  # noqa: F401  # 执行 models/__init__，注册全部 ORM 表
     DatabaseConfig.create_tables()
     AuxiliaryDatabaseConfig.create_tables()
 

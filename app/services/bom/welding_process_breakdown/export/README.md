@@ -162,7 +162,7 @@ Router (welding_process_breakdown.py)
 | Router | `app/routers/bom/welding_process_breakdown.py`（`/export`） |
 | 取数 | `app/repositories/bom/welding_process_breakdown_repository.py` → `list_l0_for_export` |
 | 标准工艺 / 目录单位 | `app/common/bom/welding_standard_process.py` |
-| 明细落库字段 | `app/models/bom_welding_process_breakdown.py`（含 `standard_process_unit`） |
+| 明细落库字段 | `app/models/bom/welding_process_breakdown.py`（含 `standard_process_unit`） |
 | 前端下载 | `static/js/features/bom/welding-process-breakdown/list/` |
 | 权限码 | `Perm.BOM_WELDING_PROCESS_BREAKDOWN_EXPORT` |
 

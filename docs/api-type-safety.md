@@ -1,5 +1,5 @@
 ---
-description: FastAPI 后端类型安全、分层架构、API 契约与权限拦截规范
+description: FastAPI 后端类型安全、分层架构、API 契约、权限拦截与 Any 函数边界
 ---
 
 # FastAPI 后端类型安全规范
@@ -361,6 +361,35 @@ Parser 仅由 Service 调用。切片依赖为**有向无环**（下游 costing/
 
 每层职责划分见架构说明；本节只约束**类型与返回形态**。
 
+### 5.1 `Any`：适度禁用（核心：不跨越函数边界）
+
+**原则**：不把 `Any` 写进函数的参数或返回值。签名一旦是 `Any`，调用链上的类型检查全部失效。
+
+这是**适度**禁用，不是项目里消灭每一个 `Any`：函数体内可以暂时接住无类型的第三方结果，但**走出这个函数之前必须收成具体类型**。
+
+| 位置 | 允许 | 禁止 |
+|------|------|------|
+| **函数签名**（含方法、模块级函数） | DTO / dataclass / `TypedDict` / Model / VO / `TypeVar` / 标准库类型 | `Any`、`dict[str, Any]`、`list[Any]`、`**kwargs: Any`、`Callable[..., Any]` 当业务 API |
+| **函数体内** | `json.loads`、无 stub 的第三方对象；立刻收窄后再往下传 | 把未收窄的 `Any` 传给其它函数 |
+| **Repository 写入** | 整行新建用 dataclass；部分更新用 `TypedDict, total=False`；字段已对齐时也可直接收 HTTP DTO | `{**dto.model_dump(), **audit_create()}` 当作参数类型；VO 进入 Repository |
+| **聚合 / 筛选** | 具名 `TypedDict` 或 Pydantic 模型 | `dict[str, Any]` 当 `filters` / `summary` |
+
+替代优先级：
+
+1. HTTP 入参 → `app/schemas/dto/` 的 DTO  
+2. HTTP 出参 → VO（**只** Service → Router，不进 Repository）  
+3. Service → Repository 整行写入 → `@dataclass`（含审计字段，按列对齐）  
+4. 部分更新 → `TypedDict, total=False`（`updated_by=` 显式赋值；不要 `**audit_update()` 打进更窄的 TypedDict）  
+5. 真正跨切片复用且无自然归属 → 再抽到 `common/` 或 `persist` 辅助
+
+例外（边界仍须收窄）：
+
+- 框架出口如 `ApiResponse.fail` 的内部泛型；**业务 Router** 仍须 `response_model=ApiResponse[具体VO]`
+- 无类型桩的第三方（如 openpyxl worksheet）：包在小函数里，对外签名不用 `Any`
+- `json.loads`：在函数内解析，返回已声明的 VO / TypedDict / 标准类型
+
+不要因为「方便」把 `dict[str, Any]` 留在 Repository / Service / Router 签名上。
+
 ---
 
 ## 6. Repository 层规范（Infrastructure）
@@ -398,7 +427,8 @@ Repository 必须返回：
 * `list[SQLAlchemy Model]`
 * `tuple[list[SQLAlchemy Model], int]`（paginate）
 * `Optional[SQLAlchemy Model]`
-* **允许**：SQL 聚合/去重的 `dict`、命名元组或轻量 read-model（如 `summarize_*`、`get_filter_options`）——见架构宪法 Repository 边界
+* **允许**：SQL 聚合/去重的具名 `TypedDict`、命名元组或轻量 read-model（如 `summarize_*`、`get_filter_options`）——见架构宪法 Repository 边界；禁止 `dict[str, Any]`
+* **写入入参**：dataclass / `TypedDict` / 列对齐的 DTO；禁止 `Any`、禁止 VO
 
 Repository 不知道：
 
@@ -486,6 +516,7 @@ Service 必须返回：
 * `list[VO]`
 * `tuple[list[VO], int]` / `tuple[list[VO], int, Filters]`  # **推荐分页形态**
 * `PageResult[VO]`  # 备选：Service 自行组装分页体
+* 调 Repository 时传入具体写入类型（dataclass / TypedDict / DTO），不要 `dict[str, Any]`，不要把 VO 传进 Repository
 
 **分页推荐写法**：
 
@@ -1066,6 +1097,7 @@ VO.model_dump() for API output
 __dict__
 dict(model)
 ApiResponse[Any]（应指定具体类型）
+函数签名使用 Any / dict[str, Any] / list[Any]（须换成 DTO / dataclass / TypedDict / Model）
 金额/单价/费用用 float（须 Decimal；JSON 用字符串）
 ```
 

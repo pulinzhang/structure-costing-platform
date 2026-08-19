@@ -3,7 +3,7 @@
 import logging
 import uuid
 from decimal import Decimal
-from typing import Any, Optional
+from typing import Optional
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -13,10 +13,10 @@ from app.common.audit import (
     AUDIT_PENDING,
     AUDIT_REJECTED,
     audit_create,
-    audit_update,
     display_name,
 )
 from app.common.timezone import now
+from app.models.costing import SteelPrice
 from app.repositories.costing.steel_price import SteelPriceRepository
 from app.schemas.dto.steel_price_dto import (
     SteelPriceAuditDTO,
@@ -24,14 +24,17 @@ from app.schemas.dto.steel_price_dto import (
     SteelPriceBatchDeleteDTO,
     SteelPriceBatchReverseAuditDTO,
     SteelPriceCreate,
+    SteelPricePatch,
     SteelPriceQuery,
     SteelPriceReverseAuditDTO,
     SteelPriceUpdate,
+    SteelPriceWrite,
 )
 from app.schemas.vo.steel_price_vo import (
     SteelPriceBatchAuditResultVO,
     SteelPriceBatchDeleteResultVO,
     SteelPriceFilterOptions,
+    SteelPriceListSummaryVO,
     SteelPriceResponse,
 )
 from app.schemas.vo.user_vo import UserVO
@@ -73,7 +76,7 @@ class SteelPriceService:
             return spec.strip()
         return f"{thickness:.2f}*{width:.2f}"
 
-    def _ensure_not_approved(self, record: Any) -> Optional[str]:
+    def _ensure_not_approved(self, record: SteelPrice) -> Optional[str]:
         if record.audit_status == AUDIT_APPROVED:
             return "记录已审核通过，请先反审核后再修改/删除/重算"
         return None
@@ -102,18 +105,27 @@ class SteelPriceService:
             limit=query.size,
         )
         rows = [SteelPriceResponse.model_validate(record) for record in records]
-        options: dict[str, Any] = self.repository.get_filter_options(db)
-        options["summary"] = self.repository.summarize_by_filters(
-            db,
-            year=year,
-            month=month,
-            location=location,
-            category_name=category_name,
-            grade=grade,
-            steel_mill=steel_mill,
-            audit_status=audit_status,
+        options = self.repository.get_filter_options(db)
+        filters = SteelPriceFilterOptions(
+            years=list(options["years"]),
+            months=list(options["months"]),
+            locations=list(options["locations"]),
+            category_names=list(options["category_names"]),
+            steel_mills=list(options["steel_mills"]),
+            audit_statuses=list(options["audit_statuses"]),
+            summary=SteelPriceListSummaryVO.model_validate(
+                self.repository.summarize_by_filters(
+                    db,
+                    year=year,
+                    month=month,
+                    location=location,
+                    category_name=category_name,
+                    grade=grade,
+                    steel_mill=steel_mill,
+                    audit_status=audit_status,
+                )
+            ),
         )
-        filters = SteelPriceFilterOptions.model_validate(options)
         return rows, total, filters
 
     def get_by_id(self, db: Session, record_id: int) -> Optional[SteelPriceResponse]:
@@ -129,43 +141,55 @@ class SteelPriceService:
         current_user: UserVO,
     ) -> tuple[Optional[SteelPriceResponse], Optional[str]]:
         current_time = now()
-        payload = data.model_dump()
-        payload["spec"] = self._build_spec(data.thickness, data.width, data.spec)
-        payload["final_price_per_ton"] = self._compute_final_price(
+        audit = audit_create(current_user)
+        write = SteelPriceWrite(
+            year=data.year,
+            month=data.month,
+            location=data.location,
+            steel_mill=data.steel_mill,
+            category_name=data.category_name,
+            grade=data.grade,
+            thickness=data.thickness,
+            width=data.width,
+            spec=self._build_spec(data.thickness, data.width, data.spec),
             base_price=data.base_price,
             thickness_adjustment=data.thickness_adjustment,
             width_adjustment=data.width_adjustment,
             zinc_adjustment=data.zinc_adjustment,
             processing_fee=data.processing_fee,
             other_adjustment=data.other_adjustment,
+            final_price_per_ton=self._compute_final_price(
+                base_price=data.base_price,
+                thickness_adjustment=data.thickness_adjustment,
+                width_adjustment=data.width_adjustment,
+                zinc_adjustment=data.zinc_adjustment,
+                processing_fee=data.processing_fee,
+                other_adjustment=data.other_adjustment,
+            ),
+            calc_batch_id=f"manual-{uuid.uuid4().hex[:16]}",
+            match_status="manual",
+            calc_status="success",
+            calc_message=None,
+            formula_version=FORMULA_VERSION,
+            calculated_at=current_time,
+            audit_status=AUDIT_PENDING,
+            remark=data.remark,
+            created_by=audit["created_by"],
+            updated_by=audit["updated_by"],
         )
-        payload["calc_batch_id"] = f"manual-{uuid.uuid4().hex[:16]}"
-        payload["match_status"] = "manual"
-        payload["calc_status"] = "success"
-        payload["calc_message"] = None
-        payload["formula_version"] = FORMULA_VERSION
-        payload["calculated_at"] = current_time
-        payload["audit_status"] = AUDIT_PENDING
-        payload["audited_by"] = None
-        payload["audited_at"] = None
-        payload["audit_remark"] = None
-        payload["reverse_audited_by"] = None
-        payload["reverse_audited_at"] = None
-        payload["reverse_audit_remark"] = None
-        payload.update(audit_create(current_user))
 
         try:
-            record = self.repository.create(db, payload)
+            record = self.repository.create(db, write)
             db.commit()
             db.refresh(record)
             return SteelPriceResponse.model_validate(record), None
         except IntegrityError as error:
             db.rollback()
             message = (
-                f"该业务键已存在：{payload['year']}-{payload['month']:02d}/"
-                f"{payload['location']}/{payload['steel_mill']}/"
-                f"{payload['category_name']}/{payload['grade']}/"
-                f"{payload['thickness']}*{payload['width']}"
+                f"该业务键已存在：{write.year}-{write.month:02d}/"
+                f"{write.location}/{write.steel_mill}/"
+                f"{write.category_name}/{write.grade}/"
+                f"{write.thickness}*{write.width}"
             )
             logger.warning("创建钢材价格冲突: %s, error=%s", message, error)
             return None, message
@@ -189,24 +213,36 @@ class SteelPriceService:
         if lock_error:
             return None, lock_error
 
-        payload = data.model_dump(exclude_none=True)
+        payload: SteelPricePatch = {}
+        if data.base_price is not None:
+            payload["base_price"] = data.base_price
+        if data.thickness_adjustment is not None:
+            payload["thickness_adjustment"] = data.thickness_adjustment
+        if data.width_adjustment is not None:
+            payload["width_adjustment"] = data.width_adjustment
+        if data.zinc_adjustment is not None:
+            payload["zinc_adjustment"] = data.zinc_adjustment
+        if data.processing_fee is not None:
+            payload["processing_fee"] = data.processing_fee
+        if data.other_adjustment is not None:
+            payload["other_adjustment"] = data.other_adjustment
+        if data.spec is not None:
+            payload["spec"] = data.spec
+        if data.remark is not None:
+            payload["remark"] = data.remark
         if not payload:
             return None, "未提供任何可更新字段"
-        payload.update(audit_update(current_user))
 
-        base_price = payload.get("base_price", record.base_price)
-        thickness_adjustment = payload.get("thickness_adjustment", record.thickness_adjustment)
-        width_adjustment = payload.get("width_adjustment", record.width_adjustment)
-        zinc_adjustment = payload.get("zinc_adjustment", record.zinc_adjustment)
-        processing_fee = payload.get("processing_fee", record.processing_fee)
-        other_adjustment = payload.get("other_adjustment", record.other_adjustment)
+        payload["updated_by"] = display_name(current_user)
         payload["final_price_per_ton"] = self._compute_final_price(
-            base_price=base_price,
-            thickness_adjustment=thickness_adjustment,
-            width_adjustment=width_adjustment,
-            zinc_adjustment=zinc_adjustment,
-            processing_fee=processing_fee,
-            other_adjustment=other_adjustment,
+            base_price=payload.get("base_price", record.base_price),
+            thickness_adjustment=payload.get(
+                "thickness_adjustment", record.thickness_adjustment
+            ),
+            width_adjustment=payload.get("width_adjustment", record.width_adjustment),
+            zinc_adjustment=payload.get("zinc_adjustment", record.zinc_adjustment),
+            processing_fee=payload.get("processing_fee", record.processing_fee),
+            other_adjustment=payload.get("other_adjustment", record.other_adjustment),
         )
 
         try:
@@ -446,7 +482,7 @@ class SteelPriceService:
                     "audited_by": operator_name,
                     "audited_at": now(),
                     "audit_remark": data.audit_remark,
-                    **audit_update(current_user),
+                    "updated_by": operator_name,
                 },
             )
             db.commit()
@@ -482,7 +518,7 @@ class SteelPriceService:
                     "audited_by": operator_name,
                     "audited_at": now(),
                     "audit_remark": data.audit_remark,
-                    **audit_update(current_user),
+                    "updated_by": operator_name,
                 },
             )
             db.commit()
@@ -507,15 +543,16 @@ class SteelPriceService:
             return None, "仅已通过记录可以反审核"
 
         try:
+            operator_name = display_name(current_user)
             updated = self.repository.update(
                 db,
                 record_id,
                 {
                     "audit_status": AUDIT_PENDING,
-                    "reverse_audited_by": display_name(current_user),
+                    "reverse_audited_by": operator_name,
                     "reverse_audited_at": now(),
                     "reverse_audit_remark": data.reverse_audit_remark.strip(),
-                    **audit_update(current_user),
+                    "updated_by": operator_name,
                 },
             )
             db.commit()
@@ -531,7 +568,7 @@ class SteelPriceService:
         db: Session,
         *,
         calc_batch_id: str,
-        rows: list[dict[str, Any]],
+        rows: list[SteelPriceWrite],
         current_user: UserVO,
     ) -> dict[str, int]:
         """
@@ -542,7 +579,7 @@ class SteelPriceService:
         - 业务键不存在 → 新建，audit_status=pending
         """
         create_audit = audit_create(current_user)
-        update_audit = audit_update(current_user)
+        operator_name = display_name(current_user)
         created_count = 0
         updated_count = 0
         skipped_approved_count = 0
@@ -550,51 +587,49 @@ class SteelPriceService:
         current_time = now()
 
         try:
-            for payload in rows:
+            for write in rows:
                 try:
                     existing = self.repository.get_by_business_key(
                         db,
-                        year=payload["year"],
-                        month=payload["month"],
-                        location=payload["location"],
-                        steel_mill=payload["steel_mill"],
-                        category_name=payload["category_name"],
-                        grade=payload["grade"],
-                        thickness=payload["thickness"],
-                        width=payload["width"],
+                        year=write.year,
+                        month=write.month,
+                        location=write.location,
+                        steel_mill=write.steel_mill,
+                        category_name=write.category_name,
+                        grade=write.grade,
+                        thickness=write.thickness,
+                        width=write.width,
                     )
                     if existing is not None and existing.audit_status == AUDIT_APPROVED:
                         skipped_approved_count += 1
                         continue
 
-                    write_payload = {
-                        **payload,
-                        "calc_batch_id": calc_batch_id,
-                        "formula_version": payload.get("formula_version") or FORMULA_VERSION,
-                        "calculated_at": current_time,
-                        "audit_status": AUDIT_PENDING,
-                        "audited_by": None,
-                        "audited_at": None,
-                        "audit_remark": None,
-                        "reverse_audited_by": None,
-                        "reverse_audited_at": None,
-                        "reverse_audit_remark": None,
-                    }
+                    write.calc_batch_id = calc_batch_id
+                    write.formula_version = write.formula_version or FORMULA_VERSION
+                    write.calculated_at = current_time
+                    write.audit_status = AUDIT_PENDING
+                    write.audited_by = None
+                    write.audited_at = None
+                    write.audit_remark = None
+                    write.reverse_audited_by = None
+                    write.reverse_audited_at = None
+                    write.reverse_audit_remark = None
 
                     if existing is None:
-                        write_payload.update(create_audit)
-                        self.repository.create(db, write_payload)
+                        write.created_by = create_audit["created_by"]
+                        write.updated_by = create_audit["updated_by"]
+                        self.repository.create(db, write)
                         created_count += 1
                     else:
-                        write_payload.update(update_audit)
-                        self.repository.update(db, existing.id, write_payload)
+                        write.updated_by = operator_name
+                        self.repository.update(db, existing.id, write)
                         updated_count += 1
                 except Exception as row_error:
                     failed_count += 1
                     logger.exception(
                         "计算落库单行失败: batch=%s grade=%s error=%s",
                         calc_batch_id,
-                        payload.get("grade"),
+                        write.grade,
                         row_error,
                     )
 

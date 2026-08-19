@@ -12,7 +12,7 @@ from decimal import Decimal
 
 from app.common.audit import SYSTEM_USER, audit_create, audit_update
 from app.database import DatabaseConfig
-from app.models.stamping_scrap_price import StampingScrapPrice
+from app.models.yishiyiyi import StampingScrapPrice
 
 DEDUCTIONS = {
     "芜湖": Decimal("149.39"),

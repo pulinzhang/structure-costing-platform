@@ -8,6 +8,9 @@ from app.repositories.stamping.stamping_process_repository import (
 from app.repositories.stamping.stamping_process_fee_repository import (
     StampingProcessFeeRepository,
 )
+from app.repositories.stamping.tailor_weld_blank_repository import (
+    StampingTailorWeldBlankRepository,
+)
 from app.repositories.stamping.tonnage_price_repository import (
     StampingTonnagePriceRepository,
 )
@@ -18,4 +21,5 @@ __all__ = [
     "StampingProcessRepository",
     "StampingTonnagePriceRepository",
     "StampingProcessFeeRepository",
+    "StampingTailorWeldBlankRepository",
 ]

@@ -12,11 +12,12 @@ FEE_QUANTIZE = Q3
 
 def resolve_final_fee(
     processing_fee: Decimal | None,
-    manual_unit_price: Decimal | None,
+    other_fee: Decimal | None = None,
 ) -> Decimal | None:
-    """最终加工费：有手工调整单价则用手工，否则用系统计算值。"""
-    if manual_unit_price is not None:
-        return optional_quantize_money(manual_unit_price, Q3)
+    """确认单价 = 系统计算加工费 + 其它费用。"""
+    other = other_fee if other_fee is not None else Decimal("0")
     if processing_fee is None:
-        return None
-    return optional_quantize_money(processing_fee, Q3)
+        if other == 0:
+            return None
+        return optional_quantize_money(other, Q3)
+    return optional_quantize_money(processing_fee + other, Q3)

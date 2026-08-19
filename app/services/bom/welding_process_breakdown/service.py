@@ -7,7 +7,7 @@ BOM 焊接工艺拆解 — 门面 Service
 
 from __future__ import annotations
 
-from typing import Any
+from datetime import datetime
 
 from sqlalchemy.orm import Session
 
@@ -17,20 +17,25 @@ from app.common.bom.welding_standard_process import (
     resolve_standard_process_name,
     resolve_standard_process_unit,
 )
-from app.models.bom_welding_process_breakdown_generate_log import (
+from app.models.bom import (
     BomWeldingProcessBreakdownGenerateLog,
+    BomWeldingProcessBreakdownNode,
 )
 from app.repositories.bom.bom_repository import BomNodeRepository
 from app.repositories.bom.welding_process_breakdown_repository import (
     BomWeldingProcessBreakdownRepository,
+    WeldingBreakdownFilterSummary,
+    WeldingBreakdownListFilters,
 )
 from app.schemas.dto.bom_welding_process_breakdown_dto import (
     BomWeldingProcessBreakdownBatchApproveDTO,
     BomWeldingProcessBreakdownBatchReverseAuditDTO,
     BomWeldingProcessBreakdownGenerateDTO,
     BomWeldingProcessBreakdownLineBatchItemDTO,
+    BomWeldingProcessBreakdownLinePatch,
     BomWeldingProcessBreakdownLineUpdateDTO,
     BomWeldingProcessBreakdownNodeLinesUpdateDTO,
+    BomWeldingProcessBreakdownNodePatch,
     BomWeldingProcessBreakdownQuery,
 )
 from app.schemas.vo.bom_welding_process_breakdown_vo import (
@@ -54,6 +59,7 @@ from app.services.bom.welding_process_breakdown.generate_log_service import (
 )
 from app.services.bom.welding_process_breakdown.generate_service import (
     BomWeldingProcessBreakdownGenerateService,
+    ProgressCallback,
 )
 from app.services.bom.welding_process_breakdown.recompute import (
     recompute_scope_derived_fields,
@@ -76,7 +82,7 @@ class BomWeldingProcessBreakdownService:
 
     def paginate(
         self, db: Session, query: BomWeldingProcessBreakdownQuery
-    ) -> tuple[list[BomWeldingProcessBreakdownNodeVO], int, dict[str, Any]]:
+    ) -> tuple[list[BomWeldingProcessBreakdownNodeVO], int, WeldingBreakdownListFilters]:
         skip = (query.page - 1) * query.size
         audit_status = query.audit_status.strip() if query.audit_status else None
         rows, total = self.repository.paginate(
@@ -93,7 +99,7 @@ class BomWeldingProcessBreakdownService:
             skip=skip,
             limit=query.size,
         )
-        filters = {
+        filters: WeldingBreakdownListFilters = {
             "locations": self.repository.get_distinct_locations(db),
             "customer_names": self.repository.get_distinct_customer_names(db),
             "vehicle_models": self.repository.get_distinct_vehicle_models(db),
@@ -136,7 +142,7 @@ class BomWeldingProcessBreakdownService:
         audit_status: str | None,
         parse_status: str | None,
         process_line_count_eq: int | None,
-    ) -> dict[str, Any]:
+    ) -> WeldingBreakdownFilterSummary:
         """HUD：列表口径汇总 + L0 工艺数=0（不受 level/工艺数筛选影响）。"""
         summary = self.repository.summarize_by_filters(
             db,
@@ -175,7 +181,7 @@ class BomWeldingProcessBreakdownService:
         return vo
 
     def _build_evidence_vo(
-        self, db: Session, row: Any
+        self, db: Session, row: BomWeldingProcessBreakdownNode
     ) -> WeldingNodeEvidenceVO:
         scope_nodes = self.repository.list_by_scope(
             db,
@@ -216,9 +222,21 @@ class BomWeldingProcessBreakdownService:
         db: Session,
         dto: BomWeldingProcessBreakdownGenerateDTO,
         current_user: UserVO,
-        **kwargs: Any,
+        *,
+        progress_callback: ProgressCallback | None = None,
+        log_id: int | None = None,
+        calc_batch_id: str | None = None,
+        started_at: datetime | None = None,
     ) -> tuple[BomWeldingProcessBreakdownGenerateResultVO | None, str | None]:
-        return self._generate_service.generate(db, dto, current_user, **kwargs)
+        return self._generate_service.generate(
+            db,
+            dto,
+            current_user,
+            progress_callback=progress_callback,
+            log_id=log_id,
+            calc_batch_id=calc_batch_id,
+            started_at=started_at,
+        )
 
     def begin_generate_processing(
         self,
@@ -282,12 +300,32 @@ class BomWeldingProcessBreakdownService:
 
     # ---------- 修改明细（须未审核；主表来自 BOM，不可改） ----------
 
+    def _line_patch_from_dto(
+        self,
+        dto: BomWeldingProcessBreakdownLineUpdateDTO
+        | BomWeldingProcessBreakdownLineBatchItemDTO,
+    ) -> BomWeldingProcessBreakdownLinePatch:
+        patch: BomWeldingProcessBreakdownLinePatch = {}
+        if "process_token" in dto.model_fields_set:
+            patch["process_token"] = dto.process_token
+        if "process_qty" in dto.model_fields_set:
+            patch["process_qty"] = dto.process_qty
+        if "process_qty_unit" in dto.model_fields_set:
+            patch["process_qty_unit"] = dto.process_qty_unit
+        if "process_qty_secondary" in dto.model_fields_set:
+            patch["process_qty_secondary"] = dto.process_qty_secondary
+        if "process_qty_secondary_unit" in dto.model_fields_set:
+            patch["process_qty_secondary_unit"] = dto.process_qty_secondary_unit
+        if "standard_process_name" in dto.model_fields_set:
+            patch["standard_process_name"] = dto.standard_process_name
+        return patch
+
     def _prepare_line_fields(
         self,
-        fields: dict[str, Any],
+        fields: BomWeldingProcessBreakdownLinePatch,
         *,
         fallback_token: str,
-    ) -> tuple[dict[str, Any], str | None]:
+    ) -> tuple[BomWeldingProcessBreakdownLinePatch, str | None]:
         """校验并补齐标准工艺/单位/map_status；失败返回 (payload, error)。"""
         if "standard_process_name" in fields:
             name = fields.get("standard_process_name")
@@ -324,7 +362,7 @@ class BomWeldingProcessBreakdownService:
         if node.audit_status == AUDIT_APPROVED:
             return None, "已审核通过，请先反审核后再修改"
 
-        fields = dto.model_dump(exclude_unset=True)
+        fields = self._line_patch_from_dto(dto)
         fields, err = self._prepare_line_fields(
             fields, fallback_token=line.process_token
         )
@@ -332,11 +370,14 @@ class BomWeldingProcessBreakdownService:
             return None, err
 
         need_recompute = "process_qty" in fields or "process_token" in fields
-        payload = {**fields, **audit_update(current_user)}
+        fields["updated_by"] = audit_update(current_user)["updated_by"]
+        node_patch: BomWeldingProcessBreakdownNodePatch = {
+            "updated_by": fields["updated_by"]
+        }
         try:
-            row = self.repository.update_line(db, line_id, payload, commit=False)
+            row = self.repository.update_line(db, line_id, fields, commit=False)
             self.repository.update_node(
-                db, node.id, audit_update(current_user), commit=False
+                db, node.id, node_patch, commit=False
             )
             if not row:
                 db.rollback()
@@ -379,7 +420,8 @@ class BomWeldingProcessBreakdownService:
 
         seen: set[int] = set()
         need_recompute = False
-        audit_fields = audit_update(current_user)
+        updated_by = audit_update(current_user)["updated_by"]
+        audit_fields: BomWeldingProcessBreakdownNodePatch = {"updated_by": updated_by}
 
         try:
             for item in dto.lines:
@@ -394,7 +436,7 @@ class BomWeldingProcessBreakdownService:
                     db.rollback()
                     return None, f"明细不属于本节点：{item_dto.line_id}"
 
-                fields = item_dto.model_dump(exclude_unset=True, exclude={"line_id"})
+                fields = self._line_patch_from_dto(item_dto)
                 if not fields:
                     continue
                 fields, err = self._prepare_line_fields(
@@ -407,9 +449,9 @@ class BomWeldingProcessBreakdownService:
                 if "process_qty" in fields or "process_token" in fields:
                     need_recompute = True
 
-                payload = {**fields, **audit_fields}
+                fields["updated_by"] = updated_by
                 row = self.repository.update_line(
-                    db, item_dto.line_id, payload, commit=False
+                    db, item_dto.line_id, fields, commit=False
                 )
                 if not row:
                     db.rollback()

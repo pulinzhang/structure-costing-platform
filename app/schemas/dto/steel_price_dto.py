@@ -1,9 +1,11 @@
 """
-钢材价格 DTO - 请求参数
+钢材价格 DTO - 请求参数 / Repository 写入载荷
 """
 
+from dataclasses import dataclass
+from datetime import datetime
 from decimal import Decimal
-from typing import Any, Optional
+from typing import Any, Optional, TypedDict
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -141,3 +143,135 @@ class SteelPriceBatchReverseAuditDTO(BaseModel):
     month: int = Field(..., ge=1, le=12, description="月份")
     location: str = Field(..., min_length=1, max_length=50, description="采购基地")
     reverse_audit_remark: str = Field(..., min_length=1, description="反审核原因（必填）")
+
+
+@dataclass(slots=True)
+class SteelPriceWrite:
+    """钢材价格插入（手工录入 / 计算落库）。"""
+
+    year: int
+    month: int
+    location: str
+    steel_mill: str
+    category_name: str
+    grade: str
+    thickness: Decimal
+    width: Decimal
+    base_price: Decimal
+    final_price_per_ton: Decimal
+    calc_batch_id: str
+    match_status: str
+    calculated_at: datetime
+    spec: str | None = None
+    thickness_adjustment: Decimal = Decimal("0")
+    width_adjustment: Decimal = Decimal("0")
+    zinc_adjustment: Decimal = Decimal("0")
+    processing_fee: Decimal = Decimal("0")
+    other_adjustment: Decimal = Decimal("0")
+    base_price_id: int | None = None
+    base_excel_filename: str | None = None
+    base_sheet_name: str | None = None
+    base_excel_row: int | None = None
+    base_excel_col: int | None = None
+    thickness_policy_id: int | None = None
+    thickness_ladder_item_id: int | None = None
+    thickness_excel_filename: str | None = None
+    thickness_sheet_name: str | None = None
+    thickness_excel_row: int | None = None
+    thickness_excel_col: int | None = None
+    width_policy_id: int | None = None
+    width_ladder_item_id: int | None = None
+    width_excel_filename: str | None = None
+    width_sheet_name: str | None = None
+    width_excel_row: int | None = None
+    width_excel_col: int | None = None
+    zinc_policy_id: int | None = None
+    zinc_ladder_item_id: int | None = None
+    zinc_excel_filename: str | None = None
+    zinc_sheet_name: str | None = None
+    zinc_excel_row: int | None = None
+    zinc_excel_col: int | None = None
+    calc_status: str = "success"
+    calc_message: str | None = None
+    formula_version: str = "v1"
+    audit_status: str = "pending"
+    audited_by: str | None = None
+    audited_at: datetime | None = None
+    audit_remark: str | None = None
+    reverse_audited_by: str | None = None
+    reverse_audited_at: datetime | None = None
+    reverse_audit_remark: str | None = None
+    remark: str | None = None
+    created_by: str | None = None
+    updated_by: str | None = None
+
+
+class SteelPricePatch(TypedDict, total=False):
+    """钢材价格部分更新（手工改价 / 审核 / 计算覆盖）。"""
+
+    spec: str | None
+    base_price: Decimal
+    thickness_adjustment: Decimal
+    width_adjustment: Decimal
+    zinc_adjustment: Decimal
+    processing_fee: Decimal
+    other_adjustment: Decimal
+    final_price_per_ton: Decimal
+    remark: str | None
+    calc_batch_id: str
+    match_status: str
+    calc_status: str
+    calc_message: str | None
+    formula_version: str
+    calculated_at: datetime
+    audit_status: str
+    audited_by: str | None
+    audited_at: datetime | None
+    audit_remark: str | None
+    reverse_audited_by: str | None
+    reverse_audited_at: datetime | None
+    reverse_audit_remark: str | None
+    updated_by: str | None
+
+
+@dataclass(slots=True)
+class SteelPriceCalcLogCreate:
+    """钢价计算日志新建。"""
+
+    calc_batch_id: str
+    year: int
+    month: int
+    location: str
+    status: str
+    detail_text: str
+    started_at: datetime
+    stamping_supplier: str | None = None
+    vehicle_model: str | None = None
+    material_count: int = 0
+    enriched_count: int = 0
+    no_base_count: int = 0
+    created_count: int = 0
+    updated_count: int = 0
+    skipped_approved_count: int = 0
+    failed_count: int = 0
+    finished_at: datetime | None = None
+    operator_id: int | None = None
+    operator_name: str | None = None
+    created_by: str | None = None
+    updated_by: str | None = None
+
+
+class SteelPriceCalcLogPatch(TypedDict, total=False):
+    """钢价计算日志部分更新。"""
+
+    status: str
+    material_count: int
+    enriched_count: int
+    no_base_count: int
+    created_count: int
+    updated_count: int
+    skipped_approved_count: int
+    failed_count: int
+    detail_text: str
+    finished_at: datetime
+    updated_by: str | None

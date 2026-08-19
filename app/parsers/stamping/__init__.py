@@ -5,6 +5,10 @@ from app.parsers.stamping.stamping_parser import (
     StampingExcelParser,
     parse_stamping_excel,
 )
+from app.parsers.stamping.tailor_weld_parser import (
+    TailorWeldExcelParser,
+    parse_tailor_weld_excel,
+)
 
 # Excel 上下文
 from app.parsers.stamping.excel_context import ExcelContext
@@ -25,6 +29,9 @@ from app.parsers.stamping.models import (
     Process,
     ParserResult,
     PartNoRange,
+    TailorWeldAssemblyParsed,
+    TailorWeldBlankParsed,
+    TailorWeldParseResult,
 )
 
 __all__ = [
@@ -32,6 +39,9 @@ __all__ = [
     "StampingExcelParser",
     "parse_stamping_excel",
     "ParserResult",
+    "TailorWeldExcelParser",
+    "parse_tailor_weld_excel",
+    "TailorWeldParseResult",
     # Excel 上下文
     "ExcelContext",
     # 表头解析
@@ -48,4 +58,6 @@ __all__ = [
     "Part",
     "Process",
     "PartNoRange",
+    "TailorWeldBlankParsed",
+    "TailorWeldAssemblyParsed",
 ]

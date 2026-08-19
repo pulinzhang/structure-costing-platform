@@ -2,62 +2,166 @@
  * Settings Page
  * 系统设置页面逻辑
  *
- * 密度 / 损耗率 / 回收率一律按十进制字符串处理（不经 Number），
- * 提交给后端为固定小数位字符串，避免 JS 尾差。
+ * 密度按 4 位小数；各类「率」界面按 2 位小数（‰ / %），提交时再换算为小数串。
  */
 
-import { settingsTemplate } from './template.js?v=8';
+import { settingsTemplate } from './template.js?v=13';
 
 const API = '/api/settings/system/config';
+const DEFAULT_APP_NAME = '汽车冲压件自动核价平台';
 const DEFAULT_DENSITY = '7.8500';
-const DEFAULT_LOSS_PERMILLE = '3.0000';
-const DEFAULT_RECOVERY_PERCENT = '97.0000';
+const DEFAULT_LOSS_PERMILLE = '3.00';
+const DEFAULT_RECOVERY_PERCENT = '97.00';
+const DEFAULT_FINISHED_FINANCE_PERCENT = '2.00';
+const DEFAULT_FINISHED_MANAGEMENT_PERCENT = '2.00';
+const DEFAULT_FINISHED_SCRAP_PERMILLE = '3.00';
+const DEFAULT_FINISHED_PRETAX_PROFIT_PERCENT = '2.00';
+
+const RATE_INPUT_IDS = [
+    'settingsSteelDensity',
+    'settingsMaterialLossPermille',
+    'settingsScrapRecoveryPercent',
+    'settingsFinishedFinancePercent',
+    'settingsFinishedManagementPercent',
+    'settingsFinishedScrapPermille',
+    'settingsFinishedPretaxProfitPercent',
+];
+
+/** 小数率 → 界面 %（2 位小数） */
+function rateToPercentDisplay(rawRate, fallback) {
+    const percent = scaleDecimalByPow10(rawRate, 2, 2);
+    return percent != null && compareDecimalStrings(percent, '0') >= 0 ? percent : fallback;
+}
+
+/** 小数率 → 界面 ‰（2 位小数） */
+function rateToPermilleDisplay(rawRate, fallback) {
+    const permille = scaleDecimalByPow10(rawRate, 3, 2);
+    return permille != null && compareDecimalStrings(permille, '0') >= 0 ? permille : fallback;
+}
+
+function isPercentInRange(value) {
+    return (
+        value != null
+        && compareDecimalStrings(value, '0') >= 0
+        && compareDecimalStrings(value, '100') <= 0
+    );
+}
+
+function isPermilleInRange(value) {
+    return (
+        value != null
+        && compareDecimalStrings(value, '0') >= 0
+        && compareDecimalStrings(value, '200') <= 0
+    );
+}
+
+function setSystemInfo(appName, version) {
+    const nameEl = document.getElementById('settingsAppNameText');
+    const versionEl = document.getElementById('settingsVersionTag');
+    if (nameEl) {
+        nameEl.textContent = appName || '—';
+        nameEl.title = appName || '';
+    }
+    if (versionEl) {
+        versionEl.textContent = version || '—';
+    }
+}
+
+function applyFormValues({
+    density,
+    lossPermille,
+    recoveryPercent,
+    financePercent,
+    managementPercent,
+    scrapPermille,
+    pretaxProfitPercent,
+}) {
+    const densityEl = document.getElementById('settingsSteelDensity');
+    if (densityEl) densityEl.value = density;
+    const lossEl = document.getElementById('settingsMaterialLossPermille');
+    if (lossEl) lossEl.value = lossPermille;
+    const recoveryEl = document.getElementById('settingsScrapRecoveryPercent');
+    if (recoveryEl) recoveryEl.value = recoveryPercent;
+    const financeEl = document.getElementById('settingsFinishedFinancePercent');
+    if (financeEl) financeEl.value = financePercent;
+    const managementEl = document.getElementById('settingsFinishedManagementPercent');
+    if (managementEl) managementEl.value = managementPercent;
+    const scrapEl = document.getElementById('settingsFinishedScrapPermille');
+    if (scrapEl) scrapEl.value = scrapPermille;
+    const pretaxEl = document.getElementById('settingsFinishedPretaxProfitPercent');
+    if (pretaxEl) pretaxEl.value = pretaxProfitPercent;
+}
 
 export const SettingsPage = {
     canUpdate: false,
+    appName: DEFAULT_APP_NAME,
 
     init() {
         this.canUpdate = typeof can === 'function' && can('op:settings-system:update');
         const saveBtn = document.getElementById('btnSaveSettings');
+        const resetBtn = document.getElementById('btnResetSettings');
         if (!this.canUpdate) {
             saveBtn?.classList.add('hidden');
-            ['settingsAppName', 'settingsSteelDensity', 'settingsMaterialLossPermille', 'settingsScrapRecoveryPercent']
-                .forEach((id) => document.getElementById(id)?.setAttribute('disabled', 'disabled'));
+            resetBtn?.classList.add('hidden');
+            RATE_INPUT_IDS.forEach((id) => {
+                document.getElementById(id)?.setAttribute('disabled', 'disabled');
+            });
         } else {
             saveBtn?.addEventListener('click', () => this.save());
+            resetBtn?.addEventListener('click', () => this.resetToDefaults());
         }
         this.load();
+    },
+
+    resetToDefaults() {
+        if (!this.canUpdate) return;
+        applyFormValues({
+            density: DEFAULT_DENSITY,
+            lossPermille: DEFAULT_LOSS_PERMILLE,
+            recoveryPercent: DEFAULT_RECOVERY_PERCENT,
+            financePercent: DEFAULT_FINISHED_FINANCE_PERCENT,
+            managementPercent: DEFAULT_FINISHED_MANAGEMENT_PERCENT,
+            scrapPermille: DEFAULT_FINISHED_SCRAP_PERMILLE,
+            pretaxProfitPercent: DEFAULT_FINISHED_PRETAX_PROFIT_PERCENT,
+        });
+        showToast('已填入默认值，点击保存后生效', 'success');
     },
 
     async load() {
         try {
             const res = await HttpClient.get(API);
             const data = res.data || {};
-            const appNameEl = document.getElementById('settingsAppName');
-            const versionEl = document.getElementById('settingsVersion');
-            const densityEl = document.getElementById('settingsSteelDensity');
-            const lossEl = document.getElementById('settingsMaterialLossPermille');
-            const recoveryEl = document.getElementById('settingsScrapRecoveryPercent');
-            if (appNameEl) appNameEl.value = data.app_name || '';
-            if (versionEl) versionEl.value = data.version || '1.0.0';
-            if (densityEl) {
-                const density = formatDecimalFixed(data.steel_density, 4);
-                densityEl.value = density && compareDecimalStrings(density, '0') > 0
-                    ? density
-                    : DEFAULT_DENSITY;
-            }
-            if (lossEl) {
-                const permille = scaleDecimalByPow10(data.material_loss_rate, 3, 4);
-                lossEl.value = permille != null && compareDecimalStrings(permille, '0') >= 0
-                    ? permille
-                    : DEFAULT_LOSS_PERMILLE;
-            }
-            if (recoveryEl) {
-                const percent = scaleDecimalByPow10(data.scrap_recovery_rate, 2, 4);
-                recoveryEl.value = percent != null && compareDecimalStrings(percent, '0') > 0
+            this.appName = (data.app_name || DEFAULT_APP_NAME).trim() || DEFAULT_APP_NAME;
+            setSystemInfo(this.appName, data.version || '1.0.0');
+
+            const density = formatDecimalFixed(data.steel_density, 4);
+            const recoveryPercent = (() => {
+                const percent = scaleDecimalByPow10(data.scrap_recovery_rate, 2, 2);
+                return percent != null && compareDecimalStrings(percent, '0') > 0
                     ? percent
                     : DEFAULT_RECOVERY_PERCENT;
-            }
+            })();
+            applyFormValues({
+                density: density && compareDecimalStrings(density, '0') > 0
+                    ? density
+                    : DEFAULT_DENSITY,
+                lossPermille: rateToPermilleDisplay(
+                    data.material_loss_rate, DEFAULT_LOSS_PERMILLE,
+                ),
+                recoveryPercent,
+                financePercent: rateToPercentDisplay(
+                    data.finished_finance_rate, DEFAULT_FINISHED_FINANCE_PERCENT,
+                ),
+                managementPercent: rateToPercentDisplay(
+                    data.finished_management_rate, DEFAULT_FINISHED_MANAGEMENT_PERCENT,
+                ),
+                scrapPermille: rateToPermilleDisplay(
+                    data.finished_scrap_rate, DEFAULT_FINISHED_SCRAP_PERMILLE,
+                ),
+                pretaxProfitPercent: rateToPercentDisplay(
+                    data.finished_pretax_profit_rate, DEFAULT_FINISHED_PRETAX_PROFIT_PERCENT,
+                ),
+            });
         } catch (error) {
             showToast(error.message || '加载系统设置失败', 'error');
         }
@@ -68,16 +172,28 @@ export const SettingsPage = {
             showToast('无保存权限', 'warning');
             return;
         }
-        const appName = (document.getElementById('settingsAppName')?.value || '').trim();
+        const appName = (this.appName || '').trim();
         const density = parseDecimalInput(document.getElementById('settingsSteelDensity')?.value, 4);
         const lossPermille = parseDecimalInput(
-            document.getElementById('settingsMaterialLossPermille')?.value, 4,
+            document.getElementById('settingsMaterialLossPermille')?.value, 2,
         );
         const recoveryPercent = parseDecimalInput(
-            document.getElementById('settingsScrapRecoveryPercent')?.value, 4,
+            document.getElementById('settingsScrapRecoveryPercent')?.value, 2,
+        );
+        const financePercent = parseDecimalInput(
+            document.getElementById('settingsFinishedFinancePercent')?.value, 2,
+        );
+        const managementPercent = parseDecimalInput(
+            document.getElementById('settingsFinishedManagementPercent')?.value, 2,
+        );
+        const scrapPermille = parseDecimalInput(
+            document.getElementById('settingsFinishedScrapPermille')?.value, 2,
+        );
+        const pretaxProfitPercent = parseDecimalInput(
+            document.getElementById('settingsFinishedPretaxProfitPercent')?.value, 2,
         );
         if (!appName) {
-            showToast('请填写应用名称', 'warning');
+            showToast('应用名称缺失，请刷新后重试', 'warning');
             return;
         }
         if (
@@ -88,11 +204,7 @@ export const SettingsPage = {
             showToast('钢材密度须大于 0 且不超过 20', 'warning');
             return;
         }
-        if (
-            lossPermille == null
-            || compareDecimalStrings(lossPermille, '0') < 0
-            || compareDecimalStrings(lossPermille, '200') > 0
-        ) {
+        if (!isPermilleInRange(lossPermille)) {
             showToast('材料损耗率须为 0~200‰', 'warning');
             return;
         }
@@ -104,10 +216,37 @@ export const SettingsPage = {
             showToast('废料回收率须为 0~100%（不含 0）', 'warning');
             return;
         }
+        if (!isPercentInRange(financePercent)) {
+            showToast('成品财务费率须为 0~100%', 'warning');
+            return;
+        }
+        if (!isPercentInRange(managementPercent)) {
+            showToast('成品管理费率须为 0~100%', 'warning');
+            return;
+        }
+        if (!isPermilleInRange(scrapPermille)) {
+            showToast('成品报废率须为 0~200‰', 'warning');
+            return;
+        }
+        if (!isPercentInRange(pretaxProfitPercent)) {
+            showToast('成品税前利润率须为 0~100%', 'warning');
+            return;
+        }
 
         const materialLossRate = scaleDecimalByPow10(lossPermille, -3, 6);
         const scrapRecoveryRate = scaleDecimalByPow10(recoveryPercent, -2, 6);
-        if (materialLossRate == null || scrapRecoveryRate == null) {
+        const finishedFinanceRate = scaleDecimalByPow10(financePercent, -2, 6);
+        const finishedManagementRate = scaleDecimalByPow10(managementPercent, -2, 6);
+        const finishedScrapRate = scaleDecimalByPow10(scrapPermille, -3, 6);
+        const finishedPretaxProfitRate = scaleDecimalByPow10(pretaxProfitPercent, -2, 6);
+        if (
+            materialLossRate == null
+            || scrapRecoveryRate == null
+            || finishedFinanceRate == null
+            || finishedManagementRate == null
+            || finishedScrapRate == null
+            || finishedPretaxProfitRate == null
+        ) {
             showToast('费率换算失败，请检查输入', 'warning');
             return;
         }
@@ -124,26 +263,44 @@ export const SettingsPage = {
                 steel_density: density,
                 material_loss_rate: materialLossRate,
                 scrap_recovery_rate: scrapRecoveryRate,
+                finished_finance_rate: finishedFinanceRate,
+                finished_management_rate: finishedManagementRate,
+                finished_scrap_rate: finishedScrapRate,
+                finished_pretax_profit_rate: finishedPretaxProfitRate,
             });
             const data = res.data || {};
-            if (document.getElementById('settingsAppName') && data.app_name) {
-                document.getElementById('settingsAppName').value = data.app_name;
+            if (data.app_name) {
+                this.appName = data.app_name;
             }
-            if (document.getElementById('settingsSteelDensity') && data.steel_density != null) {
-                document.getElementById('settingsSteelDensity').value =
-                    formatDecimalFixed(data.steel_density, 4) || density;
-            }
-            if (document.getElementById('settingsMaterialLossPermille') && data.material_loss_rate != null) {
-                document.getElementById('settingsMaterialLossPermille').value =
-                    scaleDecimalByPow10(data.material_loss_rate, 3, 4) || lossPermille;
-            }
-            if (document.getElementById('settingsScrapRecoveryPercent') && data.scrap_recovery_rate != null) {
-                document.getElementById('settingsScrapRecoveryPercent').value =
-                    scaleDecimalByPow10(data.scrap_recovery_rate, 2, 4) || recoveryPercent;
-            }
-            if (document.getElementById('settingsVersion') && data.version) {
-                document.getElementById('settingsVersion').value = data.version;
-            }
+            setSystemInfo(this.appName, data.version || '1.0.0');
+            applyFormValues({
+                density: data.steel_density != null
+                    ? (formatDecimalFixed(data.steel_density, 4) || density)
+                    : density,
+                lossPermille: data.material_loss_rate != null
+                    ? rateToPermilleDisplay(data.material_loss_rate, lossPermille)
+                    : lossPermille,
+                recoveryPercent: data.scrap_recovery_rate != null
+                    ? (() => {
+                        const percent = scaleDecimalByPow10(data.scrap_recovery_rate, 2, 2);
+                        return percent != null && compareDecimalStrings(percent, '0') > 0
+                            ? percent
+                            : recoveryPercent;
+                    })()
+                    : recoveryPercent,
+                financePercent: data.finished_finance_rate != null
+                    ? rateToPercentDisplay(data.finished_finance_rate, financePercent)
+                    : financePercent,
+                managementPercent: data.finished_management_rate != null
+                    ? rateToPercentDisplay(data.finished_management_rate, managementPercent)
+                    : managementPercent,
+                scrapPermille: data.finished_scrap_rate != null
+                    ? rateToPermilleDisplay(data.finished_scrap_rate, scrapPermille)
+                    : scrapPermille,
+                pretaxProfitPercent: data.finished_pretax_profit_rate != null
+                    ? rateToPercentDisplay(data.finished_pretax_profit_rate, pretaxProfitPercent)
+                    : pretaxProfitPercent,
+            });
             showToast(res.message || '保存成功', 'success');
         } catch (error) {
             showToast(error.message || '保存失败', 'error');

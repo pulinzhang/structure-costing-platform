@@ -19,5 +19,7 @@ class UploadResultVO(BaseModel):
     parts_count: int
     processes_count: int
     images_count: int
+    tailor_weld_assembly_count: int = 0
+    tailor_weld_blank_count: int = 0
     warnings: Optional[List[str]] = None
     parse_time_ms: float

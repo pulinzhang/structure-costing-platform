@@ -23,12 +23,17 @@ router = APIRouter(prefix="/api/bom", tags=["BOM API"])
 
 _bom_service = BomService()
 
-# 产品结构页与上传页共享只读接口
-_bom_read = require_any_perm(Perm.BOM_STRUCTURE_VIEW, Perm.BOM_UPLOAD_VIEW)
-# 级联下拉：结构/上传/焊接拆解生成与列表均可读取
+# 产品结构页、上传页、材料清单列表共享只读接口
+_bom_read = require_any_perm(
+    Perm.BOM_STRUCTURE_VIEW,
+    Perm.BOM_UPLOAD_VIEW,
+    Perm.BOM_MATERIAL_VIEW,
+)
+# 级联下拉：结构/上传/材料清单列表/焊接拆解生成与列表均可读取
 _bom_cascade_read = require_any_perm(
     Perm.BOM_STRUCTURE_VIEW,
     Perm.BOM_UPLOAD_VIEW,
+    Perm.BOM_MATERIAL_VIEW,
     Perm.BOM_WELDING_PROCESS_BREAKDOWN_GENERATE,
     Perm.BOM_WELDING_PROCESS_BREAKDOWN_VIEW,
 )
@@ -106,7 +111,7 @@ def create_snapshot(
 def delete_snapshot(
     snapshot_id: int,
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(require_perm(Perm.BOM_UPLOAD_UPLOAD)),
+    current_user: UserVO = Depends(require_perm(Perm.BOM_MATERIAL_DELETE)),
 ) -> ApiResponse[None]:
     error = _bom_service.delete_snapshot(db, snapshot_id)
     if error:

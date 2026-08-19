@@ -1,11 +1,33 @@
 """BOM Repository - 数据访问"""
 
-from typing import Any
+from typing import TypedDict
 
 from sqlalchemy import func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Query, Session
 
 from app.models.bom import BomNode, BomSnapshot
+from app.repositories.persist import model_from_payload
+from app.schemas.dto.bom_dto import BomNodeWrite, BomSnapshotWrite
+
+
+class BomSnapshotListSummary(TypedDict):
+    """BOM 清单列表 HUD 汇总。"""
+
+    total_count: int
+    active_count: int
+    draft_count: int
+    archived_count: int
+    total_node_count: int
+
+
+class BomSnapshotListFilters(TypedDict):
+    """BOM 清单列表筛选体。"""
+
+    locations: list[str]
+    vehicle_models: list[str]
+    bom_versions: list[str]
+    statuses: list[str]
+    summary: BomSnapshotListSummary
 
 
 class BomSnapshotRepository:
@@ -53,17 +75,18 @@ class BomSnapshotRepository:
         db: Session,
         location: str | None = None,
         vehicle_model: str | None = None,
+        bom_version: str | None = None,
         status: str | None = None,
         skip: int = 0,
         limit: int = 20,
     ) -> tuple[list[BomSnapshot], int]:
-        q = db.query(BomSnapshot)
-        if location:
-            q = q.filter(BomSnapshot.location == location)
-        if vehicle_model:
-            q = q.filter(BomSnapshot.vehicle_model == vehicle_model)
-        if status:
-            q = q.filter(BomSnapshot.status == status)
+        q = self._apply_list_filters(
+            db.query(BomSnapshot),
+            location=location,
+            vehicle_model=vehicle_model,
+            bom_version=bom_version,
+            status=status,
+        )
 
         total = q.count()
         rows = (
@@ -78,6 +101,63 @@ class BomSnapshotRepository:
         )
         return rows, total
 
+    def summarize(
+        self,
+        db: Session,
+        location: str | None = None,
+        vehicle_model: str | None = None,
+        bom_version: str | None = None,
+        status: str | None = None,
+    ) -> BomSnapshotListSummary:
+        """按当前筛选统计清单条数与节点总量（HUD）。"""
+        q = self._apply_list_filters(
+            db.query(BomSnapshot),
+            location=location,
+            vehicle_model=vehicle_model,
+            bom_version=bom_version,
+            status=status,
+        )
+        rows = q.all()
+        total_count = len(rows)
+        active_count = sum(1 for row in rows if row.status == "active")
+        draft_count = sum(1 for row in rows if row.status == "draft")
+        archived_count = sum(1 for row in rows if row.status == "archived")
+        snapshot_ids = [row.id for row in rows]
+        total_node_count = 0
+        if snapshot_ids:
+            total_node_count = (
+                db.query(func.count(BomNode.id))
+                .filter(BomNode.snapshot_id.in_(snapshot_ids))
+                .scalar()
+                or 0
+            )
+        return {
+            "total_count": total_count,
+            "active_count": active_count,
+            "draft_count": draft_count,
+            "archived_count": archived_count,
+            "total_node_count": int(total_node_count),
+        }
+
+    @staticmethod
+    def _apply_list_filters(
+        q: Query[BomSnapshot],
+        *,
+        location: str | None = None,
+        vehicle_model: str | None = None,
+        bom_version: str | None = None,
+        status: str | None = None,
+    ) -> Query[BomSnapshot]:
+        if location:
+            q = q.filter(BomSnapshot.location == location)
+        if vehicle_model:
+            q = q.filter(BomSnapshot.vehicle_model == vehicle_model)
+        if bom_version:
+            q = q.filter(BomSnapshot.bom_version == bom_version)
+        if status:
+            q = q.filter(BomSnapshot.status == status)
+        return q
+
     def count_nodes(self, db: Session, snapshot_id: int) -> int:
         return (
             db.query(func.count(BomNode.id))
@@ -86,8 +166,28 @@ class BomSnapshotRepository:
             or 0
         )
 
-    def create(self, db: Session, data: dict[str, Any], *, commit: bool = True) -> BomSnapshot:
-        row = BomSnapshot(**data)
+    def list_bom_versions(self, db: Session) -> list[str]:
+        rows = (
+            db.query(BomSnapshot.bom_version)
+            .distinct()
+            .order_by(BomSnapshot.bom_version.desc())
+            .all()
+        )
+        return [r[0] for r in rows if r[0]]
+
+    def list_statuses(self, db: Session) -> list[str]:
+        rows = (
+            db.query(BomSnapshot.status)
+            .distinct()
+            .order_by(BomSnapshot.status)
+            .all()
+        )
+        return [r[0] for r in rows if r[0]]
+
+    def create(
+        self, db: Session, data: BomSnapshotWrite, *, commit: bool = True
+    ) -> BomSnapshot:
+        row = model_from_payload(BomSnapshot, data)
         db.add(row)
         if commit:
             db.commit()
@@ -193,8 +293,10 @@ class BomNodeRepository:
             .all()
         )
 
-    def create(self, db: Session, data: dict[str, Any], *, commit: bool = True) -> BomNode:
-        row = BomNode(**data)
+    def create(
+        self, db: Session, data: BomNodeWrite, *, commit: bool = True
+    ) -> BomNode:
+        row = model_from_payload(BomNode, data)
         db.add(row)
         if commit:
             db.commit()

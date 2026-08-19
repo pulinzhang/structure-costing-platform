@@ -6,7 +6,7 @@
  *
  * features/
  * ├── dashboard/                 # 仪表盘
- * ├── stamping/                  # 冲压工程
+ * ├── stamping/                  # 冲压工程（年度：冲压加工费）
  * │   ├── process/               # 冲压工艺
  * │   │   ├── upload/            # 上传工艺文件
  * │   │   └── parts/             # 冲压零件列表
@@ -16,19 +16,10 @@
  * │   └── process-fee/           # 冲压加工费
  * │       ├── calc/
  * │       └── list/
- * ├── yishiyiyi/                 # 一事一议
- * │   ├── policy/                # 加减价政策
- * │   │   ├── upload/
- * │   │   └── list/
- * │   ├── base-price/            # 基准价格
- * │   │   ├── upload/
- * │   │   └── list/
- * │   ├── winning-thickness/     # 中标钢厂厚度价格一览表
- * │   │   └── list/
- * │   └── scrap-price/           # 废料月度销售价
- * ├── bom/                       # BOM
+ * ├── bom/                       # 焊接工程（年度：焊接费；技术目录仍为 bom）
  * │   ├── material/              # 材料清单
  * │   │   ├── upload/
+ * │   │   ├── list/
  * │   │   ├── structure/
  * │   │   └── viz/
  * │   ├── welding-unit-price/    # 焊接单价
@@ -40,6 +31,16 @@
  * │   └── l0-welding-fee/        # 成品焊接费（技术目录仍用 l0）
  * │       ├── calc/
  * │       └── list/
+ * ├── yishiyiyi/                 # 一事一议（钢材政策 / 月度废料价等）
+ * │   ├── policy/                # 加减价政策
+ * │   │   ├── upload/
+ * │   │   └── list/
+ * │   ├── base-price/            # 基准价格
+ * │   │   ├── upload/
+ * │   │   └── list/
+ * │   ├── winning-thickness/     # 中标钢厂厚度价格一览表
+ * │   │   └── list/
+ * │   └── scrap-price/           # 废料月度销售价
  * ├── costing/                   # 核价
  * │   ├── steel-price/           # 冲压钢材联动价
  * │   │   ├── calc/
@@ -156,47 +157,52 @@ export const pageMeta = {
     'bom-structure': {
         title: '产品结构',
         en: '产品结构',
-        breadcrumb: ['BOM', '材料清单', '产品结构'],
+        breadcrumb: ['焊接工程', '材料清单', '产品结构'],
     },
     'bom-viz': {
         title: '产品结构图',
         en: '产品结构图',
-        breadcrumb: ['BOM', '材料清单', '产品结构', '结构图'],
+        breadcrumb: ['焊接工程', '材料清单', '产品结构', '结构图'],
     },
     'bom-upload': {
         title: '上传材料清单',
         en: 'BOM_UPLOAD',
-        breadcrumb: ['BOM', '材料清单', '上传材料清单'],
+        breadcrumb: ['焊接工程', '材料清单', '上传材料清单'],
+    },
+    'bom-material': {
+        title: '材料清单列表',
+        en: 'BOM_MATERIAL_LIST',
+        breadcrumb: ['焊接工程', '材料清单', '材料清单列表'],
     },
     'bom-welding-unit-price-upload': {
         title: '焊接单价上传',
         en: 'WELDING_UNIT_PRICE_UPLOAD',
-        breadcrumb: ['BOM', '焊接单价', '上传'],
+        breadcrumb: ['焊接工程', '焊接单价', '上传'],
     },
     'bom-welding-unit-price': {
         title: '焊接单价列表',
         en: 'WELDING_UNIT_PRICE_MATRIX',
-        breadcrumb: ['BOM', '焊接单价', '焊接单价列表'],
+        breadcrumb: ['焊接工程', '焊接单价', '焊接单价列表'],
     },
     'bom-welding-process-breakdown': {
         title: '焊接工艺拆解',
         en: 'WELDING_PROCESS_BREAKDOWN',
-        breadcrumb: ['BOM', '焊接工艺拆解', '拆解'],
+        breadcrumb: ['焊接工程', '焊接工艺拆解', '拆解'],
     },
     'bom-welding-process-breakdown-list': {
         title: '焊接工艺拆解列表',
         en: 'WELDING_PROCESS_BREAKDOWN_LIST',
-        breadcrumb: ['BOM', '焊接工艺拆解', '拆解列表'],
+        breadcrumb: ['焊接工程', '焊接工艺拆解', '拆解列表'],
     },
     'bom-l0-welding-fee-calc': {
         title: '成品焊接费计算',
         en: 'FINISHED_WELDING_FEE_CALC',
-        breadcrumb: ['BOM', '成品焊接费', '计算'],
+        breadcrumb: ['焊接工程', '成品焊接费', '计算'],
     },
     'bom-l0-welding-fee-list': {
         title: '成品焊接费列表',
         en: 'FINISHED_WELDING_FEE_LIST',
-        breadcrumb: ['BOM', '成品焊接费', '列表'],
+        breadcrumb: ['焊接工程', '成品焊接费', '列表'],
     },
     costing: {
         title: '自动核价引擎',

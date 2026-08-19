@@ -2,8 +2,9 @@
 钢材基准价格 DTO - 内部传输数据结构
 """
 
+from dataclasses import dataclass
 from decimal import Decimal
-from typing import Any, Optional
+from typing import Any, Optional, TypedDict
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -114,3 +115,38 @@ class FilterOptions(BaseModel):
     category_names: list[str] = Field(default_factory=list)
     grades: list[str] = Field(default_factory=list)
     specs: list[str] = Field(default_factory=list)
+
+
+# ============================
+# Repository 写入载荷
+# ============================
+
+@dataclass(slots=True)
+class SteelBasePriceWrite:
+    """基准价格导入 / upsert 整行写入（含溯源列与审计人）。"""
+
+    year: int
+    month: int
+    location: str
+    steel_mill: str
+    category_name: str
+    grade: str
+    thick: Decimal | None
+    width: Decimal | None
+    base_price: Decimal
+    processing_fee: Decimal
+    excel_filename: str
+    sheet_name: str
+    excel_row: int
+    spec: str | None = None
+    excel_col: int | None = None
+    remark: str | None = None
+    created_by: str | None = None
+    updated_by: str | None = None
+
+
+class BasePriceUpsertCounts(TypedDict):
+    """upsert 返回的新增 / 更新条数。"""
+
+    created: int
+    updated: int

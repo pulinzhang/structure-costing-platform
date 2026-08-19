@@ -2,15 +2,13 @@
 
 from __future__ import annotations
 
-from typing import Any
-
-
 import logging
 from decimal import Decimal, ROUND_HALF_UP
 
 from sqlalchemy.orm import Session
 
 from app.models.stamping import StampingPart, StampingProcess
+from app.schemas.dto.stamping_process_fee_dto import ProcessFeeItemPayload
 from app.schemas.vo.stamping_process_fee_vo import StampingProcessFeeFailedItemVO
 from app.services.stamping.process_fee.calc.basis_text import build_process_basis_text
 from app.services.stamping.process_fee.calc.constants import TONNAGE_SOURCE_SWING_SHEAR
@@ -19,6 +17,7 @@ from app.services.stamping.process_fee.calc.labels import (
     format_process_label,
     is_swing_shear_process,
     match_previous_process,
+    self_tonnage,
     summarize_processes,
 )
 from app.services.stamping.process_fee.calc.models import TonnageRateInfo
@@ -57,8 +56,10 @@ class PartFeeCalculator:
         prev_part_cache: dict[int, StampingPart | None],
     ) -> list[StampingProcess]:
         """
-        共模/双槽/共用件以上一件工序方案为准。
-        当前多出的工序视为录入错误，跳过不计费。
+        共模右件常多出空工序行：仅裁掉「无自有吨位、且上一件对不上」的序。
+
+        左件（或主件）工艺方法也是「左右合并」，但吨位写在本件上。
+        上一件往往是另一副模具的右件，不能拿它的工序清单把本件 OP50 等裁掉。
         """
         if not processes:
             return processes
@@ -80,6 +81,9 @@ class PartFeeCalculator:
         for process in sorted(
             processes, key=lambda p: (p.process_order or 0, p.id or 0)
         ):
+            if is_swing_shear_process(process) or self_tonnage(process) is not None:
+                selected.append(process)
+                continue
             if match_previous_process(process, previous_processes) is not None:
                 selected.append(process)
             else:
@@ -103,7 +107,7 @@ class PartFeeCalculator:
         rate_map: dict[int, TonnageRateInfo],
         year: int,
         prev_part_cache: dict[int, StampingPart | None],
-    ) -> tuple[Decimal, int, list[dict[str, Any]]] | StampingProcessFeeFailedItemVO:
+    ) -> tuple[Decimal, int, list[ProcessFeeItemPayload]] | StampingProcessFeeFailedItemVO:
         processes = list(part.processes or [])
         if not processes:
             return self.build_failed_item(part, "无工序数据")
@@ -117,14 +121,12 @@ class PartFeeCalculator:
             )
 
         total = Decimal("0")
-        process_items: list[dict[str, Any]] = []
+        process_items: list[ProcessFeeItemPayload] = []
         for process in sorted(
             processes, key=lambda p: (p.process_order or 0, p.id or 0)
         ):
             process_label = format_process_label(process)
-            original_tonnage = (
-                int(process.tonnage) if process.tonnage is not None else None
-            )
+            original_tonnage = self_tonnage(process)
 
             if is_swing_shear_process(process):
                 logger.info(
@@ -136,23 +138,23 @@ class PartFeeCalculator:
                     FEE_QUANTIZE, rounding=ROUND_HALF_UP
                 )
                 process_items.append(
-                    {
-                        "source_process_id": process.id,
-                        "process_seq": process.process_seq,
-                        "process_order": process.process_order,
-                        "process_code": process.process_code,
-                        "original_tonnage": original_tonnage,
-                        "resolved_tonnage": None,
-                        "tonnage_source": TONNAGE_SOURCE_SWING_SHEAR,
-                        "inherited_from_part_id": None,
-                        "inherited_from_part_number": None,
-                        "inherited_from_process_seq": None,
-                        "inherited_from_process_code": None,
-                        "cost_ratio": None,
-                        "tonnage_price_id": None,
-                        "price_per_stroke": None,
-                        "line_fee": line_fee,
-                        "basis_text": build_process_basis_text(
+                    ProcessFeeItemPayload(
+                        source_process_id=process.id,
+                        process_seq=process.process_seq,
+                        process_order=process.process_order,
+                        process_code=process.process_code,
+                        original_tonnage=original_tonnage,
+                        resolved_tonnage=None,
+                        tonnage_source=TONNAGE_SOURCE_SWING_SHEAR,
+                        inherited_from_part_id=None,
+                        inherited_from_part_number=None,
+                        inherited_from_process_seq=None,
+                        inherited_from_process_code=None,
+                        cost_ratio=None,
+                        tonnage_price_id=None,
+                        price_per_stroke=None,
+                        line_fee=line_fee,
+                        basis_text=build_process_basis_text(
                             process_label=process_label,
                             tonnage_source=TONNAGE_SOURCE_SWING_SHEAR,
                             resolved_tonnage=None,
@@ -160,8 +162,8 @@ class PartFeeCalculator:
                             price_per_stroke=None,
                             line_fee=line_fee,
                         ),
-                        "remark": process.remark,
-                    }
+                        remark=process.remark,
+                    )
                 )
                 continue
 
@@ -178,29 +180,29 @@ class PartFeeCalculator:
                     FEE_QUANTIZE, rounding=ROUND_HALF_UP
                 )
                 process_items.append(
-                    {
-                        "source_process_id": process.id,
-                        "process_seq": process.process_seq,
-                        "process_order": process.process_order,
-                        "process_code": process.process_code,
-                        "original_tonnage": original_tonnage,
-                        "resolved_tonnage": None,
-                        "tonnage_source": TONNAGE_SOURCE_SWING_SHEAR,
-                        "inherited_from_part_id": resolved.inherited_from_part_id,
-                        "inherited_from_part_number": (
+                    ProcessFeeItemPayload(
+                        source_process_id=process.id,
+                        process_seq=process.process_seq,
+                        process_order=process.process_order,
+                        process_code=process.process_code,
+                        original_tonnage=original_tonnage,
+                        resolved_tonnage=None,
+                        tonnage_source=TONNAGE_SOURCE_SWING_SHEAR,
+                        inherited_from_part_id=resolved.inherited_from_part_id,
+                        inherited_from_part_number=(
                             resolved.inherited_from_part_number
                         ),
-                        "inherited_from_process_seq": (
+                        inherited_from_process_seq=(
                             resolved.inherited_from_process_seq
                         ),
-                        "inherited_from_process_code": (
+                        inherited_from_process_code=(
                             resolved.inherited_from_process_code
                         ),
-                        "cost_ratio": None,
-                        "tonnage_price_id": None,
-                        "price_per_stroke": None,
-                        "line_fee": line_fee,
-                        "basis_text": build_process_basis_text(
+                        cost_ratio=None,
+                        tonnage_price_id=None,
+                        price_per_stroke=None,
+                        line_fee=line_fee,
+                        basis_text=build_process_basis_text(
                             process_label=process_label,
                             tonnage_source=TONNAGE_SOURCE_SWING_SHEAR,
                             resolved_tonnage=None,
@@ -217,8 +219,8 @@ class PartFeeCalculator:
                                 resolved.inherited_from_process_code
                             ),
                         ),
-                        "remark": process.remark,
-                    }
+                        remark=process.remark,
+                    )
                 )
                 continue
 
@@ -249,23 +251,23 @@ class PartFeeCalculator:
             total += line_raw
 
             process_items.append(
-                {
-                    "source_process_id": process.id,
-                    "process_seq": process.process_seq,
-                    "process_order": process.process_order,
-                    "process_code": process.process_code,
-                    "original_tonnage": original_tonnage,
-                    "resolved_tonnage": resolved.tonnage,
-                    "tonnage_source": resolved.source,
-                    "inherited_from_part_id": resolved.inherited_from_part_id,
-                    "inherited_from_part_number": resolved.inherited_from_part_number,
-                    "inherited_from_process_seq": resolved.inherited_from_process_seq,
-                    "inherited_from_process_code": resolved.inherited_from_process_code,
-                    "cost_ratio": cost_ratio,
-                    "tonnage_price_id": rate_info.tonnage_price_id,
-                    "price_per_stroke": price,
-                    "line_fee": line_fee,
-                    "basis_text": build_process_basis_text(
+                ProcessFeeItemPayload(
+                    source_process_id=process.id,
+                    process_seq=process.process_seq,
+                    process_order=process.process_order,
+                    process_code=process.process_code,
+                    original_tonnage=original_tonnage,
+                    resolved_tonnage=resolved.tonnage,
+                    tonnage_source=resolved.source,
+                    inherited_from_part_id=resolved.inherited_from_part_id,
+                    inherited_from_part_number=resolved.inherited_from_part_number,
+                    inherited_from_process_seq=resolved.inherited_from_process_seq,
+                    inherited_from_process_code=resolved.inherited_from_process_code,
+                    cost_ratio=cost_ratio,
+                    tonnage_price_id=rate_info.tonnage_price_id,
+                    price_per_stroke=price,
+                    line_fee=line_fee,
+                    basis_text=build_process_basis_text(
                         process_label=process_label,
                         tonnage_source=resolved.source,
                         resolved_tonnage=resolved.tonnage,
@@ -276,8 +278,8 @@ class PartFeeCalculator:
                         inherited_from_process_seq=resolved.inherited_from_process_seq,
                         inherited_from_process_code=resolved.inherited_from_process_code,
                     ),
-                    "remark": process.remark,
-                }
+                    remark=process.remark,
+                )
             )
 
         return (

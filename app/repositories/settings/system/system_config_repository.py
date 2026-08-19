@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from sqlalchemy.orm import Session
 
-from app.models.system_config import SystemConfig
+from app.models.settings import SystemConfig
+from app.repositories.persist import apply_payload_fields, model_from_payload
+from app.schemas.dto.settings_dto import SystemConfigPatch, SystemConfigWrite
 
 SINGLETON_ID = 1
 
@@ -21,8 +21,9 @@ class SystemConfigRepository:
             .first()
         )
 
-    def create_singleton(self, db: Session, data: dict[str, Any]) -> SystemConfig:
-        row = SystemConfig(id=SINGLETON_ID, **data)
+    def create_singleton(self, db: Session, data: SystemConfigWrite) -> SystemConfig:
+        row = model_from_payload(SystemConfig, data)
+        row.id = SINGLETON_ID
         db.add(row)
         db.flush()
         return row
@@ -31,9 +32,8 @@ class SystemConfigRepository:
         self,
         db: Session,
         row: SystemConfig,
-        data: dict[str, Any],
+        data: SystemConfigPatch,
     ) -> SystemConfig:
-        for key, value in data.items():
-            setattr(row, key, value)
+        apply_payload_fields(row, data)
         db.flush()
         return row

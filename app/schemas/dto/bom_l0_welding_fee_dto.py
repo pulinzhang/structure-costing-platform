@@ -1,6 +1,11 @@
 """
-BOM 焊接费 DTO - 请求参数
+BOM 焊接费 DTO - 请求参数 / 仓库写入载荷
 """
+
+from dataclasses import dataclass, field
+from datetime import datetime
+from decimal import Decimal
+from typing import TypedDict
 
 from pydantic import BaseModel, Field
 
@@ -46,3 +51,80 @@ class BomL0WeldingFeeBatchReverseAuditDTO(BomL0WeldingFeeScopeDTO):
 
 class BomL0WeldingFeeBatchDeleteDTO(BomL0WeldingFeeScopeDTO):
     """批量删除（仅删未审核；已通过跳过）"""
+
+
+@dataclass(slots=True)
+class BomL0WeldingFeeItemPayload:
+    """焊接费工艺明细写入。"""
+
+    line_no: int
+    process_token: str | None = None
+    standard_process_name: str | None = None
+    process_qty: Decimal = Decimal("0")
+    process_qty_unit: str | None = None
+    unit_price: Decimal | None = None
+    unit: str | None = None
+    line_fee: Decimal | None = None
+    match_status: str = "unmapped"
+    source_breakdown_line_id: int | None = None
+    remark: str | None = None
+
+
+@dataclass(slots=True)
+class BomL0WeldingFeeUpsertPayload:
+    """焊接费主表 upsert（含明细 items）。"""
+
+    year: int
+    location: str
+    vehicle_model: str
+    bom_version: str
+    source_breakdown_node_id: int | None
+    part_number: str
+    part_name: str | None
+    customer_name: str | None
+    weld_info_raw: str | None
+    process_line_count: int
+    matched_line_count: int
+    missing_price_count: int
+    total_l0_welding_fee: Decimal
+    calc_batch_id: str | None
+    calc_status: str
+    calc_message: str | None
+    audit_status: str
+    updated_by: str | None
+    created_by: str | None = None
+    items: list[BomL0WeldingFeeItemPayload] = field(default_factory=list)
+
+
+@dataclass(slots=True)
+class BomL0WeldingFeeCalcLogCreate:
+    """焊接费计算日志新建。"""
+
+    calc_batch_id: str
+    year: int
+    location: str
+    vehicle_model: str
+    bom_version: str
+    status: str
+    detail_text: str
+    started_at: datetime
+    operator_id: int | None = None
+    operator_name: str | None = None
+    created_by: str | None = None
+    updated_by: str | None = None
+
+
+class BomL0WeldingFeeCalcLogPatch(TypedDict, total=False):
+    """焊接费计算日志部分更新。"""
+
+    status: str
+    l0_count: int
+    created_count: int
+    updated_count: int
+    skipped_approved_count: int
+    failed_count: int
+    missing_price_count: int
+    detail_text: str
+    finished_at: datetime
+    updated_by: str | None
+

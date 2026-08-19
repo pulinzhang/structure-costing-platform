@@ -74,6 +74,11 @@ export function partsTemplate() {
                                 ${window.svgIcon('trash', 'w-3 h-3')}
                                 批量删除
                             </button>
+                            <button id="partsExportBtn" type="button"
+                                    class="inline-flex items-center gap-1.5 bg-transparent text-[#6E6E73] border border-[#2A2A35] px-3 py-1.5 text-[11px] font-medium rounded-md hover:border-[#FF1E27]/50 hover:text-[#FF1E27] hover:bg-[#FF1E27]/10 hover:shadow-[0_0_12px_rgba(255,30,39,0.2)] transition-all duration-200">
+                                ${window.svgIcon('download', 'w-3 h-3')}
+                                导出 Excel
+                            </button>
                         </div>
                     </div>
                     <div class="text-[11px] font-mono text-[#555555] truncate">
@@ -92,6 +97,7 @@ export function partsTemplate() {
                                 <span id="partsCapsuleLocation" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部基地</span>
                                 <span id="partsCapsuleSupplier" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部工厂</span>
                                 <span id="partsCapsuleVehicle" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部车型</span>
+                                <span id="partsCapsuleVersion" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部版本</span>
                             </div>
                         </div>
                         <div class="flex items-center gap-3 shrink-0">
@@ -123,7 +129,7 @@ export function partsTemplate() {
                                 重置
                             </button>
                         </div>
-                        <p class="mt-2 text-[10px] text-[#555555]">筛选均可选；级联联动。批量删除须选定基地、冲压工厂和车型。</p>
+                        <p class="mt-2 text-[10px] text-[#555555]">筛选均可选；级联联动。导出 / 批量删除须同时选定基地、冲压工厂、车型和版本。</p>
                     </div>
                 </div>
 
@@ -240,6 +246,7 @@ export function updatePartsFilterCapsules() {
     const locationEl = document.getElementById('partsCapsuleLocation');
     const supplierEl = document.getElementById('partsCapsuleSupplier');
     const vehicleEl = document.getElementById('partsCapsuleVehicle');
+    const versionEl = document.getElementById('partsCapsuleVersion');
     const countEl = document.getElementById('partsAdvancedFilterCount');
     const scopeEl = document.getElementById('partsHudScope');
 
@@ -254,6 +261,10 @@ export function updatePartsFilterCapsules() {
     if (vehicleEl) {
         vehicleEl.textContent = vehicle || '全部车型';
         vehicleEl.className = vehicle ? activeCapsule : idleCapsule;
+    }
+    if (versionEl) {
+        versionEl.textContent = version || '全部版本';
+        versionEl.className = version ? activeCapsule : idleCapsule;
     }
 
     const advancedActive = [location, supplier, vehicle, version, part].filter(Boolean).length;
@@ -315,10 +326,10 @@ export function renderPartsPagination(currentPage, totalPages) {
 const CORE_COST_FIELDS = new Set(['材料', '重量', '可制件数', '模具类型']);
 
 const DIE_TYPE_OPTIONS = [
-    { value: 'progressive', label: '级进模（80%）'},
-    { value: 'single', label: '单干模具（00%）' },
-    { value: 'shared', label: '共模（0%）' },
-    { value: 'progressive_shared', label: '级进共模（0%）' },
+    { value: 'progressive', label: '级进模（80%）' },
+    { value: 'single', label: '单干模具（100%）' },
+    { value: 'shared', label: '共模（50%）' },
+    { value: 'progressive_shared', label: '级进共模（40%）' },
 ];
 
 /**
@@ -360,7 +371,7 @@ function renderExcelProvenance(part) {
     const colHint = col != null ? `第${col} 列（零件号）` : null;
     const rowHint = row != null ? `第${row} 行` : null;
     const locator = [
-        sheet ? `表。{sheet}」` : null,
+        sheet ? `表「${sheet}」` : null,
         rowHint,
         colHint,
     ].filter(Boolean).join(' · ');
@@ -382,8 +393,9 @@ function renderExcelProvenance(part) {
 
 function renderProcessRow(p, idx) {
     const processId = p.id ?? idx;
-    const ratioMap = { 0.8: 'progressive', 1.0: 'single', 0.5: 'shared', 0.4: 'progressive_shared' };
-    const currentDieType = p.die_type || ratioMap[p.cost_ratio] || 'single';
+    const ratioMap = { 0.8: 'progressive', 1: 'single', 0.5: 'shared', 0.4: 'progressive_shared' };
+    const ratioKey = Number(p.cost_ratio);
+    const currentDieType = p.die_type || ratioMap[ratioKey] || 'single';
 
     return `
                 <tr class="border-b border-[#161616] last:border-b-0 group hover:bg-[#0e0e0e] transition-colors duration-200 process-row" data-process-id="${processId}">
@@ -415,7 +427,7 @@ export function renderDetailContent(part) {
         ['版本', esc(part.version)],
         ['材料', esc(part.material)],
         ['工艺方法', esc(part.process_method ?? '-')],
-        ['自动匹配', esc(part.automation ?? '-')],
+        ['自动化', esc(part.automation ?? '-')],
     ];
     const rowsRight = [
         ['厚度', part.thickness != null ? `${part.thickness} mm` : '-'],
@@ -484,8 +496,8 @@ export function renderDetailContent(part) {
                     <table class="w-full">
                         <thead class="shrink-0">
                             <tr style="background:#0c0c0c; border-bottom:1px solid #1a1a1a;">
-                                <th class="px-4 py-2.5 text-left text-[8px] font-semibold uppercase tracking-[0.22em] text-[#353535]">度</th>
-                                <th class="px-4 py-2.5 text-left text-[8px] font-semibold uppercase tracking-[0.22em] text-[#353535]">工序史</th>
+                                <th class="px-4 py-2.5 text-left text-[8px] font-semibold uppercase tracking-[0.22em] text-[#353535]">序</th>
+                                <th class="px-4 py-2.5 text-left text-[8px] font-semibold uppercase tracking-[0.22em] text-[#353535]">工序号</th>
                                 <th class="px-4 py-2.5 text-left text-[8px] font-semibold uppercase tracking-[0.22em] text-[#353535]">代号</th>
                                 <th class="px-4 py-2.5 text-right text-[8px] font-semibold uppercase tracking-[0.22em] text-[#353535]">模数</th>
                                 <th class="px-4 py-2.5 text-right text-[8px] font-semibold uppercase tracking-[0.22em] text-[#353535]">吨位</th>

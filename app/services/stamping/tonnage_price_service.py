@@ -4,7 +4,7 @@
 """
 
 import logging
-from typing import Any, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -17,14 +17,16 @@ from app.common.audit import (
     display_name,
 )
 from app.common.timezone import now
-from app.repositories.stamping.tonnage_price_repository import StampingTonnagePriceRepository
+from app.repositories.stamping.tonnage_price_repository import (
+    StampingTonnagePriceRepository,
+    TonnagePriceListFilters,
+)
 from app.schemas.dto.stamping_tonnage_price_dto import (
     StampingTonnagePriceBatchApproveDTO,
     StampingTonnagePriceBatchReverseAuditDTO,
     StampingTonnagePriceCreate,
     StampingTonnagePriceQuery,
     StampingTonnagePriceUpdate,
-    quantize_price_per_stroke,
 )
 from app.schemas.vo.stamping_tonnage_price_vo import (
     StampingTonnagePriceBatchAuditResultVO,
@@ -59,7 +61,7 @@ class StampingTonnagePriceService:
 
     def paginate(
         self, db: Session, query: StampingTonnagePriceQuery
-    ) -> Tuple[List[StampingTonnagePriceResponse], int, dict[str, Any]]:
+    ) -> Tuple[List[StampingTonnagePriceResponse], int, TonnagePriceListFilters]:
         skip = (query.page - 1) * query.size
         audit_status = query.audit_status.strip() if query.audit_status else None
         records, total = self.repository.paginate(
@@ -71,7 +73,7 @@ class StampingTonnagePriceService:
             limit=query.size,
         )
         rows = [StampingTonnagePriceResponse.model_validate(r) for r in records]
-        filters = {
+        filters: TonnagePriceListFilters = {
             "locations": self.repository.get_distinct_locations(db),
             "years": self.repository.get_distinct_years(db),
             "tonnages": self.repository.get_distinct_tonnages(db),
@@ -98,15 +100,13 @@ class StampingTonnagePriceService:
         current_user: UserVO,
     ) -> Tuple[Optional[StampingTonnagePriceResponse], Optional[str]]:
         try:
-            payload = {
-                **data.model_dump(),
-                **audit_create(current_user),
-                "audit_status": AUDIT_PENDING,
-            }
-            payload["price_per_stroke"] = quantize_price_per_stroke(
-                payload["price_per_stroke"]
+            audit = audit_create(current_user)
+            record = self.repository.create(
+                db,
+                data,
+                created_by=audit["created_by"],
+                updated_by=audit["updated_by"],
             )
-            record = self.repository.create(db, payload)
             return StampingTonnagePriceResponse.model_validate(record), None
         except IntegrityError:
             db.rollback()
@@ -186,12 +186,12 @@ class StampingTonnagePriceService:
             if existing.audit_status == AUDIT_APPROVED:
                 return None, "已审核通过，请先反审核后再修改"
 
-            payload = {**data.model_dump(), **audit_update(current_user)}
-            if "price_per_stroke" in payload:
-                payload["price_per_stroke"] = quantize_price_per_stroke(
-                    payload["price_per_stroke"]
-                )
-            record = self.repository.update(db, id, payload)
+            record = self.repository.update(
+                db,
+                id,
+                data,
+                updated_by=audit_update(current_user)["updated_by"],
+            )
             if not record:
                 return None, "记录不存在"
             return StampingTonnagePriceResponse.model_validate(record), None

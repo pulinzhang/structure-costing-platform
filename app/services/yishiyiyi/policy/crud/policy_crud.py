@@ -7,12 +7,12 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Optional
+from typing import Optional
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.common.audit import audit_create, audit_update
+from app.common.audit import AuditCreateFields, audit_create, display_name
 from app.repositories.yishiyiyi.policy import SteelPricePolicyRepository
 from app.repositories.yishiyiyi.policy.steel_price_policy_repository import (
     MatchFilter,
@@ -24,6 +24,8 @@ from app.schemas.dto.steel_price_policy_dto import (
     PolicyCreate,
     PolicyQuery,
     PolicyUpdate,
+    SteelPriceLadderItemWrite,
+    SteelPricePolicyWrite,
 )
 from app.schemas.vo.steel_price_policy_vo import (
     LadderItemResponse,
@@ -34,6 +36,32 @@ from app.schemas.vo.steel_price_policy_vo import (
 from app.schemas.vo.user_vo import UserVO
 
 logger = logging.getLogger("service.steel_price_policy.crud")
+
+
+def _ladder_write_from_create(
+    item: LadderItemCreate,
+    audit: AuditCreateFields,
+) -> SteelPriceLadderItemWrite:
+    return SteelPriceLadderItemWrite(
+        target_sub_group=item.target_sub_group,
+        thick_min=item.thick_min,
+        thick_min_operator=item.thick_min_operator,
+        thick_max=item.thick_max,
+        thick_max_operator=item.thick_max_operator,
+        width_min=item.width_min,
+        width_min_operator=item.width_min_operator,
+        width_max=item.width_max,
+        width_max_operator=item.width_max_operator,
+        zinc_coating_min=item.zinc_coating_min,
+        zinc_coating_min_operator=item.zinc_coating_min_operator,
+        zinc_coating_max=item.zinc_coating_max,
+        zinc_coating_max_operator=item.zinc_coating_max_operator,
+        price_adjustment=item.price_adjustment,
+        is_base=item.is_base,
+        sort_order=item.sort_order,
+        created_by=audit["created_by"],
+        updated_by=audit["updated_by"],
+    )
 
 
 class SteelPricePolicyCrudService:
@@ -122,32 +150,48 @@ class SteelPricePolicyCrudService:
         current_user: UserVO,
     ) -> tuple[Optional[PolicyDetailResponse], Optional[str]]:
         create_audit = audit_create(current_user)
-        payload = data.model_dump()
+        policy_type = data.policy_type.value
+        grade_type = data.grade_type.value if data.grade_type else None
 
         match_filter = MatchFilter(
-            year=payload["year"],
-            month=payload["month"],
-            steel_mill=payload["steel_mill"],
-            category_name=payload["category_name"],
-            policy_type=payload["policy_type"],
-            grade_type=payload.get("grade_type"),
-            grade_value=payload.get("grade_value"),
-            base_thickness=payload.get("base_thickness"),
+            year=data.year,
+            month=data.month,
+            steel_mill=data.steel_mill,
+            category_name=data.category_name,
+            policy_type=policy_type,
+            grade_type=grade_type,
+            grade_value=data.grade_value,
+            base_thickness=data.base_thickness,
         )
         if self.repository.policy_exists_with_key(db, match_filter):
             db.rollback()
             return None, (
-                f"该年度({payload['year']})、月份({payload['month']})、钢厂({payload['steel_mill']})、"
-                f"大类({payload['category_name']})、类型({payload['policy_type']})的政策已存在"
+                f"该年度({data.year})、月份({data.month})、钢厂({data.steel_mill})、"
+                f"大类({data.category_name})、类型({policy_type})的政策已存在"
             )
 
         try:
-            items_data = [{**item, **create_audit} for item in payload.pop("items", [])]
-            policy_data = {k: v for k, v in payload.items() if k != "items"}
-            policy_data.update(create_audit)
-            policy_record = self.repository.create_policy(db, policy_data)
+            policy_record = self.repository.create_policy(
+                db,
+                SteelPricePolicyWrite(
+                    year=data.year,
+                    month=data.month,
+                    steel_mill=data.steel_mill,
+                    category_name=data.category_name,
+                    policy_type=policy_type,
+                    grade_type=grade_type,
+                    grade_value=data.grade_value,
+                    base_thickness=data.base_thickness,
+                    created_by=create_audit["created_by"],
+                    updated_by=create_audit["updated_by"],
+                ),
+            )
             db.flush()
-            self.repository.add_items(db, policy_record.id, items_data)
+            self.repository.add_items(
+                db,
+                policy_record.id,
+                [_ladder_write_from_create(item, create_audit) for item in data.items],
+            )
             db.commit()
 
             base_t_str = (
@@ -192,31 +236,26 @@ class SteelPricePolicyCrudService:
             db.rollback()
             return None, "记录不存在"
 
-        update_data = data.model_dump(exclude_unset=True)
-
-        has_items = "items" in update_data
-        raw_items: list[dict[str, Any]] | None = update_data.pop("items", None)
-
-        if has_items and raw_items is not None and len(raw_items) > 0:
-            items_data = raw_items
-        elif has_items:
-            items_data = []
-        else:
-            items_data = None
-
-        if not update_data and items_data is None:
+        if not data.model_fields_set:
             db.rollback()
             return None, "未提供任何可更新字段"
 
-        update_data.update(audit_update(current_user))
         try:
-            self.repository.update_policy(db, policy_id, update_data)
-            if items_data is not None:
+            self.repository.update_policy(
+                db,
+                policy_id,
+                data,
+                updated_by=display_name(current_user),
+            )
+            if "items" in data.model_fields_set:
                 create_audit = audit_create(current_user)
                 self.repository.replace_items(
                     db,
                     policy_id,
-                    [{**item, **create_audit} for item in items_data],
+                    [
+                        _ladder_write_from_create(item, create_audit)
+                        for item in (data.items or [])
+                    ],
                 )
             db.commit()
 
@@ -259,17 +298,12 @@ class SteelPricePolicyCrudService:
         if policy is None:
             return None, "政策不存在"
 
-        item_data = data.model_dump()
-        op_val = item_data.get("min_operator")
-        if op_val is not None:
-            item_data["min_operator"] = op_val.value
-        op_val2 = item_data.get("max_operator")
-        if op_val2 is not None:
-            item_data["max_operator"] = op_val2.value
-        item_data.update(audit_create(current_user))
-
         try:
-            created = self.repository.add_items(db, policy_id, [item_data])
+            created = self.repository.add_items(
+                db,
+                policy_id,
+                [_ladder_write_from_create(data, audit_create(current_user))],
+            )
             db.commit()
 
             logger.info(
@@ -295,18 +329,16 @@ class SteelPricePolicyCrudService:
         if existing is None:
             return None, "明细不存在"
 
-        update_data = data.model_dump(exclude_none=True)
-        if "min_operator" in update_data and update_data["min_operator"] is not None:
-            update_data["min_operator"] = update_data["min_operator"].value
-        if "max_operator" in update_data and update_data["max_operator"] is not None:
-            update_data["max_operator"] = update_data["max_operator"].value
-
-        if not update_data:
+        if not data.model_fields_set:
             return None, "未提供任何可更新字段"
-        update_data.update(audit_update(current_user))
 
         try:
-            updated = self.repository.update_item(db, item_id, update_data)
+            updated = self.repository.update_item(
+                db,
+                item_id,
+                data,
+                updated_by=display_name(current_user),
+            )
             db.commit()
 
             logger.info("更新阶梯明细: id=%s", item_id)

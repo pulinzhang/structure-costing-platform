@@ -1,6 +1,6 @@
 ---
 alwaysApply: true
-description: FastAPI backend type safety, layered architecture, API contract, and permission Depends (require_perm / Perm)
+description: FastAPI backend type safety, layered architecture, API contract, permission Depends, and Any must not cross function boundaries
 ---
 
 # Backend Type Safety Rules
@@ -244,6 +244,25 @@ Database
 
 Each layer has a strict responsibility.
 
+### 4.1 `Any` — moderate ban (do not cross function boundaries)
+
+**Rule:** `Any` must not appear on function parameters or return types. Once a signature is `Any`, type checking dies for the whole call chain.
+
+This is a **moderate** ban, not a hunt for every `Any` in a function body: you may catch untyped third-party values **inside** a function, but you must narrow them before they leave.
+
+| Place | Allowed | Forbidden |
+|-------|---------|-----------|
+| **Function signature** | DTO / dataclass / `TypedDict` / Model / VO / `TypeVar` / std types | `Any`, `dict[str, Any]`, `list[Any]`, `**kwargs: Any` as a business API |
+| **Function body** | `json.loads`, untyped third-party objects — narrow immediately | Passing un-narrowed `Any` to another function |
+| **Repository writes** | dataclass for full rows; `TypedDict, total=False` for patches; HTTP DTO if columns already match | `{**dto.model_dump(), **audit_create()}` as the argument type; VO into Repository |
+| **Aggregates / filters** | named `TypedDict` or Pydantic model | `dict[str, Any]` as `filters` / `summary` |
+
+Prefer: HTTP in → DTO; HTTP out → VO (Service → Router only); Service → Repository full row → dataclass; partial update → `TypedDict` with explicit `updated_by=` (do not `**audit_update()` into a narrower TypedDict).
+
+Exceptions (still narrow at the boundary): `ApiResponse.fail` internals (business routers still use `ApiResponse[ConcreteVO]`); untyped third-party objects wrapped in a small function; `json.loads` parsed inside and returned as VO / TypedDict / std types.
+
+Do not keep `dict[str, Any]` on Repository / Service / Router signatures for convenience.
+
 ---
 
 ## 5. Repository Layer Rules
@@ -270,7 +289,7 @@ list[User]
 Optional[User]
 ```
 
-Forbidden:
+Forbidden on signatures (use dataclass / TypedDict / DTO / Model):
 
 ```python
 dict
@@ -278,6 +297,10 @@ dict
 
 ```python
 dict[str, Any]
+```
+
+```python
+Any
 ```
 
 ```python
@@ -291,7 +314,8 @@ JSONResponse
 Repository must not:
 
 * create API response
-* convert to VO
+* convert to VO / accept VO as input
+* use `Any` / `dict[str, Any]` on method signatures
 * serialize fields
 * format datetime
 * format Decimal
@@ -335,8 +359,12 @@ Service is responsible for:
 
 ```python
 def create(self, db: Session, dto: UserCreateDTO, current_user: UserVO) -> UserVO:
-    payload = {**dto.model_dump(), **audit_create(current_user)}
-    ...
+    audit = audit_create(current_user)
+    payload = UserInsertPayload(
+        username=dto.username,
+        created_by=audit["created_by"],
+        updated_by=audit["updated_by"],
+    )
 ```
 
 Service must return:
@@ -369,8 +397,9 @@ Note:
 - 分页接口（现网推荐）：Service 返回 `list[VO], total[, filters]`，Router 使用 `ApiResponse.list_(items=..., total=..., page=..., page_size=..., filters=...)`
 - 分页备选：Service 返回 `PageResult[VO]`，Router 使用 `ApiResponse.ok(data=page_result)`
 - 非分页列表：Service 返回 `list[VO]`，Router 使用 `ApiResponse.ok(data=vo_list)`
+- 写入 Repository：dataclass / TypedDict / DTO；禁止 `dict[str, Any]`；禁止 VO 进入 Repository
 
-Forbidden:
+Forbidden on signatures:
 
 ```python
 dict
@@ -378,6 +407,10 @@ dict
 
 ```python
 dict[str, Any]
+```
+
+```python
+Any
 ```
 
 ```python
@@ -982,6 +1015,7 @@ VO.model_dump() for API output
 __dict__
 dict(model)
 ApiResponse[Any]
+Any / dict[str, Any] / list[Any] on function signatures (use DTO / dataclass / TypedDict / Model)
 money/unit_price/fee as float (use Decimal; JSON string for money)
 ```
 

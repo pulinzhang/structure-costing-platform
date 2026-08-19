@@ -4,8 +4,6 @@ BOM 焊接费 CRUD / 审核 / 删除服务
 
 from __future__ import annotations
 
-from typing import Any
-
 from sqlalchemy.orm import Session
 
 from app.common.audit import (
@@ -16,8 +14,11 @@ from app.common.audit import (
 )
 from app.common.timezone import now
 from app.exceptions.base import BusinessException
-from app.models.bom_l0_welding_fee import BomL0WeldingFee
-from app.repositories.bom.l0_welding_fee_repository import BomL0WeldingFeeRepository
+from app.models.bom import BomL0WeldingFee
+from app.repositories.bom.l0_welding_fee_repository import (
+    BomL0WeldingFeeRepository,
+    L0WeldingFeeListFilters,
+)
 from app.repositories.bom.welding_process_breakdown_repository import (
     BomWeldingProcessBreakdownRepository,
 )
@@ -61,7 +62,7 @@ class BomL0WeldingFeeService:
         self,
         db: Session,
         query: BomL0WeldingFeeQuery,
-    ) -> tuple[list[BomL0WeldingFeeVO], int, dict[str, Any]]:
+    ) -> tuple[list[BomL0WeldingFeeVO], int, L0WeldingFeeListFilters]:
         skip = (query.page - 1) * query.size
         rows, total = self.fee_repo.paginate(
             db,
@@ -76,7 +77,7 @@ class BomL0WeldingFeeService:
             limit=query.size,
         )
         vos = self._to_vos(db, rows)
-        filters = {
+        filters: L0WeldingFeeListFilters = {
             "year": query.year,
             "location": query.location,
             "vehicle_model": query.vehicle_model,

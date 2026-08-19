@@ -12,7 +12,7 @@ from openpyxl.styles import Alignment, PatternFill
 from openpyxl.utils import get_column_letter
 
 from app.common.timezone import now
-from app.models.bom_welding_process_breakdown import (
+from app.models.bom import (
     BomWeldingProcessBreakdownLine,
     BomWeldingProcessBreakdownNode,
 )

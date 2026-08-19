@@ -4,13 +4,23 @@
 """
 
 from decimal import Decimal
-from typing import Any, Optional
+from typing import Optional, TypeVar
 
 from sqlalchemy import distinct, func
-from sqlalchemy.orm import Query, Session, joinedload
+from sqlalchemy.orm import InstrumentedAttribute, Query, Session, joinedload
 
-from app.models.steel_price_policy import SteelPricePolicy, SteelPriceLadderItem
+from app.models.yishiyiyi import SteelPricePolicy, SteelPriceLadderItem
+from app.repositories.persist import apply_dto_fields, model_from_payload
 from app.repositories.yishiyiyi.policy.dto import FilterOptions
+from app.schemas.dto.steel_price_policy_dto import (
+    LadderItemUpdate,
+    PolicyUpdate,
+    SteelPriceLadderItemWrite,
+    SteelPricePolicyWrite,
+)
+
+TValue = TypeVar("TValue")
+_T = TypeVar("_T")
 
 
 class PolicyFilter:
@@ -153,13 +163,13 @@ class SteelPricePolicyRepository:
     def _distinct_values(
         self,
         db: Session,
-        column: Any,
+        column: InstrumentedAttribute[TValue],
         *,
         filter_none: bool = False,
         descending: bool = False,
-    ) -> list[Any]:
+    ) -> list[TValue]:
         """通用 distinct 值查询。"""
-        query: Query[Any] = db.query(distinct(column))
+        query = db.query(distinct(column))
         if filter_none:
             query = query.filter(column.isnot(None))
         order_col = column.desc() if descending else column.asc()
@@ -175,8 +185,20 @@ class SteelPricePolicyRepository:
         steel_mills = self._distinct_values(db, SteelPricePolicy.steel_mill)
         category_names = self._distinct_values(db, SteelPricePolicy.category_name)
         policy_types = self._distinct_values(db, SteelPricePolicy.policy_type)
-        grade_types = self._distinct_values(db, SteelPricePolicy.grade_type, filter_none=True)
-        grade_values = self._distinct_values(db, SteelPricePolicy.grade_value, filter_none=True)
+        grade_types = [
+            value
+            for value in self._distinct_values(
+                db, SteelPricePolicy.grade_type, filter_none=True
+            )
+            if value is not None
+        ]
+        grade_values = [
+            value
+            for value in self._distinct_values(
+                db, SteelPricePolicy.grade_value, filter_none=True
+            )
+            if value is not None
+        ]
         return FilterOptions(
             years=years,
             months=months,
@@ -189,12 +211,12 @@ class SteelPricePolicyRepository:
 
     # ---- 主表写操作 ----
 
-    def create_policy(self, db: Session, data: dict[str, Any]) -> SteelPricePolicy:
+    def create_policy(self, db: Session, data: SteelPricePolicyWrite) -> SteelPricePolicy:
         """
         创建政策主表记录（不含明细）。
         注意：此方法不 flush，由调用方（Service）控制事务。
         """
-        policy = SteelPricePolicy(**data)
+        policy = model_from_payload(SteelPricePolicy, data)
         db.add(policy)
         return policy
 
@@ -202,7 +224,9 @@ class SteelPricePolicyRepository:
         self,
         db: Session,
         policy_id: int,
-        update_data: dict[str, Any],
+        update_data: PolicyUpdate,
+        *,
+        updated_by: str,
     ) -> Optional[SteelPricePolicy]:
         """
         按主键更新政策主表字段，返回更新后记录或 None（不存在）。
@@ -211,9 +235,8 @@ class SteelPricePolicyRepository:
         policy = self.get_by_id(db, policy_id, load_items=False)
         if policy is None:
             return None
-        for column, value in update_data.items():
-            if hasattr(policy, column):
-                setattr(policy, column, value)
+        apply_dto_fields(policy, update_data, skip=frozenset({"items"}))
+        policy.updated_by = updated_by
         return policy
 
     def delete_policy(self, db: Session, policy_id: int) -> bool:
@@ -229,12 +252,12 @@ class SteelPricePolicyRepository:
 
     def _apply_optional_policy_filters(
         self,
-        query: Any,
+        query: Query[_T],
         *,
         grade_type: Optional[str] = None,
         grade_value: Optional[str] = None,
         base_thickness: Optional[Decimal] = None,
-    ) -> Any:
+    ) -> Query[_T]:
         """对 policy 的可选过滤字段应用条件（支持 NULL 精确匹配）。"""
         if grade_type is not None:
             query = query.filter(SteelPricePolicy.grade_type == grade_type)
@@ -265,15 +288,14 @@ class SteelPricePolicyRepository:
             db: 数据库会话
             match_filter: 匹配过滤条件
         """
-        query = db.query(SteelPricePolicy.id).filter(
-            SteelPricePolicy.year == match_filter.year,
-            SteelPricePolicy.month == match_filter.month,
-            SteelPricePolicy.steel_mill == match_filter.steel_mill,
-            SteelPricePolicy.category_name == match_filter.category_name,
-            SteelPricePolicy.policy_type == match_filter.policy_type,
-        )
         query = self._apply_optional_policy_filters(
-            query,
+            db.query(SteelPricePolicy.id).filter(
+                SteelPricePolicy.year == match_filter.year,
+                SteelPricePolicy.month == match_filter.month,
+                SteelPricePolicy.steel_mill == match_filter.steel_mill,
+                SteelPricePolicy.category_name == match_filter.category_name,
+                SteelPricePolicy.policy_type == match_filter.policy_type,
+            ),
             grade_type=match_filter.grade_type,
             grade_value=match_filter.grade_value,
             base_thickness=match_filter.base_thickness,
@@ -308,15 +330,16 @@ class SteelPricePolicyRepository:
         self,
         db: Session,
         policy_id: int,
-        items_data: list[dict[str, Any]],
+        items_data: list[SteelPriceLadderItemWrite],
     ) -> list[SteelPriceLadderItem]:
         """
         批量新增明细。
         注意：此方法不 flush，由调用方（Service）控制事务。
         """
-        created = []
+        created: list[SteelPriceLadderItem] = []
         for item_data in items_data:
-            item = SteelPriceLadderItem(policy_id=policy_id, **item_data)
+            item = model_from_payload(SteelPriceLadderItem, item_data)
+            item.policy_id = policy_id
             db.add(item)
             created.append(item)
         return created
@@ -325,7 +348,9 @@ class SteelPricePolicyRepository:
         self,
         db: Session,
         item_id: int,
-        update_data: dict[str, Any],
+        update_data: LadderItemUpdate,
+        *,
+        updated_by: str,
     ) -> Optional[SteelPriceLadderItem]:
         """
         更新单条明细。
@@ -334,9 +359,8 @@ class SteelPricePolicyRepository:
         item = db.query(SteelPriceLadderItem).filter(SteelPriceLadderItem.id == item_id).first()
         if item is None:
             return None
-        for column, value in update_data.items():
-            if hasattr(item, column):
-                setattr(item, column, value)
+        apply_dto_fields(item, update_data)
+        item.updated_by = updated_by
         return item
 
     def delete_item(self, db: Session, item_id: int) -> bool:
@@ -367,7 +391,7 @@ class SteelPricePolicyRepository:
         self,
         db: Session,
         policy_id: int,
-        new_items_data: list[dict[str, Any]],
+        new_items_data: list[SteelPriceLadderItemWrite],
     ) -> list[SteelPriceLadderItem]:
         """
         整组替换政策下的全部明细（旧明细级联删除）。

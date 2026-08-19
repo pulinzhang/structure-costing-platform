@@ -6,8 +6,8 @@ import logging
 
 from sqlalchemy.orm import Session
 
-from app.common.audit import audit_create, audit_update
-from app.models.steel_base_price import SteelBasePrice
+from app.common.audit import audit_create, display_name
+from app.models.yishiyiyi import SteelBasePrice
 from app.repositories.yishiyiyi.base_price import SteelBasePriceRepository
 from app.repositories.yishiyiyi.base_price.steel_base_price_repository import (
     BasePriceFilter,
@@ -66,8 +66,13 @@ class SteelBasePriceCrudService:
         current_user: UserVO,
     ) -> tuple[SteelBasePriceResponse | None, str | None]:
         try:
-            data = {**body.model_dump(), **audit_create(current_user)}
-            record = self.repository.create(db, data)
+            audit = audit_create(current_user)
+            record = self.repository.create(
+                db,
+                body,
+                created_by=audit["created_by"],
+                updated_by=audit["updated_by"],
+            )
             db.commit()
             return SteelBasePriceResponse.model_validate(record), None
         except Exception as error:
@@ -83,11 +88,14 @@ class SteelBasePriceCrudService:
         current_user: UserVO,
     ) -> tuple[SteelBasePriceResponse | None, str | None]:
         try:
-            data = body.model_dump(exclude_unset=True)
-            if not data:
+            if not body.model_fields_set:
                 return None, "没有提供任何更新字段"
-            data.update(audit_update(current_user))
-            record = self.repository.update(db, record_id, data)
+            record = self.repository.update(
+                db,
+                record_id,
+                body,
+                updated_by=display_name(current_user),
+            )
             if record is None:
                 return None, "记录不存在"
             db.commit()

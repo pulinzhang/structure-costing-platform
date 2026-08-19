@@ -10,11 +10,15 @@ from sqlalchemy.orm import Session
 
 from app.common.timezone import now
 from app.exceptions.base import BusinessException
-from app.models.stamping_part_cost_calc_log import StampingPartCostCalcLog
+from app.models.costing import StampingPartCostCalcLog
 from app.repositories.costing.stamping_part_cost.stamping_part_cost_calc_log_repository import (
     StampingPartCostCalcLogRepository,
 )
-from app.schemas.dto.stamping_part_cost_dto import StampingPartCostCalcDTO
+from app.schemas.dto.stamping_part_cost_dto import (
+    StampingPartCostCalcDTO,
+    StampingPartCostCalcLogCreate,
+    StampingPartCostCalcLogPatch,
+)
 from app.schemas.vo.stamping_part_cost_vo import StampingPartCostCalcLogVO
 from app.services.costing.stamping_part_cost.calc.constants import (
     DUPLICATE_SCOPE_CALC_MESSAGE,
@@ -67,22 +71,22 @@ class PartCostCalcLogService:
         try:
             record = self.calc_log_repo.create(
                 db,
-                {
-                    "calc_batch_id": calc_batch_id,
-                    "year": dto.year,
-                    "month": dto.month,
-                    "location": location,
-                    "stamping_supplier": supplier,
-                    "vehicle_model": dto.vehicle_model,
-                    "version": dto.version,
-                    "status": STATUS_PROCESSING,
-                    "detail_text": "计算进行中...",
-                    "started_at": started_at,
-                    "operator_id": operator_id,
-                    "operator_name": operator_name,
-                    "created_by": operator_name,
-                    "updated_by": operator_name,
-                },
+                StampingPartCostCalcLogCreate(
+                    calc_batch_id=calc_batch_id,
+                    year=dto.year,
+                    month=dto.month,
+                    location=location,
+                    stamping_supplier=supplier,
+                    vehicle_model=dto.vehicle_model,
+                    version=dto.version,
+                    status=STATUS_PROCESSING,
+                    detail_text="计算进行中...",
+                    started_at=started_at,
+                    operator_id=operator_id,
+                    operator_name=operator_name,
+                    created_by=operator_name,
+                    updated_by=operator_name,
+                ),
             )
             db.commit()
             db.refresh(record)
@@ -101,11 +105,11 @@ class PartCostCalcLogService:
         self.calc_log_repo.update(
             db,
             log_id,
-            {
-                "status": STATUS_FAILED,
-                "detail_text": detail_text,
-                "finished_at": now(),
-            },
+            StampingPartCostCalcLogPatch(
+                status=STATUS_FAILED,
+                detail_text=detail_text,
+                finished_at=now(),
+            ),
         )
         db.commit()
 
@@ -132,12 +136,11 @@ class PartCostCalcLogService:
         self.calc_log_repo.update(
             db,
             record.id,
-            {
-                "status": STATUS_FAILED,
-                "detail_text": (record.detail_text or "")
-                + "\n超时自动释放计算锁",
-                "finished_at": now(),
-            },
+            StampingPartCostCalcLogPatch(
+                status=STATUS_FAILED,
+                detail_text=(record.detail_text or "") + "\n超时自动释放计算锁",
+                finished_at=now(),
+            ),
         )
         db.commit()
 

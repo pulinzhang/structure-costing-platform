@@ -5,13 +5,14 @@
 
 import logging
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.models.stamping_scrap_price import StampingScrapPrice
-from app.schemas.dto.stamping_scrap_price_dto import FilterOptions
+from app.models.yishiyiyi import StampingScrapPrice
+from app.repositories.persist import model_from_payload
+from app.schemas.dto.stamping_scrap_price_dto import FilterOptions, ScrapPriceWrite
 
 
 logger = logging.getLogger("repository.stamping_scrap_price")
@@ -133,7 +134,7 @@ class StampingScrapPriceRepository:
         db: Session,
         year: int,
         month: int,
-        rows: List[Dict[str, Any]],
+        rows: List[ScrapPriceWrite],
     ) -> List[StampingScrapPrice]:
         """同一事务内：删掉该月旧数据，再整月写入。"""
         db.query(StampingScrapPrice).filter(
@@ -141,7 +142,7 @@ class StampingScrapPriceRepository:
             StampingScrapPrice.month == month,
         ).delete(synchronize_session=False)
 
-        records = [StampingScrapPrice(**row) for row in rows]
+        records = [model_from_payload(StampingScrapPrice, row) for row in rows]
         db.add_all(records)
         db.commit()
         for record in records:

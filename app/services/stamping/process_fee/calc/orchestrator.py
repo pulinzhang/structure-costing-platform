@@ -3,18 +3,16 @@
 
 计算链：
   1. 加载冲次单价 / 冲压零件
-  2. PartFeeCalculator      — 单零件工序加工费
-  3. TonnageResolver        — 吨位解析（共模/摆剪，由 PartFeeCalculator 调用）
-  4. fee_repo.bulk_upsert   — 结果落库
-  5. ProcessFeeCalcLogService — 计算锁与过程日志
+  2. 单件计费：拼焊件 TailorWeldFeeCalculator，其余 PartFeeCalculator
+  3. TonnageResolver        — 吨位解析（共模/摆剪，由计算器调用）
+  4. part_snapshot          — 零件主表字段写入结果行（含 is_tailor_welded）
+  5. fee_repo.bulk_upsert   — 结果落库
+  6. ProcessFeeCalcLogService — 计算锁与过程日志
 
-公式与共模规则见 PartFeeCalculator / TonnageResolver 文档。
+公式与共模规则见 PartFeeCalculator / TailorWeldFeeCalculator / TonnageResolver。
 """
 
 from __future__ import annotations
-
-from typing import Any
-
 
 import logging
 from decimal import Decimal
@@ -25,15 +23,18 @@ from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING, audit_create, audit_
 from app.common.audit import display_name
 from app.common.timezone import now
 from app.exceptions.base import BusinessException
-from app.models.stamping import StampingPart
-from app.models.stamping_process_fee_calc_log import StampingProcessFeeCalcLog
+from app.models.stamping import StampingPart, StampingProcessFeeCalcLog
 from app.repositories.stamping.stamping_process_fee_repository import (
-    PROCESS_ITEMS_KEY,
     StampingProcessFeeRepository,
 )
 from app.repositories.stamping.stamping_repository import StampingPartRepository
 from app.repositories.stamping.tonnage_price_repository import StampingTonnagePriceRepository
-from app.schemas.dto.stamping_process_fee_dto import StampingProcessFeeCalcDTO
+from app.schemas.dto.stamping_process_fee_dto import (
+    ProcessFeeCalcLogPatch,
+    ProcessFeeItemPayload,
+    ProcessFeeUpsertPayload,
+    StampingProcessFeeCalcDTO,
+)
 from app.schemas.vo.stamping_process_fee_vo import (
     StampingProcessFeeCalcLogVO,
     StampingProcessFeeCalcReadyVO,
@@ -55,6 +56,9 @@ from app.services.stamping.process_fee.calc.models import (
 )
 from app.services.stamping.process_fee.calc.part_calculator import PartFeeCalculator
 from app.services.stamping.process_fee.calc.snapshot import part_snapshot
+from app.services.stamping.process_fee.calc.tailor_weld_calculator import (
+    TailorWeldFeeCalculator,
+)
 from app.services.stamping.process_fee.fee_math import resolve_final_fee
 from app.services.stamping.process_fee.scope import require_scope
 
@@ -70,6 +74,7 @@ class StampingProcessFeeCalcOrchestrator:
         self.tonnage_repo = StampingTonnagePriceRepository()
         self.calc_log_service = ProcessFeeCalcLogService()
         self.part_calculator = PartFeeCalculator()
+        self.tailor_weld_calculator = TailorWeldFeeCalculator()
 
     def get_calc_ready(
         self,
@@ -208,7 +213,7 @@ class StampingProcessFeeCalcOrchestrator:
         detail_lines.append(f"匹配零件 {len(parts)} 件")
 
         prev_part_cache: dict[int, StampingPart | None] = {}
-        upsert_rows: list[dict[str, Any]] = []
+        upsert_rows: list[ProcessFeeUpsertPayload] = []
         failed_items: list[StampingProcessFeeFailedItemVO] = []
         zero_fee_items: list[StampingProcessFeeFailedItemVO] = []
         success_count = 0
@@ -232,17 +237,22 @@ class StampingProcessFeeCalcOrchestrator:
                 skipped_approved_count += 1
                 continue
 
-            fee_or_error = self.part_calculator.calc_part_fee(
+            calculator: PartFeeCalculator | TailorWeldFeeCalculator = (
+                self.tailor_weld_calculator
+                if part.is_tailor_welded
+                else self.part_calculator
+            )
+            fee_or_error = calculator.calc_part_fee(
                 db, part, rate_map, dto.year, prev_part_cache
             )
-            manual_price = existing.manual_unit_price if existing else None
+            other_fee = existing.other_fee if existing else None
 
             if isinstance(fee_or_error, StampingProcessFeeFailedItemVO):
                 failed_items.append(fee_or_error)
                 processing_fee = None
                 process_count = len(part.processes or [])
                 calc_fail_reason = fee_or_error.reason
-                process_items: list[dict[str, Any]] = []
+                process_items: list[ProcessFeeItemPayload] = []
             else:
                 processing_fee, process_count, process_items = fee_or_error
                 calc_fail_reason = None
@@ -250,6 +260,11 @@ class StampingProcessFeeCalcOrchestrator:
                 if processing_fee is not None and Decimal(str(processing_fee)) == 0:
                     zero_fee_count += 1
                     if len(zero_fee_items) < 50:
+                        zero_reason = (
+                            "拼焊件系统计算不含拼焊费，请到列表录入其它费用"
+                            if part.is_tailor_welded
+                            else "系统计算加工费为 0，请到列表核对或录入其它费用"
+                        )
                         zero_fee_items.append(
                             StampingProcessFeeFailedItemVO(
                                 part_number=part.part_number,
@@ -257,30 +272,31 @@ class StampingProcessFeeCalcOrchestrator:
                                 process_seq=None,
                                 process_code=None,
                                 process_method=None,
-                                reason="系统计算加工费为 0，请到列表手工调整单价",
+                                reason=zero_reason,
                             )
                         )
 
-            final_fee = resolve_final_fee(processing_fee, manual_price)
-            row = {
-                "year": dto.year,
-                "location": part.location,
-                "stamping_supplier": supplier,
-                "vehicle_model": part.vehicle_model,
-                "version": part.version,
-                **part_snapshot(part),
-                "processing_fee": processing_fee,
-                "process_count": process_count,
-                "final_processing_fee": final_fee,
-                "calc_fail_reason": calc_fail_reason,
-                "audit_status": AUDIT_PENDING,
-                PROCESS_ITEMS_KEY: process_items,
-            }
-            if existing:
-                row.update(update_audit)
-            else:
-                row.update(audit)
-            upsert_rows.append(row)
+            final_fee = resolve_final_fee(processing_fee, other_fee)
+            upsert_rows.append(
+                ProcessFeeUpsertPayload(
+                    year=dto.year,
+                    location=part.location,
+                    stamping_supplier=supplier,
+                    vehicle_model=part.vehicle_model,
+                    version=part.version,
+                    snapshot=part_snapshot(part),
+                    processing_fee=processing_fee,
+                    process_count=process_count,
+                    final_processing_fee=final_fee,
+                    calc_fail_reason=calc_fail_reason,
+                    audit_status=AUDIT_PENDING,
+                    created_by=None if existing else audit["created_by"],
+                    updated_by=(
+                        update_audit["updated_by"] if existing else audit["updated_by"]
+                    ),
+                    process_items=process_items,
+                )
+            )
 
             if index == total or index % 20 == 0:
                 pct = 10 + int(80 * index / max(total, 1))
@@ -303,7 +319,7 @@ class StampingProcessFeeCalcOrchestrator:
         )
         if zero_fee_count:
             detail_lines.append(
-                "提醒：存在计算价为 0 的零件，请到列表手工调整单价"
+                "提醒：存在计算价为 0 的零件，请到列表核对或录入其它费用"
             )
         for item in failed_items[:20]:
             detail_lines.append(
@@ -336,17 +352,17 @@ class StampingProcessFeeCalcOrchestrator:
             self.calc_log_service.calc_log_repo.update(
                 db,
                 log_id,
-                {
-                    "status": status,
-                    "total_parts": result.total_parts,
-                    "success_count": result.success_count,
-                    "failed_count": result.failed_count,
-                    "zero_fee_count": result.zero_fee_count,
-                    "skipped_approved_count": result.skipped_approved_count,
-                    "detail_text": result.detail_text,
-                    "finished_at": finished_at,
-                    "updated_by": display_name(current_user) or None,
-                },
+                ProcessFeeCalcLogPatch(
+                    status=status,
+                    total_parts=result.total_parts,
+                    success_count=result.success_count,
+                    failed_count=result.failed_count,
+                    zero_fee_count=result.zero_fee_count,
+                    skipped_approved_count=result.skipped_approved_count,
+                    detail_text=result.detail_text,
+                    finished_at=finished_at,
+                    updated_by=display_name(current_user) or None,
+                ),
             )
             db.commit()
 

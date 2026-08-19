@@ -3,9 +3,9 @@
 from datetime import datetime
 from decimal import Decimal
 
-from pydantic import BaseModel, Field, field_serializer
+from pydantic import BaseModel, Field, field_serializer, field_validator
 
-from app.common.money import Q2, Q3, Q4, Q6, optional_format_money
+from app.common.money import Q3, Q4, Q6, optional_format_money
 
 
 class StampingPartCostVO(BaseModel):
@@ -23,10 +23,10 @@ class StampingPartCostVO(BaseModel):
     part_number: str
     part_name: str | None = None
     material: str | None = None
-    thickness: Decimal | None = None
+    thickness: str | None = None
     part_weight: Decimal | None = None
-    sheet_length: Decimal | None = None
-    sheet_width: Decimal | None = None
+    sheet_length: str | None = None
+    sheet_width: str | None = None
     parts_per_sheet: int | None = None
     sheet_type: str | None = None
     die_type: str | None = None
@@ -49,7 +49,7 @@ class StampingPartCostVO(BaseModel):
 
     steel_price_id: int | None = None
     steel_mill: str | None = None
-    steel_ton_price: Decimal | None = None
+    steel_ton_price: str | None = None
     scrap_price_id: int | None = None
     scrap_ton_price: Decimal | None = None
     process_fee_id: int | None = None
@@ -81,13 +81,22 @@ class StampingPartCostVO(BaseModel):
     created_at: datetime | None = None
     updated_at: datetime | None = None
 
-    @field_serializer("thickness", "part_weight", "density", "material_utilization_pct")
+    @field_validator(
+        "thickness", "sheet_length", "sheet_width", "steel_ton_price",
+        mode="before",
+    )
+    @classmethod
+    def _display_string(cls, value: object) -> str | None:
+        """ORM Decimal 不直接当展示串；由 Service 填入 0.70/1.00 这类文本。"""
+        if value is None or value == "":
+            return None
+        if isinstance(value, str):
+            return value
+        return None
+
+    @field_serializer("part_weight", "density", "material_utilization_pct")
     def serialize_q4(self, value: Decimal | None) -> str | None:
         return optional_format_money(value, Q4, 4)
-
-    @field_serializer("sheet_length", "sheet_width")
-    def serialize_sheet_dim(self, value: Decimal | None) -> str | None:
-        return optional_format_money(value, Q2, 2)
 
     @field_serializer("material_loss_rate", "scrap_recovery_rate")
     def serialize_rate(self, value: Decimal | None) -> str | None:
@@ -97,7 +106,7 @@ class StampingPartCostVO(BaseModel):
     def serialize_weight(self, value: Decimal | None) -> str | None:
         return optional_format_money(value, Q6, 6)
 
-    @field_serializer("steel_ton_price", "scrap_ton_price")
+    @field_serializer("scrap_ton_price")
     def serialize_ton_price(self, value: Decimal | None) -> str | None:
         return optional_format_money(value, Q4, 4)
 

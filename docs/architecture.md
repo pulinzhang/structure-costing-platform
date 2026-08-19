@@ -65,9 +65,9 @@ Parser 是**横向工具**：只被 Service 调用，不依赖其它层。
 目录按 feature 对齐，例如：
 
 ```
-app/routers/stamping/     app/services/stamping/     app/repositories/stamping/
-app/routers/costing/      app/services/costing/      app/repositories/costing/
-app/routers/yishiyiyi/    …
+app/models/stamping/      app/routers/stamping/     app/services/stamping/     app/repositories/stamping/
+app/models/costing/       app/routers/costing/      app/services/costing/      app/repositories/costing/
+app/models/yishiyiyi/     …
 app/parsers/stamping/     # 仅上传类切片有 Parser
 ```
 
@@ -97,7 +97,7 @@ stamping-costing-platform/
 ├── app/
 │   ├── config.py / database.py
 │   ├── common/                  # 横切：permissions / audit / timezone …
-│   ├── models/                  # ORM（按表文件扁平组织）
+│   ├── models/{feature}/        # ORM（按垂直切片）；根 __init__ 仅供 main 注册表
 │   ├── schemas/                 # dto/ + vo/
 │   ├── repositories/{feature}/
 │   ├── services/{feature}/
@@ -224,7 +224,7 @@ ApiResponse（任务 id 或结果摘要）
 | **架构宪法** | [architecture-constitution.mdc](architecture-constitution.mdc) · `.cursor/rules/architecture-constitution.mdc` | 分层 + 切片依赖硬规则 |
 | **前端规范** | [front-end.mdc](front-end.mdc) · `.cursor/rules/front-end.mdc` | SPA / Brabus / 表格风格 |
 | **命名规范** | [naming-convention.mdc](naming-convention.mdc) · `.cursor/rules/…` | 标识符命名 |
-| **API 类型安全** | [api-type-safety.md](api-type-safety.md) · `.cursor/rules/api-type-safety.mdc` | `ApiResponse` / `PageResult` / 权限 Depends |
+| **API 类型安全** | [api-type-safety.md](api-type-safety.md) · `.cursor/rules/api-type-safety.mdc` | `ApiResponse` / `PageResult` / 权限 Depends / `Any` 不进函数签名 |
 | **Python 执行** | `.cursor/rules/python-execution.mdc` | Windows/UTF-8 跑脚本约定 |
 | **权限设计** | [permission-design.md](permission-design.md) | 前后端权限码 |
 

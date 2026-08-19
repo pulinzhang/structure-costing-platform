@@ -16,9 +16,10 @@ BOM 焊接费计算编排器
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 import logging
 from decimal import Decimal
-from typing import Any, Callable
+from typing import Callable
 
 from sqlalchemy.orm import Session
 
@@ -27,19 +28,20 @@ from app.common.bom.welding_billing_qty import resolve_billing_qty_for_price
 from app.common.money import Q4, quantize_money
 from app.common.timezone import now
 from app.exceptions.base import BusinessException
-from app.models.bom_l0_welding_fee_calc_log import BomL0WeldingFeeCalcLog
-from app.models.bom_welding_process_breakdown import BomWeldingProcessBreakdownNode
-from app.repositories.bom.l0_welding_fee_repository import (
-    FEE_ITEMS_KEY,
-    BomL0WeldingFeeRepository,
-)
+from app.models.bom import BomL0WeldingFeeCalcLog, BomWeldingProcessBreakdownNode
+from app.models.bom.welding_unit_price import BomWeldingUnitPrice
+from app.repositories.bom.l0_welding_fee_repository import BomL0WeldingFeeRepository
 from app.repositories.bom.welding_process_breakdown_repository import (
     BomWeldingProcessBreakdownRepository,
 )
 from app.repositories.bom.welding_unit_price_repository import (
     BomWeldingUnitPriceRepository,
 )
-from app.schemas.dto.bom_l0_welding_fee_dto import BomL0WeldingFeeCalcDTO
+from app.schemas.dto.bom_l0_welding_fee_dto import (
+    BomL0WeldingFeeCalcDTO,
+    BomL0WeldingFeeItemPayload,
+    BomL0WeldingFeeUpsertPayload,
+)
 from app.schemas.vo.bom_l0_welding_fee_vo import (
     BomL0WeldingFeeCalcLogVO,
     BomL0WeldingFeeCalcReadyVO,
@@ -66,6 +68,17 @@ CALC_PARTIAL = "partial"
 CALC_FAILED = "failed"
 
 MAP_READY = "ready"
+
+
+@dataclass(slots=True)
+class _L0FeeCalcParts:
+    process_line_count: int
+    matched_line_count: int
+    missing_price_count: int
+    total_l0_welding_fee: Decimal
+    calc_status: str
+    calc_message: str | None
+    items: list[BomL0WeldingFeeItemPayload]
 
 
 class BomL0WeldingFeeCalcOrchestrator:
@@ -208,7 +221,7 @@ class BomL0WeldingFeeCalcOrchestrator:
             raise BusinessException(
                 f"基地「{location}」年度 {year} 无焊接单价数据，请先维护焊接单价"
             )
-        price_map: dict[str, Any] = {p.item_name: p for p in prices}
+        price_map: dict[str, BomWeldingUnitPrice] = {p.item_name: p for p in prices}
         detail_lines.append(f"焊接单价 {len(prices)} 条")
 
         report(10, "加载成品焊接工艺拆解...")
@@ -226,7 +239,7 @@ class BomL0WeldingFeeCalcOrchestrator:
             )
         detail_lines.append(f"成品节点 {len(l0_nodes)} 个")
 
-        upsert_rows: list[dict[str, Any]] = []
+        upsert_rows: list[BomL0WeldingFeeUpsertPayload] = []
         skipped_approved_count = 0
         failed_count = 0
         missing_price_total = 0
@@ -247,30 +260,37 @@ class BomL0WeldingFeeCalcOrchestrator:
                 skipped_approved_count += 1
                 continue
 
-            row_payload = self._calc_l0_fee(node, price_map)
-            missing_price_total += int(row_payload["missing_price_count"])
-            if row_payload["calc_status"] == CALC_FAILED:
+            parts = self._calc_l0_fee(node, price_map)
+            missing_price_total += parts.missing_price_count
+            if parts.calc_status == CALC_FAILED:
                 failed_count += 1
 
-            row = {
-                "year": year,
-                "location": location,
-                "vehicle_model": vehicle_model,
-                "bom_version": bom_version,
-                "source_breakdown_node_id": node.id,
-                "part_number": node.part_number,
-                "part_name": node.part_name,
-                "customer_name": node.customer_name,
-                "weld_info_raw": (node.weld_info_raw or "").strip() or None,
-                "calc_batch_id": calc_batch_id,
-                "audit_status": AUDIT_PENDING,
-                **row_payload,
-            }
-            if existing:
-                row.update(update_audit)
-            else:
-                row.update(audit)
-            upsert_rows.append(row)
+            upsert_rows.append(
+                BomL0WeldingFeeUpsertPayload(
+                    year=year,
+                    location=location,
+                    vehicle_model=vehicle_model,
+                    bom_version=bom_version,
+                    source_breakdown_node_id=node.id,
+                    part_number=node.part_number,
+                    part_name=node.part_name,
+                    customer_name=node.customer_name,
+                    weld_info_raw=(node.weld_info_raw or "").strip() or None,
+                    process_line_count=parts.process_line_count,
+                    matched_line_count=parts.matched_line_count,
+                    missing_price_count=parts.missing_price_count,
+                    total_l0_welding_fee=parts.total_l0_welding_fee,
+                    calc_batch_id=calc_batch_id,
+                    calc_status=parts.calc_status,
+                    calc_message=parts.calc_message,
+                    audit_status=AUDIT_PENDING,
+                    updated_by=(
+                        update_audit["updated_by"] if existing else audit["updated_by"]
+                    ),
+                    created_by=None if existing else audit["created_by"],
+                    items=parts.items,
+                )
+            )
 
             if index == total or index % 20 == 0:
                 pct = 10 + int(80 * index / max(total, 1))
@@ -354,43 +374,43 @@ class BomL0WeldingFeeCalcOrchestrator:
     def _calc_l0_fee(
         self,
         node: BomWeldingProcessBreakdownNode,
-        price_map: dict[str, Any],
-    ) -> dict[str, Any]:
+        price_map: dict[str, BomWeldingUnitPrice],
+    ) -> _L0FeeCalcParts:
         lines = list(node.lines or [])
-        items: list[dict[str, Any]] = []
+        items: list[BomL0WeldingFeeItemPayload] = []
         matched_count = 0
         missing_count = 0
         total_fee = Decimal("0")
 
         for line in lines:
-            item: dict[str, Any] = {
-                "line_no": line.line_no,
-                "process_token": line.process_token,
-                "standard_process_name": line.standard_process_name,
-                "process_qty": quantize_money(line.process_qty, Q4),
-                "process_qty_unit": line.process_qty_unit,
-                "unit_price": None,
-                "unit": None,
-                "line_fee": None,
-                "match_status": MATCH_UNMAPPED,
-                "source_breakdown_line_id": line.id,
-                "remark": None,
-            }
+            item = BomL0WeldingFeeItemPayload(
+                line_no=line.line_no,
+                process_token=line.process_token,
+                standard_process_name=line.standard_process_name,
+                process_qty=quantize_money(line.process_qty, Q4),
+                process_qty_unit=line.process_qty_unit,
+                unit_price=None,
+                unit=None,
+                line_fee=None,
+                match_status=MATCH_UNMAPPED,
+                source_breakdown_line_id=line.id,
+                remark=None,
+            )
 
             name = (line.standard_process_name or "").strip()
             is_ready = (line.map_status or "") == MAP_READY and bool(name)
             if not is_ready:
                 if not name:
-                    item["remark"] = "未映射标准工艺"
+                    item.remark = "未映射标准工艺"
                 else:
-                    item["remark"] = f"映射未就绪({line.map_status})"
+                    item.remark = f"映射未就绪({line.map_status})"
                 items.append(item)
                 continue
 
             price_row = price_map.get(name)
             if price_row is None:
-                item["match_status"] = MATCH_MISSING_PRICE
-                item["remark"] = f"未找到单价：{name}"
+                item.match_status = MATCH_MISSING_PRICE
+                item.remark = f"未找到单价：{name}"
                 missing_count += 1
                 items.append(item)
                 continue
@@ -401,20 +421,20 @@ class BomL0WeldingFeeCalcOrchestrator:
                     price_unit=price_row.unit,
                 )
             except ValueError as error:
-                item["match_status"] = MATCH_UNMAPPED
-                item["remark"] = str(error)
+                item.match_status = MATCH_UNMAPPED
+                item.remark = str(error)
                 items.append(item)
                 continue
 
             unit_price = quantize_money(price_row.unit_price, Q4)
             line_fee = quantize_money(billing_qty * unit_price, Q4)
-            item["process_qty"] = billing_qty
-            item["process_qty_unit"] = billing_unit
-            item["unit_price"] = unit_price
-            item["unit"] = price_row.unit
-            item["line_fee"] = line_fee
-            item["match_status"] = MATCH_MATCHED
-            item["remark"] = billing_remark
+            item.process_qty = billing_qty
+            item.process_qty_unit = billing_unit
+            item.unit_price = unit_price
+            item.unit = price_row.unit
+            item.line_fee = line_fee
+            item.match_status = MATCH_MATCHED
+            item.remark = billing_remark
             matched_count += 1
             total_fee += line_fee
             items.append(item)
@@ -435,16 +455,15 @@ class BomL0WeldingFeeCalcOrchestrator:
             calc_status = CALC_FAILED
             calc_message = f"全部缺单价（{missing_count} 行）"
         else:
-            # 有明细但全部 unmapped
             calc_status = CALC_FAILED
             calc_message = "无可用标准工艺映射"
 
-        return {
-            "process_line_count": process_line_count,
-            "matched_line_count": matched_count,
-            "missing_price_count": missing_count,
-            "total_l0_welding_fee": total_fee,
-            "calc_status": calc_status,
-            "calc_message": calc_message,
-            FEE_ITEMS_KEY: items,
-        }
+        return _L0FeeCalcParts(
+            process_line_count=process_line_count,
+            matched_line_count=matched_count,
+            missing_price_count=missing_count,
+            total_l0_welding_fee=total_fee,
+            calc_status=calc_status,
+            calc_message=calc_message,
+            items=items,
+        )

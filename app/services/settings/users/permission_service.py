@@ -16,6 +16,7 @@ from app.common.permissions.catalog import (
 )
 from app.common.permissions.checks import require_admin
 from app.exceptions.base import NotFoundException, ValidationException
+from app.models.settings import User
 from app.repositories.settings.users.user_permission_repository import UserPermissionRepository
 from app.repositories.settings.users.user_repository import UserRepository
 from app.schemas.vo.user_vo import UserVO
@@ -75,9 +76,9 @@ class PermissionService:
             db.commit()
         return result
 
-    def resolve_permissions_for_user(self, db: Session, user: Any) -> list[str]:
+    def resolve_permissions_for_user(self, db: Session, user: User) -> list[str]:
         """组装 UserVO.permissions：admin → ['*']，否则读表。"""
-        if getattr(user, "is_admin", False):
+        if user.is_admin:
             return ["*"]
         return self.perm_repo.list_codes(db, user.id)
 

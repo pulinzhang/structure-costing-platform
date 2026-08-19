@@ -11,7 +11,7 @@ from app.common.bom.welding_standard_process import (
     WeldingStandardProcessName,
     resolve_standard_process_unit,
 )
-from app.models.bom_welding_process_breakdown import BomWeldingProcessBreakdownLine
+from app.models.bom import BomWeldingProcessBreakdownLine
 
 
 def qty_cell(value: Any) -> Decimal | str:

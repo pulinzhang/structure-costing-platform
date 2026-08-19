@@ -10,7 +10,7 @@ import {
     updatePartsFilterCapsules,
     updatePartsHud,
     renderPartsPagination,
-} from './template.js?v=15';
+} from './template.js?v=19';
 import {
     DEFAULT_PAGE_SIZE,
     PAGE_SIZE_OPTIONS,
@@ -46,8 +46,12 @@ export const PartsPage = {
     applyPermissionUi() {
         this.canUpdate = typeof can === 'function' ? can('op:stamping-parts:update') : true;
         this.canDelete = typeof can === 'function' ? can('op:stamping-parts:delete') : true;
+        this.canExport = typeof can === 'function' ? can('op:stamping-parts:export') : true;
         if (!this.canDelete) {
             document.getElementById('partsBatchDeleteBtn')?.classList.add('hidden');
+        }
+        if (!this.canExport) {
+            document.getElementById('partsExportBtn')?.classList.add('hidden');
         }
     },
 
@@ -81,6 +85,7 @@ export const PartsPage = {
             this.setAdvancedOpen(!partsState.advancedOpen);
         });
         document.getElementById('partsBatchDeleteBtn')?.addEventListener('click', () => this.batchDelete());
+        document.getElementById('partsExportBtn')?.addEventListener('click', () => this.exportExcel());
 
         pageContent?.addEventListener('change', (e) => {
             const cascadeResets = {
@@ -187,14 +192,18 @@ export const PartsPage = {
         };
     },
 
-    requireScopeForBatchDelete() {
+    requireScope(actionLabel) {
         const filters = this.collectScopeFilters();
-        if (!filters.location || !filters.stamping_supplier || !filters.vehicle_model) {
+        if (!filters.location || !filters.stamping_supplier || !filters.vehicle_model || !filters.version) {
             this.setAdvancedOpen(true);
-            showToast('批量删除须同时选择基地、冲压工厂和车型', 'warning');
+            showToast(`${actionLabel}须同时选择基地、冲压工厂、车型和版本`, 'warning');
             return null;
         }
         return filters;
+    },
+
+    requireScopeForBatchDelete() {
+        return this.requireScope('批量删除');
     },
 
     showEmptyHint(title, hint) {
@@ -338,9 +347,8 @@ export const PartsPage = {
         const filters = this.requireScopeForBatchDelete();
         if (!filters) return;
 
-        const versionHint = filters.version ? `\n版本: ${filters.version}` : '\n版本: 全部';
         if (!window.confirm(
-            `确定批量删除零件吗？\n\n基地: ${filters.location}\n工厂: ${filters.stamping_supplier}\n车型: ${filters.vehicle_model}${versionHint}\n\n将同时删除关联工序，此操作不可恢复！`,
+            `确定批量删除零件吗？\n\n基地: ${filters.location}\n工厂: ${filters.stamping_supplier}\n车型: ${filters.vehicle_model}\n版本: ${filters.version}\n\n将同时删除关联工序，此操作不可恢复！`,
         )) {
             return;
         }
@@ -360,8 +368,8 @@ export const PartsPage = {
                 location: filters.location,
                 stamping_supplier: filters.stamping_supplier,
                 vehicle_model: filters.vehicle_model,
+                version: filters.version,
             };
-            if (filters.version) body.version = filters.version;
 
             const res = await HttpClient.post(`${PARTS_API}/batch-delete`, body);
             const result = res.data || {};
@@ -549,6 +557,54 @@ export const PartsPage = {
             showToast(error.message || '保存失败', 'error');
             btn.disabled = false;
             btn.innerHTML = `<span class="tracking-[0.2em]">保存</span>`;
+        }
+    },
+
+    async exportExcel() {
+        if (this.canExport === false) {
+            showToast('无导出权限', 'warning');
+            return;
+        }
+        const scope = this.requireScope('导出');
+        if (!scope) return;
+        const params = {
+            location: scope.location,
+            stamping_supplier: scope.stamping_supplier,
+            vehicle_model: scope.vehicle_model,
+            version: scope.version,
+        };
+
+        const btn = document.getElementById('partsExportBtn');
+        const originalHtml = btn ? btn.innerHTML : '';
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = `
+                <div class="w-3 h-3 border border-[#ef5350] border-t-transparent rounded-full animate-spin"></div>
+                导出中..
+            `;
+        }
+        try {
+            const { blob, filename } = await HttpClient.download(`${PARTS_API}/export-download`, {
+                params,
+                defaultFilename: '冲压工艺确认表.xlsx',
+            });
+            const url = window.URL.createObjectURL(blob);
+            const anchor = document.createElement('a');
+            anchor.href = url;
+            anchor.download = filename || '冲压工艺确认表.xlsx';
+            document.body.appendChild(anchor);
+            anchor.click();
+            document.body.removeChild(anchor);
+            window.URL.revokeObjectURL(url);
+            showToast(`导出成功: ${filename}`, 'success');
+        } catch (error) {
+            console.error('导出冲压工艺失败', error);
+            showToast(error.message || '导出失败', 'error');
+        } finally {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            }
         }
     },
 

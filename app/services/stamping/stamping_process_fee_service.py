@@ -1,13 +1,13 @@
 """
 冲压加工费 CRUD / 统计服务
 
-列表、手工调价、审核、删除、筛选维度。
+列表、其它费用编辑、审核、删除、筛选维度。
 计算逻辑见 app.services.stamping.process_fee.calc。
 """
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Optional
 
 from sqlalchemy.orm import Session
 
@@ -21,10 +21,12 @@ from app.common.audit import (
 from app.common.timezone import now
 from app.exceptions.base import BusinessException
 from app.repositories.stamping.stamping_process_fee_repository import (
+    ProcessFeeListFilters,
     StampingProcessFeeRepository,
 )
 from app.repositories.stamping.tonnage_price_repository import StampingTonnagePriceRepository
 from app.schemas.dto.stamping_process_fee_dto import (
+    ProcessFeePatch,
     StampingProcessFeeBatchApproveDTO,
     StampingProcessFeeBatchReverseAuditDTO,
     StampingProcessFeeDeleteDTO,
@@ -48,7 +50,7 @@ class StampingProcessFeeService:
         self.fee_repo = StampingProcessFeeRepository()
         self.tonnage_repo = StampingTonnagePriceRepository()
 
-    def update_manual_price(
+    def update_other_fee(
         self,
         db: Session,
         fee_id: int,
@@ -61,18 +63,20 @@ class StampingProcessFeeService:
         if record.audit_status == AUDIT_APPROVED:
             raise BusinessException("已审核通过，请先反审核后再调整")
 
-        manual_price = dto.manual_unit_price
-        final_fee = resolve_final_fee(record.processing_fee, manual_price)
+        other_fee = dto.other_fee
+        if record.is_tailor_welded and other_fee is None:
+            raise BusinessException("拼焊件须录入其它费用（如拼焊费）")
+        final_fee = resolve_final_fee(record.processing_fee, other_fee)
         remark = (dto.remark or "").strip() or None
         updated = self.fee_repo.update_fields(
             db,
             fee_id,
-            {
-                "manual_unit_price": manual_price,
-                "final_processing_fee": final_fee,
-                "remark": remark,
-                **audit_update(current_user),
-            },
+            ProcessFeePatch(
+                other_fee=other_fee,
+                final_processing_fee=final_fee,
+                remark=remark,
+                updated_by=audit_update(current_user)["updated_by"],
+            ),
         )
         if not updated:
             raise BusinessException(f"加工费记录不存在: id={fee_id}")
@@ -88,7 +92,7 @@ class StampingProcessFeeService:
         self,
         db: Session,
         query: StampingProcessFeeQuery,
-    ) -> tuple[list[StampingProcessFeeVO], int, dict[str, Any]]:
+    ) -> tuple[list[StampingProcessFeeVO], int, ProcessFeeListFilters]:
         skip = (query.page - 1) * query.size
         rows, total = self.fee_repo.paginate(
             db,
@@ -105,7 +109,7 @@ class StampingProcessFeeService:
         )
         vos = [StampingProcessFeeVO.model_validate(r) for r in rows]
         # HUD 汇总不含 only_zero，避免点进待办筛选后大盘数字被掏空
-        filters = {
+        filters: ProcessFeeListFilters = {
             "year": query.year,
             "location": query.location,
             "stamping_supplier": query.stamping_supplier,
@@ -174,6 +178,19 @@ class StampingProcessFeeService:
             stamping_supplier=supplier,
             statuses=[AUDIT_APPROVED],
         )
+        missing_other_fee = self.fee_repo.list_tailor_weld_missing_other_fee_part_numbers(
+            db,
+            year=dto.year,
+            location=location,
+            stamping_supplier=supplier,
+            statuses=[AUDIT_PENDING, AUDIT_REJECTED],
+        )
+        if missing_other_fee:
+            preview = "、".join(missing_other_fee[:10])
+            extra = f" 等 {len(missing_other_fee)} 件" if len(missing_other_fee) > 10 else ""
+            raise BusinessException(
+                f"拼焊件须先录入其它费用（如拼焊费）后再审核：{preview}{extra}"
+            )
         updated = self.fee_repo.approve_by_scope(
             db,
             year=dto.year,
@@ -248,3 +265,33 @@ class StampingProcessFeeService:
         location: Optional[str] = None,
     ) -> list[str]:
         return self.fee_repo.get_distinct_suppliers(db, year=year, location=location)
+
+    def list_vehicle_models(
+        self,
+        db: Session,
+        year: Optional[int] = None,
+        location: Optional[str] = None,
+        stamping_supplier: Optional[str] = None,
+    ) -> list[str]:
+        return self.fee_repo.get_distinct_vehicle_models(
+            db,
+            year=year,
+            location=location,
+            stamping_supplier=stamping_supplier,
+        )
+
+    def list_versions(
+        self,
+        db: Session,
+        year: Optional[int] = None,
+        location: Optional[str] = None,
+        stamping_supplier: Optional[str] = None,
+        vehicle_model: Optional[str] = None,
+    ) -> list[str]:
+        return self.fee_repo.get_distinct_versions(
+            db,
+            year=year,
+            location=location,
+            stamping_supplier=stamping_supplier,
+            vehicle_model=vehicle_model,
+        )

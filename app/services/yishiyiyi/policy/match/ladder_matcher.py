@@ -6,7 +6,7 @@
 from decimal import Decimal
 from typing import Optional
 
-from app.models.steel_price_policy import SteelPricePolicy, SteelPriceLadderItem
+from app.models.yishiyiyi import SteelPricePolicy, SteelPriceLadderItem
 from app.schemas.dto.steel_price_policy_dto import PolicyMatchRequest
 
 

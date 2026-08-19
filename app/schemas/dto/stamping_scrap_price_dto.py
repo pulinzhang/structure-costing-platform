@@ -2,6 +2,7 @@
 冲压废料月度销售价格 DTO - 请求参数（以「月」为录入单元）
 """
 
+from dataclasses import dataclass
 from decimal import Decimal
 from typing import Any, Optional
 
@@ -98,3 +99,18 @@ class FilterOptions(BaseModel):
     """筛选选项（Repository → Service 内部）"""
 
     years: list[int] = Field(default_factory=list)
+
+
+@dataclass(slots=True)
+class ScrapPriceWrite:
+    """废料月度销售价整行写入（含净价与审计人）。"""
+
+    year: int
+    month: int
+    location: str
+    market_price: Decimal
+    deduction_fee: Decimal
+    net_price: Decimal
+    remark: str | None = None
+    created_by: str | None = None
+    updated_by: str | None = None
