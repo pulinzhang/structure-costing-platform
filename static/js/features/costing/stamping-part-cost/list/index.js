@@ -40,6 +40,7 @@ const listState = {
     canUpdate: true,
     breakdownColsOpen: false,
     advancedOpen: false,
+    pendingFilters: null,
     _onEscClose: null,
 };
 
@@ -55,11 +56,14 @@ function init() {
     });
     fillMonthOptions();
     fillAuditOptions();
-    applyQueryFromHash();
+    listState.pendingFilters = readHashFilters();
+    if (listState.pendingFilters) setAdvancedOpen(true);
     updateCostFilterCapsules();
     syncBreakdownColumnVisibility(false);
-    loadYearOptions().then(() => {
-        loadCascadeFilters().then(() => updateCostFilterCapsules());
+    loadYearOptions().then(async () => {
+        await loadCascadeFilters();
+        applyPendingFiltersToSelects();
+        updateCostFilterCapsules();
         loadList(1);
     });
 }
@@ -89,29 +93,40 @@ function setAdvancedOpen(isOpen) {
     if (label) label.textContent = isOpen ? '收起高级筛选' : '展开高级筛选';
 }
 
-function applyQueryFromHash() {
+function readHashFilters() {
     const hash = window.location.hash || '';
     const qIndex = hash.indexOf('?');
-    if (qIndex < 0) return;
+    if (qIndex < 0) return null;
     const params = new URLSearchParams(hash.slice(qIndex + 1));
-    const map = {
-        year: 'costYearFilter',
-        month: 'costMonthFilter',
-        location: 'costLocationFilter',
-        stamping_supplier: 'costSupplierFilter',
-    };
-    let hasValue = false;
-    Object.entries(map).forEach(([key, id]) => {
-        const value = params.get(key);
-        if (value) {
-            const el = document.getElementById(id);
-            if (el) {
-                el.value = value;
-                hasValue = true;
-            }
-        }
-    });
-    if (hasValue) setAdvancedOpen(true);
+    const year = params.get('year') || '';
+    const month = params.get('month') || '';
+    const location = params.get('location') || '';
+    const stamping_supplier = params.get('stamping_supplier') || '';
+    if (!year && !month && !location && !stamping_supplier) return null;
+    return { year, month, location, stamping_supplier };
+}
+
+function setSelectValue(id, value) {
+    const select = document.getElementById(id);
+    if (!select || value == null || value === '') return;
+    const text = String(value);
+    if (![...select.options].some((opt) => opt.value === text)) {
+        select.insertAdjacentHTML(
+            'beforeend',
+            `<option value="${esc(text)}">${esc(text)}</option>`,
+        );
+    }
+    select.value = text;
+}
+
+function applyPendingFiltersToSelects() {
+    const pending = listState.pendingFilters;
+    if (!pending) return;
+    setSelectValue('costYearFilter', pending.year);
+    setSelectValue('costMonthFilter', pending.month);
+    setSelectValue('costLocationFilter', pending.location);
+    setSelectValue('costSupplierFilter', pending.stamping_supplier);
+    listState.pendingFilters = null;
 }
 
 function toggleBreakdownColumns() {
@@ -235,7 +250,11 @@ function fillSelect(id, values = [], preferredValue = null) {
 async function loadYearOptions() {
     try {
         const res = await HttpClient.get(`${API_BASE}/filters/years`);
-        fillSelect('costYearFilter', Array.isArray(res.data) ? res.data : []);
+        fillSelect(
+            'costYearFilter',
+            Array.isArray(res.data) ? res.data : [],
+            listState.pendingFilters?.year || null,
+        );
     } catch (error) {
         console.error(error);
     }
@@ -243,13 +262,14 @@ async function loadYearOptions() {
 
 async function loadCascadeFilters() {
     try {
+        const pending = listState.pendingFilters;
         const params = {
-            location: document.getElementById('costLocationFilter')?.value || '',
+            location: document.getElementById('costLocationFilter')?.value || pending?.location || '',
         };
         const res = await HttpClient.get(CASCADE_API, { params });
         const filters = res.data || {};
-        fillSelect('costLocationFilter', filters.locations || []);
-        fillSelect('costSupplierFilter', filters.stamping_suppliers || []);
+        fillSelect('costLocationFilter', filters.locations || [], pending?.location || null);
+        fillSelect('costSupplierFilter', filters.stamping_suppliers || [], pending?.stamping_supplier || null);
     } catch (error) {
         console.error(error);
     }
@@ -268,13 +288,14 @@ function resetFilters() {
 }
 
 function getFilters() {
-    const yearRaw = document.getElementById('costYearFilter')?.value;
-    const monthRaw = document.getElementById('costMonthFilter')?.value;
+    const pending = listState.pendingFilters;
+    const yearRaw = document.getElementById('costYearFilter')?.value || pending?.year || '';
+    const monthRaw = document.getElementById('costMonthFilter')?.value || pending?.month || '';
     return {
         year: yearRaw ? Number(yearRaw) : undefined,
         month: monthRaw ? Number(monthRaw) : undefined,
-        location: document.getElementById('costLocationFilter')?.value || undefined,
-        stamping_supplier: document.getElementById('costSupplierFilter')?.value || undefined,
+        location: document.getElementById('costLocationFilter')?.value || pending?.location || undefined,
+        stamping_supplier: document.getElementById('costSupplierFilter')?.value || pending?.stamping_supplier || undefined,
         audit_status: document.getElementById('costAuditFilter')?.value || undefined,
         part_number: document.getElementById('costPartNumberFilter')?.value?.trim() || undefined,
     };

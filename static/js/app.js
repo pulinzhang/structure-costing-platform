@@ -32,7 +32,7 @@ import { pageConfig as stampingProcessFeePage } from './features/stamping/proces
 import { pageConfig as steelPriceListPage }   from './features/costing/steel-price/list/index.js?v=56';
 import { pageConfig as steelPriceCalcPage }    from './features/costing/steel-price/calc/index.js?v=16';
 import { pageConfig as stampingPartCostCalcPage } from './features/costing/stamping-part-cost/calc/index.js?v=9';
-import { pageConfig as stampingPartCostPage } from './features/costing/stamping-part-cost/list/index.js?v=50';
+import { pageConfig as stampingPartCostPage } from './features/costing/stamping-part-cost/list/index.js?v=51';
 import { pageConfig as steelPricePolicyUploadPage } from './features/yishiyiyi/policy/upload/index.js?v=36';
 import { pageConfig as steelPricePolicyDownloadPage } from './features/yishiyiyi/policy/list/index.js?v=30';
 import { pageConfig as basePriceUploadPage } from './features/yishiyiyi/base-price/upload/index.js?v=37';
