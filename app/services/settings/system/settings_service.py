@@ -24,6 +24,10 @@ DEFAULT_APP_NAME = "汽车冲压件自动核价平台"
 DEFAULT_STEEL_DENSITY = Decimal("7.85")
 DEFAULT_MATERIAL_LOSS_RATE = Decimal("0.003")  # 千分之 3
 DEFAULT_SCRAP_RECOVERY_RATE = Decimal("0.97")  # 97%
+DEFAULT_FINISHED_FINANCE_RATE = Decimal("0.02")  # 2%
+DEFAULT_FINISHED_MANAGEMENT_RATE = Decimal("0.02")  # 2%
+DEFAULT_FINISHED_SCRAP_RATE = Decimal("0.003")  # 千分之 3
+DEFAULT_FINISHED_PRETAX_PROFIT_RATE = Decimal("0.02")  # 2%
 APP_VERSION = "1.0.0"
 
 
@@ -42,6 +46,10 @@ class SettingsService:
                 steel_density=DEFAULT_STEEL_DENSITY,
                 material_loss_rate=DEFAULT_MATERIAL_LOSS_RATE,
                 scrap_recovery_rate=DEFAULT_SCRAP_RECOVERY_RATE,
+                finished_finance_rate=DEFAULT_FINISHED_FINANCE_RATE,
+                finished_management_rate=DEFAULT_FINISHED_MANAGEMENT_RATE,
+                finished_scrap_rate=DEFAULT_FINISHED_SCRAP_RATE,
+                finished_pretax_profit_rate=DEFAULT_FINISHED_PRETAX_PROFIT_RATE,
             )
         return ConfigVO(
             app_name=row.app_name or DEFAULT_APP_NAME,
@@ -53,6 +61,22 @@ class SettingsService:
             scrap_recovery_rate=self._normalize_recovery_rate(
                 getattr(row, "scrap_recovery_rate", None)
             ),
+            finished_finance_rate=self._normalize_percent_rate(
+                getattr(row, "finished_finance_rate", None),
+                DEFAULT_FINISHED_FINANCE_RATE,
+            ),
+            finished_management_rate=self._normalize_percent_rate(
+                getattr(row, "finished_management_rate", None),
+                DEFAULT_FINISHED_MANAGEMENT_RATE,
+            ),
+            finished_scrap_rate=self._normalize_permille_rate(
+                getattr(row, "finished_scrap_rate", None),
+                DEFAULT_FINISHED_SCRAP_RATE,
+            ),
+            finished_pretax_profit_rate=self._normalize_percent_rate(
+                getattr(row, "finished_pretax_profit_rate", None),
+                DEFAULT_FINISHED_PRETAX_PROFIT_RATE,
+            ),
         )
 
     def update_config(
@@ -63,17 +87,28 @@ class SettingsService:
     ) -> ConfigVO:
         app_name = dto.app_name.strip() or DEFAULT_APP_NAME
         audit = audit_create(current_user)
+        rate_fields = {
+            "steel_density": quantize_money(dto.steel_density, Q4),
+            "material_loss_rate": quantize_money(dto.material_loss_rate, Q6),
+            "scrap_recovery_rate": quantize_money(dto.scrap_recovery_rate, Q6),
+            "finished_finance_rate": quantize_money(dto.finished_finance_rate, Q6),
+            "finished_management_rate": quantize_money(
+                dto.finished_management_rate, Q6
+            ),
+            "finished_scrap_rate": quantize_money(dto.finished_scrap_rate, Q6),
+            "finished_pretax_profit_rate": quantize_money(
+                dto.finished_pretax_profit_rate, Q6
+            ),
+        }
         row = self.repository.get_singleton(db)
         if row is None:
             self.repository.create_singleton(
                 db,
                 SystemConfigWrite(
                     app_name=app_name,
-                    steel_density=quantize_money(dto.steel_density, Q4),
-                    material_loss_rate=quantize_money(dto.material_loss_rate, Q6),
-                    scrap_recovery_rate=quantize_money(dto.scrap_recovery_rate, Q6),
                     created_by=audit["created_by"],
                     updated_by=audit["updated_by"],
+                    **rate_fields,
                 ),
             )
         else:
@@ -82,10 +117,8 @@ class SettingsService:
                 row,
                 SystemConfigPatch(
                     app_name=app_name,
-                    steel_density=quantize_money(dto.steel_density, Q4),
-                    material_loss_rate=quantize_money(dto.material_loss_rate, Q6),
-                    scrap_recovery_rate=quantize_money(dto.scrap_recovery_rate, Q6),
                     updated_by=audit_update(current_user)["updated_by"],
+                    **rate_fields,
                 ),
             )
         db.commit()
@@ -112,6 +145,46 @@ class SettingsService:
             return DEFAULT_SCRAP_RECOVERY_RATE
         return self._normalize_recovery_rate(
             getattr(row, "scrap_recovery_rate", None)
+        )
+
+    def get_finished_finance_rate(self, db: Session) -> Decimal:
+        """核价用：读成品财务费率，无效或缺失则回退 0.02。"""
+        row = self.repository.get_singleton(db)
+        if row is None:
+            return DEFAULT_FINISHED_FINANCE_RATE
+        return self._normalize_percent_rate(
+            getattr(row, "finished_finance_rate", None),
+            DEFAULT_FINISHED_FINANCE_RATE,
+        )
+
+    def get_finished_management_rate(self, db: Session) -> Decimal:
+        """核价用：读成品管理费率，无效或缺失则回退 0.02。"""
+        row = self.repository.get_singleton(db)
+        if row is None:
+            return DEFAULT_FINISHED_MANAGEMENT_RATE
+        return self._normalize_percent_rate(
+            getattr(row, "finished_management_rate", None),
+            DEFAULT_FINISHED_MANAGEMENT_RATE,
+        )
+
+    def get_finished_scrap_rate(self, db: Session) -> Decimal:
+        """核价用：读成品报废率，无效或缺失则回退 0.003（千分之3）。"""
+        row = self.repository.get_singleton(db)
+        if row is None:
+            return DEFAULT_FINISHED_SCRAP_RATE
+        return self._normalize_permille_rate(
+            getattr(row, "finished_scrap_rate", None),
+            DEFAULT_FINISHED_SCRAP_RATE,
+        )
+
+    def get_finished_pretax_profit_rate(self, db: Session) -> Decimal:
+        """核价用：读成品税前利润率，无效或缺失则回退 0.02。"""
+        row = self.repository.get_singleton(db)
+        if row is None:
+            return DEFAULT_FINISHED_PRETAX_PROFIT_RATE
+        return self._normalize_percent_rate(
+            getattr(row, "finished_pretax_profit_rate", None),
+            DEFAULT_FINISHED_PRETAX_PROFIT_RATE,
         )
 
     @staticmethod
@@ -142,4 +215,26 @@ class SettingsService:
             return DEFAULT_SCRAP_RECOVERY_RATE
         if rate <= 0 or rate > 1:
             return DEFAULT_SCRAP_RECOVERY_RATE
+        return quantize_money(rate, Q6)
+
+    @staticmethod
+    def _normalize_percent_rate(value: Any, default: Decimal) -> Decimal:
+        """百分比费率（0~1，含 0）。"""
+        try:
+            rate = Decimal(str(value))
+        except (InvalidOperation, TypeError, ValueError):
+            return default
+        if rate < 0 or rate > 1:
+            return default
+        return quantize_money(rate, Q6)
+
+    @staticmethod
+    def _normalize_permille_rate(value: Any, default: Decimal) -> Decimal:
+        """千分率（≥0）。"""
+        try:
+            rate = Decimal(str(value))
+        except (InvalidOperation, TypeError, ValueError):
+            return default
+        if rate < 0:
+            return default
         return quantize_money(rate, Q6)

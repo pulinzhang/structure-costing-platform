@@ -120,7 +120,7 @@ if (!can('op:my-page:create')) { /* 隐藏或禁用 */ }
 | # | 议题 | 结论 |
 |---|---|---|
 | 1 | 新建用户默认权限 | **仪表盘 + 个人资料**（见 §6） |
-| 2 | 分组节点（冲压工程、一事一议等） | **可勾选**，授权更直观 |
+| 2 | 分组节点（冲压工程、焊接工程、一事一议等） | **可勾选**，授权更直观 |
 | 3 | 个人资料 | **强制权限，人人必有，授权时不可取消** |
 | 4 | 谁能授权 | 仅 `is_admin == true` |
 | 5 | 角色模板 | 本期不做；用户直接勾选权限码 |
@@ -368,35 +368,7 @@ root
 │           ├── op:stamping-process-fee:reverse
 │           └── op:stamping-process-fee:export
 │
-├── menu:yishiyiyi                             # 一事一议（分组，可勾）
-│   ├── menu:thickness                         # 加减价政策（二级分组，可勾）
-│   │   ├── menu:steel-price-policy-upload
-│   │   │   ├── op:steel-price-policy-upload:view
-│   │   │   └── op:steel-price-policy-upload:upload
-│   │   └── menu:steel-price-policy-download
-│   │       ├── op:steel-price-policy-download:view
-│   │       ├── op:steel-price-policy-download:export
-│   │       └── op:steel-price-policy-download:delete
-│   ├── menu:base-price                        # 基准价格（二级分组，可勾）
-│   │   ├── menu:base-price-upload
-│   │   │   ├── op:base-price-upload:view
-│   │   │   └── op:base-price-upload:upload
-│   │   └── menu:base-price-download
-│   │       ├── op:base-price-download:view
-│   │       ├── op:base-price-download:export
-│   │       └── op:base-price-download:delete
-│   ├── menu:winning-thickness-download        # 中标钢厂厚度价格一览表
-│   │   ├── op:winning-thickness-download:view
-│   │   └── op:winning-thickness-download:export
-│   └── menu:scrap-price                       # 废料月度销售价
-│       ├── op:scrap-price:view
-│       ├── op:scrap-price:create
-│       ├── op:scrap-price:update
-│       ├── op:scrap-price:delete
-│       ├── op:scrap-price:copy
-│       └── op:scrap-price:export
-│
-├── menu:bom                                   # BOM（分组，可勾）
+├── menu:bom                                   # 焊接工程（分组，可勾；技术码仍为 bom）
 │   ├── menu:bom-material-list                 # 材料清单（二级分组）
 │   │   ├── menu:bom-upload
 │   │   │   ├── op:bom-upload:view
@@ -440,7 +412,35 @@ root
 │           ├── op:bom-l0-welding-fee-list:approve
 │           ├── op:bom-l0-welding-fee-list:reverse
 │           └── op:bom-l0-welding-fee-list:export
-
+│
+├── menu:yishiyiyi                             # 一事一议（分组，可勾）
+│   ├── menu:thickness                         # 加减价政策（二级分组，可勾）
+│   │   ├── menu:steel-price-policy-upload
+│   │   │   ├── op:steel-price-policy-upload:view
+│   │   │   └── op:steel-price-policy-upload:upload
+│   │   └── menu:steel-price-policy-download
+│   │       ├── op:steel-price-policy-download:view
+│   │       ├── op:steel-price-policy-download:export
+│   │       └── op:steel-price-policy-download:delete
+│   ├── menu:base-price                        # 基准价格（二级分组，可勾）
+│   │   ├── menu:base-price-upload
+│   │   │   ├── op:base-price-upload:view
+│   │   │   └── op:base-price-upload:upload
+│   │   └── menu:base-price-download
+│   │       ├── op:base-price-download:view
+│   │       ├── op:base-price-download:export
+│   │       └── op:base-price-download:delete
+│   ├── menu:winning-thickness-download        # 中标钢厂厚度价格一览表
+│   │   ├── op:winning-thickness-download:view
+│   │   └── op:winning-thickness-download:export
+│   └── menu:scrap-price                       # 废料月度销售价
+│       ├── op:scrap-price:view
+│       ├── op:scrap-price:create
+│       ├── op:scrap-price:update
+│       ├── op:scrap-price:delete
+│       ├── op:scrap-price:copy
+│       └── op:scrap-price:export
+│
 ├── menu:costing                               # 核价（分组，可勾）
 │   ├── menu:steel-price                       # 冲压钢材联动价（核价第一步）
 │   │   ├── menu:steel-price-calc
@@ -735,6 +735,7 @@ static/index.html           # 侧栏 data-page
 | 2026-08-12 | 新增 `menu:settings-logs` / `op:settings-logs:view|export`；操作日志页与导出审计 |
 | 2026-08-13 | 新增 `menu:scrap-price` / `op:scrap-price:view|create|update|delete|copy`；废料月度销售价后端 |
 | 2026-08-13 | 废料销售价增加 `op:scrap-price:export` 与宽表 Excel 导出 |
+| 2026-08-19 | 侧栏：menu:bom 展示名改为「焊接工程」，顺序紧挨冲压工程、位于一事一议之前（同为年度核算） |
 | 2026-08-13 | 冲压工程侧栏拆分：`menu:stamping-process` / `menu:stamping-stroke-unit-price` / `menu:stamping-processing-fee` 二级分组对齐 UI |
 | 2026-08-16 | 焊接工艺拆解列表增加 `op:bom-welding-process-breakdown:export`（L0 主子表打平核对 Excel，不含审核） |
 | 2026-08-17 | 焊接工艺拆解：生成日志 / 任务进度改为 `GENERATE|VIEW` 任一即可（修复仅有生成权无法看日志/轮询的问题） |

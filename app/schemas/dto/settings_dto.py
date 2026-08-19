@@ -31,13 +31,45 @@ class SystemConfigUpdateDTO(BaseModel):
         le=1,
         description="废料回收率（小数，如 0.97 表示 97%）",
     )
+    finished_finance_rate: Decimal = Field(
+        ...,
+        ge=0,
+        le=1,
+        description="成品财务费率（小数，如 0.02 表示 2%）",
+    )
+    finished_management_rate: Decimal = Field(
+        ...,
+        ge=0,
+        le=1,
+        description="成品管理费率（小数，如 0.02 表示 2%）",
+    )
+    finished_scrap_rate: Decimal = Field(
+        ...,
+        ge=0,
+        le=0.2,
+        description="成品报废率（小数，如 0.003 表示千分之3）",
+    )
+    finished_pretax_profit_rate: Decimal = Field(
+        ...,
+        ge=0,
+        le=1,
+        description="成品税前利润率（小数，如 0.02 表示 2%）",
+    )
 
     @field_validator("steel_density", mode="before")
     @classmethod
     def _coerce_density(cls, value: Any) -> Decimal:
         return quantize_money(value, Q4)
 
-    @field_validator("material_loss_rate", "scrap_recovery_rate", mode="before")
+    @field_validator(
+        "material_loss_rate",
+        "scrap_recovery_rate",
+        "finished_finance_rate",
+        "finished_management_rate",
+        "finished_scrap_rate",
+        "finished_pretax_profit_rate",
+        mode="before",
+    )
     @classmethod
     def _coerce_rate(cls, value: Any) -> Decimal:
         return quantize_money(value, Q6)
@@ -51,6 +83,10 @@ class SystemConfigWrite:
     steel_density: Decimal
     material_loss_rate: Decimal
     scrap_recovery_rate: Decimal
+    finished_finance_rate: Decimal
+    finished_management_rate: Decimal
+    finished_scrap_rate: Decimal
+    finished_pretax_profit_rate: Decimal
     created_by: str
     updated_by: str
 
@@ -62,4 +98,8 @@ class SystemConfigPatch(TypedDict, total=False):
     steel_density: Decimal
     material_loss_rate: Decimal
     scrap_recovery_rate: Decimal
+    finished_finance_rate: Decimal
+    finished_management_rate: Decimal
+    finished_scrap_rate: Decimal
+    finished_pretax_profit_rate: Decimal
     updated_by: str

@@ -21,11 +21,30 @@ class ConfigVO(BaseModel):
     scrap_recovery_rate: Decimal = Field(
         ..., description="废料回收率（小数，如 0.97=97%）"
     )
+    finished_finance_rate: Decimal = Field(
+        ..., description="成品财务费率（小数，如 0.02=2%）"
+    )
+    finished_management_rate: Decimal = Field(
+        ..., description="成品管理费率（小数，如 0.02=2%）"
+    )
+    finished_scrap_rate: Decimal = Field(
+        ..., description="成品报废率（小数，如 0.003=千分之3）"
+    )
+    finished_pretax_profit_rate: Decimal = Field(
+        ..., description="成品税前利润率（小数，如 0.02=2%）"
+    )
 
     @field_serializer("steel_density")
     def serialize_density(self, value: Decimal) -> str:
         return format_money(value, Q4, 4)
 
-    @field_serializer("material_loss_rate", "scrap_recovery_rate")
+    @field_serializer(
+        "material_loss_rate",
+        "scrap_recovery_rate",
+        "finished_finance_rate",
+        "finished_management_rate",
+        "finished_scrap_rate",
+        "finished_pretax_profit_rate",
+    )
     def serialize_rate(self, value: Decimal) -> str:
         return format_money(value, Q6, 6)

@@ -95,7 +95,7 @@ class Perm:
     SCRAP_PRICE_COPY = "op:scrap-price:copy"  # 复制月度模板
     SCRAP_PRICE_EXPORT = "op:scrap-price:export"  # 导出
 
-    MENU_BOM = "menu:bom"  # BOM
+    MENU_BOM = "menu:bom"  # 焊接工程（技术码仍为 bom）
 
     MENU_BOM_MATERIAL_LIST = "menu:bom-material-list"  # 材料清单
 

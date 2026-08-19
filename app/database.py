@@ -184,6 +184,30 @@ class DatabaseConfig:
                     )
                 logger.info("已为 %s 追加列 is_tailor_welded 并回填", fee_table)
 
+        config_table = "system_configs"
+        if config_table in table_names:
+            config_cols = {col["name"] for col in inspector.get_columns(config_table)}
+            config_new_columns = (
+                ("finished_finance_rate", "NUMERIC(8, 6) NOT NULL DEFAULT 0.02"),
+                ("finished_management_rate", "NUMERIC(8, 6) NOT NULL DEFAULT 0.02"),
+                ("finished_scrap_rate", "NUMERIC(8, 6) NOT NULL DEFAULT 0.003"),
+                (
+                    "finished_pretax_profit_rate",
+                    "NUMERIC(8, 6) NOT NULL DEFAULT 0.02",
+                ),
+            )
+            for column_name, column_def in config_new_columns:
+                if column_name in config_cols:
+                    continue
+                with engine.begin() as conn:
+                    conn.execute(
+                        text(
+                            f"ALTER TABLE {config_table} "
+                            f"ADD COLUMN {column_name} {column_def}"
+                        )
+                    )
+                logger.info("已为 %s 追加列 %s", config_table, column_name)
+
 
 class AuxiliaryDatabaseConfig:
     """

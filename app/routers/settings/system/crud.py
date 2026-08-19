@@ -38,7 +38,7 @@ def update_config(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.SETTINGS_SYSTEM_UPDATE)),
 ) -> ApiResponse[ConfigVO]:
-    """更新系统配置（应用名称、钢材密度）。"""
+    """更新系统配置（应用名称、钢材密度、损耗/回收率、成品费率）。"""
     logger.info("更新系统配置: user_id=%s", current_user.id)
     config = _service.update_config(db, dto, current_user=current_user)
     return ApiResponse.updated(data=config, message="配置更新成功")
