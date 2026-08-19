@@ -35,6 +35,7 @@ class BomSnapshotQuery(BaseModel):
 
     location: str | None = Field(None, description="采购基地")
     vehicle_model: str | None = Field(None, description="车型")
+    bom_version: str | None = Field(None, description="材料清单版本")
     status: str | None = Field(None, description="状态")
     page: int = Field(1, ge=1, description="页码")
     size: int = Field(20, ge=1, le=200, description="每页条数")

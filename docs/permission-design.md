@@ -401,6 +401,9 @@ root
 │   │   ├── menu:bom-upload
 │   │   │   ├── op:bom-upload:view
 │   │   │   └── op:bom-upload:upload
+│   │   ├── menu:bom-material                  # 材料清单列表
+│   │   │   ├── op:bom-material:view
+│   │   │   └── op:bom-material:delete
 │   │   └── menu:bom-structure                 # 产品结构（路由 page=bom-structure）
 │   │       └── op:bom-structure:view
 │   └── menu:bom-welding-unit-price-group      # 焊接单价（二级分组）
@@ -523,6 +526,7 @@ root
 | bom-structure | `view` | 产品结构：基地/项目卡片浏览 |
 | bom-viz（权限码同 `menu:bom-structure`） | `view` | Assembly Workspace |
 | bom-upload | `view` / `upload` | 进入页；导入材料清单 |
+| bom-material | `view` / `delete` | 材料清单列表；单行删除清单（含树节点） |
 | bom-welding-unit-price-upload | `view` / `upload` | 查看上传页；导入焊接单价 Excel |
 | bom-welding-unit-price | `view` / `create` / `update` / `delete` / `approve` / `reverse` / `export` | 查询；新增（API）；编辑；删除（含批量，已审跳过）；审核（含批量）；反审核；导出 Excel |
 | bom-l0-welding-fee-calc | `view` / `run` / `delete` | 历史/过程；开始计算；删除计算日志 |

@@ -29,6 +29,7 @@
  * ├── bom/                       # BOM
  * │   ├── material/              # 材料清单
  * │   │   ├── upload/
+ * │   │   ├── list/
  * │   │   ├── structure/
  * │   │   └── viz/
  * │   ├── welding-unit-price/    # 焊接单价
@@ -167,6 +168,11 @@ export const pageMeta = {
         title: '上传材料清单',
         en: 'BOM_UPLOAD',
         breadcrumb: ['BOM', '材料清单', '上传材料清单'],
+    },
+    'bom-material': {
+        title: '材料清单列表',
+        en: 'BOM_MATERIAL_LIST',
+        breadcrumb: ['BOM', '材料清单', '材料清单列表'],
     },
     'bom-welding-unit-price-upload': {
         title: '焊接单价上传',

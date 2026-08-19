@@ -103,6 +103,10 @@ class Perm:
     BOM_UPLOAD_VIEW = "op:bom-upload:view"  # 查看
     BOM_UPLOAD_UPLOAD = "op:bom-upload:upload"  # 上传
 
+    MENU_BOM_MATERIAL = "menu:bom-material"  # 材料清单列表
+    BOM_MATERIAL_VIEW = "op:bom-material:view"  # 查看
+    BOM_MATERIAL_DELETE = "op:bom-material:delete"  # 删除
+
     MENU_BOM_STRUCTURE = "menu:bom-structure"  # 产品结构
     BOM_STRUCTURE_VIEW = "op:bom-structure:view"  # 查看
 

@@ -220,6 +220,15 @@
               ]
             },
             {
+              "code": "menu:bom-material",
+              "label": "材料清单列表",
+              "type": "menu",
+              "children": [
+                { "code": "op:bom-material:view", "label": "查看", "type": "op" },
+                { "code": "op:bom-material:delete", "label": "删除", "type": "op" }
+              ]
+            },
+            {
               "code": "menu:bom-structure",
               "label": "产品结构",
               "type": "menu",

@@ -116,7 +116,7 @@ static/
         │   ├── base-price/{upload,list}
         │   ├── winning-thickness/list/
         │   └── scrap-price/
-        ├── bom/material/{upload,structure,viz}
+        ├── bom/material/{upload,list,structure,viz}
         ├── bom/welding-unit-price/{upload,list}
         ├── bom/welding-process-breakdown/{generate,list}
         ├── bom/l0-welding-fee/{calc,list}
@@ -151,6 +151,7 @@ static/
 | `#/winning-thickness-download` | 中标钢厂厚度价格一览表 | `yishiyiyi/winning-thickness/list` |
 | `#/scrap-price` | 废料月度销售价 | `yishiyiyi/scrap-price` |
 | `#/bom-upload` | 上传材料清单 | `bom/material/upload` |
+| `#/bom-material` | 材料清单列表 | `bom/material/list` |
 | `#/bom-structure` | 产品结构 | `bom/material/structure` |
 | `#/bom-viz` | 产品结构图 | `bom/material/viz` |
 | `#/bom-welding-unit-price-upload` | 焊接单价上传 | `bom/welding-unit-price/upload` |

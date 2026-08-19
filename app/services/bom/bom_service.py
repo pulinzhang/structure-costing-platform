@@ -77,6 +77,7 @@ class BomService:
             db,
             location=query.location,
             vehicle_model=query.vehicle_model,
+            bom_version=query.bom_version,
             status=query.status,
             skip=skip,
             limit=query.size,
@@ -87,9 +88,19 @@ class BomService:
             vo.node_count = self.snapshot_repo.count_nodes(db, row.id)
             items.append(vo)
 
+        summary_raw = self.snapshot_repo.summarize(
+            db,
+            location=query.location,
+            vehicle_model=query.vehicle_model,
+            bom_version=query.bom_version,
+            status=query.status,
+        )
         filters: BomSnapshotListFilters = {
             "locations": self.snapshot_repo.list_locations(db),
             "vehicle_models": self.snapshot_repo.list_vehicle_models(db),
+            "bom_versions": self.snapshot_repo.list_bom_versions(db),
+            "statuses": self.snapshot_repo.list_statuses(db),
+            "summary": summary_raw,
         }
         return items, total, filters
 

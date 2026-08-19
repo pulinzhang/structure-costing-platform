@@ -298,7 +298,7 @@ stamping-costing-platform/
 | `/api/yishiyiyi/base-price` | 基准价格 |
 | `/api/yishiyiyi/winning-thickness` | 中标厚度一览 |
 | `/api/yishiyiyi/scrap-price` | 废料月度销售价 |
-| `/api/bom` | BOM 上传与产品结构 |
+| `/api/bom` | BOM 材料清单（上传 / 列表 / 产品结构） |
 | `/api/costing/steel-price` | 钢材联动计算与列表 |
 | `/api/costing/stamping-part-cost` | 零件价格计算与列表 |
 | `/api/costing/engine` | 自动核价引擎 |
