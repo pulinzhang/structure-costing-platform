@@ -521,7 +521,9 @@ export function renderL0WeldingFeeRows(records) {
         const calc = CALC_LABEL[row.calc_status] || { text: row.calc_status || '-', cls: 'text-[#8E8E93]' };
         const shortNo = resolveL0ShortPartNumber(row.part_number);
         const systemFee = row.total_l0_welding_fee != null ? fmtNum(row.total_l0_welding_fee, 4) : '-';
-        const otherFee = row.other_fee != null ? fmtNum(row.other_fee, 4) : '-';
+        const otherFee = row.other_fee != null && Number(row.other_fee) !== 0
+            ? fmtNum(row.other_fee, 4)
+            : '-';
         const finalFee = row.final_l0_welding_fee != null
             ? fmtNum(row.final_l0_welding_fee, 4)
             : systemFee;

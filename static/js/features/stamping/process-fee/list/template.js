@@ -504,6 +504,9 @@ export function renderFeeRows(records) {
             'group-hover:bg-[#1A1A26] transition-colors',
         ].join(' ');
         const canUpdate = typeof can === 'function' ? can('op:stamping-process-fee:update') : true;
+        const otherFee = row.other_fee != null && Number(row.other_fee) !== 0
+            ? formatNum(row.other_fee, 3)
+            : '-';
 
         return `
         <tr class="group relative font-mono text-[11px] border-b border-[#17171C] hover:bg-gradient-to-r hover:from-[#FF1E27]/10 hover:via-[#121218] hover:to-transparent transition-all duration-150"
@@ -523,7 +526,7 @@ export function renderFeeRows(records) {
             <td class="${cell} ${muted} font-sans ${zoneEnd}">${esc(row.vehicle_model)} / ${esc(row.version)}</td>
             <td class="${cell} text-right ${muted} tabular-nums">${esc(row.process_count)}</td>
             <td class="${cell} text-right tabular-nums ${isZero ? 'text-[#FF1E27]' : muted}">${formatNum(row.processing_fee, 3)}</td>
-            <td class="${cell} text-right ${muted} tabular-nums ${zoneEnd}">${formatNum(row.other_fee, 3)}</td>
+            <td class="${cell} text-right ${muted} tabular-nums ${zoneEnd}">${otherFee}</td>
             <td class="${finalCell}">${formatNum(row.final_processing_fee, 3)}</td>
             <td class="${cell} ${muted} font-sans">${esc(row.material)}</td>
             <td class="${cell} text-right ${mutedDeep} tabular-nums">${formatNum(row.thickness, 4)}</td>

@@ -10,7 +10,7 @@ import {
     updateL0WeldingFeeFilterCapsules,
     renderFeeDetailItems,
     resolveL0ShortPartNumber,
-} from './template.js?v=11';
+} from './template.js?v=12';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,

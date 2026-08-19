@@ -10,7 +10,7 @@ import {
     updateFeeHud,
     updateFeeFilterCapsules,
     shortPartNumber,
-} from './template.js?v=35';
+} from './template.js?v=36';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
