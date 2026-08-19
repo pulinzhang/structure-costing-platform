@@ -534,7 +534,7 @@ root
 | steel-price-calc | `view` / `run` / `delete` | 历史/过程；开始计算；删除日志 |
 | steel-price-list | `view` / `update` / `delete` / `approve` / `reject` / `reverse` / `export` | 查询；编辑；删除（含批量）；通过（含批量）；驳回；反审核（含批量）；导出 |
 | stamping-part-cost-calc | `view` / `run` / `delete` | 历史/过程；开始计算；删除日志 |
-| stamping-part-cost | `view` / `delete` / `approve` / `reverse` / `export` | 查询；删除（含批量）；审核（含批量）；反审核；导出 |
+| stamping-part-cost | `view` / `delete` / `approve` / `reverse` / `export` | 查询；删除（含批量）；审核（含批量）；反审核；导出工艺清单 Excel |
 | costing（菜单码 `menu:costing-engine`） | `view`（`op:costing:view`） | 自动核价引擎 |
 | quotation | `view` | 进入占位页 |
 | settings-profile | `view` / `update` / `password` | 查看；改资料/头像；改自己密码 |
@@ -743,4 +743,4 @@ static/index.html           # 侧栏 data-page
 | 2026-08-17 | 新增 `menu:bom-l0-welding-fee-group` 成品焊接费（计算 / 列表及审核删除操作码） |
 | 2026-08-17 | 技术命名统一为 L0：`menu/op:bom-welding-fee*` 全部替换为 `menu/op:bom-l0-welding-fee*`（功能新建未上线，无需 DB 权限 remap） |
 | 2026-08-17 | 去掉预留空码 `op:bom-l0-welding-fee-list:export`（尚无导出接口/按钮，避免权限树熵增） |
-| 2026-08-18 | 冲压零件列表增加 `op:stamping-parts:export`：工艺确认表主子表 Excel（工序 + 拼焊子片） |
+| 2026-08-19 | 冲压零件价格一览下线「核算明细」Excel；仅保留工艺清单导出（`op:stamping-part-cost:export`） |

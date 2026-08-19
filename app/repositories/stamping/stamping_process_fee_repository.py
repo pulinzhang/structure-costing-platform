@@ -370,6 +370,34 @@ class StampingProcessFeeRepository:
             .all()
         )
 
+    def list_tailor_weld_missing_manual_part_numbers(
+        self,
+        db: Session,
+        *,
+        year: int,
+        location: str,
+        stamping_supplier: str,
+        statuses: List[str],
+    ) -> list[str]:
+        """范围内待审拼焊件且未录入手工调整单价的零件号（用结算快照）。"""
+        rows = (
+            self._scope_query(
+                db,
+                year=year,
+                location=location,
+                stamping_supplier=stamping_supplier,
+            )
+            .filter(
+                StampingProcessFee.audit_status.in_(statuses),
+                StampingProcessFee.manual_unit_price.is_(None),
+                StampingProcessFee.is_tailor_welded.is_(True),
+            )
+            .with_entities(StampingProcessFee.part_number)
+            .order_by(StampingProcessFee.part_number)
+            .all()
+        )
+        return [row[0] for row in rows if row[0]]
+
     def count_by_scope_and_statuses(
         self,
         db: Session,
@@ -532,4 +560,41 @@ class StampingProcessFeeRepository:
         if location is not None:
             q = q.filter(StampingProcessFee.location == location)
         results = q.order_by(StampingProcessFee.stamping_supplier).all()
+        return [r[0] for r in results if r[0]]
+
+    def get_distinct_vehicle_models(
+        self,
+        db: Session,
+        year: Optional[int] = None,
+        location: Optional[str] = None,
+        stamping_supplier: Optional[str] = None,
+    ) -> List[str]:
+        q = db.query(StampingProcessFee.vehicle_model).distinct()
+        if year is not None:
+            q = q.filter(StampingProcessFee.year == year)
+        if location is not None:
+            q = q.filter(StampingProcessFee.location == location)
+        if stamping_supplier is not None:
+            q = q.filter(StampingProcessFee.stamping_supplier == stamping_supplier)
+        results = q.order_by(StampingProcessFee.vehicle_model).all()
+        return [r[0] for r in results if r[0]]
+
+    def get_distinct_versions(
+        self,
+        db: Session,
+        year: Optional[int] = None,
+        location: Optional[str] = None,
+        stamping_supplier: Optional[str] = None,
+        vehicle_model: Optional[str] = None,
+    ) -> List[str]:
+        q = db.query(StampingProcessFee.version).distinct()
+        if year is not None:
+            q = q.filter(StampingProcessFee.year == year)
+        if location is not None:
+            q = q.filter(StampingProcessFee.location == location)
+        if stamping_supplier is not None:
+            q = q.filter(StampingProcessFee.stamping_supplier == stamping_supplier)
+        if vehicle_model is not None:
+            q = q.filter(StampingProcessFee.vehicle_model == vehicle_model)
+        results = q.order_by(StampingProcessFee.version).all()
         return [r[0] for r in results if r[0]]

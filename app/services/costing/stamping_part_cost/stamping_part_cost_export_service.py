@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Literal
-
 from sqlalchemy.orm import Session
 
 from app.repositories.bom.bom_repository import BomNodeRepository, BomSnapshotRepository
@@ -17,16 +15,13 @@ from app.repositories.costing.stamping_part_cost.stamping_part_cost_repository i
     StampingPartCostRepository,
 )
 from app.repositories.costing.steel_price.steel_price_repository import SteelPriceRepository
-from app.services.costing.stamping_part_cost.export.detail import export_detail
 from app.services.costing.stamping_part_cost.export.process_sheet import (
     export_process_sheet,
 )
 
-ExportFormat = Literal["detail", "process_sheet"]
-
 
 class StampingPartCostExportService:
-    """导出零件价格核算结果。"""
+    """导出冲压零件核价结果（材料费 + 加工费）。"""
 
     def __init__(self) -> None:
         self.repository = StampingPartCostRepository()
@@ -48,7 +43,6 @@ class StampingPartCostExportService:
         version: str | None = None,
         part_number: str | None = None,
         audit_status: str | None = None,
-        export_format: ExportFormat = "process_sheet",
     ) -> tuple[bytes, str]:
         rows = self.repository.list_for_export(
             db,
@@ -61,14 +55,6 @@ class StampingPartCostExportService:
             part_number=part_number,
             audit_status=audit_status,
         )
-        if export_format == "detail":
-            return export_detail(
-                db,
-                rows,
-                steel_price_repo=self.steel_price_repo,
-                scrap_price_repo=self.scrap_price_repo,
-                process_fee_repo=self.process_fee_repo,
-            )
         return export_process_sheet(
             db,
             rows,
@@ -77,4 +63,10 @@ class StampingPartCostExportService:
             steel_price_repo=self.steel_price_repo,
             scrap_price_repo=self.scrap_price_repo,
             process_fee_repo=self.process_fee_repo,
+            year=year,
+            month=month,
+            location=location,
+            stamping_supplier=stamping_supplier,
+            vehicle_model=vehicle_model,
+            version=version,
         )

@@ -206,6 +206,58 @@ def list_suppliers(
 
 
 @router.get(
+    "/filters/vehicle-models",
+    response_model=ApiResponse[List[str]],
+)
+def list_vehicle_models(
+    year: int | None = Query(None, description="年度"),
+    location: str | None = Query(None, description="基地"),
+    stamping_supplier: str | None = Query(None, description="冲压工厂"),
+    db: Session = Depends(get_db),
+    current_user: UserVO = Depends(
+        require_any_perm(
+            Perm.STAMPING_PROCESS_FEE_VIEW,
+            Perm.STAMPING_PROCESS_FEE_CALC_VIEW,
+        )
+    ),
+) -> ApiResponse[List[str]]:
+    models = _service.list_vehicle_models(
+        db,
+        year=year,
+        location=location,
+        stamping_supplier=stamping_supplier,
+    )
+    return ApiResponse.ok(data=models)
+
+
+@router.get(
+    "/filters/versions",
+    response_model=ApiResponse[List[str]],
+)
+def list_versions(
+    year: int | None = Query(None, description="年度"),
+    location: str | None = Query(None, description="基地"),
+    stamping_supplier: str | None = Query(None, description="冲压工厂"),
+    vehicle_model: str | None = Query(None, description="车型"),
+    db: Session = Depends(get_db),
+    current_user: UserVO = Depends(
+        require_any_perm(
+            Perm.STAMPING_PROCESS_FEE_VIEW,
+            Perm.STAMPING_PROCESS_FEE_CALC_VIEW,
+        )
+    ),
+) -> ApiResponse[List[str]]:
+    versions = _service.list_versions(
+        db,
+        year=year,
+        location=location,
+        stamping_supplier=stamping_supplier,
+        vehicle_model=vehicle_model,
+    )
+    return ApiResponse.ok(data=versions)
+
+
+@router.get(
     "/calc/ready",
     response_model=ApiResponse[StampingProcessFeeCalcReadyVO],
 )

@@ -184,7 +184,7 @@ class Perm:
     STAMPING_PART_COST_DELETE = "op:stamping-part-cost:delete"  # 删除
     STAMPING_PART_COST_APPROVE = "op:stamping-part-cost:approve"  # 审核通过
     STAMPING_PART_COST_REVERSE = "op:stamping-part-cost:reverse"  # 反审核
-    STAMPING_PART_COST_EXPORT = "op:stamping-part-cost:export"  # 导出
+    STAMPING_PART_COST_EXPORT = "op:stamping-part-cost:export"  # 导出核价结果
 
     MENU_COSTING_ENGINE = "menu:costing-engine"  # 自动核价引擎
     COSTING_VIEW = "op:costing:view"  # 查看

@@ -13,12 +13,15 @@ from sqlalchemy.orm import Session
 from app.common.audit import AUDIT_APPROVED, display_name
 from app.common.timezone import now
 from app.exceptions.base import BusinessException
-from app.models.costing import StampingPartCostCalcLog
+from app.models.costing import StampingPartCost, StampingPartCostCalcLog
 from app.repositories.costing.stamping_part_cost.stamping_part_cost_repository import (
     PartCostListFilters,
     StampingPartCostRepository,
 )
 from app.repositories.costing.steel_price.steel_price_repository import SteelPriceRepository
+from app.repositories.stamping.tailor_weld_blank_repository import (
+    StampingTailorWeldBlankRepository,
+)
 from app.schemas.dto.stamping_part_cost_dto import (
     StampingPartCostBatchApproveDTO,
     StampingPartCostBatchReverseAuditDTO,
@@ -49,6 +52,11 @@ from app.services.costing.stamping_part_cost.calc.orchestrator import (
     StampingPartCostCalcOrchestrator,
 )
 from app.services.costing.stamping_part_cost.calc.scope import require_scope
+from app.services.costing.stamping_part_cost.export.tailor_weld_display import (
+    build_steel_price_index,
+    load_blanks_by_part_id,
+    resolve_part_cost_display,
+)
 
 # 兼容旧导入路径
 __all__ = [
@@ -64,6 +72,7 @@ class StampingPartCostService:
     def __init__(self) -> None:
         self.cost_repo = StampingPartCostRepository()
         self.steel_repo = SteelPriceRepository()
+        self.blank_repo = StampingTailorWeldBlankRepository()
         self.orchestrator = StampingPartCostCalcOrchestrator()
 
     def get_calc_ready(
@@ -203,7 +212,7 @@ class StampingPartCostService:
             ),
         }
         return (
-            [StampingPartCostVO.model_validate(r) for r in rows],
+            self._to_cost_vos(db, rows),
             total,
             filters,
         )
@@ -212,7 +221,8 @@ class StampingPartCostService:
         record = self.cost_repo.get_by_id(db, cost_id)
         if record is None:
             return None
-        return StampingPartCostVO.model_validate(record)
+        vos = self._to_cost_vos(db, [record])
+        return vos[0] if vos else None
 
     def update_manual_unit_cost(
         self,
@@ -248,7 +258,39 @@ class StampingPartCostService:
         )
         if not updated:
             raise BusinessException(f"核算记录不存在: id={cost_id}")
-        return StampingPartCostVO.model_validate(updated)
+        vos = self._to_cost_vos(db, [updated])
+        return vos[0]
+
+    def _to_cost_vos(
+        self, db: Session, rows: list[StampingPartCost]
+    ) -> list[StampingPartCostVO]:
+        if not rows:
+            return []
+        blanks_by_part = load_blanks_by_part_id(
+            db, rows, blank_repo=self.blank_repo
+        )
+        price_index = build_steel_price_index(
+            db, rows, steel_repo=self.steel_repo
+        )
+        result: list[StampingPartCostVO] = []
+        for row in rows:
+            display = resolve_part_cost_display(
+                row,
+                blanks_by_part.get(int(row.source_part_id or 0), []),
+                price_index,
+            )
+            vo = StampingPartCostVO.model_validate(row)
+            result.append(
+                vo.model_copy(
+                    update={
+                        "thickness": display.thickness,
+                        "sheet_length": display.sheet_length,
+                        "sheet_width": display.sheet_width,
+                        "steel_ton_price": display.steel_ton_price,
+                    }
+                )
+            )
+        return result
 
     def list_years(self, db: Session) -> list[int]:
         years = set(self.cost_repo.get_distinct_years(db))

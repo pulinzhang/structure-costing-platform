@@ -389,7 +389,7 @@
                 { "code": "op:stamping-part-cost:delete", "label": "删除", "type": "op" },
                 { "code": "op:stamping-part-cost:approve", "label": "审核通过", "type": "op" },
                 { "code": "op:stamping-part-cost:reverse", "label": "反审核", "type": "op" },
-                { "code": "op:stamping-part-cost:export", "label": "导出", "type": "op" }
+                { "code": "op:stamping-part-cost:export", "label": "导出工艺清单", "type": "op" }
               ]
             }
           ]

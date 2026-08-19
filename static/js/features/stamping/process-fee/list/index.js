@@ -10,7 +10,7 @@ import {
     updateFeeHud,
     updateFeeFilterCapsules,
     shortPartNumber,
-} from './template.js?v=28';
+} from './template.js?v=30';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -39,6 +39,7 @@ const feeState = {
     batchAuditSubmitting: false,
     editingId: null,
     viewingId: null,
+    editingIsTailorWelded: false,
 };
 
 function openDrawer(drawerId, backdropId) {
@@ -102,6 +103,8 @@ function applyHashFilters() {
     const year = qs.get('year') || '';
     const location = qs.get('location') || '';
     const supplier = qs.get('stamping_supplier') || '';
+    const vehicle = qs.get('vehicle_model') || '';
+    const version = qs.get('version') || '';
     if (year) {
         const yearEl = document.getElementById('feeYearFilter');
         if (yearEl) yearEl.dataset.pending = year;
@@ -114,7 +117,15 @@ function applyHashFilters() {
         const supplierEl = document.getElementById('feeSupplierFilter');
         if (supplierEl) supplierEl.dataset.pending = supplier;
     }
-    if (year || location || supplier) {
+    if (vehicle) {
+        const vehicleEl = document.getElementById('feeVehicleFilter');
+        if (vehicleEl) vehicleEl.dataset.pending = vehicle;
+    }
+    if (version) {
+        const versionEl = document.getElementById('feeVersionFilter');
+        if (versionEl) versionEl.dataset.pending = version;
+    }
+    if (year || location || supplier || vehicle || version) {
         setAdvancedOpen(true);
     }
 }
@@ -164,18 +175,36 @@ function bindEvents() {
     document.getElementById('feeYearFilter')?.addEventListener('change', () => {
         updateFeeFilterCapsules();
         loadLocationOptions().then(() => loadSupplierOptions().then(() => {
-            updateFeeFilterCapsules();
-            loadData(1);
+            loadVehicleOptions().then(() => loadVersionOptions().then(() => {
+                updateFeeFilterCapsules();
+                loadData(1);
+            }));
         }));
     });
     document.getElementById('feeLocationFilter')?.addEventListener('change', () => {
         updateFeeFilterCapsules();
         loadSupplierOptions().then(() => {
+            loadVehicleOptions().then(() => loadVersionOptions().then(() => {
+                updateFeeFilterCapsules();
+                loadData(1);
+            }));
+        });
+    });
+    document.getElementById('feeSupplierFilter')?.addEventListener('change', () => {
+        updateFeeFilterCapsules();
+        loadVehicleOptions().then(() => loadVersionOptions().then(() => {
+            updateFeeFilterCapsules();
+            loadData(1);
+        }));
+    });
+    document.getElementById('feeVehicleFilter')?.addEventListener('change', () => {
+        updateFeeFilterCapsules();
+        loadVersionOptions().then(() => {
             updateFeeFilterCapsules();
             loadData(1);
         });
     });
-    document.getElementById('feeSupplierFilter')?.addEventListener('change', () => {
+    document.getElementById('feeVersionFilter')?.addEventListener('change', () => {
         updateFeeFilterCapsules();
         loadData(1);
     });
@@ -268,6 +297,8 @@ async function loadFilterOptions() {
         }
         await loadLocationOptions();
         await loadSupplierOptions();
+        await loadVehicleOptions();
+        await loadVersionOptions();
     } catch (error) {
         showToast(error.message || '加载筛选失败', 'error');
     }
@@ -318,8 +349,62 @@ async function loadSupplierOptions() {
     }
 }
 
+async function loadVehicleOptions() {
+    const year = document.getElementById('feeYearFilter')?.value || undefined;
+    const location = document.getElementById('feeLocationFilter')?.value || undefined;
+    const supplier = document.getElementById('feeSupplierFilter')?.value || undefined;
+    try {
+        const res = await HttpClient.get(`${API_BASE}/filters/vehicle-models`, {
+            params: { year, location, stamping_supplier: supplier },
+        });
+        const models = Array.isArray(res.data) ? res.data : [];
+        const vehicleEl = document.getElementById('feeVehicleFilter');
+        if (!vehicleEl) return;
+        const pending = vehicleEl.dataset.pending || vehicleEl.value || '';
+        let html = '<option value="">全部</option>';
+        models.forEach((model) => {
+            const selected = String(model) === String(pending) ? ' selected' : '';
+            html += `<option value="${esc(model)}"${selected}>${esc(model)}</option>`;
+        });
+        vehicleEl.innerHTML = html;
+        delete vehicleEl.dataset.pending;
+    } catch (error) {
+        showToast(error.message || '加载车型失败', 'error');
+    }
+}
+
+async function loadVersionOptions() {
+    const year = document.getElementById('feeYearFilter')?.value || undefined;
+    const location = document.getElementById('feeLocationFilter')?.value || undefined;
+    const supplier = document.getElementById('feeSupplierFilter')?.value || undefined;
+    const vehicle = document.getElementById('feeVehicleFilter')?.value || undefined;
+    try {
+        const res = await HttpClient.get(`${API_BASE}/filters/versions`, {
+            params: {
+                year,
+                location,
+                stamping_supplier: supplier,
+                vehicle_model: vehicle,
+            },
+        });
+        const versions = Array.isArray(res.data) ? res.data : [];
+        const versionEl = document.getElementById('feeVersionFilter');
+        if (!versionEl) return;
+        const pending = versionEl.dataset.pending || versionEl.value || '';
+        let html = '<option value="">全部</option>';
+        versions.forEach((version) => {
+            const selected = String(version) === String(pending) ? ' selected' : '';
+            html += `<option value="${esc(version)}"${selected}>${esc(version)}</option>`;
+        });
+        versionEl.innerHTML = html;
+        delete versionEl.dataset.pending;
+    } catch (error) {
+        showToast(error.message || '加载版本失败', 'error');
+    }
+}
+
 function resetFilters() {
-    ['feeYearFilter', 'feeLocationFilter', 'feeSupplierFilter', 'feeAuditStatusFilter'].forEach((id) => {
+    ['feeYearFilter', 'feeLocationFilter', 'feeSupplierFilter', 'feeVehicleFilter', 'feeVersionFilter', 'feeAuditStatusFilter'].forEach((id) => {
         const el = document.getElementById(id);
         if (el) el.value = '';
     });
@@ -327,8 +412,10 @@ function resetFilters() {
     if (partEl) partEl.value = '';
     feeState.onlyZero = false;
     loadLocationOptions().then(() => loadSupplierOptions().then(() => {
-        updateFeeFilterCapsules();
-        loadData(1);
+        loadVehicleOptions().then(() => loadVersionOptions().then(() => {
+            updateFeeFilterCapsules();
+            loadData(1);
+        }));
     }));
 }
 
@@ -343,6 +430,8 @@ function collectScopeFilters() {
 function collectListFilters() {
     return {
         ...collectScopeFilters(),
+        vehicle_model: document.getElementById('feeVehicleFilter')?.value || '',
+        version: document.getElementById('feeVersionFilter')?.value || '',
         audit_status: document.getElementById('feeAuditStatusFilter')?.value || '',
         part_number: (document.getElementById('feePartNumberFilter')?.value || '').trim(),
         only_zero: feeState.onlyZero,
@@ -366,6 +455,8 @@ async function loadData(page = 1) {
             year: filters.year || undefined,
             location: filters.location || undefined,
             stamping_supplier: filters.stamping_supplier || undefined,
+            vehicle_model: filters.vehicle_model || undefined,
+            version: filters.version || undefined,
             part_number: filters.part_number || undefined,
             audit_status: filters.audit_status || undefined,
             only_zero: filters.only_zero || undefined,
@@ -467,6 +558,7 @@ function fillViewFieldsFromRecord(record) {
     fillViewField('fee-view-version', record.version);
     fillPartNumberFields('fee-view', record.part_number);
     fillViewField('fee-view-part-name', record.part_name);
+    fillViewField('fee-view-part-type', record.is_tailor_welded ? '拼焊件' : '普通件');
     fillViewField('fee-view-seq-no', record.seq_no);
     fillViewField('fee-view-material', record.material);
     fillViewField('fee-view-thickness', formatDecimal(record.thickness, 4));
@@ -569,10 +661,12 @@ function openEditDrawer(record) {
         return;
     }
     feeState.editingId = record.id;
+    feeState.editingIsTailorWelded = Boolean(record.is_tailor_welded);
     fillViewField('fee-edit-year', record.year);
     fillViewField('fee-edit-location', record.location);
     fillViewField('fee-edit-supplier', record.stamping_supplier);
     fillPartNumberFields('fee-edit', record.part_number);
+    fillViewField('fee-edit-part-type', record.is_tailor_welded ? '拼焊件' : '普通件');
     fillViewField('fee-edit-vehicle', record.vehicle_model);
     fillViewField('fee-edit-version', record.version);
     fillViewField('fee-edit-processing-fee', formatDecimal(record.processing_fee, 3));
@@ -586,8 +680,24 @@ function openEditDrawer(record) {
     }
     const remarkEl = document.getElementById('feeEditRemark');
     if (remarkEl) remarkEl.value = record.remark || '';
+    applyManualPriceUi(feeState.editingIsTailorWelded);
 
     openDrawer('feeEditDrawer', 'feeEditDrawerBackdrop');
+}
+
+function applyManualPriceUi(isTailorWelded) {
+    const hint = document.getElementById('feeEditTailorWeldHint');
+    const hintText = document.getElementById('feeEditManualPriceHint');
+    const input = document.getElementById('feeEditManualPrice');
+    if (hint) hint.classList.toggle('hidden', !isTailorWelded);
+    if (hintText) {
+        hintText.textContent = isTailorWelded ? '（必填，须含拼焊费）' : '（留空则回退系统计算）';
+        hintText.className = isTailorWelded ? 'text-[#FF1E27]' : 'text-[#616161]';
+    }
+    if (input) {
+        input.required = Boolean(isTailorWelded);
+        input.placeholder = isTailorWelded ? '必填' : '可空';
+    }
 }
 
 async function saveEdit() {
@@ -603,6 +713,9 @@ async function saveEdit() {
             return;
         }
         manualUnitPrice = parsed;
+    } else if (feeState.editingIsTailorWelded) {
+        showToast('拼焊件必须录入手工调整单价（系统计算不含拼焊费）', 'warning');
+        return;
     }
     const remark = String(document.getElementById('feeEditRemark')?.value || '').trim() || null;
 
@@ -625,6 +738,8 @@ async function exportExcel() {
         !filters.year
         && !filters.location
         && !filters.stamping_supplier
+        && !filters.vehicle_model
+        && !filters.version
         && !filters.audit_status
         && !filters.part_number
     ) {
@@ -648,6 +763,8 @@ async function exportExcel() {
                 year: filters.year || undefined,
                 location: filters.location || undefined,
                 stamping_supplier: filters.stamping_supplier || undefined,
+                vehicle_model: filters.vehicle_model || undefined,
+                version: filters.version || undefined,
                 audit_status: filters.audit_status || undefined,
                 part_number: filters.part_number || undefined,
             },

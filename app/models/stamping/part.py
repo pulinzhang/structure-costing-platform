@@ -29,8 +29,10 @@ if TYPE_CHECKING:
 
 class StampingPart(AuditUserMixin, Base):
     """
-    冲压件主表 - 存储零件基本信息
-    vehicle_model + version 直接存于此表，不单独建车型表
+    冲压件主表 - 存储零件基本信息。
+
+    唯一键：location + stamping_supplier + vehicle_model + version + part_number。
+    车型/版本直接存于此表，不单独建车型表。
 
     拼焊总成：is_tailor_welded=True，各片子片见 StampingTailorWeldBlank；
     工序仍挂本表（StampingProcess），核价时按子片算后汇总到父。

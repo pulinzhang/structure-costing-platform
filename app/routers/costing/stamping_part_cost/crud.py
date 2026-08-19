@@ -75,19 +75,10 @@ def export_download(
     version: str | None = Query(None, description="版本"),
     part_number: str | None = Query(None, description="零件号"),
     audit_status: str | None = Query(None, description="审核状态"),
-    export_format: str = Query(
-        "process_sheet",
-        description="process_sheet=工艺清单公式格式；detail=明细（含溯源与关联ID）",
-    ),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_PART_COST_EXPORT)),
 ) -> StreamingResponse:
-    """按当前筛选条件导出零件价格核算 Excel。"""
-    if export_format not in ("process_sheet", "detail"):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="export_format 仅支持 process_sheet 或 detail",
-        )
+    """按当前筛选条件导出冲压零件核价结果 Excel（材料费 + 加工费）。"""
     if not any(
         [
             year,
@@ -115,7 +106,6 @@ def export_download(
         version=version.strip() if version else None,
         part_number=part_number.strip() if part_number else None,
         audit_status=audit_status.strip() if audit_status else None,
-        export_format=export_format,  # type: ignore[arg-type]
     )
     return StreamingResponse(
         iter([content]),

@@ -249,9 +249,18 @@ class StampingUploadService:
         """保存零件数据到数据库，返回 part_number -> part_id 映射"""
         audit = audit_create(current_user)
         tailor_parents = tailor_parent_numbers or set()
-        self.part_repo.delete_by_vehicle_version(self.db, vehicle_model, version)
+        location = file_info.safe_location
+        self.part_repo.delete_by_scope(
+            self.db,
+            location=location,
+            stamping_supplier=stamping_supplier,
+            vehicle_model=vehicle_model,
+            version=version,
+        )
         logger.info(
-            "已删除旧数据: %s %s operator=%s",
+            "已删除旧数据: %s/%s/%s/%s operator=%s",
+            location,
+            stamping_supplier,
             vehicle_model,
             version,
             display_name(current_user),
@@ -271,7 +280,7 @@ class StampingUploadService:
             )
 
             parts_to_create.append(PartData(
-                location=file_info.safe_location,
+                location=location,
                 vehicle_model=vehicle_model,
                 version=version,
                 stamping_supplier=stamping_supplier,
@@ -304,8 +313,12 @@ class StampingUploadService:
         self.part_repo.bulk_create(self.db, parts_to_create)
         self.db.flush()
 
-        part_map = self.part_repo.get_id_map_by_vehicle_version(
-            self.db, vehicle_model, version
+        part_map = self.part_repo.get_id_map_by_scope(
+            self.db,
+            location=location,
+            stamping_supplier=stamping_supplier,
+            vehicle_model=vehicle_model,
+            version=version,
         )
         logger.info("导入零件: %d 个", len(parts_to_create))
         return part_map

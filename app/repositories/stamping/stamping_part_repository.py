@@ -289,37 +289,22 @@ class StampingPartRepository:
         logger.info(f"删除零件: id={part_id}")
         return True
 
-    def get_all_by_vehicle_version(self, db: Session, vehicle_model: str, version: str) -> List[StampingPart]:
-        """获取指定车型版本的所有零件（不分页）"""
+    def get_all_by_scope(
+        self,
+        db: Session,
+        *,
+        location: str,
+        stamping_supplier: str,
+        vehicle_model: str,
+        version: str,
+    ) -> List[StampingPart]:
+        """按唯一范围键查询零件：基地 + 冲压工厂 + 车型 + 版本。"""
         return db.query(StampingPart).filter(
+            StampingPart.location == location,
+            StampingPart.stamping_supplier == stamping_supplier,
             StampingPart.vehicle_model == vehicle_model,
             StampingPart.version == version,
         ).all()
-
-    def delete_by_vehicle_version(self, db: Session, vehicle_model: str, version: str) -> int:
-        """删除指定车型版本的全部零件和工序（不提交事务，由调用方管理）。
-
-        使用 bulk DELETE + flush，确保旧行在后续 INSERT 前已从库中消失，
-        避免唯一键 (location, supplier, model, version, part_number) 冲突。
-        """
-        parts = self.get_all_by_vehicle_version(db, vehicle_model, version)
-        count = len(parts)
-        if not parts:
-            return 0
-
-        part_ids = [part.id for part in parts]
-        db.query(StampingProcess).filter(
-            StampingProcess.part_id.in_(part_ids)
-        ).delete(synchronize_session=False)
-        db.query(StampingTailorWeldBlank).filter(
-            StampingTailorWeldBlank.part_id.in_(part_ids)
-        ).delete(synchronize_session=False)
-        db.query(StampingPart).filter(
-            StampingPart.id.in_(part_ids)
-        ).delete(synchronize_session=False)
-        db.flush()
-        logger.info("删除车型版本: %s/%s, 共 %s 个零件", vehicle_model, version, count)
-        return count
 
     def delete_by_scope(
         self,
@@ -330,13 +315,18 @@ class StampingPartRepository:
         vehicle_model: str,
         version: str,
     ) -> int:
-        """按基地 + 冲压工厂 + 车型 + 版本批量删除零件及工序。不提交事务。"""
-        parts = db.query(StampingPart).filter(
-            StampingPart.location == location,
-            StampingPart.stamping_supplier == stamping_supplier,
-            StampingPart.vehicle_model == vehicle_model,
-            StampingPart.version == version,
-        ).all()
+        """按基地 + 冲压工厂 + 车型 + 版本批量删除零件及工序。不提交事务。
+
+        使用 bulk DELETE + flush，确保旧行在后续 INSERT 前已从库中消失，
+        避免唯一键 (location, supplier, model, version, part_number) 冲突。
+        """
+        parts = self.get_all_by_scope(
+            db,
+            location=location,
+            stamping_supplier=stamping_supplier,
+            vehicle_model=vehicle_model,
+            version=version,
+        )
         count = len(parts)
         if not parts:
             return 0
@@ -362,9 +352,23 @@ class StampingPartRepository:
         )
         return count
 
-    def get_id_map_by_vehicle_version(self, db: Session, vehicle_model: str, version: str) -> Dict[str, int]:
-        """获取零件号到 ID 的映射"""
-        parts = self.get_all_by_vehicle_version(db, vehicle_model, version)
+    def get_id_map_by_scope(
+        self,
+        db: Session,
+        *,
+        location: str,
+        stamping_supplier: str,
+        vehicle_model: str,
+        version: str,
+    ) -> Dict[str, int]:
+        """获取范围内零件号到 ID 的映射。"""
+        parts = self.get_all_by_scope(
+            db,
+            location=location,
+            stamping_supplier=stamping_supplier,
+            vehicle_model=vehicle_model,
+            version=version,
+        )
         return {p.part_number: p.id for p in parts if p.part_number}
 
     def count_processes_by_part_ids(self, db: Session, part_ids: List[int]) -> Dict[int, int]:

@@ -64,6 +64,8 @@ class StampingProcessFeeService:
             raise BusinessException("已审核通过，请先反审核后再调整")
 
         manual_price = dto.manual_unit_price
+        if record.is_tailor_welded and manual_price is None:
+            raise BusinessException("拼焊件须录入手工调整单价（系统计算不含拼焊费）")
         final_fee = resolve_final_fee(record.processing_fee, manual_price)
         remark = (dto.remark or "").strip() or None
         updated = self.fee_repo.update_fields(
@@ -176,6 +178,19 @@ class StampingProcessFeeService:
             stamping_supplier=supplier,
             statuses=[AUDIT_APPROVED],
         )
+        missing_manual = self.fee_repo.list_tailor_weld_missing_manual_part_numbers(
+            db,
+            year=dto.year,
+            location=location,
+            stamping_supplier=supplier,
+            statuses=[AUDIT_PENDING, AUDIT_REJECTED],
+        )
+        if missing_manual:
+            preview = "、".join(missing_manual[:10])
+            extra = f" 等 {len(missing_manual)} 件" if len(missing_manual) > 10 else ""
+            raise BusinessException(
+                f"拼焊件须先录入手工调整单价后再审核：{preview}{extra}"
+            )
         updated = self.fee_repo.approve_by_scope(
             db,
             year=dto.year,
@@ -250,3 +265,33 @@ class StampingProcessFeeService:
         location: Optional[str] = None,
     ) -> list[str]:
         return self.fee_repo.get_distinct_suppliers(db, year=year, location=location)
+
+    def list_vehicle_models(
+        self,
+        db: Session,
+        year: Optional[int] = None,
+        location: Optional[str] = None,
+        stamping_supplier: Optional[str] = None,
+    ) -> list[str]:
+        return self.fee_repo.get_distinct_vehicle_models(
+            db,
+            year=year,
+            location=location,
+            stamping_supplier=stamping_supplier,
+        )
+
+    def list_versions(
+        self,
+        db: Session,
+        year: Optional[int] = None,
+        location: Optional[str] = None,
+        stamping_supplier: Optional[str] = None,
+        vehicle_model: Optional[str] = None,
+    ) -> list[str]:
+        return self.fee_repo.get_distinct_versions(
+            db,
+            year=year,
+            location=location,
+            stamping_supplier=stamping_supplier,
+            vehicle_model=vehicle_model,
+        )

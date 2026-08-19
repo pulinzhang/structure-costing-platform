@@ -288,10 +288,6 @@ class StampingPartService:
         """删除零件（硬删除，不写审计字段）。"""
         self.repository.delete(db, part_id)
 
-    def get_id_map(self, db: Session, vehicle_model: str, version: str) -> dict[str, int]:
-        """获取零件号映射"""
-        return self.repository.get_id_map_by_vehicle_version(db, vehicle_model, version)
-
     def create(
         self,
         db: Session,
@@ -325,10 +321,6 @@ class StampingPartService:
         payload: StampingPartPatch = {**update_data}
         payload["updated_by"] = display_name(current_user)
         return self.repository.update(db, part_id, payload)
-
-    def delete_by_vehicle_version(self, db: Session, vehicle_model: str, version: str) -> int:
-        """按车型+版本硬删除零件（上传覆盖旧数据时使用）。"""
-        return self.repository.delete_by_vehicle_version(db, vehicle_model, version)
 
     def batch_delete(
         self,

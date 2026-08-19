@@ -355,7 +355,9 @@ function renderHistoryRows(items) {
                             class="calc-view-result-btn text-[9px] text-[#777] hover:text-white mr-2"
                             data-year="${esc(item.year)}"
                             data-location="${esc(item.location || '')}"
-                            data-supplier="${esc(item.stamping_supplier || '')}">结果</button>
+                            data-supplier="${esc(item.stamping_supplier || '')}"
+                            data-vehicle="${esc(item.vehicle_model || '')}"
+                            data-version="${esc(item.version || '')}">结果</button>
                     `}
                     ${calcState.canDelete !== false ? `
                     <button type="button"
@@ -376,6 +378,8 @@ function renderHistoryRows(items) {
             if (btn.dataset.year) qs.set('year', btn.dataset.year);
             if (btn.dataset.location) qs.set('location', btn.dataset.location);
             if (btn.dataset.supplier) qs.set('stamping_supplier', btn.dataset.supplier);
+            if (btn.dataset.vehicle) qs.set('vehicle_model', btn.dataset.vehicle);
+            if (btn.dataset.version) qs.set('version', btn.dataset.version);
             const suffix = qs.toString() ? `?${qs.toString()}` : '';
             window.location.hash = `/stamping-process-fee${suffix}`;
         });

@@ -78,6 +78,10 @@ class StampingProcessFeeVO(BaseModel):
     part_remark: str | None = None
     sketch_url: str | None = None
     excel_filename: str | None = None
+    is_tailor_welded: bool = Field(
+        default=False,
+        description="是否拼焊件（结算快照；拼焊费须手工挂在父件）",
+    )
     processing_fee: Decimal | None = None
     process_count: int
     manual_unit_price: Decimal | None = None

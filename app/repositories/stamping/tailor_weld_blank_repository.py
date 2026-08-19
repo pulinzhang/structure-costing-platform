@@ -38,6 +38,23 @@ class StampingTailorWeldBlankRepository:
             .all()
         )
 
+    def list_by_part_ids(
+        self,
+        db: Session,
+        part_ids: list[int],
+    ) -> list[StampingTailorWeldBlank]:
+        if not part_ids:
+            return []
+        return (
+            db.query(StampingTailorWeldBlank)
+            .filter(StampingTailorWeldBlank.part_id.in_(part_ids))
+            .order_by(
+                StampingTailorWeldBlank.part_id.asc(),
+                StampingTailorWeldBlank.blank_seq.asc(),
+            )
+            .all()
+        )
+
     def count_by_part_id(self, db: Session, part_id: int) -> int:
         return (
             db.query(StampingTailorWeldBlank)

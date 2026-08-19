@@ -10,7 +10,7 @@ import {
     updateCostFilterCapsules,
     shortPartNumber,
     syncBreakdownColumnVisibility,
-} from './template.js?v=36';
+} from './template.js?v=40';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -40,7 +40,6 @@ const listState = {
     canUpdate: true,
     breakdownColsOpen: false,
     advancedOpen: false,
-    _onDocClick: null,
     _onEscClose: null,
 };
 
@@ -67,11 +66,6 @@ function init() {
 
 function destroy() {
     closeDetailDrawer();
-    setExportMenuOpen(false);
-    if (listState._onDocClick) {
-        document.removeEventListener('click', listState._onDocClick);
-        listState._onDocClick = null;
-    }
 }
 
 function applyPermissionUi() {
@@ -84,7 +78,7 @@ function applyPermissionUi() {
     if (!listState.canApprove) document.getElementById('costBatchApproveBtn')?.classList.add('hidden');
     if (!listState.canReverse) document.getElementById('costBatchReverseBtn')?.classList.add('hidden');
     if (!listState.canExport) {
-        document.getElementById('costExportWrap')?.classList.add('hidden');
+        document.getElementById('costExportBtn')?.classList.add('hidden');
     }
 }
 
@@ -93,14 +87,6 @@ function setAdvancedOpen(isOpen) {
     document.getElementById('costAdvancedFilterPanel')?.classList.toggle('hidden', !isOpen);
     const label = document.getElementById('costAdvancedFilterLabel');
     if (label) label.textContent = isOpen ? '收起高级筛选' : '展开高级筛选';
-}
-
-function setExportMenuOpen(isOpen) {
-    const menu = document.getElementById('costExportMenu');
-    const trigger = document.getElementById('costExportMenuBtn');
-    if (!menu) return;
-    menu.classList.toggle('hidden', !isOpen);
-    if (trigger) trigger.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
 }
 
 function applyQueryFromHash() {
@@ -202,27 +188,7 @@ function bindEvents() {
     document.getElementById('costBatchApproveBtn')?.addEventListener('click', () => batchApprove());
     document.getElementById('costBatchReverseBtn')?.addEventListener('click', () => batchReverse());
     document.getElementById('costBatchDeleteBtn')?.addEventListener('click', () => batchDelete());
-    document.getElementById('costExportMenuBtn')?.addEventListener('click', (event) => {
-        event.stopPropagation();
-        const menu = document.getElementById('costExportMenu');
-        const isOpen = menu && !menu.classList.contains('hidden');
-        setExportMenuOpen(!isOpen);
-    });
-    document.getElementById('costExportBtn')?.addEventListener('click', () => {
-        setExportMenuOpen(false);
-        exportExcel('process_sheet');
-    });
-    document.getElementById('costExportDetailBtn')?.addEventListener('click', () => {
-        setExportMenuOpen(false);
-        exportExcel('detail');
-    });
-    listState._onDocClick = (event) => {
-        const exportWrap = document.getElementById('costExportWrap');
-        if (exportWrap && !exportWrap.contains(event.target)) {
-            setExportMenuOpen(false);
-        }
-    };
-    document.addEventListener('click', listState._onDocClick);
+    document.getElementById('costExportBtn')?.addEventListener('click', () => exportExcel());
     document.getElementById('costPagination')?.addEventListener('click', (event) => {
         const btn = event.target.closest('.cost-page-btn');
         if (btn && !btn.disabled) {
@@ -548,8 +514,8 @@ function showDetailDrawer(row) {
                 ['基地 / 工厂', `${row.location || '—'} / ${row.stamping_supplier || '—'}`],
                 ['核算年月', `${row.year}-${String(row.month).padStart(2, '0')}`],
                 ['车型 / 版本', `${row.vehicle_model || '—'} / ${row.version || '—'}`],
-                ['材质 / 厚度', `${row.material || '—'} / ${fmtNum(row.thickness, 3)} mm`],
-                ['料片尺寸', `${fmtNum(row.sheet_length, 2)} × ${fmtNum(row.sheet_width, 2)} mm`],
+                ['材质 / 厚度', `${row.material || '—'} / ${row.thickness || '—'} mm`],
+                ['料片尺寸', `${row.sheet_length || '—'} × ${row.sheet_width || '—'} mm`],
                 ['可制件数', row.parts_per_sheet ?? '—'],
                 ['成品单重', `${fmtNum(row.part_weight, 4)} kg`],
             ])}
@@ -570,7 +536,7 @@ function showDetailDrawer(row) {
 
             ${detailBlock('价格与吨价', [
                 ['钢厂', row.steel_mill || '—'],
-                ['钢材吨价 P', `￥${fmtNum(row.steel_ton_price, 2)} /t`],
+                ['钢材吨价 P', row.steel_ton_price ? `${row.steel_ton_price} 元/吨` : '—'],
                 ['废料吨价 Q', `￥${fmtNum(row.scrap_ton_price, 2)} /t`],
             ])}
 
@@ -751,7 +717,7 @@ async function batchDelete() {
     }
 }
 
-async function exportExcel(exportFormat = 'process_sheet') {
+async function exportExcel() {
     if (!listState.canExport) return showToast('无导出权限', 'warning');
     const filters = getFilters();
     if (!Object.values(filters).some(Boolean)) {
@@ -767,11 +733,8 @@ async function exportExcel(exportFormat = 'process_sheet') {
                 stamping_supplier: filters.stamping_supplier || undefined,
                 audit_status: filters.audit_status || undefined,
                 part_number: filters.part_number || undefined,
-                export_format: exportFormat,
             },
-            defaultFilename: exportFormat === 'detail'
-                ? '冲压零件价格核算明细.xlsx'
-                : '冲压零件工艺清单核价.xlsx',
+            defaultFilename: '冲压零件核价结果.xlsx',
         });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');

@@ -5,8 +5,9 @@
   1. 加载冲次单价 / 冲压零件
   2. 单件计费：拼焊件 TailorWeldFeeCalculator，其余 PartFeeCalculator
   3. TonnageResolver        — 吨位解析（共模/摆剪，由计算器调用）
-  4. fee_repo.bulk_upsert   — 结果落库
-  5. ProcessFeeCalcLogService — 计算锁与过程日志
+  4. part_snapshot          — 零件主表字段写入结果行（含 is_tailor_welded）
+  5. fee_repo.bulk_upsert   — 结果落库
+  6. ProcessFeeCalcLogService — 计算锁与过程日志
 
 公式与共模规则见 PartFeeCalculator / TailorWeldFeeCalculator / TonnageResolver。
 """
@@ -259,6 +260,11 @@ class StampingProcessFeeCalcOrchestrator:
                 if processing_fee is not None and Decimal(str(processing_fee)) == 0:
                     zero_fee_count += 1
                     if len(zero_fee_items) < 50:
+                        zero_reason = (
+                            "拼焊件系统计算不含拼焊费，请到列表录入手工调整单价"
+                            if part.is_tailor_welded
+                            else "系统计算加工费为 0，请到列表手工调整单价"
+                        )
                         zero_fee_items.append(
                             StampingProcessFeeFailedItemVO(
                                 part_number=part.part_number,
@@ -266,7 +272,7 @@ class StampingProcessFeeCalcOrchestrator:
                                 process_seq=None,
                                 process_code=None,
                                 process_method=None,
-                                reason="系统计算加工费为 0，请到列表手工调整单价",
+                                reason=zero_reason,
                             )
                         )
 

@@ -16,6 +16,7 @@ from decimal import Decimal
 from typing import TYPE_CHECKING, List
 
 from sqlalchemy import (
+    Boolean,
     DateTime,
     Index,
     Integer,
@@ -98,6 +99,12 @@ class StampingProcessFee(AuditUserMixin, Base):
     excel_filename: Mapped[str | None] = mapped_column(
         String(255), nullable=True, comment="来源Excel文件名"
     )
+    is_tailor_welded: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        comment="是否拼焊件（计算时快照自零件主表；拼焊费须手工挂在父件）",
+    )
 
     # 系统计算值；算不出时可为空，由手工调整单价补齐
     processing_fee: Mapped[Decimal | None] = mapped_column(
@@ -139,6 +146,7 @@ class StampingProcessFee(AuditUserMixin, Base):
         Index("ix_stamping_process_fee_supplier", "stamping_supplier"),
         Index("ix_stamping_process_fee_audit_status", "audit_status"),
         Index("ix_stamping_process_fee_material", "material"),
+        Index("ix_stamping_process_fee_is_tailor_welded", "is_tailor_welded"),
         UniqueConstraint(
             "year",
             "location",

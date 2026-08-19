@@ -128,16 +128,61 @@ class DatabaseConfig:
         from sqlalchemy import inspect, text
 
         inspector = inspect(engine)
-        table_name = "bom_l0_welding_fees"
-        if table_name not in inspector.get_table_names():
-            return
-        existing = {col["name"] for col in inspector.get_columns(table_name)}
-        if "weld_info_raw" not in existing:
-            with engine.begin() as conn:
-                conn.execute(
-                    text(f"ALTER TABLE {table_name} ADD COLUMN weld_info_raw TEXT")
-                )
-            logger.info("已为 %s 追加列 weld_info_raw", table_name)
+        table_names = set(inspector.get_table_names())
+
+        weld_table = "bom_l0_welding_fees"
+        if weld_table in table_names:
+            weld_cols = {col["name"] for col in inspector.get_columns(weld_table)}
+            if "weld_info_raw" not in weld_cols:
+                with engine.begin() as conn:
+                    conn.execute(
+                        text(f"ALTER TABLE {weld_table} ADD COLUMN weld_info_raw TEXT")
+                    )
+                logger.info("已为 %s 追加列 weld_info_raw", weld_table)
+
+        fee_table = "stamping_process_fees"
+        if fee_table in table_names:
+            fee_cols = {col["name"] for col in inspector.get_columns(fee_table)}
+            if "is_tailor_welded" not in fee_cols:
+                with engine.begin() as conn:
+                    conn.execute(
+                        text(
+                            f"ALTER TABLE {fee_table} "
+                            "ADD COLUMN is_tailor_welded BOOLEAN NOT NULL DEFAULT 0"
+                        )
+                    )
+                    conn.execute(
+                        text(
+                            "CREATE INDEX IF NOT EXISTS "
+                            "ix_stamping_process_fee_is_tailor_welded "
+                            f"ON {fee_table} (is_tailor_welded)"
+                        )
+                    )
+                    conn.execute(
+                        text(
+                            f"UPDATE {fee_table} SET is_tailor_welded = 1 "
+                            "WHERE source_part_id IS NOT NULL AND EXISTS ("
+                            "SELECT 1 FROM stamping_parts p "
+                            f"WHERE p.id = {fee_table}.source_part_id "
+                            "AND p.is_tailor_welded = 1"
+                            ")"
+                        )
+                    )
+                    conn.execute(
+                        text(
+                            f"UPDATE {fee_table} SET is_tailor_welded = 1 "
+                            "WHERE is_tailor_welded = 0 AND EXISTS ("
+                            "SELECT 1 FROM stamping_parts p "
+                            f"WHERE p.location = {fee_table}.location "
+                            f"AND p.stamping_supplier = {fee_table}.stamping_supplier "
+                            f"AND p.vehicle_model = {fee_table}.vehicle_model "
+                            f"AND p.version = {fee_table}.version "
+                            f"AND p.part_number = {fee_table}.part_number "
+                            "AND p.is_tailor_welded = 1"
+                            ")"
+                        )
+                    )
+                logger.info("已为 %s 追加列 is_tailor_welded 并回填", fee_table)
 
 
 class AuxiliaryDatabaseConfig:

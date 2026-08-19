@@ -56,8 +56,10 @@ class PartFeeCalculator:
         prev_part_cache: dict[int, StampingPart | None],
     ) -> list[StampingProcess]:
         """
-        共模/双槽/共用件以上一件工序方案为准。
-        当前多出的工序视为录入错误，跳过不计费。
+        共模右件常多出空工序行：仅裁掉「无自有吨位、且上一件对不上」的序。
+
+        左件（或主件）工艺方法也是「左右合并」，但吨位写在本件上。
+        上一件往往是另一副模具的右件，不能拿它的工序清单把本件 OP50 等裁掉。
         """
         if not processes:
             return processes
@@ -79,6 +81,9 @@ class PartFeeCalculator:
         for process in sorted(
             processes, key=lambda p: (p.process_order or 0, p.id or 0)
         ):
+            if is_swing_shear_process(process) or self_tonnage(process) is not None:
+                selected.append(process)
+                continue
             if match_previous_process(process, previous_processes) is not None:
                 selected.append(process)
             else:

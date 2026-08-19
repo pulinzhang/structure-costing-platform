@@ -6,6 +6,8 @@
 
 各子片按自身材质/料厚匹配钢材联动价，各自算①②后金额相加；
 ③边角废料扣除按总成 O 一次计算。
+落库吨价 P：单片（或各片同价）用该价；多片不同价时按子片消耗量加权，
+使 M×P×(1+λ) 与分片合计一致。列表 VO 再按子片用 / 展示料厚、长、宽、吨价。
 加工费取父件已算结果一行（不 × 片数）；拼焊费仍手工挂父，本层不加。
 """
 
@@ -15,6 +17,7 @@ from decimal import Decimal
 
 from sqlalchemy.orm import Session
 
+from app.common.money import Q4
 from app.models.costing import SteelPrice
 from app.models.stamping import StampingPart
 from app.models.stamping.tailor_weld_blank import StampingTailorWeldBlank
@@ -85,6 +88,7 @@ class TailorWeldPartCostCalculator:
         steel_ids: list[int] = []
         steel_mills: list[str] = []
         steel_ton_prices: list[Decimal] = []
+        blank_kgs: list[Decimal] = []
 
         for blank in blanks:
             blank_or_error = self._calc_blank_material(
@@ -105,6 +109,7 @@ class TailorWeldPartCostCalculator:
             blank_kg_total += blank_kg
             material_amount_raw += amount_sheet
             loss_scrap_raw += loss_deduction
+            blank_kgs.append(blank_kg)
             steel_ids.append(steel.id)
             mill = (steel.steel_mill or "").strip()
             if mill:
@@ -167,7 +172,7 @@ class TailorWeldPartCostCalculator:
         )
 
         steel_price_id, steel_mill, steel_ton_price = self._steel_snapshot(
-            steel_ids, steel_mills, steel_ton_prices
+            steel_ids, steel_mills, steel_ton_prices, blank_kgs
         )
 
         return StampingPartCostCalcAmounts(
@@ -295,15 +300,28 @@ class TailorWeldPartCostCalculator:
         steel_ids: list[int],
         steel_mills: list[str],
         steel_ton_prices: list[Decimal],
+        blank_kgs: list[Decimal],
     ) -> tuple[int | None, str | None, Decimal | None]:
-        """多片钢价不同时不落单一溯源字段，避免误导。"""
+        """落库单列吨价：同价直接用；不同价按子片消耗量加权。"""
         unique_ids = list(dict.fromkeys(steel_ids))
         unique_prices = list(dict.fromkeys(steel_ton_prices))
         unique_mills = list(dict.fromkeys(steel_mills))
-        if len(unique_ids) == 1 and len(unique_prices) == 1:
-            mill = unique_mills[0] if len(unique_mills) == 1 else (
-                "/".join(unique_mills) if unique_mills else None
+        mill = "/".join(unique_mills) if unique_mills else None
+        if not steel_ton_prices:
+            return None, mill, None
+
+        steel_id = unique_ids[0] if len(unique_ids) == 1 else None
+        if len(unique_prices) == 1:
+            return steel_id, mill, unique_prices[0]
+
+        total_kg = sum(blank_kgs, Decimal("0"))
+        if total_kg <= 0 or len(blank_kgs) != len(steel_ton_prices):
+            return None, mill, None
+        weighted = (
+            sum(
+                (kg * price for kg, price in zip(blank_kgs, steel_ton_prices)),
+                Decimal("0"),
             )
-            return unique_ids[0], mill, unique_prices[0]
-        mill_text = "/".join(unique_mills) if unique_mills else "多片"
-        return None, mill_text, None
+            / total_kg
+        )
+        return None, mill, quantize(weighted, Q4)

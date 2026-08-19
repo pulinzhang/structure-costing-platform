@@ -8,7 +8,6 @@
 - 建立列映射
 """
 
-import re
 from typing import Any, Dict, List, Optional, Tuple
 
 
@@ -77,15 +76,47 @@ COLUMN_PATTERNS: Dict[str, List[Tuple[str, int]]] = {
         ("模具类型", 1000),
     ],
     "method": [
-        ("成形方法", 1000), ("成形", 900), ("工艺方法", 800),
+        ("成形方法", 1000), ("工艺方法", 1000), ("工艺方式", 1000), ("成形", 900),
     ],
     "auto": [
-        ("自动化", 1000),
+        ("自动化", 1000), ("生产方式", 950),
     ],
     "remark": [
         ("备注", 1000), ("备注栏", 950),
     ],
 }
+
+# 标题里文档类型短语，长的优先。车型 = 短语前面原样写下的内容。
+_VEHICLE_TITLE_MARKERS = (
+    "车身件项目冲压工艺确认表",
+    "项目冲压工艺确认表",
+    "冲压工艺确认表",
+)
+_VEHICLE_LABELS = ("项目名称", "车型号", "车型代号", "车型")
+
+
+def _vehicle_model_from_title(text: str) -> Optional[str]:
+    """从「{车型}项目冲压工艺确认表-…」类标题中取出车型，原样返回前缀。"""
+    compact = text.replace("\n", "").replace("\r", "").strip()
+    if not compact:
+        return None
+    for marker in _VEHICLE_TITLE_MARKERS:
+        idx = compact.find(marker)
+        if idx > 0:
+            model = compact[:idx].strip(" -_—/\\")
+            if model:
+                return model
+    return None
+
+
+def _value_after_label(text: str, label: str) -> Optional[str]:
+    """从「标签：值」同格文本中取出值。"""
+    if not text.startswith(label):
+        return None
+    rest = text[len(label):].strip()
+    if rest.startswith("：") or rest.startswith(":"):
+        rest = rest[1:].strip()
+    return rest or None
 
 
 class HeaderResolver:
@@ -154,55 +185,89 @@ class HeaderResolver:
         return None
 
     def find_stamping_vehicle_model(self, sheet: Any) -> Optional[str]:
-        """从表头区域提取冲压车型/项目名称"""
-        for row_idx in range(1, min(12, sheet.max_row + 1)):
-            for col in range(1, min(20, sheet.max_column + 1)):
-                val = self._get_value(row_idx, col)
-                if not val:
-                    continue
-                text = str(val).strip()
-                if any(label in text for label in ["项目名称", "项目", "车型", "车型号", "车型代号"]):
-                    sep = "：" if "：" in text else ":" if ":" in text else None
-                    if sep:
-                        model = text.split(sep, 1)[1].strip()
-                        if model:
-                            logger.info(f"从表头找到车型: {model}")
-                            return model
-        vehicle_keywords = ["T28", "T28L", "T28EV", "T13J", "T13J-BEV", "M1", "M2", "S32", "S32EV"]
+        """从表头标题或「项目名称/车型」标签提取车型，文件里写什么就是什么。"""
+        title_model: Optional[str] = None
+        label_model: Optional[str] = None
+
         for row_idx in range(1, min(12, sheet.max_row + 1)):
             for col in range(1, min(25, sheet.max_column + 1)):
                 val = self._get_value(row_idx, col)
                 if not val:
                     continue
-                text = str(val).strip()
-                for keyword in vehicle_keywords:
-                    if keyword in text:
-                        logger.info(f"从单元格找到车型关键词: {keyword}, 原始值: {text}")
-                        return keyword
+                text = str(val).replace("\n", "").replace("\r", "").strip()
+                if not text:
+                    continue
+
+                from_title = _vehicle_model_from_title(text)
+                if from_title and title_model is None:
+                    logger.info("从标题解析车型: %s, 原始值: %s", from_title, text)
+                    title_model = from_title
+
+                if label_model:
+                    continue
+                for label in _VEHICLE_LABELS:
+                    if not (text == label or text.startswith(label)):
+                        continue
+                    raw_value = _value_after_label(text, label)
+                    if not raw_value:
+                        raw_value = self._next_nonempty_cell(sheet, row_idx, col)
+                    model = self._clean_vehicle_model_value(raw_value)
+                    if model:
+                        logger.info("从表头标签解析车型: %s, 标签: %s", model, text)
+                        label_model = model
+                    break
+
+        model = label_model or title_model
+        if model:
+            logger.info("解析到车型: %s", model)
+        return model
+
+    def _next_nonempty_cell(self, sheet: Any, row_idx: int, label_col: int) -> Optional[str]:
+        for col in range(label_col + 1, min(label_col + 10, sheet.max_column + 1)):
+            val = self._get_value(row_idx, col)
+            if val and str(val).strip():
+                return str(val).replace("\n", "").replace("\r", "").strip()
         return None
 
+    def _clean_vehicle_model_value(self, value: Optional[str]) -> Optional[str]:
+        if not value:
+            return None
+        text = value.strip()
+        if not text or text in {"版本", "版次", "版本号"}:
+            return None
+        from_title = _vehicle_model_from_title(text)
+        if from_title:
+            return from_title
+        if any(marker in text for marker in ("冲压承制公司", "零件号", "工序")):
+            return None
+        return text
+
     def find_stamping_project_version(self, sheet: Any) -> Optional[str]:
-        """从表头区域提取项目版本信息"""
-        version_pattern = re.compile(
-            r"^(V?v?\d+(?:\.\d+)?|第?\d+版|Rev\.?\s*\d+|[A-Z]版)$",
-            re.IGNORECASE
-        )
-        for row_idx in range(1, min(12, sheet.max_row + 1)):
+        """从表头「版本」标签提取版本，文件里写什么就是什么。
+
+        只认标签右侧的值，不把数据区序号（如 1）当成版本。
+        """
+        labels = ("版本号", "版次", "版本")
+        for row_idx in range(1, min(10, sheet.max_row + 1)):
             for col in range(1, min(25, sheet.max_column + 1)):
                 val = self._get_value(row_idx, col)
                 if not val:
                     continue
-                text = str(val).strip()
-                if any(label in text for label in ["版本", "版次", "版本号"]):
-                    sep = "：" if "：" in text else ":" if ":" in text else None
-                    if sep:
-                        version = text.split(sep, 1)[1].strip()
-                        if version and version_pattern.match(version):
-                            logger.info(f"从表头找到版本: {version}")
-                            return version
-                if version_pattern.match(text):
-                    logger.info(f"找到版本号: {text}")
-                    return text
+                text = str(val).replace("\n", "").replace("\r", "").strip()
+                if not text:
+                    continue
+                matched_label = next(
+                    (label for label in labels if text == label or text.startswith(label)),
+                    None,
+                )
+                if not matched_label:
+                    continue
+                version = _value_after_label(text, matched_label)
+                if not version:
+                    version = self._next_nonempty_cell(sheet, row_idx, col)
+                if version:
+                    logger.info("从表头标签解析版本: %s, 原始值: %s", version, text)
+                    return version
         return None
 
     def find_header_row(self, sheet: Any) -> int:

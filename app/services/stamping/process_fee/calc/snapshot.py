@@ -26,4 +26,5 @@ def part_snapshot(part: StampingPart) -> ProcessFeePartSnapshot:
         part_remark=part.remark,
         sketch_url=part.sketch_url,
         excel_filename=part.excel_filename,
+        is_tailor_welded=bool(part.is_tailor_welded),
     )

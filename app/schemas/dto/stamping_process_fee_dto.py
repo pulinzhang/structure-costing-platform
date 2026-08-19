@@ -98,6 +98,7 @@ class ProcessFeePartSnapshot:
     part_remark: str | None
     sketch_url: str | None
     excel_filename: str | None
+    is_tailor_welded: bool = False
 
 
 @dataclass(slots=True)

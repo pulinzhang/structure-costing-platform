@@ -114,6 +114,8 @@ export function processFeeListTemplate() {
                                 <span id="feeCapsuleYear" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部年度</span>
                                 <span id="feeCapsuleLocation" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部基地</span>
                                 <span id="feeCapsuleSupplier" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部工厂</span>
+                                <span id="feeCapsuleVehicle" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部车型</span>
+                                <span id="feeCapsuleVersion" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部版本</span>
                                 <span id="feeCapsuleFailTodo" class="hidden bg-[#FF1E27]/15 border border-[#FF1E27]/40 text-[#FF1E27] px-2.5 py-1 rounded-md font-bold">待补价筛选中</span>
                             </div>
                         </div>
@@ -138,6 +140,8 @@ export function processFeeListTemplate() {
                             ${filterSelect('feeYearFilter', '年度')}
                             ${filterSelect('feeLocationFilter', '基地')}
                             ${filterSelect('feeSupplierFilter', '冲压工厂')}
+                            ${filterSelect('feeVehicleFilter', '车型')}
+                            ${filterSelect('feeVersionFilter', '版本')}
                             ${filterSelect('feeAuditStatusFilter', '审核状态')}
                             ${filterInput('feePartNumberFilter', '零件号', '短号或完整零件号')}
                             <button id="feeResetBtn" type="button"
@@ -285,9 +289,19 @@ export function processFeeListTemplate() {
                             ${viewRow('系统计算加工费', 'fee-edit-processing-fee')}
                             ${viewRow('最终加工费（保存后刷新）', 'fee-edit-final-fee', true)}
                         </div>
+                        <div id="feeEditTailorWeldHint"
+                             class="hidden mb-3 px-3 py-2 border border-[#FF1E27]/30 bg-[#1A080A]">
+                            <div class="text-[10px] font-semibold tracking-[0.08em] text-[#FF1E27]">拼焊件</div>
+                            <div class="text-[10px] text-[#C8C8D0] mt-1 leading-relaxed">
+                                系统计算不含拼焊费，必须录入手工调整单价（含拼焊费），不可留空回退。
+                            </div>
+                        </div>
                         <div class="grid grid-cols-1 gap-3">
                             <div>
-                                <label class="text-[10px] text-[#777777] mb-1 block">手工调整单价 <span class="text-[#616161]">（留空则回退系统计算）</span></label>
+                                <label class="text-[10px] text-[#777777] mb-1 block">
+                                    手工调整单价
+                                    <span id="feeEditManualPriceHint" class="text-[#616161]">（留空则回退系统计算）</span>
+                                </label>
                                 <input type="number" id="feeEditManualPrice" step="0.001" min="0"
                                        class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#ffffff] placeholder:text-[#616161] focus:outline-none focus:border-[#ff5252] rounded"
                                        placeholder="可空">
@@ -307,6 +321,7 @@ export function processFeeListTemplate() {
                             ${viewRow('基地', 'fee-edit-location')}
                             ${viewRow('冲压工厂', 'fee-edit-supplier')}
                             ${partNumberViewBlock('fee-edit')}
+                            ${viewRow('零件类型', 'fee-edit-part-type')}
                             ${viewRow('车型', 'fee-edit-vehicle')}
                             ${viewRow('版本', 'fee-edit-version')}
                         </div>
@@ -352,6 +367,7 @@ export function processFeeListTemplate() {
                         ${viewRow('冲压工厂', 'fee-view-supplier')}
                         ${partNumberViewBlock('fee-view')}
                         ${viewRow('零件名称', 'fee-view-part-name')}
+                        ${viewRow('零件类型', 'fee-view-part-type')}
                         ${viewRow('车型', 'fee-view-vehicle')}
                         ${viewRow('版本', 'fee-view-version')}
                         ${viewRow('序号', 'fee-view-seq-no')}
@@ -449,11 +465,14 @@ export function renderFeeRows(records) {
             ? formatDecimalFixed(row.processing_fee, 3)
             : null;
         const isZero = feeText == null || feeText === '0.000';
+        const isTailor = Boolean(row.is_tailor_welded);
         const failHint = row.calc_fail_reason
             ? `<span class="text-[#FF1E27]" title="${esc(row.calc_fail_reason)}">计算失败</span>`
-            : (isZero
-                ? '<span class="text-[#FF1E27]">计算价为 0</span>'
-                : '<span class="text-[#555555]">—</span>');
+            : (isTailor && (row.manual_unit_price == null || row.manual_unit_price === '')
+                ? '<span class="text-[#FF1E27]">拼焊件待补价</span>'
+                : (isZero
+                    ? '<span class="text-[#FF1E27]">计算价为 0</span>'
+                    : '<span class="text-[#555555]">—</span>'));
         const cell = 'p-3 border-b border-[#17171C] font-mono text-[11px]';
         const muted = 'text-[#8E8E93]';
         const mutedDeep = 'text-[#6E6E73]';
@@ -478,7 +497,7 @@ export function renderFeeRows(records) {
                 <div class="text-[#555555] text-[10px] mt-0.5">${esc(row.location)} · ${esc(row.stamping_supplier)}</div>
             </td>
             <td class="${cell} font-sans whitespace-nowrap">
-                ${partNumberCell(row.part_number)}
+                ${partNumberCell(row.part_number, row.is_tailor_welded)}
             </td>
             <td class="${cell} ${muted} font-sans">${esc(row.part_name)}</td>
             <td class="${cell} ${muted} font-sans ${zoneEnd}">${esc(row.vehicle_model)} / ${esc(row.version)}</td>
@@ -611,6 +630,8 @@ export function updateFeeFilterCapsules() {
     const year = document.getElementById('feeYearFilter')?.value || '';
     const location = document.getElementById('feeLocationFilter')?.value || '';
     const supplier = document.getElementById('feeSupplierFilter')?.value || '';
+    const vehicle = document.getElementById('feeVehicleFilter')?.value || '';
+    const version = document.getElementById('feeVersionFilter')?.value || '';
     const audit = document.getElementById('feeAuditStatusFilter')?.value || '';
     const part = document.getElementById('feePartNumberFilter')?.value.trim() || '';
 
@@ -620,6 +641,8 @@ export function updateFeeFilterCapsules() {
     const yearEl = document.getElementById('feeCapsuleYear');
     const locationEl = document.getElementById('feeCapsuleLocation');
     const supplierEl = document.getElementById('feeCapsuleSupplier');
+    const vehicleEl = document.getElementById('feeCapsuleVehicle');
+    const versionEl = document.getElementById('feeCapsuleVersion');
     const countEl = document.getElementById('feeAdvancedFilterCount');
 
     if (yearEl) {
@@ -634,8 +657,16 @@ export function updateFeeFilterCapsules() {
         supplierEl.textContent = supplier || '全部工厂';
         supplierEl.className = supplier ? activeCapsule : idleCapsule;
     }
+    if (vehicleEl) {
+        vehicleEl.textContent = vehicle || '全部车型';
+        vehicleEl.className = vehicle ? activeCapsule : idleCapsule;
+    }
+    if (versionEl) {
+        versionEl.textContent = version || '全部版本';
+        versionEl.className = version ? activeCapsule : idleCapsule;
+    }
 
-    const advancedActive = [year, location, supplier, audit, part].filter(Boolean).length;
+    const advancedActive = [year, location, supplier, vehicle, version, audit, part].filter(Boolean).length;
     if (countEl) countEl.textContent = `(${advancedActive})`;
 }
 
@@ -705,18 +736,22 @@ export function shortPartNumber(partNumber) {
     return digits.slice(-4);
 }
 
-/** 列表单元格：短号主角，完整号次要 */
-function partNumberCell(partNumber) {
+/** 列表单元格：短号主角，完整号次要；拼焊件加徽章 */
+function partNumberCell(partNumber, isTailorWelded) {
     const full = partNumber || '';
     const shortNo = shortPartNumber(full);
+    const badge = isTailorWelded
+        ? `<span class="mt-1 inline-block text-[9px] font-sans tracking-[0.08em] text-[#FF1E27] border border-[#FF1E27]/30 bg-[#1A080A] px-1.5 py-0.5">拼焊件</span>`
+        : '';
     if (shortNo) {
         return `
             <div class="text-[18px] font-mono font-bold tabular-nums text-white tracking-[0.14em] leading-none
                         drop-shadow-[0_0_16px_rgba(211,47,47,0.18)] group-hover:text-[#FF1E27] transition-colors"
                  title="${esc(full)}">${esc(shortNo)}</div>
-            <div class="text-[10px] font-mono text-[#555555] tracking-wider mt-1">${esc(full)}</div>`;
+            <div class="text-[10px] font-mono text-[#555555] tracking-wider mt-1">${esc(full)}</div>
+            ${badge}`;
     }
-    return `<div class="text-xs font-mono text-[#8E8E93] tracking-wider" title="${esc(full)}">${esc(full) || '—'}</div>`;
+    return `<div class="text-xs font-mono text-[#8E8E93] tracking-wider" title="${esc(full)}">${esc(full) || '—'}</div>${badge}`;
 }
 
 /** 抽屉：短史+ 完整零件号*/

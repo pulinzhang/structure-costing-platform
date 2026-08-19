@@ -2,10 +2,18 @@
 
 from __future__ import annotations
 
-from decimal import Decimal, InvalidOperation
+from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 from typing import Any
 
-from app.common.money import Q2, Q3, Q4, Q6, excel_money_cell, format_money
+from app.common.money import (
+    Q2,
+    Q3,
+    Q4,
+    Q6,
+    excel_money_cell,
+    format_money,
+    optional_format_money,
+)
 
 # 与 SettingsService / 系统配置缺省一致
 DEFAULT_STEEL_DENSITY = Decimal("7.85")
@@ -40,6 +48,47 @@ def to_decimal(value: Any) -> Decimal | None:
         return Decimal(str(value))
     except (InvalidOperation, ValueError, TypeError):
         return None
+
+
+def join_slash_formatted(
+    values: list[Decimal | None],
+    quant: Decimal,
+    places: int,
+) -> str | None:
+    """按子片顺序用 / 拼接已量化数值；全空则 None。"""
+    texts: list[str] = []
+    for value in values:
+        text = optional_format_money(value, quant, places)
+        if text is not None:
+            texts.append(text)
+    if not texts:
+        return None
+    return "/".join(texts)
+
+
+def format_ton_price_label(value: Decimal) -> str:
+    quantized = value.quantize(Q2, rounding=ROUND_HALF_UP)
+    if quantized == quantized.to_integral_value():
+        return str(int(quantized))
+    text = format(quantized, "f")
+    return text.rstrip("0").rstrip(".") if "." in text else text
+
+
+def join_slash_ton_prices(values: list[Decimal | None]) -> str | None:
+    """子片钢材吨价用 / 拼接；缺价用 — 占位以与料厚段对齐。"""
+    if not values:
+        return None
+    labels: list[str] = []
+    has_price = False
+    for value in values:
+        if value is None:
+            labels.append("—")
+            continue
+        has_price = True
+        labels.append(format_ton_price_label(value))
+    if not has_price:
+        return None
+    return "/".join(labels)
 
 
 def format_number(value: Any, digits: int | None = None) -> Decimal | str:
