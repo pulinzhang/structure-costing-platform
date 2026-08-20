@@ -232,6 +232,8 @@ class BomSnapshotRepository:
         location = (location or "").strip() or None
         vehicle_model = (vehicle_model or "").strip() or None
         status = (status or "").strip() or None
+        if status in ("*", "__all__"):
+            status = None
 
         loc_q = db.query(BomSnapshot.location).distinct()
         if status:

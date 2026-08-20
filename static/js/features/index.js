@@ -28,6 +28,9 @@
  * │   ├── annual-part-price/     # 年度零件价
  * │   │   ├── upload/
  * │   │   └── list/
+ * │   ├── packaging-transport-fee/  # 包装运输费
+ * │   │   ├── upload/
+ * │   │   └── list/
  * │   ├── welding-process-breakdown/  # 焊接工艺拆解
  * │   │   ├── generate/
  * │   │   └── list/
@@ -196,6 +199,16 @@ export const pageMeta = {
         title: '年度零件价列表',
         en: 'ANNUAL_PART_PRICE_MATRIX',
         breadcrumb: ['焊接工程', '年度零件价', '年度零件价列表'],
+    },
+    'bom-packaging-transport-fee-upload': {
+        title: '包装运输费上传',
+        en: 'PKG_TRANSPORT_FEE_UPLOAD',
+        breadcrumb: ['焊接工程', '包装运输费', '上传'],
+    },
+    'bom-packaging-transport-fee': {
+        title: '包装运输费列表',
+        en: 'PKG_TRANSPORT_FEE_MATRIX',
+        breadcrumb: ['焊接工程', '包装运输费', '包装运输费列表'],
     },
     'bom-welding-process-breakdown': {
         title: '焊接工艺拆解',

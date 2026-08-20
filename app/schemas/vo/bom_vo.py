@@ -115,7 +115,10 @@ class BomCascadeFilterQuery(BaseModel):
 
     location: str | None = Field(None, description="采购基地")
     vehicle_model: str | None = Field(None, description="项目/车型")
-    status: str | None = Field("active", description="清单状态，默认 active")
+    status: str | None = Field(
+        "active",
+        description="清单状态，默认 active；传 __all__ 或 * 表示不限状态",
+    )
 
 
 class BomCascadeFilterOptionsVO(BaseModel):

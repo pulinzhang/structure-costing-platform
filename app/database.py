@@ -282,6 +282,26 @@ class DatabaseConfig:
                     )
                 logger.info("已为 %s 追加列 %s", cost_table, column_name)
 
+        pkg_table = "bom_packaging_transport_fees"
+        if pkg_table in table_names:
+            pkg_cols = {col["name"] for col in inspector.get_columns(pkg_table)}
+            pkg_new_columns = (
+                ("excel_filename", "VARCHAR(255)"),
+                ("sheet_name", "VARCHAR(100)"),
+                ("excel_row", "INTEGER"),
+            )
+            for column_name, column_def in pkg_new_columns:
+                if column_name in pkg_cols:
+                    continue
+                with engine.begin() as conn:
+                    conn.execute(
+                        text(
+                            f"ALTER TABLE {pkg_table} "
+                            f"ADD COLUMN {column_name} {column_def}"
+                        )
+                    )
+                logger.info("已为 %s 追加列 %s", pkg_table, column_name)
+
 
 class AuxiliaryDatabaseConfig:
     """

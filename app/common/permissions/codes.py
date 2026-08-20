@@ -140,6 +140,21 @@ class Perm:
     BOM_ANNUAL_PART_PRICE_REVERSE = "op:bom-annual-part-price:reverse"  # 反审核
     BOM_ANNUAL_PART_PRICE_EXPORT = "op:bom-annual-part-price:export"  # 导出
 
+    MENU_BOM_PACKAGING_TRANSPORT_FEE_GROUP = "menu:bom-packaging-transport-fee-group"  # 包装运输费
+
+    MENU_BOM_PACKAGING_TRANSPORT_FEE_UPLOAD = "menu:bom-packaging-transport-fee-upload"  # 上传
+    BOM_PACKAGING_TRANSPORT_FEE_UPLOAD_VIEW = "op:bom-packaging-transport-fee-upload:view"  # 查看
+    BOM_PACKAGING_TRANSPORT_FEE_UPLOAD_UPLOAD = "op:bom-packaging-transport-fee-upload:upload"  # 上传
+
+    MENU_BOM_PACKAGING_TRANSPORT_FEE = "menu:bom-packaging-transport-fee"  # 包装运输费列表
+    BOM_PACKAGING_TRANSPORT_FEE_VIEW = "op:bom-packaging-transport-fee:view"  # 查询
+    BOM_PACKAGING_TRANSPORT_FEE_CREATE = "op:bom-packaging-transport-fee:create"  # 新增
+    BOM_PACKAGING_TRANSPORT_FEE_UPDATE = "op:bom-packaging-transport-fee:update"  # 编辑
+    BOM_PACKAGING_TRANSPORT_FEE_DELETE = "op:bom-packaging-transport-fee:delete"  # 删除
+    BOM_PACKAGING_TRANSPORT_FEE_APPROVE = "op:bom-packaging-transport-fee:approve"  # 审核通过
+    BOM_PACKAGING_TRANSPORT_FEE_REVERSE = "op:bom-packaging-transport-fee:reverse"  # 反审核
+    BOM_PACKAGING_TRANSPORT_FEE_EXPORT = "op:bom-packaging-transport-fee:export"  # 导出
+
     MENU_BOM_WELDING_PROCESS_BREAKDOWN_GROUP = "menu:bom-welding-process-breakdown-group"  # 焊接工艺拆解
 
     MENU_BOM_WELDING_PROCESS_BREAKDOWN = "menu:bom-welding-process-breakdown"  # 拆解

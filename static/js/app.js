@@ -13,7 +13,7 @@
  * 入口 URL 的 query 串驱动整体刷新；每次脚本更新后需要同步递增 ?v= 版本号。
  */
 
-import { pageMeta } from './features/index.js?v=23';
+import { pageMeta } from './features/index.js?v=24';
 
 // 页面导入（路径与 index.html 菜单树 / features 目录对齐）
 import { getUserSession, initUserMenu, startTokenHeartbeat, updateUserSession } from './features/login/index.js?v=14';
@@ -47,6 +47,8 @@ import { pageConfig as bomWeldingUnitPriceUploadPage } from './features/bom/weld
 import { pageConfig as bomWeldingUnitPricePage } from './features/bom/welding-unit-price/list/index.js?v=11';
 import { pageConfig as bomAnnualPartPriceUploadPage } from './features/bom/annual-part-price/upload/index.js?v=4';
 import { pageConfig as bomAnnualPartPricePage } from './features/bom/annual-part-price/list/index.js?v=4';
+import { pageConfig as bomPackagingTransportFeeUploadPage } from './features/bom/packaging-transport-fee/upload/index.js?v=3';
+import { pageConfig as bomPackagingTransportFeePage } from './features/bom/packaging-transport-fee/list/index.js?v=2';
 import { pageConfig as bomWeldingProcessBreakdownGeneratePage } from './features/bom/welding-process-breakdown/generate/index.js?v=5';
 import { pageConfig as bomWeldingProcessBreakdownListPage } from './features/bom/welding-process-breakdown/list/index.js?v=38';
 import { pageConfig as bomL0WeldingFeeCalcPage } from './features/bom/l0-welding-fee/calc/index.js?v=6';
@@ -91,6 +93,8 @@ const pages = {
     'bom-welding-unit-price': bomWeldingUnitPricePage,
     'bom-annual-part-price-upload': bomAnnualPartPriceUploadPage,
     'bom-annual-part-price': bomAnnualPartPricePage,
+    'bom-packaging-transport-fee-upload': bomPackagingTransportFeeUploadPage,
+    'bom-packaging-transport-fee': bomPackagingTransportFeePage,
     'bom-welding-process-breakdown': bomWeldingProcessBreakdownGeneratePage,
     'bom-welding-process-breakdown-list': bomWeldingProcessBreakdownListPage,
     'bom-l0-welding-fee-calc': bomL0WeldingFeeCalcPage,
