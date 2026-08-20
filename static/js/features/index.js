@@ -25,6 +25,9 @@
  * │   ├── welding-unit-price/    # 焊接单价
  * │   │   ├── upload/
  * │   │   └── list/
+ * │   ├── annual-part-price/     # 年度零件价
+ * │   │   ├── upload/
+ * │   │   └── list/
  * │   ├── welding-process-breakdown/  # 焊接工艺拆解
  * │   │   ├── generate/
  * │   │   └── list/
@@ -183,6 +186,16 @@ export const pageMeta = {
         title: '焊接单价列表',
         en: 'WELDING_UNIT_PRICE_MATRIX',
         breadcrumb: ['焊接工程', '焊接单价', '焊接单价列表'],
+    },
+    'bom-annual-part-price-upload': {
+        title: '年度零件价上传',
+        en: 'ANNUAL_PART_PRICE_UPLOAD',
+        breadcrumb: ['焊接工程', '年度零件价', '上传'],
+    },
+    'bom-annual-part-price': {
+        title: '年度零件价列表',
+        en: 'ANNUAL_PART_PRICE_MATRIX',
+        breadcrumb: ['焊接工程', '年度零件价', '年度零件价列表'],
     },
     'bom-welding-process-breakdown': {
         title: '焊接工艺拆解',

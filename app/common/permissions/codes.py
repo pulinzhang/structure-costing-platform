@@ -125,6 +125,21 @@ class Perm:
     BOM_WELDING_UNIT_PRICE_REVERSE = "op:bom-welding-unit-price:reverse"  # 反审核
     BOM_WELDING_UNIT_PRICE_EXPORT = "op:bom-welding-unit-price:export"  # 导出
 
+    MENU_BOM_ANNUAL_PART_PRICE_GROUP = "menu:bom-annual-part-price-group"  # 年度零件价
+
+    MENU_BOM_ANNUAL_PART_PRICE_UPLOAD = "menu:bom-annual-part-price-upload"  # 上传
+    BOM_ANNUAL_PART_PRICE_UPLOAD_VIEW = "op:bom-annual-part-price-upload:view"  # 查看
+    BOM_ANNUAL_PART_PRICE_UPLOAD_UPLOAD = "op:bom-annual-part-price-upload:upload"  # 上传
+
+    MENU_BOM_ANNUAL_PART_PRICE = "menu:bom-annual-part-price"  # 年度零件价列表
+    BOM_ANNUAL_PART_PRICE_VIEW = "op:bom-annual-part-price:view"  # 查询
+    BOM_ANNUAL_PART_PRICE_CREATE = "op:bom-annual-part-price:create"  # 新增
+    BOM_ANNUAL_PART_PRICE_UPDATE = "op:bom-annual-part-price:update"  # 编辑
+    BOM_ANNUAL_PART_PRICE_DELETE = "op:bom-annual-part-price:delete"  # 删除
+    BOM_ANNUAL_PART_PRICE_APPROVE = "op:bom-annual-part-price:approve"  # 审核通过
+    BOM_ANNUAL_PART_PRICE_REVERSE = "op:bom-annual-part-price:reverse"  # 反审核
+    BOM_ANNUAL_PART_PRICE_EXPORT = "op:bom-annual-part-price:export"  # 导出
+
     MENU_BOM_WELDING_PROCESS_BREAKDOWN_GROUP = "menu:bom-welding-process-breakdown-group"  # 焊接工艺拆解
 
     MENU_BOM_WELDING_PROCESS_BREAKDOWN = "menu:bom-welding-process-breakdown"  # 拆解

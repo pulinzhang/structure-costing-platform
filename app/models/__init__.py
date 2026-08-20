@@ -11,6 +11,7 @@ import 一遍，SQLAlchemy 才能在 create_all 时发现全部表。
 
 from app.models.async_task import AsyncTask
 from app.models.bom import (
+    BomAnnualPartPrice,
     BomL0WeldingFee,
     BomL0WeldingFeeCalcLog,
     BomL0WeldingFeeItem,
@@ -54,6 +55,7 @@ from app.models.yishiyiyi import (
 __all__ = [
     "AsyncTask",
     "AuditUserMixin",
+    "BomAnnualPartPrice",
     "BomL0WeldingFee",
     "BomL0WeldingFeeCalcLog",
     "BomL0WeldingFeeItem",

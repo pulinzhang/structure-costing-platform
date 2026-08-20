@@ -113,6 +113,7 @@ static/
         │   └── process-fee/{calc,list}
         ├── bom/material/{upload,list,structure,viz}   # 侧栏名「焊接工程」
         ├── bom/welding-unit-price/{upload,list}
+        ├── bom/annual-part-price/{upload,list}
         ├── bom/welding-process-breakdown/{generate,list}
         ├── bom/l0-welding-fee/{calc,list}
         ├── yishiyiyi/
@@ -152,6 +153,8 @@ static/
 | `#/bom-viz` | 产品结构图 | `bom/material/viz` |
 | `#/bom-welding-unit-price-upload` | 焊接单价上传 | `bom/welding-unit-price/upload` |
 | `#/bom-welding-unit-price` | 焊接单价列表 | `bom/welding-unit-price/list` |
+| `#/bom-annual-part-price-upload` | 年度零件价上传 | `bom/annual-part-price/upload` |
+| `#/bom-annual-part-price` | 年度零件价列表 | `bom/annual-part-price/list` |
 | `#/bom-welding-process-breakdown` | 焊接工艺拆解 | `bom/welding-process-breakdown/generate` |
 | `#/bom-welding-process-breakdown-list` | 焊接工艺拆解列表 | `bom/welding-process-breakdown/list` |
 | `#/bom-l0-welding-fee-calc` | 成品焊接费计算 | `bom/l0-welding-fee/calc` |

@@ -344,6 +344,72 @@
           ]
         },
         {
+          "code": "menu:bom-annual-part-price-group",
+          "label": "年度零件价",
+          "type": "group",
+          "children": [
+            {
+              "code": "menu:bom-annual-part-price-upload",
+              "label": "上传",
+              "type": "menu",
+              "children": [
+                {
+                  "code": "op:bom-annual-part-price-upload:view",
+                  "label": "查看",
+                  "type": "op"
+                },
+                {
+                  "code": "op:bom-annual-part-price-upload:upload",
+                  "label": "上传",
+                  "type": "op"
+                }
+              ]
+            },
+            {
+              "code": "menu:bom-annual-part-price",
+              "label": "年度零件价列表",
+              "type": "menu",
+              "children": [
+                {
+                  "code": "op:bom-annual-part-price:view",
+                  "label": "查询",
+                  "type": "op"
+                },
+                {
+                  "code": "op:bom-annual-part-price:create",
+                  "label": "新增",
+                  "type": "op"
+                },
+                {
+                  "code": "op:bom-annual-part-price:update",
+                  "label": "编辑",
+                  "type": "op"
+                },
+                {
+                  "code": "op:bom-annual-part-price:delete",
+                  "label": "删除",
+                  "type": "op"
+                },
+                {
+                  "code": "op:bom-annual-part-price:approve",
+                  "label": "审核通过",
+                  "type": "op"
+                },
+                {
+                  "code": "op:bom-annual-part-price:reverse",
+                  "label": "反审核",
+                  "type": "op"
+                },
+                {
+                  "code": "op:bom-annual-part-price:export",
+                  "label": "导出",
+                  "type": "op"
+                }
+              ]
+            }
+          ]
+        },
+        {
           "code": "menu:bom-welding-process-breakdown-group",
           "label": "焊接工艺拆解",
           "type": "group",
