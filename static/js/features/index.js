@@ -54,6 +54,9 @@
  * │   ├── stamping-part-cost/    # 冲压零件价格核算
  * │   │   ├── calc/
  * │   │   └── list/
+ * │   ├── l0-assembly-cost/      # 成品核价
+ * │   │   ├── calc/
+ * │   │   └── list/
  * │   └── engine/                # 自动核价引擎
  * ├── quotation/                 # 报价
  * ├── settings/                  # 设置
@@ -129,6 +132,16 @@ export const pageMeta = {
         title: '冲压零件价格一览',
         en: 'PART_COST_LIST',
         breadcrumb: ['核价', '冲压零件价格核算', '冲压零件价格一览'],
+    },
+    'l0-assembly-cost-calc': {
+        title: '成品核价计算',
+        en: 'L0_ASSEMBLY_COST_CALC',
+        breadcrumb: ['核价', '成品核价', '成品核价计算'],
+    },
+    'l0-assembly-cost': {
+        title: '成品核价一览',
+        en: 'L0_ASSEMBLY_COST_LIST',
+        breadcrumb: ['核价', '成品核价', '成品核价一览'],
     },
     'steel-price-policy-upload': {
         title: '加减价政策上传',

@@ -1,35 +1,65 @@
 """
-成品（L0）月核价 — 只读模拟（测试 / 验收用）
+成品（L0）月核价 — 测试适配层
 
-规则对齐 docs/l0-assembly-costing-design.md：
-  L0 → L1 →（有子件则）L2
-  叶子取价：
-    1) 完整零件号 → 冲压价（stamping_part_costs.unit_cost；
-       = 直接成本 + 财务/管理/仓储包装/税前利润等费率金额）
-    2) 完整零件号 → 年度价
-    3) 仍找不到且零件号含「-」→ 取「-」之前作为零件号，仅在冲压价表回退
-  L1 有子件且年度价命中 → 一口价剪枝；否则拆散 rollup
-  最后 + L0 焊接费（+ other_fee）
+计算真相在 app.services.costing.l0_assembly_cost.calc.rollup；
+本模块仅做入参/出参适配与报告格式化，避免双轨公式。
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import Decimal
 from typing import Literal
 
-Money = Decimal
-_Q4 = Decimal("0.0001")
+from app.services.costing.l0_assembly_cost.calc.rollup import (
+    INDIRECT_FIXTURE_ALLOC,
+    INDIRECT_GAUGE_ALLOC,
+    INDIRECT_FINANCE,
+    INDIRECT_MANAGEMENT,
+    INDIRECT_PRETAX_PROFIT,
+    INDIRECT_SCRAP,
+    INDIRECT_UNIT_TRANSPORT,
+    INDIRECT_WAREHOUSE_BUNDLING,
+    RollupBomNode,
+    RollupFinishedRates,
+    RollupPackagingFee,
+    RollupResult,
+    RollupWeldingFee,
+    quantize_money,
+    rollup_l0,
+)
 
+# 兼容旧测试常量名
+INDIRECT_PACKAGING_OTHER = INDIRECT_WAREHOUSE_BUNDLING
 
-def quantize_money(value: Decimal) -> Decimal:
-    return value.quantize(_Q4, rounding=ROUND_HALF_UP)
+__all__ = [
+    "INDIRECT_UNIT_TRANSPORT",
+    "INDIRECT_PACKAGING_OTHER",
+    "INDIRECT_WAREHOUSE_BUNDLING",
+    "INDIRECT_FINANCE",
+    "INDIRECT_MANAGEMENT",
+    "INDIRECT_SCRAP",
+    "INDIRECT_PRETAX_PROFIT",
+    "INDIRECT_GAUGE_ALLOC",
+    "INDIRECT_FIXTURE_ALLOC",
+    "SimBomNode",
+    "SimWeldingFee",
+    "SimPackagingTransportFee",
+    "SimFinishedRates",
+    "SimLine",
+    "SimMissing",
+    "SimIndirectLine",
+    "L0SimResult",
+    "quantize_money",
+    "simulate_l0",
+    "simulate_all_l0",
+    "format_l0_cost_breakdown",
+    "format_simulation_report",
+]
 
 
 @dataclass(frozen=True)
 class SimBomNode:
-    """BOM 节点（模拟入参，与 ORM 解耦）。"""
-
     id: int
     parent_id: int | None
     level: int
@@ -42,20 +72,34 @@ class SimBomNode:
 
 @dataclass(frozen=True)
 class SimWeldingFee:
-    """L0 焊接费（模拟入参）。"""
-
     final_amount: Decimal
     other_fee: Decimal = Decimal("0")
     missing_price_count: int = 0
 
 
 @dataclass(frozen=True)
-class SimLine:
-    """参与计价的一行。"""
+class SimPackagingTransportFee:
+    """源字段 other_fee → 结果 warehouse_bundling_fee。"""
 
+    unit_transport_fee: Decimal = Decimal("0")
+    other_fee: Decimal = Decimal("0")
+
+
+@dataclass(frozen=True)
+class SimFinishedRates:
+    finance_rate: Decimal = Decimal("0.02")
+    management_rate: Decimal = Decimal("0.02")
+    scrap_rate: Decimal = Decimal("0.003")
+    pretax_profit_rate: Decimal = Decimal("0.02")
+
+
+@dataclass(frozen=True)
+class SimLine:
     level_label: str
     part_number: str
-    source: Literal["stamping", "annual", "bundle"]
+    source: Literal[
+        "stamping", "annual", "bundle", "skipped_by_bundle", "missing"
+    ]
     unit_price: Decimal
     effective_qty: Decimal
     line_amount: Decimal
@@ -69,6 +113,15 @@ class SimMissing:
     effective_qty: Decimal
 
 
+@dataclass(frozen=True)
+class SimIndirectLine:
+    code: str
+    label: str
+    amount: Decimal
+    rate: Decimal | None = None
+    base_amount: Decimal | None = None
+
+
 @dataclass
 class L0SimResult:
     part_number: str
@@ -80,32 +133,109 @@ class L0SimResult:
     welding_amount: Decimal
     other_fee: Decimal
     total_amount: Decimal
+    indirect_lines: list[SimIndirectLine] = field(default_factory=list)
+    indirect_amount: Decimal = Decimal("0")
+    grand_total: Decimal = Decimal("0")
     missing: list[SimMissing] = field(default_factory=list)
     lines: list[SimLine] = field(default_factory=list)
 
+    def indirect_amount_of(self, code: str) -> Decimal:
+        for item in self.indirect_lines:
+            if item.code == code:
+                return item.amount
+        return Decimal("0.0000")
 
-def base_part_number_before_dash(part_number: str) -> str | None:
-    """取第一个「-」之前的内容；无「-」则返回 None。"""
-    if "-" not in part_number:
-        return None
-    base = part_number.split("-", 1)[0].strip()
-    return base or None
+    @property
+    def unit_transport_fee(self) -> Decimal:
+        return self.indirect_amount_of(INDIRECT_UNIT_TRANSPORT)
+
+    @property
+    def warehouse_bundling_fee(self) -> Decimal:
+        return self.indirect_amount_of(INDIRECT_WAREHOUSE_BUNDLING)
+
+    @property
+    def packaging_other_fee(self) -> Decimal:
+        """兼容旧断言名 → warehouse_bundling_fee。"""
+        return self.warehouse_bundling_fee
+
+    @property
+    def finished_finance_fee(self) -> Decimal:
+        return self.indirect_amount_of(INDIRECT_FINANCE)
+
+    @property
+    def finished_management_fee(self) -> Decimal:
+        return self.indirect_amount_of(INDIRECT_MANAGEMENT)
+
+    @property
+    def finished_scrap_fee(self) -> Decimal:
+        return self.indirect_amount_of(INDIRECT_SCRAP)
+
+    @property
+    def finished_pretax_profit_fee(self) -> Decimal:
+        return self.indirect_amount_of(INDIRECT_PRETAX_PROFIT)
 
 
-def _lookup_leaf_price(
-    part_number: str,
-    stamping_prices: dict[str, Decimal],
-    annual_prices: dict[str, Decimal],
-) -> tuple[Literal["stamping", "annual"] | None, Decimal | None]:
-    if part_number in stamping_prices:
-        return "stamping", stamping_prices[part_number]
-    if part_number in annual_prices:
-        return "annual", annual_prices[part_number]
-    # 完整号双表都无：用「-」前零件号仅回退冲压价（例 551001730AA-1 → 551001730AA）
-    base = base_part_number_before_dash(part_number)
-    if base is not None and base in stamping_prices:
-        return "stamping", stamping_prices[base]
-    return None, None
+def _to_rollup_node(node: SimBomNode) -> RollupBomNode:
+    return RollupBomNode(
+        id=node.id,
+        parent_id=node.parent_id,
+        level=node.level,
+        part_number=node.part_number,
+        part_name=node.part_name,
+        qty=node.qty,
+        node_role=node.node_role,
+        sort_no=node.sort_no,
+    )
+
+
+def _from_rollup(result: RollupResult) -> L0SimResult:
+    missing: list[SimMissing] = []
+    lines: list[SimLine] = []
+    for line in result.lines:
+        if line.cost_source == "missing":
+            missing.append(
+                SimMissing(
+                    part_number=line.part_number,
+                    part_name=line.part_name,
+                    node_role=line.node_role or "",
+                    effective_qty=line.effective_qty,
+                )
+            )
+        lines.append(
+            SimLine(
+                level_label=line.level_label,
+                part_number=line.part_number,
+                source=line.cost_source,
+                unit_price=line.unit_price,
+                effective_qty=line.effective_qty,
+                line_amount=line.line_amount,
+            )
+        )
+    return L0SimResult(
+        part_number=result.part_number,
+        part_name=result.part_name,
+        status=result.status,
+        stamping_amount=result.stamping_amount,
+        purchased_amount=result.purchased_amount,
+        bundle_amount=result.bundle_amount,
+        welding_amount=result.welding_amount,
+        other_fee=result.welding_other_fee,
+        total_amount=result.total_amount,
+        indirect_lines=[
+            SimIndirectLine(
+                code=item.code,
+                label=item.label,
+                amount=item.amount,
+                rate=item.rate,
+                base_amount=item.base_amount,
+            )
+            for item in result.indirect_lines
+        ],
+        indirect_amount=result.indirect_amount,
+        grand_total=result.grand_total,
+        missing=missing,
+        lines=lines,
+    )
 
 
 def simulate_l0(
@@ -114,123 +244,45 @@ def simulate_l0(
     stamping_prices: dict[str, Decimal],
     annual_prices: dict[str, Decimal],
     welding: SimWeldingFee | None,
+    packaging: SimPackagingTransportFee | None = None,
+    rates: SimFinishedRates | None = None,
 ) -> L0SimResult:
-    """对单个成品做 L0→L1→L2 rollup 模拟。"""
-    stamp = Decimal("0")
-    purchased = Decimal("0")
-    bundle = Decimal("0")
-    lines: list[SimLine] = []
-    missing: list[SimMissing] = []
-
-    l1_nodes = sorted(children_by_parent.get(l0.id, []), key=lambda n: n.sort_no)
-
-    for l1 in l1_nodes:
-        l1_qty = l1.qty if l1.qty is not None else Decimal("1")
-        l2_nodes = sorted(children_by_parent.get(l1.id, []), key=lambda n: n.sort_no)
-
-        if l2_nodes:
-            if l1.part_number in annual_prices:
-                unit = annual_prices[l1.part_number]
-                line_amount = quantize_money(unit * l1_qty)
-                bundle += line_amount
-                lines.append(
-                    SimLine(
-                        level_label="L1-bundle",
-                        part_number=l1.part_number,
-                        source="bundle",
-                        unit_price=unit,
-                        effective_qty=l1_qty,
-                        line_amount=line_amount,
-                    )
-                )
-                continue
-
-            for l2 in l2_nodes:
-                l2_qty = l2.qty if l2.qty is not None else Decimal("1")
-                effective_qty = l1_qty * l2_qty
-                source, unit = _lookup_leaf_price(
-                    l2.part_number, stamping_prices, annual_prices
-                )
-                if source is None or unit is None:
-                    missing.append(
-                        SimMissing(
-                            part_number=l2.part_number,
-                            part_name=l2.part_name,
-                            node_role=l2.node_role,
-                            effective_qty=effective_qty,
-                        )
-                    )
-                    continue
-                line_amount = quantize_money(unit * effective_qty)
-                if source == "stamping":
-                    stamp += line_amount
-                else:
-                    purchased += line_amount
-                lines.append(
-                    SimLine(
-                        level_label="L2",
-                        part_number=l2.part_number,
-                        source=source,
-                        unit_price=unit,
-                        effective_qty=effective_qty,
-                        line_amount=line_amount,
-                    )
-                )
-            continue
-
-        source, unit = _lookup_leaf_price(l1.part_number, stamping_prices, annual_prices)
-        if source is None or unit is None:
-            missing.append(
-                SimMissing(
-                    part_number=l1.part_number,
-                    part_name=l1.part_name,
-                    node_role=l1.node_role,
-                    effective_qty=l1_qty,
-                )
-            )
-            continue
-        line_amount = quantize_money(unit * l1_qty)
-        if source == "stamping":
-            stamp += line_amount
-        else:
-            purchased += line_amount
-        lines.append(
-            SimLine(
-                level_label="L1-leaf",
-                part_number=l1.part_number,
-                source=source,
-                unit_price=unit,
-                effective_qty=l1_qty,
-                line_amount=line_amount,
-            )
+    """委托生产 rollup_l0。"""
+    children: dict[int | None, list[RollupBomNode]] = {
+        parent_id: [_to_rollup_node(n) for n in kids]
+        for parent_id, kids in children_by_parent.items()
+    }
+    rollup_welding = None
+    if welding is not None:
+        rollup_welding = RollupWeldingFee(
+            final_amount=welding.final_amount,
+            other_fee=welding.other_fee,
+            missing_price_count=welding.missing_price_count,
         )
-
-    if welding is None:
-        weld_amount = Decimal("0")
-        other_fee = Decimal("0")
-        weld_incomplete = True
-    else:
-        weld_amount = welding.final_amount
-        other_fee = welding.other_fee
-        weld_incomplete = welding.missing_price_count > 0
-
-    total = quantize_money(stamp + purchased + bundle + weld_amount + other_fee)
-    status: Literal["ok", "partial"] = (
-        "ok" if (not missing and not weld_incomplete) else "partial"
-    )
-
-    return L0SimResult(
-        part_number=l0.part_number,
-        part_name=l0.part_name,
-        status=status,
-        stamping_amount=quantize_money(stamp),
-        purchased_amount=quantize_money(purchased),
-        bundle_amount=quantize_money(bundle),
-        welding_amount=quantize_money(weld_amount),
-        other_fee=quantize_money(other_fee),
-        total_amount=total,
-        missing=missing,
-        lines=lines,
+    rollup_packaging = None
+    if packaging is not None:
+        rollup_packaging = RollupPackagingFee(
+            unit_transport_fee=packaging.unit_transport_fee,
+            warehouse_bundling_fee=packaging.other_fee,
+        )
+    finished_rates = None
+    if rates is not None:
+        finished_rates = RollupFinishedRates(
+            finance_rate=rates.finance_rate,
+            management_rate=rates.management_rate,
+            scrap_rate=rates.scrap_rate,
+            pretax_profit_rate=rates.pretax_profit_rate,
+        )
+    return _from_rollup(
+        rollup_l0(
+            l0=_to_rollup_node(l0),
+            children_by_parent=children,
+            stamping_prices=stamping_prices,
+            annual_prices=annual_prices,
+            welding=rollup_welding,
+            packaging=rollup_packaging,
+            rates=finished_rates,
+        )
     )
 
 
@@ -239,12 +291,15 @@ def simulate_all_l0(
     stamping_prices: dict[str, Decimal],
     annual_prices: dict[str, Decimal],
     welding_by_part: dict[str, SimWeldingFee],
+    packaging_by_part: dict[str, SimPackagingTransportFee] | None = None,
+    rates: SimFinishedRates | None = None,
 ) -> list[L0SimResult]:
-    """对清单内全部 L0 成品模拟。"""
     children_by_parent: dict[int | None, list[SimBomNode]] = {}
     for node in nodes:
         children_by_parent.setdefault(node.parent_id, []).append(node)
 
+    packaging_map = packaging_by_part or {}
+    finished_rates = rates or SimFinishedRates()
     l0_nodes = sorted(
         [n for n in nodes if n.level == 0],
         key=lambda n: (n.sort_no, n.part_number),
@@ -256,9 +311,50 @@ def simulate_all_l0(
             stamping_prices=stamping_prices,
             annual_prices=annual_prices,
             welding=welding_by_part.get(l0.part_number),
+            packaging=packaging_map.get(l0.part_number),
+            rates=finished_rates,
         )
         for l0 in l0_nodes
     ]
+
+
+def format_l0_cost_breakdown(result: L0SimResult) -> str:
+    material = quantize_money(
+        result.stamping_amount + result.purchased_amount + result.bundle_amount
+    )
+    out: list[str] = [
+        f"{result.part_number}  {result.part_name or ''}  status={result.status}",
+        "",
+        "【L0 月总账】",
+        f"  ① 冲压小计       = {result.stamping_amount}",
+        f"  ② 年度价/外购    = {result.purchased_amount}",
+        f"  ③ 一口价         = {result.bundle_amount}",
+        f"  材料合计         = {material}",
+        f"  ④ 焊接费         = {result.welding_amount}",
+        f"  ⑤ 焊接其它       = {result.other_fee}",
+        "  ────────────────",
+        f"  L0 月总账        = {result.total_amount}",
+        "",
+        "【间接费用 · 一一单列】",
+    ]
+    for index, item in enumerate(result.indirect_lines, start=1):
+        rate_hint = ""
+        if item.rate is not None and item.base_amount is not None:
+            rate_hint = f"  = {item.base_amount} × {item.rate}"
+        out.append(
+            f"  I{index} {item.label:<16} = {item.amount}  ({item.code}){rate_hint}"
+        )
+    out.extend(
+        [
+            "  ────────────────",
+            f"  间接费用合计     = {result.indirect_amount}",
+            "",
+            "【总费用】",
+            f"  总费用           = {result.total_amount} + {result.indirect_amount}"
+            f" = {result.grand_total}",
+        ]
+    )
+    return "\n".join(out)
 
 
 def format_simulation_report(
@@ -268,8 +364,8 @@ def format_simulation_report(
     stamping_price_count: int,
     annual_price_count: int,
     welding_count: int,
+    packaging_count: int = 0,
 ) -> str:
-    """生成可读中文统计（一览 / 缺价 / 分项）。"""
     ok_n = sum(1 for r in results if r.status == "ok")
     partial_n = sum(1 for r in results if r.status == "partial")
     stamp_sum = quantize_money(sum((r.stamping_amount for r in results), Decimal("0")))
@@ -281,6 +377,22 @@ def format_simulation_report(
     total_ok = quantize_money(
         sum((r.total_amount for r in results if r.status == "ok"), Decimal("0"))
     )
+    indirect_sum = quantize_money(
+        sum((r.indirect_amount for r in results), Decimal("0"))
+    )
+    grand_all = quantize_money(sum((r.grand_total for r in results), Decimal("0")))
+    grand_ok = quantize_money(
+        sum((r.grand_total for r in results if r.status == "ok"), Decimal("0"))
+    )
+
+    indirect_code_sums: dict[str, Decimal] = {}
+    indirect_code_labels: dict[str, str] = {}
+    for result in results:
+        for item in result.indirect_lines:
+            indirect_code_sums[item.code] = quantize_money(
+                indirect_code_sums.get(item.code, Decimal("0")) + item.amount
+            )
+            indirect_code_labels[item.code] = item.label
 
     miss_count: dict[str, int] = {}
     miss_meta: dict[str, tuple[str | None, str]] = {}
@@ -291,28 +403,39 @@ def format_simulation_report(
 
     lines: list[str] = [
         title,
-        f"上游: 冲压价={stamping_price_count}  年度价={annual_price_count}  焊接费={welding_count}",
+        f"上游: 冲压价={stamping_price_count}  年度价={annual_price_count}  "
+        f"焊接费={welding_count}  包装运输={packaging_count}",
         "",
         "=== 一览（全部 L0）===",
-        f"{'#':>3} {'状态':<8} {'零件号':<16} {'冲压':>10} {'年度/外购':>10} "
-        f"{'一口价':>8} {'焊接':>8} {'合计':>10} {'缺价':>4} 名称",
+        f"{'#':>3} {'状态':<8} {'零件号':<16} {'月总账':>10} {'间接合计':>10} "
+        f"{'总费用':>10} {'缺价':>4} 名称",
         "-" * 100,
     ]
     for index, result in enumerate(results, start=1):
         lines.append(
             f"{index:>3} {result.status:<8} {result.part_number:<16} "
-            f"{result.stamping_amount:>10} {result.purchased_amount:>10} "
-            f"{result.bundle_amount:>8} {result.welding_amount:>8} "
-            f"{result.total_amount:>10} {len(result.missing):>4} "
+            f"{result.total_amount:>10} {result.indirect_amount:>10} "
+            f"{result.grand_total:>10} {len(result.missing):>4} "
             f"{result.part_name or ''}"
         )
     lines.extend(
         [
             "-" * 100,
             f"合计: L0={len(results)}  ok={ok_n}  partial={partial_n}",
-            f"金额: 全部行合计(含 partial 已命中)={total_all}  仅 ok 成品={total_ok}",
-            f"分项: 冲压={stamp_sum}  年度/外购={buy_sum}  一口价={bundle_sum}  "
-            f"焊接={weld_sum}  其它={other_sum}",
+            f"月总账: 全部={total_all}  仅 ok={total_ok}",
+            f"总费用: 全部={grand_all}  仅 ok={grand_ok}",
+            f"月总账分项: 冲压={stamp_sum}  年度/外购={buy_sum}  一口价={bundle_sum}  "
+            f"焊接={weld_sum}  焊接其它={other_sum}",
+            "",
+            "=== 间接费用（一一单列汇总）===",
+        ]
+    )
+    for code, amount in indirect_code_sums.items():
+        label = indirect_code_labels.get(code, code)
+        lines.append(f"  {label:<12} ({code})  = {amount}")
+    lines.append(f"  {'间接费用合计':<12}              = {indirect_sum}")
+    lines.extend(
+        [
             "",
             f"=== 缺价零件号去重 ({len(miss_count)}) ===",
         ]

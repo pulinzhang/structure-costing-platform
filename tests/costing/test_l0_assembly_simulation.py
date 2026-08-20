@@ -16,10 +16,14 @@ from sqlalchemy.orm import Session
 from app.models.bom.annual_part_price import BomAnnualPartPrice
 from app.models.bom.l0_welding_fee import BomL0WeldingFee
 from app.models.bom.node import BomNode, BomSnapshot
+from app.models.bom.packaging_transport_fee import BomPackagingTransportFee
 from app.models.costing.stamping_part_cost import StampingPartCost
+from app.services.settings.system.settings_service import SettingsService
 from tests.costing.l0_assembly_sim import (
     L0SimResult,
     SimBomNode,
+    SimFinishedRates,
+    SimPackagingTransportFee,
     SimWeldingFee,
     format_simulation_report,
     quantize_money,
@@ -173,7 +177,7 @@ def test_l1_with_children_expands_l2_qty_product() -> None:
 
 
 def test_l1_bundle_prunes_children() -> None:
-    """有子件 L1 命中年度价 → 一口价，不 rollup L2。"""
+    """有子件 L1 命中年度价 → 一口价；L2 落 skipped_by_bundle，不计金额。"""
     l0 = SimBomNode(
         id=1, parent_id=None, level=0, part_number="L0", part_name="A",
         qty=Decimal("1"), node_role="supply",
@@ -196,7 +200,70 @@ def test_l1_bundle_prunes_children() -> None:
     assert result.status == "ok"
     assert result.bundle_amount == Decimal("6.8800")
     assert result.stamping_amount == Decimal("0.0000")
-    assert all(line.source == "bundle" for line in result.lines)
+    money_lines = [line for line in result.lines if line.line_amount != 0]
+    assert all(line.source == "bundle" for line in money_lines)
+    assert any(
+        line.part_number == "L2-IGNORED" and line.source == "skipped_by_bundle"
+        for line in result.lines
+    )
+
+
+def test_packaging_transport_fees_are_indirect_not_in_monthly_total() -> None:
+    """间接费用：一一单列 → 汇总 → 加进总费用；不进 L0 月总账。"""
+    from tests.costing.l0_assembly_sim import (
+        INDIRECT_FINANCE,
+        INDIRECT_FIXTURE_ALLOC,
+        INDIRECT_GAUGE_ALLOC,
+        INDIRECT_MANAGEMENT,
+        INDIRECT_PRETAX_PROFIT,
+        INDIRECT_SCRAP,
+        INDIRECT_UNIT_TRANSPORT,
+        INDIRECT_WAREHOUSE_BUNDLING,
+    )
+
+    l0 = SimBomNode(
+        id=1, parent_id=None, level=0, part_number="L0", part_name="A",
+        qty=Decimal("1"), node_role="supply",
+    )
+    l1 = SimBomNode(
+        id=2, parent_id=1, level=1, part_number="P", part_name="叶子",
+        qty=Decimal("1"), node_role="make",
+    )
+    rates = SimFinishedRates(
+        finance_rate=Decimal("0.02"),
+        management_rate=Decimal("0.02"),
+        scrap_rate=Decimal("0.003"),
+        pretax_profit_rate=Decimal("0.02"),
+    )
+    result = simulate_l0(
+        l0=l0,
+        children_by_parent={1: [l1]},
+        stamping_prices={"P": Decimal("10.0000")},
+        annual_prices={},
+        welding=SimWeldingFee(final_amount=Decimal("1.0000"), other_fee=Decimal("0.1000")),
+        packaging=SimPackagingTransportFee(
+            unit_transport_fee=Decimal("0.7600"),
+            other_fee=Decimal("0.3872"),
+        ),
+        rates=rates,
+    )
+    assert result.status == "ok"
+    assert result.other_fee == Decimal("0.1000")
+    assert result.total_amount == Decimal("11.1000")
+
+    assert len(result.indirect_lines) == 8
+    by_code = {item.code: item for item in result.indirect_lines}
+    assert by_code[INDIRECT_UNIT_TRANSPORT].amount == Decimal("0.7600")
+    assert by_code[INDIRECT_WAREHOUSE_BUNDLING].amount == Decimal("0.3872")
+    # 11.1000 × 费率
+    assert by_code[INDIRECT_FINANCE].amount == Decimal("0.2220")
+    assert by_code[INDIRECT_MANAGEMENT].amount == Decimal("0.2220")
+    assert by_code[INDIRECT_SCRAP].amount == Decimal("0.0333")
+    assert by_code[INDIRECT_PRETAX_PROFIT].amount == Decimal("0.2220")
+    assert by_code[INDIRECT_GAUGE_ALLOC].amount == Decimal("0.0000")
+    assert by_code[INDIRECT_FIXTURE_ALLOC].amount == Decimal("0.0000")
+    assert result.indirect_amount == Decimal("1.8465")
+    assert result.grand_total == Decimal("12.9465")
 
 
 # ---------------------------------------------------------------------------
@@ -204,9 +271,27 @@ def test_l1_bundle_prunes_children() -> None:
 # ---------------------------------------------------------------------------
 
 
+def _load_finished_rates(db: Session) -> SimFinishedRates:
+    """从 system_configs 读取成品间接费率。"""
+    settings = SettingsService()
+    return SimFinishedRates(
+        finance_rate=settings.get_finished_finance_rate(db),
+        management_rate=settings.get_finished_management_rate(db),
+        scrap_rate=settings.get_finished_scrap_rate(db),
+        pretax_profit_rate=settings.get_finished_pretax_profit_rate(db),
+    )
+
+
 def _load_scope_from_db(
     db: Session,
-) -> tuple[list[SimBomNode], dict[str, Decimal], dict[str, Decimal], dict[str, SimWeldingFee]]:
+) -> tuple[
+    list[SimBomNode],
+    dict[str, Decimal],
+    dict[str, Decimal],
+    dict[str, SimWeldingFee],
+    dict[str, SimPackagingTransportFee],
+    SimFinishedRates,
+]:
     snap = (
         db.query(BomSnapshot)
         .filter(
@@ -277,7 +362,30 @@ def _load_scope_from_db(
             missing_price_count=int(r.missing_price_count or 0),
         )
 
-    return nodes, stamping_prices, annual_prices, welding_by_part
+    # 包装运输费：匹配基地 + 年度 + 零件号（不加车型）
+    packaging_by_part: dict[str, SimPackagingTransportFee] = {}
+    for r in (
+        db.query(BomPackagingTransportFee)
+        .filter(
+            BomPackagingTransportFee.location == LOCATION,
+            BomPackagingTransportFee.year == YEAR,
+        )
+        .all()
+    ):
+        packaging_by_part[r.part_number] = SimPackagingTransportFee(
+            unit_transport_fee=Decimal(str(r.unit_transport_fee)),
+            other_fee=Decimal(str(r.other_fee or 0)),
+        )
+
+    rates = _load_finished_rates(db)
+    return (
+        nodes,
+        stamping_prices,
+        annual_prices,
+        welding_by_part,
+        packaging_by_part,
+        rates,
+    )
 
 
 def _by_part(results: list[L0SimResult]) -> dict[str, L0SimResult]:
@@ -291,8 +399,17 @@ def test_qingdao_t28_2025_01_simulate_all_l0(db_session: Session) -> None:
     看统计一览请加 -s，或打开 tests/costing/last_qingdao_t28_sim_report.txt：
       python -X utf8 -m pytest tests/costing/test_l0_assembly_simulation.py::test_qingdao_t28_2025_01_simulate_all_l0 -s -v
     """
-    nodes, stamping_prices, annual_prices, welding_by_part = _load_scope_from_db(db_session)
-    results = simulate_all_l0(nodes, stamping_prices, annual_prices, welding_by_part)
+    nodes, stamping_prices, annual_prices, welding_by_part, packaging_by_part, rates = (
+        _load_scope_from_db(db_session)
+    )
+    results = simulate_all_l0(
+        nodes,
+        stamping_prices,
+        annual_prices,
+        welding_by_part,
+        packaging_by_part,
+        rates=rates,
+    )
 
     report = format_simulation_report(
         results,
@@ -300,6 +417,7 @@ def test_qingdao_t28_2025_01_simulate_all_l0(db_session: Session) -> None:
         stamping_price_count=len(stamping_prices),
         annual_price_count=len(annual_prices),
         welding_count=len(welding_by_part),
+        packaging_count=len(packaging_by_part),
     )
     _REPORT_PATH.write_text(report + "\n", encoding="utf-8")
     # pytest 默认吞掉 print；加 -s 可在终端直接看到这份一览
@@ -331,33 +449,54 @@ def test_qingdao_t28_2025_01_simulate_all_l0(db_session: Session) -> None:
 @pytest.mark.integration
 def test_qingdao_t28_2025_01_golden_samples(db_session: Session) -> None:
     """锁定此前手工演练过的样例成品金额（数据补齐后仍应保持）。"""
-    nodes, stamping_prices, annual_prices, welding_by_part = _load_scope_from_db(db_session)
+    nodes, stamping_prices, annual_prices, welding_by_part, packaging_by_part, rates = (
+        _load_scope_from_db(db_session)
+    )
     results = _by_part(
-        simulate_all_l0(nodes, stamping_prices, annual_prices, welding_by_part)
+        simulate_all_l0(
+            nodes,
+            stamping_prices,
+            annual_prices,
+            welding_by_part,
+            packaging_by_part,
+            rates=rates,
+        )
     )
 
-    # 流水槽加强梁：L1 叶子冲压(unit_cost=直接成本+费率) + L2 年度价 rollup + 焊接
+    # 流水槽加强梁：月总账不变；间接=运输/仓储捆包 + 四项费率费
     rain = results["501006873AA"]
     assert rain.status == "ok"
     assert rain.stamping_amount == Decimal("0.9615")
     assert rain.purchased_amount == Decimal("17.1240")
     assert rain.welding_amount == Decimal("0.7020")
     assert rain.total_amount == Decimal("18.7875")
+    assert rain.unit_transport_fee == Decimal("0.7600")
+    assert rain.packaging_other_fee == Decimal("0.3872")
+    assert rain.finished_finance_fee == Decimal("0.3758")
+    assert rain.finished_management_fee == Decimal("0.3758")
+    assert rain.finished_scrap_fee == Decimal("0.0564")
+    assert rain.finished_pretax_profit_fee == Decimal("0.3758")
+    assert rain.indirect_amount == Decimal("2.3310")
+    assert rain.grand_total == Decimal("21.1185")
 
-    # 低音炮安装支架
+    # 低音炮安装支架（无包装运输费行；仍有四项费率间接费）
     woofer = results["501007976AA"]
     assert woofer.status == "ok"
     assert woofer.stamping_amount == Decimal("4.8929")
     assert woofer.purchased_amount == Decimal("0.2480")
     assert woofer.welding_amount == Decimal("0.4680")
+    assert woofer.unit_transport_fee == Decimal("0.0000")
+    assert woofer.packaging_other_fee == Decimal("0.0000")
     assert woofer.total_amount == Decimal("5.6089")
+    assert woofer.indirect_amount == Decimal("0.3534")
+    assert woofer.grand_total == Decimal("5.9623")
 
-    # 后盖支架：无材料子件，仅焊接费
-    for pn, weld in (
-        ("554002084AA", Decimal("0.3130")),
-        ("554002086AA", Decimal("0.3130")),
-        ("554002085AA", Decimal("0.2710")),
-        ("554002087AA", Decimal("0.2710")),
+    # 后盖支架：无材料子件；月总账=焊接；间接=运输+仓储捆包+费率项
+    for pn, weld, indirect, grand in (
+        ("554002084AA", Decimal("0.3130"), Decimal("0.2815"), Decimal("0.5945")),
+        ("554002086AA", Decimal("0.3130"), Decimal("0.2815"), Decimal("0.5945")),
+        ("554002085AA", Decimal("0.2710"), Decimal("0.2787"), Decimal("0.5497")),
+        ("554002087AA", Decimal("0.2710"), Decimal("0.2787"), Decimal("0.5497")),
     ):
         row = results[pn]
         assert row.status == "ok"
@@ -365,14 +504,27 @@ def test_qingdao_t28_2025_01_golden_samples(db_session: Session) -> None:
         assert row.purchased_amount == Decimal("0.0000")
         assert row.welding_amount == weld
         assert row.total_amount == weld
+        assert row.unit_transport_fee == Decimal("0.0700")
+        assert row.packaging_other_fee == Decimal("0.1917")
+        assert row.indirect_amount == indirect
+        assert row.grand_total == grand
 
 
 @pytest.mark.integration
 def test_qingdao_t28_2025_01_bundle_and_dash_fallback(db_session: Session) -> None:
     """一口价剪枝；*-1 叶子用「-」前零件号回退冲压价。"""
-    nodes, stamping_prices, annual_prices, welding_by_part = _load_scope_from_db(db_session)
+    nodes, stamping_prices, annual_prices, welding_by_part, packaging_by_part, rates = (
+        _load_scope_from_db(db_session)
+    )
     results = _by_part(
-        simulate_all_l0(nodes, stamping_prices, annual_prices, welding_by_part)
+        simulate_all_l0(
+            nodes,
+            stamping_prices,
+            annual_prices,
+            welding_by_part,
+            packaging_by_part,
+            rates=rates,
+        )
     )
 
     # 侧围前部：L1 502003968AA 一口价 6.88

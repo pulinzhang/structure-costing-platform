@@ -47,6 +47,7 @@ TASK_TYPE_BOM_WELDING_PROCESS_BREAKDOWN_GENERATE = (
     "bom_welding_process_breakdown_generate"
 )
 TASK_TYPE_BOM_L0_WELDING_FEE_CALC = "bom_l0_welding_fee_calc"
+TASK_TYPE_L0_ASSEMBLY_COST_CALC = "l0_assembly_cost_calc"
 
 TASK_TTL_SECONDS = 3600
 
