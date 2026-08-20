@@ -5,7 +5,6 @@ from typing import TypedDict
 from sqlalchemy import func
 from sqlalchemy.orm import Query, Session
 
-from app.models import BomNode
 from app.models.bom import BomNode, BomSnapshot
 from app.repositories.persist import model_from_payload
 from app.schemas.dto.bom_dto import BomNodeWrite, BomSnapshotWrite
@@ -237,7 +236,7 @@ class BomSnapshotRepository:
             status = None
 
         loc_q = db.query(BomSnapshot.location).distinct()
-        if status:
+        if status is not None:
             loc_q = loc_q.filter(BomSnapshot.status == status)
         locations = [
             row[0]
@@ -246,9 +245,9 @@ class BomSnapshotRepository:
         ]
 
         model_q = db.query(BomSnapshot.vehicle_model).distinct()
-        if status:
+        if status is not None:
             model_q = model_q.filter(BomSnapshot.status == status)
-        if location:
+        if location is not None:
             model_q = model_q.filter(BomSnapshot.location == location)
         vehicle_models = [
             row[0]
@@ -257,11 +256,11 @@ class BomSnapshotRepository:
         ]
 
         version_q = db.query(BomSnapshot.bom_version).distinct()
-        if status:
+        if status is not None:
             version_q = version_q.filter(BomSnapshot.status == status)
-        if location:
+        if location is not None:
             version_q = version_q.filter(BomSnapshot.location == location)
-        if vehicle_model:
+        if vehicle_model is not None:
             version_q = version_q.filter(BomSnapshot.vehicle_model == vehicle_model)
         bom_versions = [
             row[0]
@@ -282,7 +281,7 @@ class BomNodeRepository:
     def get_by_id(self, db: Session, node_id: int) -> BomNode | None:
         return db.query(BomNode).filter(BomNode.id == node_id).first()
 
-    def list_by_snapshot(self, db: Session, snapshot_id: int) -> list[type[BomNode]]:
+    def list_by_snapshot(self, db: Session, snapshot_id: int) -> list[BomNode]:
         return (
             db.query(BomNode)
             .filter(BomNode.snapshot_id == snapshot_id)

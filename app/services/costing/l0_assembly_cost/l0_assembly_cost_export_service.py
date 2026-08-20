@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from datetime import datetime
 from io import BytesIO
 from typing import Any
 
@@ -30,12 +31,10 @@ def _num(value: Any) -> Any:
     return excel_money_cell(value, Q4, allow_negative=True)
 
 
-def _dt(value: Any) -> str:
+def _dt(value: datetime | None) -> str:
     if value is None:
         return ""
-    if hasattr(value, "strftime"):
-        return value.strftime("%Y-%m-%d %H:%M:%S")
-    return str(value)
+    return value.strftime("%Y-%m-%d %H:%M:%S")
 
 
 class L0AssemblyCostExportService:
