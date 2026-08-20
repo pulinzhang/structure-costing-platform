@@ -5,6 +5,7 @@ from typing import TypedDict
 from sqlalchemy import func
 from sqlalchemy.orm import Query, Session
 
+from app.models import BomNode
 from app.models.bom import BomNode, BomSnapshot
 from app.repositories.persist import model_from_payload
 from app.schemas.dto.bom_dto import BomNodeWrite, BomSnapshotWrite
@@ -281,7 +282,7 @@ class BomNodeRepository:
     def get_by_id(self, db: Session, node_id: int) -> BomNode | None:
         return db.query(BomNode).filter(BomNode.id == node_id).first()
 
-    def list_by_snapshot(self, db: Session, snapshot_id: int) -> list[BomNode]:
+    def list_by_snapshot(self, db: Session, snapshot_id: int) -> list[type[BomNode]]:
         return (
             db.query(BomNode)
             .filter(BomNode.snapshot_id == snapshot_id)
