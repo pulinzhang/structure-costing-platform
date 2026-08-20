@@ -203,6 +203,9 @@ ApiResponse（任务 id 或结果摘要）
 - Service：做什么（规则、组合、事务、Parser）  
 - Repository：怎么查/写库（无角色 if）
 
+教学硬约束：**Repository 禁止 `db.commit` / `db.rollback`**，只 `flush`；写成功后由 Service `commit`，失败 `rollback`。口诀：Repo 只改会话，Service 才落库。  
+特例（仍由 Service 提交）：异步任务 AUTOCOMMIT 写进度；计算锁 DDL 用独立连接，`conn.commit()` 在 Service。
+
 ### 简单查询也要 Service 吗？
 
 要。保持 Router 永不直连 Repository，便于统一权限与响应形态。

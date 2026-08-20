@@ -8,7 +8,7 @@
   ③ process_scrap_deduction   = O×η×Q         边角废料扣除
   scrap_amount_sheet = ②+③（合计，便于兼容）
   material_net_per_part = ①−②−③
-ρ_steel / λ / η 来自系统配置快照（默认 7.85 / 0.003 / 0.97）。
+  ρ_steel / λ / η 来自系统配置快照（默认 7.85 / 0.003 / 0.97）。
 """
 
 from decimal import Decimal

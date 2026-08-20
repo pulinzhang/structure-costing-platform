@@ -139,6 +139,7 @@ class StampingScrapPriceCrudService:
                 data.month,
                 payloads,
             )
+            db.commit()
             sheet = self._build_month_sheet(data.year, data.month, records)
             return sheet, None
         except Exception as exc:
@@ -152,10 +153,16 @@ class StampingScrapPriceCrudService:
         year: int,
         month: int,
     ) -> Tuple[int, Optional[str]]:
-        count = self.repository.delete_by_year_month(db, year, month)
-        if count == 0:
-            return 0, f"{year}-{month:02d} 没有可删除的数据"
-        return count, None
+        try:
+            count = self.repository.delete_by_year_month(db, year, month)
+            if count == 0:
+                return 0, f"{year}-{month:02d} 没有可删除的数据"
+            db.commit()
+            return count, None
+        except Exception as exc:
+            db.rollback()
+            logger.error("整月删除废料销售价失败: %s", exc)
+            return 0, str(exc)
 
     def copy_month(
         self,
@@ -211,6 +218,7 @@ class StampingScrapPriceCrudService:
                 body.target_month,
                 payloads,
             )
+            db.commit()
             return (
                 StampingScrapPriceCopyMonthResponse(
                     source_year=body.source_year,

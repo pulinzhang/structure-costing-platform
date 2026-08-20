@@ -11,7 +11,7 @@ import {
     parseUnitPriceInput,
     updateAnnualHud,
     updateAnnualFilterCapsules,
-} from './template.js?v=2';
+} from './template.js?v=3';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -558,7 +558,7 @@ async function saveRecord() {
     const supplierName = document.getElementById('annualEditSupplierName')?.value?.trim() || null;
     const remark = document.getElementById('annualEditRemark')?.value?.trim() || null;
     if (!recordId || !unit || unitPrice == null) {
-        showToast('请填写单位和单价（单价须为最多4位小数的数字，允许 0）', 'warning');
+        showToast('请填写单位和单价（单价须 ≥ 0，最多4位小数；填 0 表示成品核价不计入该件）', 'warning');
         return;
     }
     if (!supplyType) {

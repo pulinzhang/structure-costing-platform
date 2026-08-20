@@ -149,8 +149,7 @@ class BomWeldingUnitPriceImportService:
                             unit_price=unit_price,
                             remark=row.remark,
                         ),
-                        updated_by=update_audit["updated_by"],
-                        commit=False,
+                        updated_by=update_audit["updated_by"]
                     )
                     updated_count += 1
                 else:
@@ -165,8 +164,7 @@ class BomWeldingUnitPriceImportService:
                             remark=row.remark,
                         ),
                         created_by=create_audit["created_by"],
-                        updated_by=create_audit["updated_by"],
-                        commit=False,
+                        updated_by=create_audit["updated_by"]
                     )
                     created_count += 1
             db.commit()

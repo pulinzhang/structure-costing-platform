@@ -136,7 +136,7 @@ class BomL0WeldingFeeRepository:
         if not record:
             return None
         apply_payload_fields(record, update_data)
-        db.commit()
+        db.flush()
         db.refresh(record)
         return record
 
@@ -154,7 +154,7 @@ class BomL0WeldingFeeRepository:
                 created_count += 1
             else:
                 updated_count += 1
-        db.commit()
+        db.flush()
         for record in records:
             db.refresh(record)
         logger.info(

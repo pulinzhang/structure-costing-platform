@@ -208,8 +208,7 @@ class BomWeldingProcessBreakdownGenerateService:
                 db,
                 location=location,
                 vehicle_model=vehicle_model,
-                bom_version=bom_version,
-                commit=False,
+                bom_version=bom_version
             )
             process_log.line(f"删除未审核旧数据：{deleted} 条主表")
 
@@ -403,8 +402,7 @@ class BomWeldingProcessBreakdownGenerateService:
                 audit_status=AUDIT_PENDING,
                 created_by=created_by,
                 updated_by=updated_by,
-            ),
-            commit=False,
+            )
         )
 
         for index, item in enumerate(parse_result.items, start=1):
@@ -434,8 +432,7 @@ class BomWeldingProcessBreakdownGenerateService:
                     qty_check_detail=qty_check.qty_check_detail,
                     created_by=created_by,
                     updated_by=updated_by,
-                ),
-                commit=False,
+                )
             )
 
         return breakdown_node, process_line_count

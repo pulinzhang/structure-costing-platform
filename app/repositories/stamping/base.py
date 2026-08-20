@@ -37,23 +37,23 @@ class BaseRepository(Generic[T, TPayload]):
         return db.query(self.model).offset(skip).limit(limit).all()
 
     def create(self, db: Session, payload: TPayload) -> T:
-        """创建单条记录"""
+        """写入会话；由 Service 提交事务。"""
         instance = model_from_payload(self.model, payload)
         db.add(instance)
-        db.commit()
+        db.flush()
         db.refresh(instance)
         logger.info("创建记录: %s (id=%s)", self.model.__name__, instance.id)
         return instance
 
     def bulk_create(self, db: Session, payloads: list[TPayload]) -> list[T]:
-        """批量创建记录（不提交事务，由调用方管理）"""
+        """批量写入会话；由 Service 提交事务。"""
         instances = [model_from_payload(self.model, payload) for payload in payloads]
         db.add_all(instances)
         logger.info("批量创建: %s x%s", self.model.__name__, len(instances))
         return instances
 
     def update(self, db: Session, id: int, payload: TPayload) -> T | None:
-        """更新记录"""
+        """更新会话中的记录；由 Service 提交事务。"""
         instance = self.get_by_id(db, id)
         if instance is None:
             return None
@@ -62,17 +62,17 @@ class BaseRepository(Generic[T, TPayload]):
             payload,
             skip=frozenset({"id", "created_by", "created_at"}),
         )
-        db.commit()
+        db.flush()
         db.refresh(instance)
         logger.info("更新记录: %s (id=%s)", self.model.__name__, id)
         return instance
 
     def delete(self, db: Session, id: int) -> bool:
-        """删除记录"""
+        """从会话删除；由 Service 提交事务。"""
         instance = self.get_by_id(db, id)
         if instance is None:
             return False
         db.delete(instance)
-        db.commit()
+        db.flush()
         logger.info("删除记录: %s (id=%s)", self.model.__name__, id)
         return True

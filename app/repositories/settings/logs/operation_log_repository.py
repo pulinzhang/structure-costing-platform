@@ -17,7 +17,7 @@ class OperationLogRepository:
     def create(self, db: Session, data: OperationLogCreate) -> OperationLog:
         row = model_from_payload(OperationLog, data)
         db.add(row)
-        db.commit()
+        db.flush()
         db.refresh(row)
         return row
 

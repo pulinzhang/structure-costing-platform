@@ -74,7 +74,7 @@ class StampingProcessRepository:
     def create(self, db: Session, process_data: ProcessData) -> StampingProcess:
         process = model_from_payload(StampingProcess, process_data)
         db.add(process)
-        db.commit()
+        db.flush()
         db.refresh(process)
         logger.info("创建工序: id=%s", process.id)
         return process
@@ -96,7 +96,7 @@ class StampingProcessRepository:
             update_data,
             skip=frozenset({"id", "created_by", "created_at"}),
         )
-        db.commit()
+        db.flush()
         db.refresh(process)
         logger.info("更新工序: id=%s", process_id)
         return process
@@ -106,7 +106,7 @@ class StampingProcessRepository:
         if not process:
             return False
         db.delete(process)
-        db.commit()
+        db.flush()
         logger.info(f"删除工序: id={process_id}")
         return True
 
@@ -114,6 +114,6 @@ class StampingProcessRepository:
         count = db.query(StampingProcess).filter(StampingProcess.part_id.in_(part_ids)).delete(
             synchronize_session=False
         )
-        db.commit()
+        db.flush()
         logger.info(f"删除工序: {count} 个 (part_ids={part_ids})")
         return count

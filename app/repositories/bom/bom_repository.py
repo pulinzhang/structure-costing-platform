@@ -185,23 +185,17 @@ class BomSnapshotRepository:
         return [r[0] for r in rows if r[0]]
 
     def create(
-        self, db: Session, data: BomSnapshotWrite, *, commit: bool = True
+        self, db: Session, data: BomSnapshotWrite
     ) -> BomSnapshot:
         row = model_from_payload(BomSnapshot, data)
         db.add(row)
-        if commit:
-            db.commit()
-            db.refresh(row)
-        else:
-            db.flush()
+        db.flush()
+        db.refresh(row)
         return row
 
-    def delete(self, db: Session, snapshot: BomSnapshot, *, commit: bool = True) -> None:
+    def delete(self, db: Session, snapshot: BomSnapshot) -> None:
         db.delete(snapshot)
-        if commit:
-            db.commit()
-        else:
-            db.flush()
+        db.flush()
 
     def list_locations(self, db: Session) -> list[str]:
         rows = (
@@ -294,34 +288,25 @@ class BomNodeRepository:
         )
 
     def create(
-        self, db: Session, data: BomNodeWrite, *, commit: bool = True
+        self, db: Session, data: BomNodeWrite
     ) -> BomNode:
         row = model_from_payload(BomNode, data)
         db.add(row)
-        if commit:
-            db.commit()
-            db.refresh(row)
-        else:
-            db.flush()
+        db.flush()
+        db.refresh(row)
         return row
 
-    def delete(self, db: Session, node: BomNode, *, commit: bool = True) -> None:
+    def delete(self, db: Session, node: BomNode) -> None:
         db.delete(node)
-        if commit:
-            db.commit()
-        else:
-            db.flush()
+        db.flush()
 
     def delete_by_snapshot(
-        self, db: Session, snapshot_id: int, *, commit: bool = True
+        self, db: Session, snapshot_id: int
     ) -> int:
         count = (
             db.query(BomNode)
             .filter(BomNode.snapshot_id == snapshot_id)
             .delete(synchronize_session=False)
         )
-        if commit:
-            db.commit()
-        else:
-            db.flush()
+        db.flush()
         return count

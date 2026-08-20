@@ -375,9 +375,9 @@ class BomWeldingProcessBreakdownService:
             "updated_by": fields["updated_by"]
         }
         try:
-            row = self.repository.update_line(db, line_id, fields, commit=False)
+            row = self.repository.update_line(db, line_id, fields)
             self.repository.update_node(
-                db, node.id, node_patch, commit=False
+                db, node.id, node_patch
             )
             if not row:
                 db.rollback()
@@ -451,13 +451,13 @@ class BomWeldingProcessBreakdownService:
 
                 fields["updated_by"] = updated_by
                 row = self.repository.update_line(
-                    db, item_dto.line_id, fields, commit=False
+                    db, item_dto.line_id, fields
                 )
                 if not row:
                     db.rollback()
                     return None, f"明细不存在：{item_dto.line_id}"
 
-            self.repository.update_node(db, node.id, audit_fields, commit=False)
+            self.repository.update_node(db, node.id, audit_fields)
 
             if need_recompute:
                 recompute_scope_derived_fields(

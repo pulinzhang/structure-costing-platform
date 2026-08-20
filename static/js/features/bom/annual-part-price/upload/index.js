@@ -3,7 +3,7 @@
  * 同步导入：基地 + 年度必选，仅 .xlsx
  */
 
-import { annualPartPriceUploadTemplate } from './template.js?v=2';
+import { annualPartPriceUploadTemplate } from './template.js?v=4';
 
 
 const API_BASE = '/api/bom/annual-part-price';

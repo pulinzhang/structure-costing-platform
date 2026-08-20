@@ -35,7 +35,11 @@ class BomAnnualPartPriceCreate(BaseModel):
     part_number: str = Field(..., min_length=1, max_length=50, description="零件号")
     part_name: str | None = Field(None, max_length=200, description="零件名称")
     unit: str = Field("pcs", min_length=1, max_length=20, description="计量单位")
-    unit_price: Decimal = Field(..., ge=0, description="单价(元/单位)，Decimal 保留4位小数")
+    unit_price: Decimal = Field(
+        ...,
+        ge=0,
+        description="单价(元/单位)，≥0；为 0 表示成品核价不计入该件（如结构胶）",
+    )
     supply_type: str = Field(..., min_length=1, max_length=50, description="原供货类型")
     supplier_name: str | None = Field(None, max_length=100, description="供应商")
     remark: str | None = Field(None, description="备注")
@@ -56,7 +60,11 @@ class BomAnnualPartPriceUpdate(BaseModel):
 
     part_name: str | None = Field(None, max_length=200, description="零件名称")
     unit: str | None = Field(None, min_length=1, max_length=20, description="计量单位")
-    unit_price: Decimal = Field(..., ge=0, description="单价(元/单位)，Decimal 保留4位小数")
+    unit_price: Decimal = Field(
+        ...,
+        ge=0,
+        description="单价(元/单位)，≥0；为 0 表示成品核价不计入该件（如结构胶）",
+    )
     supply_type: str | None = Field(None, min_length=1, max_length=50, description="原供货类型")
     supplier_name: str | None = Field(None, max_length=100, description="供应商")
     remark: str | None = Field(None, description="备注")

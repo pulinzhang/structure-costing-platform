@@ -287,6 +287,7 @@ class StampingPartService:
     def delete(self, db: Session, part_id: int) -> None:
         """删除零件（硬删除，不写审计字段）。"""
         self.repository.delete(db, part_id)
+        db.commit()
 
     def create(
         self,
@@ -297,7 +298,10 @@ class StampingPartService:
         audit = audit_create(current_user)
         part_data.created_by = audit["created_by"]
         part_data.updated_by = audit["updated_by"]
-        return self.repository.create(db, part_data)
+        part = self.repository.create(db, part_data)
+        db.commit()
+        db.refresh(part)
+        return part
 
     def bulk_create(
         self,
@@ -309,7 +313,9 @@ class StampingPartService:
         for row in parts_data:
             row.created_by = audit["created_by"]
             row.updated_by = audit["updated_by"]
-        return self.repository.bulk_create(db, parts_data)
+        parts = self.repository.bulk_create(db, parts_data)
+        db.commit()
+        return parts
 
     def update(
         self,
@@ -320,7 +326,11 @@ class StampingPartService:
     ) -> StampingPart | None:
         payload: StampingPartPatch = {**update_data}
         payload["updated_by"] = display_name(current_user)
-        return self.repository.update(db, part_id, payload)
+        part = self.repository.update(db, part_id, payload)
+        if part is not None:
+            db.commit()
+            db.refresh(part)
+        return part
 
     def batch_delete(
         self,
@@ -372,6 +382,8 @@ class StampingPartService:
         process = process_repo.update(db, process_id, payload)
         if not process:
             raise NotFoundException(f"工序不存在: id={process_id}")
+        db.commit()
+        db.refresh(process)
         return StampingProcessResponse.model_validate(process)
 
     def batch_update_processes(
@@ -397,5 +409,6 @@ class StampingPartService:
                 continue
             if process_repo.update(db, item.id, payload):
                 count += 1
+        db.commit()
         logger.info("batch_update_processes 完成，更新了 %s 条", count)
         return count

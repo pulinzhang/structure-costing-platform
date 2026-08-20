@@ -5,7 +5,9 @@ from __future__ import annotations
 import logging
 import uuid
 from datetime import datetime, timedelta
+from typing import cast
 
+from sqlalchemy.engine import Engine
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -43,6 +45,16 @@ class BomWeldingProcessBreakdownGenerateLogService:
 
     def __init__(self) -> None:
         self.repository = BomWeldingProcessBreakdownGenerateLogRepository()
+
+    def _ensure_processing_lock_index(self, db: Session) -> None:
+        """DDL 用独立连接；commit 在 Service（不进业务 Session）。"""
+        if self.repository.is_processing_lock_index_ensured():
+            return
+        bind = cast(Engine, db.get_bind())
+        with bind.connect() as conn:
+            self.repository.apply_processing_lock_index(conn)
+            conn.commit()
+        self.repository.mark_processing_lock_index_ensured()
 
     def list_logs(
         self,
@@ -127,7 +139,7 @@ class BomWeldingProcessBreakdownGenerateLogService:
         operator_id: int | None = None,
         operator_name: str | None = None,
     ) -> BomWeldingProcessBreakdownGenerateLog:
-        self.repository.ensure_processing_lock_index(db)
+        self._ensure_processing_lock_index(db)
         self._expire_stale_processing(
             db,
             location=location,

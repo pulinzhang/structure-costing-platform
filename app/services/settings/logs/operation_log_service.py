@@ -84,6 +84,7 @@ class OperationLogService:
                     detail=detail,
                 ),
             )
+            db.commit()
         except Exception:
             logger.exception("写入操作日志失败: %s %s", method, path)
             try:

@@ -1,10 +1,10 @@
 """冲压加工费计算批次日志 Repository。"""
 
 import logging
-from typing import Optional, cast
+from typing import Optional
 
 from sqlalchemy import text
-from sqlalchemy.engine import Engine
+from sqlalchemy.engine import Connection
 from sqlalchemy.orm import Session
 
 from app.models.stamping import StampingProcessFeeCalcLog
@@ -31,14 +31,15 @@ class StampingProcessFeeCalcLogRepository:
 
     _lock_index_ensured = False
 
-    def ensure_processing_lock_index(self, db: Session) -> None:
-        if StampingProcessFeeCalcLogRepository._lock_index_ensured:
-            return
-        bind = cast(Engine, db.get_bind())
-        with bind.connect() as conn:
-            conn.execute(text(_PROCESSING_LOCK_INDEX_SQL))
-            conn.commit()
+    def apply_processing_lock_index(self, conn: Connection) -> None:
+        """在调用方连接上执行 DDL；不 commit（由 Service 提交）。"""
+        conn.execute(text(_PROCESSING_LOCK_INDEX_SQL))
+
+    def mark_processing_lock_index_ensured(self) -> None:
         StampingProcessFeeCalcLogRepository._lock_index_ensured = True
+
+    def is_processing_lock_index_ensured(self) -> bool:
+        return StampingProcessFeeCalcLogRepository._lock_index_ensured
 
     def get_by_id(self, db: Session, log_id: int) -> Optional[StampingProcessFeeCalcLog]:
         return (

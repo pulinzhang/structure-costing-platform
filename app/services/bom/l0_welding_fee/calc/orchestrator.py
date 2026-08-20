@@ -363,6 +363,8 @@ class BomL0WeldingFeeCalcOrchestrator:
                     "updated_by": display_name(current_user) or None,
                 },
             )
+        else:
+            db.commit()
 
         report(100, "计算完成")
         logger.info(

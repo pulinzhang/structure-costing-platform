@@ -122,7 +122,7 @@ export function annualPartPriceTemplate() {
                                 重置
                             </button>
                         </div>
-                        <p class="mt-2 text-[10px] text-[#555555]">批量删除 / 审核 / 反审核须同时选定基地和年度（与上传条件对等）。已审核记录不可删除、不可修改。</p>
+                        <p class="mt-2 text-[10px] text-[#555555]">批量删除 / 审核 / 反审核须同时选定基地和年度（与上传条件对等）。已审核记录不可删除、不可修改。单价 ≥ 0；为 0 时成品核价不计入该件（如结构胶）。</p>
                     </div>
                 </div>
 
@@ -153,7 +153,8 @@ export function annualPartPriceTemplate() {
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">零件号</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">零件名称</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">单位</th>
-                                <th class="px-2 py-2 text-right text-[9px] font-semibold tracking-[0.06em] text-[#FF1E27]/90 bg-[#1A080A]">单价</th>
+                                <th class="px-2 py-2 text-right text-[9px] font-semibold tracking-[0.06em] text-[#FF1E27]/90 bg-[#1A080A]"
+                                    title="≥0；填 0 表示成品核价不计入该件（如结构胶）">单价</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">原供货类型</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">供应商</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">备注</th>
@@ -297,7 +298,11 @@ function editDrawerHtml() {
                             <label class="text-[10px] text-[#777777] mb-1 block">单价 <span class="text-[#d32f2f]">*</span></label>
                             <input type="text" id="annualEditUnitPrice" inputmode="decimal" required
                                    class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#ffffff] font-mono rounded focus:outline-none focus:border-[#ff5252]"
-                                   placeholder="保留4位小数，如 0.1750" autocomplete="off">
+                                   placeholder="≥0，保留4位小数，如 0.1750" autocomplete="off">
+                            <p class="mt-1.5 text-[10px] text-[#555555] leading-relaxed">
+                                须 <span class="text-[#8E8E93]">≥ 0</span>，不可为负。
+                                <span class="text-[#8E8E93]">填 0</span> 表示成品核价<span class="text-[#9e9e9e]">不计入</span>该零件成本（如结构胶）；大于 0 按单价 × 用量计入。
+                            </p>
                         </div>
                     </div>
                     <div>

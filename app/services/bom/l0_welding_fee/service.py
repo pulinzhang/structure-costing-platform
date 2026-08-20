@@ -87,6 +87,8 @@ class BomL0WeldingFeeService:
         )
         if not updated:
             raise BusinessException(f"成品焊接费记录不存在: id={fee_id}")
+        db.commit()
+        db.refresh(updated)
         return self._to_vo(db, updated)
 
     def get_by_id(self, db: Session, fee_id: int) -> BomL0WeldingFeeVO | None:

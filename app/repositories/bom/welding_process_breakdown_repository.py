@@ -490,17 +490,12 @@ class BomWeldingProcessBreakdownRepository:
         self,
         db: Session,
         data: BomWeldingProcessBreakdownNodeWrite,
-        *,
-        commit: bool = False,
     ) -> BomWeldingProcessBreakdownNode:
         row = model_from_payload(BomWeldingProcessBreakdownNode, data)
         if not row.audit_status:
             row.audit_status = AUDIT_PENDING
         db.add(row)
-        if commit:
-            db.commit()
-        else:
-            db.flush()
+        db.flush()
         db.refresh(row)
         return row
 
@@ -508,15 +503,10 @@ class BomWeldingProcessBreakdownRepository:
         self,
         db: Session,
         data: BomWeldingProcessBreakdownLineWrite,
-        *,
-        commit: bool = False,
     ) -> BomWeldingProcessBreakdownLine:
         row = model_from_payload(BomWeldingProcessBreakdownLine, data)
         db.add(row)
-        if commit:
-            db.commit()
-        else:
-            db.flush()
+        db.flush()
         db.refresh(row)
         return row
 
@@ -525,17 +515,12 @@ class BomWeldingProcessBreakdownRepository:
         db: Session,
         node_id: int,
         update_data: BomWeldingProcessBreakdownNodePatch,
-        *,
-        commit: bool = True,
     ) -> BomWeldingProcessBreakdownNode | None:
         row = self.get_node_by_id(db, node_id)
         if not row:
             return None
         apply_payload_fields(row, update_data)
-        if commit:
-            db.commit()
-        else:
-            db.flush()
+        db.flush()
         db.refresh(row)
         return row
 
@@ -544,17 +529,12 @@ class BomWeldingProcessBreakdownRepository:
         db: Session,
         line_id: int,
         update_data: BomWeldingProcessBreakdownLinePatch,
-        *,
-        commit: bool = True,
     ) -> BomWeldingProcessBreakdownLine | None:
         row = self.get_line_by_id(db, line_id)
         if not row:
             return None
         apply_payload_fields(row, update_data)
-        if commit:
-            db.commit()
-        else:
-            db.flush()
+        db.flush()
         db.refresh(row)
         return row
 
@@ -565,7 +545,6 @@ class BomWeldingProcessBreakdownRepository:
         location: str,
         vehicle_model: str,
         bom_version: str,
-        commit: bool = True,
     ) -> int:
         count = (
             db.query(BomWeldingProcessBreakdownNode)
@@ -579,10 +558,7 @@ class BomWeldingProcessBreakdownRepository:
             )
             .delete(synchronize_session=False)
         )
-        if commit:
-            db.commit()
-        else:
-            db.flush()
+        db.flush()
         logger.info(
             "删除未审核焊接工艺拆解: %s/%s/%s count=%s",
             location,
@@ -622,7 +598,7 @@ class BomWeldingProcessBreakdownRepository:
             ),
             values,
         )
-        db.commit()
+        db.flush()
         return count
 
     def reverse_by_scope(
@@ -655,5 +631,5 @@ class BomWeldingProcessBreakdownRepository:
             ),
             values,
         )
-        db.commit()
+        db.flush()
         return count

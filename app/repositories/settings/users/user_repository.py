@@ -114,7 +114,7 @@ class UserRepository:
     def create(self, db: Session, data: UserInsertPayload) -> User:
         user = model_from_payload(User, data)
         db.add(user)
-        db.commit()
+        db.flush()
         db.refresh(user)
         return user
 
@@ -123,7 +123,7 @@ class UserRepository:
         if not user:
             return None
         apply_payload_fields(user, data, skip=frozenset({"id", "created_by", "created_at"}))
-        db.commit()
+        db.flush()
         db.refresh(user)
         return user
 
@@ -132,7 +132,7 @@ class UserRepository:
         if not user:
             return False
         db.delete(user)
-        db.commit()
+        db.flush()
         return True
 
     def count(self, db: Session) -> int:

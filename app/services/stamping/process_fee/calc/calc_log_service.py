@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import uuid
 from datetime import timedelta
+from typing import cast
 
+from sqlalchemy.engine import Engine
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -39,6 +41,16 @@ class ProcessFeeCalcLogService:
     ) -> None:
         self.calc_log_repo = calc_log_repo or StampingProcessFeeCalcLogRepository()
 
+    def _ensure_processing_lock_index(self, db: Session) -> None:
+        """DDL 用独立连接；commit 在 Service（不进业务 Session）。"""
+        if self.calc_log_repo.is_processing_lock_index_ensured():
+            return
+        bind = cast(Engine, db.get_bind())
+        with bind.connect() as conn:
+            self.calc_log_repo.apply_processing_lock_index(conn)
+            conn.commit()
+        self.calc_log_repo.mark_processing_lock_index_ensured()
+
     def begin_processing(
         self,
         db: Session,
@@ -48,7 +60,7 @@ class ProcessFeeCalcLogService:
         operator_name: str | None,
     ) -> StampingProcessFeeCalcLog:
         location, supplier = require_scope(dto)
-        self.calc_log_repo.ensure_processing_lock_index(db)
+        self._ensure_processing_lock_index(db)
         self.expire_stale_processing(
             db,
             year=dto.year,

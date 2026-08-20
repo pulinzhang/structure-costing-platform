@@ -847,10 +847,11 @@ def export_process_sheet(
     note["A1"].font = note_font_title
     note.merge_cells("A1:C1")
     note.row_dimensions[1].height = 24
+    # 用户看到的是纯中文+符号，没有下划线变量名
     note["A2"] = (
-        f"本批次参数：钢材密度 ρ_steel={density_text} g/cm³；"
-        f"材料损耗率 λ={loss_rate_text}（{loss_permille_text}‰）；"
-        f"废料回收率 η={recovery_text}（{recovery_percent_text}%）"
+        f"本批次参数：钢材密度 ρ（柔 Rho）={density_text} g/cm³；"
+        f"材料损耗率 λ（拉姆达 Lambda）={loss_rate_text}（{loss_permille_text}‰）；"
+        f"废料回收率 η（伊塔 Eta）={recovery_text}（{recovery_percent_text}%）"
     )
     note["A2"].font = meta_font
     note.merge_cells("A2:C2")
@@ -931,6 +932,102 @@ def export_process_sheet(
     note.column_dimensions["A"].width = 14
     note.column_dimensions["B"].width = 18
     note.column_dimensions["C"].width = 52
+
+    # 附录：负公差说明（通俗口径，供采购/核价对照）
+    tip = workbook.create_sheet("负公差说明")
+    tip_title_font = Font(name="微软雅黑", size=12, bold=True, color="1F1F1F")
+    tip_section_font = Font(name="微软雅黑", size=10, bold=True, color="FFFFFF")
+    tip_body_font = Font(name="微软雅黑", size=10, color="333333")
+    tip_section_fill = PatternFill("solid", fgColor="455A64")
+    tip_warn_fill = PatternFill("solid", fgColor="FFF3E0")
+    tip_wrap = Alignment(horizontal="left", vertical="center", wrap_text=True)
+
+    tip["A1"] = "为什么「负公差供料」时，按本表核价采购冲压件可能吃亏？"
+    tip["A1"].font = tip_title_font
+    tip.merge_cells("A1:B1")
+    tip.row_dimensions[1].height = 28
+
+    tip["A2"] = (
+        "本页是业务提醒，不是改公式。核价仍按「单件」「核价口径」页执行；"
+        "这里只说明：名义料厚核价 与 负公差实料 之间，钱差在哪里。"
+    )
+    tip["A2"].font = meta_font
+    tip.merge_cells("A2:B2")
+    tip.row_dimensions[2].height = 36
+
+    tip_sections: list[tuple[str, str]] = [
+        (
+            "一句话结论",
+            "本表用工艺卡上的「名义料厚」算材料消耗；钢厂/冲压厂实际常按「负公差」"
+            "（比名义更薄一点）交货。按名义厚度核出来的采购价，往往高于供应商真实用料成本——"
+            "差额多半落在供应商侧，采购侧更容易吃亏。",
+        ),
+        (
+            "本表怎么算材料",
+            "预估单件材料消耗 M ≈ 长 × 宽 × 料厚 × 密度 ÷ 可制件数。"
+            "料厚取工艺文件里的名义值（例如写 0.80mm），"
+            "公式里没有再扣「厚度公差」。钢材价也按名义厚度档匹配。",
+        ),
+        (
+            "负公差是什么意思",
+            "钢板允许在标准范围内略薄于名义厚度交货，例如名义 0.80mm，"
+            "实际可能到 0.76mm 左右。这叫负公差，通常仍合格，行业里很常见。"
+            "同面积的料片，实际更薄 → 实际更轻 → 按吨买钢时，开出同样多片料更省吨。",
+        ),
+        (
+            "钱差怎么来的（通俗对比）",
+            "① 核价侧：按名义厚度算 M → 材料费偏「厚」→ 冲压件最终价偏高；"
+            "② 供应商用料：常拿到负公差板 → 同样开料更省钢材重量 → 真实材料成本偏低；"
+            "③ 结果：采购侧按「偏厚」的理论价买件，供应商按「偏薄」的实料做件，"
+            "厚度差变成供应商利润空间。"
+            "粗算：厚度薄 5%，材料费部分大约也高估约 5%（加工费等另计）。",
+        ),
+        (
+            "为什么净重/废料扣不回来",
+            "表里的零件净重多半也是工艺/理论重，不是入厂实称。"
+            "名义厚度算消耗、名义净重算废料，纸面上自洽，"
+            "但负公差带来的「实料更轻」不会自动反映到核价里把采购价扣回去。"
+            "钢材联动价通常仍落在同一厚度价档，也不会因为更薄就自动降吨价补偿。",
+        ),
+        (
+            "这不是公式写错",
+            "名义厚度核价是常见采购侧口径，便于统一、可复核。"
+            "吃亏来自「名义核价 vs 负公差供料」的行业价差，不是 Excel 公式算错。"
+            "要收口，靠商务/工艺约定，而不是改长×宽×厚本身。",
+        ),
+        (
+            "实务上可以怎么谈",
+            "① 合同约定交货厚度带（中值、禁止极端负公差等）；"
+            "② 大宗件抽检实厚，超约定则议价或补差；"
+            "③ 个别高额件单独谈厚度补偿或按中值核价；"
+            "④ 与冲压厂、钢厂口径对齐后再锁年度价。"
+            "具体条款以采购与质量约定为准，本页仅作核价对照说明。",
+        ),
+    ]
+    row_idx = 4
+    for section_title, section_body in tip_sections:
+        title_cell = tip.cell(row_idx, 1, section_title)
+        title_cell.font = tip_section_font
+        title_cell.fill = tip_section_fill
+        title_cell.alignment = tip_wrap
+        title_cell.border = thin
+        tip.merge_cells(start_row=row_idx, start_column=1, end_row=row_idx, end_column=2)
+        tip.row_dimensions[row_idx].height = 22
+        row_idx += 1
+
+        body_cell = tip.cell(row_idx, 1, section_body)
+        body_cell.font = tip_body_font
+        body_cell.alignment = tip_wrap
+        body_cell.border = thin
+        if section_title == "一句话结论":
+            body_cell.fill = tip_warn_fill
+        tip.merge_cells(start_row=row_idx, start_column=1, end_row=row_idx, end_column=2)
+        tip.cell(row_idx, 2).border = thin
+        tip.row_dimensions[row_idx].height = 72 if len(section_body) > 80 else 48
+        row_idx += 2
+
+    tip.column_dimensions["A"].width = 22
+    tip.column_dimensions["B"].width = 88
 
     buffer = BytesIO()
     workbook.save(buffer)

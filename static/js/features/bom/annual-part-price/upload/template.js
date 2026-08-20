@@ -158,13 +158,11 @@ export function annualPartPriceUploadTemplate() {
                         <div>
                             <h6 class="text-[10px] uppercase tracking-wider text-[#616161] mb-2">Excel 列</h6>
                             <ul class="list-disc list-inside text-xs text-[#616161] space-y-1.5">
-                                <li><span class="text-[#9e9e9e]">零件号</span>：取价主键，如 QR36410</li>
-                                <li><span class="text-[#9e9e9e]">零件名称</span>：可选，如 焊接方螺母</li>
+                                <li><span class="text-[#9e9e9e]">零件号</span>：必填</li>
+                                <li><span class="text-[#9e9e9e]">零件名称</span> / <span class="text-[#9e9e9e]">供应商</span> / <span class="text-[#9e9e9e]">备注</span>：可选</li>
                                 <li><span class="text-[#9e9e9e]">单位</span>：默认 pcs</li>
-                                <li><span class="text-[#9e9e9e]">单价</span>：元/单位，固定四位小数，允许 0</li>
+                                <li><span class="text-[#9e9e9e]">单价</span>：≥0，四位小数；<span class="text-[#9e9e9e]">0 = 核价不计入</span>（如结构胶）</li>
                                 <li><span class="text-[#9e9e9e]">原供货类型</span>：如 标准件 / 沿用 / 胶块</li>
-                                <li><span class="text-[#9e9e9e]">供应商</span>：可选</li>
-                                <li><span class="text-[#9e9e9e]">备注</span>：可选</li>
                             </ul>
                         </div>
                         <div>
@@ -181,12 +179,9 @@ export function annualPartPriceUploadTemplate() {
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-[#222222]">
-                                        <tr><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">501004437AA</td><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">中通道后纵梁本体II</td><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">pcs</td><td class="px-2 py-1.5 text-[11px] text-right font-mono tabular-nums text-[#9e9e9e]">2.1300</td><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">沿用</td></tr>
                                         <tr><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">QR36410</td><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">焊接方螺母</td><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">pcs</td><td class="px-2 py-1.5 text-[11px] text-right font-mono tabular-nums text-[#9e9e9e]">0.1750</td><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">标准件</td></tr>
-                                        <tr><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">504000341AA</td><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">左D柱下结构增强胶块</td><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">pcs</td><td class="px-2 py-1.5 text-[11px] text-right font-mono tabular-nums text-[#9e9e9e]">31.4900</td><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">胶块</td></tr>
-                                        <tr><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">Q1980620</td><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">承面凸焊螺栓 M6X20</td><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">pcs</td><td class="px-2 py-1.5 text-[11px] text-right font-mono tabular-nums text-[#9e9e9e]">0.0620</td><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">标准件</td></tr>
-                                        <tr><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">TBD</td><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">右D柱上结构增强胶块（需替换正式号）</td><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">pcs</td><td class="px-2 py-1.5 text-[11px] text-right font-mono tabular-nums text-[#9e9e9e]">19.3600</td><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">胶块</td></tr>
-                                        <tr><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">T15-5400791</td><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">左前卷收器安装板</td><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">pcs</td><td class="px-2 py-1.5 text-[11px] text-right font-mono tabular-nums text-[#9e9e9e]">0.0000</td><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">沿用</td></tr>
+                                        <tr><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">501004437AA</td><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">中通道后纵梁本体II</td><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">pcs</td><td class="px-2 py-1.5 text-[11px] text-right font-mono tabular-nums text-[#9e9e9e]">2.1300</td><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">沿用</td></tr>
+                                        <tr><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">M14-4102311</td><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">支装抗冲击结构胶</td><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">mm</td><td class="px-2 py-1.5 text-[11px] text-right font-mono tabular-nums text-[#9e9e9e]">0.0000</td><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">结构胶</td></tr>
                                     </tbody>
                                 </table>
                             </div>
@@ -194,10 +189,8 @@ export function annualPartPriceUploadTemplate() {
                         <div>
                             <h6 class="text-[10px] uppercase tracking-wider text-[#616161] mb-2">写入规则</h6>
                             <ul class="list-disc list-inside text-xs text-[#616161] space-y-1.5">
-                                <li>基地、年度在页面选择，不写进 Excel</li>
-                                <li>唯一键：基地 + 年度 + 零件号</li>
-                                <li>已存在则更新单价/名称等，不存在则新增</li>
-                                <li>仅支持 .xlsx，同步导入；可点「下载模板」拿生产样例</li>
+                                <li>基地、年度在页面选；唯一键 = 基地 + 年度 + 零件号</li>
+                                <li>同键则更新，否则新增；仅 .xlsx</li>
                             </ul>
                         </div>
                     </div>

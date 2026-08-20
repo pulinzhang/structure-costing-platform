@@ -168,6 +168,8 @@ class BomService:
                     remark=data.remark,
                 ),
             )
+            db.commit()
+            db.refresh(row)
             vo = BomSnapshotVO.model_validate(row)
             vo.node_count = 0
             return vo, None
@@ -185,6 +187,7 @@ class BomService:
             return "BOM 清单不存在"
         try:
             self.snapshot_repo.delete(db, row)
+            db.commit()
             return None
         except Exception as exc:
             db.rollback()
@@ -251,6 +254,8 @@ class BomService:
                     sketch_url=data.sketch_url,
                 ),
             )
+            db.commit()
+            db.refresh(row)
             return self._to_node_vo(row), None
         except Exception as exc:
             db.rollback()
@@ -263,6 +268,7 @@ class BomService:
             return "节点不存在"
         try:
             self.node_repo.delete(db, row)
+            db.commit()
             return None
         except Exception as exc:
             db.rollback()
