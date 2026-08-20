@@ -5,7 +5,7 @@
  * 密度按 4 位小数；各类「率」界面按 2 位小数（‰ / %），提交时再换算为小数串。
  */
 
-import { settingsTemplate } from './template.js?v=13';
+import { settingsTemplate } from './template.js?v=14';
 
 const API = '/api/settings/system/config';
 const DEFAULT_APP_NAME = '汽车冲压件自动核价平台';
@@ -14,6 +14,7 @@ const DEFAULT_LOSS_PERMILLE = '3.00';
 const DEFAULT_RECOVERY_PERCENT = '97.00';
 const DEFAULT_FINISHED_FINANCE_PERCENT = '2.00';
 const DEFAULT_FINISHED_MANAGEMENT_PERCENT = '2.00';
+const DEFAULT_FINISHED_WAREHOUSE_PACKAGING_PERCENT = '1.00';
 const DEFAULT_FINISHED_SCRAP_PERMILLE = '3.00';
 const DEFAULT_FINISHED_PRETAX_PROFIT_PERCENT = '2.00';
 
@@ -23,6 +24,7 @@ const RATE_INPUT_IDS = [
     'settingsScrapRecoveryPercent',
     'settingsFinishedFinancePercent',
     'settingsFinishedManagementPercent',
+    'settingsFinishedWarehousePackagingPercent',
     'settingsFinishedScrapPermille',
     'settingsFinishedPretaxProfitPercent',
 ];
@@ -73,6 +75,7 @@ function applyFormValues({
     recoveryPercent,
     financePercent,
     managementPercent,
+    warehousePackagingPercent,
     scrapPermille,
     pretaxProfitPercent,
 }) {
@@ -86,6 +89,10 @@ function applyFormValues({
     if (financeEl) financeEl.value = financePercent;
     const managementEl = document.getElementById('settingsFinishedManagementPercent');
     if (managementEl) managementEl.value = managementPercent;
+    const warehousePackagingEl = document.getElementById(
+        'settingsFinishedWarehousePackagingPercent',
+    );
+    if (warehousePackagingEl) warehousePackagingEl.value = warehousePackagingPercent;
     const scrapEl = document.getElementById('settingsFinishedScrapPermille');
     if (scrapEl) scrapEl.value = scrapPermille;
     const pretaxEl = document.getElementById('settingsFinishedPretaxProfitPercent');
@@ -121,6 +128,7 @@ export const SettingsPage = {
             recoveryPercent: DEFAULT_RECOVERY_PERCENT,
             financePercent: DEFAULT_FINISHED_FINANCE_PERCENT,
             managementPercent: DEFAULT_FINISHED_MANAGEMENT_PERCENT,
+            warehousePackagingPercent: DEFAULT_FINISHED_WAREHOUSE_PACKAGING_PERCENT,
             scrapPermille: DEFAULT_FINISHED_SCRAP_PERMILLE,
             pretaxProfitPercent: DEFAULT_FINISHED_PRETAX_PROFIT_PERCENT,
         });
@@ -155,6 +163,10 @@ export const SettingsPage = {
                 managementPercent: rateToPercentDisplay(
                     data.finished_management_rate, DEFAULT_FINISHED_MANAGEMENT_PERCENT,
                 ),
+                warehousePackagingPercent: rateToPercentDisplay(
+                    data.finished_warehouse_packaging_rate,
+                    DEFAULT_FINISHED_WAREHOUSE_PACKAGING_PERCENT,
+                ),
                 scrapPermille: rateToPermilleDisplay(
                     data.finished_scrap_rate, DEFAULT_FINISHED_SCRAP_PERMILLE,
                 ),
@@ -185,6 +197,9 @@ export const SettingsPage = {
         );
         const managementPercent = parseDecimalInput(
             document.getElementById('settingsFinishedManagementPercent')?.value, 2,
+        );
+        const warehousePackagingPercent = parseDecimalInput(
+            document.getElementById('settingsFinishedWarehousePackagingPercent')?.value, 2,
         );
         const scrapPermille = parseDecimalInput(
             document.getElementById('settingsFinishedScrapPermille')?.value, 2,
@@ -224,6 +239,10 @@ export const SettingsPage = {
             showToast('成品管理费率须为 0~100%', 'warning');
             return;
         }
+        if (!isPercentInRange(warehousePackagingPercent)) {
+            showToast('仓储+包装管理费用率须为 0~100%', 'warning');
+            return;
+        }
         if (!isPermilleInRange(scrapPermille)) {
             showToast('成品报废率须为 0~200‰', 'warning');
             return;
@@ -237,6 +256,9 @@ export const SettingsPage = {
         const scrapRecoveryRate = scaleDecimalByPow10(recoveryPercent, -2, 6);
         const finishedFinanceRate = scaleDecimalByPow10(financePercent, -2, 6);
         const finishedManagementRate = scaleDecimalByPow10(managementPercent, -2, 6);
+        const finishedWarehousePackagingRate = scaleDecimalByPow10(
+            warehousePackagingPercent, -2, 6,
+        );
         const finishedScrapRate = scaleDecimalByPow10(scrapPermille, -3, 6);
         const finishedPretaxProfitRate = scaleDecimalByPow10(pretaxProfitPercent, -2, 6);
         if (
@@ -244,6 +266,7 @@ export const SettingsPage = {
             || scrapRecoveryRate == null
             || finishedFinanceRate == null
             || finishedManagementRate == null
+            || finishedWarehousePackagingRate == null
             || finishedScrapRate == null
             || finishedPretaxProfitRate == null
         ) {
@@ -265,6 +288,7 @@ export const SettingsPage = {
                 scrap_recovery_rate: scrapRecoveryRate,
                 finished_finance_rate: finishedFinanceRate,
                 finished_management_rate: finishedManagementRate,
+                finished_warehouse_packaging_rate: finishedWarehousePackagingRate,
                 finished_scrap_rate: finishedScrapRate,
                 finished_pretax_profit_rate: finishedPretaxProfitRate,
             });
@@ -294,6 +318,12 @@ export const SettingsPage = {
                 managementPercent: data.finished_management_rate != null
                     ? rateToPercentDisplay(data.finished_management_rate, managementPercent)
                     : managementPercent,
+                warehousePackagingPercent: data.finished_warehouse_packaging_rate != null
+                    ? rateToPercentDisplay(
+                        data.finished_warehouse_packaging_rate,
+                        warehousePackagingPercent,
+                    )
+                    : warehousePackagingPercent,
                 scrapPermille: data.finished_scrap_rate != null
                     ? rateToPermilleDisplay(data.finished_scrap_rate, scrapPermille)
                     : scrapPermille,

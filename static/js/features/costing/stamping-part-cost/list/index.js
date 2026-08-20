@@ -10,7 +10,7 @@ import {
     updateCostFilterCapsules,
     shortPartNumber,
     syncBreakdownColumnVisibility,
-} from './template.js?v=40';
+} from './template.js?v=43';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -516,9 +516,11 @@ function showDetailDrawer(row) {
                         单件核算成本
                     </div>
                     <div class="text-[10px] text-[#6E6E73] font-mono">
-                        原材料 R <span class="text-[#E8E8ED]">￥${fmtNum(row.material_net_per_part, 2)}</span>
+                        直接成本 <span class="text-[#E8E8ED]">￥${fmtNum(row.direct_cost, 2)}</span>
+                        <span class="text-[#3A3A42] mx-1">=</span>
+                        R <span class="text-[#E8E8ED]">￥${fmtNum(row.material_net_per_part, 2)}</span>
                         <span class="text-[#3A3A42] mx-1">+</span>
-                        加工费<span class="text-[#E8E8ED]">￥${fmtNum(row.process_fee_amount, 2)}</span>
+                        加工费 <span class="text-[#E8E8ED]">￥${fmtNum(row.process_fee_amount, 2)}</span>
                     </div>
                 </div>
                 ${heroCostHtml}
@@ -561,9 +563,9 @@ function showDetailDrawer(row) {
                 ['废料吨价 Q', `￥${fmtNum(row.scrap_ton_price, 2)} /t`],
             ])}
 
-            ${detailBlock('原材料成本拆解（R = ①−③−③）', [
-                ['③钢材采购成本（含损耗）', `￥${fmtNum(row.material_amount_sheet, 4)}`],
-                ['③损耗废料扣除（回收率）', `￥${fmtNum(row.loss_scrap_deduction, 4)}`],
+            ${detailBlock('原材料成本拆解（R = ①−②−③）', [
+                ['①钢材采购成本（含损耗）', `￥${fmtNum(row.material_amount_sheet, 4)}`],
+                ['②损耗废料扣除（回收率）', `￥${fmtNum(row.loss_scrap_deduction, 4)}`],
                 ['③边角废料扣除（回收率）', `￥${fmtNum(row.process_scrap_deduction, 4)}`],
                 ['废料扣除小计（② + ③）', `￥${fmtNum(row.scrap_amount_sheet, 4)}`],
                 [
@@ -571,6 +573,21 @@ function showDetailDrawer(row) {
                     `<span class="text-[#FF1E27] font-semibold">￥${fmtNum(row.material_net_per_part, 4)}</span>`,
                 ],
                 ['加工费', `￥${fmtNum(row.process_fee_amount, 3)}`],
+            ])}
+
+            ${detailBlock('成品费率费用', [
+                [
+                    '直接成本（R + 加工费）',
+                    `<span class="text-[#E8E8ED] font-semibold">￥${fmtNum(row.direct_cost, 4)}</span>`,
+                ],
+                ['仓储+包装管理费用', `<span class="text-[#6E6E73]">￥${fmtNum(row.finished_warehouse_packaging_fee, 4)}</span>`],
+                ['管理费', `<span class="text-[#6E6E73]">￥${fmtNum(row.finished_management_fee, 4)}</span>`],
+                ['财务费', `<span class="text-[#6E6E73]">￥${fmtNum(row.finished_finance_fee, 4)}</span>`],
+                ['税前利润', `<span class="text-[#6E6E73]">￥${fmtNum(row.finished_pretax_profit_fee, 4)}</span>`],
+                [
+                    '单件成本',
+                    `<span class="text-[#FF1E27] font-semibold">￥${fmtNum(row.unit_cost, 4)}</span>`,
+                ],
             ])}
 
             ${detailBlock('状态与来源', [

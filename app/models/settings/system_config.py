@@ -16,42 +16,48 @@ class SystemConfig(AuditUserMixin, Base):
     steel_density: Mapped[Decimal] = mapped_column(
         Numeric(6, 4),
         nullable=False,
-        default=7.85,
+        default=Decimal("7.85"),
         comment="钢材密度(g/cm3)，默认 7.85",
     )
     material_loss_rate: Mapped[Decimal] = mapped_column(
         Numeric(8, 6),
         nullable=False,
-        default=0.003,
+        default=Decimal("0.003"),
         comment="冲压材料损耗率（小数，默认 0.003=千分之3）",
     )
     scrap_recovery_rate: Mapped[Decimal] = mapped_column(
         Numeric(8, 6),
         nullable=False,
-        default=0.97,
+        default=Decimal("0.97"),
         comment="废料回收率（小数，默认 0.97=97%）",
     )
     finished_finance_rate: Mapped[Decimal] = mapped_column(
         Numeric(8, 6),
         nullable=False,
-        default=0.02,
+        default=Decimal("0.02"),
         comment="成品财务费率（小数，默认 0.02=2%）",
     )
     finished_management_rate: Mapped[Decimal] = mapped_column(
         Numeric(8, 6),
         nullable=False,
-        default=0.02,
+        default=Decimal("0.02"),
         comment="成品管理费率（小数，默认 0.02=2%）",
+    )
+    finished_warehouse_packaging_rate: Mapped[Decimal] = mapped_column(
+        Numeric(8, 6),
+        nullable=False,
+        default=Decimal("0.01"),
+        comment="仓储+包装管理费用率（小数，默认 0.01=1%）",
     )
     finished_scrap_rate: Mapped[Decimal] = mapped_column(
         Numeric(8, 6),
         nullable=False,
-        default=0.003,
+        default=Decimal("0.003"),
         comment="成品报废率（小数，默认 0.003=千分之3）",
     )
     finished_pretax_profit_rate: Mapped[Decimal] = mapped_column(
         Numeric(8, 6),
         nullable=False,
-        default=0.02,
+        default=Decimal("0.02"),
         comment="成品税前利润率（小数，默认 0.02=2%）",
     )

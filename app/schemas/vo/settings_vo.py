@@ -27,6 +27,9 @@ class ConfigVO(BaseModel):
     finished_management_rate: Decimal = Field(
         ..., description="成品管理费率（小数，如 0.02=2%）"
     )
+    finished_warehouse_packaging_rate: Decimal = Field(
+        ..., description="仓储+包装管理费用率（小数，如 0.01=1%）"
+    )
     finished_scrap_rate: Decimal = Field(
         ..., description="成品报废率（小数，如 0.003=千分之3）"
     )
@@ -43,6 +46,7 @@ class ConfigVO(BaseModel):
         "scrap_recovery_rate",
         "finished_finance_rate",
         "finished_management_rate",
+        "finished_warehouse_packaging_rate",
         "finished_scrap_rate",
         "finished_pretax_profit_rate",
     )

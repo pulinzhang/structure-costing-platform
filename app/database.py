@@ -238,6 +238,10 @@ class DatabaseConfig:
             config_new_columns = (
                 ("finished_finance_rate", "NUMERIC(8, 6) NOT NULL DEFAULT 0.02"),
                 ("finished_management_rate", "NUMERIC(8, 6) NOT NULL DEFAULT 0.02"),
+                (
+                    "finished_warehouse_packaging_rate",
+                    "NUMERIC(8, 6) NOT NULL DEFAULT 0.01",
+                ),
                 ("finished_scrap_rate", "NUMERIC(8, 6) NOT NULL DEFAULT 0.003"),
                 (
                     "finished_pretax_profit_rate",
@@ -255,6 +259,28 @@ class DatabaseConfig:
                         )
                     )
                 logger.info("已为 %s 追加列 %s", config_table, column_name)
+
+        cost_table = "stamping_part_costs"
+        if cost_table in table_names:
+            cost_cols = {col["name"] for col in inspector.get_columns(cost_table)}
+            cost_new_columns = (
+                ("direct_cost", "NUMERIC(14, 6)"),
+                ("finished_finance_fee", "NUMERIC(14, 6)"),
+                ("finished_management_fee", "NUMERIC(14, 6)"),
+                ("finished_warehouse_packaging_fee", "NUMERIC(14, 6)"),
+                ("finished_pretax_profit_fee", "NUMERIC(14, 6)"),
+            )
+            for column_name, column_def in cost_new_columns:
+                if column_name in cost_cols:
+                    continue
+                with engine.begin() as conn:
+                    conn.execute(
+                        text(
+                            f"ALTER TABLE {cost_table} "
+                            f"ADD COLUMN {column_name} {column_def}"
+                        )
+                    )
+                logger.info("已为 %s 追加列 %s", cost_table, column_name)
 
 
 class AuxiliaryDatabaseConfig:

@@ -97,6 +97,16 @@ export function settingsTemplate() {
         max: '100',
         placeholder: '2',
     });
+    const warehousePackagingField = suffixInput({
+        id: 'settingsFinishedWarehousePackagingPercent',
+        label: '仓储+包装，管理费用率',
+        tip: '默认 1%',
+        unit: '%',
+        step: '0.01',
+        min: '0',
+        max: '100',
+        placeholder: '1',
+    });
     const scrapField = suffixInput({
         id: 'settingsFinishedScrapPermille',
         label: '报废率',
@@ -162,6 +172,7 @@ export function settingsTemplate() {
                     <div class="p-4 grid grid-cols-1 sm:grid-cols-2 gap-4 content-start flex-1">
                         ${financeField}
                         ${managementField}
+                        ${warehousePackagingField}
                         ${scrapField}
                         ${pretaxField}
                     </div>

@@ -32,7 +32,7 @@ import { pageConfig as stampingProcessFeePage } from './features/stamping/proces
 import { pageConfig as steelPriceListPage }   from './features/costing/steel-price/list/index.js?v=56';
 import { pageConfig as steelPriceCalcPage }    from './features/costing/steel-price/calc/index.js?v=16';
 import { pageConfig as stampingPartCostCalcPage } from './features/costing/stamping-part-cost/calc/index.js?v=9';
-import { pageConfig as stampingPartCostPage } from './features/costing/stamping-part-cost/list/index.js?v=51';
+import { pageConfig as stampingPartCostPage } from './features/costing/stamping-part-cost/list/index.js?v=54';
 import { pageConfig as steelPricePolicyUploadPage } from './features/yishiyiyi/policy/upload/index.js?v=36';
 import { pageConfig as steelPricePolicyDownloadPage } from './features/yishiyiyi/policy/list/index.js?v=30';
 import { pageConfig as basePriceUploadPage } from './features/yishiyiyi/base-price/upload/index.js?v=37';
@@ -45,15 +45,15 @@ import { pageConfig as bomUploadPage }     from './features/bom/material/upload/
 import { pageConfig as bomMaterialListPage } from './features/bom/material/list/index.js?v=3';
 import { pageConfig as bomWeldingUnitPriceUploadPage } from './features/bom/welding-unit-price/upload/index.js?v=6';
 import { pageConfig as bomWeldingUnitPricePage } from './features/bom/welding-unit-price/list/index.js?v=11';
-import { pageConfig as bomAnnualPartPriceUploadPage } from './features/bom/annual-part-price/upload/index.js?v=2';
-import { pageConfig as bomAnnualPartPricePage } from './features/bom/annual-part-price/list/index.js?v=3';
+import { pageConfig as bomAnnualPartPriceUploadPage } from './features/bom/annual-part-price/upload/index.js?v=4';
+import { pageConfig as bomAnnualPartPricePage } from './features/bom/annual-part-price/list/index.js?v=4';
 import { pageConfig as bomWeldingProcessBreakdownGeneratePage } from './features/bom/welding-process-breakdown/generate/index.js?v=5';
 import { pageConfig as bomWeldingProcessBreakdownListPage } from './features/bom/welding-process-breakdown/list/index.js?v=38';
 import { pageConfig as bomL0WeldingFeeCalcPage } from './features/bom/l0-welding-fee/calc/index.js?v=6';
 import { pageConfig as bomL0WeldingFeeListPage } from './features/bom/l0-welding-fee/list/index.js?v=12';
 import { pageConfig as costingPage }        from './features/costing/engine/index.js';
 import { pageConfig as quotationPage }      from './features/quotation/index.js';
-import { pageConfig as settingsPage }       from './features/settings/system/index.js?v=15';
+import { pageConfig as settingsPage }       from './features/settings/system/index.js?v=16';
 import { pageConfig as settingsUsersPage }  from './features/settings/users/index.js?v=12';
 import { pageConfig as settingsLogsPage }   from './features/settings/logs/index.js?v=3';
 import { pageConfig as settingsProfilePage } from './features/settings/profile/index.js?v=9';

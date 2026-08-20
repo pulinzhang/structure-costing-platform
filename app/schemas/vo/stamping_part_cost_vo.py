@@ -60,6 +60,11 @@ class StampingPartCostVO(BaseModel):
     process_scrap_deduction: Decimal | None = None
     scrap_amount_sheet: Decimal | None = None
     material_net_per_part: Decimal | None = None
+    direct_cost: Decimal | None = None
+    finished_finance_fee: Decimal | None = None
+    finished_management_fee: Decimal | None = None
+    finished_warehouse_packaging_fee: Decimal | None = None
+    finished_pretax_profit_fee: Decimal | None = None
     unit_cost: Decimal | None = None
 
     calc_batch_id: str | None = None
@@ -120,6 +125,11 @@ class StampingPartCostVO(BaseModel):
         "process_scrap_deduction",
         "scrap_amount_sheet",
         "material_net_per_part",
+        "direct_cost",
+        "finished_finance_fee",
+        "finished_management_fee",
+        "finished_warehouse_packaging_fee",
+        "finished_pretax_profit_fee",
         "unit_cost",
     )
     def serialize_amount(self, value: Decimal | None) -> str | None:
