@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>整本帮助 · 打印 / PDF · 自动核价平台</title>
+  <link rel="icon" type="image/x-icon" href="/static/assets/favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="helper.css">
+</head>
+<body class="print-book-page">
+  <div class="layout">
+    <aside class="nav no-print" aria-label="帮助导航">
+      <a class="nav-brand" href="index.html">
+        <h1><span class="dot" aria-hidden="true"></span> 使用帮助</h1>
+        <span>PRINT · 整本</span>
+      </a>
+      <div class="nav-label">三大块</div>
+      <div class="block-switch">
+        <a href="index.html">入口总览</a>
+        <a href="help.html">① 帮助</a>
+        <a href="knowledge.html">② 知识库</a>
+        <a href="example.html">③ 样例</a>
+      </div>
+      <div class="nav-label">整本</div>
+      <ul>
+        <li><a href="print-all.html" class="is-active">合并打印</a></li>
+        <li><a href="javascript:window.print()">立即打印</a></li>
+      </ul>
+      <div class="nav-label">快捷</div>
+      <ul>
+        <li><a href="/" target="_blank" rel="noopener noreferrer">进入系统</a></li>
+      </ul>
+    </aside>
+
+    <main class="main">
+      <header class="hero no-print">
+        <div class="eyebrow">Print Book</div>
+        <h1>整本帮助 · 一次打成一份 PDF</h1>
+        <p>
+          本页会自动合并「① 帮助 + ② 知识库 + ③ 样例」。
+          点下方按钮后，在打印对话框里选择「另存为 PDF」，即可得到<strong>一份</strong>文件。
+        </p>
+        <div class="hero-actions">
+          <a class="back-link" href="index.html">← 帮助入口</a>
+          <button type="button" class="btn-print" id="btnPrintAll">打印整本 / 另存 PDF</button>
+        </div>
+      </header>
+
+      <div class="callout ok no-print" id="bookStatus">正在加载三块内容…</div>
+
+      <div id="bookRoot" aria-live="polite"></div>
+
+      <footer class="footer no-print">整本打印 · /helper/print-all.html</footer>
+    </main>
+  </div>
+
+  <script>
+    (function () {
+      const BLOCKS = [
+        { url: 'help.html', title: '① 帮助 · 操作说明' },
+        { url: 'knowledge.html', title: '② 知识库 · 核价方案' },
+        { url: 'example.html', title: '③ 样例 · 青岛 2025-01 T28' },
+      ];
+
+      const bookRoot = document.getElementById('bookRoot');
+      const statusEl = document.getElementById('bookStatus');
+      const btnPrint = document.getElementById('btnPrintAll');
+
+      function stripForPrint(mainEl) {
+        mainEl.querySelectorAll('.hero-actions, .btn-print, .back-link, .footer').forEach((node) => {
+          node.remove();
+        });
+        return mainEl;
+      }
+
+      async function loadBlock(block) {
+        const response = await fetch(block.url, { cache: 'no-store' });
+        if (!response.ok) {
+          throw new Error('无法加载 ' + block.url + '（' + response.status + '）');
+        }
+        const html = await response.text();
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        const main = doc.querySelector('main.main');
+        if (!main) {
+          throw new Error(block.url + ' 缺少 main 内容');
+        }
+
+        const article = document.createElement('article');
+        article.className = 'print-book-block';
+        article.setAttribute('data-source', block.url);
+
+        const banner = document.createElement('div');
+        banner.className = 'print-book-banner print-only';
+        banner.textContent = block.title;
+        article.appendChild(banner);
+
+        const screenLabel = document.createElement('div');
+        screenLabel.className = 'print-book-banner no-print';
+        screenLabel.textContent = block.title;
+        article.appendChild(screenLabel);
+
+        article.appendChild(stripForPrint(main.cloneNode(true)));
+        return article;
+      }
+
+      async function buildBook() {
+        bookRoot.innerHTML = '';
+        statusEl.className = 'callout no-print';
+        statusEl.textContent = '正在加载三块内容…';
+
+        try {
+          const articles = [];
+          for (const block of BLOCKS) {
+            articles.push(await loadBlock(block));
+          }
+          articles.forEach((article) => bookRoot.appendChild(article));
+          statusEl.className = 'callout ok no-print';
+          statusEl.innerHTML =
+            '已合并三块。点击「打印整本 / 另存 PDF」，目标打印机选 <strong>Microsoft Print to PDF</strong> 或「另存为 PDF」。';
+          btnPrint.disabled = false;
+          return true;
+        } catch (error) {
+          statusEl.className = 'callout warn no-print';
+          statusEl.textContent = String(error && error.message ? error.message : error);
+          btnPrint.disabled = true;
+          return false;
+        }
+      }
+
+      btnPrint.addEventListener('click', () => {
+        window.print();
+      });
+
+      buildBook().then((ok) => {
+        const params = new URLSearchParams(window.location.search);
+        if (ok && params.get('auto') === '1') {
+          window.setTimeout(() => window.print(), 400);
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
