@@ -1,4 +1,7 @@
-"""成品月核价 Excel 导出（列表所见 + 材料明细 + 间接费用，核对风排版）。"""
+"""成品月核价 Excel 导出（列表所见 + 材料明细 + 焊接费 + 间接费用，核对风排版）。
+
+金额一律写入系统计算快照；明细 Sheet 仅作佐证，不用 Excel 公式回算。
+"""
 
 from __future__ import annotations
 
@@ -29,6 +32,7 @@ _CALC_LABEL = {
     "partial": "部分",
     "failed": "失败",
 }
+_MONEY_FORMAT = "0.0000"
 
 # 列表所见列（与一览表对齐）
 LIST_HEADERS = [
@@ -154,6 +158,7 @@ class L0AssemblyCostExportService:
         list_sheet_title: str = "成品核价一览",
         items_sheet_title: str = "成品材料明细",
         indirects_sheet_title: str = "成品间接费用",
+        welding_sheet_title: str = "成品焊接费",
     ) -> tuple[str, int]:
         records = self.repository.list_for_export(
             db,
@@ -183,6 +188,20 @@ class L0AssemblyCostExportService:
             resolve_worksheet(wb, items_sheet_title),
             records,
             filter_text=filter_text,
+        )
+        from app.services.bom.l0_welding_fee.export_service import (
+            BomL0WeldingFeeExportService,
+        )
+
+        BomL0WeldingFeeExportService().write_to_workbook(
+            wb,
+            db,
+            year=year,
+            location=location,
+            vehicle_model=vehicle_model,
+            bom_version=bom_version,
+            part_number=part_number,
+            sheet_title=welding_sheet_title,
         )
         self._write_indirects_sheet(
             resolve_worksheet(wb, indirects_sheet_title),
@@ -276,7 +295,10 @@ class L0AssemblyCostExportService:
             title="成品核价一览表",
             filter_text=filter_text,
             count_label=f"共 {len(records)} 条",
-            note="说明：本表与页面列表字段一致（材料 / 焊接 / 月总账 / 间接 / 总费用）；明细见后续 Sheet。",
+            note=(
+                "说明：金额为系统核价快照（材料 / 焊接 / 月总账 / 间接 / 总费用）；"
+                "明细 Sheet 仅作佐证，不以 Excel 公式回算。"
+            ),
             col_count=col_count,
         )
 
@@ -322,9 +344,11 @@ class L0AssemblyCostExportService:
                     cell.fill = _fill(kpi_fill)
                     cell.font = _font(size=10, bold=True, color="B71C1C")
                     cell.alignment = self._right
+                    cell.number_format = _MONEY_FORMAT
                 elif col in LIST_MONEY_COLS:
                     cell.fill = _fill(stripe)
                     cell.alignment = self._right
+                    cell.number_format = _MONEY_FORMAT
                 elif col in {1, 2, 3, 14, 15}:
                     cell.fill = _fill(stripe)
                     cell.alignment = self._center
@@ -433,7 +457,7 @@ class L0AssemblyCostExportService:
             title="成品核价 · 间接费用",
             filter_text=filter_text,
             count_label=f"共 {len(records)} 个成品",
-            note="说明：I1～I8 一一列出；费率类以月总账为基数。",
+            note="说明：I1～I8 一一列出；费率类以月总账为基数（系统快照）。",
             col_count=len(headers),
         )
         self._write_simple_header(ws, header_row, headers, money_cols={10, 11, 12})
@@ -500,6 +524,8 @@ class L0AssemblyCostExportService:
             cell.fill = _fill(stripe)
             if col in money_cols:
                 cell.alignment = self._right
+                if value != "":
+                    cell.number_format = _MONEY_FORMAT
             elif col == 1:
                 cell.alignment = self._center
             else:

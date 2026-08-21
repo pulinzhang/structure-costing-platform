@@ -10,7 +10,6 @@ from sqlalchemy.orm import Session
 
 from app.common.timezone import now
 from app.services.bom.annual_part_price_export_service import BomAnnualPartPriceExportService
-from app.services.bom.l0_welding_fee.export_service import BomL0WeldingFeeExportService
 from app.services.bom.packaging_transport_fee_export_service import (
     BomPackagingTransportFeeExportService,
 )
@@ -40,7 +39,6 @@ class MonthlyBundleExportService:
         self.steel_price = SteelPriceExportService()
         self.process_fee = StampingProcessFeeExportService()
         self.part_cost = StampingPartCostExportService()
-        self.welding_fee = BomL0WeldingFeeExportService()
         self.annual_part_price = BomAnnualPartPriceExportService()
         self.packaging = BomPackagingTransportFeeExportService()
         self.welding_unit_price = BomWeldingUnitPriceExportService()
@@ -66,22 +64,12 @@ class MonthlyBundleExportService:
         wb = Workbook()
         sheet_counts: dict[str, int] = {}
 
+        # 成品核价（含一览/材料明细/焊接费/间接费用）→ 冲压零件核价…
         title, count = self.l0_assembly.write_to_workbook(
             wb,
             db,
             year=year,
             month=month,
-            location=location,
-            vehicle_model=vehicle_model,
-            bom_version=bom_version,
-        )
-        sheet_counts[title] = count
-
-        # 成品侧：核价 → 焊接费；再接冲压零件核价（冲压核价结果须排在成品焊接费之后）
-        title, count = self.welding_fee.write_to_workbook(
-            wb,
-            db,
-            year=year,
             location=location,
             vehicle_model=vehicle_model,
             bom_version=bom_version,
