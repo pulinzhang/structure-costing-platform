@@ -286,7 +286,7 @@ function renderHistoryRows(items) {
                 <td class="py-2 px-2 font-mono text-right tabular-nums ${Number(item.failed_count) > 0 ? 'text-[#ef5350]' : 'text-[#777]'}">${fmtInt(item.failed_count)}</td>
                 <td class="py-2 px-2 text-right whitespace-nowrap">
                     ${isProcessing ? `
-                    <span class="text-[9px] text-[#555]">进行中</span>
+                    <span class="text-[9px] text-[#555] mr-2">进行中</span>
                     ` : `
                     <button type="button"
                             class="calc-view-process-btn text-[9px] text-[#777] hover:text-white mr-2"
@@ -298,11 +298,12 @@ function renderHistoryRows(items) {
                             data-month="${esc(item.month)}"
                             data-location="${esc(item.location || '')}">结果</button>
                     `}
+                    `}
                     ${calcState.canDelete !== false ? `
                     <button type="button"
                             class="calc-delete-log-btn text-[9px] text-[#777] hover:text-[#ef5350]"
-                            data-log-id="${esc(item.id)}">删除</button>` : ''}
-                    `}
+                            data-log-id="${esc(item.id)}"
+                            title="含计算中：删除可释放锁">删除</button>` : ''}
                 </td>
             </tr>
         `;
@@ -332,7 +333,7 @@ async function deleteCalcLog(logId) {
         showToast('无删除权限', 'warning');
         return;
     }
-    if (!window.confirm('确定删除这条计算历史？仅删除日志，不影响已落库的钢材价格。')) {
+    if (!window.confirm('确定删除这条计算历史？计算中的记录删除后将释放锁；仅删除日志，不影响已落库的钢材价格。')) {
         return;
     }
     try {

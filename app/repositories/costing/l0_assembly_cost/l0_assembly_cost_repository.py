@@ -216,12 +216,20 @@ class L0AssemblyCostRepository:
                 audit_status=AUDIT_PENDING,
             )
             db.add(row)
+            db.flush()
             created = True
         else:
             row = existing
             created = False
-            row.items.clear()
-            row.indirects.clear()
+            # 先物理删除子行再插入，避免 SQLite 上 clear()+insert 同 flush 触发唯一约束冲突
+            db.query(L0AssemblyCostItem).filter(
+                L0AssemblyCostItem.assembly_cost_id == row.id
+            ).delete(synchronize_session=False)
+            db.query(L0AssemblyCostIndirect).filter(
+                L0AssemblyCostIndirect.assembly_cost_id == row.id
+            ).delete(synchronize_session=False)
+            db.expire(row, ["items", "indirects"])
+            db.flush()
 
         for name in _MAIN_FIELDS:
             setattr(row, name, getattr(payload, name))

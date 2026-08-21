@@ -88,11 +88,10 @@ class BomWeldingProcessBreakdownGenerateLogService:
         return BomWeldingProcessBreakdownGenerateLogVO.model_validate(record)
 
     def delete_log(self, db: Session, log_id: int) -> bool:
+        """删除拆解日志（含 processing，作僵死锁兜底释放）。"""
         record = self.repository.get_by_id(db, log_id)
         if record is None:
             return False
-        if record.status == STATUS_PROCESSING:
-            raise ValueError("拆解进行中，无法删除该记录")
         deleted = self.repository.delete(db, log_id)
         if not deleted:
             return False
@@ -226,6 +225,11 @@ class BomWeldingProcessBreakdownGenerateLogService:
         message: str,
         detail_text: str | None = None,
     ) -> None:
+        """异常路径：释放 processing 锁为 failed（先 rollback 清脏事务）。"""
+        try:
+            db.rollback()
+        except Exception:
+            pass
         finished_at = now()
         payload: BomWeldingProcessBreakdownGenerateLogPatch = {
             "status": STATUS_FAILED,

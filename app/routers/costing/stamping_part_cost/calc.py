@@ -119,6 +119,10 @@ def _process_calc_in_background(
             )
     except Exception as error:
         try:
+            db.rollback()
+        except Exception:
+            pass
+        try:
             _service.mark_log_failed(
                 db,
                 log_id=log_id,

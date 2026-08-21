@@ -79,10 +79,9 @@ class L0AssemblyCostCalcLogRepository:
         return rows, total
 
     def delete(self, db: Session, log_id: int) -> bool:
+        """删除计算日志（含 processing，作僵死锁兜底释放）。"""
         row = self.get_by_id(db, log_id)
         if row is None:
-            return False
-        if row.status == "processing":
             return False
         db.delete(row)
         db.flush()

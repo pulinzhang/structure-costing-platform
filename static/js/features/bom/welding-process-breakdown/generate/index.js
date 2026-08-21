@@ -339,7 +339,7 @@ function renderHistoryRows(items) {
                 <td class="py-2 px-2 font-mono text-right tabular-nums text-[#777]">${fmtInt(item.line_count)}</td>
                 <td class="py-2 px-2 text-right whitespace-nowrap">
                     ${isProcessing ? `
-                    <span class="text-[9px] text-[#555]">进行中</span>
+                    <span class="text-[9px] text-[#555] mr-2">进行中</span>
                     ` : `
                     <button type="button" class="calc-view-process-btn text-[9px] text-[#777] hover:text-white mr-2"
                             data-log-id="${esc(item.id)}">过程</button>
@@ -349,10 +349,11 @@ function renderHistoryRows(items) {
                             data-model="${esc(item.vehicle_model || '')}"
                             data-version="${esc(item.bom_version || '')}">结果</button>
                     `}
+                    `}
                     ${genState.canDeleteLog ? `
                     <button type="button" class="calc-delete-log-btn text-[9px] text-[#777] hover:text-[#ef5350]"
-                            data-log-id="${esc(item.id)}">删除</button>` : ''}
-                    `}
+                            data-log-id="${esc(item.id)}"
+                            title="含拆解中：删除可释放锁">删除</button>` : ''}
                 </td>
             </tr>
         `;
@@ -378,7 +379,7 @@ function renderHistoryRows(items) {
 
 async function deleteCalcLog(logId) {
     if (!logId || !genState.canDeleteLog) return;
-    if (!window.confirm('确定删除这条拆解历史？仅删除日志，不影响已落库的拆解数据。')) {
+    if (!window.confirm('确定删除这条拆解历史？拆解中的记录删除后将释放锁；仅删除日志，不影响已落库的拆解数据。')) {
         return;
     }
     try {

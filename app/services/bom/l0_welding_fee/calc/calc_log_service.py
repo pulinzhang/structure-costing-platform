@@ -128,6 +128,11 @@ class BomL0WeldingFeeCalcLogService:
         log_id: int,
         detail_text: str,
     ) -> None:
+        """异常路径：释放 processing 锁为 failed（先 rollback 清脏事务）。"""
+        try:
+            db.rollback()
+        except Exception:
+            pass
         self.calc_log_repo.update(
             db,
             log_id,
@@ -202,11 +207,10 @@ class BomL0WeldingFeeCalcLogService:
         return BomL0WeldingFeeCalcLogVO.model_validate(record)
 
     def delete_calc_log(self, db: Session, log_id: int) -> bool:
+        """删除计算日志（含 processing，作僵死锁兜底释放）。"""
         record = self.calc_log_repo.get_by_id(db, log_id)
         if record is None:
             return False
-        if record.status == STATUS_PROCESSING:
-            raise BusinessException("计算进行中，无法删除该记录")
         deleted = self.calc_log_repo.delete(db, log_id)
         if deleted:
             db.commit()

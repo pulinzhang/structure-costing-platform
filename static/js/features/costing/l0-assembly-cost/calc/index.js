@@ -325,7 +325,6 @@ function renderHistoryRows(items) {
         const meta = STATUS_META[row.status] || { label: row.status, className: 'text-[#9e9e9e]' };
         const started = row.started_at ? String(row.started_at).replace('T', ' ').slice(0, 19) : '-';
         const query = `?year=${encodeURIComponent(row.year)}&month=${encodeURIComponent(row.month)}&location=${encodeURIComponent(row.location)}&vehicle_model=${encodeURIComponent(row.vehicle_model)}&bom_version=${encodeURIComponent(row.bom_version)}`;
-        const canDeleteRow = calcState.canDelete && row.status !== 'processing';
         return `
             <tr class="hover:bg-[#1a1a1a]">
                 <td class="py-2 px-2 font-mono text-[#8E8E93] whitespace-nowrap">${esc(started)}</td>
@@ -343,7 +342,7 @@ function renderHistoryRows(items) {
                 <td class="py-2 px-2 text-right whitespace-nowrap">
                     <button data-action="jump-list" data-query="${esc(query)}"
                             class="text-[10px] text-[#9e9e9e] hover:text-white mr-2">结果</button>
-                    ${canDeleteRow ? `<button data-action="delete-log" data-id="${row.id}" class="text-[10px] text-[#ef5350] hover:text-[#ff8a80]">删除</button>` : ''}
+                    ${calcState.canDelete ? `<button data-action="delete-log" data-id="${row.id}" class="text-[10px] text-[#ef5350] hover:text-[#ff8a80]" title="含计算中：删除可释放锁">删除</button>` : ''}
                 </td>
             </tr>
         `;
@@ -352,7 +351,7 @@ function renderHistoryRows(items) {
 
 async function deleteCalcLog(logId) {
     if (!calcState.canDelete) return;
-    if (!window.confirm('确认删除该计算日志？')) return;
+    if (!window.confirm('确认删除该计算日志？计算中的记录删除后将释放锁，可重新提交。')) return;
     try {
         await HttpClient.delete(`${CALC_LOGS_API}/${logId}`);
         showToast('已删除计算日志', 'success');

@@ -85,6 +85,11 @@ class L0AssemblyCostCalcLogService:
         return row
 
     def mark_log_failed(self, db: Session, *, log_id: int, detail_text: str) -> None:
+        """异常路径：释放 processing 锁为 failed（先 rollback 清脏事务）。"""
+        try:
+            db.rollback()
+        except Exception:
+            pass
         row = self.calc_log_repo.get_by_id(db, log_id)
         if row is None:
             return

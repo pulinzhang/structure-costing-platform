@@ -152,6 +152,10 @@ def _process_steel_price_calc_in_background(
     except Exception as error:
         logger.exception("钢价计算异常: task_id=%s log_id=%s", task_id, log_id)
         try:
+            db.rollback()
+        except Exception:
+            pass
+        try:
             _calc_orchestrator.mark_log_failed(
                 db,
                 log_id=log_id,

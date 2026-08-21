@@ -112,6 +112,10 @@ def _process_calc_in_background(
             )
     except Exception as error:
         try:
+            db.rollback()
+        except Exception:
+            pass
+        try:
             _service.mark_log_failed(
                 db,
                 log_id=log_id,
@@ -233,7 +237,7 @@ def delete_calc_log(
     if not deleted:
         raise HTTPException(
             status_code=400,
-            detail="计算日志不存在或正在计算中，无法删除",
+            detail="计算日志不存在",
         )
     return ApiResponse.deleted(message="计算日志已删除")
 
