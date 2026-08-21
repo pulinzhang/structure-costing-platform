@@ -391,6 +391,7 @@ const HttpClient = (() => {
                 showToast(msg, 'error');
                 const err = new Error(msg);
                 err.status = response.status;
+                err.data = data.data;
                 throw err;
             }
 

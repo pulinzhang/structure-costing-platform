@@ -53,49 +53,13 @@ class Perm:
 
     MENU_STAMPING_PROCESS_FEE = "menu:stamping-process-fee"  # 冲压加工费列表
     STAMPING_PROCESS_FEE_VIEW = "op:stamping-process-fee:view"  # 查询
-    STAMPING_PROCESS_FEE_UPDATE = "op:stamping-process-fee:update"  # 编辑其它费用 / 确认单价
+    STAMPING_PROCESS_FEE_UPDATE = "op:stamping-process-fee:update"  # 编辑其它费用
     STAMPING_PROCESS_FEE_DELETE = "op:stamping-process-fee:delete"  # 删除
     STAMPING_PROCESS_FEE_APPROVE = "op:stamping-process-fee:approve"  # 审核通过
     STAMPING_PROCESS_FEE_REVERSE = "op:stamping-process-fee:reverse"  # 反审核
     STAMPING_PROCESS_FEE_EXPORT = "op:stamping-process-fee:export"  # 导出
 
-    MENU_YISHIYIYI = "menu:yishiyiyi"  # 一事一议
-
-    MENU_THICKNESS = "menu:thickness"  # 加减价政策
-
-    MENU_STEEL_PRICE_POLICY_UPLOAD = "menu:steel-price-policy-upload"  # 上传
-    STEEL_PRICE_POLICY_UPLOAD_VIEW = "op:steel-price-policy-upload:view"  # 查看
-    STEEL_PRICE_POLICY_UPLOAD_UPLOAD = "op:steel-price-policy-upload:upload"  # 导入
-
-    MENU_STEEL_PRICE_POLICY_DOWNLOAD = "menu:steel-price-policy-download"  # 加减价政策列表
-    STEEL_PRICE_POLICY_DOWNLOAD_VIEW = "op:steel-price-policy-download:view"  # 预览
-    STEEL_PRICE_POLICY_DOWNLOAD_EXPORT = "op:steel-price-policy-download:export"  # 导出
-    STEEL_PRICE_POLICY_DOWNLOAD_DELETE = "op:steel-price-policy-download:delete"  # 批量删除
-
-    MENU_BASE_PRICE = "menu:base-price"  # 基准价格
-
-    MENU_BASE_PRICE_UPLOAD = "menu:base-price-upload"  # 上传
-    BASE_PRICE_UPLOAD_VIEW = "op:base-price-upload:view"  # 查看
-    BASE_PRICE_UPLOAD_UPLOAD = "op:base-price-upload:upload"  # 导入
-
-    MENU_BASE_PRICE_DOWNLOAD = "menu:base-price-download"  # 基准价格列表
-    BASE_PRICE_DOWNLOAD_VIEW = "op:base-price-download:view"  # 预览
-    BASE_PRICE_DOWNLOAD_EXPORT = "op:base-price-download:export"  # 导出
-    BASE_PRICE_DOWNLOAD_DELETE = "op:base-price-download:delete"  # 批量删除
-
-    MENU_WINNING_THICKNESS_DOWNLOAD = "menu:winning-thickness-download"  # 中标钢厂厚度价格一览表
-    WINNING_THICKNESS_DOWNLOAD_VIEW = "op:winning-thickness-download:view"  # 预览
-    WINNING_THICKNESS_DOWNLOAD_EXPORT = "op:winning-thickness-download:export"  # 导出
-
-    MENU_SCRAP_PRICE = "menu:scrap-price"  # 废料月度销售价
-    SCRAP_PRICE_VIEW = "op:scrap-price:view"  # 查询
-    SCRAP_PRICE_CREATE = "op:scrap-price:create"  # 新增
-    SCRAP_PRICE_UPDATE = "op:scrap-price:update"  # 编辑
-    SCRAP_PRICE_DELETE = "op:scrap-price:delete"  # 删除
-    SCRAP_PRICE_COPY = "op:scrap-price:copy"  # 复制月度模板
-    SCRAP_PRICE_EXPORT = "op:scrap-price:export"  # 导出
-
-    MENU_BOM = "menu:bom"  # 焊接工程（技术码仍为 bom）
+    MENU_BOM = "menu:bom"  # 焊接工程
 
     MENU_BOM_MATERIAL_LIST = "menu:bom-material-list"  # 材料清单
 
@@ -178,11 +142,47 @@ class Perm:
 
     MENU_BOM_L0_WELDING_FEE_LIST = "menu:bom-l0-welding-fee-list"  # 成品焊接费列表
     BOM_L0_WELDING_FEE_LIST_VIEW = "op:bom-l0-welding-fee-list:view"  # 查询
-    BOM_L0_WELDING_FEE_LIST_UPDATE = "op:bom-l0-welding-fee-list:update"  # 编辑其它费用 / 确认单价
+    BOM_L0_WELDING_FEE_LIST_UPDATE = "op:bom-l0-welding-fee-list:update"  # 编辑其它费用
     BOM_L0_WELDING_FEE_LIST_DELETE = "op:bom-l0-welding-fee-list:delete"  # 删除
     BOM_L0_WELDING_FEE_LIST_APPROVE = "op:bom-l0-welding-fee-list:approve"  # 审核通过
     BOM_L0_WELDING_FEE_LIST_REVERSE = "op:bom-l0-welding-fee-list:reverse"  # 反审核
     BOM_L0_WELDING_FEE_LIST_EXPORT = "op:bom-l0-welding-fee-list:export"  # 导出
+
+    MENU_YISHIYIYI = "menu:yishiyiyi"  # 一事一议
+
+    MENU_THICKNESS = "menu:thickness"  # 加减价政策
+
+    MENU_STEEL_PRICE_POLICY_UPLOAD = "menu:steel-price-policy-upload"  # 上传
+    STEEL_PRICE_POLICY_UPLOAD_VIEW = "op:steel-price-policy-upload:view"  # 查看
+    STEEL_PRICE_POLICY_UPLOAD_UPLOAD = "op:steel-price-policy-upload:upload"  # 导入
+
+    MENU_STEEL_PRICE_POLICY_DOWNLOAD = "menu:steel-price-policy-download"  # 加减价政策列表
+    STEEL_PRICE_POLICY_DOWNLOAD_VIEW = "op:steel-price-policy-download:view"  # 预览
+    STEEL_PRICE_POLICY_DOWNLOAD_EXPORT = "op:steel-price-policy-download:export"  # 导出
+    STEEL_PRICE_POLICY_DOWNLOAD_DELETE = "op:steel-price-policy-download:delete"  # 批量删除
+
+    MENU_BASE_PRICE = "menu:base-price"  # 基准价格
+
+    MENU_BASE_PRICE_UPLOAD = "menu:base-price-upload"  # 上传
+    BASE_PRICE_UPLOAD_VIEW = "op:base-price-upload:view"  # 查看
+    BASE_PRICE_UPLOAD_UPLOAD = "op:base-price-upload:upload"  # 导入
+
+    MENU_BASE_PRICE_DOWNLOAD = "menu:base-price-download"  # 基准价格列表
+    BASE_PRICE_DOWNLOAD_VIEW = "op:base-price-download:view"  # 预览
+    BASE_PRICE_DOWNLOAD_EXPORT = "op:base-price-download:export"  # 导出
+    BASE_PRICE_DOWNLOAD_DELETE = "op:base-price-download:delete"  # 批量删除
+
+    MENU_WINNING_THICKNESS_DOWNLOAD = "menu:winning-thickness-download"  # 中标钢厂厚度价格一览表
+    WINNING_THICKNESS_DOWNLOAD_VIEW = "op:winning-thickness-download:view"  # 预览
+    WINNING_THICKNESS_DOWNLOAD_EXPORT = "op:winning-thickness-download:export"  # 导出
+
+    MENU_SCRAP_PRICE = "menu:scrap-price"  # 废料月度销售价
+    SCRAP_PRICE_VIEW = "op:scrap-price:view"  # 查询
+    SCRAP_PRICE_CREATE = "op:scrap-price:create"  # 新增
+    SCRAP_PRICE_UPDATE = "op:scrap-price:update"  # 编辑
+    SCRAP_PRICE_DELETE = "op:scrap-price:delete"  # 删除
+    SCRAP_PRICE_COPY = "op:scrap-price:copy"  # 复制月度模板
+    SCRAP_PRICE_EXPORT = "op:scrap-price:export"  # 导出
 
     MENU_COSTING = "menu:costing"  # 核价
 
@@ -215,7 +215,7 @@ class Perm:
     STAMPING_PART_COST_DELETE = "op:stamping-part-cost:delete"  # 删除
     STAMPING_PART_COST_APPROVE = "op:stamping-part-cost:approve"  # 审核通过
     STAMPING_PART_COST_REVERSE = "op:stamping-part-cost:reverse"  # 反审核
-    STAMPING_PART_COST_EXPORT = "op:stamping-part-cost:export"  # 导出核价结果
+    STAMPING_PART_COST_EXPORT = "op:stamping-part-cost:export"  # 导出工艺清单
 
     MENU_L0_ASSEMBLY_COST_GROUP = "menu:l0-assembly-cost-group"  # 成品核价
 
@@ -233,6 +233,8 @@ class Perm:
 
     MENU_COSTING_ENGINE = "menu:costing-engine"  # 自动核价引擎
     COSTING_VIEW = "op:costing:view"  # 查看
+    COSTING_RUN = "op:costing:run"  # 启动运行
+    COSTING_DELETE = "op:costing:delete"  # 删除 Run
 
     MENU_QUOTATION = "menu:quotation"  # 报价
     QUOTATION_VIEW = "op:quotation:view"  # 查看

@@ -25,6 +25,8 @@ from app.models.bom import (
 )
 from app.models.common import AuditUserMixin
 from app.models.costing import (
+    CostingEngineRun,
+    CostingEngineRunStep,
     L0AssemblyCost,
     L0AssemblyCostCalcLog,
     L0AssemblyCostIndirect,
@@ -71,6 +73,8 @@ __all__ = [
     "BomWeldingProcessBreakdownLine",
     "BomWeldingProcessBreakdownNode",
     "BomWeldingUnitPrice",
+    "CostingEngineRun",
+    "CostingEngineRunStep",
     "L0AssemblyCost",
     "L0AssemblyCostCalcLog",
     "L0AssemblyCostIndirect",

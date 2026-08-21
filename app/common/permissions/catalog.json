@@ -969,6 +969,16 @@
               "code": "op:costing:view",
               "label": "查看",
               "type": "op"
+            },
+            {
+              "code": "op:costing:run",
+              "label": "启动运行",
+              "type": "op"
+            },
+            {
+              "code": "op:costing:delete",
+              "label": "删除 Run",
+              "type": "op"
             }
           ]
         }

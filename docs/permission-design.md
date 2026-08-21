@@ -469,7 +469,9 @@ root
 │   │       ├── op:stamping-part-cost:reverse
 │   │       └── op:stamping-part-cost:export
 │   └── menu:costing-engine                    # 自动核价引擎（路由 page=costing）
-│       └── op:costing:view
+│       ├── op:costing:view
+│       ├── op:costing:run
+│       └── op:costing:delete
 │
 ├── menu:quotation
 │   └── op:quotation:view                      # 功能开发中，预留
@@ -536,7 +538,7 @@ root
 | steel-price-list | `view` / `update` / `delete` / `approve` / `reject` / `reverse` / `export` | 查询；编辑；删除（含批量）；通过（含批量）；驳回；反审核（含批量）；导出 |
 | stamping-part-cost-calc | `view` / `run` / `delete` | 历史/过程；开始计算；删除日志 |
 | stamping-part-cost | `view` / `delete` / `approve` / `reverse` / `export` | 查询；删除（含批量）；审核（含批量）；反审核；导出工艺清单 Excel |
-| costing（菜单码 `menu:costing-engine`） | `view`（`op:costing:view`） | 自动核价引擎 |
+| costing（菜单码 `menu:costing-engine`） | `view` / `run` / `delete` | 检查就绪；启动月度引擎；删除 Run（含 running） |
 | quotation | `view` | 进入占位页 |
 | settings-profile | `view` / `update` / `password` | 查看；改资料/头像；改自己密码 |
 | settings-system | `view` / `update` | 查看系统设置；保存设置 |
