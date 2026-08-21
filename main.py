@@ -287,16 +287,18 @@ def create_app() -> FastAPI:
             headers={"Cache-Control": "no-cache, must-revalidate"},
         )
 
-    # 使用帮助（纯静态说明页）
+    # 使用帮助站（独立静态目录：index / help / knowledge / example + css/img）
+    # /helper → /helper/ ；子页用相对路径，如 help.html、helper.css、img/...
     @app.get("/helper", include_in_schema=False)
-    @app.get("/helper/", include_in_schema=False)
-    async def helper_page():
-        """打开使用帮助"""
-        from fastapi.responses import FileResponse
-        return FileResponse(
-            "static/helper/index.html",
-            headers={"Cache-Control": "no-cache, must-revalidate"},
-        )
+    async def helper_redirect():
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url="/helper/", status_code=302)
+
+    app.mount(
+        "/helper",
+        StaticFiles(directory="static/helper", html=True),
+        name="helper_site",
+    )
 
     # favicon
     @app.get("/favicon.ico", include_in_schema=False)

@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>帮助 · 操作说明 · 自动核价平台</title>
+  <link rel="icon" type="image/x-icon" href="/static/assets/favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="helper.css">
+</head>
+<body>
+  <div class="layout">
+    <aside class="nav">
+      <a class="nav-brand" href="index.html">
+        <h1><span class="dot"></span> 使用帮助</h1>
+        <span>BLOCK · 帮助</span>
+      </a>
+      <div class="nav-label">三大块</div>
+      <div class="block-switch">
+        <a href="index.html">入口总览</a>
+        <a class="is-active" href="help.html">① 帮助</a>
+        <a href="knowledge.html">② 知识库</a>
+        <a href="example.html">③ 样例</a>
+      </div>
+      <div class="nav-label">本页</div>
+      <ul>
+        <li><a href="#start">快速入门</a></li>
+        <li><a href="#menu">菜单地图</a></li>
+        <li><a href="#engine">自动核价引擎</a></li>
+        <li><a href="#export">导出 Excel</a></li>
+        <li><a href="#faq">操作问答</a></li>
+      </ul>
+      <div class="nav-label">快捷</div>
+      <ul>
+        <li><a href="/" target="_blank" rel="noopener noreferrer">进入系统</a></li>
+        <li><a href="javascript:window.print()">打印本页</a></li>
+      </ul>
+    </aside>
+
+    <main class="main">
+      <header class="hero">
+        <div class="eyebrow">Operations Guide</div>
+        <h1>① 帮助 · 怎么操作系统</h1>
+        <p>本块只讲「按钮点哪里、任务怎么跑」。概念与算账见知识库；真实数字见样例（2025·01·青岛·T28）。</p>
+        <div class="hero-actions">
+          <a class="back-link" href="index.html">← 帮助入口</a>
+          <button type="button" class="btn-print" onclick="window.print()">打印 / PDF</button>
+        </div>
+      </header>
+
+      <section id="start">
+        <h2>快速入门</h2>
+        <p class="lead">登录后从左侧 Overlay 导航进入各功能；无权限的菜单会隐藏。</p>
+        <div class="shot-grid">
+          <figure class="shot">
+            <img src="img/00-login.png" alt="登录页">
+            <figcaption>登录页</figcaption>
+          </figure>
+          <figure class="shot">
+            <img src="img/01b-sidebar.png" alt="侧栏导航">
+            <figcaption>侧栏导航</figcaption>
+          </figure>
+        </div>
+        <ol class="steps">
+          <li>
+            <strong>登录</strong>
+            默认管理员账号见登录页提示。会话失效会跳回登录。
+          </li>
+          <li>
+            <strong>打开导航</strong>
+            点左上角菜单展开侧栏：仪表盘 → 冲压工程 → 焊接工程 → 一事一议 → 核价 → 报价 → 设置。
+          </li>
+          <li>
+            <strong>先定维度</strong>
+            上传/计算前确认<strong>基地、项目（车型）、清单版本、年、月</strong>一致，避免算到空范围。
+          </li>
+          <li>
+            <strong>列表只读核对</strong>
+            上传/计算负责写入；列表负责查询、审核、导出。明细请用操作列按钮。
+          </li>
+        </ol>
+        <figure class="shot">
+          <img src="img/01-dashboard.png" alt="仪表盘">
+          <figcaption>仪表盘 · 看缺口与待办</figcaption>
+        </figure>
+      </section>
+
+      <section id="menu">
+        <h2>菜单地图</h2>
+        <p class="lead">侧栏模块与日常动作对应关系（详细「年/月」见知识库）。</p>
+        <table>
+          <thead>
+            <tr><th>菜单</th><th>你在这里做什么</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>冲压工程</td><td>上传工艺与冲次单价；计算/查看冲压加工费</td></tr>
+            <tr><td>焊接工程</td><td>上传<strong>材料清单</strong>（核价主线）、焊接单价、年度零件价、包装运输；拆解焊接并算成品焊接费</td></tr>
+            <tr><td>一事一议</td><td>基准价、加减价政策、废料月度价（钢价联动输入）</td></tr>
+            <tr><td>核价</td><td>钢材联动 → 冲压零件价 → <strong>成品核价</strong>；自动核价引擎；导出合册</td></tr>
+            <tr><td>设置</td><td>系统费率、用户权限、操作日志</td></tr>
+          </tbody>
+        </table>
+        <div class="callout">
+          材料清单在「焊接工程」里维护，但它是整棵核价树的主数据；其它菜单多是给树上的节点挂价钱。
+        </div>
+      </section>
+
+      <section id="engine">
+        <h2>自动核价引擎</h2>
+        <p class="lead">入口只有三个参数：生产基地、年度、月份。先「检查就绪」，再「启动」。</p>
+        <figure class="shot">
+          <img src="img/18-costing-engine.png" alt="自动核价引擎">
+          <figcaption>核价 → 自动核价引擎</figcaption>
+        </figure>
+        <ol class="steps">
+          <li><strong>选范围</strong> 例如样例：青岛 · 2025 · 01。</li>
+          <li><strong>检查就绪</strong> 缺上传/配置会红灯，可点「去处理」跳到对应页。</li>
+          <li><strong>启动</strong> 缺的年度计算结果会自动补算；再跑当月钢材 → 冲压零件价 → 成品核价。</li>
+          <li><strong>看历史</strong> 一个任务通道看进度；卡住的任务可删除后重跑。</li>
+        </ol>
+      </section>
+
+      <section id="export">
+        <h2>导出 Excel</h2>
+        <p class="lead">各列表页有「导出 Excel」；成品核价一览还有「导出核对合册」（多表一本）。</p>
+        <figure class="shot">
+          <img src="img/17-l0-assembly-cost.png" alt="成品核价一览">
+          <figcaption>成品核价一览 · 单表 / 核对合册</figcaption>
+        </figure>
+        <ul>
+          <li>合册：同一文件串联成品价、冲压零件价、加工费、钢材联动、年度价、包装运输、焊接单价等，带封皮说明。</li>
+          <li>单表：只审某一环节时用对应列表的导出按钮。</li>
+          <li>无导出权限时按钮会隐藏或提示。</li>
+        </ul>
+      </section>
+
+      <section id="faq">
+        <h2>操作问答</h2>
+        <h3>看不到某个菜单？</h3>
+        <p>找管理员在「设置 → 用户管理」开通权限后刷新。</p>
+        <h3>引擎一直运行中？</h3>
+        <p>本机异常关机可能导致卡住。在运行历史删除该任务后重跑。</p>
+        <h3>需要了解概念或计算细节？</h3>
+        <p>请参阅 <a href="knowledge.html">知识库</a>；需要对照实例请参阅 <a href="example.html">样例</a>。</p>
+      </section>
+
+      <footer class="footer">帮助 · 操作说明 · /helper/help.html</footer>
+    </main>
+  </div>
+</body>
+</html>
