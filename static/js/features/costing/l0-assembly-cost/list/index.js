@@ -4,7 +4,7 @@ import {
     renderLacRows,
     updateLacHud,
     updateLacFilterCapsules,
-} from './template.js?v=4';
+} from './template.js?v=5';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
