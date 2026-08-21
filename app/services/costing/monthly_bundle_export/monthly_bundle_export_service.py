@@ -17,6 +17,7 @@ from app.services.bom.welding_unit_price_export_service import BomWeldingUnitPri
 from app.services.costing.l0_assembly_cost.export.l0_assembly_cost_export_service import (
     L0AssemblyCostExportService,
 )
+from app.services.costing.monthly_bundle_export.cover_sheet import write_cover_sheet
 from app.services.costing.steel_price.steel_price_export_service import SteelPriceExportService
 from app.services.costing.stamping_part_cost.stamping_part_cost_export_service import (
     StampingPartCostExportService,
@@ -63,6 +64,17 @@ class MonthlyBundleExportService:
         """
         wb = Workbook()
         sheet_counts: dict[str, int] = {}
+
+        cover_title = write_cover_sheet(
+            wb,
+            year=year,
+            month=month,
+            location=location,
+            vehicle_model=vehicle_model,
+            bom_version=bom_version,
+            stamping_supplier=stamping_supplier,
+        )
+        sheet_counts[cover_title] = 1
 
         # 成品核价（含一览/材料明细/焊接费/间接费用）→ 冲压零件核价…
         title, count = self.l0_assembly.write_to_workbook(
