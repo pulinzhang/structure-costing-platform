@@ -287,6 +287,17 @@ def create_app() -> FastAPI:
             headers={"Cache-Control": "no-cache, must-revalidate"},
         )
 
+    # 使用帮助（纯静态说明页）
+    @app.get("/helper", include_in_schema=False)
+    @app.get("/helper/", include_in_schema=False)
+    async def helper_page():
+        """打开使用帮助"""
+        from fastapi.responses import FileResponse
+        return FileResponse(
+            "static/helper/index.html",
+            headers={"Cache-Control": "no-cache, must-revalidate"},
+        )
+
     # favicon
     @app.get("/favicon.ico", include_in_schema=False)
     async def favicon():

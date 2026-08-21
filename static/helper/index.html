@@ -1,0 +1,1503 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="汽车冲压件自动核价平台 — 使用帮助">
+  <title>使用帮助 · 自动核价平台</title>
+  <link rel="icon" type="image/x-icon" href="/static/assets/favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --red: #d32f2f;
+      --red-bright: #FF1E27;
+      --bg: #0a0a0a;
+      --bg-main: #121212;
+      --surface: #1e1e1e;
+      --elevated: #262626;
+      --text: #ffffff;
+      --muted: #9e9e9e;
+      --dim: #616161;
+      --border: #2c2c2c;
+      --border-soft: #222222;
+      --success: #4caf50;
+      --warning: #ffb74d;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    /* 细滚动条：与主站一致，避免侧栏旁出现粗白条 */
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+    }
+    *::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+    *::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    *::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.07);
+      border-radius: 2px;
+    }
+    *::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.14);
+    }
+
+    body {
+      font-family: Inter, system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+      min-height: 100vh;
+    }
+
+    a { color: #ff8a80; text-decoration: none; }
+    a:hover { color: #ffcdd2; text-decoration: underline; }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      min-height: 100vh;
+    }
+
+    .nav {
+      position: sticky;
+      top: 0;
+      align-self: start;
+      height: 100vh;
+      overflow-y: auto;
+      overflow-x: hidden;
+      background: #0c0c0c;
+      border-right: 1px solid var(--border-soft);
+      padding: 28px 18px 40px;
+      /* Firefox：默认几乎看不见，悬停侧栏再略显 */
+      scrollbar-width: thin;
+      scrollbar-color: transparent transparent;
+    }
+    .nav:hover {
+      scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+    }
+    .nav::-webkit-scrollbar {
+      width: 3px;
+    }
+    .nav::-webkit-scrollbar-thumb {
+      background: transparent;
+    }
+    .nav:hover::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .nav-brand {
+      display: block;
+      margin-bottom: 28px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--border-soft);
+      text-decoration: none;
+    }
+
+    .nav-brand:hover { text-decoration: none; }
+
+    .nav-brand h1 {
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .nav-brand .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--red);
+      box-shadow: 0 0 8px var(--red);
+    }
+
+    .nav-brand span {
+      display: block;
+      margin-top: 6px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      color: var(--dim);
+      text-transform: uppercase;
+    }
+
+    .nav-label {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 9px;
+      letter-spacing: 0.14em;
+      color: var(--dim);
+      margin: 18px 0 8px;
+      text-transform: uppercase;
+    }
+
+    .nav ul { list-style: none; }
+    .nav li a {
+      display: block;
+      padding: 7px 10px;
+      font-size: 13px;
+      color: var(--muted);
+      border-left: 2px solid transparent;
+      text-decoration: none;
+    }
+    .nav li a:hover {
+      color: var(--text);
+      background: #161616;
+      border-left-color: var(--red);
+      text-decoration: none;
+    }
+
+    .main {
+      max-width: 880px;
+      padding: 40px 48px 80px;
+    }
+
+    .hero {
+      margin-bottom: 40px;
+      padding-bottom: 28px;
+      border-bottom: 1px solid var(--border-soft);
+    }
+
+    .hero .eyebrow {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 10px;
+      letter-spacing: 0.16em;
+      color: var(--red-bright);
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .hero h1 {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 12px;
+    }
+
+    .hero p {
+      color: var(--muted);
+      font-size: 15px;
+      max-width: 62ch;
+    }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 18px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      padding: 8px 14px;
+      text-decoration: none;
+    }
+    .back-link:hover {
+      color: var(--text);
+      border-color: var(--muted);
+      text-decoration: none;
+    }
+
+    section {
+      margin-bottom: 48px;
+      scroll-margin-top: 24px;
+    }
+
+    section > h2 {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      padding-left: 12px;
+      border-left: 3px solid var(--red);
+    }
+
+    section > .lead {
+      color: var(--muted);
+      font-size: 14px;
+      margin-bottom: 20px;
+      padding-left: 15px;
+    }
+
+    h3 {
+      font-size: 14px;
+      font-weight: 600;
+      margin: 24px 0 10px;
+      color: #e8e8e8;
+    }
+
+    p, li { font-size: 14px; color: #c8c8c8; }
+    p + p { margin-top: 10px; }
+
+    ul, ol { padding-left: 1.35em; margin: 8px 0 12px; }
+    li + li { margin-top: 6px; }
+    li strong { color: #f0f0f2; font-weight: 600; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 18px 20px;
+      margin: 14px 0;
+    }
+
+    .card h3 { margin-top: 0; }
+
+    .steps {
+      counter-reset: step;
+      list-style: none;
+      padding: 0;
+      margin: 16px 0;
+    }
+
+    .steps li {
+      position: relative;
+      padding: 14px 16px 14px 56px;
+      border: 1px solid var(--border-soft);
+      background: #111111;
+      margin-bottom: 8px;
+      color: #c8c8c8;
+    }
+
+    .steps li::before {
+      counter-increment: step;
+      content: counter(step, decimal-leading-zero);
+      position: absolute;
+      left: 14px;
+      top: 14px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--red-bright);
+    }
+
+    .steps li strong {
+      display: block;
+      color: #f0f0f2;
+      margin-bottom: 4px;
+      font-size: 13px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 14px 0 20px;
+      font-size: 13px;
+    }
+
+    th, td {
+      border: 1px solid #1a1a22;
+      padding: 10px 12px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: #0b0b0d;
+      color: #555;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    td { background: #0e0e10; color: #b8b8bc; }
+    td code, p code, li code {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 12px;
+      color: #ffab91;
+      background: #1a1010;
+      padding: 1px 5px;
+    }
+
+    .tag {
+      display: inline-block;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 10px;
+      letter-spacing: 0.06em;
+      padding: 2px 7px;
+      border: 1px solid;
+      margin-right: 4px;
+    }
+
+    .tag-hard {
+      color: #ef5350;
+      border-color: rgba(239, 83, 80, 0.4);
+      background: rgba(198, 40, 40, 0.15);
+    }
+
+    .tag-auto {
+      color: #81c784;
+      border-color: rgba(76, 175, 80, 0.35);
+      background: rgba(46, 125, 50, 0.15);
+    }
+
+    .tag-month {
+      color: #ffb74d;
+      border-color: rgba(245, 127, 23, 0.4);
+      background: rgba(245, 127, 23, 0.12);
+    }
+
+    .callout {
+      border-left: 3px solid var(--red);
+      background: #161010;
+      padding: 12px 16px;
+      margin: 16px 0;
+      font-size: 13px;
+      color: #d0d0d0;
+    }
+
+    .callout.warn {
+      border-left-color: var(--warning);
+      background: #18140c;
+    }
+
+    .callout.ok {
+      border-left-color: var(--success);
+      background: #0e1610;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin: 14px 0;
+    }
+
+    .mini {
+      background: #111;
+      border: 1px solid var(--border-soft);
+      padding: 14px 16px;
+    }
+
+    .mini h4 {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: #f0f0f2;
+    }
+
+    .mini p { font-size: 12px; color: var(--muted); margin: 0; }
+
+    figure.shot {
+      margin: 16px 0 20px;
+      border: 1px solid var(--border);
+      background: #0c0c0c;
+      overflow: hidden;
+    }
+
+    figure.shot img {
+      display: block;
+      width: 100%;
+      height: auto;
+      vertical-align: top;
+    }
+
+    figure.shot figcaption {
+      padding: 8px 12px;
+      font-size: 11px;
+      color: var(--dim);
+      border-top: 1px solid var(--border-soft);
+      font-family: "JetBrains Mono", monospace;
+      letter-spacing: 0.04em;
+    }
+
+    .shot-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin: 14px 0 20px;
+    }
+
+    .shot-grid figure.shot { margin: 0; }
+
+    .footer {
+      margin-top: 56px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border-soft);
+      font-family: "JetBrains Mono", monospace;
+      font-size: 10px;
+      color: var(--dim);
+      letter-spacing: 0.08em;
+    }
+
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+      .nav {
+        position: relative;
+        height: auto;
+        border-right: none;
+        border-bottom: 1px solid var(--border-soft);
+      }
+      .main { padding: 28px 20px 60px; }
+      .grid-2 { grid-template-columns: 1fr; }
+      .shot-grid { grid-template-columns: 1fr; }
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .hero-actions .back-link { margin-top: 0; }
+
+    .btn-print {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #ffffff;
+      background: var(--red);
+      border: 1px solid var(--red);
+      padding: 8px 14px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .btn-print:hover {
+      background: #b71c1c;
+      border-color: #b71c1c;
+    }
+
+    .print-only { display: none; }
+
+    /* ========== 打印（Windows / 浏览器 Ctrl+P）========== */
+    @page {
+      size: A4;
+      margin: 14mm 14mm 16mm;
+    }
+
+    @media print {
+      * {
+        scrollbar-width: none !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      html, body {
+        background: #fff !important;
+        color: #1a1a1a !important;
+        font-size: 10.5pt;
+        line-height: 1.55;
+        min-height: 0;
+      }
+
+      a {
+        color: #1a1a1a !important;
+        text-decoration: none !important;
+      }
+
+      .no-print,
+      .nav,
+      .back-link,
+      .btn-print,
+      .hero-actions { display: none !important; }
+
+      .print-only { display: block !important; }
+
+      .layout {
+        display: block;
+        min-height: 0;
+      }
+
+      .main {
+        max-width: none;
+        padding: 0;
+        color: #1a1a1a;
+      }
+
+      .hero {
+        margin-bottom: 18pt;
+        padding-bottom: 12pt;
+        border-bottom: 2pt solid #c62828;
+      }
+
+      .hero .eyebrow {
+        color: #c62828 !important;
+        font-size: 8pt;
+        margin-bottom: 6pt;
+      }
+
+      .hero h1 {
+        color: #111 !important;
+        font-size: 18pt;
+        margin-bottom: 6pt;
+      }
+
+      .hero p {
+        color: #444 !important;
+        font-size: 10pt;
+        max-width: none;
+      }
+
+      .print-meta {
+        margin-top: 8pt;
+        font-family: "JetBrains Mono", Consolas, monospace;
+        font-size: 8pt;
+        color: #666 !important;
+        letter-spacing: 0.04em;
+      }
+
+      .print-toc {
+        margin: 0 0 16pt;
+        padding: 10pt 12pt;
+        border: 0.6pt solid #ccc;
+        background: #fafafa !important;
+        break-inside: avoid;
+      }
+
+      .print-toc h2 {
+        font-size: 11pt;
+        margin: 0 0 8pt;
+        padding: 0;
+        border: none;
+        color: #111 !important;
+      }
+
+      .print-toc ol {
+        margin: 0;
+        padding-left: 1.2em;
+        columns: 2;
+        column-gap: 18pt;
+      }
+
+      .print-toc li {
+        color: #333 !important;
+        font-size: 9pt;
+        margin-top: 3pt;
+        break-inside: avoid;
+      }
+
+      section {
+        margin-bottom: 16pt;
+        scroll-margin-top: 0;
+      }
+
+      section > h2 {
+        font-size: 13pt;
+        color: #111 !important;
+        border-left: 3pt solid #c62828;
+        padding-left: 8pt;
+        margin-bottom: 6pt;
+        margin-top: 4pt;
+        break-after: avoid;
+        page-break-after: avoid;
+      }
+
+      section > .lead {
+        color: #555 !important;
+        font-size: 9.5pt;
+        margin-bottom: 10pt;
+        padding-left: 11pt;
+      }
+
+      h3 {
+        font-size: 11pt;
+        color: #222 !important;
+        margin: 12pt 0 6pt;
+        break-after: avoid;
+        page-break-after: avoid;
+      }
+
+      p, li {
+        color: #333 !important;
+        font-size: 10pt;
+      }
+
+      li strong { color: #111 !important; }
+
+      .card, .mini, .callout, .steps li {
+        background: #fff !important;
+        border: 0.6pt solid #ddd !important;
+        box-shadow: none !important;
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+
+      .card {
+        padding: 10pt 12pt;
+        margin: 8pt 0;
+      }
+
+      .card h3 { margin-top: 0; }
+
+      .mini {
+        background: #f7f7f7 !important;
+        padding: 8pt 10pt;
+      }
+
+      .mini h4 { color: #111 !important; font-size: 10pt; }
+      .mini p { color: #555 !important; font-size: 9pt; }
+
+      .grid-2 {
+        gap: 8pt;
+        margin: 8pt 0;
+      }
+
+      .callout {
+        border-left: 2.5pt solid #c62828 !important;
+        background: #fff8f8 !important;
+        padding: 8pt 10pt;
+        margin: 8pt 0;
+        color: #333 !important;
+        font-size: 9.5pt;
+      }
+
+      .callout.warn {
+        border-left-color: #ef6c00 !important;
+        background: #fffaf0 !important;
+      }
+
+      .callout.ok {
+        border-left-color: #2e7d32 !important;
+        background: #f4faf4 !important;
+      }
+
+      .steps {
+        margin: 8pt 0;
+      }
+
+      .steps li {
+        background: #fafafa !important;
+        padding: 8pt 10pt 8pt 36pt;
+        margin-bottom: 5pt;
+        border: 0.6pt solid #e0e0e0 !important;
+      }
+
+      .steps li::before {
+        color: #c62828 !important;
+        left: 10pt;
+        top: 8pt;
+      }
+
+      .steps li strong {
+        color: #111 !important;
+        font-size: 10pt;
+      }
+
+      table {
+        margin: 8pt 0 12pt;
+        font-size: 9pt;
+        border-collapse: collapse;
+        width: 100%;
+        break-inside: auto;
+      }
+
+      thead { display: table-header-group; }
+
+      th, td {
+        border: 0.5pt solid #bbb !important;
+        padding: 5pt 6pt;
+        background: #fff !important;
+        color: #333 !important;
+      }
+
+      th {
+        background: #f0f0f0 !important;
+        color: #444 !important;
+        font-size: 8pt;
+        font-weight: 700;
+      }
+
+      td code, p code, li code {
+        color: #b71c1c !important;
+        background: #f5f5f5 !important;
+        border: 0.4pt solid #e0e0e0;
+        font-size: 8pt;
+      }
+
+      .tag {
+        border-color: #999 !important;
+        color: #333 !important;
+        background: #f5f5f5 !important;
+      }
+
+      .tag-hard {
+        color: #b71c1c !important;
+        border-color: #ef9a9a !important;
+        background: #ffebee !important;
+      }
+
+      .tag-auto {
+        color: #1b5e20 !important;
+        border-color: #a5d6a7 !important;
+        background: #e8f5e9 !important;
+      }
+
+      .tag-month {
+        color: #e65100 !important;
+        border-color: #ffcc80 !important;
+        background: #fff3e0 !important;
+      }
+
+      figure.shot {
+        margin: 8pt 0 10pt;
+        border: 0.6pt solid #ccc !important;
+        background: #fff !important;
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+
+      figure.shot img {
+        max-height: 70mm;
+        width: auto;
+        max-width: 100%;
+        margin: 0 auto;
+        object-fit: contain;
+        object-position: top;
+      }
+
+      figure.shot figcaption {
+        color: #666 !important;
+        border-top: 0.5pt solid #ddd;
+        font-size: 8pt;
+        padding: 4pt 8pt;
+      }
+
+      .shot-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 8pt;
+        margin: 8pt 0 10pt;
+      }
+
+      .footer {
+        margin-top: 18pt;
+        padding-top: 8pt;
+        border-top: 0.6pt solid #ccc;
+        color: #888 !important;
+        font-size: 8pt;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="nav" aria-label="帮助目录">
+      <a class="nav-brand" href="#top">
+        <h1><span class="dot" aria-hidden="true"></span> 使用帮助</h1>
+        <span>STAMPING HELP · v1.0</span>
+      </a>
+
+      <div class="nav-label">目录</div>
+      <ul>
+        <li><a href="#overview">平台是什么</a></li>
+        <li><a href="#value">作用与价值</a></li>
+        <li><a href="#excel">Excel 导出能力</a></li>
+        <li><a href="#start">快速入门</a></li>
+        <li><a href="#workflow">推荐核价流程</a></li>
+        <li><a href="#stamping">冲压工程</a></li>
+        <li><a href="#welding">焊接工程</a></li>
+        <li><a href="#yishiyiyi">一事一议</a></li>
+        <li><a href="#costing">核价</a></li>
+        <li><a href="#engine">自动核价引擎</a></li>
+        <li><a href="#quotation">报价与设置</a></li>
+        <li><a href="#faq">常见问题</a></li>
+      </ul>
+
+      <div class="nav-label">返回</div>
+      <ul>
+        <li><a href="/" target="_blank" rel="noopener noreferrer">进入系统</a></li>
+        <li><a href="/login" target="_blank" rel="noopener noreferrer">登录页</a></li>
+        <li><a href="javascript:window.print()">打印本页</a></li>
+      </ul>
+    </aside>
+
+    <main class="main" id="top">
+      <header class="hero">
+        <div class="eyebrow">User Guide</div>
+        <h1>汽车冲压件自动核价平台</h1>
+        <p>
+          本帮助说明平台<strong>作用与价值</strong>、各菜单怎么用、月度核价怎么准备数据，
+          以及<strong>Excel 导出 / 核对合册</strong>如何支撑审核与对外交付。
+        </p>
+        <div class="print-only print-meta">使用帮助 · 打印稿 · STAMPING COSTING PLATFORM</div>
+        <div class="hero-actions">
+          <a class="back-link" href="/">← 返回系统</a>
+          <button type="button" class="btn-print" onclick="window.print()">打印 / PDF</button>
+        </div>
+      </header>
+
+      <div class="print-only print-toc">
+        <h2>目录</h2>
+        <ol>
+          <li>平台是什么</li>
+          <li>作用与价值</li>
+          <li>Excel 导出能力</li>
+          <li>快速入门</li>
+          <li>推荐核价流程</li>
+          <li>冲压工程</li>
+          <li>焊接工程</li>
+          <li>一事一议</li>
+          <li>核价</li>
+          <li>自动核价引擎</li>
+          <li>报价与设置</li>
+          <li>常见问题</li>
+        </ol>
+      </div>
+
+      <!-- 概述 -->
+      <section id="overview">
+        <h2>平台是什么</h2>
+        <p class="lead">把冲压工艺、焊接 BOM、钢材政策与废料价组合成零件价与成品价的一体化核价系统。</p>
+        <p>
+          平台按业务模块组织：上游准备<strong>主数据与政策</strong>，下游执行<strong>钢材联动 → 冲压零件价 → 成品核价</strong>。
+          日常月度核算可走单步计算页，也可在「自动核价引擎」选定基地、年、月后一键编排。
+          结果既可在线查询审核，也可一键导出专业 Excel，供核对、存档与汇报。
+        </p>
+        <div class="grid-2">
+          <div class="mini">
+            <h4>年度数据</h4>
+            <p>工艺、冲次单价、焊接单价、BOM、年度零件价、包装运输费等，一年内可复用。</p>
+          </div>
+          <div class="mini">
+            <h4>月度数据</h4>
+            <p>基准价、加减价政策命中、废料月度销售价等，每月核价前必须齐。</p>
+          </div>
+        </div>
+
+        <figure class="shot">
+          <img src="/static/helper/img/01-dashboard.png" alt="仪表盘：本期核价产出与待办">
+          <figcaption>仪表盘 · 本期核价产出 / 待办与风险 / 闭环就绪</figcaption>
+        </figure>
+      </section>
+
+      <!-- 作用与价值 -->
+      <section id="value">
+        <h2>作用与价值</h2>
+        <p class="lead">把分散在 Excel、邮件与口头口径里的核价工作，变成可追溯、可复算、可交付的系统流程。</p>
+
+        <div class="grid-2">
+          <div class="mini">
+            <h4>统一口径</h4>
+            <p>工艺、BOM、钢材政策、加工费、焊接费在同一平台衔接，减少「各表各算、对不上账」。</p>
+          </div>
+          <div class="mini">
+            <h4>缩短月度周期</h4>
+            <p>仪表盘看缺口，引擎一键补算与串链；从「到处找表」变成「检查就绪 → 启动」。</p>
+          </div>
+          <div class="mini">
+            <h4>可审可追</h4>
+            <p>结果带审核状态与操作日志；导出表含溯源列与公式口径，审核人能顺着数字查到源数据。</p>
+          </div>
+          <div class="mini">
+            <h4>Excel 闭环</h4>
+            <p>业务习惯仍是 Excel：上传入库、系统计算、再导出核对合册或单表，兼顾效率与交付习惯。</p>
+          </div>
+        </div>
+
+        <h3>解决什么痛点</h3>
+        <ul>
+          <li><strong>数据分散</strong>：工艺、冲次单价、政策、BOM、废料价分属多处，月度对账成本高。</li>
+          <li><strong>口径漂移</strong>：手工改表易漏公式、漏政策档；系统按统一规则计算并落库。</li>
+          <li><strong>缺口难发现</strong>：缺钢种、缺政策、缺 L0 往往算到一半才暴露；引擎硬停 + 跳转可前置阻断。</li>
+          <li><strong>交付不完整</strong>：汇报常需多张关联表；合册一次打出成品价、零件价、加工费、钢价等，便于封存。</li>
+        </ul>
+
+        <div class="callout ok">
+          核心价值一句话：<strong>算得准、跑得快、导出可核对</strong>——在线完成月度核价闭环，离线仍用专业 Excel 完成审核与汇报。
+        </div>
+      </section>
+
+      <!-- Excel -->
+      <section id="excel">
+        <h2>Excel 导出能力</h2>
+        <p class="lead">不是简单「把列表倒成表」，而是面向核对与交付的专业工作簿输出。</p>
+
+        <h3>设计亮点</h3>
+        <div class="grid-2">
+          <div class="mini">
+            <h4>多表合册</h4>
+            <p>「导出核对合册」在同一 xlsx 内串联成品核价、冲压零件核价、加工费、钢材联动、年度零件价、包装运输、焊接单价等，并带封皮说明页。</p>
+          </div>
+          <div class="mini">
+            <h4>公式可复核</h4>
+            <p>关键金额列可输出 Excel 公式（非整表死数），打开后仍能顺着单元格核对计算逻辑。</p>
+          </div>
+          <div class="mini">
+            <h4>人可读溯源</h4>
+            <p>导出含钢价/加工费/废料等溯源说明列，以及关联 ID，方便定位源文件、表名与行号。</p>
+          </div>
+          <div class="mini">
+            <h4>排版即交付</h4>
+            <p>标题区、分组表头、冻结窗格、筛选、横向打印适配等，可直接用于审核会与存档，少二次美化。</p>
+          </div>
+        </div>
+
+        <h3>月度核对合册（推荐交付物）</h3>
+        <p>
+          入口：<strong>核价 → 成品核价一览 →「导出核对合册」</strong>。
+          须选定年 / 月 / 基地 / 项目 / BOM 版本（可选冲压工厂）。
+          合册只导出、不重新算价，保证与系统当前结果一致。
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>合册内容（同一文件多 Sheet）</th>
+              <th>用途</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>封皮 · 核价说明</td>
+              <td>范围、流程与阅读指引</td>
+            </tr>
+            <tr>
+              <td>成品核价及相关明细</td>
+              <td>L0 总账、材料归集、焊接费、间接费用等</td>
+            </tr>
+            <tr>
+              <td>冲压零件核价</td>
+              <td>材料 / 废料 / 加工费构成与溯源</td>
+            </tr>
+            <tr>
+              <td>冲压加工费</td>
+              <td>年度加工费结果核对</td>
+            </tr>
+            <tr>
+              <td>钢材联动价</td>
+              <td>当月材料单价依据</td>
+            </tr>
+            <tr>
+              <td>年度零件价 / 包装运输 / 焊接单价</td>
+              <td>成品侧取价与费用输入底稿</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <figure class="shot">
+          <img src="/static/helper/img/17-l0-assembly-cost.png" alt="成品核价一览（可导出核对合册）">
+          <figcaption>成品核价一览 · 可导出单表或「核对合册」</figcaption>
+        </figure>
+
+        <h3>各业务页也可单独导出</h3>
+        <p>列表页通常有「导出 Excel」按钮（需对应导出权限）。常见包括：</p>
+        <table>
+          <thead>
+            <tr>
+              <th>模块</th>
+              <th>典型导出</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>冲压工程</td>
+              <td>冲压工艺确认表、冲次单价、冲压加工费</td>
+            </tr>
+            <tr>
+              <td>焊接工程</td>
+              <td>焊接单价、年度零件价、包装运输费、工艺拆解核对、成品焊接费</td>
+            </tr>
+            <tr>
+              <td>一事一议</td>
+              <td>基准价、加减价政策（主子表）、中标厚度一览、废料月度价</td>
+            </tr>
+            <tr>
+              <td>核价</td>
+              <td>钢材联动价、冲压零件价格、成品核价；以及上方的核对合册</td>
+            </tr>
+            <tr>
+              <td>设置</td>
+              <td>操作日志导出（审计存档）</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="callout">
+          <strong>使用建议：</strong>日常在线看仪表盘与一览表；对外汇报、跨部门核对、月度封存，优先导出<strong>核对合册</strong>。
+          单表导出适合只核对某一环节（例如只审钢材联动或只审加工费）。
+        </div>
+
+        <div class="callout warn">
+          无「导出」权限时按钮会隐藏或提示无权限。合册导出前请确认筛选维度完整，否则文件范围可能不符合预期。
+        </div>
+      </section>
+
+      <!-- 入门 -->
+      <section id="start">
+        <h2>快速入门</h2>
+        <p class="lead">登录后从左侧导航进入各功能；无权限的菜单会隐藏。</p>
+
+        <div class="shot-grid">
+          <figure class="shot">
+            <img src="/static/helper/img/00-login.png" alt="系统登录页">
+            <figcaption>登录页</figcaption>
+          </figure>
+          <figure class="shot">
+            <img src="/static/helper/img/01b-sidebar.png" alt="左侧导航 Overlay">
+            <figcaption>侧栏导航 Overlay</figcaption>
+          </figure>
+        </div>
+
+        <ol class="steps">
+          <li>
+            <strong>登录</strong>
+            打开系统登录页，使用管理员分配的账号进入。会话失效后会自动跳回登录。
+          </li>
+          <li>
+            <strong>打开导航</strong>
+            点击左上角菜单按钮展开侧栏（Overlay）。按「仪表盘 → 冲压 → 焊接 → 一事一议 → 核价 → 报价 → 设置」顺序浏览。
+          </li>
+          <li>
+            <strong>看清维度</strong>
+            多数功能按<strong>基地 / 工厂 / 车型 / 版本 / 年 / 月</strong>筛选。上传与计算前先确认维度一致，避免算到空范围。
+          </li>
+          <li>
+            <strong>列表只读核对</strong>
+            「上传/计算」写入结果，「列表」用于查询、筛选、导出与明细。明细与删除请用操作列按钮，勿依赖整行点击。
+          </li>
+        </ol>
+
+        <div class="callout">
+          权限由管理员在「设置 → 用户管理」配置。看不到某菜单时，先确认账号权限，而不是页面故障。
+        </div>
+      </section>
+
+      <!-- 流程 -->
+      <section id="workflow">
+        <h2>推荐核价流程</h2>
+        <p class="lead">先齐年度主数据，再齐当月政策，最后跑核价（或引擎一键）。</p>
+
+        <h3>一、年度主数据（缺则引擎硬停）</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>顺序</th>
+              <th>做什么</th>
+              <th>菜单位置</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1</td>
+              <td>上传冲压工艺（零件 + 工序）</td>
+              <td>冲压工程 → 冲压工艺 → 上传工艺文件</td>
+            </tr>
+            <tr>
+              <td>2</td>
+              <td>上传冲次单价</td>
+              <td>冲压工程 → 冲次单价 → 上传</td>
+            </tr>
+            <tr>
+              <td>3</td>
+              <td>上传材料清单（BOM，须含成品 L0）</td>
+              <td>焊接工程 → 材料清单 → 上传</td>
+            </tr>
+            <tr>
+              <td>4</td>
+              <td>上传焊接单价</td>
+              <td>焊接工程 → 焊接单价 → 上传</td>
+            </tr>
+            <tr>
+              <td>5</td>
+              <td>上传年度零件价、包装运输费</td>
+              <td>焊接工程 → 对应菜单</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>二、月度政策与价格（缺则引擎硬停）</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>数据</th>
+              <th>菜单位置</th>
+              <th>说明</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>钢材基准价</td>
+              <td>一事一议 → 基准价格</td>
+              <td>按年 + 月 + 基地覆盖将算钢种</td>
+            </tr>
+            <tr>
+              <td>厚度 / 宽度加减价政策</td>
+              <td>一事一议 → 加减价政策</td>
+              <td>政策须能完整匹配材料规格</td>
+            </tr>
+            <tr>
+              <td>废料月度销售价</td>
+              <td>一事一议 → 废料月度销售价</td>
+              <td>按年 + 月 + 基地维护</td>
+            </tr>
+            <tr>
+              <td>系统费率等</td>
+              <td>设置 → 系统设置</td>
+              <td>全局配置缺失也会阻断引擎</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>三、计算结果链</h3>
+        <ol class="steps">
+          <li>
+            <strong>年度可算结果（引擎可自动补算）</strong>
+            冲压加工费 → 焊接工艺拆解 → 成品焊接费。已有可用结果时默认不重算覆盖。
+          </li>
+          <li>
+            <strong>月度主链</strong>
+            冲压钢材联动价 → 冲压零件价格 → 成品核价（同项目多 BOM 版本会逐个计算）。
+          </li>
+          <li>
+            <strong>一键方式</strong>
+            数据齐备后，进入「核价 → 自动核价引擎」，选基地 + 年 + 月，先「检查就绪」再启动。
+          </li>
+        </ol>
+
+        <div class="callout ok">
+          表非空不等于可用：关键钢种、厚度档、政策匹配不全，仍会被引擎视为缺失并硬停。
+        </div>
+      </section>
+
+      <!-- 冲压 -->
+      <section id="stamping">
+        <h2>冲压工程</h2>
+        <p class="lead">工艺主数据与冲压加工费（年度核算）。</p>
+
+        <div class="card">
+          <h3>冲压工艺</h3>
+          <ul>
+            <li><strong>上传工艺文件</strong>：导入零件与工序信息。</li>
+            <li><strong>冲压零件列表</strong>：按车型/版本查询、核对、查看明细。</li>
+          </ul>
+          <figure class="shot">
+            <img src="/static/helper/img/02-stamping-parts.png" alt="冲压零件列表">
+            <figcaption>冲压零件列表</figcaption>
+          </figure>
+        </div>
+
+        <div class="card">
+          <h3>冲次单价</h3>
+          <ul>
+            <li><strong>上传</strong>：导入吨位/冲次单价矩阵。</li>
+            <li><strong>冲次单价列表</strong>：核对已入库单价，供加工费计算使用。</li>
+          </ul>
+          <figure class="shot">
+            <img src="/static/helper/img/03-stamping-tonnage.png" alt="冲次单价列表">
+            <figcaption>冲次单价列表</figcaption>
+          </figure>
+        </div>
+
+        <div class="card">
+          <h3>冲压加工费</h3>
+          <ul>
+            <li><strong>计算</strong>：基于工艺 + 冲次单价生成年度加工费。</li>
+            <li><strong>列表</strong>：查询、审核或导出计算结果。</li>
+          </ul>
+          <p style="margin-top:10px;font-size:13px;color:var(--muted);">
+            在自动核价引擎路径下，若该范围尚无加工费结果，会自动补算。
+          </p>
+          <figure class="shot">
+            <img src="/static/helper/img/04-stamping-process-fee.png" alt="冲压加工费列表">
+            <figcaption>冲压加工费列表</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <!-- 焊接 -->
+      <section id="welding">
+        <h2>焊接工程</h2>
+        <p class="lead">BOM、焊接单价、年度零件价与成品焊接费（技术目录仍为 bom）。</p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>功能</th>
+              <th>用途</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>材料清单上传 / 列表</td>
+              <td>导入并维护 BOM 快照；成品核价要求清单含 L0</td>
+            </tr>
+            <tr>
+              <td>产品结构 / 结构图</td>
+              <td>树形或图形查看 BOM 层级关系</td>
+            </tr>
+            <tr>
+              <td>焊接单价</td>
+              <td>按年 + 基地维护焊接工时单价等</td>
+            </tr>
+            <tr>
+              <td>年度零件价</td>
+              <td>外购件等年度取价来源</td>
+            </tr>
+            <tr>
+              <td>包装运输费</td>
+              <td>成品侧包装与运输费用输入</td>
+            </tr>
+            <tr>
+              <td>焊接工艺拆解</td>
+              <td>按 BOM + 单价生成拆解结果（引擎可补算）</td>
+            </tr>
+            <tr>
+              <td>成品焊接费</td>
+              <td>基于拆解计算 L0 焊接费（引擎可补算）</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="shot-grid">
+          <figure class="shot">
+            <img src="/static/helper/img/05-bom-material.png" alt="材料清单列表">
+            <figcaption>材料清单列表</figcaption>
+          </figure>
+          <figure class="shot">
+            <img src="/static/helper/img/06-bom-structure.png" alt="产品结构">
+            <figcaption>产品结构</figcaption>
+          </figure>
+          <figure class="shot">
+            <img src="/static/helper/img/07-welding-unit-price.png" alt="焊接单价列表">
+            <figcaption>焊接单价</figcaption>
+          </figure>
+          <figure class="shot">
+            <img src="/static/helper/img/08-annual-part-price.png" alt="年度零件价列表">
+            <figcaption>年度零件价</figcaption>
+          </figure>
+          <figure class="shot">
+            <img src="/static/helper/img/09-packaging-transport.png" alt="包装运输费列表">
+            <figcaption>包装运输费</figcaption>
+          </figure>
+          <figure class="shot">
+            <img src="/static/helper/img/10-welding-breakdown.png" alt="焊接工艺拆解列表">
+            <figcaption>焊接工艺拆解</figcaption>
+          </figure>
+        </div>
+        <figure class="shot">
+          <img src="/static/helper/img/11-l0-welding-fee.png" alt="成品焊接费列表">
+          <figcaption>成品焊接费列表</figcaption>
+        </figure>
+      </section>
+
+      <!-- 一事一议 -->
+      <section id="yishiyiyi">
+        <h2>一事一议</h2>
+        <p class="lead">钢材联动所需的基准价、加减价政策与废料月度价。</p>
+
+        <ul>
+          <li><strong>加减价政策</strong>：上传厚度/宽度等加减价规则，并在列表中核对。</li>
+          <li><strong>基准价格</strong>：按月维护钢厂/牌号基准价。</li>
+          <li><strong>中标钢厂厚度价格一览表</strong>：查看中标厚度价格汇总。</li>
+          <li><strong>废料月度销售价</strong>：维护当月废料销售单价，影响零件废料回收扣减。</li>
+        </ul>
+
+        <div class="shot-grid">
+          <figure class="shot">
+            <img src="/static/helper/img/12-base-price.png" alt="基准价格列表">
+            <figcaption>基准价格列表</figcaption>
+          </figure>
+          <figure class="shot">
+            <img src="/static/helper/img/13-policy.png" alt="加减价政策列表">
+            <figcaption>加减价政策列表</figcaption>
+          </figure>
+        </div>
+        <figure class="shot">
+          <img src="/static/helper/img/14-scrap-price.png" alt="废料月度销售价">
+          <figcaption>废料月度销售价</figcaption>
+        </figure>
+
+        <div class="callout warn">
+          月度核价前务必确认：基准价覆盖钢种、政策能匹配规格、废料价已按基地填好。三者任一缺口都会导致引擎硬停。
+        </div>
+      </section>
+
+      <!-- 核价 -->
+      <section id="costing">
+        <h2>核价</h2>
+        <p class="lead">单步计算与结果一览；也可交给自动核价引擎统一编排。</p>
+
+        <div class="card">
+          <h3>冲压钢材联动价</h3>
+          <p>将基准价 + 加减价政策落到零件材料规格，生成当月钢材联动单价。</p>
+          <ul>
+            <li>计算页：选择年 / 月 / 基地等范围后启动异步任务。</li>
+            <li>一览页：查询、筛选、导出联动结果。</li>
+          </ul>
+          <figure class="shot">
+            <img src="/static/helper/img/15-steel-price.png" alt="冲压钢材联动价一览">
+            <figcaption>冲压钢材联动价一览</figcaption>
+          </figure>
+        </div>
+
+        <div class="card">
+          <h3>冲压零件价格核算</h3>
+          <p>在钢材联动价与加工费等基础上，核算冲压零件月度价格。</p>
+          <figure class="shot">
+            <img src="/static/helper/img/16-stamping-part-cost.png" alt="冲压零件价格一览">
+            <figcaption>冲压零件价格一览</figcaption>
+          </figure>
+        </div>
+
+        <div class="card">
+          <h3>成品核价</h3>
+          <p>
+            按 BOM 将冲压件价、焊接费、年度零件价、包装运输等汇总为成品（L0）价格。
+            同一项目存在多个 BOM 版本时，引擎会<strong>逐个全算</strong>，不会只算最新版。
+          </p>
+          <figure class="shot">
+            <img src="/static/helper/img/17-l0-assembly-cost.png" alt="成品核价一览">
+            <figcaption>成品核价一览</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <!-- 引擎 -->
+      <section id="engine">
+        <h2>自动核价引擎</h2>
+        <p class="lead">入口仅三个参数：生产基地、年度、月份。</p>
+
+        <figure class="shot">
+          <img src="/static/helper/img/18-costing-engine.png" alt="自动核价引擎控制台">
+          <figcaption>月度核价控制台 · 检查就绪 / 启动 / 运行历史</figcaption>
+        </figure>
+
+        <ol class="steps">
+          <li>
+            <strong>选择范围</strong>
+            在「核价 → 自动核价引擎」选定基地、年、月。
+          </li>
+          <li>
+            <strong>检查就绪</strong>
+            系统校验上传/配置是否齐全。红灯项可点「去处理」跳到对应上传/维护页。
+          </li>
+          <li>
+            <strong>启动运行</strong>
+            通过门禁后一键启动。引擎会自动补算缺失的年度结果，再跑当月钢材 → 零件价 → 成品核价。
+          </li>
+          <li>
+            <strong>看进度与历史</strong>
+            前端只轮询一个异步任务。可在运行历史中查看步骤状态；卡住的任务也可删除后重跑。
+          </li>
+        </ol>
+
+        <h3>数据分类速查</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>类型</th>
+              <th>行为</th>
+              <th>举例</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="tag tag-hard">硬停</span> 上传/配置</td>
+              <td>缺失则整次停止，并给出跳转</td>
+              <td>工艺、冲次单价、BOM、焊接单价、年度零件价、包装运输、基准价、加减价政策、废料价、系统费率</td>
+            </tr>
+            <tr>
+              <td><span class="tag tag-auto">补算</span> 年度结果</td>
+              <td>缺失则自动计算；已有则默认不覆盖</td>
+              <td>冲压加工费、焊接工艺拆解、成品焊接费</td>
+            </tr>
+            <tr>
+              <td><span class="tag tag-month">主链</span> 月度结果</td>
+              <td>按依赖顺序计算</td>
+              <td>钢材联动 → 冲压零件价 → 成品核价</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="callout">
+          引擎<strong>不改核价公式</strong>，只负责发现范围、门禁、调度与进度。金额规则仍由各原有计算模块执行。
+        </div>
+      </section>
+
+      <!-- 报价设置 -->
+      <section id="quotation">
+        <h2>报价与设置</h2>
+        <p class="lead">报价输出与账号、系统参数维护。</p>
+
+        <div class="grid-2">
+          <div class="mini">
+            <h4>报价</h4>
+            <p>在核价结果基础上生成/管理报价单（见侧栏「报价」）。</p>
+          </div>
+          <div class="mini">
+            <h4>个人资料</h4>
+            <p>查看与修改当前登录用户基本信息。</p>
+          </div>
+          <div class="mini">
+            <h4>系统设置</h4>
+            <p>维护费率等全局配置；核价前确认已配置完整。</p>
+          </div>
+          <div class="mini">
+            <h4>用户 / 操作日志</h4>
+            <p>管理员分配权限、审计操作记录。</p>
+          </div>
+        </div>
+
+        <div class="shot-grid">
+          <figure class="shot">
+            <img src="/static/helper/img/19-quotation.png" alt="报价单管理">
+            <figcaption>报价</figcaption>
+          </figure>
+          <figure class="shot">
+            <img src="/static/helper/img/20-settings.png" alt="系统设置">
+            <figcaption>系统设置</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <!-- FAQ -->
+      <section id="faq">
+        <h2>常见问题</h2>
+        <p class="lead">操作中最常遇到的阻断与处理方式。</p>
+
+        <h3>引擎提示数据缺失怎么办？</h3>
+        <p>
+          点硬停列表中的「去处理」，按跳转页补传或补维护，再回到引擎点「检查就绪」。
+          若按钮禁用，说明当前账号无该页权限，需联系管理员开通。
+        </p>
+
+        <h3>为什么列表有数据仍报缺失？</h3>
+        <p>
+          引擎按<strong>将要计算的范围</strong>检查覆盖完整性：缺关键钢种、厚度档、政策匹配失败、BOM 无 L0 等，都会判为缺失。
+        </p>
+
+        <h3>年度加工费 / 焊接费会被覆盖吗？</h3>
+        <p>
+          默认不会。仅当该范围<strong>尚无可用结果</strong>时引擎才补算；已有结果（含已审核）默认保留。
+        </p>
+
+        <h3>任务一直显示运行中？</h3>
+        <p>
+          本机异常关机等可能导致任务卡住。可在引擎运行历史中删除该任务（含运行中状态），补齐数据后重新启动。
+        </p>
+
+        <h3>单步计算和引擎有何区别？</h3>
+        <p>
+          单步页只跑某一个计算；引擎在同一入口下按依赖串起年度补算与月度主链，并统一进度与缺口跳转。
+          公式与结果表与单步计算一致。
+        </p>
+
+        <h3>打不开某个菜单？</h3>
+        <p>
+          多为权限未授权。请管理员在「设置 → 用户管理」检查角色与权限码，刷新页面后再试。
+        </p>
+
+        <h3>核对合册和单表导出怎么选？</h3>
+        <p>
+          跨部门汇报、月度封存选<strong>成品核价一览 → 导出核对合册</strong>（多 Sheet 一次齐）。
+          只审某一个环节时，在对应列表页点「导出 Excel」即可。详见上方「Excel 导出能力」。
+        </p>
+      </section>
+
+      <footer class="footer">
+        STAMPING COSTING PLATFORM · HELP · 打印：Ctrl+P 或点「打印 / PDF」 · http://127.0.0.1:8000/helper
+      </footer>
+    </main>
+  </div>
+</body>
+</html>
