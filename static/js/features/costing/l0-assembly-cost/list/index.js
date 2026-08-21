@@ -4,7 +4,7 @@ import {
     renderLacRows,
     updateLacHud,
     updateLacFilterCapsules,
-} from './template.js?v=5';
+} from './template.js?v=6';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -83,6 +83,7 @@ function applyPermissionUi() {
     }
     if (!listState.canExport) {
         document.getElementById('lacExportBtn')?.classList.add('hidden');
+        document.getElementById('lacExportBundleBtn')?.classList.add('hidden');
     }
 }
 
@@ -205,6 +206,7 @@ function bindEvents() {
     document.getElementById('lacBatchReverseBtn')?.addEventListener('click', () => batchReverse());
     document.getElementById('lacBatchDeleteBtn')?.addEventListener('click', () => batchDelete());
     document.getElementById('lacExportBtn')?.addEventListener('click', () => exportExcel());
+    document.getElementById('lacExportBundleBtn')?.addEventListener('click', () => exportBundleExcel());
 
     document.getElementById('lacPagination')?.addEventListener('click', (event) => {
         const btn = event.target.closest('.lac-page-btn');
@@ -352,10 +354,11 @@ function getFilters() {
     };
 }
 
-function requireScope() {
+function requireScope(actionLabel = '批量操作') {
     const f = getFilters();
     if (!f.year || !f.month || !f.location || !f.vehicle_model || !f.bom_version) {
-        showToast('批量操作须选定年度、月份、基地、项目、版本', 'warning');
+        showToast(`${actionLabel}须选定年度、月份、基地、项目、版本`, 'warning');
+        setAdvancedOpen(true);
         return null;
     }
     return {
@@ -496,6 +499,53 @@ async function exportExcel() {
     } catch (error) {
         if (!error.status) {
             showToast(error.message || '导出失败', 'error');
+        }
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+        }
+    }
+}
+
+async function exportBundleExcel() {
+    if (!listState.canExport) return showToast('无导出权限', 'warning');
+    const scope = requireScope('导出核对合册');
+    if (!scope) return;
+    const btn = document.getElementById('lacExportBundleBtn');
+    const originalHtml = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML =
+            `<div class="w-3 h-3 border border-[#ef5350] border-t-transparent rounded-full animate-spin"></div>合册导出中..`;
+    }
+    try {
+        const { blob, filename } = await HttpClient.download(
+            '/api/costing/monthly-bundle/export-download',
+            {
+                params: {
+                    year: scope.year,
+                    month: scope.month,
+                    location: scope.location,
+                    vehicle_model: scope.vehicle_model,
+                    bom_version: scope.bom_version,
+                },
+                defaultFilename: '核对合册.xlsx',
+                timeout: 300000,
+            },
+        );
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = filename;
+        document.body.appendChild(anchor);
+        anchor.click();
+        document.body.removeChild(anchor);
+        URL.revokeObjectURL(url);
+        showToast(`核对合册已导出: ${filename}`, 'success');
+    } catch (error) {
+        if (!error.status) {
+            showToast(error.message || '核对合册导出失败', 'error');
         }
     } finally {
         if (btn) {

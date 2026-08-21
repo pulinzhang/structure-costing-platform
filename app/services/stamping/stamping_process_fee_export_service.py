@@ -16,6 +16,7 @@ from openpyxl.utils import get_column_letter
 from sqlalchemy.orm import Session
 
 from app.common.audit import audit_status_label
+from app.common.excel_workbook import resolve_worksheet
 from app.common.money import Q3, Q4, excel_money_cell
 from app.common.timezone import now
 from app.models.stamping.process_fee import StampingProcessFee
@@ -141,6 +142,53 @@ class StampingProcessFeeExportService:
         part_number: str | None = None,
         audit_status: str | None = None,
     ) -> tuple[bytes, str]:
+        wb = Workbook()
+        _title, fee_count = self.write_to_workbook(
+            wb,
+            db,
+            year=year,
+            location=location,
+            stamping_supplier=stamping_supplier,
+            vehicle_model=vehicle_model,
+            version=version,
+            part_number=part_number,
+            audit_status=audit_status,
+        )
+
+        buffer = BytesIO()
+        wb.save(buffer)
+        content = buffer.getvalue()
+
+        stamp = now().strftime("%Y%m%d_%H%M%S")
+        parts = ["冲压加工费"]
+        if year:
+            parts.append(f"{year}年")
+        if location:
+            parts.append(location)
+        if stamping_supplier:
+            parts.append(stamping_supplier)
+        filename = "_".join(parts) + f"_{stamp}.xlsx"
+        logger.info(
+            "导出冲压加工费 %s 条主表 -> %s",
+            fee_count,
+            filename,
+        )
+        return content, filename
+
+    def write_to_workbook(
+        self,
+        wb: Workbook,
+        db: Session,
+        *,
+        year: int | None = None,
+        location: str | None = None,
+        stamping_supplier: str | None = None,
+        vehicle_model: str | None = None,
+        version: str | None = None,
+        part_number: str | None = None,
+        audit_status: str | None = None,
+        sheet_title: str = "冲压加工费",
+    ) -> tuple[str, int]:
         records = self.repository.list_for_export(
             db,
             year=year,
@@ -152,9 +200,7 @@ class StampingProcessFeeExportService:
             audit_status=audit_status,
         )
 
-        wb = Workbook()
-        ws = wb.worksheets[0]
-        ws.title = "冲压加工费"
+        ws = resolve_worksheet(wb, sheet_title)
 
         filter_text = self._filter_text(
             year=year,
@@ -231,26 +277,13 @@ class StampingProcessFeeExportService:
         ws.sheet_view.showGridLines = False
         ws.sheet_view.zoomScale = 90
 
-        buffer = BytesIO()
-        wb.save(buffer)
-        content = buffer.getvalue()
-
-        stamp = now().strftime("%Y%m%d_%H%M%S")
-        parts = ["冲压加工费"]
-        if year:
-            parts.append(f"{year}年")
-        if location:
-            parts.append(location)
-        if stamping_supplier:
-            parts.append(stamping_supplier)
-        filename = "_".join(parts) + f"_{stamp}.xlsx"
         logger.info(
-            "导出冲压加工费 %s 条主表 / %s 行明细 -> %s",
+            "写入冲压加工费 sheet=%s 主表=%s 明细行=%s",
+            ws.title,
             len(records),
             export_row_count,
-            filename,
         )
-        return content, filename
+        return ws.title, len(records)
 
     def _write_banner(self, ws: Any, *, filter_text: str, fee_count: int) -> None:
         indent = Alignment(horizontal="left", vertical="center", indent=1)

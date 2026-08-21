@@ -14,6 +14,7 @@ from openpyxl.utils import get_column_letter
 from sqlalchemy.orm import Session
 
 from app.common.audit import audit_status_label
+from app.common.excel_workbook import resolve_worksheet
 from app.common.money import Q4, excel_money_cell
 from app.common.timezone import now
 from app.repositories.costing.steel_price.steel_price_repository import SteelPriceRepository
@@ -168,7 +169,7 @@ def _num_blank_zero(value: Any, quant: Any = Q4, *, allow_negative: bool = True)
 def _dt(value: datetime | None) -> str:
     if value is None:
         return ""
-    return value.strftime("%Y-%m-%d %H:%M:%S")
+    return f"{value:%Y-%m-%d %H:%M:%S}"
 
 
 class SteelPriceExportService:
@@ -202,6 +203,54 @@ class SteelPriceExportService:
         Returns:
             (文件字节, 文件名)
         """
+        wb = Workbook()
+        _title, record_count = self.write_to_workbook(
+            wb,
+            db,
+            year=year,
+            month=month,
+            location=location,
+            category_name=category_name,
+            grade=grade,
+            steel_mill=steel_mill,
+            audit_status=audit_status,
+        )
+        scope_parts = [
+            f"{year}年" if year else None,
+            f"{month}月" if month else None,
+            location,
+            category_name,
+            steel_mill,
+            grade,
+            audit_status_label(audit_status) if audit_status else None,
+        ]
+        scope = "_".join(p for p in scope_parts if p) or "筛选"
+        stamp = now().strftime("%Y%m%d_%H%M%S")
+        filename = f"钢材联动价格_{scope}_{stamp}.xlsx"
+
+        output = BytesIO()
+        wb.save(output)
+        logger.info(
+            "导出钢材联动价格 Excel 完成: filename=%s records=%d",
+            filename,
+            record_count,
+        )
+        return output.getvalue(), filename
+
+    def write_to_workbook(
+        self,
+        wb: Workbook,
+        db: Session,
+        *,
+        year: int | None = None,
+        month: int | None = None,
+        location: str | None = None,
+        category_name: str | None = None,
+        grade: str | None = None,
+        steel_mill: str | None = None,
+        audit_status: str | None = None,
+        sheet_title: str = "钢材联动价",
+    ) -> tuple[str, int]:
         records = self.repository.list_for_export(
             db,
             year=year,
@@ -222,9 +271,7 @@ class SteelPriceExportService:
             audit_status=audit_status,
         )
 
-        wb = Workbook()
-        ws = wb.worksheets[0]
-        ws.title = "钢材联动价格"
+        ws = resolve_worksheet(wb, sheet_title)
 
         self._write_banner(ws, filter_text=filter_text, record_count=len(records))
         header_row = self._write_headers(ws)
@@ -321,27 +368,7 @@ class SteelPriceExportService:
         ws.sheet_view.showGridLines = False
         ws.sheet_view.zoomScale = 85
 
-        scope_parts = [
-            f"{year}年" if year else None,
-            f"{month}月" if month else None,
-            location,
-            category_name,
-            steel_mill,
-            grade,
-            audit_status_label(audit_status) if audit_status else None,
-        ]
-        scope = "_".join(p for p in scope_parts if p) or "筛选"
-        stamp = now().strftime("%Y%m%d_%H%M%S")
-        filename = f"钢材联动价格_{scope}_{stamp}.xlsx"
-
-        output = BytesIO()
-        wb.save(output)
-        logger.info(
-            "导出钢材联动价格 Excel 完成: filename=%s records=%d",
-            filename,
-            len(records),
-        )
-        return output.getvalue(), filename
+        return ws.title, len(records)
 
     @staticmethod
     def _filter_text(

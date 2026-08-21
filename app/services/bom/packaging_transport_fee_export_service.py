@@ -12,6 +12,7 @@ from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 from sqlalchemy.orm import Session
 
+from app.common.excel_workbook import resolve_worksheet
 from app.common.money import Q4, excel_money_cell
 from app.common.timezone import now
 from app.repositories.bom.packaging_transport_fee_repository import (
@@ -47,16 +48,55 @@ class BomPackagingTransportFeeExportService:
         year: int | None = None,
         vehicle_model: str | None = None,
     ) -> tuple[bytes, str]:
+        wb = Workbook()
+        _title, count = self.write_to_workbook(
+            wb,
+            db,
+            location=location,
+            year=year,
+            vehicle_model=vehicle_model,
+        )
+        buffer = BytesIO()
+        wb.save(buffer)
+        content = buffer.getvalue()
+
+        stamp = now().strftime("%Y%m%d_%H%M%S")
+        parts = ["包装运输费"]
+        if location:
+            parts.append(location)
+        if year:
+            parts.append(f"{year}年")
+        if vehicle_model:
+            parts.append(vehicle_model)
+        filename = "_".join(parts) + f"_{stamp}.xlsx"
+
+        logger.info(
+            "导出包装运输费 %s 条 location=%s year=%s vehicle=%s -> %s",
+            count,
+            location,
+            year,
+            vehicle_model,
+            filename,
+        )
+        return content, filename
+
+    def write_to_workbook(
+        self,
+        wb: Workbook,
+        db: Session,
+        *,
+        location: str | None = None,
+        year: int | None = None,
+        vehicle_model: str | None = None,
+        sheet_title: str = "BOM包装运输费",
+    ) -> tuple[str, int]:
         records = self.repository.list_for_export(
             db,
             location=location,
             year=year,
             vehicle_model=vehicle_model,
         )
-
-        wb = Workbook()
-        ws = wb.worksheets[0]
-        ws.title = "包装运输费"
+        ws = resolve_worksheet(wb, sheet_title)
 
         header_font = Font(name="微软雅黑", size=10, bold=True, color="FFFFFF")
         header_fill = PatternFill(
@@ -155,27 +195,4 @@ class BomPackagingTransportFeeExportService:
         ws.column_dimensions["E"].width = 18
         ws.freeze_panes = "A2"
         ws.auto_filter.ref = f"A1:X{max(1, len(records) + 1)}"
-
-        buffer = BytesIO()
-        wb.save(buffer)
-        content = buffer.getvalue()
-
-        stamp = now().strftime("%Y%m%d_%H%M%S")
-        parts = ["包装运输费"]
-        if location:
-            parts.append(location)
-        if year:
-            parts.append(f"{year}年")
-        if vehicle_model:
-            parts.append(vehicle_model)
-        filename = "_".join(parts) + f"_{stamp}.xlsx"
-
-        logger.info(
-            "导出包装运输费 %s 条 location=%s year=%s vehicle=%s -> %s",
-            len(records),
-            location,
-            year,
-            vehicle_model,
-            filename,
-        )
-        return content, filename
+        return ws.title, len(records)

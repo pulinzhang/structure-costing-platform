@@ -13,6 +13,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from sqlalchemy.orm import Session
 
+from app.common.excel_workbook import resolve_worksheet
 from app.common.timezone import now
 from app.repositories.bom.bom_repository import BomNodeRepository, BomSnapshotRepository
 from app.repositories.stamping.stamping_process_fee_repository import (
@@ -249,7 +250,8 @@ def _part_size_formula(material_row: int, thickness_row: int) -> str:
     return f'=F{material_row}&"-"&TEXT(G{thickness_row},"0.0###")'
 
 
-def export_process_sheet(
+def write_process_sheet_to_workbook(
+    workbook: Workbook,
     db: Session,
     rows: list[Any],
     *,
@@ -264,19 +266,13 @@ def export_process_sheet(
     stamping_supplier: str | None = None,
     vehicle_model: str | None = None,
     version: str | None = None,
-) -> tuple[bytes, str]:
+    sheet_title: str = "冲压核价结果",
+) -> tuple[str, int]:
     """
-    工艺清单口径：对齐样例至 R 列 + 加工费 + 成品费率费用 + 最终价。
-    普通件一行一件，M/N/O/I/R 保留 Excel 公式；
-    直接成本 T=R+S；四项费用（仓储包装→管理→财务→税前利润）=T×费率；最终价=T+四项。
-    拼焊件按子片分行（料厚/长/宽/单价各片一格），净重与成本等列合并；
-    子片 M 引用本行 G/J/K/L，总成 O/N/R 引用各子片行。
-    总成供货号：同基地 BOM 上溯 L0；多总成时逗号分隔。
-    末尾 Z~AE 为人可读溯源（核对/手工补填），AF~AH 为关联 ID（钢材/废料/加工费）。
+    将工艺清单口径核价结果写入已有 Workbook（不 save）。
+    返回 (主表 sheet 名, 主表零件行数近似用 rows 长度)。
     """
-    workbook = Workbook()
-    sheet = workbook.worksheets[0]
-    sheet.title = "核价结果"
+    sheet = resolve_worksheet(workbook, sheet_title)
 
     last_col = 34  # AH
     last_col_letter = "AH"
@@ -838,7 +834,7 @@ def export_process_sheet(
     sheet.page_setup.fitToHeight = 0
 
     # 附录：核价口径定义（次于「单件」工作表，打开文件默认见单件）
-    note = workbook.create_sheet("核价口径")
+    note = resolve_worksheet(workbook, "冲压核价口径")
     note_font_title = Font(name="微软雅黑", size=12, bold=True, color="1F1F1F")
     note_font = Font(name="微软雅黑", size=10, color="333333")
     note_header = Font(name="微软雅黑", size=10, bold=True, color="FFFFFF")
@@ -934,7 +930,7 @@ def export_process_sheet(
     note.column_dimensions["C"].width = 52
 
     # 附录：负公差说明（通俗口径，供采购/核价对照）
-    tip = workbook.create_sheet("负公差说明")
+    tip = resolve_worksheet(workbook, "冲压负公差说明")
     tip_title_font = Font(name="微软雅黑", size=12, bold=True, color="1F1F1F")
     tip_section_font = Font(name="微软雅黑", size=10, bold=True, color="FFFFFF")
     tip_body_font = Font(name="微软雅黑", size=10, color="333333")
@@ -1028,6 +1024,52 @@ def export_process_sheet(
 
     tip.column_dimensions["A"].width = 22
     tip.column_dimensions["B"].width = 88
+
+    return sheet.title, len(rows)
+
+
+def export_process_sheet(
+    db: Session,
+    rows: list[Any],
+    *,
+    bom_snapshot_repo: BomSnapshotRepository,
+    bom_node_repo: BomNodeRepository,
+    steel_price_repo: SteelPriceRepository,
+    scrap_price_repo: StampingScrapPriceRepository,
+    process_fee_repo: StampingProcessFeeRepository,
+    year: int | None = None,
+    month: int | None = None,
+    location: str | None = None,
+    stamping_supplier: str | None = None,
+    vehicle_model: str | None = None,
+    version: str | None = None,
+) -> tuple[bytes, str]:
+    """
+    工艺清单口径：对齐样例至 R 列 + 加工费 + 成品费率费用 + 最终价。
+    普通件一行一件，M/N/O/I/R 保留 Excel 公式；
+    直接成本 T=R+S；四项费用（仓储包装→管理→财务→税前利润）=T×费率；最终价=T+四项。
+    拼焊件按子片分行（料厚/长/宽/单价各片一格），净重与成本等列合并；
+    子片 M 引用本行 G/J/K/L，总成 O/N/R 引用各子片行。
+    总成供货号：同基地 BOM 上溯 L0；多总成时逗号分隔。
+    末尾 Z~AE 为人可读溯源（核对/手工补填），AF~AH 为关联 ID（钢材/废料/加工费）。
+    """
+    workbook = Workbook()
+    write_process_sheet_to_workbook(
+        workbook,
+        db,
+        rows,
+        bom_snapshot_repo=bom_snapshot_repo,
+        bom_node_repo=bom_node_repo,
+        steel_price_repo=steel_price_repo,
+        scrap_price_repo=scrap_price_repo,
+        process_fee_repo=process_fee_repo,
+        year=year,
+        month=month,
+        location=location,
+        stamping_supplier=stamping_supplier,
+        vehicle_model=vehicle_model,
+        version=version,
+    )
 
     buffer = BytesIO()
     workbook.save(buffer)

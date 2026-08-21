@@ -76,9 +76,15 @@ export function l0AssemblyCostListTemplate() {
                             </button>
                             <button id="lacExportBtn" type="button"
                                     class="inline-flex items-center gap-1.5 bg-transparent text-[#6E6E73] border border-[#2A2A35] px-3 py-1.5 text-[11px] font-medium rounded-md hover:border-[#FF1E27]/50 hover:text-[#FF1E27] hover:bg-[#FF1E27]/10 hover:shadow-[0_0_12px_rgba(255,30,39,0.2)] transition-all duration-200"
-                                    title="按当前筛选导出全部列表数据（一览所见字段 + 材料明细 + 间接费用）">
+                                    title="仅导出成品核价（一览 + 材料明细 + 间接费用）">
                                 ${window.svgIcon('download', 'w-3 h-3')}
-                                导出 Excel
+                                导出成品核价
+                            </button>
+                            <button id="lacExportBundleBtn" type="button"
+                                    class="inline-flex items-center gap-1.5 bg-transparent text-[#6E6E73] border border-[#2A2A35] px-3 py-1.5 text-[11px] font-medium rounded-md hover:border-[#FF1E27]/50 hover:text-[#FF1E27] hover:bg-[#FF1E27]/10 hover:shadow-[0_0_12px_rgba(255,30,39,0.2)] transition-all duration-200"
+                                    title="导出核对合册：成品核价 + 冲压零件核价 + 焊接费 + 加工费 + 钢材联动等关联表（须选定年/月/基地/项目/版本）">
+                                ${window.svgIcon('download', 'w-3 h-3')}
+                                导出核对合册
                             </button>
                         </div>
                     </div>

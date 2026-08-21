@@ -12,6 +12,7 @@ from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 from sqlalchemy.orm import Session
 
+from app.common.excel_workbook import resolve_worksheet
 from app.common.money import Q4, excel_money_cell
 from app.common.timezone import now
 from app.repositories.bom.annual_part_price_repository import (
@@ -45,15 +46,46 @@ class BomAnnualPartPriceExportService:
         location: str | None = None,
         year: int | None = None,
     ) -> tuple[bytes, str]:
+        wb = Workbook()
+        _title, count = self.write_to_workbook(
+            wb, db, location=location, year=year
+        )
+        buffer = BytesIO()
+        wb.save(buffer)
+        content = buffer.getvalue()
+
+        stamp = now().strftime("%Y%m%d_%H%M%S")
+        parts = ["年度零件价"]
+        if location:
+            parts.append(location)
+        if year:
+            parts.append(f"{year}年")
+        filename = "_".join(parts) + f"_{stamp}.xlsx"
+
+        logger.info(
+            "导出年度零件价 %s 条 location=%s year=%s -> %s",
+            count,
+            location,
+            year,
+            filename,
+        )
+        return content, filename
+
+    def write_to_workbook(
+        self,
+        wb: Workbook,
+        db: Session,
+        *,
+        location: str | None = None,
+        year: int | None = None,
+        sheet_title: str = "BOM年度零件价",
+    ) -> tuple[str, int]:
         records = self.repository.list_for_export(
             db,
             location=location,
             year=year,
         )
-
-        wb = Workbook()
-        ws = wb.worksheets[0]
-        ws.title = "年度零件价"
+        ws = resolve_worksheet(wb, sheet_title)
 
         header_font = Font(name="微软雅黑", size=10, bold=True, color="FFFFFF")
         header_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
@@ -120,24 +152,4 @@ class BomAnnualPartPriceExportService:
 
         ws.freeze_panes = "A2"
         ws.auto_filter.ref = f"A1:J{max(1, len(records) + 1)}"
-
-        buffer = BytesIO()
-        wb.save(buffer)
-        content = buffer.getvalue()
-
-        stamp = now().strftime("%Y%m%d_%H%M%S")
-        parts = ["年度零件价"]
-        if location:
-            parts.append(location)
-        if year:
-            parts.append(f"{year}年")
-        filename = "_".join(parts) + f"_{stamp}.xlsx"
-
-        logger.info(
-            "导出年度零件价 %s 条 location=%s year=%s -> %s",
-            len(records),
-            location,
-            year,
-            filename,
-        )
-        return content, filename
+        return ws.title, len(records)

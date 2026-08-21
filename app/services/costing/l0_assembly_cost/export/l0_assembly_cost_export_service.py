@@ -13,6 +13,7 @@ from openpyxl.utils import get_column_letter
 from sqlalchemy.orm import Session
 
 from app.common.audit import audit_status_label
+from app.common.excel_workbook import resolve_worksheet
 from app.common.money import Q4, excel_money_cell
 from app.common.timezone import now
 from app.models.costing.l0_assembly_cost import L0AssemblyCost
@@ -72,7 +73,7 @@ def _num(value: Any) -> Any:
 def _dt(value: datetime | None) -> str:
     if value is None:
         return ""
-    return value.strftime("%Y-%m-%d %H:%M:%S")
+    return f"{value:%Y-%m-%d %H:%M:%S}"
 
 
 def _thin() -> Border:
@@ -103,6 +104,57 @@ class L0AssemblyCostExportService:
         audit_status: str | None = None,
         calc_status: str | None = None,
     ) -> tuple[bytes, str]:
+        wb = Workbook()
+        _title, record_count = self.write_to_workbook(
+            wb,
+            db,
+            year=year,
+            month=month,
+            location=location,
+            vehicle_model=vehicle_model,
+            bom_version=bom_version,
+            part_number=part_number,
+            audit_status=audit_status,
+            calc_status=calc_status,
+        )
+
+        scope_parts = [
+            f"{year}年" if year else None,
+            f"{month}月" if month else None,
+            location,
+            vehicle_model,
+            bom_version,
+        ]
+        scope = "_".join(p for p in scope_parts if p) or "筛选"
+        stamp = now().strftime("%Y%m%d_%H%M%S")
+        filename = f"成品核价_{scope}_{stamp}.xlsx"
+
+        output = BytesIO()
+        wb.save(output)
+        logger.info(
+            "导出成品核价 Excel: filename=%s records=%d",
+            filename,
+            record_count,
+        )
+        return output.getvalue(), filename
+
+    def write_to_workbook(
+        self,
+        wb: Workbook,
+        db: Session,
+        *,
+        year: int | None = None,
+        month: int | None = None,
+        location: str | None = None,
+        vehicle_model: str | None = None,
+        bom_version: str | None = None,
+        part_number: str | None = None,
+        audit_status: str | None = None,
+        calc_status: str | None = None,
+        list_sheet_title: str = "成品核价一览",
+        items_sheet_title: str = "成品材料明细",
+        indirects_sheet_title: str = "成品间接费用",
+    ) -> tuple[str, int]:
         records = self.repository.list_for_export(
             db,
             year=year,
@@ -125,34 +177,19 @@ class L0AssemblyCostExportService:
             calc_status=calc_status,
         )
 
-        wb = Workbook()
-        self._write_list_sheet(wb.active, records, filter_text=filter_text)
+        list_ws = resolve_worksheet(wb, list_sheet_title)
+        self._write_list_sheet(list_ws, records, filter_text=filter_text)
         self._write_items_sheet(
-            wb.create_sheet("材料明细"), records, filter_text=filter_text
+            resolve_worksheet(wb, items_sheet_title),
+            records,
+            filter_text=filter_text,
         )
         self._write_indirects_sheet(
-            wb.create_sheet("间接费用"), records, filter_text=filter_text
+            resolve_worksheet(wb, indirects_sheet_title),
+            records,
+            filter_text=filter_text,
         )
-
-        scope_parts = [
-            f"{year}年" if year else None,
-            f"{month}月" if month else None,
-            location,
-            vehicle_model,
-            bom_version,
-        ]
-        scope = "_".join(p for p in scope_parts if p) or "筛选"
-        stamp = now().strftime("%Y%m%d_%H%M%S")
-        filename = f"成品核价_{scope}_{stamp}.xlsx"
-
-        output = BytesIO()
-        wb.save(output)
-        logger.info(
-            "导出成品核价 Excel: filename=%s records=%d",
-            filename,
-            len(records),
-        )
-        return output.getvalue(), filename
+        return list_ws.title, len(records)
 
     @staticmethod
     def _filter_text(
