@@ -120,7 +120,7 @@ class BomWeldingUnitPriceExportService:
             cell.border = thin_border
 
         for row_idx, record in enumerate(records, start=2):
-            values = [
+            values: list[Any] = [
                 record.location,
                 record.year,
                 record.item_name,

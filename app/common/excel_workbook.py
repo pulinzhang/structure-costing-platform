@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import cast
+
 from openpyxl import Workbook
 from openpyxl.worksheet.worksheet import Worksheet
 
@@ -29,4 +31,4 @@ def resolve_worksheet(wb: Workbook, sheet_title: str) -> Worksheet:
         while f"{sheet_title}_{suffix}" in existing:
             suffix += 1
         title = f"{sheet_title}_{suffix}"
-    return wb.create_sheet(title)
+    return cast(Worksheet, wb.create_sheet(title))

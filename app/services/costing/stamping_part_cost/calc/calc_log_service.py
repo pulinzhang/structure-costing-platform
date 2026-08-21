@@ -11,7 +11,6 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.common.timezone import now
-from app.exceptions.base import BusinessException
 from app.models.costing import StampingPartCostCalcLog
 from app.repositories.costing.stamping_part_cost.stamping_part_cost_calc_log_repository import (
     StampingPartCostCalcLogRepository,

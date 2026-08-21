@@ -11,7 +11,6 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.common.timezone import now
-from app.exceptions.base import BusinessException
 from app.models.bom import BomL0WeldingFeeCalcLog
 from app.repositories.bom.l0_welding_fee_calc_log_repository import (
     BomL0WeldingFeeCalcLogRepository,
