@@ -120,6 +120,9 @@ class SteelBasePriceService:
             progress_callback=progress_callback,
         )
 
+    def build_template(self) -> tuple[bytes, str]:
+        return self._import_service.build_template()
+
     def list_for_export(
         self,
         db: Session,

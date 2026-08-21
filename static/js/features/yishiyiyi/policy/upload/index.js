@@ -72,6 +72,9 @@ const PolicyUploadPage = {
         const form = document.getElementById('policyUploadForm');
         const resetButton = document.getElementById('policyResetButton');
         const selectBtn = document.getElementById('policySelectFileBtn');
+        const templateBtn = document.getElementById('policyUploadTemplateBtn');
+
+        templateBtn?.addEventListener('click', () => this.downloadTemplate());
 
         zone?.addEventListener('click', (event) => {
             if (this.canUpload === false || this.isUploading) return;
@@ -286,6 +289,7 @@ const PolicyUploadPage = {
         const resetButton = document.getElementById('policyResetButton');
         const yearInput = document.getElementById('policyYear');
         const monthInput = document.getElementById('policyMonth');
+        const templateBtn = document.getElementById('policyUploadTemplateBtn');
 
         if (button) {
             button.disabled = isUploading || !this.selectedFile;
@@ -296,6 +300,28 @@ const PolicyUploadPage = {
         if (resetButton) resetButton.disabled = isUploading;
         if (yearInput) yearInput.disabled = isUploading;
         if (monthInput) monthInput.disabled = isUploading;
+        if (templateBtn) templateBtn.disabled = isUploading;
+    },
+
+    async downloadTemplate() {
+        try {
+            const { blob, filename } = await HttpClient.download('/api/yishiyiyi/policy/template', {
+                defaultFilename: '加减价政策导入模板.xlsx',
+            });
+            const url = window.URL.createObjectURL(blob);
+            const anchor = document.createElement('a');
+            anchor.href = url;
+            anchor.download = filename;
+            document.body.appendChild(anchor);
+            anchor.click();
+            document.body.removeChild(anchor);
+            window.URL.revokeObjectURL(url);
+            showToast('模板已下载', 'success');
+        } catch (error) {
+            if (!error.status) {
+                showToast(error.message || '模板下载失败', 'error');
+            }
+        }
     },
 
     stopPolling() {

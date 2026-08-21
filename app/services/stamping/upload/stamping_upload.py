@@ -23,6 +23,7 @@ from app.schemas.dto.stamping_upload_dto import FileInfo, PartData, ProcessData,
 from app.schemas.vo.user_vo import UserVO
 from app.services.stamping.tailor_weld_blank_service import StampingTailorWeldBlankService
 from app.services.stamping.upload.cost_ratio_preserver import ProcessCostRatioPreserver
+from app.services.stamping.upload.template_builder import build_stamping_process_template
 
 # progress_callback(progress: int, msg: str)
 ProgressCallback = Callable[[int, str], None]
@@ -39,6 +40,11 @@ class StampingUploadService:
         self.process_repo = StampingProcessRepository()
         self.cost_ratio_preserver = ProcessCostRatioPreserver()
         self.tailor_weld_service = StampingTailorWeldBlankService()
+
+    @staticmethod
+    def build_template() -> tuple[bytes, str]:
+        """下载用冲压工艺导入模板（含样例零件）。"""
+        return build_stamping_process_template()
 
     def process_upload(
         self,

@@ -24,6 +24,9 @@ from app.utils.steel_price_archive import (
     FILE_KIND_BASE_PRICE,
     save_steel_price_upload,
 )
+from app.services.yishiyiyi.base_price.importing.template_builder import (
+    build_steel_base_price_template,
+)
 
 ProgressCallback = Callable[[int, str], None]
 
@@ -129,6 +132,10 @@ class SteelBasePriceImportService:
 
     def __init__(self) -> None:
         self.repository = SteelBasePriceRepository()
+
+    def build_template(self) -> tuple[bytes, str]:
+        """下载用基准价格导入模板（含样例宽表）。"""
+        return build_steel_base_price_template()
 
     def import_excel(
         self,

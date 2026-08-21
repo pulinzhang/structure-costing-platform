@@ -116,6 +116,9 @@ class SteelPricePolicyService:
     ) -> None:
         self._import_service.validate_upload(file_content, filename)
 
+    def build_template(self) -> tuple[bytes, str]:
+        return self._import_service.build_template()
+
     def import_from_parser(
         self,
         db: Session,

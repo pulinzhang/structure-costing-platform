@@ -24,6 +24,9 @@ from app.schemas.dto.steel_price_policy_dto import (
 from app.schemas.vo.steel_price_policy_vo import ImportResultResponse
 from app.schemas.vo.user_vo import UserVO
 from app.utils.steel_price_archive import FILE_KIND_POLICY, save_steel_price_upload
+from app.services.yishiyiyi.policy.importing.template_builder import (
+    build_steel_price_policy_template,
+)
 
 # progress_callback(progress: int, msg: str)
 ProgressCallback = Callable[[int, str], None]
@@ -86,6 +89,10 @@ class SteelPricePolicyImportService:
 
     def __init__(self) -> None:
         self.repository = SteelPricePolicyRepository()
+
+    def build_template(self) -> tuple[bytes, str]:
+        """下载用加减价政策导入模板（含样例钢种）。"""
+        return build_steel_price_policy_template()
 
     def validate_upload(
         self,
