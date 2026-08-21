@@ -15,6 +15,7 @@ from app.common.audit import (
     audit_create,
     display_name,
 )
+from app.common.bom.welding_standard_process import validate_welding_unit_price_catalog
 from app.common.timezone import now
 from app.repositories.bom.welding_unit_price_repository import (
     BomWeldingUnitPriceRepository,
@@ -183,6 +184,12 @@ class BomWeldingUnitPriceService:
                 return None, "记录不存在"
             if existing.audit_status == AUDIT_APPROVED:
                 return None, "已审核通过，请先反审核后再修改"
+
+            unit_to_check = data.unit if data.unit is not None else existing.unit
+            try:
+                validate_welding_unit_price_catalog(existing.item_name, unit_to_check)
+            except ValueError as exc:
+                return None, str(exc)
 
             record = self.repository.update(
                 db,

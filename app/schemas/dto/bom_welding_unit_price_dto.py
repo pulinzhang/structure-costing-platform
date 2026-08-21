@@ -5,8 +5,9 @@
 from decimal import Decimal
 from typing import Any
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
+from app.common.bom.welding_standard_process import validate_welding_unit_price_catalog
 from app.common.money import Q4, quantize_money
 
 
@@ -29,6 +30,18 @@ class BomWeldingUnitPriceCreate(BaseModel):
     @classmethod
     def _coerce_unit_price(cls, value: Any) -> Decimal:
         return quantize_unit_price(value)
+
+    @field_validator("item_name", mode="before")
+    @classmethod
+    def _strip_item_name(cls, value: Any) -> Any:
+        if isinstance(value, str):
+            return value.strip()
+        return value
+
+    @model_validator(mode="after")
+    def _validate_standard_catalog(self) -> "BomWeldingUnitPriceCreate":
+        validate_welding_unit_price_catalog(self.item_name, self.unit)
+        return self
 
 
 class BomWeldingUnitPriceUpdate(BaseModel):

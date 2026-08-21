@@ -12,6 +12,7 @@ from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from sqlalchemy.orm import Session
 
 from app.common.audit import audit_create, audit_update
+from app.common.bom.welding_standard_process import list_welding_standard_catalog
 from app.parsers.bom.welding_unit_price_parser import parse_welding_unit_price_excel
 from app.repositories.bom.welding_unit_price_repository import BomWeldingUnitPriceRepository
 from app.schemas.dto.bom_welding_unit_price_dto import (
@@ -19,26 +20,30 @@ from app.schemas.dto.bom_welding_unit_price_dto import (
     BomWeldingUnitPriceUpdate,
     quantize_unit_price,
 )
-from app.schemas.vo.bom_welding_unit_price_vo import BomWeldingUnitPriceImportResultVO
+from app.schemas.vo.bom_welding_unit_price_vo import (
+    BomWeldingUnitPriceImportResultVO,
+    WeldingStandardProcessCatalogItemVO,
+)
 from app.schemas.vo.user_vo import UserVO
 
 logger = logging.getLogger("service.bom_welding_unit_price_import")
 
-TEMPLATE_SAMPLE_ROWS: list[tuple[str, str, Decimal, str]] = [
-    ("焊点", "个", Decimal("0.0999"), ""),
-    ("植/螺柱/凸焊", "个", Decimal("0.1053"), ""),
-    ("铆接", "个", Decimal("0.1053"), ""),
-    ("CO2焊缝", "CM", Decimal("0.0700"), ""),
-    ("折边/点焊胶", "MM", Decimal("0.0009"), ""),
-    ("电镀", "平方", Decimal("12.0000"), ""),
-    ("电泳（盐雾试验要求≤244H）", "平方", Decimal("12.0000"), ""),
-    ("电泳（盐雾试验要求244H-720H）", "平方", Decimal("15.0000"), ""),
-    ("电泳（盐雾试验要求＞720H）", "平方", Decimal("18.0000"), ""),
-    ("压铆", "个", Decimal("0.1800"), ""),
-    ("打铆钉", "个", Decimal("0.4500"), ""),
-    ("二维码", "个", Decimal("0.1800"), ""),
-    ("套袋", "个", Decimal("0.0900"), ""),
-]
+# 模板示例单价（名称/单位以标准目录为准；缺省费用用 0）
+_TEMPLATE_SAMPLE_PRICES: dict[str, Decimal] = {
+    "焊点": Decimal("0.0999"),
+    "植/螺柱/凸焊": Decimal("0.1053"),
+    "铆接": Decimal("0.1053"),
+    "CO2焊缝": Decimal("0.0700"),
+    "折边/点焊胶": Decimal("0.0009"),
+    "电镀": Decimal("12.0000"),
+    "电泳（盐雾试验要求≤244H）": Decimal("12.0000"),
+    "电泳（盐雾试验要求244H-720H）": Decimal("15.0000"),
+    "电泳（盐雾试验要求＞720H）": Decimal("18.0000"),
+    "压铆": Decimal("0.1800"),
+    "打铆钉": Decimal("0.4500"),
+    "二维码": Decimal("0.1800"),
+    "套袋": Decimal("0.0900"),
+}
 
 
 class BomWeldingUnitPriceImportService:
@@ -47,11 +52,18 @@ class BomWeldingUnitPriceImportService:
     def __init__(self) -> None:
         self.repository = BomWeldingUnitPriceRepository()
 
+    def list_standard_catalog(self) -> list[WeldingStandardProcessCatalogItemVO]:
+        """返回焊接标准工艺目录（供前端展示 / 与导入门禁对齐）。"""
+        return [
+            WeldingStandardProcessCatalogItemVO(item_name=name, unit=unit)
+            for name, unit in list_welding_standard_catalog()
+        ]
+
     def build_template(self) -> tuple[bytes, str]:
-        """生成四列模板：名称 / 单位 / 费用 / 备注（费用=单位工费单价）。"""
+        """生成导入模板：数据表 + 标准工艺目录表。"""
         workbook = Workbook()
-        sheet = workbook.worksheets[0]
-        sheet.title = "焊接单价"
+        data_sheet = workbook.worksheets[0]
+        data_sheet.title = "焊接单价"
 
         header_font = Font(name="微软雅黑", size=10, bold=True, color="FFFFFF")
         header_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
@@ -66,18 +78,18 @@ class BomWeldingUnitPriceImportService:
 
         headers = ["名称", "单位", "费用", "备注"]
         for col, title in enumerate(headers, start=1):
-            cell = sheet.cell(row=1, column=col, value=title)
+            cell = data_sheet.cell(row=1, column=col, value=title)
             cell.font = header_font
             cell.fill = header_fill
             cell.alignment = header_alignment
             cell.border = thin_border
 
-        for row_idx, (name, unit, unit_price, remark) in enumerate(
-            TEMPLATE_SAMPLE_ROWS, start=2
-        ):
-            values: list[str | Decimal] = [name, unit, unit_price, remark]
+        catalog = list_welding_standard_catalog()
+        for row_idx, (name, unit) in enumerate(catalog, start=2):
+            unit_price = _TEMPLATE_SAMPLE_PRICES.get(name, Decimal("0.0000"))
+            values: list[str | Decimal] = [name, unit, unit_price, ""]
             for col, value in enumerate(values, start=1):
-                cell = sheet.cell(row=row_idx, column=col, value=value)
+                cell = data_sheet.cell(row=row_idx, column=col, value=value)
                 cell.font = data_font
                 cell.border = thin_border
                 cell.alignment = Alignment(
@@ -87,16 +99,47 @@ class BomWeldingUnitPriceImportService:
                 if col == 3:
                     cell.number_format = "0.0000"
 
-        sheet.column_dimensions["A"].width = 36
-        sheet.column_dimensions["B"].width = 10
-        sheet.column_dimensions["C"].width = 12
-        sheet.column_dimensions["D"].width = 20
-        sheet.freeze_panes = "A2"
+        data_sheet.column_dimensions["A"].width = 36
+        data_sheet.column_dimensions["B"].width = 10
+        data_sheet.column_dimensions["C"].width = 12
+        data_sheet.column_dimensions["D"].width = 20
+        data_sheet.freeze_panes = "A2"
+
+        catalog_sheet = workbook.create_sheet("标准工艺目录")
+        note_font = Font(name="微软雅黑", size=9, color="C00000")
+        catalog_sheet.merge_cells("A1:B1")
+        note_cell = catalog_sheet.cell(
+            row=1,
+            column=1,
+            value="导入「名称」「单位」须与本表完全一致，否则整批中止",
+        )
+        note_cell.font = note_font
+        note_cell.alignment = Alignment(vertical="center", wrap_text=True)
+        catalog_sheet.row_dimensions[1].height = 22
+
+        catalog_headers = ["名称", "单位"]
+        for col, title in enumerate(catalog_headers, start=1):
+            cell = catalog_sheet.cell(row=2, column=col, value=title)
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = header_alignment
+            cell.border = thin_border
+        for row_idx, (name, unit) in enumerate(catalog, start=3):
+            for col, value in enumerate((name, unit), start=1):
+                cell = catalog_sheet.cell(row=row_idx, column=col, value=value)
+                cell.font = data_font
+                cell.border = thin_border
+                cell.alignment = Alignment(
+                    horizontal="center" if col == 2 else "left",
+                    vertical="center",
+                )
+        catalog_sheet.column_dimensions["A"].width = 40
+        catalog_sheet.column_dimensions["B"].width = 12
+        catalog_sheet.freeze_panes = "A3"
 
         buffer = BytesIO()
         workbook.save(buffer)
         return buffer.getvalue(), "焊接单价导入模板.xlsx"
-
     def import_excel(
         self,
         db: Session,
@@ -125,6 +168,16 @@ class BomWeldingUnitPriceImportService:
         if not parse_result.rows:
             raise ValueError("未解析到有效数据行")
 
+        catalog_errors = [
+            err
+            for err in parse_result.errors
+            if "不属于焊接标准工艺目录" in err or "单位应为" in err
+        ]
+        if catalog_errors:
+            raise ValueError(
+                "导入中止（名称/单位必须与焊接标准工艺目录一致）："
+                + "；".join(catalog_errors)
+            )
         created_count = 0
         updated_count = 0
         skipped_approved = 0

@@ -8,6 +8,8 @@ from __future__ import annotations
 
 from enum import StrEnum
 
+from app.common.bom.welding_billing_qty import normalize_unit_key
+
 
 class WeldingStandardProcessName(StrEnum):
     """焊接单价目录中的标准工艺名称。"""
@@ -90,8 +92,58 @@ def all_standard_process_names() -> list[str]:
     return [item.value for item in WeldingStandardProcessName]
 
 
+_STANDARD_PROCESS_NAME_SET: frozenset[str] = frozenset(all_standard_process_names())
+
+
+def list_welding_standard_catalog() -> list[tuple[str, str]]:
+    """标准工艺目录：(名称, 单位)，顺序与枚举一致。"""
+    return [
+        (name, STANDARD_PROCESS_UNIT[name])
+        for name in all_standard_process_names()
+        if name in STANDARD_PROCESS_UNIT
+    ]
+
+
+def is_standard_process_name(name: str | None) -> bool:
+    """名称是否属于焊接标准工艺目录。"""
+    if not name:
+        return False
+    return name.strip() in _STANDARD_PROCESS_NAME_SET
+
+
 def resolve_standard_process_unit(standard_process_name: str | None) -> str | None:
     """按标准工艺名取目录单位；未知或未映射时返回 None。"""
     if not standard_process_name:
         return None
     return STANDARD_PROCESS_UNIT.get(standard_process_name)
+
+
+def validate_welding_unit_price_catalog(
+    item_name: str,
+    unit: str | None = None,
+) -> None:
+    """
+    焊接单价门禁：名称必须属于标准工艺目录；若传入单位则须与目录单位一致。
+
+    不一致时抛 ``ValueError``（供导入 / DTO / 手工创建复用）。
+    """
+    name = (item_name or "").strip()
+    if not name:
+        raise ValueError("名称为空，不属于焊接标准工艺目录")
+    if name not in _STANDARD_PROCESS_NAME_SET:
+        raise ValueError(
+            f"「{name}」不属于焊接标准工艺目录"
+            f"（须与拆解标准工艺名完全一致，例如「折边/点焊胶」）"
+        )
+    if unit is None:
+        return
+    expected = STANDARD_PROCESS_UNIT.get(name)
+    if not expected:
+        return
+    actual = (unit or "").strip()
+    if not actual:
+        raise ValueError(f"「{name}」单位不能为空（目录单位为「{expected}」）")
+    if normalize_unit_key(actual) != normalize_unit_key(expected):
+        raise ValueError(
+            f"「{name}」单位应为「{expected}」，当前为「{actual}」"
+        )
