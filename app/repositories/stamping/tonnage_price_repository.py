@@ -242,7 +242,6 @@ class StampingTonnagePriceRepository:
         *,
         created_by: str,
         updated_by: str,
-        commit: bool = True,
     ) -> StampingTonnagePrice:
         """创建单条记录"""
         record = model_from_payload(StampingTonnagePrice, data)
@@ -250,10 +249,7 @@ class StampingTonnagePriceRepository:
         record.updated_by = updated_by
         record.audit_status = AUDIT_PENDING
         db.add(record)
-        if commit:
-            db.commit()
-        else:
-            db.flush()
+        db.flush()
         db.refresh(record)
         logger.info(
             "创建冲次单价: location=%s, year=%s, tonnage=%s, id=%s",
@@ -281,7 +277,7 @@ class StampingTonnagePriceRepository:
             record.audit_status = AUDIT_PENDING
             records.append(record)
         db.add_all(records)
-        db.commit()
+        db.flush()
         for record in records:
             db.refresh(record)
         logger.info("批量创建冲次单价: %s 条", len(records))
@@ -294,7 +290,6 @@ class StampingTonnagePriceRepository:
         update_data: StampingTonnagePriceUpdate,
         *,
         updated_by: str,
-        commit: bool = True,
     ) -> Optional[StampingTonnagePrice]:
         """更新记录"""
         record = self.get_by_id(db, id)
@@ -302,10 +297,7 @@ class StampingTonnagePriceRepository:
             return None
         apply_dto_fields(record, update_data)
         record.updated_by = updated_by
-        if commit:
-            db.commit()
-        else:
-            db.flush()
+        db.flush()
         db.refresh(record)
         logger.info("更新冲次单价: id=%s", id)
         return record
@@ -316,7 +308,7 @@ class StampingTonnagePriceRepository:
         if not record:
             return False
         db.delete(record)
-        db.commit()
+        db.flush()
         logger.info("删除冲次单价: id=%s", id)
         return True
 
@@ -333,7 +325,7 @@ class StampingTonnagePriceRepository:
             )
             .delete(synchronize_session=False)
         )
-        db.commit()
+        db.flush()
         logger.info(
             "删除未审核冲次单价: location=%s year=%s count=%s",
             location,
@@ -369,7 +361,7 @@ class StampingTonnagePriceRepository:
             ),
             values,
         )
-        db.commit()
+        db.flush()
         return count
 
     def reverse_by_location_year(
@@ -399,5 +391,5 @@ class StampingTonnagePriceRepository:
             ),
             values,
         )
-        db.commit()
+        db.flush()
         return count

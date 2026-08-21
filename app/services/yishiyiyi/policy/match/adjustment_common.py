@@ -24,7 +24,8 @@ _CATEGORY_ALIASES: dict[str, frozenset[str]] = {
 }
 
 # 基价钢厂（极简）↔ 政策钢厂（简称 / 带(新) / 集团名）
-# 未列出的钢厂仅做归一化后的精确匹配（如 VAMA、唐钢、宝钢）。
+# 「X」与「X(新)」由 steel_mill_aliases 自动互通，不必逐家手写。
+# 此处只维护跨品牌/集团等非常规别名。
 _STEEL_MILL_ALIASES: dict[str, frozenset[str]] = {
     "本钢": frozenset({"本钢", "鞍钢集团"}),
     "鞍钢集团": frozenset({"本钢", "鞍钢集团"}),
@@ -32,6 +33,8 @@ _STEEL_MILL_ALIASES: dict[str, frozenset[str]] = {
     "马钢(新)": frozenset({"马钢", "马钢(新)"}),
     "山钢": frozenset({"山钢", "山钢(新)"}),
     "山钢(新)": frozenset({"山钢", "山钢(新)"}),
+    "唐钢": frozenset({"唐钢", "唐钢(新)"}),
+    "唐钢(新)": frozenset({"唐钢", "唐钢(新)"}),
 }
 
 PolicyHit = tuple[SteelPricePolicy, SteelPriceLadderItem]
@@ -93,6 +96,8 @@ def steel_mill_aliases(steel_mill: str | None) -> frozenset[str]:
     返回与基价钢厂可互通的政策钢厂名集合（均已归一化）。
 
     匹配优先级由 steel_mill_match_rank 决定，本函数只负责「能不能配上」。
+    除显式别名表外，任意钢厂名自动与其「(新)」变体双向互通
+    （基价写「唐钢」、政策写「唐钢(新)」可命中）。
     """
     name = normalize_steel_mill(steel_mill)
     if not name:
@@ -106,9 +111,28 @@ def steel_mill_aliases(steel_mill: str | None) -> frozenset[str]:
                 aliases = values
                 break
 
-    if aliases:
-        return frozenset(normalize_steel_mill(item) for item in aliases)
-    return frozenset({name})
+    base: set[str] = (
+        {normalize_steel_mill(item) for item in aliases}
+        if aliases
+        else {name}
+    )
+    return frozenset(_expand_new_variant_mills(base))
+
+
+_NEW_SUFFIX = "(新)"
+
+
+def _expand_new_variant_mills(names: set[str]) -> set[str]:
+    """为集合内每个名称补上 / 去掉「(新)」对偶名。"""
+    expanded = set(names)
+    for item in names:
+        if item.endswith(_NEW_SUFFIX):
+            root = item[: -len(_NEW_SUFFIX)].strip()
+            if root:
+                expanded.add(root)
+        else:
+            expanded.add(f"{item}{_NEW_SUFFIX}")
+    return expanded
 
 
 def _steel_mills_equal(left: str, right: str) -> bool:

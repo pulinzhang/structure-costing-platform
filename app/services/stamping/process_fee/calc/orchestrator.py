@@ -364,7 +364,7 @@ class StampingProcessFeeCalcOrchestrator:
                     updated_by=display_name(current_user) or None,
                 ),
             )
-            db.commit()
+        db.commit()
 
         report(100, "计算完成")
         logger.info(

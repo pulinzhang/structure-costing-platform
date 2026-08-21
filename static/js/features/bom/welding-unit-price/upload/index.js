@@ -3,7 +3,7 @@
  * 同步导入：基地 + 年度必选，仅 .xlsx
  */
 
-import { weldingUnitPriceUploadTemplate } from './template.js?v=2';
+import { weldingUnitPriceUploadTemplate } from './template.js?v=4';
 
 const API_BASE = '/api/bom/welding-unit-price';
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -12,15 +12,19 @@ const WeldingUnitPriceUploadPage = {
     selectedFile: null,
     isUploading: false,
     canUpload: true,
+    catalogItems: [],
 
     init() {
         this.selectedFile = null;
         this.isUploading = false;
+        this.catalogItems = [];
         this.applyPermissionUi();
         this.bindEvents();
         this.hideProgress();
+        this.clearResult();
         this.clearSelectedFile(false);
         this.fillDefaultYear();
+        this.loadStandardCatalog();
     },
 
     applyPermissionUi() {
@@ -61,6 +65,7 @@ const WeldingUnitPriceUploadPage = {
         const selectBtn = document.getElementById('weldingUnitPriceUploadSelectFileBtn');
         const resetBtn = document.getElementById('weldingUnitPriceUploadResetBtn');
         const templateBtn = document.getElementById('weldingUnitPriceUploadTemplateBtn');
+        const resultCloseBtn = document.getElementById('weldingUnitPriceUploadResultCloseBtn');
 
         zone?.addEventListener('click', (event) => {
             if (this.canUpload === false || this.isUploading) return;
@@ -95,6 +100,7 @@ const WeldingUnitPriceUploadPage = {
 
         resetBtn?.addEventListener('click', () => this.reset());
         templateBtn?.addEventListener('click', () => this.downloadTemplate());
+        resultCloseBtn?.addEventListener('click', () => this.clearResult());
 
         form?.addEventListener('submit', (event) => {
             event.preventDefault();
@@ -109,18 +115,130 @@ const WeldingUnitPriceUploadPage = {
         }
     },
 
+    async loadStandardCatalog() {
+        const body = document.getElementById('weldingUnitPriceCatalogBody');
+        const countEl = document.getElementById('weldingUnitPriceCatalogCount');
+        try {
+            const res = await HttpClient.get(`${API_BASE}/standard-catalog`);
+            const items = Array.isArray(res.data) ? res.data : [];
+            this.catalogItems = items;
+            this.renderStandardCatalog(items);
+        } catch (error) {
+            this.catalogItems = [];
+            if (body) {
+                body.innerHTML = `
+                    <tr>
+                        <td colspan="2" class="px-2 py-3 text-[11px] text-[#ef5350] text-center">标准目录加载失败</td>
+                    </tr>`;
+            }
+            if (countEl) countEl.textContent = '—';
+            if (!error.status) {
+                showToast(error.message || '标准目录加载失败', 'error');
+            }
+        }
+    },
+
+    renderStandardCatalog(items) {
+        const body = document.getElementById('weldingUnitPriceCatalogBody');
+        const countEl = document.getElementById('weldingUnitPriceCatalogCount');
+        if (countEl) countEl.textContent = `${items.length} 项`;
+        if (!body) return;
+        if (!items.length) {
+            body.innerHTML = `
+                <tr>
+                    <td colspan="2" class="px-2 py-3 text-[11px] text-[#555555] text-center">暂无标准目录</td>
+                </tr>`;
+            return;
+        }
+        body.innerHTML = items.map((item) => `
+            <tr>
+                <td class="px-2 py-1.5 text-[11px] text-[#C8C8D0]">${esc(item.item_name)}</td>
+                <td class="px-2 py-1.5 text-[11px] font-mono text-[#9e9e9e]">${esc(item.unit)}</td>
+            </tr>`).join('');
+    },
+
+    clearResult() {
+        const panel = document.getElementById('weldingUnitPriceUploadResult');
+        const body = document.getElementById('weldingUnitPriceUploadResultBody');
+        if (panel) panel.classList.add('hidden');
+        if (body) body.innerHTML = '';
+    },
+
+    showResult(type, message, details = []) {
+        const panel = document.getElementById('weldingUnitPriceUploadResult');
+        const title = document.getElementById('weldingUnitPriceUploadResultTitle');
+        const accent = document.getElementById('weldingUnitPriceUploadResultAccent');
+        const body = document.getElementById('weldingUnitPriceUploadResultBody');
+        if (!panel || !body) return;
+
+        const isError = type === 'error';
+        const isWarning = type === 'warning';
+        if (title) {
+            title.textContent = isError ? '导入失败' : (isWarning ? '导入完成（有警告）' : '导入成功');
+            title.className = isError
+                ? 'text-[11px] font-semibold text-[#ef5350] mb-0 tracking-wide'
+                : (isWarning
+                    ? 'text-[11px] font-semibold text-[#ffb74d] mb-0 tracking-wide'
+                    : 'text-[11px] font-semibold text-[#66bb6a] mb-0 tracking-wide');
+        }
+        if (accent) {
+            accent.className = isError
+                ? 'w-0.5 h-3 bg-[#d32f2f] shrink-0 shadow-[0_0_6px_rgba(211,47,47,0.45)]'
+                : (isWarning
+                    ? 'w-0.5 h-3 bg-[#f57f17] shrink-0'
+                    : 'w-0.5 h-3 bg-[#2e7d32] shrink-0');
+        }
+        panel.className = isError
+            ? 'mb-4 border border-[#5c1a1a] bg-[#1a0808]'
+            : (isWarning
+                ? 'mb-4 border border-[#4a3a12] bg-[#14100a]'
+                : 'mb-4 border border-[#1a3a1a] bg-[#0a140a]');
+
+        const lines = [];
+        const main = String(message || '').trim();
+        if (main) lines.push(main);
+        for (const detail of details) {
+            const text = String(detail || '').trim();
+            if (text && text !== main) lines.push(text);
+        }
+        const expanded = [];
+        for (const line of lines) {
+            const parts = line.split('；').map((part) => part.trim()).filter(Boolean);
+            if (parts.length > 1) expanded.push(...parts);
+            else expanded.push(line);
+        }
+
+        if (expanded.length <= 1) {
+            body.innerHTML = `<p class="mb-0 text-[12px] leading-relaxed ${isError ? 'text-[#ffcdd2]' : 'text-[#C8C8D0]'}">${esc(expanded[0] || '')}</p>`;
+        } else {
+            body.innerHTML = `
+                <ul class="list-none space-y-1.5 mb-0">
+                    ${expanded.map((line) => `
+                        <li class="flex gap-2 text-[12px] leading-relaxed ${isError ? 'text-[#ffcdd2]' : 'text-[#C8C8D0]'}">
+                            <span class="text-[#616161] shrink-0">·</span>
+                            <span class="min-w-0 break-words">${esc(line)}</span>
+                        </li>`).join('')}
+                </ul>`;
+        }
+        panel.classList.remove('hidden');
+        panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    },
+
     selectFile(file) {
         if (!file || this.isUploading) return;
         if (!file.name.toLowerCase().endsWith('.xlsx')) {
             showToast('仅支持 .xlsx 文件', 'warning');
+            this.showResult('error', '仅支持 .xlsx 文件');
             return;
         }
         if (file.size > MAX_FILE_SIZE) {
             showToast('文件过大，最大支持 5MB', 'warning');
+            this.showResult('error', '文件过大，最大支持 5MB');
             return;
         }
 
         this.hideProgress();
+        this.clearResult();
         this.selectedFile = file;
 
         const preview = document.getElementById('weldingUnitPriceUploadFilePreview');
@@ -169,6 +287,7 @@ const WeldingUnitPriceUploadPage = {
             return;
         }
         this.hideProgress();
+        this.clearResult();
         this.clearSelectedFile(true);
         const location = document.getElementById('weldingUnitPriceUploadLocation');
         const year = document.getElementById('weldingUnitPriceUploadYear');
@@ -247,14 +366,17 @@ const WeldingUnitPriceUploadPage = {
 
         if (!location) {
             showToast('请选择采购基地', 'warning');
+            this.showResult('error', '请选择采购基地');
             return;
         }
         if (!yearRaw || !/^\d{4}$/.test(yearRaw)) {
             showToast('请填写正确的年度（4位年份）', 'warning');
+            this.showResult('error', '请填写正确的年度（4位年份）');
             return;
         }
         if (!this.selectedFile) {
             showToast('请选择 Excel 文件', 'warning');
+            this.showResult('error', '请选择 Excel 文件');
             return;
         }
 
@@ -263,6 +385,7 @@ const WeldingUnitPriceUploadPage = {
         formData.append('year', yearRaw);
         formData.append('file', this.selectedFile);
 
+        this.clearResult();
         this.setUploading(true);
         this.showProgress();
 
@@ -272,12 +395,16 @@ const WeldingUnitPriceUploadPage = {
             const msg = res.message
                 || data.message
                 || `导入成功：新增 ${data.created_count ?? 0}，更新 ${data.updated_count ?? 0}`;
-            showToast(msg, 'success');
+            const warnings = Array.isArray(data.warnings) ? data.warnings : [];
+            const resultType = warnings.length ? 'warning' : 'success';
+            showToast(msg, resultType === 'warning' ? 'warning' : 'success');
+            this.showResult(resultType, msg, warnings);
             this.hideProgress();
             this.clearSelectedFile(true);
         } catch (err) {
             this.hideProgress();
-            showToast(err.message || '导入失败', 'error');
+            // HttpClient 已弹 Toast；此处落常驻面板，长文案可完整阅读
+            this.showResult('error', err.message || '导入失败');
         } finally {
             this.setUploading(false);
         }

@@ -203,6 +203,9 @@ ApiResponse（任务 id 或结果摘要）
 - Service：做什么（规则、组合、事务、Parser）  
 - Repository：怎么查/写库（无角色 if）
 
+教学硬约束：**Repository 禁止 `db.commit` / `db.rollback`**，只 `flush`；写成功后由 Service `commit`，失败 `rollback`。口诀：Repo 只改会话，Service 才落库。  
+特例（仍由 Service 提交）：异步任务 AUTOCOMMIT 写进度；计算锁 DDL 用独立连接，`conn.commit()` 在 Service。
+
 ### 简单查询也要 Service 吗？
 
 要。保持 Router 永不直连 Repository，便于统一权限与响应形态。
@@ -227,5 +230,7 @@ ApiResponse（任务 id 或结果摘要）
 | **API 类型安全** | [api-type-safety.md](api-type-safety.md) · `.cursor/rules/api-type-safety.mdc` | `ApiResponse` / `PageResult` / 权限 Depends / `Any` 不进函数签名 |
 | **Python 执行** | `.cursor/rules/python-execution.mdc` | Windows/UTF-8 跑脚本约定 |
 | **权限设计** | [permission-design.md](permission-design.md) | 前后端权限码 |
+| **L0 成品核价设计** | [l0-assembly-costing-design.md](l0-assembly-costing-design.md) | 供货总成月度总账、外购/L1 年度价、业务示意图（待落地） |
+| **BOM 年度零件价表** | [bom-annual-part-prices-design.md](bom-annual-part-prices-design.md) | 外购价 / L1 一口价表结构与 `bom` 切片归属（待落地） |
 
 `docs/*.mdc` 与 `.cursor/rules/*.mdc` 应对齐；改规范时两处一起改。

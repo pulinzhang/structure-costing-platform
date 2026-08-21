@@ -139,6 +139,13 @@ def _part_cost_upsert(
         payload.process_scrap_deduction = amounts.process_scrap_deduction
         payload.scrap_amount_sheet = amounts.scrap_amount_sheet
         payload.material_net_per_part = amounts.material_net_per_part
+        payload.direct_cost = amounts.direct_cost
+        payload.finished_finance_fee = amounts.finished_finance_fee
+        payload.finished_management_fee = amounts.finished_management_fee
+        payload.finished_warehouse_packaging_fee = (
+            amounts.finished_warehouse_packaging_fee
+        )
+        payload.finished_pretax_profit_fee = amounts.finished_pretax_profit_fee
         payload.unit_cost = amounts.unit_cost
     return payload
 
@@ -290,11 +297,22 @@ class StampingPartCostCalcOrchestrator:
         density = self.settings_service.get_steel_density(db)
         loss_rate = self.settings_service.get_material_loss_rate(db)
         recovery_rate = self.settings_service.get_scrap_recovery_rate(db)
+        finance_rate = self.settings_service.get_finished_finance_rate(db)
+        management_rate = self.settings_service.get_finished_management_rate(db)
+        warehouse_packaging_rate = (
+            self.settings_service.get_finished_warehouse_packaging_rate(db)
+        )
+        pretax_profit_rate = (
+            self.settings_service.get_finished_pretax_profit_rate(db)
+        )
         started_at = now()
         detail_lines: list[str] = [
             f"开始计算 year={dto.year} month={dto.month} location={location} "
             f"supplier={supplier} density={density} loss_rate={loss_rate} "
-            f"recovery={recovery_rate} formula={FORMULA_VERSION}"
+            f"recovery={recovery_rate} finance={finance_rate} "
+            f"management={management_rate} "
+            f"warehouse_packaging={warehouse_packaging_rate} "
+            f"pretax_profit={pretax_profit_rate} formula={FORMULA_VERSION}"
         ]
 
         report(5, "校验前置数据...")
@@ -382,6 +400,10 @@ class StampingPartCostCalcOrchestrator:
                 density=density,
                 loss_rate=loss_rate,
                 recovery_rate=recovery_rate,
+                finance_rate=finance_rate,
+                management_rate=management_rate,
+                warehouse_packaging_rate=warehouse_packaging_rate,
+                pretax_profit_rate=pretax_profit_rate,
             )
 
             created_by = None if existing else audit["created_by"]
@@ -492,7 +514,7 @@ class StampingPartCostCalcOrchestrator:
                     updated_by=display_name(current_user) or None,
                 ),
             )
-            db.commit()
+        db.commit()
 
         report(100, "计算完成")
         logger.info(

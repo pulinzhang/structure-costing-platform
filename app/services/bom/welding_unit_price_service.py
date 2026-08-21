@@ -15,6 +15,7 @@ from app.common.audit import (
     audit_create,
     display_name,
 )
+from app.common.bom.welding_standard_process import validate_welding_unit_price_catalog
 from app.common.timezone import now
 from app.repositories.bom.welding_unit_price_repository import (
     BomWeldingUnitPriceRepository,
@@ -103,6 +104,8 @@ class BomWeldingUnitPriceService:
                 created_by=audit["created_by"],
                 updated_by=audit["updated_by"],
             )
+            db.commit()
+            db.refresh(record)
             return BomWeldingUnitPriceResponse.model_validate(record), None
         except IntegrityError:
             db.rollback()
@@ -182,6 +185,12 @@ class BomWeldingUnitPriceService:
             if existing.audit_status == AUDIT_APPROVED:
                 return None, "已审核通过，请先反审核后再修改"
 
+            unit_to_check = data.unit if data.unit is not None else existing.unit
+            try:
+                validate_welding_unit_price_catalog(existing.item_name, unit_to_check)
+            except ValueError as exc:
+                return None, str(exc)
+
             record = self.repository.update(
                 db,
                 id,
@@ -190,6 +199,8 @@ class BomWeldingUnitPriceService:
             )
             if not record:
                 return None, "记录不存在"
+            db.commit()
+            db.refresh(record)
             return BomWeldingUnitPriceResponse.model_validate(record), None
         except Exception as e:
             db.rollback()
@@ -202,10 +213,16 @@ class BomWeldingUnitPriceService:
             return False, "记录不存在"
         if record.audit_status == AUDIT_APPROVED:
             return False, "已审核通过，请先反审核后再删除"
-        success = self.repository.delete(db, id)
-        if not success:
-            return False, "记录不存在"
-        return True, None
+        try:
+            success = self.repository.delete(db, id)
+            if not success:
+                return False, "记录不存在"
+            db.commit()
+            return True, None
+        except Exception as e:
+            db.rollback()
+            logger.error("删除焊接工费单价失败: %s", e)
+            return False, str(e)
 
     def batch_delete_by_location_year(
         self,
@@ -230,9 +247,15 @@ class BomWeldingUnitPriceService:
             year=year,
             statuses=[AUDIT_APPROVED],
         )
-        deleted_count = self.repository.delete_unaudited_by_location_year(
-            db, location, year
-        )
+        try:
+            deleted_count = self.repository.delete_unaudited_by_location_year(
+                db, location, year
+            )
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            logger.error("批量删除焊接工费单价失败: %s", e)
+            return 0, 0, str(e)
         logger.info(
             "批量删除焊接工费单价: location=%s year=%s deleted=%s skipped=%s",
             location,
@@ -261,15 +284,21 @@ class BomWeldingUnitPriceService:
             year=dto.year,
             statuses=[AUDIT_APPROVED],
         )
-        updated = self.repository.approve_by_location_year(
-            db,
-            location=location,
-            year=dto.year,
-            audited_by=operator,
-            audited_at=now(),
-            audit_remark=(dto.audit_remark or "").strip() or None,
-            updated_by=operator,
-        )
+        try:
+            updated = self.repository.approve_by_location_year(
+                db,
+                location=location,
+                year=dto.year,
+                audited_by=operator,
+                audited_at=now(),
+                audit_remark=(dto.audit_remark or "").strip() or None,
+                updated_by=operator,
+            )
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            logger.error("批量审核焊接工费单价失败: %s", e)
+            return None, str(e)
         return (
             BomWeldingUnitPriceBatchAuditResultVO(
                 updated_count=updated,
@@ -302,15 +331,21 @@ class BomWeldingUnitPriceService:
             year=dto.year,
             statuses=[AUDIT_PENDING],
         )
-        updated = self.repository.reverse_by_location_year(
-            db,
-            location=location,
-            year=dto.year,
-            reverse_audited_by=operator,
-            reverse_audited_at=now(),
-            reverse_audit_remark=remark,
-            updated_by=operator,
-        )
+        try:
+            updated = self.repository.reverse_by_location_year(
+                db,
+                location=location,
+                year=dto.year,
+                reverse_audited_by=operator,
+                reverse_audited_at=now(),
+                reverse_audit_remark=remark,
+                updated_by=operator,
+            )
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            logger.error("批量反审核焊接工费单价失败: %s", e)
+            return None, str(e)
         return (
             BomWeldingUnitPriceBatchAuditResultVO(
                 updated_count=updated,

@@ -139,6 +139,37 @@ class DatabaseConfig:
                         text(f"ALTER TABLE {weld_table} ADD COLUMN weld_info_raw TEXT")
                     )
                 logger.info("已为 %s 追加列 weld_info_raw", weld_table)
+            if "other_fee" not in weld_cols:
+                with engine.begin() as conn:
+                    conn.execute(
+                        text(
+                            f"ALTER TABLE {weld_table} "
+                            "ADD COLUMN other_fee NUMERIC(14, 4)"
+                        )
+                    )
+                logger.info("已为 %s 追加列 other_fee", weld_table)
+            if "final_l0_welding_fee" not in weld_cols:
+                with engine.begin() as conn:
+                    conn.execute(
+                        text(
+                            f"ALTER TABLE {weld_table} "
+                            "ADD COLUMN final_l0_welding_fee NUMERIC(14, 4)"
+                        )
+                    )
+                    conn.execute(
+                        text(
+                            f"UPDATE {weld_table} SET final_l0_welding_fee = "
+                            "total_l0_welding_fee "
+                            "WHERE final_l0_welding_fee IS NULL"
+                        )
+                    )
+                logger.info("已为 %s 追加列 final_l0_welding_fee 并回填", weld_table)
+            if "remark" not in weld_cols:
+                with engine.begin() as conn:
+                    conn.execute(
+                        text(f"ALTER TABLE {weld_table} ADD COLUMN remark TEXT")
+                    )
+                logger.info("已为 %s 追加列 remark", weld_table)
 
         fee_table = "stamping_process_fees"
         if fee_table in table_names:
@@ -207,6 +238,10 @@ class DatabaseConfig:
             config_new_columns = (
                 ("finished_finance_rate", "NUMERIC(8, 6) NOT NULL DEFAULT 0.02"),
                 ("finished_management_rate", "NUMERIC(8, 6) NOT NULL DEFAULT 0.02"),
+                (
+                    "finished_warehouse_packaging_rate",
+                    "NUMERIC(8, 6) NOT NULL DEFAULT 0.01",
+                ),
                 ("finished_scrap_rate", "NUMERIC(8, 6) NOT NULL DEFAULT 0.003"),
                 (
                     "finished_pretax_profit_rate",
@@ -224,6 +259,48 @@ class DatabaseConfig:
                         )
                     )
                 logger.info("已为 %s 追加列 %s", config_table, column_name)
+
+        cost_table = "stamping_part_costs"
+        if cost_table in table_names:
+            cost_cols = {col["name"] for col in inspector.get_columns(cost_table)}
+            cost_new_columns = (
+                ("direct_cost", "NUMERIC(14, 6)"),
+                ("finished_finance_fee", "NUMERIC(14, 6)"),
+                ("finished_management_fee", "NUMERIC(14, 6)"),
+                ("finished_warehouse_packaging_fee", "NUMERIC(14, 6)"),
+                ("finished_pretax_profit_fee", "NUMERIC(14, 6)"),
+            )
+            for column_name, column_def in cost_new_columns:
+                if column_name in cost_cols:
+                    continue
+                with engine.begin() as conn:
+                    conn.execute(
+                        text(
+                            f"ALTER TABLE {cost_table} "
+                            f"ADD COLUMN {column_name} {column_def}"
+                        )
+                    )
+                logger.info("已为 %s 追加列 %s", cost_table, column_name)
+
+        pkg_table = "bom_packaging_transport_fees"
+        if pkg_table in table_names:
+            pkg_cols = {col["name"] for col in inspector.get_columns(pkg_table)}
+            pkg_new_columns = (
+                ("excel_filename", "VARCHAR(255)"),
+                ("sheet_name", "VARCHAR(100)"),
+                ("excel_row", "INTEGER"),
+            )
+            for column_name, column_def in pkg_new_columns:
+                if column_name in pkg_cols:
+                    continue
+                with engine.begin() as conn:
+                    conn.execute(
+                        text(
+                            f"ALTER TABLE {pkg_table} "
+                            f"ADD COLUMN {column_name} {column_def}"
+                        )
+                    )
+                logger.info("已为 %s 追加列 %s", pkg_table, column_name)
 
 
 class AuxiliaryDatabaseConfig:

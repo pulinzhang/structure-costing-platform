@@ -22,7 +22,7 @@ class UserTokenRepository:
     def create(self, db: Session, data: UserTokenCreate) -> UserToken:
         row = model_from_payload(UserToken, data)
         db.add(row)
-        db.commit()
+        db.flush()
         db.refresh(row)
         return row
 
@@ -36,7 +36,7 @@ class UserTokenRepository:
         username = str(row.username or "")
         real_name = str(row.real_name) if row.real_name else None
         row.updated_by = (real_name or username).strip() or username
-        db.commit()
+        db.flush()
         db.refresh(row)
         return row
 
@@ -45,7 +45,7 @@ class UserTokenRepository:
         if not row:
             return False
         db.delete(row)
-        db.commit()
+        db.flush()
         return True
 
     def delete_by_user_id(self, db: Session, user_id: int) -> int:
@@ -54,7 +54,7 @@ class UserTokenRepository:
             .filter(UserToken.user_id == user_id)
             .delete(synchronize_session=False)
         )
-        db.commit()
+        db.flush()
         return count
 
     def delete_other_tokens(self, db: Session, user_id: int, keep_token: str) -> int:
@@ -67,7 +67,7 @@ class UserTokenRepository:
             )
             .delete(synchronize_session=False)
         )
-        db.commit()
+        db.flush()
         return count
 
     def sync_user_snapshot(
@@ -86,7 +86,7 @@ class UserTokenRepository:
             db.query(UserToken).filter(UserToken.user_id == user_id),
             values,
         )
-        db.commit()
+        db.flush()
         return count
 
     def delete_expired(self, db: Session, idle_hours: int = TOKEN_IDLE_HOURS) -> int:
@@ -97,5 +97,5 @@ class UserTokenRepository:
             .filter(UserToken.last_active_at < deadline)
             .delete(synchronize_session=False)
         )
-        db.commit()
+        db.flush()
         return count

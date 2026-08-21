@@ -144,7 +144,7 @@ class StampingScrapPriceRepository:
 
         records = [model_from_payload(StampingScrapPrice, row) for row in rows]
         db.add_all(records)
-        db.commit()
+        db.flush()
         for record in records:
             db.refresh(record)
 
@@ -165,6 +165,6 @@ class StampingScrapPriceRepository:
             )
             .delete(synchronize_session=False)
         )
-        db.commit()
+        db.flush()
         logger.info("删除 %s-%s 废料销售价: %s 条", year, month, count)
         return count

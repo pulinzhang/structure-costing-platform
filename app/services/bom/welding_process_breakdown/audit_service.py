@@ -78,6 +78,7 @@ class BomWeldingProcessBreakdownAuditService:
             vehicle_model=vehicle_model,
             bom_version=bom_version,
         )
+        db.commit()
         return (
             BomWeldingProcessBreakdownBatchDeleteResultVO(
                 location=location,
@@ -124,6 +125,7 @@ class BomWeldingProcessBreakdownAuditService:
             audit_remark=(dto.audit_remark or "").strip() or None,
             updated_by=operator,
         )
+        db.commit()
         return (
             BomWeldingProcessBreakdownBatchAuditResultVO(
                 updated_count=updated,
@@ -169,6 +171,7 @@ class BomWeldingProcessBreakdownAuditService:
             reverse_audit_remark=remark,
             updated_by=operator,
         )
+        db.commit()
         return (
             BomWeldingProcessBreakdownBatchAuditResultVO(
                 updated_count=updated,

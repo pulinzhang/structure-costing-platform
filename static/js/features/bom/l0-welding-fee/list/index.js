@@ -1,5 +1,5 @@
 /**
- * BOM 焊接费列表：HUD + 筛选 + 明细抽屉 + 批量审核/反审核/删除
+ * BOM 焊接费列表：HUD + 筛选 + 明细抽屉 + 编辑其它费用 + 批量审核/反审核/删除
  */
 
 import {
@@ -10,7 +10,7 @@ import {
     updateL0WeldingFeeFilterCapsules,
     renderFeeDetailItems,
     resolveL0ShortPartNumber,
-} from './template.js?v=8';
+} from './template.js?v=12';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -19,6 +19,7 @@ import {
 const API_BASE = '/api/bom/l0-welding-fees';
 const DRAWER_ANIMATION_MS = 300;
 const SCOPE_REQUIRED_MESSAGE = '须选定年度、基地、项目、版本';
+const FEE_DIGITS = 4;
 
 const feeState = {
     records: [],
@@ -31,6 +32,9 @@ const feeState = {
     advancedOpen: false,
     batchAuditMode: null,
     batchAuditSubmitting: false,
+    canUpdate: false,
+    editingSystemFee: null,
+    viewingFee: null,
 };
 
 function openDrawer(drawerId, backdropId) {
@@ -75,12 +79,14 @@ function init() {
 }
 
 function destroy() {
-    closeDetailDrawer();
+    closeDrawer('l0wfViewDrawer', 'l0wfViewBackdrop');
+    closeDrawer('l0wfEditDrawer', 'l0wfEditBackdrop');
     closeDrawer('l0wfBatchAuditDrawer', 'l0wfBatchAuditBackdrop');
 }
 
 function applyPermissionUi() {
     const canFn = typeof can === 'function' ? can : () => true;
+    feeState.canUpdate = canFn('op:bom-l0-welding-fee-list:update');
     if (!canFn('op:bom-l0-welding-fee-list:export')) {
         document.getElementById('l0wfExportBtn')?.classList.add('hidden');
     }
@@ -272,11 +278,19 @@ function bindEvents() {
     });
 
     document.getElementById('l0wfTableBody')?.addEventListener('click', (event) => {
-        const btn = event.target.closest('[data-action="detail"]');
-        if (!btn) return;
+        const editBtn = event.target.closest('[data-action="edit"]');
+        if (editBtn) {
+            event.preventDefault();
+            event.stopPropagation();
+            const record = feeState.records.find((row) => Number(row.id) === Number(editBtn.dataset.id));
+            if (record) openEditDrawer(record);
+            return;
+        }
+        const detailBtn = event.target.closest('[data-action="detail"]');
+        if (!detailBtn) return;
         event.preventDefault();
         event.stopPropagation();
-        openDetailDrawer(Number(btn.dataset.id));
+        openDetailDrawer(Number(detailBtn.dataset.id));
     });
 
     document.getElementById('l0wfBatchApproveBtn')?.addEventListener('click', () => openBatchAudit('approve'));
@@ -293,6 +307,27 @@ function bindEvents() {
         closeDrawer('l0wfBatchAuditDrawer', 'l0wfBatchAuditBackdrop');
     });
     document.getElementById('l0wfBatchAuditSubmit')?.addEventListener('click', submitBatchAudit);
+
+    document.getElementById('l0wfEditClose')?.addEventListener('click', () => {
+        closeDrawer('l0wfEditDrawer', 'l0wfEditBackdrop');
+    });
+    document.getElementById('l0wfEditCancel')?.addEventListener('click', () => {
+        closeDrawer('l0wfEditDrawer', 'l0wfEditBackdrop');
+    });
+    document.getElementById('l0wfEditBackdrop')?.addEventListener('click', () => {
+        closeDrawer('l0wfEditDrawer', 'l0wfEditBackdrop');
+    });
+    document.getElementById('l0wfEditSubmit')?.addEventListener('click', () => saveEdit());
+    document.getElementById('l0wfEditOtherFee')?.addEventListener('input', updateFinalFeePreview);
+
+    const closeView = () => closeDrawer('l0wfViewDrawer', 'l0wfViewBackdrop');
+    document.getElementById('l0wfViewClose')?.addEventListener('click', closeView);
+    document.getElementById('l0wfViewBackdrop')?.addEventListener('click', closeView);
+    document.getElementById('l0wfViewEditBtn')?.addEventListener('click', () => {
+        const fee = feeState.viewingFee;
+        closeDrawer('l0wfViewDrawer', 'l0wfViewBackdrop');
+        if (fee) openEditDrawer(fee);
+    });
 }
 
 function resetFilters() {
@@ -327,7 +362,7 @@ async function loadData(page = feeState.page) {
     const body = document.getElementById('l0wfTableBody');
     const empty = document.getElementById('l0wfEmpty');
     if (body) {
-        body.innerHTML = `<tr><td colspan="13" class="py-10 text-center text-[#555]">
+        body.innerHTML = `<tr><td colspan="15" class="py-10 text-center text-[#555]">
             <div class="inline-block w-5 h-5 border-2 border-[#2c2c2c] border-t-[#FF1E27] rounded-full animate-spin"></div>
         </td></tr>`;
     }
@@ -380,7 +415,7 @@ async function loadData(page = feeState.page) {
     } catch (error) {
         console.error('加载焊接费失败:', error);
         if (body) {
-            body.innerHTML = `<tr><td colspan="13" class="py-8 text-center text-[#ef5350]">加载失败</td></tr>`;
+            body.innerHTML = `<tr><td colspan="15" class="py-8 text-center text-[#ef5350]">加载失败</td></tr>`;
         }
     }
 }
@@ -390,73 +425,221 @@ async function openDetailDrawer(feeId) {
     try {
         const res = await HttpClient.get(`${API_BASE}/${feeId}`);
         const fee = res.data || {};
-        showDetailDrawer(fee);
+        openViewDrawer(fee);
     } catch (error) {
         showToast(error.message || '加载明细失败', 'error');
     }
 }
 
-function closeDetailDrawer() {
-    document.getElementById('l0wfDetailBackdrop')?.remove();
-    document.getElementById('l0wfDetailDrawer')?.remove();
+function fillViewField(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value == null || value === '' ? '—' : String(value);
 }
 
-function showDetailDrawer(fee) {
-    closeDetailDrawer();
-    const shortNo = resolveL0ShortPartNumber(fee.part_number);
-    const backdrop = document.createElement('div');
-    backdrop.id = 'l0wfDetailBackdrop';
-    backdrop.className = 'fixed inset-0 z-[80] bg-black/70 backdrop-blur-sm';
+function fillPartNumberFields(prefix, partNumber) {
+    const shortEl = document.getElementById(`${prefix}-part-short`);
+    const fullEl = document.getElementById(`${prefix}-part-number`);
+    const full = String(partNumber || '').trim();
+    const shortNo = resolveL0ShortPartNumber(full);
+    if (shortEl) shortEl.textContent = shortNo;
+    if (fullEl) {
+        const showFull = Boolean(full) && shortNo !== full && shortNo !== '—';
+        fullEl.textContent = showFull ? full : '';
+        fullEl.classList.toggle('hidden', !showFull);
+    }
+}
 
-    const drawer = document.createElement('div');
-    drawer.id = 'l0wfDetailDrawer';
-    drawer.className =
-        'fixed inset-y-0 right-0 z-[85] w-[720px] max-w-[95vw] bg-[#1a1a1a] border-l border-[#2a2a2a] flex flex-col';
-    drawer.innerHTML = `
-        <div class="px-5 py-3.5 flex items-center justify-between shrink-0 bg-[#1f1f1f] border-b border-[#333]">
-            <div>
-                <h5 class="text-[11px] font-semibold tracking-wider text-[#b0b0b0] uppercase">成品焊接费明细</h5>
-                <p class="text-[12px] text-[#F0F0F2] mt-1 font-mono">
-                    ${esc(shortNo)}
-                    <span class="text-[10px] text-[#555] ml-2">${esc(fee.part_number || '')}</span>
-                </p>
-            </div>
-            <button type="button" id="l0wfDetailClose"
-                    class="flex items-center justify-center w-8 h-8 rounded-md text-[#707070] hover:text-white hover:bg-[#d32f2f] transition-all">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-            </button>
-        </div>
-        <div class="px-5 py-3 border-b border-[#222] text-[10px] text-[#777] grid grid-cols-2 gap-2 shrink-0">
-            <div>范围：${esc(fee.year)} · ${esc(fee.location)} · ${esc(fee.vehicle_model)} · ${esc(fee.bom_version)}</div>
-            <div class="text-right">成品焊接费 <span class="font-mono text-[#FF1E27] text-[12px] font-bold">${esc(fmtNum(fee.total_l0_welding_fee, 4))}</span></div>
-            <div>工艺 ${esc(fee.process_line_count ?? 0)} · 命中 ${esc(fee.matched_line_count ?? 0)} · 缺单价 ${esc(fee.missing_price_count ?? 0)}</div>
-            <div class="text-right">${esc(fee.part_name || '-')}</div>
-        </div>
-        <div class="px-5 py-2.5 border-b border-[#222] shrink-0">
-            <div class="text-[9px] tracking-wider text-[#555555] mb-1">焊接信息原文</div>
-            <p class="text-[11px] text-[#6E6E73] leading-relaxed whitespace-pre-wrap break-words mb-0">${esc((fee.weld_info_raw || '').trim() || '—')}</p>
-        </div>
-        <div class="flex-1 overflow-y-auto overscroll-contain">
-            <table class="w-full border-collapse">
-                <thead class="sticky top-0 bg-[#121212]">
-                    <tr class="border-b border-[#222] text-[9px] text-[#555]">
-                        <th class="px-2 py-2 text-left font-medium">标准工艺</th>
-                        <th class="px-2 py-2 text-right font-medium">过程量</th>
-                        <th class="px-2 py-2 text-right font-medium">单价</th>
-                        <th class="px-2 py-2 text-left font-medium">单位</th>
-                        <th class="px-2 py-2 text-right font-medium">行费</th>
-                        <th class="px-2 py-2 text-center font-medium">匹配</th>
-                    </tr>
-                </thead>
-                <tbody>${renderFeeDetailItems(fee.items || [])}</tbody>
-            </table>
-        </div>
-    `;
+function formatDateTime(value) {
+    if (!value) return '—';
+    const text = String(value).replace('T', ' ');
+    return text.length >= 19 ? text.slice(0, 19) : text;
+}
 
-    document.body.appendChild(backdrop);
-    document.body.appendChild(drawer);
-    backdrop.addEventListener('click', closeDetailDrawer);
-    document.getElementById('l0wfDetailClose')?.addEventListener('click', closeDetailDrawer);
+function auditStatusLabel(status) {
+    return { pending: '待审', approved: '已通过', rejected: '已驳回' }[status] || status || '—';
+}
+
+function calcStatusLabel(status) {
+    return { ok: '正常', partial: '缺单价', failed: '失败' }[status] || status || '—';
+}
+
+function openViewDrawer(fee) {
+    feeState.viewingFee = fee;
+    fillViewFieldsFromRecord(fee);
+
+    const itemsEl = document.getElementById('l0wfViewProcessItems');
+    if (itemsEl) itemsEl.innerHTML = renderFeeDetailItems(fee.items || []);
+
+    const approved = fee.audit_status === 'approved';
+    const editBtn = document.getElementById('l0wfViewEditBtn');
+    if (editBtn) {
+        editBtn.classList.toggle('hidden', !(feeState.canUpdate && !approved));
+    }
+    openDrawer('l0wfViewDrawer', 'l0wfViewBackdrop');
+}
+
+function fillViewFieldsFromRecord(fee) {
+    fillViewField('l0wf-view-year', fee.year);
+    fillViewField('l0wf-view-location', fee.location);
+    fillViewField('l0wf-view-vehicle', fee.vehicle_model);
+    fillViewField('l0wf-view-version', fee.bom_version);
+    fillPartNumberFields('l0wf-view', fee.part_number);
+    fillViewField('l0wf-view-part-name', fee.part_name);
+    fillViewField('l0wf-view-customer', fee.customer_name);
+
+    fillViewField('l0wf-view-system-fee', formatDecimal(fee.total_l0_welding_fee, FEE_DIGITS));
+    fillViewField('l0wf-view-other-fee', formatDecimal(fee.other_fee, FEE_DIGITS));
+    fillViewField(
+        'l0wf-view-final-fee',
+        formatDecimal(
+            fee.final_l0_welding_fee != null ? fee.final_l0_welding_fee : fee.total_l0_welding_fee,
+            FEE_DIGITS,
+        ),
+    );
+    fillViewField('l0wf-view-process-count', fee.process_line_count ?? 0);
+    fillViewField(
+        'l0wf-view-match-stats',
+        `${fee.matched_line_count ?? 0} / ${fee.missing_price_count ?? 0}`,
+    );
+    fillViewField('l0wf-view-calc-status', calcStatusLabel(fee.calc_status));
+    fillViewField('l0wf-view-remark', fee.remark);
+    fillViewField('l0wf-view-calc-message', fee.calc_message);
+
+    const weldEl = document.getElementById('l0wf-view-weld-info');
+    if (weldEl) {
+        weldEl.textContent = (fee.weld_info_raw || '').trim() || '—';
+    }
+
+    fillViewField('l0wf-view-audit-status', auditStatusLabel(fee.audit_status));
+    fillViewField('l0wf-view-audited-by', fee.audited_by);
+    fillViewField('l0wf-view-audited-at', formatDateTime(fee.audited_at));
+    fillViewField('l0wf-view-audit-remark', fee.audit_remark);
+    fillViewField('l0wf-view-reverse-by', fee.reverse_audited_by);
+    fillViewField('l0wf-view-reverse-at', formatDateTime(fee.reverse_audited_at));
+    fillViewField('l0wf-view-reverse-remark', fee.reverse_audit_remark);
+    fillViewField('l0wf-view-created-by', fee.created_by);
+    fillViewField('l0wf-view-created-at', formatDateTime(fee.created_at));
+    fillViewField('l0wf-view-updated-by', fee.updated_by);
+    fillViewField('l0wf-view-updated-at', formatDateTime(fee.updated_at));
+}
+
+function formatDecimal(value, digits = FEE_DIGITS) {
+    if (typeof formatDecimalFixed === 'function') {
+        const fixed = formatDecimalFixed(value, digits, { allowNegative: true });
+        return fixed == null ? '—' : fixed;
+    }
+    if (value == null || value === '') return '—';
+    const num = Number(value);
+    return Number.isFinite(num) ? num.toFixed(digits) : '—';
+}
+
+function openEditDrawer(record) {
+    if (!feeState.canUpdate) {
+        showToast('无编辑权限', 'warning');
+        return;
+    }
+    if (record.audit_status === 'approved') {
+        showToast('已审核通过，请先反审核后再调整', 'warning');
+        return;
+    }
+
+    feeState.editingSystemFee = record.total_l0_welding_fee;
+    fillViewField('l0wf-edit-year', record.year);
+    fillViewField('l0wf-edit-location', record.location);
+    fillViewField('l0wf-edit-vehicle', record.vehicle_model);
+    fillViewField('l0wf-edit-version', record.bom_version);
+    fillPartNumberFields('l0wf-edit', record.part_number);
+    fillViewField('l0wf-edit-part-name', record.part_name);
+    fillViewField('l0wf-edit-system-fee', formatDecimal(record.total_l0_welding_fee, FEE_DIGITS));
+
+    const idEl = document.getElementById('l0wfEditRecordId');
+    if (idEl) idEl.value = String(record.id);
+    const otherEl = document.getElementById('l0wfEditOtherFee');
+    if (otherEl) {
+        otherEl.value = record.other_fee == null ? '' : String(record.other_fee);
+    }
+    const remarkEl = document.getElementById('l0wfEditRemark');
+    if (remarkEl) remarkEl.value = record.remark || '';
+
+    updateFinalFeePreview();
+    openDrawer('l0wfEditDrawer', 'l0wfEditBackdrop');
+}
+
+function updateFinalFeePreview() {
+    const finalEl = document.getElementById('l0wf-edit-final-fee');
+    const otherEl = document.getElementById('l0wfEditOtherFee');
+    if (!finalEl) return;
+
+    const baseText = feeState.editingSystemFee == null || feeState.editingSystemFee === ''
+        ? null
+        : formatDecimal(feeState.editingSystemFee, FEE_DIGITS);
+    const otherRaw = String(otherEl?.value || '').trim();
+    let otherText = null;
+    if (otherRaw !== '') {
+        otherText = parseDecimalInput(otherRaw, FEE_DIGITS, { allowNegative: true });
+        if (otherText == null) {
+            finalEl.textContent = '—';
+            return;
+        }
+    }
+
+    if (baseText == null || baseText === '—') {
+        finalEl.textContent = otherText == null ? '—' : otherText;
+        return;
+    }
+    finalEl.textContent = addFixedDecimalStrings(baseText, otherText || `0.${'0'.repeat(FEE_DIGITS)}`, FEE_DIGITS) || '—';
+}
+
+/** 固定小数位字符串相加（不经 Number，避免金额精度漂移）。 */
+function addFixedDecimalStrings(left, right, digits = FEE_DIGITS) {
+    const leftText = formatDecimal(left, digits);
+    const rightText = formatDecimal(right, digits);
+    if (leftText == null || leftText === '—' || rightText == null || rightText === '—') return null;
+    const toScaled = (text) => {
+        const negative = text.startsWith('-');
+        const body = negative ? text.slice(1) : text;
+        const [intPart, frac = ''] = body.split('.');
+        const padded = `${frac}${'0'.repeat(digits)}`.slice(0, digits);
+        const scaled = BigInt(`${intPart || '0'}${padded}`);
+        return negative ? -scaled : scaled;
+    };
+    const sum = toScaled(leftText) + toScaled(rightText);
+    const negative = sum < 0n;
+    const abs = negative ? -sum : sum;
+    const raw = abs.toString().padStart(digits + 1, '0');
+    const intPart = raw.slice(0, -digits) || '0';
+    const frac = raw.slice(-digits);
+    return `${negative ? '-' : ''}${intPart}.${frac}`;
+}
+
+async function saveEdit() {
+    const feeId = Number(document.getElementById('l0wfEditRecordId')?.value);
+    if (!Number.isFinite(feeId)) return;
+
+    const otherRaw = String(document.getElementById('l0wfEditOtherFee')?.value || '').trim();
+    let otherFee = null;
+    if (otherRaw !== '') {
+        const parsed = parseDecimalInput(otherRaw, FEE_DIGITS, { allowNegative: true });
+        if (parsed == null) {
+            showToast('其它费用须为有效数字（可正可负）', 'warning');
+            return;
+        }
+        otherFee = parsed;
+    }
+
+    const remark = String(document.getElementById('l0wfEditRemark')?.value || '').trim() || null;
+
+    try {
+        const res = await HttpClient.patch(`${API_BASE}/${feeId}`, {
+            other_fee: otherFee,
+            remark,
+        });
+        showToast(res.message || '保存成功', 'success');
+        closeDrawer('l0wfEditDrawer', 'l0wfEditBackdrop');
+        await loadData(feeState.page);
+    } catch (error) {
+        showToast(error.message || '保存失败', 'error');
+    }
 }
 
 function openBatchAudit(mode) {

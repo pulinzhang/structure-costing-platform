@@ -123,6 +123,28 @@ export function weldingUnitPriceUploadTemplate() {
 
                                     <div id="weldingUnitPriceUploadFilePreview" class="hidden mb-4"></div>
 
+                                    <div id="weldingUnitPriceUploadResult"
+                                         class="hidden mb-4 border border-[#2c2c2c] bg-[#121212]"
+                                         role="status"
+                                         aria-live="polite">
+                                        <div class="flex items-start justify-between gap-3 px-3 py-2.5 border-b border-[#222222]">
+                                            <div class="flex items-center gap-2 min-w-0">
+                                                <span id="weldingUnitPriceUploadResultAccent"
+                                                      class="w-0.5 h-3 bg-[#d32f2f] shrink-0 shadow-[0_0_6px_rgba(211,47,47,0.45)]"></span>
+                                                <h6 id="weldingUnitPriceUploadResultTitle"
+                                                    class="text-[11px] font-semibold text-[#9e9e9e] mb-0 tracking-wide">导入结果</h6>
+                                            </div>
+                                            <button type="button"
+                                                    id="weldingUnitPriceUploadResultCloseBtn"
+                                                    class="text-[#616161] hover:text-[#ffffff] transition-colors shrink-0"
+                                                    aria-label="关闭结果">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                            </button>
+                                        </div>
+                                        <div id="weldingUnitPriceUploadResultBody"
+                                             class="px-3 py-3 text-[12px] text-[#C8C8D0] leading-relaxed whitespace-pre-wrap break-words max-h-[240px] overflow-y-auto"></div>
+                                    </div>
+
                                     <div class="flex items-center justify-end gap-3">
                                         <button type="button"
                                                 id="weldingUnitPriceUploadResetBtn"
@@ -158,38 +180,32 @@ export function weldingUnitPriceUploadTemplate() {
                         <div>
                             <h6 class="text-[10px] uppercase tracking-wider text-[#616161] mb-2">固定四列</h6>
                             <ul class="list-disc list-inside text-xs text-[#616161] space-y-1.5">
-                                <li><span class="text-[#9e9e9e]">名称</span>：费用项目，如 焊点</li>
-                                <li><span class="text-[#9e9e9e]">单位</span>：个 / CM / MM / 平方</li>
+                                <li><span class="text-[#9e9e9e]">名称</span>：须与下方标准工艺目录<span class="font-semibold text-[#c8c8c8]">完全一致</span></li>
+                                <li><span class="text-[#9e9e9e]">单位</span>：须与目录单位一致（个 / CM / MM / 平方）</li>
                                 <li><span class="text-[#9e9e9e]">费用</span>：工费单价（元），固定保留四位小数</li>
                                 <li><span class="text-[#9e9e9e]">备注</span>：可选</li>
                             </ul>
                         </div>
                         <div>
-                            <h6 class="text-[10px] uppercase tracking-wider text-[#616161] mb-2">示例</h6>
-                            <div class="overflow-hidden border border-[#2c2c2c] max-h-[280px] overflow-y-auto">
+                            <div class="flex items-center justify-between gap-2 mb-2">
+                                <h6 class="text-[10px] uppercase tracking-wider text-[#616161] mb-0">标准工艺目录</h6>
+                                <span id="weldingUnitPriceCatalogCount" class="text-[10px] font-mono text-[#555555]">—</span>
+                            </div>
+                            <p class="text-[10px] text-[#616161] mb-2 leading-relaxed">
+                                名称写错一字（如「拆边」）导入会整批中止；模板另含同名工作表。
+                            </p>
+                            <div class="overflow-hidden border border-[#2c2c2c] max-h-[320px] overflow-y-auto">
                                 <table class="w-full">
                                     <thead class="sticky top-0">
                                         <tr class="bg-[#0a0a0a] border-b border-[#2c2c2c]">
                                             <th class="px-2 py-1.5 text-left text-[10px] font-semibold text-[#616161]">名称</th>
                                             <th class="px-2 py-1.5 text-left text-[10px] font-semibold text-[#616161]">单位</th>
-                                            <th class="px-2 py-1.5 text-right text-[10px] font-semibold text-[#616161]">费用</th>
-                                            <th class="px-2 py-1.5 text-left text-[10px] font-semibold text-[#616161]">备注</th>
                                         </tr>
                                     </thead>
-                                    <tbody class="divide-y divide-[#222222]">
-                                        <tr><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">焊点</td><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">个</td><td class="px-2 py-1.5 text-[11px] text-right font-mono tabular-nums text-[#9e9e9e]">0.0999</td><td class="px-2 py-1.5 text-[11px] text-[#555555]"></td></tr>
-                                        <tr><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">植/螺柱/凸焊</td><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">个</td><td class="px-2 py-1.5 text-[11px] text-right font-mono tabular-nums text-[#9e9e9e]">0.1053</td><td class="px-2 py-1.5 text-[11px] text-[#555555]"></td></tr>
-                                        <tr><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">铆接</td><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">个</td><td class="px-2 py-1.5 text-[11px] text-right font-mono tabular-nums text-[#9e9e9e]">0.1053</td><td class="px-2 py-1.5 text-[11px] text-[#555555]"></td></tr>
-                                        <tr><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">CO2焊缝</td><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">CM</td><td class="px-2 py-1.5 text-[11px] text-right font-mono tabular-nums text-[#9e9e9e]">0.0700</td><td class="px-2 py-1.5 text-[11px] text-[#555555]"></td></tr>
-                                        <tr><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">折边/点焊胶</td><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">MM</td><td class="px-2 py-1.5 text-[11px] text-right font-mono tabular-nums text-[#9e9e9e]">0.0009</td><td class="px-2 py-1.5 text-[11px] text-[#555555]"></td></tr>
-                                        <tr><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">电镀</td><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">平方</td><td class="px-2 py-1.5 text-[11px] text-right font-mono tabular-nums text-[#9e9e9e]">12.0000</td><td class="px-2 py-1.5 text-[11px] text-[#555555]"></td></tr>
-                                        <tr><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">电泳（盐雾试验要求≤244H）</td><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">平方</td><td class="px-2 py-1.5 text-[11px] text-right font-mono tabular-nums text-[#9e9e9e]">12.0000</td><td class="px-2 py-1.5 text-[11px] text-[#555555]"></td></tr>
-                                        <tr><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">电泳（盐雾试验要求244H-720H）</td><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">平方</td><td class="px-2 py-1.5 text-[11px] text-right font-mono tabular-nums text-[#9e9e9e]">15.0000</td><td class="px-2 py-1.5 text-[11px] text-[#555555]"></td></tr>
-                                        <tr><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">电泳（盐雾试验要求＞720H）</td><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">平方</td><td class="px-2 py-1.5 text-[11px] text-right font-mono tabular-nums text-[#9e9e9e]">18.0000</td><td class="px-2 py-1.5 text-[11px] text-[#555555]"></td></tr>
-                                        <tr><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">压铆</td><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">个</td><td class="px-2 py-1.5 text-[11px] text-right font-mono tabular-nums text-[#9e9e9e]">0.1800</td><td class="px-2 py-1.5 text-[11px] text-[#555555]"></td></tr>
-                                        <tr><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">打铆钉</td><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">个</td><td class="px-2 py-1.5 text-[11px] text-right font-mono tabular-nums text-[#9e9e9e]">0.4500</td><td class="px-2 py-1.5 text-[11px] text-[#555555]"></td></tr>
-                                        <tr><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">二维码</td><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">个</td><td class="px-2 py-1.5 text-[11px] text-right font-mono tabular-nums text-[#9e9e9e]">0.1800</td><td class="px-2 py-1.5 text-[11px] text-[#555555]"></td></tr>
-                                        <tr><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">套袋</td><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">个</td><td class="px-2 py-1.5 text-[11px] text-right font-mono tabular-nums text-[#9e9e9e]">0.0900</td><td class="px-2 py-1.5 text-[11px] text-[#555555]"></td></tr>
+                                    <tbody id="weldingUnitPriceCatalogBody" class="divide-y divide-[#222222]">
+                                        <tr>
+                                            <td colspan="2" class="px-2 py-3 text-[11px] text-[#555555] text-center">加载标准目录…</td>
+                                        </tr>
                                     </tbody>
                                 </table>
                             </div>
@@ -199,6 +215,7 @@ export function weldingUnitPriceUploadTemplate() {
                             <ul class="list-disc list-inside text-xs text-[#616161] space-y-1.5">
                                 <li>唯一键：基地 + 年度 + 名称</li>
                                 <li>已存在则更新费用/单位/备注，不存在则新增</li>
+                                <li>非目录名称 / 单位不匹配 → 整批中止</li>
                                 <li>仅支持 .xlsx，同步导入无需等待队列</li>
                             </ul>
                         </div>

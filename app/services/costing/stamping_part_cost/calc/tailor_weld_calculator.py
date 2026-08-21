@@ -31,6 +31,7 @@ from app.services.costing.stamping_part_cost.calc.constants import (
     AMOUNT_QUANTIZE,
     FEE_QUANTIZE,
     UTIL_QUANTIZE,
+    compute_finished_cost_stack,
     quantize,
 )
 from app.services.costing.stamping_part_cost.calc.resolvers import PriceResolver
@@ -61,6 +62,10 @@ class TailorWeldPartCostCalculator:
         density: Decimal,
         loss_rate: Decimal,
         recovery_rate: Decimal,
+        finance_rate: Decimal,
+        management_rate: Decimal,
+        warehouse_packaging_rate: Decimal,
+        pretax_profit_rate: Decimal,
     ) -> StampingPartCostCalcAmounts | StampingPartCostFailedItemVO:
         blanks = list(part.tailor_weld_blanks or [])
         blanks = sorted(blanks, key=lambda b: (b.blank_seq or 0, b.id or 0))
@@ -167,8 +172,20 @@ class TailorWeldPartCostCalculator:
             material_amount_sheet - loss_scrap_deduction - process_scrap_deduction,
             AMOUNT_QUANTIZE,
         )
-        unit_cost = quantize(
-            material_net_per_part + process_fee_amount, AMOUNT_QUANTIZE
+        (
+            direct_cost,
+            finished_finance_fee,
+            finished_management_fee,
+            finished_warehouse_packaging_fee,
+            finished_pretax_profit_fee,
+            unit_cost,
+        ) = compute_finished_cost_stack(
+            material_net_per_part=material_net_per_part,
+            process_fee_amount=process_fee_amount,
+            finance_rate=finance_rate,
+            management_rate=management_rate,
+            warehouse_packaging_rate=warehouse_packaging_rate,
+            pretax_profit_rate=pretax_profit_rate,
         )
 
         steel_price_id, steel_mill, steel_ton_price = self._steel_snapshot(
@@ -195,6 +212,11 @@ class TailorWeldPartCostCalculator:
             process_scrap_deduction=process_scrap_deduction,
             scrap_amount_sheet=scrap_amount_sheet,
             material_net_per_part=material_net_per_part,
+            direct_cost=direct_cost,
+            finished_finance_fee=finished_finance_fee,
+            finished_management_fee=finished_management_fee,
+            finished_warehouse_packaging_fee=finished_warehouse_packaging_fee,
+            finished_pretax_profit_fee=finished_pretax_profit_fee,
             unit_cost=unit_cost,
         )
 

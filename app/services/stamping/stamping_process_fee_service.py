@@ -80,6 +80,8 @@ class StampingProcessFeeService:
         )
         if not updated:
             raise BusinessException(f"加工费记录不存在: id={fee_id}")
+        db.commit()
+        db.refresh(updated)
         return StampingProcessFeeVO.model_validate(updated)
 
     def get_by_id(self, db: Session, fee_id: int) -> StampingProcessFeeVO | None:

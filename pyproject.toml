@@ -121,3 +121,6 @@ disable_error_code = ["union-attr", "index"]
 asyncio_mode = "auto"
 testpaths = ["tests"]
 python_files = ["test_*.py"]
+markers = [
+    "integration: 依赖本地主库现网数据的集成测试",
+]

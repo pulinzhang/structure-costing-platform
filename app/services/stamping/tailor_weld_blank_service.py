@@ -164,6 +164,7 @@ class StampingTailorWeldBlankService:
                 is_tailor_welded=True,
                 current_user=current_user,
             )
+            db.commit()
             return [StampingTailorWeldBlankVO.model_validate(row) for row in blanks]
         except Exception:
             db.rollback()
@@ -200,6 +201,8 @@ class StampingTailorWeldBlankService:
                 is_tailor_welded=True,
                 current_user=current_user,
             )
+            db.commit()
+            db.refresh(blank)
             return StampingTailorWeldBlankVO.model_validate(blank)
         except Exception:
             db.rollback()
@@ -265,6 +268,8 @@ class StampingTailorWeldBlankService:
             updated = self.repository.update(db, blank_id, patch)
             if updated is None:
                 raise NotFoundException(f"拼焊子片不存在: id={blank_id}")
+            db.commit()
+            db.refresh(updated)
             return StampingTailorWeldBlankVO.model_validate(updated)
         except (NotFoundException, BusinessException):
             raise
@@ -290,6 +295,7 @@ class StampingTailorWeldBlankService:
             is_tailor_welded=remaining > 0,
             current_user=current_user,
         )
+        db.commit()
 
     def clear_by_part_id(
         self,
@@ -306,6 +312,7 @@ class StampingTailorWeldBlankService:
             is_tailor_welded=False,
             current_user=current_user,
         )
+        db.commit()
         return count
 
     def save_parsed_for_upload(

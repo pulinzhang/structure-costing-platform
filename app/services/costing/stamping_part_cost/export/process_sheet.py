@@ -13,6 +13,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from sqlalchemy.orm import Session
 
+from app.common.excel_workbook import resolve_worksheet
 from app.common.timezone import now
 from app.repositories.bom.bom_repository import BomNodeRepository, BomSnapshotRepository
 from app.repositories.stamping.stamping_process_fee_repository import (
@@ -37,6 +38,7 @@ from app.services.costing.stamping_part_cost.export.tailor_weld_display import (
     resolve_part_cost_display,
 )
 from app.services.costing.stamping_part_cost.export.trace_lookups import load_trace_maps
+from app.services.settings.system.settings_service import SettingsService
 from app.services.costing.stamping_part_cost.helpers import (
     DEFAULT_MATERIAL_LOSS_RATE,
     DEFAULT_SCRAP_RECOVERY_RATE,
@@ -81,6 +83,11 @@ _PROCESS_COL_LETTERS = (
     "AA",
     "AB",
     "AC",
+    "AD",
+    "AE",
+    "AF",
+    "AG",
+    "AH",
 )
 # 拼焊总成共用列：跨子片行合并（料厚/长/宽/消耗/单价等按片分行）
 _TAILOR_MERGED_COLS = frozenset(
@@ -101,19 +108,72 @@ _TAILOR_MERGED_COLS = frozenset(
         "U",
         "V",
         "W",
+        "X",
         "Y",
         "Z",
+        "AA",
         "AB",
-        "AC",
+        "AD",
+        "AE",
+        "AG",
+        "AH",
     }
 )
-_NUMBER_COLS = frozenset({"G", "H", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T"})
-_TRACE_COLS = frozenset({"U", "V", "W", "X", "Y", "Z", "AA", "AB", "AC"})
-_ID_COLS = frozenset({"AA", "AB", "AC"})
+_NUMBER_COLS = frozenset(
+    {
+        "G",
+        "H",
+        "J",
+        "K",
+        "L",
+        "M",
+        "N",
+        "O",
+        "P",
+        "Q",
+        "R",
+        "S",
+        "T",
+        "U",
+        "V",
+        "W",
+        "X",
+        "Y",
+    }
+)
+_TRACE_COLS = frozenset(
+    {"Z", "AA", "AB", "AC", "AD", "AE", "AF", "AG", "AH"}
+)
+_ID_COLS = frozenset({"AF", "AG", "AH"})
 _RESULT_COLS = frozenset({"R"})
-_FINAL_COLS = frozenset({"T"})
+_FINAL_COLS = frozenset({"Y"})
+_FEE_RATE_COLS = frozenset({"U", "V", "W", "X"})
 _TEXT_LEFT_COLS = frozenset({"B", "C", "D", "E", "F", "I"})
 _FILENAME_ILLEGAL = '<>:"/\\|?*'
+
+
+def _finished_fee_formula_cells(
+    excel_row: int,
+    *,
+    warehouse_packaging_rate: Decimal,
+    management_rate: Decimal,
+    finance_rate: Decimal,
+    pretax_profit_rate: Decimal,
+) -> dict[str, object]:
+    """直接成本 + 四项费用（固定顺序）+ 最终价，均为 Excel 公式。
+
+    顺序：仓储+包装 → 管理费 → 财务费 → 税前利润
+    费率须为系统配置 Decimal（禁止用费用÷直接成本反推，会出脏小数）。
+    """
+    t = f"T{excel_row}"
+    return {
+        "T": f"=R{excel_row}+S{excel_row}",
+        "U": f"={t}*{formula_number(warehouse_packaging_rate)}",
+        "V": f"={t}*{formula_number(management_rate)}",
+        "W": f"={t}*{formula_number(finance_rate)}",
+        "X": f"={t}*{formula_number(pretax_profit_rate)}",
+        "Y": f"={t}+U{excel_row}+V{excel_row}+W{excel_row}+X{excel_row}",
+    }
 
 
 def _filename_token(value: object) -> str | None:
@@ -190,7 +250,8 @@ def _part_size_formula(material_row: int, thickness_row: int) -> str:
     return f'=F{material_row}&"-"&TEXT(G{thickness_row},"0.0###")'
 
 
-def export_process_sheet(
+def write_process_sheet_to_workbook(
+    workbook: Workbook,
     db: Session,
     rows: list[Any],
     *,
@@ -205,23 +266,27 @@ def export_process_sheet(
     stamping_supplier: str | None = None,
     vehicle_model: str | None = None,
     version: str | None = None,
-) -> tuple[bytes, str]:
+    sheet_title: str = "冲压核价结果",
+) -> tuple[str, int]:
     """
-    工艺清单口径：对齐样例至 R 列 + 加工费 + 最终价。
-    普通件一行一件，M/N/O/I/R/最终价保留 Excel 公式。
-    拼焊件按子片分行（料厚/长/宽/单价各片一格），净重与成本等列合并；
-    子片 M 引用本行 G/J/K/L，总成 O/N/R 引用各子片行。
-    总成供货号：同基地 BOM 上溯 L0；多总成时逗号分隔。
-    末尾 U~Z 为人可读溯源（核对/手工补填），AA~AC 为关联 ID（钢材/废料/加工费）。
+    将工艺清单口径核价结果写入已有 Workbook（不 save）。
+    返回 (主表 sheet 名, 主表零件行数近似用 rows 长度)。
     """
-    workbook = Workbook()
-    sheet = workbook.worksheets[0]
-    sheet.title = "核价结果"
+    sheet = resolve_worksheet(workbook, sheet_title)
 
-    last_col = 29  # AC
-    last_col_letter = "AC"
+    last_col = 34  # AH
+    last_col_letter = "AH"
     trace_cols = _TRACE_COLS
     id_cols = _ID_COLS
+    fee_rate_cols = _FEE_RATE_COLS
+
+    settings_service = SettingsService()
+    warehouse_packaging_rate = (
+        settings_service.get_finished_warehouse_packaging_rate(db)
+    )
+    management_rate = settings_service.get_finished_management_rate(db)
+    finance_rate = settings_service.get_finished_finance_rate(db)
+    pretax_profit_rate = settings_service.get_finished_pretax_profit_rate(db)
 
     # —— 样式 ——
     thin = Border(
@@ -237,6 +302,7 @@ def export_process_sheet(
     weak_header_font = Font(name="微软雅黑", size=8, bold=True, color="757575")
     data_font = Font(name="微软雅黑", size=9, color="000000")
     weak_data_font = Font(name="微软雅黑", size=8, color="9E9E9E")
+    fee_rate_font = Font(name="微软雅黑", size=8, color="757575")
     accent_font = Font(name="微软雅黑", size=9, bold=True, color="C62828")
 
     fill_title = PatternFill("solid", fgColor="F5F5F5")
@@ -244,12 +310,16 @@ def export_process_sheet(
     fill_group_product = PatternFill("solid", fgColor="455A64")
     fill_group_process = PatternFill("solid", fgColor="1565C0")
     fill_group_fee = PatternFill("solid", fgColor="2E7D32")
+    fill_group_fee_rate = PatternFill("solid", fgColor="607D8B")
     fill_group_final = PatternFill("solid", fgColor="C62828")
     fill_group_trace = PatternFill("solid", fgColor="78909C")
     fill_header = PatternFill("solid", fgColor="ECEFF1")
     fill_header_trace = PatternFill("solid", fgColor="ECEFF1")
+    fill_header_fee_rate = PatternFill("solid", fgColor="ECEFF1")
     fill_zebra = PatternFill("solid", fgColor="FAFAFA")
     fill_zebra_trace = PatternFill("solid", fgColor="F5F5F5")
+    fill_fee_rate = PatternFill("solid", fgColor="F7F7F7")
+    fill_fee_rate_zebra = PatternFill("solid", fgColor="F0F0F0")
     fill_result = PatternFill("solid", fgColor="FFF3E0")
     fill_final = PatternFill("solid", fgColor="FFEBEE")
 
@@ -289,7 +359,8 @@ def export_process_sheet(
         f"M=L×W×T×ρ_steel÷1,000,000÷n；"
         f"O=M−H；"
         f"R=M×P×(1+λ)−M×λ×η×Q−O×η×Q；"
-        f"最终价=R+S。"
+        f"直接成本=R+S；"
+        f"最终价=直接成本+仓储包装费+管理费+财务费+税前利润。"
         f"拼焊件按子片分行：G/J/K/P 各片一格；"
         f"子片 M=J×K×G×ρ/1e6/L；"
         f"总成 O=SUM(M)−H，R=Σ(Mi×Pi×(1+λ))−SUM(M)×λ×η×Q−O×η×Q。"
@@ -317,7 +388,7 @@ def export_process_sheet(
     meta_cell = sheet["A2"]
     meta_cell.value = (
         f"{meta_text}　|　共 {len(rows)} 件　|　{formula_hint}"
-        f"　|　U~Z 人可读溯源可核对/补填；AA~AC 为关联 ID"
+        f"　|　Z~AE 人可读溯源可核对/补填；AF~AH 为关联 ID"
     )
     meta_cell.font = meta_font
     meta_cell.alignment = Alignment(horizontal="left", vertical="center", wrap_text=True)
@@ -332,18 +403,22 @@ def export_process_sheet(
         range(3, 10): fill_group_product,
         range(10, 19): fill_group_process,
         range(19, 20): fill_group_fee,
-        range(20, 21): fill_group_final,
-        range(21, 27): fill_group_trace,
-        range(27, 30): fill_group_trace,
+        range(20, 21): fill_group_fee,
+        range(21, 25): fill_group_fee_rate,
+        range(25, 26): fill_group_final,
+        range(26, 32): fill_group_trace,
+        range(32, 35): fill_group_trace,
     }
     for merge_range, label in (
         ("A3:B3", "标识"),
         ("C3:I3", "产品信息"),
         ("J3:R3", "材料费"),
         ("S3:S3", "加工费"),
-        ("T3:T3", "最终价"),
-        ("U3:Z3", "溯源"),
-        ("AA3:AC3", "关联ID"),
+        ("T3:T3", "直接成本"),
+        ("U3:X3", "成品费率费用"),
+        ("Y3:Y3", "最终价"),
+        ("Z3:AE3", "溯源"),
+        ("AF3:AH3", "关联ID"),
     ):
         sheet.merge_cells(merge_range)
         cell = sheet[merge_range.split(":")[0]]
@@ -382,23 +457,37 @@ def export_process_sheet(
         ("Q", "废料单价(元/KG)"),
         ("R", "原材料成本"),
         ("S", "加工费"),
-        ("T", "最终价"),
-        ("U", "来源Excel"),
-        ("V", "工作表"),
-        ("W", "行/列"),
-        ("X", "钢材价溯源"),
-        ("Y", "废料价溯源"),
-        ("Z", "加工费溯源"),
-        ("AA", "钢材价ID"),
-        ("AB", "废料价ID"),
-        ("AC", "加工费ID"),
+        ("T", "直接成本"),
+        ("U", "仓储+包装"),
+        ("V", "管理费"),
+        ("W", "财务费"),
+        ("X", "税前利润"),
+        ("Y", "最终价"),
+        ("Z", "来源Excel"),
+        ("AA", "工作表"),
+        ("AB", "行/列"),
+        ("AC", "钢材价溯源"),
+        ("AD", "废料价溯源"),
+        ("AE", "加工费溯源"),
+        ("AF", "钢材价ID"),
+        ("AG", "废料价ID"),
+        ("AH", "加工费ID"),
     ]
     for col_letter, title in headers:
         cell = sheet[f"{col_letter}4"]
         cell.value = title
         is_trace = col_letter in trace_cols
-        cell.font = weak_header_font if is_trace else header_font
-        cell.fill = fill_header_trace if is_trace else fill_header
+        is_fee_rate = col_letter in fee_rate_cols
+        if is_trace or is_fee_rate:
+            cell.font = weak_header_font
+        else:
+            cell.font = header_font
+        if is_trace:
+            cell.fill = fill_header_trace
+        elif is_fee_rate:
+            cell.fill = fill_header_fee_rate
+        else:
+            cell.fill = fill_header
         cell.alignment = center
         cell.border = thin
     sheet.row_dimensions[4].height = 40
@@ -428,8 +517,11 @@ def export_process_sheet(
             if col_letter in values:
                 cell.value = values[col_letter]
             is_trace = col_letter in trace_cols
+            is_fee_rate = col_letter in fee_rate_cols
             if is_trace:
                 cell.font = weak_data_font
+            elif is_fee_rate:
+                cell.font = fee_rate_font
             elif col_letter in final_cols:
                 cell.font = accent_font
             else:
@@ -439,6 +531,8 @@ def export_process_sheet(
                 cell.fill = fill_final
             elif col_letter in result_cols:
                 cell.fill = fill_result
+            elif is_fee_rate:
+                cell.fill = fill_fee_rate_zebra if zebra else fill_fee_rate
             elif is_trace:
                 cell.fill = fill_zebra_trace if zebra else fill_plain
             elif zebra:
@@ -446,13 +540,13 @@ def export_process_sheet(
             else:
                 cell.fill = fill_plain
 
-            if col_letter in {"X", "Y", "Z"}:
+            if col_letter in {"AC", "AD", "AE"}:
                 cell.alignment = Alignment(
                     horizontal="left", vertical="center", wrap_text=True
                 )
             elif col_letter in id_cols:
                 cell.alignment = center
-            elif col_letter in text_left_cols or col_letter in {"U", "V"}:
+            elif col_letter in text_left_cols or col_letter in {"Z", "AA"}:
                 cell.alignment = left
             elif col_letter in number_cols or col_letter == "A":
                 cell.alignment = right if col_letter != "A" else center
@@ -467,7 +561,7 @@ def export_process_sheet(
                 cell.number_format = "0.##"
             elif col_letter == "N":
                 cell.number_format = "0.00%"
-            elif col_letter in {"M", "O", "R", "T"}:
+            elif col_letter in {"M", "O", "R", "T", "U", "V", "W", "X", "Y"}:
                 cell.number_format = "0.0000"
             elif col_letter == "L":
                 cell.number_format = "0"
@@ -476,7 +570,7 @@ def export_process_sheet(
 
         multi_line = any(
             isinstance(values.get(col), str) and "\n" in str(values.get(col))
-            for col in ("X", "Y", "Z")
+            for col in ("AC", "AD", "AE")
         )
         sheet.row_dimensions[excel_row].height = 52 if multi_line else 18
 
@@ -584,8 +678,8 @@ def export_process_sheet(
                         if term.steel_kg_price is not None
                         else ""
                     ),
-                    "X": format_steel_price_excel_trace(term.steel),
-                    "AA": term.steel.id if term.steel is not None else "",
+                    "AC": format_steel_price_excel_trace(term.steel),
+                    "AF": term.steel.id if term.steel is not None else "",
                 }
                 if index == 0:
                     blank_values.update(
@@ -606,18 +700,24 @@ def export_process_sheet(
                             "Q": float(scrap_kg) if scrap_kg is not None else "",
                             "R": group_r,
                             "S": process_fee_cell,
-                            "T": f"=R{first_row}+S{first_row}",
-                            "U": row.excel_filename or "",
-                            "V": row.excel_sheet_name or "",
-                            "W": part_excel_row_col(row),
-                            "Y": scrap_trace,
-                            "Z": fee_trace,
-                            "AB": (
+                            **_finished_fee_formula_cells(
+                                first_row,
+                                warehouse_packaging_rate=warehouse_packaging_rate,
+                                management_rate=management_rate,
+                                finance_rate=finance_rate,
+                                pretax_profit_rate=pretax_profit_rate,
+                            ),
+                            "Z": row.excel_filename or "",
+                            "AA": row.excel_sheet_name or "",
+                            "AB": part_excel_row_col(row),
+                            "AD": scrap_trace,
+                            "AE": fee_trace,
+                            "AG": (
                                 row.scrap_price_id
                                 if row.scrap_price_id is not None
                                 else ""
                             ),
-                            "AC": (
+                            "AH": (
                                 row.process_fee_id
                                 if row.process_fee_id is not None
                                 else ""
@@ -659,20 +759,26 @@ def export_process_sheet(
                 f"-O{excel_row}*Q{excel_row}*{formula_number(recovery)}"
             ),
             "S": process_fee_cell,
-            "T": f"=R{excel_row}+S{excel_row}",
-            "U": row.excel_filename or "",
-            "V": row.excel_sheet_name or "",
-            "W": part_excel_row_col(row),
-            "X": format_steel_price_excel_trace(
+            **_finished_fee_formula_cells(
+                excel_row,
+                warehouse_packaging_rate=warehouse_packaging_rate,
+                management_rate=management_rate,
+                finance_rate=finance_rate,
+                pretax_profit_rate=pretax_profit_rate,
+            ),
+            "Z": row.excel_filename or "",
+            "AA": row.excel_sheet_name or "",
+            "AB": part_excel_row_col(row),
+            "AC": format_steel_price_excel_trace(
                 steel_by_id.get(row.steel_price_id)
                 if row.steel_price_id is not None
                 else None
             ),
-            "Y": scrap_trace,
-            "Z": fee_trace,
-            "AA": row.steel_price_id if row.steel_price_id is not None else "",
-            "AB": row.scrap_price_id if row.scrap_price_id is not None else "",
-            "AC": row.process_fee_id if row.process_fee_id is not None else "",
+            "AD": scrap_trace,
+            "AE": fee_trace,
+            "AF": row.steel_price_id if row.steel_price_id is not None else "",
+            "AG": row.scrap_price_id if row.scrap_price_id is not None else "",
+            "AH": row.process_fee_id if row.process_fee_id is not None else "",
         }
         paint_data_row(excel_row, values, zebra)
         excel_row += 1
@@ -700,15 +806,20 @@ def export_process_sheet(
         "R": 12,
         "S": 10,
         "T": 11,
-        "U": 28,
-        "V": 14,
-        "W": 8,
-        "X": 42,
-        "Y": 28,
-        "Z": 36,
-        "AA": 10,
-        "AB": 10,
-        "AC": 10,
+        "U": 10,
+        "V": 10,
+        "W": 12,
+        "X": 10,
+        "Y": 11,
+        "Z": 28,
+        "AA": 14,
+        "AB": 8,
+        "AC": 42,
+        "AD": 28,
+        "AE": 36,
+        "AF": 10,
+        "AG": 10,
+        "AH": 10,
     }
     for col_letter, width in widths.items():
         sheet.column_dimensions[col_letter].width = width
@@ -723,7 +834,7 @@ def export_process_sheet(
     sheet.page_setup.fitToHeight = 0
 
     # 附录：核价口径定义（次于「单件」工作表，打开文件默认见单件）
-    note = workbook.create_sheet("核价口径")
+    note = resolve_worksheet(workbook, "冲压核价口径")
     note_font_title = Font(name="微软雅黑", size=12, bold=True, color="1F1F1F")
     note_font = Font(name="微软雅黑", size=10, color="333333")
     note_header = Font(name="微软雅黑", size=10, bold=True, color="FFFFFF")
@@ -732,10 +843,11 @@ def export_process_sheet(
     note["A1"].font = note_font_title
     note.merge_cells("A1:C1")
     note.row_dimensions[1].height = 24
+    # 用户看到的是纯中文+符号，没有下划线变量名
     note["A2"] = (
-        f"本批次参数：钢材密度 ρ_steel={density_text} g/cm³；"
-        f"材料损耗率 λ={loss_rate_text}（{loss_permille_text}‰）；"
-        f"废料回收率 η={recovery_text}（{recovery_percent_text}%）"
+        f"本批次参数：钢材密度 ρ（柔 Rho）={density_text} g/cm³；"
+        f"材料损耗率 λ（拉姆达 Lambda）={loss_rate_text}（{loss_permille_text}‰）；"
+        f"废料回收率 η（伊塔 Eta）={recovery_text}（{recovery_percent_text}%）"
     )
     note["A2"].font = meta_font
     note.merge_cells("A2:C2")
@@ -781,16 +893,26 @@ def export_process_sheet(
             "拼焊件：=Σ(Mi×Pi×(1+λ))−SUM(M)×λ×η×Q−O×η×Q（引用各子片行）",
         ),
         ("S", "加工费", "元/件；取自加工费核算结果（拼焊父件一行）"),
-        ("最终价", "单件制件价格", "R + S"),
+        ("T", "直接成本", "R + S"),
+        ("U", "仓储+包装", "直接成本 × 仓储+包装管理费用率"),
+        ("V", "管理费", "直接成本 × 管理费率"),
+        ("W", "财务费", "直接成本 × 财务费率"),
+        ("X", "税前利润", "直接成本 × 税前利润率"),
         (
-            "U~Z",
+            "Y",
+            "最终价",
+            "直接成本 + 仓储包装费 + 管理费 + 财务费 + 税前利润"
+            "（计算时按系统设置费率落库；导出列为公式）",
+        ),
+        (
+            "Z~AE",
             "溯源（弱化）",
             "按文件/表/行定位核对；钢材含基价·厚度·宽度·锌层；"
             "拼焊件可含多条钢材价；废料为基地年月净价；"
             "加工费为工艺文件+工序依据。单元格可手工补填。",
         ),
         (
-            "AA~AC",
+            "AF~AH",
             "关联ID（弱化）",
             "钢材价ID / 废料价ID / 加工费ID；拼焊件钢材价ID 按子片分行。",
         ),
@@ -806,6 +928,52 @@ def export_process_sheet(
     note.column_dimensions["A"].width = 14
     note.column_dimensions["B"].width = 18
     note.column_dimensions["C"].width = 52
+
+    return sheet.title, len(rows)
+
+
+def export_process_sheet(
+    db: Session,
+    rows: list[Any],
+    *,
+    bom_snapshot_repo: BomSnapshotRepository,
+    bom_node_repo: BomNodeRepository,
+    steel_price_repo: SteelPriceRepository,
+    scrap_price_repo: StampingScrapPriceRepository,
+    process_fee_repo: StampingProcessFeeRepository,
+    year: int | None = None,
+    month: int | None = None,
+    location: str | None = None,
+    stamping_supplier: str | None = None,
+    vehicle_model: str | None = None,
+    version: str | None = None,
+) -> tuple[bytes, str]:
+    """
+    工艺清单口径：对齐样例至 R 列 + 加工费 + 成品费率费用 + 最终价。
+    普通件一行一件，M/N/O/I/R 保留 Excel 公式；
+    直接成本 T=R+S；四项费用（仓储包装→管理→财务→税前利润）=T×费率；最终价=T+四项。
+    拼焊件按子片分行（料厚/长/宽/单价各片一格），净重与成本等列合并；
+    子片 M 引用本行 G/J/K/L，总成 O/N/R 引用各子片行。
+    总成供货号：同基地 BOM 上溯 L0；多总成时逗号分隔。
+    末尾 Z~AE 为人可读溯源（核对/手工补填），AF~AH 为关联 ID（钢材/废料/加工费）。
+    """
+    workbook = Workbook()
+    write_process_sheet_to_workbook(
+        workbook,
+        db,
+        rows,
+        bom_snapshot_repo=bom_snapshot_repo,
+        bom_node_repo=bom_node_repo,
+        steel_price_repo=steel_price_repo,
+        scrap_price_repo=scrap_price_repo,
+        process_fee_repo=process_fee_repo,
+        year=year,
+        month=month,
+        location=location,
+        stamping_supplier=stamping_supplier,
+        vehicle_model=vehicle_model,
+        version=version,
+    )
 
     buffer = BytesIO()
     workbook.save(buffer)

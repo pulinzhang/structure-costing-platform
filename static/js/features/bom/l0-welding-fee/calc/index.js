@@ -341,7 +341,7 @@ function renderHistoryRows(items) {
                 <td class="py-2 px-2 font-mono text-right tabular-nums ${Number(item.missing_price_count) > 0 ? 'text-[#ffb74d]' : 'text-[#777]'}">${fmtInt(item.missing_price_count)}</td>
                 <td class="py-2 px-2 font-mono text-right tabular-nums text-[#777]">${fmtInt(item.skipped_approved_count)}</td>
                 <td class="py-2 px-2 text-right whitespace-nowrap">
-                    ${isProcessing ? `<span class="text-[9px] text-[#555]">进行中</span>` : `
+                    ${isProcessing ? `<span class="text-[9px] text-[#555] mr-2">进行中</span>` : `
                     <button type="button" class="wf-calc-view-process-btn text-[9px] text-[#777] hover:text-white mr-2" data-log-id="${esc(item.id)}">过程</button>
                     ${item.status === 'failed' ? '' : `
                     <button type="button" class="wf-calc-view-result-btn text-[9px] text-[#777] hover:text-white mr-2"
@@ -349,9 +349,9 @@ function renderHistoryRows(items) {
                             data-location="${esc(item.location || '')}"
                             data-vehicle-model="${esc(item.vehicle_model || '')}"
                             data-bom-version="${esc(item.bom_version || '')}">结果</button>`}
-                    ${calcState.canDelete !== false ? `
-                    <button type="button" class="wf-calc-delete-log-btn text-[9px] text-[#777] hover:text-[#ef5350]" data-log-id="${esc(item.id)}">删除</button>` : ''}
                     `}
+                    ${calcState.canDelete !== false ? `
+                    <button type="button" class="wf-calc-delete-log-btn text-[9px] text-[#777] hover:text-[#ef5350]" data-log-id="${esc(item.id)}" title="含计算中：删除可释放锁">删除</button>` : ''}
                 </td>
             </tr>
         `;
@@ -381,7 +381,7 @@ async function deleteCalcLog(logId) {
         if (calcState.canDelete === false) showToast('无删除权限', 'warning');
         return;
     }
-    if (!window.confirm('确定删除这条计算历史？仅删除日志，不影响已落库的焊接费。')) return;
+    if (!window.confirm('确定删除这条计算历史？计算中的记录删除后将释放锁；仅删除日志，不影响已落库的焊接费。')) return;
     try {
         await HttpClient.delete(`${CALC_LOGS_API}/${logId}`);
         showToast('删除成功', 'success');

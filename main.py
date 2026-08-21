@@ -287,6 +287,19 @@ def create_app() -> FastAPI:
             headers={"Cache-Control": "no-cache, must-revalidate"},
         )
 
+    # 使用帮助站（独立静态目录：index / help / knowledge / example + css/img）
+    # /helper → /helper/ ；子页用相对路径，如 help.html、helper.css、img/...
+    @app.get("/helper", include_in_schema=False)
+    async def helper_redirect():
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url="/helper/", status_code=302)
+
+    app.mount(
+        "/helper",
+        StaticFiles(directory="static/helper", html=True),
+        name="helper_site",
+    )
+
     # favicon
     @app.get("/favicon.ico", include_in_schema=False)
     async def favicon():
@@ -305,6 +318,12 @@ def create_app() -> FastAPI:
     from app.routers.bom.crud import router as bom_router
     from app.routers.bom.upload import router as bom_upload_router
     from app.routers.bom.welding_unit_price import router as bom_welding_unit_price_router
+    from app.routers.bom.annual_part_price import (
+        router as bom_annual_part_price_router,
+    )
+    from app.routers.bom.packaging_transport_fee import (
+        router as bom_packaging_transport_fee_router,
+    )
     from app.routers.bom.welding_process_breakdown import (
         router as bom_welding_process_breakdown_router,
     )
@@ -321,6 +340,15 @@ def create_app() -> FastAPI:
     )
     from app.routers.costing.stamping_part_cost.crud import (
         router as costing_stamping_part_cost_router,
+    )
+    from app.routers.costing.l0_assembly_cost.calc import (
+        router as costing_l0_assembly_cost_calc_router,
+    )
+    from app.routers.costing.l0_assembly_cost.crud import (
+        router as costing_l0_assembly_cost_router,
+    )
+    from app.routers.costing.monthly_bundle_export.crud import (
+        router as costing_monthly_bundle_export_router,
     )
     from app.routers.costing.steel_price.crud import router as costing_steel_price_router
     from app.routers.costing.steel_price.calc import router as costing_steel_price_calc_router
@@ -344,6 +372,9 @@ def create_app() -> FastAPI:
     app.include_router(stamping_process_fee_router)
     app.include_router(costing_stamping_part_cost_calc_router)
     app.include_router(costing_stamping_part_cost_router)
+    app.include_router(costing_l0_assembly_cost_calc_router)
+    app.include_router(costing_l0_assembly_cost_router)
+    app.include_router(costing_monthly_bundle_export_router)
     app.include_router(costing_steel_price_calc_router)
     app.include_router(costing_steel_price_router)
     app.include_router(yishiyiyi_policy_upload_router)
@@ -355,6 +386,8 @@ def create_app() -> FastAPI:
     app.include_router(bom_router)
     app.include_router(bom_upload_router)
     app.include_router(bom_welding_unit_price_router)
+    app.include_router(bom_annual_part_price_router)
+    app.include_router(bom_packaging_transport_fee_router)
     app.include_router(bom_welding_process_breakdown_router)
     app.include_router(bom_l0_welding_fee_router)
     app.include_router(costing_engine_router)

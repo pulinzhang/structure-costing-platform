@@ -10,6 +10,7 @@ BOM 焊接费计算编排器
   再按单价单位换算（长度 mm↔cm；面积 平方≡m2/平方米）
   line_fee = 计费用量 × unit_price（Q4；不乘装配用量）
   total_l0_welding_fee = Σ line_fee
+  final_l0_welding_fee = total_l0_welding_fee + other_fee（重算保留已录入其它费用）
 
 已审核结果跳过覆盖；不要求上游拆解已审核。
 """
@@ -24,10 +25,11 @@ from typing import Callable
 from sqlalchemy.orm import Session
 
 from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING, audit_create, audit_update, display_name
+from app.exceptions.base import BusinessException
 from app.common.bom.welding_billing_qty import resolve_billing_qty_for_price
 from app.common.money import Q4, quantize_money
 from app.common.timezone import now
-from app.exceptions.base import BusinessException
+from app.services.bom.l0_welding_fee.fee_math import resolve_final_l0_welding_fee
 from app.models.bom import BomL0WeldingFeeCalcLog, BomWeldingProcessBreakdownNode
 from app.models.bom.welding_unit_price import BomWeldingUnitPrice
 from app.repositories.bom.l0_welding_fee_repository import BomL0WeldingFeeRepository
@@ -265,6 +267,12 @@ class BomL0WeldingFeeCalcOrchestrator:
             if parts.calc_status == CALC_FAILED:
                 failed_count += 1
 
+            other_fee = existing.other_fee if existing else None
+            final_fee = resolve_final_l0_welding_fee(
+                parts.total_l0_welding_fee,
+                other_fee,
+            )
+
             upsert_rows.append(
                 BomL0WeldingFeeUpsertPayload(
                     year=year,
@@ -280,6 +288,7 @@ class BomL0WeldingFeeCalcOrchestrator:
                     matched_line_count=parts.matched_line_count,
                     missing_price_count=parts.missing_price_count,
                     total_l0_welding_fee=parts.total_l0_welding_fee,
+                    final_l0_welding_fee=final_fee,
                     calc_batch_id=calc_batch_id,
                     calc_status=parts.calc_status,
                     calc_message=parts.calc_message,
@@ -354,6 +363,8 @@ class BomL0WeldingFeeCalcOrchestrator:
                     "updated_by": display_name(current_user) or None,
                 },
             )
+        else:
+            db.commit()
 
         report(100, "计算完成")
         logger.info(

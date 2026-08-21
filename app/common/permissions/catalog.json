@@ -344,6 +344,138 @@
           ]
         },
         {
+          "code": "menu:bom-annual-part-price-group",
+          "label": "年度零件价",
+          "type": "group",
+          "children": [
+            {
+              "code": "menu:bom-annual-part-price-upload",
+              "label": "上传",
+              "type": "menu",
+              "children": [
+                {
+                  "code": "op:bom-annual-part-price-upload:view",
+                  "label": "查看",
+                  "type": "op"
+                },
+                {
+                  "code": "op:bom-annual-part-price-upload:upload",
+                  "label": "上传",
+                  "type": "op"
+                }
+              ]
+            },
+            {
+              "code": "menu:bom-annual-part-price",
+              "label": "年度零件价列表",
+              "type": "menu",
+              "children": [
+                {
+                  "code": "op:bom-annual-part-price:view",
+                  "label": "查询",
+                  "type": "op"
+                },
+                {
+                  "code": "op:bom-annual-part-price:create",
+                  "label": "新增",
+                  "type": "op"
+                },
+                {
+                  "code": "op:bom-annual-part-price:update",
+                  "label": "编辑",
+                  "type": "op"
+                },
+                {
+                  "code": "op:bom-annual-part-price:delete",
+                  "label": "删除",
+                  "type": "op"
+                },
+                {
+                  "code": "op:bom-annual-part-price:approve",
+                  "label": "审核通过",
+                  "type": "op"
+                },
+                {
+                  "code": "op:bom-annual-part-price:reverse",
+                  "label": "反审核",
+                  "type": "op"
+                },
+                {
+                  "code": "op:bom-annual-part-price:export",
+                  "label": "导出",
+                  "type": "op"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "menu:bom-packaging-transport-fee-group",
+          "label": "包装运输费",
+          "type": "group",
+          "children": [
+            {
+              "code": "menu:bom-packaging-transport-fee-upload",
+              "label": "上传",
+              "type": "menu",
+              "children": [
+                {
+                  "code": "op:bom-packaging-transport-fee-upload:view",
+                  "label": "查看",
+                  "type": "op"
+                },
+                {
+                  "code": "op:bom-packaging-transport-fee-upload:upload",
+                  "label": "上传",
+                  "type": "op"
+                }
+              ]
+            },
+            {
+              "code": "menu:bom-packaging-transport-fee",
+              "label": "包装运输费列表",
+              "type": "menu",
+              "children": [
+                {
+                  "code": "op:bom-packaging-transport-fee:view",
+                  "label": "查询",
+                  "type": "op"
+                },
+                {
+                  "code": "op:bom-packaging-transport-fee:create",
+                  "label": "新增",
+                  "type": "op"
+                },
+                {
+                  "code": "op:bom-packaging-transport-fee:update",
+                  "label": "编辑",
+                  "type": "op"
+                },
+                {
+                  "code": "op:bom-packaging-transport-fee:delete",
+                  "label": "删除",
+                  "type": "op"
+                },
+                {
+                  "code": "op:bom-packaging-transport-fee:approve",
+                  "label": "审核通过",
+                  "type": "op"
+                },
+                {
+                  "code": "op:bom-packaging-transport-fee:reverse",
+                  "label": "反审核",
+                  "type": "op"
+                },
+                {
+                  "code": "op:bom-packaging-transport-fee:export",
+                  "label": "导出",
+                  "type": "op"
+                }
+              ]
+            }
+          ]
+        },
+        {
           "code": "menu:bom-welding-process-breakdown-group",
           "label": "焊接工艺拆解",
           "type": "group",
@@ -439,6 +571,11 @@
                 {
                   "code": "op:bom-l0-welding-fee-list:view",
                   "label": "查询",
+                  "type": "op"
+                },
+                {
+                  "code": "op:bom-l0-welding-fee-list:update",
+                  "label": "编辑其它费用",
                   "type": "op"
                 },
                 {
@@ -763,6 +900,67 @@
           ]
         },
         {
+          "code": "menu:l0-assembly-cost-group",
+          "label": "成品核价",
+          "type": "group",
+          "children": [
+            {
+              "code": "menu:l0-assembly-cost-calc",
+              "label": "成品核价计算",
+              "type": "menu",
+              "children": [
+                {
+                  "code": "op:l0-assembly-cost-calc:view",
+                  "label": "查看",
+                  "type": "op"
+                },
+                {
+                  "code": "op:l0-assembly-cost-calc:run",
+                  "label": "计算",
+                  "type": "op"
+                },
+                {
+                  "code": "op:l0-assembly-cost-calc:delete",
+                  "label": "删除日志",
+                  "type": "op"
+                }
+              ]
+            },
+            {
+              "code": "menu:l0-assembly-cost",
+              "label": "成品核价一览",
+              "type": "menu",
+              "children": [
+                {
+                  "code": "op:l0-assembly-cost:view",
+                  "label": "查询",
+                  "type": "op"
+                },
+                {
+                  "code": "op:l0-assembly-cost:delete",
+                  "label": "删除",
+                  "type": "op"
+                },
+                {
+                  "code": "op:l0-assembly-cost:approve",
+                  "label": "审核通过",
+                  "type": "op"
+                },
+                {
+                  "code": "op:l0-assembly-cost:reverse",
+                  "label": "反审核",
+                  "type": "op"
+                },
+                {
+                  "code": "op:l0-assembly-cost:export",
+                  "label": "导出",
+                  "type": "op"
+                }
+              ]
+            }
+          ]
+        },
+        {
           "code": "menu:costing-engine",
           "label": "自动核价引擎",
           "type": "menu",
@@ -770,6 +968,16 @@
             {
               "code": "op:costing:view",
               "label": "查看",
+              "type": "op"
+            },
+            {
+              "code": "op:costing:run",
+              "label": "启动运行",
+              "type": "op"
+            },
+            {
+              "code": "op:costing:delete",
+              "label": "删除 Run",
               "type": "op"
             }
           ]

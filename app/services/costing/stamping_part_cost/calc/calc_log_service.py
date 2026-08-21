@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import uuid
 from datetime import timedelta
+from typing import cast
 
+from sqlalchemy.engine import Engine
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.common.timezone import now
-from app.exceptions.base import BusinessException
 from app.models.costing import StampingPartCostCalcLog
 from app.repositories.costing.stamping_part_cost.stamping_part_cost_calc_log_repository import (
     StampingPartCostCalcLogRepository,
@@ -39,6 +40,16 @@ class PartCostCalcLogService:
     ) -> None:
         self.calc_log_repo = calc_log_repo or StampingPartCostCalcLogRepository()
 
+    def _ensure_processing_lock_index(self, db: Session) -> None:
+        """DDL 用独立连接；commit 在 Service（不进业务 Session）。"""
+        if self.calc_log_repo.is_processing_lock_index_ensured():
+            return
+        bind = cast(Engine, db.get_bind())
+        with bind.connect() as conn:
+            self.calc_log_repo.apply_processing_lock_index(conn)
+            conn.commit()
+        self.calc_log_repo.mark_processing_lock_index_ensured()
+
     def begin_processing(
         self,
         db: Session,
@@ -48,7 +59,7 @@ class PartCostCalcLogService:
         operator_name: str | None,
     ) -> StampingPartCostCalcLog:
         location, supplier = require_scope(dto)
-        self.calc_log_repo.ensure_processing_lock_index(db)
+        self._ensure_processing_lock_index(db)
         self.expire_stale_processing(
             db,
             year=dto.year,
@@ -102,6 +113,11 @@ class PartCostCalcLogService:
         log_id: int,
         detail_text: str,
     ) -> None:
+        """异常路径：释放 processing 锁为 failed（先 rollback 清脏事务）。"""
+        try:
+            db.rollback()
+        except Exception:
+            pass
         self.calc_log_repo.update(
             db,
             log_id,
@@ -176,11 +192,10 @@ class PartCostCalcLogService:
         return StampingPartCostCalcLogVO.model_validate(record)
 
     def delete_calc_log(self, db: Session, log_id: int) -> bool:
+        """删除计算日志（含 processing，作僵死锁兜底释放）。"""
         record = self.calc_log_repo.get_by_id(db, log_id)
         if record is None:
             return False
-        if record.status == STATUS_PROCESSING:
-            raise BusinessException("计算进行中，无法删除该记录")
         deleted = self.calc_log_repo.delete(db, log_id)
         if deleted:
             db.commit()

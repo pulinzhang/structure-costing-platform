@@ -140,7 +140,10 @@ class UserService:
         )
         try:
             user = self.repository.create(db, payload)
-            self.permission_service.assign_defaults(db, user.id, commit=True)
+            # 同一事务：用户 + 默认权限一起提交
+            self.permission_service.assign_defaults(db, user.id, commit=False)
+            db.commit()
+            db.refresh(user)
             return self._to_vo(db, user)
         except IntegrityError as exc:
             db.rollback()
@@ -164,6 +167,8 @@ class UserService:
         )
         if not user:
             return None
+        db.commit()
+        db.refresh(user)
         return self._to_vo(db, user)
 
     def update_own_profile(
@@ -181,6 +186,8 @@ class UserService:
         )
         if not user:
             raise ValueError("用户不存在")
+        db.commit()
+        db.refresh(user)
         return self._to_vo(db, user)
 
     def update_own_avatar(
@@ -215,6 +222,8 @@ class UserService:
         if not updated:
             delete_avatar_file(avatar_url)
             raise ValueError("用户不存在")
+        db.commit()
+        db.refresh(updated)
         delete_avatar_file(old_avatar)
         return self._to_vo(db, updated)
 
@@ -236,6 +245,8 @@ class UserService:
         )
         if not user:
             return None
+        db.commit()
+        db.refresh(user)
         return self._to_vo(db, user)
 
     def change_own_password(
@@ -264,6 +275,8 @@ class UserService:
         )
         if not updated:
             raise ValueError("用户不存在")
+        db.commit()
+        db.refresh(updated)
         return self._to_vo(db, updated)
 
     def delete(self, db: Session, user_id: int, current_user: UserVO) -> bool:
@@ -275,7 +288,10 @@ class UserService:
             admin_count = sum(1 for u in self.repository.list_all(db) if u.is_admin)
             if admin_count <= 1:
                 raise ValueError("不能删除最后一个管理员")
-        return self.repository.delete(db, user_id)
+        ok = self.repository.delete(db, user_id)
+        if ok:
+            db.commit()
+        return ok
 
     def ensure_default_admin(self, db: Session) -> None:
         """首次启动时若无用户，创建默认管理员 admin / admin123"""
@@ -296,4 +312,5 @@ class UserService:
         )
         self.repository.create(db, payload)
         logger.info("已创建默认管理员账号: admin / admin123")
+        # ensure_bootstrap 内统一 commit（含刚创建的 admin）
         self.permission_service.ensure_bootstrap(db)

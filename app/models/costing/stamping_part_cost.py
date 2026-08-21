@@ -8,7 +8,7 @@
   ③ process_scrap_deduction   = O×η×Q         边角废料扣除
   scrap_amount_sheet = ②+③（合计，便于兼容）
   material_net_per_part = ①−②−③
-ρ_steel / λ / η 来自系统配置快照（默认 7.85 / 0.003 / 0.97）。
+  ρ_steel / λ / η 来自系统配置快照（默认 7.85 / 0.003 / 0.97）。
 """
 
 from decimal import Decimal
@@ -68,19 +68,19 @@ class StampingPartCost(AuditUserMixin, Base):
     density: Mapped[Decimal] = mapped_column(
         Numeric(6, 4),
         nullable=False,
-        default=7.85,
+        default=Decimal("7.85"),
         comment="密度(g/cm3)，来自系统配置快照",
     )
     material_loss_rate: Mapped[Decimal] = mapped_column(
         Numeric(8, 6),
         nullable=False,
-        default=0.003,
+        default=Decimal("0.003"),
         comment="材料损耗率（小数），来自系统配置快照",
     )
     scrap_recovery_rate: Mapped[Decimal] = mapped_column(
         Numeric(8, 6),
         nullable=False,
-        default=0.97,
+        default=Decimal("0.97"),
         comment="废料回收率（小数），来自系统配置快照",
     )
     blank_weight_kg: Mapped[Decimal | None] = mapped_column(
@@ -143,10 +143,36 @@ class StampingPartCost(AuditUserMixin, Base):
         nullable=True,
         comment="原材料成本R（单件，元）=①−②−③",
     )
+    direct_cost: Mapped[Decimal | None] = mapped_column(
+        Numeric(14, 6),
+        nullable=True,
+        comment="直接成本=R(元)+加工费(元)",
+    )
+    finished_finance_fee: Mapped[Decimal | None] = mapped_column(
+        Numeric(14, 6),
+        nullable=True,
+        comment="成品财务费=直接成本×财务费率（元）",
+    )
+    finished_management_fee: Mapped[Decimal | None] = mapped_column(
+        Numeric(14, 6),
+        nullable=True,
+        comment="成品管理费=直接成本×管理费率（元）",
+    )
+    finished_warehouse_packaging_fee: Mapped[Decimal | None] = mapped_column(
+        Numeric(14, 6),
+        nullable=True,
+        comment="仓储+包装管理费用=直接成本×仓储+包装管理费用率（元）",
+    )
+    finished_pretax_profit_fee: Mapped[Decimal | None] = mapped_column(
+        Numeric(14, 6),
+        nullable=True,
+        comment="成品税前利润=直接成本×税前利润率（元）",
+    )
+
     unit_cost: Mapped[Decimal | None] = mapped_column(
         Numeric(14, 6),
         nullable=True,
-        comment="单件成本=R+加工费(元)",
+        comment="单件成本=直接成本+成品财务费+成品管理费+仓储+包装管理费用+成品税前利润(元)",
     )
 
     # —— 批次 / 状态 ——
@@ -159,7 +185,7 @@ class StampingPartCost(AuditUserMixin, Base):
     )
     calc_fail_reason: Mapped[str | None] = mapped_column(Text, nullable=True, comment="计算失败原因")
     formula_version: Mapped[str | None] = mapped_column(
-        String(50), nullable=True, comment="公式版本，如 part-cost-v5"
+        String(50), nullable=True, comment="公式版本，如 part-cost-v6"
     )
     calculated_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, comment="计算时间")
     remark: Mapped[str | None] = mapped_column(Text, nullable=True, comment="备注")

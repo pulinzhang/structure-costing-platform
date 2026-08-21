@@ -80,7 +80,7 @@ class StampingTailorWeldBlankRepository:
     def create(self, db: Session, data: TailorWeldBlankWrite) -> StampingTailorWeldBlank:
         blank = model_from_payload(StampingTailorWeldBlank, data)
         db.add(blank)
-        db.commit()
+        db.flush()
         db.refresh(blank)
         logger.info(
             "创建拼焊子片: id=%s part_id=%s blank_seq=%s",
@@ -100,7 +100,7 @@ class StampingTailorWeldBlankRepository:
         if blank is None:
             return None
         apply_payload_fields(blank, update_data)
-        db.commit()
+        db.flush()
         db.refresh(blank)
         logger.info("更新拼焊子片: id=%s", blank_id)
         return blank
@@ -110,7 +110,7 @@ class StampingTailorWeldBlankRepository:
         if blank is None:
             return False
         db.delete(blank)
-        db.commit()
+        db.flush()
         logger.info("删除拼焊子片: id=%s", blank_id)
         return True
 
@@ -121,7 +121,7 @@ class StampingTailorWeldBlankRepository:
             .filter(StampingTailorWeldBlank.part_id == part_id)
             .delete(synchronize_session=False)
         )
-        db.commit()
+        db.flush()
         logger.info("按父件清空拼焊子片: part_id=%s count=%s", part_id, count)
         return int(count)
 
@@ -137,7 +137,7 @@ class StampingTailorWeldBlankRepository:
         ).delete(synchronize_session=False)
         blanks = [model_from_payload(StampingTailorWeldBlank, row) for row in payloads]
         db.add_all(blanks)
-        db.commit()
+        db.flush()
         for blank in blanks:
             db.refresh(blank)
         blanks.sort(key=lambda row: row.blank_seq)

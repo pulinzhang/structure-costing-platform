@@ -38,6 +38,7 @@ from app.schemas.vo.steel_price_vo import (
     SteelPriceResponse,
 )
 from app.schemas.vo.user_vo import UserVO
+from app.services.costing.steel_price.spec_format import build_spec
 
 
 logger = logging.getLogger("service.steel_price")
@@ -74,7 +75,7 @@ class SteelPriceService:
     def _build_spec(thickness: Decimal, width: Decimal, spec: str | None) -> str | None:
         if spec and spec.strip():
             return spec.strip()
-        return f"{thickness:.2f}*{width:.2f}"
+        return build_spec(thickness, width) or None
 
     def _ensure_not_approved(self, record: SteelPrice) -> Optional[str]:
         if record.audit_status == AUDIT_APPROVED:

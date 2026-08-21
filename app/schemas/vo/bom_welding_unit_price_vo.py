@@ -91,3 +91,10 @@ class BomWeldingUnitPriceBatchAuditResultVO(BaseModel):
     skipped_count: int = 0
     location: str
     year: int
+
+
+class WeldingStandardProcessCatalogItemVO(BaseModel):
+    """焊接标准工艺目录项（导入名称须与此完全一致）。"""
+
+    item_name: str
+    unit: str

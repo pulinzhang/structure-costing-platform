@@ -11,6 +11,7 @@ from app.common.audit import (
     AUDIT_PENDING,
     AUDIT_REJECTED,
     display_name,
+    audit_update,
 )
 from app.common.timezone import now
 from app.exceptions.base import BusinessException
@@ -19,6 +20,7 @@ from app.repositories.bom.l0_welding_fee_repository import (
     BomL0WeldingFeeRepository,
     L0WeldingFeeListFilters,
 )
+from app.services.bom.l0_welding_fee.fee_math import resolve_final_l0_welding_fee
 from app.repositories.bom.welding_process_breakdown_repository import (
     BomWeldingProcessBreakdownRepository,
 )
@@ -27,6 +29,8 @@ from app.schemas.dto.bom_l0_welding_fee_dto import (
     BomL0WeldingFeeBatchDeleteDTO,
     BomL0WeldingFeeBatchReverseAuditDTO,
     BomL0WeldingFeeQuery,
+    BomL0WeldingFeeUpdateDTO,
+    L0WeldingFeePatch,
 )
 from app.schemas.vo.bom_l0_welding_fee_vo import (
     BomL0WeldingFeeBatchAuditResultVO,
@@ -51,6 +55,41 @@ class BomL0WeldingFeeService:
     def __init__(self) -> None:
         self.fee_repo = BomL0WeldingFeeRepository()
         self.breakdown_repo = BomWeldingProcessBreakdownRepository()
+
+    def update_other_fee(
+        self,
+        db: Session,
+        fee_id: int,
+        dto: BomL0WeldingFeeUpdateDTO,
+        current_user: UserVO,
+    ) -> BomL0WeldingFeeVO:
+        record = self.fee_repo.get_by_id(db, fee_id)
+        if not record:
+            raise BusinessException(f"成品焊接费记录不存在: id={fee_id}")
+        if record.audit_status == AUDIT_APPROVED:
+            raise BusinessException("已审核通过，请先反审核后再调整")
+
+        other_fee = dto.other_fee
+        final_fee = resolve_final_l0_welding_fee(
+            record.total_l0_welding_fee,
+            other_fee,
+        )
+        remark = (dto.remark or "").strip() or None
+        updated = self.fee_repo.update_fields(
+            db,
+            fee_id,
+            L0WeldingFeePatch(
+                other_fee=other_fee,
+                final_l0_welding_fee=final_fee,
+                remark=remark,
+                updated_by=audit_update(current_user)["updated_by"],
+            ),
+        )
+        if not updated:
+            raise BusinessException(f"成品焊接费记录不存在: id={fee_id}")
+        db.commit()
+        db.refresh(updated)
+        return self._to_vo(db, updated)
 
     def get_by_id(self, db: Session, fee_id: int) -> BomL0WeldingFeeVO | None:
         record = self.fee_repo.get_by_id(db, fee_id)

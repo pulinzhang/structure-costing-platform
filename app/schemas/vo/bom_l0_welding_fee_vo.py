@@ -50,6 +50,9 @@ class BomL0WeldingFeeVO(BaseModel):
     matched_line_count: int = 0
     missing_price_count: int = 0
     total_l0_welding_fee: Decimal
+    other_fee: Decimal | None = None
+    final_l0_welding_fee: Decimal | None = None
+    remark: str | None = None
     calc_batch_id: str | None = None
     calc_status: str = "ok"
     calc_message: str | None = None
@@ -66,7 +69,7 @@ class BomL0WeldingFeeVO(BaseModel):
     updated_at: datetime | None = None
     items: list[BomL0WeldingFeeItemVO] = Field(default_factory=list)
 
-    @field_serializer("total_l0_welding_fee")
+    @field_serializer("total_l0_welding_fee", "other_fee", "final_l0_welding_fee")
     def serialize_fee(self, value: Decimal | None) -> str | None:
         return optional_format_money(value, Q4, 4)
 

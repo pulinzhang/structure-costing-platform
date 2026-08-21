@@ -118,6 +118,11 @@ class StampingPartCostCalcAmounts:
     process_scrap_deduction: Decimal | None
     scrap_amount_sheet: Decimal | None
     material_net_per_part: Decimal | None
+    direct_cost: Decimal | None
+    finished_finance_fee: Decimal | None
+    finished_management_fee: Decimal | None
+    finished_warehouse_packaging_fee: Decimal | None
+    finished_pretax_profit_fee: Decimal | None
     unit_cost: Decimal | None
 
 
@@ -155,6 +160,11 @@ class StampingPartCostUpsertPayload:
     process_scrap_deduction: Decimal | None = None
     scrap_amount_sheet: Decimal | None = None
     material_net_per_part: Decimal | None = None
+    direct_cost: Decimal | None = None
+    finished_finance_fee: Decimal | None = None
+    finished_management_fee: Decimal | None = None
+    finished_warehouse_packaging_fee: Decimal | None = None
+    finished_pretax_profit_fee: Decimal | None = None
     unit_cost: Decimal | None = None
     calc_batch_id: str | None = None
     calc_fail_reason: str | None = None

@@ -3,7 +3,7 @@ BOM L0焊接费（完工产品 / 供货总成）结果表
 
 按年度 + 基地 + 车型 + BOM 版本 + L0 拆解节点维度存储。
 仅计完工产品（level=0）过程量 × 分年焊接单价；下级工艺不计费。
-审核锁定：audit_status == 'approved' 时禁止重算覆盖 / 删除；须先反审核。
+审核锁定：audit_status == 'approved' 时禁止编辑其它费用、重算覆盖 / 删除；须先反审核。
 """
 
 from __future__ import annotations
@@ -78,7 +78,20 @@ class BomL0WeldingFee(AuditUserMixin, Base):
         Numeric(14, 4),
         nullable=False,
         default=0,
-        comment="焊接费合计(元)",
+        comment="系统计算焊接费合计(元)",
+    )
+    other_fee: Mapped[Decimal | None] = mapped_column(
+        Numeric(14, 4),
+        nullable=True,
+        comment="其它费用(元)；可正可负",
+    )
+    final_l0_welding_fee: Mapped[Decimal | None] = mapped_column(
+        Numeric(14, 4),
+        nullable=True,
+        comment="确认单价(元) = 系统计算 + 其它费用",
+    )
+    remark: Mapped[str | None] = mapped_column(
+        Text, nullable=True, comment="备注（其它费用说明等）"
     )
 
     calc_batch_id: Mapped[str | None] = mapped_column(

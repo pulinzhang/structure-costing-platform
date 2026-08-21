@@ -8,6 +8,7 @@ from typing import Optional
 
 from app.common.timezone import now
 from app.schemas.dto.steel_price_dto import SteelPriceWrite
+from app.services.costing.steel_price.spec_format import build_spec
 
 
 @dataclass
@@ -147,8 +148,6 @@ class CalcRow:
             + Decimal(str(self.processing_fee))
             + Decimal(str(self.other_adjustment))
         )
-        thickness_f = float(self.thickness)
-        width_f = float(width)
         return SteelPriceWrite(
             year=self.year,
             month=self.month,
@@ -158,7 +157,7 @@ class CalcRow:
             grade=self.grade,
             thickness=self.thickness,
             width=width,
-            spec=f"{thickness_f:.2f}*{width_f:.2f}",
+            spec=build_spec(self.thickness, width),
             base_price=base_price,
             thickness_adjustment=self.thickness_adjustment,
             width_adjustment=self.width_adjustment,

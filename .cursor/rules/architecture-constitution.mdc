@@ -442,6 +442,14 @@ app/
 
 **事务放在 Service 层**（组合多个 Repository 操作）
 
+| 层 | 允许 | 禁止 |
+|---|---|---|
+| **Repository** | `db.add` / `db.delete` / `db.flush` / `db.refresh` | `db.commit` / `db.rollback` |
+| **Service** | `db.commit` / `db.rollback` / `with db.begin()` | 把提交散落到多个 Repo 方法里 |
+
+教学口诀：**Repo 只改会话，Service 才落库。**  
+（特例：① 异步任务辅助库用 AUTOCOMMIT 连接写进度；② 计算锁 DDL 用独立连接执行索引，仍由 Service `conn.commit()`。二者都不在 Repository 里对业务 `Session` 调 `commit`。）
+
 ```python
 class StampingUploadService:
     """上传服务 - 事务管理示例"""

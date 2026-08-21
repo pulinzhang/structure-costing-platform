@@ -107,6 +107,8 @@ class StampingTonnagePriceService:
                 created_by=audit["created_by"],
                 updated_by=audit["updated_by"],
             )
+            db.commit()
+            db.refresh(record)
             return StampingTonnagePriceResponse.model_validate(record), None
         except IntegrityError:
             db.rollback()
@@ -194,6 +196,8 @@ class StampingTonnagePriceService:
             )
             if not record:
                 return None, "记录不存在"
+            db.commit()
+            db.refresh(record)
             return StampingTonnagePriceResponse.model_validate(record), None
         except Exception as e:
             db.rollback()
@@ -206,10 +210,16 @@ class StampingTonnagePriceService:
             return False, "记录不存在"
         if record.audit_status == AUDIT_APPROVED:
             return False, "已审核通过，请先反审核后再删除"
-        success = self.repository.delete(db, id)
-        if not success:
-            return False, "记录不存在"
-        return True, None
+        try:
+            success = self.repository.delete(db, id)
+            if not success:
+                return False, "记录不存在"
+            db.commit()
+            return True, None
+        except Exception as e:
+            db.rollback()
+            logger.error("删除冲次单价失败: %s", e)
+            return False, str(e)
 
     def batch_delete_by_location_year(
         self,
@@ -235,9 +245,15 @@ class StampingTonnagePriceService:
             year=year,
             statuses=[AUDIT_APPROVED],
         )
-        deleted_count = self.repository.delete_unaudited_by_location_year(
-            db, location, year
-        )
+        try:
+            deleted_count = self.repository.delete_unaudited_by_location_year(
+                db, location, year
+            )
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            logger.error("批量删除冲次单价失败: %s", e)
+            return 0, 0, str(e)
         logger.info(
             "批量删除冲次单价: location=%s year=%s deleted=%s skipped=%s",
             location,
@@ -266,15 +282,21 @@ class StampingTonnagePriceService:
             year=dto.year,
             statuses=[AUDIT_APPROVED],
         )
-        updated = self.repository.approve_by_location_year(
-            db,
-            location=location,
-            year=dto.year,
-            audited_by=operator,
-            audited_at=now(),
-            audit_remark=(dto.audit_remark or "").strip() or None,
-            updated_by=operator,
-        )
+        try:
+            updated = self.repository.approve_by_location_year(
+                db,
+                location=location,
+                year=dto.year,
+                audited_by=operator,
+                audited_at=now(),
+                audit_remark=(dto.audit_remark or "").strip() or None,
+                updated_by=operator,
+            )
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            logger.error("批量审核冲次单价失败: %s", e)
+            return None, str(e)
         return (
             StampingTonnagePriceBatchAuditResultVO(
                 updated_count=updated,
@@ -307,15 +329,21 @@ class StampingTonnagePriceService:
             year=dto.year,
             statuses=[AUDIT_PENDING],
         )
-        updated = self.repository.reverse_by_location_year(
-            db,
-            location=location,
-            year=dto.year,
-            reverse_audited_by=operator,
-            reverse_audited_at=now(),
-            reverse_audit_remark=remark,
-            updated_by=operator,
-        )
+        try:
+            updated = self.repository.reverse_by_location_year(
+                db,
+                location=location,
+                year=dto.year,
+                reverse_audited_by=operator,
+                reverse_audited_at=now(),
+                reverse_audit_remark=remark,
+                updated_by=operator,
+            )
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            logger.error("批量反审核冲次单价失败: %s", e)
+            return None, str(e)
         return (
             StampingTonnagePriceBatchAuditResultVO(
                 updated_count=updated,

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from app.services.costing.steel_price.calc.models import CalcRow, SteelPriceCalcResult
+from app.services.costing.steel_price.spec_format import build_spec
 
 # 批次状态（落库 steel_price_calc_logs.status）
 STATUS_PROCESSING = "processing"
@@ -66,6 +67,6 @@ def collect_row_warnings(rows: list[CalcRow], *, keyword: str | None = None) -> 
                 continue
         text = "；".join(messages)
         warnings.append(
-            f"{row.grade} {float(row.thickness):.4f}*{float(row.width or 0):.2f} {text}"
+            f"{row.grade} {build_spec(row.thickness, row.width or 0)} {text}"
         )
     return warnings

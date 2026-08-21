@@ -258,6 +258,8 @@ class StampingPartCostService:
         )
         if not updated:
             raise BusinessException(f"核算记录不存在: id={cost_id}")
+        db.commit()
+        db.refresh(updated)
         vos = self._to_cost_vos(db, [updated])
         return vos[0]
 

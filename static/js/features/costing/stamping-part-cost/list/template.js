@@ -134,7 +134,7 @@ export function partCostListTemplate() {
                 </div>
 
                 <div class="overflow-x-auto bg-[#0A0A0E] brabus-bg-grid">
-                    <table id="costDataTable" class="w-full table-fixed bg-transparent border-collapse" style="min-width: 1196px;">
+                    <table id="costDataTable" class="w-full table-fixed bg-transparent border-collapse" style="min-width: 1520px;">
                         <colgroup id="costColgroup">
                             <col style="width:3px">
                             <col style="width:72px">
@@ -151,6 +151,11 @@ export function partCostListTemplate() {
                             <col class="cost-breakdown-col hidden" style="width:64px">
                             <col class="cost-breakdown-col hidden" style="width:68px">
                             <col style="width:76px">
+                            <col style="width:58px">
+                            <col style="width:72px">
+                            <col style="width:58px">
+                            <col style="width:58px">
+                            <col style="width:64px">
                             <col style="width:58px">
                             <col style="width:86px">
                             <col style="width:44px">
@@ -180,7 +185,12 @@ export function partCostListTemplate() {
                                     原材料R
                                 </th>
                                 <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]">加工费</th>
-                                <th class="px-2 py-2 text-right text-[9px] font-semibold tracking-[0.06em] text-[#FF1E27]/90 bg-[#1A080A]" title="单件成本 = 原材料 R + 加工费">单件成本</th>
+                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]" title="直接成本 = R + 加工费">直接成本</th>
+                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#484848]" title="直接成本 × 仓储+包装管理费用率">仓储包装</th>
+                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#484848]" title="直接成本 × 管理费率">管理费</th>
+                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#484848]" title="直接成本 × 财务费率">财务费</th>
+                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#484848]" title="直接成本 × 税前利润率">税前利润</th>
+                                <th class="px-2 py-2 text-right text-[9px] font-semibold tracking-[0.06em] text-[#FF1E27]/90 bg-[#1A080A]" title="单件成本 = 直接成本 + 仓储包装 + 管理费 + 财务费 + 税前利润">单件成本</th>
                                 <th class="px-1 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-[#555555]">核算</th>
                                 <th class="px-1 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-[#555555]">审核</th>
                                 <th class="p-0 w-9" aria-label="操作"></th>
@@ -286,6 +296,11 @@ export function renderCostRows(records, breakdownOpen = false) {
             <td class="cost-breakdown-col ${breakdownHidden} ${num}">${fmtNum(row.scrap_amount_sheet, 2)}</td>
             <td class="${num} text-[#C8C8D0] font-semibold">${fmtNum(row.material_net_per_part, 2)}</td>
             <td class="${num}">${fmtNum(row.process_fee_amount, 2)}</td>
+            <td class="${num}">${fmtNum(row.direct_cost, 2)}</td>
+            <td class="px-2 py-2 font-mono text-[9px] text-right tabular-nums text-[#555555]">${fmtNum(row.finished_warehouse_packaging_fee, 2)}</td>
+            <td class="px-2 py-2 font-mono text-[9px] text-right tabular-nums text-[#555555]">${fmtNum(row.finished_management_fee, 2)}</td>
+            <td class="px-2 py-2 font-mono text-[9px] text-right tabular-nums text-[#555555]">${fmtNum(row.finished_finance_fee, 2)}</td>
+            <td class="px-2 py-2 font-mono text-[9px] text-right tabular-nums text-[#555555]">${fmtNum(row.finished_pretax_profit_fee, 2)}</td>
             <td class="px-2 py-1.5 text-right font-mono font-black tabular-nums text-[12px] text-[#FF1E27] bg-[#1A080A] border-x border-[#FF1E27]/20">
                 <span style="text-shadow: 0 0 8px rgba(255,30,39,0.45);">${fmtNum(row.unit_cost, 4)}</span>
             </td>
@@ -313,7 +328,7 @@ export function syncBreakdownColumnVisibility(isOpen) {
     }
     const table = document.getElementById('costDataTable');
     if (table) {
-                table.style.minWidth = isOpen ? '1456px' : '1196px';
+                table.style.minWidth = isOpen ? '1780px' : '1520px';
     }
 }
 

@@ -108,7 +108,7 @@ class StampingPartCostRepository:
         if not record:
             return None
         apply_payload_fields(record, update_data)
-        db.commit()
+        db.flush()
         db.refresh(record)
         return record
 
@@ -116,7 +116,7 @@ class StampingPartCostRepository:
         self, db: Session, data_list: list[StampingPartCostUpsertPayload]
     ) -> list[StampingPartCost]:
         records = [self.upsert(db, data) for data in data_list]
-        db.commit()
+        db.flush()
         for record in records:
             db.refresh(record)
         logger.info("批量 upsert 零件价格核算: %s 条", len(records))

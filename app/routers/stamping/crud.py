@@ -178,6 +178,7 @@ def get_cascade_filters(
             Perm.STEEL_PRICE_LIST_VIEW,
             Perm.STAMPING_PROCESS_FEE_CALC_VIEW,
             Perm.STAMPING_PROCESS_FEE_VIEW,
+            Perm.COSTING_VIEW,
         )
     ),
 ) -> ApiResponse[StampingCascadeFilterOptionsVO]:

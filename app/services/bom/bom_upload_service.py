@@ -81,7 +81,7 @@ class BomUploadService:
                 db, location, vehicle_model, bom_version
             )
             if existing:
-                self.snapshot_repo.delete(db, existing, commit=False)
+                self.snapshot_repo.delete(db, existing)
                 replaced = True
 
             audit = audit_create(current_user)
@@ -106,8 +106,7 @@ class BomUploadService:
                     status="active",
                     created_by=audit["created_by"],
                     updated_by=audit["updated_by"],
-                ),
-                commit=False,
+                )
             )
 
             sheet_name = parse_result.sheet_name
@@ -153,8 +152,7 @@ class BomUploadService:
                         excel_part_col=_EXCEL_PART_COL_BY_LEVEL.get(parsed.level),
                         created_by=audit["created_by"],
                         updated_by=audit["updated_by"],
-                    ),
-                    commit=False,
+                    )
                 )
                 index_to_id[index] = row.id
 

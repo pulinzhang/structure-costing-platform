@@ -25,6 +25,12 @@
  * │   ├── welding-unit-price/    # 焊接单价
  * │   │   ├── upload/
  * │   │   └── list/
+ * │   ├── annual-part-price/     # 年度零件价
+ * │   │   ├── upload/
+ * │   │   └── list/
+ * │   ├── packaging-transport-fee/  # 包装运输费
+ * │   │   ├── upload/
+ * │   │   └── list/
  * │   ├── welding-process-breakdown/  # 焊接工艺拆解
  * │   │   ├── generate/
  * │   │   └── list/
@@ -46,6 +52,9 @@
  * │   │   ├── calc/
  * │   │   └── list/
  * │   ├── stamping-part-cost/    # 冲压零件价格核算
+ * │   │   ├── calc/
+ * │   │   └── list/
+ * │   ├── l0-assembly-cost/      # 成品核价
  * │   │   ├── calc/
  * │   │   └── list/
  * │   └── engine/                # 自动核价引擎
@@ -124,6 +133,16 @@ export const pageMeta = {
         en: 'PART_COST_LIST',
         breadcrumb: ['核价', '冲压零件价格核算', '冲压零件价格一览'],
     },
+    'l0-assembly-cost-calc': {
+        title: '成品核价计算',
+        en: 'L0_ASSEMBLY_COST_CALC',
+        breadcrumb: ['核价', '成品核价', '成品核价计算'],
+    },
+    'l0-assembly-cost': {
+        title: '成品核价一览',
+        en: 'L0_ASSEMBLY_COST_LIST',
+        breadcrumb: ['核价', '成品核价', '成品核价一览'],
+    },
     'steel-price-policy-upload': {
         title: '加减价政策上传',
         en: 'PRICE_POLICY_UPLOAD',
@@ -183,6 +202,26 @@ export const pageMeta = {
         title: '焊接单价列表',
         en: 'WELDING_UNIT_PRICE_MATRIX',
         breadcrumb: ['焊接工程', '焊接单价', '焊接单价列表'],
+    },
+    'bom-annual-part-price-upload': {
+        title: '年度零件价上传',
+        en: 'ANNUAL_PART_PRICE_UPLOAD',
+        breadcrumb: ['焊接工程', '年度零件价', '上传'],
+    },
+    'bom-annual-part-price': {
+        title: '年度零件价列表',
+        en: 'ANNUAL_PART_PRICE_MATRIX',
+        breadcrumb: ['焊接工程', '年度零件价', '年度零件价列表'],
+    },
+    'bom-packaging-transport-fee-upload': {
+        title: '包装运输费上传',
+        en: 'PKG_TRANSPORT_FEE_UPLOAD',
+        breadcrumb: ['焊接工程', '包装运输费', '上传'],
+    },
+    'bom-packaging-transport-fee': {
+        title: '包装运输费列表',
+        en: 'PKG_TRANSPORT_FEE_MATRIX',
+        breadcrumb: ['焊接工程', '包装运输费', '包装运输费列表'],
     },
     'bom-welding-process-breakdown': {
         title: '焊接工艺拆解',

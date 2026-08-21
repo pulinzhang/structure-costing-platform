@@ -5,7 +5,9 @@ from __future__ import annotations
 import logging
 import uuid
 from datetime import datetime, timedelta
+from typing import cast
 
+from sqlalchemy.engine import Engine
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -44,6 +46,16 @@ class BomWeldingProcessBreakdownGenerateLogService:
     def __init__(self) -> None:
         self.repository = BomWeldingProcessBreakdownGenerateLogRepository()
 
+    def _ensure_processing_lock_index(self, db: Session) -> None:
+        """DDL 用独立连接；commit 在 Service（不进业务 Session）。"""
+        if self.repository.is_processing_lock_index_ensured():
+            return
+        bind = cast(Engine, db.get_bind())
+        with bind.connect() as conn:
+            self.repository.apply_processing_lock_index(conn)
+            conn.commit()
+        self.repository.mark_processing_lock_index_ensured()
+
     def list_logs(
         self,
         db: Session,
@@ -76,11 +88,10 @@ class BomWeldingProcessBreakdownGenerateLogService:
         return BomWeldingProcessBreakdownGenerateLogVO.model_validate(record)
 
     def delete_log(self, db: Session, log_id: int) -> bool:
+        """删除拆解日志（含 processing，作僵死锁兜底释放）。"""
         record = self.repository.get_by_id(db, log_id)
         if record is None:
             return False
-        if record.status == STATUS_PROCESSING:
-            raise ValueError("拆解进行中，无法删除该记录")
         deleted = self.repository.delete(db, log_id)
         if not deleted:
             return False
@@ -127,7 +138,7 @@ class BomWeldingProcessBreakdownGenerateLogService:
         operator_id: int | None = None,
         operator_name: str | None = None,
     ) -> BomWeldingProcessBreakdownGenerateLog:
-        self.repository.ensure_processing_lock_index(db)
+        self._ensure_processing_lock_index(db)
         self._expire_stale_processing(
             db,
             location=location,
@@ -214,6 +225,11 @@ class BomWeldingProcessBreakdownGenerateLogService:
         message: str,
         detail_text: str | None = None,
     ) -> None:
+        """异常路径：释放 processing 锁为 failed（先 rollback 清脏事务）。"""
+        try:
+            db.rollback()
+        except Exception:
+            pass
         finished_at = now()
         payload: BomWeldingProcessBreakdownGenerateLogPatch = {
             "status": STATUS_FAILED,

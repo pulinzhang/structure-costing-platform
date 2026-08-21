@@ -28,6 +28,7 @@ from app.schemas.vo.bom_welding_unit_price_vo import (
     BomWeldingUnitPriceBulkUpsertResponse,
     BomWeldingUnitPriceImportResultVO,
     BomWeldingUnitPriceResponse,
+    WeldingStandardProcessCatalogItemVO,
 )
 from app.schemas.vo.user_vo import UserVO
 from app.services.bom.welding_unit_price_export_service import (
@@ -137,13 +138,27 @@ def export_excel(
     )
 
 
+@router.get(
+    "/standard-catalog",
+    response_model=ApiResponse[list[WeldingStandardProcessCatalogItemVO]],
+)
+def list_standard_catalog(
+    current_user: UserVO = Depends(
+        require_perm(Perm.BOM_WELDING_UNIT_PRICE_UPLOAD_VIEW)
+    ),
+) -> ApiResponse[list[WeldingStandardProcessCatalogItemVO]]:
+    """焊接标准工艺目录（导入名称/单位须与此完全一致）。"""
+    data = _import_service.list_standard_catalog()
+    return ApiResponse.ok(data=data, message=f"标准工艺 {len(data)} 项")
+
+
 @router.get("/template")
 def download_import_template(
     current_user: UserVO = Depends(
         require_perm(Perm.BOM_WELDING_UNIT_PRICE_UPLOAD_VIEW)
     ),
 ) -> StreamingResponse:
-    """下载焊接单价导入模板（名称 / 单位 / 费用 / 备注）。"""
+    """下载焊接单价导入模板（含标准工艺目录工作表）。"""
     content, filename = _import_service.build_template()
     return StreamingResponse(
         iter([content]),

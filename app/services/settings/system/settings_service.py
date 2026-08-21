@@ -26,6 +26,7 @@ DEFAULT_MATERIAL_LOSS_RATE = Decimal("0.003")  # 千分之 3
 DEFAULT_SCRAP_RECOVERY_RATE = Decimal("0.97")  # 97%
 DEFAULT_FINISHED_FINANCE_RATE = Decimal("0.02")  # 2%
 DEFAULT_FINISHED_MANAGEMENT_RATE = Decimal("0.02")  # 2%
+DEFAULT_FINISHED_WAREHOUSE_PACKAGING_RATE = Decimal("0.01")  # 1%
 DEFAULT_FINISHED_SCRAP_RATE = Decimal("0.003")  # 千分之 3
 DEFAULT_FINISHED_PRETAX_PROFIT_RATE = Decimal("0.02")  # 2%
 APP_VERSION = "1.0.0"
@@ -48,6 +49,7 @@ class SettingsService:
                 scrap_recovery_rate=DEFAULT_SCRAP_RECOVERY_RATE,
                 finished_finance_rate=DEFAULT_FINISHED_FINANCE_RATE,
                 finished_management_rate=DEFAULT_FINISHED_MANAGEMENT_RATE,
+                finished_warehouse_packaging_rate=DEFAULT_FINISHED_WAREHOUSE_PACKAGING_RATE,
                 finished_scrap_rate=DEFAULT_FINISHED_SCRAP_RATE,
                 finished_pretax_profit_rate=DEFAULT_FINISHED_PRETAX_PROFIT_RATE,
             )
@@ -68,6 +70,10 @@ class SettingsService:
             finished_management_rate=self._normalize_percent_rate(
                 getattr(row, "finished_management_rate", None),
                 DEFAULT_FINISHED_MANAGEMENT_RATE,
+            ),
+            finished_warehouse_packaging_rate=self._normalize_percent_rate(
+                getattr(row, "finished_warehouse_packaging_rate", None),
+                DEFAULT_FINISHED_WAREHOUSE_PACKAGING_RATE,
             ),
             finished_scrap_rate=self._normalize_permille_rate(
                 getattr(row, "finished_scrap_rate", None),
@@ -92,6 +98,9 @@ class SettingsService:
         scrap_recovery_rate = quantize_money(dto.scrap_recovery_rate, Q6)
         finished_finance_rate = quantize_money(dto.finished_finance_rate, Q6)
         finished_management_rate = quantize_money(dto.finished_management_rate, Q6)
+        finished_warehouse_packaging_rate = quantize_money(
+            dto.finished_warehouse_packaging_rate, Q6
+        )
         finished_scrap_rate = quantize_money(dto.finished_scrap_rate, Q6)
         finished_pretax_profit_rate = quantize_money(
             dto.finished_pretax_profit_rate, Q6
@@ -107,6 +116,7 @@ class SettingsService:
                     scrap_recovery_rate=scrap_recovery_rate,
                     finished_finance_rate=finished_finance_rate,
                     finished_management_rate=finished_management_rate,
+                    finished_warehouse_packaging_rate=finished_warehouse_packaging_rate,
                     finished_scrap_rate=finished_scrap_rate,
                     finished_pretax_profit_rate=finished_pretax_profit_rate,
                     created_by=audit["created_by"],
@@ -124,6 +134,7 @@ class SettingsService:
                     scrap_recovery_rate=scrap_recovery_rate,
                     finished_finance_rate=finished_finance_rate,
                     finished_management_rate=finished_management_rate,
+                    finished_warehouse_packaging_rate=finished_warehouse_packaging_rate,
                     finished_scrap_rate=finished_scrap_rate,
                     finished_pretax_profit_rate=finished_pretax_profit_rate,
                     updated_by=audit_update(current_user)["updated_by"],
@@ -173,6 +184,16 @@ class SettingsService:
         return self._normalize_percent_rate(
             getattr(row, "finished_management_rate", None),
             DEFAULT_FINISHED_MANAGEMENT_RATE,
+        )
+
+    def get_finished_warehouse_packaging_rate(self, db: Session) -> Decimal:
+        """核价用：读仓储+包装管理费用率，无效或缺失则回退 0.01。"""
+        row = self.repository.get_singleton(db)
+        if row is None:
+            return DEFAULT_FINISHED_WAREHOUSE_PACKAGING_RATE
+        return self._normalize_percent_rate(
+            getattr(row, "finished_warehouse_packaging_rate", None),
+            DEFAULT_FINISHED_WAREHOUSE_PACKAGING_RATE,
         )
 
     def get_finished_scrap_rate(self, db: Session) -> Decimal:

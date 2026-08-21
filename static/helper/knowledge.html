@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>知识库 · 核价方案 · 自动核价平台</title>
+  <link rel="icon" type="image/x-icon" href="/static/assets/favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="helper.css">
+</head>
+<body>
+  <div class="layout">
+    <aside class="nav">
+      <a class="nav-brand" href="index.html">
+        <h1><span class="dot"></span> 使用帮助</h1>
+        <span>BLOCK · 知识库</span>
+      </a>
+      <div class="nav-label">三大块</div>
+      <div class="block-switch">
+        <a href="index.html">入口总览</a>
+        <a href="help.html">① 帮助</a>
+        <a class="is-active" href="knowledge.html">② 知识库</a>
+        <a href="example.html">③ 样例</a>
+      </div>
+      <div class="nav-label">本页</div>
+      <ul>
+        <li><a href="#what">核的是什么</a></li>
+        <li><a href="#bom">材料清单是主线</a></li>
+        <li><a href="#prereq">前置条件（传一次）</a></li>
+        <li><a href="#year">一年维护</a></li>
+        <li><a href="#month">每月核价</a></li>
+        <li><a href="#how">怎么算出成品价</a></li>
+        <li><a href="#map">全貌图</a></li>
+      </ul>
+      <div class="nav-label">快捷</div>
+      <ul>
+        <li><a href="example.html">看真实样例 →</a></li>
+        <li><a href="javascript:window.print()">打印本页</a></li>
+      </ul>
+    </aside>
+
+    <main class="main">
+      <header class="hero">
+        <div class="eyebrow">Knowledge Base</div>
+        <h1>② 知识库 · 核价方案</h1>
+        <p>
+          一句话：按<strong>材料清单</strong>核算每个<strong>成品（完工产品）</strong>的月度总费用。
+          材料清单、冲压工艺、焊接工艺拆解为<strong>前置底盘</strong>；
+          <strong>冲次单价、焊接单价一年传一次</strong>；再做每月钢价与成品核价。
+        </p>
+        <div class="hero-actions">
+          <a class="back-link" href="index.html">← 帮助入口</a>
+          <button type="button" class="btn-print" onclick="window.print()">打印 / PDF</button>
+        </div>
+      </header>
+
+      <section id="what">
+        <h2>核的是什么</h2>
+        <p class="lead">
+          核的是交到客户手里的<strong>成品</strong>（树上的根），不是零散的一个螺栓或一张钢板。
+          真正算账：从根走到最末叶子 → 叶子先有价 → 再 rollup 回根。
+        </p>
+
+        <h3>核价怎么走（概念流程）</h3>
+        <div class="dual-rail" aria-label="左侧向下查叶子，右侧向上rollup">
+          <div class="dr-caption">两条箭头 · 左查右收</div>
+          <div class="dr-keys">
+            <span class="dr-key down"><i>↓ 查</i> 从根找到最末叶子</span>
+            <span class="dr-key up"><i>↑ rollup</i> 叶子有价后汇总回根</span>
+          </div>
+          <div class="dr-body">
+            <div class="dr-rail down">
+              <div class="dr-sub">起点<br>根</div>
+              <div class="dr-label">查 ↓</div>
+              <div class="dr-shaft" aria-hidden="true"></div>
+              <div class="dr-sub">终点<br>叶子</div>
+            </div>
+
+            <div class="dr-center">
+              <div class="dr-levels">
+                <span><b>L0</b>1 个根（成品）</span>
+                <span><b>L1</b>2 个（分总成 + 零件）</span>
+                <span><b>L2</b>挂在分总成下的叶子</span>
+              </div>
+              <div class="htree">
+                <div class="ht-node is-root">
+                  <div class="ht-head">
+                    <span class="ht-lv">L0</span>
+                    <div class="ht-body">
+                      <strong>成品（供货总成）· 根</strong>
+                      <div class="ht-meta">核价对象 · 下面必须按真实父子关系展开</div>
+                    </div>
+                  </div>
+                  <div class="ht-children">
+                    <div class="ht-node is-branch">
+                      <div class="ht-head">
+                        <span class="ht-lv">L1</span>
+                        <div class="ht-body">
+                          <strong>分总成</strong>
+                          <div class="ht-meta">分支节点 · 下面还有 L2</div>
+                        </div>
+                      </div>
+                      <div class="ht-children">
+                        <div class="ht-node is-leaf">
+                          <div class="ht-head">
+                            <span class="ht-lv">L2</span>
+                            <div class="ht-body">
+                              <strong>叶子 · 自制 / 外购件</strong>
+                              <div class="ht-meta">最末层才取价</div>
+                            </div>
+                          </div>
+                        </div>
+                        <div class="ht-node is-leaf">
+                          <div class="ht-head">
+                            <span class="ht-lv">L2</span>
+                            <div class="ht-body">
+                              <strong>叶子 · 另一零件</strong>
+                              <div class="ht-meta">最末层才取价</div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="ht-node is-leaf">
+                      <div class="ht-head">
+                        <span class="ht-lv">L1</span>
+                        <div class="ht-body">
+                          <strong>叶子 · 直接挂在成品下的零件</strong>
+                          <div class="ht-meta">也是 L1，但本身已是最末层（无 L2）</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="dr-node is-total">
+                <div class="dr-tag">rollup：从最末叶子 ×用量 逐层回到 L0</div>
+                <strong>月总账 → 成品总费用</strong>
+                <p>+ 焊接 + 间接费用</p>
+              </div>
+            </div>
+
+            <div class="dr-rail up">
+              <div class="dr-sub">终点<br>根</div>
+              <div class="dr-shaft" aria-hidden="true"></div>
+              <div class="dr-label">rollup ↑</div>
+              <div class="dr-sub">起点<br>叶子</div>
+            </div>
+          </div>
+          <p class="dr-foot">
+            左边 <b class="down">红 ↓ 查</b>按 L0→L1→L2 找叶子；右边 <b class="up">绿 ↑ rollup</b>按 L2→L1→L0 收金额。层级不能压平。
+          </p>
+        </div>
+
+        <div class="callout ok">
+          带金额的成品树见<a href="example.html">样例</a>（青岛 · 2025 · 01 · T28）。
+          下面各节讲前置、年度、每月如何把叶子价准备好。
+        </div>
+
+        <div class="grid-2">
+          <div class="mini">
+            <h4>成品 = 完工产品</h4>
+            <p>材料清单最顶层的供货总成。系统为每个成品出月总账和总费用。</p>
+          </div>
+          <div class="mini">
+            <h4>不是只核冲压件</h4>
+            <p>成品下面既有自制冲压件，也有外购件、分总成。全部挂到同一棵树上再汇总。</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="bom">
+        <h2>材料清单是主线</h2>
+        <p class="lead">先有树，再挂价。没有材料清单，就无法确定核价对象。清单属于<strong>前置底盘</strong>：同一基地 / 项目 / 版本传好后长期复用，结构变更时再重传。</p>
+
+        <div class="flow-col">
+          <div class="flow-step">
+            <div class="n">主线 · 前置</div>
+            <strong>材料清单</strong>
+            <p>告诉系统：成品由哪些分总成、零件组成，各用多少件。</p>
+          </div>
+          <div class="flow-step">
+            <div class="n">辅助 · 挂价</div>
+            <strong>工艺 / 冲次 / 钢价 / 废料 / 加工费</strong>
+            <p>算出自制冲压件「每个多少钱」。</p>
+          </div>
+          <div class="flow-step">
+            <div class="n">辅助 · 挂价</div>
+            <strong>年度零件价 / 焊接与拆解 / 包装运输 / 费率</strong>
+            <p>外购件、焊接、间接费用从这里来。</p>
+          </div>
+        </div>
+
+        <h3>树长什么样</h3>
+        <div class="tree">
+          <div class="root">成品（供货总成）── 核价对象</div>
+          <div class="mid">　├── 分总成（下面还有零件）</div>
+          <div class="leaf">　│　　├── 自制冲压件</div>
+          <div class="leaf">　│　　└── 外购件（螺母、标准件…）</div>
+          <div class="mid">　└── 零件（直接挂在成品下）</div>
+        </div>
+        <p>用量会沿树往下乘：相对成品的有效用量 = 路径上各层用量连乘。</p>
+      </section>
+
+      <section id="prereq">
+        <h2>前置条件（传一次即可）</h2>
+        <p class="lead">
+          这些是核价的<strong>结构与工艺底盘</strong>。同一范围传妥、生成妥之后，日常月度核价不必每月重做；
+          仅当工艺改版、清单换版、焊接结构变化时再更新。
+        </p>
+
+        <div class="callout ok">
+          实务上：先把前置底盘铺齐 → 再做年内价格与年度计算结果 → 每月只跑钢价与成品账。
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>前置项</th>
+              <th>菜单位置</th>
+              <th>做什么</th>
+              <th>何时再做</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="tag tag-main">主线</span> 材料清单</td>
+              <td>焊接工程 → 材料清单</td>
+              <td>上传成品树（基地 + 项目 + 清单版本）</td>
+              <td>清单换版 / 结构变更</td>
+            </tr>
+            <tr>
+              <td>冲压工艺</td>
+              <td>冲压工程 → 冲压工艺</td>
+              <td>上传零件与工序（自制件工艺底盘）</td>
+              <td>工艺文件改版</td>
+            </tr>
+            <tr>
+              <td>焊接工艺拆解</td>
+              <td>焊接工程 → 焊接工艺拆解</td>
+              <td>按材料清单 + 当年焊接单价生成拆解结果（可引擎自动补算）</td>
+              <td>清单结构变更，或当年焊接单价调整后重做</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="flow">
+          <div class="flow-step">
+            <div class="n">前置 1</div>
+            <strong>材料清单</strong>
+            <p>成品结构</p>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step">
+            <div class="n">前置 2</div>
+            <strong>冲压工艺</strong>
+            <p>自制件怎么冲</p>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step">
+            <div class="n">前置 3</div>
+            <strong>焊接工艺拆解</strong>
+            <p>焊什么、怎么拆（依赖当年焊接单价）</p>
+          </div>
+        </div>
+
+        <p>
+          说明：焊接工艺拆解不是每月上传的 Excel，而是在清单与<strong>当年焊接单价</strong>就绪后生成；
+          已有可用结果时，自动核价引擎默认不重算覆盖。
+          <strong>冲次单价、焊接单价按年上传</strong>，见下一节。
+        </p>
+      </section>
+
+      <section id="year">
+        <h2>年度维护（一年传一次 / 算一次，年内复用）</h2>
+        <p class="lead">按<strong>年 + 基地</strong>维护单价与年度计算结果；同年 1～12 月共用，不必每月重传。</p>
+
+        <table>
+          <thead>
+            <tr><th>工作</th><th>说明</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="tag tag-year">一年一传</span> 冲次单价</td>
+              <td>冲压工程 → 冲次单价。吨位 / 冲次单价矩阵，供年度加工费使用。</td>
+            </tr>
+            <tr>
+              <td><span class="tag tag-year">一年一传</span> 焊接单价</td>
+              <td>焊接工程 → 焊接单价。焊接工时等单价，供工艺拆解与成品焊接费使用。</td>
+            </tr>
+            <tr>
+              <td>上传年度零件价</td>
+              <td>外购件、沿用件、分总成一口价等取价来源。</td>
+            </tr>
+            <tr>
+              <td>上传包装运输费</td>
+              <td>成品侧运输、仓储捆包等间接费用输入。</td>
+            </tr>
+            <tr>
+              <td>算冲压加工费</td>
+              <td>依赖前置「冲压工艺」+ 本年「冲次单价」。缺失时引擎可自动补算；已有默认不覆盖。</td>
+            </tr>
+            <tr>
+              <td>算成品焊接费</td>
+              <td>依赖前置「焊接工艺拆解」（拆解又依赖本年焊接单价）。缺失时引擎可自动补算；已有默认不覆盖。</td>
+            </tr>
+            <tr>
+              <td>系统费率</td>
+              <td>财务 / 管理 / 报废 / 税前利润等，全站配置，一般很少改。</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="month">
+        <h2>每月核价（月月要做）</h2>
+        <p class="lead">前置与年度结果已齐时，每月主要处理「跟钢价走」的账，并算出当月成品总费用。</p>
+
+        <table>
+          <thead>
+            <tr><th>工作</th><th>说明</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>钢材基准价、加减价政策、废料月度价</td>
+              <td>当月钢价与废料扣减依据；缺则引擎硬停。</td>
+            </tr>
+            <tr>
+              <td>算钢材联动价</td>
+              <td>政策落到材料规格 → 当月钢价。</td>
+            </tr>
+            <tr>
+              <td>算冲压零件价格</td>
+              <td>材料 + 废料 + 加工费等 → 自制件当月单价。</td>
+            </tr>
+            <tr>
+              <td><strong>算成品核价</strong></td>
+              <td>按材料清单自下而上汇总 → 月总账 + 间接费用 → <strong>总费用</strong>。</td>
+            </tr>
+            <tr>
+              <td>导出核对合册（可选）</td>
+              <td>只导出、不算价；便于审核存档。</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="callout">
+          同一年里，1～12 月通常<strong>变化的是冲压件月价（跟钢价走）</strong>；
+          材料清单、冲压工艺、焊接拆解不必每月重做；
+          <strong>冲次单价、焊接单价、年度零件价、包装运输、焊接费</strong>等按年维护。
+          因此成品总费用会随月微调，而结构底盘与年内单价保持稳定。
+        </div>
+      </section>
+
+      <section id="how">
+        <h2>怎么算出一个成品的价钱</h2>
+        <p class="lead">讲解顺序对齐生产：从零件到焊装，再到完工成品。</p>
+
+        <div class="flow">
+          <div class="flow-step">
+            <div class="n">01</div>
+            <strong>零件先有价</strong>
+            <p>自制件用当月冲压价；否则用当年年度零件价。</p>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step">
+            <div class="n">02</div>
+            <strong>焊装往上收</strong>
+            <p>按材料清单装进分总成 / 成品，计入成品焊接费。</p>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step">
+            <div class="n">03</div>
+            <strong>汇总月总账</strong>
+            <p>冲压 + 外购/年度价 + 一口价（若有）+ 焊接。</p>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step">
+            <div class="n">04</div>
+            <strong>成品完工入账</strong>
+            <p>加上间接费用 → 总费用。</p>
+          </div>
+        </div>
+
+        <h3>零件取价顺序</h3>
+        <ol>
+          <li>完整零件号 → <strong>当月冲压零件价</strong>（算成功的）</li>
+          <li>否则完整零件号 → <strong>当年年度零件价</strong>（0 表示不计金额，如某些辅料）</li>
+          <li>仍找不到且零件号带 <code>-</code> → 取第一个 <code>-</code> 前的号，<strong>只回退冲压价</strong></li>
+        </ol>
+
+        <h3>公式（成品）</h3>
+        <div class="card">
+          <p><strong>月总账</strong> = 冲压件金额 + 外购/年度价金额 + 分总成一口价 + 成品焊接费 + 焊接其它</p>
+          <p><strong>总费用</strong> = 月总账 + 间接费用合计</p>
+        </div>
+
+        <h3>分总成两种算法</h3>
+        <div class="grid-2">
+          <div class="mini">
+            <h4>拆散计价（常见）</h4>
+            <p>分总成没有「一口价」时：零件各自计价后向上汇总，不对分总成本身再要一笔。</p>
+          </div>
+          <div class="mini">
+            <h4>一口价（包价）</h4>
+            <p>分总成在年度零件价里有包价：只认这一包，不再把下面零件加一遍。</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="map">
+        <h2>全貌图：前置 → 年度 → 每月 → 完工</h2>
+        <div class="flow-col">
+          <div class="flow-step">
+            <div class="n">前置 · 结构工艺</div>
+            <strong>材料清单 + 冲压工艺 → 焊接工艺拆解</strong>
+            <p>改版才重做；拆解依赖当年焊接单价</p>
+          </div>
+          <div class="flow-step">
+            <div class="n">年度 · 一年一传 / 一算</div>
+            <strong>冲次单价、焊接单价、年度零件价、包装运输；加工费、成品焊接费；费率</strong>
+            <p>年内复用；引擎可对缺失结果自动补算</p>
+          </div>
+          <div class="flow-step">
+            <div class="n">每月</div>
+            <strong>基准价 / 政策 / 废料 → 钢材联动 → 冲压零件价 → 成品核价</strong>
+            <p>跟钢价走的月度主链</p>
+          </div>
+          <div class="flow-step">
+            <div class="n">完工入账</div>
+            <strong>零件齐价 → 焊装收拢 → 月总账 + 间接 → 总费用</strong>
+            <p>详见样例「从叶子到完工」</p>
+          </div>
+        </div>
+        <div class="callout warn">
+          可参阅 <a href="example.html">样例</a>：青岛 · 2025 · 01 · T28，按本页同一章节结构对照真实金额。
+        </div>
+      </section>
+
+      <footer class="footer">知识库 · 核价方案 · /helper/knowledge.html</footer>
+    </main>
+  </div>
+</body>
+</html>

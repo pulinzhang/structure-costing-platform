@@ -12,6 +12,7 @@ from openpyxl.utils import get_column_letter
 from sqlalchemy.orm import Session
 
 from app.common.audit import audit_status_label
+from app.common.excel_workbook import resolve_worksheet
 from app.common.money import Q4, excel_money_cell
 from app.common.timezone import now
 from app.models.bom import BomL0WeldingFee
@@ -36,8 +37,8 @@ _CALC_LABEL = {
 }
 
 # 主表列（纵向合并）+ 明细分隔
-MAIN_COLS = 14
-COL_COUNT = 21
+MAIN_COLS = 17
+COL_COUNT = 24
 HEADERS = [
     "序号",
     "年度",
@@ -50,7 +51,10 @@ HEADERS = [
     "工艺数",
     "命中",
     "缺单价",
-    "成品焊接费",
+    "系统计算",
+    "其它费用",
+    "确认单价",
+    "备注",
     "计算状态",
     "审核状态",
     "标准工艺",
@@ -74,6 +78,9 @@ WIDTHS = [
     8,
     8,
     14,
+    12,
+    14,
+    24,
     10,
     10,
     18,
@@ -128,8 +135,9 @@ class BomL0WeldingFeeExportService:
         self._split_main = _border(right=Side(style="medium", color="B71C1C"))
         self._split_detail = _border(left=Side(style="medium", color="B71C1C"))
 
-    def export(
+    def write_to_workbook(
         self,
+        wb: Workbook,
         db: Session,
         *,
         year: int | None = None,
@@ -139,7 +147,8 @@ class BomL0WeldingFeeExportService:
         part_number: str | None = None,
         audit_status: str | None = None,
         calc_status: str | None = None,
-    ) -> tuple[bytes, str]:
+        sheet_title: str = "成品焊接费",
+    ) -> tuple[str, int]:
         records = self.fee_repo.list_for_export(
             db,
             year=year,
@@ -152,9 +161,7 @@ class BomL0WeldingFeeExportService:
         )
         self._fill_missing_weld_info(db, records)
 
-        wb = Workbook()
-        ws = wb.worksheets[0]
-        ws.title = "成品焊接费"
+        ws = resolve_worksheet(wb, sheet_title)
 
         filter_text = self._filter_text(
             year=year,
@@ -169,7 +176,6 @@ class BomL0WeldingFeeExportService:
         header_row = self._write_headers(ws)
 
         row_idx = header_row + 1
-        export_row_count = 0
         for seq_no, record in enumerate(records, start=1):
             items = sorted(
                 list(record.items or []),
@@ -189,7 +195,6 @@ class BomL0WeldingFeeExportService:
                 )
                 ws.row_dimensions[row_idx].height = self._row_height(record)
                 row_idx += 1
-                export_row_count += 1
                 continue
 
             group_start = row_idx
@@ -206,7 +211,6 @@ class BomL0WeldingFeeExportService:
                 )
                 ws.row_dimensions[row_idx].height = self._row_height(record)
                 row_idx += 1
-                export_row_count += 1
             if row_idx - 1 > group_start:
                 self._merge_main(ws, group_start, row_idx - 1, main_fill)
 
@@ -228,6 +232,35 @@ class BomL0WeldingFeeExportService:
         ws.sheet_view.showGridLines = False
         ws.sheet_view.zoomScale = 90
 
+        return ws.title, len(records)
+
+    def export(
+        self,
+        db: Session,
+        *,
+        year: int | None = None,
+        location: str | None = None,
+        vehicle_model: str | None = None,
+        bom_version: str | None = None,
+        part_number: str | None = None,
+        audit_status: str | None = None,
+        calc_status: str | None = None,
+    ) -> tuple[bytes, str]:
+        wb = Workbook()
+        _title, fee_count = self.write_to_workbook(
+            wb,
+            db,
+            year=year,
+            location=location,
+            vehicle_model=vehicle_model,
+            bom_version=bom_version,
+            part_number=part_number,
+            audit_status=audit_status,
+            calc_status=calc_status,
+        )
+        # header_row is always 5 (banner 1–3 + group 4 + headers 5)
+        export_row_count = max(0, wb.worksheets[0].max_row - 5)
+
         buffer = BytesIO()
         wb.save(buffer)
         content = buffer.getvalue()
@@ -243,7 +276,7 @@ class BomL0WeldingFeeExportService:
         filename = f"成品焊接费_{scope}_{stamp}.xlsx"
         logger.info(
             "导出成品焊接费 %s 条主表 / %s 行明细 / 文件 %s",
-            len(records),
+            fee_count,
             export_row_count,
             filename,
         )
@@ -321,7 +354,7 @@ class BomL0WeldingFeeExportService:
             cell.border = self._split_detail if col == MAIN_COLS + 1 else self._thin
         ws.row_dimensions[group_row].height = GROUP_H
 
-        fee_cols = {12, 20}  # L0合计、行费
+        fee_cols = {12, 13, 14, 23}  # 系统计算、其它费用、确认单价、行费
         for col, title in enumerate(HEADERS, start=1):
             cell = ws.cell(row=header_row, column=col, value=title)
             cell.font = header_font
@@ -371,6 +404,9 @@ class BomL0WeldingFeeExportService:
                 record.matched_line_count,
                 record.missing_price_count,
                 _num(record.total_l0_welding_fee),
+                _num(record.other_fee),
+                _num(record.final_l0_welding_fee),
+                (record.remark or "").strip(),
                 _CALC_LABEL.get(calc_status, calc_status),
                 audit_status_label(record.audit_status),
             ]
@@ -388,21 +424,30 @@ class BomL0WeldingFeeExportService:
                     cell.font = _font(size=9, color="607D8B")
                     cell.alignment = self._left
                 elif col == 12:
+                    cell.font = _font(size=11, bold=True, color="546E7A")
+                    cell.alignment = self._right
+                elif col == 13:
+                    cell.font = _font(size=11, color="37474F")
+                    cell.alignment = self._right
+                elif col == 14:
                     cell.font = _font(size=11, bold=True, color="E65100")
                     cell.alignment = self._right
                     cell.fill = _fill("FFF3E0")
+                elif col == 15:
+                    cell.font = _font(size=9, color="607D8B")
+                    cell.alignment = self._left
                 elif col in {9, 10, 11}:
                     cell.font = _font(bold=True, color="C62828") if (col == 11 and missing) else _font()
                     cell.alignment = self._center
-                elif col == 13:
+                elif col == 16:
                     cell.font, cell.fill = self._status_tone(calc_status)
                     cell.alignment = self._center
-                elif col == 14:
+                elif col == 17:
                     cell.font, cell.fill = self._audit_tone(record.audit_status)
                     cell.alignment = self._center
                 else:
                     cell.font = _font()
-                    cell.alignment = self._left if col in {3, 4, 5, 7} else self._center
+                    cell.alignment = self._left if col in {3, 4, 5, 7, 15} else self._center
 
         detail_values: list[Any] = [
             (item.standard_process_name or item.process_token or "") if item else "",

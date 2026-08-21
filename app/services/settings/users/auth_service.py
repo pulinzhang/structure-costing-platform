@@ -61,6 +61,7 @@ class AuthService:
                 updated_by=name,
             ),
         )
+        token_db.commit()
 
         return LoginVO(
             token=token,
@@ -70,13 +71,18 @@ class AuthService:
     def logout(self, token_db: Session, token: str) -> None:
         if token:
             self.token_repo.delete_by_token(token_db, token)
+            token_db.commit()
 
     def revoke_all_sessions(self, token_db: Session, user_id: int) -> int:
         """作废该用户全部登录会话"""
-        return self.token_repo.delete_by_user_id(token_db, user_id)
+        count = self.token_repo.delete_by_user_id(token_db, user_id)
+        token_db.commit()
+        return count
 
     def logout_other_sessions(self, token_db: Session, user_id: int, keep_token: str) -> int:
-        return self.token_repo.delete_other_tokens(token_db, user_id, keep_token)
+        count = self.token_repo.delete_other_tokens(token_db, user_id, keep_token)
+        token_db.commit()
+        return count
 
     def sync_profile_to_tokens(self, token_db: Session, user: UserVO) -> None:
         self.token_repo.sync_user_snapshot(
@@ -90,6 +96,7 @@ class AuthService:
                 avatar=user.avatar,
             ),
         )
+        token_db.commit()
 
     def touch(self, user_db: Session, token_db: Session, token: str) -> UserVO:
         return self.get_user_by_token(user_db, token_db, token, do_touch=True)
@@ -126,14 +133,17 @@ class AuthService:
         deadline = row.last_active_at + timedelta(hours=TOKEN_IDLE_HOURS)
         if now() > deadline:
             self.token_repo.delete_by_token(token_db, token)
+            token_db.commit()
             raise PermissionError("登录已超时，请重新登录")
 
         user = self.user_repo.get_by_id(user_db, row.user_id)
         if not user or user.is_active is not True:
             self.token_repo.delete_by_token(token_db, token)
+            token_db.commit()
             raise PermissionError("账号已停用")
 
         if do_touch:
             touched = self.token_repo.touch(token_db, token)
+            token_db.commit()
             return (touched or row), user
         return row, user

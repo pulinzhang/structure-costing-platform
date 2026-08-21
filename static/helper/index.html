@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="汽车冲压件自动核价平台 — 使用帮助入口">
+  <title>使用帮助 · 自动核价平台</title>
+  <link rel="icon" type="image/x-icon" href="/static/assets/favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="helper.css">
+</head>
+<body>
+  <div class="layout">
+    <aside class="nav" aria-label="帮助导航">
+      <a class="nav-brand" href="index.html">
+        <h1><span class="dot" aria-hidden="true"></span> 使用帮助</h1>
+        <span>STAMPING HELP · v2.0</span>
+      </a>
+
+      <div class="nav-label">三大块</div>
+      <div class="block-switch">
+        <a class="is-active" href="index.html">入口总览</a>
+        <a href="help.html">① 帮助</a>
+        <a href="knowledge.html">② 知识库</a>
+        <a href="example.html">③ 样例</a>
+      </div>
+
+      <div class="nav-label">快捷</div>
+      <ul>
+        <li><a href="/" target="_blank" rel="noopener noreferrer">进入系统</a></li>
+        <li><a href="/login" target="_blank" rel="noopener noreferrer">登录页</a></li>
+        <li><a href="javascript:window.print()">打印本页</a></li>
+      </ul>
+    </aside>
+
+    <main class="main" id="top">
+      <header class="hero">
+        <div class="eyebrow">Help Center</div>
+        <h1>汽车冲压件自动核价平台 · 帮助中心</h1>
+        <p>
+          帮助分成三块：<strong>帮助</strong>（怎么操作系统）、
+          <strong>知识库</strong>（核的是什么、一年/每月做什么）、
+          <strong>样例</strong>（用青岛 T28 真实数据走一遍账）。
+        </p>
+        <div class="scope-pill">
+          <span>样例范围固定</span>
+          <span>2025 年</span>
+          <span>01 月</span>
+          <span>青岛</span>
+          <span>T28</span>
+          <span>清单 D/00</span>
+        </div>
+        <div class="hero-actions">
+          <a class="back-link" href="/" target="_blank" rel="noopener noreferrer">← 返回系统</a>
+          <button type="button" class="btn-print" onclick="window.print()">打印 / PDF</button>
+        </div>
+      </header>
+
+      <div class="hub-cards">
+        <a class="hub-card" href="help.html">
+          <div class="kicker">BLOCK 01</div>
+          <h2>帮助</h2>
+          <p>登录、侧栏、仪表盘、上传与列表、自动核价引擎、Excel 导出怎么点——面向操作。</p>
+        </a>
+        <a class="hub-card" href="knowledge.html">
+          <div class="kicker">BLOCK 02</div>
+          <h2>知识库</h2>
+          <p>核的是<strong>成品</strong>；材料清单 / 冲压工艺 / 拆解为前置底盘；冲次单价与焊接单价一年一传；再区分每月核价。</p>
+        </a>
+        <a class="hub-card" href="example.html">
+          <div class="kicker">BLOCK 03</div>
+          <h2>样例</h2>
+          <p>按知识库同一结构举例：青岛 · 2025 · 01 · T28 ·「流水槽加强梁总成」，前置→年度→每月→总费用 21.20 元。</p>
+        </a>
+      </div>
+
+      <section>
+        <h2>建议阅读顺序</h2>
+        <ol class="steps">
+          <li>
+            <strong>先看知识库</strong>
+            明确「核的是成品」、前置底盘传一次、年度与每月各自做什么。
+          </li>
+          <li>
+            <strong>再看样例</strong>
+            青岛 · 2025 · 01 · T28，按知识库章节把数字对上。
+          </li>
+          <li>
+            <strong>最后看帮助</strong>
+            回到系统里按菜单上传、计算、导出。
+          </li>
+        </ol>
+        <div class="callout ok">
+          三块是独立 HTML，共用 <code>helper.css</code>。也可直接打开
+          <code>/helper/help.html</code>、<code>/helper/knowledge.html</code>、<code>/helper/example.html</code>。
+        </div>
+      </section>
+
+      <footer class="footer">
+        STAMPING HELP · 入口 · /helper/ · Ctrl+P 打印
+      </footer>
+    </main>
+  </div>
+</body>
+</html>

@@ -254,7 +254,7 @@ class StampingPartRepository:
     def create(self, db: Session, part_data: PartData) -> StampingPart:
         part = model_from_payload(StampingPart, part_data)
         db.add(part)
-        db.commit()
+        db.flush()
         db.refresh(part)
         logger.info("创建零件: %s (id=%s)", part.part_number, part.id)
         return part
@@ -274,7 +274,7 @@ class StampingPartRepository:
             update_data,
             skip=frozenset({"id", "created_by", "created_at"}),
         )
-        db.commit()
+        db.flush()
         db.refresh(part)
         logger.info("更新零件: id=%s", part_id)
         return part
@@ -285,7 +285,7 @@ class StampingPartRepository:
         if not part:
             return False
         db.delete(part)
-        db.commit()
+        db.flush()
         logger.info(f"删除零件: id={part_id}")
         return True
 

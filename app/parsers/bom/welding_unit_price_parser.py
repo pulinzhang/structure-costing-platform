@@ -16,6 +16,7 @@ from typing import Any
 
 from openpyxl import load_workbook
 
+from app.common.bom.welding_standard_process import validate_welding_unit_price_catalog
 from app.common.money import Q4, quantize_money
 
 
@@ -172,6 +173,11 @@ def parse_welding_unit_price_excel(file_content: bytes) -> WeldingUnitPriceParse
             unit = unit_raw or "个"
             if name_raw in seen_names:
                 errors.append(f"第 {row_idx} 行：名称「{name_raw}」重复")
+                continue
+            try:
+                validate_welding_unit_price_catalog(name_raw, unit)
+            except ValueError as exc:
+                errors.append(f"第 {row_idx} 行：{exc}")
                 continue
             seen_names.add(name_raw)
 

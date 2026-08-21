@@ -150,6 +150,10 @@ def _process_generate_in_background(
     except Exception as error:
         logger.exception("焊接工艺拆解异常: task_id=%s log_id=%s", task_id, log_id)
         try:
+            db.rollback()
+        except Exception:
+            pass
+        try:
             _service.mark_generate_log_failed(
                 db,
                 log_id=log_id,

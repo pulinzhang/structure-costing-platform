@@ -185,23 +185,17 @@ class BomSnapshotRepository:
         return [r[0] for r in rows if r[0]]
 
     def create(
-        self, db: Session, data: BomSnapshotWrite, *, commit: bool = True
+        self, db: Session, data: BomSnapshotWrite
     ) -> BomSnapshot:
         row = model_from_payload(BomSnapshot, data)
         db.add(row)
-        if commit:
-            db.commit()
-            db.refresh(row)
-        else:
-            db.flush()
+        db.flush()
+        db.refresh(row)
         return row
 
-    def delete(self, db: Session, snapshot: BomSnapshot, *, commit: bool = True) -> None:
+    def delete(self, db: Session, snapshot: BomSnapshot) -> None:
         db.delete(snapshot)
-        if commit:
-            db.commit()
-        else:
-            db.flush()
+        db.flush()
 
     def list_locations(self, db: Session) -> list[str]:
         rows = (
@@ -238,9 +232,11 @@ class BomSnapshotRepository:
         location = (location or "").strip() or None
         vehicle_model = (vehicle_model or "").strip() or None
         status = (status or "").strip() or None
+        if status in ("*", "__all__"):
+            status = None
 
         loc_q = db.query(BomSnapshot.location).distinct()
-        if status:
+        if status is not None:
             loc_q = loc_q.filter(BomSnapshot.status == status)
         locations = [
             row[0]
@@ -249,9 +245,9 @@ class BomSnapshotRepository:
         ]
 
         model_q = db.query(BomSnapshot.vehicle_model).distinct()
-        if status:
+        if status is not None:
             model_q = model_q.filter(BomSnapshot.status == status)
-        if location:
+        if location is not None:
             model_q = model_q.filter(BomSnapshot.location == location)
         vehicle_models = [
             row[0]
@@ -260,11 +256,11 @@ class BomSnapshotRepository:
         ]
 
         version_q = db.query(BomSnapshot.bom_version).distinct()
-        if status:
+        if status is not None:
             version_q = version_q.filter(BomSnapshot.status == status)
-        if location:
+        if location is not None:
             version_q = version_q.filter(BomSnapshot.location == location)
-        if vehicle_model:
+        if vehicle_model is not None:
             version_q = version_q.filter(BomSnapshot.vehicle_model == vehicle_model)
         bom_versions = [
             row[0]
@@ -294,34 +290,25 @@ class BomNodeRepository:
         )
 
     def create(
-        self, db: Session, data: BomNodeWrite, *, commit: bool = True
+        self, db: Session, data: BomNodeWrite
     ) -> BomNode:
         row = model_from_payload(BomNode, data)
         db.add(row)
-        if commit:
-            db.commit()
-            db.refresh(row)
-        else:
-            db.flush()
+        db.flush()
+        db.refresh(row)
         return row
 
-    def delete(self, db: Session, node: BomNode, *, commit: bool = True) -> None:
+    def delete(self, db: Session, node: BomNode) -> None:
         db.delete(node)
-        if commit:
-            db.commit()
-        else:
-            db.flush()
+        db.flush()
 
     def delete_by_snapshot(
-        self, db: Session, snapshot_id: int, *, commit: bool = True
+        self, db: Session, snapshot_id: int
     ) -> int:
         count = (
             db.query(BomNode)
             .filter(BomNode.snapshot_id == snapshot_id)
             .delete(synchronize_session=False)
         )
-        if commit:
-            db.commit()
-        else:
-            db.flush()
+        db.flush()
         return count

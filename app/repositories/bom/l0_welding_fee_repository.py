@@ -18,6 +18,7 @@ from app.repositories.persist import apply_payload_fields, model_from_payload, q
 from app.schemas.dto.bom_l0_welding_fee_dto import (
     BomL0WeldingFeeItemPayload,
     BomL0WeldingFeeUpsertPayload,
+    L0WeldingFeePatch,
 )
 
 logger = logging.getLogger("repository.bom.l0_welding_fee")
@@ -128,6 +129,17 @@ class BomL0WeldingFeeRepository:
         self.replace_items(db, record.id, data.items)
         return record, True
 
+    def update_fields(
+        self, db: Session, fee_id: int, update_data: L0WeldingFeePatch
+    ) -> BomL0WeldingFee | None:
+        record = self.get_by_id(db, fee_id)
+        if not record:
+            return None
+        apply_payload_fields(record, update_data)
+        db.flush()
+        db.refresh(record)
+        return record
+
     def bulk_upsert(
         self, db: Session, data_list: list[BomL0WeldingFeeUpsertPayload]
     ) -> tuple[list[BomL0WeldingFee], int, int]:
@@ -142,7 +154,7 @@ class BomL0WeldingFeeRepository:
                 created_count += 1
             else:
                 updated_count += 1
-        db.commit()
+        db.flush()
         for record in records:
             db.refresh(record)
         logger.info(
@@ -299,7 +311,7 @@ class BomL0WeldingFeeRepository:
         )
         row = q.with_entities(
             func.count(BomL0WeldingFee.id).label("total_count"),
-            func.coalesce(func.sum(BomL0WeldingFee.total_l0_welding_fee), 0).label("total_fee"),
+            func.coalesce(func.sum(BomL0WeldingFee.final_l0_welding_fee), 0).label("total_fee"),
             func.sum(
                 case((BomL0WeldingFee.audit_status == AUDIT_PENDING, 1), else_=0)
             ).label("pending_count"),
