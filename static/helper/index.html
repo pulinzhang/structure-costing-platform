@@ -31,7 +31,7 @@
       <ul>
         <li><a href="/" target="_blank" rel="noopener noreferrer">进入系统</a></li>
         <li><a href="/login" target="_blank" rel="noopener noreferrer">登录页</a></li>
-        <li><a href="javascript:window.print()">打印本页</a></li>
+        <li><a href="print-all.html"><strong>整本打印 / PDF</strong></a></li>
       </ul>
     </aside>
 
@@ -54,7 +54,7 @@
         </div>
         <div class="hero-actions">
           <a class="back-link" href="/" target="_blank" rel="noopener noreferrer">← 返回系统</a>
-          <button type="button" class="btn-print" onclick="window.print()">打印 / PDF</button>
+          <a class="btn-print" href="print-all.html" style="text-decoration:none;">整本打印 / PDF</a>
         </div>
       </header>
 
@@ -93,8 +93,9 @@
           </li>
         </ol>
         <div class="callout ok">
-          三块是独立 HTML，共用 <code>helper.css</code>。也可直接打开
-          <code>/helper/help.html</code>、<code>/helper/knowledge.html</code>、<code>/helper/example.html</code>。
+          三块是独立 HTML，共用 <code>helper.css</code>。
+          若要<strong>一份 PDF</strong>，请打开 <a href="print-all.html">整本打印</a>
+          （合并帮助 + 知识库 + 样例后一次另存）。
         </div>
       </section>
 

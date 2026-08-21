@@ -804,6 +804,34 @@ figure.shot figcaption {
 
 .print-only { display: none; }
 
+/* 整本打印页 */
+.print-book-banner {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: var(--red-bright);
+  padding: 10px 0 8px;
+  margin: 8px 0 18px;
+  border-bottom: 1px solid var(--border-soft);
+  text-transform: uppercase;
+}
+.print-book-block {
+  margin-bottom: 48px;
+  padding-bottom: 24px;
+  border-bottom: 1px dashed #2a2a32;
+}
+.print-book-block:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+.print-book-page .print-book-block .main {
+  padding: 0;
+  max-width: none;
+}
+.print-book-page .print-book-block .hero {
+  margin-bottom: 18px;
+}
+
 @media (max-width: 960px) {
   .layout { grid-template-columns: 1fr; }
   .nav {
@@ -838,6 +866,27 @@ figure.shot figcaption {
   }
   .nav, .hero-actions, .btn-print, .back-link, .block-switch, .no-print {
     display: none !important;
+  }
+  .print-book-block {
+    border-bottom: none !important;
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+    break-after: page;
+    page-break-after: always;
+  }
+  .print-book-block:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+  .print-book-banner {
+    color: #b71c1c !important;
+    border-bottom: 1pt solid #ccc !important;
+    margin-bottom: 12pt !important;
+  }
+  .print-book-block .hero {
+    border-bottom: 2pt solid #c62828;
+    margin-bottom: 12pt;
+    padding-bottom: 8pt;
   }
   .print-only { display: block !important; }
   .layout { display: block; }

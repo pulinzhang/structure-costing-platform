@@ -35,7 +35,8 @@
       <div class="nav-label">快捷</div>
       <ul>
         <li><a href="/" target="_blank" rel="noopener noreferrer">进入系统</a></li>
-        <li><a href="javascript:window.print()">打印本页</a></li>
+        <li><a href="print-all.html">整本打印 / PDF</a></li>
+        <li><a href="javascript:window.print()">仅打印本页</a></li>
       </ul>
     </aside>
 
@@ -46,7 +47,8 @@
         <p>本块只讲「按钮点哪里、任务怎么跑」。概念与算账见知识库；真实数字见样例（2025·01·青岛·T28）。</p>
         <div class="hero-actions">
           <a class="back-link" href="index.html">← 帮助入口</a>
-          <button type="button" class="btn-print" onclick="window.print()">打印 / PDF</button>
+          <a class="btn-print" href="print-all.html" style="text-decoration:none;">整本打印 / PDF</a>
+          <button type="button" class="btn-print" onclick="window.print()" style="background:transparent;color:#9e9e9e;border-color:#2c2c2c;">仅本页</button>
         </div>
       </header>
 
