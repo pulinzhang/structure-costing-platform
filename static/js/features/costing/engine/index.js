@@ -2,7 +2,7 @@
  * 月度智能自动核价引擎 — 页面逻辑 (BRABUS Pure Industrial Spec)
  */
 
-import { costingTemplate } from './template.js?v=14';
+import { costingTemplate } from './template.js?v=20';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -16,6 +16,45 @@ const POLL_INTERVAL_MS = 1500;
 const STORAGE_KEY = 'costing_engine_context';
 /** 与后端 _SOFT_UPLOAD_GATE_CODES 对齐：仅提示，不阻断启动 */
 const SOFT_GATE_CODES = new Set(['thickness_policy']);
+
+/** 核算数据管道阶梯 */
+const PIPELINE_STAGES = [
+    {
+        id: 'ingest',
+        zh: '数据摄入',
+        gateCodes: [
+            'stamping_process',
+            'tonnage_price',
+            'welding_unit_price',
+            'packaging_transport',
+            'annual_part_price',
+        ],
+    },
+    {
+        id: 'validate',
+        zh: '格式清洗',
+        gateCodes: ['base_price', 'thickness_policy', 'scrap_price', 'system_rates'],
+    },
+    {
+        id: 'match',
+        zh: 'BOM 匹配',
+        gateCodes: ['bom_snapshot'],
+    },
+    {
+        id: 'aggregate',
+        zh: '成本归集',
+        gateCodes: [
+            'annual_process_fee',
+            'annual_welding_breakdown',
+            'annual_l0_welding_fee',
+        ],
+    },
+    {
+        id: 'settle',
+        zh: '最终核算',
+        gateCodes: [],
+    },
+];
 
 const GATE_LABELS = {
     stamping_process: '冲压工艺',
@@ -33,14 +72,13 @@ const GATE_LABELS = {
     annual_l0_welding_fee: '成品焊接费',
 };
 
-/** 中文主标；英文仅作氛围（中文 // EN） */
 const STATUS_META = {
-    running: { label: '运行中 // RUNNING', className: 'text-[#64b5f6]' },
-    succeeded: { label: '核算完成 // SUCCESS', className: 'text-emerald-400 font-bold' },
-    partial: { label: '部分完成 // PARTIAL', className: 'text-amber-400' },
-    failed: { label: '核算失败 // FAILED', className: 'text-[#FF1E27] font-bold' },
-    blocked: { label: '强约束阻断 // BLOCKED', className: 'text-[#FF1E27] font-bold' },
-    deleted: { label: '已删除 // DELETED', className: 'text-zinc-600' },
+    running: { label: '运行中', className: 'text-neutral-300' },
+    succeeded: { label: '核算完成', className: 'text-neutral-400' },
+    partial: { label: '部分完成', className: 'text-amber-500/80' },
+    failed: { label: '核算失败', className: 'text-[#FF1E27]' },
+    blocked: { label: '强约束阻断', className: 'text-[#FF1E27]' },
+    deleted: { label: '已删除', className: 'text-neutral-700' },
 };
 
 const engineState = {
@@ -55,19 +93,31 @@ const engineState = {
     activeRunId: null,
     pollTimer: null,
     pollInFlight: false,
+    runProgress: 0,
+    gatesDetailOpen: false,
+    scopeExpanded: new Set(),
+    scopeSelected: null,
     history: {
         page: 1,
         size: DEFAULT_PAGE_SIZE,
         total: 0,
         items: [],
     },
+    customSelects: new Map(),
 };
 
 export const CostingPage = {
     init() {
         stopPolling();
+        destroyCustomSelects();
         bindEvents();
         bindSelectChangeListeners();
+        mountEngineCustomSelects([
+            'engineLocation',
+            'engineYear',
+            'engineMonth',
+            'engineHistoryPageSize',
+        ]);
         bindPageSizeSelect('engineHistoryPageSize', {
             getSize: () => engineState.history.size,
             setSize: (size) => {
@@ -77,24 +127,182 @@ export const CostingPage = {
         });
         applyPermissionUi();
         restoreContext();
+        refreshEngineCustomSelect('engineYear');
+        refreshEngineCustomSelect('engineMonth');
+        renderPipeline();
+        updateIgnitionLed();
         loadLocations().then(() => {
-            const ctx = readStoredContext();
-            if (ctx?.location) {
-                checkReady();
-            }
+            refreshEngineCustomSelect('engineLocation');
+            // 不自动检查就绪：必须用户显式点「检查就绪」后才能启动
         });
+        invalidateReady({ keepPanels: true });
         loadHistory(1);
     },
 };
 
 export function destroy() {
     stopPolling();
+    destroyCustomSelects();
 }
 
 function applyPermissionUi() {
     engineState.canRun = typeof can === 'function' ? can('op:costing:run') : true;
     engineState.canDelete = typeof can === 'function' ? can('op:costing:delete') : true;
     updateStartButton();
+}
+
+/** 自绘下拉：规避 Chrome 原生 option 浅蓝高亮 */
+function mountEngineCustomSelects(selectIds) {
+    selectIds.forEach((id) => mountEngineCustomSelect(id));
+}
+
+function destroyCustomSelects() {
+    engineState.customSelects.forEach((api) => api.destroy());
+    engineState.customSelects.clear();
+    document.removeEventListener('click', onEngineSelectDocClick, true);
+    document.removeEventListener('keydown', onEngineSelectKeydown, true);
+}
+
+function onEngineSelectDocClick(event) {
+    engineState.customSelects.forEach((api) => {
+        if (!api.wrap.contains(event.target)) api.close();
+    });
+}
+
+function onEngineSelectKeydown(event) {
+    if (event.key !== 'Escape') return;
+    engineState.customSelects.forEach((api) => api.close());
+}
+
+function refreshEngineCustomSelect(selectId) {
+    const api = engineState.customSelects.get(selectId);
+    if (api) api.refresh();
+}
+
+function mountEngineCustomSelect(selectId) {
+    const select = document.getElementById(selectId);
+    if (!select || engineState.customSelects.has(selectId)) return;
+
+    const isSm = select.classList.contains('engine-select-source-sm');
+    const wrap = document.createElement('div');
+    wrap.className = `engine-select-wrap${isSm ? ' is-sm' : ''}`;
+    select.parentNode.insertBefore(wrap, select);
+    wrap.appendChild(select);
+    select.classList.add('engine-select-native');
+
+    const trigger = document.createElement('button');
+    trigger.type = 'button';
+    trigger.className = 'engine-select-trigger';
+    trigger.setAttribute('aria-haspopup', 'listbox');
+    trigger.setAttribute('aria-expanded', 'false');
+
+    const label = document.createElement('span');
+    label.className = 'engine-select-label truncate';
+    const caret = document.createElement('span');
+    caret.className = 'engine-select-caret';
+    caret.setAttribute('aria-hidden', 'true');
+    trigger.appendChild(label);
+    trigger.appendChild(caret);
+
+    const menu = document.createElement('div');
+    menu.className = 'engine-select-menu hidden';
+    menu.setAttribute('role', 'listbox');
+
+    wrap.appendChild(trigger);
+    wrap.appendChild(menu);
+
+    const syncLabel = () => {
+        const opt = select.options[select.selectedIndex];
+        label.textContent = opt ? opt.textContent : '';
+    };
+
+    const rebuildMenu = () => {
+        menu.innerHTML = '';
+        Array.from(select.options).forEach((opt) => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = `engine-select-option${
+                opt.value === select.value ? ' is-selected' : ''
+            }`;
+            btn.setAttribute('role', 'option');
+            btn.setAttribute('data-value', opt.value);
+            btn.textContent = opt.textContent;
+            if (opt.disabled) {
+                btn.disabled = true;
+                btn.classList.add('opacity-40');
+            }
+            btn.addEventListener('click', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                if (select.value !== opt.value) {
+                    select.value = opt.value;
+                    select.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+                syncLabel();
+                rebuildMenu();
+                close();
+            });
+            menu.appendChild(btn);
+        });
+    };
+
+    const close = () => {
+        wrap.classList.remove('is-open');
+        menu.classList.add('hidden');
+        trigger.setAttribute('aria-expanded', 'false');
+    };
+
+    const open = () => {
+        engineState.customSelects.forEach((other, id) => {
+            if (id !== selectId) other.close();
+        });
+        rebuildMenu();
+        wrap.classList.add('is-open');
+        menu.classList.remove('hidden');
+        trigger.setAttribute('aria-expanded', 'true');
+    };
+
+    const toggle = (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        if (wrap.classList.contains('is-open')) close();
+        else open();
+    };
+
+    const onNativeChange = () => {
+        syncLabel();
+        rebuildMenu();
+    };
+
+    trigger.addEventListener('click', toggle);
+    select.addEventListener('change', onNativeChange);
+
+    if (engineState.customSelects.size === 0) {
+        document.addEventListener('click', onEngineSelectDocClick, true);
+        document.addEventListener('keydown', onEngineSelectKeydown, true);
+    }
+
+    syncLabel();
+    rebuildMenu();
+
+    engineState.customSelects.set(selectId, {
+        wrap,
+        close,
+        refresh: () => {
+            syncLabel();
+            rebuildMenu();
+        },
+        destroy: () => {
+            close();
+            trigger.removeEventListener('click', toggle);
+            select.removeEventListener('change', onNativeChange);
+            if (wrap.parentNode) {
+                wrap.parentNode.insertBefore(select, wrap);
+                wrap.remove();
+            }
+            select.classList.remove('engine-select-native');
+        },
+    });
 }
 
 function bindEvents() {
@@ -106,12 +314,54 @@ function bindEvents() {
         const runId = Number(btn.getAttribute('data-run-id'));
         if (runId) deleteRun(runId);
     });
+    document.getElementById('engineGateHardList')?.addEventListener('click', (event) => {
+        const toggle = event.target.closest('[data-action="toggle-gates-detail"]');
+        if (toggle) {
+            engineState.gatesDetailOpen = !engineState.gatesDetailOpen;
+            renderGateHardList(engineState.ready);
+            return;
+        }
+        const navBtn = event.target.closest('[data-action="navigate"]');
+        if (!navBtn) return;
+        const page = navBtn.getAttribute('data-page');
+        const queryRaw = navBtn.getAttribute('data-query') || '{}';
+        let query = {};
+        try {
+            query = JSON.parse(queryRaw);
+        } catch (_) {
+            query = {};
+        }
+        navigateWithQuery(page, query);
+    });
+    document.getElementById('enginePlanTree')?.addEventListener('click', (event) => {
+        const toggle = event.target.closest('[data-action="scope-toggle"]');
+        if (toggle) {
+            const key = toggle.getAttribute('data-scope-key');
+            if (!key) return;
+            if (engineState.scopeExpanded.has(key)) {
+                engineState.scopeExpanded.delete(key);
+            } else {
+                engineState.scopeExpanded.add(key);
+            }
+            engineState.scopeSelected = key;
+            renderPlanScope();
+            return;
+        }
+        const select = event.target.closest('[data-action="scope-select"]');
+        if (select) {
+            const key = select.getAttribute('data-scope-key');
+            engineState.scopeSelected = key;
+            renderPlanScope();
+        }
+    });
 }
 
 function bindSelectChangeListeners() {
     ['engineLocation', 'engineYear', 'engineMonth'].forEach((id) => {
         document.getElementById(id)?.addEventListener('change', () => {
             persistContext();
+            // 账期/基地一变，上次检查结果立即作废
+            invalidateReady();
         });
     });
 }
@@ -122,6 +372,71 @@ function getInputs() {
         year: Number(document.getElementById('engineYear')?.value || 0),
         month: Number(document.getElementById('engineMonth')?.value || 0),
     };
+}
+
+/** 最近一次检查结果是否对应当前筛选 */
+function matchesReadyInputs() {
+    const ready = engineState.ready;
+    if (!ready) return false;
+    const inputs = getInputs();
+    const checked = ready.input || {};
+    return (
+        String(checked.location || '').trim() === inputs.location &&
+        Number(checked.year) === inputs.year &&
+        Number(checked.month) === inputs.month
+    );
+}
+
+/** 当前筛选已检查且可启动 */
+function isReadyForCurrentInputs() {
+    return matchesReadyInputs() && !!engineState.ready?.can_start;
+}
+
+/**
+ * 作废检查结果（换基地/年月，或进页重置）
+ * @param {{ keepPanels?: boolean }} [options] keepPanels=true 时仅清状态、不刷占位文案（进页模板已是占位）
+ */
+function invalidateReady(options = {}) {
+    engineState.ready = null;
+    engineState.gatesDetailOpen = false;
+    if (!options.keepPanels) {
+        resetReadyPanels();
+    }
+    updateStartButton();
+}
+
+function resetReadyPanels() {
+    const badge = document.getElementById('engineHardStopBadge');
+    if (badge) {
+        badge.textContent = '未检查';
+        badge.className = 'text-[10px] text-neutral-600';
+    }
+    const hardList = document.getElementById('engineGateHardList');
+    if (hardList) {
+        hardList.innerHTML =
+            '<div class="py-6 text-[10px] text-neutral-700">请先点击「检查就绪」</div>';
+    }
+    const annualBadge = document.getElementById('engineAnnualBadge');
+    if (annualBadge) {
+        annualBadge.textContent = '未检查';
+        annualBadge.className = 'text-[10px] text-neutral-600';
+    }
+    const annualList = document.getElementById('engineGateAnnualList');
+    if (annualList) {
+        annualList.innerHTML =
+            '<div class="py-6 text-[10px] text-neutral-700">请先点击「检查就绪」</div>';
+    }
+    const scopeSummary = document.getElementById('engineScopeSummary');
+    if (scopeSummary) {
+        scopeSummary.textContent = '节点 0';
+        scopeSummary.className =
+            'text-[10px] font-mono text-neutral-600 tabular-nums';
+    }
+    const tree = document.getElementById('enginePlanTree');
+    if (tree) {
+        tree.innerHTML =
+            '<div class="py-6 text-[10px] text-neutral-700">请先检查就绪</div>';
+    }
 }
 
 function persistContext() {
@@ -169,8 +484,10 @@ async function loadLocations() {
         if (engineState._pendingLocation && list.includes(engineState._pendingLocation)) {
             select.value = engineState._pendingLocation;
         }
+        refreshEngineCustomSelect('engineLocation');
     } catch (_) {
         select.innerHTML = '<option value="">加载失败</option>';
+        refreshEngineCustomSelect('engineLocation');
     }
 }
 
@@ -231,77 +548,51 @@ function summarizeGateMessage(item) {
 
 function renderReady(ready) {
     const hardStop = !!ready?.gates?.hard_stop;
+    const softTipCount = (ready?.gates?.upload_or_config || []).filter(isSoftTip).length;
     const badge = document.getElementById('engineHardStopBadge');
     if (badge) {
-        const softTipCount = (ready?.gates?.upload_or_config || []).filter(isSoftTip).length;
         if (hardStop) {
-            badge.textContent = '强约束未过 // HARD_STOP';
-            badge.className =
-                'text-[9px] tracking-[0.06em] bg-[#1A080A] text-[#FF1E27] border border-[#FF1E27] px-2 py-0.5 rounded-none shrink-0';
+            badge.textContent = '需处理';
+            badge.className = 'text-[10px] text-[#FF1E27]';
         } else if (ready) {
-            badge.textContent = softTipCount ? '已就绪（有提示）' : '已通过 // PASSED';
-            badge.className =
-                'text-[9px] tracking-[0.06em] bg-[#081A10] text-emerald-400 border border-emerald-500/50 px-2 py-0.5 rounded-none shrink-0';
+            badge.textContent = softTipCount ? '有提示' : '已就绪';
+            badge.className = 'text-[10px] text-neutral-600';
         } else {
             badge.textContent = '未检查';
-            badge.className =
-                'text-[9px] tracking-[0.06em] bg-[#121216] text-zinc-500 border border-[#22222A] px-2 py-0.5 rounded-none shrink-0';
+            badge.className = 'text-[10px] text-neutral-600';
         }
     }
 
-    const hardList = document.getElementById('engineGateHardList');
-    if (hardList) {
-        const items = sortGateItems(ready?.gates?.upload_or_config || []);
-        if (!items.length) {
-            hardList.innerHTML =
-                '<div class="px-3 py-8 text-center text-[10px] tracking-wide text-zinc-600">暂无检查项</div>';
-        } else {
-            hardList.innerHTML = items.map((item) => renderGateRow(item)).join('');
-            hardList.querySelectorAll('[data-action="navigate"]').forEach((btn) => {
-                btn.addEventListener('click', () => {
-                    const page = btn.getAttribute('data-page');
-                    const queryRaw = btn.getAttribute('data-query') || '{}';
-                    let query = {};
-                    try {
-                        query = JSON.parse(queryRaw);
-                    } catch (_) {
-                        query = {};
-                    }
-                    navigateWithQuery(page, query);
-                });
-            });
-            requestAnimationFrame(() => scrollGateBlockerIntoView(hardList));
-        }
-    }
+    // 有异常时默认收起通过项；全部通过时也保持折叠摘要
+    engineState.gatesDetailOpen = false;
+    renderGateHardList(ready);
 
     const annual = ready?.gates?.annual_derived || [];
     const willCalc = annual.filter((a) => a.will_auto_calc);
     const annualBadge = document.getElementById('engineAnnualBadge');
     if (annualBadge) {
         annualBadge.textContent = willCalc.length
-            ? `${willCalc.length} 项待补算`
-            : '已完成 // COMPLETE';
+            ? `${willCalc.length} 项`
+            : '无待补算';
         annualBadge.className = willCalc.length
-            ? 'text-[10px] font-bold tracking-[0.06em] text-amber-400 shrink-0'
-            : 'text-[10px] text-zinc-600 shrink-0';
+            ? 'text-[10px] text-amber-500/80'
+            : 'text-[10px] text-neutral-600';
     }
     const annualList = document.getElementById('engineGateAnnualList');
     if (annualList) {
         if (!willCalc.length) {
             annualList.innerHTML =
-                '<div class="px-3 py-8 text-center text-[10px] tracking-wide text-zinc-600">年度派生数据已齐备</div>';
+                '<div class="text-[11px] text-neutral-600 py-1">年度派生数据已齐备</div>';
         } else {
             annualList.innerHTML = willCalc
                 .map(
                     (item) => `
-                <div class="flex items-center justify-between gap-3 px-3 py-2 border-b border-[#1A1A22] bg-[#0E0C06]">
-                    <div class="flex items-center gap-2 min-w-0">
-                        <span class="w-1.5 h-1.5 bg-amber-400 shrink-0"></span>
-                        <span class="text-xs font-medium text-amber-400 shrink-0">${esc(gateLabel(item.code))}</span>
-                        <span class="text-[9px] font-mono text-zinc-500 uppercase shrink-0">${esc(item.code)}</span>
-                        <span class="text-[10px] font-mono text-zinc-400 truncate">${esc(item.scope_key)}</span>
+                <div class="flex items-center justify-between gap-3 py-2 border-b border-white/5">
+                    <div class="min-w-0">
+                        <div class="text-[12px] text-amber-500/90">${esc(gateLabel(item.code))}</div>
+                        <div class="text-[10px] font-mono text-neutral-600 truncate mt-0.5">${esc(item.scope_key)}</div>
                     </div>
-                    <span class="text-[9px] tracking-[0.06em] bg-[#1A1408] text-amber-400 border border-amber-500/40 px-1.5 py-0.5 shrink-0">待补算</span>
+                    <span class="text-[10px] text-amber-500/70 shrink-0">待补算</span>
                 </div>`
                 )
                 .join('');
@@ -310,38 +601,75 @@ function renderReady(ready) {
 
     const suppliers = ready?.plan?.part_cost_scopes || [];
     const l0Scopes = ready?.plan?.l0_scopes || [];
-    const supplierEl = document.getElementById('enginePlanSuppliers');
-    if (supplierEl) {
-        supplierEl.innerHTML = suppliers.length
-            ? suppliers
-                  .map(
-                      (s) => `
-                <div class="border border-[#1E1E26] bg-[#0A0A0D] px-2.5 py-2 flex items-center gap-2 min-w-0">
-                    <span class="w-1.5 h-1.5 bg-[#FF1E27] shrink-0"></span>
-                    <span class="text-[11px] font-mono text-white truncate" title="${esc(s.stamping_supplier)}">${esc(s.stamping_supplier)}</span>
-                </div>`
-                  )
-                  .join('')
-            : '<div class="border border-dashed border-[#1E1E26] bg-[#0A0A0D] px-2 py-3 text-[10px] text-zinc-600 text-center col-span-full">暂无节点</div>';
+    if (!engineState.scopeExpanded.size) {
+        if (suppliers.length) engineState.scopeExpanded.add('branch:supplier');
+        if (l0Scopes.length) engineState.scopeExpanded.add('branch:l0');
     }
-    const l0El = document.getElementById('enginePlanL0');
-    if (l0El) {
-        l0El.innerHTML = l0Scopes.length
-            ? l0Scopes
-                  .map(
-                      (s) => `
-                <div class="border border-[#1E1E26] bg-[#0A0A0D] px-2.5 py-2 flex items-center gap-2 min-w-0">
-                    <span class="w-1.5 h-1.5 bg-[#FF1E27] shrink-0"></span>
-                    <span class="text-[11px] font-mono text-white truncate">${esc(s.vehicle_model)}</span>
-                    <span class="text-[10px] font-mono text-zinc-600 shrink-0">/</span>
-                    <span class="text-[11px] font-mono text-zinc-400 truncate">${esc(s.bom_version)}</span>
-                </div>`
-                  )
-                  .join('')
-            : '<div class="border border-dashed border-[#1E1E26] bg-[#0A0A0D] px-2 py-3 text-[10px] text-zinc-600 text-center col-span-full">暂无节点</div>';
+    renderPlanScope();
+
+    const scopeSummary = document.getElementById('engineScopeSummary');
+    if (scopeSummary) {
+        const nodeCount = suppliers.length + l0Scopes.length;
+        scopeSummary.textContent = `节点 ${nodeCount}`;
+        scopeSummary.className = 'text-[10px] font-mono text-neutral-600 tabular-nums';
     }
 
     updateReadyStatus();
+    renderPipeline();
+    updateIgnitionLed();
+}
+
+function renderGateHardList(ready) {
+    const hardList = document.getElementById('engineGateHardList');
+    if (!hardList) return;
+
+    const items = sortGateItems(ready?.gates?.upload_or_config || []);
+    if (!items.length) {
+        hardList.innerHTML =
+            '<div class="py-6 text-[10px] text-neutral-700">暂无检查项</div>';
+        return;
+    }
+
+    const attention = items.filter((item) => isHardFail(item) || isSoftTip(item));
+    const passed = items.filter((item) => !isHardFail(item) && !isSoftTip(item));
+    const open = engineState.gatesDetailOpen;
+
+    const attentionHtml = attention.length
+        ? attention.map((item) => renderGateRow(item)).join('')
+        : '';
+
+    const summaryHtml = passed.length
+        ? `
+        <button type="button"
+                data-action="toggle-gates-detail"
+                class="w-full text-left py-2 text-[11px] text-neutral-500 hover:text-neutral-300 transition-colors">
+            <span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500/70 mr-2 align-middle"></span>
+            ${passed.length} 项基础约束已校验通过
+            <span class="text-neutral-700 ml-2">${open ? '收起明细' : '展开明细'}</span>
+        </button>`
+        : '';
+
+    const passedDetailHtml =
+        open && passed.length
+            ? `<div class="mt-1 space-y-0 opacity-60">${passed.map((item) => renderGateRow(item)).join('')}</div>`
+            : '';
+
+    if (!attention.length && !passed.length) {
+        hardList.innerHTML =
+            '<div class="py-6 text-[10px] text-neutral-700">暂无检查项</div>';
+        return;
+    }
+
+    hardList.innerHTML = `
+        <div class="space-y-1">
+            ${attentionHtml}
+            ${summaryHtml}
+            ${passedDetailHtml}
+        </div>`;
+
+    if (attention.some(isHardFail)) {
+        requestAnimationFrame(() => scrollGateBlockerIntoView(hardList));
+    }
 }
 
 function isSoftGate(item) {
@@ -378,7 +706,6 @@ function scrollGateBlockerIntoView(hardList) {
 }
 
 function renderGateRow(item) {
-    const ok = !!item.ok;
     const soft = isSoftTip(item);
     const hardFail = isHardFail(item);
     const nav = item.navigate;
@@ -393,54 +720,54 @@ function renderGateRow(item) {
     const line = missingHint ? `${summary} · ${missingHint}` : summary;
     const role = hardFail ? 'hard-fail' : soft ? 'soft-tip' : 'ok';
 
-    const led = hardFail
-        ? '<span class="w-2 h-2 bg-[#FF1E27] shrink-0"></span>'
-        : soft
-          ? '<span class="w-2 h-2 bg-amber-400 shrink-0"></span>'
-          : '<span class="w-2 h-2 bg-emerald-400 shrink-0"></span>';
-
     let actionHtml = '';
-    if (nav) {
-        const linkClass = soft || hardFail
-            ? 'shrink-0 text-[10px] font-bold tracking-[0.06em] text-amber-400 hover:text-amber-300'
-            : 'shrink-0 text-[10px] font-bold tracking-[0.06em] text-[#FF1E27] hover:text-white';
+    if (nav && (hardFail || soft)) {
         if (canPage) {
             actionHtml = `
                 <button type="button"
                         data-action="navigate"
                         data-page="${esc(nav.page)}"
                         data-query='${esc(JSON.stringify(nav.query || {}))}'
-                        class="${linkClass}">
+                        class="shrink-0 text-[10px] ${hardFail ? 'text-[#FF1E27] hover:text-white' : 'text-amber-500/80 hover:text-amber-400'}">
                     去处理 →
                 </button>`;
         } else {
-            actionHtml = '<span class="shrink-0 text-[9px] tracking-wide text-zinc-600">无权限</span>';
+            actionHtml = '<span class="shrink-0 text-[9px] text-neutral-700">无权限</span>';
         }
-    } else if (ok || soft) {
-        actionHtml =
-            '<span class="shrink-0 text-[9px] tracking-[0.06em] bg-[#081A10] text-emerald-400 border border-emerald-500/40 px-2 py-0.5 rounded-none">已通过 // PASSED</span>';
     }
 
-    const rowClass = hardFail
-        ? 'bg-[#14080A] border-l-2 border-l-[#FF1E27]'
-        : soft
-          ? 'bg-[#1A1408] border-l-2 border-l-amber-400'
-          : 'hover:bg-[#0E0E12] border-l-2 border-l-transparent';
-
-    return `
+    if (hardFail) {
+        return `
         <div data-gate-role="${role}" data-gate-code="${esc(item.code)}"
-             class="flex items-center justify-between gap-3 px-3 py-2 border-b border-[#181820] ${rowClass} transition-colors">
-            <div class="flex items-center gap-3 min-w-0 flex-1">
-                ${led}
-                <div class="min-w-0 flex-1">
-                    <div class="flex items-baseline gap-2 min-w-0">
-                        <span class="text-xs font-medium text-white shrink-0">${esc(zhTitle)}</span>
-                        <span class="text-[9px] font-mono uppercase text-zinc-500 truncate">${esc(item.code)}</span>
-                    </div>
-                    <p class="text-[10px] font-mono text-zinc-400 truncate mt-0.5" title="${esc(line)}">${esc(line)}</p>
-                </div>
+             class="flex items-start justify-between gap-3 py-2.5 border-b border-white/5 border-l-2 border-l-[#FF1E27] pl-3 -ml-0.5">
+            <div class="min-w-0 flex-1">
+                <div class="text-[12px] text-white">${esc(zhTitle)}</div>
+                <p class="text-[10px] text-neutral-500 truncate mt-0.5" title="${esc(line)}">${esc(line)}</p>
             </div>
             ${actionHtml}
+        </div>`;
+    }
+
+    if (soft) {
+        return `
+        <div data-gate-role="${role}" data-gate-code="${esc(item.code)}"
+             class="flex items-start justify-between gap-3 py-2.5 border-b border-white/5 border-l-2 border-l-amber-500/60 pl-3 -ml-0.5">
+            <div class="min-w-0 flex-1">
+                <div class="text-[12px] text-neutral-200">${esc(zhTitle)}</div>
+                <p class="text-[10px] text-neutral-500 truncate mt-0.5" title="${esc(line)}">${esc(line)}</p>
+            </div>
+            ${actionHtml}
+        </div>`;
+    }
+
+    // 通过项：仅在展开明细中出现，无绿色徽章
+    return `
+        <div data-gate-role="${role}" data-gate-code="${esc(item.code)}"
+             class="flex items-center justify-between gap-3 py-1.5 border-b border-white/5">
+            <div class="min-w-0 flex-1">
+                <span class="text-[11px] text-neutral-500">${esc(zhTitle)}</span>
+                <span class="text-[10px] text-neutral-700 ml-2 truncate">${esc(line)}</span>
+            </div>
         </div>`;
 }
 
@@ -449,26 +776,369 @@ function updateReadyStatus() {
     const text = document.getElementById('engineReadyStatusText');
     if (!led || !text) return;
 
-    const ready = engineState.ready;
+    const ready = matchesReadyInputs() ? engineState.ready : null;
     const hardStop = !!ready?.gates?.hard_stop;
     const canStart = !!ready?.can_start;
 
+    if (engineState.isRunning || engineState.isStarting) {
+        led.className = 'w-1.5 h-1.5 bg-[#FF1E27] shrink-0';
+        text.textContent = '引擎点火';
+        text.className = 'text-[10px] text-[#FF1E27]/80';
+        return;
+    }
     if (!ready) {
-        led.className = 'w-2.5 h-2.5 bg-zinc-700 shrink-0';
+        led.className = 'w-1.5 h-1.5 bg-neutral-700 shrink-0';
         text.textContent = '待命';
-        text.className = 'text-xs font-bold tracking-[0.06em] text-zinc-500 truncate mt-0.5';
+        text.className = 'text-[10px] text-neutral-500';
         return;
     }
     if (hardStop || !canStart) {
-        led.className = 'w-2.5 h-2.5 bg-[#FF1E27] shrink-0 shadow-[0_0_8px_#FF1E27]';
+        led.className = 'w-1.5 h-1.5 bg-[#FF1E27] shrink-0';
         text.textContent = '强约束阻断';
-        text.className = 'text-xs font-bold tracking-[0.06em] text-[#FF1E27] truncate mt-0.5';
+        text.className = 'text-[10px] text-[#FF1E27]/80';
         return;
     }
-    led.className =
-        'w-2.5 h-2.5 bg-emerald-400 shrink-0 shadow-[0_0_8px_#34D399] animate-pulse';
+    led.className = 'w-1.5 h-1.5 bg-emerald-500/70 shrink-0';
     text.textContent = '系统就绪';
-    text.className = 'text-xs font-bold tracking-[0.06em] text-emerald-400 truncate mt-0.5';
+    text.className = 'text-[10px] text-neutral-500';
+}
+
+function updateIgnitionLed() {
+    const led = document.getElementById('engineIgnitionLed');
+    if (!led) return;
+
+    led.classList.remove('engine-ignition-ready', 'engine-ignition-running');
+
+    if (engineState.isRunning || engineState.isStarting) {
+        led.className =
+            'w-2 h-2 rounded-full bg-emerald-500/80 shrink-0 engine-ignition-running';
+        return;
+    }
+
+    const canIgnite =
+        isReadyForCurrentInputs() &&
+        engineState.canRun &&
+        !engineState.isCheckingReady;
+
+    if (canIgnite) {
+        led.className =
+            'w-2 h-2 rounded-full bg-[#FF1E27] shrink-0 engine-ignition-ready';
+        return;
+    }
+
+    if (matchesReadyInputs() && !engineState.ready.can_start) {
+        led.className = 'w-2 h-2 rounded-full bg-[#FF1E27]/35 shrink-0';
+        return;
+    }
+
+    led.className = 'w-2 h-2 rounded-full bg-neutral-700 shrink-0';
+}
+
+/**
+ * 门禁 → 管道阶梯状态：idle | pending | active | passed | failed
+ */
+function resolvePipelineStages() {
+    const ready = engineState.ready;
+    const gates = ready?.gates?.upload_or_config || [];
+    const annual = ready?.gates?.annual_derived || [];
+    const gateByCode = new Map(gates.map((g) => [g.code, g]));
+
+    const stageHasHardFail = (stage) =>
+        stage.gateCodes.some((code) => {
+            const item = gateByCode.get(code);
+            return item ? isHardFail(item) : false;
+        });
+
+    const stageHasSoftTip = (stage) =>
+        stage.gateCodes.some((code) => {
+            const item = gateByCode.get(code);
+            return item ? isSoftTip(item) : false;
+        });
+
+    const stageAllOk = (stage) => {
+        if (!stage.gateCodes.length) return true;
+        return stage.gateCodes.every((code) => {
+            const item = gateByCode.get(code);
+            if (!item) return true;
+            return !isHardFail(item);
+        });
+    };
+
+    const annualPending = annual.some((a) => a.will_auto_calc);
+
+    if (engineState.isRunning || engineState.isStarting) {
+        const pct = Math.max(0, Math.min(100, engineState.runProgress || 0));
+        const activeIdx = Math.min(
+            PIPELINE_STAGES.length - 1,
+            Math.floor((pct / 100) * PIPELINE_STAGES.length)
+        );
+        return PIPELINE_STAGES.map((stage, idx) => {
+            if (idx < activeIdx) return { ...stage, state: 'passed' };
+            if (idx === activeIdx) return { ...stage, state: 'active' };
+            return { ...stage, state: 'pending' };
+        });
+    }
+
+    if (!ready) {
+        return PIPELINE_STAGES.map((stage) => ({ ...stage, state: 'idle' }));
+    }
+
+    if (ready.gates?.hard_stop) {
+        let failedSeen = false;
+        return PIPELINE_STAGES.map((stage, idx) => {
+            if (stage.id === 'settle') {
+                return { ...stage, state: 'pending' };
+            }
+            if (stage.id === 'aggregate') {
+                return {
+                    ...stage,
+                    state: annualPending ? 'pending' : 'passed',
+                };
+            }
+            if (failedSeen) return { ...stage, state: 'pending' };
+            if (stageHasHardFail(stage)) {
+                failedSeen = true;
+                return { ...stage, state: 'failed' };
+            }
+            if (stageAllOk(stage)) {
+                return {
+                    ...stage,
+                    state: stageHasSoftTip(stage) ? 'soft' : 'passed',
+                };
+            }
+            if (idx === 0) return { ...stage, state: 'failed' };
+            return { ...stage, state: 'pending' };
+        });
+    }
+
+    if (ready.can_start) {
+        return PIPELINE_STAGES.map((stage) => {
+            if (stage.id === 'aggregate' && annualPending) {
+                return { ...stage, state: 'soft' };
+            }
+            if (stage.id === 'settle') {
+                return { ...stage, state: 'passed' };
+            }
+            if (stageHasSoftTip(stage)) {
+                return { ...stage, state: 'soft' };
+            }
+            return { ...stage, state: 'passed' };
+        });
+    }
+
+    return PIPELINE_STAGES.map((stage) => ({ ...stage, state: 'pending' }));
+}
+
+function renderPipeline() {
+    const track = document.getElementById('enginePipelineTrack');
+    const statusEl = document.getElementById('enginePipelineStatus');
+    if (!track) return;
+
+    const stages = resolvePipelineStages();
+    const hasFailed = stages.some((s) => s.state === 'failed');
+    const allPassed = stages.every(
+        (s) => s.state === 'passed' || s.state === 'soft'
+    );
+
+    if (statusEl) {
+        if (engineState.isRunning || engineState.isStarting) {
+            statusEl.textContent = '运行中';
+            statusEl.className = 'text-[10px] text-neutral-500';
+        } else if (hasFailed) {
+            statusEl.textContent = '阻断';
+            statusEl.className = 'text-[10px] text-[#FF1E27]/70';
+        } else if (allPassed && engineState.ready?.can_start) {
+            statusEl.textContent = '已放行';
+            statusEl.className = 'text-[10px] text-neutral-600';
+        } else if (engineState.ready) {
+            statusEl.textContent = '待放行';
+            statusEl.className = 'text-[10px] text-neutral-600';
+        } else {
+            statusEl.textContent = '待命';
+            statusEl.className = 'text-[10px] text-neutral-700';
+        }
+    }
+
+    // 默认极暗；仅失败/运行中节点略提亮
+    const stateStyle = {
+        idle: { dot: 'bg-neutral-800', label: 'text-neutral-700', line: 'bg-neutral-800' },
+        pending: { dot: 'bg-neutral-800', label: 'text-neutral-600', line: 'bg-neutral-800' },
+        active: { dot: 'bg-[#FF1E27]/80', label: 'text-neutral-300', line: 'bg-neutral-800' },
+        passed: { dot: 'bg-neutral-700', label: 'text-neutral-600', line: 'bg-neutral-800' },
+        soft: { dot: 'bg-amber-700/60', label: 'text-neutral-500', line: 'bg-neutral-800' },
+        failed: { dot: 'bg-[#FF1E27]', label: 'text-[#FF1E27]/80', line: 'bg-neutral-800' },
+    };
+
+    track.className = 'relative flex items-stretch gap-0 overflow-x-auto py-1';
+    track.innerHTML = stages
+        .map((stage, idx) => {
+            const style = stateStyle[stage.state] || stateStyle.idle;
+            const isLast = idx === stages.length - 1;
+            const connector = isLast
+                ? ''
+                : `<div class="flex-1 min-w-[16px] h-px self-center mx-1 ${style.line}"></div>`;
+            return `
+            <div class="flex items-center min-w-0 flex-1">
+                <div class="flex flex-col items-center min-w-[64px] px-0.5">
+                    <span class="w-1.5 h-1.5 rounded-full shrink-0 ${style.dot}"></span>
+                    <span class="mt-2 text-[9px] tracking-wide ${style.label} whitespace-nowrap">${esc(stage.zh)}</span>
+                </div>
+                ${connector}
+            </div>`;
+        })
+        .join('');
+}
+
+function renderPlanScope() {
+    const tree = document.getElementById('enginePlanTree');
+    if (!tree) return;
+
+    const ready = engineState.ready;
+    if (!ready) {
+        tree.innerHTML =
+            '<div class="py-6 text-[10px] text-neutral-700">请先检查就绪</div>';
+        return;
+    }
+
+    const suppliers = ready?.plan?.part_cost_scopes || [];
+    const l0Scopes = ready?.plan?.l0_scopes || [];
+    const steel = ready?.plan?.steel || {};
+    const location = steel.location || ready?.input?.location || '—';
+    const period = `${steel.year || '—'} / ${String(steel.month || 0).padStart(2, '0')}`;
+
+    if (!suppliers.length && !l0Scopes.length) {
+        tree.innerHTML =
+            '<div class="py-6 text-[10px] text-neutral-700">暂无覆盖节点</div>';
+        return;
+    }
+
+    const supplierKey = 'branch:supplier';
+    const l0Key = 'branch:l0';
+    const supplierOpen = engineState.scopeExpanded.has(supplierKey);
+    const l0Open = engineState.scopeExpanded.has(l0Key);
+
+    const branchHeader = (key, title, count, open) => `
+        <button type="button"
+                data-action="scope-toggle"
+                data-scope-key="${esc(key)}"
+                class="w-full flex items-center justify-between gap-2 py-1.5 text-left hover:text-neutral-200 transition-colors">
+            <div class="flex items-center gap-2 min-w-0">
+                <span class="font-mono text-[9px] text-neutral-600 shrink-0">${open ? '▼' : '▶'}</span>
+                <span class="text-[12px] text-neutral-300 truncate">${esc(title)}</span>
+            </div>
+            <span class="text-[10px] font-mono text-neutral-600 tabular-nums shrink-0">${count}</span>
+        </button>`;
+
+    const supplierChildren = supplierOpen
+        ? suppliers
+              .map((s, idx) => {
+                  const key = `supplier:${s.stamping_supplier}`;
+                  const selected = engineState.scopeSelected === key;
+                  return `
+                <button type="button"
+                        data-action="scope-select"
+                        data-scope-key="${esc(key)}"
+                        class="w-full pl-5 py-1 flex items-center gap-2 text-left ${
+                            selected ? 'text-white' : 'text-neutral-500 hover:text-neutral-300'
+                        }">
+                    <span class="text-[10px] font-mono text-neutral-700 tabular-nums shrink-0">${String(idx + 1).padStart(2, '0')}</span>
+                    <span class="text-[11px] font-mono truncate" title="${esc(s.stamping_supplier)}">${esc(s.stamping_supplier)}</span>
+                </button>`;
+              })
+              .join('')
+        : '';
+
+    const l0Children = l0Open
+        ? l0Scopes
+              .map((s) => {
+                  const key = `l0:${s.vehicle_model}/${s.bom_version}`;
+                  const open = engineState.scopeExpanded.has(key);
+                  const selected = engineState.scopeSelected === key;
+                  const detail = open
+                      ? `
+                    <div class="pl-8 py-1.5 space-y-0.5 text-[10px] text-neutral-600">
+                        <div class="flex justify-between gap-2">
+                            <span>车型</span>
+                            <span class="font-mono text-neutral-400">${esc(s.vehicle_model)}</span>
+                        </div>
+                        <div class="flex justify-between gap-2">
+                            <span>BOM 版本</span>
+                            <span class="font-mono text-neutral-400">${esc(s.bom_version)}</span>
+                        </div>
+                        <div class="font-mono text-neutral-700">成品节点 × 1</div>
+                    </div>`
+                      : '';
+                  return `
+                <div>
+                    <button type="button"
+                            data-action="scope-toggle"
+                            data-scope-key="${esc(key)}"
+                            class="w-full pl-5 py-1 flex items-center justify-between gap-2 text-left ${
+                                selected ? 'text-white' : 'text-neutral-500 hover:text-neutral-300'
+                            }">
+                        <div class="flex items-center gap-2 min-w-0">
+                            <span class="font-mono text-[9px] text-neutral-700 shrink-0">${open ? '▼' : '▶'}</span>
+                            <span class="text-[11px] font-mono truncate">${esc(s.vehicle_model)} / ${esc(s.bom_version)}</span>
+                        </div>
+                    </button>
+                    ${detail}
+                </div>`;
+              })
+              .join('')
+        : '';
+
+    tree.innerHTML = `
+        <div class="space-y-1">
+            <div class="flex items-baseline justify-between gap-3 py-1 mb-2">
+                <div class="min-w-0">
+                    <div class="text-[10px] text-neutral-700">生产基地</div>
+                    <div class="text-[13px] font-mono text-neutral-200 truncate">${esc(location)}</div>
+                </div>
+                <div class="text-right shrink-0">
+                    <div class="text-[10px] text-neutral-700">账期</div>
+                    <div class="text-[12px] font-mono text-neutral-400 tabular-nums">${esc(period)}</div>
+                </div>
+            </div>
+            <div>
+                ${branchHeader(supplierKey, '冲压供应商', suppliers.length, supplierOpen)}
+                ${supplierChildren}
+            </div>
+            <div class="mt-2">
+                ${branchHeader(l0Key, '车型 BOM', l0Scopes.length, l0Open)}
+                ${l0Children}
+            </div>
+        </div>`;
+}
+
+/**
+ * 确定性审计指纹（前端展示用，非服务端签名）
+ */
+function auditFingerprint(row) {
+    const seed = [
+        row.id,
+        row.location || '',
+        row.year,
+        row.month,
+        row.status || '',
+        row.task_id || '',
+        row.started_at || '',
+        row.created_by || '',
+    ].join('|');
+    let hash = 0x811c9dc5;
+    for (let i = 0; i < seed.length; i += 1) {
+        hash ^= seed.charCodeAt(i);
+        hash = Math.imul(hash, 0x01000193);
+    }
+    const primary = (hash >>> 0).toString(16).toUpperCase().padStart(8, '0');
+    const secondary = (
+        (Math.imul(Number(row.id) || 1, 0x4b2a) ^ (hash >>> 8)) >>>
+        0
+    )
+        .toString(16)
+        .toUpperCase()
+        .padStart(8, '0')
+        .slice(0, 4);
+    return `0x${primary}${secondary}`;
 }
 
 function navigateWithQuery(page, query) {
@@ -488,7 +1158,7 @@ function updateStartButton() {
     const hint = document.getElementById('engineStartHint');
     if (!btn) return;
 
-    const readyOk = !!engineState.ready?.can_start;
+    const readyOk = isReadyForCurrentInputs();
     const canStart =
         readyOk &&
         engineState.canRun &&
@@ -499,13 +1169,17 @@ function updateStartButton() {
     btn.classList.toggle('hidden', false);
 
     updateReadyStatus();
+    updateIgnitionLed();
+    renderPipeline();
 
     let hintText = '';
     if (!engineState.canRun) {
         hintText = '当前账号无启动权限';
-    } else if (!engineState.ready) {
-        hintText = '';
-    } else if (!readyOk) {
+    } else if (!engineState.ready || !matchesReadyInputs()) {
+        hintText = engineState.ready
+            ? '筛选已变更，请重新点击「检查就绪」'
+            : '';
+    } else if (!engineState.ready.can_start) {
         hintText = '请先处理红色硬停项后再启动';
     } else if (canStart) {
         const hasSoftTip = (engineState.ready?.gates?.upload_or_config || []).some(isSoftTip);
@@ -519,8 +1193,8 @@ function updateStartButton() {
             hint.textContent = hintText;
             hint.classList.remove('hidden');
             hint.className = canStart
-                ? 'mt-4 text-[10px] tracking-wide text-emerald-400'
-                : 'mt-4 text-[10px] tracking-wide text-zinc-500';
+                ? 'mt-3 text-[10px] text-neutral-500'
+                : 'mt-3 text-[10px] text-neutral-600';
         } else {
             hint.textContent = '';
             hint.classList.add('hidden');
@@ -531,9 +1205,13 @@ function updateStartButton() {
         ? '启动月度核价引擎'
         : !engineState.canRun
           ? '无启动权限'
-          : !readyOk
-            ? '请先通过硬停检查'
-            : '';
+          : !engineState.ready
+            ? '请先点击「检查就绪」'
+            : !matchesReadyInputs()
+              ? '筛选已变更，请重新检查就绪'
+              : !engineState.ready.can_start
+                ? '请先通过硬停检查'
+                : '';
 }
 
 async function startRun() {
@@ -544,8 +1222,13 @@ async function startRun() {
     ) {
         return;
     }
-    if (!engineState.ready?.can_start) {
-        showToast('请先通过检查就绪', 'warning');
+    if (!isReadyForCurrentInputs()) {
+        showToast(
+            engineState.ready
+                ? '筛选已变更，请重新检查就绪'
+                : '请先通过检查就绪',
+            'warning'
+        );
         return;
     }
     if (!engineState.canRun) {
@@ -567,7 +1250,8 @@ async function startRun() {
         }
         engineState.activeTaskId = taskId;
         engineState.isRunning = true;
-        showProgress(0, 'TASK_SUBMITTED // 任务已提交…');
+        engineState.runProgress = 0;
+        showProgress(0, '任务已提交…');
         startPolling(taskId);
         loadHistory(1);
     } catch (error) {
@@ -606,11 +1290,14 @@ function showProgress(percent, msg) {
     const pct = document.getElementById('engineProgressPercent');
     const msgEl = document.getElementById('engineProgressMsg');
     const spinner = document.getElementById('engineProgressSpinner');
-    if (bar) bar.style.width = `${Math.max(0, Math.min(100, percent))}%`;
-    if (pct) pct.textContent = `${Math.round(percent)}%`;
+    engineState.runProgress = Math.max(0, Math.min(100, percent));
+    if (bar) bar.style.width = `${engineState.runProgress}%`;
+    if (pct) pct.textContent = `${Math.round(engineState.runProgress)}%`;
     if (msgEl) msgEl.textContent = msg || '—';
     spinner?.classList.remove('hidden');
     document.getElementById('engineResultPanel')?.classList.add('hidden');
+    renderPipeline();
+    updateIgnitionLed();
 }
 
 function hideProgressSpinner() {
@@ -623,6 +1310,7 @@ function hideProgressPanel() {
 
 function showResult(result) {
     hideProgressPanel();
+    engineState.runProgress = 100;
     const panel = document.getElementById('engineResultPanel');
     panel?.classList.remove('hidden');
     const status = result?.status || '—';
@@ -640,6 +1328,8 @@ function showResult(result) {
     if (result?.run_id) {
         engineState.activeRunId = result.run_id;
     }
+    renderPipeline();
+    updateIgnitionLed();
 }
 
 function startPolling(taskId) {
@@ -708,7 +1398,7 @@ async function loadHistory(page) {
     } catch (_) {
         const body = document.getElementById('engineHistoryBody');
         if (body) {
-            body.innerHTML = `<tr><td colspan="7" class="px-3 py-8 text-center text-[10px] text-[#FF1E27]">历史加载失败</td></tr>`;
+            body.innerHTML = `<tr><td colspan="7" class="px-2 py-8 text-center text-[10px] text-[#FF1E27]/80">历史加载失败</td></tr>`;
         }
     }
 }
@@ -721,7 +1411,7 @@ function renderHistory() {
 
     const items = engineState.history.items;
     if (!items.length) {
-        body.innerHTML = `<tr><td colspan="7" class="px-3 py-8 text-center text-[10px] text-zinc-600">暂无运行记录</td></tr>`;
+        body.innerHTML = `<tr><td colspan="7" class="px-2 py-8 text-center text-[10px] text-neutral-700">暂无运行记录</td></tr>`;
         renderPager();
         return;
     }
@@ -730,22 +1420,28 @@ function renderHistory() {
         .map((row) => {
             const meta = STATUS_META[row.status] || {
                 label: row.status,
-                className: 'text-zinc-500',
+                className: 'text-neutral-600',
             };
+            const fingerprint = auditFingerprint(row);
             const deleteBtn = engineState.canDelete
                 ? `<button type="button" data-action="delete-run" data-run-id="${row.id}"
-                        class="px-2 py-1 text-[10px] text-zinc-500 hover:text-[#FF1E27] transition-colors"
+                        class="opacity-0 group-hover:opacity-100 focus:opacity-100 px-2 py-1 text-[10px] text-neutral-600 hover:text-[#FF1E27] transition-opacity"
                         title="删除记录（不撤销已算价格）">删除</button>`
                 : '';
             return `
-            <tr class="group relative text-[11px] border-b border-[#1A1A20] hover:bg-[#0E0E12] transition-colors">
-                <td class="px-3 py-2 font-mono text-white font-bold tabular-nums">${esc(row.id)}</td>
-                <td class="px-3 py-2 text-zinc-200">${esc(row.location)}</td>
-                <td class="px-3 py-2 text-right font-mono text-zinc-400 tabular-nums">${esc(row.year)}-${String(row.month).padStart(2, '0')}</td>
-                <td class="px-3 py-2 text-center ${meta.className}">${esc(meta.label)}</td>
-                <td class="px-3 py-2 text-zinc-400">${esc(row.created_by || '-')}</td>
-                <td class="px-3 py-2 text-[10px] font-mono text-zinc-500 tabular-nums">${esc(formatTs(row.started_at))}</td>
-                <td class="px-3 py-2 text-center">${deleteBtn}</td>
+            <tr class="engine-history-row group font-mono text-[11px] border-b border-white/5 hover:bg-white/[0.02] transition-colors">
+                <td class="px-2 py-2.5 overflow-hidden">
+                    <div class="text-[13px] text-neutral-200 tabular-nums">#${esc(row.id)}</div>
+                    <div class="engine-audit-hash text-[9px] text-neutral-700 mt-0.5 truncate" title="${esc(fingerprint)}">
+                        ${esc(fingerprint)}
+                    </div>
+                </td>
+                <td class="px-2 py-2.5 text-neutral-400 overflow-hidden truncate" title="${esc(row.location)}">${esc(row.location)}</td>
+                <td class="px-2 py-2.5 text-right text-[10px] text-neutral-500 tabular-nums">${esc(row.year)}-${String(row.month).padStart(2, '0')}</td>
+                <td class="px-2 py-2.5 text-center text-[10px] ${meta.className}">${esc(meta.label)}</td>
+                <td class="px-2 py-2.5 text-[10px] text-neutral-500 overflow-hidden truncate">${esc(row.created_by || '-')}</td>
+                <td class="px-2 py-2.5 text-[10px] text-neutral-600 tabular-nums">${esc(formatTs(row.started_at))}</td>
+                <td class="px-2 py-2.5 text-center">${deleteBtn}</td>
             </tr>`;
         })
         .join('');
@@ -765,10 +1461,10 @@ function renderPager() {
         const active = i === page;
         buttons.push(`
             <button type="button" data-page="${i}"
-                class="min-w-[28px] h-7 px-2 text-[10px] font-mono rounded-none transition-colors ${
+                class="min-w-[28px] h-7 px-2 text-[10px] font-mono transition-colors ${
                     active
-                        ? 'bg-[#FF1E27] text-white font-bold border border-[#FF1E27]'
-                        : 'bg-[#121216] text-zinc-400 border border-[#22222A] hover:text-white hover:border-[#FF1E27]'
+                        ? 'text-white border-b border-[#FF1E27]'
+                        : 'text-neutral-600 hover:text-neutral-300'
                 }">${i}</button>`);
     }
     pager.innerHTML = buttons.join('');
