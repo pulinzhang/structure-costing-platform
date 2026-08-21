@@ -7,11 +7,14 @@
 from __future__ import annotations
 
 import logging
+import re
+from decimal import Decimal, InvalidOperation
 from typing import Callable, Optional
 
 from sqlalchemy.orm import Session
 
 from app.common.audit import audit_create
+from app.exceptions import ValidationException
 from app.parsers.yishiyiyi.base_price import parse_base_price_excel
 from app.repositories.yishiyiyi.base_price import SteelBasePriceRepository
 from app.schemas.dto.steel_base_price_dto import SteelBasePriceWrite
@@ -26,6 +29,51 @@ ProgressCallback = Callable[[int, str], None]
 
 logger = logging.getLogger("service.steel_base_price.import")
 
+# 钢厂名不得为纯数字（含小数），防止列错位把价格读进钢厂
+_NUMERIC_STEEL_MILL_RE = re.compile(r"^[+-]?\d+(\.\d+)?$")
+
+
+def _is_numeric_steel_mill(steel_mill: object) -> bool:
+    """钢厂值为纯数字（或可解析为数字）时视为格式错误。"""
+    if isinstance(steel_mill, (int, float, Decimal)):
+        return True
+    text = str(steel_mill).strip()
+    if not text:
+        return False
+    if _NUMERIC_STEEL_MILL_RE.fullmatch(text):
+        return True
+    try:
+        Decimal(text)
+        return True
+    except (InvalidOperation, ValueError):
+        return False
+
+
+def _assert_steel_mills_not_numeric(records: list[dict[str, object]]) -> None:
+    """导入小锁：任一钢厂为数字则整批拒绝，避免列错位脏数据入库。"""
+    bad_samples: list[str] = []
+    bad_count = 0
+    for record in records:
+        mill = record.get("steel_mill")
+        if not _is_numeric_steel_mill(mill):
+            continue
+        bad_count += 1
+        if len(bad_samples) >= 5:
+            continue
+        excel_row = record.get("excel_row")
+        location = record.get("location")
+        bad_samples.append(
+            f"第{excel_row}行/{location}基地→钢厂「{mill}」"
+        )
+    if bad_count == 0:
+        return
+    sample_text = "；".join(bad_samples)
+    more = f"等共 {bad_count} 处" if bad_count > len(bad_samples) else f"共 {bad_count} 处"
+    raise ValidationException(
+        f"钢厂不能为数字（疑似表格列错位或格式不正确）：{sample_text}（{more}）。"
+        "请核对各基地「中标钢厂」列是否对齐后再导入。"
+    )
+
 
 def _base_price_write_from_record(
     record: dict[str, object],
@@ -36,8 +84,6 @@ def _base_price_write_from_record(
     created_by: str,
     updated_by: str,
 ) -> SteelBasePriceWrite:
-    from decimal import Decimal
-
     thick = record.get("thick")
     width = record.get("width")
     base_price = record["base_price"]
@@ -117,6 +163,7 @@ class SteelBasePriceImportService:
 
         _report(10, "正在解析基准价格 Excel...")
         parse_result = parse_base_price_excel(file_content)
+        _assert_steel_mills_not_numeric(parse_result.records)
 
         writes = [
             _base_price_write_from_record(

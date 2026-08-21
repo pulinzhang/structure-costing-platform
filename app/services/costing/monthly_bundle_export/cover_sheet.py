@@ -215,7 +215,6 @@ def write_cover_sheet(
         font=_font(size=16, bold=True, color=_WHITE),
         height=32,
     )
-    supplier = stamping_supplier or "未限定"
     _band(
         ws,
         row=2,
