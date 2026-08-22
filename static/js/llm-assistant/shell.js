@@ -17,7 +17,7 @@ import { mountComposer, setComposerBusy } from './chat/composer.js';
 import { humanizeUserFacingError } from './errors.js';
 import { renderThread } from './chat/thread.js?v=5';
 
-import { openPrintPreview, closePrintPreview } from './export/print.js?v=3';
+import { printAssistantMessage, closePrintPreview } from './export/print.js?v=4';
 
 import { downloadWordDocument } from './export/word.js?v=1';
 
@@ -43,7 +43,7 @@ import {
 
 import { pollTask } from './task/poller.js';
 
-import { entryButtonHtml, shellHtml } from './template.js?v=3';
+import { entryButtonHtml, shellHtml } from './template.js?v=4';
 
 
 
@@ -117,8 +117,6 @@ export function createShell(options) {
 
         history: root.querySelector('#llmHistoryOverlay'),
 
-        preview: root.querySelector('#llmPrintPreviewOverlay'),
-
         chips: root.querySelector('#llmChips'),
 
         composer: root.querySelector('#llmComposer'),
@@ -159,7 +157,7 @@ export function createShell(options) {
 
     root.querySelector('#llmBtnHistory')?.addEventListener('click', () => {
 
-        closePrintPreview(els.preview);
+        closePrintPreview();
 
         void openHistoryPanel(els.history, {
 
@@ -213,11 +211,11 @@ export function createShell(options) {
 
             if (exportType === 'print') {
 
-                closePrintPreview(els.preview);
+                closePrintPreview();
 
                 els.history?.classList.add('hidden');
 
-                openPrintPreview(msg, els.preview);
+                printAssistantMessage(msg);
 
             } else if (exportType === 'word') {
 
@@ -409,7 +407,7 @@ export function createShell(options) {
 
         els.history?.classList.add('hidden');
 
-        closePrintPreview(els.preview);
+        closePrintPreview();
 
 
 

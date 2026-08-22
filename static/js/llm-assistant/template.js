@@ -44,7 +44,6 @@ export function shellHtml() {
 
   <div class="relative flex-1 flex flex-col min-h-0">
     <div id="llmHistoryOverlay" class="hidden absolute inset-0 z-20 flex flex-col bg-[#121212]"></div>
-    <div id="llmPrintPreviewOverlay" class="hidden absolute inset-0 z-30 flex flex-col bg-[#121212]"></div>
     <div id="llmThread" class="flex-1 overflow-y-auto px-3 py-3 space-y-3 bg-[#0a0a0a] min-h-0" role="log" aria-live="polite"></div>
   </div>
   <div id="llmChips" class="px-3 pt-2 pb-1 border-t border-[#1a1a1a] bg-[#121212] shrink-0 overflow-x-auto"></div>

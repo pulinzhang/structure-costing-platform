@@ -111,7 +111,7 @@ function renderExportToolbar(msg) {
 <div class="flex items-center justify-end gap-0.5 mb-1.5" data-llm-export-toolbar>
   <button type="button" data-llm-export="print" data-msg-id="${escAttr(msg.id)}"
     class="${EXPORT_ICON_BTN_CLASS}"
-    title="打印预览" aria-label="打印预览">${llmIconPrint()}</button>
+    title="打印" aria-label="打印">${llmIconPrint()}</button>
   <button type="button" data-llm-export="word" data-msg-id="${escAttr(msg.id)}"
     class="${EXPORT_ICON_BTN_CLASS}"
     title="导出 Word" aria-label="导出 Word">${llmIconWord()}</button>
