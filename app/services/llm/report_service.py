@@ -21,6 +21,7 @@ from app.schemas.dto.llm_analysis_dto import (
     LlmAnalysisReportCreateDTO,
     LlmAnalysisReportQuery,
 )
+from app.schemas.llm.analysis_query import AnalysisQuery
 from app.schemas.vo.async_task_vo import AsyncTaskProgressVO
 from app.schemas.vo.llm_analysis_vo import (
     LlmAnalysisReportTaskVO,
@@ -36,6 +37,7 @@ from app.services.async_task import (
 )
 from app.services.llm.analysis.idempotency import build_idempotency_key
 from app.services.llm.analysis.runner import AnalysisRunner
+from app.services.llm.usage import UsageHelpRunner
 from app.services.llm.client import LlmClientError
 from app.services.llm.context.snapshot_builder import SnapshotBuilder
 from app.services.llm.generator import LlmReportGenerator
@@ -58,6 +60,7 @@ class LlmAnalysisReportService:
         self.repository = LlmAnalysisReportRepository()
         self.query_parser = QueryParser()
         self.runner = AnalysisRunner()
+        self.usage_runner = UsageHelpRunner()
         self.snapshot_builder = SnapshotBuilder()
         self.generator = LlmReportGenerator()
 
@@ -145,7 +148,12 @@ class LlmAnalysisReportService:
             str(audit["updated_by"]),
             json.dumps(analysis_query.model_dump(mode="json"), ensure_ascii=False),
         )
-        return self._to_task_vo(row, from_cache=False, message="正在查询核价结果…")
+        return self._to_task_vo(row, from_cache=False, message=self._submit_message(analysis_query))
+
+    def _submit_message(self, analysis_query: AnalysisQuery) -> str:
+        if analysis_query.query_mode == "usage_help":
+            return "正在检索帮助语料…"
+        return "正在查询核价结果…"
 
     def get_report(
         self,
@@ -248,9 +256,16 @@ class LlmAnalysisReportService:
                 task_id,
                 status=STATUS_RUNNING,
                 progress=25,
-                message="正在查询并聚合核价事实…",
+                message=(
+                    "正在检索帮助语料…"
+                    if analysis_query.query_mode == "usage_help"
+                    else "正在查询并聚合核价事实…"
+                ),
             )
-            run = self.runner.run(db, analysis_query)
+            if analysis_query.query_mode == "usage_help":
+                run = self.usage_runner.run(analysis_query)
+            else:
+                run = self.runner.run(db, analysis_query)
             snapshot = self.snapshot_builder.build(
                 query=analysis_query, run=run
             )
@@ -259,7 +274,11 @@ class LlmAnalysisReportService:
                 task_id,
                 status=STATUS_RUNNING,
                 progress=55,
-                message="正在生成解释…",
+                message=(
+                    "正在生成操作说明…"
+                    if analysis_query.query_mode == "usage_help"
+                    else "AI正在思考中…"
+                ),
             )
             try:
                 generated = self.generator.generate(
@@ -326,7 +345,11 @@ class LlmAnalysisReportService:
                 task_id,
                 status=STATUS_COMPLETED,
                 progress=100,
-                message="分析完成",
+                message=(
+                    "帮助回答完成"
+                    if analysis_query.query_mode == "usage_help"
+                    else "分析完成"
+                ),
                 result={
                     "report_id": report_id,
                     "status": REPORT_STATUS_SUCCEEDED,

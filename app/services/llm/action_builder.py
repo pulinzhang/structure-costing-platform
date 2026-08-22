@@ -15,6 +15,8 @@ from app.services.llm.menu_catalog import (
     build_list_params_for_page,
     resolve_menu_target,
 )
+from app.services.llm.usage.actions import build_usage_help_actions
+from app.services.llm.usage.corpus import CorpusChunk
 
 
 class ActionBuilder:
@@ -24,6 +26,9 @@ class ActionBuilder:
         query: AnalysisQuery,
         run: AnalysisRunResult,
     ) -> list[AnalysisAction]:
+        if query.query_mode == "usage_help":
+            return self._build_usage_help(query=query, run=run)
+
         actions: list[AnalysisAction] = []
         part_number = query.part_number()
 
@@ -140,6 +145,34 @@ class ActionBuilder:
             )
 
         return actions
+
+    def _build_usage_help(
+        self,
+        *,
+        query: AnalysisQuery,
+        run: AnalysisRunResult,
+    ) -> list[AnalysisAction]:
+        raw_chunks = run.evidence.get("corpus_chunks") or []
+        chunks: list[CorpusChunk] = []
+        for item in raw_chunks:
+            if not isinstance(item, dict):
+                continue
+            chunks.append(
+                CorpusChunk(
+                    chunk_id=str(item.get("chunk_id") or ""),
+                    title=str(item.get("title") or ""),
+                    text=str(item.get("text") or ""),
+                    source_page=str(item.get("source_page") or "help.html"),
+                    anchor=str(item.get("anchor") or "start"),
+                    keywords=tuple(str(k) for k in (item.get("keywords") or [])),
+                    menu_hash=(
+                        str(item["menu_hash"])
+                        if item.get("menu_hash") is not None
+                        else None
+                    ),
+                )
+            )
+        return build_usage_help_actions(query, chunks)
 
     def _deep_link(self, path: str, params: dict[str, str | list[str]]) -> str:
         cleaned = {key: value for key, value in params.items() if value}

@@ -3,6 +3,7 @@
  */
 
 import { buildAssistantDocumentHtml, canExportAssistantMessage } from './document.js?v=1';
+import { llmIconClose, llmIconPrint, PANEL_ICON_BTN_CLASS } from '../icons.js';
 
 /** @type {((event: KeyboardEvent) => void)|null} */
 let escListener = null;
@@ -46,21 +47,15 @@ export function openPrintPreview(msg, overlayEl) {
     overlayEl.classList.remove('hidden');
     overlayEl.setAttribute('aria-hidden', 'false');
     overlayEl.innerHTML = `
-<div class="flex items-center justify-between gap-2 px-3 py-2 border-b border-[#222] bg-[#1e1e1e] shrink-0">
-  <div class="min-w-0">
-    <div class="text-xs font-semibold text-[#F0F0F2]">AI 回答 · 打印预览</div>
-    <div class="text-[10px] text-[#616161] truncate">白底 A4 排版，可直接打印或另存为 PDF</div>
-  </div>
-  <div class="flex items-center gap-1 shrink-0">
+<div class="flex items-center justify-between gap-2 px-2 py-1 border-b border-[#222] bg-[#1e1e1e] shrink-0">
+  <span class="text-[10px] text-[#616161] truncate px-1">打印预览</span>
+  <div class="flex items-center gap-0.5 shrink-0">
     <button type="button" id="llmPreviewPrint"
-      class="inline-flex items-center px-2.5 py-1 text-[10px] font-medium text-white bg-[#d32f2f] hover:bg-[#b71c1c] rounded-sm transition-colors">
-      打印
-    </button>
+      class="${PANEL_ICON_BTN_CLASS}"
+      title="打印" aria-label="打印">${llmIconPrint()}</button>
     <button type="button" id="llmPreviewClose"
-      class="inline-flex items-center px-2.5 py-1 text-[10px] text-[#9e9e9e] border border-[#2c2c2c] hover:text-white hover:border-[#9e9e9e] rounded-sm transition-colors"
-      aria-label="关闭预览">
-      关闭
-    </button>
+      class="${PANEL_ICON_BTN_CLASS}"
+      title="关闭" aria-label="关闭">${llmIconClose()}</button>
   </div>
 </div>
 <iframe id="llmPreviewFrame"

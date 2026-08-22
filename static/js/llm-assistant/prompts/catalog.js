@@ -8,44 +8,13 @@
 export const PROMPT_CATALOG = [
     {
         id: 'Q01',
-        label: '今年青岛采购成本总体怎么样？',
+        label: '当月核算情况怎么样？',
         audience: 'buyer_lead',
     },
     {
-        id: 'Q03',
-        label: '哪些供货总成最贵？优先跟哪些件议价？',
-        audience: 'buyer',
-    },
-    {
-        id: 'Q11',
-        label: '还有哪些零件缺价或算不全（partial）？',
-        audience: 'buyer',
-    },
-    {
-        id: 'Q12',
-        label: '为什么这个月核价跑不起来？主数据还缺什么？',
+        id: 'Q02',
+        label: '当月一事一议价格怎么样？',
         audience: 'buyer_lead',
-    },
-    {
-        id: 'Q21',
-        label: '本月钢材联动价哪些规格在涨？',
-        audience: 'buyer',
-    },
-    {
-        id: 'Q31',
-        label: '哪些冲压件材料净成本异常偏高？',
-        audience: 'buyer',
-    },
-    {
-        id: 'Q41',
-        label: '交给主机厂的总成里，总费用 Top 有哪些？',
-        audience: 'sales_quote',
-    },
-    {
-        id: 'Q51',
-        label: '帮我解读零件号 {part_number}，我怎么跟供应商谈？',
-        audience: 'buyer',
-        needs_part_number: true,
     },
 ];
 

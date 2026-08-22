@@ -90,6 +90,9 @@ class LlmReportGenerator:
         snapshot: AnalysisSnapshot,
         audience: str,
     ) -> GeneratedReport:
+        if snapshot.query.query_mode == "usage_help":
+            return self._generate_usage_help(snapshot=snapshot)
+
         prompt = self._registry.resolve(audience)
         system = f"{prompt.system_prompt}\n\n{_FIELD_CARD}"
         context_json = json.dumps(
@@ -119,12 +122,45 @@ class LlmReportGenerator:
             audience=prompt.audience,
         )
 
+    def _generate_usage_help(self, *, snapshot: AnalysisSnapshot) -> GeneratedReport:
+        prompt = self._registry.resolve_usage_help()
+        system = prompt.system_prompt
+        context_json = json.dumps(
+            snapshot.to_prompt_dict(), ensure_ascii=False, indent=2
+        )
+        user = prompt.render_user(
+            user_question=snapshot.query.user_question,
+            report_type=analyses_key_label_zh(snapshot.query.analyses_key()),
+            audience="使用帮助",
+            context_json=context_json,
+        )
+        combined_hash = f"{prompt.prompt_hash}:usage-help-v1"
+        result: LlmChatResult = self._client.chat(
+            system_prompt=system,
+            user_prompt=user,
+            temperature=prompt.temperature,
+            max_tokens=prompt.max_tokens,
+        )
+        return GeneratedReport(
+            markdown_content=sanitize_report_markdown(result.content),
+            prompt_version=prompt.prompt_version,
+            prompt_hash=combined_hash,
+            llm_model=result.model,
+            prompt_tokens=result.prompt_tokens,
+            completion_tokens=result.completion_tokens,
+            total_tokens=result.total_tokens,
+            audience="usage_help",
+        )
+
     def render_fallback_markdown(
         self,
         *,
         snapshot: AnalysisSnapshot,
         error_hint: str,
     ) -> str:
+        if snapshot.query.query_mode == "usage_help":
+            return self._render_usage_help_fallback(snapshot=snapshot, error_hint=error_hint)
+
         summary = snapshot.summary or {}
         lines = [
             "# 采购分析（规则模板）",
@@ -152,6 +188,32 @@ class LlmReportGenerator:
         else:
             lines.append("- 本次未见核算不全或缺价样本。")
         lines.extend(["", "## 下一步"])
+        for action in snapshot.actions[:5]:
+            lines.append(f"- {action.label} → `{action.target}`")
+        return "\n".join(lines)
+
+    def _render_usage_help_fallback(
+        self,
+        *,
+        snapshot: AnalysisSnapshot,
+        error_hint: str,
+    ) -> str:
+        chunks = snapshot.result.get("chunks") or []
+        lines = [
+            "# 使用帮助（规则模板）",
+            "",
+            f"> 用户问题：{snapshot.query.user_question}",
+            "",
+            f"> 说明：模型暂不可用（{error_hint}），以下为语料摘录。",
+            "",
+        ]
+        for chunk in chunks:
+            if not isinstance(chunk, dict):
+                continue
+            lines.append(f"## {chunk.get('title', '帮助')}")
+            lines.append(str(chunk.get("excerpt") or "").strip())
+            lines.append("")
+        lines.append("## 下一步")
         for action in snapshot.actions[:5]:
             lines.append(f"- {action.label} → `{action.target}`")
         return "\n".join(lines)

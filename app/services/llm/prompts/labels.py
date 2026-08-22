@@ -23,6 +23,8 @@ AUDIENCE_LABEL_ZH: dict[str, str] = {
 
 
 def analyses_key_label_zh(analyses_key: str) -> str:
+    if analyses_key == "usage_help":
+        return "使用帮助"
     parts = [part.strip() for part in analyses_key.split(",") if part.strip()]
     if not parts:
         return ANALYSIS_KIND_LABEL_ZH["summary"]

@@ -3,6 +3,7 @@
  */
 
 import { humanizeUserFacingError } from '../errors.js';
+import { EXPORT_ICON_BTN_CLASS, llmIconPrint, llmIconWord } from '../icons.js';
 import { renderMarkdown } from '../markdown/render.js';
 import { renderActionsHtml } from '../report/actions.js';
 import { renderSnapshotPanel } from '../report/snapshot-panel.js';
@@ -107,16 +108,13 @@ function renderExportToolbar(msg) {
     if (!canShowExportToolbar(msg)) return '';
 
     return `
-<div class="flex items-center justify-between gap-2 mb-2" data-llm-export-toolbar>
-  <span class="text-[9px] font-medium tracking-[0.06em] text-[#6b6b6b]">AI 回答</span>
-  <div class="flex items-center gap-1 shrink-0">
-    <button type="button" data-llm-export="print" data-msg-id="${escAttr(msg.id)}"
-      class="inline-flex items-center px-2 py-0.5 text-[10px] text-[#c8c8c8] bg-[#1a1a1a] border border-[#333333] hover:border-[#d32f2f] hover:text-white rounded-sm transition-colors"
-      title="打印预览 AI 回答" aria-label="打印预览 AI 回答">打印预览</button>
-    <button type="button" data-llm-export="word" data-msg-id="${escAttr(msg.id)}"
-      class="inline-flex items-center px-2 py-0.5 text-[10px] text-[#c8c8c8] bg-[#1a1a1a] border border-[#333333] hover:border-[#d32f2f] hover:text-white rounded-sm transition-colors"
-      title="导出 Word" aria-label="导出 Word">导出 Word</button>
-  </div>
+<div class="flex items-center justify-end gap-0.5 mb-1.5" data-llm-export-toolbar>
+  <button type="button" data-llm-export="print" data-msg-id="${escAttr(msg.id)}"
+    class="${EXPORT_ICON_BTN_CLASS}"
+    title="打印预览" aria-label="打印预览">${llmIconPrint()}</button>
+  <button type="button" data-llm-export="word" data-msg-id="${escAttr(msg.id)}"
+    class="${EXPORT_ICON_BTN_CLASS}"
+    title="导出 Word" aria-label="导出 Word">${llmIconWord()}</button>
 </div>`;
 }
 

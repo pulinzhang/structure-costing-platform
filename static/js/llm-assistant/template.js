@@ -18,8 +18,8 @@ export function shellHtml() {
 
 <section id="llmAssistantPanel"
          class="hidden fixed z-[110] flex flex-col overflow-hidden border border-[#2c2c2c] bg-[#121212]
-                w-[min(380px,calc(100vw-1.5rem))] h-[min(560px,calc(100vh-5rem))]
-                right-4 bottom-4 shadow-[0_16px_48px_rgba(0,0,0,0.65)]"
+                w-[min(380px,calc(100vw-1.5rem))] top-4 bottom-4 right-4 h-auto
+                shadow-[0_16px_48px_rgba(0,0,0,0.65)]"
          role="dialog" aria-label="AI助理">
   <header class="flex items-center justify-between gap-2 px-3 py-2 border-b border-[#222] bg-[#1e1e1e] shrink-0">
     <div class="min-w-0">

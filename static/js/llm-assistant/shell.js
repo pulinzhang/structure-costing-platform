@@ -10,14 +10,14 @@
 
 import { createReport, getReport } from './api.js';
 
-import { mountChips, setChipsDisabled } from './chat/chips.js';
+import { mountChips, setChipsDisabled, setChipsVisible } from './chat/chips.js';
 
 import { mountComposer, setComposerBusy } from './chat/composer.js';
 
 import { humanizeUserFacingError } from './errors.js';
-import { renderThread } from './chat/thread.js?v=4';
+import { renderThread } from './chat/thread.js?v=5';
 
-import { openPrintPreview, closePrintPreview } from './export/print.js?v=2';
+import { openPrintPreview, closePrintPreview } from './export/print.js?v=3';
 
 import { downloadWordDocument } from './export/word.js?v=1';
 
@@ -43,7 +43,7 @@ import {
 
 import { pollTask } from './task/poller.js';
 
-import { entryButtonHtml, shellHtml } from './template.js?v=2';
+import { entryButtonHtml, shellHtml } from './template.js?v=3';
 
 
 
@@ -191,6 +191,8 @@ export function createShell(options) {
 
         if (els.promptMeta) els.promptMeta.textContent = '';
 
+        updateChipsVisibility();
+
     });
 
 
@@ -280,6 +282,16 @@ export function createShell(options) {
         messages = stored.messages || [];
 
         renderThread(els.thread, messages);
+
+        updateChipsVisibility();
+
+    }
+
+
+
+    function updateChipsVisibility() {
+
+        setChipsVisible(els.chips, messages.length === 0);
 
     }
 
@@ -409,7 +421,7 @@ export function createShell(options) {
 
                     'fixed z-[110] flex flex-col overflow-hidden border border-[#2c2c2c] bg-[#121212] ' +
 
-                    'left-4 right-4 top-16 bottom-4 w-auto h-auto shadow-[0_16px_48px_rgba(0,0,0,0.65)]';
+                    'left-4 right-4 top-4 bottom-4 w-auto h-auto shadow-[0_16px_48px_rgba(0,0,0,0.65)]';
 
             } else {
 
@@ -417,9 +429,9 @@ export function createShell(options) {
 
                     'fixed z-[110] flex flex-col overflow-hidden border border-[#2c2c2c] bg-[#121212] ' +
 
-                    'w-[min(420px,calc(100vw-1.5rem))] h-[min(620px,calc(100vh-5rem))] ' +
+                    'w-[min(420px,calc(100vw-1.5rem))] top-4 bottom-4 right-4 h-auto ' +
 
-                    'right-4 bottom-4 shadow-[0_16px_48px_rgba(0,0,0,0.65)]';
+                    'shadow-[0_16px_48px_rgba(0,0,0,0.65)]';
 
             }
 
@@ -479,6 +491,8 @@ export function createShell(options) {
 
             persist();
 
+            updateChipsVisibility();
+
             if (els.promptMeta) {
 
                 els.promptMeta.textContent = assistantMsg.prompt_version || '';
@@ -535,7 +549,7 @@ export function createShell(options) {
 
 
 
-        const promptId = opts.promptId || (opts.part_number ? 'Q51' : null);
+        const promptId = opts.promptId || null;
 
         if (promptId) {
 
@@ -682,6 +696,8 @@ export function createShell(options) {
         messages = [...messages, userMsg, assistantMsg];
 
         renderThread(els.thread, messages);
+
+        updateChipsVisibility();
 
         persist();
 

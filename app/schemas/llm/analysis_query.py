@@ -15,6 +15,8 @@ AnalysisKind = Literal[
     "drilldown",
 ]
 
+QueryMode = Literal["analysis", "usage_help"]
+
 
 class TimeRange(BaseModel):
     """YYYY-MM 闭区间。"""
@@ -67,6 +69,8 @@ class AnalysisQuery(BaseModel):
     analyses: list[AnalysisKind] = Field(default_factory=lambda: ["summary"])
     user_question: str = ""
     unresolved_mentions: list[str] = Field(default_factory=list)
+    query_mode: QueryMode = "analysis"
+    help_topic: str | None = None
 
     @field_validator("filters", mode="before")
     @classmethod
@@ -131,4 +135,6 @@ class AnalysisQuery(BaseModel):
         return None
 
     def analyses_key(self) -> str:
+        if self.query_mode == "usage_help":
+            return "usage_help"
         return ",".join(self.analyses)

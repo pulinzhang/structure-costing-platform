@@ -48,6 +48,15 @@ export function setChipsDisabled(root, disabled) {
     });
 }
 
+/**
+ * @param {HTMLElement} root
+ * @param {boolean} visible
+ */
+export function setChipsVisible(root, visible) {
+    if (!root) return;
+    root.classList.toggle('hidden', !visible);
+}
+
 function shorten(text, max) {
     const s = String(text || '');
     if (s.length <= max) return s;

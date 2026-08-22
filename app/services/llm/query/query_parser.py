@@ -14,6 +14,7 @@ from app.services.llm.client import LlmClientError
 from app.services.llm.query.comparison_basis import default_comparison_basis
 from app.services.llm.query.condition_extractor import ConditionExtractor
 from app.services.llm.query.entity_aligner import EntityAligner
+from app.services.llm.query.intent_router import detect_help_topic, detect_query_mode
 from app.services.llm.query.time_range import DefaultScopeMonth, normalize_time_range
 from app.utils.logging_config import get_logger
 
@@ -33,6 +34,9 @@ class QueryParser:
     def parse(self, db: Session, *, user_question: str) -> AnalysisQuery:
         """LLM 只产出条件草稿；对齐与 analyses/subject 由 Python 决定。"""
         question = (user_question or "").strip()
+        if detect_query_mode(question) == "usage_help":
+            return self._parse_usage_help(question)
+
         clock = now()
         default = DefaultScopeMonth(year=clock.year, month=clock.month)
 
@@ -48,6 +52,22 @@ class QueryParser:
             draft = self._rule_fallback_draft(question, default)
 
         return self._assemble(db, question=question, draft=draft, default=default)
+
+    def _parse_usage_help(self, question: str) -> AnalysisQuery:
+        clock = now()
+        default = DefaultScopeMonth(year=clock.year, month=clock.month)
+        time_range = normalize_time_range(user_question=question, default=default)
+        help_topic = detect_help_topic(question)
+        return AnalysisQuery(
+            time_range=time_range,
+            filters={},
+            subject="usage_help",
+            comparison_basis=default_comparison_basis(same_bom_version=True),
+            analyses=["summary"],
+            user_question=question,
+            query_mode="usage_help",
+            help_topic=help_topic,
+        )
 
     def _assemble(
         self,
