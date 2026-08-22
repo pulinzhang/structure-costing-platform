@@ -1,0 +1,146 @@
+/**
+ * AI 回答打印：新标签页全屏文档 + 系统打印对话框；弹窗被拦时回退全屏遮罩。
+ */
+
+import { buildAssistantDocumentHtml, canExportAssistantMessage } from './document.js?v=1';
+import { llmIconClose, llmIconPrint, PANEL_ICON_BTN_CLASS } from '../icons.js';
+
+const FULLSCREEN_OVERLAY_ID = 'llmPrintFullscreenOverlay';
+
+/** @type {((event: KeyboardEvent) => void)|null} */
+let escListener = null;
+
+/**
+ * 关闭全屏打印遮罩（弹窗被拦截时的回退层）。
+ */
+export function closePrintPreview() {
+    const overlay = document.getElementById(FULLSCREEN_OVERLAY_ID);
+    if (overlay) {
+        overlay.remove();
+    }
+    if (escListener) {
+        document.removeEventListener('keydown', escListener);
+        escListener = null;
+    }
+}
+
+/**
+ * @param {object} msg
+ */
+export function printAssistantMessage(msg) {
+    if (!canExportAssistantMessage(msg)) {
+        if (typeof window.showToast === 'function') {
+            window.showToast('暂无可打印的 AI 回答', 'warning');
+        }
+        return;
+    }
+
+    const html = buildAssistantDocumentHtml(msg, { forPreview: false });
+    if (openPrintWindow(html)) {
+        return;
+    }
+
+    if (typeof window.showToast === 'function') {
+        window.showToast('弹窗被拦截，已改用全屏预览', 'warning');
+    }
+    openFullscreenPreview(msg, html);
+}
+
+/**
+ * @param {string} html
+ * @returns {boolean}
+ */
+function openPrintWindow(html) {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+        return false;
+    }
+
+    printWindow.document.open();
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.focus();
+
+    const triggerPrint = () => {
+        try {
+            printWindow.focus();
+            printWindow.print();
+        } catch (error) {
+            if (typeof window.showToast === 'function') {
+                window.showToast(error?.message || '打印失败', 'error');
+            }
+        }
+    };
+
+    if (printWindow.document.readyState === 'complete') {
+        window.setTimeout(triggerPrint, 200);
+    } else {
+        printWindow.addEventListener('load', () => {
+            window.setTimeout(triggerPrint, 100);
+        });
+    }
+
+    return true;
+}
+
+/**
+ * @param {object} msg
+ * @param {string} html
+ */
+function openFullscreenPreview(msg, html) {
+    closePrintPreview();
+
+    const overlay = document.createElement('div');
+    overlay.id = FULLSCREEN_OVERLAY_ID;
+    overlay.className = 'fixed inset-0 z-[120] flex flex-col bg-[#0a0a0a]';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-label', '打印预览');
+    overlay.innerHTML = `
+<div class="flex items-center justify-between gap-2 px-3 py-2 border-b border-[#222] bg-[#1e1e1e] shrink-0">
+  <span class="text-[10px] text-[#616161] truncate px-1">打印预览 · 报告${msg.report_id ? ` #${msg.report_id}` : ''}</span>
+  <div class="flex items-center gap-0.5 shrink-0">
+    <button type="button" data-llm-print-action="print"
+      class="${PANEL_ICON_BTN_CLASS}"
+      title="打印" aria-label="打印">${llmIconPrint()}</button>
+    <button type="button" data-llm-print-action="close"
+      class="${PANEL_ICON_BTN_CLASS}"
+      title="关闭" aria-label="关闭">${llmIconClose()}</button>
+  </div>
+</div>
+<iframe data-llm-print-frame
+  class="flex-1 w-full min-h-0 bg-white border-0"
+  title="AI 回答打印预览"
+  sandbox="allow-same-origin allow-modals"></iframe>`;
+
+    document.body.appendChild(overlay);
+
+    const frame = overlay.querySelector('[data-llm-print-frame]');
+    if (!(frame instanceof HTMLIFrameElement)) {
+        closePrintPreview();
+        return;
+    }
+
+    frame.srcdoc = html;
+
+    overlay.querySelector('[data-llm-print-action="print"]')?.addEventListener('click', () => {
+        try {
+            frame.contentWindow?.focus();
+            frame.contentWindow?.print();
+        } catch (error) {
+            if (typeof window.showToast === 'function') {
+                window.showToast(error?.message || '打印失败', 'error');
+            }
+        }
+    });
+
+    overlay.querySelector('[data-llm-print-action="close"]')?.addEventListener('click', () => {
+        closePrintPreview();
+    });
+
+    escListener = (event) => {
+        if (event.key === 'Escape') {
+            closePrintPreview();
+        }
+    };
+    document.addEventListener('keydown', escListener);
+}

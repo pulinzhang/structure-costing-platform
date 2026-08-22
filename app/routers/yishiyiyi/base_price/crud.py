@@ -253,6 +253,19 @@ def export_download(
     )
 
 
+@router.get("/template")
+def download_base_price_import_template(
+    current_user: UserVO = Depends(require_perm(Perm.BASE_PRICE_UPLOAD_VIEW)),
+) -> StreamingResponse:
+    """下载基准价格导入模板（含样例宽表与填写说明）。"""
+    content, filename = _steel_base_price_service.build_template()
+    return StreamingResponse(
+        iter([content]),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{quote(filename)}"},
+    )
+
+
 @router.post(
     "/import",
     response_model=ApiResponse[AsyncTaskAcceptedVO],

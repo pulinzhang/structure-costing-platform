@@ -1,6 +1,9 @@
 """BOM Excel 上传路由：导入时必须传 location。"""
 
+from urllib.parse import quote
+
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.common.permissions.codes import Perm
@@ -14,6 +17,21 @@ from app.utils.response import ApiResponse
 router = APIRouter(prefix="/api/bom", tags=["BOM API"])
 
 _upload_service = BomUploadService()
+
+
+@router.get("/template")
+def download_bom_import_template(
+    current_user: UserVO = Depends(require_perm(Perm.BOM_UPLOAD_VIEW)),
+) -> StreamingResponse:
+    """下载材料清单导入模板（含三级树样例与填写说明）。"""
+    content, filename = _upload_service.build_template()
+    return StreamingResponse(
+        iter([content]),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={
+            "Content-Disposition": f"attachment; filename*=UTF-8''{quote(filename)}"
+        },
+    )
 
 
 @router.post(

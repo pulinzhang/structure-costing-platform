@@ -4,8 +4,10 @@
 """
 
 import logging
+from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi.responses import StreamingResponse
 
 from app.common.audit import display_name
 from app.common.permissions.codes import Perm
@@ -31,6 +33,21 @@ router = APIRouter(prefix="/api/yishiyiyi/policy", tags=["钢价政策上传"])
 
 _policy_service = SteelPricePolicyService()
 _async_task_service = AsyncTaskService()
+
+
+@router.get("/template")
+def download_policy_import_template(
+    current_user: UserVO = Depends(require_perm(Perm.STEEL_PRICE_POLICY_UPLOAD_VIEW)),
+) -> StreamingResponse:
+    """下载加减价政策导入模板（含样例钢种与填写说明）。"""
+    content, filename = _policy_service.build_template()
+    return StreamingResponse(
+        iter([content]),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={
+            "Content-Disposition": f"attachment; filename*=UTF-8''{quote(filename)}"
+        },
+    )
 
 
 def _process_policy_upload_in_background(

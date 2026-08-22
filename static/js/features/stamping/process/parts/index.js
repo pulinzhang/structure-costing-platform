@@ -27,11 +27,54 @@ const PARTS_CONFIG = {
     STORAGE_KEY: 'parts_page_size',
 };
 
+function readHashFilters() {
+    const hash = window.location.hash || '';
+    const qIndex = hash.indexOf('?');
+    if (qIndex < 0) return null;
+    const params = new URLSearchParams(hash.slice(qIndex + 1));
+    const location = params.get('location') || '';
+    const stamping_supplier = params.get('stamping_supplier') || '';
+    const vehicle_model = params.get('vehicle_model') || '';
+    const version = params.get('version') || '';
+    const part_number = params.get('part_number') || '';
+    if (!location && !stamping_supplier && !vehicle_model && !version && !part_number) {
+        return null;
+    }
+    return { location, stamping_supplier, vehicle_model, version, part_number };
+}
+
+function setSelectValue(id, value) {
+    const select = document.getElementById(id);
+    if (!select || value == null || value === '') return;
+    const text = String(value);
+    if (![...select.options].some((opt) => opt.value === text)) {
+        select.insertAdjacentHTML(
+            'beforeend',
+            `<option value="${esc(text)}">${esc(text)}</option>`,
+        );
+    }
+    select.value = text;
+}
+
+function applyPendingFiltersToSelects() {
+    const pending = partsState.pendingFilters;
+    if (!pending) return;
+    setSelectValue('locationFilter', pending.location);
+    setSelectValue('supplierFilter', pending.stamping_supplier);
+    setSelectValue('vehicleModelFilter', pending.vehicle_model);
+    setSelectValue('versionFilter', pending.version);
+    const searchEl = document.getElementById('searchInput');
+    if (searchEl && pending.part_number) searchEl.value = pending.part_number;
+    partsState.pendingFilters = null;
+    updatePartsFilterCapsules();
+}
+
 const partsState = {
     currentPage: 1,
     pageSize: DEFAULT_PAGE_SIZE,
     isLoading: false,
     advancedOpen: false,
+    pendingFilters: null,
 };
 
 export const PartsPage = {
@@ -40,7 +83,12 @@ export const PartsPage = {
         this.bindEvents();
         this.bindDrawerEvents();
         this.applyPermissionUi();
-        this.loadCascadeFilters().then(() => this.loadParts(1));
+        partsState.pendingFilters = readHashFilters();
+        if (partsState.pendingFilters) this.setAdvancedOpen(true);
+        this.loadCascadeFilters().then(() => {
+            applyPendingFiltersToSelects();
+            this.loadParts(1);
+        });
     },
 
     applyPermissionUi() {

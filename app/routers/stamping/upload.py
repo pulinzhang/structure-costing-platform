@@ -6,6 +6,8 @@
 from dataclasses import asdict
 
 from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException
+from fastapi.responses import StreamingResponse
+from urllib.parse import quote
 
 from app.common.permissions.codes import Perm
 from app.utils.logging_config import get_logger
@@ -31,6 +33,21 @@ logger = get_logger("router.stamping.upload")
 router = APIRouter(prefix="/api/stamping/upload", tags=["冲压工艺上传 API"])
 
 _async_task_service = AsyncTaskService()
+
+
+@router.get("/template")
+def download_stamping_import_template(
+    current_user: UserVO = Depends(require_perm(Perm.STAMPING_UPLOAD_VIEW)),
+) -> StreamingResponse:
+    """下载冲压工艺导入模板（含样例零件与填写说明）。"""
+    content, filename = StampingUploadService.build_template()
+    return StreamingResponse(
+        iter([content]),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={
+            "Content-Disposition": f"attachment; filename*=UTF-8''{quote(filename)}"
+        },
+    )
 
 
 def _process_stamping_upload_in_background(

@@ -11,9 +11,17 @@ export function uploadTemplate() {
         <div class="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-3">
             <!-- ===== 左栏：表单卡片 ===== -->
             <div class="bg-[#1e1e1e] border border-[#2c2c2c]">
-                <div class="px-5 py-3 border-b border-[#222222] flex items-center gap-2.5">
-                    ${window.svgIcon('clipboard-list', 'w-3.5 h-3.5 text-[#616161]')}
-                    <h5 class="text-xs font-semibold text-[#9e9e9e] mb-0">上传车型冲压工艺文件</h5>
+                <div class="px-5 py-3 border-b border-[#222222] flex items-center justify-between gap-3">
+                    <div class="flex items-center gap-2.5">
+                        ${window.svgIcon('clipboard-list', 'w-3.5 h-3.5 text-[#616161]')}
+                        <h5 class="text-xs font-semibold text-[#9e9e9e] mb-0">上传车型冲压工艺文件</h5>
+                    </div>
+                    <button type="button"
+                            id="stampingUploadTemplateBtn"
+                            class="inline-flex items-center gap-1.5 bg-transparent text-[#888888] border border-[#2c2c2c] px-3 py-1.5 text-[11px] font-medium rounded-sm hover:border-[#d32f2f] hover:text-[#d32f2f] transition-all duration-150">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        下载模板
+                    </button>
                 </div>
                 <div class="p-5">
                     <form id="uploadForm" enctype="multipart/form-data">

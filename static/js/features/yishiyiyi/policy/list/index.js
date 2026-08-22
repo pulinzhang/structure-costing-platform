@@ -20,6 +20,7 @@ const policyDownloadState = {
     pageSize: DEFAULT_PREVIEW_PAGE_SIZE,
     totalPages: 1,
     filtersLoaded: false,
+    pendingFilters: null,
 };
 
 // API 基础路径
@@ -39,8 +40,58 @@ function init() {
         options: PREVIEW_PAGE_SIZE_OPTIONS,
         defaultSize: DEFAULT_PREVIEW_PAGE_SIZE,
     });
-    loadFilterOptions();
+    policyDownloadState.pendingFilters = readHashFilters();
+    loadFilterOptions().then(() => {
+        applyPendingFiltersToSelects();
+        updateConditionsDisplay();
+        if (policyDownloadState.pendingFilters) {
+            previewData(1);
+        }
+    });
     applyPermissionUi();
+}
+
+function readHashFilters() {
+    const hash = window.location.hash || '';
+    const qIndex = hash.indexOf('?');
+    if (qIndex < 0) return null;
+    const params = new URLSearchParams(hash.slice(qIndex + 1));
+    const year = params.get('year') || '';
+    const month = params.get('month') || '';
+    const category_name = params.get('category_name') || '';
+    const steel_mill = params.get('steel_mill') || '';
+    const grade_value = params.get('grade_value') || '';
+    if (!year && !month && !category_name && !steel_mill && !grade_value) return null;
+    return { year, month, category_name, steel_mill, grade_value };
+}
+
+function setSelectValue(id, value) {
+    const select = document.getElementById(id);
+    if (!select || value == null || value === '') return;
+    const text = String(value);
+    if (![...select.options].some((opt) => opt.value === text)) {
+        select.insertAdjacentHTML(
+            'beforeend',
+            `<option value="${esc(text)}">${esc(text)}</option>`,
+        );
+    }
+    select.value = text;
+}
+
+function applyPendingFiltersToSelects() {
+    const pending = policyDownloadState.pendingFilters;
+    if (!pending) return;
+    setSelectValue('policyDownloadYear', pending.year);
+    setSelectValue('policyDownloadMonth', pending.month);
+    setSelectValue('policyDownloadCategory', pending.category_name);
+    const gradeInput = document.getElementById('policyDownloadGrade');
+    if (gradeInput && pending.grade_value) {
+        gradeInput.value = pending.grade_value;
+    }
+    const millInput = document.getElementById('policyDownloadMill');
+    if (millInput && pending.steel_mill) {
+        millInput.value = pending.steel_mill;
+    }
 }
 
 function applyPermissionUi() {
@@ -208,12 +259,13 @@ function getFilterValue(id) {
 }
 
 function collectFilters() {
+    const pending = policyDownloadState.pendingFilters;
     return {
-        year: getFilterValue('policyDownloadYear'),
-        month: getFilterValue('policyDownloadMonth'),
-        category_name: getFilterValue('policyDownloadCategory'),
-        grade_value: document.getElementById('policyDownloadGrade')?.value.trim() || '',
-        steel_mill: getFilterValue('policyDownloadMill'),
+        year: getFilterValue('policyDownloadYear') || pending?.year || '',
+        month: getFilterValue('policyDownloadMonth') || pending?.month || '',
+        category_name: getFilterValue('policyDownloadCategory') || pending?.category_name || '',
+        grade_value: document.getElementById('policyDownloadGrade')?.value.trim() || pending?.grade_value || '',
+        steel_mill: getFilterValue('policyDownloadMill') || pending?.steel_mill || '',
     };
 }
 

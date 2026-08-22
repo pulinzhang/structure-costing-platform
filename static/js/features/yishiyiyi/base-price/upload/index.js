@@ -3,7 +3,7 @@
  * 基准价格上传 — 异步 task_id + 进度轮询
  */
 
-import { basePriceUploadTemplate } from './template.js?v=35';
+import { basePriceUploadTemplate } from './template.js?v=36';
 
 const POLL_INTERVAL_MS = 2000;
 
@@ -64,6 +64,9 @@ const BasePriceUploadPage = {
         const form = document.getElementById('basePriceUploadForm');
         const resetButton = document.getElementById('basePriceResetButton');
         const selectBtn = document.getElementById('basePriceSelectFileBtn');
+        const templateBtn = document.getElementById('basePriceUploadTemplateBtn');
+
+        templateBtn?.addEventListener('click', () => this.downloadTemplate());
 
         zone?.addEventListener('click', (event) => {
             if (this.canUpload === false || this.isUploading) return;
@@ -239,6 +242,7 @@ const BasePriceUploadPage = {
         const resetButton = document.getElementById('basePriceResetButton');
         const yearInput = document.getElementById('basePriceYear');
         const monthInput = document.getElementById('basePriceMonth');
+        const templateBtn = document.getElementById('basePriceUploadTemplateBtn');
 
         if (button) {
             button.disabled = isUploading || !this.selectedFile;
@@ -249,6 +253,28 @@ const BasePriceUploadPage = {
         if (resetButton) resetButton.disabled = isUploading;
         if (yearInput) yearInput.disabled = isUploading;
         if (monthInput) monthInput.disabled = isUploading;
+        if (templateBtn) templateBtn.disabled = isUploading;
+    },
+
+    async downloadTemplate() {
+        try {
+            const { blob, filename } = await HttpClient.download('/api/yishiyiyi/base-price/template', {
+                defaultFilename: '基准价格导入模板.xlsx',
+            });
+            const url = window.URL.createObjectURL(blob);
+            const anchor = document.createElement('a');
+            anchor.href = url;
+            anchor.download = filename;
+            document.body.appendChild(anchor);
+            anchor.click();
+            document.body.removeChild(anchor);
+            window.URL.revokeObjectURL(url);
+            showToast('模板已下载', 'success');
+        } catch (error) {
+            if (!error.status) {
+                showToast(error.message || '模板下载失败', 'error');
+            }
+        }
     },
 
     stopPolling() {

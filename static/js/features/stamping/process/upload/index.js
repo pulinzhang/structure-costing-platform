@@ -87,6 +87,9 @@ export const UploadPage = {
         const fileInput = document.getElementById('fileInput');
         const uploadForm = document.getElementById('uploadForm');
         const selectBtn = document.getElementById('stampingSelectFileBtn');
+        const templateBtn = document.getElementById('stampingUploadTemplateBtn');
+
+        templateBtn?.addEventListener('click', () => this.downloadTemplate());
 
         if (!uploadZone || !fileInput) return;
 
@@ -315,6 +318,7 @@ export const UploadPage = {
         const resetBtn = document.getElementById('stampingResetButton');
         const location = document.getElementById('location');
         const fileInput = document.getElementById('fileInput');
+        const templateBtn = document.getElementById('stampingUploadTemplateBtn');
 
         if (submitBtn) {
             const hasFile = fileInput?.files?.length > 0;
@@ -325,6 +329,28 @@ export const UploadPage = {
         }
         if (resetBtn) resetBtn.disabled = isUploading;
         if (location) location.disabled = isUploading;
+        if (templateBtn) templateBtn.disabled = isUploading;
+    },
+
+    async downloadTemplate() {
+        try {
+            const { blob, filename } = await HttpClient.download('/api/stamping/upload/template', {
+                defaultFilename: '冲压工艺导入模板.xlsx',
+            });
+            const url = window.URL.createObjectURL(blob);
+            const anchor = document.createElement('a');
+            anchor.href = url;
+            anchor.download = filename;
+            document.body.appendChild(anchor);
+            anchor.click();
+            document.body.removeChild(anchor);
+            window.URL.revokeObjectURL(url);
+            showToast('模板已下载', 'success');
+        } catch (error) {
+            if (!error.status) {
+                showToast(error.message || '模板下载失败', 'error');
+            }
+        }
     },
 
     stopPolling() {

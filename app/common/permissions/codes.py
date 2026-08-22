@@ -236,6 +236,10 @@ class Perm:
     COSTING_RUN = "op:costing:run"  # 启动运行
     COSTING_DELETE = "op:costing:delete"  # 删除 Run
 
+    MENU_LLM_ANALYSIS = "menu:llm-analysis"  # 采购智能分析
+    LLM_ANALYSIS_VIEW = "op:llm-analysis:view"  # 查看报告
+    LLM_ANALYSIS_RUN = "op:llm-analysis:run"  # 生成分析
+
     MENU_QUOTATION = "menu:quotation"  # 报价
     QUOTATION_VIEW = "op:quotation:view"  # 查看
 

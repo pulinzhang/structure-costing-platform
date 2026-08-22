@@ -16,6 +16,7 @@ from app.repositories.bom.bom_repository import BomNodeRepository, BomSnapshotRe
 from app.schemas.dto.bom_dto import BomNodeWrite, BomSnapshotWrite
 from app.schemas.vo.bom_vo import BomImportResultVO, BomSnapshotVO
 from app.schemas.vo.user_vo import UserVO
+from app.services.bom.bom_template_builder import build_bom_material_template
 
 logger = logging.getLogger("service.bom.upload")
 
@@ -29,6 +30,10 @@ class BomUploadService:
     def __init__(self) -> None:
         self.snapshot_repo = BomSnapshotRepository()
         self.node_repo = BomNodeRepository()
+
+    def build_template(self) -> tuple[bytes, str]:
+        """下载用材料清单导入模板（含三级树样例）。"""
+        return build_bom_material_template()
 
     def import_excel(
         self,

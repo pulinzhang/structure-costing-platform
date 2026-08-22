@@ -59,6 +59,13 @@ class Settings(BaseSettings):
     DEFAULT_PAGE_SIZE: int = 20
     MAX_PAGE_SIZE: int = 100
 
+    # LLM（OpenAI 兼容；仅 llm client 使用）
+    LLM_API_KEY: str = ""
+    LLM_MODEL: str = "deepseek-chat"
+    LLM_BASE_URL: str = "https://api.deepseek.com"
+    LLM_TIMEOUT_SECONDS: int = 90
+    LLM_IDEMPOTENCY_TTL_MINUTES: int = 5
+
     class Config:
         env_file = ".env"
         case_sensitive = True
