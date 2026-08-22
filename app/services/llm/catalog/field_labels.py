@@ -109,8 +109,8 @@ STEEL_PRICE_FIELD_LABELS: dict[str, str] = {
 # 聚合键（VO 没有，须在 Pack Schema 显式声明）
 AGGREGATE_FIELD_LABELS: dict[str, str] = {
     "l0_count": "L0 成品件数",
-    "ok_count": "核算完成件数（ok）",
-    "partial_count": "核算不全件数（partial）",
+    "ok_count": "核算完成件数",
+    "partial_count": "核算不全件数",
     "grand_total_sum": "总费用合计（元）",
     "total_amount_sum": "月总账合计（元）",
     "indirect_amount_sum": "间接费用合计（元）",

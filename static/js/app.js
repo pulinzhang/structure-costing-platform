@@ -22,10 +22,10 @@ import {
     canAccessPage,
     fallbackPageName,
 } from './permissions.js?v=9';
-import { bootLlmAssistant } from './llm-assistant/boot.js?v=2';
+import { bootLlmAssistant } from './llm-assistant/boot.js?v=9';
 import { pageConfig as dashboardPage }      from './features/dashboard/index.js?v=5';
 import { pageConfig as stampingUploadPage } from './features/stamping/process/upload/index.js?v=39';
-import { pageConfig as stampingPartsPage }  from './features/stamping/process/parts/index.js?v=28';
+import { pageConfig as stampingPartsPage }  from './features/stamping/process/parts/index.js?v=29';
 import { pageConfig as stampingTonnagePage } from './features/stamping/tonnage/list/index.js?v=19';
 import { pageConfig as stampingTonnageUploadPage } from './features/stamping/tonnage/upload/index.js?v=4';
 import { pageConfig as stampingProcessFeeCalcPage } from './features/stamping/process-fee/calc/index.js?v=25';
@@ -37,7 +37,7 @@ import { pageConfig as stampingPartCostPage } from './features/costing/stamping-
 import { pageConfig as l0AssemblyCostCalcPage } from './features/costing/l0-assembly-cost/calc/index.js?v=3';
 import { pageConfig as l0AssemblyCostPage } from './features/costing/l0-assembly-cost/list/index.js?v=8';
 import { pageConfig as steelPricePolicyUploadPage } from './features/yishiyiyi/policy/upload/index.js?v=37';
-import { pageConfig as steelPricePolicyDownloadPage } from './features/yishiyiyi/policy/list/index.js?v=30';
+import { pageConfig as steelPricePolicyDownloadPage } from './features/yishiyiyi/policy/list/index.js?v=31';
 import { pageConfig as basePriceUploadPage } from './features/yishiyiyi/base-price/upload/index.js?v=38';
 import { pageConfig as basePriceDownloadPage } from './features/yishiyiyi/base-price/list/index.js?v=30';
 import { pageConfig as winningThicknessDownloadPage } from './features/yishiyiyi/winning-thickness/list/index.js?v=7';

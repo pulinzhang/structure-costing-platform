@@ -28,3 +28,22 @@ export async function getTaskProgress(taskId) {
     const res = await HttpClient.get(`/api/llm/tasks/${encodeURIComponent(taskId)}`);
     return res.data;
 }
+
+/**
+ * @param {{
+ *   location?: string,
+ *   year?: number,
+ *   month?: number,
+ *   vehicle_model?: string,
+ *   bom_version?: string,
+ *   report_type?: string,
+ *   status?: string,
+ *   skip?: number,
+ *   limit?: number,
+ * }} [params]
+ * @returns {Promise<object>}
+ */
+export async function listReports(params = {}) {
+    const res = await HttpClient.get('/api/llm/reports', { params });
+    return res.data;
+}

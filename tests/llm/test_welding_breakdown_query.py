@@ -1,0 +1,58 @@
+# -*- coding: utf-8 -*-
+"""焊接工艺拆解问句解析与取数。"""
+
+from __future__ import annotations
+
+from unittest.mock import MagicMock
+
+import pytest
+
+from app.database import DatabaseConfig
+from app.services.llm.analysis.runner import AnalysisRunner
+from app.services.llm.query.query_parser import QueryParser
+
+
+def test_query_parser_welding_breakdown_subject() -> None:
+    parser = QueryParser()
+    db = MagicMock()
+    parser._aligner._scope_repo.list_locations = MagicMock(  # noqa: SLF001
+        return_value=["青岛"]
+    )
+    parser._aligner._scope_repo.list_vehicle_models = MagicMock(  # noqa: SLF001
+        return_value=["T28"]
+    )
+    parser._aligner._scope_repo.list_bom_versions = MagicMock(  # noqa: SLF001
+        return_value=["D/00"]
+    )
+    parser._extractor.extract = MagicMock(  # noqa: SLF001
+        return_value={
+            "time_range": {"start": "2025-01", "end": "2025-01"},
+            "filters": {"location": "青岛基地", "vehicle_model": "T28"},
+            "compare_locations": [],
+        }
+    )
+
+    query = parser.parse(
+        db,
+        user_question="青岛基地，T28，焊接工艺拆解的情况。",
+    )
+    assert query.subject == "welding_process_breakdown"
+    assert query.location() == "青岛"
+
+
+@pytest.mark.integration
+def test_welding_breakdown_qingdao_t28() -> None:
+    db = DatabaseConfig.get_session_factory()()
+    try:
+        query = QueryParser().parse(
+            db,
+            user_question="青岛基地，T28，焊接工艺拆解的情况。",
+        )
+        assert query.subject == "welding_process_breakdown"
+
+        run = AnalysisRunner().run(db, query)
+        assert run.has_data is True
+        assert run.summary is not None
+        assert run.summary["node_count"] > 0
+    finally:
+        db.close()

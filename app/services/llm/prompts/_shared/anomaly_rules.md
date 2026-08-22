@@ -22,9 +22,16 @@
 
 仍须保留专节，明确写类似：
 
-> 本次 Pack 显示 partial_count=0，缺价样本为空，未见核算不全或缺价风险。
+> 本次数据显示核算不全件数为 0，缺价样本为空，未见核算不全或缺价风险。
 
 禁止因为「想让报告好看」而删除风险信息。
+
+## 成品 vs 冲压域（part_existence）
+
+- JSON 中 `part_existence.primary_source = l0` 且 `domain_note` 有说明时：表示该件是**成品供货总成**，只在成品核价一览建账。
+- `stamping_cost.applicable = false` 或 `stamping_process.applicable = false`（或 `expected_absence = true`）表示**该数据源本就不适用**，不是缺数据、不是风险。
+- **禁止**把「成品在 L0 已找到，但冲压零件价格/冲压工艺未找到」写成异常、风险提示或「需要说明的是…」。
+- 只有 `applicable = true` 且 `found = false` 时，才可提示该库未命中。
 
 ## 禁止
 

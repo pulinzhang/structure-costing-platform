@@ -2,12 +2,11 @@
  * 常见问题胶囊
  */
 
-import { PROMPT_CATALOG, fillPromptTemplate } from '../prompts/catalog.js';
+import { PROMPT_CATALOG } from '../prompts/catalog.js';
 
 /**
  * @param {HTMLElement} root
  * @param {{
- *   scope: object,
  *   disabled?: boolean,
  *   onPick: (item: object, text: string) => void,
  * }} options
@@ -17,7 +16,9 @@ export function mountChips(root, options) {
     root.innerHTML = `
 <div class="flex gap-1.5 min-w-max pb-1">
   ${PROMPT_CATALOG.map((item) => {
-        const label = fillPromptTemplate(item.label, options.scope || {});
+        const label = item.needs_part_number
+            ? item.label.replace('{part_number}', '…')
+            : item.label;
         const short = shorten(label, 18);
         return `<button type="button"
           class="shrink-0 px-2 py-1 text-[10px] border border-[#2c2c2c] text-[#9e9e9e] hover:border-[#ff5252] hover:text-[#F5F5F5] transition-colors disabled:opacity-40 disabled:cursor-not-allowed rounded-sm"
@@ -32,8 +33,7 @@ export function mountChips(root, options) {
             const id = btn.getAttribute('data-prompt-id');
             const item = PROMPT_CATALOG.find((p) => p.id === id);
             if (!item) return;
-            const text = fillPromptTemplate(item.label, options.scope || {});
-            options.onPick(item, text);
+            options.onPick(item, item.label);
         });
     });
 }

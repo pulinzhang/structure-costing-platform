@@ -72,6 +72,8 @@ class LlmAnalysisReportVO(BaseModel):
     error_message: str | None = None
     metadata: LlmAnalysisReportMetadataVO
     attachments: dict[str, Any] | None = None
+    snapshot: dict[str, Any] | None = None
+    actions: list[dict[str, Any]] | None = None
 
     @classmethod
     def from_orm_row(
@@ -84,17 +86,36 @@ class LlmAnalysisReportVO(BaseModel):
     ) -> "LlmAnalysisReportVO":
         import json
 
-        context_pack_ids = pack_ids
+        context_pack_ids: list[str] = pack_ids or []
+        snapshot: dict[str, Any] | None = None
+        actions: list[dict[str, Any]] | None = None
         raw_ids = getattr(row, "context_pack_ids", None)
-        if context_pack_ids is None and raw_ids:
+        if raw_ids:
             try:
                 parsed = json.loads(raw_ids)
                 if isinstance(parsed, list):
                     context_pack_ids = [str(item) for item in parsed]
+                elif isinstance(parsed, dict):
+                    analyses = parsed.get("analyses") or []
+                    if isinstance(analyses, list):
+                        context_pack_ids = [str(item) for item in analyses]
+                    snap = parsed.get("snapshot")
+                    if isinstance(snap, dict):
+                        snapshot = snap
+                    act = parsed.get("actions")
+                    if isinstance(act, list):
+                        actions = [item for item in act if isinstance(item, dict)]
             except (TypeError, ValueError, json.JSONDecodeError):
                 context_pack_ids = []
-        if context_pack_ids is None:
-            context_pack_ids = []
+
+        from app.services.llm.prompts.labels import sanitize_report_markdown
+
+        raw_markdown = getattr(row, "markdown_content", None)
+        markdown_content = (
+            sanitize_report_markdown(str(raw_markdown))
+            if raw_markdown
+            else None
+        )
 
         return cls(
             report_id=int(getattr(row, "id")),
@@ -115,7 +136,7 @@ class LlmAnalysisReportVO(BaseModel):
                 stamping_supplier=getattr(row, "stamping_supplier", None),
             ),
             status=str(getattr(row, "status")),
-            markdown_content=getattr(row, "markdown_content", None),
+            markdown_content=markdown_content,
             error_message=getattr(row, "error_message", None),
             metadata=LlmAnalysisReportMetadataVO(
                 engine_run_id=getattr(row, "engine_run_id", None),
@@ -136,4 +157,13 @@ class LlmAnalysisReportVO(BaseModel):
                 user_question=str(getattr(row, "user_question")),
             ),
             attachments=attachments,
+            snapshot=snapshot,
+            actions=actions,
         )
+
+
+class LlmScopeOptionsVO(BaseModel):
+    locations: list[str] = Field(default_factory=list)
+    vehicle_models: list[str] = Field(default_factory=list)
+    bom_versions: list[str] = Field(default_factory=list)
+    years: list[int] = Field(default_factory=list)

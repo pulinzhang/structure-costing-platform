@@ -1,13 +1,5 @@
-"""Context Pack 组装（C12：只调上游 Service）。"""
+"""LLM 分析上下文组装。"""
 
-from app.services.llm.context.aggregator import (
-    AggregatedContext,
-    AnalysisScope,
-    LlmContextAggregator,
-)
+from app.services.llm.context.snapshot_builder import SnapshotBuilder
 
-__all__ = [
-    "AggregatedContext",
-    "AnalysisScope",
-    "LlmContextAggregator",
-]
+__all__ = ["SnapshotBuilder"]

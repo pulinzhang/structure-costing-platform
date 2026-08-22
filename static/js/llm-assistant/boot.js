@@ -4,7 +4,7 @@
 
 import { can } from '../permissions.js?v=9';
 import { getUserSession } from '../features/login/index.js?v=14';
-import { createShell } from './shell.js?v=2';
+import { createShell } from './shell.js?v=9';
 
 const QUEUE_KEY = '_q';
 
@@ -97,7 +97,6 @@ export function bootLlmAssistant() {
         close: (...args) => shell.close(...args),
         setMode: (...args) => shell.setMode(...args),
         getMode: () => shell.getMode(),
-        getScope: () => shell.getScope(),
     };
 
     queued.forEach(([method, args]) => {

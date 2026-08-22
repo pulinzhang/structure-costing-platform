@@ -56,6 +56,7 @@ class OpenAiCompatibleClient:
         user_prompt: str,
         temperature: float = 0.2,
         max_tokens: int = 2500,
+        response_format: dict[str, str] | None = None,
     ) -> LlmChatResult:
         if not self.api_key:
             raise LlmClientError("未配置 LLM_API_KEY")
@@ -63,7 +64,7 @@ class OpenAiCompatibleClient:
             raise LlmClientError("未配置 LLM_MODEL")
 
         url = f"{self.base_url}/chat/completions"
-        payload = {
+        payload: dict[str, Any] = {
             "model": self.model,
             "temperature": temperature,
             "max_tokens": max_tokens,
@@ -72,6 +73,8 @@ class OpenAiCompatibleClient:
                 {"role": "user", "content": user_prompt},
             ],
         }
+        if response_format is not None:
+            payload["response_format"] = response_format
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",

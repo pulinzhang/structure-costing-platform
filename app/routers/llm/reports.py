@@ -21,7 +21,7 @@ from app.schemas.vo.llm_analysis_vo import (
     LlmAnalysisReportVO,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.services.llm.analysis.report_service import LlmAnalysisReportService
+from app.services.llm.report_service import LlmAnalysisReportService
 from app.utils.response import ApiResponse
 
 router = APIRouter(prefix="/api/llm", tags=["采购智能分析"])
