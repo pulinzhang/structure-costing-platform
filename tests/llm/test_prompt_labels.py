@@ -20,4 +20,4 @@ def test_audience_label_zh() -> None:
 
 def test_sanitize_report_markdown_report_type() -> None:
     raw = "报告类型：summary ｜ 受众：buyer_lead"
-    assert sanitize_report_markdown(raw) == "报告类型：概览分析 ｜ 受众：采购主管"
+    assert sanitize_report_markdown(raw) == ""

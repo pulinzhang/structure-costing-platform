@@ -72,8 +72,6 @@ class LlmAnalysisReportVO(BaseModel):
     error_message: str | None = None
     metadata: LlmAnalysisReportMetadataVO
     attachments: dict[str, Any] | None = None
-    snapshot: dict[str, Any] | None = None
-    actions: list[dict[str, Any]] | None = None
 
     @classmethod
     def from_orm_row(
@@ -87,8 +85,6 @@ class LlmAnalysisReportVO(BaseModel):
         import json
 
         context_pack_ids: list[str] = pack_ids or []
-        snapshot: dict[str, Any] | None = None
-        actions: list[dict[str, Any]] | None = None
         raw_ids = getattr(row, "context_pack_ids", None)
         if raw_ids:
             try:
@@ -99,12 +95,6 @@ class LlmAnalysisReportVO(BaseModel):
                     analyses = parsed.get("analyses") or []
                     if isinstance(analyses, list):
                         context_pack_ids = [str(item) for item in analyses]
-                    snap = parsed.get("snapshot")
-                    if isinstance(snap, dict):
-                        snapshot = snap
-                    act = parsed.get("actions")
-                    if isinstance(act, list):
-                        actions = [item for item in act if isinstance(item, dict)]
             except (TypeError, ValueError, json.JSONDecodeError):
                 context_pack_ids = []
 
@@ -157,8 +147,6 @@ class LlmAnalysisReportVO(BaseModel):
                 user_question=str(getattr(row, "user_question")),
             ),
             attachments=attachments,
-            snapshot=snapshot,
-            actions=actions,
         )
 
 

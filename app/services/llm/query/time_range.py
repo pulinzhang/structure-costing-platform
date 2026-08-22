@@ -23,6 +23,10 @@ _CN_NUM = {
 }
 
 _RECENT_MONTHS_RE = re.compile(r"近\s*([一二三四五六七八九十\d]+)\s*个?月")
+_YEAR_FIRST_N_MONTHS_RE = re.compile(
+    r"(\d{4})\s*年\s*前\s*([一二三四五六七八九十\d]+)\s*个?月"
+)
+_YEAR_ONLY_RE = re.compile(r"(\d{4})\s*年(?!\s*\d{1,2}\s*月)")
 _RANGE_RE = re.compile(
     r"(\d{4})\s*年\s*(\d{1,2})\s*月\s*[到至\-~～]\s*(?:(\d{4})\s*年\s*)?(\d{1,2})\s*月"
 )
@@ -80,6 +84,23 @@ def normalize_time_range(
         if start > end:
             start, end = end, start
         return TimeRange(start=start, end=end)
+
+    year_first = _YEAR_FIRST_N_MONTHS_RE.search(text)
+    if year_first:
+        year = int(year_first.group(1))
+        count = min(12, max(1, _parse_cn_or_int(year_first.group(2))))
+        return TimeRange(
+            start=month_key(year, 1),
+            end=month_key(year, count),
+        )
+
+    year_only = _YEAR_ONLY_RE.search(text)
+    if year_only:
+        year = int(year_only.group(1))
+        return TimeRange(
+            start=month_key(year, 1),
+            end=month_key(year, 12),
+        )
 
     if _HALF_YEAR_RE.search(text):
         start_year, start_month = shift_month(default.year, default.month, -5)

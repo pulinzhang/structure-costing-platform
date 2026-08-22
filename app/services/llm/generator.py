@@ -17,7 +17,6 @@ from app.services.llm.prompts.labels import (
     sanitize_report_markdown,
 )
 from app.services.llm.prompts.registry import PromptRegistry
-from app.services.llm.query.comparison_basis import comparability_label_zh
 
 
 @dataclass(frozen=True, slots=True)
@@ -36,9 +35,9 @@ def _build_field_card() -> str:
   lines = [
       "【字段词典 — 仅供理解 JSON，写入报告时必须全部转为中文白话】",
       "【铁律】",
-      "1. 报告正文禁止出现英文字段名、代码术语；见 chinese_style_rules。",
-      "2. 数字必须来自 Snapshot；禁止重算、禁止改为万元。",
-      "3. 建议可执行，但不发明 Snapshot.actions 以外的系统跳转。",
+      "1. 问什么答什么；禁止套完整报告模板。",
+      "2. 报告正文禁止出现英文字段名、代码术语；见 chinese_style_rules。",
+      "3. 数字必须来自 Snapshot；禁止重算、禁止改为万元。",
       "",
       "常见字段中文释义：",
   ]
@@ -162,22 +161,24 @@ class LlmReportGenerator:
             return self._render_usage_help_fallback(snapshot=snapshot, error_hint=error_hint)
 
         summary = snapshot.summary or {}
+        question = snapshot.query.user_question
         lines = [
-            "# 采购分析（规则模板）",
+            f"## {question}",
             "",
-            f"> 用户问题：{snapshot.query.user_question}",
+            f"模型暂不可用（{error_hint}），以下为系统数据摘要：",
             "",
-            f"> 说明：模型暂不可用（{error_hint}），以下仅拼装系统关键指标。",
-            "",
-            "## 结论摘要",
-            f"- 数据状态：{snapshot.meta.data_message}",
-            f"- 可比口径：{comparability_label_zh(snapshot.meta.comparability)}（{snapshot.meta.comparison_basis_label}）",
-            f"- 供货总成件数：{summary.get('l0_count', '-')}",
-            f"- 总费用合计（元）：{summary.get('grand_total_sum', '-')}",
-            f"- 月总账合计（元）：{summary.get('total_amount_sum', '-')}",
-            "",
-            "## 异常与风险",
         ]
+        if snapshot.meta.has_data is False:
+            lines.append(snapshot.meta.data_message or "当前查询范围无可用数据。")
+        else:
+            if summary.get("grand_total_sum") is not None:
+                lines.append(f"- 总费用合计（元）：{summary.get('grand_total_sum')}")
+            if summary.get("total_amount_sum") is not None:
+                lines.append(f"- 月总账合计（元）：{summary.get('total_amount_sum')}")
+            if summary.get("l0_count") is not None:
+                lines.append(f"- 供货总成件数：{summary.get('l0_count')}")
+            if summary.get("ok_count") is not None:
+                lines.append(f"- 已全部算清：{summary.get('ok_count')}")
         risk = None
         if snapshot.result.get("kind") == "risk":
             risk = snapshot.result
@@ -185,11 +186,6 @@ class LlmReportGenerator:
             risk = (snapshot.result.get("parts") or {}).get("risk")
         if risk and int(risk.get("partial_count") or 0) > 0:
             lines.append(f"- 核算不全件数：{risk.get('partial_count')}")
-        else:
-            lines.append("- 本次未见核算不全或缺价样本。")
-        lines.extend(["", "## 下一步"])
-        for action in snapshot.actions[:5]:
-            lines.append(f"- {action.label} → `{action.target}`")
         return "\n".join(lines)
 
     def _render_usage_help_fallback(
@@ -210,10 +206,7 @@ class LlmReportGenerator:
         for chunk in chunks:
             if not isinstance(chunk, dict):
                 continue
-            lines.append(f"## {chunk.get('title', '帮助')}")
+            lines.append(f"### {chunk.get('title', '帮助')}")
             lines.append(str(chunk.get("excerpt") or "").strip())
             lines.append("")
-        lines.append("## 下一步")
-        for action in snapshot.actions[:5]:
-            lines.append(f"- {action.label} → `{action.target}`")
-        return "\n".join(lines)
+        return "\n".join(lines).strip()

@@ -2,7 +2,7 @@
 
  * 对话壳层状态机：closed | panel | maximized | docked
 
- * 请求仅传自然语言；Snapshot 数字 + LLM 解释 + 规则 Actions。
+ * 请求仅传自然语言；回复仅展示 Markdown 正文。
 
  */
 
@@ -15,7 +15,7 @@ import { mountChips, setChipsDisabled, setChipsVisible } from './chat/chips.js';
 import { mountComposer, setComposerBusy } from './chat/composer.js';
 
 import { humanizeUserFacingError } from './errors.js';
-import { renderThread } from './chat/thread.js?v=6';
+import { renderThread } from './chat/thread.js?v=8';
 
 import { printAssistantMessage, closePrintPreview } from './export/print.js?v=4';
 
@@ -24,8 +24,6 @@ import { downloadWordDocument } from './export/word.js?v=1';
 import { findPrompt, fillPromptTemplate } from './prompts/catalog.js';
 
 import { applyReportToMessage } from './report/apply-report.js';
-
-import { executeAction } from './report/actions.js?v=1';
 
 import { openHistoryPanel } from './report/history.js';
 
@@ -226,38 +224,6 @@ export function createShell(options) {
             return;
 
         }
-
-
-
-        const actionBtn = event.target.closest('[data-llm-action-id]');
-
-        if (!actionBtn || actionBtn.disabled) return;
-
-
-
-        const msgEl = actionBtn.closest('[data-msg-id]');
-
-        const msgId = msgEl?.getAttribute('data-msg-id');
-
-        const msg = messages.find((item) => item.id === msgId);
-
-        if (!msg || !Array.isArray(msg.actions)) return;
-
-
-
-        const actionId = actionBtn.getAttribute('data-llm-action-id');
-
-        const action = msg.actions.find((item) => item.action_id === actionId);
-
-        if (!action) return;
-
-
-
-        executeAction(action, {
-
-            onNavigate: () => setMode('docked'),
-
-        });
 
     });
 
@@ -490,12 +456,6 @@ export function createShell(options) {
             persist();
 
             updateChipsVisibility();
-
-            if (els.promptMeta) {
-
-                els.promptMeta.textContent = assistantMsg.prompt_version || '';
-
-            }
 
             setStatus(`已打开 #${reportId}`);
 
@@ -790,12 +750,6 @@ export function createShell(options) {
 
 
             applyReportToMessage(assistantMsg, report);
-
-            if (els.promptMeta) {
-
-                els.promptMeta.textContent = assistantMsg.prompt_version || '';
-
-            }
 
             setStatus(assistantMsg.from_cache ? '完成（缓存）' : '完成');
 
