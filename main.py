@@ -362,6 +362,7 @@ def create_app() -> FastAPI:
     from app.routers.settings.users.crud import router as user_crud_router
     from app.routers.settings.users.permissions import router as permissions_router
     from app.routers.settings.logs.crud import router as operation_log_router
+    from app.routers.llm.reports import router as llm_reports_router
 
     # include_router = 注册路由（鉴权由各端点 Depends(get_current_user) 声明）
     app.include_router(auth_router)
@@ -396,6 +397,7 @@ def create_app() -> FastAPI:
     app.include_router(user_crud_router)
     app.include_router(permissions_router)
     app.include_router(operation_log_router)
+    app.include_router(llm_reports_router)
 
     # ========== 全局异常处理器 ==========
     from app.exceptions.handlers import (

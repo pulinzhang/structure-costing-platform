@@ -985,6 +985,23 @@
       ]
     },
     {
+      "code": "menu:llm-analysis",
+      "label": "采购智能分析",
+      "type": "menu",
+      "children": [
+        {
+          "code": "op:llm-analysis:view",
+          "label": "查看报告",
+          "type": "op"
+        },
+        {
+          "code": "op:llm-analysis:run",
+          "label": "生成分析",
+          "type": "op"
+        }
+      ]
+    },
+    {
       "code": "menu:quotation",
       "label": "报价",
       "type": "menu",

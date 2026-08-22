@@ -1,0 +1,32 @@
+# Prompt 清单（llm 切片）
+# PromptRegistry 加载本文件；改文案须 bump version
+
+version: "v1.0.0"
+
+shared:
+  - _shared/currency_rules.md
+  - _shared/anomaly_rules.md
+
+audiences:
+  buyer:
+    system:
+      - system_buyer.md
+  buyer_lead:
+    system:
+      - system_buyer_lead.md
+  costing:
+    system:
+      - system_costing.md
+  sales_quote:
+    system:
+      - system_sales_quote.md
+  exec:
+    system:
+      - system_exec.md
+
+user_shell: user_report_shell.md
+
+defaults:
+  audience: buyer_lead
+  temperature: 0.2
+  max_tokens: 2500
