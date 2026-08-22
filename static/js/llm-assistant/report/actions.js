@@ -58,8 +58,8 @@ export function executeAction(action, options = {}) {
             window.showToast?.('跳转目标无效', 'warning');
             return;
         }
-        window.location.hash = target.startsWith('#') ? target.slice(1) : target;
-        if (typeof options.onNavigate === 'function') {
+        const stayedInSpa = navigateToTarget(target);
+        if (stayedInSpa && typeof options.onNavigate === 'function') {
             options.onNavigate();
         }
         return;
@@ -82,6 +82,22 @@ export function executeAction(action, options = {}) {
     }
 
     window.showToast?.('未知动作类型', 'warning');
+}
+
+/**
+ * @param {string} target
+ * @returns {boolean} 是否仍在 SPA 内跳转（用于决定是否收起助理面板）
+ */
+function navigateToTarget(target) {
+    if (/^https?:\/\//i.test(target) || target.startsWith('/')) {
+        const opened = window.open(target, '_blank', 'noopener,noreferrer');
+        if (!opened && typeof window.showToast === 'function') {
+            window.showToast('请允许弹窗后重试', 'warning');
+        }
+        return false;
+    }
+    window.location.hash = target.startsWith('#') ? target.slice(1) : target;
+    return true;
 }
 
 function esc(value) {
