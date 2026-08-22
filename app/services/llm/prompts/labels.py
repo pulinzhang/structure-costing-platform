@@ -37,8 +37,14 @@ def audience_label_zh(audience: str) -> str:
     return AUDIENCE_LABEL_ZH.get(text, text)
 
 
+_BOILERPLATE_LINE_RE = re.compile(
+    r"^\s*(?:[-*]\s*)?(?:报告类型|受众|目标受众|数据生成日期|生成日期)\s*[：:|｜]",
+    re.IGNORECASE,
+)
+
+
 def sanitize_report_markdown(content: str) -> str:
-    """兜底：修正报告元信息行里残留的英文类型/受众名。"""
+    """兜底：修正残留英文标签，并剔除不应展示的报告元信息行。"""
     result = content
     replacements = {**ANALYSIS_KIND_LABEL_ZH, **AUDIENCE_LABEL_ZH}
     for english, chinese in replacements.items():
@@ -62,4 +68,9 @@ def sanitize_report_markdown(content: str) -> str:
         )
     result = re.sub(r"\bdashboard\b", "分析", result, flags=re.IGNORECASE)
     result = re.sub(r"仪表盘", "分析", result)
-    return result
+    filtered_lines = [
+        line
+        for line in result.splitlines()
+        if not _BOILERPLATE_LINE_RE.match(line.strip())
+    ]
+    return "\n".join(filtered_lines).strip()

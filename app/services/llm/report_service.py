@@ -308,9 +308,6 @@ class LlmAnalysisReportService:
                 completion_tokens = None
                 total_tokens = None
 
-            snapshot_json = json.dumps(
-                snapshot.model_dump(mode="json"), ensure_ascii=False
-            )
             self.repository.mark_succeeded(
                 db,
                 report_id,
@@ -324,14 +321,7 @@ class LlmAnalysisReportService:
                     completion_tokens=completion_tokens,
                     total_tokens=total_tokens,
                     context_pack_ids=json.dumps(
-                        {
-                            "analyses": analysis_query.analyses,
-                            "actions": [
-                                action.model_dump(mode="json")
-                                for action in snapshot.actions
-                            ],
-                            "snapshot": json.loads(snapshot_json),
-                        },
+                        {"analyses": analysis_query.analyses},
                         ensure_ascii=False,
                     ),
                     has_data=1 if snapshot.meta.has_data else 0,

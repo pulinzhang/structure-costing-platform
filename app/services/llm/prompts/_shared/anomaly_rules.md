@@ -1,40 +1,55 @@
-# 异常与风险分析铁律（C11）— 必须无条件遵守
+# 异常与风险（C11）— 按需说明，禁止空章灌水
 
-## 何时必须出「异常与风险」专节
+## 何时写
 
-只要 Context JSON 中出现以下任一线索，报告必须有独立二级标题「异常与风险」（或同等含义），不得并进「一切正常」的叙述里：
+**仅当**满足以下任一条件时，才在回答中提及异常 / 风险 / 缺价 / 算不全：
 
+- 用户问题本身关心：缺价、算不全、风险、能不能当定稿底数、数据是否可靠等；
+- 或回答所依赖的核心数字因以下情况**可能不可信**，且不说清楚会误导用户：
+
+线索（JSON 中）：
 - `missingPriceRisk.partial_count` > 0，或 `sample` 非空
 - `monthOverview.partial_count` > 0
 - 明细行 `status` / `calc_status` 为 `partial` 或其他非 `ok`
 - `missing_leaf_count` > 0
-- `meta.hasData` = false
+- `meta.hasData` = false（且与用户问题相关）
 - 存在 `engine_gate_digest` / 门禁缺口类字段
-- `mom_comparison` 中后端已给出的异常涨跌标记（若有）
+- **基准价探查**：`base_price_anomalies.items`（`base_price_jump`）、基准价 `trend.anomaly_months`
+- **加减价探查**（口语常说「加减价」，不必写「政策」）：`policy_anomalies.items`（`policy_adjustment_jump`）、加减价 `trend.anomaly_months`
 
-## 专节应写什么
+## 何时写（比较 / 趋势类例外）
 
-1. **事实**：用 JSON 中的计数与零件号样本（最多列 Pack 已给的样本，勿编造零件号）。
-2. **影响**：说明哪些结论不可当「已定稿交付底数」（例如 partial 的 `grand_total` 可能不完整）。
-3. **动作**：可执行建议（催供应商报价、补年度价、去上传主数据、重跑引擎等）；有 `navigate` 则点名页面意图。
+用户问**比较、对比、变化、趋势、全年**时，须按 `comparison_advice_rules.md` 在「建议」**之前**写「风险提示」；无异常时一句带过即可。
 
-## 无异常时
+其余场景仍按上文「何时写」：仅在有异常线索或用户关心可靠性时提及，禁止空章灌水。
 
-仍须保留专节，明确写类似：
+## 怎么写
 
-> 本次数据显示核算不全件数为 0，缺价样本为空，未见核算不全或缺价风险。
-
-禁止因为「想让报告好看」而删除风险信息。
+- 融入相关段落，用 1～3 句说明事实与对结论的影响即可。
+- **比较 / 趋势类**可用二级标题「风险提示」（见 `comparison_advice_rules.md`）；其他场景禁止为凑格式单独开「异常与风险」空章。
+- 有样本则引用 JSON 已给零件号（勿编造）。
 
 ## 成品 vs 冲压域（part_existence）
 
-- JSON 中 `part_existence.primary_source = l0` 且 `domain_note` 有说明时：表示该件是**成品供货总成**，只在成品核价一览建账。
-- `stamping_cost.applicable = false` 或 `stamping_process.applicable = false`（或 `expected_absence = true`）表示**该数据源本就不适用**，不是缺数据、不是风险。
-- **禁止**把「成品在 L0 已找到，但冲压零件价格/冲压工艺未找到」写成异常、风险提示或「需要说明的是…」。
+- `part_existence.primary_source = l0`：成品供货总成，只在成品核价一览建账。
+- `stamping_cost.applicable = false` 等：**数据源不适用**，不是缺数据、不是风险。
+- **禁止**把「成品在 L0 已找到，但冲压库未命中」写成异常。
 - 只有 `applicable = true` 且 `found = false` 时，才可提示该库未命中。
+
+## 加减价 vs 基准价（口语对照）
+
+采购同事口头常说 **「加减价」**，不一定说「政策」；与 **「中标价」= 基准价** 一样，须先对齐口径再写异常：
+
+| 用户口语 | 实际数据 | 异常线索 JSON | 核对入口（正文可写） |
+|---------|---------|--------------|-------------------|
+| 加减价 / 厚度加减 / 宽度加价 | 加减价政策列表（`steel_price_policy`） | `policy_anomalies.items` | 加减价政策列表 |
+| 中标价 / 基准价 | 基准价格列表（`steel_base_price`） | `base_price_anomalies.items` | 基准价格列表 |
+
+- 用户问加减价有无异常、传错、跳变时：按 `comparison_advice_rules.md`「加减价探查类」出表；**正文沿用用户口语「加减价」**，不要刻意改成「加减价政策」除非需要指明菜单页。
+- 禁止把加减价异常写成基准价异常，或混用「中标厚度一览」。
 
 ## 禁止
 
 - 禁止把 `partial` 说成「已全部完成」。
-- 禁止在 JSON 无证据时编造「同步失败」「钢厂违约」等异常故事。
+- 禁止在 JSON 无证据时编造「同步失败」「钢厂违约」等故事。
 - 禁止用「加强管理」代替可执行动作。

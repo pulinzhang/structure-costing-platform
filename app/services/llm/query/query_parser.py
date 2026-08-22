@@ -20,6 +20,49 @@ from app.utils.logging_config import get_logger
 
 logger = get_logger("service.llm.query_parser")
 
+# 口语「中标价」= 基准价格列表（#/base-price-download），不是「中标厚度价格一览」
+_BASE_PRICE_TERMS: tuple[str, ...] = (
+    "基准价",
+    "基准价格",
+    "到厂价",
+    "原卷承兑",
+    "中标价",
+)
+_WINNING_THICKNESS_TERMS: tuple[str, ...] = (
+    "中标厚度价",
+    "中标厚度",
+    "中标钢厂厚度",
+    "厚度价格一览",
+    "厚度价格一览表",
+)
+# 口语常说「加减价」，少写「政策」；均指加减价政策列表
+_POLICY_TERMS: tuple[str, ...] = (
+    "加减价",
+    "加减价政策",
+    "厚度加减",
+    "厚度加减价",
+    "厚度政策",
+    "宽度加价",
+    "宽度加减",
+    "宽度政策",
+    "锌层加减",
+    "锌层加价",
+)
+
+
+def _is_policy_question(question: str) -> bool:
+    return any(term in question for term in _POLICY_TERMS)
+
+
+def _is_base_price_question(question: str) -> bool:
+    if any(term in question for term in _BASE_PRICE_TERMS):
+        return True
+    return False
+
+
+def _is_winning_thickness_question(question: str) -> bool:
+    return any(term in question for term in _WINNING_THICKNESS_TERMS)
+
 
 class QueryParser:
     def __init__(
@@ -192,22 +235,12 @@ class QueryParser:
         filters: dict[str, str],
     ) -> str:
         """按侧栏菜单语义定 subject（决定取数口径 + 主 Action 落点）。"""
-        if any(
-            word in question
-            for word in ("加减价", "厚度加减", "厚度政策", "宽度加价", "加减价政策")
-        ):
+        if _is_policy_question(question):
             return "steel_price_policy"
-        if any(
-            word in question
-            for word in (
-                "中标厚度价",
-                "中标厚度",
-                "中标钢厂厚度",
-                "厚度价格一览",
-                "厚度价格一览表",
-            )
-        ):
+        if _is_winning_thickness_question(question):
             return "winning_thickness"
+        if _is_base_price_question(question) and "厚度" not in question:
+            return "steel_base_price"
         if any(
             word in question
             for word in ("废料销售价", "废料价", "废料月度", "废料月价", "废钢价")
@@ -249,10 +282,7 @@ class QueryParser:
             return "bom_material"
         if any(word in question for word in ("产品结构", "结构图", "BOM结构")):
             return "bom_material"
-        if any(
-            word in question
-            for word in ("基准价", "基准价格", "到厂价", "原卷承兑", "中标价")
-        ):
+        if _is_base_price_question(question):
             return "steel_base_price"
         if any(word in question for word in ("联动价", "钢材联动")):
             return "steel_price"
@@ -508,7 +538,7 @@ class QueryParser:
             word in question for word in ("趋势", "变化", "涨", "跌", "环比", "同比")
         ):
             result.append("trend")
-        if any(word in question for word in ("谁贵", "驱动", "贡献", "构成", "拆", "报告", "一览")):
+        if any(word in question for word in ("谁贵", "驱动", "贡献", "构成", "拆")):
             result.append("drivers")
         if has_compare or any(
             word in question for word in ("对比", "比较", "哪个基地", "谁更")
@@ -516,6 +546,47 @@ class QueryParser:
             result.append("comparison")
         if any(word in question for word in ("缺价", "partial", "算不全", "跑不起来")):
             result.append("risk")
+        if any(
+            word in question
+            for word in (
+                "风险",
+                "异常",
+                "最大",
+                "突出",
+                "核对",
+                "有问题",
+                "什么问题",
+                "哪个零件",
+                "哪个月",
+                "波动",
+                "怪",
+                "传错",
+                "上传错",
+                "有无异常",
+            )
+        ):
+            if "risk" not in result:
+                result.append("risk")
+            if "drivers" not in result:
+                result.append("drivers")
+            if time_span > 1 and "trend" not in result:
+                result.append("trend")
+        if _is_base_price_question(question) and any(
+            word in question
+            for word in ("异常", "分析", "波动", "怪", "传错", "核对", "上下", "有无")
+        ):
+            if "trend" not in result:
+                result.append("trend")
+            if "drivers" not in result:
+                result.append("drivers")
+        if _is_policy_question(question) and any(
+            word in question
+            for word in ("异常", "分析", "波动", "怪", "传错", "核对", "上下", "有无")
+        ):
+            if "trend" not in result:
+                result.append("trend")
+            if "drivers" not in result:
+                result.append("drivers")
         if part_number or "零件号" in question:
             result.append("drilldown")
         if tonnage or any(word in question for word in ("冲次", "吨位")):
@@ -532,20 +603,17 @@ class QueryParser:
         ):
             if "drivers" not in result:
                 result.append("drivers")
-        if any(word in question for word in ("加减价", "厚度", "政策")) and any(
-            word in question for word in ("情况", "怎么样", "哪些", "报告")
-        ):
-            if "drivers" not in result:
-                result.append("drivers")
-        if any(word in question for word in ("基准价", "基准价格", "到厂价")) and any(
+        if _is_policy_question(question) and any(
             word in question for word in ("情况", "怎么样", "哪些", "报告", "多少")
         ):
             if "drivers" not in result:
                 result.append("drivers")
-        if any(
-            word in question
-            for word in ("中标厚度", "厚度价格一览", "厚度价格一览表")
-        ) and any(
+        if _is_base_price_question(question) and any(
+            word in question for word in ("情况", "怎么样", "哪些", "报告", "多少")
+        ):
+            if "drivers" not in result:
+                result.append("drivers")
+        if _is_winning_thickness_question(question) and any(
             word in question for word in ("情况", "怎么样", "哪些", "报告", "多少")
         ):
             if "drivers" not in result:

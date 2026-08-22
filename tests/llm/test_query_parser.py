@@ -517,3 +517,257 @@ def test_idempotency_fingerprint_stable() -> None:
         user_id=1,
     )
     assert "q:" in key
+
+
+def test_normalize_year_first_n_months() -> None:
+    tr = normalize_time_range(
+        user_question="2025年前6个月核算里最大的风险是什么",
+        default=DefaultScopeMonth(2026, 8),
+    )
+    assert tr.start == "2025-01"
+    assert tr.end == "2025-06"
+
+
+def test_build_l0_mom_anomalies_ranks_jump() -> None:
+    from decimal import Decimal
+
+    from app.repositories.llm.cost_analysis_repository import L0PartPeriodRow
+    from app.services.llm.analysis.cost_driver import build_l0_mom_anomalies
+
+    rows = [
+        L0PartPeriodRow(
+            year=2025,
+            month=1,
+            part_number="P001",
+            part_name="件A",
+            grand_total=Decimal("100"),
+            total_amount=Decimal("90"),
+            calc_status="ok",
+            missing_leaf_count=0,
+            calc_message=None,
+            stamping_amount=Decimal("50"),
+            purchased_amount=Decimal("20"),
+            bundle_amount=Decimal("0"),
+            welding_amount=Decimal("10"),
+            welding_other_fee=Decimal("0"),
+            indirect_amount=Decimal("10"),
+            bom_version="V1",
+        ),
+        L0PartPeriodRow(
+            year=2025,
+            month=2,
+            part_number="P001",
+            part_name="件A",
+            grand_total=Decimal("200"),
+            total_amount=Decimal("180"),
+            calc_status="ok",
+            missing_leaf_count=0,
+            calc_message=None,
+            stamping_amount=Decimal("100"),
+            purchased_amount=Decimal("40"),
+            bundle_amount=Decimal("0"),
+            welding_amount=Decimal("20"),
+            welding_other_fee=Decimal("0"),
+            indirect_amount=Decimal("20"),
+            bom_version="V1",
+        ),
+    ]
+    result = build_l0_mom_anomalies(rows, top_n=5)
+    assert result["kind"] == "mom_anomalies"
+    assert len(result["items"]) == 1
+    top = result["items"][0]
+    assert top["part_number"] == "P001"
+    assert top["month"] == "2025-02"
+    assert top["change"] == "100.0000"
+
+
+def test_query_parser_max_risk_question() -> None:
+    parser = QueryParser()
+    db = MagicMock()
+    _mock_aligner(parser)
+    parser._extractor.extract = MagicMock(  # noqa: SLF001
+        return_value={
+            "time_range": {"start": "2025-01", "end": "2025-06"},
+            "filters": {"location": "青岛"},
+            "compare_locations": [],
+        }
+    )
+    query = parser.parse(
+        db,
+        user_question="2025年前6个月，核算里最大的风险是什么？",
+    )
+    assert query.time_range.start == "2025-01"
+    assert query.time_range.end == "2025-06"
+    assert "risk" in query.analyses
+    assert "drivers" in query.analyses
+    assert "trend" in query.analyses
+
+
+def test_normalize_year_only_base_price() -> None:
+    tr = normalize_time_range(
+        user_question="2025年基准价有无异常",
+        default=DefaultScopeMonth(2026, 8),
+    )
+    assert tr.start == "2025-01"
+    assert tr.end == "2025-12"
+
+
+def test_build_base_price_mom_anomalies() -> None:
+    from decimal import Decimal
+
+    from app.repositories.llm.base_price_analysis_repository import BasePricePeriodRow
+    from app.services.llm.analysis.base_price_summary import build_base_price_mom_anomalies
+
+    rows = [
+        BasePricePeriodRow(
+            year=2025,
+            month=1,
+            location="青岛基地",
+            steel_mill="宝钢",
+            category_name="冷轧",
+            grade="DC04",
+            spec="1.0",
+            base_price=Decimal("4000"),
+            processing_fee=Decimal("100"),
+        ),
+        BasePricePeriodRow(
+            year=2025,
+            month=2,
+            location="青岛基地",
+            steel_mill="宝钢",
+            category_name="冷轧",
+            grade="DC04",
+            spec="1.0",
+            base_price=Decimal("5000"),
+            processing_fee=Decimal("100"),
+        ),
+    ]
+    result = build_base_price_mom_anomalies(rows, top_n=5)
+    assert result["kind"] == "base_price_anomalies"
+    assert len(result["items"]) == 1
+    item = result["items"][0]
+    assert item["month"] == "2025-02"
+    assert item["steel_mill"] == "宝钢"
+    assert item["change"] == "1000.0000"
+
+
+def test_query_parser_base_price_anomaly() -> None:
+    parser = QueryParser()
+    db = MagicMock()
+    _mock_aligner(parser)
+    parser._extractor.extract = MagicMock(  # noqa: SLF001
+        return_value={
+            "time_range": {"start": "2025-01", "end": "2025-12"},
+            "filters": {"location": "青岛"},
+            "compare_locations": [],
+        }
+    )
+    query = parser.parse(
+        db,
+        user_question="2025年基准价分析一下，有没有传错的？",
+    )
+    assert query.subject == "steel_base_price"
+    assert query.time_range.start == "2025-01"
+    assert query.time_range.end == "2025-12"
+    assert "trend" in query.analyses
+    assert "drivers" in query.analyses
+
+
+def test_query_parser_zhongbiao_price_alias() -> None:
+    parser = QueryParser()
+    db = MagicMock()
+    _mock_aligner(parser)
+    parser._extractor.extract = MagicMock(  # noqa: SLF001
+        return_value={
+            "time_range": {"start": "2025-01", "end": "2025-12"},
+            "filters": {"location": "青岛"},
+            "compare_locations": [],
+        }
+    )
+    query = parser.parse(
+        db,
+        user_question="2025年中标价有没有异常，是不是传错了？",
+    )
+    assert query.subject == "steel_base_price"
+    assert query.time_range.start == "2025-01"
+    assert query.time_range.end == "2025-12"
+    assert "trend" in query.analyses
+
+
+def test_winning_thickness_not_confused_with_zhongbiao_price() -> None:
+    parser = QueryParser()
+    assert parser._resolve_subject(  # noqa: SLF001
+        question="中标厚度价格一览表怎么样",
+        analyses=["summary"],
+        filters={},
+    ) == "winning_thickness"
+    assert parser._resolve_subject(
+        question="2025年中标价波动大吗",
+        analyses=["summary"],
+        filters={},
+    ) == "steel_base_price"
+
+
+def test_build_policy_mom_anomalies() -> None:
+    from decimal import Decimal
+
+    from app.repositories.llm.policy_analysis_repository import PolicyLadderRow
+    from app.services.llm.analysis.policy_summary import build_policy_mom_anomalies
+
+    rows = [
+        PolicyLadderRow(
+            policy_id=1,
+            year=2025,
+            month=1,
+            steel_mill="宝钢",
+            category_name="冷轧",
+            policy_type="THICKNESS",
+            grade_value="DC04",
+            base_thickness=Decimal("1.0"),
+            price_adjustment=50,
+            thick_min=Decimal("0.8"),
+            thick_max=Decimal("1.2"),
+            is_base=0,
+        ),
+        PolicyLadderRow(
+            policy_id=2,
+            year=2025,
+            month=2,
+            steel_mill="宝钢",
+            category_name="冷轧",
+            policy_type="THICKNESS",
+            grade_value="DC04",
+            base_thickness=Decimal("1.0"),
+            price_adjustment=200,
+            thick_min=Decimal("0.8"),
+            thick_max=Decimal("1.2"),
+            is_base=0,
+        ),
+    ]
+    result = build_policy_mom_anomalies(rows, top_n=5)
+    assert result["kind"] == "policy_anomalies"
+    assert len(result["items"]) == 1
+    item = result["items"][0]
+    assert item["month"] == "2025-02"
+    assert item["change"] == 150
+
+
+def test_query_parser_policy_colloquial_anomaly() -> None:
+    parser = QueryParser()
+    db = MagicMock()
+    parser._extractor.extract = MagicMock(  # noqa: SLF001
+        return_value={
+            "time_range": {"start": "2025-01", "end": "2025-12"},
+            "filters": {},
+            "compare_locations": [],
+        }
+    )
+    query = parser.parse(
+        db,
+        user_question="2025年加减价有没有异常，是不是传错了？",
+    )
+    assert query.subject == "steel_price_policy"
+    assert query.time_range.start == "2025-01"
+    assert query.time_range.end == "2025-12"
+    assert "trend" in query.analyses
+    assert "drivers" in query.analyses

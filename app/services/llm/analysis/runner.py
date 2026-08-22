@@ -56,6 +56,7 @@ from app.services.llm.analysis.anomaly import build_risks, build_stamping_risks
 from app.services.llm.analysis.comparison import build_location_comparison
 from app.services.llm.analysis.cost_driver import (
     build_l0_drivers,
+    build_l0_mom_anomalies,
     build_stamping_drivers,
 )
 from app.services.llm.analysis.cost_trend import (
@@ -66,7 +67,9 @@ from app.services.llm.analysis.cost_trend import (
 from app.services.llm.analysis.drilldown import build_drilldown
 from app.services.llm.analysis.base_price_summary import (
     build_base_price_drivers,
+    build_base_price_mom_anomalies,
     build_base_price_summary,
+    build_base_price_trend,
 )
 from app.services.llm.analysis.process_fee_summary import (
     build_process_fee_drilldown,
@@ -80,7 +83,9 @@ from app.services.llm.analysis.part_lookup import (
 )
 from app.services.llm.analysis.policy_summary import (
     build_policy_drivers,
+    build_policy_mom_anomalies,
     build_policy_summary,
+    build_policy_trend,
 )
 from app.services.llm.analysis.scrap_price_summary import (
     build_scrap_price_drivers,
@@ -448,6 +453,12 @@ class AnalysisRunner:
             out.summary = build_policy_summary(rows)
         if "drivers" in query.analyses:
             parts_result["drivers"] = build_policy_drivers(rows)
+        if "trend" in query.analyses and rows:
+            parts_result["trend"] = build_policy_trend(
+                rows, basis=query.comparison_basis
+            )
+        if rows and query.time_range.month_span() > 1:
+            parts_result["policy_anomalies"] = build_policy_mom_anomalies(rows)
         out.result = _compose_result(parts_result, default_kind="summary")
         out.evidence["policy_ladder_rows"] = [
             {
@@ -492,6 +503,12 @@ class AnalysisRunner:
             out.summary = build_base_price_summary(rows)
         if "drivers" in query.analyses:
             parts_result["drivers"] = build_base_price_drivers(rows)
+        if "trend" in query.analyses and rows:
+            parts_result["trend"] = build_base_price_trend(
+                rows, basis=query.comparison_basis
+            )
+        if rows and query.time_range.month_span() > 1:
+            parts_result["base_price_anomalies"] = build_base_price_mom_anomalies(rows)
         out.result = _compose_result(parts_result, default_kind="summary")
         out.evidence["base_price_rows"] = [
             {
@@ -1122,7 +1139,8 @@ class AnalysisRunner:
         )
 
         need_parts = any(
-            kind in query.analyses for kind in ("drivers", "risk", "drilldown")
+            kind in query.analyses
+            for kind in ("drivers", "risk", "drilldown", "trend")
         )
         part_rows = []
         if need_parts:
@@ -1161,6 +1179,11 @@ class AnalysisRunner:
 
         if "risk" in query.analyses:
             parts_result["risk"] = build_risks(part_rows)
+
+        if part_rows and any(
+            kind in query.analyses for kind in ("risk", "drivers", "trend")
+        ):
+            parts_result["mom_anomalies"] = build_l0_mom_anomalies(part_rows)
 
         if "drilldown" in query.analyses:
             part_number = query.part_number() or ""
