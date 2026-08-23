@@ -48,9 +48,8 @@ export function shellHtml() {
   </div>
   <div id="llmChips" class="px-3 pt-2 pb-1 border-t border-[#1a1a1a] bg-[#121212] shrink-0 overflow-x-auto"></div>
   <div id="llmComposer" class="px-3 py-2 border-t border-[#222] bg-[#1e1e1e] shrink-0"></div>
-  <footer class="px-3 py-1.5 border-t border-[#1a1a1a] bg-[#0c0c0c] flex items-center justify-between gap-2 shrink-0">
+  <footer class="px-3 py-1.5 border-t border-[#1a1a1a] bg-[#0c0c0c] flex items-center shrink-0">
     <button type="button" id="llmBtnClearChat" class="text-[10px] text-[#616161] hover:text-[#9e9e9e]">清空本机对话</button>
-    <span id="llmPromptMeta" class="text-[10px] font-mono text-[#3a3a3a] truncate"></span>
   </footer>
 </section>
 `.trim();

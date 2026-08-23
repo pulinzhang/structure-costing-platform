@@ -30,51 +30,6 @@ class PartDataProfile:
     domain_note: str | None = None
 
 
-_PART_LOOKUP_MENU_KEYS: tuple[str, ...] = (
-    "l0",
-    "stamping_part",
-    "stamping_process",
-)
-
-
-def resolve_part_lookup_menu_keys(
-    *,
-    cross_check: bool,
-    l0_row_count: int,
-    stamping_cost_row_count: int,
-    stamping_process_row_count: int,
-) -> tuple[str, ...]:
-    """跨库「存在吗」保留三入口；核价详情只链到有数据的域。"""
-    if cross_check:
-        return _PART_LOOKUP_MENU_KEYS
-    if (
-        l0_row_count > 0
-        and stamping_cost_row_count == 0
-        and stamping_process_row_count == 0
-    ):
-        return ("l0",)
-    if (
-        stamping_cost_row_count > 0
-        and l0_row_count == 0
-        and stamping_process_row_count == 0
-    ):
-        return ("stamping_part",)
-    if (
-        stamping_process_row_count > 0
-        and l0_row_count == 0
-        and stamping_cost_row_count == 0
-    ):
-        return ("stamping_process",)
-    keys: list[str] = []
-    if l0_row_count > 0:
-        keys.append("l0")
-    if stamping_cost_row_count > 0:
-        keys.append("stamping_part")
-    if stamping_process_row_count > 0:
-        keys.append("stamping_process")
-    return tuple(keys) if keys else ("l0",)
-
-
 def resolve_part_data_profile(
     *,
     l0_rows: list[L0PartPeriodRow],

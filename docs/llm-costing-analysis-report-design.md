@@ -25,8 +25,7 @@
 > **Repository 负责把时间范围内的事实查出来（可含 SQL 层查询聚合）。**  
 > **Analysis 负责把事实变成趋势、比较、动因和异常（业务分析逻辑）。**  
 > **Snapshot 只保存「本次分析」的确定性结果。**  
-> **LLM 不计算数字，而是理解这些结果、解释原因、形成业务判断。**  
-> **Actions 把判断接到实际工作（导航或工作流），由规则生成，不经 LLM 发明。**
+> **LLM 不计算数字，而是理解这些结果、解释原因、形成业务判断。**
 
 ```text
                     用户问题
@@ -56,11 +55,7 @@
               ┌────────┴────────┐
               ▼                 ▼
              UI                 LLM
-        数字/图表/证据       解释/判断/语言
-              │                 │
-              └────────┬────────┘
-                       ▼
-                    Actions
+        数字/图表/证据       解释/判断（Markdown）
 ```
 
 | 约定 | 说明 |
@@ -88,7 +83,7 @@
 | 跨维查明细交 LLM 自己比 | 数字对比不稳，随基地×月膨胀 |
 | 只谈时间、不谈口径 | 制造业「涨了 8%」可能是 BOM/工艺变了，不是价格趋势 |
 | 聊天历史只存浏览器 | 企业需要可重开的分析记录 |
-| 输出停在 Markdown | 缺可执行 Actions 闭环 |
+| 输出停在 Markdown、缺 Snapshot 证据 | 采购看不到数字与口径，无法核对 LLM 判断 |
 
 **工程底线：** 不改核价公式、金额单位「元」、异常必显、异步任务、浮动壳、权限与审计。
 
@@ -113,7 +108,7 @@ AnalysisQuery
    ↓
 Snapshot（只含本次用到的结果）
    ↓
-UI 数字 + LLM 解释 + Actions
+UI 数字 + LLM 解释（Markdown）
 ```
 
 | 用户问法（示例） | 系统内部组合（示例） |
@@ -142,7 +137,7 @@ UI 数字 + LLM 解释 + Actions
 ① Query 解析 → AnalysisQuery（filters + time_range + comparison_basis + analyses）
 ② Repository（查）→ 事实行 / SQL 查询聚合行
 ③ Analysis（算）→ trend / driver / compare / risk / drilldown 确定性结果
-④ Snapshot（本次结果）→ UI + LLM 解释 → Actions
+④ Snapshot（本次结果）→ UI + LLM 解释
 ```
 
 | 层 | 职责 | 不做 |
@@ -150,9 +145,9 @@ UI 数字 + LLM 解释 + Actions
 | **Query** | 结构化「查什么范围、以什么口径、做什么分析」 | 不算金额；不调模型做完备意图（P0） |
 | **Repository** | **查**出时间范围内的事实；可做 **DB 查询聚合** | **不做**业务分析逻辑（见 §5） |
 | **Analysis** | **算**趋势/对比/动因/异常/排序/贡献 | 不调 LLM；不改单价公式；不直接堆原始明细给 Prompt |
-| **Snapshot + LLM** | 保存本次确定性结果；LLM **解释与业务判断** | LLM 不发明数字；不发明 Actions |
+| **Snapshot + LLM** | 保存本次确定性结果；LLM **解释与业务判断**（Markdown） | LLM 不发明数字；聊天区不生成跳转按钮 |
 
-> **Repository 负责查，Analysis 负责算，Snapshot 保存本次结果，LLM 负责解释与判断，Actions 接到工作。**
+> **Repository 负责查，Analysis 负责算，Snapshot 保存本次结果，LLM 负责解释与判断。**
 
 依赖：`llm` 独立下游；可 import 上游结果表 Model；不经上游 Service→VO 取分析主数据；不被 `costing` 反向依赖。
 
@@ -278,7 +273,7 @@ P0 至少实现：`same_part` + `same_bom_version` 开关与文案；材料/工�
 | 谁 | 干什么 |
 |----|--------|
 | **LLM** | 口语 → 干净 JSON：`time_range` + `filters`（+ `compare_locations`） |
-| **Python** | 词典对齐、定 `analyses[]` / `subject`、环比/TopN、组 Snapshot、规则 Actions |
+| **Python** | 词典对齐、定 `analyses[]` / `subject`、环比/TopN、组 Snapshot |
 | **SQL/Repo** | `WHERE` / `GROUP BY` / `SUM` 精确取数 |
 
 ```text
@@ -320,7 +315,7 @@ POST body：仅 user_question
 
 | 规则 | 说明 |
 |------|------|
-| LLM 只做抽取 | 不得输出金额、结论、`analyses`、Actions |
+| LLM 只做抽取 | 不得输出金额、结论、`analyses` |
 | `response_format=json_object` + `temperature=0` | API 级约束 + 确定性 |
 | 未提时间 | `time_range` 默认 = 当前年月（start=end） |
 | 入口无 scope | 条件一律从 `user_question` 抽出 |
@@ -460,7 +455,7 @@ def query_l0_monthly_totals(
 **业务解释与判断**示例（LLM，须基于 Snapshot 证据）：
 
 - 「本次上涨主要受钢材价格变化影响」（需 Snapshot 中有钢材动因证据）  
-- 「该零件值得优先与供应商重新议价」（建议口吻；同时对应 Actions，不替代人工拍板）  
+- 「该零件值得优先与供应商重新议价」（建议口吻；不替代人工拍板）  
 
 ### 6.1 场景
 
@@ -497,8 +492,7 @@ def query_l0_monthly_totals(
   "evidence": {
     "series": [ ],
     "samples": [ ]
-  },
-  "actions": [ ]
+  }
 }
 ```
 
@@ -509,7 +503,6 @@ def query_l0_monthly_totals(
 | `summary` | 可选；仅当 `analyses` 含 summary 或需要一句话 KPI 时出现 |
 | `result` | **按分析类型分化**：`kind` = trend \| drivers \| comparison \| risk \| drilldown \| composite |
 | `evidence` | 支撑 result 的少量序列/样本（已裁剪），供 UI 表与 LLM 引用 |
-| `actions` | 规则生成（§8） |
 
 `result.kind = "composite"` 时：
 
@@ -537,97 +530,24 @@ UI：**数字/表/图以 Snapshot 为准**；Markdown 是解释与判断。
 
 ---
 
-## 8. Actions：可扩展 + NAVIGATE 深链带参
+## 8. 列表页落点（`menu_catalog.py`，仅服务端路由/测试）
 
-原则不变：**Actions 由规则引擎生成，不经 LLM 发明。**
+助理**问什么答什么**：聊天区只展示 Markdown 正文，**不生成跳转按钮或深链 Action**。
 
-不要把 Action 理解成「只有裸路径 + 权限码」。抽象为：
+`menu_catalog.py` 保留 `subject → hash_page` 映射，用于：
 
-| `type` | 含义 | P0 |
-|--------|------|----|
-| `NAVIGATE` | 跳转现网页面（View Action），**必须支持带查询参数的 Deep Link** | 必须支持 |
-| `WORKFLOW` | 触发业务工作流（跟催、重核价、生成议价任务等） | 可先占位枚举，P1 接真流程 |
-| `REUSE_EXPLANATION` | 复用本轮 LLM 议价要点等到剪贴板/侧栏 | 可选 |
-
-### 8.1 NAVIGATE Deep Link（从分析到闭环）
-
-> 采购点击 Action 后，应**直接落到带筛选条件的现网业务页**，而不是只打开空白列表再手工重选 scope。  
-> 主落点与侧栏「核价」子菜单一览页对齐（`menu_catalog.py`）：
+- Query Parser / 菜单问句回归测试（`tests/llm/test_menu_questions.py`）
+- 侧栏覆盖审计（`MENU_COVERAGE`）
 
 | `subject` | 用户说法示例 | 落点 |
 |-----------|--------------|------|
 | `l0` / `cost_total` | 成品成本、采购成本、供货总成 | `#/l0-assembly-cost` |
 | `stamping_part` | 冲压件、冲压零件成本 | `#/stamping-part-cost` |
 | `steel_price` | 钢材、钢价、联动价 | `#/steel-price-list` |
-| `steel_price_policy` | 加减价、厚度加减价、宽度加价 | `#/steel-price-policy-download` |
-| `steel_base_price` | 基准价、基准价格、到厂价 | `#/base-price-download` |
-| `part` | 单件零件号（默认成品；含「冲压」→ 冲压一览） | 见上 |
+| `steel_price_policy` | 加减价、厚度加减价 | `#/steel-price-policy-download` |
+| `steel_base_price` | 基准价、中标价 | `#/base-price-download` |
 
-**待接（`MENU_COVERAGE` status=pending）**：`#/winning-thickness-download`（中标厚度价）、`#/scrap-price`（废料销售价）、`#/costing`（引擎编排页）。
-
-```json
-{
-  "action_id": "drilldown_part_501006875AA",
-  "type": "NAVIGATE",
-  "label": "查看 501006875AA 详细核价单",
-  "target": "#/costing-detail?part_number=501006875AA&start=2026-01&end=2026-08&location=%E9%9D%92%E5%B2%9B",
-  "permission": "op:costing:view",
-  "params": {
-    "part_number": "501006875AA",
-    "start": "2026-01",
-    "end": "2026-08",
-    "location": "青岛"
-  }
-}
-```
-
-| 约定 | 说明 |
-|------|------|
-| `target` | Hash 路由 + **query string**；参数来自本次 Query/Snapshot（时间范围、基地、零件号等），URL 编码 |
-| `params` | 可选结构化副本，便于前端 `LlmAssistant` / 业务页解析，避免只靠拆 URL |
-| 参数白名单 | 只允许现网页已支持的筛选键（`part_number`、`location`、`start`/`end` 或 `year`/`month`、`vehicle_model`、`bom_version`…）；禁止塞入 Prompt 私货 |
-| 与分析对齐 | Deep Link 的时间/基地须与本次 `time_range` / `filters` 一致，避免点进去对不上证据 |
-| 权限 | 仍校验 `permission`；无权限则不渲染该 Action |
-
-钢材 / 缺价等同理：
-
-```json
-{
-  "action_id": "open_steel_prices_scoped",
-  "type": "NAVIGATE",
-  "label": "查看本区间钢材联动价",
-  "target": "#/steel-price-list?location=%E9%9D%92%E5%B2%9B&start=2026-01&end=2026-08",
-  "permission": "op:steel-price:view",
-  "params": {
-    "location": "青岛",
-    "start": "2026-01",
-    "end": "2026-08"
-  }
-}
-```
-
-业务页约定：列表/明细页启动时读取 Hash query（或 `params` 经壳层传入），**预填筛选并拉数**；与助理 `open({ scope })` 预填同源。
-
-### 8.2 WORKFLOW（演进）
-
-```json
-{
-  "action_id": "missing_price_followup",
-  "type": "WORKFLOW",
-  "label": "创建缺价跟进",
-  "target": "missing_price_followup",
-  "permission": "op:missing-price:follow",
-  "params": {
-      "location": "青岛",
-    "part_numbers": ["501006875AA"]
-  }
-}
-```
-
-常见 View Action：查看核价明细（深链）、材料价、供应商、历史报价、缺价清单。  
-常见 Workflow Action：创建缺价跟进、申请重新核价、生成议价要点任务。
-
-LLM 可在叙述中**建议**「建议优先议价」，但 **Actions 列表仍只来自规则**（依据 Snapshot.risks/drivers/result 生成深链参数）。
+帮助类问题走 `usage_help` 模式，语料来自 `static/helper/*.html`，不经 `menu_catalog` 深链。
 
 ---
 
@@ -636,16 +556,15 @@ LLM 可在叙述中**建议**「建议优先议价」，但 **Actions 列表仍�
 
 | 存哪 | 存什么 |
 |------|--------|
-| 服务端分析记录 | Query、Snapshot、explanation、actions、审计字段 |
+| 服务端分析记录 | Query、Snapshot、explanation（Markdown）、审计字段 |
 | localStorage | 仅 UI 与 `analysis_id` 引用 |
 
 | Method | Path | 说明 |
 |--------|------|------|
 | `POST` | `/api/llm/reports` | body：**仅** `user_question`（+ 可选 `audience` / `force_refresh` / `idempotency_key`） |
 | `GET` | `/api/llm/tasks/{task_id}` | 轮询 |
-| `GET` | `/api/llm/reports/{id}` | Snapshot + explanation + actions |
+| `GET` | `/api/llm/reports/{id}` | Markdown 正文 + 元数据 |
 | `GET` | `/api/llm/reports` | 历史 |
-| `GET` | `/api/llm/meta/scope-options` | Repository DISTINCT（词典对齐用，非前端必填表单） |
 
 **对外请求不传 scope / analyses[]；analyses 由条件抽取后在服务端组合。** 不以 `mode=overview|analyze|drilldown` 作为产品概念。
 
@@ -681,8 +600,8 @@ app/services/llm/
     snapshot_builder.py   # 只组装「本次」Snapshot
     field_labels.py
   generator.py
-  action_builder.py       # NAVIGATE / WORKFLOW 规则
   report_service.py
+  usage/                  # 帮助语料检索（usage_help 模式）
 
 app/repositories/llm/
   cost_analysis_repository.py     # WHERE/GROUP BY/SUM 等查询聚合
@@ -691,7 +610,7 @@ app/repositories/llm/
   scope_options_repository.py
   report_repository.py
 
-app/schemas/llm/          # AnalysisQuery / Snapshot / Action
+app/schemas/llm/          # AnalysisQuery / Snapshot
 app/routers/llm/
 static/js/llm-assistant/
 ```
@@ -702,7 +621,7 @@ static/js/llm-assistant/
 | 业务分析（trend/driver/…） | `services/llm/analysis/*` |
 | 组装本次 Snapshot | `context/snapshot_builder.py` |
 | 问题 → AnalysisQuery | `query/query_parser.py`（+ 词典对齐） |
-| Snapshot 形状 | `query` / `meta` / `summary?` / `result` / `evidence` / `actions` |
+| Snapshot 形状 | `query` / `meta` / `summary?` / `result` / `evidence`；按需填充 |
 | 产品入口 | `analyses[]` 由解析/胶囊组合；非用户报表菜单 |
 
 ---
@@ -721,7 +640,7 @@ static/js/llm-assistant/
 | R9 | Snapshot 只含本次结果；禁止万能大杂烩空块 |
 | R10 | 分析类型由系统组合；禁止把 Overview/Analyze/Drilldown 当用户主菜单 |
 | R11 | 确定性结论归 Analysis；业务解释与判断归 LLM |
-| R12 | Actions 规则生成；类型可扩展（NAVIGATE / WORKFLOW…）；LLM 不发明 Action；**NAVIGATE 必须支持带参 Deep Link**（时间/基地/零件等与本次 Query 对齐） |
+| R12 | **问什么答什么**：聊天区仅 Markdown；不返回 Action 按钮；帮助走 `usage_help` + helper 语料 |
 | R13 | Query Parser：规则优先；可选 Lightweight LLM **仅 Structured Output 抽取**；抽出实体须经 Schema 词典对齐；禁止 Parser 内算金额或臆造主数据 |
 | R14 | 服务端落分析记录；localStorage 仅 UI |
 | R15 | 壳层浮动助理；异常/缺价/口径漂移必显 |
@@ -735,8 +654,8 @@ static/js/llm-assistant/
 
 | 阶段 | 交付 |
 |------|------|
-| **P0** | Query Parser（规则优先 + 可选 Structured Output + 词典对齐）+ Repository 区间查询聚合 + Analysis（summary/trend/drivers/risk）+ 瘦 Snapshot + **Actions(NAVIGATE 深链带参)** + 落库 + 壳层；comparison_basis 最小集；无 LLM 降级卡 |
-| **P1** | comparison；drilldown 组合；WORKFLOW Action 占位/首条；口径校验增强；历史列表 |
+| **P0** | Query Parser + Repository 区间查询 + Analysis + 瘦 Snapshot + 落库 + 壳层；`usage_help` 帮助模式；comparison_basis 最小集 |
+| **P1** | comparison；drilldown 组合；口径校验增强；历史列表 |
 | **P2** | 材料/工艺/公式版本对齐；导出；审计增强 |
 
 ---
@@ -751,7 +670,7 @@ static/js/llm-assistant/
 | 贵在哪 | drivers 含 rate，数字出 Analysis | 模型估算涨幅 |
 | 跨基地 | comparison 出 Analysis | 明细堆 Prompt 让模型比 |
 | 单号组合 | drilldown+trend 同次 Snapshot，无多余空块 | 塞满无关 gate/parts |
-| Actions | 仅规则列表；NAVIGATE **深链带参**可直达筛选页 | LLM 发明跳转 / 打开空白列表需重选条件 |
+| 帮助 | usage_help 命中 helper 语料，步骤可操作 | 编造菜单路径或操作 |
 | Parser | 「青岛厂」对齐为 `青岛`；未知实体进 unresolved | Parser 臆造基地或直接算涨幅 |
 | 审计 | 按 analysis_id 重开 | 清缓存无法找回 |
 
@@ -765,10 +684,10 @@ static/js/llm-assistant/
 | Repository vs Analysis | SQL 查询聚合在 Repo；MoM/贡献度/TopN/异常在 Analysis |
 | Query | Scope（filters+time+basis）+ Intent（analyses[]）；不做过早 OLAP 字段森林 |
 | 可比口径 | `comparison_basis` 一等公民；趋势必标 tight/loose |
-| Snapshot | query/meta/summary/result/evidence/actions；按需填充 |
+| Snapshot | query/meta/summary/result/evidence；按需填充 |
 | 三 mode | 非用户菜单；系统组合 analyses |
 | LLM | 不算数；可做业务解释与判断（有证据） |
-| Actions | 规则生成；NAVIGATE **深链带参** / WORKFLOW 可扩展 |
+| 帮助 | `usage_help` + `static/helper` 语料；不查核价库 |
 | Query Parser | 规则优先 + 可选 Structured Output 抽取 + 词典对齐；非重型 NLU |
 | 取数 | **`llm` Repository 直读**结果表；按条件/时间范围查询；遵守权限与口径 |
 ---
@@ -777,7 +696,9 @@ static/js/llm-assistant/
 
 | 日期 | 说明 |
 |------|------|
-| 2026-08-22 | 初稿：分析查询系统 + LLM 解释层；四层边界；时间范围与可比口径；Query Parser；NAVIGATE 深链 |
+| 2026-08-23 | 同步 §0.1 / §2 / §3 等 Actions 过时表述；§0.1 流程图即分层主图 |
+| 2026-08-23 | 移除 ActionBuilder / 聊天区深链；Snapshot 无 actions；新增 usage_help 与成品核价卡住 FAQ |
+| 2026-08-22 | 初稿：分析查询系统 + LLM 解释层；四层边界；时间范围与可比口径；Query Parser |
 
 ---
 

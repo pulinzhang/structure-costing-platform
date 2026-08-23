@@ -15,11 +15,11 @@ import { mountChips, setChipsDisabled, setChipsVisible } from './chat/chips.js';
 import { mountComposer, setComposerBusy } from './chat/composer.js';
 
 import { humanizeUserFacingError } from './errors.js';
-import { renderThread } from './chat/thread.js?v=8';
+import { renderThread } from './chat/thread.js?v=9';
 
-import { printAssistantMessage, closePrintPreview } from './export/print.js?v=4';
+import { printAssistantMessage, closePrintPreview } from './export/print.js?v=5';
 
-import { downloadWordDocument } from './export/word.js?v=1';
+import { downloadWordDocument } from './export/word.js?v=2';
 
 import { findPrompt, fillPromptTemplate } from './prompts/catalog.js';
 
@@ -41,7 +41,7 @@ import {
 
 import { pollTask } from './task/poller.js';
 
-import { entryButtonHtml, shellHtml } from './template.js?v=4';
+import { entryButtonHtml, shellHtml } from './template.js?v=5';
 
 
 
@@ -119,8 +119,6 @@ export function createShell(options) {
 
         composer: root.querySelector('#llmComposer'),
 
-        promptMeta: root.querySelector('#llmPromptMeta'),
-
         entryBtn: entryHost?.querySelector('#llmAssistantEntryBtn'),
 
     };
@@ -184,8 +182,6 @@ export function createShell(options) {
         renderThread(els.thread, messages);
 
         setStatus('已清空本机对话');
-
-        if (els.promptMeta) els.promptMeta.textContent = '';
 
         updateChipsVisibility();
 

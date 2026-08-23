@@ -17,8 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from app.services.llm.action_builder import ActionBuilder  # noqa: E402
-from app.services.llm.analysis.runner import AnalysisRunResult  # noqa: E402
+from app.services.llm.menu_catalog import SUBJECT_MENU  # noqa: E402
 from app.services.llm.query.query_parser import QueryParser  # noqa: E402
 from tests.llm.menu_question_matrix import MENU_QUESTION_CASES  # noqa: E402
 
@@ -52,15 +51,12 @@ def main() -> int:
         question = case.user_question
 
         if case.status == "complete":
-            action = ActionBuilder().build(query=query, run=AnalysisRunResult())[0]
-            ok = (
-                query.subject == case.expected_subject
-                and action.action_id == case.expected_action_id
-            )
+            menu = SUBJECT_MENU.get(case.expected_subject or "")
+            ok = query.subject == case.expected_subject and menu.hash_page == case.hash_page
             if not ok:
                 failed += 1
                 status = "FAIL"
-            route = f" → {query.subject} / {action.target}"
+            route = f" → {query.subject} / #{case.hash_page}"
         else:
             route = " → (待接 subject)"
 

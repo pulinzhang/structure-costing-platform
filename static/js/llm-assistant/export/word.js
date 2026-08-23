@@ -2,7 +2,7 @@
  * AI 回答导出 Word（HTML 封装 .doc，Word / WPS 可直接打开）
  */
 
-import { buildAssistantDocumentHtml, buildExportFilename, canExportAssistantMessage } from './document.js';
+import { buildAssistantDocumentHtml, buildExportFilename, canExportAssistantMessage } from './document.js?v=2';
 
 /**
  * @param {object} msg
@@ -15,7 +15,7 @@ export function downloadWordDocument(msg) {
         return;
     }
 
-    const html = buildAssistantDocumentHtml(msg, { forPreview: false });
+    const html = buildAssistantDocumentHtml(msg);
     const blob = new Blob(['\ufeff', html], { type: 'application/msword;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement('a');

@@ -26,6 +26,7 @@ _ANALYSIS_DATA_SIGNALS: tuple[str, ...] = (
     "情况如何",
     "报告",
     "一览",
+    "的情况",
     "存在吗",
     "有没有这个",
     "在不在",
@@ -38,6 +39,8 @@ _USAGE_HOW_SIGNALS: tuple[str, ...] = (
     "如何操作",
     "怎么点",
     "怎样",
+    "怎么办",
+    "如何",
     "在哪",
     "哪里",
     "哪儿",
@@ -82,6 +85,23 @@ _STUCK_SIGNALS: tuple[str, ...] = (
     "删除任务",
 )
 
+_CALC_STUCK_SIGNALS: tuple[str, ...] = (
+    "成品核价",
+    "成品价",
+    "成品成本",
+    "l0核价",
+)
+
+_CALC_STUCK_STATE_SIGNALS: tuple[str, ...] = (
+    "卡住",
+    "卡了",
+    "计算中",
+    "一直算",
+    "重复提交",
+    "释放锁",
+    "计算历史",
+)
+
 _PERMISSION_SIGNALS: tuple[str, ...] = (
     "看不到",
     "没有菜单",
@@ -95,6 +115,7 @@ _HELP_TOPIC_RULES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("export", ("导出", "合册", "excel", "Excel", "核对合册")),
     ("faq_permission", _PERMISSION_SIGNALS),
     ("faq_stuck", _STUCK_SIGNALS),
+    ("faq_calc_stuck", _CALC_STUCK_SIGNALS + _CALC_STUCK_STATE_SIGNALS),
     ("upload", ("上传", "导入", "怎么传")),
     ("bom_material", ("材料清单", "bom清单", "BOM清单", "清单在哪", "清单主线")),
     ("monthly", ("每月", "月度", "当月", "一个月要做")),
@@ -135,6 +156,9 @@ def detect_help_topic(question: str) -> str:
     if not text:
         return "start"
 
+    if has_calc_stuck(question):
+        return "faq_calc_stuck"
+
     best_id = "start"
     best_score = 0
     permission_bonus = 50 if has_permission_only(question) else 0
@@ -157,7 +181,15 @@ def detect_help_topic(question: str) -> str:
 
 
 def has_stuck_only(text: str) -> bool:
+    if has_calc_stuck(text):
+        return False
     return any(signal in text for signal in _STUCK_SIGNALS)
+
+
+def has_calc_stuck(text: str) -> bool:
+    has_calc = any(signal in text for signal in _CALC_STUCK_SIGNALS)
+    has_state = any(signal in text for signal in _CALC_STUCK_STATE_SIGNALS)
+    return has_calc and has_state
 
 
 def has_permission_only(text: str) -> bool:

@@ -22,13 +22,12 @@ class CorpusChunk:
     source_page: str
     anchor: str
     keywords: tuple[str, ...]
-    menu_hash: str | None = None
 
     @property
     def help_url(self) -> str:
         return f"/helper/{self.source_page}#{self.anchor}"
 
-    def to_dict(self) -> dict[str, str | list[str] | None]:
+    def to_dict(self) -> dict[str, str | list[str]]:
         return {
             "chunk_id": self.chunk_id,
             "title": self.title,
@@ -36,7 +35,6 @@ class CorpusChunk:
             "source_page": self.source_page,
             "anchor": self.anchor,
             "help_url": self.help_url,
-            "menu_hash": self.menu_hash,
             "keywords": list(self.keywords),
         }
 
@@ -90,30 +88,58 @@ def _faq_chunks(faq_text: str) -> list[CorpusChunk]:
                     "焊接工程",
                     "侧栏",
                 ),
-                menu_hash="settings-users",
             )
         )
     if "引擎一直运行中" in faq_text:
         chunks.append(
             CorpusChunk(
                 chunk_id="faq_stuck",
-                title="引擎任务卡住怎么办",
+                title="自动核价引擎任务卡住怎么办",
                 text=(
-                    "引擎一直显示运行中：本机异常关机可能导致任务卡住。"
-                    "在自动核价引擎的运行历史中删除该任务后重新启动。"
+                    "自动核价引擎一直显示运行中：本机异常关机可能导致任务卡住。"
+                    "打开「核价 → 自动核价引擎」，在运行历史中删除该任务后重新启动。"
+                    "删除用于清理中断任务，不会撤销已写入的钢材价、零件价或成品价。"
                 ),
                 source_page="help.html",
                 anchor="faq",
                 keywords=(
                     "运行中",
                     "一直运行",
-                    "卡住",
+                    "引擎",
+                    "自动核价",
+                    "运行历史",
                     "删任务",
                     "删除任务",
-                    "启动",
-                    "引擎",
                 ),
-                menu_hash="costing",
+            )
+        )
+    if "成品核价计算卡住" in faq_text:
+        chunks.append(
+            CorpusChunk(
+                chunk_id="faq_calc_stuck",
+                title="成品核价计算卡住怎么办",
+                text=(
+                    "成品核价计算时若一直显示计算中、无法再次提交：通常是上一次异常中断"
+                    "（关机、关浏览器），系统仍认为该范围正在计算。"
+                    "打开「核价 → 成品核价计算」，在页面下方计算历史中找到状态为「计算中」的记录，"
+                    "点删除释放锁，再重新开始计算。"
+                    "仅删除日志与计算锁，不会撤销已写入成品核价一览的数据。"
+                ),
+                source_page="help.html",
+                anchor="faq",
+                keywords=(
+                    "成品核价",
+                    "成品价",
+                    "成品成本",
+                    "计算中",
+                    "卡住",
+                    "卡了",
+                    "计算历史",
+                    "删除",
+                    "释放锁",
+                    "重复提交",
+                    "开始计算",
+                ),
             )
         )
     if chunks:
@@ -144,7 +170,6 @@ def _extra_faq_chunks() -> list[CorpusChunk]:
             source_page="help.html",
             anchor="menu",
             keywords=("上传", "导入", "怎么传", "工艺文件", "材料清单"),
-            menu_hash="stamping-upload",
         ),
         CorpusChunk(
             chunk_id="bom_material",
@@ -164,7 +189,6 @@ def _extra_faq_chunks() -> list[CorpusChunk]:
                 "清单主线",
                 "产品结构",
             ),
-            menu_hash="bom-material",
         ),
         CorpusChunk(
             chunk_id="list_usage",
@@ -195,7 +219,6 @@ def load_corpus_chunks() -> tuple[CorpusChunk, ...]:
             source_page="help.html",
             anchor="start",
             keywords=("入门", "登录", "第一次", "快速入门", "会话", "侧栏", "导航"),
-            menu_hash="dashboard",
         ),
         CorpusChunk(
             chunk_id="menu",
@@ -229,7 +252,6 @@ def load_corpus_chunks() -> tuple[CorpusChunk, ...]:
                 "运行",
                 "怎么跑",
             ),
-            menu_hash="costing",
         ),
         CorpusChunk(
             chunk_id="export",
@@ -238,7 +260,6 @@ def load_corpus_chunks() -> tuple[CorpusChunk, ...]:
             source_page="help.html",
             anchor="export",
             keywords=("导出", "合册", "excel", "Excel", "核对合册", "导出 Excel"),
-            menu_hash="l0-assembly-cost",
         ),
         CorpusChunk(
             chunk_id="monthly",
@@ -247,7 +268,6 @@ def load_corpus_chunks() -> tuple[CorpusChunk, ...]:
             source_page="knowledge.html",
             anchor="month",
             keywords=("每月", "月度", "当月", "一个月要做", "维护", "哪些数据"),
-            menu_hash="costing",
         ),
     ]
 

@@ -14,6 +14,7 @@ export function applyReportToMessage(msg, report) {
     msg.task_id = report?.task_id ?? msg.task_id;
     msg.from_cache = Boolean(report?.metadata?.from_cache);
     msg.generated_at = report?.metadata?.generated_at || null;
+    msg.prompt_version = report?.metadata?.prompt_version || null;
     msg.resolved_report_type = report?.resolved_report_type || null;
     msg.scope = report?.scope || null;
     msg.user_question = report?.user_question || null;

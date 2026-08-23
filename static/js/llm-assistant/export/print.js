@@ -2,7 +2,7 @@
  * AI 回答打印：新标签页全屏文档 + 系统打印对话框；弹窗被拦时回退全屏遮罩。
  */
 
-import { buildAssistantDocumentHtml, canExportAssistantMessage } from './document.js?v=1';
+import { buildAssistantDocumentHtml, canExportAssistantMessage } from './document.js?v=2';
 import { llmIconClose, llmIconPrint, PANEL_ICON_BTN_CLASS } from '../icons.js';
 
 const FULLSCREEN_OVERLAY_ID = 'llmPrintFullscreenOverlay';
@@ -35,7 +35,7 @@ export function printAssistantMessage(msg) {
         return;
     }
 
-    const html = buildAssistantDocumentHtml(msg, { forPreview: false });
+    const html = buildAssistantDocumentHtml(msg);
     if (openPrintWindow(html)) {
         return;
     }

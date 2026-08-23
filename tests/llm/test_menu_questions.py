@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""按侧栏菜单逐条构造标准问句，校验 subject / Action 深链。"""
+"""按侧栏菜单逐条构造标准问句，校验 subject 与列表筛选参数。"""
 
 from __future__ import annotations
 
@@ -7,8 +7,6 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from app.services.llm.action_builder import ActionBuilder
-from app.services.llm.analysis.runner import AnalysisRunResult
 from app.services.llm.menu_catalog import SUBJECT_MENU, build_list_params
 from app.services.llm.query.query_parser import QueryParser
 from tests.llm.menu_question_matrix import (
@@ -42,9 +40,8 @@ def _parse(case) -> tuple:
     db = MagicMock()
     _mock_parser(parser)
     query = parser.parse(db, user_question=case.user_question)
-    action = ActionBuilder().build(query=query, run=AnalysisRunResult())[0]
     params = build_list_params(query)
-    return query, action, params
+    return query, params
 
 
 @pytest.mark.parametrize(
@@ -53,16 +50,13 @@ def _parse(case) -> tuple:
     ids=[item.menu_label for item in complete_cases()],
 )
 def test_complete_menu_question_routes_correctly(case) -> None:
-    query, action, _params = _parse(case)
+    query, _params = _parse(case)
 
     assert query.time_range.start == "2025-01"
     assert query.time_range.end == "2025-01"
     assert query.location() == "青岛"
     assert query.subject == case.expected_subject
     assert "summary" in query.analyses
-
-    assert action.action_id == case.expected_action_id
-    assert action.target.startswith(f"#/{case.hash_page}?")
 
     menu = SUBJECT_MENU[case.expected_subject]
     if case.expected_subject == "bom_material" and case.hash_page in (
@@ -120,7 +114,7 @@ def test_complete_menu_question_routes_correctly(case) -> None:
     ],
 )
 def test_complete_menu_question_list_params(case, expected_params) -> None:
-    query, _, params = _parse(case)
+    query, params = _parse(case)
     for key, value in expected_params.items():
         if key == "policy_type":
             assert query.filters.get("policy_type") == value

@@ -5,7 +5,6 @@ from __future__ import annotations
 import pytest
 
 from app.schemas.llm.analysis_query import AnalysisQuery, TimeRange
-from app.services.llm.action_builder import ActionBuilder
 from app.services.llm.query.intent_router import detect_help_topic, detect_query_mode
 from app.services.llm.usage.manifest import retrieve_chunks
 from app.services.llm.usage.runner import UsageHelpRunner
@@ -19,6 +18,7 @@ from app.services.llm.usage.corpus import load_corpus_chunks
         ("看不到焊接工程菜单", "usage_help"),
         ("每月要维护哪些数据？", "usage_help"),
         ("怎么导出核对合册？", "usage_help"),
+        ("我在进行成品核价计算时卡住了，怎么办？", "usage_help"),
         ("青岛 1 月成品价多少？", "analysis"),
         ("501006875AA 多少钱", "analysis"),
     ],
@@ -36,6 +36,7 @@ def test_detect_query_mode(question: str, expected_mode: str) -> None:
         ("怎么导出 Excel 合册", "export"),
         ("材料清单在哪上传", "bom_material"),
         ("引擎一直运行中怎么办", "faq_stuck"),
+        ("我在进行成品核价计算时卡住了，怎么办？", "faq_calc_stuck"),
     ],
 )
 def test_detect_help_topic(question: str, expected_topic: str) -> None:
@@ -52,6 +53,7 @@ def test_load_corpus_has_p1a_sections() -> None:
         "export",
         "faq_permission",
         "faq_stuck",
+        "faq_calc_stuck",
         "monthly",
     ):
         assert required in chunk_ids
@@ -63,7 +65,7 @@ def test_retrieve_engine_chunk() -> None:
     assert chunks[0].chunk_id == "engine"
 
 
-def test_usage_help_runner_and_actions() -> None:
+def test_usage_help_runner() -> None:
     query = AnalysisQuery(
         time_range=TimeRange(start="2026-01", end="2026-01"),
         user_question="自动核价引擎怎么启动？",
@@ -76,7 +78,56 @@ def test_usage_help_runner_and_actions() -> None:
     assert run.result.get("kind") == "usage_help"
     assert run.evidence.get("corpus_chunks")
 
-    actions = ActionBuilder().build(query=query, run=run)
-    targets = [action.target for action in actions]
-    assert "#/costing" in targets
-    assert any("/helper/help.html#engine" in target for target in targets)
+
+L0_CALC_STUCK_QUESTION = "我在进行成品核价计算时卡住了，怎么办？"
+
+
+def test_query_parser_routes_l0_calc_stuck_to_usage_help() -> None:
+    from unittest.mock import MagicMock
+
+    from app.services.llm.query.query_parser import QueryParser
+
+    parser = QueryParser()
+    db = MagicMock()
+    query = parser.parse(db, user_question=L0_CALC_STUCK_QUESTION)
+    assert query.query_mode == "usage_help"
+    assert query.subject == "usage_help"
+    assert query.help_topic == "faq_calc_stuck"
+
+
+def test_retrieve_l0_calc_stuck_chunk() -> None:
+    load_corpus_chunks.cache_clear()
+    chunks = retrieve_chunks(
+        L0_CALC_STUCK_QUESTION,
+        primary_topic="faq_calc_stuck",
+        top_k=2,
+    )
+    assert chunks
+    assert chunks[0].chunk_id == "faq_calc_stuck"
+    assert "计算历史" in chunks[0].text
+    assert "删除" in chunks[0].text
+    assert "计算中" in chunks[0].text
+
+
+def test_l0_calc_stuck_usage_help_fallback_markdown() -> None:
+    """不依赖真实 LLM：语料命中后降级模板应包含删除计算历史指引。"""
+    from app.services.llm.context.snapshot_builder import SnapshotBuilder
+    from app.services.llm.generator import LlmReportGenerator
+    from app.services.llm.query.query_parser import QueryParser
+
+    load_corpus_chunks.cache_clear()
+    parser = QueryParser()
+    query = parser._parse_usage_help(L0_CALC_STUCK_QUESTION)  # noqa: SLF001
+    assert query.query_mode == "usage_help"
+    assert query.help_topic == "faq_calc_stuck"
+
+    run = UsageHelpRunner().run(query)
+    snapshot = SnapshotBuilder().build(query=query, run=run)
+    markdown = LlmReportGenerator().render_fallback_markdown(
+        snapshot=snapshot,
+        error_hint="test",
+    )
+    assert "计算历史" in markdown
+    assert "删除" in markdown
+    assert "计算中" in markdown
+    assert "成品核价计算" in markdown

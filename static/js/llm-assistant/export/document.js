@@ -13,7 +13,13 @@ export function canExportAssistantMessage(msg) {
     if (msg?.role !== 'assistant') return false;
     if (msg.status === 'pending' || msg.status === 'error') return false;
     const content = String(msg.content || '').trim();
-    if (!content || content === 'AI思考中…' || content.startsWith('AI思考中')) return false;
+    if (
+        !content
+        || content.startsWith('AI思考中')
+        || content.startsWith('AI正在思考中')
+    ) {
+        return false;
+    }
     return true;
 }
 
@@ -29,11 +35,9 @@ export function buildExportFilename(msg) {
 
 /**
  * @param {object} msg
- * @param {{ forPreview?: boolean }} [options]
  * @returns {string}
  */
-export function buildAssistantDocumentHtml(msg, options = {}) {
-    const forPreview = Boolean(options.forPreview);
+export function buildAssistantDocumentHtml(msg) {
     const question = String(msg.user_question || '').trim();
     const scopeText = formatScope(msg.scope);
     const reportType = msg.resolved_report_type
@@ -48,19 +52,7 @@ export function buildAssistantDocumentHtml(msg, options = {}) {
     if (msg.from_cache) footerParts.push('缓存命中');
     const footerText = footerParts.join(' · ');
 
-    const previewToolbar = forPreview
-        ? `<div class="no-print preview-toolbar">
-  <span class="preview-toolbar-title">AI 回答 · 打印预览</span>
-  <div class="preview-toolbar-actions">
-    <button type="button" class="preview-btn preview-btn-primary" onclick="window.print()">打印</button>
-    <button type="button" class="preview-btn" onclick="window.close()">关闭</button>
-  </div>
-</div>`
-        : '';
-
-    const wordMeta = forPreview
-        ? ''
-        : `<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom></w:WordDocument></xml><![endif]-->`;
+    const wordMeta = `<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom></w:WordDocument></xml><![endif]-->`;
 
     return `<!DOCTYPE html>
 <html xmlns:o="urn:schemas-microsoft-com:office:office"
@@ -79,7 +71,6 @@ ${documentStyles()}
 </style>
 </head>
 <body>
-${previewToolbar}
 <article class="doc">
   <header class="doc-header">
     <h1 class="doc-title">AI 分析报告</h1>
@@ -256,42 +247,8 @@ body {
   font-size: 9pt;
   color: #999999;
 }
-.no-print.preview-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  max-width: 720px;
-  margin: 0 auto 20px;
-  padding: 10px 14px;
-  background: #f8f8f8;
-  border: 1px solid #dddddd;
-  border-radius: 4px;
-}
-.preview-toolbar-title {
-  font-size: 10pt;
-  font-weight: 600;
-  color: #333333;
-}
-.preview-toolbar-actions { display: flex; gap: 8px; }
-.preview-btn {
-  padding: 6px 14px;
-  font-size: 10pt;
-  border: 1px solid #cccccc;
-  border-radius: 3px;
-  background: #ffffff;
-  color: #333333;
-  cursor: pointer;
-}
-.preview-btn-primary {
-  background: #d32f2f;
-  border-color: #d32f2f;
-  color: #ffffff;
-}
-.preview-btn:hover { opacity: 0.9; }
 @media print {
   body { padding: 0; }
-  .no-print { display: none !important; }
 }
 `.trim();
 }

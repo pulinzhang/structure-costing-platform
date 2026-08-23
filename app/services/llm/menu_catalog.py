@@ -12,7 +12,6 @@ class MenuTarget:
     """一个分析主题对应的主列表页。"""
 
     hash_page: str
-    action_id: str
     label: str
 
 
@@ -27,96 +26,78 @@ class MenuCoverageItem:
     notes: str = ""
 
 
-# subject → 主 Action 落点
+# subject → 主列表页落点
 SUBJECT_MENU: dict[str, MenuTarget] = {
     "stamping_process": MenuTarget(
         hash_page="stamping-parts",
-        action_id="open_stamping_parts",
         label="打开冲压零件列表",
     ),
     "stamping_part": MenuTarget(
         hash_page="stamping-part-cost",
-        action_id="open_stamping_part_cost",
         label="打开冲压零件价格一览",
     ),
     "stamping_tonnage": MenuTarget(
         hash_page="stamping-tonnage",
-        action_id="open_stamping_tonnage",
         label="打开冲次单价列表",
     ),
     "stamping_process_fee": MenuTarget(
         hash_page="stamping-process-fee",
-        action_id="open_stamping_process_fee",
         label="打开冲压加工费列表",
     ),
     "l0": MenuTarget(
         hash_page="l0-assembly-cost",
-        action_id="open_l0_assembly_cost",
         label="打开成品核价一览",
     ),
     "cost_total": MenuTarget(
         hash_page="l0-assembly-cost",
-        action_id="open_l0_assembly_cost",
         label="打开成品核价一览",
     ),
     "steel_price": MenuTarget(
         hash_page="steel-price-list",
-        action_id="open_steel_price_list",
         label="打开冲压钢材联动价一览",
     ),
     "steel_price_policy": MenuTarget(
         hash_page="steel-price-policy-download",
-        action_id="open_steel_price_policy",
         label="打开加减价政策列表",
     ),
     "steel_base_price": MenuTarget(
         hash_page="base-price-download",
-        action_id="open_steel_base_price",
         label="打开基准价格列表",
     ),
     "winning_thickness": MenuTarget(
         hash_page="winning-thickness-download",
-        action_id="open_winning_thickness",
         label="打开中标钢厂厚度价格一览表",
     ),
     "scrap_price": MenuTarget(
         hash_page="scrap-price",
-        action_id="open_scrap_price",
         label="打开废料月度销售价",
     ),
     "welding_unit_price": MenuTarget(
         hash_page="bom-welding-unit-price",
-        action_id="open_bom_welding_unit_price",
         label="打开焊接单价列表",
     ),
     "annual_part_price": MenuTarget(
         hash_page="bom-annual-part-price",
-        action_id="open_bom_annual_part_price",
         label="打开年度零件价列表",
     ),
     "packaging_transport_fee": MenuTarget(
         hash_page="bom-packaging-transport-fee",
-        action_id="open_bom_packaging_transport_fee",
         label="打开包装运输费列表",
     ),
     "bom_material": MenuTarget(
         hash_page="bom-material",
-        action_id="open_bom_material",
         label="打开材料清单列表",
     ),
     "welding_process_breakdown": MenuTarget(
         hash_page="bom-welding-process-breakdown-list",
-        action_id="open_bom_welding_process_breakdown_list",
         label="打开焊接工艺拆解列表",
     ),
     "l0_welding_fee": MenuTarget(
         hash_page="bom-l0-welding-fee-list",
-        action_id="open_bom_l0_welding_fee_list",
         label="打开成品焊接费列表",
     ),
     "part": MenuTarget(
         hash_page="l0-assembly-cost",
-        action_id="open_l0_assembly_cost",
         label="打开成品核价一览",
     ),
 }
@@ -271,33 +252,6 @@ ENTITY_LIST_PAGES: tuple[tuple[str, str], ...] = (
     ("stamping-part-cost", "stamping_part"),
     ("l0-assembly-cost", "l0"),
 )
-
-
-def resolve_menu_target(query: AnalysisQuery) -> MenuTarget:
-    """按 subject 选主落点；零件号 + 冲压语境走工艺或核价一览。"""
-    subject = query.subject
-    question = query.user_question or ""
-    if subject == "part" and "冲压" in question:
-        if any(
-            word in question
-            for word in ("工艺", "工序", "模具", "OP10", "OP20")
-        ):
-            return SUBJECT_MENU["stamping_process"]
-        return SUBJECT_MENU["stamping_part"]
-    if subject == "bom_material":
-        if "结构图" in question:
-            return MenuTarget(
-                hash_page="bom-viz",
-                action_id="open_bom_viz",
-                label="打开产品结构图",
-            )
-        if any(word in question for word in ("产品结构", "结构树", "BOM结构")):
-            return MenuTarget(
-                hash_page="bom-structure",
-                action_id="open_bom_structure",
-                label="打开产品结构",
-            )
-    return SUBJECT_MENU.get(subject, SUBJECT_MENU["cost_total"])
 
 
 def expand_base_price_location(location: str) -> str:
@@ -499,24 +453,3 @@ def build_list_params(query: AnalysisQuery) -> dict[str, str]:
     if part_number:
         params["part_number"] = part_number
     return params
-
-
-_PAGE_PARAM_SUBJECT: dict[str, str] = {
-    "stamping-parts": "stamping_process",
-    "stamping-part-cost": "stamping_part",
-    "stamping-process-fee": "stamping_process_fee",
-    "bom-material": "bom_material",
-    "bom-structure": "bom_material",
-    "bom-viz": "bom_material",
-    "bom-welding-process-breakdown-list": "welding_process_breakdown",
-    "bom-l0-welding-fee-list": "l0_welding_fee",
-    "l0-assembly-cost": "l0",
-}
-
-
-def build_list_params_for_page(query: AnalysisQuery, hash_page: str) -> dict[str, str]:
-    """按目标列表页生成深链参数（单件跨域检索时用）。"""
-    override = _PAGE_PARAM_SUBJECT.get(hash_page)
-    if override and override != query.subject:
-        query = query.model_copy(update={"subject": override})
-    return build_list_params(query)

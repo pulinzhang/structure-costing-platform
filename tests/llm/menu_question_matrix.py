@@ -15,7 +15,6 @@ class MenuQuestionCase:
     menu_label: str
     question_topic: str
     expected_subject: str | None
-    expected_action_id: str | None
     status: str  # complete | pending
 
     @property
@@ -30,7 +29,6 @@ MENU_QUESTION_CASES: tuple[MenuQuestionCase, ...] = (
         "加减价政策列表",
         "厚度加减价",
         "steel_price_policy",
-        "open_steel_price_policy",
         "complete",
     ),
     MenuQuestionCase(
@@ -38,7 +36,6 @@ MENU_QUESTION_CASES: tuple[MenuQuestionCase, ...] = (
         "基准价格列表",
         "基准价",
         "steel_base_price",
-        "open_steel_base_price",
         "complete",
     ),
     MenuQuestionCase(
@@ -46,7 +43,6 @@ MENU_QUESTION_CASES: tuple[MenuQuestionCase, ...] = (
         "中标钢厂厚度价格一览表",
         "中标厚度价",
         "winning_thickness",
-        "open_winning_thickness",
         "complete",
     ),
     MenuQuestionCase(
@@ -54,7 +50,6 @@ MENU_QUESTION_CASES: tuple[MenuQuestionCase, ...] = (
         "废料月度销售价",
         "废料销售价",
         "scrap_price",
-        "open_scrap_price",
         "complete",
     ),
     MenuQuestionCase(
@@ -62,7 +57,6 @@ MENU_QUESTION_CASES: tuple[MenuQuestionCase, ...] = (
         "冲压零件列表",
         "冲压工艺",
         "stamping_process",
-        "open_stamping_parts",
         "complete",
     ),
     MenuQuestionCase(
@@ -70,7 +64,6 @@ MENU_QUESTION_CASES: tuple[MenuQuestionCase, ...] = (
         "冲次单价列表",
         "冲次单价",
         "stamping_tonnage",
-        "open_stamping_tonnage",
         "complete",
     ),
     MenuQuestionCase(
@@ -78,7 +71,6 @@ MENU_QUESTION_CASES: tuple[MenuQuestionCase, ...] = (
         "冲压加工费列表",
         "冲压加工费",
         "stamping_process_fee",
-        "open_stamping_process_fee",
         "complete",
     ),
     MenuQuestionCase(
@@ -86,7 +78,6 @@ MENU_QUESTION_CASES: tuple[MenuQuestionCase, ...] = (
         "焊接单价列表",
         "焊接单价",
         "welding_unit_price",
-        "open_bom_welding_unit_price",
         "complete",
     ),
     MenuQuestionCase(
@@ -94,7 +85,6 @@ MENU_QUESTION_CASES: tuple[MenuQuestionCase, ...] = (
         "年度零件价列表",
         "年度零件价",
         "annual_part_price",
-        "open_bom_annual_part_price",
         "complete",
     ),
     MenuQuestionCase(
@@ -102,7 +92,6 @@ MENU_QUESTION_CASES: tuple[MenuQuestionCase, ...] = (
         "包装运输费列表",
         "包装运输费",
         "packaging_transport_fee",
-        "open_bom_packaging_transport_fee",
         "complete",
     ),
     MenuQuestionCase(
@@ -110,7 +99,6 @@ MENU_QUESTION_CASES: tuple[MenuQuestionCase, ...] = (
         "材料清单列表",
         "材料清单",
         "bom_material",
-        "open_bom_material",
         "complete",
     ),
     MenuQuestionCase(
@@ -118,7 +106,6 @@ MENU_QUESTION_CASES: tuple[MenuQuestionCase, ...] = (
         "产品结构",
         "产品结构",
         "bom_material",
-        "open_bom_structure",
         "complete",
     ),
     MenuQuestionCase(
@@ -126,7 +113,6 @@ MENU_QUESTION_CASES: tuple[MenuQuestionCase, ...] = (
         "产品结构图",
         "结构图",
         "bom_material",
-        "open_bom_viz",
         "complete",
     ),
     MenuQuestionCase(
@@ -134,7 +120,6 @@ MENU_QUESTION_CASES: tuple[MenuQuestionCase, ...] = (
         "焊接工艺拆解列表",
         "焊接工艺拆解",
         "welding_process_breakdown",
-        "open_bom_welding_process_breakdown_list",
         "complete",
     ),
     MenuQuestionCase(
@@ -142,7 +127,6 @@ MENU_QUESTION_CASES: tuple[MenuQuestionCase, ...] = (
         "成品焊接费列表",
         "成品焊接费",
         "l0_welding_fee",
-        "open_bom_l0_welding_fee_list",
         "complete",
     ),
     MenuQuestionCase(
@@ -150,7 +134,6 @@ MENU_QUESTION_CASES: tuple[MenuQuestionCase, ...] = (
         "冲压钢材联动价一览",
         "钢材联动价",
         "steel_price",
-        "open_steel_price_list",
         "complete",
     ),
     MenuQuestionCase(
@@ -158,7 +141,6 @@ MENU_QUESTION_CASES: tuple[MenuQuestionCase, ...] = (
         "冲压零件价格一览",
         "冲压件成本",
         "stamping_part",
-        "open_stamping_part_cost",
         "complete",
     ),
     MenuQuestionCase(
@@ -166,14 +148,12 @@ MENU_QUESTION_CASES: tuple[MenuQuestionCase, ...] = (
         "成品核价一览",
         "成品成本",
         "l0",
-        "open_l0_assembly_cost",
         "complete",
     ),
     MenuQuestionCase(
         "costing",
         "自动核价引擎",
         "自动核价",
-        None,
         None,
         "pending",
     ),

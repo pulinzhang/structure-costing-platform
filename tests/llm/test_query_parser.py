@@ -128,39 +128,6 @@ def test_query_parser_price_detail_skips_dashboard_summary() -> None:
     assert query.location() == "青岛"
 
 
-def test_price_detail_l0_action_only() -> None:
-    from app.services.llm.action_builder import ActionBuilder
-    from app.services.llm.analysis.runner import AnalysisRunResult
-
-    parser = QueryParser()
-    db = MagicMock()
-    _mock_aligner(parser)
-    parser._extractor.extract = MagicMock(  # noqa: SLF001
-        return_value={
-            "time_range": {"start": "2025-01", "end": "2025-01"},
-            "filters": {"location": "青岛"},
-            "compare_locations": [],
-        }
-    )
-
-    query = parser.parse(
-        db,
-        user_question="2025-01 青岛 9144的价格详情",
-    )
-    run = AnalysisRunResult(
-        evidence={
-            "part_lookup": {
-                "l0_rows": 1,
-                "stamping_cost_rows": 0,
-                "stamping_process_rows": 0,
-            }
-        }
-    )
-    actions = ActionBuilder().build(query=query, run=run)
-    assert len(actions) == 1
-    assert actions[0].action_id == "open_l0_assembly_cost"
-
-
 def test_query_parser_rule_fallback_when_llm_fails() -> None:
     from app.services.llm.client import LlmClientError
 
@@ -266,9 +233,6 @@ def test_query_parser_scrap_price_not_cost_total() -> None:
 
 
 def test_query_parser_stamping_process_maps_to_parts_list() -> None:
-    from app.services.llm.action_builder import ActionBuilder
-    from app.services.llm.analysis.runner import AnalysisRunResult
-
     parser = QueryParser()
     db = MagicMock()
     _mock_aligner(parser)
@@ -295,12 +259,12 @@ def test_query_parser_stamping_process_maps_to_parts_list() -> None:
     assert "drivers" in query.analyses
     assert "trend" not in query.analyses
 
-    action = ActionBuilder().build(query=query, run=AnalysisRunResult())[0]
-    assert action.action_id == "open_stamping_parts"
-    assert action.target.startswith("#/stamping-parts?")
-    assert "location=%E9%9D%92%E5%B2%9B" in action.target
-    assert "vehicle_model=T28" in action.target
-    assert "version=V1" in action.target
+    from app.services.llm.menu_catalog import build_list_params
+
+    params = build_list_params(query)
+    assert params.get("location") == "青岛"
+    assert params.get("vehicle_model") == "T28"
+    assert params.get("version") == "V1"
 
 
 def test_build_stamping_process_summary() -> None:
@@ -431,13 +395,6 @@ def test_query_parser_l0_finished_product_cost_report() -> None:
     assert "summary" in query.analyses
     assert "drivers" in query.analyses
 
-    from app.services.llm.action_builder import ActionBuilder
-    from app.services.llm.analysis.runner import AnalysisRunResult
-
-    action = ActionBuilder().build(query=query, run=AnalysisRunResult())[0]
-    assert action.action_id == "open_l0_assembly_cost"
-    assert action.target.startswith("#/l0-assembly-cost?")
-
 
 def test_query_parser_thickness_policy_question() -> None:
     parser = QueryParser()
@@ -460,21 +417,17 @@ def test_query_parser_thickness_policy_question() -> None:
     assert "summary" in query.analyses
     assert "drivers" in query.analyses
 
-    from app.services.llm.action_builder import ActionBuilder
-    from app.services.llm.analysis.runner import AnalysisRunResult
+    from app.services.llm.menu_catalog import build_list_params
 
-    action = ActionBuilder().build(query=query, run=AnalysisRunResult())[0]
-    assert action.action_id == "open_steel_price_policy"
-    assert action.target.startswith("#/steel-price-policy-download?")
-    assert "year=2025" in action.target
-    assert "month=1" in action.target
+    params = build_list_params(query)
+    assert params.get("year") == "2025"
+    assert params.get("month") == "1"
 
 
 def test_query_parser_base_price_question() -> None:
     from unittest.mock import MagicMock
 
-    from app.services.llm.action_builder import ActionBuilder
-    from app.services.llm.analysis.runner import AnalysisRunResult
+    from app.services.llm.menu_catalog import build_list_params
     from app.services.llm.query.query_parser import QueryParser
 
     parser = QueryParser()
@@ -497,10 +450,10 @@ def test_query_parser_base_price_question() -> None:
     assert "summary" in query.analyses
     assert "drivers" in query.analyses
 
-    action = ActionBuilder().build(query=query, run=AnalysisRunResult())[0]
-    assert action.action_id == "open_steel_base_price"
-    assert action.target.startswith("#/base-price-download?")
-    assert "location=%E9%9D%92%E5%B2%9B%E5%9F%BA%E5%9C%B0" in action.target
+    params = build_list_params(query)
+    assert params.get("location") == "青岛基地"
+    assert params.get("year") == "2025"
+    assert params.get("month") == "1"
 
 
 def test_idempotency_fingerprint_stable() -> None:

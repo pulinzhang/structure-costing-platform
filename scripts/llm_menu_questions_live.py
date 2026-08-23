@@ -27,6 +27,7 @@ from app.services.llm.analysis.runner import AnalysisRunner  # noqa: E402
 from app.services.llm.client import LlmClientError  # noqa: E402
 from app.services.llm.context.snapshot_builder import SnapshotBuilder  # noqa: E402
 from app.services.llm.generator import LlmReportGenerator  # noqa: E402
+from app.services.llm.menu_catalog import SUBJECT_MENU  # noqa: E402
 from app.services.llm.query.query_parser import QueryParser  # noqa: E402
 from tests.llm.menu_question_matrix import (  # noqa: E402
     MENU_QUESTION_CASES,
@@ -41,8 +42,7 @@ class LiveCheckResult:
     ok: bool = False
     subject: str = ""
     expected_subject: str = ""
-    action_id: str = ""
-    action_target: str = ""
+    hash_page: str = ""
     time_range: str = ""
     location: str = ""
     has_data: bool = False
@@ -52,11 +52,10 @@ class LiveCheckResult:
     warnings: list[str] = field(default_factory=list)
 
 
-def _check_routing(result: LiveCheckResult, case, query, action) -> None:
+def _check_routing(result: LiveCheckResult, case, query) -> None:
     result.subject = query.subject
     result.expected_subject = case.expected_subject or ""
-    result.action_id = action.action_id
-    result.action_target = action.target
+    result.hash_page = case.hash_page
     result.time_range = f"{query.time_range.start} ~ {query.time_range.end}"
     result.location = query.location() or ""
 
@@ -64,12 +63,15 @@ def _check_routing(result: LiveCheckResult, case, query, action) -> None:
         result.errors.append(
             f"subject 期望 {case.expected_subject}，实际 {query.subject}"
         )
-    if action.action_id != case.expected_action_id:
+
+    menu = SUBJECT_MENU.get(case.expected_subject or "")
+    if menu.hash_page != case.hash_page and case.expected_subject == "bom_material":
+        if case.hash_page not in ("bom-structure", "bom-viz"):
+            result.errors.append(f"hash_page 期望 #{case.hash_page}")
+    elif menu.hash_page != case.hash_page:
         result.errors.append(
-            f"action 期望 {case.expected_action_id}，实际 {action.action_id}"
+            f"hash_page 期望 #{case.hash_page}，菜单登记 #{menu.hash_page}"
         )
-    if not action.target.startswith(f"#/{case.hash_page}?"):
-        result.errors.append(f"深链未落在 #/{case.hash_page}")
 
     if query.time_range.start != "2025-01" or query.time_range.end != "2025-01":
         result.errors.append(
@@ -100,12 +102,11 @@ def _run_one(case, *, with_report: bool) -> LiveCheckResult:
         runner = AnalysisRunner()
         run = runner.run(db, query)
         snapshot = SnapshotBuilder().build(query=query, run=run)
-        action = snapshot.actions[0]
 
         result.has_data = snapshot.meta.has_data
         result.data_message = snapshot.meta.data_message or ""
 
-        _check_routing(result, case, query, action)
+        _check_routing(result, case, query)
 
         if not snapshot.meta.has_data:
             result.warnings.append(f"无业务数据: {snapshot.meta.data_message}")
@@ -177,9 +178,8 @@ def main() -> int:
         print(f"\n■ {live.menu_label}")
         print(f"  问句: {live.user_question}")
         print(f"  subject: {live.subject} (期望 {live.expected_subject})")
+        print(f"  列表页: #{live.hash_page}")
         print(f"  时间: {live.time_range} | 基地: {live.location or '—'}")
-        print(f"  Action: {live.action_id}")
-        print(f"  深链: {live.action_target}")
         print(f"  数据: {'有' if live.has_data else '无'} — {live.data_message}")
         if args.with_report:
             print(f"  报告: {live.report_chars} 字")

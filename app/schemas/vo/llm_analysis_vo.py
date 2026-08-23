@@ -148,10 +148,3 @@ class LlmAnalysisReportVO(BaseModel):
             ),
             attachments=attachments,
         )
-
-
-class LlmScopeOptionsVO(BaseModel):
-    locations: list[str] = Field(default_factory=list)
-    vehicle_models: list[str] = Field(default_factory=list)
-    bom_versions: list[str] = Field(default_factory=list)
-    years: list[int] = Field(default_factory=list)
