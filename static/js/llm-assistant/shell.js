@@ -25,7 +25,7 @@ import { findPrompt, fillPromptTemplate } from './prompts/catalog.js';
 
 import { applyReportToMessage } from './report/apply-report.js';
 
-import { openHistoryPanel } from './report/history.js';
+import { openHistoryPanel } from './report/history.js?v=3';
 
 import {
 
@@ -162,6 +162,28 @@ export function createShell(options) {
                 els.history?.classList.add('hidden');
 
                 void reopenReport(reportId);
+
+            },
+
+            onDeleted: (reportId) => {
+
+                const before = messages.length;
+
+                messages = messages.filter(
+
+                    (msg) => Number(msg.report_id) !== Number(reportId),
+
+                );
+
+                if (messages.length !== before) {
+
+                    renderThread(els.thread, messages);
+
+                    persist();
+
+                    updateChipsVisibility();
+
+                }
 
             },
 
@@ -421,6 +443,15 @@ export function createShell(options) {
 
         if (busy) return;
 
+        const existingIndex = messages.findIndex(
+            (item) => Number(item.report_id) === Number(reportId),
+        );
+        if (existingIndex >= 0) {
+            setStatus(`已在对话中 #${reportId}`);
+            renderThread(els.thread, messages);
+            return;
+        }
+
         setBusy(true);
 
         setStatus('加载历史分析…');
@@ -428,6 +459,20 @@ export function createShell(options) {
         try {
 
             const report = await getReport(reportId);
+
+            const question = String(report?.user_question || '').trim() || '（无问句）';
+
+            const userMsg = {
+
+                id: `m_${Date.now()}_u`,
+
+                role: 'user',
+
+                content: question,
+
+                created_at: report?.metadata?.generated_at || new Date().toISOString(),
+
+            };
 
             const assistantMsg = {
 
@@ -445,7 +490,7 @@ export function createShell(options) {
 
             applyReportToMessage(assistantMsg, report);
 
-            messages = [...messages, assistantMsg];
+            messages = [...messages, userMsg, assistantMsg];
 
             renderThread(els.thread, messages);
 

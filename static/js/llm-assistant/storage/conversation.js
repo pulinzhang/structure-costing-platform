@@ -1,5 +1,5 @@
 /**
- * 对话历史 — 仅 localStorage（C8）
+ * 对话历史 — 本机浮窗会话缓存（非服务端分析历史权威源）
  */
 
 const STORAGE_PREFIX = 'llm_chat_v1';

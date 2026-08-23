@@ -17,6 +17,7 @@ from app.schemas.dto.llm_analysis_dto import (
 )
 from app.schemas.vo.async_task_vo import AsyncTaskProgressVO
 from app.schemas.vo.llm_analysis_vo import (
+    LlmAnalysisReportListItemVO,
     LlmAnalysisReportTaskVO,
     LlmAnalysisReportVO,
 )
@@ -57,7 +58,7 @@ def get_report(
 
 @router.get(
     "/reports",
-    response_model=ApiResponse[PageResult[LlmAnalysisReportVO]],
+    response_model=ApiResponse[PageResult[LlmAnalysisReportListItemVO]],
 )
 def list_reports(
     location: str | None = Query(None),
@@ -68,10 +69,10 @@ def list_reports(
     report_type: str | None = Query(None),
     status: str | None = Query(None),
     skip: int = Query(0, ge=0),
-    limit: int = Query(20, ge=1, le=100),
+    limit: int = Query(10, ge=1, le=100),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.LLM_ANALYSIS_VIEW)),
-) -> ApiResponse[PageResult[LlmAnalysisReportVO]]:
+) -> ApiResponse[PageResult[LlmAnalysisReportListItemVO]]:
     query = LlmAnalysisReportQuery(
         location=location,
         year=year,
@@ -90,6 +91,19 @@ def list_reports(
         page=(skip // limit) + 1,
         page_size=limit,
     )
+
+
+@router.delete(
+    "/reports/{report_id}",
+    response_model=ApiResponse[None],
+)
+def delete_report(
+    report_id: int,
+    db: Session = Depends(get_db),
+    current_user: UserVO = Depends(require_perm(Perm.LLM_ANALYSIS_VIEW)),
+) -> ApiResponse[None]:
+    _service.delete_report(db, report_id, current_user=current_user)
+    return ApiResponse.deleted(message="删除成功")
 
 
 @router.get(

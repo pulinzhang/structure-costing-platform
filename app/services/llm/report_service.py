@@ -24,6 +24,7 @@ from app.schemas.dto.llm_analysis_dto import (
 from app.schemas.llm.analysis_query import AnalysisQuery
 from app.schemas.vo.async_task_vo import AsyncTaskProgressVO
 from app.schemas.vo.llm_analysis_vo import (
+    LlmAnalysisReportListItemVO,
     LlmAnalysisReportTaskVO,
     LlmAnalysisReportVO,
     LlmAnalysisScopeVO,
@@ -167,11 +168,9 @@ class LlmAnalysisReportService:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="报告不存在"
             )
-        if int(row.user_id) != int(current_user.id) and not bool(
-            getattr(current_user, "is_admin", False)
-        ):
+        if int(row.user_id) != int(current_user.id):
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, detail="无权查看该报告"
+                status_code=status.HTTP_403_FORBIDDEN, detail="只能查看本人的分析报告"
             )
         return LlmAnalysisReportVO.from_orm_row(row)
 
@@ -181,14 +180,10 @@ class LlmAnalysisReportService:
         query: LlmAnalysisReportQuery,
         *,
         current_user: UserVO,
-    ) -> tuple[list[LlmAnalysisReportVO], int]:
+    ) -> tuple[list[LlmAnalysisReportListItemVO], int]:
         rows, total = self.repository.paginate(
             db,
-            user_id=(
-                None
-                if getattr(current_user, "is_admin", False)
-                else int(current_user.id)
-            ),
+            user_id=int(current_user.id),
             location=query.location,
             year=query.year,
             month=query.month,
@@ -199,7 +194,27 @@ class LlmAnalysisReportService:
             skip=query.skip,
             limit=query.limit,
         )
-        return [LlmAnalysisReportVO.from_orm_row(row) for row in rows], total
+        return [LlmAnalysisReportListItemVO.from_orm_row(row) for row in rows], total
+
+    def delete_report(
+        self,
+        db: Session,
+        report_id: int,
+        *,
+        current_user: UserVO,
+    ) -> None:
+        """删除分析报告；只能删除本人的记录（管理员也不能删他人）。"""
+        row = self.repository.get_by_id(db, report_id)
+        if row is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="报告不存在"
+            )
+        if int(row.user_id) != int(current_user.id):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="只能删除本人的分析报告"
+            )
+        self.repository.delete_by_id(db, report_id)
+        db.commit()
 
     def get_task_progress(
         self,
@@ -214,11 +229,13 @@ class LlmAnalysisReportService:
                 status_code=status.HTTP_404_NOT_FOUND, detail="任务不存在"
             )
         row = self.repository.get_by_task_id(db, task_id)
-        if row is not None and int(row.user_id) != int(current_user.id) and not bool(
-            getattr(current_user, "is_admin", False)
-        ):
+        if row is None:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, detail="无权查看该任务"
+                status_code=status.HTTP_404_NOT_FOUND, detail="任务不存在"
+            )
+        if int(row.user_id) != int(current_user.id):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="只能查看本人的分析任务"
             )
         result = AsyncTaskService.parse_result_json(snapshot.get("result_json"))
         return AsyncTaskProgressVO.from_snapshot(snapshot, result=result)

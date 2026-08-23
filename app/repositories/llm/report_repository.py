@@ -212,3 +212,11 @@ class LlmAnalysisReportRepository:
             q.order_by(LlmAnalysisReport.id.desc()).offset(skip).limit(limit).all()
         )
         return rows, total
+
+    def delete_by_id(self, db: Session, report_id: int) -> bool:
+        row = self.get_by_id(db, report_id)
+        if row is None:
+            return False
+        db.delete(row)
+        db.flush()
+        return True

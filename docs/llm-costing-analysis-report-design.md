@@ -1,31 +1,87 @@
-# 核价结果智能分析 — 产品架构设计
+# 核价结果智能分析 — 产品设计
 
-> 状态：**架构定稿**（时间范围 + Repository 直读；Query / Repository / Analysis / Snapshot 边界锁定）  
-> 业务主体：冲焊装配供应商（可多租户售卖）· 主用户：**采购部**  
+> 状态：**已定稿归档**  
+> 业务主体：冲焊装配供应商（可多租户）· 主用户：**采购部**  
 > 关联：`docs/costing-engine-design.md`、`docs/l0-assembly-costing-design.md`、`docs/architecture.md`  
 > 参考：仅借鉴「预聚合事实 + 强约束 Prompt」；不复用 Chat/SSE
 
+**阅读指引**
+
+| 章节 | 读者 | 内容 |
+|------|------|------|
+| **A. 产品契约** | 评审、采购、产品 | 用户看到什么、系统保证什么、禁止什么 |
+| **B. 架构契约** | 后端、前端开发 | 分层边界、数据流、不可违反的工程规则 |
+| **C. 实现附录** | 实现时查阅 | Schema 示例、API、目录、测试辅助 |
+
 ---
 
-## 0. 一句话原则
+## A. 产品契约
 
-> **数字由系统计算，事实由系统提供，确定性结论由 Analysis 算出，业务解释与判断由 LLM 完成。**  
-> 产品目标不是「正确生成 Markdown 报告」，而是：**采购用约 30 秒发现问题 → 看到证据 → 点下一步动作。**
+### A.1 一句话
+
+> **数字由系统计算，解释由 LLM 完成；采购约 30 秒从回答里抓住问题、关键数字与核对线索。问什么答什么，不铺报告模板。**
 
 核价引擎是唯一算价真相源。LLM **不得**重算单价、改公式、自行汇总环比/占比/贡献度。
 
-本产品本质不是固定报表生成器，而是：
+本产品本质：
 
-> **基于核价结果库的分析查询系统 + LLM 自然语言解释层。**  
-> **时间范围**与**可比口径（comparison_basis）**同为一等能力。
+> **基于核价结果库的分析查询系统 + LLM 自然语言解释层。**
 
-### 0.1 取数与计算总原则
+### A.2 用户路径
 
-> **LLM 分析模块允许直接访问业务结果表（经本切片只读 Repository），但禁止绕过数据权限与业务口径。**  
-> **Repository 负责把时间范围内的事实查出来（可含 SQL 层查询聚合）。**  
-> **Analysis 负责把事实变成趋势、比较、动因和异常（业务分析逻辑）。**  
-> **Snapshot 只保存「本次分析」的确定性结果。**  
-> **LLM 不计算数字，而是理解这些结果、解释原因、形成业务判断。**
+```text
+用户提问（或点胶囊）
+    → 异步分析（轮询，无流式）
+    → 聊天区展示 Markdown 正文
+    → 可选：打印/Word 导出、分析历史重开
+```
+
+用户**不选**报表类型、Overview/Analyze/Drilldown、分析 mode 菜单。系统从问句推出内部 `analyses[]`（见附录 C.2）。
+
+### A.3 聊天区：展示与不展示
+
+| 展示 | 不展示 |
+|------|--------|
+| 用户问句 + 助理 **Markdown 正文** | Snapshot JSON、KPI 面板、图表 |
+| 进行中 / 失败状态 | 跳转列表 Action、深链 query |
+| 单条 **打印 / Word 导出**（问句、scope、时间元信息） | `analyses[]` 选择器、三 mode 菜单 |
+| **分析历史** overlay（本人的记录，10 条/页，触底加载） | 流式打字机 |
+
+**口径（tight/loose）**：写在 **Markdown 正文**里说明；**不做**单独口径徽章或证据抽屉（与「问什么答什么」一致）。
+
+### A.4 分析历史与权限
+
+| 规则 | 说明 |
+|------|------|
+| 权威存储 | 服务端 `llm_analysis_reports`，按 `user_id` 隔离 |
+| 列表 | 所有人（**含管理员**）仅自己的记录；`GET /api/llm/reports`，默认每页 10 条，overlay **触底加载** |
+| 详情 | 只能查看本人的记录；他人 **403** |
+| 删除 | 只能删除本人的记录；管理员也不能删他人 |
+| 本机缓存 | `localStorage`（`llm_chat_v1`）仅浮窗会话缓存；清缓存不删服务端记录 |
+
+### A.5 验收口诀
+
+> **30 秒内 Markdown 能指出一个问题，并给出可核对的关键数字/月份/零件；口径不可比时正文必须写清。**
+
+| 场景 | 通过 | 失败 |
+|------|------|------|
+| 趋势 | 区间一次查询 + Analysis 环比与库一致 + 正文写明 tight/loose | 循环按月取数 / 模型自己算数 / 隐瞒 BOM 变更 |
+| 动因 | TopN 数字出自 Analysis，正文引用 | 模型估算涨幅 |
+| 跨基地 | comparison 结论在正文写清两侧差异 | 明细堆给模型自行比 |
+| 单号 | drilldown+trend 同次分析，无无关空块 | 塞满无关 gate/parts |
+| 聊天 UI | 仅 Markdown + 导出/历史 | 双轨 UI、证据面板、Action 按钮 |
+| 帮助 | `usage_help` 命中 helper 语料 | 编造菜单路径 |
+| 历史 | 服务端重开；本人列表/查看/删除 | 仅浏览器存储 |
+
+### A.6 非目标
+
+Tool Calling 开放域、流式打字机、侧栏分析菜单、自动议价发函、向量 RAG（首期）、LLM 算环比、聊天区 Snapshot 面板、跳转深链 Action、全站审计混进助理历史。
+
+---
+
+## B. 架构契约
+
+### B.1 数据流（主图）
 
 ```text
                     用户问题
@@ -39,134 +95,140 @@
               │                 │
               └────────┬────────┘
                        ▼
-                  Repository
+                  Repository        ← 查：WHERE / GROUP BY / SUM
                        │
-              原始事实 / SQL 查询聚合
                        ▼
-                   Analysis
-       ┌────────┬──────┼──────┬────────┐
-       ▼        ▼      ▼      ▼        ▼
-     Trend    Driver Compare Risk   Drilldown
-       │        │      │      │        │
-       └────────┴──────┼──────┴────────┘
-                       ▼
-                AnalysisSnapshot
+                   Analysis          ← 算：MoM / TopN / 对比 / 异常
                        │
-              ┌────────┴────────┐
-              ▼                 ▼
-             UI                 LLM
-        数字/图表/证据       解释/判断（Markdown）
+                       ▼
+                AnalysisSnapshot      ← 本次确定性结果（生成态，仅喂 Prompt）
+                       │
+                       ▼
+                      LLM            ← 解释与判断 → Markdown
+                       │
+                       ▼
+              落库 + 聊天区 UI（仅正文）
 ```
 
-| 约定 | 说明 |
+**Snapshot 不整包暴露给聊天 API/UI**；采购只见 `markdown_content` 与元数据。
+
+### B.2 四层职责
+
+| 层 | 做 | 不做 |
+|----|-----|------|
+| **Query** | 结构化范围、口径、`analyses[]` | 不算金额；**意图由 Python 规则定** |
+| **Repository** | 时间范围内事实与 SQL 查询聚合 | 业务分析（MoM、贡献度、议价判断） |
+| **Analysis** | 趋势/对比/动因/异常等确定性结论 | 调 LLM；不绕过 Repo 写 SQL |
+| **LLM + UI** | 写 Markdown；UI 只渲染正文 | 发明数字；挂证据抽屉 |
+
+依赖：`llm` 为独立下游切片；可只读上游结果表 Model；分析主数据不经上游 Service→VO 拼装。
+
+### B.3 Query：两层，避免 OLAP 膨胀
+
+**Scope（查什么）**：`time_range` + `filters`（开放字典）+ `subject` + `comparison_basis`  
+**Intent（做什么）**：`analyses[]`（可组合，非用户菜单）
+
+不在 Schema 根上无限加 `supplier` / `thickness` 等字段；新维度进 `filters`。
+
+**Parser 分工**（详见附录 C.4）：
+
+| 谁 | 职责 |
+|----|------|
+| LLM（可选） | 仅抽 `time_range` / `filters`；无 key 时规则回退 |
+| Python | 词典对齐、`analyses` / `subject` / `comparison_basis` |
+| SQL/Repo | 精确取数 |
+
+禁止：LLM 定意图、Parser 内算金额、Parser 内循环调 Service 取数。
+
+### B.4 Repository ↔ Analysis 边界
+
+```text
+Repository                          Analysis
+WHERE / JOIN / GROUP BY / SUM       MoM / YoY / 累计涨幅
+BETWEEN start AND end               贡献度、TopN、异常判定
+权限过滤                            跨基地对比结论、口径对齐后的差分
+```
+
+**时间范围**：一次按起止条件查询；**禁止**按月循环调上游 Service。
+
+### B.5 可比口径 `comparison_basis`
+
+时间相同 ≠ 可直接比。BOM/材料/工艺/公式版本变化时，「涨 8%」可能是对象变了。
+
+- Analysis 输出 `comparability: tight | loose` 及原因  
+- Snapshot.meta 记录口径标签  
+- LLM 须在正文说明；loose 时不得宣称「纯价格上涨」  
+- P0 至少：`same_part` + `same_bom_version`；材料/工艺可先占位
+
+### B.6 Analysis 模块（按 `analyses[]` 按需执行）
+
+| 模块 | 输出（确定性，LLM 不得改数） |
+|------|------------------------------|
+| `summary` | 盘子、结构、缺价计数 |
+| `trend` | 序列、环比、累计变化、异常月 |
+| `drivers` | TopN、change_rate、贡献度 |
+| `comparison` | 跨基地/区间涨幅与差值 |
+| `risk` | 缺价 / partial / gate |
+| `drilldown` | 单号分解与区间差分 |
+
+### B.6.1 核心算法公式（开发按此写，QA 按此验）
+
+| 模块 | 输出字段 | 计算公式 / 判定规则（明确到边界条件） |
+|------|---------|--------------------------------------|
+| **trend.环比** | `mom_rate` | `(本月值 - 上月值) / 上月值`；**上月值=0 或 null → mom_rate = null**（不捏造 0% 或 ∞） |
+| **trend.累计变化** | `cumulative_rate` | `(期末值 - 期初值) / 期初值`；期初值=0 → null |
+| **trend.异常月** | `anomaly_months[]` | 满足以下任一条件即标记：① `abs(mom_rate) > avg(abs(mom_rate)) + 2*stddev`；② `abs(mom_rate) > 0.15`（15% 阈值）；命中则在 `meta.anomaly_note` 中说明 |
+| **drivers.TopN** | `top_items[]` | 按 `abs(变化金额)` 降序取前 N（默认 5）；N 由 `filters.top_n` 控制或规则层默认 |
+| **drivers.贡献度** | `contribution` | `该零件变化金额 / sum(所有变化金额绝对值)`；输出百分比及累计贡献（Top5 累计通常 >60% 才写「集中」，否则写「分散」） |
+| **comparison.涨幅差** | `spread` | `(A终 - A初)/A初 - (B终 - B初)/B初`；任何分母=0 则该组比较结果标 `invalid`，不在正文中做量化对比 |
+| **risk.缺价** | `missing_price_items[]` | 结果表中 `price IS NULL OR price = 0` 的记录，按零件号去重计数；不计入成本总额（Analysis 做 sum 时自动过滤这些行，且 meta 中写明过滤了多少条） |
+
+> **开发约束**：所有数值保留 2 位小数（金额）或 2 位百分比（涨幅）；LLM Prompt 中禁止重新格式化单位（元→万元）。
+
+### B.7 工程约束（合并清单）
+
+| # | 约束 |
+|---|------|
+| 1 | 纯 REST + 异步轮询；无 SSE |
+| 2 | 不改核价公式；金额单位「元」 |
+| 3 | 业务分析只在 Analysis；Repository 仅查询聚合 |
+| 4 | 时间范围一等公民；禁止按月循环 Service |
+| 5 | `llm` 只读 Repo 直读结果表；遵守数据权限与口径 |
+| 6 | Query = Scope + Intent；禁止根级字段森林 |
+| 7 | 趋势/对比必带 `comparison_basis`；loose 写进 Markdown |
+| 8 | Snapshot 只含本次 `analyses` 结果；禁止万能空块 |
+| 9 | 分析类型 Python 规则组合；禁止三 mode 用户菜单 |
+| 10 | 聊天区仅 Markdown；无 Action / 证据面板 |
+| 11 | 帮助走 `usage_help` + `static/helper` 语料 |
+| 12 | 分析历史落服务端；本人列表/查看/删除；localStorage 仅会话缓存 |
+| 13 | 轻量 Parser；不做完备 NL Query Engine |
+| 14 | **预聚合事实表优先**：Repository 优先查询按月/基地/车型预聚合的汇总表（如 `monthly_cost_summary`），不直接查明细 `l0_assembly_cost_detail`（除非 drilldown 单号）。预聚合表每日 ETL 凌晨更新，延迟 ≤ 24h。若预聚合表未就绪，自动降级到明细表但加 `/*+ MAX_EXECUTION_TIME(5000) */` Hint；**保护数据库不因全表扫描挂掉** |
+| 15 | **超时与限流**：SQL 执行超过 5 秒自动熔断，返回 `data_message="当前数据量较大，建议缩小时间范围（如近3个月）"`；单用户并发任务 ≤ 2 个，超出返回 429（`too many requests`）；**保护系统不被偶然的「今年1月到8月」大查询拖垮** |
+
+### B.8 P0 上线范围
+
+首期必须交付、可对外使用的最小闭环：
+
+| 能力 | 范围 |
 |------|------|
-| 取数 | **`llm` Repository 直读**结果表；可含参数化 SQL / ORM **查询聚合** |
-| 时间范围 | **一次**按起止条件查出，再交给 Analysis；禁止按月循环调上游 Service 拼装 |
-| 数字对比 | **Analysis 先算** trend / comparison / driver，再交给 LLM 解释 |
-| 结论边界 | **确定性结论**由 Analysis；**业务解释与判断**由 LLM |
-| 产品入口 | **分析类型由系统从问题推出**；用户不必选择报表/mode 菜单 |
+| **入口** | 浮动助理；`user_question` 一问一答；胶囊人话；异步轮询 |
+| **Query** | Parser（LLM 抽条件 + 词典对齐 + 规则定 `analyses[]`）；四级降级（C.4.2.1）；`usage_help` |
+| **取数与算** | Repository 区间一次查询；Analysis `summary` / `trend` / `risk`（公式见 B.6.1）；`comparison_basis` 最小集（`same_part` + `same_bom_version`） |
+| **输出** | 瘦 Snapshot → LLM Markdown；聊天区仅正文；口径 tight/loose 写在正文 |
+| **持久化** | `llm_analysis_reports` 落库；本人列表/查看/删除；10 条/页触底加载 |
+| **韧性** | LLM 失败 fallback 模板；SQL 熔断与单用户并发限流（B.7 #14/#15） |
 
-**禁止：** 改写业务结果表、触发算价 Orchestrator、绕过租户/基地数据权限、让 LLM 自己算环比与占比、把 Repository 做成第二个 Analysis Service、把明细堆给 LLM 自行比大小。
-
----
-
-## 1. 设计目标与反模式
-
-本设计要避免下列反模式：
-
-| 反模式 | 问题 |
-|--------|------|
-| 按月循环调 Service 再拼装喂模型 | 时间趋势要调 N 次，绕远、难做区间查询 |
-| 重型自然语言意图引擎 | 做成小型 NL Query Engine；采购问法高度重复 |
-| `report_type` / 用户选 mode 菜单 | 助手变成报表/菜单路由器 |
-| 碎装数据包 + 万能结果抽屉 | 维护成本高，一次分析却塞满无关块 |
-| 跨维查明细交 LLM 自己比 | 数字对比不稳，随基地×月膨胀 |
-| 只谈时间、不谈口径 | 制造业「涨了 8%」可能是 BOM/工艺变了，不是价格趋势 |
-| 聊天历史只存浏览器 | 企业需要可重开的分析记录 |
-| 输出停在 Markdown、缺 Snapshot 证据 | 采购看不到数字与口径，无法核对 LLM 判断 |
-
-**工程底线：** 不改核价公式、金额单位「元」、异常必显、异步任务、浮动壳、权限与审计。
+**P0 不含**：打印/Word 导出、`comparison`/`drilldown` 组合深化、材料/工艺/公式版本口径校验、管理端审计、预聚合 ETL（可先查明细表 + 熔断，见 C.10 Story 1 可并行）。
 
 ---
 
-## 2. 产品形态：问题驱动，不是菜单驱动
+## C. 实现附录
 
-对外不讲「请选择 Overview / Analyze / Drilldown」。用户只提问（或点胶囊人话），系统内部组合分析能力：
-
-```text
-用户问题
-   ↓
-AnalysisQuery
-   ↓
-系统决定需要哪些分析能力（可组合）
-   ├── Summary（盘子）
-   ├── Trend（趋势）
-   ├── Drivers（动因）
-   ├── Comparison（对比）
-   ├── Risk（风险/缺价）
-   └── Drilldown（单号）
-   ↓
-Snapshot（只含本次用到的结果）
-   ↓
-UI 数字 + LLM 解释（Markdown）
-```
-
-| 用户问法（示例） | 系统内部组合（示例） |
-|------------------|----------------------|
-| 这个月采购成本怎么样？ | Summary + Risk |
-| 今年青岛 T28 成本怎么变化？ | Summary + Trend |
-| 哪些零件涨得最快？ | Drivers（+ Trend） |
-| 青岛和芜湖谁涨得更多？ | Comparison |
-| 501006875AA 最近半年为什么涨？ | Drilldown + Trend + Drivers |
-
-胶囊只是「填入一句人话」；**不是**让用户选择报表类型。API 可保留内部 `analyses[]` 枚举供实现，**禁止**把三 mode 做成产品主菜单。
-
-**时间范围**是分析主轴之一（单月 = start=end）。另见 §4.3 **可比口径**。
-
-### 2.1 交互
-
-- 壳层浮动助理；不挂侧栏、不占主内容区；遮罩不压暗原表  
-- 胶囊一键发常见问法；自由输入可选，轻量解析即可  
-- 无 SSE；AsyncTask + 轮询；整包返回  
-
----
-
-## 3. 四层架构
-
-```text
-① Query 解析 → AnalysisQuery（filters + time_range + comparison_basis + analyses）
-② Repository（查）→ 事实行 / SQL 查询聚合行
-③ Analysis（算）→ trend / driver / compare / risk / drilldown 确定性结果
-④ Snapshot（本次结果）→ UI + LLM 解释
-```
-
-| 层 | 职责 | 不做 |
-|----|------|------|
-| **Query** | 结构化「查什么范围、以什么口径、做什么分析」 | 不算金额；不调模型做完备意图（P0） |
-| **Repository** | **查**出时间范围内的事实；可做 **DB 查询聚合** | **不做**业务分析逻辑（见 §5） |
-| **Analysis** | **算**趋势/对比/动因/异常/排序/贡献 | 不调 LLM；不改单价公式；不直接堆原始明细给 Prompt |
-| **Snapshot + LLM** | 保存本次确定性结果；LLM **解释与业务判断**（Markdown） | LLM 不发明数字；聊天区不生成跳转按钮 |
-
-> **Repository 负责查，Analysis 负责算，Snapshot 保存本次结果，LLM 负责解释与判断。**
-
-依赖：`llm` 独立下游；可 import 上游结果表 Model；不经上游 Service→VO 取分析主数据；不被 `costing` 反向依赖。
-
----
-
-## 4. AnalysisQuery：拆成「范围」+「意图」，避免过早 OLAP 化
-
-**不要**把 Query 做成不断膨胀的「用户能问什么」字段清单（supplier / thickness / workshop… 无限加字段）。
-
-拆成两层：
-
-### 4.1 Query Scope（查什么范围）
+### C.1 AnalysisQuery 示例
 
 ```json
 {
-  "time_range": {
-    "start": "2026-01",
-    "end": "2026-08"
-  },
+  "time_range": { "start": "2026-01", "end": "2026-08" },
   "filters": {
     "location": "青岛",
     "vehicle_model": "T28",
@@ -180,65 +242,43 @@ UI 数字 + LLM 解释（Markdown）
     "same_process": false,
     "label": "same_bom_version"
   },
+  "analyses": ["summary", "trend"],
   "user_question": "今年青岛 T28 采购成本怎么变化？"
 }
 ```
 
 | 字段 | 说明 |
 |------|------|
-| `time_range` | **一等公民**；`start`/`end` 用 `YYYY-MM`；单月则相同 |
-| `filters` | **开放字典式过滤**，只放本次已知维度；新增维度加 filter key，不改 Query 根结构 |
-| `subject` | 分析对象粒度：`cost_total` / `steel_price` / `part` / `l0` / …（短枚举，按需增） |
-| `comparison_basis` | **可比口径**（§4.3）；趋势/对比必须声明 |
+| `time_range` | `YYYY-MM`；单月 start=end |
+| `filters` | 开放字典；口语经词典对齐后进此（附录 C.4.3） |
+| `subject` | `cost_total` / `steel_price` / `part` / `l0` / … |
+| `comparison_basis` | 见 C.3 |
+| `analyses` | 见 C.2 |
 
-`filters` **不要**在 Schema 根上提前铺平 `supplier`、`thickness`、`process`…；需要时再进 `filters`，避免长成小型 OLAP 语言。
+问法 → 内部分组合示例：
 
-### 4.2 Analysis Intent（做什么分析）
+| 用户问法 | `analyses`（示例） |
+|----------|-------------------|
+| 这个月采购成本怎么样？ | `summary`, `risk` |
+| 今年青岛 T28 成本怎么变化？ | `summary`, `trend` |
+| 哪些零件涨得最快？ | `drivers`, `trend` |
+| 青岛和芜湖谁涨得更多？ | `comparison` |
+| 501006875AA 为什么涨？ | `drilldown`, `trend`, `drivers` |
 
-```json
-{
-  "analyses": ["summary", "trend"]
-}
-```
+### C.2 `analyses` 枚举
 
-或由解析器从问题推出（可组合，不是单选菜单）：
-
-| `analyses` 值 | 含义 |
-|---------------|------|
+| 值 | 含义 |
+|----|------|
 | `summary` | 盘子/结构/缺价计数 |
 | `trend` | 时间序列趋势 |
 | `drivers` | 涨跌动因 TopN |
 | `comparison` | 跨基地/跨区间对比 |
 | `risk` | 缺价 / partial / gate |
-| `drilldown` | 单号分解（通常配合 `filters.part_number`） |
+| `drilldown` | 单号分解（常配合 `filters.part_number`） |
 
-示例：「今年青岛 T28 哪些零件成本涨得最快？」
+规则层默认追加逻辑（附录 C.4.4）：默认 `summary`；跨月/趋势词 → `trend`；零件号 → `drilldown`；对比/多基地 → `comparison`；缺价 → `risk`。
 
-```json
-{
-  "time_range": { "start": "2026-01", "end": "2026-08" },
-  "filters": {
-    "location": "青岛",
-    "vehicle_model": "T28"
-  },
-  "subject": "part",
-  "comparison_basis": {
-    "same_part": true,
-    "same_bom_version": true,
-    "same_material": false,
-    "same_process": false,
-    "label": "same_part_and_bom"
-  },
-  "analyses": ["drivers", "trend"],
-  "user_question": "今年青岛 T28 哪些零件成本涨得最快？"
-}
-```
-
-「501006875AA 最近半年为什么涨这么多？」→ `analyses: ["drilldown","trend","drivers"]`，`filters.part_number` 有值。
-
-### 4.3 可比口径 `comparison_basis`（制造业必补）
-
-**时间相同 ≠ 可直接比。** BOM 变了、材料规格变了、工艺变了、核价公式版本变了、产品状态变了，则「3 月比 1 月涨 8%」可能是对象变了，不是价格趋势。
+### C.3 `comparison_basis` 字段
 
 ```json
 {
@@ -249,229 +289,89 @@ UI 数字 + LLM 解释（Markdown）
     "same_process": true,
     "same_formula_version": false,
     "label": "same_part_bom_material_process",
-    "notes": "仅同零件号+同 BOM 版本纳入趋势；材料/工艺未对齐时不得宣称「纯价格上涨」"
+    "notes": "材料/工艺未对齐时不得宣称纯价格上涨"
   }
 }
 ```
 
-| 要求 | 说明 |
-|------|------|
-| 趋势/对比必带 | Snapshot.meta 必须标明本次是 **同口径可比** 还是 **全量结果趋势（口径可能漂移）** |
-| Analysis 遵守 | `trend`/`drivers`/`comparison` 按 basis 过滤或分组；无法对齐时输出 `comparability: "loose"` 与原因 |
-| LLM 遵守 | 口径为 loose 时，解释中必须写明「可能含 BOM/工艺变更，不单是价格变动」 |
-| UI | 显著展示口径标签，避免采购把「对象变化」当成「钢价上涨」 |
+### C.4 Query Parser
 
-P0 至少实现：`same_part` + `same_bom_version` 开关与文案；材料/工艺/公式版本可先占位，在 meta 中声明「未校验」。
-
-### 4.4 Query Parser 轻量实现（`query_parser.py`）
-
-> 目标：自然语言灵活，但 **IntentParser 不做成重型 NLU / 自研规则森林**。  
-> 解析器只负责抽出「范围与对象线索」，**不做金额计算、不选报表类型、不调业务 Service 取数**。
-
-#### 4.4.1 职责分工（最优雅切分）
-
-| 谁 | 干什么 |
-|----|--------|
-| **LLM** | 口语 → 干净 JSON：`time_range` + `filters`（+ `compare_locations`） |
-| **Python** | 词典对齐、定 `analyses[]` / `subject`、环比/TopN、组 Snapshot |
-| **SQL/Repo** | `WHERE` / `GROUP BY` / `SUM` 精确取数 |
+#### C.4.1 流水线
 
 ```text
 POST body：仅 user_question
         │
         ▼
-┌───────────────────────────────────────┐
-│ A. ConditionExtractor（LLM，t=0）       │
-│    + 当前年月锚点；JSON Mode            │
-│    只吐 time_range / filters            │
-└───────────────────┬───────────────────┘
-                    ▼
-┌───────────────────────────────────────┐
-│ B. EntityAligner（Python）              │
-│    「青岛厂」→ location:"青岛"          │
-└───────────────────┬───────────────────┘
-                    ▼
-┌───────────────────────────────────────┐
-│ C. QueryParser 规则（Python）           │
-│    定 analyses / subject / basis        │
-│    → AnalysisQuery → Runner → SQL       │
-└───────────────────────────────────────┘
+ ConditionExtractor（LLM，t=0，可无 key 则规则回退）
+        │  只吐 time_range / filters
+        ▼
+ EntityAligner（Python）「青岛厂」→ location:"青岛"
+        │
+        ▼
+ QueryParser 规则 → analyses / subject / basis → AnalysisQuery
 ```
 
-前端**不要求**用户填写基地/年月/车型/BOM scope；胶囊与输入框都是一句人话。
-
-#### 4.4.2 抽取契约（LLM Structured Output 仅限此 Schema）
+#### C.4.2 LLM 抽取契约
 
 ```json
 {
   "time_range": { "start": "2026-01", "end": "2026-08" },
-  "filters": {
-    "location": "青岛厂",
-    "vehicle_model": "T28"
-  },
+  "filters": { "location": "青岛厂", "vehicle_model": "T28" },
   "compare_locations": []
 }
 ```
 
-| 规则 | 说明 |
-|------|------|
-| LLM 只做抽取 | 不得输出金额、结论、`analyses` |
-| `response_format=json_object` + `temperature=0` | API 级约束 + 确定性 |
-| 未提时间 | `time_range` 默认 = 当前年月（start=end） |
-| 入口无 scope | 条件一律从 `user_question` 抽出 |
+- 不得输出金额、结论、`analyses`  
+- 未提时间 → 默认当前年月  
+- 相对时间归一：这个月 / 近三个月 / 今年以来 / 过去半年（规则层校正）
 
-相对时间说法归一（规则层可再校正）：
+#### C.4.2.1 降级链条（按顺序尝试，永远不报「解析失败」）
 
-| 用户说法 | `time_range` |
-|----------|--------------|
-| 这个月 | start=end=当前系统月 |
-| 近三个月 | end=当前月，start=end-2 |
-| 今年以来 / 1月到8月 | start=当年-01 或明示，end=明示或当前月 |
-| 过去半年 | end=当前月，start=end-5 |
+```text
+第1级（最优）：LLM 成功抽取 → 词典对齐通过 → 使用
+    │
+第2级（部分降级）：LLM 抽取成功，但某 filter 对齐失败
+    → 丢弃该 filter（不加），meta.unresolved_mentions 记录原文
+    → 继续执行分析（范围放宽，而非中断）
+    │
+第3级（时间降级）：LLM 未抽/抽错 time_range
+    → 规则层兜底：start = end = 当前系统月份
+    → meta.data_message = "未识别到时间范围，默认分析当月"
+    │
+第4级（最粗兜底）：LLM 返回非 JSON / 超时 / 字段全缺
+    → 全部规则兜底：
+       time_range = 当前月份
+       filters = {}（全量分析，不加任何基地/车型过滤）
+       analyses = ["summary", "risk"]（最保守的安全组合）
+    → meta.data_message = "未能识别具体条件，展示全量数据摘要"
+    → 状态仍返回 success（不弹红字报错）
+```
 
-#### 4.4.3 Schema 词典对齐（强制）
+**原则**：让采购**永远看到一段 Markdown**（哪怕只是全量摘要），而不是「解析失败，请重新提问」。采购宁愿看到范围偏大的数据，也不愿意面对一个红色报错框。
 
-抽取得到的是**口语实体**，必须经本系统词典 / scope-options 对齐后才能进 `filters`：
+#### C.4.3 词典对齐
 
 | 步骤 | 做法 |
 |------|------|
-| 加载词典 | 基地、车型、BOM 版本等来自 `scope_options_repository` DISTINCT + 受控别名表（如「青岛厂」「青岛基地」→ `青岛`） |
-| 对齐 | 精确匹配 → 别名表 → （可选）规范化去后缀「厂/基地」；**禁止**模糊到错误主数据 |
-| 失败策略 | 对齐失败：该 filter **不写入** Query，并在 Snapshot.meta 记 `unresolved_mentions` |
-| 零件号 | 正则抽出后与结果表存在性可选校验；不存在则 drilldown 分析标注无数据，不编造 |
+| 词典来源 | `scope_options_repository` DISTINCT + 别名表 |
+| 对齐 | 精确 → 别名 → 去后缀「厂/基地」；禁止模糊错配 |
+| 失败 | filter 不写入；`unresolved_mentions` 记入 meta |
 
-```text
-「青岛厂」 --词典对齐--> filters.location = "青岛"   ✅
-「胶东那边」 --无法对齐--> 丢弃 + unresolved_mentions   ✅（不臆造）
-```
-
-#### 4.4.4 `analyses` 怎么定（纯 Python 规则）
+#### C.4.4 `analyses` 规则表
 
 | 线索 | 追加 |
 |------|------|
 | 默认 | `summary` |
-| 跨月 / 「趋势」「涨跌」 | `trend` |
-| 零件号 / 「零件号」 | `drilldown` |
-| 「对比」「谁更」/ 多基地 | `comparison` |
-| 「缺价」「partial」 | `risk` |
+| 跨月 / 趋势 / 涨跌 | `trend` |
+| 零件号 | `drilldown` |
+| 对比 / 谁更 / 多基地 | `comparison` |
+| 缺价 / partial | `risk` |
 
-**不做：** 让 LLM 选 analyses；重型意图分类；要求用户先选 Overview/Analyze/Drilldown。
+帮助类问句走 `usage_help`，语料 `static/helper/*.html`，不查核价库。
 
-解析只产出完整 `AnalysisQuery`；**不**在解析器里循环调 Service / 查金额。
+### C.5 AnalysisSnapshot 形状
 
----
-
-
-
-## 5. Repository ↔ Analysis 边界（必须定死）
-
-### 5.1 总规则
-
-> **Repository 可以做数据库层面的「查询聚合」，但不能承载业务分析逻辑。**  
-> **Analysis 不做「再查一遍库换写法」，只消费 Repository 返回的事实/查询聚合结果。**
-
-```text
-Repository                          Analysis
-──────────                          ────────
-WHERE / JOIN                        MoM / YoY
-GROUP BY month|part|location        Change Rate / 累计涨幅
-SUM / AVG / MIN / MAX / COUNT       Contribution（贡献度）
-DISTINCT（scope 下拉）               Ranking / TopN（业务排序规则）
-BETWEEN start AND end               Anomaly（业务异常判定）
-权限过滤（tenant/location）          Trend 形态摘要、可比口径对齐后的对比
-```
-
-| 允许放在 Repository | 必须放在 Analysis |
-|---------------------|-------------------|
-| `SUM(amount) GROUP BY year, month` | 环比、同比、累计涨幅 |
-| `AVG(price) GROUP BY spec, month` | 贡献度、头部集中度 |
-| 按 `part_number` 过滤的明细行 | TopN 业务排序（含并列规则） |
-| 区间内 raw rows（有行数上限） | 异常月/异常件判定 |
-| | 跨基地「谁涨得更多」的结论字段 |
-| | 按 `comparison_basis` 做可比对齐后的差分 |
-
-**禁止：** Repository 方法名叫 `analyze_*` / `compute_mom_*`；在 Repository 里写「值得议价」类业务判断；Analysis 里再写一套绕过 Repository 的 SQL。
-
-### 5.2 正确 vs 错误（时间范围）
-
-```text
-正确：
-  Repository.query_monthly_totals(filters, start, end)
-    → [{month, sum_amount}, ...]   // SQL GROUP BY 即可
-  Analysis.trend(rows, comparison_basis)
-    → {points, mom_rates, cumulative_change, anomalies, comparability}
-
-错误：
-  for m in 1..8: 按月分页取数 → 把多月明细堆给 LLM 自己比
-
-错误：
-  Repository.get_trend_with_mom_and_top_drivers(...)  // 业务分析泄漏进 Repository
-```
-
-### 5.3 Repository 约定
-
-```python
-# 示意：只做查询与查询聚合
-def query_l0_monthly_totals(
-    db: Session,
-    *,
-    filters: dict[str, str],
-    start: str,  # YYYY-MM
-    end: str,
-    tenant_id: ...,
-) -> list[MonthlyTotalRow]:
-    """WHERE + GROUP BY month + SUM；不含环比/贡献度。"""
-    ...
-```
-
-| 规则 | 说明 |
-|------|------|
-| 可直读 | 结果表 Model；参数化 ORM / SQL |
-| 返回 | 本切片行 / 查询聚合 TypedDict；**不是**上游列表 VO，**不**包 ApiResponse |
-| 权限 | WHERE 必带租户/基地等与现网一致的范围 |
-| 禁止 | 写业务表；调算价 Orchestrator；按月循环调上游 Service；实现 MoM/贡献度/议价判断 |
-
----
-
-## 6. Analysis：确定性计算（可组合）
-
-按 Query.`analyses` **按需执行**模块，结果写入 Snapshot.`result`（见 §7），不要每次跑全套。
-
-| 模块 | 输入 | 输出（确定性） |
-|------|------|----------------|
-| `summary` | 查询聚合行 / 计数 | 盘子、结构占比（占比若由总额相除，属确定性算，可在 Analysis） |
-| `trend` | 月序列 + comparison_basis | 点列、高低点、累计变化、逐月环比、异常月、`comparability` |
-| `drivers` | 对象多期值 + basis | start/end/change/change_rate、TopN、贡献度 |
-| `comparison` | 多序列 | 各涨幅、差值、winner 字段 |
-| `risk` | partial/缺价/gate 事实 | risks 列表 |
-| `drilldown` | 单号事实 | 分解行 + 区间差分 |
-
-**确定性结论**示例（Analysis 写进 Snapshot，LLM 不得改数字）：
-
-- 「青岛 1–8 月累计 +8.7%，芜湖 +3.2%」  
-- 「Top3 零件贡献了区间涨幅的 62%」  
-- 「本次趋势口径：同零件号+同 BOM（loose/tight）」  
-
-**业务解释与判断**示例（LLM，须基于 Snapshot 证据）：
-
-- 「本次上涨主要受钢材价格变化影响」（需 Snapshot 中有钢材动因证据）  
-- 「该零件值得优先与供应商重新议价」（建议口吻；不替代人工拍板）  
-
-### 6.1 场景
-
-**趋势：** Repository 一次查出 8 个月 `GROUP BY month` 合计 → Analysis.trend → LLM 叙述阶段变化。  
-**动因：** Repository 区间零件行或按件汇总 → Analysis.drivers Top20 → LLM 归纳集中在哪类件。  
-**对比：** Repository `location IN (…) AND month BETWEEN` → Analysis.comparison 算出两侧涨幅 → LLM 解释差距。
-
----
-
-## 7. AnalysisSnapshot：本次结果，不是万能容器
-
-> **Snapshot 是「本次分析结果」，不是「所有可能数据的抽屉」。**
-
-用户只问钢材趋势时，**不要**塞 `parts` / `gate` / `drivers` / `comparison` 空壳。
-
-### 7.1 形状
+> 生成态；按需填充；只含本次 `analyses` 请求的部分。
 
 ```json
 {
@@ -480,7 +380,7 @@ def query_l0_monthly_totals(
     "has_data": true,
     "comparability": "tight",
     "comparison_basis_label": "same_part_and_bom",
-    "currency_note": "金额单位：元；禁止改写为万元",
+    "currency_note": "金额单位：元",
     "generated_at": "…",
     "data_message": "…"
   },
@@ -496,77 +396,29 @@ def query_l0_monthly_totals(
 }
 ```
 
-| 块 | 含义 |
-|----|------|
-| `query` | 回显本次 AnalysisQuery（含 time_range、filters、basis、analyses） |
-| `meta` | 有无数据、**可比口径标签**、币种、生成时间 |
-| `summary` | 可选；仅当 `analyses` 含 summary 或需要一句话 KPI 时出现 |
-| `result` | **按分析类型分化**：`kind` = trend \| drivers \| comparison \| risk \| drilldown \| composite |
-| `evidence` | 支撑 result 的少量序列/样本（已裁剪），供 UI 表与 LLM 引用 |
+`result.kind` 可为 `trend` | `drivers` | `comparison` | `risk` | `drilldown` | `composite`。  
+`composite` 时 `result.parts` 仅含本次请求的子模块。
 
-`result.kind = "composite"` 时：
+喂 Prompt：System（禁止重算、loose 必说明）+ User（`user_question` + 裁剪后 Snapshot JSON）。
 
-```json
-"result": {
-  "kind": "composite",
-  "parts": {
-    "drilldown": { },
-    "trend": { },
-    "drivers": { }
-  }
-}
-```
+#### C.5.1 可观测性（生产必配）
 
-只放入本次 `analyses` 请求过的部分。
+| 项 | 落点 | 用途 |
+|----|------|------|
+| `trace_id` | 每个任务生成一个 UUID，贯穿 Query → Repo → Analysis → LLM，写进 `llm_analysis_reports.trace_id` | 线上排查单个分析请求的全链路耗时 |
+| **LLM 输入输出审计** | 记录 `prompt_preview`（前 500 字符）和 `llm_response_preview`（前 500 字符），落库但不返回前端 | 调试抽取不准 / 回答跑偏，回放现场 |
+| **慢查询日志** | Repo 层 SQL 执行 > 1s 的打印 `warn` 日志，含 `trace_id` 和 SQL 摘要 | DBA 介入优化前，开发自己先抓到是哪条 SQL 慢 |
+| **分析结果对比** | 每个 Snapshot 中 `analysis_version` 字段（如 `v1.0`），便于日后算法升级时回溯旧结果是否被影响 | 算法迭代时，有基线版本可对比 |
 
-### 7.2 喂给 LLM
-
-```text
-System：采购助手；只引用 Snapshot；禁止重算；口径 loose 必须说明；异常必写
-User ：user_question + Snapshot JSON（已按本次 analyses 裁剪）+ 字段词典
-```
-
-UI：**数字/表/图以 Snapshot 为准**；Markdown 是解释与判断。
-
----
-
-## 8. 列表页落点（`menu_catalog.py`，仅服务端路由/测试）
-
-助理**问什么答什么**：聊天区只展示 Markdown 正文，**不生成跳转按钮或深链 Action**。
-
-`menu_catalog.py` 保留 `subject → hash_page` 映射，用于：
-
-- Query Parser / 菜单问句回归测试（`tests/llm/test_menu_questions.py`）
-- 侧栏覆盖审计（`MENU_COVERAGE`）
-
-| `subject` | 用户说法示例 | 落点 |
-|-----------|--------------|------|
-| `l0` / `cost_total` | 成品成本、采购成本、供货总成 | `#/l0-assembly-cost` |
-| `stamping_part` | 冲压件、冲压零件成本 | `#/stamping-part-cost` |
-| `steel_price` | 钢材、钢价、联动价 | `#/steel-price-list` |
-| `steel_price_policy` | 加减价、厚度加减价 | `#/steel-price-policy-download` |
-| `steel_base_price` | 基准价、中标价 | `#/base-price-download` |
-
-帮助类问题走 `usage_help` 模式，语料来自 `static/helper/*.html`，不经 `menu_catalog` 深链。
-
----
-
-
-## 9. 持久化与 API
-
-| 存哪 | 存什么 |
-|------|--------|
-| 服务端分析记录 | Query、Snapshot、explanation（Markdown）、审计字段 |
-| localStorage | 仅 UI 与 `analysis_id` 引用 |
+### C.6 HTTP API
 
 | Method | Path | 说明 |
 |--------|------|------|
-| `POST` | `/api/llm/reports` | body：**仅** `user_question`（+ 可选 `audience` / `force_refresh` / `idempotency_key`） |
+| `POST` | `/api/llm/reports` | body：`user_question`（+ 可选 `audience` / `force_refresh` / `idempotency_key`） |
 | `GET` | `/api/llm/tasks/{task_id}` | 轮询 |
-| `GET` | `/api/llm/reports/{id}` | Markdown 正文 + 元数据 |
-| `GET` | `/api/llm/reports` | 历史 |
-
-**对外请求不传 scope / analyses[]；analyses 由条件抽取后在服务端组合。** 不以 `mode=overview|analyze|drilldown` 作为产品概念。
+| `GET` | `/api/llm/reports/{id}` | Markdown + 元数据；校验 `user_id` |
+| `GET` | `/api/llm/reports` | 本人历史分页（默认 limit=10）；**列表项 VO**，不含 `markdown_content` |
+| `DELETE` | `/api/llm/reports/{id}` | 只能删除本人的记录 |
 
 ```json
 {
@@ -576,130 +428,84 @@ UI：**数字/表/图以 Snapshot 为准**；Markdown 是解释与判断。
 }
 ```
 
----
+对外不传 `scope` / `analyses[]`；由服务端解析组合。
 
-## 10. 目录建议
+**落库字段（`llm_analysis_reports`）**：`user_id`、`user_question`、scope 字段、`markdown_content`、状态、审计等。完整 Snapshot **不落库整包**。
+
+### C.7 目录结构
 
 ```text
 app/services/llm/
-    query/
-    query_parser.py       # NL → LLM 条件抽取 → 词典对齐 → AnalysisQuery
-    condition_extractor.py
-    entity_aligner.py     # Schema 词典 / scope-options 对齐（「青岛厂」→「青岛」）
-    time_range.py
-    comparison_basis.py   # 口径默认值与校验
-  analysis/
-    summary.py
-    cost_trend.py         # MoM、累计涨幅、异常月（业务分析）
-    cost_driver.py
-    comparison.py
-    anomaly.py
-    drilldown.py
-    runner.py             # 按 analyses[] 组合执行
-  context/
-    snapshot_builder.py   # 只组装「本次」Snapshot
-    field_labels.py
+  query/                  # parser, condition_extractor, entity_aligner, time_range, comparison_basis
+  analysis/               # summary, trend, driver, comparison, drilldown, runner
+  context/                # snapshot_builder
+  catalog/                # field_labels
+  usage/                  # usage_help 语料检索
   generator.py
   report_service.py
-  usage/                  # 帮助语料检索（usage_help 模式）
 
-app/repositories/llm/
-  cost_analysis_repository.py     # WHERE/GROUP BY/SUM 等查询聚合
-  steel_price_analysis_repository.py
-  stamping_cost_analysis_repository.py
-  scope_options_repository.py
-  report_repository.py
-
-app/schemas/llm/          # AnalysisQuery / Snapshot
+app/repositories/llm/     # cost/steel/stamping analysis repos, scope_options, report_repository
+app/schemas/llm/
 app/routers/llm/
 static/js/llm-assistant/
 ```
 
-| 模块职责 | 落点 |
-|----------|------|
-| 查事实 / SQL 查询聚合 | `repositories/llm/*` |
-| 业务分析（trend/driver/…） | `services/llm/analysis/*` |
-| 组装本次 Snapshot | `context/snapshot_builder.py` |
-| 问题 → AnalysisQuery | `query/query_parser.py`（+ 词典对齐） |
-| Snapshot 形状 | `query` / `meta` / `summary?` / `result` / `evidence`；按需填充 |
-| 产品入口 | `analyses[]` 由解析/胶囊组合；非用户报表菜单 |
+### C.8 `menu_catalog`（测试辅助）
+
+**不进产品 UI。** 保留 `subject → hash_page` 映射，用于：
+
+- `tests/llm/test_menu_questions.py` 菜单问句回归  
+- 侧栏覆盖审计（`MENU_COVERAGE`）
+
+| `subject` | 落点（参考） |
+|-----------|--------------|
+| `l0` / `cost_total` | `#/l0-assembly-cost` |
+| `stamping_part` | `#/stamping-part-cost` |
+| `steel_price` | `#/steel-price-list` |
+| `steel_price_policy` | `#/steel-price-policy-download` |
+| `steel_base_price` | `#/base-price-download` |
+
+### C.9 Repository 示意
+
+```python
+def query_l0_monthly_totals(
+    db: Session,
+    *,
+    filters: dict[str, str],
+    start: str,  # YYYY-MM
+    end: str,
+    tenant_id: ...,
+) -> list[MonthlyTotalRow]:
+    """WHERE + GROUP BY month + SUM；不含环比/贡献度。"""
+```
+
+禁止：Repository 方法名 `analyze_*`；Repo 内 MoM/议价判断；Analysis 内绕过 Repo 的 SQL。
+
+### C.10 开发拆单指南（按此拆 Story）
+
+| 序号 | Story 名称 | 产出 | 预估（人天） |
+|------|-----------|------|-------------|
+| 1 | **预聚合表 ETL** | 新建 `monthly_cost_summary` 表 + 每日定时任务（凌晨 2 点） | 2 |
+| 2 | **Repository 层** | `query_monthly_totals`、`query_part_details`、`query_location_comparison` 三个方法 + 单元测试（Mock DB） | 2 |
+| 3 | **Analysis 核心算法** | `trend.py`、`drivers.py`、`comparison.py`、`risk.py`、`drilldown.py` + 公式单测（输入固定序列，输出预期数字） | 3 |
+| 4 | **Query Parser** | `condition_extractor`（LLM 调用）+ `entity_aligner`（词典对齐）+ `analyses_rules` + 降级策略单测（模拟 LLM 失败场景） | 3 |
+| 5 | **Snapshot + LLM 生成** | `snapshot_builder` + `generator.py`（Prompt 组装 + LLM 调用）+ Markdown 渲染校验 | 2 |
+| 6 | **API + 落库 + 历史** | 5 个 HTTP 接口 + `llm_analysis_reports` 表迁移 + 权限校验（本人隔离） | 2 |
+| 7 | **前端浮窗 + 历史 overlay** | 聊天区、胶囊、打印/Word 导出、历史列表（触底加载） | 3 |
+| 8 | **联调与 50 条真实问句回归** | 拿采购部真实问句跑通，调 Prompt 直到 90% 以上可接受 | 2 |
+| **合计** | | | **19 人天（≈ 1 人月）** |
 
 ---
 
-## 11. 约束清单
-
-| # | 约束 |
-|---|------|
-| R1 | 纯 REST；整包返回；无 SSE/WebSocket |
-| R2 | 异步任务 + 轮询为主路径 |
-| R3 | 不改核价公式；LLM 不重算、不改单位为万元 |
-| R4 | **业务分析逻辑（MoM/贡献度/TopN/异常）只在 Analysis**；Repository 仅查询与查询聚合 |
-| R5 | **时间范围一等公民**；一次按起止条件查询；禁止按月循环 Service |
-| R6 | 允许 `llm` 只读 Repository 直读结果表；禁止绕过数据权限与业务口径；分析主数据不经上游 Service→VO 拼装 || R7 | Query = Scope（filters+time+basis）+ Intent（analyses[]）；避免根级字段无限膨胀 |
-| R8 | **comparison_basis 必出现在趋势/对比类分析**；Snapshot.meta 标明 tight/loose |
-| R9 | Snapshot 只含本次结果；禁止万能大杂烩空块 |
-| R10 | 分析类型由系统组合；禁止把 Overview/Analyze/Drilldown 当用户主菜单 |
-| R11 | 确定性结论归 Analysis；业务解释与判断归 LLM |
-| R12 | **问什么答什么**：聊天区仅 Markdown；不返回 Action 按钮；帮助走 `usage_help` + helper 语料 |
-| R13 | Query Parser：规则优先；可选 Lightweight LLM **仅 Structured Output 抽取**；抽出实体须经 Schema 词典对齐；禁止 Parser 内算金额或臆造主数据 |
-| R14 | 服务端落分析记录；localStorage 仅 UI |
-| R15 | 壳层浮动助理；异常/缺价/口径漂移必显 |
-| R16 | 轻量 Query 解析；不做完备 NL Query Engine（P0） |
-
-**非目标：** Tool Calling 开放域、流式打字机、侧栏分析菜单、自动议价发函、向量 RAG（首期）、LLM 算环比、Repository 内实现业务分析、按月调 Service 冒充时间范围。
-
----
-
-## 12. 分期
-
-| 阶段 | 交付 |
-|------|------|
-| **P0** | Query Parser + Repository 区间查询 + Analysis + 瘦 Snapshot + 落库 + 壳层；`usage_help` 帮助模式；comparison_basis 最小集 |
-| **P1** | comparison；drilldown 组合；口径校验增强；历史列表 |
-| **P2** | 材料/工艺/公式版本对齐；导出；审计增强 |
-
----
-
-## 13. 验收口诀
-
-> **30 秒内能指出一个问题，并立刻点到证据和下一步；若口径不可比，必须看得见。**
-
-| 场景 | 通过 | 失败 |
-|------|------|------|
-| 趋势 | 一次区间查询 + Analysis 环比与库一致 + **展示口径标签** | 循环 Service / 模型自己数月 / 隐瞒 BOM 变更 |
-| 贵在哪 | drivers 含 rate，数字出 Analysis | 模型估算涨幅 |
-| 跨基地 | comparison 出 Analysis | 明细堆 Prompt 让模型比 |
-| 单号组合 | drilldown+trend 同次 Snapshot，无多余空块 | 塞满无关 gate/parts |
-| 帮助 | usage_help 命中 helper 语料，步骤可操作 | 编造菜单路径或操作 |
-| Parser | 「青岛厂」对齐为 `青岛`；未知实体进 unresolved | Parser 臆造基地或直接算涨幅 |
-| 审计 | 按 analysis_id 重开 | 清缓存无法找回 |
-
----
-
-## 14. 决策摘要（评审用）
-
-| 议题 | 决策 |
-|------|------|
-| 产品本质 | 核价库分析查询系统 + LLM 解释/判断层 |
-| Repository vs Analysis | SQL 查询聚合在 Repo；MoM/贡献度/TopN/异常在 Analysis |
-| Query | Scope（filters+time+basis）+ Intent（analyses[]）；不做过早 OLAP 字段森林 |
-| 可比口径 | `comparison_basis` 一等公民；趋势必标 tight/loose |
-| Snapshot | query/meta/summary/result/evidence；按需填充 |
-| 三 mode | 非用户菜单；系统组合 analyses |
-| LLM | 不算数；可做业务解释与判断（有证据） |
-| 帮助 | `usage_help` + `static/helper` 语料；不查核价库 |
-| Query Parser | 规则优先 + 可选 Structured Output 抽取 + 词典对齐；非重型 NLU |
-| 取数 | **`llm` Repository 直读**结果表；按条件/时间范围查询；遵守权限与口径 |
----
-
-## 15. 修订记录
+## 修订记录
 
 | 日期 | 说明 |
 |------|------|
-| 2026-08-23 | 同步 §0.1 / §2 / §3 等 Actions 过时表述；§0.1 流程图即分层主图 |
-| 2026-08-23 | 移除 ActionBuilder / 聊天区深链；Snapshot 无 actions；新增 usage_help 与成品核价卡住 FAQ |
-| 2026-08-22 | 初稿：分析查询系统 + LLM 解释层；四层边界；时间范围与可比口径；Query Parser |
+| 2026-08-23 | **归档**：删 B.8 分期 / B.9 决策摘要，合并为 B.8 P0 上线范围 |
+| 2026-08-23 | 施工补丁：B.6.1 算法公式、C.4.2.1 降级链条、B.7 #14/#15 性能约束、C.5.1 可观测性、C.10 拆单指南 |
+| 2026-08-23 | **文档熵减**：重组为 A 产品 / B 架构 / C 附录；合并约束清单；口径统一为 Markdown 正文；历史本人+10条触底；移除 Action/三 mode 主叙事 |
+| 2026-08-22 | 初稿：分析查询系统 + LLM 解释层；四层边界；时间范围与可比口径 |
 
 ---
 
-*实现以 §0 / §3 / §4 / §5 / §7 / §11 为准。*
+*实现以 **A（产品）+ B（架构）** 为准；Schema/API 细节查 **C（附录）**。*

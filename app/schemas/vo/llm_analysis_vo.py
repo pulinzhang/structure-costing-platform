@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_serializer
 
@@ -41,6 +40,48 @@ class LlmAnalysisReportMetadataVO(BaseModel):
         return value.isoformat() if value else None
 
 
+class LlmAnalysisReportListMetadataVO(BaseModel):
+    """分析历史列表项元数据（不含正文与审计大字段）。"""
+
+    generated_at: datetime | None = None
+
+    @field_serializer("generated_at")
+    def _ser_dt(self, value: datetime | None) -> str | None:
+        return value.isoformat() if value else None
+
+
+class LlmAnalysisReportListItemVO(BaseModel):
+    """GET /api/llm/reports 列表项；不含 markdown_content。"""
+
+    report_id: int
+    status: str
+    user_question: str
+    resolved_report_type: str
+    scope: LlmAnalysisScopeVO
+    metadata: LlmAnalysisReportListMetadataVO
+
+    @classmethod
+    def from_orm_row(cls, row: object) -> "LlmAnalysisReportListItemVO":
+        return cls(
+            report_id=int(getattr(row, "id")),
+            status=str(getattr(row, "status")),
+            user_question=str(getattr(row, "user_question")),
+            resolved_report_type=str(getattr(row, "resolved_report_type")),
+            scope=LlmAnalysisScopeVO(
+                location=str(getattr(row, "location")),
+                year=int(getattr(row, "year")),
+                month=int(getattr(row, "month")),
+                vehicle_model=str(getattr(row, "vehicle_model")),
+                bom_version=str(getattr(row, "bom_version")),
+                part_number=getattr(row, "part_number", None),
+                stamping_supplier=getattr(row, "stamping_supplier", None),
+            ),
+            metadata=LlmAnalysisReportListMetadataVO(
+                generated_at=getattr(row, "updated_at", None),
+            ),
+        )
+
+
 class LlmAnalysisReportTaskVO(BaseModel):
     """创建任务受理 / 轮询摘要。"""
 
@@ -71,7 +112,6 @@ class LlmAnalysisReportVO(BaseModel):
     markdown_content: str | None = None
     error_message: str | None = None
     metadata: LlmAnalysisReportMetadataVO
-    attachments: dict[str, Any] | None = None
 
     @classmethod
     def from_orm_row(
@@ -79,7 +119,6 @@ class LlmAnalysisReportVO(BaseModel):
         row: object,
         *,
         from_cache: bool = False,
-        attachments: dict[str, Any] | None = None,
         pack_ids: list[str] | None = None,
     ) -> "LlmAnalysisReportVO":
         import json
@@ -146,5 +185,4 @@ class LlmAnalysisReportVO(BaseModel):
                 intent_source=str(getattr(row, "intent_source")),
                 user_question=str(getattr(row, "user_question")),
             ),
-            attachments=attachments,
         )

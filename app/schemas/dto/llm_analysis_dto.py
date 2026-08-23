@@ -31,4 +31,4 @@ class LlmAnalysisReportQuery(BaseModel):
     report_type: str | None = None
     status: str | None = None
     skip: int = Field(0, ge=0)
-    limit: int = Field(20, ge=1, le=100)
+    limit: int = Field(10, ge=1, le=100)

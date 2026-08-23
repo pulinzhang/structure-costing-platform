@@ -47,3 +47,14 @@ export async function listReports(params = {}) {
     const res = await HttpClient.get('/api/llm/reports', { params });
     return res.data;
 }
+
+/**
+ * @param {number|string} reportId
+ * @returns {Promise<object>}
+ */
+export async function deleteReport(reportId) {
+    const res = await HttpClient.delete(
+        `/api/llm/reports/${encodeURIComponent(String(reportId))}`,
+    );
+    return res.data;
+}
