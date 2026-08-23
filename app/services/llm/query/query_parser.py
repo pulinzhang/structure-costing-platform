@@ -6,7 +6,7 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
-from app.common.part_number import extract_part_number_from_text
+from app.common.part_number import extract_part_number_from_text, sanitize_part_number_token
 from app.common.tonnage import extract_tonnage_from_text
 from app.common.timezone import now
 from app.schemas.llm.analysis_query import AnalysisKind, AnalysisQuery, TimeRange
@@ -161,8 +161,15 @@ class QueryParser:
         )
         for key in ("location", "vehicle_model", "bom_version", "part_number", "tonnage"):
             value = raw_filters.get(key)
-            if value is not None and str(value).strip():
-                filter_mentions.append((key, str(value).strip()))
+            if value is None or not str(value).strip():
+                continue
+            text = str(value).strip()
+            if key == "part_number":
+                sanitized = sanitize_part_number_token(text)
+                if sanitized:
+                    filter_mentions.append((key, sanitized))
+                continue
+            filter_mentions.append((key, text))
 
         compare_locations_raw = draft.get("compare_locations") or []
         if isinstance(compare_locations_raw, list):

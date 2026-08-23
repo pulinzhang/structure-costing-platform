@@ -77,7 +77,15 @@ def test_query_parser_yikoujia_alias() -> None:
 def test_annual_part_price_qingdao_yoy() -> None:
     db = DatabaseConfig.get_session_factory()()
     try:
-        query = QueryParser().parse(
+        parser = QueryParser()
+        parser._extractor.extract = MagicMock(  # noqa: SLF001
+            return_value={
+                "time_range": {"start": "2025-01", "end": "2025-12"},
+                "filters": {"location": "青岛基地"},
+                "compare_locations": [],
+            }
+        )
+        query = parser.parse(
             db,
             user_question="今年与去年，青岛基地，年度零件价，比较。",
         )

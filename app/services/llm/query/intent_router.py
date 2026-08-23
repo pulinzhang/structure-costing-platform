@@ -33,6 +33,7 @@ _ANALYSIS_DATA_SIGNALS: tuple[str, ...] = (
 )
 
 _USAGE_HOW_SIGNALS: tuple[str, ...] = (
+    "怎么",
     "怎么用",
     "如何使用",
     "怎么操作",
@@ -134,6 +135,9 @@ def detect_query_mode(question: str) -> QueryMode:
     has_how = any(signal in text for signal in _USAGE_HOW_SIGNALS)
     has_usage_topic = any(signal in text for signal in _USAGE_TOPIC_SIGNALS)
     has_analysis = any(signal in text for signal in _ANALYSIS_DATA_SIGNALS)
+
+    if has_how and has_usage_topic:
+        return "usage_help"
 
     if has_analysis:
         return "analysis"

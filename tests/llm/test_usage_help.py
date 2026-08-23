@@ -18,6 +18,7 @@ from app.services.llm.usage.corpus import load_corpus_chunks
         ("看不到焊接工程菜单", "usage_help"),
         ("每月要维护哪些数据？", "usage_help"),
         ("怎么导出核对合册？", "usage_help"),
+        ("成品核价一览怎么导出 Excel？", "usage_help"),
         ("我在进行成品核价计算时卡住了，怎么办？", "usage_help"),
         ("青岛 1 月成品价多少？", "analysis"),
         ("501006875AA 多少钱", "analysis"),

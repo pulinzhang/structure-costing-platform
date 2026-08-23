@@ -15,6 +15,13 @@ _PART_SHORT_RE = re.compile(
     r"(?<![0-9])(?!(?:19|20)\d{2})(\d{4})(?!\d|年)",
 )
 
+_YEAR_TOKEN_RE = re.compile(r"^(?:19|20)\d{2}$")
+_YM_HYPHEN_RE = re.compile(r"^(?:19|20)\d{2}-(?:0[1-9]|1[0-2])$")
+_YM_COMPACT_RE = re.compile(r"^(?:19|20)\d{2}(?:0[1-9]|1[0-2])$")
+_YMD_COMPACT_RE = re.compile(
+    r"^(?:19|20)\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01])$"
+)
+
 T = TypeVar("T")
 
 
@@ -37,9 +44,33 @@ def normalize_part_number_token(value: str) -> str:
     return (value or "").strip().upper()
 
 
+def is_temporal_part_number_token(value: str) -> bool:
+    """年份 / 年月 / 年月日写法，不是零件号。"""
+    token = normalize_part_number_token(value)
+    if not token:
+        return False
+    if _YEAR_TOKEN_RE.fullmatch(token):
+        return True
+    if _YM_HYPHEN_RE.fullmatch(token):
+        return True
+    if _YM_COMPACT_RE.fullmatch(token):
+        return True
+    if _YMD_COMPACT_RE.fullmatch(token):
+        return True
+    return False
+
+
+def sanitize_part_number_token(value: str) -> str | None:
+    """剔除时间 token；合法零件号片段则返回规范化大写串。"""
+    token = normalize_part_number_token(value)
+    if not token or is_temporal_part_number_token(token):
+        return None
+    return token
+
+
 def part_numbers_match(row_part_number: str, query_token: str) -> bool:
     row = normalize_part_number_token(row_part_number)
-    token = normalize_part_number_token(query_token)
+    token = sanitize_part_number_token(query_token)
     if not row or not token:
         return False
     if row == token:
@@ -48,16 +79,16 @@ def part_numbers_match(row_part_number: str, query_token: str) -> bool:
 
 
 def extract_part_number_from_text(text: str) -> str | None:
-    """从问句抽取全码或 4 位数字简码。"""
+    """从问句抽取全码或 4 位数字简码（排除年份/年月）。"""
     question = (text or "").strip()
     if not question:
         return None
     full = _PART_FULL_RE.search(question)
     if full:
-        return full.group(1).upper()
+        return sanitize_part_number_token(full.group(1))
     short = _PART_SHORT_RE.search(question)
     if short:
-        return short.group(1)
+        return sanitize_part_number_token(short.group(1))
     return None
 
 
@@ -67,7 +98,7 @@ def pick_part_row(
     *,
     get_part_number: Callable[[T], str],
 ) -> T | None:
-    token = normalize_part_number_token(query_token)
+    token = sanitize_part_number_token(query_token)
     if not rows or not token:
         return None
     exact = next(

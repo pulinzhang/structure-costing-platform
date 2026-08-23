@@ -22,6 +22,7 @@ def test_extract_four_digit_short_code() -> None:
 
 def test_extract_skips_year_in_question() -> None:
     assert extract_part_number_from_text("2026年1月青岛采购成本") is None
+    assert extract_part_number_from_text("2025-01青岛") is None
 
 
 def test_part_numbers_match_fuzzy() -> None:

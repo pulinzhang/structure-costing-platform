@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 from sqlalchemy.orm import Session
 
-from app.common.part_number import normalize_part_number_token
+from app.common.part_number import normalize_part_number_token, sanitize_part_number_token
 from app.common.tonnage import normalize_tonnage_token
 from app.repositories.llm.scope_options_repository import ScopeOptionsRepository
 
@@ -77,7 +77,7 @@ class EntityAligner:
                 else:
                     unresolved.append(f"bom_version:{text}")
             elif key == "part_number":
-                token = normalize_part_number_token(text)
+                token = sanitize_part_number_token(text)
                 if not token:
                     continue
                 matches = self._scope_repo.list_part_numbers_matching(db, token)
