@@ -15,11 +15,14 @@
 | **冲压工程** | 工艺 Excel 上传与解析；零件/工序列表；冲次单价；加工费计算与列表 |
 | **一事一议** | 加减价政策上传/列表/匹配；基准价格；中标钢厂厚度一览；废料月度销售价 |
 | **BOM** | 材料清单上传；产品结构；结构图可视化 |
-| **核价** | 冲压钢材联动计算与一览；零件价格计算与一览（审核/导出）；自动核价引擎（占位） |
+| **核价** | 冲压钢材联动计算与一览；零件价格计算与一览（审核/导出）；自动核价引擎 |
+| **AI 助理** | 核价结果智能分析：自然语言提问 → 系统算数 + LLM 解释；Markdown 回答、分析历史、打印/Word 导出 |
 | **报价** | 报价单管理（占位） |
 | **设置** | 个人资料、系统配置、用户管理、操作日志 |
 
-典型链路：工艺 / 政策 / 基价 / 废料价 / BOM 入库 → 钢材联动 → 零件核价（材料 + 加工费）→ 审核导出。
+典型链路：工艺 / 政策 / 基价 / 废料价 / BOM 入库 → 钢材联动 → 零件核价（材料 + 加工费）→ 成品核价 → **AI 助理解读趋势与动因**。
+
+**AI 助理（LLM）**：数字由核价库与 Analysis 层计算，LLM 只负责自然语言解释；问什么答什么，不流式、不跳页。设计详见 [docs/llm-costing-analysis-report-design.md](docs/llm-costing-analysis-report-design.md)。
 
 **生产环境（Windows，可无 Python）**：见 [docs/deploy-windows-production.md](docs/deploy-windows-production.md)，一键脚本 `scripts\windows\setup.bat`。
 
@@ -183,6 +186,10 @@ python -X utf8 your_script.py
 | `LOG_LEVEL` | 日志级别 | 随环境：开发 DEBUG / 生产 WARNING |
 | `DEBUG` | 调试模式 | 开发 `True` |
 | `CORS_ORIGINS` | 跨域 | 开发 `*`；生产白名单 |
+| `LLM_API_KEY` | AI 助理 API Key（OpenAI 兼容） | 空则 LLM 降级为规则摘要 |
+| `LLM_MODEL` / `LLM_BASE_URL` | 模型与接口地址 | `deepseek-chat` / DeepSeek |
+| `LLM_SQL_TIMEOUT_SECONDS` | 分析 SQL 熔断 | `5` |
+| `LLM_MAX_CONCURRENT_TASKS_PER_USER` | 每用户并发分析上限 | `2` |
 
 ---
 
@@ -254,8 +261,8 @@ stamping-costing-platform/
 ├── main.py                 # FastAPI 入口、静态挂载、路由注册
 ├── app/
 │   ├── common/             # 权限、审计、时区等横切
-│   ├── routers/            # API：stamping / yishiyiyi / bom / costing / settings …
-│   ├── services/           # 业务逻辑（含异步计算编排）
+│   ├── routers/            # API：stamping / yishiyiyi / bom / costing / llm / settings …
+│   ├── services/           # 业务逻辑（含异步计算编排、LLM 分析）
 │   ├── repositories/       # 数据访问
 │   ├── models/             # ORM
 │   ├── schemas/            # dto/ + vo/ + PageResult
@@ -271,6 +278,7 @@ stamping-costing-platform/
 │       ├── app.js          # Hash 路由与页面注册
 │       ├── permissions.js
 │       ├── page-size.js
+│       ├── llm-assistant/  # 顶栏 AI 助理浮窗
 │       └── features/       # 与侧栏对齐的页面模块
 ├── docs/                   # 架构、前端、API 类型安全、权限等
 ├── data/                   # SQLite
@@ -302,6 +310,7 @@ stamping-costing-platform/
 | `/api/costing/steel-price` | 钢材联动计算与列表 |
 | `/api/costing/stamping-part-cost` | 零件价格计算与列表 |
 | `/api/costing/engine` | 自动核价引擎 |
+| `/api/llm` | AI 助理：提交分析、轮询结果、分析历史 |
 | `/api/quotation` | 报价 |
 | `/api/settings/system` | 系统配置 |
 | `/api/settings/users` | 用户与权限 |
@@ -341,6 +350,7 @@ await HttpClient.post('/api/stamping/upload/', formData);
 | [前端规范](docs/front-end.mdc) | SPA、Brabus、HUD 数据表 |
 | [API 类型安全](docs/api-type-safety.md) | `ApiResponse` / `PageResult` / 权限 Depends / `Any` 不进函数签名 |
 | [权限设计](docs/permission-design.md) | 前后端权限码 |
+| [LLM 智能分析设计](docs/llm-costing-analysis-report-design.md) | AI 助理产品契约与架构 |
 | [生产安装（Windows 一键）](docs/deploy-windows-production.md) | 无 Python 环境用 `scripts/windows/setup.bat` |
 | 云主机 Docker 手工发版 | 仓库根目录 `bash deploy.sh`（拉代码、构建、启动） |
 | [命名规范](docs/naming-convention.mdc) | 标识符命名 |

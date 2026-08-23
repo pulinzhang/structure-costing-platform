@@ -29,6 +29,7 @@
         <li><a href="#start">快速入门</a></li>
         <li><a href="#menu">菜单地图</a></li>
         <li><a href="#engine">自动核价引擎</a></li>
+        <li><a href="#llm-assistant">AI 助理</a></li>
         <li><a href="#export">导出 Excel</a></li>
         <li><a href="#faq">操作问答</a></li>
       </ul>
@@ -101,6 +102,7 @@
             <tr><td>焊接工程</td><td>上传<strong>材料清单</strong>（核价主线）、焊接单价、年度零件价、包装运输；拆解焊接并算成品焊接费</td></tr>
             <tr><td>一事一议</td><td>基准价、加减价政策、废料月度价（钢价联动输入）</td></tr>
             <tr><td>核价</td><td>钢材联动 → 冲压零件价 → <strong>成品核价</strong>；自动核价引擎；导出合册</td></tr>
+            <tr><td>顶栏 AI 助理</td><td>用自然语言问核价结果（趋势、动因、对比、下钻、风险）；系统算数，AI 写 Markdown 解释</td></tr>
             <tr><td>设置</td><td>系统费率、用户权限、操作日志</td></tr>
           </tbody>
         </table>
@@ -122,6 +124,39 @@
           <li><strong>启动</strong> 缺的年度计算结果会自动补算；再跑当月钢材 → 冲压零件价 → 成品核价。</li>
           <li><strong>看历史</strong> 一个任务通道看进度；卡住的任务可删除后重跑。</li>
         </ol>
+      </section>
+
+      <section id="llm-assistant">
+        <h2>AI 助理（核价智能分析）</h2>
+        <p class="lead">
+          顶栏右侧 <strong>AI 助手</strong> 按钮打开浮窗。数字由核价库计算，AI 只负责用自然语言解释——问什么答什么，不铺固定报告模板。
+        </p>
+        <ol class="steps">
+          <li>
+            <strong>提问</strong>
+            直接输入或点下方胶囊，例如：「青岛 T28 近 3 个月成品价趋势」「今年与去年对比」「501006875AA 为什么涨了」。
+          </li>
+          <li>
+            <strong>等待分析</strong>
+            系统异步跑查询与统计（无流式打字机）；状态栏显示进行中，完成后聊天区展示 <strong>Markdown 正文</strong>。
+          </li>
+          <li>
+            <strong>分析历史</strong>
+            点浮窗右上角时钟图标，查看本人历史记录（分页加载）；可重开、删除。管理员也只能看自己的记录。
+          </li>
+          <li>
+            <strong>导出</strong>
+            单条回答可打印或导出 Word（含问句、范围与时间元信息）。
+          </li>
+        </ol>
+        <div class="callout">
+          <strong>口径说明</strong>：若 BOM 版本变化导致不可严格同比，正文会写明 tight / loose；缺价零件不计入趋势与动因，并在正文中提示排除条数。
+        </div>
+        <ul>
+          <li>无 <code>LLM_ANALYSIS_RUN</code> 权限时顶栏按钮隐藏。</li>
+          <li>未配置 <code>LLM_API_KEY</code> 时仍可分析，但解释层会降级为规则摘要。</li>
+          <li>问操作步骤（如「怎么上传工艺」）会命中本帮助语料，不编造菜单路径。</li>
+        </ul>
       </section>
 
       <section id="export">
@@ -146,6 +181,8 @@
         <p>本机异常关机可能导致自动核价引擎任务卡住。在「核价 → 自动核价引擎」的<strong>运行历史</strong>中删除该任务后重新启动。</p>
         <h3>成品核价计算卡住了？</h3>
         <p>本机异常关机或关闭浏览器后，计算历史里可能仍显示<strong>计算中</strong>，系统会拒绝重复提交。打开「核价 → 成品核价计算」，在页面下方<strong>计算历史</strong>中找到状态为「计算中」的记录，点<strong>删除</strong>释放锁，再重新「开始计算」。删除只清日志与计算锁，不会撤销已写入成品核价一览的数据。</p>
+        <h3>AI 助理一直分析中？</h3>
+        <p>同一时间每人最多 2 个并发任务；数据量过大可能触发 SQL 熔断，请缩小时间范围（如近 3 个月）后重试。若长时间无响应，清空本机对话后重新提问。</p>
         <h3>需要了解概念或计算细节？</h3>
         <p>请参阅 <a href="knowledge.html">知识库</a>；需要对照实例请参阅 <a href="example.html">样例</a>。</p>
       </section>
