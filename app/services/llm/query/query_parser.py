@@ -15,7 +15,12 @@ from app.services.llm.query.comparison_basis import default_comparison_basis
 from app.services.llm.query.condition_extractor import ConditionExtractor
 from app.services.llm.query.entity_aligner import EntityAligner
 from app.services.llm.query.intent_router import detect_help_topic, detect_query_mode
-from app.services.llm.query.time_range import DefaultScopeMonth, normalize_time_range
+from app.services.llm.query.time_range import (
+    DefaultScopeMonth,
+    draft_has_time_range,
+    normalize_time_range,
+    question_has_explicit_time,
+)
 from app.utils.logging_config import get_logger
 
 logger = get_logger("service.llm.query_parser")
@@ -93,8 +98,37 @@ class QueryParser:
         except LlmClientError as exc:
             logger.warning("LLM 条件抽取失败，回退规则: %s", exc)
             draft = self._rule_fallback_draft(question, default)
+            query = self._assemble(
+                db,
+                question=question,
+                draft=draft,
+                default=default,
+            )
+            has_scope_hint = bool(
+                question_has_explicit_time(question) or draft.get("filters")
+            )
+            if has_scope_hint:
+                return query.model_copy(
+                    update={
+                        "parser_fallback_level": 4,
+                        "parser_data_message": "未能识别具体条件，展示全量数据摘要",
+                    }
+                )
+            return query.model_copy(
+                update={
+                    "analyses": ["summary", "risk"],
+                    "filters": {},
+                    "parser_fallback_level": 4,
+                    "parser_data_message": "未能识别具体条件，展示全量数据摘要",
+                }
+            )
 
-        return self._assemble(db, question=question, draft=draft, default=default)
+        return self._assemble(
+            db,
+            question=question,
+            draft=draft,
+            default=default,
+        )
 
     def _parse_usage_help(self, question: str) -> AnalysisQuery:
         clock = now()
@@ -173,6 +207,12 @@ class QueryParser:
                 filters["location"] = compare_aligned[0]
 
         time_range = self._parse_time_range(draft, question=question, default=default)
+        parser_fallback_level = 1
+        parser_data_message: str | None = None
+        if not draft_has_time_range(draft) and not question_has_explicit_time(question):
+            parser_fallback_level = 3
+            parser_data_message = "未识别到时间范围，默认分析当月"
+
         analyses = self._resolve_analyses(
             question=question,
             part_number=filters.get("part_number"),
@@ -205,6 +245,8 @@ class QueryParser:
             analyses=analyses,
             user_question=question,
             unresolved_mentions=unresolved,
+            parser_fallback_level=parser_fallback_level,
+            parser_data_message=parser_data_message,
         )
 
     def _parse_time_range(

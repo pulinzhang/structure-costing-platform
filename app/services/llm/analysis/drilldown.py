@@ -1,4 +1,4 @@
-"""单号钻取。"""
+"""单号钻取（含区间差分 period_diff）。"""
 
 from __future__ import annotations
 
@@ -7,6 +7,7 @@ from typing import Any
 from app.common.part_number import part_numbers_match
 from app.repositories.llm.cost_analysis_repository import L0PartPeriodRow
 from app.services.llm._money import money_str, month_key
+from app.services.llm.analysis._formulas import build_period_diff
 
 
 def build_drilldown(
@@ -21,10 +22,13 @@ def build_drilldown(
             "part_number": part_number,
             "message": "未找到该零件号的 L0 核价结果",
             "points": [],
+            "period_diff": None,
         }
 
     ordered = sorted(matched, key=lambda item: (item.year, item.month))
     latest = ordered[-1]
+    start_row = ordered[0]
+    end_row = ordered[-1]
     points = [
         {
             "month": month_key(row.year, row.month),
@@ -35,6 +39,10 @@ def build_drilldown(
         }
         for row in ordered
     ]
+    period_diff = None
+    if len(ordered) >= 1:
+        period_diff = build_period_diff(start_row, end_row)
+
     return {
         "kind": "drilldown",
         "part_number": latest.part_number,
@@ -54,5 +62,6 @@ def build_drilldown(
             "missing_leaf_count": latest.missing_leaf_count,
             "bom_version": latest.bom_version,
         },
+        "period_diff": period_diff,
         "points": points,
     }

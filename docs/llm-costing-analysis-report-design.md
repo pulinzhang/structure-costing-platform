@@ -166,22 +166,24 @@ BETWEEN start AND end               贡献度、TopN、异常判定
 |------|------------------------------|
 | `summary` | 盘子、结构、缺价计数 |
 | `trend` | 序列、环比、累计变化、异常月 |
-| `drivers` | TopN、change_rate、贡献度 |
+| `drivers` | 上涨贡献 TopN、下跌拖累 TopN、`change_rate` |
 | `comparison` | 跨基地/区间涨幅与差值 |
 | `risk` | 缺价 / partial / gate |
-| `drilldown` | 单号分解与区间差分 |
+| `drilldown` | 单号分解、区间差分（首末月 + 成本子项） |
 
 ### B.6.1 核心算法公式（开发按此写，QA 按此验）
 
 | 模块 | 输出字段 | 计算公式 / 判定规则（明确到边界条件） |
 |------|---------|--------------------------------------|
 | **trend.环比** | `mom_rate` | `(本月值 - 上月值) / 上月值`；**上月值=0 或 null → mom_rate = null**（不捏造 0% 或 ∞） |
-| **trend.累计变化** | `cumulative_rate` | `(期末值 - 期初值) / 期初值`；期初值=0 → null |
-| **trend.异常月** | `anomaly_months[]` | 满足以下任一条件即标记：① `abs(mom_rate) > avg(abs(mom_rate)) + 2*stddev`；② `abs(mom_rate) > 0.15`（15% 阈值）；命中则在 `meta.anomaly_note` 中说明 |
+| **trend.累计变化** | `cumulative_rate` | `(期末值 - 期初值) / 期初值`；期初值=0 → null；**`time_range.start = time_range.end`（单月查询）→ cumulative_rate = null**（不计算，避免 0% 误导） |
+| **trend.异常月** | `anomaly_months[]` | **数据点 < 6**（有效 `mom_rate` 月数）：仅 `abs(mom_rate) > 0.15` 标记；**数据点 ≥ 6**：① `abs(mom_rate) > avg(abs(mom_rate)) + 2*stddev` OR ② `abs(mom_rate) > 0.15`，任一满足即标记；命中后在 `meta.anomaly_note` 写明「异常环比：[月份] [变化率]，建议核查原因」 |
 | **drivers.TopN** | `top_items[]` | 按 `abs(变化金额)` 降序取前 N（默认 5）；N 由 `filters.top_n` 控制或规则层默认 |
-| **drivers.贡献度** | `contribution` | `该零件变化金额 / sum(所有变化金额绝对值)`；输出百分比及累计贡献（Top5 累计通常 >60% 才写「集中」，否则写「分散」） |
+| **drivers.上涨贡献** | `up_contribution[]` | `该零件变化金额 / sum(所有正变化金额)`；仅对 `变化金额 > 0` 的零件计算；输出 TopN（默认 5）及累计百分比；TopN 累计通常 >60% 才写「集中」，否则写「分散」 |
+| **drivers.下跌拖累** | `down_drag[]` | 对 `变化金额 < 0` 的零件，按 `abs(变化金额)` 降序输出 TopN；不参与贡献度百分比，标注「拖累项」 |
 | **comparison.涨幅差** | `spread` | `(A终 - A初)/A初 - (B终 - B初)/B初`；任何分母=0 则该组比较结果标 `invalid`，不在正文中做量化对比 |
-| **risk.缺价** | `missing_price_items[]` | 结果表中 `price IS NULL OR price = 0` 的记录，按零件号去重计数；不计入成本总额（Analysis 做 sum 时自动过滤这些行，且 meta 中写明过滤了多少条） |
+| **drilldown.区间差分** | `period_diff` | 取 `start` 月值与 `end` 月值对比：`(end_value - start_value)`；若中间有缺失月份，取最近有效月；分解项按 `cost_component`（材料/加工/外购）拆分子项，输出每个子项的绝对值变化与占比 |
+| **risk.缺价** | `missing_price_items[]` | 结果表中 `price IS NULL OR price = 0` 的记录，按零件号去重计数；**不参与**趋势/对比/贡献度计算；在 `meta.data_message` 中写明「已排除 [N] 条缺价记录（单价为空或0），实际有效成本基于剩余记录计算」；**LLM 正文必须引用此条**，避免采购误认为全量 |
 
 > **开发约束**：所有数值保留 2 位小数（金额）或 2 位百分比（涨幅）；LLM Prompt 中禁止重新格式化单位（元→万元）。
 
@@ -501,6 +503,7 @@ def query_l0_monthly_totals(
 
 | 日期 | 说明 |
 |------|------|
+| 2026-08-23 | **算法补丁**：B.6.1 修正 drivers 贡献度（上涨/下跌分拆）、trend 异常月稀疏数据规则、drilldown 区间差分定义、单月 cumulative_rate=null、risk 缺价 data_message 与 LLM 引用要求 |
 | 2026-08-23 | **归档**：删 B.8 分期 / B.9 决策摘要，合并为 B.8 P0 上线范围 |
 | 2026-08-23 | 施工补丁：B.6.1 算法公式、C.4.2.1 降级链条、B.7 #14/#15 性能约束、C.5.1 可观测性、C.10 拆单指南 |
 | 2026-08-23 | **文档熵减**：重组为 A 产品 / B 架构 / C 附录；合并约束清单；口径统一为 Markdown 正文；历史本人+10条触底；移除 Action/三 mode 主叙事 |

@@ -7,6 +7,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field
 
 from app.schemas.llm.analysis_query import AnalysisQuery
+from app.services.llm.analysis.constants import ANALYSIS_VERSION
 
 
 class SnapshotMeta(BaseModel):
@@ -17,6 +18,11 @@ class SnapshotMeta(BaseModel):
     generated_at: str | None = None
     data_message: str | None = None
     unresolved_mentions: list[str] = Field(default_factory=list)
+    anomaly_note: str | None = None
+    analysis_version: str = ANALYSIS_VERSION
+    trace_id: str | None = None
+    comparability_note: str | None = None
+    filtered_missing_price_count: int = 0
 
 
 class AnalysisSnapshot(BaseModel):

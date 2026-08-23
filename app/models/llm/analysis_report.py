@@ -73,6 +73,15 @@ class LlmAnalysisReport(AuditUserMixin, Base):
     )
     data_message: Mapped[str | None] = mapped_column(String(500), nullable=True)
     audit_hint: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    trace_id: Mapped[str | None] = mapped_column(
+        String(36), nullable=True, index=True, comment="全链路追踪 ID"
+    )
+    prompt_preview: Mapped[str | None] = mapped_column(
+        Text, nullable=True, comment="Prompt 前 500 字符（审计）"
+    )
+    llm_response_preview: Mapped[str | None] = mapped_column(
+        Text, nullable=True, comment="LLM 响应前 500 字符（审计）"
+    )
 
     __table_args__ = (
         Index(

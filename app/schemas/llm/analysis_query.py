@@ -71,6 +71,15 @@ class AnalysisQuery(BaseModel):
     unresolved_mentions: list[str] = Field(default_factory=list)
     query_mode: QueryMode = "analysis"
     help_topic: str | None = None
+    parser_fallback_level: int = 1
+    parser_data_message: str | None = None
+    trace_id: str | None = None
+
+    def top_n(self, default: int = 5) -> int:
+        raw = self.filter_get("top_n")
+        if raw is not None and str(raw).strip().isdigit():
+            return max(1, min(50, int(str(raw).strip())))
+        return default
 
     @field_validator("filters", mode="before")
     @classmethod

@@ -4,15 +4,26 @@ from __future__ import annotations
 
 from decimal import Decimal, ROUND_HALF_UP
 
-_MONEY_QUANT = Decimal("0.0001")
+_MONEY_QUANT = Decimal("0.01")
+_RATE_QUANT = Decimal("0.01")
 
 
 def money_str(value: Decimal | int | float | None) -> str:
+    """B.6.1：金额保留 2 位小数。"""
     if value is None:
-        return "0.0000"
+        return "0.00"
     number = value if isinstance(value, Decimal) else Decimal(str(value))
     quantized = number.quantize(_MONEY_QUANT, rounding=ROUND_HALF_UP)
-    return f"{quantized:.4f}"
+    return f"{quantized:.2f}"
+
+
+def rate_str(value: Decimal | int | float | None) -> str:
+    """B.6.1：涨幅比率保留 2 位小数（小数形式，如 0.15 = 15%）。"""
+    if value is None:
+        return "0.00"
+    number = value if isinstance(value, Decimal) else Decimal(str(value))
+    quantized = number.quantize(_RATE_QUANT, rounding=ROUND_HALF_UP)
+    return f"{quantized:.2f}"
 
 
 def month_key(year: int, month: int) -> str:

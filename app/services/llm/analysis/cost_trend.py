@@ -9,7 +9,12 @@ from app.repositories.llm.cost_analysis_repository import L0MonthlyTotalRow
 from app.repositories.llm.steel_price_analysis_repository import SteelMonthlyAvgRow
 from app.repositories.llm.stamping_cost_analysis_repository import StampingPartPeriodRow
 from app.schemas.llm.analysis_query import ComparisonBasis
-from app.services.llm._money import money_str, month_key
+from app.services.llm._money import money_str, month_key, rate_str
+from app.services.llm.analysis._formulas import (
+    compute_cumulative_rate,
+    compute_mom_rate,
+    detect_anomaly_months,
+)
 from app.services.llm.query.comparison_basis import resolve_comparability
 
 
@@ -17,8 +22,8 @@ def build_cost_trend(
     rows: list[L0MonthlyTotalRow],
     *,
     basis: ComparisonBasis,
+    single_month: bool = False,
 ) -> dict[str, Any]:
-    # 单基地序列：按月合并（同月多基地则分 location 由 comparison 处理）
     by_month: dict[str, Decimal] = {}
     for row in rows:
         key = month_key(row.year, row.month)
@@ -28,6 +33,7 @@ def build_cost_trend(
         sorted(by_month.items(), key=lambda item: item[0]),
         value_label="grand_total_sum",
         basis=basis,
+        single_month=single_month,
     )
 
 
@@ -35,20 +41,26 @@ def build_steel_trend(
     rows: list[SteelMonthlyAvgRow],
     *,
     basis: ComparisonBasis,
+    single_month: bool = False,
 ) -> dict[str, Any]:
     series = [
         (month_key(row.year, row.month), row.avg_final_price)
         for row in sorted(rows, key=lambda item: (item.year, item.month))
     ]
-    return _trend_from_series(series, value_label="avg_final_price", basis=basis)
+    return _trend_from_series(
+        series,
+        value_label="avg_final_price",
+        basis=basis,
+        single_month=single_month,
+    )
 
 
 def build_stamping_trend(
     rows: list[StampingPartPeriodRow],
     *,
     basis: ComparisonBasis,
+    single_month: bool = False,
 ) -> dict[str, Any]:
-    """按月汇总冲压件 unit_cost 合计，用于环比。"""
     by_month: dict[str, Decimal] = {}
     for row in rows:
         key = month_key(row.year, row.month)
@@ -57,6 +69,7 @@ def build_stamping_trend(
         sorted(by_month.items(), key=lambda item: item[0]),
         value_label="unit_cost_sum",
         basis=basis,
+        single_month=single_month,
     )
 
 
@@ -65,6 +78,7 @@ def _trend_from_series(
     *,
     value_label: str,
     basis: ComparisonBasis,
+    single_month: bool = False,
 ) -> dict[str, Any]:
     if not series:
         return {
@@ -72,6 +86,8 @@ def _trend_from_series(
             "points": [],
             "comparability": resolve_comparability(basis),
             "comparison_basis_label": basis.label,
+            "anomaly_months": [],
+            "anomaly_note": None,
         }
 
     points: list[dict[str, Any]] = []
@@ -81,14 +97,13 @@ def _trend_from_series(
         mom_rate = None
         if prev is not None:
             mom_delta = value - prev
-            if prev != 0:
-                mom_rate = (mom_delta / prev).quantize(Decimal("0.0001"))
+            mom_rate = compute_mom_rate(prev, value)
         points.append(
             {
                 "month": month,
                 value_label: money_str(value),
                 "mom_delta": money_str(mom_delta) if mom_delta is not None else None,
-                "mom_rate": str(mom_rate) if mom_rate is not None else None,
+                "mom_rate": rate_str(mom_rate) if mom_rate is not None else None,
             }
         )
         prev = value
@@ -97,18 +112,9 @@ def _trend_from_series(
     first = values[0]
     last = values[-1]
     cumulative_delta = last - first
-    cumulative_rate = (
-        (cumulative_delta / first).quantize(Decimal("0.0001")) if first != 0 else None
-    )
-
-    # 简单异常：|环比| > 10%
-    anomalies: list[str] = []
-    for point in points:
-        rate = point.get("mom_rate")
-        if rate is None:
-            continue
-        if abs(Decimal(rate)) >= Decimal("0.10"):
-            anomalies.append(str(point["month"]))
+    is_single = single_month or len(series) <= 1
+    cumulative_rate = compute_cumulative_rate(first, last, single_month=is_single)
+    anomaly_months, anomaly_note = detect_anomaly_months(points)
 
     return {
         "kind": "trend",
@@ -119,8 +125,9 @@ def _trend_from_series(
         "start": money_str(first),
         "end": money_str(last),
         "cumulative_delta": money_str(cumulative_delta),
-        "cumulative_rate": str(cumulative_rate) if cumulative_rate is not None else None,
-        "anomaly_months": anomalies,
+        "cumulative_rate": rate_str(cumulative_rate) if cumulative_rate is not None else None,
+        "anomaly_months": anomaly_months,
+        "anomaly_note": anomaly_note,
         "comparability": resolve_comparability(basis),
         "comparison_basis_label": basis.label,
         "notes": basis.notes,

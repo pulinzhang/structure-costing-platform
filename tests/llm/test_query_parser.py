@@ -128,6 +128,31 @@ def test_query_parser_price_detail_skips_dashboard_summary() -> None:
     assert query.location() == "青岛"
 
 
+def test_normalize_yoy_range() -> None:
+    tr = normalize_time_range(
+        user_question="今年与去年，青岛基地，年度零件价，比较。",
+        default=DefaultScopeMonth(2026, 8),
+    )
+    assert tr.start == "2025-01"
+    assert tr.end == "2026-08"
+
+
+def test_query_parser_level4_blind_question_forces_safe_analyses() -> None:
+    from app.services.llm.client import LlmClientError
+
+    parser = QueryParser()
+    db = MagicMock()
+    _mock_aligner(parser)
+    parser._extractor.extract = MagicMock(  # noqa: SLF001
+        side_effect=LlmClientError("no key")
+    )
+
+    query = parser.parse(db, user_question="总体怎么样")
+    assert query.analyses == ["summary", "risk"]
+    assert query.filters == {}
+    assert query.parser_fallback_level == 4
+
+
 def test_query_parser_rule_fallback_when_llm_fails() -> None:
     from app.services.llm.client import LlmClientError
 
@@ -143,8 +168,9 @@ def test_query_parser_rule_fallback_when_llm_fails() -> None:
         user_question="近三个月青岛成本怎么样",
     )
     assert query.location() == "青岛"
-    assert "summary" in query.analyses
     assert "trend" in query.analyses
+    assert query.parser_fallback_level == 4
+    assert query.time_range.start == "2026-06"
 
 
 def test_build_summary_and_trend() -> None:
@@ -184,12 +210,19 @@ def test_build_summary_and_trend() -> None:
     ]
     summary = build_summary(rows)
     assert summary["l0_count"] == 20
-    assert summary["grand_total_sum"] == "2100.0000"
+    assert summary["grand_total_sum"] == "2100.00"
 
     trend = build_cost_trend(rows, basis=default_comparison_basis())
     assert trend["kind"] == "trend"
-    assert trend["cumulative_rate"] == "0.1000"
+    assert trend["cumulative_rate"] == "0.10"
     assert len(trend["points"]) == 2
+
+    single_month_trend = build_cost_trend(
+        rows[:1],
+        basis=default_comparison_basis(),
+        single_month=True,
+    )
+    assert single_month_trend["cumulative_rate"] is None
 
 
 def test_query_parser_winning_thickness_not_base_price() -> None:
@@ -371,7 +404,7 @@ def test_build_stamping_summary() -> None:
     assert summary["part_count"] == 2
     assert summary["success_count"] == 1
     assert summary["failed_count"] == 1
-    assert summary["unit_cost_sum"] == "30.0000"
+    assert summary["unit_cost_sum"] == "30.00"
 
 
 def test_query_parser_l0_finished_product_cost_report() -> None:
@@ -531,7 +564,7 @@ def test_build_l0_mom_anomalies_ranks_jump() -> None:
     top = result["items"][0]
     assert top["part_number"] == "P001"
     assert top["month"] == "2025-02"
-    assert top["change"] == "100.0000"
+    assert top["change"] == "100.00"
 
 
 def test_query_parser_max_risk_question() -> None:
@@ -601,7 +634,7 @@ def test_build_base_price_mom_anomalies() -> None:
     item = result["items"][0]
     assert item["month"] == "2025-02"
     assert item["steel_mill"] == "宝钢"
-    assert item["change"] == "1000.0000"
+    assert item["change"] == "1000.00"
 
 
 def test_query_parser_base_price_anomaly() -> None:

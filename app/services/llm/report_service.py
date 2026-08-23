@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import uuid
 from typing import Any
 
 from fastapi import HTTPException, status
@@ -76,6 +77,17 @@ class LlmAnalysisReportService:
             db,
             user_question=dto.user_question,
         )
+        active_count = self.repository.count_active_by_user(
+            db, user_id=int(current_user.id)
+        )
+        if active_count >= int(settings.LLM_MAX_CONCURRENT_TASKS_PER_USER):
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="too many requests",
+            )
+
+        trace_id = str(uuid.uuid4())
+        analysis_query = analysis_query.model_copy(update={"trace_id": trace_id})
         audience = (dto.audience or "buyer_lead").strip() or "buyer_lead"
         part_number = analysis_query.part_number()
         analyses_key = analysis_query.analyses_key()
@@ -135,6 +147,7 @@ class LlmAnalysisReportService:
                 engine_run_id=None,
                 status=REPORT_STATUS_PENDING,
                 idempotency_key=idem_key,
+                trace_id=trace_id,
                 created_by=audit["created_by"],
                 updated_by=audit["updated_by"],
             ),
@@ -268,6 +281,10 @@ class LlmAnalysisReportService:
             analysis_query = AnalysisQuery.model_validate(
                 json.loads(analysis_query_json)
             )
+            if not analysis_query.trace_id:
+                analysis_query = analysis_query.model_copy(
+                    update={"trace_id": str(uuid.uuid4())}
+                )
 
             _async_task_service.update_task_standalone(
                 task_id,
@@ -309,6 +326,8 @@ class LlmAnalysisReportService:
                 prompt_tokens = generated.prompt_tokens
                 completion_tokens = generated.completion_tokens
                 total_tokens = generated.total_tokens
+                prompt_preview = generated.prompt_preview
+                llm_response_preview = generated.llm_response_preview
             except LlmClientError as exc:
                 logger.warning("LLM 调用失败，降级规则模板: %s", exc)
                 markdown = self.generator.render_fallback_markdown(
@@ -324,6 +343,8 @@ class LlmAnalysisReportService:
                 prompt_tokens = None
                 completion_tokens = None
                 total_tokens = None
+                prompt_preview = None
+                llm_response_preview = None
 
             self.repository.mark_succeeded(
                 db,
@@ -338,12 +359,18 @@ class LlmAnalysisReportService:
                     completion_tokens=completion_tokens,
                     total_tokens=total_tokens,
                     context_pack_ids=json.dumps(
-                        {"analyses": analysis_query.analyses},
+                        {
+                            "analyses": analysis_query.analyses,
+                            "trace_id": analysis_query.trace_id,
+                            "analysis_version": snapshot.meta.analysis_version,
+                        },
                         ensure_ascii=False,
                     ),
                     has_data=1 if snapshot.meta.has_data else 0,
                     data_message=snapshot.meta.data_message,
                     audit_hint=None,
+                    prompt_preview=prompt_preview,
+                    llm_response_preview=llm_response_preview,
                     updated_by=updated_by,
                 ),
             )

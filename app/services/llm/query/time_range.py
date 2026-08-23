@@ -32,7 +32,8 @@ _RANGE_RE = re.compile(
 )
 _SINGLE_RE = re.compile(r"(\d{4})\s*年\s*(\d{1,2})\s*月")
 _HALF_YEAR_RE = re.compile(r"过去\s*半年|近\s*半年")
-_THIS_YEAR_RE = re.compile(r"今年以来|本年以来|今年")
+_THIS_YEAR_RE = re.compile(r"今年以来|本年以来|今年(?![与和].*去年)")
+_YOY_RE = re.compile(r"今年与去年|去年和今年|去年与今年|同比")
 
 
 def _parse_cn_or_int(text: str) -> int:
@@ -109,6 +110,12 @@ def normalize_time_range(
             end=month_key(default.year, default.month),
         )
 
+    if _YOY_RE.search(text):
+        return TimeRange(
+            start=month_key(default.year - 1, 1),
+            end=month_key(default.year, default.month),
+        )
+
     if _THIS_YEAR_RE.search(text):
         return TimeRange(
             start=month_key(default.year, 1),
@@ -135,3 +142,34 @@ def normalize_time_range(
 
     key = month_key(default.year, default.month)
     return TimeRange(start=key, end=key)
+
+
+def question_has_explicit_time(user_question: str) -> bool:
+    """问句是否包含可识别的时间表达（用于 C.4.2.1 第 3 级判定）。"""
+    text = user_question or ""
+    if _RANGE_RE.search(text):
+        return True
+    if _YEAR_FIRST_N_MONTHS_RE.search(text):
+        return True
+    if _YEAR_ONLY_RE.search(text):
+        return True
+    if _HALF_YEAR_RE.search(text):
+        return True
+    if _YOY_RE.search(text):
+        return True
+    if _THIS_YEAR_RE.search(text):
+        return True
+    if _RECENT_MONTHS_RE.search(text):
+        return True
+    if _SINGLE_RE.search(text):
+        return True
+    return False
+
+
+def draft_has_time_range(draft: dict[str, object]) -> bool:
+    raw = draft.get("time_range")
+    if not isinstance(raw, dict):
+        return False
+    start = str(raw.get("start") or "").strip()
+    end = str(raw.get("end") or "").strip()
+    return bool(start and end)

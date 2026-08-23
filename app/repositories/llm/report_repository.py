@@ -31,6 +31,7 @@ class LlmAnalysisReportInsert:
     engine_run_id: int | None
     status: str
     idempotency_key: str
+    trace_id: str | None
     created_by: str
     updated_by: str
 
@@ -49,6 +50,8 @@ class LlmAnalysisReportSuccessPatch:
     has_data: int
     data_message: str | None
     audit_hint: str | None
+    prompt_preview: str | None
+    llm_response_preview: str | None
     updated_by: str
 
 
@@ -72,6 +75,16 @@ class LlmAnalysisReportRepository:
             db.query(LlmAnalysisReport)
             .filter(LlmAnalysisReport.task_id == task_id)
             .first()
+        )
+
+    def count_active_by_user(self, db: Session, *, user_id: int) -> int:
+        return (
+            db.query(LlmAnalysisReport)
+            .filter(
+                LlmAnalysisReport.user_id == user_id,
+                LlmAnalysisReport.status.in_(("pending", "running")),
+            )
+            .count()
         )
 
     def find_idempotent_hit(
@@ -116,6 +129,7 @@ class LlmAnalysisReportRepository:
             engine_run_id=payload.engine_run_id,
             status=payload.status,
             idempotency_key=payload.idempotency_key,
+            trace_id=payload.trace_id,
             created_by=payload.created_by,
             updated_by=payload.updated_by,
         )
@@ -154,6 +168,8 @@ class LlmAnalysisReportRepository:
         row.has_data = patch.has_data
         row.data_message = patch.data_message
         row.audit_hint = patch.audit_hint
+        row.prompt_preview = patch.prompt_preview
+        row.llm_response_preview = patch.llm_response_preview
         row.updated_by = patch.updated_by
         db.flush()
         db.refresh(row)

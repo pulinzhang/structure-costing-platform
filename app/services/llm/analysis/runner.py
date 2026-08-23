@@ -8,7 +8,10 @@ from typing import Any
 from sqlalchemy.orm import Session
 
 from app.repositories.llm.base_price_analysis_repository import BasePriceAnalysisRepository
-from app.repositories.llm.cost_analysis_repository import L0CostAnalysisRepository
+from app.repositories.llm.cost_analysis_repository import (
+    L0CostAnalysisRepository,
+    L0PartPeriodRow,
+)
 from app.repositories.llm.policy_analysis_repository import PolicyAnalysisRepository
 from app.repositories.llm.steel_price_analysis_repository import (
     SteelPriceAnalysisRepository,
@@ -140,6 +143,10 @@ from app.services.llm.analysis.winning_thickness_summary import (
 )
 from app.schemas.llm.analysis_query import AnalysisQuery
 from app.services.llm.menu_catalog import expand_base_price_location
+from app.repositories.llm._query_guard import LlmQueryTimeoutError
+from app.services.llm.analysis._formulas import format_missing_price_message
+from app.services.llm.analysis.comparability import resolve_runtime_comparability
+from app.services.llm.analysis.constants import ANALYSIS_VERSION
 from app.services.llm.query.comparison_basis import resolve_comparability
 
 
@@ -151,6 +158,10 @@ class AnalysisRunResult:
     has_data: bool = False
     data_message: str = ""
     comparability: str = "unknown"
+    comparability_note: str | None = None
+    anomaly_note: str | None = None
+    analysis_version: str = ANALYSIS_VERSION
+    filtered_missing_price_count: int = 0
 
 
 class AnalysisRunner:
@@ -1125,52 +1136,95 @@ class AnalysisRunner:
             if compare_raw
             else None
         )
+        trace_id = query.trace_id
 
-        monthly = self._l0_repo.query_monthly_totals(
-            db,
-            location=None if locations else location,
-            vehicle_model=vehicle_model,
-            bom_version=bom_version,
-            start_year=tr.start_year,
-            start_month=tr.start_month,
-            end_year=tr.end_year,
-            end_month=tr.end_month,
-            locations=locations,
-        )
-
-        need_parts = any(
-            kind in query.analyses
-            for kind in ("drivers", "risk", "drilldown", "trend")
-        )
-        part_rows = []
-        if need_parts:
-            part_rows = self._l0_repo.query_part_rows(
+        try:
+            monthly = self._l0_repo.query_monthly_totals(
                 db,
-                location=location,
+                location=None if locations else location,
                 vehicle_model=vehicle_model,
                 bom_version=bom_version,
                 start_year=tr.start_year,
                 start_month=tr.start_month,
                 end_year=tr.end_year,
                 end_month=tr.end_month,
-                part_number=query.part_number(),
+                locations=locations,
+                trace_id=trace_id,
+            )
+        except LlmQueryTimeoutError:
+            return AnalysisRunResult(
+                comparability=resolve_comparability(query.comparison_basis),
+                has_data=False,
+                data_message="当前数据量较大，建议缩小时间范围（如近3个月）",
             )
 
+        need_parts = any(
+            kind in query.analyses
+            for kind in ("drivers", "risk", "drilldown", "trend")
+        )
+        part_rows: list[L0PartPeriodRow] = []
+        filtered_missing = 0
+        if need_parts:
+            try:
+                part_rows = self._l0_repo.query_part_rows(
+                    db,
+                    location=location,
+                    vehicle_model=vehicle_model,
+                    bom_version=bom_version,
+                    start_year=tr.start_year,
+                    start_month=tr.start_month,
+                    end_year=tr.end_year,
+                    end_month=tr.end_month,
+                    part_number=query.part_number(),
+                    trace_id=trace_id,
+                )
+                filtered_missing = self._l0_repo.count_filtered_missing_price(
+                    db,
+                    location=location,
+                    vehicle_model=vehicle_model,
+                    bom_version=bom_version,
+                    start_year=tr.start_year,
+                    start_month=tr.start_month,
+                    end_year=tr.end_year,
+                    end_month=tr.end_month,
+                    trace_id=trace_id,
+                )
+            except LlmQueryTimeoutError:
+                return AnalysisRunResult(
+                    comparability=resolve_comparability(query.comparison_basis),
+                    has_data=bool(monthly),
+                    data_message="当前数据量较大，建议缩小时间范围（如近3个月）",
+                )
+
+        comparability, comparability_note = resolve_runtime_comparability(
+            basis=query.comparison_basis,
+            part_rows=part_rows,
+        )
         out = AnalysisRunResult(
-            comparability=resolve_comparability(query.comparison_basis),
+            comparability=comparability,
+            comparability_note=comparability_note,
+            filtered_missing_price_count=filtered_missing,
         )
         parts_result: dict[str, Any] = {}
+        driver_top_n = query.top_n()
 
         if "summary" in query.analyses:
             out.summary = build_summary(monthly)
 
         if "trend" in query.analyses:
-            parts_result["trend"] = build_cost_trend(
-                monthly, basis=query.comparison_basis
+            single_month = query.time_range.start == query.time_range.end
+            trend_result = build_cost_trend(
+                monthly,
+                basis=query.comparison_basis,
+                single_month=single_month,
             )
+            parts_result["trend"] = trend_result
+            out.anomaly_note = trend_result.get("anomaly_note")
 
         if "drivers" in query.analyses:
-            parts_result["drivers"] = build_l0_drivers(part_rows)
+            parts_result["drivers"] = build_l0_drivers(
+                part_rows, top_n=driver_top_n
+            )
 
         if "comparison" in query.analyses:
             parts_result["comparison"] = build_location_comparison(
@@ -1178,7 +1232,10 @@ class AnalysisRunner:
             )
 
         if "risk" in query.analyses:
-            parts_result["risk"] = build_risks(part_rows)
+            parts_result["risk"] = build_risks(
+                part_rows,
+                filtered_missing_price_count=filtered_missing,
+            )
 
         if part_rows and any(
             kind in query.analyses for kind in ("risk", "drivers", "trend")
@@ -1193,15 +1250,21 @@ class AnalysisRunner:
 
         out.result = _compose_result(parts_result, default_kind="summary")
         out.has_data = bool(monthly) or bool(part_rows)
+        base_message = query.parser_data_message or ""
+        missing_message = format_missing_price_message(filtered_missing)
         if monthly:
-            out.data_message = (
+            detail = (
                 f"L0 月切片={len(monthly)}，"
                 f"合计件数={sum(row.l0_count for row in monthly)}"
             )
+            parts = [part for part in (base_message, missing_message, detail) if part]
+            out.data_message = "；".join(parts)
         elif part_rows:
-            out.data_message = f"L0 零件行={len(part_rows)}"
+            detail = f"L0 零件行={len(part_rows)}"
+            parts = [part for part in (base_message, missing_message, detail) if part]
+            out.data_message = "；".join(parts)
         else:
-            out.data_message = "当前查询范围无核价结果"
+            out.data_message = base_message or missing_message or "当前查询范围无核价结果"
 
         if out.summary is None and monthly:
             out.summary = build_summary(monthly)

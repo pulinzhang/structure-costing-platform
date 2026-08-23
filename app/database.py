@@ -302,6 +302,26 @@ class DatabaseConfig:
                     )
                 logger.info("已为 %s 追加列 %s", pkg_table, column_name)
 
+        llm_report_table = "llm_analysis_reports"
+        if llm_report_table in table_names:
+            llm_cols = {col["name"] for col in inspector.get_columns(llm_report_table)}
+            llm_new_columns = (
+                ("trace_id", "VARCHAR(36)"),
+                ("prompt_preview", "TEXT"),
+                ("llm_response_preview", "TEXT"),
+            )
+            for column_name, column_def in llm_new_columns:
+                if column_name in llm_cols:
+                    continue
+                with engine.begin() as conn:
+                    conn.execute(
+                        text(
+                            f"ALTER TABLE {llm_report_table} "
+                            f"ADD COLUMN {column_name} {column_def}"
+                        )
+                    )
+                logger.info("已为 %s 追加列 %s", llm_report_table, column_name)
+
 
 class AuxiliaryDatabaseConfig:
     """

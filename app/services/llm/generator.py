@@ -29,6 +29,8 @@ class GeneratedReport:
     completion_tokens: int | None
     total_tokens: int | None
     audience: str
+    prompt_preview: str | None = None
+    llm_response_preview: str | None = None
 
 
 def _build_field_card() -> str:
@@ -110,6 +112,7 @@ class LlmReportGenerator:
             temperature=prompt.temperature,
             max_tokens=prompt.max_tokens,
         )
+        combined_prompt = f"{system}\n\n{user}"
         return GeneratedReport(
             markdown_content=sanitize_report_markdown(result.content),
             prompt_version=prompt.prompt_version,
@@ -119,6 +122,8 @@ class LlmReportGenerator:
             completion_tokens=result.completion_tokens,
             total_tokens=result.total_tokens,
             audience=prompt.audience,
+            prompt_preview=combined_prompt[:500],
+            llm_response_preview=(result.content or "")[:500],
         )
 
     def _generate_usage_help(self, *, snapshot: AnalysisSnapshot) -> GeneratedReport:
@@ -140,6 +145,7 @@ class LlmReportGenerator:
             temperature=prompt.temperature,
             max_tokens=prompt.max_tokens,
         )
+        combined_prompt = f"{system}\n\n{user}"
         return GeneratedReport(
             markdown_content=sanitize_report_markdown(result.content),
             prompt_version=prompt.prompt_version,
@@ -149,6 +155,8 @@ class LlmReportGenerator:
             completion_tokens=result.completion_tokens,
             total_tokens=result.total_tokens,
             audience="usage_help",
+            prompt_preview=combined_prompt[:500],
+            llm_response_preview=(result.content or "")[:500],
         )
 
     def render_fallback_markdown(
