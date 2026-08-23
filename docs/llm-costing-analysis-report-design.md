@@ -3,7 +3,7 @@
 > 状态：**已定稿归档**  
 > 业务主体：冲焊装配供应商（可多租户）· 主用户：**采购部**  
 > 关联：`docs/costing-engine-design.md`、`docs/l0-assembly-costing-design.md`、`docs/architecture.md`  
-> 参考：仅借鉴「预聚合事实 + 强约束 Prompt」；不复用 Chat/SSE
+> 参考：仅借鉴「明细事实直查 + 强约束 Prompt」；不复用 Chat/SSE；**禁止**预聚合表与 ETL
 
 **阅读指引**
 
@@ -195,7 +195,7 @@ BETWEEN start AND end               贡献度、TopN、异常判定
 | 2 | 不改核价公式；金额单位「元」 |
 | 3 | 业务分析只在 Analysis；Repository 仅查询聚合 |
 | 4 | 时间范围一等公民；禁止按月循环 Service |
-| 5 | `llm` 只读 Repo 直读结果表；遵守数据权限与口径 |
+| 5 | `llm` 只读 Repo 直读**核价结果明细表**；遵守数据权限与口径；**禁止**为 LLM 分析单独建预聚合表或跑 ETL |
 | 6 | Query = Scope + Intent；禁止根级字段森林 |
 | 7 | 趋势/对比必带 `comparison_basis`；loose 写进 Markdown |
 | 8 | Snapshot 只含本次 `analyses` 结果；禁止万能空块 |
@@ -204,8 +204,21 @@ BETWEEN start AND end               贡献度、TopN、异常判定
 | 11 | 帮助走 `usage_help` + `static/helper` 语料 |
 | 12 | 分析历史落服务端；本人列表/查看/删除；localStorage 仅会话缓存 |
 | 13 | 轻量 Parser；不做完备 NL Query Engine |
-| 14 | **预聚合事实表优先**：Repository 优先查询按月/基地/车型预聚合的汇总表（如 `monthly_cost_summary`），不直接查明细 `l0_assembly_cost_detail`（除非 drilldown 单号）。预聚合表每日 ETL 凌晨更新，延迟 ≤ 24h。若预聚合表未就绪，自动降级到明细表但加 `/*+ MAX_EXECUTION_TIME(5000) */` Hint；**保护数据库不因全表扫描挂掉** |
+| 14 | **明细表直查（禁止预聚合）**：Repository **必须**在核价结果明细表（如 `costing_l0_assembly_costs`）上按 `time_range` 一次 `WHERE / GROUP BY / SUM` 聚合；**禁止**为 LLM 分析维护 `monthly_cost_summary` 等预聚合事实表，**禁止**定时 ETL / 物化视图 / 读写缓存表。数据必须与核价一览同源、同口径、实时一致。大查询靠 `run_guarded_query` 熔断（见 #15），不靠预聚合 |
 | 15 | **超时与限流**：SQL 执行超过 5 秒自动熔断，返回 `data_message="当前数据量较大，建议缩小时间范围（如近3个月）"`；单用户并发任务 ≤ 2 个，超出返回 429（`too many requests`）；**保护系统不被偶然的「今年1月到8月」大查询拖垮** |
+
+#### B.7.1 为何禁止预聚合与 ETL
+
+本产品**不是**独立的数据分析平台或跨系统数仓，而是**核价结果库上的查询 + LLM 解释层**。在此前提下，预聚合表与定时 ETL 的收益远小于一致性风险：
+
+| 事实 | 设计含义 |
+|------|----------|
+| **单库、不跨系统** | 唯一真相源即核价结果明细表（如 L0 成品核价一览）；无需为 LLM 再建一层「分析专用」事实表 |
+| **数据量可控** | 约 **2 年、~20M 行**量级；按 `time_range` 一次 `WHERE + GROUP BY` 在单机 SQLite 可接受，不值得为省查询时间引入第二层存储 |
+| **核价参数常调** | BOM、单价、工艺、费率等**经常重算**；明细行随重算即变。预聚合/ETL 必然带来**延迟**（T+1 甚至更长）与**口径漂移**（汇总表仍是旧参数下的数） |
+| **采购核对场景** | 用户拿助理回答与「核价一览」对账；**必须与一览同源、同口径、实时一致**。任何「先 ETL 再查」都会导致「报表 2754 元、一览 16415 元」类事故 |
+
+**结论**：性能靠 **明细表区间聚合 + `run_guarded_query` 熔断/限流（#15）**，不靠离线汇总。若未来数据量显著增长，优先优化索引/SQL/缩小默认查询跨度，**仍不引入** LLM 专用预聚合或 ETL，除非产品定位变为独立分析平台（超出本期范围）。
 
 ### B.8 P0 上线范围
 
@@ -215,12 +228,12 @@ BETWEEN start AND end               贡献度、TopN、异常判定
 |------|------|
 | **入口** | 浮动助理；`user_question` 一问一答；胶囊人话；异步轮询 |
 | **Query** | Parser（LLM 抽条件 + 词典对齐 + 规则定 `analyses[]`）；四级降级（C.4.2.1）；`usage_help` |
-| **取数与算** | Repository 区间一次查询；Analysis `summary` / `trend` / `risk`（公式见 B.6.1）；`comparison_basis` 最小集（`same_part` + `same_bom_version`） |
+| **取数与算** | Repository **直查明细表**区间一次聚合（B.7 #14）；Analysis `summary` / `trend` / `risk`（公式见 B.6.1）；`comparison_basis` 最小集（`same_part` + `same_bom_version`） |
 | **输出** | 瘦 Snapshot → LLM Markdown；聊天区仅正文；口径 tight/loose 写在正文 |
 | **持久化** | `llm_analysis_reports` 落库；本人列表/查看/删除；10 条/页触底加载 |
-| **韧性** | LLM 失败 fallback 模板；SQL 熔断与单用户并发限流（B.7 #14/#15） |
+| **韧性** | LLM 失败 fallback 模板；SQL 熔断与单用户并发限流（B.7 #15） |
 
-**P0 不含**：打印/Word 导出、`comparison`/`drilldown` 组合深化、材料/工艺/公式版本口径校验、管理端审计、预聚合 ETL（可先查明细表 + 熔断，见 C.10 Story 1 可并行）。
+**P0 不含**：打印/Word 导出、`comparison`/`drilldown` 组合深化、材料/工艺/公式版本口径校验、管理端审计、**任何 LLM 专用预聚合表或 ETL**。
 
 ---
 
@@ -478,24 +491,27 @@ def query_l0_monthly_totals(
     end: str,
     tenant_id: ...,
 ) -> list[MonthlyTotalRow]:
-    """WHERE + GROUP BY month + SUM；不含环比/贡献度。"""
+    """在 costing_l0_assembly_costs 上 WHERE + GROUP BY month + SUM；不含环比/贡献度。"""
 ```
 
-禁止：Repository 方法名 `analyze_*`；Repo 内 MoM/议价判断；Analysis 内绕过 Repo 的 SQL。
+**禁止**：
+
+- Repository 方法名 `analyze_*`；Repo 内 MoM/议价判断；Analysis 内绕过 Repo 的 SQL  
+- 为 LLM 分析新建/读写预聚合表（如 `llm_monthly_cost_summary`）  
+- 定时 ETL、物化视图、「先查缓存再查明细」双路径
 
 ### C.10 开发拆单指南（按此拆 Story）
 
 | 序号 | Story 名称 | 产出 | 预估（人天） |
 |------|-----------|------|-------------|
-| 1 | **预聚合表 ETL** | 新建 `monthly_cost_summary` 表 + 每日定时任务（凌晨 2 点） | 2 |
-| 2 | **Repository 层** | `query_monthly_totals`、`query_part_details`、`query_location_comparison` 三个方法 + 单元测试（Mock DB） | 2 |
-| 3 | **Analysis 核心算法** | `trend.py`、`drivers.py`、`comparison.py`、`risk.py`、`drilldown.py` + 公式单测（输入固定序列，输出预期数字） | 3 |
-| 4 | **Query Parser** | `condition_extractor`（LLM 调用）+ `entity_aligner`（词典对齐）+ `analyses_rules` + 降级策略单测（模拟 LLM 失败场景） | 3 |
-| 5 | **Snapshot + LLM 生成** | `snapshot_builder` + `generator.py`（Prompt 组装 + LLM 调用）+ Markdown 渲染校验 | 2 |
-| 6 | **API + 落库 + 历史** | 5 个 HTTP 接口 + `llm_analysis_reports` 表迁移 + 权限校验（本人隔离） | 2 |
-| 7 | **前端浮窗 + 历史 overlay** | 聊天区、胶囊、打印/Word 导出、历史列表（触底加载） | 3 |
-| 8 | **联调与 50 条真实问句回归** | 拿采购部真实问句跑通，调 Prompt 直到 90% 以上可接受 | 2 |
-| **合计** | | | **19 人天（≈ 1 人月）** |
+| 1 | **Repository 层** | `query_monthly_totals`、`query_part_details`、`query_location_comparison` 三个方法（**明细表直查**）+ 单元测试（Mock DB） | 2 |
+| 2 | **Analysis 核心算法** | `trend.py`、`drivers.py`、`comparison.py`、`risk.py`、`drilldown.py` + 公式单测（输入固定序列，输出预期数字） | 3 |
+| 3 | **Query Parser** | `condition_extractor`（LLM 调用）+ `entity_aligner`（词典对齐）+ `analyses_rules` + 降级策略单测（模拟 LLM 失败场景） | 3 |
+| 4 | **Snapshot + LLM 生成** | `snapshot_builder` + `generator.py`（Prompt 组装 + LLM 调用）+ Markdown 渲染校验 | 2 |
+| 5 | **API + 落库 + 历史** | 5 个 HTTP 接口 + `llm_analysis_reports` 表迁移 + 权限校验（本人隔离） | 2 |
+| 6 | **前端浮窗 + 历史 overlay** | 聊天区、胶囊、打印/Word 导出、历史列表（触底加载） | 3 |
+| 7 | **联调与 50 条真实问句回归** | 拿采购部真实问句跑通，调 Prompt 直到 90% 以上可接受 | 2 |
+| **合计** | | | **17 人天** |
 
 ---
 
@@ -503,6 +519,7 @@ def query_l0_monthly_totals(
 
 | 日期 | 说明 |
 |------|------|
+| 2026-08-23 | **架构收紧**：B.7 #14 改为明细表直查，**禁止** LLM 预聚合表与 ETL；新增 B.7.1 设计理由（单库、~20M/2年、核价常调、一致性优先）；C.9/C.10 同步 |
 | 2026-08-23 | **算法补丁**：B.6.1 修正 drivers 贡献度（上涨/下跌分拆）、trend 异常月稀疏数据规则、drilldown 区间差分定义、单月 cumulative_rate=null、risk 缺价 data_message 与 LLM 引用要求 |
 | 2026-08-23 | **归档**：删 B.8 分期 / B.9 决策摘要，合并为 B.8 P0 上线范围 |
 | 2026-08-23 | 施工补丁：B.6.1 算法公式、C.4.2.1 降级链条、B.7 #14/#15 性能约束、C.5.1 可观测性、C.10 拆单指南 |

@@ -38,11 +38,13 @@ def _build_scope(query: AnalysisQuery, run: AnalysisRunResult) -> SnapshotScope:
         and month_count >= 12
         and query_month_span >= 12
     )
+    has_coverage_gap = query_month_span > 0 and month_count < query_month_span
     return SnapshotScope(
         time_range={"start": start, "end": end},
         month_count=month_count,
         query_month_span=query_month_span,
         is_full_calendar_year=is_full_calendar_year,
+        has_coverage_gap=has_coverage_gap,
     )
 
 

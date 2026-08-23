@@ -52,7 +52,7 @@ from app.models.stamping import (
     StampingTailorWeldBlank,
     StampingTonnagePrice,
 )
-from app.models.llm import LlmAnalysisReport, LlmMonthlyCostSummary
+from app.models.llm import LlmAnalysisReport
 from app.models.yishiyiyi import (
     StampingScrapPrice,
     SteelBasePrice,
@@ -77,7 +77,6 @@ __all__ = [
     "CostingEngineRun",
     "CostingEngineRunStep",
     "LlmAnalysisReport",
-    "LlmMonthlyCostSummary",
     "L0AssemblyCost",
     "L0AssemblyCostCalcLog",
     "L0AssemblyCostIndirect",

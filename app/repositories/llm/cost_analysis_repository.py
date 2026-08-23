@@ -11,7 +11,6 @@ from sqlalchemy.sql.elements import ColumnElement
 
 from app.common.part_number import escape_like_fragment
 from app.models.costing.l0_assembly_cost import L0AssemblyCost
-from app.models.llm.monthly_cost_summary import LlmMonthlyCostSummary
 from app.repositories.llm._query_guard import run_guarded_query
 from app.services.llm._money import ym_int
 
@@ -79,28 +78,11 @@ class L0CostAnalysisRepository:
         locations: list[str] | None = None,
         trace_id: str | None = None,
     ) -> list[L0MonthlyTotalRow]:
-        summary_rows = run_guarded_query(
-            sql_summary="llm_monthly_cost_summary.query_monthly_totals",
-            trace_id=trace_id,
-            query_fn=lambda: self._query_monthly_from_summary(
-                db,
-                location=location,
-                vehicle_model=vehicle_model,
-                bom_version=bom_version,
-                start_year=start_year,
-                start_month=start_month,
-                end_year=end_year,
-                end_month=end_month,
-                locations=locations,
-            ),
-        )
-        if summary_rows:
-            return summary_rows
-
-        detail_rows = run_guarded_query(
+        """按月从 L0 明细表实时聚合。"""
+        return run_guarded_query(
             sql_summary="costing_l0_assembly_costs.query_monthly_totals",
             trace_id=trace_id,
-            query_fn=lambda: self._query_monthly_from_detail(
+            query_fn=lambda: self._query_monthly_totals_impl(
                 db,
                 location=location,
                 vehicle_model=vehicle_model,
@@ -112,9 +94,6 @@ class L0CostAnalysisRepository:
                 locations=locations,
             ),
         )
-        if detail_rows:
-            self._refresh_monthly_summary(db, detail_rows)
-        return detail_rows
 
     def query_part_rows(
         self,
@@ -185,63 +164,7 @@ class L0CostAnalysisRepository:
             query_fn=_count,
         )
 
-    def _query_monthly_from_summary(
-        self,
-        db: Session,
-        *,
-        location: str | None,
-        vehicle_model: str | None,
-        bom_version: str | None,
-        start_year: int,
-        start_month: int,
-        end_year: int,
-        end_month: int,
-        locations: list[str] | None,
-    ) -> list[L0MonthlyTotalRow]:
-        start = ym_int(start_year, start_month)
-        end = ym_int(end_year, end_month)
-        ym_expr = LlmMonthlyCostSummary.year * 100 + LlmMonthlyCostSummary.month
-
-        q = db.query(LlmMonthlyCostSummary).filter(ym_expr >= start, ym_expr <= end)
-        if locations:
-            q = q.filter(LlmMonthlyCostSummary.location.in_(locations))
-        elif location:
-            q = q.filter(LlmMonthlyCostSummary.location == location)
-        if vehicle_model:
-            q = q.filter(LlmMonthlyCostSummary.vehicle_model == vehicle_model)
-        if bom_version:
-            q = q.filter(LlmMonthlyCostSummary.bom_version == bom_version)
-
-        rows = q.order_by(
-            LlmMonthlyCostSummary.location.asc(),
-            LlmMonthlyCostSummary.year.asc(),
-            LlmMonthlyCostSummary.month.asc(),
-        ).all()
-        if not rows:
-            return []
-
-        return [
-            L0MonthlyTotalRow(
-                year=int(row.year),
-                month=int(row.month),
-                location=str(row.location),
-                l0_count=int(row.l0_count or 0),
-                ok_count=int(row.ok_count or 0),
-                partial_count=int(row.partial_count or 0),
-                grand_total_sum=Decimal(str(row.grand_total_sum or 0)),
-                total_amount_sum=Decimal(str(row.total_amount_sum or 0)),
-                indirect_amount_sum=Decimal(str(row.indirect_amount_sum or 0)),
-                stamping_amount_sum=Decimal(str(row.stamping_amount_sum or 0)),
-                purchased_amount_sum=Decimal(str(row.purchased_amount_sum or 0)),
-                bundle_amount_sum=Decimal(str(row.bundle_amount_sum or 0)),
-                welding_amount_sum=Decimal(str(row.welding_amount_sum or 0)),
-                welding_other_amount_sum=Decimal(str(row.welding_other_amount_sum or 0)),
-                missing_price_count=int(row.missing_price_count or 0),
-            )
-            for row in rows
-        ]
-
-    def _query_monthly_from_detail(
+    def _query_monthly_totals_impl(
         self,
         db: Session,
         *,
@@ -429,48 +352,3 @@ class L0CostAnalysisRepository:
             )
             for row in q.all()
         ]
-
-    def _refresh_monthly_summary(
-        self,
-        db: Session,
-        rows: list[L0MonthlyTotalRow],
-    ) -> None:
-        """明细降级查询后回写预聚合表（懒刷新）。"""
-        if not rows:
-            return
-        for row in rows:
-            existing = (
-                db.query(LlmMonthlyCostSummary)
-                .filter(
-                    LlmMonthlyCostSummary.year == row.year,
-                    LlmMonthlyCostSummary.month == row.month,
-                    LlmMonthlyCostSummary.location == row.location,
-                )
-                .first()
-            )
-            if existing is not None:
-                continue
-            db.add(
-                LlmMonthlyCostSummary(
-                    year=row.year,
-                    month=row.month,
-                    location=row.location,
-                    vehicle_model="*",
-                    bom_version="*",
-                    l0_count=row.l0_count,
-                    ok_count=row.ok_count,
-                    partial_count=row.partial_count,
-                    missing_price_count=row.missing_price_count,
-                    grand_total_sum=row.grand_total_sum,
-                    total_amount_sum=row.total_amount_sum,
-                    indirect_amount_sum=row.indirect_amount_sum,
-                    stamping_amount_sum=row.stamping_amount_sum,
-                    purchased_amount_sum=row.purchased_amount_sum,
-                    bundle_amount_sum=row.bundle_amount_sum,
-                    welding_amount_sum=row.welding_amount_sum,
-                    welding_other_amount_sum=row.welding_other_amount_sum,
-                    created_by="system",
-                    updated_by="system",
-                )
-            )
-        db.flush()

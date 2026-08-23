@@ -322,6 +322,12 @@ class DatabaseConfig:
                     )
                 logger.info("已为 %s 追加列 %s", llm_report_table, column_name)
 
+        obsolete_table = "llm_monthly_cost_summary"
+        if obsolete_table in table_names:
+            with engine.begin() as conn:
+                conn.execute(text(f"DROP TABLE {obsolete_table}"))
+            logger.info("已删除废弃表 %s", obsolete_table)
+
 
 class AuxiliaryDatabaseConfig:
     """

@@ -17,6 +17,7 @@ class SnapshotScope(BaseModel):
     month_count: int = 0
     query_month_span: int = 0
     is_full_calendar_year: bool = False
+    has_coverage_gap: bool = False
 
 
 class SnapshotMeta(BaseModel):
