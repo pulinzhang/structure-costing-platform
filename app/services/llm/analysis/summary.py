@@ -6,13 +6,32 @@ from collections import defaultdict
 from decimal import Decimal
 from typing import Any
 
-from app.repositories.llm.cost_analysis_repository import L0MonthlyTotalRow
+from app.repositories.llm.cost_analysis_repository import L0MonthlyTotalRow, L0PartPeriodRow
 from app.repositories.llm.stamping_cost_analysis_repository import StampingPartPeriodRow
 from app.repositories.llm.steel_price_analysis_repository import SteelMonthlyAvgRow
 from app.services.llm._money import money_str, month_key
 
 
-def build_summary(rows: list[L0MonthlyTotalRow]) -> dict[str, Any]:
+def _distinct_l0_status_counts(
+    part_rows: list[L0PartPeriodRow],
+) -> tuple[int, int, int]:
+    """按零件号去重；任一月非 ok 则计为 partial。"""
+    status_by_part: dict[str, str] = {}
+    for row in part_rows:
+        current = status_by_part.get(row.part_number)
+        if current is None or row.calc_status != "ok":
+            status_by_part[row.part_number] = row.calc_status
+    total = len(status_by_part)
+    partial_count = sum(1 for status in status_by_part.values() if status != "ok")
+    ok_count = total - partial_count
+    return total, ok_count, partial_count
+
+
+def build_summary(
+    rows: list[L0MonthlyTotalRow],
+    *,
+    part_rows: list[L0PartPeriodRow] | None = None,
+) -> dict[str, Any]:
     if not rows:
         return {
             "l0_count": 0,
@@ -25,10 +44,17 @@ def build_summary(rows: list[L0MonthlyTotalRow]) -> dict[str, Any]:
             "months": [],
         }
 
-    # 若多月：用全区间合计；单月则该月
-    l0_count = sum(row.l0_count for row in rows)
-    ok_count = sum(row.ok_count for row in rows)
-    partial_count = sum(row.partial_count for row in rows)
+    # 金额类指标：多月区间求和；件数类指标：按零件号去重，禁止「27×N 月=54/324」
+    if part_rows:
+        l0_count, ok_count, partial_count = _distinct_l0_status_counts(part_rows)
+    elif len(rows) == 1:
+        l0_count = rows[0].l0_count
+        ok_count = rows[0].ok_count
+        partial_count = rows[0].partial_count
+    else:
+        l0_count = max(row.l0_count for row in rows)
+        ok_count = max(row.ok_count for row in rows)
+        partial_count = max(row.partial_count for row in rows)
     grand = sum((row.grand_total_sum for row in rows), start=rows[0].grand_total_sum * 0)
     total = sum((row.total_amount_sum for row in rows), start=rows[0].total_amount_sum * 0)
     indirect = sum(
@@ -56,6 +82,7 @@ def build_summary(rows: list[L0MonthlyTotalRow]) -> dict[str, Any]:
         "l0_count": l0_count,
         "ok_count": ok_count,
         "partial_count": partial_count,
+        "month_count": len(rows),
         "grand_total_sum": money_str(grand),
         "total_amount_sum": money_str(total),
         "indirect_amount_sum": money_str(indirect),

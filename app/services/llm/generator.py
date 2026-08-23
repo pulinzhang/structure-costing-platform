@@ -39,7 +39,8 @@ def _build_field_card() -> str:
       "【铁律】",
       "1. 问什么答什么；禁止套完整报告模板。",
       "2. 报告正文禁止出现英文字段名、代码术语；见 chinese_style_rules。",
-      "3. 数字必须来自 Snapshot；禁止重算、禁止改为万元。",
+      "3. 写合计/全年前必读 JSON 顶层 scope（time_range、month_count）；见 scope_rules。",
+      "4. 数字必须来自 Snapshot；禁止重算、禁止改为万元。",
       "",
       "常见字段中文释义：",
   ]
@@ -179,6 +180,12 @@ class LlmReportGenerator:
         if snapshot.meta.has_data is False:
             lines.append(snapshot.meta.data_message or "当前查询范围无可用数据。")
         else:
+            scope = snapshot.meta.scope
+            if scope is not None:
+                lines.append(
+                    f"- 查询范围：{scope.time_range.get('start')} 至 "
+                    f"{scope.time_range.get('end')}（{scope.month_count} 个月有数据）"
+                )
             if summary.get("grand_total_sum") is not None:
                 lines.append(f"- 总费用合计（元）：{summary.get('grand_total_sum')}")
             if summary.get("total_amount_sum") is not None:

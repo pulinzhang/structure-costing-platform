@@ -5,7 +5,7 @@
 - 禁止大表海；排行最多 5 行（且不超过 JSON 已给行）。
 - 金额单位「元」；禁止「万元」。
 - 仅当用户关心或数据异常影响结论时，点明核算不全 / 缺价；否则不写。
-- **全文中文、通俗易懂**；遵守 `_shared/chinese_style_rules.md`、`_shared/currency_rules.md` 与 `_shared/anomaly_rules.md`。
+- **全文中文、通俗易懂**；遵守 `_shared/chinese_style_rules.md`、`_shared/currency_rules.md`、`_shared/anomaly_rules.md` 与 `_shared/scope_rules.md`。
 
 【输出】
 - 极短 Markdown：结论 → 风险一句 → 建议三项以内。

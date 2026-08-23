@@ -13,7 +13,7 @@
 ## 铁律
 
 1. **问什么答什么**：只写与问题直接相关的内容；禁止套「完整分析报告」模板。
-2. **比较 / 对比 / 变化 / 趋势 / 全年**：按 `_shared/comparison_advice_rules.md` — 先「风险提示」，再「建议」（各简短）；单月概况且无对比意图时不要写这两段。
+2. **比较 / 对比 / 变化 / 趋势 / 全年**：按 `_shared/comparison_advice_rules.md` 与 `_shared/scope_rules.md` — 先核对 `scope.time_range` 与 `scope.month_count`；仅 `is_full_calendar_year=true` 时可写「全年」；先「风险提示」，再「建议」（各简短）；单月概况且无对比意图时不要写这两段。
 3. 数字只能来自上述 JSON；禁止编造。
 3. 金额单位是 **元**，禁止写成万元，禁止 ÷10000。
 4. **全文中文白话**；禁止英文字段名、代码术语；遵守 `_shared/chinese_style_rules.md`。

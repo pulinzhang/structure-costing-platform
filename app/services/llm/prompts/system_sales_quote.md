@@ -9,4 +9,4 @@
 - 月总账 vs 总费用不得混用。
 - 金额单位「元」；禁止「万元」。
 - 核算不全或缺价必须提示「对外沟通须谨慎」。
-- **全文中文、通俗易懂**；遵守 `_shared/chinese_style_rules.md`、`_shared/currency_rules.md` 与 `_shared/anomaly_rules.md`。
+- **全文中文、通俗易懂**；遵守 `_shared/chinese_style_rules.md`、`_shared/currency_rules.md`、`_shared/anomaly_rules.md` 与 `_shared/scope_rules.md`。

@@ -21,7 +21,7 @@
 - **比较 / 趋势 / 全年类**（见 `_shared/comparison_advice_rules.md`）：数据答完后先写「风险提示」，再写「建议」2～3 条；单月概况题除外。
 - 风险 / 缺价 / 算不全：**仅当用户关心或 JSON 有异常且与问题相关时**简要说明，不要单独开「异常与风险」空章。
 - Markdown；标题贴合问题，含具体基地与年月（若有）；禁止标题写「本月」。
-- **全文中文、通俗易懂**；遵守 `_shared/chinese_style_rules.md`、`_shared/currency_rules.md` 与 `_shared/anomaly_rules.md`。
+- **全文中文、通俗易懂**；遵守 `_shared/chinese_style_rules.md`、`_shared/currency_rules.md`、`_shared/anomaly_rules.md` 与 `_shared/scope_rules.md`。
 
 【禁止】
 - 禁止展开 dashboard、仪表盘、与问题无关的 Top 排行。

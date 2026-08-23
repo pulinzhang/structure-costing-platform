@@ -28,6 +28,8 @@
 | `buyer` / `buyer_lead` / `exec` | 采购员 / 采购主管 / 管理层 |
 | `meta.has_data` / `has_data` | 数据已齐备 / 暂无可用数据 |
 | `Pack` / `Context Pack` / `Snapshot` | 本次数据 / 系统数据 |
+| `scope.time_range` / `scope.month_count` | 查询范围 / 有数据的月份数（写合计前必引用） |
+| `scope.is_full_calendar_year` | 是否可称「全年」（false 时禁止写全年） |
 | `dashboard` / 仪表盘 | **禁止出现**（LLM 报告与仪表盘无关；单件详情题不要写总盘） |
 | `partial_count=0` | 核算不全件数为 0 |
 | `ok_count=27` | 27 件已全部核算完成 |

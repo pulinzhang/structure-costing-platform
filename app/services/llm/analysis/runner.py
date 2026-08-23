@@ -1160,7 +1160,7 @@ class AnalysisRunner:
 
         need_parts = any(
             kind in query.analyses
-            for kind in ("drivers", "risk", "drilldown", "trend")
+            for kind in ("drivers", "risk", "drilldown", "trend", "summary")
         )
         part_rows: list[L0PartPeriodRow] = []
         filtered_missing = 0
@@ -1209,7 +1209,7 @@ class AnalysisRunner:
         driver_top_n = query.top_n()
 
         if "summary" in query.analyses:
-            out.summary = build_summary(monthly)
+            out.summary = build_summary(monthly, part_rows=part_rows or None)
 
         if "trend" in query.analyses:
             single_month = query.time_range.start == query.time_range.end
@@ -1253,9 +1253,14 @@ class AnalysisRunner:
         base_message = query.parser_data_message or ""
         missing_message = format_missing_price_message(filtered_missing)
         if monthly:
+            part_total = (
+                out.summary.get("l0_count")
+                if out.summary
+                else max(row.l0_count for row in monthly)
+            )
             detail = (
                 f"L0 月切片={len(monthly)}，"
-                f"合计件数={sum(row.l0_count for row in monthly)}"
+                f"供货总成={part_total}件（按零件号去重）"
             )
             parts = [part for part in (base_message, missing_message, detail) if part]
             out.data_message = "；".join(parts)
@@ -1267,7 +1272,7 @@ class AnalysisRunner:
             out.data_message = base_message or missing_message or "当前查询范围无核价结果"
 
         if out.summary is None and monthly:
-            out.summary = build_summary(monthly)
+            out.summary = build_summary(monthly, part_rows=part_rows or None)
 
         out.evidence["monthly_totals"] = [
             {

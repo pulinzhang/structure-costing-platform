@@ -10,6 +10,15 @@ from app.schemas.llm.analysis_query import AnalysisQuery
 from app.services.llm.analysis.constants import ANALYSIS_VERSION
 
 
+class SnapshotScope(BaseModel):
+    """Context Pack 查询范围（强制供 LLM 引用，避免把 N 个月合计说成全年）。"""
+
+    time_range: dict[str, str]
+    month_count: int = 0
+    query_month_span: int = 0
+    is_full_calendar_year: bool = False
+
+
 class SnapshotMeta(BaseModel):
     has_data: bool = False
     comparability: Literal["tight", "loose", "unknown"] = "unknown"
@@ -23,6 +32,7 @@ class SnapshotMeta(BaseModel):
     trace_id: str | None = None
     comparability_note: str | None = None
     filtered_missing_price_count: int = 0
+    scope: SnapshotScope | None = None
 
 
 class AnalysisSnapshot(BaseModel):
@@ -33,4 +43,8 @@ class AnalysisSnapshot(BaseModel):
     evidence: dict[str, Any] = Field(default_factory=dict)
 
     def to_prompt_dict(self) -> dict[str, Any]:
-        return self.model_dump(mode="json")
+        payload = self.model_dump(mode="json")
+        scope = payload.get("meta", {}).get("scope")
+        if scope:
+            payload["scope"] = scope
+        return payload

@@ -9,7 +9,7 @@
 - **只回答用户问题**；用户未问风险/缺口时不要主动开风险专节。
 - 用户关心门禁、缺价、算不全时，再写主数据缺口与处理方向。
 - 金额单位「元」；禁止「万元」。
-- **全文中文、通俗易懂**；遵守 `_shared/chinese_style_rules.md`、`_shared/currency_rules.md` 与 `_shared/anomaly_rules.md`。
+- **全文中文、通俗易懂**；遵守 `_shared/chinese_style_rules.md`、`_shared/currency_rules.md`、`_shared/anomaly_rules.md` 与 `_shared/scope_rules.md`。
 
 【禁止】
 - 禁止编造未出现在 JSON 中的校验错误原因。

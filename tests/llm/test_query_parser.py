@@ -6,7 +6,7 @@ from __future__ import annotations
 from decimal import Decimal
 from unittest.mock import MagicMock
 
-from app.repositories.llm.cost_analysis_repository import L0MonthlyTotalRow
+from app.repositories.llm.cost_analysis_repository import L0MonthlyTotalRow, L0PartPeriodRow
 from app.services.llm.analysis.cost_trend import build_cost_trend
 from app.services.llm.analysis.idempotency import (
     build_idempotency_key,
@@ -209,7 +209,7 @@ def test_build_summary_and_trend() -> None:
         ),
     ]
     summary = build_summary(rows)
-    assert summary["l0_count"] == 20
+    assert summary["l0_count"] == 10
     assert summary["grand_total_sum"] == "2100.00"
 
     trend = build_cost_trend(rows, basis=default_comparison_basis())
@@ -223,6 +223,69 @@ def test_build_summary_and_trend() -> None:
         single_month=True,
     )
     assert single_month_trend["cumulative_rate"] is None
+
+
+def test_build_summary_multi_month_deduplicates_part_count() -> None:
+    monthly = [
+        L0MonthlyTotalRow(
+            year=2025,
+            month=1,
+            location="青岛",
+            l0_count=27,
+            ok_count=27,
+            partial_count=0,
+            grand_total_sum=Decimal("100"),
+            total_amount_sum=Decimal("90"),
+            indirect_amount_sum=Decimal("10"),
+            stamping_amount_sum=Decimal("50"),
+            purchased_amount_sum=Decimal("20"),
+            bundle_amount_sum=Decimal("5"),
+            welding_amount_sum=Decimal("15"),
+            welding_other_amount_sum=Decimal("0"),
+        ),
+        L0MonthlyTotalRow(
+            year=2025,
+            month=3,
+            location="青岛",
+            l0_count=27,
+            ok_count=27,
+            partial_count=0,
+            grand_total_sum=Decimal("110"),
+            total_amount_sum=Decimal("99"),
+            indirect_amount_sum=Decimal("11"),
+            stamping_amount_sum=Decimal("55"),
+            purchased_amount_sum=Decimal("20"),
+            bundle_amount_sum=Decimal("5"),
+            welding_amount_sum=Decimal("15"),
+            welding_other_amount_sum=Decimal("0"),
+        ),
+    ]
+    part_rows = [
+        L0PartPeriodRow(
+            year=2025,
+            month=month,
+            part_number=f"50100687{i}AA",
+            part_name="件",
+            grand_total=Decimal("1"),
+            total_amount=Decimal("1"),
+            calc_status="ok",
+            missing_leaf_count=0,
+            calc_message=None,
+            stamping_amount=Decimal("0"),
+            purchased_amount=Decimal("0"),
+            bundle_amount=Decimal("0"),
+            welding_amount=Decimal("0"),
+            welding_other_fee=Decimal("0"),
+            indirect_amount=Decimal("0"),
+            bom_version="D/00",
+        )
+        for month in (1, 3)
+        for i in range(3)
+    ]
+    summary = build_summary(monthly, part_rows=part_rows)
+    assert summary["l0_count"] == 3
+    assert summary["partial_count"] == 0
+    assert summary["grand_total_sum"] == "210.00"
 
 
 def test_query_parser_winning_thickness_not_base_price() -> None:

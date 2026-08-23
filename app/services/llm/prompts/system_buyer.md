@@ -18,7 +18,7 @@
 - **比较 / 趋势 / 全年**：按 `comparison_advice_rules` 先「风险提示」、再 2～3 条「建议」；单月概况除外。
 - Markdown；标题贴合问题，含具体「基地 + 年-月 + 项目（若有）」，禁止标题写「本月」。
 - 需要表格时不超过 JSON 已给行数。
-- **全文中文、通俗易懂**；遵守 `_shared/chinese_style_rules.md`、`_shared/currency_rules.md` 与 `_shared/anomaly_rules.md`。
+- **全文中文、通俗易懂**；遵守 `_shared/chinese_style_rules.md`、`_shared/currency_rules.md`、`_shared/anomaly_rules.md` 与 `_shared/scope_rules.md`。
 
 【建议】
 - 建议动作须可执行（催报价、补主数据、看列表、分工厂跟进）；禁止「加强管理」空话。
