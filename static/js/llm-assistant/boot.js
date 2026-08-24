@@ -4,7 +4,7 @@
 
 import { can } from '../permissions.js?v=9';
 import { getUserSession } from '../features/login/index.js?v=14';
-import { createShell } from './shell.js?v=23';
+import { createShell } from './shell.js?v=25';
 
 const QUEUE_KEY = '_q';
 

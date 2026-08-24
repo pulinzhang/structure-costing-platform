@@ -1,5 +1,6 @@
 /**
- * AI 回答打印：新标签页全屏文档 + 系统打印对话框；弹窗被拦时回退全屏遮罩。
+ * AI 回答「打印」：新标签页打开可打印 HTML 文档（不自动调系统打印对话框）。
+ * 弹窗被拦时回退全屏预览，用户可自行再点打印。
  */
 
 import { buildAssistantDocumentHtml, canExportAssistantMessage } from './document.js?v=2';
@@ -47,6 +48,7 @@ export function printAssistantMessage(msg) {
 }
 
 /**
+ * 新标签页打开文档，不调用 print()。
  * @param {string} html
  * @returns {boolean}
  */
@@ -60,26 +62,6 @@ function openPrintWindow(html) {
     printWindow.document.write(html);
     printWindow.document.close();
     printWindow.focus();
-
-    const triggerPrint = () => {
-        try {
-            printWindow.focus();
-            printWindow.print();
-        } catch (error) {
-            if (typeof window.showToast === 'function') {
-                window.showToast(error?.message || '打印失败', 'error');
-            }
-        }
-    };
-
-    if (printWindow.document.readyState === 'complete') {
-        window.setTimeout(triggerPrint, 200);
-    } else {
-        printWindow.addEventListener('load', () => {
-            window.setTimeout(triggerPrint, 100);
-        });
-    }
-
     return true;
 }
 

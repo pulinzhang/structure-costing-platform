@@ -59,18 +59,19 @@ export async function openHistoryPanel(overlay, options) {
     if (!body || !listEl || !footerEl) return;
 
     const renderFooter = () => {
-        if (state.loading && state.items.length) {
-            footerEl.innerHTML = `
-  <span class="inline-block w-3 h-3 border border-[#616161] border-t-[#ff5252] rounded-full animate-spin mr-1 align-middle"></span>
-  加载更多…`;
-            return;
-        }
         if (!state.items.length && !state.loading) {
             footerEl.innerHTML = '';
             return;
         }
+        // 已无更多：绝不显示「加载更多」，避免触底后仍误以为还有
         if (!state.hasMore) {
             footerEl.textContent = state.items.length ? '没有更多了' : '';
+            return;
+        }
+        if (state.loading && state.items.length) {
+            footerEl.innerHTML = `
+  <span class="inline-block w-3 h-3 border border-[#616161] border-t-[#ff5252] rounded-full animate-spin mr-1 align-middle"></span>
+  加载更多…`;
             return;
         }
         footerEl.textContent = '';
@@ -107,8 +108,10 @@ export async function openHistoryPanel(overlay, options) {
             state.items = state.items.concat(batch);
             state.skip = state.items.length;
             state.hasMore = state.skip < state.total && batch.length > 0;
+            state.loading = false;
             renderList();
         } catch (error) {
+            state.loading = false;
             if (!state.items.length) {
                 listEl.innerHTML = `<div class="py-8 text-center text-[11px] text-[#ef5350]">${esc(error?.message || '加载失败')}</div>`;
                 footerEl.innerHTML = '';
@@ -116,8 +119,6 @@ export async function openHistoryPanel(overlay, options) {
                 window.showToast?.(error?.message || '加载失败', 'error');
                 renderFooter();
             }
-        } finally {
-            state.loading = false;
         }
     };
 
