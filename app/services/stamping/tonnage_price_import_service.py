@@ -12,6 +12,7 @@ from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from sqlalchemy.orm import Session
 
 from app.common.audit import audit_create, audit_update
+from app.config import settings
 from app.parsers.stamping.tonnage_price_parser import parse_tonnage_price_excel
 from app.repositories.stamping.tonnage_price_repository import StampingTonnagePriceRepository
 from app.schemas.dto.stamping_tonnage_price_dto import (
@@ -21,6 +22,9 @@ from app.schemas.dto.stamping_tonnage_price_dto import (
 )
 from app.schemas.vo.stamping_tonnage_price_vo import StampingTonnagePriceImportResultVO
 from app.schemas.vo.user_vo import UserVO
+from app.services.file_trace.path_utils import to_upload_relpath
+from app.services.file_trace.register import register_existing
+from app.utils.stamping_tonnage_price_archive import save_tonnage_price_upload
 
 logger = logging.getLogger("service.stamping_tonnage_price_import")
 
@@ -108,6 +112,17 @@ class StampingTonnagePriceImportService:
             raise ValueError("仅支持 .xlsx 文件")
         if not file_content:
             raise ValueError("文件内容为空")
+        if len(file_content) > settings.MAX_UPLOAD_SIZE:
+            max_mb = settings.MAX_UPLOAD_SIZE // (1024 * 1024)
+            raise ValueError(f"文件过大，最大支持 {max_mb}MB")
+
+        archive_path = save_tonnage_price_upload(
+            file_content=file_content,
+            filename=original_name,
+            year=year,
+            location=location,
+        )
+        archived_rel = to_upload_relpath(archive_path)
 
         parse_result = parse_tonnage_price_excel(file_content)
         if parse_result.errors and not parse_result.rows:
@@ -151,6 +166,15 @@ class StampingTonnagePriceImportService:
                         updated_by=create_audit["updated_by"]
                     )
                     created_count += 1
+            register_existing(
+                db,
+                file_category="stamping_tonnage_price",
+                stored_relpath=archived_rel,
+                original_filename=original_name,
+                current_user=current_user,
+                location=location,
+                year=year,
+            )
             db.commit()
         except Exception:
             db.rollback()
@@ -169,9 +193,10 @@ class StampingTonnagePriceImportService:
             message += f"；有 {len(parse_result.errors)} 行解析跳过"
 
         logger.info(
-            "%s file=%s created=%s updated=%s skipped_approved=%s warnings=%s",
+            "%s file=%s archived=%s created=%s updated=%s skipped_approved=%s warnings=%s",
             message,
             original_name,
+            archived_rel,
             created_count,
             updated_count,
             skipped_approved,

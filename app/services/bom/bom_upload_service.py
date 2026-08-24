@@ -9,6 +9,7 @@ from pathlib import Path
 from sqlalchemy.orm import Session
 
 from app.common.audit import audit_create
+from app.common.upload_scope_validation import validate_bom_material_upload_scope
 from app.common.timezone import now
 from app.config import settings
 from app.parsers.bom.bom_parser import BomParsedNode, parse_bom_excel
@@ -17,6 +18,7 @@ from app.schemas.dto.bom_dto import BomNodeWrite, BomSnapshotWrite
 from app.schemas.vo.bom_vo import BomImportResultVO, BomSnapshotVO
 from app.schemas.vo.user_vo import UserVO
 from app.services.bom.bom_template_builder import build_bom_material_template
+from app.services.file_trace.register import register_existing
 
 logger = logging.getLogger("service.bom.upload")
 
@@ -64,8 +66,14 @@ class BomUploadService:
         if not parse_result.nodes:
             raise ValueError("未解析到 BOM 节点，请检查 Excel 格式")
 
-        vehicle_model = (meta.vehicle_model or "").strip() or "UNKNOWN"
-        bom_version = (meta.bom_version or "").strip() or "V1"
+        scope = validate_bom_material_upload_scope(
+            location=location,
+            vehicle_model=meta.vehicle_model,
+            bom_version=meta.bom_version,
+        )
+        location = scope.location
+        vehicle_model = scope.vehicle_model
+        bom_version = scope.bom_version
         file_hash = hashlib.sha256(file_content).hexdigest()
         relative_path = self._save_excel_file(
             file_content=file_content,
@@ -160,6 +168,20 @@ class BomUploadService:
                     )
                 )
                 index_to_id[index] = row.id
+
+            register_existing(
+                db,
+                file_category="bom_material",
+                stored_relpath=relative_path,
+                original_filename=original_name,
+                current_user=current_user,
+                file_hash=file_hash,
+                location=location,
+                vehicle_model=vehicle_model,
+                bom_version=bom_version,
+                business_ref_type="bom_snapshot",
+                business_ref_id=snapshot.id,
+            )
 
             db.commit()
             db.refresh(snapshot)

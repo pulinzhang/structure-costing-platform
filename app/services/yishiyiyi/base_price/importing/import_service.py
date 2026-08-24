@@ -24,6 +24,8 @@ from app.utils.steel_price_archive import (
     FILE_KIND_BASE_PRICE,
     save_steel_price_upload,
 )
+from app.services.file_trace.path_utils import to_upload_relpath
+from app.services.file_trace.register import register_existing
 from app.services.yishiyiyi.base_price.importing.template_builder import (
     build_steel_base_price_template,
 )
@@ -160,13 +162,14 @@ class SteelBasePriceImportService:
                 progress_callback(progress, msg)
 
         _report(5, "正在归档上传源文件...")
-        save_steel_price_upload(
+        archive_path = save_steel_price_upload(
             file_content=file_content,
             filename=filename,
             year=year,
             month=month,
             file_kind=FILE_KIND_BASE_PRICE,
         )
+        stored_relpath = to_upload_relpath(archive_path)
 
         _report(10, "正在解析基准价格 Excel...")
         parse_result = parse_base_price_excel(file_content)
@@ -185,6 +188,21 @@ class SteelBasePriceImportService:
         ]
         if not writes:
             _report(100, "解析完成，无有效数据行")
+            try:
+                register_existing(
+                    db,
+                    file_category="steel_base_price",
+                    stored_relpath=stored_relpath,
+                    original_filename=filename,
+                    current_user=current_user,
+                    year=year,
+                    month=month,
+                )
+                db.commit()
+            except Exception:
+                db.rollback()
+                logger.exception("登记基准价源文件失败: filename=%s", filename)
+                raise
             return SteelBasePriceImportResultResponse(
                 filename=filename,
                 created_count=0,
@@ -197,6 +215,15 @@ class SteelBasePriceImportService:
         _report(50, f"解析完成，共 {len(writes)} 条，正在写入数据库...")
         try:
             counts = self.repository.upsert(db, writes)
+            register_existing(
+                db,
+                file_category="steel_base_price",
+                stored_relpath=stored_relpath,
+                original_filename=filename,
+                current_user=current_user,
+                year=year,
+                month=month,
+            )
             _report(90, "正在提交事务...")
             db.commit()
         except Exception:

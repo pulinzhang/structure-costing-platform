@@ -16,6 +16,7 @@ from app.config import settings
 from app.database import Base
 from app.models.bom.node import BomSnapshot
 from app.models.bom.packaging_transport_fee import BomPackagingTransportFee
+from app.models.file_trace.upload_file import UploadFile
 from app.parsers.bom.packaging_transport_fee_parser import (
     parse_packaging_transport_fee_excel,
 )
@@ -56,7 +57,11 @@ def memory_db(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Generator[Sess
     )
     Base.metadata.create_all(
         bind=engine,
-        tables=[BomSnapshot.__table__, BomPackagingTransportFee.__table__],
+        tables=[
+            BomSnapshot.__table__,
+            BomPackagingTransportFee.__table__,
+            UploadFile.__table__,
+        ],
     )
     session_factory = sessionmaker(bind=engine)
     session = session_factory()

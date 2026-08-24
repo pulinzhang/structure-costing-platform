@@ -24,6 +24,8 @@ from app.schemas.dto.steel_price_policy_dto import (
 from app.schemas.vo.steel_price_policy_vo import ImportResultResponse
 from app.schemas.vo.user_vo import UserVO
 from app.utils.steel_price_archive import FILE_KIND_POLICY, save_steel_price_upload
+from app.services.file_trace.path_utils import to_upload_relpath
+from app.services.file_trace.register import register_existing
 from app.services.yishiyiyi.policy.importing.template_builder import (
     build_steel_price_policy_template,
 )
@@ -144,13 +146,14 @@ class SteelPricePolicyImportService:
                 progress_callback(progress, msg)
 
         _report(1, "正在归档上传源文件...")
-        save_steel_price_upload(
+        archive_path = save_steel_price_upload(
             file_content=file_content,
             filename=filename,
             year=year,
             month=month,
             file_kind=FILE_KIND_POLICY,
         )
+        stored_relpath = to_upload_relpath(archive_path)
 
         result = parse_steel_price_policy_excel(
             file_content,
@@ -227,6 +230,15 @@ class SteelPricePolicyImportService:
                     created += 1
 
             # 整个循环完成后统一提交
+            register_existing(
+                db,
+                file_category="steel_price_policy",
+                stored_relpath=stored_relpath,
+                original_filename=filename,
+                current_user=current_user,
+                year=year,
+                month=month,
+            )
             _report(99, "正在提交事务...")
             db.commit()
 

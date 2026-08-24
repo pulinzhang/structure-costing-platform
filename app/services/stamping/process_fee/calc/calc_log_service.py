@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+import logging
 import uuid
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import cast
 
 from sqlalchemy.engine import Engine
@@ -20,7 +21,10 @@ from app.schemas.dto.stamping_process_fee_dto import (
     ProcessFeeCalcLogPatch,
     StampingProcessFeeCalcDTO,
 )
-from app.schemas.vo.stamping_process_fee_vo import StampingProcessFeeCalcLogVO
+from app.schemas.vo.stamping_process_fee_vo import (
+    StampingProcessFeeCalcLogVO,
+    StampingProcessFeeCalcResultVO,
+)
 from app.services.stamping.process_fee.calc.constants import (
     DUPLICATE_SCOPE_CALC_MESSAGE,
     STATUS_FAILED,
@@ -29,6 +33,8 @@ from app.services.stamping.process_fee.calc.constants import (
 )
 from app.services.stamping.process_fee.calc.models import DuplicateScopeCalcError
 from app.services.stamping.process_fee.scope import require_scope
+
+logger = logging.getLogger("service.stamping.process_fee.calc.log")
 
 
 class ProcessFeeCalcLogService:
@@ -193,3 +199,66 @@ class ProcessFeeCalcLogService:
         if deleted:
             db.commit()
         return deleted
+
+    def persist(
+        self,
+        db: Session,
+        *,
+        result: StampingProcessFeeCalcResultVO,
+        operator_name: str | None = None,
+    ) -> int | None:
+        """引擎等同步调用未走 begin_processing 时，补写终态历史。"""
+        operator = operator_name or "系统"
+        started_at = (
+            datetime.fromisoformat(result.started_at)
+            if result.started_at
+            else now()
+        )
+        finished_at = (
+            datetime.fromisoformat(result.finished_at)
+            if result.finished_at
+            else now()
+        )
+        calc_batch_id = result.calc_batch_id or f"spf-{uuid.uuid4().hex[:16]}"
+        try:
+            record = self.calc_log_repo.create(
+                db,
+                ProcessFeeCalcLogCreate(
+                    calc_batch_id=calc_batch_id,
+                    year=result.year,
+                    location=result.location,
+                    stamping_supplier=result.stamping_supplier,
+                    vehicle_model=result.vehicle_model,
+                    version=result.version,
+                    status=result.status,
+                    detail_text=result.detail_text or "",
+                    started_at=started_at,
+                    operator_name=operator,
+                    created_by=operator,
+                    updated_by=operator,
+                ),
+            )
+            self.calc_log_repo.update(
+                db,
+                record.id,
+                ProcessFeeCalcLogPatch(
+                    status=result.status,
+                    total_parts=result.total_parts,
+                    success_count=result.success_count,
+                    failed_count=result.failed_count,
+                    zero_fee_count=result.zero_fee_count,
+                    skipped_approved_count=result.skipped_approved_count,
+                    detail_text=result.detail_text or "",
+                    finished_at=finished_at,
+                    updated_by=operator,
+                ),
+            )
+            db.commit()
+            db.refresh(record)
+            return record.id
+        except Exception:
+            db.rollback()
+            logger.exception(
+                "写入加工费计算日志失败: batch=%s", calc_batch_id
+            )
+            return None

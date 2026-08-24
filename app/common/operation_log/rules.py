@@ -37,7 +37,7 @@ _MODULE_RULES: list[tuple[str, str]] = [
     ("/api/settings", "系统设置"),
     ("/api/dashboard", "仪表盘"),
     ("/api/costing", "核价"),
-    ("/api/quotation", "报价"),
+    ("/api/file-trace", "文件溯源"),
 ]
 
 
@@ -62,6 +62,8 @@ def should_record(method: str, path: str) -> bool:
         if "export-preview" in path_only:
             return False
         if "export-download" in path_only or path_only.endswith("/export"):
+            return True
+        if "/download" in path_only:
             return True
         if "/export" in path_only and "preview" not in path_only:
             return True

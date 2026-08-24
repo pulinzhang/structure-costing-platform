@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+import logging
 import uuid
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import cast
 
 from sqlalchemy.engine import Engine
@@ -20,7 +21,10 @@ from app.schemas.dto.stamping_part_cost_dto import (
     StampingPartCostCalcLogCreate,
     StampingPartCostCalcLogPatch,
 )
-from app.schemas.vo.stamping_part_cost_vo import StampingPartCostCalcLogVO
+from app.schemas.vo.stamping_part_cost_vo import (
+    StampingPartCostCalcLogVO,
+    StampingPartCostCalcResultVO,
+)
 from app.services.costing.stamping_part_cost.calc.constants import (
     DUPLICATE_SCOPE_CALC_MESSAGE,
     STATUS_FAILED,
@@ -29,6 +33,8 @@ from app.services.costing.stamping_part_cost.calc.constants import (
 )
 from app.services.costing.stamping_part_cost.calc.models import DuplicateScopeCalcError
 from app.services.costing.stamping_part_cost.calc.scope import require_scope
+
+logger = logging.getLogger("service.stamping_part_cost.calc.log")
 
 
 class PartCostCalcLogService:
@@ -200,3 +206,66 @@ class PartCostCalcLogService:
         if deleted:
             db.commit()
         return deleted
+
+    def persist(
+        self,
+        db: Session,
+        *,
+        result: StampingPartCostCalcResultVO,
+        operator_name: str | None = None,
+    ) -> int | None:
+        """引擎等同步调用未走 begin_processing 时，补写终态历史。"""
+        operator = operator_name or "系统"
+        started_at = (
+            datetime.fromisoformat(result.started_at)
+            if result.started_at
+            else now()
+        )
+        finished_at = (
+            datetime.fromisoformat(result.finished_at)
+            if result.finished_at
+            else now()
+        )
+        calc_batch_id = result.calc_batch_id or f"spc-{uuid.uuid4().hex[:16]}"
+        try:
+            record = self.calc_log_repo.create(
+                db,
+                StampingPartCostCalcLogCreate(
+                    calc_batch_id=calc_batch_id,
+                    year=result.year,
+                    month=result.month,
+                    location=result.location,
+                    stamping_supplier=result.stamping_supplier,
+                    vehicle_model=result.vehicle_model,
+                    version=result.version,
+                    status=result.status,
+                    detail_text=result.detail_text or "",
+                    started_at=started_at,
+                    operator_name=operator,
+                    created_by=operator,
+                    updated_by=operator,
+                ),
+            )
+            self.calc_log_repo.update(
+                db,
+                record.id,
+                StampingPartCostCalcLogPatch(
+                    status=result.status,
+                    total_parts=result.total_parts,
+                    success_count=result.success_count,
+                    failed_count=result.failed_count,
+                    skipped_approved_count=result.skipped_approved_count,
+                    detail_text=result.detail_text or "",
+                    finished_at=finished_at,
+                    updated_by=operator,
+                ),
+            )
+            db.commit()
+            db.refresh(record)
+            return record.id
+        except Exception:
+            db.rollback()
+            logger.exception(
+                "写入零件核价计算日志失败: batch=%s", calc_batch_id
+            )
+            return None

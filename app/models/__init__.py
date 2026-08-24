@@ -24,6 +24,7 @@ from app.models.bom import (
     BomWeldingUnitPrice,
 )
 from app.models.common import AuditUserMixin
+from app.models.file_trace import UploadFile
 from app.models.costing import (
     CostingEngineRun,
     CostingEngineRunStep,
@@ -74,6 +75,7 @@ __all__ = [
     "BomWeldingProcessBreakdownLine",
     "BomWeldingProcessBreakdownNode",
     "BomWeldingUnitPrice",
+    "UploadFile",
     "CostingEngineRun",
     "CostingEngineRunStep",
     "LlmAnalysisReport",

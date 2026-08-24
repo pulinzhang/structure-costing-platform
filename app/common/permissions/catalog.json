@@ -986,7 +986,7 @@
     },
     {
       "code": "menu:llm-analysis",
-      "label": "采购智能分析",
+      "label": "AI助理",
       "type": "menu",
       "children": [
         {
@@ -1002,13 +1002,18 @@
       ]
     },
     {
-      "code": "menu:quotation",
-      "label": "报价",
+      "code": "menu:file-trace",
+      "label": "文件溯源",
       "type": "menu",
       "children": [
         {
-          "code": "op:quotation:view",
+          "code": "op:file-trace:view",
           "label": "查看",
+          "type": "op"
+        },
+        {
+          "code": "op:file-trace:download",
+          "label": "下载原件",
           "type": "op"
         }
       ]

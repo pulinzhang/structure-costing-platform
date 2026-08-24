@@ -25,7 +25,7 @@ from app.schemas.vo.user_vo import UserVO
 from app.services.llm.report_service import LlmAnalysisReportService
 from app.utils.response import ApiResponse
 
-router = APIRouter(prefix="/api/llm", tags=["采购智能分析"])
+router = APIRouter(prefix="/api/llm", tags=["AI助理"])
 
 _service = LlmAnalysisReportService()
 

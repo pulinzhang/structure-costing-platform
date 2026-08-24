@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+import logging
 import uuid
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import cast
 
 from sqlalchemy.engine import Engine
@@ -20,7 +21,10 @@ from app.schemas.dto.bom_l0_welding_fee_dto import (
     BomL0WeldingFeeCalcLogCreate,
     BomL0WeldingFeeCalcLogPatch,
 )
-from app.schemas.vo.bom_l0_welding_fee_vo import BomL0WeldingFeeCalcLogVO
+from app.schemas.vo.bom_l0_welding_fee_vo import (
+    BomL0WeldingFeeCalcLogVO,
+    BomL0WeldingFeeCalcResultVO,
+)
 
 STATUS_PROCESSING = "processing"
 STATUS_SUCCESS = "success"
@@ -29,6 +33,8 @@ STATUS_FAILED = "failed"
 
 STALE_PROCESSING_SECONDS = 2 * 60 * 60
 DUPLICATE_SCOPE_CALC_MESSAGE = "当前年度/基地/车型/版本正在计算中，请勿重复提交。"
+
+logger = logging.getLogger("service.bom.l0_welding_fee.calc.log")
 
 
 class DuplicateScopeCalcError(Exception):
@@ -214,3 +220,66 @@ class BomL0WeldingFeeCalcLogService:
         if deleted:
             db.commit()
         return deleted
+
+    def persist(
+        self,
+        db: Session,
+        *,
+        result: BomL0WeldingFeeCalcResultVO,
+        operator_name: str | None = None,
+    ) -> int | None:
+        """引擎等同步调用未走 begin_processing 时，补写终态历史。"""
+        operator = operator_name or "系统"
+        started_at = (
+            datetime.fromisoformat(result.started_at)
+            if result.started_at
+            else now()
+        )
+        finished_at = (
+            datetime.fromisoformat(result.finished_at)
+            if result.finished_at
+            else now()
+        )
+        calc_batch_id = result.calc_batch_id or f"bwf-{uuid.uuid4().hex[:16]}"
+        try:
+            record = self.calc_log_repo.create(
+                db,
+                BomL0WeldingFeeCalcLogCreate(
+                    calc_batch_id=calc_batch_id,
+                    year=result.year,
+                    location=result.location,
+                    vehicle_model=result.vehicle_model,
+                    bom_version=result.bom_version,
+                    status=result.status,
+                    detail_text=result.detail_text or "",
+                    started_at=started_at,
+                    operator_name=operator,
+                    created_by=operator,
+                    updated_by=operator,
+                ),
+            )
+            self.calc_log_repo.update(
+                db,
+                record.id,
+                BomL0WeldingFeeCalcLogPatch(
+                    status=result.status,
+                    l0_count=result.l0_count,
+                    created_count=result.created_count,
+                    updated_count=result.updated_count,
+                    skipped_approved_count=result.skipped_approved_count,
+                    failed_count=result.failed_count,
+                    missing_price_count=result.missing_price_count,
+                    detail_text=result.detail_text or "",
+                    finished_at=finished_at,
+                    updated_by=operator,
+                ),
+            )
+            db.commit()
+            db.refresh(record)
+            return record.id
+        except Exception:
+            db.rollback()
+            logger.exception(
+                "写入焊接费计算日志失败: batch=%s", calc_batch_id
+            )
+            return None

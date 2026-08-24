@@ -32,6 +32,7 @@ from app.schemas.vo.user_vo import UserVO
 from app.utils.bom_packaging_transport_fee_archive import (
     save_packaging_transport_fee_upload,
 )
+from app.services.file_trace.register import register_existing
 
 logger = logging.getLogger("service.bom_packaging_transport_fee_import")
 
@@ -286,6 +287,16 @@ class BomPackagingTransportFeeImportService:
                         updated_by=create_audit["updated_by"],
                     )
                     created_count += 1
+            register_existing(
+                db,
+                file_category="bom_packaging_transport_fee",
+                stored_relpath=archived_rel,
+                original_filename=original_name,
+                current_user=current_user,
+                location=location,
+                year=year,
+                vehicle_model=vehicle_model,
+            )
             db.commit()
         except Exception:
             db.rollback()

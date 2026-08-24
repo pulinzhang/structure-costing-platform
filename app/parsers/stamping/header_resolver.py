@@ -11,6 +11,7 @@
 from typing import Any, Dict, List, Optional, Tuple
 
 
+from app.common.vehicle_model import normalize_vehicle_model
 from app.utils.logging_config import get_logger
 from app.parsers.stamping.models.header import HeaderContext
 
@@ -185,7 +186,7 @@ class HeaderResolver:
         return None
 
     def find_stamping_vehicle_model(self, sheet: Any) -> Optional[str]:
-        """从表头标题或「项目名称/车型」标签提取车型，文件里写什么就是什么。"""
+        """从表头标题或「项目名称/车型」标签提取车型，并归一化（剔除中文）。"""
         title_model: Optional[str] = None
         label_model: Optional[str] = None
 
@@ -217,9 +218,13 @@ class HeaderResolver:
                         label_model = model
                     break
 
-        model = label_model or title_model
+        raw_model = label_model or title_model
+        model = normalize_vehicle_model(raw_model)
         if model:
-            logger.info("解析到车型: %s", model)
+            if raw_model and model != raw_model:
+                logger.info("车型归一化: %s → %s", raw_model, model)
+            else:
+                logger.info("解析到车型: %s", model)
         return model
 
     def _next_nonempty_cell(self, sheet: Any, row_idx: int, label_col: int) -> Optional[str]:

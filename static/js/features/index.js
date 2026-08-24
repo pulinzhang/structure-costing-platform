@@ -58,7 +58,7 @@
  * │   │   ├── calc/
  * │   │   └── list/
  * │   └── engine/                # 自动核价引擎
- * ├── quotation/                 # 报价
+ * ├── file-trace/                # 文件溯源
  * ├── settings/                  # 设置
  * │   ├── profile/
  * │   ├── system/
@@ -248,10 +248,10 @@ export const pageMeta = {
         en: 'AUTOMATED_COSTING',
         breadcrumb: ['核价', '自动核价引擎'],
     },
-    quotation: {
-        title: '报价单管理',
-        en: 'QUOTATION_GEN',
-        breadcrumb: ['报价'],
+    'file-trace': {
+        title: '文件溯源',
+        en: 'FILE_TRACE',
+        breadcrumb: ['文件溯源'],
     },
     settings: {
         title: '系统设置',

@@ -7,6 +7,7 @@ from typing import Any
 
 import re
 
+from app.common.vehicle_model import normalize_vehicle_model
 from app.parsers.bom.models import BomParsedMeta
 from app.parsers.bom.value_parser import cell_value, parse_date, to_text
 
@@ -37,9 +38,9 @@ def parse_bom_meta(ws: Any) -> BomParsedMeta:
             row3_parts.append(value)
     row3 = " ".join(row3_parts)
 
-    vm = re.search(r"项目代号[:：]?\s*([A-Za-z0-9\-]+)", row3)
+    vm = re.search(r"项目代号[:：]?\s*(\S+)", row3)
     if vm:
-        meta.vehicle_model = vm.group(1).strip()
+        meta.vehicle_model = normalize_vehicle_model(vm.group(1).strip())
     cat = re.search(r"产品类别[:：]?\s*(\S+)", row3)
     if cat:
         meta.product_category = cat.group(1).strip()
@@ -56,10 +57,5 @@ def parse_bom_meta(ws: Any) -> BomParsedMeta:
     rev = re.search(r"修订日期[:：]?\s*([0-9年月日./\-]+)", row3)
     if rev:
         meta.revision_date = parse_date(rev.group(1))
-
-    if not meta.bom_version:
-        meta.bom_version = "V1"
-    if not meta.vehicle_model:
-        meta.vehicle_model = "UNKNOWN"
 
     return meta

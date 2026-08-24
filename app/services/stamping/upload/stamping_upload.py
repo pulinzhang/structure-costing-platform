@@ -12,6 +12,7 @@ from typing import Callable, Dict, List, Optional
 from sqlalchemy.orm import Session
 
 from app.common.audit import audit_create, display_name
+from app.common.upload_scope_validation import validate_stamping_process_upload_scope
 from app.common.timezone import now
 from app.parsers.stamping.models.part import Part
 from app.parsers.stamping.models.process import Process
@@ -24,6 +25,8 @@ from app.schemas.vo.user_vo import UserVO
 from app.services.stamping.tailor_weld_blank_service import StampingTailorWeldBlankService
 from app.services.stamping.upload.cost_ratio_preserver import ProcessCostRatioPreserver
 from app.services.stamping.upload.template_builder import build_stamping_process_template
+from app.services.file_trace.path_utils import to_upload_relpath
+from app.services.file_trace.register import register_existing
 
 # progress_callback(progress: int, msg: str)
 ProgressCallback = Callable[[int, str], None]
@@ -75,9 +78,16 @@ class StampingUploadService:
         try:
             parse_result = parse_stamping_excel(tmp_path)
             tailor_result = parse_tailor_weld_excel(tmp_path)
-            vehicle_model = parse_result.vehicle_model or "未知车型"
-            version = parse_result.version or "V1"
-            stamping_supplier = parse_result.stamping_supplier or ""
+            scope = validate_stamping_process_upload_scope(
+                location=location,
+                stamping_supplier=parse_result.stamping_supplier,
+                vehicle_model=parse_result.vehicle_model,
+                version=parse_result.version,
+            )
+            location = scope.location
+            vehicle_model = scope.vehicle_model
+            version = scope.version
+            stamping_supplier = scope.stamping_supplier
             tailor_parent_numbers = set(tailor_result.parent_part_numbers)
 
             logger.info(
@@ -153,6 +163,18 @@ class StampingUploadService:
                     parse_time_ms,
                 )
                 _report(95, "正在提交事务...")
+
+                register_existing(
+                    self.db,
+                    file_category="stamping_process",
+                    stored_relpath=to_upload_relpath(file_info.file_path),
+                    original_filename=filename,
+                    current_user=current_user,
+                    location=file_info.safe_location,
+                    vehicle_model=vehicle_model,
+                    process_version=version,
+                    stamping_supplier=stamping_supplier or None,
+                )
 
                 return UploadResult(
                     filename=filename,

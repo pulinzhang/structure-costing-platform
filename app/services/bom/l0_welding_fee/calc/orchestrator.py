@@ -365,6 +365,11 @@ class BomL0WeldingFeeCalcOrchestrator:
             )
         else:
             db.commit()
+            self.calc_log_service.persist(
+                db,
+                result=result,
+                operator_name=display_name(current_user) or "系统",
+            )
 
         report(100, "计算完成")
         logger.info(
