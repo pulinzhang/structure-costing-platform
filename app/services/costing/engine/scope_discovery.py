@@ -4,10 +4,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.models.bom import BomNode, BomSnapshot
+from app.repositories.bom.bom_repository import BomSnapshotRepository
 from app.repositories.stamping.stamping_part_repository import StampingPartRepository
 from app.services.costing.stamping_part_cost.helpers import location_candidates
 
@@ -34,6 +33,7 @@ class ScopeDiscovery:
 
     def __init__(self) -> None:
         self.part_repo = StampingPartRepository()
+        self.bom_snapshot_repo = BomSnapshotRepository()
 
     def discover(
         self,
@@ -53,7 +53,14 @@ class ScopeDiscovery:
                 if name and name not in suppliers:
                     suppliers.append(name)
 
-        l0_scopes = self._discover_l0_scopes(db, aliases)
+        l0_scopes = [
+            L0Scope(
+                location=row["location"],
+                vehicle_model=row["vehicle_model"],
+                bom_version=row["bom_version"],
+            )
+            for row in self.bom_snapshot_repo.discover_l0_scopes(db, aliases)
+        ]
         return DiscoveryResult(
             location=location_clean,
             year=year,
@@ -62,49 +69,3 @@ class ScopeDiscovery:
             stamping_suppliers=suppliers,
             l0_scopes=l0_scopes,
         )
-
-    def _discover_l0_scopes(
-        self,
-        db: Session,
-        aliases: list[str],
-    ) -> list[L0Scope]:
-        if not aliases:
-            return []
-        rows = (
-            db.query(
-                BomSnapshot.location,
-                BomSnapshot.vehicle_model,
-                BomSnapshot.bom_version,
-            )
-            .join(BomNode, BomNode.snapshot_id == BomSnapshot.id)
-            .filter(
-                BomSnapshot.location.in_(aliases),
-                BomNode.level == 0,
-            )
-            .group_by(
-                BomSnapshot.location,
-                BomSnapshot.vehicle_model,
-                BomSnapshot.bom_version,
-            )
-            .having(func.count(BomNode.id) > 0)
-            .order_by(
-                BomSnapshot.vehicle_model,
-                BomSnapshot.bom_version,
-            )
-            .all()
-        )
-        scopes: list[L0Scope] = []
-        seen: set[tuple[str, str]] = set()
-        for location, vehicle_model, bom_version in rows:
-            key = ((vehicle_model or "").strip(), (bom_version or "").strip())
-            if not key[0] or not key[1] or key in seen:
-                continue
-            seen.add(key)
-            scopes.append(
-                L0Scope(
-                    location=(location or "").strip(),
-                    vehicle_model=key[0],
-                    bom_version=key[1],
-                )
-            )
-        return scopes

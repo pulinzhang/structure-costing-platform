@@ -30,6 +30,14 @@ class BomSnapshotListFilters(TypedDict):
     summary: BomSnapshotListSummary
 
 
+class BomL0ScopeRow(TypedDict):
+    """含 L0 节点的 BOM 快照 scope（location 为快照上实际字符串）。"""
+
+    location: str
+    vehicle_model: str
+    bom_version: str
+
+
 class BomSnapshotRepository:
     """BOM 清单版本数据访问"""
 
@@ -166,6 +174,68 @@ class BomSnapshotRepository:
             or 0
         )
 
+    def count_all_nodes(
+        self, db: Session, location: str | None = None
+    ) -> int:
+        """统计 BOM 节点总量（可按基地过滤）。"""
+        node_q = (
+            db.query(func.count(BomNode.id))
+            .select_from(BomNode)
+            .join(BomSnapshot, BomSnapshot.id == BomNode.snapshot_id)
+        )
+        if location:
+            node_q = node_q.filter(BomSnapshot.location == location)
+        return int(node_q.scalar() or 0)
+
+    def discover_l0_scopes(
+        self, db: Session, locations: list[str]
+    ) -> list[BomL0ScopeRow]:
+        """发现指定基地别名下含 L0 节点的 BOM 版本。"""
+        if not locations:
+            return []
+        rows = (
+            db.query(
+                BomSnapshot.location,
+                BomSnapshot.vehicle_model,
+                BomSnapshot.bom_version,
+            )
+            .join(BomNode, BomNode.snapshot_id == BomSnapshot.id)
+            .filter(
+                BomSnapshot.location.in_(locations),
+                BomNode.level == 0,
+            )
+            .group_by(
+                BomSnapshot.location,
+                BomSnapshot.vehicle_model,
+                BomSnapshot.bom_version,
+            )
+            .having(func.count(BomNode.id) > 0)
+            .order_by(
+                BomSnapshot.vehicle_model,
+                BomSnapshot.bom_version,
+            )
+            .all()
+        )
+        scopes: list[BomL0ScopeRow] = []
+        seen: set[tuple[str, str]] = set()
+        for location, vehicle_model, bom_version in rows:
+            vehicle = (vehicle_model or "").strip()
+            version = (bom_version or "").strip()
+            if not vehicle or not version:
+                continue
+            key = (vehicle, version)
+            if key in seen:
+                continue
+            seen.add(key)
+            scopes.append(
+                {
+                    "location": (location or "").strip(),
+                    "vehicle_model": vehicle,
+                    "bom_version": version,
+                }
+            )
+        return scopes
+
     def list_bom_versions(self, db: Session) -> list[str]:
         rows = (
             db.query(BomSnapshot.bom_version)
@@ -287,6 +357,15 @@ class BomNodeRepository:
             .filter(BomNode.snapshot_id == snapshot_id)
             .order_by(BomNode.level, BomNode.sort_no, BomNode.id)
             .all()
+        )
+
+    def count_by_snapshot_and_level(
+        self, db: Session, snapshot_id: int, level: int
+    ) -> int:
+        return (
+            db.query(BomNode)
+            .filter(BomNode.snapshot_id == snapshot_id, BomNode.level == level)
+            .count()
         )
 
     def create(

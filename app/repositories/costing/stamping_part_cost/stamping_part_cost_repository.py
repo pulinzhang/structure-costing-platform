@@ -433,6 +433,51 @@ class StampingPartCostRepository:
         results = q.order_by(StampingPartCost.month.desc()).all()
         return [r[0] for r in results if r[0]]
 
+    def count_calc_success_with_unit_cost(
+        self,
+        db: Session,
+        *,
+        year: int,
+        month: int,
+        location: str,
+        vehicle_model: str,
+    ) -> int:
+        return (
+            db.query(StampingPartCost)
+            .filter(
+                StampingPartCost.location == location,
+                StampingPartCost.vehicle_model == vehicle_model,
+                StampingPartCost.year == year,
+                StampingPartCost.month == month,
+                StampingPartCost.calc_status == "success",
+                StampingPartCost.unit_cost.isnot(None),
+            )
+            .count()
+        )
+
+    def list_calc_success_with_unit_cost(
+        self,
+        db: Session,
+        *,
+        year: int,
+        month: int,
+        location: str,
+        vehicle_model: str,
+    ) -> List[StampingPartCost]:
+        return (
+            db.query(StampingPartCost)
+            .filter(
+                StampingPartCost.location == location,
+                StampingPartCost.vehicle_model == vehicle_model,
+                StampingPartCost.year == year,
+                StampingPartCost.month == month,
+                StampingPartCost.calc_status == "success",
+                StampingPartCost.unit_cost.isnot(None),
+            )
+            .order_by(StampingPartCost.part_number, StampingPartCost.id.asc())
+            .all()
+        )
+
     def get_distinct_locations(
         self, db: Session, year: Optional[int] = None, month: Optional[int] = None
     ) -> List[str]:

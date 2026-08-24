@@ -77,6 +77,33 @@ class BomAnnualPartPriceRepository:
             .all()
         )
 
+    def count_with_unit_price(
+        self, db: Session, *, location: str, year: int
+    ) -> int:
+        return (
+            db.query(BomAnnualPartPrice)
+            .filter(
+                BomAnnualPartPrice.location == location,
+                BomAnnualPartPrice.year == year,
+                BomAnnualPartPrice.unit_price.isnot(None),
+            )
+            .count()
+        )
+
+    def list_with_unit_price(
+        self, db: Session, *, location: str, year: int
+    ) -> List[BomAnnualPartPrice]:
+        return (
+            db.query(BomAnnualPartPrice)
+            .filter(
+                BomAnnualPartPrice.location == location,
+                BomAnnualPartPrice.year == year,
+                BomAnnualPartPrice.unit_price.isnot(None),
+            )
+            .order_by(BomAnnualPartPrice.part_number)
+            .all()
+        )
+
     def list_by_year(self, db: Session, year: int) -> List[BomAnnualPartPrice]:
         return (
             db.query(BomAnnualPartPrice)

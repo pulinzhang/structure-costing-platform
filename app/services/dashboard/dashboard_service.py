@@ -9,7 +9,6 @@ from typing import NamedTuple
 
 from decimal import Decimal
 
-from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.common.money import parse_decimal
@@ -18,9 +17,6 @@ from app.common.scrap_price_locations import (
     SCRAP_PRICE_LOCATIONS,
 )
 from app.common.timezone import now
-from app.models.bom import BomNode, BomSnapshot
-from app.models.costing import SteelPrice
-from app.models.yishiyiyi import SteelBasePrice, SteelPricePolicy
 from app.repositories.bom.bom_repository import BomSnapshotRepository
 from app.repositories.costing.stamping_part_cost.stamping_part_cost_repository import (
     StampingPartCostRepository,
@@ -30,6 +26,12 @@ from app.repositories.costing.steel_price.steel_price_repository import (
 )
 from app.repositories.stamping.stamping_process_fee_repository import (
     StampingProcessFeeRepository,
+)
+from app.repositories.yishiyiyi.base_price.steel_base_price_repository import (
+    SteelBasePriceRepository,
+)
+from app.repositories.yishiyiyi.policy.steel_price_policy_repository import (
+    SteelPricePolicyRepository,
 )
 from app.schemas.vo.dashboard_vo import (
     DashboardAttentionItemVO,
@@ -75,6 +77,8 @@ class DashboardService:
         self.steel_price_repo = SteelPriceRepository()
         self.part_cost_repo = StampingPartCostRepository()
         self.bom_snapshot_repo = BomSnapshotRepository()
+        self.base_price_repo = SteelBasePriceRepository()
+        self.policy_repo = SteelPricePolicyRepository()
 
     def get_all_stats(
         self,
@@ -476,18 +480,9 @@ class DashboardService:
 
     def _preferred_months(self, db: Session, year: int) -> list[int]:
         months: set[int] = set()
-        for col_year, col_month in (
-            (SteelBasePrice.year, SteelBasePrice.month),
-            (SteelPrice.year, SteelPrice.month),
-            (SteelPricePolicy.year, SteelPricePolicy.month),
-        ):
-            rows = (
-                db.query(col_month)
-                .filter(col_year == year)
-                .distinct()
-                .all()
-            )
-            months.update(int(r[0]) for r in rows if r[0] is not None)
+        months.update(self.base_price_repo.get_distinct_months_for_year(db, year))
+        months.update(self.steel_price_repo.get_distinct_months_for_year(db, year))
+        months.update(self.policy_repo.get_distinct_months_for_year(db, year))
         months.update(self.part_cost_repo.get_distinct_months(db, year=year))
         return sorted(months)
 
@@ -580,14 +575,7 @@ class DashboardService:
             skip=0,
             limit=1,
         )
-        node_q = (
-            db.query(func.count(BomNode.id))
-            .select_from(BomNode)
-            .join(BomSnapshot, BomSnapshot.id == BomNode.snapshot_id)
-        )
-        if location:
-            node_q = node_q.filter(BomSnapshot.location == location)
-        node_count = int(node_q.scalar() or 0)
+        node_count = self.bom_snapshot_repo.count_all_nodes(db, location=location)
         return DashboardBomStatsVO(
             snapshot_count=int(snapshot_count),
             node_count=node_count,

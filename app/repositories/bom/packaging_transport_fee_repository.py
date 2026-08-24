@@ -86,6 +86,31 @@ class BomPackagingTransportFeeRepository:
             .all()
         )
 
+    def count_by_location_year(
+        self, db: Session, *, location: str, year: int
+    ) -> int:
+        return (
+            db.query(BomPackagingTransportFee)
+            .filter(
+                BomPackagingTransportFee.location == location,
+                BomPackagingTransportFee.year == year,
+            )
+            .count()
+        )
+
+    def list_by_location_year(
+        self, db: Session, *, location: str, year: int
+    ) -> List[BomPackagingTransportFee]:
+        return (
+            db.query(BomPackagingTransportFee)
+            .filter(
+                BomPackagingTransportFee.location == location,
+                BomPackagingTransportFee.year == year,
+            )
+            .order_by(BomPackagingTransportFee.part_number)
+            .all()
+        )
+
     def _build_list_query(
         self,
         db: Session,

@@ -209,6 +209,16 @@ class SteelPricePolicyRepository:
             grade_values=grade_values,
         )
 
+    def get_distinct_months_for_year(self, db: Session, year: int) -> list[int]:
+        results = (
+            db.query(SteelPricePolicy.month)
+            .filter(SteelPricePolicy.year == year)
+            .distinct()
+            .order_by(SteelPricePolicy.month)
+            .all()
+        )
+        return [int(r[0]) for r in results if r[0] is not None]
+
     # ---- 主表写操作 ----
 
     def create_policy(self, db: Session, data: SteelPricePolicyWrite) -> SteelPricePolicy:

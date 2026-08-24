@@ -150,6 +150,16 @@ class SteelBasePriceRepository:
             specs=specs,
         )
 
+    def get_distinct_months_for_year(self, db: Session, year: int) -> list[int]:
+        results = (
+            db.query(SteelBasePrice.month)
+            .filter(SteelBasePrice.year == year)
+            .distinct()
+            .order_by(SteelBasePrice.month)
+            .all()
+        )
+        return [int(r[0]) for r in results if r[0] is not None]
+
     # ---- 写操作 ----
 
     def create(

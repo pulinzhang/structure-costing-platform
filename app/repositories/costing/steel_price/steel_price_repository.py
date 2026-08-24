@@ -287,6 +287,15 @@ class SteelPriceRepository:
             "audit_statuses": audit_statuses,
         }
 
+    def get_distinct_months_for_year(self, db: Session, year: int) -> list[int]:
+        results = (
+            db.query(distinct(SteelPrice.month))
+            .filter(SteelPrice.year == year)
+            .order_by(SteelPrice.month)
+            .all()
+        )
+        return [int(row[0]) for row in results if row[0] is not None]
+
     def create(self, db: Session, data: SteelPriceWrite) -> SteelPrice:
         """插入新记录。"""
         record = model_from_payload(SteelPrice, data)

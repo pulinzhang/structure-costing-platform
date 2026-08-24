@@ -16,16 +16,20 @@ from sqlalchemy.orm import Session
 from app.common.audit import AUDIT_APPROVED, audit_create
 from app.common.timezone import now
 from app.exceptions.base import BusinessException
-from app.models.bom.annual_part_price import BomAnnualPartPrice
-from app.models.bom.l0_welding_fee import BomL0WeldingFee
-from app.models.bom.node import BomNode, BomSnapshot
-from app.models.bom.packaging_transport_fee import BomPackagingTransportFee
-from app.models.costing.stamping_part_cost import StampingPartCost
+from app.repositories.bom.annual_part_price_repository import BomAnnualPartPriceRepository
+from app.repositories.bom.bom_repository import BomNodeRepository, BomSnapshotRepository
+from app.repositories.bom.l0_welding_fee_repository import BomL0WeldingFeeRepository
+from app.repositories.bom.packaging_transport_fee_repository import (
+    BomPackagingTransportFeeRepository,
+)
 from app.repositories.costing.l0_assembly_cost.l0_assembly_cost_repository import (
     L0AssemblyCostIndirectInsert,
     L0AssemblyCostItemInsert,
     L0AssemblyCostRepository,
     L0AssemblyCostUpsertPayload,
+)
+from app.repositories.costing.stamping_part_cost.stamping_part_cost_repository import (
+    StampingPartCostRepository,
 )
 from app.schemas.dto.l0_assembly_cost_dto import L0AssemblyCostCalcDTO
 from app.schemas.vo.l0_assembly_cost_vo import (
@@ -62,6 +66,12 @@ class L0AssemblyCostCalcOrchestrator:
         self.cost_repo = L0AssemblyCostRepository()
         self.calc_log_service = L0AssemblyCostCalcLogService()
         self.settings_service = SettingsService()
+        self.bom_snapshot_repo = BomSnapshotRepository()
+        self.bom_node_repo = BomNodeRepository()
+        self.stamping_cost_repo = StampingPartCostRepository()
+        self.annual_price_repo = BomAnnualPartPriceRepository()
+        self.l0_welding_fee_repo = BomL0WeldingFeeRepository()
+        self.packaging_fee_repo = BomPackagingTransportFeeRepository()
 
     def get_calc_ready(
         self,
@@ -76,60 +86,33 @@ class L0AssemblyCostCalcOrchestrator:
         location = location.strip()
         vehicle_model = vehicle_model.strip()
         bom_version = bom_version.strip()
-        snap = (
-            db.query(BomSnapshot)
-            .filter(
-                BomSnapshot.location == location,
-                BomSnapshot.vehicle_model == vehicle_model,
-                BomSnapshot.bom_version == bom_version,
-            )
-            .one_or_none()
+        snap = self.bom_snapshot_repo.get_by_unique_key(
+            db, location, vehicle_model, bom_version
         )
         l0_count = 0
         if snap is not None:
-            l0_count = (
-                db.query(BomNode)
-                .filter(BomNode.snapshot_id == snap.id, BomNode.level == 0)
-                .count()
+            l0_count = self.bom_node_repo.count_by_snapshot_and_level(
+                db, snap.id, level=0
             )
-        stamping_n = (
-            db.query(StampingPartCost)
-            .filter(
-                StampingPartCost.location == location,
-                StampingPartCost.vehicle_model == vehicle_model,
-                StampingPartCost.year == year,
-                StampingPartCost.month == month,
-                StampingPartCost.calc_status == "success",
-                StampingPartCost.unit_cost.isnot(None),
-            )
-            .count()
+        stamping_n = self.stamping_cost_repo.count_calc_success_with_unit_cost(
+            db,
+            year=year,
+            month=month,
+            location=location,
+            vehicle_model=vehicle_model,
         )
-        annual_n = (
-            db.query(BomAnnualPartPrice)
-            .filter(
-                BomAnnualPartPrice.location == location,
-                BomAnnualPartPrice.year == year,
-                BomAnnualPartPrice.unit_price.isnot(None),
-            )
-            .count()
+        annual_n = self.annual_price_repo.count_with_unit_price(
+            db, location=location, year=year
         )
-        weld_n = (
-            db.query(BomL0WeldingFee)
-            .filter(
-                BomL0WeldingFee.location == location,
-                BomL0WeldingFee.vehicle_model == vehicle_model,
-                BomL0WeldingFee.year == year,
-                BomL0WeldingFee.bom_version == bom_version,
-            )
-            .count()
+        weld_n = self.l0_welding_fee_repo.count_by_calc_scope(
+            db,
+            year=year,
+            location=location,
+            vehicle_model=vehicle_model,
+            bom_version=bom_version,
         )
-        pkg_n = (
-            db.query(BomPackagingTransportFee)
-            .filter(
-                BomPackagingTransportFee.location == location,
-                BomPackagingTransportFee.year == year,
-            )
-            .count()
+        pkg_n = self.packaging_fee_repo.count_by_location_year(
+            db, location=location, year=year
         )
         ready = l0_count > 0 and (stamping_n > 0 or annual_n > 0)
         message = None
@@ -189,14 +172,8 @@ class L0AssemblyCostCalcOrchestrator:
                 progress_callback(progress, msg)
 
         report(5, "加载 BOM…")
-        snap = (
-            db.query(BomSnapshot)
-            .filter(
-                BomSnapshot.location == location,
-                BomSnapshot.vehicle_model == vehicle_model,
-                BomSnapshot.bom_version == bom_version,
-            )
-            .one_or_none()
+        snap = self.bom_snapshot_repo.get_by_unique_key(
+            db, location, vehicle_model, bom_version
         )
         if snap is None:
             err = BusinessException(
@@ -205,7 +182,7 @@ class L0AssemblyCostCalcOrchestrator:
             release_lock_on_error(err)
             raise err
 
-        orm_nodes = db.query(BomNode).filter(BomNode.snapshot_id == snap.id).all()
+        orm_nodes = self.bom_node_repo.list_by_snapshot(db, snap.id)
         nodes = [
             RollupBomNode(
                 id=n.id,
@@ -235,37 +212,27 @@ class L0AssemblyCostCalcOrchestrator:
         report(15, "加载上游价表…")
         stamping_prices = {
             r.part_number: Decimal(str(r.unit_cost))
-            for r in db.query(StampingPartCost)
-            .filter(
-                StampingPartCost.location == location,
-                StampingPartCost.vehicle_model == vehicle_model,
-                StampingPartCost.year == year,
-                StampingPartCost.month == month,
-                StampingPartCost.calc_status == "success",
-                StampingPartCost.unit_cost.isnot(None),
+            for r in self.stamping_cost_repo.list_calc_success_with_unit_cost(
+                db,
+                year=year,
+                month=month,
+                location=location,
+                vehicle_model=vehicle_model,
             )
-            .all()
         }
         annual_prices = {
             r.part_number: Decimal(str(r.unit_price))
-            for r in db.query(BomAnnualPartPrice)
-            .filter(
-                BomAnnualPartPrice.location == location,
-                BomAnnualPartPrice.year == year,
-                BomAnnualPartPrice.unit_price.isnot(None),
+            for r in self.annual_price_repo.list_with_unit_price(
+                db, location=location, year=year
             )
-            .all()
         }
         welding_by_part: dict[str, RollupWeldingFee] = {}
-        for weld_row in (
-            db.query(BomL0WeldingFee)
-            .filter(
-                BomL0WeldingFee.location == location,
-                BomL0WeldingFee.vehicle_model == vehicle_model,
-                BomL0WeldingFee.year == year,
-                BomL0WeldingFee.bom_version == bom_version,
-            )
-            .all()
+        for weld_row in self.l0_welding_fee_repo.list_by_calc_scope(
+            db,
+            year=year,
+            location=location,
+            vehicle_model=vehicle_model,
+            bom_version=bom_version,
         ):
             final = weld_row.final_l0_welding_fee
             if final is None:
@@ -278,13 +245,8 @@ class L0AssemblyCostCalcOrchestrator:
                 summary=None,
             )
         packaging_by_part: dict[str, RollupPackagingFee] = {}
-        for pkg_row in (
-            db.query(BomPackagingTransportFee)
-            .filter(
-                BomPackagingTransportFee.location == location,
-                BomPackagingTransportFee.year == year,
-            )
-            .all()
+        for pkg_row in self.packaging_fee_repo.list_by_location_year(
+            db, location=location, year=year
         ):
             packaging_by_part[pkg_row.part_number] = RollupPackagingFee(
                 unit_transport_fee=Decimal(str(pkg_row.unit_transport_fee)),

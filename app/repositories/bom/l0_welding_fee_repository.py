@@ -181,6 +181,46 @@ class BomL0WeldingFeeRepository:
             BomL0WeldingFee.bom_version == bom_version,
         )
 
+    def count_by_calc_scope(
+        self,
+        db: Session,
+        *,
+        year: int,
+        location: str,
+        vehicle_model: str,
+        bom_version: str,
+    ) -> int:
+        return int(
+            self._scope_query(
+                db,
+                year=year,
+                location=location,
+                vehicle_model=vehicle_model,
+                bom_version=bom_version,
+            ).count()
+        )
+
+    def list_by_calc_scope(
+        self,
+        db: Session,
+        *,
+        year: int,
+        location: str,
+        vehicle_model: str,
+        bom_version: str,
+    ) -> list[BomL0WeldingFee]:
+        return (
+            self._scope_query(
+                db,
+                year=year,
+                location=location,
+                vehicle_model=vehicle_model,
+                bom_version=bom_version,
+            )
+            .order_by(BomL0WeldingFee.part_number, BomL0WeldingFee.id.asc())
+            .all()
+        )
+
     def _build_list_query(
         self,
         db: Session,
