@@ -15,7 +15,7 @@ AnalysisKind = Literal[
     "drilldown",
 ]
 
-QueryMode = Literal["analysis", "usage_help"]
+QueryMode = Literal["analysis", "usage_help", "engine_readiness"]
 
 
 class TimeRange(BaseModel):
@@ -146,4 +146,6 @@ class AnalysisQuery(BaseModel):
     def analyses_key(self) -> str:
         if self.query_mode == "usage_help":
             return "usage_help"
+        if self.query_mode == "engine_readiness":
+            return "engine_readiness"
         return ",".join(self.analyses)

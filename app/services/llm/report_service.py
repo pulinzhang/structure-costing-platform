@@ -39,6 +39,7 @@ from app.services.async_task import (
 )
 from app.services.llm.analysis.idempotency import build_idempotency_key
 from app.services.llm.analysis.runner import AnalysisRunner
+from app.services.llm.engine_readiness import EngineReadinessRunner
 from app.services.llm.usage import UsageHelpRunner
 from app.services.llm.client import LlmClientError
 from app.services.llm.context.snapshot_builder import SnapshotBuilder
@@ -63,6 +64,7 @@ class LlmAnalysisReportService:
         self.query_parser = QueryParser()
         self.runner = AnalysisRunner()
         self.usage_runner = UsageHelpRunner()
+        self.engine_readiness_runner = EngineReadinessRunner()
         self.snapshot_builder = SnapshotBuilder()
         self.generator = LlmReportGenerator()
 
@@ -293,11 +295,15 @@ class LlmAnalysisReportService:
                 message=(
                     "正在检索帮助语料…"
                     if analysis_query.query_mode == "usage_help"
+                    else "正在检查核算就绪…"
+                    if analysis_query.query_mode == "engine_readiness"
                     else "正在查询并聚合核价事实…"
                 ),
             )
             if analysis_query.query_mode == "usage_help":
                 run = self.usage_runner.run(analysis_query)
+            elif analysis_query.query_mode == "engine_readiness":
+                run = self.engine_readiness_runner.run(db, analysis_query)
             else:
                 run = self.runner.run(db, analysis_query)
             snapshot = self.snapshot_builder.build(
@@ -311,6 +317,8 @@ class LlmAnalysisReportService:
                 message=(
                     "正在生成操作说明…"
                     if analysis_query.query_mode == "usage_help"
+                    else "正在生成就绪说明…"
+                    if analysis_query.query_mode == "engine_readiness"
                     else "AI正在思考中…"
                 ),
             )

@@ -16,6 +16,7 @@ from app.services.llm.prompts.labels import (
     audience_label_zh,
     sanitize_report_markdown,
 )
+from app.services.llm.engine_readiness.runner import render_engine_readiness_markdown
 from app.services.llm.prompts.registry import PromptRegistry
 
 
@@ -94,6 +95,8 @@ class LlmReportGenerator:
     ) -> GeneratedReport:
         if snapshot.query.query_mode == "usage_help":
             return self._generate_usage_help(snapshot=snapshot)
+        if snapshot.query.query_mode == "engine_readiness":
+            return self._generate_engine_readiness(snapshot=snapshot)
 
         prompt = self._registry.resolve(audience)
         system = f"{prompt.system_prompt}\n\n{_FIELD_CARD}"
@@ -160,6 +163,39 @@ class LlmReportGenerator:
             llm_response_preview=(result.content or "")[:500],
         )
 
+    def _generate_engine_readiness(self, *, snapshot: AnalysisSnapshot) -> GeneratedReport:
+        prompt = self._registry.resolve_engine_readiness()
+        system = prompt.system_prompt
+        context_json = json.dumps(
+            snapshot.to_prompt_dict(), ensure_ascii=False, indent=2
+        )
+        user = prompt.render_user(
+            user_question=snapshot.query.user_question,
+            report_type=analyses_key_label_zh(snapshot.query.analyses_key()),
+            audience="核算就绪",
+            context_json=context_json,
+        )
+        combined_hash = f"{prompt.prompt_hash}:engine-readiness-v1"
+        result: LlmChatResult = self._client.chat(
+            system_prompt=system,
+            user_prompt=user,
+            temperature=prompt.temperature,
+            max_tokens=prompt.max_tokens,
+        )
+        combined_prompt = f"{system}\n\n{user}"
+        return GeneratedReport(
+            markdown_content=sanitize_report_markdown(result.content),
+            prompt_version=prompt.prompt_version,
+            prompt_hash=combined_hash,
+            llm_model=result.model,
+            prompt_tokens=result.prompt_tokens,
+            completion_tokens=result.completion_tokens,
+            total_tokens=result.total_tokens,
+            audience="engine_readiness",
+            prompt_preview=combined_prompt[:500],
+            llm_response_preview=(result.content or "")[:500],
+        )
+
     def render_fallback_markdown(
         self,
         *,
@@ -168,6 +204,11 @@ class LlmReportGenerator:
     ) -> str:
         if snapshot.query.query_mode == "usage_help":
             return self._render_usage_help_fallback(snapshot=snapshot, error_hint=error_hint)
+        if snapshot.query.query_mode == "engine_readiness":
+            return self._render_engine_readiness_fallback(
+                snapshot=snapshot,
+                error_hint=error_hint,
+            )
 
         summary = snapshot.summary or {}
         question = snapshot.query.user_question
@@ -202,6 +243,29 @@ class LlmReportGenerator:
         if risk and int(risk.get("partial_count") or 0) > 0:
             lines.append(f"- 核算不全件数：{risk.get('partial_count')}")
         return "\n".join(lines)
+
+    def _render_engine_readiness_fallback(
+        self,
+        *,
+        snapshot: AnalysisSnapshot,
+        error_hint: str,
+    ) -> str:
+        evidence = snapshot.evidence or {}
+        ready_raw = evidence.get("engine_ready")
+        if isinstance(ready_raw, dict):
+            from app.schemas.vo.costing_engine_vo import CostingEngineReadyVO
+
+            ready = CostingEngineReadyVO.model_validate(ready_raw)
+            body = render_engine_readiness_markdown(
+                user_question=snapshot.query.user_question,
+                ready=ready,
+            )
+            return f"{body}\n\n> 说明：模型暂不可用（{error_hint}），以上为系统就绪检查结果。"
+        return (
+            f"## {snapshot.query.user_question}\n\n"
+            f"{snapshot.meta.data_message or '就绪检查未完成。'}\n\n"
+            f"> 模型暂不可用（{error_hint}）。"
+        )
 
     def _render_usage_help_fallback(
         self,

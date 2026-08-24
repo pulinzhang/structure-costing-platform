@@ -14,7 +14,11 @@ from app.services.llm.client import LlmClientError
 from app.services.llm.query.comparison_basis import default_comparison_basis
 from app.services.llm.query.condition_extractor import ConditionExtractor
 from app.services.llm.query.entity_aligner import EntityAligner
-from app.services.llm.query.intent_router import detect_help_topic, detect_query_mode
+from app.services.llm.query.intent_router import (
+    detect_engine_readiness_question,
+    detect_help_topic,
+    detect_query_mode,
+)
 from app.services.llm.query.time_range import (
     DefaultScopeMonth,
     draft_has_time_range,
@@ -82,6 +86,8 @@ class QueryParser:
     def parse(self, db: Session, *, user_question: str) -> AnalysisQuery:
         """LLM 只产出条件草稿；对齐与 analyses/subject 由 Python 决定。"""
         question = (user_question or "").strip()
+        if detect_engine_readiness_question(question):
+            return self._parse_engine_readiness(db, question=question)
         if detect_query_mode(question) == "usage_help":
             return self._parse_usage_help(question)
 
@@ -128,6 +134,58 @@ class QueryParser:
             question=question,
             draft=draft,
             default=default,
+        )
+
+    def _parse_engine_readiness(self, db: Session, *, question: str) -> AnalysisQuery:
+        clock = now()
+        default = DefaultScopeMonth(year=clock.year, month=clock.month)
+        draft: dict[str, Any] = {}
+        fallback_level = 1
+        parser_message: str | None = None
+        try:
+            draft = self._extractor.extract(
+                question,
+                current_year=clock.year,
+                current_month=clock.month,
+            )
+        except LlmClientError as exc:
+            logger.warning("就绪问句条件抽取失败，规则回退: %s", exc)
+            draft = self._rule_fallback_draft(question, default)
+            fallback_level = 4
+
+        time_range = self._parse_time_range(
+            draft,
+            question=question,
+            default=default,
+        )
+        if not draft_has_time_range(draft) and not question_has_explicit_time(question):
+            parser_message = "未识别到时间范围，默认检查当月"
+
+        filter_mentions: list[tuple[str, str]] = []
+        filters_raw = draft.get("filters")
+        raw_filters: dict[str, Any] = (
+            filters_raw if isinstance(filters_raw, dict) else {}
+        )
+        for key in ("location", "vehicle_model"):
+            value = raw_filters.get(key)
+            if value is not None and str(value).strip():
+                filter_mentions.append((key, str(value).strip()))
+
+        aligned = self._aligner.align(db, mentions=filter_mentions, seed_filters={})
+        filters = aligned.filters
+        unresolved = list(aligned.unresolved_mentions)
+
+        return AnalysisQuery(
+            time_range=time_range,
+            filters=filters,
+            subject="engine_readiness",
+            comparison_basis=default_comparison_basis(same_bom_version=True),
+            analyses=["summary"],
+            user_question=question,
+            unresolved_mentions=unresolved,
+            query_mode="engine_readiness",
+            parser_fallback_level=fallback_level,
+            parser_data_message=parser_message,
         )
 
     def _parse_usage_help(self, question: str) -> AnalysisQuery:

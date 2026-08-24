@@ -120,3 +120,31 @@ class PromptRegistry:
             max_tokens=max_tokens,
             prompt_hash=digest,
         )
+
+    def resolve_engine_readiness(self) -> ResolvedPrompt:
+        """核算就绪检查专用 Prompt。"""
+        shared_parts = [
+            self._read_md(str(name))
+            for name in (self._manifest.get("shared") or [])
+            if str(name).endswith("chinese_style_rules.md")
+        ]
+        system_prompt = "\n\n".join(
+            [self._read_md("system_engine_readiness.md"), *shared_parts]
+        ).strip()
+        user_shell = self._read_md("user_usage_shell.md")
+        version = str(self._manifest.get("version") or "v0.0.0")
+        defaults = self._manifest.get("defaults") or {}
+        temperature = float(defaults.get("temperature") or 0.2)
+        max_tokens = int(defaults.get("max_tokens") or 2500)
+        digest = hashlib.sha256(
+            f"{version}|engine_readiness|{system_prompt}|{user_shell}".encode("utf-8")
+        ).hexdigest()[:16]
+        return ResolvedPrompt(
+            audience="engine_readiness",
+            prompt_version=version,
+            system_prompt=system_prompt,
+            user_shell=user_shell,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            prompt_hash=digest,
+        )

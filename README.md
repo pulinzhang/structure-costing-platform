@@ -188,7 +188,6 @@ python -X utf8 your_script.py
 | `CORS_ORIGINS` | 跨域 | 开发 `*`；生产白名单 |
 | `LLM_API_KEY` | AI 助理 API Key（OpenAI 兼容） | 空则 LLM 降级为规则摘要 |
 | `LLM_MODEL` / `LLM_BASE_URL` | 模型与接口地址 | `deepseek-chat` / DeepSeek |
-| `LLM_SQL_TIMEOUT_SECONDS` | 分析 SQL 熔断 | `5` |
 | `LLM_MAX_CONCURRENT_TASKS_PER_USER` | 每用户并发分析上限 | `2` |
 
 ---

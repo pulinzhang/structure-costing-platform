@@ -143,7 +143,6 @@ from app.services.llm.analysis.winning_thickness_summary import (
 )
 from app.schemas.llm.analysis_query import AnalysisQuery
 from app.services.llm.menu_catalog import expand_base_price_location
-from app.repositories.llm._query_guard import LlmQueryTimeoutError
 from app.services.llm.analysis._formulas import format_missing_price_message
 from app.services.llm.analysis.comparability import resolve_runtime_comparability
 from app.services.llm.analysis.constants import ANALYSIS_VERSION
@@ -1138,25 +1137,18 @@ class AnalysisRunner:
         )
         trace_id = query.trace_id
 
-        try:
-            monthly = self._l0_repo.query_monthly_totals(
-                db,
-                location=None if locations else location,
-                vehicle_model=vehicle_model,
-                bom_version=bom_version,
-                start_year=tr.start_year,
-                start_month=tr.start_month,
-                end_year=tr.end_year,
-                end_month=tr.end_month,
-                locations=locations,
-                trace_id=trace_id,
-            )
-        except LlmQueryTimeoutError:
-            return AnalysisRunResult(
-                comparability=resolve_comparability(query.comparison_basis),
-                has_data=False,
-                data_message="当前数据量较大，建议缩小时间范围（如近3个月）",
-            )
+        monthly = self._l0_repo.query_monthly_totals(
+            db,
+            location=None if locations else location,
+            vehicle_model=vehicle_model,
+            bom_version=bom_version,
+            start_year=tr.start_year,
+            start_month=tr.start_month,
+            end_year=tr.end_year,
+            end_month=tr.end_month,
+            locations=locations,
+            trace_id=trace_id,
+        )
 
         need_parts = any(
             kind in query.analyses
@@ -1165,36 +1157,29 @@ class AnalysisRunner:
         part_rows: list[L0PartPeriodRow] = []
         filtered_missing = 0
         if need_parts:
-            try:
-                part_rows = self._l0_repo.query_part_rows(
-                    db,
-                    location=location,
-                    vehicle_model=vehicle_model,
-                    bom_version=bom_version,
-                    start_year=tr.start_year,
-                    start_month=tr.start_month,
-                    end_year=tr.end_year,
-                    end_month=tr.end_month,
-                    part_number=query.part_number(),
-                    trace_id=trace_id,
-                )
-                filtered_missing = self._l0_repo.count_filtered_missing_price(
-                    db,
-                    location=location,
-                    vehicle_model=vehicle_model,
-                    bom_version=bom_version,
-                    start_year=tr.start_year,
-                    start_month=tr.start_month,
-                    end_year=tr.end_year,
-                    end_month=tr.end_month,
-                    trace_id=trace_id,
-                )
-            except LlmQueryTimeoutError:
-                return AnalysisRunResult(
-                    comparability=resolve_comparability(query.comparison_basis),
-                    has_data=bool(monthly),
-                    data_message="当前数据量较大，建议缩小时间范围（如近3个月）",
-                )
+            part_rows = self._l0_repo.query_part_rows(
+                db,
+                location=location,
+                vehicle_model=vehicle_model,
+                bom_version=bom_version,
+                start_year=tr.start_year,
+                start_month=tr.start_month,
+                end_year=tr.end_year,
+                end_month=tr.end_month,
+                part_number=query.part_number(),
+                trace_id=trace_id,
+            )
+            filtered_missing = self._l0_repo.count_filtered_missing_price(
+                db,
+                location=location,
+                vehicle_model=vehicle_model,
+                bom_version=bom_version,
+                start_year=tr.start_year,
+                start_month=tr.start_month,
+                end_year=tr.end_year,
+                end_month=tr.end_month,
+                trace_id=trace_id,
+            )
 
         comparability, comparability_note = resolve_runtime_comparability(
             basis=query.comparison_basis,

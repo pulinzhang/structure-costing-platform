@@ -71,6 +71,7 @@
 | 单号 | drilldown+trend 同次分析，无无关空块 | 塞满无关 gate/parts |
 | 聊天 UI | 仅 Markdown + 导出/历史 | 双轨 UI、证据面板、Action 按钮 |
 | 帮助 | `usage_help` 命中 helper 语料 | 编造菜单路径 |
+| 核算就绪 | 「还差什么才能核算」→ `engine_readiness`，与引擎检查就绪红灯一致；BOM 已有则不得要求重传 | 把「无核价结果」当成缺 BOM |
 | 历史 | 服务端重开；本人列表/查看/删除 | 仅浏览器存储 |
 
 ### A.6 非目标
@@ -204,8 +205,8 @@ BETWEEN start AND end               贡献度、TopN、异常判定
 | 11 | 帮助走 `usage_help` + `static/helper` 语料 |
 | 12 | 分析历史落服务端；本人列表/查看/删除；localStorage 仅会话缓存 |
 | 13 | 轻量 Parser；不做完备 NL Query Engine |
-| 14 | **明细表直查（禁止预聚合）**：Repository **必须**在核价结果明细表（如 `costing_l0_assembly_costs`）上按 `time_range` 一次 `WHERE / GROUP BY / SUM` 聚合；**禁止**为 LLM 分析维护 `monthly_cost_summary` 等预聚合事实表，**禁止**定时 ETL / 物化视图 / 读写缓存表。数据必须与核价一览同源、同口径、实时一致。大查询靠 `run_guarded_query` 熔断（见 #15），不靠预聚合 |
-| 15 | **超时与限流**：SQL 执行超过 5 秒自动熔断，返回 `data_message="当前数据量较大，建议缩小时间范围（如近3个月）"`；单用户并发任务 ≤ 2 个，超出返回 429（`too many requests`）；**保护系统不被偶然的「今年1月到8月」大查询拖垮** |
+| 14 | **明细表直查（禁止预聚合）**：Repository **必须**在核价结果明细表（如 `costing_l0_assembly_costs`）上按 `time_range` 一次 `WHERE / GROUP BY / SUM` 聚合；**禁止**为 LLM 分析维护 `monthly_cost_summary` 等预聚合事实表，**禁止**定时 ETL / 物化视图 / 读写缓存表。数据必须与核价一览同源、同口径、实时一致 |
+| 15 | **并发限流**：单用户并发分析任务 ≤ 2 个，超出返回 429（`too many requests`）；**不做** SQL 执行超时熔断（库约 30MB、区间聚合在单机 SQLite 可接受；慢查询仅打 warn 日志，见 C.5.1） |
 
 #### B.7.1 为何禁止预聚合与 ETL
 
@@ -214,11 +215,11 @@ BETWEEN start AND end               贡献度、TopN、异常判定
 | 事实 | 设计含义 |
 |------|----------|
 | **单库、不跨系统** | 唯一真相源即核价结果明细表（如 L0 成品核价一览）；无需为 LLM 再建一层「分析专用」事实表 |
-| **数据量可控** | 约 **2 年、~20M 行**量级；按 `time_range` 一次 `WHERE + GROUP BY` 在单机 SQLite 可接受，不值得为省查询时间引入第二层存储 |
+| **数据量可控** | 业务库约 **30MB**、约 **2 年 / ~20M 行**量级；按 `time_range` 一次 `WHERE + GROUP BY` 在单机 SQLite 通常在秒级内完成，**无需** SQL 熔断，也不值得为省查询时间引入第二层存储 |
 | **核价参数常调** | BOM、单价、工艺、费率等**经常重算**；明细行随重算即变。预聚合/ETL 必然带来**延迟**（T+1 甚至更长）与**口径漂移**（汇总表仍是旧参数下的数） |
 | **采购核对场景** | 用户拿助理回答与「核价一览」对账；**必须与一览同源、同口径、实时一致**。任何「先 ETL 再查」都会导致「报表 2754 元、一览 16415 元」类事故 |
 
-**结论**：性能靠 **明细表区间聚合 + `run_guarded_query` 熔断/限流（#15）**，不靠离线汇总。若未来数据量显著增长，优先优化索引/SQL/缩小默认查询跨度，**仍不引入** LLM 专用预聚合或 ETL，除非产品定位变为独立分析平台（超出本期范围）。
+**结论**：性能靠 **明细表区间聚合 + 单用户并发限流（#15）**，不靠离线汇总。若未来数据量显著增长，优先优化索引/SQL/缩小默认查询跨度；届时再评估 SQL 超时保护，**当前阶段不引入**熔断。仍**不引入** LLM 专用预聚合或 ETL，除非产品定位变为独立分析平台（超出本期范围）。
 
 ### B.8 P0 上线范围
 
@@ -231,7 +232,7 @@ BETWEEN start AND end               贡献度、TopN、异常判定
 | **取数与算** | Repository **直查明细表**区间一次聚合（B.7 #14）；Analysis `summary` / `trend` / `risk`（公式见 B.6.1）；`comparison_basis` 最小集（`same_part` + `same_bom_version`） |
 | **输出** | 瘦 Snapshot → LLM Markdown；聊天区仅正文；口径 tight/loose 写在正文 |
 | **持久化** | `llm_analysis_reports` 落库；本人列表/查看/删除；10 条/页触底加载 |
-| **韧性** | LLM 失败 fallback 模板；SQL 熔断与单用户并发限流（B.7 #15） |
+| **韧性** | LLM 失败 fallback 模板；单用户并发限流（B.7 #15） |
 
 **P0 不含**：打印/Word 导出、`comparison`/`drilldown` 组合深化、材料/工艺/公式版本口径校验、管理端审计、**任何 LLM 专用预聚合表或 ETL**。
 
@@ -384,6 +385,8 @@ POST body：仅 user_question
 
 帮助类问句走 `usage_help`，语料 `static/helper/*.html`，不查核价库。
 
+「还差什么 / 缺什么才能核算（核价）」走 `engine_readiness`：调用与「自动核价引擎 → 检查就绪」同源的 `CostingEngineService.get_ready`；BOM 按基地+车型+版本跨年复用，绿灯时禁止建议重传清单。
+
 ### C.5 AnalysisSnapshot 形状
 
 > 生成态；按需填充；只含本次 `analyses` 请求的部分。
@@ -456,6 +459,7 @@ app/services/llm/
   context/                # snapshot_builder
   catalog/                # field_labels
   usage/                  # usage_help 语料检索
+  engine_readiness/       # 核算就绪（对接 costing 引擎 get_ready）
   generator.py
   report_service.py
 
@@ -519,6 +523,8 @@ def query_l0_monthly_totals(
 
 | 日期 | 说明 |
 |------|------|
+| 2026-08-24 | **引擎就绪问句**：`query_mode=engine_readiness`；「还差什么才能核算」走 `CostingEngineService.get_ready`，与检查就绪同源；BOM 跨年复用，禁止误报缺清单 |
+| 2026-08-24 | **去掉 SQL 熔断**：B.7 #14/#15、B.7.1、B.8 韧性；库约 30MB 区间聚合无需 5s 熔断，保留并发限流与 C.5.1 慢查询日志 |
 | 2026-08-23 | **架构收紧**：B.7 #14 改为明细表直查，**禁止** LLM 预聚合表与 ETL；新增 B.7.1 设计理由（单库、~20M/2年、核价常调、一致性优先）；C.9/C.10 同步 |
 | 2026-08-23 | **算法补丁**：B.6.1 修正 drivers 贡献度（上涨/下跌分拆）、trend 异常月稀疏数据规则、drilldown 区间差分定义、单月 cumulative_rate=null、risk 缺价 data_message 与 LLM 引用要求 |
 | 2026-08-23 | **归档**：删 B.8 分期 / B.9 决策摘要，合并为 B.8 P0 上线范围 |

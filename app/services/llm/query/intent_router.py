@@ -32,6 +32,38 @@ _ANALYSIS_DATA_SIGNALS: tuple[str, ...] = (
     "在不在",
 )
 
+# 「缺口」口语：还差/缺什么（勿单独用「哪些数据」，否则会误伤「每月要维护哪些数据」）
+_ENGINE_GAP_SIGNALS: tuple[str, ...] = (
+    "还差",
+    "缺什么",
+    "少了什么",
+    "还要什么",
+    "还需要",
+    "缺少什么",
+    "缺哪些",
+    "缺哪些数据",
+    "还差什么",
+    "还差那些",
+    "数据齐",
+    "齐了吗",
+    "准备什么",
+    "上传什么",
+)
+
+# 「核算动作」：须与缺口词同现；禁止单独用「数据」（太宽）
+_ENGINE_COSTING_SIGNALS: tuple[str, ...] = (
+    "核算",
+    "核价",
+    "自动核价",
+    "引擎",
+    "检查就绪",
+    "能算",
+    "可以算",
+    "能不能算",
+    "才可以",
+    "才能",
+)
+
 _USAGE_HOW_SIGNALS: tuple[str, ...] = (
     "怎么",
     "怎么用",
@@ -126,11 +158,34 @@ _HELP_TOPIC_RULES: tuple[tuple[str, tuple[str, ...]], ...] = (
 )
 
 
+def detect_engine_readiness_question(question: str) -> bool:
+    """「还差什么才能核算/核价」→ 引擎就绪检查（非核价一览分析）。"""
+    text = (question or "").strip()
+    if not text:
+        return False
+    # 「怎么用引擎」仍走帮助；「检查就绪」本身是就绪检查
+    if "检查就绪" in text and not any(
+        signal in text for signal in _USAGE_HOW_SIGNALS
+    ):
+        return True
+    if any(signal in text for signal in _USAGE_HOW_SIGNALS):
+        return False
+    # 「每月要维护哪些数据」是帮助月历，不是某月门禁
+    if ("每月" in text or "月度" in text) and "维护" in text:
+        return False
+    has_gap = any(signal in text for signal in _ENGINE_GAP_SIGNALS)
+    has_costing = any(signal in text for signal in _ENGINE_COSTING_SIGNALS)
+    return has_gap and has_costing
+
+
 def detect_query_mode(question: str) -> QueryMode:
-    """判定走核价分析还是使用帮助。"""
+    """判定走核价分析、引擎就绪还是使用帮助。"""
     text = (question or "").strip()
     if not text:
         return "analysis"
+
+    if detect_engine_readiness_question(text):
+        return "engine_readiness"
 
     has_how = any(signal in text for signal in _USAGE_HOW_SIGNALS)
     has_usage_topic = any(signal in text for signal in _USAGE_TOPIC_SIGNALS)

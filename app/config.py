@@ -65,7 +65,6 @@ class Settings(BaseSettings):
     LLM_BASE_URL: str = "https://api.deepseek.com"
     LLM_TIMEOUT_SECONDS: int = 90
     LLM_IDEMPOTENCY_TTL_MINUTES: int = 5
-    LLM_SQL_TIMEOUT_SECONDS: int = 5
     LLM_MAX_CONCURRENT_TASKS_PER_USER: int = 2
 
     class Config:
