@@ -198,6 +198,7 @@ def get_active_parts(self, db: Session, user_id: int):
 - **允许**：技术性判空拼接过滤条件（如 `if value is not None`）
 - **允许**：SQL 聚合/去重结果返回具名 `TypedDict`、命名元组或轻量 read-model（如 `summarize_*`、`get_filter_options`）
 - **禁止**：把返回类型写成匿名 `dict` / `dict[str, Any]`（调用方看不到键）。`TypedDict` 运行时就是 `dict`；`def summarize(...) -> FooSummary: return {"a": 1}` **就是**返回该 TypedDict，不是类型谎言。`return FooSummary(a=1)` 与 dict 字面量等价，属风格，不强制
+- **LLM 特例**：`llm` 切片内 Repository 可使用本切片内部纯函数（如 `app.services.llm._money`）；**禁止**把这类工具抽到 `app/common/` 来「消反向依赖」。见 LLM 设计 B.2.1
 - **允许**：按 Service 传入的明确状态值做过滤/批量更新（如 `audit_status=AUDIT_APPROVED`）；**谁决定状态**仍在 Service
 - 所有「该不该通过 / 下一步状态是什么」的决策必须在 Service 层完成
 
@@ -395,6 +396,9 @@ app/
 下游 / 编排与核价切片（可组合上游）
   costing · dashboard
 
+解释层（独立下游，隔离特例）
+  llm     ← 只读上游结果表；内部工具不进 common；上游不得依赖 llm
+
 横切登记（被上游上传 Service 调用，不依赖 costing）
   file_trace
 ```
@@ -402,19 +406,23 @@ app/
 | 规则 | 说明 |
 |------|------|
 | **下游 → 上游** | ✅ 允许。如 `costing` 调用 `StampingPartService` / `SteelBasePriceService`，或只读调用上游 Repository |
-| **上游 → 下游** | ❌ 禁止。如 `stamping` 不得依赖 `costing` |
+| **上游 → 下游** | ❌ 禁止。如 `stamping` 不得依赖 `costing` / `llm` |
 | **同层互依** | ❌ 禁止成环。同层确需共享算法时：抽到 `common/`，或明确归属一方、另一方单向依赖 |
 | **调用形态优先序** | ① 上游 Service 的稳定查询 API → ② 只读上游 Repository（批量/导出/计算热路径）→ ③ 抽到 `common/`（真正多切片复用的无领域编排逻辑） |
+| **`llm` 隔离** | 只读上游结果表 Model，不经上游 Service→VO。内部工具留在本切片（如 `_money.py`），**禁止**抽到 `app/common/`。本切片 Repo 用这些纯函数不算主业务「Repo 反向依赖 Service」。细则：`docs/llm-costing-analysis-report-design.md` B.2.1 |
 
 ```
 ✅ 正确：
   costing/services → stamping/services（读零件/材料规格）
   costing/services → yishiyiyi repositories（只读政策/废料价）
   dashboard/services → 多个上游 Service（聚合 KPI）
+  llm repositories → 只读上游结果表 Model；llm 内部 `_money` 等留在本切片
   yishiyiyi/winning_thickness → costing 内可复用的纯计算模型（若归属 costing；或抽 common）
 
 ❌ 错误：
   stamping/services → costing/services     （上游依赖下游）
+  stamping / costing → llm                 （主业务依赖解释层）
+  把 llm/_money 抽到 app/common            （污染核价主路径）
   base_price ↔ steel_price 互相 import     （成环）
   Router → 任意切片 Repository / Parser
 ```
@@ -619,6 +627,7 @@ async def upload_stamping_file(..., current_user: UserVO = Depends(...)):
 | Service `return None, "错误"` / Router 拆元组或 `if not vo` 猜状态码 | 两套错误通道，404/400/500/409 靠文案或 Router 分支 | Service 抛 `NotFoundException` / `BusinessException`（冲突用 `code=409`）；全局 handler 转响应（§5.2） |
 | Repository 做权限/角色分支 | 违反职责边界 | 策略判断放 Service |
 | 把 TypedDict 函数体的 `return {…}` 当成「返回裸 dict」 | 误解：`TypedDict` 运行时就是 `dict` | 只禁**签名**写成 `dict` / `dict[str, Any]`；`-> FooSummary` + dict 字面量合法 |
+| 把 LLM `_money` 等抽进 `app/common` | 污染核价主路径，破坏 LLM 隔离 | 工具留在 `llm` 切片内；上游不得 import llm |
 | **上游切片依赖下游** | 依赖倒置、易成环 | 只允许下游组合上游；共享算法放 common 或归属唯一切片 |
 
 ---
@@ -645,5 +654,6 @@ app/
 - 权限、审计、时区、通用文件存储等放 `common/`
 - 领域数据（零件、基价、政策、BOM）**留在所属切片**；由下游 Service 组合调用
 - 仅当算法/查询**没有自然归属切片**且被多方复用时，再抽到 `common/`
+- **`llm` 内部工具不进 `common/`**（金额展示、年月键等留在本切片；见 4.2 与 LLM 设计 B.2.1）
 
 **例外说明**：`common/` 是本架构中**唯一按技术层水平组织的目录**，因为它不属于任何单一业务切片。

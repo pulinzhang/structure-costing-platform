@@ -60,6 +60,7 @@ Parser 是**横向工具**：只被 Service 调用；禁止依赖 Router/Service
 |------|------|----------|
 | **上游 / 基础数据** | `settings` · `stamping` · `bom` · `yishiyiyi` | 用户配置、工艺零件、BOM、基价/政策/废料价 |
 | **下游 / 编排核价** | `costing` · `dashboard` | 钢材联动、零件核价、成品核价、引擎编排、KPI |
+| **解释层（隔离特例）** | `llm` | 核价结果自然语言分析；只读上游表；内部工具不进 `common`；上游不得依赖它 |
 | **横切登记** | `file_trace` | 已落盘 Excel 登记与鉴权下载；被上游上传 Service 调用，**不**依赖 costing |
 | **横切基础设施** | `app/common/` | 权限、审计、时区、金额量化等纯函数（**不**依赖业务切片） |
 
@@ -81,9 +82,11 @@ app/parsers/stamping/     # 仅上传类切片有 Parser
 
 ```
 ✅ costing / dashboard  →  调用 stamping、yishiyiyi、bom、settings（Service 或只读 Repository）
+✅ llm → 只读上游结果表 Model（不经上游 Service→VO）；内部工具留在本切片
 ✅ stamping / bom / yishiyiyi 上传 Service → file_trace.register_existing（横切登记）
-❌ stamping / yishiyiyi →  依赖 costing、dashboard（上游不得依赖下游）
+❌ stamping / yishiyiyi →  依赖 costing、dashboard、llm（上游不得依赖下游）
 ❌ file_trace → costing（登记切片不得依赖核价）
+❌ 把 llm 内部工具抽到 app/common（污染主业务）
 ❌ 同层互相 import 成环
 ```
 
@@ -249,7 +252,7 @@ ApiResponse[AsyncTaskAcceptedVO]
 
 ### 跨切片该不该抽到 common？
 
-领域数据留在所属切片；下游直接组合上游即可。只有**无自然归属**且多方复用的横切能力才进 `common/`。
+领域数据留在所属切片；下游直接组合上游即可。只有**无自然归属**且多方复用的横切能力才进 `common/`。**`llm` 内部工具（金额展示、年月键等）留在本切片，禁止抽到 `common/`**，以免摊进核价主路径。细则见 [LLM 设计 B.2.1](llm-costing-analysis-report-design.md)。
 
 ### Model 可以有 relationship 吗？
 
@@ -275,5 +278,6 @@ ApiResponse[AsyncTaskAcceptedVO]
 | **BOM 年度零件价表** | [bom-annual-part-prices-design.md](bom-annual-part-prices-design.md) | 外购价 / L1 一口价单表（已上线：上传/列表/审核） |
 | **核价引擎设计** | [costing-engine-design.md](costing-engine-design.md) | 基地+年+月一键编排（已上线） |
 | **文件溯源设计** | [file-trace-design.md](file-trace-design.md) | 已落盘 Excel 登记与鉴权下载（MVP 已上线；深链/导出等见文内非目标） |
+| **核价结果智能分析** | [llm-costing-analysis-report-design.md](llm-costing-analysis-report-design.md) | LLM 解释层；切片隔离特例见文内 B.2.1 |
 
 `docs/*.mdc` 与 `.cursor/rules/*.mdc` 应对齐；改规范时两处一起改。

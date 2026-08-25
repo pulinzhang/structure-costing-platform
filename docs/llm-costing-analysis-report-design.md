@@ -122,7 +122,20 @@ Tool Calling 开放域、流式打字机、侧栏分析菜单、自动议价发�
 | **Analysis** | 趋势/对比/动因/异常等确定性结论 | 调 LLM；不绕过 Repo 写 SQL |
 | **LLM + UI** | 写 Markdown；UI 只渲染正文 | 发明数字；挂证据抽屉 |
 
-依赖：`llm` 为独立下游切片；可只读上游结果表 Model；分析主数据不经上游 Service→VO 拼装。
+依赖：`llm` 为独立下游切片；可只读上游结果表 Model；分析主数据不经上游 Service→VO 拼装。隔离细则见 B.2.1。
+
+### B.2.1 LLM 切片特例（隔离，不污染主业务）
+
+`llm` 是核价主路径之外的解释层，目标是**独立、干净、不影响主业务**。
+
+| 做 | 不做 |
+|----|------|
+| 只读上游结果表 Model（明细直查） | 经上游 Service→VO 拼装分析主数据 |
+| 金额展示、年月键等内部工具留在 `app/services/llm/`（如 `_money.py`） | 抽到 `app/common/`（会摊进核价主路径） |
+| 本切片 Repository 使用本切片内部纯函数（如 `ym_int`） | 为消「Repo → 本切片工具」去改 common / 冲压 / 核价代码 |
+| 异步任务走公共 `async_task` runner | 上游切片（stamping / bom / yishiyiyi / costing / dashboard）`import llm` |
+
+「Repository 禁止依赖 Service」约束的是**主业务分层**。LLM 内部 `_money.py` 一类纯函数给本切片 Repo 用，不算主业务反向依赖，**不要**为对齐这条去动主业务。
 
 ### B.3 Query：两层，避免 OLAP 膨胀
 
@@ -207,6 +220,7 @@ BETWEEN start AND end               贡献度、TopN、异常判定
 | 13 | 轻量 Parser；不做完备 NL Query Engine |
 | 14 | **明细表直查（禁止预聚合）**：Repository **必须**在核价结果明细表（如 `costing_l0_assembly_costs`）上按 `time_range` 一次 `WHERE / GROUP BY / SUM` 聚合；**禁止**为 LLM 分析维护 `monthly_cost_summary` 等预聚合事实表，**禁止**定时 ETL / 物化视图 / 读写缓存表。数据必须与核价一览同源、同口径、实时一致 |
 | 15 | **并发限流**：单用户并发分析任务 ≤ 2 个，超出返回 429（`too many requests`）；**不做** SQL 执行超时熔断（库约 30MB、区间聚合在单机 SQLite 可接受；慢查询仅打 warn 日志，见 C.5.1） |
+| 16 | **切片隔离**：内部工具留在 `llm`，禁止进 `app/common`；上游不得 `import llm`；不为消本切片 Repo 用 `_money` 去改主业务（见 B.2.1） |
 
 #### B.7.1 为何禁止预聚合与 ETL
 
@@ -523,6 +537,7 @@ def query_l0_monthly_totals(
 
 | 日期 | 说明 |
 |------|------|
+| 2026-08-25 | **LLM 切片特例**：B.2.1 / B.7 #16；内部工具不进 `common`，不改主业务消分层 |
 | 2026-08-24 | **引擎就绪问句**：`query_mode=engine_readiness`；「还差什么才能核算」走 `CostingEngineService.get_ready`，与检查就绪同源；BOM 跨年复用，禁止误报缺清单 |
 | 2026-08-24 | **去掉 SQL 熔断**：B.7 #14/#15、B.7.1、B.8 韧性；库约 30MB 区间聚合无需 5s 熔断，保留并发限流与 C.5.1 慢查询日志 |
 | 2026-08-23 | **架构收紧**：B.7 #14 改为明细表直查，**禁止** LLM 预聚合表与 ETL；新增 B.7.1 设计理由（单库、~20M/2年、核价常调、一致性优先）；C.9/C.10 同步 |
