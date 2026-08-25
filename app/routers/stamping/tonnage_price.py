@@ -3,7 +3,7 @@
 API 接口定义
 """
 
-from typing import Any, List
+from typing import List
 from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, File, Form, Query, UploadFile
@@ -51,7 +51,7 @@ _import_service = StampingTonnagePriceImportService()
 def list_all(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_VIEW)),
-) -> Any:
+) -> ApiResponse[List[StampingTonnagePriceResponse]]:
     """获取所有冲次单价列表（按年份、吨位排序）"""
     data = _tonnage_price_service.list_all(db)
     return ApiResponse.ok(data=data, message=f"查询到 {len(data)} 条记录")
@@ -63,7 +63,7 @@ def list_by_year(
     location: str | None = None,
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_VIEW)),
-) -> Any:
+) -> ApiResponse[List[StampingTonnagePriceResponse]]:
     """获取指定年份的冲次单价；传入 location 时按基地过滤"""
     if location:
         data = _tonnage_price_service.list_by_location_year(db, location, year)
@@ -77,7 +77,7 @@ def paginate(
     query: StampingTonnagePriceQuery = Depends(),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_VIEW)),
-) -> Any:
+) -> ApiResponse[PageResult[StampingTonnagePriceResponse]]:
     """分页查询冲次单价"""
     rows, total, filters = _tonnage_price_service.paginate(db, query)
     return ApiResponse.list_(
@@ -94,7 +94,7 @@ def paginate(
 def get_locations(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_VIEW)),
-) -> Any:
+) -> ApiResponse[List[str]]:
     """获取所有基地列表"""
     data = _tonnage_price_service.get_locations(db)
     return ApiResponse.ok(data=data)
@@ -104,7 +104,7 @@ def get_locations(
 def get_years(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_VIEW)),
-) -> Any:
+) -> ApiResponse[List[int]]:
     """获取所有年份列表"""
     data = _tonnage_price_service.get_years(db)
     return ApiResponse.ok(data=data)
@@ -114,7 +114,7 @@ def get_years(
 def get_tonnages(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_VIEW)),
-) -> Any:
+) -> ApiResponse[List[int]]:
     """获取所有吨位列表"""
     data = _tonnage_price_service.get_tonnages(db)
     return ApiResponse.ok(data=data)
@@ -256,7 +256,7 @@ def bulk_upsert(
     items: List[StampingTonnagePriceCreate],
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_CREATE)),
-) -> Any:
+) -> ApiResponse[StampingTonnagePriceBulkUpsertResponse]:
     """批量写入冲次单价（存在则更新，与 Excel 导入一致）"""
     created, updated, failed, skipped_approved = _tonnage_price_service.bulk_upsert(
         db, items, current_user=current_user
@@ -283,7 +283,7 @@ def create(
     body: StampingTonnagePriceCreate,
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_CREATE)),
-) -> Any:
+) -> ApiResponse[StampingTonnagePriceResponse]:
     """创建冲次单价记录"""
     record = _tonnage_price_service.create(db, body, current_user=current_user)
     return ApiResponse.created(data=record, message="创建成功")
@@ -294,7 +294,7 @@ def get_by_id(
     id: int,
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_VIEW)),
-) -> Any:
+) -> ApiResponse[StampingTonnagePriceResponse]:
     """获取单个冲次单价记录"""
     record = _tonnage_price_service.get_by_id(db, id)
     return ApiResponse.ok(data=record, message="获取成功")
@@ -306,7 +306,7 @@ def update(
     body: StampingTonnagePriceUpdate,
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_UPDATE)),
-) -> Any:
+) -> ApiResponse[StampingTonnagePriceResponse]:
     """更新冲次单价记录"""
     record = _tonnage_price_service.update(db, id, body, current_user=current_user)
     return ApiResponse.updated(data=record, message="更新成功")
@@ -317,7 +317,7 @@ def delete(
     id: int,
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_DELETE)),
-) -> Any:
+) -> ApiResponse[None]:
     """删除冲次单价记录"""
     _tonnage_price_service.delete(db, id)
     return ApiResponse.deleted(message="删除成功")

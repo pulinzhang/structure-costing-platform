@@ -3,7 +3,7 @@
 API 接口定义
 """
 
-from typing import Any, List
+from typing import List
 from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, File, Form, Query, UploadFile, status
@@ -51,7 +51,7 @@ _import_service = BomWeldingUnitPriceImportService()
 def list_all(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BOM_WELDING_UNIT_PRICE_VIEW)),
-) -> Any:
+) -> ApiResponse[List[BomWeldingUnitPriceResponse]]:
     """获取所有焊接单价列表"""
     data = _welding_unit_price_service.list_all(db)
     return ApiResponse.ok(data=data, message=f"查询到 {len(data)} 条记录")
@@ -66,7 +66,7 @@ def list_by_year(
     location: str | None = None,
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BOM_WELDING_UNIT_PRICE_VIEW)),
-) -> Any:
+) -> ApiResponse[List[BomWeldingUnitPriceResponse]]:
     """获取指定年份的焊接单价；传入 location 时按基地过滤"""
     if location:
         data = _welding_unit_price_service.list_by_location_year(db, location, year)
@@ -83,7 +83,7 @@ def paginate(
     query: BomWeldingUnitPriceQuery = Depends(),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BOM_WELDING_UNIT_PRICE_VIEW)),
-) -> Any:
+) -> ApiResponse[PageResult[BomWeldingUnitPriceResponse]]:
     """分页查询焊接单价"""
     rows, total, filters = _welding_unit_price_service.paginate(db, query)
     return ApiResponse.list_(
@@ -100,7 +100,7 @@ def paginate(
 def get_locations(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BOM_WELDING_UNIT_PRICE_VIEW)),
-) -> Any:
+) -> ApiResponse[List[str]]:
     """获取所有基地列表"""
     data = _welding_unit_price_service.get_locations(db)
     return ApiResponse.ok(data=data)
@@ -110,7 +110,7 @@ def get_locations(
 def get_years(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BOM_WELDING_UNIT_PRICE_VIEW)),
-) -> Any:
+) -> ApiResponse[List[int]]:
     """获取所有年份列表"""
     data = _welding_unit_price_service.get_years(db)
     return ApiResponse.ok(data=data)
@@ -273,7 +273,7 @@ def bulk_upsert(
     items: List[BomWeldingUnitPriceCreate],
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BOM_WELDING_UNIT_PRICE_CREATE)),
-) -> Any:
+) -> ApiResponse[BomWeldingUnitPriceBulkUpsertResponse]:
     """批量写入焊接单价（存在则更新）"""
     created, updated, failed, skipped_approved = _welding_unit_price_service.bulk_upsert(
         db, items, current_user=current_user
