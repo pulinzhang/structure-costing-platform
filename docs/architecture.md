@@ -41,7 +41,7 @@ Parser 是**横向工具**：只被 Service 调用；禁止依赖 Router/Service
 |----|--------|------------|
 | **Router** | 鉴权依赖、参数、调 Service、返回 `ApiResponse`；下载/导出可 `StreamingResponse` / `FileResponse` | 业务逻辑、`db.query`、调 Parser、后台 worker 壳（§5.3）、把 Service 错误元组转 `HTTPException`（§5.2） |
 | **Service** | 业务规则、事务、调 Parser/Repo、ORM→VO、抛业务异常 | 直接写 SQL；用 `(None, str)` 向 Router 报错；手写 datetime/Decimal JSON |
-| **Repository** | CRUD / 聚合查询；返回 Model 或具名 `TypedDict` | 权限/角色分支决策；匿名 `dict` |
+| **Repository** | CRUD / 聚合查询；返回 Model 或具名 `TypedDict`（函数体 `return {…}` 合法） | 权限/角色分支决策；签名写成匿名 `dict` / `dict[str, Any]` |
 | **Model** | 表字段 + `relationship` | `to_dict`、业务 `@property` |
 | **Schema** | DTO（`schemas/dto/`）/ VO（`schemas/vo/`） | 业务流程 |
 | **Parser** | 纯解析，无副作用 | 依赖 Router/Service/Repository |
@@ -130,7 +130,7 @@ stamping-costing-platform/
 - `start_*` 入队：HTTP 200 + `ApiResponse.ok(data=accepted)`，不要套 POST 201
 - 下载/导出：`StreamingResponse` / `FileResponse`，不走 `ApiResponse`
 - 业务路由：`Depends(require_perm(Perm.…))`；写操作把 `current_user` 显式传给 Service
-- Service 返回 VO；Repository 返回 Model（聚合用 `TypedDict`，禁止匿名 `dict`）
+- Service 返回 VO；Repository 返回 Model（聚合签名用具名 `TypedDict`，函数体 `return {…}` 合法；禁止签名写成匿名 `dict`）
 - **禁止** Model.`to_dict`；JSON 形态用 VO `@field_serializer`（金额/物理量字符串；datetime **必须** `app.common.timezone.datetime_to_iso`）
 
 细则：[架构宪法](architecture-constitution.mdc) + 项目内 `api-type-safety` 规则。

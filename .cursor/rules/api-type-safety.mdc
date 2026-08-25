@@ -261,7 +261,7 @@ This is a **moderate** ban, not a hunt for every `Any` in a function body: you m
 | **Function signature** | DTO / dataclass / `TypedDict` / Model / VO / `TypeVar` / std types | `Any`, `dict[str, Any]`, `list[Any]`, `**kwargs: Any` as a business API |
 | **Function body** | `json.loads`, untyped third-party objects — narrow immediately | Passing un-narrowed `Any` to another function |
 | **Repository writes** | dataclass for full rows; `TypedDict, total=False` for patches; HTTP DTO if columns already match | `{**dto.model_dump(), **audit_create()}` as the argument type; VO into Repository |
-| **Aggregates / filters** | named `TypedDict` or Pydantic model | `dict[str, Any]` as `filters` / `summary` |
+| **Aggregates / filters** | named `TypedDict` (signature `-> FooSummary`; body `return {"key": …}` **is valid** — TypedDict is a dict at runtime) | signature typed as `dict` / `dict[str, Any]` for `filters` / `summary` |
 
 Prefer: HTTP in → DTO; HTTP out → VO (Service → Router only); Service → Repository full row → dataclass; partial update → `TypedDict` with explicit `updated_by=` (do not `**audit_update()` into a narrower TypedDict).
 
@@ -281,7 +281,7 @@ Repository returns:
 * list[SQLAlchemy Model]
 * Optional[SQLAlchemy Model]
 * tuple[list[Model], int] for paginate
-* named `TypedDict` / named tuple / read-model for aggregates (`summarize_*`, `get_filter_options`) — not anonymous `dict` / `dict[str, Any]`
+* named `TypedDict` / named tuple / read-model for aggregates (`summarize_*`, `get_filter_options`). Signature `-> FooSummary` plus `return {"key": value}` **is** returning that TypedDict, not a type lie; `return FooSummary(...)` is style, not required. Forbidden: signature typed as anonymous `dict` / `dict[str, Any]`
 
 Allowed:
 
@@ -343,13 +343,30 @@ def get_by_id(
     ).first()
 ```
 
-Incorrect:
+Incorrect (should return a Model, not an anonymous dict standing in for a row):
 ```python
 def get_by_id(...):
     return {
         "id": user.id,
         "name": user.name
     }
+```
+
+Correct (aggregate: named TypedDict on the signature; dict literal in the body):
+```python
+class UserFilterSummary(TypedDict):
+    active_count: int
+    admin_count: int
+
+
+def summarize_by_filters(...) -> UserFilterSummary:
+    return {"active_count": n, "admin_count": m}
+```
+
+Incorrect (anonymous dict on the signature — callers cannot see keys):
+```python
+def summarize_by_filters(...) -> dict[str, Any]:
+    return {"active_count": n, "admin_count": m}
 ```
 
 ---
@@ -1031,7 +1048,7 @@ Before commit, check:
 
 Forbidden:
 ```
-return dict
+return dict / dict[str, Any] as a function signature (TypedDict body `return {…}` is valid)
 return JSONResponse          # 业务 Router；全局 handler 除外
 return ORM Model from Router
 model_dump() in Router
@@ -1073,7 +1090,7 @@ Every Service:
     no implicit current_user / ContextVar
 
 Every Repository:
-    returns SQLAlchemy Model (aggregates: TypedDict / read-model, not anonymous dict)
+    returns SQLAlchemy Model (aggregates: named TypedDict on the signature; body `return {…}` is valid; not `dict` / `dict[str, Any]` as the signature)
 
 Frontend (same codes):
     menu → canAccessPage / applySidebarPermissions

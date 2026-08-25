@@ -196,7 +196,8 @@ def get_active_parts(self, db: Session, user_id: int):
 - 只接收**明确的查询/写入参数**（字段值、排序、分页、目标状态值）
 - **禁止**：权限/角色判断、按用户身份分支的业务策略
 - **允许**：技术性判空拼接过滤条件（如 `if value is not None`）
-- **允许**：SQL 聚合/去重结果返回具名 `TypedDict`、命名元组或轻量 read-model（如 `summarize_*`、`get_filter_options`）；**禁止**匿名 `dict` / `dict[str, Any]`
+- **允许**：SQL 聚合/去重结果返回具名 `TypedDict`、命名元组或轻量 read-model（如 `summarize_*`、`get_filter_options`）
+- **禁止**：把返回类型写成匿名 `dict` / `dict[str, Any]`（调用方看不到键）。`TypedDict` 运行时就是 `dict`；`def summarize(...) -> FooSummary: return {"a": 1}` **就是**返回该 TypedDict，不是类型谎言。`return FooSummary(a=1)` 与 dict 字面量等价，属风格，不强制
 - **允许**：按 Service 传入的明确状态值做过滤/批量更新（如 `audit_status=AUDIT_APPROVED`）；**谁决定状态**仍在 Service
 - 所有「该不该通过 / 下一步状态是什么」的决策必须在 Service 层完成
 
@@ -617,6 +618,7 @@ async def upload_stamping_file(..., current_user: UserVO = Depends(...)):
 | Router 写后台 worker 壳 / 引擎自建 Session 壳 | 进度/异常路径复制多份 | Service `start_*` + `async_task` runner（§5.3） |
 | Service `return None, "错误"` / Router 拆元组或 `if not vo` 猜状态码 | 两套错误通道，404/400/500/409 靠文案或 Router 分支 | Service 抛 `NotFoundException` / `BusinessException`（冲突用 `code=409`）；全局 handler 转响应（§5.2） |
 | Repository 做权限/角色分支 | 违反职责边界 | 策略判断放 Service |
+| 把 TypedDict 函数体的 `return {…}` 当成「返回裸 dict」 | 误解：`TypedDict` 运行时就是 `dict` | 只禁**签名**写成 `dict` / `dict[str, Any]`；`-> FooSummary` + dict 字面量合法 |
 | **上游切片依赖下游** | 依赖倒置、易成环 | 只允许下游组合上游；共享算法放 common 或归属唯一切片 |
 
 ---

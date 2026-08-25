@@ -384,7 +384,7 @@ Parser 仅由 Service 调用。切片依赖为**有向无环**（下游 costing/
 | **函数签名**（含方法、模块级函数） | DTO / dataclass / `TypedDict` / Model / VO / `TypeVar` / 标准库类型 | `Any`、`dict[str, Any]`、`list[Any]`、`**kwargs: Any`、`Callable[..., Any]` 当业务 API |
 | **函数体内** | `json.loads`、无 stub 的第三方对象；立刻收窄后再往下传 | 把未收窄的 `Any` 传给其它函数 |
 | **Repository 写入** | 整行新建用 dataclass；部分更新用 `TypedDict, total=False`；字段已对齐时也可直接收 HTTP DTO | `{**dto.model_dump(), **audit_create()}` 当作参数类型；VO 进入 Repository |
-| **聚合 / 筛选** | 具名 `TypedDict` 或 Pydantic 模型 | `dict[str, Any]` 当 `filters` / `summary` |
+| **聚合 / 筛选** | 具名 `TypedDict`（签名 `-> FooSummary`，函数体 `return {"key": …}` **合法**：TypedDict 运行时就是 dict） | 签名写成 `dict` / `dict[str, Any]` 当 `filters` / `summary` |
 
 替代优先级：
 
@@ -439,7 +439,8 @@ Repository 必须返回：
 * `list[SQLAlchemy Model]`
 * `tuple[list[SQLAlchemy Model], int]`（paginate）
 * `Optional[SQLAlchemy Model]`
-* **允许**：SQL 聚合/去重的具名 `TypedDict`、命名元组或轻量 read-model（如 `summarize_*`、`get_filter_options`）——见架构宪法 Repository 边界；禁止 `dict[str, Any]`
+* **允许**：SQL 聚合/去重的具名 `TypedDict`、命名元组或轻量 read-model（如 `summarize_*`、`get_filter_options`）——见架构宪法 Repository 边界。签名 `-> FooSummary` 后 `return {"key": value}` **就是**返回该 TypedDict，不是「声明 TypedDict、实际返回裸 dict」；写成 `return FooSummary(...)` 只是风格，不强制
+* **禁止**：签名写成 `dict` / `dict[str, Any]`（调用方看不到键）
 * **写入入参**：dataclass / `TypedDict` / 列对齐的 DTO；禁止 `Any`、禁止 VO
 
 Repository 不知道：
@@ -483,13 +484,30 @@ def get_by_id(
     ).first()
 ```
 
-错误：
+错误（本应返回 Model，却用匿名 dict 冒充行对象）：
 ```python
 def get_by_id(...):
     return {
         "id": part.id,
         "part_number": part.part_number
     }
+```
+
+正确（聚合：签名是具名 TypedDict；函数体用 dict 字面量）：
+```python
+class BomSnapshotListSummary(TypedDict):
+    total_count: int
+    active_count: int
+
+
+def summarize(self, db: Session) -> BomSnapshotListSummary:
+    return {"total_count": total_count, "active_count": active_count}
+```
+
+错误（聚合签名匿名，调用方看不到键）：
+```python
+def summarize(self, db: Session) -> dict[str, Any]:
+    return {"total_count": total_count, "active_count": active_count}
 ```
 
 ---
@@ -1103,7 +1121,7 @@ JSON
 
 禁止：
 ```
-return dict
+return dict / dict[str, Any] 作为函数签名（TypedDict 函数体 return {…} 合法）
 return JSONResponse          # 业务 Router；全局 handler 除外
 return ORM Model from Router
 model_dump() 用于 VO 返回
@@ -1140,7 +1158,7 @@ ApiResponse[Any]（应指定具体类型；框架 list_/fail 除外）
     无隐式 current_user / ContextVar
 
 每个 Repository：
-    returns SQLAlchemy Model（聚合接口可返回 TypedDict / 轻量结构，禁止匿名 dict）
+    returns SQLAlchemy Model（聚合签名用具名 TypedDict；函数体 return {…} 合法；禁止签名写成匿名 dict）
 
 分页接口：
     推荐 Service 返回 list[VO] + total；Router 用 ApiResponse.list_()
