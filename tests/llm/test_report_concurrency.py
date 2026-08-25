@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """并发限流（B.7 #15）。"""
 
 from __future__ import annotations

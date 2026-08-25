@@ -435,4 +435,4 @@ def write_cover_sheet(
 
     ws.freeze_panes = "A4"
     ws.print_title_rows = "1:2"
-    return ws.title
+    return str(ws.title)

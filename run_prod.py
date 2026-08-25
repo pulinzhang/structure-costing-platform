@@ -44,12 +44,20 @@ def _load_dotenv_workers_port() -> tuple[int, int]:
                 key, _, value = line.partition("=")
                 key = key.strip()
                 value = value.strip().strip('"').strip("'")
-                if key == "UVICORN_WORKERS" and "UVICORN_WORKERS" not in os.environ:
-                    if value.isdigit() and int(value) > 0:
-                        workers = int(value)
-                if key == "PORT" and "PORT" not in os.environ:
-                    if value.isdigit() and int(value) > 0:
-                        port = int(value)
+                if (
+                    key == "UVICORN_WORKERS"
+                    and "UVICORN_WORKERS" not in os.environ
+                    and value.isdigit()
+                    and int(value) > 0
+                ):
+                    workers = int(value)
+                if (
+                    key == "PORT"
+                    and "PORT" not in os.environ
+                    and value.isdigit()
+                    and int(value) > 0
+                ):
+                    port = int(value)
     except OSError:
         pass
     return workers, port

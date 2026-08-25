@@ -112,7 +112,7 @@ def build_stamping_risks(
         )
         status_counts[row.calc_status] = status_counts.get(row.calc_status, 0) + 1
 
-    risks = []
+    risks: list[dict[str, Any]] = []
     if missing_by_part:
         risks.append(
             {

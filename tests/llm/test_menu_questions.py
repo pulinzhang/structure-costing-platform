@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """按侧栏菜单逐条构造标准问句，校验 subject 与列表筛选参数。"""
 
 from __future__ import annotations
@@ -17,16 +16,10 @@ from tests.llm.menu_question_matrix import (
 
 
 def _mock_parser(parser: QueryParser) -> None:
-    parser._aligner._scope_repo.list_locations = MagicMock(  # noqa: SLF001
-        return_value=["青岛"]
-    )
-    parser._aligner._scope_repo.list_vehicle_models = MagicMock(  # noqa: SLF001
-        return_value=["T28"]
-    )
-    parser._aligner._scope_repo.list_bom_versions = MagicMock(  # noqa: SLF001
-        return_value=["V1"]
-    )
-    parser._extractor.extract = MagicMock(  # noqa: SLF001
+    parser._aligner._scope_repo.list_locations = MagicMock(return_value=["青岛"])
+    parser._aligner._scope_repo.list_vehicle_models = MagicMock(return_value=["T28"])
+    parser._aligner._scope_repo.list_bom_versions = MagicMock(return_value=["V1"])
+    parser._extractor.extract = MagicMock(
         return_value={
             "time_range": {"start": "2025-01", "end": "2025-01"},
             "filters": {"location": "青岛基地"},
@@ -98,17 +91,35 @@ def test_complete_menu_question_routes_correctly(case) -> None:
         ),
         pytest.param(
             next(c for c in complete_cases() if c.hash_page == "steel-price-list"),
-            {"location": "青岛", "year": "2025", "month": "1", "start": "2025-01", "end": "2025-01"},
+            {
+                "location": "青岛",
+                "year": "2025",
+                "month": "1",
+                "start": "2025-01",
+                "end": "2025-01",
+            },
             id="冲压钢材联动价一览",
         ),
         pytest.param(
             next(c for c in complete_cases() if c.hash_page == "stamping-part-cost"),
-            {"location": "青岛", "year": "2025", "month": "1", "start": "2025-01", "end": "2025-01"},
+            {
+                "location": "青岛",
+                "year": "2025",
+                "month": "1",
+                "start": "2025-01",
+                "end": "2025-01",
+            },
             id="冲压零件价格一览",
         ),
         pytest.param(
             next(c for c in complete_cases() if c.hash_page == "l0-assembly-cost"),
-            {"location": "青岛", "year": "2025", "month": "1", "start": "2025-01", "end": "2025-01"},
+            {
+                "location": "青岛",
+                "year": "2025",
+                "month": "1",
+                "start": "2025-01",
+                "end": "2025-01",
+            },
             id="成品核价一览",
         ),
     ],

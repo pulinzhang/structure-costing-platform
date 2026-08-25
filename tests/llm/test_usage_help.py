@@ -118,7 +118,7 @@ def test_l0_calc_stuck_usage_help_fallback_markdown() -> None:
 
     load_corpus_chunks.cache_clear()
     parser = QueryParser()
-    query = parser._parse_usage_help(L0_CALC_STUCK_QUESTION)  # noqa: SLF001
+    query = parser._parse_usage_help(L0_CALC_STUCK_QUESTION)
     assert query.query_mode == "usage_help"
     assert query.help_topic == "faq_calc_stuck"
 

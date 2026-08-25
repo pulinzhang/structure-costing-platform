@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """引擎就绪问句：解析与取数对齐 CostingEngineService.get_ready。"""
 
 from __future__ import annotations
@@ -17,26 +16,17 @@ from app.services.llm.query.query_parser import QueryParser
 
 
 def test_detect_engine_readiness_mode() -> None:
-    assert (
-        detect_query_mode("青岛 2026年02月还差什么数据才能自动核价？")
-        == "engine_readiness"
-    )
+    assert detect_query_mode("青岛 2026年02月还差什么数据才能自动核价？") == "engine_readiness"
     assert detect_query_mode("自动核价引擎怎么用？") == "usage_help"
 
 
 def test_parse_engine_readiness_qingdao_feb_2026() -> None:
     parser = QueryParser()
     db = MagicMock()
-    parser._aligner._scope_repo.list_locations = MagicMock(  # noqa: SLF001
-        return_value=["青岛", "芜湖"]
-    )
-    parser._aligner._scope_repo.list_vehicle_models = MagicMock(  # noqa: SLF001
-        return_value=["T28"]
-    )
-    parser._aligner._scope_repo.list_bom_versions = MagicMock(  # noqa: SLF001
-        return_value=["D/00"]
-    )
-    parser._extractor.extract = MagicMock(  # noqa: SLF001
+    parser._aligner._scope_repo.list_locations = MagicMock(return_value=["青岛", "芜湖"])
+    parser._aligner._scope_repo.list_vehicle_models = MagicMock(return_value=["T28"])
+    parser._aligner._scope_repo.list_bom_versions = MagicMock(return_value=["D/00"])
+    parser._extractor.extract = MagicMock(
         return_value={
             "time_range": {"start": "2026-02", "end": "2026-02"},
             "filters": {"location": "青岛基地"},
@@ -94,9 +84,7 @@ def test_engine_readiness_qingdao_2026_02_lists_hard_gates() -> None:
         assert "跨年复用" in markdown
         assert "不要求每年重传" in markdown
         hard_section = (
-            markdown.split("### 还缺")[1].split("###")[0]
-            if "### 还缺" in markdown
-            else ""
+            markdown.split("### 还缺")[1].split("###")[0] if "### 还缺" in markdown else ""
         )
         assert "材料清单" not in hard_section
     finally:

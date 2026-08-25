@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """焊接单价问句解析与取数。"""
 
 from __future__ import annotations
@@ -15,19 +14,11 @@ from app.services.llm.query.query_parser import QueryParser
 def test_query_parser_welding_unit_price_subject() -> None:
     parser = QueryParser()
     db = MagicMock()
-    parser._aligner._scope_repo.list_locations = MagicMock(  # noqa: SLF001
-        return_value=["青岛", "芜湖"]
-    )
-    parser._aligner._scope_repo.list_vehicle_models = MagicMock(  # noqa: SLF001
-        return_value=["T28"]
-    )
-    parser._aligner._scope_repo.list_bom_versions = MagicMock(  # noqa: SLF001
-        return_value=["V3"]
-    )
-    parser._aligner._scope_repo.list_part_numbers_matching = MagicMock(  # noqa: SLF001
-        return_value=[]
-    )
-    parser._extractor.extract = MagicMock(  # noqa: SLF001
+    parser._aligner._scope_repo.list_locations = MagicMock(return_value=["青岛", "芜湖"])
+    parser._aligner._scope_repo.list_vehicle_models = MagicMock(return_value=["T28"])
+    parser._aligner._scope_repo.list_bom_versions = MagicMock(return_value=["V3"])
+    parser._aligner._scope_repo.list_part_numbers_matching = MagicMock(return_value=[])
+    parser._extractor.extract = MagicMock(
         return_value={
             "time_range": {"start": "2025-01", "end": "2026-08"},
             "filters": {"location": "青岛基地"},

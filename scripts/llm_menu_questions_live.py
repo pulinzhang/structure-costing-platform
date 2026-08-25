@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """接通真实 LLM + 业务库，逐条跑菜单标准问句，校验解析 / 取数 / Snapshot。
 
 用法（仓库根目录）::
@@ -60,18 +59,14 @@ def _check_routing(result: LiveCheckResult, case, query) -> None:
     result.location = query.location() or ""
 
     if query.subject != case.expected_subject:
-        result.errors.append(
-            f"subject 期望 {case.expected_subject}，实际 {query.subject}"
-        )
+        result.errors.append(f"subject 期望 {case.expected_subject}，实际 {query.subject}")
 
     menu = SUBJECT_MENU.get(case.expected_subject or "")
     if menu.hash_page != case.hash_page and case.expected_subject == "bom_material":
         if case.hash_page not in ("bom-structure", "bom-viz"):
             result.errors.append(f"hash_page 期望 #{case.hash_page}")
     elif menu.hash_page != case.hash_page:
-        result.errors.append(
-            f"hash_page 期望 #{case.hash_page}，菜单登记 #{menu.hash_page}"
-        )
+        result.errors.append(f"hash_page 期望 #{case.hash_page}，菜单登记 #{menu.hash_page}")
 
     if query.time_range.start != "2025-01" or query.time_range.end != "2025-01":
         result.errors.append(
@@ -167,10 +162,7 @@ def main() -> int:
         note = live.data_message[:40] if live.data_message else ""
         if live.errors:
             note = live.errors[0][:60]
-        print(
-            f"{status:<6} {live.menu_label:<20} "
-            f"{live.subject:<20} {data_flag:<6} {note}"
-        )
+        print(f"{status:<6} {live.menu_label:<20} " f"{live.subject:<20} {data_flag:<6} {note}")
 
     print("-" * 100)
     print("\n明细：")

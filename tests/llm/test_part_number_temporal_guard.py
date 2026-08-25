@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """年份/年月不得误判为零件号。"""
 
 from __future__ import annotations
@@ -74,18 +73,10 @@ def test_sanitize_part_number_token() -> None:
 
 
 def _mock_parser(parser: QueryParser) -> None:
-    parser._aligner._scope_repo.list_locations = MagicMock(  # noqa: SLF001
-        return_value=["青岛"]
-    )
-    parser._aligner._scope_repo.list_vehicle_models = MagicMock(  # noqa: SLF001
-        return_value=["T28"]
-    )
-    parser._aligner._scope_repo.list_bom_versions = MagicMock(  # noqa: SLF001
-        return_value=["D/00"]
-    )
-    parser._aligner._scope_repo.list_part_numbers_matching = MagicMock(  # noqa: SLF001
-        return_value=[]
-    )
+    parser._aligner._scope_repo.list_locations = MagicMock(return_value=["青岛"])
+    parser._aligner._scope_repo.list_vehicle_models = MagicMock(return_value=["T28"])
+    parser._aligner._scope_repo.list_bom_versions = MagicMock(return_value=["D/00"])
+    parser._aligner._scope_repo.list_part_numbers_matching = MagicMock(return_value=[])
 
 
 @pytest.mark.parametrize(
@@ -105,7 +96,7 @@ def test_query_parser_strips_temporal_part_from_llm_filters(
     parser = QueryParser()
     db = MagicMock()
     _mock_parser(parser)
-    parser._extractor.extract = MagicMock(  # noqa: SLF001
+    parser._extractor.extract = MagicMock(
         return_value={
             "time_range": {"start": "2025-01", "end": "2025-01"},
             "filters": {"location": "青岛", "part_number": llm_part_number},
@@ -120,7 +111,7 @@ def test_query_parser_strips_temporal_part_from_llm_filters(
 def test_entity_aligner_skips_temporal_part_mention() -> None:
     aligner = EntityAligner()
     db = MagicMock()
-    aligner._scope_repo.list_part_numbers_matching = MagicMock(return_value=[])  # noqa: SLF001
+    aligner._scope_repo.list_part_numbers_matching = MagicMock(return_value=[])
     result = aligner.align(
         db,
         mentions=[("part_number", "2025"), ("part_number", "2025-01")],
@@ -133,7 +124,7 @@ def test_menu_questions_do_not_resolve_temporal_part_numbers() -> None:
     parser = QueryParser()
     db = MagicMock()
     _mock_parser(parser)
-    parser._extractor.extract = MagicMock(  # noqa: SLF001
+    parser._extractor.extract = MagicMock(
         return_value={
             "time_range": {"start": "2025-01", "end": "2025-01"},
             "filters": {"location": "青岛基地"},

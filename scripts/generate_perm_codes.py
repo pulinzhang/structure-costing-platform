@@ -1,5 +1,5 @@
-# -*- coding: utf-8 -*-
 """从 catalog.json 生成 codes.py。"""
+
 from __future__ import annotations
 
 import json

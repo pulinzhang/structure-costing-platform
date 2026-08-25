@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """part_lookup 分析单测。"""
 
 from __future__ import annotations

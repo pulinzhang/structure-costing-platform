@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Context Pack scope 字段与 prompt 口径。"""
 
 from __future__ import annotations
@@ -68,7 +67,7 @@ def test_qingdao_2025_snapshot_scope_matches_database_months() -> None:
     db = DatabaseConfig.get_session_factory()()
     try:
         parser = QueryParser()
-        parser._extractor.extract = MagicMock(  # noqa: SLF001
+        parser._extractor.extract = MagicMock(
             return_value={
                 "time_range": {"start": "2025-01", "end": "2025-12"},
                 "filters": {"location": "青岛基地"},
