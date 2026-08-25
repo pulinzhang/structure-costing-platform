@@ -449,6 +449,32 @@ class SteelPricePolicyRepository:
 
     # ---- 导出查询（原 get_export_data 相关方法已移至 ExportService）----
 
+    def _apply_export_filters(
+        self,
+        query: Query[_T],
+        *,
+        year: Optional[int] = None,
+        month: Optional[int] = None,
+        steel_mill: Optional[str] = None,
+        category_name: Optional[str] = None,
+        grade_value: Optional[str] = None,
+        policy_type: Optional[str] = None,
+    ) -> Query[_T]:
+        """导出查询共用的政策筛选条件。"""
+        if year is not None:
+            query = query.filter(SteelPricePolicy.year == year)
+        if month is not None:
+            query = query.filter(SteelPricePolicy.month == month)
+        if steel_mill:
+            query = query.filter(SteelPricePolicy.steel_mill == steel_mill)
+        if category_name:
+            query = query.filter(SteelPricePolicy.category_name == category_name)
+        if grade_value:
+            query = query.filter(SteelPricePolicy.grade_value.contains(grade_value))
+        if policy_type:
+            query = query.filter(SteelPricePolicy.policy_type == policy_type)
+        return query
+
     def list_for_period(
         self,
         db: Session,
@@ -486,18 +512,14 @@ class SteelPricePolicyRepository:
         Returns:
             政策主表列表（按年份、月份、ID 排序）
         """
-        query = db.query(SteelPricePolicy)
-
-        if year is not None:
-            query = query.filter(SteelPricePolicy.year == year)
-        if month is not None:
-            query = query.filter(SteelPricePolicy.month == month)
-        if steel_mill:
-            query = query.filter(SteelPricePolicy.steel_mill == steel_mill)
-        if category_name:
-            query = query.filter(SteelPricePolicy.category_name == category_name)
-        if grade_value:
-            query = query.filter(SteelPricePolicy.grade_value.contains(grade_value))
+        query = self._apply_export_filters(
+            db.query(SteelPricePolicy),
+            year=year,
+            month=month,
+            steel_mill=steel_mill,
+            category_name=category_name,
+            grade_value=grade_value,
+        )
 
         query = query.order_by(
             SteelPricePolicy.year.asc(),
@@ -508,10 +530,58 @@ class SteelPricePolicyRepository:
 
         if skip:
             query = query.offset(skip)
-        if limit:
+        if limit is not None:
             query = query.limit(limit)
 
         return query.all()
+
+    def list_export_pairs(
+        self,
+        db: Session,
+        *,
+        year: Optional[int] = None,
+        month: Optional[int] = None,
+        steel_mill: Optional[str] = None,
+        category_name: Optional[str] = None,
+        grade_value: Optional[str] = None,
+        skip: int = 0,
+        limit: Optional[int] = None,
+    ) -> list[tuple[SteelPricePolicy, SteelPriceLadderItem | None]]:
+        """
+        主表 LEFT JOIN 阶梯明细，按扁平化导出行分页。
+
+        skip/limit 作用在联合行上（一条明细一行；无明细的政策占一行），
+        与 count_export_rows / 预览页码对齐。
+        """
+        query = (
+            db.query(SteelPricePolicy, SteelPriceLadderItem)
+            .select_from(SteelPricePolicy)
+            .outerjoin(
+                SteelPriceLadderItem,
+                SteelPricePolicy.id == SteelPriceLadderItem.policy_id,
+            )
+        )
+        query = self._apply_export_filters(
+            query,
+            year=year,
+            month=month,
+            steel_mill=steel_mill,
+            category_name=category_name,
+            grade_value=grade_value,
+        )
+        query = query.order_by(
+            SteelPricePolicy.year.asc(),
+            SteelPricePolicy.month.asc(),
+            SteelPricePolicy.id.asc(),
+            SteelPricePolicy.steel_mill,
+            SteelPriceLadderItem.sort_order.asc(),
+            SteelPriceLadderItem.id.asc(),
+        )
+        if skip:
+            query = query.offset(skip)
+        if limit is not None:
+            query = query.limit(limit)
+        return [(policy, item) for policy, item in query.all()]
 
     def list_items_for_export(
         self,
@@ -549,19 +619,46 @@ class SteelPricePolicyRepository:
         grade_value: Optional[str] = None,
     ) -> int:
         """统计主表记录数（供 ExportService 调用）。"""
-        query = db.query(func.count(SteelPricePolicy.id))
+        query = self._apply_export_filters(
+            db.query(func.count(SteelPricePolicy.id)),
+            year=year,
+            month=month,
+            steel_mill=steel_mill,
+            category_name=category_name,
+            grade_value=grade_value,
+        )
+        return query.scalar() or 0
 
-        if year is not None:
-            query = query.filter(SteelPricePolicy.year == year)
-        if month is not None:
-            query = query.filter(SteelPricePolicy.month == month)
-        if steel_mill:
-            query = query.filter(SteelPricePolicy.steel_mill == steel_mill)
-        if category_name:
-            query = query.filter(SteelPricePolicy.category_name == category_name)
-        if grade_value:
-            query = query.filter(SteelPricePolicy.grade_value.contains(grade_value))
-
+    def count_export_rows(
+        self,
+        db: Session,
+        *,
+        year: Optional[int] = None,
+        month: Optional[int] = None,
+        steel_mill: Optional[str] = None,
+        category_name: Optional[str] = None,
+        grade_value: Optional[str] = None,
+    ) -> int:
+        """
+        统计扁平化导出行数（与 list_export_pairs 同一套 LEFT JOIN）。
+        有明细的政策按明细条数计；无明细的政策计 1 行。
+        """
+        query = (
+            db.query(func.count(SteelPricePolicy.id))
+            .select_from(SteelPricePolicy)
+            .outerjoin(
+                SteelPriceLadderItem,
+                SteelPricePolicy.id == SteelPriceLadderItem.policy_id,
+            )
+        )
+        query = self._apply_export_filters(
+            query,
+            year=year,
+            month=month,
+            steel_mill=steel_mill,
+            category_name=category_name,
+            grade_value=grade_value,
+        )
         return query.scalar() or 0
 
     def count_items_for_export(
@@ -576,27 +673,22 @@ class SteelPricePolicyRepository:
         policy_type: Optional[str] = None,
     ) -> int:
         """
-        统计明细总数（供 ExportService / 统计接口调用）。
+        统计明细总数（供统计接口调用）。
         通过 JOIN 主表并应用相同的过滤条件来确保一致性。
         """
         query = db.query(func.count(SteelPriceLadderItem.id)).join(
             SteelPricePolicy,
             SteelPricePolicy.id == SteelPriceLadderItem.policy_id,
         )
-
-        if year is not None:
-            query = query.filter(SteelPricePolicy.year == year)
-        if month is not None:
-            query = query.filter(SteelPricePolicy.month == month)
-        if steel_mill:
-            query = query.filter(SteelPricePolicy.steel_mill == steel_mill)
-        if category_name:
-            query = query.filter(SteelPricePolicy.category_name == category_name)
-        if grade_value:
-            query = query.filter(SteelPricePolicy.grade_value.contains(grade_value))
-        if policy_type:
-            query = query.filter(SteelPricePolicy.policy_type == policy_type)
-
+        query = self._apply_export_filters(
+            query,
+            year=year,
+            month=month,
+            steel_mill=steel_mill,
+            category_name=category_name,
+            grade_value=grade_value,
+            policy_type=policy_type,
+        )
         return query.scalar() or 0
 
     # ---- 条件批量删除 ----
