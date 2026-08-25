@@ -48,17 +48,20 @@ CALC_HEADERS = [
     "下限符号",
     "厚max",
     "上限符号",
+    "厚度范围",
     "基准价(元/吨)",
     "加减价(元/吨)",
     "加工费(元/吨)",
     "最终价(元/吨)",
 ]
-CALC_COLUMN_WIDTHS = [14, 14, 14, 12, 10, 12, 10, 12, 14, 14, 14, 16]
-CALC_PRICE_COLS = frozenset({9, 10, 11, 12})
+# E–H 供公式匹配，导出时隐藏；读者只看 A–D、I–M
+CALC_COLUMN_WIDTHS = [14, 14, 14, 12, 10, 12, 10, 12, 18, 14, 14, 14, 16]
+CALC_HIDDEN_COLS = frozenset({5, 6, 7, 8})
+CALC_PRICE_COLS = frozenset({10, 11, 12, 13})
 CALC_OPERATOR_COLS = frozenset({6, 8})
-CALC_NUMBER_COLS = frozenset({5, 7, 9, 10, 11, 12})
+CALC_NUMBER_COLS = frozenset({5, 7, 10, 11, 12, 13})
 CALC_THICK_COLS = frozenset({5, 7})
-CALC_FINAL_COL = 12
+CALC_FINAL_COL = 13
 CALC_TAB_COLOR = "548235"
 EXAMPLE_TAB_COLOR = "C65911"
 

@@ -103,8 +103,15 @@ def test_export_has_overview_calc_and_example_sheets() -> None:
     assert calc.cell(1, 1).value == "中标钢厂厚度价格一览表"
     assert calc.cell(_HEADER_ROW, 1).value == "基地"
     assert calc.cell(_HEADER_ROW, 2).value == "钢种"
-    header_text = "".join(str(calc.cell(_HEADER_ROW, col).value or "") for col in range(1, 13))
+    assert calc.cell(_HEADER_ROW, 9).value == "厚度范围"
+    assert calc.cell(_HEADER_ROW, 13).value == "最终价(元/吨)"
+    header_text = "".join(str(calc.cell(_HEADER_ROW, col).value or "") for col in range(1, 14))
     assert "溯源" not in header_text
+    assert calc.column_dimensions["E"].hidden is True
+    assert calc.column_dimensions["F"].hidden is True
+    assert calc.column_dimensions["G"].hidden is True
+    assert calc.column_dimensions["H"].hidden is True
+    assert calc.column_dimensions["I"].hidden is not True
     assert calc.cell(_DATA_START, 1).value == "芜湖"
     assert calc.cell(_DATA_START, 2).value == "冷轧"
     assert calc.cell(_DATA_START, 3).value == "DC01"
@@ -113,32 +120,44 @@ def test_export_has_overview_calc_and_example_sheets() -> None:
     assert calc.cell(_DATA_START, 6).value == ">="
     assert Decimal(str(calc.cell(_DATA_START, 7).value)) == Decimal("0.80")
     assert calc.cell(_DATA_START, 8).value == "<"
-    assert calc.cell(_DATA_START, 12).value == f"=I{_DATA_START}+J{_DATA_START}+K{_DATA_START}"
+    assert calc.cell(_DATA_START, 9).value == "0.60 ≤ t < 0.80"
+    assert calc.cell(_DATA_START, 13).value == f"=J{_DATA_START}+K{_DATA_START}+L{_DATA_START}"
     second = _DATA_START + 1
     assert calc.cell(second, 5).value is None
     assert calc.cell(second, 6).value is None
     assert calc.cell(second, 7).value is None
     assert calc.cell(second, 8).value is None
-    assert calc.cell(second, 12).value == f"=I{second}+J{second}+K{second}"
+    assert calc.cell(second, 9).value == "-"
+    assert calc.cell(second, 13).value == f"=J{second}+K{second}+L{second}"
 
     example = workbook[example_name]
     assert example.cell(1, 1).value == "中标钢厂厚度价格一览表"
     assert example.cell(_HEADER_ROW, 1).value == "基地"
     assert example.cell(_HEADER_ROW, 5).value == "厚度"
-    assert example.cell(_HEADER_ROW, 9).value == "最终价(元/吨)"
+    assert example.cell(_HEADER_ROW, 6).value == "计算页行号"
+    assert example.cell(_HEADER_ROW, 10).value == "最终价(元/吨)"
     assert example.cell(_DATA_START, 3).value == "DC01"
-    lookup = str(example.cell(_DATA_START, 6).value)
+    calc_row_lookup = str(example.cell(_DATA_START, 6).value)
+    assert calc_row_lookup.startswith("=IF($E7=")
+    assert "ROW(" in calc_row_lookup
+    assert f"'{calc_name}'!$A$" in calc_row_lookup
+    lookup = str(example.cell(_DATA_START, 7).value)
     assert lookup.startswith("=IF($E7=")
     assert f"'{calc_name}'!$A$" in lookup
     assert f"'{calc_name}'!$C$" in lookup
+    assert f"'{calc_name}'!$J$" in lookup
     assert f"'{calc_name}'!$B$" not in lookup
     assert f"'{calc_name}'!$D$" not in lookup
-    assert str(example.cell(_DATA_START, 9).value).startswith("=IF(F7=")
+    assert f"'{calc_name}'!$I$" not in lookup
+    assert str(example.cell(_DATA_START, 10).value).startswith("=IF(G7=")
     formula_notes = " ".join(
         str(example.cell(row, 1).value or "") for row in range(1, example.max_row + 1)
     )
     assert "公式说明" in formula_notes
-    assert "最终价 = 基准价 + 厚度加减价 + 加工费" in formula_notes
+    assert "计算页行号" in formula_notes
+    assert "SUMPRODUCT" in formula_notes
+    assert "下限" in formula_notes
+    assert "最终价 = 基准价 + 加减价 + 加工费" in formula_notes
     workbook.close()
 
 
@@ -163,5 +182,5 @@ def test_example_sheet_without_rows_still_explains_formula() -> None:
     assert example.cell(3, 8).value == "0"
     assert "本次无数据可摘录" in joined
     assert "公式说明" in joined
-    assert workbook[calc_name].cell(_HEADER_ROW, 12).value == "最终价(元/吨)"
+    assert workbook[calc_name].cell(_HEADER_ROW, 13).value == "最终价(元/吨)"
     workbook.close()
