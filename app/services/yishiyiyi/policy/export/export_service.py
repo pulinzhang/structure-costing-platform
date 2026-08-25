@@ -5,10 +5,11 @@
 """
 
 import logging
-from typing import Any, Optional
+from typing import Optional
 
 from sqlalchemy.orm import Session
 
+from app.models.yishiyiyi import SteelPriceLadderItem, SteelPricePolicy
 from app.repositories.yishiyiyi.policy import SteelPricePolicyRepository
 from app.repositories.yishiyiyi.policy.dto import ExportRow
 from app.services.yishiyiyi.policy.export.excel_exporter import SteelPricePolicyExporter
@@ -46,13 +47,13 @@ class SteelPricePolicyExportService:
             steel_mill: 筛选 - 钢厂
             category_name: 筛选 - 钢种大类
             grade_value: 筛选 - 牌号（模糊）
-            skip: 分页偏移
-            limit: 分页限制
+            skip: 扁平化导出行偏移（一条阶梯明细一行）
+            limit: 每页行数
 
         Returns:
             扁平化的导出行列表
         """
-        policies = self.repository.list_policies_for_export(
+        pairs = self.repository.list_export_pairs(
             db,
             year=year,
             month=month,
@@ -62,71 +63,53 @@ class SteelPricePolicyExportService:
             skip=skip,
             limit=limit,
         )
+        return [self._to_export_row(policy, item) for policy, item in pairs]
 
-        if not policies:
-            return []
-
-        policy_ids = [p.id for p in policies]
-        items_map: dict[int, list[Any]] = {}
-        items = self.repository.list_items_for_export(db, policy_ids)
-        for item in items:
-            items_map.setdefault(item.policy_id, []).append(item)
-
-        rows: list[ExportRow] = []
-        for policy in policies:
-            policy_items = items_map.get(policy.id, [])
-            if not policy_items:
-                rows.append(
-                    ExportRow(
-                        policy_id=policy.id,
-                        year=policy.year,
-                        month=policy.month,
-                        steel_mill=policy.steel_mill,
-                        category_name=policy.category_name or "",
-                        policy_type=policy.policy_type or "",
-                        grade_type=policy.grade_type,
-                        grade_value=policy.grade_value,
-                        base_thickness=str(policy.base_thickness) if policy.base_thickness is not None else None,
-                        excel_filename=policy.excel_filename,
-                    )
-                )
-            else:
-                for item in policy_items:
-                    rows.append(
-                        ExportRow(
-                            policy_id=policy.id,
-                            year=policy.year,
-                            month=policy.month,
-                            steel_mill=policy.steel_mill,
-                            category_name=policy.category_name or "",
-                            policy_type=policy.policy_type or "",
-                            grade_type=policy.grade_type,
-                            grade_value=policy.grade_value,
-                            base_thickness=str(policy.base_thickness) if policy.base_thickness is not None else None,
-                            item_id=item.id,
-                            target_sub_group=item.target_sub_group,
-                            thick_min=str(item.thick_min) if item.thick_min is not None else None,
-                            thick_min_operator=item.thick_min_operator,
-                            thick_max=str(item.thick_max) if item.thick_max is not None else None,
-                            thick_max_operator=item.thick_max_operator,
-                            width_min=str(item.width_min) if item.width_min is not None else None,
-                            width_min_operator=item.width_min_operator,
-                            width_max=str(item.width_max) if item.width_max is not None else None,
-                            width_max_operator=item.width_max_operator,
-                            zinc_coating_min=str(item.zinc_coating_min) if item.zinc_coating_min is not None else None,
-                            zinc_coating_min_operator=item.zinc_coating_min_operator,
-                            zinc_coating_max=str(item.zinc_coating_max) if item.zinc_coating_max is not None else None,
-                            zinc_coating_max_operator=item.zinc_coating_max_operator,
-                            price_adjustment=item.price_adjustment,
-                            is_base=item.is_base,
-                            sort_order=item.sort_order,
-                            excel_filename=policy.excel_filename,
-                            excel_row=item.excel_row,
-                            excel_col=item.excel_col,
-                        )
-                    )
-
-        return rows
+    @staticmethod
+    def _to_export_row(
+        policy: SteelPricePolicy,
+        item: SteelPriceLadderItem | None,
+    ) -> ExportRow:
+        """把主表 + 可选明细展成一行导出记录。"""
+        return ExportRow(
+            policy_id=policy.id,
+            year=policy.year,
+            month=policy.month,
+            steel_mill=policy.steel_mill,
+            category_name=policy.category_name or "",
+            policy_type=policy.policy_type or "",
+            grade_type=policy.grade_type,
+            grade_value=policy.grade_value,
+            base_thickness=str(policy.base_thickness) if policy.base_thickness is not None else None,
+            excel_filename=policy.excel_filename,
+            item_id=item.id if item is not None else None,
+            target_sub_group=item.target_sub_group if item is not None else None,
+            thick_min=str(item.thick_min) if item is not None and item.thick_min is not None else None,
+            thick_min_operator=item.thick_min_operator if item is not None else None,
+            thick_max=str(item.thick_max) if item is not None and item.thick_max is not None else None,
+            thick_max_operator=item.thick_max_operator if item is not None else None,
+            width_min=str(item.width_min) if item is not None and item.width_min is not None else None,
+            width_min_operator=item.width_min_operator if item is not None else None,
+            width_max=str(item.width_max) if item is not None and item.width_max is not None else None,
+            width_max_operator=item.width_max_operator if item is not None else None,
+            zinc_coating_min=(
+                str(item.zinc_coating_min)
+                if item is not None and item.zinc_coating_min is not None
+                else None
+            ),
+            zinc_coating_min_operator=item.zinc_coating_min_operator if item is not None else None,
+            zinc_coating_max=(
+                str(item.zinc_coating_max)
+                if item is not None and item.zinc_coating_max is not None
+                else None
+            ),
+            zinc_coating_max_operator=item.zinc_coating_max_operator if item is not None else None,
+            price_adjustment=item.price_adjustment if item is not None else None,
+            is_base=item.is_base if item is not None else None,
+            sort_order=item.sort_order if item is not None else None,
+            excel_row=item.excel_row if item is not None else None,
+            excel_col=item.excel_col if item is not None else None,
+        )
 
     def count_export_data(
         self,
@@ -152,7 +135,7 @@ class SteelPricePolicyExportService:
         Returns:
             明细总行数
         """
-        return self.repository.count_items_for_export(
+        return self.repository.count_export_rows(
             db,
             year=year,
             month=month,
