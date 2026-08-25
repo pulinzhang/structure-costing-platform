@@ -22,7 +22,7 @@
 import re
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import Any, Optional
+from typing import Any
 
 from .value_parser import _to_str
 
@@ -35,15 +35,17 @@ from .value_parser import _to_str
 _PATTERN_PURE_NUM = re.compile(r"^\s*(-?\d+(?:\.\d+)?)\s*(?:mm)?\s*$", re.IGNORECASE)
 
 # ---------- 1.2 单边符号 ----------
-_PATTERN_GT = re.compile(r"^[>＞](?!=)\s*(-?\d+(?:\.\d+)?)\s*[a-zA-Z]*$")   # >0.5 / ＞0.5
-_PATTERN_GTE = re.compile(r"^(?:[≥≧]|>=|＞=)\s*(-?\d+(?:\.\d+)?)\s*[a-zA-Z]*$")  # ≥0.5 / >=0.5 / ≧0.5
-_PATTERN_LTE = re.compile(r"^[≤≦<＜]=?\s*(-?\d+(?:\.\d+)?)\s*[a-zA-Z]*$")  # ≤800 / <=800 / ＜1000 / ≦800
+_PATTERN_GT = re.compile(r"^[>＞](?!=)\s*(-?\d+(?:\.\d+)?)\s*[a-zA-Z]*$")  # >0.5 / ＞0.5
+_PATTERN_GTE = re.compile(
+    r"^(?:[≥≧]|>=|＞=)\s*(-?\d+(?:\.\d+)?)\s*[a-zA-Z]*$"
+)  # ≥0.5 / >=0.5 / ≧0.5
+_PATTERN_LTE = re.compile(
+    r"^[≤≦<＜]=?\s*(-?\d+(?:\.\d+)?)\s*[a-zA-Z]*$"
+)  # ≤800 / <=800 / ＜1000 / ≦800
 
 
 # ---------- 1.3 简单区间（不含变量） ----------
-_PATTERN_SIMPLE_RANGE = re.compile(
-    r"^\s*(-?\d+(?:\.\d+)?)\s*[-~]\s*(-?\d+(?:\.\d+)?)\s*$"
-)
+_PATTERN_SIMPLE_RANGE = re.compile(r"^\s*(-?\d+(?:\.\d+)?)\s*[-~]\s*(-?\d+(?:\.\d+)?)\s*$")
 _PATTERN_SIMPLE_RANGE_WITH_UNIT = re.compile(
     r"^\s*(-?\d+(?:\.\d+)?)\s*[-~]\s*(-?\d+(?:\.\d+)?)\s*[a-zA-Z]*\s*$"
 )
@@ -89,15 +91,16 @@ _PATTERN_W_INC_BOTH = re.compile(
     r"^\s*(-?\d+(?:\.\d+)?)\s*(?:<=|≤|＜=)\s*[Ww宽]\s*(?:<=|≤|＜=)\s*(-?\d+(?:\.\d+)?)\s*[a-zA-Z]*$"
 )
 
+
 # ===========================================================================
 # 2. 数据结构
 # ===========================================================================
 @dataclass
 class _Boundary:
-    min_val: Optional[Decimal] = None
-    min_operator: Optional[str] = None
-    max_val: Optional[Decimal] = None
-    max_operator: Optional[str] = None
+    min_val: Decimal | None = None
+    min_operator: str | None = None
+    max_val: Decimal | None = None
+    max_operator: str | None = None
 
 
 # 全角/半角操作符 → 半角规范形式
@@ -117,7 +120,7 @@ _OPERATOR_NORMALIZE = {
 }
 
 
-def normalize_operator(op: Optional[str]) -> Optional[str]:
+def normalize_operator(op: str | None) -> str | None:
     """将比较操作符规范为半角：> / >= / < / <=。无法识别则原样返回。"""
     if op is None:
         return None
@@ -127,12 +130,12 @@ def normalize_operator(op: Optional[str]) -> Optional[str]:
     return _OPERATOR_NORMALIZE.get(text, text)
 
 
-def is_strict_gt(op: Optional[str]) -> bool:
+def is_strict_gt(op: str | None) -> bool:
     """是否为严格大于（> / ＞）。"""
     return normalize_operator(op) == ">"
 
 
-def is_lte(op: Optional[str]) -> bool:
+def is_lte(op: str | None) -> bool:
     """是否为小于等于（<= / ≤ / ≦ / ＜=）。"""
     return normalize_operator(op) == "<="
 
@@ -140,7 +143,7 @@ def is_lte(op: Optional[str]) -> bool:
 # ===========================================================================
 # 3. 解析函数（按优先级顺序匹配）
 # ===========================================================================
-def _parse_boundary(header: Any) -> Optional[_Boundary]:
+def _parse_boundary(header: Any) -> _Boundary | None:
     """解析列头为区间描述。"""
     text = _to_str(header)
     if not text:
@@ -209,16 +212,13 @@ def _parse_boundary(header: Any) -> Optional[_Boundary]:
     if match_lte:
         raw = text.strip()
         # 根据首部符号判断操作符（全角/半角）
-        if raw.startswith(("≤", "≦", "<=", "＜=")):
-            op = "<="
-        else:  # 以 "<" 或 "＜" 开头
-            op = "<"
+        op = "<=" if raw.startswith(("≤", "≦", "<=", "＜=")) else "<"
         return _Boundary(max_val=Decimal(match_lte.group(1)), max_operator=op)
 
     return None
 
 
-def _parse_boundary_thickness(text: str) -> Optional[_Boundary]:
+def _parse_boundary_thickness(text: str) -> _Boundary | None:
     """
     厚度专用的 boundary 解析：
     - 纯数字（如 "0.5"）→ 仅 max <=（无 min 边界）
@@ -250,10 +250,7 @@ def _parse_boundary_thickness(text: str) -> Optional[_Boundary]:
     match_lte = _PATTERN_LTE.match(text)
     if match_lte:
         raw = text.strip()
-        if raw.startswith(("≤", "≦", "<=", "＜=")):
-            op = "<="
-        else:
-            op = "<"
+        op = "<=" if raw.startswith(("≤", "≦", "<=", "＜=")) else "<"
         return _Boundary(max_val=Decimal(match_lte.group(1)), max_operator=op)
 
     # ---------- 纯数字（无符号）→ 仅 max <= ----------

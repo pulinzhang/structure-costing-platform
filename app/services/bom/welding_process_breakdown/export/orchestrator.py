@@ -74,8 +74,7 @@ class BomWeldingProcessBreakdownExportOrchestrator:
         )
 
         logger.info(
-            "导出 L0 工艺核对 %s 行（%s 个 L0） "
-            "location=%s model=%s ver=%s process_eq=%s -> %s",
+            "导出 L0 工艺核对 %s 行（%s 个 L0） " "location=%s model=%s ver=%s process_eq=%s -> %s",
             export_row_count,
             len(nodes),
             location,

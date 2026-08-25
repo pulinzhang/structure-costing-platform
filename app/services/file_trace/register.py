@@ -43,7 +43,11 @@ def register_existing(
     if file_category not in VALID_FILE_CATEGORIES:
         raise ValueError(f"不支持的文件分类: {file_category}")
 
-    relpath = to_upload_relpath(stored_relpath) if Path(stored_relpath).is_absolute() else stored_relpath.replace("\\", "/")
+    relpath = (
+        to_upload_relpath(stored_relpath)
+        if Path(stored_relpath).is_absolute()
+        else stored_relpath.replace("\\", "/")
+    )
     absolute_path = resolve_upload_path(relpath)
     if not absolute_path.is_file():
         raise ValueError(f"原件不存在: {relpath}")

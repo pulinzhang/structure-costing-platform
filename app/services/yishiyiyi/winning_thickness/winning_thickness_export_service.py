@@ -98,6 +98,4 @@ class WinningThicknessExportService:
             category_name=category_name,
             grade=grade,
         )
-        return self._exporter.generate(
-            rows, year=year, month=month, location=location
-        )
+        return self._exporter.generate(rows, year=year, month=month, location=location)

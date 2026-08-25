@@ -70,9 +70,7 @@ class UserTokenRepository:
         db.flush()
         return count
 
-    def sync_user_snapshot(
-        self, db: Session, user_id: int, snapshot: UserTokenSnapshot
-    ) -> int:
+    def sync_user_snapshot(self, db: Session, user_id: int, snapshot: UserTokenSnapshot) -> int:
         """资料变更后，同步该用户所有 token 上的展示字段"""
         values: dict[str, str | datetime | None] = {
             "username": snapshot["username"],

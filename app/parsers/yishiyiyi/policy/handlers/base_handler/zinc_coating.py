@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import re
 from decimal import Decimal
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from openpyxl.worksheet.worksheet import Worksheet
 
@@ -22,14 +22,14 @@ _ZINC_RANGE_PATTERN = re.compile(r"^\d+\s*-\s*\d+$")
 class ZincCoatingParser:
     """锌层加价表块：定位 + 解析为 ParsedPolicy。"""
 
-    def __init__(self, scanner: Optional[SheetScanner] = None):
+    def __init__(self, scanner: SheetScanner | None = None):
         self.scanner = scanner or SheetScanner()
 
     def find_blocks(
         self,
         sheet: Worksheet,
         steel_mill: str,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """查找所有「锌层加价」表块。
 
         表结构（严格以「锌层加价」为识别因子）：
@@ -40,11 +40,11 @@ class ZincCoatingParser:
         镀锌量范围格式固定为「数字-数字」闭区间。
         """
         del steel_mill  # 查找不依赖钢厂；签名与调用方对齐
-        blocks: List[Dict[str, Any]] = []
+        blocks: list[dict[str, Any]] = []
         max_row = self.scanner.row_max(sheet)
         max_col = self.scanner.col_max(sheet)
 
-        zinc_label_rows: List[int] = []
+        zinc_label_rows: list[int] = []
         for row in range(1, max_row + 1):
             text = self.scanner.text(sheet, row, 1)
             if text and "锌层加价" in text:
@@ -59,8 +59,8 @@ class ZincCoatingParser:
             if not range_text or "镀锌量" not in range_text:
                 continue
 
-            zinc_cols: List[int] = []
-            zinc_ranges: List[str] = []
+            zinc_cols: list[int] = []
+            zinc_ranges: list[str] = []
             for col in range(2, max_col + 1):
                 value = sheet.cell(row=range_row, column=col).value
                 if value and _ZINC_RANGE_PATTERN.match(str(value).strip()):
@@ -72,12 +72,8 @@ class ZincCoatingParser:
 
             thick_ge_text = self.scanner.text(sheet, thick_ge_row, 1)
             thick_lt_text = self.scanner.text(sheet, thick_lt_row, 1)
-            thick_ge_ok = thick_ge_text and bool(
-                re.search(r"厚度≥0\.6mm加价", thick_ge_text)
-            )
-            thick_lt_ok = thick_lt_text and bool(
-                re.search(r"厚度<0\.6mm加价", thick_lt_text)
-            )
+            thick_ge_ok = thick_ge_text and bool(re.search(r"厚度≥0\.6mm加价", thick_ge_text))
+            thick_lt_ok = thick_lt_text and bool(re.search(r"厚度<0\.6mm加价", thick_lt_text))
             if not (thick_ge_ok and thick_lt_ok):
                 continue
 
@@ -99,10 +95,10 @@ class ZincCoatingParser:
         self,
         sheet: Worksheet,
         steel_mill: str,
-    ) -> List[ParsedPolicy]:
+    ) -> list[ParsedPolicy]:
         """解析所有锌层加价块，返回 ParsedPolicy 列表。"""
         blocks = self.find_blocks(sheet, steel_mill)
-        policies: List[ParsedPolicy] = []
+        policies: list[ParsedPolicy] = []
 
         for block in blocks:
             zinc_cols = block["zinc_cols"]
@@ -125,7 +121,7 @@ class ZincCoatingParser:
                 thick_min = Decimal(str(thick_min_raw)) if thick_min_raw else None
                 thick_max = Decimal(str(thick_max_raw)) if thick_max_raw else None
 
-                for col, zinc_range in zip(zinc_cols, zinc_ranges):
+                for col, zinc_range in zip(zinc_cols, zinc_ranges, strict=False):
                     price = _to_int_price(sheet.cell(row=row, column=col).value)
                     zinc_min, zinc_max = self._parse_zinc_range(zinc_range)
 
@@ -163,20 +159,20 @@ class ZincCoatingParser:
     @staticmethod
     def _parse_thickness_cond(
         cond: str,
-    ) -> Tuple[Optional[str], Optional[str], Optional[str], Optional[str]]:
+    ) -> tuple[str | None, str | None, str | None, str | None]:
         """解析厚度条件字符串，如「≥0.6mm」或「<0.6mm」。"""
         if cond.startswith("≥"):
-            value = cond[1:].rstrip("mm").strip()
+            value = cond[1:].removesuffix("mm").strip()
             return (value, ">=", None, None)
         if cond.startswith("<"):
-            value = cond[1:].rstrip("mm").strip()
+            value = cond[1:].removesuffix("mm").strip()
             return (None, None, value, "<")
         return (None, None, None, None)
 
     @staticmethod
     def _parse_zinc_range(
         zinc_range: str,
-    ) -> Tuple[Optional[Decimal], Optional[Decimal]]:
+    ) -> tuple[Decimal | None, Decimal | None]:
         """解析镀锌量范围字符串，兼容「-」「～」「—」等分隔符。"""
         if not zinc_range:
             return (None, None)

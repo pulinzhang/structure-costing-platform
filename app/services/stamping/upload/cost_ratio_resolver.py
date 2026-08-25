@@ -39,9 +39,7 @@ def resolve_cost_ratio(automation: Any, process_method: Any) -> Decimal:
 
 
 def _matches_any(automation: Any, process_method: Any, keywords: tuple[str, ...]) -> bool:
-    return _contains_keyword(process_method, keywords) or _contains_keyword(
-        automation, keywords
-    )
+    return _contains_keyword(process_method, keywords) or _contains_keyword(automation, keywords)
 
 
 def _contains_keyword(value: Any, keywords: tuple[str, ...]) -> bool:

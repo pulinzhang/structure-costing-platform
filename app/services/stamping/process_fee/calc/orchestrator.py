@@ -139,9 +139,7 @@ class StampingProcessFeeCalcOrchestrator:
         log_id: int,
         detail_text: str,
     ) -> None:
-        self.calc_log_service.mark_log_failed(
-            db, log_id=log_id, detail_text=detail_text
-        )
+        self.calc_log_service.mark_log_failed(db, log_id=log_id, detail_text=detail_text)
 
     def list_calc_logs(
         self,
@@ -162,9 +160,7 @@ class StampingProcessFeeCalcOrchestrator:
             size=size,
         )
 
-    def get_calc_log(
-        self, db: Session, log_id: int
-    ) -> StampingProcessFeeCalcLogVO:
+    def get_calc_log(self, db: Session, log_id: int) -> StampingProcessFeeCalcLogVO:
         return self.calc_log_service.get_calc_log(db, log_id)
 
     def delete_calc_log(self, db: Session, log_id: int) -> None:
@@ -187,8 +183,7 @@ class StampingProcessFeeCalcOrchestrator:
         location, supplier = require_scope(dto)
         started_at = now()
         detail_lines: list[str] = [
-            f"开始计算 year={dto.year} location={location} "
-            f"supplier={supplier}"
+            f"开始计算 year={dto.year} location={location} " f"supplier={supplier}"
         ]
         report(5, "加载冲次单价...")
         rates = self.tonnage_repo.list_by_location_year(db, location, dto.year)
@@ -215,9 +210,7 @@ class StampingProcessFeeCalcOrchestrator:
             version=dto.version,
         )
         if not parts:
-            raise BusinessException(
-                f"基地「{location}」工厂「{supplier}」下未找到匹配的冲压零件"
-            )
+            raise BusinessException(f"基地「{location}」工厂「{supplier}」下未找到匹配的冲压零件")
         detail_lines.append(f"匹配零件 {len(parts)} 件")
 
         prev_part_cache: dict[int, StampingPart | None] = {}
@@ -246,13 +239,9 @@ class StampingProcessFeeCalcOrchestrator:
                 continue
 
             calculator: PartFeeCalculator | TailorWeldFeeCalculator = (
-                self.tailor_weld_calculator
-                if part.is_tailor_welded
-                else self.part_calculator
+                self.tailor_weld_calculator if part.is_tailor_welded else self.part_calculator
             )
-            fee_or_error = calculator.calc_part_fee(
-                db, part, rate_map, dto.year, prev_part_cache
-            )
+            fee_or_error = calculator.calc_part_fee(db, part, rate_map, dto.year, prev_part_cache)
             other_fee = existing.other_fee if existing else None
 
             if isinstance(fee_or_error, StampingProcessFeeFailedItemVO):
@@ -299,9 +288,7 @@ class StampingProcessFeeCalcOrchestrator:
                     calc_fail_reason=calc_fail_reason,
                     audit_status=AUDIT_PENDING,
                     created_by=None if existing else audit["created_by"],
-                    updated_by=(
-                        update_audit["updated_by"] if existing else audit["updated_by"]
-                    ),
+                    updated_by=(update_audit["updated_by"] if existing else audit["updated_by"]),
                     process_items=process_items,
                 )
             )
@@ -326,13 +313,9 @@ class StampingProcessFeeCalcOrchestrator:
             f"零价 {zero_fee_count}，跳过已审 {skipped_approved_count}"
         )
         if zero_fee_count:
-            detail_lines.append(
-                "提醒：存在计算价为 0 的零件，请到列表核对或录入其它费用"
-            )
+            detail_lines.append("提醒：存在计算价为 0 的零件，请到列表核对或录入其它费用")
         for item in failed_items[:20]:
-            detail_lines.append(
-                f"失败 {item.part_number} {item.process_seq or ''}: {item.reason}"
-            )
+            detail_lines.append(f"失败 {item.part_number} {item.process_seq or ''}: {item.reason}")
 
         finished_at = now()
         result = StampingProcessFeeCalcResultVO(

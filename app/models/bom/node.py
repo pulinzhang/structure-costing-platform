@@ -20,7 +20,6 @@ Excel 对照（材料清单典型列）：
 from typing import Any
 from decimal import Decimal
 from sqlalchemy import (
-
     Boolean,
     Date,
     ForeignKey,
@@ -30,7 +29,8 @@ from sqlalchemy import (
     SmallInteger,
     String,
     Text,
-    UniqueConstraint)
+    UniqueConstraint,
+)
 from sqlalchemy.orm import Mapped, relationship, mapped_column
 
 from app.database import Base

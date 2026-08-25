@@ -87,8 +87,7 @@ class BomWeldingProcessBreakdownAuditService:
             deleted_count=deleted,
             skipped_approved_count=skipped,
             message=(
-                f"已删除 {deleted} 条主表"
-                + (f"，跳过已审核 {skipped} 条" if skipped else "")
+                f"已删除 {deleted} 条主表" + (f"，跳过已审核 {skipped} 条" if skipped else "")
             ),
         )
 

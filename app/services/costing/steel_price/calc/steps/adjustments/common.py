@@ -4,7 +4,7 @@
 `app.services.yishiyiyi.policy.match.adjustment_common` 引入。
 """
 
-from app.services.yishiyiyi.policy.match.adjustment_common import (  # noqa: F401
+from app.services.yishiyiyi.policy.match.adjustment_common import (
     PolicyHit,
     PolicyMatchContext,
     PolicyMatchTarget,

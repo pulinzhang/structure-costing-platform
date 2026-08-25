@@ -49,13 +49,7 @@ def save_annual_part_price_upload(
     timestamp = now().strftime("%Y%m%d_%H%M%S")
     archive_name = f"{timestamp}_{ARCHIVE_KIND}_{safe_name}"
 
-    target_dir = (
-        settings.UPLOAD_DIR
-        / ARCHIVE_ROOT_NAME
-        / ARCHIVE_KIND
-        / str(year)
-        / safe_location
-    )
+    target_dir = settings.UPLOAD_DIR / ARCHIVE_ROOT_NAME / ARCHIVE_KIND / str(year) / safe_location
     target_dir.mkdir(parents=True, exist_ok=True)
     target_path = target_dir / archive_name
 

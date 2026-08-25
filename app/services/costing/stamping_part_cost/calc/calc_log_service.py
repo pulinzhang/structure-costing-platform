@@ -34,6 +34,7 @@ from app.services.costing.stamping_part_cost.calc.constants import (
 )
 from app.services.costing.stamping_part_cost.calc.models import DuplicateScopeCalcError
 from app.services.costing.stamping_part_cost.calc.scope import require_scope
+import contextlib
 
 logger = logging.getLogger("service.stamping_part_cost.calc.log")
 
@@ -121,10 +122,8 @@ class PartCostCalcLogService:
         detail_text: str,
     ) -> None:
         """异常路径：释放 processing 锁为 failed（先 rollback 清脏事务）。"""
-        try:
+        with contextlib.suppress(Exception):
             db.rollback()
-        except Exception:
-            pass
         self.calc_log_repo.update(
             db,
             log_id,
@@ -190,9 +189,7 @@ class PartCostCalcLogService:
         )
         return [StampingPartCostCalcLogVO.model_validate(r) for r in rows], total
 
-    def get_calc_log(
-        self, db: Session, log_id: int
-    ) -> StampingPartCostCalcLogVO:
+    def get_calc_log(self, db: Session, log_id: int) -> StampingPartCostCalcLogVO:
         record = self.calc_log_repo.get_by_id(db, log_id)
         if record is None:
             raise NotFoundException("计算日志不存在")
@@ -217,16 +214,8 @@ class PartCostCalcLogService:
     ) -> int | None:
         """引擎等同步调用未走 begin_processing 时，补写终态历史。"""
         operator = operator_name or "系统"
-        started_at = (
-            datetime.fromisoformat(result.started_at)
-            if result.started_at
-            else now()
-        )
-        finished_at = (
-            datetime.fromisoformat(result.finished_at)
-            if result.finished_at
-            else now()
-        )
+        started_at = datetime.fromisoformat(result.started_at) if result.started_at else now()
+        finished_at = datetime.fromisoformat(result.finished_at) if result.finished_at else now()
         calc_batch_id = result.calc_batch_id or f"spc-{uuid.uuid4().hex[:16]}"
         try:
             record = self.calc_log_repo.create(
@@ -266,7 +255,5 @@ class PartCostCalcLogService:
             return record.id
         except Exception:
             db.rollback()
-            logger.exception(
-                "写入零件核价计算日志失败: batch=%s", calc_batch_id
-            )
+            logger.exception("写入零件核价计算日志失败: batch=%s", calc_batch_id)
             return None

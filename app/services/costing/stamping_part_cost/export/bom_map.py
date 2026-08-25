@@ -2,6 +2,7 @@
 
 from typing import Any
 
+
 def build_part_to_l0_map(nodes: list[Any]) -> dict[str, str]:
     """
     零件号 → L0 供货总成零件号。
@@ -31,7 +32,4 @@ def build_part_to_l0_map(nodes: list[Any]) -> dict[str, str]:
         if root_part not in bucket:
             bucket.append(root_part)
 
-    return {
-        part_number: ",".join(roots)
-        for part_number, roots in roots_by_part.items()
-    }
+    return {part_number: ",".join(roots) for part_number, roots in roots_by_part.items()}

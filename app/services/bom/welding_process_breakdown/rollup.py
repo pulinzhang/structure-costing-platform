@@ -27,9 +27,7 @@ def apply_rollup_flags(
         if node.level != 0 or node.source_node_id is None:
             continue
 
-        parent_tokens = {
-            line.process_token: line.process_qty for line in node.lines
-        }
+        parent_tokens = {line.process_token: line.process_qty for line in node.lines}
         child_bom_nodes = children_map.get(node.source_node_id, [])
         child_token_totals: dict[str, Decimal] = defaultdict(lambda: Decimal("0"))
         child_lines_by_token: dict[str, list[BomWeldingProcessBreakdownLine]] = defaultdict(list)

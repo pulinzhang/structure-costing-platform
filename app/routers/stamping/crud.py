@@ -3,7 +3,6 @@
 前后端分离 API 接口
 """
 
-from typing import List
 from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, Query
@@ -193,23 +192,19 @@ def update_process(
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_PARTS_UPDATE)),
 ) -> ApiResponse[StampingProcessResponse]:
     """更新工序（如成本系数）"""
-    result = _stamping_service.update_process(
-        db, process_id, body, current_user=current_user
-    )
+    result = _stamping_service.update_process(db, process_id, body, current_user=current_user)
     return ApiResponse.ok(data=result, message="工序更新成功")
 
 
 @router.put("/parts/{part_id}/processes", response_model=ApiResponse[BatchUpdateResponse])
 def batch_update_processes(
     part_id: int,
-    body: List[StampingProcessItemUpdate],
+    body: list[StampingProcessItemUpdate],
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_PARTS_UPDATE)),
 ) -> ApiResponse[BatchUpdateResponse]:
     """批量更新零件的所有工序（仅更新 cost_ratio）"""
-    updated = _stamping_service.batch_update_processes(
-        db, body, current_user=current_user
-    )
+    updated = _stamping_service.batch_update_processes(db, body, current_user=current_user)
     return ApiResponse.ok(
         data=BatchUpdateResponse(updated=updated),
         message=f"成功更新 {updated} 条工序",

@@ -329,66 +329,62 @@ class L0AssemblyCostRepository:
                 noload(L0AssemblyCost.items),
                 noload(L0AssemblyCost.indirects),
             )
-            .order_by(
-                L0AssemblyCost.id.asc()
-            )
+            .order_by(L0AssemblyCost.id.asc())
             .offset(skip)
             .limit(limit)
             .all()
         )
-        agg = (
-            self._apply_filters(
-                db.query(
-                    func.count(L0AssemblyCost.id),
-                    func.coalesce(
-                        func.sum(
-                            case(
-                                (L0AssemblyCost.calc_status == "ok", 1),
-                                else_=0,
-                            )
-                        ),
-                        0,
+        agg = self._apply_filters(
+            db.query(
+                func.count(L0AssemblyCost.id),
+                func.coalesce(
+                    func.sum(
+                        case(
+                            (L0AssemblyCost.calc_status == "ok", 1),
+                            else_=0,
+                        )
                     ),
-                    func.coalesce(
-                        func.sum(
-                            case(
-                                (L0AssemblyCost.calc_status == "partial", 1),
-                                else_=0,
-                            )
-                        ),
-                        0,
-                    ),
-                    func.coalesce(
-                        func.sum(
-                            case(
-                                (L0AssemblyCost.audit_status == AUDIT_PENDING, 1),
-                                else_=0,
-                            )
-                        ),
-                        0,
-                    ),
-                    func.coalesce(
-                        func.sum(
-                            case(
-                                (L0AssemblyCost.audit_status == AUDIT_APPROVED, 1),
-                                else_=0,
-                            )
-                        ),
-                        0,
-                    ),
-                    func.coalesce(func.sum(L0AssemblyCost.grand_total), 0),
-                    func.coalesce(func.sum(L0AssemblyCost.total_amount), 0),
+                    0,
                 ),
-                year=year,
-                month=month,
-                location=location,
-                vehicle_model=vehicle_model,
-                bom_version=bom_version,
-                part_number=part_number,
-                audit_status=audit_status,
-                calc_status=calc_status,
-            ).one()
-        )
+                func.coalesce(
+                    func.sum(
+                        case(
+                            (L0AssemblyCost.calc_status == "partial", 1),
+                            else_=0,
+                        )
+                    ),
+                    0,
+                ),
+                func.coalesce(
+                    func.sum(
+                        case(
+                            (L0AssemblyCost.audit_status == AUDIT_PENDING, 1),
+                            else_=0,
+                        )
+                    ),
+                    0,
+                ),
+                func.coalesce(
+                    func.sum(
+                        case(
+                            (L0AssemblyCost.audit_status == AUDIT_APPROVED, 1),
+                            else_=0,
+                        )
+                    ),
+                    0,
+                ),
+                func.coalesce(func.sum(L0AssemblyCost.grand_total), 0),
+                func.coalesce(func.sum(L0AssemblyCost.total_amount), 0),
+            ),
+            year=year,
+            month=month,
+            location=location,
+            vehicle_model=vehicle_model,
+            bom_version=bom_version,
+            part_number=part_number,
+            audit_status=audit_status,
+            calc_status=calc_status,
+        ).one()
         summary: L0AssemblyCostFilterSummary = {
             "total_count": int(agg[0] or 0),
             "ok_count": int(agg[1] or 0),
@@ -671,10 +667,5 @@ class L0AssemblyCostRepository:
         return int(count)
 
     def list_distinct_years(self, db: Session) -> list[int]:
-        rows = (
-            db.query(L0AssemblyCost.year)
-            .distinct()
-            .order_by(L0AssemblyCost.year.desc())
-            .all()
-        )
+        rows = db.query(L0AssemblyCost.year).distinct().order_by(L0AssemblyCost.year.desc()).all()
         return [int(r[0]) for r in rows]

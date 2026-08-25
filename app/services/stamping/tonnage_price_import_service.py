@@ -151,7 +151,7 @@ class StampingTonnagePriceImportService:
                         db,
                         existing.id,
                         StampingTonnagePriceUpdate(price_per_stroke=price),
-                        updated_by=update_audit["updated_by"]
+                        updated_by=update_audit["updated_by"],
                     )
                     updated_count += 1
                 else:
@@ -164,7 +164,7 @@ class StampingTonnagePriceImportService:
                             price_per_stroke=price,
                         ),
                         created_by=create_audit["created_by"],
-                        updated_by=create_audit["updated_by"]
+                        updated_by=create_audit["updated_by"],
                     )
                     created_count += 1
             register_existing(

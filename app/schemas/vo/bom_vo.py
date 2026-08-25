@@ -2,7 +2,6 @@
 
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Union
 
 from pydantic import BaseModel, Field, field_serializer
 
@@ -85,7 +84,7 @@ class BomNodeVO(BaseModel):
     updated_at: datetime | None = None
 
     @field_serializer("qty", "thickness_mm", "part_weight")
-    def serialize_decimal(self, value: Union[Decimal, None]) -> str | None:
+    def serialize_decimal(self, value: Decimal | None) -> str | None:
         return optional_format_money(value, Q4, 4, allow_negative=True)
 
     @field_serializer("created_at", "updated_at")

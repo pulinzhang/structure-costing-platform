@@ -65,14 +65,8 @@ class PromptRegistry:
         if not isinstance(audience_cfg, dict):
             raise KeyError(f"未知 audience: {resolved_audience}")
 
-        shared_parts = [
-            self._read_md(str(name))
-            for name in (self._manifest.get("shared") or [])
-        ]
-        system_parts = [
-            self._read_md(str(name))
-            for name in (audience_cfg.get("system") or [])
-        ]
+        shared_parts = [self._read_md(str(name)) for name in (self._manifest.get("shared") or [])]
+        system_parts = [self._read_md(str(name)) for name in (audience_cfg.get("system") or [])]
         system_prompt = "\n\n".join([*system_parts, *shared_parts]).strip()
         user_shell = self._read_md(str(self._manifest.get("user_shell") or "user_report_shell.md"))
 
@@ -80,7 +74,7 @@ class PromptRegistry:
         temperature = float(defaults.get("temperature") or 0.2)
         max_tokens = int(defaults.get("max_tokens") or 2500)
         digest = hashlib.sha256(
-            f"{version}|{resolved_audience}|{system_prompt}|{user_shell}".encode("utf-8")
+            f"{version}|{resolved_audience}|{system_prompt}|{user_shell}".encode()
         ).hexdigest()[:16]
 
         return ResolvedPrompt(
@@ -100,16 +94,14 @@ class PromptRegistry:
             for name in (self._manifest.get("shared") or [])
             if str(name).endswith("chinese_style_rules.md")
         ]
-        system_prompt = "\n\n".join(
-            [self._read_md("system_usage_help.md"), *shared_parts]
-        ).strip()
+        system_prompt = "\n\n".join([self._read_md("system_usage_help.md"), *shared_parts]).strip()
         user_shell = self._read_md("user_usage_shell.md")
         version = str(self._manifest.get("version") or "v0.0.0")
         defaults = self._manifest.get("defaults") or {}
         temperature = float(defaults.get("temperature") or 0.2)
         max_tokens = int(defaults.get("max_tokens") or 2500)
         digest = hashlib.sha256(
-            f"{version}|usage_help|{system_prompt}|{user_shell}".encode("utf-8")
+            f"{version}|usage_help|{system_prompt}|{user_shell}".encode()
         ).hexdigest()[:16]
         return ResolvedPrompt(
             audience="usage_help",
@@ -137,7 +129,7 @@ class PromptRegistry:
         temperature = float(defaults.get("temperature") or 0.2)
         max_tokens = int(defaults.get("max_tokens") or 2500)
         digest = hashlib.sha256(
-            f"{version}|engine_readiness|{system_prompt}|{user_shell}".encode("utf-8")
+            f"{version}|engine_readiness|{system_prompt}|{user_shell}".encode()
         ).hexdigest()[:16]
         return ResolvedPrompt(
             audience="engine_readiness",

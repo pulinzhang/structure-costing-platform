@@ -80,12 +80,14 @@ class Settings(BaseSettings):
 # 根据环境调整配置
 class DevelopmentSettings(Settings):
     """开发环境配置"""
+
     IS_DEBUG: bool = Field(default=True, validation_alias=_IS_DEBUG_ALIAS)
     LOG_LEVEL: str = "DEBUG"
 
 
 class ProductionSettings(Settings):
     """生产环境配置"""
+
     IS_DEBUG: bool = Field(default=False, validation_alias=_IS_DEBUG_ALIAS)
     LOG_LEVEL: str = "WARNING"
     CORS_ORIGINS: list[str] = [
@@ -97,6 +99,7 @@ class ProductionSettings(Settings):
 
 class TestSettings(Settings):
     """测试环境配置"""
+
     IS_DEBUG: bool = Field(default=True, validation_alias=_IS_DEBUG_ALIAS)
     DATABASE_URL: str = "sqlite:///:memory:"
     AUXILIARY_DATABASE_URL: str = "sqlite:///:memory:"

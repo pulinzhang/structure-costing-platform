@@ -3,8 +3,6 @@
 异步计算触发 + 计算就绪检查 + 计算日志/任务进度
 """
 
-from typing import List
-
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
@@ -42,7 +40,7 @@ _async_task_service = AsyncTaskService()
 
 @router.get(
     "/filters/years",
-    response_model=ApiResponse[List[int]],
+    response_model=ApiResponse[list[int]],
 )
 def list_years(
     db: Session = Depends(get_db),
@@ -52,7 +50,7 @@ def list_years(
             Perm.STAMPING_PART_COST_CALC_VIEW,
         )
     ),
-) -> ApiResponse[List[int]]:
+) -> ApiResponse[list[int]]:
     years = _service.list_years(db)
     return ApiResponse.ok(data=years)
 
@@ -149,15 +147,9 @@ def get_calc_task_progress(
     task_id: str,
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_PART_COST_CALC_VIEW)),
 ) -> ApiResponse[AsyncTaskProgressVO]:
-    task = _async_task_service.require_snapshot(
-        task_id, TASK_TYPE_STAMPING_PART_COST_CALC
-    )
+    task = _async_task_service.require_snapshot(task_id, TASK_TYPE_STAMPING_PART_COST_CALC)
     result_raw = AsyncTaskService.parse_result_json(task.get("result_json"))
-    result = (
-        StampingPartCostCalcResultVO.model_validate(result_raw)
-        if result_raw
-        else None
-    )
+    result = StampingPartCostCalcResultVO.model_validate(result_raw) if result_raw else None
     return ApiResponse.ok(
         data=AsyncTaskProgressVO.from_snapshot(
             task,

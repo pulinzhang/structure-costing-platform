@@ -57,9 +57,7 @@ def build_stamping_drivers(
     *,
     top_n: int = DEFAULT_DRIVER_TOP_N,
 ) -> dict[str, Any]:
-    priced_rows = [
-        row for row in rows if row.unit_cost is not None and row.unit_cost > 0
-    ]
+    priced_rows = [row for row in rows if row.unit_cost is not None and row.unit_cost > 0]
     by_part: dict[str, list[StampingPartPeriodRow]] = defaultdict(list)
     for row in priced_rows:
         by_part[row.part_number].append(row)
@@ -109,9 +107,8 @@ def build_l0_mom_anomalies(
                 continue
             change = curr_row.grand_total - prev_row.grand_total
             rate = compute_change_rate(prev_row.grand_total, curr_row.grand_total)
-            if abs(change) < min_abs_change:
-                if rate is None or abs(rate) < min_rate:
-                    continue
+            if abs(change) < min_abs_change and (rate is None or abs(rate) < min_rate):
+                continue
             spikes.append(
                 {
                     "anomaly_type": "mom_jump",

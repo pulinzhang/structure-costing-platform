@@ -10,7 +10,8 @@
 
 镀锌块每行都是独立政策。
 """
-from typing import Any, Dict, List, Optional
+
+from typing import Any
 
 from decimal import Decimal
 
@@ -24,9 +25,7 @@ from .constants import GRADE_LABELS, parse_thickness_label
 class TanggangSheetHandler(BaseSheetHandler):
     """唐钢 Sheet 处理器。"""
 
-    def find_thickness_blocks(
-        self, sheet: Worksheet, steel_mill: str
-    ) -> List[Dict[str, Any]]:
+    def find_thickness_blocks(self, sheet: Worksheet, steel_mill: str) -> list[dict[str, Any]]:
         return self.find_default_thickness_blocks(sheet, steel_mill)
 
     # ------------------------------------------------------------------ #
@@ -37,8 +36,8 @@ class TanggangSheetHandler(BaseSheetHandler):
         self,
         sheet: Worksheet,
         steel_mill: str,
-        block: Dict[str, Any],
-    ) -> List[Any]:
+        block: dict[str, Any],
+    ) -> list[Any]:
         """唐钢宽度块解析：逐行构建政策。
 
         - 钢种行（DC01、DC03、"DC04及以上"）：grade_type = GRADE
@@ -62,7 +61,7 @@ class TanggangSheetHandler(BaseSheetHandler):
             return []
 
         sorted_price_cols = sorted(price_cols)
-        policies: List[Any] = []
+        policies: list[Any] = []
 
         for r in range(data_start, data_end + 1):
             grade_raw = self.text_or_none(sheet, r, 1)
@@ -113,7 +112,7 @@ class TanggangSheetHandler(BaseSheetHandler):
         sheet: Worksheet,
         steel_mill: str,
         policy_type: str,
-    ) -> List[Any]:
+    ) -> list[Any]:
         """唐钢定制：WIDTH 政策走专用解析。"""
         if policy_type == "WIDTH":
             blocks = self.find_width_blocks(sheet, steel_mill)
@@ -139,15 +138,15 @@ class TanggangSheetHandler(BaseSheetHandler):
         *,
         category: str = "冷轧钢",
         header_row_offset: int = 1,
-        scan_cols: Optional[List[int]] = None,
-    ) -> Optional[Dict[str, Any]]:
+        scan_cols: list[int] | None = None,
+    ) -> dict[str, Any] | None:
         """唐钢专用：允许纯数字列头（如 1000mm），不走 _parse_boundary 过滤。"""
         header_row = title_row + header_row_offset
         if header_row > block_end:
             return None
 
         # 唐钢：手动收集所有非空列头（含纯数字）
-        price_cols: List[int] = []
+        price_cols: list[int] = []
         for c in range(data_col_start, max_col + 1):
             raw = sheet.cell(row=header_row, column=c).value
             if raw is not None and str(raw).strip():
@@ -168,13 +167,11 @@ class TanggangSheetHandler(BaseSheetHandler):
             "grade_blacklist": GRADE_LABELS,
         }
 
-    def find_width_blocks(
-        self, sheet: Worksheet, steel_mill: str
-    ) -> List[Dict[str, Any]]:
-        blocks: List[Dict[str, Any]] = []
+    def find_width_blocks(self, sheet: Worksheet, steel_mill: str) -> list[dict[str, Any]]:
+        blocks: list[dict[str, Any]] = []
         max_row, max_col = self.row_max(sheet), self.col_max(sheet)
 
-        w_title_rows: List[int] = []
+        w_title_rows: list[int] = []
         for r in range(1, max_row + 1):
             text = self.text(sheet, r, 1)
             if text and ("宽度加价" in text or "宽度加减价" in text):
@@ -191,8 +188,12 @@ class TanggangSheetHandler(BaseSheetHandler):
                 category = "冷轧钢"
 
             block = self.locate_width_block(
-                sheet, title_row, block_end,
-                grade_col=1, data_col_start=2, max_col=max_col,
+                sheet,
+                title_row,
+                block_end,
+                grade_col=1,
+                data_col_start=2,
+                max_col=max_col,
                 category=category,
             )
             if block:
@@ -207,8 +208,8 @@ class TanggangSheetHandler(BaseSheetHandler):
         self,
         sheet: Worksheet,
         header_row: int,
-        price_cols: List[int],
-    ) -> Dict[int, "_Boundary"]:
+        price_cols: list[int],
+    ) -> dict[int, "_Boundary"]:
         """唐钢宽度边界收集：处理纯数字等号区间。
 
         唐钢数据中可能出现"1000mm"这样的纯数字，表示精确值区间 1000<=W<=1000。
@@ -218,7 +219,7 @@ class TanggangSheetHandler(BaseSheetHandler):
         from app.parsers.yishiyiyi.policy.boundary_parser import _Boundary
         import re
 
-        result: Dict[int, _Boundary] = {}
+        result: dict[int, _Boundary] = {}
         _PURE_NUM_RE = re.compile(r"^\s*(-?\d+(?:\.\d+)?)\s*(?:mm)?\s*$", re.IGNORECASE)
 
         for c in price_cols:
@@ -239,6 +240,7 @@ class TanggangSheetHandler(BaseSheetHandler):
             else:
                 # 非纯数字，使用通用解析
                 from app.parsers.yishiyiyi.policy.boundary_parser import _parse_boundary
+
                 b = _parse_boundary(raw)
                 if b is not None:
                     result[c] = b

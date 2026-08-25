@@ -92,9 +92,7 @@ def export_download(
     return StreamingResponse(
         iter([content]),
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={
-            "Content-Disposition": f"attachment; filename*=UTF-8''{quote(filename)}"
-        },
+        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{quote(filename)}"},
     )
 
 
@@ -121,9 +119,7 @@ def update_manual_unit_cost(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_PART_COST_UPDATE)),
 ) -> ApiResponse[StampingPartCostVO]:
-    row = _service.update_manual_unit_cost(
-        db, cost_id, dto, current_user=current_user
-    )
+    row = _service.update_manual_unit_cost(db, cost_id, dto, current_user=current_user)
     return ApiResponse.updated(data=row, message="最终成本已保存")
 
 

@@ -74,9 +74,7 @@ def build_welding_unit_price_comparison(
                     "unit_price": _unit_price_str(item.unit_price),
                     "year": only_year,
                 }
-                for item in sorted(
-                    by_year[only_year].values(), key=lambda row: row.item_name
-                )
+                for item in sorted(by_year[only_year].values(), key=lambda row: row.item_name)
             ],
         }
 
@@ -101,9 +99,7 @@ def build_welding_unit_price_comparison(
         if base_price is not None and compare_price is not None:
             change = compare_price - base_price
             if base_price != 0:
-                rate = (change / base_price).quantize(
-                    Decimal("0.0001"), rounding=ROUND_HALF_UP
-                )
+                rate = (change / base_price).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
                 change_rate = str(rate)
             if change > 0:
                 increased += 1

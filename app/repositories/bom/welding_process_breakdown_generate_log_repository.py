@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 from sqlalchemy import text
 from sqlalchemy.engine import Connection
@@ -44,9 +43,7 @@ class BomWeldingProcessBreakdownGenerateLogRepository:
     def is_processing_lock_index_ensured(self) -> bool:
         return BomWeldingProcessBreakdownGenerateLogRepository._lock_index_ensured
 
-    def get_by_id(
-        self, db: Session, log_id: int
-    ) -> Optional[BomWeldingProcessBreakdownGenerateLog]:
+    def get_by_id(self, db: Session, log_id: int) -> BomWeldingProcessBreakdownGenerateLog | None:
         return (
             db.query(BomWeldingProcessBreakdownGenerateLog)
             .filter(BomWeldingProcessBreakdownGenerateLog.id == log_id)
@@ -60,7 +57,7 @@ class BomWeldingProcessBreakdownGenerateLogRepository:
         location: str,
         vehicle_model: str,
         bom_version: str,
-    ) -> Optional[BomWeldingProcessBreakdownGenerateLog]:
+    ) -> BomWeldingProcessBreakdownGenerateLog | None:
         return (
             db.query(BomWeldingProcessBreakdownGenerateLog)
             .filter(
@@ -85,17 +82,13 @@ class BomWeldingProcessBreakdownGenerateLogRepository:
     ) -> tuple[list[BomWeldingProcessBreakdownGenerateLog], int]:
         query = db.query(BomWeldingProcessBreakdownGenerateLog)
         if location:
-            query = query.filter(
-                BomWeldingProcessBreakdownGenerateLog.location == location
-            )
+            query = query.filter(BomWeldingProcessBreakdownGenerateLog.location == location)
         if vehicle_model:
             query = query.filter(
                 BomWeldingProcessBreakdownGenerateLog.vehicle_model == vehicle_model
             )
         if bom_version:
-            query = query.filter(
-                BomWeldingProcessBreakdownGenerateLog.bom_version == bom_version
-            )
+            query = query.filter(BomWeldingProcessBreakdownGenerateLog.bom_version == bom_version)
         total = query.count()
         records = (
             query.order_by(BomWeldingProcessBreakdownGenerateLog.id.desc())
@@ -115,7 +108,7 @@ class BomWeldingProcessBreakdownGenerateLogRepository:
 
     def update(
         self, db: Session, log_id: int, data: BomWeldingProcessBreakdownGenerateLogPatch
-    ) -> Optional[BomWeldingProcessBreakdownGenerateLog]:
+    ) -> BomWeldingProcessBreakdownGenerateLog | None:
         record = self.get_by_id(db, log_id)
         if record is None:
             return None

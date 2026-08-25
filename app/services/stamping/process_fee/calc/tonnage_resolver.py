@@ -112,8 +112,7 @@ class TonnageResolver:
 
         if is_swing_shear_process(matched):
             logger.info(
-                "共模件继承摆剪(计0): part=%s method=%s process=%s "
-                "from_part=%s from_process=%s",
+                "共模件继承摆剪(计0): part=%s method=%s process=%s " "from_part=%s from_process=%s",
                 part.part_number,
                 method_label,
                 process_label,

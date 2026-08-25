@@ -24,9 +24,7 @@ def resolve_runtime_comparability(
         for row in part_rows:
             by_part[row.part_number].add(row.bom_version)
         drift_parts = [
-            part_number
-            for part_number, versions in by_part.items()
-            if len(versions) > 1
+            part_number for part_number, versions in by_part.items() if len(versions) > 1
         ]
         if drift_parts:
             sample = ", ".join(drift_parts[:3])

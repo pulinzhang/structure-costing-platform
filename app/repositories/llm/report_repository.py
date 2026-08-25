@@ -64,18 +64,10 @@ class LlmAnalysisReportFailPatch:
 
 class LlmAnalysisReportRepository:
     def get_by_id(self, db: Session, report_id: int) -> LlmAnalysisReport | None:
-        return (
-            db.query(LlmAnalysisReport)
-            .filter(LlmAnalysisReport.id == report_id)
-            .first()
-        )
+        return db.query(LlmAnalysisReport).filter(LlmAnalysisReport.id == report_id).first()
 
     def get_by_task_id(self, db: Session, task_id: str) -> LlmAnalysisReport | None:
-        return (
-            db.query(LlmAnalysisReport)
-            .filter(LlmAnalysisReport.task_id == task_id)
-            .first()
-        )
+        return db.query(LlmAnalysisReport).filter(LlmAnalysisReport.task_id == task_id).first()
 
     def count_active_by_user(self, db: Session, *, user_id: int) -> int:
         return (
@@ -224,9 +216,7 @@ class LlmAnalysisReportRepository:
         if status:
             q = q.filter(LlmAnalysisReport.status == status)
         total = q.count()
-        rows = (
-            q.order_by(LlmAnalysisReport.id.desc()).offset(skip).limit(limit).all()
-        )
+        rows = q.order_by(LlmAnalysisReport.id.desc()).offset(skip).limit(limit).all()
         return rows, total
 
     def delete_by_id(self, db: Session, report_id: int) -> bool:

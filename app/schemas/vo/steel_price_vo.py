@@ -4,7 +4,6 @@
 
 from datetime import datetime
 from decimal import Decimal
-from typing import Optional
 
 from pydantic import BaseModel, field_serializer
 
@@ -15,7 +14,7 @@ from app.common.timezone import datetime_to_iso
 class SteelPriceListSummaryVO(BaseModel):
     """列表筛选汇总（均价 / 待审 / 已审，按过滤条件全量）"""
 
-    avg_final_price: Optional[Decimal] = None
+    avg_final_price: Decimal | None = None
     pending_count: int = 0
     approved_count: int = 0
 
@@ -33,7 +32,7 @@ class SteelPriceFilterOptions(BaseModel):
     category_names: list[str] = []
     steel_mills: list[str] = []
     audit_statuses: list[str] = []
-    summary: Optional[SteelPriceListSummaryVO] = None
+    summary: SteelPriceListSummaryVO | None = None
 
 
 class SteelPriceBatchDeleteResultVO(BaseModel):
@@ -70,7 +69,7 @@ class SteelPriceResponse(BaseModel):
     grade: str
     thickness: Decimal
     width: Decimal
-    spec: Optional[str] = None
+    spec: str | None = None
 
     base_price: Decimal
     thickness_adjustment: Decimal
@@ -80,53 +79,53 @@ class SteelPriceResponse(BaseModel):
     other_adjustment: Decimal
     final_price_per_ton: Decimal
 
-    base_price_id: Optional[int] = None
-    base_excel_filename: Optional[str] = None
-    base_sheet_name: Optional[str] = None
-    base_excel_row: Optional[int] = None
-    base_excel_col: Optional[int] = None
+    base_price_id: int | None = None
+    base_excel_filename: str | None = None
+    base_sheet_name: str | None = None
+    base_excel_row: int | None = None
+    base_excel_col: int | None = None
 
-    thickness_policy_id: Optional[int] = None
-    thickness_ladder_item_id: Optional[int] = None
-    thickness_excel_filename: Optional[str] = None
-    thickness_sheet_name: Optional[str] = None
-    thickness_excel_row: Optional[int] = None
-    thickness_excel_col: Optional[int] = None
+    thickness_policy_id: int | None = None
+    thickness_ladder_item_id: int | None = None
+    thickness_excel_filename: str | None = None
+    thickness_sheet_name: str | None = None
+    thickness_excel_row: int | None = None
+    thickness_excel_col: int | None = None
 
-    width_policy_id: Optional[int] = None
-    width_ladder_item_id: Optional[int] = None
-    width_excel_filename: Optional[str] = None
-    width_sheet_name: Optional[str] = None
-    width_excel_row: Optional[int] = None
-    width_excel_col: Optional[int] = None
+    width_policy_id: int | None = None
+    width_ladder_item_id: int | None = None
+    width_excel_filename: str | None = None
+    width_sheet_name: str | None = None
+    width_excel_row: int | None = None
+    width_excel_col: int | None = None
 
-    zinc_policy_id: Optional[int] = None
-    zinc_ladder_item_id: Optional[int] = None
-    zinc_excel_filename: Optional[str] = None
-    zinc_sheet_name: Optional[str] = None
-    zinc_excel_row: Optional[int] = None
-    zinc_excel_col: Optional[int] = None
+    zinc_policy_id: int | None = None
+    zinc_ladder_item_id: int | None = None
+    zinc_excel_filename: str | None = None
+    zinc_sheet_name: str | None = None
+    zinc_excel_row: int | None = None
+    zinc_excel_col: int | None = None
 
     calc_batch_id: str
     match_status: str
     calc_status: str
-    calc_message: Optional[str] = None
+    calc_message: str | None = None
     formula_version: str
-    calculated_at: Optional[datetime] = None
+    calculated_at: datetime | None = None
 
     audit_status: str
-    audited_by: Optional[str] = None
-    audited_at: Optional[datetime] = None
-    audit_remark: Optional[str] = None
-    reverse_audited_by: Optional[str] = None
-    reverse_audited_at: Optional[datetime] = None
-    reverse_audit_remark: Optional[str] = None
+    audited_by: str | None = None
+    audited_at: datetime | None = None
+    audit_remark: str | None = None
+    reverse_audited_by: str | None = None
+    reverse_audited_at: datetime | None = None
+    reverse_audit_remark: str | None = None
 
-    remark: Optional[str] = None
-    created_by: Optional[str] = None
-    updated_by: Optional[str] = None
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+    remark: str | None = None
+    created_by: str | None = None
+    updated_by: str | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
 
     @field_serializer("thickness")
     def serialize_thickness(self, value: Decimal) -> str:
@@ -156,7 +155,7 @@ class SteelPriceResponse(BaseModel):
         "created_at",
         "updated_at",
     )
-    def serialize_datetime(self, value: datetime | None) -> Optional[str]:
+    def serialize_datetime(self, value: datetime | None) -> str | None:
         return datetime_to_iso(value)
 
 
@@ -166,13 +165,13 @@ class SteelPriceCalcResultVO(BaseModel):
     model_config = {"from_attributes": True}
 
     calc_batch_id: str
-    log_id: Optional[int] = None
+    log_id: int | None = None
     status: str = "failed"
-    year: Optional[int] = None
-    month: Optional[int] = None
-    location: Optional[str] = None
-    stamping_supplier: Optional[str] = None
-    vehicle_model: Optional[str] = None
+    year: int | None = None
+    month: int | None = None
+    location: str | None = None
+    stamping_supplier: str | None = None
+    vehicle_model: str | None = None
     material_count: int = 0
     enriched_count: int = 0
     no_base_count: int = 0
@@ -181,8 +180,8 @@ class SteelPriceCalcResultVO(BaseModel):
     skipped_approved_count: int = 0
     failed_count: int = 0
     detail_text: str = ""
-    started_at: Optional[str] = None
-    finished_at: Optional[str] = None
+    started_at: str | None = None
+    finished_at: str | None = None
 
 
 class SteelPriceCalcLogVO(BaseModel):
@@ -195,8 +194,8 @@ class SteelPriceCalcLogVO(BaseModel):
     year: int
     month: int
     location: str
-    stamping_supplier: Optional[str] = None
-    vehicle_model: Optional[str] = None
+    stamping_supplier: str | None = None
+    vehicle_model: str | None = None
     status: str
     material_count: int = 0
     enriched_count: int = 0
@@ -206,13 +205,13 @@ class SteelPriceCalcLogVO(BaseModel):
     skipped_approved_count: int = 0
     failed_count: int = 0
     detail_text: str = ""
-    operator_id: Optional[int] = None
-    operator_name: Optional[str] = None
-    created_by: Optional[str] = None
-    started_at: Optional[datetime] = None
-    finished_at: Optional[datetime] = None
-    created_at: Optional[datetime] = None
+    operator_id: int | None = None
+    operator_name: str | None = None
+    created_by: str | None = None
+    started_at: datetime | None = None
+    finished_at: datetime | None = None
+    created_at: datetime | None = None
 
     @field_serializer("started_at", "finished_at", "created_at")
-    def serialize_datetime(self, value: datetime | None) -> Optional[str]:
+    def serialize_datetime(self, value: datetime | None) -> str | None:
         return datetime_to_iso(value)

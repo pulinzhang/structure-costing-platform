@@ -46,14 +46,12 @@ class CostingEngineRun(AuditUserMixin, Base):
         JSON, nullable=True, comment="终态摘要"
     )
 
-    started_at: Mapped[datetime | None] = mapped_column(
-        DateTime, nullable=True, comment="开始时间"
-    )
+    started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, comment="开始时间")
     finished_at: Mapped[datetime | None] = mapped_column(
         DateTime, nullable=True, comment="结束时间"
     )
 
-    steps: Mapped[list["CostingEngineRunStep"]] = relationship(
+    steps: Mapped[list[CostingEngineRunStep]] = relationship(
         "CostingEngineRunStep",
         back_populates="run",
         cascade="all, delete-orphan",

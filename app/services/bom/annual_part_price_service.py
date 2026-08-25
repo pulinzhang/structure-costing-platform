@@ -4,7 +4,6 @@ BOM 年度零件价 Service
 """
 
 import logging
-from typing import List, Tuple
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -43,25 +42,23 @@ class BomAnnualPartPriceService:
     def __init__(self) -> None:
         self.repository = BomAnnualPartPriceRepository()
 
-    def list_by_year(
-        self, db: Session, year: int
-    ) -> List[BomAnnualPartPriceResponse]:
+    def list_by_year(self, db: Session, year: int) -> list[BomAnnualPartPriceResponse]:
         records = self.repository.list_by_year(db, year)
         return [BomAnnualPartPriceResponse.model_validate(r) for r in records]
 
     def list_by_location_year(
         self, db: Session, location: str, year: int
-    ) -> List[BomAnnualPartPriceResponse]:
+    ) -> list[BomAnnualPartPriceResponse]:
         records = self.repository.list_by_location_year(db, location, year)
         return [BomAnnualPartPriceResponse.model_validate(r) for r in records]
 
-    def list_all(self, db: Session) -> List[BomAnnualPartPriceResponse]:
+    def list_all(self, db: Session) -> list[BomAnnualPartPriceResponse]:
         records = self.repository.list_all(db)
         return [BomAnnualPartPriceResponse.model_validate(r) for r in records]
 
     def paginate(
         self, db: Session, query: BomAnnualPartPriceQuery
-    ) -> Tuple[List[BomAnnualPartPriceResponse], int, AnnualPartPriceListFilters]:
+    ) -> tuple[list[BomAnnualPartPriceResponse], int, AnnualPartPriceListFilters]:
         skip = (query.page - 1) * query.size
         audit_status = query.audit_status.strip() if query.audit_status else None
         keyword = query.keyword.strip() if query.keyword else None
@@ -89,9 +86,7 @@ class BomAnnualPartPriceService:
         }
         return rows, total, filters
 
-    def get_by_id(
-        self, db: Session, id: int
-    ) -> BomAnnualPartPriceResponse:
+    def get_by_id(self, db: Session, id: int) -> BomAnnualPartPriceResponse:
         record = self.repository.get_by_id(db, id)
         if not record:
             raise NotFoundException(f"年度零件价记录不存在: id={id}")
@@ -185,7 +180,7 @@ class BomAnnualPartPriceService:
         *,
         location: str,
         year: int,
-    ) -> Tuple[int, int]:
+    ) -> tuple[int, int]:
         location = (location or "").strip()
         if not location:
             raise BusinessException("请选择采购基地")
@@ -203,9 +198,7 @@ class BomAnnualPartPriceService:
                 year=year,
                 statuses=[AUDIT_APPROVED],
             )
-            deleted_count = self.repository.delete_unaudited_by_location_year(
-                db, location, year
-            )
+            deleted_count = self.repository.delete_unaudited_by_location_year(db, location, year)
             db.commit()
         except Exception:
             db.rollback()
@@ -308,8 +301,8 @@ class BomAnnualPartPriceService:
             year=dto.year,
         )
 
-    def get_locations(self, db: Session) -> List[str]:
+    def get_locations(self, db: Session) -> list[str]:
         return self.repository.get_distinct_locations(db)
 
-    def get_years(self, db: Session) -> List[int]:
+    def get_years(self, db: Session) -> list[int]:
         return self.repository.get_distinct_years(db)

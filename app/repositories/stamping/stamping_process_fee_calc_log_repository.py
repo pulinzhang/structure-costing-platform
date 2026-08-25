@@ -1,7 +1,6 @@
 """冲压加工费计算批次日志 Repository。"""
 
 import logging
-from typing import Optional
 
 from sqlalchemy import text
 from sqlalchemy.engine import Connection
@@ -41,7 +40,7 @@ class StampingProcessFeeCalcLogRepository:
     def is_processing_lock_index_ensured(self) -> bool:
         return StampingProcessFeeCalcLogRepository._lock_index_ensured
 
-    def get_by_id(self, db: Session, log_id: int) -> Optional[StampingProcessFeeCalcLog]:
+    def get_by_id(self, db: Session, log_id: int) -> StampingProcessFeeCalcLog | None:
         return (
             db.query(StampingProcessFeeCalcLog)
             .filter(StampingProcessFeeCalcLog.id == log_id)
@@ -55,7 +54,7 @@ class StampingProcessFeeCalcLogRepository:
         year: int,
         location: str,
         stamping_supplier: str,
-    ) -> Optional[StampingProcessFeeCalcLog]:
+    ) -> StampingProcessFeeCalcLog | None:
         return (
             db.query(StampingProcessFeeCalcLog)
             .filter(
@@ -84,21 +83,14 @@ class StampingProcessFeeCalcLogRepository:
         if location:
             query = query.filter(StampingProcessFeeCalcLog.location == location)
         if stamping_supplier:
-            query = query.filter(
-                StampingProcessFeeCalcLog.stamping_supplier == stamping_supplier
-            )
+            query = query.filter(StampingProcessFeeCalcLog.stamping_supplier == stamping_supplier)
         total = query.count()
         records = (
-            query.order_by(StampingProcessFeeCalcLog.id.desc())
-            .offset(skip)
-            .limit(limit)
-            .all()
+            query.order_by(StampingProcessFeeCalcLog.id.desc()).offset(skip).limit(limit).all()
         )
         return records, total
 
-    def create(
-        self, db: Session, data: ProcessFeeCalcLogCreate
-    ) -> StampingProcessFeeCalcLog:
+    def create(self, db: Session, data: ProcessFeeCalcLogCreate) -> StampingProcessFeeCalcLog:
         record = model_from_payload(StampingProcessFeeCalcLog, data)
         db.add(record)
         db.flush()
@@ -106,7 +98,7 @@ class StampingProcessFeeCalcLogRepository:
 
     def update(
         self, db: Session, log_id: int, data: ProcessFeeCalcLogPatch
-    ) -> Optional[StampingProcessFeeCalcLog]:
+    ) -> StampingProcessFeeCalcLog | None:
         record = self.get_by_id(db, log_id)
         if record is None:
             return None

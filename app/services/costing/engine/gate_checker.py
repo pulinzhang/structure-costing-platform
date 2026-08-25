@@ -82,9 +82,7 @@ class GateChecker:
         attach_nav = (not ok) if with_navigate is None else with_navigate
         navigate = None
         if attach_nav:
-            navigate = build_navigate(
-                code, year=year, month=month, location=location
-            )
+            navigate = build_navigate(code, year=year, month=month, location=location)
         return CostingEngineGateItemVO(
             code=code,
             ok=ok,
@@ -203,9 +201,7 @@ class GateChecker:
                 year=year,
                 month=month,
             )
-        labels = [
-            f"{s.vehicle_model}/{s.bom_version}" for s in discovery.l0_scopes
-        ]
+        labels = [f"{s.vehicle_model}/{s.bom_version}" for s in discovery.l0_scopes]
         return self._item(
             code="bom_snapshot",
             ok=True,
@@ -259,9 +255,7 @@ class GateChecker:
     ) -> CostingEngineGateItemVO:
         total = 0
         for alias in aliases:
-            _, count = self.packaging_repo.paginate(
-                db, location=alias, year=year, skip=0, limit=1
-            )
+            _, count = self.packaging_repo.paginate(db, location=alias, year=year, skip=0, limit=1)
             total += count
         if total <= 0:
             return self._item(
@@ -362,9 +356,7 @@ class GateChecker:
         for row in rows:
             self.adjustment_applier.apply_thickness([row], policies)
             if row.thickness_policy_id is None:
-                thickness_missing.append(
-                    f"{row.grade}@{float(row.thickness):.4f}/{row.steel_mill}"
-                )
+                thickness_missing.append(f"{row.grade}@{float(row.thickness):.4f}/{row.steel_mill}")
 
         thickness_missing = list(dict.fromkeys(thickness_missing))[:20]
         thickness_ok = len(thickness_missing) == 0
@@ -398,9 +390,7 @@ class GateChecker:
         year: int,
         month: int,
     ) -> CostingEngineGateItemVO:
-        scrap = self.price_resolver.find_scrap_price(
-            db, location=location, year=year, month=month
-        )
+        scrap = self.price_resolver.find_scrap_price(db, location=location, year=year, month=month)
         if scrap is None:
             return self._item(
                 code="scrap_price",

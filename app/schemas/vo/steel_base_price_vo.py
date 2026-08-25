@@ -9,7 +9,6 @@
 
 from datetime import datetime
 from decimal import Decimal
-from typing import Optional
 
 from pydantic import BaseModel, field_serializer
 
@@ -29,20 +28,20 @@ class SteelBasePriceResponse(BaseModel):
     steel_mill: str
     category_name: str
     grade: str
-    thick: Optional[Decimal] = None
-    width: Optional[Decimal] = None
-    base_price: Optional[Decimal] = None
-    processing_fee: Optional[Decimal] = None
-    spec: Optional[str] = None
-    excel_filename: Optional[str] = None
-    sheet_name: Optional[str] = None
-    excel_row: Optional[int] = None
-    excel_col: Optional[int] = None
-    remark: Optional[str] = None
-    created_by: Optional[str] = None
-    updated_by: Optional[str] = None
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+    thick: Decimal | None = None
+    width: Decimal | None = None
+    base_price: Decimal | None = None
+    processing_fee: Decimal | None = None
+    spec: str | None = None
+    excel_filename: str | None = None
+    sheet_name: str | None = None
+    excel_row: int | None = None
+    excel_col: int | None = None
+    remark: str | None = None
+    created_by: str | None = None
+    updated_by: str | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
 
     @field_serializer("thick", "width")
     def serialize_dim(self, value: Decimal | None) -> str | None:
@@ -53,22 +52,24 @@ class SteelBasePriceResponse(BaseModel):
         return optional_format_money(value, Q2, 2)
 
     @field_serializer("created_at", "updated_at")
-    def serialize_datetime(self, value: datetime | None) -> Optional[str]:
+    def serialize_datetime(self, value: datetime | None) -> str | None:
         return datetime_to_iso(value)
 
 
 class SteelBasePriceImportResultResponse(BaseModel):
     """Excel 导入结果响应"""
+
     filename: str
     created_count: int = 0
     updated_count: int = 0
     total: int = 0
-    warnings: Optional[list[str]] = None
-    errors: Optional[list[str]] = None
+    warnings: list[str] | None = None
+    errors: list[str] | None = None
 
 
 class SteelBasePriceExportRow(BaseModel):
     """导出预览行 VO"""
+
     model_config = {"from_attributes": True}
 
     year: int
@@ -77,15 +78,15 @@ class SteelBasePriceExportRow(BaseModel):
     steel_mill: str
     category_name: str
     grade: str
-    thick: Optional[Decimal] = None
-    width: Optional[Decimal] = None
-    base_price: Optional[Decimal] = None
-    processing_fee: Optional[Decimal] = None
-    spec: Optional[str] = None
-    excel_filename: Optional[str] = None
-    sheet_name: Optional[str] = None
-    excel_row: Optional[int] = None
-    excel_col: Optional[int] = None
+    thick: Decimal | None = None
+    width: Decimal | None = None
+    base_price: Decimal | None = None
+    processing_fee: Decimal | None = None
+    spec: str | None = None
+    excel_filename: str | None = None
+    sheet_name: str | None = None
+    excel_row: int | None = None
+    excel_col: int | None = None
 
     @field_serializer("thick", "width")
     def serialize_dim(self, value: Decimal | None) -> str | None:
@@ -98,6 +99,7 @@ class SteelBasePriceExportRow(BaseModel):
 
 class FilterOptionsVO(BaseModel):
     """筛选选项 VO（API 响应用）"""
+
     years: list[int] = []
     months: list[int] = []
     locations: list[str] = []

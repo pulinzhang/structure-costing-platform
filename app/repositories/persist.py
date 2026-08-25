@@ -52,7 +52,7 @@ def apply_dto_fields(
 ) -> None:
     """只写入 Pydantic v2 已显式设置的字段（exclude_unset）。"""
     fields_set = getattr(dto, "model_fields_set", None)
-    if not isinstance(fields_set, (set, frozenset)):
+    if not isinstance(fields_set, set | frozenset):
         apply_payload_fields(instance, dto, skip=skip)
         return
     names = _mapped_column_names(type(instance))

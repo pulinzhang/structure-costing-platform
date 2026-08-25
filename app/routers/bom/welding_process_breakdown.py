@@ -86,9 +86,7 @@ def export_l0_excel(
         None, description="工艺明细行数精确匹配；传 0 仅导出无工艺 L0"
     ),
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(
-        require_perm(Perm.BOM_WELDING_PROCESS_BREAKDOWN_EXPORT)
-    ),
+    current_user: UserVO = Depends(require_perm(Perm.BOM_WELDING_PROCESS_BREAKDOWN_EXPORT)),
 ) -> StreamingResponse:
     """
     导出 L0 供货总成工艺核对表（主表字段 merge 到明细行；不含审核信息）。
@@ -105,9 +103,7 @@ def export_l0_excel(
     return StreamingResponse(
         iter([content]),
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={
-            "Content-Disposition": f"attachment; filename*=UTF-8''{quote(filename)}"
-        },
+        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{quote(filename)}"},
     )
 
 
@@ -133,9 +129,7 @@ def get_generate_prep_stats(
     vehicle_model: str = Query(..., min_length=1),
     bom_version: str = Query(..., min_length=1),
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(
-        require_perm(Perm.BOM_WELDING_PROCESS_BREAKDOWN_GENERATE)
-    ),
+    current_user: UserVO = Depends(require_perm(Perm.BOM_WELDING_PROCESS_BREAKDOWN_GENERATE)),
 ) -> ApiResponse[BomWeldingProcessBreakdownGeneratePrepStatsVO]:
     """拆解前数据就绪统计。"""
     stats = _service.get_generate_prep_stats(
@@ -203,9 +197,7 @@ def get_generate_log(
 def delete_generate_log(
     log_id: int,
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(
-        require_perm(Perm.BOM_WELDING_PROCESS_BREAKDOWN_DELETE_LOG)
-    ),
+    current_user: UserVO = Depends(require_perm(Perm.BOM_WELDING_PROCESS_BREAKDOWN_DELETE_LOG)),
 ) -> ApiResponse[None]:
     _service.delete_generate_log(db, log_id)
     return ApiResponse.deleted(message="删除成功")
@@ -245,9 +237,7 @@ def get_generate_task_progress(
 def generate_from_bom(
     dto: BomWeldingProcessBreakdownGenerateDTO,
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(
-        require_perm(Perm.BOM_WELDING_PROCESS_BREAKDOWN_GENERATE)
-    ),
+    current_user: UserVO = Depends(require_perm(Perm.BOM_WELDING_PROCESS_BREAKDOWN_GENERATE)),
 ) -> ApiResponse[AsyncTaskAcceptedVO]:
     """从 BOM 异步生成焊接工艺拆解。"""
     accepted = _service.start_generate(db, dto, current_user=current_user)
@@ -266,9 +256,7 @@ def update_line(
     line_id: int,
     dto: BomWeldingProcessBreakdownLineUpdateDTO,
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(
-        require_perm(Perm.BOM_WELDING_PROCESS_BREAKDOWN_SAVE_LINES)
-    ),
+    current_user: UserVO = Depends(require_perm(Perm.BOM_WELDING_PROCESS_BREAKDOWN_SAVE_LINES)),
 ) -> ApiResponse[BomWeldingProcessBreakdownLineVO]:
     """修改明细（过程量/标准工艺）；map/rollup/qty_check 由服务侧重算"""
     row = _service.update_line(db, line_id, dto, current_user=current_user)
@@ -283,14 +271,10 @@ def update_node_lines(
     node_id: int,
     dto: BomWeldingProcessBreakdownNodeLinesUpdateDTO,
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(
-        require_perm(Perm.BOM_WELDING_PROCESS_BREAKDOWN_SAVE_LINES)
-    ),
+    current_user: UserVO = Depends(require_perm(Perm.BOM_WELDING_PROCESS_BREAKDOWN_SAVE_LINES)),
 ) -> ApiResponse[BomWeldingProcessBreakdownNodeVO]:
     """一次保存节点下全部工艺明细"""
-    row = _service.update_node_lines(
-        db, node_id, dto, current_user=current_user
-    )
+    row = _service.update_node_lines(db, node_id, dto, current_user=current_user)
     return ApiResponse.updated(data=row, message="全部工艺已保存")
 
 
@@ -301,9 +285,7 @@ def update_node_lines(
 def batch_delete(
     dto: BomWeldingProcessBreakdownBatchDeleteDTO,
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(
-        require_perm(Perm.BOM_WELDING_PROCESS_BREAKDOWN_DELETE)
-    ),
+    current_user: UserVO = Depends(require_perm(Perm.BOM_WELDING_PROCESS_BREAKDOWN_DELETE)),
 ) -> ApiResponse[BomWeldingProcessBreakdownBatchDeleteResultVO]:
     """按基地+项目+版本批量删除（仅未审核）"""
     result = _service.batch_delete(
@@ -322,9 +304,7 @@ def batch_delete(
 def batch_approve(
     dto: BomWeldingProcessBreakdownBatchApproveDTO,
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(
-        require_perm(Perm.BOM_WELDING_PROCESS_BREAKDOWN_APPROVE)
-    ),
+    current_user: UserVO = Depends(require_perm(Perm.BOM_WELDING_PROCESS_BREAKDOWN_APPROVE)),
 ) -> ApiResponse[BomWeldingProcessBreakdownBatchAuditResultVO]:
     """按基地+项目+版本批量审核"""
     result = _service.batch_approve(db, dto, current_user=current_user)
@@ -341,9 +321,7 @@ def batch_approve(
 def batch_reverse_audit(
     dto: BomWeldingProcessBreakdownBatchReverseAuditDTO,
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(
-        require_perm(Perm.BOM_WELDING_PROCESS_BREAKDOWN_REVERSE)
-    ),
+    current_user: UserVO = Depends(require_perm(Perm.BOM_WELDING_PROCESS_BREAKDOWN_REVERSE)),
 ) -> ApiResponse[BomWeldingProcessBreakdownBatchAuditResultVO]:
     """按基地+项目+版本批量反审核"""
     result = _service.batch_reverse_audit(db, dto, current_user=current_user)

@@ -2,7 +2,6 @@
 BOM 包装运输费路由
 """
 
-from typing import List
 from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, File, Form, Query, UploadFile, status
@@ -66,27 +65,27 @@ def paginate(
     )
 
 
-@router.get("/filters/locations", response_model=ApiResponse[List[str]])
+@router.get("/filters/locations", response_model=ApiResponse[list[str]])
 def get_locations(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BOM_PACKAGING_TRANSPORT_FEE_VIEW)),
-) -> ApiResponse[List[str]]:
+) -> ApiResponse[list[str]]:
     return ApiResponse.ok(data=_service.get_locations(db))
 
 
-@router.get("/filters/years", response_model=ApiResponse[List[int]])
+@router.get("/filters/years", response_model=ApiResponse[list[int]])
 def get_years(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BOM_PACKAGING_TRANSPORT_FEE_VIEW)),
-) -> ApiResponse[List[int]]:
+) -> ApiResponse[list[int]]:
     return ApiResponse.ok(data=_service.get_years(db))
 
 
-@router.get("/filters/vehicle-models", response_model=ApiResponse[List[str]])
+@router.get("/filters/vehicle-models", response_model=ApiResponse[list[str]])
 def get_vehicle_models(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BOM_PACKAGING_TRANSPORT_FEE_VIEW)),
-) -> ApiResponse[List[str]]:
+) -> ApiResponse[list[str]]:
     return ApiResponse.ok(data=_service.get_vehicle_models(db))
 
 
@@ -107,25 +106,19 @@ def export_excel(
     return StreamingResponse(
         iter([content]),
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={
-            "Content-Disposition": f"attachment; filename*=UTF-8''{quote(filename)}"
-        },
+        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{quote(filename)}"},
     )
 
 
 @router.get("/template")
 def download_import_template(
-    current_user: UserVO = Depends(
-        require_perm(Perm.BOM_PACKAGING_TRANSPORT_FEE_UPLOAD_VIEW)
-    ),
+    current_user: UserVO = Depends(require_perm(Perm.BOM_PACKAGING_TRANSPORT_FEE_UPLOAD_VIEW)),
 ) -> StreamingResponse:
     content, filename = _import_service.build_template()
     return StreamingResponse(
         iter([content]),
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={
-            "Content-Disposition": f"attachment; filename*=UTF-8''{quote(filename)}"
-        },
+        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{quote(filename)}"},
     )
 
 
@@ -140,9 +133,7 @@ async def upload_excel(
     vehicle_model: str = Form(..., description="项目（必填）"),
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(
-        require_perm(Perm.BOM_PACKAGING_TRANSPORT_FEE_UPLOAD_UPLOAD)
-    ),
+    current_user: UserVO = Depends(require_perm(Perm.BOM_PACKAGING_TRANSPORT_FEE_UPLOAD_UPLOAD)),
 ) -> ApiResponse[BomPackagingTransportFeeImportResultVO]:
     content = await file.read()
     result = _import_service.import_excel(

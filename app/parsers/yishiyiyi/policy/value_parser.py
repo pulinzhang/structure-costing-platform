@@ -9,7 +9,7 @@
 """
 
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
-from typing import Any, Optional
+from typing import Any
 
 _DECIMAL_STRIP_CHARS = " \t\u3000元/吨件mm\t"
 _ONE = Decimal("1")
@@ -22,7 +22,7 @@ def _to_str(value: Any) -> str:
     return str(value).strip()
 
 
-def _to_str_or_none(value: Any) -> Optional[str]:
+def _to_str_or_none(value: Any) -> str | None:
     """单元格值转为 None 或字符串（已 strip）。"""
     text = _to_str(value)
     return text if text else None
@@ -42,7 +42,7 @@ def is_decimal_like(text: str) -> bool:
         return False
 
 
-def _to_decimal(value: Any) -> Optional[Decimal]:
+def _to_decimal(value: Any) -> Decimal | None:
     """单元格值 → Decimal。
 
     - None / 空白 / 不可解析 → None
@@ -51,7 +51,7 @@ def _to_decimal(value: Any) -> Optional[Decimal]:
     """
     if value is None:
         return None
-    if isinstance(value, (int, float, Decimal)):
+    if isinstance(value, int | float | Decimal):
         return Decimal(str(value))
     text = _to_str(value)
     if not text:

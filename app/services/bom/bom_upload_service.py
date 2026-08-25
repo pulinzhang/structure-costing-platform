@@ -58,9 +58,7 @@ class BomUploadService:
         if not file_content:
             raise BusinessException("文件内容为空")
         if len(file_content) > settings.MAX_UPLOAD_SIZE:
-            raise BusinessException(
-                f"文件过大，上限 {settings.MAX_UPLOAD_SIZE // (1024 * 1024)}MB"
-            )
+            raise BusinessException(f"文件过大，上限 {settings.MAX_UPLOAD_SIZE // (1024 * 1024)}MB")
 
         parse_result = parse_bom_excel(file_content)
         meta = parse_result.meta
@@ -120,7 +118,7 @@ class BomUploadService:
                     status="active",
                     created_by=audit["created_by"],
                     updated_by=audit["updated_by"],
-                )
+                ),
             )
 
             sheet_name = parse_result.sheet_name
@@ -166,7 +164,7 @@ class BomUploadService:
                         excel_part_col=_EXCEL_PART_COL_BY_LEVEL.get(parsed.level),
                         created_by=audit["created_by"],
                         updated_by=audit["updated_by"],
-                    )
+                    ),
                 )
                 index_to_id[index] = row.id
 
@@ -224,9 +222,7 @@ class BomUploadService:
         safe_vehicle = self._safe_segment(vehicle_model)
         safe_version = self._safe_segment(bom_version)
         timestamp_str = now().strftime("%Y%m%d_%H%M%S")
-        stored_name = (
-            f"{safe_location}_{safe_vehicle}_{safe_version}_{timestamp_str}_{filename}"
-        )
+        stored_name = f"{safe_location}_{safe_vehicle}_{safe_version}_{timestamp_str}_{filename}"
 
         relative_dir = Path("bom") / safe_location / safe_vehicle / safe_version
         absolute_dir = settings.UPLOAD_DIR / relative_dir
@@ -240,15 +236,13 @@ class BomUploadService:
         logger.info("BOM Excel 已落盘: %s (%s bytes)", absolute_path, len(file_content))
         return relative_path
 
-    def _sketch_dir_relative(
-        self, location: str, vehicle_model: str, bom_version: str
-    ) -> str:
+    def _sketch_dir_relative(self, location: str, vehicle_model: str, bom_version: str) -> str:
         safe_location = self._safe_segment(location)
         safe_vehicle = self._safe_segment(vehicle_model)
         safe_version = self._safe_segment(bom_version)
-        return str(
-            Path("bom") / safe_location / safe_vehicle / safe_version / "sketches"
-        ).replace("\\", "/")
+        return str(Path("bom") / safe_location / safe_vehicle / safe_version / "sketches").replace(
+            "\\", "/"
+        )
 
     def _save_node_sketches(
         self,
@@ -267,10 +261,13 @@ class BomUploadService:
         for index, node in enumerate(nodes):
             if not node.sketch_bytes:
                 continue
-            safe_part = "".join(
-                ch if ch.isalnum() or ch in ("_", "-") else "_"
-                for ch in str(node.part_number or f"node{index}")
-            ) or f"node{index}"
+            safe_part = (
+                "".join(
+                    ch if ch.isalnum() or ch in ("_", "-") else "_"
+                    for ch in str(node.part_number or f"node{index}")
+                )
+                or f"node{index}"
+            )
             file_name = f"{node.sort_no}_{safe_part}.png"
             abs_path = target_dir / file_name
             try:

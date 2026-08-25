@@ -56,10 +56,7 @@ def save_user_avatar(
     if suffix not in ALLOWED_AVATAR_EXTENSIONS:
         raise ValueError("仅支持 jpg / jpeg / png / webp / gif 格式")
 
-    safe_name = (
-        f"u{user_id}_{now().strftime('%Y%m%d_%H%M%S')}"
-        f"_{uuid.uuid4().hex[:8]}{suffix}"
-    )
+    safe_name = f"u{user_id}_{now().strftime('%Y%m%d_%H%M%S')}" f"_{uuid.uuid4().hex[:8]}{suffix}"
     target_path = get_avatar_dir() / safe_name
     target_path.write_bytes(file_content)
     url = f"{AVATAR_URL_PREFIX}{safe_name}"

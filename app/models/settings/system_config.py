@@ -6,12 +6,15 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.database import Base
 from app.models.common.audit_mixin import AuditUserMixin
 
+
 class SystemConfig(AuditUserMixin, Base):
     """系统配置表（仅维护 id=1 单例行）"""
 
     __tablename__ = "system_configs"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=False, comment="固定为 1")
+    id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, autoincrement=False, comment="固定为 1"
+    )
     app_name: Mapped[str] = mapped_column(String(100), nullable=False, comment="应用名称")
     steel_density: Mapped[Decimal] = mapped_column(
         Numeric(6, 4),

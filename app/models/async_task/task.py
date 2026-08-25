@@ -17,8 +17,12 @@ class AsyncTask(AuditUserMixin, AuxiliaryBase):
 
     __tablename__ = "async_tasks"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True, comment="主键 ID")
-    task_id: Mapped[str] = mapped_column(String(36), nullable=False, unique=True, comment="任务 UUID")
+    id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, autoincrement=True, comment="主键 ID"
+    )
+    task_id: Mapped[str] = mapped_column(
+        String(36), nullable=False, unique=True, comment="任务 UUID"
+    )
     task_type: Mapped[str] = mapped_column(
         String(64),
         nullable=False,
@@ -32,10 +36,16 @@ class AsyncTask(AuditUserMixin, AuxiliaryBase):
         comment="pending / running / completed / failed",
     )
     progress: Mapped[int] = mapped_column(Integer, nullable=False, default=0, comment="进度 0-100")
-    message: Mapped[str] = mapped_column(String(500), nullable=False, default="", comment="当前阶段说明")
-    result_json: Mapped[str | None] = mapped_column(Text, nullable=True, comment="完成结果 JSON 字符串")
+    message: Mapped[str] = mapped_column(
+        String(500), nullable=False, default="", comment="当前阶段说明"
+    )
+    result_json: Mapped[str | None] = mapped_column(
+        Text, nullable=True, comment="完成结果 JSON 字符串"
+    )
     operator_id: Mapped[int | None] = mapped_column(Integer, nullable=True, comment="提交人用户 ID")
-    operator_name: Mapped[str | None] = mapped_column(String(50), nullable=True, comment="提交人显示名")
+    operator_name: Mapped[str | None] = mapped_column(
+        String(50), nullable=True, comment="提交人显示名"
+    )
 
     __table_args__ = (
         Index("ix_async_tasks_task_id", "task_id"),

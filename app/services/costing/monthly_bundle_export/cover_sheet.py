@@ -104,9 +104,7 @@ def _box(
     cell = ws.cell(row=row, column=start, value=value)
     cell.font = font
     cell.fill = fill
-    cell.alignment = align or Alignment(
-        horizontal="center", vertical="center", wrap_text=True
-    )
+    cell.alignment = align or Alignment(horizontal="center", vertical="center", wrap_text=True)
     cell.border = border
     _paint(ws, row, start, end, fill=fill, border=border)
     if height is not None:
@@ -161,10 +159,7 @@ def _cards(
 ) -> None:
     """等宽卡片：10 列均分，每卡 2 列（5 卡）或按数量整除。"""
     count = len(items)
-    if count <= 0 or _COLS % count != 0:
-        span = max(1, _COLS // max(count, 1))
-    else:
-        span = _COLS // count
+    span = max(1, _COLS // max(count, 1)) if count <= 0 or _COLS % count != 0 else _COLS // count
     for index, text in enumerate(items):
         start = 1 + index * span
         end = start + span - 1
@@ -234,7 +229,7 @@ def write_cover_sheet(
             "【核算须知】成品总价 = 材料 + 焊接 + 间接费用。"
             "本册单价为系统最终核算快照，金额为系统计算结果；"  # <--- 明确开票依据
             "明细表仅供核对，不以 Excel 公式回算。"
-            "如有疑问，请联系采购部。"  
+            "如有疑问，请联系采购部。"
         ),
         fill=_FILL_HINT,
         font=_font(size=9, color=_HINT_TEXT),

@@ -3,7 +3,7 @@
 import logging
 from datetime import datetime
 from decimal import Decimal
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 from sqlalchemy import case, distinct, func
 from sqlalchemy.orm import Query, Session
@@ -41,7 +41,7 @@ _UPDATE_SKIP = frozenset({"id", "created_by", "created_at"})
 class SteelPriceRepository:
     """钢材价格数据访问。"""
 
-    def get_by_id(self, db: Session, record_id: int) -> Optional[SteelPrice]:
+    def get_by_id(self, db: Session, record_id: int) -> SteelPrice | None:
         """根据 ID 查询单条记录。"""
         return db.query(SteelPrice).filter(SteelPrice.id == record_id).first()
 
@@ -49,21 +49,13 @@ class SteelPriceRepository:
         """按主键批量查询。"""
         if not record_ids:
             return []
-        return (
-            db.query(SteelPrice)
-            .filter(SteelPrice.id.in_(record_ids))
-            .all()
-        )
+        return db.query(SteelPrice).filter(SteelPrice.id.in_(record_ids)).all()
 
     def list_distinct_years(self, db: Session) -> list[int]:
         """去重年度，降序。"""
         return [
             row[0]
-            for row in (
-                db.query(distinct(SteelPrice.year))
-                .order_by(SteelPrice.year.desc())
-                .all()
-            )
+            for row in (db.query(distinct(SteelPrice.year)).order_by(SteelPrice.year.desc()).all())
             if row[0] is not None
         ]
 
@@ -79,7 +71,7 @@ class SteelPriceRepository:
         grade: str,
         thickness: Decimal,
         width: Decimal,
-    ) -> Optional[SteelPrice]:
+    ) -> SteelPrice | None:
         """按业务唯一键查询。"""
         return (
             db.query(SteelPrice)
@@ -192,18 +184,16 @@ class SteelPriceRepository:
         )
         row = query.with_entities(
             func.avg(SteelPrice.final_price_per_ton).label("avg_final_price"),
-            func.sum(
-                case((SteelPrice.audit_status == AUDIT_PENDING, 1), else_=0)
-            ).label("pending_count"),
-            func.sum(
-                case((SteelPrice.audit_status == AUDIT_APPROVED, 1), else_=0)
-            ).label("approved_count"),
+            func.sum(case((SteelPrice.audit_status == AUDIT_PENDING, 1), else_=0)).label(
+                "pending_count"
+            ),
+            func.sum(case((SteelPrice.audit_status == AUDIT_APPROVED, 1), else_=0)).label(
+                "approved_count"
+            ),
         ).one()
         avg_value = row.avg_final_price
         return {
-            "avg_final_price": (
-                Decimal(str(avg_value)) if avg_value is not None else None
-            ),
+            "avg_final_price": (Decimal(str(avg_value)) if avg_value is not None else None),
             "pending_count": int(row.pending_count or 0),
             "approved_count": int(row.approved_count or 0),
         }
@@ -231,19 +221,16 @@ class SteelPriceRepository:
             steel_mill=steel_mill,
             audit_status=audit_status,
         )
-        return (
-            query.order_by(
-                SteelPrice.year.desc(),
-                SteelPrice.month.desc(),
-                SteelPrice.location,
-                SteelPrice.category_name,
-                SteelPrice.grade,
-                SteelPrice.steel_mill,
-                SteelPrice.thickness,
-                SteelPrice.width,
-            )
-            .all()
-        )
+        return query.order_by(
+            SteelPrice.year.desc(),
+            SteelPrice.month.desc(),
+            SteelPrice.location,
+            SteelPrice.category_name,
+            SteelPrice.grade,
+            SteelPrice.steel_mill,
+            SteelPrice.thickness,
+            SteelPrice.width,
+        ).all()
 
     def get_filter_options(self, db: Session) -> SteelPriceFilterOptionValues:
         years = [
@@ -251,8 +238,7 @@ class SteelPriceRepository:
             for row in db.query(distinct(SteelPrice.year)).order_by(SteelPrice.year.desc()).all()
         ]
         months = [
-            row[0]
-            for row in db.query(distinct(SteelPrice.month)).order_by(SteelPrice.month).all()
+            row[0] for row in db.query(distinct(SteelPrice.month)).order_by(SteelPrice.month).all()
         ]
         locations = [
             row[0]
@@ -268,7 +254,9 @@ class SteelPriceRepository:
         ]
         steel_mills = [
             row[0]
-            for row in db.query(distinct(SteelPrice.steel_mill)).order_by(SteelPrice.steel_mill).all()
+            for row in db.query(distinct(SteelPrice.steel_mill))
+            .order_by(SteelPrice.steel_mill)
+            .all()
             if row[0]
         ]
         audit_statuses = [
@@ -318,7 +306,7 @@ class SteelPriceRepository:
         db: Session,
         record_id: int,
         update_data: SteelPriceWrite | SteelPricePatch,
-    ) -> Optional[SteelPrice]:
+    ) -> SteelPrice | None:
         """按主键更新记录，记录不存在时返回 None。"""
         record = self.get_by_id(db, record_id)
         if record is None:

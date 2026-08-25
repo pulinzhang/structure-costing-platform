@@ -68,9 +68,7 @@ class SteelPricePolicyMatchService:
                 grade_value=None,
                 base_thickness=data.base_thickness,
             )
-            fallback_candidates = self.repository.find_candidate_policies(
-                db, fallback_filter
-            )
+            fallback_candidates = self.repository.find_candidate_policies(db, fallback_filter)
             fallback_hits = self._matcher.collect_hits(fallback_candidates, data)
             if fallback_hits:
                 fallback_hit = fallback_hits[0]

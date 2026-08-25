@@ -4,10 +4,7 @@
 """
 
 from decimal import Decimal
-from typing import List
-from sqlalchemy import (
-
-    ForeignKey, Index, Integer, Numeric, String, UniqueConstraint)
+from sqlalchemy import ForeignKey, Index, Integer, Numeric, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, relationship, mapped_column
 
 from app.database import Base
@@ -26,24 +23,42 @@ class SteelPricePolicy(AuditUserMixin, Base):
 
     # 生效周期
     year: Mapped[int] = mapped_column(Integer, nullable=False, comment="生效年度（如：2026）")
-    month: Mapped[int] = mapped_column(Integer, nullable=False, comment="生效月份（1-12，如：4 表示 4 月）")
+    month: Mapped[int] = mapped_column(
+        Integer, nullable=False, comment="生效月份（1-12，如：4 表示 4 月）"
+    )
 
     # 钢厂与钢种
-    steel_mill: Mapped[str] = mapped_column(String(100), nullable=False, comment="钢厂名称（如：'马钢'、'宝钢'）")
-    category_name: Mapped[str] = mapped_column(String(100), nullable=False, comment="钢种大类（如：'冷轧钢'、'镀锌钢'）")
+    steel_mill: Mapped[str] = mapped_column(
+        String(100), nullable=False, comment="钢厂名称（如：'马钢'、'宝钢'）"
+    )
+    category_name: Mapped[str] = mapped_column(
+        String(100), nullable=False, comment="钢种大类（如：'冷轧钢'、'镀锌钢'）"
+    )
 
     # 政策类型与条件
-    policy_type: Mapped[str] = mapped_column(String(20), nullable=False, comment="政策类型：THICKNESS=厚度加减价，WIDTH=宽度加价")
+    policy_type: Mapped[str] = mapped_column(
+        String(20), nullable=False, comment="政策类型：THICKNESS=厚度加减价，WIDTH=宽度加价"
+    )
     # grade_type: GRADE=钢种牌号（如 DC01），WIDTH_RANGE=宽度范围（如 700≤W<900），CATEGORY=钢材类别（如 冷轧钢）
-    grade_type: Mapped[str | None] = mapped_column(String(20), nullable=True, comment="grade_value 的语义类型：GRADE/WIDTH_RANGE/CATEGORY")
-    grade_value: Mapped[str | None] = mapped_column(String(100), nullable=True, comment="牌号或宽度范围（GRADE 时如 'DC01'，WIDTH_RANGE 时如 '700≤W<900'，CATEGORY 时如 '冷轧钢'）")
-    base_thickness: Mapped[Decimal | None] = mapped_column(Numeric(5, 2), nullable=True, comment="基准厚度（仅厚度政策需要，如 1.00）")
+    grade_type: Mapped[str | None] = mapped_column(
+        String(20), nullable=True, comment="grade_value 的语义类型：GRADE/WIDTH_RANGE/CATEGORY"
+    )
+    grade_value: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True,
+        comment="牌号或宽度范围（GRADE 时如 'DC01'，WIDTH_RANGE 时如 '700≤W<900'，CATEGORY 时如 '冷轧钢'）",
+    )
+    base_thickness: Mapped[Decimal | None] = mapped_column(
+        Numeric(5, 2), nullable=True, comment="基准厚度（仅厚度政策需要，如 1.00）"
+    )
 
     # 元数据
-    excel_filename: Mapped[str | None] = mapped_column(String(255), nullable=True, comment="来源 Excel 文件名")
+    excel_filename: Mapped[str | None] = mapped_column(
+        String(255), nullable=True, comment="来源 Excel 文件名"
+    )
 
     # 关联子表（cascade 确保删除主表时自动删除所有明细）
-    items: Mapped[List["SteelPriceLadderItem"]] = relationship(
+    items: Mapped[list["SteelPriceLadderItem"]] = relationship(
         "SteelPriceLadderItem",
         back_populates="policy",
         cascade="all, delete-orphan",
@@ -89,43 +104,77 @@ class SteelPriceLadderItem(AuditUserMixin, Base):
     )
 
     # 附加子分组（如镀锌宽度加价中的 "厚度≤1.5mm" 或冷轧宽度中的 "DC01、DC03"）
-    target_sub_group: Mapped[str | None] = mapped_column(String(100), nullable=True, comment="附加子分组条件")
+    target_sub_group: Mapped[str | None] = mapped_column(
+        String(100), nullable=True, comment="附加子分组条件"
+    )
 
     # 厚度区间
-    thick_min: Mapped[Decimal | None] = mapped_column(Numeric(7, 2), nullable=True, comment="厚度下限值（mm）")
-    thick_min_operator: Mapped[str | None] = mapped_column(String(10), nullable=True, comment="厚度下限操作符（如 '>=' 或 '>'）")
-    thick_max: Mapped[Decimal | None] = mapped_column(Numeric(7, 2), nullable=True, comment="厚度上限值（mm）")
-    thick_max_operator: Mapped[str | None] = mapped_column(String(10), nullable=True, comment="厚度上限操作符（如 '<=' 或 '<'）")
+    thick_min: Mapped[Decimal | None] = mapped_column(
+        Numeric(7, 2), nullable=True, comment="厚度下限值（mm）"
+    )
+    thick_min_operator: Mapped[str | None] = mapped_column(
+        String(10), nullable=True, comment="厚度下限操作符（如 '>=' 或 '>'）"
+    )
+    thick_max: Mapped[Decimal | None] = mapped_column(
+        Numeric(7, 2), nullable=True, comment="厚度上限值（mm）"
+    )
+    thick_max_operator: Mapped[str | None] = mapped_column(
+        String(10), nullable=True, comment="厚度上限操作符（如 '<=' 或 '<'）"
+    )
 
     # 宽度区间
-    width_min: Mapped[Decimal | None] = mapped_column(Numeric(7, 2), nullable=True, comment="宽度下限值（mm）")
-    width_min_operator: Mapped[str | None] = mapped_column(String(10), nullable=True, comment="宽度下限操作符（如 '>=' 或 '>'）")
-    width_max: Mapped[Decimal | None] = mapped_column(Numeric(7, 2), nullable=True, comment="宽度上限值（mm）")
-    width_max_operator: Mapped[str | None] = mapped_column(String(10), nullable=True, comment="宽度上限操作符（如 '<=' 或 '<'）")
+    width_min: Mapped[Decimal | None] = mapped_column(
+        Numeric(7, 2), nullable=True, comment="宽度下限值（mm）"
+    )
+    width_min_operator: Mapped[str | None] = mapped_column(
+        String(10), nullable=True, comment="宽度下限操作符（如 '>=' 或 '>'）"
+    )
+    width_max: Mapped[Decimal | None] = mapped_column(
+        Numeric(7, 2), nullable=True, comment="宽度上限值（mm）"
+    )
+    width_max_operator: Mapped[str | None] = mapped_column(
+        String(10), nullable=True, comment="宽度上限操作符（如 '<=' 或 '<'）"
+    )
 
     # 锌层克重区间（g/m²）
-    zinc_coating_min: Mapped[Decimal | None] = mapped_column(Numeric(7, 2), nullable=True, comment="锌层克重下限值（g/m²）")
-    zinc_coating_min_operator: Mapped[str | None] = mapped_column(String(10), nullable=True, comment="锌层克重下限操作符（如 '>=' 或 '>'）")
-    zinc_coating_max: Mapped[Decimal | None] = mapped_column(Numeric(7, 2), nullable=True, comment="锌层克重上限值（g/m²）")
-    zinc_coating_max_operator: Mapped[str | None] = mapped_column(String(10), nullable=True, comment="锌层克重上限操作符（如 '<=' 或 '<'）")
+    zinc_coating_min: Mapped[Decimal | None] = mapped_column(
+        Numeric(7, 2), nullable=True, comment="锌层克重下限值（g/m²）"
+    )
+    zinc_coating_min_operator: Mapped[str | None] = mapped_column(
+        String(10), nullable=True, comment="锌层克重下限操作符（如 '>=' 或 '>'）"
+    )
+    zinc_coating_max: Mapped[Decimal | None] = mapped_column(
+        Numeric(7, 2), nullable=True, comment="锌层克重上限值（g/m²）"
+    )
+    zinc_coating_max_operator: Mapped[str | None] = mapped_column(
+        String(10), nullable=True, comment="锌层克重上限操作符（如 '<=' 或 '<'）"
+    )
 
     # 对应的加减价金额（元/吨，整数精确到元）
-    price_adjustment: Mapped[int] = mapped_column(Integer, nullable=False, comment="加减价金额（元/吨）")
+    price_adjustment: Mapped[int] = mapped_column(
+        Integer, nullable=False, comment="加减价金额（元/吨）"
+    )
 
     # Excel 原始位置（用于测试核对）
-    excel_row: Mapped[int | None] = mapped_column(Integer, nullable=True, comment="Excel 行号（1-based）")
-    excel_col: Mapped[int | None] = mapped_column(Integer, nullable=True, comment="Excel 列号（1-based）")
+    excel_row: Mapped[int | None] = mapped_column(
+        Integer, nullable=True, comment="Excel 行号（1-based）"
+    )
+    excel_col: Mapped[int | None] = mapped_column(
+        Integer, nullable=True, comment="Excel 列号（1-based）"
+    )
 
     # 是否为基准厚度（加价为0）
-    is_base: Mapped[int] = mapped_column(Integer, nullable=False, default=0, comment="是否为基准厚度：0=否，1=是")
+    is_base: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, comment="是否为基准厚度：0=否，1=是"
+    )
 
     # 匹配排序号
-    sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0, comment="匹配排序号")
+    sort_order: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, comment="匹配排序号"
+    )
 
     # 关联主表
-    policy: Mapped["SteelPricePolicy"] = relationship(
-        "SteelPricePolicy", back_populates="items"
-    )
+    policy: Mapped["SteelPricePolicy"] = relationship("SteelPricePolicy", back_populates="items")
 
     __table_args__ = (
         Index("ix_ladder_policy_id", "policy_id"),

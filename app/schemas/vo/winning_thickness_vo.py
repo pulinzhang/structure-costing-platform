@@ -1,7 +1,6 @@
 """中标钢厂厚度价格一览表 VO。"""
 
 from decimal import Decimal
-from typing import Optional
 
 from pydantic import BaseModel, field_serializer
 
@@ -27,22 +26,22 @@ class WinningThicknessRowVO(BaseModel):
     year: int
     month: int
     location: str
-    spec: Optional[str] = None
-    base_thickness: Optional[Decimal] = None
+    spec: str | None = None
+    base_thickness: Decimal | None = None
 
     # 基价溯源
-    base_price_id: Optional[int] = None
-    base_excel_filename: Optional[str] = None
-    base_sheet_name: Optional[str] = None
-    base_excel_row: Optional[int] = None
-    base_excel_col: Optional[int] = None
+    base_price_id: int | None = None
+    base_excel_filename: str | None = None
+    base_sheet_name: str | None = None
+    base_excel_row: int | None = None
+    base_excel_col: int | None = None
 
     # 厚度政策溯源
-    thickness_policy_id: Optional[int] = None
-    thickness_ladder_item_id: Optional[int] = None
-    thickness_excel_filename: Optional[str] = None
-    thickness_excel_row: Optional[int] = None
-    thickness_excel_col: Optional[int] = None
+    thickness_policy_id: int | None = None
+    thickness_ladder_item_id: int | None = None
+    thickness_excel_filename: str | None = None
+    thickness_excel_row: int | None = None
+    thickness_excel_col: int | None = None
 
     @field_serializer("base_price", "processing_fee", "final_price")
     def serialize_price(self, value: Decimal) -> str:

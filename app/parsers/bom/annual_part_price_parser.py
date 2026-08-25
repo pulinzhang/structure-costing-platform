@@ -65,7 +65,7 @@ def _parse_unit_price(value: Any) -> Decimal | None:
     try:
         if isinstance(value, Decimal):
             number = value
-        elif isinstance(value, (int, float)):
+        elif isinstance(value, int | float):
             number = Decimal(str(value))
         else:
             text = str(value).strip().replace(",", "")
@@ -168,23 +168,15 @@ def parse_annual_part_price_excel(file_content: bytes) -> AnnualPartPriceParseRe
         for row_idx in range(header_row + 1, (sheet.max_row or header_row) + 1):
             part_number = _cell_text(sheet.cell(row_idx, part_number_col).value)
             part_name = (
-                _cell_text(sheet.cell(row_idx, part_name_col).value)
-                if part_name_col
-                else ""
+                _cell_text(sheet.cell(row_idx, part_name_col).value) if part_name_col else ""
             )
-            unit_raw = (
-                _cell_text(sheet.cell(row_idx, unit_col).value) if unit_col else ""
-            )
+            unit_raw = _cell_text(sheet.cell(row_idx, unit_col).value) if unit_col else ""
             price_raw = sheet.cell(row_idx, price_col).value
             supply_type = _cell_text(sheet.cell(row_idx, supply_type_col).value)
             supplier_raw = (
-                _cell_text(sheet.cell(row_idx, supplier_col).value)
-                if supplier_col
-                else ""
+                _cell_text(sheet.cell(row_idx, supplier_col).value) if supplier_col else ""
             )
-            remark_raw = (
-                _cell_text(sheet.cell(row_idx, remark_col).value) if remark_col else ""
-            )
+            remark_raw = _cell_text(sheet.cell(row_idx, remark_col).value) if remark_col else ""
 
             if not part_number and (price_raw is None or price_raw == ""):
                 continue

@@ -105,11 +105,7 @@ def batch_approve_steel_prices(
         data=result,
         message=(
             f"已审核通过 {result.updated_count} 条"
-            + (
-                f"，跳过 {result.skipped_count} 条"
-                if result.skipped_count
-                else ""
-            )
+            + (f"，跳过 {result.skipped_count} 条" if result.skipped_count else "")
         ),
     )
 
@@ -128,18 +124,12 @@ def batch_reverse_audit_steel_prices(
 
     三者必填；仅处理已通过记录，其余跳过；反审核意见必填。
     """
-    result = _steel_price_service.batch_reverse_audit(
-        db, body, current_user=current_user
-    )
+    result = _steel_price_service.batch_reverse_audit(db, body, current_user=current_user)
     return ApiResponse.ok(
         data=result,
         message=(
             f"已反审核 {result.updated_count} 条"
-            + (
-                f"，跳过 {result.skipped_count} 条"
-                if result.skipped_count
-                else ""
-            )
+            + (f"，跳过 {result.skipped_count} 条" if result.skipped_count else "")
         ),
     )
 
@@ -203,9 +193,7 @@ def update_steel_price(
     current_user: UserVO = Depends(require_perm(Perm.STEEL_PRICE_LIST_UPDATE)),
 ) -> ApiResponse[SteelPriceResponse]:
     """更新钢材价格（已审核通过不可改）。"""
-    record = _steel_price_service.update(
-        db, record_id, body, current_user=current_user
-    )
+    record = _steel_price_service.update(db, record_id, body, current_user=current_user)
     return ApiResponse.updated(data=record, message="更新成功")
 
 
@@ -234,9 +222,7 @@ def approve_steel_price(
     current_user: UserVO = Depends(require_perm(Perm.STEEL_PRICE_LIST_APPROVE)),
 ) -> ApiResponse[SteelPriceResponse]:
     """经理审核通过。"""
-    record = _steel_price_service.approve(
-        db, record_id, body, current_user=current_user
-    )
+    record = _steel_price_service.approve(db, record_id, body, current_user=current_user)
     return ApiResponse.updated(data=record, message="审核通过")
 
 
@@ -251,9 +237,7 @@ def reject_steel_price(
     current_user: UserVO = Depends(require_perm(Perm.STEEL_PRICE_LIST_REJECT)),
 ) -> ApiResponse[SteelPriceResponse]:
     """经理审核驳回。"""
-    record = _steel_price_service.reject(
-        db, record_id, body, current_user=current_user
-    )
+    record = _steel_price_service.reject(db, record_id, body, current_user=current_user)
     return ApiResponse.updated(data=record, message="已驳回")
 
 
@@ -268,7 +252,5 @@ def reverse_audit_steel_price(
     current_user: UserVO = Depends(require_perm(Perm.STEEL_PRICE_LIST_REVERSE)),
 ) -> ApiResponse[SteelPriceResponse]:
     """经理反审核（approved → pending）。"""
-    record = _steel_price_service.reverse_audit(
-        db, record_id, body, current_user=current_user
-    )
+    record = _steel_price_service.reverse_audit(db, record_id, body, current_user=current_user)
     return ApiResponse.updated(data=record, message="反审核成功")

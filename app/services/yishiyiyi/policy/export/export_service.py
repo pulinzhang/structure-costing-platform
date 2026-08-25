@@ -5,7 +5,6 @@
 """
 
 import logging
-from typing import Optional
 
 from sqlalchemy.orm import Session
 
@@ -29,13 +28,13 @@ class SteelPricePolicyExportService:
         self,
         db: Session,
         *,
-        year: Optional[int] = None,
-        month: Optional[int] = None,
-        steel_mill: Optional[str] = None,
-        category_name: Optional[str] = None,
-        grade_value: Optional[str] = None,
+        year: int | None = None,
+        month: int | None = None,
+        steel_mill: str | None = None,
+        category_name: str | None = None,
+        grade_value: str | None = None,
         skip: int = 0,
-        limit: Optional[int] = None,
+        limit: int | None = None,
     ) -> list[ExportRow]:
         """
         获取导出数据（主子表联合查询，返回扁平化的 ExportRow 列表）。
@@ -80,17 +79,27 @@ class SteelPricePolicyExportService:
             policy_type=policy.policy_type or "",
             grade_type=policy.grade_type,
             grade_value=policy.grade_value,
-            base_thickness=str(policy.base_thickness) if policy.base_thickness is not None else None,
+            base_thickness=str(policy.base_thickness)
+            if policy.base_thickness is not None
+            else None,
             excel_filename=policy.excel_filename,
             item_id=item.id if item is not None else None,
             target_sub_group=item.target_sub_group if item is not None else None,
-            thick_min=str(item.thick_min) if item is not None and item.thick_min is not None else None,
+            thick_min=str(item.thick_min)
+            if item is not None and item.thick_min is not None
+            else None,
             thick_min_operator=item.thick_min_operator if item is not None else None,
-            thick_max=str(item.thick_max) if item is not None and item.thick_max is not None else None,
+            thick_max=str(item.thick_max)
+            if item is not None and item.thick_max is not None
+            else None,
             thick_max_operator=item.thick_max_operator if item is not None else None,
-            width_min=str(item.width_min) if item is not None and item.width_min is not None else None,
+            width_min=str(item.width_min)
+            if item is not None and item.width_min is not None
+            else None,
             width_min_operator=item.width_min_operator if item is not None else None,
-            width_max=str(item.width_max) if item is not None and item.width_max is not None else None,
+            width_max=str(item.width_max)
+            if item is not None and item.width_max is not None
+            else None,
             width_max_operator=item.width_max_operator if item is not None else None,
             zinc_coating_min=(
                 str(item.zinc_coating_min)
@@ -115,11 +124,11 @@ class SteelPricePolicyExportService:
         self,
         db: Session,
         *,
-        year: Optional[int] = None,
-        month: Optional[int] = None,
-        steel_mill: Optional[str] = None,
-        category_name: Optional[str] = None,
-        grade_value: Optional[str] = None,
+        year: int | None = None,
+        month: int | None = None,
+        steel_mill: str | None = None,
+        category_name: str | None = None,
+        grade_value: str | None = None,
     ) -> int:
         """
         统计导出数据总数（阶梯明细级别）。
@@ -148,11 +157,11 @@ class SteelPricePolicyExportService:
         self,
         db: Session,
         *,
-        year: Optional[int] = None,
-        month: Optional[int] = None,
-        steel_mill: Optional[str] = None,
-        category_name: Optional[str] = None,
-        grade_value: Optional[str] = None,
+        year: int | None = None,
+        month: int | None = None,
+        steel_mill: str | None = None,
+        category_name: str | None = None,
+        grade_value: str | None = None,
     ) -> tuple[bytes, str]:
         """
         生成导出 Excel 文件字节数据。

@@ -6,10 +6,11 @@
 
 import re
 from decimal import Decimal, InvalidOperation
-from typing import Any, Optional
+from typing import Any
+import contextlib
 
 
-def parse_decimal(value: Any) -> Optional[Decimal]:
+def parse_decimal(value: Any) -> Decimal | None:
     """解析数值，处理 / ~ 等特殊字符"""
     if value is None:
         return None
@@ -25,10 +26,8 @@ def parse_decimal(value: Any) -> Optional[Decimal]:
 
     if "/" in val_str:
         parts = val_str.split("/")
-        try:
+        with contextlib.suppress(ValueError, ZeroDivisionError):
             val_str = str(float(parts[0]) / float(parts[1]))
-        except (ValueError, ZeroDivisionError):
-            pass
 
     if "~" in val_str:
         val_str = val_str.split("~")[0].strip()
@@ -39,7 +38,7 @@ def parse_decimal(value: Any) -> Optional[Decimal]:
         return None
 
 
-def parse_int(value: Any) -> Optional[int]:
+def parse_int(value: Any) -> int | None:
     """解析整数，处理带字母后缀的格式如 600T"""
     if value is None:
         return None

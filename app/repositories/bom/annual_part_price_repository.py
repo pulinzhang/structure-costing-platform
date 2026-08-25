@@ -6,7 +6,7 @@ BOM 年度零件价 Repository
 
 import logging
 from datetime import datetime
-from typing import List, Optional, Tuple, TypedDict
+from typing import TypedDict
 
 from sqlalchemy import and_, case, func, or_
 from sqlalchemy.orm import Query, Session
@@ -42,14 +42,12 @@ class AnnualPartPriceListFilters(TypedDict):
 class BomAnnualPartPriceRepository:
     """年度零件价数据访问"""
 
-    def get_by_id(self, db: Session, id: int) -> Optional[BomAnnualPartPrice]:
-        return (
-            db.query(BomAnnualPartPrice).filter(BomAnnualPartPrice.id == id).first()
-        )
+    def get_by_id(self, db: Session, id: int) -> BomAnnualPartPrice | None:
+        return db.query(BomAnnualPartPrice).filter(BomAnnualPartPrice.id == id).first()
 
     def get_by_location_year_part_number(
         self, db: Session, location: str, year: int, part_number: str
-    ) -> Optional[BomAnnualPartPrice]:
+    ) -> BomAnnualPartPrice | None:
         return (
             db.query(BomAnnualPartPrice)
             .filter(
@@ -64,7 +62,7 @@ class BomAnnualPartPriceRepository:
 
     def list_by_location_year(
         self, db: Session, location: str, year: int
-    ) -> List[BomAnnualPartPrice]:
+    ) -> list[BomAnnualPartPrice]:
         return (
             db.query(BomAnnualPartPrice)
             .filter(
@@ -77,9 +75,7 @@ class BomAnnualPartPriceRepository:
             .all()
         )
 
-    def count_with_unit_price(
-        self, db: Session, *, location: str, year: int
-    ) -> int:
+    def count_with_unit_price(self, db: Session, *, location: str, year: int) -> int:
         return (
             db.query(BomAnnualPartPrice)
             .filter(
@@ -92,7 +88,7 @@ class BomAnnualPartPriceRepository:
 
     def list_with_unit_price(
         self, db: Session, *, location: str, year: int
-    ) -> List[BomAnnualPartPrice]:
+    ) -> list[BomAnnualPartPrice]:
         return (
             db.query(BomAnnualPartPrice)
             .filter(
@@ -104,7 +100,7 @@ class BomAnnualPartPriceRepository:
             .all()
         )
 
-    def list_by_year(self, db: Session, year: int) -> List[BomAnnualPartPrice]:
+    def list_by_year(self, db: Session, year: int) -> list[BomAnnualPartPrice]:
         return (
             db.query(BomAnnualPartPrice)
             .filter(BomAnnualPartPrice.year == year)
@@ -118,10 +114,10 @@ class BomAnnualPartPriceRepository:
     def _build_list_query(
         self,
         db: Session,
-        location: Optional[str] = None,
-        year: Optional[int] = None,
-        audit_status: Optional[str] = None,
-        keyword: Optional[str] = None,
+        location: str | None = None,
+        year: int | None = None,
+        audit_status: str | None = None,
+        keyword: str | None = None,
     ) -> Query[BomAnnualPartPrice]:
         q = db.query(BomAnnualPartPrice)
         if location is not None:
@@ -143,13 +139,13 @@ class BomAnnualPartPriceRepository:
     def paginate(
         self,
         db: Session,
-        location: Optional[str] = None,
-        year: Optional[int] = None,
-        audit_status: Optional[str] = None,
-        keyword: Optional[str] = None,
+        location: str | None = None,
+        year: int | None = None,
+        audit_status: str | None = None,
+        keyword: str | None = None,
         skip: int = 0,
         limit: int = 100,
-    ) -> Tuple[List[BomAnnualPartPrice], int]:
+    ) -> tuple[list[BomAnnualPartPrice], int]:
         q = self._build_list_query(
             db,
             location=location,
@@ -173,10 +169,10 @@ class BomAnnualPartPriceRepository:
     def summarize_by_filters(
         self,
         db: Session,
-        location: Optional[str] = None,
-        year: Optional[int] = None,
-        audit_status: Optional[str] = None,
-        keyword: Optional[str] = None,
+        location: str | None = None,
+        year: int | None = None,
+        audit_status: str | None = None,
+        keyword: str | None = None,
     ) -> AuditCountSummary:
         q = self._build_list_query(
             db,
@@ -187,12 +183,12 @@ class BomAnnualPartPriceRepository:
         )
         row = q.with_entities(
             func.count(BomAnnualPartPrice.id).label("total_count"),
-            func.sum(
-                case((BomAnnualPartPrice.audit_status == AUDIT_PENDING, 1), else_=0)
-            ).label("pending_count"),
-            func.sum(
-                case((BomAnnualPartPrice.audit_status == AUDIT_APPROVED, 1), else_=0)
-            ).label("approved_count"),
+            func.sum(case((BomAnnualPartPrice.audit_status == AUDIT_PENDING, 1), else_=0)).label(
+                "pending_count"
+            ),
+            func.sum(case((BomAnnualPartPrice.audit_status == AUDIT_APPROVED, 1), else_=0)).label(
+                "approved_count"
+            ),
         ).one()
         return {
             "total_count": int(row.total_count or 0),
@@ -203,11 +199,11 @@ class BomAnnualPartPriceRepository:
     def list_for_export(
         self,
         db: Session,
-        location: Optional[str] = None,
-        year: Optional[int] = None,
-        audit_status: Optional[str] = None,
-        keyword: Optional[str] = None,
-    ) -> List[BomAnnualPartPrice]:
+        location: str | None = None,
+        year: int | None = None,
+        audit_status: str | None = None,
+        keyword: str | None = None,
+    ) -> list[BomAnnualPartPrice]:
         q = self._build_list_query(
             db,
             location=location,
@@ -215,16 +211,13 @@ class BomAnnualPartPriceRepository:
             audit_status=audit_status,
             keyword=keyword,
         )
-        return (
-            q.order_by(
-                BomAnnualPartPrice.location,
-                BomAnnualPartPrice.year,
-                BomAnnualPartPrice.part_number,
-            )
-            .all()
-        )
+        return q.order_by(
+            BomAnnualPartPrice.location,
+            BomAnnualPartPrice.year,
+            BomAnnualPartPrice.part_number,
+        ).all()
 
-    def list_all(self, db: Session) -> List[BomAnnualPartPrice]:
+    def list_all(self, db: Session) -> list[BomAnnualPartPrice]:
         return (
             db.query(BomAnnualPartPrice)
             .order_by(
@@ -235,7 +228,7 @@ class BomAnnualPartPriceRepository:
             .all()
         )
 
-    def get_distinct_locations(self, db: Session) -> List[str]:
+    def get_distinct_locations(self, db: Session) -> list[str]:
         results = (
             db.query(BomAnnualPartPrice.location)
             .distinct()
@@ -244,7 +237,7 @@ class BomAnnualPartPriceRepository:
         )
         return [r[0] for r in results]
 
-    def get_distinct_years(self, db: Session) -> List[int]:
+    def get_distinct_years(self, db: Session) -> list[int]:
         results = (
             db.query(BomAnnualPartPrice.year)
             .distinct()
@@ -259,7 +252,7 @@ class BomAnnualPartPriceRepository:
         *,
         location: str,
         year: int,
-        statuses: List[str],
+        statuses: list[str],
     ) -> int:
         return (
             db.query(BomAnnualPartPrice)
@@ -303,7 +296,7 @@ class BomAnnualPartPriceRepository:
         update_data: BomAnnualPartPriceUpdate,
         *,
         updated_by: str,
-    ) -> Optional[BomAnnualPartPrice]:
+    ) -> BomAnnualPartPrice | None:
         """写入会话；由 Service 提交事务。"""
         record = self.get_by_id(db, id)
         if not record:
@@ -325,9 +318,7 @@ class BomAnnualPartPriceRepository:
         logger.info("删除年度零件价: id=%s", id)
         return True
 
-    def delete_unaudited_by_location_year(
-        self, db: Session, location: str, year: int
-    ) -> int:
+    def delete_unaudited_by_location_year(self, db: Session, location: str, year: int) -> int:
         """写入会话；由 Service 提交事务。"""
         count = (
             db.query(BomAnnualPartPrice)
@@ -355,8 +346,8 @@ class BomAnnualPartPriceRepository:
         year: int,
         audited_by: str,
         audited_at: datetime,
-        audit_remark: Optional[str],
-        updated_by: Optional[str] = None,
+        audit_remark: str | None,
+        updated_by: str | None = None,
     ) -> int:
         """写入会话；由 Service 提交事务。"""
         values: dict[str, str | datetime | None] = {
@@ -387,7 +378,7 @@ class BomAnnualPartPriceRepository:
         reverse_audited_by: str,
         reverse_audited_at: datetime,
         reverse_audit_remark: str,
-        updated_by: Optional[str] = None,
+        updated_by: str | None = None,
     ) -> int:
         """写入会话；由 Service 提交事务。"""
         values: dict[str, str | datetime | None] = {

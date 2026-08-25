@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import Any, Optional, TypedDict
+from typing import Any, TypedDict
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
@@ -28,30 +28,24 @@ def _strip(value: Any) -> Any:
 class StampingTailorWeldBlankItemDTO(BaseModel):
     """单片子片录入项（用于新增或整组替换）。"""
 
-    blank_seq: Optional[int] = Field(
+    blank_seq: int | None = Field(
         default=None,
         ge=1,
         description="子片序号，从 1 起；整组替换时可省略，按列表顺序自动 1..N",
     )
-    blank_part_number: Optional[str] = Field(
+    blank_part_number: str | None = Field(
         default=None,
         max_length=60,
         description="子件零件号；省略则自动生成「父零件号-序号」",
     )
-    material: Optional[str] = Field(default=None, max_length=50, description="材质")
-    thickness: Optional[Decimal] = Field(default=None, description="料厚(mm)")
-    part_weight: Optional[Decimal] = Field(default=None, description="子片重量(kg)")
-    sheet_length: Optional[Decimal] = Field(
-        default=None, description="料片长/卷料宽(mm)"
-    )
-    sheet_width: Optional[Decimal] = Field(
-        default=None, description="料片宽/卷料步距(mm)"
-    )
-    parts_per_sheet: Optional[int] = Field(
-        default=None, ge=1, description="可制件数"
-    )
-    sheet_type: Optional[str] = Field(default=None, max_length=50, description="料片式样")
-    remark: Optional[str] = Field(default=None, description="备注")
+    material: str | None = Field(default=None, max_length=50, description="材质")
+    thickness: Decimal | None = Field(default=None, description="料厚(mm)")
+    part_weight: Decimal | None = Field(default=None, description="子片重量(kg)")
+    sheet_length: Decimal | None = Field(default=None, description="料片长/卷料宽(mm)")
+    sheet_width: Decimal | None = Field(default=None, description="料片宽/卷料步距(mm)")
+    parts_per_sheet: int | None = Field(default=None, ge=1, description="可制件数")
+    sheet_type: str | None = Field(default=None, max_length=50, description="料片式样")
+    remark: str | None = Field(default=None, description="备注")
 
     @field_validator(
         "blank_part_number",
@@ -84,18 +78,16 @@ class StampingTailorWeldBlankCreateDTO(StampingTailorWeldBlankItemDTO):
 class StampingTailorWeldBlankUpdateDTO(BaseModel):
     """更新单片子片（部分字段）。"""
 
-    blank_seq: Optional[int] = Field(default=None, ge=1, description="子片序号")
-    blank_part_number: Optional[str] = Field(
-        default=None, max_length=60, description="子件零件号"
-    )
-    material: Optional[str] = Field(default=None, max_length=50)
-    thickness: Optional[Decimal] = None
-    part_weight: Optional[Decimal] = None
-    sheet_length: Optional[Decimal] = None
-    sheet_width: Optional[Decimal] = None
-    parts_per_sheet: Optional[int] = Field(default=None, ge=1)
-    sheet_type: Optional[str] = Field(default=None, max_length=50)
-    remark: Optional[str] = None
+    blank_seq: int | None = Field(default=None, ge=1, description="子片序号")
+    blank_part_number: str | None = Field(default=None, max_length=60, description="子件零件号")
+    material: str | None = Field(default=None, max_length=50)
+    thickness: Decimal | None = None
+    part_weight: Decimal | None = None
+    sheet_length: Decimal | None = None
+    sheet_width: Decimal | None = None
+    parts_per_sheet: int | None = Field(default=None, ge=1)
+    sheet_type: str | None = Field(default=None, max_length=50)
+    remark: str | None = None
 
     @field_validator(
         "blank_part_number",
@@ -134,9 +126,7 @@ class StampingTailorWeldBlankReplaceDTO(BaseModel):
         if len(seqs) != len(set(seqs)):
             raise ValueError("blank_seq 不能重复")
         numbers = [
-            item.blank_part_number
-            for item in self.items
-            if item.blank_part_number is not None
+            item.blank_part_number for item in self.items if item.blank_part_number is not None
         ]
         if len(numbers) != len(set(numbers)):
             raise ValueError("blank_part_number 不能重复")

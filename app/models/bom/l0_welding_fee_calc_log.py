@@ -19,7 +19,9 @@ class BomL0WeldingFeeCalcLog(AuditUserMixin, Base):
 
     __tablename__ = "bom_l0_welding_fee_calc_logs"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True, comment="主键 ID")
+    id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, autoincrement=True, comment="主键 ID"
+    )
     calc_batch_id: Mapped[str] = mapped_column(
         String(64), nullable=False, unique=True, comment="计算批次号"
     )
@@ -37,12 +39,18 @@ class BomL0WeldingFeeCalcLog(AuditUserMixin, Base):
     )
 
     l0_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, comment="L0 节点数")
-    created_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, comment="新增结果条数")
-    updated_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, comment="更新结果条数")
+    created_count: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, comment="新增结果条数"
+    )
+    updated_count: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, comment="更新结果条数"
+    )
     skipped_approved_count: Mapped[int] = mapped_column(
         Integer, nullable=False, default=0, comment="跳过已审核数"
     )
-    failed_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, comment="计算失败数")
+    failed_count: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, comment="计算失败数"
+    )
     missing_price_count: Mapped[int] = mapped_column(
         Integer, nullable=False, default=0, comment="缺单价明细合计"
     )
@@ -55,9 +63,13 @@ class BomL0WeldingFeeCalcLog(AuditUserMixin, Base):
     )
 
     started_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, comment="计算开始时间")
-    finished_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, comment="计算结束时间")
+    finished_at: Mapped[datetime | None] = mapped_column(
+        DateTime, nullable=True, comment="计算结束时间"
+    )
     operator_id: Mapped[int | None] = mapped_column(Integer, nullable=True, comment="提交人用户 ID")
-    operator_name: Mapped[str | None] = mapped_column(String(50), nullable=True, comment="提交人显示名")
+    operator_name: Mapped[str | None] = mapped_column(
+        String(50), nullable=True, comment="提交人显示名"
+    )
 
     __table_args__ = (
         Index("ix_bl0wf_calc_log_batch", "calc_batch_id"),

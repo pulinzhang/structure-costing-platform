@@ -6,6 +6,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.database import Base
 from app.models.common.audit_mixin import AuditUserMixin
 
+
 class SteelPriceCalcLog(AuditUserMixin, Base):
     """
     钢价计算批次日志
@@ -16,14 +17,22 @@ class SteelPriceCalcLog(AuditUserMixin, Base):
 
     __tablename__ = "steel_price_calc_logs"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True, comment="主键 ID")
-    calc_batch_id: Mapped[str] = mapped_column(String(64), nullable=False, unique=True, comment="计算批次号")
+    id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, autoincrement=True, comment="主键 ID"
+    )
+    calc_batch_id: Mapped[str] = mapped_column(
+        String(64), nullable=False, unique=True, comment="计算批次号"
+    )
 
     year: Mapped[int] = mapped_column(Integer, nullable=False, comment="核价年度")
     month: Mapped[int] = mapped_column(Integer, nullable=False, comment="核价月份")
     location: Mapped[str] = mapped_column(String(50), nullable=False, comment="生产基地")
-    stamping_supplier: Mapped[str | None] = mapped_column(String(50), nullable=True, comment="冲压工厂（筛选）")
-    vehicle_model: Mapped[str | None] = mapped_column(String(50), nullable=True, comment="配套车型（筛选）")
+    stamping_supplier: Mapped[str | None] = mapped_column(
+        String(50), nullable=True, comment="冲压工厂（筛选）"
+    )
+    vehicle_model: Mapped[str | None] = mapped_column(
+        String(50), nullable=True, comment="配套车型（筛选）"
+    )
 
     status: Mapped[str] = mapped_column(
         String(20),
@@ -32,15 +41,27 @@ class SteelPriceCalcLog(AuditUserMixin, Base):
         comment="批次状态：processing / success / partial / failed",
     )
 
-    material_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, comment="材料厚度规格数")
-    enriched_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, comment="命中基价展开行数")
-    no_base_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, comment="无基价规格数")
-    created_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, comment="新增结果条数")
-    updated_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, comment="更新结果条数")
+    material_count: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, comment="材料厚度规格数"
+    )
+    enriched_count: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, comment="命中基价展开行数"
+    )
+    no_base_count: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, comment="无基价规格数"
+    )
+    created_count: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, comment="新增结果条数"
+    )
+    updated_count: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, comment="更新结果条数"
+    )
     skipped_approved_count: Mapped[int] = mapped_column(
         Integer, nullable=False, default=0, comment="跳过已审核条数"
     )
-    failed_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, comment="落库失败条数")
+    failed_count: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, comment="落库失败条数"
+    )
 
     detail_text: Mapped[str] = mapped_column(
         Text,
@@ -50,9 +71,13 @@ class SteelPriceCalcLog(AuditUserMixin, Base):
     )
 
     started_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, comment="计算开始时间")
-    finished_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, comment="计算结束时间")
+    finished_at: Mapped[datetime | None] = mapped_column(
+        DateTime, nullable=True, comment="计算结束时间"
+    )
     operator_id: Mapped[int | None] = mapped_column(Integer, nullable=True, comment="提交人用户 ID")
-    operator_name: Mapped[str | None] = mapped_column(String(50), nullable=True, comment="提交人显示名")
+    operator_name: Mapped[str | None] = mapped_column(
+        String(50), nullable=True, comment="提交人显示名"
+    )
 
     __table_args__ = (
         Index("ix_steel_price_calc_log_batch", "calc_batch_id"),

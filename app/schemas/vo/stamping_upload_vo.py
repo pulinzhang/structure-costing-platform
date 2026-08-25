@@ -2,13 +2,12 @@
 冲压工艺上传 VO - 响应数据结构
 """
 
-from typing import Optional, List
-
 from pydantic import BaseModel
 
 
 class UploadResultVO(BaseModel):
     """上传结果响应 VO"""
+
     filename: str
     new_filename: str
     size: int
@@ -21,5 +20,5 @@ class UploadResultVO(BaseModel):
     images_count: int
     tailor_weld_assembly_count: int = 0
     tailor_weld_blank_count: int = 0
-    warnings: Optional[List[str]] = None
+    warnings: list[str] | None = None
     parse_time_ms: float

@@ -31,9 +31,7 @@ class SteelBasePriceExporter:
         ws.title = "基准价格导出"
 
         header_font = Font(name="微软雅黑", size=10, bold=True, color="FFFFFF")
-        header_fill = PatternFill(
-            start_color="4472C4", end_color="4472C4", fill_type="solid"
-        )
+        header_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
         header_alignment = Alignment(horizontal="center", vertical="center")
 
         data_font = Font(name="微软雅黑", size=10, color="000000")
@@ -88,9 +86,7 @@ class SteelBasePriceExporter:
                 excel_money_cell(record.thick, Q2) if record.thick else "",
                 int(quantize_money(record.width, Q2)) if record.width else "",
                 excel_money_cell(record.base_price, Q2) if record.base_price else "",
-                excel_money_cell(record.processing_fee, Q2)
-                if record.processing_fee
-                else "",
+                excel_money_cell(record.processing_fee, Q2) if record.processing_fee else "",
                 record.excel_filename,
                 record.sheet_name,
                 record.excel_row,

@@ -179,9 +179,7 @@ class BomWeldingProcessBreakdownService:
         )
         return summary
 
-    def get_node(
-        self, db: Session, node_id: int
-    ) -> BomWeldingProcessBreakdownNodeVO:
+    def get_node(self, db: Session, node_id: int) -> BomWeldingProcessBreakdownNodeVO:
         row = self.repository.get_node_by_id(db, node_id)
         if not row:
             raise NotFoundException("记录不存在")
@@ -287,9 +285,7 @@ class BomWeldingProcessBreakdownService:
             size=size,
         )
 
-    def get_generate_log(
-        self, db: Session, log_id: int
-    ) -> BomWeldingProcessBreakdownGenerateLogVO:
+    def get_generate_log(self, db: Session, log_id: int) -> BomWeldingProcessBreakdownGenerateLogVO:
         return self._generate_log_service.get_log(db, log_id)
 
     def delete_generate_log(self, db: Session, log_id: int) -> None:
@@ -397,8 +393,7 @@ class BomWeldingProcessBreakdownService:
 
     def _line_patch_from_dto(
         self,
-        dto: BomWeldingProcessBreakdownLineUpdateDTO
-        | BomWeldingProcessBreakdownLineBatchItemDTO,
+        dto: BomWeldingProcessBreakdownLineUpdateDTO | BomWeldingProcessBreakdownLineBatchItemDTO,
     ) -> BomWeldingProcessBreakdownLinePatch:
         patch: BomWeldingProcessBreakdownLinePatch = {}
         if "process_token" in dto.model_fields_set:
@@ -436,9 +431,7 @@ class BomWeldingProcessBreakdownService:
                 )
                 fields["standard_process_name"] = auto_name
                 fields["map_status"] = map_status
-                fields["standard_process_unit"] = resolve_standard_process_unit(
-                    auto_name
-                )
+                fields["standard_process_unit"] = resolve_standard_process_unit(auto_name)
         return fields
 
     def update_line(
@@ -464,14 +457,10 @@ class BomWeldingProcessBreakdownService:
 
         need_recompute = "process_qty" in fields or "process_token" in fields
         fields["updated_by"] = audit_update(current_user)["updated_by"]
-        node_patch: BomWeldingProcessBreakdownNodePatch = {
-            "updated_by": fields["updated_by"]
-        }
+        node_patch: BomWeldingProcessBreakdownNodePatch = {"updated_by": fields["updated_by"]}
         try:
             row = self.repository.update_line(db, line_id, fields)
-            self.repository.update_node(
-                db, node.id, node_patch
-            )
+            self.repository.update_node(db, node.id, node_patch)
             if not row:
                 db.rollback()
                 raise NotFoundException("明细不存在")
@@ -533,17 +522,13 @@ class BomWeldingProcessBreakdownService:
                 fields = self._line_patch_from_dto(item_dto)
                 if not fields:
                     continue
-                fields = self._prepare_line_fields(
-                    fields, fallback_token=line.process_token
-                )
+                fields = self._prepare_line_fields(fields, fallback_token=line.process_token)
 
                 if "process_qty" in fields or "process_token" in fields:
                     need_recompute = True
 
                 fields["updated_by"] = updated_by
-                row = self.repository.update_line(
-                    db, item_dto.line_id, fields
-                )
+                row = self.repository.update_line(db, item_dto.line_id, fields)
                 if not row:
                     raise NotFoundException(f"明细不存在：{item_dto.line_id}")
 

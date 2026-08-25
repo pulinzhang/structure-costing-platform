@@ -39,7 +39,7 @@ class PartCostDisplayFields:
     steel_kg_price_display: str | None
     blank_steel_ids: list[int]
     blank_steels: list[SteelPrice]
-    blank_terms: list["TailorWeldBlankTerm"]
+    blank_terms: list[TailorWeldBlankTerm]
 
 
 @dataclass(slots=True)
@@ -63,7 +63,6 @@ def blank_term_has_mass_inputs(term: TailorWeldBlankTerm) -> bool:
         and term.parts_per_sheet is not None
         and term.parts_per_sheet > 0
     )
-
 
 
 def load_blanks_by_part_id(
@@ -96,16 +95,12 @@ def build_steel_price_index(
             if candidate in seen_locations:
                 continue
             seen_locations.add(candidate)
-            for record in repo.list_for_export(
-                db, year=year, month=month, location=candidate
-            ):
+            for record in repo.list_for_export(db, year=year, month=month, location=candidate):
                 grade = (record.grade or "").strip()
                 if not grade or record.thickness is None:
                     continue
                 for loc in location_candidates(record.location):
-                    index[(record.year, record.month, loc, grade, record.thickness)] = (
-                        record
-                    )
+                    index[(record.year, record.month, loc, grade, record.thickness)] = record
     return index
 
 
@@ -241,15 +236,9 @@ def resolve_part_cost_display(
             steel_ton_price = format_ton_price_label(Decimal(str(row.steel_ton_price)))
         return PartCostDisplayFields(
             is_tailor_welded=True,
-            thickness=join_slash_formatted(
-                [blank.thickness for blank in blanks], Q2, 2
-            ),
-            sheet_length=join_slash_formatted(
-                [blank.sheet_length for blank in blanks], Q2, 2
-            ),
-            sheet_width=join_slash_formatted(
-                [blank.sheet_width for blank in blanks], Q2, 2
-            ),
+            thickness=join_slash_formatted([blank.thickness for blank in blanks], Q2, 2),
+            sheet_length=join_slash_formatted([blank.sheet_length for blank in blanks], Q2, 2),
+            sheet_width=join_slash_formatted([blank.sheet_width for blank in blanks], Q2, 2),
             steel_ton_price=steel_ton_price,
             steel_kg_price_display=_join_kg_prices(blank_ton_for_display),
             blank_steel_ids=list(dict.fromkeys(blank_ids_display)),
@@ -271,9 +260,7 @@ def resolve_part_cost_display(
         sheet_width=optional_format_money(getattr(row, "sheet_width", None), Q2, 2),
         steel_ton_price=steel_ton_text,
         steel_kg_price_display=steel_kg_text,
-        blank_steel_ids=(
-            [int(row.steel_price_id)] if getattr(row, "steel_price_id", None) else []
-        ),
+        blank_steel_ids=([int(row.steel_price_id)] if getattr(row, "steel_price_id", None) else []),
         blank_steels=[],
         blank_terms=[],
     )

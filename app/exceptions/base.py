@@ -15,7 +15,6 @@ raise NotFoundException(f"零件不存在: id={part_id}")
 """
 
 
-
 class BusinessException(Exception):
     """业务拒绝。默认 HTTP 400；期别冲突传 code=409。handler 按 self.code 写状态码。"""
 

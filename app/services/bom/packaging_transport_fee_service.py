@@ -3,7 +3,6 @@ BOM 包装运输费 Service
 """
 
 import logging
-from typing import List, Tuple
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -39,8 +38,8 @@ class BomPackagingTransportFeeService:
 
     def paginate(
         self, db: Session, query: BomPackagingTransportFeeQuery
-    ) -> Tuple[
-        List[BomPackagingTransportFeeResponse],
+    ) -> tuple[
+        list[BomPackagingTransportFeeResponse],
         int,
         PackagingTransportFeeListFilters,
     ]:
@@ -75,9 +74,7 @@ class BomPackagingTransportFeeService:
         }
         return rows, total, filters
 
-    def get_by_id(
-        self, db: Session, id: int
-    ) -> BomPackagingTransportFeeResponse:
+    def get_by_id(self, db: Session, id: int) -> BomPackagingTransportFeeResponse:
         record = self.repository.get_by_id(db, id)
         if not record:
             raise NotFoundException(f"包装运输费记录不存在: id={id}")
@@ -172,7 +169,7 @@ class BomPackagingTransportFeeService:
         location: str,
         year: int,
         vehicle_model: str,
-    ) -> Tuple[int, int]:
+    ) -> tuple[int, int]:
         location = (location or "").strip()
         vehicle_model = (vehicle_model or "").strip()
         if not location:
@@ -309,11 +306,11 @@ class BomPackagingTransportFeeService:
             vehicle_model=vehicle_model,
         )
 
-    def get_locations(self, db: Session) -> List[str]:
+    def get_locations(self, db: Session) -> list[str]:
         return self.repository.get_distinct_locations(db)
 
-    def get_years(self, db: Session) -> List[int]:
+    def get_years(self, db: Session) -> list[int]:
         return self.repository.get_distinct_years(db)
 
-    def get_vehicle_models(self, db: Session) -> List[str]:
+    def get_vehicle_models(self, db: Session) -> list[str]:
         return self.repository.get_distinct_vehicle_models(db)

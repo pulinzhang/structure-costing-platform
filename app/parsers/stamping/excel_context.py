@@ -7,7 +7,7 @@ Excel 上下文模块
 - 单元格值获取
 """
 
-from typing import Any, List, Optional
+from typing import Any
 
 import openpyxl
 
@@ -22,12 +22,12 @@ class ExcelContext:
     """Excel 工作表上下文"""
 
     def __init__(self) -> None:
-        self.workbook: Optional[openpyxl.Workbook] = None
-        self.sheet: Optional[openpyxl.worksheet.worksheet.Worksheet] = None
+        self.workbook: openpyxl.Workbook | None = None
+        self.sheet: openpyxl.worksheet.worksheet.Worksheet | None = None
         self.max_row: int = 0
         self.max_column: int = 0
         # 零件号合并范围列表（按 start_row 排序）
-        self._part_no_ranges: List[PartNoRange] = []
+        self._part_no_ranges: list[PartNoRange] = []
 
     def load(self, file_path: str) -> None:
         """加载 Excel 文件"""
@@ -54,7 +54,7 @@ class ExcelContext:
         self.max_column = self.sheet.max_column
         return self.sheet
 
-    def _find_stamping_sheet(self) -> Optional[openpyxl.worksheet.worksheet.Worksheet]:
+    def _find_stamping_sheet(self) -> openpyxl.worksheet.worksheet.Worksheet | None:
         """识别冲压数据Sheet"""
         for sheet in self.workbook.worksheets:
             for row_idx in range(1, min(16, sheet.max_row + 1)):
@@ -92,17 +92,19 @@ class ExcelContext:
             max_r = merged_range.max_row
             value = self.sheet.cell(min_r, min_c).value
 
-            self._part_no_ranges.append(PartNoRange(
-                value=value,
-                start_row=min_r,
-                end_row=max_r,
-            ))
+            self._part_no_ranges.append(
+                PartNoRange(
+                    value=value,
+                    start_row=min_r,
+                    end_row=max_r,
+                )
+            )
 
         # 按起始行排序
         self._part_no_ranges.sort(key=lambda x: x.start_row)
         logger.info(f"零件号合并范围: {len(self._part_no_ranges)} 个")
 
-    def get_part_no_range(self, row: int) -> Optional[PartNoRange]:
+    def get_part_no_range(self, row: int) -> PartNoRange | None:
         """
         获取指定行所属的零件号范围。
 

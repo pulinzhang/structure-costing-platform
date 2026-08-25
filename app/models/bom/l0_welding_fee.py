@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from decimal import Decimal
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     DateTime,
@@ -37,7 +37,7 @@ class BomL0WeldingFee(AuditUserMixin, Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
 
-    items: Mapped[List["BomL0WeldingFeeItem"]] = relationship(
+    items: Mapped[list[BomL0WeldingFeeItem]] = relationship(
         "BomL0WeldingFeeItem",
         back_populates="fee",
         cascade="all, delete-orphan",
@@ -113,12 +113,24 @@ class BomL0WeldingFee(AuditUserMixin, Base):
         default="pending",
         comment="审核状态：pending=待审，approved=已通过，rejected=已驳回",
     )
-    audited_by: Mapped[str | None] = mapped_column(String(50), nullable=True, comment="最近一次审核人")
-    audited_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, comment="最近一次审核时间")
-    audit_remark: Mapped[str | None] = mapped_column(Text, nullable=True, comment="最近一次审核意见")
-    reverse_audited_by: Mapped[str | None] = mapped_column(String(50), nullable=True, comment="反审核人")
-    reverse_audited_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, comment="反审核时间")
-    reverse_audit_remark: Mapped[str | None] = mapped_column(Text, nullable=True, comment="反审核原因")
+    audited_by: Mapped[str | None] = mapped_column(
+        String(50), nullable=True, comment="最近一次审核人"
+    )
+    audited_at: Mapped[datetime | None] = mapped_column(
+        DateTime, nullable=True, comment="最近一次审核时间"
+    )
+    audit_remark: Mapped[str | None] = mapped_column(
+        Text, nullable=True, comment="最近一次审核意见"
+    )
+    reverse_audited_by: Mapped[str | None] = mapped_column(
+        String(50), nullable=True, comment="反审核人"
+    )
+    reverse_audited_at: Mapped[datetime | None] = mapped_column(
+        DateTime, nullable=True, comment="反审核时间"
+    )
+    reverse_audit_remark: Mapped[str | None] = mapped_column(
+        Text, nullable=True, comment="反审核原因"
+    )
 
     __table_args__ = (
         UniqueConstraint(

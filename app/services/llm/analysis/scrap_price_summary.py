@@ -63,9 +63,7 @@ def build_scrap_price_drivers(
 
     items: list[dict[str, Any]] = []
     for location, location_rows in by_location.items():
-        latest = sorted(
-            location_rows, key=lambda row: (row.year, row.month)
-        )[-1]
+        latest = sorted(location_rows, key=lambda row: (row.year, row.month))[-1]
         items.append(
             {
                 "object_type": "scrap_price",

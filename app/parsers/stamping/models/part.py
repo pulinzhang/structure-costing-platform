@@ -11,7 +11,6 @@
 
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import Optional
 
 
 @dataclass(slots=True)
@@ -30,29 +29,30 @@ class Part:
 
     好的类型，本身就是最好的文档（Good Types Are Self-Documenting）。
     """
+
     # 序号
     seq_no: int = 0
 
     # 零件号（唯一标识）
-    part_number: Optional[str] = None
+    part_number: str | None = None
 
     # 零件名称
-    part_name: Optional[str] = None
+    part_name: str | None = None
 
     # 材质（如 DC04、BH220）
-    material: Optional[str] = None
+    material: str | None = None
 
     # 料厚（mm）
-    thickness: Optional[Decimal] = None
+    thickness: Decimal | None = None
 
     # 单件重量（kg）
-    part_weight: Optional[Decimal] = None
+    part_weight: Decimal | None = None
 
     # 料片长度（mm）
-    sheet_length: Optional[Decimal] = None
+    sheet_length: Decimal | None = None
 
     # 料片宽度（mm）
-    sheet_width: Optional[Decimal] = None
+    sheet_width: Decimal | None = None
 
     # 可制件数：一张钢板/料片单独冲压本零件时可出的件数。
     # 例：1 张料出 2 件 → 2；出 1 件 → 1；左右件共模同冲时按单侧零件计则为 2。
@@ -60,24 +60,24 @@ class Part:
     parts_per_sheet: int = 0
 
     # 料片式样（卷料/板料）
-    sheet_type: Optional[str] = None
+    sheet_type: str | None = None
 
     # 模具类型（单动/双动）
-    die_type: Optional[str] = None
+    die_type: str | None = None
 
     # 成形方法（冲裁/拉伸/翻边...）
-    process_method: Optional[str] = None
+    process_method: str | None = None
 
     # 自动化：Excel「自动化」列原文（如自动/手动/半自动），原样落库，勿转成布尔
-    automation: Optional[str] = None
+    automation: str | None = None
 
     # 备注
-    remark: Optional[str] = None
+    remark: str | None = None
 
     # 冲压供应商（从Excel表头提取，如"烟台海众汽车零部件有限公司"）
-    stamping_supplier: Optional[str] = None
+    stamping_supplier: str | None = None
 
     # Excel 单元格溯源（防扯皮）
-    excel_sheet_name: Optional[str] = None
-    excel_row: Optional[int] = None
-    excel_part_col: Optional[int] = None
+    excel_sheet_name: str | None = None
+    excel_row: int | None = None
+    excel_part_col: int | None = None

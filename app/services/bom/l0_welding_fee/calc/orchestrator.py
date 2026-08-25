@@ -20,7 +20,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import logging
 from decimal import Decimal
-from typing import Callable
+from collections.abc import Callable
 
 from sqlalchemy.orm import Session
 
@@ -168,9 +168,7 @@ class BomL0WeldingFeeCalcOrchestrator:
         log_id: int,
         detail_text: str,
     ) -> None:
-        self.calc_log_service.mark_failed(
-            db, log_id=log_id, detail_text=detail_text
-        )
+        self.calc_log_service.mark_failed(db, log_id=log_id, detail_text=detail_text)
 
     def list_calc_logs(
         self,
@@ -193,9 +191,7 @@ class BomL0WeldingFeeCalcOrchestrator:
             size=size,
         )
 
-    def get_calc_log(
-        self, db: Session, log_id: int
-    ) -> BomL0WeldingFeeCalcLogVO:
+    def get_calc_log(self, db: Session, log_id: int) -> BomL0WeldingFeeCalcLogVO:
         return self.calc_log_service.get_calc_log(db, log_id)
 
     def delete_calc_log(self, db: Session, log_id: int) -> None:
@@ -301,9 +297,7 @@ class BomL0WeldingFeeCalcOrchestrator:
                     calc_status=parts.calc_status,
                     calc_message=parts.calc_message,
                     audit_status=AUDIT_PENDING,
-                    updated_by=(
-                        update_audit["updated_by"] if existing else audit["updated_by"]
-                    ),
+                    updated_by=(update_audit["updated_by"] if existing else audit["updated_by"]),
                     created_by=None if existing else audit["created_by"],
                     items=parts.items,
                 )

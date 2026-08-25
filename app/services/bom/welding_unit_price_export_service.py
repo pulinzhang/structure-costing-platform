@@ -46,9 +46,7 @@ class BomWeldingUnitPriceExportService:
         year: int | None = None,
     ) -> tuple[bytes, str]:
         wb = Workbook()
-        _title, count = self.write_to_workbook(
-            wb, db, location=location, year=year
-        )
+        _title, count = self.write_to_workbook(wb, db, location=location, year=year)
         buffer = BytesIO()
         wb.save(buffer)
         content = buffer.getvalue()

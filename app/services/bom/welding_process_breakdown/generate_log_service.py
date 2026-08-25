@@ -27,6 +27,7 @@ from app.schemas.vo.bom_welding_process_breakdown_vo import (
     BomWeldingProcessBreakdownGenerateLogVO,
     BomWeldingProcessBreakdownGenerateResultVO,
 )
+import contextlib
 
 logger = logging.getLogger("service.bom.welding_process_breakdown.generate_log")
 
@@ -79,13 +80,9 @@ class BomWeldingProcessBreakdownGenerateLogService:
             skip=skip,
             limit=size,
         )
-        return [
-            BomWeldingProcessBreakdownGenerateLogVO.model_validate(r) for r in records
-        ], total
+        return [BomWeldingProcessBreakdownGenerateLogVO.model_validate(r) for r in records], total
 
-    def get_log(
-        self, db: Session, log_id: int
-    ) -> BomWeldingProcessBreakdownGenerateLogVO:
+    def get_log(self, db: Session, log_id: int) -> BomWeldingProcessBreakdownGenerateLogVO:
         record = self.repository.get_by_id(db, log_id)
         if record is None:
             raise NotFoundException("拆解记录不存在")
@@ -229,10 +226,8 @@ class BomWeldingProcessBreakdownGenerateLogService:
         detail_text: str | None = None,
     ) -> None:
         """异常路径：释放 processing 锁为 failed（先 rollback 清脏事务）。"""
-        try:
+        with contextlib.suppress(Exception):
             db.rollback()
-        except Exception:
-            pass
         finished_at = now()
         payload: BomWeldingProcessBreakdownGenerateLogPatch = {
             "status": STATUS_FAILED,

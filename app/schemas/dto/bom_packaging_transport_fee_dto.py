@@ -35,15 +35,11 @@ class BomPackagingTransportFeeCreate(BaseModel):
     fixture_unit_price: Decimal | None = Field(None, ge=0, description="器具单价")
     fixture_invest_amount: Decimal | None = Field(None, ge=0, description="器具投入总金额")
     unit_packaging_fee: Decimal = Field(..., ge=0, description="单件包装费")
-    round_trip_transport_price: Decimal | None = Field(
-        None, ge=0, description="往返运输价格"
-    )
+    round_trip_transport_price: Decimal | None = Field(None, ge=0, description="往返运输价格")
     unit_transport_fee: Decimal = Field(..., ge=0, description="单件运输费")
     fixture_maint_fee: Decimal = Field(..., ge=0, description="器具年损维护费")
     other_fee: Decimal = Field(Decimal("0"), ge=0, description="其它费用合计")
-    packaging_transport_total: Decimal = Field(
-        ..., ge=0, description="包装运输费合计"
-    )
+    packaging_transport_total: Decimal = Field(..., ge=0, description="包装运输费合计")
     remark: str | None = Field(None, description="备注")
     excel_filename: str | None = Field(None, max_length=255, description="来源 Excel 文件名")
     sheet_name: str | None = Field(None, max_length=100, description="来源工作表名")
@@ -136,9 +132,7 @@ class BomPackagingTransportFeeQuery(BaseModel):
     year: int | None = Field(None, description="定价年度")
     vehicle_model: str | None = Field(None, description="项目/车型")
     audit_status: str | None = Field(None, description="审核状态")
-    keyword: str | None = Field(
-        None, max_length=100, description="零件号或名称模糊搜索"
-    )
+    keyword: str | None = Field(None, max_length=100, description="零件号或名称模糊搜索")
     page: int = Field(1, ge=1, description="页码")
     size: int = Field(100, ge=1, le=500, description="每页条数")
 

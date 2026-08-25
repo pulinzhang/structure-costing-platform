@@ -217,9 +217,7 @@ class L0CheckWorkbookBuilder:
         for col in range(MAIN_COLS + 1, COL_COUNT + 1):
             cell = ws.cell(row=group_row, column=col)
             cell.fill = fill("B71C1C")
-            cell.border = (
-                style.split_detail if col == MAIN_COLS + 1 else style.thin
-            )
+            cell.border = style.split_detail if col == MAIN_COLS + 1 else style.thin
         ws.row_dimensions[group_row].height = GROUP_H
 
         for col, title in enumerate(HEADERS, start=1):
@@ -234,9 +232,7 @@ class L0CheckWorkbookBuilder:
                 cell.border = style.thin
             else:
                 cell.fill = fill("C62828")
-                cell.border = (
-                    style.split_detail if col == MAIN_COLS + 1 else style.thin
-                )
+                cell.border = style.split_detail if col == MAIN_COLS + 1 else style.thin
         ws.row_dimensions[header_row].height = HEADER_H
         return header_row
 
@@ -361,8 +357,7 @@ class L0CheckWorkbookBuilder:
                 cell.fill = row_fill
                 cell.font = (
                     style.accent
-                    if col in (COL["序号"], COL["零件号"])
-                    or col in STD_COLS | BILLING_COLS
+                    if col in (COL["序号"], COL["零件号"]) or col in STD_COLS | BILLING_COLS
                     else style.data
                 )
             elif col <= MAIN_COLS:

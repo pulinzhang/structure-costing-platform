@@ -12,7 +12,7 @@
 """
 
 from decimal import Decimal
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from openpyxl.worksheet.worksheet import Worksheet
 
@@ -40,7 +40,7 @@ _CATEGORY_NAMES = frozenset({"冷轧钢", "镀锌钢", "酸洗钢", "热轧钢"}
 class PolicyAssembler:
     """政策装配器：封装业务语义解析逻辑。"""
 
-    def __init__(self, scanner: Optional[SheetScanner] = None):
+    def __init__(self, scanner: SheetScanner | None = None):
         self.scanner = scanner or SheetScanner()
 
     # ------------------------------------------------------------------ #
@@ -52,7 +52,7 @@ class PolicyAssembler:
         sheet: Worksheet,
         label_row: int,
         block_end: int,
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """执行厚度块的 5 步定位，返回块描述或 None。"""
         title_row = self.scanner.find_thickness_title_row(
             sheet, label_row, block_end, scan_cols=None
@@ -60,23 +60,17 @@ class PolicyAssembler:
         if title_row is None:
             return None
 
-        header_row = self.scanner.find_header_row(
-            sheet, title_row + 1, block_end, scan_cols=None
-        )
+        header_row = self.scanner.find_header_row(sheet, title_row + 1, block_end, scan_cols=None)
         if header_row is None:
             return None
 
         # header 行遇到第一个空 cell 即终止扫描
-        price_cols = self.scanner.collect_price_cols_thickness(
-            sheet, header_row, start_col=2
-        )
+        price_cols = self.scanner.collect_price_cols_thickness(sheet, header_row, start_col=2)
         if not price_cols:
             return None
 
         data_end = block_end
-        base_thickness = self.scanner.infer_base_thickness(
-            sheet, header_row, label_row
-        )
+        base_thickness = self.scanner.infer_base_thickness(sheet, header_row, label_row)
         category = self.scanner.infer_category(sheet, label_row)
 
         return {
@@ -102,8 +96,8 @@ class PolicyAssembler:
         *,
         category: str = "冷轧钢",
         header_row_offset: int = 1,
-        scan_cols: Optional[List[int]] = None,
-    ) -> Optional[Dict[str, Any]]:
+        scan_cols: list[int] | None = None,
+    ) -> dict[str, Any] | None:
         """执行宽度块的 3 步定位，返回块描述。"""
         header_row = title_row + header_row_offset
         if header_row > block_end:
@@ -138,8 +132,8 @@ class PolicyAssembler:
         self,
         sheet: Worksheet,
         header_row: int,
-        price_cols: List[int],
-    ) -> Dict[int, _Boundary]:
+        price_cols: list[int],
+    ) -> dict[int, _Boundary]:
         """从列头行收集所有边界定义（通用版）。"""
         result = {}
         for c in price_cols:
@@ -153,8 +147,8 @@ class PolicyAssembler:
         self,
         sheet: Worksheet,
         header_row: int,
-        price_cols: List[int],
-    ) -> Dict[int, _Boundary]:
+        price_cols: list[int],
+    ) -> dict[int, _Boundary]:
         """从列头行收集所有边界定义（厚度专用）。
 
         纯数字（如 "0.5"）规范化为 "<=0.5" 后解析，解析为 min=None, max=数字, max_operator="<="。
@@ -167,7 +161,7 @@ class PolicyAssembler:
         for c in price_cols:
             raw = sheet.cell(row=header_row, column=c).value
             # 纯数字开头：原始数据不规范，补全为 "<=数字" 使其规范
-            if isinstance(raw, (int, float)):
+            if isinstance(raw, int | float):
                 normalized = "<=" + str(raw)
             elif isinstance(raw, str) and _PURE_NUM_RE.match(raw):
                 normalized = "<=" + raw.strip()
@@ -181,9 +175,9 @@ class PolicyAssembler:
     def infer_upper_bound(
         self,
         boundary: _Boundary,
-        sorted_cols: List[int],
+        sorted_cols: list[int],
         col_idx: int,
-        boundaries: Dict[int, _Boundary],
+        boundaries: dict[int, _Boundary],
         policy_type: str = "WIDTH",
     ) -> _Boundary:
         """推断完整边界：
@@ -219,22 +213,18 @@ class PolicyAssembler:
                         min_op = ">" if is_lte(prev_boundary.max_operator) else ">="
 
         # 2. 推断上界
-        if max_val is None:
-            if col_idx < len(sorted_cols) - 1:
-                # 有下一列，从下一列的 min_val / min_operator 推断
-                # 例：≥1.0 | ＞2.0 → 当前 1.0≤t≤2.0（下一档严格大于，本档闭上界）
-                # 例：≥0.9 | ≥1.0 → 当前 0.9≤t<1.0（下一档含等号，本档开上界）
-                # 全角/半角（＞/>、≥/>=）均通过 is_strict_gt 识别
-                next_c = sorted_cols[col_idx + 1]
-                if next_c in boundaries:
-                    next_boundary = boundaries[next_c]
-                    if next_boundary.min_val is not None:
-                        max_val = next_boundary.min_val
-                        if is_strict_gt(next_boundary.min_operator):
-                            max_op = "<="
-                        else:
-                            max_op = "<"
-            # else: 最后一列且无上界，max_val 保持 None（表示 ∞）
+        if max_val is None and col_idx < len(sorted_cols) - 1:
+            # 有下一列，从下一列的 min_val / min_operator 推断
+            # 例：≥1.0 | ＞2.0 → 当前 1.0≤t≤2.0（下一档严格大于，本档闭上界）
+            # 例：≥0.9 | ≥1.0 → 当前 0.9≤t<1.0（下一档含等号，本档开上界）
+            # 全角/半角（＞/>、≥/>=）均通过 is_strict_gt 识别
+            next_c = sorted_cols[col_idx + 1]
+            if next_c in boundaries:
+                next_boundary = boundaries[next_c]
+                if next_boundary.min_val is not None:
+                    max_val = next_boundary.min_val
+                    max_op = "<=" if is_strict_gt(next_boundary.min_operator) else "<"
+        # else: 最后一列且无上界，max_val 保持 None（表示 ∞）
 
         return _Boundary(
             min_val=min_val,
@@ -266,13 +256,13 @@ class PolicyAssembler:
         self,
         sheet: Worksheet,
         r: int,
-        price_cols: List[int],
-        boundaries: Dict[int, _Boundary],
+        price_cols: list[int],
+        boundaries: dict[int, _Boundary],
         policy_type: str = "THICKNESS",
         sort_order: int = 0,
-    ) -> Tuple[List[ParsedLadderItem], Any]:
+    ) -> tuple[list[ParsedLadderItem], Any]:
         """构建行内阶梯明细项列表。返回 (items, extra)。"""
-        items: List[ParsedLadderItem] = []
+        items: list[ParsedLadderItem] = []
         sorted_cols = sorted(price_cols)
         for i, c in enumerate(sorted_cols):
             if c not in boundaries:
@@ -354,7 +344,7 @@ class PolicyAssembler:
         self,
         boundary: _Boundary,
         price: int,
-        width_boundary: Optional[_Boundary] = None,
+        width_boundary: _Boundary | None = None,
         excel_row: int = 0,
         excel_col: int = 0,
     ) -> ParsedLadderItem:
@@ -402,8 +392,8 @@ class PolicyAssembler:
         self,
         sheet: Worksheet,
         steel_mill: str,
-        block: Dict[str, Any],
-    ) -> List[ParsedPolicy]:
+        block: dict[str, Any],
+    ) -> list[ParsedPolicy]:
         """给定块描述，构建 ParsedPolicy 列表。"""
         grade_col = block.get("grade_col")
         header_row = block["header_row"]
@@ -423,7 +413,7 @@ class PolicyAssembler:
             return []
 
         sorted_price_cols = sorted(price_cols)
-        policies: List[ParsedPolicy] = []
+        policies: list[ParsedPolicy] = []
 
         for r in range(data_start, data_end + 1):
             if grade_col is None:
@@ -463,13 +453,27 @@ class PolicyAssembler:
 
     _GALVANIZED_SUFFIXES: tuple[str, ...] = ("+Z", "+ZF", "+ZM", "+ZA", "+AZ")
     _PICKLED_SUFFIXES: tuple[str, ...] = ("+A",)
-    _PICKLED_GRADES: frozenset[str] = frozenset({
-        "SPHC", "SPHD", "SPHE", "SPHF",
-        "SAPH370", "SAPH400", "SAPH440",
-        "QStE340TM", "QStE380TM", "QStE420TM", "QStE460TM", "QStE500TM",
-        "QSTE420TM", "QSTE460TM", "QSTE500TM",
-        "B510L", "B590L",
-    })
+    _PICKLED_GRADES: frozenset[str] = frozenset(
+        {
+            "SPHC",
+            "SPHD",
+            "SPHE",
+            "SPHF",
+            "SAPH370",
+            "SAPH400",
+            "SAPH440",
+            "QStE340TM",
+            "QStE380TM",
+            "QStE420TM",
+            "QStE460TM",
+            "QStE500TM",
+            "QSTE420TM",
+            "QSTE460TM",
+            "QSTE500TM",
+            "B510L",
+            "B590L",
+        }
+    )
 
     def category_from_grade_name(self, grade: str) -> str:
         """按钢种名后缀/名称推断 category。"""
@@ -488,7 +492,7 @@ class PolicyAssembler:
     def infer_block_category(
         self,
         sheet: Worksheet,
-        block: Dict[str, Any],
+        block: dict[str, Any],
     ) -> str:
         """综合'字面 hint'与'grade 后缀'推断块的 category。"""
         literal_cat = block.get("category_name") or "冷轧钢"

@@ -3,7 +3,7 @@
 import logging
 from datetime import datetime
 from decimal import Decimal
-from typing import List, Optional, Tuple, TypedDict
+from typing import TypedDict
 
 from sqlalchemy import case, func
 from sqlalchemy.orm import Query, Session
@@ -43,12 +43,8 @@ _UPSERT_SKIP = frozenset({"id", "created_by", "created_at"})
 class StampingPartCostRepository:
     """零件价格核算结果数据访问。"""
 
-    def get_by_id(self, db: Session, cost_id: int) -> Optional[StampingPartCost]:
-        return (
-            db.query(StampingPartCost)
-            .filter(StampingPartCost.id == cost_id)
-            .first()
-        )
+    def get_by_id(self, db: Session, cost_id: int) -> StampingPartCost | None:
+        return db.query(StampingPartCost).filter(StampingPartCost.id == cost_id).first()
 
     def get_by_business_key(
         self,
@@ -61,7 +57,7 @@ class StampingPartCostRepository:
         vehicle_model: str,
         version: str,
         part_number: str,
-    ) -> Optional[StampingPartCost]:
+    ) -> StampingPartCost | None:
         return (
             db.query(StampingPartCost)
             .filter(
@@ -103,7 +99,7 @@ class StampingPartCostRepository:
 
     def update_fields(
         self, db: Session, cost_id: int, update_data: StampingPartCostPatch
-    ) -> Optional[StampingPartCost]:
+    ) -> StampingPartCost | None:
         record = self.get_by_id(db, cost_id)
         if not record:
             return None
@@ -142,14 +138,14 @@ class StampingPartCostRepository:
         self,
         db: Session,
         *,
-        year: Optional[int] = None,
-        month: Optional[int] = None,
-        location: Optional[str] = None,
-        stamping_supplier: Optional[str] = None,
-        vehicle_model: Optional[str] = None,
-        version: Optional[str] = None,
-        part_number: Optional[str] = None,
-        audit_status: Optional[str] = None,
+        year: int | None = None,
+        month: int | None = None,
+        location: str | None = None,
+        stamping_supplier: str | None = None,
+        vehicle_model: str | None = None,
+        version: str | None = None,
+        part_number: str | None = None,
+        audit_status: str | None = None,
     ) -> Query[StampingPartCost]:
         q = db.query(StampingPartCost)
         if year is not None:
@@ -173,17 +169,17 @@ class StampingPartCostRepository:
     def paginate(
         self,
         db: Session,
-        year: Optional[int] = None,
-        month: Optional[int] = None,
-        location: Optional[str] = None,
-        stamping_supplier: Optional[str] = None,
-        vehicle_model: Optional[str] = None,
-        version: Optional[str] = None,
-        part_number: Optional[str] = None,
-        audit_status: Optional[str] = None,
+        year: int | None = None,
+        month: int | None = None,
+        location: str | None = None,
+        stamping_supplier: str | None = None,
+        vehicle_model: str | None = None,
+        version: str | None = None,
+        part_number: str | None = None,
+        audit_status: str | None = None,
         skip: int = 0,
         limit: int = 20,
-    ) -> Tuple[List[StampingPartCost], int]:
+    ) -> tuple[list[StampingPartCost], int]:
         q = self._build_list_query(
             db,
             year=year,
@@ -214,14 +210,14 @@ class StampingPartCostRepository:
         self,
         db: Session,
         *,
-        year: Optional[int] = None,
-        month: Optional[int] = None,
-        location: Optional[str] = None,
-        stamping_supplier: Optional[str] = None,
-        vehicle_model: Optional[str] = None,
-        version: Optional[str] = None,
-        part_number: Optional[str] = None,
-        audit_status: Optional[str] = None,
+        year: int | None = None,
+        month: int | None = None,
+        location: str | None = None,
+        stamping_supplier: str | None = None,
+        vehicle_model: str | None = None,
+        version: str | None = None,
+        part_number: str | None = None,
+        audit_status: str | None = None,
     ) -> PartCostFilterSummary:
         """按与列表相同的筛选条件汇总：均单价 / 待审 / 已审。"""
         q = self._build_list_query(
@@ -237,18 +233,16 @@ class StampingPartCostRepository:
         )
         row = q.with_entities(
             func.avg(StampingPartCost.unit_cost).label("avg_unit_cost"),
-            func.sum(
-                case((StampingPartCost.audit_status == AUDIT_PENDING, 1), else_=0)
-            ).label("pending_count"),
-            func.sum(
-                case((StampingPartCost.audit_status == AUDIT_APPROVED, 1), else_=0)
-            ).label("approved_count"),
+            func.sum(case((StampingPartCost.audit_status == AUDIT_PENDING, 1), else_=0)).label(
+                "pending_count"
+            ),
+            func.sum(case((StampingPartCost.audit_status == AUDIT_APPROVED, 1), else_=0)).label(
+                "approved_count"
+            ),
         ).one()
         avg_value = row.avg_unit_cost
         return {
-            "avg_unit_cost": (
-                Decimal(str(avg_value)) if avg_value is not None else None
-            ),
+            "avg_unit_cost": (Decimal(str(avg_value)) if avg_value is not None else None),
             "pending_count": int(row.pending_count or 0),
             "approved_count": int(row.approved_count or 0),
         }
@@ -256,15 +250,15 @@ class StampingPartCostRepository:
     def list_for_export(
         self,
         db: Session,
-        year: Optional[int] = None,
-        month: Optional[int] = None,
-        location: Optional[str] = None,
-        stamping_supplier: Optional[str] = None,
-        vehicle_model: Optional[str] = None,
-        version: Optional[str] = None,
-        part_number: Optional[str] = None,
-        audit_status: Optional[str] = None,
-    ) -> List[StampingPartCost]:
+        year: int | None = None,
+        month: int | None = None,
+        location: str | None = None,
+        stamping_supplier: str | None = None,
+        vehicle_model: str | None = None,
+        version: str | None = None,
+        part_number: str | None = None,
+        audit_status: str | None = None,
+    ) -> list[StampingPartCost]:
         q = db.query(StampingPartCost)
         if year is not None:
             q = q.filter(StampingPartCost.year == year)
@@ -282,15 +276,12 @@ class StampingPartCostRepository:
             q = q.filter(StampingPartCost.part_number.like(f"%{part_number}%"))
         if audit_status:
             q = q.filter(StampingPartCost.audit_status == audit_status)
-        return (
-            q.order_by(
-                StampingPartCost.year.desc(),
-                StampingPartCost.month.desc(),
-                StampingPartCost.location,
-                StampingPartCost.id.asc(),
-            )
-            .all()
-        )
+        return q.order_by(
+            StampingPartCost.year.desc(),
+            StampingPartCost.month.desc(),
+            StampingPartCost.location,
+            StampingPartCost.id.asc(),
+        ).all()
 
     def count_by_scope_and_statuses(
         self,
@@ -300,7 +291,7 @@ class StampingPartCostRepository:
         month: int,
         location: str,
         stamping_supplier: str,
-        statuses: List[str],
+        statuses: list[str],
     ) -> int:
         return (
             self._scope_query(
@@ -355,8 +346,8 @@ class StampingPartCostRepository:
         stamping_supplier: str,
         audited_by: str,
         audited_at: datetime,
-        audit_remark: Optional[str],
-        updated_by: Optional[str] = None,
+        audit_remark: str | None,
+        updated_by: str | None = None,
     ) -> int:
         values: dict[str, str | datetime | None] = {
             "audit_status": AUDIT_APPROVED,
@@ -373,9 +364,7 @@ class StampingPartCostRepository:
                 month=month,
                 location=location,
                 stamping_supplier=stamping_supplier,
-            ).filter(
-                StampingPartCost.audit_status.in_([AUDIT_PENDING, AUDIT_REJECTED])
-            ),
+            ).filter(StampingPartCost.audit_status.in_([AUDIT_PENDING, AUDIT_REJECTED])),
             values,
         )
         db.flush()
@@ -392,7 +381,7 @@ class StampingPartCostRepository:
         reverse_audited_by: str,
         reverse_audited_at: datetime,
         reverse_audit_remark: str,
-        updated_by: Optional[str] = None,
+        updated_by: str | None = None,
     ) -> int:
         values: dict[str, str | datetime | None] = {
             "audit_status": AUDIT_PENDING,
@@ -415,18 +404,13 @@ class StampingPartCostRepository:
         db.flush()
         return count
 
-    def get_distinct_years(self, db: Session) -> List[int]:
+    def get_distinct_years(self, db: Session) -> list[int]:
         results = (
-            db.query(StampingPartCost.year)
-            .distinct()
-            .order_by(StampingPartCost.year.desc())
-            .all()
+            db.query(StampingPartCost.year).distinct().order_by(StampingPartCost.year.desc()).all()
         )
         return [r[0] for r in results]
 
-    def get_distinct_months(
-        self, db: Session, year: Optional[int] = None
-    ) -> List[int]:
+    def get_distinct_months(self, db: Session, year: int | None = None) -> list[int]:
         q = db.query(StampingPartCost.month).distinct()
         if year is not None:
             q = q.filter(StampingPartCost.year == year)
@@ -463,7 +447,7 @@ class StampingPartCostRepository:
         month: int,
         location: str,
         vehicle_model: str,
-    ) -> List[StampingPartCost]:
+    ) -> list[StampingPartCost]:
         return (
             db.query(StampingPartCost)
             .filter(
@@ -479,8 +463,8 @@ class StampingPartCostRepository:
         )
 
     def get_distinct_locations(
-        self, db: Session, year: Optional[int] = None, month: Optional[int] = None
-    ) -> List[str]:
+        self, db: Session, year: int | None = None, month: int | None = None
+    ) -> list[str]:
         q = db.query(StampingPartCost.location).distinct()
         if year is not None:
             q = q.filter(StampingPartCost.year == year)
@@ -492,10 +476,10 @@ class StampingPartCostRepository:
     def get_distinct_suppliers(
         self,
         db: Session,
-        year: Optional[int] = None,
-        month: Optional[int] = None,
-        location: Optional[str] = None,
-    ) -> List[str]:
+        year: int | None = None,
+        month: int | None = None,
+        location: str | None = None,
+    ) -> list[str]:
         q = db.query(StampingPartCost.stamping_supplier).distinct()
         if year is not None:
             q = q.filter(StampingPartCost.year == year)

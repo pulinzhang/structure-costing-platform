@@ -64,9 +64,7 @@ def _is_policy_question(question: str) -> bool:
 
 
 def _is_base_price_question(question: str) -> bool:
-    if any(term in question for term in _BASE_PRICE_TERMS):
-        return True
-    return False
+    return bool(any(term in question for term in _BASE_PRICE_TERMS))
 
 
 def _is_winning_thickness_question(question: str) -> bool:
@@ -110,9 +108,7 @@ class QueryParser:
                 draft=draft,
                 default=default,
             )
-            has_scope_hint = bool(
-                question_has_explicit_time(question) or draft.get("filters")
-            )
+            has_scope_hint = bool(question_has_explicit_time(question) or draft.get("filters"))
             if has_scope_hint:
                 return query.model_copy(
                     update={
@@ -163,9 +159,7 @@ class QueryParser:
 
         filter_mentions: list[tuple[str, str]] = []
         filters_raw = draft.get("filters")
-        raw_filters: dict[str, Any] = (
-            filters_raw if isinstance(filters_raw, dict) else {}
-        )
+        raw_filters: dict[str, Any] = filters_raw if isinstance(filters_raw, dict) else {}
         for key in ("location", "vehicle_model"):
             value = raw_filters.get(key)
             if value is not None and str(value).strip():
@@ -214,9 +208,7 @@ class QueryParser:
     ) -> AnalysisQuery:
         filter_mentions: list[tuple[str, str]] = []
         filters_raw = draft.get("filters")
-        raw_filters: dict[str, Any] = (
-            filters_raw if isinstance(filters_raw, dict) else {}
-        )
+        raw_filters: dict[str, Any] = filters_raw if isinstance(filters_raw, dict) else {}
         for key in ("location", "vehicle_model", "bom_version", "part_number", "tonnage"):
             value = raw_filters.get(key)
             if value is None or not str(value).strip():
@@ -248,11 +240,7 @@ class QueryParser:
         unresolved = list(aligned.unresolved_mentions)
         if tonnage_token is not None:
             filters["tonnage"] = str(tonnage_token)
-            unresolved = [
-                item
-                for item in unresolved
-                if not item.startswith("vehicle_model:")
-            ]
+            unresolved = [item for item in unresolved if not item.startswith("vehicle_model:")]
 
         compare_aligned: list[str] = []
         if isinstance(compare_locations_raw, list):
@@ -260,9 +248,7 @@ class QueryParser:
                 text = str(location).strip()
                 if not text:
                     continue
-                one = self._aligner.align(
-                    db, mentions=[("location", text)], seed_filters={}
-                )
+                one = self._aligner.align(db, mentions=[("location", text)], seed_filters={})
                 resolved = one.filters.get("location")
                 if resolved and resolved not in compare_aligned:
                     compare_aligned.append(resolved)
@@ -291,11 +277,7 @@ class QueryParser:
             filters=filters,
         )
         if subject == "stamping_process":
-            analyses = [
-                kind
-                for kind in analyses
-                if kind not in ("trend", "comparison", "risk")
-            ]
+            analyses = [kind for kind in analyses if kind not in ("trend", "comparison", "risk")]
         if subject == "steel_price_policy":
             if "厚度" in question:
                 filters["policy_type"] = "THICKNESS"
@@ -349,8 +331,7 @@ class QueryParser:
         if _is_base_price_question(question) and "厚度" not in question:
             return "steel_base_price"
         if any(
-            word in question
-            for word in ("废料销售价", "废料价", "废料月度", "废料月价", "废钢价")
+            word in question for word in ("废料销售价", "废料价", "废料月度", "废料月价", "废钢价")
         ):
             return "scrap_price"
         if "废料" in question and "销售" in question:
@@ -366,26 +347,18 @@ class QueryParser:
             for word in ("成品", "L0", "l0", "总成", "供货总成", "月总账", "采购成本")
         ):
             return "annual_part_price"
-        if any(
-            word in question
-            for word in ("外购价", "外购零件价", "外购件价")
-        ) and "冲压" not in question:
+        if (
+            any(word in question for word in ("外购价", "外购零件价", "外购件价"))
+            and "冲压" not in question
+        ):
             return "annual_part_price"
         if any(word in question for word in ("包装运输费", "包装运输")):
             return "packaging_transport_fee"
-        if any(
-            word in question
-            for word in ("成品焊接费", "L0焊接费", "供货总成焊接费")
-        ):
+        if any(word in question for word in ("成品焊接费", "L0焊接费", "供货总成焊接费")):
             return "l0_welding_fee"
-        if "焊接工艺拆解" in question or (
-            "工艺拆解" in question and "焊接" in question
-        ):
+        if "焊接工艺拆解" in question or ("工艺拆解" in question and "焊接" in question):
             return "welding_process_breakdown"
-        if any(
-            word in question
-            for word in ("材料清单", "BOM清单", "bom清单", "材料清单列表")
-        ):
+        if any(word in question for word in ("材料清单", "BOM清单", "bom清单", "材料清单列表")):
             return "bom_material"
         if any(word in question for word in ("产品结构", "结构图", "BOM结构")):
             return "bom_material"
@@ -397,13 +370,12 @@ class QueryParser:
             return "steel_price"
 
         tonnage_filter = filters.get("tonnage")
-        if any(
-            word in question
-            for word in ("冲次单价", "冲次价格", "单冲次", "冲次价", "冲次")
-        ):
+        if any(word in question for word in ("冲次单价", "冲次价格", "单冲次", "冲次价", "冲次")):
             return "stamping_tonnage"
-        if tonnage_filter and "冲压" in question and any(
-            word in question for word in ("价格", "单价", "多少钱")
+        if (
+            tonnage_filter
+            and "冲压" in question
+            and any(word in question for word in ("价格", "单价", "多少钱"))
         ):
             return "stamping_tonnage"
         if (
@@ -415,25 +387,17 @@ class QueryParser:
             return "stamping_tonnage"
 
         if "焊接" not in question and (
-            "冲压加工费" in question
-            or ("冲压" in question and "加工费" in question)
+            "冲压加工费" in question or ("冲压" in question and "加工费" in question)
         ):
             return "stamping_process_fee"
 
         part_number = filters.get("part_number")
         if part_number:
-            if any(
-                word in question
-                for word in ("存在", "有没有", "在不在", "有没有这个", "在吗")
-            ):
+            if any(word in question for word in ("存在", "有没有", "在不在", "有没有这个", "在吗")):
                 return "part"
             if self._is_drilldown_focused(question, part_number):
-                if (
-                    "焊接" not in question
-                    and any(
-                        word in question
-                        for word in ("加工费", "冲压费", "冲压加工费", "工序费")
-                    )
+                if "焊接" not in question and any(
+                    word in question for word in ("加工费", "冲压费", "冲压加工费", "工序费")
                 ):
                     return "stamping_process_fee"
                 if any(
@@ -448,12 +412,16 @@ class QueryParser:
                     )
                 ):
                     return "stamping_process"
-                if "工序" in question and "加工费" not in question and "焊接" not in question:
-                    if any(
+                if (
+                    "工序" in question
+                    and "加工费" not in question
+                    and "焊接" not in question
+                    and any(
                         hint in question
                         for hint in ("冲压", "OP10", "OP20", "模具", "吨位", "工艺")
-                    ):
-                        return "stamping_process"
+                    )
+                ):
+                    return "stamping_process"
                 if any(
                     word in question
                     for word in (
@@ -470,36 +438,21 @@ class QueryParser:
                 ):
                     return "stamping_part"
                 return "l0"
-            if (
-                "焊接" not in question
-                and any(
-                    word in question
-                    for word in ("加工费", "冲压费", "冲压加工费", "工序费")
-                )
+            if "焊接" not in question and any(
+                word in question for word in ("加工费", "冲压费", "冲压加工费", "工序费")
             ):
                 return "stamping_process_fee"
             if any(
-                word in question
-                for word in ("一口价", "年度零件价", "外购价", "外购零件价")
-            ) and not any(
-                word in question for word in ("成品", "L0", "l0", "总成", "供货总成")
-            ):
+                word in question for word in ("一口价", "年度零件价", "外购价", "外购零件价")
+            ) and not any(word in question for word in ("成品", "L0", "l0", "总成", "供货总成")):
                 return "annual_part_price"
             if any(word in question for word in ("包装运输费", "包装运输")):
                 return "packaging_transport_fee"
-            if any(
-                word in question
-                for word in ("成品焊接费", "L0焊接费", "供货总成焊接费")
-            ):
+            if any(word in question for word in ("成品焊接费", "L0焊接费", "供货总成焊接费")):
                 return "l0_welding_fee"
-            if "焊接工艺拆解" in question or (
-                "工艺拆解" in question and "焊接" in question
-            ):
+            if "焊接工艺拆解" in question or ("工艺拆解" in question and "焊接" in question):
                 return "welding_process_breakdown"
-            if any(
-                word in question
-                for word in ("材料清单", "BOM清单", "bom清单")
-            ):
+            if any(word in question for word in ("材料清单", "BOM清单", "bom清单")):
                 return "bom_material"
             if any(
                 word in question
@@ -513,12 +466,15 @@ class QueryParser:
                 )
             ):
                 return "stamping_process"
-            if "工序" in question and "加工费" not in question and "焊接" not in question:
-                if any(
-                    hint in question
-                    for hint in ("冲压", "OP10", "OP20", "模具", "吨位", "工艺")
-                ):
-                    return "stamping_process"
+            if (
+                "工序" in question
+                and "加工费" not in question
+                and "焊接" not in question
+                and any(
+                    hint in question for hint in ("冲压", "OP10", "OP20", "模具", "吨位", "工艺")
+                )
+            ):
+                return "stamping_process"
             if any(
                 word in question
                 for word in ("冲压件", "冲压零件", "冲压成本", "冲压价格", "零件价格")
@@ -547,15 +503,15 @@ class QueryParser:
             )
         ):
             return "stamping_process"
-        if "工序" in question and "加工费" not in question and "焊接" not in question:
-            if any(
-                hint in question
-                for hint in ("冲压", "OP10", "OP20", "模具", "吨位", "工艺")
-            ):
-                return "stamping_process"
+        if (
+            "工序" in question
+            and "加工费" not in question
+            and "焊接" not in question
+            and any(hint in question for hint in ("冲压", "OP10", "OP20", "模具", "吨位", "工艺"))
+        ):
+            return "stamping_process"
         if any(
-            word in question
-            for word in ("冲压件", "冲压零件", "冲压成本", "冲压价格", "零件价格")
+            word in question for word in ("冲压件", "冲压零件", "冲压成本", "冲压价格", "零件价格")
         ):
             return "stamping_part"
         if "冲压" in question and any(
@@ -565,8 +521,7 @@ class QueryParser:
         if "冲压" in question:
             return "stamping_process"
         if any(
-            word in question
-            for word in ("成品", "成品成本", "供货总成", "总成成本", "L0", "l0")
+            word in question for word in ("成品", "成品成本", "供货总成", "总成成本", "L0", "l0")
         ):
             return "l0"
         # 采购成本 / 总成本等默认 → 成品核价一览
@@ -596,10 +551,7 @@ class QueryParser:
             "怎么样",
             "概览",
         )
-        if any(
-            phrase in question
-            for phrase in ("多少钱", "什么价", "单价多少", "价格多少")
-        ):
+        if any(phrase in question for phrase in ("多少钱", "什么价", "单价多少", "价格多少")):
             return not any(word in question for word in overview_words)
         return False
 
@@ -616,23 +568,18 @@ class QueryParser:
         if self._is_drilldown_focused(question, part_number):
             result: list[AnalysisKind] = ["drilldown"]
             if time_span > 1 or any(
-                word in question
-                for word in ("趋势", "变化", "涨", "跌", "环比", "同比")
+                word in question for word in ("趋势", "变化", "涨", "跌", "环比", "同比")
             ):
                 result.append("trend")
             if has_compare or any(
                 word in question for word in ("对比", "比较", "哪个基地", "谁更")
             ):
                 result.append("comparison")
-            if any(
-                word in question for word in ("缺价", "partial", "算不全", "跑不起来")
-            ):
+            if any(word in question for word in ("缺价", "partial", "算不全", "跑不起来")):
                 result.append("risk")
             if any(word in question for word in ("概览", "总体", "汇总")):
                 result.insert(0, "summary")
-            if any(
-                word in question for word in ("谁贵", "驱动", "贡献", "构成")
-            ):
+            if any(word in question for word in ("谁贵", "驱动", "贡献", "构成")):
                 result.append("drivers")
             seen_focus: list[AnalysisKind] = []
             for kind in result:
@@ -647,9 +594,7 @@ class QueryParser:
             result.append("trend")
         if any(word in question for word in ("谁贵", "驱动", "贡献", "构成", "拆")):
             result.append("drivers")
-        if has_compare or any(
-            word in question for word in ("对比", "比较", "哪个基地", "谁更")
-        ):
+        if has_compare or any(word in question for word in ("对比", "比较", "哪个基地", "谁更")):
             result.append("comparison")
         if any(word in question for word in ("缺价", "partial", "算不全", "跑不起来")):
             result.append("risk")
@@ -696,40 +641,46 @@ class QueryParser:
                 result.append("drivers")
         if part_number or "零件号" in question:
             result.append("drilldown")
-        if tonnage or any(word in question for word in ("冲次", "吨位")):
-            if "drilldown" not in result:
-                result.append("drilldown")
+        if (
+            tonnage or any(word in question for word in ("冲次", "吨位"))
+        ) and "drilldown" not in result:
+            result.append("drilldown")
         # 主题报告默认带 drivers（Top 头部件 / 工序最多件）
-        if any(
-            word in question
-            for word in ("冲压", "冲压工艺", "工艺路线", "工序", "工艺文件")
-        ) and "drivers" not in result:
+        if (
+            any(word in question for word in ("冲压", "冲压工艺", "工艺路线", "工序", "工艺文件"))
+            and "drivers" not in result
+        ):
             result.append("drivers")
-        if any(word in question for word in ("成品", "采购", "总成")) and any(
-            word in question for word in ("报告", "一览", "成本")
+        if (
+            any(word in question for word in ("成品", "采购", "总成"))
+            and any(word in question for word in ("报告", "一览", "成本"))
+            and "drivers" not in result
         ):
-            if "drivers" not in result:
-                result.append("drivers")
-        if _is_policy_question(question) and any(
-            word in question for word in ("情况", "怎么样", "哪些", "报告", "多少")
+            result.append("drivers")
+        if (
+            _is_policy_question(question)
+            and any(word in question for word in ("情况", "怎么样", "哪些", "报告", "多少"))
+            and "drivers" not in result
         ):
-            if "drivers" not in result:
-                result.append("drivers")
-        if _is_base_price_question(question) and any(
-            word in question for word in ("情况", "怎么样", "哪些", "报告", "多少")
+            result.append("drivers")
+        if (
+            _is_base_price_question(question)
+            and any(word in question for word in ("情况", "怎么样", "哪些", "报告", "多少"))
+            and "drivers" not in result
         ):
-            if "drivers" not in result:
-                result.append("drivers")
-        if _is_winning_thickness_question(question) and any(
-            word in question for word in ("情况", "怎么样", "哪些", "报告", "多少")
+            result.append("drivers")
+        if (
+            _is_winning_thickness_question(question)
+            and any(word in question for word in ("情况", "怎么样", "哪些", "报告", "多少"))
+            and "drivers" not in result
         ):
-            if "drivers" not in result:
-                result.append("drivers")
-        if any(word in question for word in ("废料", "废钢")) and any(
-            word in question for word in ("情况", "怎么样", "哪些", "报告", "多少", "销售")
+            result.append("drivers")
+        if (
+            any(word in question for word in ("废料", "废钢"))
+            and any(word in question for word in ("情况", "怎么样", "哪些", "报告", "多少", "销售"))
+            and "drivers" not in result
         ):
-            if "drivers" not in result:
-                result.append("drivers")
+            result.append("drivers")
         seen: list[AnalysisKind] = []
         for kind in result:
             if kind not in seen:

@@ -54,9 +54,7 @@ def detect_anomaly_months(
     if use_stat_rule:
         avg_abs = sum(abs_rates, start=Decimal("0")) / Decimal(len(abs_rates))
         if len(abs_rates) >= 2:
-            stddev = Decimal(
-                str(statistics.pstdev([float(value) for value in abs_rates]))
-            )
+            stddev = Decimal(str(statistics.pstdev([float(value) for value in abs_rates])))
         else:
             stddev = Decimal("0")
         stat_threshold = avg_abs + Decimal("2") * stddev
@@ -115,9 +113,7 @@ def build_drivers_payload(
     for index, item in enumerate(up_ranked, start=1):
         change = _parse_change_decimal(item)
         contribution = (
-            (change / positive_sum).quantize(Decimal("0.01"))
-            if positive_sum > 0
-            else Decimal("0")
+            (change / positive_sum).quantize(Decimal("0.01")) if positive_sum > 0 else Decimal("0")
         )
         cumulative += contribution
         up_contribution.append(
@@ -227,7 +223,4 @@ def build_period_diff(
 def format_missing_price_message(count: int) -> str:
     if count <= 0:
         return ""
-    return (
-        f"已排除 {count} 条缺价记录（单价为空或0），"
-        "实际有效成本基于剩余记录计算"
-    )
+    return f"已排除 {count} 条缺价记录（单价为空或0），" "实际有效成本基于剩余记录计算"

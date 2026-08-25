@@ -3,7 +3,6 @@
 异步计算 + 计算日志 + 列表审核删除
 """
 
-from typing import List
 from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, Query
@@ -59,7 +58,7 @@ _async_task_service = AsyncTaskService()
 
 @router.get(
     "/filters/years",
-    response_model=ApiResponse[List[int]],
+    response_model=ApiResponse[list[int]],
 )
 def list_years(
     db: Session = Depends(get_db),
@@ -69,14 +68,14 @@ def list_years(
             Perm.STAMPING_PROCESS_FEE_CALC_VIEW,
         )
     ),
-) -> ApiResponse[List[int]]:
+) -> ApiResponse[list[int]]:
     years = _service.list_years(db)
     return ApiResponse.ok(data=years)
 
 
 @router.get(
     "/filters/locations",
-    response_model=ApiResponse[List[str]],
+    response_model=ApiResponse[list[str]],
 )
 def list_locations(
     year: int | None = Query(None, description="年度"),
@@ -87,14 +86,14 @@ def list_locations(
             Perm.STAMPING_PROCESS_FEE_CALC_VIEW,
         )
     ),
-) -> ApiResponse[List[str]]:
+) -> ApiResponse[list[str]]:
     locations = _service.list_locations(db, year=year)
     return ApiResponse.ok(data=locations)
 
 
 @router.get(
     "/filters/suppliers",
-    response_model=ApiResponse[List[str]],
+    response_model=ApiResponse[list[str]],
 )
 def list_suppliers(
     year: int | None = Query(None, description="年度"),
@@ -106,14 +105,14 @@ def list_suppliers(
             Perm.STAMPING_PROCESS_FEE_CALC_VIEW,
         )
     ),
-) -> ApiResponse[List[str]]:
+) -> ApiResponse[list[str]]:
     suppliers = _service.list_suppliers(db, year=year, location=location)
     return ApiResponse.ok(data=suppliers)
 
 
 @router.get(
     "/filters/vehicle-models",
-    response_model=ApiResponse[List[str]],
+    response_model=ApiResponse[list[str]],
 )
 def list_vehicle_models(
     year: int | None = Query(None, description="年度"),
@@ -126,7 +125,7 @@ def list_vehicle_models(
             Perm.STAMPING_PROCESS_FEE_CALC_VIEW,
         )
     ),
-) -> ApiResponse[List[str]]:
+) -> ApiResponse[list[str]]:
     models = _service.list_vehicle_models(
         db,
         year=year,
@@ -138,7 +137,7 @@ def list_vehicle_models(
 
 @router.get(
     "/filters/versions",
-    response_model=ApiResponse[List[str]],
+    response_model=ApiResponse[list[str]],
 )
 def list_versions(
     year: int | None = Query(None, description="年度"),
@@ -152,7 +151,7 @@ def list_versions(
             Perm.STAMPING_PROCESS_FEE_CALC_VIEW,
         )
     ),
-) -> ApiResponse[List[str]]:
+) -> ApiResponse[list[str]]:
     versions = _service.list_versions(
         db,
         year=year,
@@ -251,15 +250,9 @@ def get_calc_task_progress(
     task_id: str,
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_PROCESS_FEE_CALC_VIEW)),
 ) -> ApiResponse[AsyncTaskProgressVO]:
-    task = _async_task_service.require_snapshot(
-        task_id, TASK_TYPE_STAMPING_PROCESS_FEE_CALC
-    )
+    task = _async_task_service.require_snapshot(task_id, TASK_TYPE_STAMPING_PROCESS_FEE_CALC)
     result_raw = AsyncTaskService.parse_result_json(task.get("result_json"))
-    result = (
-        StampingProcessFeeCalcResultVO.model_validate(result_raw)
-        if result_raw
-        else None
-    )
+    result = StampingProcessFeeCalcResultVO.model_validate(result_raw) if result_raw else None
     return ApiResponse.ok(
         data=AsyncTaskProgressVO.from_snapshot(
             task,

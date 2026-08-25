@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import Any, Optional, Protocol, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 from app.models.yishiyiyi import SteelPriceLadderItem, SteelPricePolicy
 
@@ -111,11 +111,7 @@ def steel_mill_aliases(steel_mill: str | None) -> frozenset[str]:
                 aliases = values
                 break
 
-    base: set[str] = (
-        {normalize_steel_mill(item) for item in aliases}
-        if aliases
-        else {name}
-    )
+    base: set[str] = {normalize_steel_mill(item) for item in aliases} if aliases else {name}
     return frozenset(_expand_new_variant_mills(base))
 
 
@@ -175,7 +171,7 @@ def steel_mill_match_rank(row_mill: str | None, policy_mill: str | None) -> int:
     return 1
 
 
-def to_decimal(value: Any) -> Optional[Decimal]:
+def to_decimal(value: Any) -> Decimal | None:
     if value is None:
         return None
     text = str(value).strip()
@@ -186,8 +182,8 @@ def to_decimal(value: Any) -> Optional[Decimal]:
 
 def bound_ok(
     value: Decimal,
-    bound: Optional[Decimal],
-    operator: Optional[str],
+    bound: Decimal | None,
+    operator: str | None,
     *,
     default_op: str,
 ) -> bool:
@@ -222,8 +218,8 @@ def bound_ok(
 def item_matches_dims(
     item: SteelPriceLadderItem,
     *,
-    thickness: Optional[Decimal],
-    width: Optional[Decimal],
+    thickness: Decimal | None,
+    width: Decimal | None,
     check_thickness: bool,
     check_width: bool,
 ) -> bool:
@@ -354,8 +350,8 @@ def order_by_base_thickness(
 def match_items(
     policy: SteelPricePolicy,
     *,
-    thickness: Optional[Decimal],
-    width: Optional[Decimal],
+    thickness: Decimal | None,
+    width: Decimal | None,
     check_thickness: bool,
     check_width: bool,
 ) -> SteelPriceLadderItem | None:

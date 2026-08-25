@@ -43,7 +43,9 @@ def retrieve_chunks(
         key=lambda chunk: _score_chunk(question, chunk, primary_topic=primary_topic),
         reverse=True,
     )
-    positive = [chunk for chunk in ranked if _score_chunk(question, chunk, primary_topic=primary_topic) > 0]
+    positive = [
+        chunk for chunk in ranked if _score_chunk(question, chunk, primary_topic=primary_topic) > 0
+    ]
 
     if primary_topic:
         primary = next((chunk for chunk in chunks if chunk.chunk_id == primary_topic), None)

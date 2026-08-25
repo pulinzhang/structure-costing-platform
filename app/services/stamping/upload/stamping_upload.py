@@ -8,7 +8,7 @@
 import logging
 from decimal import Decimal
 from pathlib import Path
-from typing import Callable, Dict, List, Optional
+from collections.abc import Callable
 from sqlalchemy.orm import Session
 
 from app.common.audit import audit_create, display_name
@@ -20,7 +20,10 @@ from app.parsers.stamping.stamping_parser import parse_stamping_excel
 from app.parsers.stamping.tailor_weld_parser import parse_tailor_weld_excel
 from app.config import settings
 from app.exceptions.base import BusinessException
-from app.repositories.stamping.stamping_repository import StampingPartRepository, StampingProcessRepository
+from app.repositories.stamping.stamping_repository import (
+    StampingPartRepository,
+    StampingProcessRepository,
+)
 from app.schemas.dto.stamping_upload_dto import FileInfo, PartData, ProcessData, UploadResult
 from app.schemas.vo.async_task_vo import AsyncTaskAcceptedVO
 from app.schemas.vo.user_vo import UserVO
@@ -64,7 +67,7 @@ class StampingUploadService:
         filename: str,
         location: str,
         current_user: UserVO,
-        progress_callback: Optional[ProgressCallback] = None,
+        progress_callback: ProgressCallback | None = None,
     ) -> UploadResult:
         """
         处理冲压工艺文件上传（完整业务流程）。
@@ -112,9 +115,7 @@ class StampingUploadService:
                 f"{tailor_result.assembly_count} 个拼焊件，正在保存文件...",
             )
 
-            file_info = self._save_file(
-                file_content, filename, location, vehicle_model, version
-            )
+            file_info = self._save_file(file_content, filename, location, vehicle_model, version)
 
             _report(55, "正在保存零件简图...")
             saved_images = self._save_part_images(
@@ -240,7 +241,7 @@ class StampingUploadService:
 
     def _save_part_images(
         self,
-        images_by_part: Dict[str, bytes],
+        images_by_part: dict[str, bytes],
         target_dir: str,
     ) -> int:
         """保存零件简图到磁盘"""
@@ -254,8 +255,7 @@ class StampingUploadService:
             if not part_number or not img_bytes:
                 continue
             safe_name = "".join(
-                c if c.isalnum() or c in ("_", "-") else "_"
-                for c in str(part_number)
+                c if c.isalnum() or c in ("_", "-") else "_" for c in str(part_number)
             )
             if not safe_name:
                 continue
@@ -272,17 +272,17 @@ class StampingUploadService:
 
     def _save_parts(
         self,
-        parts: List[Part],
+        parts: list[Part],
         vehicle_model: str,
         version: str,
         file_info: FileInfo,
-        images_by_part: Dict[str, bytes],
+        images_by_part: dict[str, bytes],
         stamping_supplier: str = "",
         excel_filename: str = "",
-        tailor_parent_numbers: Optional[set[str]] = None,
+        tailor_parent_numbers: set[str] | None = None,
         *,
         current_user: UserVO,
-    ) -> Dict[str, int]:
+    ) -> dict[str, int]:
         """保存零件数据到数据库，返回 part_number -> part_id 映射"""
         audit = audit_create(current_user)
         tailor_parents = tailor_parent_numbers or set()
@@ -303,7 +303,7 @@ class StampingUploadService:
             display_name(current_user),
         )
 
-        parts_to_create: List[PartData] = []
+        parts_to_create: list[PartData] = []
         for part in parts:
             part_number = part.part_number
             if not part_number:
@@ -316,32 +316,34 @@ class StampingUploadService:
                 else None
             )
 
-            parts_to_create.append(PartData(
-                location=location,
-                vehicle_model=vehicle_model,
-                version=version,
-                stamping_supplier=stamping_supplier,
-                seq_no=part.seq_no,
-                part_number=part_number,
-                part_name=part.part_name,
-                material=part.material,
-                thickness=part.thickness,
-                part_weight=part.part_weight,
-                sheet_length=part.sheet_length,
-                sheet_width=part.sheet_width,
-                parts_per_sheet=part.parts_per_sheet,
-                sheet_type=part.sheet_type,
-                die_type=part.die_type,
-                process_method=part.process_method,
-                automation=part.automation,
-                remark=part.remark,
-                sketch_url=sketch_url,
-                is_tailor_welded=part_number in tailor_parents,
-                excel_filename=excel_filename,
-                excel_sheet_name=part.excel_sheet_name,
-                excel_row=part.excel_row,
-                excel_part_col=part.excel_part_col,
-            ))
+            parts_to_create.append(
+                PartData(
+                    location=location,
+                    vehicle_model=vehicle_model,
+                    version=version,
+                    stamping_supplier=stamping_supplier,
+                    seq_no=part.seq_no,
+                    part_number=part_number,
+                    part_name=part.part_name,
+                    material=part.material,
+                    thickness=part.thickness,
+                    part_weight=part.part_weight,
+                    sheet_length=part.sheet_length,
+                    sheet_width=part.sheet_width,
+                    parts_per_sheet=part.parts_per_sheet,
+                    sheet_type=part.sheet_type,
+                    die_type=part.die_type,
+                    process_method=part.process_method,
+                    automation=part.automation,
+                    remark=part.remark,
+                    sketch_url=sketch_url,
+                    is_tailor_welded=part_number in tailor_parents,
+                    excel_filename=excel_filename,
+                    excel_sheet_name=part.excel_sheet_name,
+                    excel_row=part.excel_row,
+                    excel_part_col=part.excel_part_col,
+                )
+            )
 
         audit = audit_create(current_user)
         for part_row in parts_to_create:
@@ -362,14 +364,14 @@ class StampingUploadService:
 
     def _save_processes(
         self,
-        processes: List[Process],
-        part_map: Dict[str, int],
+        processes: list[Process],
+        part_map: dict[str, int],
         current_user: UserVO,
     ) -> int:
         """保存工序数据到数据库"""
         audit = audit_create(current_user)
-        processes_to_create: List[ProcessData] = []
-        part_order_counter: Dict[str, int] = {}
+        processes_to_create: list[ProcessData] = []
+        part_order_counter: dict[str, int] = {}
 
         for process in processes:
             part_number = process.part_number
@@ -385,16 +387,20 @@ class StampingUploadService:
             order = part_order_counter.get(part_number, 0) + 1
             part_order_counter[part_number] = order
 
-            processes_to_create.append(ProcessData(
-                part_id=part_id,
-                process_seq=process.process_seq,
-                process_order=order,
-                process_code=process.process_code,
-                die_sets=process.die_sets,
-                tonnage=process.tonnage,
-                cost_ratio=process.cost_ratio if process.cost_ratio is not None else Decimal("1.00"),
-                remark=process.remark,
-            ))
+            processes_to_create.append(
+                ProcessData(
+                    part_id=part_id,
+                    process_seq=process.process_seq,
+                    process_order=order,
+                    process_code=process.process_code,
+                    die_sets=process.die_sets,
+                    tonnage=process.tonnage,
+                    cost_ratio=process.cost_ratio
+                    if process.cost_ratio is not None
+                    else Decimal("1.00"),
+                    remark=process.remark,
+                )
+            )
 
         if processes_to_create:
             for process_row in processes_to_create:
@@ -422,9 +428,7 @@ class StampingUploadService:
             raise BusinessException("未提供文件名")
         ext = "." + filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
         if ext not in {".xlsx", ".xls"}:
-            raise BusinessException(
-                f"不支持的文件类型: {ext}，仅支持 .xlsx / .xls"
-            )
+            raise BusinessException(f"不支持的文件类型: {ext}，仅支持 .xlsx / .xls")
         if not file_content:
             raise BusinessException("上传文件为空")
         if len(file_content) > settings.MAX_UPLOAD_SIZE:
@@ -453,9 +457,7 @@ class StampingUploadService:
                     current_user=current_user,
                 )
             except (BusinessException, ValueError) as error:
-                logger.warning(
-                    "冲压上传业务失败: task_id=%s error=%s", task.task_id, error
-                )
+                logger.warning("冲压上传业务失败: task_id=%s error=%s", task.task_id, error)
                 return WorkerTaskOutcome(
                     status=STATUS_FAILED,
                     progress=0,

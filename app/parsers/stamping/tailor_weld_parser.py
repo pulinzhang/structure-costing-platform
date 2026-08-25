@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import time
 from decimal import Decimal, InvalidOperation
-from typing import Any, Optional
+from typing import Any
 
 from app.parsers.stamping.excel_context import ExcelContext
 from app.parsers.stamping.header_resolver import HeaderResolver
@@ -31,7 +31,7 @@ from app.utils.logging_config import get_logger
 logger = get_logger("parser.stamping.tailor_weld")
 
 
-def _as_text(value: Any) -> Optional[str]:
+def _as_text(value: Any) -> str | None:
     if value is None:
         return None
     text = str(value).strip()
@@ -232,7 +232,7 @@ class TailorWeldExcelParser:
         length_merges: list[tuple[int, int]],
         width_merges: list[tuple[int, int]],
         warnings: list[str],
-    ) -> Optional[TailorWeldAssemblyParsed]:
+    ) -> TailorWeldAssemblyParsed | None:
         parent_part_number = _as_text(part_range.value)
         if parent_part_number is None:
             return None
@@ -268,25 +268,17 @@ class TailorWeldExcelParser:
 
         blanks: list[TailorWeldBlankParsed] = []
         for index, (blank_start, blank_end) in enumerate(length_blocks, start=1):
-            thickness = (
-                thickness_segments[index - 1]
-                if index <= len(thickness_segments)
-                else None
-            )
+            thickness = thickness_segments[index - 1] if index <= len(thickness_segments) else None
             blanks.append(
                 TailorWeldBlankParsed(
                     blank_seq=index,
                     excel_row_start=blank_start,
                     excel_row_end=blank_end,
                     sheet_length=parse_decimal(
-                        _value_at_merge_or_row(
-                            excel_ctx, length_col, blank_start, length_merges
-                        )
+                        _value_at_merge_or_row(excel_ctx, length_col, blank_start, length_merges)
                     ),
                     sheet_width=parse_decimal(
-                        _value_at_merge_or_row(
-                            excel_ctx, width_col, blank_start, width_merges
-                        )
+                        _value_at_merge_or_row(excel_ctx, width_col, blank_start, width_merges)
                     ),
                     thickness=thickness,
                     material=material,

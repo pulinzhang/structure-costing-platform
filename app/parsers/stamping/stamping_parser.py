@@ -15,7 +15,7 @@
 """
 
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from app.parsers.stamping.excel_context import ExcelContext
 from app.parsers.stamping.header_resolver import HeaderResolver
@@ -55,9 +55,9 @@ class StampingExcelParser:
 
     def __init__(self) -> None:
         self.result = ParserResult()
-        self._excel_ctx: Optional[ExcelContext] = None
-        self._header_resolver: Optional[HeaderResolver] = None
-        self._row_parser: Optional[RowParser] = None
+        self._excel_ctx: ExcelContext | None = None
+        self._header_resolver: HeaderResolver | None = None
+        self._row_parser: RowParser | None = None
         self._processed_images: set[Any] = set()  # 已处理图片集合，避免重复
 
     def parse(self, file_path: str) -> ParserResult:
@@ -139,8 +139,8 @@ class StampingExcelParser:
         col_map = self.result.col_map
         data_start = self.result.data_start_row
 
-        process_count: Dict[str, int] = {}
-        current_part_number: Optional[str] = None
+        process_count: dict[str, int] = {}
+        current_part_number: str | None = None
 
         for row_idx in range(data_start, excel_ctx.sheet.max_row + 1):
             self.result.total_rows += 1
@@ -176,7 +176,7 @@ class StampingExcelParser:
 
                 if current_part_number and op_val:
                     # 有工序代码
-                    process: Optional[Process] = self._row_parser.parse_process_row(
+                    process: Process | None = self._row_parser.parse_process_row(
                         row_idx, current_part_number
                     )
                     if process:
@@ -187,23 +187,19 @@ class StampingExcelParser:
 
         # 保存最后一个零件
         if current_part_number:
-            self._save_part(
-                current_part_number, part_saver, process_count, self.result.warnings
-            )
+            self._save_part(current_part_number, part_saver, process_count, self.result.warnings)
 
     def _save_part(
         self,
         part_number: str,
         part_saver: PartSaver,
-        process_count: Dict[str, int],
-        warnings: List[str],
+        process_count: dict[str, int],
+        warnings: list[str],
     ) -> None:
         """保存零件（生成警告）"""
-        part_saver.save_part(
-            part_number, process_count.get(part_number, 0), warnings
-        )
+        part_saver.save_part(part_number, process_count.get(part_number, 0), warnings)
 
-    def _handle_image_for_row(self, row_idx: int, part_number: Optional[str], end_row: int) -> None:
+    def _handle_image_for_row(self, row_idx: int, part_number: str | None, end_row: int) -> None:
         """处理该行的图片归属
 
         Excel 排版规则（基于 excel_sample 样本）：
@@ -226,7 +222,7 @@ class StampingExcelParser:
 
         for img in sheet._images:
             # 跳过已有归属的图片
-            if img in getattr(self, '_processed_images', set()):
+            if img in getattr(self, "_processed_images", set()):
                 continue
 
             anchor = getattr(img, "anchor", None)
@@ -235,7 +231,8 @@ class StampingExcelParser:
 
             try:
                 from openpyxl.drawing.spreadsheet_drawing import OneCellAnchor, TwoCellAnchor
-                if isinstance(anchor, (OneCellAnchor, TwoCellAnchor)):
+
+                if isinstance(anchor, OneCellAnchor | TwoCellAnchor):
                     marker = anchor._from
                     if marker is None or marker.col is None or marker.row is None:
                         continue
@@ -273,7 +270,7 @@ class StampingExcelParser:
                 if img_bytes:
                     self.result.images_by_part[part_number] = img_bytes
                     # 标记为已处理，避免重复
-                    if not hasattr(self, '_processed_images'):
+                    if not hasattr(self, "_processed_images"):
                         self._processed_images = set()
                     self._processed_images.add(img)
             except Exception:
@@ -284,7 +281,9 @@ class StampingExcelParser:
         logger.info("=== 解析完成 ===")
         logger.info(f"Sheet: {self.result.sheet_name}")
         logger.info(f"表头行: {self.result.header_row}, 数据起始行: {self.result.data_start_row}")
-        logger.info(f"零件数: {self.result.part_count}, 工序数: {self.result.process_count}, 简图: {self.result.image_count}")
+        logger.info(
+            f"零件数: {self.result.part_count}, 工序数: {self.result.process_count}, 简图: {self.result.image_count}"
+        )
         logger.info(f"Header路径: {self.result.header_paths}")
         logger.info(f"列映射: {self.result.col_map}")
         if self.result.warnings:

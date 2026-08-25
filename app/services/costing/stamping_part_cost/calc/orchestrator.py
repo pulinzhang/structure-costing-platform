@@ -142,9 +142,7 @@ def _part_cost_upsert(
         payload.direct_cost = amounts.direct_cost
         payload.finished_finance_fee = amounts.finished_finance_fee
         payload.finished_management_fee = amounts.finished_management_fee
-        payload.finished_warehouse_packaging_fee = (
-            amounts.finished_warehouse_packaging_fee
-        )
+        payload.finished_warehouse_packaging_fee = amounts.finished_warehouse_packaging_fee
         payload.finished_pretax_profit_fee = amounts.finished_pretax_profit_fee
         payload.unit_cost = amounts.unit_cost
     return payload
@@ -275,9 +273,7 @@ class StampingPartCostCalcOrchestrator:
         log_id: int,
         detail_text: str,
     ) -> None:
-        self.calc_log_service.mark_log_failed(
-            db, log_id=log_id, detail_text=detail_text
-        )
+        self.calc_log_service.mark_log_failed(db, log_id=log_id, detail_text=detail_text)
 
     def calculate(
         self,
@@ -299,12 +295,8 @@ class StampingPartCostCalcOrchestrator:
         recovery_rate = self.settings_service.get_scrap_recovery_rate(db)
         finance_rate = self.settings_service.get_finished_finance_rate(db)
         management_rate = self.settings_service.get_finished_management_rate(db)
-        warehouse_packaging_rate = (
-            self.settings_service.get_finished_warehouse_packaging_rate(db)
-        )
-        pretax_profit_rate = (
-            self.settings_service.get_finished_pretax_profit_rate(db)
-        )
+        warehouse_packaging_rate = self.settings_service.get_finished_warehouse_packaging_rate(db)
+        pretax_profit_rate = self.settings_service.get_finished_pretax_profit_rate(db)
         started_at = now()
         detail_lines: list[str] = [
             f"开始计算 year={dto.year} month={dto.month} location={location} "
@@ -355,9 +347,7 @@ class StampingPartCostCalcOrchestrator:
             version=dto.version,
         )
         if not parts:
-            raise BusinessException(
-                f"基地「{location}」工厂「{supplier}」下未找到匹配的冲压零件"
-            )
+            raise BusinessException(f"基地「{location}」工厂「{supplier}」下未找到匹配的冲压零件")
         detail_lines.append(f"匹配零件 {len(parts)} 件")
 
         upsert_rows: list[StampingPartCostUpsertPayload] = []
@@ -385,9 +375,7 @@ class StampingPartCostCalcOrchestrator:
                 continue
 
             calculator: PartCostCalculator | TailorWeldPartCostCalculator = (
-                self.tailor_weld_calculator
-                if part.is_tailor_welded
-                else self.part_calculator
+                self.tailor_weld_calculator if part.is_tailor_welded else self.part_calculator
             )
             row_or_error = calculator.calc_part_cost(
                 db,
@@ -407,9 +395,7 @@ class StampingPartCostCalcOrchestrator:
             )
 
             created_by = None if existing else audit["created_by"]
-            updated_by = (
-                update_audit["updated_by"] if existing else audit["updated_by"]
-            )
+            updated_by = update_audit["updated_by"] if existing else audit["updated_by"]
             snapshot = part_snapshot(part)
             if isinstance(row_or_error, StampingPartCostFailedItemVO):
                 failed_items.append(row_or_error)
@@ -472,8 +458,7 @@ class StampingPartCostCalcOrchestrator:
             status = STATUS_SUCCESS
 
         detail_lines.append(
-            f"成功 {success_count}，失败 {len(failed_items)}，"
-            f"跳过已审 {skipped_approved_count}"
+            f"成功 {success_count}，失败 {len(failed_items)}，" f"跳过已审 {skipped_approved_count}"
         )
         for item in failed_items[:20]:
             detail_lines.append(f"失败 {item.part_number}: {item.reason}")

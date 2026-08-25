@@ -4,7 +4,6 @@
 """
 
 import logging
-from typing import List, Tuple
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -44,23 +43,23 @@ class BomWeldingUnitPriceService:
     def __init__(self) -> None:
         self.repository = BomWeldingUnitPriceRepository()
 
-    def list_by_year(self, db: Session, year: int) -> List[BomWeldingUnitPriceResponse]:
+    def list_by_year(self, db: Session, year: int) -> list[BomWeldingUnitPriceResponse]:
         records = self.repository.list_by_year(db, year)
         return [BomWeldingUnitPriceResponse.model_validate(r) for r in records]
 
     def list_by_location_year(
         self, db: Session, location: str, year: int
-    ) -> List[BomWeldingUnitPriceResponse]:
+    ) -> list[BomWeldingUnitPriceResponse]:
         records = self.repository.list_by_location_year(db, location, year)
         return [BomWeldingUnitPriceResponse.model_validate(r) for r in records]
 
-    def list_all(self, db: Session) -> List[BomWeldingUnitPriceResponse]:
+    def list_all(self, db: Session) -> list[BomWeldingUnitPriceResponse]:
         records = self.repository.list_all(db)
         return [BomWeldingUnitPriceResponse.model_validate(r) for r in records]
 
     def paginate(
         self, db: Session, query: BomWeldingUnitPriceQuery
-    ) -> Tuple[List[BomWeldingUnitPriceResponse], int, WeldingUnitPriceListFilters]:
+    ) -> tuple[list[BomWeldingUnitPriceResponse], int, WeldingUnitPriceListFilters]:
         skip = (query.page - 1) * query.size
         audit_status = query.audit_status.strip() if query.audit_status else None
         records, total = self.repository.paginate(
@@ -125,17 +124,17 @@ class BomWeldingUnitPriceService:
     def bulk_upsert(
         self,
         db: Session,
-        items: List[BomWeldingUnitPriceCreate],
+        items: list[BomWeldingUnitPriceCreate],
         current_user: UserVO,
-    ) -> Tuple[
-        List[BomWeldingUnitPriceResponse],
-        List[BomWeldingUnitPriceResponse],
-        List[str],
+    ) -> tuple[
+        list[BomWeldingUnitPriceResponse],
+        list[BomWeldingUnitPriceResponse],
+        list[str],
         int,
     ]:
-        created: List[BomWeldingUnitPriceResponse] = []
-        updated: List[BomWeldingUnitPriceResponse] = []
-        failed: List[str] = []
+        created: list[BomWeldingUnitPriceResponse] = []
+        updated: list[BomWeldingUnitPriceResponse] = []
+        failed: list[str] = []
         skipped_approved = 0
 
         for item in items:
@@ -160,8 +159,7 @@ class BomWeldingUnitPriceService:
                     updated.append(record)
                 except BusinessException as error:
                     failed.append(
-                        str(error)
-                        or f"{item.location}/{item.year}/{item.item_name} 更新失败"
+                        str(error) or f"{item.location}/{item.year}/{item.item_name} 更新失败"
                     )
                 continue
 
@@ -237,7 +235,7 @@ class BomWeldingUnitPriceService:
         *,
         location: str,
         year: int,
-    ) -> Tuple[int, int]:
+    ) -> tuple[int, int]:
         location = (location or "").strip()
         if not location:
             raise BusinessException("请选择采购基地")
@@ -255,9 +253,7 @@ class BomWeldingUnitPriceService:
             statuses=[AUDIT_APPROVED],
         )
         try:
-            deleted_count = self.repository.delete_unaudited_by_location_year(
-                db, location, year
-            )
+            deleted_count = self.repository.delete_unaudited_by_location_year(db, location, year)
             db.commit()
         except Exception:
             db.rollback()
@@ -357,8 +353,8 @@ class BomWeldingUnitPriceService:
             year=dto.year,
         )
 
-    def get_locations(self, db: Session) -> List[str]:
+    def get_locations(self, db: Session) -> list[str]:
         return self.repository.get_distinct_locations(db)
 
-    def get_years(self, db: Session) -> List[int]:
+    def get_years(self, db: Session) -> list[int]:
         return self.repository.get_distinct_years(db)

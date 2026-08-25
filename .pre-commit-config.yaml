@@ -1,11 +1,18 @@
 repos:
-  # 1. Ruff 代码检查与格式化
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.5.0
+  # 1. Ruff 代码检查与格式化（使用本地 pip 安装的 v0.5.0，避免国内访问 GitHub 克隆超时；版本与 pyproject dev-deps 下限精确对齐）
+  - repo: local
     hooks:
       - id: ruff
-        args: [--fix, --exit-non-zero-on-fix]
+        name: ruff (lint + auto-fix)
+        entry: python -m ruff check --fix --exit-non-zero-on-fix --no-cache
+        language: system
+        types_or: [python, pyi]
+
       - id: ruff-format
+        name: ruff (code formatter)
+        entry: python -m ruff format --no-cache
+        language: system
+        types_or: [python, pyi]
 
   # 2. Mypy 静态类型检查（使用当前 PATH / venv 中的 python，兼容 PyCharm）
   - repo: local

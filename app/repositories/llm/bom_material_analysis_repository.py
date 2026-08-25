@@ -46,9 +46,7 @@ class BomMaterialAnalysisRepository:
         part_number: str | None = None,
         limit: int = 5000,
     ) -> list[BomMaterialNodeRow]:
-        q = db.query(BomNode, BomSnapshot).join(
-            BomSnapshot, BomNode.snapshot_id == BomSnapshot.id
-        )
+        q = db.query(BomNode, BomSnapshot).join(BomSnapshot, BomNode.snapshot_id == BomSnapshot.id)
         normalized = _normalize_location(location)
         if normalized:
             q = q.filter(BomSnapshot.location == normalized)
@@ -79,9 +77,7 @@ class BomMaterialAnalysisRepository:
                 node_role=str(node.node_role),
                 material=node.material,
                 thickness_mm=(
-                    Decimal(str(node.thickness_mm))
-                    if node.thickness_mm is not None
-                    else None
+                    Decimal(str(node.thickness_mm)) if node.thickness_mm is not None else None
                 ),
                 qty=Decimal(str(node.qty)) if node.qty is not None else None,
             )

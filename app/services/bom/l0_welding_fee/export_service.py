@@ -377,9 +377,7 @@ class BomL0WeldingFeeExportService:
                 cell.border = self._thin
             else:
                 cell.fill = _fill("C62828")
-                cell.border = (
-                    self._split_detail if col == MAIN_COLS + 1 else self._thin
-                )
+                cell.border = self._split_detail if col == MAIN_COLS + 1 else self._thin
         ws.row_dimensions[header_row].height = HEADER_H
         return header_row
 
@@ -447,7 +445,9 @@ class BomL0WeldingFeeExportService:
                     cell.font = _font(size=9, color="607D8B")
                     cell.alignment = self._left
                 elif col in {9, 10, 11}:
-                    cell.font = _font(bold=True, color="C62828") if (col == 11 and missing) else _font()
+                    cell.font = (
+                        _font(bold=True, color="C62828") if (col == 11 and missing) else _font()
+                    )
                     cell.alignment = self._center
                 elif col == 16:
                     cell.font, cell.fill = self._status_tone(calc_status)
@@ -574,14 +574,11 @@ class BomL0WeldingFeeExportService:
             parts.append(f"计算={_CALC_LABEL.get(calc_status, calc_status)}")
         return " · ".join(parts) if parts else "全部筛选"
 
-    def _fill_missing_weld_info(
-        self, db: Session, records: list[BomL0WeldingFee]
-    ) -> None:
+    def _fill_missing_weld_info(self, db: Session, records: list[BomL0WeldingFee]) -> None:
         need_ids = [
             int(r.source_breakdown_node_id)
             for r in records
-            if r.source_breakdown_node_id
-            and not (r.weld_info_raw or "").strip()
+            if r.source_breakdown_node_id and not (r.weld_info_raw or "").strip()
         ]
         if not need_ids:
             return

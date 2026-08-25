@@ -147,9 +147,7 @@ def parse_welding_info_text(weld_info: str | None) -> WeldingProcessBreakdownPar
                 secondary = _to_decimal(match.group(2))
                 if secondary is not None:
                     secondary_unit = "mm"
-            standard_name, map_status = resolve_standard_process_name(
-                token, tags=tuple(tags)
-            )
+            standard_name, map_status = resolve_standard_process_name(token, tags=tuple(tags))
             items.append(
                 WeldingProcessBreakdownParsedItem(
                     process_token=token,

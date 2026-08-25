@@ -7,7 +7,7 @@ Response 类型统一放 vo/steel_price_policy_vo.py
 from dataclasses import dataclass
 from decimal import Decimal
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
@@ -19,6 +19,7 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 
 class PolicyType(str, Enum):
     """政策类型枚举"""
+
     THICKNESS = "THICKNESS"
     WIDTH = "WIDTH"
     THICKNESS_WIDTH = "THICKNESS_WIDTH"
@@ -26,6 +27,7 @@ class PolicyType(str, Enum):
 
 class GradeType(str, Enum):
     """grade_value 的语义类型枚举"""
+
     GRADE = "GRADE"
     WIDTH_RANGE = "WIDTH_RANGE"
     CATEGORY = "CATEGORY"
@@ -33,6 +35,7 @@ class GradeType(str, Enum):
 
 class Operator(str, Enum):
     """区间操作符枚举"""
+
     GTE = ">="
     GT = ">"
     LTE = "<="
@@ -44,7 +47,7 @@ class Operator(str, Enum):
 # ============================
 
 
-def _strip(v: Optional[str]) -> Optional[str]:
+def _strip(v: str | None) -> str | None:
     """去除首尾空白，无意义时返回 None"""
     if v is None:
         return None
@@ -59,22 +62,23 @@ def _strip(v: Optional[str]) -> Optional[str]:
 
 class LadderItemCreate(BaseModel):
     """阶梯明细创建请求"""
-    target_sub_group: Optional[str] = Field(None, max_length=100, description="附加子分组条件")
 
-    thick_min: Optional[Decimal] = Field(None, description="厚度下限值（mm）")
-    thick_min_operator: Optional[str] = Field(">=", description="厚度下限操作符")
-    thick_max: Optional[Decimal] = Field(None, description="厚度上限值（mm）")
-    thick_max_operator: Optional[str] = Field("<", description="厚度上限操作符")
+    target_sub_group: str | None = Field(None, max_length=100, description="附加子分组条件")
 
-    width_min: Optional[Decimal] = Field(None, description="宽度下限值（mm）")
-    width_min_operator: Optional[str] = Field(">=", description="宽度下限操作符")
-    width_max: Optional[Decimal] = Field(None, description="宽度上限值（mm）")
-    width_max_operator: Optional[str] = Field("<", description="宽度上限操作符")
+    thick_min: Decimal | None = Field(None, description="厚度下限值（mm）")
+    thick_min_operator: str | None = Field(">=", description="厚度下限操作符")
+    thick_max: Decimal | None = Field(None, description="厚度上限值（mm）")
+    thick_max_operator: str | None = Field("<", description="厚度上限操作符")
 
-    zinc_coating_min: Optional[Decimal] = Field(None, description="锌层克重下限值（g/m²）")
-    zinc_coating_min_operator: Optional[str] = Field(">=", description="锌层克重下限操作符")
-    zinc_coating_max: Optional[Decimal] = Field(None, description="锌层克重上限值（g/m²）")
-    zinc_coating_max_operator: Optional[str] = Field("<", description="锌层克重上限操作符")
+    width_min: Decimal | None = Field(None, description="宽度下限值（mm）")
+    width_min_operator: str | None = Field(">=", description="宽度下限操作符")
+    width_max: Decimal | None = Field(None, description="宽度上限值（mm）")
+    width_max_operator: str | None = Field("<", description="宽度上限操作符")
+
+    zinc_coating_min: Decimal | None = Field(None, description="锌层克重下限值（g/m²）")
+    zinc_coating_min_operator: str | None = Field(">=", description="锌层克重下限操作符")
+    zinc_coating_max: Decimal | None = Field(None, description="锌层克重上限值（g/m²）")
+    zinc_coating_max_operator: str | None = Field("<", description="锌层克重上限操作符")
 
     price_adjustment: int = Field(..., description="加减价金额（元/吨，整数）")
     is_base: int = Field(0, description="是否为基准厚度：0=否，1=是")
@@ -96,21 +100,22 @@ class LadderItemCreate(BaseModel):
 
 class LadderItemUpdate(BaseModel):
     """阶梯明细更新请求"""
-    target_sub_group: Optional[str] = Field(None, max_length=100, description="附加子分组条件")
 
-    thick_min: Optional[Decimal] = Field(None, description="厚度下限值（mm）")
-    thick_min_operator: Optional[str] = Field(None, description="厚度下限操作符")
-    thick_max: Optional[Decimal] = Field(None, description="厚度上限值（mm）")
-    thick_max_operator: Optional[str] = Field(None, description="厚度上限操作符")
+    target_sub_group: str | None = Field(None, max_length=100, description="附加子分组条件")
 
-    width_min: Optional[Decimal] = Field(None, description="宽度下限值（mm）")
-    width_min_operator: Optional[str] = Field(None, description="宽度下限操作符")
-    width_max: Optional[Decimal] = Field(None, description="宽度上限值（mm）")
-    width_max_operator: Optional[str] = Field(None, description="宽度上限操作符")
+    thick_min: Decimal | None = Field(None, description="厚度下限值（mm）")
+    thick_min_operator: str | None = Field(None, description="厚度下限操作符")
+    thick_max: Decimal | None = Field(None, description="厚度上限值（mm）")
+    thick_max_operator: str | None = Field(None, description="厚度上限操作符")
 
-    price_adjustment: Optional[int] = Field(None, description="加减价金额（元/吨）")
-    is_base: Optional[int] = Field(None, description="是否为基准厚度：0=否，1=是")
-    sort_order: Optional[int] = Field(None, description="匹配排序号")
+    width_min: Decimal | None = Field(None, description="宽度下限值（mm）")
+    width_min_operator: str | None = Field(None, description="宽度下限操作符")
+    width_max: Decimal | None = Field(None, description="宽度上限值（mm）")
+    width_max_operator: str | None = Field(None, description="宽度上限操作符")
+
+    price_adjustment: int | None = Field(None, description="加减价金额（元/吨）")
+    is_base: int | None = Field(None, description="是否为基准厚度：0=否，1=是")
+    sort_order: int | None = Field(None, description="匹配排序号")
 
     @field_validator("target_sub_group", mode="before")
     @classmethod
@@ -125,14 +130,15 @@ class LadderItemUpdate(BaseModel):
 
 class PolicyCreate(BaseModel):
     """政策创建请求"""
+
     year: int = Field(..., ge=2000, le=2100, description="生效年度")
     month: int = Field(..., ge=1, le=12, description="生效月份（1-12）")
     steel_mill: str = Field(..., min_length=1, max_length=100, description="钢厂名称")
     category_name: str = Field(..., min_length=1, max_length=100, description="钢种大类")
     policy_type: PolicyType = Field(..., description="政策类型")
-    grade_type: Optional[GradeType] = Field(None, description="grade_value 的语义类型")
-    grade_value: Optional[str] = Field(None, max_length=100, description="牌号或宽度范围")
-    base_thickness: Optional[Decimal] = Field(None, description="基准厚度（仅厚度政策需要）")
+    grade_type: GradeType | None = Field(None, description="grade_value 的语义类型")
+    grade_value: str | None = Field(None, max_length=100, description="牌号或宽度范围")
+    base_thickness: Decimal | None = Field(None, description="基准厚度（仅厚度政策需要）")
     items: list[LadderItemCreate] = Field(..., min_length=1, description="阶梯明细，至少一条")
 
     @field_validator("steel_mill", "category_name", "grade_value", mode="before")
@@ -152,10 +158,11 @@ class PolicyCreate(BaseModel):
 
 class PolicyUpdate(BaseModel):
     """政策更新请求"""
-    grade_type: Optional[GradeType] = Field(None, description="grade_value 的语义类型")
-    grade_value: Optional[str] = Field(None, max_length=100, description="牌号或宽度范围")
-    base_thickness: Optional[Decimal] = Field(None, description="基准厚度")
-    items: Optional[list[LadderItemCreate]] = Field(None, description="整组替换阶梯明细")
+
+    grade_type: GradeType | None = Field(None, description="grade_value 的语义类型")
+    grade_value: str | None = Field(None, max_length=100, description="牌号或宽度范围")
+    base_thickness: Decimal | None = Field(None, description="基准厚度")
+    items: list[LadderItemCreate] | None = Field(None, description="整组替换阶梯明细")
 
     @field_validator("grade_value", mode="before")
     @classmethod
@@ -176,13 +183,14 @@ class PolicyUpdate(BaseModel):
 
 class PolicyQuery(BaseModel):
     """政策分页筛选参数"""
-    year: Optional[int] = Field(None, ge=2000, le=2100, description="生效年度")
-    month: Optional[int] = Field(None, ge=1, le=12, description="生效月份（1-12）")
-    steel_mill: Optional[str] = Field(None, description="钢厂名称")
-    category_name: Optional[str] = Field(None, description="钢种大类")
-    policy_type: Optional[PolicyType] = Field(None, description="政策类型")
-    grade_type: Optional[GradeType] = Field(None, description="grade_value 的语义类型")
-    grade_value: Optional[str] = Field(None, description="牌号或宽度范围")
+
+    year: int | None = Field(None, ge=2000, le=2100, description="生效年度")
+    month: int | None = Field(None, ge=1, le=12, description="生效月份（1-12）")
+    steel_mill: str | None = Field(None, description="钢厂名称")
+    category_name: str | None = Field(None, description="钢种大类")
+    policy_type: PolicyType | None = Field(None, description="政策类型")
+    grade_type: GradeType | None = Field(None, description="grade_value 的语义类型")
+    grade_value: str | None = Field(None, description="牌号或宽度范围")
     page: int = Field(1, ge=1, description="页码")
     size: int = Field(20, ge=1, le=200, description="每页条数")
 
@@ -199,20 +207,23 @@ class PolicyQuery(BaseModel):
 
 class PolicyMatchRequest(BaseModel):
     """阶梯匹配请求"""
+
     year: int = Field(..., ge=2000, le=2100, description="生效年度")
     month: int = Field(..., ge=1, le=12, description="生效月份（1-12）")
     steel_mill: str = Field(..., min_length=1, max_length=100, description="钢厂名称")
     category_name: str = Field(..., min_length=1, max_length=100, description="钢种大类")
     policy_type: PolicyType = Field(..., description="政策类型")
-    grade_type: Optional[GradeType] = Field(None, description="grade_value 的语义类型")
-    grade_value: Optional[str] = Field(None, max_length=100, description="牌号或宽度范围")
-    base_thickness: Optional[Decimal] = Field(None, description="基准厚度")
-    target_sub_group: Optional[str] = Field(None, max_length=100, description="附加子分组条件")
-    thickness: Optional[Decimal] = Field(None, description="待匹配的厚度值（mm）")
-    width: Optional[Decimal] = Field(None, description="待匹配的宽度值（mm）")
-    zinc_coating: Optional[int] = Field(None, description="待匹配的锌层克重（g/m²）")
+    grade_type: GradeType | None = Field(None, description="grade_value 的语义类型")
+    grade_value: str | None = Field(None, max_length=100, description="牌号或宽度范围")
+    base_thickness: Decimal | None = Field(None, description="基准厚度")
+    target_sub_group: str | None = Field(None, max_length=100, description="附加子分组条件")
+    thickness: Decimal | None = Field(None, description="待匹配的厚度值（mm）")
+    width: Decimal | None = Field(None, description="待匹配的宽度值（mm）")
+    zinc_coating: int | None = Field(None, description="待匹配的锌层克重（g/m²）")
 
-    @field_validator("steel_mill", "category_name", "grade_value", "target_sub_group", mode="before")
+    @field_validator(
+        "steel_mill", "category_name", "grade_value", "target_sub_group", mode="before"
+    )
     @classmethod
     def strip_strings(cls, v: Any) -> Any:
         return _strip(v)
@@ -224,7 +235,7 @@ class PolicyMatchRequest(BaseModel):
             return None
         if isinstance(v, Decimal):
             return v
-        if isinstance(v, (int, float, str)):
+        if isinstance(v, int | float | str):
             return Decimal(str(v))
         raise ValueError("thickness/width 必须是数字")
 
@@ -235,7 +246,7 @@ class PolicyMatchRequest(BaseModel):
             return None
         if isinstance(v, int):
             return v
-        if isinstance(v, (float, str)):
+        if isinstance(v, float | str):
             return int(float(v))
         raise ValueError("zinc_coating 必须是整数")
 

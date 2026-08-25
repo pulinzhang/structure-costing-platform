@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 from decimal import Decimal
-from typing import List, Optional
 
 from sqlalchemy.orm import Session
 
@@ -55,7 +54,7 @@ class StampingScrapPriceCrudService:
         records: list[StampingScrapPrice],
     ) -> StampingScrapPriceMonthSheetVO:
         by_location = {r.location: r for r in records}
-        items: List[StampingScrapPriceMonthRowVO] = []
+        items: list[StampingScrapPriceMonthRowVO] = []
         for location in SCRAP_PRICE_LOCATIONS:
             record = by_location.get(location)
             if record:
@@ -86,8 +85,8 @@ class StampingScrapPriceCrudService:
     def list_month_summaries(
         self,
         db: Session,
-        year: Optional[int] = None,
-    ) -> List[StampingScrapPriceMonthSummaryVO]:
+        year: int | None = None,
+    ) -> list[StampingScrapPriceMonthSummaryVO]:
         rows = self.repository.list_month_summaries(db, year=year)
         return [
             StampingScrapPriceMonthSummaryVO(
@@ -173,10 +172,7 @@ class StampingScrapPriceCrudService:
         body: StampingScrapPriceCopyMonth,
         current_user: UserVO,
     ) -> StampingScrapPriceCopyMonthResponse:
-        if (
-            body.source_year == body.target_year
-            and body.source_month == body.target_month
-        ):
+        if body.source_year == body.target_year and body.source_month == body.target_month:
             raise BusinessException("源年月与目标年月不能相同")
 
         source_records = self.repository.list_by_year_month(
@@ -185,9 +181,7 @@ class StampingScrapPriceCrudService:
             body.source_month,
         )
         if not source_records:
-            raise NotFoundException(
-                f"源年月 {body.source_year}-{body.source_month:02d} 没有数据"
-            )
+            raise NotFoundException(f"源年月 {body.source_year}-{body.source_month:02d} 没有数据")
 
         by_location = {r.location: r for r in source_records}
         missing = [name for name in SCRAP_PRICE_LOCATIONS if name not in by_location]

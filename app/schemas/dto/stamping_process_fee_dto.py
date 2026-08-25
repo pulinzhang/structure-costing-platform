@@ -52,9 +52,7 @@ class StampingProcessFeeUpdateDTO(BaseModel):
         None,
         description="其它费用(元)，如拼焊费；可正可负；传 null 表示无其它费用",
     )
-    remark: str | None = Field(
-        None, max_length=1000, description="备注（调整理由/原因）"
-    )
+    remark: str | None = Field(None, max_length=1000, description="备注（调整理由/原因）")
 
     @field_validator("other_fee", mode="before")
     @classmethod

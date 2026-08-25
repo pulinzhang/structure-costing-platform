@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from openpyxl.worksheet.worksheet import Worksheet
 
@@ -24,8 +24,8 @@ class ThicknessBlockFinder:
 
     def __init__(
         self,
-        scanner: Optional[SheetScanner] = None,
-        assembler: Optional[PolicyAssembler] = None,
+        scanner: SheetScanner | None = None,
+        assembler: PolicyAssembler | None = None,
     ):
         self.scanner = scanner or SheetScanner()
         self.assembler = assembler or PolicyAssembler(scanner=self.scanner)
@@ -34,7 +34,7 @@ class ThicknessBlockFinder:
         self,
         sheet: Worksheet,
         steel_mill: str,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """默认厚度块扫描：按三步逻辑找块。
 
         第一步：找到所有含「厚度加减价-基准厚度」或「厚度加减价」的单元格
@@ -42,24 +42,20 @@ class ThicknessBlockFinder:
         第三步：从单元格左边第一列的下一行取出钢种；钢种单元格为空时块结束
         """
         del steel_mill  # 扫描不依赖钢厂；签名与调用方对齐
-        blocks: List[Dict[str, Any]] = []
+        blocks: list[dict[str, Any]] = []
         max_row = self.scanner.row_max(sheet)
         max_col = self.scanner.col_max(sheet)
 
-        title_cells: List[Dict[str, Any]] = []
+        title_cells: list[dict[str, Any]] = []
         for row in range(1, max_row + 1):
             for col in range(1, max_col + 1):
                 text = self.scanner.text(sheet, row, col)
-                if text and (
-                    "厚度加减价-基准厚度" in text or "厚度加减价" in text
-                ):
+                if text and ("厚度加减价-基准厚度" in text or "厚度加减价" in text):
                     next_row_text = self.scanner.text(sheet, row + 1, col)
                     if next_row_text and (
                         any(symbol in next_row_text for symbol in ["≥", "≤", "＞", "<"])
                         or (
-                            next_row_text.strip()[0:1].isdigit()
-                            if next_row_text.strip()
-                            else False
+                            next_row_text.strip()[0:1].isdigit() if next_row_text.strip() else False
                         )
                     ):
                         title_cells.append({"row": row, "col": col, "text": text})
@@ -85,9 +81,7 @@ class ThicknessBlockFinder:
             if not price_cols:
                 continue
 
-            base_thickness = self.scanner.infer_base_thickness(
-                sheet, header_row, title_row
-            )
+            base_thickness = self.scanner.infer_base_thickness(sheet, header_row, title_row)
 
             block = {
                 "category_name": "冷轧钢",
@@ -126,14 +120,14 @@ class ThicknessBlockFinder:
         sheet: Worksheet,
         header_row: int,
         title_col: int,
-    ) -> List[int]:
+    ) -> list[int]:
         """从 header_row 收集含 boundary 的列。
 
         厚度块专用：纯数字规范化为「<=数字」后判断。
         扫描遇到第一个空 cell 即终止。
         """
         scan_end = self.scanner.col_max(sheet)
-        cols: List[int] = []
+        cols: list[int] = []
         for col in range(title_col, scan_end + 1):
             raw = sheet.cell(row=header_row, column=col).value
             if raw is None:
@@ -142,7 +136,7 @@ class ThicknessBlockFinder:
             if _MAX_LABEL_RE.match(raw_stripped):
                 cols.append(col)
                 continue
-            if isinstance(raw, (int, float)):
+            if isinstance(raw, int | float):
                 normalized = "<=" + str(raw)
             elif isinstance(raw, str):
                 match = _MAX_LABEL_RE.match(raw_stripped)

@@ -18,21 +18,13 @@ _PART_SHORT_RE = re.compile(
 _YEAR_TOKEN_RE = re.compile(r"^(?:19|20)\d{2}$")
 _YM_HYPHEN_RE = re.compile(r"^(?:19|20)\d{2}-(?:0[1-9]|1[0-2])$")
 _YM_COMPACT_RE = re.compile(r"^(?:19|20)\d{2}(?:0[1-9]|1[0-2])$")
-_YMD_COMPACT_RE = re.compile(
-    r"^(?:19|20)\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01])$"
-)
+_YMD_COMPACT_RE = re.compile(r"^(?:19|20)\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01])$")
 
 T = TypeVar("T")
 
 
 def escape_like_fragment(value: str) -> str:
-    return (
-        (value or "")
-        .strip()
-        .replace("\\", "\\\\")
-        .replace("%", "\\%")
-        .replace("_", "\\_")
-    )
+    return (value or "").strip().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
 
 def part_number_like_pattern(fragment: str) -> str:
@@ -55,9 +47,7 @@ def is_temporal_part_number_token(value: str) -> bool:
         return True
     if _YM_COMPACT_RE.fullmatch(token):
         return True
-    if _YMD_COMPACT_RE.fullmatch(token):
-        return True
-    return False
+    return bool(_YMD_COMPACT_RE.fullmatch(token))
 
 
 def sanitize_part_number_token(value: str) -> str | None:
@@ -107,7 +97,5 @@ def pick_part_row(
     )
     if exact is not None:
         return exact
-    matched = [
-        row for row in rows if part_numbers_match(get_part_number(row), token)
-    ]
+    matched = [row for row in rows if part_numbers_match(get_part_number(row), token)]
     return matched[0] if matched else None

@@ -3,7 +3,6 @@
 API 接口定义
 """
 
-from typing import List
 from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, File, Form, Query, UploadFile, status
@@ -47,11 +46,11 @@ _export_service = BomWeldingUnitPriceExportService()
 _import_service = BomWeldingUnitPriceImportService()
 
 
-@router.get("/list", response_model=ApiResponse[List[BomWeldingUnitPriceResponse]])
+@router.get("/list", response_model=ApiResponse[list[BomWeldingUnitPriceResponse]])
 def list_all(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BOM_WELDING_UNIT_PRICE_VIEW)),
-) -> ApiResponse[List[BomWeldingUnitPriceResponse]]:
+) -> ApiResponse[list[BomWeldingUnitPriceResponse]]:
     """获取所有焊接单价列表"""
     data = _welding_unit_price_service.list_all(db)
     return ApiResponse.ok(data=data, message=f"查询到 {len(data)} 条记录")
@@ -59,14 +58,14 @@ def list_all(
 
 @router.get(
     "/by-year/{year}",
-    response_model=ApiResponse[List[BomWeldingUnitPriceResponse]],
+    response_model=ApiResponse[list[BomWeldingUnitPriceResponse]],
 )
 def list_by_year(
     year: int,
     location: str | None = None,
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BOM_WELDING_UNIT_PRICE_VIEW)),
-) -> ApiResponse[List[BomWeldingUnitPriceResponse]]:
+) -> ApiResponse[list[BomWeldingUnitPriceResponse]]:
     """获取指定年份的焊接单价；传入 location 时按基地过滤"""
     if location:
         data = _welding_unit_price_service.list_by_location_year(db, location, year)
@@ -96,21 +95,21 @@ def paginate(
     )
 
 
-@router.get("/filters/locations", response_model=ApiResponse[List[str]])
+@router.get("/filters/locations", response_model=ApiResponse[list[str]])
 def get_locations(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BOM_WELDING_UNIT_PRICE_VIEW)),
-) -> ApiResponse[List[str]]:
+) -> ApiResponse[list[str]]:
     """获取所有基地列表"""
     data = _welding_unit_price_service.get_locations(db)
     return ApiResponse.ok(data=data)
 
 
-@router.get("/filters/years", response_model=ApiResponse[List[int]])
+@router.get("/filters/years", response_model=ApiResponse[list[int]])
 def get_years(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BOM_WELDING_UNIT_PRICE_VIEW)),
-) -> ApiResponse[List[int]]:
+) -> ApiResponse[list[int]]:
     """获取所有年份列表"""
     data = _welding_unit_price_service.get_years(db)
     return ApiResponse.ok(data=data)
@@ -132,9 +131,7 @@ def export_excel(
     return StreamingResponse(
         iter([content]),
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={
-            "Content-Disposition": f"attachment; filename*=UTF-8''{quote(filename)}"
-        },
+        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{quote(filename)}"},
     )
 
 
@@ -143,9 +140,7 @@ def export_excel(
     response_model=ApiResponse[list[WeldingStandardProcessCatalogItemVO]],
 )
 def list_standard_catalog(
-    current_user: UserVO = Depends(
-        require_perm(Perm.BOM_WELDING_UNIT_PRICE_UPLOAD_VIEW)
-    ),
+    current_user: UserVO = Depends(require_perm(Perm.BOM_WELDING_UNIT_PRICE_UPLOAD_VIEW)),
 ) -> ApiResponse[list[WeldingStandardProcessCatalogItemVO]]:
     """焊接标准工艺目录（导入名称/单位须与此完全一致）。"""
     data = _import_service.list_standard_catalog()
@@ -154,18 +149,14 @@ def list_standard_catalog(
 
 @router.get("/template")
 def download_import_template(
-    current_user: UserVO = Depends(
-        require_perm(Perm.BOM_WELDING_UNIT_PRICE_UPLOAD_VIEW)
-    ),
+    current_user: UserVO = Depends(require_perm(Perm.BOM_WELDING_UNIT_PRICE_UPLOAD_VIEW)),
 ) -> StreamingResponse:
     """下载焊接单价导入模板（含标准工艺目录工作表）。"""
     content, filename = _import_service.build_template()
     return StreamingResponse(
         iter([content]),
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={
-            "Content-Disposition": f"attachment; filename*=UTF-8''{quote(filename)}"
-        },
+        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{quote(filename)}"},
     )
 
 
@@ -179,9 +170,7 @@ async def upload_welding_unit_price_excel(
     year: int = Form(..., description="年度（必填）"),
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(
-        require_perm(Perm.BOM_WELDING_UNIT_PRICE_UPLOAD_UPLOAD)
-    ),
+    current_user: UserVO = Depends(require_perm(Perm.BOM_WELDING_UNIT_PRICE_UPLOAD_UPLOAD)),
 ) -> ApiResponse[BomWeldingUnitPriceImportResultVO]:
     """同步导入焊接单价 Excel；基地与年度必选；仅支持 .xlsx。"""
     content = await file.read()
@@ -237,9 +226,7 @@ def batch_approve(
     current_user: UserVO = Depends(require_perm(Perm.BOM_WELDING_UNIT_PRICE_APPROVE)),
 ) -> ApiResponse[BomWeldingUnitPriceBatchAuditResultVO]:
     """按基地 + 年度批量审核通过。"""
-    result = _welding_unit_price_service.batch_approve(
-        db, body, current_user=current_user
-    )
+    result = _welding_unit_price_service.batch_approve(db, body, current_user=current_user)
     message = f"已审核通过 {result.updated_count} 条"
     if result.skipped_count:
         message += f"，跳过已审核 {result.skipped_count} 条"
@@ -256,9 +243,7 @@ def batch_reverse_audit(
     current_user: UserVO = Depends(require_perm(Perm.BOM_WELDING_UNIT_PRICE_REVERSE)),
 ) -> ApiResponse[BomWeldingUnitPriceBatchAuditResultVO]:
     """按基地 + 年度批量反审核。"""
-    result = _welding_unit_price_service.batch_reverse_audit(
-        db, body, current_user=current_user
-    )
+    result = _welding_unit_price_service.batch_reverse_audit(db, body, current_user=current_user)
     message = f"已反审核 {result.updated_count} 条"
     if result.skipped_count:
         message += f"，跳过非已审 {result.skipped_count} 条"
@@ -270,7 +255,7 @@ def batch_reverse_audit(
     response_model=ApiResponse[BomWeldingUnitPriceBulkUpsertResponse],
 )
 def bulk_upsert(
-    items: List[BomWeldingUnitPriceCreate],
+    items: list[BomWeldingUnitPriceCreate],
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BOM_WELDING_UNIT_PRICE_CREATE)),
 ) -> ApiResponse[BomWeldingUnitPriceBulkUpsertResponse]:
@@ -306,9 +291,7 @@ def create(
     current_user: UserVO = Depends(require_perm(Perm.BOM_WELDING_UNIT_PRICE_CREATE)),
 ) -> ApiResponse[BomWeldingUnitPriceResponse]:
     """创建焊接单价记录"""
-    record = _welding_unit_price_service.create(
-        db, body, current_user=current_user
-    )
+    record = _welding_unit_price_service.create(db, body, current_user=current_user)
     return ApiResponse.created(data=record, message="创建成功")
 
 
@@ -331,9 +314,7 @@ def update(
     current_user: UserVO = Depends(require_perm(Perm.BOM_WELDING_UNIT_PRICE_UPDATE)),
 ) -> ApiResponse[BomWeldingUnitPriceResponse]:
     """更新焊接单价记录"""
-    record = _welding_unit_price_service.update(
-        db, id, body, current_user=current_user
-    )
+    record = _welding_unit_price_service.update(db, id, body, current_user=current_user)
     return ApiResponse.updated(data=record, message="更新成功")
 
 

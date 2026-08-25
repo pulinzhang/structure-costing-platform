@@ -17,7 +17,7 @@ import traceback
 import uuid
 from collections.abc import Callable
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 from sqlalchemy.orm import Session
 
@@ -91,9 +91,7 @@ class SteelPriceCalcOrchestrator:
             stamping_supplier=(
                 request.stamping_supplier.strip() if request.stamping_supplier else None
             ),
-            vehicle_model=(
-                request.vehicle_model.strip() if request.vehicle_model else None
-            ),
+            vehicle_model=(request.vehicle_model.strip() if request.vehicle_model else None),
             operator_id=operator_id,
             operator_name=operator_name,
         )
@@ -126,7 +124,7 @@ class SteelPriceCalcOrchestrator:
         self,
         db: Session,
         request: SteelPriceCalcRequest,
-        progress_callback: Optional[ProgressCallback] = None,
+        progress_callback: ProgressCallback | None = None,
         *,
         log_id: int | None = None,
         calc_batch_id: str | None = None,
@@ -140,6 +138,7 @@ class SteelPriceCalcOrchestrator:
         否则回退为新建终态日志。
         业务失败返回 status=failed 的结果，不再向外抛出（校验错误 ValueError 除外）。
         """
+
         def _report(progress: int, msg: str) -> None:
             if progress_callback:
                 progress_callback(progress, msg)
@@ -164,9 +163,7 @@ class SteelPriceCalcOrchestrator:
         log_builder = ProcessLogBuilder()
 
         location = request.location.strip() if request.location else None
-        stamping_supplier = (
-            request.stamping_supplier.strip() if request.stamping_supplier else None
-        )
+        stamping_supplier = request.stamping_supplier.strip() if request.stamping_supplier else None
         vehicle_model = request.vehicle_model.strip() if request.vehicle_model else None
 
         result = SteelPriceCalcResult(
@@ -220,9 +217,7 @@ class SteelPriceCalcOrchestrator:
             result.no_base_count = no_base_count
             log_builder.line(f"命中基价并展开: {result.enriched_count} 行")
             log_builder.line(f"无基价/基价不完整: {result.no_base_count} 条")
-            log_builder.append_limited_details(
-                "无基价明细", no_base_details, is_error=True
-            )
+            log_builder.append_limited_details("无基价明细", no_base_details, is_error=True)
             _report(
                 40,
                 f"Step2 完成：命中 {result.enriched_count} 行，无基价 {result.no_base_count}",

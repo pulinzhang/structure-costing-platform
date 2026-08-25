@@ -152,9 +152,7 @@ def create_node(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BOM_UPLOAD_UPLOAD)),
 ) -> ApiResponse[BomNodeVO]:
-    row = _bom_service.create_node(
-        db, snapshot_id, body, current_user=current_user
-    )
+    row = _bom_service.create_node(db, snapshot_id, body, current_user=current_user)
     return ApiResponse.created(data=row, message="节点创建成功")
 
 

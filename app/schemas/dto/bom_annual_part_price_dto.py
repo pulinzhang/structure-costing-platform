@@ -88,9 +88,7 @@ class BomAnnualPartPriceQuery(BaseModel):
     location: str | None = Field(None, description="采购基地")
     year: int | None = Field(None, description="定价年度")
     audit_status: str | None = Field(None, description="审核状态")
-    keyword: str | None = Field(
-        None, max_length=100, description="零件号或名称模糊搜索（OR）"
-    )
+    keyword: str | None = Field(None, max_length=100, description="零件号或名称模糊搜索（OR）")
     page: int = Field(1, ge=1, description="页码")
     size: int = Field(100, ge=1, le=500, description="每页条数")
 

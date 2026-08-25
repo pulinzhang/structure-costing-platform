@@ -4,7 +4,6 @@
 """
 
 import logging
-from typing import List, Tuple
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -44,25 +43,23 @@ class StampingTonnagePriceService:
     def __init__(self) -> None:
         self.repository = StampingTonnagePriceRepository()
 
-    def list_by_year(
-        self, db: Session, year: int
-    ) -> List[StampingTonnagePriceResponse]:
+    def list_by_year(self, db: Session, year: int) -> list[StampingTonnagePriceResponse]:
         records = self.repository.list_by_year(db, year)
         return [StampingTonnagePriceResponse.model_validate(r) for r in records]
 
     def list_by_location_year(
         self, db: Session, location: str, year: int
-    ) -> List[StampingTonnagePriceResponse]:
+    ) -> list[StampingTonnagePriceResponse]:
         records = self.repository.list_by_location_year(db, location, year)
         return [StampingTonnagePriceResponse.model_validate(r) for r in records]
 
-    def list_all(self, db: Session) -> List[StampingTonnagePriceResponse]:
+    def list_all(self, db: Session) -> list[StampingTonnagePriceResponse]:
         records = self.repository.list_all(db)
         return [StampingTonnagePriceResponse.model_validate(r) for r in records]
 
     def paginate(
         self, db: Session, query: StampingTonnagePriceQuery
-    ) -> Tuple[List[StampingTonnagePriceResponse], int, TonnagePriceListFilters]:
+    ) -> tuple[list[StampingTonnagePriceResponse], int, TonnagePriceListFilters]:
         skip = (query.page - 1) * query.size
         audit_status = query.audit_status.strip() if query.audit_status else None
         records, total = self.repository.paginate(
@@ -127,12 +124,12 @@ class StampingTonnagePriceService:
     def bulk_upsert(
         self,
         db: Session,
-        items: List[StampingTonnagePriceCreate],
+        items: list[StampingTonnagePriceCreate],
         current_user: UserVO,
-    ) -> Tuple[
-        List[StampingTonnagePriceResponse],
-        List[StampingTonnagePriceResponse],
-        List[str],
+    ) -> tuple[
+        list[StampingTonnagePriceResponse],
+        list[StampingTonnagePriceResponse],
+        list[str],
         int,
     ]:
         """
@@ -140,9 +137,9 @@ class StampingTonnagePriceService:
         已审核通过的记录跳过，不覆盖。
         返回 (新增列表, 更新列表, 失败错误信息列表, 跳过已审核条数)。
         """
-        created: List[StampingTonnagePriceResponse] = []
-        updated: List[StampingTonnagePriceResponse] = []
-        failed: List[str] = []
+        created: list[StampingTonnagePriceResponse] = []
+        updated: list[StampingTonnagePriceResponse] = []
+        failed: list[str] = []
         skipped_approved = 0
 
         for item in items:
@@ -157,16 +154,13 @@ class StampingTonnagePriceService:
                     record = self.update(
                         db,
                         existing.id,
-                        StampingTonnagePriceUpdate(
-                            price_per_stroke=item.price_per_stroke
-                        ),
+                        StampingTonnagePriceUpdate(price_per_stroke=item.price_per_stroke),
                         current_user=current_user,
                     )
                     updated.append(record)
                 except BusinessException as error:
                     failed.append(
-                        str(error)
-                        or f"{item.location}/{item.year}/{item.tonnage}T 更新失败"
+                        str(error) or f"{item.location}/{item.year}/{item.tonnage}T 更新失败"
                     )
                 continue
 
@@ -235,7 +229,7 @@ class StampingTonnagePriceService:
         *,
         location: str,
         year: int,
-    ) -> Tuple[int, int]:
+    ) -> tuple[int, int]:
         """按基地 + 年度批量删除未审核记录。返回 (删除条数, 跳过已审核条数)。"""
         location = (location or "").strip()
         if not location:
@@ -254,9 +248,7 @@ class StampingTonnagePriceService:
             statuses=[AUDIT_APPROVED],
         )
         try:
-            deleted_count = self.repository.delete_unaudited_by_location_year(
-                db, location, year
-            )
+            deleted_count = self.repository.delete_unaudited_by_location_year(db, location, year)
             db.commit()
         except Exception:
             db.rollback()
@@ -356,11 +348,11 @@ class StampingTonnagePriceService:
             year=dto.year,
         )
 
-    def get_locations(self, db: Session) -> List[str]:
+    def get_locations(self, db: Session) -> list[str]:
         return self.repository.get_distinct_locations(db)
 
-    def get_years(self, db: Session) -> List[int]:
+    def get_years(self, db: Session) -> list[int]:
         return self.repository.get_distinct_years(db)
 
-    def get_tonnages(self, db: Session) -> List[int]:
+    def get_tonnages(self, db: Session) -> list[int]:
         return self.repository.get_distinct_tonnages(db)

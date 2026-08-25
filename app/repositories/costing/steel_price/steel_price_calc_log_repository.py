@@ -1,7 +1,6 @@
 """钢价计算批次日志 Repository。"""
 
 import logging
-from typing import Optional
 
 from sqlalchemy import text
 from sqlalchemy.engine import Connection
@@ -39,12 +38,10 @@ class SteelPriceCalcLogRepository:
     def is_processing_lock_index_ensured(self) -> bool:
         return SteelPriceCalcLogRepository._lock_index_ensured
 
-    def get_by_id(self, db: Session, log_id: int) -> Optional[SteelPriceCalcLog]:
+    def get_by_id(self, db: Session, log_id: int) -> SteelPriceCalcLog | None:
         return db.query(SteelPriceCalcLog).filter(SteelPriceCalcLog.id == log_id).first()
 
-    def get_by_batch_id(
-        self, db: Session, calc_batch_id: str
-    ) -> Optional[SteelPriceCalcLog]:
+    def get_by_batch_id(self, db: Session, calc_batch_id: str) -> SteelPriceCalcLog | None:
         return (
             db.query(SteelPriceCalcLog)
             .filter(SteelPriceCalcLog.calc_batch_id == calc_batch_id)
@@ -58,7 +55,7 @@ class SteelPriceCalcLogRepository:
         year: int,
         month: int,
         location: str,
-    ) -> Optional[SteelPriceCalcLog]:
+    ) -> SteelPriceCalcLog | None:
         return (
             db.query(SteelPriceCalcLog)
             .filter(
@@ -90,12 +87,7 @@ class SteelPriceCalcLogRepository:
             query = query.filter(SteelPriceCalcLog.location == location)
 
         total = query.count()
-        records = (
-            query.order_by(SteelPriceCalcLog.id.desc())
-            .offset(skip)
-            .limit(limit)
-            .all()
-        )
+        records = query.order_by(SteelPriceCalcLog.id.desc()).offset(skip).limit(limit).all()
         return records, total
 
     def create(self, db: Session, data: SteelPriceCalcLogCreate) -> SteelPriceCalcLog:
@@ -112,7 +104,7 @@ class SteelPriceCalcLogRepository:
 
     def update(
         self, db: Session, log_id: int, data: SteelPriceCalcLogPatch
-    ) -> Optional[SteelPriceCalcLog]:
+    ) -> SteelPriceCalcLog | None:
         record = self.get_by_id(db, log_id)
         if record is None:
             return None
@@ -134,4 +126,3 @@ class SteelPriceCalcLogRepository:
         db.flush()
         logger.info("删除计算日志: id=%s batch=%s", log_id, record.calc_batch_id)
         return True
-

@@ -154,8 +154,7 @@ class MonthlyBundleExportService:
         stamp = now().strftime("%Y%m%d_%H%M%S")
         safe_version = bom_version.replace("/", "-").replace("\\", "-")
         filename = (
-            f"核对合册_{year}年{month}月_{location}_"
-            f"{vehicle_model}_{safe_version}_{stamp}.xlsx"
+            f"核对合册_{year}年{month}月_{location}_" f"{vehicle_model}_{safe_version}_{stamp}.xlsx"
         )
         output = BytesIO()
         wb.save(output)

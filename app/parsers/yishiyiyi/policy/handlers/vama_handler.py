@@ -22,8 +22,9 @@
   ≥0.6   → 0.51 < w < 0.6（标准厚度值，开区间）
   ...
 """
+
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from openpyxl.worksheet.worksheet import Worksheet
 
@@ -35,6 +36,8 @@ from ..boundary_parser import _Boundary, is_strict_gt
 from .constants import GRADE_LABELS
 
 from ..models.ladder_item import ParsedLadderItem
+
+
 class VamaSheetHandler(BaseSheetHandler):
     """VAMA Sheet 处理器。"""
 
@@ -42,14 +45,12 @@ class VamaSheetHandler(BaseSheetHandler):
         self,
         sheet: Worksheet,
         header_row: int,
-        price_cols: List[int],
-    ) -> Dict[int, "_Boundary"]:
+        price_cols: list[int],
+    ) -> dict[int, "_Boundary"]:
         """VAMA 厚度专用：收集边界，使用厚度专用解析器。"""
         return self.assembler.collect_boundaries_thickness(sheet, header_row, price_cols)
 
-    def find_thickness_blocks(
-        self, sheet: Worksheet, steel_mill: str
-    ) -> List[Dict[str, Any]]:
+    def find_thickness_blocks(self, sheet: Worksheet, steel_mill: str) -> list[dict[str, Any]]:
         blocks = self.find_default_thickness_blocks(sheet, steel_mill)
         for block in blocks:
             # 读取 Col 10 的宽度范围（如 "1000-1600"）
@@ -60,8 +61,8 @@ class VamaSheetHandler(BaseSheetHandler):
         return blocks
 
     def _parse_width_range_from_col10(
-        self, sheet: Worksheet, block: Dict[str, Any]
-    ) -> Optional[Dict[str, Any]]:
+        self, sheet: Worksheet, block: dict[str, Any]
+    ) -> dict[str, Any] | None:
         """从 Col 10 读取宽度范围。
 
         表头行（或数据行）Col 10 通常是 "1000-1600" 这样的格式，
@@ -88,7 +89,7 @@ class VamaSheetHandler(BaseSheetHandler):
 
         return None
 
-    def _parse_width_text(self, text: str) -> Optional[Dict[str, Any]]:
+    def _parse_width_text(self, text: str) -> dict[str, Any] | None:
         """解析宽度文本，如 "1000-1600" → 闭区间 [1000, 1600]。
 
         VAMA 的宽度范围均为闭区间（两端都含）。
@@ -110,9 +111,7 @@ class VamaSheetHandler(BaseSheetHandler):
 
         return None
 
-    def find_width_blocks(
-        self, sheet: Worksheet, steel_mill: str
-    ) -> List[Dict[str, Any]]:
+    def find_width_blocks(self, sheet: Worksheet, steel_mill: str) -> list[dict[str, Any]]:
         # VAMA 没有独立的宽度政策块
         return []
 
@@ -120,10 +119,10 @@ class VamaSheetHandler(BaseSheetHandler):
         self,
         sheet: Worksheet,
         steel_mill: str,
-        warnings: List[str],
-    ) -> List[Any]:
+        warnings: list[str],
+    ) -> list[Any]:
         """VAMA override：调用 VAMA 专用 _parse_one_block，直接注入 width_range。"""
-        policies: List[Any] = []
+        policies: list[Any] = []
         for block in self.find_thickness_blocks(sheet, steel_mill):
             policies.extend(self._parse_one_block(sheet, steel_mill, "THICKNESS", block))
         for block in self.find_width_blocks(sheet, steel_mill):
@@ -139,12 +138,12 @@ class VamaSheetHandler(BaseSheetHandler):
         sheet: Worksheet,
         steel_mill: str,
         policy_type: str,
-        block: Dict[str, Any],
-    ) -> List[ParsedPolicy]:
+        block: dict[str, Any],
+    ) -> list[ParsedPolicy]:
         """VAMA override：处理 THICKNESS_WIDTH 类型，在每条 item 上注入 block 的宽度范围。"""
         grade_col = block.get("grade_col")
         header_row = block["header_row"]
-        price_cols: List[int] = list(block["price_cols"])
+        price_cols: list[int] = list(block["price_cols"])
         data_start = block["data_row_start"]
         data_end = block["data_row_end"]
         category_name = block.get("category_name", "冷轧钢")
@@ -159,8 +158,8 @@ class VamaSheetHandler(BaseSheetHandler):
 
         sorted_price_cols = sorted(price_cols)
 
-        policies: List[ParsedPolicy] = []
-        last_grade: Optional[str] = None
+        policies: list[ParsedPolicy] = []
+        last_grade: str | None = None
         for r in range(data_start, data_end + 1):
             if grade_col is None:
                 continue
@@ -196,13 +195,13 @@ class VamaSheetHandler(BaseSheetHandler):
         self,
         sheet: Worksheet,
         r: int,
-        price_cols: List[int],
-        boundaries: Dict[int, _Boundary],
-        width_range: Optional[Dict[str, Any]],
+        price_cols: list[int],
+        boundaries: dict[int, _Boundary],
+        width_range: dict[str, Any] | None,
         sort_order: int = 0,
-    ) -> List[ParsedLadderItem]:
+    ) -> list[ParsedLadderItem]:
         """VAMA 专用：构建行内阶梯项，同时注入宽度范围（双维度 THICKNESS_WIDTH）。"""
-        items: List[ParsedLadderItem] = []
+        items: list[ParsedLadderItem] = []
         sorted_cols = sorted(price_cols)
 
         for i, c in enumerate(sorted_cols):
@@ -238,10 +237,7 @@ class VamaSheetHandler(BaseSheetHandler):
                         # 1. 显式终结档（≥X-Y 格式）：已在 boundary_parser 中用 <=，此处不会被触发
                         # 2. 下一档 min_operator = ">" / "＞"（如 "＞2.0"）：闭区间 ≤
                         # 3. 下一档 min_operator = ">=" / "≥"：开区间 <
-                        if is_strict_gt(next_boundary.min_operator):
-                            max_operator = "<="
-                        else:
-                            max_operator = "<"
+                        max_operator = "<=" if is_strict_gt(next_boundary.min_operator) else "<"
                         boundary = _Boundary(
                             min_val=boundary.min_val,
                             min_operator=boundary.min_operator,

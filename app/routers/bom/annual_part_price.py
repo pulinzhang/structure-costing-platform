@@ -3,7 +3,6 @@ BOM 年度零件价路由
 API 接口定义（外购 + L1 一口价合并单表）
 """
 
-from typing import List
 from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, File, Form, Query, UploadFile, status
@@ -66,21 +65,21 @@ def paginate(
     )
 
 
-@router.get("/filters/locations", response_model=ApiResponse[List[str]])
+@router.get("/filters/locations", response_model=ApiResponse[list[str]])
 def get_locations(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BOM_ANNUAL_PART_PRICE_VIEW)),
-) -> ApiResponse[List[str]]:
+) -> ApiResponse[list[str]]:
     """获取所有基地列表"""
     data = _service.get_locations(db)
     return ApiResponse.ok(data=data)
 
 
-@router.get("/filters/years", response_model=ApiResponse[List[int]])
+@router.get("/filters/years", response_model=ApiResponse[list[int]])
 def get_years(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BOM_ANNUAL_PART_PRICE_VIEW)),
-) -> ApiResponse[List[int]]:
+) -> ApiResponse[list[int]]:
     """获取所有年份列表"""
     data = _service.get_years(db)
     return ApiResponse.ok(data=data)
@@ -102,26 +101,20 @@ def export_excel(
     return StreamingResponse(
         iter([content]),
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={
-            "Content-Disposition": f"attachment; filename*=UTF-8''{quote(filename)}"
-        },
+        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{quote(filename)}"},
     )
 
 
 @router.get("/template")
 def download_import_template(
-    current_user: UserVO = Depends(
-        require_perm(Perm.BOM_ANNUAL_PART_PRICE_UPLOAD_VIEW)
-    ),
+    current_user: UserVO = Depends(require_perm(Perm.BOM_ANNUAL_PART_PRICE_UPLOAD_VIEW)),
 ) -> StreamingResponse:
     """下载年度零件价导入模板。"""
     content, filename = _import_service.build_template()
     return StreamingResponse(
         iter([content]),
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={
-            "Content-Disposition": f"attachment; filename*=UTF-8''{quote(filename)}"
-        },
+        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{quote(filename)}"},
     )
 
 
@@ -135,9 +128,7 @@ async def upload_excel(
     year: int = Form(..., description="年度（必填）"),
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(
-        require_perm(Perm.BOM_ANNUAL_PART_PRICE_UPLOAD_UPLOAD)
-    ),
+    current_user: UserVO = Depends(require_perm(Perm.BOM_ANNUAL_PART_PRICE_UPLOAD_UPLOAD)),
 ) -> ApiResponse[BomAnnualPartPriceImportResultVO]:
     """同步导入年度零件价 Excel；基地与年度必选；仅支持 .xlsx。"""
     content = await file.read()

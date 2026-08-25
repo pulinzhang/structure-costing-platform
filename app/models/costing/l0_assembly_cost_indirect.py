@@ -27,15 +27,13 @@ class L0AssemblyCostIndirect(Base):
         index=True,
     )
 
-    assembly_cost: Mapped["L0AssemblyCost"] = relationship(
+    assembly_cost: Mapped[L0AssemblyCost] = relationship(
         "L0AssemblyCost", back_populates="indirects"
     )
 
     code: Mapped[str] = mapped_column(String(50), nullable=False, comment="间接项代码")
     label: Mapped[str] = mapped_column(String(100), nullable=False, comment="展示名")
-    amount: Mapped[Decimal] = mapped_column(
-        Numeric(14, 4), nullable=False, default=Decimal("0")
-    )
+    amount: Mapped[Decimal] = mapped_column(Numeric(14, 4), nullable=False, default=Decimal("0"))
     rate: Mapped[Decimal | None] = mapped_column(Numeric(8, 6), nullable=True)
     base_amount: Mapped[Decimal | None] = mapped_column(Numeric(14, 4), nullable=True)
     sort_no: Mapped[int] = mapped_column(Integer, nullable=False, default=0)

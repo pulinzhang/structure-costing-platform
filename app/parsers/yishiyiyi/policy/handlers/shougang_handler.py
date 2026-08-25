@@ -1,7 +1,7 @@
 """首钢 Sheet 处理器。"""
 
 from decimal import Decimal
-from typing import Any, Dict, List
+from typing import Any
 
 from openpyxl.worksheet.worksheet import Worksheet
 
@@ -33,9 +33,7 @@ class ShougangSheetHandler(BaseSheetHandler):
     # 厚度块
     # ------------------------------------------------------------------ #
 
-    def find_thickness_blocks(
-        self, sheet: Worksheet, steel_mill: str
-    ) -> List[Dict[str, Any]]:
+    def find_thickness_blocks(self, sheet: Worksheet, steel_mill: str) -> list[dict[str, Any]]:
         return self.find_default_thickness_blocks(sheet, steel_mill)
 
     # ------------------------------------------------------------------ #
@@ -79,9 +77,7 @@ class ShougangSheetHandler(BaseSheetHandler):
     # 块定位
     # ------------------------------------------------------------------ #
 
-    def find_width_blocks(
-        self, sheet: Worksheet, steel_mill: str
-    ) -> List[Dict[str, Any]]:
+    def find_width_blocks(self, sheet: Worksheet, steel_mill: str) -> list[dict[str, Any]]:
         """定位首钢所有宽度块。
 
         1. 扫描全表，找含"宽度"关键字的行 → 块标题（其合并单元格 end_col 即为价格列终点）
@@ -89,22 +85,20 @@ class ShougangSheetHandler(BaseSheetHandler):
         3. 从列头行含"宽"的列确定为起始列，标题合并单元格 end_col 为终止列
         4. 在块范围内扫描数据行
         """
-        blocks: List[Dict[str, Any]] = []
+        blocks: list[dict[str, Any]] = []
         max_row = self.row_max(sheet)
         max_col = self.col_max(sheet)
 
-        w_title_rows: List[int] = []
-        w_title_cols: List[int] = []
+        w_title_rows: list[int] = []
+        w_title_cols: list[int] = []
         for r in range(1, max_row + 1):
             for c in range(1, max_col + 1):
-                if self.text_or_none(sheet, r, c) and "宽度" in str(
-                    self.text_or_none(sheet, r, c)
-                ):
+                if self.text_or_none(sheet, r, c) and "宽度" in str(self.text_or_none(sheet, r, c)):
                     w_title_rows.append(r)
                     w_title_cols.append(c)
                     break
 
-        for idx, (title_row, title_col) in enumerate(zip(w_title_rows, w_title_cols)):
+        for idx, (title_row, title_col) in enumerate(zip(w_title_rows, w_title_cols, strict=False)):
             scan_end = w_title_rows[idx + 1] - 1 if idx + 1 < len(w_title_rows) else max_row
 
             header_row = self._find_header_row_in_range(sheet, title_row, scan_end)
@@ -125,7 +119,8 @@ class ShougangSheetHandler(BaseSheetHandler):
 
             # 收集价格列（title_col+1 到 price_end_col）
             price_cols = [
-                c for c in range(title_col + 1, price_end_col + 1)
+                c
+                for c in range(title_col + 1, price_end_col + 1)
                 if self.text_or_none(sheet, header_row, c) is not None
             ]
             if not price_cols:
@@ -139,9 +134,7 @@ class ShougangSheetHandler(BaseSheetHandler):
 
             for r in range(header_row + 1, scan_end + 1):
                 label = self.text_or_none(sheet, r, grade_col)
-                has_price = any(
-                    self.text_or_none(sheet, r, c) is not None for c in price_cols
-                )
+                has_price = any(self.text_or_none(sheet, r, c) is not None for c in price_cols)
                 if label and label not in GRADE_LABELS:
                     if data_start is None:
                         data_start = r
@@ -167,17 +160,19 @@ class ShougangSheetHandler(BaseSheetHandler):
             else:
                 category = "冷轧钢"
 
-            blocks.append({
-                "category_name": category,
-                "policy_type": "WIDTH",
-                "header_row": header_row,
-                "grade_col": grade_col,
-                "price_cols": sorted(price_cols),
-                "data_row_start": data_start,
-                "data_row_end": data_end,
-                "base_thickness": None,
-                "grade_blacklist": GRADE_LABELS,
-            })
+            blocks.append(
+                {
+                    "category_name": category,
+                    "policy_type": "WIDTH",
+                    "header_row": header_row,
+                    "grade_col": grade_col,
+                    "price_cols": sorted(price_cols),
+                    "data_row_start": data_start,
+                    "data_row_end": data_end,
+                    "base_thickness": None,
+                    "grade_blacklist": GRADE_LABELS,
+                }
+            )
 
         return blocks
 
@@ -189,8 +184,8 @@ class ShougangSheetHandler(BaseSheetHandler):
         self,
         sheet: Worksheet,
         steel_mill: str,
-        block: Dict[str, Any],
-    ) -> List[ParsedPolicy]:
+        block: dict[str, Any],
+    ) -> list[ParsedPolicy]:
         header_row = block["header_row"]
         price_cols = sorted(block["price_cols"])
         data_start = block["data_row_start"]
@@ -227,15 +222,17 @@ class ShougangSheetHandler(BaseSheetHandler):
                 raw.thick_max = thick_max
                 raw.thick_max_operator = thick_max_op or "<"
 
-            policies.append(ParsedPolicy(
-                steel_mill=steel_mill,
-                category_name=category_name,
-                grade_type=GRADE_TYPE_WIDTH_RANGE,
-                grade_value=thickness_label,
-                policy_type=POLICY_TYPE_WIDTH,
-                base_thickness=None,
-                items=raw_items,
-            ))
+            policies.append(
+                ParsedPolicy(
+                    steel_mill=steel_mill,
+                    category_name=category_name,
+                    grade_type=GRADE_TYPE_WIDTH_RANGE,
+                    grade_value=thickness_label,
+                    policy_type=POLICY_TYPE_WIDTH,
+                    base_thickness=None,
+                    items=raw_items,
+                )
+            )
 
         return policies
 
@@ -248,7 +245,7 @@ class ShougangSheetHandler(BaseSheetHandler):
         sheet: Worksheet,
         steel_mill: str,
         policy_type: str,
-    ) -> List[ParsedPolicy]:
+    ) -> list[ParsedPolicy]:
         if policy_type == "WIDTH":
             blocks = self.find_width_blocks(sheet, steel_mill)
             policies = []

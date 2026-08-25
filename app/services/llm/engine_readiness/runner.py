@@ -46,16 +46,10 @@ def _gate_to_dict(item: CostingEngineGateItemVO) -> dict[str, Any]:
 
 def _ready_to_summary(ready: CostingEngineReadyVO) -> dict[str, Any]:
     gates = ready.gates.upload_or_config
-    hard_fails = [
-        g for g in gates if (not g.ok) and g.code not in _SOFT_GATE_CODES
-    ]
-    soft_hints = [
-        g for g in gates if g.code in _SOFT_GATE_CODES and (not g.ok or g.missing)
-    ]
+    hard_fails = [g for g in gates if (not g.ok) and g.code not in _SOFT_GATE_CODES]
+    soft_hints = [g for g in gates if g.code in _SOFT_GATE_CODES and (not g.ok or g.missing)]
     ok_items = [g for g in gates if g.ok and g.code not in _SOFT_GATE_CODES]
-    l0_labels = [
-        f"{s.vehicle_model}/{s.bom_version}" for s in ready.plan.l0_scopes
-    ]
+    l0_labels = [f"{s.vehicle_model}/{s.bom_version}" for s in ready.plan.l0_scopes]
     return {
         "kind": "engine_readiness",
         "location": ready.input.get("location"),
@@ -67,9 +61,7 @@ def _ready_to_summary(ready: CostingEngineReadyVO) -> dict[str, Any]:
         "soft_hint_count": len(soft_hints),
         "ready_count": len(ok_items),
         "l0_scopes": l0_labels,
-        "stamping_suppliers": [
-            s.stamping_supplier for s in ready.plan.part_cost_scopes
-        ],
+        "stamping_suppliers": [s.stamping_supplier for s in ready.plan.part_cost_scopes],
     }
 
 
@@ -98,9 +90,7 @@ def render_engine_readiness_markdown(
     ]
 
     hard_fails = [
-        g
-        for g in ready.gates.upload_or_config
-        if (not g.ok) and g.code not in _SOFT_GATE_CODES
+        g for g in ready.gates.upload_or_config if (not g.ok) and g.code not in _SOFT_GATE_CODES
     ]
     soft_hints = [
         g
@@ -140,9 +130,7 @@ def render_engine_readiness_markdown(
         lines.append("")
 
     if ready.plan.l0_scopes:
-        scopes = "、".join(
-            f"{s.vehicle_model}/{s.bom_version}" for s in ready.plan.l0_scopes
-        )
+        scopes = "、".join(f"{s.vehicle_model}/{s.bom_version}" for s in ready.plan.l0_scopes)
         lines.append(f"成品核价范围（BOM 含 L0）：{scopes}。")
         lines.append("")
 

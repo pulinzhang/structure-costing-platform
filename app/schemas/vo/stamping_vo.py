@@ -4,7 +4,7 @@
 
 from datetime import datetime
 from decimal import Decimal
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field, field_serializer, field_validator
 
@@ -13,6 +13,7 @@ from app.common.timezone import datetime_to_iso
 
 
 # ==================== 冲次单价 VO ====================
+
 
 class StampingPartResponse(BaseModel):
     """冲压零件响应 VO"""
@@ -24,44 +25,38 @@ class StampingPartResponse(BaseModel):
     vehicle_model: str
     version: str
     stamping_supplier: str
-    seq_no: Optional[int] = None
+    seq_no: int | None = None
     part_number: str
-    part_name: Optional[str] = None
-    material: Optional[str] = None
-    thickness: Optional[Decimal] = None
-    part_weight: Optional[Decimal] = None
-    sheet_length: Optional[Decimal] = None
-    sheet_width: Optional[Decimal] = None
-    parts_per_sheet: Optional[int] = Field(
+    part_name: str | None = None
+    material: str | None = None
+    thickness: Decimal | None = None
+    part_weight: Decimal | None = None
+    sheet_length: Decimal | None = None
+    sheet_width: Decimal | None = None
+    parts_per_sheet: int | None = Field(
         default=None,
         description=(
             "可制件数：一张钢板/料片单独冲本零件可出的件数"
             "（例：1出2记2；左右共模按单侧计则为2；非利用率百分比）"
         ),
     )
-    sheet_type: Optional[str] = None
-    die_type: Optional[str] = None
-    process_method: Optional[str] = None
-    automation: Optional[str] = Field(
+    sheet_type: str | None = None
+    die_type: str | None = None
+    process_method: str | None = None
+    automation: str | None = Field(
         default=None,
         description="自动化：工艺文件原文（如自动/手动/半自动），非布尔是/否",
     )
-    remark: Optional[str] = None
-    sketch_url: Optional[str] = None
-    excel_filename: Optional[str] = None
-    excel_sheet_name: Optional[str] = Field(
-        default=None, description="来源 Excel 工作表名"
-    )
-    excel_row: Optional[int] = Field(
-        default=None, description="来源 Excel 行号（1-based）"
-    )
-    excel_part_col: Optional[int] = Field(
-        default=None, description="零件号所在列号（1-based）"
-    )
-    created_by: Optional[str] = None
-    updated_by: Optional[str] = None
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+    remark: str | None = None
+    sketch_url: str | None = None
+    excel_filename: str | None = None
+    excel_sheet_name: str | None = Field(default=None, description="来源 Excel 工作表名")
+    excel_row: int | None = Field(default=None, description="来源 Excel 行号（1-based）")
+    excel_part_col: int | None = Field(default=None, description="零件号所在列号（1-based）")
+    created_by: str | None = None
+    updated_by: str | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
 
     @field_serializer("created_at", "updated_at")
     def serialize_datetime(self, value: Any) -> Any:
@@ -85,19 +80,19 @@ class StampingPartListResponse(BaseModel):
     vehicle_model: str
     version: str
     part_number: str
-    part_name: Optional[str] = None
-    material: Optional[str] = None
-    thickness: Optional[Decimal] = None
-    part_weight: Optional[Decimal] = None
+    part_name: str | None = None
+    material: str | None = None
+    thickness: Decimal | None = None
+    part_weight: Decimal | None = None
     stamping_supplier: str
-    die_type: Optional[str] = None
-    process_method: Optional[str] = None
-    location: Optional[str] = None
-    excel_filename: Optional[str] = None
-    excel_sheet_name: Optional[str] = None
-    excel_row: Optional[int] = None
-    excel_part_col: Optional[int] = None
-    sketch_url: Optional[str] = None
+    die_type: str | None = None
+    process_method: str | None = None
+    location: str | None = None
+    excel_filename: str | None = None
+    excel_sheet_name: str | None = None
+    excel_row: int | None = None
+    excel_part_col: int | None = None
+    sketch_url: str | None = None
     process_count: int = Field(default=0, description="工序数量")
 
     @field_serializer("thickness", "part_weight")
@@ -114,13 +109,13 @@ class StampingProcessResponse(BaseModel):
     part_id: int
     process_seq: str
     process_order: int
-    process_code: Optional[str] = None
+    process_code: str | None = None
     die_sets: int
-    tonnage: Optional[int] = None
+    tonnage: int | None = None
     cost_ratio: Decimal
-    remark: Optional[str] = None
-    created_by: Optional[str] = None
-    updated_by: Optional[str] = None
+    remark: str | None = None
+    created_by: str | None = None
+    updated_by: str | None = None
 
     @field_serializer("cost_ratio")
     def serialize_cost_ratio(self, value: Decimal) -> str:
@@ -137,44 +132,38 @@ class StampingPartWithProcessesResponse(BaseModel):
     vehicle_model: str
     version: str
     stamping_supplier: str
-    seq_no: Optional[int] = None
+    seq_no: int | None = None
     part_number: str
-    part_name: Optional[str] = None
-    material: Optional[str] = None
-    thickness: Optional[Decimal] = None
-    part_weight: Optional[Decimal] = None
-    sheet_length: Optional[Decimal] = None
-    sheet_width: Optional[Decimal] = None
-    parts_per_sheet: Optional[int] = Field(
+    part_name: str | None = None
+    material: str | None = None
+    thickness: Decimal | None = None
+    part_weight: Decimal | None = None
+    sheet_length: Decimal | None = None
+    sheet_width: Decimal | None = None
+    parts_per_sheet: int | None = Field(
         default=None,
         description=(
             "可制件数：一张钢板/料片单独冲本零件可出的件数"
             "（例：1出2记2；左右共模按单侧计则为2；非利用率百分比）"
         ),
     )
-    sheet_type: Optional[str] = None
-    die_type: Optional[str] = None
-    process_method: Optional[str] = None
-    automation: Optional[str] = Field(
+    sheet_type: str | None = None
+    die_type: str | None = None
+    process_method: str | None = None
+    automation: str | None = Field(
         default=None,
         description="自动化：工艺文件原文（如自动/手动/半自动），非布尔是/否",
     )
-    remark: Optional[str] = None
-    sketch_url: Optional[str] = None
-    excel_filename: Optional[str] = None
-    excel_sheet_name: Optional[str] = Field(
-        default=None, description="来源 Excel 工作表名"
-    )
-    excel_row: Optional[int] = Field(
-        default=None, description="来源 Excel 行号（1-based）"
-    )
-    excel_part_col: Optional[int] = Field(
-        default=None, description="零件号所在列号（1-based）"
-    )
-    created_by: Optional[str] = None
-    updated_by: Optional[str] = None
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+    remark: str | None = None
+    sketch_url: str | None = None
+    excel_filename: str | None = None
+    excel_sheet_name: str | None = Field(default=None, description="来源 Excel 工作表名")
+    excel_row: int | None = Field(default=None, description="来源 Excel 行号（1-based）")
+    excel_part_col: int | None = Field(default=None, description="零件号所在列号（1-based）")
+    created_by: str | None = None
+    updated_by: str | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
     processes: list[StampingProcessResponse] = []
 
     @field_serializer("created_at", "updated_at")
@@ -192,23 +181,25 @@ class StampingPartWithProcessesResponse(BaseModel):
 
 class StampingPartQuery(BaseModel):
     """冲压零件查询参数"""
-    location: Optional[str] = Field(None, description="采购基地")
-    vehicle_model: Optional[str] = Field(None, description="车型")
-    version: Optional[str] = Field(None, description="版本")
-    part_number: Optional[str] = Field(None, description="零件号")
-    part_name: Optional[str] = Field(None, description="零件名称")
-    material: Optional[str] = Field(None, description="材质")
-    stamping_supplier: Optional[str] = Field(None, description="冲压供应商")
+
+    location: str | None = Field(None, description="采购基地")
+    vehicle_model: str | None = Field(None, description="车型")
+    version: str | None = Field(None, description="版本")
+    part_number: str | None = Field(None, description="零件号")
+    part_name: str | None = Field(None, description="零件名称")
+    material: str | None = Field(None, description="材质")
+    stamping_supplier: str | None = Field(None, description="冲压供应商")
     page: int = Field(1, ge=1, description="页码")
     size: int = Field(100, ge=1, le=500, description="每页条数")
 
 
 class StampingProcessUpdate(BaseModel):
     """工序更新请求"""
-    cost_ratio: Optional[Decimal] = Field(
+
+    cost_ratio: Decimal | None = Field(
         None, ge=0, le=10, description="成本系数（0~10，即0%~1000%）"
     )
-    remark: Optional[str] = None
+    remark: str | None = None
 
     @field_validator("cost_ratio", mode="before")
     @classmethod
@@ -220,11 +211,12 @@ class StampingProcessUpdate(BaseModel):
 
 class StampingProcessItemUpdate(BaseModel):
     """单个工序更新项"""
+
     id: int
-    cost_ratio: Optional[Decimal] = Field(
+    cost_ratio: Decimal | None = Field(
         None, ge=0, le=10, description="成本系数（0~10，即0%~1000%）"
     )
-    remark: Optional[str] = None
+    remark: str | None = None
 
     @field_validator("cost_ratio", mode="before")
     @classmethod
@@ -246,23 +238,26 @@ class StampingPartListSummaryVO(BaseModel):
 
 class StampingPartListFilterOptions(BaseModel):
     """零件列表筛选下拉选项 VO"""
+
     locations: list[str] = []
     vehicle_models: list[str] = []
     versions: list[str] = []
     materials: list[str] = []
     stamping_suppliers: list[str] = []
-    summary: Optional[StampingPartListSummaryVO] = None
+    summary: StampingPartListSummaryVO | None = None
 
 
 class StampingCascadeFilterQuery(BaseModel):
     """冲压级联筛选查询参数"""
-    location: Optional[str] = Field(None, description="采购基地")
-    stamping_supplier: Optional[str] = Field(None, description="冲压工厂")
-    vehicle_model: Optional[str] = Field(None, description="配套车型")
+
+    location: str | None = Field(None, description="采购基地")
+    stamping_supplier: str | None = Field(None, description="冲压工厂")
+    vehicle_model: str | None = Field(None, description="配套车型")
 
 
 class StampingCascadeFilterOptionsVO(BaseModel):
     """冲压级联筛选下拉选项 VO（基地 → 冲压工厂 → 配套车型）"""
+
     locations: list[str] = Field(default_factory=list, description="基地")
     stamping_suppliers: list[str] = Field(default_factory=list, description="冲压工厂")
     vehicle_models: list[str] = Field(default_factory=list, description="配套车型")
@@ -277,30 +272,32 @@ class StampingMaterialResponse(BaseModel):
     如厚度 ``0.70/1.00``、长 ``550.00/555.00``。
     """
 
-    material: Optional[str] = None
-    thickness: Optional[str] = Field(
+    material: str | None = None
+    thickness: str | None = Field(
         default=None, description="料厚(mm)；拼焊件为各子片拼接，如 0.70/1.00"
     )
-    sheet_length: Optional[str] = Field(
+    sheet_length: str | None = Field(
         default=None, description="料片长/卷料宽(mm)；拼焊件为各子片拼接"
     )
-    sheet_width: Optional[str] = Field(
+    sheet_width: str | None = Field(
         default=None, description="料片宽/卷料步距(mm)；拼焊件为各子片拼接"
     )
 
 
 class StampingMaterialQuery(BaseModel):
     """材料查询参数"""
-    location: Optional[str] = Field(None, description="采购基地")
-    stamping_supplier: Optional[str] = Field(None, description="冲压供应商")
-    vehicle_model: Optional[str] = Field(None, description="车型")
-    version: Optional[str] = Field(None, description="版本")
+
+    location: str | None = Field(None, description="采购基地")
+    stamping_supplier: str | None = Field(None, description="冲压供应商")
+    vehicle_model: str | None = Field(None, description="车型")
+    version: str | None = Field(None, description="版本")
     page: int = Field(1, ge=1, description="页码")
     size: int = Field(50, ge=1, le=500, description="每页条数")
 
 
 class BatchUpdateResponse(BaseModel):
     """批量更新响应 VO"""
+
     updated: int
 
 

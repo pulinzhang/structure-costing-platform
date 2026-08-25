@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_serializer
 
@@ -63,18 +64,18 @@ class LlmAnalysisReportListItemVO(BaseModel):
     metadata: LlmAnalysisReportListMetadataVO
 
     @classmethod
-    def from_orm_row(cls, row: object) -> "LlmAnalysisReportListItemVO":
+    def from_orm_row(cls, row: Any) -> LlmAnalysisReportListItemVO:
         return cls(
-            report_id=int(getattr(row, "id")),
-            status=str(getattr(row, "status")),
-            user_question=str(getattr(row, "user_question")),
-            resolved_report_type=str(getattr(row, "resolved_report_type")),
+            report_id=int(row.id),
+            status=str(row.status),
+            user_question=str(row.user_question),
+            resolved_report_type=str(row.resolved_report_type),
             scope=LlmAnalysisScopeVO(
-                location=str(getattr(row, "location")),
-                year=int(getattr(row, "year")),
-                month=int(getattr(row, "month")),
-                vehicle_model=str(getattr(row, "vehicle_model")),
-                bom_version=str(getattr(row, "bom_version")),
+                location=str(row.location),
+                year=int(row.year),
+                month=int(row.month),
+                vehicle_model=str(row.vehicle_model),
+                bom_version=str(row.bom_version),
                 part_number=getattr(row, "part_number", None),
                 stamping_supplier=getattr(row, "stamping_supplier", None),
             ),
@@ -118,11 +119,11 @@ class LlmAnalysisReportVO(BaseModel):
     @classmethod
     def from_orm_row(
         cls,
-        row: object,
+        row: Any,
         *,
         from_cache: bool = False,
         pack_ids: list[str] | None = None,
-    ) -> "LlmAnalysisReportVO":
+    ) -> LlmAnalysisReportVO:
         import json
 
         context_pack_ids: list[str] = pack_ids or []
@@ -142,31 +143,27 @@ class LlmAnalysisReportVO(BaseModel):
         from app.services.llm.prompts.labels import sanitize_report_markdown
 
         raw_markdown = getattr(row, "markdown_content", None)
-        markdown_content = (
-            sanitize_report_markdown(str(raw_markdown))
-            if raw_markdown
-            else None
-        )
+        markdown_content = sanitize_report_markdown(str(raw_markdown)) if raw_markdown else None
 
         return cls(
-            report_id=int(getattr(row, "id")),
-            task_id=str(getattr(row, "task_id")),
-            report_type=str(getattr(row, "report_type")),
-            resolved_report_type=str(getattr(row, "resolved_report_type")),
-            audience=str(getattr(row, "audience")),
-            user_question=str(getattr(row, "user_question")),
+            report_id=int(row.id),
+            task_id=str(row.task_id),
+            report_type=str(row.report_type),
+            resolved_report_type=str(row.resolved_report_type),
+            audience=str(row.audience),
+            user_question=str(row.user_question),
             prompt_id=getattr(row, "prompt_id", None),
-            intent_source=str(getattr(row, "intent_source")),
+            intent_source=str(row.intent_source),
             scope=LlmAnalysisScopeVO(
-                location=str(getattr(row, "location")),
-                year=int(getattr(row, "year")),
-                month=int(getattr(row, "month")),
-                vehicle_model=str(getattr(row, "vehicle_model")),
-                bom_version=str(getattr(row, "bom_version")),
+                location=str(row.location),
+                year=int(row.year),
+                month=int(row.month),
+                vehicle_model=str(row.vehicle_model),
+                bom_version=str(row.bom_version),
                 part_number=getattr(row, "part_number", None),
                 stamping_supplier=getattr(row, "stamping_supplier", None),
             ),
-            status=str(getattr(row, "status")),
+            status=str(row.status),
             markdown_content=markdown_content,
             error_message=getattr(row, "error_message", None),
             metadata=LlmAnalysisReportMetadataVO(
@@ -183,8 +180,8 @@ class LlmAnalysisReportVO(BaseModel):
                 total_tokens=getattr(row, "total_tokens", None),
                 from_cache=from_cache,
                 audit_hint=getattr(row, "audit_hint", None),
-                resolved_report_type=str(getattr(row, "resolved_report_type")),
-                intent_source=str(getattr(row, "intent_source")),
-                user_question=str(getattr(row, "user_question")),
+                resolved_report_type=str(row.resolved_report_type),
+                intent_source=str(row.intent_source),
+                user_question=str(row.user_question),
             ),
         )

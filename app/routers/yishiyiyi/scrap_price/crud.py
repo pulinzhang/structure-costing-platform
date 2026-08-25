@@ -2,7 +2,6 @@
 冲压废料月度销售价格路由（以「月」为录入/维护单元）
 """
 
-from typing import List, Optional
 from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, Query
@@ -93,13 +92,13 @@ def delete_month(
 
 @router.get(
     "/months",
-    response_model=ApiResponse[List[StampingScrapPriceMonthSummaryVO]],
+    response_model=ApiResponse[list[StampingScrapPriceMonthSummaryVO]],
 )
 def list_months(
-    year: Optional[int] = Query(None, ge=2000, le=2100, description="按年筛选"),
+    year: int | None = Query(None, ge=2000, le=2100, description="按年筛选"),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.SCRAP_PRICE_VIEW)),
-) -> ApiResponse[List[StampingScrapPriceMonthSummaryVO]]:
+) -> ApiResponse[list[StampingScrapPriceMonthSummaryVO]]:
     """已维护月份列表（维护页导航）。"""
     data = _scrap_price_service.list_month_summaries(db, year=year)
     return ApiResponse.ok(data=data, message=f"共 {len(data)} 个月份")
@@ -123,9 +122,7 @@ def get_filter_options(
     response_model=None,
 )
 def export_excel(
-    year: Optional[int] = Query(
-        None, ge=2000, le=2100, description="仅导出指定年；空则导出全部年份"
-    ),
+    year: int | None = Query(None, ge=2000, le=2100, description="仅导出指定年；空则导出全部年份"),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.SCRAP_PRICE_EXPORT)),
 ) -> StreamingResponse:
@@ -134,9 +131,7 @@ def export_excel(
     return StreamingResponse(
         iter([content]),
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={
-            "Content-Disposition": f"attachment; filename*=UTF-8''{quote(filename)}"
-        },
+        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{quote(filename)}"},
     )
 
 
@@ -150,9 +145,7 @@ def copy_month(
     current_user: UserVO = Depends(require_perm(Perm.SCRAP_PRICE_COPY)),
 ) -> ApiResponse[StampingScrapPriceCopyMonthResponse]:
     """从源月复制到目标月（目标已有则覆盖；源月必须录满 6 行）。"""
-    result = _scrap_price_service.copy_month(
-        db, body, current_user=current_user
-    )
+    result = _scrap_price_service.copy_month(db, body, current_user=current_user)
     return ApiResponse.ok(
         data=result,
         message=(

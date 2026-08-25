@@ -52,9 +52,7 @@ def resolve_assembly_supply_no(
             )
             if snapshot is None:
                 continue
-            part_to_l0 = build_part_to_l0_map(
-                bom_node_repo.list_by_snapshot(db, snapshot.id)
-            )
+            part_to_l0 = build_part_to_l0_map(bom_node_repo.list_by_snapshot(db, snapshot.id))
             snapshot_l0_cache[key] = part_to_l0
             break
 

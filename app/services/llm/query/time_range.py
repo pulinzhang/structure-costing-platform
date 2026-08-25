@@ -23,9 +23,7 @@ _CN_NUM = {
 }
 
 _RECENT_MONTHS_RE = re.compile(r"近\s*([一二三四五六七八九十\d]+)\s*个?月")
-_YEAR_FIRST_N_MONTHS_RE = re.compile(
-    r"(\d{4})\s*年\s*前\s*([一二三四五六七八九十\d]+)\s*个?月"
-)
+_YEAR_FIRST_N_MONTHS_RE = re.compile(r"(\d{4})\s*年\s*前\s*([一二三四五六七八九十\d]+)\s*个?月")
 _YEAR_ONLY_RE = re.compile(r"(\d{4})\s*年(?!\s*\d{1,2}\s*月)")
 _RANGE_RE = re.compile(
     r"(\d{4})\s*年\s*(\d{1,2})\s*月\s*[到至\-~～]\s*(?:(\d{4})\s*年\s*)?(\d{1,2})\s*月"
@@ -62,11 +60,15 @@ def normalize_time_range(
     explicit_end: str | None = None,
 ) -> TimeRange:
     if explicit_start and explicit_end:
-        start = explicit_start if len(explicit_start) == 7 else month_key(
-            int(explicit_start[:4]), int(explicit_start.split("-")[-1])
+        start = (
+            explicit_start
+            if len(explicit_start) == 7
+            else month_key(int(explicit_start[:4]), int(explicit_start.split("-")[-1]))
         )
-        end = explicit_end if len(explicit_end) == 7 else month_key(
-            int(explicit_end[:4]), int(explicit_end.split("-")[-1])
+        end = (
+            explicit_end
+            if len(explicit_end) == 7
+            else month_key(int(explicit_end[:4]), int(explicit_end.split("-")[-1]))
         )
         if start > end:
             start, end = end, start
@@ -125,9 +127,7 @@ def normalize_time_range(
     recent = _RECENT_MONTHS_RE.search(text)
     if recent:
         count = max(1, _parse_cn_or_int(recent.group(1)))
-        start_year, start_month = shift_month(
-            default.year, default.month, -(count - 1)
-        )
+        start_year, start_month = shift_month(default.year, default.month, -(count - 1))
         return TimeRange(
             start=month_key(start_year, start_month),
             end=month_key(default.year, default.month),
@@ -161,9 +161,7 @@ def question_has_explicit_time(user_question: str) -> bool:
         return True
     if _RECENT_MONTHS_RE.search(text):
         return True
-    if _SINGLE_RE.search(text):
-        return True
-    return False
+    return bool(_SINGLE_RE.search(text))
 
 
 def draft_has_time_range(draft: dict[str, object]) -> bool:

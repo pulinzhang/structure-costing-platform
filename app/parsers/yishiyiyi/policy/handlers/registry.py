@@ -14,6 +14,7 @@ from .shougang_handler import ShougangSheetHandler
 from .tanggang_handler import TanggangSheetHandler
 from .vama_handler import VamaSheetHandler
 
+
 def find_handler(sheet_name: str) -> Any:
     """根据 sheet 名字找到合适的处理器（大小写不敏感）。"""
     sheet_lower = sheet_name.lower()
@@ -34,7 +35,7 @@ _HANDLERS: list[tuple[type, tuple[str, ...]]] = [
     # 首钢：冷轧按厚度+宽度组合，镀锌按厚度+宽度组合
     (ShougangSheetHandler, ("首钢",)),
     # 鞍钢/鞍本/本钢：按宽度区间设固定价差，冷/镀/酸洗各一套
-    (AngangSheetHandler, ("鞍钢集团","鞍本","本钢", "鞍钢（")),
+    (AngangSheetHandler, ("鞍钢集团", "鞍本", "本钢", "鞍钢（")),
     # 鞍神：按厚度区间（2.0~0.75mm）与宽度（750~1250mm）组合
     (AnshenSheetHandler, ("鞍神",)),
     # VAMA/华菱：按钢种+厚度+宽度三维组合加价

@@ -3,8 +3,6 @@
 统一处理 FastAPI 中的各种异常，转换为标准 ApiResponse 格式
 """
 
-from typing import Union
-
 from fastapi import HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -14,9 +12,7 @@ from app.exceptions.base import BusinessException
 from app.utils.response import ApiResponse
 
 
-async def http_exception_handler(
-    request: Request, exc: HTTPException
-) -> JSONResponse:
+async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
     """处理 HTTPException
 
     注意：透传 HTTP 状态码，保持 RESTful 语义
@@ -31,7 +27,7 @@ async def http_exception_handler(
 
 
 async def validation_exception_handler(
-    request: Request, exc: Union[RequestValidationError, ValidationError]
+    request: Request, exc: RequestValidationError | ValidationError
 ) -> JSONResponse:
     """处理 Pydantic 验证错误"""
     errors = []
@@ -49,9 +45,7 @@ async def validation_exception_handler(
     )
 
 
-async def business_exception_handler(
-    request: Request, exc: BusinessException
-) -> JSONResponse:
+async def business_exception_handler(request: Request, exc: BusinessException) -> JSONResponse:
     """处理业务异常
 
     注意：透传 HTTP 状态码

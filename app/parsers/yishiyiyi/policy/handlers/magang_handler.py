@@ -18,7 +18,7 @@
 
 import re
 from decimal import Decimal
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from openpyxl.worksheet.worksheet import Worksheet
 
@@ -38,22 +38,17 @@ from app.parsers.yishiyiyi.policy.value_parser import _to_int_price
 # ============================================================================
 _THICKNESS_RANGE_MAP = {
     # Block 1: 冷轧钢宽度加减价
-    4: (None, ">=", Decimal("2.5"), "<"),   # 厚度＜2.5
+    4: (None, ">=", Decimal("2.5"), "<"),  # 厚度＜2.5
     5: (Decimal("2.5"), ">=", None, "<"),  # 厚度≥2.5
-
     # Block 2: 冷轧卷板（非高强）
     10: (None, ">=", Decimal("0.8"), "<"),  # 厚度＜0.8
     11: (Decimal("0.8"), ">=", None, "<"),  # 厚度≥0.8
-
     # Block 3: 冷轧卷板（高强）
     14: (Decimal("0.3"), ">=", Decimal("3.0"), "<="),  # 0.3～3.0
-
     # Block 4: 镀锌卷板（非高强）
     23: (Decimal("0.3"), ">=", Decimal("2.5"), "<="),  # 0.3～2.5
-
     # Block 5: 镀锌卷板（高强）
     27: (Decimal("0.3"), ">=", Decimal("2.5"), "<="),  # 0.3～2.5
-
     # Block 6: 镀锌卷板（高强）
     30: (Decimal("0.3"), ">=", Decimal("2.5"), "<="),  # 0.3～2.5
 }
@@ -63,7 +58,8 @@ _THICKNESS_RANGE_MAP = {
 #  辅助函数
 # ============================================================================
 
-def _parse_thickness_label(label: str) -> Tuple[Optional[float], str, Optional[float], str]:
+
+def _parse_thickness_label(label: str) -> tuple[float | None, str, float | None, str]:
     """解析厚度范围标签。
     支持：厚度<0.8 | 厚度≥0.8 | 0.3～3.0（闭区间）
     """
@@ -93,8 +89,8 @@ def _parse_thickness_label(label: str) -> Tuple[Optional[float], str, Optional[f
 # 马钢历史数据中使用的宽度边界格式 → (min_val, min_op, max_val, max_op)
 # 这些格式是写死的，因为马钢历史数据格式固定不变
 _WIDTH_BOUNDARY_MAP = {
-    "＜900":    (None, ">=", Decimal("900"), "<"),
-    "＜1000":   (None, ">=", Decimal("1000"), "<"),
+    "＜900": (None, ">=", Decimal("900"), "<"),
+    "＜1000": (None, ">=", Decimal("1000"), "<"),
     "1000≤宽度≤1250": (Decimal("1000"), ">=", Decimal("1250"), "<="),
     "1000≤宽度≤1350": (Decimal("1000"), ">=", Decimal("1350"), "<="),
     "1000≤宽度＜1200": (Decimal("1000"), ">=", Decimal("1200"), "<"),
@@ -105,15 +101,15 @@ _WIDTH_BOUNDARY_MAP = {
     "1400≤宽度＜1500": (Decimal("1400"), ">=", Decimal("1500"), "<"),
     "1500＜宽度≤1680": (Decimal("1500"), ">", Decimal("1680"), "<="),
     "1650＜宽度＜1850": (Decimal("1650"), ">", Decimal("1850"), "<"),
-    "900≤宽度＜1000":  (Decimal("900"), ">=", Decimal("1000"), "<"),
-    "≥1500":  (Decimal("1500"), ">=", None, "<"),
-    "≥1650":  (Decimal("1650"), ">=", None, "<"),
-    "≥1850":  (Decimal("1850"), ">=", None, "<"),
-    "≥1900":  (Decimal("1900"), ">=", None, "<"),
+    "900≤宽度＜1000": (Decimal("900"), ">=", Decimal("1000"), "<"),
+    "≥1500": (Decimal("1500"), ">=", None, "<"),
+    "≥1650": (Decimal("1650"), ">=", None, "<"),
+    "≥1850": (Decimal("1850"), ">=", None, "<"),
+    "≥1900": (Decimal("1900"), ">=", None, "<"),
 }
 
 
-def _parse_width_boundary(text: str) -> Tuple[Optional[Decimal], str, Optional[Decimal], str]:
+def _parse_width_boundary(text: str) -> tuple[Decimal | None, str, Decimal | None, str]:
     """解析宽度边界，返回 (min_val, min_op, max_val, max_op)
 
     马钢历史数据格式固定，直接查表返回。
@@ -129,6 +125,7 @@ def _parse_width_boundary(text: str) -> Tuple[Optional[Decimal], str, Optional[D
 
     # 纯数字结尾的上界（兜底，如 "＜850" 这种未知的上界格式）
     import re
+
     m = re.match(r"^[＜<=]\s*(\d+)$", text)
     if m:
         return None, ">=", Decimal(m.group(1)), "<"
@@ -138,11 +135,11 @@ def _parse_width_boundary(text: str) -> Tuple[Optional[Decimal], str, Optional[D
 
 
 def _infer_width_boundaries(
-    raw: Dict[int, Tuple[Optional[Decimal], str, Optional[Decimal], str]],
-    price_cols: List[int],
-) -> Dict[int, Tuple[Optional[Decimal], str, Optional[Decimal], str]]:
+    raw: dict[int, tuple[Decimal | None, str, Decimal | None, str]],
+    price_cols: list[int],
+) -> dict[int, tuple[Decimal | None, str, Decimal | None, str]]:
     """推断完整边界：补全 min/max 为 None 的列"""
-    result: Dict[int, Tuple[Optional[Decimal], str, Optional[Decimal], str]] = {}
+    result: dict[int, tuple[Decimal | None, str, Decimal | None, str]] = {}
     sorted_cols = sorted(price_cols)
 
     for i, c in enumerate(sorted_cols):
@@ -181,8 +178,8 @@ def _infer_width_boundaries(
 
 
 def _parse_width_boundary_cold_high_strength(
-    price_cols: List[int],
-) -> Dict[int, Tuple[Optional[Decimal], str, Optional[Decimal], str]]:
+    price_cols: list[int],
+) -> dict[int, tuple[Decimal | None, str, Decimal | None, str]]:
     """冷轧卷板（高强）特殊宽度边界：列头文本 <900 <1000 ... 与实际含义不符。
 
     实际映射（固定写死）：
@@ -192,7 +189,7 @@ def _parse_width_boundary_cold_high_strength(
         col18 1400≤w<1500 → 1400 <= w < 1500
         col19 ≥1500       → w >= 1500
     """
-    result: Dict[int, Tuple[Optional[Decimal], str, Optional[Decimal], str]] = {}
+    result: dict[int, tuple[Decimal | None, str, Decimal | None, str]] = {}
 
     # col15: w < 900
     if 15 in price_cols:
@@ -222,34 +219,63 @@ def _parse_width_boundary_cold_high_strength(
 # ============================================================================
 # 冷轧非高强钢种
 _COLD_ROLL_NORMAL_GRADES = [
-    "DC01", "DC03", "DC04", "DC06",
-    "B180H1", "B170P1/HC180Y", "B210P1/HC220Y", "B250P1/HC260Y",
-    "HC340/590DP", "HC340LA", "HC420LA", "HC420/780DP",
+    "DC01",
+    "DC03",
+    "DC04",
+    "DC06",
+    "B180H1",
+    "B170P1/HC180Y",
+    "B210P1/HC220Y",
+    "B250P1/HC260Y",
+    "HC340/590DP",
+    "HC340LA",
+    "HC420LA",
+    "HC420/780DP",
 ]
 
 # 高强冷轧钢种
 _COLD_ROLL_HIGH_STRENGTH_GRADES = [
-    "QSTE420TM", "SAPH370", "SAPH440", "SPHC", "SPHE",
+    "QSTE420TM",
+    "SAPH370",
+    "SAPH440",
+    "SPHC",
+    "SPHE",
 ]
 
 # 镀锌非高强钢种
 _GALVANIZED_NORMAL_GRADES = [
-    "DC54D+Z", "DC56D+Z",
-    "HC180YD+Z", "HC220YD+Z", "HC260YD+Z",
-    "HC340/590DPD+Z", "HC420/780DPD+Z",
-    "HC340LAD+Z", "HC420LAD+Z", "HC500LAD+Z",
+    "DC54D+Z",
+    "DC56D+Z",
+    "HC180YD+Z",
+    "HC220YD+Z",
+    "HC260YD+Z",
+    "HC340/590DPD+Z",
+    "HC420/780DPD+Z",
+    "HC340LAD+Z",
+    "HC420LAD+Z",
+    "HC500LAD+Z",
 ]
 
 # 镀锌高强钢种1：H300LA及以上低合金、HC250/450DPD及以上双相钢、HC380/590TRD及以上
 _GALVANIZED_HIGH_STRENGTH_GRADES_1 = [
-    "H300LA", "HC250/450DPD", "HC380/590TRD",
-    "HC300/500DPD", "HC340/600DPD", "HC380/600DPD",
-    "HC420/780TRD", "HC460/780TRD", "HC500/780TRD",
+    "H300LA",
+    "HC250/450DPD",
+    "HC380/590TRD",
+    "HC300/500DPD",
+    "HC340/600DPD",
+    "HC380/600DPD",
+    "HC420/780TRD",
+    "HC460/780TRD",
+    "HC500/780TRD",
 ]
 
 # 镀锌高强钢种2：CR240LA、H260YD、H260LAD、H260PD、M260LYD
 _GALVANIZED_HIGH_STRENGTH_GRADES_2 = [
-    "CR240LA", "H260YD", "H260LAD", "H260PD", "M260LYD",
+    "CR240LA",
+    "H260YD",
+    "H260LAD",
+    "H260PD",
+    "M260LYD",
 ]
 
 
@@ -264,7 +290,7 @@ class _WidthRegion:
         price_col_end: int,
         data_row_start: int,
         data_row_end: int,
-        grades: Optional[List[str]] = None,
+        grades: list[str] | None = None,
     ):
         self.title = title
         self.category = category
@@ -277,12 +303,12 @@ class _WidthRegion:
         self.grades = grades or []
 
 
-def _grade_from_col14(sheet: Worksheet, row: int) -> Optional[str]:
+def _grade_from_col14(sheet: Worksheet, row: int) -> str | None:
     v = sheet.cell(row=row, column=14).value
     return str(v).strip() if v is not None else None
 
 
-def _grade_from_col15(sheet: Worksheet, row: int) -> Optional[str]:
+def _grade_from_col15(sheet: Worksheet, row: int) -> str | None:
     v = sheet.cell(row=row, column=15).value
     if v is not None:
         return str(v).strip()
@@ -296,7 +322,7 @@ def _grade_from_col15(sheet: Worksheet, row: int) -> Optional[str]:
 
 
 # 六个固定区域
-_WIDTH_REGIONS: List[_WidthRegion] = [
+_WIDTH_REGIONS: list[_WidthRegion] = [
     # 1. 冷轧钢宽度加减价
     _WidthRegion(
         title="冷轧钢宽度加减价",
@@ -376,6 +402,7 @@ _WIDTH_REGIONS: List[_WidthRegion] = [
 #  Handler
 # ============================================================================
 
+
 class MagangSheetHandler(BaseSheetHandler):
     """马钢 Sheet 处理器（旧版格式）。使用固定区域逐行读取 N2:T33 六类宽度加减价。"""
 
@@ -383,9 +410,9 @@ class MagangSheetHandler(BaseSheetHandler):
         self,
         sheet: Worksheet,
         steel_mill: str,
-        warnings: List[str],
-    ) -> List[Any]:
-        policies: List[Any] = []
+        warnings: list[str],
+    ) -> list[Any]:
+        policies: list[Any] = []
         policies.extend(self._parse_thickness_fixed(sheet, steel_mill))
         policies.extend(self._parse_width_fixed(sheet, steel_mill, warnings))
         policies.extend(self.parse_zinc_coating_blocks(sheet, steel_mill))
@@ -396,9 +423,9 @@ class MagangSheetHandler(BaseSheetHandler):
     # ------------------------------------------------------------------ #
 
     def _parse_width_fixed(
-        self, sheet: Worksheet, steel_mill: str, warnings: List[str]
-    ) -> List[Any]:
-        policies: List[Any] = []
+        self, sheet: Worksheet, steel_mill: str, warnings: list[str]
+    ) -> list[Any]:
+        policies: list[Any] = []
         for region in _WIDTH_REGIONS:
             policies.extend(self._parse_one_region(sheet, steel_mill, region, warnings))
         return policies
@@ -408,8 +435,8 @@ class MagangSheetHandler(BaseSheetHandler):
         sheet: Worksheet,
         steel_mill: str,
         region: _WidthRegion,
-        warnings: List[str],
-    ) -> List[Any]:
+        warnings: list[str],
+    ) -> list[Any]:
         """分两步处理：
         对于grades为空的，说明是冷轧卷类
         对于grades不为空的，说明是板类。grades里的每一个都是一个policy
@@ -433,7 +460,7 @@ class MagangSheetHandler(BaseSheetHandler):
             return []
 
         # Step 2: 宽度块处理 - 解析列头宽度边界
-        raw_boundaries: Dict[int, Tuple[Optional[Decimal], str, Optional[Decimal], str]] = {}
+        raw_boundaries: dict[int, tuple[Decimal | None, str, Decimal | None, str]] = {}
         for c in price_cols:
             cell_text = sheet.cell(row=header_row, column=c).value
             if cell_text is not None:
@@ -449,7 +476,7 @@ class MagangSheetHandler(BaseSheetHandler):
 
         # Step 3/4: 构建 policy
         # grades 不为空 -> 板类：使用 region.grades；为空 -> 冷轧卷类：用行内 grade_value
-        policies: List[Any] = []
+        policies: list[Any] = []
         if region.grades:
             # 板类：外层是行（每行代表一个厚度范围），里层是该行对应的钢种；
             # 同一行的价格数据被所有钢种共用
@@ -464,46 +491,51 @@ class MagangSheetHandler(BaseSheetHandler):
                         category_name = region.category + thick_range_label
                     else:
                         category_name = region.category
-                    policies.append(ParsedPolicy(
-                        steel_mill=steel_mill,
-                        category_name=category_name,
-                        grade_type=GRADE_TYPE_THICKNESS_RANGE,
-                        grade_value=grade_value,
-                        policy_type=POLICY_TYPE_WIDTH,
-                        base_thickness=None,
-                        items=items,
-                    ))
+                    policies.append(
+                        ParsedPolicy(
+                            steel_mill=steel_mill,
+                            category_name=category_name,
+                            grade_type=GRADE_TYPE_THICKNESS_RANGE,
+                            grade_value=grade_value,
+                            policy_type=POLICY_TYPE_WIDTH,
+                            base_thickness=None,
+                            items=items,
+                        )
+                    )
         else:
             # 冷轧卷类：使用行数据中的 grade_value
             for r, grade_value in grade_rows_with_value:
                 items = self._build_width_items(sheet, r, price_cols, boundaries)
                 if not items:
                     continue
-                policies.append(ParsedPolicy(
-                    steel_mill=steel_mill,
-                    category_name=region.category,
-                    grade_type=GRADE_TYPE_THICKNESS_RANGE,
-                    grade_value=grade_value,
-                    policy_type=POLICY_TYPE_WIDTH,
-                    base_thickness=None,
-                    items=items,
-                ))
+                policies.append(
+                    ParsedPolicy(
+                        steel_mill=steel_mill,
+                        category_name=region.category,
+                        grade_type=GRADE_TYPE_THICKNESS_RANGE,
+                        grade_value=grade_value,
+                        policy_type=POLICY_TYPE_WIDTH,
+                        base_thickness=None,
+                        items=items,
+                    )
+                )
 
         return policies
+
     def _build_width_items(
         self,
         sheet: Worksheet,
         row: int,
-        price_cols: List[int],
-        boundaries: Dict[int, Tuple[Optional[Decimal], str, Optional[Decimal], str]],
-    ) -> List[ParsedLadderItem]:
+        price_cols: list[int],
+        boundaries: dict[int, tuple[Decimal | None, str, Decimal | None, str]],
+    ) -> list[ParsedLadderItem]:
         """构建某行的宽度阶梯 items（厚度范围从写死的 _THICKNESS_RANGE_MAP 获取）"""
         # 从写死的厚度范围表获取
         thick_min, thick_min_op, thick_max, thick_max_op = _THICKNESS_RANGE_MAP.get(
             row, (None, ">=", None, "<")
         )
 
-        items: List[ParsedLadderItem] = []
+        items: list[ParsedLadderItem] = []
         sorted_cols = sorted(price_cols)
 
         for i, c in enumerate(sorted_cols):
@@ -516,22 +548,24 @@ class MagangSheetHandler(BaseSheetHandler):
             if price == 0 and min_val is None and max_val is None:
                 continue
 
-            items.append(ParsedLadderItem(
-                target_sub_group=None,
-                thick_min=thick_min,
-                thick_min_operator=thick_min_op,
-                thick_max=thick_max,
-                thick_max_operator=thick_max_op,
-                width_min=min_val,
-                width_min_operator=min_op,
-                width_max=max_val,
-                width_max_operator=max_op,
-                price_adjustment=price,
-                is_base=False,
-                sort_order=row * 100 + i,
-                excel_row=row,
-                excel_col=c,
-            ))
+            items.append(
+                ParsedLadderItem(
+                    target_sub_group=None,
+                    thick_min=thick_min,
+                    thick_min_operator=thick_min_op,
+                    thick_max=thick_max,
+                    thick_max_operator=thick_max_op,
+                    width_min=min_val,
+                    width_min_operator=min_op,
+                    width_max=max_val,
+                    width_max_operator=max_op,
+                    price_adjustment=price,
+                    is_base=False,
+                    sort_order=row * 100 + i,
+                    excel_row=row,
+                    excel_col=c,
+                )
+            )
 
         return items
 
@@ -539,13 +573,9 @@ class MagangSheetHandler(BaseSheetHandler):
     #  厚度解析（复用默认逻辑）
     # ------------------------------------------------------------------ #
 
-    def _parse_thickness_fixed(
-        self, sheet: Worksheet, steel_mill: str
-    ) -> List[Any]:
+    def _parse_thickness_fixed(self, sheet: Worksheet, steel_mill: str) -> list[Any]:
         blocks = self.find_default_thickness_blocks(sheet, steel_mill)
-        policies: List[Any] = []
+        policies: list[Any] = []
         for block in blocks:
-            policies.extend(
-                self.assembler.build_policies_from_block(sheet, steel_mill, block)
-            )
+            policies.extend(self.assembler.build_policies_from_block(sheet, steel_mill, block))
         return policies

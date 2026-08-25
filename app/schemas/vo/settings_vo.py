@@ -15,24 +15,14 @@ class ConfigVO(BaseModel):
     app_name: str
     version: str
     steel_density: Decimal = Field(..., description="钢材密度(g/cm3)")
-    material_loss_rate: Decimal = Field(
-        ..., description="冲压材料损耗率（小数，如 0.003=千分之3）"
-    )
-    scrap_recovery_rate: Decimal = Field(
-        ..., description="废料回收率（小数，如 0.97=97%）"
-    )
-    finished_finance_rate: Decimal = Field(
-        ..., description="成品财务费率（小数，如 0.02=2%）"
-    )
-    finished_management_rate: Decimal = Field(
-        ..., description="成品管理费率（小数，如 0.02=2%）"
-    )
+    material_loss_rate: Decimal = Field(..., description="冲压材料损耗率（小数，如 0.003=千分之3）")
+    scrap_recovery_rate: Decimal = Field(..., description="废料回收率（小数，如 0.97=97%）")
+    finished_finance_rate: Decimal = Field(..., description="成品财务费率（小数，如 0.02=2%）")
+    finished_management_rate: Decimal = Field(..., description="成品管理费率（小数，如 0.02=2%）")
     finished_warehouse_packaging_rate: Decimal = Field(
         ..., description="仓储+包装管理费用率（小数，如 0.01=1%）"
     )
-    finished_scrap_rate: Decimal = Field(
-        ..., description="成品报废率（小数，如 0.003=千分之3）"
-    )
+    finished_scrap_rate: Decimal = Field(..., description="成品报废率（小数，如 0.003=千分之3）")
     finished_pretax_profit_rate: Decimal = Field(
         ..., description="成品税前利润率（小数，如 0.02=2%）"
     )

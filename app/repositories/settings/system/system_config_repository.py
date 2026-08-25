@@ -15,11 +15,7 @@ class SystemConfigRepository:
     """系统配置数据访问。"""
 
     def get_singleton(self, db: Session) -> SystemConfig | None:
-        return (
-            db.query(SystemConfig)
-            .filter(SystemConfig.id == SINGLETON_ID)
-            .first()
-        )
+        return db.query(SystemConfig).filter(SystemConfig.id == SINGLETON_ID).first()
 
     def create_singleton(self, db: Session, data: SystemConfigWrite) -> SystemConfig:
         row = model_from_payload(SystemConfig, data)

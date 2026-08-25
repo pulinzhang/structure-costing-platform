@@ -38,13 +38,13 @@ class L0AssemblyCost(AuditUserMixin, Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
 
-    items: Mapped[list["L0AssemblyCostItem"]] = relationship(
+    items: Mapped[list[L0AssemblyCostItem]] = relationship(
         "L0AssemblyCostItem",
         back_populates="assembly_cost",
         cascade="all, delete-orphan",
         order_by="L0AssemblyCostItem.sort_no, L0AssemblyCostItem.id",
     )
-    indirects: Mapped[list["L0AssemblyCostIndirect"]] = relationship(
+    indirects: Mapped[list[L0AssemblyCostIndirect]] = relationship(
         "L0AssemblyCostIndirect",
         back_populates="assembly_cost",
         cascade="all, delete-orphan",

@@ -66,9 +66,7 @@ class PartFeeCalculator:
         if not can_inherit_previous_tonnage(part, processes[0]):
             return processes
 
-        previous_part = self.tonnage_resolver.get_previous_part(
-            db, part, prev_part_cache
-        )
+        previous_part = self.tonnage_resolver.get_previous_part(db, part, prev_part_cache)
         if previous_part is None:
             return processes
 
@@ -78,9 +76,7 @@ class PartFeeCalculator:
 
         selected: list[StampingProcess] = []
         skipped_labels: list[str] = []
-        for process in sorted(
-            processes, key=lambda p: (p.process_order or 0, p.id or 0)
-        ):
+        for process in sorted(processes, key=lambda p: (p.process_order or 0, p.id or 0)):
             if is_swing_shear_process(process) or self_tonnage(process) is not None:
                 selected.append(process)
                 continue
@@ -91,8 +87,7 @@ class PartFeeCalculator:
 
         if skipped_labels:
             logger.warning(
-                "共模件跳过多余工序(以上一件为准): part=%s skipped=%s "
-                "上一件 %s 工序清单：%s",
+                "共模件跳过多余工序(以上一件为准): part=%s skipped=%s " "上一件 %s 工序清单：%s",
                 part.part_number,
                 "、".join(skipped_labels),
                 previous_part.part_number,
@@ -112,19 +107,13 @@ class PartFeeCalculator:
         if not processes:
             return self.build_failed_item(part, "无工序数据")
 
-        processes = self._select_processes_for_calc(
-            db, part, processes, prev_part_cache
-        )
+        processes = self._select_processes_for_calc(db, part, processes, prev_part_cache)
         if not processes:
-            return self.build_failed_item(
-                part, "共模件按上一件工序方案筛选后无有效工序"
-            )
+            return self.build_failed_item(part, "共模件按上一件工序方案筛选后无有效工序")
 
         total = Decimal("0")
         process_items: list[ProcessFeeItemPayload] = []
-        for process in sorted(
-            processes, key=lambda p: (p.process_order or 0, p.id or 0)
-        ):
+        for process in sorted(processes, key=lambda p: (p.process_order or 0, p.id or 0)):
             process_label = format_process_label(process)
             original_tonnage = self_tonnage(process)
 
@@ -134,9 +123,7 @@ class PartFeeCalculator:
                     part.part_number,
                     process_label,
                 )
-                line_fee = Decimal("0").quantize(
-                    FEE_QUANTIZE, rounding=ROUND_HALF_UP
-                )
+                line_fee = Decimal("0").quantize(FEE_QUANTIZE, rounding=ROUND_HALF_UP)
                 process_items.append(
                     ProcessFeeItemPayload(
                         source_process_id=process.id,
@@ -167,18 +154,14 @@ class PartFeeCalculator:
                 )
                 continue
 
-            tonnage_or_error = self.tonnage_resolver.resolve(
-                db, part, process, prev_part_cache
-            )
+            tonnage_or_error = self.tonnage_resolver.resolve(db, part, process, prev_part_cache)
             if isinstance(tonnage_or_error, str):
                 return self.build_failed_item(part, tonnage_or_error, process)
 
             resolved = tonnage_or_error
 
             if resolved.source == TONNAGE_SOURCE_SWING_SHEAR:
-                line_fee = Decimal("0").quantize(
-                    FEE_QUANTIZE, rounding=ROUND_HALF_UP
-                )
+                line_fee = Decimal("0").quantize(FEE_QUANTIZE, rounding=ROUND_HALF_UP)
                 process_items.append(
                     ProcessFeeItemPayload(
                         source_process_id=process.id,
@@ -189,15 +172,9 @@ class PartFeeCalculator:
                         resolved_tonnage=None,
                         tonnage_source=TONNAGE_SOURCE_SWING_SHEAR,
                         inherited_from_part_id=resolved.inherited_from_part_id,
-                        inherited_from_part_number=(
-                            resolved.inherited_from_part_number
-                        ),
-                        inherited_from_process_seq=(
-                            resolved.inherited_from_process_seq
-                        ),
-                        inherited_from_process_code=(
-                            resolved.inherited_from_process_code
-                        ),
+                        inherited_from_part_number=(resolved.inherited_from_part_number),
+                        inherited_from_process_seq=(resolved.inherited_from_process_seq),
+                        inherited_from_process_code=(resolved.inherited_from_process_code),
                         cost_ratio=None,
                         tonnage_price_id=None,
                         price_per_stroke=None,
@@ -209,15 +186,9 @@ class PartFeeCalculator:
                             cost_ratio=None,
                             price_per_stroke=None,
                             line_fee=line_fee,
-                            inherited_from_part_number=(
-                                resolved.inherited_from_part_number
-                            ),
-                            inherited_from_process_seq=(
-                                resolved.inherited_from_process_seq
-                            ),
-                            inherited_from_process_code=(
-                                resolved.inherited_from_process_code
-                            ),
+                            inherited_from_part_number=(resolved.inherited_from_part_number),
+                            inherited_from_process_seq=(resolved.inherited_from_process_seq),
+                            inherited_from_process_code=(resolved.inherited_from_process_code),
                         ),
                         remark=process.remark,
                     )
@@ -242,9 +213,7 @@ class PartFeeCalculator:
                     process,
                 )
 
-            cost_ratio = Decimal(
-                str(process.cost_ratio if process.cost_ratio is not None else 1)
-            )
+            cost_ratio = Decimal(str(process.cost_ratio if process.cost_ratio is not None else 1))
             price = rate_info.price_per_stroke
             line_raw = cost_ratio * price
             line_fee = line_raw.quantize(FEE_QUANTIZE, rounding=ROUND_HALF_UP)

@@ -304,7 +304,7 @@ class StampingPartExportService:
 
         part_cols: tuple[int, ...] = (1, 2, 3, 4, 5, 7, 10, 11, 16, 17, 18, 19)
         if not blanks:
-            part_cols = part_cols + (6, 8, 9)
+            part_cols = (*part_cols, 6, 8, 9)
         for col in part_cols:
             _merge_if_needed(ws, start_row, end_row, col)
 
@@ -322,7 +322,7 @@ class StampingPartExportService:
 
         if blanks:
             spans = _split_spans(n_rows, len(blanks))
-            for blank, (rel_start, rel_end) in zip(blanks, spans):
+            for blank, (rel_start, rel_end) in zip(blanks, spans, strict=False):
                 abs_start = start_row + rel_start
                 abs_end = start_row + rel_end
                 for col in (6, 8, 9):
@@ -335,8 +335,12 @@ class StampingPartExportService:
                 ws.cell(row=abs_start, column=9, value=_num(width, Q2)).alignment = self._right
         else:
             ws.cell(row=start_row, column=6, value=_num(part.thickness, Q4)).alignment = self._right
-            ws.cell(row=start_row, column=8, value=_num(part.sheet_length, Q2)).alignment = self._right
-            ws.cell(row=start_row, column=9, value=_num(part.sheet_width, Q2)).alignment = self._right
+            ws.cell(
+                row=start_row, column=8, value=_num(part.sheet_length, Q2)
+            ).alignment = self._right
+            ws.cell(
+                row=start_row, column=9, value=_num(part.sheet_width, Q2)
+            ).alignment = self._right
 
         for offset, process in enumerate(processes):
             excel_row = start_row + offset
@@ -418,10 +422,7 @@ def _resolve_sketch_path(part: StampingPart) -> Path | None:
     safe_location = location.replace("/", "_").replace("\\", "_")
     safe_vehicle = vehicle_model.replace("/", "_").replace("\\", "_")
     safe_version = version.replace("/", "_").replace("\\", "_").replace(" ", "_")
-    safe_name = "".join(
-        ch if ch.isalnum() or ch in ("_", "-") else "_"
-        for ch in part_number
-    )
+    safe_name = "".join(ch if ch.isalnum() or ch in ("_", "-") else "_" for ch in part_number)
     if not safe_name:
         return None
     candidate = (

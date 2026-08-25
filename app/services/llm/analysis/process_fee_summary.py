@@ -29,10 +29,7 @@ def build_process_fee_summary(rows: list[ProcessFeeRow]) -> dict[str, Any]:
 
     part_numbers = {row.part_number for row in rows}
     years = sorted({row.year for row in rows})
-    fees = [
-        row.final_processing_fee or row.processing_fee or Decimal("0")
-        for row in rows
-    ]
+    fees = [row.final_processing_fee or row.processing_fee or Decimal("0") for row in rows]
     fee_sum = sum(fees, Decimal("0"))
     avg = fee_sum / len(fees) if fees else Decimal("0")
 

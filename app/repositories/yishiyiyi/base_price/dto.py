@@ -3,8 +3,6 @@
 用于 Repository 层返回结构化数据，避免使用字典
 """
 
-from typing import Optional
-
 from pydantic import BaseModel, Field
 
 
@@ -34,13 +32,13 @@ class ExportRow(BaseModel):
     steel_mill: str
     category_name: str
     grade: str
-    thick: Optional[str] = None  # Decimal 转为字符串
-    width: Optional[str] = None  # Decimal 转为字符串
-    base_price: Optional[str] = None  # Decimal 转为字符串
-    processing_fee: Optional[str] = None  # Decimal 转为字符串
-    excel_filename: Optional[str] = None
-    sheet_name: Optional[str] = None
-    excel_row: Optional[int] = None
-    remark: Optional[str] = None
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
+    thick: str | None = None  # Decimal 转为字符串
+    width: str | None = None  # Decimal 转为字符串
+    base_price: str | None = None  # Decimal 转为字符串
+    processing_fee: str | None = None  # Decimal 转为字符串
+    excel_filename: str | None = None
+    sheet_name: str | None = None
+    excel_row: int | None = None
+    remark: str | None = None
+    created_at: str | None = None
+    updated_at: str | None = None

@@ -26,6 +26,7 @@ from app.schemas.vo.bom_l0_welding_fee_vo import (
     BomL0WeldingFeeCalcLogVO,
     BomL0WeldingFeeCalcResultVO,
 )
+import contextlib
 
 STATUS_PROCESSING = "processing"
 STATUS_SUCCESS = "success"
@@ -138,10 +139,8 @@ class BomL0WeldingFeeCalcLogService:
         detail_text: str,
     ) -> None:
         """异常路径：释放 processing 锁为 failed（先 rollback 清脏事务）。"""
-        try:
+        with contextlib.suppress(Exception):
             db.rollback()
-        except Exception:
-            pass
         self.calc_log_repo.update(
             db,
             log_id,
@@ -207,9 +206,7 @@ class BomL0WeldingFeeCalcLogService:
         )
         return [BomL0WeldingFeeCalcLogVO.model_validate(r) for r in rows], total
 
-    def get_calc_log(
-        self, db: Session, log_id: int
-    ) -> BomL0WeldingFeeCalcLogVO:
+    def get_calc_log(self, db: Session, log_id: int) -> BomL0WeldingFeeCalcLogVO:
         record = self.calc_log_repo.get_by_id(db, log_id)
         if record is None:
             raise NotFoundException("计算日志不存在")
@@ -234,16 +231,8 @@ class BomL0WeldingFeeCalcLogService:
     ) -> int | None:
         """引擎等同步调用未走 begin_processing 时，补写终态历史。"""
         operator = operator_name or "系统"
-        started_at = (
-            datetime.fromisoformat(result.started_at)
-            if result.started_at
-            else now()
-        )
-        finished_at = (
-            datetime.fromisoformat(result.finished_at)
-            if result.finished_at
-            else now()
-        )
+        started_at = datetime.fromisoformat(result.started_at) if result.started_at else now()
+        finished_at = datetime.fromisoformat(result.finished_at) if result.finished_at else now()
         calc_batch_id = result.calc_batch_id or f"bwf-{uuid.uuid4().hex[:16]}"
         try:
             record = self.calc_log_repo.create(
@@ -283,7 +272,5 @@ class BomL0WeldingFeeCalcLogService:
             return record.id
         except Exception:
             db.rollback()
-            logger.exception(
-                "写入焊接费计算日志失败: batch=%s", calc_batch_id
-            )
+            logger.exception("写入焊接费计算日志失败: batch=%s", calc_batch_id)
             return None

@@ -5,7 +5,7 @@ BOM 包装运输费 Repository
 
 import logging
 from datetime import datetime
-from typing import List, Optional, Tuple, TypedDict
+from typing import TypedDict
 
 from sqlalchemy import and_, case, func, or_
 from sqlalchemy.orm import Query, Session
@@ -38,12 +38,8 @@ class PackagingTransportFeeListFilters(TypedDict):
 class BomPackagingTransportFeeRepository:
     """包装运输费数据访问"""
 
-    def get_by_id(self, db: Session, id: int) -> Optional[BomPackagingTransportFee]:
-        return (
-            db.query(BomPackagingTransportFee)
-            .filter(BomPackagingTransportFee.id == id)
-            .first()
-        )
+    def get_by_id(self, db: Session, id: int) -> BomPackagingTransportFee | None:
+        return db.query(BomPackagingTransportFee).filter(BomPackagingTransportFee.id == id).first()
 
     def get_by_unique_key(
         self,
@@ -52,7 +48,7 @@ class BomPackagingTransportFeeRepository:
         year: int,
         vehicle_model: str,
         part_number: str,
-    ) -> Optional[BomPackagingTransportFee]:
+    ) -> BomPackagingTransportFee | None:
         return (
             db.query(BomPackagingTransportFee)
             .filter(
@@ -72,7 +68,7 @@ class BomPackagingTransportFeeRepository:
         location: str,
         year: int,
         vehicle_model: str,
-    ) -> List[BomPackagingTransportFee]:
+    ) -> list[BomPackagingTransportFee]:
         return (
             db.query(BomPackagingTransportFee)
             .filter(
@@ -86,9 +82,7 @@ class BomPackagingTransportFeeRepository:
             .all()
         )
 
-    def count_by_location_year(
-        self, db: Session, *, location: str, year: int
-    ) -> int:
+    def count_by_location_year(self, db: Session, *, location: str, year: int) -> int:
         return (
             db.query(BomPackagingTransportFee)
             .filter(
@@ -100,7 +94,7 @@ class BomPackagingTransportFeeRepository:
 
     def list_by_location_year(
         self, db: Session, *, location: str, year: int
-    ) -> List[BomPackagingTransportFee]:
+    ) -> list[BomPackagingTransportFee]:
         return (
             db.query(BomPackagingTransportFee)
             .filter(
@@ -114,11 +108,11 @@ class BomPackagingTransportFeeRepository:
     def _build_list_query(
         self,
         db: Session,
-        location: Optional[str] = None,
-        year: Optional[int] = None,
-        vehicle_model: Optional[str] = None,
-        audit_status: Optional[str] = None,
-        keyword: Optional[str] = None,
+        location: str | None = None,
+        year: int | None = None,
+        vehicle_model: str | None = None,
+        audit_status: str | None = None,
+        keyword: str | None = None,
     ) -> Query[BomPackagingTransportFee]:
         q = db.query(BomPackagingTransportFee)
         if location is not None:
@@ -142,14 +136,14 @@ class BomPackagingTransportFeeRepository:
     def paginate(
         self,
         db: Session,
-        location: Optional[str] = None,
-        year: Optional[int] = None,
-        vehicle_model: Optional[str] = None,
-        audit_status: Optional[str] = None,
-        keyword: Optional[str] = None,
+        location: str | None = None,
+        year: int | None = None,
+        vehicle_model: str | None = None,
+        audit_status: str | None = None,
+        keyword: str | None = None,
         skip: int = 0,
         limit: int = 100,
-    ) -> Tuple[List[BomPackagingTransportFee], int]:
+    ) -> tuple[list[BomPackagingTransportFee], int]:
         q = self._build_list_query(
             db,
             location=location,
@@ -175,11 +169,11 @@ class BomPackagingTransportFeeRepository:
     def summarize_by_filters(
         self,
         db: Session,
-        location: Optional[str] = None,
-        year: Optional[int] = None,
-        vehicle_model: Optional[str] = None,
-        audit_status: Optional[str] = None,
-        keyword: Optional[str] = None,
+        location: str | None = None,
+        year: int | None = None,
+        vehicle_model: str | None = None,
+        audit_status: str | None = None,
+        keyword: str | None = None,
     ) -> AuditCountSummary:
         q = self._build_list_query(
             db,
@@ -213,12 +207,12 @@ class BomPackagingTransportFeeRepository:
     def list_for_export(
         self,
         db: Session,
-        location: Optional[str] = None,
-        year: Optional[int] = None,
-        vehicle_model: Optional[str] = None,
-        audit_status: Optional[str] = None,
-        keyword: Optional[str] = None,
-    ) -> List[BomPackagingTransportFee]:
+        location: str | None = None,
+        year: int | None = None,
+        vehicle_model: str | None = None,
+        audit_status: str | None = None,
+        keyword: str | None = None,
+    ) -> list[BomPackagingTransportFee]:
         q = self._build_list_query(
             db,
             location=location,
@@ -227,17 +221,14 @@ class BomPackagingTransportFeeRepository:
             audit_status=audit_status,
             keyword=keyword,
         )
-        return (
-            q.order_by(
-                BomPackagingTransportFee.location,
-                BomPackagingTransportFee.year,
-                BomPackagingTransportFee.vehicle_model,
-                BomPackagingTransportFee.part_number,
-            )
-            .all()
-        )
+        return q.order_by(
+            BomPackagingTransportFee.location,
+            BomPackagingTransportFee.year,
+            BomPackagingTransportFee.vehicle_model,
+            BomPackagingTransportFee.part_number,
+        ).all()
 
-    def get_distinct_locations(self, db: Session) -> List[str]:
+    def get_distinct_locations(self, db: Session) -> list[str]:
         results = (
             db.query(BomPackagingTransportFee.location)
             .distinct()
@@ -246,7 +237,7 @@ class BomPackagingTransportFeeRepository:
         )
         return [r[0] for r in results]
 
-    def get_distinct_years(self, db: Session) -> List[int]:
+    def get_distinct_years(self, db: Session) -> list[int]:
         results = (
             db.query(BomPackagingTransportFee.year)
             .distinct()
@@ -255,7 +246,7 @@ class BomPackagingTransportFeeRepository:
         )
         return [r[0] for r in results]
 
-    def get_distinct_vehicle_models(self, db: Session) -> List[str]:
+    def get_distinct_vehicle_models(self, db: Session) -> list[str]:
         results = (
             db.query(BomPackagingTransportFee.vehicle_model)
             .distinct()
@@ -271,7 +262,7 @@ class BomPackagingTransportFeeRepository:
         location: str,
         year: int,
         vehicle_model: str,
-        statuses: List[str],
+        statuses: list[str],
     ) -> int:
         return (
             db.query(BomPackagingTransportFee)
@@ -316,7 +307,7 @@ class BomPackagingTransportFeeRepository:
         update_data: BomPackagingTransportFeeUpdate,
         *,
         updated_by: str,
-    ) -> Optional[BomPackagingTransportFee]:
+    ) -> BomPackagingTransportFee | None:
         record = self.get_by_id(db, id)
         if not record:
             return None
@@ -372,8 +363,8 @@ class BomPackagingTransportFeeRepository:
         vehicle_model: str,
         audited_by: str,
         audited_at: datetime,
-        audit_remark: Optional[str],
-        updated_by: Optional[str] = None,
+        audit_remark: str | None,
+        updated_by: str | None = None,
     ) -> int:
         values: dict[str, str | datetime | None] = {
             "audit_status": AUDIT_APPROVED,
@@ -405,7 +396,7 @@ class BomPackagingTransportFeeRepository:
         reverse_audited_by: str,
         reverse_audited_at: datetime,
         reverse_audit_remark: str,
-        updated_by: Optional[str] = None,
+        updated_by: str | None = None,
     ) -> int:
         values: dict[str, str | datetime | None] = {
             "audit_status": AUDIT_PENDING,

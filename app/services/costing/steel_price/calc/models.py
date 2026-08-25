@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from decimal import Decimal
-from typing import Optional
 
 from app.common.timezone import now
 from app.schemas.dto.steel_price_dto import SteelPriceWrite
@@ -84,7 +83,7 @@ class CalcRow:
     # 元数据
     match_status: str = "no_base"
     calc_status: str = "failed"
-    calc_message: Optional[str] = None
+    calc_message: str | None = None
     messages: list[str] = field(default_factory=list)
 
     def add_message(self, message: str) -> None:
@@ -129,12 +128,7 @@ class CalcRow:
         category_name = self.category_name
         width = self.width
         base_price = self.base_price
-        if (
-            steel_mill is None
-            or category_name is None
-            or width is None
-            or base_price is None
-        ):
+        if steel_mill is None or category_name is None or width is None or base_price is None:
             raise ValueError(
                 "不可落库行缺少必填字段: "
                 f"location={self.location} grade={self.grade} thickness={self.thickness}"

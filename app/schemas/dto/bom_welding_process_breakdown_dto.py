@@ -83,6 +83,7 @@ class BomWeldingProcessBreakdownNodeLinesUpdateDTO(BaseModel):
         ..., min_length=1, description="待保存的明细行"
     )
 
+
 class BomWeldingProcessBreakdownQuery(BaseModel):
     """分页查询"""
 
@@ -209,4 +210,3 @@ class BomWeldingProcessBreakdownGenerateLogPatch(TypedDict, total=False):
     detail_text: str
     finished_at: datetime
     updated_by: str
-

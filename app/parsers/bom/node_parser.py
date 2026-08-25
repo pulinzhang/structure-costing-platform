@@ -191,27 +191,26 @@ def parse_bom_nodes(ws: Any) -> tuple[list[BomParsedNode], dict[int, int], dict[
                 nodes.append(node)
                 deepest_index = current_l1_index
 
-            if has_l2:
-                if current_l1_index is not None:
-                    sort_counter += 1
-                    qty, qty_unit, qty_text = parse_qty(l2_qty_raw)
-                    node = BomParsedNode(
-                        level=2,
-                        parent_index=current_l1_index,
-                        sort_no=sort_counter,
-                        internal_number=l2_internal,
-                        part_number=l2_part or l2_internal or f"L2-{sort_counter}",
-                        part_name=l2_name,
-                        qty=qty if qty is not None else Decimal("1"),
-                        qty_unit=qty_unit,
-                        qty_text=qty_text,
-                        node_role="make",
-                        source_row=row,
-                    )
-                    current_l2_index = len(nodes)
-                    deepest_index = current_l2_index
-                    nodes.append(node)
-                    nodes[current_l1_index].node_role = "structure"
+            if has_l2 and current_l1_index is not None:
+                sort_counter += 1
+                qty, qty_unit, qty_text = parse_qty(l2_qty_raw)
+                node = BomParsedNode(
+                    level=2,
+                    parent_index=current_l1_index,
+                    sort_no=sort_counter,
+                    internal_number=l2_internal,
+                    part_number=l2_part or l2_internal or f"L2-{sort_counter}",
+                    part_name=l2_name,
+                    qty=qty if qty is not None else Decimal("1"),
+                    qty_unit=qty_unit,
+                    qty_text=qty_text,
+                    node_role="make",
+                    source_row=row,
+                )
+                current_l2_index = len(nodes)
+                deepest_index = current_l2_index
+                nodes.append(node)
+                nodes[current_l1_index].node_role = "structure"
 
             # 材料属性落到本行最深节点（通常不是 L0）
             if deepest_index is not None and deepest_index != current_l0_index:

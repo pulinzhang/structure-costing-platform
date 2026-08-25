@@ -37,7 +37,11 @@ class UploadFile(Base, AuditUserMixin):
     business_ref_type: Mapped[str | None] = mapped_column(String(40), nullable=True)
     business_ref_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     status: Mapped[str] = mapped_column(
-        String(20), nullable=False, default="active", index=True, comment="active/superseded/missing"
+        String(20),
+        nullable=False,
+        default="active",
+        index=True,
+        comment="active/superseded/missing",
     )
     superseded_by_id: Mapped[int | None] = mapped_column(
         ForeignKey("upload_files.id"), nullable=True

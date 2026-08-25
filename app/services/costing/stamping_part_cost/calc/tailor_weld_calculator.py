@@ -129,9 +129,7 @@ class TailorWeldPartCostCalculator:
             )
 
         scrap_kg = blank_kg_total - finished_total_kg
-        utilization = quantize(
-            (finished_total_kg / blank_kg_total) * Decimal("100"), UTIL_QUANTIZE
-        )
+        utilization = quantize((finished_total_kg / blank_kg_total) * Decimal("100"), UTIL_QUANTIZE)
 
         fee = self.fee_repo.get_by_business_key(
             db,
@@ -154,9 +152,7 @@ class TailorWeldPartCostCalculator:
                 part_name=part.part_name,
                 reason="加工费确认单价为空，请先完成加工费计算或录入其它费用",
             )
-        process_fee_amount = quantize(
-            Decimal(str(fee.final_processing_fee)), FEE_QUANTIZE
-        )
+        process_fee_amount = quantize(Decimal(str(fee.final_processing_fee)), FEE_QUANTIZE)
 
         material_amount_sheet = quantize(material_amount_raw, AMOUNT_QUANTIZE)
         loss_scrap_deduction = quantize(loss_scrap_raw, AMOUNT_QUANTIZE)
@@ -232,14 +228,8 @@ class TailorWeldPartCostCalculator:
         loss_rate: Decimal,
         recovery_rate: Decimal,
         scrap_kg_price: Decimal,
-    ) -> (
-        tuple[Decimal, Decimal, Decimal, SteelPrice]
-        | StampingPartCostFailedItemVO
-    ):
-        blank_label = (
-            blank.blank_part_number
-            or f"{part.part_number}-{blank.blank_seq}"
-        )
+    ) -> tuple[Decimal, Decimal, Decimal, SteelPrice] | StampingPartCostFailedItemVO:
+        blank_label = blank.blank_part_number or f"{part.part_number}-{blank.blank_seq}"
         material = (blank.material or "").strip()
         if not material:
             return StampingPartCostFailedItemVO(
@@ -274,8 +264,10 @@ class TailorWeldPartCostCalculator:
             )
 
         blank_kg = (
-            sheet_length * sheet_width * thickness * density
-        ) / Decimal("1000000") / Decimal(parts_per_sheet)
+            (sheet_length * sheet_width * thickness * density)
+            / Decimal("1000000")
+            / Decimal(parts_per_sheet)
+        )
         if blank_kg <= 0:
             return StampingPartCostFailedItemVO(
                 part_number=part.part_number,
@@ -341,7 +333,7 @@ class TailorWeldPartCostCalculator:
             return None, mill, None
         weighted = (
             sum(
-                (kg * price for kg, price in zip(blank_kgs, steel_ton_prices)),
+                (kg * price for kg, price in zip(blank_kgs, steel_ton_prices, strict=False)),
                 Decimal("0"),
             )
             / total_kg

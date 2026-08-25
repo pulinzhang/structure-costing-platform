@@ -11,7 +11,9 @@ from app.common.timezone import now
 class AuditUserMixin:
     """业务表统一审计字段（子类勿再重复定义）。"""
 
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=now, nullable=False, comment="创建时间（东八区墙钟）")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=now, nullable=False, comment="创建时间（东八区墙钟）"
+    )
     created_by: Mapped[str | None] = mapped_column(String(50), nullable=True, comment="创建人")
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,

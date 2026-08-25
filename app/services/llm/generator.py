@@ -35,43 +35,43 @@ class GeneratedReport:
 
 
 def _build_field_card() -> str:
-  lines = [
-      "【字段词典 — 仅供理解 JSON，写入报告时必须全部转为中文白话】",
-      "【铁律】",
-      "1. 问什么答什么；禁止套完整报告模板。",
-      "2. 报告正文禁止出现英文字段名、代码术语；见 chinese_style_rules。",
-      "3. 写合计/全年前必读 JSON 顶层 scope（time_range、month_count）；见 scope_rules。",
-      "4. 数字必须来自 Snapshot；禁止重算、禁止改为万元。",
-      "",
-      "常见字段中文释义：",
-  ]
-  label_map = {**L0_FIELD_LABELS, **AGGREGATE_FIELD_LABELS}
-  for key in (
-      "grand_total",
-      "grand_total_sum",
-      "total_amount",
-      "total_amount_sum",
-      "indirect_amount",
-      "stamping_amount",
-      "purchased_amount",
-      "bundle_amount",
-      "welding_amount",
-      "welding_other_fee",
-      "l0_count",
-      "ok_count",
-      "partial_count",
-  ):
-      if key in label_map:
-          lines.append(f"- {key} → {label_map[key]}")
-  lines.extend(
-      [
-          "- comparability/tight → 同口径可比",
-          "- comparability/loose → 口径可能变化",
-          "- summary → 概览分析",
-          "- buyer_lead → 采购主管",
-      ]
-  )
-  return "\n".join(lines)
+    lines = [
+        "【字段词典 — 仅供理解 JSON，写入报告时必须全部转为中文白话】",
+        "【铁律】",
+        "1. 问什么答什么；禁止套完整报告模板。",
+        "2. 报告正文禁止出现英文字段名、代码术语；见 chinese_style_rules。",
+        "3. 写合计/全年前必读 JSON 顶层 scope（time_range、month_count）；见 scope_rules。",
+        "4. 数字必须来自 Snapshot；禁止重算、禁止改为万元。",
+        "",
+        "常见字段中文释义：",
+    ]
+    label_map = {**L0_FIELD_LABELS, **AGGREGATE_FIELD_LABELS}
+    for key in (
+        "grand_total",
+        "grand_total_sum",
+        "total_amount",
+        "total_amount_sum",
+        "indirect_amount",
+        "stamping_amount",
+        "purchased_amount",
+        "bundle_amount",
+        "welding_amount",
+        "welding_other_fee",
+        "l0_count",
+        "ok_count",
+        "partial_count",
+    ):
+        if key in label_map:
+            lines.append(f"- {key} → {label_map[key]}")
+    lines.extend(
+        [
+            "- comparability/tight → 同口径可比",
+            "- comparability/loose → 口径可能变化",
+            "- summary → 概览分析",
+            "- buyer_lead → 采购主管",
+        ]
+    )
+    return "\n".join(lines)
 
 
 _FIELD_CARD = _build_field_card()
@@ -100,9 +100,7 @@ class LlmReportGenerator:
 
         prompt = self._registry.resolve(audience)
         system = f"{prompt.system_prompt}\n\n{_FIELD_CARD}"
-        context_json = json.dumps(
-            snapshot.to_prompt_dict(), ensure_ascii=False, indent=2
-        )
+        context_json = json.dumps(snapshot.to_prompt_dict(), ensure_ascii=False, indent=2)
         user = prompt.render_user(
             user_question=snapshot.query.user_question,
             report_type=analyses_key_label_zh(snapshot.query.analyses_key()),
@@ -133,9 +131,7 @@ class LlmReportGenerator:
     def _generate_usage_help(self, *, snapshot: AnalysisSnapshot) -> GeneratedReport:
         prompt = self._registry.resolve_usage_help()
         system = prompt.system_prompt
-        context_json = json.dumps(
-            snapshot.to_prompt_dict(), ensure_ascii=False, indent=2
-        )
+        context_json = json.dumps(snapshot.to_prompt_dict(), ensure_ascii=False, indent=2)
         user = prompt.render_user(
             user_question=snapshot.query.user_question,
             report_type=analyses_key_label_zh(snapshot.query.analyses_key()),
@@ -166,9 +162,7 @@ class LlmReportGenerator:
     def _generate_engine_readiness(self, *, snapshot: AnalysisSnapshot) -> GeneratedReport:
         prompt = self._registry.resolve_engine_readiness()
         system = prompt.system_prompt
-        context_json = json.dumps(
-            snapshot.to_prompt_dict(), ensure_ascii=False, indent=2
-        )
+        context_json = json.dumps(snapshot.to_prompt_dict(), ensure_ascii=False, indent=2)
         user = prompt.render_user(
             user_question=snapshot.query.user_question,
             report_type=analyses_key_label_zh(snapshot.query.analyses_key()),

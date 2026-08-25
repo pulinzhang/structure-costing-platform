@@ -54,9 +54,7 @@ def recompute_scope_derived_fields(
     bom_nodes = BomNodeRepository().list_by_snapshot(db, snapshot_id)
     children_map = build_children_map(bom_nodes)
     source_to_breakdown: dict[int, Any] = {
-        node.source_node_id: node
-        for node in nodes
-        if node.source_node_id is not None
+        node.source_node_id: node for node in nodes if node.source_node_id is not None
     }
 
     for node in nodes:

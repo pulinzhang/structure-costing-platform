@@ -264,12 +264,8 @@ def build_stamping_process_template() -> tuple[bytes, str]:
         if is_tailor:
             assert blank_segments is not None
             for segment in blank_segments:
-                sheet.cell(
-                    row=segment["start_row"], column=8, value=segment["length"]
-                )
-                sheet.cell(
-                    row=segment["start_row"], column=9, value=segment["width"]
-                )
+                sheet.cell(row=segment["start_row"], column=8, value=segment["length"])
+                sheet.cell(row=segment["start_row"], column=9, value=segment["width"])
         else:
             sheet.cell(row=start_row, column=8, value=part["length"])
             sheet.cell(row=start_row, column=9, value=part["width"])
@@ -317,8 +313,6 @@ def _write_notes(sheet: Worksheet, lines: list[str]) -> None:
     for idx, line in enumerate(lines, start=3):
         sheet.cell(row=idx, column=1, value=f"{idx - 2}. {line}")
         sheet.cell(row=idx, column=1).font = Font(name="微软雅黑", size=10)
-        sheet.cell(row=idx, column=1).alignment = Alignment(
-            wrap_text=True, vertical="center"
-        )
+        sheet.cell(row=idx, column=1).alignment = Alignment(wrap_text=True, vertical="center")
         sheet.row_dimensions[idx].height = 22
     sheet.column_dimensions["A"].width = 96

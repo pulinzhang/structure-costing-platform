@@ -71,7 +71,7 @@ def _parse_price(value: Any) -> Decimal | None:
     try:
         if isinstance(value, Decimal):
             number = value
-        elif isinstance(value, (int, float)):
+        elif isinstance(value, int | float):
             number = Decimal(str(value))
         else:
             text = str(value).strip().replace(",", "")
@@ -145,9 +145,7 @@ def parse_tonnage_price_excel(file_content: bytes) -> TonnagePriceParseResult:
 
         for row_idx in range(header_row + 1, (sheet.max_row or header_row) + 1):
             name_raw = _cell_text(sheet.cell(row_idx, name_col).value)
-            unit_raw = (
-                _cell_text(sheet.cell(row_idx, unit_col).value) if unit_col else ""
-            )
+            unit_raw = _cell_text(sheet.cell(row_idx, unit_col).value) if unit_col else ""
             price_raw = sheet.cell(row_idx, price_col).value
 
             if not name_raw and (price_raw is None or price_raw == ""):

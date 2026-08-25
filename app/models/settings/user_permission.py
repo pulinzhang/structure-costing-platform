@@ -10,9 +10,7 @@ class UserPermission(Base):
     """用户已授权的权限码（扁平存储）"""
 
     __tablename__ = "user_permissions"
-    __table_args__ = (
-        UniqueConstraint("user_id", "permission_code", name="uq_user_permission"),
-    )
+    __table_args__ = (UniqueConstraint("user_id", "permission_code", name="uq_user_permission"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True, autoincrement=True)
     user_id: Mapped[int] = mapped_column(

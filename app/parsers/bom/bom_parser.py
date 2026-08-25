@@ -30,7 +30,7 @@ __all__ = [
 
 def parse_bom_excel(source: str | Path | bytes) -> BomParseResult:
     """解析车身件材料清单 Excel，返回头信息 + 扁平节点列表（含 parent_index）。"""
-    if isinstance(source, (bytes, bytearray)):
+    if isinstance(source, bytes | bytearray):
         file_bytes = bytes(source)
         wb = load_workbook(BytesIO(file_bytes), data_only=True)
     else:

@@ -46,6 +46,7 @@ from app.services.llm.context.snapshot_builder import SnapshotBuilder
 from app.services.llm.generator import LlmReportGenerator
 from app.services.llm.query.query_parser import QueryParser
 from app.utils.logging_config import get_logger
+import contextlib
 
 logger = get_logger("service.llm.report")
 
@@ -79,9 +80,7 @@ class LlmAnalysisReportService:
             db,
             user_question=dto.user_question,
         )
-        active_count = self.repository.count_active_by_user(
-            db, user_id=int(current_user.id)
-        )
+        active_count = self.repository.count_active_by_user(db, user_id=int(current_user.id))
         if active_count >= int(settings.LLM_MAX_CONCURRENT_TASKS_PER_USER):
             raise BusinessException("too many requests", code=429)
 
@@ -263,13 +262,9 @@ class LlmAnalysisReportService:
             if row is None:
                 raise RuntimeError(f"报告不存在: {report_id}")
 
-            analysis_query = AnalysisQuery.model_validate(
-                json.loads(analysis_query_json)
-            )
+            analysis_query = AnalysisQuery.model_validate(json.loads(analysis_query_json))
             if not analysis_query.trace_id:
-                analysis_query = analysis_query.model_copy(
-                    update={"trace_id": str(uuid.uuid4())}
-                )
+                analysis_query = analysis_query.model_copy(update={"trace_id": str(uuid.uuid4())})
 
             _async_task_service.update_task_standalone(
                 task_id,
@@ -289,9 +284,7 @@ class LlmAnalysisReportService:
                 run = self.engine_readiness_runner.run(db, analysis_query)
             else:
                 run = self.runner.run(db, analysis_query)
-            snapshot = self.snapshot_builder.build(
-                query=analysis_query, run=run
-            )
+            snapshot = self.snapshot_builder.build(query=analysis_query, run=run)
 
             _async_task_service.update_task_standalone(
                 task_id,
@@ -371,9 +364,7 @@ class LlmAnalysisReportService:
                 status=STATUS_COMPLETED,
                 progress=100,
                 message=(
-                    "帮助回答完成"
-                    if analysis_query.query_mode == "usage_help"
-                    else "分析完成"
+                    "帮助回答完成" if analysis_query.query_mode == "usage_help" else "分析完成"
                 ),
                 result={
                     "report_id": report_id,
@@ -383,10 +374,8 @@ class LlmAnalysisReportService:
             )
         except Exception as exc:
             logger.exception("LLM 分析任务失败 task_id=%s", task_id)
-            try:
+            with contextlib.suppress(Exception):
                 db.rollback()
-            except Exception:
-                pass
             try:
                 self.repository.mark_failed(
                     db,
@@ -426,9 +415,7 @@ class LlmAnalysisReportService:
         progress = 0
         if row.status == REPORT_STATUS_RUNNING:
             progress = 40
-        elif row.status == REPORT_STATUS_SUCCEEDED:
-            progress = 100
-        elif row.status == REPORT_STATUS_FAILED:
+        elif row.status == REPORT_STATUS_SUCCEEDED or row.status == REPORT_STATUS_FAILED:
             progress = 100
         return LlmAnalysisReportTaskVO(
             task_id=row.task_id,
