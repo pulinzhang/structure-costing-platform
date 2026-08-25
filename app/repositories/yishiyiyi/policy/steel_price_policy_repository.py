@@ -4,7 +4,7 @@
 """
 
 from decimal import Decimal
-from typing import Optional, TypeVar
+from typing import TypeVar
 
 from sqlalchemy import distinct, func
 from sqlalchemy.orm import InstrumentedAttribute, Query, Session, joinedload
@@ -29,13 +29,13 @@ class PolicyFilter:
     def __init__(
         self,
         *,
-        year: Optional[int] = None,
-        month: Optional[int] = None,
-        steel_mill: Optional[str] = None,
-        category_name: Optional[str] = None,
-        policy_type: Optional[str] = None,
-        grade_type: Optional[str] = None,
-        grade_value: Optional[str] = None,
+        year: int | None = None,
+        month: int | None = None,
+        steel_mill: str | None = None,
+        category_name: str | None = None,
+        policy_type: str | None = None,
+        grade_type: str | None = None,
+        grade_value: str | None = None,
         skip: int = 0,
         limit: int = 20,
     ):
@@ -61,9 +61,9 @@ class MatchFilter:
         steel_mill: str,
         category_name: str,
         policy_type: str,
-        grade_type: Optional[str] = None,
-        grade_value: Optional[str] = None,
-        base_thickness: Optional[Decimal] = None,
+        grade_type: str | None = None,
+        grade_value: str | None = None,
+        base_thickness: Decimal | None = None,
     ):
         self.year = year
         self.month = month
@@ -85,7 +85,7 @@ class SteelPricePolicyRepository:
         db: Session,
         policy_id: int,
         load_items: bool = True,
-    ) -> Optional[SteelPricePolicy]:
+    ) -> SteelPricePolicy | None:
         """
         根据主键查询政策。
 
@@ -187,16 +187,12 @@ class SteelPricePolicyRepository:
         policy_types = self._distinct_values(db, SteelPricePolicy.policy_type)
         grade_types = [
             value
-            for value in self._distinct_values(
-                db, SteelPricePolicy.grade_type, filter_none=True
-            )
+            for value in self._distinct_values(db, SteelPricePolicy.grade_type, filter_none=True)
             if value is not None
         ]
         grade_values = [
             value
-            for value in self._distinct_values(
-                db, SteelPricePolicy.grade_value, filter_none=True
-            )
+            for value in self._distinct_values(db, SteelPricePolicy.grade_value, filter_none=True)
             if value is not None
         ]
         return FilterOptions(
@@ -237,7 +233,7 @@ class SteelPricePolicyRepository:
         update_data: PolicyUpdate,
         *,
         updated_by: str,
-    ) -> Optional[SteelPricePolicy]:
+    ) -> SteelPricePolicy | None:
         """
         按主键更新政策主表字段，返回更新后记录或 None（不存在）。
         注意：此方法不 flush，由调用方（Service）控制事务。
@@ -264,9 +260,9 @@ class SteelPricePolicyRepository:
         self,
         query: Query[_T],
         *,
-        grade_type: Optional[str] = None,
-        grade_value: Optional[str] = None,
-        base_thickness: Optional[Decimal] = None,
+        grade_type: str | None = None,
+        grade_value: str | None = None,
+        base_thickness: Decimal | None = None,
     ) -> Query[_T]:
         """对 policy 的可选过滤字段应用条件（支持 NULL 精确匹配）。"""
         if grade_type is not None:
@@ -290,7 +286,7 @@ class SteelPricePolicyRepository:
         self,
         db: Session,
         match_filter: MatchFilter,
-    ) -> Optional[int]:
+    ) -> int | None:
         """
         根据业务键查询政策 ID（用于 upsert 场景获取旧记录 ID）。
 
@@ -317,7 +313,7 @@ class SteelPricePolicyRepository:
         self,
         db: Session,
         match_filter: MatchFilter,
-        exclude_id: Optional[int] = None,
+        exclude_id: int | None = None,
     ) -> bool:
         """
         检查指定业务键是否已存在（用于应用层唯一冲突检查）。
@@ -328,11 +324,7 @@ class SteelPricePolicyRepository:
             exclude_id: 排除的记录 ID（用于更新时排除自身）
         """
         policy_id = self.get_policy_id_by_key(db, match_filter)
-        if policy_id is None:
-            return False
-        if exclude_id is not None and policy_id == exclude_id:
-            return False
-        return True
+        return not (policy_id is None or (exclude_id is not None and policy_id == exclude_id))
 
     # ---- 明细写操作 ----
 
@@ -361,7 +353,7 @@ class SteelPricePolicyRepository:
         update_data: LadderItemUpdate,
         *,
         updated_by: str,
-    ) -> Optional[SteelPriceLadderItem]:
+    ) -> SteelPriceLadderItem | None:
         """
         更新单条明细。
         注意：此方法不 flush，由调用方（Service）控制事务。
@@ -410,7 +402,7 @@ class SteelPricePolicyRepository:
         self.delete_items_by_policy_id(db, policy_id)
         return self.add_items(db, policy_id, new_items_data)
 
-    def get_item_by_id(self, db: Session, item_id: int) -> Optional[SteelPriceLadderItem]:
+    def get_item_by_id(self, db: Session, item_id: int) -> SteelPriceLadderItem | None:
         """按明细 ID 查询。"""
         return db.query(SteelPriceLadderItem).filter(SteelPriceLadderItem.id == item_id).first()
 
@@ -453,12 +445,12 @@ class SteelPricePolicyRepository:
         self,
         query: Query[_T],
         *,
-        year: Optional[int] = None,
-        month: Optional[int] = None,
-        steel_mill: Optional[str] = None,
-        category_name: Optional[str] = None,
-        grade_value: Optional[str] = None,
-        policy_type: Optional[str] = None,
+        year: int | None = None,
+        month: int | None = None,
+        steel_mill: str | None = None,
+        category_name: str | None = None,
+        grade_value: str | None = None,
+        policy_type: str | None = None,
     ) -> Query[_T]:
         """导出查询共用的政策筛选条件。"""
         if year is not None:
@@ -498,13 +490,13 @@ class SteelPricePolicyRepository:
         self,
         db: Session,
         *,
-        year: Optional[int] = None,
-        month: Optional[int] = None,
-        steel_mill: Optional[str] = None,
-        category_name: Optional[str] = None,
-        grade_value: Optional[str] = None,
+        year: int | None = None,
+        month: int | None = None,
+        steel_mill: str | None = None,
+        category_name: str | None = None,
+        grade_value: str | None = None,
         skip: int = 0,
-        limit: Optional[int] = None,
+        limit: int | None = None,
     ) -> list[SteelPricePolicy]:
         """
         获取导出所需的主表数据（供 ExportService 调用）。
@@ -539,13 +531,13 @@ class SteelPricePolicyRepository:
         self,
         db: Session,
         *,
-        year: Optional[int] = None,
-        month: Optional[int] = None,
-        steel_mill: Optional[str] = None,
-        category_name: Optional[str] = None,
-        grade_value: Optional[str] = None,
+        year: int | None = None,
+        month: int | None = None,
+        steel_mill: str | None = None,
+        category_name: str | None = None,
+        grade_value: str | None = None,
         skip: int = 0,
-        limit: Optional[int] = None,
+        limit: int | None = None,
     ) -> list[tuple[SteelPricePolicy, SteelPriceLadderItem | None]]:
         """
         主表 LEFT JOIN 阶梯明细，按扁平化导出行分页。
@@ -553,7 +545,7 @@ class SteelPricePolicyRepository:
         skip/limit 作用在联合行上（一条明细一行；无明细的政策占一行），
         与 count_export_rows / 预览页码对齐。
         """
-        query = (
+        _base = (
             db.query(SteelPricePolicy, SteelPriceLadderItem)
             .select_from(SteelPricePolicy)
             .outerjoin(
@@ -562,7 +554,7 @@ class SteelPricePolicyRepository:
             )
         )
         query = self._apply_export_filters(
-            query,
+            _base,
             year=year,
             month=month,
             steel_mill=steel_mill,
@@ -612,11 +604,11 @@ class SteelPricePolicyRepository:
         self,
         db: Session,
         *,
-        year: Optional[int] = None,
-        month: Optional[int] = None,
-        steel_mill: Optional[str] = None,
-        category_name: Optional[str] = None,
-        grade_value: Optional[str] = None,
+        year: int | None = None,
+        month: int | None = None,
+        steel_mill: str | None = None,
+        category_name: str | None = None,
+        grade_value: str | None = None,
     ) -> int:
         """统计主表记录数（供 ExportService 调用）。"""
         query = self._apply_export_filters(
@@ -633,17 +625,17 @@ class SteelPricePolicyRepository:
         self,
         db: Session,
         *,
-        year: Optional[int] = None,
-        month: Optional[int] = None,
-        steel_mill: Optional[str] = None,
-        category_name: Optional[str] = None,
-        grade_value: Optional[str] = None,
+        year: int | None = None,
+        month: int | None = None,
+        steel_mill: str | None = None,
+        category_name: str | None = None,
+        grade_value: str | None = None,
     ) -> int:
         """
         统计扁平化导出行数（与 list_export_pairs 同一套 LEFT JOIN）。
         有明细的政策按明细条数计；无明细的政策计 1 行。
         """
-        query = (
+        _base = (
             db.query(func.count(SteelPricePolicy.id))
             .select_from(SteelPricePolicy)
             .outerjoin(
@@ -652,7 +644,7 @@ class SteelPricePolicyRepository:
             )
         )
         query = self._apply_export_filters(
-            query,
+            _base,
             year=year,
             month=month,
             steel_mill=steel_mill,
@@ -665,23 +657,23 @@ class SteelPricePolicyRepository:
         self,
         db: Session,
         *,
-        year: Optional[int] = None,
-        month: Optional[int] = None,
-        steel_mill: Optional[str] = None,
-        category_name: Optional[str] = None,
-        grade_value: Optional[str] = None,
-        policy_type: Optional[str] = None,
+        year: int | None = None,
+        month: int | None = None,
+        steel_mill: str | None = None,
+        category_name: str | None = None,
+        grade_value: str | None = None,
+        policy_type: str | None = None,
     ) -> int:
         """
         统计明细总数（供统计接口调用）。
         通过 JOIN 主表并应用相同的过滤条件来确保一致性。
         """
-        query = db.query(func.count(SteelPriceLadderItem.id)).join(
+        _base = db.query(func.count(SteelPriceLadderItem.id)).join(
             SteelPricePolicy,
             SteelPricePolicy.id == SteelPriceLadderItem.policy_id,
         )
         query = self._apply_export_filters(
-            query,
+            _base,
             year=year,
             month=month,
             steel_mill=steel_mill,
@@ -697,9 +689,9 @@ class SteelPricePolicyRepository:
         self,
         db: Session,
         *,
-        year: Optional[int] = None,
-        month: Optional[int] = None,
-        steel_mill: Optional[str] = None,
+        year: int | None = None,
+        month: int | None = None,
+        steel_mill: str | None = None,
     ) -> int:
         """
         根据条件统计政策数量（删除前查询）。
@@ -722,9 +714,9 @@ class SteelPricePolicyRepository:
         self,
         db: Session,
         *,
-        year: Optional[int] = None,
-        month: Optional[int] = None,
-        steel_mill: Optional[str] = None,
+        year: int | None = None,
+        month: int | None = None,
+        steel_mill: str | None = None,
     ) -> int:
         """
         根据条件批量删除政策。
@@ -754,9 +746,9 @@ class SteelPricePolicyRepository:
         self,
         db: Session,
         *,
-        year: Optional[int] = None,
-        month: Optional[int] = None,
-        steel_mill: Optional[str] = None,
+        year: int | None = None,
+        month: int | None = None,
+        steel_mill: str | None = None,
     ) -> list[int]:
         """
         根据条件获取政策 ID 列表（用于级联删除前的预处理）。

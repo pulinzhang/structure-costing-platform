@@ -106,8 +106,8 @@ def get_mandatory() -> list[str]:
     return list(load_catalog()["mandatory"])
 
 
-def get_all_codes() -> Any:
-    return load_catalog()["all_codes"]
+def get_all_codes() -> list[str]:
+    return list(load_catalog()["all_codes"])
 
 
 def is_valid_code(code: str) -> bool:
