@@ -50,6 +50,14 @@ from app.schemas.vo.bom_l0_welding_fee_vo import (
     BomL0WeldingFeeCalcResultVO,
 )
 from app.schemas.vo.user_vo import UserVO
+from app.schemas.vo.async_task_vo import AsyncTaskAcceptedVO
+from app.services.async_task import (
+    TASK_TYPE_BOM_L0_WELDING_FEE_CALC,
+    AsyncTaskService,
+    WorkerTaskOutcome,
+    calc_status_label,
+    outcome_from_calc_status,
+)
 from app.services.bom.l0_welding_fee.calc.calc_log_service import (
     STATUS_FAILED,
     STATUS_PARTIAL,
@@ -386,6 +394,73 @@ class BomL0WeldingFeeCalcOrchestrator:
             missing_price_total,
         )
         return result
+
+    def start_calc(
+        self,
+        db: Session,
+        dto: BomL0WeldingFeeCalcDTO,
+        current_user: UserVO,
+    ) -> AsyncTaskAcceptedVO:
+        lock_log = self.begin_processing(
+            db,
+            dto,
+            operator_id=current_user.id,
+            operator_name=display_name(current_user),
+        )
+        log_id = lock_log.id
+        calc_batch_id = lock_log.calc_batch_id
+        scoped = BomL0WeldingFeeCalcDTO(
+            year=dto.year,
+            location=dto.location.strip(),
+            vehicle_model=dto.vehicle_model.strip(),
+            bom_version=dto.bom_version.strip(),
+        )
+        async_task_service = AsyncTaskService()
+        task = async_task_service.create_task(
+            task_type=TASK_TYPE_BOM_L0_WELDING_FEE_CALC,
+            message="已提交计算队列",
+            operator_id=current_user.id,
+            operator_name=display_name(current_user),
+        )
+
+        def work(worker_db: Session, on_progress: ProgressCallback) -> WorkerTaskOutcome:
+            result = self.calculate(
+                worker_db,
+                scoped,
+                current_user,
+                progress_callback=on_progress,
+                log_id=log_id,
+                calc_batch_id=calc_batch_id,
+            )
+            label = calc_status_label(result.status)
+            return outcome_from_calc_status(
+                result.status,
+                failed_message=(
+                    f"计算失败：新增 {result.created_count}，更新 {result.updated_count}，"
+                    f"失败 {result.failed_count}"
+                ),
+                completed_message=(
+                    f"计算{label}：新增 {result.created_count}，"
+                    f"更新 {result.updated_count}，失败 {result.failed_count}，"
+                    f"缺单价 {result.missing_price_count}"
+                ),
+                result=result.model_dump(),
+            )
+
+        def on_crash(worker_db: Session, error: BaseException) -> None:
+            self.mark_log_failed(
+                worker_db,
+                log_id=log_id,
+                detail_text=f"计算失败: {error}",
+            )
+
+        async_task_service.submit_session_worker(
+            task.task_id,
+            start_message="后台开始计算...",
+            work=work,
+            on_crash=on_crash,
+        )
+        return AsyncTaskAcceptedVO(task_id=task.task_id)
 
     def _calc_l0_fee(
         self,

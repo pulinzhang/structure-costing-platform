@@ -8,6 +8,7 @@ __pycache__/
 .Python
 build/
 dist/
+*.egg
 *.egg-info/
 
 # Virtual environments
@@ -21,29 +22,51 @@ env/
 .run/
 *.swp
 *.swo
+*~
 
-# Environment variables
+# Environment variables (.env.example / .env.production.example 仍入库)
 .env
+.env.local
+.env.*.local
 
 # Database
 *.db
-data/*.db
 *.sqlite
+*.sqlite3
 *.db-wal
 *.db-shm
+*.db-journal
+data/*.db
 data/*.db-wal
 data/*.db-shm
 data/*.lock
+
+# Tool caches / coverage
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+.hypothesis/
 
 # Local Excel samples / scratch (large, not for VCS)
 excel_sample/
 tmp_*.xlsx
 tmp_*.xls
 tmp_*.csv
+~$*
+dump_all.txt
+
+# Local test / audit run outputs
+tests/**/last_*
 
 # OS
 .DS_Store
 Thumbs.db
+desktop.ini
+ehthumbs.db
 
 # Logs
 *.log

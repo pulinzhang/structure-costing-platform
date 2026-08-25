@@ -6,10 +6,12 @@ CRUD / 导入 / 匹配 / 导出见各子包；本模块仅委托并保持对外 
 
 from __future__ import annotations
 
+import logging
 from typing import Optional
 
 from sqlalchemy.orm import Session
 
+from app.common.audit import display_name
 from app.repositories.yishiyiyi.policy.dto import ExportRow
 from app.schemas.dto.steel_price_policy_dto import (
     LadderItemCreate,
@@ -27,7 +29,15 @@ from app.schemas.vo.steel_price_policy_vo import (
     PolicyMatchResponse,
     PolicyOptionsResponse,
 )
+from app.schemas.vo.async_task_vo import AsyncTaskAcceptedVO
 from app.schemas.vo.user_vo import UserVO
+from app.services.async_task import (
+    STATUS_COMPLETED,
+    STATUS_FAILED,
+    TASK_TYPE_POLICY_UPLOAD,
+    AsyncTaskService,
+    WorkerTaskOutcome,
+)
 from app.services.yishiyiyi.policy.crud.policy_crud import SteelPricePolicyCrudService
 from app.services.yishiyiyi.policy.export.export_service import (
     SteelPricePolicyExportService,
@@ -42,6 +52,8 @@ __all__ = [
     "ProgressCallback",
     "SteelPricePolicyService",
 ]
+
+logger = logging.getLogger("service.steel_price_policy")
 
 
 class SteelPricePolicyService:
@@ -240,3 +252,58 @@ class SteelPricePolicyService:
         return self._crud.delete_by_conditions(
             db, year=year, month=month, steel_mill=steel_mill
         )
+
+    def start_upload(
+        self,
+        *,
+        file_content: bytes,
+        filename: str,
+        year: int,
+        month: int,
+        current_user: UserVO,
+    ) -> AsyncTaskAcceptedVO:
+        """创建异步任务并入队政策 Excel 解析。"""
+        async_task_service = AsyncTaskService()
+        task = async_task_service.create_task(
+            task_type=TASK_TYPE_POLICY_UPLOAD,
+            message="已提交解析队列",
+            operator_id=current_user.id,
+            operator_name=display_name(current_user),
+        )
+
+        def work(db: Session, on_progress: ProgressCallback) -> WorkerTaskOutcome:
+            try:
+                result = self.import_from_parser(
+                    db,
+                    file_content=file_content,
+                    filename=filename,
+                    year=year,
+                    month=month,
+                    progress_callback=on_progress,
+                    current_user=current_user,
+                )
+            except ValueError as error:
+                logger.warning(
+                    "政策导入业务失败: task_id=%s error=%s", task.task_id, error
+                )
+                return WorkerTaskOutcome(
+                    status=STATUS_FAILED,
+                    progress=0,
+                    message=str(error),
+                )
+            return WorkerTaskOutcome(
+                status=STATUS_COMPLETED,
+                message=(
+                    f"导入完成：新增 {result.created_count} 条，"
+                    f"更新 {result.updated_count} 条，共 {result.total} 条"
+                ),
+                result=result.model_dump(),
+            )
+
+        async_task_service.submit_session_worker(
+            task.task_id,
+            start_message="后台开始解析...",
+            work=work,
+            crash_message=lambda error: f"解析异常: {error}",
+        )
+        return AsyncTaskAcceptedVO(task_id=task.task_id)

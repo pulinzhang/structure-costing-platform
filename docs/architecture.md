@@ -39,7 +39,7 @@ Parser 是**横向工具**：只被 Service 调用，不依赖其它层。
 
 | 层 | 做什么 | 不要做什么 |
 |----|--------|------------|
-| **Router** | 鉴权依赖、参数、调 Service、返回 `ApiResponse` | 业务逻辑、`db.query`、调 Parser |
+| **Router** | 鉴权依赖、参数、调 Service、返回 `ApiResponse` | 业务逻辑、`db.query`、调 Parser、后台 worker 壳（§5.3） |
 | **Service** | 业务规则、事务、调 Parser/Repo、ORM→VO | 直接写 SQL |
 | **Repository** | CRUD / 聚合查询；返回 Model 或聚合结果 | 权限/角色分支决策 |
 | **Model** | 表字段 + `relationship` | `to_dict`、业务 `@property` |
@@ -59,14 +59,16 @@ Parser 是**横向工具**：只被 Service 调用，不依赖其它层。
 | 角色 | 切片 | 典型内容 |
 |------|------|----------|
 | **上游 / 基础数据** | `settings` · `stamping` · `bom` · `yishiyiyi` | 用户配置、工艺零件、BOM、基价/政策/废料价 |
-| **下游 / 编排核价** | `costing` · `dashboard` · `quotation` | 钢材联动、零件核价、KPI、报价 |
-| **横切** | `app/common/` | 权限、审计、时区等（**不**依赖业务切片） |
+| **下游 / 编排核价** | `costing` · `dashboard` | 钢材联动、零件核价、成品核价、引擎编排、KPI |
+| **横切登记** | `file_trace` | 已落盘 Excel 登记与鉴权下载；被上游上传 Service 调用，**不**依赖 costing |
+| **横切基础设施** | `app/common/` | 权限、审计、时区等（**不**依赖业务切片） |
 
 目录按 feature 对齐，例如：
 
 ```
 app/models/stamping/      app/routers/stamping/     app/services/stamping/     app/repositories/stamping/
 app/models/costing/       app/routers/costing/      app/services/costing/      app/repositories/costing/
+app/models/file_trace/    app/routers/file_trace/   app/services/file_trace/   app/repositories/file_trace/
 app/models/yishiyiyi/     …
 app/parsers/stamping/     # 仅上传类切片有 Parser
 ```
@@ -79,7 +81,9 @@ app/parsers/stamping/     # 仅上传类切片有 Parser
 
 ```
 ✅ costing / dashboard  →  调用 stamping、yishiyiyi、bom、settings（Service 或只读 Repository）
+✅ stamping / bom / yishiyiyi 上传 Service → file_trace.register_existing（横切登记）
 ❌ stamping / yishiyiyi →  依赖 costing、dashboard（上游不得依赖下游）
+❌ file_trace → costing（登记切片不得依赖核价）
 ❌ 同层互相 import 成环
 ```
 
@@ -169,25 +173,49 @@ def list_parts(
 浏览器 POST /api/stamping/…upload
         │
         ▼
-Router（权限 + 参数）──► Upload Service
-        │                    │
-        │                    ├── Parser.parse_stamping_excel(...)
-        │                    ├── 存文件 / 简图
-        │                    └── Part/Process Repository 写入
+Router（权限 + 文件校验）──► Upload Service.start_upload
+        │                         │
+        │                         ├── create_task + submit（立即返回 task_id）
+        │                         └── 后台：async_task runner 开独立 Session
+        │                                    └── process_upload → Parser → Repository
         ▼
-ApiResponse（任务 id 或结果摘要）
+ApiResponse[AsyncTaskAcceptedVO]
+前端轮询 GET …/tasks/{task_id}
 ```
 
-核价计算则是下游 Service **组合**上游零件、政策、基价、废料价等，再写入 costing 表。
+核价计算则是下游 Service **组合**上游零件、政策、基价、废料价等，再写入 costing 表；长计算同样走 `start_calc` + runner，不要在 Router 里开 Session。
+
+硬约束见宪法 [§5.3](architecture-constitution.mdc)。
 
 ---
 
-## 9. 添加功能的推荐顺序
+## 9. 异步后台任务（目标态）
+
+上传 / 计算立即返回 `task_id`，后台线程跑业务。请求级 `db` 不能带进线程。
+
+| 谁 | 做什么 |
+|----|--------|
+| **Router** | 校验、调 `service.start_*`、返回 `AsyncTaskAcceptedVO`、进度查询 |
+| **切片 Service** | `create_task` + `submit`；真正的 `process_upload` / `calculate` / 引擎 `execute`；成功文案；任务终态；崩溃时释放计算锁或回写引擎 Run |
+| **`async_task` runner** | 独立业务 Session、`on_progress` 写辅助库、统一 catch、关 Session |
+
+公共 runner 放 `app/services/async_task/`（已有切片归属），**不要**进 `common/`，也**不要**为每个切片复制一份 60 行 worker。
+
+**不要做：** 在 Router 写 `_process_*_in_background`；把同一套壳复制进多个 Service（**含引擎 worker**）；让 runner 知道「零件数 / 缺单价 / `run_id`」；为此换 Celery；引擎 worker 内再 `submit` 子任务死等。
+
+**落地范围（已落地）：**
+- 9 个上传/计算 Router 的 `_process_*_in_background` 已删除，改为 `service.start_*`
+- **核价引擎** `CostingEngineService`：`start_run` 仍在 Service 提交；Session / 进度 / `db.close()` 走 `submit_session_worker`；`RunDeletedError`、回写 Run 失败态留在引擎 Service
+- LLM 报告 worker **不在本批**（已在 Service 内 submit，可随后靠拢）
+
+---
+
+## 10. 添加功能的推荐顺序
 
 1. **Schema**：DTO / VO  
 2. **Model**（若新表）+ 迁移/建表策略按项目惯例  
 3. **Repository**  
-4. **Service**（含权限相关业务判断、事务）  
+4. **Service**（含权限相关业务判断、事务；异步上传/计算/引擎用 `start_*` + `async_task` runner，见 §9）  
 5. **Router**（`response_model` + `require_perm`）  
 6. **前端**：`pageMeta` + `app.js` 注册 + 侧栏 `data-page` + 权限码  
 7. 递增前端脚本 `?v=`
@@ -196,7 +224,7 @@ ApiResponse（任务 id 或结果摘要）
 
 ---
 
-## 10. 常见问题
+## 11. 常见问题
 
 ### Service 和 Repository 区别？
 
@@ -204,7 +232,7 @@ ApiResponse（任务 id 或结果摘要）
 - Repository：怎么查/写库（无角色 if）
 
 教学硬约束：**Repository 禁止 `db.commit` / `db.rollback`**，只 `flush`；写成功后由 Service `commit`，失败 `rollback`。口诀：Repo 只改会话，Service 才落库。  
-特例（仍由 Service 提交）：异步任务 AUTOCOMMIT 写进度；计算锁 DDL 用独立连接，`conn.commit()` 在 Service。
+特例（仍由 Service 提交）：异步任务进度由 `async_task` runner 经辅助库 AUTOCOMMIT 写入（宪法 §5.3）；计算锁 DDL 用独立连接，`conn.commit()` 在 Service。
 
 ### 简单查询也要 Service 吗？
 
@@ -218,9 +246,13 @@ ApiResponse（任务 id 或结果摘要）
 
 可以。禁止的是业务方法与 `to_dict`。
 
+### 后台解析/计算为什么不能写在 Router？
+
+请求 `db` 在响应后关闭，线程必须新开 Session；进度写辅助库、失败标任务、关 Session 是横切壳，应只有一份 runner。Router 只调 `start_*`。成功文案和释放计算锁仍在切片 Service。引擎虽然已在 Service 里 `submit`，同样不得自建 Session/进度壳。
+
 ---
 
-## 11. 规范索引
+## 12. 规范索引
 
 | 文档 | 位置 | 用途 |
 |------|------|------|
@@ -230,7 +262,9 @@ ApiResponse（任务 id 或结果摘要）
 | **API 类型安全** | [api-type-safety.md](api-type-safety.md) · `.cursor/rules/api-type-safety.mdc` | `ApiResponse` / `PageResult` / 权限 Depends / `Any` 不进函数签名 |
 | **Python 执行** | `.cursor/rules/python-execution.mdc` | Windows/UTF-8 跑脚本约定 |
 | **权限设计** | [permission-design.md](permission-design.md) | 前后端权限码 |
-| **L0 成品核价设计** | [l0-assembly-costing-design.md](l0-assembly-costing-design.md) | 供货总成月度总账、外购/L1 年度价、业务示意图（待落地） |
-| **BOM 年度零件价表** | [bom-annual-part-prices-design.md](bom-annual-part-prices-design.md) | 外购价 / L1 一口价表结构与 `bom` 切片归属（待落地） |
+| **L0 成品核价设计** | [l0-assembly-costing-design.md](l0-assembly-costing-design.md) | 供货总成月度总账、外购/L1 年度价（已上线：计算/一览/导出） |
+| **BOM 年度零件价表** | [bom-annual-part-prices-design.md](bom-annual-part-prices-design.md) | 外购价 / L1 一口价单表（已上线：上传/列表/审核） |
+| **核价引擎设计** | [costing-engine-design.md](costing-engine-design.md) | 基地+年+月一键编排（已上线） |
+| **文件溯源设计** | [file-trace-design.md](file-trace-design.md) | 已落盘 Excel 登记与鉴权下载（MVP 已上线；深链/导出等见文内非目标） |
 
 `docs/*.mdc` 与 `.cursor/rules/*.mdc` 应对齐；改规范时两处一起改。

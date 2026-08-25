@@ -11,17 +11,12 @@ from pydantic import BaseModel
 
 from app.common.permissions.codes import Perm
 from app.deps.permissions import require_any_perm, require_perm
-from app.common.audit import display_name
 from app.config import settings
-from app.database import DatabaseConfig, get_db
+from app.database import get_db
 from app.schemas.vo.user_vo import UserVO
-from app.utils.logging_config import get_logger
 from app.utils.response import ApiResponse
 from app.services.async_task import (
-    STATUS_COMPLETED,
-    STATUS_FAILED,
     STATUS_PENDING,
-    STATUS_RUNNING,
     TASK_TYPE_BASE_PRICE_IMPORT,
     AsyncTaskService,
 )
@@ -45,8 +40,6 @@ from app.schemas.common import PageResult
 
 # 默认分页大小常量
 DEFAULT_EXPORT_PAGE_SIZE = 5000
-
-logger = get_logger("router.steel_base_price")
 
 
 class BatchDeleteResponse(BaseModel):
@@ -75,72 +68,6 @@ def _build_filter_options_vo(service: SteelBasePriceService, db: Session) -> Fil
         grades=raw.grades,
         specs=raw.specs,
     )
-
-
-def _process_base_price_import_in_background(
-    task_id: str,
-    file_content: bytes,
-    filename: str,
-    year: int,
-    month: int,
-    current_user: UserVO,
-) -> None:
-    """后台线程解析基准价 Excel；独立 Session，不复用请求 db。"""
-    session_factory = DatabaseConfig.get_session_factory()
-    db = session_factory()
-
-    def on_progress(progress: int, msg: str) -> None:
-        _async_task_service.update_task_standalone(
-            task_id,
-            status=STATUS_RUNNING,
-            progress=progress,
-            message=msg,
-        )
-
-    try:
-        _async_task_service.update_task_standalone(
-            task_id,
-            status=STATUS_RUNNING,
-            progress=1,
-            message="后台开始解析...",
-        )
-        result = _steel_base_price_service.import_excel(
-            db,
-            file_content=file_content,
-            filename=filename,
-            year=year,
-            month=month,
-            progress_callback=on_progress,
-            current_user=current_user,
-        )
-        _async_task_service.update_task_standalone(
-            task_id,
-            status=STATUS_COMPLETED,
-            progress=100,
-            message=(
-                f"导入完成：新增 {result.created_count} 条，"
-                f"更新 {result.updated_count} 条，共 {result.total} 条"
-            ),
-            result=result.model_dump(),
-        )
-    except ValueError as error:
-        logger.warning("基准价导入业务失败: task_id=%s error=%s", task_id, error)
-        _async_task_service.update_task_standalone(
-            task_id,
-            status=STATUS_FAILED,
-            progress=0,
-            message=str(error),
-        )
-    except Exception as error:
-        logger.exception("基准价导入异常: task_id=%s filename=%s", task_id, filename)
-        _async_task_service.update_task_standalone(
-            task_id,
-            status=STATUS_FAILED,
-            progress=0,
-            message=f"解析异常: {error}",
-        )
-    finally:
-        db.close()
 
 
 @router.get(
@@ -297,24 +224,15 @@ async def import_base_price(
             detail=f"文件过大，最大支持 {settings.MAX_UPLOAD_SIZE // (1024 * 1024)}MB",
         )
 
-    task = _async_task_service.create_task(
-        task_type=TASK_TYPE_BASE_PRICE_IMPORT,
-        message="已提交解析队列",
-        operator_id=current_user.id,
-        operator_name=display_name(current_user),
+    accepted = _steel_base_price_service.start_import(
+        file_content=content,
+        filename=filename,
+        year=year,
+        month=month,
+        current_user=current_user,
     )
-    AsyncTaskService.submit(
-        _process_base_price_import_in_background,
-        task.task_id,
-        content,
-        filename,
-        year,
-        month,
-        current_user,
-    )
-
     return ApiResponse.ok(
-        data=AsyncTaskAcceptedVO(task_id=task.task_id),
+        data=accepted,
         message="上传成功，后台开始解析",
     )
 

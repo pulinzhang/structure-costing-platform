@@ -114,6 +114,7 @@ static/
         ├── bom/material/{upload,list,structure,viz}   # 侧栏名「焊接工程」
         ├── bom/welding-unit-price/{upload,list}
         ├── bom/annual-part-price/{upload,list}
+        ├── bom/packaging-transport-fee/{upload,list}
         ├── bom/welding-process-breakdown/{generate,list}
         ├── bom/l0-welding-fee/{calc,list}
         ├── yishiyiyi/
@@ -124,8 +125,9 @@ static/
         ├── costing/
         │   ├── steel-price/{calc,list}
         │   ├── stamping-part-cost/{calc,list}
+        │   ├── l0-assembly-cost/{calc,list}
         │   └── engine/
-        ├── quotation/
+        ├── file-trace/
         ├── settings/{profile,system,users,logs}
         └── login/             # template + index（会话）+ boot.js（登录页入口）
 ```
@@ -134,7 +136,7 @@ static/
 
 > 注释里若出现 `ui/` 可复用组件目录：当前仓库**未落地**；新共享逻辑优先 `page-size.js` / `main.js` / 页面内私有模块，勿假设存在 `ui/`。
 >
-> **侧栏顺序**：仪表盘 → 冲压工程 → 焊接工程（`bom`）→ 一事一议 → 核价…。冲压与焊接同为年度核算（加工费 / 焊接费），故焊接工程紧挨冲压、排在一事一议之前。
+> **侧栏顺序**：仪表盘 → 冲压工程 → 焊接工程（`bom`）→ 一事一议 → 核价 → 文件溯源 → 设置。冲压与焊接同为年度核算（加工费 / 焊接费），故焊接工程紧挨冲压、排在一事一议之前。
 
 ### 2.1 路由名 → 页面映射
 
@@ -155,6 +157,8 @@ static/
 | `#/bom-welding-unit-price` | 焊接单价列表 | `bom/welding-unit-price/list` |
 | `#/bom-annual-part-price-upload` | 年度零件价上传 | `bom/annual-part-price/upload` |
 | `#/bom-annual-part-price` | 年度零件价列表 | `bom/annual-part-price/list` |
+| `#/bom-packaging-transport-fee-upload` | 包装运输费上传 | `bom/packaging-transport-fee/upload` |
+| `#/bom-packaging-transport-fee` | 包装运输费列表 | `bom/packaging-transport-fee/list` |
 | `#/bom-welding-process-breakdown` | 焊接工艺拆解 | `bom/welding-process-breakdown/generate` |
 | `#/bom-welding-process-breakdown-list` | 焊接工艺拆解列表 | `bom/welding-process-breakdown/list` |
 | `#/bom-l0-welding-fee-calc` | 成品焊接费计算 | `bom/l0-welding-fee/calc` |
@@ -169,8 +173,10 @@ static/
 | `#/steel-price-list` | 冲压钢材联动价一览 | `costing/steel-price/list` |
 | `#/stamping-part-cost-calc` | 冲压零件价格计算 | `costing/stamping-part-cost/calc` |
 | `#/stamping-part-cost` | 冲压零件价格一览 | `costing/stamping-part-cost/list` |
+| `#/l0-assembly-cost-calc` | 成品核价计算 | `costing/l0-assembly-cost/calc` |
+| `#/l0-assembly-cost` | 成品核价一览 | `costing/l0-assembly-cost/list` |
 | `#/costing` | 自动核价引擎 | `costing/engine` |
-| `#/quotation` | 报价单管理 | `quotation` |
+| `#/file-trace` | 文件溯源 | `file-trace` |
 | `#/settings` | 系统设置 | `settings/system` |
 | `#/settings-users` | 用户管理 | `settings/users` |
 | `#/settings-logs` | 操作日志 | `settings/logs` |

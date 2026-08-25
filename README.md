@@ -14,10 +14,10 @@
 | **仪表盘** | 管理者看板：本期产出 / 待办与风险 / 核价闭环就绪 + 决策入口 |
 | **冲压工程** | 工艺 Excel 上传与解析；零件/工序列表；冲次单价；加工费计算与列表 |
 | **一事一议** | 加减价政策上传/列表/匹配；基准价格；中标钢厂厚度一览；废料月度销售价 |
-| **BOM** | 材料清单上传；产品结构；结构图可视化 |
-| **核价** | 冲压钢材联动计算与一览；零件价格计算与一览（审核/导出）；自动核价引擎 |
+| **焊接工程（BOM）** | 材料清单上传 / 产品结构 / 结构图；焊接单价；年度零件价；包装运输费；焊接工艺拆解；成品焊接费 |
+| **核价** | 冲压钢材联动；零件价格；成品核价（L0）；自动核价引擎；月度核对合册 |
+| **文件溯源** | 已落盘业务 Excel 登记、筛选、鉴权下载 |
 | **AI 助理** | 核价结果智能分析：自然语言提问 → 系统算数 + LLM 解释；Markdown 回答、分析历史、打印/Word 导出 |
-| **报价** | 报价单管理（占位） |
 | **设置** | 个人资料、系统配置、用户管理、操作日志 |
 
 典型链路：工艺 / 政策 / 基价 / 废料价 / BOM 入库 → 钢材联动 → 零件核价（材料 + 加工费）→ 成品核价 → **AI 助理解读趋势与动因**。
@@ -39,7 +39,7 @@
 | 后端 | FastAPI，`/api/*` JSON；`ApiResponse[T]` + `PageResult` |
 | 前端 | `static/` SPA（无构建）：Hash 路由、Tailwind CDN、ES Module |
 | 分层 | Router → Service → Repository → DB；Parser 仅 Service 调用 |
-| 切片 | 上游 `stamping` / `yishiyiyi` / `bom` / `settings`；下游 `costing` / `dashboard` 可组合上游 |
+| 切片 | 上游 `stamping` / `yishiyiyi` / `bom` / `settings`；横切 `file_trace`；下游 `costing` / `dashboard` 可组合上游 |
 
 可读导读：[docs/architecture.md](docs/architecture.md)
 
@@ -260,7 +260,7 @@ stamping-costing-platform/
 ├── main.py                 # FastAPI 入口、静态挂载、路由注册
 ├── app/
 │   ├── common/             # 权限、审计、时区等横切
-│   ├── routers/            # API：stamping / yishiyiyi / bom / costing / llm / settings …
+│   ├── routers/            # API：stamping / yishiyiyi / bom / costing / file_trace / llm / settings …
 │   ├── services/           # 业务逻辑（含异步计算编排、LLM 分析）
 │   ├── repositories/       # 数据访问
 │   ├── models/             # ORM
@@ -306,11 +306,18 @@ stamping-costing-platform/
 | `/api/yishiyiyi/winning-thickness` | 中标厚度一览 |
 | `/api/yishiyiyi/scrap-price` | 废料月度销售价 |
 | `/api/bom` | BOM 材料清单（上传 / 列表 / 产品结构） |
+| `/api/bom/welding-unit-price` | 焊接单价 |
+| `/api/bom/annual-part-price` | 年度零件价 |
+| `/api/bom/packaging-transport-fee` | 包装运输费 |
+| `/api/bom/welding-process-breakdown` | 焊接工艺拆解 |
+| `/api/bom/l0-welding-fees` | 成品焊接费 |
 | `/api/costing/steel-price` | 钢材联动计算与列表 |
 | `/api/costing/stamping-part-cost` | 零件价格计算与列表 |
+| `/api/costing/l0-assembly-costs` | 成品核价（L0） |
+| `/api/costing/monthly-bundle` | 月度核对合册导出 |
 | `/api/costing/engine` | 自动核价引擎 |
+| `/api/file-trace` | 文件溯源（列表 / 鉴权下载） |
 | `/api/llm` | AI 助理：提交分析、轮询结果、分析历史 |
-| `/api/quotation` | 报价 |
 | `/api/settings/system` | 系统配置 |
 | `/api/settings/users` | 用户与权限 |
 
@@ -349,6 +356,9 @@ await HttpClient.post('/api/stamping/upload/', formData);
 | [前端规范](docs/front-end.mdc) | SPA、Brabus、HUD 数据表 |
 | [API 类型安全](docs/api-type-safety.md) | `ApiResponse` / `PageResult` / 权限 Depends / `Any` 不进函数签名 |
 | [权限设计](docs/permission-design.md) | 前后端权限码 |
+| [文件溯源设计](docs/file-trace-design.md) | 已落盘 Excel 登记与鉴权下载 |
+| [L0 成品核价设计](docs/l0-assembly-costing-design.md) | 供货总成月度总账 |
+| [核价引擎设计](docs/costing-engine-design.md) | 基地+年+月一键编排 |
 | [LLM 智能分析设计](docs/llm-costing-analysis-report-design.md) | AI 助理产品契约与架构 |
 | [生产安装（Windows 一键）](docs/deploy-windows-production.md) | 无 Python 环境用 `scripts/windows/setup.bat` |
 | 云主机 Docker 手工发版 | 仓库根目录 `bash deploy.sh`（拉代码、构建、启动） |

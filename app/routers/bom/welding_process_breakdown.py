@@ -7,9 +7,8 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from urllib.parse import quote
 
-from app.common.audit import display_name
 from app.common.permissions.codes import Perm
-from app.database import DatabaseConfig, get_db
+from app.database import get_db
 from app.deps.permissions import require_any_perm, require_perm
 from app.schemas.common.page_result import PageResult
 from app.schemas.dto.bom_welding_process_breakdown_dto import (
@@ -33,10 +32,7 @@ from app.schemas.vo.bom_welding_process_breakdown_vo import (
 )
 from app.schemas.vo.user_vo import UserVO
 from app.services.async_task import (
-    STATUS_COMPLETED,
-    STATUS_FAILED,
     STATUS_PENDING,
-    STATUS_RUNNING,
     TASK_TYPE_BOM_WELDING_PROCESS_BREAKDOWN_GENERATE,
     AsyncTaskService,
 )
@@ -50,10 +46,7 @@ from app.services.bom.welding_process_breakdown.generate_log_service import (
     DUPLICATE_SCOPE_GENERATE_MESSAGE,
     DuplicateScopeGenerateError,
 )
-from app.utils.logging_config import get_logger
 from app.utils.response import ApiResponse
-
-logger = get_logger("router.bom.welding_process_breakdown")
 
 router = APIRouter(
     prefix="/api/bom/welding-process-breakdown",
@@ -63,113 +56,6 @@ router = APIRouter(
 _service = BomWeldingProcessBreakdownService()
 _export_orchestrator = BomWeldingProcessBreakdownExportOrchestrator()
 _async_task_service = AsyncTaskService()
-
-
-def _process_generate_in_background(
-    task_id: str,
-    log_id: int,
-    calc_batch_id: str,
-    location: str,
-    vehicle_model: str,
-    bom_version: str,
-    customer_name: str | None,
-    started_at_iso: str | None,
-    current_user: UserVO,
-) -> None:
-    """后台线程执行拆解；独立 Session。"""
-    from datetime import datetime
-
-    session_factory = DatabaseConfig.get_session_factory()
-    db = session_factory()
-
-    def on_progress(progress: int, msg: str) -> None:
-        _async_task_service.update_task_standalone(
-            task_id,
-            status=STATUS_RUNNING,
-            progress=progress,
-            message=msg,
-        )
-
-    started_at = None
-    if started_at_iso:
-        try:
-            started_at = datetime.fromisoformat(started_at_iso)
-        except ValueError:
-            started_at = None
-
-    try:
-        _async_task_service.update_task_standalone(
-            task_id,
-            status=STATUS_RUNNING,
-            progress=1,
-            message="后台开始拆解...",
-        )
-        dto = BomWeldingProcessBreakdownGenerateDTO(
-            location=location,
-            vehicle_model=vehicle_model,
-            bom_version=bom_version,
-            customer_name=customer_name,
-        )
-        result, error = _service.generate_from_bom(
-            db,
-            dto,
-            current_user,
-            progress_callback=on_progress,
-            log_id=log_id,
-            calc_batch_id=calc_batch_id,
-            started_at=started_at,
-        )
-        if error or result is None:
-            _async_task_service.update_task_standalone(
-                task_id,
-                status=STATUS_FAILED,
-                progress=100,
-                message=error or "拆解失败",
-                result=(
-                    BomWeldingProcessBreakdownGenerateResultVO(
-                        location=location,
-                        vehicle_model=vehicle_model,
-                        bom_version=bom_version,
-                        status="failed",
-                        message=error or "拆解失败",
-                        calc_batch_id=calc_batch_id,
-                        log_id=log_id,
-                        detail_text=error or "",
-                    ).model_dump()
-                ),
-            )
-            return
-
-        _async_task_service.update_task_standalone(
-            task_id,
-            status=STATUS_COMPLETED,
-            progress=100,
-            message=result.message,
-            result=result.model_dump(),
-        )
-    except Exception as error:
-        logger.exception("焊接工艺拆解异常: task_id=%s log_id=%s", task_id, log_id)
-        try:
-            db.rollback()
-        except Exception:
-            pass
-        try:
-            _service.mark_generate_log_failed(
-                db,
-                log_id=log_id,
-                message=str(error),
-                detail_text=f"拆解异常: {error}",
-            )
-        except Exception:
-            logger.exception("释放拆解锁失败: log_id=%s", log_id)
-        _async_task_service.update_task_standalone(
-            task_id,
-            status=STATUS_FAILED,
-            progress=0,
-            message=f"拆解异常: {error}",
-        )
-    finally:
-        db.close()
 
 
 @router.get(
@@ -383,50 +269,16 @@ def generate_from_bom(
     ),
 ) -> ApiResponse[AsyncTaskAcceptedVO]:
     """从 BOM 异步生成焊接工艺拆解。"""
-    location = dto.location.strip()
-    vehicle_model = dto.vehicle_model.strip()
-    bom_version = dto.bom_version.strip()
-    customer_name = (dto.customer_name or "").strip() or None
-
     try:
-        lock_log = _service.begin_generate_processing(
-            db,
-            location=location,
-            vehicle_model=vehicle_model,
-            bom_version=bom_version,
-            customer_name=customer_name,
-            operator_id=current_user.id,
-            operator_name=display_name(current_user),
-        )
+        accepted = _service.start_generate(db, dto, current_user=current_user)
     except DuplicateScopeGenerateError as error:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=str(error) or DUPLICATE_SCOPE_GENERATE_MESSAGE,
         ) from error
 
-    task = _async_task_service.create_task(
-        task_type=TASK_TYPE_BOM_WELDING_PROCESS_BREAKDOWN_GENERATE,
-        message="已提交拆解队列",
-        operator_id=current_user.id,
-        operator_name=display_name(current_user),
-    )
-    started_at_iso = (
-        lock_log.started_at.isoformat(timespec="seconds") if lock_log.started_at else None
-    )
-    AsyncTaskService.submit(
-        _process_generate_in_background,
-        task.task_id,
-        lock_log.id,
-        lock_log.calc_batch_id,
-        location,
-        vehicle_model,
-        bom_version,
-        customer_name,
-        started_at_iso,
-        current_user,
-    )
     return ApiResponse.ok(
-        data=AsyncTaskAcceptedVO(task_id=task.task_id),
+        data=accepted,
         message="已提交后台拆解",
     )
 

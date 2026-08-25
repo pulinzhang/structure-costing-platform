@@ -22,12 +22,18 @@ from typing import Any, Callable, Optional
 from sqlalchemy.orm import Session
 
 from app.common.timezone import now
-from app.database import AuxiliaryDatabaseConfig
+from app.database import AuxiliaryDatabaseConfig, DatabaseConfig
 from app.models.async_task import AsyncTask
 from app.repositories.async_task import AsyncTaskRepository
 from app.repositories.persist import model_from_payload
 from app.schemas.dto.async_task_dto import AsyncTaskInsert, AsyncTaskPatch
 from app.utils.logging_config import get_logger
+from app.services.async_task.worker_runner import (
+    CrashCallback,
+    CrashMessageFn,
+    CrashResultFn,
+    WorkerWork,
+)
 
 
 logger = get_logger("service.async_task")
@@ -216,6 +222,92 @@ class AsyncTaskService:
         if count:
             logger.info("清理过期异步任务: count=%s", count)
         return count
+
+    def run_in_worker_session(
+        self,
+        task_id: str,
+        *,
+        start_message: str,
+        work: WorkerWork,
+        on_crash: CrashCallback | None = None,
+        crash_message: CrashMessageFn | None = None,
+        crash_progress: int = 0,
+        crash_result: CrashResultFn | None = None,
+    ) -> None:
+        """
+        后台线程入口：独立业务 Session + 进度回调 + 统一 catch / close。
+        切片只提供 work / 可选 on_crash；禁止在 Router 复制本流程。
+        """
+        db = DatabaseConfig.get_session_factory()()
+
+        def on_progress(progress: int, msg: str) -> None:
+            self.update_task_standalone(
+                task_id,
+                status=STATUS_RUNNING,
+                progress=progress,
+                message=msg,
+            )
+
+        try:
+            self.update_task_standalone(
+                task_id,
+                status=STATUS_RUNNING,
+                progress=1,
+                message=start_message,
+            )
+            outcome = work(db, on_progress)
+            self.update_task_standalone(
+                task_id,
+                status=outcome.status,
+                progress=outcome.progress,
+                message=outcome.message,
+                result=outcome.result,
+            )
+        except Exception as error:
+            logger.exception("异步任务异常: task_id=%s", task_id)
+            try:
+                db.rollback()
+            except Exception:
+                pass
+            if on_crash is not None:
+                try:
+                    on_crash(db, error)
+                except Exception:
+                    logger.exception("异步任务崩溃回调失败: task_id=%s", task_id)
+            result = crash_result(error) if crash_result is not None else None
+            message = crash_message(error) if crash_message is not None else str(error)
+            self.update_task_standalone(
+                task_id,
+                status=STATUS_FAILED,
+                progress=crash_progress,
+                message=message,
+                result=result,
+            )
+        finally:
+            db.close()
+
+    def submit_session_worker(
+        self,
+        task_id: str,
+        *,
+        start_message: str,
+        work: WorkerWork,
+        on_crash: CrashCallback | None = None,
+        crash_message: CrashMessageFn | None = None,
+        crash_progress: int = 0,
+        crash_result: CrashResultFn | None = None,
+    ) -> None:
+        """入队：线程内调用 run_in_worker_session。"""
+        self.submit(
+            self.run_in_worker_session,
+            task_id,
+            start_message=start_message,
+            work=work,
+            on_crash=on_crash,
+            crash_message=crash_message,
+            crash_progress=crash_progress,
+            crash_result=crash_result,
+        )
 
     @staticmethod
     def parse_result_json(result_json: Optional[str]) -> Any:

@@ -11,7 +11,7 @@ from datetime import datetime
 
 from sqlalchemy.orm import Session
 
-from app.common.audit import AUDIT_APPROVED, audit_update
+from app.common.audit import AUDIT_APPROVED, audit_update, display_name
 from app.common.bom.welding_standard_process import (
     all_standard_process_names,
     resolve_standard_process_name,
@@ -49,6 +49,14 @@ from app.schemas.vo.bom_welding_process_breakdown_vo import (
     WeldingNodeEvidenceVO,
 )
 from app.schemas.vo.user_vo import UserVO
+from app.schemas.vo.async_task_vo import AsyncTaskAcceptedVO
+from app.services.async_task import (
+    STATUS_COMPLETED,
+    STATUS_FAILED,
+    TASK_TYPE_BOM_WELDING_PROCESS_BREAKDOWN_GENERATE,
+    AsyncTaskService,
+    WorkerTaskOutcome,
+)
 from app.services.bom.welding_process_breakdown.audit_service import (
     BomWeldingProcessBreakdownAuditService,
 )
@@ -297,6 +305,92 @@ class BomWeldingProcessBreakdownService:
         self._generate_service.mark_log_failed(
             db, log_id=log_id, message=message, detail_text=detail_text
         )
+
+    def start_generate(
+        self,
+        db: Session,
+        dto: BomWeldingProcessBreakdownGenerateDTO,
+        current_user: UserVO,
+    ) -> AsyncTaskAcceptedVO:
+        location = dto.location.strip()
+        vehicle_model = dto.vehicle_model.strip()
+        bom_version = dto.bom_version.strip()
+        customer_name = (dto.customer_name or "").strip() or None
+        lock_log = self.begin_generate_processing(
+            db,
+            location=location,
+            vehicle_model=vehicle_model,
+            bom_version=bom_version,
+            customer_name=customer_name,
+            operator_id=current_user.id,
+            operator_name=display_name(current_user),
+        )
+        log_id = lock_log.id
+        calc_batch_id = lock_log.calc_batch_id
+        started_at = lock_log.started_at
+        scoped = BomWeldingProcessBreakdownGenerateDTO(
+            location=location,
+            vehicle_model=vehicle_model,
+            bom_version=bom_version,
+            customer_name=customer_name,
+        )
+        async_task_service = AsyncTaskService()
+        task = async_task_service.create_task(
+            task_type=TASK_TYPE_BOM_WELDING_PROCESS_BREAKDOWN_GENERATE,
+            message="已提交拆解队列",
+            operator_id=current_user.id,
+            operator_name=display_name(current_user),
+        )
+
+        def work(worker_db: Session, on_progress: ProgressCallback) -> WorkerTaskOutcome:
+            result, error = self.generate_from_bom(
+                worker_db,
+                scoped,
+                current_user,
+                progress_callback=on_progress,
+                log_id=log_id,
+                calc_batch_id=calc_batch_id,
+                started_at=started_at,
+            )
+            if error or result is None:
+                fail_message = error or "拆解失败"
+                return WorkerTaskOutcome(
+                    status=STATUS_FAILED,
+                    progress=100,
+                    message=fail_message,
+                    result=BomWeldingProcessBreakdownGenerateResultVO(
+                        location=location,
+                        vehicle_model=vehicle_model,
+                        bom_version=bom_version,
+                        status="failed",
+                        message=fail_message,
+                        calc_batch_id=calc_batch_id,
+                        log_id=log_id,
+                        detail_text=error or "",
+                    ).model_dump(),
+                )
+            return WorkerTaskOutcome(
+                status=STATUS_COMPLETED,
+                message=result.message,
+                result=result.model_dump(),
+            )
+
+        def on_crash(worker_db: Session, error: BaseException) -> None:
+            self.mark_generate_log_failed(
+                worker_db,
+                log_id=log_id,
+                message=str(error),
+                detail_text=f"拆解异常: {error}",
+            )
+
+        async_task_service.submit_session_worker(
+            task.task_id,
+            start_message="后台开始拆解...",
+            work=work,
+            on_crash=on_crash,
+            crash_message=lambda error: f"拆解异常: {error}",
+        )
+        return AsyncTaskAcceptedVO(task_id=task.task_id)
 
     # ---------- 修改明细（须未审核；主表来自 BOM，不可改） ----------
 

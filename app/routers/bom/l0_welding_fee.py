@@ -10,9 +10,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
-from app.common.audit import display_name
 from app.common.permissions.codes import Perm
-from app.database import DatabaseConfig, get_db
+from app.database import get_db
 from app.deps.permissions import require_any_perm, require_perm
 from app.exceptions.base import BusinessException
 from app.schemas.common.page_result import PageResult
@@ -35,10 +34,7 @@ from app.schemas.vo.bom_l0_welding_fee_vo import (
 )
 from app.schemas.vo.user_vo import UserVO
 from app.services.async_task import (
-    STATUS_COMPLETED,
-    STATUS_FAILED,
     STATUS_PENDING,
-    STATUS_RUNNING,
     TASK_TYPE_BOM_L0_WELDING_FEE_CALC,
     AsyncTaskService,
 )
@@ -58,97 +54,6 @@ _service = BomL0WeldingFeeService()
 _calc_orchestrator = BomL0WeldingFeeCalcOrchestrator()
 _export_service = BomL0WeldingFeeExportService()
 _async_task_service = AsyncTaskService()
-
-
-def _process_calc_in_background(
-    task_id: str,
-    log_id: int,
-    calc_batch_id: str,
-    year: int,
-    location: str,
-    vehicle_model: str,
-    bom_version: str,
-    current_user: UserVO,
-) -> None:
-    session_factory = DatabaseConfig.get_session_factory()
-    db = session_factory()
-
-    def on_progress(progress: int, msg: str) -> None:
-        _async_task_service.update_task_standalone(
-            task_id,
-            status=STATUS_RUNNING,
-            progress=progress,
-            message=msg,
-        )
-
-    try:
-        _async_task_service.update_task_standalone(
-            task_id,
-            status=STATUS_RUNNING,
-            progress=1,
-            message="后台开始计算...",
-        )
-        dto = BomL0WeldingFeeCalcDTO(
-            year=year,
-            location=location,
-            vehicle_model=vehicle_model,
-            bom_version=bom_version,
-        )
-        result = _calc_orchestrator.calculate(
-            db,
-            dto,
-            current_user=current_user,
-            progress_callback=on_progress,
-            log_id=log_id,
-            calc_batch_id=calc_batch_id,
-        )
-        if result.status == "failed":
-            _async_task_service.update_task_standalone(
-                task_id,
-                status=STATUS_FAILED,
-                progress=100,
-                message=(
-                    f"计算失败：新增 {result.created_count}，更新 {result.updated_count}，"
-                    f"失败 {result.failed_count}"
-                ),
-                result=result.model_dump(),
-            )
-        else:
-            label = {"success": "成功", "partial": "部分成功"}.get(
-                result.status, result.status
-            )
-            _async_task_service.update_task_standalone(
-                task_id,
-                status=STATUS_COMPLETED,
-                progress=100,
-                message=(
-                    f"计算{label}：新增 {result.created_count}，"
-                    f"更新 {result.updated_count}，失败 {result.failed_count}，"
-                    f"缺单价 {result.missing_price_count}"
-                ),
-                result=result.model_dump(),
-            )
-    except Exception as error:
-        try:
-            db.rollback()
-        except Exception:
-            pass
-        try:
-            _calc_orchestrator.mark_log_failed(
-                db,
-                log_id=log_id,
-                detail_text=f"计算失败: {error}",
-            )
-        except Exception:
-            pass
-        _async_task_service.update_task_standalone(
-            task_id,
-            status=STATUS_FAILED,
-            progress=0,
-            message=str(error),
-        )
-    finally:
-        db.close()
 
 
 @router.get(
@@ -351,37 +256,15 @@ def calculate(
 ) -> ApiResponse[AsyncTaskAcceptedVO]:
     """提交异步计算；立即返回 task_id，前端轮询进度。"""
     try:
-        lock_log = _calc_orchestrator.begin_processing(
-            db,
-            dto,
-            operator_id=current_user.id,
-            operator_name=display_name(current_user),
-        )
+        accepted = _calc_orchestrator.start_calc(db, dto, current_user=current_user)
     except DuplicateScopeCalcError as error:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=str(error) or DUPLICATE_SCOPE_CALC_MESSAGE,
         ) from error
 
-    task = _async_task_service.create_task(
-        task_type=TASK_TYPE_BOM_L0_WELDING_FEE_CALC,
-        message="已提交计算队列",
-        operator_id=current_user.id,
-        operator_name=display_name(current_user),
-    )
-    AsyncTaskService.submit(
-        _process_calc_in_background,
-        task.task_id,
-        lock_log.id,
-        lock_log.calc_batch_id,
-        dto.year,
-        dto.location.strip(),
-        dto.vehicle_model.strip(),
-        dto.bom_version.strip(),
-        current_user,
-    )
     return ApiResponse.ok(
-        data=AsyncTaskAcceptedVO(task_id=task.task_id),
+        data=accepted,
         message="已提交后台计算",
     )
 

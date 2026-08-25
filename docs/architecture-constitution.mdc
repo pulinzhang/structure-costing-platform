@@ -25,7 +25,7 @@ alwaysApply: true
 
 | 层级 | 职责 | 禁止事项 |
 |------|------|----------|
-| **Router** | 接收请求、参数验证、调用 Service、返回响应 | 禁止写业务逻辑；禁止直接查数据库；禁止直接调用 Parser |
+| **Router** | 接收请求、参数验证、调用 Service、返回响应 | 禁止写业务逻辑；禁止直接查数据库；禁止直接调用 Parser；禁止写后台 worker 壳（§5.3） |
 | **Service** | 业务逻辑、数据转换、事务管理、异常处理；**唯一可调用 Parser** | 禁止直接写 SQL（须经 Repository） |
 | **Repository** | 数据库 CRUD / 聚合查询构建 | 禁止权限/角色等业务策略判断 |
 | **Model** | 定义数据库表结构 | 禁止写业务方法（如 `to_dict`、业务 `@property`） |
@@ -81,7 +81,14 @@ def list_parts(db: Session = Depends(get_db), query: StampingPartQuery = Depends
 def upload(file: UploadFile):
     result = parse_excel(file)  # ❌ Parser 只能被 Service 调用
     return result
+
+# 错误：Router 写后台 worker（开 Session / 进度 / 拼成功文案 / 释放计算锁）
+def _process_xxx_in_background(task_id, ...):  # ❌ 见 §5.3
+    db = DatabaseConfig.get_session_factory()()
+    ...
 ```
+
+异步上传/计算：Router 只调切片 Service 的 `start_*`，返回 `AsyncTaskAcceptedVO`。禁止在 Router 定义 `_process_*_in_background`，禁止 Router 调用 `get_session_factory` / `update_task_standalone`。
 
 ---
 
@@ -123,6 +130,7 @@ class StampingPartService:
 - **抛出业务异常**（由 Router 统一捕获）
 - 调用 Parser（**唯一能调用 Parser 的层级**）
 - 数据序列化（使用 Schema，不在 Model 里写 `to_dict`）
+- **异步任务**：`create_task` + `submit`；成功文案与任务终态映射；崩溃时释放计算锁或回写引擎 Run（见 §5.3）
 
 ---
 
@@ -406,7 +414,10 @@ app/
   settings · stamping · bom · yishiyiyi
 
 下游 / 编排与核价切片（可组合上游）
-  costing · dashboard · quotation
+  costing · dashboard
+
+横切登记（被上游上传 Service 调用，不依赖 costing）
+  file_trace
 ```
 
 | 规则 | 说明 |
@@ -445,7 +456,7 @@ app/
 | **Service** | `db.commit` / `db.rollback` / `with db.begin()` | 把提交散落到多个 Repo 方法里 |
 
 教学口诀：**Repo 只改会话，Service 才落库。**  
-（特例：① 异步任务辅助库用 AUTOCOMMIT 连接写进度；② 计算锁 DDL 用独立连接执行索引，仍由 Service `conn.commit()`。二者都不在 Repository 里对业务 `Session` 调 `commit`。）
+（特例：① 异步任务进度由 `async_task` runner 经辅助库 AUTOCOMMIT 写入，切片 Service 负责 `create_task` + `submit`（见 §5.3）；② 计算锁 DDL 用独立连接执行索引，仍由 Service `conn.commit()`。二者都不在 Repository 里对业务 `Session` 调 `commit`。）
 
 ```python
 class StampingUploadService:
@@ -504,6 +515,39 @@ def get_part(part_id: int, db: Session = Depends(get_db)):
 | `BusinessException` | Service | 通用业务异常 |
 | `HTTPException` | Router | HTTP 层异常（404、400 等） |
 
+### 5.3 异步后台任务（线程 worker）
+
+上传/计算类接口立即返回 `task_id`，后台线程执行业务。**请求级 `db` 禁止带进线程**（响应结束后会被关闭）。
+
+| 职责 | 归属 |
+|------|------|
+| HTTP 校验、调 `start_*`、返回 `AsyncTaskAcceptedVO`、进度查询 | Router |
+| `create_task` + `submit`；调用本切片 `process_upload` / `calculate` / 引擎 `execute`；成功文案；`result.status` → 任务终态；崩溃时 `mark_log_failed` 或回写引擎 Run 失败态 | 切片 Service |
+| 独立业务 Session、`on_progress` → 辅助库 AUTOCOMMIT、统一 catch、`db.close()` | `app/services/async_task` 公共 runner |
+
+**硬约束：**
+- Router **禁止**定义 `_process_*_in_background`，**禁止**调用 `DatabaseConfig.get_session_factory` / `AsyncTaskService.update_task_standalone`
+- 横切壳只写一份 runner，**禁止**把同一套 Session/进度/finally 复制进多个切片 Service（**含核价引擎** worker）
+- runner **禁止**感知领域字段（零件数、缺单价、零价、`run_id` 等）；文案与终态映射留在切片
+- 计算锁 / 生成锁释放只允许在切片 Service 的崩溃回调里，**禁止**写在 Router
+- 引擎领域异常（`RunDeletedError`、回写 `costing_engine_run` 失败态）留在 `CostingEngineService`；runner 只提供 Session / 进度 / 统一 close
+- 引擎路径 **禁止**再 `submit` 子任务并在 worker 内等待（线程池死锁）；子计算同进程同步调用
+- 沿用现有线程池 + 辅助库；**禁止**为此引入 Celery / Redis 队列等新框架
+- 任务 `result` 写入辅助库 JSON 时，由切片 Service 从 dataclass / VO 转出；Router **禁止** `vo.model_dump()`
+
+**✅ 正确（示意）：**
+
+```python
+@router.post("/", response_model=ApiResponse[AsyncTaskAcceptedVO])
+async def upload_stamping_file(..., current_user: UserVO = Depends(...)):
+    accepted = service.start_upload(..., current_user=current_user)
+    return ApiResponse.ok(data=accepted, message="上传成功，后台开始解析")
+```
+
+引擎已是 `start_run` 在 Service 提交；落地时把开 Session / `on_progress` / `finally: db.close()` 换成公共 runner，**不要**再保留一份引擎专用 100 行壳。
+
+**❌ 错误：** Router 内开 Session、拼「上传成功：N 个零件」、`except` 里 `mark_log_failed`；引擎 Service 内重复实现同一套 Session/进度壳。
+
 ---
 
 ## 六、快速检查清单
@@ -519,6 +563,8 @@ def get_part(part_id: int, db: Session = Depends(get_db)):
 - [ ] 我在 Repository 里写**权限/角色**判断了吗？ → **禁止**，移到 Service
 - [ ] 我在 Model 里写 `to_dict` 了吗？ → **禁止**，用 Schema 序列化
 - [ ] 跨切片依赖是**下游 → 上游**且无环吗？ → 上游不得依赖下游
+- [ ] 异步上传/计算的 worker 壳写在 **Router** 里了吗？（`_process_*_in_background` / Router 开 Session）→ **禁止**，见 §5.3
+- [ ] 把同一套 Session/进度/finally 复制进多个 Service 了吗？（含引擎 worker）→ **禁止**，抽 `async_task` runner
 
 ---
 
@@ -531,6 +577,7 @@ def get_part(part_id: int, db: Session = Depends(get_db)):
 | Model 里有业务方法 | 耦合数据库和业务 | Model 只定义结构，用 Schema 序列化 |
 | 多层都写同一份逻辑 | 代码重复、难以维护 | 各层各司其职 |
 | Router 直接调用 Parser | 绕过 Service 业务逻辑 | Router → Service → Parser |
+| Router 写后台 worker 壳 / 引擎自建 Session 壳 | 进度/异常路径复制多份 | Service `start_*` + `async_task` runner（§5.3） |
 | Repository 做权限/角色分支 | 违反职责边界 | 策略判断放 Service |
 | **上游切片依赖下游** | 依赖倒置、易成环 | 只允许下游组合上游；共享算法放 common 或归属唯一切片 |
 

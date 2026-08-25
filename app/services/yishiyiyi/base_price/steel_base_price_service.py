@@ -6,10 +6,12 @@ CRUD / 导入 / 导出见各子包；本模块仅委托并保持对外 API。
 
 from __future__ import annotations
 
+import logging
 from typing import Optional
 
 from sqlalchemy.orm import Session
 
+from app.common.audit import display_name
 from app.models.yishiyiyi import SteelBasePrice
 from app.schemas.dto.steel_base_price_dto import (
     FilterOptions,
@@ -22,7 +24,15 @@ from app.schemas.vo.steel_base_price_vo import (
     SteelBasePriceImportResultResponse,
     SteelBasePriceResponse,
 )
+from app.schemas.vo.async_task_vo import AsyncTaskAcceptedVO
 from app.schemas.vo.user_vo import UserVO
+from app.services.async_task import (
+    STATUS_COMPLETED,
+    STATUS_FAILED,
+    TASK_TYPE_BASE_PRICE_IMPORT,
+    AsyncTaskService,
+    WorkerTaskOutcome,
+)
 from app.services.yishiyiyi.base_price.crud.base_price_crud import (
     SteelBasePriceCrudService,
 )
@@ -38,6 +48,8 @@ __all__ = [
     "ProgressCallback",
     "SteelBasePriceService",
 ]
+
+logger = logging.getLogger("service.steel_base_price")
 
 
 class SteelBasePriceService:
@@ -180,3 +192,58 @@ class SteelBasePriceService:
             steel_mill=steel_mill,
             spec=spec,
         )
+
+    def start_import(
+        self,
+        *,
+        file_content: bytes,
+        filename: str,
+        year: int,
+        month: int,
+        current_user: UserVO,
+    ) -> AsyncTaskAcceptedVO:
+        """创建异步任务并入队基准价 Excel 解析。"""
+        async_task_service = AsyncTaskService()
+        task = async_task_service.create_task(
+            task_type=TASK_TYPE_BASE_PRICE_IMPORT,
+            message="已提交解析队列",
+            operator_id=current_user.id,
+            operator_name=display_name(current_user),
+        )
+
+        def work(db: Session, on_progress: ProgressCallback) -> WorkerTaskOutcome:
+            try:
+                result = self.import_excel(
+                    db,
+                    file_content=file_content,
+                    filename=filename,
+                    year=year,
+                    month=month,
+                    progress_callback=on_progress,
+                    current_user=current_user,
+                )
+            except ValueError as error:
+                logger.warning(
+                    "基准价导入业务失败: task_id=%s error=%s", task.task_id, error
+                )
+                return WorkerTaskOutcome(
+                    status=STATUS_FAILED,
+                    progress=0,
+                    message=str(error),
+                )
+            return WorkerTaskOutcome(
+                status=STATUS_COMPLETED,
+                message=(
+                    f"导入完成：新增 {result.created_count} 条，"
+                    f"更新 {result.updated_count} 条，共 {result.total} 条"
+                ),
+                result=result.model_dump(),
+            )
+
+        async_task_service.submit_session_worker(
+            task.task_id,
+            start_message="后台开始解析...",
+            work=work,
+            crash_message=lambda error: f"解析异常: {error}",
+        )
+        return AsyncTaskAcceptedVO(task_id=task.task_id)
