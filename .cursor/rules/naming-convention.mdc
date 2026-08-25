@@ -18,6 +18,8 @@ alwaysApply: true
 - ❌ 禁止使用中文拼音
 - ❌ 禁止使用无意义名称如 `tmp1`、`temp2`
 
+> **既有例外**：切片名 `yishiyiyi`（一事一议）是历史拼音，代码中继续沿用，不要再引入 `special_negotiation` 等第二套包名/路径。切片内部的新变量、函数、文件仍用英文（如 `base_price`、`policy`）。文档可用 special negotiation 作英文对照，不作为标识符。
+
 ```
 ✅ good:  part_number, vehicle_model, tonnage
 ❌ bad:   partNo, chexing, danwei
