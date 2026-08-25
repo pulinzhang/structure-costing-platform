@@ -51,6 +51,7 @@ export function winningThicknessDownloadTemplate() {
                             <span class="text-[#9e9e9e] font-medium">说明：</span>
                             必选基地、年度、月份。取该期中标钢厂基准价，按算价同规则匹配厚度加减价政策并展开各厚度区间，
                             形成外发用价格一览：最终价 = 基准价 + 厚度加减价 + 加工费。基地/钢种与溯源列弱化展示。
+                            导出 Excel 含三页：阅读用一览、计算用（基地/钢种/厚度上下限，供对方套公式）、使用示例。
                         </p>
                     </div>
                 </div>

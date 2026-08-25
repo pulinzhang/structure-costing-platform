@@ -89,6 +89,8 @@ if __name__ == "__main__":
             "uvicorn",
             "main:app",
             "--reload",
+            "--reload-dir",
+            "app",
             "--host",
             "0.0.0.0",
             "--port",

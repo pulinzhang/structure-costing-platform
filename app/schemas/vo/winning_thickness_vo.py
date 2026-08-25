@@ -22,6 +22,10 @@ class WinningThicknessRowVO(BaseModel):
     category_name: str
     steel_mill: str
     thickness_range: str
+    thick_min: Decimal | None = None
+    thick_min_operator: str | None = None
+    thick_max: Decimal | None = None
+    thick_max_operator: str | None = None
     grade: str
     year: int
     month: int
@@ -51,6 +55,6 @@ class WinningThicknessRowVO(BaseModel):
     def serialize_adjustment(self, value: Decimal) -> str:
         return format_money(value, Q4, 4, allow_negative=True)
 
-    @field_serializer("base_thickness")
+    @field_serializer("base_thickness", "thick_min", "thick_max")
     def serialize_thickness(self, value: Decimal | None) -> str | None:
         return optional_format_money(value, Q2, 2)

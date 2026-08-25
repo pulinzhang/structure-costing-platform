@@ -115,7 +115,7 @@ def export_download(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.WINNING_THICKNESS_DOWNLOAD_EXPORT)),
 ) -> StreamingResponse:
-    """下载中标钢厂厚度价格一览表 Excel（外发用；溯源列小字弱化）。"""
+    """下载中标钢厂厚度价格一览表 Excel（一览 + 计算用 + 使用示例）。"""
     content, filename = _export_service.export(
         db,
         year=year,
