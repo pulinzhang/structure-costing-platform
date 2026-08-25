@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """遍历问句矩阵：解析 → 取数 → Snapshot（mock 条件抽取，对齐库内 Scope）。"""
 
 from __future__ import annotations
@@ -48,7 +47,7 @@ def _parser_with_mock(scope: TraversalScope, case: TraversalCase) -> QueryParser
     parser = QueryParser()
     if case.category != "usage":
         draft = mock_extractor_draft(case, scope)
-        parser._extractor.extract = MagicMock(return_value=draft)  # noqa: SLF001
+        parser._extractor.extract = MagicMock(return_value=draft)
     return parser
 
 
@@ -108,8 +107,6 @@ def test_traversal_pipeline(traversal_case: TraversalCase, traversal_scope: Trav
                 assert run.summary is not None, "有数据时 summary 不应为空"
 
         if traversal_case.expect_has_data is False:
-            assert not run.has_data, (
-                f"期望无数据但 has_data=True: {run.data_message}"
-            )
+            assert not run.has_data, f"期望无数据但 has_data=True: {run.data_message}"
     finally:
         db.close()

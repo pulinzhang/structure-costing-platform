@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """年度零件价 / 一口价 问句解析与取数。"""
 
 from __future__ import annotations
@@ -15,19 +14,11 @@ from app.services.llm.query.query_parser import QueryParser
 def test_query_parser_annual_part_price_subject() -> None:
     parser = QueryParser()
     db = MagicMock()
-    parser._aligner._scope_repo.list_locations = MagicMock(  # noqa: SLF001
-        return_value=["青岛", "芜湖"]
-    )
-    parser._aligner._scope_repo.list_vehicle_models = MagicMock(  # noqa: SLF001
-        return_value=["T28"]
-    )
-    parser._aligner._scope_repo.list_bom_versions = MagicMock(  # noqa: SLF001
-        return_value=["V3"]
-    )
-    parser._aligner._scope_repo.list_part_numbers_matching = MagicMock(  # noqa: SLF001
-        return_value=[]
-    )
-    parser._extractor.extract = MagicMock(  # noqa: SLF001
+    parser._aligner._scope_repo.list_locations = MagicMock(return_value=["青岛", "芜湖"])
+    parser._aligner._scope_repo.list_vehicle_models = MagicMock(return_value=["T28"])
+    parser._aligner._scope_repo.list_bom_versions = MagicMock(return_value=["V3"])
+    parser._aligner._scope_repo.list_part_numbers_matching = MagicMock(return_value=[])
+    parser._extractor.extract = MagicMock(
         return_value={
             "time_range": {"start": "2025-01", "end": "2026-08"},
             "filters": {"location": "青岛基地"},
@@ -47,19 +38,11 @@ def test_query_parser_annual_part_price_subject() -> None:
 def test_query_parser_yikoujia_alias() -> None:
     parser = QueryParser()
     db = MagicMock()
-    parser._aligner._scope_repo.list_locations = MagicMock(  # noqa: SLF001
-        return_value=["青岛"]
-    )
-    parser._aligner._scope_repo.list_vehicle_models = MagicMock(  # noqa: SLF001
-        return_value=[]
-    )
-    parser._aligner._scope_repo.list_bom_versions = MagicMock(  # noqa: SLF001
-        return_value=[]
-    )
-    parser._aligner._scope_repo.list_part_numbers_matching = MagicMock(  # noqa: SLF001
-        return_value=["501004437AA"]
-    )
-    parser._extractor.extract = MagicMock(  # noqa: SLF001
+    parser._aligner._scope_repo.list_locations = MagicMock(return_value=["青岛"])
+    parser._aligner._scope_repo.list_vehicle_models = MagicMock(return_value=[])
+    parser._aligner._scope_repo.list_bom_versions = MagicMock(return_value=[])
+    parser._aligner._scope_repo.list_part_numbers_matching = MagicMock(return_value=["501004437AA"])
+    parser._extractor.extract = MagicMock(
         return_value={
             "time_range": {"start": "2026-01", "end": "2026-08"},
             "filters": {"location": "青岛", "part_number": "4437"},
@@ -78,7 +61,7 @@ def test_annual_part_price_qingdao_yoy() -> None:
     db = DatabaseConfig.get_session_factory()()
     try:
         parser = QueryParser()
-        parser._extractor.extract = MagicMock(  # noqa: SLF001
+        parser._extractor.extract = MagicMock(
             return_value={
                 "time_range": {"start": "2025-01", "end": "2025-12"},
                 "filters": {"location": "青岛基地"},

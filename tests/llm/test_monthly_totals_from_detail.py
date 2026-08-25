@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """L0 月汇总：始终从明细表实时聚合。"""
 
 from __future__ import annotations

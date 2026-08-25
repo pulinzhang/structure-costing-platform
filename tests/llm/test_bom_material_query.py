@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """材料清单 / 产品结构问句解析与取数。"""
 
 from __future__ import annotations
@@ -15,16 +14,10 @@ from app.services.llm.query.query_parser import QueryParser
 def test_query_parser_bom_material_subject() -> None:
     parser = QueryParser()
     db = MagicMock()
-    parser._aligner._scope_repo.list_locations = MagicMock(  # noqa: SLF001
-        return_value=["青岛"]
-    )
-    parser._aligner._scope_repo.list_vehicle_models = MagicMock(  # noqa: SLF001
-        return_value=["T28"]
-    )
-    parser._aligner._scope_repo.list_bom_versions = MagicMock(  # noqa: SLF001
-        return_value=["D/00"]
-    )
-    parser._extractor.extract = MagicMock(  # noqa: SLF001
+    parser._aligner._scope_repo.list_locations = MagicMock(return_value=["青岛"])
+    parser._aligner._scope_repo.list_vehicle_models = MagicMock(return_value=["T28"])
+    parser._aligner._scope_repo.list_bom_versions = MagicMock(return_value=["D/00"])
+    parser._extractor.extract = MagicMock(
         return_value={
             "time_range": {"start": "2025-01", "end": "2025-01"},
             "filters": {"location": "青岛基地", "vehicle_model": "T28"},

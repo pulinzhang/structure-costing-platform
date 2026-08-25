@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """按库内 Scope + 侧栏菜单生成 LLM 遍历问句（防回归 / 防笑话）。"""
 
 from __future__ import annotations
@@ -123,8 +122,7 @@ def build_traversal_cases(db: Session) -> list[TraversalCase]:
                     False
                     if menu_case.expected_subject == "winning_thickness"
                     else True
-                    if menu_case.status == "complete"
-                    and menu_case.expected_subject is not None
+                    if menu_case.status == "complete" and menu_case.expected_subject is not None
                     else None
                 ),
                 notes=menu_case.menu_label,

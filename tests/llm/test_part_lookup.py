@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """单件跨域检索 runner 集成（真实库）。"""
 
 from __future__ import annotations

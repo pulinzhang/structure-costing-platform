@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """可比口径动态校验单测。"""
 
 from __future__ import annotations

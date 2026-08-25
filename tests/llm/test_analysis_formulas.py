@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """B.6.1 核心算法单测。"""
 
 from __future__ import annotations
@@ -28,10 +27,7 @@ def test_cumulative_rate_matches_design() -> None:
 
 
 def test_cumulative_rate_single_month_is_null() -> None:
-    assert (
-        compute_cumulative_rate(Decimal("1000"), Decimal("1100"), single_month=True)
-        is None
-    )
+    assert compute_cumulative_rate(Decimal("1000"), Decimal("1100"), single_month=True) is None
 
 
 def test_anomaly_months_threshold_15_percent_when_few_points() -> None:
@@ -47,10 +43,7 @@ def test_anomaly_months_threshold_15_percent_when_few_points() -> None:
 
 
 def test_anomaly_months_uses_stat_rule_when_enough_points() -> None:
-    points = [
-        {"month": f"2026-{month:02d}", "mom_rate": "0.02"}
-        for month in range(1, 7)
-    ]
+    points = [{"month": f"2026-{month:02d}", "mom_rate": "0.02"} for month in range(1, 7)]
     points[-1] = {"month": "2026-06", "mom_rate": "0.20"}
     months, note = detect_anomaly_months(points)
     assert "2026-06" in months

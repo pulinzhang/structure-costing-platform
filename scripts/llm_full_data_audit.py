@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """基于业务库现有数据，穷举 LLM 可答问句并跑通解析 → 分析 → 报告（或降级）。
 
 用法（仓库根目录）::
@@ -159,7 +158,7 @@ def run_case(
                 expect_has_data=case.expect_has_data,
             )
             draft = mock_extractor_draft(traversal_stub, scope)
-            parser._extractor.extract = lambda *args, **kwargs: draft  # noqa: SLF001
+            parser._extractor.extract = lambda *args, **kwargs: draft
 
         query = parser.parse(db, user_question=case.user_question)
         result.subject = query.subject
@@ -176,9 +175,7 @@ def run_case(
             result.errors.append(f"误将时间识别为零件号: {part_number}")
 
         if case.expected_subject and query.subject != case.expected_subject:
-            result.errors.append(
-                f"subject 期望 {case.expected_subject}，实际 {query.subject}"
-            )
+            result.errors.append(f"subject 期望 {case.expected_subject}，实际 {query.subject}")
 
         if case.expected_hash_page and case.expected_subject:
             menu = SUBJECT_MENU.get(case.expected_subject)
@@ -190,9 +187,7 @@ def run_case(
                 ):
                     expected_page = "bom-material"
                 if menu.hash_page != expected_page:
-                    result.errors.append(
-                        f"列表页期望 {expected_page}，实际 {menu.hash_page}"
-                    )
+                    result.errors.append(f"列表页期望 {expected_page}，实际 {menu.hash_page}")
 
         if query.query_mode == "usage_help":
             run = usage_runner.run(query)
@@ -308,8 +303,12 @@ def main() -> int:
             results.append(result)
             status = "PASS" if result.ok else "FAIL"
             data_flag = "有" if result.has_data else "无"
-            note = result.errors[0] if result.errors else (
-                result.data_message[:36] if result.data_message else result.report_preview[:36]
+            note = (
+                result.errors[0]
+                if result.errors
+                else (
+                    result.data_message[:36] if result.data_message else result.report_preview[:36]
+                )
             )
             print(
                 f"{status:<6} [{result.category}] {result.case_id:<22} "
@@ -321,13 +320,16 @@ def main() -> int:
     failed = [r for r in results if not r.ok]
     warned = [r for r in results if r.warnings]
     no_data_menu = [
-        r for r in results
+        r
+        for r in results
         if r.category == "menu" and not r.has_data and r.query_mode != "usage_help"
     ]
 
     print("\n" + "=" * 100)
-    print(f"汇总: {len(results) - len(failed)}/{len(results)} 通过, "
-          f"{len(warned)} 条警告, {len(failed)} 条失败")
+    print(
+        f"汇总: {len(results) - len(failed)}/{len(results)} 通过, "
+        f"{len(warned)} 条警告, {len(failed)} 条失败"
+    )
     if no_data_menu:
         print(f"菜单问句无数据: {len(no_data_menu)} 条（可能库内缺表数据）")
 

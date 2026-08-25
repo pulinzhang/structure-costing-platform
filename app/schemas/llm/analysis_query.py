@@ -61,7 +61,7 @@ class AnalysisQuery(BaseModel):
     filters: dict[str, str] = Field(default_factory=dict)
     subject: str = "cost_total"
     comparison_basis: ComparisonBasis = Field(default_factory=ComparisonBasis)
-    analyses: list[AnalysisKind] = Field(default_factory=lambda: ["summary"])
+    analyses: list[AnalysisKind] = Field(default_factory=lambda: list[AnalysisKind](["summary"]))
     user_question: str = ""
     unresolved_mentions: list[str] = Field(default_factory=list)
     query_mode: QueryMode = "analysis"

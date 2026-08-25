@@ -22,9 +22,7 @@ def _cell_text(sheet: Worksheet, row: int, col: int) -> str:
 
 def _merge_keys(sheet: Worksheet, max_row: int = 20) -> list[str]:
     keys: list[str] = []
-    for merged in sorted(
-        sheet.merged_cells.ranges, key=lambda item: (item.min_row, item.min_col)
-    ):
+    for merged in sorted(sheet.merged_cells.ranges, key=lambda item: (item.min_row, item.min_col)):
         if merged.min_row <= max_row:
             keys.append(str(merged))
     return keys
@@ -99,7 +97,7 @@ def check_bom() -> list[str]:
     content, _name = build_bom_material_template()
     tpl = load_workbook(BytesIO(content), data_only=False)["车身件材料清单"]
 
-    real_path = list((UPLOADS / "bom" / "青岛" / "T28" / "D_00").glob("*.xlsx"))[0]
+    real_path = next((UPLOADS / "bom" / "青岛" / "T28" / "D_00").glob("*.xlsx"))
     real = load_workbook(real_path, data_only=False).active
     assert real is not None
 
@@ -152,11 +150,7 @@ def check_base_price() -> list[str]:
     assert real is not None
 
     for label, sheet in (("模板", tpl), ("实样", real)):
-        joined = " ".join(
-            _cell_text(sheet, row, col)
-            for row in (4, 5)
-            for col in range(1, 16)
-        )
+        joined = " ".join(_cell_text(sheet, row, col) for row in (4, 5) for col in range(1, 16))
         required = ["序号", "钢种", "牌号", "参考规格", "芜湖", "青岛", "钢厂", "到厂原卷"]
         missing = _has_all(joined, required)
         if missing:
@@ -176,9 +170,7 @@ def check_base_price() -> list[str]:
     parsed = parse_base_price_excel(content)
     locations = {str(row.get("location")) for row in parsed.records}
     if len(parsed.records) < 8 or parsed.errors:
-        issues.append(
-            f"基价模板解析异常: records={len(parsed.records)} errors={parsed.errors}"
-        )
+        issues.append(f"基价模板解析异常: records={len(parsed.records)} errors={parsed.errors}")
     if not {"芜湖", "青岛", "大连", "鄂尔多斯"}.issubset(locations):
         issues.append(f"基价模板基地不全: {sorted(locations)}")
 
@@ -206,12 +198,8 @@ def check_policy() -> list[str]:
     # 首钢排版与模板最接近
     real = real_wb["首钢"] if "首钢" in real_wb.sheetnames else real_wb.worksheets[0]
 
-    tpl_text = " ".join(
-        _cell_text(tpl, row, col) for row in range(1, 6) for col in range(1, 10)
-    )
-    real_text = " ".join(
-        _cell_text(real, row, col) for row in range(1, 6) for col in range(1, 16)
-    )
+    tpl_text = " ".join(_cell_text(tpl, row, col) for row in range(1, 6) for col in range(1, 10))
+    real_text = " ".join(_cell_text(real, row, col) for row in range(1, 6) for col in range(1, 16))
     if "厚度加减价" not in tpl_text:
         issues.append("政策模板缺「厚度加减价」标题")
     if "≥0.5" not in tpl_text:
@@ -251,9 +239,7 @@ def check_flat_templates() -> list[str]:
         StampingTonnagePriceImportService,
     )
 
-    tonnage = parse_tonnage_price_excel(
-        StampingTonnagePriceImportService().build_template()[0]
-    )
+    tonnage = parse_tonnage_price_excel(StampingTonnagePriceImportService().build_template()[0])
     print(f"[冲次] rows={len(tonnage.rows)} -> {'OK' if len(tonnage.rows) >= 3 else 'FAIL'}")
     if len(tonnage.rows) < 3:
         issues.append("冲次模板解析不足")
@@ -263,9 +249,7 @@ def check_flat_templates() -> list[str]:
         BomWeldingUnitPriceImportService,
     )
 
-    welding = parse_welding_unit_price_excel(
-        BomWeldingUnitPriceImportService().build_template()[0]
-    )
+    welding = parse_welding_unit_price_excel(BomWeldingUnitPriceImportService().build_template()[0])
     print(f"[焊接] rows={len(welding.rows)} -> {'OK' if len(welding.rows) >= 3 else 'FAIL'}")
     if len(welding.rows) < 3:
         issues.append("焊接模板解析不足")
@@ -275,9 +259,7 @@ def check_flat_templates() -> list[str]:
         BomAnnualPartPriceImportService,
     )
 
-    annual = parse_annual_part_price_excel(
-        BomAnnualPartPriceImportService().build_template()[0]
-    )
+    annual = parse_annual_part_price_excel(BomAnnualPartPriceImportService().build_template()[0])
     print(f"[年度零件价] rows={len(annual.rows)} -> {'OK' if len(annual.rows) >= 3 else 'FAIL'}")
     if len(annual.rows) < 3:
         issues.append("年度零件价模板解析不足")

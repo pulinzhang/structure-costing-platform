@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """QueryParser / 时间范围 / 趋势分析单测（不调真实 LLM、不改库）。"""
 
 from __future__ import annotations
@@ -49,25 +48,17 @@ def test_normalize_recent_three_months() -> None:
 
 
 def _mock_aligner(parser: QueryParser) -> None:
-    parser._aligner._scope_repo.list_locations = MagicMock(  # noqa: SLF001
-        return_value=["青岛"]
-    )
-    parser._aligner._scope_repo.list_vehicle_models = MagicMock(  # noqa: SLF001
-        return_value=["T28"]
-    )
-    parser._aligner._scope_repo.list_bom_versions = MagicMock(  # noqa: SLF001
-        return_value=["V1"]
-    )
-    parser._aligner._scope_repo.list_part_numbers_matching = MagicMock(  # noqa: SLF001
-        return_value=[]
-    )
+    parser._aligner._scope_repo.list_locations = MagicMock(return_value=["青岛"])
+    parser._aligner._scope_repo.list_vehicle_models = MagicMock(return_value=["T28"])
+    parser._aligner._scope_repo.list_bom_versions = MagicMock(return_value=["V1"])
+    parser._aligner._scope_repo.list_part_numbers_matching = MagicMock(return_value=[])
 
 
 def test_query_parser_uses_llm_draft() -> None:
     parser = QueryParser()
     db = MagicMock()
     _mock_aligner(parser)
-    parser._extractor.extract = MagicMock(  # noqa: SLF001
+    parser._extractor.extract = MagicMock(
         return_value={
             "time_range": {"start": "2026-01", "end": "2026-01"},
             "filters": {"location": "青岛", "vehicle_model": "T28"},
@@ -82,14 +73,14 @@ def test_query_parser_uses_llm_draft() -> None:
     assert "summary" in query.analyses
     assert query.location() == "青岛"
     assert query.time_range.start == "2026-01"
-    parser._extractor.extract.assert_called_once()  # noqa: SLF001
+    parser._extractor.extract.assert_called_once()
 
 
 def test_query_parser_part_number_adds_drilldown() -> None:
     parser = QueryParser()
     db = MagicMock()
     _mock_aligner(parser)
-    parser._extractor.extract = MagicMock(  # noqa: SLF001
+    parser._extractor.extract = MagicMock(
         return_value={
             "time_range": {"start": "2026-08", "end": "2026-08"},
             "filters": {},
@@ -109,7 +100,7 @@ def test_query_parser_price_detail_skips_dashboard_summary() -> None:
     parser = QueryParser()
     db = MagicMock()
     _mock_aligner(parser)
-    parser._extractor.extract = MagicMock(  # noqa: SLF001
+    parser._extractor.extract = MagicMock(
         return_value={
             "time_range": {"start": "2025-01", "end": "2025-01"},
             "filters": {"location": "青岛"},
@@ -143,9 +134,7 @@ def test_query_parser_level4_blind_question_forces_safe_analyses() -> None:
     parser = QueryParser()
     db = MagicMock()
     _mock_aligner(parser)
-    parser._extractor.extract = MagicMock(  # noqa: SLF001
-        side_effect=LlmClientError("no key")
-    )
+    parser._extractor.extract = MagicMock(side_effect=LlmClientError("no key"))
 
     query = parser.parse(db, user_question="总体怎么样")
     assert query.analyses == ["summary", "risk"]
@@ -159,9 +148,7 @@ def test_query_parser_rule_fallback_when_llm_fails() -> None:
     parser = QueryParser()
     db = MagicMock()
     _mock_aligner(parser)
-    parser._extractor.extract = MagicMock(  # noqa: SLF001
-        side_effect=LlmClientError("no key")
-    )
+    parser._extractor.extract = MagicMock(side_effect=LlmClientError("no key"))
 
     query = parser.parse(
         db,
@@ -292,7 +279,7 @@ def test_query_parser_winning_thickness_not_base_price() -> None:
     parser = QueryParser()
     db = MagicMock()
     _mock_aligner(parser)
-    parser._extractor.extract = MagicMock(  # noqa: SLF001
+    parser._extractor.extract = MagicMock(
         return_value={
             "time_range": {"start": "2025-01", "end": "2025-01"},
             "filters": {"location": "青岛基地"},
@@ -312,7 +299,7 @@ def test_query_parser_scrap_price_not_cost_total() -> None:
     parser = QueryParser()
     db = MagicMock()
     _mock_aligner(parser)
-    parser._extractor.extract = MagicMock(  # noqa: SLF001
+    parser._extractor.extract = MagicMock(
         return_value={
             "time_range": {"start": "2025-01", "end": "2025-01"},
             "filters": {"location": "青岛基地"},
@@ -332,7 +319,7 @@ def test_query_parser_stamping_process_maps_to_parts_list() -> None:
     parser = QueryParser()
     db = MagicMock()
     _mock_aligner(parser)
-    parser._extractor.extract = MagicMock(  # noqa: SLF001
+    parser._extractor.extract = MagicMock(
         return_value={
             "time_range": {"start": "2025-01", "end": "2025-01"},
             "filters": {
@@ -414,7 +401,7 @@ def test_query_parser_stamping_report_maps_to_part_cost() -> None:
     parser = QueryParser()
     db = MagicMock()
     _mock_aligner(parser)
-    parser._extractor.extract = MagicMock(  # noqa: SLF001
+    parser._extractor.extract = MagicMock(
         return_value={
             "time_range": {"start": "2025-01", "end": "2025-01"},
             "filters": {"location": "青岛基地"},
@@ -474,7 +461,7 @@ def test_query_parser_l0_finished_product_cost_report() -> None:
     parser = QueryParser()
     db = MagicMock()
     _mock_aligner(parser)
-    parser._extractor.extract = MagicMock(  # noqa: SLF001
+    parser._extractor.extract = MagicMock(
         return_value={
             "time_range": {"start": "2025-01", "end": "2025-01"},
             "filters": {"location": "青岛基地"},
@@ -495,7 +482,7 @@ def test_query_parser_l0_finished_product_cost_report() -> None:
 def test_query_parser_thickness_policy_question() -> None:
     parser = QueryParser()
     db = MagicMock()
-    parser._extractor.extract = MagicMock(  # noqa: SLF001
+    parser._extractor.extract = MagicMock(
         return_value={
             "time_range": {"start": "2025-01", "end": "2025-01"},
             "filters": {},
@@ -528,8 +515,8 @@ def test_query_parser_base_price_question() -> None:
 
     parser = QueryParser()
     db = MagicMock()
-    parser._aligner._scope_repo.list_locations = MagicMock(return_value=["青岛"])  # noqa: SLF001
-    parser._extractor.extract = MagicMock(  # noqa: SLF001
+    parser._aligner._scope_repo.list_locations = MagicMock(return_value=["青岛"])
+    parser._extractor.extract = MagicMock(
         return_value={
             "time_range": {"start": "2025-01", "end": "2025-01"},
             "filters": {"location": "青岛基地"},
@@ -634,7 +621,7 @@ def test_query_parser_max_risk_question() -> None:
     parser = QueryParser()
     db = MagicMock()
     _mock_aligner(parser)
-    parser._extractor.extract = MagicMock(  # noqa: SLF001
+    parser._extractor.extract = MagicMock(
         return_value={
             "time_range": {"start": "2025-01", "end": "2025-06"},
             "filters": {"location": "青岛"},
@@ -704,7 +691,7 @@ def test_query_parser_base_price_anomaly() -> None:
     parser = QueryParser()
     db = MagicMock()
     _mock_aligner(parser)
-    parser._extractor.extract = MagicMock(  # noqa: SLF001
+    parser._extractor.extract = MagicMock(
         return_value={
             "time_range": {"start": "2025-01", "end": "2025-12"},
             "filters": {"location": "青岛"},
@@ -726,7 +713,7 @@ def test_query_parser_zhongbiao_price_alias() -> None:
     parser = QueryParser()
     db = MagicMock()
     _mock_aligner(parser)
-    parser._extractor.extract = MagicMock(  # noqa: SLF001
+    parser._extractor.extract = MagicMock(
         return_value={
             "time_range": {"start": "2025-01", "end": "2025-12"},
             "filters": {"location": "青岛"},
@@ -745,16 +732,22 @@ def test_query_parser_zhongbiao_price_alias() -> None:
 
 def test_winning_thickness_not_confused_with_zhongbiao_price() -> None:
     parser = QueryParser()
-    assert parser._resolve_subject(  # noqa: SLF001
-        question="中标厚度价格一览表怎么样",
-        analyses=["summary"],
-        filters={},
-    ) == "winning_thickness"
-    assert parser._resolve_subject(
-        question="2025年中标价波动大吗",
-        analyses=["summary"],
-        filters={},
-    ) == "steel_base_price"
+    assert (
+        parser._resolve_subject(
+            question="中标厚度价格一览表怎么样",
+            analyses=["summary"],
+            filters={},
+        )
+        == "winning_thickness"
+    )
+    assert (
+        parser._resolve_subject(
+            question="2025年中标价波动大吗",
+            analyses=["summary"],
+            filters={},
+        )
+        == "steel_base_price"
+    )
 
 
 def test_build_policy_mom_anomalies() -> None:
@@ -804,7 +797,7 @@ def test_build_policy_mom_anomalies() -> None:
 def test_query_parser_policy_colloquial_anomaly() -> None:
     parser = QueryParser()
     db = MagicMock()
-    parser._extractor.extract = MagicMock(  # noqa: SLF001
+    parser._extractor.extract = MagicMock(
         return_value={
             "time_range": {"start": "2025-01", "end": "2025-12"},
             "filters": {},

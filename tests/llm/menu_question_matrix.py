@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """侧栏列表页 → 标准问句模板（青岛基地 + 2025年01月 + 主题）。"""
 
 from __future__ import annotations

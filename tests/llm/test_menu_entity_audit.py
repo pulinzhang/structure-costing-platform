@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """实体表列表页 ↔ subject ↔ runner 覆盖审计。"""
 
 from __future__ import annotations

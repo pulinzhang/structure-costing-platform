@@ -1,7 +1,8 @@
-# -*- coding: utf-8 -*-
 """Capture feature screenshots for static/helper/img (dev helper, not shipped)."""
+
 from __future__ import annotations
 
+import contextlib
 import pathlib
 import time
 
@@ -65,10 +66,8 @@ def main() -> None:
             page.goto(url, wait_until="networkidle")
             time.sleep(1.0)
             if wait_text:
-                try:
+                with contextlib.suppress(Exception):
                     page.wait_for_selector(wait_text, timeout=8000)
-                except Exception:
-                    pass
             else:
                 # wait for page content mount
                 try:

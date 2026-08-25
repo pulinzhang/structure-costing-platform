@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """侧栏菜单覆盖查检。"""
 
 from __future__ import annotations

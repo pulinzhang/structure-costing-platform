@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """冲压加工费问句解析与取数。"""
 
 from __future__ import annotations
@@ -15,19 +14,11 @@ from app.services.llm.query.query_parser import QueryParser
 def test_query_parser_stamping_process_fee_subject() -> None:
     parser = QueryParser()
     db = MagicMock()
-    parser._aligner._scope_repo.list_locations = MagicMock(  # noqa: SLF001
-        return_value=["芜湖", "青岛"]
-    )
-    parser._aligner._scope_repo.list_vehicle_models = MagicMock(  # noqa: SLF001
-        return_value=["T13J"]
-    )
-    parser._aligner._scope_repo.list_bom_versions = MagicMock(  # noqa: SLF001
-        return_value=["V3"]
-    )
-    parser._aligner._scope_repo.list_part_numbers_matching = MagicMock(  # noqa: SLF001
-        return_value=["502008024AA"]
-    )
-    parser._extractor.extract = MagicMock(  # noqa: SLF001
+    parser._aligner._scope_repo.list_locations = MagicMock(return_value=["芜湖", "青岛"])
+    parser._aligner._scope_repo.list_vehicle_models = MagicMock(return_value=["T13J"])
+    parser._aligner._scope_repo.list_bom_versions = MagicMock(return_value=["V3"])
+    parser._aligner._scope_repo.list_part_numbers_matching = MagicMock(return_value=["502008024AA"])
+    parser._extractor.extract = MagicMock(
         return_value={
             "time_range": {"start": "2026-01", "end": "2026-08"},
             "filters": {"part_number": "8024"},
