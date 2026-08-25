@@ -34,6 +34,7 @@ from app.services.yishiyiyi.winning_thickness.export.values import (
     CALC_COLUMN_WIDTHS,
     CALC_FINAL_COL,
     CALC_HEADERS,
+    CALC_HIDDEN_COLS,
     CALC_NUMBER_COLS,
     CALC_OPERATOR_COLS,
     CALC_PRICE_COLS,
@@ -54,10 +55,10 @@ def write_calc_sheet(
         ws,
         last_col=last_col,
         meta=meta,
-        sheet_role="计算用 · 厚度上下限拆列，无溯源",
+        sheet_role="计算用 · 可读厚度范围 + 公式匹配列（已隐藏）",
         formula_note=(
-            "厚min / 厚max 为空表示该侧不限制。"
-            "最终价列为 Excel 公式（基准价 + 加减价 + 加工费），改左侧三项会自动重算。"
+            "厚度范围与一览页相同，便于阅读。"
+            "最终价 = 基准价 + 加减价 + 加工费（Excel 公式，改左侧三项会自动重算）。"
         ),
     )
     write_calc_header(ws, header_row=header_row)
@@ -76,7 +77,10 @@ def write_calc_sheet(
 
 def apply_calc_column_widths(ws: Worksheet) -> None:
     for col_idx, width in enumerate(CALC_COLUMN_WIDTHS, start=1):
-        ws.column_dimensions[get_column_letter(col_idx)].width = width
+        dim = ws.column_dimensions[get_column_letter(col_idx)]
+        dim.width = width
+        if col_idx in CALC_HIDDEN_COLS:
+            dim.hidden = True
 
 
 def write_calc_header(ws: Worksheet, *, header_row: int) -> None:
@@ -104,10 +108,11 @@ def write_calc_data_row(
         excel_operator(row.thick_min_operator),
         excel_thickness(row.thick_max),
         excel_operator(row.thick_max_operator),
+        row.thickness_range or "",
         excel_money_cell(row.base_price, Q4),
         excel_money_cell(row.thickness_adjustment, Q4, allow_negative=True),
         excel_money_cell(row.processing_fee, Q4),
-        f"=I{excel_row}+J{excel_row}+K{excel_row}",
+        f"=J{excel_row}+K{excel_row}+L{excel_row}",
     ]
     stripe = zebra_fill(data_index)
     for col_idx, value in enumerate(values, start=1):
