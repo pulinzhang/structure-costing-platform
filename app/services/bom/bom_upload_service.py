@@ -12,6 +12,7 @@ from app.common.audit import audit_create
 from app.common.upload_scope_validation import validate_bom_material_upload_scope
 from app.common.timezone import now
 from app.config import settings
+from app.exceptions.base import BusinessException
 from app.parsers.bom.bom_parser import BomParsedNode, parse_bom_excel
 from app.repositories.bom.bom_repository import BomNodeRepository, BomSnapshotRepository
 from app.schemas.dto.bom_dto import BomNodeWrite, BomSnapshotWrite
@@ -48,23 +49,23 @@ class BomUploadService:
     ) -> BomImportResultVO:
         location = (location or "").strip()
         if not location:
-            raise ValueError("请选择采购基地")
+            raise BusinessException("请选择采购基地")
 
         original_name = Path(filename).name
         ext = Path(original_name).suffix.lower()
         if ext not in {".xlsx", ".xls"}:
-            raise ValueError("仅支持 .xlsx / .xls 文件")
+            raise BusinessException("仅支持 .xlsx / .xls 文件")
         if not file_content:
-            raise ValueError("文件内容为空")
+            raise BusinessException("文件内容为空")
         if len(file_content) > settings.MAX_UPLOAD_SIZE:
-            raise ValueError(
+            raise BusinessException(
                 f"文件过大，上限 {settings.MAX_UPLOAD_SIZE // (1024 * 1024)}MB"
             )
 
         parse_result = parse_bom_excel(file_content)
         meta = parse_result.meta
         if not parse_result.nodes:
-            raise ValueError("未解析到 BOM 节点，请检查 Excel 格式")
+            raise BusinessException("未解析到 BOM 节点，请检查 Excel 格式")
 
         scope = validate_bom_material_upload_scope(
             location=location,
@@ -129,7 +130,7 @@ class BomUploadService:
                 if parsed.parent_index is not None:
                     parent_id = index_to_id.get(parsed.parent_index)
                     if parent_id is None:
-                        raise ValueError(
+                        raise BusinessException(
                             f"节点父子关系异常: {parsed.part_number} "
                             f"parent_index={parsed.parent_index}"
                         )

@@ -7,6 +7,8 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_serializer
 
+from app.common.timezone import datetime_to_iso
+
 
 class CostingEngineNavigateVO(BaseModel):
     """硬停项功能页深链。"""
@@ -83,7 +85,7 @@ class CostingEngineRunStepVO(BaseModel):
 
     @field_serializer("started_at", "finished_at")
     def serialize_datetime(self, value: datetime | None) -> str | None:
-        return value.isoformat() if value else None
+        return datetime_to_iso(value)
 
 
 class CostingEngineRunVO(BaseModel):
@@ -106,7 +108,7 @@ class CostingEngineRunVO(BaseModel):
 
     @field_serializer("created_at", "started_at", "finished_at")
     def serialize_datetime(self, value: datetime | None) -> str | None:
-        return value.isoformat() if value else None
+        return datetime_to_iso(value)
 
 
 class CostingEngineRunListItemVO(BaseModel):
@@ -127,4 +129,4 @@ class CostingEngineRunListItemVO(BaseModel):
 
     @field_serializer("created_at", "started_at", "finished_at")
     def serialize_datetime(self, value: datetime | None) -> str | None:
-        return value.isoformat() if value else None
+        return datetime_to_iso(value)

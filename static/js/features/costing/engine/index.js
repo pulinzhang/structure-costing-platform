@@ -1386,10 +1386,12 @@ async function fetchTaskProgress(taskId) {
 
 async function loadHistory(page) {
     engineState.history.page = page || 1;
-    const skip = (engineState.history.page - 1) * engineState.history.size;
     try {
         const res = await HttpClient.get(RUNS_API, {
-            params: { skip, limit: engineState.history.size },
+            params: {
+                page: engineState.history.page,
+                size: engineState.history.size,
+            },
         });
         const data = res.data || {};
         engineState.history.items = data.items || [];

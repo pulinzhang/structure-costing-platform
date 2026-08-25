@@ -381,8 +381,8 @@ async function loadList(page = 1) {
         const res = await HttpClient.get(API_BASE, {
             params: {
                 ...filters,
-                skip: (page - 1) * listState.pageSize,
-                limit: listState.pageSize,
+                page,
+                size: listState.pageSize,
             },
         });
         const pageData = res.data || {};

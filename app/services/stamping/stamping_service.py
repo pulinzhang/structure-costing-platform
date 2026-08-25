@@ -286,7 +286,9 @@ class StampingPartService:
 
     def delete(self, db: Session, part_id: int) -> None:
         """删除零件（硬删除，不写审计字段）。"""
-        self.repository.delete(db, part_id)
+        deleted = self.repository.delete(db, part_id)
+        if not deleted:
+            raise NotFoundException(f"零件不存在: id={part_id}")
         db.commit()
 
     def create(

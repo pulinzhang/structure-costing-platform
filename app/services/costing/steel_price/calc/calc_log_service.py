@@ -12,6 +12,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.common.timezone import now
+from app.exceptions.base import NotFoundException
 from app.models.costing import SteelPriceCalcLog
 from app.repositories.costing.steel_price import SteelPriceCalcLogRepository
 from app.schemas.dto.steel_price_dto import SteelPriceCalcLogCreate, SteelPriceCalcLogPatch
@@ -66,27 +67,26 @@ class CalcLogService:
         )
         return [SteelPriceCalcLogVO.model_validate(r) for r in records], total
 
-    def get_log(self, db: Session, log_id: int) -> SteelPriceCalcLogVO | None:
+    def get_log(self, db: Session, log_id: int) -> SteelPriceCalcLogVO:
         record = self.repository.get_by_id(db, log_id)
         if record is None:
-            return None
+            raise NotFoundException("计算记录不存在")
         return SteelPriceCalcLogVO.model_validate(record)
 
-    def delete_log(self, db: Session, log_id: int) -> bool:
+    def delete_log(self, db: Session, log_id: int) -> None:
         """删除计算日志（含 processing，作僵死锁兜底释放）。"""
         record = self.repository.get_by_id(db, log_id)
         if record is None:
-            return False
+            raise NotFoundException("计算记录不存在")
         deleted = self.repository.delete(db, log_id)
         if not deleted:
-            return False
+            raise NotFoundException("计算记录不存在")
         try:
             db.commit()
         except Exception:
             db.rollback()
             logger.exception("删除计算日志失败: id=%s", log_id)
             raise
-        return True
 
     def is_period_processing(
         self,

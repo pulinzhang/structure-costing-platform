@@ -7,6 +7,7 @@ from decimal import Decimal
 
 from sqlalchemy.orm import Session
 
+from app.exceptions.base import BusinessException
 from app.models.yishiyiyi import SteelBasePrice, SteelPriceLadderItem, SteelPricePolicy
 from app.repositories.yishiyiyi.base_price import SteelBasePriceRepository
 from app.repositories.yishiyiyi.policy import SteelPricePolicyRepository
@@ -42,7 +43,7 @@ class WinningThicknessRowAssembler:
     ) -> list[WinningThicknessRowVO]:
         location = (location or "").strip()
         if not location:
-            raise ValueError("基地不能为空")
+            raise BusinessException("基地不能为空")
 
         bases = self.base_repository.list_for_export(
             db,

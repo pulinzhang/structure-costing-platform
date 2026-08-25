@@ -14,7 +14,7 @@ from typing import Callable, Optional
 from sqlalchemy.orm import Session
 
 from app.common.audit import audit_create
-from app.exceptions import ValidationException
+from app.exceptions import BusinessException
 from app.parsers.yishiyiyi.base_price import parse_base_price_excel
 from app.repositories.yishiyiyi.base_price import SteelBasePriceRepository
 from app.schemas.dto.steel_base_price_dto import SteelBasePriceWrite
@@ -74,7 +74,7 @@ def _assert_steel_mills_not_numeric(records: list[dict[str, object]]) -> None:
         return
     sample_text = "；".join(bad_samples)
     more = f"等共 {bad_count} 处" if bad_count > len(bad_samples) else f"共 {bad_count} 处"
-    raise ValidationException(
+    raise BusinessException(
         f"钢厂不能为数字（疑似表格列错位或格式不正确）：{sample_text}（{more}）。"
         "请核对各基地「中标钢厂」列是否对齐后再导入。"
     )

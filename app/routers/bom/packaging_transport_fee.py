@@ -5,7 +5,7 @@ BOM 包装运输费路由
 from typing import List
 from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, Query, UploadFile, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
@@ -144,34 +144,16 @@ async def upload_excel(
         require_perm(Perm.BOM_PACKAGING_TRANSPORT_FEE_UPLOAD_UPLOAD)
     ),
 ) -> ApiResponse[BomPackagingTransportFeeImportResultVO]:
-    if not (location or "").strip():
-        raise HTTPException(status_code=400, detail="请选择采购基地")
-    if not (vehicle_model or "").strip():
-        raise HTTPException(status_code=400, detail="请填写项目")
-    if year < 2000 or year > 2100:
-        raise HTTPException(status_code=400, detail="请填写正确的年度")
-    if not file.filename:
-        raise HTTPException(status_code=400, detail="未提供文件名")
-
     content = await file.read()
-    if not content:
-        raise HTTPException(status_code=400, detail="文件内容为空")
-
-    try:
-        result = _import_service.import_excel(
-            db,
-            file_content=content,
-            filename=file.filename,
-            location=location.strip(),
-            year=year,
-            vehicle_model=vehicle_model.strip(),
-            current_user=current_user,
-        )
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"导入失败: {exc}") from exc
-
+    result = _import_service.import_excel(
+        db,
+        file_content=content,
+        filename=file.filename or "",
+        location=location.strip(),
+        year=year,
+        vehicle_model=vehicle_model.strip(),
+        current_user=current_user,
+    )
     return ApiResponse.created(data=result, message=result.message)
 
 
@@ -184,14 +166,12 @@ def batch_delete(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BOM_PACKAGING_TRANSPORT_FEE_DELETE)),
 ) -> ApiResponse[BomPackagingTransportFeeBatchDeleteResultVO]:
-    deleted_count, skipped, error = _service.batch_delete_by_scope(
+    deleted_count, skipped = _service.batch_delete_by_scope(
         db,
         location=body.location,
         year=body.year,
         vehicle_model=body.vehicle_model,
     )
-    if error:
-        raise HTTPException(status_code=400, detail=error)
 
     message = (
         f"已删除基地「{body.location}」{body.year} 年项目「{body.vehicle_model}」"
@@ -221,10 +201,7 @@ def batch_approve(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BOM_PACKAGING_TRANSPORT_FEE_APPROVE)),
 ) -> ApiResponse[BomPackagingTransportFeeBatchAuditResultVO]:
-    result, error = _service.batch_approve(db, body, current_user=current_user)
-    if error:
-        raise HTTPException(status_code=400, detail=error)
-    assert result is not None
+    result = _service.batch_approve(db, body, current_user=current_user)
     message = f"已审核通过 {result.updated_count} 条"
     if result.skipped_count:
         message += f"，跳过已审核 {result.skipped_count} 条"
@@ -240,10 +217,7 @@ def batch_reverse_audit(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BOM_PACKAGING_TRANSPORT_FEE_REVERSE)),
 ) -> ApiResponse[BomPackagingTransportFeeBatchAuditResultVO]:
-    result, error = _service.batch_reverse_audit(db, body, current_user=current_user)
-    if error:
-        raise HTTPException(status_code=400, detail=error)
-    assert result is not None
+    result = _service.batch_reverse_audit(db, body, current_user=current_user)
     message = f"已反审核 {result.updated_count} 条"
     if result.skipped_count:
         message += f"，跳过非已审 {result.skipped_count} 条"
@@ -260,9 +234,7 @@ def create(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BOM_PACKAGING_TRANSPORT_FEE_CREATE)),
 ) -> ApiResponse[BomPackagingTransportFeeResponse]:
-    record, error = _service.create(db, body, current_user=current_user)
-    if error:
-        raise HTTPException(status_code=400, detail=error)
+    record = _service.create(db, body, current_user=current_user)
     return ApiResponse.created(data=record, message="创建成功")
 
 
@@ -273,8 +245,6 @@ def get_by_id(
     current_user: UserVO = Depends(require_perm(Perm.BOM_PACKAGING_TRANSPORT_FEE_VIEW)),
 ) -> ApiResponse[BomPackagingTransportFeeResponse]:
     record = _service.get_by_id(db, id)
-    if not record:
-        raise HTTPException(status_code=404, detail=f"包装运输费记录不存在: id={id}")
     return ApiResponse.ok(data=record, message="获取成功")
 
 
@@ -285,10 +255,7 @@ def update(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BOM_PACKAGING_TRANSPORT_FEE_UPDATE)),
 ) -> ApiResponse[BomPackagingTransportFeeResponse]:
-    record, error = _service.update(db, id, body, current_user=current_user)
-    if error:
-        status_code = 404 if error == "记录不存在" else 400
-        raise HTTPException(status_code=status_code, detail=error)
+    record = _service.update(db, id, body, current_user=current_user)
     return ApiResponse.updated(data=record, message="更新成功")
 
 
@@ -298,8 +265,5 @@ def delete(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BOM_PACKAGING_TRANSPORT_FEE_DELETE)),
 ) -> ApiResponse[None]:
-    success, error = _service.delete(db, id)
-    if not success:
-        status_code = 404 if error == "记录不存在" else 400
-        raise HTTPException(status_code=status_code, detail=error or "记录不存在")
+    _service.delete(db, id)
     return ApiResponse.deleted(message="删除成功")

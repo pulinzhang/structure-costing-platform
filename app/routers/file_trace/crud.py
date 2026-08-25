@@ -29,12 +29,11 @@ def list_upload_files(
     current_user: UserVO = Depends(require_perm(Perm.FILE_TRACE_VIEW)),
 ) -> ApiResponse[PageResult[UploadFileVO]]:
     rows, total = _service.list_files(db, query, current_user)
-    page = (query.skip // query.limit) + 1 if query.limit else 1
     return ApiResponse.list_(
         items=rows,
         total=total,
-        page=page,
-        page_size=query.limit,
+        page=query.page,
+        page_size=query.size,
         message=f"查询到 {total} 条记录",
     )
 

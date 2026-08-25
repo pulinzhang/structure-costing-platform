@@ -3,10 +3,10 @@
 API 接口定义
 """
 
-from typing import Any, List
+from typing import List
 from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
+from fastapi import APIRouter, Depends, File, Form, Query, UploadFile
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
@@ -51,7 +51,7 @@ _import_service = StampingTonnagePriceImportService()
 def list_all(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_VIEW)),
-) -> Any:
+) -> ApiResponse[List[StampingTonnagePriceResponse]]:
     """获取所有冲次单价列表（按年份、吨位排序）"""
     data = _tonnage_price_service.list_all(db)
     return ApiResponse.ok(data=data, message=f"查询到 {len(data)} 条记录")
@@ -63,7 +63,7 @@ def list_by_year(
     location: str | None = None,
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_VIEW)),
-) -> Any:
+) -> ApiResponse[List[StampingTonnagePriceResponse]]:
     """获取指定年份的冲次单价；传入 location 时按基地过滤"""
     if location:
         data = _tonnage_price_service.list_by_location_year(db, location, year)
@@ -77,7 +77,7 @@ def paginate(
     query: StampingTonnagePriceQuery = Depends(),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_VIEW)),
-) -> Any:
+) -> ApiResponse[PageResult[StampingTonnagePriceResponse]]:
     """分页查询冲次单价"""
     rows, total, filters = _tonnage_price_service.paginate(db, query)
     return ApiResponse.list_(
@@ -94,7 +94,7 @@ def paginate(
 def get_locations(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_VIEW)),
-) -> Any:
+) -> ApiResponse[List[str]]:
     """获取所有基地列表"""
     data = _tonnage_price_service.get_locations(db)
     return ApiResponse.ok(data=data)
@@ -104,7 +104,7 @@ def get_locations(
 def get_years(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_VIEW)),
-) -> Any:
+) -> ApiResponse[List[int]]:
     """获取所有年份列表"""
     data = _tonnage_price_service.get_years(db)
     return ApiResponse.ok(data=data)
@@ -114,7 +114,7 @@ def get_years(
 def get_tonnages(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_VIEW)),
-) -> Any:
+) -> ApiResponse[List[int]]:
     """获取所有吨位列表"""
     data = _tonnage_price_service.get_tonnages(db)
     return ApiResponse.ok(data=data)
@@ -170,31 +170,15 @@ async def upload_tonnage_price_excel(
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_UPLOAD_UPLOAD)),
 ) -> ApiResponse[StampingTonnagePriceImportResultVO]:
     """同步导入冲次单价 Excel；基地与年度必选；仅支持 .xlsx。"""
-    if not (location or "").strip():
-        raise HTTPException(status_code=400, detail="请选择采购基地")
-    if year < 2000 or year > 2100:
-        raise HTTPException(status_code=400, detail="请填写正确的年度")
-    if not file.filename:
-        raise HTTPException(status_code=400, detail="未提供文件名")
-
     content = await file.read()
-    if not content:
-        raise HTTPException(status_code=400, detail="文件内容为空")
-
-    try:
-        result = _import_service.import_excel(
-            db,
-            file_content=content,
-            filename=file.filename,
-            location=location.strip(),
-            year=year,
-            current_user=current_user,
-        )
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"导入失败: {exc}") from exc
-
+    result = _import_service.import_excel(
+        db,
+        file_content=content,
+        filename=file.filename or "",
+        location=location.strip(),
+        year=year,
+        current_user=current_user,
+    )
     return ApiResponse.created(data=result, message=result.message)
 
 
@@ -208,13 +192,11 @@ def batch_delete(
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_DELETE)),
 ) -> ApiResponse[StampingTonnagePriceBatchDeleteResultVO]:
     """按基地 + 年度批量删除冲次单价（仅删未审核；已通过跳过）。"""
-    deleted_count, skipped, error = _tonnage_price_service.batch_delete_by_location_year(
+    deleted_count, skipped = _tonnage_price_service.batch_delete_by_location_year(
         db,
         location=body.location,
         year=body.year,
     )
-    if error:
-        raise HTTPException(status_code=400, detail=error)
 
     message = f"已删除基地「{body.location}」{body.year} 年共 {deleted_count} 条"
     if skipped:
@@ -241,12 +223,9 @@ def batch_approve(
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_APPROVE)),
 ) -> ApiResponse[StampingTonnagePriceBatchAuditResultVO]:
     """按基地 + 年度批量审核通过。"""
-    result, error = _tonnage_price_service.batch_approve(
+    result = _tonnage_price_service.batch_approve(
         db, body, current_user=current_user
     )
-    if error:
-        raise HTTPException(status_code=400, detail=error)
-    assert result is not None
     message = f"已审核通过 {result.updated_count} 条"
     if result.skipped_count:
         message += f"，跳过已审核 {result.skipped_count} 条"
@@ -263,12 +242,9 @@ def batch_reverse_audit(
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_REVERSE)),
 ) -> ApiResponse[StampingTonnagePriceBatchAuditResultVO]:
     """按基地 + 年度批量反审核。"""
-    result, error = _tonnage_price_service.batch_reverse_audit(
+    result = _tonnage_price_service.batch_reverse_audit(
         db, body, current_user=current_user
     )
-    if error:
-        raise HTTPException(status_code=400, detail=error)
-    assert result is not None
     message = f"已反审核 {result.updated_count} 条"
     if result.skipped_count:
         message += f"，跳过非已审 {result.skipped_count} 条"
@@ -280,7 +256,7 @@ def bulk_upsert(
     items: List[StampingTonnagePriceCreate],
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_CREATE)),
-) -> Any:
+) -> ApiResponse[StampingTonnagePriceBulkUpsertResponse]:
     """批量写入冲次单价（存在则更新，与 Excel 导入一致）"""
     created, updated, failed, skipped_approved = _tonnage_price_service.bulk_upsert(
         db, items, current_user=current_user
@@ -307,11 +283,9 @@ def create(
     body: StampingTonnagePriceCreate,
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_CREATE)),
-) -> Any:
+) -> ApiResponse[StampingTonnagePriceResponse]:
     """创建冲次单价记录"""
-    record, error = _tonnage_price_service.create(db, body, current_user=current_user)
-    if error:
-        raise HTTPException(status_code=400, detail=error)
+    record = _tonnage_price_service.create(db, body, current_user=current_user)
     return ApiResponse.created(data=record, message="创建成功")
 
 
@@ -320,11 +294,9 @@ def get_by_id(
     id: int,
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_VIEW)),
-) -> Any:
+) -> ApiResponse[StampingTonnagePriceResponse]:
     """获取单个冲次单价记录"""
     record = _tonnage_price_service.get_by_id(db, id)
-    if not record:
-        raise HTTPException(status_code=404, detail=f"冲次单价记录不存在: id={id}")
     return ApiResponse.ok(data=record, message="获取成功")
 
 
@@ -334,13 +306,10 @@ def update(
     body: StampingTonnagePriceUpdate,
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_UPDATE)),
-) -> Any:
+) -> ApiResponse[StampingTonnagePriceResponse]:
     """更新冲次单价记录"""
-    record, error = _tonnage_price_service.update(db, id, body, current_user=current_user)
-    if error:
-        status_code = 404 if error == "记录不存在" else 400
-        raise HTTPException(status_code=status_code, detail=error)
-    return ApiResponse.ok(data=record, message="更新成功")
+    record = _tonnage_price_service.update(db, id, body, current_user=current_user)
+    return ApiResponse.updated(data=record, message="更新成功")
 
 
 @router.delete("/{id}", response_model=ApiResponse[None])
@@ -348,10 +317,7 @@ def delete(
     id: int,
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_DELETE)),
-) -> Any:
+) -> ApiResponse[None]:
     """删除冲次单价记录"""
-    success, error = _tonnage_price_service.delete(db, id)
-    if not success:
-        status_code = 404 if error == "记录不存在" else 400
-        raise HTTPException(status_code=status_code, detail=error or "记录不存在")
+    _tonnage_price_service.delete(db, id)
     return ApiResponse.deleted(message="删除成功")

@@ -6,7 +6,7 @@ Dashboard Router - API 接口
 - GET /stats/steel-price-calc 钢价联动计算页数据依据（计算页专用）
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.common.permissions.codes import Perm
@@ -18,11 +18,9 @@ from app.schemas.vo.dashboard_vo import (
 )
 from app.schemas.vo.user_vo import UserVO
 from app.services.dashboard.dashboard_service import DashboardService
-from app.utils.logging_config import get_logger
 from app.utils.response import ApiResponse
 
 
-logger = get_logger("router.dashboard")
 router = APIRouter(prefix="/api/dashboard", tags=["仪表盘 API"])
 
 _dashboard_service = DashboardService()
@@ -37,19 +35,15 @@ def get_all_stats(
     current_user: UserVO = Depends(require_perm(Perm.DASHBOARD_VIEW)),
 ) -> ApiResponse[DashboardStatsVO]:
     """获取仪表盘汇总：作用域 KPI + 核价流水线就绪度"""
-    try:
-        return ApiResponse.ok(
-            data=_dashboard_service.get_all_stats(
-                db,
-                year=year,
-                month=month,
-                location=location,
-            ),
-            message="获取成功",
-        )
-    except Exception as e:
-        logger.error(f"获取统计数据失败: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    return ApiResponse.ok(
+        data=_dashboard_service.get_all_stats(
+            db,
+            year=year,
+            month=month,
+            location=location,
+        ),
+        message="获取成功",
+    )
 
 
 @router.get(
@@ -66,16 +60,12 @@ def get_steel_price_calc_stats(
     current_user: UserVO = Depends(require_perm(Perm.STEEL_PRICE_CALC_VIEW)),
 ) -> ApiResponse[SteelPriceCalcStatsVO]:
     """钢价联动计算页数据依据统计"""
-    try:
-        stats = _dashboard_service.get_steel_price_calc_stats(
-            db,
-            year=year,
-            month=month,
-            location=location,
-            stamping_supplier=stamping_supplier,
-            vehicle_model=vehicle_model,
-        )
-        return ApiResponse.ok(data=stats, message="获取成功")
-    except Exception as e:
-        logger.error(f"获取钢价计算统计失败: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    stats = _dashboard_service.get_steel_price_calc_stats(
+        db,
+        year=year,
+        month=month,
+        location=location,
+        stamping_supplier=stamping_supplier,
+        vehicle_model=vehicle_model,
+    )
+    return ApiResponse.ok(data=stats, message="获取成功")

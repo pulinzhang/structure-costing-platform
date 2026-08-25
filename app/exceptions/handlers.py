@@ -61,6 +61,7 @@ async def business_exception_handler(
         content=ApiResponse.fail(
             message=exc.message,
             code=exc.code,
+            data=exc.data,
         ).model_dump(),
     )
 

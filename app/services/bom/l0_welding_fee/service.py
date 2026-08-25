@@ -14,7 +14,7 @@ from app.common.audit import (
     audit_update,
 )
 from app.common.timezone import now
-from app.exceptions.base import BusinessException
+from app.exceptions.base import BusinessException, NotFoundException
 from app.models.bom import BomL0WeldingFee
 from app.repositories.bom.l0_welding_fee_repository import (
     BomL0WeldingFeeRepository,
@@ -65,7 +65,7 @@ class BomL0WeldingFeeService:
     ) -> BomL0WeldingFeeVO:
         record = self.fee_repo.get_by_id(db, fee_id)
         if not record:
-            raise BusinessException(f"成品焊接费记录不存在: id={fee_id}")
+            raise NotFoundException(f"成品焊接费记录不存在: id={fee_id}")
         if record.audit_status == AUDIT_APPROVED:
             raise BusinessException("已审核通过，请先反审核后再调整")
 
@@ -86,15 +86,15 @@ class BomL0WeldingFeeService:
             ),
         )
         if not updated:
-            raise BusinessException(f"成品焊接费记录不存在: id={fee_id}")
+            raise NotFoundException(f"成品焊接费记录不存在: id={fee_id}")
         db.commit()
         db.refresh(updated)
         return self._to_vo(db, updated)
 
-    def get_by_id(self, db: Session, fee_id: int) -> BomL0WeldingFeeVO | None:
+    def get_by_id(self, db: Session, fee_id: int) -> BomL0WeldingFeeVO:
         record = self.fee_repo.get_by_id(db, fee_id)
         if not record:
-            return None
+            raise NotFoundException(f"成品焊接费记录不存在: id={fee_id}")
         return self._to_vo(db, record)
 
     def list_fees(

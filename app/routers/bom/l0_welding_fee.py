@@ -6,15 +6,13 @@ BOM 成品焊接费路由（技术路径仍用 l0）
 from typing import List
 from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
-from app.common.audit import display_name
 from app.common.permissions.codes import Perm
-from app.database import DatabaseConfig, get_db
+from app.database import get_db
 from app.deps.permissions import require_any_perm, require_perm
-from app.exceptions.base import BusinessException
 from app.schemas.common.page_result import PageResult
 from app.schemas.dto.bom_l0_welding_fee_dto import (
     BomL0WeldingFeeBatchApproveDTO,
@@ -35,18 +33,13 @@ from app.schemas.vo.bom_l0_welding_fee_vo import (
 )
 from app.schemas.vo.user_vo import UserVO
 from app.services.async_task import (
-    STATUS_COMPLETED,
-    STATUS_FAILED,
     STATUS_PENDING,
-    STATUS_RUNNING,
     TASK_TYPE_BOM_L0_WELDING_FEE_CALC,
     AsyncTaskService,
 )
 from app.services.bom.l0_welding_fee import (
-    DUPLICATE_SCOPE_CALC_MESSAGE,
     BomL0WeldingFeeCalcOrchestrator,
     BomL0WeldingFeeService,
-    DuplicateScopeCalcError,
 )
 from app.services.bom.l0_welding_fee.export_service import BomL0WeldingFeeExportService
 from app.utils.response import ApiResponse
@@ -58,97 +51,6 @@ _service = BomL0WeldingFeeService()
 _calc_orchestrator = BomL0WeldingFeeCalcOrchestrator()
 _export_service = BomL0WeldingFeeExportService()
 _async_task_service = AsyncTaskService()
-
-
-def _process_calc_in_background(
-    task_id: str,
-    log_id: int,
-    calc_batch_id: str,
-    year: int,
-    location: str,
-    vehicle_model: str,
-    bom_version: str,
-    current_user: UserVO,
-) -> None:
-    session_factory = DatabaseConfig.get_session_factory()
-    db = session_factory()
-
-    def on_progress(progress: int, msg: str) -> None:
-        _async_task_service.update_task_standalone(
-            task_id,
-            status=STATUS_RUNNING,
-            progress=progress,
-            message=msg,
-        )
-
-    try:
-        _async_task_service.update_task_standalone(
-            task_id,
-            status=STATUS_RUNNING,
-            progress=1,
-            message="后台开始计算...",
-        )
-        dto = BomL0WeldingFeeCalcDTO(
-            year=year,
-            location=location,
-            vehicle_model=vehicle_model,
-            bom_version=bom_version,
-        )
-        result = _calc_orchestrator.calculate(
-            db,
-            dto,
-            current_user=current_user,
-            progress_callback=on_progress,
-            log_id=log_id,
-            calc_batch_id=calc_batch_id,
-        )
-        if result.status == "failed":
-            _async_task_service.update_task_standalone(
-                task_id,
-                status=STATUS_FAILED,
-                progress=100,
-                message=(
-                    f"计算失败：新增 {result.created_count}，更新 {result.updated_count}，"
-                    f"失败 {result.failed_count}"
-                ),
-                result=result.model_dump(),
-            )
-        else:
-            label = {"success": "成功", "partial": "部分成功"}.get(
-                result.status, result.status
-            )
-            _async_task_service.update_task_standalone(
-                task_id,
-                status=STATUS_COMPLETED,
-                progress=100,
-                message=(
-                    f"计算{label}：新增 {result.created_count}，"
-                    f"更新 {result.updated_count}，失败 {result.failed_count}，"
-                    f"缺单价 {result.missing_price_count}"
-                ),
-                result=result.model_dump(),
-            )
-    except Exception as error:
-        try:
-            db.rollback()
-        except Exception:
-            pass
-        try:
-            _calc_orchestrator.mark_log_failed(
-                db,
-                log_id=log_id,
-                detail_text=f"计算失败: {error}",
-            )
-        except Exception:
-            pass
-        _async_task_service.update_task_standalone(
-            task_id,
-            status=STATUS_FAILED,
-            progress=0,
-            message=str(error),
-        )
-    finally:
-        db.close()
 
 
 @router.get(
@@ -291,8 +193,6 @@ def get_calc_log(
     current_user: UserVO = Depends(require_perm(Perm.BOM_L0_WELDING_FEE_CALC_VIEW)),
 ) -> ApiResponse[BomL0WeldingFeeCalcLogVO]:
     record = _calc_orchestrator.get_calc_log(db, log_id)
-    if not record:
-        raise HTTPException(status_code=404, detail="计算日志不存在")
     return ApiResponse.ok(data=record)
 
 
@@ -305,12 +205,7 @@ def delete_calc_log(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BOM_L0_WELDING_FEE_CALC_DELETE)),
 ) -> ApiResponse[None]:
-    try:
-        deleted = _calc_orchestrator.delete_calc_log(db, log_id)
-    except BusinessException as error:
-        raise HTTPException(status_code=400, detail=str(error)) from error
-    if not deleted:
-        raise HTTPException(status_code=404, detail="计算日志不存在")
+    _calc_orchestrator.delete_calc_log(db, log_id)
     return ApiResponse.deleted(message="计算日志已删除")
 
 
@@ -322,9 +217,9 @@ def get_calc_task_progress(
     task_id: str,
     current_user: UserVO = Depends(require_perm(Perm.BOM_L0_WELDING_FEE_CALC_VIEW)),
 ) -> ApiResponse[AsyncTaskProgressVO]:
-    task = _async_task_service.get_task_snapshot(task_id)
-    if task is None or task.get("task_type") != TASK_TYPE_BOM_L0_WELDING_FEE_CALC:
-        raise HTTPException(status_code=404, detail="任务不存在或已过期")
+    task = _async_task_service.require_snapshot(
+        task_id, TASK_TYPE_BOM_L0_WELDING_FEE_CALC
+    )
     result_raw = AsyncTaskService.parse_result_json(task.get("result_json"))
     result = (
         BomL0WeldingFeeCalcResultVO.model_validate(result_raw)
@@ -350,38 +245,10 @@ def calculate(
     current_user: UserVO = Depends(require_perm(Perm.BOM_L0_WELDING_FEE_CALC_RUN)),
 ) -> ApiResponse[AsyncTaskAcceptedVO]:
     """提交异步计算；立即返回 task_id，前端轮询进度。"""
-    try:
-        lock_log = _calc_orchestrator.begin_processing(
-            db,
-            dto,
-            operator_id=current_user.id,
-            operator_name=display_name(current_user),
-        )
-    except DuplicateScopeCalcError as error:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=str(error) or DUPLICATE_SCOPE_CALC_MESSAGE,
-        ) from error
+    accepted = _calc_orchestrator.start_calc(db, dto, current_user=current_user)
 
-    task = _async_task_service.create_task(
-        task_type=TASK_TYPE_BOM_L0_WELDING_FEE_CALC,
-        message="已提交计算队列",
-        operator_id=current_user.id,
-        operator_name=display_name(current_user),
-    )
-    AsyncTaskService.submit(
-        _process_calc_in_background,
-        task.task_id,
-        lock_log.id,
-        lock_log.calc_batch_id,
-        dto.year,
-        dto.location.strip(),
-        dto.vehicle_model.strip(),
-        dto.bom_version.strip(),
-        current_user,
-    )
     return ApiResponse.ok(
-        data=AsyncTaskAcceptedVO(task_id=task.task_id),
+        data=accepted,
         message="已提交后台计算",
     )
 
@@ -419,11 +286,6 @@ def export_download(
     current_user: UserVO = Depends(require_perm(Perm.BOM_L0_WELDING_FEE_LIST_EXPORT)),
 ) -> StreamingResponse:
     """按当前筛选条件导出成品焊接费 Excel（主表字段打平到工艺明细行）。"""
-    if not any([year, location, vehicle_model, bom_version, part_number, audit_status, calc_status]):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="请至少选择一个筛选条件后再导出",
-        )
     content, filename = _export_service.export(
         db,
         year=year,
@@ -451,8 +313,6 @@ def get_fee(
     current_user: UserVO = Depends(require_perm(Perm.BOM_L0_WELDING_FEE_LIST_VIEW)),
 ) -> ApiResponse[BomL0WeldingFeeVO]:
     row = _service.get_by_id(db, fee_id)
-    if not row:
-        raise HTTPException(status_code=404, detail="成品焊接费记录不存在")
     return ApiResponse.ok(data=row)
 
 
@@ -466,10 +326,7 @@ def update_other_fee(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BOM_L0_WELDING_FEE_LIST_UPDATE)),
 ) -> ApiResponse[BomL0WeldingFeeVO]:
-    try:
-        row = _service.update_other_fee(db, fee_id, dto, current_user=current_user)
-    except BusinessException as error:
-        raise HTTPException(status_code=400, detail=str(error)) from error
+    row = _service.update_other_fee(db, fee_id, dto, current_user=current_user)
     return ApiResponse.updated(data=row, message="成品焊接费已保存")
 
 

@@ -6,15 +6,13 @@
 from typing import List
 from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
-from app.common.audit import display_name
 from app.common.permissions.codes import Perm
-from app.database import DatabaseConfig, get_db
+from app.database import get_db
 from app.deps.permissions import require_any_perm, require_perm
-from app.exceptions.base import BusinessException
 from app.schemas.common.page_result import PageResult
 from app.schemas.dto.stamping_process_fee_dto import (
     StampingProcessFeeBatchApproveDTO,
@@ -35,16 +33,11 @@ from app.schemas.vo.stamping_process_fee_vo import (
 )
 from app.schemas.vo.user_vo import UserVO
 from app.services.async_task import (
-    STATUS_COMPLETED,
-    STATUS_FAILED,
     STATUS_PENDING,
-    STATUS_RUNNING,
     TASK_TYPE_STAMPING_PROCESS_FEE_CALC,
     AsyncTaskService,
 )
 from app.services.stamping.process_fee import (
-    DUPLICATE_SCOPE_CALC_MESSAGE,
-    DuplicateScopeCalcError,
     StampingProcessFeeCalcOrchestrator,
 )
 from app.services.stamping.stamping_process_fee_export_service import (
@@ -62,97 +55,6 @@ _service = StampingProcessFeeService()
 _calc_orchestrator = StampingProcessFeeCalcOrchestrator()
 _export_service = StampingProcessFeeExportService()
 _async_task_service = AsyncTaskService()
-
-
-def _process_calc_in_background(
-    task_id: str,
-    log_id: int,
-    calc_batch_id: str,
-    year: int,
-    location: str,
-    stamping_supplier: str,
-    vehicle_model: str | None,
-    version: str | None,
-    current_user: UserVO,
-) -> None:
-    session_factory = DatabaseConfig.get_session_factory()
-    db = session_factory()
-
-    def on_progress(progress: int, msg: str) -> None:
-        _async_task_service.update_task_standalone(
-            task_id,
-            status=STATUS_RUNNING,
-            progress=progress,
-            message=msg,
-        )
-
-    try:
-        _async_task_service.update_task_standalone(
-            task_id,
-            status=STATUS_RUNNING,
-            progress=1,
-            message="后台开始计算...",
-        )
-        dto = StampingProcessFeeCalcDTO(
-            year=year,
-            location=location,
-            stamping_supplier=stamping_supplier,
-            vehicle_model=vehicle_model,
-            version=version,
-        )
-        result = _calc_orchestrator.calculate(
-            db,
-            dto,
-            current_user=current_user,
-            progress_callback=on_progress,
-            log_id=log_id,
-            calc_batch_id=calc_batch_id,
-        )
-        if result.status == "failed":
-            _async_task_service.update_task_standalone(
-                task_id,
-                status=STATUS_FAILED,
-                progress=100,
-                message=(
-                    f"计算失败：成功 {result.success_count}，失败 {result.failed_count}"
-                ),
-                result=result.model_dump(),
-            )
-        else:
-            label = {"success": "成功", "partial": "部分成功"}.get(
-                result.status, result.status
-            )
-            _async_task_service.update_task_standalone(
-                task_id,
-                status=STATUS_COMPLETED,
-                progress=100,
-                message=(
-                    f"计算{label}：成功 {result.success_count}，"
-                    f"失败 {result.failed_count}，零价 {result.zero_fee_count}"
-                ),
-                result=result.model_dump(),
-            )
-    except Exception as error:
-        try:
-            db.rollback()
-        except Exception:
-            pass
-        try:
-            _calc_orchestrator.mark_log_failed(
-                db,
-                log_id=log_id,
-                detail_text=f"计算失败: {error}",
-            )
-        except Exception:
-            pass
-        _async_task_service.update_task_standalone(
-            task_id,
-            status=STATUS_FAILED,
-            progress=0,
-            message=str(error),
-        )
-    finally:
-        db.close()
 
 
 @router.get(
@@ -325,8 +227,6 @@ def get_calc_log(
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_PROCESS_FEE_CALC_VIEW)),
 ) -> ApiResponse[StampingProcessFeeCalcLogVO]:
     record = _calc_orchestrator.get_calc_log(db, log_id)
-    if not record:
-        raise HTTPException(status_code=404, detail="计算日志不存在")
     return ApiResponse.ok(data=record)
 
 
@@ -339,12 +239,7 @@ def delete_calc_log(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_PROCESS_FEE_CALC_DELETE)),
 ) -> ApiResponse[None]:
-    try:
-        deleted = _calc_orchestrator.delete_calc_log(db, log_id)
-    except BusinessException as error:
-        raise HTTPException(status_code=400, detail=str(error)) from error
-    if not deleted:
-        raise HTTPException(status_code=404, detail="计算日志不存在")
+    _calc_orchestrator.delete_calc_log(db, log_id)
     return ApiResponse.deleted(message="计算日志已删除")
 
 
@@ -356,9 +251,9 @@ def get_calc_task_progress(
     task_id: str,
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_PROCESS_FEE_CALC_VIEW)),
 ) -> ApiResponse[AsyncTaskProgressVO]:
-    task = _async_task_service.get_task_snapshot(task_id)
-    if task is None or task.get("task_type") != TASK_TYPE_STAMPING_PROCESS_FEE_CALC:
-        raise HTTPException(status_code=404, detail="任务不存在或已过期")
+    task = _async_task_service.require_snapshot(
+        task_id, TASK_TYPE_STAMPING_PROCESS_FEE_CALC
+    )
     result_raw = AsyncTaskService.parse_result_json(task.get("result_json"))
     result = (
         StampingProcessFeeCalcResultVO.model_validate(result_raw)
@@ -384,39 +279,10 @@ def calculate(
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_PROCESS_FEE_CALC_RUN)),
 ) -> ApiResponse[AsyncTaskAcceptedVO]:
     """提交异步计算；立即返回 task_id，前端轮询进度。"""
-    try:
-        lock_log = _calc_orchestrator.begin_processing(
-            db,
-            dto,
-            operator_id=current_user.id,
-            operator_name=display_name(current_user),
-        )
-    except DuplicateScopeCalcError as error:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=str(error) or DUPLICATE_SCOPE_CALC_MESSAGE,
-        ) from error
+    accepted = _calc_orchestrator.start_calc(db, dto, current_user=current_user)
 
-    task = _async_task_service.create_task(
-        task_type=TASK_TYPE_STAMPING_PROCESS_FEE_CALC,
-        message="已提交计算队列",
-        operator_id=current_user.id,
-        operator_name=display_name(current_user),
-    )
-    AsyncTaskService.submit(
-        _process_calc_in_background,
-        task.task_id,
-        lock_log.id,
-        lock_log.calc_batch_id,
-        dto.year,
-        dto.location,
-        dto.stamping_supplier,
-        dto.vehicle_model,
-        dto.version,
-        current_user,
-    )
     return ApiResponse.ok(
-        data=AsyncTaskAcceptedVO(task_id=task.task_id),
+        data=accepted,
         message="已提交后台计算",
     )
 
@@ -454,12 +320,6 @@ def export_download(
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_PROCESS_FEE_EXPORT)),
 ) -> StreamingResponse:
     """按当前筛选条件导出冲压加工费 Excel。"""
-    if not any([year, location, stamping_supplier, vehicle_model, version, part_number, audit_status]):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="请至少选择一个筛选条件后再导出",
-        )
-
     content, filename = _export_service.export(
         db,
         year=year,
@@ -487,8 +347,6 @@ def get_fee(
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_PROCESS_FEE_VIEW)),
 ) -> ApiResponse[StampingProcessFeeVO]:
     row = _service.get_by_id(db, fee_id)
-    if not row:
-        raise HTTPException(status_code=404, detail="加工费记录不存在")
     return ApiResponse.ok(data=row)
 
 

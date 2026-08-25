@@ -7,6 +7,7 @@ import logging
 from sqlalchemy.orm import Session
 
 from app.common.audit import audit_create, display_name
+from app.exceptions.base import BusinessException, NotFoundException
 from app.models.yishiyiyi import SteelBasePrice
 from app.repositories.yishiyiyi.base_price import SteelBasePriceRepository
 from app.repositories.yishiyiyi.base_price.steel_base_price_repository import (
@@ -53,10 +54,10 @@ class SteelBasePriceCrudService:
         records, total = self.repository.paginate(db, base_filter)
         return [SteelBasePriceResponse.model_validate(r) for r in records], total
 
-    def get_by_id(self, db: Session, record_id: int) -> SteelBasePriceResponse | None:
+    def get_by_id(self, db: Session, record_id: int) -> SteelBasePriceResponse:
         record = self.repository.get_by_id(db, record_id)
         if record is None:
-            return None
+            raise NotFoundException("记录不存在")
         return SteelBasePriceResponse.model_validate(record)
 
     def create(
@@ -64,7 +65,7 @@ class SteelBasePriceCrudService:
         db: Session,
         body: SteelBasePriceCreate,
         current_user: UserVO,
-    ) -> tuple[SteelBasePriceResponse | None, str | None]:
+    ) -> SteelBasePriceResponse:
         try:
             audit = audit_create(current_user)
             record = self.repository.create(
@@ -74,11 +75,11 @@ class SteelBasePriceCrudService:
                 updated_by=audit["updated_by"],
             )
             db.commit()
-            return SteelBasePriceResponse.model_validate(record), None
-        except Exception as error:
+            return SteelBasePriceResponse.model_validate(record)
+        except Exception:
             db.rollback()
             logger.exception("创建基准价格失败")
-            return None, str(error)
+            raise
 
     def update(
         self,
@@ -86,10 +87,10 @@ class SteelBasePriceCrudService:
         record_id: int,
         body: SteelBasePriceUpdate,
         current_user: UserVO,
-    ) -> tuple[SteelBasePriceResponse | None, str | None]:
+    ) -> SteelBasePriceResponse:
+        if not body.model_fields_set:
+            raise BusinessException("没有提供任何更新字段")
         try:
-            if not body.model_fields_set:
-                return None, "没有提供任何更新字段"
             record = self.repository.update(
                 db,
                 record_id,
@@ -97,25 +98,30 @@ class SteelBasePriceCrudService:
                 updated_by=display_name(current_user),
             )
             if record is None:
-                return None, "记录不存在"
+                raise NotFoundException("记录不存在")
             db.commit()
-            return SteelBasePriceResponse.model_validate(record), None
-        except Exception as error:
+            return SteelBasePriceResponse.model_validate(record)
+        except (BusinessException, NotFoundException):
+            db.rollback()
+            raise
+        except Exception:
             db.rollback()
             logger.exception("更新基准价格失败: id=%s", record_id)
-            return None, str(error)
+            raise
 
-    def delete(self, db: Session, record_id: int) -> tuple[bool, str | None]:
+    def delete(self, db: Session, record_id: int) -> None:
         try:
             success = self.repository.delete(db, record_id)
             if not success:
-                return False, "记录不存在"
+                raise NotFoundException("记录不存在")
             db.commit()
-            return True, None
-        except Exception as error:
+        except (BusinessException, NotFoundException):
+            db.rollback()
+            raise
+        except Exception:
             db.rollback()
             logger.exception("删除基准价格失败: id=%s", record_id)
-            return False, str(error)
+            raise
 
     def batch_delete(
         self,
@@ -125,7 +131,7 @@ class SteelBasePriceCrudService:
         month: int,
         location: str | None = None,
         steel_mill: str | None = None,
-    ) -> tuple[bool, str | None]:
+    ) -> None:
         try:
             count = self.repository.delete_by_conditions(
                 db,
@@ -143,11 +149,10 @@ class SteelBasePriceCrudService:
                 steel_mill,
                 count,
             )
-            return True, None
-        except Exception as error:
+        except Exception:
             db.rollback()
             logger.exception("批量删除基准价格失败")
-            return False, str(error)
+            raise
 
     def list_for_calc(
         self,

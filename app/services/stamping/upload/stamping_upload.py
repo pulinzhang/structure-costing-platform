@@ -19,9 +19,18 @@ from app.parsers.stamping.models.process import Process
 from app.parsers.stamping.stamping_parser import parse_stamping_excel
 from app.parsers.stamping.tailor_weld_parser import parse_tailor_weld_excel
 from app.config import settings
+from app.exceptions.base import BusinessException
 from app.repositories.stamping.stamping_repository import StampingPartRepository, StampingProcessRepository
 from app.schemas.dto.stamping_upload_dto import FileInfo, PartData, ProcessData, UploadResult
+from app.schemas.vo.async_task_vo import AsyncTaskAcceptedVO
 from app.schemas.vo.user_vo import UserVO
+from app.services.async_task import (
+    STATUS_COMPLETED,
+    STATUS_FAILED,
+    TASK_TYPE_STAMPING_UPLOAD,
+    AsyncTaskService,
+    WorkerTaskOutcome,
+)
 from app.services.stamping.tailor_weld_blank_service import StampingTailorWeldBlankService
 from app.services.stamping.upload.cost_ratio_preserver import ProcessCostRatioPreserver
 from app.services.stamping.upload.template_builder import build_stamping_process_template
@@ -395,3 +404,78 @@ class StampingUploadService:
 
         logger.info("导入工序: %d 个", len(processes_to_create))
         return len(processes_to_create)
+
+    @classmethod
+    def start_upload(
+        cls,
+        *,
+        file_content: bytes,
+        filename: str,
+        location: str,
+        current_user: UserVO,
+    ) -> AsyncTaskAcceptedVO:
+        """创建异步任务并入队；后台线程开独立 Session 解析入库。"""
+        location = (location or "").strip()
+        if not location:
+            raise BusinessException("请输入基地")
+        if not filename:
+            raise BusinessException("未提供文件名")
+        ext = "." + filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+        if ext not in {".xlsx", ".xls"}:
+            raise BusinessException(
+                f"不支持的文件类型: {ext}，仅支持 .xlsx / .xls"
+            )
+        if not file_content:
+            raise BusinessException("上传文件为空")
+        if len(file_content) > settings.MAX_UPLOAD_SIZE:
+            raise BusinessException(
+                f"文件过大，最大支持 {settings.MAX_UPLOAD_SIZE // (1024 * 1024)}MB"
+            )
+
+        from dataclasses import asdict
+
+        async_task_service = AsyncTaskService()
+        task = async_task_service.create_task(
+            task_type=TASK_TYPE_STAMPING_UPLOAD,
+            message="已提交解析队列",
+            operator_id=current_user.id,
+            operator_name=display_name(current_user),
+        )
+
+        def work(db: Session, on_progress: ProgressCallback) -> WorkerTaskOutcome:
+            service = cls(db)
+            try:
+                result = service.process_upload(
+                    file_content=file_content,
+                    filename=filename,
+                    location=location,
+                    progress_callback=on_progress,
+                    current_user=current_user,
+                )
+            except (BusinessException, ValueError) as error:
+                logger.warning(
+                    "冲压上传业务失败: task_id=%s error=%s", task.task_id, error
+                )
+                return WorkerTaskOutcome(
+                    status=STATUS_FAILED,
+                    progress=0,
+                    message=str(error),
+                )
+            return WorkerTaskOutcome(
+                status=STATUS_COMPLETED,
+                message=(
+                    f"上传成功：{result.parts_count} 个零件，"
+                    f"{result.processes_count} 道工序"
+                    f"（拼焊 {result.tailor_weld_assembly_count} 件 / "
+                    f"{result.tailor_weld_blank_count} 片）"
+                ),
+                result=asdict(result),
+            )
+
+        async_task_service.submit_session_worker(
+            task.task_id,
+            start_message="后台开始解析...",
+            work=work,
+            crash_message=lambda error: f"解析异常: {error}",
+        )
+        return AsyncTaskAcceptedVO(task_id=task.task_id)

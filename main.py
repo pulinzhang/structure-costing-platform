@@ -102,7 +102,7 @@ def create_app() -> FastAPI:
         description=settings.APP_DESCRIPTION,
         version=settings.APP_VERSION,
         lifespan=lifespan,
-        debug=settings.DEBUG,
+        debug=settings.IS_DEBUG,
         swagger_ui_parameters={
             "defaultModelsExpandDepth": 1,
             "docExpansion": "list",
@@ -450,8 +450,8 @@ if __name__ == "__main__":
         "main:app",  # "文件名:变量名" 的格式
         host=settings.HOST,
         port=settings.PORT,
-        reload=settings.DEBUG,
-        reload_dirs=["app"] if settings.DEBUG else None,
+        reload=settings.IS_DEBUG,
+        reload_dirs=["app"] if settings.IS_DEBUG else None,
         log_level="info",
         access_log=False,  # 禁用 uvicorn 访问日志，使用我们自己的请求日志中间件
     )

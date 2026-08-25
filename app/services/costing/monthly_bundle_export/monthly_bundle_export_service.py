@@ -9,6 +9,7 @@ from openpyxl import Workbook
 from sqlalchemy.orm import Session
 
 from app.common.timezone import now
+from app.exceptions.base import BusinessException
 from app.services.bom.annual_part_price_export_service import BomAnnualPartPriceExportService
 from app.services.bom.packaging_transport_fee_export_service import (
     BomPackagingTransportFeeExportService,
@@ -62,6 +63,13 @@ class MonthlyBundleExportService:
         bom_version 仅用于 BOM/成品侧（成品核价、焊接费）。
         冲压零件核价与加工费不传版本：工艺版本与 BOM 版本本就不一致。
         """
+        location = (location or "").strip()
+        vehicle_model = (vehicle_model or "").strip()
+        bom_version = (bom_version or "").strip()
+        if not location or not vehicle_model or not bom_version:
+            raise BusinessException("基地、项目、版本不能为空")
+        stamping_supplier = (stamping_supplier or "").strip() or None
+
         wb = Workbook()
         sheet_counts: dict[str, int] = {}
 

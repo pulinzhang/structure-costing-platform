@@ -378,18 +378,42 @@ root
 │   │   │   └── op:bom-material:delete
 │   │   └── menu:bom-structure                 # 产品结构（路由 page=bom-structure）
 │   │       └── op:bom-structure:view
-│   └── menu:bom-welding-unit-price-group      # 焊接单价（二级分组）
-│       ├── menu:bom-welding-unit-price-upload
-│       │   ├── op:bom-welding-unit-price-upload:view
-│       │   └── op:bom-welding-unit-price-upload:upload
-│       └── menu:bom-welding-unit-price
-│           ├── op:bom-welding-unit-price:view
-│           ├── op:bom-welding-unit-price:create
-│           ├── op:bom-welding-unit-price:update
-│           ├── op:bom-welding-unit-price:delete
-│           ├── op:bom-welding-unit-price:approve
-│           ├── op:bom-welding-unit-price:reverse
-│           └── op:bom-welding-unit-price:export
+│   ├── menu:bom-welding-unit-price-group      # 焊接单价（二级分组）
+│   │   ├── menu:bom-welding-unit-price-upload
+│   │   │   ├── op:bom-welding-unit-price-upload:view
+│   │   │   └── op:bom-welding-unit-price-upload:upload
+│   │   └── menu:bom-welding-unit-price
+│   │       ├── op:bom-welding-unit-price:view
+│   │       ├── op:bom-welding-unit-price:create
+│   │       ├── op:bom-welding-unit-price:update
+│   │       ├── op:bom-welding-unit-price:delete
+│   │       ├── op:bom-welding-unit-price:approve
+│   │       ├── op:bom-welding-unit-price:reverse
+│   │       └── op:bom-welding-unit-price:export
+│   ├── menu:bom-annual-part-price-group       # 年度零件价（二级分组）
+│   │   ├── menu:bom-annual-part-price-upload
+│   │   │   ├── op:bom-annual-part-price-upload:view
+│   │   │   └── op:bom-annual-part-price-upload:upload
+│   │   └── menu:bom-annual-part-price
+│   │       ├── op:bom-annual-part-price:view
+│   │       ├── op:bom-annual-part-price:create
+│   │       ├── op:bom-annual-part-price:update
+│   │       ├── op:bom-annual-part-price:delete
+│   │       ├── op:bom-annual-part-price:approve
+│   │       ├── op:bom-annual-part-price:reverse
+│   │       └── op:bom-annual-part-price:export
+│   ├── menu:bom-packaging-transport-fee-group # 包装运输费（二级分组）
+│   │   ├── menu:bom-packaging-transport-fee-upload
+│   │   │   ├── op:bom-packaging-transport-fee-upload:view
+│   │   │   └── op:bom-packaging-transport-fee-upload:upload
+│   │   └── menu:bom-packaging-transport-fee
+│   │       ├── op:bom-packaging-transport-fee:view
+│   │       ├── op:bom-packaging-transport-fee:create
+│   │       ├── op:bom-packaging-transport-fee:update
+│   │       ├── op:bom-packaging-transport-fee:delete
+│   │       ├── op:bom-packaging-transport-fee:approve
+│   │       ├── op:bom-packaging-transport-fee:reverse
+│   │       └── op:bom-packaging-transport-fee:export
 │   ├── menu:bom-welding-process-breakdown-group  # 焊接工艺拆解
 │   │   ├── menu:bom-welding-process-breakdown
 │   │   │   ├── op:bom-welding-process-breakdown:generate
@@ -468,13 +492,29 @@ root
 │   │       ├── op:stamping-part-cost:approve
 │   │       ├── op:stamping-part-cost:reverse
 │   │       └── op:stamping-part-cost:export
+│   ├── menu:l0-assembly-cost-group            # 成品核价
+│   │   ├── menu:l0-assembly-cost-calc
+│   │   │   ├── op:l0-assembly-cost-calc:view
+│   │   │   ├── op:l0-assembly-cost-calc:run
+│   │   │   └── op:l0-assembly-cost-calc:delete
+│   │   └── menu:l0-assembly-cost
+│   │       ├── op:l0-assembly-cost:view
+│   │       ├── op:l0-assembly-cost:delete
+│   │       ├── op:l0-assembly-cost:approve
+│   │       ├── op:l0-assembly-cost:reverse
+│   │       └── op:l0-assembly-cost:export
 │   └── menu:costing-engine                    # 自动核价引擎（路由 page=costing）
 │       ├── op:costing:view
 │       ├── op:costing:run
 │       └── op:costing:delete
 │
-├── menu:quotation
-│   └── op:quotation:view                      # 功能开发中，预留
+├── menu:llm-analysis                          # AI 助理（顶栏浮窗，非侧栏页）
+│   ├── op:llm-analysis:view
+│   └── op:llm-analysis:run
+│
+├── menu:file-trace                            # 文件溯源
+│   ├── op:file-trace:view
+│   └── op:file-trace:download
 │
 └── menu:settings                              # 设置（分组，可勾；强制保留）
     ├── menu:settings-profile                  # 强制
@@ -500,10 +540,10 @@ root
 
 | 类别 | 数量 |
 |---|---|
-| 分组 `type=group` | 16（含 `bom-l0-welding-fee-group` 等） |
-| 叶子 `type=menu` | 31 |
-| 操作 `op` | 104 |
-| 可勾节点合计 | 151（`root` 一般不入库） |
+| 分组 `type=group` | 19（含 `bom-packaging-transport-fee-group` / `l0-assembly-cost-group` 等） |
+| 叶子 `type=menu` | 39 |
+| 操作 `op` | 139 |
+| 可勾节点合计 | 197（`root` 一般不入库） |
 | 新建默认 | 7 |
 | 强制 | 5（均包含在默认集内） |
 
@@ -532,14 +572,22 @@ root
 | bom-material | `view` / `delete` | 材料清单列表；单行删除清单（含树节点） |
 | bom-welding-unit-price-upload | `view` / `upload` | 查看上传页；导入焊接单价 Excel |
 | bom-welding-unit-price | `view` / `create` / `update` / `delete` / `approve` / `reverse` / `export` | 查询；新增（API）；编辑；删除（含批量，已审跳过）；审核（含批量）；反审核；导出 Excel |
+| bom-annual-part-price-upload | `view` / `upload` | 查看上传页；导入年度零件价 Excel |
+| bom-annual-part-price | `view` / `create` / `update` / `delete` / `approve` / `reverse` / `export` | 查询；新增；编辑；删除；审核；反审核；导出 |
+| bom-packaging-transport-fee-upload | `view` / `upload` | 查看上传页；导入包装运输费 Excel |
+| bom-packaging-transport-fee | `view` / `create` / `update` / `delete` / `approve` / `reverse` / `export` | 查询；新增；编辑；删除；审核；反审核；导出 |
+| bom-welding-process-breakdown | `generate` / `delete-log` | 从 BOM 生成拆解；删除拆解日志 |
+| bom-welding-process-breakdown-list | `view` / `save-lines` / `delete` / `approve` / `reverse` / `export` | 查询；编辑明细；删除；审核；反审核；导出 L0 核对 |
 | bom-l0-welding-fee-calc | `view` / `run` / `delete` | 历史/过程；开始计算；删除计算日志 |
 | bom-l0-welding-fee-list | `view` / `update` / `delete` / `approve` / `reverse` / `export` | 查询；编辑其它费用；删除（含批量）；审核（含批量）；反审核；导出 Excel |
 | steel-price-calc | `view` / `run` / `delete` | 历史/过程；开始计算；删除日志 |
 | steel-price-list | `view` / `update` / `delete` / `approve` / `reject` / `reverse` / `export` | 查询；编辑；删除（含批量）；通过（含批量）；驳回；反审核（含批量）；导出 |
 | stamping-part-cost-calc | `view` / `run` / `delete` | 历史/过程；开始计算；删除日志 |
-| stamping-part-cost | `view` / `delete` / `approve` / `reverse` / `export` | 查询；删除（含批量）；审核（含批量）；反审核；导出工艺清单 Excel |
+| stamping-part-cost | `view` / `update` / `delete` / `approve` / `reverse` / `export` | 查询；失败手工改价；删除（含批量）；审核（含批量）；反审核；导出工艺清单 Excel |
+| l0-assembly-cost-calc | `view` / `run` / `delete` | 历史/过程；开始计算；删除日志 |
+| l0-assembly-cost | `view` / `delete` / `approve` / `reverse` / `export` | 查询；删除；审核；反审核；导出 |
 | costing（菜单码 `menu:costing-engine`） | `view` / `run` / `delete` | 检查就绪；启动月度引擎；删除 Run（含 running） |
-| quotation | `view` | 进入占位页 |
+| file-trace | `view` / `download` | 列表/详情；鉴权下载原件 |
 | settings-profile | `view` / `update` / `password` | 查看；改资料/头像；改自己密码 |
 | settings-system | `view` / `update` | 查看系统设置；保存设置 |
 | settings-users | `view` / `create` / `update` / `password` / `delete` / `grant` | 查询；新增；编辑；重置他人密码；删除；授权 |

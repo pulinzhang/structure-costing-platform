@@ -1,12 +1,11 @@
 """月度智能自动核价引擎 API。"""
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.common.permissions.codes import Perm
 from app.database import get_db
 from app.deps.permissions import require_perm
-from app.exceptions.base import BusinessException, NotFoundException
 from app.schemas.common.page_result import PageResult
 from app.schemas.dto.costing_engine_dto import CostingEngineRunCreateDTO
 from app.schemas.vo.async_task_vo import AsyncTaskAcceptedVO, AsyncTaskProgressVO
@@ -16,11 +15,9 @@ from app.schemas.vo.costing_engine_vo import (
     CostingEngineRunVO,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.services.costing.engine import CostingEngineHardStopError, CostingEngineService
-from app.utils.logging_config import get_logger
+from app.services.costing.engine import CostingEngineService
 from app.utils.response import ApiResponse
 
-logger = get_logger("router.costing.engine")
 router = APIRouter(prefix="/api/costing/engine", tags=["核价引擎 API"])
 
 _service = CostingEngineService()
@@ -37,13 +34,10 @@ def get_ready(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.COSTING_VIEW)),
 ) -> ApiResponse[CostingEngineReadyVO]:
-    try:
-        ready = _service.get_ready(
-            db, location=location, year=year, month=month
-        )
-        return ApiResponse.ok(data=ready)
-    except BusinessException as error:
-        raise HTTPException(status_code=error.code, detail=str(error)) from error
+    ready = _service.get_ready(
+        db, location=location, year=year, month=month
+    )
+    return ApiResponse.ok(data=ready)
 
 
 @router.post(
@@ -55,24 +49,8 @@ def start_run(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.COSTING_RUN)),
 ) -> ApiResponse[AsyncTaskAcceptedVO]:
-    try:
-        accepted = _service.start_run(db, dto, current_user=current_user)
-        return ApiResponse.ok(data=accepted, message="引擎任务已提交")
-    except CostingEngineHardStopError as error:
-        return ApiResponse.fail(
-            message=str(error),
-            code=400,
-            data={
-                "hard_stop": True,
-                "can_start": False,
-                "upload_or_config": [
-                    item.model_dump(exclude_none=True)
-                    for item in error.upload_or_config
-                ],
-            },
-        )
-    except BusinessException as error:
-        raise HTTPException(status_code=error.code, detail=str(error)) from error
+    accepted = _service.start_run(db, dto, current_user=current_user)
+    return ApiResponse.ok(data=accepted, message="引擎任务已提交")
 
 
 @router.get(
@@ -84,13 +62,8 @@ def get_task_progress(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.COSTING_VIEW)),
 ) -> ApiResponse[AsyncTaskProgressVO]:
-    try:
-        progress = _service.get_task_progress(db, task_id)
-        return ApiResponse.ok(data=progress)
-    except NotFoundException as error:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=str(error)
-        ) from error
+    progress = _service.get_task_progress(db, task_id)
+    return ApiResponse.ok(data=progress)
 
 
 @router.get(
@@ -102,12 +75,7 @@ def get_run(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.COSTING_VIEW)),
 ) -> ApiResponse[CostingEngineRunVO]:
-    try:
-        return ApiResponse.ok(data=_service.get_run(db, run_id))
-    except NotFoundException as error:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=str(error)
-        ) from error
+    return ApiResponse.ok(data=_service.get_run(db, run_id))
 
 
 @router.get(
@@ -119,8 +87,8 @@ def list_runs(
     year: int | None = Query(None, ge=2000, le=2100),
     month: int | None = Query(None, ge=1, le=12),
     status_filter: str | None = Query(None, alias="status"),
-    skip: int = Query(0, ge=0),
-    limit: int = Query(20, ge=1, le=100),
+    page: int = Query(1, ge=1),
+    size: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.COSTING_VIEW)),
 ) -> ApiResponse[PageResult[CostingEngineRunListItemVO]]:
@@ -130,14 +98,14 @@ def list_runs(
         year=year,
         month=month,
         status=status_filter,
-        skip=skip,
-        limit=limit,
+        page=page,
+        size=size,
     )
     return ApiResponse.list_(
         items=items,
         total=total,
-        page=(skip // limit) + 1 if limit else 1,
-        page_size=limit,
+        page=page,
+        page_size=size,
     )
 
 
@@ -150,12 +118,7 @@ def delete_run(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.COSTING_DELETE)),
 ) -> ApiResponse[None]:
-    try:
-        _service.delete_run(db, run_id)
-        return ApiResponse.deleted(
-            message="已删除引擎 Run（不撤销已写入的业务价格）"
-        )
-    except NotFoundException as error:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=str(error)
-        ) from error
+    _service.delete_run(db, run_id)
+    return ApiResponse.deleted(
+        message="已删除引擎 Run（不撤销已写入的业务价格）"
+    )

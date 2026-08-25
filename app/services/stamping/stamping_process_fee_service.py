@@ -19,7 +19,7 @@ from app.common.audit import (
     display_name,
 )
 from app.common.timezone import now
-from app.exceptions.base import BusinessException
+from app.exceptions.base import BusinessException, NotFoundException
 from app.repositories.stamping.stamping_process_fee_repository import (
     ProcessFeeListFilters,
     StampingProcessFeeRepository,
@@ -59,7 +59,7 @@ class StampingProcessFeeService:
     ) -> StampingProcessFeeVO:
         record = self.fee_repo.get_by_id(db, fee_id)
         if not record:
-            raise BusinessException(f"加工费记录不存在: id={fee_id}")
+            raise NotFoundException(f"加工费记录不存在: id={fee_id}")
         if record.audit_status == AUDIT_APPROVED:
             raise BusinessException("已审核通过，请先反审核后再调整")
 
@@ -79,15 +79,15 @@ class StampingProcessFeeService:
             ),
         )
         if not updated:
-            raise BusinessException(f"加工费记录不存在: id={fee_id}")
+            raise NotFoundException(f"加工费记录不存在: id={fee_id}")
         db.commit()
         db.refresh(updated)
         return StampingProcessFeeVO.model_validate(updated)
 
-    def get_by_id(self, db: Session, fee_id: int) -> StampingProcessFeeVO | None:
+    def get_by_id(self, db: Session, fee_id: int) -> StampingProcessFeeVO:
         record = self.fee_repo.get_by_id(db, fee_id)
         if not record:
-            return None
+            raise NotFoundException(f"加工费记录不存在: id={fee_id}")
         return StampingProcessFeeVO.model_validate(record)
 
     def paginate(

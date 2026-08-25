@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from decimal import Decimal
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
 from sqlalchemy.orm import Session
 
@@ -13,6 +13,7 @@ from app.common.scrap_price_locations import (
     SCRAP_PRICE_LOCATION_COUNT,
     SCRAP_PRICE_LOCATIONS,
 )
+from app.exceptions.base import BusinessException, NotFoundException
 from app.models.yishiyiyi import StampingScrapPrice
 from app.repositories.yishiyiyi.scrap_price.scrap_price_repository import (
     StampingScrapPriceRepository,
@@ -111,7 +112,7 @@ class StampingScrapPriceCrudService:
         db: Session,
         data: StampingScrapPriceMonthSaveDTO,
         current_user: UserVO,
-    ) -> Tuple[Optional[StampingScrapPriceMonthSheetVO], Optional[str]]:
+    ) -> StampingScrapPriceMonthSheetVO:
         try:
             audit = audit_create(current_user)
             payloads: list[ScrapPriceWrite] = []
@@ -140,41 +141,43 @@ class StampingScrapPriceCrudService:
                 payloads,
             )
             db.commit()
-            sheet = self._build_month_sheet(data.year, data.month, records)
-            return sheet, None
-        except Exception as exc:
+            return self._build_month_sheet(data.year, data.month, records)
+        except Exception:
             db.rollback()
-            logger.error("整月保存废料销售价失败: %s", exc)
-            return None, str(exc)
+            logger.exception("整月保存废料销售价失败")
+            raise
 
     def delete_month(
         self,
         db: Session,
         year: int,
         month: int,
-    ) -> Tuple[int, Optional[str]]:
+    ) -> int:
         try:
             count = self.repository.delete_by_year_month(db, year, month)
             if count == 0:
-                return 0, f"{year}-{month:02d} 没有可删除的数据"
+                raise NotFoundException(f"{year}-{month:02d} 没有可删除的数据")
             db.commit()
-            return count, None
-        except Exception as exc:
+            return count
+        except (BusinessException, NotFoundException):
             db.rollback()
-            logger.error("整月删除废料销售价失败: %s", exc)
-            return 0, str(exc)
+            raise
+        except Exception:
+            db.rollback()
+            logger.exception("整月删除废料销售价失败")
+            raise
 
     def copy_month(
         self,
         db: Session,
         body: StampingScrapPriceCopyMonth,
         current_user: UserVO,
-    ) -> Tuple[Optional[StampingScrapPriceCopyMonthResponse], Optional[str]]:
+    ) -> StampingScrapPriceCopyMonthResponse:
         if (
             body.source_year == body.target_year
             and body.source_month == body.target_month
         ):
-            return None, "源年月与目标年月不能相同"
+            raise BusinessException("源年月与目标年月不能相同")
 
         source_records = self.repository.list_by_year_month(
             db,
@@ -182,14 +185,14 @@ class StampingScrapPriceCrudService:
             body.source_month,
         )
         if not source_records:
-            return None, (
+            raise NotFoundException(
                 f"源年月 {body.source_year}-{body.source_month:02d} 没有数据"
             )
 
         by_location = {r.location: r for r in source_records}
         missing = [name for name in SCRAP_PRICE_LOCATIONS if name not in by_location]
         if missing:
-            return None, (
+            raise BusinessException(
                 f"源月数据不完整，缺少: {', '.join(missing)}；请先补全源月再复制"
             )
 
@@ -219,17 +222,14 @@ class StampingScrapPriceCrudService:
                 payloads,
             )
             db.commit()
-            return (
-                StampingScrapPriceCopyMonthResponse(
-                    source_year=body.source_year,
-                    source_month=body.source_month,
-                    target_year=body.target_year,
-                    target_month=body.target_month,
-                    created_count=len(records),
-                ),
-                None,
+            return StampingScrapPriceCopyMonthResponse(
+                source_year=body.source_year,
+                source_month=body.source_month,
+                target_year=body.target_year,
+                target_month=body.target_month,
+                created_count=len(records),
             )
-        except Exception as exc:
+        except Exception:
             db.rollback()
-            logger.error("跨月复制废料销售价失败: %s", exc)
-            return None, str(exc)
+            logger.exception("跨月复制废料销售价失败")
+            raise

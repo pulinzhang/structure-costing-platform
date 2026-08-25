@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 
 from app.common.audit import audit_create, audit_update
 from app.config import settings
+from app.exceptions.base import BusinessException
 from app.parsers.bom.packaging_transport_fee_parser import (
     parse_packaging_transport_fee_excel,
 )
@@ -157,29 +158,29 @@ class BomPackagingTransportFeeImportService:
         location = (location or "").strip()
         vehicle_model = (vehicle_model or "").strip()
         if not location:
-            raise ValueError("请选择采购基地")
+            raise BusinessException("请选择采购基地")
         if not vehicle_model:
-            raise ValueError("请选择项目")
+            raise BusinessException("请选择项目")
         if year < 2000 or year > 2100:
-            raise ValueError("年度不正确")
+            raise BusinessException("年度不正确")
 
         bom_snapshots = self.snapshot_repository.list_by_location_model(
             db, location, vehicle_model
         )
         if not bom_snapshots:
-            raise ValueError(
+            raise BusinessException(
                 f"未找到材料清单：基地「{location}」项目「{vehicle_model}」，"
                 "请先上传 BOM 后再导入包装运输费"
             )
 
         original_name = Path(filename or "").name
         if Path(original_name).suffix.lower() != ".xlsx":
-            raise ValueError("仅支持 .xlsx 文件")
+            raise BusinessException("仅支持 .xlsx 文件")
         if not file_content:
-            raise ValueError("文件内容为空")
+            raise BusinessException("文件内容为空")
         if len(file_content) > settings.MAX_UPLOAD_SIZE:
             max_mb = settings.MAX_UPLOAD_SIZE // (1024 * 1024)
-            raise ValueError(f"文件过大，最大支持 {max_mb}MB")
+            raise BusinessException(f"文件过大，最大支持 {max_mb}MB")
 
         # 导入前先归档源文件（对齐一事一议加减价/基价溯源规则）
         archive_path = save_packaging_transport_fee_upload(
@@ -198,9 +199,9 @@ class BomPackagingTransportFeeImportService:
 
         parse_result = parse_packaging_transport_fee_excel(file_content)
         if parse_result.errors and not parse_result.rows:
-            raise ValueError("；".join(parse_result.errors))
+            raise BusinessException("；".join(parse_result.errors))
         if not parse_result.rows:
-            raise ValueError("未解析到有效数据行")
+            raise BusinessException("未解析到有效数据行")
 
         sheet_name = parse_result.sheet_name
         created_count = 0

@@ -8,6 +8,7 @@ from datetime import timedelta
 from sqlalchemy.orm import Session
 
 from app.common.timezone import now
+from app.exceptions.base import BusinessException, NotFoundException
 from app.models.costing.l0_assembly_cost_calc_log import L0AssemblyCostCalcLog
 from app.repositories.costing.l0_assembly_cost.l0_assembly_cost_calc_log_repository import (
     L0AssemblyCostCalcLogRepository,
@@ -25,8 +26,11 @@ DUPLICATE_SCOPE_CALC_MESSAGE = "当前年度/月份/基地/项目/版本正在�
 SCOPE_REQUIRED_MESSAGE = "须选定年度、月份、基地、项目、BOM 版本。"
 
 
-class DuplicateScopeCalcError(Exception):
+class DuplicateScopeCalcError(BusinessException):
     """同一计算范围已有进行中的任务。"""
+
+    def __init__(self, message: str = DUPLICATE_SCOPE_CALC_MESSAGE) -> None:
+        super().__init__(message=message, code=409)
 
 
 class L0AssemblyCostCalcLogService:
@@ -148,14 +152,14 @@ class L0AssemblyCostCalcLogService:
         )
         return [L0AssemblyCostCalcLogVO.model_validate(r) for r in rows], total
 
-    def get_calc_log(self, db: Session, log_id: int) -> L0AssemblyCostCalcLogVO | None:
+    def get_calc_log(self, db: Session, log_id: int) -> L0AssemblyCostCalcLogVO:
         row = self.calc_log_repo.get_by_id(db, log_id)
         if row is None:
-            return None
+            raise NotFoundException("计算日志不存在")
         return L0AssemblyCostCalcLogVO.model_validate(row)
 
-    def delete_calc_log(self, db: Session, log_id: int) -> bool:
+    def delete_calc_log(self, db: Session, log_id: int) -> None:
         ok = self.calc_log_repo.delete(db, log_id)
-        if ok:
-            db.commit()
-        return ok
+        if not ok:
+            raise NotFoundException("计算日志不存在")
+        db.commit()

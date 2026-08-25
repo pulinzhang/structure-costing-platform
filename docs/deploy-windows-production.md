@@ -91,12 +91,12 @@ scripts\windows\start.bat
 
 | 变量 | 生产建议 |
 |------|----------|
-| `APP_ENV` | 必须 `production`（关闭 DEBUG / reload，日志 WARNING） |
+| `APP_ENV` | 必须 `production`（关闭 IS_DEBUG / reload，日志 WARNING） |
 | `HOST` | `0.0.0.0`（局域网可访问） |
 | `PORT` | `8000` 或按需 |
 | `UVICORN_WORKERS` | 默认 `4`；SQLite 写锁多时可改为 `2` |
 | `PASSWORD_SALT` | **必改**，与开发机不同的随机串 |
-| `DEBUG` | `False` |
+| `IS_DEBUG` | `False` |
 | `LOG_LEVEL` | `WARNING` |
 | `CORS_ORIGINS` | JSON 数组，包含实际前端来源，例如 `["http://10.0.0.8:8000"]`（同源部署通常也写上访问用的 origin） |
 | `DATABASE_URL` | 默认可用；务必定期备份 `data\*.db` |
@@ -270,6 +270,6 @@ scripts\windows\vendor\nssm\win64\nssm.exe
 | | 开发（README） | 生产（本文） |
 |--|----------------|--------------|
 | Python 工具链 | Ruff / Mypy / pre-commit | 不装 |
-| 启动 | `--reload`、DEBUG | 无 reload、`APP_ENV=production` |
+| 启动 | `--reload`、IS_DEBUG | 无 reload、`APP_ENV=production` |
 | 依赖 | `requirements.txt` + `requirements-dev.txt` | 仅 `requirements.txt` |
 | 密码盐 / CORS | 可用默认 | **必须改** |

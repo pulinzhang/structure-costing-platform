@@ -5,14 +5,13 @@
 
 from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.common.permissions.codes import Perm
 from app.database import get_db
 from app.deps.permissions import require_perm
-from app.exceptions.base import BusinessException
 from app.schemas.common.page_result import PageResult
 from app.schemas.dto.stamping_part_cost_dto import (
     StampingPartCostBatchApproveDTO,
@@ -79,23 +78,6 @@ def export_download(
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_PART_COST_EXPORT)),
 ) -> StreamingResponse:
     """按当前筛选条件导出冲压零件核价结果 Excel（材料费 + 加工费）。"""
-    if not any(
-        [
-            year,
-            month,
-            location,
-            stamping_supplier,
-            vehicle_model,
-            version,
-            part_number,
-            audit_status,
-        ]
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="请至少选择一个筛选条件后再导出",
-        )
-
     content, filename = _export_service.export(
         db,
         year=year,
@@ -126,8 +108,6 @@ def get_cost(
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_PART_COST_VIEW)),
 ) -> ApiResponse[StampingPartCostVO]:
     row = _service.get_by_id(db, cost_id)
-    if not row:
-        raise HTTPException(status_code=404, detail="核算记录不存在")
     return ApiResponse.ok(data=row)
 
 
@@ -141,12 +121,9 @@ def update_manual_unit_cost(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_PART_COST_UPDATE)),
 ) -> ApiResponse[StampingPartCostVO]:
-    try:
-        row = _service.update_manual_unit_cost(
-            db, cost_id, dto, current_user=current_user
-        )
-    except BusinessException as error:
-        raise HTTPException(status_code=400, detail=str(error)) from error
+    row = _service.update_manual_unit_cost(
+        db, cost_id, dto, current_user=current_user
+    )
     return ApiResponse.updated(data=row, message="最终成本已保存")
 
 
@@ -159,10 +136,7 @@ def batch_delete_costs(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_PART_COST_DELETE)),
 ) -> ApiResponse[StampingPartCostBatchDeleteResultVO]:
-    try:
-        result = _service.batch_delete(db, dto)
-    except BusinessException as error:
-        raise HTTPException(status_code=400, detail=str(error)) from error
+    result = _service.batch_delete(db, dto)
     message = f"已删除 {result.deleted_count} 条"
     if result.skipped_approved_count:
         message += f"，跳过已审核 {result.skipped_approved_count} 条"
@@ -178,10 +152,7 @@ def batch_approve_costs(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_PART_COST_APPROVE)),
 ) -> ApiResponse[StampingPartCostBatchAuditResultVO]:
-    try:
-        result = _service.batch_approve(db, dto, current_user=current_user)
-    except BusinessException as error:
-        raise HTTPException(status_code=400, detail=str(error)) from error
+    result = _service.batch_approve(db, dto, current_user=current_user)
     message = f"已审核通过 {result.updated_count} 条"
     if result.skipped_count:
         message += f"，跳过 {result.skipped_count} 条"
@@ -197,10 +168,7 @@ def batch_reverse_audit_costs(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_PART_COST_REVERSE)),
 ) -> ApiResponse[StampingPartCostBatchAuditResultVO]:
-    try:
-        result = _service.batch_reverse_audit(db, dto, current_user=current_user)
-    except BusinessException as error:
-        raise HTTPException(status_code=400, detail=str(error)) from error
+    result = _service.batch_reverse_audit(db, dto, current_user=current_user)
     message = f"已反审核 {result.updated_count} 条"
     if result.skipped_count:
         message += f"，跳过 {result.skipped_count} 条"

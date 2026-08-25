@@ -12,6 +12,7 @@ from typing import Callable, Optional
 from sqlalchemy.orm import Session
 
 from app.common.audit import AuditCreateFields, audit_create
+from app.exceptions.base import BusinessException
 from app.parsers.yishiyiyi.policy import parse_steel_price_policy_excel
 from app.parsers.yishiyiyi.policy.models.ladder_item import ParsedLadderItem
 from app.parsers.yishiyiyi.policy.models.policy import ParsedPolicy
@@ -103,20 +104,20 @@ class SteelPricePolicyImportService:
     ) -> None:
         """
         验证上传文件，返回 None 表示验证通过。
-        抛出 ValueError 表示验证失败。
+        抛出 BusinessException 表示验证失败。
         """
         from app.config import settings
 
         if not filename:
-            raise ValueError("未提供文件名")
+            raise BusinessException("未提供文件名")
         ext = filename.lower()
         if not (ext.endswith(".xlsx") or ext.endswith(".xls") or ext.endswith(".xlsm")):
-            raise ValueError("仅支持 .xlsx、.xls 或 .xlsm 文件")
+            raise BusinessException("仅支持 .xlsx、.xls 或 .xlsm 文件")
         if not file_content:
-            raise ValueError("上传文件为空")
+            raise BusinessException("上传文件为空")
         if len(file_content) > settings.MAX_UPLOAD_SIZE:
             max_mb = settings.MAX_UPLOAD_SIZE // (1024 * 1024)
-            raise ValueError(f"文件过大，最大支持 {max_mb}MB")
+            raise BusinessException(f"文件过大，最大支持 {max_mb}MB")
 
     def import_from_parser(
         self,

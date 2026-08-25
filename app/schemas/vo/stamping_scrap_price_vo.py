@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field, field_serializer
 
 from app.common.money import Q2, optional_format_money
 from app.common.scrap_price_locations import SCRAP_PRICE_LOCATIONS
+from app.common.timezone import datetime_to_iso
 
 
 class StampingScrapPriceMonthRowVO(BaseModel):
@@ -31,7 +32,7 @@ class StampingScrapPriceMonthRowVO(BaseModel):
 
     @field_serializer("created_at", "updated_at")
     def serialize_datetime(self, value: datetime | None) -> str | None:
-        return value.isoformat() if value else None
+        return datetime_to_iso(value)
 
     model_config = {"from_attributes": True}
 
@@ -62,7 +63,7 @@ class StampingScrapPriceMonthSummaryVO(BaseModel):
 
     @field_serializer("updated_at")
     def serialize_datetime(self, value: datetime | None) -> str | None:
-        return value.isoformat() if value else None
+        return datetime_to_iso(value)
 
 
 class StampingScrapPriceFilterOptionsVO(BaseModel):

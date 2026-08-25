@@ -14,6 +14,7 @@ from app.common.audit import (
     audit_update,
 )
 from app.common.permissions.checks import require_permission
+from app.exceptions.base import BusinessException, NotFoundException
 from app.models.settings import User
 from app.repositories.settings.users.user_repository import (
     UserListFilters,
@@ -108,10 +109,10 @@ class UserService:
         }
         return [self._to_vo(db, u) for u in rows], total, filters
 
-    def get_by_id(self, db: Session, user_id: int) -> UserVO | None:
+    def get_by_id(self, db: Session, user_id: int) -> UserVO:
         user = self.repository.get_by_id(db, user_id)
         if not user:
-            return None
+            raise NotFoundException("用户不存在")
         return self._to_vo(db, user)
 
     def create(
@@ -122,7 +123,7 @@ class UserService:
     ) -> UserVO:
         require_permission(current_user, Perm.SETTINGS_USERS_CREATE)
         if self.repository.get_by_username(db, dto.username):
-            raise ValueError(f"账号已存在: {dto.username}")
+            raise BusinessException(f"账号已存在: {dto.username}")
 
         audit = audit_create(current_user)
         payload = UserInsertPayload(
@@ -148,7 +149,7 @@ class UserService:
         except IntegrityError as exc:
             db.rollback()
             logger.warning("创建用户失败（唯一约束）: %s", exc)
-            raise ValueError(f"账号已存在: {dto.username}") from exc
+            raise BusinessException(f"账号已存在: {dto.username}") from exc
 
     def update(
         self,
@@ -156,7 +157,7 @@ class UserService:
         user_id: int,
         dto: UserUpdateDTO,
         current_user: UserVO,
-    ) -> UserVO | None:
+    ) -> UserVO:
         require_permission(current_user, Perm.SETTINGS_USERS_UPDATE)
         if not dto.model_fields_set:
             return self.get_by_id(db, user_id)
@@ -166,7 +167,7 @@ class UserService:
             _user_patch_from_dto(dto, updated_by=audit_update(current_user)["updated_by"]),
         )
         if not user:
-            return None
+            raise NotFoundException("用户不存在")
         db.commit()
         db.refresh(user)
         return self._to_vo(db, user)
@@ -185,7 +186,7 @@ class UserService:
             _user_patch_from_dto(dto, updated_by=audit_update(current_user)["updated_by"]),
         )
         if not user:
-            raise ValueError("用户不存在")
+            raise NotFoundException("用户不存在")
         db.commit()
         db.refresh(user)
         return self._to_vo(db, user)
@@ -202,13 +203,16 @@ class UserService:
         require_permission(current_user, Perm.SETTINGS_PROFILE_UPDATE)
         existing = self.repository.get_by_id(db, current_user.id)
         if not existing:
-            raise ValueError("用户不存在")
+            raise NotFoundException("用户不存在")
 
-        avatar_url = save_user_avatar(
-            user_id=current_user.id,
-            file_content=file_content,
-            filename=filename,
-        )
+        try:
+            avatar_url = save_user_avatar(
+                user_id=current_user.id,
+                file_content=file_content,
+                filename=filename,
+            )
+        except ValueError as exc:
+            raise BusinessException(str(exc)) from exc
         # 新文件落盘成功后再删旧文件，避免上传失败导致丢头像
         old_avatar = existing.avatar
         updated = self.repository.update(
@@ -221,7 +225,7 @@ class UserService:
         )
         if not updated:
             delete_avatar_file(avatar_url)
-            raise ValueError("用户不存在")
+            raise NotFoundException("用户不存在")
         db.commit()
         db.refresh(updated)
         delete_avatar_file(old_avatar)
@@ -233,7 +237,7 @@ class UserService:
         user_id: int,
         dto: UserPasswordUpdateDTO,
         current_user: UserVO,
-    ) -> UserVO | None:
+    ) -> UserVO:
         require_permission(current_user, Perm.SETTINGS_USERS_PASSWORD)
         user = self.repository.update(
             db,
@@ -244,7 +248,7 @@ class UserService:
             },
         )
         if not user:
-            return None
+            raise NotFoundException("用户不存在")
         db.commit()
         db.refresh(user)
         return self._to_vo(db, user)
@@ -259,11 +263,11 @@ class UserService:
         require_permission(current_user, Perm.SETTINGS_PROFILE_PASSWORD)
         user = self.repository.get_by_id(db, current_user.id)
         if not user:
-            raise ValueError("用户不存在")
+            raise NotFoundException("用户不存在")
         if user.password_hash != hash_password_md5(dto.old_password):
-            raise ValueError("当前密码不正确")
+            raise BusinessException("当前密码不正确")
         if dto.old_password == dto.password:
-            raise ValueError("新密码不能与当前密码相同")
+            raise BusinessException("新密码不能与当前密码相同")
 
         updated = self.repository.update(
             db,
@@ -274,24 +278,24 @@ class UserService:
             },
         )
         if not updated:
-            raise ValueError("用户不存在")
+            raise NotFoundException("用户不存在")
         db.commit()
         db.refresh(updated)
         return self._to_vo(db, updated)
 
-    def delete(self, db: Session, user_id: int, current_user: UserVO) -> bool:
+    def delete(self, db: Session, user_id: int, current_user: UserVO) -> None:
         require_permission(current_user, Perm.SETTINGS_USERS_DELETE)
         target = self.repository.get_by_id(db, user_id)
         if not target:
-            return False
+            raise NotFoundException("用户不存在")
         if target.is_admin:
             admin_count = sum(1 for u in self.repository.list_all(db) if u.is_admin)
             if admin_count <= 1:
-                raise ValueError("不能删除最后一个管理员")
+                raise BusinessException("不能删除最后一个管理员")
         ok = self.repository.delete(db, user_id)
-        if ok:
-            db.commit()
-        return ok
+        if not ok:
+            raise NotFoundException("用户不存在")
+        db.commit()
 
     def ensure_default_admin(self, db: Session) -> None:
         """首次启动时若无用户，创建默认管理员 admin / admin123"""

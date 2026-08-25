@@ -4,7 +4,7 @@
 
 from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
@@ -36,14 +36,6 @@ router = APIRouter(prefix="/api/costing/steel-price", tags=["钢材价格管理"
 
 _steel_price_service = SteelPriceService()
 _steel_price_export_service = SteelPriceExportService()
-
-
-def _raise_service_error(error: str | None, not_found_prefix: str = "记录不存在") -> None:
-    if not error:
-        return
-    if error.startswith(not_found_prefix) or "不存在" in error:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error)
-    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error)
 
 
 @router.get(
@@ -80,12 +72,7 @@ def batch_delete_steel_prices(
 
     年度、月份、基地必填；已审核通过的记录跳过。
     """
-    result, error = _steel_price_service.batch_delete(db, body)
-    if error is not None or result is None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=error or "批量删除失败",
-        )
+    result = _steel_price_service.batch_delete(db, body)
     return ApiResponse.ok(
         data=result,
         message=(
@@ -113,12 +100,7 @@ def batch_approve_steel_prices(
 
     三者必填；仅处理待审/已驳回，已通过记录跳过。
     """
-    result, error = _steel_price_service.batch_approve(db, body, current_user=current_user)
-    if error is not None or result is None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=error or "批量审核失败",
-        )
+    result = _steel_price_service.batch_approve(db, body, current_user=current_user)
     return ApiResponse.ok(
         data=result,
         message=(
@@ -146,14 +128,9 @@ def batch_reverse_audit_steel_prices(
 
     三者必填；仅处理已通过记录，其余跳过；反审核意见必填。
     """
-    result, error = _steel_price_service.batch_reverse_audit(
+    result = _steel_price_service.batch_reverse_audit(
         db, body, current_user=current_user
     )
-    if error is not None or result is None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=error or "批量反审核失败",
-        )
     return ApiResponse.ok(
         data=result,
         message=(
@@ -184,12 +161,6 @@ def export_download(
 
     含基价/厚度/宽度/锌层完整溯源（ID + 文件名 + 表页 + 行号 + 列号），便于对账扯皮。
     """
-    if not any([year, month, location, category_name, grade, steel_mill, audit_status]):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="请至少选择一个筛选条件后再导出",
-        )
-
     content, filename = _steel_price_export_service.export(
         db,
         year=year,
@@ -218,8 +189,6 @@ def get_steel_price(
 ) -> ApiResponse[SteelPriceResponse]:
     """查看单条钢材价格。"""
     record = _steel_price_service.get_by_id(db, record_id)
-    if record is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="记录不存在")
     return ApiResponse.ok(data=record)
 
 
@@ -234,11 +203,9 @@ def update_steel_price(
     current_user: UserVO = Depends(require_perm(Perm.STEEL_PRICE_LIST_UPDATE)),
 ) -> ApiResponse[SteelPriceResponse]:
     """更新钢材价格（已审核通过不可改）。"""
-    record, error = _steel_price_service.update(
+    record = _steel_price_service.update(
         db, record_id, body, current_user=current_user
     )
-    if error:
-        _raise_service_error(error)
     return ApiResponse.updated(data=record, message="更新成功")
 
 
@@ -252,9 +219,7 @@ def delete_steel_price(
     current_user: UserVO = Depends(require_perm(Perm.STEEL_PRICE_LIST_DELETE)),
 ) -> ApiResponse[None]:
     """删除钢材价格（已审核通过不可删）。"""
-    success, error = _steel_price_service.delete(db, record_id)
-    if not success:
-        _raise_service_error(error or "记录不存在")
+    _steel_price_service.delete(db, record_id)
     return ApiResponse.deleted(message="删除成功")
 
 
@@ -269,11 +234,9 @@ def approve_steel_price(
     current_user: UserVO = Depends(require_perm(Perm.STEEL_PRICE_LIST_APPROVE)),
 ) -> ApiResponse[SteelPriceResponse]:
     """经理审核通过。"""
-    record, error = _steel_price_service.approve(
+    record = _steel_price_service.approve(
         db, record_id, body, current_user=current_user
     )
-    if error:
-        _raise_service_error(error)
     return ApiResponse.updated(data=record, message="审核通过")
 
 
@@ -288,11 +251,9 @@ def reject_steel_price(
     current_user: UserVO = Depends(require_perm(Perm.STEEL_PRICE_LIST_REJECT)),
 ) -> ApiResponse[SteelPriceResponse]:
     """经理审核驳回。"""
-    record, error = _steel_price_service.reject(
+    record = _steel_price_service.reject(
         db, record_id, body, current_user=current_user
     )
-    if error:
-        _raise_service_error(error)
     return ApiResponse.updated(data=record, message="已驳回")
 
 
@@ -307,9 +268,7 @@ def reverse_audit_steel_price(
     current_user: UserVO = Depends(require_perm(Perm.STEEL_PRICE_LIST_REVERSE)),
 ) -> ApiResponse[SteelPriceResponse]:
     """经理反审核（approved → pending）。"""
-    record, error = _steel_price_service.reverse_audit(
+    record = _steel_price_service.reverse_audit(
         db, record_id, body, current_user=current_user
     )
-    if error:
-        _raise_service_error(error)
     return ApiResponse.updated(data=record, message="反审核成功")

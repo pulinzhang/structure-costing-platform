@@ -1,6 +1,6 @@
 """登录认证路由"""
 
-from fastapi import APIRouter, Depends, File, Header, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, Header, UploadFile
 from sqlalchemy.orm import Session
 
 from app.common.permissions.codes import Perm
@@ -32,14 +32,8 @@ def login(
     token_db: Session = Depends(get_auxiliary_db),
 ) -> ApiResponse[LoginVO]:
     """账号密码登录，返回 token（存入辅助库 user_tokens）"""
-    try:
-        result = _auth_service.login(db, token_db, dto)
-        return ApiResponse.ok(data=result, message="登录成功")
-    except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=str(exc),
-        ) from exc
+    result = _auth_service.login(db, token_db, dto)
+    return ApiResponse.ok(data=result, message="登录成功")
 
 
 @router.post(
@@ -71,15 +65,9 @@ def update_me(
     current_user: UserVO = Depends(require_perm(Perm.SETTINGS_PROFILE_UPDATE)),
 ) -> ApiResponse[UserVO]:
     """当前用户更新个人资料，并同步 token 快照"""
-    try:
-        user = _user_service.update_own_profile(db, current_user, dto)
-        _auth_service.sync_profile_to_tokens(token_db, user)
-        return ApiResponse.updated(data=user, message="资料已保存")
-    except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(exc),
-        ) from exc
+    user = _user_service.update_own_profile(db, current_user, dto)
+    _auth_service.sync_profile_to_tokens(token_db, user)
+    return ApiResponse.updated(data=user, message="资料已保存")
 
 
 @router.post(
@@ -96,24 +84,18 @@ async def upload_avatar(
     上传头像到 uploads/avatars/，写入用户 avatar，并返回相对路径 URL。
     例：/uploads/avatars/u1_20260812_103000_ab12cd34.png
     """
-    try:
-        content = await file.read()
-        user = _user_service.update_own_avatar(
-            db,
-            current_user,
-            file_content=content,
-            filename=file.filename or "avatar.png",
-        )
-        _auth_service.sync_profile_to_tokens(token_db, user)
-        return ApiResponse.ok(
-            data=AvatarUploadVO(url=user.avatar or ""),
-            message="头像上传成功",
-        )
-    except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(exc),
-        ) from exc
+    content = await file.read()
+    user = _user_service.update_own_avatar(
+        db,
+        current_user,
+        file_content=content,
+        filename=file.filename or "avatar.png",
+    )
+    _auth_service.sync_profile_to_tokens(token_db, user)
+    return ApiResponse.ok(
+        data=AvatarUploadVO(url=user.avatar or ""),
+        message="头像上传成功",
+    )
 
 
 @router.put(
@@ -129,18 +111,12 @@ def change_password(
     current_user: UserVO = Depends(require_perm(Perm.SETTINGS_PROFILE_PASSWORD)),
 ) -> ApiResponse[UserVO]:
     """当前用户修改密码：必须验证旧密码；默认注销其他设备"""
-    try:
-        user = _user_service.change_own_password(db, current_user, dto)
-        if dto.logout_other_sessions:
-            token = extract_token(authorization, x_token) or ""
-            if token:
-                _auth_service.logout_other_sessions(token_db, current_user.id, token)
-        return ApiResponse.updated(data=user, message="密码已更新")
-    except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(exc),
-        ) from exc
+    user = _user_service.change_own_password(db, current_user, dto)
+    if dto.logout_other_sessions:
+        token = extract_token(authorization, x_token) or ""
+        if token:
+            _auth_service.logout_other_sessions(token_db, current_user.id, token)
+    return ApiResponse.updated(data=user, message="密码已更新")
 
 
 @router.post(

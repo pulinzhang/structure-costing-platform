@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 
 from app.common.audit import audit_status_label
 from app.common.excel_workbook import resolve_worksheet
+from app.common.export_filters import require_at_least_one_export_filter
 from app.common.money import Q4, excel_money_cell
 from app.common.timezone import now
 from app.models.bom import BomL0WeldingFee
@@ -246,6 +247,15 @@ class BomL0WeldingFeeExportService:
         audit_status: str | None = None,
         calc_status: str | None = None,
     ) -> tuple[bytes, str]:
+        require_at_least_one_export_filter(
+            year,
+            location,
+            vehicle_model,
+            bom_version,
+            part_number,
+            audit_status,
+            calc_status,
+        )
         wb = Workbook()
         _title, fee_count = self.write_to_workbook(
             wb,

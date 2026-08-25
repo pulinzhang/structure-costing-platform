@@ -9,8 +9,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import InstrumentedAttribute, Query, Session
 from sqlalchemy.sql.selectable import Subquery
 
-from app.models import StampingPart, StampingProcess
-from app.models.stamping.tailor_weld_blank import StampingTailorWeldBlank
+from app.models.stamping import StampingPart, StampingProcess, StampingTailorWeldBlank
 from app.repositories.persist import apply_payload_fields, model_from_payload
 from app.schemas.dto.stamping_upload_dto import PartData, StampingPartPatch
 

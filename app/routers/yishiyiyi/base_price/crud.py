@@ -4,24 +4,18 @@
 
 from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from fastapi import APIRouter, Depends, File, Query, UploadFile, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
 from app.common.permissions.codes import Perm
 from app.deps.permissions import require_any_perm, require_perm
-from app.common.audit import display_name
-from app.config import settings
-from app.database import DatabaseConfig, get_db
+from app.database import get_db
 from app.schemas.vo.user_vo import UserVO
-from app.utils.logging_config import get_logger
 from app.utils.response import ApiResponse
 from app.services.async_task import (
-    STATUS_COMPLETED,
-    STATUS_FAILED,
     STATUS_PENDING,
-    STATUS_RUNNING,
     TASK_TYPE_BASE_PRICE_IMPORT,
     AsyncTaskService,
 )
@@ -45,8 +39,6 @@ from app.schemas.common import PageResult
 
 # 默认分页大小常量
 DEFAULT_EXPORT_PAGE_SIZE = 5000
-
-logger = get_logger("router.steel_base_price")
 
 
 class BatchDeleteResponse(BaseModel):
@@ -75,72 +67,6 @@ def _build_filter_options_vo(service: SteelBasePriceService, db: Session) -> Fil
         grades=raw.grades,
         specs=raw.specs,
     )
-
-
-def _process_base_price_import_in_background(
-    task_id: str,
-    file_content: bytes,
-    filename: str,
-    year: int,
-    month: int,
-    current_user: UserVO,
-) -> None:
-    """后台线程解析基准价 Excel；独立 Session，不复用请求 db。"""
-    session_factory = DatabaseConfig.get_session_factory()
-    db = session_factory()
-
-    def on_progress(progress: int, msg: str) -> None:
-        _async_task_service.update_task_standalone(
-            task_id,
-            status=STATUS_RUNNING,
-            progress=progress,
-            message=msg,
-        )
-
-    try:
-        _async_task_service.update_task_standalone(
-            task_id,
-            status=STATUS_RUNNING,
-            progress=1,
-            message="后台开始解析...",
-        )
-        result = _steel_base_price_service.import_excel(
-            db,
-            file_content=file_content,
-            filename=filename,
-            year=year,
-            month=month,
-            progress_callback=on_progress,
-            current_user=current_user,
-        )
-        _async_task_service.update_task_standalone(
-            task_id,
-            status=STATUS_COMPLETED,
-            progress=100,
-            message=(
-                f"导入完成：新增 {result.created_count} 条，"
-                f"更新 {result.updated_count} 条，共 {result.total} 条"
-            ),
-            result=result.model_dump(),
-        )
-    except ValueError as error:
-        logger.warning("基准价导入业务失败: task_id=%s error=%s", task_id, error)
-        _async_task_service.update_task_standalone(
-            task_id,
-            status=STATUS_FAILED,
-            progress=0,
-            message=str(error),
-        )
-    except Exception as error:
-        logger.exception("基准价导入异常: task_id=%s filename=%s", task_id, filename)
-        _async_task_service.update_task_standalone(
-            task_id,
-            status=STATUS_FAILED,
-            progress=0,
-            message=f"解析异常: {error}",
-        )
-    finally:
-        db.close()
 
 
 @router.get(
@@ -277,44 +203,15 @@ async def import_base_price(
     current_user: UserVO = Depends(require_perm(Perm.BASE_PRICE_UPLOAD_UPLOAD)),
 ) -> ApiResponse[AsyncTaskAcceptedVO]:
     """导入 Excel，立即返回 task_id，后台线程解析入库。"""
-    filename = file.filename or ""
-    if not filename:
-        raise HTTPException(status_code=400, detail="未提供文件名")
-
-    ext = "." + filename.split(".")[-1].lower()
-    if ext not in {".xlsx", ".xls"}:
-        raise HTTPException(
-            status_code=400,
-            detail=f"不支持的文件类型: {ext}，仅支持 .xlsx / .xls",
-        )
-
-    content = await file.read()
-    if not content:
-        raise HTTPException(status_code=400, detail="上传文件为空")
-    if len(content) > settings.MAX_UPLOAD_SIZE:
-        raise HTTPException(
-            status_code=400,
-            detail=f"文件过大，最大支持 {settings.MAX_UPLOAD_SIZE // (1024 * 1024)}MB",
-        )
-
-    task = _async_task_service.create_task(
-        task_type=TASK_TYPE_BASE_PRICE_IMPORT,
-        message="已提交解析队列",
-        operator_id=current_user.id,
-        operator_name=display_name(current_user),
+    accepted = _steel_base_price_service.start_import(
+        file_content=await file.read(),
+        filename=file.filename or "",
+        year=year,
+        month=month,
+        current_user=current_user,
     )
-    AsyncTaskService.submit(
-        _process_base_price_import_in_background,
-        task.task_id,
-        content,
-        filename,
-        year,
-        month,
-        current_user,
-    )
-
     return ApiResponse.ok(
-        data=AsyncTaskAcceptedVO(task_id=task.task_id),
+        data=accepted,
         message="上传成功，后台开始解析",
     )
 
@@ -328,9 +225,7 @@ def get_base_price_import_task_progress(
     current_user: UserVO = Depends(require_perm(Perm.BASE_PRICE_UPLOAD_VIEW)),
 ) -> ApiResponse[AsyncTaskProgressVO]:
     """查询基准价格导入任务进度。"""
-    task = _async_task_service.get_task_snapshot(task_id)
-    if task is None or task.get("task_type") != TASK_TYPE_BASE_PRICE_IMPORT:
-        raise HTTPException(status_code=404, detail="任务不存在或已过期")
+    task = _async_task_service.require_snapshot(task_id, TASK_TYPE_BASE_PRICE_IMPORT)
 
     result_raw = AsyncTaskService.parse_result_json(task.get("result_json"))
     result = (
@@ -358,8 +253,6 @@ def get_base_price(
 ) -> ApiResponse[SteelBasePriceResponse]:
     """获取单条基准价格记录。"""
     record = _steel_base_price_service.get_by_id(db, record_id)
-    if record is None:
-        raise HTTPException(status_code=404, detail="记录不存在")
     return ApiResponse.ok(data=record)
 
 
@@ -374,9 +267,7 @@ def create_base_price(
     current_user: UserVO = Depends(require_perm(Perm.BASE_PRICE_UPLOAD_UPLOAD)),
 ) -> ApiResponse[SteelBasePriceResponse]:
     """创建基准价格记录。"""
-    record, error = _steel_base_price_service.create(db, body, current_user=current_user)
-    if error:
-        return ApiResponse.fail(message=error, code=400)
+    record = _steel_base_price_service.create(db, body, current_user=current_user)
     return ApiResponse.created(data=record, message="创建成功")
 
 
@@ -391,11 +282,9 @@ def update_base_price(
     current_user: UserVO = Depends(require_perm(Perm.BASE_PRICE_UPLOAD_UPLOAD)),
 ) -> ApiResponse[SteelBasePriceResponse]:
     """更新基准价格记录。"""
-    record, error = _steel_base_price_service.update(
+    record = _steel_base_price_service.update(
         db, record_id, body, current_user=current_user
     )
-    if error:
-        return ApiResponse.fail(message=error, code=400)
     return ApiResponse.updated(data=record, message="更新成功")
 
 
@@ -409,9 +298,7 @@ def delete_base_price(
     current_user: UserVO = Depends(require_perm(Perm.BASE_PRICE_DOWNLOAD_DELETE)),
 ) -> ApiResponse[None]:
     """删除基准价格记录。"""
-    ok, error = _steel_base_price_service.delete(db, record_id)
-    if not ok:
-        raise HTTPException(status_code=404, detail=error or "记录不存在")
+    _steel_base_price_service.delete(db, record_id)
     return ApiResponse.deleted(message="删除成功")
 
 
@@ -425,15 +312,14 @@ def batch_delete_base_prices(
     current_user: UserVO = Depends(require_perm(Perm.BASE_PRICE_DOWNLOAD_DELETE)),
 ) -> ApiResponse[BatchDeleteResponse]:
     """按条件批量删除基准价格记录（年度+月份必须同时指定）。"""
-    if body.year is None or body.month is None:
-        return ApiResponse.fail(message="year 和 month 不能为空", code=400)
-    ok, error = _steel_base_price_service.batch_delete(
+    year, month = _steel_base_price_service.batch_delete(
         db,
         year=body.year,
         month=body.month,
         location=body.location,
         steel_mill=body.steel_mill,
     )
-    if not ok:
-        return ApiResponse.fail(message=error or "批量删除失败", code=400)
-    return ApiResponse.ok(data=BatchDeleteResponse(year=body.year, month=body.month), message="批量删除成功")
+    return ApiResponse.ok(
+        data=BatchDeleteResponse(year=year, month=month),
+        message="批量删除成功",
+    )

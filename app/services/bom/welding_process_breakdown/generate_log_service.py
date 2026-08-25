@@ -12,6 +12,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.common.timezone import now
+from app.exceptions.base import BusinessException, NotFoundException
 from app.models.bom import (
     BomWeldingProcessBreakdownGenerateLog,
 )
@@ -36,8 +37,11 @@ STALE_PROCESSING_SECONDS = 2 * 3600
 DUPLICATE_SCOPE_GENERATE_MESSAGE = "当前范围正在拆解中，请勿重复提交。"
 
 
-class DuplicateScopeGenerateError(Exception):
+class DuplicateScopeGenerateError(BusinessException):
     """同一基地+项目+版本已有 processing 锁。"""
+
+    def __init__(self, message: str = DUPLICATE_SCOPE_GENERATE_MESSAGE) -> None:
+        super().__init__(message=message, code=409)
 
 
 class BomWeldingProcessBreakdownGenerateLogService:
@@ -81,27 +85,26 @@ class BomWeldingProcessBreakdownGenerateLogService:
 
     def get_log(
         self, db: Session, log_id: int
-    ) -> BomWeldingProcessBreakdownGenerateLogVO | None:
+    ) -> BomWeldingProcessBreakdownGenerateLogVO:
         record = self.repository.get_by_id(db, log_id)
         if record is None:
-            return None
+            raise NotFoundException("拆解记录不存在")
         return BomWeldingProcessBreakdownGenerateLogVO.model_validate(record)
 
-    def delete_log(self, db: Session, log_id: int) -> bool:
+    def delete_log(self, db: Session, log_id: int) -> None:
         """删除拆解日志（含 processing，作僵死锁兜底释放）。"""
         record = self.repository.get_by_id(db, log_id)
         if record is None:
-            return False
+            raise NotFoundException("拆解记录不存在")
         deleted = self.repository.delete(db, log_id)
         if not deleted:
-            return False
+            raise NotFoundException("拆解记录不存在")
         try:
             db.commit()
         except Exception:
             db.rollback()
             logger.exception("删除拆解日志失败: id=%s", log_id)
             raise
-        return True
 
     def is_scope_processing(
         self,

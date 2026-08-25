@@ -14,13 +14,7 @@ from typing import Optional
 from pydantic import BaseModel, field_serializer
 
 from app.common.money import Q2, optional_format_money
-
-
-def datetime_to_str(value: datetime | None) -> Optional[str]:
-    """datetime 类型转字符串序列化器"""
-    if isinstance(value, datetime):
-        return value.isoformat()
-    return value
+from app.common.timezone import datetime_to_iso
 
 
 class SteelBasePriceResponse(BaseModel):
@@ -60,7 +54,7 @@ class SteelBasePriceResponse(BaseModel):
 
     @field_serializer("created_at", "updated_at")
     def serialize_datetime(self, value: datetime | None) -> Optional[str]:
-        return datetime_to_str(value)
+        return datetime_to_iso(value)
 
 
 class SteelBasePriceImportResultResponse(BaseModel):

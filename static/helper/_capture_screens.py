@@ -32,7 +32,7 @@ PAGES: list[tuple[str, str, str | None]] = [
     ("16-stamping-part-cost.png", "/app#/stamping-part-cost", None),
     ("17-l0-assembly-cost.png", "/app#/l0-assembly-cost", None),
     ("18-costing-engine.png", "/app#/costing", None),
-    ("19-quotation.png", "/app#/quotation", None),
+    ("19-file-trace.png", "/app#/file-trace", None),
     ("20-settings.png", "/app#/settings", None),
 ]
 

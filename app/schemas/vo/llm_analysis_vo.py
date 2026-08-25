@@ -6,6 +6,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field, field_serializer
 
+from app.common.timezone import datetime_to_iso
+
 
 class LlmAnalysisScopeVO(BaseModel):
     location: str
@@ -37,7 +39,7 @@ class LlmAnalysisReportMetadataVO(BaseModel):
 
     @field_serializer("generated_at")
     def _ser_dt(self, value: datetime | None) -> str | None:
-        return value.isoformat() if value else None
+        return datetime_to_iso(value)
 
 
 class LlmAnalysisReportListMetadataVO(BaseModel):
@@ -47,7 +49,7 @@ class LlmAnalysisReportListMetadataVO(BaseModel):
 
     @field_serializer("generated_at")
     def _ser_dt(self, value: datetime | None) -> str | None:
-        return value.isoformat() if value else None
+        return datetime_to_iso(value)
 
 
 class LlmAnalysisReportListItemVO(BaseModel):

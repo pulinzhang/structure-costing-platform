@@ -11,7 +11,8 @@ from datetime import datetime
 
 from sqlalchemy.orm import Session
 
-from app.common.audit import AUDIT_APPROVED, audit_update
+from app.common.audit import AUDIT_APPROVED, audit_update, display_name
+from app.exceptions.base import BusinessException, NotFoundException
 from app.common.bom.welding_standard_process import (
     all_standard_process_names,
     resolve_standard_process_name,
@@ -49,6 +50,14 @@ from app.schemas.vo.bom_welding_process_breakdown_vo import (
     WeldingNodeEvidenceVO,
 )
 from app.schemas.vo.user_vo import UserVO
+from app.schemas.vo.async_task_vo import AsyncTaskAcceptedVO
+from app.services.async_task import (
+    STATUS_COMPLETED,
+    STATUS_FAILED,
+    TASK_TYPE_BOM_WELDING_PROCESS_BREAKDOWN_GENERATE,
+    AsyncTaskService,
+    WorkerTaskOutcome,
+)
 from app.services.bom.welding_process_breakdown.audit_service import (
     BomWeldingProcessBreakdownAuditService,
 )
@@ -172,10 +181,10 @@ class BomWeldingProcessBreakdownService:
 
     def get_node(
         self, db: Session, node_id: int
-    ) -> BomWeldingProcessBreakdownNodeVO | None:
+    ) -> BomWeldingProcessBreakdownNodeVO:
         row = self.repository.get_node_by_id(db, node_id)
         if not row:
-            return None
+            raise NotFoundException("记录不存在")
         vo = BomWeldingProcessBreakdownNodeVO.model_validate(row)
         vo.evidence = self._build_evidence_vo(db, row)
         return vo
@@ -280,11 +289,11 @@ class BomWeldingProcessBreakdownService:
 
     def get_generate_log(
         self, db: Session, log_id: int
-    ) -> BomWeldingProcessBreakdownGenerateLogVO | None:
+    ) -> BomWeldingProcessBreakdownGenerateLogVO:
         return self._generate_log_service.get_log(db, log_id)
 
-    def delete_generate_log(self, db: Session, log_id: int) -> bool:
-        return self._generate_log_service.delete_log(db, log_id)
+    def delete_generate_log(self, db: Session, log_id: int) -> None:
+        self._generate_log_service.delete_log(db, log_id)
 
     def mark_generate_log_failed(
         self,
@@ -297,6 +306,92 @@ class BomWeldingProcessBreakdownService:
         self._generate_service.mark_log_failed(
             db, log_id=log_id, message=message, detail_text=detail_text
         )
+
+    def start_generate(
+        self,
+        db: Session,
+        dto: BomWeldingProcessBreakdownGenerateDTO,
+        current_user: UserVO,
+    ) -> AsyncTaskAcceptedVO:
+        location = dto.location.strip()
+        vehicle_model = dto.vehicle_model.strip()
+        bom_version = dto.bom_version.strip()
+        customer_name = (dto.customer_name or "").strip() or None
+        lock_log = self.begin_generate_processing(
+            db,
+            location=location,
+            vehicle_model=vehicle_model,
+            bom_version=bom_version,
+            customer_name=customer_name,
+            operator_id=current_user.id,
+            operator_name=display_name(current_user),
+        )
+        log_id = lock_log.id
+        calc_batch_id = lock_log.calc_batch_id
+        started_at = lock_log.started_at
+        scoped = BomWeldingProcessBreakdownGenerateDTO(
+            location=location,
+            vehicle_model=vehicle_model,
+            bom_version=bom_version,
+            customer_name=customer_name,
+        )
+        async_task_service = AsyncTaskService()
+        task = async_task_service.create_task(
+            task_type=TASK_TYPE_BOM_WELDING_PROCESS_BREAKDOWN_GENERATE,
+            message="已提交拆解队列",
+            operator_id=current_user.id,
+            operator_name=display_name(current_user),
+        )
+
+        def work(worker_db: Session, on_progress: ProgressCallback) -> WorkerTaskOutcome:
+            result, error = self.generate_from_bom(
+                worker_db,
+                scoped,
+                current_user,
+                progress_callback=on_progress,
+                log_id=log_id,
+                calc_batch_id=calc_batch_id,
+                started_at=started_at,
+            )
+            if error or result is None:
+                fail_message = error or "拆解失败"
+                return WorkerTaskOutcome(
+                    status=STATUS_FAILED,
+                    progress=100,
+                    message=fail_message,
+                    result=BomWeldingProcessBreakdownGenerateResultVO(
+                        location=location,
+                        vehicle_model=vehicle_model,
+                        bom_version=bom_version,
+                        status="failed",
+                        message=fail_message,
+                        calc_batch_id=calc_batch_id,
+                        log_id=log_id,
+                        detail_text=error or "",
+                    ).model_dump(),
+                )
+            return WorkerTaskOutcome(
+                status=STATUS_COMPLETED,
+                message=result.message,
+                result=result.model_dump(),
+            )
+
+        def on_crash(worker_db: Session, error: BaseException) -> None:
+            self.mark_generate_log_failed(
+                worker_db,
+                log_id=log_id,
+                message=str(error),
+                detail_text=f"拆解异常: {error}",
+            )
+
+        async_task_service.submit_session_worker(
+            task.task_id,
+            start_message="后台开始拆解...",
+            work=work,
+            on_crash=on_crash,
+            crash_message=lambda error: f"拆解异常: {error}",
+        )
+        return AsyncTaskAcceptedVO(task_id=task.task_id)
 
     # ---------- 修改明细（须未审核；主表来自 BOM，不可改） ----------
 
@@ -325,13 +420,13 @@ class BomWeldingProcessBreakdownService:
         fields: BomWeldingProcessBreakdownLinePatch,
         *,
         fallback_token: str,
-    ) -> tuple[BomWeldingProcessBreakdownLinePatch, str | None]:
-        """校验并补齐标准工艺/单位/map_status；失败返回 (payload, error)。"""
+    ) -> BomWeldingProcessBreakdownLinePatch:
+        """校验并补齐标准工艺/单位/map_status。"""
         if "standard_process_name" in fields:
             name = fields.get("standard_process_name")
             if name:
                 if name not in _STANDARD_PROCESS_NAMES:
-                    return fields, f"未知标准工艺名称：{name}"
+                    raise BusinessException(f"未知标准工艺名称：{name}")
                 fields["standard_process_name"] = name
                 fields["map_status"] = "ready"
                 fields["standard_process_unit"] = resolve_standard_process_unit(name)
@@ -344,7 +439,7 @@ class BomWeldingProcessBreakdownService:
                 fields["standard_process_unit"] = resolve_standard_process_unit(
                     auto_name
                 )
-        return fields, None
+        return fields
 
     def update_line(
         self,
@@ -352,22 +447,20 @@ class BomWeldingProcessBreakdownService:
         line_id: int,
         dto: BomWeldingProcessBreakdownLineUpdateDTO,
         current_user: UserVO,
-    ) -> tuple[BomWeldingProcessBreakdownLineVO | None, str | None]:
+    ) -> BomWeldingProcessBreakdownLineVO:
         line = self.repository.get_line_by_id(db, line_id)
         if not line:
-            return None, "明细不存在"
+            raise NotFoundException("明细不存在")
         node = self.repository.get_node_by_id(db, line.breakdown_node_id)
         if not node:
-            return None, "主表不存在"
+            raise NotFoundException("主表不存在")
         if node.audit_status == AUDIT_APPROVED:
-            return None, "已审核通过，请先反审核后再修改"
+            raise BusinessException("已审核通过，请先反审核后再修改")
 
-        fields = self._line_patch_from_dto(dto)
-        fields, err = self._prepare_line_fields(
-            fields, fallback_token=line.process_token
+        fields = self._prepare_line_fields(
+            self._line_patch_from_dto(dto),
+            fallback_token=line.process_token,
         )
-        if err:
-            return None, err
 
         need_recompute = "process_qty" in fields or "process_token" in fields
         fields["updated_by"] = audit_update(current_user)["updated_by"]
@@ -381,7 +474,7 @@ class BomWeldingProcessBreakdownService:
             )
             if not row:
                 db.rollback()
-                return None, "明细不存在"
+                raise NotFoundException("明细不存在")
 
             if need_recompute:
                 recompute_scope_derived_fields(
@@ -395,7 +488,10 @@ class BomWeldingProcessBreakdownService:
 
             db.commit()
             db.refresh(row)
-            return BomWeldingProcessBreakdownLineVO.model_validate(row), None
+            return BomWeldingProcessBreakdownLineVO.model_validate(row)
+        except (BusinessException, NotFoundException):
+            db.rollback()
+            raise
         except Exception:
             db.rollback()
             raise
@@ -406,17 +502,17 @@ class BomWeldingProcessBreakdownService:
         node_id: int,
         dto: BomWeldingProcessBreakdownNodeLinesUpdateDTO,
         current_user: UserVO,
-    ) -> tuple[BomWeldingProcessBreakdownNodeVO | None, str | None]:
+    ) -> BomWeldingProcessBreakdownNodeVO:
         """一次保存节点下全部工艺；单事务，派生字段只重算一次。"""
         node = self.repository.get_node_by_id(db, node_id)
         if not node:
-            return None, "主表不存在"
+            raise NotFoundException("主表不存在")
         if node.audit_status == AUDIT_APPROVED:
-            return None, "已审核通过，请先反审核后再修改"
+            raise BusinessException("已审核通过，请先反审核后再修改")
 
         lines_by_id = {ln.id: ln for ln in (node.lines or [])}
         if not lines_by_id:
-            return None, "无明细行可保存"
+            raise BusinessException("无明细行可保存")
 
         seen: set[int] = set()
         need_recompute = False
@@ -427,24 +523,19 @@ class BomWeldingProcessBreakdownService:
             for item in dto.lines:
                 item_dto: BomWeldingProcessBreakdownLineBatchItemDTO = item
                 if item_dto.line_id in seen:
-                    db.rollback()
-                    return None, f"明细行重复：{item_dto.line_id}"
+                    raise BusinessException(f"明细行重复：{item_dto.line_id}")
                 seen.add(item_dto.line_id)
 
                 line = lines_by_id.get(item_dto.line_id)
                 if not line:
-                    db.rollback()
-                    return None, f"明细不属于本节点：{item_dto.line_id}"
+                    raise BusinessException(f"明细不属于本节点：{item_dto.line_id}")
 
                 fields = self._line_patch_from_dto(item_dto)
                 if not fields:
                     continue
-                fields, err = self._prepare_line_fields(
+                fields = self._prepare_line_fields(
                     fields, fallback_token=line.process_token
                 )
-                if err:
-                    db.rollback()
-                    return None, err
 
                 if "process_qty" in fields or "process_token" in fields:
                     need_recompute = True
@@ -454,8 +545,7 @@ class BomWeldingProcessBreakdownService:
                     db, item_dto.line_id, fields
                 )
                 if not row:
-                    db.rollback()
-                    return None, f"明细不存在：{item_dto.line_id}"
+                    raise NotFoundException(f"明细不存在：{item_dto.line_id}")
 
             self.repository.update_node(db, node.id, audit_fields)
 
@@ -470,7 +560,10 @@ class BomWeldingProcessBreakdownService:
                 )
 
             db.commit()
-            return self.get_node(db, node_id), None
+            return self.get_node(db, node_id)
+        except (BusinessException, NotFoundException):
+            db.rollback()
+            raise
         except Exception:
             db.rollback()
             raise
@@ -484,7 +577,7 @@ class BomWeldingProcessBreakdownService:
         location: str,
         vehicle_model: str,
         bom_version: str,
-    ) -> tuple[BomWeldingProcessBreakdownBatchDeleteResultVO | None, str | None]:
+    ) -> BomWeldingProcessBreakdownBatchDeleteResultVO:
         return self._audit_service.batch_delete(
             db,
             location=location,
@@ -497,7 +590,7 @@ class BomWeldingProcessBreakdownService:
         db: Session,
         dto: BomWeldingProcessBreakdownBatchApproveDTO,
         current_user: UserVO,
-    ) -> tuple[BomWeldingProcessBreakdownBatchAuditResultVO | None, str | None]:
+    ) -> BomWeldingProcessBreakdownBatchAuditResultVO:
         return self._audit_service.batch_approve(db, dto, current_user)
 
     def batch_reverse_audit(
@@ -505,5 +598,5 @@ class BomWeldingProcessBreakdownService:
         db: Session,
         dto: BomWeldingProcessBreakdownBatchReverseAuditDTO,
         current_user: UserVO,
-    ) -> tuple[BomWeldingProcessBreakdownBatchAuditResultVO | None, str | None]:
+    ) -> BomWeldingProcessBreakdownBatchAuditResultVO:
         return self._audit_service.batch_reverse_audit(db, dto, current_user)

@@ -18,6 +18,8 @@ alwaysApply: true
 - ❌ 禁止使用中文拼音
 - ❌ 禁止使用无意义名称如 `tmp1`、`temp2`
 
+> **既有例外**：切片名 `yishiyiyi`（一事一议）是历史拼音，代码中继续沿用，不要再引入 `special_negotiation` 等第二套包名/路径。切片内部的新变量、函数、文件仍用英文（如 `base_price`、`policy`）。文档可用 special negotiation 作英文对照，不作为标识符。
+
 ```
 ✅ good:  part_number, vehicle_model, tonnage
 ❌ bad:   partNo, chexing, danwei
@@ -96,7 +98,7 @@ alwaysApply: true
 |------|------|------|
 | 请求参数 | 小写下划线 | `vehicle_model`, `version` |
 | 响应数据 | 小写下划线 | `code`, `message`, `data` |
-| 分页参数 | skip / limit 或 page / page_size | `skip=0`, `limit=100` |
+| 分页参数 | page + size（请求）；响应 `page_size` | `page=1`, `size=20` |
 | 路径参数 | 小写下划线 | `/parts/{part_id}` |
 
 ---

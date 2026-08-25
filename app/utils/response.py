@@ -52,7 +52,7 @@ class ApiResponse(BaseModel, Generic[T]):
 
         注意：
         - 禁止用于 HTTP 参数校验（由 RequestValidationError 处理）
-        - 禁止用于资源不存在（由 HTTPException 或 NotFoundException 处理）
+        - 禁止用于资源不存在（由 NotFoundException 处理）
         - 禁止用于权限失败（由 PermissionException 处理）
         """
         return cls(code=code, success=False, message=message, data=data)

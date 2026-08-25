@@ -6,14 +6,13 @@ from __future__ import annotations
 
 from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.common.permissions.codes import Perm
 from app.database import get_db
 from app.deps.permissions import require_perm
-from app.exceptions.base import BusinessException
 from app.schemas.common.page_result import PageResult
 from app.schemas.dto.l0_assembly_cost_dto import (
     L0AssemblyCostBatchApproveDTO,
@@ -56,8 +55,8 @@ def list_costs(
     part_number: str | None = Query(None),
     audit_status: str | None = Query(None),
     calc_status: str | None = Query(None),
-    skip: int = Query(0, ge=0),
-    limit: int = Query(20, ge=1, le=200),
+    page: int = Query(1, ge=1),
+    size: int = Query(20, ge=1, le=200),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.L0_ASSEMBLY_COST_VIEW)),
 ) -> ApiResponse[PageResult[L0AssemblyCostVO]]:
@@ -70,15 +69,15 @@ def list_costs(
         part_number=part_number,
         audit_status=audit_status,
         calc_status=calc_status,
-        skip=skip,
-        limit=limit,
+        page=page,
+        size=size,
     )
     rows, total, filters = _service.paginate(db, query)
     return ApiResponse.list_(
         items=rows,
         total=total,
-        page=(skip // limit) + 1 if limit else 1,
-        page_size=limit,
+        page=page,
+        page_size=size,
         filters=filters,
         message=f"查询到 {total} 条记录",
     )
@@ -98,23 +97,6 @@ def export_download(
     current_user: UserVO = Depends(require_perm(Perm.L0_ASSEMBLY_COST_EXPORT)),
 ) -> StreamingResponse:
     """按当前筛选导出成品核价 Excel（主表 + 材料明细 + 间接费用）。"""
-    if not any(
-        [
-            year,
-            month,
-            location,
-            vehicle_model,
-            bom_version,
-            part_number,
-            audit_status,
-            calc_status,
-        ]
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="请至少选择一个筛选条件后再导出",
-        )
-
     content, filename = _export_service.export(
         db,
         year=year,
@@ -145,8 +127,6 @@ def get_cost(
     current_user: UserVO = Depends(require_perm(Perm.L0_ASSEMBLY_COST_VIEW)),
 ) -> ApiResponse[L0AssemblyCostVO]:
     row = _service.get_by_id(db, cost_id)
-    if row is None:
-        raise HTTPException(status_code=404, detail="记录不存在")
     return ApiResponse.ok(data=row)
 
 
@@ -159,10 +139,7 @@ def batch_delete(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.L0_ASSEMBLY_COST_DELETE)),
 ) -> ApiResponse[L0AssemblyCostBatchResultVO]:
-    try:
-        result = _service.batch_delete(db, dto, current_user=current_user)
-    except BusinessException as error:
-        raise HTTPException(status_code=400, detail=str(error)) from error
+    result = _service.batch_delete(db, dto, current_user=current_user)
     return ApiResponse.ok(data=result, message=result.message or "删除完成")
 
 
@@ -175,10 +152,7 @@ def batch_approve(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.L0_ASSEMBLY_COST_APPROVE)),
 ) -> ApiResponse[L0AssemblyCostBatchResultVO]:
-    try:
-        result = _service.batch_approve(db, dto, current_user=current_user)
-    except BusinessException as error:
-        raise HTTPException(status_code=400, detail=str(error)) from error
+    result = _service.batch_approve(db, dto, current_user=current_user)
     return ApiResponse.ok(data=result, message=result.message or "审核完成")
 
 
@@ -191,8 +165,5 @@ def batch_reverse(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.L0_ASSEMBLY_COST_REVERSE)),
 ) -> ApiResponse[L0AssemblyCostBatchResultVO]:
-    try:
-        result = _service.batch_reverse(db, dto, current_user=current_user)
-    except BusinessException as error:
-        raise HTTPException(status_code=400, detail=str(error)) from error
+    result = _service.batch_reverse(db, dto, current_user=current_user)
     return ApiResponse.ok(data=result, message=result.message or "反审核完成")

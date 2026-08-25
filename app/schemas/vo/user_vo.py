@@ -4,6 +4,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, field_serializer
 
+from app.common.timezone import datetime_to_iso
+
 
 class UserVO(BaseModel):
     """用户信息（不含密码）"""
@@ -25,7 +27,7 @@ class UserVO(BaseModel):
 
     @field_serializer("created_at", "updated_at")
     def serialize_datetime(self, value: datetime | None) -> str | None:
-        return value.isoformat() if value else None
+        return datetime_to_iso(value)
 
     model_config = {"from_attributes": True}
 

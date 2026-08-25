@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
@@ -38,24 +38,14 @@ def export_download(
 
     须选定年/月/基地/项目/BOM 版本；冲压侧不按 BOM 版本过滤。
     """
-    location_value = location.strip()
-    vehicle_value = vehicle_model.strip()
-    version_value = bom_version.strip()
-    if not location_value or not vehicle_value or not version_value:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="基地、项目、版本不能为空",
-        )
-
-    supplier = stamping_supplier.strip() if stamping_supplier else None
     content, filename = _export_service.export(
         db,
         year=year,
         month=month,
-        location=location_value,
-        vehicle_model=vehicle_value,
-        bom_version=version_value,
-        stamping_supplier=supplier or None,
+        location=location,
+        vehicle_model=vehicle_model,
+        bom_version=bom_version,
+        stamping_supplier=stamping_supplier,
     )
     return StreamingResponse(
         iter([content]),

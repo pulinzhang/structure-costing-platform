@@ -21,13 +21,25 @@ from typing import Any, Optional
 
 from sqlalchemy.orm import Session
 
+from app.common.audit import display_name
 from app.common.timezone import now
+from app.exceptions.base import BusinessException
 from app.services.costing.steel_price.calc.calc_log_service import CalcLogService
 from app.services.costing.steel_price.calc.models import (
     SteelPriceCalcRequest,
     SteelPriceCalcResult,
 )
+from app.schemas.dto.steel_price_dto import SteelPriceCalcDTO
+from app.schemas.vo.async_task_vo import AsyncTaskAcceptedVO
+from app.schemas.vo.steel_price_vo import SteelPriceCalcLogVO, SteelPriceCalcResultVO
 from app.schemas.vo.user_vo import UserVO
+from app.services.async_task import (
+    TASK_TYPE_STEEL_PRICE_CALC,
+    AsyncTaskService,
+    WorkerTaskOutcome,
+    calc_status_label,
+    outcome_from_calc_status,
+)
 from app.services.costing.steel_price.calc.process_log import ProcessLogBuilder
 from app.services.costing.steel_price.calc.status import (
     STATUS_FAILED,
@@ -70,7 +82,7 @@ class SteelPriceCalcOrchestrator:
         """提交前写入 processing 期别锁。"""
         location = (request.location or "").strip()
         if not location:
-            raise ValueError("计算钢价必须指定生产基地 location")
+            raise BusinessException("计算钢价必须指定生产基地 location")
         return self.calc_log_service.begin_processing(
             db,
             year=request.year,
@@ -178,7 +190,7 @@ class SteelPriceCalcOrchestrator:
 
         try:
             if not location:
-                raise ValueError("计算钢价必须指定生产基地 location")
+                raise BusinessException("计算钢价必须指定生产基地 location")
 
             normalized = SteelPriceCalcRequest(
                 year=request.year,
@@ -280,7 +292,7 @@ class SteelPriceCalcOrchestrator:
             log_builder.line(f"批次状态: {result.status}")
             _report(92, "写入计算过程日志...")
 
-        except ValueError as error:
+        except (BusinessException, ValueError) as error:
             result.status = STATUS_FAILED
             log_builder.section("计算校验失败")
             log_builder.error(str(error))
@@ -331,8 +343,87 @@ class SteelPriceCalcOrchestrator:
             size=size,
         )
 
-    def get_log(self, db: Session, log_id: int) -> Any:
+    def get_log(self, db: Session, log_id: int) -> SteelPriceCalcLogVO:
         return self.calc_log_service.get_log(db, log_id)
 
-    def delete_log(self, db: Session, log_id: int) -> bool:
-        return self.calc_log_service.delete_log(db, log_id)
+    def delete_log(self, db: Session, log_id: int) -> None:
+        self.calc_log_service.delete_log(db, log_id)
+
+    @staticmethod
+    def _to_result_vo(result: SteelPriceCalcResult) -> SteelPriceCalcResultVO:
+        return SteelPriceCalcResultVO.model_validate(result)
+
+    def start_calc(
+        self,
+        db: Session,
+        dto: SteelPriceCalcDTO,
+        current_user: UserVO,
+    ) -> AsyncTaskAcceptedVO:
+        location = (dto.location or "").strip()
+        if not location:
+            raise BusinessException("计算钢价必须指定生产基地")
+        request = SteelPriceCalcRequest(
+            year=dto.year,
+            month=dto.month,
+            location=location,
+            stamping_supplier=dto.stamping_supplier,
+            vehicle_model=dto.vehicle_model,
+        )
+        lock_log = self.begin_processing(
+            db,
+            request,
+            operator_id=current_user.id,
+            operator_name=display_name(current_user),
+        )
+        started_at = lock_log.started_at
+        log_id = lock_log.id
+        calc_batch_id = lock_log.calc_batch_id
+        async_task_service = AsyncTaskService()
+        task = async_task_service.create_task(
+            task_type=TASK_TYPE_STEEL_PRICE_CALC,
+            message="已提交计算队列",
+            operator_id=current_user.id,
+            operator_name=display_name(current_user),
+        )
+
+        def work(worker_db: Session, on_progress: ProgressCallback) -> WorkerTaskOutcome:
+            result = self.calculate(
+                worker_db,
+                request,
+                progress_callback=on_progress,
+                log_id=log_id,
+                calc_batch_id=calc_batch_id,
+                started_at=started_at,
+                current_user=current_user,
+            )
+            result_vo = self._to_result_vo(result)
+            label = calc_status_label(result.status)
+            return outcome_from_calc_status(
+                result.status,
+                failed_message=(
+                    f"计算失败：新增 {result.created_count}，"
+                    f"更新 {result.updated_count}，失败 {result.failed_count}"
+                ),
+                completed_message=(
+                    f"计算{label}：新增 {result.created_count}，"
+                    f"更新 {result.updated_count}，失败 {result.failed_count}"
+                ),
+                result=result_vo.model_dump(),
+            )
+
+        def on_crash(worker_db: Session, error: BaseException) -> None:
+            self.mark_log_failed(
+                worker_db,
+                log_id=log_id,
+                message=str(error),
+                detail_text=f"计算异常: {error}",
+            )
+
+        async_task_service.submit_session_worker(
+            task.task_id,
+            start_message="后台开始计算...",
+            work=work,
+            on_crash=on_crash,
+            crash_message=lambda error: f"计算异常: {error}",
+        )
+        return AsyncTaskAcceptedVO(task_id=task.task_id)

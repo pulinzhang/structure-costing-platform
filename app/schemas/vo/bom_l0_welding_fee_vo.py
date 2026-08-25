@@ -8,6 +8,7 @@ from decimal import Decimal
 from pydantic import BaseModel, Field, field_serializer
 
 from app.common.money import Q4, optional_format_money
+from app.common.timezone import datetime_to_iso
 
 
 class BomL0WeldingFeeItemVO(BaseModel):
@@ -80,7 +81,7 @@ class BomL0WeldingFeeVO(BaseModel):
         "reverse_audited_at",
     )
     def serialize_datetime(self, value: datetime | None) -> str | None:
-        return value.isoformat() if value else None
+        return datetime_to_iso(value)
 
     model_config = {"from_attributes": True}
 
@@ -147,7 +148,7 @@ class BomL0WeldingFeeCalcLogVO(BaseModel):
 
     @field_serializer("started_at", "finished_at", "created_at")
     def serialize_log_datetime(self, value: datetime | None) -> str | None:
-        return value.isoformat() if value else None
+        return datetime_to_iso(value)
 
 
 class BomL0WeldingFeeBatchAuditResultVO(BaseModel):

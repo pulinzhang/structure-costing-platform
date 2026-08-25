@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from app.exceptions.base import BusinessException
 from app.services.costing.steel_price.calc.models import CalcRow, SteelPriceCalcResult
 from app.services.costing.steel_price.spec_format import build_spec
 
@@ -17,11 +18,11 @@ DUPLICATE_PERIOD_CALC_MESSAGE = "当前期别正在计算中，请勿重复提�
 STALE_PROCESSING_SECONDS = 2 * 3600
 
 
-class DuplicatePeriodCalcError(Exception):
+class DuplicatePeriodCalcError(BusinessException):
     """同一年度+月份+基地已有进行中的计算。"""
 
     def __init__(self, message: str = DUPLICATE_PERIOD_CALC_MESSAGE) -> None:
-        super().__init__(message)
+        super().__init__(message=message, code=409)
 
 
 def resolve_batch_status(result: SteelPriceCalcResult, rows: list[CalcRow]) -> str:

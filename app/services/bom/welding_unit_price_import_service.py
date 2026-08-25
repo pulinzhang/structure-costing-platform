@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 from app.common.audit import audit_create, audit_update
 from app.common.bom.welding_standard_process import list_welding_standard_catalog
 from app.config import settings
+from app.exceptions.base import BusinessException
 from app.parsers.bom.welding_unit_price_parser import parse_welding_unit_price_excel
 from app.repositories.bom.welding_unit_price_repository import BomWeldingUnitPriceRepository
 from app.schemas.dto.bom_welding_unit_price_dto import (
@@ -156,18 +157,18 @@ class BomWeldingUnitPriceImportService:
     ) -> BomWeldingUnitPriceImportResultVO:
         location = (location or "").strip()
         if not location:
-            raise ValueError("请选择采购基地")
+            raise BusinessException("请选择采购基地")
         if year < 2000 or year > 2100:
-            raise ValueError("年度不正确")
+            raise BusinessException("年度不正确")
 
         original_name = Path(filename or "").name
         if Path(original_name).suffix.lower() != ".xlsx":
-            raise ValueError("仅支持 .xlsx 文件")
+            raise BusinessException("仅支持 .xlsx 文件")
         if not file_content:
-            raise ValueError("文件内容为空")
+            raise BusinessException("文件内容为空")
         if len(file_content) > settings.MAX_UPLOAD_SIZE:
             max_mb = settings.MAX_UPLOAD_SIZE // (1024 * 1024)
-            raise ValueError(f"文件过大，最大支持 {max_mb}MB")
+            raise BusinessException(f"文件过大，最大支持 {max_mb}MB")
 
         archive_path = save_welding_unit_price_upload(
             file_content=file_content,
@@ -179,9 +180,9 @@ class BomWeldingUnitPriceImportService:
 
         parse_result = parse_welding_unit_price_excel(file_content)
         if parse_result.errors and not parse_result.rows:
-            raise ValueError("；".join(parse_result.errors))
+            raise BusinessException("；".join(parse_result.errors))
         if not parse_result.rows:
-            raise ValueError("未解析到有效数据行")
+            raise BusinessException("未解析到有效数据行")
 
         catalog_errors = [
             err
@@ -189,7 +190,7 @@ class BomWeldingUnitPriceImportService:
             if "不属于焊接标准工艺目录" in err or "单位应为" in err
         ]
         if catalog_errors:
-            raise ValueError(
+            raise BusinessException(
                 "导入中止（名称/单位必须与焊接标准工艺目录一致）："
                 + "；".join(catalog_errors)
             )

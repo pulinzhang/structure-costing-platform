@@ -6,7 +6,7 @@
 from typing import List
 from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
@@ -112,8 +112,6 @@ def get_part(
 ) -> ApiResponse[StampingPartWithProcessesResponse]:
     """获取单个零件（包含工序）"""
     vo = _stamping_service.get_by_id(db, part_id)
-    if not vo:
-        raise HTTPException(status_code=404, detail="零件不存在")
     return ApiResponse.ok(data=vo, message="获取零件成功")
 
 
@@ -198,8 +196,6 @@ def update_process(
     result = _stamping_service.update_process(
         db, process_id, body, current_user=current_user
     )
-    if not result:
-        raise HTTPException(status_code=404, detail="工序不存在")
     return ApiResponse.ok(data=result, message="工序更新成功")
 
 

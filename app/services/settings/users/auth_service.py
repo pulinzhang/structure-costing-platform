@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.common.audit import display_name
 from app.common.timezone import now
+from app.exceptions.base import BusinessException
 from app.models.settings import User, UserToken
 from app.repositories.settings.users.user_repository import UserRepository
 from app.repositories.settings.users.user_token_repository import TOKEN_IDLE_HOURS, UserTokenRepository
@@ -32,11 +33,11 @@ class AuthService:
     def login(self, user_db: Session, token_db: Session, dto: UserLoginDTO) -> LoginVO:
         user = self.user_repo.get_by_username(user_db, dto.username.strip())
         if not user:
-            raise ValueError("账号或密码错误")
+            raise BusinessException("账号或密码错误", code=401)
         if user.is_active is not True:
-            raise ValueError("账号已停用，无法登录")
+            raise BusinessException("账号已停用，无法登录", code=401)
         if user.password_hash != hash_password_md5(dto.password):
-            raise ValueError("账号或密码错误")
+            raise BusinessException("账号或密码错误", code=401)
 
         # 清理过期 token，并作废该用户旧会话
         self.token_repo.delete_expired(token_db)

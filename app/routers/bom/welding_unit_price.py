@@ -3,10 +3,10 @@
 API 接口定义
 """
 
-from typing import Any, List
+from typing import List
 from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, Query, UploadFile, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
@@ -51,7 +51,7 @@ _import_service = BomWeldingUnitPriceImportService()
 def list_all(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BOM_WELDING_UNIT_PRICE_VIEW)),
-) -> Any:
+) -> ApiResponse[List[BomWeldingUnitPriceResponse]]:
     """获取所有焊接单价列表"""
     data = _welding_unit_price_service.list_all(db)
     return ApiResponse.ok(data=data, message=f"查询到 {len(data)} 条记录")
@@ -66,7 +66,7 @@ def list_by_year(
     location: str | None = None,
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BOM_WELDING_UNIT_PRICE_VIEW)),
-) -> Any:
+) -> ApiResponse[List[BomWeldingUnitPriceResponse]]:
     """获取指定年份的焊接单价；传入 location 时按基地过滤"""
     if location:
         data = _welding_unit_price_service.list_by_location_year(db, location, year)
@@ -83,7 +83,7 @@ def paginate(
     query: BomWeldingUnitPriceQuery = Depends(),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BOM_WELDING_UNIT_PRICE_VIEW)),
-) -> Any:
+) -> ApiResponse[PageResult[BomWeldingUnitPriceResponse]]:
     """分页查询焊接单价"""
     rows, total, filters = _welding_unit_price_service.paginate(db, query)
     return ApiResponse.list_(
@@ -100,7 +100,7 @@ def paginate(
 def get_locations(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BOM_WELDING_UNIT_PRICE_VIEW)),
-) -> Any:
+) -> ApiResponse[List[str]]:
     """获取所有基地列表"""
     data = _welding_unit_price_service.get_locations(db)
     return ApiResponse.ok(data=data)
@@ -110,7 +110,7 @@ def get_locations(
 def get_years(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BOM_WELDING_UNIT_PRICE_VIEW)),
-) -> Any:
+) -> ApiResponse[List[int]]:
     """获取所有年份列表"""
     data = _welding_unit_price_service.get_years(db)
     return ApiResponse.ok(data=data)
@@ -184,31 +184,15 @@ async def upload_welding_unit_price_excel(
     ),
 ) -> ApiResponse[BomWeldingUnitPriceImportResultVO]:
     """同步导入焊接单价 Excel；基地与年度必选；仅支持 .xlsx。"""
-    if not (location or "").strip():
-        raise HTTPException(status_code=400, detail="请选择采购基地")
-    if year < 2000 or year > 2100:
-        raise HTTPException(status_code=400, detail="请填写正确的年度")
-    if not file.filename:
-        raise HTTPException(status_code=400, detail="未提供文件名")
-
     content = await file.read()
-    if not content:
-        raise HTTPException(status_code=400, detail="文件内容为空")
-
-    try:
-        result = _import_service.import_excel(
-            db,
-            file_content=content,
-            filename=file.filename,
-            location=location.strip(),
-            year=year,
-            current_user=current_user,
-        )
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"导入失败: {exc}") from exc
-
+    result = _import_service.import_excel(
+        db,
+        file_content=content,
+        filename=file.filename or "",
+        location=location.strip(),
+        year=year,
+        current_user=current_user,
+    )
     return ApiResponse.created(data=result, message=result.message)
 
 
@@ -222,13 +206,11 @@ def batch_delete(
     current_user: UserVO = Depends(require_perm(Perm.BOM_WELDING_UNIT_PRICE_DELETE)),
 ) -> ApiResponse[BomWeldingUnitPriceBatchDeleteResultVO]:
     """按基地 + 年度批量删除焊接单价（仅删未审核；已通过跳过）。"""
-    deleted_count, skipped, error = _welding_unit_price_service.batch_delete_by_location_year(
+    deleted_count, skipped = _welding_unit_price_service.batch_delete_by_location_year(
         db,
         location=body.location,
         year=body.year,
     )
-    if error:
-        raise HTTPException(status_code=400, detail=error)
 
     message = f"已删除基地「{body.location}」{body.year} 年共 {deleted_count} 条"
     if skipped:
@@ -255,12 +237,9 @@ def batch_approve(
     current_user: UserVO = Depends(require_perm(Perm.BOM_WELDING_UNIT_PRICE_APPROVE)),
 ) -> ApiResponse[BomWeldingUnitPriceBatchAuditResultVO]:
     """按基地 + 年度批量审核通过。"""
-    result, error = _welding_unit_price_service.batch_approve(
+    result = _welding_unit_price_service.batch_approve(
         db, body, current_user=current_user
     )
-    if error:
-        raise HTTPException(status_code=400, detail=error)
-    assert result is not None
     message = f"已审核通过 {result.updated_count} 条"
     if result.skipped_count:
         message += f"，跳过已审核 {result.skipped_count} 条"
@@ -277,12 +256,9 @@ def batch_reverse_audit(
     current_user: UserVO = Depends(require_perm(Perm.BOM_WELDING_UNIT_PRICE_REVERSE)),
 ) -> ApiResponse[BomWeldingUnitPriceBatchAuditResultVO]:
     """按基地 + 年度批量反审核。"""
-    result, error = _welding_unit_price_service.batch_reverse_audit(
+    result = _welding_unit_price_service.batch_reverse_audit(
         db, body, current_user=current_user
     )
-    if error:
-        raise HTTPException(status_code=400, detail=error)
-    assert result is not None
     message = f"已反审核 {result.updated_count} 条"
     if result.skipped_count:
         message += f"，跳过非已审 {result.skipped_count} 条"
@@ -297,7 +273,7 @@ def bulk_upsert(
     items: List[BomWeldingUnitPriceCreate],
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BOM_WELDING_UNIT_PRICE_CREATE)),
-) -> Any:
+) -> ApiResponse[BomWeldingUnitPriceBulkUpsertResponse]:
     """批量写入焊接单价（存在则更新）"""
     created, updated, failed, skipped_approved = _welding_unit_price_service.bulk_upsert(
         db, items, current_user=current_user
@@ -330,11 +306,9 @@ def create(
     current_user: UserVO = Depends(require_perm(Perm.BOM_WELDING_UNIT_PRICE_CREATE)),
 ) -> ApiResponse[BomWeldingUnitPriceResponse]:
     """创建焊接单价记录"""
-    record, error = _welding_unit_price_service.create(
+    record = _welding_unit_price_service.create(
         db, body, current_user=current_user
     )
-    if error:
-        raise HTTPException(status_code=400, detail=error)
     return ApiResponse.created(data=record, message="创建成功")
 
 
@@ -346,8 +320,6 @@ def get_by_id(
 ) -> ApiResponse[BomWeldingUnitPriceResponse]:
     """获取单个焊接单价记录"""
     record = _welding_unit_price_service.get_by_id(db, id)
-    if not record:
-        raise HTTPException(status_code=404, detail=f"焊接单价记录不存在: id={id}")
     return ApiResponse.ok(data=record, message="获取成功")
 
 
@@ -359,12 +331,9 @@ def update(
     current_user: UserVO = Depends(require_perm(Perm.BOM_WELDING_UNIT_PRICE_UPDATE)),
 ) -> ApiResponse[BomWeldingUnitPriceResponse]:
     """更新焊接单价记录"""
-    record, error = _welding_unit_price_service.update(
+    record = _welding_unit_price_service.update(
         db, id, body, current_user=current_user
     )
-    if error:
-        status_code = 404 if error == "记录不存在" else 400
-        raise HTTPException(status_code=status_code, detail=error)
     return ApiResponse.updated(data=record, message="更新成功")
 
 
@@ -375,8 +344,5 @@ def delete(
     current_user: UserVO = Depends(require_perm(Perm.BOM_WELDING_UNIT_PRICE_DELETE)),
 ) -> ApiResponse[None]:
     """删除焊接单价记录"""
-    success, error = _welding_unit_price_service.delete(db, id)
-    if not success:
-        status_code = 404 if error == "记录不存在" else 400
-        raise HTTPException(status_code=status_code, detail=error or "记录不存在")
+    _welding_unit_price_service.delete(db, id)
     return ApiResponse.deleted(message="删除成功")

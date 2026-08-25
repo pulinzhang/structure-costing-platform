@@ -38,8 +38,8 @@ export async function getTaskProgress(taskId) {
  *   bom_version?: string,
  *   report_type?: string,
  *   status?: string,
- *   skip?: number,
- *   limit?: number,
+ *   page?: number,
+ *   size?: number,
  * }} [params]
  * @returns {Promise<object>}
  */

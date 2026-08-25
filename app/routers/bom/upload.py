@@ -2,7 +2,7 @@
 
 from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, UploadFile
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
@@ -46,26 +46,12 @@ async def upload_bom_excel(
     current_user: UserVO = Depends(require_perm(Perm.BOM_UPLOAD_UPLOAD)),
 ) -> ApiResponse[BomImportResultVO]:
     """导入车身件材料清单 Excel；基地必选；Excel 原件落盘；同基地+车型+版本覆盖。"""
-    if not (location or "").strip():
-        raise HTTPException(status_code=400, detail="请选择采购基地")
-    if not file.filename:
-        raise HTTPException(status_code=400, detail="未提供文件名")
-
     content = await file.read()
-    if not content:
-        raise HTTPException(status_code=400, detail="文件内容为空")
-
-    try:
-        result = _upload_service.import_excel(
-            db,
-            file_content=content,
-            filename=file.filename,
-            location=location.strip(),
-            current_user=current_user,
-        )
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"导入失败: {exc}") from exc
-
+    result = _upload_service.import_excel(
+        db,
+        file_content=content,
+        filename=file.filename or "",
+        location=location.strip(),
+        current_user=current_user,
+    )
     return ApiResponse.created(data=result, message=result.message)

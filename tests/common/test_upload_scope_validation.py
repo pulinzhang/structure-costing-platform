@@ -8,6 +8,7 @@ from app.common.upload_scope_validation import (
     validate_bom_material_upload_scope,
     validate_stamping_process_upload_scope,
 )
+from app.exceptions.base import BusinessException
 
 
 def test_validate_stamping_process_upload_scope_ok() -> None:
@@ -24,7 +25,7 @@ def test_validate_stamping_process_upload_scope_ok() -> None:
 
 
 def test_validate_stamping_process_upload_scope_missing_fields() -> None:
-    with pytest.raises(ValueError, match="冲压工厂"):
+    with pytest.raises(BusinessException, match="冲压工厂"):
         validate_stamping_process_upload_scope(
             location="青岛",
             stamping_supplier="",
@@ -45,7 +46,7 @@ def test_validate_bom_material_upload_scope_ok() -> None:
 
 
 def test_validate_bom_material_upload_scope_missing_project() -> None:
-    with pytest.raises(ValueError, match="项目"):
+    with pytest.raises(BusinessException, match="项目"):
         validate_bom_material_upload_scope(
             location="青岛",
             vehicle_model=None,
@@ -54,7 +55,7 @@ def test_validate_bom_material_upload_scope_missing_project() -> None:
 
 
 def test_validate_bom_material_upload_scope_missing_version() -> None:
-    with pytest.raises(ValueError, match="版本"):
+    with pytest.raises(BusinessException, match="版本"):
         validate_bom_material_upload_scope(
             location="青岛",
             vehicle_model="T28",

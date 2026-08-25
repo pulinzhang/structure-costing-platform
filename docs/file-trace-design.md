@@ -1,9 +1,9 @@
 # 文件溯源 — 设计说明
 
-> 状态：**待评审（已修订 · 范围收窄）**  
-> 替代：侧栏「报价」占位页（`#/quotation`）→ **文件溯源**（`#/file-trace`）  
+> 状态：**已上线（MVP）**  
+> 历史：侧栏「报价」占位页（`#/quotation`）已替换为 **文件溯源**（`#/file-trace`）；quotation 代码与权限码已移除。  
 > 关联：`docs/architecture.md`、`docs/permission-design.md`、`docs/api-type-safety.md`  
-> 现网碎片：`bom_snapshots.source_file_*`、`steel_price_archive`、`bom_packaging_transport_fee_archive`、冲压 `uploads/{基地}/{车型}/{版本}/`
+> 现网：`app/routers/file_trace/`、`app/services/file_trace/`、`static/js/features/file-trace/`、`tests/file_trace/test_register.py`
 
 ---
 
@@ -132,14 +132,14 @@
 
 ### 3.1 侧栏
 
-将 `static/index.html` 原「报价」改为：
+将 `static/index.html` 原「报价」改为「文件溯源」（**已完成**）：
 
 ```text
 文件溯源  →  #/file-trace
 data-page="file-trace"
 ```
 
-移除或废弃：`#/quotation`、`menu:quotation`、`op:quotation:view`。
+`#/quotation`、`menu:quotation`、`op:quotation:view` 已移除。
 
 ### 3.2 路由与前端模块
 
@@ -353,7 +353,7 @@ JSON 端点使用 `response_model=ApiResponse[T]`；**下载为 `StreamingRespon
 
 | 参数 | 类型 | 说明 |
 |------|------|------|
-| `skip` / `limit` | int | 分页 |
+| `page` / `size` | int | 分页（`page` 从 1 起） |
 | `file_category` | str? | 须在 `allowed_categories` 内 |
 | `location` | str? | |
 | `year` | int? | |
@@ -422,7 +422,7 @@ JSON 端点使用 `response_model=ApiResponse[T]`；**下载为 `StreamingRespon
 
 ## 7. 权限设计
 
-在 `catalog.json` 新增（并 **删除** quotation 相关码）：
+权限码已写入 `catalog.json`（quotation 相关码已删除）：
 
 | 码 | 说明 |
 |----|------|
@@ -467,15 +467,15 @@ JSON 端点使用 `response_model=ApiResponse[T]`；**下载为 `StreamingRespon
 
 ## 9. 实施清单（单期 MVP）
 
-- [ ] 表 `upload_files` + 切片 API + 前端 `file-trace` 页（替换 quotation）
-- [ ] 权限树 + `generate_perm_codes`
-- [ ] `register_existing` + §4.5 supersede
-- [ ] 已落盘 upload Service 登记钩子（含钢价基准/政策异步 §6.1、冲次单价）
-- [ ] 定向回填脚本 §6.2
-- [ ] 鉴权下载 + 操作日志
-- [ ] `tests/file_trace/`
+- [x] 表 `upload_files` + 切片 API + 前端 `file-trace` 页（替换 quotation）
+- [x] 权限树 + `generate_perm_codes`（`menu:file-trace` / `op:file-trace:view` / `op:file-trace:download`）
+- [x] `register_existing` + §4.5 supersede
+- [x] 已落盘 upload Service 登记钩子（含钢价基准/政策异步 §6.1、冲次单价）
+- [x] 定向回填脚本 §6.2（`scripts/backfill_upload_files.py`）
+- [x] 鉴权下载 + 操作日志
+- [x] `tests/file_trace/`（现有 `test_register.py`；下载鉴权矩阵仍可补）
 
-**明确不在本清单：** `save_and_register`、深链、路径迁移、`superseded` 列表筛选、导出溯源 Excel。
+**明确不在本清单（仍未做）：** `save_and_register`、深链、路径迁移、`superseded` 列表筛选、导出溯源 Excel。
 
 ---
 
@@ -492,14 +492,14 @@ JSON 端点使用 `response_model=ApiResponse[T]`；**下载为 `StreamingRespon
 
 ---
 
-## 11. 废弃与迁移
+## 11. 废弃与迁移（已完成）
 
 | 项 | 处理 |
 |----|------|
-| `app/routers/quotation/` | 删除 |
-| `static/js/features/quotation/` | 删除，改 `file-trace` |
-| `catalog.json` `menu:quotation` | 移除；角色勾选 `menu:file-trace` |
-| `Perm.QUOTATION_*` | 移除后 `python -X utf8 -m scripts.generate_perm_codes` |
+| `app/routers/quotation/` | 已删除（仓库中无此目录） |
+| `static/js/features/quotation/` | 已删除；现网为 `file-trace` |
+| `catalog.json` `menu:quotation` | 已移除；现码 `menu:file-trace` |
+| `Perm.QUOTATION_*` | 已移除；现码 `Perm.FILE_TRACE_*` |
 
 ---
 

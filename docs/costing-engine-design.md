@@ -3,7 +3,8 @@
 > 面向产品、实施与开发复核。  
 > 入口仅 **基地 + 年度 + 月份**；在既有钢材联动 / 冲压零件价 / 成品 L0 计算之上增加 **编排层**。  
 > 硬约束见 [architecture.md](architecture.md)；L0 取价规则见 [l0-assembly-costing-design.md](l0-assembly-costing-design.md)。  
-> **本文为设计定稿，实现前以本文为准。**
+> **状态：已上线。** 产品规则仍以本文为准；实现见 §19 代码锚点。  
+> **产品入口：** `#/costing`；API `/api/costing/engine`。
 
 ---
 
@@ -42,11 +43,15 @@
 | 成品焊接费 | `POST /api/bom/l0-welding-fees/calc` | ✅ |
 | 月度核对合册 | `GET /api/costing/monthly-bundle/export-download` | 同步导出 |
 
-### 3.2 缺口
+### 3.2 实现状态
 
-- `#/costing` 与 `/api/costing/engine` 仍为占位  
-- 无人将「基地+年+月」展开为多工厂 × 多 BOM 并串链  
-- 无统一 Run 账本与「上传硬停 / 年度补算 / 月度主链」分类门禁  
+| 项 | 状态 |
+|---|---|
+| `#/costing` 与 `/api/costing/engine` | 已上线（就绪检查、启动 Run、轮询、历史删除含 running） |
+| 「基地+年+月」展开为多工厂 × 多 BOM 并串链 | 已上线（`run_orchestrator` / `scope_discovery`） |
+| Run 账本与「上传硬停 / 年度补算 / 月度主链」分类门禁 | 已上线 |
+
+产品规则（R1–R8）仍以本文为准。目标页若暂不读 `navigate.query`，至少落到正确功能页（见 §12）。  
 
 ---
 
@@ -325,14 +330,16 @@ GET  .../tasks/{task_id} → AsyncTaskProgressVO
   POST /api/costing/engine/runs     → { task_id }
   GET  /api/costing/engine/tasks/{task_id}  → AsyncTaskProgressVO（同形）
 
-父 Worker
-  写 costing_engine_run / steps
-  更新父 AsyncTask 的 progress / message
+父 Worker（`CostingEngineService` + `async_task` runner）
+  runner：独立业务 Session、进度写辅助库、统一 close
+  Service：写 costing_engine_run / steps；领域异常（删 Run）与失败回写
   同进程调用各 Orchestrator.calculate(..., progress_callback=映射)
 ```
 
 - 新增 `TASK_TYPE_COSTING_ENGINE_RUN`。  
 - `run.task_id` ↔ 父任务互指；完成时 `result` 含 `run_id` + 摘要。  
+- **分层：** `start_run` 已在 Service 提交；开 Session / `on_progress` / `finally` 必须走公共 runner（架构宪法 §5.3），禁止引擎再自建一套 worker 壳。  
+- 领域逻辑（`RunDeletedError`、回写 Run 失败态、进度权重）留在 `CostingEngineService`，runner 不感知 `run_id`。  
 
 ### 9.3 禁止嵌套入队死等
 
@@ -478,7 +485,7 @@ can_start: bool   # = not hard_stop 且存在可执行路径
 
 ## 12. 前端页面（`#/costing`）
 
-替换现占位「核价功能开发中」：
+页面已替换早期「核价功能开发中」占位，现网能力对应：
 
 1. **参数区**：基地、年、月 +「检查就绪」  
 2. **门禁区**：5.1 红灯置顶；每条未通过项展示 `message` + **「去处理」**（读 `navigate`，见 §5.3）；无权限则禁用并提示；5.2 黄灯「将自动计算」  
@@ -581,7 +588,7 @@ can_start: bool   # = not hard_stop 且存在可执行路径
 | 零件价编排 | `app/services/costing/stamping_part_cost/calc/orchestrator.py` |
 | L0 编排 | `app/services/costing/l0_assembly_cost/calc/orchestrator.py` |
 | 合册 | `app/services/costing/monthly_bundle_export/` |
-| 引擎占位 | `app/routers/costing/engine/`、`static/js/features/costing/engine/` |
+| 引擎实现 | `app/routers/costing/engine/`、`app/services/costing/engine/`、`static/js/features/costing/engine/` |
 | 异步任务 | `app/services/async_task/async_task_service.py` |
 | 进度 VO | `app/schemas/vo/async_task_vo.py` |
 
@@ -594,3 +601,5 @@ can_start: bool   # = not hard_stop 且存在可执行路径
 | 2026-08-21 | 初稿：三参数入口、5.1 硬停、年度补算、多 BOM 全算、父任务异步统一 |
 | 2026-08-21 | 增补 R7 / §5.3：硬停项带 `navigate` 深链；P0 验收含「去处理」跳转 |
 | 2026-08-21 | 增补 R8 / §8.4：`running` 亦可删除 Run，避免本机中断后卡住 |
+| 2026-08-25 | as-built：标记 `#/costing` 与引擎 API 已上线；规则仍以本文为准 |
+| 2026-08-25 | §9.2：引擎 worker 纳入 `async_task` 公共 runner（宪法 §5.3）；领域异常仍留引擎 Service |

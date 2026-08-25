@@ -5,7 +5,7 @@
 from typing import List, Optional
 from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
@@ -69,9 +69,7 @@ def save_month(
     ),
 ) -> ApiResponse[StampingScrapPriceMonthSheetVO]:
     """整月一次提交：覆盖写入固定 6 个基地。"""
-    sheet, error = _scrap_price_service.save_month(db, body, current_user=current_user)
-    if error:
-        raise HTTPException(status_code=400, detail=error)
+    sheet = _scrap_price_service.save_month(db, body, current_user=current_user)
     return ApiResponse.updated(
         data=sheet,
         message=f"{body.year}-{body.month:02d} 保存成功",
@@ -89,9 +87,7 @@ def delete_month(
     current_user: UserVO = Depends(require_perm(Perm.SCRAP_PRICE_DELETE)),
 ) -> ApiResponse[None]:
     """删除整月数据。"""
-    count, error = _scrap_price_service.delete_month(db, year, month)
-    if error:
-        raise HTTPException(status_code=404, detail=error)
+    count = _scrap_price_service.delete_month(db, year, month)
     return ApiResponse.deleted(message=f"已删除 {year}-{month:02d} 共 {count} 条")
 
 
@@ -154,11 +150,9 @@ def copy_month(
     current_user: UserVO = Depends(require_perm(Perm.SCRAP_PRICE_COPY)),
 ) -> ApiResponse[StampingScrapPriceCopyMonthResponse]:
     """从源月复制到目标月（目标已有则覆盖；源月必须录满 6 行）。"""
-    result, error = _scrap_price_service.copy_month(
+    result = _scrap_price_service.copy_month(
         db, body, current_user=current_user
     )
-    if error:
-        raise HTTPException(status_code=400, detail=error)
     return ApiResponse.ok(
         data=result,
         message=(

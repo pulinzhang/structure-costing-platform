@@ -6,7 +6,7 @@ CRUD / 导出见各子包；本模块仅委托并保持对外 API。
 
 from __future__ import annotations
 
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
 from sqlalchemy.orm import Session
 
@@ -58,7 +58,7 @@ class StampingScrapPriceService:
         db: Session,
         data: StampingScrapPriceMonthSaveDTO,
         current_user: UserVO,
-    ) -> Tuple[Optional[StampingScrapPriceMonthSheetVO], Optional[str]]:
+    ) -> StampingScrapPriceMonthSheetVO:
         return self._crud.save_month(db, data, current_user)
 
     def delete_month(
@@ -66,7 +66,7 @@ class StampingScrapPriceService:
         db: Session,
         year: int,
         month: int,
-    ) -> Tuple[int, Optional[str]]:
+    ) -> int:
         return self._crud.delete_month(db, year, month)
 
     def copy_month(
@@ -74,5 +74,5 @@ class StampingScrapPriceService:
         db: Session,
         body: StampingScrapPriceCopyMonth,
         current_user: UserVO,
-    ) -> Tuple[Optional[StampingScrapPriceCopyMonthResponse], Optional[str]]:
+    ) -> StampingScrapPriceCopyMonthResponse:
         return self._crud.copy_month(db, body, current_user)

@@ -17,6 +17,34 @@ from app.services.async_task.async_task_service import (
     TASK_TYPE_COSTING_ENGINE_RUN,
     AsyncTaskService,
 )
+from app.services.async_task.worker_runner import (
+    ProgressCallback,
+    WorkerTaskOutcome,
+    calc_status_label,
+    outcome_from_calc_status,
+)
+
+__all__ = [
+    "AsyncTaskService",
+    "STATUS_PENDING",
+    "STATUS_RUNNING",
+    "STATUS_COMPLETED",
+    "STATUS_FAILED",
+    "TASK_TYPE_POLICY_UPLOAD",
+    "TASK_TYPE_STAMPING_UPLOAD",
+    "TASK_TYPE_BASE_PRICE_IMPORT",
+    "TASK_TYPE_STEEL_PRICE_CALC",
+    "TASK_TYPE_STAMPING_PROCESS_FEE_CALC",
+    "TASK_TYPE_STAMPING_PART_COST_CALC",
+    "TASK_TYPE_BOM_WELDING_PROCESS_BREAKDOWN_GENERATE",
+    "TASK_TYPE_BOM_L0_WELDING_FEE_CALC",
+    "TASK_TYPE_L0_ASSEMBLY_COST_CALC",
+    "TASK_TYPE_COSTING_ENGINE_RUN",
+    "ProgressCallback",
+    "WorkerTaskOutcome",
+    "calc_status_label",
+    "outcome_from_calc_status",
+]
 
 __all__ = [
     "AsyncTaskService",

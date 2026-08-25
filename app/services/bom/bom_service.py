@@ -6,6 +6,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.common.audit import audit_create
+from app.exceptions.base import BusinessException, NotFoundException
 from app.common.bom.manufacturing_category import resolve_manufacturing_category
 from app.models.bom import BomNode
 from app.repositories.bom.bom_repository import (
@@ -59,9 +60,9 @@ class BomService:
         )
         return vo
 
-    def list_nodes_flat(self, db: Session, snapshot_id: int) -> list[BomNodeVO] | None:
+    def list_nodes_flat(self, db: Session, snapshot_id: int) -> list[BomNodeVO]:
         if not self.snapshot_repo.get_by_id(db, snapshot_id):
-            return None
+            raise NotFoundException("BOM 清单不存在")
         rows = self.node_repo.list_by_snapshot(db, snapshot_id)
         parent_ids_with_children = {r.parent_id for r in rows if r.parent_id is not None}
         return [
@@ -117,10 +118,10 @@ class BomService:
         )
         return BomCascadeFilterOptionsVO.model_validate(raw)
 
-    def get_snapshot(self, db: Session, snapshot_id: int) -> BomSnapshotVO | None:
+    def get_snapshot(self, db: Session, snapshot_id: int) -> BomSnapshotVO:
         row = self.snapshot_repo.get_by_id(db, snapshot_id)
         if not row:
-            return None
+            raise NotFoundException("BOM 清单不存在")
         vo = BomSnapshotVO.model_validate(row)
         vo.node_count = self.snapshot_repo.count_nodes(db, row.id)
         return vo
@@ -130,17 +131,21 @@ class BomService:
         db: Session,
         data: BomSnapshotCreate,
         current_user: UserVO,
-    ) -> tuple[BomSnapshotVO | None, str | None]:
+    ) -> BomSnapshotVO:
         if data.stage not in _ALLOWED_STAGES:
-            return None, f"stage 无效，允许: {', '.join(sorted(_ALLOWED_STAGES))}"
+            raise BusinessException(
+                f"stage 无效，允许: {', '.join(sorted(_ALLOWED_STAGES))}"
+            )
         if data.status not in _ALLOWED_STATUSES:
-            return None, f"status 无效，允许: {', '.join(sorted(_ALLOWED_STATUSES))}"
+            raise BusinessException(
+                f"status 无效，允许: {', '.join(sorted(_ALLOWED_STATUSES))}"
+            )
 
         existing = self.snapshot_repo.get_by_unique_key(
             db, data.location, data.vehicle_model, data.bom_version
         )
         if existing:
-            return None, (
+            raise BusinessException(
                 f"BOM 已存在: {data.location} / {data.vehicle_model} / {data.bom_version}"
             )
 
@@ -172,33 +177,32 @@ class BomService:
             db.refresh(row)
             vo = BomSnapshotVO.model_validate(row)
             vo.node_count = 0
-            return vo, None
+            return vo
         except IntegrityError:
             db.rollback()
-            return None, "BOM 唯一键冲突（基地+车型+版本）"
-        except Exception as exc:
+            raise BusinessException("BOM 唯一键冲突（基地+车型+版本）") from None
+        except BusinessException:
             db.rollback()
-            logger.error("创建 BOM snapshot 失败: %s", exc)
-            return None, str(exc)
+            raise
+        except Exception:
+            db.rollback()
+            logger.exception("创建 BOM snapshot 失败")
+            raise
 
-    def delete_snapshot(self, db: Session, snapshot_id: int) -> str | None:
+    def delete_snapshot(self, db: Session, snapshot_id: int) -> None:
         row = self.snapshot_repo.get_by_id(db, snapshot_id)
         if not row:
-            return "BOM 清单不存在"
+            raise NotFoundException("BOM 清单不存在")
         try:
             self.snapshot_repo.delete(db, row)
             db.commit()
-            return None
-        except Exception as exc:
+        except Exception:
             db.rollback()
-            logger.error("删除 BOM snapshot 失败: %s", exc)
-            return str(exc)
+            logger.exception("删除 BOM snapshot 失败")
+            raise
 
-    def list_nodes_tree(self, db: Session, snapshot_id: int) -> list[BomNodeTreeVO] | None:
-        flat = self.list_nodes_flat(db, snapshot_id)
-        if flat is None:
-            return None
-        return self._build_tree(flat)
+    def list_nodes_tree(self, db: Session, snapshot_id: int) -> list[BomNodeTreeVO]:
+        return self._build_tree(self.list_nodes_flat(db, snapshot_id))
 
     def create_node(
         self,
@@ -206,22 +210,24 @@ class BomService:
         snapshot_id: int,
         data: BomNodeCreate,
         current_user: UserVO,
-    ) -> tuple[BomNodeVO | None, str | None]:
+    ) -> BomNodeVO:
         snapshot = self.snapshot_repo.get_by_id(db, snapshot_id)
         if not snapshot:
-            return None, "BOM 清单不存在"
+            raise NotFoundException("BOM 清单不存在")
         if data.node_role not in _ALLOWED_ROLES:
-            return None, f"node_role 无效，允许: {', '.join(sorted(_ALLOWED_ROLES))}"
+            raise BusinessException(
+                f"node_role 无效，允许: {', '.join(sorted(_ALLOWED_ROLES))}"
+            )
 
         if data.parent_id is None:
             if data.level != 0:
-                return None, "无父节点时 level 必须为 0"
+                raise BusinessException("无父节点时 level 必须为 0")
         else:
             parent = self.node_repo.get_by_id(db, data.parent_id)
             if not parent or parent.snapshot_id != snapshot_id:
-                return None, "父节点不存在或不属于该 BOM"
+                raise NotFoundException("父节点不存在或不属于该 BOM")
             if data.level != parent.level + 1:
-                return None, f"子节点 level 应为 {parent.level + 1}"
+                raise BusinessException(f"子节点 level 应为 {parent.level + 1}")
 
         try:
             audit = audit_create(current_user)
@@ -256,24 +262,26 @@ class BomService:
             )
             db.commit()
             db.refresh(row)
-            return self._to_node_vo(row), None
-        except Exception as exc:
+            return self._to_node_vo(row)
+        except (BusinessException, NotFoundException):
             db.rollback()
-            logger.error("创建 BOM node 失败: %s", exc)
-            return None, str(exc)
+            raise
+        except Exception:
+            db.rollback()
+            logger.exception("创建 BOM node 失败")
+            raise
 
-    def delete_node(self, db: Session, node_id: int) -> str | None:
+    def delete_node(self, db: Session, node_id: int) -> None:
         row = self.node_repo.get_by_id(db, node_id)
         if not row:
-            return "节点不存在"
+            raise NotFoundException("节点不存在")
         try:
             self.node_repo.delete(db, row)
             db.commit()
-            return None
-        except Exception as exc:
+        except Exception:
             db.rollback()
-            logger.error("删除 BOM node 失败: %s", exc)
-            return str(exc)
+            logger.exception("删除 BOM node 失败")
+            raise
 
     @staticmethod
     def _build_tree(flat: list[BomNodeVO]) -> list[BomNodeTreeVO]:

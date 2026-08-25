@@ -5,6 +5,7 @@ from __future__ import annotations
 from openpyxl import Workbook
 from sqlalchemy.orm import Session
 
+from app.common.export_filters import require_at_least_one_export_filter
 from app.repositories.bom.bom_repository import BomNodeRepository, BomSnapshotRepository
 from app.repositories.stamping.stamping_process_fee_repository import (
     StampingProcessFeeRepository,
@@ -46,6 +47,16 @@ class StampingPartCostExportService:
         part_number: str | None = None,
         audit_status: str | None = None,
     ) -> tuple[bytes, str]:
+        require_at_least_one_export_filter(
+            year,
+            month,
+            location,
+            stamping_supplier,
+            vehicle_model,
+            version,
+            part_number,
+            audit_status,
+        )
         rows = self.repository.list_for_export(
             db,
             year=year,

@@ -1,6 +1,6 @@
 """用户 CRUD 路由"""
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from app.common.permissions.codes import Perm
@@ -68,8 +68,6 @@ def get_user(
 ) -> ApiResponse[UserVO]:
     """获取单个用户"""
     user = _user_service.get_by_id(db, user_id)
-    if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="用户不存在")
     return ApiResponse.ok(data=user)
 
 
@@ -84,11 +82,8 @@ def create_user(
     current_user: UserVO = Depends(require_perm(Perm.SETTINGS_USERS_CREATE)),
 ) -> ApiResponse[UserVO]:
     """创建用户"""
-    try:
-        user = _user_service.create(db, dto, current_user=current_user)
-        return ApiResponse.created(data=user, message="创建成功")
-    except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    user = _user_service.create(db, dto, current_user=current_user)
+    return ApiResponse.created(data=user, message="创建成功")
 
 
 @router.put(
@@ -105,8 +100,6 @@ def update_user(
     """更新用户资料；若停用账号则立即作废其全部登录会话"""
     payload = dto.model_dump(exclude_unset=True)
     user = _user_service.update(db, user_id, dto, current_user=current_user)
-    if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="用户不存在")
 
     # 管理员停用 → 拒绝继续使用系统（踢下线）
     if payload.get("is_active") is False:
@@ -128,8 +121,6 @@ def update_password(
 ) -> ApiResponse[UserVO]:
     """管理员重置密码：改密后作废该用户全部会话，强制重新登录"""
     user = _user_service.update_password(db, user_id, dto, current_user=current_user)
-    if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="用户不存在")
     _auth_service.revoke_all_sessions(token_db, user.id)
     return ApiResponse.updated(data=user, message="密码已更新")
 
@@ -145,11 +136,6 @@ def delete_user(
     current_user: UserVO = Depends(require_perm(Perm.SETTINGS_USERS_DELETE)),
 ) -> ApiResponse[None]:
     """删除用户并作废其登录会话"""
-    try:
-        ok = _user_service.delete(db, user_id, current_user=current_user)
-    except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
-    if not ok:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="用户不存在")
+    _user_service.delete(db, user_id, current_user=current_user)
     _auth_service.revoke_all_sessions(token_db, user_id)
     return ApiResponse.deleted(message="删除成功")

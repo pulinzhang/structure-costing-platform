@@ -6,6 +6,8 @@ from dataclasses import dataclass
 from decimal import Decimal
 from typing import Callable
 
+from app.exceptions.base import BusinessException
+
 
 ProgressCallback = Callable[[int, str], None]
 
@@ -30,5 +32,8 @@ class TonnageRateInfo:
     tonnage_price_id: int | None = None
 
 
-class DuplicateScopeCalcError(Exception):
+class DuplicateScopeCalcError(BusinessException):
     """同一计算范围已有进行中的任务。"""
+
+    def __init__(self, message: str = "同一计算范围已有进行中的任务。") -> None:
+        super().__init__(message=message, code=409)

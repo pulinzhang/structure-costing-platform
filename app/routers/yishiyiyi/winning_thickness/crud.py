@@ -5,7 +5,7 @@
 
 from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
@@ -80,20 +80,17 @@ def export_preview(
     current_user: UserVO = Depends(require_perm(Perm.WINNING_THICKNESS_DOWNLOAD_VIEW)),
 ) -> ApiResponse[PageResult[WinningThicknessRowVO]]:
     """预览中标钢厂厚度价格一览。"""
-    try:
-        items, total = _export_service.preview(
-            db,
-            year=year,
-            month=month,
-            location=location,
-            steel_mill=steel_mill,
-            category_name=category_name,
-            grade=grade,
-            page=page,
-            page_size=size,
-        )
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    items, total = _export_service.preview(
+        db,
+        year=year,
+        month=month,
+        location=location,
+        steel_mill=steel_mill,
+        category_name=category_name,
+        grade=grade,
+        page=page,
+        page_size=size,
+    )
 
     return ApiResponse.list_(
         items=items,
@@ -119,18 +116,15 @@ def export_download(
     current_user: UserVO = Depends(require_perm(Perm.WINNING_THICKNESS_DOWNLOAD_EXPORT)),
 ) -> StreamingResponse:
     """下载中标钢厂厚度价格一览表 Excel（外发用；溯源列小字弱化）。"""
-    try:
-        content, filename = _export_service.export(
-            db,
-            year=year,
-            month=month,
-            location=location,
-            steel_mill=steel_mill,
-            category_name=category_name,
-            grade=grade,
-        )
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    content, filename = _export_service.export(
+        db,
+        year=year,
+        month=month,
+        location=location,
+        steel_mill=steel_mill,
+        category_name=category_name,
+        grade=grade,
+    )
 
     return StreamingResponse(
         iter([content]),

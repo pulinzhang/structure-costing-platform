@@ -22,8 +22,8 @@ import {
     canAccessPage,
     fallbackPageName,
 } from './permissions.js?v=9';
-import { bootLlmAssistant } from './llm-assistant/boot.js?v=25';
-import { pageConfig as dashboardPage }      from './features/dashboard/index.js?v=5';
+import { bootLlmAssistant } from './llm-assistant/boot.js?v=26';
+import { pageConfig as dashboardPage }      from './features/dashboard/index.js?v=6';
 import { pageConfig as stampingUploadPage } from './features/stamping/process/upload/index.js?v=39';
 import { pageConfig as stampingPartsPage }  from './features/stamping/process/parts/index.js?v=29';
 import { pageConfig as stampingTonnagePage } from './features/stamping/tonnage/list/index.js?v=19';
@@ -35,7 +35,7 @@ import { pageConfig as steelPriceCalcPage }    from './features/costing/steel-pr
 import { pageConfig as stampingPartCostCalcPage } from './features/costing/stamping-part-cost/calc/index.js?v=10';
 import { pageConfig as stampingPartCostPage } from './features/costing/stamping-part-cost/list/index.js?v=54';
 import { pageConfig as l0AssemblyCostCalcPage } from './features/costing/l0-assembly-cost/calc/index.js?v=3';
-import { pageConfig as l0AssemblyCostPage } from './features/costing/l0-assembly-cost/list/index.js?v=8';
+import { pageConfig as l0AssemblyCostPage } from './features/costing/l0-assembly-cost/list/index.js?v=9';
 import { pageConfig as steelPricePolicyUploadPage } from './features/yishiyiyi/policy/upload/index.js?v=37';
 import { pageConfig as steelPricePolicyDownloadPage } from './features/yishiyiyi/policy/list/index.js?v=31';
 import { pageConfig as basePriceUploadPage } from './features/yishiyiyi/base-price/upload/index.js?v=38';
@@ -56,11 +56,11 @@ import { pageConfig as bomWeldingProcessBreakdownGeneratePage } from './features
 import { pageConfig as bomWeldingProcessBreakdownListPage } from './features/bom/welding-process-breakdown/list/index.js?v=38';
 import { pageConfig as bomL0WeldingFeeCalcPage } from './features/bom/l0-welding-fee/calc/index.js?v=7';
 import { pageConfig as bomL0WeldingFeeListPage } from './features/bom/l0-welding-fee/list/index.js?v=12';
-import { pageConfig as costingPage }        from './features/costing/engine/index.js?v=23';
-import { pageConfig as fileTracePage }       from './features/file-trace/index.js?v=3';
+import { pageConfig as costingPage }        from './features/costing/engine/index.js?v=24';
+import { pageConfig as fileTracePage }       from './features/file-trace/index.js?v=4';
 import { pageConfig as settingsPage }       from './features/settings/system/index.js?v=16';
 import { pageConfig as settingsUsersPage }  from './features/settings/users/index.js?v=12';
-import { pageConfig as settingsLogsPage }   from './features/settings/logs/index.js?v=3';
+import { pageConfig as settingsLogsPage }   from './features/settings/logs/index.js?v=4';
 import { pageConfig as settingsProfilePage } from './features/settings/profile/index.js?v=9';
 
 // 未登录禁止进入主应用：不渲染业务页，避免请求 dashboard 等后端

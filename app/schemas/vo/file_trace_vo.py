@@ -7,6 +7,7 @@ from typing import Self
 
 from pydantic import BaseModel, field_serializer, model_validator
 
+from app.common.timezone import datetime_to_iso
 from app.services.file_trace.categories import category_label
 
 
@@ -93,8 +94,8 @@ class UploadFileVO(BaseModel):
         )
 
     @field_serializer("created_at")
-    def serialize_created_at(self, value: datetime) -> str:
-        return value.isoformat()
+    def serialize_created_at(self, value: datetime) -> str | None:
+        return datetime_to_iso(value)
 
 
 class UploadFileFiltersVO(BaseModel):

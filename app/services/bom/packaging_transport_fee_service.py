@@ -3,13 +3,14 @@ BOM 包装运输费 Service
 """
 
 import logging
-from typing import List, Optional, Tuple
+from typing import List, Tuple
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING, audit_create, display_name
 from app.common.timezone import now
+from app.exceptions.base import BusinessException, NotFoundException
 from app.repositories.bom.packaging_transport_fee_repository import (
     BomPackagingTransportFeeRepository,
     PackagingTransportFeeListFilters,
@@ -76,10 +77,10 @@ class BomPackagingTransportFeeService:
 
     def get_by_id(
         self, db: Session, id: int
-    ) -> Optional[BomPackagingTransportFeeResponse]:
+    ) -> BomPackagingTransportFeeResponse:
         record = self.repository.get_by_id(db, id)
         if not record:
-            return None
+            raise NotFoundException(f"包装运输费记录不存在: id={id}")
         return BomPackagingTransportFeeResponse.model_validate(record)
 
     def create(
@@ -87,7 +88,7 @@ class BomPackagingTransportFeeService:
         db: Session,
         data: BomPackagingTransportFeeCreate,
         current_user: UserVO,
-    ) -> Tuple[Optional[BomPackagingTransportFeeResponse], Optional[str]]:
+    ) -> BomPackagingTransportFeeResponse:
         try:
             audit = audit_create(current_user)
             record = self.repository.create(
@@ -98,19 +99,20 @@ class BomPackagingTransportFeeService:
             )
             db.commit()
             db.refresh(record)
-            return BomPackagingTransportFeeResponse.model_validate(record), None
+            return BomPackagingTransportFeeResponse.model_validate(record)
         except IntegrityError:
             db.rollback()
-            error_msg = (
+            raise BusinessException(
                 f"该基地({data.location})、年份({data.year})、项目({data.vehicle_model})"
                 f"和零件「{data.part_number}」的记录已存在"
-            )
-            logger.warning(error_msg)
-            return None, error_msg
-        except Exception as e:
+            ) from None
+        except BusinessException:
             db.rollback()
-            logger.error("创建包装运输费失败: %s", e)
-            return None, str(e)
+            raise
+        except Exception:
+            db.rollback()
+            logger.exception("创建包装运输费失败")
+            raise
 
     def update(
         self,
@@ -118,14 +120,13 @@ class BomPackagingTransportFeeService:
         id: int,
         data: BomPackagingTransportFeeUpdate,
         current_user: UserVO,
-    ) -> Tuple[Optional[BomPackagingTransportFeeResponse], Optional[str]]:
+    ) -> BomPackagingTransportFeeResponse:
+        existing = self.repository.get_by_id(db, id)
+        if not existing:
+            raise NotFoundException("记录不存在")
+        if existing.audit_status == AUDIT_APPROVED:
+            raise BusinessException("已审核通过，请先反审核后再修改")
         try:
-            existing = self.repository.get_by_id(db, id)
-            if not existing:
-                return None, "记录不存在"
-            if existing.audit_status == AUDIT_APPROVED:
-                return None, "已审核通过，请先反审核后再修改"
-
             record = self.repository.update(
                 db,
                 id,
@@ -133,31 +134,36 @@ class BomPackagingTransportFeeService:
                 updated_by=display_name(current_user),
             )
             if not record:
-                return None, "记录不存在"
+                raise NotFoundException("记录不存在")
             db.commit()
             db.refresh(record)
-            return BomPackagingTransportFeeResponse.model_validate(record), None
-        except Exception as e:
+            return BomPackagingTransportFeeResponse.model_validate(record)
+        except (BusinessException, NotFoundException):
             db.rollback()
-            logger.error("更新包装运输费失败: %s", e)
-            return None, str(e)
+            raise
+        except Exception:
+            db.rollback()
+            logger.exception("更新包装运输费失败")
+            raise
 
-    def delete(self, db: Session, id: int) -> Tuple[bool, Optional[str]]:
+    def delete(self, db: Session, id: int) -> None:
+        record = self.repository.get_by_id(db, id)
+        if not record:
+            raise NotFoundException("记录不存在")
+        if record.audit_status == AUDIT_APPROVED:
+            raise BusinessException("已审核通过，请先反审核后再删除")
         try:
-            record = self.repository.get_by_id(db, id)
-            if not record:
-                return False, "记录不存在"
-            if record.audit_status == AUDIT_APPROVED:
-                return False, "已审核通过，请先反审核后再删除"
             success = self.repository.delete(db, id)
             if not success:
-                return False, "记录不存在"
+                raise NotFoundException("记录不存在")
             db.commit()
-            return True, None
-        except Exception as e:
+        except (BusinessException, NotFoundException):
             db.rollback()
-            logger.error("删除包装运输费失败: %s", e)
-            return False, str(e)
+            raise
+        except Exception:
+            db.rollback()
+            logger.exception("删除包装运输费失败")
+            raise
 
     def batch_delete_by_scope(
         self,
@@ -166,22 +172,20 @@ class BomPackagingTransportFeeService:
         location: str,
         year: int,
         vehicle_model: str,
-    ) -> Tuple[int, int, Optional[str]]:
+    ) -> Tuple[int, int]:
         location = (location or "").strip()
         vehicle_model = (vehicle_model or "").strip()
         if not location:
-            return 0, 0, "请选择采购基地"
+            raise BusinessException("请选择采购基地")
         if not vehicle_model:
-            return 0, 0, "请选择项目"
+            raise BusinessException("请选择项目")
         if year < 2000 or year > 2100:
-            return 0, 0, "请选择正确的年度"
+            raise BusinessException("请选择正确的年度")
 
         existing = self.repository.list_by_scope(db, location, year, vehicle_model)
         if not existing:
-            return (
-                0,
-                0,
-                f"基地「{location}」{year} 年项目「{vehicle_model}」没有可删除的数据",
+            raise BusinessException(
+                f"基地「{location}」{year} 年项目「{vehicle_model}」没有可删除的数据"
             )
 
         try:
@@ -197,28 +201,28 @@ class BomPackagingTransportFeeService:
             )
             db.commit()
             db.expire_all()
-        except Exception as e:
+        except Exception:
             db.rollback()
-            logger.error("批量删除包装运输费失败: %s", e)
-            return 0, 0, str(e)
+            logger.exception("批量删除包装运输费失败")
+            raise
 
-        return deleted_count, skipped, None
+        return deleted_count, skipped
 
     def batch_approve(
         self,
         db: Session,
         dto: BomPackagingTransportFeeBatchApproveDTO,
         current_user: UserVO,
-    ) -> Tuple[Optional[BomPackagingTransportFeeBatchAuditResultVO], Optional[str]]:
+    ) -> BomPackagingTransportFeeBatchAuditResultVO:
         location = (dto.location or "").strip()
         vehicle_model = (dto.vehicle_model or "").strip()
         if not location:
-            return None, "请选择采购基地"
+            raise BusinessException("请选择采购基地")
         if not vehicle_model:
-            return None, "请选择项目"
+            raise BusinessException("请选择项目")
         operator = display_name(current_user)
         if not operator:
-            return None, "无法识别当前登录用户"
+            raise BusinessException("无法识别当前登录用户")
 
         try:
             skipped = self.repository.count_by_scope_and_statuses(
@@ -240,20 +244,17 @@ class BomPackagingTransportFeeService:
             )
             db.commit()
             db.expire_all()
-        except Exception as e:
+        except Exception:
             db.rollback()
-            logger.error("批量审核包装运输费失败: %s", e)
-            return None, str(e)
+            logger.exception("批量审核包装运输费失败")
+            raise
 
-        return (
-            BomPackagingTransportFeeBatchAuditResultVO(
-                updated_count=updated,
-                skipped_count=skipped,
-                location=location,
-                year=dto.year,
-                vehicle_model=vehicle_model,
-            ),
-            None,
+        return BomPackagingTransportFeeBatchAuditResultVO(
+            updated_count=updated,
+            skipped_count=skipped,
+            location=location,
+            year=dto.year,
+            vehicle_model=vehicle_model,
         )
 
     def batch_reverse_audit(
@@ -261,19 +262,19 @@ class BomPackagingTransportFeeService:
         db: Session,
         dto: BomPackagingTransportFeeBatchReverseAuditDTO,
         current_user: UserVO,
-    ) -> Tuple[Optional[BomPackagingTransportFeeBatchAuditResultVO], Optional[str]]:
+    ) -> BomPackagingTransportFeeBatchAuditResultVO:
         location = (dto.location or "").strip()
         vehicle_model = (dto.vehicle_model or "").strip()
         if not location:
-            return None, "请选择采购基地"
+            raise BusinessException("请选择采购基地")
         if not vehicle_model:
-            return None, "请选择项目"
+            raise BusinessException("请选择项目")
         remark = (dto.reverse_audit_remark or "").strip()
         if not remark:
-            return None, "反审核原因必填"
+            raise BusinessException("反审核原因必填")
         operator = display_name(current_user)
         if not operator:
-            return None, "无法识别当前登录用户"
+            raise BusinessException("无法识别当前登录用户")
 
         try:
             skipped = self.repository.count_by_scope_and_statuses(
@@ -295,20 +296,17 @@ class BomPackagingTransportFeeService:
             )
             db.commit()
             db.expire_all()
-        except Exception as e:
+        except Exception:
             db.rollback()
-            logger.error("批量反审核包装运输费失败: %s", e)
-            return None, str(e)
+            logger.exception("批量反审核包装运输费失败")
+            raise
 
-        return (
-            BomPackagingTransportFeeBatchAuditResultVO(
-                updated_count=updated,
-                skipped_count=skipped,
-                location=location,
-                year=dto.year,
-                vehicle_model=vehicle_model,
-            ),
-            None,
+        return BomPackagingTransportFeeBatchAuditResultVO(
+            updated_count=updated,
+            skipped_count=skipped,
+            location=location,
+            year=dto.year,
+            vehicle_model=vehicle_model,
         )
 
     def get_locations(self, db: Session) -> List[str]:

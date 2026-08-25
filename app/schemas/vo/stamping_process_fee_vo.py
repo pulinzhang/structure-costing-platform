@@ -8,6 +8,7 @@ from decimal import Decimal
 from pydantic import BaseModel, Field, field_serializer
 
 from app.common.money import Q2, Q3, Q4, optional_format_money
+from app.common.timezone import datetime_to_iso
 
 
 class StampingProcessFeeItemVO(BaseModel):
@@ -130,7 +131,7 @@ class StampingProcessFeeVO(BaseModel):
         "reverse_audited_at",
     )
     def serialize_datetime(self, value: datetime | None) -> str | None:
-        return value.isoformat() if value else None
+        return datetime_to_iso(value)
 
     model_config = {"from_attributes": True}
 
@@ -197,7 +198,7 @@ class StampingProcessFeeCalcLogVO(BaseModel):
 
     @field_serializer("started_at", "finished_at", "created_at")
     def serialize_log_datetime(self, value: datetime | None) -> str | None:
-        return value.isoformat() if value else None
+        return datetime_to_iso(value)
 
 
 class StampingProcessFeeCalcReadyVO(BaseModel):

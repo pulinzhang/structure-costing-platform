@@ -10,6 +10,7 @@ from openpyxl import Workbook
 
 from app.common.bom.welding_standard_process import validate_welding_unit_price_catalog
 from app.parsers.bom.welding_unit_price_parser import parse_welding_unit_price_excel
+from app.exceptions.base import BusinessException
 from app.schemas.dto.bom_welding_unit_price_dto import BomWeldingUnitPriceCreate
 from app.services.bom.welding_unit_price_import_service import (
     BomWeldingUnitPriceImportService,
@@ -68,7 +69,7 @@ def test_import_aborts_on_catalog_error() -> None:
         ]
     )
     service = BomWeldingUnitPriceImportService()
-    with pytest.raises(ValueError, match="导入中止"):
+    with pytest.raises(BusinessException, match="导入中止"):
         service.import_excel(
             db=None,  # type: ignore[arg-type]
             file_content=content,

@@ -7,6 +7,8 @@ from decimal import Decimal
 
 from pydantic import BaseModel, field_serializer
 
+from app.common.timezone import datetime_to_iso
+
 
 class BomWeldingProcessBreakdownLineVO(BaseModel):
     """明细行：单件焊接过程量"""
@@ -43,7 +45,7 @@ class BomWeldingProcessBreakdownLineVO(BaseModel):
 
     @field_serializer("created_at", "updated_at")
     def serialize_datetime(self, value: datetime | None) -> str | None:
-        return value.isoformat() if value else None
+        return datetime_to_iso(value)
 
     model_config = {"from_attributes": True}
 
@@ -159,7 +161,7 @@ class BomWeldingProcessBreakdownNodeVO(BaseModel):
         "reverse_audited_at",
     )
     def serialize_datetime(self, value: datetime | None) -> str | None:
-        return value.isoformat() if value else None
+        return datetime_to_iso(value)
 
     model_config = {"from_attributes": True}
 
@@ -208,7 +210,7 @@ class BomWeldingProcessBreakdownGenerateLogVO(BaseModel):
 
     @field_serializer("started_at", "finished_at", "created_at")
     def serialize_datetime(self, value: datetime | None) -> str | None:
-        return value.isoformat() if value else None
+        return datetime_to_iso(value)
 
 
 class BomWeldingProcessBreakdownGeneratePrepStatsVO(BaseModel):

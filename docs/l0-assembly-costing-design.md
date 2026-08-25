@@ -1,7 +1,8 @@
 # 供货总成（L0）成品核价 — 业务与设计说明
 
 > 面向业务、实施与新同事。说明 **如何从 BOM 结构算出每个成品的月度总成本**。  
-> **取价与汇总规则已由只读模拟验收**（`tests/costing/l0_assembly_sim.py`，青岛 T28 · 2025-01）；**产品功能（结果表 / API / 页面）仍待落地**。  
+> **状态：已上线。** 取价与汇总规则仍以本文为准；只读模拟见 `tests/costing/l0_assembly_sim.py`（青岛 T28 · 2025-01）。  
+> **产品入口：** `#/l0-assembly-cost-calc`、`#/l0-assembly-cost`；API `/api/costing/l0-assembly-costs`。  
 > 硬约束（分层、切片依赖）见 [architecture.md](architecture.md)。
 
 ---
