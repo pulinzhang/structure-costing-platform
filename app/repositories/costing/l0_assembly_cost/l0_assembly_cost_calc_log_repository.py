@@ -4,14 +4,44 @@ from __future__ import annotations
 
 from datetime import datetime
 
+from sqlalchemy import text
+from sqlalchemy.engine import Connection
 from sqlalchemy.orm import Session
 
 from app.models.costing.l0_assembly_cost_calc_log import L0AssemblyCostCalcLog
 
+_STATUS_PROCESSING = "processing"
+
+_PROCESSING_LOCK_INDEX_SQL = """
+CREATE UNIQUE INDEX IF NOT EXISTS uq_l0_assembly_calc_processing
+ON costing_l0_assembly_cost_calc_logs(year, month, location, vehicle_model, bom_version)
+WHERE status = 'processing'
+"""
+
 
 class L0AssemblyCostCalcLogRepository:
+    _lock_index_ensured = False
+
+    def apply_processing_lock_index(self, conn: Connection) -> None:
+        """在调用方连接上执行 DDL；不 commit（由 Service 提交）。"""
+        conn.execute(text(_PROCESSING_LOCK_INDEX_SQL))
+
+    def mark_processing_lock_index_ensured(self) -> None:
+        L0AssemblyCostCalcLogRepository._lock_index_ensured = True
+
+    def is_processing_lock_index_ensured(self) -> bool:
+        return L0AssemblyCostCalcLogRepository._lock_index_ensured
+
     def get_by_id(self, db: Session, log_id: int) -> L0AssemblyCostCalcLog | None:
         return db.query(L0AssemblyCostCalcLog).filter(L0AssemblyCostCalcLog.id == log_id).first()
+
+    def list_processing(self, db: Session) -> list[L0AssemblyCostCalcLog]:
+        return (
+            db.query(L0AssemblyCostCalcLog)
+            .filter(L0AssemblyCostCalcLog.status == _STATUS_PROCESSING)
+            .order_by(L0AssemblyCostCalcLog.id.asc())
+            .all()
+        )
 
     def get_processing_by_scope(
         self,
@@ -31,7 +61,7 @@ class L0AssemblyCostCalcLogRepository:
                 L0AssemblyCostCalcLog.location == location,
                 L0AssemblyCostCalcLog.vehicle_model == vehicle_model,
                 L0AssemblyCostCalcLog.bom_version == bom_version,
-                L0AssemblyCostCalcLog.status == "processing",
+                L0AssemblyCostCalcLog.status == _STATUS_PROCESSING,
             )
             .order_by(L0AssemblyCostCalcLog.id.desc())
             .first()
@@ -82,7 +112,7 @@ class L0AssemblyCostCalcLogRepository:
         rows = (
             db.query(L0AssemblyCostCalcLog)
             .filter(
-                L0AssemblyCostCalcLog.status == "processing",
+                L0AssemblyCostCalcLog.status == _STATUS_PROCESSING,
                 L0AssemblyCostCalcLog.started_at.isnot(None),
                 L0AssemblyCostCalcLog.started_at < older_than,
             )
