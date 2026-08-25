@@ -68,8 +68,8 @@ def list_reports(
     bom_version: str | None = Query(None),
     report_type: str | None = Query(None),
     status: str | None = Query(None),
-    skip: int = Query(0, ge=0),
-    limit: int = Query(10, ge=1, le=100),
+    page: int = Query(1, ge=1),
+    size: int = Query(10, ge=1, le=100),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.LLM_ANALYSIS_VIEW)),
 ) -> ApiResponse[PageResult[LlmAnalysisReportListItemVO]]:
@@ -81,15 +81,15 @@ def list_reports(
         bom_version=bom_version,
         report_type=report_type,
         status=status,
-        skip=skip,
-        limit=limit,
+        page=page,
+        size=size,
     )
     items, total = _service.list_reports(db, query, current_user=current_user)
     return ApiResponse.list_(
         items=items,
         total=total,
-        page=(skip // limit) + 1,
-        page_size=limit,
+        page=page,
+        page_size=size,
     )
 
 

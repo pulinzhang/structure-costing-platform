@@ -7,6 +7,7 @@ from typing import Union
 from pydantic import BaseModel, Field, field_serializer
 
 from app.common.money import Q4, optional_format_money
+from app.common.timezone import datetime_to_iso
 
 
 class BomSnapshotVO(BaseModel):
@@ -38,11 +39,11 @@ class BomSnapshotVO(BaseModel):
 
     @field_serializer("doc_date", "revision_date")
     def serialize_date(self, value: date | None) -> str | None:
-        return value.isoformat() if value else None
+        return datetime_to_iso(value)
 
     @field_serializer("created_at", "updated_at")
     def serialize_datetime(self, value: datetime | None) -> str | None:
-        return value.isoformat() if value else None
+        return datetime_to_iso(value)
 
     model_config = {"from_attributes": True}
 
@@ -89,7 +90,7 @@ class BomNodeVO(BaseModel):
 
     @field_serializer("created_at", "updated_at")
     def serialize_datetime(self, value: datetime | None) -> str | None:
-        return value.isoformat() if value else None
+        return datetime_to_iso(value)
 
     model_config = {"from_attributes": True}
 

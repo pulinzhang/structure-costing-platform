@@ -28,10 +28,10 @@ const STATUS_LABEL = {
 export async function openHistoryPanel(overlay, options) {
     if (!overlay) return;
 
-    /** @type {{ items: object[], skip: number, total: number, loading: boolean, hasMore: boolean }} */
+    /** @type {{ items: object[], page: number, total: number, loading: boolean, hasMore: boolean }} */
     const state = {
         items: [],
-        skip: 0,
+        page: 1,
         total: 0,
         loading: false,
         hasMore: true,
@@ -102,12 +102,12 @@ export async function openHistoryPanel(overlay, options) {
         }
 
         try {
-            const data = await listReports({ skip: state.skip, limit: PAGE_SIZE });
+            const data = await listReports({ page: state.page, size: PAGE_SIZE });
             const batch = data?.items || [];
             state.total = Number(data?.total ?? state.total);
             state.items = state.items.concat(batch);
-            state.skip = state.items.length;
-            state.hasMore = state.skip < state.total && batch.length > 0;
+            state.page += 1;
+            state.hasMore = state.items.length < state.total && batch.length > 0;
             state.loading = false;
             renderList();
         } catch (error) {
@@ -124,7 +124,7 @@ export async function openHistoryPanel(overlay, options) {
 
     const reloadFromStart = async () => {
         state.items = [];
-        state.skip = 0;
+        state.page = 1;
         state.total = 0;
         state.hasMore = true;
         state.loading = false;
@@ -173,8 +173,7 @@ export async function openHistoryPanel(overlay, options) {
                 if (index >= 0) {
                     state.items.splice(index, 1);
                     state.total = Math.max(0, state.total - 1);
-                    state.skip = state.items.length;
-                    state.hasMore = state.skip < state.total;
+                    state.hasMore = state.items.length < state.total;
                     renderList();
                     if (state.hasMore && state.items.length < PAGE_SIZE) {
                         await loadMore();

@@ -353,7 +353,7 @@ JSON 端点使用 `response_model=ApiResponse[T]`；**下载为 `StreamingRespon
 
 | 参数 | 类型 | 说明 |
 |------|------|------|
-| `skip` / `limit` | int | 分页 |
+| `page` / `size` | int | 分页（`page` 从 1 起） |
 | `file_category` | str? | 须在 `allowed_categories` 内 |
 | `location` | str? | |
 | `year` | int? | |

@@ -4,6 +4,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field, field_serializer
 
+from app.common.timezone import datetime_to_iso
+
 
 class OperationLogVO(BaseModel):
     """单条操作日志。"""
@@ -25,7 +27,7 @@ class OperationLogVO(BaseModel):
 
     @field_serializer("created_at")
     def serialize_datetime(self, value: datetime | None) -> str | None:
-        return value.strftime("%Y-%m-%d %H:%M:%S") if value else None
+        return datetime_to_iso(value)
 
     model_config = {"from_attributes": True}
 

@@ -8,6 +8,7 @@ from decimal import Decimal, ROUND_HALF_UP
 from pydantic import BaseModel, ConfigDict, Field, field_serializer
 
 from app.common.money import Q4
+from app.common.timezone import datetime_to_iso
 
 
 def _money_str(value: Decimal | None) -> str | None:
@@ -149,7 +150,7 @@ class L0AssemblyCostVO(BaseModel):
 
     @field_serializer("calculated_at", "audited_at", "created_at", "updated_at")
     def _ser_dt(self, value: datetime | None) -> str | None:
-        return value.isoformat() if value else None
+        return datetime_to_iso(value)
 
 
 class L0AssemblyCostListSummaryVO(BaseModel):
@@ -211,7 +212,7 @@ class L0AssemblyCostCalcLogVO(BaseModel):
 
     @field_serializer("started_at", "finished_at")
     def _ser_dt(self, value: datetime | None) -> str | None:
-        return value.isoformat() if value else None
+        return datetime_to_iso(value)
 
 
 class L0AssemblyCostBatchResultVO(BaseModel):

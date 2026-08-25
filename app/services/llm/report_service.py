@@ -199,8 +199,8 @@ class LlmAnalysisReportService:
             bom_version=query.bom_version,
             report_type=query.report_type,
             status=query.status,
-            skip=query.skip,
-            limit=query.limit,
+            skip=(query.page - 1) * query.size,
+            limit=query.size,
         )
         return [LlmAnalysisReportListItemVO.from_orm_row(row) for row in rows], total
 

@@ -42,8 +42,8 @@ function collectFilters() {
 function buildQueryParams(page) {
     const filters = collectFilters();
     const params = {
-        skip: (page - 1) * ftState.pageSize,
-        limit: ftState.pageSize,
+        page,
+        size: ftState.pageSize,
     };
     Object.entries(filters).forEach(([key, value]) => {
         if (value !== '' && value != null) params[key] = value;

@@ -435,7 +435,7 @@ POST body：仅 user_question
 | `POST` | `/api/llm/reports` | body：`user_question`（+ 可选 `audience` / `force_refresh` / `idempotency_key`） |
 | `GET` | `/api/llm/tasks/{task_id}` | 轮询 |
 | `GET` | `/api/llm/reports/{id}` | Markdown + 元数据；校验 `user_id` |
-| `GET` | `/api/llm/reports` | 本人历史分页（默认 limit=10）；**列表项 VO**，不含 `markdown_content` |
+| `GET` | `/api/llm/reports` | 本人历史分页（`page` + `size`，默认 size=10）；**列表项 VO**，不含 `markdown_content` |
 | `DELETE` | `/api/llm/reports/{id}` | 只能删除本人的记录 |
 
 ```json

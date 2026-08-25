@@ -3,7 +3,7 @@
 异常体系说明（架构宪法 §5.2）：
 - BusinessException: 通用业务拒绝（默认 HTTP 400；唯一键、审核锁、缺字段；冲突传 code=409）
 - NotFoundException: 资源不存在或任务过期（404）
-- ValidationException: 仅当有意返回 422；业务拒绝用 BusinessException
+- ValidationException: 不要用；请求体校验走 Pydantic 422；业务拒绝用 BusinessException
 - PermissionException: 权限不足（403；通常由 require_perm 抛）
 
 Service 对 Router 抛这些异常，由全局 handler 转成 ApiResponse.fail。
@@ -39,7 +39,7 @@ class NotFoundException(BusinessException):
 
 
 class ValidationException(BusinessException):
-    """仅当有意返回 HTTP 422（与请求体 Pydantic 同码）。业务拒绝默认用 BusinessException（400）。"""
+    """不要用。请求体校验走 Pydantic 422；业务拒绝用 BusinessException（400）。"""
 
     def __init__(self, message: str = "数据校验失败"):
         super().__init__(message=message, code=422)

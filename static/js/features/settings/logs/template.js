@@ -126,6 +126,11 @@ export function logsTemplate() {
     `;
 }
 
+function formatDateTime(value) {
+    if (!value) return '-';
+    return String(value).replace('T', ' ').slice(0, 19);
+}
+
 /**
  * @param {Array} records
  * @returns {string}
@@ -146,7 +151,7 @@ export function renderTableRows(records) {
 
         return `
             <tr class="${isEven ? 'bg-[#1a1a1a]/40' : ''} hover:bg-[#ffffff]/[0.02] transition-colors">
-                <td class="px-4 py-2.5 text-[11px] text-[#9e9e9e] font-mono whitespace-nowrap">${esc(record.created_at)}</td>
+                <td class="px-4 py-2.5 text-[11px] text-[#9e9e9e] font-mono whitespace-nowrap">${esc(formatDateTime(record.created_at))}</td>
                 <td class="px-4 py-2.5 text-[11px] text-[#c8c8c8]">
                     <div>${esc(operator)}</div>
                     ${operatorSub}

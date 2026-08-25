@@ -21,7 +21,7 @@ from sqlalchemy.orm import Session
 from app.common.money import Q2, Q4, excel_money_cell
 from app.common.timezone import now
 from app.config import settings
-from app.exceptions import ValidationException
+from app.exceptions import BusinessException
 from app.models.stamping import StampingPart, StampingProcess, StampingTailorWeldBlank
 from app.repositories.stamping.stamping_part_repository import StampingPartRepository
 
@@ -103,7 +103,7 @@ class StampingPartExportService:
         vehicle_model = vehicle_model.strip()
         version = version.strip()
         if not location or not stamping_supplier or not vehicle_model or not version:
-            raise ValidationException("导出须同时选定基地、冲压工厂、车型和版本")
+            raise BusinessException("导出须同时选定基地、冲压工厂、车型和版本")
 
         parts = self.repository.list_for_export(
             db,

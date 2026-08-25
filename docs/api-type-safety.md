@@ -11,7 +11,7 @@ description: FastAPI 后端类型安全、分层架构、API 契约、权限拦�
 
 ## 1. API 响应契约
 
-每个 API 接口必须同时定义：
+JSON 业务接口必须同时定义：
 
 ```python
 response_model=ApiResponse[T]
@@ -22,6 +22,8 @@ response_model=ApiResponse[T]
 ```python
 -> ApiResponse[T]
 ```
+
+**例外（现网已落地）**：Excel / 原件下载返回 `StreamingResponse` 或 `FileResponse`，不要套 `ApiResponse`，也不要 `response_model=ApiResponse[…]`。禁止业务 Router 返回裸 dict / 裸 `JSONResponse`。全局异常 handler 可用 `JSONResponse` 包 `ApiResponse.fail().model_dump()`。
 
 示例：
 
@@ -134,9 +136,11 @@ class ApiResponse(BaseModel, Generic[T]):
 | 正常返回（无 data） | `ApiResponse.ok()` | 200 | |
 | 正常返回（有 data） | `ApiResponse.ok(data=vo)` | 200 | |
 | **分页列表** | **`ApiResponse.list_(items=..., total=..., page=..., page_size=..., filters=...)`** | 200 | data 为 `PageResult` |
-| 创建资源 | `ApiResponse.created(data=vo)` | 201 | |
-| 更新资源 | `ApiResponse.updated(data=vo)` | 200 | |
+| 创建资源（CRUD / 同步导入已有结果 VO） | `ApiResponse.created(data=vo)` | 201 | |
+| **`start_*` 立即返回 `task_id`** | **`ApiResponse.ok(data=accepted)`** | **200** | 不要套 POST=201 |
+| 更新资源（PUT/PATCH） | `ApiResponse.updated(data=vo)` | 200 | 批量审核/删除用 `ok(data=result)` |
 | 删除资源 | `ApiResponse.deleted()` | 200 | |
+| Excel / 原件下载 | `StreamingResponse` / `FileResponse` | — | 不走 `ApiResponse` |
 | 参数校验失败 | 请求体 Pydantic → `validation_exception_handler` | 422 | Router 不要手写 fail() |
 | 业务拒绝 | Service `raise BusinessException` | 400 | 唯一键/审核锁/缺字段；禁止 `(None, msg)` |
 | 期别/范围冲突 | Service `raise BusinessException(..., code=409)` | 409 | 重复计算锁；不要 Router 转 `HTTP_409` |
@@ -170,7 +174,7 @@ def list_steel_prices(
         total=total,
         page=query.page,
         page_size=query.size,
-        filters=filters,  # 或 filters.model_dump()，视 VO 而定
+        filters=filters,  # 优先直接传 filters VO，不要为 list_ 再 model_dump
     )
 ```
 
@@ -193,16 +197,19 @@ return ApiResponse.ok(data={"items": ..., "total": ...})
 
 > `ApiResponse.list_()` **允许且推荐**用于分页。旧文档曾禁止 `list_()`，已与实现不符，作废。
 
-### 2.4 方法选择规则
+### 2.4 禁止绕过契约
 
 ```python
-# ❌ 禁止：绕过 Pydantic
+# ❌ 禁止：业务 Router 绕过 Pydantic / ApiResponse
 return JSONResponse(...)
 return {"success": True, "data": ...}
 
-# ❌ 禁止：在错误响应中返回 data（除非是详细错误信息对象）
-ApiResponse.fail(message="参数错误", data={"field": "xxx"})  # 仅校验详细错误时允许
+# ❌ 禁止：Router 手写 ApiResponse.fail()（业务失败由 Service 抛异常，全局 handler 写 fail）
 ```
+
+`fail()` 的 `data` **仅**全局 `validation_exception_handler` 用来带字段错误列表。业务 handler 不带 `data`。业务 Router 不要自己调 `fail()`。
+
+全局 handler 用 `JSONResponse(content=ApiResponse.fail(...).model_dump())` 是实现例外，不算「业务 Router 返回 JSONResponse」。
 
 ---
 
@@ -253,6 +260,8 @@ from app.schemas.common.page_result import PageResult
 def list_parts(...) -> ApiResponse[PageResult[StampingPartListResponse]]:
     ...
 ```
+
+列表 **HTTP 查询参数必须是 `page` + `size`**（`page` 从 1 起）。禁止 Router / DTO 再暴露 `skip` / `limit`。Repository 内部可用 `skip` / `limit` 表示 SQL `OFFSET` / `LIMIT`，由 Service 换算。
 
 ### 3.3 分页响应结构
 
@@ -335,23 +344,20 @@ return ApiResponse.ok(data=vo)
 ### 4.4 DTO 更新参数传递
 
 ```python
-# ✅ 推荐：Service 接收 DTO，用 model_dump() 提取参数
+# ✅ 推荐：Service 接收 DTO，原样或按列交给 Repository
 class StampingPartService:
     def update_part(
         self,
         db: Session,
         part_id: int,
         dto: StampingPartUpdateDTO,
+        current_user: UserVO,
     ) -> StampingPartVO:
-        update_data = dto.model_dump(exclude_unset=True)
-        part = self.repository.update(db, part_id, update_data)
+        part = self.repository.update(db, part_id, dto, current_user=current_user)
         return StampingPartVO.model_validate(part)
-
-# ✅ 替代：Service 接收 dict（当 DTO 已经是 dict 时）
-def update_part(self, db: Session, part_id: int, update_data: dict):
-    part = self.repository.update(db, part_id, update_data)
-    ...
 ```
+
+写入 Repository 用 DTO / dataclass / `TypedDict`，不要把 Service 签名收成 `dict`。
 
 ---
 
@@ -390,7 +396,7 @@ Parser 仅由 Service 调用。切片依赖为**有向无环**（下游 costing/
 
 例外（边界仍须收窄）：
 
-- 框架出口如 `ApiResponse.fail` 的内部泛型；**业务 Router** 仍须 `response_model=ApiResponse[具体VO]`
+- 框架出口：`ApiResponse.fail` / `ApiResponse.list_` / `PageResult.filters` 的内部泛型可以是 `Any`；**业务 Router** 仍须 `response_model=ApiResponse[具体VO]` 或 `ApiResponse[PageResult[具体VO]]`
 - 无类型桩的第三方（如 openpyxl worksheet）：包在小函数里，对外签名不用 `Any`
 - `json.loads`：在函数内解析，返回已声明的 VO / TypedDict / 标准类型
 
@@ -424,7 +430,7 @@ ApiResponse[T]
 Repository 只做：
 
 * SQL 查询
-* 数据分页（skip/limit）
+* 数据分页（SQL `OFFSET` / `LIMIT`；由 Service 从 HTTP `page` / `size` 换算）
 * 计数（total）
 
 Repository 必须返回：
@@ -643,7 +649,7 @@ Router 禁止：
 
 * 访问数据库 / 操作 ORM Model
 * 在 Router 内 `Model → VO`
-* 返回裸 dict / `JSONResponse`
+* 返回裸 dict；业务 Router 返回裸 `JSONResponse`（下载用 `StreamingResponse` / `FileResponse`；全局 handler 除外）
 * 把 Service 错误元组 / `None` 转成 `HTTPException`（见架构宪法 §5.2）
 
 ```python
@@ -689,8 +695,11 @@ return {"items": ..., "total": total}
 | `GET`（列表） | 获取资源列表（不分页） | `list[VO]` | `ApiResponse.ok(data=list)` | 200 | `ApiResponse[list[StampingProcessResponse]]` |
 | `GET`（列表） | 获取资源列表（分页） | `list[VO], total[, filters]` 或 `PageResult[VO]` | **`ApiResponse.list_(...)`** 或 `ok(data=page)` | 200 | `ApiResponse[PageResult[…]]` |
 | `POST` | 创建资源 | `VO` | `ApiResponse.created(data=vo)` | 201 | `ApiResponse[StampingPartVO]` |
+| `POST` | `start_*` 入队（立刻 `task_id`） | `AsyncTaskAcceptedVO` | **`ApiResponse.ok(data=accepted)`** | **200** | `ApiResponse[AsyncTaskAcceptedVO]` |
 | `PUT` / `PATCH` | 更新资源 | `VO`（不存在抛 `NotFoundException`） | `ApiResponse.updated(data=vo)` | 200 / 404 | `ApiResponse[StampingProcessResponse]` |
+| `POST` | 批量审核 / 批量删除 | 结果 VO | `ApiResponse.ok(data=result)` | 200 | `ApiResponse[…ResultVO]` |
 | `DELETE` | 删除资源 | `None`（不存在抛 `NotFoundException`） | `ApiResponse.deleted()` | 200 / 404 | `ApiResponse[None]` |
+| `GET` | Excel / 原件下载 | bytes + 文件名 | `StreamingResponse` / `FileResponse` | 200 | 无 `ApiResponse` |
 
 ### GET - 获取单个资源
 
@@ -765,6 +774,18 @@ def create_part(
     return ApiResponse.created(data=part, message="创建成功")
 ```
 
+### POST - 异步入队（`start_*`，HTTP 200）
+
+```python
+@router.post("/", response_model=ApiResponse[AsyncTaskAcceptedVO])
+async def upload_stamping_file(
+    ...,
+    current_user: UserVO = Depends(require_perm(Perm.STAMPING_UPLOAD_UPLOAD)),
+) -> ApiResponse[AsyncTaskAcceptedVO]:
+    accepted = service.start_upload(..., current_user=current_user)
+    return ApiResponse.ok(data=accepted, message="上传成功，后台开始解析")
+```
+
 ### PUT - 更新资源
 
 ```python
@@ -798,9 +819,9 @@ def update_process(
 ) -> ApiResponse[StampingProcessResponse]:
     """更新工序（如成本系数）"""
     result = _stamping_service.update_process(
-        db, process_id, body.model_dump(exclude_unset=True), current_user=current_user
+        db, process_id, body, current_user=current_user
     )
-    return ApiResponse.ok(data=result, message="工序更新成功")
+    return ApiResponse.updated(data=result, message="工序更新成功")
 ```
 
 ### DELETE - 删除资源
@@ -903,13 +924,11 @@ dict(stamping_part)
 
 ## 11. 序列化规范
 
-所有特殊类型转换必须在 VO 内部完成。
+datetime / Decimal / Enum 的 **JSON 形态**必须在 VO 的 `@field_serializer` 内完成。
 
-禁止在以下层序列化：
+禁止在 Router / Service / Repository **手写**这类格式化（如 `strftime`、`float(price)`）。
 
-* Router
-* Service
-* Repository
+Service **应当**做 ORM → VO（`model_validate`）；这不是「在 Service 里序列化 JSON」。
 
 ---
 
@@ -971,14 +990,14 @@ round(float(value), 4)         # 导出
 
 #### 非金额 Decimal（料厚、重量等物理量）
 
-Model / DTO 仍优先 `Decimal`。若历史 VO 将物理量序列化为 JSON number，可继续；**新建金额类字段不得沿用 float 序列化**。
+Model / DTO / VO 仍用 `Decimal`。JSON **同样输出固定小数位字符串**（现网走 `format_money` / `optional_format_money`），不要 `float(value)`。
 
 ```python
+from app.common.money import Q4, optional_format_money
+
 @field_serializer("thickness", "part_weight")
-def serialize_physical_decimal(self, value):
-    if isinstance(value, Decimal):
-        return float(value)
-    return value
+def serialize_physical_decimal(self, value: Decimal | None) -> str | None:
+    return optional_format_money(value, Q4, 4)
 ```
 
 ---
@@ -992,12 +1011,14 @@ def serialize_physical_decimal(self, value):
 
 示例：
 ```python
+from app.common.timezone import datetime_to_iso
+
 @field_serializer("created_at", "updated_at")
-def serialize_datetime(self, value):
-    if isinstance(value, datetime):
-        return value.strftime("%Y-%m-%d %H:%M:%S")
-    return value
+def serialize_datetime(self, value: datetime | None) -> str | None:
+    return datetime_to_iso(value)
 ```
+
+VO 的 datetime JSON **必须**走 `app.common.timezone.datetime_to_iso`（`isoformat()`，如 `"2026-08-25T10:42:00"`）。禁止各 VO 自写 `strftime("%Y-%m-%d %H:%M:%S")` 或重复的本地 helper。Excel 文件名、归档目录时间戳可以用 `strftime`，那不是 API 输出。
 
 ---
 
@@ -1083,22 +1104,23 @@ JSON
 禁止：
 ```
 return dict
-return JSONResponse
+return JSONResponse          # 业务 Router；全局 handler 除外
 return ORM Model from Router
 model_dump() 用于 VO 返回
 VO.model_dump() for API output
 tuple[VO | None, str | None] 作为 HTTP 错误通道
 __dict__
 dict(model)
-ApiResponse[Any]（应指定具体类型）
-函数签名使用 Any / dict[str, Any] / list[Any]（须换成 DTO / dataclass / TypedDict / Model）
-金额/单价/费用用 float（须 Decimal；JSON 用字符串）
+ApiResponse[Any]（应指定具体类型；框架 list_/fail 除外）
+业务函数签名使用 Any / dict[str, Any] / list[Any]（须换成 DTO / dataclass / TypedDict / Model）
+金额/单价/费用/物理量用 float（须 Decimal；JSON 用字符串）
 ```
 
 必须：
 ```
 每个接口：
-    response_model=ApiResponse[T]
+    JSON 业务：response_model=ApiResponse[T]
+    下载/导出：StreamingResponse / FileResponse（例外）
 
 每个业务 Router（登录除外）：
     Depends(require_perm(Perm.XXX)) / require_any_perm / require_admin_user
@@ -1110,7 +1132,7 @@ ApiResponse[Any]（应指定具体类型）
     pass current_user=current_user
 
 每个 Router：
-    使用 ApiResponse.xxx() 方法返回
+    JSON 用 ApiResponse.xxx()；下载不走 ApiResponse
 
 每个 Service：
     returns VO / list[VO] / (list, total[, filters]) / PageResult
@@ -1118,7 +1140,7 @@ ApiResponse[Any]（应指定具体类型）
     无隐式 current_user / ContextVar
 
 每个 Repository：
-    returns SQLAlchemy Model（聚合接口可返回 dict / 轻量结构）
+    returns SQLAlchemy Model（聚合接口可返回 TypedDict / 轻量结构，禁止匿名 dict）
 
 分页接口：
     推荐 Service 返回 list[VO] + total；Router 用 ApiResponse.list_()

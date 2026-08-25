@@ -9,7 +9,7 @@ description: FastAPI backend type safety, layered architecture, API contract, pe
 
 ## 1. API Response Contract
 
-Every API endpoint must define:
+JSON business endpoints must define:
 
 ```python
 response_model=ApiResponse[T]
@@ -20,6 +20,8 @@ The function return annotation must match:
 ```python
 -> ApiResponse[T]
 ```
+
+**Exception (matches current code):** Excel / original-file downloads return `StreamingResponse` or `FileResponse` — no `ApiResponse`, no `response_model=ApiResponse[…]`. Business routers must not return a bare dict or bare `JSONResponse`. Global exception handlers may wrap `ApiResponse.fail().model_dump()` in `JSONResponse`.
 
 Examples:
 
@@ -151,7 +153,7 @@ return ApiResponse.ok(
 
 `ApiResponse.ok()` and `ApiResponse.error()` must return `ApiResponse[T]` instances.
 
-Forbidden:
+Forbidden in **business routers**:
 
 ```python
 return JSONResponse(...)
@@ -164,6 +166,8 @@ return {
     "data": data
 }
 ```
+
+Global exception handlers may use `JSONResponse` around `ApiResponse.fail(...).model_dump()`. `fail().data` is only for the Pydantic 422 field-error list.
 
 ---
 
@@ -195,7 +199,7 @@ ApiResponse[PageResult[T]]
 Example:
 
 ```python
-from typing import Generic, TypeVar
+from typing import Generic, TypeVar, Optional, Any
 from pydantic import BaseModel
 
 T = TypeVar("T")
@@ -209,7 +213,7 @@ class PageResult(BaseModel, Generic[T]):
     total_pages: int = 0
     has_next: bool = False
     has_prev: bool = False
-    filters: dict | None = None
+    filters: Optional[Any] = None  # 现网可为筛选项 VO；禁止业务签名再发明 dict[str, Any]
 ```
 
 Example:
@@ -222,6 +226,8 @@ Example:
 def list_users() -> ApiResponse[PageResult[UserVO]]:
     ...
 ```
+
+HTTP list query params **must** be `page` + `size` (`page` starts at 1). Do not expose `skip` / `limit` on Router / DTO. Repository may use `skip` / `limit` as SQL `OFFSET` / `LIMIT`; Service converts from `page` / `size`.
 
 ---
 
@@ -259,7 +265,7 @@ This is a **moderate** ban, not a hunt for every `Any` in a function body: you m
 
 Prefer: HTTP in → DTO; HTTP out → VO (Service → Router only); Service → Repository full row → dataclass; partial update → `TypedDict` with explicit `updated_by=` (do not `**audit_update()` into a narrower TypedDict).
 
-Exceptions (still narrow at the boundary): `ApiResponse.fail` internals (business routers still use `ApiResponse[ConcreteVO]`); untyped third-party objects wrapped in a small function; `json.loads` parsed inside and returned as VO / TypedDict / std types.
+Exceptions (still narrow at the boundary): `ApiResponse.fail` / `ApiResponse.list_` / `PageResult.filters` internals may use `Any`; **business routers** still use `ApiResponse[ConcreteVO]` or `ApiResponse[PageResult[ConcreteVO]]`; untyped third-party objects wrapped in a small function; `json.loads` parsed inside and returned as VO / TypedDict / std types.
 
 Do not keep `dict[str, Any]` on Repository / Service / Router signatures for convenience.
 
@@ -274,6 +280,8 @@ Repository returns:
 * SQLAlchemy Model
 * list[SQLAlchemy Model]
 * Optional[SQLAlchemy Model]
+* tuple[list[Model], int] for paginate
+* named `TypedDict` / named tuple / read-model for aggregates (`summarize_*`, `get_filter_options`) — not anonymous `dict` / `dict[str, Any]`
 
 Allowed:
 
@@ -463,15 +471,16 @@ Router is responsible for:
 * request validation
 * dependency injection
 * calling Service
-* returning ApiResponse[T]
+* returning `ApiResponse[T]` for JSON; `StreamingResponse` / `FileResponse` for downloads
 
 Router must not:
 
 * access database directly
 * manipulate SQLAlchemy Model
 * convert ORM to dict
-* serialize VO manually
+* serialize VO manually for API output
 * translate Service errors (`if error:` / `"不存在" in error` / `if not vo: HTTPException`) — 见架构宪法 §5.2
+* return bare `JSONResponse` (global exception handlers excepted)
 
 Required:
 
@@ -554,8 +563,11 @@ Every HTTP method must follow consistent response patterns:
 | `GET` (single) | 获取单个资源 | `VO`（不存在则抛 `NotFoundException`） | `ApiResponse.ok(data=vo)` | `ApiResponse[UserVO]` |
 | `GET` (list) | 获取资源列表 | `list[VO]` 或 `(list[VO], total[, filters])` | `ApiResponse.ok(data=list)` 或 `ApiResponse.list_(items=...)` | `ApiResponse[list[UserVO]]` 或 `ApiResponse[PageResult[UserVO]]` |
 | `POST` | 创建资源 | `VO` | `ApiResponse.created(data=vo)` | `ApiResponse[UserVO]` |
+| `POST` | `start_*` 入队（立刻 `task_id`） | `AsyncTaskAcceptedVO` | `ApiResponse.ok(data=accepted)`（HTTP 200，不要 201） | `ApiResponse[AsyncTaskAcceptedVO]` |
 | `PUT` / `PATCH` | 更新资源 | `VO`（不存在则抛 `NotFoundException`） | `ApiResponse.updated(data=vo)` | `ApiResponse[UserVO]` |
+| `POST` | 批量审核 / 批量删除 | 结果 VO | `ApiResponse.ok(data=result)` | `ApiResponse[…ResultVO]` |
 | `DELETE` | 删除资源 | `None`（不存在则抛 `NotFoundException`） | `ApiResponse.deleted(message="删除成功")` | `ApiResponse[None]` |
+| `GET` | Excel / 原件下载 | bytes | `StreamingResponse` / `FileResponse` | 无 `ApiResponse` |
 
 ### GET - 获取单个资源
 
@@ -598,18 +610,18 @@ def list_users(
     response_model=ApiResponse[PageResult[UserVO]]
 )
 def list_users_paginated(
-    skip: int = Query(0, ge=0),
-    limit: int = Query(20, ge=1, le=100),
+    page: int = Query(1, ge=1),
+    size: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.SETTINGS_USERS_VIEW)),
 ) -> ApiResponse[PageResult[UserVO]]:
     service = UserService()
-    users, total = service.list_users_paginated(db, skip=skip, limit=limit)
+    users, total = service.list_users_paginated(db, page=page, size=size)
     return ApiResponse.list_(
         items=users,
         total=total,
-        page=(skip // limit) + 1,
-        page_size=limit
+        page=page,
+        page_size=size
     )
 ```
 
@@ -629,6 +641,18 @@ def create_user(
     service = UserService()
     user = service.create_user(db, dto, current_user=current_user)
     return ApiResponse.created(data=user, message="创建成功")
+```
+
+### POST - `start_*` 入队（HTTP 200，不是 201）
+
+```python
+@router.post("/", response_model=ApiResponse[AsyncTaskAcceptedVO])
+async def upload_stamping_file(
+    ...,
+    current_user: UserVO = Depends(require_perm(Perm.STAMPING_UPLOAD_UPLOAD)),
+) -> ApiResponse[AsyncTaskAcceptedVO]:
+    accepted = service.start_upload(..., current_user=current_user)
+    return ApiResponse.ok(data=accepted, message="上传成功，后台开始解析")
 ```
 
 ### PUT - 更新资源
@@ -785,13 +809,11 @@ dict(user_model)
 
 ## 11. Serialization Rules
 
-All special type conversion must happen inside VO.
+datetime / Decimal / Enum **JSON shape** must live in VO `@field_serializer`.
 
-Do not serialize in:
+Do not hand-format those types in Router / Service / Repository (`strftime`, `float(price)`).
 
-* Router
-* Service
-* Repository
+Service **should** convert ORM → VO (`model_validate`). That is not “serializing JSON in Service”.
 
 ---
 
@@ -853,12 +875,14 @@ round(float(value), 4)       # 导出
 
 #### Non-money Decimal（料厚、重量等物理量）
 
-Model / DTO 仍优先 `Decimal`。若历史 VO 将物理量序列化为 JSON number，可继续；**新建金额类字段不得沿用 float 序列化**。
+Model / DTO / VO 仍用 `Decimal`。JSON **同样输出固定小数位字符串**（`format_money` / `optional_format_money`），不要 `float(value)`。
 
 ```python
+from app.common.money import Q4, optional_format_money
+
 @field_serializer("thickness", "part_weight")
-def serialize_physical_decimal(self, value: Decimal | None) -> float | None:
-    return float(value) if isinstance(value, Decimal) else value
+def serialize_physical_decimal(self, value: Decimal | None) -> str | None:
+    return optional_format_money(value, Q4, 4)
 ```
 
 ---
@@ -872,13 +896,14 @@ Use:
 
 Example:
 ```python
+from app.common.timezone import datetime_to_iso
+
 @field_serializer("created_at")
-def serialize_datetime(
-    self,
-    value
-):
-    return value.isoformat()
+def serialize_datetime(self, value: datetime | None) -> str | None:
+    return datetime_to_iso(value)
 ```
+
+VO datetime JSON **must** go through `app.common.timezone.datetime_to_iso` (`isoformat()`, e.g. `"2026-08-25T10:42:00"`). Do not write `strftime("%Y-%m-%d %H:%M:%S")` or duplicate local helpers in each VO. Excel filenames / archive stamps may still use `strftime`; that is not API output.
 
 ---
 
@@ -1007,22 +1032,25 @@ Before commit, check:
 Forbidden:
 ```
 return dict
-return JSONResponse
+return JSONResponse          # 业务 Router；全局 handler 除外
 return ORM Model from Router
 model_dump() in Router
 VO.model_dump() for API output
 tuple[VO | None, str | None] as HTTP error channel
 __dict__
 dict(model)
-ApiResponse[Any]
-Any / dict[str, Any] / list[Any] on function signatures (use DTO / dataclass / TypedDict / Model)
-money/unit_price/fee as float (use Decimal; JSON string for money)
+ApiResponse[Any]             # 业务路由；框架 list_/fail 除外
+Any / dict[str, Any] / list[Any] on business function signatures
+money/unit_price/fee/physical as float (use Decimal; JSON string)
 ```
 
 Required:
 ```
-Every endpoint:
+Every JSON endpoint:
     response_model=ApiResponse[T]
+
+Downloads / Excel export:
+    StreamingResponse / FileResponse (no ApiResponse)
 
 Every Router (except login):
     current_user via Depends(get_current_user)  # 仅 me/touch/logout
@@ -1037,7 +1065,7 @@ Every write Router → Service:
     pass current_user=current_user
 
 Every Router:
-    returns ApiResponse[T]
+    JSON → ApiResponse.xxx(); downloads → StreamingResponse / FileResponse
 
 Every Service:
     returns VO / list[VO] / (list, total[, filters]) / PageResult
@@ -1045,7 +1073,7 @@ Every Service:
     no implicit current_user / ContextVar
 
 Every Repository:
-    returns SQLAlchemy Model
+    returns SQLAlchemy Model (aggregates: TypedDict / read-model, not anonymous dict)
 
 Frontend (same codes):
     menu → canAccessPage / applySidebarPermissions

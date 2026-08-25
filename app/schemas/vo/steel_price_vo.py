@@ -9,12 +9,7 @@ from typing import Optional
 from pydantic import BaseModel, field_serializer
 
 from app.common.money import Q4, format_money, optional_format_money
-
-
-def datetime_to_str(value: datetime | None) -> Optional[str]:
-    if isinstance(value, datetime):
-        return value.isoformat()
-    return value
+from app.common.timezone import datetime_to_iso
 
 
 class SteelPriceListSummaryVO(BaseModel):
@@ -162,7 +157,7 @@ class SteelPriceResponse(BaseModel):
         "updated_at",
     )
     def serialize_datetime(self, value: datetime | None) -> Optional[str]:
-        return datetime_to_str(value)
+        return datetime_to_iso(value)
 
 
 class SteelPriceCalcResultVO(BaseModel):
@@ -220,4 +215,4 @@ class SteelPriceCalcLogVO(BaseModel):
 
     @field_serializer("started_at", "finished_at", "created_at")
     def serialize_datetime(self, value: datetime | None) -> Optional[str]:
-        return datetime_to_str(value)
+        return datetime_to_iso(value)

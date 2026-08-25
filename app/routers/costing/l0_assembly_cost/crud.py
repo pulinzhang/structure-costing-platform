@@ -55,8 +55,8 @@ def list_costs(
     part_number: str | None = Query(None),
     audit_status: str | None = Query(None),
     calc_status: str | None = Query(None),
-    skip: int = Query(0, ge=0),
-    limit: int = Query(20, ge=1, le=200),
+    page: int = Query(1, ge=1),
+    size: int = Query(20, ge=1, le=200),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.L0_ASSEMBLY_COST_VIEW)),
 ) -> ApiResponse[PageResult[L0AssemblyCostVO]]:
@@ -69,15 +69,15 @@ def list_costs(
         part_number=part_number,
         audit_status=audit_status,
         calc_status=calc_status,
-        skip=skip,
-        limit=limit,
+        page=page,
+        size=size,
     )
     rows, total, filters = _service.paginate(db, query)
     return ApiResponse.list_(
         items=rows,
         total=total,
-        page=(skip // limit) + 1 if limit else 1,
-        page_size=limit,
+        page=page,
+        page_size=size,
         filters=filters,
         message=f"查询到 {total} 条记录",
     )

@@ -6,7 +6,7 @@ from pathlib import Path
 
 from sqlalchemy.orm import Session
 
-from app.exceptions.base import NotFoundException, ValidationException
+from app.exceptions.base import BusinessException, NotFoundException
 from app.repositories.file_trace.upload_file_repository import UploadFileRepository
 from app.schemas.dto.file_trace_dto import UploadFileListQuery
 from app.schemas.vo.file_trace_vo import UploadFileFiltersVO, UploadFileVO
@@ -30,7 +30,13 @@ class UploadFileService:
         if query.file_category and query.file_category not in allowed:
             return [], 0
 
-        rows, total = _repo.paginate(db, query, allowed)
+        rows, total = _repo.paginate(
+            db,
+            query,
+            allowed,
+            skip=(query.page - 1) * query.size,
+            limit=query.size,
+        )
         return [UploadFileVO.model_validate(row) for row in rows], total
 
     def get_filters(
@@ -80,12 +86,12 @@ class UploadFileService:
             raise NotFoundException(f"文件不存在: id={file_id}")
 
         if row.status not in {"active", "superseded"}:
-            raise ValidationException("该文件不可下载")
+            raise BusinessException("该文件不可下载")
 
         try:
             absolute_path = resolve_upload_path(row.stored_relpath)
         except ValueError as exc:
-            raise ValidationException(str(exc)) from exc
+            raise BusinessException(str(exc)) from exc
 
         if not absolute_path.is_file():
             raise NotFoundException("原件已丢失，请联系管理员")

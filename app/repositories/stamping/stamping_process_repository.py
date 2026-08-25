@@ -3,9 +3,9 @@
 import logging
 from typing import List, Optional
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, contains_eager
 
-from app.models import StampingProcess
+from app.models.stamping import StampingPart, StampingProcess
 from app.repositories.persist import apply_payload_fields, model_from_payload
 from app.schemas.dto.stamping_upload_dto import ProcessData, StampingProcessPatch
 
@@ -21,8 +21,6 @@ class StampingProcessRepository:
 
     def count_by_part_location(self, db: Session, location: str | None = None) -> int:
         """按零件生产基地统计工序数；location 为空则全库。"""
-        from app.models import StampingPart
-
         q = db.query(StampingProcess).join(
             StampingPart, StampingProcess.part_id == StampingPart.id
         )
@@ -54,10 +52,6 @@ class StampingProcessRepository:
         version: str,
     ) -> List[StampingProcess]:
         """按基地 + 冲压工厂 + 车型 + 版本查询工序（含所属零件）。"""
-        from sqlalchemy.orm import contains_eager
-
-        from app.models import StampingPart
-
         return (
             db.query(StampingProcess)
             .join(StampingPart, StampingProcess.part_id == StampingPart.id)

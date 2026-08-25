@@ -11,6 +11,7 @@ from typing import Optional, Union
 from pydantic import BaseModel, Field, field_serializer
 
 from app.common.money import Q2, optional_format_money
+from app.common.timezone import datetime_to_iso
 
 
 # ============================
@@ -138,7 +139,7 @@ class PolicyListResponse(BaseModel):
 
     @field_serializer("created_at", "updated_at")
     def serialize_datetime(self, value: Optional[datetime]) -> Optional[str]:
-        return value.isoformat() if value else None
+        return datetime_to_iso(value)
 
     model_config = {"from_attributes": True}
 
@@ -166,7 +167,7 @@ class PolicyDetailResponse(BaseModel):
 
     @field_serializer("created_at", "updated_at")
     def serialize_datetime(self, value: Optional[datetime]) -> Optional[str]:
-        return value.isoformat() if value else None
+        return datetime_to_iso(value)
 
     model_config = {"from_attributes": True}
 

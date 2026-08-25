@@ -30,5 +30,5 @@ class LlmAnalysisReportQuery(BaseModel):
     bom_version: str | None = None
     report_type: str | None = None
     status: str | None = None
-    skip: int = Field(0, ge=0)
-    limit: int = Field(10, ge=1, le=100)
+    page: int = Field(1, ge=1)
+    size: int = Field(10, ge=1, le=100)

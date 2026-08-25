@@ -22,8 +22,8 @@ class L0AssemblyCostQuery(BaseModel):
     part_number: str | None = None
     audit_status: str | None = None
     calc_status: str | None = None
-    skip: int = Field(0, ge=0)
-    limit: int = Field(20, ge=1, le=200)
+    page: int = Field(1, ge=1)
+    size: int = Field(20, ge=1, le=200)
 
 
 class L0AssemblyCostScopeDTO(BaseModel):

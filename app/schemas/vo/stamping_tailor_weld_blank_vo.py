@@ -6,17 +6,12 @@ from __future__ import annotations
 
 from datetime import datetime
 from decimal import Decimal
-from typing import Any, Optional, Union
+from typing import Any, Optional
 
 from pydantic import BaseModel, Field, field_serializer
 
 from app.common.money import Q2, Q4, optional_format_money
-
-
-def _datetime_to_str(value: Union[datetime, str, None]) -> Optional[str]:
-    if isinstance(value, datetime):
-        return value.strftime("%Y-%m-%d %H:%M:%S")
-    return value
+from app.common.timezone import datetime_to_iso
 
 
 class StampingTailorWeldBlankVO(BaseModel):
@@ -47,7 +42,7 @@ class StampingTailorWeldBlankVO(BaseModel):
 
     @field_serializer("created_at", "updated_at")
     def serialize_datetime(self, value: Any) -> Any:
-        return _datetime_to_str(value)
+        return datetime_to_iso(value)
 
     @field_serializer("thickness", "part_weight")
     def serialize_physical(self, value: Decimal | None) -> str | None:

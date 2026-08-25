@@ -25,7 +25,7 @@ import { findPrompt, fillPromptTemplate } from './prompts/catalog.js';
 
 import { applyReportToMessage } from './report/apply-report.js';
 
-import { openHistoryPanel } from './report/history.js?v=4';
+import { openHistoryPanel } from './report/history.js?v=5';
 
 import {
 

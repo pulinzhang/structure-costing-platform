@@ -8,6 +8,9 @@ alwaysApply: true
 > 基于垂直切片的模块化架构（Feature-based Vertical Slice Architecture）
 > 分层严格（Router → Service → Repository）；切片依赖有向无环（下游可组合上游）
 > 所有代码必须遵循的分层与依赖规范
+>
+> 可读导读：`docs/architecture.md`（与本文同步维护）
+> Cursor 规则：`.cursor/rules/architecture-constitution.mdc`（改一处须改两处）
 
 ---
 
@@ -25,17 +28,17 @@ alwaysApply: true
 
 | 层级 | 职责 | 禁止事项 |
 |------|------|----------|
-| **Router** | 接收请求、参数验证、调用 Service、返回 `ApiResponse` | 禁止写业务逻辑；禁止直接查数据库；禁止直接调用 Parser；禁止写后台 worker 壳（§5.3）；禁止把 Service 错误元组 / `None` 转成 `HTTPException`（§5.2） |
-| **Service** | 业务逻辑、数据转换、事务管理、异常处理；**唯一可调用 Parser** | 禁止直接写 SQL（须经 Repository）；禁止用 `(None, str)` 向 Router 返回错误（§5.2） |
+| **Router** | 接收请求、参数验证、调用 Service、返回 `ApiResponse`；下载/导出可返回 `StreamingResponse` / `FileResponse` | 禁止写业务逻辑；禁止直接查数据库；禁止直接调用 Parser；禁止写后台 worker 壳（§5.3）；禁止把 Service 错误元组 / `None` 转成 `HTTPException`（§5.2） |
+| **Service** | 业务逻辑、ORM→VO、事务管理、异常处理；**唯一可调用 Parser** | 禁止直接写 SQL（须经 Repository）；禁止用 `(None, str)` 向 Router 返回错误（§5.2）；禁止在 Service 里格式化 datetime/Decimal 给前端 |
 | **Repository** | 数据库 CRUD / 聚合查询构建 | 禁止权限/角色等业务策略判断 |
-| **Model** | 定义数据库表结构 | 禁止写业务方法（如 `to_dict`、业务 `@property`） |
-| **Schema** | 请求验证、响应序列化（DTO/VO） | 禁止写业务流程逻辑 |
+| **Model** | 定义数据库表结构；允许 `relationship` | 禁止 `to_dict`、业务 `@property` |
+| **Schema** | 请求验证（DTO）/ 响应序列化（VO） | 禁止写业务流程逻辑 |
 | **Parser** | 解析文件（纯函数，工具层） | 禁止写业务逻辑；禁止依赖 Router/Service/Repository |
 
 **Parser 特殊说明**：
 - Parser 是**横向工具层**，不属于分层体系
 - **只能被 Service 层调用**，Router 禁止直接调用 Parser
-- Parser 无依赖，不依赖任何其他层
+- 禁止依赖 Router / Service / Repository；**允许**调用 `app/common/` 纯函数（如 `money`、`vehicle_model`）
 
 ---
 
@@ -57,14 +60,21 @@ Router 的三件事：
 ```python
 # app/routers/stamping/crud.py
 
-@router.get("/parts")
+@router.get("/parts", response_model=ApiResponse[PageResult[PartVO]])
 def list_parts(
     db: Session = Depends(get_db),
     query: StampingPartQuery = Depends(),
-):
+    current_user: UserVO = Depends(require_perm(Perm.STAMPING_PARTS_VIEW)),
+) -> ApiResponse[PageResult[PartVO]]:
     service = StampingPartService()
-    data, total = service.list_parts(db, query)
-    return ApiResponse.list_(data=data, total=total)
+    records, total, filters = service.paginate(db, query)
+    return ApiResponse.list_(
+        items=records,
+        total=total,
+        page=query.page,
+        page_size=query.size,
+        filters=filters,
+    )
 ```
 
 **❌ 错误示例：**
@@ -114,11 +124,11 @@ class StampingPartService:
             db,
             vehicle_model=query.vehicle_model,
             version=query.version,
-            skip=query.skip,
-            limit=query.limit,
+            skip=(query.page - 1) * query.size,
+            limit=query.size,
         )
 
-        # 数据转换：使用 Schema 序列化，不依赖 Model 的 to_dict
+        # ORM → VO（datetime/Decimal 的 JSON 形态由 VO @field_serializer 负责）
         return [PartResponse.model_validate(p) for p in parts], total
 ```
 
@@ -129,7 +139,7 @@ class StampingPartService:
 - **事务管理**（使用 `db.begin()` 或装饰器）
 - **抛出业务异常**（由全局 `business_exception_handler` 捕获，见 §5.2）
 - 调用 Parser（**唯一能调用 Parser 的层级**）
-- 数据序列化（使用 Schema，不在 Model 里写 `to_dict`）
+- **ORM → VO**（`VO.model_validate`；不在 Model 里写 `to_dict`，不把 VO dump 成 API dict）
 - **异步任务**：`create_task` + `submit`；成功文案与任务终态映射；崩溃时释放计算锁或回写引擎 Run（见 §5.3）
 
 ---
@@ -169,6 +179,8 @@ class StampingPartRepository:
         return parts, total
 ```
 
+HTTP 列表查询参数必须是 `page` + `size`（禁止 Router / DTO 暴露 `skip` / `limit`）。上面 Repository 的 `skip` / `limit` 只对应 SQL `OFFSET` / `LIMIT`，由 Service 用 `(query.page - 1) * query.size` 换算。
+
 **❌ 禁止示例：**
 
 ```python
@@ -184,7 +196,7 @@ def get_active_parts(self, db: Session, user_id: int):
 - 只接收**明确的查询/写入参数**（字段值、排序、分页、目标状态值）
 - **禁止**：权限/角色判断、按用户身份分支的业务策略
 - **允许**：技术性判空拼接过滤条件（如 `if value is not None`）
-- **允许**：SQL 聚合/去重结果返回 `dict`、命名元组或轻量 read-model（如 `summarize_*`、`get_filter_options`）
+- **允许**：SQL 聚合/去重结果返回具名 `TypedDict`、命名元组或轻量 read-model（如 `summarize_*`、`get_filter_options`）；**禁止**匿名 `dict` / `dict[str, Any]`
 - **允许**：按 Service 传入的明确状态值做过滤/批量更新（如 `audit_status=AUDIT_APPROVED`）；**谁决定状态**仍在 Service
 - 所有「该不该通过 / 下一步状态是什么」的决策必须在 Service 层完成
 
@@ -192,20 +204,20 @@ def get_active_parts(self, db: Session, user_id: int):
 
 ### 2.4 Model 层（模型层）
 
-**职责：定义数据库表结构，只定义字段，不写任何方法**
+**职责：定义数据库表结构；允许 `relationship` / `__table_args__` / Mapped 注解，禁止业务方法**
 
 ```python
 # app/models/stamping/part.py
 
 class StampingPart(Base):
-    """只定义表结构，不写任何逻辑方法"""
+    """表结构 + relationship；不写 to_dict / 业务 @property"""
     __tablename__ = "stamping_parts"
 
     id = Column(Integer, primary_key=True)
     part_number = Column(String(50), unique=True, index=True)
     vehicle_model = Column(String(50), index=True)
     version = Column(String(50), index=True)
-    # ... 只定义字段，不写 to_dict，不写业务方法
+    processes = relationship("StampingProcess", back_populates="part")
 ```
 
 **❌ 禁止示例：**
@@ -215,7 +227,7 @@ class StampingPart(Base):
 class StampingPart(Base):
     # ...
 
-    def to_dict(self):  # ❌ Model 禁止写方法
+    def to_dict(self):  # ❌ Model 禁止 to_dict
         return {...}
 
     @property
@@ -227,42 +239,35 @@ class StampingPart(Base):
 
 ### 2.5 Schema 层（模式层）
 
-**职责：请求验证、响应序列化（DTO）**
+**职责：请求验证（DTO）与响应序列化（VO）**
 
 ```python
-# app/schemas/stamping.py
-
-from pydantic import BaseModel
-
+# app/schemas/dto/stamping_part_dto.py
 class StampingPartQuery(BaseModel):
-    """请求参数验证"""
     vehicle_model: str
     version: str
     part_number: str | None = None
-    skip: int = 0
-    limit: int = 100
+    page: int = 1
+    size: int = 20
 
+# app/schemas/vo/stamping_vo.py
 class StampingPartResponse(BaseModel):
-    """响应数据序列化"""
     id: int
     part_number: str
     part_name: str
     material: str | None
 
-    class Config:
-        from_attributes = True  # 支持从 ORM 模型转换
-
-def serialize_part(part: StampingPart) -> dict:
-    """独立的序列化工具函数"""
-    return StampingPartResponse.model_validate(part).model_dump()
+    model_config = {"from_attributes": True}
 ```
+
+Service 用 `StampingPartResponse.model_validate(part)` 得到 VO，交给 Router 放进 `ApiResponse`。**禁止**再 `model_dump()` 当 API 输出。
 
 **Schema 与 Model 的区别：**
 | | Model | Schema |
 |---|---|---|
-| 用途 | 定义数据库表结构 | 请求验证 / 响应序列化 |
-| 位置 | 数据库层 | DTO 层 |
-| 逻辑 | 无 | 无 |
+| 用途 | 定义数据库表结构 | DTO（入）/ VO（出） |
+| 位置 | `app/models/{feature}/` | `app/schemas/dto/` · `app/schemas/vo/` |
+| 逻辑 | 无业务方法 | 无业务流程；VO 可用 `@field_serializer` |
 
 ---
 
@@ -276,8 +281,8 @@ def serialize_part(part: StampingPart) -> dict:
 def parse_stamping_excel(file_path: str) -> ParseResult:
     """
     纯函数：输入文件路径，输出结构化数据
-    - 无副作用（不写数据库、不写文件）
-    - 不依赖任何其他层
+    - 无副作用（不写数据库、不写业务文件）
+    - 禁止依赖 Router / Service / Repository；允许 `app/common/` 纯函数
     - 被 Service 层调用，不被 Router 直接调用
     """
     # 读取 Excel
@@ -299,55 +304,28 @@ def parse_stamping_excel(file_path: str) -> ParseResult:
 
 ```
 app/
-├── common/                          # 公共层（可被所有切片依赖）
-│   ├── models/                      # 公共模型（如 User、AuditLog）
-│   ├── repositories/               # 公共数据访问
-│   ├── services/                    # 公共业务逻辑
-│   │   ├── material_service.py      # 材料计算（冲压/注塑共用）
-│   │   ├── file_service.py         # 文件存储
-│   │   └── email_service.py         # 邮件发送
-│   └── schemas/                     # 公共 Schema
-│
-├── routers/                         # Router 层
-│   └── stamping/                    # 冲压功能切片
-│       ├── __init__.py
-│       ├── crud.py                  # 查询接口
-│       └── upload.py                # 上传接口
-├── services/                        # Service 层
-│   └── stamping/                    # 冲压功能切片
-│       ├── __init__.py
-│       ├── stamping_service.py      # 零件业务逻辑
-│       └── upload/                  # 上传业务
-│           ├── __init__.py
-│           └── stamping_upload.py   # 调用 Parser，处理上传流程
-├── repositories/                     # Repository 层
-│   └── stamping/                    # 冲压功能切片
-│       ├── __init__.py
-│       └── stamping_repository.py   # 数据库 CRUD
-├── models/                         # Model 层（按垂直切片分子包）
-│   ├── common/                     # 横切 Mixin（AuditUserMixin）
-│   ├── settings/                   # 用户 / 权限 / 配置 / 操作日志
-│   ├── stamping/                   # 冲压零件 / 冲次单价 / 加工费
-│   ├── bom/                        # BOM / 焊接单价 / 拆解 / L0 焊接费
-│   ├── yishiyiyi/                  # 基价 / 政策 / 废料价
-│   ├── costing/                    # 钢材联动价 / 零件核价
-│   └── async_task/                 # 异步任务（辅助库）
-├── schemas/                         # Schema 层
-│   └── stamping.py                  # 请求验证 / 响应序列化
-└── parsers/                        # Parser 层（横向工具）
-    └── stamping/                    # 冲压功能切片
-        ├── __init__.py
-        └── stamping_parser.py       # Excel 解析
+├── common/                          # 横切：permissions / audit / timezone / money …
+├── routers/{feature}/               # crud.py / upload.py
+├── services/{feature}/
+├── repositories/{feature}/
+├── models/{feature}/                # ORM；根 __init__ 仅供 main 注册表
+│   ├── common/                      # Mixin（AuditUserMixin）
+│   └── settings/                    # 用户 / 权限 / 配置 / 操作日志
+├── schemas/
+│   ├── dto/                         # 请求 DTO
+│   ├── vo/                          # 响应 VO
+│   └── common/                      # PageResult 等
+├── parsers/{feature}/               # 仅上传类切片
+└── utils/                           # ApiResponse 等
 ```
 
 **common/ 公共层说明：**
 | 目录 | 内容 | 示例 |
 |------|------|------|
-| `common/`（横切） | 权限、审计、时区等基础设施 | `permissions/`、`audit/` |
-| `common/services/`（可选） | 无切片归属的纯技术能力 | 文件存储、邮件 |
-| `common/repositories/`（可选） | 无业务归属的共享查询辅助 | 通用分页基类 |
+| `common/`（横切） | 权限、审计、时区、金额量化等纯函数 | `permissions/`、`audit.py`、`timezone.py`、`money.py` |
+| 领域辅助（无切片归属时） | 被 Parser/多切片复用的纯规则 | `vehicle_model.py`、`bom/welding_standard_process.py` |
 
-> 领域数据访问（零件、基价、政策、BOM）**留在各自切片**；由下游核价/仪表盘按依赖方向组合，不必强行搬进 `common/`。
+> 领域表与 Repository（零件、基价、政策、BOM）**留在各自切片**；由下游核价/仪表盘按依赖方向组合，不必强行搬进 `common/`。不要再画 `common/models` / `common/schemas` 或虚构的 `material_service.py`。
 
 **命名规则：**
 - Router：`app/routers/{feature}/crud.py`、`app/routers/{feature}/upload.py`
@@ -356,9 +334,9 @@ app/
 - Model：`app/models/{feature}/{entity}.py`；业务代码 `from app.models.{feature} import …`
 - `app/models/__init__.py` 仅供 `main.py` 启动时全量注册表，禁止当日常 import 入口
 - 其它层根 `__init__.py`（services / repositories / schemas / parsers 等）只作包标记，禁止汇总导出
-- Schema：`app/schemas/{feature}.py`
+- Schema：`app/schemas/dto/{feature}_dto.py`、`app/schemas/vo/{feature}_vo.py`
 - Parser：`app/parsers/{feature}/{feature}_parser.py`
-- Common：`app/common/services/{service_name}.py`
+- Common：`app/common/` 下纯函数模块（不要为横切能力再套一层 `common/services/` 除非确有无切片归属的技术服务）
 
 ---
 
@@ -378,7 +356,7 @@ app/
 ├──────────────┬───────────────────────┤
 │               │ 调用 Parser（唯一合法）│
 │          ┌────▼────┐                 │
-│          │ Parser   │ ← 横向工具，无依赖│
+│          │ Parser   │ ← 横向工具；可调 Common 纯函数│
 │          └─────────┘                 │
 │               │                     │
 │               │ 可调用 Common        │
@@ -401,7 +379,7 @@ app/
 | Router | 本切片 Service（及任务编排所需的本切片/公共 Service） | Repository、Model、Parser |
 | Service | Repository、Parser、Common、**按 4.2 允许的上游切片** | Router；直接 SQL |
 | Repository | Model、Common 中的共享查询辅助 | Service、Router、Parser |
-| Parser | 无 | 任何层 |
+| Parser | `app/common/` 纯函数 | Router、Service、Repository、Model |
 | Model | 无 | 任何层 |
 
 ### 4.2 切片依赖（有向无环，允许下游组合上游）
@@ -477,7 +455,7 @@ class StampingUploadService:
             processes = self.process_repo.bulk_create(db, processes_data)
 
             db.commit()  # 提交事务
-            return {"parts": len(parts), "processes": len(processes)}
+            return result_vo  # 返回 VO / dataclass，不要裸 dict
 
         except IntegrityError:
             db.rollback()
@@ -518,16 +496,16 @@ def get_part(...) -> ApiResponse[PartVO]:
 | `NotFoundException` | 404 | 资源不存在、异步任务不存在或已过期 |
 | `BusinessException` | 400 | 唯一键冲突、`IntegrityError`、已审核不可改、缺必填、无更新字段、其它业务拒绝 |
 | `BusinessException(..., code=409)` | 409 | 期别/范围冲突（如同一基地年月正在计算） |
-| `ValidationException` | 422 | **仅当**有意与请求体 Pydantic 校验同码。业务拒绝用 `BusinessException`（400），不要用本类表达唯一键/审核锁 |
+| `ValidationException` | 422 | **不要用。** 请求体校验走 Pydantic → 全局 422；业务拒绝一律 `BusinessException`（400） |
 | `PermissionException` | 403 | 权限不足（由 `require_perm` 抛，切片不必手写） |
 | 未捕获 `Exception` | 500 | `rollback` + `logger.exception` + **再 raise**。禁止 `BusinessException(str(exc))`，禁止 `return None, str(exc)` |
 
-**`HTTPException` 边界（窄）：**
+**`HTTPException` 边界（窄）：业务 Router 和切片 Service 一律不抛 `HTTPException`。找不到 → `NotFoundException`；拒绝 → `BusinessException`（冲突 `code=409`）。**
 
 | 允许 | 禁止 |
 |------|------|
-| `app/deps/auth.py` 未登录 → `HTTPException(401)` | Router `if not vo: HTTPException(404)` |
-| FastAPI 自身的路由/参数解析错误 | Router `except` 业务失败再转 `HTTPException(400/404/409)` |
+| `app/deps/auth.py` 未登录 → `HTTPException(401)` | 业务 Router 任何 `raise HTTPException` |
+| FastAPI 自身的路由/参数解析错误 | `if not vo:` / `if error:` / `except` 后再转 `HTTPException(400/404/409)` |
 | | 任务过期、记录不存在等业务 404（应 `NotFoundException`） |
 
 handler 已按 `BusinessException.code` 写状态码，**禁止**用 `HTTPException` 翻译 Service 失败。
@@ -589,7 +567,7 @@ if not record:
 - 引擎领域异常（`RunDeletedError`、回写 `costing_engine_run` 失败态）留在 `CostingEngineService`；runner 只提供 Session / 进度 / 统一 close
 - 引擎路径 **禁止**再 `submit` 子任务并在 worker 内等待（线程池死锁）；子计算同进程同步调用
 - 沿用现有线程池 + 辅助库；**禁止**为此引入 Celery / Redis 队列等新框架
-- 任务 `result` 写入辅助库 JSON 时，由切片 Service 从 dataclass / VO 转出；Router **禁止** `vo.model_dump()`（这是持久化序列化，不是 API 输出，见类型安全 §12）
+- 任务 `result` 写入辅助库 JSON 时，由切片 Service 从 dataclass / VO 转出；Router **禁止** `vo.model_dump()`（持久化不是 API 输出，见类型安全「model_dump」规则）
 - `start_*` 入队前的业务拒绝对 Router **抛异常**（缺基地等 → `BusinessException` 400；重复计算锁 → `BusinessException(..., code=409)`）。worker `work()` 内失败映射 `WorkerTaskOutcome`，可捕获本切片 `BusinessException` 写成任务 message（不是 HTTP 错误通道）
 
 **✅ 正确（示意）：**
@@ -618,7 +596,7 @@ async def upload_stamping_file(..., current_user: UserVO = Depends(...)):
 - [ ] 这段代码是**数据转换**吗？ → 放到 **Schema**
 - [ ] 这段代码是**文件解析**吗？ → 放到 **Parser**（只能被 Service 调用）
 - [ ] 我在 Repository 里写**权限/角色**判断了吗？ → **禁止**，移到 Service
-- [ ] 我在 Model 里写 `to_dict` 了吗？ → **禁止**，用 Schema 序列化
+- [ ] 我在 Model 里写 `to_dict` 或业务 `@property` 了吗？ → **禁止**；`relationship` 允许
 - [ ] 跨切片依赖是**下游 → 上游**且无环吗？ → 上游不得依赖下游
 - [ ] 异步上传/计算的 worker 壳写在 **Router** 里了吗？（`_process_*_in_background` / Router 开 Session）→ **禁止**，见 §5.3
 - [ ] 把同一套 Session/进度/finally 复制进多个 Service 了吗？（含引擎 worker）→ **禁止**，抽 `async_task` runner
@@ -653,10 +631,10 @@ async def upload_stamping_file(..., current_user: UserVO = Depends(...)):
 app/
 ├── common/
 │   ├── permissions/                  # 权限码、鉴权辅助
-│   ├── audit/                        # 审计字段填充
-│   ├── timezone/                     # 时区等横切工具
-│   ├── services/                     # 可选：无切片归属的纯技术能力
-│   └── repositories/                 # 可选：跨表但无业务归属的查询辅助
+│   ├── audit.py                      # 审计字段填充
+│   ├── timezone.py                   # 东八区墙钟
+│   ├── money.py                      # Decimal 量化 / JSON 字符串
+│   └── …                             # vehicle_model、part_number、bom 纯规则等
 └── services/{feature}/               # 业务仍按切片垂直组织
 ```
 

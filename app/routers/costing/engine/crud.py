@@ -87,8 +87,8 @@ def list_runs(
     year: int | None = Query(None, ge=2000, le=2100),
     month: int | None = Query(None, ge=1, le=12),
     status_filter: str | None = Query(None, alias="status"),
-    skip: int = Query(0, ge=0),
-    limit: int = Query(20, ge=1, le=100),
+    page: int = Query(1, ge=1),
+    size: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.COSTING_VIEW)),
 ) -> ApiResponse[PageResult[CostingEngineRunListItemVO]]:
@@ -98,14 +98,14 @@ def list_runs(
         year=year,
         month=month,
         status=status_filter,
-        skip=skip,
-        limit=limit,
+        page=page,
+        size=size,
     )
     return ApiResponse.list_(
         items=items,
         total=total,
-        page=(skip // limit) + 1 if limit else 1,
-        page_size=limit,
+        page=page,
+        page_size=size,
     )
 
 

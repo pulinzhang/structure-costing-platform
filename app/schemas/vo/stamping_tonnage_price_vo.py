@@ -9,6 +9,7 @@ from typing import Any
 from pydantic import BaseModel, field_serializer
 
 from app.common.money import Q3, format_money
+from app.common.timezone import datetime_to_iso
 
 
 def format_price_per_stroke(value: Any) -> str:
@@ -42,7 +43,7 @@ class StampingTonnagePriceResponse(BaseModel):
 
     @field_serializer("created_at", "updated_at", "audited_at", "reverse_audited_at")
     def serialize_datetime(self, value: datetime | None) -> str | None:
-        return value.isoformat() if value else None
+        return datetime_to_iso(value)
 
     model_config = {"from_attributes": True}
 

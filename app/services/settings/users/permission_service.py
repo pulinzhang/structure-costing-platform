@@ -15,7 +15,7 @@ from app.common.permissions.catalog import (
     is_valid_code,
 )
 from app.common.permissions.checks import require_admin
-from app.exceptions.base import NotFoundException, ValidationException
+from app.exceptions.base import BusinessException, NotFoundException
 from app.models.settings import User
 from app.repositories.settings.users.user_permission_repository import UserPermissionRepository
 from app.repositories.settings.users.user_repository import UserRepository
@@ -60,7 +60,7 @@ class PermissionService:
         if not user:
             raise NotFoundException("用户不存在")
         if user.is_admin:
-            raise ValidationException("管理员拥有全部权限，无需单独授权")
+            raise BusinessException("管理员拥有全部权限，无需单独授权")
 
         valid = [c for c in codes if is_valid_code(c)]
         final_codes = sorted(set(valid) | set(get_mandatory()))

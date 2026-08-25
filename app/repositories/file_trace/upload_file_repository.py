@@ -120,6 +120,9 @@ class UploadFileRepository:
         db: Session,
         query: UploadFileListQuery,
         allowed_categories: list[str],
+        *,
+        skip: int,
+        limit: int,
     ) -> tuple[list[UploadFile], int]:
         if not allowed_categories:
             return [], 0
@@ -156,8 +159,8 @@ class UploadFileRepository:
         total = q.count()
         rows = (
             q.order_by(UploadFile.created_at.desc(), UploadFile.id.desc())
-            .offset(query.skip)
-            .limit(query.limit)
+            .offset(skip)
+            .limit(limit)
             .all()
         )
         return rows, total

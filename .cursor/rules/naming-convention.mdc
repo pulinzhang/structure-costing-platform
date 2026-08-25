@@ -98,7 +98,7 @@ alwaysApply: true
 |------|------|------|
 | 请求参数 | 小写下划线 | `vehicle_model`, `version` |
 | 响应数据 | 小写下划线 | `code`, `message`, `data` |
-| 分页参数 | skip / limit 或 page / page_size | `skip=0`, `limit=100` |
+| 分页参数 | page + size（请求）；响应 `page_size` | `page=1`, `size=20` |
 | 路径参数 | 小写下划线 | `/parts/{part_id}` |
 
 ---

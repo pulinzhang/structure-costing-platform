@@ -250,8 +250,8 @@ class L0AssemblyCostService:
             part_number=query.part_number,
             audit_status=query.audit_status,
             calc_status=query.calc_status,
-            skip=query.skip,
-            limit=query.limit,
+            skip=(query.page - 1) * query.size,
+            limit=query.size,
         )
         return (
             [L0AssemblyCostVO.model_validate(r) for r in rows],

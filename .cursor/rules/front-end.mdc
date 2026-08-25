@@ -527,7 +527,7 @@ ES Module 导出：`PAGE_SIZE_OPTIONS`、`DEFAULT_PAGE_SIZE`、`PREVIEW_*`、`pa
 ### 7.5 URL 与 API
 
 - API 前缀：`/api`
-- 列表分页参数常见：`skip` / `limit`（以接口为准）
+- 列表分页请求必须：`page` / `size`（禁止 `skip` / `limit`）
 - 分页体常见：`data: { items, total, page, page_size, … }`（`ApiResponse` + `PageResult`）
 - 使用 `HttpClient` 后读 `res.data`，不要假设 `code: 0`
 

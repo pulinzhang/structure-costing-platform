@@ -233,8 +233,8 @@ class CostingEngineService:
         year: int | None = None,
         month: int | None = None,
         status: str | None = None,
-        skip: int = 0,
-        limit: int = 20,
+        page: int = 1,
+        size: int = 20,
     ) -> tuple[list[CostingEngineRunListItemVO], int]:
         rows, total = self.run_repo.paginate(
             db,
@@ -242,8 +242,8 @@ class CostingEngineService:
             year=year,
             month=month,
             status=status,
-            skip=skip,
-            limit=limit,
+            skip=(page - 1) * size,
+            limit=size,
         )
         items = [CostingEngineRunListItemVO.model_validate(r) for r in rows]
         return items, total

@@ -31,7 +31,7 @@
 响应：  Database ──► Repository ──► Service ──► Router（ApiResponse[T]）
 ```
 
-Parser 是**横向工具**：只被 Service 调用，不依赖其它层。
+Parser 是**横向工具**：只被 Service 调用；禁止依赖 Router/Service/Repository，**允许** `app/common/` 纯函数。
 
 ---
 
@@ -39,11 +39,11 @@ Parser 是**横向工具**：只被 Service 调用，不依赖其它层。
 
 | 层 | 做什么 | 不要做什么 |
 |----|--------|------------|
-| **Router** | 鉴权依赖、参数、调 Service、返回 `ApiResponse` | 业务逻辑、`db.query`、调 Parser、后台 worker 壳（§5.3）、把 Service 错误元组转 `HTTPException`（§5.2） |
-| **Service** | 业务规则、事务、调 Parser/Repo、ORM→VO、抛业务异常 | 直接写 SQL；用 `(None, str)` 向 Router 报错 |
-| **Repository** | CRUD / 聚合查询；返回 Model 或聚合结果 | 权限/角色分支决策 |
+| **Router** | 鉴权依赖、参数、调 Service、返回 `ApiResponse`；下载/导出可 `StreamingResponse` / `FileResponse` | 业务逻辑、`db.query`、调 Parser、后台 worker 壳（§5.3）、把 Service 错误元组转 `HTTPException`（§5.2） |
+| **Service** | 业务规则、事务、调 Parser/Repo、ORM→VO、抛业务异常 | 直接写 SQL；用 `(None, str)` 向 Router 报错；手写 datetime/Decimal JSON |
+| **Repository** | CRUD / 聚合查询；返回 Model 或具名 `TypedDict` | 权限/角色分支决策；匿名 `dict` |
 | **Model** | 表字段 + `relationship` | `to_dict`、业务 `@property` |
-| **Schema** | DTO（入）/ VO（出） | 业务流程 |
+| **Schema** | DTO（`schemas/dto/`）/ VO（`schemas/vo/`） | 业务流程 |
 | **Parser** | 纯解析，无副作用 | 依赖 Router/Service/Repository |
 
 餐厅类比：Router=服务员，Service=厨师，Repository=仓管，Database=冰箱。
@@ -61,7 +61,7 @@ Parser 是**横向工具**：只被 Service 调用，不依赖其它层。
 | **上游 / 基础数据** | `settings` · `stamping` · `bom` · `yishiyiyi` | 用户配置、工艺零件、BOM、基价/政策/废料价 |
 | **下游 / 编排核价** | `costing` · `dashboard` | 钢材联动、零件核价、成品核价、引擎编排、KPI |
 | **横切登记** | `file_trace` | 已落盘 Excel 登记与鉴权下载；被上游上传 Service 调用，**不**依赖 costing |
-| **横切基础设施** | `app/common/` | 权限、审计、时区等（**不**依赖业务切片） |
+| **横切基础设施** | `app/common/` | 权限、审计、时区、金额量化等纯函数（**不**依赖业务切片） |
 
 目录按 feature 对齐，例如：
 
@@ -100,7 +100,7 @@ stamping-costing-platform/
 ├── main.py                      # FastAPI 入口
 ├── app/
 │   ├── config.py / database.py
-│   ├── common/                  # 横切：permissions / audit / timezone …
+│   ├── common/                  # 横切：permissions / audit / timezone / money …
 │   ├── models/{feature}/        # ORM（按垂直切片）；根 __init__ 仅供 main 注册表
 │   ├── schemas/                 # dto/ + vo/
 │   ├── repositories/{feature}/
@@ -126,10 +126,12 @@ stamping-costing-platform/
 ## 6. API 契约要点
 
 - 统一包装：`ApiResponse[T]`（`code` / `success` / `message` / `data`）
-- 分页：`data` 内为 `PageResult`（`items` / `total` / `page` / …），不要把 `total` 摊在根上
+- 分页：列表查询参数必须是 `page` + `size`（禁止 HTTP `skip` / `limit`）；`data` 内为 `PageResult`（`items` / `total` / `page` / `page_size` / …）；`list_(items=..., page=..., page_size=...)`
+- `start_*` 入队：HTTP 200 + `ApiResponse.ok(data=accepted)`，不要套 POST 201
+- 下载/导出：`StreamingResponse` / `FileResponse`，不走 `ApiResponse`
 - 业务路由：`Depends(require_perm(Perm.…))`；写操作把 `current_user` 显式传给 Service
-- Service 返回 VO；Repository 返回 Model（聚合接口可返回 dict / 轻量结构）
-- **禁止** Model.`to_dict`；序列化用 VO + `@field_serializer`
+- Service 返回 VO；Repository 返回 Model（聚合用 `TypedDict`，禁止匿名 `dict`）
+- **禁止** Model.`to_dict`；JSON 形态用 VO `@field_serializer`（金额/物理量字符串；datetime **必须** `app.common.timezone.datetime_to_iso`）
 
 细则：[架构宪法](architecture-constitution.mdc) + 项目内 `api-type-safety` 规则。
 
@@ -211,7 +213,7 @@ ApiResponse[AsyncTaskAcceptedVO]
 2. **Model**（若新表）+ 迁移/建表策略按项目惯例  
 3. **Repository**  
 4. **Service**（含权限相关业务判断、事务、§5.2 业务异常；异步上传/计算/引擎用 `start_*` + `async_task` runner，见 §9）  
-5. **Router**（`response_model` + `require_perm`；成功路径返回 `ApiResponse`，不要翻译业务错误）  
+5. **Router**（JSON：`response_model` + `require_perm` + `ApiResponse`；下载例外；不要翻译业务错误）  
 6. **前端**：`pageMeta` + `app.js` 注册 + 侧栏 `data-page` + 权限码  
 7. 递增前端脚本 `?v=`
 
@@ -235,7 +237,15 @@ ApiResponse[AsyncTaskAcceptedVO]
 
 ### 业务失败该返回元组还是抛异常？
 
-抛异常。Service 对 Router：不存在 → `NotFoundException`（404）；普通拒绝 → `BusinessException`（400）；期别冲突 → `BusinessException(..., code=409)`。全局 handler 按 `exc.code` 转 `ApiResponse.fail`。禁止 `(None, str)`，禁止 Router 入口返回 `VO | None` / `bool` 再判空，禁止 Router `except` 后再转 `HTTPException`。分页 `(items, total)`、Parser 匹配结果不是错误通道。未预期错误 rollback 后原样抛（500），不要包成 `BusinessException(str(e))`。细则见宪法 [§5.2](architecture-constitution.mdc)。
+抛异常。Service 对 Router：不存在 → `NotFoundException`（404）；普通拒绝 → `BusinessException`（400）；期别冲突 → `BusinessException(..., code=409)`。全局 handler 按 `exc.code` 转 `ApiResponse.fail`。禁止 `(None, str)`，禁止 Router 入口返回 `VO | None` / `bool` 再判空。**业务 Router / 切片 Service 不抛 `HTTPException`**（未登录只在 `deps/auth`）。分页 `(items, total)`、Parser 匹配结果不是错误通道。未预期错误 rollback 后原样抛（500），不要包成 `BusinessException(str(e))`。细则见宪法 [§5.2](architecture-constitution.mdc)。不要用 `ValidationException`；请求体校验走 Pydantic。
+
+### `start_*` 该用 201 还是 200？
+
+200。立刻返回 `task_id` 用 `ApiResponse.ok(data=accepted)`。`created()` / 201 只给 CRUD 创建或同步导入已有结果 VO。
+
+### 下载接口要套 ApiResponse 吗？
+
+不要。Excel / 原件用 `StreamingResponse` 或 `FileResponse`。
 
 ### 跨切片该不该抽到 common？
 
