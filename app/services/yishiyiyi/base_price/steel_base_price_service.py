@@ -12,6 +12,8 @@ from typing import Optional
 from sqlalchemy.orm import Session
 
 from app.common.audit import display_name
+from app.config import settings
+from app.exceptions.base import BusinessException
 from app.models.yishiyiyi import SteelBasePrice
 from app.schemas.dto.steel_base_price_dto import (
     FilterOptions,
@@ -71,7 +73,7 @@ class SteelBasePriceService:
     ) -> tuple[list[SteelBasePriceResponse], int]:
         return self._crud.paginate(db, query)
 
-    def get_by_id(self, db: Session, record_id: int) -> SteelBasePriceResponse | None:
+    def get_by_id(self, db: Session, record_id: int) -> SteelBasePriceResponse:
         return self._crud.get_by_id(db, record_id)
 
     def create(
@@ -79,7 +81,7 @@ class SteelBasePriceService:
         db: Session,
         body: SteelBasePriceCreate,
         current_user: UserVO,
-    ) -> tuple[SteelBasePriceResponse | None, str | None]:
+    ) -> SteelBasePriceResponse:
         return self._crud.create(db, body, current_user)
 
     def update(
@@ -88,28 +90,31 @@ class SteelBasePriceService:
         record_id: int,
         body: SteelBasePriceUpdate,
         current_user: UserVO,
-    ) -> tuple[SteelBasePriceResponse | None, str | None]:
+    ) -> SteelBasePriceResponse:
         return self._crud.update(db, record_id, body, current_user)
 
-    def delete(self, db: Session, record_id: int) -> tuple[bool, str | None]:
+    def delete(self, db: Session, record_id: int) -> None:
         return self._crud.delete(db, record_id)
 
     def batch_delete(
         self,
         db: Session,
         *,
-        year: int,
-        month: int,
+        year: int | None,
+        month: int | None,
         location: str | None = None,
         steel_mill: str | None = None,
-    ) -> tuple[bool, str | None]:
-        return self._crud.batch_delete(
+    ) -> tuple[int, int]:
+        if year is None or month is None:
+            raise BusinessException("year 和 month 不能为空")
+        self._crud.batch_delete(
             db,
             year=year,
             month=month,
             location=location,
             steel_mill=steel_mill,
         )
+        return year, month
 
     def import_excel(
         self,
@@ -203,6 +208,18 @@ class SteelBasePriceService:
         current_user: UserVO,
     ) -> AsyncTaskAcceptedVO:
         """创建异步任务并入队基准价 Excel 解析。"""
+        if not filename:
+            raise BusinessException("未提供文件名")
+        ext = "." + filename.split(".")[-1].lower()
+        if ext not in {".xlsx", ".xls"}:
+            raise BusinessException(f"不支持的文件类型: {ext}，仅支持 .xlsx / .xls")
+        if not file_content:
+            raise BusinessException("上传文件为空")
+        if len(file_content) > settings.MAX_UPLOAD_SIZE:
+            raise BusinessException(
+                f"文件过大，最大支持 {settings.MAX_UPLOAD_SIZE // (1024 * 1024)}MB"
+            )
+
         async_task_service = AsyncTaskService()
         task = async_task_service.create_task(
             task_type=TASK_TYPE_BASE_PRICE_IMPORT,
@@ -222,7 +239,7 @@ class SteelBasePriceService:
                     progress_callback=on_progress,
                     current_user=current_user,
                 )
-            except ValueError as error:
+            except BusinessException as error:
                 logger.warning(
                     "基准价导入业务失败: task_id=%s error=%s", task.task_id, error
                 )

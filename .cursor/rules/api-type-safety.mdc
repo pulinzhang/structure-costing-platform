@@ -374,6 +374,8 @@ Service must return:
 * `tuple[list[VO], int]` / 带 filters 的 tuple  # 分页推荐
 * `PageResult[VO]`  # 分页备选
 
+对 **Router 调用的** 单资源 get / 写操作：找不到或业务拒绝时 **抛异常**（`NotFoundException` / `BusinessException`，冲突用 `code=409`），不要 `VO | None`，不要 `delete → bool`，不要 `tuple[VO | None, str | None]`。细则见架构宪法 §5.2。
+
 Allowed:
 
 ```python
@@ -417,6 +419,10 @@ Any
 model_dump()
 ```
 
+```python
+tuple[UserVO | None, str | None]  # HTTP 错误通道；分页 (list, total) 除外
+```
+
 Example:
 
 Correct:
@@ -425,7 +431,7 @@ def get_user(
     self,
     db: Session,
     user_id: int
-) -> UserVO | None:
+) -> UserVO:
 
     user = self.repository.get_by_id(
         db,
@@ -433,7 +439,7 @@ def get_user(
     )
 
     if not user:
-        return None
+        raise NotFoundException(f"用户不存在: id={user_id}")
 
     return UserVO.model_validate(user)
 ```
@@ -444,6 +450,8 @@ return {
     "id": user.id,
     "name": user.name
 }
+
+return None, "用户不存在"
 ```
 
 ---
@@ -463,6 +471,7 @@ Router must not:
 * manipulate SQLAlchemy Model
 * convert ORM to dict
 * serialize VO manually
+* translate Service errors (`if error:` / `"不存在" in error` / `if not vo: HTTPException`) — 见架构宪法 §5.2
 
 Required:
 
@@ -542,11 +551,11 @@ Every HTTP method must follow consistent response patterns:
 
 | Method | Purpose | Service Return | Router Return | Response Model |
 |--------|---------|----------------|---------------|----------------|
-| `GET` (single) | 获取单个资源 | `VO` | `ApiResponse.ok(data=vo)` | `ApiResponse[UserVO]` |
+| `GET` (single) | 获取单个资源 | `VO`（不存在则抛 `NotFoundException`） | `ApiResponse.ok(data=vo)` | `ApiResponse[UserVO]` |
 | `GET` (list) | 获取资源列表 | `list[VO]` 或 `(list[VO], total[, filters])` | `ApiResponse.ok(data=list)` 或 `ApiResponse.list_(items=...)` | `ApiResponse[list[UserVO]]` 或 `ApiResponse[PageResult[UserVO]]` |
 | `POST` | 创建资源 | `VO` | `ApiResponse.created(data=vo)` | `ApiResponse[UserVO]` |
-| `PUT` / `PATCH` | 更新资源 | `VO` | `ApiResponse.updated(data=vo)` | `ApiResponse[UserVO]` |
-| `DELETE` | 删除资源 | `None` | `ApiResponse.deleted(message="删除成功")` | `ApiResponse[None]` |
+| `PUT` / `PATCH` | 更新资源 | `VO`（不存在则抛 `NotFoundException`） | `ApiResponse.updated(data=vo)` | `ApiResponse[UserVO]` |
+| `DELETE` | 删除资源 | `None`（不存在则抛 `NotFoundException`） | `ApiResponse.deleted(message="删除成功")` | `ApiResponse[None]` |
 
 ### GET - 获取单个资源
 
@@ -562,8 +571,6 @@ def get_user(
 ) -> ApiResponse[UserVO]:
     service = UserService()
     user = service.get_user(db, user_id)
-    if not user:
-        raise HTTPException(status_code=404, detail="用户不存在")
     return ApiResponse.ok(data=user)
 ```
 
@@ -639,8 +646,6 @@ def update_user(
 ) -> ApiResponse[UserVO]:
     service = UserService()
     user = service.update_user(db, user_id, dto, current_user=current_user)
-    if not user:
-        raise HTTPException(status_code=404, detail="用户不存在")
     return ApiResponse.updated(data=user, message="更新成功")
 ```
 
@@ -663,23 +668,16 @@ def delete_user(
 
 ### Error Response Pattern
 
-All endpoints should handle errors consistently:
+业务失败由 Service 抛 `NotFoundException` / `BusinessException`（冲突 `code=409`），`business_exception_handler` 写成 `ApiResponse.fail`。Router **不要** `try/except` 再转 `HTTPException`，不要拆 `(record, error)`，不要 `if not vo: 404`。
 
 ```python
-from fastapi import HTTPException, status
-
 @router.get("/users/{user_id}", ...)
 def get_user(...):
-    try:
-        user = service.get_user(db, user_id)
-        if not user:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="用户不存在")
-        return ApiResponse.ok(data=user)
-    except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    user = service.get_user(db, user_id)
+    return ApiResponse.ok(data=user)
 ```
 
-Note: Use `HTTPException` for error handling. The `detail` will be included in the response `message` field via FastAPI exception handler.
+请求体 Pydantic 校验走 `validation_exception_handler`（422）。未登录走 `deps/auth` 的 `HTTPException(401)`。未捕获异常走 `generic_exception_handler`（500）。细则见架构宪法 §5.2。
 
 ---
 
@@ -911,6 +909,7 @@ Use for:
 * update parameters
 * repository parameters
 * internal transformation
+* **异步任务 `result` 写入辅助库 JSON**（切片 Service：`result=result_vo.model_dump()` → `WorkerTaskOutcome`）。JSON 列存不下活的 VO；Router 进度查询用 `parse_result_json` + `XXXVO.model_validate` 后再放进 `ApiResponse`。这不是 API 输出。架构宪法 §5.3。
 
 Forbidden:
 
@@ -1012,6 +1011,7 @@ return JSONResponse
 return ORM Model from Router
 model_dump() in Router
 VO.model_dump() for API output
+tuple[VO | None, str | None] as HTTP error channel
 __dict__
 dict(model)
 ApiResponse[Any]
@@ -1031,6 +1031,7 @@ Every Router (except login):
 Every business Router:
     no bare get_current_user without Perm
     no permission string literals — use Perm.*
+    no if error: HTTPException / no if not vo: 404 / no except-then-HTTPException for business failures
 
 Every write Router → Service:
     pass current_user=current_user
@@ -1039,7 +1040,8 @@ Every Router:
     returns ApiResponse[T]
 
 Every Service:
-    returns VO
+    returns VO / list[VO] / (list, total[, filters]) / PageResult
+    raises NotFoundException / BusinessException for HTTP-facing failures (conflict: code=409)
     no implicit current_user / ContextVar
 
 Every Repository:

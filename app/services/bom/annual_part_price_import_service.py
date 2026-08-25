@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 
 from app.common.audit import audit_create, audit_update
 from app.config import settings
+from app.exceptions.base import BusinessException
 from app.parsers.bom.annual_part_price_parser import parse_annual_part_price_excel
 from app.repositories.bom.annual_part_price_repository import (
     BomAnnualPartPriceRepository,
@@ -155,18 +156,18 @@ class BomAnnualPartPriceImportService:
     ) -> BomAnnualPartPriceImportResultVO:
         location = (location or "").strip()
         if not location:
-            raise ValueError("请选择采购基地")
+            raise BusinessException("请选择采购基地")
         if year < 2000 or year > 2100:
-            raise ValueError("年度不正确")
+            raise BusinessException("年度不正确")
 
         original_name = Path(filename or "").name
         if Path(original_name).suffix.lower() != ".xlsx":
-            raise ValueError("仅支持 .xlsx 文件")
+            raise BusinessException("仅支持 .xlsx 文件")
         if not file_content:
-            raise ValueError("文件内容为空")
+            raise BusinessException("文件内容为空")
         if len(file_content) > settings.MAX_UPLOAD_SIZE:
             max_mb = settings.MAX_UPLOAD_SIZE // (1024 * 1024)
-            raise ValueError(f"文件过大，最大支持 {max_mb}MB")
+            raise BusinessException(f"文件过大，最大支持 {max_mb}MB")
 
         archive_path = save_annual_part_price_upload(
             file_content=file_content,
@@ -178,9 +179,9 @@ class BomAnnualPartPriceImportService:
 
         parse_result = parse_annual_part_price_excel(file_content)
         if parse_result.errors and not parse_result.rows:
-            raise ValueError("；".join(parse_result.errors))
+            raise BusinessException("；".join(parse_result.errors))
         if not parse_result.rows:
-            raise ValueError("未解析到有效数据行")
+            raise BusinessException("未解析到有效数据行")
 
         created_count = 0
         updated_count = 0

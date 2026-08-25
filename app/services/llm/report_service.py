@@ -6,12 +6,12 @@ import json
 import uuid
 from typing import Any
 
-from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.common.audit import audit_create, display_name
 from app.config import settings
 from app.database import DatabaseConfig
+from app.exceptions.base import BusinessException, NotFoundException, PermissionException
 from app.repositories.llm import (
     LlmAnalysisReportFailPatch,
     LlmAnalysisReportInsert,
@@ -83,10 +83,7 @@ class LlmAnalysisReportService:
             db, user_id=int(current_user.id)
         )
         if active_count >= int(settings.LLM_MAX_CONCURRENT_TASKS_PER_USER):
-            raise HTTPException(
-                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail="too many requests",
-            )
+            raise BusinessException("too many requests", code=429)
 
         trace_id = str(uuid.uuid4())
         analysis_query = analysis_query.model_copy(update={"trace_id": trace_id})
@@ -180,13 +177,9 @@ class LlmAnalysisReportService:
     ) -> LlmAnalysisReportVO:
         row = self.repository.get_by_id(db, report_id)
         if row is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="报告不存在"
-            )
+            raise NotFoundException("报告不存在")
         if int(row.user_id) != int(current_user.id):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, detail="只能查看本人的分析报告"
-            )
+            raise PermissionException("只能查看本人的分析报告")
         return LlmAnalysisReportVO.from_orm_row(row)
 
     def list_reports(
@@ -221,13 +214,9 @@ class LlmAnalysisReportService:
         """删除分析报告；只能删除本人的记录（管理员也不能删他人）。"""
         row = self.repository.get_by_id(db, report_id)
         if row is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="报告不存在"
-            )
+            raise NotFoundException("报告不存在")
         if int(row.user_id) != int(current_user.id):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, detail="只能删除本人的分析报告"
-            )
+            raise PermissionException("只能删除本人的分析报告")
         self.repository.delete_by_id(db, report_id)
         db.commit()
 
@@ -240,18 +229,12 @@ class LlmAnalysisReportService:
     ) -> AsyncTaskProgressVO:
         snapshot = _async_task_service.get_task_snapshot(task_id)
         if snapshot is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="任务不存在"
-            )
+            raise NotFoundException("任务不存在")
         row = self.repository.get_by_task_id(db, task_id)
         if row is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="任务不存在"
-            )
+            raise NotFoundException("任务不存在")
         if int(row.user_id) != int(current_user.id):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, detail="只能查看本人的分析任务"
-            )
+            raise PermissionException("只能查看本人的分析任务")
         result = AsyncTaskService.parse_result_json(snapshot.get("result_json"))
         return AsyncTaskProgressVO.from_snapshot(snapshot, result=result)
 

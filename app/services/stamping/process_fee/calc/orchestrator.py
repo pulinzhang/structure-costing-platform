@@ -164,11 +164,11 @@ class StampingProcessFeeCalcOrchestrator:
 
     def get_calc_log(
         self, db: Session, log_id: int
-    ) -> StampingProcessFeeCalcLogVO | None:
+    ) -> StampingProcessFeeCalcLogVO:
         return self.calc_log_service.get_calc_log(db, log_id)
 
-    def delete_calc_log(self, db: Session, log_id: int) -> bool:
-        return self.calc_log_service.delete_calc_log(db, log_id)
+    def delete_calc_log(self, db: Session, log_id: int) -> None:
+        self.calc_log_service.delete_calc_log(db, log_id)
 
     def calculate(
         self,

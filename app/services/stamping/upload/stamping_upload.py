@@ -19,6 +19,7 @@ from app.parsers.stamping.models.process import Process
 from app.parsers.stamping.stamping_parser import parse_stamping_excel
 from app.parsers.stamping.tailor_weld_parser import parse_tailor_weld_excel
 from app.config import settings
+from app.exceptions.base import BusinessException
 from app.repositories.stamping.stamping_repository import StampingPartRepository, StampingProcessRepository
 from app.schemas.dto.stamping_upload_dto import FileInfo, PartData, ProcessData, UploadResult
 from app.schemas.vo.async_task_vo import AsyncTaskAcceptedVO
@@ -414,6 +415,23 @@ class StampingUploadService:
         current_user: UserVO,
     ) -> AsyncTaskAcceptedVO:
         """创建异步任务并入队；后台线程开独立 Session 解析入库。"""
+        location = (location or "").strip()
+        if not location:
+            raise BusinessException("请输入基地")
+        if not filename:
+            raise BusinessException("未提供文件名")
+        ext = "." + filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+        if ext not in {".xlsx", ".xls"}:
+            raise BusinessException(
+                f"不支持的文件类型: {ext}，仅支持 .xlsx / .xls"
+            )
+        if not file_content:
+            raise BusinessException("上传文件为空")
+        if len(file_content) > settings.MAX_UPLOAD_SIZE:
+            raise BusinessException(
+                f"文件过大，最大支持 {settings.MAX_UPLOAD_SIZE // (1024 * 1024)}MB"
+            )
+
         from dataclasses import asdict
 
         async_task_service = AsyncTaskService()
@@ -434,7 +452,7 @@ class StampingUploadService:
                     progress_callback=on_progress,
                     current_user=current_user,
                 )
-            except ValueError as error:
+            except (BusinessException, ValueError) as error:
                 logger.warning(
                     "冲压上传业务失败: task_id=%s error=%s", task.task_id, error
                 )

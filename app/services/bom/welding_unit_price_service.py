@@ -4,7 +4,7 @@
 """
 
 import logging
-from typing import List, Optional, Tuple
+from typing import List, Tuple
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -17,6 +17,7 @@ from app.common.audit import (
 )
 from app.common.bom.welding_standard_process import validate_welding_unit_price_catalog
 from app.common.timezone import now
+from app.exceptions.base import BusinessException, NotFoundException
 from app.repositories.bom.welding_unit_price_repository import (
     BomWeldingUnitPriceRepository,
     WeldingUnitPriceListFilters,
@@ -84,10 +85,10 @@ class BomWeldingUnitPriceService:
         }
         return rows, total, filters
 
-    def get_by_id(self, db: Session, id: int) -> Optional[BomWeldingUnitPriceResponse]:
+    def get_by_id(self, db: Session, id: int) -> BomWeldingUnitPriceResponse:
         record = self.repository.get_by_id(db, id)
         if not record:
-            return None
+            raise NotFoundException(f"焊接单价记录不存在: id={id}")
         return BomWeldingUnitPriceResponse.model_validate(record)
 
     def create(
@@ -95,7 +96,7 @@ class BomWeldingUnitPriceService:
         db: Session,
         data: BomWeldingUnitPriceCreate,
         current_user: UserVO,
-    ) -> Tuple[Optional[BomWeldingUnitPriceResponse], Optional[str]]:
+    ) -> BomWeldingUnitPriceResponse:
         try:
             audit = audit_create(current_user)
             record = self.repository.create(
@@ -106,19 +107,20 @@ class BomWeldingUnitPriceService:
             )
             db.commit()
             db.refresh(record)
-            return BomWeldingUnitPriceResponse.model_validate(record), None
+            return BomWeldingUnitPriceResponse.model_validate(record)
         except IntegrityError:
             db.rollback()
-            error_msg = (
+            raise BusinessException(
                 f"该基地({data.location})、年份({data.year})"
                 f"和项目「{data.item_name}」的记录已存在"
-            )
-            logger.warning(error_msg)
-            return None, error_msg
-        except Exception as e:
+            ) from None
+        except BusinessException:
             db.rollback()
-            logger.error("创建焊接工费单价失败: %s", e)
-            return None, str(e)
+            raise
+        except Exception:
+            db.rollback()
+            logger.exception("创建焊接工费单价失败")
+            raise
 
     def bulk_upsert(
         self,
@@ -144,30 +146,30 @@ class BomWeldingUnitPriceService:
                 if existing.audit_status == AUDIT_APPROVED:
                     skipped_approved += 1
                     continue
-                record, error = self.update(
-                    db,
-                    existing.id,
-                    BomWeldingUnitPriceUpdate(
-                        unit=item.unit,
-                        unit_price=item.unit_price,
-                        remark=item.remark,
-                    ),
-                    current_user=current_user,
-                )
-                if record:
+                try:
+                    record = self.update(
+                        db,
+                        existing.id,
+                        BomWeldingUnitPriceUpdate(
+                            unit=item.unit,
+                            unit_price=item.unit_price,
+                            remark=item.remark,
+                        ),
+                        current_user=current_user,
+                    )
                     updated.append(record)
-                else:
+                except BusinessException as error:
                     failed.append(
-                        error
+                        str(error)
                         or f"{item.location}/{item.year}/{item.item_name} 更新失败"
                     )
                 continue
 
-            record, error = self.create(db, item, current_user=current_user)
-            if record:
+            try:
+                record = self.create(db, item, current_user=current_user)
                 created.append(record)
-            else:
-                failed.append(error or "未知错误")
+            except BusinessException as error:
+                failed.append(str(error) or "未知错误")
 
         return created, updated, failed, skipped_approved
 
@@ -177,20 +179,20 @@ class BomWeldingUnitPriceService:
         id: int,
         data: BomWeldingUnitPriceUpdate,
         current_user: UserVO,
-    ) -> Tuple[Optional[BomWeldingUnitPriceResponse], Optional[str]]:
+    ) -> BomWeldingUnitPriceResponse:
+        existing = self.repository.get_by_id(db, id)
+        if not existing:
+            raise NotFoundException("记录不存在")
+        if existing.audit_status == AUDIT_APPROVED:
+            raise BusinessException("已审核通过，请先反审核后再修改")
+
+        unit_to_check = data.unit if data.unit is not None else existing.unit
         try:
-            existing = self.repository.get_by_id(db, id)
-            if not existing:
-                return None, "记录不存在"
-            if existing.audit_status == AUDIT_APPROVED:
-                return None, "已审核通过，请先反审核后再修改"
+            validate_welding_unit_price_catalog(existing.item_name, unit_to_check)
+        except ValueError as exc:
+            raise BusinessException(str(exc)) from exc
 
-            unit_to_check = data.unit if data.unit is not None else existing.unit
-            try:
-                validate_welding_unit_price_catalog(existing.item_name, unit_to_check)
-            except ValueError as exc:
-                return None, str(exc)
-
+        try:
             record = self.repository.update(
                 db,
                 id,
@@ -198,31 +200,36 @@ class BomWeldingUnitPriceService:
                 updated_by=display_name(current_user),
             )
             if not record:
-                return None, "记录不存在"
+                raise NotFoundException("记录不存在")
             db.commit()
             db.refresh(record)
-            return BomWeldingUnitPriceResponse.model_validate(record), None
-        except Exception as e:
+            return BomWeldingUnitPriceResponse.model_validate(record)
+        except (BusinessException, NotFoundException):
             db.rollback()
-            logger.error("更新焊接工费单价失败: %s", e)
-            return None, str(e)
+            raise
+        except Exception:
+            db.rollback()
+            logger.exception("更新焊接工费单价失败")
+            raise
 
-    def delete(self, db: Session, id: int) -> Tuple[bool, Optional[str]]:
+    def delete(self, db: Session, id: int) -> None:
         record = self.repository.get_by_id(db, id)
         if not record:
-            return False, "记录不存在"
+            raise NotFoundException("记录不存在")
         if record.audit_status == AUDIT_APPROVED:
-            return False, "已审核通过，请先反审核后再删除"
+            raise BusinessException("已审核通过，请先反审核后再删除")
         try:
             success = self.repository.delete(db, id)
             if not success:
-                return False, "记录不存在"
+                raise NotFoundException("记录不存在")
             db.commit()
-            return True, None
-        except Exception as e:
+        except (BusinessException, NotFoundException):
             db.rollback()
-            logger.error("删除焊接工费单价失败: %s", e)
-            return False, str(e)
+            raise
+        except Exception:
+            db.rollback()
+            logger.exception("删除焊接工费单价失败")
+            raise
 
     def batch_delete_by_location_year(
         self,
@@ -230,16 +237,16 @@ class BomWeldingUnitPriceService:
         *,
         location: str,
         year: int,
-    ) -> Tuple[int, int, Optional[str]]:
+    ) -> Tuple[int, int]:
         location = (location or "").strip()
         if not location:
-            return 0, 0, "请选择采购基地"
+            raise BusinessException("请选择采购基地")
         if year < 2000 or year > 2100:
-            return 0, 0, "请选择正确的年度"
+            raise BusinessException("请选择正确的年度")
 
         existing = self.repository.list_by_location_year(db, location, year)
         if not existing:
-            return 0, 0, f"基地「{location}」{year} 年没有可删除的数据"
+            raise BusinessException(f"基地「{location}」{year} 年没有可删除的数据")
 
         skipped = self.repository.count_by_location_year_and_statuses(
             db,
@@ -252,10 +259,10 @@ class BomWeldingUnitPriceService:
                 db, location, year
             )
             db.commit()
-        except Exception as e:
+        except Exception:
             db.rollback()
-            logger.error("批量删除焊接工费单价失败: %s", e)
-            return 0, 0, str(e)
+            logger.exception("批量删除焊接工费单价失败")
+            raise
         logger.info(
             "批量删除焊接工费单价: location=%s year=%s deleted=%s skipped=%s",
             location,
@@ -263,20 +270,20 @@ class BomWeldingUnitPriceService:
             deleted_count,
             skipped,
         )
-        return deleted_count, skipped, None
+        return deleted_count, skipped
 
     def batch_approve(
         self,
         db: Session,
         dto: BomWeldingUnitPriceBatchApproveDTO,
         current_user: UserVO,
-    ) -> Tuple[Optional[BomWeldingUnitPriceBatchAuditResultVO], Optional[str]]:
+    ) -> BomWeldingUnitPriceBatchAuditResultVO:
         location = (dto.location or "").strip()
         if not location:
-            return None, "请选择采购基地"
+            raise BusinessException("请选择采购基地")
         operator = display_name(current_user)
         if not operator:
-            return None, "无法识别当前登录用户"
+            raise BusinessException("无法识别当前登录用户")
 
         skipped = self.repository.count_by_location_year_and_statuses(
             db,
@@ -295,18 +302,15 @@ class BomWeldingUnitPriceService:
                 updated_by=operator,
             )
             db.commit()
-        except Exception as e:
+        except Exception:
             db.rollback()
-            logger.error("批量审核焊接工费单价失败: %s", e)
-            return None, str(e)
-        return (
-            BomWeldingUnitPriceBatchAuditResultVO(
-                updated_count=updated,
-                skipped_count=skipped,
-                location=location,
-                year=dto.year,
-            ),
-            None,
+            logger.exception("批量审核焊接工费单价失败")
+            raise
+        return BomWeldingUnitPriceBatchAuditResultVO(
+            updated_count=updated,
+            skipped_count=skipped,
+            location=location,
+            year=dto.year,
         )
 
     def batch_reverse_audit(
@@ -314,16 +318,16 @@ class BomWeldingUnitPriceService:
         db: Session,
         dto: BomWeldingUnitPriceBatchReverseAuditDTO,
         current_user: UserVO,
-    ) -> Tuple[Optional[BomWeldingUnitPriceBatchAuditResultVO], Optional[str]]:
+    ) -> BomWeldingUnitPriceBatchAuditResultVO:
         location = (dto.location or "").strip()
         if not location:
-            return None, "请选择采购基地"
+            raise BusinessException("请选择采购基地")
         remark = (dto.reverse_audit_remark or "").strip()
         if not remark:
-            return None, "反审核原因必填"
+            raise BusinessException("反审核原因必填")
         operator = display_name(current_user)
         if not operator:
-            return None, "无法识别当前登录用户"
+            raise BusinessException("无法识别当前登录用户")
 
         skipped = self.repository.count_by_location_year_and_statuses(
             db,
@@ -342,18 +346,15 @@ class BomWeldingUnitPriceService:
                 updated_by=operator,
             )
             db.commit()
-        except Exception as e:
+        except Exception:
             db.rollback()
-            logger.error("批量反审核焊接工费单价失败: %s", e)
-            return None, str(e)
-        return (
-            BomWeldingUnitPriceBatchAuditResultVO(
-                updated_count=updated,
-                skipped_count=skipped,
-                location=location,
-                year=dto.year,
-            ),
-            None,
+            logger.exception("批量反审核焊接工费单价失败")
+            raise
+        return BomWeldingUnitPriceBatchAuditResultVO(
+            updated_count=updated,
+            skipped_count=skipped,
+            location=location,
+            year=dto.year,
         )
 
     def get_locations(self, db: Session) -> List[str]:

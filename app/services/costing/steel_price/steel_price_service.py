@@ -3,7 +3,6 @@
 import logging
 import uuid
 from decimal import Decimal
-from typing import Optional
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -16,6 +15,7 @@ from app.common.audit import (
     display_name,
 )
 from app.common.timezone import now
+from app.exceptions.base import BusinessException, NotFoundException
 from app.models.costing import SteelPrice
 from app.repositories.costing.steel_price import SteelPriceRepository
 from app.schemas.dto.steel_price_dto import (
@@ -77,10 +77,9 @@ class SteelPriceService:
             return spec.strip()
         return build_spec(thickness, width) or None
 
-    def _ensure_not_approved(self, record: SteelPrice) -> Optional[str]:
+    def _ensure_not_approved(self, record: SteelPrice) -> None:
         if record.audit_status == AUDIT_APPROVED:
-            return "记录已审核通过，请先反审核后再修改/删除/重算"
-        return None
+            raise BusinessException("记录已审核通过，请先反审核后再修改/删除/重算")
 
     def paginate(
         self, db: Session, query: SteelPriceQuery
@@ -129,10 +128,10 @@ class SteelPriceService:
         )
         return rows, total, filters
 
-    def get_by_id(self, db: Session, record_id: int) -> Optional[SteelPriceResponse]:
+    def get_by_id(self, db: Session, record_id: int) -> SteelPriceResponse:
         record = self.repository.get_by_id(db, record_id)
         if record is None:
-            return None
+            raise NotFoundException("记录不存在")
         return SteelPriceResponse.model_validate(record)
 
     def create(
@@ -140,7 +139,7 @@ class SteelPriceService:
         db: Session,
         data: SteelPriceCreate,
         current_user: UserVO,
-    ) -> tuple[Optional[SteelPriceResponse], Optional[str]]:
+    ) -> SteelPriceResponse:
         current_time = now()
         audit = audit_create(current_user)
         write = SteelPriceWrite(
@@ -183,7 +182,7 @@ class SteelPriceService:
             record = self.repository.create(db, write)
             db.commit()
             db.refresh(record)
-            return SteelPriceResponse.model_validate(record), None
+            return SteelPriceResponse.model_validate(record)
         except IntegrityError as error:
             db.rollback()
             message = (
@@ -193,11 +192,14 @@ class SteelPriceService:
                 f"{write.thickness}*{write.width}"
             )
             logger.warning("创建钢材价格冲突: %s, error=%s", message, error)
-            return None, message
-        except Exception as error:
+            raise BusinessException(message) from error
+        except BusinessException:
             db.rollback()
-            logger.exception("创建钢材价格失败: %s", error)
-            return None, str(error)
+            raise
+        except Exception:
+            db.rollback()
+            logger.exception("创建钢材价格失败")
+            raise
 
     def update(
         self,
@@ -205,14 +207,12 @@ class SteelPriceService:
         record_id: int,
         data: SteelPriceUpdate,
         current_user: UserVO,
-    ) -> tuple[Optional[SteelPriceResponse], Optional[str]]:
+    ) -> SteelPriceResponse:
         record = self.repository.get_by_id(db, record_id)
         if record is None:
-            return None, "记录不存在"
+            raise NotFoundException("记录不存在")
 
-        lock_error = self._ensure_not_approved(record)
-        if lock_error:
-            return None, lock_error
+        self._ensure_not_approved(record)
 
         payload: SteelPricePatch = {}
         if data.base_price is not None:
@@ -232,7 +232,7 @@ class SteelPriceService:
         if data.remark is not None:
             payload["remark"] = data.remark
         if not payload:
-            return None, "未提供任何可更新字段"
+            raise BusinessException("未提供任何可更新字段")
 
         payload["updated_by"] = display_name(current_user)
         payload["final_price_per_ton"] = self._compute_final_price(
@@ -250,43 +250,46 @@ class SteelPriceService:
             updated = self.repository.update(db, record_id, payload)
             if updated is None:
                 db.rollback()
-                return None, "记录不存在"
+                raise NotFoundException("记录不存在")
             db.commit()
             db.refresh(updated)
-            return SteelPriceResponse.model_validate(updated), None
+            return SteelPriceResponse.model_validate(updated)
         except IntegrityError as error:
             db.rollback()
             logger.warning("更新钢材价格冲突: id=%s, error=%s", record_id, error)
-            return None, "更新违反唯一约束"
-        except Exception as error:
+            raise BusinessException("更新违反唯一约束") from error
+        except (BusinessException, NotFoundException):
             db.rollback()
-            logger.exception("更新钢材价格失败: id=%s, error=%s", record_id, error)
-            return None, str(error)
+            raise
+        except Exception:
+            db.rollback()
+            logger.exception("更新钢材价格失败: id=%s", record_id)
+            raise
 
-    def delete(self, db: Session, record_id: int) -> tuple[bool, Optional[str]]:
+    def delete(self, db: Session, record_id: int) -> None:
         record = self.repository.get_by_id(db, record_id)
         if record is None:
-            return False, "记录不存在"
+            raise NotFoundException("记录不存在")
 
-        lock_error = self._ensure_not_approved(record)
-        if lock_error:
-            return False, lock_error
+        self._ensure_not_approved(record)
 
         try:
             success = self.repository.delete(db, record_id)
             if not success:
                 db.rollback()
-                return False, "记录不存在"
+                raise NotFoundException("记录不存在")
             db.commit()
-            return True, None
-        except Exception as error:
+        except (BusinessException, NotFoundException):
             db.rollback()
-            logger.exception("删除钢材价格失败: id=%s, error=%s", record_id, error)
-            return False, str(error)
+            raise
+        except Exception:
+            db.rollback()
+            logger.exception("删除钢材价格失败: id=%s", record_id)
+            raise
 
     def batch_delete(
         self, db: Session, data: SteelPriceBatchDeleteDTO
-    ) -> tuple[Optional[SteelPriceBatchDeleteResultVO], Optional[str]]:
+    ) -> SteelPriceBatchDeleteResultVO:
         """
         按筛选条件批量删除未审核记录。
 
@@ -294,7 +297,7 @@ class SteelPriceService:
         """
         location = data.location.strip()
         if not location:
-            return None, "基地不能为空"
+            raise BusinessException("基地不能为空")
 
         category_name = data.category_name.strip() if data.category_name else None
         grade = data.grade.strip() if data.grade else None
@@ -320,17 +323,14 @@ class SteelPriceService:
                 steel_mill=steel_mill,
             )
             db.commit()
-            return (
-                SteelPriceBatchDeleteResultVO(
-                    deleted_count=deleted_count,
-                    skipped_approved_count=skipped_approved_count,
-                    year=data.year,
-                    month=data.month,
-                    location=location,
-                ),
-                None,
+            return SteelPriceBatchDeleteResultVO(
+                deleted_count=deleted_count,
+                skipped_approved_count=skipped_approved_count,
+                year=data.year,
+                month=data.month,
+                location=location,
             )
-        except Exception as error:
+        except Exception:
             db.rollback()
             logger.exception(
                 "批量删除钢材价格失败: year=%s month=%s location=%s",
@@ -338,14 +338,14 @@ class SteelPriceService:
                 data.month,
                 location,
             )
-            return None, str(error)
+            raise
 
     def batch_approve(
         self,
         db: Session,
         data: SteelPriceBatchApproveDTO,
         current_user: UserVO,
-    ) -> tuple[Optional[SteelPriceBatchAuditResultVO], Optional[str]]:
+    ) -> SteelPriceBatchAuditResultVO:
         """
         按年度+月份+基地批量审核通过。
 
@@ -353,10 +353,10 @@ class SteelPriceService:
         """
         location = data.location.strip()
         if not location:
-            return None, "采购基地不能为空"
+            raise BusinessException("采购基地不能为空")
         audited_by = display_name(current_user)
         if not audited_by:
-            return None, "无法识别当前登录用户"
+            raise BusinessException("无法识别当前登录用户")
         audit_remark = data.audit_remark.strip() if data.audit_remark else None
 
         try:
@@ -378,17 +378,14 @@ class SteelPriceService:
                 updated_by=audited_by,
             )
             db.commit()
-            return (
-                SteelPriceBatchAuditResultVO(
-                    updated_count=updated_count,
-                    skipped_count=skipped_count,
-                    year=data.year,
-                    month=data.month,
-                    location=location,
-                ),
-                None,
+            return SteelPriceBatchAuditResultVO(
+                updated_count=updated_count,
+                skipped_count=skipped_count,
+                year=data.year,
+                month=data.month,
+                location=location,
             )
-        except Exception as error:
+        except Exception:
             db.rollback()
             logger.exception(
                 "批量审核失败: year=%s month=%s location=%s",
@@ -396,14 +393,14 @@ class SteelPriceService:
                 data.month,
                 location,
             )
-            return None, str(error)
+            raise
 
     def batch_reverse_audit(
         self,
         db: Session,
         data: SteelPriceBatchReverseAuditDTO,
         current_user: UserVO,
-    ) -> tuple[Optional[SteelPriceBatchAuditResultVO], Optional[str]]:
+    ) -> SteelPriceBatchAuditResultVO:
         """
         按年度+月份+基地批量反审核。
 
@@ -411,13 +408,13 @@ class SteelPriceService:
         """
         location = data.location.strip()
         if not location:
-            return None, "采购基地不能为空"
+            raise BusinessException("采购基地不能为空")
         reverse_audited_by = display_name(current_user)
         if not reverse_audited_by:
-            return None, "无法识别当前登录用户"
+            raise BusinessException("无法识别当前登录用户")
         reverse_audit_remark = data.reverse_audit_remark.strip()
         if not reverse_audit_remark:
-            return None, "反审核原因必填"
+            raise BusinessException("反审核原因必填")
 
         try:
             skipped_count = self.repository.count_by_conditions_and_statuses(
@@ -438,17 +435,14 @@ class SteelPriceService:
                 updated_by=reverse_audited_by,
             )
             db.commit()
-            return (
-                SteelPriceBatchAuditResultVO(
-                    updated_count=updated_count,
-                    skipped_count=skipped_count,
-                    year=data.year,
-                    month=data.month,
-                    location=location,
-                ),
-                None,
+            return SteelPriceBatchAuditResultVO(
+                updated_count=updated_count,
+                skipped_count=skipped_count,
+                year=data.year,
+                month=data.month,
+                location=location,
             )
-        except Exception as error:
+        except Exception:
             db.rollback()
             logger.exception(
                 "批量反审核失败: year=%s month=%s location=%s",
@@ -456,7 +450,7 @@ class SteelPriceService:
                 data.month,
                 location,
             )
-            return None, str(error)
+            raise
 
     def approve(
         self,
@@ -464,14 +458,14 @@ class SteelPriceService:
         record_id: int,
         data: SteelPriceAuditDTO,
         current_user: UserVO,
-    ) -> tuple[Optional[SteelPriceResponse], Optional[str]]:
+    ) -> SteelPriceResponse:
         record = self.repository.get_by_id(db, record_id)
         if record is None:
-            return None, "记录不存在"
+            raise NotFoundException("记录不存在")
         if record.audit_status == AUDIT_APPROVED:
-            return None, "记录已是审核通过状态"
+            raise BusinessException("记录已是审核通过状态")
         if record.audit_status not in (AUDIT_PENDING, AUDIT_REJECTED):
-            return None, f"当前状态不允许审核通过: {record.audit_status}"
+            raise BusinessException(f"当前状态不允许审核通过: {record.audit_status}")
 
         try:
             operator_name = display_name(current_user)
@@ -486,13 +480,18 @@ class SteelPriceService:
                     "updated_by": operator_name,
                 },
             )
+            if updated is None:
+                raise NotFoundException("记录不存在")
             db.commit()
             db.refresh(updated)
-            return SteelPriceResponse.model_validate(updated), None
-        except Exception as error:
+            return SteelPriceResponse.model_validate(updated)
+        except (BusinessException, NotFoundException):
             db.rollback()
-            logger.exception("审核通过失败: id=%s, error=%s", record_id, error)
-            return None, str(error)
+            raise
+        except Exception:
+            db.rollback()
+            logger.exception("审核通过失败: id=%s", record_id)
+            raise
 
     def reject(
         self,
@@ -500,14 +499,14 @@ class SteelPriceService:
         record_id: int,
         data: SteelPriceAuditDTO,
         current_user: UserVO,
-    ) -> tuple[Optional[SteelPriceResponse], Optional[str]]:
+    ) -> SteelPriceResponse:
         record = self.repository.get_by_id(db, record_id)
         if record is None:
-            return None, "记录不存在"
+            raise NotFoundException("记录不存在")
         if record.audit_status == AUDIT_APPROVED:
-            return None, "已通过记录请先反审核，再驳回"
+            raise BusinessException("已通过记录请先反审核，再驳回")
         if record.audit_status != AUDIT_PENDING:
-            return None, f"当前状态不允许驳回: {record.audit_status}"
+            raise BusinessException(f"当前状态不允许驳回: {record.audit_status}")
 
         try:
             operator_name = display_name(current_user)
@@ -522,13 +521,18 @@ class SteelPriceService:
                     "updated_by": operator_name,
                 },
             )
+            if updated is None:
+                raise NotFoundException("记录不存在")
             db.commit()
             db.refresh(updated)
-            return SteelPriceResponse.model_validate(updated), None
-        except Exception as error:
+            return SteelPriceResponse.model_validate(updated)
+        except (BusinessException, NotFoundException):
             db.rollback()
-            logger.exception("审核驳回失败: id=%s, error=%s", record_id, error)
-            return None, str(error)
+            raise
+        except Exception:
+            db.rollback()
+            logger.exception("审核驳回失败: id=%s", record_id)
+            raise
 
     def reverse_audit(
         self,
@@ -536,12 +540,12 @@ class SteelPriceService:
         record_id: int,
         data: SteelPriceReverseAuditDTO,
         current_user: UserVO,
-    ) -> tuple[Optional[SteelPriceResponse], Optional[str]]:
+    ) -> SteelPriceResponse:
         record = self.repository.get_by_id(db, record_id)
         if record is None:
-            return None, "记录不存在"
+            raise NotFoundException("记录不存在")
         if record.audit_status != AUDIT_APPROVED:
-            return None, "仅已通过记录可以反审核"
+            raise BusinessException("仅已通过记录可以反审核")
 
         try:
             operator_name = display_name(current_user)
@@ -556,13 +560,18 @@ class SteelPriceService:
                     "updated_by": operator_name,
                 },
             )
+            if updated is None:
+                raise NotFoundException("记录不存在")
             db.commit()
             db.refresh(updated)
-            return SteelPriceResponse.model_validate(updated), None
-        except Exception as error:
+            return SteelPriceResponse.model_validate(updated)
+        except (BusinessException, NotFoundException):
             db.rollback()
-            logger.exception("反审核失败: id=%s, error=%s", record_id, error)
-            return None, str(error)
+            raise
+        except Exception:
+            db.rollback()
+            logger.exception("反审核失败: id=%s", record_id)
+            raise
 
     def save_calc_batch(
         self,

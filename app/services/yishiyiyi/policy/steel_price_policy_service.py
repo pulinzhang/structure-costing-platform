@@ -12,6 +12,7 @@ from typing import Optional
 from sqlalchemy.orm import Session
 
 from app.common.audit import display_name
+from app.exceptions.base import BusinessException
 from app.repositories.yishiyiyi.policy.dto import ExportRow
 from app.schemas.dto.steel_price_policy_dto import (
     LadderItemCreate,
@@ -72,7 +73,7 @@ class SteelPricePolicyService:
     ) -> tuple[list[PolicyListResponse], int, PolicyOptionsResponse]:
         return self._crud.paginate(db, query)
 
-    def get_by_id(self, db: Session, policy_id: int) -> Optional[PolicyDetailResponse]:
+    def get_by_id(self, db: Session, policy_id: int) -> PolicyDetailResponse:
         return self._crud.get_by_id(db, policy_id)
 
     def create(
@@ -80,7 +81,7 @@ class SteelPricePolicyService:
         db: Session,
         data: PolicyCreate,
         current_user: UserVO,
-    ) -> tuple[Optional[PolicyDetailResponse], Optional[str]]:
+    ) -> PolicyDetailResponse:
         return self._crud.create(db, data, current_user)
 
     def update(
@@ -89,10 +90,10 @@ class SteelPricePolicyService:
         policy_id: int,
         data: PolicyUpdate,
         current_user: UserVO,
-    ) -> tuple[Optional[PolicyDetailResponse], Optional[str]]:
+    ) -> PolicyDetailResponse:
         return self._crud.update(db, policy_id, data, current_user)
 
-    def delete(self, db: Session, policy_id: int) -> tuple[bool, Optional[str]]:
+    def delete(self, db: Session, policy_id: int) -> None:
         return self._crud.delete(db, policy_id)
 
     def add_item(
@@ -101,7 +102,7 @@ class SteelPricePolicyService:
         policy_id: int,
         data: LadderItemCreate,
         current_user: UserVO,
-    ) -> tuple[Optional[LadderItemResponse], Optional[str]]:
+    ) -> LadderItemResponse:
         return self._crud.add_item(db, policy_id, data, current_user)
 
     def update_item(
@@ -110,10 +111,10 @@ class SteelPricePolicyService:
         item_id: int,
         data: LadderItemUpdate,
         current_user: UserVO,
-    ) -> tuple[Optional[LadderItemResponse], Optional[str]]:
+    ) -> LadderItemResponse:
         return self._crud.update_item(db, item_id, data, current_user)
 
-    def delete_item(self, db: Session, item_id: int) -> tuple[bool, Optional[str]]:
+    def delete_item(self, db: Session, item_id: int) -> None:
         return self._crud.delete_item(db, item_id)
 
     def match(
@@ -248,7 +249,7 @@ class SteelPricePolicyService:
         year: Optional[int] = None,
         month: Optional[int] = None,
         steel_mill: Optional[str] = None,
-    ) -> tuple[int, Optional[str]]:
+    ) -> int:
         return self._crud.delete_by_conditions(
             db, year=year, month=month, steel_mill=steel_mill
         )
@@ -282,7 +283,7 @@ class SteelPricePolicyService:
                     progress_callback=on_progress,
                     current_user=current_user,
                 )
-            except ValueError as error:
+            except BusinessException as error:
                 logger.warning(
                     "政策导入业务失败: task_id=%s error=%s", task.task_id, error
                 )

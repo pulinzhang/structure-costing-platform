@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session
 
 from app.common.audit import audit_status_label
 from app.common.excel_workbook import resolve_worksheet
+from app.common.export_filters import require_at_least_one_export_filter
 from app.common.money import Q3, Q4, excel_money_cell
 from app.common.timezone import now
 from app.models.stamping.process_fee import StampingProcessFee
@@ -142,6 +143,15 @@ class StampingProcessFeeExportService:
         part_number: str | None = None,
         audit_status: str | None = None,
     ) -> tuple[bytes, str]:
+        require_at_least_one_export_filter(
+            year,
+            location,
+            stamping_supplier,
+            vehicle_model,
+            version,
+            part_number,
+            audit_status,
+        )
         wb = Workbook()
         _title, fee_count = self.write_to_workbook(
             wb,

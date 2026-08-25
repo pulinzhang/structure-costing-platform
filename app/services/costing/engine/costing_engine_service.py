@@ -55,7 +55,18 @@ class CostingEngineHardStopError(BusinessException):
         *,
         upload_or_config: list[CostingEngineGateItemVO],
     ):
-        super().__init__(message=message, code=400)
+        super().__init__(
+            message=message,
+            code=400,
+            data={
+                "hard_stop": True,
+                "can_start": False,
+                "upload_or_config": [
+                    item.model_dump(exclude_none=True)
+                    for item in upload_or_config
+                ],
+            },
+        )
         self.upload_or_config = upload_or_config
 
 

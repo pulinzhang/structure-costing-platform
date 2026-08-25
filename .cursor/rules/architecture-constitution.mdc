@@ -28,8 +28,8 @@ alwaysApply: true
 
 | 层级 | 职责 | 禁止事项 |
 |------|------|----------|
-| **Router** | 接收请求、参数验证、调用 Service、返回响应 | 禁止写业务逻辑；禁止直接查数据库；禁止直接调用 Parser；禁止写后台 worker 壳（§5.3） |
-| **Service** | 业务逻辑、数据转换、事务管理、异常处理；**唯一可调用 Parser** | 禁止直接写 SQL（须经 Repository） |
+| **Router** | 接收请求、参数验证、调用 Service、返回 `ApiResponse` | 禁止写业务逻辑；禁止直接查数据库；禁止直接调用 Parser；禁止写后台 worker 壳（§5.3）；禁止把 Service 错误元组 / `None` 转成 `HTTPException`（§5.2） |
+| **Service** | 业务逻辑、数据转换、事务管理、异常处理；**唯一可调用 Parser** | 禁止直接写 SQL（须经 Repository）；禁止用 `(None, str)` 向 Router 返回错误（§5.2） |
 | **Repository** | 数据库 CRUD / 聚合查询构建 | 禁止权限/角色等业务策略判断 |
 | **Model** | 定义数据库表结构 | 禁止写业务方法（如 `to_dict`、业务 `@property`） |
 | **Schema** | 请求验证、响应序列化（DTO/VO） | 禁止写业务流程逻辑 |
@@ -52,7 +52,7 @@ alwaysApply: true
 Router 的三件事：
 1. 接收请求 → 从请求中提取参数
 2. 调用 Service → 把参数传给业务层
-3. 返回响应 → 把 Service 的结果封装成 HTTP 响应
+3. 返回成功响应 → 把 Service 的 VO 封装成 `ApiResponse`（业务失败由全局 handler 处理，见 §5.2）
 ```
 
 **✅ 正确示例：**
@@ -130,7 +130,7 @@ class StampingPartService:
 - 组合多个 Repository 调用（本切片 + 按依赖方向允许的上游切片）
 - 组合上游切片 Service（下游编排/核价场景，见「四、依赖方向」）
 - **事务管理**（使用 `db.begin()` 或装饰器）
-- **抛出业务异常**（由 Router 统一捕获）
+- **抛出业务异常**（由全局 `business_exception_handler` 捕获，见 §5.2）
 - 调用 Parser（**唯一能调用 Parser 的层级**）
 - 数据序列化（使用 Schema，不在 Model 里写 `to_dict`）
 - **异步任务**：`create_task` + `submit`；成功文案与任务终态映射；崩溃时释放计算锁或回写引擎 Run（见 §5.3）
@@ -482,41 +482,97 @@ class StampingUploadService:
             db.commit()  # 提交事务
             return {"parts": len(parts), "processes": len(processes)}
 
-        except Exception as e:
-            db.rollback()  # 失败回滚
-            raise BusinessException(f"上传失败: {e}")  # 抛出业务异常
+        except IntegrityError:
+            db.rollback()
+            raise BusinessException("该车型版本已存在") from None
+        except BusinessException:
+            db.rollback()
+            raise
+        except Exception:
+            db.rollback()
+            logger.exception("上传失败")
+            raise  # 未预期错误走 500，禁止包成 BusinessException(str(e))
 ```
 
 ### 5.2 异常处理
 
-**Service 抛出异常，Router 统一捕获**
+**Service 抛业务异常；全局 handler 转成 `ApiResponse.fail`。Router 只调 Service、组装成功响应。**
+
+实现：`app.exceptions.base`（`BusinessException` / `NotFoundException` / `ValidationException` / `PermissionException`）+ `app.exceptions.handlers.business_exception_handler`（按 `exc.code` 写 HTTP 状态码）。未捕获异常走 `generic_exception_handler`（500）。
 
 ```python
-# Service 层：抛出业务异常
-class StampingPartService:
-    def get_part(self, db: Session, part_id: int):
-        part = self.repository.get_by_id(db, part_id)
-        if not part:
-            raise NotFoundException(f"零件不存在: id={part_id}")
-        return part
+# Service
+def get_part(self, db: Session, part_id: int) -> PartVO:
+    part = self.repository.get_by_id(db, part_id)
+    if not part:
+        raise NotFoundException(f"零件不存在: id={part_id}")
+    return PartVO.model_validate(part)
 
-# Router 层：统一捕获处理
-@router.get("/parts/{part_id}")
-def get_part(part_id: int, db: Session = Depends(get_db)):
-    try:
-        service = StampingPartService()
-        return ApiResponse.ok(service.get_part(db, part_id))
-    except NotFoundException as e:
-        raise HTTPException(status_code=404, detail=str(e))
+# Router：不要 try/except 业务异常，不要拆 (record, error)
+@router.get("/parts/{part_id}", response_model=ApiResponse[PartVO])
+def get_part(...) -> ApiResponse[PartVO]:
+    return ApiResponse.ok(data=service.get_part(db, part_id))
 ```
 
-**异常分类：**
-| 异常类型 | 抛出层 | 说明 |
-|----------|--------|------|
-| `NotFoundException` | Service | 资源不存在 |
-| `ValidationException` | Service | 业务校验失败 |
-| `BusinessException` | Service | 通用业务异常 |
-| `HTTPException` | Router | HTTP 层异常（404、400 等） |
+**对 Router 入口的异常分类：**
+
+| 类型 | 默认 HTTP | 何时用 |
+|------|-----------|--------|
+| `NotFoundException` | 404 | 资源不存在、异步任务不存在或已过期 |
+| `BusinessException` | 400 | 唯一键冲突、`IntegrityError`、已审核不可改、缺必填、无更新字段、其它业务拒绝 |
+| `BusinessException(..., code=409)` | 409 | 期别/范围冲突（如同一基地年月正在计算） |
+| `ValidationException` | 422 | **仅当**有意与请求体 Pydantic 校验同码。业务拒绝用 `BusinessException`（400），不要用本类表达唯一键/审核锁 |
+| `PermissionException` | 403 | 权限不足（由 `require_perm` 抛，切片不必手写） |
+| 未捕获 `Exception` | 500 | `rollback` + `logger.exception` + **再 raise**。禁止 `BusinessException(str(exc))`，禁止 `return None, str(exc)` |
+
+**`HTTPException` 边界（窄）：**
+
+| 允许 | 禁止 |
+|------|------|
+| `app/deps/auth.py` 未登录 → `HTTPException(401)` | Router `if not vo: HTTPException(404)` |
+| FastAPI 自身的路由/参数解析错误 | Router `except` 业务失败再转 `HTTPException(400/404/409)` |
+| | 任务过期、记录不存在等业务 404（应 `NotFoundException`） |
+
+handler 已按 `BusinessException.code` 写状态码，**禁止**用 `HTTPException` 翻译 Service 失败。
+
+**写事务：**
+
+```python
+try:
+    ...
+    db.commit()
+    return vo
+except IntegrityError:
+    db.rollback()
+    raise BusinessException("BOM 唯一键冲突（基地+车型+版本）") from None
+except BusinessException:
+    db.rollback()
+    raise
+except Exception:
+    db.rollback()
+    logger.exception("创建失败")
+    raise
+```
+
+**禁止（对 Router 的错误通道）：**
+
+```python
+return None, "记录不存在"
+return None, str(exc)
+def get_by_id(...) -> SomeVO | None:  # Router 入口
+    return None  # 再由 Router if not vo: 404
+def delete(...) -> bool:
+    return False
+# Router
+record, error = service.update(...)
+if error:
+    code = 404 if "不存在" in error else 400
+    raise HTTPException(status_code=code, detail=error)
+if not record:
+    raise HTTPException(status_code=404, detail="不存在")
+```
+
+**允许的元组（不是 HTTP 错误通道）：** 分页 `(items, total[, filters])`；Parser / 计算「没匹配到」的领域结果；worker `work()` 把失败写入 `WorkerTaskOutcome`（任务 JSON 终态，不穿过 HTTP）。
 
 ### 5.3 异步后台任务（线程 worker）
 
@@ -536,7 +592,8 @@ def get_part(part_id: int, db: Session = Depends(get_db)):
 - 引擎领域异常（`RunDeletedError`、回写 `costing_engine_run` 失败态）留在 `CostingEngineService`；runner 只提供 Session / 进度 / 统一 close
 - 引擎路径 **禁止**再 `submit` 子任务并在 worker 内等待（线程池死锁）；子计算同进程同步调用
 - 沿用现有线程池 + 辅助库；**禁止**为此引入 Celery / Redis 队列等新框架
-- 任务 `result` 写入辅助库 JSON 时，由切片 Service 从 dataclass / VO 转出；Router **禁止** `vo.model_dump()`
+- 任务 `result` 写入辅助库 JSON 时，由切片 Service 从 dataclass / VO 转出；Router **禁止** `vo.model_dump()`（这是持久化序列化，不是 API 输出，见类型安全 §12）
+- `start_*` 入队前的业务拒绝对 Router **抛异常**（缺基地等 → `BusinessException` 400；重复计算锁 → `BusinessException(..., code=409)`）。worker `work()` 内失败映射 `WorkerTaskOutcome`，可捕获本切片 `BusinessException` 写成任务 message（不是 HTTP 错误通道）
 
 **✅ 正确（示意）：**
 
@@ -547,7 +604,7 @@ async def upload_stamping_file(..., current_user: UserVO = Depends(...)):
     return ApiResponse.ok(data=accepted, message="上传成功，后台开始解析")
 ```
 
-引擎已是 `start_run` 在 Service 提交；落地时把开 Session / `on_progress` / `finally: db.close()` 换成公共 runner，**不要**再保留一份引擎专用 100 行壳。
+引擎 `start_run` 在 Service 提交；Session / 进度 / `db.close()` 必须走公共 runner，**禁止**引擎自建一份 worker 壳。
 
 **❌ 错误：** Router 内开 Session、拼「上传成功：N 个零件」、`except` 里 `mark_log_failed`；引擎 Service 内重复实现同一套 Session/进度壳。
 
@@ -568,6 +625,8 @@ async def upload_stamping_file(..., current_user: UserVO = Depends(...)):
 - [ ] 跨切片依赖是**下游 → 上游**且无环吗？ → 上游不得依赖下游
 - [ ] 异步上传/计算的 worker 壳写在 **Router** 里了吗？（`_process_*_in_background` / Router 开 Session）→ **禁止**，见 §5.3
 - [ ] 把同一套 Session/进度/finally 复制进多个 Service 了吗？（含引擎 worker）→ **禁止**，抽 `async_task` runner
+- [ ] Service 用 `(None, "错误文案")` 或 Router 入口返回 `VO | None` / `bool` 再由 Router 判空了吗？→ **禁止**，抛 `NotFoundException` / `BusinessException`（§5.2）
+- [ ] Router 用 `"不存在" in error` 猜 404、或 `if error:` / `if not vo:` 转 `HTTPException` 了吗？→ **禁止**，交给全局 handler
 
 ---
 
@@ -581,6 +640,7 @@ async def upload_stamping_file(..., current_user: UserVO = Depends(...)):
 | 多层都写同一份逻辑 | 代码重复、难以维护 | 各层各司其职 |
 | Router 直接调用 Parser | 绕过 Service 业务逻辑 | Router → Service → Parser |
 | Router 写后台 worker 壳 / 引擎自建 Session 壳 | 进度/异常路径复制多份 | Service `start_*` + `async_task` runner（§5.3） |
+| Service `return None, "错误"` / Router 拆元组或 `if not vo` 猜状态码 | 两套错误通道，404/400/500/409 靠文案或 Router 分支 | Service 抛 `NotFoundException` / `BusinessException`（冲突用 `code=409`）；全局 handler 转响应（§5.2） |
 | Repository 做权限/角色分支 | 违反职责边界 | 策略判断放 Service |
 | **上游切片依赖下游** | 依赖倒置、易成环 | 只允许下游组合上游；共享算法放 common 或归属唯一切片 |
 

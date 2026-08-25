@@ -4,7 +4,7 @@
 """
 
 import logging
-from typing import List, Optional, Tuple
+from typing import List, Tuple
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -17,6 +17,7 @@ from app.common.audit import (
     display_name,
 )
 from app.common.timezone import now
+from app.exceptions.base import BusinessException, NotFoundException
 from app.repositories.stamping.tonnage_price_repository import (
     StampingTonnagePriceRepository,
     TonnagePriceListFilters,
@@ -87,10 +88,10 @@ class StampingTonnagePriceService:
         }
         return rows, total, filters
 
-    def get_by_id(self, db: Session, id: int) -> Optional[StampingTonnagePriceResponse]:
+    def get_by_id(self, db: Session, id: int) -> StampingTonnagePriceResponse:
         record = self.repository.get_by_id(db, id)
         if not record:
-            return None
+            raise NotFoundException(f"冲次单价记录不存在: id={id}")
         return StampingTonnagePriceResponse.model_validate(record)
 
     def create(
@@ -98,7 +99,7 @@ class StampingTonnagePriceService:
         db: Session,
         data: StampingTonnagePriceCreate,
         current_user: UserVO,
-    ) -> Tuple[Optional[StampingTonnagePriceResponse], Optional[str]]:
+    ) -> StampingTonnagePriceResponse:
         try:
             audit = audit_create(current_user)
             record = self.repository.create(
@@ -109,18 +110,19 @@ class StampingTonnagePriceService:
             )
             db.commit()
             db.refresh(record)
-            return StampingTonnagePriceResponse.model_validate(record), None
+            return StampingTonnagePriceResponse.model_validate(record)
         except IntegrityError:
             db.rollback()
-            error_msg = (
+            raise BusinessException(
                 f"该基地({data.location})、年份({data.year})和吨位({data.tonnage})的记录已存在"
-            )
-            logger.warning(error_msg)
-            return None, error_msg
-        except Exception as e:
+            ) from None
+        except BusinessException:
             db.rollback()
-            logger.error(f"创建冲次单价失败: {e}")
-            return None, str(e)
+            raise
+        except Exception:
+            db.rollback()
+            logger.exception("创建冲次单价失败")
+            raise
 
     def bulk_upsert(
         self,
@@ -151,26 +153,28 @@ class StampingTonnagePriceService:
                 if existing.audit_status == AUDIT_APPROVED:
                     skipped_approved += 1
                     continue
-                record, error = self.update(
-                    db,
-                    existing.id,
-                    StampingTonnagePriceUpdate(price_per_stroke=item.price_per_stroke),
-                    current_user=current_user,
-                )
-                if record:
+                try:
+                    record = self.update(
+                        db,
+                        existing.id,
+                        StampingTonnagePriceUpdate(
+                            price_per_stroke=item.price_per_stroke
+                        ),
+                        current_user=current_user,
+                    )
                     updated.append(record)
-                else:
+                except BusinessException as error:
                     failed.append(
-                        error
+                        str(error)
                         or f"{item.location}/{item.year}/{item.tonnage}T 更新失败"
                     )
                 continue
 
-            record, error = self.create(db, item, current_user=current_user)
-            if record:
+            try:
+                record = self.create(db, item, current_user=current_user)
                 created.append(record)
-            else:
-                failed.append(error or "未知错误")
+            except BusinessException as error:
+                failed.append(str(error) or "未知错误")
 
         return created, updated, failed, skipped_approved
 
@@ -180,14 +184,13 @@ class StampingTonnagePriceService:
         id: int,
         data: StampingTonnagePriceUpdate,
         current_user: UserVO,
-    ) -> Tuple[Optional[StampingTonnagePriceResponse], Optional[str]]:
+    ) -> StampingTonnagePriceResponse:
+        existing = self.repository.get_by_id(db, id)
+        if not existing:
+            raise NotFoundException("记录不存在")
+        if existing.audit_status == AUDIT_APPROVED:
+            raise BusinessException("已审核通过，请先反审核后再修改")
         try:
-            existing = self.repository.get_by_id(db, id)
-            if not existing:
-                return None, "记录不存在"
-            if existing.audit_status == AUDIT_APPROVED:
-                return None, "已审核通过，请先反审核后再修改"
-
             record = self.repository.update(
                 db,
                 id,
@@ -195,31 +198,36 @@ class StampingTonnagePriceService:
                 updated_by=audit_update(current_user)["updated_by"],
             )
             if not record:
-                return None, "记录不存在"
+                raise NotFoundException("记录不存在")
             db.commit()
             db.refresh(record)
-            return StampingTonnagePriceResponse.model_validate(record), None
-        except Exception as e:
+            return StampingTonnagePriceResponse.model_validate(record)
+        except (BusinessException, NotFoundException):
             db.rollback()
-            logger.error(f"更新冲次单价失败: {e}")
-            return None, str(e)
+            raise
+        except Exception:
+            db.rollback()
+            logger.exception("更新冲次单价失败")
+            raise
 
-    def delete(self, db: Session, id: int) -> Tuple[bool, Optional[str]]:
+    def delete(self, db: Session, id: int) -> None:
         record = self.repository.get_by_id(db, id)
         if not record:
-            return False, "记录不存在"
+            raise NotFoundException("记录不存在")
         if record.audit_status == AUDIT_APPROVED:
-            return False, "已审核通过，请先反审核后再删除"
+            raise BusinessException("已审核通过，请先反审核后再删除")
         try:
             success = self.repository.delete(db, id)
             if not success:
-                return False, "记录不存在"
+                raise NotFoundException("记录不存在")
             db.commit()
-            return True, None
-        except Exception as e:
+        except (BusinessException, NotFoundException):
             db.rollback()
-            logger.error("删除冲次单价失败: %s", e)
-            return False, str(e)
+            raise
+        except Exception:
+            db.rollback()
+            logger.exception("删除冲次单价失败")
+            raise
 
     def batch_delete_by_location_year(
         self,
@@ -227,17 +235,17 @@ class StampingTonnagePriceService:
         *,
         location: str,
         year: int,
-    ) -> Tuple[int, int, Optional[str]]:
-        """按基地 + 年度批量删除未审核记录。返回 (删除条数, 跳过已审核条数, 错误信息)。"""
+    ) -> Tuple[int, int]:
+        """按基地 + 年度批量删除未审核记录。返回 (删除条数, 跳过已审核条数)。"""
         location = (location or "").strip()
         if not location:
-            return 0, 0, "请选择采购基地"
+            raise BusinessException("请选择采购基地")
         if year < 2000 or year > 2100:
-            return 0, 0, "请选择正确的年度"
+            raise BusinessException("请选择正确的年度")
 
         existing = self.repository.list_by_location_year(db, location, year)
         if not existing:
-            return 0, 0, f"基地「{location}」{year} 年没有可删除的数据"
+            raise BusinessException(f"基地「{location}」{year} 年没有可删除的数据")
 
         skipped = self.repository.count_by_location_year_and_statuses(
             db,
@@ -250,10 +258,10 @@ class StampingTonnagePriceService:
                 db, location, year
             )
             db.commit()
-        except Exception as e:
+        except Exception:
             db.rollback()
-            logger.error("批量删除冲次单价失败: %s", e)
-            return 0, 0, str(e)
+            logger.exception("批量删除冲次单价失败")
+            raise
         logger.info(
             "批量删除冲次单价: location=%s year=%s deleted=%s skipped=%s",
             location,
@@ -261,20 +269,20 @@ class StampingTonnagePriceService:
             deleted_count,
             skipped,
         )
-        return deleted_count, skipped, None
+        return deleted_count, skipped
 
     def batch_approve(
         self,
         db: Session,
         dto: StampingTonnagePriceBatchApproveDTO,
         current_user: UserVO,
-    ) -> Tuple[Optional[StampingTonnagePriceBatchAuditResultVO], Optional[str]]:
+    ) -> StampingTonnagePriceBatchAuditResultVO:
         location = (dto.location or "").strip()
         if not location:
-            return None, "请选择采购基地"
+            raise BusinessException("请选择采购基地")
         operator = display_name(current_user)
         if not operator:
-            return None, "无法识别当前登录用户"
+            raise BusinessException("无法识别当前登录用户")
 
         skipped = self.repository.count_by_location_year_and_statuses(
             db,
@@ -293,18 +301,15 @@ class StampingTonnagePriceService:
                 updated_by=operator,
             )
             db.commit()
-        except Exception as e:
+        except Exception:
             db.rollback()
-            logger.error("批量审核冲次单价失败: %s", e)
-            return None, str(e)
-        return (
-            StampingTonnagePriceBatchAuditResultVO(
-                updated_count=updated,
-                skipped_count=skipped,
-                location=location,
-                year=dto.year,
-            ),
-            None,
+            logger.exception("批量审核冲次单价失败")
+            raise
+        return StampingTonnagePriceBatchAuditResultVO(
+            updated_count=updated,
+            skipped_count=skipped,
+            location=location,
+            year=dto.year,
         )
 
     def batch_reverse_audit(
@@ -312,16 +317,16 @@ class StampingTonnagePriceService:
         db: Session,
         dto: StampingTonnagePriceBatchReverseAuditDTO,
         current_user: UserVO,
-    ) -> Tuple[Optional[StampingTonnagePriceBatchAuditResultVO], Optional[str]]:
+    ) -> StampingTonnagePriceBatchAuditResultVO:
         location = (dto.location or "").strip()
         if not location:
-            return None, "请选择采购基地"
+            raise BusinessException("请选择采购基地")
         remark = (dto.reverse_audit_remark or "").strip()
         if not remark:
-            return None, "反审核原因必填"
+            raise BusinessException("反审核原因必填")
         operator = display_name(current_user)
         if not operator:
-            return None, "无法识别当前登录用户"
+            raise BusinessException("无法识别当前登录用户")
 
         skipped = self.repository.count_by_location_year_and_statuses(
             db,
@@ -340,18 +345,15 @@ class StampingTonnagePriceService:
                 updated_by=operator,
             )
             db.commit()
-        except Exception as e:
+        except Exception:
             db.rollback()
-            logger.error("批量反审核冲次单价失败: %s", e)
-            return None, str(e)
-        return (
-            StampingTonnagePriceBatchAuditResultVO(
-                updated_count=updated,
-                skipped_count=skipped,
-                location=location,
-                year=dto.year,
-            ),
-            None,
+            logger.exception("批量反审核冲次单价失败")
+            raise
+        return StampingTonnagePriceBatchAuditResultVO(
+            updated_count=updated,
+            skipped_count=skipped,
+            location=location,
+            year=dto.year,
         )
 
     def get_locations(self, db: Session) -> List[str]:

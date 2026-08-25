@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING, display_name
 from app.common.timezone import now
+from app.exceptions.base import BusinessException
 from app.repositories.bom.welding_process_breakdown_repository import (
     BomWeldingProcessBreakdownRepository,
 )
@@ -48,10 +49,10 @@ class BomWeldingProcessBreakdownAuditService:
         location: str,
         vehicle_model: str,
         bom_version: str,
-    ) -> tuple[BomWeldingProcessBreakdownBatchDeleteResultVO | None, str | None]:
+    ) -> BomWeldingProcessBreakdownBatchDeleteResultVO:
         scope = _normalize_scope(location, vehicle_model, bom_version)
         if not scope:
-            return None, "基地、项目、版本均必填"
+            raise BusinessException("基地、项目、版本均必填")
         location, vehicle_model, bom_version = scope
 
         existing_count = self.repository.count_by_scope(
@@ -61,7 +62,7 @@ class BomWeldingProcessBreakdownAuditService:
             bom_version=bom_version,
         )
         if existing_count <= 0:
-            return None, (
+            raise BusinessException(
                 f"范围「{location}/{vehicle_model}/{bom_version}」没有可删除的数据"
             )
 
@@ -79,19 +80,16 @@ class BomWeldingProcessBreakdownAuditService:
             bom_version=bom_version,
         )
         db.commit()
-        return (
-            BomWeldingProcessBreakdownBatchDeleteResultVO(
-                location=location,
-                vehicle_model=vehicle_model,
-                bom_version=bom_version,
-                deleted_count=deleted,
-                skipped_approved_count=skipped,
-                message=(
-                    f"已删除 {deleted} 条主表"
-                    + (f"，跳过已审核 {skipped} 条" if skipped else "")
-                ),
+        return BomWeldingProcessBreakdownBatchDeleteResultVO(
+            location=location,
+            vehicle_model=vehicle_model,
+            bom_version=bom_version,
+            deleted_count=deleted,
+            skipped_approved_count=skipped,
+            message=(
+                f"已删除 {deleted} 条主表"
+                + (f"，跳过已审核 {skipped} 条" if skipped else "")
             ),
-            None,
         )
 
     def batch_approve(
@@ -99,14 +97,14 @@ class BomWeldingProcessBreakdownAuditService:
         db: Session,
         dto: BomWeldingProcessBreakdownBatchApproveDTO,
         current_user: UserVO,
-    ) -> tuple[BomWeldingProcessBreakdownBatchAuditResultVO | None, str | None]:
+    ) -> BomWeldingProcessBreakdownBatchAuditResultVO:
         scope = _normalize_scope(dto.location, dto.vehicle_model, dto.bom_version)
         if not scope:
-            return None, "基地、项目、版本均必填"
+            raise BusinessException("基地、项目、版本均必填")
         location, vehicle_model, bom_version = scope
         operator = display_name(current_user)
         if not operator:
-            return None, "无法识别当前登录用户"
+            raise BusinessException("无法识别当前登录用户")
 
         skipped = self.repository.count_by_scope_and_statuses(
             db,
@@ -126,15 +124,12 @@ class BomWeldingProcessBreakdownAuditService:
             updated_by=operator,
         )
         db.commit()
-        return (
-            BomWeldingProcessBreakdownBatchAuditResultVO(
-                updated_count=updated,
-                skipped_count=skipped,
-                location=location,
-                vehicle_model=vehicle_model,
-                bom_version=bom_version,
-            ),
-            None,
+        return BomWeldingProcessBreakdownBatchAuditResultVO(
+            updated_count=updated,
+            skipped_count=skipped,
+            location=location,
+            vehicle_model=vehicle_model,
+            bom_version=bom_version,
         )
 
     def batch_reverse_audit(
@@ -142,17 +137,17 @@ class BomWeldingProcessBreakdownAuditService:
         db: Session,
         dto: BomWeldingProcessBreakdownBatchReverseAuditDTO,
         current_user: UserVO,
-    ) -> tuple[BomWeldingProcessBreakdownBatchAuditResultVO | None, str | None]:
+    ) -> BomWeldingProcessBreakdownBatchAuditResultVO:
         scope = _normalize_scope(dto.location, dto.vehicle_model, dto.bom_version)
         if not scope:
-            return None, "基地、项目、版本均必填"
+            raise BusinessException("基地、项目、版本均必填")
         location, vehicle_model, bom_version = scope
         remark = (dto.reverse_audit_remark or "").strip()
         if not remark:
-            return None, "反审核原因必填"
+            raise BusinessException("反审核原因必填")
         operator = display_name(current_user)
         if not operator:
-            return None, "无法识别当前登录用户"
+            raise BusinessException("无法识别当前登录用户")
 
         skipped = self.repository.count_by_scope_and_statuses(
             db,
@@ -172,13 +167,10 @@ class BomWeldingProcessBreakdownAuditService:
             updated_by=operator,
         )
         db.commit()
-        return (
-            BomWeldingProcessBreakdownBatchAuditResultVO(
-                updated_count=updated,
-                skipped_count=skipped,
-                location=location,
-                vehicle_model=vehicle_model,
-                bom_version=bom_version,
-            ),
-            None,
+        return BomWeldingProcessBreakdownBatchAuditResultVO(
+            updated_count=updated,
+            skipped_count=skipped,
+            location=location,
+            vehicle_model=vehicle_model,
+            bom_version=bom_version,
         )

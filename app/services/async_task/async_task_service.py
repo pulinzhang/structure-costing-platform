@@ -23,6 +23,7 @@ from sqlalchemy.orm import Session
 
 from app.common.timezone import now
 from app.database import AuxiliaryDatabaseConfig, DatabaseConfig
+from app.exceptions.base import NotFoundException
 from app.models.async_task import AsyncTask
 from app.repositories.async_task import AsyncTaskRepository
 from app.repositories.persist import model_from_payload
@@ -161,6 +162,13 @@ class AsyncTaskService:
             "operator_name": record.operator_name,
             "updated_at": record.updated_at,
         }
+
+    def require_snapshot(self, task_id: str, task_type: str) -> dict[str, Any]:
+        """轮询入口：类型不匹配或已过期则 404。"""
+        snapshot = self.get_task_snapshot(task_id)
+        if snapshot is None or snapshot.get("task_type") != task_type:
+            raise NotFoundException("任务不存在或已过期")
+        return snapshot
 
     def update_task(
         self,

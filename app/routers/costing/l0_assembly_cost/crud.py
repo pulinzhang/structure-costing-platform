@@ -6,14 +6,13 @@ from __future__ import annotations
 
 from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.common.permissions.codes import Perm
 from app.database import get_db
 from app.deps.permissions import require_perm
-from app.exceptions.base import BusinessException
 from app.schemas.common.page_result import PageResult
 from app.schemas.dto.l0_assembly_cost_dto import (
     L0AssemblyCostBatchApproveDTO,
@@ -98,23 +97,6 @@ def export_download(
     current_user: UserVO = Depends(require_perm(Perm.L0_ASSEMBLY_COST_EXPORT)),
 ) -> StreamingResponse:
     """按当前筛选导出成品核价 Excel（主表 + 材料明细 + 间接费用）。"""
-    if not any(
-        [
-            year,
-            month,
-            location,
-            vehicle_model,
-            bom_version,
-            part_number,
-            audit_status,
-            calc_status,
-        ]
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="请至少选择一个筛选条件后再导出",
-        )
-
     content, filename = _export_service.export(
         db,
         year=year,
@@ -145,8 +127,6 @@ def get_cost(
     current_user: UserVO = Depends(require_perm(Perm.L0_ASSEMBLY_COST_VIEW)),
 ) -> ApiResponse[L0AssemblyCostVO]:
     row = _service.get_by_id(db, cost_id)
-    if row is None:
-        raise HTTPException(status_code=404, detail="记录不存在")
     return ApiResponse.ok(data=row)
 
 
@@ -159,10 +139,7 @@ def batch_delete(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.L0_ASSEMBLY_COST_DELETE)),
 ) -> ApiResponse[L0AssemblyCostBatchResultVO]:
-    try:
-        result = _service.batch_delete(db, dto, current_user=current_user)
-    except BusinessException as error:
-        raise HTTPException(status_code=400, detail=str(error)) from error
+    result = _service.batch_delete(db, dto, current_user=current_user)
     return ApiResponse.ok(data=result, message=result.message or "删除完成")
 
 
@@ -175,10 +152,7 @@ def batch_approve(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.L0_ASSEMBLY_COST_APPROVE)),
 ) -> ApiResponse[L0AssemblyCostBatchResultVO]:
-    try:
-        result = _service.batch_approve(db, dto, current_user=current_user)
-    except BusinessException as error:
-        raise HTTPException(status_code=400, detail=str(error)) from error
+    result = _service.batch_approve(db, dto, current_user=current_user)
     return ApiResponse.ok(data=result, message=result.message or "审核完成")
 
 
@@ -191,8 +165,5 @@ def batch_reverse(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.L0_ASSEMBLY_COST_REVERSE)),
 ) -> ApiResponse[L0AssemblyCostBatchResultVO]:
-    try:
-        result = _service.batch_reverse(db, dto, current_user=current_user)
-    except BusinessException as error:
-        raise HTTPException(status_code=400, detail=str(error)) from error
+    result = _service.batch_reverse(db, dto, current_user=current_user)
     return ApiResponse.ok(data=result, message=result.message or "反审核完成")

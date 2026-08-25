@@ -6,14 +6,13 @@
 from typing import List
 from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.common.permissions.codes import Perm
 from app.database import get_db
 from app.deps.permissions import require_any_perm, require_perm
-from app.exceptions.base import BusinessException
 from app.schemas.common.page_result import PageResult
 from app.schemas.dto.stamping_process_fee_dto import (
     StampingProcessFeeBatchApproveDTO,
@@ -39,8 +38,6 @@ from app.services.async_task import (
     AsyncTaskService,
 )
 from app.services.stamping.process_fee import (
-    DUPLICATE_SCOPE_CALC_MESSAGE,
-    DuplicateScopeCalcError,
     StampingProcessFeeCalcOrchestrator,
 )
 from app.services.stamping.stamping_process_fee_export_service import (
@@ -230,8 +227,6 @@ def get_calc_log(
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_PROCESS_FEE_CALC_VIEW)),
 ) -> ApiResponse[StampingProcessFeeCalcLogVO]:
     record = _calc_orchestrator.get_calc_log(db, log_id)
-    if not record:
-        raise HTTPException(status_code=404, detail="计算日志不存在")
     return ApiResponse.ok(data=record)
 
 
@@ -244,12 +239,7 @@ def delete_calc_log(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_PROCESS_FEE_CALC_DELETE)),
 ) -> ApiResponse[None]:
-    try:
-        deleted = _calc_orchestrator.delete_calc_log(db, log_id)
-    except BusinessException as error:
-        raise HTTPException(status_code=400, detail=str(error)) from error
-    if not deleted:
-        raise HTTPException(status_code=404, detail="计算日志不存在")
+    _calc_orchestrator.delete_calc_log(db, log_id)
     return ApiResponse.deleted(message="计算日志已删除")
 
 
@@ -261,9 +251,9 @@ def get_calc_task_progress(
     task_id: str,
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_PROCESS_FEE_CALC_VIEW)),
 ) -> ApiResponse[AsyncTaskProgressVO]:
-    task = _async_task_service.get_task_snapshot(task_id)
-    if task is None or task.get("task_type") != TASK_TYPE_STAMPING_PROCESS_FEE_CALC:
-        raise HTTPException(status_code=404, detail="任务不存在或已过期")
+    task = _async_task_service.require_snapshot(
+        task_id, TASK_TYPE_STAMPING_PROCESS_FEE_CALC
+    )
     result_raw = AsyncTaskService.parse_result_json(task.get("result_json"))
     result = (
         StampingProcessFeeCalcResultVO.model_validate(result_raw)
@@ -289,13 +279,7 @@ def calculate(
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_PROCESS_FEE_CALC_RUN)),
 ) -> ApiResponse[AsyncTaskAcceptedVO]:
     """提交异步计算；立即返回 task_id，前端轮询进度。"""
-    try:
-        accepted = _calc_orchestrator.start_calc(db, dto, current_user=current_user)
-    except DuplicateScopeCalcError as error:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=str(error) or DUPLICATE_SCOPE_CALC_MESSAGE,
-        ) from error
+    accepted = _calc_orchestrator.start_calc(db, dto, current_user=current_user)
 
     return ApiResponse.ok(
         data=accepted,
@@ -336,12 +320,6 @@ def export_download(
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_PROCESS_FEE_EXPORT)),
 ) -> StreamingResponse:
     """按当前筛选条件导出冲压加工费 Excel。"""
-    if not any([year, location, stamping_supplier, vehicle_model, version, part_number, audit_status]):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="请至少选择一个筛选条件后再导出",
-        )
-
     content, filename = _export_service.export(
         db,
         year=year,
@@ -369,8 +347,6 @@ def get_fee(
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_PROCESS_FEE_VIEW)),
 ) -> ApiResponse[StampingProcessFeeVO]:
     row = _service.get_by_id(db, fee_id)
-    if not row:
-        raise HTTPException(status_code=404, detail="加工费记录不存在")
     return ApiResponse.ok(data=row)
 
 

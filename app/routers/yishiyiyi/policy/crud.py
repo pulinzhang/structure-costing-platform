@@ -4,9 +4,9 @@
 所有尺寸和金额字段全程使用 Decimal/Integer，绝不转为 float。
 """
 
-from typing import Any, Optional
+from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.common.permissions.codes import Perm
@@ -36,24 +36,6 @@ from app.utils.response import ApiResponse
 router = APIRouter(prefix="/api/yishiyiyi/policy", tags=["钢价政策管理"])
 
 _policy_service = SteelPricePolicyService()
-
-
-def _map_service_error(
-    result: tuple[Any, ...],
-    entity_name: str = "记录",
-) -> Any:
-    """
-    解析 Service 层返回的 (record, error) 元组。
-    - error 为 None → 返回 record
-    - error 含"不存在" → raise 404
-    - 其它 error → raise 400
-    """
-    record, error = result
-    if error is None:
-        return record
-    if "不存在" in (error or ""):
-        raise HTTPException(status_code=404, detail=error)
-    raise HTTPException(status_code=400, detail=error)
 
 
 @router.get(
@@ -115,14 +97,12 @@ def batch_delete_policies(
     根据条件批量删除政策。
     年度、月份必填；钢厂可选（不填则删除该年月下全部钢厂）。
     """
-    count, error = _policy_service.delete_by_conditions(
+    count = _policy_service.delete_by_conditions(
         db,
         year=year,
         month=month,
         steel_mill=steel_mill,
     )
-    if error:
-        raise HTTPException(status_code=400, detail=error)
     return ApiResponse.deleted(message=f"成功删除 {count} 条政策")
 
 
@@ -166,8 +146,6 @@ def get_policy(
 ) -> ApiResponse[PolicyDetailResponse]:
     """获取政策详情（含完整阶梯明细，按 sort_order + id 排序）"""
     record = _policy_service.get_by_id(db, policy_id)
-    if record is None:
-        raise HTTPException(status_code=404, detail="政策记录不存在")
     return ApiResponse.ok(data=record)
 
 
@@ -181,9 +159,7 @@ def create_policy(
     current_user: UserVO = Depends(require_perm(Perm.STEEL_PRICE_POLICY_UPLOAD_UPLOAD)),
 ) -> ApiResponse[PolicyDetailResponse]:
     """原子创建政策（含阶梯明细）"""
-    record = _map_service_error(
-        _policy_service.create(db, body, current_user=current_user), "政策"
-    )
+    record = _policy_service.create(db, body, current_user=current_user)
     return ApiResponse.created(data=record, message="政策创建成功")
 
 
@@ -198,9 +174,7 @@ def update_policy(
     current_user: UserVO = Depends(require_perm(Perm.STEEL_PRICE_POLICY_UPLOAD_UPLOAD)),
 ) -> ApiResponse[PolicyDetailResponse]:
     """更新政策（支持更新政策头字段和整组替换阶梯明细）"""
-    record = _map_service_error(
-        _policy_service.update(db, policy_id, body, current_user=current_user), "政策"
-    )
+    record = _policy_service.update(db, policy_id, body, current_user=current_user)
     return ApiResponse.updated(data=record, message="政策更新成功")
 
 
@@ -214,10 +188,7 @@ def delete_policy(
     current_user: UserVO = Depends(require_perm(Perm.STEEL_PRICE_POLICY_DOWNLOAD_DELETE)),
 ) -> ApiResponse[None]:
     """删除政策（含级联删除全部阶梯明细）"""
-    success, error = _policy_service.delete(db, policy_id)
-    if not success:
-        _map_service_error((None, error), "政策")
-        raise HTTPException(status_code=400, detail=error or "删除失败")
+    _policy_service.delete(db, policy_id)
     return ApiResponse.deleted(message="政策删除成功")
 
 
@@ -232,10 +203,7 @@ def add_ladder_item(
     current_user: UserVO = Depends(require_perm(Perm.STEEL_PRICE_POLICY_UPLOAD_UPLOAD)),
 ) -> ApiResponse[LadderItemResponse]:
     """向指定政策新增一条阶梯明细"""
-    record = _map_service_error(
-        _policy_service.add_item(db, policy_id, body, current_user=current_user),
-        "阶梯明细",
-    )
+    record = _policy_service.add_item(db, policy_id, body, current_user=current_user)
     return ApiResponse.created(data=record, message="阶梯明细新增成功")
 
 
@@ -251,10 +219,7 @@ def update_ladder_item(
     current_user: UserVO = Depends(require_perm(Perm.STEEL_PRICE_POLICY_UPLOAD_UPLOAD)),
 ) -> ApiResponse[LadderItemResponse]:
     """更新指定政策下的单条阶梯明细"""
-    record = _map_service_error(
-        _policy_service.update_item(db, item_id, body, current_user=current_user),
-        "阶梯明细",
-    )
+    record = _policy_service.update_item(db, item_id, body, current_user=current_user)
     return ApiResponse.updated(data=record, message="阶梯明细更新成功")
 
 
@@ -269,8 +234,5 @@ def delete_ladder_item(
     current_user: UserVO = Depends(require_perm(Perm.STEEL_PRICE_POLICY_DOWNLOAD_DELETE)),
 ) -> ApiResponse[None]:
     """删除指定政策下的单条阶梯明细"""
-    success, error = _policy_service.delete_item(db, item_id)
-    if not success:
-        _map_service_error((None, error), "阶梯明细")
-        raise HTTPException(status_code=400, detail=error or "删除失败")
+    _policy_service.delete_item(db, item_id)
     return ApiResponse.deleted(message="阶梯明细删除成功")

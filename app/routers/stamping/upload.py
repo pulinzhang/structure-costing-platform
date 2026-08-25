@@ -3,13 +3,12 @@
 异步任务：立即返回 task_id，后台线程解析入库，前端轮询进度。
 """
 
-from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException
+from fastapi import APIRouter, Depends, UploadFile, File, Form
 from fastapi.responses import StreamingResponse
 from urllib.parse import quote
 
 from app.common.permissions.codes import Perm
 from app.utils.logging_config import get_logger
-from app.config import settings
 from app.deps.permissions import require_perm
 from app.schemas.vo.user_vo import UserVO
 from app.services.async_task import (
@@ -56,31 +55,10 @@ async def upload_stamping_file(
         file.filename,
     )
 
-    if not location.strip():
-        raise HTTPException(status_code=400, detail="请输入基地")
-    if not file.filename:
-        raise HTTPException(status_code=400, detail="未提供文件名")
-
-    ext = "." + file.filename.split(".")[-1].lower()
-    allowed = {".xlsx", ".xls"}
-    if ext not in allowed:
-        raise HTTPException(
-            status_code=400,
-            detail=f"不支持的文件类型: {ext}，仅支持 .xlsx / .xls",
-        )
-
     content = await file.read()
-    if not content:
-        raise HTTPException(status_code=400, detail="上传文件为空")
-    if len(content) > settings.MAX_UPLOAD_SIZE:
-        raise HTTPException(
-            status_code=400,
-            detail=f"文件过大，最大支持 {settings.MAX_UPLOAD_SIZE // (1024 * 1024)}MB",
-        )
-
     accepted = StampingUploadService.start_upload(
         file_content=content,
-        filename=file.filename,
+        filename=file.filename or "",
         location=location.strip(),
         current_user=current_user,
     )
@@ -99,9 +77,7 @@ def get_stamping_upload_task_progress(
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_UPLOAD_VIEW)),
 ) -> ApiResponse[AsyncTaskProgressVO]:
     """查询冲压工艺上传任务进度。"""
-    task = _async_task_service.get_task_snapshot(task_id)
-    if task is None or task.get("task_type") != TASK_TYPE_STAMPING_UPLOAD:
-        raise HTTPException(status_code=404, detail="任务不存在或已过期")
+    task = _async_task_service.require_snapshot(task_id, TASK_TYPE_STAMPING_UPLOAD)
 
     return ApiResponse.ok(
         data=AsyncTaskProgressVO.from_snapshot(

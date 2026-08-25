@@ -4,7 +4,7 @@ BOM 年度零件价 Service
 """
 
 import logging
-from typing import List, Optional, Tuple
+from typing import List, Tuple
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -16,6 +16,7 @@ from app.common.audit import (
     display_name,
 )
 from app.common.timezone import now
+from app.exceptions.base import BusinessException, NotFoundException
 from app.repositories.bom.annual_part_price_repository import (
     AnnualPartPriceListFilters,
     BomAnnualPartPriceRepository,
@@ -90,10 +91,10 @@ class BomAnnualPartPriceService:
 
     def get_by_id(
         self, db: Session, id: int
-    ) -> Optional[BomAnnualPartPriceResponse]:
+    ) -> BomAnnualPartPriceResponse:
         record = self.repository.get_by_id(db, id)
         if not record:
-            return None
+            raise NotFoundException(f"年度零件价记录不存在: id={id}")
         return BomAnnualPartPriceResponse.model_validate(record)
 
     def create(
@@ -101,7 +102,7 @@ class BomAnnualPartPriceService:
         db: Session,
         data: BomAnnualPartPriceCreate,
         current_user: UserVO,
-    ) -> Tuple[Optional[BomAnnualPartPriceResponse], Optional[str]]:
+    ) -> BomAnnualPartPriceResponse:
         try:
             audit = audit_create(current_user)
             record = self.repository.create(
@@ -112,19 +113,20 @@ class BomAnnualPartPriceService:
             )
             db.commit()
             db.refresh(record)
-            return BomAnnualPartPriceResponse.model_validate(record), None
+            return BomAnnualPartPriceResponse.model_validate(record)
         except IntegrityError:
             db.rollback()
-            error_msg = (
+            raise BusinessException(
                 f"该基地({data.location})、年份({data.year})"
                 f"和零件「{data.part_number}」的记录已存在"
-            )
-            logger.warning(error_msg)
-            return None, error_msg
-        except Exception as e:
+            ) from None
+        except BusinessException:
             db.rollback()
-            logger.error("创建年度零件价失败: %s", e)
-            return None, str(e)
+            raise
+        except Exception:
+            db.rollback()
+            logger.exception("创建年度零件价失败")
+            raise
 
     def update(
         self,
@@ -132,14 +134,13 @@ class BomAnnualPartPriceService:
         id: int,
         data: BomAnnualPartPriceUpdate,
         current_user: UserVO,
-    ) -> Tuple[Optional[BomAnnualPartPriceResponse], Optional[str]]:
+    ) -> BomAnnualPartPriceResponse:
+        existing = self.repository.get_by_id(db, id)
+        if not existing:
+            raise NotFoundException("记录不存在")
+        if existing.audit_status == AUDIT_APPROVED:
+            raise BusinessException("已审核通过，请先反审核后再修改")
         try:
-            existing = self.repository.get_by_id(db, id)
-            if not existing:
-                return None, "记录不存在"
-            if existing.audit_status == AUDIT_APPROVED:
-                return None, "已审核通过，请先反审核后再修改"
-
             record = self.repository.update(
                 db,
                 id,
@@ -147,31 +148,36 @@ class BomAnnualPartPriceService:
                 updated_by=display_name(current_user),
             )
             if not record:
-                return None, "记录不存在"
+                raise NotFoundException("记录不存在")
             db.commit()
             db.refresh(record)
-            return BomAnnualPartPriceResponse.model_validate(record), None
-        except Exception as e:
+            return BomAnnualPartPriceResponse.model_validate(record)
+        except (BusinessException, NotFoundException):
             db.rollback()
-            logger.error("更新年度零件价失败: %s", e)
-            return None, str(e)
+            raise
+        except Exception:
+            db.rollback()
+            logger.exception("更新年度零件价失败")
+            raise
 
-    def delete(self, db: Session, id: int) -> Tuple[bool, Optional[str]]:
+    def delete(self, db: Session, id: int) -> None:
+        record = self.repository.get_by_id(db, id)
+        if not record:
+            raise NotFoundException("记录不存在")
+        if record.audit_status == AUDIT_APPROVED:
+            raise BusinessException("已审核通过，请先反审核后再删除")
         try:
-            record = self.repository.get_by_id(db, id)
-            if not record:
-                return False, "记录不存在"
-            if record.audit_status == AUDIT_APPROVED:
-                return False, "已审核通过，请先反审核后再删除"
             success = self.repository.delete(db, id)
             if not success:
-                return False, "记录不存在"
+                raise NotFoundException("记录不存在")
             db.commit()
-            return True, None
-        except Exception as e:
+        except (BusinessException, NotFoundException):
             db.rollback()
-            logger.error("删除年度零件价失败: %s", e)
-            return False, str(e)
+            raise
+        except Exception:
+            db.rollback()
+            logger.exception("删除年度零件价失败")
+            raise
 
     def batch_delete_by_location_year(
         self,
@@ -179,16 +185,16 @@ class BomAnnualPartPriceService:
         *,
         location: str,
         year: int,
-    ) -> Tuple[int, int, Optional[str]]:
+    ) -> Tuple[int, int]:
         location = (location or "").strip()
         if not location:
-            return 0, 0, "请选择采购基地"
+            raise BusinessException("请选择采购基地")
         if year < 2000 or year > 2100:
-            return 0, 0, "请选择正确的年度"
+            raise BusinessException("请选择正确的年度")
 
         existing = self.repository.list_by_location_year(db, location, year)
         if not existing:
-            return 0, 0, f"基地「{location}」{year} 年没有可删除的数据"
+            raise BusinessException(f"基地「{location}」{year} 年没有可删除的数据")
 
         try:
             skipped = self.repository.count_by_location_year_and_statuses(
@@ -201,10 +207,10 @@ class BomAnnualPartPriceService:
                 db, location, year
             )
             db.commit()
-        except Exception as e:
+        except Exception:
             db.rollback()
-            logger.error("批量删除年度零件价失败: %s", e)
-            return 0, 0, str(e)
+            logger.exception("批量删除年度零件价失败")
+            raise
 
         logger.info(
             "批量删除年度零件价: location=%s year=%s deleted=%s skipped=%s",
@@ -213,20 +219,20 @@ class BomAnnualPartPriceService:
             deleted_count,
             skipped,
         )
-        return deleted_count, skipped, None
+        return deleted_count, skipped
 
     def batch_approve(
         self,
         db: Session,
         dto: BomAnnualPartPriceBatchApproveDTO,
         current_user: UserVO,
-    ) -> Tuple[Optional[BomAnnualPartPriceBatchAuditResultVO], Optional[str]]:
+    ) -> BomAnnualPartPriceBatchAuditResultVO:
         location = (dto.location or "").strip()
         if not location:
-            return None, "请选择采购基地"
+            raise BusinessException("请选择采购基地")
         operator = display_name(current_user)
         if not operator:
-            return None, "无法识别当前登录用户"
+            raise BusinessException("无法识别当前登录用户")
 
         try:
             skipped = self.repository.count_by_location_year_and_statuses(
@@ -245,19 +251,16 @@ class BomAnnualPartPriceService:
                 updated_by=operator,
             )
             db.commit()
-        except Exception as e:
+        except Exception:
             db.rollback()
-            logger.error("批量审核年度零件价失败: %s", e)
-            return None, str(e)
+            logger.exception("批量审核年度零件价失败")
+            raise
 
-        return (
-            BomAnnualPartPriceBatchAuditResultVO(
-                updated_count=updated,
-                skipped_count=skipped,
-                location=location,
-                year=dto.year,
-            ),
-            None,
+        return BomAnnualPartPriceBatchAuditResultVO(
+            updated_count=updated,
+            skipped_count=skipped,
+            location=location,
+            year=dto.year,
         )
 
     def batch_reverse_audit(
@@ -265,16 +268,16 @@ class BomAnnualPartPriceService:
         db: Session,
         dto: BomAnnualPartPriceBatchReverseAuditDTO,
         current_user: UserVO,
-    ) -> Tuple[Optional[BomAnnualPartPriceBatchAuditResultVO], Optional[str]]:
+    ) -> BomAnnualPartPriceBatchAuditResultVO:
         location = (dto.location or "").strip()
         if not location:
-            return None, "请选择采购基地"
+            raise BusinessException("请选择采购基地")
         remark = (dto.reverse_audit_remark or "").strip()
         if not remark:
-            return None, "反审核原因必填"
+            raise BusinessException("反审核原因必填")
         operator = display_name(current_user)
         if not operator:
-            return None, "无法识别当前登录用户"
+            raise BusinessException("无法识别当前登录用户")
 
         try:
             skipped = self.repository.count_by_location_year_and_statuses(
@@ -293,19 +296,16 @@ class BomAnnualPartPriceService:
                 updated_by=operator,
             )
             db.commit()
-        except Exception as e:
+        except Exception:
             db.rollback()
-            logger.error("批量反审核年度零件价失败: %s", e)
-            return None, str(e)
+            logger.exception("批量反审核年度零件价失败")
+            raise
 
-        return (
-            BomAnnualPartPriceBatchAuditResultVO(
-                updated_count=updated,
-                skipped_count=skipped,
-                location=location,
-                year=dto.year,
-            ),
-            None,
+        return BomAnnualPartPriceBatchAuditResultVO(
+            updated_count=updated,
+            skipped_count=skipped,
+            location=location,
+            year=dto.year,
         )
 
     def get_locations(self, db: Session) -> List[str]:

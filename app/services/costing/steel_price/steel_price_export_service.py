@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 
 from app.common.audit import audit_status_label
 from app.common.excel_workbook import resolve_worksheet
+from app.common.export_filters import require_at_least_one_export_filter
 from app.common.money import Q4, excel_money_cell
 from app.common.timezone import now
 from app.repositories.costing.steel_price.steel_price_repository import SteelPriceRepository
@@ -203,6 +204,9 @@ class SteelPriceExportService:
         Returns:
             (文件字节, 文件名)
         """
+        require_at_least_one_export_filter(
+            year, month, location, category_name, grade, steel_mill, audit_status
+        )
         wb = Workbook()
         _title, record_count = self.write_to_workbook(
             wb,

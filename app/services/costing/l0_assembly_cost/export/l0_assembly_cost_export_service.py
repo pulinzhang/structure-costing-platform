@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session
 
 from app.common.audit import audit_status_label
 from app.common.excel_workbook import resolve_worksheet
+from app.common.export_filters import require_at_least_one_export_filter
 from app.common.money import Q4, excel_money_cell
 from app.common.timezone import now
 from app.models.costing.l0_assembly_cost import L0AssemblyCost
@@ -108,6 +109,16 @@ class L0AssemblyCostExportService:
         audit_status: str | None = None,
         calc_status: str | None = None,
     ) -> tuple[bytes, str]:
+        require_at_least_one_export_filter(
+            year,
+            month,
+            location,
+            vehicle_model,
+            bom_version,
+            part_number,
+            audit_status,
+            calc_status,
+        )
         wb = Workbook()
         _title, record_count = self.write_to_workbook(
             wb,

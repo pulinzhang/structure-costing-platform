@@ -12,6 +12,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.common.timezone import now
+from app.exceptions.base import BusinessException, NotFoundException
 from app.models.bom import BomL0WeldingFeeCalcLog
 from app.repositories.bom.l0_welding_fee_calc_log_repository import (
     BomL0WeldingFeeCalcLogRepository,
@@ -37,8 +38,11 @@ DUPLICATE_SCOPE_CALC_MESSAGE = "当前年度/基地/车型/版本正在计算中
 logger = logging.getLogger("service.bom.l0_welding_fee.calc.log")
 
 
-class DuplicateScopeCalcError(Exception):
+class DuplicateScopeCalcError(BusinessException):
     """同一计算范围已有进行中的任务。"""
+
+    def __init__(self, message: str = DUPLICATE_SCOPE_CALC_MESSAGE) -> None:
+        super().__init__(message=message, code=409)
 
 
 class BomL0WeldingFeeCalcLogService:
@@ -205,21 +209,21 @@ class BomL0WeldingFeeCalcLogService:
 
     def get_calc_log(
         self, db: Session, log_id: int
-    ) -> BomL0WeldingFeeCalcLogVO | None:
+    ) -> BomL0WeldingFeeCalcLogVO:
         record = self.calc_log_repo.get_by_id(db, log_id)
         if record is None:
-            return None
+            raise NotFoundException("计算日志不存在")
         return BomL0WeldingFeeCalcLogVO.model_validate(record)
 
-    def delete_calc_log(self, db: Session, log_id: int) -> bool:
+    def delete_calc_log(self, db: Session, log_id: int) -> None:
         """删除计算日志（含 processing，作僵死锁兜底释放）。"""
         record = self.calc_log_repo.get_by_id(db, log_id)
         if record is None:
-            return False
+            raise NotFoundException("计算日志不存在")
         deleted = self.calc_log_repo.delete(db, log_id)
-        if deleted:
-            db.commit()
-        return deleted
+        if not deleted:
+            raise NotFoundException("计算日志不存在")
+        db.commit()
 
     def persist(
         self,

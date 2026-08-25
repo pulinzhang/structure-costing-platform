@@ -1,6 +1,6 @@
 """BOM 路由 - 清单版本与树节点最小 CRUD"""
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.common.permissions.codes import Perm
@@ -85,8 +85,6 @@ def get_snapshot(
     current_user: UserVO = Depends(_bom_read),
 ) -> ApiResponse[BomSnapshotVO]:
     row = _bom_service.get_snapshot(db, snapshot_id)
-    if not row:
-        raise HTTPException(status_code=404, detail="BOM 清单不存在")
     return ApiResponse.ok(data=row)
 
 
@@ -100,9 +98,7 @@ def create_snapshot(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BOM_UPLOAD_UPLOAD)),
 ) -> ApiResponse[BomSnapshotVO]:
-    row, error = _bom_service.create_snapshot(db, body, current_user=current_user)
-    if error:
-        raise HTTPException(status_code=400, detail=error)
+    row = _bom_service.create_snapshot(db, body, current_user=current_user)
     return ApiResponse.created(data=row, message="创建成功")
 
 
@@ -115,10 +111,7 @@ def delete_snapshot(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BOM_MATERIAL_DELETE)),
 ) -> ApiResponse[None]:
-    error = _bom_service.delete_snapshot(db, snapshot_id)
-    if error:
-        status = 404 if "不存在" in error else 400
-        raise HTTPException(status_code=status, detail=error)
+    _bom_service.delete_snapshot(db, snapshot_id)
     return ApiResponse.deleted(message="删除成功")
 
 
@@ -132,8 +125,6 @@ def list_nodes(
     current_user: UserVO = Depends(_bom_read),
 ) -> ApiResponse[list[BomNodeVO]]:
     rows = _bom_service.list_nodes_flat(db, snapshot_id)
-    if rows is None:
-        raise HTTPException(status_code=404, detail="BOM 清单不存在")
     return ApiResponse.ok(data=rows, message=f"查询到 {len(rows)} 个节点")
 
 
@@ -147,8 +138,6 @@ def get_tree(
     current_user: UserVO = Depends(_bom_read),
 ) -> ApiResponse[list[BomNodeTreeVO]]:
     tree = _bom_service.list_nodes_tree(db, snapshot_id)
-    if tree is None:
-        raise HTTPException(status_code=404, detail="BOM 清单不存在")
     return ApiResponse.ok(data=tree, message="获取树成功")
 
 
@@ -163,12 +152,9 @@ def create_node(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BOM_UPLOAD_UPLOAD)),
 ) -> ApiResponse[BomNodeVO]:
-    row, error = _bom_service.create_node(
+    row = _bom_service.create_node(
         db, snapshot_id, body, current_user=current_user
     )
-    if error:
-        status = 404 if "不存在" in error else 400
-        raise HTTPException(status_code=status, detail=error)
     return ApiResponse.created(data=row, message="节点创建成功")
 
 
@@ -181,8 +167,5 @@ def delete_node(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BOM_UPLOAD_UPLOAD)),
 ) -> ApiResponse[None]:
-    error = _bom_service.delete_node(db, node_id)
-    if error:
-        status = 404 if "不存在" in error else 400
-        raise HTTPException(status_code=status, detail=error)
+    _bom_service.delete_node(db, node_id)
     return ApiResponse.deleted(message="节点删除成功")

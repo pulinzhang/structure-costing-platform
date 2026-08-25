@@ -137,10 +137,12 @@ class ApiResponse(BaseModel, Generic[T]):
 | 创建资源 | `ApiResponse.created(data=vo)` | 201 | |
 | 更新资源 | `ApiResponse.updated(data=vo)` | 200 | |
 | 删除资源 | `ApiResponse.deleted()` | 200 | |
-| 参数校验失败 | `ApiResponse.fail(message=..., code=400)` | 400 | |
-| 业务规则冲突 | `ApiResponse.fail(message=..., code=422)` | 422 | |
-| 资源不存在 | `HTTPException(status_code=404)` | - | 用 FastAPI 异常，不用 fail() |
-| 系统异常 | `ApiResponse.error(message=..., code=500)` | 500 | |
+| 参数校验失败 | 请求体 Pydantic → `validation_exception_handler` | 422 | Router 不要手写 fail() |
+| 业务拒绝 | Service `raise BusinessException` | 400 | 唯一键/审核锁/缺字段；禁止 `(None, msg)` |
+| 期别/范围冲突 | Service `raise BusinessException(..., code=409)` | 409 | 重复计算锁；不要 Router 转 `HTTP_409` |
+| 资源不存在 | Service `raise NotFoundException` | 404 | 含任务过期；Router 不要 `if not vo: 404` |
+| 未登录 | 依赖 `HTTPException(401)` | 401 | 仅 `deps/auth`，不是切片 Service |
+| 系统异常 | 未捕获 Exception → `generic_exception_handler` | 500 | 禁止 `BusinessException(str(exc))` / `return None, str(exc)` |
 
 ### 2.3 分页组装模式（现网约定）
 
@@ -299,7 +301,8 @@ def list_parts(...) -> ApiResponse[PageResult[StampingPartListResponse]]:
 # model_dump() 仅在此链路中使用
 
 # VO：数据库 → Service → API 输出
-# 禁止对 VO 使用 model_dump() 返回
+# 禁止对 VO 使用 model_dump() 作为 API 返回值
+# 允许：切片 Service 把 VO dump 进异步任务 result_json（持久化，见架构宪法 §5.3）
 ```
 
 ### 4.2 允许使用 model_dump() 的场景
@@ -311,6 +314,9 @@ def update_part(db, part_id: int, dto: StampingPartUpdateDTO):
 
 # 场景 2：内部数据结构转换
 internal_data = SomeModel(...).model_dump()
+
+# 场景 3：异步任务 result 写入辅助库 JSON（非 API 输出）
+result=result_vo.model_dump()  # WorkerTaskOutcome；Router 禁止 dump
 ```
 
 ### 4.3 禁止使用 model_dump() 的场景
@@ -518,6 +524,8 @@ Service 必须返回：
 * `PageResult[VO]`  # 备选：Service 自行组装分页体
 * 调 Repository 时传入具体写入类型（dataclass / TypedDict / DTO），不要 `dict[str, Any]`，不要把 VO 传进 Repository
 
+对 **Router 调用的** 单资源 get / 写操作：找不到或业务拒绝时 **抛异常**（`NotFoundException` / `BusinessException`，冲突用 `code=409`），不要 `VO | None`，不要 `delete → bool`，不要 `tuple[VO | None, str | None]`。细则见架构宪法 §5.2。
+
 **分页推荐写法**：
 
 ```python
@@ -537,7 +545,8 @@ def paginate(
 ```python
 dict
 dict[str, Any]
-model_dump()  # 禁止用于返回
+model_dump()  # 禁止用于 API 返回
+tuple[VO | None, str | None]  # HTTP 错误通道；分页 (list, total) 除外
 ```
 
 示例：
@@ -548,10 +557,10 @@ def get_by_id(
     self,
     db: Session,
     part_id: int
-) -> StampingPartWithProcessesResponse | None:
+) -> StampingPartWithProcessesResponse:
     part = self.repository.get_by_id(db, part_id)
     if not part:
-        return None
+        raise NotFoundException(f"零件不存在: id={part_id}")
     return StampingPartWithProcessesResponse.model_validate(part)
 ```
 
@@ -561,6 +570,8 @@ return {
     "id": part.id,
     "part_number": part.part_number
 }
+
+return None, "零件不存在"
 ```
 
 ---
@@ -633,6 +644,7 @@ Router 禁止：
 * 访问数据库 / 操作 ORM Model
 * 在 Router 内 `Model → VO`
 * 返回裸 dict / `JSONResponse`
+* 把 Service 错误元组 / `None` 转成 `HTTPException`（见架构宪法 §5.2）
 
 ```python
 @router.get(
@@ -673,12 +685,12 @@ return {"items": ..., "total": total}
 
 | 方法 | 用途 | Service 返回 | Router 返回 | code | Response Model |
 |------|------|-------------|-------------|------|----------------|
-| `GET`（单个） | 获取单个资源 | `VO` 或 `None` | `ApiResponse.ok(data=vo)` 或 `HTTPException(404)` | 200 / 404 | `ApiResponse[StampingPartVO]` |
+| `GET`（单个） | 获取单个资源 | `VO`（不存在抛 `NotFoundException`） | `ApiResponse.ok(data=vo)` | 200 / 404 | `ApiResponse[StampingPartVO]` |
 | `GET`（列表） | 获取资源列表（不分页） | `list[VO]` | `ApiResponse.ok(data=list)` | 200 | `ApiResponse[list[StampingProcessResponse]]` |
 | `GET`（列表） | 获取资源列表（分页） | `list[VO], total[, filters]` 或 `PageResult[VO]` | **`ApiResponse.list_(...)`** 或 `ok(data=page)` | 200 | `ApiResponse[PageResult[…]]` |
 | `POST` | 创建资源 | `VO` | `ApiResponse.created(data=vo)` | 201 | `ApiResponse[StampingPartVO]` |
-| `PUT` / `PATCH` | 更新资源 | `VO` 或 `None` | `ApiResponse.updated(data=vo)` 或 `HTTPException(404)` | 200 / 404 | `ApiResponse[StampingProcessResponse]` |
-| `DELETE` | 删除资源 | `bool` 或 `None` | `ApiResponse.deleted()` 或 `HTTPException(404)` | 200 / 404 | `ApiResponse[None]` |
+| `PUT` / `PATCH` | 更新资源 | `VO`（不存在抛 `NotFoundException`） | `ApiResponse.updated(data=vo)` | 200 / 404 | `ApiResponse[StampingProcessResponse]` |
+| `DELETE` | 删除资源 | `None`（不存在抛 `NotFoundException`） | `ApiResponse.deleted()` | 200 / 404 | `ApiResponse[None]` |
 
 ### GET - 获取单个资源
 
@@ -694,8 +706,6 @@ def get_part(
 ) -> ApiResponse[StampingPartWithProcessesResponse]:
     """获取单个零件（包含工序）"""
     part = _stamping_service.get_by_id(db, part_id)
-    if not part:
-        raise HTTPException(status_code=404, detail="零件不存在")
     return ApiResponse.ok(data=part, message="获取成功")
 ```
 
@@ -770,8 +780,6 @@ def update_part(
 ) -> ApiResponse[StampingPartVO]:
     service = StampingPartService()
     part = service.update_part(db, part_id, dto, current_user=current_user)
-    if not part:
-        raise HTTPException(status_code=404, detail="零件不存在")
     return ApiResponse.updated(data=part, message="更新成功")
 ```
 
@@ -792,8 +800,6 @@ def update_process(
     result = _stamping_service.update_process(
         db, process_id, body.model_dump(exclude_unset=True), current_user=current_user
     )
-    if not result:
-        raise HTTPException(status_code=404, detail="工序不存在")
     return ApiResponse.ok(data=result, message="工序更新成功")
 ```
 
@@ -810,35 +816,22 @@ def delete_part(
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_PARTS_DELETE)),
 ) -> ApiResponse[None]:
     """删除零件（同时删除关联工序）"""
-    success = _stamping_service.delete(db, part_id)
-    if not success:
-        raise HTTPException(status_code=404, detail="零件不存在")
+    _stamping_service.delete(db, part_id)
     return ApiResponse.deleted(message="零件删除成功")
 ```
 
 ### 错误响应模式
 
-所有接口应一致地处理错误：
+业务失败由 Service 抛 `NotFoundException` / `BusinessException`（冲突 `code=409`），`business_exception_handler` 写成 `ApiResponse.fail`。Router **不要** `try/except` 再转 `HTTPException`，不要拆 `(record, error)`，不要 `if not vo: 404`。
 
 ```python
-from fastapi import HTTPException, status
-
 @router.get("/parts/{part_id}", ...)
 def get_part(...):
-    try:
-        part = _stamping_service.get_by_id(db, part_id)
-        if not part:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="零件不存在")
-        return ApiResponse.ok(data=part)
-    except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    part = _stamping_service.get_by_id(db, part_id)
+    return ApiResponse.ok(data=part)
 ```
 
-注意：
-- 使用 `HTTPException` 处理错误
-- `detail` 会通过 FastAPI 异常处理器包含在响应的 `message` 字段中
-- 业务校验失败用 `ApiResponse.fail(code=422, message="...")`
-- 系统异常用 `ApiResponse.error(code=500, message="...")`
+请求体 Pydantic 校验走 `validation_exception_handler`（422）。未登录走 `deps/auth` 的 `HTTPException(401)`。未捕获异常走 `generic_exception_handler`（500）。细则见架构宪法 §5.2。
 
 ---
 
@@ -1094,6 +1087,7 @@ return JSONResponse
 return ORM Model from Router
 model_dump() 用于 VO 返回
 VO.model_dump() for API output
+tuple[VO | None, str | None] 作为 HTTP 错误通道
 __dict__
 dict(model)
 ApiResponse[Any]（应指定具体类型）
@@ -1110,6 +1104,7 @@ ApiResponse[Any]（应指定具体类型）
     Depends(require_perm(Perm.XXX)) / require_any_perm / require_admin_user
     禁止裸 get_current_user（me/touch/logout 除外）
     禁止权限码字面量，用 Perm.*
+    禁止 if error: HTTPException / if not vo: 404 / except 业务失败再转 409
 
 写操作 Router → Service：
     pass current_user=current_user
@@ -1119,6 +1114,7 @@ ApiResponse[Any]（应指定具体类型）
 
 每个 Service：
     returns VO / list[VO] / (list, total[, filters]) / PageResult
+    对 Router 入口的失败抛 NotFoundException / BusinessException（冲突 code=409）
     无隐式 current_user / ContextVar
 
 每个 Repository：

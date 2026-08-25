@@ -5,8 +5,7 @@ from __future__ import annotations
 from unittest.mock import MagicMock
 
 import pytest
-from fastapi import HTTPException
-
+from app.exceptions.base import NotFoundException, PermissionException
 from app.schemas.dto.llm_analysis_dto import LlmAnalysisReportQuery
 from app.schemas.vo.user_vo import UserVO
 from app.services.llm.report_service import LlmAnalysisReportService
@@ -74,10 +73,10 @@ def test_get_report_other_user_forbidden_even_admin() -> None:
     row.user_id = 2
     service.repository.get_by_id = MagicMock(return_value=row)
 
-    with pytest.raises(HTTPException) as exc_info:
+    with pytest.raises(PermissionException) as exc_info:
         service.get_report(db, 101, current_user=_user(1, is_admin=True))
 
-    assert exc_info.value.status_code == 403
+    assert exc_info.value.code == 403
 
 
 def test_list_reports_returns_list_item_without_markdown() -> None:
@@ -116,10 +115,10 @@ def test_get_task_progress_without_report_row_not_found(
         MagicMock(return_value={"status": "running", "progress": 10}),
     )
 
-    with pytest.raises(HTTPException) as exc_info:
+    with pytest.raises(NotFoundException) as exc_info:
         service.get_task_progress(db, "task-abc", current_user=_user(1))
 
-    assert exc_info.value.status_code == 404
+    assert exc_info.value.code == 404
 
 
 def test_get_task_progress_other_user_forbidden(
@@ -135,7 +134,7 @@ def test_get_task_progress_other_user_forbidden(
         MagicMock(return_value={"status": "running", "progress": 10}),
     )
 
-    with pytest.raises(HTTPException) as exc_info:
+    with pytest.raises(PermissionException) as exc_info:
         service.get_task_progress(db, "task-abc", current_user=_user(1))
 
-    assert exc_info.value.status_code == 403
+    assert exc_info.value.code == 403

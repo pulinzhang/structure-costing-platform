@@ -5,7 +5,7 @@
 
 from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, UploadFile
 from fastapi.responses import StreamingResponse
 
 from app.common.permissions.codes import Perm
@@ -59,11 +59,7 @@ async def upload_policy_excel(
     主数据仍在单一大事务中导入（全部成功或全部回滚）。
     """
     file_content = await file.read()
-
-    try:
-        _policy_service.validate_upload(file_content, file.filename or "")
-    except ValueError as error:
-        raise HTTPException(status_code=400, detail=str(error)) from error
+    _policy_service.validate_upload(file_content, file.filename or "")
 
     accepted = _policy_service.start_upload(
         file_content=file_content,
@@ -87,9 +83,7 @@ def get_upload_task_progress(
     current_user: UserVO = Depends(require_perm(Perm.STEEL_PRICE_POLICY_UPLOAD_VIEW)),
 ) -> ApiResponse[AsyncTaskProgressVO]:
     """查询政策上传/解析任务进度（辅助库）"""
-    task = _async_task_service.get_task_snapshot(task_id)
-    if task is None or task.get("task_type") != TASK_TYPE_POLICY_UPLOAD:
-        raise HTTPException(status_code=404, detail="任务不存在或已过期")
+    task = _async_task_service.require_snapshot(task_id, TASK_TYPE_POLICY_UPLOAD)
 
     result_raw = AsyncTaskService.parse_result_json(task.get("result_json"))
     result = ImportResultResponse.model_validate(result_raw) if result_raw else None

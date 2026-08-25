@@ -6,14 +6,13 @@ BOM 成品焊接费路由（技术路径仍用 l0）
 from typing import List
 from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.common.permissions.codes import Perm
 from app.database import get_db
 from app.deps.permissions import require_any_perm, require_perm
-from app.exceptions.base import BusinessException
 from app.schemas.common.page_result import PageResult
 from app.schemas.dto.bom_l0_welding_fee_dto import (
     BomL0WeldingFeeBatchApproveDTO,
@@ -39,10 +38,8 @@ from app.services.async_task import (
     AsyncTaskService,
 )
 from app.services.bom.l0_welding_fee import (
-    DUPLICATE_SCOPE_CALC_MESSAGE,
     BomL0WeldingFeeCalcOrchestrator,
     BomL0WeldingFeeService,
-    DuplicateScopeCalcError,
 )
 from app.services.bom.l0_welding_fee.export_service import BomL0WeldingFeeExportService
 from app.utils.response import ApiResponse
@@ -196,8 +193,6 @@ def get_calc_log(
     current_user: UserVO = Depends(require_perm(Perm.BOM_L0_WELDING_FEE_CALC_VIEW)),
 ) -> ApiResponse[BomL0WeldingFeeCalcLogVO]:
     record = _calc_orchestrator.get_calc_log(db, log_id)
-    if not record:
-        raise HTTPException(status_code=404, detail="计算日志不存在")
     return ApiResponse.ok(data=record)
 
 
@@ -210,12 +205,7 @@ def delete_calc_log(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BOM_L0_WELDING_FEE_CALC_DELETE)),
 ) -> ApiResponse[None]:
-    try:
-        deleted = _calc_orchestrator.delete_calc_log(db, log_id)
-    except BusinessException as error:
-        raise HTTPException(status_code=400, detail=str(error)) from error
-    if not deleted:
-        raise HTTPException(status_code=404, detail="计算日志不存在")
+    _calc_orchestrator.delete_calc_log(db, log_id)
     return ApiResponse.deleted(message="计算日志已删除")
 
 
@@ -227,9 +217,9 @@ def get_calc_task_progress(
     task_id: str,
     current_user: UserVO = Depends(require_perm(Perm.BOM_L0_WELDING_FEE_CALC_VIEW)),
 ) -> ApiResponse[AsyncTaskProgressVO]:
-    task = _async_task_service.get_task_snapshot(task_id)
-    if task is None or task.get("task_type") != TASK_TYPE_BOM_L0_WELDING_FEE_CALC:
-        raise HTTPException(status_code=404, detail="任务不存在或已过期")
+    task = _async_task_service.require_snapshot(
+        task_id, TASK_TYPE_BOM_L0_WELDING_FEE_CALC
+    )
     result_raw = AsyncTaskService.parse_result_json(task.get("result_json"))
     result = (
         BomL0WeldingFeeCalcResultVO.model_validate(result_raw)
@@ -255,13 +245,7 @@ def calculate(
     current_user: UserVO = Depends(require_perm(Perm.BOM_L0_WELDING_FEE_CALC_RUN)),
 ) -> ApiResponse[AsyncTaskAcceptedVO]:
     """提交异步计算；立即返回 task_id，前端轮询进度。"""
-    try:
-        accepted = _calc_orchestrator.start_calc(db, dto, current_user=current_user)
-    except DuplicateScopeCalcError as error:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=str(error) or DUPLICATE_SCOPE_CALC_MESSAGE,
-        ) from error
+    accepted = _calc_orchestrator.start_calc(db, dto, current_user=current_user)
 
     return ApiResponse.ok(
         data=accepted,
@@ -302,11 +286,6 @@ def export_download(
     current_user: UserVO = Depends(require_perm(Perm.BOM_L0_WELDING_FEE_LIST_EXPORT)),
 ) -> StreamingResponse:
     """按当前筛选条件导出成品焊接费 Excel（主表字段打平到工艺明细行）。"""
-    if not any([year, location, vehicle_model, bom_version, part_number, audit_status, calc_status]):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="请至少选择一个筛选条件后再导出",
-        )
     content, filename = _export_service.export(
         db,
         year=year,
@@ -334,8 +313,6 @@ def get_fee(
     current_user: UserVO = Depends(require_perm(Perm.BOM_L0_WELDING_FEE_LIST_VIEW)),
 ) -> ApiResponse[BomL0WeldingFeeVO]:
     row = _service.get_by_id(db, fee_id)
-    if not row:
-        raise HTTPException(status_code=404, detail="成品焊接费记录不存在")
     return ApiResponse.ok(data=row)
 
 
@@ -349,10 +326,7 @@ def update_other_fee(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BOM_L0_WELDING_FEE_LIST_UPDATE)),
 ) -> ApiResponse[BomL0WeldingFeeVO]:
-    try:
-        row = _service.update_other_fee(db, fee_id, dto, current_user=current_user)
-    except BusinessException as error:
-        raise HTTPException(status_code=400, detail=str(error)) from error
+    row = _service.update_other_fee(db, fee_id, dto, current_user=current_user)
     return ApiResponse.updated(data=row, message="成品焊接费已保存")
 
 

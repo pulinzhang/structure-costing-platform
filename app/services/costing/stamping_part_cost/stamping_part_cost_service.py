@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 
 from app.common.audit import AUDIT_APPROVED, display_name
 from app.common.timezone import now
-from app.exceptions.base import BusinessException
+from app.exceptions.base import BusinessException, NotFoundException
 from app.models.costing import StampingPartCost, StampingPartCostCalcLog
 from app.repositories.costing.stamping_part_cost.stamping_part_cost_repository import (
     PartCostListFilters,
@@ -231,11 +231,11 @@ class StampingPartCostService:
 
     def get_calc_log(
         self, db: Session, log_id: int
-    ) -> StampingPartCostCalcLogVO | None:
+    ) -> StampingPartCostCalcLogVO:
         return self.orchestrator.calc_log_service.get_calc_log(db, log_id)
 
-    def delete_calc_log(self, db: Session, log_id: int) -> bool:
-        return self.orchestrator.calc_log_service.delete_calc_log(db, log_id)
+    def delete_calc_log(self, db: Session, log_id: int) -> None:
+        self.orchestrator.calc_log_service.delete_calc_log(db, log_id)
 
     def paginate(
         self, db: Session, query: StampingPartCostQuery
@@ -284,12 +284,14 @@ class StampingPartCostService:
             filters,
         )
 
-    def get_by_id(self, db: Session, cost_id: int) -> StampingPartCostVO | None:
+    def get_by_id(self, db: Session, cost_id: int) -> StampingPartCostVO:
         record = self.cost_repo.get_by_id(db, cost_id)
         if record is None:
-            return None
+            raise NotFoundException(f"核算记录不存在: id={cost_id}")
         vos = self._to_cost_vos(db, [record])
-        return vos[0] if vos else None
+        if not vos:
+            raise NotFoundException(f"核算记录不存在: id={cost_id}")
+        return vos[0]
 
     def update_manual_unit_cost(
         self,
@@ -301,7 +303,7 @@ class StampingPartCostService:
         """仅允许对计算失败且未审核的记录手工录入最终单件成本。"""
         record = self.cost_repo.get_by_id(db, cost_id)
         if not record:
-            raise BusinessException(f"核算记录不存在: id={cost_id}")
+            raise NotFoundException(f"核算记录不存在: id={cost_id}")
         if record.calc_status != STATUS_FAILED:
             raise BusinessException("仅计算失败的记录允许手工改价")
         if record.audit_status == AUDIT_APPROVED:
@@ -324,7 +326,7 @@ class StampingPartCostService:
             },
         )
         if not updated:
-            raise BusinessException(f"核算记录不存在: id={cost_id}")
+            raise NotFoundException(f"核算记录不存在: id={cost_id}")
         db.commit()
         db.refresh(updated)
         vos = self._to_cost_vos(db, [updated])

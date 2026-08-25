@@ -23,6 +23,7 @@ from sqlalchemy.orm import Session
 
 from app.common.audit import display_name
 from app.common.timezone import now
+from app.exceptions.base import BusinessException
 from app.services.costing.steel_price.calc.calc_log_service import CalcLogService
 from app.services.costing.steel_price.calc.models import (
     SteelPriceCalcRequest,
@@ -30,7 +31,7 @@ from app.services.costing.steel_price.calc.models import (
 )
 from app.schemas.dto.steel_price_dto import SteelPriceCalcDTO
 from app.schemas.vo.async_task_vo import AsyncTaskAcceptedVO
-from app.schemas.vo.steel_price_vo import SteelPriceCalcResultVO
+from app.schemas.vo.steel_price_vo import SteelPriceCalcLogVO, SteelPriceCalcResultVO
 from app.schemas.vo.user_vo import UserVO
 from app.services.async_task import (
     TASK_TYPE_STEEL_PRICE_CALC,
@@ -81,7 +82,7 @@ class SteelPriceCalcOrchestrator:
         """提交前写入 processing 期别锁。"""
         location = (request.location or "").strip()
         if not location:
-            raise ValueError("计算钢价必须指定生产基地 location")
+            raise BusinessException("计算钢价必须指定生产基地 location")
         return self.calc_log_service.begin_processing(
             db,
             year=request.year,
@@ -189,7 +190,7 @@ class SteelPriceCalcOrchestrator:
 
         try:
             if not location:
-                raise ValueError("计算钢价必须指定生产基地 location")
+                raise BusinessException("计算钢价必须指定生产基地 location")
 
             normalized = SteelPriceCalcRequest(
                 year=request.year,
@@ -291,7 +292,7 @@ class SteelPriceCalcOrchestrator:
             log_builder.line(f"批次状态: {result.status}")
             _report(92, "写入计算过程日志...")
 
-        except ValueError as error:
+        except (BusinessException, ValueError) as error:
             result.status = STATUS_FAILED
             log_builder.section("计算校验失败")
             log_builder.error(str(error))
@@ -342,11 +343,11 @@ class SteelPriceCalcOrchestrator:
             size=size,
         )
 
-    def get_log(self, db: Session, log_id: int) -> Any:
+    def get_log(self, db: Session, log_id: int) -> SteelPriceCalcLogVO:
         return self.calc_log_service.get_log(db, log_id)
 
-    def delete_log(self, db: Session, log_id: int) -> bool:
-        return self.calc_log_service.delete_log(db, log_id)
+    def delete_log(self, db: Session, log_id: int) -> None:
+        self.calc_log_service.delete_log(db, log_id)
 
     @staticmethod
     def _to_result_vo(result: SteelPriceCalcResult) -> SteelPriceCalcResultVO:
@@ -360,7 +361,7 @@ class SteelPriceCalcOrchestrator:
     ) -> AsyncTaskAcceptedVO:
         location = (dto.location or "").strip()
         if not location:
-            raise ValueError("计算钢价必须指定生产基地")
+            raise BusinessException("计算钢价必须指定生产基地")
         request = SteelPriceCalcRequest(
             year=dto.year,
             month=dto.month,

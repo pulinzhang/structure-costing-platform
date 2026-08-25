@@ -1,45 +1,45 @@
 """业务异常基类
 
-异常体系说明：
-- BusinessException: 通用业务异常（如库存不足、余额不足）
-- NotFoundException: 资源不存在（404）
-- ValidationException: 业务校验失败（如重复提交、数据冲突）
-- PermissionException: 权限不足
+异常体系说明（架构宪法 §5.2）：
+- BusinessException: 通用业务拒绝（默认 HTTP 400；唯一键、审核锁、缺字段；冲突传 code=409）
+- NotFoundException: 资源不存在或任务过期（404）
+- ValidationException: 仅当有意返回 422；业务拒绝用 BusinessException
+- PermissionException: 权限不足（403；通常由 require_perm 抛）
 
-使用方式：
+Service 对 Router 抛这些异常，由全局 handler 转成 ApiResponse.fail。
+禁止 return None, "错误文案"；禁止 Router 再转 HTTPException。
+
 ```python
-# Service 层抛出
 raise NotFoundException(f"零件不存在: id={part_id}")
-
-# 全局异常处理器统一捕获
-# 转换为 ApiResponse.fail(message=str(exception))
 ```
 """
 
 
 
 class BusinessException(Exception):
-    """通用业务异常（如库存不足、余额不足）"""
+    """业务拒绝。默认 HTTP 400；期别冲突传 code=409。handler 按 self.code 写状态码。"""
 
     def __init__(
         self,
         message: str = "业务处理失败",
         code: int = 400,
+        data: object | None = None,
     ):
         self.message = message
         self.code = code
+        self.data = data
         super().__init__(message)
 
 
 class NotFoundException(BusinessException):
-    """资源不存在异常（对应 HTTP 404）"""
+    """资源不存在或任务过期（HTTP 404）。"""
 
     def __init__(self, message: str = "资源不存在"):
         super().__init__(message=message, code=404)
 
 
 class ValidationException(BusinessException):
-    """业务校验失败异常（如重复提交、数据冲突）"""
+    """仅当有意返回 HTTP 422（与请求体 Pydantic 同码）。业务拒绝默认用 BusinessException（400）。"""
 
     def __init__(self, message: str = "数据校验失败"):
         super().__init__(message=message, code=422)

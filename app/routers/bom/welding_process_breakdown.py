@@ -2,7 +2,7 @@
 BOM 焊接工艺拆解路由
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from urllib.parse import quote
@@ -41,10 +41,6 @@ from app.services.bom.welding_process_breakdown import (
 )
 from app.services.bom.welding_process_breakdown.export import (
     BomWeldingProcessBreakdownExportOrchestrator,
-)
-from app.services.bom.welding_process_breakdown.generate_log_service import (
-    DUPLICATE_SCOPE_GENERATE_MESSAGE,
-    DuplicateScopeGenerateError,
 )
 from app.utils.response import ApiResponse
 
@@ -125,8 +121,6 @@ def get_node(
     current_user: UserVO = Depends(require_perm(Perm.BOM_WELDING_PROCESS_BREAKDOWN_VIEW)),
 ) -> ApiResponse[BomWeldingProcessBreakdownNodeVO]:
     row = _service.get_node(db, node_id)
-    if not row:
-        raise HTTPException(status_code=404, detail="记录不存在")
     return ApiResponse.ok(data=row)
 
 
@@ -199,8 +193,6 @@ def get_generate_log(
     current_user: UserVO = Depends(_generate_read),
 ) -> ApiResponse[BomWeldingProcessBreakdownGenerateLogVO]:
     record = _service.get_generate_log(db, log_id)
-    if record is None:
-        raise HTTPException(status_code=404, detail="拆解记录不存在")
     return ApiResponse.ok(data=record)
 
 
@@ -215,15 +207,7 @@ def delete_generate_log(
         require_perm(Perm.BOM_WELDING_PROCESS_BREAKDOWN_DELETE_LOG)
     ),
 ) -> ApiResponse[None]:
-    try:
-        deleted = _service.delete_generate_log(db, log_id)
-    except ValueError as error:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(error),
-        ) from error
-    if not deleted:
-        raise HTTPException(status_code=404, detail="拆解记录不存在")
+    _service.delete_generate_log(db, log_id)
     return ApiResponse.deleted(message="删除成功")
 
 
@@ -235,12 +219,9 @@ def get_generate_task_progress(
     task_id: str,
     current_user: UserVO = Depends(_generate_read),
 ) -> ApiResponse[AsyncTaskProgressVO]:
-    task = _async_task_service.get_task_snapshot(task_id)
-    if (
-        task is None
-        or task.get("task_type") != TASK_TYPE_BOM_WELDING_PROCESS_BREAKDOWN_GENERATE
-    ):
-        raise HTTPException(status_code=404, detail="任务不存在或已过期")
+    task = _async_task_service.require_snapshot(
+        task_id, TASK_TYPE_BOM_WELDING_PROCESS_BREAKDOWN_GENERATE
+    )
 
     result_raw = AsyncTaskService.parse_result_json(task.get("result_json"))
     result = (
@@ -269,13 +250,7 @@ def generate_from_bom(
     ),
 ) -> ApiResponse[AsyncTaskAcceptedVO]:
     """从 BOM 异步生成焊接工艺拆解。"""
-    try:
-        accepted = _service.start_generate(db, dto, current_user=current_user)
-    except DuplicateScopeGenerateError as error:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=str(error) or DUPLICATE_SCOPE_GENERATE_MESSAGE,
-        ) from error
+    accepted = _service.start_generate(db, dto, current_user=current_user)
 
     return ApiResponse.ok(
         data=accepted,
@@ -296,10 +271,7 @@ def update_line(
     ),
 ) -> ApiResponse[BomWeldingProcessBreakdownLineVO]:
     """修改明细（过程量/标准工艺）；map/rollup/qty_check 由服务侧重算"""
-    row, error = _service.update_line(db, line_id, dto, current_user=current_user)
-    if error:
-        code = 404 if "不存在" in error else 400
-        raise HTTPException(status_code=code, detail=error)
+    row = _service.update_line(db, line_id, dto, current_user=current_user)
     return ApiResponse.updated(data=row, message="更新成功")
 
 
@@ -316,12 +288,9 @@ def update_node_lines(
     ),
 ) -> ApiResponse[BomWeldingProcessBreakdownNodeVO]:
     """一次保存节点下全部工艺明细"""
-    row, error = _service.update_node_lines(
+    row = _service.update_node_lines(
         db, node_id, dto, current_user=current_user
     )
-    if error:
-        code = 404 if "不存在" in error else 400
-        raise HTTPException(status_code=code, detail=error)
     return ApiResponse.updated(data=row, message="全部工艺已保存")
 
 
@@ -337,14 +306,12 @@ def batch_delete(
     ),
 ) -> ApiResponse[BomWeldingProcessBreakdownBatchDeleteResultVO]:
     """按基地+项目+版本批量删除（仅未审核）"""
-    result, error = _service.batch_delete(
+    result = _service.batch_delete(
         db,
         location=dto.location,
         vehicle_model=dto.vehicle_model,
         bom_version=dto.bom_version,
     )
-    if error:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error)
     return ApiResponse.ok(data=result, message=result.message if result else "删除成功")
 
 
@@ -360,9 +327,7 @@ def batch_approve(
     ),
 ) -> ApiResponse[BomWeldingProcessBreakdownBatchAuditResultVO]:
     """按基地+项目+版本批量审核"""
-    result, error = _service.batch_approve(db, dto, current_user=current_user)
-    if error:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error)
+    result = _service.batch_approve(db, dto, current_user=current_user)
     return ApiResponse.ok(
         data=result,
         message=f"已审核 {result.updated_count if result else 0} 条",
@@ -381,9 +346,7 @@ def batch_reverse_audit(
     ),
 ) -> ApiResponse[BomWeldingProcessBreakdownBatchAuditResultVO]:
     """按基地+项目+版本批量反审核"""
-    result, error = _service.batch_reverse_audit(db, dto, current_user=current_user)
-    if error:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error)
+    result = _service.batch_reverse_audit(db, dto, current_user=current_user)
     return ApiResponse.ok(
         data=result,
         message=f"已反审核 {result.updated_count if result else 0} 条",

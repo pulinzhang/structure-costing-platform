@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.common.audit import display_name
 from app.common.timezone import now
+from app.exceptions.base import NotFoundException
 from app.models.costing.l0_assembly_cost_calc_log import L0AssemblyCostCalcLog
 from app.repositories.bom.annual_part_price_repository import (
     BomAnnualPartPriceRepository,
@@ -217,11 +218,11 @@ class L0AssemblyCostService:
 
     def get_calc_log(
         self, db: Session, log_id: int
-    ) -> L0AssemblyCostCalcLogVO | None:
+    ) -> L0AssemblyCostCalcLogVO:
         return self.calc_log_service.get_calc_log(db, log_id)
 
-    def delete_calc_log(self, db: Session, log_id: int) -> bool:
-        return self.calc_log_service.delete_calc_log(db, log_id)
+    def delete_calc_log(self, db: Session, log_id: int) -> None:
+        self.calc_log_service.delete_calc_log(db, log_id)
 
     def list_years(self, db: Session) -> list[int]:
         """计算页年度：取上游价表并集（从未核算过也能选）。
@@ -258,10 +259,10 @@ class L0AssemblyCostService:
             filters,
         )
 
-    def get_by_id(self, db: Session, cost_id: int) -> L0AssemblyCostVO | None:
+    def get_by_id(self, db: Session, cost_id: int) -> L0AssemblyCostVO:
         row = self.cost_repo.get_by_id(db, cost_id)
         if row is None:
-            return None
+            raise NotFoundException("记录不存在")
         return L0AssemblyCostVO.model_validate(row)
 
     def batch_delete(

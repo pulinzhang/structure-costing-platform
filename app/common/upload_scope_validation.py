@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from app.common.vehicle_model import normalize_vehicle_model
+from app.exceptions.base import BusinessException
 
 _PLACEHOLDER_VEHICLE_MODELS = frozenset({"UNKNOWN", "未知车型"})
 
@@ -69,7 +70,7 @@ def validate_stamping_process_upload_scope(
     vehicle = _require_vehicle_model(vehicle_model, "车型", missing)
 
     if missing:
-        raise ValueError(
+        raise BusinessException(
             f"Excel 头信息不完整，无法导入：缺少{_missing_label_text(missing)}。"
             "请检查表头是否填写冲压承制公司、车型（项目名称）与版本。"
         )
@@ -97,7 +98,7 @@ def validate_bom_material_upload_scope(
     vehicle = _require_vehicle_model(vehicle_model, "项目", missing)
 
     if missing:
-        raise ValueError(
+        raise BusinessException(
             f"Excel 头信息不完整，无法导入：缺少{_missing_label_text(missing)}。"
             "请检查表头是否填写项目代号与版本。"
         )

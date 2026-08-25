@@ -4,8 +4,13 @@ from __future__ import annotations
 
 from typing import Callable
 
+from app.exceptions.base import BusinessException
+
 ProgressCallback = Callable[[int, str], None]
 
 
-class DuplicateScopeCalcError(Exception):
+class DuplicateScopeCalcError(BusinessException):
     """同一计算范围已有进行中的任务。"""
+
+    def __init__(self, message: str = "同一计算范围已有进行中的任务。") -> None:
+        super().__init__(message=message, code=409)

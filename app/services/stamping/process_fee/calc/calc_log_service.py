@@ -12,6 +12,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.common.timezone import now
+from app.exceptions.base import NotFoundException
 from app.models.stamping import StampingProcessFeeCalcLog
 from app.repositories.stamping.stamping_process_fee_calc_log_repository import (
     StampingProcessFeeCalcLogRepository,
@@ -184,21 +185,21 @@ class ProcessFeeCalcLogService:
 
     def get_calc_log(
         self, db: Session, log_id: int
-    ) -> StampingProcessFeeCalcLogVO | None:
+    ) -> StampingProcessFeeCalcLogVO:
         record = self.calc_log_repo.get_by_id(db, log_id)
         if record is None:
-            return None
+            raise NotFoundException("计算日志不存在")
         return StampingProcessFeeCalcLogVO.model_validate(record)
 
-    def delete_calc_log(self, db: Session, log_id: int) -> bool:
+    def delete_calc_log(self, db: Session, log_id: int) -> None:
         """删除计算日志（含 processing，作僵死锁兜底释放）。"""
         record = self.calc_log_repo.get_by_id(db, log_id)
         if record is None:
-            return False
+            raise NotFoundException("计算日志不存在")
         deleted = self.calc_log_repo.delete(db, log_id)
-        if deleted:
-            db.commit()
-        return deleted
+        if not deleted:
+            raise NotFoundException("计算日志不存在")
+        db.commit()
 
     def persist(
         self,

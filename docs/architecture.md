@@ -39,8 +39,8 @@ Parser 是**横向工具**：只被 Service 调用，不依赖其它层。
 
 | 层 | 做什么 | 不要做什么 |
 |----|--------|------------|
-| **Router** | 鉴权依赖、参数、调 Service、返回 `ApiResponse` | 业务逻辑、`db.query`、调 Parser、后台 worker 壳（§5.3） |
-| **Service** | 业务规则、事务、调 Parser/Repo、ORM→VO | 直接写 SQL |
+| **Router** | 鉴权依赖、参数、调 Service、返回 `ApiResponse` | 业务逻辑、`db.query`、调 Parser、后台 worker 壳（§5.3）、把 Service 错误元组转 `HTTPException`（§5.2） |
+| **Service** | 业务规则、事务、调 Parser/Repo、ORM→VO、抛业务异常 | 直接写 SQL；用 `(None, str)` 向 Router 报错 |
 | **Repository** | CRUD / 聚合查询；返回 Model 或聚合结果 | 权限/角色分支决策 |
 | **Model** | 表字段 + `relationship` | `to_dict`、业务 `@property` |
 | **Schema** | DTO（入）/ VO（出） | 业务流程 |
@@ -189,7 +189,7 @@ ApiResponse[AsyncTaskAcceptedVO]
 
 ---
 
-## 9. 异步后台任务（目标态）
+## 9. 异步后台任务
 
 上传 / 计算立即返回 `task_id`，后台线程跑业务。请求级 `db` 不能带进线程。
 
@@ -201,12 +201,7 @@ ApiResponse[AsyncTaskAcceptedVO]
 
 公共 runner 放 `app/services/async_task/`（已有切片归属），**不要**进 `common/`，也**不要**为每个切片复制一份 60 行 worker。
 
-**不要做：** 在 Router 写 `_process_*_in_background`；把同一套壳复制进多个 Service（**含引擎 worker**）；让 runner 知道「零件数 / 缺单价 / `run_id`」；为此换 Celery；引擎 worker 内再 `submit` 子任务死等。
-
-**落地范围（已落地）：**
-- 9 个上传/计算 Router 的 `_process_*_in_background` 已删除，改为 `service.start_*`
-- **核价引擎** `CostingEngineService`：`start_run` 仍在 Service 提交；Session / 进度 / `db.close()` 走 `submit_session_worker`；`RunDeletedError`、回写 Run 失败态留在引擎 Service
-- LLM 报告 worker **不在本批**（已在 Service 内 submit，可随后靠拢）
+**不要做：** 在 Router 写 `_process_*_in_background`；把同一套壳复制进多个 Service（**含引擎 worker**）；让 runner 知道「零件数 / 缺单价 / `run_id`」；为此换 Celery；引擎 worker 内再 `submit` 子任务死等。引擎 `start_run` 的 Session / 进度必须走公共 runner。LLM 报告 worker 同样遵守本节，禁止另写一套壳。
 
 ---
 
@@ -215,8 +210,8 @@ ApiResponse[AsyncTaskAcceptedVO]
 1. **Schema**：DTO / VO  
 2. **Model**（若新表）+ 迁移/建表策略按项目惯例  
 3. **Repository**  
-4. **Service**（含权限相关业务判断、事务；异步上传/计算/引擎用 `start_*` + `async_task` runner，见 §9）  
-5. **Router**（`response_model` + `require_perm`）  
+4. **Service**（含权限相关业务判断、事务、§5.2 业务异常；异步上传/计算/引擎用 `start_*` + `async_task` runner，见 §9）  
+5. **Router**（`response_model` + `require_perm`；成功路径返回 `ApiResponse`，不要翻译业务错误）  
 6. **前端**：`pageMeta` + `app.js` 注册 + 侧栏 `data-page` + 权限码  
 7. 递增前端脚本 `?v=`
 
@@ -237,6 +232,10 @@ ApiResponse[AsyncTaskAcceptedVO]
 ### 简单查询也要 Service 吗？
 
 要。保持 Router 永不直连 Repository，便于统一权限与响应形态。
+
+### 业务失败该返回元组还是抛异常？
+
+抛异常。Service 对 Router：不存在 → `NotFoundException`（404）；普通拒绝 → `BusinessException`（400）；期别冲突 → `BusinessException(..., code=409)`。全局 handler 按 `exc.code` 转 `ApiResponse.fail`。禁止 `(None, str)`，禁止 Router 入口返回 `VO | None` / `bool` 再判空，禁止 Router `except` 后再转 `HTTPException`。分页 `(items, total)`、Parser 匹配结果不是错误通道。未预期错误 rollback 后原样抛（500），不要包成 `BusinessException(str(e))`。细则见宪法 [§5.2](architecture-constitution.mdc)。
 
 ### 跨切片该不该抽到 common？
 

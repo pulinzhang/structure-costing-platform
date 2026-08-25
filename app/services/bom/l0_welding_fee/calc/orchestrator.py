@@ -195,11 +195,11 @@ class BomL0WeldingFeeCalcOrchestrator:
 
     def get_calc_log(
         self, db: Session, log_id: int
-    ) -> BomL0WeldingFeeCalcLogVO | None:
+    ) -> BomL0WeldingFeeCalcLogVO:
         return self.calc_log_service.get_calc_log(db, log_id)
 
-    def delete_calc_log(self, db: Session, log_id: int) -> bool:
-        return self.calc_log_service.delete_calc_log(db, log_id)
+    def delete_calc_log(self, db: Session, log_id: int) -> None:
+        self.calc_log_service.delete_calc_log(db, log_id)
 
     def calculate(
         self,

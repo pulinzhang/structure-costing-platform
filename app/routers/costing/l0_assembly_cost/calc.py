@@ -6,13 +6,12 @@ from __future__ import annotations
 
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.common.permissions.codes import Perm
 from app.database import get_db
 from app.deps.permissions import require_any_perm, require_perm
-from app.exceptions.base import BusinessException
 from app.schemas.common.page_result import PageResult
 from app.schemas.dto.l0_assembly_cost_dto import L0AssemblyCostCalcDTO
 from app.schemas.vo.async_task_vo import AsyncTaskAcceptedVO, AsyncTaskProgressVO
@@ -28,8 +27,6 @@ from app.services.async_task import (
     AsyncTaskService,
 )
 from app.services.costing.l0_assembly_cost.l0_assembly_cost_service import (
-    DUPLICATE_SCOPE_CALC_MESSAGE,
-    DuplicateScopeCalcError,
     L0AssemblyCostService,
 )
 from app.utils.response import ApiResponse
@@ -129,8 +126,6 @@ def get_calc_log(
     current_user: UserVO = Depends(require_perm(Perm.L0_ASSEMBLY_COST_CALC_VIEW)),
 ) -> ApiResponse[L0AssemblyCostCalcLogVO]:
     record = _service.get_calc_log(db, log_id)
-    if not record:
-        raise HTTPException(status_code=404, detail="计算日志不存在")
     return ApiResponse.ok(data=record)
 
 
@@ -143,12 +138,7 @@ def delete_calc_log(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.L0_ASSEMBLY_COST_CALC_DELETE)),
 ) -> ApiResponse[None]:
-    deleted = _service.delete_calc_log(db, log_id)
-    if not deleted:
-        raise HTTPException(
-            status_code=400,
-            detail="计算日志不存在",
-        )
+    _service.delete_calc_log(db, log_id)
     return ApiResponse.deleted(message="计算日志已删除")
 
 
@@ -160,9 +150,9 @@ def get_calc_task_progress(
     task_id: str,
     current_user: UserVO = Depends(require_perm(Perm.L0_ASSEMBLY_COST_CALC_VIEW)),
 ) -> ApiResponse[AsyncTaskProgressVO]:
-    task = _async_task_service.get_task_snapshot(task_id)
-    if task is None or task.get("task_type") != TASK_TYPE_L0_ASSEMBLY_COST_CALC:
-        raise HTTPException(status_code=404, detail="任务不存在或已过期")
+    task = _async_task_service.require_snapshot(
+        task_id, TASK_TYPE_L0_ASSEMBLY_COST_CALC
+    )
     result_raw = AsyncTaskService.parse_result_json(task.get("result_json"))
     result = (
         L0AssemblyCostCalcResultVO.model_validate(result_raw)
@@ -187,15 +177,7 @@ def calculate(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.L0_ASSEMBLY_COST_CALC_RUN)),
 ) -> ApiResponse[AsyncTaskAcceptedVO]:
-    try:
-        accepted = _service.start_calc(db, dto, current_user=current_user)
-    except DuplicateScopeCalcError as error:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=str(error) or DUPLICATE_SCOPE_CALC_MESSAGE,
-        ) from error
-    except BusinessException as error:
-        raise HTTPException(status_code=400, detail=str(error)) from error
+    accepted = _service.start_calc(db, dto, current_user=current_user)
 
     return ApiResponse.ok(
         data=accepted,

@@ -14,6 +14,7 @@ from sqlalchemy.pool import StaticPool
 from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING, SYSTEM_USER
 from app.config import settings
 from app.database import Base
+from app.exceptions.base import BusinessException
 from app.models.bom.node import BomSnapshot
 from app.models.bom.packaging_transport_fee import BomPackagingTransportFee
 from app.models.file_trace.upload_file import UploadFile
@@ -185,7 +186,7 @@ class TestPackagingTransportFeeImport:
         self, memory_db: Session, sample_xlsx_bytes: bytes
     ) -> None:
         service = BomPackagingTransportFeeImportService()
-        with pytest.raises(ValueError, match="未找到材料清单"):
+        with pytest.raises(BusinessException, match="未找到材料清单"):
             service.import_excel(
                 memory_db,
                 file_content=sample_xlsx_bytes,
@@ -259,7 +260,7 @@ class TestPackagingTransportFeeImport:
         self, memory_db: Session, sample_xlsx_bytes: bytes
     ) -> None:
         service = BomPackagingTransportFeeImportService()
-        with pytest.raises(ValueError, match="采购基地"):
+        with pytest.raises(BusinessException, match="采购基地"):
             service.import_excel(
                 memory_db,
                 file_content=sample_xlsx_bytes,
@@ -269,7 +270,7 @@ class TestPackagingTransportFeeImport:
                 vehicle_model=VEHICLE_MODEL,
                 current_user=SYSTEM_USER,
             )
-        with pytest.raises(ValueError, match="项目"):
+        with pytest.raises(BusinessException, match="项目"):
             service.import_excel(
                 memory_db,
                 file_content=sample_xlsx_bytes,

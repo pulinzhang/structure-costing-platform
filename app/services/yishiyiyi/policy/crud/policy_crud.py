@@ -13,6 +13,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.common.audit import AuditCreateFields, audit_create, display_name
+from app.exceptions.base import BusinessException, NotFoundException
 from app.repositories.yishiyiyi.policy import SteelPricePolicyRepository
 from app.repositories.yishiyiyi.policy.steel_price_policy_repository import (
     MatchFilter,
@@ -119,10 +120,10 @@ class SteelPricePolicyCrudService:
         )
         return rows, total, options_resp
 
-    def get_by_id(self, db: Session, policy_id: int) -> Optional[PolicyDetailResponse]:
+    def get_by_id(self, db: Session, policy_id: int) -> PolicyDetailResponse:
         record = self.repository.get_by_id(db, policy_id, load_items=True)
         if record is None:
-            return None
+            raise NotFoundException("政策记录不存在")
         sorted_items = sorted(record.items, key=lambda x: (x.sort_order, x.id))
         return PolicyDetailResponse(
             id=record.id,
@@ -148,7 +149,7 @@ class SteelPricePolicyCrudService:
         db: Session,
         data: PolicyCreate,
         current_user: UserVO,
-    ) -> tuple[Optional[PolicyDetailResponse], Optional[str]]:
+    ) -> PolicyDetailResponse:
         create_audit = audit_create(current_user)
         policy_type = data.policy_type.value
         grade_type = data.grade_type.value if data.grade_type else None
@@ -164,8 +165,7 @@ class SteelPricePolicyCrudService:
             base_thickness=data.base_thickness,
         )
         if self.repository.policy_exists_with_key(db, match_filter):
-            db.rollback()
-            return None, (
+            raise BusinessException(
                 f"该年度({data.year})、月份({data.month})、钢厂({data.steel_mill})、"
                 f"大类({data.category_name})、类型({policy_type})的政策已存在"
             )
@@ -213,16 +213,18 @@ class SteelPricePolicyCrudService:
                 policy_record.id,
             )
 
-            result = self.get_by_id(db, policy_record.id)
-            return result, None
+            return self.get_by_id(db, policy_record.id)
         except IntegrityError as error:
             db.rollback()
             logger.warning("创建钢价政策违反唯一约束: %s", error)
-            return None, "违反业务唯一约束"
-        except Exception as error:
+            raise BusinessException("违反业务唯一约束") from error
+        except (BusinessException, NotFoundException):
             db.rollback()
-            logger.exception("创建钢价政策失败: %s", error)
-            return None, str(error)
+            raise
+        except Exception:
+            db.rollback()
+            logger.exception("创建钢价政策失败")
+            raise
 
     def update(
         self,
@@ -230,15 +232,13 @@ class SteelPricePolicyCrudService:
         policy_id: int,
         data: PolicyUpdate,
         current_user: UserVO,
-    ) -> tuple[Optional[PolicyDetailResponse], Optional[str]]:
+    ) -> PolicyDetailResponse:
         existing = self.repository.get_by_id(db, policy_id, load_items=False)
         if existing is None:
-            db.rollback()
-            return None, "记录不存在"
+            raise NotFoundException("记录不存在")
 
         if not data.model_fields_set:
-            db.rollback()
-            return None, "未提供任何可更新字段"
+            raise BusinessException("未提供任何可更新字段")
 
         try:
             self.repository.update_policy(
@@ -261,31 +261,35 @@ class SteelPricePolicyCrudService:
 
             logger.info("更新钢价政策: id=%s", policy_id)
 
-            return self.get_by_id(db, policy_id), None
+            return self.get_by_id(db, policy_id)
         except IntegrityError as error:
             db.rollback()
             logger.warning("更新钢价政策违反约束: id=%s, error=%s", policy_id, error)
-            return None, "更新违反约束"
-        except Exception as error:
+            raise BusinessException("更新违反约束") from error
+        except (BusinessException, NotFoundException):
             db.rollback()
-            logger.exception("更新钢价政策失败: id=%s, error=%s", policy_id, error)
-            return None, str(error)
+            raise
+        except Exception:
+            db.rollback()
+            logger.exception("更新钢价政策失败: id=%s", policy_id)
+            raise
 
-    def delete(self, db: Session, policy_id: int) -> tuple[bool, Optional[str]]:
+    def delete(self, db: Session, policy_id: int) -> None:
         try:
             success = self.repository.delete_policy(db, policy_id)
             if not success:
                 db.rollback()
-                return False, "记录不存在"
+                raise NotFoundException("记录不存在")
             db.commit()
 
             logger.info("删除钢价政策: id=%s", policy_id)
-
-            return True, None
-        except Exception as error:
+        except (BusinessException, NotFoundException):
             db.rollback()
-            logger.exception("删除钢价政策失败: id=%s, error=%s", policy_id, error)
-            return False, str(error)
+            raise
+        except Exception:
+            db.rollback()
+            logger.exception("删除钢价政策失败: id=%s", policy_id)
+            raise
 
     def add_item(
         self,
@@ -293,10 +297,10 @@ class SteelPricePolicyCrudService:
         policy_id: int,
         data: LadderItemCreate,
         current_user: UserVO,
-    ) -> tuple[Optional[LadderItemResponse], Optional[str]]:
+    ) -> LadderItemResponse:
         policy = self.repository.get_by_id(db, policy_id, load_items=False)
         if policy is None:
-            return None, "政策不存在"
+            raise NotFoundException("政策不存在")
 
         try:
             created = self.repository.add_items(
@@ -310,13 +314,11 @@ class SteelPricePolicyCrudService:
                 "新增阶梯明细: policy_id=%s item_id=%s", policy_id, created[0].id
             )
 
-            return LadderItemResponse.model_validate(created[0]), None
-        except Exception as error:
+            return LadderItemResponse.model_validate(created[0])
+        except Exception:
             db.rollback()
-            logger.exception(
-                "新增阶梯明细失败: policy_id=%s, error=%s", policy_id, error
-            )
-            return None, str(error)
+            logger.exception("新增阶梯明细失败: policy_id=%s", policy_id)
+            raise
 
     def update_item(
         self,
@@ -324,13 +326,13 @@ class SteelPricePolicyCrudService:
         item_id: int,
         data: LadderItemUpdate,
         current_user: UserVO,
-    ) -> tuple[Optional[LadderItemResponse], Optional[str]]:
+    ) -> LadderItemResponse:
         existing = self.repository.get_item_by_id(db, item_id)
         if existing is None:
-            return None, "明细不存在"
+            raise NotFoundException("明细不存在")
 
         if not data.model_fields_set:
-            return None, "未提供任何可更新字段"
+            raise BusinessException("未提供任何可更新字段")
 
         try:
             updated = self.repository.update_item(
@@ -339,31 +341,37 @@ class SteelPricePolicyCrudService:
                 data,
                 updated_by=display_name(current_user),
             )
+            if updated is None:
+                raise NotFoundException("明细不存在")
             db.commit()
 
             logger.info("更新阶梯明细: id=%s", item_id)
 
-            return LadderItemResponse.model_validate(updated), None
-        except Exception as error:
+            return LadderItemResponse.model_validate(updated)
+        except (BusinessException, NotFoundException):
             db.rollback()
-            logger.exception("更新阶梯明细失败: item_id=%s, error=%s", item_id, error)
-            return None, str(error)
+            raise
+        except Exception:
+            db.rollback()
+            logger.exception("更新阶梯明细失败: item_id=%s", item_id)
+            raise
 
-    def delete_item(self, db: Session, item_id: int) -> tuple[bool, Optional[str]]:
+    def delete_item(self, db: Session, item_id: int) -> None:
         try:
             success = self.repository.delete_item(db, item_id)
             if not success:
                 db.rollback()
-                return False, "明细不存在"
+                raise NotFoundException("明细不存在")
             db.commit()
 
             logger.info("删除阶梯明细: id=%s", item_id)
-
-            return True, None
-        except Exception as error:
+        except (BusinessException, NotFoundException):
             db.rollback()
-            logger.exception("删除阶梯明细失败: item_id=%s, error=%s", item_id, error)
-            return False, str(error)
+            raise
+        except Exception:
+            db.rollback()
+            logger.exception("删除阶梯明细失败: item_id=%s", item_id)
+            raise
 
     def count_policies(
         self,
@@ -416,13 +424,13 @@ class SteelPricePolicyCrudService:
         year: Optional[int] = None,
         month: Optional[int] = None,
         steel_mill: Optional[str] = None,
-    ) -> tuple[int, Optional[str]]:
+    ) -> int:
         """
         根据条件批量删除政策。
         年度、月份必填；钢厂可选（不填则删除该年月下全部钢厂）。
         """
         if year is None or month is None:
-            return 0, "年度、月份必须选择"
+            raise BusinessException("年度、月份必须选择")
 
         mill = steel_mill.strip() if steel_mill else None
 
@@ -443,14 +451,13 @@ class SteelPricePolicyCrudService:
                 count,
             )
 
-            return count, None
-        except Exception as error:
+            return count
+        except Exception:
             db.rollback()
             logger.exception(
-                "批量删除钢价政策失败: year=%s month=%s steel_mill=%s error=%s",
+                "批量删除钢价政策失败: year=%s month=%s steel_mill=%s",
                 year,
                 month,
                 mill,
-                error,
             )
-            return 0, str(error)
+            raise
