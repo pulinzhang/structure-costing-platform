@@ -61,7 +61,7 @@ class _ScrapStatus(NamedTuple):
     required_count: int
     is_complete: bool
     scrap_location: str | None
-    scrap_location_filled: bool | None
+    is_scrap_location_filled: bool | None
     scrap_location_net_price: Decimal | None
 
 
@@ -137,9 +137,9 @@ class DashboardService:
             ),
             scrap_filled_count=scrap_status.filled_count,
             scrap_required_count=scrap_status.required_count,
-            scrap_is_complete=scrap_status.is_complete,
+            is_scrap_complete=scrap_status.is_complete,
             scrap_location=scrap_status.scrap_location,
-            scrap_location_filled=scrap_status.scrap_location_filled,
+            is_scrap_location_filled=scrap_status.is_scrap_location_filled,
             scrap_location_net_price=scrap_status.scrap_location_net_price,
         )
         process_fee = DashboardAuditBucketVO(
@@ -260,10 +260,10 @@ class DashboardService:
         has_process_fee = (process_fee.total_count or 0) > 0
         has_steel = steel_price.pending_count + steel_price.approved_count > 0
         has_part = part_cost.pending_count + part_cost.approved_count > 0
-        if yishiyiyi.scrap_location_filled is not None:
-            scrap_ok = bool(yishiyiyi.scrap_location_filled)
+        if yishiyiyi.is_scrap_location_filled is not None:
+            scrap_ok = bool(yishiyiyi.is_scrap_location_filled)
         else:
-            scrap_ok = yishiyiyi.scrap_is_complete
+            scrap_ok = yishiyiyi.is_scrap_complete
         flags = (
             yishiyiyi.base_price_count > 0,
             yishiyiyi.policy_count > 0,
@@ -275,7 +275,7 @@ class DashboardService:
         return DashboardReadinessVO(
             has_base_price=flags[0],
             has_policy=flags[1],
-            scrap_complete=flags[2],
+            is_scrap_complete=flags[2],
             has_process_fee=flags[3],
             has_steel_price=flags[4],
             has_part_cost=flags[5],
@@ -326,7 +326,7 @@ class DashboardService:
                     page="steel-price-policy-download",
                 )
             )
-        if yishiyiyi.scrap_location_filled is False:
+        if yishiyiyi.is_scrap_location_filled is False:
             loc_label = yishiyiyi.scrap_location or "所选基地"
             items.append(
                 DashboardAttentionItemVO(
@@ -338,8 +338,8 @@ class DashboardService:
                 )
             )
         elif (
-            yishiyiyi.scrap_location_filled is None
-            and not yishiyiyi.scrap_is_complete
+            yishiyiyi.is_scrap_location_filled is None
+            and not yishiyiyi.is_scrap_complete
         ):
             items.append(
                 DashboardAttentionItemVO(
@@ -545,23 +545,23 @@ class DashboardService:
         sheet = self.scrap_service.get_month_sheet(db, year, month)
 
         scrap_location: str | None = None
-        scrap_location_filled: bool | None = None
+        is_scrap_location_filled: bool | None = None
         scrap_location_net_price: Decimal | None = None
         if location and location in SCRAP_PRICE_LOCATIONS:
             scrap_location = location
             row = next((r for r in sheet.items if r.location == location), None)
             if row is not None and row.net_price is not None:
-                scrap_location_filled = True
+                is_scrap_location_filled = True
                 scrap_location_net_price = parse_decimal(row.net_price)
             else:
-                scrap_location_filled = False
+                is_scrap_location_filled = False
 
         status = _ScrapStatus(
             filled_count=int(sheet.filled_count),
             required_count=SCRAP_PRICE_LOCATION_COUNT,
             is_complete=bool(sheet.is_complete),
             scrap_location=scrap_location,
-            scrap_location_filled=scrap_location_filled,
+            is_scrap_location_filled=is_scrap_location_filled,
             scrap_location_net_price=scrap_location_net_price,
         )
         return status

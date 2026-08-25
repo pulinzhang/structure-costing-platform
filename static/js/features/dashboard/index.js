@@ -24,7 +24,7 @@ const SEVERITY_META = {
 const READY_ROWS = [
     { key: 'has_base_price', label: '中标基价', page: 'base-price-download' },
     { key: 'has_policy', label: '加减价政策', page: 'steel-price-policy-download' },
-    { key: 'scrap_complete', label: '废料月度价', page: 'scrap-price' },
+    { key: 'is_scrap_complete', label: '废料月度价', page: 'scrap-price' },
     { key: 'has_process_fee', label: '冲压加工费', page: 'stamping-process-fee' },
     { key: 'has_steel_price', label: '钢材联动价', page: 'steel-price-list' },
     { key: 'has_part_cost', label: '冲压零件价格', page: 'stamping-part-cost' },
@@ -225,11 +225,11 @@ function renderContext(master, bom, yishiyiyi, scope) {
 
     let scrapText;
     if (y.scrap_location) {
-        scrapText = y.scrap_location_filled
+        scrapText = y.is_scrap_location_filled
             ? `${esc(y.scrap_location)}废料净价 ¥${esc(fmtNum(y.scrap_location_net_price))}`
             : `${esc(y.scrap_location)}废料未录`;
     } else {
-        scrapText = y.scrap_is_complete
+        scrapText = y.is_scrap_complete
             ? `废料月齐 ${y.scrap_filled_count}/${y.scrap_required_count}`
             : `废料月 ${y.scrap_filled_count ?? 0}/${y.scrap_required_count ?? 0}`;
     }

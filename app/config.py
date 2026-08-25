@@ -3,9 +3,9 @@
 统一的配置入口，支持多环境配置
 """
 
-from typing import Any
 import os
 from pathlib import Path
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings
 # 项目根目录 (app/config.py -> app/ -> 项目根目录)
 
@@ -13,6 +13,9 @@ BASE_DIR: Path = Path(__file__).resolve().parent.parent
 
 # 获取环境变量，默认为 development
 ENV: str = os.getenv("APP_ENV", "development")
+
+# 兼容旧环境变量 DEBUG
+_IS_DEBUG_ALIAS = AliasChoices("IS_DEBUG", "DEBUG")
 
 
 class Settings(BaseSettings):
@@ -25,7 +28,7 @@ class Settings(BaseSettings):
     APP_NAME: str = "汽车冲压件自动核价平台"
     APP_VERSION: str = "1.0.0"
     APP_DESCRIPTION: str = "Stamping Costing Platform"
-    DEBUG: bool = True
+    IS_DEBUG: bool = Field(default=True, validation_alias=_IS_DEBUG_ALIAS)
     ENV: str = "development"
 
     # 服务器配置
@@ -45,7 +48,7 @@ class Settings(BaseSettings):
     # 上传配置
     UPLOAD_DIR: Path = BASE_DIR / "uploads"
     MAX_UPLOAD_SIZE: int = 50 * 1024 * 1024  # 50MB
-    ALLOWED_EXTENSIONS: set[Any] = {".xlsx", ".xls", ".csv"}
+    ALLOWED_EXTENSIONS: set[str] = {".xlsx", ".xls", ".csv"}
 
     # 日志配置
     LOG_DIR: Path = BASE_DIR / "logs"
@@ -53,7 +56,7 @@ class Settings(BaseSettings):
     LOG_FORMAT: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
     # CORS 配置
-    CORS_ORIGINS: list[Any] = ["*"]
+    CORS_ORIGINS: list[str] = ["*"]
 
     # 分页配置
     DEFAULT_PAGE_SIZE: int = 20
@@ -71,20 +74,21 @@ class Settings(BaseSettings):
         env_file = ".env"
         case_sensitive = True
         extra = "allow"
+        populate_by_name = True
 
 
 # 根据环境调整配置
 class DevelopmentSettings(Settings):
     """开发环境配置"""
-    DEBUG: bool = True
+    IS_DEBUG: bool = Field(default=True, validation_alias=_IS_DEBUG_ALIAS)
     LOG_LEVEL: str = "DEBUG"
 
 
 class ProductionSettings(Settings):
     """生产环境配置"""
-    DEBUG: bool = False
+    IS_DEBUG: bool = Field(default=False, validation_alias=_IS_DEBUG_ALIAS)
     LOG_LEVEL: str = "WARNING"
-    CORS_ORIGINS: list[Any] = [
+    CORS_ORIGINS: list[str] = [
         "http://localhost:3000",
         "http://127.0.0.1:3000",
         "http://localhost:5500",
@@ -93,7 +97,7 @@ class ProductionSettings(Settings):
 
 class TestSettings(Settings):
     """测试环境配置"""
-    DEBUG: bool = True
+    IS_DEBUG: bool = Field(default=True, validation_alias=_IS_DEBUG_ALIAS)
     DATABASE_URL: str = "sqlite:///:memory:"
     AUXILIARY_DATABASE_URL: str = "sqlite:///:memory:"
 

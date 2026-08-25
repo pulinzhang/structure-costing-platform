@@ -184,7 +184,7 @@ python -X utf8 your_script.py
 | `AUXILIARY_DATABASE_URL` | 会话与异步任务 | `sqlite:///./data/auxiliary.db` |
 | `PASSWORD_SALT` | 密码摘要盐 | 内置默认（生产务必覆盖） |
 | `LOG_LEVEL` | 日志级别 | 随环境：开发 DEBUG / 生产 WARNING |
-| `DEBUG` | 调试模式 | 开发 `True` |
+| `IS_DEBUG` | 调试模式 | 开发 `True` |
 | `CORS_ORIGINS` | 跨域 | 开发 `*`；生产白名单 |
 | `LLM_API_KEY` | AI 助理 API Key（OpenAI 兼容） | 空则 LLM 降级为规则摘要 |
 | `LLM_MODEL` / `LLM_BASE_URL` | 模型与接口地址 | `deepseek-chat` / DeepSeek |

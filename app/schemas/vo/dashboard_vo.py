@@ -35,9 +35,9 @@ class DashboardYishiyiyiStatsVO(BaseModel):
     policy_count: int = 0
     scrap_filled_count: int = 0
     scrap_required_count: int = 0
-    scrap_is_complete: bool = False
+    is_scrap_complete: bool = False
     scrap_location: str | None = None
-    scrap_location_filled: bool | None = None
+    is_scrap_location_filled: bool | None = None
     scrap_location_net_price: Decimal | None = None
 
     @field_serializer("scrap_location_net_price")
@@ -72,7 +72,7 @@ class DashboardReadinessVO(BaseModel):
 
     has_base_price: bool = False
     has_policy: bool = False
-    scrap_complete: bool = False
+    is_scrap_complete: bool = False
     has_process_fee: bool = False
     has_steel_price: bool = False
     has_part_cost: bool = False

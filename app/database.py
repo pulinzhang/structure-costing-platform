@@ -57,13 +57,13 @@ def _create_engine_for_url(database_url: str, *, label: str) -> Engine:
                 database_url,
                 connect_args=connect_args,
                 poolclass=StaticPool,
-                echo=settings.DEBUG,
+                echo=settings.IS_DEBUG,
             )
         else:
             engine = create_engine(
                 database_url,
                 connect_args=connect_args,
-                echo=settings.DEBUG,
+                echo=settings.IS_DEBUG,
             )
         event.listen(engine, "connect", _configure_sqlite_connection)
         logger.info(
@@ -79,7 +79,7 @@ def _create_engine_for_url(database_url: str, *, label: str) -> Engine:
         pool_size=10,
         max_overflow=20,
         pool_pre_ping=True,
-        echo=settings.DEBUG,
+        echo=settings.IS_DEBUG,
     )
     event.listen(engine, "connect", _configure_postgres_connection)
     logger.info("%s PostgreSQL 引擎创建成功（TIME ZONE %s）", label, CHINA_TZ_NAME)
