@@ -17,7 +17,7 @@
 |------|------|
 | 行组装 | 去重基价、匹配 THICKNESS 政策、展开阶梯行 |
 | 预览分页 | 内存分页返回 VO |
-| Excel 导出 | 与前端预览列一致（含弱化溯源列） |
+| Excel 导出 | 三页：阅读用一览（含弱化溯源）、计算用（基地/钢种/厚度上下限，无溯源）、使用示例 |
 
 **对外入口**：
 
@@ -32,7 +32,7 @@ from app.services.yishiyiyi.winning_thickness import WinningThicknessExportServi
 ## 2. 为什么这样组织
 
 1. **组装与 Excel 分离**  
-   政策匹配、区间展开与 openpyxl 样式无关：改匹配看 `assemble/`，改表样看 `export/excel_exporter.py`。
+   政策匹配、区间展开与 openpyxl 样式无关：改匹配看 `assemble/`，改表样看 `export/`。
 
 2. **门面只做委托**  
    `WinningThicknessExportService` 提供 `build_rows` / `preview` / `export`，细节在子包。
@@ -57,7 +57,13 @@ app/services/yishiyiyi/winning_thickness/
 ├── assemble/
 │   └── row_assembler.py                  # 基价×厚度阶梯行组装
 └── export/
-    └── excel_exporter.py                  # openpyxl
+    ├── excel_exporter.py                 # 组工作簿
+    ├── letterhead.py                     # 外发抬头
+    ├── overview_sheet.py                 # 阅读页
+    ├── calc_sheet.py                     # 计算页
+    ├── example_sheet.py                  # 使用示例页
+    ├── values.py                         # 列布局 / 溯源 / 摘录
+    └── styles.py                         # 色板字体
 ```
 
 ---
@@ -77,7 +83,7 @@ Router
 | 子包 | 负责 | 不负责 |
 |------|------|--------|
 | `assemble/` | 去重、政策命中、展开 VO | xlsx |
-| `export/` | 表头/弱化列/溯源文本/工作簿 | 政策匹配 |
+| `export/` | 工作簿 / 抬头 / 三页表样 | 政策匹配 |
 
 ---
 
@@ -85,8 +91,9 @@ Router
 
 - 必填：年、月、基地。  
 - 厚度政策：`policy_type == THICKNESS` 且 `grade_value` 等于牌号；优先 `base_thickness` 一致。  
-- 无政策或无厚度阶梯：仍输出一行，加减价为 0，厚度范围为 `-`。  
-- 区间文案复用 `policy.export.excel_exporter.format_interval`。
+- 无政策或无厚度阶梯：仍输出一行，加减价为 0，厚度范围为 `-`；计算页厚 min/max 与符号留空。  
+- 区间文案复用 `policy.export.excel_exporter.format_interval`。  
+- 计算页最终价为 Excel 公式 `基准价+加减价+加工费`；使用示例页从本批真实行摘录，下部附公式说明。
 
 ---
 
@@ -95,7 +102,11 @@ Router
 | 需求 | 落点 |
 |------|------|
 | 匹配规则 / 展开逻辑 | `assemble/row_assembler.py` |
-| 导出列或样式 | `export/excel_exporter.py` |
+| 外发抬头 / 打印 | `export/letterhead.py` |
+| 阅读页列或样式 | `export/overview_sheet.py` |
+| 计算页列或公式 | `export/calc_sheet.py` |
+| 示例页摘录 / 公式说明 | `export/example_sheet.py` |
+| 色板字体 | `export/styles.py` |
 | 预览分页策略 | 门面 `preview` |
 
 ---

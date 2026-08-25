@@ -5,7 +5,7 @@
 import {
     winningThicknessDownloadTemplate,
     renderWinningThicknessRows,
-} from './template.js?v=7';
+} from './template.js?v=8';
 
 const winningThicknessState = {
     records: [],
