@@ -237,9 +237,7 @@ class SteelPriceService:
         payload["updated_by"] = display_name(current_user)
         payload["final_price_per_ton"] = self._compute_final_price(
             base_price=payload.get("base_price", record.base_price),
-            thickness_adjustment=payload.get(
-                "thickness_adjustment", record.thickness_adjustment
-            ),
+            thickness_adjustment=payload.get("thickness_adjustment", record.thickness_adjustment),
             width_adjustment=payload.get("width_adjustment", record.width_adjustment),
             zinc_adjustment=payload.get("zinc_adjustment", record.zinc_adjustment),
             processing_fee=payload.get("processing_fee", record.processing_fee),

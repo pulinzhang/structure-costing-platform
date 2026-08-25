@@ -1,7 +1,6 @@
 """冲压工序数据访问。"""
 
 import logging
-from typing import List, Optional
 
 from sqlalchemy.orm import Session, contains_eager
 
@@ -21,17 +20,15 @@ class StampingProcessRepository:
 
     def count_by_part_location(self, db: Session, location: str | None = None) -> int:
         """按零件生产基地统计工序数；location 为空则全库。"""
-        q = db.query(StampingProcess).join(
-            StampingPart, StampingProcess.part_id == StampingPart.id
-        )
+        q = db.query(StampingProcess).join(StampingPart, StampingProcess.part_id == StampingPart.id)
         if location:
             q = q.filter(StampingPart.location == location)
         return int(q.count())
 
-    def get_by_id(self, db: Session, process_id: int) -> Optional[StampingProcess]:
+    def get_by_id(self, db: Session, process_id: int) -> StampingProcess | None:
         return db.query(StampingProcess).filter(StampingProcess.id == process_id).first()
 
-    def get_by_part_id(self, db: Session, part_id: int) -> List[StampingProcess]:
+    def get_by_part_id(self, db: Session, part_id: int) -> list[StampingProcess]:
         return (
             db.query(StampingProcess)
             .filter(StampingProcess.part_id == part_id)
@@ -39,7 +36,7 @@ class StampingProcessRepository:
             .all()
         )
 
-    def list_all(self, db: Session, skip: int = 0, limit: int = 100) -> List[StampingProcess]:
+    def list_all(self, db: Session, skip: int = 0, limit: int = 100) -> list[StampingProcess]:
         return db.query(StampingProcess).offset(skip).limit(limit).all()
 
     def list_by_scope(
@@ -50,7 +47,7 @@ class StampingProcessRepository:
         stamping_supplier: str,
         vehicle_model: str,
         version: str,
-    ) -> List[StampingProcess]:
+    ) -> list[StampingProcess]:
         """按基地 + 冲压工厂 + 车型 + 版本查询工序（含所属零件）。"""
         return (
             db.query(StampingProcess)
@@ -73,7 +70,7 @@ class StampingProcessRepository:
         logger.info("创建工序: id=%s", process.id)
         return process
 
-    def bulk_create(self, db: Session, processes_data: List[ProcessData]) -> List[StampingProcess]:
+    def bulk_create(self, db: Session, processes_data: list[ProcessData]) -> list[StampingProcess]:
         processes = [model_from_payload(StampingProcess, data) for data in processes_data]
         db.add_all(processes)
         logger.info("批量创建工序: %s 个", len(processes))
@@ -81,7 +78,7 @@ class StampingProcessRepository:
 
     def update(
         self, db: Session, process_id: int, update_data: StampingProcessPatch
-    ) -> Optional[StampingProcess]:
+    ) -> StampingProcess | None:
         process = self.get_by_id(db, process_id)
         if not process:
             return None
@@ -104,9 +101,11 @@ class StampingProcessRepository:
         logger.info(f"删除工序: id={process_id}")
         return True
 
-    def delete_by_part_ids(self, db: Session, part_ids: List[int]) -> int:
-        count = db.query(StampingProcess).filter(StampingProcess.part_id.in_(part_ids)).delete(
-            synchronize_session=False
+    def delete_by_part_ids(self, db: Session, part_ids: list[int]) -> int:
+        count = (
+            db.query(StampingProcess)
+            .filter(StampingProcess.part_id.in_(part_ids))
+            .delete(synchronize_session=False)
         )
         db.flush()
         logger.info(f"删除工序: {count} 个 (part_ids={part_ids})")

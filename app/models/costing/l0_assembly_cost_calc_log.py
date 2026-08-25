@@ -36,9 +36,7 @@ class L0AssemblyCostCalcLog(AuditUserMixin, Base):
     ok_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     partial_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     failed_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    skipped_approved_count: Mapped[int] = mapped_column(
-        Integer, nullable=False, default=0
-    )
+    skipped_approved_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     finished_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     operator_id: Mapped[int | None] = mapped_column(Integer, nullable=True)

@@ -98,17 +98,12 @@ class RunOrchestrator:
                     message="已有结果，跳过补算",
                 )
                 step_summaries.append(
-                    self._step_summary(
-                        step.stage, step.scope_key, "skipped", step.message
-                    )
+                    self._step_summary(step.stage, step.scope_key, "skipped", step.message)
                 )
                 continue
 
             # 拆解失败则跳过同 scope 焊接费补算
-            if (
-                item.code == "annual_l0_welding_fee"
-                and item.scope_key in failed_l0
-            ):
+            if item.code == "annual_l0_welding_fee" and item.scope_key in failed_l0:
                 step = self._finish_step(
                     db,
                     run_id=run_id,
@@ -119,9 +114,7 @@ class RunOrchestrator:
                     metrics=None,
                 )
                 step_summaries.append(
-                    self._step_summary(
-                        item.code, item.scope_key, "skipped", step.message
-                    )
+                    self._step_summary(item.code, item.scope_key, "skipped", step.message)
                 )
                 annual_done += 1
                 continue
@@ -149,9 +142,7 @@ class RunOrchestrator:
                 message=message,
                 metrics=metrics,
             )
-            step_summaries.append(
-                self._step_summary(step.stage, step.scope_key, status, message)
-            )
+            step_summaries.append(self._step_summary(step.stage, step.scope_key, status, message))
             annual_done += 1
             report(
                 map_progress("annual", annual_done, annual_total),
@@ -178,9 +169,7 @@ class RunOrchestrator:
         report(map_progress("steel", 1, 1), steel_msg or "钢材联动完成")
 
         if not steel_ok:
-            summary = self._build_summary(
-                discovery, step_summaries, run_status="failed"
-            )
+            summary = self._build_summary(discovery, step_summaries, run_status="failed")
             self._finalize_run(db, run_id, status="failed", summary=summary)
             return summary
 
@@ -203,9 +192,7 @@ class RunOrchestrator:
                     metrics=None,
                 )
                 step_summaries.append(
-                    self._step_summary(
-                        "part_cost", supplier, "skipped", step.message
-                    )
+                    self._step_summary("part_cost", supplier, "skipped", step.message)
                 )
                 continue
 
@@ -225,9 +212,7 @@ class RunOrchestrator:
                 message=message,
                 metrics=metrics,
             )
-            step_summaries.append(
-                self._step_summary("part_cost", supplier, status, message)
-            )
+            step_summaries.append(self._step_summary("part_cost", supplier, status, message))
             report(
                 map_progress("part_cost", idx + 1, part_total),
                 f"零件价 {idx + 1}/{len(suppliers)} · {supplier}",
@@ -252,9 +237,7 @@ class RunOrchestrator:
                     message="年度焊接拆解/焊接费补算失败，跳过成品核价",
                     metrics=None,
                 )
-                step_summaries.append(
-                    self._step_summary("l0", scope_key, "skipped", step.message)
-                )
+                step_summaries.append(self._step_summary("l0", scope_key, "skipped", step.message))
                 continue
 
             ok, message, metrics = self._run_l0(
@@ -270,9 +253,7 @@ class RunOrchestrator:
                 message=message,
                 metrics=metrics,
             )
-            step_summaries.append(
-                self._step_summary("l0", scope_key, status, message)
-            )
+            step_summaries.append(self._step_summary("l0", scope_key, status, message))
             report(
                 map_progress("l0", idx + 1, l0_total),
                 f"L0 核价 {idx + 1}/{len(scopes)} · {scope.vehicle_model} / {scope.bom_version}",
@@ -304,9 +285,11 @@ class RunOrchestrator:
                 process_fee_result = self.process_fee_orch.calculate(
                     db, process_fee_dto, current_user=current_user
                 )
-                return True, f"加工费补算完成 status={process_fee_result.status}", {
-                    "status": process_fee_result.status
-                }
+                return (
+                    True,
+                    f"加工费补算完成 status={process_fee_result.status}",
+                    {"status": process_fee_result.status},
+                )
 
             if item.code == "annual_welding_breakdown":
                 vehicle_model, bom_version = item.scope_key.split("|", 1)
@@ -321,9 +304,13 @@ class RunOrchestrator:
                 )
                 if error:
                     return False, error, None
-                return True, "焊接工艺拆解补算完成", {
-                    "result": bool(result_vo),
-                }
+                return (
+                    True,
+                    "焊接工艺拆解补算完成",
+                    {
+                        "result": bool(result_vo),
+                    },
+                )
 
             if item.code == "annual_l0_welding_fee":
                 vehicle_model, bom_version = item.scope_key.split("|", 1)
@@ -334,12 +321,12 @@ class RunOrchestrator:
                     vehicle_model=vehicle_model,
                     bom_version=bom_version,
                 )
-                l0_result = self.l0_welding_orch.calculate(
-                    db, l0_dto, current_user=current_user
+                l0_result = self.l0_welding_orch.calculate(db, l0_dto, current_user=current_user)
+                return (
+                    True,
+                    f"L0 焊接费补算完成 status={l0_result.status}",
+                    {"status": l0_result.status},
                 )
-                return True, f"L0 焊接费补算完成 status={l0_result.status}", {
-                    "status": l0_result.status
-                }
 
             return False, f"未知年度补算 code={item.code}", None
         except Exception as exc:
@@ -360,18 +347,20 @@ class RunOrchestrator:
                 month=discovery.month,
                 location=discovery.location,
             )
-            result = self.steel_orch.calculate(
-                db, request, current_user=current_user
-            )
+            result = self.steel_orch.calculate(db, request, current_user=current_user)
             ok = result.status in ("success", "partial", "succeeded")
             # steel uses success/partial/failed
             if result.status == "failed":
                 ok = False
-            return ok, f"钢材联动 status={result.status}", {
-                "status": result.status,
-                "created_count": getattr(result, "created_count", None),
-                "updated_count": getattr(result, "updated_count", None),
-            }
+            return (
+                ok,
+                f"钢材联动 status={result.status}",
+                {
+                    "status": result.status,
+                    "created_count": getattr(result, "created_count", None),
+                    "updated_count": getattr(result, "updated_count", None),
+                },
+            )
         except Exception as exc:
             logger.exception("钢材联动失败")
             db.rollback()
@@ -392,9 +381,7 @@ class RunOrchestrator:
                 location=discovery.location,
                 stamping_supplier=stamping_supplier,
             )
-            result = self.part_cost_orch.calculate(
-                db, dto, current_user=current_user
-            )
+            result = self.part_cost_orch.calculate(db, dto, current_user=current_user)
             status = getattr(result, "status", "success")
             ok = status != "failed"
             return ok, f"零件价 status={status}", {"status": status}
@@ -419,16 +406,12 @@ class RunOrchestrator:
                 vehicle_model=scope.vehicle_model,
                 bom_version=scope.bom_version,
             )
-            result = self.l0_orch.calculate(
-                db, dto, current_user=current_user
-            )
+            result = self.l0_orch.calculate(db, dto, current_user=current_user)
             status = getattr(result, "status", "success")
             ok = status != "failed"
             return ok, f"L0 核价 status={status}", {"status": status}
         except Exception as exc:
-            logger.exception(
-                "L0 核价失败: %s/%s", scope.vehicle_model, scope.bom_version
-            )
+            logger.exception("L0 核价失败: %s/%s", scope.vehicle_model, scope.bom_version)
             db.rollback()
             return False, str(exc), None
 
@@ -523,10 +506,7 @@ class RunOrchestrator:
         discovery: DiscoveryResult, vehicle_model: str, bom_version: str
     ) -> L0Scope | None:
         for scope in discovery.l0_scopes:
-            if (
-                scope.vehicle_model == vehicle_model
-                and scope.bom_version == bom_version
-            ):
+            if scope.vehicle_model == vehicle_model and scope.bom_version == bom_version:
                 return scope
         return None
 

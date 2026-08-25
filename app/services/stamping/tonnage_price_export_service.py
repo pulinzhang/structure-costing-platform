@@ -30,7 +30,6 @@ def _dt(value: Any) -> Any:
     return value.strftime("%Y-%m-%d %H:%M:%S") if hasattr(value, "strftime") else str(value)
 
 
-
 class StampingTonnagePriceExportService:
     """冲次单价 Excel 导出。"""
 

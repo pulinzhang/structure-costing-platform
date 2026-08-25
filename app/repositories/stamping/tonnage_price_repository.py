@@ -5,7 +5,7 @@
 
 import logging
 from datetime import datetime
-from typing import List, Optional, Tuple, TypedDict
+from typing import TypedDict
 
 from sqlalchemy import and_, case, func
 from sqlalchemy.orm import Query, Session
@@ -42,13 +42,13 @@ class TonnagePriceListFilters(TypedDict):
 class StampingTonnagePriceRepository:
     """冲次单价数据访问"""
 
-    def get_by_id(self, db: Session, id: int) -> Optional[StampingTonnagePrice]:
+    def get_by_id(self, db: Session, id: int) -> StampingTonnagePrice | None:
         """根据 ID 查询单条记录"""
         return db.query(StampingTonnagePrice).filter(StampingTonnagePrice.id == id).first()
 
     def get_by_location_year_tonnage(
         self, db: Session, location: str, year: int, tonnage: int
-    ) -> Optional[StampingTonnagePrice]:
+    ) -> StampingTonnagePrice | None:
         """根据基地、年份和吨位查询记录"""
         return (
             db.query(StampingTonnagePrice)
@@ -64,7 +64,7 @@ class StampingTonnagePriceRepository:
 
     def list_by_location_year(
         self, db: Session, location: str, year: int
-    ) -> List[StampingTonnagePrice]:
+    ) -> list[StampingTonnagePrice]:
         """查询指定基地+年份的所有记录"""
         return (
             db.query(StampingTonnagePrice)
@@ -78,7 +78,7 @@ class StampingTonnagePriceRepository:
             .all()
         )
 
-    def list_by_year(self, db: Session, year: int) -> List[StampingTonnagePrice]:
+    def list_by_year(self, db: Session, year: int) -> list[StampingTonnagePrice]:
         """查询指定年份的所有记录（跨基地）"""
         return (
             db.query(StampingTonnagePrice)
@@ -90,9 +90,9 @@ class StampingTonnagePriceRepository:
     def _build_list_query(
         self,
         db: Session,
-        location: Optional[str] = None,
-        year: Optional[int] = None,
-        audit_status: Optional[str] = None,
+        location: str | None = None,
+        year: int | None = None,
+        audit_status: str | None = None,
     ) -> Query[StampingTonnagePrice]:
         q = db.query(StampingTonnagePrice)
         if location is not None:
@@ -106,16 +106,14 @@ class StampingTonnagePriceRepository:
     def paginate(
         self,
         db: Session,
-        location: Optional[str] = None,
-        year: Optional[int] = None,
-        audit_status: Optional[str] = None,
+        location: str | None = None,
+        year: int | None = None,
+        audit_status: str | None = None,
         skip: int = 0,
         limit: int = 100,
-    ) -> Tuple[List[StampingTonnagePrice], int]:
+    ) -> tuple[list[StampingTonnagePrice], int]:
         """分页查询"""
-        q = self._build_list_query(
-            db, location=location, year=year, audit_status=audit_status
-        )
+        q = self._build_list_query(db, location=location, year=year, audit_status=audit_status)
         total = q.count()
         records = (
             q.order_by(
@@ -132,22 +130,20 @@ class StampingTonnagePriceRepository:
     def summarize_by_filters(
         self,
         db: Session,
-        location: Optional[str] = None,
-        year: Optional[int] = None,
-        audit_status: Optional[str] = None,
+        location: str | None = None,
+        year: int | None = None,
+        audit_status: str | None = None,
     ) -> AuditCountSummary:
         """按筛选条件汇总条数 / 待审 / 已审。"""
-        q = self._build_list_query(
-            db, location=location, year=year, audit_status=audit_status
-        )
+        q = self._build_list_query(db, location=location, year=year, audit_status=audit_status)
         row = q.with_entities(
             func.count(StampingTonnagePrice.id).label("total_count"),
-            func.sum(
-                case((StampingTonnagePrice.audit_status == AUDIT_PENDING, 1), else_=0)
-            ).label("pending_count"),
-            func.sum(
-                case((StampingTonnagePrice.audit_status == AUDIT_APPROVED, 1), else_=0)
-            ).label("approved_count"),
+            func.sum(case((StampingTonnagePrice.audit_status == AUDIT_PENDING, 1), else_=0)).label(
+                "pending_count"
+            ),
+            func.sum(case((StampingTonnagePrice.audit_status == AUDIT_APPROVED, 1), else_=0)).label(
+                "approved_count"
+            ),
         ).one()
         return {
             "total_count": int(row.total_count or 0),
@@ -158,24 +154,19 @@ class StampingTonnagePriceRepository:
     def list_for_export(
         self,
         db: Session,
-        location: Optional[str] = None,
-        year: Optional[int] = None,
-        audit_status: Optional[str] = None,
-    ) -> List[StampingTonnagePrice]:
+        location: str | None = None,
+        year: int | None = None,
+        audit_status: str | None = None,
+    ) -> list[StampingTonnagePrice]:
         """按筛选条件导出全量记录（不分页）"""
-        q = self._build_list_query(
-            db, location=location, year=year, audit_status=audit_status
-        )
-        return (
-            q.order_by(
-                StampingTonnagePrice.location,
-                StampingTonnagePrice.year,
-                StampingTonnagePrice.tonnage,
-            )
-            .all()
-        )
+        q = self._build_list_query(db, location=location, year=year, audit_status=audit_status)
+        return q.order_by(
+            StampingTonnagePrice.location,
+            StampingTonnagePrice.year,
+            StampingTonnagePrice.tonnage,
+        ).all()
 
-    def list_all(self, db: Session) -> List[StampingTonnagePrice]:
+    def list_all(self, db: Session) -> list[StampingTonnagePrice]:
         """查询所有记录"""
         return (
             db.query(StampingTonnagePrice)
@@ -187,7 +178,7 @@ class StampingTonnagePriceRepository:
             .all()
         )
 
-    def get_distinct_locations(self, db: Session) -> List[str]:
+    def get_distinct_locations(self, db: Session) -> list[str]:
         """获取所有基地列表"""
         results = (
             db.query(StampingTonnagePrice.location)
@@ -197,7 +188,7 @@ class StampingTonnagePriceRepository:
         )
         return [r[0] for r in results]
 
-    def get_distinct_years(self, db: Session) -> List[int]:
+    def get_distinct_years(self, db: Session) -> list[int]:
         """获取所有年份列表"""
         results = (
             db.query(StampingTonnagePrice.year)
@@ -207,7 +198,7 @@ class StampingTonnagePriceRepository:
         )
         return [r[0] for r in results]
 
-    def get_distinct_tonnages(self, db: Session) -> List[int]:
+    def get_distinct_tonnages(self, db: Session) -> list[int]:
         """获取所有吨位列表"""
         results = (
             db.query(StampingTonnagePrice.tonnage)
@@ -223,7 +214,7 @@ class StampingTonnagePriceRepository:
         *,
         location: str,
         year: int,
-        statuses: List[str],
+        statuses: list[str],
     ) -> int:
         return (
             db.query(StampingTonnagePrice)
@@ -290,7 +281,7 @@ class StampingTonnagePriceRepository:
         update_data: StampingTonnagePriceUpdate,
         *,
         updated_by: str,
-    ) -> Optional[StampingTonnagePrice]:
+    ) -> StampingTonnagePrice | None:
         """更新记录"""
         record = self.get_by_id(db, id)
         if not record:
@@ -312,9 +303,7 @@ class StampingTonnagePriceRepository:
         logger.info("删除冲次单价: id=%s", id)
         return True
 
-    def delete_unaudited_by_location_year(
-        self, db: Session, location: str, year: int
-    ) -> int:
+    def delete_unaudited_by_location_year(self, db: Session, location: str, year: int) -> int:
         """仅删除未审核通过的记录（已通过跳过）"""
         count = (
             db.query(StampingTonnagePrice)
@@ -342,8 +331,8 @@ class StampingTonnagePriceRepository:
         year: int,
         audited_by: str,
         audited_at: datetime,
-        audit_remark: Optional[str],
-        updated_by: Optional[str] = None,
+        audit_remark: str | None,
+        updated_by: str | None = None,
     ) -> int:
         values: dict[str, str | datetime | None] = {
             "audit_status": AUDIT_APPROVED,
@@ -373,7 +362,7 @@ class StampingTonnagePriceRepository:
         reverse_audited_by: str,
         reverse_audited_at: datetime,
         reverse_audit_remark: str,
-        updated_by: Optional[str] = None,
+        updated_by: str | None = None,
     ) -> int:
         values: dict[str, str | datetime | None] = {
             "audit_status": AUDIT_PENDING,

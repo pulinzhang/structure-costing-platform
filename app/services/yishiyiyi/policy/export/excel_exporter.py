@@ -5,7 +5,7 @@
 
 from io import BytesIO
 from decimal import Decimal, InvalidOperation
-from typing import Any, Optional
+from typing import Any
 
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
@@ -38,11 +38,26 @@ EVEN_FILL = PatternFill(start_color="F2F2F2", end_color="F2F2F2", fill_type="sol
 ODD_FILL = PatternFill(start_color="FFFFFF", end_color="FFFFFF", fill_type="solid")
 
 HEADERS = [
-    "政策ID", "年度", "月份", "钢厂", "钢种大类", "政策类型",
-    "牌号类型", "牌号/范围", "基准厚度",
-    "明细ID", "子分组", "厚度条件", "宽度条件", "锌层条件",
-    "加减价(元/吨)", "基准", "排序",
-    "文件名", "行号", "列号",
+    "政策ID",
+    "年度",
+    "月份",
+    "钢厂",
+    "钢种大类",
+    "政策类型",
+    "牌号类型",
+    "牌号/范围",
+    "基准厚度",
+    "明细ID",
+    "子分组",
+    "厚度条件",
+    "宽度条件",
+    "锌层条件",
+    "加减价(元/吨)",
+    "基准",
+    "排序",
+    "文件名",
+    "行号",
+    "列号",
 ]
 
 COLUMN_WIDTHS = [10, 8, 8, 12, 12, 12, 10, 15, 10, 10, 15, 18, 18, 14, 8, 8, 30, 8, 8]
@@ -51,6 +66,7 @@ COLUMN_WIDTHS = [10, 8, 8, 12, 12, 12, 10, 15, 10, 10, 15, 18, 18, 14, 8, 8, 30,
 # =============================================================================
 # 格式化辅助函数
 # =============================================================================
+
 
 def format_decimal(value: Any, digits: Any = 2) -> str:
     if value is None:
@@ -66,9 +82,9 @@ def format_decimal(value: Any, digits: Any = 2) -> str:
 def format_interval(
     variable: str,
     min_val: Any,
-    min_op: Optional[str],
+    min_op: str | None,
     max_val: Any,
-    max_op: Optional[str],
+    max_op: str | None,
     decimals: int = 2,
 ) -> str:
     """
@@ -85,19 +101,20 @@ def format_interval(
     Returns:
         格式化后的条件字符串
     """
+
     def fmt(v: Any) -> Any:
         if v is None:
             return ""
         return format_decimal(v, decimals)
 
-    def min_symbol(op: Optional[str]) -> str:
+    def min_symbol(op: str | None) -> str:
         if op == ">=":
             return "≤"
         if op == ">":
             return "<"
         return ""
 
-    def max_symbol(op: Optional[str]) -> str:
+    def max_symbol(op: str | None) -> str:
         if op == "<=":
             return "≤"
         if op == "<":
@@ -159,15 +176,16 @@ def format_zinc_condition(row: ExportRow) -> str:
 # 导出器类
 # =============================================================================
 
+
 class SteelPricePolicyExporter:
     """钢价政策 Excel 导出器"""
 
     def generate(
         self,
         records: list[ExportRow],
-        year: Optional[int] = None,
-        month: Optional[int] = None,
-        steel_mill: Optional[str] = None,
+        year: int | None = None,
+        month: int | None = None,
+        steel_mill: str | None = None,
     ) -> tuple[bytes, str]:
         """
         生成 Excel 文件字节数据。
@@ -245,9 +263,9 @@ class SteelPricePolicyExporter:
 
     def _build_filename(
         self,
-        year: Optional[int],
-        month: Optional[int],
-        steel_mill: Optional[str],
+        year: int | None,
+        month: int | None,
+        steel_mill: str | None,
     ) -> str:
         """构建导出文件名"""
         parts = ["厚度加减价导出"]
@@ -258,4 +276,3 @@ class SteelPricePolicyExporter:
         if steel_mill:
             parts.append(steel_mill)
         return f"{'_'.join(parts)}.xlsx"
-

@@ -1,4 +1,4 @@
-from typing import Generic, TypeVar, Any, Optional
+from typing import Generic, TypeVar, Any
 from pydantic import BaseModel, Field
 
 T = TypeVar("T")
@@ -14,4 +14,4 @@ class PageResult(BaseModel, Generic[T]):
     total_pages: int = 0
     has_next: bool = False
     has_prev: bool = False
-    filters: Optional[Any] = None
+    filters: Any | None = None

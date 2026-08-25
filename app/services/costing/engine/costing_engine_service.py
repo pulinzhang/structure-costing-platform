@@ -62,8 +62,7 @@ class CostingEngineHardStopError(BusinessException):
                 "hard_stop": True,
                 "can_start": False,
                 "upload_or_config": [
-                    item.model_dump(exclude_none=True)
-                    for item in upload_or_config
+                    item.model_dump(exclude_none=True) for item in upload_or_config
                 ],
             },
         )
@@ -93,14 +92,11 @@ class CostingEngineService:
         if not location_clean:
             raise BusinessException("请指定生产基地")
 
-        discovered = self.discovery.discover(
-            db, location=location_clean, year=year, month=month
-        )
+        discovered = self.discovery.discover(db, location=location_clean, year=year, month=month)
         upload_or_config = self.gate_checker.check(db, discovered)
         annual_derived = self.annual_planner.plan(db, discovered)
         hard_stop = any(
-            (not item.ok) and item.code not in _SOFT_UPLOAD_GATE_CODES
-            for item in upload_or_config
+            (not item.ok) and item.code not in _SOFT_UPLOAD_GATE_CODES for item in upload_or_config
         )
         has_path = bool(discovered.stamping_suppliers or discovered.l0_scopes)
         can_start = (not hard_stop) and has_path
@@ -140,9 +136,7 @@ class CostingEngineService:
         dto: CostingEngineRunCreateDTO,
         current_user: UserVO,
     ) -> AsyncTaskAcceptedVO:
-        ready = self.get_ready(
-            db, location=dto.location, year=dto.year, month=dto.month
-        )
+        ready = self.get_ready(db, location=dto.location, year=dto.year, month=dto.month)
         if not ready.can_start:
             raise CostingEngineHardStopError(
                 "硬门禁未通过，无法启动引擎",
@@ -194,9 +188,7 @@ class CostingEngineService:
         )
         return AsyncTaskAcceptedVO(task_id=task.task_id)
 
-    def get_task_progress(
-        self, db: Session, task_id: str
-    ) -> AsyncTaskProgressVO:
+    def get_task_progress(self, db: Session, task_id: str) -> AsyncTaskProgressVO:
         snapshot = self.async_task_service.get_task_snapshot(task_id)
         if snapshot is None:
             raise NotFoundException("任务不存在或已过期")
@@ -280,9 +272,7 @@ class CostingEngineService:
     ) -> None:
         def work(db: Session, on_progress: ProgressCallback) -> WorkerTaskOutcome:
             try:
-                discovered = self.discovery.discover(
-                    db, location=location, year=year, month=month
-                )
+                discovered = self.discovery.discover(db, location=location, year=year, month=month)
                 annual_items = self.annual_planner.plan(db, discovered)
                 summary = self.run_orchestrator.execute(
                     db,

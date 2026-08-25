@@ -57,22 +57,14 @@ def build_summary(
         partial_count = max(row.partial_count for row in rows)
     grand = sum((row.grand_total_sum for row in rows), start=rows[0].grand_total_sum * 0)
     total = sum((row.total_amount_sum for row in rows), start=rows[0].total_amount_sum * 0)
-    indirect = sum(
-        (row.indirect_amount_sum for row in rows), start=rows[0].indirect_amount_sum * 0
-    )
-    stamping = sum(
-        (row.stamping_amount_sum for row in rows), start=rows[0].stamping_amount_sum * 0
-    )
+    indirect = sum((row.indirect_amount_sum for row in rows), start=rows[0].indirect_amount_sum * 0)
+    stamping = sum((row.stamping_amount_sum for row in rows), start=rows[0].stamping_amount_sum * 0)
     purchased = sum(
         (row.purchased_amount_sum for row in rows),
         start=rows[0].purchased_amount_sum * 0,
     )
-    bundle = sum(
-        (row.bundle_amount_sum for row in rows), start=rows[0].bundle_amount_sum * 0
-    )
-    welding = sum(
-        (row.welding_amount_sum for row in rows), start=rows[0].welding_amount_sum * 0
-    )
+    bundle = sum((row.bundle_amount_sum for row in rows), start=rows[0].bundle_amount_sum * 0)
+    welding = sum((row.welding_amount_sum for row in rows), start=rows[0].welding_amount_sum * 0)
     welding_other = sum(
         (row.welding_other_amount_sum for row in rows),
         start=rows[0].welding_other_amount_sum * 0,
@@ -145,9 +137,7 @@ def build_stamping_summary(rows: list[StampingPartPeriodRow]) -> dict[str, Any]:
                 "month": month,
                 "part_count": len(items),
                 "unit_cost_sum": money_str(month_unit),
-                "success_count": sum(
-                    1 for item in items if item.calc_status == "success"
-                ),
+                "success_count": sum(1 for item in items if item.calc_status == "success"),
             }
         )
 
@@ -197,4 +187,3 @@ def build_steel_summary(rows: list[SteelMonthlyAvgRow]) -> dict[str, Any]:
             for row in sorted_rows
         ],
     }
-

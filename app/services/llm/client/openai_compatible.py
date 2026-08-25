@@ -39,14 +39,10 @@ class OpenAiCompatibleClient:
         timeout_seconds: int | None = None,
     ) -> None:
         self.api_key = (api_key if api_key is not None else settings.LLM_API_KEY).strip()
-        self.base_url = (
-            base_url if base_url is not None else settings.LLM_BASE_URL
-        ).rstrip("/")
+        self.base_url = (base_url if base_url is not None else settings.LLM_BASE_URL).rstrip("/")
         self.model = (model if model is not None else settings.LLM_MODEL).strip()
         self.timeout_seconds = (
-            timeout_seconds
-            if timeout_seconds is not None
-            else int(settings.LLM_TIMEOUT_SECONDS)
+            timeout_seconds if timeout_seconds is not None else int(settings.LLM_TIMEOUT_SECONDS)
         )
 
     def chat(
@@ -86,9 +82,7 @@ class OpenAiCompatibleClient:
             raise LlmClientError(f"LLM 网络错误: {exc}") from exc
 
         if response.status_code >= 400:
-            raise LlmClientError(
-                f"LLM HTTP {response.status_code}: {response.text[:500]}"
-            )
+            raise LlmClientError(f"LLM HTTP {response.status_code}: {response.text[:500]}")
 
         try:
             body = response.json()

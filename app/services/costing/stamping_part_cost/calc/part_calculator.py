@@ -116,8 +116,10 @@ class PartCostCalculator:
 
         # 对齐 Excel M：L×W×T×density/1e6/可制件数（不做中间四舍五入）
         blank_kg = (
-            sheet_length * sheet_width * thickness * density
-        ) / Decimal("1000000") / Decimal(parts_per_sheet)
+            (sheet_length * sheet_width * thickness * density)
+            / Decimal("1000000")
+            / Decimal(parts_per_sheet)
+        )
         if blank_kg <= 0:
             return StampingPartCostFailedItemVO(
                 part_number=part.part_number,
@@ -128,9 +130,7 @@ class PartCostCalculator:
         # Excel：O=M−H，N=H/M；finished 存净重 H
         finished_total_kg = part_weight
         scrap_kg = blank_kg - finished_total_kg
-        utilization = quantize(
-            (finished_total_kg / blank_kg) * Decimal("100"), UTIL_QUANTIZE
-        )
+        utilization = quantize((finished_total_kg / blank_kg) * Decimal("100"), UTIL_QUANTIZE)
 
         steel_rows = self.price_resolver.find_steel_prices(
             db,
@@ -150,10 +150,7 @@ class PartCostCalculator:
             return StampingPartCostFailedItemVO(
                 part_number=part.part_number,
                 part_name=part.part_name,
-                reason=(
-                    f"钢材联动价匹配到 {len(steel_rows)} 条，"
-                    "中标场景应唯一，请检查数据"
-                ),
+                reason=(f"钢材联动价匹配到 {len(steel_rows)} 条，" "中标场景应唯一，请检查数据"),
             )
         steel = steel_rows[0]
         steel_ton_price = Decimal(str(steel.final_price_per_ton))
@@ -179,9 +176,7 @@ class PartCostCalculator:
                 part_name=part.part_name,
                 reason="加工费确认单价为空，请先完成加工费计算或录入其它费用",
             )
-        process_fee_amount = quantize(
-            Decimal(str(fee.final_processing_fee)), FEE_QUANTIZE
-        )
+        process_fee_amount = quantize(Decimal(str(fee.final_processing_fee)), FEE_QUANTIZE)
 
         # 对齐 Excel R 三项分列：
         # ① M×P×(1+λ)  ② M×λ×η×Q  ③ O×η×Q   （P/Q=元/kg=吨价/1000）

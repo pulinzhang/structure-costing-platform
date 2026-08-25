@@ -132,4 +132,3 @@ class BomNodeWrite:
     excel_sheet_name: str | None = None
     excel_row: int | None = None
     excel_part_col: int | None = None
-

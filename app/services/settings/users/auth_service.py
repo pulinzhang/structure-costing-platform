@@ -10,7 +10,10 @@ from app.common.timezone import now
 from app.exceptions.base import BusinessException
 from app.models.settings import User, UserToken
 from app.repositories.settings.users.user_repository import UserRepository
-from app.repositories.settings.users.user_token_repository import TOKEN_IDLE_HOURS, UserTokenRepository
+from app.repositories.settings.users.user_token_repository import (
+    TOKEN_IDLE_HOURS,
+    UserTokenRepository,
+)
 from app.schemas.dto.user_dto import UserLoginDTO, UserTokenCreate, UserTokenSnapshot
 from app.schemas.vo.user_vo import LoginVO, UserVO
 from app.services.settings.users.permission_service import PermissionService
@@ -110,9 +113,7 @@ class AuthService:
         *,
         do_touch: bool = True,
     ) -> UserVO:
-        _row, user = self._require_valid_token(
-            user_db, token_db, token, do_touch=do_touch
-        )
+        _row, user = self._require_valid_token(user_db, token_db, token, do_touch=do_touch)
         return self._to_vo(user_db, user)
 
     def _require_valid_token(

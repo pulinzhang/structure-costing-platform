@@ -100,9 +100,7 @@ def get_steel_price_calc_task_progress(
     task = _async_task_service.require_snapshot(task_id, TASK_TYPE_STEEL_PRICE_CALC)
 
     result_raw = AsyncTaskService.parse_result_json(task.get("result_json"))
-    result = (
-        SteelPriceCalcResultVO.model_validate(result_raw) if result_raw else None
-    )
+    result = SteelPriceCalcResultVO.model_validate(result_raw) if result_raw else None
     return ApiResponse.ok(
         data=AsyncTaskProgressVO.from_snapshot(
             task,
@@ -127,9 +125,7 @@ def calculate_steel_prices(
     同一年度+月份+基地若已有 processing，直接拒绝重复提交。
     立即返回 task_id，前端轮询 /calc/tasks/{task_id} 获取进度。
     """
-    accepted = _calc_orchestrator.start_calc(
-        db, body, current_user=current_user
-    )
+    accepted = _calc_orchestrator.start_calc(db, body, current_user=current_user)
 
     return ApiResponse.ok(
         data=accepted,

@@ -21,9 +21,7 @@ class StampingTailorWeldBlankRepository:
 
     def get_by_id(self, db: Session, blank_id: int) -> StampingTailorWeldBlank | None:
         return (
-            db.query(StampingTailorWeldBlank)
-            .filter(StampingTailorWeldBlank.id == blank_id)
-            .first()
+            db.query(StampingTailorWeldBlank).filter(StampingTailorWeldBlank.id == blank_id).first()
         )
 
     def list_by_part_id(
@@ -132,9 +130,9 @@ class StampingTailorWeldBlankRepository:
         payloads: list[TailorWeldBlankWrite],
     ) -> list[StampingTailorWeldBlank]:
         """删除父件下旧子片后批量写入新子片（单事务提交）。"""
-        db.query(StampingTailorWeldBlank).filter(
-            StampingTailorWeldBlank.part_id == part_id
-        ).delete(synchronize_session=False)
+        db.query(StampingTailorWeldBlank).filter(StampingTailorWeldBlank.part_id == part_id).delete(
+            synchronize_session=False
+        )
         blanks = [model_from_payload(StampingTailorWeldBlank, row) for row in payloads]
         db.add_all(blanks)
         db.flush()

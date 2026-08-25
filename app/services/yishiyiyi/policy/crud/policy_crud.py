@@ -7,7 +7,6 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -135,9 +134,7 @@ class SteelPricePolicyCrudService:
             grade_type=record.grade_type,
             grade_value=record.grade_value,
             base_thickness=record.base_thickness,
-            items=[
-                LadderItemResponse.model_validate(item) for item in sorted_items
-            ],
+            items=[LadderItemResponse.model_validate(item) for item in sorted_items],
             created_by=getattr(record, "created_by", None),
             updated_by=getattr(record, "updated_by", None),
             created_at=record.created_at,
@@ -252,10 +249,7 @@ class SteelPricePolicyCrudService:
                 self.repository.replace_items(
                     db,
                     policy_id,
-                    [
-                        _ladder_write_from_create(item, create_audit)
-                        for item in (data.items or [])
-                    ],
+                    [_ladder_write_from_create(item, create_audit) for item in (data.items or [])],
                 )
             db.commit()
 
@@ -310,9 +304,7 @@ class SteelPricePolicyCrudService:
             )
             db.commit()
 
-            logger.info(
-                "新增阶梯明细: policy_id=%s item_id=%s", policy_id, created[0].id
-            )
+            logger.info("新增阶梯明细: policy_id=%s item_id=%s", policy_id, created[0].id)
 
             return LadderItemResponse.model_validate(created[0])
         except Exception:
@@ -377,9 +369,9 @@ class SteelPricePolicyCrudService:
         self,
         db: Session,
         *,
-        year: Optional[int] = None,
-        month: Optional[int] = None,
-        steel_mill: Optional[str] = None,
+        year: int | None = None,
+        month: int | None = None,
+        steel_mill: str | None = None,
     ) -> int:
         return self.repository.count_by_conditions(
             db,
@@ -404,10 +396,10 @@ class SteelPricePolicyCrudService:
         self,
         db: Session,
         *,
-        year: Optional[int] = None,
-        month: Optional[int] = None,
-        steel_mill: Optional[str] = None,
-        policy_type: Optional[str] = None,
+        year: int | None = None,
+        month: int | None = None,
+        steel_mill: str | None = None,
+        policy_type: str | None = None,
     ) -> int:
         return self.repository.count_items_for_export(
             db,
@@ -421,9 +413,9 @@ class SteelPricePolicyCrudService:
         self,
         db: Session,
         *,
-        year: Optional[int] = None,
-        month: Optional[int] = None,
-        steel_mill: Optional[str] = None,
+        year: int | None = None,
+        month: int | None = None,
+        steel_mill: str | None = None,
     ) -> int:
         """
         根据条件批量删除政策。

@@ -7,7 +7,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Callable, Optional
+from collections.abc import Callable
 
 from sqlalchemy.orm import Session
 
@@ -127,7 +127,7 @@ class SteelPricePolicyImportService:
         year: int,
         month: int,
         current_user: UserVO,
-        progress_callback: Optional[ProgressCallback] = None,
+        progress_callback: ProgressCallback | None = None,
     ) -> ImportResultResponse:
         """
         解析 Excel 文件并批量导入。
@@ -185,8 +185,7 @@ class SteelPricePolicyImportService:
                     audit=create_audit,
                 )
                 norm_items = [
-                    _ladder_write_from_parsed(item, create_audit)
-                    for item in policy_data.items
+                    _ladder_write_from_parsed(item, create_audit) for item in policy_data.items
                 ]
 
                 match_filter = MatchFilter(

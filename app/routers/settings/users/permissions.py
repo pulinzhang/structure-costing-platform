@@ -53,7 +53,5 @@ def set_user_permissions(
     current_user: UserVO = Depends(require_admin_user),
 ) -> ApiResponse[list[str]]:
     """覆盖保存用户权限（强制合并个人资料必选码）"""
-    codes = _permission_service.set_user_permissions(
-        db, user_id, dto.codes, current_user
-    )
+    codes = _permission_service.set_user_permissions(db, user_id, dto.codes, current_user)
     return ApiResponse.updated(data=codes, message="授权已保存")

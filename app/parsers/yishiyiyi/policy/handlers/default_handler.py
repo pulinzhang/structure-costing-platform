@@ -9,7 +9,7 @@
     DC01       180       140       ...
 """
 
-from typing import Any, Dict, List
+from typing import Any
 
 from openpyxl.worksheet.worksheet import Worksheet
 
@@ -23,16 +23,12 @@ class DefaultSheetHandler(BaseSheetHandler):
     # 厚度块查找 - 复用基类的默认扫描
     # ------------------------------------------------------------------ #
 
-    def find_thickness_blocks(
-        self, sheet: Worksheet, steel_mill: str
-    ) -> List[Dict[str, Any]]:
+    def find_thickness_blocks(self, sheet: Worksheet, steel_mill: str) -> list[dict[str, Any]]:
         return self.find_default_thickness_blocks(sheet, steel_mill)
 
     # ------------------------------------------------------------------ #
     # 宽度块查找（默认无）
     # ------------------------------------------------------------------ #
 
-    def find_width_blocks(
-        self, sheet: Worksheet, steel_mill: str
-    ) -> List[Dict[str, Any]]:
+    def find_width_blocks(self, sheet: Worksheet, steel_mill: str) -> list[dict[str, Any]]:
         return []

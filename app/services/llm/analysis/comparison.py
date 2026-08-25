@@ -65,14 +65,10 @@ def build_location_comparison(
             left = series[left_index]
             right = series[right_index]
             left_rate = (
-                Decimal(str(left["change_rate"]))
-                if left.get("change_rate") is not None
-                else None
+                Decimal(str(left["change_rate"])) if left.get("change_rate") is not None else None
             )
             right_rate = (
-                Decimal(str(right["change_rate"]))
-                if right.get("change_rate") is not None
-                else None
+                Decimal(str(right["change_rate"])) if right.get("change_rate") is not None else None
             )
             spread_result = compute_spread(left_rate, right_rate)
             spreads.append(

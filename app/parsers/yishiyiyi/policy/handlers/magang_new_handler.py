@@ -9,7 +9,8 @@
     +Z  → 镀锌钢
     其它 → 冷轧钢 (默认)
 """
-from typing import Any, Dict, List, Optional
+
+from typing import Any
 
 from openpyxl.worksheet.worksheet import Worksheet
 
@@ -30,7 +31,7 @@ class MagangNewSheetHandler(BaseSheetHandler):
         start_row: int,
         end_row: int,
         label_col: int,
-    ) -> Optional[int]:
+    ) -> int | None:
         """在 [start_row, end_row] 范围内，从后向前找钢种列最后一个有值的行。
 
         考虑合并单元格：若某行在合并区域内，即使该行自身值为 None，
@@ -45,22 +46,18 @@ class MagangNewSheetHandler(BaseSheetHandler):
                 return r
         return None
 
-    def find_thickness_blocks(
-        self, sheet: Worksheet, steel_mill: str
-    ) -> List[Dict[str, Any]]:
+    def find_thickness_blocks(self, sheet: Worksheet, steel_mill: str) -> list[dict[str, Any]]:
         return self.find_default_thickness_blocks(sheet, steel_mill)
 
-    def find_width_blocks(
-        self, sheet: Worksheet, steel_mill: str
-    ) -> List[Dict[str, Any]]:
-        blocks: List[Dict[str, Any]] = []
+    def find_width_blocks(self, sheet: Worksheet, steel_mill: str) -> list[dict[str, Any]]:
+        blocks: list[dict[str, Any]] = []
         max_row, max_col = self.row_max(sheet), self.col_max(sheet)
 
         if max_col < _W_START_COL:
             return []
 
         # 只扫描右侧列区域（col 15+）的 label 行，作为块天然边界
-        w_title_rows: List[int] = []
+        w_title_rows: list[int] = []
         for r in range(1, max_row + 1):
             for c in range(_W_START_COL, max_col + 1):
                 text = self.text(sheet, r, c)
@@ -77,12 +74,12 @@ class MagangNewSheetHandler(BaseSheetHandler):
             # 找本块钢种列（col 15）的最后一个非空行
             # candidate_end 限制为本块范围：下一个 title_row - 1（若有），否则 max_row
             candidate_start = title_row + 1
-            if i + 1 < len(w_title_rows):
-                candidate_end = w_title_rows[i + 1] - 1
-            else:
-                candidate_end = max_row
+            candidate_end = w_title_rows[i + 1] - 1 if i + 1 < len(w_title_rows) else max_row
             last_grade_row = self.find_last_label_row_in_range(
-                sheet, candidate_start, candidate_end, _W_GRADE_COL,
+                sheet,
+                candidate_start,
+                candidate_end,
+                _W_GRADE_COL,
             )
             if last_grade_row is None:
                 continue
@@ -92,17 +89,19 @@ class MagangNewSheetHandler(BaseSheetHandler):
                 continue
 
             block = self.locate_width_block(
-                sheet, title_row, block_end,
-                grade_col=_W_GRADE_COL, data_col_start=_W_START_COL, max_col=max_col,
+                sheet,
+                title_row,
+                block_end,
+                grade_col=_W_GRADE_COL,
+                data_col_start=_W_START_COL,
+                max_col=max_col,
                 category="冷轧钢",
                 header_row_offset=1,
                 scan_cols=w_scan_cols,
             )
             if block:
                 # 按本块实际钢种名后缀推断 category（复用 assembler 的推断逻辑）
-                block["category_name"] = self.assembler.infer_block_category(
-                    sheet, block
-                )
+                block["category_name"] = self.assembler.infer_block_category(sheet, block)
                 blocks.append(block)
 
         return blocks

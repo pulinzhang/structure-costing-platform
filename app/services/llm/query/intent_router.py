@@ -164,9 +164,7 @@ def detect_engine_readiness_question(question: str) -> bool:
     if not text:
         return False
     # 「怎么用引擎」仍走帮助；「检查就绪」本身是就绪检查
-    if "检查就绪" in text and not any(
-        signal in text for signal in _USAGE_HOW_SIGNALS
-    ):
+    if "检查就绪" in text and not any(signal in text for signal in _USAGE_HOW_SIGNALS):
         return True
     if any(signal in text for signal in _USAGE_HOW_SIGNALS):
         return False

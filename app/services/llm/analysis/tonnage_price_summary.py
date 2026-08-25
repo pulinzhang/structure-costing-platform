@@ -46,10 +46,7 @@ def build_tonnage_price_drilldown(
     *,
     tonnage: int | None,
 ) -> dict[str, Any]:
-    if tonnage is not None:
-        matched = [row for row in rows if row.tonnage == tonnage]
-    else:
-        matched = list(rows)
+    matched = [row for row in rows if row.tonnage == tonnage] if tonnage is not None else list(rows)
 
     if not matched:
         return {

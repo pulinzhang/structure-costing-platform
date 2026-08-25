@@ -11,11 +11,7 @@ from app.models.costing.l0_assembly_cost_calc_log import L0AssemblyCostCalcLog
 
 class L0AssemblyCostCalcLogRepository:
     def get_by_id(self, db: Session, log_id: int) -> L0AssemblyCostCalcLog | None:
-        return (
-            db.query(L0AssemblyCostCalcLog)
-            .filter(L0AssemblyCostCalcLog.id == log_id)
-            .first()
-        )
+        return db.query(L0AssemblyCostCalcLog).filter(L0AssemblyCostCalcLog.id == log_id).first()
 
     def get_processing_by_scope(
         self,
@@ -70,12 +66,7 @@ class L0AssemblyCostCalcLogRepository:
         if bom_version:
             q = q.filter(L0AssemblyCostCalcLog.bom_version == bom_version)
         total = q.count()
-        rows = (
-            q.order_by(L0AssemblyCostCalcLog.id.desc())
-            .offset(skip)
-            .limit(limit)
-            .all()
-        )
+        rows = q.order_by(L0AssemblyCostCalcLog.id.desc()).offset(skip).limit(limit).all()
         return rows, total
 
     def delete(self, db: Session, log_id: int) -> bool:
@@ -87,9 +78,7 @@ class L0AssemblyCostCalcLogRepository:
         db.flush()
         return True
 
-    def expire_stale_processing(
-        self, db: Session, *, older_than: datetime, message: str
-    ) -> int:
+    def expire_stale_processing(self, db: Session, *, older_than: datetime, message: str) -> int:
         rows = (
             db.query(L0AssemblyCostCalcLog)
             .filter(

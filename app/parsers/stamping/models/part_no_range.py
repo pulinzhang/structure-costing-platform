@@ -25,6 +25,7 @@ class PartNoRange:
         会生成：
             PartNoRange(value="501006875AA", start_row=5, end_row=7)
     """
+
     # 零件号值
     value: Any
 

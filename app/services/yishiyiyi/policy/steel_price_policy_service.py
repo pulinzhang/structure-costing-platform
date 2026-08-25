@@ -7,7 +7,6 @@ CRUD / 导入 / 匹配 / 导出见各子包；本模块仅委托并保持对外 
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 from sqlalchemy.orm import Session
 
@@ -117,9 +116,7 @@ class SteelPricePolicyService:
     def delete_item(self, db: Session, item_id: int) -> None:
         return self._crud.delete_item(db, item_id)
 
-    def match(
-        self, db: Session, data: PolicyMatchRequest
-    ) -> PolicyMatchResponse:
+    def match(self, db: Session, data: PolicyMatchRequest) -> PolicyMatchResponse:
         return self._match_service.match(db, data)
 
     def validate_upload(
@@ -140,7 +137,7 @@ class SteelPricePolicyService:
         year: int,
         month: int,
         current_user: UserVO,
-        progress_callback: Optional[ProgressCallback] = None,
+        progress_callback: ProgressCallback | None = None,
     ) -> ImportResultResponse:
         return self._import_service.import_from_parser(
             db,
@@ -155,13 +152,13 @@ class SteelPricePolicyService:
     def get_export_data(
         self,
         db: Session,
-        year: Optional[int] = None,
-        month: Optional[int] = None,
-        steel_mill: Optional[str] = None,
-        category_name: Optional[str] = None,
-        grade_value: Optional[str] = None,
+        year: int | None = None,
+        month: int | None = None,
+        steel_mill: str | None = None,
+        category_name: str | None = None,
+        grade_value: str | None = None,
         skip: int = 0,
-        limit: Optional[int] = None,
+        limit: int | None = None,
     ) -> list[ExportRow]:
         return self._export_service.get_export_data(
             db,
@@ -177,11 +174,11 @@ class SteelPricePolicyService:
     def count_export_data(
         self,
         db: Session,
-        year: Optional[int] = None,
-        month: Optional[int] = None,
-        steel_mill: Optional[str] = None,
-        category_name: Optional[str] = None,
-        grade_value: Optional[str] = None,
+        year: int | None = None,
+        month: int | None = None,
+        steel_mill: str | None = None,
+        category_name: str | None = None,
+        grade_value: str | None = None,
     ) -> int:
         return self._export_service.count_export_data(
             db,
@@ -196,13 +193,11 @@ class SteelPricePolicyService:
         self,
         db: Session,
         *,
-        year: Optional[int] = None,
-        month: Optional[int] = None,
-        steel_mill: Optional[str] = None,
+        year: int | None = None,
+        month: int | None = None,
+        steel_mill: str | None = None,
     ) -> int:
-        return self._crud.count_policies(
-            db, year=year, month=month, steel_mill=steel_mill
-        )
+        return self._crud.count_policies(db, year=year, month=month, steel_mill=steel_mill)
 
     def get_filter_options(self, db: Session) -> PolicyOptionsResponse:
         return self._crud.get_filter_options(db)
@@ -211,10 +206,10 @@ class SteelPricePolicyService:
         self,
         db: Session,
         *,
-        year: Optional[int] = None,
-        month: Optional[int] = None,
-        steel_mill: Optional[str] = None,
-        policy_type: Optional[str] = None,
+        year: int | None = None,
+        month: int | None = None,
+        steel_mill: str | None = None,
+        policy_type: str | None = None,
     ) -> int:
         return self._crud.count_ladder_items(
             db,
@@ -227,11 +222,11 @@ class SteelPricePolicyService:
     def generate_export_excel_bytes(
         self,
         db: Session,
-        year: Optional[int] = None,
-        month: Optional[int] = None,
-        steel_mill: Optional[str] = None,
-        category_name: Optional[str] = None,
-        grade_value: Optional[str] = None,
+        year: int | None = None,
+        month: int | None = None,
+        steel_mill: str | None = None,
+        category_name: str | None = None,
+        grade_value: str | None = None,
     ) -> tuple[bytes, str]:
         return self._export_service.export_to_excel(
             db,
@@ -246,13 +241,11 @@ class SteelPricePolicyService:
         self,
         db: Session,
         *,
-        year: Optional[int] = None,
-        month: Optional[int] = None,
-        steel_mill: Optional[str] = None,
+        year: int | None = None,
+        month: int | None = None,
+        steel_mill: str | None = None,
     ) -> int:
-        return self._crud.delete_by_conditions(
-            db, year=year, month=month, steel_mill=steel_mill
-        )
+        return self._crud.delete_by_conditions(db, year=year, month=month, steel_mill=steel_mill)
 
     def start_upload(
         self,
@@ -284,9 +277,7 @@ class SteelPricePolicyService:
                     current_user=current_user,
                 )
             except BusinessException as error:
-                logger.warning(
-                    "政策导入业务失败: task_id=%s error=%s", task.task_id, error
-                )
+                logger.warning("政策导入业务失败: task_id=%s error=%s", task.task_id, error)
                 return WorkerTaskOutcome(
                     status=STATUS_FAILED,
                     progress=0,

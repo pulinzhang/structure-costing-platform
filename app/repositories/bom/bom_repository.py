@@ -168,15 +168,11 @@ class BomSnapshotRepository:
 
     def count_nodes(self, db: Session, snapshot_id: int) -> int:
         return (
-            db.query(func.count(BomNode.id))
-            .filter(BomNode.snapshot_id == snapshot_id)
-            .scalar()
+            db.query(func.count(BomNode.id)).filter(BomNode.snapshot_id == snapshot_id).scalar()
             or 0
         )
 
-    def count_all_nodes(
-        self, db: Session, location: str | None = None
-    ) -> int:
+    def count_all_nodes(self, db: Session, location: str | None = None) -> int:
         """统计 BOM 节点总量（可按基地过滤）。"""
         node_q = (
             db.query(func.count(BomNode.id))
@@ -187,9 +183,7 @@ class BomSnapshotRepository:
             node_q = node_q.filter(BomSnapshot.location == location)
         return int(node_q.scalar() or 0)
 
-    def discover_l0_scopes(
-        self, db: Session, locations: list[str]
-    ) -> list[BomL0ScopeRow]:
+    def discover_l0_scopes(self, db: Session, locations: list[str]) -> list[BomL0ScopeRow]:
         """发现指定基地别名下含 L0 节点的 BOM 版本。"""
         if not locations:
             return []
@@ -246,17 +240,10 @@ class BomSnapshotRepository:
         return [r[0] for r in rows if r[0]]
 
     def list_statuses(self, db: Session) -> list[str]:
-        rows = (
-            db.query(BomSnapshot.status)
-            .distinct()
-            .order_by(BomSnapshot.status)
-            .all()
-        )
+        rows = db.query(BomSnapshot.status).distinct().order_by(BomSnapshot.status).all()
         return [r[0] for r in rows if r[0]]
 
-    def create(
-        self, db: Session, data: BomSnapshotWrite
-    ) -> BomSnapshot:
+    def create(self, db: Session, data: BomSnapshotWrite) -> BomSnapshot:
         row = model_from_payload(BomSnapshot, data)
         db.add(row)
         db.flush()
@@ -268,20 +255,12 @@ class BomSnapshotRepository:
         db.flush()
 
     def list_locations(self, db: Session) -> list[str]:
-        rows = (
-            db.query(BomSnapshot.location)
-            .distinct()
-            .order_by(BomSnapshot.location)
-            .all()
-        )
+        rows = db.query(BomSnapshot.location).distinct().order_by(BomSnapshot.location).all()
         return [r[0] for r in rows if r[0]]
 
     def list_vehicle_models(self, db: Session) -> list[str]:
         rows = (
-            db.query(BomSnapshot.vehicle_model)
-            .distinct()
-            .order_by(BomSnapshot.vehicle_model)
-            .all()
+            db.query(BomSnapshot.vehicle_model).distinct().order_by(BomSnapshot.vehicle_model).all()
         )
         return [r[0] for r in rows if r[0]]
 
@@ -308,11 +287,7 @@ class BomSnapshotRepository:
         loc_q = db.query(BomSnapshot.location).distinct()
         if status is not None:
             loc_q = loc_q.filter(BomSnapshot.status == status)
-        locations = [
-            row[0]
-            for row in loc_q.order_by(BomSnapshot.location).all()
-            if row[0]
-        ]
+        locations = [row[0] for row in loc_q.order_by(BomSnapshot.location).all() if row[0]]
 
         model_q = db.query(BomSnapshot.vehicle_model).distinct()
         if status is not None:
@@ -320,9 +295,7 @@ class BomSnapshotRepository:
         if location is not None:
             model_q = model_q.filter(BomSnapshot.location == location)
         vehicle_models = [
-            row[0]
-            for row in model_q.order_by(BomSnapshot.vehicle_model).all()
-            if row[0]
+            row[0] for row in model_q.order_by(BomSnapshot.vehicle_model).all() if row[0]
         ]
 
         version_q = db.query(BomSnapshot.bom_version).distinct()
@@ -333,9 +306,7 @@ class BomSnapshotRepository:
         if vehicle_model is not None:
             version_q = version_q.filter(BomSnapshot.vehicle_model == vehicle_model)
         bom_versions = [
-            row[0]
-            for row in version_q.order_by(BomSnapshot.bom_version.desc()).all()
-            if row[0]
+            row[0] for row in version_q.order_by(BomSnapshot.bom_version.desc()).all() if row[0]
         ]
 
         return {
@@ -359,18 +330,14 @@ class BomNodeRepository:
             .all()
         )
 
-    def count_by_snapshot_and_level(
-        self, db: Session, snapshot_id: int, level: int
-    ) -> int:
+    def count_by_snapshot_and_level(self, db: Session, snapshot_id: int, level: int) -> int:
         return (
             db.query(BomNode)
             .filter(BomNode.snapshot_id == snapshot_id, BomNode.level == level)
             .count()
         )
 
-    def create(
-        self, db: Session, data: BomNodeWrite
-    ) -> BomNode:
+    def create(self, db: Session, data: BomNodeWrite) -> BomNode:
         row = model_from_payload(BomNode, data)
         db.add(row)
         db.flush()
@@ -381,9 +348,7 @@ class BomNodeRepository:
         db.delete(node)
         db.flush()
 
-    def delete_by_snapshot(
-        self, db: Session, snapshot_id: int
-    ) -> int:
+    def delete_by_snapshot(self, db: Session, snapshot_id: int) -> int:
         count = (
             db.query(BomNode)
             .filter(BomNode.snapshot_id == snapshot_id)

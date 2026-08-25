@@ -160,9 +160,7 @@ class StampingScrapPriceExporter:
         records: list[Any],
         start_row: int,
     ) -> int:
-        by_location: dict[str, dict[int, Any]] = {
-            name: {} for name in SCRAP_PRICE_LOCATIONS
-        }
+        by_location: dict[str, dict[int, Any]] = {name: {} for name in SCRAP_PRICE_LOCATIONS}
         for record in records:
             if record.location not in by_location:
                 by_location[record.location] = {}
@@ -181,8 +179,7 @@ class StampingScrapPriceExporter:
         for location in SCRAP_PRICE_LOCATIONS:
             month_map = by_location.get(location, {})
             has_deduction = any(
-                (_to_decimal(r.deduction_fee) or Decimal("0")) > 0
-                for r in month_map.values()
+                (_to_decimal(r.deduction_fee) or Decimal("0")) > 0 for r in month_map.values()
             )
             if has_deduction:
                 row = self._write_deduction_location(ws, row, location, month_map)
@@ -192,7 +189,9 @@ class StampingScrapPriceExporter:
         _apply_block_outer_border(ws, start_row, row - 1)
         return row
 
-    def _write_plain_location(self, ws: Any, row: int, location: str, month_map: dict[int, Any]) -> int:
+    def _write_plain_location(
+        self, ws: Any, row: int, location: str, month_map: dict[int, Any]
+    ) -> int:
         name_cell = ws.cell(row=row, column=1, value=location)
         name_cell.font = _DATA_FONT
         name_cell.alignment = _CENTER

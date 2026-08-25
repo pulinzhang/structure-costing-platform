@@ -27,9 +27,7 @@ class L0AssemblyCostItem(Base):
         index=True,
     )
 
-    assembly_cost: Mapped["L0AssemblyCost"] = relationship(
-        "L0AssemblyCost", back_populates="items"
-    )
+    assembly_cost: Mapped[L0AssemblyCost] = relationship("L0AssemblyCost", back_populates="items")
 
     level_label: Mapped[str] = mapped_column(
         String(20),

@@ -149,21 +149,16 @@ class WinningThicknessRowAssembler:
 
         match_row = PolicyMatchContext(
             grade=grade,
-            thickness=(
-                Decimal(str(base.thick)) if base.thick is not None else Decimal("0")
-            ),
+            thickness=(Decimal(str(base.thick)) if base.thick is not None else Decimal("0")),
             steel_mill=base.steel_mill,
             category_name=base.category_name,
-            base_thickness=(
-                Decimal(str(base.thick)) if base.thick is not None else None
-            ),
+            base_thickness=(Decimal(str(base.thick)) if base.thick is not None else None),
         )
         candidates = filter_candidates(match_row, policies)
         thickness_policies = [
             p
             for p in candidates
-            if p.policy_type == "THICKNESS"
-            and (p.grade_value or "").strip() == grade
+            if p.policy_type == "THICKNESS" and (p.grade_value or "").strip() == grade
         ]
         if not thickness_policies:
             return None

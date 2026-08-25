@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from decimal import Decimal
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field, field_serializer
 
@@ -24,21 +24,21 @@ class StampingTailorWeldBlankVO(BaseModel):
     parent_part_number: str
     blank_seq: int
     blank_part_number: str
-    material: Optional[str] = None
-    thickness: Optional[Decimal] = None
-    part_weight: Optional[Decimal] = None
-    sheet_length: Optional[Decimal] = None
-    sheet_width: Optional[Decimal] = None
-    parts_per_sheet: Optional[int] = Field(
+    material: str | None = None
+    thickness: Decimal | None = None
+    part_weight: Decimal | None = None
+    sheet_length: Decimal | None = None
+    sheet_width: Decimal | None = None
+    parts_per_sheet: int | None = Field(
         default=None,
         description="可制件数：一张料单独冲本子片可出的件数",
     )
-    sheet_type: Optional[str] = None
-    remark: Optional[str] = None
-    created_by: Optional[str] = None
-    updated_by: Optional[str] = None
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+    sheet_type: str | None = None
+    remark: str | None = None
+    created_by: str | None = None
+    updated_by: str | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
 
     @field_serializer("created_at", "updated_at")
     def serialize_datetime(self, value: Any) -> Any:

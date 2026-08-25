@@ -62,12 +62,7 @@ def save_steel_price_upload(
     timestamp = now().strftime("%Y%m%d_%H%M%S")
     archive_name = f"{timestamp}_{file_kind}_{safe_name}"
 
-    target_dir = (
-        settings.UPLOAD_DIR
-        / ARCHIVE_ROOT_NAME
-        / str(year)
-        / f"{month:02d}"
-    )
+    target_dir = settings.UPLOAD_DIR / ARCHIVE_ROOT_NAME / str(year) / f"{month:02d}"
     target_dir.mkdir(parents=True, exist_ok=True)
     target_path = target_dir / archive_name
 

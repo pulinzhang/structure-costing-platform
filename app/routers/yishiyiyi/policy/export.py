@@ -3,7 +3,6 @@
 导出 Excel + 导出预览分页。
 """
 
-from typing import Optional
 from urllib.parse import quote
 
 from fastapi import APIRouter, Depends
@@ -29,11 +28,11 @@ _policy_service = SteelPricePolicyService()
 
 @router.get("/export")
 def export_policies_excel(
-    year: Optional[int] = None,
-    month: Optional[int] = None,
-    steel_mill: Optional[str] = None,
-    category_name: Optional[str] = None,
-    grade_value: Optional[str] = None,
+    year: int | None = None,
+    month: int | None = None,
+    steel_mill: str | None = None,
+    category_name: str | None = None,
+    grade_value: str | None = None,
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STEEL_PRICE_POLICY_DOWNLOAD_EXPORT)),
 ) -> StreamingResponse:
@@ -63,11 +62,11 @@ def export_policies_excel(
     response_model=ApiResponse[PageResult[ExportRow]],
 )
 def export_policies_preview(
-    year: Optional[int] = None,
-    month: Optional[int] = None,
-    steel_mill: Optional[str] = None,
-    category_name: Optional[str] = None,
-    grade_value: Optional[str] = None,
+    year: int | None = None,
+    month: int | None = None,
+    steel_mill: str | None = None,
+    category_name: str | None = None,
+    grade_value: str | None = None,
     page: int = 1,
     size: int = DEFAULT_PAGE_SIZE,
     db: Session = Depends(get_db),

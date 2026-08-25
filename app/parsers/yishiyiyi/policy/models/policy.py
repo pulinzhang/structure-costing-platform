@@ -15,7 +15,7 @@ grade_type 取值:
 
 from dataclasses import dataclass, field
 from decimal import Decimal
-from typing import Any, List, Optional
+from typing import Any
 
 from .ladder_item import ParsedLadderItem
 
@@ -38,9 +38,9 @@ class ParsedPolicy:
     grade_type: str
     grade_value: str
     policy_type: str
-    base_thickness: Optional[Decimal] = None
-    excel_filename: Optional[str] = None
-    items: List[ParsedLadderItem] = field(default_factory=list)
+    base_thickness: Decimal | None = None
+    excel_filename: str | None = None
+    items: list[ParsedLadderItem] = field(default_factory=list)
 
     def model_dump(self) -> dict[str, Any]:
         """返回字典格式，兼容 Pydantic 接口"""
@@ -50,7 +50,9 @@ class ParsedPolicy:
             "grade_type": self.grade_type,
             "grade_value": self.grade_value,
             "policy_type": self.policy_type,
-            "base_thickness": float(self.base_thickness) if self.base_thickness is not None else None,
+            "base_thickness": float(self.base_thickness)
+            if self.base_thickness is not None
+            else None,
             "excel_filename": self.excel_filename,
             "items": [item.to_dict() for item in self.items],
         }

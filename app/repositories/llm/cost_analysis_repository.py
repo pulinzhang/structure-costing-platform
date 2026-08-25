@@ -185,15 +185,9 @@ class L0CostAnalysisRepository:
             (_is_missing_price(), 0),
             else_=L0AssemblyCost.grand_total,
         )
-        ok_count = func.sum(
-            case((L0AssemblyCost.calc_status == "ok", 1), else_=0)
-        )
-        partial_count = func.sum(
-            case((L0AssemblyCost.calc_status != "ok", 1), else_=0)
-        )
-        missing_price_count = func.sum(
-            case((_is_missing_price(), 1), else_=0)
-        )
+        ok_count = func.sum(case((L0AssemblyCost.calc_status == "ok", 1), else_=0))
+        partial_count = func.sum(case((L0AssemblyCost.calc_status != "ok", 1), else_=0))
+        missing_price_count = func.sum(case((_is_missing_price(), 1), else_=0))
 
         q = db.query(
             L0AssemblyCost.year,
@@ -204,21 +198,15 @@ class L0CostAnalysisRepository:
             partial_count,
             func.coalesce(func.sum(priced), 0),
             func.coalesce(
-                func.sum(
-                    case((_is_missing_price(), 0), else_=L0AssemblyCost.total_amount)
-                ),
+                func.sum(case((_is_missing_price(), 0), else_=L0AssemblyCost.total_amount)),
                 0,
             ),
             func.coalesce(
-                func.sum(
-                    case((_is_missing_price(), 0), else_=L0AssemblyCost.indirect_amount)
-                ),
+                func.sum(case((_is_missing_price(), 0), else_=L0AssemblyCost.indirect_amount)),
                 0,
             ),
             func.coalesce(
-                func.sum(
-                    case((_is_missing_price(), 0), else_=L0AssemblyCost.stamping_amount)
-                ),
+                func.sum(case((_is_missing_price(), 0), else_=L0AssemblyCost.stamping_amount)),
                 0,
             ),
             func.coalesce(
@@ -231,15 +219,11 @@ class L0CostAnalysisRepository:
                 0,
             ),
             func.coalesce(
-                func.sum(
-                    case((_is_missing_price(), 0), else_=L0AssemblyCost.bundle_amount)
-                ),
+                func.sum(case((_is_missing_price(), 0), else_=L0AssemblyCost.bundle_amount)),
                 0,
             ),
             func.coalesce(
-                func.sum(
-                    case((_is_missing_price(), 0), else_=L0AssemblyCost.welding_amount)
-                ),
+                func.sum(case((_is_missing_price(), 0), else_=L0AssemblyCost.welding_amount)),
                 0,
             ),
             func.coalesce(

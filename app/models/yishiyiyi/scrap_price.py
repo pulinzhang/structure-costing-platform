@@ -25,7 +25,9 @@ class StampingScrapPrice(AuditUserMixin, Base):
 
     __tablename__ = "stamping_scrap_prices"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True, comment="主键 ID")
+    id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, autoincrement=True, comment="主键 ID"
+    )
 
     # 【维度】
     location: Mapped[str] = mapped_column(

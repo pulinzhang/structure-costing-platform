@@ -5,7 +5,7 @@
 import logging
 from datetime import datetime
 from decimal import Decimal
-from typing import List, Optional, Tuple, TypedDict
+from typing import TypedDict
 
 from sqlalchemy import case, func, or_
 from sqlalchemy.orm import Query, Session, joinedload, noload
@@ -63,7 +63,7 @@ _UPSERT_SKIP = frozenset({"id", "created_by", "created_at"})
 class StampingProcessFeeRepository:
     """冲压加工费结果数据访问"""
 
-    def get_by_id(self, db: Session, fee_id: int) -> Optional[StampingProcessFee]:
+    def get_by_id(self, db: Session, fee_id: int) -> StampingProcessFee | None:
         return (
             db.query(StampingProcessFee)
             .options(joinedload(StampingProcessFee.process_items))
@@ -99,9 +99,7 @@ class StampingProcessFeeRepository:
             return
         record.process_items.clear()
         for item in items_data:
-            record.process_items.append(
-                model_from_payload(StampingProcessFeeItem, item)
-            )
+            record.process_items.append(model_from_payload(StampingProcessFeeItem, item))
         db.flush()
 
     def get_by_business_key(
@@ -113,7 +111,7 @@ class StampingProcessFeeRepository:
         vehicle_model: str,
         version: str,
         part_number: str,
-    ) -> Optional[StampingProcessFee]:
+    ) -> StampingProcessFee | None:
         q = db.query(StampingProcessFee).filter(
             StampingProcessFee.year == year,
             StampingProcessFee.location == location,
@@ -152,7 +150,7 @@ class StampingProcessFeeRepository:
 
     def update_fields(
         self, db: Session, fee_id: int, update_data: ProcessFeePatch
-    ) -> Optional[StampingProcessFee]:
+    ) -> StampingProcessFee | None:
         record = self.get_by_id(db, fee_id)
         if not record:
             return None
@@ -188,13 +186,13 @@ class StampingProcessFeeRepository:
     def _build_list_query(
         self,
         db: Session,
-        year: Optional[int] = None,
-        location: Optional[str] = None,
-        stamping_supplier: Optional[str] = None,
-        vehicle_model: Optional[str] = None,
-        version: Optional[str] = None,
-        part_number: Optional[str] = None,
-        audit_status: Optional[str] = None,
+        year: int | None = None,
+        location: str | None = None,
+        stamping_supplier: str | None = None,
+        vehicle_model: str | None = None,
+        version: str | None = None,
+        part_number: str | None = None,
+        audit_status: str | None = None,
         only_zero: bool = False,
     ) -> Query[StampingProcessFee]:
         q = db.query(StampingProcessFee)
@@ -219,17 +217,17 @@ class StampingProcessFeeRepository:
     def paginate(
         self,
         db: Session,
-        year: Optional[int] = None,
-        location: Optional[str] = None,
-        stamping_supplier: Optional[str] = None,
-        vehicle_model: Optional[str] = None,
-        version: Optional[str] = None,
-        part_number: Optional[str] = None,
-        audit_status: Optional[str] = None,
+        year: int | None = None,
+        location: str | None = None,
+        stamping_supplier: str | None = None,
+        vehicle_model: str | None = None,
+        version: str | None = None,
+        part_number: str | None = None,
+        audit_status: str | None = None,
         only_zero: bool = False,
         skip: int = 0,
         limit: int = 20,
-    ) -> Tuple[List[StampingProcessFee], int]:
+    ) -> tuple[list[StampingProcessFee], int]:
         q = self._build_list_query(
             db,
             year=year,
@@ -259,13 +257,13 @@ class StampingProcessFeeRepository:
     def summarize_by_filters(
         self,
         db: Session,
-        year: Optional[int] = None,
-        location: Optional[str] = None,
-        stamping_supplier: Optional[str] = None,
-        vehicle_model: Optional[str] = None,
-        version: Optional[str] = None,
-        part_number: Optional[str] = None,
-        audit_status: Optional[str] = None,
+        year: int | None = None,
+        location: str | None = None,
+        stamping_supplier: str | None = None,
+        vehicle_model: str | None = None,
+        version: str | None = None,
+        part_number: str | None = None,
+        audit_status: str | None = None,
     ) -> ProcessFeeFilterSummary:
         """按筛选条件汇总：总金额 / 件均 / 待补价 / 待审 / 已审 / 版本标签。"""
         q = self._build_list_query(
@@ -281,16 +279,12 @@ class StampingProcessFeeRepository:
         )
         row = q.with_entities(
             func.count(StampingProcessFee.id).label("total_count"),
-            func.coalesce(func.sum(StampingProcessFee.final_processing_fee), 0).label(
-                "total_fee"
-            ),
+            func.coalesce(func.sum(StampingProcessFee.final_processing_fee), 0).label("total_fee"),
             func.avg(StampingProcessFee.final_processing_fee).label("avg_fee"),
-            func.sum(
-                case((_needs_price_fix_clause(), 1), else_=0)
-            ).label("zero_count"),
-            func.sum(
-                case((StampingProcessFee.audit_status == AUDIT_PENDING, 1), else_=0)
-            ).label("pending_count"),
+            func.sum(case((_needs_price_fix_clause(), 1), else_=0)).label("zero_count"),
+            func.sum(case((StampingProcessFee.audit_status == AUDIT_PENDING, 1), else_=0)).label(
+                "pending_count"
+            ),
             func.sum(
                 case(
                     (StampingProcessFee.audit_status == AUDIT_APPROVED, 1),
@@ -341,14 +335,14 @@ class StampingProcessFeeRepository:
     def list_for_export(
         self,
         db: Session,
-        year: Optional[int] = None,
-        location: Optional[str] = None,
-        stamping_supplier: Optional[str] = None,
-        vehicle_model: Optional[str] = None,
-        version: Optional[str] = None,
-        part_number: Optional[str] = None,
-        audit_status: Optional[str] = None,
-    ) -> List[StampingProcessFee]:
+        year: int | None = None,
+        location: str | None = None,
+        stamping_supplier: str | None = None,
+        vehicle_model: str | None = None,
+        version: str | None = None,
+        part_number: str | None = None,
+        audit_status: str | None = None,
+    ) -> list[StampingProcessFee]:
         q = self._build_list_query(
             db,
             year=year,
@@ -377,7 +371,7 @@ class StampingProcessFeeRepository:
         year: int,
         location: str,
         stamping_supplier: str,
-        statuses: List[str],
+        statuses: list[str],
     ) -> list[str]:
         """范围内待审拼焊件且未录入其它费用的零件号（用结算快照）。"""
         rows = (
@@ -405,7 +399,7 @@ class StampingProcessFeeRepository:
         year: int,
         location: str,
         stamping_supplier: str,
-        statuses: List[str],
+        statuses: list[str],
     ) -> int:
         return (
             self._scope_query(
@@ -475,8 +469,8 @@ class StampingProcessFeeRepository:
         stamping_supplier: str,
         audited_by: str,
         audited_at: datetime,
-        audit_remark: Optional[str],
-        updated_by: Optional[str] = None,
+        audit_remark: str | None,
+        updated_by: str | None = None,
     ) -> int:
         values: dict[str, str | datetime | None] = {
             "audit_status": AUDIT_APPROVED,
@@ -492,9 +486,7 @@ class StampingProcessFeeRepository:
                 year=year,
                 location=location,
                 stamping_supplier=stamping_supplier,
-            ).filter(
-                StampingProcessFee.audit_status.in_([AUDIT_PENDING, AUDIT_REJECTED])
-            ),
+            ).filter(StampingProcessFee.audit_status.in_([AUDIT_PENDING, AUDIT_REJECTED])),
             values,
         )
         db.flush()
@@ -510,7 +502,7 @@ class StampingProcessFeeRepository:
         reverse_audited_by: str,
         reverse_audited_at: datetime,
         reverse_audit_remark: str,
-        updated_by: Optional[str] = None,
+        updated_by: str | None = None,
     ) -> int:
         values: dict[str, str | datetime | None] = {
             "audit_status": AUDIT_PENDING,
@@ -532,7 +524,7 @@ class StampingProcessFeeRepository:
         db.flush()
         return count
 
-    def get_distinct_years(self, db: Session) -> List[int]:
+    def get_distinct_years(self, db: Session) -> list[int]:
         results = (
             db.query(StampingProcessFee.year)
             .distinct()
@@ -541,7 +533,7 @@ class StampingProcessFeeRepository:
         )
         return [r[0] for r in results]
 
-    def get_distinct_locations(self, db: Session, year: Optional[int] = None) -> List[str]:
+    def get_distinct_locations(self, db: Session, year: int | None = None) -> list[str]:
         q = db.query(StampingProcessFee.location).distinct()
         if year is not None:
             q = q.filter(StampingProcessFee.year == year)
@@ -551,9 +543,9 @@ class StampingProcessFeeRepository:
     def get_distinct_suppliers(
         self,
         db: Session,
-        year: Optional[int] = None,
-        location: Optional[str] = None,
-    ) -> List[str]:
+        year: int | None = None,
+        location: str | None = None,
+    ) -> list[str]:
         q = db.query(StampingProcessFee.stamping_supplier).distinct()
         if year is not None:
             q = q.filter(StampingProcessFee.year == year)
@@ -565,10 +557,10 @@ class StampingProcessFeeRepository:
     def get_distinct_vehicle_models(
         self,
         db: Session,
-        year: Optional[int] = None,
-        location: Optional[str] = None,
-        stamping_supplier: Optional[str] = None,
-    ) -> List[str]:
+        year: int | None = None,
+        location: str | None = None,
+        stamping_supplier: str | None = None,
+    ) -> list[str]:
         q = db.query(StampingProcessFee.vehicle_model).distinct()
         if year is not None:
             q = q.filter(StampingProcessFee.year == year)
@@ -582,11 +574,11 @@ class StampingProcessFeeRepository:
     def get_distinct_versions(
         self,
         db: Session,
-        year: Optional[int] = None,
-        location: Optional[str] = None,
-        stamping_supplier: Optional[str] = None,
-        vehicle_model: Optional[str] = None,
-    ) -> List[str]:
+        year: int | None = None,
+        location: str | None = None,
+        stamping_supplier: str | None = None,
+        vehicle_model: str | None = None,
+    ) -> list[str]:
         q = db.query(StampingProcessFee.version).distinct()
         if year is not None:
             q = q.filter(StampingProcessFee.year == year)

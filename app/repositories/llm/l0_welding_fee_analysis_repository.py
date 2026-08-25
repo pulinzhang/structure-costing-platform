@@ -79,9 +79,7 @@ class L0WeldingFeeAnalysisRepository:
                 part_number=str(row.part_number),
                 part_name=row.part_name,
                 total_l0_welding_fee=Decimal(str(row.total_l0_welding_fee or 0)),
-                other_fee=(
-                    Decimal(str(row.other_fee)) if row.other_fee is not None else None
-                ),
+                other_fee=(Decimal(str(row.other_fee)) if row.other_fee is not None else None),
                 final_l0_welding_fee=(
                     Decimal(str(row.final_l0_welding_fee))
                     if row.final_l0_welding_fee is not None

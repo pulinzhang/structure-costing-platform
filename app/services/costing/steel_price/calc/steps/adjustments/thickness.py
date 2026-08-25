@@ -51,8 +51,7 @@ class ThicknessAdjustmentMatcher:
         policies = [
             p
             for p in candidates
-            if p.policy_type == "THICKNESS"
-            and (p.grade_value or "").strip() == grade
+            if p.policy_type == "THICKNESS" and (p.grade_value or "").strip() == grade
         ]
         if not policies:
             return None

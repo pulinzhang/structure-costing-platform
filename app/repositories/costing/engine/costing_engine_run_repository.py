@@ -103,11 +103,7 @@ class CostingEngineRunRepository:
         return step
 
     def get_step(self, db: Session, step_id: int) -> CostingEngineRunStep | None:
-        return (
-            db.query(CostingEngineRunStep)
-            .filter(CostingEngineRunStep.id == step_id)
-            .first()
-        )
+        return db.query(CostingEngineRunStep).filter(CostingEngineRunStep.id == step_id).first()
 
     def update_run_fields(
         self,
@@ -178,20 +174,11 @@ class CostingEngineRunRepository:
         if status:
             q = q.filter(CostingEngineRun.status == status)
         total = q.count()
-        rows = (
-            q.order_by(CostingEngineRun.id.desc())
-            .offset(skip)
-            .limit(limit)
-            .all()
-        )
+        rows = q.order_by(CostingEngineRun.id.desc()).offset(skip).limit(limit).all()
         return rows, total
 
     def delete(self, db: Session, run_id: int) -> bool:
-        row = (
-            db.query(CostingEngineRun)
-            .filter(CostingEngineRun.id == run_id)
-            .first()
-        )
+        row = db.query(CostingEngineRun).filter(CostingEngineRun.id == run_id).first()
         if row is None:
             return False
         db.delete(row)

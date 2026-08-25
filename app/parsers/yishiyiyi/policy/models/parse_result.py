@@ -1,7 +1,7 @@
 """解析结果聚合。"""
 
 from dataclasses import dataclass, field
-from typing import Any, List
+from typing import Any
 
 from .policy import ParsedPolicy
 
@@ -10,9 +10,9 @@ from .policy import ParsedPolicy
 class SteelPricePolicyParseResult:
     """一张钢价政策表解析的最终结果。"""
 
-    policies: List[ParsedPolicy] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
-    sheet_names: List[str] = field(default_factory=list)
+    policies: list[ParsedPolicy] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
+    sheet_names: list[str] = field(default_factory=list)
     year: int = 0
     month: int = 0
 

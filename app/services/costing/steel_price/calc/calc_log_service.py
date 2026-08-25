@@ -25,6 +25,7 @@ from app.services.costing.steel_price.calc.status import (
     STALE_PROCESSING_SECONDS,
     DuplicatePeriodCalcError,
 )
+import contextlib
 
 
 logger = logging.getLogger("service.steel_price.calc.log")
@@ -99,9 +100,7 @@ class CalcLogService:
         """期别是否正在计算（会顺带回收超时僵死锁）。"""
         self._expire_stale_processing(db, year=year, month=month, location=location)
         return (
-            self.repository.find_processing(
-                db, year=year, month=month, location=location
-            )
+            self.repository.find_processing(db, year=year, month=month, location=location)
             is not None
         )
 
@@ -125,9 +124,7 @@ class CalcLogService:
         self._ensure_processing_lock_index(db)
         self._expire_stale_processing(db, year=year, month=month, location=location)
 
-        existing = self.repository.find_processing(
-            db, year=year, month=month, location=location
-        )
+        existing = self.repository.find_processing(db, year=year, month=month, location=location)
         if existing is not None:
             raise DuplicatePeriodCalcError(DUPLICATE_PERIOD_CALC_MESSAGE)
 
@@ -218,9 +215,7 @@ class CalcLogService:
             return record.id
         except Exception:
             db.rollback()
-            logger.exception(
-                "更新计算日志失败: log_id=%s batch=%s", log_id, result.calc_batch_id
-            )
+            logger.exception("更新计算日志失败: log_id=%s batch=%s", log_id, result.calc_batch_id)
             return None
 
     def mark_failed(
@@ -232,10 +227,8 @@ class CalcLogService:
         detail_text: str | None = None,
     ) -> None:
         """异常路径：释放 processing 锁为 failed（先 rollback 清脏事务）。"""
-        try:
+        with contextlib.suppress(Exception):
             db.rollback()
-        except Exception:
-            pass
         finished_at = now()
         payload: SteelPriceCalcLogPatch = {
             "status": STATUS_FAILED,
@@ -267,9 +260,7 @@ class CalcLogService:
         finished_at: datetime,
     ) -> int | None:
         if result.year is None or result.month is None:
-            logger.error(
-                "写入计算日志失败: batch=%s 缺少 year/month", result.calc_batch_id
-            )
+            logger.error("写入计算日志失败: batch=%s 缺少 year/month", result.calc_batch_id)
             return None
         try:
             record = self.repository.create(
@@ -301,9 +292,7 @@ class CalcLogService:
             return record.id
         except Exception as error:
             db.rollback()
-            logger.exception(
-                "写入计算日志失败: batch=%s error=%s", result.calc_batch_id, error
-            )
+            logger.exception("写入计算日志失败: batch=%s error=%s", result.calc_batch_id, error)
             return None
 
     def _expire_stale_processing(
@@ -314,9 +303,7 @@ class CalcLogService:
         month: int,
         location: str,
     ) -> None:
-        record = self.repository.find_processing(
-            db, year=year, month=month, location=location
-        )
+        record = self.repository.find_processing(db, year=year, month=month, location=location)
         if record is None or record.started_at is None:
             return
         age = now() - record.started_at

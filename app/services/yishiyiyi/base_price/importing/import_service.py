@@ -9,7 +9,7 @@ from __future__ import annotations
 import logging
 import re
 from decimal import Decimal, InvalidOperation
-from typing import Callable, Optional
+from collections.abc import Callable
 
 from sqlalchemy.orm import Session
 
@@ -40,7 +40,7 @@ _NUMERIC_STEEL_MILL_RE = re.compile(r"^[+-]?\d+(\.\d+)?$")
 
 def _is_numeric_steel_mill(steel_mill: object) -> bool:
     """钢厂值为纯数字（或可解析为数字）时视为格式错误。"""
-    if isinstance(steel_mill, (int, float, Decimal)):
+    if isinstance(steel_mill, int | float | Decimal):
         return True
     text = str(steel_mill).strip()
     if not text:
@@ -67,9 +67,7 @@ def _assert_steel_mills_not_numeric(records: list[dict[str, object]]) -> None:
             continue
         excel_row = record.get("excel_row")
         location = record.get("location")
-        bad_samples.append(
-            f"第{excel_row}行/{location}基地→钢厂「{mill}」"
-        )
+        bad_samples.append(f"第{excel_row}行/{location}基地→钢厂「{mill}」")
     if bad_count == 0:
         return
     sample_text = "；".join(bad_samples)
@@ -148,7 +146,7 @@ class SteelBasePriceImportService:
         year: int,
         month: int,
         current_user: UserVO,
-        progress_callback: Optional[ProgressCallback] = None,
+        progress_callback: ProgressCallback | None = None,
     ) -> SteelBasePriceImportResultResponse:
         """
         解析 Excel 并执行 upsert。

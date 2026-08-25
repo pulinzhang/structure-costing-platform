@@ -96,9 +96,7 @@ def build_l0_welding_fee_comparison(
         compare_row = compare_parts.get(key)
         ref = compare_row or base_row
         base_fee = (
-            base_row.final_l0_welding_fee or base_row.total_l0_welding_fee
-            if base_row
-            else None
+            base_row.final_l0_welding_fee or base_row.total_l0_welding_fee if base_row else None
         )
         compare_fee = (
             compare_row.final_l0_welding_fee or compare_row.total_l0_welding_fee
@@ -110,9 +108,7 @@ def build_l0_welding_fee_comparison(
         if base_fee is not None and compare_fee is not None:
             change = compare_fee - base_fee
             if base_fee != 0:
-                rate = (change / base_fee).quantize(
-                    Decimal("0.0001"), rounding=ROUND_HALF_UP
-                )
+                rate = (change / base_fee).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
                 change_rate = str(rate)
         items.append(
             {
@@ -206,9 +202,7 @@ def build_l0_welding_fee_drivers(
             "year": row.year,
             "part_number": row.part_number,
             "part_name": row.part_name,
-            "final_l0_welding_fee": _fee_str(
-                row.final_l0_welding_fee or row.total_l0_welding_fee
-            ),
+            "final_l0_welding_fee": _fee_str(row.final_l0_welding_fee or row.total_l0_welding_fee),
         }
         for index, row in enumerate(ranked, start=1)
     ]

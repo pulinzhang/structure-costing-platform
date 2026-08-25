@@ -98,15 +98,64 @@ HEADERS = [
 
 COL_COUNT = len(HEADERS)
 WIDTHS = [
-    8, 8, 8, 10, 10, 8, 16, 10, 10, 14,
-    12, 12, 12, 12, 10, 10, 12,
-    10, 28, 12, 10, 10,
-    12, 12, 28, 12, 10, 10,
-    12, 12, 28, 12, 10, 10,
-    12, 12, 28, 12, 10, 10,
-    14, 10, 24, 20, 10, 18,
-    10, 10, 18, 16, 10, 18, 16, 20,
-    12, 18, 12, 18,
+    8,
+    8,
+    8,
+    10,
+    10,
+    8,
+    16,
+    10,
+    10,
+    14,
+    12,
+    12,
+    12,
+    12,
+    10,
+    10,
+    12,
+    10,
+    28,
+    12,
+    10,
+    10,
+    12,
+    12,
+    28,
+    12,
+    10,
+    10,
+    12,
+    12,
+    28,
+    12,
+    10,
+    10,
+    12,
+    12,
+    28,
+    12,
+    10,
+    10,
+    14,
+    10,
+    24,
+    20,
+    10,
+    18,
+    10,
+    10,
+    18,
+    16,
+    10,
+    18,
+    16,
+    20,
+    12,
+    18,
+    12,
+    18,
 ]
 
 # 列区间（1-based）
@@ -116,8 +165,28 @@ PROVENANCE_COLS = set(range(18, 41))
 CALC_COLS = set(range(41, 55))
 AUDIT_COLS = set(range(55, 59))
 RIGHT_ALIGN_COLS = {
-    1, 2, 3, 8, 9, *MONEY_COLS, KPI_COL,
-    18, 21, 22, 23, 24, 27, 28, 29, 30, 33, 34, 35, 36, 39, 40,
+    1,
+    2,
+    3,
+    8,
+    9,
+    *MONEY_COLS,
+    KPI_COL,
+    18,
+    21,
+    22,
+    23,
+    24,
+    27,
+    28,
+    29,
+    30,
+    33,
+    34,
+    35,
+    36,
+    39,
+    40,
 }
 CENTER_COLS = {1, 2, 3, 41, 42, 47}
 
@@ -357,9 +426,7 @@ class SteelPriceExportService:
         last_data = header_row + max(len(records), 1)
         # 冻结到价格区右侧，横向滚动时主表仍可见
         ws.freeze_panes = f"{get_column_letter(KPI_COL + 1)}{header_row + 1}"
-        ws.auto_filter.ref = (
-            f"A{header_row}:{get_column_letter(COL_COUNT)}{last_data}"
-        )
+        ws.auto_filter.ref = f"A{header_row}:{get_column_letter(COL_COUNT)}{last_data}"
         ws.print_title_rows = f"1:{header_row}"
         ws.page_setup.orientation = "landscape"
         ws.page_setup.fitToPage = True
@@ -522,9 +589,7 @@ class SteelPriceExportService:
             elif col in PROVENANCE_COLS:
                 cell.fill = _fill(prov_stripe)
                 cell.font = _font(size=8, color="90A4AE")
-                cell.alignment = (
-                    self._right if col in RIGHT_ALIGN_COLS else self._left
-                )
+                cell.alignment = self._right if col in RIGHT_ALIGN_COLS else self._left
             else:
                 cell.fill = _fill(stripe)
                 cell.font = _font(size=9)

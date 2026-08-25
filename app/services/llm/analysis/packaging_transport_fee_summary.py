@@ -83,9 +83,7 @@ def build_packaging_transport_fee_comparison(
                     "vehicle_model": item.vehicle_model,
                     "part_number": item.part_number,
                     "part_name": item.part_name,
-                    "packaging_transport_total": _fee_str(
-                        item.packaging_transport_total
-                    ),
+                    "packaging_transport_total": _fee_str(item.packaging_transport_total),
                     "year": only_year,
                 }
                 for item in sorted(
@@ -115,9 +113,7 @@ def build_packaging_transport_fee_comparison(
         if base_total is not None and compare_total is not None:
             change = compare_total - base_total
             if base_total != 0:
-                rate = (change / base_total).quantize(
-                    Decimal("0.0001"), rounding=ROUND_HALF_UP
-                )
+                rate = (change / base_total).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
                 change_rate = str(rate)
             if change > 0:
                 increased += 1
@@ -223,9 +219,9 @@ def build_packaging_transport_fee_drivers(
 
     latest_year = max(row.year for row in rows)
     latest_rows = [row for row in rows if row.year == latest_year]
-    ranked = sorted(
-        latest_rows, key=lambda row: row.packaging_transport_total, reverse=True
-    )[:top_n]
+    ranked = sorted(latest_rows, key=lambda row: row.packaging_transport_total, reverse=True)[
+        :top_n
+    ]
     items = [
         {
             "rank": index,

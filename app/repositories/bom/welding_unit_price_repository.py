@@ -5,7 +5,7 @@
 
 import logging
 from datetime import datetime
-from typing import List, Optional, Tuple, TypedDict
+from typing import TypedDict
 
 from sqlalchemy import and_, case, func
 from sqlalchemy.orm import Query, Session
@@ -41,12 +41,12 @@ class WeldingUnitPriceListFilters(TypedDict):
 class BomWeldingUnitPriceRepository:
     """焊接工费单价数据访问"""
 
-    def get_by_id(self, db: Session, id: int) -> Optional[BomWeldingUnitPrice]:
+    def get_by_id(self, db: Session, id: int) -> BomWeldingUnitPrice | None:
         return db.query(BomWeldingUnitPrice).filter(BomWeldingUnitPrice.id == id).first()
 
     def get_by_location_year_item(
         self, db: Session, location: str, year: int, item_name: str
-    ) -> Optional[BomWeldingUnitPrice]:
+    ) -> BomWeldingUnitPrice | None:
         return (
             db.query(BomWeldingUnitPrice)
             .filter(
@@ -61,7 +61,7 @@ class BomWeldingUnitPriceRepository:
 
     def list_by_location_year(
         self, db: Session, location: str, year: int
-    ) -> List[BomWeldingUnitPrice]:
+    ) -> list[BomWeldingUnitPrice]:
         return (
             db.query(BomWeldingUnitPrice)
             .filter(
@@ -74,7 +74,7 @@ class BomWeldingUnitPriceRepository:
             .all()
         )
 
-    def list_by_year(self, db: Session, year: int) -> List[BomWeldingUnitPrice]:
+    def list_by_year(self, db: Session, year: int) -> list[BomWeldingUnitPrice]:
         return (
             db.query(BomWeldingUnitPrice)
             .filter(BomWeldingUnitPrice.year == year)
@@ -85,9 +85,9 @@ class BomWeldingUnitPriceRepository:
     def _build_list_query(
         self,
         db: Session,
-        location: Optional[str] = None,
-        year: Optional[int] = None,
-        audit_status: Optional[str] = None,
+        location: str | None = None,
+        year: int | None = None,
+        audit_status: str | None = None,
     ) -> Query[BomWeldingUnitPrice]:
         q = db.query(BomWeldingUnitPrice)
         if location is not None:
@@ -101,15 +101,13 @@ class BomWeldingUnitPriceRepository:
     def paginate(
         self,
         db: Session,
-        location: Optional[str] = None,
-        year: Optional[int] = None,
-        audit_status: Optional[str] = None,
+        location: str | None = None,
+        year: int | None = None,
+        audit_status: str | None = None,
         skip: int = 0,
         limit: int = 100,
-    ) -> Tuple[List[BomWeldingUnitPrice], int]:
-        q = self._build_list_query(
-            db, location=location, year=year, audit_status=audit_status
-        )
+    ) -> tuple[list[BomWeldingUnitPrice], int]:
+        q = self._build_list_query(db, location=location, year=year, audit_status=audit_status)
         total = q.count()
         records = (
             q.order_by(
@@ -126,21 +124,19 @@ class BomWeldingUnitPriceRepository:
     def summarize_by_filters(
         self,
         db: Session,
-        location: Optional[str] = None,
-        year: Optional[int] = None,
-        audit_status: Optional[str] = None,
+        location: str | None = None,
+        year: int | None = None,
+        audit_status: str | None = None,
     ) -> AuditCountSummary:
-        q = self._build_list_query(
-            db, location=location, year=year, audit_status=audit_status
-        )
+        q = self._build_list_query(db, location=location, year=year, audit_status=audit_status)
         row = q.with_entities(
             func.count(BomWeldingUnitPrice.id).label("total_count"),
-            func.sum(
-                case((BomWeldingUnitPrice.audit_status == AUDIT_PENDING, 1), else_=0)
-            ).label("pending_count"),
-            func.sum(
-                case((BomWeldingUnitPrice.audit_status == AUDIT_APPROVED, 1), else_=0)
-            ).label("approved_count"),
+            func.sum(case((BomWeldingUnitPrice.audit_status == AUDIT_PENDING, 1), else_=0)).label(
+                "pending_count"
+            ),
+            func.sum(case((BomWeldingUnitPrice.audit_status == AUDIT_APPROVED, 1), else_=0)).label(
+                "approved_count"
+            ),
         ).one()
         return {
             "total_count": int(row.total_count or 0),
@@ -151,23 +147,18 @@ class BomWeldingUnitPriceRepository:
     def list_for_export(
         self,
         db: Session,
-        location: Optional[str] = None,
-        year: Optional[int] = None,
-        audit_status: Optional[str] = None,
-    ) -> List[BomWeldingUnitPrice]:
-        q = self._build_list_query(
-            db, location=location, year=year, audit_status=audit_status
-        )
-        return (
-            q.order_by(
-                BomWeldingUnitPrice.location,
-                BomWeldingUnitPrice.year,
-                BomWeldingUnitPrice.item_name,
-            )
-            .all()
-        )
+        location: str | None = None,
+        year: int | None = None,
+        audit_status: str | None = None,
+    ) -> list[BomWeldingUnitPrice]:
+        q = self._build_list_query(db, location=location, year=year, audit_status=audit_status)
+        return q.order_by(
+            BomWeldingUnitPrice.location,
+            BomWeldingUnitPrice.year,
+            BomWeldingUnitPrice.item_name,
+        ).all()
 
-    def list_all(self, db: Session) -> List[BomWeldingUnitPrice]:
+    def list_all(self, db: Session) -> list[BomWeldingUnitPrice]:
         return (
             db.query(BomWeldingUnitPrice)
             .order_by(
@@ -178,7 +169,7 @@ class BomWeldingUnitPriceRepository:
             .all()
         )
 
-    def get_distinct_locations(self, db: Session) -> List[str]:
+    def get_distinct_locations(self, db: Session) -> list[str]:
         results = (
             db.query(BomWeldingUnitPrice.location)
             .distinct()
@@ -187,7 +178,7 @@ class BomWeldingUnitPriceRepository:
         )
         return [r[0] for r in results]
 
-    def get_distinct_years(self, db: Session) -> List[int]:
+    def get_distinct_years(self, db: Session) -> list[int]:
         results = (
             db.query(BomWeldingUnitPrice.year)
             .distinct()
@@ -202,7 +193,7 @@ class BomWeldingUnitPriceRepository:
         *,
         location: str,
         year: int,
-        statuses: List[str],
+        statuses: list[str],
     ) -> int:
         return (
             db.query(BomWeldingUnitPrice)
@@ -245,7 +236,7 @@ class BomWeldingUnitPriceRepository:
         update_data: BomWeldingUnitPriceUpdate,
         *,
         updated_by: str,
-    ) -> Optional[BomWeldingUnitPrice]:
+    ) -> BomWeldingUnitPrice | None:
         record = self.get_by_id(db, id)
         if not record:
             return None
@@ -265,9 +256,7 @@ class BomWeldingUnitPriceRepository:
         logger.info("删除焊接工费单价: id=%s", id)
         return True
 
-    def delete_unaudited_by_location_year(
-        self, db: Session, location: str, year: int
-    ) -> int:
+    def delete_unaudited_by_location_year(self, db: Session, location: str, year: int) -> int:
         count = (
             db.query(BomWeldingUnitPrice)
             .filter(
@@ -294,8 +283,8 @@ class BomWeldingUnitPriceRepository:
         year: int,
         audited_by: str,
         audited_at: datetime,
-        audit_remark: Optional[str],
-        updated_by: Optional[str] = None,
+        audit_remark: str | None,
+        updated_by: str | None = None,
     ) -> int:
         values: dict[str, str | datetime | None] = {
             "audit_status": AUDIT_APPROVED,
@@ -325,7 +314,7 @@ class BomWeldingUnitPriceRepository:
         reverse_audited_by: str,
         reverse_audited_at: datetime,
         reverse_audit_remark: str,
-        updated_by: Optional[str] = None,
+        updated_by: str | None = None,
     ) -> int:
         values: dict[str, str | datetime | None] = {
             "audit_status": AUDIT_PENDING,

@@ -21,9 +21,7 @@ class StampingTonnagePriceCreate(BaseModel):
     location: str = Field(..., min_length=1, max_length=50, description="采购基地")
     year: int = Field(..., ge=2000, le=2100, description="年份")
     tonnage: int = Field(..., ge=1, description="压机吨位(T)")
-    price_per_stroke: Decimal = Field(
-        ..., ge=0, description="单冲次价格(元)，Decimal 保留3位小数"
-    )
+    price_per_stroke: Decimal = Field(..., ge=0, description="单冲次价格(元)，Decimal 保留3位小数")
 
     @field_validator("price_per_stroke", mode="before")
     @classmethod
@@ -34,9 +32,7 @@ class StampingTonnagePriceCreate(BaseModel):
 class StampingTonnagePriceUpdate(BaseModel):
     """冲次单价更新请求"""
 
-    price_per_stroke: Decimal = Field(
-        ..., ge=0, description="单冲次价格(元)，Decimal 保留3位小数"
-    )
+    price_per_stroke: Decimal = Field(..., ge=0, description="单冲次价格(元)，Decimal 保留3位小数")
 
     @field_validator("price_per_stroke", mode="before")
     @classmethod

@@ -7,7 +7,7 @@
 SQLite 使用独立文件，写入不受主业务长事务锁影响。
 """
 
-from typing import Generator
+from collections.abc import Generator
 
 from sqlalchemy import Engine, create_engine, event
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
@@ -135,17 +135,12 @@ class DatabaseConfig:
             weld_cols = {col["name"] for col in inspector.get_columns(weld_table)}
             if "weld_info_raw" not in weld_cols:
                 with engine.begin() as conn:
-                    conn.execute(
-                        text(f"ALTER TABLE {weld_table} ADD COLUMN weld_info_raw TEXT")
-                    )
+                    conn.execute(text(f"ALTER TABLE {weld_table} ADD COLUMN weld_info_raw TEXT"))
                 logger.info("已为 %s 追加列 weld_info_raw", weld_table)
             if "other_fee" not in weld_cols:
                 with engine.begin() as conn:
                     conn.execute(
-                        text(
-                            f"ALTER TABLE {weld_table} "
-                            "ADD COLUMN other_fee NUMERIC(14, 4)"
-                        )
+                        text(f"ALTER TABLE {weld_table} " "ADD COLUMN other_fee NUMERIC(14, 4)")
                     )
                 logger.info("已为 %s 追加列 other_fee", weld_table)
             if "final_l0_welding_fee" not in weld_cols:
@@ -166,9 +161,7 @@ class DatabaseConfig:
                 logger.info("已为 %s 追加列 final_l0_welding_fee 并回填", weld_table)
             if "remark" not in weld_cols:
                 with engine.begin() as conn:
-                    conn.execute(
-                        text(f"ALTER TABLE {weld_table} ADD COLUMN remark TEXT")
-                    )
+                    conn.execute(text(f"ALTER TABLE {weld_table} ADD COLUMN remark TEXT"))
                 logger.info("已为 %s 追加列 remark", weld_table)
 
         fee_table = "stamping_process_fees"
@@ -217,19 +210,12 @@ class DatabaseConfig:
             if "other_fee" not in fee_cols:
                 with engine.begin() as conn:
                     conn.execute(
-                        text(
-                            f"ALTER TABLE {fee_table} "
-                            "ADD COLUMN other_fee NUMERIC(12, 3)"
-                        )
+                        text(f"ALTER TABLE {fee_table} " "ADD COLUMN other_fee NUMERIC(12, 3)")
                     )
                 logger.info("已为 %s 追加列 other_fee", fee_table)
             if "manual_unit_price" in fee_cols:
                 with engine.begin() as conn:
-                    conn.execute(
-                        text(
-                            f"ALTER TABLE {fee_table} DROP COLUMN manual_unit_price"
-                        )
-                    )
+                    conn.execute(text(f"ALTER TABLE {fee_table} DROP COLUMN manual_unit_price"))
                 logger.info("已从 %s 删除列 manual_unit_price", fee_table)
 
         config_table = "system_configs"
@@ -254,8 +240,7 @@ class DatabaseConfig:
                 with engine.begin() as conn:
                     conn.execute(
                         text(
-                            f"ALTER TABLE {config_table} "
-                            f"ADD COLUMN {column_name} {column_def}"
+                            f"ALTER TABLE {config_table} " f"ADD COLUMN {column_name} {column_def}"
                         )
                     )
                 logger.info("已为 %s 追加列 %s", config_table, column_name)
@@ -275,10 +260,7 @@ class DatabaseConfig:
                     continue
                 with engine.begin() as conn:
                     conn.execute(
-                        text(
-                            f"ALTER TABLE {cost_table} "
-                            f"ADD COLUMN {column_name} {column_def}"
-                        )
+                        text(f"ALTER TABLE {cost_table} " f"ADD COLUMN {column_name} {column_def}")
                     )
                 logger.info("已为 %s 追加列 %s", cost_table, column_name)
 
@@ -295,10 +277,7 @@ class DatabaseConfig:
                     continue
                 with engine.begin() as conn:
                     conn.execute(
-                        text(
-                            f"ALTER TABLE {pkg_table} "
-                            f"ADD COLUMN {column_name} {column_def}"
-                        )
+                        text(f"ALTER TABLE {pkg_table} " f"ADD COLUMN {column_name} {column_def}")
                     )
                 logger.info("已为 %s 追加列 %s", pkg_table, column_name)
 
@@ -362,7 +341,7 @@ class AuxiliaryDatabaseConfig:
 
     @classmethod
     def create_tables(cls) -> None:
-        import app.models.async_task  # noqa: F401
+        import app.models.async_task
         import app.models.settings  # noqa: F401
 
         engine = cls.get_engine()

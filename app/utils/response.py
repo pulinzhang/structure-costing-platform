@@ -1,4 +1,4 @@
-from typing import Generic, TypeVar, Any, Optional
+from typing import Generic, TypeVar, Any
 from pydantic import BaseModel
 
 T = TypeVar("T")
@@ -29,7 +29,7 @@ class ApiResponse(BaseModel, Generic[T]):
     data: T | None = None
 
     @classmethod
-    def ok(cls, data: Optional[T] = None, message: str = "操作成功") -> "ApiResponse[T]":
+    def ok(cls, data: T | None = None, message: str = "操作成功") -> "ApiResponse[T]":
         """成功响应（2xx）
 
         注意：data 默认 None，允许无返回值场景（如 DELETE 成功）

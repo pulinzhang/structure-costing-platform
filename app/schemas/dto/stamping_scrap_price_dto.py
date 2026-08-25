@@ -4,7 +4,7 @@
 
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
@@ -15,7 +15,7 @@ from app.common.scrap_price_locations import (
 )
 
 
-def _strip(value: Optional[str]) -> Optional[str]:
+def _strip(value: str | None) -> str | None:
     if value is None:
         return None
     value = value.strip()
@@ -32,7 +32,7 @@ class StampingScrapPriceMonthRowInput(BaseModel):
         ge=0,
         description="扣费（元/吨）",
     )
-    remark: Optional[str] = Field(None, description="备注")
+    remark: str | None = Field(None, description="备注")
 
     @field_validator("location", "remark", mode="before")
     @classmethod
@@ -75,9 +75,7 @@ class StampingScrapPriceMonthSaveDTO(BaseModel):
         expected = list(SCRAP_PRICE_LOCATIONS)
         actual = [row.location for row in self.items]
         if sorted(actual) != sorted(expected):
-            raise ValueError(
-                f"items 必须恰好包含且仅包含固定基地: {', '.join(expected)}"
-            )
+            raise ValueError(f"items 必须恰好包含且仅包含固定基地: {', '.join(expected)}")
         if len(set(actual)) != len(actual):
             raise ValueError("items 中基地名称不能重复")
         # 按固定顺序重排，便于落库与前端展示一致

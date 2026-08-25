@@ -15,6 +15,7 @@ from app.repositories.costing.l0_assembly_cost.l0_assembly_cost_calc_log_reposit
 )
 from app.schemas.dto.l0_assembly_cost_dto import L0AssemblyCostCalcDTO
 from app.schemas.vo.l0_assembly_cost_vo import L0AssemblyCostCalcLogVO
+import contextlib
 
 STATUS_PROCESSING = "processing"
 STATUS_SUCCESS = "success"
@@ -90,10 +91,8 @@ class L0AssemblyCostCalcLogService:
 
     def mark_log_failed(self, db: Session, *, log_id: int, detail_text: str) -> None:
         """异常路径：释放 processing 锁为 failed（先 rollback 清脏事务）。"""
-        try:
+        with contextlib.suppress(Exception):
             db.rollback()
-        except Exception:
-            pass
         row = self.calc_log_repo.get_by_id(db, log_id)
         if row is None:
             return

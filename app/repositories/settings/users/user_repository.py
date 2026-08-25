@@ -96,12 +96,8 @@ class UserRepository:
             is_active=is_active,
         )
         row = q.with_entities(
-            func.sum(case((User.is_active.is_(True), 1), else_=0)).label(
-                "active_count"
-            ),
-            func.sum(case((User.is_admin.is_(True), 1), else_=0)).label(
-                "admin_count"
-            ),
+            func.sum(case((User.is_active.is_(True), 1), else_=0)).label("active_count"),
+            func.sum(case((User.is_admin.is_(True), 1), else_=0)).label("admin_count"),
         ).one()
         return {
             "active_count": int(row.active_count or 0),

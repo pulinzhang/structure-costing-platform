@@ -86,9 +86,7 @@ class BomWeldingProcessBreakdownGenerateService:
             )
 
         bom_nodes = self.node_repository.list_by_snapshot(db, snapshot.id)
-        weld_node_count = sum(
-            1 for n in bom_nodes if (n.weld_info or "").strip()
-        )
+        weld_node_count = sum(1 for n in bom_nodes if (n.weld_info or "").strip())
         breakdown_node_count = self.repository.count_by_scope(
             db,
             location=location,
@@ -169,9 +167,7 @@ class BomWeldingProcessBreakdownGenerateService:
             )
             return None, error
 
-        process_log.line(
-            f"snapshot_id={snapshot.id} 顾客={snapshot.customer_name or '—'}"
-        )
+        process_log.line(f"snapshot_id={snapshot.id} 顾客={snapshot.customer_name or '—'}")
         report(12, "检查已审核数据...")
 
         approved_count = self.repository.count_by_scope_and_statuses(
@@ -182,33 +178,23 @@ class BomWeldingProcessBreakdownGenerateService:
             statuses=[AUDIT_APPROVED],
         )
         if approved_count > 0:
-            err = (
-                f"该范围已有 {approved_count} 条已审核拆解，"
-                "请先反审核后再重新生成"
-            )
+            err = f"该范围已有 {approved_count} 条已审核拆解，" "请先反审核后再重新生成"
             process_log.error(err)
-            self._fail_log(
-                db, log_id=log_id, message=err, detail_text=process_log.build()
-            )
+            self._fail_log(db, log_id=log_id, message=err, detail_text=process_log.build())
             return None, err
 
         bom_nodes = self.node_repository.list_by_snapshot(db, snapshot.id)
         by_id = index_nodes_by_id(bom_nodes)
         children_map = build_children_map(bom_nodes)
         weld_candidates = [n for n in bom_nodes if (n.weld_info or "").strip()]
-        process_log.line(
-            f"BOM 节点 {len(bom_nodes)}，含焊接原文 {len(weld_candidates)}"
-        )
+        process_log.line(f"BOM 节点 {len(bom_nodes)}，含焊接原文 {len(weld_candidates)}")
         audit_fields = audit_create(current_user)
 
         try:
             report(20, "清理未审核旧拆解...")
             process_log.section("清理")
             deleted = self.repository.delete_unaudited_by_scope(
-                db,
-                location=location,
-                vehicle_model=vehicle_model,
-                bom_version=bom_version
+                db, location=location, vehicle_model=vehicle_model, bom_version=bom_version
             )
             process_log.line(f"删除未审核旧数据：{deleted} 条主表")
 
@@ -250,10 +236,7 @@ class BomWeldingProcessBreakdownGenerateService:
             db.commit()
 
             finished = now()
-            message = (
-                f"已生成焊接工艺拆解：主表 {len(created_nodes)} 条，"
-                f"明细 {line_count} 条"
-            )
+            message = f"已生成焊接工艺拆解：主表 {len(created_nodes)} 条，" f"明细 {line_count} 条"
             process_log.section("结果")
             process_log.line(message)
 
@@ -275,9 +258,7 @@ class BomWeldingProcessBreakdownGenerateService:
             )
 
             if log_id is not None:
-                self.log_service.finalize(
-                    db, log_id=log_id, result=result, finished_at=finished
-                )
+                self.log_service.finalize(db, log_id=log_id, result=result, finished_at=finished)
                 result.log_id = log_id
 
             report(100, message)
@@ -310,9 +291,7 @@ class BomWeldingProcessBreakdownGenerateService:
         message: str,
         detail_text: str | None = None,
     ) -> None:
-        self.log_service.mark_failed(
-            db, log_id=log_id, message=message, detail_text=detail_text
-        )
+        self.log_service.mark_failed(db, log_id=log_id, message=message, detail_text=detail_text)
 
     def _fail_log(
         self,
@@ -324,9 +303,7 @@ class BomWeldingProcessBreakdownGenerateService:
     ) -> None:
         if log_id is None:
             return
-        self.log_service.mark_failed(
-            db, log_id=log_id, message=message, detail_text=detail_text
-        )
+        self.log_service.mark_failed(db, log_id=log_id, message=message, detail_text=detail_text)
 
     def _resolve_snapshot(
         self,
@@ -341,9 +318,7 @@ class BomWeldingProcessBreakdownGenerateService:
             db, location, vehicle_model, bom_version
         )
         if not snapshot:
-            return None, (
-                f"未找到 BOM：基地={location} 项目={vehicle_model} 版本={bom_version}"
-            )
+            return None, (f"未找到 BOM：基地={location} 项目={vehicle_model} 版本={bom_version}")
         if customer_name_filter and (snapshot.customer_name or "") != customer_name_filter:
             return None, (
                 f"顾客名称不匹配：期望「{customer_name_filter}」，"
@@ -402,7 +377,7 @@ class BomWeldingProcessBreakdownGenerateService:
                 audit_status=AUDIT_PENDING,
                 created_by=created_by,
                 updated_by=updated_by,
-            )
+            ),
         )
 
         for index, item in enumerate(parse_result.items, start=1):
@@ -432,7 +407,7 @@ class BomWeldingProcessBreakdownGenerateService:
                     qty_check_detail=qty_check.qty_check_detail,
                     created_by=created_by,
                     updated_by=updated_by,
-                )
+                ),
             )
 
         return breakdown_node, process_line_count

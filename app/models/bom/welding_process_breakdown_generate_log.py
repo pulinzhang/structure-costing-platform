@@ -27,18 +27,12 @@ class BomWeldingProcessBreakdownGenerateLog(AuditUserMixin, Base):
     )
 
     location: Mapped[str] = mapped_column(String(50), nullable=False, comment="采购基地")
-    vehicle_model: Mapped[str] = mapped_column(
-        String(50), nullable=False, comment="项目/车型"
-    )
-    bom_version: Mapped[str] = mapped_column(
-        String(20), nullable=False, comment="材料清单版本"
-    )
+    vehicle_model: Mapped[str] = mapped_column(String(50), nullable=False, comment="项目/车型")
+    bom_version: Mapped[str] = mapped_column(String(20), nullable=False, comment="材料清单版本")
     customer_name: Mapped[str | None] = mapped_column(
         String(100), nullable=True, comment="顾客名称"
     )
-    snapshot_id: Mapped[int | None] = mapped_column(
-        Integer, nullable=True, comment="BOM 快照 ID"
-    )
+    snapshot_id: Mapped[int | None] = mapped_column(Integer, nullable=True, comment="BOM 快照 ID")
 
     status: Mapped[str] = mapped_column(
         String(20),
@@ -61,15 +55,11 @@ class BomWeldingProcessBreakdownGenerateLog(AuditUserMixin, Base):
         comment="拆解过程全文",
     )
 
-    started_at: Mapped[datetime] = mapped_column(
-        DateTime, nullable=False, comment="开始时间"
-    )
+    started_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, comment="开始时间")
     finished_at: Mapped[datetime | None] = mapped_column(
         DateTime, nullable=True, comment="结束时间"
     )
-    operator_id: Mapped[int | None] = mapped_column(
-        Integer, nullable=True, comment="提交人用户 ID"
-    )
+    operator_id: Mapped[int | None] = mapped_column(Integer, nullable=True, comment="提交人用户 ID")
     operator_name: Mapped[str | None] = mapped_column(
         String(50), nullable=True, comment="提交人显示名"
     )

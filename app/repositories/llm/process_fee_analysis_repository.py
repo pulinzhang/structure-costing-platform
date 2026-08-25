@@ -74,13 +74,9 @@ class ProcessFeeAnalysisRepository:
                 part_number=str(row.part_number),
                 part_name=row.part_name,
                 processing_fee=(
-                    Decimal(str(row.processing_fee))
-                    if row.processing_fee is not None
-                    else None
+                    Decimal(str(row.processing_fee)) if row.processing_fee is not None else None
                 ),
-                other_fee=(
-                    Decimal(str(row.other_fee)) if row.other_fee is not None else None
-                ),
+                other_fee=(Decimal(str(row.other_fee)) if row.other_fee is not None else None),
                 final_processing_fee=(
                     Decimal(str(row.final_processing_fee))
                     if row.final_processing_fee is not None

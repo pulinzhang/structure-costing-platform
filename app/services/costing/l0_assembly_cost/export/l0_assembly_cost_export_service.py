@@ -274,10 +274,7 @@ class L0AssemblyCostExportService:
         c2 = ws.cell(
             row=2,
             column=1,
-            value=(
-                f"{filter_text} · {count_label}"
-                f"　　导出 {now().strftime('%Y-%m-%d %H:%M')}"
-            ),
+            value=(f"{filter_text} · {count_label}" f"　　导出 {now().strftime('%Y-%m-%d %H:%M')}"),
         )
         c2.font = _font(size=9, color="455A64")
         c2.fill = _fill("E8EAF6")
@@ -372,8 +369,7 @@ class L0AssemblyCostExportService:
             ws.column_dimensions[get_column_letter(col)].width = width
         ws.freeze_panes = f"A{header_row + 1}"
         ws.auto_filter.ref = (
-            f"A{header_row}:{get_column_letter(col_count)}"
-            f"{header_row + max(len(records), 1)}"
+            f"A{header_row}:{get_column_letter(col_count)}" f"{header_row + max(len(records), 1)}"
         )
 
     def _write_items_sheet(
@@ -432,9 +428,7 @@ class L0AssemblyCostExportService:
                     _num(item.effective_qty),
                     _num(item.line_amount),
                 ]
-                self._append_styled_row(
-                    ws, row_idx, row_data, money_cols={13, 14, 15}, seq=seq
-                )
+                self._append_styled_row(ws, row_idx, row_data, money_cols={13, 14, 15}, seq=seq)
                 row_idx += 1
 
         widths = [6, 8, 6, 10, 10, 10, 16, 10, 16, 18, 14, 18, 12, 10, 12]
@@ -492,9 +486,7 @@ class L0AssemblyCostExportService:
                     _num(ind.rate) if ind.rate is not None else "",
                     _num(ind.base_amount) if ind.base_amount is not None else "",
                 ]
-                self._append_styled_row(
-                    ws, row_idx, row_data, money_cols={10, 11, 12}, seq=seq
-                )
+                self._append_styled_row(ws, row_idx, row_data, money_cols={10, 11, 12}, seq=seq)
                 row_idx += 1
 
         widths = [6, 8, 6, 10, 10, 10, 16, 14, 20, 12, 10, 12]

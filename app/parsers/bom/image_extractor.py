@@ -47,7 +47,7 @@ class BomImageAnchor:
 
 def extract_bom_images(source: str | Path | bytes) -> list[BomImageAnchor]:
     """从 xlsx 抽取总成/单件图示，统一转为 PNG。"""
-    if isinstance(source, (bytes, bytearray)):
+    if isinstance(source, bytes | bytearray):
         zip_file = ZipFile(BytesIO(source))
     else:
         zip_file = ZipFile(str(source))
@@ -70,9 +70,7 @@ def extract_bom_images(source: str | Path | bytes) -> list[BomImageAnchor]:
                 drawing_xml = zip_file.read(drawing_path)
             except KeyError:
                 continue
-            results.extend(
-                _parse_drawing(zip_file, drawing_xml, rid_map)
-            )
+            results.extend(_parse_drawing(zip_file, drawing_xml, rid_map))
 
         logger.info(
             "BOM 简图抽取: %s 张 (总成列=%s, 单件列=%s)",

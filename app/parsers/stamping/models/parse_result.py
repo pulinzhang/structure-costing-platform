@@ -5,7 +5,7 @@
 """
 
 from dataclasses import dataclass, field
-from typing import Any, List, Dict
+from typing import Any
 
 from app.parsers.stamping.models.part import Part
 from app.parsers.stamping.models.process import Process
@@ -23,17 +23,18 @@ class ParserResult:
     - processes: List[Process] - 工序列表（对象，而非 dict）
     - images_by_part: Dict[str, bytes] - 零件简图
     """
+
     # 零件列表（对象列表）
-    parts: List[Part] = field(default_factory=list)
+    parts: list[Part] = field(default_factory=list)
 
     # 工序列表（对象列表）
-    processes: List[Process] = field(default_factory=list)
+    processes: list[Process] = field(default_factory=list)
 
     # 警告信息（不影响解析，但值得注意）
-    warnings: List[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
 
     # 错误信息（解析失败）
-    errors: List[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
 
     # Sheet 名称
     sheet_name: str = ""
@@ -57,7 +58,7 @@ class ParserResult:
     parse_time_ms: float = 0
 
     # 零件简图：零件号 -> 图片二进制
-    images_by_part: Dict[str, bytes] = field(default_factory=dict)
+    images_by_part: dict[str, bytes] = field(default_factory=dict)
 
     # 冲压供应商名称
     stamping_supplier: str = ""

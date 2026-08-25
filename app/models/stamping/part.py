@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 from decimal import Decimal
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     Boolean,
@@ -37,6 +37,7 @@ class StampingPart(AuditUserMixin, Base):
     拼焊总成：is_tailor_welded=True，各片子片见 StampingTailorWeldBlank；
     工序仍挂本表（StampingProcess），核价时按子片算后汇总到父。
     """
+
     __tablename__ = "stamping_parts"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -67,12 +68,20 @@ class StampingPart(AuditUserMixin, Base):
 
     # 材料信息（普通件使用；拼焊总成可空，以各子片为准）
     material: Mapped[str | None] = mapped_column(String(50), nullable=True, comment="材质")
-    thickness: Mapped[Decimal | None] = mapped_column(Numeric(10, 4), nullable=True, comment="料厚(mm)")
-    part_weight: Mapped[Decimal | None] = mapped_column(Numeric(12, 4), nullable=True, comment="零件重量(kg)")
+    thickness: Mapped[Decimal | None] = mapped_column(
+        Numeric(10, 4), nullable=True, comment="料厚(mm)"
+    )
+    part_weight: Mapped[Decimal | None] = mapped_column(
+        Numeric(12, 4), nullable=True, comment="零件重量(kg)"
+    )
 
     # 料片尺寸
-    sheet_length: Mapped[Decimal | None] = mapped_column(Numeric(10, 2), nullable=True, comment="料片长/卷料宽(mm)")
-    sheet_width: Mapped[Decimal | None] = mapped_column(Numeric(10, 2), nullable=True, comment="料片宽/卷料步距(mm)")
+    sheet_length: Mapped[Decimal | None] = mapped_column(
+        Numeric(10, 2), nullable=True, comment="料片长/卷料宽(mm)"
+    )
+    sheet_width: Mapped[Decimal | None] = mapped_column(
+        Numeric(10, 2), nullable=True, comment="料片宽/卷料步距(mm)"
+    )
 
     # 生产信息
     # parts_per_sheet：一张钢板/料片单独冲压「本零件」时可出的件数。
@@ -81,15 +90,16 @@ class StampingPart(AuditUserMixin, Base):
         Integer,
         nullable=True,
         comment=(
-            "可制件数：一张钢板/料片单独冲本零件可出的件数"
-            "（例：1出2记2；左右共模按单侧计则为2）"
+            "可制件数：一张钢板/料片单独冲本零件可出的件数" "（例：1出2记2；左右共模按单侧计则为2）"
         ),
     )
     sheet_type: Mapped[str | None] = mapped_column(String(50), nullable=True, comment="料片式样")
 
     # 工艺信息
     die_type: Mapped[str | None] = mapped_column(String(50), nullable=True, comment="模具类型")
-    process_method: Mapped[str | None] = mapped_column(String(50), nullable=True, comment="工艺方法")
+    process_method: Mapped[str | None] = mapped_column(
+        String(50), nullable=True, comment="工艺方法"
+    )
     automation: Mapped[str | None] = mapped_column(
         String(20),
         nullable=True,
@@ -98,7 +108,11 @@ class StampingPart(AuditUserMixin, Base):
 
     # 扩展信息
     remark: Mapped[str | None] = mapped_column(Text, nullable=True, comment="备注")
-    sketch_url: Mapped[str | None] = mapped_column(String(500), nullable=True, comment="零件简图URL（相对于上传目录，格式：车型/日期/零件号.png）")
+    sketch_url: Mapped[str | None] = mapped_column(
+        String(500),
+        nullable=True,
+        comment="零件简图URL（相对于上传目录，格式：车型/日期/零件号.png）",
+    )
 
     # 【防扯皮与溯源铁证字段（与 BOM / 钢价对齐：文件 + 表页 + 行 + 零件号列）】
     excel_filename: Mapped[str] = mapped_column(
@@ -123,12 +137,10 @@ class StampingPart(AuditUserMixin, Base):
     )
 
     # 关联
-    processes: Mapped[List["StampingProcess"]] = relationship(
-        "StampingProcess",
-        back_populates="part",
-        cascade="all, delete-orphan"
+    processes: Mapped[list[StampingProcess]] = relationship(
+        "StampingProcess", back_populates="part", cascade="all, delete-orphan"
     )
-    tailor_weld_blanks: Mapped[List["StampingTailorWeldBlank"]] = relationship(
+    tailor_weld_blanks: Mapped[list[StampingTailorWeldBlank]] = relationship(
         "StampingTailorWeldBlank",
         back_populates="part",
         cascade="all, delete-orphan",
@@ -136,16 +148,26 @@ class StampingPart(AuditUserMixin, Base):
     )
 
     __table_args__ = (
-        Index("ix_part_location_supplier_model_version_number",
-              "location", "stamping_supplier", "vehicle_model", "version", "part_number"),
+        Index(
+            "ix_part_location_supplier_model_version_number",
+            "location",
+            "stamping_supplier",
+            "vehicle_model",
+            "version",
+            "part_number",
+        ),
         Index("ix_part_vehicle_model", "vehicle_model"),
         Index("ix_part_version", "version"),
         Index("ix_part_number", "part_number"),
         Index("ix_part_is_tailor_welded", "is_tailor_welded"),
         # 唯一键：基地 + 供应商 + 车型 + 版本 + 零件号
         UniqueConstraint(
-            "location", "stamping_supplier", "vehicle_model", "version", "part_number",
-            name="uix_part_unique_key"
+            "location",
+            "stamping_supplier",
+            "vehicle_model",
+            "version",
+            "part_number",
+            name="uix_part_unique_key",
         ),
     )
 
@@ -154,28 +176,37 @@ class StampingProcess(AuditUserMixin, Base):
     """
     冲压工序子表 - 存储零件的冲压工序详情
     """
+
     __tablename__ = "stamping_processes"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    part_id: Mapped[int] = mapped_column(Integer, ForeignKey("stamping_parts.id", ondelete="CASCADE"), nullable=False)
+    part_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("stamping_parts.id", ondelete="CASCADE"), nullable=False
+    )
 
     # 工序信息
     process_seq: Mapped[str] = mapped_column(String(20), nullable=False, comment="工序序号(如OP10)")
-    process_order: Mapped[int] = mapped_column(Integer, nullable=False, default=1, comment="零件内工序顺序(从1开始)")
-    process_code: Mapped[str | None] = mapped_column(String(50), nullable=True, comment="工序代码(如DR/TR+PI)")
+    process_order: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=1, comment="零件内工序顺序(从1开始)"
+    )
+    process_code: Mapped[str | None] = mapped_column(
+        String(50), nullable=True, comment="工序代码(如DR/TR+PI)"
+    )
     die_sets: Mapped[int | None] = mapped_column(Integer, nullable=True, default=1, comment="套数")
 
-     # 设备信息
+    # 设备信息
     tonnage: Mapped[int | None] = mapped_column(Integer, nullable=True, comment="设备吨位(T)")
 
     # 费用比例（用于共模分摊，如左右件各占50%则填0.5）
-    cost_ratio: Mapped[Decimal] = mapped_column(Numeric(5, 2), nullable=False, default=Decimal("1.00"), comment="单次冲压费用比例")
+    cost_ratio: Mapped[Decimal] = mapped_column(
+        Numeric(5, 2), nullable=False, default=Decimal("1.00"), comment="单次冲压费用比例"
+    )
 
     # 扩展信息
     remark: Mapped[str | None] = mapped_column(Text, nullable=True, comment="备注")
 
     # 关联
-    part: Mapped["StampingPart"] = relationship("StampingPart", back_populates="processes")
+    part: Mapped[StampingPart] = relationship("StampingPart", back_populates="processes")
 
     __table_args__ = (
         Index("ix_process_part_id", "part_id"),

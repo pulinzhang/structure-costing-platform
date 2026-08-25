@@ -1,6 +1,6 @@
 """异步上传任务 VO — 各业务上传接口共用。"""
 
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -17,9 +17,9 @@ class AsyncTaskProgressVO(BaseModel):
     status: str = Field(..., description="pending | running | completed | failed")
     progress: int = Field(0, ge=0, le=100, description="进度百分比 0-100")
     msg: str = Field("", description="当前阶段说明")
-    result: Optional[Any] = Field(None, description="完成后的业务结果")
-    operator_id: Optional[int] = Field(None, description="提交人用户 ID")
-    operator_name: Optional[str] = Field(None, description="提交人显示名")
+    result: Any | None = Field(None, description="完成后的业务结果")
+    operator_id: int | None = Field(None, description="提交人用户 ID")
+    operator_name: str | None = Field(None, description="提交人显示名")
     updated_at: float = Field(0, description="最近更新时间戳（秒）")
 
     @classmethod

@@ -6,7 +6,6 @@ CRUD / 导出见各子包；本模块仅委托并保持对外 API。
 
 from __future__ import annotations
 
-from typing import List, Optional
 
 from sqlalchemy.orm import Session
 
@@ -46,8 +45,8 @@ class StampingScrapPriceService:
     def list_month_summaries(
         self,
         db: Session,
-        year: Optional[int] = None,
-    ) -> List[StampingScrapPriceMonthSummaryVO]:
+        year: int | None = None,
+    ) -> list[StampingScrapPriceMonthSummaryVO]:
         return self._crud.list_month_summaries(db, year=year)
 
     def get_filter_options(self, db: Session) -> StampingScrapPriceFilterOptionsVO:

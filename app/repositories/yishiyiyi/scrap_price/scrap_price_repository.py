@@ -5,7 +5,6 @@
 
 import logging
 from datetime import datetime
-from typing import List, Optional, Tuple
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -26,7 +25,7 @@ class StampingScrapPriceRepository:
         db: Session,
         year: int,
         month: int,
-    ) -> List[StampingScrapPrice]:
+    ) -> list[StampingScrapPrice]:
         return (
             db.query(StampingScrapPrice)
             .filter(
@@ -43,7 +42,7 @@ class StampingScrapPriceRepository:
         location: str,
         year: int,
         month: int,
-    ) -> Optional[StampingScrapPrice]:
+    ) -> StampingScrapPrice | None:
         return (
             db.query(StampingScrapPrice)
             .filter(
@@ -54,23 +53,17 @@ class StampingScrapPriceRepository:
             .first()
         )
 
-    def list_by_ids(
-        self, db: Session, record_ids: list[int]
-    ) -> List[StampingScrapPrice]:
+    def list_by_ids(self, db: Session, record_ids: list[int]) -> list[StampingScrapPrice]:
         """按主键批量查询。"""
         if not record_ids:
             return []
-        return (
-            db.query(StampingScrapPrice)
-            .filter(StampingScrapPrice.id.in_(record_ids))
-            .all()
-        )
+        return db.query(StampingScrapPrice).filter(StampingScrapPrice.id.in_(record_ids)).all()
 
     def list_by_year(
         self,
         db: Session,
         year: int,
-    ) -> List[StampingScrapPrice]:
+    ) -> list[StampingScrapPrice]:
         return (
             db.query(StampingScrapPrice)
             .filter(StampingScrapPrice.year == year)
@@ -78,7 +71,7 @@ class StampingScrapPriceRepository:
             .all()
         )
 
-    def list_years_asc(self, db: Session) -> List[int]:
+    def list_years_asc(self, db: Session) -> list[int]:
         return [
             row[0]
             for row in (
@@ -92,8 +85,8 @@ class StampingScrapPriceRepository:
     def list_month_summaries(
         self,
         db: Session,
-        year: Optional[int] = None,
-    ) -> List[Tuple[int, int, int, Optional[datetime]]]:
+        year: int | None = None,
+    ) -> list[tuple[int, int, int, datetime | None]]:
         """
         按年月汇总：[(year, month, filled_count, max_updated_at), ...]
         按 year desc, month desc 排序。
@@ -134,8 +127,8 @@ class StampingScrapPriceRepository:
         db: Session,
         year: int,
         month: int,
-        rows: List[ScrapPriceWrite],
-    ) -> List[StampingScrapPrice]:
+        rows: list[ScrapPriceWrite],
+    ) -> list[StampingScrapPrice]:
         """同一事务内：删掉该月旧数据，再整月写入。"""
         db.query(StampingScrapPrice).filter(
             StampingScrapPrice.year == year,

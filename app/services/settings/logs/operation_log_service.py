@@ -29,6 +29,7 @@ from app.schemas.vo.operation_log_vo import (
     OperationLogVO,
 )
 from app.schemas.vo.user_vo import UserVO
+import contextlib
 
 logger = logging.getLogger("service.operation_log")
 
@@ -87,10 +88,8 @@ class OperationLogService:
             db.commit()
         except Exception:
             logger.exception("写入操作日志失败: %s %s", method, path)
-            try:
+            with contextlib.suppress(Exception):
                 db.rollback()
-            except Exception:
-                pass
         finally:
             db.close()
 
@@ -166,11 +165,7 @@ class OperationLogService:
             cell.alignment = Alignment(horizontal="center")
 
         for row_idx, row in enumerate(rows, start=2):
-            created = (
-                row.created_at.strftime("%Y-%m-%d %H:%M:%S")
-                if row.created_at
-                else ""
-            )
+            created = row.created_at.strftime("%Y-%m-%d %H:%M:%S") if row.created_at else ""
             values: list[Any] = [
                 row.id,
                 created,

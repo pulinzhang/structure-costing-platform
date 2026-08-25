@@ -66,9 +66,7 @@ def build_base_price_drivers(rows: list[BasePricePeriodRow], *, top_n: int = 15)
             }
         )
 
-    ranked = sorted(items, key=lambda item: Decimal(item["avg_base_price"]), reverse=True)[
-        :top_n
-    ]
+    ranked = sorted(items, key=lambda item: Decimal(item["avg_base_price"]), reverse=True)[:top_n]
     for index, item in enumerate(ranked, start=1):
         item["rank"] = index
     return {"kind": "drivers", "items": ranked, "top_n": top_n}
@@ -97,15 +95,7 @@ def build_base_price_trend(
 
 
 def _base_price_series_key(row: BasePricePeriodRow) -> str:
-    return "|".join(
-        [
-            row.location,
-            row.steel_mill,
-            row.category_name,
-            row.grade,
-            row.spec,
-        ]
-    )
+    return f"{row.location}|{row.steel_mill}|{row.category_name}|{row.grade}|{row.spec}"
 
 
 def build_base_price_mom_anomalies(
@@ -138,7 +128,7 @@ def build_base_price_mom_anomalies(
         )
 
     spikes: list[dict[str, Any]] = []
-    for key, month_map in by_key.items():
+    for _key, month_map in by_key.items():
         ordered_months = sorted(month_map.keys())
         ordered_rows = [month_map[month] for month in ordered_months]
         for index in range(1, len(ordered_rows)):
@@ -148,9 +138,8 @@ def build_base_price_mom_anomalies(
             rate: Decimal | None = None
             if prev_row.base_price != 0:
                 rate = (change / prev_row.base_price).quantize(Decimal("0.0001"))
-            if abs(change) < min_abs_change:
-                if rate is None or abs(rate) < min_rate:
-                    continue
+            if abs(change) < min_abs_change and (rate is None or abs(rate) < min_rate):
+                continue
             spikes.append(
                 {
                     "anomaly_type": "base_price_jump",

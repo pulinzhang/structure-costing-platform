@@ -4,7 +4,6 @@
 
 from __future__ import annotations
 
-from typing import List
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
@@ -42,7 +41,7 @@ _async_task_service = AsyncTaskService()
 
 @router.get(
     "/filters/years",
-    response_model=ApiResponse[List[int]],
+    response_model=ApiResponse[list[int]],
 )
 def list_years(
     db: Session = Depends(get_db),
@@ -52,7 +51,7 @@ def list_years(
             Perm.L0_ASSEMBLY_COST_CALC_VIEW,
         )
     ),
-) -> ApiResponse[List[int]]:
+) -> ApiResponse[list[int]]:
     """上游可核算年度（冲压价/年度价/焊接费/包装运输并集），非结果表年份。"""
     years = _service.list_years(db)
     return ApiResponse.ok(data=years)
@@ -150,15 +149,9 @@ def get_calc_task_progress(
     task_id: str,
     current_user: UserVO = Depends(require_perm(Perm.L0_ASSEMBLY_COST_CALC_VIEW)),
 ) -> ApiResponse[AsyncTaskProgressVO]:
-    task = _async_task_service.require_snapshot(
-        task_id, TASK_TYPE_L0_ASSEMBLY_COST_CALC
-    )
+    task = _async_task_service.require_snapshot(task_id, TASK_TYPE_L0_ASSEMBLY_COST_CALC)
     result_raw = AsyncTaskService.parse_result_json(task.get("result_json"))
-    result = (
-        L0AssemblyCostCalcResultVO.model_validate(result_raw)
-        if result_raw
-        else None
-    )
+    result = L0AssemblyCostCalcResultVO.model_validate(result_raw) if result_raw else None
     return ApiResponse.ok(
         data=AsyncTaskProgressVO.from_snapshot(
             task,

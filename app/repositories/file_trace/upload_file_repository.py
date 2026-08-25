@@ -38,11 +38,7 @@ class UploadFileRepository:
     """upload_files CRUD / 查询。"""
 
     def get_by_relpath(self, db: Session, stored_relpath: str) -> UploadFile | None:
-        return (
-            db.query(UploadFile)
-            .filter(UploadFile.stored_relpath == stored_relpath)
-            .first()
-        )
+        return db.query(UploadFile).filter(UploadFile.stored_relpath == stored_relpath).first()
 
     def get_by_id(self, db: Session, file_id: int) -> UploadFile | None:
         return db.query(UploadFile).filter(UploadFile.id == file_id).first()
@@ -127,9 +123,7 @@ class UploadFileRepository:
         if not allowed_categories:
             return [], 0
 
-        q = db.query(UploadFile).filter(
-            UploadFile.file_category.in_(allowed_categories)
-        )
+        q = db.query(UploadFile).filter(UploadFile.file_category.in_(allowed_categories))
 
         if query.file_category:
             q = q.filter(UploadFile.file_category == query.file_category)
@@ -185,23 +179,29 @@ class UploadFileRepository:
             UploadFile.status == "active",
         )
 
-        categories = sorted({row[0] for row in base.with_entities(UploadFile.file_category).distinct()})
+        categories = sorted(
+            {row[0] for row in base.with_entities(UploadFile.file_category).distinct()}
+        )
         locations = sorted(
             {row[0] for row in base.with_entities(UploadFile.location).distinct() if row[0]}
         )
         years = sorted(
-            {row[0] for row in base.with_entities(UploadFile.year).distinct() if row[0] is not None},
+            {
+                row[0]
+                for row in base.with_entities(UploadFile.year).distinct()
+                if row[0] is not None
+            },
             reverse=True,
         )
         months = sorted(
-            {row[0] for row in base.with_entities(UploadFile.month).distinct() if row[0] is not None}
-        )
-        vehicle_models = sorted(
             {
                 row[0]
-                for row in base.with_entities(UploadFile.vehicle_model).distinct()
-                if row[0]
+                for row in base.with_entities(UploadFile.month).distinct()
+                if row[0] is not None
             }
+        )
+        vehicle_models = sorted(
+            {row[0] for row in base.with_entities(UploadFile.vehicle_model).distinct() if row[0]}
         )
         creators = sorted(
             {row[0] for row in base.with_entities(UploadFile.created_by).distinct() if row[0]}

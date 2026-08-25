@@ -57,9 +57,7 @@ class SettingsService:
             app_name=row.app_name or DEFAULT_APP_NAME,
             version=APP_VERSION,
             steel_density=self._normalize_density(row.steel_density),
-            material_loss_rate=self._normalize_loss_rate(
-                getattr(row, "material_loss_rate", None)
-            ),
+            material_loss_rate=self._normalize_loss_rate(getattr(row, "material_loss_rate", None)),
             scrap_recovery_rate=self._normalize_recovery_rate(
                 getattr(row, "scrap_recovery_rate", None)
             ),
@@ -102,9 +100,7 @@ class SettingsService:
             dto.finished_warehouse_packaging_rate, Q6
         )
         finished_scrap_rate = quantize_money(dto.finished_scrap_rate, Q6)
-        finished_pretax_profit_rate = quantize_money(
-            dto.finished_pretax_profit_rate, Q6
-        )
+        finished_pretax_profit_rate = quantize_money(dto.finished_pretax_profit_rate, Q6)
         row = self.repository.get_singleton(db)
         if row is None:
             self.repository.create_singleton(
@@ -162,9 +158,7 @@ class SettingsService:
         row = self.repository.get_singleton(db)
         if row is None:
             return DEFAULT_SCRAP_RECOVERY_RATE
-        return self._normalize_recovery_rate(
-            getattr(row, "scrap_recovery_rate", None)
-        )
+        return self._normalize_recovery_rate(getattr(row, "scrap_recovery_rate", None))
 
     def get_finished_finance_rate(self, db: Session) -> Decimal:
         """核价用：读成品财务费率，无效或缺失则回退 0.02。"""

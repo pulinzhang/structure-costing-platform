@@ -12,7 +12,8 @@
 - 工序结束：op 列（工序号）为空
 """
 
-from typing import Any, Callable, Dict, Optional
+from typing import Any
+from collections.abc import Callable
 
 from app.parsers.stamping.value_parser import parse_decimal, parse_int
 from app.parsers.stamping.models.part import Part
@@ -22,7 +23,7 @@ from app.parsers.stamping.models.process import Process
 class RowParser:
     """行数据解析器"""
 
-    def __init__(self, get_value_fn: Callable[..., Any], col_map: Dict[str, int]):
+    def __init__(self, get_value_fn: Callable[..., Any], col_map: dict[str, int]):
         """
         Args:
             get_value_fn: 单元格值获取函数 (row, col) -> Any
@@ -64,7 +65,7 @@ class RowParser:
             excel_part_col=self._col_map.get("part_no", 2),
         )
 
-    def parse_process_row(self, row_idx: int, part_number: str) -> Optional[Process]:
+    def parse_process_row(self, row_idx: int, part_number: str) -> Process | None:
         """
         解析工序行。
 

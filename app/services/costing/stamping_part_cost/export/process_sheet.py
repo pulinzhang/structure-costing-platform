@@ -141,9 +141,7 @@ _NUMBER_COLS = frozenset(
         "Y",
     }
 )
-_TRACE_COLS = frozenset(
-    {"Z", "AA", "AB", "AC", "AD", "AE", "AF", "AG", "AH"}
-)
+_TRACE_COLS = frozenset({"Z", "AA", "AB", "AC", "AD", "AE", "AF", "AG", "AH"})
 _ID_COLS = frozenset({"AF", "AG", "AH"})
 _RESULT_COLS = frozenset({"R"})
 _FINAL_COLS = frozenset({"Y"})
@@ -222,9 +220,7 @@ def build_process_sheet_filename(
     year_value = year if year is not None else _unique_row_int(rows, "year")
     month_value = month if month is not None else _unique_row_int(rows, "month")
     location_value = location or _unique_row_value(rows, "location")
-    supplier_value = stamping_supplier or _unique_row_value(
-        rows, "stamping_supplier"
-    )
+    supplier_value = stamping_supplier or _unique_row_value(rows, "stamping_supplier")
     vehicle_value = vehicle_model or _unique_row_value(rows, "vehicle_model")
     version_value = version or _unique_row_value(rows, "version")
 
@@ -281,9 +277,7 @@ def write_process_sheet_to_workbook(
     fee_rate_cols = _FEE_RATE_COLS
 
     settings_service = SettingsService()
-    warehouse_packaging_rate = (
-        settings_service.get_finished_warehouse_packaging_rate(db)
-    )
+    warehouse_packaging_rate = settings_service.get_finished_warehouse_packaging_rate(db)
     management_rate = settings_service.get_finished_management_rate(db)
     finance_rate = settings_service.get_finished_finance_rate(db)
     pretax_profit_rate = settings_service.get_finished_pretax_profit_rate(db)
@@ -541,9 +535,7 @@ def write_process_sheet_to_workbook(
                 cell.fill = fill_plain
 
             if col_letter in {"AC", "AD", "AE"}:
-                cell.alignment = Alignment(
-                    horizontal="left", vertical="center", wrap_text=True
-                )
+                cell.alignment = Alignment(horizontal="left", vertical="center", wrap_text=True)
             elif col_letter in id_cols:
                 cell.alignment = center
             elif col_letter in text_left_cols or col_letter in {"Z", "AA"}:
@@ -563,9 +555,7 @@ def write_process_sheet_to_workbook(
                 cell.number_format = "0.00%"
             elif col_letter in {"M", "O", "R", "T", "U", "V", "W", "X", "Y"}:
                 cell.number_format = "0.0000"
-            elif col_letter == "L":
-                cell.number_format = "0"
-            elif col_letter in id_cols:
+            elif col_letter == "L" or col_letter in id_cols:
                 cell.number_format = "0"
 
         multi_line = any(
@@ -584,12 +574,10 @@ def write_process_sheet_to_workbook(
     for offset, row in enumerate(rows):
         density = to_decimal(getattr(row, "density", None)) or DEFAULT_STEEL_DENSITY
         loss_rate = (
-            to_decimal(getattr(row, "material_loss_rate", None))
-            or DEFAULT_MATERIAL_LOSS_RATE
+            to_decimal(getattr(row, "material_loss_rate", None)) or DEFAULT_MATERIAL_LOSS_RATE
         )
         recovery = (
-            to_decimal(getattr(row, "scrap_recovery_rate", None))
-            or DEFAULT_SCRAP_RECOVERY_RATE
+            to_decimal(getattr(row, "scrap_recovery_rate", None)) or DEFAULT_SCRAP_RECOVERY_RATE
         )
         display = resolve_part_cost_display(
             row,
@@ -611,19 +599,13 @@ def write_process_sheet_to_workbook(
         seq = row.seq_no if row.seq_no is not None else offset + 1
         zebra = offset % 2 == 1
         scrap_trace = format_scrap_price_trace(
-            scrap_by_id.get(row.scrap_price_id)
-            if row.scrap_price_id is not None
-            else None
+            scrap_by_id.get(row.scrap_price_id) if row.scrap_price_id is not None else None
         )
         fee_trace = format_process_fee_trace(
-            fee_by_id.get(row.process_fee_id)
-            if row.process_fee_id is not None
-            else None
+            fee_by_id.get(row.process_fee_id) if row.process_fee_id is not None else None
         )
         process_fee_cell = (
-            _num(row.process_fee_amount, 3)
-            if row.process_fee_amount is not None
-            else ""
+            _num(row.process_fee_amount, 3) if row.process_fee_amount is not None else ""
         )
 
         if display.is_tailor_welded and len(display.blank_terms) >= 2:
@@ -653,31 +635,17 @@ def write_process_sheet_to_workbook(
             for index, term in enumerate(terms):
                 blank_row = first_row + index
                 blank_values: dict[str, object] = {
-                    "G": (
-                        _num(term.thickness, 4) if term.thickness is not None else ""
-                    ),
+                    "G": (_num(term.thickness, 4) if term.thickness is not None else ""),
                     "I": _part_size_formula(first_row, blank_row),
-                    "J": (
-                        _num(term.length, 2) if term.length is not None else ""
-                    ),
-                    "K": (
-                        _num(term.width, 2) if term.width is not None else ""
-                    ),
-                    "L": (
-                        term.parts_per_sheet
-                        if term.parts_per_sheet is not None
-                        else ""
-                    ),
+                    "J": (_num(term.length, 2) if term.length is not None else ""),
+                    "K": (_num(term.width, 2) if term.width is not None else ""),
+                    "L": (term.parts_per_sheet if term.parts_per_sheet is not None else ""),
                     "M": (
                         build_blank_row_m_formula(blank_row, density)
                         if blank_term_has_mass_inputs(term)
                         else ""
                     ),
-                    "P": (
-                        float(term.steel_kg_price)
-                        if term.steel_kg_price is not None
-                        else ""
-                    ),
+                    "P": (float(term.steel_kg_price) if term.steel_kg_price is not None else ""),
                     "AC": format_steel_price_excel_trace(term.steel),
                     "AF": term.steel.id if term.steel is not None else "",
                 }
@@ -690,11 +658,7 @@ def write_process_sheet_to_workbook(
                             "D": row.part_name or "",
                             "E": "",
                             "F": row.material or "",
-                            "H": (
-                                _num(row.part_weight, 4)
-                                if row.part_weight is not None
-                                else ""
-                            ),
+                            "H": (_num(row.part_weight, 4) if row.part_weight is not None else ""),
                             "N": group_n,
                             "O": group_o,
                             "Q": float(scrap_kg) if scrap_kg is not None else "",
@@ -712,16 +676,8 @@ def write_process_sheet_to_workbook(
                             "AB": part_excel_row_col(row),
                             "AD": scrap_trace,
                             "AE": fee_trace,
-                            "AG": (
-                                row.scrap_price_id
-                                if row.scrap_price_id is not None
-                                else ""
-                            ),
-                            "AH": (
-                                row.process_fee_id
-                                if row.process_fee_id is not None
-                                else ""
-                            ),
+                            "AG": (row.scrap_price_id if row.scrap_price_id is not None else ""),
+                            "AH": (row.process_fee_id if row.process_fee_id is not None else ""),
                         }
                     )
                 paint_data_row(blank_row, blank_values, zebra)
@@ -770,9 +726,7 @@ def write_process_sheet_to_workbook(
             "AA": row.excel_sheet_name or "",
             "AB": part_excel_row_col(row),
             "AC": format_steel_price_excel_trace(
-                steel_by_id.get(row.steel_price_id)
-                if row.steel_price_id is not None
-                else None
+                steel_by_id.get(row.steel_price_id) if row.steel_price_id is not None else None
             ),
             "AD": scrap_trace,
             "AE": fee_trace,
@@ -870,8 +824,7 @@ def write_process_sheet_to_workbook(
         (
             "M",
             "预估单件材料消耗",
-            "普通件 / 拼焊子片行：=J×K×G×ρ/1e6/L；"
-            "总成消耗 = SUM(各子片 M)",
+            "普通件 / 拼焊子片行：=J×K×G×ρ/1e6/L；" "总成消耗 = SUM(各子片 M)",
         ),
         ("H", "零件净重", "kg；拼焊件为焊后总成净重，跨子片行合并"),
         ("O", "废料重量", "普通件 O=M−H；拼焊件 O=SUM(M)−H（合并格）"),

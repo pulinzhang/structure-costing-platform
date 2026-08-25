@@ -37,9 +37,7 @@ class ScopeOptionsRepository:
 
     def list_bom_versions(self, db: Session) -> list[str]:
         rows = db.query(L0AssemblyCost.bom_version).distinct().all()
-        return sorted(
-            str(item[0]).strip() for item in rows if item[0]
-        )
+        return sorted(str(item[0]).strip() for item in rows if item[0])
 
     def list_years(self, db: Session) -> list[int]:
         values: set[int] = set()

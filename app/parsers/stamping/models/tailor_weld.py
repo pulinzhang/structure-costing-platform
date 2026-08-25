@@ -18,7 +18,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from decimal import Decimal
-from typing import Optional
 
 
 @dataclass(slots=True)
@@ -37,15 +36,15 @@ class TailorWeldBlankParsed:
     blank_seq: int
     excel_row_start: int
     excel_row_end: int
-    sheet_length: Optional[Decimal] = None
-    sheet_width: Optional[Decimal] = None
-    thickness: Optional[Decimal] = None
-    material: Optional[str] = None
-    blank_part_number: Optional[str] = None
-    parts_per_sheet: Optional[int] = None
-    sheet_type: Optional[str] = None
-    remark: Optional[str] = None
-    excel_sheet_name: Optional[str] = None
+    sheet_length: Decimal | None = None
+    sheet_width: Decimal | None = None
+    thickness: Decimal | None = None
+    material: str | None = None
+    blank_part_number: str | None = None
+    parts_per_sheet: int | None = None
+    sheet_type: str | None = None
+    remark: str | None = None
+    excel_sheet_name: str | None = None
 
     @property
     def excel_row_span(self) -> int:
@@ -69,14 +68,14 @@ class TailorWeldAssemblyParsed:
     parent_part_number: str
     excel_row_start: int
     excel_row_end: int
-    part_name: Optional[str] = None
-    material: Optional[str] = None
-    thickness_raw: Optional[str] = None
-    part_weight: Optional[Decimal] = None
-    parts_per_sheet: Optional[int] = None
-    sheet_type: Optional[str] = None
+    part_name: str | None = None
+    material: str | None = None
+    thickness_raw: str | None = None
+    part_weight: Decimal | None = None
+    parts_per_sheet: int | None = None
+    sheet_type: str | None = None
     blanks: list[TailorWeldBlankParsed] = field(default_factory=list)
-    excel_sheet_name: Optional[str] = None
+    excel_sheet_name: str | None = None
 
     @property
     def blank_count(self) -> int:

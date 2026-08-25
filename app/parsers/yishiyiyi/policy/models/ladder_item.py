@@ -7,7 +7,7 @@
 
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import Any, Optional
+from typing import Any
 
 
 @dataclass
@@ -15,25 +15,25 @@ class ParsedLadderItem:
     """双维度阶梯明细"""
 
     # 附加分组条件（如按钢种分组）
-    target_sub_group: Optional[str] = None
+    target_sub_group: str | None = None
 
     # 厚度维度
-    thick_min: Optional[Decimal] = None
-    thick_min_operator: Optional[str] = ">="
-    thick_max: Optional[Decimal] = None
-    thick_max_operator: Optional[str] = "<"
+    thick_min: Decimal | None = None
+    thick_min_operator: str | None = ">="
+    thick_max: Decimal | None = None
+    thick_max_operator: str | None = "<"
 
     # 宽度维度
-    width_min: Optional[Decimal] = None
-    width_min_operator: Optional[str] = ">="
-    width_max: Optional[Decimal] = None
-    width_max_operator: Optional[str] = "<"
+    width_min: Decimal | None = None
+    width_min_operator: str | None = ">="
+    width_max: Decimal | None = None
+    width_max_operator: str | None = "<"
 
     # 锌层克重维度（g/m²）
-    zinc_coating_min: Optional[Decimal] = None
-    zinc_coating_min_operator: Optional[str] = ">="
-    zinc_coating_max: Optional[Decimal] = None
-    zinc_coating_max_operator: Optional[str] = "<"
+    zinc_coating_min: Decimal | None = None
+    zinc_coating_min_operator: str | None = ">="
+    zinc_coating_max: Decimal | None = None
+    zinc_coating_max_operator: str | None = "<"
 
     # 加减价
     price_adjustment: int = 0
@@ -41,8 +41,8 @@ class ParsedLadderItem:
     sort_order: int = 0
 
     # Excel 原始位置（用于测试核对）
-    excel_row: Optional[int] = None
-    excel_col: Optional[int] = None
+    excel_row: int | None = None
+    excel_col: int | None = None
 
     @property
     def has_thickness_condition(self) -> bool:
@@ -62,7 +62,11 @@ class ParsedLadderItem:
     @property
     def has_any_condition(self) -> bool:
         """是否有任一维度条件"""
-        return self.has_thickness_condition or self.has_width_condition or self.has_zinc_coating_condition
+        return (
+            self.has_thickness_condition
+            or self.has_width_condition
+            or self.has_zinc_coating_condition
+        )
 
     def model_dump(self) -> dict[str, Any]:
         """返回字典格式，兼容 Pydantic 接口"""
@@ -79,9 +83,13 @@ class ParsedLadderItem:
             "width_max": float(self.width_max) if self.width_max is not None else None,
             "width_max_operator": self.width_max_operator,
             # 锌层克重维度
-            "zinc_coating_min": float(self.zinc_coating_min) if self.zinc_coating_min is not None else None,
+            "zinc_coating_min": float(self.zinc_coating_min)
+            if self.zinc_coating_min is not None
+            else None,
             "zinc_coating_min_operator": self.zinc_coating_min_operator,
-            "zinc_coating_max": float(self.zinc_coating_max) if self.zinc_coating_max is not None else None,
+            "zinc_coating_max": float(self.zinc_coating_max)
+            if self.zinc_coating_max is not None
+            else None,
             "zinc_coating_max_operator": self.zinc_coating_max_operator,
             # 加减价
             "price_adjustment": self.price_adjustment,

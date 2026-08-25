@@ -4,8 +4,6 @@
 所有尺寸和金额字段全程使用 Decimal/Integer，绝不转为 float。
 """
 
-from typing import Optional
-
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
@@ -87,9 +85,9 @@ def get_policy_options(
     response_model=ApiResponse[None],
 )
 def batch_delete_policies(
-    year: Optional[int] = None,
-    month: Optional[int] = None,
-    steel_mill: Optional[str] = None,
+    year: int | None = None,
+    month: int | None = None,
+    steel_mill: str | None = None,
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STEEL_PRICE_POLICY_DOWNLOAD_DELETE)),
 ) -> ApiResponse[None]:

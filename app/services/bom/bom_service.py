@@ -65,10 +65,7 @@ class BomService:
             raise NotFoundException("BOM 清单不存在")
         rows = self.node_repo.list_by_snapshot(db, snapshot_id)
         parent_ids_with_children = {r.parent_id for r in rows if r.parent_id is not None}
-        return [
-            self._to_node_vo(r, has_children=r.id in parent_ids_with_children)
-            for r in rows
-        ]
+        return [self._to_node_vo(r, has_children=r.id in parent_ids_with_children) for r in rows]
 
     def paginate_snapshots(
         self, db: Session, query: BomSnapshotQuery
@@ -133,13 +130,9 @@ class BomService:
         current_user: UserVO,
     ) -> BomSnapshotVO:
         if data.stage not in _ALLOWED_STAGES:
-            raise BusinessException(
-                f"stage 无效，允许: {', '.join(sorted(_ALLOWED_STAGES))}"
-            )
+            raise BusinessException(f"stage 无效，允许: {', '.join(sorted(_ALLOWED_STAGES))}")
         if data.status not in _ALLOWED_STATUSES:
-            raise BusinessException(
-                f"status 无效，允许: {', '.join(sorted(_ALLOWED_STATUSES))}"
-            )
+            raise BusinessException(f"status 无效，允许: {', '.join(sorted(_ALLOWED_STATUSES))}")
 
         existing = self.snapshot_repo.get_by_unique_key(
             db, data.location, data.vehicle_model, data.bom_version
@@ -215,9 +208,7 @@ class BomService:
         if not snapshot:
             raise NotFoundException("BOM 清单不存在")
         if data.node_role not in _ALLOWED_ROLES:
-            raise BusinessException(
-                f"node_role 无效，允许: {', '.join(sorted(_ALLOWED_ROLES))}"
-            )
+            raise BusinessException(f"node_role 无效，允许: {', '.join(sorted(_ALLOWED_ROLES))}")
 
         if data.parent_id is None:
             if data.level != 0:

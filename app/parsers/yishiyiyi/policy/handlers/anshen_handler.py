@@ -16,7 +16,7 @@
 """
 
 from decimal import Decimal
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from openpyxl.worksheet.worksheet import Worksheet
 from ..value_parser import _to_int_price
@@ -32,14 +32,10 @@ class AnshenSheetHandler(BaseSheetHandler):
         """鞍神：厚度-宽度组合加价，只走 THICKNESS_WIDTH 通道。"""
         return self._parse_blocks(sheet, steel_mill, "THICKNESS_WIDTH")
 
-    def find_thickness_blocks(
-        self, sheet: Worksheet, steel_mill: str
-    ) -> List[Dict[str, Any]]:
+    def find_thickness_blocks(self, sheet: Worksheet, steel_mill: str) -> list[dict[str, Any]]:
         return []
 
-    def find_width_blocks(
-        self, sheet: Worksheet, steel_mill: str
-    ) -> List[Dict[str, Any]]:
+    def find_width_blocks(self, sheet: Worksheet, steel_mill: str) -> list[dict[str, Any]]:
         """定位鞍神规格加价表格。
 
         表格结构（从 Row 5 开始）:
@@ -49,11 +45,11 @@ class AnshenSheetHandler(BaseSheetHandler):
 
         只有一个宽度范围块。
         """
-        blocks: List[Dict[str, Any]] = []
+        blocks: list[dict[str, Any]] = []
         max_row = self.row_max(sheet)
 
         # 找"鞍神规格加价"关键字所在行
-        header_row: Optional[int] = None
+        header_row: int | None = None
         for r in range(1, max_row + 1):
             text = self.text(sheet, r, 1)
             if text and "鞍神规格加价" in text:
@@ -67,14 +63,13 @@ class AnshenSheetHandler(BaseSheetHandler):
         title_row = header_row + 1
 
         # 找数据起始行（厚度范围行）
-        data_start: Optional[int] = None
+        data_start: int | None = None
         for r in range(title_row + 1, max_row + 1):
             val = self.text(sheet, r, 1)
-            if val and val.strip():
-                # 检查是否是厚度范围格式（如 "2.0＜T≤2.3"）
-                if "＜" in val or "<" in val or "≤" in val or ">=" in val:
-                    data_start = r
-                    break
+            # 检查是否是厚度范围格式（如 "2.0＜T≤2.3"）
+            if val and val.strip() and ("＜" in val or "<" in val or "≤" in val or ">=" in val):
+                data_start = r
+                break
 
         if data_start is None:
             return []
@@ -105,7 +100,7 @@ class AnshenSheetHandler(BaseSheetHandler):
         # 数据列应该是 B 列（第2列）
         price_col = 2  # B 列
 
-        block: Dict[str, Any] = {
+        block: dict[str, Any] = {
             "category_name": "冷轧钢",
             "policy_type": "THICKNESS_WIDTH",
             "grade_col": 1,
@@ -123,11 +118,11 @@ class AnshenSheetHandler(BaseSheetHandler):
         sheet: Worksheet,
         steel_mill: str,
         policy_type: str,
-    ) -> List[Any]:
+    ) -> list[Any]:
         """鞍神定制：所有政策走专用解析。"""
         if policy_type == "THICKNESS_WIDTH":
             blocks = self.find_width_blocks(sheet, steel_mill)
-            policies: List[Any] = []
+            policies: list[Any] = []
             for block in blocks:
                 policies.extend(self._parse_anshen_block(sheet, steel_mill, block))
             return policies
@@ -137,8 +132,8 @@ class AnshenSheetHandler(BaseSheetHandler):
         self,
         sheet: Worksheet,
         steel_mill: str,
-        block: Dict[str, Any],
-    ) -> List[Any]:
+        block: dict[str, Any],
+    ) -> list[Any]:
         """解析鞍神宽度块：每行厚度范围生成一条政策。
 
         鞍神不分钢种，同一宽度范围内按厚度范围分行。
@@ -159,7 +154,7 @@ class AnshenSheetHandler(BaseSheetHandler):
         header_row = block["header_row"]
         width_boundary = self.text(sheet, header_row, 2) or "750＜W≤1250"
 
-        policies: List[Any] = []
+        policies: list[Any] = []
 
         for r in range(data_start, data_end + 1):
             thickness_label = self.text(sheet, r, 1)
@@ -232,9 +227,9 @@ class AnshenSheetHandler(BaseSheetHandler):
         import re
 
         # 提取最小值和操作符
-        min_val: Optional[float] = None
+        min_val: float | None = None
         min_op: str = ">="
-        max_val: Optional[float] = None
+        max_val: float | None = None
         max_op: str = "<"
 
         # 匹配 "X＜W≤Y" 或 "X<W<=Y" 格式

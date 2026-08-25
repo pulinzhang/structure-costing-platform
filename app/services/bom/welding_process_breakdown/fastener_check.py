@@ -39,9 +39,7 @@ def sum_child_fastener_qty(
     total = Decimal("0")
     for child in children:
         name = f"{child.part_name or ''} {child.part_number or ''}"
-        if _FASTENER_NAME_RE.search(name) or _FASTENER_PN_RE.match(
-            child.part_number or ""
-        ):
+        if _FASTENER_NAME_RE.search(name) or _FASTENER_PN_RE.match(child.part_number or ""):
             qty = child.qty if child.qty is not None else Decimal("0")
             total += qty
             parts.append(f"{child.part_number}×{qty}")

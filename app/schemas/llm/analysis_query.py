@@ -41,12 +41,7 @@ class TimeRange(BaseModel):
         return int(self.end[5:7])
 
     def month_span(self) -> int:
-        return (
-            self.end_year * 12
-            + self.end_month
-            - (self.start_year * 12 + self.start_month)
-            + 1
-        )
+        return self.end_year * 12 + self.end_month - (self.start_year * 12 + self.start_month) + 1
 
 
 class ComparisonBasis(BaseModel):
@@ -102,7 +97,7 @@ class AnalysisQuery(BaseModel):
             return ["summary"]
         if isinstance(value, str):
             value = [value]
-        if not isinstance(value, (list, tuple)):
+        if not isinstance(value, list | tuple):
             return ["summary"]
         allowed = {
             "summary",

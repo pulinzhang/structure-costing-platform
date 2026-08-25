@@ -7,7 +7,6 @@
 
 from __future__ import annotations
 
-from typing import Optional
 
 from sqlalchemy.orm import Session
 
@@ -190,9 +189,7 @@ class StampingProcessFeeService:
         if missing_other_fee:
             preview = "、".join(missing_other_fee[:10])
             extra = f" 等 {len(missing_other_fee)} 件" if len(missing_other_fee) > 10 else ""
-            raise BusinessException(
-                f"拼焊件须先录入其它费用（如拼焊费）后再审核：{preview}{extra}"
-            )
+            raise BusinessException(f"拼焊件须先录入其它费用（如拼焊费）后再审核：{preview}{extra}")
         updated = self.fee_repo.approve_by_scope(
             db,
             year=dto.year,
@@ -257,23 +254,23 @@ class StampingProcessFeeService:
         rate_years = self.tonnage_repo.get_distinct_years(db)
         return sorted(set(fee_years) | set(rate_years), reverse=True)
 
-    def list_locations(self, db: Session, year: Optional[int] = None) -> list[str]:
+    def list_locations(self, db: Session, year: int | None = None) -> list[str]:
         return self.fee_repo.get_distinct_locations(db, year=year)
 
     def list_suppliers(
         self,
         db: Session,
-        year: Optional[int] = None,
-        location: Optional[str] = None,
+        year: int | None = None,
+        location: str | None = None,
     ) -> list[str]:
         return self.fee_repo.get_distinct_suppliers(db, year=year, location=location)
 
     def list_vehicle_models(
         self,
         db: Session,
-        year: Optional[int] = None,
-        location: Optional[str] = None,
-        stamping_supplier: Optional[str] = None,
+        year: int | None = None,
+        location: str | None = None,
+        stamping_supplier: str | None = None,
     ) -> list[str]:
         return self.fee_repo.get_distinct_vehicle_models(
             db,
@@ -285,10 +282,10 @@ class StampingProcessFeeService:
     def list_versions(
         self,
         db: Session,
-        year: Optional[int] = None,
-        location: Optional[str] = None,
-        stamping_supplier: Optional[str] = None,
-        vehicle_model: Optional[str] = None,
+        year: int | None = None,
+        location: str | None = None,
+        stamping_supplier: str | None = None,
+        vehicle_model: str | None = None,
     ) -> list[str]:
         return self.fee_repo.get_distinct_versions(
             db,

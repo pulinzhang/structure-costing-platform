@@ -126,9 +126,7 @@ class StampingPartCostService:
         log_id: int,
         detail_text: str,
     ) -> None:
-        self.orchestrator.mark_log_failed(
-            db, log_id=log_id, detail_text=detail_text
-        )
+        self.orchestrator.mark_log_failed(db, log_id=log_id, detail_text=detail_text)
 
     def calculate(
         self,
@@ -187,8 +185,7 @@ class StampingPartCostService:
                     f"计算失败：成功 {result.success_count}，失败 {result.failed_count}"
                 ),
                 completed_message=(
-                    f"计算{label}：成功 {result.success_count}，"
-                    f"失败 {result.failed_count}"
+                    f"计算{label}：成功 {result.success_count}，" f"失败 {result.failed_count}"
                 ),
                 result=result.model_dump(),
             )
@@ -229,9 +226,7 @@ class StampingPartCostService:
             size=size,
         )
 
-    def get_calc_log(
-        self, db: Session, log_id: int
-    ) -> StampingPartCostCalcLogVO:
+    def get_calc_log(self, db: Session, log_id: int) -> StampingPartCostCalcLogVO:
         return self.orchestrator.calc_log_service.get_calc_log(db, log_id)
 
     def delete_calc_log(self, db: Session, log_id: int) -> None:
@@ -313,9 +308,7 @@ class StampingPartCostService:
         if not remark:
             raise BusinessException("备注不能为空")
 
-        unit_cost = Decimal(str(dto.unit_cost)).quantize(
-            AMOUNT_QUANTIZE, rounding=ROUND_HALF_UP
-        )
+        unit_cost = Decimal(str(dto.unit_cost)).quantize(AMOUNT_QUANTIZE, rounding=ROUND_HALF_UP)
         updated = self.cost_repo.update_fields(
             db,
             cost_id,
@@ -332,17 +325,11 @@ class StampingPartCostService:
         vos = self._to_cost_vos(db, [updated])
         return vos[0]
 
-    def _to_cost_vos(
-        self, db: Session, rows: list[StampingPartCost]
-    ) -> list[StampingPartCostVO]:
+    def _to_cost_vos(self, db: Session, rows: list[StampingPartCost]) -> list[StampingPartCostVO]:
         if not rows:
             return []
-        blanks_by_part = load_blanks_by_part_id(
-            db, rows, blank_repo=self.blank_repo
-        )
-        price_index = build_steel_price_index(
-            db, rows, steel_repo=self.steel_repo
-        )
+        blanks_by_part = load_blanks_by_part_id(db, rows, blank_repo=self.blank_repo)
+        price_index = build_steel_price_index(db, rows, steel_repo=self.steel_repo)
         result: list[StampingPartCostVO] = []
         for row in rows:
             display = resolve_part_cost_display(
@@ -378,9 +365,7 @@ class StampingPartCostService:
         month: int | None = None,
         location: str | None = None,
     ) -> list[str]:
-        return self.cost_repo.get_distinct_suppliers(
-            db, year=year, month=month, location=location
-        )
+        return self.cost_repo.get_distinct_suppliers(db, year=year, month=month, location=location)
 
     def batch_delete(
         self, db: Session, dto: StampingPartCostDeleteDTO
@@ -429,14 +414,17 @@ class StampingPartCostService:
             audit_remark=dto.audit_remark,
             updated_by=display_name(current_user),
         )
-        skipped = self.cost_repo.count_by_scope_and_statuses(
-            db,
-            year=dto.year,
-            month=dto.month,
-            location=location,
-            stamping_supplier=supplier,
-            statuses=[AUDIT_APPROVED],
-        ) - updated
+        skipped = (
+            self.cost_repo.count_by_scope_and_statuses(
+                db,
+                year=dto.year,
+                month=dto.month,
+                location=location,
+                stamping_supplier=supplier,
+                statuses=[AUDIT_APPROVED],
+            )
+            - updated
+        )
         db.commit()
         return StampingPartCostBatchAuditResultVO(
             updated_count=updated,

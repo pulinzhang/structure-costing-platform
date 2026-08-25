@@ -387,9 +387,7 @@ class StampingProcessFeeExportService:
                 cell.border = self._thin
             else:
                 cell.fill = _fill("C62828")
-                cell.border = (
-                    self._split_detail if col == MAIN_COLS + 1 else self._thin
-                )
+                cell.border = self._split_detail if col == MAIN_COLS + 1 else self._thin
         ws.row_dimensions[header_row].height = HEADER_H
         return header_row
 
@@ -455,9 +453,7 @@ class StampingProcessFeeExportService:
             item.resolved_tonnage if item and item.resolved_tonnage is not None else "",
             _TONNAGE_SOURCE_LABEL.get(tonnage_source, tonnage_source) if item else "",
             _num(item.cost_ratio, Q4) if item and item.cost_ratio is not None else "",
-            _num(item.price_per_stroke, Q3)
-            if item and item.price_per_stroke is not None
-            else "",
+            _num(item.price_per_stroke, Q3) if item and item.price_per_stroke is not None else "",
             _num(item.line_fee, Q3) if item else "",
             (item.basis_text or "").strip() if item else "",
         ]

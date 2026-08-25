@@ -71,15 +71,9 @@ def _material_row_from_part(part: StampingPart) -> StampingMaterialResponse:
             material = (blanks[0].material or "").strip() or None
         return StampingMaterialResponse(
             material=material,
-            thickness=_join_formatted_numbers(
-                [blank.thickness for blank in blanks], Q2, 2
-            ),
-            sheet_length=_join_formatted_numbers(
-                [blank.sheet_length for blank in blanks], Q2, 2
-            ),
-            sheet_width=_join_formatted_numbers(
-                [blank.sheet_width for blank in blanks], Q2, 2
-            ),
+            thickness=_join_formatted_numbers([blank.thickness for blank in blanks], Q2, 2),
+            sheet_length=_join_formatted_numbers([blank.sheet_length for blank in blanks], Q2, 2),
+            sheet_width=_join_formatted_numbers([blank.sheet_width for blank in blanks], Q2, 2),
         )
     return StampingMaterialResponse(
         material=material,
@@ -125,9 +119,7 @@ class StampingPartService:
         summary = self.repository.summarize_by_filters(db, location=location_clean)
         return {
             "parts": int(parts),
-            "processes": self.process_repository.count_by_part_location(
-                db, location_clean
-            ),
+            "processes": self.process_repository.count_by_part_location(db, location_clean),
             "models": int(summary.get("vehicle_model_count") or 0),
         }
 

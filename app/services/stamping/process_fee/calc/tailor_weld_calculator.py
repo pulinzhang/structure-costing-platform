@@ -78,9 +78,7 @@ class TailorWeldFeeCalculator:
 
         total = Decimal("0")
         process_items: list[ProcessFeeItemPayload] = []
-        for process in sorted(
-            processes, key=lambda p: (p.process_order or 0, p.id or 0)
-        ):
+        for process in sorted(processes, key=lambda p: (p.process_order or 0, p.id or 0)):
             process_label = format_process_label(process)
             original_tonnage = self_tonnage(process)
 
@@ -116,9 +114,7 @@ class TailorWeldFeeCalculator:
                 )
                 continue
 
-            tonnage_or_error = self.tonnage_resolver.resolve(
-                db, part, process, prev_part_cache
-            )
+            tonnage_or_error = self.tonnage_resolver.resolve(db, part, process, prev_part_cache)
             if isinstance(tonnage_or_error, str):
                 return self.build_failed_item(part, tonnage_or_error, process)
 
@@ -160,15 +156,9 @@ class TailorWeldFeeCalculator:
         resolved: ProcessTonnageResolveResult | None = None,
     ) -> ProcessFeeItemPayload:
         line_fee = Decimal("0").quantize(FEE_QUANTIZE, rounding=ROUND_HALF_UP)
-        inherited_part_number = (
-            resolved.inherited_from_part_number if resolved else None
-        )
-        inherited_process_seq = (
-            resolved.inherited_from_process_seq if resolved else None
-        )
-        inherited_process_code = (
-            resolved.inherited_from_process_code if resolved else None
-        )
+        inherited_part_number = resolved.inherited_from_part_number if resolved else None
+        inherited_process_seq = resolved.inherited_from_process_seq if resolved else None
+        inherited_process_code = resolved.inherited_from_process_code if resolved else None
         return ProcessFeeItemPayload(
             source_process_id=process.id,
             process_seq=process.process_seq,
@@ -177,9 +167,7 @@ class TailorWeldFeeCalculator:
             original_tonnage=original_tonnage,
             resolved_tonnage=None,
             tonnage_source=tonnage_source,
-            inherited_from_part_id=(
-                resolved.inherited_from_part_id if resolved else None
-            ),
+            inherited_from_part_id=(resolved.inherited_from_part_id if resolved else None),
             inherited_from_part_number=inherited_part_number,
             inherited_from_process_seq=inherited_process_seq,
             inherited_from_process_code=inherited_process_code,
@@ -229,9 +217,7 @@ class TailorWeldFeeCalculator:
                 process,
             )
 
-        cost_ratio = Decimal(
-            str(process.cost_ratio if process.cost_ratio is not None else 1)
-        )
+        cost_ratio = Decimal(str(process.cost_ratio if process.cost_ratio is not None else 1))
         price = rate_info.price_per_stroke
         line_raw = cost_ratio * price
         line_fee = line_raw.quantize(FEE_QUANTIZE, rounding=ROUND_HALF_UP)

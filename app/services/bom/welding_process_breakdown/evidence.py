@@ -59,9 +59,7 @@ def build_node_evidence(
     """
     children_map = children_map or {}
     source_by_bom_id = {
-        n.source_node_id: n
-        for n in scope_nodes
-        if getattr(n, "source_node_id", None) is not None
+        n.source_node_id: n for n in scope_nodes if getattr(n, "source_node_id", None) is not None
     }
 
     items_by_token: dict[str, dict[str, Any]] = {}
@@ -96,9 +94,7 @@ def build_node_evidence(
 
         status = line.qty_check_status or "skipped"
         fastener_sum = (
-            _dec(line.child_fastener_qty_sum)
-            if line.child_fastener_qty_sum is not None
-            else None
+            _dec(line.child_fastener_qty_sum) if line.child_fastener_qty_sum is not None else None
         )
         item["child_status"] = status
         item["child_fastener_sum"] = fastener_sum
@@ -229,9 +225,7 @@ def _fill_l1_rollup(
             f"={_fmt(c['contrib'])}"
             for c in contribs
         )
-        item["l1_detail"] = (
-            f"L0 原文无「{token}」，L1 滚乘合计={_fmt(total)}（{parts}）"
-        )
+        item["l1_detail"] = f"L0 原文无「{token}」，L1 滚乘合计={_fmt(total)}（{parts}）"
         return
     if parent_qty is not None and not contribs:
         item["l1_status"] = "l0_only"

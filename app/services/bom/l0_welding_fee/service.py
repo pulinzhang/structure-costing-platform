@@ -140,18 +140,13 @@ class BomL0WeldingFeeService:
     def _to_vo(self, db: Session, record: BomL0WeldingFee) -> BomL0WeldingFeeVO:
         return self._to_vos(db, [record])[0]
 
-    def _to_vos(
-        self, db: Session, records: list[BomL0WeldingFee]
-    ) -> list[BomL0WeldingFeeVO]:
+    def _to_vos(self, db: Session, records: list[BomL0WeldingFee]) -> list[BomL0WeldingFeeVO]:
         need_ids = [
             int(r.source_breakdown_node_id)
             for r in records
-            if r.source_breakdown_node_id
-            and not (r.weld_info_raw or "").strip()
+            if r.source_breakdown_node_id and not (r.weld_info_raw or "").strip()
         ]
-        weld_map = (
-            self.breakdown_repo.map_weld_info_by_ids(db, need_ids) if need_ids else {}
-        )
+        weld_map = self.breakdown_repo.map_weld_info_by_ids(db, need_ids) if need_ids else {}
         result: list[BomL0WeldingFeeVO] = []
         for record in records:
             vo = BomL0WeldingFeeVO.model_validate(record)
@@ -300,9 +295,7 @@ class BomL0WeldingFeeService:
         year: int | None = None,
         location: str | None = None,
     ) -> list[str]:
-        return self.fee_repo.get_distinct_vehicle_models(
-            db, year=year, location=location
-        )
+        return self.fee_repo.get_distinct_vehicle_models(db, year=year, location=location)
 
     def list_bom_versions(
         self,

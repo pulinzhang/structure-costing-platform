@@ -53,9 +53,7 @@ class WeldingBreakdownListFilters(TypedDict):
 class BomWeldingProcessBreakdownRepository:
     """焊接工艺拆解数据访问"""
 
-    def get_node_by_id(
-        self, db: Session, node_id: int
-    ) -> BomWeldingProcessBreakdownNode | None:
+    def get_node_by_id(self, db: Session, node_id: int) -> BomWeldingProcessBreakdownNode | None:
         return (
             db.query(BomWeldingProcessBreakdownNode)
             .options(joinedload(BomWeldingProcessBreakdownNode.lines))
@@ -63,9 +61,7 @@ class BomWeldingProcessBreakdownRepository:
             .first()
         )
 
-    def map_weld_info_by_ids(
-        self, db: Session, node_ids: list[int]
-    ) -> dict[int, str]:
+    def map_weld_info_by_ids(self, db: Session, node_ids: list[int]) -> dict[int, str]:
         """批量取焊接信息原文（仅 id + weld_info_raw）。"""
         ids = sorted({int(n) for n in node_ids if n})
         if not ids:
@@ -84,9 +80,7 @@ class BomWeldingProcessBreakdownRepository:
             if (row.weld_info_raw or "").strip()
         }
 
-    def get_line_by_id(
-        self, db: Session, line_id: int
-    ) -> BomWeldingProcessBreakdownLine | None:
+    def get_line_by_id(self, db: Session, line_id: int) -> BomWeldingProcessBreakdownLine | None:
         return (
             db.query(BomWeldingProcessBreakdownLine)
             .filter(BomWeldingProcessBreakdownLine.id == line_id)
@@ -129,9 +123,7 @@ class BomWeldingProcessBreakdownRepository:
         if bom_version:
             q = q.filter(BomWeldingProcessBreakdownNode.bom_version == bom_version)
         if part_number:
-            q = q.filter(
-                BomWeldingProcessBreakdownNode.part_number.like(f"%{part_number}%")
-            )
+            q = q.filter(BomWeldingProcessBreakdownNode.part_number.like(f"%{part_number}%"))
         if level is not None:
             q = q.filter(BomWeldingProcessBreakdownNode.level == level)
         if audit_status:
@@ -139,9 +131,7 @@ class BomWeldingProcessBreakdownRepository:
         if parse_status:
             q = q.filter(BomWeldingProcessBreakdownNode.parse_status == parse_status)
         if process_line_count_eq is not None:
-            q = q.filter(
-                BomWeldingProcessBreakdownNode.process_line_count == process_line_count_eq
-            )
+            q = q.filter(BomWeldingProcessBreakdownNode.process_line_count == process_line_count_eq)
         return q
 
     def _build_list_query(
@@ -160,9 +150,7 @@ class BomWeldingProcessBreakdownRepository:
         load_lines: bool = False,
     ) -> Query[BomWeldingProcessBreakdownNode]:
         # 列表/汇总只用 process_line_count，默认不拉取明细（明细走 get_node）
-        q: Query[BomWeldingProcessBreakdownNode] = db.query(
-            BomWeldingProcessBreakdownNode
-        )
+        q: Query[BomWeldingProcessBreakdownNode] = db.query(BomWeldingProcessBreakdownNode)
         if load_lines:
             q = q.options(joinedload(BomWeldingProcessBreakdownNode.lines))
         q = self._apply_list_filters(
@@ -248,16 +236,13 @@ class BomWeldingProcessBreakdownRepository:
             process_line_count_eq=process_line_count_eq,
             load_lines=True,
         )
-        return (
-            q.order_by(
-                BomWeldingProcessBreakdownNode.location,
-                BomWeldingProcessBreakdownNode.vehicle_model,
-                BomWeldingProcessBreakdownNode.bom_version,
-                BomWeldingProcessBreakdownNode.part_number,
-                BomWeldingProcessBreakdownNode.id,
-            )
-            .all()
-        )
+        return q.order_by(
+            BomWeldingProcessBreakdownNode.location,
+            BomWeldingProcessBreakdownNode.vehicle_model,
+            BomWeldingProcessBreakdownNode.bom_version,
+            BomWeldingProcessBreakdownNode.part_number,
+            BomWeldingProcessBreakdownNode.id,
+        ).all()
 
     def list_by_scope(
         self,
@@ -270,11 +255,15 @@ class BomWeldingProcessBreakdownRepository:
         return (
             db.query(BomWeldingProcessBreakdownNode)
             .options(joinedload(BomWeldingProcessBreakdownNode.lines))
-            .filter(and_(*self._scope_filter(
-                location=location,
-                vehicle_model=vehicle_model,
-                bom_version=bom_version,
-            )))
+            .filter(
+                and_(
+                    *self._scope_filter(
+                        location=location,
+                        vehicle_model=vehicle_model,
+                        bom_version=bom_version,
+                    )
+                )
+            )
             .order_by(
                 BomWeldingProcessBreakdownNode.level,
                 BomWeldingProcessBreakdownNode.part_number,
@@ -434,11 +423,13 @@ class BomWeldingProcessBreakdownRepository:
         return (
             db.query(BomWeldingProcessBreakdownNode)
             .filter(
-                and_(*self._scope_filter(
-                    location=location,
-                    vehicle_model=vehicle_model,
-                    bom_version=bom_version,
-                )),
+                and_(
+                    *self._scope_filter(
+                        location=location,
+                        vehicle_model=vehicle_model,
+                        bom_version=bom_version,
+                    )
+                ),
                 BomWeldingProcessBreakdownNode.audit_status.in_(statuses),
             )
             .count()
@@ -549,11 +540,13 @@ class BomWeldingProcessBreakdownRepository:
         count = (
             db.query(BomWeldingProcessBreakdownNode)
             .filter(
-                and_(*self._scope_filter(
-                    location=location,
-                    vehicle_model=vehicle_model,
-                    bom_version=bom_version,
-                )),
+                and_(
+                    *self._scope_filter(
+                        location=location,
+                        vehicle_model=vehicle_model,
+                        bom_version=bom_version,
+                    )
+                ),
                 BomWeldingProcessBreakdownNode.audit_status != AUDIT_APPROVED,
             )
             .delete(synchronize_session=False)
@@ -589,11 +582,13 @@ class BomWeldingProcessBreakdownRepository:
         }
         count = query_update(
             db.query(BomWeldingProcessBreakdownNode).filter(
-                and_(*self._scope_filter(
-                    location=location,
-                    vehicle_model=vehicle_model,
-                    bom_version=bom_version,
-                )),
+                and_(
+                    *self._scope_filter(
+                        location=location,
+                        vehicle_model=vehicle_model,
+                        bom_version=bom_version,
+                    )
+                ),
                 BomWeldingProcessBreakdownNode.audit_status != AUDIT_APPROVED,
             ),
             values,
@@ -622,11 +617,13 @@ class BomWeldingProcessBreakdownRepository:
         }
         count = query_update(
             db.query(BomWeldingProcessBreakdownNode).filter(
-                and_(*self._scope_filter(
-                    location=location,
-                    vehicle_model=vehicle_model,
-                    bom_version=bom_version,
-                )),
+                and_(
+                    *self._scope_filter(
+                        location=location,
+                        vehicle_model=vehicle_model,
+                        bom_version=bom_version,
+                    )
+                ),
                 BomWeldingProcessBreakdownNode.audit_status == AUDIT_APPROVED,
             ),
             values,

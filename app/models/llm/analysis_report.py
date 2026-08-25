@@ -19,9 +19,7 @@ class LlmAnalysisReport(AuditUserMixin, Base):
     task_id: Mapped[str] = mapped_column(
         String(64), nullable=False, unique=True, index=True, comment="AsyncTask ID"
     )
-    user_id: Mapped[int] = mapped_column(
-        Integer, nullable=False, index=True, comment="提交用户 ID"
-    )
+    user_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True, comment="提交用户 ID")
 
     report_type: Mapped[str] = mapped_column(
         String(40), nullable=False, comment="请求类型（可含 auto）"

@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from decimal import Decimal
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     Boolean,
@@ -41,7 +41,7 @@ class StampingProcessFee(AuditUserMixin, Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
 
-    process_items: Mapped[List[StampingProcessFeeItem]] = relationship(
+    process_items: Mapped[list[StampingProcessFeeItem]] = relationship(
         "StampingProcessFeeItem",
         back_populates="fee",
         cascade="all, delete-orphan",
@@ -55,19 +55,29 @@ class StampingProcessFee(AuditUserMixin, Base):
     version: Mapped[str] = mapped_column(String(20), nullable=False, comment="版本")
 
     # —— 零件主表快照（来自 stamping_parts）——
-    source_part_id: Mapped[int | None] = mapped_column(Integer, nullable=True, comment="来源零件主表 id")
+    source_part_id: Mapped[int | None] = mapped_column(
+        Integer, nullable=True, comment="来源零件主表 id"
+    )
     seq_no: Mapped[int | None] = mapped_column(Integer, nullable=True, comment="序号")
     part_number: Mapped[str] = mapped_column(String(50), nullable=False, comment="零件号")
     part_name: Mapped[str | None] = mapped_column(String(200), nullable=True, comment="零件名称")
 
     # 材料信息
     material: Mapped[str | None] = mapped_column(String(50), nullable=True, comment="材质")
-    thickness: Mapped[Decimal | None] = mapped_column(Numeric(10, 4), nullable=True, comment="料厚(mm)")
-    part_weight: Mapped[Decimal | None] = mapped_column(Numeric(12, 4), nullable=True, comment="零件重量(kg)")
+    thickness: Mapped[Decimal | None] = mapped_column(
+        Numeric(10, 4), nullable=True, comment="料厚(mm)"
+    )
+    part_weight: Mapped[Decimal | None] = mapped_column(
+        Numeric(12, 4), nullable=True, comment="零件重量(kg)"
+    )
 
     # 料片尺寸
-    sheet_length: Mapped[Decimal | None] = mapped_column(Numeric(10, 2), nullable=True, comment="料片长/卷料宽(mm)")
-    sheet_width: Mapped[Decimal | None] = mapped_column(Numeric(10, 2), nullable=True, comment="料片宽/卷料步距(mm)")
+    sheet_length: Mapped[Decimal | None] = mapped_column(
+        Numeric(10, 2), nullable=True, comment="料片长/卷料宽(mm)"
+    )
+    sheet_width: Mapped[Decimal | None] = mapped_column(
+        Numeric(10, 2), nullable=True, comment="料片宽/卷料步距(mm)"
+    )
 
     # 生产信息
     # 一张钢板/料片单独冲本零件可出的件数（快照自零件主表）
@@ -76,15 +86,16 @@ class StampingProcessFee(AuditUserMixin, Base):
         Integer,
         nullable=True,
         comment=(
-            "可制件数：一张钢板/料片单独冲本零件可出的件数"
-            "（例：1出2记2；左右共模按单侧计则为2）"
+            "可制件数：一张钢板/料片单独冲本零件可出的件数" "（例：1出2记2；左右共模按单侧计则为2）"
         ),
     )
     sheet_type: Mapped[str | None] = mapped_column(String(50), nullable=True, comment="料片式样")
 
     # 工艺信息
     die_type: Mapped[str | None] = mapped_column(String(50), nullable=True, comment="模具类型")
-    process_method: Mapped[str | None] = mapped_column(String(50), nullable=True, comment="工艺方法")
+    process_method: Mapped[str | None] = mapped_column(
+        String(50), nullable=True, comment="工艺方法"
+    )
     automation: Mapped[str | None] = mapped_column(
         String(20),
         nullable=True,
@@ -110,15 +121,21 @@ class StampingProcessFee(AuditUserMixin, Base):
     processing_fee: Mapped[Decimal | None] = mapped_column(
         Numeric(12, 3), nullable=True, comment="系统计算加工费(元)"
     )
-    process_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, comment="参与汇总的工序数")
+    process_count: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, comment="参与汇总的工序数"
+    )
     other_fee: Mapped[Decimal | None] = mapped_column(
         Numeric(12, 3), nullable=True, comment="其它费用(元)，如拼焊费；可正可负"
     )
     final_processing_fee: Mapped[Decimal | None] = mapped_column(
         Numeric(12, 3), nullable=True, comment="确认单价(元) = 系统计算 + 其它费用"
     )
-    calc_fail_reason: Mapped[str | None] = mapped_column(Text, nullable=True, comment="计算失败原因")
-    remark: Mapped[str | None] = mapped_column(Text, nullable=True, comment="备注（其它费用说明等）")
+    calc_fail_reason: Mapped[str | None] = mapped_column(
+        Text, nullable=True, comment="计算失败原因"
+    )
+    remark: Mapped[str | None] = mapped_column(
+        Text, nullable=True, comment="备注（其它费用说明等）"
+    )
 
     # 审核锁定 + 反审核留痕
     audit_status: Mapped[str] = mapped_column(
@@ -127,12 +144,24 @@ class StampingProcessFee(AuditUserMixin, Base):
         default="pending",
         comment="审核状态：pending=待审，approved=已通过，rejected=已驳回",
     )
-    audited_by: Mapped[str | None] = mapped_column(String(50), nullable=True, comment="最近一次审核人")
-    audited_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, comment="最近一次审核时间")
-    audit_remark: Mapped[str | None] = mapped_column(Text, nullable=True, comment="最近一次审核意见")
-    reverse_audited_by: Mapped[str | None] = mapped_column(String(50), nullable=True, comment="反审核人")
-    reverse_audited_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, comment="反审核时间")
-    reverse_audit_remark: Mapped[str | None] = mapped_column(Text, nullable=True, comment="反审核原因")
+    audited_by: Mapped[str | None] = mapped_column(
+        String(50), nullable=True, comment="最近一次审核人"
+    )
+    audited_at: Mapped[datetime | None] = mapped_column(
+        DateTime, nullable=True, comment="最近一次审核时间"
+    )
+    audit_remark: Mapped[str | None] = mapped_column(
+        Text, nullable=True, comment="最近一次审核意见"
+    )
+    reverse_audited_by: Mapped[str | None] = mapped_column(
+        String(50), nullable=True, comment="反审核人"
+    )
+    reverse_audited_at: Mapped[datetime | None] = mapped_column(
+        DateTime, nullable=True, comment="反审核时间"
+    )
+    reverse_audit_remark: Mapped[str | None] = mapped_column(
+        Text, nullable=True, comment="反审核原因"
+    )
 
     __table_args__ = (
         Index("ix_stamping_process_fee_year", "year"),

@@ -10,10 +10,10 @@ _CJK_RE = re.compile(r"[\u2e80-\u9fff\u3400-\u4dbf\uf900-\ufaff]")
 
 def normalize_vehicle_model(value: str | None) -> str | None:
     """
-    将解析出的车型代号归一化为无中文的代号。
+      将解析出的车型代号归一化为无中文的代号。
 
-    例：青岛T28 → T28，T28样例 → T28，T28 → T28。
-  车型代号业务上不含中文；剔除 CJK 后若为空则返回 None。
+      例：青岛T28 → T28，T28样例 → T28，T28 → T28。
+    车型代号业务上不含中文；剔除 CJK 后若为空则返回 None。
     """
     if value is None:
         return None

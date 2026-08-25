@@ -5,7 +5,7 @@
 
 import logging
 import sys
-from typing import Any, Optional
+from typing import Any
 from logging.handlers import RotatingFileHandler
 
 from app.config import settings
@@ -36,16 +36,16 @@ class LoggerConfig:
 
         # 配置根日志器
         root_logger = logging.getLogger()
-        
+
         # 只在还没有配置时设置
         if not cls._configured:
             # 重要：清除所有现有的处理器
             root_logger.handlers.clear()
-            
+
             # 设置日志级别
             level = getattr(logging, settings.LOG_LEVEL.upper(), logging.INFO)
             root_logger.setLevel(level)
-            
+
             # 添加控制台处理器
             console_handler = cls._create_console_handler()
             console_handler.setLevel(level)
@@ -66,8 +66,7 @@ class LoggerConfig:
         handler = logging.StreamHandler(sys.stderr)
         handler.setLevel(logging.DEBUG)
         formatter = logging.Formatter(
-            fmt="%(asctime)s | %(levelname)-8s | %(message)s",
-            datefmt="%H:%M:%S"
+            fmt="%(asctime)s | %(levelname)-8s | %(message)s", datefmt="%H:%M:%S"
         )
         handler.setFormatter(formatter)
         return handler
@@ -76,12 +75,13 @@ class LoggerConfig:
     def _create_file_handler() -> logging.Handler:
         """创建文件处理器"""
         log_file = settings.LOG_DIR / "app.log"
-        
+
         # 验证目录可写
         import os
+
         if not os.access(settings.LOG_DIR, os.W_OK):
             print(f"[FATAL] 日志目录不可写: {settings.LOG_DIR}", file=sys.stderr)
-        
+
         # 自定义 Handler，确保每次写入后立即刷新到磁盘
         class SafeRotatingFileHandler(RotatingFileHandler):
             def emit(self, record: Any) -> Any:
@@ -90,22 +90,21 @@ class LoggerConfig:
                     self.flush()
                 except Exception:
                     pass  # 静默忽略日志写入错误，避免干扰主流程
-        
+
         try:
             handler = SafeRotatingFileHandler(
                 filename=str(log_file),
                 maxBytes=10 * 1024 * 1024,  # 10MB
                 backupCount=5,
-                encoding="utf-8"
+                encoding="utf-8",
             )
         except Exception as e:
             print(f"[FATAL] 无法创建文件处理器: {e}", file=sys.stderr)
             raise
-        
+
         handler.setLevel(logging.INFO)
         formatter = logging.Formatter(
-            fmt="%(asctime)s | %(levelname)-8s | %(message)s",
-            datefmt="%Y-%m-%d %H:%M:%S"
+            fmt="%(asctime)s | %(levelname)-8s | %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
         )
         handler.setFormatter(formatter)
         return handler
@@ -148,12 +147,12 @@ def get_logger(name: str) -> logging.Logger:
 
     # 获取日志器
     logger = logging.getLogger(name)
-    
+
     # 确保日志器的级别与根日志器一致，避免子 logger 被设置为 NOTSET 导致不输出
     root_logger = logging.getLogger()
     if logger.level == 0:  # 0 表示 NOTSET
         logger.setLevel(root_logger.level)
-    
+
     return logger
 
 
@@ -162,17 +161,19 @@ def log_request(logger: logging.Logger, method: str, path: str) -> None:
     logger.info(f"请求: {method} {path}")
 
 
-def log_response(logger: logging.Logger, method: str, path: str, status: int, duration_ms: float) -> None:
+def log_response(
+    logger: logging.Logger, method: str, path: str, status: int, duration_ms: float
+) -> None:
     """记录 HTTP 响应"""
     logger.info(f"响应: {method} {path} - 状态:{status} - 耗时:{duration_ms:.2f}ms")
 
 
-def log_error(logger: logging.Logger, error: Exception, context: Optional[str] = None) -> None:
+def log_error(logger: logging.Logger, error: Exception, context: str | None = None) -> None:
     """记录错误日志"""
     if context:
-        logger.error(f"{context} - 错误: {type(error).__name__}: {str(error)}", exc_info=True)
+        logger.error(f"{context} - 错误: {type(error).__name__}: {error!s}", exc_info=True)
     else:
-        logger.error(f"错误: {type(error).__name__}: {str(error)}", exc_info=True)
+        logger.error(f"错误: {type(error).__name__}: {error!s}", exc_info=True)
 
 
 def log_business_operation(logger: logging.Logger, operation: str, details: dict[str, Any]) -> None:

@@ -86,6 +86,7 @@ class UserSelfPasswordUpdateDTO(BaseModel):
         description="改密成功后是否注销其他设备登录",
     )
 
+
 class UserQueryDTO(BaseModel):
     """用户分页查询"""
 

@@ -34,9 +34,7 @@ def get_ready(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.COSTING_VIEW)),
 ) -> ApiResponse[CostingEngineReadyVO]:
-    ready = _service.get_ready(
-        db, location=location, year=year, month=month
-    )
+    ready = _service.get_ready(db, location=location, year=year, month=month)
     return ApiResponse.ok(data=ready)
 
 
@@ -119,6 +117,4 @@ def delete_run(
     current_user: UserVO = Depends(require_perm(Perm.COSTING_DELETE)),
 ) -> ApiResponse[None]:
     _service.delete_run(db, run_id)
-    return ApiResponse.deleted(
-        message="已删除引擎 Run（不撤销已写入的业务价格）"
-    )
+    return ApiResponse.deleted(message="已删除引擎 Run（不撤销已写入的业务价格）")

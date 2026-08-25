@@ -49,12 +49,15 @@ class AnnualCalcPlanner:
 
         for scope in discovery.l0_scopes:
             scope_key = f"{scope.vehicle_model}|{scope.bom_version}"
-            breakdown_exists = self.breakdown_repo.count_by_scope(
-                db,
-                location=scope.location,
-                vehicle_model=scope.vehicle_model,
-                bom_version=scope.bom_version,
-            ) > 0
+            breakdown_exists = (
+                self.breakdown_repo.count_by_scope(
+                    db,
+                    location=scope.location,
+                    vehicle_model=scope.vehicle_model,
+                    bom_version=scope.bom_version,
+                )
+                > 0
+            )
             items.append(
                 CostingEngineAnnualItemVO(
                     code="annual_welding_breakdown",

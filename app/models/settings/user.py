@@ -13,8 +13,12 @@ class User(AuditUserMixin, Base):
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True, autoincrement=True)
-    username: Mapped[str] = mapped_column(String(50), unique=True, index=True, nullable=False, comment="登录账号")
-    password_hash: Mapped[str] = mapped_column(String(32), nullable=False, comment="密码摘要 MD5(salt+password)")
+    username: Mapped[str] = mapped_column(
+        String(50), unique=True, index=True, nullable=False, comment="登录账号"
+    )
+    password_hash: Mapped[str] = mapped_column(
+        String(32), nullable=False, comment="密码摘要 MD5(salt+password)"
+    )
 
     real_name: Mapped[str | None] = mapped_column(String(50), nullable=True, comment="姓名")
     email: Mapped[str | None] = mapped_column(String(100), nullable=True, comment="邮箱")
@@ -27,7 +31,9 @@ class User(AuditUserMixin, Base):
         comment="头像相对路径，如 /uploads/avatars/xxx.png；空则前端显示首字母",
     )
 
-    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False, comment="启用状态")
+    is_active: Mapped[bool] = mapped_column(
+        Boolean, default=True, nullable=False, comment="启用状态"
+    )
     is_admin: Mapped[bool] = mapped_column(
         Boolean,
         default=False,

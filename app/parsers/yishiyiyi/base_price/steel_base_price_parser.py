@@ -9,7 +9,7 @@ import io
 import re
 from dataclasses import dataclass, field
 from decimal import Decimal
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import openpyxl
 import xlrd
@@ -19,20 +19,23 @@ import xlrd
 # 第1层：数据类定义
 # ============================================================
 
+
 @dataclass
 class BaseColumnConfig:
     """基地列配置"""
-    location: str          # 基地名称（如 "芜湖"）
-    mill_col: int          # 钢厂列索引（0-based）
-    price_col: int         # 价格列索引（0-based）
+
+    location: str  # 基地名称（如 "芜湖"）
+    mill_col: int  # 钢厂列索引（0-based）
+    price_col: int  # 价格列索引（0-based）
 
 
 @dataclass
 class ParsedContext:
     """解析上下文"""
-    year: Optional[int]
-    month: Optional[int]
-    base_configs: List[BaseColumnConfig]
+
+    year: int | None
+    month: int | None
+    base_configs: list[BaseColumnConfig]
     spec_col: int = 3  # 规格列索引（默认第4列，兼容旧格式）
     sheet_name: str = "Sheet1"
 
@@ -40,9 +43,10 @@ class ParsedContext:
 @dataclass
 class ParseResult:
     """解析结果"""
-    errors: List[str] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
-    records: List[Dict[str, Any]] = field(default_factory=list)
+
+    errors: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
+    records: list[dict[str, Any]] = field(default_factory=list)
 
     @property
     def total(self) -> int:
@@ -53,6 +57,7 @@ class ParseResult:
 # 第2层：辅助函数（工具层）
 # ============================================================
 
+
 def _str(value: Any) -> str:
     """安全转换为去空白字符串，空值返回空字符串"""
     if value is None:
@@ -60,7 +65,7 @@ def _str(value: Any) -> str:
     return str(value).strip()
 
 
-def _decimal(value: Any) -> Optional[Decimal]:
+def _decimal(value: Any) -> Decimal | None:
     """
     安全转换为 Decimal
     支持：数字、字符串数字；失败或空值返回 None
@@ -70,7 +75,7 @@ def _decimal(value: Any) -> Optional[Decimal]:
         return None
     if isinstance(value, Decimal):
         return value
-    if isinstance(value, (int, float)):
+    if isinstance(value, int | float):
         try:
             return Decimal(str(value))
         except Exception:
@@ -85,7 +90,7 @@ def _decimal(value: Any) -> Optional[Decimal]:
         return None
 
 
-def _parse_year_month(text: str) -> Tuple[Optional[int], Optional[int]]:
+def _parse_year_month(text: str) -> tuple[int | None, int | None]:
     """
     从文本中解析年月
     支持格式：2025年1月、2025-1、2025.1、202501
@@ -93,8 +98,8 @@ def _parse_year_month(text: str) -> Tuple[Optional[int], Optional[int]]:
     """
     text = _str(text)
     patterns = [
-        r'(\d{4})[年\-\.](\d{1,2})',  # 2025年1月、2025-1、2025.1
-        r'(\d{4})(\d{2})',             # 202501
+        r"(\d{4})[年\-\.](\d{1,2})",  # 2025年1月、2025-1、2025.1
+        r"(\d{4})(\d{2})",  # 202501
     ]
     for pattern in patterns:
         match = re.search(pattern, text)
@@ -106,7 +111,7 @@ def _parse_year_month(text: str) -> Tuple[Optional[int], Optional[int]]:
     return None, None
 
 
-def _parse_spec(spec_str: str) -> Tuple[Optional[Decimal], Optional[Decimal]]:
+def _parse_spec(spec_str: str) -> tuple[Decimal | None, Decimal | None]:
     """
     解析规格字符串，支持格式：
     - 1.0*1250
@@ -118,13 +123,13 @@ def _parse_spec(spec_str: str) -> Tuple[Optional[Decimal], Optional[Decimal]]:
         return None, None
 
     # 匹配 厚度*宽度，厚度部分允许以 . 开头
-    match = re.match(r'([\d.]*[\d]+)\*(\d+)', spec_str)
+    match = re.match(r"([\d.]*[\d]+)\*(\d+)", spec_str)
     if match:
         thick_str = match.group(1)
 
         # 业务修正：.0 → 1.0（Excel 中常省略前面的 1）
-        if thick_str.startswith('.'):
-            thick_str = '1' + thick_str
+        if thick_str.startswith("."):
+            thick_str = "1" + thick_str
 
         thick = _decimal(thick_str)
         width = _decimal(match.group(2))
@@ -133,13 +138,13 @@ def _parse_spec(spec_str: str) -> Tuple[Optional[Decimal], Optional[Decimal]]:
     return None, None
 
 
-def _parse_sheet2(wb: openpyxl.Workbook) -> Dict[str, Dict[str, str]]:
+def _parse_sheet2(wb: openpyxl.Workbook) -> dict[str, dict[str, str]]:
     """
     解析 Sheet2，返回映射：{ grade -> { location -> steel_mill } }
     列布局：A=材质, B=芜湖钢厂, C=大连钢厂, D=青岛钢厂
     【当前未启用，保留备用】
     """
-    result: Dict[str, Dict[str, str]] = {}
+    result: dict[str, dict[str, str]] = {}
     if "Sheet2" not in wb.sheetnames:
         return result
 
@@ -168,7 +173,8 @@ def _parse_sheet2(wb: openpyxl.Workbook) -> Dict[str, Dict[str, str]]:
 # 第3层：表头解析器（元数据提取）
 # ============================================================
 
-def _extract_year_month_from_sheet(ws: Any) -> Tuple[Optional[int], Optional[int]]:
+
+def _extract_year_month_from_sheet(ws: Any) -> tuple[int | None, int | None]:
     """从工作表前3行提取年月"""
     for row in ws.iter_rows(min_row=1, max_row=3, values_only=True):
         for cell in row:
@@ -179,7 +185,7 @@ def _extract_year_month_from_sheet(ws: Any) -> Tuple[Optional[int], Optional[int
     return None, None
 
 
-def _extract_base_configs(ws: Any) -> List[BaseColumnConfig]:
+def _extract_base_configs(ws: Any) -> list[BaseColumnConfig]:
     """
     从第4行(基地名)和第5行(子标题)动态识别所有基地列对。
     支持：
@@ -188,8 +194,8 @@ def _extract_base_configs(ws: Any) -> List[BaseColumnConfig]:
     - 1列/基地：只有价格列（如"到厂原卷承兑价格"，无独立钢厂列）
     返回 BaseColumnConfig 列表。
     """
-    header_row = list(ws.iter_rows(min_row=4, max_row=4, values_only=True))[0]
-    sub_row = list(ws.iter_rows(min_row=5, max_row=5, values_only=True))[0]
+    header_row = next(iter(ws.iter_rows(min_row=4, max_row=4, values_only=True)))
+    sub_row = next(iter(ws.iter_rows(min_row=5, max_row=5, values_only=True)))
 
     configs = []
     # 从第5列（索引4）开始扫描，前4列是固定列（序号、钢种、牌号、规格）
@@ -222,11 +228,7 @@ def _extract_base_configs(ws: Any) -> List[BaseColumnConfig]:
 
         if price_col is not None:
             location = base_name.replace("基地", "").strip()
-            configs.append(BaseColumnConfig(
-                location=location,
-                mill_col=idx,
-                price_col=price_col
-            ))
+            configs.append(BaseColumnConfig(location=location, mill_col=idx, price_col=price_col))
         # 如果找不到价格列，跳过该基地（后续可在 warnings 中记录）
 
     # 备用逻辑：如果上面没有识别到任何基地，尝试直接识别价格列
@@ -242,39 +244,40 @@ def _extract_base_configs(ws: Any) -> List[BaseColumnConfig]:
             # 检查是否包含价格关键词（说明这是价格列）
             if sub_text and ("价格" in sub_text or "承兑" in sub_text):
                 location = base_name.replace("基地", "").strip()
-                configs.append(BaseColumnConfig(
-                    location=location,
-                    mill_col=idx,  # 复用价格列作为 mill_col（实际数据为空时会跳过）
-                    price_col=idx
-                ))
+                configs.append(
+                    BaseColumnConfig(
+                        location=location,
+                        mill_col=idx,  # 复用价格列作为 mill_col（实际数据为空时会跳过）
+                        price_col=idx,
+                    )
+                )
             elif not sub_text and base_name not in ("合计", "厚度加减价", "未税合计", "含税合计"):
                 # 无副标题的基地名列，尝试向后找价格列
                 for lookahead in range(idx + 1, len(header_row)):
                     lookahead_sub = _str(sub_row[lookahead]) if lookahead < len(sub_row) else ""
                     if lookahead_sub and ("价格" in lookahead_sub or "承兑" in lookahead_sub):
                         location = base_name.replace("基地", "").strip()
-                        configs.append(BaseColumnConfig(
-                            location=location,
-                            mill_col=idx,
-                            price_col=lookahead
-                        ))
+                        configs.append(
+                            BaseColumnConfig(location=location, mill_col=idx, price_col=lookahead)
+                        )
                         break
 
     return configs
 
-def _extract_processing_fee_col(ws: Any) -> Optional[int]:
+
+def _extract_processing_fee_col(ws: Any) -> int | None:
     """
     从第4行或第5行查找"加工费"列的索引（0-based）
     返回列索引，找不到返回 None
     """
     # 先查第4行（基地名行）
-    header_row = list(ws.iter_rows(min_row=4, max_row=4, values_only=True))[0]
+    header_row = next(iter(ws.iter_rows(min_row=4, max_row=4, values_only=True)))
     for idx, cell in enumerate(header_row):
         if cell and "加工费" in str(cell):
             return idx
 
     # 再查第5行（子标题行）
-    sub_row = list(ws.iter_rows(min_row=5, max_row=5, values_only=True))[0]
+    sub_row = next(iter(ws.iter_rows(min_row=5, max_row=5, values_only=True)))
     for idx, cell in enumerate(sub_row):
         if cell and "加工费" in str(cell):
             return idx
@@ -282,7 +285,7 @@ def _extract_processing_fee_col(ws: Any) -> Optional[int]:
     return None
 
 
-def _find_spec_column(ws: Any) -> Optional[int]:
+def _find_spec_column(ws: Any) -> int | None:
     """
     从表头行（第4行或第5行）查找"参考规格"或"规格"列的索引。
     返回列索引（0-based），找不到返回 None。
@@ -290,7 +293,9 @@ def _find_spec_column(ws: Any) -> Optional[int]:
     # 检查第4行（索引3）和第5行（索引4）
     for row_idx in [4, 5]:
         try:
-            header_row = list(ws.iter_rows(min_row=row_idx, max_row=row_idx, values_only=True))[0]
+            header_row = next(
+                iter(ws.iter_rows(min_row=row_idx, max_row=row_idx, values_only=True))
+            )
         except (IndexError, StopIteration):
             continue
 
@@ -313,12 +318,10 @@ def _find_spec_column(ws: Any) -> Optional[int]:
 # 第4层：行数据映射器
 # ============================================================
 
+
 def _map_row_to_records(
-    row: tuple[Any, ...],
-    context: ParsedContext,
-    excel_row_num: int,
-    processing_fee: Decimal
-) -> List[Dict[str, Any]]:
+    row: tuple[Any, ...], context: ParsedContext, excel_row_num: int, processing_fee: Decimal
+) -> list[dict[str, Any]]:
     """
     将一行 Excel 数据 + 基地配置 → 多条数据库记录（每个基地一条）
     """
@@ -344,28 +347,31 @@ def _map_row_to_records(
 
         # 只有钢厂和价格都存在时才生成记录
         if mill and price is not None:
-            records.append({
-                "year": context.year,
-                "month": context.month,
-                "location": cfg.location,
-                "steel_mill": mill,
-                "category_name": steel_type,
-                "grade": grade,
-                "spec": spec_str,
-                "thick": thick,
-                "width": width,
-                "base_price": price,
-                "processing_fee": processing_fee,
-                "excel_filename": "",
-                "sheet_name": context.sheet_name,
-                "excel_row": excel_row_num,
-                "excel_col": cfg.price_col + 1,  # 转为 1-based 列号
-                "remark": None,
-            })
+            records.append(
+                {
+                    "year": context.year,
+                    "month": context.month,
+                    "location": cfg.location,
+                    "steel_mill": mill,
+                    "category_name": steel_type,
+                    "grade": grade,
+                    "spec": spec_str,
+                    "thick": thick,
+                    "width": width,
+                    "base_price": price,
+                    "processing_fee": processing_fee,
+                    "excel_filename": "",
+                    "sheet_name": context.sheet_name,
+                    "excel_row": excel_row_num,
+                    "excel_col": cfg.price_col + 1,  # 转为 1-based 列号
+                    "remark": None,
+                }
+            )
 
     return records
 
-def _find_data_sheet(wb: Any) -> Optional[Any]:
+
+def _find_data_sheet(wb: Any) -> Any | None:
     """
     自动查找包含数据的工作表。
     识别规则：在第4行或第5行能找到"钢种"、"牌号"、"规格"等关键列名。
@@ -380,45 +386,48 @@ def _find_data_sheet(wb: Any) -> Optional[Any]:
             ws = wb[name]
             # 简单验证：检查第4行或第5行是否有"钢种"
             try:
-                row4 = list(ws.iter_rows(min_row=4, max_row=4, values_only=True))[0]
-                row5 = list(ws.iter_rows(min_row=5, max_row=5, values_only=True))[0]
+                row4 = next(iter(ws.iter_rows(min_row=4, max_row=4, values_only=True)))
+                row5 = next(iter(ws.iter_rows(min_row=5, max_row=5, values_only=True)))
                 header_text = " ".join([_str(cell) for cell in row4 + row5 if cell])
                 if "钢种" in header_text or "牌号" in header_text:
                     return ws
             except (IndexError, StopIteration):
                 continue
-    
+
     # 遍历所有工作表，找到第一个包含关键列的工作表
     for sheet_name in wb.sheetnames:
         ws = wb[sheet_name]
-        
+
         for row_idx in [4, 5]:
             try:
-                header_row = list(ws.iter_rows(min_row=row_idx, max_row=row_idx, values_only=True))[0]
+                header_row = next(
+                    iter(ws.iter_rows(min_row=row_idx, max_row=row_idx, values_only=True))
+                )
                 header_text = " ".join([_str(cell) for cell in header_row if cell])
-                
+
                 keywords = ["钢种", "牌号", "规格", "钢厂", "价格"]
                 if any(kw in header_text for kw in keywords):
                     return ws
             except (IndexError, StopIteration):
                 continue
-    
+
     # 兜底：返回第一个非空工作表
     for sheet_name in wb.sheetnames:
         ws = wb[sheet_name]
         try:
-            first_data_row = list(ws.iter_rows(min_row=6, max_row=6, values_only=True))[0]
+            first_data_row = next(iter(ws.iter_rows(min_row=6, max_row=6, values_only=True)))
             if any(cell is not None and _str(cell) for cell in first_data_row[:5]):
                 return ws
         except (IndexError, StopIteration):
             continue
-    
+
     return None
 
 
 # ============================================================
 # 第4.5层：XLS 文件兼容层（xlrd）
 # ============================================================
+
 
 class _XlsSheetWrapper:
     """
@@ -433,20 +442,21 @@ class _XlsSheetWrapper:
     def title(self) -> Any:
         return self._sheet.name
 
-    def iter_rows(self, min_row: int = 1, max_row: Optional[int] = None,
-                  values_only: bool = True) -> List[List[Any]]:
+    def iter_rows(
+        self, min_row: int = 1, max_row: int | None = None, values_only: bool = True
+    ) -> list[list[Any]]:
         """
         模拟 openpyxl.iter_rows(..., values_only=True) 的行为。
         xlrd 行号从 0 开始；openpyxl 从 1 开始。
         参数 min_row/max_row 采用 openpyxl 的 1-based 语义。
         """
-        results: List[List[Any]] = []
+        results: list[list[Any]] = []
         row_count = self._sheet.nrows
         actual_min = max(0, min_row - 1)
         actual_max = row_count if max_row is None else min(max_row, row_count)
 
         for row_idx in range(actual_min, actual_max):
-            row_values: List[Any] = []
+            row_values: list[Any] = []
             for col_idx in range(self._sheet.ncols):
                 cell = self._sheet.cell(row_idx, col_idx)
                 if cell.ctype == xlrd.XL_CELL_DATE:
@@ -472,9 +482,7 @@ class _XlsSheetWrapper:
                         row_values.append(val)
                 elif cell.ctype == xlrd.XL_CELL_BOOLEAN:
                     row_values.append(bool(cell.value))
-                elif cell.ctype == xlrd.XL_CELL_ERROR:
-                    row_values.append(None)
-                elif cell.ctype == xlrd.XL_CELL_BLANK:
+                elif cell.ctype == xlrd.XL_CELL_ERROR or cell.ctype == xlrd.XL_CELL_BLANK:
                     row_values.append(None)
                 else:
                     row_values.append(cell.value)
@@ -490,12 +498,12 @@ class _XlsWorkbookWrapper:
 
     def __init__(self, book: xlrd.Book):
         self._book = book
-        self._sheets: Dict[str, _XlsSheetWrapper] = {
+        self._sheets: dict[str, _XlsSheetWrapper] = {
             s.name: _XlsSheetWrapper(s) for s in book.sheets()
         }
 
     @property
-    def sheetnames(self) -> List[str]:
+    def sheetnames(self) -> list[str]:
         return list(self._sheets.keys())
 
     def __getitem__(self, name: str) -> _XlsSheetWrapper:
@@ -509,12 +517,13 @@ def _is_xls_file(file_content: bytes) -> bool:
     if len(file_content) < 4:
         return False
     # XLS 文件以复合文档头开始（OLE2 Format）
-    return file_content[:4] == b'\xD0\xCF\x11\xE0'
+    return file_content[:4] == b"\xd0\xcf\x11\xe0"
 
 
 # ============================================================
 # 第5层：流程编排器（入口函数）
 # ============================================================
+
 
 def parse_base_price_excel(file_content: bytes) -> ParseResult:
     """
@@ -577,7 +586,7 @@ def parse_base_price_excel(file_content: bytes) -> ParseResult:
         month=month,
         base_configs=base_configs,
         spec_col=spec_col,
-        sheet_name=actual_sheet_name
+        sheet_name=actual_sheet_name,
     )
 
     # ---------- 3. 动态识别加工费列 ----------
@@ -624,6 +633,6 @@ def parse_base_price_excel(file_content: bytes) -> ParseResult:
         result.warnings.append(f"跳过 {skip_count} 行（钢种或牌号为空或无法解析）")
 
     # ---------- 6. 排序：按列升序（基地从左到右），再按行升序（原始行号） ----------
-    result.records.sort(key=lambda r: (r.get('excel_col', 0), r.get('excel_row', 0)))
+    result.records.sort(key=lambda r: (r.get("excel_col", 0), r.get("excel_row", 0)))
 
     return result

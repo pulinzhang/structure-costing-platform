@@ -62,7 +62,7 @@ class CostingEngineRunStep(Base):
     started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     finished_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
-    run: Mapped["CostingEngineRun"] = relationship(
+    run: Mapped[CostingEngineRun] = relationship(
         "CostingEngineRun",
         back_populates="steps",
     )

@@ -22,6 +22,7 @@ class Process:
 
     工序属于某个零件，通过 part_number 关联。
     """
+
     # 所属零件号
     part_number: str
 

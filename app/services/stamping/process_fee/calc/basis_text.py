@@ -30,19 +30,14 @@ def build_process_basis_text(
             from_seq = (inherited_from_process_seq or "").strip() or "?"
             from_code = (inherited_from_process_code or "").strip()
             from_label = f"{from_seq}/{from_code}" if from_code else from_seq
-            return (
-                f"{process_label}: 继承上一件{from_part}/{from_label} "
-                f"摆剪不计费 = 0"
-            )
+            return f"{process_label}: 继承上一件{from_part}/{from_label} " f"摆剪不计费 = 0"
         return f"{process_label}: 摆剪不计费 = 0"
 
     if tonnage_source == TONNAGE_SOURCE_TAILOR_WELD:
         return f"{process_label}: 拼焊不计费 = 0"
 
     ratio_text = f"{cost_ratio:.2f}" if cost_ratio is not None else "1.00"
-    price_text = (
-        f"{price_per_stroke:.3f}" if price_per_stroke is not None else "-"
-    )
+    price_text = f"{price_per_stroke:.3f}" if price_per_stroke is not None else "-"
     fee_text = f"{line_fee:.3f}"
     tonnage_text = f"{resolved_tonnage}T" if resolved_tonnage is not None else "-"
 

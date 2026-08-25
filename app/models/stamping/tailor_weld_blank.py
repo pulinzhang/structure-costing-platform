@@ -87,13 +87,11 @@ class StampingTailorWeldBlank(AuditUserMixin, Base):
         nullable=True,
         comment="可制件数：一张料单独冲本子片可出的件数",
     )
-    sheet_type: Mapped[str | None] = mapped_column(
-        String(50), nullable=True, comment="料片式样"
-    )
+    sheet_type: Mapped[str | None] = mapped_column(String(50), nullable=True, comment="料片式样")
 
     remark: Mapped[str | None] = mapped_column(Text, nullable=True, comment="备注")
 
-    part: Mapped["StampingPart"] = relationship(
+    part: Mapped[StampingPart] = relationship(
         "StampingPart",
         back_populates="tailor_weld_blanks",
     )

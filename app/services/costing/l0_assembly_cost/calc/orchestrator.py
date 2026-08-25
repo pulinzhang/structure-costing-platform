@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import logging
 from decimal import Decimal
-from typing import Callable
+from collections.abc import Callable
 
 from sqlalchemy.orm import Session
 
@@ -86,14 +86,10 @@ class L0AssemblyCostCalcOrchestrator:
         location = location.strip()
         vehicle_model = vehicle_model.strip()
         bom_version = bom_version.strip()
-        snap = self.bom_snapshot_repo.get_by_unique_key(
-            db, location, vehicle_model, bom_version
-        )
+        snap = self.bom_snapshot_repo.get_by_unique_key(db, location, vehicle_model, bom_version)
         l0_count = 0
         if snap is not None:
-            l0_count = self.bom_node_repo.count_by_snapshot_and_level(
-                db, snap.id, level=0
-            )
+            l0_count = self.bom_node_repo.count_by_snapshot_and_level(db, snap.id, level=0)
         stamping_n = self.stamping_cost_repo.count_calc_success_with_unit_cost(
             db,
             year=year,
@@ -101,9 +97,7 @@ class L0AssemblyCostCalcOrchestrator:
             location=location,
             vehicle_model=vehicle_model,
         )
-        annual_n = self.annual_price_repo.count_with_unit_price(
-            db, location=location, year=year
-        )
+        annual_n = self.annual_price_repo.count_with_unit_price(db, location=location, year=year)
         weld_n = self.l0_welding_fee_repo.count_by_calc_scope(
             db,
             year=year,
@@ -111,9 +105,7 @@ class L0AssemblyCostCalcOrchestrator:
             vehicle_model=vehicle_model,
             bom_version=bom_version,
         )
-        pkg_n = self.packaging_fee_repo.count_by_location_year(
-            db, location=location, year=year
-        )
+        pkg_n = self.packaging_fee_repo.count_by_location_year(db, location=location, year=year)
         ready = l0_count > 0 and (stamping_n > 0 or annual_n > 0)
         message = None
         if snap is None:
@@ -172,13 +164,9 @@ class L0AssemblyCostCalcOrchestrator:
                 progress_callback(progress, msg)
 
         report(5, "加载 BOM…")
-        snap = self.bom_snapshot_repo.get_by_unique_key(
-            db, location, vehicle_model, bom_version
-        )
+        snap = self.bom_snapshot_repo.get_by_unique_key(db, location, vehicle_model, bom_version)
         if snap is None:
-            err = BusinessException(
-                f"无 BOM 快照: {location}/{vehicle_model}/{bom_version}"
-            )
+            err = BusinessException(f"无 BOM 快照: {location}/{vehicle_model}/{bom_version}")
             release_lock_on_error(err)
             raise err
 
@@ -222,9 +210,7 @@ class L0AssemblyCostCalcOrchestrator:
         }
         annual_prices = {
             r.part_number: Decimal(str(r.unit_price))
-            for r in self.annual_price_repo.list_with_unit_price(
-                db, location=location, year=year
-            )
+            for r in self.annual_price_repo.list_with_unit_price(db, location=location, year=year)
         }
         welding_by_part: dict[str, RollupWeldingFee] = {}
         for weld_row in self.l0_welding_fee_repo.list_by_calc_scope(
@@ -369,9 +355,7 @@ class L0AssemblyCostCalcOrchestrator:
                                 for ind in result.indirect_lines
                             ],
                         )
-                        _, is_created = self.cost_repo.upsert_with_children(
-                            db, payload
-                        )
+                        _, is_created = self.cost_repo.upsert_with_children(db, payload)
                     if is_created:
                         created += 1
                     else:
@@ -380,7 +364,7 @@ class L0AssemblyCostCalcOrchestrator:
                         ok_n += 1
                     else:
                         partial_n += 1
-                except Exception as exc:  # noqa: BLE001 — 单件失败不中断整批
+                except Exception as exc:  # — 单件失败不中断整批
                     logger.exception("L0 核价失败 %s: %s", l0.part_number, exc)
                     failed_n += 1
 

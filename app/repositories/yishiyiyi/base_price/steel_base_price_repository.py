@@ -3,7 +3,7 @@
 只负责数据库访问，事务由 Service 层管理
 """
 
-from typing import Optional, TypeVar
+from typing import TypeVar
 
 from sqlalchemy import distinct, func
 from sqlalchemy.orm import InstrumentedAttribute, Session
@@ -45,13 +45,13 @@ class BasePriceFilter:
     def __init__(
         self,
         *,
-        year: Optional[int] = None,
-        month: Optional[int] = None,
-        location: Optional[str] = None,
-        steel_mill: Optional[str] = None,
-        category_name: Optional[str] = None,
-        grade: Optional[str] = None,
-        spec: Optional[str] = None,
+        year: int | None = None,
+        month: int | None = None,
+        location: str | None = None,
+        steel_mill: str | None = None,
+        category_name: str | None = None,
+        grade: str | None = None,
+        spec: str | None = None,
         skip: int = 0,
         limit: int = 20,
     ):
@@ -71,7 +71,7 @@ class SteelBasePriceRepository:
 
     # ---- 查询 ----
 
-    def get_by_id(self, db: Session, record_id: int) -> Optional[SteelBasePrice]:
+    def get_by_id(self, db: Session, record_id: int) -> SteelBasePrice | None:
         """根据主键查询单条记录。"""
         return db.query(SteelBasePrice).filter(SteelBasePrice.id == record_id).first()
 
@@ -184,7 +184,7 @@ class SteelBasePriceRepository:
         update_data: SteelBasePriceUpdate,
         *,
         updated_by: str,
-    ) -> Optional[SteelBasePrice]:
+    ) -> SteelBasePrice | None:
         """按主键更新记录，返回更新后记录或 None（不存在）。"""
         record = self.get_by_id(db, record_id)
         if record is None:
@@ -251,10 +251,10 @@ class SteelBasePriceRepository:
         self,
         db: Session,
         *,
-        year: Optional[int] = None,
-        month: Optional[int] = None,
-        location: Optional[str] = None,
-        steel_mill: Optional[str] = None,
+        year: int | None = None,
+        month: int | None = None,
+        location: str | None = None,
+        steel_mill: str | None = None,
     ) -> int:
         """
         根据条件批量删除记录。

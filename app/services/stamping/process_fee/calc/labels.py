@@ -51,10 +51,7 @@ def can_inherit_previous_tonnage(
         return True
     if is_merged_process_method(process.process_code):
         return True
-    for sibling in part.processes or []:
-        if is_merged_process_method(sibling.process_code):
-            return True
-    return False
+    return any(is_merged_process_method(sibling.process_code) for sibling in part.processes or [])
 
 
 def format_merge_signal_label(
@@ -96,9 +93,7 @@ def summarize_processes(processes: list[StampingProcess]) -> str:
     if not processes:
         return "无工序"
     items: list[str] = []
-    for process in sorted(
-        processes, key=lambda p: (p.process_order or 0, p.id or 0)
-    ):
+    for process in sorted(processes, key=lambda p: (p.process_order or 0, p.id or 0)):
         label = format_process_label(process)
         own = self_tonnage(process)
         tonnage_text = "无吨位" if own is None else f"{own}T"

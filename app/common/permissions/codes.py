@@ -6,7 +6,7 @@
 
 from __future__ import annotations
 
-from typing import Iterator
+from collections.abc import Iterator
 
 
 class Perm:
@@ -108,7 +108,9 @@ class Perm:
 
     MENU_BOM_PACKAGING_TRANSPORT_FEE_UPLOAD = "menu:bom-packaging-transport-fee-upload"  # 上传
     BOM_PACKAGING_TRANSPORT_FEE_UPLOAD_VIEW = "op:bom-packaging-transport-fee-upload:view"  # 查看
-    BOM_PACKAGING_TRANSPORT_FEE_UPLOAD_UPLOAD = "op:bom-packaging-transport-fee-upload:upload"  # 上传
+    BOM_PACKAGING_TRANSPORT_FEE_UPLOAD_UPLOAD = (
+        "op:bom-packaging-transport-fee-upload:upload"  # 上传
+    )
 
     MENU_BOM_PACKAGING_TRANSPORT_FEE = "menu:bom-packaging-transport-fee"  # 包装运输费列表
     BOM_PACKAGING_TRANSPORT_FEE_VIEW = "op:bom-packaging-transport-fee:view"  # 查询
@@ -119,15 +121,23 @@ class Perm:
     BOM_PACKAGING_TRANSPORT_FEE_REVERSE = "op:bom-packaging-transport-fee:reverse"  # 反审核
     BOM_PACKAGING_TRANSPORT_FEE_EXPORT = "op:bom-packaging-transport-fee:export"  # 导出
 
-    MENU_BOM_WELDING_PROCESS_BREAKDOWN_GROUP = "menu:bom-welding-process-breakdown-group"  # 焊接工艺拆解
+    MENU_BOM_WELDING_PROCESS_BREAKDOWN_GROUP = (
+        "menu:bom-welding-process-breakdown-group"  # 焊接工艺拆解
+    )
 
     MENU_BOM_WELDING_PROCESS_BREAKDOWN = "menu:bom-welding-process-breakdown"  # 拆解
-    BOM_WELDING_PROCESS_BREAKDOWN_GENERATE = "op:bom-welding-process-breakdown:generate"  # 从BOM生成
-    BOM_WELDING_PROCESS_BREAKDOWN_DELETE_LOG = "op:bom-welding-process-breakdown:delete-log"  # 删除拆解日志
+    BOM_WELDING_PROCESS_BREAKDOWN_GENERATE = (
+        "op:bom-welding-process-breakdown:generate"  # 从BOM生成
+    )
+    BOM_WELDING_PROCESS_BREAKDOWN_DELETE_LOG = (
+        "op:bom-welding-process-breakdown:delete-log"  # 删除拆解日志
+    )
 
     MENU_BOM_WELDING_PROCESS_BREAKDOWN_LIST = "menu:bom-welding-process-breakdown-list"  # 拆解列表
     BOM_WELDING_PROCESS_BREAKDOWN_VIEW = "op:bom-welding-process-breakdown:view"  # 查询
-    BOM_WELDING_PROCESS_BREAKDOWN_SAVE_LINES = "op:bom-welding-process-breakdown:save-lines"  # 编辑明细
+    BOM_WELDING_PROCESS_BREAKDOWN_SAVE_LINES = (
+        "op:bom-welding-process-breakdown:save-lines"  # 编辑明细
+    )
     BOM_WELDING_PROCESS_BREAKDOWN_DELETE = "op:bom-welding-process-breakdown:delete"  # 删除
     BOM_WELDING_PROCESS_BREAKDOWN_APPROVE = "op:bom-welding-process-breakdown:approve"  # 审核通过
     BOM_WELDING_PROCESS_BREAKDOWN_REVERSE = "op:bom-welding-process-breakdown:reverse"  # 反审核
@@ -283,4 +293,3 @@ def get_perm_code_map() -> dict[str, str]:
         for name, value in vars(Perm).items()
         if not name.startswith("_") and isinstance(value, str)
     }
-

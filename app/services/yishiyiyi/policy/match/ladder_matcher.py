@@ -4,7 +4,6 @@
 """
 
 from decimal import Decimal
-from typing import Optional
 
 from app.models.yishiyiyi import SteelPricePolicy, SteelPriceLadderItem
 from app.schemas.dto.steel_price_policy_dto import PolicyMatchRequest
@@ -14,7 +13,8 @@ from app.schemas.dto.steel_price_policy_dto import PolicyMatchRequest
 # 运算符比较
 # =============================================================================
 
-def _compare(value: Optional[Decimal], operator: Optional[str]) -> bool:
+
+def _compare(value: Decimal | None, operator: str | None) -> bool:
     """
     单条件比较：value 是否满足 operator 条件。
     operator 为空或 None 时视为无限制，返回 True。
@@ -34,10 +34,10 @@ def _compare(value: Optional[Decimal], operator: Optional[str]) -> bool:
 
 def _item_matches(
     item: SteelPriceLadderItem,
-    thickness: Optional[Decimal],
-    width: Optional[Decimal],
-    zinc_coating: Optional[Decimal],
-    target_sub_group: Optional[str],
+    thickness: Decimal | None,
+    width: Decimal | None,
+    zinc_coating: Decimal | None,
+    target_sub_group: str | None,
 ) -> bool:
     """
     判断单条明细是否命中给定的厚度、宽度和锌层克重值。
@@ -102,6 +102,7 @@ def _item_matches(
 # =============================================================================
 # 匹配器类
 # =============================================================================
+
 
 class LadderMatcher:
     """阶梯明细匹配器"""

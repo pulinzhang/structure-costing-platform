@@ -53,9 +53,7 @@ def require_any_perm(*codes: str) -> Callable[..., UserVO]:
         require_any_permission(current_user, list(codes))
         return current_user
 
-    _dependency.__name__ = "require_any_perm_" + "_".join(
-        c.replace(":", "_") for c in codes
-    )
+    _dependency.__name__ = "require_any_perm_" + "_".join(c.replace(":", "_") for c in codes)
     return _dependency
 
 

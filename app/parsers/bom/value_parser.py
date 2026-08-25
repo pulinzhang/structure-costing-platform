@@ -62,7 +62,7 @@ def to_decimal(value: Any) -> Decimal | None:
         return None
     if isinstance(value, Decimal):
         return value
-    if isinstance(value, (int, float)):
+    if isinstance(value, int | float):
         return Decimal(str(value))
     text = to_text(value)
     if not text:

@@ -43,6 +43,7 @@ DEFAULT_EXPORT_PAGE_SIZE = 5000
 
 class BatchDeleteResponse(BaseModel):
     """批量删除响应 VO"""
+
     year: int
     month: int
 
@@ -57,6 +58,7 @@ _async_task_service = AsyncTaskService()
 def _build_filter_options_vo(service: SteelBasePriceService, db: Session) -> FilterOptionsVO:
     """从 Repository 获取 FilterOptions 并转换为 VO"""
     from app.schemas.dto.steel_base_price_dto import FilterOptions
+
     raw: FilterOptions = service.get_filter_options(db)
     return FilterOptionsVO(
         years=raw.years,
@@ -76,7 +78,9 @@ def _build_filter_options_vo(service: SteelBasePriceService, db: Session) -> Fil
 def list_base_prices(
     query: SteelBasePriceQuery = Depends(),
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(require_any_perm(Perm.BASE_PRICE_DOWNLOAD_VIEW, Perm.BASE_PRICE_UPLOAD_VIEW)),
+    current_user: UserVO = Depends(
+        require_any_perm(Perm.BASE_PRICE_DOWNLOAD_VIEW, Perm.BASE_PRICE_UPLOAD_VIEW)
+    ),
 ) -> ApiResponse[list[SteelBasePriceResponse]]:
     """
     分页查询基准价格列表。
@@ -97,7 +101,9 @@ def list_base_prices(
 )
 def get_base_price_options(
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(require_any_perm(Perm.BASE_PRICE_DOWNLOAD_VIEW, Perm.BASE_PRICE_UPLOAD_VIEW)),
+    current_user: UserVO = Depends(
+        require_any_perm(Perm.BASE_PRICE_DOWNLOAD_VIEW, Perm.BASE_PRICE_UPLOAD_VIEW)
+    ),
 ) -> ApiResponse[FilterOptionsVO]:
     """获取筛选下拉选项（年度/月份/基地/钢厂等）。"""
     filters = _build_filter_options_vo(_steel_base_price_service, db)
@@ -228,11 +234,7 @@ def get_base_price_import_task_progress(
     task = _async_task_service.require_snapshot(task_id, TASK_TYPE_BASE_PRICE_IMPORT)
 
     result_raw = AsyncTaskService.parse_result_json(task.get("result_json"))
-    result = (
-        SteelBasePriceImportResultResponse.model_validate(result_raw)
-        if result_raw
-        else None
-    )
+    result = SteelBasePriceImportResultResponse.model_validate(result_raw) if result_raw else None
     return ApiResponse.ok(
         data=AsyncTaskProgressVO.from_snapshot(
             task,
@@ -249,7 +251,9 @@ def get_base_price_import_task_progress(
 def get_base_price(
     record_id: int,
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(require_any_perm(Perm.BASE_PRICE_DOWNLOAD_VIEW, Perm.BASE_PRICE_UPLOAD_VIEW)),
+    current_user: UserVO = Depends(
+        require_any_perm(Perm.BASE_PRICE_DOWNLOAD_VIEW, Perm.BASE_PRICE_UPLOAD_VIEW)
+    ),
 ) -> ApiResponse[SteelBasePriceResponse]:
     """获取单条基准价格记录。"""
     record = _steel_base_price_service.get_by_id(db, record_id)
@@ -282,9 +286,7 @@ def update_base_price(
     current_user: UserVO = Depends(require_perm(Perm.BASE_PRICE_UPLOAD_UPLOAD)),
 ) -> ApiResponse[SteelBasePriceResponse]:
     """更新基准价格记录。"""
-    record = _steel_base_price_service.update(
-        db, record_id, body, current_user=current_user
-    )
+    record = _steel_base_price_service.update(db, record_id, body, current_user=current_user)
     return ApiResponse.updated(data=record, message="更新成功")
 
 

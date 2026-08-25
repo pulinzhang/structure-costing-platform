@@ -96,9 +96,7 @@ class StampingProcessAnalysisRepository:
                     stamping_supplier=part.stamping_supplier,
                     material=part.material,
                     thickness=(
-                        Decimal(str(part.thickness))
-                        if part.thickness is not None
-                        else None
+                        Decimal(str(part.thickness)) if part.thickness is not None else None
                     ),
                     is_tailor_welded=bool(part.is_tailor_welded),
                     process_count=int(process_count or 0),

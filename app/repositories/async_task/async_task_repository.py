@@ -10,7 +10,6 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Optional
 
 from sqlalchemy import Connection, delete, insert, update
 from sqlalchemy.orm import Session
@@ -22,7 +21,7 @@ from app.schemas.dto.async_task_dto import AsyncTaskInsert, AsyncTaskPatch
 class AsyncTaskRepository:
     """异步任务数据访问 — 只做 SQL，不含节流/线程池等业务策略。"""
 
-    def get_by_task_id(self, db: Session, task_id: str) -> Optional[AsyncTask]:
+    def get_by_task_id(self, db: Session, task_id: str) -> AsyncTask | None:
         return db.query(AsyncTask).filter(AsyncTask.task_id == task_id).first()
 
     def insert_task(self, conn: Connection, data: AsyncTaskInsert) -> None:
@@ -66,15 +65,9 @@ class AsyncTaskRepository:
             values["updated_by"] = data["updated_by"]
         if not values:
             return
-        conn.execute(
-            update(AsyncTask)
-            .where(AsyncTask.task_id == task_id)
-            .values(**values)
-        )
+        conn.execute(update(AsyncTask).where(AsyncTask.task_id == task_id).values(**values))
 
     def delete_older_than(self, conn: Connection, cutoff: datetime) -> int:
         """AUTOCOMMIT 连接上删除过期任务，返回删除行数。"""
-        result = conn.execute(
-            delete(AsyncTask).where(AsyncTask.updated_at < cutoff)
-        )
+        result = conn.execute(delete(AsyncTask).where(AsyncTask.updated_at < cutoff))
         return int(result.rowcount or 0)

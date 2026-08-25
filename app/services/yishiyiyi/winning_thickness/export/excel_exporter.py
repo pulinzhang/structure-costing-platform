@@ -85,15 +85,9 @@ class WinningThicknessExporter:
         ws.title = "厚度价格一览"
 
         header_font = Font(name="微软雅黑", size=10, bold=True, color="FFFFFF")
-        header_fill = PatternFill(
-            start_color="4472C4", end_color="4472C4", fill_type="solid"
-        )
-        weak_header_fill = PatternFill(
-            start_color="8FAADC", end_color="8FAADC", fill_type="solid"
-        )
-        header_alignment = Alignment(
-            horizontal="center", vertical="center", wrap_text=True
-        )
+        header_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
+        weak_header_fill = PatternFill(start_color="8FAADC", end_color="8FAADC", fill_type="solid")
+        header_alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
 
         data_font = Font(name="微软雅黑", size=10, color="000000")
         weak_font = Font(name="微软雅黑", size=8, color="808080")

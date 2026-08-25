@@ -144,6 +144,4 @@ def validate_welding_unit_price_catalog(
     if not actual:
         raise ValueError(f"「{name}」单位不能为空（目录单位为「{expected}」）")
     if normalize_unit_key(actual) != normalize_unit_key(expected):
-        raise ValueError(
-            f"「{name}」单位应为「{expected}」，当前为「{actual}」"
-        )
+        raise ValueError(f"「{name}」单位应为「{expected}」，当前为「{actual}」")

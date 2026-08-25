@@ -52,12 +52,7 @@ class OperationLogRepository:
             q = q.filter(OperationLog.created_at <= created_to)
 
         total = q.count()
-        rows = (
-            q.order_by(OperationLog.id.desc())
-            .offset(skip)
-            .limit(limit)
-            .all()
-        )
+        rows = q.order_by(OperationLog.id.desc()).offset(skip).limit(limit).all()
         return rows, total
 
     def list_for_export(
@@ -88,11 +83,7 @@ class OperationLogRepository:
             q = q.filter(OperationLog.created_at >= created_from)
         if created_to is not None:
             q = q.filter(OperationLog.created_at <= created_to)
-        return (
-            q.order_by(OperationLog.id.desc())
-            .limit(limit)
-            .all()
-        )
+        return q.order_by(OperationLog.id.desc()).limit(limit).all()
 
     def list_filter_options(self, db: Session) -> dict[str, list[str]]:
         modules = [
@@ -106,18 +97,12 @@ class OperationLogRepository:
         ]
         actions = [
             r[0]
-            for r in db.query(OperationLog.action)
-            .distinct()
-            .order_by(OperationLog.action)
-            .all()
+            for r in db.query(OperationLog.action).distinct().order_by(OperationLog.action).all()
             if r[0]
         ]
         methods = [
             r[0]
-            for r in db.query(OperationLog.method)
-            .distinct()
-            .order_by(OperationLog.method)
-            .all()
+            for r in db.query(OperationLog.method).distinct().order_by(OperationLog.method).all()
             if r[0]
         ]
         return {"modules": modules, "actions": actions, "methods": methods}

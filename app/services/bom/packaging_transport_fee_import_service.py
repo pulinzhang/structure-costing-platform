@@ -99,9 +99,7 @@ class BomPackagingTransportFeeImportService:
         sheet.title = "包装运输费"
 
         header_font = Font(name="微软雅黑", size=10, bold=True, color="FFFFFF")
-        header_fill = PatternFill(
-            start_color="4472C4", end_color="4472C4", fill_type="solid"
-        )
+        header_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
         header_alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
         data_font = Font(name="微软雅黑", size=9)
         thin_border = Border(
@@ -164,9 +162,7 @@ class BomPackagingTransportFeeImportService:
         if year < 2000 or year > 2100:
             raise BusinessException("年度不正确")
 
-        bom_snapshots = self.snapshot_repository.list_by_location_model(
-            db, location, vehicle_model
-        )
+        bom_snapshots = self.snapshot_repository.list_by_location_model(db, location, vehicle_model)
         if not bom_snapshots:
             raise BusinessException(
                 f"未找到材料清单：基地「{location}」项目「{vehicle_model}」，"
@@ -191,9 +187,7 @@ class BomPackagingTransportFeeImportService:
             vehicle_model=vehicle_model,
         )
         try:
-            archived_rel = str(
-                archive_path.relative_to(settings.UPLOAD_DIR)
-            ).replace("\\", "/")
+            archived_rel = str(archive_path.relative_to(settings.UPLOAD_DIR)).replace("\\", "/")
         except ValueError:
             archived_rel = str(archive_path).replace("\\", "/")
 
@@ -240,9 +234,7 @@ class BomPackagingTransportFeeImportService:
                             unit_transport_fee=quantize_fee(row.unit_transport_fee),
                             fixture_maint_fee=quantize_fee(row.fixture_maint_fee),
                             other_fee=quantize_fee(row.other_fee),
-                            packaging_transport_total=quantize_fee(
-                                row.packaging_transport_total
-                            ),
+                            packaging_transport_total=quantize_fee(row.packaging_transport_total),
                             remark=row.remark,
                             excel_filename=original_name,
                             sheet_name=sheet_name,
@@ -276,9 +268,7 @@ class BomPackagingTransportFeeImportService:
                             unit_transport_fee=quantize_fee(row.unit_transport_fee),
                             fixture_maint_fee=quantize_fee(row.fixture_maint_fee),
                             other_fee=quantize_fee(row.other_fee),
-                            packaging_transport_total=quantize_fee(
-                                row.packaging_transport_total
-                            ),
+                            packaging_transport_total=quantize_fee(row.packaging_transport_total),
                             remark=row.remark,
                             excel_filename=original_name,
                             sheet_name=sheet_name,

@@ -27,8 +27,7 @@ class StampingScrapPriceExportService:
     ) -> tuple[bytes, str]:
         years = [year] if year is not None else self.repository.list_years_asc(db)
         records_by_year = {
-            year_value: self.repository.list_by_year(db, year_value)
-            for year_value in years
+            year_value: self.repository.list_by_year(db, year_value) for year_value in years
         }
         return self._exporter.generate(
             years,

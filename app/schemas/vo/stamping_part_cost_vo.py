@@ -88,7 +88,10 @@ class StampingPartCostVO(BaseModel):
     updated_at: datetime | None = None
 
     @field_validator(
-        "thickness", "sheet_length", "sheet_width", "steel_ton_price",
+        "thickness",
+        "sheet_length",
+        "sheet_width",
+        "steel_ton_price",
         mode="before",
     )
     @classmethod

@@ -250,9 +250,7 @@ class StampingTailorWeldBlankService:
                 patch["blank_seq"],
             )
             if conflict is not None and conflict.id != blank.id:
-                raise BusinessException(
-                    f"子片序号已存在: blank_seq={patch['blank_seq']}"
-                )
+                raise BusinessException(f"子片序号已存在: blank_seq={patch['blank_seq']}")
 
         # 改序号且未显式传子件号时，按约定重算「父号-N」
         if "blank_seq" in patch and "blank_part_number" not in patch:
@@ -340,14 +338,10 @@ class StampingTailorWeldBlankService:
             parent_part_number = assembly.parent_part_number
             part_id = part_map.get(parent_part_number)
             if part_id is None:
-                warnings.append(
-                    f"拼焊总成 {parent_part_number} 在零件主表中不存在，已跳过"
-                )
+                warnings.append(f"拼焊总成 {parent_part_number} 在零件主表中不存在，已跳过")
                 continue
             if assembly.blank_count < 2:
-                warnings.append(
-                    f"拼焊总成 {parent_part_number} 子片不足 2 片，已跳过"
-                )
+                warnings.append(f"拼焊总成 {parent_part_number} 子片不足 2 片，已跳过")
                 continue
 
             saved_assemblies += 1
@@ -360,9 +354,7 @@ class StampingTailorWeldBlankService:
                         blank_seq=blank_seq,
                         blank_part_number=(
                             blank.blank_part_number
-                            or self.build_blank_part_number(
-                                parent_part_number, blank_seq
-                            )
+                            or self.build_blank_part_number(parent_part_number, blank_seq)
                         ),
                         material=blank.material,
                         thickness=blank.thickness,

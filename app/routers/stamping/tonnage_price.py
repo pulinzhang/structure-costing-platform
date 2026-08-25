@@ -3,7 +3,6 @@
 API 接口定义
 """
 
-from typing import List
 from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, File, Form, Query, UploadFile
@@ -47,23 +46,23 @@ _export_service = StampingTonnagePriceExportService()
 _import_service = StampingTonnagePriceImportService()
 
 
-@router.get("/list", response_model=ApiResponse[List[StampingTonnagePriceResponse]])
+@router.get("/list", response_model=ApiResponse[list[StampingTonnagePriceResponse]])
 def list_all(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_VIEW)),
-) -> ApiResponse[List[StampingTonnagePriceResponse]]:
+) -> ApiResponse[list[StampingTonnagePriceResponse]]:
     """获取所有冲次单价列表（按年份、吨位排序）"""
     data = _tonnage_price_service.list_all(db)
     return ApiResponse.ok(data=data, message=f"查询到 {len(data)} 条记录")
 
 
-@router.get("/by-year/{year}", response_model=ApiResponse[List[StampingTonnagePriceResponse]])
+@router.get("/by-year/{year}", response_model=ApiResponse[list[StampingTonnagePriceResponse]])
 def list_by_year(
     year: int,
     location: str | None = None,
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_VIEW)),
-) -> ApiResponse[List[StampingTonnagePriceResponse]]:
+) -> ApiResponse[list[StampingTonnagePriceResponse]]:
     """获取指定年份的冲次单价；传入 location 时按基地过滤"""
     if location:
         data = _tonnage_price_service.list_by_location_year(db, location, year)
@@ -90,31 +89,31 @@ def paginate(
     )
 
 
-@router.get("/filters/locations", response_model=ApiResponse[List[str]])
+@router.get("/filters/locations", response_model=ApiResponse[list[str]])
 def get_locations(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_VIEW)),
-) -> ApiResponse[List[str]]:
+) -> ApiResponse[list[str]]:
     """获取所有基地列表"""
     data = _tonnage_price_service.get_locations(db)
     return ApiResponse.ok(data=data)
 
 
-@router.get("/filters/years", response_model=ApiResponse[List[int]])
+@router.get("/filters/years", response_model=ApiResponse[list[int]])
 def get_years(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_VIEW)),
-) -> ApiResponse[List[int]]:
+) -> ApiResponse[list[int]]:
     """获取所有年份列表"""
     data = _tonnage_price_service.get_years(db)
     return ApiResponse.ok(data=data)
 
 
-@router.get("/filters/tonnages", response_model=ApiResponse[List[int]])
+@router.get("/filters/tonnages", response_model=ApiResponse[list[int]])
 def get_tonnages(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_VIEW)),
-) -> ApiResponse[List[int]]:
+) -> ApiResponse[list[int]]:
     """获取所有吨位列表"""
     data = _tonnage_price_service.get_tonnages(db)
     return ApiResponse.ok(data=data)
@@ -136,9 +135,7 @@ def export_excel(
     return StreamingResponse(
         iter([content]),
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={
-            "Content-Disposition": f"attachment; filename*=UTF-8''{quote(filename)}"
-        },
+        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{quote(filename)}"},
     )
 
 
@@ -151,9 +148,7 @@ def download_import_template(
     return StreamingResponse(
         iter([content]),
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={
-            "Content-Disposition": f"attachment; filename*=UTF-8''{quote(filename)}"
-        },
+        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{quote(filename)}"},
     )
 
 
@@ -223,9 +218,7 @@ def batch_approve(
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_APPROVE)),
 ) -> ApiResponse[StampingTonnagePriceBatchAuditResultVO]:
     """按基地 + 年度批量审核通过。"""
-    result = _tonnage_price_service.batch_approve(
-        db, body, current_user=current_user
-    )
+    result = _tonnage_price_service.batch_approve(db, body, current_user=current_user)
     message = f"已审核通过 {result.updated_count} 条"
     if result.skipped_count:
         message += f"，跳过已审核 {result.skipped_count} 条"
@@ -242,9 +235,7 @@ def batch_reverse_audit(
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_REVERSE)),
 ) -> ApiResponse[StampingTonnagePriceBatchAuditResultVO]:
     """按基地 + 年度批量反审核。"""
-    result = _tonnage_price_service.batch_reverse_audit(
-        db, body, current_user=current_user
-    )
+    result = _tonnage_price_service.batch_reverse_audit(db, body, current_user=current_user)
     message = f"已反审核 {result.updated_count} 条"
     if result.skipped_count:
         message += f"，跳过非已审 {result.skipped_count} 条"
@@ -253,7 +244,7 @@ def batch_reverse_audit(
 
 @router.post("/bulk", response_model=ApiResponse[StampingTonnagePriceBulkUpsertResponse])
 def bulk_upsert(
-    items: List[StampingTonnagePriceCreate],
+    items: list[StampingTonnagePriceCreate],
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_CREATE)),
 ) -> ApiResponse[StampingTonnagePriceBulkUpsertResponse]:

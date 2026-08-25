@@ -17,7 +17,7 @@
 }
 """
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from openpyxl.worksheet.worksheet import Worksheet
 
@@ -48,11 +48,11 @@ class BaseSheetHandler:
         self,
         sheet: Worksheet,
         steel_mill: str,
-        warnings: List[str],
-    ) -> List[ParsedPolicy]:
+        warnings: list[str],
+    ) -> list[ParsedPolicy]:
         """解析入口：厚度块 + 宽度块 + 锌层加价块。"""
         del warnings
-        policies: List[ParsedPolicy] = []
+        policies: list[ParsedPolicy] = []
         policies.extend(self._parse_blocks(sheet, steel_mill, "THICKNESS"))
         policies.extend(self._parse_blocks(sheet, steel_mill, "WIDTH"))
         policies.extend(self.parse_zinc_coating_blocks(sheet, steel_mill))
@@ -62,15 +62,11 @@ class BaseSheetHandler:
     # 子类钩子
     # ------------------------------------------------------------------ #
 
-    def find_thickness_blocks(
-        self, sheet: Worksheet, steel_mill: str
-    ) -> List[Dict[str, Any]]:
+    def find_thickness_blocks(self, sheet: Worksheet, steel_mill: str) -> list[dict[str, Any]]:
         """返回本 Sheet 所有厚度块描述。默认空，子类覆写。"""
         return []
 
-    def find_width_blocks(
-        self, sheet: Worksheet, steel_mill: str
-    ) -> List[Dict[str, Any]]:
+    def find_width_blocks(self, sheet: Worksheet, steel_mill: str) -> list[dict[str, Any]]:
         """返回本 Sheet 所有宽度块描述。默认空，子类覆写。"""
         return []
 
@@ -78,21 +74,17 @@ class BaseSheetHandler:
     # 复用组件（对外 API 保持不变，内部委托）
     # ------------------------------------------------------------------ #
 
-    def find_zinc_coating_blocks(
-        self, sheet: Worksheet, steel_mill: str
-    ) -> List[Dict[str, Any]]:
+    def find_zinc_coating_blocks(self, sheet: Worksheet, steel_mill: str) -> list[dict[str, Any]]:
         return self._zinc_parser.find_blocks(sheet, steel_mill)
 
-    def parse_zinc_coating_blocks(
-        self, sheet: Worksheet, steel_mill: str
-    ) -> List[ParsedPolicy]:
+    def parse_zinc_coating_blocks(self, sheet: Worksheet, steel_mill: str) -> list[ParsedPolicy]:
         return self._zinc_parser.parse_blocks(sheet, steel_mill)
 
     def find_default_thickness_blocks(
         self,
         sheet: Worksheet,
         steel_mill: str,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         return self._thickness_finder.find_default_blocks(sheet, steel_mill)
 
     # ------------------------------------------------------------------ #
@@ -104,18 +96,16 @@ class BaseSheetHandler:
         sheet: Worksheet,
         steel_mill: str,
         policy_type: str,
-    ) -> List[ParsedPolicy]:
+    ) -> list[ParsedPolicy]:
         """按块描述列表执行通用解析。"""
         blocks = (
             self.find_thickness_blocks(sheet, steel_mill)
             if policy_type == "THICKNESS"
             else self.find_width_blocks(sheet, steel_mill)
         )
-        policies: List[ParsedPolicy] = []
+        policies: list[ParsedPolicy] = []
         for block in blocks:
-            policies.extend(
-                self.assembler.build_policies_from_block(sheet, steel_mill, block)
-            )
+            policies.extend(self.assembler.build_policies_from_block(sheet, steel_mill, block))
         return policies
 
     def _parse_one_block(
@@ -123,8 +113,8 @@ class BaseSheetHandler:
         sheet: Worksheet,
         steel_mill: str,
         policy_type: str,
-        block: Dict[str, Any],
-    ) -> List[ParsedPolicy]:
+        block: dict[str, Any],
+    ) -> list[ParsedPolicy]:
         del policy_type
         return self.assembler.build_policies_from_block(sheet, steel_mill, block)
 
@@ -133,18 +123,16 @@ class BaseSheetHandler:
         sheet: Worksheet,
         steel_mill: str,
         policy_type: str,
-    ) -> List[ParsedPolicy]:
+    ) -> list[ParsedPolicy]:
         """THICKNESS/WIDTH 通用解析（子类复用）。"""
         blocks = (
             self.find_thickness_blocks(sheet, steel_mill)
             if policy_type == "THICKNESS"
             else self.find_width_blocks(sheet, steel_mill)
         )
-        policies: List[ParsedPolicy] = []
+        policies: list[ParsedPolicy] = []
         for block in blocks:
-            policies.extend(
-                self._parse_one_block(sheet, steel_mill, policy_type, block)
-            )
+            policies.extend(self._parse_one_block(sheet, steel_mill, policy_type, block))
         return policies
 
     # ------------------------------------------------------------------ #
@@ -156,7 +144,7 @@ class BaseSheetHandler:
         sheet: Worksheet,
         label_row: int,
         block_end: int,
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         return self.assembler.locate_thickness_block(sheet, label_row, block_end)
 
     def locate_width_block(
@@ -170,8 +158,8 @@ class BaseSheetHandler:
         *,
         category: str = "冷轧钢",
         header_row_offset: int = 1,
-        scan_cols: Optional[List[int]] = None,
-    ) -> Optional[Dict[str, Any]]:
+        scan_cols: list[int] | None = None,
+    ) -> dict[str, Any] | None:
         return self.assembler.locate_width_block(
             sheet,
             title_row,
@@ -189,8 +177,8 @@ class BaseSheetHandler:
         sheet: Worksheet,
         header_row: int,
         start_col: int = 2,
-        end_col: Optional[int] = None,
-    ) -> List[int]:
+        end_col: int | None = None,
+    ) -> list[int]:
         return self.scanner.collect_price_cols(sheet, header_row, start_col, end_col)
 
     def find_block_end_row(
@@ -201,7 +189,7 @@ class BaseSheetHandler:
         max_col: int,
         *,
         blank_limit: int = BLANK_LIMIT,
-        scan_cols: Optional[List[int]] = None,
+        scan_cols: list[int] | None = None,
     ) -> int:
         return self.scanner.find_block_end_row(
             sheet,
@@ -216,8 +204,8 @@ class BaseSheetHandler:
         self,
         sheet: Worksheet,
         start_row: int = 1,
-        end_row: Optional[int] = None,
-    ) -> List[int]:
+        end_row: int | None = None,
+    ) -> list[int]:
         return self.scanner.find_grade_label_rows(sheet, start_row, end_row)
 
     def find_section_break_row(
@@ -226,12 +214,10 @@ class BaseSheetHandler:
         start_row: int,
         max_row: int,
         scan_col: int = 1,
-    ) -> Optional[int]:
-        return self.scanner.find_section_break_row(
-            sheet, start_row, max_row, scan_col
-        )
+    ) -> int | None:
+        return self.scanner.find_section_break_row(sheet, start_row, max_row, scan_col)
 
-    def find_start_row(self, sheet: Worksheet, r: int, c: int) -> Optional[int]:
+    def find_start_row(self, sheet: Worksheet, r: int, c: int) -> int | None:
         return self.scanner.find_start_row(sheet, r, c)
 
     def row_max(self, sheet: Worksheet) -> int:
@@ -243,32 +229,32 @@ class BaseSheetHandler:
     def text(self, sheet: Worksheet, r: int, c: int) -> str:
         return self.scanner.text(sheet, r, c)
 
-    def text_or_none(self, sheet: Worksheet, r: int, c: int) -> Optional[str]:
+    def text_or_none(self, sheet: Worksheet, r: int, c: int) -> str | None:
         return self.scanner.text_or_none(sheet, r, c)
 
     def category_from_grade_name(self, grade: str) -> str:
         return self.assembler.category_from_grade_name(grade)
 
-    def infer_block_category(self, sheet: Worksheet, block: Dict[str, Any]) -> str:
+    def infer_block_category(self, sheet: Worksheet, block: dict[str, Any]) -> str:
         return self.assembler.infer_block_category(sheet, block)
 
     def _collect_boundaries(
         self,
         sheet: Worksheet,
         header_row: int,
-        price_cols: List[int],
-    ) -> Dict[int, _Boundary]:
+        price_cols: list[int],
+    ) -> dict[int, _Boundary]:
         return self.assembler.collect_boundaries(sheet, header_row, price_cols)
 
     def _build_items_for_row(
         self,
         sheet: Worksheet,
         r: int,
-        price_cols: List[int],
-        boundaries: Dict[int, _Boundary],
+        price_cols: list[int],
+        boundaries: dict[int, _Boundary],
         policy_type: str = "THICKNESS",
         sort_order: int = 0,
-    ) -> Tuple[List[ParsedLadderItem], Any]:
+    ) -> tuple[list[ParsedLadderItem], Any]:
         return self.assembler.build_items_for_row(
             sheet, r, price_cols, boundaries, policy_type, sort_order
         )
@@ -291,7 +277,5 @@ class BaseSheetHandler:
         start_row: int,
         col: int,
         min_row: int = 1,
-    ) -> Tuple[int, int]:
-        return self.scanner.find_value_above_with_row(
-            sheet, start_row, col, min_row
-        )
+    ) -> tuple[int, int]:
+        return self.scanner.find_value_above_with_row(sheet, start_row, col, min_row)

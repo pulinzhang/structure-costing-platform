@@ -106,13 +106,7 @@ def _cell_text(value: Any) -> str:
 
 
 def _normalize_header(text: str) -> str:
-    return (
-        text.replace("\n", "")
-        .replace(" ", "")
-        .replace("（", "(")
-        .replace("）", ")")
-        .strip()
-    )
+    return text.replace("\n", "").replace(" ", "").replace("（", "(").replace("）", ")").strip()
 
 
 def _parse_money(value: Any, *, allow_empty: bool = False) -> Decimal | None:
@@ -121,7 +115,7 @@ def _parse_money(value: Any, *, allow_empty: bool = False) -> Decimal | None:
     try:
         if isinstance(value, Decimal):
             number = value
-        elif isinstance(value, (int, float)):
+        elif isinstance(value, int | float):
             number = Decimal(str(value))
         else:
             text = str(value).strip().replace(",", "")
@@ -160,9 +154,7 @@ def _is_skip_row(part_number: str, part_name: str) -> bool:
         return True
     if "计算公式" in part_number or "计算公式" in part_name:
         return True
-    if part_number in ("序号", "料号", "零件号"):
-        return True
-    return False
+    return part_number in ("序号", "料号", "零件号")
 
 
 def _looks_like_production_header(sheet: Any, row_idx: int) -> bool:
@@ -173,9 +165,7 @@ def _looks_like_production_header(sheet: Any, row_idx: int) -> bool:
     joined = "|".join(texts)
     has_part = any(t in ("料号", "零件号") for t in texts)
     has_pack = any("包装类型" in t for t in texts)
-    has_total = any("包装运输费合计" in t for t in texts) or any(
-        "包装运输费" in t for t in texts
-    )
+    has_total = any("包装运输费合计" in t for t in texts) or any("包装运输费" in t for t in texts)
     # 生产样例：料号 + 包装类型，合计可能在同行或下一行合并区
     if has_part and has_pack:
         return True
@@ -287,8 +277,7 @@ def _parse_production_sheet(sheet: Any, header_row: int) -> PackagingTransportFe
     data_start = header_row + 1
     # 若下一行是子表头（长/宽/高），再跳一行
     next_texts = [
-        _normalize_header(_cell_text(sheet.cell(header_row + 1, c).value))
-        for c in range(6, 15)
+        _normalize_header(_cell_text(sheet.cell(header_row + 1, c).value)) for c in range(6, 15)
     ]
     if any(t.startswith("长") or t == "器具单价" or "总投入" in t for t in next_texts):
         data_start = header_row + 2
@@ -317,9 +306,7 @@ def _parse_production_sheet(sheet: Any, header_row: int) -> PackagingTransportFe
             sheet.cell(row_idx, PROD_COL["other_fee"]).value,
             allow_empty=True,
         )
-        total = _parse_money(
-            sheet.cell(row_idx, PROD_COL["packaging_transport_total"]).value
-        )
+        total = _parse_money(sheet.cell(row_idx, PROD_COL["packaging_transport_total"]).value)
         if pkg_fee is None:
             errors.append(f"第 {row_idx} 行：单件包装费无效")
             continue
@@ -336,13 +323,9 @@ def _parse_production_sheet(sheet: Any, header_row: int) -> PackagingTransportFe
                 row_number=row_idx,
                 part_number=part_number,
                 part_name=part_name or None,
-                packaging_type=_cell_text(
-                    sheet.cell(row_idx, PROD_COL["packaging_type"]).value
-                )
+                packaging_type=_cell_text(sheet.cell(row_idx, PROD_COL["packaging_type"]).value)
                 or None,
-                pieces_per_pack=_parse_int(
-                    sheet.cell(row_idx, PROD_COL["pieces_per_pack"]).value
-                ),
+                pieces_per_pack=_parse_int(sheet.cell(row_idx, PROD_COL["pieces_per_pack"]).value),
                 fixture_length_mm=_parse_int(
                     sheet.cell(row_idx, PROD_COL["fixture_length_mm"]).value
                 ),
@@ -352,9 +335,7 @@ def _parse_production_sheet(sheet: Any, header_row: int) -> PackagingTransportFe
                 fixture_height_mm=_parse_int(
                     sheet.cell(row_idx, PROD_COL["fixture_height_mm"]).value
                 ),
-                oem_stock_qty=_parse_int(
-                    sheet.cell(row_idx, PROD_COL["oem_stock_qty"]).value
-                ),
+                oem_stock_qty=_parse_int(sheet.cell(row_idx, PROD_COL["oem_stock_qty"]).value),
                 transit_qty=_parse_int(sheet.cell(row_idx, PROD_COL["transit_qty"]).value),
                 company_stock_qty=_parse_int(
                     sheet.cell(row_idx, PROD_COL["company_stock_qty"]).value
@@ -405,9 +386,7 @@ def _parse_flat_sheet(
     for row_idx in range(header_row + 1, (sheet.max_row or header_row) + 1):
         part_number = _cell_text(sheet.cell(row_idx, columns[H_PART_NUMBER]).value)
         part_name_col = col(H_PART_NAME)
-        part_name = (
-            _cell_text(sheet.cell(row_idx, part_name_col).value) if part_name_col else ""
-        )
+        part_name = _cell_text(sheet.cell(row_idx, part_name_col).value) if part_name_col else ""
         if _is_skip_row(part_number, part_name):
             continue
         if not part_number:
@@ -442,17 +421,13 @@ def _parse_flat_sheet(
             errors.append(f"第 {row_idx} 行：包装运输费合计无效")
             continue
 
-        def opt_int(header: str) -> int | None:
+        def opt_int(header: str, row_idx: int = row_idx) -> int | None:
             c = col(header)
             return _parse_int(sheet.cell(row_idx, c).value) if c else None
 
-        def opt_money(header: str) -> Decimal | None:
+        def opt_money(header: str, row_idx: int = row_idx) -> Decimal | None:
             c = col(header)
-            return (
-                _parse_money(sheet.cell(row_idx, c).value, allow_empty=True)
-                if c
-                else None
-            )
+            return _parse_money(sheet.cell(row_idx, c).value, allow_empty=True) if c else None
 
         remark_col = col(H_REMARK)
         packaging_col = col(H_PACKAGING_TYPE)
@@ -510,15 +485,11 @@ def parse_packaging_transport_fee_excel(
     try:
         workbook = load_workbook(BytesIO(file_content), data_only=True, read_only=True)
     except Exception as exc:
-        return PackagingTransportFeeParseResult(
-            rows=[], errors=[f"无法读取 Excel：{exc}"]
-        )
+        return PackagingTransportFeeParseResult(rows=[], errors=[f"无法读取 Excel：{exc}"])
 
     try:
         if not workbook.worksheets:
-            return PackagingTransportFeeParseResult(
-                rows=[], errors=["Excel 中没有工作表"]
-            )
+            return PackagingTransportFeeParseResult(rows=[], errors=["Excel 中没有工作表"])
         sheet = workbook.worksheets[0]
 
         # 优先识别生产双行表头

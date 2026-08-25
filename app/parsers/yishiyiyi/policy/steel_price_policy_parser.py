@@ -27,7 +27,8 @@
 
 import io
 from pathlib import Path
-from typing import Any, Callable, List, Optional, Union
+from typing import Any
+from collections.abc import Callable
 
 import xlrd
 from openpyxl.worksheet.worksheet import Worksheet
@@ -136,6 +137,7 @@ def _unwrap_xlrd_cell(cell: Any) -> Any:
         return value
     if ctype == xlrd.XL_CELL_DATE:
         from xlrd.xldate import XLDateAmbiguous, XLDateNegative, XLDateOOD
+
         try:
             tuple_val = xlrd.xldate_as_tuple(value, 0)
             if tuple_val[0] == 0 and tuple_val[1] == 0:
@@ -160,8 +162,8 @@ def _unwrap_xlrd_cell(cell: Any) -> Any:
 def parse_steel_price_policy_sheet(
     sheet: Worksheet,
     sheet_name: str,
-    warnings: List[str],
-    excel_filename: Optional[str] = None,
+    warnings: list[str],
+    excel_filename: str | None = None,
 ) -> Any:
     """解析一张 Sheet，返回 ParsedPolicy 列表。
 
@@ -185,9 +187,7 @@ def parse_steel_price_policy_sheet(
         policies = handler.parse(sheet, sheet_name, warnings)
         for policy in policies:
             policy.excel_filename = excel_filename
-        logger.info(
-            f"钢厂 [{sheet_name}] 解析完成，共 {len(policies)} 条政策"
-        )
+        logger.info(f"钢厂 [{sheet_name}] 解析完成，共 {len(policies)} 条政策")
         return policies
     except Exception as e:
         msg = f"钢厂 [{sheet_name}] 解析失败: {e}"
@@ -201,7 +201,7 @@ def parse_steel_price_policy_sheet(
 # ============================================================================
 
 
-def list_sheets(file: Union[str, Path, bytes]) -> List[str]:
+def list_sheets(file: str | Path | bytes) -> list[str]:
     """列出 Excel 文件中所有 Sheet 名称（用于前端下拉选择）。"""
     wb, _ = _load_workbook_or_bytes(file)
     try:
@@ -211,12 +211,12 @@ def list_sheets(file: Union[str, Path, bytes]) -> List[str]:
 
 
 def parse_steel_price_policy_excel(
-    file: Union[str, Path, bytes],
+    file: str | Path | bytes,
     *,
     year: int,
     month: int,
-    excel_filename: Optional[str] = None,
-    progress_callback: Optional[ProgressCallback] = None,
+    excel_filename: str | None = None,
+    progress_callback: ProgressCallback | None = None,
 ) -> SteelPricePolicyParseResult:
     """整张 Excel 解析（便捷 API）。
 
@@ -251,8 +251,8 @@ class SteelPricePolicyExcelParser:
         *,
         year: int,
         month: int,
-        excel_filename: Optional[str] = None,
-        progress_callback: Optional[ProgressCallback] = None,
+        excel_filename: str | None = None,
+        progress_callback: ProgressCallback | None = None,
     ):
         self.year = year
         self.month = month
@@ -264,11 +264,9 @@ class SteelPricePolicyExcelParser:
         if self.progress_callback:
             self.progress_callback(progress, msg)
 
-    def parse(self, file: Union[str, Path, bytes]) -> SteelPricePolicyParseResult:
+    def parse(self, file: str | Path | bytes) -> SteelPricePolicyParseResult:
         logger.info(f"开始解析钢价政策 Excel（{self.year}年{self.month}月）")
-        self.result = SteelPricePolicyParseResult(
-            year=self.year, month=self.month
-        )
+        self.result = SteelPricePolicyParseResult(year=self.year, month=self.month)
 
         self._report(5, "正在读取 Excel 字节流...")
         wb, _ = _load_workbook_or_bytes(file)
@@ -279,7 +277,9 @@ class SteelPricePolicyExcelParser:
             for index, sheet_name in enumerate(wb.sheetnames):
                 # 解析阶段占用 5% ~ 70%
                 progress = 5 + int((index / total_sheets) * 65)
-                self._report(progress, f"正在解析 Sheet：{sheet_name}（{index + 1}/{total_sheets}）")
+                self._report(
+                    progress, f"正在解析 Sheet：{sheet_name}（{index + 1}/{total_sheets}）"
+                )
                 sheet = wb[sheet_name]
                 policies = parse_steel_price_policy_sheet(
                     sheet, sheet_name, self.result.warnings, excel_filename=self.excel_filename
@@ -346,7 +346,7 @@ def _load_workbook_or_bytes(file: Any) -> tuple[Any, ...]:
     """
     from openpyxl import load_workbook
 
-    if isinstance(file, (str, Path)):
+    if isinstance(file, str | Path):
         path = Path(file)
         if path.suffix.lower() == ".xls":
             xlrd_wb = xlrd.open_workbook(str(path))

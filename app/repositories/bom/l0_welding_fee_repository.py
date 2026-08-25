@@ -352,18 +352,18 @@ class BomL0WeldingFeeRepository:
         row = q.with_entities(
             func.count(BomL0WeldingFee.id).label("total_count"),
             func.coalesce(func.sum(BomL0WeldingFee.final_l0_welding_fee), 0).label("total_fee"),
-            func.sum(
-                case((BomL0WeldingFee.audit_status == AUDIT_PENDING, 1), else_=0)
-            ).label("pending_count"),
-            func.sum(
-                case((BomL0WeldingFee.audit_status == AUDIT_APPROVED, 1), else_=0)
-            ).label("approved_count"),
-            func.sum(
-                case((BomL0WeldingFee.calc_status == "partial", 1), else_=0)
-            ).label("partial_count"),
-            func.sum(
-                case((BomL0WeldingFee.calc_status == "failed", 1), else_=0)
-            ).label("failed_count"),
+            func.sum(case((BomL0WeldingFee.audit_status == AUDIT_PENDING, 1), else_=0)).label(
+                "pending_count"
+            ),
+            func.sum(case((BomL0WeldingFee.audit_status == AUDIT_APPROVED, 1), else_=0)).label(
+                "approved_count"
+            ),
+            func.sum(case((BomL0WeldingFee.calc_status == "partial", 1), else_=0)).label(
+                "partial_count"
+            ),
+            func.sum(case((BomL0WeldingFee.calc_status == "failed", 1), else_=0)).label(
+                "failed_count"
+            ),
             func.sum(BomL0WeldingFee.missing_price_count).label("missing_price_count"),
         ).one()
 
@@ -479,9 +479,7 @@ class BomL0WeldingFeeRepository:
                 location=location,
                 vehicle_model=vehicle_model,
                 bom_version=bom_version,
-            ).filter(
-                BomL0WeldingFee.audit_status.in_([AUDIT_PENDING, AUDIT_REJECTED])
-            ),
+            ).filter(BomL0WeldingFee.audit_status.in_([AUDIT_PENDING, AUDIT_REJECTED])),
             values,
         )
         db.flush()
@@ -523,10 +521,7 @@ class BomL0WeldingFeeRepository:
 
     def get_distinct_years(self, db: Session) -> list[int]:
         results = (
-            db.query(BomL0WeldingFee.year)
-            .distinct()
-            .order_by(BomL0WeldingFee.year.desc())
-            .all()
+            db.query(BomL0WeldingFee.year).distinct().order_by(BomL0WeldingFee.year.desc()).all()
         )
         return [r[0] for r in results]
 

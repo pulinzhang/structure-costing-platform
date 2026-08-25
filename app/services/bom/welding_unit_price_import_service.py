@@ -145,6 +145,7 @@ class BomWeldingUnitPriceImportService:
         buffer = BytesIO()
         workbook.save(buffer)
         return buffer.getvalue(), "焊接单价导入模板.xlsx"
+
     def import_excel(
         self,
         db: Session,
@@ -191,8 +192,7 @@ class BomWeldingUnitPriceImportService:
         ]
         if catalog_errors:
             raise BusinessException(
-                "导入中止（名称/单位必须与焊接标准工艺目录一致）："
-                + "；".join(catalog_errors)
+                "导入中止（名称/单位必须与焊接标准工艺目录一致）：" + "；".join(catalog_errors)
             )
         created_count = 0
         updated_count = 0
@@ -218,7 +218,7 @@ class BomWeldingUnitPriceImportService:
                             unit_price=unit_price,
                             remark=row.remark,
                         ),
-                        updated_by=update_audit["updated_by"]
+                        updated_by=update_audit["updated_by"],
                     )
                     updated_count += 1
                 else:
@@ -233,7 +233,7 @@ class BomWeldingUnitPriceImportService:
                             remark=row.remark,
                         ),
                         created_by=create_audit["created_by"],
-                        updated_by=create_audit["updated_by"]
+                        updated_by=create_audit["updated_by"],
                     )
                     created_count += 1
             register_existing(

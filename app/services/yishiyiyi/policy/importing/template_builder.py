@@ -108,8 +108,6 @@ def _write_notes(sheet: Worksheet, lines: list[str]) -> None:
     for idx, line in enumerate(lines, start=3):
         sheet.cell(row=idx, column=1, value=f"{idx - 2}. {line}")
         sheet.cell(row=idx, column=1).font = Font(name="微软雅黑", size=10)
-        sheet.cell(row=idx, column=1).alignment = Alignment(
-            wrap_text=True, vertical="center"
-        )
+        sheet.cell(row=idx, column=1).alignment = Alignment(wrap_text=True, vertical="center")
         sheet.row_dimensions[idx].height = 22
     sheet.column_dimensions["A"].width = 96

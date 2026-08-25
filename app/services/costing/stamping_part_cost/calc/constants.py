@@ -40,23 +40,13 @@ def compute_finished_cost_stack(
         (direct_cost, finance_fee, management_fee,
          warehouse_packaging_fee, pretax_profit_fee, unit_cost)
     """
-    direct_cost = quantize(
-        material_net_per_part + process_fee_amount, AMOUNT_QUANTIZE
-    )
+    direct_cost = quantize(material_net_per_part + process_fee_amount, AMOUNT_QUANTIZE)
     finance_fee = quantize(direct_cost * finance_rate, AMOUNT_QUANTIZE)
     management_fee = quantize(direct_cost * management_rate, AMOUNT_QUANTIZE)
-    warehouse_packaging_fee = quantize(
-        direct_cost * warehouse_packaging_rate, AMOUNT_QUANTIZE
-    )
-    pretax_profit_fee = quantize(
-        direct_cost * pretax_profit_rate, AMOUNT_QUANTIZE
-    )
+    warehouse_packaging_fee = quantize(direct_cost * warehouse_packaging_rate, AMOUNT_QUANTIZE)
+    pretax_profit_fee = quantize(direct_cost * pretax_profit_rate, AMOUNT_QUANTIZE)
     unit_cost = quantize(
-        direct_cost
-        + finance_fee
-        + management_fee
-        + warehouse_packaging_fee
-        + pretax_profit_fee,
+        direct_cost + finance_fee + management_fee + warehouse_packaging_fee + pretax_profit_fee,
         AMOUNT_QUANTIZE,
     )
     return (

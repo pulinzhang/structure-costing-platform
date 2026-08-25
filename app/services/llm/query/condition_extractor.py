@@ -53,11 +53,7 @@ class ConditionExtractor:
             raise LlmClientError("问题为空")
 
         anchor = f"{current_year:04d}-{current_month:02d}"
-        user_prompt = (
-            f"当前年月：{anchor}\n"
-            f"用户问题：{question}\n"
-            "请输出 JSON。"
-        )
+        user_prompt = f"当前年月：{anchor}\n" f"用户问题：{question}\n" "请输出 JSON。"
         result = self._client.chat(
             system_prompt=_EXTRACT_SYSTEM,
             user_prompt=user_prompt,

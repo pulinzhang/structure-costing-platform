@@ -13,9 +13,7 @@ from app.common.money import Q4
 
 FORMULA_VERSION = "l0-assembly-v1"
 
-CostSource = Literal[
-    "stamping", "annual", "bundle", "skipped_by_bundle", "missing"
-]
+CostSource = Literal["stamping", "annual", "bundle", "skipped_by_bundle", "missing"]
 CalcStatus = Literal["ok", "partial"]
 
 INDIRECT_UNIT_TRANSPORT = "unit_transport_fee"
@@ -372,9 +370,7 @@ def rollup_l0(
                 )
             continue
 
-        source, unit, hint = lookup_leaf_price(
-            l1.part_number, stamping_prices, annual_prices
-        )
+        source, unit, hint = lookup_leaf_price(l1.part_number, stamping_prices, annual_prices)
         if source is None or unit is None:
             missing_count += 1
             lines.append(
@@ -438,17 +434,13 @@ def rollup_l0(
         allocation=allocation,
     )
     by_code = {item.code: item.amount for item in indirect_lines}
-    indirect = quantize_money(
-        sum((item.amount for item in indirect_lines), Decimal("0"))
-    )
+    indirect = quantize_money(sum((item.amount for item in indirect_lines), Decimal("0")))
     alloc_total = quantize_money(
         by_code.get(INDIRECT_GAUGE_ALLOC, Decimal("0"))
         + by_code.get(INDIRECT_FIXTURE_ALLOC, Decimal("0"))
     )
     grand = quantize_money(total + indirect)
-    status: CalcStatus = (
-        "ok" if (missing_count == 0 and not weld_incomplete) else "partial"
-    )
+    status: CalcStatus = "ok" if (missing_count == 0 and not weld_incomplete) else "partial"
 
     return RollupResult(
         part_number=l0.part_number,

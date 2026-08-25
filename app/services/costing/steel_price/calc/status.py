@@ -67,7 +67,5 @@ def collect_row_warnings(rows: list[CalcRow], *, keyword: str | None = None) -> 
             if not messages:
                 continue
         text = "；".join(messages)
-        warnings.append(
-            f"{row.grade} {build_spec(row.thickness, row.width or 0)} {text}"
-        )
+        warnings.append(f"{row.grade} {build_spec(row.thickness, row.width or 0)} {text}")
     return warnings

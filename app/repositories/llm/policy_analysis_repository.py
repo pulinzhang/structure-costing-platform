@@ -82,14 +82,10 @@ class PolicyAnalysisRepository:
                     ),
                     price_adjustment=int(item.price_adjustment),
                     thick_min=(
-                        Decimal(str(item.thick_min))
-                        if item.thick_min is not None
-                        else None
+                        Decimal(str(item.thick_min)) if item.thick_min is not None else None
                     ),
                     thick_max=(
-                        Decimal(str(item.thick_max))
-                        if item.thick_max is not None
-                        else None
+                        Decimal(str(item.thick_max)) if item.thick_max is not None else None
                     ),
                     is_base=int(item.is_base or 0),
                 )
@@ -121,8 +117,12 @@ class PolicyAnalysisRepository:
             q = q.filter(SteelPricePolicy.category_name == category_name)
         if policy_type:
             q = q.filter(SteelPricePolicy.policy_type == policy_type)
-        return q.order_by(
-            SteelPricePolicy.year.asc(),
-            SteelPricePolicy.month.asc(),
-            SteelPricePolicy.steel_mill.asc(),
-        ).limit(limit).all()
+        return (
+            q.order_by(
+                SteelPricePolicy.year.asc(),
+                SteelPricePolicy.month.asc(),
+                SteelPricePolicy.steel_mill.asc(),
+            )
+            .limit(limit)
+            .all()
+        )

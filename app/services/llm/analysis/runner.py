@@ -99,7 +99,11 @@ from app.services.llm.analysis.stamping_process_summary import (
     build_stamping_process_drivers,
     build_stamping_process_summary,
 )
-from app.services.llm.analysis.summary import build_stamping_summary, build_steel_summary, build_summary
+from app.services.llm.analysis.summary import (
+    build_stamping_summary,
+    build_steel_summary,
+    build_summary,
+)
 from app.services.llm.analysis.tonnage_price_summary import (
     build_tonnage_price_drilldown,
     build_tonnage_price_summary,
@@ -217,9 +221,7 @@ class AnalysisRunner:
             return self._run_part_lookup(db, query)
         return self._run_l0(db, query)
 
-    def _run_stamping_process(
-        self, db: Session, query: AnalysisQuery
-    ) -> AnalysisRunResult:
+    def _run_stamping_process(self, db: Session, query: AnalysisQuery) -> AnalysisRunResult:
         """对齐「冲压零件列表」#/stamping-parts（工艺主数据）。"""
         rows = self._stamping_process_repo.query_part_rows(
             db,
@@ -231,9 +233,7 @@ class AnalysisRunner:
         out = AnalysisRunResult(
             comparability=resolve_comparability(query.comparison_basis),
             has_data=bool(rows),
-            data_message=(
-                f"冲压工艺零件={len(rows)}" if rows else "当前范围无冲压工艺数据"
-            ),
+            data_message=(f"冲压工艺零件={len(rows)}" if rows else "当前范围无冲压工艺数据"),
         )
         parts_result: dict[str, Any] = {}
 
@@ -274,9 +274,7 @@ class AnalysisRunner:
         ]
         return out
 
-    def _run_stamping_tonnage(
-        self, db: Session, query: AnalysisQuery
-    ) -> AnalysisRunResult:
+    def _run_stamping_tonnage(self, db: Session, query: AnalysisQuery) -> AnalysisRunResult:
         """对齐「冲次单价列表」#/stamping-tonnage。"""
         year = query.time_range.end_year
         tonnage = query.tonnage()
@@ -289,9 +287,7 @@ class AnalysisRunner:
         out = AnalysisRunResult(
             comparability=resolve_comparability(query.comparison_basis),
             has_data=bool(rows),
-            data_message=(
-                f"冲次单价行={len(rows)}" if rows else "当前范围无冲次单价数据"
-            ),
+            data_message=(f"冲次单价行={len(rows)}" if rows else "当前范围无冲次单价数据"),
         )
         parts_result: dict[str, Any] = {}
 
@@ -299,9 +295,7 @@ class AnalysisRunner:
             out.summary = build_tonnage_price_summary(rows)
 
         if "drilldown" in query.analyses or tonnage is not None:
-            parts_result["drilldown"] = build_tonnage_price_drilldown(
-                rows, tonnage=tonnage
-            )
+            parts_result["drilldown"] = build_tonnage_price_drilldown(rows, tonnage=tonnage)
 
         out.result = _compose_result(parts_result, default_kind="summary")
         out.evidence["tonnage_price_rows"] = [
@@ -316,9 +310,7 @@ class AnalysisRunner:
         ]
         return out
 
-    def _run_stamping_process_fee(
-        self, db: Session, query: AnalysisQuery
-    ) -> AnalysisRunResult:
+    def _run_stamping_process_fee(self, db: Session, query: AnalysisQuery) -> AnalysisRunResult:
         """对齐「冲压加工费列表」#/stamping-process-fee。"""
         tr = query.time_range
         part_token = query.part_number() or ""
@@ -339,9 +331,7 @@ class AnalysisRunner:
         out = AnalysisRunResult(
             comparability=resolve_comparability(query.comparison_basis),
             has_data=bool(rows),
-            data_message=(
-                f"冲压加工费行={len(rows)}" if rows else "当前范围无冲压加工费数据"
-            ),
+            data_message=(f"冲压加工费行={len(rows)}" if rows else "当前范围无冲压加工费数据"),
         )
         parts_result: dict[str, Any] = {}
 
@@ -368,9 +358,7 @@ class AnalysisRunner:
                     else None
                 ),
                 "processing_fee": (
-                    f"{row.processing_fee:.3f}"
-                    if row.processing_fee is not None
-                    else None
+                    f"{row.processing_fee:.3f}" if row.processing_fee is not None else None
                 ),
                 "audit_status": row.audit_status,
             }
@@ -378,9 +366,7 @@ class AnalysisRunner:
         ]
         return out
 
-    def _run_stamping_part(
-        self, db: Session, query: AnalysisQuery
-    ) -> AnalysisRunResult:
+    def _run_stamping_part(self, db: Session, query: AnalysisQuery) -> AnalysisRunResult:
         """对齐「冲压零件价格一览」#/stamping-part-cost。"""
         tr = query.time_range
         rows = self._stamping_repo.query_part_rows(
@@ -396,9 +382,7 @@ class AnalysisRunner:
         out = AnalysisRunResult(
             comparability=resolve_comparability(query.comparison_basis),
             has_data=bool(rows),
-            data_message=(
-                f"冲压零件行={len(rows)}" if rows else "当前范围无冲压零件价格数据"
-            ),
+            data_message=(f"冲压零件行={len(rows)}" if rows else "当前范围无冲压零件价格数据"),
         )
         parts_result: dict[str, Any] = {}
 
@@ -406,9 +390,7 @@ class AnalysisRunner:
             out.summary = build_stamping_summary(rows)
 
         if "trend" in query.analyses:
-            parts_result["trend"] = build_stamping_trend(
-                rows, basis=query.comparison_basis
-            )
+            parts_result["trend"] = build_stamping_trend(rows, basis=query.comparison_basis)
 
         if "drivers" in query.analyses:
             parts_result["drivers"] = build_stamping_drivers(rows)
@@ -435,9 +417,7 @@ class AnalysisRunner:
         ]
         return out
 
-    def _run_steel_price_policy(
-        self, db: Session, query: AnalysisQuery
-    ) -> AnalysisRunResult:
+    def _run_steel_price_policy(self, db: Session, query: AnalysisQuery) -> AnalysisRunResult:
         """对齐「加减价政策列表」#/steel-price-policy-download。"""
         tr = query.time_range
         policy_type = query.filter_get("policy_type")
@@ -454,9 +434,7 @@ class AnalysisRunner:
         out = AnalysisRunResult(
             comparability=resolve_comparability(query.comparison_basis),
             has_data=bool(rows),
-            data_message=(
-                f"加减价阶梯行={len(rows)}" if rows else "当前范围无加减价政策数据"
-            ),
+            data_message=(f"加减价阶梯行={len(rows)}" if rows else "当前范围无加减价政策数据"),
         )
         parts_result: dict[str, Any] = {}
         if "summary" in query.analyses:
@@ -464,9 +442,7 @@ class AnalysisRunner:
         if "drivers" in query.analyses:
             parts_result["drivers"] = build_policy_drivers(rows)
         if "trend" in query.analyses and rows:
-            parts_result["trend"] = build_policy_trend(
-                rows, basis=query.comparison_basis
-            )
+            parts_result["trend"] = build_policy_trend(rows, basis=query.comparison_basis)
         if rows and query.time_range.month_span() > 1:
             parts_result["policy_anomalies"] = build_policy_mom_anomalies(rows)
         out.result = _compose_result(parts_result, default_kind="summary")
@@ -485,9 +461,7 @@ class AnalysisRunner:
         ]
         return out
 
-    def _run_steel_base_price(
-        self, db: Session, query: AnalysisQuery
-    ) -> AnalysisRunResult:
+    def _run_steel_base_price(self, db: Session, query: AnalysisQuery) -> AnalysisRunResult:
         """对齐「基准价格列表」#/base-price-download。"""
         tr = query.time_range
         rows = self._base_price_repo.query_rows(
@@ -504,9 +478,7 @@ class AnalysisRunner:
         out = AnalysisRunResult(
             comparability=resolve_comparability(query.comparison_basis),
             has_data=bool(rows),
-            data_message=(
-                f"基准价行={len(rows)}" if rows else "当前范围无基准价格数据"
-            ),
+            data_message=(f"基准价行={len(rows)}" if rows else "当前范围无基准价格数据"),
         )
         parts_result: dict[str, Any] = {}
         if "summary" in query.analyses:
@@ -514,9 +486,7 @@ class AnalysisRunner:
         if "drivers" in query.analyses:
             parts_result["drivers"] = build_base_price_drivers(rows)
         if "trend" in query.analyses and rows:
-            parts_result["trend"] = build_base_price_trend(
-                rows, basis=query.comparison_basis
-            )
+            parts_result["trend"] = build_base_price_trend(rows, basis=query.comparison_basis)
         if rows and query.time_range.month_span() > 1:
             parts_result["base_price_anomalies"] = build_base_price_mom_anomalies(rows)
         out.result = _compose_result(parts_result, default_kind="summary")
@@ -533,9 +503,7 @@ class AnalysisRunner:
         ]
         return out
 
-    def _run_winning_thickness(
-        self, db: Session, query: AnalysisQuery
-    ) -> AnalysisRunResult:
+    def _run_winning_thickness(self, db: Session, query: AnalysisQuery) -> AnalysisRunResult:
         """对齐「中标钢厂厚度价格一览表」#/winning-thickness-download。"""
         tr = query.time_range
         location = expand_base_price_location(query.location() or "")
@@ -558,9 +526,7 @@ class AnalysisRunner:
         out = AnalysisRunResult(
             comparability=resolve_comparability(query.comparison_basis),
             has_data=bool(rows),
-            data_message=(
-                f"中标厚度价行={len(rows)}" if rows else "当前范围无中标厚度价数据"
-            ),
+            data_message=(f"中标厚度价行={len(rows)}" if rows else "当前范围无中标厚度价数据"),
         )
         parts_result: dict[str, Any] = {}
         if "summary" in query.analyses:
@@ -594,9 +560,7 @@ class AnalysisRunner:
         out = AnalysisRunResult(
             comparability=resolve_comparability(query.comparison_basis),
             has_data=bool(rows),
-            data_message=(
-                f"废料价行={len(rows)}" if rows else "当前范围无废料销售价数据"
-            ),
+            data_message=(f"废料价行={len(rows)}" if rows else "当前范围无废料销售价数据"),
         )
         parts_result: dict[str, Any] = {}
         if "summary" in query.analyses:
@@ -615,9 +579,7 @@ class AnalysisRunner:
         ]
         return out
 
-    def _run_welding_unit_price(
-        self, db: Session, query: AnalysisQuery
-    ) -> AnalysisRunResult:
+    def _run_welding_unit_price(self, db: Session, query: AnalysisQuery) -> AnalysisRunResult:
         """对齐「焊接单价列表」#/bom-welding-unit-price。"""
         tr = query.time_range
         rows = self._welding_unit_price_repo.query_rows(
@@ -629,9 +591,7 @@ class AnalysisRunner:
         out = AnalysisRunResult(
             comparability=resolve_comparability(query.comparison_basis),
             has_data=bool(rows),
-            data_message=(
-                f"焊接单价行={len(rows)}" if rows else "当前范围无焊接单价数据"
-            ),
+            data_message=(f"焊接单价行={len(rows)}" if rows else "当前范围无焊接单价数据"),
         )
         parts_result: dict[str, Any] = {}
 
@@ -662,9 +622,7 @@ class AnalysisRunner:
         ]
         return out
 
-    def _run_annual_part_price(
-        self, db: Session, query: AnalysisQuery
-    ) -> AnalysisRunResult:
+    def _run_annual_part_price(self, db: Session, query: AnalysisQuery) -> AnalysisRunResult:
         """对齐「年度零件价列表」#/bom-annual-part-price（外购 + 一口价）。"""
         tr = query.time_range
         part_token = query.part_number() or ""
@@ -689,9 +647,7 @@ class AnalysisRunner:
         out = AnalysisRunResult(
             comparability=resolve_comparability(query.comparison_basis),
             has_data=bool(rows),
-            data_message=(
-                f"年度零件价行={len(rows)}" if rows else "当前范围无年度零件价数据"
-            ),
+            data_message=(f"年度零件价行={len(rows)}" if rows else "当前范围无年度零件价数据"),
         )
         parts_result: dict[str, Any] = {}
 
@@ -735,9 +691,7 @@ class AnalysisRunner:
         ]
         return out
 
-    def _run_packaging_transport_fee(
-        self, db: Session, query: AnalysisQuery
-    ) -> AnalysisRunResult:
+    def _run_packaging_transport_fee(self, db: Session, query: AnalysisQuery) -> AnalysisRunResult:
         """对齐「包装运输费列表」#/bom-packaging-transport-fee。"""
         tr = query.time_range
         part_token = query.part_number() or ""
@@ -764,9 +718,7 @@ class AnalysisRunner:
         out = AnalysisRunResult(
             comparability=resolve_comparability(query.comparison_basis),
             has_data=bool(rows),
-            data_message=(
-                f"包装运输费行={len(rows)}" if rows else "当前范围无包装运输费数据"
-            ),
+            data_message=(f"包装运输费行={len(rows)}" if rows else "当前范围无包装运输费数据"),
         )
         parts_result: dict[str, Any] = {}
 
@@ -810,9 +762,7 @@ class AnalysisRunner:
         ]
         return out
 
-    def _run_bom_material(
-        self, db: Session, query: AnalysisQuery
-    ) -> AnalysisRunResult:
+    def _run_bom_material(self, db: Session, query: AnalysisQuery) -> AnalysisRunResult:
         """对齐「材料清单列表」#/bom-material（产品结构/结构图同数据）。"""
         part_token = query.part_number() or ""
         rows = self._bom_material_repo.query_node_rows(
@@ -830,9 +780,7 @@ class AnalysisRunner:
         out = AnalysisRunResult(
             comparability=resolve_comparability(query.comparison_basis),
             has_data=bool(rows),
-            data_message=(
-                f"材料清单节点={len(rows)}" if rows else "当前范围无材料清单数据"
-            ),
+            data_message=(f"材料清单节点={len(rows)}" if rows else "当前范围无材料清单数据"),
         )
         parts_result: dict[str, Any] = {}
         if "summary" in query.analyses:
@@ -911,9 +859,7 @@ class AnalysisRunner:
         ]
         return out
 
-    def _run_l0_welding_fee(
-        self, db: Session, query: AnalysisQuery
-    ) -> AnalysisRunResult:
+    def _run_l0_welding_fee(self, db: Session, query: AnalysisQuery) -> AnalysisRunResult:
         """对齐「成品焊接费列表」#/bom-l0-welding-fee-list。"""
         tr = query.time_range
         part_token = query.part_number() or ""
@@ -942,9 +888,7 @@ class AnalysisRunner:
         out = AnalysisRunResult(
             comparability=resolve_comparability(query.comparison_basis),
             has_data=bool(rows),
-            data_message=(
-                f"成品焊接费行={len(rows)}" if rows else "当前范围无成品焊接费数据"
-            ),
+            data_message=(f"成品焊接费行={len(rows)}" if rows else "当前范围无成品焊接费数据"),
         )
         parts_result: dict[str, Any] = {}
         if "summary" in query.analyses:
@@ -1003,9 +947,7 @@ class AnalysisRunner:
         if "summary" in query.analyses:
             out.summary = build_steel_summary(steel_rows)
         if "trend" in query.analyses:
-            parts_result["trend"] = build_steel_trend(
-                steel_rows, basis=query.comparison_basis
-            )
+            parts_result["trend"] = build_steel_trend(steel_rows, basis=query.comparison_basis)
         default_kind = "trend" if "trend" in query.analyses else "summary"
         out.result = _compose_result(parts_result, default_kind=default_kind)
         out.evidence["steel_series"] = [
@@ -1018,9 +960,7 @@ class AnalysisRunner:
         ]
         return out
 
-    def _run_part_lookup(
-        self, db: Session, query: AnalysisQuery
-    ) -> AnalysisRunResult:
+    def _run_part_lookup(self, db: Session, query: AnalysisQuery) -> AnalysisRunResult:
         """指定零件号：同时在 L0、冲压价、冲压工艺中检索。"""
         tr = query.time_range
         part_token = query.part_number() or ""
@@ -1077,9 +1017,7 @@ class AnalysisRunner:
             process_rows=process_rows,
         )
         drilldown_only = "drilldown" in query.analyses and "summary" not in query.analyses
-        skip_cross_existence = (
-            drilldown_only and profile.primary_source == "l0" and bool(l0_rows)
-        )
+        skip_cross_existence = drilldown_only and profile.primary_source == "l0" and bool(l0_rows)
 
         parts_result: dict[str, Any] = {}
         if not skip_cross_existence and (
@@ -1093,9 +1031,7 @@ class AnalysisRunner:
             )
         if "drilldown" in query.analyses:
             if l0_rows:
-                parts_result["l0_drilldown"] = build_drilldown(
-                    l0_rows, part_number=part_token
-                )
+                parts_result["l0_drilldown"] = build_drilldown(l0_rows, part_number=part_token)
             if profile.stamping_cost_applicable:
                 parts_result["stamping_cost_drilldown"] = _build_stamping_drilldown(
                     stamping_rows, part_number=part_token
@@ -1108,12 +1044,10 @@ class AnalysisRunner:
                     vehicle_model=query.vehicle_model(),
                     version=query.bom_version(),
                 )
-                parts_result["stamping_process_drilldown"] = (
-                    build_stamping_process_drilldown(
-                        part,
-                        processes,
-                        part_number=part_token,
-                    )
+                parts_result["stamping_process_drilldown"] = build_stamping_process_drilldown(
+                    part,
+                    processes,
+                    part_number=part_token,
                 )
 
         out.result = _compose_result(parts_result, default_kind="part_existence")
@@ -1151,8 +1085,7 @@ class AnalysisRunner:
         )
 
         need_parts = any(
-            kind in query.analyses
-            for kind in ("drivers", "risk", "drilldown", "trend", "summary")
+            kind in query.analyses for kind in ("drivers", "risk", "drilldown", "trend", "summary")
         )
         part_rows: list[L0PartPeriodRow] = []
         filtered_missing = 0
@@ -1207,9 +1140,7 @@ class AnalysisRunner:
             out.anomaly_note = trend_result.get("anomaly_note")
 
         if "drivers" in query.analyses:
-            parts_result["drivers"] = build_l0_drivers(
-                part_rows, top_n=driver_top_n
-            )
+            parts_result["drivers"] = build_l0_drivers(part_rows, top_n=driver_top_n)
 
         if "comparison" in query.analyses:
             parts_result["comparison"] = build_location_comparison(
@@ -1222,16 +1153,12 @@ class AnalysisRunner:
                 filtered_missing_price_count=filtered_missing,
             )
 
-        if part_rows and any(
-            kind in query.analyses for kind in ("risk", "drivers", "trend")
-        ):
+        if part_rows and any(kind in query.analyses for kind in ("risk", "drivers", "trend")):
             parts_result["mom_anomalies"] = build_l0_mom_anomalies(part_rows)
 
         if "drilldown" in query.analyses:
             part_number = query.part_number() or ""
-            parts_result["drilldown"] = build_drilldown(
-                part_rows, part_number=part_number
-            )
+            parts_result["drilldown"] = build_drilldown(part_rows, part_number=part_number)
 
         out.result = _compose_result(parts_result, default_kind="summary")
         out.has_data = bool(monthly) or bool(part_rows)
@@ -1239,14 +1166,9 @@ class AnalysisRunner:
         missing_message = format_missing_price_message(filtered_missing)
         if monthly:
             part_total = (
-                out.summary.get("l0_count")
-                if out.summary
-                else max(row.l0_count for row in monthly)
+                out.summary.get("l0_count") if out.summary else max(row.l0_count for row in monthly)
             )
-            detail = (
-                f"L0 月切片={len(monthly)}，"
-                f"供货总成={part_total}件（按零件号去重）"
-            )
+            detail = f"L0 月切片={len(monthly)}，" f"供货总成={part_total}件（按零件号去重）"
             parts = [part for part in (base_message, missing_message, detail) if part]
             out.data_message = "；".join(parts)
         elif part_rows:
@@ -1304,14 +1226,10 @@ def _build_stamping_drilldown(
         "part_name": latest.part_name,
         "unit_cost": str(latest.unit_cost),
         "material_net_per_part": (
-            str(latest.material_net_per_part)
-            if latest.material_net_per_part is not None
-            else None
+            str(latest.material_net_per_part) if latest.material_net_per_part is not None else None
         ),
         "process_fee_amount": (
-            str(latest.process_fee_amount)
-            if latest.process_fee_amount is not None
-            else None
+            str(latest.process_fee_amount) if latest.process_fee_amount is not None else None
         ),
         "calc_status": latest.calc_status,
         "stamping_supplier": latest.stamping_supplier,

@@ -13,7 +13,8 @@ find_width_blocks 处理右侧 3 个宽度块。
 - 每个类别块只生成一条政策，grade_value = category_name，grade_type = CATEGORY
 - 每行数据（各钢种）共用相同的宽度阶梯价格（合并单元格实现）
 """
-from typing import Any, Dict, List
+
+from typing import Any
 
 from openpyxl.worksheet.worksheet import Worksheet
 
@@ -38,9 +39,7 @@ class AngangSheetHandler(BaseSheetHandler):
     # 厚度块
     # ------------------------------------------------------------------ #
 
-    def find_thickness_blocks(
-        self, sheet: Worksheet, steel_mill: str
-    ) -> List[Dict[str, Any]]:
+    def find_thickness_blocks(self, sheet: Worksheet, steel_mill: str) -> list[dict[str, Any]]:
         """左侧（cols 1-10）：多块厚度 (冷轧/镀锌/酸洗 三个)."""
         return self.find_default_thickness_blocks(sheet, steel_mill)
 
@@ -52,8 +51,8 @@ class AngangSheetHandler(BaseSheetHandler):
         self,
         sheet: Worksheet,
         steel_mill: str,
-        block: Dict[str, Any],
-    ) -> List[Any]:
+        block: dict[str, Any],
+    ) -> list[Any]:
         """鞍钢宽度块解析：每个类别块生成一条政策，grade_value = category_name。
 
         鞍钢宽度加价按钢材类别（冷轧钢/镀锌钢/酸洗钢）划分，不区分钢种牌号。
@@ -99,7 +98,7 @@ class AngangSheetHandler(BaseSheetHandler):
         sheet: Worksheet,
         steel_mill: str,
         policy_type: str,
-    ) -> List[Any]:
+    ) -> list[Any]:
         """鞍钢定制：WIDTH 政策走专用解析（按类别生成，每类别一条）。"""
         if policy_type == "WIDTH":
             blocks = self.find_width_blocks(sheet, steel_mill)
@@ -115,38 +114,34 @@ class AngangSheetHandler(BaseSheetHandler):
         sheet: Worksheet,
         steel_mill: str,
         policy_type: str,
-    ) -> List[Any]:
+    ) -> list[Any]:
         """THICKNESS 政策的通用解析（复用基类逻辑）。"""
         blocks = (
             self.find_thickness_blocks(sheet, steel_mill)
             if policy_type == "THICKNESS"
             else self.find_width_blocks(sheet, steel_mill)
         )
-        policies: List[Any] = []
+        policies: list[Any] = []
         for block in blocks:
-            policies.extend(
-                self._parse_one_block(sheet, steel_mill, policy_type, block)
-            )
+            policies.extend(self._parse_one_block(sheet, steel_mill, policy_type, block))
         return policies
 
     # ------------------------------------------------------------------ #
     # 宽度块
     # ------------------------------------------------------------------ #
 
-    def find_width_blocks(
-        self, sheet: Worksheet, steel_mill: str
-    ) -> List[Dict[str, Any]]:
+    def find_width_blocks(self, sheet: Worksheet, steel_mill: str) -> list[dict[str, Any]]:
         """右侧（cols 17+）：3 个宽度子块（冷轧/镀锌/酸洗）。
 
         标题在 col 17（R4=`冷轧产品宽度加价`，R8=`镀锌...`，R12=`酸洗...`）。
         列头行 = 标题行 + 1，列头列 = 17。
         """
-        blocks: List[Dict[str, Any]] = []
+        blocks: list[dict[str, Any]] = []
         max_row = self.row_max(sheet)
         max_col = self.col_max(sheet)
 
         # 收集所有宽度块起始行（col 17 含"宽度加价"）
-        block_starts: List[int] = []
+        block_starts: list[int] = []
         for r in range(1, max_row + 1):
             text = self.text(sheet, r, _W_TITLE_COL)
             if text and "宽度" in text and "加价" in text:
@@ -157,17 +152,13 @@ class AngangSheetHandler(BaseSheetHandler):
             if i + 1 < len(block_starts):
                 block_end = block_starts[i + 1] - 1
             else:
-                block_end = self.find_block_end_row(
-                    sheet, title_row + 2, max_row, max_col
-                )
+                block_end = self.find_block_end_row(sheet, title_row + 2, max_row, max_col)
             # 再一次避免吸入后面 "钢种" label_row
             next_label_rows = self.find_grade_label_rows(sheet, title_row + 2, max_row)
             if next_label_rows:
                 block_end = min(block_end, next_label_rows[0] - 1)
             # 避免吸入后面的"厚度加减价"段标题
-            next_break = self.find_section_break_row(
-                sheet, title_row + 2, max_row, scan_col=1
-            )
+            next_break = self.find_section_break_row(sheet, title_row + 2, max_row, scan_col=1)
             if next_break is not None:
                 block_end = min(block_end, next_break - 1)
 
@@ -191,16 +182,18 @@ class AngangSheetHandler(BaseSheetHandler):
             if not price_cols:
                 continue
 
-            blocks.append({
-                "category_name": category,
-                "policy_type": "WIDTH",
-                "grade_col": 1,
-                "header_row": header_row,
-                "price_cols": price_cols,
-                "data_row_start": header_row + 1,
-                "data_row_end": block_end,
-                "base_thickness": None,
-                "grade_blacklist": GRADE_LABELS,
-            })
+            blocks.append(
+                {
+                    "category_name": category,
+                    "policy_type": "WIDTH",
+                    "grade_col": 1,
+                    "header_row": header_row,
+                    "price_cols": price_cols,
+                    "data_row_start": header_row + 1,
+                    "data_row_end": block_end,
+                    "base_thickness": None,
+                    "grade_blacklist": GRADE_LABELS,
+                }
+            )
 
         return blocks

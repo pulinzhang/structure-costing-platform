@@ -3,8 +3,6 @@
 用于 Repository 层返回结构化数据，避免使用字典
 """
 
-from typing import Optional
-
 from pydantic import BaseModel, Field
 
 
@@ -35,30 +33,30 @@ class ExportRow(BaseModel):
     steel_mill: str
     category_name: str
     policy_type: str
-    grade_type: Optional[str] = None
-    grade_value: Optional[str] = None
-    base_thickness: Optional[str] = None  # Decimal 转为字符串
+    grade_type: str | None = None
+    grade_value: str | None = None
+    base_thickness: str | None = None  # Decimal 转为字符串
 
     # 阶梯明细字段
-    item_id: Optional[int] = None
-    target_sub_group: Optional[str] = None
-    thick_min: Optional[str] = None  # Decimal 转为字符串
-    thick_min_operator: Optional[str] = None
-    thick_max: Optional[str] = None  # Decimal 转为字符串
-    thick_max_operator: Optional[str] = None
-    width_min: Optional[str] = None  # Decimal 转为字符串
-    width_min_operator: Optional[str] = None
-    width_max: Optional[str] = None  # Decimal 转为字符串
-    width_max_operator: Optional[str] = None
-    zinc_coating_min: Optional[str] = None  # Decimal 转为字符串
-    zinc_coating_min_operator: Optional[str] = None
-    zinc_coating_max: Optional[str] = None  # Decimal 转为字符串
-    zinc_coating_max_operator: Optional[str] = None
-    price_adjustment: Optional[int] = None
-    is_base: Optional[int] = None
-    sort_order: Optional[int] = None
+    item_id: int | None = None
+    target_sub_group: str | None = None
+    thick_min: str | None = None  # Decimal 转为字符串
+    thick_min_operator: str | None = None
+    thick_max: str | None = None  # Decimal 转为字符串
+    thick_max_operator: str | None = None
+    width_min: str | None = None  # Decimal 转为字符串
+    width_min_operator: str | None = None
+    width_max: str | None = None  # Decimal 转为字符串
+    width_max_operator: str | None = None
+    zinc_coating_min: str | None = None  # Decimal 转为字符串
+    zinc_coating_min_operator: str | None = None
+    zinc_coating_max: str | None = None  # Decimal 转为字符串
+    zinc_coating_max_operator: str | None = None
+    price_adjustment: int | None = None
+    is_base: int | None = None
+    sort_order: int | None = None
 
     # 追溯字段（放在最后）
-    excel_filename: Optional[str] = None  # 来源 Excel 文件名
-    excel_row: Optional[int] = None  # Excel 行号（1-based）
-    excel_col: Optional[int] = None  # Excel 列号（1-based）
+    excel_filename: str | None = None  # 来源 Excel 文件名
+    excel_row: int | None = None  # Excel 行号（1-based）
+    excel_col: int | None = None  # Excel 列号（1-based）

@@ -71,8 +71,6 @@ def sanitize_report_markdown(content: str) -> str:
     result = re.sub(r"\bdashboard\b", "分析", result, flags=re.IGNORECASE)
     result = re.sub(r"仪表盘", "分析", result)
     filtered_lines = [
-        line
-        for line in result.splitlines()
-        if not _BOILERPLATE_LINE_RE.match(line.strip())
+        line for line in result.splitlines() if not _BOILERPLATE_LINE_RE.match(line.strip())
     ]
     return "\n".join(filtered_lines).strip()

@@ -49,11 +49,12 @@ def should_record(method: str, path: str) -> bool:
     if path_only in _SKIP_EXACT:
         return False
     # 操作日志列表本身不记（避免噪声）；导出走记录
-    if path_only == "/api/settings/logs" or path_only.rstrip("/").endswith(
-        "/settings/logs"
+    if (
+        (path_only == "/api/settings/logs" or path_only.rstrip("/").endswith("/settings/logs"))
+        and method == "GET"
+        and "export" not in path_only
     ):
-        if method == "GET" and "export" not in path_only:
-            return False
+        return False
     method_upper = method.upper()
     if method_upper in _WRITE_METHODS:
         return True
@@ -81,9 +82,10 @@ def infer_module(path: str) -> str:
 def infer_action(method: str, path: str) -> str:
     path_only = path.split("?", 1)[0]
     method_upper = method.upper()
-    if method_upper == "GET" or "export" in path_only:
-        if "export" in path_only or "download" in path_only:
-            return "export"
+    if (method_upper == "GET" or "export" in path_only) and (
+        "export" in path_only or "download" in path_only
+    ):
+        return "export"
     if "upload" in path_only or "import" in path_only:
         return "upload"
     if "password" in path_only:

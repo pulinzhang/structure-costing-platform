@@ -42,11 +42,7 @@ class BomL0WeldingFeeCalcLogRepository:
         return BomL0WeldingFeeCalcLogRepository._lock_index_ensured
 
     def get_by_id(self, db: Session, log_id: int) -> BomL0WeldingFeeCalcLog | None:
-        return (
-            db.query(BomL0WeldingFeeCalcLog)
-            .filter(BomL0WeldingFeeCalcLog.id == log_id)
-            .first()
-        )
+        return db.query(BomL0WeldingFeeCalcLog).filter(BomL0WeldingFeeCalcLog.id == log_id).first()
 
     def find_processing(
         self,
@@ -91,17 +87,10 @@ class BomL0WeldingFeeCalcLogRepository:
         if bom_version:
             query = query.filter(BomL0WeldingFeeCalcLog.bom_version == bom_version)
         total = query.count()
-        records = (
-            query.order_by(BomL0WeldingFeeCalcLog.id.desc())
-            .offset(skip)
-            .limit(limit)
-            .all()
-        )
+        records = query.order_by(BomL0WeldingFeeCalcLog.id.desc()).offset(skip).limit(limit).all()
         return records, total
 
-    def create(
-        self, db: Session, data: BomL0WeldingFeeCalcLogCreate
-    ) -> BomL0WeldingFeeCalcLog:
+    def create(self, db: Session, data: BomL0WeldingFeeCalcLogCreate) -> BomL0WeldingFeeCalcLog:
         record = model_from_payload(BomL0WeldingFeeCalcLog, data)
         db.add(record)
         db.flush()

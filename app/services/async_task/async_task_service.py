@@ -17,7 +17,8 @@ import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
-from typing import Any, Callable, Optional
+from typing import Any
+from collections.abc import Callable
 
 from sqlalchemy.orm import Session
 
@@ -35,6 +36,7 @@ from app.services.async_task.worker_runner import (
     CrashResultFn,
     WorkerWork,
 )
+import contextlib
 
 
 logger = get_logger("service.async_task")
@@ -50,9 +52,7 @@ TASK_TYPE_BASE_PRICE_IMPORT = "steel_base_price_import"
 TASK_TYPE_STEEL_PRICE_CALC = "steel_price_calc"
 TASK_TYPE_STAMPING_PROCESS_FEE_CALC = "stamping_process_fee_calc"
 TASK_TYPE_STAMPING_PART_COST_CALC = "stamping_part_cost_calc"
-TASK_TYPE_BOM_WELDING_PROCESS_BREAKDOWN_GENERATE = (
-    "bom_welding_process_breakdown_generate"
-)
+TASK_TYPE_BOM_WELDING_PROCESS_BREAKDOWN_GENERATE = "bom_welding_process_breakdown_generate"
 TASK_TYPE_BOM_L0_WELDING_FEE_CALC = "bom_l0_welding_fee_calc"
 TASK_TYPE_L0_ASSEMBLY_COST_CALC = "l0_assembly_cost_calc"
 TASK_TYPE_COSTING_ENGINE_RUN = "costing_engine_run"
@@ -86,8 +86,8 @@ class AsyncTaskService:
         self,
         task_id: str,
         *,
-        status: Optional[str],
-        progress: Optional[int],
+        status: str | None,
+        progress: int | None,
         result: Any,
     ) -> bool:
         if status in (STATUS_COMPLETED, STATUS_FAILED) or result is not None:
@@ -139,14 +139,14 @@ class AsyncTaskService:
             self.repository.insert_task(conn, payload)
         return model_from_payload(AsyncTask, payload)
 
-    def get_by_task_id(self, task_id: str) -> Optional[AsyncTask]:
+    def get_by_task_id(self, task_id: str) -> AsyncTask | None:
         db = self._read_session()
         try:
             return self.repository.get_by_task_id(db, task_id)
         finally:
             db.close()
 
-    def get_task_snapshot(self, task_id: str) -> Optional[dict[str, Any]]:
+    def get_task_snapshot(self, task_id: str) -> dict[str, Any] | None:
         """轮询快照：只读辅助库。"""
         record = self.get_by_task_id(task_id)
         if record is None:
@@ -174,9 +174,9 @@ class AsyncTaskService:
         self,
         task_id: str,
         *,
-        status: Optional[str] = None,
-        progress: Optional[int] = None,
-        message: Optional[str] = None,
+        status: str | None = None,
+        progress: int | None = None,
+        message: str | None = None,
         result: Any = None,
     ) -> None:
         """AUTOCOMMIT 更新任务（辅助库）。"""
@@ -197,15 +197,13 @@ class AsyncTaskService:
         self,
         task_id: str,
         *,
-        status: Optional[str] = None,
-        progress: Optional[int] = None,
-        message: Optional[str] = None,
+        status: str | None = None,
+        progress: int | None = None,
+        message: str | None = None,
         result: Any = None,
     ) -> None:
         """后台线程专用：写入辅助库。"""
-        if self._should_skip_db_write(
-            task_id, status=status, progress=progress, result=result
-        ):
+        if self._should_skip_db_write(task_id, status=status, progress=progress, result=result):
             return
 
         try:
@@ -273,10 +271,8 @@ class AsyncTaskService:
             )
         except Exception as error:
             logger.exception("异步任务异常: task_id=%s", task_id)
-            try:
+            with contextlib.suppress(Exception):
                 db.rollback()
-            except Exception:
-                pass
             if on_crash is not None:
                 try:
                     on_crash(db, error)
@@ -318,7 +314,7 @@ class AsyncTaskService:
         )
 
     @staticmethod
-    def parse_result_json(result_json: Optional[str]) -> Any:
+    def parse_result_json(result_json: str | None) -> Any:
         if not result_json:
             return None
         try:

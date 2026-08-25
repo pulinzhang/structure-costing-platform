@@ -115,9 +115,7 @@ class L0AssemblyCostService:
         log_id: int,
         detail_text: str,
     ) -> None:
-        self.calc_log_service.mark_log_failed(
-            db, log_id=log_id, detail_text=detail_text
-        )
+        self.calc_log_service.mark_log_failed(db, log_id=log_id, detail_text=detail_text)
 
     def calculate(
         self,
@@ -216,9 +214,7 @@ class L0AssemblyCostService:
             limit=size,
         )
 
-    def get_calc_log(
-        self, db: Session, log_id: int
-    ) -> L0AssemblyCostCalcLogVO:
+    def get_calc_log(self, db: Session, log_id: int) -> L0AssemblyCostCalcLogVO:
         return self.calc_log_service.get_calc_log(db, log_id)
 
     def delete_calc_log(self, db: Session, log_id: int) -> None:

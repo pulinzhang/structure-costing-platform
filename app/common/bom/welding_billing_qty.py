@@ -29,12 +29,7 @@ def normalize_unit_key(unit: str | None) -> str:
     raw = (unit or "").strip()
     if not raw:
         return ""
-    text = (
-        raw.replace("㎡", "m2")
-        .replace("m²", "m2")
-        .replace("M²", "m2")
-        .replace("Ｍ", "m")
-    )
+    text = raw.replace("㎡", "m2").replace("m²", "m2").replace("M²", "m2").replace("Ｍ", "m")
     lower = text.lower()
     if lower in _LENGTH_TO_MM:
         return lower

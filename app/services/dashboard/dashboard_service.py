@@ -115,9 +115,7 @@ class DashboardService:
         )
         bom = self._bom_coverage(db, location=scope.location)
 
-        master_raw = self.stamping_service.summarize_master(
-            db, location=scope.location
-        )
+        master_raw = self.stamping_service.summarize_master(db, location=scope.location)
         master = DashboardMasterStatsVO(
             parts=master_raw["parts"],
             processes=master_raw["processes"],
@@ -236,9 +234,7 @@ class DashboardService:
     ) -> DashboardOutcomeVO:
         return DashboardOutcomeVO(
             pending_total=(
-                process_fee.pending_count
-                + steel_price.pending_count
-                + part_cost.pending_count
+                process_fee.pending_count + steel_price.pending_count + part_cost.pending_count
             ),
             process_fee_pending=process_fee.pending_count,
             steel_price_pending=steel_price.pending_count,
@@ -337,10 +333,7 @@ class DashboardService:
                     page="scrap-price",
                 )
             )
-        elif (
-            yishiyiyi.is_scrap_location_filled is None
-            and not yishiyiyi.is_scrap_complete
-        ):
+        elif yishiyiyi.is_scrap_location_filled is None and not yishiyiyi.is_scrap_complete:
             items.append(
                 DashboardAttentionItemVO(
                     code="scrap_incomplete",
@@ -486,9 +479,7 @@ class DashboardService:
         months.update(self.part_cost_repo.get_distinct_months(db, year=year))
         return sorted(months)
 
-    def _collect_scope_options(
-        self, db: Session
-    ) -> tuple[list[int], list[int], list[str]]:
+    def _collect_scope_options(self, db: Session) -> tuple[list[int], list[int], list[str]]:
         base_opts = self.base_price_service.get_filter_options(db)
         policy_opts = self.policy_service.get_filter_options(db)
         scrap_opts = self.scrap_service.get_filter_options(db)
@@ -505,9 +496,7 @@ class DashboardService:
             reverse=True,
         )
         months = sorted(
-            set(base_opts.months)
-            | set(policy_opts.months)
-            | set(steel_opts.get("months") or [])
+            set(base_opts.months) | set(policy_opts.months) | set(steel_opts.get("months") or [])
         )
         locations = sorted(
             {
@@ -566,9 +555,7 @@ class DashboardService:
         )
         return status
 
-    def _bom_coverage(
-        self, db: Session, *, location: str | None
-    ) -> DashboardBomStatsVO:
+    def _bom_coverage(self, db: Session, *, location: str | None) -> DashboardBomStatsVO:
         _, snapshot_count = self.bom_snapshot_repo.paginate(
             db,
             location=location,

@@ -7,7 +7,6 @@ CRUD / 导入 / 导出见各子包；本模块仅委托并保持对外 API。
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 from sqlalchemy.orm import Session
 
@@ -125,7 +124,7 @@ class SteelBasePriceService:
         year: int,
         month: int,
         current_user: UserVO,
-        progress_callback: Optional[ProgressCallback] = None,
+        progress_callback: ProgressCallback | None = None,
     ) -> SteelBasePriceImportResultResponse:
         return self._import_service.import_excel(
             db,
@@ -175,9 +174,7 @@ class SteelBasePriceService:
         month: int,
         location: str,
     ) -> list[SteelBasePrice]:
-        return self._crud.list_for_calc(
-            db, year=year, month=month, location=location
-        )
+        return self._crud.list_for_calc(db, year=year, month=month, location=location)
 
     def count_by_conditions(
         self,
@@ -240,9 +237,7 @@ class SteelBasePriceService:
                     current_user=current_user,
                 )
             except BusinessException as error:
-                logger.warning(
-                    "基准价导入业务失败: task_id=%s error=%s", task.task_id, error
-                )
+                logger.warning("基准价导入业务失败: task_id=%s error=%s", task.task_id, error)
                 return WorkerTaskOutcome(
                     status=STATUS_FAILED,
                     progress=0,

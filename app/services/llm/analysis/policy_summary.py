@@ -56,8 +56,7 @@ def build_policy_summary(rows: list[PolicyLadderRow]) -> dict[str, Any]:
         "width_policy_count": len(width_policies),
         "non_zero_adjustment_count": non_zero,
         "months": [
-            {"month": month, "ladder_row_count": count}
-            for month, count in sorted(by_month.items())
+            {"month": month, "ladder_row_count": count} for month, count in sorted(by_month.items())
         ],
     }
 
@@ -83,9 +82,7 @@ def build_policy_drivers(rows: list[PolicyLadderRow], *, top_n: int = 15) -> dic
             }
         )
 
-    ranked = sorted(items, key=lambda item: item["adjustment_row_count"], reverse=True)[
-        :top_n
-    ]
+    ranked = sorted(items, key=lambda item: item["adjustment_row_count"], reverse=True)[:top_n]
     for index, item in enumerate(ranked, start=1):
         item["rank"] = index
     return {"kind": "drivers", "items": ranked, "top_n": top_n}
@@ -102,10 +99,7 @@ def build_policy_trend(
         if row.price_adjustment != 0:
             by_month[month_key(row.year, row.month)] += 1
 
-    series = [
-        (month, Decimal(count))
-        for month, count in sorted(by_month.items())
-    ]
+    series = [(month, Decimal(count)) for month, count in sorted(by_month.items())]
     trend = _trend_from_series(series, value_label="non_zero_ladder_count", basis=basis)
     trend["subject"] = "steel_price_policy"
     return trend
@@ -149,7 +143,7 @@ def build_policy_mom_anomalies(
         by_key[key][month] = row
 
     spikes: list[dict[str, Any]] = []
-    for key, month_map in by_key.items():
+    for _key, month_map in by_key.items():
         ordered_months = sorted(month_map.keys())
         ordered_rows = [month_map[month] for month in ordered_months]
         for index in range(1, len(ordered_rows)):
@@ -160,9 +154,9 @@ def build_policy_mom_anomalies(
                 continue
             rate: Decimal | None = None
             if prev_row.price_adjustment != 0:
-                rate = (
-                    Decimal(change) / Decimal(prev_row.price_adjustment)
-                ).quantize(Decimal("0.0001"))
+                rate = (Decimal(change) / Decimal(prev_row.price_adjustment)).quantize(
+                    Decimal("0.0001")
+                )
             spikes.append(
                 {
                     "anomaly_type": "policy_adjustment_jump",
