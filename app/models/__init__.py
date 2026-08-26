@@ -57,6 +57,7 @@ from app.models.llm import LlmAnalysisReport
 from app.models.yishiyiyi import (
     StampingScrapPrice,
     SteelBasePrice,
+    SteelGradeCategory,
     SteelPriceLadderItem,
     SteelPricePolicy,
 )
@@ -95,6 +96,7 @@ __all__ = [
     "StampingTailorWeldBlank",
     "StampingTonnagePrice",
     "SteelBasePrice",
+    "SteelGradeCategory",
     "SteelPrice",
     "SteelPriceCalcLog",
     "SteelPriceLadderItem",

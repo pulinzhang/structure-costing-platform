@@ -16,6 +16,7 @@ from app.common.upload_scope_validation import validate_stamping_process_upload_
 from app.common.timezone import now
 from app.parsers.stamping.models.part import Part
 from app.parsers.stamping.models.process import Process
+from app.parsers.stamping.models.tailor_weld import TailorWeldAssemblyParsed
 from app.parsers.stamping.stamping_parser import parse_stamping_excel
 from app.parsers.stamping.tailor_weld_parser import parse_tailor_weld_excel
 from app.config import settings
@@ -39,6 +40,11 @@ from app.services.stamping.upload.cost_ratio_preserver import ProcessCostRatioPr
 from app.services.stamping.upload.template_builder import build_stamping_process_template
 from app.services.file_trace.path_utils import to_upload_relpath
 from app.services.file_trace.register import register_existing
+from app.services.yishiyiyi.steel_grade_category import (
+    GradeEnsureItem,
+    SOURCE_STAMPING_UPLOAD,
+    SteelGradeCategoryService,
+)
 
 # progress_callback(progress: int, msg: str)
 ProgressCallback = Callable[[int, str], None]
@@ -158,9 +164,17 @@ class StampingUploadService:
                 process_count = self._save_processes(
                     parse_result.processes, part_map, current_user=current_user
                 )
+                grade_result = SteelGradeCategoryService().ensure_grades(
+                    self.db,
+                    self._collect_upload_grades(parse_result.parts, tailor_result.assemblies),
+                    source=SOURCE_STAMPING_UPLOAD,
+                    current_user=current_user,
+                )
 
                 warnings = list(parse_result.warnings) + list(tailor_result.warnings)
                 warnings.extend(tailor_warnings)
+                if grade_result.conflicts:
+                    warnings.extend(grade_result.conflicts)
                 parse_time_ms = parse_result.parse_time_ms + tailor_result.parse_time_ms
 
                 logger.info(
@@ -205,6 +219,29 @@ class StampingUploadService:
         finally:
             if os.path.exists(tmp_path):
                 os.unlink(tmp_path)
+
+    @staticmethod
+    def _collect_upload_grades(
+        parts: list[Part],
+        assemblies: list[TailorWeldAssemblyParsed],
+    ) -> list[GradeEnsureItem]:
+        seen: set[str] = set()
+        items: list[GradeEnsureItem] = []
+
+        def add_material(raw: str | None) -> None:
+            grade = (raw or "").strip()
+            if not grade or grade in seen:
+                return
+            seen.add(grade)
+            items.append(GradeEnsureItem(grade=grade))
+
+        for part in parts:
+            add_material(part.material)
+        for assembly in assemblies:
+            add_material(assembly.material)
+            for blank in assembly.blanks:
+                add_material(blank.material)
+        return items
 
     def _save_file(
         self,

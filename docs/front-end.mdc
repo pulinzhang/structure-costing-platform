@@ -120,6 +120,7 @@ static/
         ├── yishiyiyi/
         │   ├── policy/{upload,list}
         │   ├── base-price/{upload,list}
+        │   ├── steel-grade-category/
         │   ├── winning-thickness/list/
         │   └── scrap-price/
         ├── costing/
@@ -167,6 +168,7 @@ static/
 | `#/steel-price-policy-download` | 加减价政策列表 | `yishiyiyi/policy/list` |
 | `#/base-price-upload` | 基准价格上传 | `yishiyiyi/base-price/upload` |
 | `#/base-price-download` | 基准价格列表 | `yishiyiyi/base-price/list` |
+| `#/steel-grade-category` | 牌号分类 | `yishiyiyi/steel-grade-category` |
 | `#/winning-thickness-download` | 中标钢厂厚度价格一览表 | `yishiyiyi/winning-thickness/list` |
 | `#/scrap-price` | 废料月度销售价 | `yishiyiyi/scrap-price` |
 | `#/steel-price-calc` | 冲压钢材联动计算 | `costing/steel-price/calc` |

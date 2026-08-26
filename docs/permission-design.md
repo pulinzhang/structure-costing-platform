@@ -455,6 +455,12 @@ root
 │   │       ├── op:base-price-download:view
 │   │       ├── op:base-price-download:export
 │   │       └── op:base-price-download:delete
+│   ├── menu:steel-grade-category              # 牌号分类
+│   │   ├── op:steel-grade-category:view
+│   │   ├── op:steel-grade-category:create
+│   │   ├── op:steel-grade-category:update
+│   │   ├── op:steel-grade-category:delete
+│   │   └── op:steel-grade-category:export
 │   ├── menu:winning-thickness-download        # 中标钢厂厚度价格一览表
 │   │   ├── op:winning-thickness-download:view
 │   │   └── op:winning-thickness-download:export
@@ -565,6 +571,7 @@ root
 | steel-price-policy-download | `view` / `export` / `delete` | 预览；导出 Excel；批量删除 |
 | base-price-upload | `view` / `upload` | 进入页；导入基准价格 |
 | base-price-download | `view` / `export` / `delete` | 预览；导出；批量删除 |
+| steel-grade-category | `view` / `create` / `update` / `delete` / `export` | 查询；新增；编辑大类/备注；删除档案行；导出 Excel |
 | winning-thickness-download | `view` / `export` | 预览；导出 Excel |
 | bom-structure | `view` | 产品结构：基地/项目卡片浏览 |
 | bom-viz（权限码同 `menu:bom-structure`） | `view` | Assembly Workspace |
@@ -797,3 +804,4 @@ static/index.html           # 侧栏 data-page
 | 2026-08-17 | 去掉预留空码 `op:bom-l0-welding-fee-list:export`（尚无导出接口/按钮，避免权限树熵增） |
 | 2026-08-19 | 冲压零件价格一览下线「核算明细」Excel；仅保留工艺清单导出（`op:stamping-part-cost:export`） |
 | 2026-08-19 | 成品焊接费列表：恢复 `export`（导出已落地）并增加 `update`（编辑其它费用 / 备注） |
+| 2026-08-26 | 新增 `menu:steel-grade-category` / `op:steel-grade-category:view|create|update|delete|export`；牌号分类档案 CRUD + Excel 导出 |

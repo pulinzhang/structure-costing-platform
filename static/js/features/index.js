@@ -44,6 +44,7 @@
  * │   ├── base-price/            # 基准价格
  * │   │   ├── upload/
  * │   │   └── list/
+ * │   ├── steel-grade-category/  # 牌号分类
  * │   ├── winning-thickness/     # 中标钢厂厚度价格一览表
  * │   │   └── list/
  * │   └── scrap-price/           # 废料月度销售价
@@ -162,6 +163,11 @@ export const pageMeta = {
         title: '基准价格列表',
         en: 'BASE_PRICE_DATABASE',
         breadcrumb: ['一事一议', '基准价格', '基准价格列表'],
+    },
+    'steel-grade-category': {
+        title: '牌号分类',
+        en: 'STEEL_GRADE_CATEGORY',
+        breadcrumb: ['一事一议', '牌号分类'],
     },
     'winning-thickness-download': {
         title: '中标钢厂厚度价格一览表',

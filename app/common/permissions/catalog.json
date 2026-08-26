@@ -702,6 +702,38 @@
           ]
         },
         {
+          "code": "menu:steel-grade-category",
+          "label": "牌号分类",
+          "type": "menu",
+          "children": [
+            {
+              "code": "op:steel-grade-category:view",
+              "label": "查看",
+              "type": "op"
+            },
+            {
+              "code": "op:steel-grade-category:create",
+              "label": "新增",
+              "type": "op"
+            },
+            {
+              "code": "op:steel-grade-category:update",
+              "label": "编辑",
+              "type": "op"
+            },
+            {
+              "code": "op:steel-grade-category:delete",
+              "label": "删除",
+              "type": "op"
+            },
+            {
+              "code": "op:steel-grade-category:export",
+              "label": "导出",
+              "type": "op"
+            }
+          ]
+        },
+        {
           "code": "menu:winning-thickness-download",
           "label": "中标钢厂厚度价格一览表",
           "type": "menu",

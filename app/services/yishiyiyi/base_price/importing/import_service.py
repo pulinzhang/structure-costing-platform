@@ -29,6 +29,11 @@ from app.services.file_trace.register import register_existing
 from app.services.yishiyiyi.base_price.importing.template_builder import (
     build_steel_base_price_template,
 )
+from app.services.yishiyiyi.steel_grade_category import (
+    GradeEnsureItem,
+    SOURCE_BASE_PRICE,
+    SteelGradeCategoryService,
+)
 
 ProgressCallback = Callable[[int, str], None]
 
@@ -222,6 +227,17 @@ class SteelBasePriceImportService:
                 year=year,
                 month=month,
             )
+            grade_result = SteelGradeCategoryService().ensure_grades(
+                db,
+                [
+                    GradeEnsureItem(grade=write.grade, category_name=write.category_name)
+                    for write in writes
+                ],
+                source=SOURCE_BASE_PRICE,
+                current_user=current_user,
+            )
+            if grade_result.conflicts:
+                parse_result.warnings.extend(grade_result.conflicts)
             _report(90, "正在提交事务...")
             db.commit()
         except Exception:

@@ -114,6 +114,50 @@ class SteelBasePriceRepository:
         )
         return records, total
 
+    def list_distinct_grade_categories(self, db: Session) -> list[tuple[str, str]]:
+        """全表去重 (grade, category_name)，供牌号档案回填。"""
+        rows = (
+            db.query(SteelBasePrice.grade, SteelBasePrice.category_name)
+            .filter(SteelBasePrice.grade.isnot(None))
+            .distinct()
+            .all()
+        )
+        result: list[tuple[str, str]] = []
+        for grade, category_name in rows:
+            grade_text = (grade or "").strip()
+            category_text = (category_name or "").strip()
+            if grade_text and category_text:
+                result.append((grade_text, category_text))
+        return result
+
+    def map_most_frequent_category_by_grades(
+        self, db: Session, grades: list[str]
+    ) -> dict[str, str]:
+        """牌号 → 基价行出现次数最多的大类。"""
+        if not grades:
+            return {}
+        rows = (
+            db.query(
+                SteelBasePrice.grade,
+                SteelBasePrice.category_name,
+                func.count().label("hit_count"),
+            )
+            .filter(SteelBasePrice.grade.in_(grades))
+            .group_by(SteelBasePrice.grade, SteelBasePrice.category_name)
+            .all()
+        )
+        best: dict[str, tuple[str, int]] = {}
+        for grade, category_name, hit_count in rows:
+            grade_text = (grade or "").strip()
+            category_text = (category_name or "").strip()
+            if not grade_text or not category_text:
+                continue
+            previous = best.get(grade_text)
+            count = int(hit_count)
+            if previous is None or count > previous[1]:
+                best[grade_text] = (category_text, count)
+        return {grade: pair[0] for grade, pair in best.items()}
+
     # ---- 筛选选项 ----
 
     def _distinct_values(

@@ -182,6 +182,13 @@ class Perm:
     BASE_PRICE_DOWNLOAD_EXPORT = "op:base-price-download:export"  # 导出
     BASE_PRICE_DOWNLOAD_DELETE = "op:base-price-download:delete"  # 批量删除
 
+    MENU_STEEL_GRADE_CATEGORY = "menu:steel-grade-category"  # 牌号分类
+    STEEL_GRADE_CATEGORY_VIEW = "op:steel-grade-category:view"  # 查看
+    STEEL_GRADE_CATEGORY_CREATE = "op:steel-grade-category:create"  # 新增
+    STEEL_GRADE_CATEGORY_UPDATE = "op:steel-grade-category:update"  # 编辑
+    STEEL_GRADE_CATEGORY_DELETE = "op:steel-grade-category:delete"  # 删除
+    STEEL_GRADE_CATEGORY_EXPORT = "op:steel-grade-category:export"  # 导出
+
     MENU_WINNING_THICKNESS_DOWNLOAD = "menu:winning-thickness-download"  # 中标钢厂厚度价格一览表
     WINNING_THICKNESS_DOWNLOAD_VIEW = "op:winning-thickness-download:view"  # 预览
     WINNING_THICKNESS_DOWNLOAD_EXPORT = "op:winning-thickness-download:export"  # 导出

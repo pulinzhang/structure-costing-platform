@@ -13,7 +13,7 @@
  * 入口 URL 的 query 串驱动整体刷新；每次脚本更新后需要同步递增 ?v= 版本号。
  */
 
-import { pageMeta } from './features/index.js?v=26';
+import { pageMeta } from './features/index.js?v=27';
 
 // 页面导入（路径与 index.html 菜单树 / features 目录对齐）
 import { getUserSession, initUserMenu, startTokenHeartbeat, updateUserSession } from './features/login/index.js?v=14';
@@ -41,6 +41,7 @@ import { pageConfig as steelPricePolicyDownloadPage } from './features/yishiyiyi
 import { pageConfig as basePriceUploadPage } from './features/yishiyiyi/base-price/upload/index.js?v=38';
 import { pageConfig as basePriceDownloadPage } from './features/yishiyiyi/base-price/list/index.js?v=30';
 import { pageConfig as winningThicknessDownloadPage } from './features/yishiyiyi/winning-thickness/list/index.js?v=8';
+import { pageConfig as steelGradeCategoryPage } from './features/yishiyiyi/steel-grade-category/index.js?v=4';
 import { pageConfig as scrapPricePage } from './features/yishiyiyi/scrap-price/index.js?v=19';
 import { pageConfig as bomStructurePage }  from './features/bom/material/structure/index.js?v=9';
 import { pageConfig as bomVizPage }        from './features/bom/material/viz/index.js?v=29';
@@ -88,6 +89,7 @@ const pages = {
     'steel-price-policy-download': steelPricePolicyDownloadPage,
     'base-price-upload': basePriceUploadPage,
     'base-price-download': basePriceDownloadPage,
+    'steel-grade-category': steelGradeCategoryPage,
     'winning-thickness-download': winningThicknessDownloadPage,
     'scrap-price': scrapPricePage,
     'bom-structure':  bomStructurePage,

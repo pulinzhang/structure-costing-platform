@@ -55,6 +55,7 @@ async def lifespan(app: FastAPI):
     # 启动时
     # 注意：日志配置应该在 uvicorn 启动前完成，这里只做保障
     from app.utils.logging_config import LoggerConfig
+
     LoggerConfig.configure(force=True)
 
     # 教学/开发交付：空库用 create_all 建表即可，不做历史库 Schema 升级
@@ -63,6 +64,7 @@ async def lifespan(app: FastAPI):
 
     ensure_directories()
     from app import models as _orm_models  # noqa: F401  # 执行 models/__init__，注册全部 ORM 表
+
     DatabaseConfig.create_tables()
     AuxiliaryDatabaseConfig.create_tables()
 
@@ -240,7 +242,7 @@ def create_app() -> FastAPI:
             {"name": "权限管理", "description": "权限目录与用户授权"},
             {"name": "操作日志", "description": "业务写操作与导出审计"},
             {"name": "登录认证", "description": "账号密码登录"},
-        ]
+        ],
     )
 
     # ========== CORS 配置 ==========
@@ -272,6 +274,7 @@ def create_app() -> FastAPI:
     async def spa_index():
         """单页应用入口"""
         from fastapi.responses import FileResponse
+
         return FileResponse(
             "static/index.html",
             headers={"Cache-Control": "no-cache, must-revalidate"},
@@ -282,6 +285,7 @@ def create_app() -> FastAPI:
     async def login_page():
         """打开登录页面"""
         from fastapi.responses import FileResponse
+
         return FileResponse(
             "static/login.html",
             headers={"Cache-Control": "no-cache, must-revalidate"},
@@ -292,6 +296,7 @@ def create_app() -> FastAPI:
     @app.get("/helper", include_in_schema=False)
     async def helper_redirect():
         from fastapi.responses import RedirectResponse
+
         return RedirectResponse(url="/helper/", status_code=302)
 
     app.mount(
@@ -304,6 +309,7 @@ def create_app() -> FastAPI:
     @app.get("/favicon.ico", include_in_schema=False)
     async def favicon():
         from fastapi.responses import Response
+
         return Response(status_code=204)
 
     # 保留旧路由兼容性（未登录先进鉴权页）
@@ -311,6 +317,7 @@ def create_app() -> FastAPI:
     async def root():
         """根路径重定向到独立登录页"""
         from fastapi.responses import RedirectResponse
+
         return RedirectResponse(url="/login", status_code=302)
 
     # ========== 导入各个功能模块的路由 ==========
@@ -356,7 +363,12 @@ def create_app() -> FastAPI:
     from app.routers.yishiyiyi.policy.export import router as yishiyiyi_policy_export_router
     from app.routers.yishiyiyi.policy.crud import router as yishiyiyi_policy_router
     from app.routers.yishiyiyi.base_price.crud import router as yishiyiyi_base_price_router
-    from app.routers.yishiyiyi.winning_thickness.crud import router as yishiyiyi_winning_thickness_router
+    from app.routers.yishiyiyi.steel_grade_category.crud import (
+        router as yishiyiyi_steel_grade_category_router,
+    )
+    from app.routers.yishiyiyi.winning_thickness.crud import (
+        router as yishiyiyi_winning_thickness_router,
+    )
     from app.routers.yishiyiyi.scrap_price.crud import router as yishiyiyi_scrap_price_router
     from app.routers.settings.auth.crud import router as auth_router
     from app.routers.settings.users.crud import router as user_crud_router
@@ -382,6 +394,7 @@ def create_app() -> FastAPI:
     app.include_router(yishiyiyi_policy_export_router)
     app.include_router(yishiyiyi_policy_router)
     app.include_router(yishiyiyi_base_price_router)
+    app.include_router(yishiyiyi_steel_grade_category_router)
     app.include_router(yishiyiyi_winning_thickness_router)
     app.include_router(yishiyiyi_scrap_price_router)
     app.include_router(bom_router)
@@ -407,6 +420,7 @@ def create_app() -> FastAPI:
         generic_exception_handler,
     )
     from app.exceptions.base import BusinessException
+
     app.add_exception_handler(HTTPException, http_exception_handler)
     app.add_exception_handler(RequestValidationError, validation_exception_handler)
     app.add_exception_handler(BusinessException, business_exception_handler)
@@ -420,6 +434,7 @@ def create_app() -> FastAPI:
         每次请求都会先经过这里，记录日志后再继续处理
         """
         import time
+
         start_time = time.time()
 
         log_request(logger, request.method, request.url.path)
