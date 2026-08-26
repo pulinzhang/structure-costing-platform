@@ -11,7 +11,7 @@ import {
     updatePkgHud,
     updatePkgFilterCapsules,
     renderDetailBody,
-} from './template.js?v=2';
+} from './template.js?v=3';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -449,10 +449,10 @@ function openBatchAudit(mode) {
             ? '将范围内待审记录批量审核通过。'
             : '将范围内已审核记录批量反审核为待审。';
     document.getElementById('pkgBatchAuditRemarkLabel').textContent =
-        mode === 'approve' ? '审核意见' : '反审核原因 *';
+        mode === 'approve' ? '审核意见 *' : '反审核原因 *';
     document.getElementById('pkgBatchAuditRemark').value = '';
     document.getElementById('pkgBatchAuditRemark').placeholder =
-        mode === 'approve' ? '可选填写审核意见' : '必填反审核原因';
+        mode === 'approve' ? '请填写审核意见（必填）' : '必填反审核原因';
 
     const session = typeof getUserSession === 'function' ? getUserSession() : null;
     const operator = session?.display_name || session?.username || '—';
@@ -470,8 +470,8 @@ async function submitBatchAudit() {
         return;
     }
     const remark = document.getElementById('pkgBatchAuditRemark')?.value?.trim() || '';
-    if (mode === 'reverse' && !remark) {
-        showToast('反审核原因必填', 'warning');
+    if (!remark) {
+        showToast(mode === 'approve' ? '审核意见必填' : '反审核原因必填', 'warning');
         return;
     }
     const year = Number(filters.year);
@@ -480,7 +480,7 @@ async function submitBatchAudit() {
         year,
         vehicle_model: filters.vehicle_model,
     };
-    if (mode === 'approve') body.audit_remark = remark || null;
+    if (mode === 'approve') body.audit_remark = remark;
     else body.reverse_audit_remark = remark;
 
     pkgState.batchAuditSubmitting = true;

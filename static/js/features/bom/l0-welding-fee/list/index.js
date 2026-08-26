@@ -10,7 +10,7 @@ import {
     updateL0WeldingFeeFilterCapsules,
     renderFeeDetailItems,
     resolveL0ShortPartNumber,
-} from './template.js?v=12';
+} from './template.js?v=13';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -652,10 +652,10 @@ function openBatchAudit(mode) {
     const remark = document.getElementById('l0wfBatchAuditRemark');
     const scopeEl = document.getElementById('l0wfBatchAuditScope');
     if (title) title.textContent = isReverse ? '批量反审核' : '批量审核';
-    if (label) label.textContent = isReverse ? '反审核原因（必填）' : '审核意见（可选）';
+    if (label) label.textContent = isReverse ? '反审核原因（必填）' : '审核意见（必填）';
     if (remark) {
         remark.value = '';
-        remark.placeholder = isReverse ? '请填写反审核原因' : '可选';
+        remark.placeholder = isReverse ? '请填写反审核原因' : '请填写审核意见';
     }
     if (scopeEl) {
         scopeEl.textContent = `${scope.year} · ${scope.location} · ${scope.vehicle_model} · ${scope.bom_version}`;
@@ -669,14 +669,14 @@ async function submitBatchAudit() {
     if (!scope) return;
     const mode = feeState.batchAuditMode;
     const remark = (document.getElementById('l0wfBatchAuditRemark')?.value || '').trim();
-    if (mode === 'reverse' && !remark) {
-        showToast('反审核原因必填', 'warning');
+    if (!remark) {
+        showToast(mode === 'approve' ? '审核意见必填' : '反审核原因必填', 'warning');
         return;
     }
 
     const body = { ...scope };
     const url = mode === 'approve' ? `${API_BASE}/batch-approve` : `${API_BASE}/batch-reverse-audit`;
-    if (mode === 'approve') body.audit_remark = remark || null;
+    if (mode === 'approve') body.audit_remark = remark;
     else body.reverse_audit_remark = remark;
 
     feeState.batchAuditSubmitting = true;

@@ -406,7 +406,7 @@ export function l0WeldingFeeListTemplate() {
                         <span id="l0wfBatchAuditRemarkLabel" class="text-[10px] text-[#6E6E73]">审核意见</span>
                         <textarea id="l0wfBatchAuditRemark" rows="4"
                                   class="w-full px-3 py-2 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#ffffff] placeholder:text-[#616161] focus:outline-none focus:border-[#ff5252] rounded-sm"
-                                  placeholder="可选"></textarea>
+                                  placeholder="请填写审核意见（必填）"></textarea>
                     </label>
                 </div>
                 <div class="px-5 py-3 border-t border-[#222] flex justify-end gap-2 shrink-0">

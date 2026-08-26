@@ -133,7 +133,7 @@ class SteelPriceBatchApproveDTO(BaseModel):
     year: int = Field(..., ge=2000, le=2100, description="年度")
     month: int = Field(..., ge=1, le=12, description="月份")
     location: str = Field(..., min_length=1, max_length=50, description="采购基地")
-    audit_remark: str | None = Field(None, description="审核意见")
+    audit_remark: str = Field(..., min_length=1, description="审核意见（必填）")
 
 
 class SteelPriceBatchReverseAuditDTO(BaseModel):

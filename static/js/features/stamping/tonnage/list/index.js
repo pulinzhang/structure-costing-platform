@@ -11,7 +11,7 @@ import {
     parsePricePerStrokeInput,
     updateTonnageHud,
     updateTonnageFilterCapsules,
-} from './template.js?v=19';
+} from './template.js?v=20';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -381,11 +381,11 @@ function openBatchAuditDrawer(mode) {
         getSessionDisplayName() || '（当前登录用户）';
     const remarkLabel = document.getElementById('tonnageBatchAuditRemarkLabel');
     remarkLabel.innerHTML = isApprove
-        ? '审核意见'
+        ? '审核意见<span class="text-[#d32f2f]">*</span>'
         : '反审核意见<span class="text-[#d32f2f]">*</span>';
     const remarkEl = document.getElementById('tonnageBatchAuditRemark');
     remarkEl.value = '';
-    remarkEl.placeholder = isApprove ? '可选填写审核意见' : '必填反审核原因';
+    remarkEl.placeholder = isApprove ? '请填写审核意见（必填）' : '必填反审核原因';
     document.getElementById('tonnageBatchAuditFilterSummary').textContent =
         `基地 ${filters.location} · 年度 ${filters.year}`;
     openDrawer('tonnageBatchAuditDrawer', 'tonnageBatchAuditDrawerBackdrop');
@@ -396,8 +396,8 @@ async function submitBatchAudit() {
     const mode = document.getElementById('tonnageBatchAuditMode')?.value || 'approve';
     const filters = collectScopeFilters();
     const remark = document.getElementById('tonnageBatchAuditRemark')?.value.trim() || '';
-    if (mode === 'reverse' && !remark) {
-        showToast('反审核意见必填', 'warning');
+    if (!remark) {
+        showToast(mode === 'approve' ? '审核意见必填' : '反审核意见必填', 'warning');
         return;
     }
     const body = {
@@ -407,7 +407,7 @@ async function submitBatchAudit() {
     const url = mode === 'approve'
         ? `${API_BASE}/batch-approve`
         : `${API_BASE}/batch-reverse-audit`;
-    if (mode === 'approve') body.audit_remark = remark || null;
+    if (mode === 'approve') body.audit_remark = remark;
     else body.reverse_audit_remark = remark;
 
     const btn = document.getElementById('confirmTonnageBatchAuditBtn');

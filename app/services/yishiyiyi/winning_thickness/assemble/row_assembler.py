@@ -16,6 +16,7 @@ from app.services.yishiyiyi.policy.export.excel_exporter import format_interval
 from app.services.yishiyiyi.policy.match.adjustment_common import (
     PolicyMatchContext,
     filter_candidates,
+    grade_exact,
     normalize_steel_mill,
     order_by_base_thickness,
 )
@@ -156,9 +157,7 @@ class WinningThicknessRowAssembler:
         )
         candidates = filter_candidates(match_row, policies)
         thickness_policies = [
-            p
-            for p in candidates
-            if p.policy_type == "THICKNESS" and (p.grade_value or "").strip() == grade
+            p for p in candidates if p.policy_type == "THICKNESS" and grade_exact(p, match_row)
         ]
         if not thickness_policies:
             return None

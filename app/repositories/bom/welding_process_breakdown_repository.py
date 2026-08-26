@@ -199,10 +199,10 @@ class BomWeldingProcessBreakdownRepository:
         total = q.count()
         rows = (
             q.order_by(
-                BomWeldingProcessBreakdownNode.supply_part_number,
                 BomWeldingProcessBreakdownNode.level,
-                BomWeldingProcessBreakdownNode.part_number,
                 BomWeldingProcessBreakdownNode.id,
+                BomWeldingProcessBreakdownNode.supply_part_number,
+                BomWeldingProcessBreakdownNode.part_number,
             )
             .offset(skip)
             .limit(limit)

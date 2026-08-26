@@ -246,7 +246,7 @@ export function processFeeListTemplate() {
                     <label class="text-[10px] text-[#777777] mb-1 block" id="feeBatchAuditRemarkLabel">审核意见</label>
                     <textarea id="feeBatchAuditRemark" rows="4" maxlength="500"
                               class="w-full px-3 py-2 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#ffffff] placeholder:text-[#616161] focus:outline-none focus:border-[#ff5252] transition-all rounded resize-none"
-                              placeholder="可选填写审核意见"></textarea>
+                              placeholder="请填写审核意见（必填）"></textarea>
                 </div>
             </div>
             <div class="px-6 py-4 border-t border-[#262626] flex items-center justify-end gap-2 shrink-0">

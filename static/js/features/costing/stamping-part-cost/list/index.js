@@ -10,7 +10,7 @@ import {
     updateCostFilterCapsules,
     shortPartNumber,
     syncBreakdownColumnVisibility,
-} from './template.js?v=43';
+} from './template.js?v=45';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -18,6 +18,8 @@ import {
 
 const API_BASE = '/api/costing/stamping-part-cost';
 const CASCADE_API = '/api/stamping/filters/cascade';
+const DRAWER_ANIMATION_MS = 300;
+const SCOPE_REQUIRED_MESSAGE = '批量操作须选定年度、月份、基地、冲压工厂';
 
 const FILTER_IDS = [
     'costYearFilter',
@@ -41,8 +43,32 @@ const listState = {
     breakdownColsOpen: false,
     advancedOpen: false,
     pendingFilters: null,
+    batchAuditSubmitting: false,
     _onEscClose: null,
 };
+
+function openDrawer(drawerId, backdropId) {
+    const drawer = document.getElementById(drawerId);
+    const backdrop = document.getElementById(backdropId);
+    if (!drawer) return;
+    drawer.style.display = 'flex';
+    if (backdrop) backdrop.style.display = 'block';
+    void drawer.offsetWidth;
+    drawer.classList.remove('translate-x-full');
+    drawer.classList.add('translate-x-0');
+}
+
+function closeDrawer(drawerId, backdropId) {
+    const drawer = document.getElementById(drawerId);
+    const backdrop = document.getElementById(backdropId);
+    if (!drawer) return;
+    drawer.classList.remove('translate-x-0');
+    drawer.classList.add('translate-x-full');
+    setTimeout(() => {
+        drawer.style.display = 'none';
+        if (backdrop) backdrop.style.display = 'none';
+    }, DRAWER_ANIMATION_MS);
+}
 
 function init() {
     applyPermissionUi();
@@ -200,9 +226,10 @@ function bindEvents() {
         loadList(1);
     });
 
-    document.getElementById('costBatchApproveBtn')?.addEventListener('click', () => batchApprove());
-    document.getElementById('costBatchReverseBtn')?.addEventListener('click', () => batchReverse());
+    document.getElementById('costBatchApproveBtn')?.addEventListener('click', () => openBatchAuditDrawer('approve'));
+    document.getElementById('costBatchReverseBtn')?.addEventListener('click', () => openBatchAuditDrawer('reverse'));
     document.getElementById('costBatchDeleteBtn')?.addEventListener('click', () => batchDelete());
+    bindBatchAuditDrawerEvents();
     document.getElementById('costExportBtn')?.addEventListener('click', () => exportExcel());
     document.getElementById('costPagination')?.addEventListener('click', (event) => {
         const btn = event.target.closest('.cost-page-btn');
@@ -304,7 +331,8 @@ function getFilters() {
 function requireScope() {
     const f = getFilters();
     if (!f.year || !f.month || !f.location || !f.stamping_supplier) {
-        showToast('批量操作须选定年度、月份、基地、冲压工厂', 'warning');
+        setAdvancedOpen(true);
+        showToast(SCOPE_REQUIRED_MESSAGE, 'warning');
         return null;
     }
     return {
@@ -706,38 +734,130 @@ function closeDetailDrawer() {
     }
 }
 
-async function batchApprove() {
-    if (!listState.canApprove) return showToast('无审核权限', 'warning');
-    const scope = requireScope();
-    if (!scope) return;
-    if (!window.confirm('确认批量审核通过当前范围？')) return;
+function bindBatchAuditDrawerEvents() {
+    document.getElementById('closeCostBatchAuditDrawer')?.addEventListener('click', closeBatchAuditDrawer);
+    document.getElementById('cancelCostBatchAuditBtn')?.addEventListener('click', closeBatchAuditDrawer);
+    document.getElementById('costBatchAuditDrawerBackdrop')?.addEventListener('click', closeBatchAuditDrawer);
+    document.getElementById('confirmCostBatchAuditBtn')?.addEventListener('click', () => submitBatchAudit());
+}
+
+function getSessionDisplayName() {
     try {
-        const res = await HttpClient.post(`${API_BASE}/batch-approve`, scope);
-        showToast(res.message || '审核完成', 'success');
-        loadList(listState.page);
-    } catch (error) {
-        showToast(error.message || '审核失败', 'error');
+        const raw = localStorage.getItem('brabus_user');
+        if (!raw) return '';
+        const session = JSON.parse(raw);
+        return (session.real_name || session.name || session.username || '').trim();
+    } catch (_) {
+        return '';
     }
 }
 
-async function batchReverse() {
-    if (!listState.canReverse) return showToast('无反审核权限', 'warning');
+function openBatchAuditDrawer(mode) {
+    const isApprove = mode === 'approve';
+    if (isApprove && !listState.canApprove) return showToast('无审核权限', 'warning');
+    if (!isApprove && !listState.canReverse) return showToast('无反审核权限', 'warning');
     const scope = requireScope();
     if (!scope) return;
-    const remark = window.prompt('请输入反审核原因');
-    if (!remark || !remark.trim()) {
-        showToast('反审核原因必填', 'warning');
+
+    const modeEl = document.getElementById('costBatchAuditMode');
+    const titleEl = document.getElementById('costBatchAuditDrawerTitle');
+    const hintEl = document.getElementById('costBatchAuditHint');
+    const operatorLabel = document.getElementById('costBatchAuditOperatorLabel');
+    const remarkLabel = document.getElementById('costBatchAuditRemarkLabel');
+    const operatorDisplay = document.getElementById('costBatchAuditOperatorDisplay');
+    const remarkEl = document.getElementById('costBatchAuditRemark');
+    const summaryEl = document.getElementById('costBatchAuditFilterSummary');
+    const confirmBtn = document.getElementById('confirmCostBatchAuditBtn');
+
+    if (modeEl) modeEl.value = isApprove ? 'approve' : 'reverse';
+    if (titleEl) titleEl.textContent = isApprove ? '批量审核' : '批量反审核';
+    if (hintEl) {
+        hintEl.textContent = isApprove
+            ? '仅按年度、月份、基地、冲压工厂处理待审记录；已通过记录会跳过。'
+            : '仅按年度、月份、基地、冲压工厂处理已通过记录；其余状态会跳过。反审核意见必填。';
+    }
+    if (operatorLabel) operatorLabel.textContent = isApprove ? '审核人' : '反审核人';
+    if (operatorDisplay) {
+        operatorDisplay.textContent = getSessionDisplayName() || '（当前登录用户）';
+    }
+    if (remarkLabel) {
+        remarkLabel.innerHTML = isApprove
+            ? '审核意见<span class="text-[#d32f2f]">*</span>'
+            : '反审核意见<span class="text-[#d32f2f]">*</span>';
+    }
+    if (remarkEl) {
+        remarkEl.value = '';
+        remarkEl.placeholder = isApprove ? '请填写审核意见（必填）' : '请填写反审核原因（必填）';
+    }
+    if (summaryEl) {
+        summaryEl.textContent =
+            `年度 ${scope.year} · 月份 ${scope.month} · 基地 ${scope.location} · 工厂 ${scope.stamping_supplier}`;
+    }
+    if (confirmBtn) {
+        confirmBtn.textContent = isApprove ? '确认审核通过' : '确认反审核';
+        confirmBtn.className =
+            'inline-flex items-center gap-1.5 bg-[#d32f2f] text-white px-4 py-2 text-[11px] font-semibold rounded hover:bg-[#b71c1c] transition-all';
+    }
+
+    openDrawer('costBatchAuditDrawer', 'costBatchAuditDrawerBackdrop');
+}
+
+function closeBatchAuditDrawer() {
+    if (listState.batchAuditSubmitting) return;
+    closeDrawer('costBatchAuditDrawer', 'costBatchAuditDrawerBackdrop');
+}
+
+async function submitBatchAudit() {
+    if (listState.batchAuditSubmitting) return;
+    const mode = document.getElementById('costBatchAuditMode')?.value || 'approve';
+    const isApprove = mode === 'approve';
+    const scope = requireScope();
+    if (!scope) return;
+
+    const remark = document.getElementById('costBatchAuditRemark')?.value.trim() || '';
+    if (!remark) {
+        showToast(isApprove ? '审核意见必填' : '反审核意见必填', 'warning');
         return;
     }
+
+    const confirmBtn = document.getElementById('confirmCostBatchAuditBtn');
+    const originalText = confirmBtn ? confirmBtn.textContent : '';
+    listState.batchAuditSubmitting = true;
+    if (confirmBtn) {
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = '提交中…';
+    }
+
     try {
-        const res = await HttpClient.post(`${API_BASE}/batch-reverse-audit`, {
-            ...scope,
-            reverse_audit_remark: remark.trim(),
-        });
-        showToast(res.message || '反审核完成', 'success');
+        const body = { ...scope };
+        let response;
+        if (isApprove) {
+            body.audit_remark = remark;
+            response = await HttpClient.post(`${API_BASE}/batch-approve`, body);
+        } else {
+            body.reverse_audit_remark = remark;
+            response = await HttpClient.post(`${API_BASE}/batch-reverse-audit`, body);
+        }
+        const result = response.data || {};
+        const updated = result.updated_count ?? 0;
+        const skipped = result.skipped_count ?? 0;
+        showToast(
+            response.message ||
+                `${isApprove ? '已审核通过' : '已反审核'} ${updated} 条` +
+                    (skipped ? `，跳过 ${skipped} 条` : ''),
+            updated > 0 ? 'success' : 'warning',
+        );
+        listState.batchAuditSubmitting = false;
+        closeBatchAuditDrawer();
         loadList(listState.page);
     } catch (error) {
-        showToast(error.message || '反审核失败', 'error');
+        showToast(error.message || (isApprove ? '审核失败' : '反审核失败'), 'error');
+    } finally {
+        listState.batchAuditSubmitting = false;
+        if (confirmBtn) {
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = originalText;
+        }
     }
 }
 

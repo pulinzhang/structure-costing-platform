@@ -196,6 +196,56 @@ export function l0AssemblyCostListTemplate() {
                 </div>
             </div>
         </div>
+
+        ${batchAuditDrawerHtml()}
+    `;
+}
+
+function batchAuditDrawerHtml() {
+    return `
+        <div class="fixed inset-0 z-[80] bg-black/70 backdrop-blur-sm transition-opacity duration-300"
+             id="lacBatchAuditDrawerBackdrop" style="display:none"></div>
+        <div class="fixed inset-y-0 right-0 z-[85] w-[420px] bg-[#1a1a1a] border-l border-[#2a2a2a] transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col"
+             id="lacBatchAuditDrawer" style="display:none; max-height: 100vh; box-shadow: -20px 0 60px rgba(0,0,0,0.95);">
+            <div class="px-5 py-3.5 flex items-center justify-between shrink-0"
+                 style="background: linear-gradient(180deg, #1f1f1f 0%, #1a1a1a 100%); border-bottom: 1px solid #333333;">
+                <h5 class="text-[11px] font-semibold tracking-wider text-[#b0b0b0] flex items-center gap-2.5 uppercase">
+                    <span style="width:3px;height:14px;background:#d32f2f;border-radius:1px;display:inline-block;box-shadow: 0 0 8px rgba(211,47,47,0.5);"></span>
+                    <span id="lacBatchAuditDrawerTitle">批量审核</span>
+                </h5>
+                <button type="button" id="closeLacBatchAuditDrawer"
+                        class="flex items-center justify-center w-8 h-8 rounded-md text-[#707070] hover:text-white hover:bg-[#d32f2f] transition-all">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <div class="flex-1 min-h-0 overflow-y-auto p-6 space-y-4">
+                <input type="hidden" id="lacBatchAuditMode" value="approve">
+                <div class="bg-[#0c0c0c] border border-[#1a1a1a] rounded p-3 text-[11px] text-[#9e9e9e]" id="lacBatchAuditFilterSummary"></div>
+                <p id="lacBatchAuditHint" class="text-[11px] text-[#616161]"></p>
+                <div>
+                    <label class="text-[10px] text-[#777777] mb-1 block" id="lacBatchAuditOperatorLabel">操作人</label>
+                    <div id="lacBatchAuditOperatorDisplay"
+                         class="w-full h-9 px-3 flex items-center text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#9e9e9e] rounded">
+                        —
+                    </div>
+                    <p class="text-[10px] text-[#555555] mt-1">取自当前登录用户，无需填写</p>
+                </div>
+                <div>
+                    <label class="text-[10px] text-[#777777] mb-1 block" id="lacBatchAuditRemarkLabel">审核意见</label>
+                    <textarea id="lacBatchAuditRemark" rows="4" maxlength="500"
+                              class="w-full px-3 py-2 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#ffffff] placeholder:text-[#616161] focus:outline-none focus:border-[#ff5252] transition-all rounded resize-none"
+                              placeholder="请填写审核意见（必填）"></textarea>
+                </div>
+            </div>
+            <div class="px-6 py-4 border-t border-[#262626] flex items-center justify-end gap-2 shrink-0">
+                <button type="button" id="cancelLacBatchAuditBtn" class="inline-flex items-center gap-1.5 bg-transparent text-[#9e9e9e] border border-[#2c2c2c] px-4 py-2 text-[11px] font-medium rounded hover:border-[#9e9e9e] hover:text-white transition-all">取消</button>
+                <button type="button" id="confirmLacBatchAuditBtn" class="inline-flex items-center gap-1.5 bg-[#d32f2f] text-white px-4 py-2 text-[11px] font-semibold rounded hover:bg-[#b71c1c] transition-all">
+                    确认提交
+                </button>
+            </div>
+        </div>
     `;
 }
 

@@ -9,7 +9,7 @@ import {
     renderSteelPriceRows,
     updateSteelPriceHud,
     updateActiveFilterCapsules,
-} from './template.js?v=47';
+} from './template.js?v=48';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -519,12 +519,12 @@ function openBatchAuditDrawer(mode) {
     }
     if (remarkLabel) {
         remarkLabel.innerHTML = isApprove
-            ? '审核意见'
+            ? '审核意见<span class="text-[#d32f2f]">*</span>'
             : '反审核意见<span class="text-[#d32f2f]">*</span>';
     }
     if (remarkEl) {
         remarkEl.value = '';
-        remarkEl.placeholder = isApprove ? '可选填写审核意见' : '请填写反审核原因（必填）';
+        remarkEl.placeholder = isApprove ? '请填写审核意见（必填）' : '请填写反审核原因（必填）';
     }
     if (summaryEl) {
         summaryEl.textContent = `年度 ${filters.year} · 月份 ${filters.month} · 基地 ${filters.location}`;
@@ -555,8 +555,8 @@ async function submitBatchAudit() {
     }
 
     const remark = document.getElementById('batchAuditRemark')?.value.trim() || '';
-    if (!isApprove && !remark) {
-        showToast('反审核意见必填', 'warning');
+    if (!remark) {
+        showToast(isApprove ? '审核意见必填' : '反审核意见必填', 'warning');
         return;
     }
 
@@ -576,7 +576,7 @@ async function submitBatchAudit() {
         };
         let response;
         if (isApprove) {
-            if (remark) body.audit_remark = remark;
+            body.audit_remark = remark;
             response = await HttpClient.post(`${API_BASE}/batch-approve`, body);
         } else {
             body.reverse_audit_remark = remark;
@@ -857,11 +857,14 @@ async function deleteRecord(id) {
 async function handleApprove() {
     const id = steelPriceState.currentViewId;
     if (!id) return;
-    const auditRemark = window.prompt('审核意见（可选，可留空）');
+    const auditRemark = window.prompt('请输入审核意见（必填）');
     if (auditRemark === null) return;
+    if (!auditRemark.trim()) {
+        showToast('审核意见必填', 'warning');
+        return;
+    }
     try {
-        const body = {};
-        if (auditRemark.trim()) body.audit_remark = auditRemark.trim();
+        const body = { audit_remark: auditRemark.trim() };
         await HttpClient.post(`${API_BASE}/${id}/approve`, body);
         showToast('审核通过', 'success');
         closeDrawer('viewDrawer', 'viewDrawerBackdrop');

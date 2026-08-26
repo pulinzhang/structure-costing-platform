@@ -37,7 +37,7 @@ class L0AssemblyCostScopeDTO(BaseModel):
 
 
 class L0AssemblyCostBatchApproveDTO(L0AssemblyCostScopeDTO):
-    audit_remark: str | None = None
+    audit_remark: str = Field(..., min_length=1, description="审核意见（必填）")
 
 
 class L0AssemblyCostBatchReverseDTO(L0AssemblyCostScopeDTO):
