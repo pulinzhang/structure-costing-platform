@@ -1,16 +1,16 @@
 # 浅色主题改造 — 设计说明
 
-> 状态：**设计定稿（待拍板 / 待开发）**  
-> 关联：`.cursor/rules/front-end.mdc`、`docs/front-end.mdc`、`static/css/style.css`、`static/index.html`、`static/js/features/**`  
-> 原则：**只改前端观感，不改后端 / API / 权限 / 路由。** 禁止「只改 `:root` 变量」或「每个 class 写两套 hex」。必须先收成语义色 token，再换浅色色板。HUD 浅色上去掉霓虹 glow。
+> 状态：**设计定稿（待开发）**  
+> 关联：`.cursor/rules/front-end.mdc`、`docs/front-end.mdc`、`static/css/style.css`、`static/index.html`、`static/login.html`、`static/js/features/**`  
+> 原则：**深色与浅色同时存在，本机 `localStorage` 记忆，不进账号、不进后端。** 禁止「只改 `:root`」或「每个 class 写两套 hex」。必须先收成语义色 token；浅色 HUD 去掉霓虹 glow。
 
 ---
 
 ## 0. 一句话
 
-> **把写死在 Tailwind hex 里的 Brabus 暗色，收成一套 CSS 语义变量；浅色作为办公默认皮肤，工业红与密表结构保留，霓虹发光不带到浅底上。**
+> **把写死的 Brabus hex 收成一套 CSS 语义变量；深色 / 浅色两套色板挂在 `html[data-theme]` 上；用户在个人资料页切换，写入本机 `localStorage`（`brabus_theme`），刷新、关浏览器、登出后再进仍是上次选的。**
 
-不是换一套 Material / Ant Design。不是全站反相（黑变白）。后端不动。
+不是换掉暗色。不是跟账号走。不是全站反相。后端不动。
 
 ---
 
@@ -60,12 +60,13 @@
 
 | # | 目标 |
 |---|------|
-| G1 | 办公场景下一套可读的浅色皮肤：画布灰白、面板白、灰边、深字 |
+| G1 | **深色与浅色并存**，同一套组件，只换 token |
 | G2 | 品牌红仍是唯一强调色；表体直角、密表、等宽数字、操作只走操作列 |
 | G3 | 颜色进入语义 token（`--bg-canvas` / `--text-muted` 等），模板不再写业务 hex |
-| G4 | 浅色 HUD：**实心红 + 淡红底 KPI 列**，去掉 `text-shadow` / 霓虹 glow / 大块黑阴影 |
-| G5 | 登录、Toast、侧栏、顶栏、抽屉、空状态、滚动条、autofill 与业务页同一套色 |
-| G6 | 落地时同步改 `docs/front-end.mdc` 与 `.cursor/rules/front-end.mdc`（两处一起改） |
+| G4 | 浅色 HUD：**实心红 + 淡红底 KPI 列**，去掉 `text-shadow` / 霓虹 glow / 大块黑阴影；深色 HUD 可保留现网发光 |
+| G5 | 登录、主应用、Toast、侧栏、顶栏、抽屉、AI 助理、帮助站读**同一** `brabus_theme` |
+| G6 | 选择只存在本机 `localStorage`，不进用户表、不进 API |
+| G7 | 落地时同步改 `docs/front-end.mdc` 与 `.cursor/rules/front-end.mdc`（两处一起改） |
 
 后端、权限码、Hash 路由、API 契约 **不在目标内**。
 
@@ -84,6 +85,7 @@
 - `static/helper/**` 帮助站（独立暗色 CSS，需跟主站浅色对齐或提供同一 token）
 - 产品结构图（`bom/material/viz`）节点色按浅底重调
 - 打印 / 导出相关样式（助理 `export/print.js` 等）若写死暗色则一并收口
+- 个人资料页（`#/settings-profile`）「外观」卡片：深 / 浅切换；入口 html 启动时读 `localStorage` 防闪
 
 ### 3.2 不做
 
@@ -93,29 +95,36 @@
 | 权限、路由名、侧栏信息架构 | 只换皮 |
 | 为主题引入构建链 / 换 UI 框架 | 继续 Tailwind CDN + 原生 JS |
 | 历史页「看起来差不多就行」的半吊子 | 要么全站 token 化，要么先试点再全量；禁止长期两套皮肤混用 |
-| 浅色上保留暗色霓虹 HUD | 见 §5.3 |
+| 浅色上保留暗色霓虹 HUD | 见 §5.3；深色可以留 |
+| 主题跟账号 / 服务端配置 | 只认本机 `localStorage`，登出不清主题 |
+| 顶栏 / 登录页放主题开关 | 入口只在个人资料；顶栏保持现网信息密度 |
+| 主题写入 `PUT /api/auth/me` | 本机记忆，不进用户资料接口 |
+| 跟随系统 `prefers-color-scheme` | 不做自动跟随，避免和本机记忆打架 |
 
-### 3.3 待拍板（建议默认）
+### 3.3 已拍板 / 仍待拍板
 
-落地前请书面确认下面三项。文档按「建议默认」写后续章节；若拍板不同，先改本文再开发。
+| # | 问题 | 结论 |
+|---|------|------|
+| D1 | 深色与浅色？存在哪里？ | **已拍板：两套都在。本机 `localStorage`，键 `brabus_theme`。** 详见 §5.2 |
+| D2 | 浅色 HUD 是否去掉霓虹发光？ | **去掉**。浅底用实心红 + 淡红底；深色保持现网 HUD |
+| D3 | 先试点还是一次全量？ | **先试点**：壳层 + 个人资料外观卡 + 零件价格一览，两套主题都过，再全量 |
 
-| # | 问题 | 建议默认 |
-|---|------|----------|
-| D1 | 全员浅色，还是暗/浅可切换？ | **浅色默认**；架构按可切换预留 token（`html[data-theme]`）。开关 UI 可二期 |
-| D2 | 浅色 HUD 是否去掉霓虹发光？ | **去掉**。浅底用实心红 + 淡红底 |
-| D3 | 先试点还是一次全量？ | **先试点**：壳层 + 登录 + 零件价格一览（现网 HUD 标杆），视觉过了再全量 |
-
-工期随 D1 变化：仅浅色约 3–4 周；带切换约 5–7 周（1 人全职，含全路由目视验收）。
+工期按双主题计：约 **5–7 周**（1 人全职，含深/浅各验一遍）。
 
 ---
 
-## 4. 设计语言：Brabus Precision Light
+## 4. 设计语言：同一套结构，两套色板
 
-暗色理念保留三句话：**极简克制、工业精密、红色唯一强调**。换掉的是「碳素黑底 + 发光」。
+理念三句话不变：**极简克制、工业精密、红色唯一强调**。深色继续是 Carbon Dark；浅色是同一骨架上的 Precision Light，不是另一套后台皮肤。
 
-### 4.1 色板（浅色默认）
+切换只改 `html[data-theme]`，**不改 DOM 结构**。glow / 重阴影用 token 表达，浅色上把它们收成「无 / 轻」。
 
-落地时写入 `:root`（或 `html[data-theme="light"]`）。名称用语义，不要用 `gray-500` 这种与 Tailwind 默认冲突的名字。
+### 4.1 色板
+
+名称用语义，不要用 `gray-500` 这种与 Tailwind 默认冲突的名字。  
+**`:root` = 深色**（与现网一致，无 JS 时也不闪浅）。`html[data-theme="light"]` 覆盖为浅色。
+
+#### 浅色 `html[data-theme="light"]`
 
 | Token | 浅色 hex | 用途 |
 |-------|----------|------|
@@ -139,7 +148,26 @@
 
 **页内品牌红只保留 `#d32f2f`。** HUD 现用的 `#FF1E27` 收到 `--brabus-red`，禁止同一表混两套红。
 
-暗色若二期保留，作为 `html[data-theme="dark"]` 覆盖同一批 token，映射回现网阶梯（`--bg-canvas: #0a0a0a` 等）。本文不展开暗色色板——现网即暗色真相。
+#### 深色 `:root` / `html[data-theme="dark"]`（现网映射）
+
+| Token | 深色 hex | 对应现网 |
+|-------|----------|----------|
+| `--bg-canvas` | `#0a0a0a` | `--bg-deep` / `body` |
+| `--bg-surface` | `#0A0A0C` / `#1e1e1e` | HUD 外框 / 面板（落地时表外框与普通面板可拆 `--bg-table` 若一值不够） |
+| `--bg-elevated` | `#0a0a0a` / `#262626` | 输入 / 抬升 |
+| `--bg-hover` | `#161620` | 表行 hover |
+| `--bg-kpi` | `#1A080A` | KPI 暗红底 |
+| `--text-main` | `#F0F0F2` | 主文字 |
+| `--text-muted` | `#555555` | 表头 |
+| `--text-dim` | `#616161` | 次要 / 禁用 |
+| `--text-numeric` | `#8E8E93` | 表格数字 |
+| `--border-subtle` | `#141418` | 行分割 |
+| `--border-color` | `#2c2c2c` | 面板边 |
+| `--border-active` | `#ff5252` | focus |
+| `--brabus-red` | `#d32f2f` | 品牌红（HUD 的 `#FF1E27` 收口到此） |
+| `--success` / `--warning` / `--danger` | 现网状态色 | 可保持 |
+
+若表外框 `#0A0A0C` 与卡片 `#1e1e1e` 不能共用一个 `--bg-surface`，允许加 `--bg-table`，两套主题都要赋值。不要为每个页面加私有色。
 
 ### 4.2 组件对照
 
@@ -171,7 +199,8 @@
 - 画布必须用 `--bg-canvas`（灰白），禁止整页纯白无边框铺满。
 - 面板允许白底，但必须带 `--border-color`。
 - 业务 class 仍禁止写入 `style.css`；颜色必须走 token，禁止新增业务 hex。
-- 浅色页内强调红只许 `--brabus-red`（`#d32f2f`）。
+- 页内强调红只许 `--brabus-red`（`#d32f2f`），深浅皆然。
+- 新增：允许并要求 `html[data-theme="light"|"dark"]`；禁止再写死 `bg-[#0a0a0a]` 当画布。
 
 `docs/front-end.mdc` 与 `.cursor/rules/front-end.mdc` 必须同步改。
 
@@ -210,19 +239,56 @@
 
 壳层 CSS（`.sidebar`、`.page-header` 等）去掉写死的 `#121214`、`rgba(255,255,255,0.08)`，全部改为 `var(--…)`。需要新增的壳层专用 token（侧栏字色透明度、遮罩）可以加，但不要为单个业务页加 class。
 
-### 5.2 主题挂载（即使第一期不上开关）
+### 5.2 主题挂载与本机记忆（一期就要做）
+
+**真相在 `html` 属性，记忆在 `localStorage`。** 不读系统配色，不写数据库。
+
+| 项 | 约定 |
+|----|------|
+| 属性 | `html[data-theme="dark" \| "light"]` |
+| 存储键 | `brabus_theme`（与现网 `brabus_user`、`brabus_operator_id` 同前缀） |
+| 合法值 | 仅 `"dark"` / `"light"`；其它或损坏视为无记录 |
+| 无记录默认 | **`dark`**（与现网一致，老用户不被突然洗成浅色） |
+| 作用域 | 本浏览器、本源。换电脑 / 清站点数据会丢，需再选一次 |
+| 与登录 | **登出不清** `brabus_theme`。换账号共用这台机器上的选择 |
+| 入口 | `index.html`、`login.html`、帮助站共用同一键 |
+
+#### 防闪（阻塞脚本，放在 Tailwind / `style.css` 之前）
 
 ```html
-<html lang="zh-CN" data-theme="light">
+<script>
+(function () {
+  var k = 'brabus_theme';
+  var t = 'dark';
+  try {
+    var s = localStorage.getItem(k);
+    if (s === 'light' || s === 'dark') t = s;
+  } catch (e) {}
+  document.documentElement.setAttribute('data-theme', t);
+})();
+</script>
 ```
 
-- 第一期：写死 `light`，或启动时读 `localStorage`（若已有值）否则 `light`。
-- 第二期：顶栏增加切换，写入 `localStorage`，改 `document.documentElement.dataset.theme`。
-- 防闪：`index.html` / `login.html` 在 Tailwind 之前用极短内联脚本设 `data-theme`，避免先暗后浅。
+无这段脚本时 CSS `:root` 已是深色，最坏也只是「该浅却先闪一下深」，不会浅→深闪瞎。
+
+#### 切换（入口只在个人资料）
+
+- **唯一操作入口**：`#/settings-profile` 个人资料页。现网该页是「身份摘要 + 基本资料 + 安全设置」；新增独立卡片 **「外观」**，不要塞进「基本资料」表单（那张卡要点保存才生效，主题必须立刻换）。
+- 建议位置：三列网格下方通栏卡片（与改密物理隔离）；卡片内两项：**深色 / 浅色** 分段选择（或 radio），当前项高亮品牌红。不要只放无文字的月亮图标。
+- **立刻生效**：点选即 `applyTheme(...)`，**没有「保存」按钮**，不调 `PUT /api/auth/me`。
+- 权限：能打开个人资料页即可改主题（`menu:settings-profile` / `canAccessPage`）。**不要**挂在 `op:settings-profile:update` 上——那是改姓名邮箱；无更新权限的人仍应能选深浅。
+- **顶栏、登录页、帮助站都不放开关。** 它们只在加载时读 `brabus_theme` 上色。未登录用户看到的是这台机器上次选的（默认深色）。
+- 行为：`setAttribute('data-theme', …)` + `localStorage.setItem('brabus_theme', …)`。隐私模式写入失败时仍切换当次会话，Toast「无法记住主题」。
+- 实现：一个小模块（如 `static/js/theme.js`），`applyTheme(next)` / `getTheme()`。禁止各页自己读写键。个人资料 `index.js` 只调这个模块。
+- 帮助站与登录页加载同一套**读取**逻辑（防闪脚本即可），避免主站浅色、帮助仍深色。
+
+#### 结构图 / 内联色
+
+`bom/material/viz` 等用 JS 写 `fill` / `stroke` 的，切换主题时必须重绘或改节点色。不要假设只刷 CSS 变量就够。
 
 `body` 不要再写 `bg-[#0a0a0a]`，改为 `bg-[var(--bg-canvas)]` 或等价语义 class。
 
-### 5.3 不能只换 token 的部分（必须重画）
+### 5.3 不能只换 token 的部分（浅色必须重画；深色可近似现网）
 
 这些依赖「深底 + 发光」，映射到浅色变量会很难看，要按 §4.2 改结构或内联阴影：
 
@@ -261,53 +327,49 @@
 - 登录成功与失败 Toast  
 - 桌面宽度；侧栏 Overlay 开合  
 
-试点通过后再铺全站。全量完成后按 `features/index.js` 的 `pageMeta` 路由清单一页不漏。
+试点通过后再铺全站。全量完成后按 `features/index.js` 的 `pageMeta` 路由清单一页不漏。**每个页面深色、浅色各点一遍**；刷新后主题仍在；登出再登录主题仍在。
 
 ---
 
 ## 6. 工作量
 
-按 **1 名熟悉本仓库前端的人全职** 估，含目视验收。D3 试点约 **3–5 人天**，可从全量表中单列。
+按 **1 名熟悉本仓库前端的人全职** 估，含深/浅两套目视验收。D3 试点约 **4–6 人天**（含开关与防闪）。
 
-### 6.1 方案 A：全站浅色（无切换 UI）
+本期就是双主题，不再分「先只上浅色」。
 
 | 块 | 内容 | 人天 |
 |----|------|------|
-| 规范 + 色板 | 改两份 `front-end.mdc`、token 表、试点对照 | 1–2 |
-| 壳层 | `style.css`、入口 html | 1.5 |
-| 登录 | 登录页模板 | 0.5 |
+| 规范 + 两套色板 | 改两份 `front-end.mdc`、token 对照 | 1–2 |
+| 主题模块 | `brabus_theme`、防闪脚本、个人资料「外观」卡 | 1 |
+| 壳层 | `style.css` 全部改 token；深/浅侧栏与顶栏 | 2 |
+| 登录 | 模板 + 与主站同一记忆 | 0.5 |
 | Token 替换 | ~40 个 template + 行渲染 index + 分页 + Toast | 5–7 |
-| HUD 重画 | 十来个密表：去 glow、KPI 列、筛选条 | 3–4 |
-| 特殊页 | 仪表盘、结构图、引擎、设置 | 2 |
+| HUD | 浅色去 glow；深色对齐现网 | 3–4 |
+| 特殊页 | 仪表盘、结构图（切换要重绘）、引擎、设置 | 2.5 |
 | 周边 | LLM 助理、帮助站、打印 | 1.5 |
-| 验收 | 40+ 路由 × 列表/空/错/抽屉 | 3–5 |
-| **合计** | | **约 18–24 人天（3–4 周）** |
+| 验收 | 40+ 路由 × 深/浅 × 列表/空/错/抽屉；刷新/登出记忆 | 5–7 |
+| **合计** | | **约 22–28 人天（5–7 周）** |
 
-### 6.2 方案 B：暗/浅可切换
-
-方案 A 全部 + 顶栏开关、`localStorage`、防闪、**两套色板各验一遍** → 再 **+8–12 人天（合计 5–7 周）**。
-
-架构上方案 A 若已按 `data-theme` + token 落地，方案 B 的增量主要是开关与暗色验收，而不是再扫一遍 hex。
-
-### 6.3 风险
+### 6.1 风险
 
 - **语义误分类**：同一 `#555555` 不能当成一个 token 全局替换。  
 - **漏改 `index.js`**：模板浅了、行渲染仍黑。  
 - **帮助站 / 助理落在主站后面**：用户会觉得「没改完」。  
 - **规范未改就开工**：后续 PR 会被现网 front-end 规则打回浅色 class。
+- **键名写错 / 多处各读各的**：登录与主站主题不一致。只允许一个模块碰 `brabus_theme`。
+- **权限绑错**：用 `op:settings-profile:update` 藏外观卡，导致只能改资料的人才能换主题。入口跟菜单走即可。
+- **登出误清主题**：`brabus_user` 清除时不得 `removeItem('brabus_theme')`。
 
 ---
 
 ## 7. 建议落地顺序
 
 ```
-拍板 D1 / D2 / D3
-    → 改设计规范（两份 front-end.mdc）
-    → 试点：壳层 + 登录 + 零件价格一览
-    → 目视过审
+改设计规范（两份 front-end.mdc）
+    → 主题模块 + 防闪 + 个人资料「外观」卡（localStorage）
+    → 试点：壳层 + 个人资料 + 零件价格一览（深/浅都过）
     → 按 §5.4 铺全站
-    → 全路由验收
-    →（可选二期）主题开关
+    → 全路由 × 两套主题验收（含刷新、登出后再进）
 ```
 
-未拍板前 **不改业务代码**。本文只定设计与路径。
+D1 已拍板。未开工前本文继续只改设计、不改业务代码。
