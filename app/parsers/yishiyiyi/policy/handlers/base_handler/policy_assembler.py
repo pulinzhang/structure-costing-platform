@@ -35,7 +35,10 @@ from app.services.yishiyiyi.steel_grade_category.constants import (
     CANONICAL_CATEGORY_NAMES,
     normalize_category_name,
 )
-from app.parsers.yishiyiyi.policy.value_parser import _to_int_price
+from app.parsers.yishiyiyi.policy.value_parser import (
+    _to_int_price,
+    is_carry_forward_price,
+)
 from app.parsers.yishiyiyi.policy.handlers.constants import GRADE_LABELS
 from .sheet_scanner import SheetScanner
 
@@ -270,28 +273,20 @@ class PolicyAssembler:
         """构建行内阶梯明细项列表。返回 (items, extra)。"""
         items: list[ParsedLadderItem] = []
         sorted_cols = sorted(price_cols)
+        last_ladder_col = next((col for col in reversed(sorted_cols) if col in boundaries), None)
         for i, c in enumerate(sorted_cols):
             if c not in boundaries:
                 continue
 
-            price_cell = sheet.cell(row=r, column=c)
-            if price_cell.value is None:
-                start_row = self.scanner.find_start_row(sheet, r, c)
-                if start_row is not None:
-                    start_val = sheet.cell(row=start_row, column=c).value
-                    if start_val is not None:
-                        price = _to_int_price(start_val)
-                        price_row = start_row
-                    else:
-                        price, price_row = self.scanner.find_value_above_with_row(
-                            sheet, start_row, c
-                        )
-                else:
-                    price = 0
-                    price_row = r
-            else:
-                price = _to_int_price(price_cell.value)
-                price_row = r
+            price, price_row, raw_value = self._read_row_price(sheet, r, c)
+            # 厚度末档填「/」或「无」：页内约定沿用上一阶梯，不得落成 0
+            if (
+                policy_type == POLICY_TYPE_THICKNESS
+                and c == last_ladder_col
+                and items
+                and is_carry_forward_price(raw_value)
+            ):
+                price = items[-1].price_adjustment
 
             boundary = self.infer_upper_bound(
                 boundaries[c], sorted_cols, i, boundaries, policy_type
@@ -303,6 +298,29 @@ class PolicyAssembler:
                 items.append(self._make_width_item(boundary, price, sort_order, price_row, c))
 
         return items, None
+
+    def _read_row_price(
+        self,
+        sheet: Worksheet,
+        row_index: int,
+        col: int,
+    ) -> tuple[int, int, object]:
+        """读取阶梯加减价，返回 (price, excel_row, raw_value)。"""
+        raw_value = sheet.cell(row=row_index, column=col).value
+        if raw_value is not None:
+            return _to_int_price(raw_value), row_index, raw_value
+
+        start_row = self.scanner.find_start_row(sheet, row_index, col)
+        if start_row is None:
+            return 0, row_index, None
+
+        start_val = sheet.cell(row=start_row, column=col).value
+        if start_val is not None:
+            return _to_int_price(start_val), start_row, start_val
+
+        price, price_row = self.scanner.find_value_above_with_row(sheet, start_row, col)
+        above_raw = sheet.cell(row=price_row, column=col).value
+        return price, price_row, above_raw
 
     @staticmethod
     def _make_thickness_item(
