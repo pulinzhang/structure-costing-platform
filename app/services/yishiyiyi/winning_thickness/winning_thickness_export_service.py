@@ -20,7 +20,13 @@ __all__ = ["WinningThicknessExportService"]
 
 
 class WinningThicknessExportService:
-    """中标钢厂厚度价格一览表：基价 × 厚度阶梯，含加工费。"""
+    """
+    中标钢厂厚度价格一览表：基价 × 大类厚度阶梯，含加工费。
+
+    以基价表为据：仅当期有中标基价的牌号才输出。
+    预览/导出均为「扁平行」：每个牌号按 CATEGORY 厚度政策展开全部区间，
+    一行对应一个厚度阶梯（前端据此做阶梯展示）。
+    """
 
     def __init__(self) -> None:
         self._assembler = WinningThicknessRowAssembler()
@@ -28,6 +34,7 @@ class WinningThicknessExportService:
         # 兼容直接读 repository 的用法
         self.base_repository = self._assembler.base_repository
         self.policy_repository = self._assembler.policy_repository
+        self.grade_category_repository = self._assembler.grade_category_repository
 
     def build_rows(
         self,
@@ -63,6 +70,7 @@ class WinningThicknessExportService:
         page: int = 1,
         page_size: int = 500,
     ) -> tuple[list[WinningThicknessRowVO], int]:
+        """预览：返回扁平行列表，每行一个厚度阶梯（同牌号多行）。"""
         all_rows = self.build_rows(
             db,
             year=year,

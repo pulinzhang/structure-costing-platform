@@ -50,13 +50,9 @@ class BaseSheetHandler:
         steel_mill: str,
         warnings: list[str],
     ) -> list[ParsedPolicy]:
-        """解析入口：厚度块 + 宽度块 + 锌层加价块。"""
+        """解析入口：仅厚度加减价（大类一条）；宽度/锌层本期不导入。"""
         del warnings
-        policies: list[ParsedPolicy] = []
-        policies.extend(self._parse_blocks(sheet, steel_mill, "THICKNESS"))
-        policies.extend(self._parse_blocks(sheet, steel_mill, "WIDTH"))
-        policies.extend(self.parse_zinc_coating_blocks(sheet, steel_mill))
-        return policies
+        return self._parse_blocks(sheet, steel_mill, "THICKNESS")
 
     # ------------------------------------------------------------------ #
     # 子类钩子

@@ -373,6 +373,36 @@ def order_by_base_thickness(
     return exact + nullable + others
 
 
+def find_best_thickness_policy(
+    row: PolicyMatchTarget,
+    policies: list[SteelPricePolicy],
+) -> SteelPricePolicy | None:
+    """
+    按档案大类锁定一条 THICKNESS + CATEGORY 政策。
+
+    钢厂别名 + 大类别名筛候选，base_thickness 优先，只返回第一条。
+    不按零件料厚跨政策回退（与中标厚度一览一致）。
+    """
+    if not (row.steel_mill or "").strip() or not (row.category_name or "").strip():
+        return None
+    candidates = filter_candidates(row, policies)
+    thickness_policies = [
+        policy
+        for policy in candidates
+        if policy.policy_type == "THICKNESS"
+        and (policy.grade_type or "").strip().upper() == "CATEGORY"
+        and grade_category(policy, row)
+    ]
+    if not thickness_policies:
+        return None
+    ordered = order_by_base_thickness(
+        thickness_policies,
+        row,
+        prefer_base_thickness=True,
+    )
+    return ordered[0] if ordered else None
+
+
 def match_items(
     policy: SteelPricePolicy,
     *,

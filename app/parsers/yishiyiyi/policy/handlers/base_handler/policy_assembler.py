@@ -23,11 +23,17 @@ from app.parsers.yishiyiyi.policy.boundary_parser import (
     is_strict_gt,
 )
 from app.parsers.yishiyiyi.policy.models import ParsedLadderItem, ParsedPolicy
+from app.exceptions.base import BusinessException
 from app.parsers.yishiyiyi.policy.models.policy import (
     GRADE_TYPE_CATEGORY,
     GRADE_TYPE_GRADE,
     GRADE_TYPE_WIDTH_RANGE,
     POLICY_TYPE_THICKNESS,
+    POLICY_TYPE_WIDTH,
+)
+from app.services.yishiyiyi.steel_grade_category.constants import (
+    CANONICAL_CATEGORY_NAMES,
+    normalize_category_name,
 )
 from app.parsers.yishiyiyi.policy.value_parser import _to_int_price
 from app.parsers.yishiyiyi.policy.handlers.constants import GRADE_LABELS
@@ -239,8 +245,8 @@ class PolicyAssembler:
 
     def infer_grade_type(self, grade: str, policy_type: str) -> str:
         """推断 grade 的语义类型。"""
-        if policy_type == "THICKNESS":
-            return GRADE_TYPE_GRADE
+        if policy_type == POLICY_TYPE_THICKNESS:
+            return GRADE_TYPE_CATEGORY
         grade_stripped = grade.strip()
         if any(kw in grade_stripped for kw in _WIDTH_RANGE_KEYWORDS):
             return GRADE_TYPE_WIDTH_RANGE
@@ -388,6 +394,21 @@ class PolicyAssembler:
     # 政策构建（单块 → ParsedPolicy 列表）
     # ------------------------------------------------------------------ #
 
+    @staticmethod
+    def _ladder_items_signature(items: list[ParsedLadderItem]) -> tuple[tuple[object, ...], ...]:
+        ordered = sorted(items, key=lambda item: (item.sort_order or 0, item.excel_row or 0))
+        return tuple(
+            (
+                item.thick_min,
+                item.thick_min_operator,
+                item.thick_max,
+                item.thick_max_operator,
+                item.price_adjustment,
+                bool(item.is_base),
+            )
+            for item in ordered
+        )
+
     def build_policies_from_block(
         self,
         sheet: Worksheet,
@@ -395,6 +416,96 @@ class PolicyAssembler:
         block: dict[str, Any],
     ) -> list[ParsedPolicy]:
         """给定块描述，构建 ParsedPolicy 列表。"""
+        policy_type = block.get("policy_type", POLICY_TYPE_THICKNESS)
+        if policy_type == POLICY_TYPE_WIDTH:
+            return []
+        if policy_type == POLICY_TYPE_THICKNESS:
+            return self._build_category_thickness_policies_from_block(sheet, steel_mill, block)
+        return self._build_legacy_policies_from_block(sheet, steel_mill, block)
+
+    def _build_category_thickness_policies_from_block(
+        self,
+        sheet: Worksheet,
+        steel_mill: str,
+        block: dict[str, Any],
+    ) -> list[ParsedPolicy]:
+        """厚度块：每个大类一条 CATEGORY 政策（冷轧钢 / 镀锌钢 / 酸洗钢）。"""
+        grade_col = block.get("grade_col")
+        header_row = block["header_row"]
+        price_cols = list(block["price_cols"])
+        data_start = block["data_row_start"]
+        data_end = block["data_row_end"]
+        category_name = (block.get("category_name") or "冷轧钢").strip()
+        base_thickness = block.get("base_thickness")
+        grade_blacklist = block.get("grade_blacklist", GRADE_LABELS)
+
+        canonical = normalize_category_name(category_name)
+        if canonical not in CANONICAL_CATEGORY_NAMES:
+            return []
+
+        boundaries = self.collect_boundaries_thickness(sheet, header_row, price_cols)
+        if not boundaries:
+            return []
+
+        sorted_price_cols = sorted(price_cols)
+        representative_items: list[ParsedLadderItem] | None = None
+        representative_signature: tuple[tuple[object, ...], ...] | None = None
+
+        for row_index in range(data_start, data_end + 1):
+            if grade_col is None:
+                continue
+            grade = self.scanner.text_or_none(sheet, row_index, grade_col)
+            if not grade:
+                continue
+            if "//" in grade:
+                grade = grade.replace("//", "/")
+            if grade in grade_blacklist:
+                continue
+
+            items, _ = self.build_items_for_row(
+                sheet,
+                row_index,
+                sorted_price_cols,
+                boundaries,
+                POLICY_TYPE_THICKNESS,
+                sort_order=row_index,
+            )
+            if not items:
+                continue
+
+            signature = self._ladder_items_signature(items)
+            if representative_items is None:
+                representative_items = items
+                representative_signature = signature
+                continue
+            if signature != representative_signature:
+                raise BusinessException(
+                    f"厚度块「{category_name}」多行牌号阶梯不一致（行 {row_index}），请核对 Excel"
+                )
+
+        if not representative_items:
+            return []
+
+        grade_value = category_name
+        return [
+            ParsedPolicy(
+                steel_mill=steel_mill,
+                category_name=category_name,
+                grade_type=GRADE_TYPE_CATEGORY,
+                grade_value=grade_value,
+                policy_type=POLICY_TYPE_THICKNESS,
+                base_thickness=base_thickness,
+                items=representative_items,
+            )
+        ]
+
+    def _build_legacy_policies_from_block(
+        self,
+        sheet: Worksheet,
+        steel_mill: str,
+        block: dict[str, Any],
+    ) -> list[ParsedPolicy]:
+        """非厚度块遗留路径（本期应无调用）。"""
         grade_col = block.get("grade_col")
         header_row = block["header_row"]
         price_cols = list(block["price_cols"])
@@ -405,10 +516,7 @@ class PolicyAssembler:
         grade_blacklist = block.get("grade_blacklist", GRADE_LABELS)
         policy_type = block.get("policy_type", POLICY_TYPE_THICKNESS)
 
-        if policy_type == POLICY_TYPE_THICKNESS:
-            boundaries = self.collect_boundaries_thickness(sheet, header_row, price_cols)
-        else:
-            boundaries = self.collect_boundaries(sheet, header_row, price_cols)
+        boundaries = self.collect_boundaries(sheet, header_row, price_cols)
         if not boundaries:
             return []
 

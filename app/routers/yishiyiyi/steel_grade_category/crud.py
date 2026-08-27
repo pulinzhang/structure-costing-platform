@@ -2,13 +2,13 @@
 
 from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.common.permissions.codes import Perm
 from app.database import get_db
-from app.deps.permissions import require_perm
+from app.deps.permissions import require_any_perm, require_perm
 from app.schemas.common import PageResult
 from app.schemas.dto.steel_grade_category_dto import (
     SteelGradeCategoryCreate,
@@ -32,15 +32,40 @@ router = APIRouter(prefix="/api/yishiyiyi/steel-grade-category", tags=["牌号�
 _service = SteelGradeCategoryService()
 _export_service = SteelGradeCategoryExportService()
 
+_FILTER_READ_PERMS = require_any_perm(
+    Perm.STEEL_GRADE_CATEGORY_VIEW,
+    Perm.STEEL_PRICE_POLICY_DOWNLOAD_VIEW,
+    Perm.WINNING_THICKNESS_DOWNLOAD_VIEW,
+)
+
 
 @router.get(
     "/categories",
     response_model=ApiResponse[list[SteelGradeCategoryOptionVO]],
 )
 def list_canonical_categories(
-    current_user: UserVO = Depends(require_perm(Perm.STEEL_GRADE_CATEGORY_VIEW)),
+    current_user: UserVO = Depends(_FILTER_READ_PERMS),
 ) -> ApiResponse[list[SteelGradeCategoryOptionVO]]:
     return ApiResponse.ok(data=_service.list_canonical_categories())
+
+
+@router.get(
+    "/grades",
+    response_model=ApiResponse[list[str]],
+)
+def list_grades_for_filter(
+    category_name: str = Query(..., min_length=1, description="档案大类：冷轧/镀锌/酸洗"),
+    grade: str | None = Query(None, description="牌号关键字（可选，模糊）"),
+    db: Session = Depends(get_db),
+    current_user: UserVO = Depends(_FILTER_READ_PERMS),
+) -> ApiResponse[list[str]]:
+    """按大类返回牌号列表，供政策导出等页级联筛选。"""
+    grades = _service.list_grades_for_filter(
+        db,
+        category_name=category_name.strip(),
+        grade=grade.strip() if grade else None,
+    )
+    return ApiResponse.ok(data=grades)
 
 
 @router.get(

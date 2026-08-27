@@ -47,8 +47,8 @@ export function policyDownloadTemplate() {
                     <div class="flex items-end gap-3 flex-wrap">
                         ${filterSelect('policyDownloadYear', '年度')}
                         ${filterSelect('policyDownloadMonth', '月份')}
-                        ${filterSelect('policyDownloadCategory', '钢种')}
-                        ${filterInput('policyDownloadGrade', '牌号', '输入牌号（模糊）')}
+                        ${filterSelect('policyDownloadCategory', '分类')}
+                        ${filterInputWithDatalist('policyDownloadGrade', '牌号', 'policyGradeOptions')}
                         ${filterInputWithDatalist('policyDownloadMill', '钢厂', 'steelMillOptions')}
                     </div>
                     <div class="flex items-center gap-2">
@@ -181,9 +181,9 @@ function filterInput(id, label, placeholder) {
 function filterInputWithDatalist(id, label, datalistId) {
     return `<label class="space-y-1">
         <span class="block text-[9px] font-semibold text-[#484848] uppercase tracking-[0.12em] whitespace-nowrap">${label}</span>
-        <input type="text" id="${id}" list="${datalistId}"
-               class="w-44 h-7 pl-2.5 pr-3 text-[11px] bg-[#0d0d0d] border border-[#272727] text-[#909090] placeholder:text-[#505050] focus:outline-none focus:border-[#ff5252] focus:text-[#d0d0d0] transition-all rounded-sm"
-               placeholder="输入搜索或选择">
+        <input type="text" id="${id}" list="${datalistId}" disabled
+               class="w-44 h-7 pl-2.5 pr-3 text-[11px] bg-[#0d0d0d] border border-[#272727] text-[#909090] placeholder:text-[#505050] focus:outline-none focus:border-[#ff5252] focus:text-[#d0d0d0] transition-all rounded-sm disabled:opacity-50 disabled:cursor-not-allowed"
+               placeholder="请先选择分类">
         <datalist id="${datalistId}"></datalist>
     </label>`;
 }

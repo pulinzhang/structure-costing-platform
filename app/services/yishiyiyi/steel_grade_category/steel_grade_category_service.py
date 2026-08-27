@@ -51,6 +51,22 @@ class SteelGradeCategoryService:
             for seq, name in CANONICAL_CATEGORIES
         ]
 
+    def list_grades_for_filter(
+        self,
+        db: Session,
+        *,
+        category_name: str,
+        grade: str | None = None,
+    ) -> list[str]:
+        name = normalize_category_name(category_name)
+        if name is None or name not in CANONICAL_CATEGORY_NAMES:
+            raise BusinessException("分类无效，请选择冷轧、镀锌或酸洗")
+        return self.repository.list_grade_values(
+            db,
+            category_name=name,
+            grade=(grade or "").strip() or None,
+        )
+
     def paginate(
         self, db: Session, query: SteelGradeCategoryQuery
     ) -> tuple[list[SteelGradeCategoryVO], int]:

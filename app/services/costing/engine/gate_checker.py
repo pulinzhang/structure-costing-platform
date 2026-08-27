@@ -354,7 +354,7 @@ class GateChecker:
         thickness_missing: list[str] = []
 
         for row in rows:
-            self.adjustment_applier.apply_thickness([row], policies)
+            self.adjustment_applier.apply_thickness(db, [row], policies)
             if row.thickness_policy_id is None:
                 thickness_missing.append(f"{row.grade}@{float(row.thickness):.4f}/{row.steel_mill}")
 

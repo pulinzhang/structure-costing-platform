@@ -85,6 +85,21 @@ class SteelGradeCategoryRepository:
         )
         return self._ordered(query).all()
 
+    def list_grade_values(
+        self,
+        db: Session,
+        *,
+        category_name: str,
+        grade: str | None = None,
+    ) -> list[str]:
+        query = db.query(SteelGradeCategory.grade).filter(
+            SteelGradeCategory.category_name == category_name,
+        )
+        if grade:
+            query = query.filter(SteelGradeCategory.grade.like(f"%{grade}%"))
+        rows = query.order_by(SteelGradeCategory.grade.asc()).all()
+        return [row[0] for row in rows]
+
     def create(self, db: Session, payload: SteelGradeCategoryInsert) -> SteelGradeCategory:
         record = model_from_payload(SteelGradeCategory, payload)
         db.add(record)

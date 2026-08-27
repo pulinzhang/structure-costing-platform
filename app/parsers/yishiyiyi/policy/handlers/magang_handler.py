@@ -414,8 +414,6 @@ class MagangSheetHandler(BaseSheetHandler):
     ) -> list[Any]:
         policies: list[Any] = []
         policies.extend(self._parse_thickness_fixed(sheet, steel_mill))
-        policies.extend(self._parse_width_fixed(sheet, steel_mill, warnings))
-        policies.extend(self.parse_zinc_coating_blocks(sheet, steel_mill))
         return policies
 
     # ------------------------------------------------------------------ #

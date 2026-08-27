@@ -229,8 +229,8 @@ class SteelPriceCalcOrchestrator:
             # Step 3 — 厚度加减价（独立）
             _report(45, "Step3：厚度加减价匹配...")
             log_builder.section("Step3 厚度加减价匹配")
-            log_builder.line(f"加减价政策加载: {len(policies)} 条（厚度/宽度共用，仅此一次）")
-            rows = self.adjustment_applier.apply_thickness(rows, policies)
+            log_builder.line(f"加减价政策加载: {len(policies)} 条（仅厚度大类）")
+            rows = self.adjustment_applier.apply_thickness(db, rows, policies)
             thickness_hit, thickness_miss = summarize_policy_hits(rows, prefix="thickness")
             log_builder.line(f"厚度政策命中: {thickness_hit}")
             log_builder.line(f"厚度政策未命中: {thickness_miss}")
@@ -241,21 +241,16 @@ class SteelPriceCalcOrchestrator:
             )
             _report(55, f"Step3 完成：厚度命中 {thickness_hit}，未命中 {thickness_miss}")
 
-            # Step 4 — 宽度加减价（独立）
-            _report(60, "Step4：宽度加减价匹配...")
-            log_builder.section("Step4 宽度加减价匹配")
+            # Step 4 — 宽度加减价（本期下线，保留步骤编号兼容日志）
+            _report(60, "Step4：宽度加减价（本期跳过）...")
+            log_builder.section("Step4 宽度加减价")
+            log_builder.line("宽度加减价本期不应用")
             rows = self.adjustment_applier.apply_width(rows, policies)
-            width_hit, width_miss = summarize_policy_hits(rows, prefix="width")
-            log_builder.line(f"宽度政策命中: {width_hit}")
-            log_builder.line(f"宽度政策未命中: {width_miss}")
-            log_builder.append_limited_details(
-                "宽度未命中/警告",
-                collect_row_warnings(rows, keyword="宽度"),
-                is_error=True,
-            )
+            log_builder.line("宽度政策命中: 0")
+            log_builder.line("宽度政策未命中: 0")
             for key, count in summarize_match_status(rows).items():
                 log_builder.line(f"match_status={key}: {count}")
-            _report(70, f"Step4 完成：宽度命中 {width_hit}，未命中 {width_miss}")
+            _report(70, "Step4 完成：宽度加减价已跳过")
 
             # Step 5
             _report(75, "Step5：结果落库...")

@@ -37,10 +37,10 @@ import { pageConfig as stampingPartCostPage } from './features/costing/stamping-
 import { pageConfig as l0AssemblyCostCalcPage } from './features/costing/l0-assembly-cost/calc/index.js?v=3';
 import { pageConfig as l0AssemblyCostPage } from './features/costing/l0-assembly-cost/list/index.js?v=11';
 import { pageConfig as steelPricePolicyUploadPage } from './features/yishiyiyi/policy/upload/index.js?v=37';
-import { pageConfig as steelPricePolicyDownloadPage } from './features/yishiyiyi/policy/list/index.js?v=31';
+import { pageConfig as steelPricePolicyDownloadPage } from './features/yishiyiyi/policy/list/index.js?v=33';
 import { pageConfig as basePriceUploadPage } from './features/yishiyiyi/base-price/upload/index.js?v=38';
 import { pageConfig as basePriceDownloadPage } from './features/yishiyiyi/base-price/list/index.js?v=30';
-import { pageConfig as winningThicknessDownloadPage } from './features/yishiyiyi/winning-thickness/list/index.js?v=8';
+import { pageConfig as winningThicknessDownloadPage } from './features/yishiyiyi/winning-thickness/list/index.js?v=11';
 import { pageConfig as steelGradeCategoryPage } from './features/yishiyiyi/steel-grade-category/index.js?v=4';
 import { pageConfig as scrapPricePage } from './features/yishiyiyi/scrap-price/index.js?v=19';
 import { pageConfig as bomStructurePage }  from './features/bom/material/structure/index.js?v=9';

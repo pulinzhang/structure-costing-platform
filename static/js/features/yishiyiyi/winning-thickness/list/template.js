@@ -31,8 +31,8 @@ export function winningThicknessDownloadTemplate() {
                         ${filterSelect('winningThicknessYear', '年度', true)}
                         ${filterSelect('winningThicknessMonth', '月份', true)}
                         ${filterSelect('winningThicknessLocation', '基地', true)}
-                        ${filterSelect('winningThicknessCategory', '钢种', false)}
-                        ${filterInput('winningThicknessGrade', '牌号', '输入牌号（模糊）')}
+                        ${filterSelect('winningThicknessCategory', '分类', false)}
+                        ${filterInputWithDatalist('winningThicknessGrade', '牌号', 'winningThicknessGradeOptions')}
                         ${filterSelect('winningThicknessMill', '钢厂', false)}
                     </div>
                     <div class="flex items-center gap-2">
@@ -49,9 +49,8 @@ export function winningThicknessDownloadTemplate() {
                     <div class="bg-[#0c0c0c] border border-[#1a1a1a] rounded p-3">
                         <p class="text-[11px] text-[#888888] leading-5">
                             <span class="text-[#9e9e9e] font-medium">说明：</span>
-                            必选基地、年度、月份。取该期中标钢厂基准价，按算价同规则匹配厚度加减价政策并展开各厚度区间，
-                            形成外发用价格一览：最终价 = 基准价 + 厚度加减价 + 加工费。基地/钢种与溯源列弱化展示。
-                            导出 Excel 含三页：阅读用一览、计算用（基地/钢种/厚度上下限，供对方套公式）、使用示例。
+                            必选基地、年度、月份。以当期中标基价为据，按档案大类匹配 CATEGORY 厚度政策；
+                            每个牌号展开全部厚度阶梯（一行一区间），最终价 = 基准价 + 厚度加减价 + 加工费。
                         </p>
                     </div>
                 </div>
@@ -98,8 +97,10 @@ export function winningThicknessDownloadTemplate() {
 
                     <div class="flex items-center justify-between mt-4">
                         <div class="text-[11px] text-[#616161]">
-                            共 <span id="winningThicknessRecordCount" class="text-[#9e9e9e] font-mono">0</span> 条记录
+                            共 <span id="winningThicknessRecordCount" class="text-[#9e9e9e] font-mono">0</span> 条阶梯行
+                            <span class="text-[#484848] ml-2">（同牌号多行 = 各厚度区间）</span>
                         </div>
+                        <div id="winningThicknessPagination" class="flex items-center gap-0.5"></div>
                     </div>
                 </div>
             </div>
@@ -127,15 +128,18 @@ function filterSelect(id, label, required) {
     </label>`;
 }
 
-function filterInput(id, label, placeholder) {
+function filterInputWithDatalist(id, label, datalistId) {
     return `<label class="space-y-1">
         <span class="block text-[9px] font-semibold text-[#484848] uppercase tracking-[0.12em] whitespace-nowrap">${label}</span>
-        <input id="${id}" placeholder="${placeholder}" class="h-7 w-32 px-2.5 text-[11px] bg-[#0d0d0d] border border-[#272727] text-[#ffffff] placeholder:text-[#616161] rounded-sm focus:outline-none focus:border-[#ff5252]">
+        <input type="text" id="${id}" list="${datalistId}" disabled
+               class="w-44 h-7 pl-2.5 pr-3 text-[11px] bg-[#0d0d0d] border border-[#272727] text-[#909090] placeholder:text-[#505050] focus:outline-none focus:border-[#ff5252] focus:text-[#d0d0d0] transition-all rounded-sm disabled:opacity-50 disabled:cursor-not-allowed"
+               placeholder="请先选择分类">
+        <datalist id="${datalistId}"></datalist>
     </label>`;
 }
 
 /**
- * 渲染预览行
+ * 渲染预览行（同牌号+钢厂+基价合并单元格，逐行展示厚度阶梯）
  */
 export function renderWinningThicknessRows(records) {
     if (!records || !records.length) {
@@ -146,40 +150,117 @@ export function renderWinningThicknessRows(records) {
         `;
     }
 
-    return records.map(record => {
-        const locationCategory = [record.location, record.category_name]
+    const groups = groupLadderRecords(records);
+    const numCell = 'px-3 py-2 text-[11px] text-right font-mono tabular-nums';
+    const dimCell = 'px-3 py-2 text-[11px] text-[#9e9e9e] align-top';
+    const traceCell = 'px-3 py-2 text-[9px] text-[#3a3a3a] max-w-[180px] truncate align-top';
+    const sharedBorder = 'border-r border-[#1a1a1a]/60';
+
+    return groups.map((group) => {
+        const first = group[0];
+        const locationCategory = [first.location, first.category_name]
             .filter(Boolean)
             .join(' · ');
+        const baseTrace = formatBaseTrace(first);
+        const rowspan = group.length;
 
-        const baseTrace = [
-            record.base_price_id != null ? `ID:${esc(record.base_price_id)}` : '',
-            record.base_excel_filename || '',
-            record.base_sheet_name || '',
-            record.base_excel_row != null ? `R${esc(record.base_excel_row)}` : '',
-            record.base_excel_col != null ? `C${esc(record.base_excel_col)}` : '',
-        ].filter(Boolean).join(' · ');
+        return group.map((record, index) => {
+            const thickTrace = formatThicknessTrace(record);
+            const isFirst = index === 0;
+            const groupBorder = isFirst ? 'border-t border-[#222222]' : 'border-t border-[#1a1a1a]/40';
 
-        const thickTrace = [
-            record.thickness_policy_id != null ? `P:${esc(record.thickness_policy_id)}` : '',
-            record.thickness_ladder_item_id != null ? `L:${esc(record.thickness_ladder_item_id)}` : '',
-            record.thickness_excel_filename || '',
-            record.thickness_excel_row != null ? `R${esc(record.thickness_excel_row)}` : '',
-            record.thickness_excel_col != null ? `C${esc(record.thickness_excel_col)}` : '',
-        ].filter(Boolean).join(' · ');
+            const sharedPrefix = isFirst ? `
+                <td class="px-3 py-2 text-[9px] text-[#3a3a3a] whitespace-nowrap ${sharedBorder}" rowspan="${rowspan}">${esc(locationCategory) || '—'}</td>
+                <td class="${dimCell} ${sharedBorder}" rowspan="${rowspan}">${esc(first.grade)}</td>
+                <td class="${dimCell} ${sharedBorder}" rowspan="${rowspan}">${esc(first.steel_mill)}</td>
+            ` : '';
 
-        return `
-            <tr class="hover:bg-[#ffffff]/[0.02] transition-colors">
-                <td class="px-3 py-2 text-[9px] text-[#3a3a3a] whitespace-nowrap">${esc(locationCategory) || '—'}</td>
-                <td class="px-3 py-2 text-[11px] text-[#9e9e9e]">${esc(record.grade)}</td>
-                <td class="px-3 py-2 text-[11px] text-[#9e9e9e]">${esc(record.steel_mill)}</td>
+            const ladderCells = `
                 <td class="px-3 py-2 text-[11px] text-[#c8c8c8] font-mono whitespace-nowrap">${esc(record.thickness_range)}</td>
-                <td class="px-3 py-2 text-[11px] text-right font-mono tabular-nums text-[#ffffff]">${fmtNum(record.base_price, 2)}</td>
-                <td class="px-3 py-2 text-[11px] text-right font-mono tabular-nums text-[#9e9e9e]">${fmtNum(record.thickness_adjustment, 2)}</td>
-                <td class="px-3 py-2 text-[11px] text-right font-mono tabular-nums text-[#9e9e9e]">${fmtNum(record.processing_fee, 2)}</td>
+            `;
+
+            const sharedBasePrice = isFirst ? `
+                <td class="${numCell} text-[#ffffff] ${sharedBorder}" rowspan="${rowspan}">${fmtNum(first.base_price, 2)}</td>
+            ` : '';
+
+            const adjustmentCell = `
+                <td class="${numCell} text-[#ffb74d]">${fmtNum(record.thickness_adjustment, 2)}</td>
+            `;
+
+            const sharedProcessing = isFirst ? `
+                <td class="${numCell} text-[#9e9e9e] ${sharedBorder}" rowspan="${rowspan}">${fmtNum(first.processing_fee, 2)}</td>
+            ` : '';
+
+            const tailCells = `
                 <td class="px-3 py-2 text-[12px] text-right font-mono tabular-nums font-semibold text-[#ffffff]">${fmtNum(record.final_price, 2)}</td>
-                <td class="px-3 py-2 text-[9px] text-[#3a3a3a] max-w-[180px] truncate" title="${esc(baseTrace)}">${esc(baseTrace) || '—'}</td>
-                <td class="px-3 py-2 text-[9px] text-[#3a3a3a] max-w-[180px] truncate" title="${esc(thickTrace)}">${esc(thickTrace) || '—'}</td>
-            </tr>
-        `;
+                ${isFirst ? `<td class="${traceCell} ${sharedBorder}" rowspan="${rowspan}" title="${esc(baseTrace)}">${esc(baseTrace) || '—'}</td>` : ''}
+                <td class="${traceCell}" title="${esc(thickTrace)}">${esc(thickTrace) || '—'}</td>
+            `;
+
+            if (isFirst) {
+                return `
+                    <tr class="hover:bg-[#ffffff]/[0.02] transition-colors ${groupBorder}">
+                        ${sharedPrefix}
+                        ${ladderCells}
+                        ${sharedBasePrice}
+                        ${adjustmentCell}
+                        ${sharedProcessing}
+                        ${tailCells}
+                    </tr>
+                `;
+            }
+
+            return `
+                <tr class="hover:bg-[#ffffff]/[0.02] transition-colors ${groupBorder}">
+                    ${ladderCells}
+                    ${adjustmentCell}
+                    ${tailCells}
+                </tr>
+            `;
+        }).join('');
     }).join('');
+}
+
+function groupLadderRecords(records) {
+    const groups = [];
+    let current = null;
+    let currentKey = '';
+
+    for (const record of records) {
+        const key = [
+            record.location || '',
+            record.category_name || '',
+            record.grade || '',
+            record.steel_mill || '',
+            record.base_price_id ?? '',
+        ].join('|');
+        if (!current || currentKey !== key) {
+            current = [record];
+            groups.push(current);
+            currentKey = key;
+        } else {
+            current.push(record);
+        }
+    }
+    return groups;
+}
+
+function formatBaseTrace(record) {
+    return [
+        record.base_price_id != null ? `ID:${record.base_price_id}` : '',
+        record.base_excel_filename || '',
+        record.base_sheet_name || '',
+        record.base_excel_row != null ? `R${record.base_excel_row}` : '',
+        record.base_excel_col != null ? `C${record.base_excel_col}` : '',
+    ].filter(Boolean).join(' · ');
+}
+
+function formatThicknessTrace(record) {
+    return [
+        record.thickness_policy_id != null ? `P:${record.thickness_policy_id}` : '',
+        record.thickness_ladder_item_id != null ? `L:${record.thickness_ladder_item_id}` : '',
+        record.thickness_excel_filename || '',
+        record.thickness_excel_row != null ? `R${record.thickness_excel_row}` : '',
+        record.thickness_excel_col != null ? `C${record.thickness_excel_col}` : '',
+    ].filter(Boolean).join(' · ');
 }

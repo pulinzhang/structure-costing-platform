@@ -51,14 +51,20 @@ class VamaSheetHandler(BaseSheetHandler):
         return self.assembler.collect_boundaries_thickness(sheet, header_row, price_cols)
 
     def find_thickness_blocks(self, sheet: Worksheet, steel_mill: str) -> list[dict[str, Any]]:
-        blocks = self.find_default_thickness_blocks(sheet, steel_mill)
-        for block in blocks:
-            # 读取 Col 10 的宽度范围（如 "1000-1600"）
-            width_boundary = self._parse_width_range_from_col10(sheet, block)
-            block["width_range"] = width_boundary
-            # VAMA 的厚度政策同时带宽度约束，类型改为 THICKNESS_WIDTH
-            block["policy_type"] = "THICKNESS_WIDTH"
-        return blocks
+        return self.find_default_thickness_blocks(sheet, steel_mill)
+
+    def parse(
+        self,
+        sheet: Worksheet,
+        steel_mill: str,
+        warnings: list[str],
+    ) -> list[Any]:
+        """VAMA：仅厚度块，按大类一条 CATEGORY 政策。"""
+        del warnings
+        policies: list[Any] = []
+        for block in self.find_thickness_blocks(sheet, steel_mill):
+            policies.extend(self.assembler.build_policies_from_block(sheet, steel_mill, block))
+        return policies
 
     def _parse_width_range_from_col10(
         self, sheet: Worksheet, block: dict[str, Any]
@@ -114,20 +120,6 @@ class VamaSheetHandler(BaseSheetHandler):
     def find_width_blocks(self, sheet: Worksheet, steel_mill: str) -> list[dict[str, Any]]:
         # VAMA 没有独立的宽度政策块
         return []
-
-    def parse(
-        self,
-        sheet: Worksheet,
-        steel_mill: str,
-        warnings: list[str],
-    ) -> list[Any]:
-        """VAMA override：调用 VAMA 专用 _parse_one_block，直接注入 width_range。"""
-        policies: list[Any] = []
-        for block in self.find_thickness_blocks(sheet, steel_mill):
-            policies.extend(self._parse_one_block(sheet, steel_mill, "THICKNESS", block))
-        for block in self.find_width_blocks(sheet, steel_mill):
-            policies.extend(self._parse_one_block(sheet, steel_mill, "WIDTH", block))
-        return policies
 
     # ------------------------------------------------------------------ #
     # VAMA 专用：override _parse_one_block，注入 width_range
