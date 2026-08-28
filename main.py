@@ -340,6 +340,7 @@ def create_app() -> FastAPI:
     from app.routers.settings.system.crud import router as settings_router
     from app.routers.stamping.crud import router as stamping_crud_router
     from app.routers.stamping.upload import router as stamping_upload_router
+    from app.routers.stamping.die import router as stamping_die_router
     from app.routers.stamping.tonnage_price import router as stamping_tonnage_price_router
     from app.routers.stamping.stamping_process_fee import router as stamping_process_fee_router
     from app.routers.costing.stamping_part_cost.calc import (
@@ -381,6 +382,7 @@ def create_app() -> FastAPI:
     app.include_router(dashboard_router)
     app.include_router(stamping_crud_router)
     app.include_router(stamping_upload_router)
+    app.include_router(stamping_die_router)
     app.include_router(stamping_tonnage_price_router)
     app.include_router(stamping_process_fee_router)
     app.include_router(costing_stamping_part_cost_calc_router)

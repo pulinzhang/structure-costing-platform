@@ -48,6 +48,7 @@ STATUS_FAILED = "failed"
 
 TASK_TYPE_POLICY_UPLOAD = "steel_price_policy_upload"
 TASK_TYPE_STAMPING_UPLOAD = "stamping_upload"
+TASK_TYPE_STAMPING_DIE_UPLOAD = "stamping_die_upload"
 TASK_TYPE_BASE_PRICE_IMPORT = "steel_base_price_import"
 TASK_TYPE_STEEL_PRICE_CALC = "steel_price_calc"
 TASK_TYPE_STAMPING_PROCESS_FEE_CALC = "stamping_process_fee_calc"
@@ -186,7 +187,7 @@ class AsyncTaskService:
         if progress is not None:
             values["progress"] = max(0, min(100, int(progress)))
         if message is not None:
-            values["message"] = message[:500]
+            values["message"] = message
         if result is not None:
             values["result_json"] = json.dumps(result, ensure_ascii=False)
 

@@ -235,6 +235,11 @@ class UploadFileRepository:
                 UploadFile.vehicle_model == vehicle_model,
                 UploadFile.bom_version == bom_version,
             )
+        if file_category == "stamping_die":
+            return query.filter(
+                UploadFile.location == location,
+                UploadFile.vehicle_model == vehicle_model,
+            )
         if file_category == "stamping_process":
             filters = [
                 UploadFile.location == location,

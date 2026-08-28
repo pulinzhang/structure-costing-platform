@@ -307,6 +307,35 @@ class DatabaseConfig:
                 conn.execute(text(f"DROP TABLE {obsolete_table}"))
             logger.info("已删除废弃表 %s", obsolete_table)
 
+        process_table = "stamping_processes"
+        if process_table in table_names:
+            process_cols = {col["name"] for col in inspector.get_columns(process_table)}
+            if "die_number" not in process_cols:
+                with engine.begin() as conn:
+                    conn.execute(
+                        text(f"ALTER TABLE {process_table} ADD COLUMN die_number VARCHAR(80)")
+                    )
+                logger.info("已为 %s 追加列 die_number", process_table)
+
+        die_process_table = "stamping_die_processes"
+        if die_process_table in table_names:
+            die_process_cols = {col["name"] for col in inspector.get_columns(die_process_table)}
+            if "die_number" not in die_process_cols:
+                with engine.begin() as conn:
+                    conn.execute(
+                        text(f"ALTER TABLE {die_process_table} ADD COLUMN die_number VARCHAR(80)")
+                    )
+                logger.info("已为 %s 追加列 die_number", die_process_table)
+
+        die_table = "stamping_die_parts"
+        if die_table in table_names:
+            die_cols = {col["name"] for col in inspector.get_columns(die_table)}
+            if "alloc_status" in die_cols:
+                with engine.begin() as conn:
+                    conn.execute(text("DROP INDEX IF EXISTS ix_die_part_alloc_status"))
+                    conn.execute(text(f"ALTER TABLE {die_table} DROP COLUMN alloc_status"))
+                logger.info("已从 %s 删除列 alloc_status", die_table)
+
 
 class AuxiliaryDatabaseConfig:
     """

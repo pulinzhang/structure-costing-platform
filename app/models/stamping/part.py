@@ -193,6 +193,9 @@ class StampingProcess(AuditUserMixin, Base):
         String(50), nullable=True, comment="工序代码(如DR/TR+PI)"
     )
     die_sets: Mapped[int | None] = mapped_column(Integer, nullable=True, default=1, comment="套数")
+    die_number: Mapped[str | None] = mapped_column(
+        String(80), nullable=True, comment="模具编号（工艺确认表原文，空则无模具）"
+    )
 
     # 设备信息
     tonnage: Mapped[int | None] = mapped_column(Integer, nullable=True, comment="设备吨位(T)")

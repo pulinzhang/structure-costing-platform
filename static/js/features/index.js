@@ -10,6 +10,9 @@
  * │   ├── process/               # 冲压工艺
  * │   │   ├── upload/            # 上传工艺文件
  * │   │   └── parts/             # 冲压零件列表
+ * │   ├── die/                   # 冲压模具
+ * │   │   ├── upload/            # 上传模具布点
+ * │   │   └── list/              # 模具清单
  * │   ├── tonnage/               # 冲次单价
  * │   │   ├── upload/
  * │   │   └── list/
@@ -93,6 +96,16 @@ export const pageMeta = {
         title: '冲压零件列表',
         en: 'PARTS_MASTER',
         breadcrumb: ['冲压工程', '冲压工艺', '冲压零件列表'],
+    },
+    'stamping-die-upload': {
+        title: '上传模具布点',
+        en: 'DIE_LAYOUT_UPLOAD',
+        breadcrumb: ['冲压工程', '冲压模具', '上传模具布点'],
+    },
+    'stamping-die-list': {
+        title: '模具清单',
+        en: 'DIE_LAYOUT_LIST',
+        breadcrumb: ['冲压工程', '冲压模具', '模具清单'],
     },
     'stamping-tonnage-upload': {
         title: '冲次单价上传',

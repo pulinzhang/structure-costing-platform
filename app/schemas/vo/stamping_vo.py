@@ -111,6 +111,7 @@ class StampingProcessResponse(BaseModel):
     process_order: int
     process_code: str | None = None
     die_sets: int
+    die_number: str | None = None
     tonnage: int | None = None
     cost_ratio: Decimal
     remark: str | None = None

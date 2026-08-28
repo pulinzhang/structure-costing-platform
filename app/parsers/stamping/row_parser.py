@@ -84,15 +84,31 @@ class RowParser:
 
         if not process_seq:
             return None
+        process_seq = str(process_seq).strip()
+        if not process_seq:
+            return None
 
         return Process(
             part_number=part_number,
             process_seq=process_seq,
             process_code=self._cell(row_idx, "code", 13),
             die_sets=parse_int(self._cell(row_idx, "die_set", 14)) or 1,
+            die_number=_as_die_number(self._cell(row_idx, "die_number")),
             tonnage=parse_int(self._cell(row_idx, "tonnage", 15)),
             remark=self._cell(row_idx, "remark"),
+            excel_row=row_idx,
         )
+
+
+def _as_die_number(value: object) -> str | None:
+    if value is None or value == "":
+        return None
+    text = str(value).strip()
+    if not text or text.startswith("#"):
+        return None
+    if text.endswith(".0") and text[:-2].replace("-", "", 1).isdigit():
+        return text[:-2]
+    return text
 
 
 class PartSaver:

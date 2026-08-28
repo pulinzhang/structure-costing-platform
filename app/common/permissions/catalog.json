@@ -86,6 +86,57 @@
           ]
         },
         {
+          "code": "menu:stamping-die",
+          "label": "冲压模具",
+          "type": "group",
+          "children": [
+            {
+              "code": "menu:stamping-die-upload",
+              "label": "上传模具布点",
+              "type": "menu",
+              "children": [
+                {
+                  "code": "op:stamping-die-upload:view",
+                  "label": "查看",
+                  "type": "op"
+                },
+                {
+                  "code": "op:stamping-die-upload:upload",
+                  "label": "上传",
+                  "type": "op"
+                }
+              ]
+            },
+            {
+              "code": "menu:stamping-die-list",
+              "label": "模具清单",
+              "type": "menu",
+              "children": [
+                {
+                  "code": "op:stamping-die-list:view",
+                  "label": "查询",
+                  "type": "op"
+                },
+                {
+                  "code": "op:stamping-die-list:update",
+                  "label": "编辑",
+                  "type": "op"
+                },
+                {
+                  "code": "op:stamping-die-list:delete",
+                  "label": "删除",
+                  "type": "op"
+                },
+                {
+                  "code": "op:stamping-die-list:export",
+                  "label": "导出",
+                  "type": "op"
+                }
+              ]
+            }
+          ]
+        },
+        {
           "code": "menu:stamping-stroke-unit-price",
           "label": "冲次单价",
           "type": "group",

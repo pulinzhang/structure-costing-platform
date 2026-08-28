@@ -129,7 +129,7 @@ export function partsTemplate() {
                                 重置
                             </button>
                         </div>
-                        <p class="mt-2 text-[10px] text-[#555555]">筛选均可选；级联联动。导出 / 批量删除须同时选定基地、冲压工厂、车型和版本。</p>
+                        <p class="mt-2 text-[10px] text-[#555555]">筛选均可选；级联联动。导出须选定基地（冲压工厂、车型、版本可选）。批量删除须同时选定基地、冲压工厂、车型和版本。</p>
                     </div>
                 </div>
 
@@ -402,6 +402,7 @@ function renderProcessRow(p, idx) {
                     <td class="px-4 py-4 text-[10px] text-[#4a4a4a] font-mono tracking-[0.06em]">${p.process_order ?? '—'}</td>
                     <td class="px-4 py-4 text-[11px] text-[#888888] font-mono tracking-[0.06em]">${esc(p.process_seq)}</td>
                     <td class="px-4 py-4 text-[11px] text-[#888888] font-medium tracking-[0.05em]">${esc(p.process_code)}</td>
+                    <td class="px-4 py-4 text-[11px] text-[#C8C8D0] font-mono tracking-[0.04em]">${esc(p.die_number)}</td>
                     <td class="px-4 py-4 text-right text-[11px] font-mono text-[#777777] tracking-[0.06em]">${p.die_sets ?? '—'}</td>
                     <td class="px-4 py-4 text-right text-[11px] font-mono text-[#777777] tracking-[0.06em]">${p.tonnage ? `${p.tonnage}T` : '—'}</td>
                     <td class="px-4 py-4">
@@ -442,7 +443,7 @@ export function renderDetailContent(part) {
     const processes = part.processes || [];
     const processRows = processes.length
         ? processes.map((p, idx) => renderProcessRow(p, idx)).join('')
-        : `<tr><td colspan="6" class="px-4 py-12 text-center text-[11px] text-[#333333] tracking-[0.15em]">暂无工序数据</td></tr>`;
+        : `<tr><td colspan="7" class="px-4 py-12 text-center text-[11px] text-[#333333] tracking-[0.15em]">暂无工序数据</td></tr>`;
 
     return `
         <div class="h-full min-h-full flex flex-col" style="background: linear-gradient(175deg, #0a0a0a 0%, #090909 100%);">
@@ -499,6 +500,7 @@ export function renderDetailContent(part) {
                                 <th class="px-4 py-2.5 text-left text-[8px] font-semibold uppercase tracking-[0.22em] text-[#353535]">序</th>
                                 <th class="px-4 py-2.5 text-left text-[8px] font-semibold uppercase tracking-[0.22em] text-[#353535]">工序号</th>
                                 <th class="px-4 py-2.5 text-left text-[8px] font-semibold uppercase tracking-[0.22em] text-[#353535]">代号</th>
+                                <th class="px-4 py-2.5 text-left text-[8px] font-semibold uppercase tracking-[0.22em] text-[#353535]">模具编号</th>
                                 <th class="px-4 py-2.5 text-right text-[8px] font-semibold uppercase tracking-[0.22em] text-[#353535]">模数</th>
                                 <th class="px-4 py-2.5 text-right text-[8px] font-semibold uppercase tracking-[0.22em] text-[#353535]">吨位</th>
                                 <th class="px-4 py-2.5 text-left text-[8px] font-semibold uppercase tracking-[0.22em] text-[#353535]">模具类型</th>

@@ -86,6 +86,7 @@ class ProcessData:
     die_sets: int = field(metadata={"description": "模具套数"})
     # 以下字段有默认值，放在后面
     process_code: str | None = field(default=None, metadata={"description": "工序代码"})
+    die_number: str | None = field(default=None, metadata={"description": "模具编号"})
     tonnage: int | None = field(default=None, metadata={"description": "吨位(T)"})
     cost_ratio: Decimal = field(default=Decimal("1.00"), metadata={"description": "费用比例"})
     remark: str | None = field(default=None, metadata={"description": "备注"})

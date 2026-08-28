@@ -45,6 +45,8 @@ from app.models.settings import (
     UserToken,
 )
 from app.models.stamping import (
+    StampingDiePart,
+    StampingDieProcess,
     StampingPart,
     StampingProcess,
     StampingProcessFee,
@@ -85,6 +87,8 @@ __all__ = [
     "L0AssemblyCostIndirect",
     "L0AssemblyCostItem",
     "OperationLog",
+    "StampingDiePart",
+    "StampingDieProcess",
     "StampingPart",
     "StampingPartCost",
     "StampingPartCostCalcLog",

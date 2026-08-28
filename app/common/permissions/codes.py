@@ -29,6 +29,18 @@ class Perm:
     STAMPING_PARTS_DELETE = "op:stamping-parts:delete"  # 删除
     STAMPING_PARTS_EXPORT = "op:stamping-parts:export"  # 导出
 
+    MENU_STAMPING_DIE = "menu:stamping-die"  # 冲压模具
+
+    MENU_STAMPING_DIE_UPLOAD = "menu:stamping-die-upload"  # 上传模具布点
+    STAMPING_DIE_UPLOAD_VIEW = "op:stamping-die-upload:view"  # 查看
+    STAMPING_DIE_UPLOAD_UPLOAD = "op:stamping-die-upload:upload"  # 上传
+
+    MENU_STAMPING_DIE_LIST = "menu:stamping-die-list"  # 模具清单
+    STAMPING_DIE_LIST_VIEW = "op:stamping-die-list:view"  # 查询
+    STAMPING_DIE_LIST_UPDATE = "op:stamping-die-list:update"  # 编辑
+    STAMPING_DIE_LIST_DELETE = "op:stamping-die-list:delete"  # 删除
+    STAMPING_DIE_LIST_EXPORT = "op:stamping-die-list:export"  # 导出
+
     MENU_STAMPING_STROKE_UNIT_PRICE = "menu:stamping-stroke-unit-price"  # 冲次单价
 
     MENU_STAMPING_TONNAGE_UPLOAD = "menu:stamping-tonnage-upload"  # 上传

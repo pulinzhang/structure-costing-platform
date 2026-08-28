@@ -37,7 +37,7 @@ class AsyncTask(AuditUserMixin, AuxiliaryBase):
     )
     progress: Mapped[int] = mapped_column(Integer, nullable=False, default=0, comment="进度 0-100")
     message: Mapped[str] = mapped_column(
-        String(500), nullable=False, default="", comment="当前阶段说明"
+        Text, nullable=False, default="", comment="当前阶段说明（核对失败可含完整清单）"
     )
     result_json: Mapped[str | None] = mapped_column(
         Text, nullable=True, comment="完成结果 JSON 字符串"

@@ -61,13 +61,13 @@ def list_parts(
 @router.get("/parts/export-download")
 def export_download(
     location: str = Query(..., min_length=1, description="采购基地"),
-    stamping_supplier: str = Query(..., min_length=1, description="冲压工厂"),
-    vehicle_model: str = Query(..., min_length=1, description="车型"),
-    version: str = Query(..., min_length=1, description="版本"),
+    stamping_supplier: str | None = Query(None, description="冲压工厂"),
+    vehicle_model: str | None = Query(None, description="车型"),
+    version: str | None = Query(None, description="版本"),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_PARTS_EXPORT)),
 ) -> StreamingResponse:
-    """按基地 + 冲压工厂 + 车型 + 版本导出工艺确认表（与导入同范围，多费用比例列）。"""
+    """按基地导出工艺确认表；冲压工厂、车型、版本可选。"""
     content, filename = _export_service.export(
         db,
         location=location,

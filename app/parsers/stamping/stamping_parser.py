@@ -26,6 +26,7 @@ from app.parsers.stamping.row_parser import (
 from app.parsers.stamping.models.header import HeaderContext
 from app.parsers.stamping.models.part import Part
 from app.parsers.stamping.models.process import Process
+from app.exceptions.base import BusinessException
 from app.parsers.stamping.models.parse_result import ParserResult
 from app.utils.logging_config import get_logger
 
@@ -123,6 +124,8 @@ class StampingExcelParser:
         self.result.data_start_row = header_ctx.data_start_row
         self.result.col_map = header_ctx.col_map
         self.result.header_paths = header_ctx.header_paths
+        if "die_number" not in header_ctx.col_map:
+            raise BusinessException("未识别到「模具编号」列，请确认工艺确认表含该列")
 
         logger.info(f"表头行: {self.result.header_row}, 数据起始行: {self.result.data_start_row}")
 

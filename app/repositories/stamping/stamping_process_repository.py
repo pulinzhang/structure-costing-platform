@@ -1,6 +1,7 @@
 """冲压工序数据访问。"""
 
 import logging
+from typing import TypedDict
 
 from sqlalchemy.orm import Session, contains_eager
 
@@ -9,6 +10,15 @@ from app.repositories.persist import apply_payload_fields, model_from_payload
 from app.schemas.dto.stamping_upload_dto import ProcessData, StampingProcessPatch
 
 logger = logging.getLogger("repository.stamping.process")
+
+
+class StampingProcessLayoutTrace(TypedDict):
+    part_number: str
+    process_seq: str
+    die_number: str | None
+    excel_filename: str
+    stamping_supplier: str | None
+    version: str | None
 
 
 class StampingProcessRepository:
@@ -110,3 +120,51 @@ class StampingProcessRepository:
         db.flush()
         logger.info(f"删除工序: {count} 个 (part_ids={part_ids})")
         return count
+
+    def list_layout_traces_for_scope(
+        self,
+        db: Session,
+        *,
+        location: str,
+        vehicle_model: str,
+    ) -> list[StampingProcessLayoutTrace]:
+        rows = (
+            db.query(
+                StampingPart.part_number,
+                StampingProcess.process_seq,
+                StampingProcess.die_number,
+                StampingPart.excel_filename,
+                StampingPart.stamping_supplier,
+                StampingPart.version,
+            )
+            .join(StampingProcess, StampingProcess.part_id == StampingPart.id)
+            .filter(
+                StampingPart.location == location,
+                StampingPart.vehicle_model == vehicle_model,
+            )
+            .all()
+        )
+        traces: list[StampingProcessLayoutTrace] = []
+        for (
+            part_number,
+            process_seq,
+            die_number,
+            excel_filename,
+            stamping_supplier,
+            version,
+        ) in rows:
+            number = (die_number or "").strip() or None
+            filename = (excel_filename or "").strip()
+            supplier = (stamping_supplier or "").strip() or None
+            version_text = (version or "").strip() or None
+            traces.append(
+                {
+                    "part_number": str(part_number).strip(),
+                    "process_seq": str(process_seq).strip(),
+                    "die_number": number,
+                    "excel_filename": filename,
+                    "stamping_supplier": supplier,
+                    "version": version_text,
+                }
+            )
+        return traces

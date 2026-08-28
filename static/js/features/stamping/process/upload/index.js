@@ -3,7 +3,7 @@
  * 冲压工艺上传 — 异步 task_id + 进度轮询
  */
 
-import { uploadTemplate } from './template.js';
+import { uploadTemplate } from './template.js?v=1';
 
 const MAX_RECENT_UPLOADS = 8;
 const POLL_INTERVAL_MS = 2000;
@@ -410,9 +410,11 @@ export const UploadPage = {
 
                 if (status === 'failed') {
                     this.stopPolling();
-                    showToast(msg || '上传失败', 'error');
+                    const fullMsg = msg || '上传失败';
+                    showToast(fullMsg.split('\n')[0] || fullMsg, 'error');
                     this.clearActiveTask();
                     this.setUploading(false);
+                    document.getElementById('uploadZone')?.classList.remove('pointer-events-none');
                     return;
                 }
             } catch (error) {

@@ -35,6 +35,11 @@ from app.services.async_task import (
     AsyncTaskService,
     WorkerTaskOutcome,
 )
+from app.services.stamping.process_seq_validator import (
+    ProcessSeqOccurrence,
+    find_duplicate_process_seqs,
+    format_duplicate_process_seq_issues,
+)
 from app.services.stamping.tailor_weld_blank_service import StampingTailorWeldBlankService
 from app.services.stamping.upload.cost_ratio_preserver import ProcessCostRatioPreserver
 from app.services.stamping.upload.template_builder import build_stamping_process_template
@@ -107,6 +112,21 @@ class StampingUploadService:
             version = scope.version
             stamping_supplier = scope.stamping_supplier
             tailor_parent_numbers = set(tailor_result.parent_part_numbers)
+
+            duplicate_seqs = find_duplicate_process_seqs(
+                [
+                    ProcessSeqOccurrence(
+                        part_number=process.part_number,
+                        process_seq=process.process_seq,
+                        excel_row=process.excel_row,
+                    )
+                    for process in parse_result.processes
+                ]
+            )
+            if duplicate_seqs:
+                raise BusinessException(
+                    format_duplicate_process_seq_issues(duplicate_seqs, source_name="工艺确认表")
+                )
 
             logger.info(
                 "解析 Excel 完成：%d 个零件、%d 道工序、%d 个拼焊总成",
@@ -431,6 +451,7 @@ class StampingUploadService:
                     process_order=order,
                     process_code=process.process_code,
                     die_sets=process.die_sets,
+                    die_number=process.die_number,
                     tonnage=process.tonnage,
                     cost_ratio=process.cost_ratio
                     if process.cost_ratio is not None

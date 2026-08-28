@@ -49,6 +49,23 @@ class StampingPartRepository:
         """去重车型数量。"""
         return db.query(StampingPart.vehicle_model).distinct().count()
 
+    def exists_location_vehicle_model(
+        self,
+        db: Session,
+        *,
+        location: str,
+        vehicle_model: str,
+    ) -> bool:
+        return (
+            db.query(StampingPart.id)
+            .filter(
+                StampingPart.location == location,
+                StampingPart.vehicle_model == vehicle_model,
+            )
+            .first()
+            is not None
+        )
+
     def get_by_id(self, db: Session, part_id: int) -> StampingPart | None:
         from sqlalchemy.orm import selectinload
 
@@ -220,7 +237,10 @@ class StampingPartRepository:
         part_number: str | None = None,
         part_name: str | None = None,
     ) -> list[StampingPart]:
-        """按列表筛选加载零件 + 工序 + 拼焊子片（导出用，不分页）。"""
+        """按列表筛选加载零件 + 工序 + 拼焊子片（导出用，不分页）。
+
+        排序：车型 → 冲压工厂 → 版本 → id。
+        """
         from sqlalchemy.orm import selectinload
 
         q = self._build_list_query(
@@ -237,7 +257,12 @@ class StampingPartRepository:
                 selectinload(StampingPart.processes),
                 selectinload(StampingPart.tailor_weld_blanks),
             )
-            .order_by(StampingPart.seq_no, StampingPart.id)
+            .order_by(
+                StampingPart.vehicle_model,
+                StampingPart.version,
+                StampingPart.stamping_supplier,
+                StampingPart.id,
+            )
             .all()
         )
 

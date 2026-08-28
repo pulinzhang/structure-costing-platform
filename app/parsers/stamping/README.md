@@ -518,10 +518,13 @@ process = Process(
     part_number="501006875AA",
     process_seq="OP10",
     process_code="拉伸",
+    die_number="T28-BL-001",
     tonnage=800,
     ...
 )
 ```
+
+列映射含 `die_number`（表头「模具编号」）。识别不到该列则解析失败。单元格空则 `die_number is None`。同一零件出现重复工序号时，由上传 Service 整单拒绝，错误中含 Excel 行号。
 
 #### HeaderContext（表头上下文）
 

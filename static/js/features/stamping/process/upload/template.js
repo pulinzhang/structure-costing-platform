@@ -113,7 +113,7 @@ export function uploadTemplate() {
                                                      class="h-full bg-[#d32f2f] shadow-[0_0_8px_rgba(211,47,47,0.5)] transition-all duration-300"
                                                      style="width: 0%"></div>
                                             </div>
-                                            <p id="stampingProgressMsg" class="text-[11px] text-[#9e9e9e] leading-relaxed mb-0">已提交解析队列</p>
+                                            <p id="stampingProgressMsg" class="text-[11px] text-[#9e9e9e] leading-relaxed mb-0 whitespace-pre-wrap break-words max-h-48 overflow-y-auto">已提交解析队列</p>
                                         </div>
                                     </div>
 
@@ -173,7 +173,7 @@ export function uploadTemplate() {
                         <!-- 数据起始 -->
                         <div>
                             <p class="text-[9px] text-[#4a4a4a] tracking-[0.18em] uppercase mb-2">数据起始</p>
-                            <p class="text-[11px] text-[#888888]">第 1 行 · 不留空行</p>
+                            <p class="text-[11px] text-[#888888]">第 1 行 · 不留空行。同一零件的工序号（如 OP30）不可重复。</p>
                         </div>
                         <!-- 支持字段 -->
                         <div>

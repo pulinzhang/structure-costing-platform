@@ -10,7 +10,7 @@ import {
     updatePartsFilterCapsules,
     updatePartsHud,
     renderPartsPagination,
-} from './template.js?v=19';
+} from './template.js?v=21';
 import {
     DEFAULT_PAGE_SIZE,
     PAGE_SIZE_OPTIONS,
@@ -252,6 +252,16 @@ export const PartsPage = {
 
     requireScopeForBatchDelete() {
         return this.requireScope('批量删除');
+    },
+
+    requireLocationForExport() {
+        const filters = this.collectScopeFilters();
+        if (!filters.location) {
+            this.setAdvancedOpen(true);
+            showToast('导出须选择基地', 'warning');
+            return null;
+        }
+        return filters;
     },
 
     showEmptyHint(title, hint) {
@@ -613,14 +623,12 @@ export const PartsPage = {
             showToast('无导出权限', 'warning');
             return;
         }
-        const scope = this.requireScope('导出');
+        const scope = this.requireLocationForExport();
         if (!scope) return;
-        const params = {
-            location: scope.location,
-            stamping_supplier: scope.stamping_supplier,
-            vehicle_model: scope.vehicle_model,
-            version: scope.version,
-        };
+        const params = { location: scope.location };
+        if (scope.stamping_supplier) params.stamping_supplier = scope.stamping_supplier;
+        if (scope.vehicle_model) params.vehicle_model = scope.vehicle_model;
+        if (scope.version) params.version = scope.version;
 
         const btn = document.getElementById('partsExportBtn');
         const originalHtml = btn ? btn.innerHTML : '';

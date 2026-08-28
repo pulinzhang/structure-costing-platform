@@ -343,6 +343,15 @@ root
 │   │       ├── op:stamping-parts:update
 │   │       ├── op:stamping-parts:delete
 │   │       └── op:stamping-parts:export
+│   ├── menu:stamping-die                      # 冲压模具（二级分组，可勾）
+│   │   ├── menu:stamping-die-upload
+│   │   │   ├── op:stamping-die-upload:view
+│   │   │   └── op:stamping-die-upload:upload
+│   │   └── menu:stamping-die-list
+│   │       ├── op:stamping-die-list:view
+│   │       ├── op:stamping-die-list:update
+│   │       ├── op:stamping-die-list:delete
+│   │       └── op:stamping-die-list:export
 │   ├── menu:stamping-stroke-unit-price        # 冲次单价（二级分组，可勾）
 │   │   ├── menu:stamping-tonnage-upload
 │   │   │   ├── op:stamping-tonnage-upload:view
@@ -562,6 +571,8 @@ root
 | dashboard | `view` | 查看 KPI / 统计 |
 | stamping-upload | `view` / `upload` | 进入页；「上传」 |
 | stamping-parts | `view` / `update` / `delete` / `export` | 查询详情；保存工序；单条删除 / 批量删除；导出工艺确认表 |
+| stamping-die-upload | `view` / `upload` | 进入页；上传模具布点 Excel |
+| stamping-die-list | `view` / `update` / `delete` / `export` | 查询详情；改子表分摊比例；按基地+项目整包删除；导出 |
 | stamping-tonnage-upload | `view` / `upload` | 查看上传页；导入冲次单价 Excel |
 | stamping-tonnage | `view` / `create` / `update` / `delete` / `approve` / `reverse` / `export` | 查询；新增（API）；编辑；删除（含批量，已审跳过）；审核（含批量）；反审核；导出 Excel |
 | stamping-process-fee-calc | `view` / `run` / `delete` | 查看；执行计算；删除计算日志 |
@@ -804,4 +815,4 @@ static/index.html           # 侧栏 data-page
 | 2026-08-17 | 去掉预留空码 `op:bom-l0-welding-fee-list:export`（尚无导出接口/按钮，避免权限树熵增） |
 | 2026-08-19 | 冲压零件价格一览下线「核算明细」Excel；仅保留工艺清单导出（`op:stamping-part-cost:export`） |
 | 2026-08-19 | 成品焊接费列表：恢复 `export`（导出已落地）并增加 `update`（编辑其它费用 / 备注） |
-| 2026-08-26 | 新增 `menu:steel-grade-category` / `op:steel-grade-category:view|create|update|delete|export`；牌号分类档案 CRUD + Excel 导出 |
+| 2026-08-28 | 新增 `menu:stamping-die` 及上传/清单叶子：模具布点入库（不算费） |

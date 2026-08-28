@@ -9,6 +9,7 @@ from app.schemas.vo.user_vo import UserVO
 FILE_CATEGORY_LABELS: dict[str, str] = {
     "bom_material": "BOM 材料清单",
     "stamping_process": "冲压工艺",
+    "stamping_die": "冲压模具布点",
     "stamping_tonnage_price": "冲次单价",
     "steel_base_price": "钢价基准价",
     "steel_price_policy": "加减价政策",
@@ -23,6 +24,10 @@ CATEGORY_VIEW_PERMISSIONS: dict[str, tuple[str, ...]] = {
     "stamping_process": (
         Perm.STAMPING_UPLOAD_VIEW,
         Perm.STAMPING_PARTS_VIEW,
+    ),
+    "stamping_die": (
+        Perm.STAMPING_DIE_UPLOAD_VIEW,
+        Perm.STAMPING_DIE_LIST_VIEW,
     ),
     "stamping_tonnage_price": (
         Perm.STAMPING_TONNAGE_UPLOAD_VIEW,
