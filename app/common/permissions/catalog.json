@@ -133,6 +133,33 @@
                   "type": "op"
                 }
               ]
+            },
+            {
+              "code": "menu:stamping-die-unit-price",
+              "label": "模具单价",
+              "type": "menu",
+              "children": [
+                {
+                  "code": "op:stamping-die-unit-price:view",
+                  "label": "查询",
+                  "type": "op"
+                },
+                {
+                  "code": "op:stamping-die-unit-price:create",
+                  "label": "新增",
+                  "type": "op"
+                },
+                {
+                  "code": "op:stamping-die-unit-price:update",
+                  "label": "编辑",
+                  "type": "op"
+                },
+                {
+                  "code": "op:stamping-die-unit-price:delete",
+                  "label": "删除",
+                  "type": "op"
+                }
+              ]
             }
           ]
         },

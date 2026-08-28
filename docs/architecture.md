@@ -277,6 +277,7 @@ ApiResponse[AsyncTaskAcceptedVO]
 | **L0 成品核价设计** | [l0-assembly-costing-design.md](l0-assembly-costing-design.md) | 供货总成月度总账、外购/L1 年度价（已上线：计算/一览/导出） |
 | **委外分总成 / 退化 L0 核价** | [outsourced-assembly-costing-design.md](outsourced-assembly-costing-design.md) | 财务看 L0；采购看 L1 分总成与 L1 冲压件（直接采购）及退化 L0（草案） |
 | **冲压件模具管理** | [stamping-die-management-design.md](stamping-die-management-design.md) | 计算模具费用的依据（布点 A–AC、子表分摊比例）；本期入库不算额、不记分摊状态（已落地） |
+| **冲压模具单价档案** | [stamping-die-unit-price-design.md](stamping-die-unit-price-design.md) | 基地+项目钢板模/级进模单价与分摊数量（万台）（已落地；不算年度模具费） |
 | **BOM 年度零件价表** | [bom-annual-part-prices-design.md](bom-annual-part-prices-design.md) | 外购价 / L1 一口价单表（已上线：上传/列表/审核） |
 | **核价引擎设计** | [costing-engine-design.md](costing-engine-design.md) | 基地+年+月一键编排（已上线） |
 | **文件溯源设计** | [file-trace-design.md](file-trace-design.md) | 已落盘 Excel 登记与鉴权下载（MVP 已上线；深链/导出等见文内非目标） |

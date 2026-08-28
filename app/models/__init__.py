@@ -47,6 +47,7 @@ from app.models.settings import (
 from app.models.stamping import (
     StampingDiePart,
     StampingDieProcess,
+    StampingDieUnitPrice,
     StampingPart,
     StampingProcess,
     StampingProcessFee,
@@ -89,6 +90,7 @@ __all__ = [
     "OperationLog",
     "StampingDiePart",
     "StampingDieProcess",
+    "StampingDieUnitPrice",
     "StampingPart",
     "StampingPartCost",
     "StampingPartCostCalcLog",

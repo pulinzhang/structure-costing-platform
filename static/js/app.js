@@ -13,7 +13,7 @@
  * 入口 URL 的 query 串驱动整体刷新；每次脚本更新后需要同步递增 ?v= 版本号。
  */
 
-import { pageMeta } from './features/index.js?v=28';
+import { pageMeta } from './features/index.js?v=29';
 
 // 页面导入（路径与 index.html 菜单树 / features 目录对齐）
 import { getUserSession, initUserMenu, startTokenHeartbeat, updateUserSession } from './features/login/index.js?v=14';
@@ -28,6 +28,7 @@ import { pageConfig as stampingUploadPage } from './features/stamping/process/up
 import { pageConfig as stampingPartsPage }  from './features/stamping/process/parts/index.js?v=32';
 import { pageConfig as stampingDieUploadPage } from './features/stamping/die/upload/index.js?v=3';
 import { pageConfig as stampingDieListPage } from './features/stamping/die/list/index.js?v=6';
+import { pageConfig as stampingDieUnitPricePage } from './features/stamping/die/unit-price/index.js?v=4';
 import { pageConfig as stampingTonnagePage } from './features/stamping/tonnage/list/index.js?v=20';
 import { pageConfig as stampingTonnageUploadPage } from './features/stamping/tonnage/upload/index.js?v=4';
 import { pageConfig as stampingProcessFeeCalcPage } from './features/stamping/process-fee/calc/index.js?v=25';
@@ -79,6 +80,7 @@ const pages = {
     'stamping-parts':  stampingPartsPage,
     'stamping-die-upload': stampingDieUploadPage,
     'stamping-die-list': stampingDieListPage,
+    'stamping-die-unit-price': stampingDieUnitPricePage,
     'stamping-tonnage-upload': stampingTonnageUploadPage,
     'stamping-tonnage': stampingTonnagePage,
     'stamping-process-fee-calc': stampingProcessFeeCalcPage,

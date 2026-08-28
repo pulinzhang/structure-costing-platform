@@ -12,7 +12,8 @@
  * │   │   └── parts/             # 冲压零件列表
  * │   ├── die/                   # 冲压模具
  * │   │   ├── upload/            # 上传模具布点
- * │   │   └── list/              # 模具清单
+ * │   │   ├── list/              # 模具清单
+ * │   │   └── unit-price/        # 模具单价
  * │   ├── tonnage/               # 冲次单价
  * │   │   ├── upload/
  * │   │   └── list/
@@ -106,6 +107,11 @@ export const pageMeta = {
         title: '模具清单',
         en: 'DIE_LAYOUT_LIST',
         breadcrumb: ['冲压工程', '冲压模具', '模具清单'],
+    },
+    'stamping-die-unit-price': {
+        title: '模具单价',
+        en: 'DIE_UNIT_PRICE',
+        breadcrumb: ['冲压工程', '冲压模具', '模具单价'],
     },
     'stamping-tonnage-upload': {
         title: '冲次单价上传',
