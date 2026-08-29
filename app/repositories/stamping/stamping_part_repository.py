@@ -35,6 +35,13 @@ class MaterialSpecRow(TypedDict):
     thickness: Decimal
 
 
+class StampingPartScopeIdentity(TypedDict):
+    """基地+项目下去重后的零件号与名称。"""
+
+    part_number: str
+    part_name: str
+
+
 logger = logging.getLogger("repository.stamping.part")
 
 
@@ -65,6 +72,32 @@ class StampingPartRepository:
             .first()
             is not None
         )
+
+    def list_distinct_parts_for_scope(
+        self,
+        db: Session,
+        *,
+        location: str,
+        vehicle_model: str,
+    ) -> list[StampingPartScopeIdentity]:
+        rows = (
+            db.query(StampingPart.part_number, StampingPart.part_name, StampingPart.id)
+            .filter(
+                StampingPart.location == location,
+                StampingPart.vehicle_model == vehicle_model,
+            )
+            .order_by(StampingPart.part_number.asc(), StampingPart.id.desc())
+            .all()
+        )
+        seen: dict[str, str] = {}
+        order: list[str] = []
+        for part_number, part_name, _part_id in rows:
+            number = (part_number or "").strip()
+            if not number or number in seen:
+                continue
+            seen[number] = (part_name or "").strip()
+            order.append(number)
+        return [{"part_number": number, "part_name": seen[number]} for number in order]
 
     def get_by_id(self, db: Session, part_id: int) -> StampingPart | None:
         from sqlalchemy.orm import selectinload
