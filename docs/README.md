@@ -23,7 +23,7 @@
 | [stamping-die-management-design.md](stamping/stamping-die-management-design.md) | 模具布点依据（已落地） |
 | [stamping-die-unit-price-design.md](stamping/stamping-die-unit-price-design.md) | 模具单价档案（已落地） |
 | [stamping-gauge-fee-design.md](stamping/stamping-gauge-fee-design.md) | 检具费档案（已落地） |
-| [stamping-die-fee-design.md](stamping/stamping-die-fee-design.md) | 年度模具费（设计） |
+| [stamping-die-fee-design.md](stamping/stamping-die-fee-design.md) | 年度模具费（设计；不含检具） |
 
 ## 焊接 / BOM `bom/`
 
