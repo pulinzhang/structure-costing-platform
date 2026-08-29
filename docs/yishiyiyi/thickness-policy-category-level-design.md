@@ -1,7 +1,7 @@
 # 厚度加减价政策 — 分类级引入改造说明
 
 > 状态：**设计定稿（待开发）**  
-> 关联：`docs/steel-grade-category-design.md`、`app/models/yishiyiyi/steel_price_policy.py`、`app/services/costing/steel_price/calc/steps/adjustments/thickness.py`  
+> 关联：`docs/yishiyiyi/steel-grade-category-design.md`、`app/models/yishiyiyi/steel_price_policy.py`、`app/services/costing/steel_price/calc/steps/adjustments/thickness.py`  
 > 原则：**只做厚度加减价**（冷轧 / 镀锌 / 酸洗 **三大类均做**）；政策按 **牌号分类大类级** 存储（`grade_type = CATEGORY`，`grade_value` 与块标签共用）；**开发环境清空历史政策后重来**，不做旧数据迁移与兼容。**宽度加减价、厚宽组合、锌层等本期不做。**
 
 ---
@@ -339,8 +339,8 @@ CalcRow.width_adjustment → 0
 ## 12. 文档与权限
 
 - 落地后更新 `app/services/yishiyiyi/policy/README.md`（厚度三大类 + 宽度下线）  
-- `docs/costing-engine-design.md`：硬停改为「已分类牌号须有对应大类厚度政策」；宽度调差移除  
-- `docs/steel-grade-category-design.md`：已链本文  
+- `docs/costing/costing-engine-design.md`：硬停改为「已分类牌号须有对应大类厚度政策」；宽度调差移除  
+- `docs/yishiyiyi/steel-grade-category-design.md`：已链本文  
 - 权限码可不变  
 
 ---

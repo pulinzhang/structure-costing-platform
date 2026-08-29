@@ -2,8 +2,8 @@
 
 > **状态：已上线。** 外购价与 L1 一口价合并为同一张表、同一套上传/列表/审核。  
 > **产品入口：** `#/bom-annual-part-price-upload`、`#/bom-annual-part-price`；API `/api/bom/annual-part-price`。  
-> 成品月核价总览见 [l0-assembly-costing-design.md](l0-assembly-costing-design.md)。  
-> 分层与切片硬规则见 [architecture.md](architecture.md)。
+> 成品月核价总览见 [l0-assembly-costing-design.md](../costing/l0-assembly-costing-design.md)。  
+> 分层与切片硬规则见 [architecture.md](../architecture.md)。
 
 ---
 

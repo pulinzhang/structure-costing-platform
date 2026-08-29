@@ -22,7 +22,7 @@
 
 典型链路：工艺 / 政策 / 基价 / 废料价 / BOM 入库 → 钢材联动 → 零件核价（材料 + 加工费）→ 成品核价 → **AI 助理解读趋势与动因**。
 
-**AI 助理（LLM）**：数字由核价库与 Analysis 层计算，LLM 只负责自然语言解释；问什么答什么，不流式、不跳页。设计详见 [docs/llm-costing-analysis-report-design.md](docs/llm-costing-analysis-report-design.md)。
+**AI 助理（LLM）**：数字由核价库与 Analysis 层计算，LLM 只负责自然语言解释；问什么答什么，不流式、不跳页。设计详见 [docs/llm/llm-costing-analysis-report-design.md](docs/llm/llm-costing-analysis-report-design.md)。
 
 **生产环境（Windows，可无 Python）**：见 [docs/deploy-windows-production.md](docs/deploy-windows-production.md)，一键脚本 `scripts\windows\setup.bat`。
 
@@ -351,15 +351,12 @@ await HttpClient.post('/api/stamping/upload/', formData);
 
 | 文档 | 内容 |
 |------|------|
+| [文档目录](docs/README.md) | 按切片分目录的设计文档索引 |
 | [架构说明](docs/architecture.md) | 分层 + 垂直切片导读 |
 | [架构宪法](docs/architecture-constitution.mdc) | 分层与切片依赖硬规则 |
 | [前端规范](docs/front-end.mdc) | SPA、Brabus、HUD 数据表 |
 | [API 类型安全](docs/api-type-safety.md) | `ApiResponse` / `PageResult` / 权限 Depends / `Any` 不进函数签名 |
 | [权限设计](docs/permission-design.md) | 前后端权限码 |
-| [文件溯源设计](docs/file-trace-design.md) | 已落盘 Excel 登记与鉴权下载 |
-| [L0 成品核价设计](docs/l0-assembly-costing-design.md) | 供货总成月度总账 |
-| [核价引擎设计](docs/costing-engine-design.md) | 基地+年+月一键编排 |
-| [LLM 智能分析设计](docs/llm-costing-analysis-report-design.md) | AI 助理产品契约与架构 |
 | [生产安装（Windows 一键）](docs/deploy-windows-production.md) | 无 Python 环境用 `scripts/windows/setup.bat` |
 | 云主机 Docker 手工发版 | 仓库根目录 `bash deploy.sh`（拉代码、构建、启动） |
 | [命名规范](docs/naming-convention.mdc) | 标识符命名 |

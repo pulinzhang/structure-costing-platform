@@ -200,7 +200,7 @@
 
 | 文档 | 关系 |
 |------|------|
-| `docs/costing-engine-design.md` | 落地时入口增加账本 + 沿用年；覆盖规则按账本隔离 |
-| `docs/l0-assembly-costing-design.md` | 唯一键加账本；取协议价用 `annual_price_year` |
-| `docs/effective-period-design.md` | 正交；晚到订价走本文，定稿后改口走生效期 |
+| `docs/costing/costing-engine-design.md` | 落地时入口增加账本 + 沿用年；覆盖规则按账本隔离 |
+| `docs/costing/l0-assembly-costing-design.md` | 唯一键加账本；取协议价用 `annual_price_year` |
+| `docs/costing/effective-period-design.md` | 正交；晚到订价走本文，定稿后改口走生效期 |
 | `docs/architecture.md` | 仍一套库；costing 结果表加维度，不新建切片库 |

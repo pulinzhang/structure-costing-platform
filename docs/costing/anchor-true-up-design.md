@@ -3,7 +3,7 @@
 > 面向业务员、实施与开发。  
 > 状态：**设计稿（未落地）**  
 > 依据：现场操作员口径（2026-08）  
-> 现网核价见 [成品核价](l0-assembly-costing-design.md)、[月度引擎](costing-engine-design.md)；原件见 [文件溯源](file-trace-design.md)。
+> 现网核价见 [成品核价](l0-assembly-costing-design.md)、[月度引擎](costing-engine-design.md)；原件见 [文件溯源](../file-trace/file-trace-design.md)。
 
 这不是主合同管理。主合同条款多、不进本系统。本系统只管主合同的附件：**批量零部件价格协议**（零件价目）。现场口头或叫「锚点价」，对外和系统里称 **协议价**。
 

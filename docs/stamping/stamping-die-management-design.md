@@ -3,8 +3,8 @@
 > **状态：已落地（本期只入库，不算模具费金额）。**  
 > 样本：`excel_sample/T13J/副本②T13J项目冲压模具布点工艺清单-2024-01-22.xlsx`（Sheet「零件汇总」）。  
 > **本阶段只读 A～AC 列。** AD 及以后（责任人、模具款、检具款、总费用、预付等）一律忽略。检具费档案另表，见 [stamping-gauge-fee-design.md](stamping-gauge-fee-design.md)，**不读布点 AD+ 检具款列**。  
-> 关联：现网冲压工艺导入（`app/parsers/stamping/`、`cost_ratio_resolver.py`）、成品间接费 I7/I8 预留（[l0-assembly-costing-design.md](l0-assembly-costing-design.md)）。  
-> 硬约束：分层与切片见 [architecture.md](architecture.md)。
+> 关联：现网冲压工艺导入（`app/parsers/stamping/`、`cost_ratio_resolver.py`）、成品间接费 I7/I8 预留（[l0-assembly-costing-design.md](../costing/l0-assembly-costing-design.md)）。  
+> 硬约束：分层与切片见 [architecture.md](../architecture.md)。
 
 ---
 
@@ -271,7 +271,7 @@ menu:stamping
               └── op:stamping-die-list:export
 ```
 
-模具单价权限树见 [permission-design.md](permission-design.md) 与 [stamping-die-unit-price-design.md](stamping-die-unit-price-design.md)，不要在本文件再抄一份。
+模具单价权限树见 [permission-design.md](../permission-design.md) 与 [stamping-die-unit-price-design.md](stamping-die-unit-price-design.md)，不要在本文件再抄一份。
 
 ---
 

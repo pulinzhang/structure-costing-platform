@@ -1,6 +1,6 @@
 """成品月核价 — 纯函数 rollup 引擎（无 IO）。
 
-规则见 docs/l0-assembly-costing-design.md。
+规则见 docs/costing/l0-assembly-costing-design.md。
 """
 
 from __future__ import annotations

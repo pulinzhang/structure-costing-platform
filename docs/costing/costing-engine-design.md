@@ -2,7 +2,7 @@
 
 > 面向产品、实施与开发复核。  
 > 入口仅 **基地 + 年度 + 月份**；在既有钢材联动 / 冲压零件价 / 成品 L0 计算之上增加 **编排层**。  
-> 硬约束见 [architecture.md](architecture.md)；L0 取价规则见 [l0-assembly-costing-design.md](l0-assembly-costing-design.md)。  
+> 硬约束见 [architecture.md](../architecture.md)；L0 取价规则见 [l0-assembly-costing-design.md](l0-assembly-costing-design.md)。  
 > **状态：已上线。** 产品规则仍以本文为准；实现见 §19 代码锚点。  
 > **产品入口：** `#/costing`；API `/api/costing/engine`。
 
@@ -559,7 +559,7 @@ can_start: bool   # = not hard_stop 且存在可执行路径
 
 ## 17. 权限（实现时落地）
 
-- 菜单：`menu:costing` / 引擎页码与 [permission-design.md](permission-design.md) 对齐  
+- 菜单：`menu:costing` / 引擎页码与 [permission-design.md](../permission-design.md) 对齐  
 - 操作：查看 ready、提交 run、查看历史、导出合册  
 - 禁止仅藏按钮；Router 使用 `require_perm(Perm.*)`  
 

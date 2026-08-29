@@ -2,7 +2,7 @@
 
 > 状态：**已定稿归档**  
 > 业务主体：冲焊装配供应商（可多租户）· 主用户：**采购部**  
-> 关联：`docs/costing-engine-design.md`、`docs/l0-assembly-costing-design.md`、`docs/architecture.md`  
+> 关联：`docs/costing/costing-engine-design.md`、`docs/costing/l0-assembly-costing-design.md`、`docs/architecture.md`  
 > 参考：仅借鉴「明细事实直查 + 强约束 Prompt」；不复用 Chat/SSE；**禁止**预聚合表与 ETL
 
 **阅读指引**

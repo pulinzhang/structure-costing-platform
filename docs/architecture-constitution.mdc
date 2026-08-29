@@ -409,7 +409,7 @@ app/
 | **上游 → 下游** | ❌ 禁止。如 `stamping` 不得依赖 `costing` / `llm` |
 | **同层互依** | ❌ 禁止成环。同层确需共享算法时：抽到 `common/`，或明确归属一方、另一方单向依赖 |
 | **调用形态优先序** | ① 上游 Service 的稳定查询 API → ② 只读上游 Repository（批量/导出/计算热路径）→ ③ 抽到 `common/`（真正多切片复用的无领域编排逻辑） |
-| **`llm` 隔离** | 只读上游结果表 Model，不经上游 Service→VO。内部工具留在本切片（如 `_money.py`），**禁止**抽到 `app/common/`。本切片 Repo 用这些纯函数不算主业务「Repo 反向依赖 Service」。细则：`docs/llm-costing-analysis-report-design.md` B.2.1 |
+| **`llm` 隔离** | 只读上游结果表 Model，不经上游 Service→VO。内部工具留在本切片（如 `_money.py`），**禁止**抽到 `app/common/`。本切片 Repo 用这些纯函数不算主业务「Repo 反向依赖 Service」。细则：`docs/llm/llm-costing-analysis-report-design.md` B.2.1 |
 
 ```
 ✅ 正确：

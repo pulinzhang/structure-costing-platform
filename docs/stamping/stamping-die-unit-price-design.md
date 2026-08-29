@@ -2,7 +2,7 @@
 
 > **状态：已落地（仅档案维护）。**  
 > 关联：[冲压件模具管理](stamping-die-management-design.md)（布点几何，不算额）。  
-> 硬约束：分层与切片见 [architecture.md](architecture.md)。
+> 硬约束：分层与切片见 [architecture.md](../architecture.md)。
 
 ---
 

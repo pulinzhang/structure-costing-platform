@@ -3,7 +3,7 @@
 > 面向业务、实施与新同事。说明 **如何从 BOM 结构算出每个成品的月度总成本**。  
 > **状态：已上线。** 取价与汇总规则仍以本文为准；只读模拟见 `tests/costing/l0_assembly_sim.py`（青岛 T28 · 2025-01）。  
 > **产品入口：** `#/l0-assembly-cost-calc`、`#/l0-assembly-cost`；API `/api/costing/l0-assembly-costs`。  
-> 硬约束（分层、切片依赖）见 [architecture.md](architecture.md)。
+> 硬约束（分层、切片依赖）见 [architecture.md](../architecture.md)。
 
 ---
 
@@ -520,9 +520,9 @@ grand_total = total_amount + indirect_amount
 
 | 文档 / 代码 | 说明 |
 |-------------|------|
-| [architecture.md](architecture.md) | 分层与切片 |
-| [api-type-safety.md](api-type-safety.md) | API / 金额 Decimal 约定 |
-| [bom-annual-part-prices-design.md](bom-annual-part-prices-design.md) | 年度零件价 |
+| [architecture.md](../architecture.md) | 分层与切片 |
+| [api-type-safety.md](../api-type-safety.md) | API / 金额 Decimal 约定 |
+| [bom-annual-part-prices-design.md](../bom/bom-annual-part-prices-design.md) | 年度零件价 |
 | `app/models/costing/stamping_part_cost.py` | 冲压零件价 |
 | `app/models/bom/packaging_transport_fee.py` | 包装运输（I1/I2） |
 | `app/models/settings/system_config.py` | 成品费率（I3～I6） |

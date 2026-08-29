@@ -1,7 +1,7 @@
 # 年度协议价生效期 — 设计说明
 
 > 状态：**设计稿（未落地）**  
-> 关联：`docs/bom-annual-part-prices-design.md`、`docs/l0-assembly-costing-design.md`、`docs/costing-engine-design.md`、`docs/architecture.md`  
+> 关联：`docs/bom/bom-annual-part-prices-design.md`、`docs/costing/l0-assembly-costing-design.md`、`docs/costing/costing-engine-design.md`、`docs/architecture.md`  
 > 原则：账在库里对得上。客户、核价引擎、分析读同一套行。不要用审核 Excel 快照当历史账。
 
 ---
@@ -282,10 +282,10 @@ costing 只调用上游 Repository/Service 的 `as_of`，禁止 costing 自己�
 
 | 文档 | 要点 |
 |------|------|
-| `docs/bom-annual-part-prices-design.md` | 唯一键与取价从「年」改为「年 + 覆盖该月的段」；节奏从「一年订一次」改为「默认全年，允许分段」 |
-| `docs/l0-assembly-costing-design.md` | ②③⑤ 取价带月 |
-| `docs/costing-engine-design.md` | gate 按月覆盖；`annual_l0_welding_fee` 改为按月 |
-| `docs/file-trace-design.md` | 不扩大到审核快照 |
+| `docs/bom/bom-annual-part-prices-design.md` | 唯一键与取价从「年」改为「年 + 覆盖该月的段」；节奏从「一年订一次」改为「默认全年，允许分段」 |
+| `docs/costing/l0-assembly-costing-design.md` | ②③⑤ 取价带月 |
+| `docs/costing/costing-engine-design.md` | gate 按月覆盖；`annual_l0_welding_fee` 改为按月 |
+| `docs/file-trace/file-trace-design.md` | 不扩大到审核快照 |
 
 ---
 

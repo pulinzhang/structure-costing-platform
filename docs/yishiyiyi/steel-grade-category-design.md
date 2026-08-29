@@ -83,7 +83,7 @@
 读取（以后都要）
   yishiyiyi（政策匹配 / 中标厚度 / 按大类筛牌号）
       →  本切片 get_by_grade / map_grades
-      →  厚度加减价（冷轧/镀锌/酸洗、分类级）见 docs/thickness-policy-category-level-design.md
+      →  厚度加减价（冷轧/镀锌/酸洗、分类级）见 docs/yishiyiyi/thickness-policy-category-level-design.md
   costing（钢材联动 / 零件核价 / 成品核价）
       →  yishiyiyi.SteelGradeCategoryService（或只读 Repository）
 

@@ -2,8 +2,8 @@
 
 > **状态：草案（未实施）。本文只定口径，不改代码。**  
 > 样本：`excel_sample/T13J项目车身件材料清单 (1).xlsx`（T13J · D/09 · 奇瑞公司 · 批量生产清单）。  
-> 关联：[l0-assembly-costing-design.md](l0-assembly-costing-design.md)、[bom-annual-part-prices-design.md](bom-annual-part-prices-design.md)、现网 `app/services/bom/welding_process_breakdown/`。  
-> 硬约束：分层与切片见 [architecture.md](architecture.md)。
+> 关联：[l0-assembly-costing-design.md](l0-assembly-costing-design.md)、[bom-annual-part-prices-design.md](../bom/bom-annual-part-prices-design.md)、现网 `app/services/bom/welding_process_breakdown/`。  
+> 硬约束：分层与切片见 [architecture.md](../architecture.md)。
 
 ---
 
@@ -536,8 +536,8 @@ P0 可以当独立小需求，不必等采购应成本表。P3 不要和 P2 绑�
 | `app/services/bom/l0_welding_fee/` | 只计 L0 |
 | `app/services/costing/l0_assembly_cost/calc/rollup.py` | 一口价剪枝；L0 不当叶子 |
 | `app/parsers/bom/node_parser.py` | 材料不落到 L0 |
-| `docs/l0-assembly-costing-design.md` | 财务核算账（L0 成品月总账）真相源 |
-| `docs/bom-annual-part-prices-design.md` | 一口价 / `supplier_name` |
+| `docs/costing/l0-assembly-costing-design.md` | 财务核算账（L0 成品月总账）真相源 |
+| `docs/bom/bom-annual-part-prices-design.md` | 一口价 / `supplier_name` |
 
 ---
 
