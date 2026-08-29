@@ -1,5 +1,7 @@
 """冲压模具数据访问。"""
 
+from typing import TypedDict
+
 from sqlalchemy.orm import Session, selectinload
 
 from app.models.stamping.die import StampingDiePart, StampingDieProcess
@@ -7,7 +9,51 @@ from app.repositories.persist import model_from_payload
 from app.schemas.dto.stamping_die_dto import StampingDiePartInsert, StampingDieProcessInsert
 
 
+class StampingDiePartScopeIdentity(TypedDict):
+    part_number: str
+    part_name: str
+
+
 class StampingDiePartRepository:
+    def exists_location_vehicle_model(
+        self,
+        db: Session,
+        *,
+        location: str,
+        vehicle_model: str,
+    ) -> bool:
+        return (
+            db.query(StampingDiePart.id)
+            .filter(
+                StampingDiePart.location == location,
+                StampingDiePart.vehicle_model == vehicle_model,
+            )
+            .first()
+            is not None
+        )
+
+    def list_parts_for_scope(
+        self,
+        db: Session,
+        *,
+        location: str,
+        vehicle_model: str,
+    ) -> list[StampingDiePartScopeIdentity]:
+        rows = (
+            db.query(StampingDiePart.part_number, StampingDiePart.part_name)
+            .filter(
+                StampingDiePart.location == location,
+                StampingDiePart.vehicle_model == vehicle_model,
+            )
+            .order_by(StampingDiePart.id.asc())
+            .all()
+        )
+        return [
+            {"part_number": (part_number or "").strip(), "part_name": (part_name or "").strip()}
+            for part_number, part_name in rows
+            if (part_number or "").strip()
+        ]
+
     def paginate(
         self,
         db: Session,

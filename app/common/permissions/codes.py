@@ -47,6 +47,18 @@ class Perm:
     STAMPING_DIE_UNIT_PRICE_UPDATE = "op:stamping-die-unit-price:update"  # 编辑
     STAMPING_DIE_UNIT_PRICE_DELETE = "op:stamping-die-unit-price:delete"  # 删除
 
+    MENU_STAMPING_GAUGE_FEE_GROUP = "menu:stamping-gauge-fee-group"  # 冲压检具费
+
+    MENU_STAMPING_GAUGE_FEE_UPLOAD = "menu:stamping-gauge-fee-upload"  # 上传
+    STAMPING_GAUGE_FEE_UPLOAD_VIEW = "op:stamping-gauge-fee-upload:view"  # 查看
+    STAMPING_GAUGE_FEE_UPLOAD_UPLOAD = "op:stamping-gauge-fee-upload:upload"  # 上传
+
+    MENU_STAMPING_GAUGE_FEE = "menu:stamping-gauge-fee"  # 检具费列表
+    STAMPING_GAUGE_FEE_VIEW = "op:stamping-gauge-fee:view"  # 查询
+    STAMPING_GAUGE_FEE_UPDATE = "op:stamping-gauge-fee:update"  # 编辑
+    STAMPING_GAUGE_FEE_DELETE = "op:stamping-gauge-fee:delete"  # 删除
+    STAMPING_GAUGE_FEE_EXPORT = "op:stamping-gauge-fee:export"  # 导出
+
     MENU_STAMPING_STROKE_UNIT_PRICE = "menu:stamping-stroke-unit-price"  # 冲次单价
 
     MENU_STAMPING_TONNAGE_UPLOAD = "menu:stamping-tonnage-upload"  # 上传

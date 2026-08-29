@@ -29,6 +29,8 @@
 |-----------------|-------------------------|
 | `bom_material` | `BomUploadService.import_excel` |
 | `stamping_process` | `StampingUploadService.process_upload` |
+| `stamping_die` | `StampingDieUploadService.process_upload` |
+| `stamping_gauge_fee` | `StampingGaugeFeeUploadService.import_excel` |
 | `stamping_tonnage_price` | `StampingTonnagePriceImportService` + `save_tonnage_price_upload` |
 | `steel_base_price` | `SteelBasePriceImportService` + `save_steel_price_upload` |
 | `steel_price_policy` | `SteelPricePolicyImportService` + `save_steel_price_upload` |
@@ -42,6 +44,8 @@
 |------|-----------------|------------|------|
 | BOM 材料清单 | ✅ | ✅ | ✅ |
 | 冲压工艺 | ✅ | ✅ | ✅ |
+| 冲压模具布点 | ✅ | ✅ | ✅ |
+| 冲压检具费 | ✅ | ✅ | ✅ |
 | 冲次单价 | ✅ | ✅ | ✅ |
 | 钢价基准价 | ✅ | ✅ | ✅ |
 | 钢价加减价政策 | ✅ | ✅ | ✅ |
@@ -221,6 +225,7 @@ file_trace Service → upload_file Repository（读列表 / 下载）
 | `bom_material` | BOM 材料清单 | `location`, `vehicle_model`, `bom_version` | `BomUploadService.import_excel` |
 | `stamping_process` | 冲压工艺 | `location`, `vehicle_model`, `process_version`, `stamping_supplier` | `StampingUploadService.process_upload` |
 | `stamping_die` | 冲压模具布点 | `location`, `vehicle_model` | `StampingDieUploadService.process_upload` |
+| `stamping_gauge_fee` | 冲压检具费 | `location`, `vehicle_model` | `StampingGaugeFeeUploadService.import_excel` |
 | `stamping_tonnage_price` | 冲次单价 | `location`, `year` | 冲次单价 import（归档后登记） |
 | `steel_base_price` | 钢价基准价 | `year`, `month` | 基准价 import（归档后登记） |
 | `steel_price_policy` | 加减价政策 | `year`, `month` | 政策 import（归档后登记） |
@@ -288,6 +293,7 @@ file_trace Service → upload_file Repository（读列表 / 下载）
 | `bom_material` | `file_category` + `location` + `vehicle_model` + `bom_version` |
 | `stamping_process` | `file_category` + `location` + `vehicle_model` + `process_version` + `stamping_supplier` |
 | `stamping_die` | `file_category` + `location` + `vehicle_model` |
+| `stamping_gauge_fee` | `file_category` + `location` + `vehicle_model` |
 | `stamping_tonnage_price` | `file_category` + `location` + `year` |
 | `steel_base_price` | `file_category` + `year` + `month` |
 | `steel_price_policy` | `file_category` + `year` + `month` |
@@ -449,6 +455,7 @@ JSON 端点使用 `response_model=ApiResponse[T]`；**下载为 `StreamingRespon
 |-----------------|----------------------|
 | `stamping_process` | `op:stamping-upload:view`, `op:stamping-parts:view` |
 | `stamping_die` | `op:stamping-die-upload:view`, `op:stamping-die-list:view` |
+| `stamping_gauge_fee` | `op:stamping-gauge-fee-upload:view`, `op:stamping-gauge-fee:view` |
 | `stamping_tonnage_price` | `op:stamping-tonnage-upload:view`, `op:stamping-tonnage:view` |
 | `steel_base_price` | `op:base-price-upload:view`, `op:base-price-download:view` |
 | `steel_price_policy` | `op:steel-price-policy-upload:view`, `op:steel-price-policy-download:view` |

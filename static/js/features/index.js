@@ -14,6 +14,9 @@
  * │   │   ├── upload/            # 上传模具布点
  * │   │   ├── list/              # 模具清单
  * │   │   └── unit-price/        # 模具单价
+ * │   ├── gauge-fee/             # 冲压检具费
+ * │   │   ├── upload/
+ * │   │   └── list/
  * │   ├── tonnage/               # 冲次单价
  * │   │   ├── upload/
  * │   │   └── list/
@@ -112,6 +115,16 @@ export const pageMeta = {
         title: '模具单价',
         en: 'DIE_UNIT_PRICE',
         breadcrumb: ['冲压工程', '冲压模具', '模具单价'],
+    },
+    'stamping-gauge-fee-upload': {
+        title: '检具费上传',
+        en: 'GAUGE_FEE_UPLOAD',
+        breadcrumb: ['冲压工程', '冲压检具费', '上传'],
+    },
+    'stamping-gauge-fee': {
+        title: '检具费列表',
+        en: 'GAUGE_FEE_LIST',
+        breadcrumb: ['冲压工程', '冲压检具费', '检具费列表'],
     },
     'stamping-tonnage-upload': {
         title: '冲次单价上传',

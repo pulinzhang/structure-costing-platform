@@ -357,6 +357,15 @@ root
 │   │       ├── op:stamping-die-unit-price:create
 │   │       ├── op:stamping-die-unit-price:update
 │   │       └── op:stamping-die-unit-price:delete
+│   ├── menu:stamping-gauge-fee-group          # 冲压检具费（二级分组，可勾）
+│   │   ├── menu:stamping-gauge-fee-upload
+│   │   │   ├── op:stamping-gauge-fee-upload:view
+│   │   │   └── op:stamping-gauge-fee-upload:upload
+│   │   └── menu:stamping-gauge-fee
+│   │       ├── op:stamping-gauge-fee:view
+│   │       ├── op:stamping-gauge-fee:update
+│   │       ├── op:stamping-gauge-fee:delete
+│   │       └── op:stamping-gauge-fee:export
 │   ├── menu:stamping-stroke-unit-price        # 冲次单价（二级分组，可勾）
 │   │   ├── menu:stamping-tonnage-upload
 │   │   │   ├── op:stamping-tonnage-upload:view
@@ -579,6 +588,8 @@ root
 | stamping-die-upload | `view` / `upload` | 进入页；上传模具布点 Excel |
 | stamping-die-list | `view` / `update` / `delete` / `export` | 查询详情；改子表分摊比例；按基地+项目整包删除；导出 |
 | stamping-die-unit-price | `view` / `create` / `update` / `delete` | 查询；新增；编辑单价/分摊数量/状态；删除档案 |
+| stamping-gauge-fee-upload | `view` / `upload` | 查看上传页；下载模板并导入检具费 Excel |
+| stamping-gauge-fee | `view` / `update` / `delete` / `export` | 查询；编辑检具费/分摊/状态；单条删除或批量删除（须选定基地+项目）；导出 Excel（含基地、项目） |
 | stamping-tonnage-upload | `view` / `upload` | 查看上传页；导入冲次单价 Excel |
 | stamping-tonnage | `view` / `create` / `update` / `delete` / `approve` / `reverse` / `export` | 查询；新增（API）；编辑；删除（含批量，已审跳过）；审核（含批量）；反审核；导出 Excel |
 | stamping-process-fee-calc | `view` / `run` / `delete` | 查看；执行计算；删除计算日志 |
@@ -823,3 +834,6 @@ static/index.html           # 侧栏 data-page
 | 2026-08-19 | 成品焊接费列表：恢复 `export`（导出已落地）并增加 `update`（编辑其它费用 / 备注） |
 | 2026-08-28 | 新增 `menu:stamping-die` 及上传/清单叶子：模具布点入库（不算费） |
 | 2026-08-29 | 新增 `menu:stamping-die-unit-price`：模具单价档案 CRUD |
+| 2026-08-29 | 新增 `menu:stamping-gauge-fee-group`：检具费上传 / 列表（整包删除） |
+| 2026-08-29 | 检具费列表增加 `op:stamping-gauge-fee:update`；支持单条编辑与删除 |
+| 2026-08-29 | 检具费列表增加 `op:stamping-gauge-fee:export`；导出含基地、项目 |

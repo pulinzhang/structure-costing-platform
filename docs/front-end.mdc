@@ -110,6 +110,7 @@ static/
         ├── stamping/
         │   ├── process/{upload,parts}
         │   ├── die/{upload,list,unit-price}
+        │   ├── gauge-fee/{upload,list}
         │   ├── tonnage/{upload,list}
         │   └── process-fee/{calc,list}
         ├── bom/material/{upload,list,structure,viz}   # 侧栏名「焊接工程」
@@ -150,6 +151,8 @@ static/
 | `#/stamping-die-upload` | 上传模具布点 | `stamping/die/upload` |
 | `#/stamping-die-list` | 模具清单 | `stamping/die/list` |
 | `#/stamping-die-unit-price` | 模具单价 | `stamping/die/unit-price` |
+| `#/stamping-gauge-fee-upload` | 检具费上传 | `stamping/gauge-fee/upload` |
+| `#/stamping-gauge-fee` | 检具费列表 | `stamping/gauge-fee/list` |
 | `#/stamping-tonnage-upload` | 冲次单价上传 | `stamping/tonnage/upload` |
 | `#/stamping-tonnage` | 冲次单价列表 | `stamping/tonnage/list` |
 | `#/stamping-process-fee-calc` | 冲压加工费计算 | `stamping/process-fee/calc` |
