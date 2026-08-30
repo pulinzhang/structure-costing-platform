@@ -18,7 +18,7 @@ from app.exceptions.base import BusinessException
 from app.models.stamping.die import StampingDiePart, StampingDieProcess
 from app.repositories.stamping.stamping_die_repository import StampingDiePartRepository
 
-COL_COUNT = 30
+COL_COUNT = 32
 DATA_START_ROW = 6
 DEFAULT_ROW_HEIGHT = 18
 
@@ -41,6 +41,8 @@ WIDTHS = [
     6,
     16,
     20,
+    18,
+    10,
     12,
     8,
     8,
@@ -71,7 +73,9 @@ WIDTHS = [
 ]
 
 # 零件级列（多道工序时纵向合并）
-_PART_COLS = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 21, 23, 24, 25, 26, 27, 28)
+_PART_COLS = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 23, 25, 26, 27, 28, 29, 30)
+_RATIO_COL = 31
+_DIE_NUMBER_COL = 32
 
 
 class StampingDieExportService:
@@ -86,13 +90,30 @@ class StampingDieExportService:
         self._data_font = Font(name=_FONT_NAME, size=9, color="000000")
 
     def export_workbook(
-        self, db: Session, *, location: str, vehicle_model: str
+        self,
+        db: Session,
+        *,
+        location: str,
+        vehicle_model: str,
+        stamping_supplier: str | None = None,
+        version: str | None = None,
+        part_number: str | None = None,
     ) -> tuple[bytes, str]:
         loc = (location or "").strip()
         vehicle = normalize_vehicle_model(vehicle_model) or ""
         if not loc or not vehicle:
             raise BusinessException("导出须选择基地和项目")
-        parts = self.repository.list_for_export(db, location=loc, vehicle_model=vehicle)
+        supplier = (stamping_supplier or "").strip() or None
+        version_value = (version or "").strip() or None
+        part_filter = (part_number or "").strip() or None
+        parts = self.repository.list_for_export(
+            db,
+            location=loc,
+            vehicle_model=vehicle,
+            stamping_supplier=supplier,
+            version=version_value,
+            part_number=part_filter,
+        )
 
         workbook = Workbook()
         sheet = workbook.active
@@ -105,6 +126,8 @@ class StampingDieExportService:
             sheet,
             location=loc,
             vehicle_model=vehicle,
+            stamping_supplier=supplier,
+            version=version_value,
             part_count=len(parts),
             process_count=process_count,
         )
@@ -141,7 +164,12 @@ class StampingDieExportService:
         buffer = BytesIO()
         workbook.save(buffer)
         stamp = now().strftime("%Y%m%d_%H%M%S")
-        filename = f"冲压模具布点工艺清单_{loc}_{vehicle}_{stamp}.xlsx"
+        extra = ""
+        if supplier:
+            extra += f"_{supplier}"
+        if version_value:
+            extra += f"_{version_value}"
+        filename = f"冲压模具布点工艺清单_{loc}_{vehicle}{extra}_{stamp}.xlsx"
         return buffer.getvalue(), filename
 
     def _write_banner(
@@ -150,6 +178,8 @@ class StampingDieExportService:
         *,
         location: str,
         vehicle_model: str,
+        stamping_supplier: str | None,
+        version: str | None,
         part_count: int,
         process_count: int,
     ) -> None:
@@ -161,12 +191,17 @@ class StampingDieExportService:
         title_cell.alignment = Alignment(horizontal="left", vertical="center", indent=1)
         sheet.row_dimensions[1].height = 28
 
-        count_start = 24
+        scope_bits = [f"基地：{location}", f"项目：{vehicle_model}"]
+        if stamping_supplier:
+            scope_bits.append(f"供应商：{stamping_supplier}")
+        if version:
+            scope_bits.append(f"版本：{version}")
+        count_start = 26
         sheet.merge_cells(start_row=2, start_column=1, end_row=2, end_column=count_start - 1)
         scope_cell = sheet.cell(
             row=2,
             column=1,
-            value=f"基地：{location}    项目：{vehicle_model}",
+            value="    ".join(scope_bits),
         )
         scope_cell.font = self._meta_font
         scope_cell.fill = _META_FILL
@@ -192,38 +227,40 @@ class StampingDieExportService:
             1: "序号",
             2: "零件号",
             3: "零件名称",
-            4: "材质",
-            5: "料厚\n(mm)",
-            6: "净重\n(kg)",
-            7: "预估板料尺寸 (mm)",
-            9: "板料形状",
-            10: "可制件数",
-            11: "材料消耗\n(kg)",
-            12: "材料利用率",
-            13: "预估工艺",
-            16: "预估模具尺寸 (mm)",
-            19: "掏空系数",
-            20: "预估重量\n(T)",
-            21: "重量小计\n(T)",
-            22: "设备吨位\n(T)",
-            23: "模具类型",
-            24: "模具方式",
-            25: "生产方式",
-            26: "端拾器",
-            27: "零件等级",
-            28: "备注",
-            29: "分摊比例",
-            30: "模具编号",
+            4: "供应商",
+            5: "版本",
+            6: "材质",
+            7: "料厚\n(mm)",
+            8: "净重\n(kg)",
+            9: "预估板料尺寸 (mm)",
+            11: "板料形状",
+            12: "可制件数",
+            13: "材料消耗\n(kg)",
+            14: "材料利用率",
+            15: "预估工艺",
+            18: "预估模具尺寸 (mm)",
+            21: "掏空系数",
+            22: "预估重量\n(T)",
+            23: "重量小计\n(T)",
+            24: "设备吨位\n(T)",
+            25: "模具类型",
+            26: "模具方式",
+            27: "生产方式",
+            28: "端拾器",
+            29: "零件等级",
+            30: "备注",
+            31: "分摊比例",
+            32: "模具编号",
         }
         row5 = {
-            7: "长",
-            8: "宽",
-            13: "工序名称",
-            14: "工序",
-            15: "套数",
-            16: "长度",
-            17: "宽度",
-            18: "高度",
+            9: "长",
+            10: "宽",
+            15: "工序名称",
+            16: "工序",
+            17: "套数",
+            18: "长度",
+            19: "宽度",
+            20: "高度",
         }
         merges = [
             (4, 1, 5, 1),
@@ -232,15 +269,15 @@ class StampingDieExportService:
             (4, 4, 5, 4),
             (4, 5, 5, 5),
             (4, 6, 5, 6),
-            (4, 7, 4, 8),
-            (4, 9, 5, 9),
-            (4, 10, 5, 10),
+            (4, 7, 5, 7),
+            (4, 8, 5, 8),
+            (4, 9, 4, 10),
             (4, 11, 5, 11),
             (4, 12, 5, 12),
-            (4, 13, 4, 15),
-            (4, 16, 4, 18),
-            (4, 19, 5, 19),
-            (4, 20, 5, 20),
+            (4, 13, 5, 13),
+            (4, 14, 5, 14),
+            (4, 15, 4, 17),
+            (4, 18, 4, 20),
             (4, 21, 5, 21),
             (4, 22, 5, 22),
             (4, 23, 5, 23),
@@ -251,6 +288,8 @@ class StampingDieExportService:
             (4, 28, 5, 28),
             (4, 29, 5, 29),
             (4, 30, 5, 30),
+            (4, 31, 5, 31),
+            (4, 32, 5, 32),
         ]
         for start_row, start_col, end_row, end_col in merges:
             if (start_row, start_col) != (end_row, end_col):
@@ -265,7 +304,7 @@ class StampingDieExportService:
             for row in (4, 5):
                 cell = sheet.cell(row=row, column=col)
                 cell.font = self._header_font
-                if col == 29:
+                if col == _RATIO_COL:
                     cell.fill = _RATIO_HEADER_FILL
                 elif row == 4:
                     cell.fill = _HEADER_FILL
@@ -302,7 +341,7 @@ class StampingDieExportService:
                 cell.font = self._data_font
                 cell.border = _THIN
                 cell.alignment = self._center
-                if col == 29:
+                if col == _RATIO_COL:
                     cell.fill = _RATIO_FILL
                 elif fill is not None:
                     cell.fill = fill
@@ -313,40 +352,44 @@ class StampingDieExportService:
         sheet.cell(row=start_row, column=1, value=seq_no)
         sheet.cell(row=start_row, column=2, value=part.part_number or "").alignment = self._left
         sheet.cell(row=start_row, column=3, value=part.part_name or "").alignment = self._left
-        sheet.cell(row=start_row, column=4, value=part.material or "")
-        _set_num(sheet, start_row, 5, part.thickness, Q4, "0.0000")
-        _set_num(sheet, start_row, 6, part.part_weight, Q4, "0.0000")
-        _set_num(sheet, start_row, 7, part.sheet_length, Q2, "0.00")
-        _set_num(sheet, start_row, 8, part.sheet_width, Q2, "0.00")
-        sheet.cell(row=start_row, column=9, value=part.sheet_shape or "")
-        sheet.cell(row=start_row, column=10, value=part.parts_per_sheet)
-        _set_num(sheet, start_row, 11, part.material_consumption, Q4, "0.0000")
-        _set_num(sheet, start_row, 12, part.material_utilization, Q4, "0.00%")
-        _set_num(sheet, start_row, 21, part.estimated_weight_subtotal_t, Q4, "0.0000")
-        sheet.cell(row=start_row, column=23, value=part.die_type or "")
-        sheet.cell(row=start_row, column=24, value=part.die_method or "")
-        sheet.cell(row=start_row, column=25, value=part.production_mode or "")
-        sheet.cell(row=start_row, column=26, value=part.needs_end_effector or "")
-        sheet.cell(row=start_row, column=27, value=part.part_grade or "")
-        sheet.cell(row=start_row, column=28, value=part.remark or "").alignment = self._left
+        sheet.cell(
+            row=start_row, column=4, value=part.stamping_supplier or ""
+        ).alignment = self._left
+        sheet.cell(row=start_row, column=5, value=part.version or "")
+        sheet.cell(row=start_row, column=6, value=part.material or "")
+        _set_num(sheet, start_row, 7, part.thickness, Q4, "0.0000")
+        _set_num(sheet, start_row, 8, part.part_weight, Q4, "0.0000")
+        _set_num(sheet, start_row, 9, part.sheet_length, Q2, "0.00")
+        _set_num(sheet, start_row, 10, part.sheet_width, Q2, "0.00")
+        sheet.cell(row=start_row, column=11, value=part.sheet_shape or "")
+        sheet.cell(row=start_row, column=12, value=part.parts_per_sheet)
+        _set_num(sheet, start_row, 13, part.material_consumption, Q4, "0.0000")
+        _set_num(sheet, start_row, 14, part.material_utilization, Q4, "0.00%")
+        _set_num(sheet, start_row, 23, part.estimated_weight_subtotal_t, Q4, "0.0000")
+        sheet.cell(row=start_row, column=25, value=part.die_type or "")
+        sheet.cell(row=start_row, column=26, value=part.die_method or "")
+        sheet.cell(row=start_row, column=27, value=part.production_mode or "")
+        sheet.cell(row=start_row, column=28, value=part.needs_end_effector or "")
+        sheet.cell(row=start_row, column=29, value=part.part_grade or "")
+        sheet.cell(row=start_row, column=30, value=part.remark or "").alignment = self._left
 
         if not processes:
             return n_rows
 
         for offset, process in enumerate(processes):
             excel_row = start_row + offset
-            sheet.cell(row=excel_row, column=13, value=process.process_seq)
-            sheet.cell(row=excel_row, column=14, value=process.process_code or "")
-            sheet.cell(row=excel_row, column=15, value=process.die_sets)
-            _set_num(sheet, excel_row, 16, process.die_length, Q2, "0.00")
-            _set_num(sheet, excel_row, 17, process.die_width, Q2, "0.00")
-            _set_num(sheet, excel_row, 18, process.die_height, Q2, "0.00")
-            _set_num(sheet, excel_row, 19, process.hollow_factor, Q4, "0.0000")
-            _set_num(sheet, excel_row, 20, process.estimated_weight_t, Q4, "0.0000")
-            sheet.cell(row=excel_row, column=22, value=process.tonnage)
-            _set_num(sheet, excel_row, 29, process.alloc_ratio, Q2, "0.00")
-            sheet.cell(row=excel_row, column=29).fill = _RATIO_FILL
-            sheet.cell(row=excel_row, column=30, value=process.die_number or "")
+            sheet.cell(row=excel_row, column=15, value=process.process_seq)
+            sheet.cell(row=excel_row, column=16, value=process.process_code or "")
+            sheet.cell(row=excel_row, column=17, value=process.die_sets)
+            _set_num(sheet, excel_row, 18, process.die_length, Q2, "0.00")
+            _set_num(sheet, excel_row, 19, process.die_width, Q2, "0.00")
+            _set_num(sheet, excel_row, 20, process.die_height, Q2, "0.00")
+            _set_num(sheet, excel_row, 21, process.hollow_factor, Q4, "0.0000")
+            _set_num(sheet, excel_row, 22, process.estimated_weight_t, Q4, "0.0000")
+            sheet.cell(row=excel_row, column=24, value=process.tonnage)
+            _set_num(sheet, excel_row, _RATIO_COL, process.alloc_ratio, Q2, "0.00")
+            sheet.cell(row=excel_row, column=_RATIO_COL).fill = _RATIO_FILL
+            sheet.cell(row=excel_row, column=_DIE_NUMBER_COL, value=process.die_number or "")
         return n_rows
 
 

@@ -218,3 +218,5 @@ def test_basis_text_mentions_inherit() -> None:
         inherited_from_process_seq="OP10",
     )
     assert text.startswith("继承 LEFT OP10 重量；")
+    assert " / 10 万台 = " in text
+    assert "10.0000" not in text

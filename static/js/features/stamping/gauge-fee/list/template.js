@@ -210,7 +210,7 @@ export function gaugeFeeListTemplate() {
                     </div>
                     <div>
                         <label class="text-[10px] font-semibold text-[#616161] tracking-wider mb-1 block">项目分摊数量（万台） <span class="text-[#FF1E27]">*</span></label>
-                        <input type="text" id="gflEditAllocQty" required inputmode="decimal"
+                        <input type="text" id="gflEditAllocQty" required inputmode="numeric"
                                class="w-full h-8 px-3 text-xs font-mono bg-[#0a0a0c] border border-[#2c2c2c] text-white placeholder:text-[#616161] focus:outline-none focus:border-[#ff5252]"
                                placeholder="如 10" autocomplete="off">
                     </div>
@@ -275,7 +275,7 @@ export function renderTableRows(records) {
             <td class="px-2 py-2 overflow-hidden text-[12px] font-bold text-[#F0F0F2] truncate" title="${esc(record.part_number)}">${esc(record.part_number)}</td>
             <td class="px-2 py-2 overflow-hidden text-[11px] text-[#8E8E93] truncate" title="${esc(record.part_name)}">${esc(record.part_name)}</td>
             <td class="px-2 py-1.5 text-right font-mono font-black tabular-nums text-[12px] text-[#FF1E27] bg-[#1A080A] border-x border-[#FF1E27]/20">${esc(fmtNum(record.gauge_fee, 4))}</td>
-            <td class="${numCell}">${esc(fmtNum(record.allocation_qty, 4))}</td>
+            <td class="${numCell}">${esc(fmtNum(record.allocation_qty, 0))}</td>
             <td class="px-1 py-2 text-center"><span class="text-[9px] font-medium ${statusClass}">${esc(record.status_label || record.status)}</span></td>
             <td class="px-1 py-2 text-center">
                 <div class="inline-flex items-center justify-center gap-0.5 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto focus-within:opacity-100 focus-within:pointer-events-auto transition-opacity duration-100">

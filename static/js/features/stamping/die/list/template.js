@@ -48,6 +48,18 @@ export function dieListTemplate() {
                             </select>
                         </label>
                         <label class="flex flex-col gap-1">
+                            <span class="text-[10px] text-[#555555] tracking-wider">供应商</span>
+                            <select id="dieListSupplier" class="h-9 min-w-[160px] px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#9e9e9e] appearance-none cursor-pointer focus:outline-none focus:border-[#ff5252]">
+                                <option value="">请先选择项目</option>
+                            </select>
+                        </label>
+                        <label class="flex flex-col gap-1">
+                            <span class="text-[10px] text-[#555555] tracking-wider">版本</span>
+                            <select id="dieListVersion" class="h-9 min-w-[120px] px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#9e9e9e] appearance-none cursor-pointer focus:outline-none focus:border-[#ff5252]">
+                                <option value="">请先选择项目</option>
+                            </select>
+                        </label>
+                        <label class="flex flex-col gap-1">
                             <span class="text-[10px] text-[#555555] tracking-wider">零件号</span>
                             <input id="dieListPartNumber" type="text" placeholder="可选"
                                    class="h-9 min-w-[140px] px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#ffffff] placeholder:text-[#616161] focus:outline-none focus:border-[#ff5252]">
@@ -59,15 +71,17 @@ export function dieListTemplate() {
                             查询
                         </button>
                     </div>
-                    <p class="mt-2 text-[10px] text-[#555555]">须先选择基地和项目后再查询。无版本维度。</p>
+                    <p class="mt-2 text-[10px] text-[#555555]">须先选择基地和项目后再查询。供应商、版本为附加筛；删除本范围仍按基地+项目整包删除。</p>
                 </div>
                 <div class="overflow-x-auto brabus-bg-grid">
-                    <table class="w-full table-fixed bg-transparent border-collapse" style="min-width: 880px;">
+                    <table class="w-full table-fixed bg-transparent border-collapse" style="min-width: 1100px;">
                         <colgroup>
                             <col style="width: 8px">
                             <col style="width: 56px">
-                            <col style="width: 180px">
+                            <col style="width: 160px">
                             <col>
+                            <col style="width: 140px">
+                            <col style="width: 72px">
                             <col style="width: 90px">
                             <col style="width: 90px">
                             <col style="width: 90px">
@@ -80,6 +94,8 @@ export function dieListTemplate() {
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">序号</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">零件号</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">零件名称</th>
+                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">供应商</th>
+                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">版本</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">模具类型</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">模具方式</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">生产方式</th>

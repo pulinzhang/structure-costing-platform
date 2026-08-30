@@ -10,7 +10,7 @@ import {
     updateDieFeeHud,
     updateDieFeeFilterCapsules,
     shortPartNumber,
-} from './template.js?v=2';
+} from './template.js?v=6';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -96,6 +96,8 @@ function applyHashFilters() {
     const year = qs.get('year') || '';
     const location = qs.get('location') || '';
     const vehicle = qs.get('vehicle_model') || '';
+    const supplier = qs.get('stamping_supplier') || '';
+    const version = qs.get('version') || '';
     if (year) {
         const yearEl = document.getElementById('dieFeeYearFilter');
         if (yearEl) yearEl.dataset.pending = year;
@@ -108,7 +110,15 @@ function applyHashFilters() {
         const vehicleEl = document.getElementById('dieFeeVehicleFilter');
         if (vehicleEl) vehicleEl.dataset.pending = vehicle;
     }
-    if (year || location || vehicle) {
+    if (supplier) {
+        const supplierEl = document.getElementById('dieFeeSupplierFilter');
+        if (supplierEl) supplierEl.dataset.pending = supplier;
+    }
+    if (version) {
+        const versionEl = document.getElementById('dieFeeVersionFilter');
+        if (versionEl) versionEl.dataset.pending = version;
+    }
+    if (year || location || vehicle || supplier || version) {
         setAdvancedOpen(true);
     }
 }
@@ -156,17 +166,30 @@ function bindEvents() {
     document.getElementById('dieFeeBatchReverseBtn')?.addEventListener('click', () => openBatchAuditDrawer('reverse'));
 
     document.getElementById('dieFeeYearFilter')?.addEventListener('change', () => {
-        updateDieFeeFilterCapsules();
-        loadData(1);
-    });
-    document.getElementById('dieFeeLocationFilter')?.addEventListener('change', () => {
-        updateDieFeeFilterCapsules();
-        loadVehicleOptions().then(() => {
+        loadIdentityOptions().then(() => {
             updateDieFeeFilterCapsules();
             loadData(1);
         });
     });
+    document.getElementById('dieFeeLocationFilter')?.addEventListener('change', () => {
+        loadVehicleOptions().then(() => loadIdentityOptions().then(() => {
+            updateDieFeeFilterCapsules();
+            loadData(1);
+        }));
+    });
     document.getElementById('dieFeeVehicleFilter')?.addEventListener('change', () => {
+        loadIdentityOptions().then(() => {
+            updateDieFeeFilterCapsules();
+            loadData(1);
+        });
+    });
+    document.getElementById('dieFeeSupplierFilter')?.addEventListener('change', () => {
+        loadVersionOptions().then(() => {
+            updateDieFeeFilterCapsules();
+            loadData(1);
+        });
+    });
+    document.getElementById('dieFeeVersionFilter')?.addEventListener('change', () => {
         updateDieFeeFilterCapsules();
         loadData(1);
     });
@@ -250,6 +273,7 @@ async function loadFilterOptions() {
         fillSelect('dieFeeYearFilter', data.years || []);
         fillSelect('dieFeeLocationFilter', data.locations || []);
         await loadVehicleOptions();
+        await loadIdentityOptions();
     } catch (error) {
         showToast(error.message || '加载筛选失败', 'error');
     }
@@ -268,6 +292,42 @@ async function loadVehicleOptions() {
     }
 }
 
+async function loadIdentityOptions() {
+    const year = document.getElementById('dieFeeYearFilter')?.value || '';
+    const location = document.getElementById('dieFeeLocationFilter')?.value || '';
+    const vehicle = document.getElementById('dieFeeVehicleFilter')?.value || '';
+    if (!year || !location || !vehicle) {
+        fillSelect('dieFeeSupplierFilter', []);
+        fillSelect('dieFeeVersionFilter', []);
+        return;
+    }
+    try {
+        const supplierEl = document.getElementById('dieFeeSupplierFilter');
+        const supplier = supplierEl?.dataset.pending || supplierEl?.value || '';
+        const res = await HttpClient.get(`${API_BASE}/filters`, {
+            params: {
+                year,
+                location,
+                vehicle_model: vehicle,
+                stamping_supplier: supplier || undefined,
+            },
+        });
+        fillSelect('dieFeeSupplierFilter', res.data?.stamping_suppliers || []);
+        fillSelect('dieFeeVersionFilter', res.data?.versions || []);
+    } catch (error) {
+        showToast(error.message || '加载供应商/版本失败', 'error');
+    }
+}
+
+async function loadVersionOptions() {
+    const versionEl = document.getElementById('dieFeeVersionFilter');
+    if (versionEl) {
+        versionEl.value = '';
+        delete versionEl.dataset.pending;
+    }
+    await loadIdentityOptions();
+}
+
 function fillSelect(id, values) {
     const select = document.getElementById(id);
     if (!select) return;
@@ -283,7 +343,7 @@ function fillSelect(id, values) {
 }
 
 function resetFilters() {
-    ['dieFeeYearFilter', 'dieFeeLocationFilter', 'dieFeeVehicleFilter', 'dieFeeAuditStatusFilter'].forEach((id) => {
+    ['dieFeeYearFilter', 'dieFeeLocationFilter', 'dieFeeVehicleFilter', 'dieFeeSupplierFilter', 'dieFeeVersionFilter', 'dieFeeAuditStatusFilter'].forEach((id) => {
         const el = document.getElementById(id);
         if (el) el.value = '';
     });
@@ -307,6 +367,8 @@ function collectScopeFilters() {
 function collectListFilters() {
     return {
         ...collectScopeFilters(),
+        stamping_supplier: document.getElementById('dieFeeSupplierFilter')?.value || '',
+        version: document.getElementById('dieFeeVersionFilter')?.value || '',
         audit_status: document.getElementById('dieFeeAuditStatusFilter')?.value || '',
         part_number: (document.getElementById('dieFeePartNumberFilter')?.value || '').trim(),
         only_zero: feeState.onlyZero,
@@ -320,6 +382,10 @@ function hasScope(scope) {
 
 function scopeLabel(scope) {
     if (!hasScope(scope)) return '—';
+    if (scope.stamping_supplier || scope.version) {
+        const extra = [scope.stamping_supplier, scope.version].filter(Boolean).join(' · ');
+        return `${scope.location} · ${scope.vehicle_model} · ${extra}`;
+    }
     return `${scope.location} · ${scope.vehicle_model}`;
 }
 
@@ -359,6 +425,8 @@ async function loadData(page = 1) {
             year: Number(filters.year),
             location: filters.location,
             vehicle_model: filters.vehicle_model,
+            stamping_supplier: filters.stamping_supplier || undefined,
+            version: filters.version || undefined,
             part_number: filters.part_number || undefined,
             audit_status: filters.audit_status || undefined,
             only_zero: filters.only_zero || undefined,
@@ -461,6 +529,8 @@ function fillViewFieldsFromRecord(record) {
     fillViewField('die-fee-view-year', record.year);
     fillViewField('die-fee-view-location', record.location);
     fillViewField('die-fee-view-vehicle', record.vehicle_model);
+    fillViewField('die-fee-view-supplier', record.stamping_supplier);
+    fillViewField('die-fee-view-version', record.version);
     fillPartNumberFields('die-fee-view', record.part_number);
     fillViewField('die-fee-view-part-name', record.part_name);
     fillViewField('die-fee-view-seq-no', record.seq_no);
@@ -476,7 +546,7 @@ function fillViewFieldsFromRecord(record) {
     fillViewField('die-fee-view-adjustment', formatDecimal(record.adjustment_amount, 4));
     fillViewField('die-fee-view-final-fee', formatDecimal(record.final_die_fee, 4));
     fillViewField('die-fee-view-unit-price', formatDecimal(record.unit_price, 4));
-    fillViewField('die-fee-view-allocation-qty', formatDecimal(record.allocation_qty, 4));
+    fillViewField('die-fee-view-allocation-qty', formatDecimal(record.allocation_qty, 0));
     fillViewField('die-fee-view-remark', record.remark);
     fillViewField('die-fee-view-audit-status', auditStatusLabel(record.audit_status));
     fillViewField('die-fee-view-audited-by', record.audited_by);
@@ -557,6 +627,8 @@ function openEditDrawer(record) {
     fillViewField('die-fee-edit-location', record.location);
     fillPartNumberFields('die-fee-edit', record.part_number);
     fillViewField('die-fee-edit-vehicle', record.vehicle_model);
+    fillViewField('die-fee-edit-supplier', record.stamping_supplier);
+    fillViewField('die-fee-edit-version', record.version);
     fillViewField('die-fee-edit-production-mode', record.production_mode);
     fillViewField('die-fee-edit-price-kind', priceKindLabel(record.price_kind));
     fillViewField('die-fee-edit-die-fee', formatDecimal(record.die_fee, 4));
@@ -675,6 +747,8 @@ async function exportExcel() {
                 year: Number(filters.year),
                 location: filters.location,
                 vehicle_model: filters.vehicle_model,
+                stamping_supplier: filters.stamping_supplier || undefined,
+                version: filters.version || undefined,
                 audit_status: filters.audit_status || undefined,
                 part_number: filters.part_number || undefined,
                 only_zero: filters.only_zero || undefined,

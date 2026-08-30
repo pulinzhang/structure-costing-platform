@@ -42,6 +42,14 @@ class StampingPartScopeIdentity(TypedDict):
     part_name: str
 
 
+class StampingPartDieMatchIdentity(TypedDict):
+    """基地+项目下工艺零件身份（布点回填供应商/版本）。"""
+
+    part_number: str
+    stamping_supplier: str
+    version: str
+
+
 logger = logging.getLogger("repository.stamping.part")
 
 
@@ -98,6 +106,34 @@ class StampingPartRepository:
             seen[number] = (part_name or "").strip()
             order.append(number)
         return [{"part_number": number, "part_name": seen[number]} for number in order]
+
+    def list_die_match_identities(
+        self,
+        db: Session,
+        *,
+        location: str,
+        vehicle_model: str,
+    ) -> list[StampingPartDieMatchIdentity]:
+        rows = (
+            db.query(
+                StampingPart.part_number,
+                StampingPart.stamping_supplier,
+                StampingPart.version,
+            )
+            .filter(
+                StampingPart.location == location,
+                StampingPart.vehicle_model == vehicle_model,
+            )
+            .all()
+        )
+        return [
+            {
+                "part_number": (part_number or "").strip(),
+                "stamping_supplier": (stamping_supplier or "").strip(),
+                "version": (version or "").strip(),
+            }
+            for part_number, stamping_supplier, version in rows
+        ]
 
     def get_by_id(self, db: Session, part_id: int) -> StampingPart | None:
         from sqlalchemy.orm import selectinload

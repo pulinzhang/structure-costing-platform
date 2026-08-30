@@ -6,6 +6,7 @@ from collections.abc import Generator
 from decimal import Decimal
 
 import pytest
+from pydantic import ValidationError
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
@@ -96,7 +97,8 @@ def test_create_normalizes_vehicle_and_lists(memory_db: Session) -> None:
     assert created.vehicle_model == "T13J"
     assert created.location == "芜湖"
     assert created.steel_plate_unit_price == Decimal("3.3600")
-    assert created.allocation_qty == Decimal("10.0000")
+    assert created.allocation_qty == Decimal("10")
+    assert created.model_dump(mode="json")["allocation_qty"] == "10"
     assert created.status == STATUS_EFFECTIVE
     assert created.status_label == "生效"
 
@@ -192,7 +194,7 @@ def test_wuhu_t13j_full_lifecycle(memory_db: Session) -> None:
     assert created.vehicle_model == "T13J"
     assert created.steel_plate_unit_price == Decimal("3.3600")
     assert created.progressive_die_unit_price == Decimal("5.1500")
-    assert created.allocation_qty == Decimal("10.0000")
+    assert created.allocation_qty == Decimal("10")
     assert created.status == STATUS_EFFECTIVE
 
     detail = service.get_by_id(memory_db, created.id)
@@ -243,7 +245,7 @@ def test_wuhu_t13j_full_lifecycle(memory_db: Session) -> None:
         current_user=SYSTEM_USER,
     )
     assert restored.status == STATUS_EFFECTIVE
-    assert restored.allocation_qty == Decimal("10.0000")
+    assert restored.allocation_qty == Decimal("10")
 
     with pytest.raises(BusinessException) as exc_info:
         service.create(memory_db, _create_dto(), current_user=SYSTEM_USER)
@@ -252,3 +254,10 @@ def test_wuhu_t13j_full_lifecycle(memory_db: Session) -> None:
     service.delete(memory_db, created.id)
     with pytest.raises(NotFoundException):
         service.get_by_id(memory_db, created.id)
+
+
+def test_allocation_qty_rejects_fraction() -> None:
+    with pytest.raises(ValidationError):
+        _create_dto(allocation_qty=Decimal("10.5"))
+    with pytest.raises(ValidationError):
+        _create_dto(allocation_qty=Decimal("0"))

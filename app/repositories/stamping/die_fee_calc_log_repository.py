@@ -59,6 +59,8 @@ class StampingDieFeeCalcLogRepository:
         year: int | None = None,
         location: str | None = None,
         vehicle_model: str | None = None,
+        stamping_supplier: str | None = None,
+        version: str | None = None,
         skip: int = 0,
         limit: int = 20,
     ) -> tuple[list[StampingDieFeeCalcLog], int]:
@@ -69,6 +71,10 @@ class StampingDieFeeCalcLogRepository:
             query = query.filter(StampingDieFeeCalcLog.location == location)
         if vehicle_model:
             query = query.filter(StampingDieFeeCalcLog.vehicle_model == vehicle_model)
+        if stamping_supplier:
+            query = query.filter(StampingDieFeeCalcLog.stamping_supplier == stamping_supplier)
+        if version:
+            query = query.filter(StampingDieFeeCalcLog.version == version)
         total = query.count()
         rows = query.order_by(StampingDieFeeCalcLog.id.desc()).offset(skip).limit(limit).all()
         return rows, total

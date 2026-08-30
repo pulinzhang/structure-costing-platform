@@ -1,13 +1,15 @@
 import {
     dieFeeCalcTemplate,
     renderCalcHistoryPagination,
-} from './template.js?v=1';
+    CALC_HISTORY_COLSPAN,
+} from './template.js?v=2';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
 } from '../../../../page-size.js?v=2';
 
 const API_BASE = '/api/stamping/die-fees';
+const DIE_FILTERS_API = '/api/stamping/die/filters';
 const CALC_API = `${API_BASE}/calc`;
 const CALC_READY_API = `${API_BASE}/calc/ready`;
 const CALC_TASK_API = `${API_BASE}/calc/progress`;
@@ -70,7 +72,15 @@ function bindEvents() {
         loadFilters(true);
         loadCalcReady();
     });
-    document.getElementById('calcVehicleModel')?.addEventListener('change', () => loadCalcReady());
+    document.getElementById('calcVehicleModel')?.addEventListener('change', () => {
+        loadIdentityFilters(true);
+        loadCalcReady();
+    });
+    document.getElementById('calcSupplier')?.addEventListener('change', () => {
+        loadVersionOptions();
+        loadCalcReady();
+    });
+    document.getElementById('calcVersion')?.addEventListener('change', () => loadCalcReady());
     document.getElementById('startCalcBtn')?.addEventListener('click', () => startCalculation());
     document.getElementById('calcHistoryRefreshBtn')?.addEventListener('click', () => loadCalcHistory(1));
     document.getElementById('calcHistoryPagination')?.addEventListener('click', (event) => {
@@ -82,12 +92,12 @@ function bindEvents() {
     });
 }
 
-function fillSelect(id, values, preferredValue) {
+function fillSelect(id, values, preferredValue, placeholder = '请选择') {
     const select = document.getElementById(id);
     if (!select) return;
     const current = preferredValue != null ? preferredValue : select.value;
     select.innerHTML =
-        '<option value="">请选择</option>' +
+        `<option value="">${esc(placeholder)}</option>` +
         values.map((value) => {
             const text = String(value);
             return `<option value="${esc(text)}"${text === String(current) ? ' selected' : ''}>${esc(text)}</option>`;
@@ -103,9 +113,47 @@ async function loadFilters(keepVehicle) {
         const filters = res.data || {};
         fillSelect('calcLocation', filters.locations || []);
         fillSelect('calcVehicleModel', filters.vehicle_models || [], keepVehicle ? undefined : '');
+        await loadIdentityFilters(!keepVehicle);
     } catch (error) {
         showToast(error.message || '加载筛选项失败', 'error');
     }
+}
+
+async function loadIdentityFilters(resetDownstream) {
+    const location = document.getElementById('calcLocation')?.value || '';
+    const vehicle = document.getElementById('calcVehicleModel')?.value || '';
+    if (resetDownstream) {
+        ['calcSupplier', 'calcVersion'].forEach((id) => {
+            const el = document.getElementById(id);
+            if (el) el.value = '';
+        });
+    }
+    if (!location || !vehicle) {
+        fillSelect('calcSupplier', [], '', '请先选择项目');
+        fillSelect('calcVersion', [], '', '请先选择项目');
+        return;
+    }
+    try {
+        const supplier = document.getElementById('calcSupplier')?.value || '';
+        const res = await HttpClient.get(DIE_FILTERS_API, {
+            params: {
+                location,
+                vehicle_model: vehicle,
+                stamping_supplier: supplier || undefined,
+            },
+        });
+        const data = res.data || {};
+        fillSelect('calcSupplier', data.stamping_suppliers || [], undefined, '全部');
+        fillSelect('calcVersion', data.versions || [], undefined, '全部');
+    } catch (error) {
+        showToast(error.message || '加载供应商/版本失败', 'error');
+    }
+}
+
+async function loadVersionOptions() {
+    const versionEl = document.getElementById('calcVersion');
+    if (versionEl) versionEl.value = '';
+    await loadIdentityFilters(false);
 }
 
 function resetFilters() {
@@ -135,6 +183,10 @@ async function loadCalcReady() {
         const params = { year };
         if (location) params.location = location;
         if (vehicleModel) params.vehicle_model = vehicleModel;
+        const supplier = document.getElementById('calcSupplier')?.value || '';
+        const version = document.getElementById('calcVersion')?.value || '';
+        if (supplier) params.stamping_supplier = supplier;
+        if (version) params.version = version;
         const res = await HttpClient.get(CALC_READY_API, { params });
         const data = res.data || {};
         setReady(
@@ -190,7 +242,7 @@ function validateReady() {
 async function loadCalcHistory(page = calcState.history.page) {
     const body = document.getElementById('calcHistoryBody');
     if (!body) return;
-    body.innerHTML = `<tr><td colspan="10" class="py-8 text-center text-[#555]">加载中..</td></tr>`;
+            body.innerHTML = `<tr><td colspan="${CALC_HISTORY_COLSPAN}" class="py-8 text-center text-[#555]">加载中..</td></tr>`;
     try {
         const res = await HttpClient.get(CALC_LOGS_API, {
             params: { page, size: calcState.history.size },
@@ -212,7 +264,7 @@ async function loadCalcHistory(page = calcState.history.page) {
             );
         }
     } catch (error) {
-        body.innerHTML = `<tr><td colspan="10" class="py-8 text-center text-[#ef5350]">加载失败</td></tr>`;
+            body.innerHTML = `<tr><td colspan="${CALC_HISTORY_COLSPAN}" class="py-8 text-center text-[#ef5350]">加载失败</td></tr>`;
     }
 }
 
@@ -231,7 +283,7 @@ function renderHistoryRows(items) {
     const body = document.getElementById('calcHistoryBody');
     if (!body) return;
     if (!items.length) {
-        body.innerHTML = `<tr><td colspan="10" class="py-8 text-center text-[#555]">暂无计算记录</td></tr>`;
+        body.innerHTML = `<tr><td colspan="${CALC_HISTORY_COLSPAN}" class="py-8 text-center text-[#555]">暂无计算记录</td></tr>`;
         return;
     }
     body.innerHTML = items.map((item) => {
@@ -244,6 +296,8 @@ function renderHistoryRows(items) {
                 <td class="py-2 px-2 font-mono text-[#ccc]">${esc(item.year)}</td>
                 <td class="py-2 px-2 text-[#ccc]">${esc(item.location || '-')}</td>
                 <td class="py-2 px-2 text-[#ccc]">${esc(item.vehicle_model || '-')}</td>
+                <td class="py-2 px-2 text-[#ccc] whitespace-nowrap">${esc(item.stamping_supplier || '全部')}</td>
+                <td class="py-2 px-2 text-[#ccc] whitespace-nowrap">${esc(item.version || '全部')}</td>
                 <td class="py-2 px-2 text-center text-[9px] ${status.className}">${status.label}</td>
                 <td class="py-2 px-2 font-mono text-right tabular-nums text-[#777]">${fmtInt(item.total_parts)}</td>
                 <td class="py-2 px-2 font-mono text-right tabular-nums text-[#777]">${fmtInt(item.success_count)}</td>
@@ -254,7 +308,9 @@ function renderHistoryRows(items) {
                     ${item.status === 'failed' ? '' : `
                     <button type="button" class="calc-view-result-btn text-[9px] text-[#777] hover:text-white mr-2"
                         data-year="${esc(item.year)}" data-location="${esc(item.location || '')}"
-                        data-vehicle="${esc(item.vehicle_model || '')}">结果</button>`}
+                        data-vehicle="${esc(item.vehicle_model || '')}"
+                        data-supplier="${esc(item.stamping_supplier || '')}"
+                        data-version="${esc(item.version || '')}">结果</button>`}
                     `}
                     ${calcState.canDelete !== false && !isProcessing ? `
                     <button type="button" class="calc-delete-log-btn text-[9px] text-[#777] hover:text-[#ef5350]" data-log-id="${esc(item.id)}">删除</button>` : ''}
@@ -270,6 +326,8 @@ function renderHistoryRows(items) {
             if (btn.dataset.year) qs.set('year', btn.dataset.year);
             if (btn.dataset.location) qs.set('location', btn.dataset.location);
             if (btn.dataset.vehicle) qs.set('vehicle_model', btn.dataset.vehicle);
+            if (btn.dataset.supplier) qs.set('stamping_supplier', btn.dataset.supplier);
+            if (btn.dataset.version) qs.set('version', btn.dataset.version);
             window.location.hash = `/stamping-die-fee?${qs.toString()}`;
         });
     });
@@ -334,6 +392,8 @@ async function startCalculation() {
     const year = parseInt(document.getElementById('calcYear')?.value, 10);
     const location = document.getElementById('calcLocation')?.value || '';
     const vehicleModel = document.getElementById('calcVehicleModel')?.value || '';
+    const supplier = document.getElementById('calcSupplier')?.value || '';
+    const version = document.getElementById('calcVersion')?.value || '';
     if (Number.isNaN(year) || !location || !vehicleModel) {
         showToast(SCOPE_REQUIRED_MESSAGE, 'warning');
         return;
@@ -345,11 +405,14 @@ async function startCalculation() {
     setCalculating(true);
     showProgress(0, '已提交计算队列');
     try {
-        const response = await HttpClient.post(CALC_API, {
+        const payload = {
             year,
             location,
             vehicle_model: vehicleModel,
-        });
+        };
+        if (supplier) payload.stamping_supplier = supplier;
+        if (version) payload.version = version;
+        const response = await HttpClient.post(CALC_API, payload);
         const taskId = response.data?.task_id;
         if (!taskId) throw new Error('未返回任务 ID');
         loadCalcHistory(1);
@@ -438,7 +501,7 @@ function startPolling(taskId) {
 function setCalculating(isCalculating) {
     calcState.isCalculating = isCalculating;
     const startBtn = document.getElementById('startCalcBtn');
-    ['calcYear', 'calcLocation', 'calcVehicleModel', 'calcResetBtn'].forEach((id) => {
+    ['calcYear', 'calcLocation', 'calcVehicleModel', 'calcSupplier', 'calcVersion', 'calcResetBtn'].forEach((id) => {
         const el = document.getElementById(id);
         if (el) el.disabled = isCalculating;
     });

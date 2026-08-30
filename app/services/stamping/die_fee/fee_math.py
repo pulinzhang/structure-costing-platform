@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from decimal import Decimal
 
-from app.common.money import Q4, format_money, quantize_money
+from app.common.money import Q0, Q4, format_money, quantize_money
 
 PRICE_KIND_PROGRESSIVE = "progressive"
 PRICE_KIND_STEEL_PLATE = "steel_plate"
@@ -72,7 +72,7 @@ def build_line_basis_text(
     weight = format_money(estimated_weight_t, Q4, 4)
     price = format_money(unit_price, Q4, 4)
     ratio = format_money(alloc_ratio, Decimal("0.01"), 2)
-    qty = format_money(allocation_qty, Q4, 4)
+    qty = format_money(allocation_qty, Q0, 0)
     fee = format_money(line_die_fee, Q4, 4)
     inherit_bit = ""
     from_part = (inherited_from_part_number or "").strip()

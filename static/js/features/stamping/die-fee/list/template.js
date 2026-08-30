@@ -107,6 +107,8 @@ export function dieFeeListTemplate() {
                                 <span id="dieFeeCapsuleYear" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部年度</span>
                                 <span id="dieFeeCapsuleLocation" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部基地</span>
                                 <span id="dieFeeCapsuleVehicle" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部项目</span>
+                                <span id="dieFeeCapsuleSupplier" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部供应商</span>
+                                <span id="dieFeeCapsuleVersion" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部版本</span>
                                 <span id="dieFeeCapsuleZero" class="hidden bg-[#FF1E27]/15 border border-[#FF1E27]/40 text-[#FF1E27] px-2.5 py-1 rounded-md font-bold">零价筛选中</span>
                             </div>
                         </div>
@@ -130,6 +132,8 @@ export function dieFeeListTemplate() {
                             ${filterSelect('dieFeeYearFilter', '年度')}
                             ${filterSelect('dieFeeLocationFilter', '基地')}
                             ${filterSelect('dieFeeVehicleFilter', '项目')}
+                            ${filterSelect('dieFeeSupplierFilter', '供应商')}
+                            ${filterSelect('dieFeeVersionFilter', '版本')}
                             ${filterSelect('dieFeeAuditStatusFilter', '审核状态')}
                             ${filterInput('dieFeePartNumberFilter', '零件号', '短号或完整零件号')}
                             <button id="dieFeeResetBtn" type="button"
@@ -138,16 +142,18 @@ export function dieFeeListTemplate() {
                                 重置
                             </button>
                         </div>
-                        <p class="mt-2 text-[10px] text-[#555555]">查询 / 导出 / 批量删除 / 审核 / 反审核须选定年度、基地、项目。</p>
+                        <p class="mt-2 text-[10px] text-[#555555]">查询 / 导出 / 批量删除 / 审核 / 反审核须选定年度、基地、项目。供应商、版本为附加筛。</p>
                     </div>
                 </div>
 
                 <div class="overflow-x-auto brabus-bg-grid">
-                    <table class="w-full min-w-[1880px] bg-transparent">
+                    <table class="w-full min-w-[2100px] bg-transparent">
                         <thead>
                             <tr class="border-b border-[#17171C] bg-[#0B0B0D]/95">
                                 <th class="p-0 w-0"></th>
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">核价维度</th>
+                                <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">供应商</th>
+                                <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">版本</th>
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#A1A1A6] whitespace-nowrap">零件号</th>
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">零件名称</th>
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap border-r border-[#22222A]">生产方式</th>
@@ -302,6 +308,8 @@ export function dieFeeListTemplate() {
                             ${viewRow('基地', 'die-fee-edit-location')}
                             ${partNumberViewBlock('die-fee-edit')}
                             ${viewRow('项目', 'die-fee-edit-vehicle')}
+                            ${viewRow('供应商', 'die-fee-edit-supplier')}
+                            ${viewRow('版本', 'die-fee-edit-version')}
                             ${viewRow('生产方式', 'die-fee-edit-production-mode')}
                             ${viewRow('取价档', 'die-fee-edit-price-kind')}
                         </div>
@@ -345,6 +353,8 @@ export function dieFeeListTemplate() {
                         ${partNumberViewBlock('die-fee-view')}
                         ${viewRow('零件名称', 'die-fee-view-part-name')}
                         ${viewRow('项目', 'die-fee-view-vehicle')}
+                        ${viewRow('供应商', 'die-fee-view-supplier')}
+                        ${viewRow('版本', 'die-fee-view-version')}
                         ${viewRow('序号', 'die-fee-view-seq-no')}
                         ${viewRow('生产方式', 'die-fee-view-production-mode')}
                         ${viewRow('取价档', 'die-fee-view-price-kind')}
@@ -460,6 +470,8 @@ export function renderDieFeeRows(records) {
                 <div class="font-bold text-white text-[12px] group-hover:text-[#FF1E27] transition-colors">${esc(row.year)}</div>
                 <div class="text-[#555555] text-[10px] mt-0.5">${esc(row.location)} · ${esc(row.vehicle_model)}</div>
             </td>
+            <td class="${cell} ${muted} font-sans whitespace-nowrap">${esc(row.stamping_supplier)}</td>
+            <td class="${cell} ${muted} font-mono whitespace-nowrap">${esc(row.version)}</td>
             <td class="${cell} font-sans whitespace-nowrap">
                 ${partNumberCell(row.part_number)}
             </td>
@@ -469,7 +481,7 @@ export function renderDieFeeRows(records) {
                 <div class="text-[10px] text-[#555555] mt-0.5">${esc(priceKind)}</div>
             </td>
             <td class="${cell} text-right ${muted} tabular-nums">${formatNum(row.unit_price, 4)}</td>
-            <td class="${cell} text-right ${muted} tabular-nums">${formatNum(row.allocation_qty, 4)}</td>
+            <td class="${cell} text-right ${muted} tabular-nums">${formatNum(row.allocation_qty, 0)}</td>
             <td class="${cell} text-right tabular-nums ${muted}">${formatNum(row.die_fee, 4)}</td>
             <td class="${cell} text-right ${muted} tabular-nums ${zoneEnd}">${adj}</td>
             <td class="${finalCell}">${formatNum(row.final_die_fee, 4)}</td>
@@ -585,6 +597,8 @@ export function updateDieFeeFilterCapsules() {
     const year = document.getElementById('dieFeeYearFilter')?.value || '';
     const location = document.getElementById('dieFeeLocationFilter')?.value || '';
     const vehicle = document.getElementById('dieFeeVehicleFilter')?.value || '';
+    const supplier = document.getElementById('dieFeeSupplierFilter')?.value || '';
+    const version = document.getElementById('dieFeeVersionFilter')?.value || '';
     const audit = document.getElementById('dieFeeAuditStatusFilter')?.value || '';
     const part = document.getElementById('dieFeePartNumberFilter')?.value.trim() || '';
 
@@ -594,6 +608,8 @@ export function updateDieFeeFilterCapsules() {
     const yearEl = document.getElementById('dieFeeCapsuleYear');
     const locationEl = document.getElementById('dieFeeCapsuleLocation');
     const vehicleEl = document.getElementById('dieFeeCapsuleVehicle');
+    const supplierEl = document.getElementById('dieFeeCapsuleSupplier');
+    const versionEl = document.getElementById('dieFeeCapsuleVersion');
     const countEl = document.getElementById('dieFeeAdvancedFilterCount');
 
     if (yearEl) {
@@ -608,8 +624,16 @@ export function updateDieFeeFilterCapsules() {
         vehicleEl.textContent = vehicle || '全部项目';
         vehicleEl.className = vehicle ? activeCapsule : idleCapsule;
     }
+    if (supplierEl) {
+        supplierEl.textContent = supplier || '全部供应商';
+        supplierEl.className = supplier ? activeCapsule : idleCapsule;
+    }
+    if (versionEl) {
+        versionEl.textContent = version || '全部版本';
+        versionEl.className = version ? activeCapsule : idleCapsule;
+    }
 
-    const advancedActive = [year, location, vehicle, audit, part].filter(Boolean).length;
+    const advancedActive = [year, location, vehicle, supplier, version, audit, part].filter(Boolean).length;
     if (countEl) countEl.textContent = `(${advancedActive})`;
 }
 

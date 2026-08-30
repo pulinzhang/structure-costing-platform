@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session
 
 from app.common.audit import audit_status_label
 from app.common.excel_workbook import resolve_worksheet
-from app.common.money import Q2, Q4, excel_money_cell
+from app.common.money import Q0, Q2, Q4, excel_money_cell
 from app.common.timezone import now
 from app.common.vehicle_model import normalize_vehicle_model
 from app.exceptions.base import BusinessException
@@ -32,15 +32,17 @@ logger = logging.getLogger("service.stamping_die_fee_export")
 
 _FONT = "微软雅黑"
 
-MAIN_COLS = 16
+MAIN_COLS = 18
 FEE_DETAIL_COLS = 6
 FEE_END_COL = MAIN_COLS + FEE_DETAIL_COLS
-COL_COUNT = 28
+COL_COUNT = 30
 HEADERS = [
     "序号",
     "年度",
     "基地",
     "项目",
+    "供应商",
+    "版本",
     "零件号",
     "零件名称",
     "生产方式",
@@ -71,6 +73,8 @@ WIDTHS = [
     8,
     10,
     12,
+    18,
+    10,
     16,
     18,
     12,
@@ -104,18 +108,18 @@ GROUP_H = 18
 HEADER_H = 22
 DATA_H = 24
 
-_FEE_HEADER_COLS = {11, 12, 13, 14, 15, 21}
-_MAIN_MONEY_COLS = {10, 11, 12, 13, 14, 15}
-_COL_LINE_FEE = 21
-_COL_FEE_BASIS = 22
+_FEE_HEADER_COLS = {13, 14, 15, 16, 17, 23}
+_MAIN_MONEY_COLS = {12, 13, 14, 15, 16, 17}
+_COL_LINE_FEE = 23
+_COL_FEE_BASIS = 24
 _COL_CHECK_START = FEE_END_COL + 1
-_COL_LENGTH = 24
-_COL_WIDTH = 25
-_COL_HEIGHT = 26
-_COL_HOLLOW = 27
-_COL_CHECK_WEIGHT = 28
-_FEE_MONEY_COLS = {19, 20, 21}
-_CHECK_NUM_COLS = {24, 25, 26, 27, 28}
+_COL_LENGTH = 26
+_COL_WIDTH = 27
+_COL_HEIGHT = 28
+_COL_HOLLOW = 29
+_COL_CHECK_WEIGHT = 30
+_FEE_MONEY_COLS = {21, 22, 23}
+_CHECK_NUM_COLS = {26, 27, 28, 29, 30}
 _CHECK_WEIGHT_FORMAT = "0.0000"
 
 
@@ -143,6 +147,10 @@ def _num(value: Any) -> Any:
 
 def _num_q2(value: Any) -> Any:
     return excel_money_cell(value, Q2, allow_negative=True)
+
+
+def _num_whole(value: Any) -> Any:
+    return excel_money_cell(value, Q0, allow_negative=False)
 
 
 def _check_weight_formula(row_idx: int) -> str:
@@ -186,12 +194,16 @@ class StampingDieFeeExportService:
         part_number: str | None,
         audit_status: str | None,
         only_zero: bool,
+        stamping_supplier: str | None = None,
+        version: str | None = None,
     ) -> tuple[bytes, str]:
         loc = location.strip()
         vehicle = normalize_vehicle_model(vehicle_model)
         if not loc or not vehicle:
             raise BusinessException("导出必须指定基地和项目")
         part = (part_number or "").strip() or None
+        supplier = (stamping_supplier or "").strip() or None
+        version_value = (version or "").strip() or None
 
         workbook = Workbook()
         _title, fee_count = self._write_to_workbook(
@@ -203,12 +215,19 @@ class StampingDieFeeExportService:
             part_number=part,
             audit_status=audit_status,
             only_zero=only_zero,
+            stamping_supplier=supplier,
+            version=version_value,
         )
 
         buffer = BytesIO()
         workbook.save(buffer)
         stamp = now().strftime("%Y%m%d_%H%M%S")
-        filename = f"冲压模具费_{year}_{loc}_{vehicle}_{stamp}.xlsx"
+        extra_bits = ""
+        if supplier:
+            extra_bits += f"_{supplier}"
+        if version_value:
+            extra_bits += f"_{version_value}"
+        filename = f"冲压模具费_{year}_{loc}_{vehicle}{extra_bits}_{stamp}.xlsx"
         logger.info("导出冲压模具费 %s 条主表 -> %s", fee_count, filename)
         return buffer.getvalue(), filename
 
@@ -223,6 +242,8 @@ class StampingDieFeeExportService:
         part_number: str | None,
         audit_status: str | None,
         only_zero: bool,
+        stamping_supplier: str | None = None,
+        version: str | None = None,
         sheet_title: str = "冲压模具费",
     ) -> tuple[str, int]:
         records = self.fee_repo.list_for_export(
@@ -233,6 +254,8 @@ class StampingDieFeeExportService:
             part_number=part_number,
             audit_status=audit_status,
             only_zero=only_zero,
+            stamping_supplier=stamping_supplier,
+            version=version,
         )
         process_by_id = self._load_source_processes(db, records)
         sheet = resolve_worksheet(workbook, sheet_title)
@@ -240,6 +263,8 @@ class StampingDieFeeExportService:
             year=year,
             location=location,
             vehicle_model=vehicle_model,
+            stamping_supplier=stamping_supplier,
+            version=version,
             part_number=part_number,
             audit_status=audit_status,
             only_zero=only_zero,
@@ -490,6 +515,8 @@ class StampingDieFeeExportService:
                 record.year,
                 record.location,
                 record.vehicle_model,
+                record.stamping_supplier or "",
+                record.version or "",
                 record.part_number,
                 record.part_name or "",
                 record.production_mode or "",
@@ -497,7 +524,7 @@ class StampingDieFeeExportService:
                 record.material or "",
                 _num(record.thickness),
                 _num(record.unit_price),
-                _num(record.allocation_qty),
+                _num_whole(record.allocation_qty),
                 _num(record.die_fee),
                 _num(record.adjustment_amount),
                 _num(record.final_die_fee),
@@ -510,19 +537,21 @@ class StampingDieFeeExportService:
                 if col == 1:
                     cell.font = _font(size=11, bold=True, color="37474F")
                     cell.alignment = self._center
-                elif col == 5:
+                elif col == 7:
                     cell.font = _font(bold=True, color="1565C0")
                     cell.alignment = self._left
-                elif col == 15:
+                elif col == 17:
                     cell.font = _font(size=11, bold=True, color="E65100")
                     cell.alignment = self._right
                     cell.fill = _fill("FFF3E0")
                 elif col in _MAIN_MONEY_COLS:
-                    cell.font = _font(bold=True) if col in {13, 14} else _font()
+                    cell.font = _font(bold=True) if col in {15, 16} else _font()
                     cell.alignment = self._right
                 else:
                     cell.font = _font()
-                    cell.alignment = self._left if col in {3, 4, 6, 7, 8, 9} else self._center
+                    cell.alignment = (
+                        self._left if col in {3, 4, 5, 6, 8, 9, 10, 11} else self._center
+                    )
 
         detail_values: list[Any] = [
             (item.process_seq or "") if item else "",
@@ -595,7 +624,7 @@ class StampingDieFeeExportService:
                 end_column=col,
             )
             cell = sheet.cell(row=start_row, column=col)
-            if col == 15:
+            if col == 17:
                 cell.fill = _fill("FFF3E0")
             else:
                 cell.fill = main_fill
@@ -615,6 +644,8 @@ class StampingDieFeeExportService:
         year: int,
         location: str,
         vehicle_model: str,
+        stamping_supplier: str | None,
+        version: str | None,
         part_number: str | None,
         audit_status: str | None,
         only_zero: bool,
@@ -624,6 +655,10 @@ class StampingDieFeeExportService:
             f"基地={location}",
             f"项目={vehicle_model}",
         ]
+        if stamping_supplier:
+            parts.append(f"供应商={stamping_supplier}")
+        if version:
+            parts.append(f"版本={version}")
         if part_number:
             parts.append(f"零件号含={part_number}")
         if audit_status:

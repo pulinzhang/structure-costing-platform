@@ -39,11 +39,33 @@ class StampingDieFeeService:
         self.fee_repo = StampingDieFeeRepository()
         self.die_repo = StampingDiePartRepository()
 
-    def list_filters(self, db: Session, location: str | None) -> StampingDieFeeFilterVO:
+    def list_filters(
+        self,
+        db: Session,
+        *,
+        location: str | None,
+        year: int | None = None,
+        vehicle_model: str | None = None,
+        stamping_supplier: str | None = None,
+    ) -> StampingDieFeeFilterVO:
+        supplier_value = (stamping_supplier or "").strip() or None
         return StampingDieFeeFilterVO(
             years=self.fee_repo.get_distinct_years(db),
             locations=self.die_repo.list_locations(db),
             vehicle_models=self.die_repo.list_vehicle_models(db, location=location),
+            stamping_suppliers=self.fee_repo.list_distinct_suppliers(
+                db,
+                year=year,
+                location=location,
+                vehicle_model=vehicle_model,
+            ),
+            versions=self.fee_repo.list_distinct_versions(
+                db,
+                year=year,
+                location=location,
+                vehicle_model=vehicle_model,
+                stamping_supplier=supplier_value,
+            ),
         )
 
     def get_by_id(self, db: Session, fee_id: int) -> StampingDieFeeVO:
@@ -61,6 +83,8 @@ class StampingDieFeeService:
             year=query.year,
             location=query.location,
             vehicle_model=query.vehicle_model,
+            stamping_supplier=query.stamping_supplier,
+            version=query.version,
             part_number=query.part_number,
             audit_status=query.audit_status,
             only_zero=bool(query.only_zero),
@@ -72,6 +96,8 @@ class StampingDieFeeService:
             year=query.year,
             location=query.location,
             vehicle_model=query.vehicle_model,
+            stamping_supplier=query.stamping_supplier,
+            version=query.version,
             part_number=query.part_number,
             audit_status=query.audit_status,
         )
@@ -79,6 +105,8 @@ class StampingDieFeeService:
             year=query.year,
             location=query.location,
             vehicle_model=query.vehicle_model,
+            stamping_supplier=query.stamping_supplier,
+            version=query.version,
             part_number=query.part_number,
             audit_status=query.audit_status,
             only_zero=bool(query.only_zero),

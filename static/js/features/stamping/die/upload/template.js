@@ -42,7 +42,7 @@ export function dieUploadTemplate() {
                                     <select id="dieVehicleModel" name="vehicle_model" required class="upload-input w-[280px] text-[11px]">
                                         <option value="">请先选择基地</option>
                                     </select>
-                                    <p class="mt-2 text-[10px] text-[#555555]">须先上传该基地+项目的冲压工艺确认表；选项来自已入库工艺，且须与文件名中的项目一致。</p>
+                        <p class="mt-2 text-[10px] text-[#555555]">须先上传该基地+项目的冲压工艺确认表；选项来自已入库工艺，且须与文件名中的项目一致。每个零件须能唯一对应工艺中的供应商与版本，否则整单拒绝。</p>
                                 </div>
                             </div>
                             <div class="h-px bg-[#1e1e1e] mx-6 mb-4"></div>

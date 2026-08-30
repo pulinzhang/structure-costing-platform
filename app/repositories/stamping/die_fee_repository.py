@@ -57,6 +57,19 @@ class StampingDieFeeRepository:
             StampingDieFee.vehicle_model == vehicle_model,
         )
 
+    def _apply_identity_filters(
+        self,
+        query: Query[StampingDieFee],
+        *,
+        stamping_supplier: str | None,
+        version: str | None,
+    ) -> Query[StampingDieFee]:
+        if stamping_supplier:
+            query = query.filter(StampingDieFee.stamping_supplier == stamping_supplier)
+        if version:
+            query = query.filter(StampingDieFee.version == version)
+        return query
+
     def count_by_scope_and_statuses(
         self,
         db: Session,
@@ -65,17 +78,20 @@ class StampingDieFeeRepository:
         location: str,
         vehicle_model: str,
         statuses: list[str],
+        stamping_supplier: str | None = None,
+        version: str | None = None,
     ) -> int:
-        return (
+        query = self._apply_identity_filters(
             self._scope_query(
                 db,
                 year=year,
                 location=location,
                 vehicle_model=vehicle_model,
-            )
-            .filter(StampingDieFee.audit_status.in_(statuses))
-            .count()
+            ),
+            stamping_supplier=stamping_supplier,
+            version=version,
         )
+        return query.filter(StampingDieFee.audit_status.in_(statuses)).count()
 
     def _build_list_query(
         self,
@@ -87,12 +103,18 @@ class StampingDieFeeRepository:
         part_number: str | None,
         audit_status: str | None,
         only_zero: bool,
+        stamping_supplier: str | None = None,
+        version: str | None = None,
     ) -> Query[StampingDieFee]:
-        query = self._scope_query(
-            db,
-            year=year,
-            location=location,
-            vehicle_model=vehicle_model,
+        query = self._apply_identity_filters(
+            self._scope_query(
+                db,
+                year=year,
+                location=location,
+                vehicle_model=vehicle_model,
+            ),
+            stamping_supplier=stamping_supplier,
+            version=version,
         )
         if part_number:
             query = query.filter(StampingDieFee.part_number.like(f"%{part_number}%"))
@@ -114,6 +136,8 @@ class StampingDieFeeRepository:
         only_zero: bool,
         skip: int,
         limit: int,
+        stamping_supplier: str | None = None,
+        version: str | None = None,
     ) -> tuple[list[StampingDieFee], int]:
         query = self._build_list_query(
             db,
@@ -123,6 +147,8 @@ class StampingDieFeeRepository:
             part_number=part_number,
             audit_status=audit_status,
             only_zero=only_zero,
+            stamping_supplier=stamping_supplier,
+            version=version,
         )
         total = query.count()
         rows = (
@@ -147,6 +173,8 @@ class StampingDieFeeRepository:
         vehicle_model: str,
         part_number: str | None,
         audit_status: str | None,
+        stamping_supplier: str | None = None,
+        version: str | None = None,
     ) -> DieFeeFilterSummary:
         query = self._build_list_query(
             db,
@@ -156,6 +184,8 @@ class StampingDieFeeRepository:
             part_number=part_number,
             audit_status=audit_status,
             only_zero=False,
+            stamping_supplier=stamping_supplier,
+            version=version,
         )
         row = query.with_entities(
             func.count(StampingDieFee.id).label("total_count"),
@@ -190,6 +220,8 @@ class StampingDieFeeRepository:
         part_number: str | None,
         audit_status: str | None,
         only_zero: bool,
+        stamping_supplier: str | None = None,
+        version: str | None = None,
     ) -> list[StampingDieFee]:
         query = self._build_list_query(
             db,
@@ -199,6 +231,8 @@ class StampingDieFeeRepository:
             part_number=part_number,
             audit_status=audit_status,
             only_zero=only_zero,
+            stamping_supplier=stamping_supplier,
+            version=version,
         )
         return (
             query.options(joinedload(StampingDieFee.items))
@@ -245,24 +279,34 @@ class StampingDieFeeRepository:
         year: int,
         location: str,
         vehicle_model: str,
+        stamping_supplier: str | None = None,
+        version: str | None = None,
     ) -> int:
-        fee_ids = [
-            row.id
-            for row in (
-                self._scope_query(db, year=year, location=location, vehicle_model=vehicle_model)
-                .with_entities(StampingDieFee.id)
-                .all()
-            )
-        ]
+        query = self._build_list_query(
+            db,
+            year=year,
+            location=location,
+            vehicle_model=vehicle_model,
+            part_number=None,
+            audit_status=None,
+            only_zero=False,
+            stamping_supplier=stamping_supplier,
+            version=version,
+        )
+        fee_ids = [row.id for row in query.with_entities(StampingDieFee.id).all()]
         if fee_ids:
             (
                 db.query(StampingDieFeeItem)
                 .filter(StampingDieFeeItem.fee_id.in_(fee_ids))
                 .delete(synchronize_session=False)
             )
-        count = self._scope_query(
-            db, year=year, location=location, vehicle_model=vehicle_model
-        ).delete(synchronize_session=False)
+            count = (
+                db.query(StampingDieFee)
+                .filter(StampingDieFee.id.in_(fee_ids))
+                .delete(synchronize_session=False)
+            )
+        else:
+            count = 0
         db.flush()
         return count
 
@@ -358,3 +402,54 @@ class StampingDieFeeRepository:
     def get_distinct_years(self, db: Session) -> list[int]:
         rows = db.query(StampingDieFee.year).distinct().order_by(StampingDieFee.year.desc()).all()
         return [row[0] for row in rows]
+
+    def list_distinct_suppliers(
+        self,
+        db: Session,
+        *,
+        year: int | None,
+        location: str | None,
+        vehicle_model: str | None,
+    ) -> list[str]:
+        if not year or not location or not vehicle_model:
+            return []
+        rows = (
+            self._scope_query(db, year=year, location=location, vehicle_model=vehicle_model)
+            .with_entities(StampingDieFee.stamping_supplier)
+            .filter(
+                StampingDieFee.stamping_supplier.isnot(None),
+                StampingDieFee.stamping_supplier != "",
+            )
+            .distinct()
+            .order_by(StampingDieFee.stamping_supplier.asc())
+            .all()
+        )
+        return [row[0] for row in rows if row[0]]
+
+    def list_distinct_versions(
+        self,
+        db: Session,
+        *,
+        year: int | None,
+        location: str | None,
+        vehicle_model: str | None,
+        stamping_supplier: str | None = None,
+    ) -> list[str]:
+        if not year or not location or not vehicle_model:
+            return []
+        query = self._apply_identity_filters(
+            self._scope_query(db, year=year, location=location, vehicle_model=vehicle_model),
+            stamping_supplier=stamping_supplier,
+            version=None,
+        )
+        rows = (
+            query.with_entities(StampingDieFee.version)
+            .filter(
+                StampingDieFee.version.isnot(None),
+                StampingDieFee.version != "",
+            )
+            .distinct()
+            .order_by(StampingDieFee.version.asc())
+            .all()
+        )
+        return [row[0] for row in rows if row[0]]

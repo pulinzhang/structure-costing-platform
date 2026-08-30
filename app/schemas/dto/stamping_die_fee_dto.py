@@ -34,17 +34,30 @@ class StampingDieFeeScopeDTO(BaseModel):
 
 
 class StampingDieFeeCalcDTO(StampingDieFeeScopeDTO):
-    """提交计算。"""
+    """提交计算。供应商/版本可选；锁范围仍是年+基地+项目。"""
+
+    stamping_supplier: str | None = None
+    version: str | None = None
+
+    @field_validator("stamping_supplier", "version", mode="before")
+    @classmethod
+    def _strip_identity(cls, value: object) -> str | None:
+        if value is None:
+            return None
+        text = str(value).strip()
+        return text or None
 
 
 class StampingDieFeeQuery(StampingDieFeeScopeDTO):
+    stamping_supplier: str | None = None
+    version: str | None = None
     part_number: str | None = None
     audit_status: str | None = None
     only_zero: bool = False
     page: int = Field(1, ge=1)
     size: int = Field(20, ge=1, le=500)
 
-    @field_validator("part_number", "audit_status", mode="before")
+    @field_validator("stamping_supplier", "version", "part_number", "audit_status", mode="before")
     @classmethod
     def _strip_optional(cls, value: object) -> str | None:
         if value is None:
@@ -96,6 +109,8 @@ class DieFeeInsertPayload:
     year: int
     location: str
     vehicle_model: str
+    stamping_supplier: str | None
+    version: str | None
     part_number: str
     source_die_part_id: int | None
     seq_no: int | None
@@ -136,6 +151,8 @@ class DieFeeCalcLogCreate:
     status: str
     detail_text: str
     started_at: datetime
+    stamping_supplier: str | None = None
+    version: str | None = None
     operator_id: int | None = None
     operator_name: str | None = None
     created_by: str | None = None

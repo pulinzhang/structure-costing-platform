@@ -9,7 +9,7 @@ from typing import Any
 
 from openpyxl import load_workbook
 
-from app.common.money import Q4, quantize_money
+from app.common.money import Q4, quantize_money, quantize_positive_whole
 from app.common.part_number import normalize_part_number_token
 from app.models.stamping.gauge_fee import (
     STATUS_EFFECTIVE,
@@ -62,6 +62,15 @@ def _cell_text(value: Any) -> str:
 def _normalize_header(value: Any) -> str:
     text = _cell_text(value).replace(" ", "").replace("\n", "")
     return _HEADER_ALIASES.get(text, text)
+
+
+def _parse_required_allocation_qty(value: Any, field_label: str) -> Decimal:
+    if value is None or _cell_text(value) == "":
+        raise ValueError(f"「{field_label}」不能为空")
+    try:
+        return quantize_positive_whole(value, label=field_label)
+    except InvalidOperation as exc:
+        raise ValueError(f"「{field_label}」须为正整数") from exc
 
 
 def _parse_required_money(value: Any, field_label: str) -> Decimal:
@@ -148,7 +157,7 @@ def parse_gauge_fee_excel(file_content: bytes) -> GaugeFeeParseResult:
                     else None,
                     HEADER_GAUGE_FEE,
                 )
-                allocation_qty = _parse_required_money(
+                allocation_qty = _parse_required_allocation_qty(
                     values[header_map[HEADER_ALLOCATION_QTY]]
                     if header_map[HEADER_ALLOCATION_QTY] < len(values)
                     else None,

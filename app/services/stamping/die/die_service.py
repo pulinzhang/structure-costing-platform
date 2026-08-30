@@ -38,16 +38,39 @@ class StampingDieService:
             raise BusinessException("请选择项目")
         return loc, vehicle
 
-    def list_scope_filters(self, db: Session, location: str | None) -> StampingDieScopeFilterVO:
+    def list_scope_filters(
+        self,
+        db: Session,
+        location: str | None,
+        vehicle_model: str | None = None,
+        stamping_supplier: str | None = None,
+    ) -> StampingDieScopeFilterVO:
+        location_value = (location or "").strip() or None
+        vehicle_value = normalize_vehicle_model(vehicle_model) or None
+        supplier_value = (stamping_supplier or "").strip() or None
         raw = self.stamping_part_repo.get_cascade_filter_options(
             db,
-            location=(location or "").strip() or None,
+            location=location_value,
             stamping_supplier=None,
             vehicle_model=None,
         )
+        suppliers: list[str] = []
+        versions: list[str] = []
+        if location_value and vehicle_value:
+            suppliers = self.die_part_repo.list_distinct_suppliers(
+                db, location=location_value, vehicle_model=vehicle_value
+            )
+            versions = self.die_part_repo.list_distinct_versions(
+                db,
+                location=location_value,
+                vehicle_model=vehicle_value,
+                stamping_supplier=supplier_value,
+            )
         return StampingDieScopeFilterVO(
             locations=list(raw["locations"]),
             vehicle_models=list(raw["vehicle_models"]),
+            stamping_suppliers=suppliers,
+            versions=versions,
         )
 
     def paginate(
@@ -59,6 +82,8 @@ class StampingDieService:
             db,
             location=location,
             vehicle_model=vehicle_model,
+            stamping_supplier=query.stamping_supplier,
+            version=query.version,
             part_number=query.part_number,
             skip=skip,
             limit=query.size,

@@ -335,6 +335,53 @@ class DatabaseConfig:
                     conn.execute(text("DROP INDEX IF EXISTS ix_die_part_alloc_status"))
                     conn.execute(text(f"ALTER TABLE {die_table} DROP COLUMN alloc_status"))
                 logger.info("已从 %s 删除列 alloc_status", die_table)
+            if "stamping_supplier" not in die_cols:
+                with engine.begin() as conn:
+                    conn.execute(
+                        text(f"ALTER TABLE {die_table} ADD COLUMN stamping_supplier VARCHAR(50)")
+                    )
+                logger.info("已为 %s 追加列 stamping_supplier", die_table)
+            if "version" not in die_cols:
+                with engine.begin() as conn:
+                    conn.execute(text(f"ALTER TABLE {die_table} ADD COLUMN version VARCHAR(20)"))
+                logger.info("已为 %s 追加列 version", die_table)
+
+        die_fee_table = "stamping_die_fees"
+        if die_fee_table in table_names:
+            die_fee_cols = {col["name"] for col in inspector.get_columns(die_fee_table)}
+            if "stamping_supplier" not in die_fee_cols:
+                with engine.begin() as conn:
+                    conn.execute(
+                        text(
+                            f"ALTER TABLE {die_fee_table} ADD COLUMN stamping_supplier VARCHAR(50)"
+                        )
+                    )
+                logger.info("已为 %s 追加列 stamping_supplier", die_fee_table)
+            if "version" not in die_fee_cols:
+                with engine.begin() as conn:
+                    conn.execute(
+                        text(f"ALTER TABLE {die_fee_table} ADD COLUMN version VARCHAR(20)")
+                    )
+                logger.info("已为 %s 追加列 version", die_fee_table)
+
+        calc_log_table = "stamping_die_fee_calc_logs"
+        if calc_log_table in table_names:
+            calc_log_cols = {col["name"] for col in inspector.get_columns(calc_log_table)}
+            if "stamping_supplier" not in calc_log_cols:
+                with engine.begin() as conn:
+                    conn.execute(
+                        text(
+                            f"ALTER TABLE {calc_log_table} "
+                            "ADD COLUMN stamping_supplier VARCHAR(50)"
+                        )
+                    )
+                logger.info("已为 %s 追加列 stamping_supplier", calc_log_table)
+            if "version" not in calc_log_cols:
+                with engine.begin() as conn:
+                    conn.execute(
+                        text(f"ALTER TABLE {calc_log_table} ADD COLUMN version VARCHAR(20)")
+                    )
+                logger.info("已为 %s 追加列 version", calc_log_table)
 
 
 class AuxiliaryDatabaseConfig:

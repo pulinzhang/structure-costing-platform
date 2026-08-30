@@ -10,6 +10,7 @@ from decimal import Decimal, ROUND_HALF_UP
 from typing import Any
 
 # 常用量化步长（与各表 Numeric scale 对齐）
+Q0 = Decimal("1")
 Q2 = Decimal("0.01")
 Q3 = Decimal("0.001")
 Q4 = Decimal("0.0001")
@@ -44,6 +45,17 @@ def quantize_money(
         raise ValueError("数值不能为负")
     step = Decimal(quant) if isinstance(quant, str) else quant
     return number.quantize(step, rounding=ROUND_HALF_UP)
+
+
+def quantize_positive_whole(value: Any, *, label: str = "数量") -> Decimal:
+    """正整数（如分摊万台）。计算层仍用 Decimal，禁止小数。"""
+    number = parse_decimal(value)
+    if number <= 0:
+        raise ValueError(f"{label}须为正整数")
+    quantized = number.quantize(Q0, rounding=ROUND_HALF_UP)
+    if quantized != number:
+        raise ValueError(f"{label}须为正整数")
+    return quantized
 
 
 def optional_quantize_money(

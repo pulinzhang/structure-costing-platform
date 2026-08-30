@@ -1,6 +1,11 @@
 from decimal import Decimal
 
-from app.services.stamping.die_fee.export_service import _check_weight_formula
+from app.services.stamping.die_fee.export_service import (
+    COL_COUNT,
+    HEADERS,
+    WIDTHS,
+    _check_weight_formula,
+)
 from app.services.stamping.die_fee.fee_math import (
     calc_line_die_fee,
     is_progressive_mode,
@@ -45,6 +50,11 @@ def test_final_fee_allows_zero_not_used_for_negative_check() -> None:
 
 def test_check_weight_excel_formula() -> None:
     formula = _check_weight_formula(6)
-    assert formula.startswith("=IF(COUNT(X6,Y6,Z6,AA6)=4,")
-    assert "X6*Y6*Z6*AA6*7.85/1000000000" in formula
+    assert formula.startswith("=IF(COUNT(Z6,AA6,AB6,AC6)=4,")
+    assert "Z6*AA6*AB6*AC6*7.85/1000000000" in formula
     assert "^" not in formula
+    assert len(HEADERS) == COL_COUNT == len(WIDTHS)
+    assert HEADERS[4] == "供应商"
+    assert HEADERS[5] == "版本"
+    assert HEADERS[6] == "零件号"
+    assert HEADERS[16] == "最终模具费"

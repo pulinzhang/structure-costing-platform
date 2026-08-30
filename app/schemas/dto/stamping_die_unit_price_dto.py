@@ -6,7 +6,7 @@ from typing import TypedDict
 
 from pydantic import BaseModel, Field, field_validator
 
-from app.common.money import Q4, quantize_money
+from app.common.money import Q4, quantize_money, quantize_positive_whole
 from app.models.stamping.die_unit_price import STATUS_EFFECTIVE, STATUS_INVALID
 
 _ALLOWED_STATUS = frozenset({STATUS_EFFECTIVE, STATUS_INVALID})
@@ -30,10 +30,7 @@ def _require_status(value: object) -> str:
 
 
 def _require_allocation_qty(value: object) -> Decimal:
-    number = quantize_money(value, Q4)
-    if number <= 0:
-        raise ValueError("分摊数量须大于 0")
-    return number
+    return quantize_positive_whole(value, label="分摊万台")
 
 
 class StampingDieUnitPriceQuery(BaseModel):

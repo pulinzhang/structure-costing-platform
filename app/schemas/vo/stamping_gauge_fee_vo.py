@@ -5,7 +5,7 @@ from decimal import Decimal
 
 from pydantic import BaseModel, computed_field, field_serializer
 
-from app.common.money import Q4, format_money
+from app.common.money import Q0, Q4, format_money
 from app.common.timezone import datetime_to_iso
 from app.models.stamping.gauge_fee import STATUS_EFFECTIVE, STATUS_INVALID
 
@@ -31,9 +31,13 @@ class StampingGaugeFeeVO(BaseModel):
     created_at: datetime | None = None
     updated_at: datetime | None = None
 
-    @field_serializer("gauge_fee", "allocation_qty")
+    @field_serializer("gauge_fee")
     def serialize_money(self, value: Decimal) -> str:
         return format_money(value, Q4, 4)
+
+    @field_serializer("allocation_qty")
+    def serialize_allocation_qty(self, value: Decimal) -> str:
+        return format_money(value, Q0, 0)
 
     @field_serializer("created_at", "updated_at")
     def serialize_datetime(self, value: datetime | None) -> str | None:

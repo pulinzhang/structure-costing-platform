@@ -311,7 +311,13 @@ def test_parse_rejects_empty_or_negative_money() -> None:
         _excel_bytes([("P001", "名称", Decimal("0.8"), Decimal("-1"), "生效")])
     )
     assert negative_qty.rows == []
-    assert any("不能为负" in msg for msg in negative_qty.errors)
+    assert any("正整数" in msg for msg in negative_qty.errors)
+
+    fraction_qty = parse_gauge_fee_excel(
+        _excel_bytes([("P001", "名称", Decimal("0.8"), Decimal("10.5"), "生效")])
+    )
+    assert fraction_qty.rows == []
+    assert any("正整数" in msg for msg in fraction_qty.errors)
 
 
 def test_export_includes_location_and_vehicle(memory_db: Session) -> None:

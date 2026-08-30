@@ -5,7 +5,7 @@ from decimal import Decimal
 
 from pydantic import BaseModel, Field, field_serializer
 
-from app.common.money import Q4, optional_format_money
+from app.common.money import Q0, Q4, format_money, optional_format_money
 from app.common.timezone import datetime_to_iso
 
 
@@ -28,11 +28,14 @@ class StampingDieFeeItemVO(BaseModel):
         "estimated_weight_t",
         "alloc_ratio",
         "unit_price",
-        "allocation_qty",
         "line_die_fee",
     )
     def serialize_decimal(self, value: Decimal | None) -> str | None:
         return optional_format_money(value, Q4, 4)
+
+    @field_serializer("allocation_qty")
+    def serialize_allocation_qty(self, value: Decimal) -> str:
+        return format_money(value, Q0, 0)
 
     model_config = {"from_attributes": True}
 
@@ -42,6 +45,8 @@ class StampingDieFeeVO(BaseModel):
     year: int
     location: str
     vehicle_model: str
+    stamping_supplier: str | None = None
+    version: str | None = None
     part_number: str
     source_die_part_id: int | None = None
     seq_no: int | None = None
@@ -78,13 +83,16 @@ class StampingDieFeeVO(BaseModel):
         "thickness",
         "part_weight",
         "unit_price",
-        "allocation_qty",
         "die_fee",
         "adjustment_amount",
         "final_die_fee",
     )
     def serialize_money(self, value: Decimal | None) -> str | None:
         return optional_format_money(value, Q4, 4)
+
+    @field_serializer("allocation_qty")
+    def serialize_allocation_qty(self, value: Decimal) -> str:
+        return format_money(value, Q0, 0)
 
     @field_serializer(
         "created_at",
@@ -102,6 +110,8 @@ class StampingDieFeeCalcResultVO(BaseModel):
     year: int
     location: str
     vehicle_model: str
+    stamping_supplier: str | None = None
+    version: str | None = None
     calc_batch_id: str | None = None
     log_id: int | None = None
     status: str = "success"
@@ -122,6 +132,8 @@ class StampingDieFeeCalcLogVO(BaseModel):
     year: int
     location: str
     vehicle_model: str
+    stamping_supplier: str | None = None
+    version: str | None = None
     status: str
     total_parts: int = 0
     success_count: int = 0
@@ -144,6 +156,8 @@ class StampingDieFeeCalcReadyVO(BaseModel):
     year: int
     location: str | None = None
     vehicle_model: str | None = None
+    stamping_supplier: str | None = None
+    version: str | None = None
     part_count: int = 0
     calculable_count: int = 0
     has_unit_price: bool = False
@@ -153,6 +167,8 @@ class StampingDieFeeFilterVO(BaseModel):
     years: list[int] = Field(default_factory=list)
     locations: list[str] = Field(default_factory=list)
     vehicle_models: list[str] = Field(default_factory=list)
+    stamping_suppliers: list[str] = Field(default_factory=list)
+    versions: list[str] = Field(default_factory=list)
 
 
 class StampingDieFeeBatchDeleteResultVO(BaseModel):
@@ -175,6 +191,8 @@ class DieFeeListFilters(BaseModel):
     year: int
     location: str
     vehicle_model: str
+    stamping_supplier: str | None = None
+    version: str | None = None
     part_number: str | None = None
     audit_status: str | None = None
     only_zero: bool = False

@@ -51,13 +51,28 @@ _async_task_service = AsyncTaskService()
 @router.get("/filters", response_model=ApiResponse[StampingDieFeeFilterVO])
 def list_filters(
     location: str | None = Query(None),
+    year: int | None = Query(None, ge=2000, le=2100),
+    vehicle_model: str | None = Query(None),
+    stamping_supplier: str | None = Query(None),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(
         require_any_perm(Perm.STAMPING_DIE_FEE_VIEW, Perm.STAMPING_DIE_FEE_CALC_VIEW)
     ),
 ) -> ApiResponse[StampingDieFeeFilterVO]:
     location_value = location.strip() if location else None
-    return ApiResponse.ok(data=_service.list_filters(db, location_value))
+    vehicle_value = (
+        normalize_vehicle_model(vehicle_model) if (vehicle_model or "").strip() else None
+    )
+    supplier_value = stamping_supplier.strip() if stamping_supplier else None
+    return ApiResponse.ok(
+        data=_service.list_filters(
+            db,
+            location=location_value,
+            year=year,
+            vehicle_model=vehicle_value,
+            stamping_supplier=supplier_value,
+        )
+    )
 
 
 @router.get("/calc/ready", response_model=ApiResponse[StampingDieFeeCalcReadyVO])
@@ -65,6 +80,8 @@ def get_calc_ready(
     year: int = Query(..., ge=2000, le=2100),
     location: str | None = Query(None),
     vehicle_model: str | None = Query(None),
+    stamping_supplier: str | None = Query(None),
+    version: str | None = Query(None),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_DIE_FEE_CALC_VIEW)),
 ) -> ApiResponse[StampingDieFeeCalcReadyVO]:
@@ -75,6 +92,8 @@ def get_calc_ready(
         vehicle_model=normalize_vehicle_model(vehicle_model)
         if (vehicle_model or "").strip()
         else None,
+        stamping_supplier=(stamping_supplier or "").strip() or None,
+        version=(version or "").strip() or None,
     )
     return ApiResponse.ok(data=data)
 
@@ -87,6 +106,8 @@ def list_calc_logs(
     year: int | None = Query(None),
     location: str | None = Query(None),
     vehicle_model: str | None = Query(None),
+    stamping_supplier: str | None = Query(None),
+    version: str | None = Query(None),
     page: int = Query(1, ge=1),
     size: int = Query(10, ge=1, le=100),
     db: Session = Depends(get_db),
@@ -97,6 +118,8 @@ def list_calc_logs(
         year=year,
         location=location,
         vehicle_model=vehicle_model,
+        stamping_supplier=(stamping_supplier or "").strip() or None,
+        version=(version or "").strip() or None,
         page=page,
         size=size,
     )
@@ -183,6 +206,8 @@ def export_download(
     year: int = Query(..., ge=2000, le=2100),
     location: str = Query(..., min_length=1),
     vehicle_model: str = Query(..., min_length=1),
+    stamping_supplier: str | None = Query(None),
+    version: str | None = Query(None),
     part_number: str | None = Query(None),
     audit_status: str | None = Query(None),
     only_zero: bool = Query(False),
@@ -194,6 +219,8 @@ def export_download(
         year=year,
         location=location.strip(),
         vehicle_model=vehicle_model.strip(),
+        stamping_supplier=stamping_supplier.strip() if stamping_supplier else None,
+        version=version.strip() if version else None,
         part_number=part_number.strip() if part_number else None,
         audit_status=audit_status.strip() if audit_status else None,
         only_zero=only_zero,

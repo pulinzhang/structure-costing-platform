@@ -2,7 +2,7 @@
 
 from typing import TypedDict
 
-from sqlalchemy.orm import Session, selectinload
+from sqlalchemy.orm import Query, Session, selectinload
 
 from app.models.stamping.die import StampingDiePart, StampingDieProcess
 from app.repositories.persist import model_from_payload
@@ -54,6 +54,28 @@ class StampingDiePartRepository:
             if (part_number or "").strip()
         ]
 
+    def _scope_query(
+        self,
+        db: Session,
+        *,
+        location: str,
+        vehicle_model: str,
+        stamping_supplier: str | None = None,
+        version: str | None = None,
+        part_number: str | None = None,
+    ) -> Query[StampingDiePart]:
+        query = db.query(StampingDiePart).filter(
+            StampingDiePart.location == location,
+            StampingDiePart.vehicle_model == vehicle_model,
+        )
+        if stamping_supplier:
+            query = query.filter(StampingDiePart.stamping_supplier == stamping_supplier)
+        if version:
+            query = query.filter(StampingDiePart.version == version)
+        if part_number:
+            query = query.filter(StampingDiePart.part_number.like(f"%{part_number.strip()}%"))
+        return query
+
     def paginate(
         self,
         db: Session,
@@ -63,17 +85,20 @@ class StampingDiePartRepository:
         part_number: str | None,
         skip: int,
         limit: int,
+        stamping_supplier: str | None = None,
+        version: str | None = None,
     ) -> tuple[list[StampingDiePart], int]:
-        query = db.query(StampingDiePart).filter(
-            StampingDiePart.location == location,
-            StampingDiePart.vehicle_model == vehicle_model,
+        query = self._scope_query(
+            db,
+            location=location,
+            vehicle_model=vehicle_model,
+            stamping_supplier=stamping_supplier,
+            version=version,
+            part_number=part_number,
         )
-        if part_number:
-            query = query.filter(StampingDiePart.part_number.like(f"%{part_number.strip()}%"))
         total = query.count()
         rows = (
-            query.order_by(StampingDiePart.id.asc())
-            .order_by(StampingDiePart.seq_no.asc(), StampingDiePart.id.asc())
+            query.order_by(StampingDiePart.seq_no.asc(), StampingDiePart.id.asc())
             .offset(skip)
             .limit(limit)
             .all()
@@ -94,17 +119,24 @@ class StampingDiePartRepository:
         *,
         location: str,
         vehicle_model: str,
+        stamping_supplier: str | None = None,
+        version: str | None = None,
+        part_number: str | None = None,
     ) -> list[StampingDiePart]:
-        return (
-            db.query(StampingDiePart)
-            .options(selectinload(StampingDiePart.processes))
-            .filter(
-                StampingDiePart.location == location,
-                StampingDiePart.vehicle_model == vehicle_model,
+        rows: list[StampingDiePart] = (
+            self._scope_query(
+                db,
+                location=location,
+                vehicle_model=vehicle_model,
+                stamping_supplier=stamping_supplier,
+                version=version,
+                part_number=part_number,
             )
+            .options(selectinload(StampingDiePart.processes))
             .order_by(StampingDiePart.seq_no.asc(), StampingDiePart.id.asc())
             .all()
         )
+        return rows
 
     def list_existing_in_scope(
         self,
@@ -205,6 +237,46 @@ class StampingDiePartRepository:
         if location:
             query = query.filter(StampingDiePart.location == location)
         rows = query.order_by(StampingDiePart.vehicle_model.asc()).all()
+        return [row[0] for row in rows if row[0]]
+
+    def list_distinct_suppliers(
+        self,
+        db: Session,
+        *,
+        location: str,
+        vehicle_model: str,
+    ) -> list[str]:
+        rows = (
+            db.query(StampingDiePart.stamping_supplier)
+            .filter(
+                StampingDiePart.location == location,
+                StampingDiePart.vehicle_model == vehicle_model,
+                StampingDiePart.stamping_supplier.isnot(None),
+                StampingDiePart.stamping_supplier != "",
+            )
+            .distinct()
+            .order_by(StampingDiePart.stamping_supplier.asc())
+            .all()
+        )
+        return [row[0] for row in rows if row[0]]
+
+    def list_distinct_versions(
+        self,
+        db: Session,
+        *,
+        location: str,
+        vehicle_model: str,
+        stamping_supplier: str | None = None,
+    ) -> list[str]:
+        query = db.query(StampingDiePart.version).filter(
+            StampingDiePart.location == location,
+            StampingDiePart.vehicle_model == vehicle_model,
+            StampingDiePart.version.isnot(None),
+            StampingDiePart.version != "",
+        )
+        if stamping_supplier:
+            query = query.filter(StampingDiePart.stamping_supplier == stamping_supplier)
+        rows = query.distinct().order_by(StampingDiePart.version.asc()).all()
         return [row[0] for row in rows if row[0]]
 
 

@@ -6,7 +6,7 @@ from typing import TypedDict
 
 from pydantic import BaseModel, Field, field_validator
 
-from app.common.money import Q4, quantize_money
+from app.common.money import Q4, quantize_money, quantize_positive_whole
 from app.models.stamping.gauge_fee import STATUS_EFFECTIVE, STATUS_INVALID
 
 _ALLOWED_STATUS = frozenset({STATUS_EFFECTIVE, STATUS_INVALID})
@@ -80,9 +80,7 @@ class StampingGaugeFeeUpdate(BaseModel):
     def coerce_optional_qty(cls, value: object) -> Decimal | None:
         if value is None or (isinstance(value, str) and not str(value).strip()):
             return None
-        number = quantize_money(value, Q4)
-        if number <= 0:
-            raise ValueError("分摊数量须大于 0")
+        number = quantize_positive_whole(value, label="分摊万台")
         return number
 
     @field_validator("status", mode="before")

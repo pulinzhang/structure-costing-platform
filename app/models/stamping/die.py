@@ -19,6 +19,12 @@ class StampingDiePart(AuditUserMixin, Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     location: Mapped[str] = mapped_column(String(50), nullable=False, comment="采购基地")
     vehicle_model: Mapped[str] = mapped_column(String(50), nullable=False, comment="项目")
+    stamping_supplier: Mapped[str | None] = mapped_column(
+        String(50), nullable=True, comment="冲压供应商（从工艺回填）"
+    )
+    version: Mapped[str | None] = mapped_column(
+        String(20), nullable=True, comment="版本（从工艺回填）"
+    )
     seq_no: Mapped[int | None] = mapped_column(Integer, nullable=True, comment="序号")
     part_number: Mapped[str] = mapped_column(String(50), nullable=False, comment="零件号")
     part_name: Mapped[str | None] = mapped_column(String(200), nullable=True, comment="零件名称")

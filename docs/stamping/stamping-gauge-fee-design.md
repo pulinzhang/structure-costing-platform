@@ -41,7 +41,7 @@
 | `part_number` | 规范化零件号；入库用模具布点号码 |
 | `part_name` | 展示用；上传以模具布点名称为准（Excel 名称仅人读） |
 | `gauge_fee` | `Decimal`，万元，默认 0.8 |
-| `allocation_qty` | 万台，默认 10 |
+| `allocation_qty` | 万台，正整数，默认 10 |
 | `status` | `effective` 生效 / `invalid` 失效 |
 
 ---

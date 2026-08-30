@@ -4,6 +4,8 @@
 
 import { pageSizeSelectHtml } from '../../../../page-size.js?v=2';
 
+export const CALC_HISTORY_COLSPAN = 12;
+
 export function dieFeeCalcTemplate() {
     return `
         <div class="space-y-4 w-full font-sans antialiased text-[#bbb]">
@@ -20,6 +22,8 @@ export function dieFeeCalcTemplate() {
                     </label>
                     ${filterSelect('calcLocation', '基地', true)}
                     ${filterSelect('calcVehicleModel', '项目', true)}
+                    ${filterSelect('calcSupplier', '供应商', false, '全部')}
+                    ${filterSelect('calcVersion', '版本', false, '全部')}
                     <button id="calcResetBtn"
                             class="inline-flex items-center gap-1 h-7 px-3 text-[11px] font-medium text-[#616161] hover:text-[#9e9e9e] transition-all duration-150">
                         重置
@@ -44,7 +48,7 @@ export function dieFeeCalcTemplate() {
                     </div>
                 </div>
                 <div class="flex items-center gap-3">
-                    <span class="text-[9px] text-[#666]">再次计算将删除该范围未审核结果后重写；已审核禁止计算</span>
+                    <span class="text-[9px] text-[#666]">共模按项目全部布点顺序继承；只重写所选供应商/版本的结果。未选则整项目重算。已审核禁止计算</span>
                     <button id="startCalcBtn"
                             class="h-7 px-4 text-[10px] bg-[#b71c1c] hover:bg-[#c62828] text-white font-medium rounded-sm transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
                         开始计算
@@ -65,7 +69,7 @@ export function dieFeeCalcTemplate() {
                 <p id="calcProgressMsg" class="text-[11px] text-[#9e9e9e] leading-relaxed mb-0">已提交计算队列</p>
             </div>
             <div id="dataReadyErrorBanner" class="hidden text-[10px] text-[#d69e2e] bg-[#1a1710] px-2.5 py-1.5 border-l-2 border-[#d69e2e]">
-                须选定年度、基地、项目，并确保有布点与生效模具单价。
+                须选定年度、基地、项目，并确保所选范围内有布点与生效模具单价。供应商/版本为附加筛。
             </div>
             <div class="pt-2">
                 <div class="flex items-center justify-between mb-1.5">
@@ -82,6 +86,8 @@ export function dieFeeCalcTemplate() {
                                     <th class="py-2 px-2 font-normal whitespace-nowrap">年度</th>
                                     <th class="py-2 px-2 font-normal whitespace-nowrap">基地</th>
                                     <th class="py-2 px-2 font-normal whitespace-nowrap">项目</th>
+                                    <th class="py-2 px-2 font-normal whitespace-nowrap">供应商</th>
+                                    <th class="py-2 px-2 font-normal whitespace-nowrap">版本</th>
                                     <th class="py-2 px-2 font-normal text-center whitespace-nowrap">状态</th>
                                     <th class="py-2 px-2 font-normal text-right whitespace-nowrap">布点</th>
                                     <th class="py-2 px-2 font-normal text-right whitespace-nowrap">入库</th>
@@ -90,7 +96,7 @@ export function dieFeeCalcTemplate() {
                                 </tr>
                             </thead>
                             <tbody id="calcHistoryBody" class="text-[10px] divide-y divide-[#222222]">
-                                <tr><td colspan="10" class="py-8 text-center text-[#555]">加载中..</td></tr>
+                                <tr><td colspan="${CALC_HISTORY_COLSPAN}" class="py-8 text-center text-[#555]">加载中..</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -107,12 +113,12 @@ export function dieFeeCalcTemplate() {
     `;
 }
 
-function filterSelect(id, label, required = false) {
+function filterSelect(id, label, required = false, emptyLabel = '请选择') {
     const mark = required ? '<span class="text-[#d32f2f]">*</span>' : '';
     return `<label class="space-y-1">
         <span class="block text-[9px] font-semibold text-[#484848] uppercase tracking-[0.12em]">${label}${mark}</span>
         <select id="${id}" class="w-32 h-7 pl-2.5 pr-7 text-[11px] bg-[#0d0d0d] border border-[#272727] text-[#909090] appearance-none cursor-pointer focus:outline-none focus:border-[#ff5252] rounded-sm">
-            <option value="">请选择</option>
+            <option value="">${emptyLabel}</option>
         </select>
     </label>`;
 }

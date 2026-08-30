@@ -85,6 +85,8 @@ class DieFeeCalcLogService:
                     year=dto.year,
                     location=dto.location,
                     vehicle_model=dto.vehicle_model,
+                    stamping_supplier=dto.stamping_supplier,
+                    version=dto.version,
                     status=STATUS_PROCESSING,
                     detail_text="计算进行中...",
                     started_at=started_at,
@@ -157,6 +159,8 @@ class DieFeeCalcLogService:
         year: int | None = None,
         location: str | None = None,
         vehicle_model: str | None = None,
+        stamping_supplier: str | None = None,
+        version: str | None = None,
         page: int = 1,
         size: int = 20,
     ) -> tuple[list[StampingDieFeeCalcLogVO], int]:
@@ -166,6 +170,8 @@ class DieFeeCalcLogService:
             year=year,
             location=location,
             vehicle_model=vehicle_model,
+            stamping_supplier=stamping_supplier,
+            version=version,
             skip=skip,
             limit=size,
         )

@@ -35,7 +35,7 @@
 | `vehicle_model` | 项目（`normalize_vehicle_model`） |
 | `steel_plate_unit_price` | 钢板模，万元/吨，`Decimal` |
 | `progressive_die_unit_price` | 级进模，万元/吨 |
-| `allocation_qty` | 项目分摊数量（万台），`Decimal`，默认 10 |
+| `allocation_qty` | 项目分摊数量（万台），正整数 `Decimal`，默认 10，JSON 不带小数位 |
 | `status` | `effective` 生效 / `invalid` 失效 |
 
 铸造模取价留给计算层（可并入钢板模档），本表不单列。

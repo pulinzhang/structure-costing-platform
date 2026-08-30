@@ -33,6 +33,12 @@ class StampingDieFee(AuditUserMixin, Base):
     year: Mapped[int] = mapped_column(Integer, nullable=False, comment="计算年度")
     location: Mapped[str] = mapped_column(String(50), nullable=False, comment="采购基地")
     vehicle_model: Mapped[str] = mapped_column(String(50), nullable=False, comment="项目")
+    stamping_supplier: Mapped[str | None] = mapped_column(
+        String(50), nullable=True, comment="冲压供应商（从布点快照）"
+    )
+    version: Mapped[str | None] = mapped_column(
+        String(20), nullable=True, comment="版本（从布点快照）"
+    )
     part_number: Mapped[str] = mapped_column(String(50), nullable=False, comment="零件号")
 
     source_die_part_id: Mapped[int | None] = mapped_column(

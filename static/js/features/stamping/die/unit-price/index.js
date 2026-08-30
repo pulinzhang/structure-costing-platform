@@ -6,7 +6,7 @@ import {
     dieUnitPriceTemplate,
     renderTableRows,
     renderPagination,
-} from './template.js?v=4';
+} from './template.js?v=5';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -240,8 +240,8 @@ async function submitEdit() {
         return;
     }
     const allocationNumber = Number(allocationQty);
-    if (!allocationQty || !Number.isFinite(allocationNumber) || allocationNumber <= 0) {
-        showToast('分摊数量须大于 0（万台）', 'warning');
+    if (!allocationQty || !Number.isInteger(allocationNumber) || allocationNumber <= 0) {
+        showToast('分摊万台须为正整数', 'warning');
         return;
     }
 

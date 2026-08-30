@@ -152,7 +152,7 @@ export function dieUnitPriceTemplate() {
                     </div>
                     <div>
                         <label class="text-[10px] font-semibold text-[#616161] tracking-wider mb-1 block">项目分摊数量（万台） <span class="text-[#FF1E27]">*</span></label>
-                        <input type="text" id="dupEditAllocQty" required inputmode="decimal"
+                        <input type="text" id="dupEditAllocQty" required inputmode="numeric"
                                class="w-full h-8 px-3 text-xs font-mono bg-[#0a0a0c] border border-[#2c2c2c] text-white placeholder:text-[#616161] focus:outline-none focus:border-[#ff5252]"
                                placeholder="如 10" value="10" autocomplete="off">
                     </div>
@@ -227,7 +227,7 @@ export function renderTableRows(records) {
             </td>
             <td class="${numCell}">${esc(fmtNum(record.steel_plate_unit_price, 4))}</td>
             <td class="px-2 py-1.5 text-right font-mono font-black tabular-nums text-[12px] text-[#FF1E27] bg-[#1A080A] border-x border-[#FF1E27]/20">${esc(fmtNum(record.progressive_die_unit_price, 4))}</td>
-            <td class="${numCell}">${esc(fmtNum(record.allocation_qty, 4))}</td>
+            <td class="${numCell}">${esc(fmtNum(record.allocation_qty, 0))}</td>
             <td class="px-1 py-2 text-center">
                 <span class="text-[9px] font-medium ${statusClass}">${esc(record.status_label || record.status)}</span>
             </td>

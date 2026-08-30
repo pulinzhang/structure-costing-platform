@@ -11,7 +11,7 @@ from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.worksheet import Worksheet
 from sqlalchemy.orm import Session
 
-from app.common.money import Q4, excel_money_cell
+from app.common.money import Q0, Q4, excel_money_cell
 from app.common.timezone import now
 from app.common.vehicle_model import normalize_vehicle_model
 from app.models.stamping.gauge_fee import STATUS_EFFECTIVE, STATUS_INVALID, StampingGaugeFee
@@ -167,16 +167,20 @@ class StampingGaugeFeeExportService:
                 record.part_number,
                 record.part_name or "",
                 excel_money_cell(record.gauge_fee, Q4),
-                excel_money_cell(record.allocation_qty, Q4),
+                excel_money_cell(record.allocation_qty, Q0),
                 _STATUS_LABELS.get(record.status, record.status),
             ]
             for col, value in enumerate(values, start=1):
                 cell = sheet.cell(row=row_idx, column=col, value=value)
                 cell.font = money_font if col in (5, 6) else data_font
                 cell.border = _THIN
-                if col in (5, 6):
+                if col == 5:
                     cell.alignment = right
                     cell.number_format = "0.0000"
+                    cell.fill = _MONEY_FILL
+                elif col == 6:
+                    cell.alignment = right
+                    cell.number_format = "0"
                     cell.fill = _MONEY_FILL
                 elif col == 7:
                     cell.alignment = center

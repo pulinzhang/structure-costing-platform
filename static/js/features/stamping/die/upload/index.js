@@ -1,4 +1,4 @@
-import { dieUploadTemplate } from './template.js?v=3';
+import { dieUploadTemplate } from './template.js?v=4';
 
 const MAX_RECENT_UPLOADS = 8;
 const POLL_INTERVAL_MS = 2000;

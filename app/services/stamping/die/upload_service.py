@@ -12,6 +12,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.common.audit import audit_create, display_name
+from app.common.part_number import normalize_part_number_token
 from app.common.timezone import now
 from app.common.vehicle_model import normalize_vehicle_model
 from app.config import settings
@@ -43,6 +44,10 @@ from app.services.stamping.die.die_number_resolver import (
     DieLayoutCheckRow,
     StampingProcessTrace,
     validate_die_layout,
+)
+from app.services.stamping.die.process_identity import (
+    ProcessPartIdentity,
+    map_die_parts_to_process,
 )
 from app.services.stamping.die.template_builder import build_die_layout_template
 from app.services.stamping.die.weight_check import (
@@ -162,6 +167,23 @@ class StampingDieUploadService:
         if weight_issues:
             raise BusinessException(format_die_weight_mismatch_issues(weight_issues))
 
+        try:
+            process_identities = map_die_parts_to_process(
+                [part.part_number for part in parsed.parts],
+                [
+                    ProcessPartIdentity(
+                        part_number=row["part_number"],
+                        stamping_supplier=row["stamping_supplier"],
+                        version=row["version"],
+                    )
+                    for row in self.stamping_part_repo.list_die_match_identities(
+                        self.db, location=location, vehicle_model=vehicle_model
+                    )
+                ],
+            )
+        except ValueError as exc:
+            raise BusinessException(str(exc)) from None
+
         check_rows = [
             DieLayoutCheckRow(
                 part_number=part.part_number,
@@ -207,10 +229,13 @@ class StampingDieUploadService:
             audit = audit_create(current_user)
             part_rows: list[StampingDiePartInsert] = []
             for parsed_part in parsed.parts:
+                identity = process_identities[normalize_part_number_token(parsed_part.part_number)]
                 part_rows.append(
                     StampingDiePartInsert(
                         location=location,
                         vehicle_model=vehicle_model,
+                        stamping_supplier=identity.stamping_supplier,
+                        version=identity.version,
                         seq_no=parsed_part.seq_no,
                         part_number=parsed_part.part_number,
                         part_name=parsed_part.part_name,
