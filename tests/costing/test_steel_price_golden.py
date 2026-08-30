@@ -80,9 +80,9 @@ def test_steel_price_golden_wuhu_2026_01_magang_dc01(db_session: Session) -> Non
 def test_steel_price_golden_wuhu_2026_01_magang_hc180y_06(db_session: Session) -> None:
     """
     芜湖 2026-01 马钢 HC180Y 厚 0.6。
-    政策牌号为 B170P1/HC180Y，须按双牌号互认命中厚度阶梯 [0.6, 0.7) +200。
-    基价 3919 + 原卷加工费 120；宽度政策未命中。
-    final = 3919 + 200 + 0 + 0 + 120 + 0 = 4239。
+    基价只按冷轧大类（与 DC01 同一条马钢冷轧基价 3742），不对牌号。
+    厚度按大类政策命中 [0.6, 0.7) +200；宽度政策未命中。
+    final = 3742 + 200 + 0 + 0 + 120 + 0 = 4062。
     """
     request = SteelPriceCalcRequest(year=YEAR, month=MONTH, location=LOCATION)
     rows, no_base_count, details = BasePriceEnricher().enrich(
@@ -111,7 +111,7 @@ def test_steel_price_golden_wuhu_2026_01_magang_hc180y_06(db_session: Session) -
         pytest.skip(f"无 {STEEL_MILL} 基价行: {LOCATION}/HC180Y/{YEAR}-{MONTH:02d}")
     row = magang[0]
 
-    assert row.base_price == Decimal("3919.00")
+    assert row.base_price == Decimal("3742.00")
     assert row.processing_fee == Decimal("120.00")
     assert row.thickness_adjustment == Decimal("200")
     assert row.thickness_policy_id is not None
@@ -119,4 +119,4 @@ def test_steel_price_golden_wuhu_2026_01_magang_hc180y_06(db_session: Session) -
     assert row.match_status == "no_width_policy"
 
     payload = row.to_persist_payload(calc_batch_id="gold-2026-01-hc180y", formula_version="test")
-    assert payload.final_price_per_ton == Decimal("4239.00")
+    assert payload.final_price_per_ton == Decimal("4062.00")

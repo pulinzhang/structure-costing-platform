@@ -5,7 +5,7 @@
 import {
     partCostCalcTemplate,
     renderCalcHistoryPagination,
-} from './template.js?v=2';
+} from './template.js?v=4';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -41,6 +41,8 @@ const calcState = {
         steel_price_count: 0,
         scrap_price_count: 0,
         process_fee_count: 0,
+        die_fee_count: 0,
+        gauge_fee_count: 0,
         can_calculate: false,
     },
     history: {
@@ -222,6 +224,8 @@ async function loadCalcReady() {
             steel_price_count: 0,
             scrap_price_count: 0,
             process_fee_count: 0,
+            die_fee_count: 0,
+            gauge_fee_count: 0,
             can_calculate: false,
         };
         setReadyCounts(calcState.ready);
@@ -244,6 +248,8 @@ async function loadCalcReady() {
             steel_price_count: Number(data.steel_price_count) || 0,
             scrap_price_count: Number(data.scrap_price_count) || 0,
             process_fee_count: Number(data.process_fee_count) || 0,
+            die_fee_count: Number(data.die_fee_count) || 0,
+            gauge_fee_count: Number(data.gauge_fee_count) || 0,
             can_calculate: Boolean(data.can_calculate),
         };
         setReadyCounts(calcState.ready);
@@ -255,6 +261,8 @@ async function loadCalcReady() {
             steel_price_count: 0,
             scrap_price_count: 0,
             process_fee_count: 0,
+            die_fee_count: 0,
+            gauge_fee_count: 0,
             can_calculate: false,
         };
         setReadyCounts(calcState.ready);
@@ -288,6 +296,8 @@ function setReadyCounts(ready) {
     setCountHtml('cntSteel', ready.steel_price_count, '条');
     setCountHtml('cntScrap', ready.scrap_price_count, '条');
     setCountHtml('cntFee', ready.process_fee_count, '条');
+    setCountHtml('cntDieFee', ready.die_fee_count, '条');
+    setCountHtml('cntGaugeFee', ready.gauge_fee_count, '条');
 }
 
 function setCountHtml(id, count, unit) {

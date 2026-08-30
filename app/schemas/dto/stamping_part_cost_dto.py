@@ -113,6 +113,10 @@ class StampingPartCostCalcAmounts:
     scrap_ton_price: Decimal | None
     process_fee_id: int | None
     process_fee_amount: Decimal | None
+    die_fee_id: int | None
+    die_fee_amount: Decimal | None
+    gauge_fee_id: int | None
+    gauge_fee_amount: Decimal | None
     material_amount_sheet: Decimal | None
     loss_scrap_deduction: Decimal | None
     process_scrap_deduction: Decimal | None
@@ -155,6 +159,10 @@ class StampingPartCostUpsertPayload:
     scrap_ton_price: Decimal | None = None
     process_fee_id: int | None = None
     process_fee_amount: Decimal | None = None
+    die_fee_id: int | None = None
+    die_fee_amount: Decimal | None = None
+    gauge_fee_id: int | None = None
+    gauge_fee_amount: Decimal | None = None
     material_amount_sheet: Decimal | None = None
     loss_scrap_deduction: Decimal | None = None
     process_scrap_deduction: Decimal | None = None

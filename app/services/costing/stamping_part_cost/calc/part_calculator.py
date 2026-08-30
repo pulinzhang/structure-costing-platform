@@ -24,6 +24,7 @@ from app.services.costing.stamping_part_cost.calc.constants import (
     quantize,
 )
 from app.services.costing.stamping_part_cost.calc.resolvers import PriceResolver
+from app.services.costing.stamping_part_cost.calc.tooling_fees import lookup_tooling_fees
 from app.services.costing.stamping_part_cost.helpers import to_decimal
 
 
@@ -140,19 +141,13 @@ class PartCostCalculator:
             grade=material,
             thickness=thickness,
         )
-        if not steel_rows:
+        steel = self.price_resolver.pick_steel_price(steel_rows)
+        if steel is None:
             return StampingPartCostFailedItemVO(
                 part_number=part.part_number,
                 part_name=part.part_name,
                 reason=f"未匹配到钢材联动价（材质={material}, 料厚={thickness}）",
             )
-        if len(steel_rows) > 1:
-            return StampingPartCostFailedItemVO(
-                part_number=part.part_number,
-                part_name=part.part_name,
-                reason=(f"钢材联动价匹配到 {len(steel_rows)} 条，" "中标场景应唯一，请检查数据"),
-            )
-        steel = steel_rows[0]
         steel_ton_price = Decimal(str(steel.final_price_per_ton))
 
         fee = self.fee_repo.get_by_business_key(
@@ -177,6 +172,13 @@ class PartCostCalculator:
                 reason="加工费确认单价为空，请先完成加工费计算或录入其它费用",
             )
         process_fee_amount = quantize(Decimal(str(fee.final_processing_fee)), FEE_QUANTIZE)
+        tooling = lookup_tooling_fees(
+            db,
+            year=year,
+            location=part.location,
+            vehicle_model=part.vehicle_model,
+            part_number=part.part_number,
+        )
 
         # 对齐 Excel R 三项分列：
         # ① M×P×(1+λ)  ② M×λ×η×Q  ③ O×η×Q   （P/Q=元/kg=吨价/1000）
@@ -213,6 +215,8 @@ class PartCostCalculator:
         ) = compute_finished_cost_stack(
             material_net_per_part=material_net_per_part,
             process_fee_amount=process_fee_amount,
+            die_fee_amount=tooling.die_fee_amount,
+            gauge_fee_amount=tooling.gauge_fee_amount,
             finance_rate=finance_rate,
             management_rate=management_rate,
             warehouse_packaging_rate=warehouse_packaging_rate,
@@ -234,6 +238,10 @@ class PartCostCalculator:
             scrap_ton_price=scrap_ton_price,
             process_fee_id=fee.id,
             process_fee_amount=process_fee_amount,
+            die_fee_id=tooling.die_fee_id,
+            die_fee_amount=tooling.die_fee_amount,
+            gauge_fee_id=tooling.gauge_fee_id,
+            gauge_fee_amount=tooling.gauge_fee_amount,
             material_amount_sheet=material_amount_sheet,
             loss_scrap_deduction=loss_scrap_deduction,
             process_scrap_deduction=process_scrap_deduction,

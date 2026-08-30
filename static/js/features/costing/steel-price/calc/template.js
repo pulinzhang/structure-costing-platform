@@ -53,7 +53,7 @@ export function steelPriceCalcTemplate() {
 
                 <div class="flex items-center gap-3">
                     <span id="reCalcNotice" class="text-[9px] text-[#666]">
-                        再次计算将覆盖未审核数据；已审核记录跳过
+                        按工艺全部牌号+料厚落库（钢厂+大类取价，同中标厚度一览）；再次计算覆盖未审核，已审核跳过
                     </span>
                     <button id="startCalcBtn"
                             class="h-7 px-4 text-[10px] bg-[#b71c1c] hover:bg-[#c62828] text-white font-medium rounded-sm transition-colors disabled:opacity-30 disabled:cursor-not-allowed">

@@ -23,6 +23,8 @@ class StampingPartPeriodRow:
     process_fee_amount: Decimal | None
     calc_status: str
     stamping_supplier: str
+    die_fee_amount: Decimal | None = None
+    gauge_fee_amount: Decimal | None = None
 
 
 class StampingCostAnalysisRepository:
@@ -75,6 +77,16 @@ class StampingCostAnalysisRepository:
                     process_fee_amount=(
                         Decimal(str(row.process_fee_amount))
                         if getattr(row, "process_fee_amount", None) is not None
+                        else None
+                    ),
+                    die_fee_amount=(
+                        Decimal(str(row.die_fee_amount))
+                        if getattr(row, "die_fee_amount", None) is not None
+                        else None
+                    ),
+                    gauge_fee_amount=(
+                        Decimal(str(row.gauge_fee_amount))
+                        if getattr(row, "gauge_fee_amount", None) is not None
                         else None
                     ),
                     calc_status=str(row.calc_status or "success"),

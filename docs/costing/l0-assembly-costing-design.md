@@ -149,8 +149,8 @@ grand_total     = total_amount + indirect_amount
 ### 4.3 ① 冲压件取价（与现网一致，勿拆开重算）
 
 ```text
-stamping_part_costs.unit_cost   （part-cost-v6）
-  = direct_cost                 ← 材料净成本 + 冲压加工费
+stamping_part_costs.unit_cost   （part-cost-v7）
+  = direct_cost                 ← 材料净成本 + 冲压加工费 + 模具费 + 检具费
   + finished_finance_fee        ← 直接成本 × 财务费率
   + finished_management_fee
   + finished_warehouse_packaging_fee

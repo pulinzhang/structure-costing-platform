@@ -10,7 +10,7 @@ import {
     updateCostFilterCapsules,
     shortPartNumber,
     syncBreakdownColumnVisibility,
-} from './template.js?v=45';
+} from './template.js?v=46';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -549,6 +549,10 @@ function showDetailDrawer(row) {
                         R <span class="text-[#E8E8ED]">￥${fmtNum(row.material_net_per_part, 2)}</span>
                         <span class="text-[#3A3A42] mx-1">+</span>
                         加工费 <span class="text-[#E8E8ED]">￥${fmtNum(row.process_fee_amount, 2)}</span>
+                        <span class="text-[#3A3A42] mx-1">+</span>
+                        模具费 <span class="text-[#E8E8ED]">￥${fmtNum(row.die_fee_amount, 2)}</span>
+                        <span class="text-[#3A3A42] mx-1">+</span>
+                        检具费 <span class="text-[#E8E8ED]">￥${fmtNum(row.gauge_fee_amount, 2)}</span>
                     </div>
                 </div>
                 ${heroCostHtml}
@@ -601,11 +605,13 @@ function showDetailDrawer(row) {
                     `<span class="text-[#FF1E27] font-semibold">￥${fmtNum(row.material_net_per_part, 4)}</span>`,
                 ],
                 ['加工费', `￥${fmtNum(row.process_fee_amount, 3)}`],
+                ['模具费', `￥${fmtNum(row.die_fee_amount, 4)}`],
+                ['检具费', `￥${fmtNum(row.gauge_fee_amount, 4)}`],
             ])}
 
             ${detailBlock('成品费率费用', [
                 [
-                    '直接成本（R + 加工费）',
+                    '直接成本（R + 加工费 + 模具费 + 检具费）',
                     `<span class="text-[#E8E8ED] font-semibold">￥${fmtNum(row.direct_cost, 4)}</span>`,
                 ],
                 ['仓储+包装管理费用', `<span class="text-[#6E6E73]">￥${fmtNum(row.finished_warehouse_packaging_fee, 4)}</span>`],

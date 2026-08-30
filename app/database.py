@@ -254,6 +254,10 @@ class DatabaseConfig:
                 ("finished_management_fee", "NUMERIC(14, 6)"),
                 ("finished_warehouse_packaging_fee", "NUMERIC(14, 6)"),
                 ("finished_pretax_profit_fee", "NUMERIC(14, 6)"),
+                ("die_fee_id", "INTEGER"),
+                ("die_fee_amount", "NUMERIC(14, 6)"),
+                ("gauge_fee_id", "INTEGER"),
+                ("gauge_fee_amount", "NUMERIC(14, 6)"),
             )
             for column_name, column_def in cost_new_columns:
                 if column_name in cost_cols:

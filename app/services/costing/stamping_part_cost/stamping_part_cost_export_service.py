@@ -24,7 +24,7 @@ from app.services.costing.stamping_part_cost.export.process_sheet import (
 
 
 class StampingPartCostExportService:
-    """导出冲压零件核价结果（材料费 + 加工费）。"""
+    """导出冲压零件核价结果（材料费 + 加工费 + 模具费 + 检具费）。"""
 
     def __init__(self) -> None:
         self.repository = StampingPartCostRepository()

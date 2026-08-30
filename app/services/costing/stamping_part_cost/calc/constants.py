@@ -6,7 +6,7 @@ from decimal import Decimal, ROUND_HALF_UP
 
 from app.common.money import Q3
 
-FORMULA_VERSION = "part-cost-v6"
+FORMULA_VERSION = "part-cost-v7"
 AMOUNT_QUANTIZE = Decimal("0.000001")
 UTIL_QUANTIZE = Decimal("0.01")
 FEE_QUANTIZE = Q3
@@ -33,14 +33,22 @@ def compute_finished_cost_stack(
     management_rate: Decimal,
     warehouse_packaging_rate: Decimal,
     pretax_profit_rate: Decimal,
+    die_fee_amount: Decimal = Decimal("0"),
+    gauge_fee_amount: Decimal = Decimal("0"),
 ) -> tuple[Decimal, Decimal, Decimal, Decimal, Decimal, Decimal]:
     """直接成本与四项成品费用 → 单件成本。
+
+    直接成本 = 原材料净成本 R + 加工费 + 模具费 + 检具费。
+    无模具/检具档案时金额为 0。
 
     Returns:
         (direct_cost, finance_fee, management_fee,
          warehouse_packaging_fee, pretax_profit_fee, unit_cost)
     """
-    direct_cost = quantize(material_net_per_part + process_fee_amount, AMOUNT_QUANTIZE)
+    direct_cost = quantize(
+        material_net_per_part + process_fee_amount + die_fee_amount + gauge_fee_amount,
+        AMOUNT_QUANTIZE,
+    )
     finance_fee = quantize(direct_cost * finance_rate, AMOUNT_QUANTIZE)
     management_fee = quantize(direct_cost * management_rate, AMOUNT_QUANTIZE)
     warehouse_packaging_fee = quantize(direct_cost * warehouse_packaging_rate, AMOUNT_QUANTIZE)

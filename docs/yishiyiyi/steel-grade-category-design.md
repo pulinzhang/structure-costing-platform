@@ -25,10 +25,10 @@
 | 来源 | 字段 | 有没有大类 | 问题 |
 |------|------|------------|------|
 | 基准价格 `steel_base_prices` | `grade`（钢材牌号）+ `category_name`（大类） | 有。注释与现网取值就是 **镀锌、冷轧、酸洗** | 大类写在每一条月度基价行上，随年月/钢厂/规格重复；没有「全库牌号清单」 |
-| 冲压零件 `stamping_parts` / 拼焊子片 `stamping_tailor_weld_blanks` | `material`（工艺卡「材质」，语义即牌号） | **没有** | 工艺卡只有牌号。核价时用 `material == grade` 去撞基价，大类是从命中的基价行抄来的 |
+| 冲压零件 `stamping_parts` / 拼焊子片 `stamping_tailor_weld_blanks` | `material`（工艺卡「材质」，语义即牌号） | **没有** | 工艺卡只有牌号。核价时用档案把 `material` 收成大类，再对基价 `category_name` |
 
-钢材联动现网匹配键是：`year + month + location + grade(=零件 material)`（见 `enrich_base_price.py`）。  
-档案不改变这条匹配，只把「牌号 ↔ 大类」从基价行上抽成可维护的主数据。
+钢材联动现网：基价与厚度政策按 `year + month + location + 钢厂 + 档案大类`（见 `enrich_base_price.py`）；落库仍带工艺牌号。零件核价按 `牌号 + 料厚` 取联动价，不按大类回退。材料牌号用来查分类，不对基价表 `grade`。
+档案把「牌号 ↔ 大类」从基价行上抽成可维护的主数据。
 
 要管的四件事：
 

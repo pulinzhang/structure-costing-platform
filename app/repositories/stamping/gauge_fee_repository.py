@@ -31,6 +31,40 @@ class StampingGaugeFeeRepository:
     def get_by_id(self, db: Session, record_id: int) -> StampingGaugeFee | None:
         return db.query(StampingGaugeFee).filter(StampingGaugeFee.id == record_id).first()
 
+    def get_effective_by_part(
+        self,
+        db: Session,
+        *,
+        location: str,
+        vehicle_model: str,
+        part_number: str,
+    ) -> StampingGaugeFee | None:
+        return (
+            db.query(StampingGaugeFee)
+            .filter(
+                StampingGaugeFee.location == location,
+                StampingGaugeFee.vehicle_model == vehicle_model,
+                StampingGaugeFee.part_number == part_number,
+                StampingGaugeFee.status == STATUS_EFFECTIVE,
+            )
+            .first()
+        )
+
+    def count_effective(
+        self,
+        db: Session,
+        *,
+        location: str,
+        vehicle_model: str | None = None,
+    ) -> int:
+        query = db.query(StampingGaugeFee).filter(
+            StampingGaugeFee.location == location,
+            StampingGaugeFee.status == STATUS_EFFECTIVE,
+        )
+        if vehicle_model:
+            query = query.filter(StampingGaugeFee.vehicle_model == vehicle_model)
+        return query.count()
+
     def list_page(
         self,
         db: Session,

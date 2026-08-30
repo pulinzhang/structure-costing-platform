@@ -1231,6 +1231,12 @@ def _build_stamping_drilldown(
         "process_fee_amount": (
             str(latest.process_fee_amount) if latest.process_fee_amount is not None else None
         ),
+        "die_fee_amount": (
+            str(latest.die_fee_amount) if latest.die_fee_amount is not None else None
+        ),
+        "gauge_fee_amount": (
+            str(latest.gauge_fee_amount) if latest.gauge_fee_amount is not None else None
+        ),
         "calc_status": latest.calc_status,
         "stamping_supplier": latest.stamping_supplier,
         "month": f"{latest.year:04d}-{latest.month:02d}",

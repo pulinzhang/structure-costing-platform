@@ -1,4 +1,4 @@
-"""加减价匹配：牌号 → 档案大类 → 厚度加减价；宽度本期下线。"""
+"""加减价匹配：已按大类匹配的行直接落档厚度政策；宽度本期下线。"""
 
 from __future__ import annotations
 
@@ -12,6 +12,7 @@ from app.services.costing.steel_price.calc.steps.adjustments.thickness import (
     ThicknessAdjustmentMatcher,
 )
 from app.services.yishiyiyi.steel_grade_category import SteelGradeCategoryService
+from app.services.yishiyiyi.steel_grade_category.constants import as_canonical_category
 
 
 class AdjustmentApplier:
@@ -40,7 +41,7 @@ class AdjustmentApplier:
         rows: list[CalcRow],
         policies: list[SteelPricePolicy],
     ) -> list[CalcRow]:
-        """厚度加减价：牌号 → 档案大类 → CATEGORY 政策 → 料厚落档。"""
+        """厚度加减价：大类 → CATEGORY 政策 → 料厚落档。"""
         grades = sorted({(row.grade or "").strip() for row in rows if (row.grade or "").strip()})
         category_map = {
             (vo.grade or "").strip(): vo
@@ -71,11 +72,19 @@ class AdjustmentApplier:
             row.add_message("缺少基价维度，无法匹配厚度加减价政策")
             return
 
+        existing = as_canonical_category(row.category_name)
+        if existing:
+            row.category_name = existing
+            self.thickness_matcher.apply(row, policies)
+            return
+
         grade = (row.grade or "").strip()
         archive = category_map.get(grade)
-        category_name = (archive.category_name or "").strip() if archive is not None else ""
+        category_name = as_canonical_category(
+            archive.category_name if archive is not None else None
+        )
         if not category_name:
-            row.add_message("牌号未分类，无法匹配厚度加减价政策")
+            row.add_message("未分类，无法匹配厚度加减价政策")
             return
         row.category_name = category_name
         self.thickness_matcher.apply(row, policies)

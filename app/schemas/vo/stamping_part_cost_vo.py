@@ -55,6 +55,10 @@ class StampingPartCostVO(BaseModel):
     scrap_ton_price: Decimal | None = None
     process_fee_id: int | None = None
     process_fee_amount: Decimal | None = None
+    die_fee_id: int | None = None
+    die_fee_amount: Decimal | None = None
+    gauge_fee_id: int | None = None
+    gauge_fee_amount: Decimal | None = None
 
     material_amount_sheet: Decimal | None = None
     loss_scrap_deduction: Decimal | None = None
@@ -129,6 +133,8 @@ class StampingPartCostVO(BaseModel):
         "process_scrap_deduction",
         "scrap_amount_sheet",
         "material_net_per_part",
+        "die_fee_amount",
+        "gauge_fee_amount",
         "direct_cost",
         "finished_finance_fee",
         "finished_management_fee",
@@ -226,6 +232,8 @@ class StampingPartCostCalcReadyVO(BaseModel):
     steel_price_count: int = 0
     scrap_price_count: int = 0
     process_fee_count: int = 0
+    die_fee_count: int = 0
+    gauge_fee_count: int = 0
     can_calculate: bool = False
 
 

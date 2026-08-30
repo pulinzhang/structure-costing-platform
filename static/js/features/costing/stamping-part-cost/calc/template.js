@@ -50,11 +50,21 @@ export function partCostCalcTemplate() {
                         <span class="text-[9px] text-[#666] block">加工费</span>
                         <span id="cntFee" class="text-xs font-mono font-bold text-[#dddddd]">- <span class="text-[9px] font-normal text-[#555]">条</span></span>
                     </div>
+                    <div class="w-px h-5 bg-[#222]"></div>
+                    <div>
+                        <span class="text-[9px] text-[#666] block">模具费</span>
+                        <span id="cntDieFee" class="text-xs font-mono font-bold text-[#dddddd]">- <span class="text-[9px] font-normal text-[#555]">条</span></span>
+                    </div>
+                    <div class="w-px h-5 bg-[#222]"></div>
+                    <div>
+                        <span class="text-[9px] text-[#666] block">检具费</span>
+                        <span id="cntGaugeFee" class="text-xs font-mono font-bold text-[#dddddd]">- <span class="text-[9px] font-normal text-[#555]">条</span></span>
+                    </div>
                 </div>
 
                 <div class="flex items-center gap-3">
                     <span id="reCalcNotice" class="text-[9px] text-[#666]">
-                        再次计算将覆盖未审核数据；已审核记录跳过
+                        按零件牌号+料厚取钢材联动价（多钢厂取最低）；再次计算覆盖未审核，已审核跳过
                     </span>
                     <button id="startCalcBtn"
                             class="h-7 px-4 text-[10px] bg-[#b71c1c] hover:bg-[#c62828] text-white font-medium rounded-sm transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
@@ -80,7 +90,7 @@ export function partCostCalcTemplate() {
             </div>
 
             <div id="dataReadyErrorBanner" class="hidden text-[10px] text-[#d69e2e] bg-[#1a1710] px-2.5 py-1.5 border-l-2 border-[#d69e2e]">
-                提示：须选定年度、月份、基地、冲压工厂；并确保钢材联动价、废料月度价、加工费与匹配零件均已就绪。
+                提示：须选定年度、月份、基地、冲压工厂；并确保钢材联动价、废料月度价、加工费与匹配零件均已就绪。模具费、检具费缺档按 0 计入。
             </div>
 
             <div class="pt-2">

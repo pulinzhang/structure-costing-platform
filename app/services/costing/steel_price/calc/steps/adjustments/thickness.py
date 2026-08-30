@@ -27,8 +27,8 @@ class ThicknessAdjustmentMatcher:
         Returns:
             True 表示命中；False 表示未命中（已写入提示消息）。
         """
-        if not (row.grade or "").strip() or not (row.category_name or "").strip():
-            row.add_message("牌号未分类，无法匹配厚度加减价政策")
+        if not (row.category_name or "").strip():
+            row.add_message("未分类，无法匹配厚度加减价政策")
             return False
 
         policy = find_best_thickness_policy(row, policies)

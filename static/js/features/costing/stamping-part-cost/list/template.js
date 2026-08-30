@@ -78,7 +78,7 @@ export function partCostListTemplate() {
                             </button>
                             <button id="costExportBtn" type="button"
                                     class="inline-flex items-center gap-1.5 bg-transparent text-[#6E6E73] border border-[#2A2A35] px-3 py-1.5 text-[11px] font-medium rounded-md hover:border-[#FF1E27]/50 hover:text-[#FF1E27] hover:bg-[#FF1E27]/10 hover:shadow-[0_0_12px_rgba(255,30,39,0.2)] transition-all duration-200"
-                                    title="按当前筛选导出冲压零件核价结果（含材料费与加工费）">
+                                    title="按当前筛选导出冲压零件核价结果（含材料费、加工费、模具费、检具费）">
                                 ${window.svgIcon('download', 'w-3 h-3')}
                                 导出 Excel
                             </button>
@@ -134,7 +134,7 @@ export function partCostListTemplate() {
                 </div>
 
                 <div class="overflow-x-auto bg-[#0A0A0E] brabus-bg-grid">
-                    <table id="costDataTable" class="w-full table-fixed bg-transparent border-collapse" style="min-width: 1520px;">
+                    <table id="costDataTable" class="w-full table-fixed bg-transparent border-collapse" style="min-width: 1640px;">
                         <colgroup id="costColgroup">
                             <col style="width:3px">
                             <col style="width:72px">
@@ -151,6 +151,8 @@ export function partCostListTemplate() {
                             <col class="cost-breakdown-col hidden" style="width:64px">
                             <col class="cost-breakdown-col hidden" style="width:68px">
                             <col style="width:76px">
+                            <col style="width:58px">
+                            <col style="width:58px">
                             <col style="width:58px">
                             <col style="width:72px">
                             <col style="width:58px">
@@ -185,7 +187,9 @@ export function partCostListTemplate() {
                                     原材料R
                                 </th>
                                 <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]">加工费</th>
-                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]" title="直接成本 = R + 加工费">直接成本</th>
+                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]" title="年度模具费最终价（元/件）；无档案为 0">模具费</th>
+                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]" title="检具费（万元）÷ 分摊万台 = 元/件；无档案为 0">检具费</th>
+                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]" title="直接成本 = R + 加工费 + 模具费 + 检具费">直接成本</th>
                                 <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#484848]" title="直接成本 × 仓储+包装管理费用率">仓储包装</th>
                                 <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#484848]" title="直接成本 × 管理费率">管理费</th>
                                 <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#484848]" title="直接成本 × 财务费率">财务费</th>
@@ -346,6 +350,8 @@ export function renderCostRows(records, breakdownOpen = false) {
             <td class="cost-breakdown-col ${breakdownHidden} ${num}">${fmtNum(row.scrap_amount_sheet, 2)}</td>
             <td class="${num} text-[#C8C8D0] font-semibold">${fmtNum(row.material_net_per_part, 2)}</td>
             <td class="${num}">${fmtNum(row.process_fee_amount, 2)}</td>
+            <td class="${num}">${fmtNum(row.die_fee_amount, 2)}</td>
+            <td class="${num}">${fmtNum(row.gauge_fee_amount, 2)}</td>
             <td class="${num}">${fmtNum(row.direct_cost, 2)}</td>
             <td class="px-2 py-2 font-mono text-[9px] text-right tabular-nums text-[#555555]">${fmtNum(row.finished_warehouse_packaging_fee, 2)}</td>
             <td class="px-2 py-2 font-mono text-[9px] text-right tabular-nums text-[#555555]">${fmtNum(row.finished_management_fee, 2)}</td>

@@ -34,6 +34,8 @@ from app.repositories.costing.stamping_part_cost.stamping_part_cost_repository i
     StampingPartCostRepository,
 )
 from app.repositories.costing.steel_price.steel_price_repository import SteelPriceRepository
+from app.repositories.stamping.die_fee_repository import StampingDieFeeRepository
+from app.repositories.stamping.gauge_fee_repository import StampingGaugeFeeRepository
 from app.repositories.stamping.stamping_process_fee_repository import (
     StampingProcessFeeRepository,
 )
@@ -134,6 +136,10 @@ def _part_cost_upsert(
         payload.scrap_ton_price = amounts.scrap_ton_price
         payload.process_fee_id = amounts.process_fee_id
         payload.process_fee_amount = amounts.process_fee_amount
+        payload.die_fee_id = amounts.die_fee_id
+        payload.die_fee_amount = amounts.die_fee_amount
+        payload.gauge_fee_id = amounts.gauge_fee_id
+        payload.gauge_fee_amount = amounts.gauge_fee_amount
         payload.material_amount_sheet = amounts.material_amount_sheet
         payload.loss_scrap_deduction = amounts.loss_scrap_deduction
         payload.process_scrap_deduction = amounts.process_scrap_deduction
@@ -158,6 +164,8 @@ class StampingPartCostCalcOrchestrator:
         self.steel_repo = SteelPriceRepository()
         self.scrap_repo = StampingScrapPriceRepository()
         self.fee_repo = StampingProcessFeeRepository()
+        self.die_fee_repo = StampingDieFeeRepository()
+        self.gauge_fee_repo = StampingGaugeFeeRepository()
         self.settings_service = SettingsService()
         self.price_resolver = PriceResolver(
             steel_repo=self.steel_repo,
@@ -203,6 +211,8 @@ class StampingPartCostCalcOrchestrator:
         steel_price_count = 0
         scrap_price_count = 0
         process_fee_count = 0
+        die_fee_count = 0
+        gauge_fee_count = 0
 
         if year and month and location_value:
             for candidate in location_candidates(location_value):
@@ -224,6 +234,19 @@ class StampingPartCostCalcOrchestrator:
                 location=location_value,
                 stamping_supplier=supplier_value,
                 statuses=[AUDIT_PENDING, AUDIT_APPROVED, AUDIT_REJECTED],
+            )
+
+        if year and location_value:
+            die_fee_count = self.die_fee_repo.count_by_year_location(
+                db,
+                year=year,
+                location=location_value,
+                vehicle_model=vehicle_model,
+            )
+            gauge_fee_count = self.gauge_fee_repo.count_effective(
+                db,
+                location=location_value,
+                vehicle_model=vehicle_model,
             )
 
         can_calculate = bool(
@@ -248,6 +271,8 @@ class StampingPartCostCalcOrchestrator:
             steel_price_count=steel_price_count,
             scrap_price_count=scrap_price_count,
             process_fee_count=process_fee_count,
+            die_fee_count=die_fee_count,
+            gauge_fee_count=gauge_fee_count,
             can_calculate=can_calculate,
         )
 
@@ -323,7 +348,8 @@ class StampingPartCostCalcOrchestrator:
             )
         detail_lines.append(
             f"就绪：零件 {ready.part_count}，钢材价 {ready.steel_price_count}，"
-            f"废料价 {ready.scrap_price_count}，加工费 {ready.process_fee_count}"
+            f"废料价 {ready.scrap_price_count}，加工费 {ready.process_fee_count}，"
+            f"模具费 {ready.die_fee_count}，检具费 {ready.gauge_fee_count}"
         )
 
         scrap = self.price_resolver.find_scrap_price(

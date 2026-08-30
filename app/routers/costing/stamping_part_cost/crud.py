@@ -77,7 +77,7 @@ def export_download(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_PART_COST_EXPORT)),
 ) -> StreamingResponse:
-    """按当前筛选条件导出冲压零件核价结果 Excel（材料费 + 加工费）。"""
+    """按当前筛选条件导出冲压零件核价结果 Excel（材料费 + 加工费 + 模具费 + 检具费）。"""
     content, filename = _export_service.export(
         db,
         year=year,

@@ -79,7 +79,7 @@
 | `grade_exact` 厚度回退 | 新 Matcher **只认** `grade_type=CATEGORY` |
 | 改 `steel_price_ladder_items` 表结构 | 阶梯字段不变 |
 | 改 `steel_grade_categories` 表结构 | 档案仍三分类 |
-| 改基准价匹配键 | 仍是 `location + grade` |
+| 改基准价表结构 | 基价行仍带 `grade`；核价匹配只认档案大类，不对基价牌号 |
 
 ---
 

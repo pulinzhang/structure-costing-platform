@@ -4,7 +4,7 @@
  */
 
 import { canAccessPage } from '../../permissions.js?v=9';
-import { dashboardTemplate } from './template.js?v=5';
+import { dashboardTemplate } from './template.js?v=6';
 
 const DASHBOARD_STATS_API = '/api/dashboard/stats';
 

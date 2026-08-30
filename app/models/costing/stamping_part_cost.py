@@ -136,6 +136,18 @@ class StampingPartCost(AuditUserMixin, Base):
     process_fee_amount: Mapped[Decimal | None] = mapped_column(
         Numeric(12, 3), nullable=True, comment="加工费(元/件)"
     )
+    die_fee_id: Mapped[int | None] = mapped_column(
+        Integer, nullable=True, comment="年度模具费结果 id"
+    )
+    die_fee_amount: Mapped[Decimal | None] = mapped_column(
+        Numeric(14, 6), nullable=True, comment="模具费(元/件)"
+    )
+    gauge_fee_id: Mapped[int | None] = mapped_column(
+        Integer, nullable=True, comment="检具费档案 id"
+    )
+    gauge_fee_amount: Mapped[Decimal | None] = mapped_column(
+        Numeric(14, 6), nullable=True, comment="检具费(元/件)=万元÷万台"
+    )
 
     # —— 金额（对齐 Excel R：①−②−③）——
     material_amount_sheet: Mapped[Decimal | None] = mapped_column(
@@ -166,7 +178,7 @@ class StampingPartCost(AuditUserMixin, Base):
     direct_cost: Mapped[Decimal | None] = mapped_column(
         Numeric(14, 6),
         nullable=True,
-        comment="直接成本=R(元)+加工费(元)",
+        comment="直接成本=R(元)+加工费+模具费+检具费(元/件)",
     )
     finished_finance_fee: Mapped[Decimal | None] = mapped_column(
         Numeric(14, 6),
@@ -209,7 +221,7 @@ class StampingPartCost(AuditUserMixin, Base):
         Text, nullable=True, comment="计算失败原因"
     )
     formula_version: Mapped[str | None] = mapped_column(
-        String(50), nullable=True, comment="公式版本，如 part-cost-v6"
+        String(50), nullable=True, comment="公式版本，如 part-cost-v7"
     )
     calculated_at: Mapped[datetime | None] = mapped_column(
         DateTime, nullable=True, comment="计算时间"

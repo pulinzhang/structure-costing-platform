@@ -31,6 +31,14 @@ def normalize_category_name(raw: str | None) -> str | None:
     return _ALIAS_TO_CANONICAL.get(name, name)
 
 
+def as_canonical_category(raw: str | None) -> str | None:
+    """已是冷轧/镀锌/酸洗（含别名）则返回三字；否则 None。"""
+    name = normalize_category_name(raw)
+    if name in CANONICAL_CATEGORY_NAMES:
+        return name
+    return None
+
+
 def seq_for_category(category_name: str | None) -> int | None:
     if not category_name:
         return None

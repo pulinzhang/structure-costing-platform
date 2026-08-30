@@ -23,7 +23,7 @@ class SteelPriceCalcRequest:
 
 @dataclass
 class MaterialThicknessRow:
-    """Step1：冲压材料厚度规格（基地 + 钢种 + 厚度，三者缺一不可）。"""
+    """Step1：冲压材料厚度规格（基地 + 牌号 + 厚度，三者缺一不可）。"""
 
     location: str
     material: str

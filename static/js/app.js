@@ -23,7 +23,7 @@ import {
     fallbackPageName,
 } from './permissions.js?v=9';
 import { bootLlmAssistant } from './llm-assistant/boot.js?v=26';
-import { pageConfig as dashboardPage }      from './features/dashboard/index.js?v=6';
+import { pageConfig as dashboardPage }      from './features/dashboard/index.js?v=7';
 import { pageConfig as stampingUploadPage } from './features/stamping/process/upload/index.js?v=40';
 import { pageConfig as stampingPartsPage }  from './features/stamping/process/parts/index.js?v=32';
 import { pageConfig as stampingDieUploadPage } from './features/stamping/die/upload/index.js?v=4';
@@ -38,9 +38,9 @@ import { pageConfig as stampingTonnageUploadPage } from './features/stamping/ton
 import { pageConfig as stampingProcessFeeCalcPage } from './features/stamping/process-fee/calc/index.js?v=25';
 import { pageConfig as stampingProcessFeePage } from './features/stamping/process-fee/list/index.js?v=42';
 import { pageConfig as steelPriceListPage }   from './features/costing/steel-price/list/index.js?v=57';
-import { pageConfig as steelPriceCalcPage }    from './features/costing/steel-price/calc/index.js?v=17';
-import { pageConfig as stampingPartCostCalcPage } from './features/costing/stamping-part-cost/calc/index.js?v=10';
-import { pageConfig as stampingPartCostPage } from './features/costing/stamping-part-cost/list/index.js?v=56';
+import { pageConfig as steelPriceCalcPage }    from './features/costing/steel-price/calc/index.js?v=18';
+import { pageConfig as stampingPartCostCalcPage } from './features/costing/stamping-part-cost/calc/index.js?v=12';
+import { pageConfig as stampingPartCostPage } from './features/costing/stamping-part-cost/list/index.js?v=57';
 import { pageConfig as l0AssemblyCostCalcPage } from './features/costing/l0-assembly-cost/calc/index.js?v=3';
 import { pageConfig as l0AssemblyCostPage } from './features/costing/l0-assembly-cost/list/index.js?v=11';
 import { pageConfig as steelPricePolicyUploadPage } from './features/yishiyiyi/policy/upload/index.js?v=37';
