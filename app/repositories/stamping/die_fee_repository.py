@@ -1,6 +1,7 @@
 """冲压年度模具费 Repository。"""
 
 from datetime import datetime
+from decimal import Decimal
 from typing import TypedDict
 
 from sqlalchemy import case, func
@@ -23,9 +24,14 @@ class DieFeeFilterSummary(TypedDict):
     pending_count: int
     approved_count: int
     zero_count: int
+    total_fee: Decimal
+    avg_fee: Decimal
 
 
-_ITEM_SKIP = frozenset({"id", "fee_id"})
+def _sql_money(value: object) -> Decimal:
+    if value is None:
+        return Decimal("0")
+    return Decimal(str(value))
 
 
 class StampingDieFeeRepository:
@@ -153,6 +159,7 @@ class StampingDieFeeRepository:
         )
         row = query.with_entities(
             func.count(StampingDieFee.id).label("total_count"),
+            func.coalesce(func.sum(StampingDieFee.final_die_fee), 0).label("total_fee"),
             func.sum(case((StampingDieFee.audit_status == AUDIT_PENDING, 1), else_=0)).label(
                 "pending_count"
             ),
@@ -161,11 +168,16 @@ class StampingDieFeeRepository:
             ),
             func.sum(case((StampingDieFee.final_die_fee == 0, 1), else_=0)).label("zero_count"),
         ).one()
+        total_count = int(row.total_count or 0)
+        total_fee = _sql_money(row.total_fee)
+        avg_fee = (total_fee / Decimal(total_count)) if total_count else Decimal("0")
         return {
-            "total_count": int(row.total_count or 0),
+            "total_count": total_count,
             "pending_count": int(row.pending_count or 0),
             "approved_count": int(row.approved_count or 0),
             "zero_count": int(row.zero_count or 0),
+            "total_fee": total_fee,
+            "avg_fee": avg_fee,
         }
 
     def list_for_export(

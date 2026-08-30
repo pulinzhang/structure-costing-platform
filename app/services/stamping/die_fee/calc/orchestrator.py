@@ -38,6 +38,7 @@ from app.services.stamping.die_fee.calc.constants import (
     STATUS_SUCCESS,
 )
 from app.services.stamping.die_fee.calc.part_calculator import DieFeePartCalculator
+from app.services.stamping.die_fee.calc.weight_resolver import PreviousWeightIndex
 from app.services.stamping.die_fee.fee_math import ZERO
 from app.services.async_task.worker_runner import ProgressCallback
 
@@ -75,15 +76,17 @@ class StampingDieFeeCalcOrchestrator:
                 and price.allocation_qty is not None
                 and price.allocation_qty > ZERO
             )
+            previous_weights = PreviousWeightIndex()
             if has_unit_price and price is not None:
                 for part in parts:
-                    result = self.part_calculator.calc_part(
+                    calculated, previous_weights = self.part_calculator.calc_part(
                         part,
                         steel_plate_unit_price=price.steel_plate_unit_price,
                         progressive_die_unit_price=price.progressive_die_unit_price,
                         allocation_qty=price.allocation_qty,
+                        previous_weights=previous_weights,
                     )
-                    if result is not None:
+                    if calculated is not None:
                         calculable_count += 1
         return StampingDieFeeCalcReadyVO(
             year=year,
@@ -184,12 +187,14 @@ class StampingDieFeeCalcOrchestrator:
         success_count = 0
         skipped_no_die_count = 0
         total = len(parts)
+        previous_weights = PreviousWeightIndex()
         for index, part in enumerate(parts, start=1):
-            calculated = self.part_calculator.calc_part(
+            calculated, previous_weights = self.part_calculator.calc_part(
                 part,
                 steel_plate_unit_price=price.steel_plate_unit_price,
                 progressive_die_unit_price=price.progressive_die_unit_price,
                 allocation_qty=price.allocation_qty,
+                previous_weights=previous_weights,
             )
             if calculated is None:
                 skipped_no_die_count += 1

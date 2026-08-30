@@ -86,6 +86,8 @@ class StampingDieFeeService:
             pending_count=summary["pending_count"],
             approved_count=summary["approved_count"],
             zero_count=summary["zero_count"],
+            total_fee=summary["total_fee"],
+            avg_fee=summary["avg_fee"],
         )
         return [StampingDieFeeVO.model_validate(row) for row in rows], total, filters
 

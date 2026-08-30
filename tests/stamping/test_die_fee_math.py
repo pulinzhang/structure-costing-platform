@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+from app.services.stamping.die_fee.export_service import _check_weight_formula
 from app.services.stamping.die_fee.fee_math import (
     calc_line_die_fee,
     is_progressive_mode,
@@ -40,3 +41,10 @@ def test_progressive_from_production_mode() -> None:
 def test_final_fee_allows_zero_not_used_for_negative_check() -> None:
     assert resolve_final_die_fee(Decimal("1.0000"), Decimal("-1.0000")) == Decimal("0.0000")
     assert resolve_final_die_fee(Decimal("1.0000"), Decimal("-0.5000")) == Decimal("0.5000")
+
+
+def test_check_weight_excel_formula() -> None:
+    formula = _check_weight_formula(6)
+    assert formula.startswith("=IF(COUNT(X6,Y6,Z6,AA6)=4,")
+    assert "X6*Y6*Z6*AA6*7.85/1000000000" in formula
+    assert "^" not in formula

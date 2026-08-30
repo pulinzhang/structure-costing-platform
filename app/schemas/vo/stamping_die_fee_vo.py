@@ -182,3 +182,9 @@ class DieFeeListFilters(BaseModel):
     pending_count: int = 0
     approved_count: int = 0
     zero_count: int = 0
+    total_fee: Decimal = Decimal("0")
+    avg_fee: Decimal = Decimal("0")
+
+    @field_serializer("total_fee", "avg_fee")
+    def serialize_summary_money(self, value: Decimal | None) -> str | None:
+        return optional_format_money(value, Q4, 4)

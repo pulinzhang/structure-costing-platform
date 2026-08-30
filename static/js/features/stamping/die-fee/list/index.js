@@ -1,333 +1,876 @@
-import { dieFeeListTemplate, renderDieFeeRows } from './template.js?v=1';
+/**
+ * 冲压模具费列表页
+ * 对齐冲压加工费列表：HUD + 胶囊筛选 + 查看/编辑抽屉 + 批量审核/反审核/删除 + Excel 导出
+ */
+
+import {
+    dieFeeListTemplate,
+    renderDieFeeRows,
+    renderDieFeePagination,
+    updateDieFeeHud,
+    updateDieFeeFilterCapsules,
+    shortPartNumber,
+} from './template.js?v=2';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
 } from '../../../../page-size.js?v=2';
 
 const API_BASE = '/api/stamping/die-fees';
-const SCOPE_REQUIRED_MESSAGE = '请先选择年度、基地、项目';
+const DRAWER_ANIMATION_MS = 300;
+const SCOPE_REQUIRED_MESSAGE = '须选定年度、基地、项目';
 
 const feeState = {
+    records: [],
+    total: 0,
     page: 1,
     pageSize: DEFAULT_PAGE_SIZE,
-    total: 0,
-    items: [],
-    onlyZero: false,
+    totalPages: 1,
     canUpdate: true,
-    canDelete: true,
-    canApprove: true,
-    canReverse: true,
-    canExport: true,
+    advancedOpen: false,
+    onlyZero: false,
+    zeroCount: 0,
+    batchAuditSubmitting: false,
+    viewingId: null,
+    editingDieFee: null,
 };
 
-function parseHashParams() {
-    const hash = window.location.hash || '';
-    const qIndex = hash.indexOf('?');
-    if (qIndex < 0) return {};
-    return Object.fromEntries(new URLSearchParams(hash.slice(qIndex + 1)));
+function openDrawer(drawerId, backdropId) {
+    const drawer = document.getElementById(drawerId);
+    const backdrop = document.getElementById(backdropId);
+    if (!drawer) return;
+    drawer.style.display = 'flex';
+    if (backdrop) backdrop.style.display = 'block';
+    void drawer.offsetWidth;
+    drawer.classList.remove('translate-x-full');
+    drawer.classList.add('translate-x-0');
 }
 
-function readScope() {
-    return {
-        year: Number(document.getElementById('dieFeeYear')?.value),
-        location: document.getElementById('dieFeeLocation')?.value || '',
-        vehicle_model: document.getElementById('dieFeeVehicle')?.value || '',
-    };
-}
-
-function hasScope(scope) {
-    return scope.year >= 2000 && scope.location && scope.vehicle_model;
+function closeDrawer(drawerId, backdropId) {
+    const drawer = document.getElementById(drawerId);
+    const backdrop = document.getElementById(backdropId);
+    if (!drawer) return;
+    drawer.classList.remove('translate-x-0');
+    drawer.classList.add('translate-x-full');
+    setTimeout(() => {
+        drawer.style.display = 'none';
+        if (backdrop) backdrop.style.display = 'none';
+    }, DRAWER_ANIMATION_MS);
 }
 
 function init() {
-    feeState.canUpdate = typeof can === 'function' ? can('op:stamping-die-fee:update') : true;
-    feeState.canDelete = typeof can === 'function' ? can('op:stamping-die-fee:delete') : true;
-    feeState.canApprove = typeof can === 'function' ? can('op:stamping-die-fee:approve') : true;
-    feeState.canReverse = typeof can === 'function' ? can('op:stamping-die-fee:reverse') : true;
-    feeState.canExport = typeof can === 'function' ? can('op:stamping-die-fee:export') : true;
-    if (!feeState.canExport) document.getElementById('dieFeeExportBtn')?.classList.add('hidden');
-    if (!feeState.canApprove) document.getElementById('dieFeeApproveBtn')?.classList.add('hidden');
-    if (!feeState.canReverse) document.getElementById('dieFeeReverseBtn')?.classList.add('hidden');
-    if (!feeState.canDelete) document.getElementById('dieFeeDeleteScopeBtn')?.classList.add('hidden');
-
-    const yearEl = document.getElementById('dieFeeYear');
-    const params = parseHashParams();
-    if (yearEl) yearEl.value = params.year || String(new Date().getFullYear());
-
+    bindEvents();
     bindPageSizeSelect('dieFeePageSize', {
         getSize: () => feeState.pageSize,
         setSize: (size) => {
             feeState.pageSize = size;
         },
-        onChange: () => loadList(1),
+        onChange: () => loadData(1),
     });
-    bindEvents();
-    loadFilters().then(() => {
-        if (params.location) {
-            const loc = document.getElementById('dieFeeLocation');
-            if (loc) loc.value = params.location;
-        }
-        return loadFilters(true);
-    }).then(() => {
-        if (params.vehicle_model) {
-            const veh = document.getElementById('dieFeeVehicle');
-            if (veh) veh.value = params.vehicle_model;
-        }
-        renderEmpty();
-        if (hasScope(readScope())) loadList(1);
+    applyPermissionUi();
+    applyHashFilters();
+    fillAuditStatusOptions();
+    loadFilterOptions().then(() => {
+        updateDieFeeFilterCapsules();
+        loadData(1);
     });
+}
+
+function applyPermissionUi() {
+    feeState.canUpdate = typeof can === 'function' ? can('op:stamping-die-fee:update') : true;
+    const canDelete = typeof can === 'function' ? can('op:stamping-die-fee:delete') : true;
+    const canApprove = typeof can === 'function' ? can('op:stamping-die-fee:approve') : true;
+    const canReverse = typeof can === 'function' ? can('op:stamping-die-fee:reverse') : true;
+    const canExport = typeof can === 'function' ? can('op:stamping-die-fee:export') : true;
+    if (!canDelete) document.getElementById('dieFeeBatchDeleteBtn')?.classList.add('hidden');
+    if (!canApprove) document.getElementById('dieFeeBatchApproveBtn')?.classList.add('hidden');
+    if (!canReverse) document.getElementById('dieFeeBatchReverseBtn')?.classList.add('hidden');
+    if (!canExport) document.getElementById('dieFeeExportBtn')?.classList.add('hidden');
+}
+
+function applyHashFilters() {
+    const hash = window.location.hash || '';
+    const queryIndex = hash.indexOf('?');
+    if (queryIndex < 0) return;
+    const qs = new URLSearchParams(hash.slice(queryIndex + 1));
+    const year = qs.get('year') || '';
+    const location = qs.get('location') || '';
+    const vehicle = qs.get('vehicle_model') || '';
+    if (year) {
+        const yearEl = document.getElementById('dieFeeYearFilter');
+        if (yearEl) yearEl.dataset.pending = year;
+    }
+    if (location) {
+        const locEl = document.getElementById('dieFeeLocationFilter');
+        if (locEl) locEl.dataset.pending = location;
+    }
+    if (vehicle) {
+        const vehicleEl = document.getElementById('dieFeeVehicleFilter');
+        if (vehicleEl) vehicleEl.dataset.pending = vehicle;
+    }
+    if (year || location || vehicle) {
+        setAdvancedOpen(true);
+    }
+}
+
+function fillAuditStatusOptions() {
+    const el = document.getElementById('dieFeeAuditStatusFilter');
+    if (!el) return;
+    el.innerHTML = `
+        <option value="">全部</option>
+        <option value="pending">待审</option>
+        <option value="approved">已通过</option>
+        <option value="rejected">已驳回</option>
+    `;
+}
+
+function setAdvancedOpen(isOpen) {
+    feeState.advancedOpen = isOpen;
+    document.getElementById('dieFeeAdvancedFilterPanel')?.classList.toggle('hidden', !isOpen);
+    const label = document.getElementById('dieFeeAdvancedFilterLabel');
+    if (label) label.textContent = isOpen ? '收起高级筛选' : '展开高级筛选';
 }
 
 function bindEvents() {
-    document.getElementById('dieFeeLocation')?.addEventListener('change', () => {
-        loadFilters(true);
-        renderEmpty();
+    document.getElementById('dieFeeSearchBtn')?.addEventListener('click', () => loadData(1));
+    document.getElementById('dieFeeResetBtn')?.addEventListener('click', resetFilters);
+    document.getElementById('dieFeeToggleAdvancedFilter')?.addEventListener('click', () => {
+        setAdvancedOpen(!feeState.advancedOpen);
     });
-    document.getElementById('dieFeeSearchBtn')?.addEventListener('click', () => loadList(1));
-    document.getElementById('dieFeePartNumber')?.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            loadList(1);
-        }
-    });
-    document.getElementById('dieFeeOnlyZeroBtn')?.addEventListener('click', () => {
-        feeState.onlyZero = !feeState.onlyZero;
-        document.getElementById('dieFeeOnlyZeroBtn')?.classList.toggle('border-[#FF1E27]', feeState.onlyZero);
-        document.getElementById('dieFeeOnlyZeroBtn')?.classList.toggle('text-white', feeState.onlyZero);
-        loadList(1);
-    });
-    document.getElementById('dieFeeExportBtn')?.addEventListener('click', () => exportExcel());
-    document.getElementById('dieFeeApproveBtn')?.addEventListener('click', () => batchAudit('approve'));
-    document.getElementById('dieFeeReverseBtn')?.addEventListener('click', () => batchAudit('reverse'));
-    document.getElementById('dieFeeDeleteScopeBtn')?.addEventListener('click', () => deleteScope());
-    document.getElementById('dieFeeDrawerClose')?.addEventListener('click', () => closeDrawer());
-    document.getElementById('dieFeeDrawerBackdrop')?.addEventListener('click', () => closeDrawer());
-    document.getElementById('pageContent')?.addEventListener('click', (e) => {
-        const actionBtn = e.target.closest('button[data-action]');
-        if (actionBtn) {
-            const id = Number(actionBtn.getAttribute('data-id'));
-            const action = actionBtn.getAttribute('data-action');
-            if (action === 'detail' || action === 'edit') openDetail(id, action === 'edit');
-            if (action === 'delete') deleteOne(id);
+    document.getElementById('dieFeeHudZeroCard')?.addEventListener('click', () => {
+        if (feeState.onlyZero) {
+            feeState.onlyZero = false;
+            loadData(1);
             return;
         }
-        const pageBtn = e.target.closest('#dieFeePagination button[data-page]');
-        if (pageBtn && !pageBtn.disabled) loadList(Number(pageBtn.dataset.page));
+        if (feeState.zeroCount <= 0) {
+            showToast('当前无最终为零的行', 'success');
+            return;
+        }
+        feeState.onlyZero = true;
+        loadData(1);
+    });
+    document.getElementById('dieFeeExportBtn')?.addEventListener('click', () => exportExcel());
+    document.getElementById('dieFeeBatchDeleteBtn')?.addEventListener('click', batchDelete);
+    document.getElementById('dieFeeBatchApproveBtn')?.addEventListener('click', () => openBatchAuditDrawer('approve'));
+    document.getElementById('dieFeeBatchReverseBtn')?.addEventListener('click', () => openBatchAuditDrawer('reverse'));
+
+    document.getElementById('dieFeeYearFilter')?.addEventListener('change', () => {
+        updateDieFeeFilterCapsules();
+        loadData(1);
+    });
+    document.getElementById('dieFeeLocationFilter')?.addEventListener('change', () => {
+        updateDieFeeFilterCapsules();
+        loadVehicleOptions().then(() => {
+            updateDieFeeFilterCapsules();
+            loadData(1);
+        });
+    });
+    document.getElementById('dieFeeVehicleFilter')?.addEventListener('change', () => {
+        updateDieFeeFilterCapsules();
+        loadData(1);
+    });
+    document.getElementById('dieFeeAuditStatusFilter')?.addEventListener('change', () => {
+        updateDieFeeFilterCapsules();
+        loadData(1);
+    });
+    document.getElementById('dieFeePartNumberFilter')?.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') loadData(1);
+    });
+    document.getElementById('dieFeePartNumberFilter')?.addEventListener('input', () => {
+        updateDieFeeFilterCapsules();
+    });
+
+    document.getElementById('dieFeePagination')?.addEventListener('click', (event) => {
+        const btn = event.target.closest('[data-die-fee-page]');
+        if (!btn) return;
+        const page = Number(btn.getAttribute('data-die-fee-page'));
+        if (!Number.isFinite(page) || page < 1) return;
+        loadData(page);
+    });
+
+    bindEditDrawerEvents();
+    bindViewDrawerEvents();
+    bindBatchAuditDrawerEvents();
+}
+
+function bindRowEvents() {
+    document.querySelectorAll('#dieFeeTableBody .view-btn').forEach((btn) => {
+        btn.addEventListener('click', (event) => {
+            event.stopPropagation();
+            const row = btn.closest('tr');
+            const id = Number(row?.dataset.id);
+            const record = feeState.records.find((item) => item.id === id);
+            if (record) openViewDrawer(record);
+        });
+    });
+    document.querySelectorAll('#dieFeeTableBody .edit-btn').forEach((btn) => {
+        btn.addEventListener('click', (event) => {
+            event.stopPropagation();
+            const row = btn.closest('tr');
+            const id = Number(row?.dataset.id);
+            const record = feeState.records.find((item) => item.id === id);
+            if (record) openEditDrawer(record);
+        });
     });
 }
 
-function fillSelect(id, values, preferred) {
+function bindEditDrawerEvents() {
+    const close = () => closeDrawer('dieFeeEditDrawer', 'dieFeeEditDrawerBackdrop');
+    document.getElementById('closeDieFeeEditDrawer')?.addEventListener('click', close);
+    document.getElementById('cancelDieFeeEditBtn')?.addEventListener('click', close);
+    document.getElementById('dieFeeEditDrawerBackdrop')?.addEventListener('click', close);
+    document.getElementById('submitDieFeeEditBtn')?.addEventListener('click', () => saveEdit());
+    document.getElementById('dieFeeEditAdjustment')?.addEventListener('input', updateFinalFeePreview);
+}
+
+function bindViewDrawerEvents() {
+    const close = () => closeDrawer('dieFeeViewDrawer', 'dieFeeViewDrawerBackdrop');
+    document.getElementById('closeDieFeeViewDrawer')?.addEventListener('click', close);
+    document.getElementById('dieFeeViewDrawerBackdrop')?.addEventListener('click', close);
+    document.getElementById('dieFeeViewDrawerEditBtn')?.addEventListener('click', () => {
+        const record = feeState.records.find((item) => item.id === feeState.viewingId);
+        if (!record) return;
+        closeDrawer('dieFeeViewDrawer', 'dieFeeViewDrawerBackdrop');
+        openEditDrawer(record);
+    });
+}
+
+function bindBatchAuditDrawerEvents() {
+    document.getElementById('closeDieFeeBatchAuditDrawer')?.addEventListener('click', closeBatchAuditDrawer);
+    document.getElementById('cancelDieFeeBatchAuditBtn')?.addEventListener('click', closeBatchAuditDrawer);
+    document.getElementById('dieFeeBatchAuditDrawerBackdrop')?.addEventListener('click', closeBatchAuditDrawer);
+    document.getElementById('confirmDieFeeBatchAuditBtn')?.addEventListener('click', submitBatchAudit);
+}
+
+async function loadFilterOptions() {
+    try {
+        const res = await HttpClient.get(`${API_BASE}/filters`);
+        const data = res.data || {};
+        fillSelect('dieFeeYearFilter', data.years || []);
+        fillSelect('dieFeeLocationFilter', data.locations || []);
+        await loadVehicleOptions();
+    } catch (error) {
+        showToast(error.message || '加载筛选失败', 'error');
+    }
+}
+
+async function loadVehicleOptions() {
+    const location = document.getElementById('dieFeeLocationFilter')?.value || '';
+    try {
+        const res = await HttpClient.get(`${API_BASE}/filters`, {
+            params: location ? { location } : {},
+        });
+        const models = res.data?.vehicle_models || [];
+        fillSelect('dieFeeVehicleFilter', models);
+    } catch (error) {
+        showToast(error.message || '加载项目失败', 'error');
+    }
+}
+
+function fillSelect(id, values) {
     const select = document.getElementById(id);
     if (!select) return;
-    const current = preferred != null ? preferred : select.value;
-    select.innerHTML =
-        '<option value="">请选择</option>' +
-        (values || []).map((value) => {
-            const text = String(value);
-            return `<option value="${esc(text)}"${text === String(current) ? ' selected' : ''}>${esc(text)}</option>`;
-        }).join('');
-}
-
-async function loadFilters(keepVehicle) {
-    const location = document.getElementById('dieFeeLocation')?.value || '';
-    const res = await HttpClient.get(`${API_BASE}/filters`, {
-        params: location ? { location } : {},
+    const pending = select.dataset.pending || select.value || '';
+    let html = '<option value="">全部</option>';
+    (values || []).forEach((value) => {
+        const text = String(value);
+        const selected = text === String(pending) ? ' selected' : '';
+        html += `<option value="${esc(text)}"${selected}>${esc(text)}</option>`;
     });
-    const data = res.data || {};
-    fillSelect('dieFeeLocation', data.locations || []);
-    fillSelect('dieFeeVehicle', data.vehicle_models || [], keepVehicle ? undefined : '');
+    select.innerHTML = html;
+    delete select.dataset.pending;
 }
 
-function renderEmpty() {
-    const tbody = document.getElementById('dieFeeTbody');
-    if (tbody) {
-        tbody.innerHTML = `<tr><td colspan="8" class="py-16 text-center text-[#555555]">${SCOPE_REQUIRED_MESSAGE}，未选齐不会请求列表</td></tr>`;
-    }
-    const total = document.getElementById('dieFeeTotal');
-    if (total) total.textContent = '';
-    const hud = document.getElementById('dieFeeHud');
-    if (hud) hud.textContent = '';
+function resetFilters() {
+    ['dieFeeYearFilter', 'dieFeeLocationFilter', 'dieFeeVehicleFilter', 'dieFeeAuditStatusFilter'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+    const partEl = document.getElementById('dieFeePartNumberFilter');
+    if (partEl) partEl.value = '';
+    feeState.onlyZero = false;
+    loadFilterOptions().then(() => {
+        updateDieFeeFilterCapsules();
+        loadData(1);
+    });
 }
 
-async function loadList(page) {
-    const scope = readScope();
-    if (!hasScope(scope)) {
-        showToast(SCOPE_REQUIRED_MESSAGE, 'warning');
-        renderEmpty();
-        return;
-    }
-    feeState.page = page || 1;
-    const params = {
-        year: scope.year,
-        location: scope.location,
-        vehicle_model: scope.vehicle_model,
-        page: feeState.page,
-        size: feeState.pageSize,
+function collectScopeFilters() {
+    return {
+        year: document.getElementById('dieFeeYearFilter')?.value || '',
+        location: document.getElementById('dieFeeLocationFilter')?.value || '',
+        vehicle_model: document.getElementById('dieFeeVehicleFilter')?.value || '',
     };
-    const partNumber = document.getElementById('dieFeePartNumber')?.value?.trim();
-    const auditStatus = document.getElementById('dieFeeAuditStatus')?.value;
-    if (partNumber) params.part_number = partNumber;
-    if (auditStatus) params.audit_status = auditStatus;
-    if (feeState.onlyZero) params.only_zero = true;
-    const tbody = document.getElementById('dieFeeTbody');
-    if (tbody) tbody.innerHTML = `<tr><td colspan="8" class="py-16 text-center text-[#555555]">加载中..</td></tr>`;
-    const res = await HttpClient.get(API_BASE, { params });
-    const data = res.data || {};
-    feeState.items = data.items || [];
-    feeState.total = data.total || 0;
-    feeState.page = data.page || feeState.page;
-    const filters = data.filters || {};
-    const hud = document.getElementById('dieFeeHud');
-    if (hud) {
-        hud.textContent = `共 ${filters.total_count ?? feeState.total} 件 · 待审 ${filters.pending_count ?? '-'} · 已审 ${filters.approved_count ?? '-'} · 最终为 0：${filters.zero_count ?? '-'}`;
-    }
-    if (tbody) {
-        tbody.innerHTML = renderDieFeeRows(feeState.items, {
-            canUpdate: feeState.canUpdate,
-            canDelete: feeState.canDelete,
-        });
-    }
-    const totalEl = document.getElementById('dieFeeTotal');
-    if (totalEl) totalEl.textContent = `共 ${feeState.total} 条`;
-    renderPagination();
 }
 
-function renderPagination() {
-    const wrap = document.getElementById('dieFeePagination');
-    if (!wrap) return;
-    const totalPages = feeState.total > 0 ? Math.ceil(feeState.total / feeState.pageSize) : 0;
-    if (totalPages <= 1) {
-        wrap.innerHTML = '';
+function collectListFilters() {
+    return {
+        ...collectScopeFilters(),
+        audit_status: document.getElementById('dieFeeAuditStatusFilter')?.value || '',
+        part_number: (document.getElementById('dieFeePartNumberFilter')?.value || '').trim(),
+        only_zero: feeState.onlyZero,
+    };
+}
+
+function hasScope(scope) {
+    const year = Number(scope.year);
+    return year >= 2000 && Boolean(scope.location) && Boolean(scope.vehicle_model);
+}
+
+function scopeLabel(scope) {
+    if (!hasScope(scope)) return '—';
+    return `${scope.location} · ${scope.vehicle_model}`;
+}
+
+function showEmpty(message) {
+    const empty = document.getElementById('dieFeeEmpty');
+    const hint = document.getElementById('dieFeeEmptyHint');
+    if (hint && message) hint.textContent = message;
+    empty?.classList.remove('hidden');
+}
+
+async function loadData(page = 1) {
+    const loading = document.getElementById('dieFeeLoading');
+    const empty = document.getElementById('dieFeeEmpty');
+    const body = document.getElementById('dieFeeTableBody');
+    if (body) body.innerHTML = '';
+    empty?.classList.add('hidden');
+    updateDieFeeFilterCapsules();
+
+    const filters = collectListFilters();
+    if (!hasScope(filters)) {
+        loading?.classList.add('hidden');
+        showEmpty('请先选定年度、基地、项目后查询，或先在「冲压模具费计算」中执行计算');
+        const totalLabel = document.getElementById('dieFeeTotalLabel');
+        if (totalLabel) totalLabel.textContent = '';
+        const pagination = document.getElementById('dieFeePagination');
+        if (pagination) pagination.innerHTML = '';
+        updateDieFeeHud(0, null, feeState.onlyZero, '—');
         return;
     }
-    let html = '';
-    for (let i = 1; i <= totalPages; i += 1) {
-        html += `<button type="button" data-page="${i}" class="flex items-center justify-center w-6 h-6 text-[10px] ${i === feeState.page ? 'bg-[#FF1E27] text-white' : 'text-[#585858] hover:text-[#c0c0c0]'}">${i}</button>`;
-    }
-    wrap.innerHTML = html;
-}
 
-async function openDetail(feeId, editing) {
-    const res = await HttpClient.get(`${API_BASE}/${feeId}`);
-    const row = res.data || {};
-    const body = document.getElementById('dieFeeDrawerBody');
-    const items = Array.isArray(row.items) ? row.items : [];
-    const pending = row.audit_status !== 'approved';
-    body.innerHTML = `
-        <div class="space-y-3">
-            <div class="text-[#F0F0F2] font-mono">${esc(row.part_number)} ${esc(row.part_name || '')}</div>
-            <div>系统模具费 ${esc(fmtNum(row.die_fee, 4))} · 最终 ${esc(fmtNum(row.final_die_fee, 4))}</div>
-            ${items.map((item) => `
-                <div class="border border-[#222] p-2">
-                    <div>${esc(item.process_seq)} ${esc(item.process_code || '')}</div>
-                    <div class="text-[10px] text-[#555]">${esc(item.basis_text || '')}</div>
-                    <div class="font-mono text-right text-[#FF1E27]">${esc(fmtNum(item.line_die_fee, 4))}</div>
-                </div>`).join('')}
-            ${editing && pending && feeState.canUpdate ? `
-            <label class="block space-y-1">
-                <span>调整金额</span>
-                <input id="dieFeeAdjInput" class="w-full h-8 px-2 bg-[#0a0a0a] border border-[#2c2c2c] text-white" value="${row.adjustment_amount == null ? '' : esc(row.adjustment_amount)}">
-            </label>
-            <label class="block space-y-1">
-                <span>备注</span>
-                <textarea id="dieFeeRemarkInput" class="w-full h-20 px-2 py-1 bg-[#0a0a0a] border border-[#2c2c2c] text-white">${esc(row.remark || '')}</textarea>
-            </label>
-            <button type="button" id="dieFeeSaveAdj" data-id="${esc(row.id)}" class="h-8 px-4 bg-[#d32f2f] text-white text-[10px]">保存</button>
-            ` : ''}
-        </div>`;
-    document.getElementById('dieFeeDrawerBackdrop')?.classList.remove('hidden');
-    const drawer = document.getElementById('dieFeeDrawer');
-    drawer?.classList.remove('hidden');
-    drawer?.classList.remove('translate-x-full');
-    document.getElementById('dieFeeSaveAdj')?.addEventListener('click', () => saveAdjustment(row.id));
-}
+    loading?.classList.remove('hidden');
 
-function closeDrawer() {
-    document.getElementById('dieFeeDrawerBackdrop')?.classList.add('hidden');
-    const drawer = document.getElementById('dieFeeDrawer');
-    drawer?.classList.add('hidden');
-    drawer?.classList.add('translate-x-full');
-}
-
-async function saveAdjustment(feeId) {
-    const adjRaw = document.getElementById('dieFeeAdjInput')?.value ?? '';
-    const remark = document.getElementById('dieFeeRemarkInput')?.value || '';
-    const body = { remark: remark.trim() || null };
-    if (adjRaw.trim() === '') body.adjustment_amount = null;
-    else body.adjustment_amount = adjRaw.trim();
     try {
-        await HttpClient.put(`${API_BASE}/${feeId}`, body);
-        showToast('已保存', 'success');
-        closeDrawer();
-        loadList(feeState.page);
+        const params = {
+            page,
+            size: feeState.pageSize,
+            year: Number(filters.year),
+            location: filters.location,
+            vehicle_model: filters.vehicle_model,
+            part_number: filters.part_number || undefined,
+            audit_status: filters.audit_status || undefined,
+            only_zero: filters.only_zero || undefined,
+        };
+        const res = await HttpClient.get(API_BASE, { params });
+        const data = res.data || {};
+        feeState.records = Array.isArray(data.items) ? data.items : [];
+        feeState.total = data.total || 0;
+        feeState.page = data.page || page;
+        feeState.pageSize = data.page_size || feeState.pageSize;
+        feeState.totalPages = data.total_pages || Math.ceil(feeState.total / feeState.pageSize) || 1;
+
+        const totalLabel = document.getElementById('dieFeeTotalLabel');
+        if (totalLabel) {
+            totalLabel.textContent = feeState.onlyZero
+                ? `零价 ${feeState.total} 条`
+                : `共 ${feeState.total} 条`;
+        }
+        const summary = data.filters || null;
+        updateDieFeeHud(feeState.total, summary, feeState.onlyZero, scopeLabel(filters));
+        feeState.zeroCount = Number(summary?.zero_count ?? 0);
+
+        if (!feeState.records.length) {
+            showEmpty('当前筛选下暂无模具费数据，请先在「冲压模具费计算」中执行计算');
+        } else if (body) {
+            body.innerHTML = renderDieFeeRows(feeState.records);
+            bindRowEvents();
+        }
+
+        const pagination = document.getElementById('dieFeePagination');
+        if (pagination) {
+            pagination.innerHTML = renderDieFeePagination(feeState.page, feeState.totalPages);
+        }
+    } catch (error) {
+        showToast(error.message || '加载失败', 'error');
+        showEmpty('加载失败，请稍后重试');
+        updateDieFeeHud(0, null, feeState.onlyZero, scopeLabel(filters));
+    } finally {
+        loading?.classList.add('hidden');
+    }
+}
+
+function fillPartNumberFields(prefix, partNumber) {
+    const shortEl = document.getElementById(`${prefix}-part-short`);
+    const fullEl = document.getElementById(`${prefix}-part-number`);
+    const full = partNumber || '';
+    const shortNo = shortPartNumber(full);
+    if (shortEl) {
+        shortEl.textContent = shortNo || (full || '—');
+        shortEl.classList.toggle('text-xl', Boolean(shortNo));
+        shortEl.classList.toggle('text-xs', !shortNo);
+        shortEl.classList.toggle('text-[#cccccc]', !shortNo);
+        shortEl.classList.toggle('text-white', Boolean(shortNo));
+    }
+    if (fullEl) {
+        fullEl.textContent = shortNo ? full : '';
+        fullEl.classList.toggle('hidden', !shortNo);
+    }
+}
+
+function fillViewField(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value == null || value === '' ? '—' : String(value);
+}
+
+function formatDecimal(value, digits = 4) {
+    const fixed = formatDecimalFixed(value, digits, { allowNegative: true });
+    return fixed == null ? '—' : withThousandsSep(fixed);
+}
+
+function formatDateTime(value) {
+    if (!value) return '—';
+    const text = String(value).replace('T', ' ');
+    return text.length >= 19 ? text.slice(0, 19) : text;
+}
+
+function auditStatusLabel(status) {
+    return { pending: '待审', approved: '已通过', rejected: '已驳回' }[status] || status || '—';
+}
+
+function priceKindLabel(kind) {
+    return kind === 'progressive' ? '级进模' : '钢板模';
+}
+
+function openViewDrawer(record) {
+    feeState.viewingId = record.id;
+    fillViewFieldsFromRecord(record);
+    renderProcessItems(record.items || []);
+
+    const approved = record.audit_status === 'approved';
+    const editBtn = document.getElementById('dieFeeViewDrawerEditBtn');
+    if (editBtn) {
+        editBtn.classList.toggle('hidden', !(feeState.canUpdate && !approved));
+    }
+    openDrawer('dieFeeViewDrawer', 'dieFeeViewDrawerBackdrop');
+    loadFeeDetail(record.id);
+}
+
+function fillViewFieldsFromRecord(record) {
+    fillViewField('die-fee-view-year', record.year);
+    fillViewField('die-fee-view-location', record.location);
+    fillViewField('die-fee-view-vehicle', record.vehicle_model);
+    fillPartNumberFields('die-fee-view', record.part_number);
+    fillViewField('die-fee-view-part-name', record.part_name);
+    fillViewField('die-fee-view-seq-no', record.seq_no);
+    fillViewField('die-fee-view-production-mode', record.production_mode);
+    fillViewField('die-fee-view-price-kind', priceKindLabel(record.price_kind));
+    fillViewField('die-fee-view-material', record.material);
+    fillViewField('die-fee-view-thickness', formatDecimal(record.thickness, 4));
+    fillViewField('die-fee-view-part-weight', formatDecimal(record.part_weight, 4));
+    fillViewField('die-fee-view-die-type', record.die_type);
+    fillViewField('die-fee-view-die-method', record.die_method);
+    fillViewField('die-fee-view-excel-filename', record.excel_filename);
+    fillViewField('die-fee-view-die-fee', formatDecimal(record.die_fee, 4));
+    fillViewField('die-fee-view-adjustment', formatDecimal(record.adjustment_amount, 4));
+    fillViewField('die-fee-view-final-fee', formatDecimal(record.final_die_fee, 4));
+    fillViewField('die-fee-view-unit-price', formatDecimal(record.unit_price, 4));
+    fillViewField('die-fee-view-allocation-qty', formatDecimal(record.allocation_qty, 4));
+    fillViewField('die-fee-view-remark', record.remark);
+    fillViewField('die-fee-view-audit-status', auditStatusLabel(record.audit_status));
+    fillViewField('die-fee-view-audited-by', record.audited_by);
+    fillViewField('die-fee-view-audited-at', formatDateTime(record.audited_at));
+    fillViewField('die-fee-view-audit-remark', record.audit_remark);
+    fillViewField('die-fee-view-reverse-by', record.reverse_audited_by);
+    fillViewField('die-fee-view-reverse-at', formatDateTime(record.reverse_audited_at));
+    fillViewField('die-fee-view-reverse-remark', record.reverse_audit_remark);
+    fillViewField('die-fee-view-created-by', record.created_by);
+    fillViewField('die-fee-view-created-at', formatDateTime(record.created_at));
+    fillViewField('die-fee-view-updated-by', record.updated_by);
+    fillViewField('die-fee-view-updated-at', formatDateTime(record.updated_at));
+}
+
+async function loadFeeDetail(feeId) {
+    const container = document.getElementById('dieFeeViewProcessItems');
+    if (container) {
+        container.innerHTML = '<div class="px-4 py-6 text-[11px] text-[#616161]">加载中..</div>';
+    }
+    try {
+        const res = await HttpClient.get(`${API_BASE}/${feeId}`);
+        const detail = res?.data || res;
+        if (!detail || feeState.viewingId !== feeId) return;
+        fillViewFieldsFromRecord(detail);
+        renderProcessItems(detail.items || []);
+    } catch (error) {
+        if (container && feeState.viewingId === feeId) {
+            container.innerHTML = `<div class="px-4 py-6 text-[11px] text-[#ef5350]">${esc(error.message || '加载溯源失败')}</div>`;
+        }
+    }
+}
+
+function renderProcessItems(items) {
+    const container = document.getElementById('dieFeeViewProcessItems');
+    if (!container) return;
+    if (!items || !items.length) {
+        container.innerHTML = '<div class="px-4 py-6 text-[11px] text-[#616161]">暂无各序溯源</div>';
+        return;
+    }
+    const rows = items.map((item) => `
+            <tr class="hover:bg-[#ffffff]/[0.02] transition-colors">
+                <td class="px-3 py-2 text-[11px] font-mono text-[#9e9e9e] whitespace-nowrap">${esc(item.process_seq || '—')}</td>
+                <td class="px-3 py-2 text-[11px] text-[#cccccc] whitespace-nowrap">${esc(item.process_code || '—')}</td>
+                <td class="px-3 py-2 text-[11px] text-right font-mono tabular-nums text-[#9e9e9e]">${formatDecimal(item.estimated_weight_t, 4)}</td>
+                <td class="px-3 py-2 text-[11px] text-right font-mono tabular-nums text-[#9e9e9e]">${formatDecimal(item.alloc_ratio, 2)}</td>
+                <td class="px-3 py-2 text-[11px] text-right font-mono tabular-nums text-[#9e9e9e]">${formatDecimal(item.unit_price, 4)}</td>
+                <td class="px-3 py-2 text-[11px] text-right font-mono tabular-nums text-[#ffffff]">${formatDecimal(item.line_die_fee, 4)}</td>
+                <td class="px-3 py-2 text-[11px] text-[#888888] min-w-[180px]">${esc(item.basis_text || '—')}</td>
+            </tr>`).join('');
+    container.innerHTML = `
+        <table class="w-full">
+            <thead>
+                <tr class="bg-[#0a0a0a] border-b border-[#2c2c2c]">
+                    <th class="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161]">工序</th>
+                    <th class="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161]">代码</th>
+                    <th class="px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161]">预估重量(T)</th>
+                    <th class="px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161]">分摊比例</th>
+                    <th class="px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161]">单价</th>
+                    <th class="px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161]">本序模具费</th>
+                    <th class="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161]">计算依据</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-[#222222]">${rows}</tbody>
+        </table>`;
+}
+
+function openEditDrawer(record) {
+    if (!feeState.canUpdate) {
+        showToast('无编辑权限', 'warning');
+        return;
+    }
+    if (record.audit_status === 'approved') {
+        showToast('已审核通过，请先反审核后再调整', 'warning');
+        return;
+    }
+    feeState.editingDieFee = record.die_fee;
+    fillViewField('die-fee-edit-year', record.year);
+    fillViewField('die-fee-edit-location', record.location);
+    fillPartNumberFields('die-fee-edit', record.part_number);
+    fillViewField('die-fee-edit-vehicle', record.vehicle_model);
+    fillViewField('die-fee-edit-production-mode', record.production_mode);
+    fillViewField('die-fee-edit-price-kind', priceKindLabel(record.price_kind));
+    fillViewField('die-fee-edit-die-fee', formatDecimal(record.die_fee, 4));
+
+    const idEl = document.getElementById('dieFeeEditRecordId');
+    if (idEl) idEl.value = String(record.id);
+    const adjEl = document.getElementById('dieFeeEditAdjustment');
+    if (adjEl) {
+        adjEl.value = record.adjustment_amount == null ? '' : String(record.adjustment_amount);
+    }
+    const remarkEl = document.getElementById('dieFeeEditRemark');
+    if (remarkEl) remarkEl.value = record.remark || '';
+    updateFinalFeePreview();
+
+    openDrawer('dieFeeEditDrawer', 'dieFeeEditDrawerBackdrop');
+}
+
+function updateFinalFeePreview() {
+    const finalEl = document.getElementById('die-fee-edit-final-fee');
+    const adjEl = document.getElementById('dieFeeEditAdjustment');
+    if (!finalEl) return;
+
+    const baseText = feeState.editingDieFee == null || feeState.editingDieFee === ''
+        ? null
+        : formatDecimalFixed(feeState.editingDieFee, 4, { allowNegative: true });
+    const adjRaw = String(adjEl?.value || '').trim();
+    let adjText = null;
+    if (adjRaw !== '') {
+        adjText = parseDecimalInput(adjRaw, 4, { allowNegative: true });
+        if (adjText == null) {
+            finalEl.textContent = '—';
+            return;
+        }
+    }
+
+    if (baseText == null) {
+        finalEl.textContent = adjText == null ? '—' : withThousandsSep(adjText);
+        return;
+    }
+    const summed = addFixedDecimalStrings(baseText, adjText || '0.0000', 4);
+    finalEl.textContent = summed ? withThousandsSep(summed) : '—';
+}
+
+function addFixedDecimalStrings(left, right, digits = 4) {
+    const leftText = formatDecimalFixed(left, digits, { allowNegative: true });
+    const rightText = formatDecimalFixed(right, digits, { allowNegative: true });
+    if (leftText == null || rightText == null) return null;
+    const toScaled = (text) => {
+        const negative = text.startsWith('-');
+        const body = negative ? text.slice(1) : text;
+        const [intPart, frac = ''] = body.split('.');
+        const padded = `${frac}${'0'.repeat(digits)}`.slice(0, digits);
+        const scaled = BigInt(`${intPart || '0'}${padded}`);
+        return negative ? -scaled : scaled;
+    };
+    const sum = toScaled(leftText) + toScaled(rightText);
+    const negative = sum < 0n;
+    const abs = negative ? -sum : sum;
+    const raw = abs.toString().padStart(digits + 1, '0');
+    const intPart = raw.slice(0, -digits) || '0';
+    const frac = raw.slice(-digits);
+    return `${negative ? '-' : ''}${intPart}.${frac}`;
+}
+
+async function saveEdit() {
+    const feeId = Number(document.getElementById('dieFeeEditRecordId')?.value);
+    if (!Number.isFinite(feeId)) return;
+
+    const adjRaw = String(document.getElementById('dieFeeEditAdjustment')?.value || '').trim();
+    let adjustmentAmount = null;
+    if (adjRaw !== '') {
+        const parsed = parseDecimalInput(adjRaw, 4, { allowNegative: true });
+        if (parsed == null) {
+            showToast('调整金额须为有效数字（可正可负）', 'warning');
+            return;
+        }
+        adjustmentAmount = parsed;
+    }
+
+    const remark = String(document.getElementById('dieFeeEditRemark')?.value || '').trim() || null;
+
+    try {
+        const res = await HttpClient.put(`${API_BASE}/${feeId}`, {
+            adjustment_amount: adjustmentAmount,
+            remark,
+        });
+        showToast(res.message || '保存成功', 'success');
+        closeDrawer('dieFeeEditDrawer', 'dieFeeEditDrawerBackdrop');
+        await loadData(feeState.page);
     } catch (error) {
         showToast(error.message || '保存失败', 'error');
     }
 }
 
-async function deleteOne(feeId) {
-    if (!window.confirm('删除该未审核模具费？')) return;
-    await HttpClient.delete(`${API_BASE}/${feeId}`);
-    showToast('已删除', 'success');
-    loadList(feeState.page);
-}
-
-async function deleteScope() {
-    const scope = readScope();
-    if (!hasScope(scope)) {
-        showToast(SCOPE_REQUIRED_MESSAGE, 'warning');
-        return;
-    }
-    if (!window.confirm('删除该范围全部未审核记录？')) return;
-    await HttpClient.delete(`${API_BASE}/scope`, { params: scope });
-    showToast('已删除未审核', 'success');
-    loadList(1);
-}
-
-async function batchAudit(kind) {
-    const scope = readScope();
-    if (!hasScope(scope)) {
-        showToast(SCOPE_REQUIRED_MESSAGE, 'warning');
-        return;
-    }
-    if (kind === 'approve') {
-        const remark = window.prompt('审核意见（必填）');
-        if (!remark || !remark.trim()) return;
-        await HttpClient.post(`${API_BASE}/batch-approve`, { ...scope, audit_remark: remark.trim() });
-        showToast('已审核', 'success');
-    } else {
-        const remark = window.prompt('反审核原因（必填）');
-        if (!remark || !remark.trim()) return;
-        await HttpClient.post(`${API_BASE}/batch-reverse-audit`, {
-            ...scope,
-            reverse_audit_remark: remark.trim(),
-        });
-        showToast('已反审核', 'success');
-    }
-    loadList(feeState.page);
-}
-
 async function exportExcel() {
-    const scope = readScope();
-    if (!hasScope(scope)) {
+    const filters = collectListFilters();
+    if (!hasScope(filters)) {
+        setAdvancedOpen(true);
         showToast(SCOPE_REQUIRED_MESSAGE, 'warning');
         return;
     }
-    const params = {
-        year: scope.year,
-        location: scope.location,
-        vehicle_model: scope.vehicle_model,
+
+    const btn = document.getElementById('dieFeeExportBtn');
+    const originalHtml = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `
+            <div class="w-3 h-3 border border-[#ef5350] border-t-transparent rounded-full animate-spin"></div>
+            导出中..
+        `;
+    }
+
+    try {
+        const { blob, filename } = await HttpClient.download(`${API_BASE}/export`, {
+            params: {
+                year: Number(filters.year),
+                location: filters.location,
+                vehicle_model: filters.vehicle_model,
+                audit_status: filters.audit_status || undefined,
+                part_number: filters.part_number || undefined,
+                only_zero: filters.only_zero || undefined,
+            },
+            defaultFilename: '冲压模具费导出.xlsx',
+        });
+
+        const url = window.URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = filename;
+        document.body.appendChild(anchor);
+        anchor.click();
+        document.body.removeChild(anchor);
+        window.URL.revokeObjectURL(url);
+        showToast(`导出成功: ${filename}`, 'success');
+    } catch (error) {
+        if (!error.status) {
+            showToast(error.message || '导出失败', 'error');
+        }
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+        }
+    }
+}
+
+async function batchDelete() {
+    const filters = collectScopeFilters();
+    if (!hasScope(filters)) {
+        setAdvancedOpen(true);
+        showToast(SCOPE_REQUIRED_MESSAGE, 'warning');
+        return;
+    }
+    if (!window.confirm(
+        `确定批量删除未审核记录吗？\n\n年度: ${filters.year} | 基地: ${filters.location} | 项目: ${filters.vehicle_model}\n\n仅删除待审/已驳回；已审核通过会跳过。此操作不可恢复！`,
+    )) {
+        return;
+    }
+
+    const btn = document.getElementById('dieFeeBatchDeleteBtn');
+    const originalHtml = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `
+            <div class="w-3 h-3 border border-[#ef5350] border-t-transparent rounded-full animate-spin"></div>
+            删除中..
+        `;
+    }
+
+    try {
+        const res = await HttpClient.delete(`${API_BASE}/scope`, {
+            params: {
+                year: Number(filters.year),
+                location: filters.location,
+                vehicle_model: filters.vehicle_model,
+            },
+        });
+        const result = res.data || {};
+        const deleted = result.deleted_count ?? 0;
+        const skipped = result.skipped_approved_count ?? 0;
+        showToast(
+            res.message || `已删除 ${deleted} 条` + (skipped ? `，跳过已审核 ${skipped} 条` : ''),
+            deleted > 0 ? 'success' : 'warning',
+        );
+        await loadFilterOptions();
+        await loadData(1);
+    } catch (error) {
+        showToast(error.message || '批量删除失败', 'error');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+        }
+    }
+}
+
+function getSessionDisplayName() {
+    try {
+        const raw = localStorage.getItem('brabus_user');
+        if (!raw) return '';
+        const session = JSON.parse(raw);
+        return (session.real_name || session.name || session.username || '').trim();
+    } catch (_) {
+        return '';
+    }
+}
+
+function openBatchAuditDrawer(mode) {
+    const filters = collectScopeFilters();
+    if (!hasScope(filters)) {
+        setAdvancedOpen(true);
+        showToast(SCOPE_REQUIRED_MESSAGE, 'warning');
+        return;
+    }
+
+    const isApprove = mode === 'approve';
+    const modeEl = document.getElementById('dieFeeBatchAuditMode');
+    const titleEl = document.getElementById('dieFeeBatchAuditDrawerTitle');
+    const hintEl = document.getElementById('dieFeeBatchAuditHint');
+    const operatorLabel = document.getElementById('dieFeeBatchAuditOperatorLabel');
+    const remarkLabel = document.getElementById('dieFeeBatchAuditRemarkLabel');
+    const operatorDisplay = document.getElementById('dieFeeBatchAuditOperatorDisplay');
+    const remarkEl = document.getElementById('dieFeeBatchAuditRemark');
+    const summaryEl = document.getElementById('dieFeeBatchAuditFilterSummary');
+
+    if (modeEl) modeEl.value = isApprove ? 'approve' : 'reverse';
+    if (titleEl) titleEl.textContent = isApprove ? '批量审核' : '批量反审核';
+    if (hintEl) {
+        hintEl.textContent = isApprove
+            ? '仅处理待审/已驳回；已通过记录会跳过。'
+            : '仅处理已通过记录；其余状态会跳过。反审核意见必填。';
+    }
+    if (operatorLabel) operatorLabel.textContent = isApprove ? '审核人' : '反审核人';
+    if (operatorDisplay) {
+        operatorDisplay.textContent = getSessionDisplayName() || '（当前登录用户）';
+    }
+    if (remarkLabel) {
+        remarkLabel.innerHTML = isApprove
+            ? '审核意见<span class="text-[#d32f2f]">*</span>'
+            : '反审核意见<span class="text-[#d32f2f]">*</span>';
+    }
+    if (remarkEl) {
+        remarkEl.value = '';
+        remarkEl.placeholder = isApprove ? '请填写审核意见（必填）' : '必填反审核原因';
+    }
+    if (summaryEl) {
+        summaryEl.textContent = `年度 ${filters.year} · 基地 ${filters.location} · 项目 ${filters.vehicle_model}`;
+    }
+    openDrawer('dieFeeBatchAuditDrawer', 'dieFeeBatchAuditDrawerBackdrop');
+}
+
+function closeBatchAuditDrawer() {
+    if (feeState.batchAuditSubmitting) return;
+    closeDrawer('dieFeeBatchAuditDrawer', 'dieFeeBatchAuditDrawerBackdrop');
+}
+
+async function submitBatchAudit() {
+    if (feeState.batchAuditSubmitting) return;
+    const mode = document.getElementById('dieFeeBatchAuditMode')?.value || 'approve';
+    const filters = collectScopeFilters();
+    const remark = document.getElementById('dieFeeBatchAuditRemark')?.value.trim() || '';
+    if (!remark) {
+        showToast(mode === 'approve' ? '审核意见必填' : '反审核意见必填', 'warning');
+        return;
+    }
+
+    const body = {
+        year: Number(filters.year),
+        location: filters.location,
+        vehicle_model: filters.vehicle_model,
     };
-    const partNumber = document.getElementById('dieFeePartNumber')?.value?.trim();
-    const auditStatus = document.getElementById('dieFeeAuditStatus')?.value;
-    if (partNumber) params.part_number = partNumber;
-    if (auditStatus) params.audit_status = auditStatus;
-    if (feeState.onlyZero) params.only_zero = true;
-    await HttpClient.download(`${API_BASE}/export`, { params });
+    const url = mode === 'approve'
+        ? `${API_BASE}/batch-approve`
+        : `${API_BASE}/batch-reverse-audit`;
+    if (mode === 'approve') {
+        body.audit_remark = remark;
+    } else {
+        body.reverse_audit_remark = remark;
+    }
+
+    const btn = document.getElementById('confirmDieFeeBatchAuditBtn');
+    feeState.batchAuditSubmitting = true;
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = '提交中…';
+    }
+
+    try {
+        const res = await HttpClient.post(url, body);
+        const result = res.data || {};
+        showToast(
+            res.message
+                || (mode === 'approve'
+                    ? `已审核通过 ${result.updated_count || 0} 条`
+                    : `已反审核 ${result.updated_count || 0} 条`),
+            (result.updated_count || 0) > 0 ? 'success' : 'warning',
+        );
+        closeDrawer('dieFeeBatchAuditDrawer', 'dieFeeBatchAuditDrawerBackdrop');
+        await loadData(feeState.page);
+    } catch (error) {
+        showToast(error.message || '操作失败', 'error');
+    } finally {
+        feeState.batchAuditSubmitting = false;
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = '确认提交';
+        }
+    }
 }
 
 function destroy() {
-    closeDrawer();
+    closeDrawer('dieFeeViewDrawer', 'dieFeeViewDrawerBackdrop');
+    closeDrawer('dieFeeEditDrawer', 'dieFeeEditDrawerBackdrop');
+    closeDrawer('dieFeeBatchAuditDrawer', 'dieFeeBatchAuditDrawerBackdrop');
 }
 
 export const pageConfig = {

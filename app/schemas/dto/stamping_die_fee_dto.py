@@ -37,31 +37,12 @@ class StampingDieFeeCalcDTO(StampingDieFeeScopeDTO):
     """提交计算。"""
 
 
-class StampingDieFeeQuery(BaseModel):
-    year: int = Field(..., ge=2000, le=2100)
-    location: str = Field(..., min_length=1)
-    vehicle_model: str = Field(..., min_length=1)
+class StampingDieFeeQuery(StampingDieFeeScopeDTO):
     part_number: str | None = None
     audit_status: str | None = None
     only_zero: bool = False
     page: int = Field(1, ge=1)
     size: int = Field(20, ge=1, le=500)
-
-    @field_validator("location", "vehicle_model", mode="before")
-    @classmethod
-    def _strip_required(cls, value: object) -> str:
-        text = str(value).strip() if value is not None else ""
-        if not text:
-            raise ValueError("不能为空")
-        return text
-
-    @field_validator("vehicle_model")
-    @classmethod
-    def _normalize_vehicle(cls, value: str) -> str:
-        normalized = normalize_vehicle_model(value)
-        if not normalized:
-            raise ValueError("项目不能为空")
-        return normalized
 
     @field_validator("part_number", "audit_status", mode="before")
     @classmethod

@@ -45,6 +45,11 @@ from app.services.stamping.die.die_number_resolver import (
     validate_die_layout,
 )
 from app.services.stamping.die.template_builder import build_die_layout_template
+from app.services.stamping.die.weight_check import (
+    DieWeightCheckRow,
+    find_die_weight_mismatches,
+    format_die_weight_mismatch_issues,
+)
 from app.services.stamping.process_seq_validator import (
     ProcessSeqOccurrence,
     find_duplicate_process_seqs,
@@ -137,6 +142,25 @@ class StampingDieUploadService:
             raise BusinessException(
                 format_duplicate_process_seq_issues(duplicate_seqs, source_name="模具布点清单")
             )
+
+        weight_issues = find_die_weight_mismatches(
+            [
+                DieWeightCheckRow(
+                    part_number=part.part_number,
+                    process_seq=process.process_seq,
+                    excel_row=process.excel_row,
+                    die_length=process.die_length,
+                    die_width=process.die_width,
+                    die_height=process.die_height,
+                    hollow_factor=process.hollow_factor,
+                    estimated_weight_t=process.estimated_weight_t,
+                )
+                for part in parsed.parts
+                for process in part.processes
+            ]
+        )
+        if weight_issues:
+            raise BusinessException(format_die_weight_mismatch_issues(weight_issues))
 
         check_rows = [
             DieLayoutCheckRow(

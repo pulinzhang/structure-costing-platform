@@ -66,13 +66,21 @@ def build_line_basis_text(
     alloc_ratio: Decimal,
     allocation_qty: Decimal,
     line_die_fee: Decimal,
+    inherited_from_part_number: str | None = None,
+    inherited_from_process_seq: str | None = None,
 ) -> str:
     weight = format_money(estimated_weight_t, Q4, 4)
     price = format_money(unit_price, Q4, 4)
     ratio = format_money(alloc_ratio, Decimal("0.01"), 2)
     qty = format_money(allocation_qty, Q4, 4)
     fee = format_money(line_die_fee, Q4, 4)
-    return f"{weight} T × {price} 万元/吨 × {ratio} / {qty} 万台 = {fee} 元"
+    inherit_bit = ""
+    from_part = (inherited_from_part_number or "").strip()
+    from_seq = (inherited_from_process_seq or "").strip()
+    if from_part:
+        seq_bit = f" {from_seq}" if from_seq else ""
+        inherit_bit = f"继承 {from_part}{seq_bit} 重量；"
+    return f"{inherit_bit}{weight} T × {price} 万元/吨 × {ratio} / {qty} 万台 = {fee} 元"
 
 
 @dataclass(slots=True, frozen=True)

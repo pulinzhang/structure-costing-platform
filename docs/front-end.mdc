@@ -112,7 +112,8 @@ static/
         │   ├── die/{upload,list,unit-price}
         │   ├── gauge-fee/{upload,list}
         │   ├── tonnage/{upload,list}
-        │   └── process-fee/{calc,list}
+        │   ├── process-fee/{calc,list}
+        │   └── die-fee/{calc,list}
         ├── bom/material/{upload,list,structure,viz}   # 侧栏名「焊接工程」
         ├── bom/welding-unit-price/{upload,list}
         ├── bom/annual-part-price/{upload,list}
@@ -157,6 +158,8 @@ static/
 | `#/stamping-tonnage` | 冲次单价列表 | `stamping/tonnage/list` |
 | `#/stamping-process-fee-calc` | 冲压加工费计算 | `stamping/process-fee/calc` |
 | `#/stamping-process-fee` | 冲压加工费列表 | `stamping/process-fee/list` |
+| `#/stamping-die-fee-calc` | 冲压模具费计算 | `stamping/die-fee/calc` |
+| `#/stamping-die-fee` | 冲压模具费列表 | `stamping/die-fee/list` |
 | `#/bom-upload` | 上传材料清单 | `bom/material/upload` |
 | `#/bom-material` | 材料清单列表 | `bom/material/list` |
 | `#/bom-structure` | 产品结构 | `bom/material/structure` |

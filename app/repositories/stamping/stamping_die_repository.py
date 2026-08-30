@@ -212,6 +212,12 @@ class StampingDieProcessRepository:
     def get_by_id(self, db: Session, process_id: int) -> StampingDieProcess | None:
         return db.query(StampingDieProcess).filter(StampingDieProcess.id == process_id).first()
 
+    def list_by_ids(self, db: Session, process_ids: list[int]) -> list[StampingDieProcess]:
+        unique_ids = list(dict.fromkeys(process_ids))
+        if not unique_ids:
+            return []
+        return db.query(StampingDieProcess).filter(StampingDieProcess.id.in_(unique_ids)).all()
+
     def bulk_create(self, db: Session, rows: list[StampingDieProcessInsert]) -> None:
         for payload in rows:
             db.add(model_from_payload(StampingDieProcess, payload))
