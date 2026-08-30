@@ -378,6 +378,18 @@ root
 │   │       ├── op:stamping-tonnage:approve
 │   │       ├── op:stamping-tonnage:reverse
 │   │       └── op:stamping-tonnage:export
+│   └── menu:stamping-die-fee-group           # 冲压模具费（二级分组）
+│       ├── menu:stamping-die-fee-calc
+│       │   ├── op:stamping-die-fee-calc:view
+│       │   ├── op:stamping-die-fee-calc:run
+│       │   └── op:stamping-die-fee-calc:delete
+│       └── menu:stamping-die-fee
+│           ├── op:stamping-die-fee:view
+│           ├── op:stamping-die-fee:update
+│           ├── op:stamping-die-fee:delete
+│           ├── op:stamping-die-fee:approve
+│           ├── op:stamping-die-fee:reverse
+│           └── op:stamping-die-fee:export
 │   └── menu:stamping-processing-fee           # 冲压加工费（二级分组，可勾）
 │       ├── menu:stamping-process-fee-calc
 │       │   ├── op:stamping-process-fee-calc:view
@@ -594,6 +606,8 @@ root
 | stamping-tonnage | `view` / `create` / `update` / `delete` / `approve` / `reverse` / `export` | 查询；新增（API）；编辑；删除（含批量，已审跳过）；审核（含批量）；反审核；导出 Excel |
 | stamping-process-fee-calc | `view` / `run` / `delete` | 查看；执行计算；删除计算日志 |
 | stamping-process-fee | `view` / `update` / `delete` / `approve` / `reverse` / `export` | 查询；编辑其它费用；批量删除；审核；反审核；导出 |
+| stamping-die-fee-calc | `view` / `run` / `delete` | 查看；执行计算；删除计算日志 |
+| stamping-die-fee | `view` / `update` / `delete` / `approve` / `reverse` / `export` | 查询；编辑调整金额；单条或范围删未审核；审核；反审核；导出 |
 | scrap-price | `view` / `create` / `update` / `delete` / `copy` / `export` | 查询；整月保存；删除本月；复制月度；导出 Excel |
 | steel-price-policy-upload | `view` / `upload` | 进入页；导入政策 |
 | steel-price-policy-download | `view` / `export` / `delete` | 预览；导出 Excel；批量删除 |

@@ -281,6 +281,72 @@
           ]
         },
         {
+          "code": "menu:stamping-die-fee-group",
+          "label": "冲压模具费",
+          "type": "group",
+          "children": [
+            {
+              "code": "menu:stamping-die-fee-calc",
+              "label": "冲压模具费计算",
+              "type": "menu",
+              "children": [
+                {
+                  "code": "op:stamping-die-fee-calc:view",
+                  "label": "查看",
+                  "type": "op"
+                },
+                {
+                  "code": "op:stamping-die-fee-calc:run",
+                  "label": "计算",
+                  "type": "op"
+                },
+                {
+                  "code": "op:stamping-die-fee-calc:delete",
+                  "label": "删除日志",
+                  "type": "op"
+                }
+              ]
+            },
+            {
+              "code": "menu:stamping-die-fee",
+              "label": "冲压模具费列表",
+              "type": "menu",
+              "children": [
+                {
+                  "code": "op:stamping-die-fee:view",
+                  "label": "查询",
+                  "type": "op"
+                },
+                {
+                  "code": "op:stamping-die-fee:update",
+                  "label": "编辑调整金额",
+                  "type": "op"
+                },
+                {
+                  "code": "op:stamping-die-fee:delete",
+                  "label": "删除",
+                  "type": "op"
+                },
+                {
+                  "code": "op:stamping-die-fee:approve",
+                  "label": "审核通过",
+                  "type": "op"
+                },
+                {
+                  "code": "op:stamping-die-fee:reverse",
+                  "label": "反审核",
+                  "type": "op"
+                },
+                {
+                  "code": "op:stamping-die-fee:export",
+                  "label": "导出",
+                  "type": "op"
+                }
+              ]
+            }
+          ]
+        },
+        {
           "code": "menu:stamping-processing-fee",
           "label": "冲压加工费",
           "type": "group",

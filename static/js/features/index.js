@@ -116,6 +116,16 @@ export const pageMeta = {
         en: 'DIE_UNIT_PRICE',
         breadcrumb: ['冲压工程', '冲压模具', '模具单价'],
     },
+    'stamping-die-fee-calc': {
+        title: '冲压模具费计算',
+        en: 'DIE_FEE_CALC',
+        breadcrumb: ['冲压工程', '冲压模具费', '冲压模具费计算'],
+    },
+    'stamping-die-fee': {
+        title: '冲压模具费列表',
+        en: 'DIE_FEE_LIST',
+        breadcrumb: ['冲压工程', '冲压模具费', '冲压模具费列表'],
+    },
     'stamping-gauge-fee-upload': {
         title: '检具费上传',
         en: 'GAUGE_FEE_UPLOAD',

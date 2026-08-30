@@ -173,6 +173,40 @@ class StampingDiePartRepository:
         db.flush()
         return int(deleted)
 
+    def list_with_processes(
+        self,
+        db: Session,
+        *,
+        location: str,
+        vehicle_model: str,
+    ) -> list[StampingDiePart]:
+        return (
+            db.query(StampingDiePart)
+            .options(selectinload(StampingDiePart.processes))
+            .filter(
+                StampingDiePart.location == location,
+                StampingDiePart.vehicle_model == vehicle_model,
+            )
+            .order_by(StampingDiePart.id.asc())
+            .all()
+        )
+
+    def list_locations(self, db: Session) -> list[str]:
+        rows = (
+            db.query(StampingDiePart.location)
+            .distinct()
+            .order_by(StampingDiePart.location.asc())
+            .all()
+        )
+        return [row[0] for row in rows if row[0]]
+
+    def list_vehicle_models(self, db: Session, *, location: str | None) -> list[str]:
+        query = db.query(StampingDiePart.vehicle_model).distinct()
+        if location:
+            query = query.filter(StampingDiePart.location == location)
+        rows = query.order_by(StampingDiePart.vehicle_model.asc()).all()
+        return [row[0] for row in rows if row[0]]
+
 
 class StampingDieProcessRepository:
     def get_by_id(self, db: Session, process_id: int) -> StampingDieProcess | None:

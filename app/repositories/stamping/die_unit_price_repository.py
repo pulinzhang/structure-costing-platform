@@ -2,7 +2,7 @@
 
 from sqlalchemy.orm import Session
 
-from app.models.stamping.die_unit_price import StampingDieUnitPrice
+from app.models.stamping.die_unit_price import STATUS_EFFECTIVE, StampingDieUnitPrice
 from app.repositories.persist import apply_payload_fields, model_from_payload
 from app.schemas.dto.stamping_die_unit_price_dto import (
     StampingDieUnitPriceInsert,
@@ -29,6 +29,23 @@ class StampingDieUnitPriceRepository:
         if exclude_id is not None:
             query = query.filter(StampingDieUnitPrice.id != exclude_id)
         return query.first()
+
+    def get_effective(
+        self,
+        db: Session,
+        *,
+        location: str,
+        vehicle_model: str,
+    ) -> StampingDieUnitPrice | None:
+        return (
+            db.query(StampingDieUnitPrice)
+            .filter(
+                StampingDieUnitPrice.location == location,
+                StampingDieUnitPrice.vehicle_model == vehicle_model,
+                StampingDieUnitPrice.status == STATUS_EFFECTIVE,
+            )
+            .first()
+        )
 
     def paginate(
         self,

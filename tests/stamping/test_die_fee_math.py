@@ -1,0 +1,42 @@
+from decimal import Decimal
+
+from app.services.stamping.die_fee.fee_math import (
+    calc_line_die_fee,
+    is_progressive_mode,
+    resolve_final_die_fee,
+    resolve_price_kind,
+)
+
+
+def test_line_die_fee_example() -> None:
+    line = calc_line_die_fee(
+        estimated_weight_t=Decimal("2"),
+        unit_price=Decimal("5"),
+        alloc_ratio=Decimal("1"),
+        allocation_qty=Decimal("10"),
+    )
+    assert line == Decimal("1.0000")
+
+
+def test_skip_zero_weight() -> None:
+    assert (
+        calc_line_die_fee(
+            estimated_weight_t=Decimal("0"),
+            unit_price=Decimal("5"),
+            alloc_ratio=Decimal("1"),
+            allocation_qty=Decimal("10"),
+        )
+        is None
+    )
+
+
+def test_progressive_from_production_mode() -> None:
+    assert is_progressive_mode("级进模")
+    assert resolve_price_kind("级进模自动") == "progressive"
+    assert resolve_price_kind("钢板模") == "steel_plate"
+    assert resolve_price_kind("铸造模") == "steel_plate"
+
+
+def test_final_fee_allows_zero_not_used_for_negative_check() -> None:
+    assert resolve_final_die_fee(Decimal("1.0000"), Decimal("-1.0000")) == Decimal("0.0000")
+    assert resolve_final_die_fee(Decimal("1.0000"), Decimal("-0.5000")) == Decimal("0.5000")

@@ -74,6 +74,21 @@ class Perm:
     STAMPING_TONNAGE_REVERSE = "op:stamping-tonnage:reverse"  # 反审核
     STAMPING_TONNAGE_EXPORT = "op:stamping-tonnage:export"  # 导出
 
+    MENU_STAMPING_DIE_FEE_GROUP = "menu:stamping-die-fee-group"  # 冲压模具费
+
+    MENU_STAMPING_DIE_FEE_CALC = "menu:stamping-die-fee-calc"  # 冲压模具费计算
+    STAMPING_DIE_FEE_CALC_VIEW = "op:stamping-die-fee-calc:view"  # 查看
+    STAMPING_DIE_FEE_CALC_RUN = "op:stamping-die-fee-calc:run"  # 计算
+    STAMPING_DIE_FEE_CALC_DELETE = "op:stamping-die-fee-calc:delete"  # 删除日志
+
+    MENU_STAMPING_DIE_FEE = "menu:stamping-die-fee"  # 冲压模具费列表
+    STAMPING_DIE_FEE_VIEW = "op:stamping-die-fee:view"  # 查询
+    STAMPING_DIE_FEE_UPDATE = "op:stamping-die-fee:update"  # 编辑调整金额
+    STAMPING_DIE_FEE_DELETE = "op:stamping-die-fee:delete"  # 删除
+    STAMPING_DIE_FEE_APPROVE = "op:stamping-die-fee:approve"  # 审核通过
+    STAMPING_DIE_FEE_REVERSE = "op:stamping-die-fee:reverse"  # 反审核
+    STAMPING_DIE_FEE_EXPORT = "op:stamping-die-fee:export"  # 导出
+
     MENU_STAMPING_PROCESSING_FEE = "menu:stamping-processing-fee"  # 冲压加工费
 
     MENU_STAMPING_PROCESS_FEE_CALC = "menu:stamping-process-fee-calc"  # 冲压加工费计算
