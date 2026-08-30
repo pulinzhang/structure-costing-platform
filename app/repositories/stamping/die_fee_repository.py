@@ -43,6 +43,43 @@ class StampingDieFeeRepository:
             .first()
         )
 
+    def get_by_year_location_vehicle_part(
+        self,
+        db: Session,
+        *,
+        year: int,
+        location: str,
+        vehicle_model: str,
+        part_number: str,
+    ) -> StampingDieFee | None:
+        return (
+            db.query(StampingDieFee)
+            .options(noload(StampingDieFee.items))
+            .filter(
+                StampingDieFee.year == year,
+                StampingDieFee.location == location,
+                StampingDieFee.vehicle_model == vehicle_model,
+                StampingDieFee.part_number == part_number,
+            )
+            .first()
+        )
+
+    def count_by_year_location(
+        self,
+        db: Session,
+        *,
+        year: int,
+        location: str,
+        vehicle_model: str | None = None,
+    ) -> int:
+        query = db.query(StampingDieFee).filter(
+            StampingDieFee.year == year,
+            StampingDieFee.location == location,
+        )
+        if vehicle_model:
+            query = query.filter(StampingDieFee.vehicle_model == vehicle_model)
+        return query.count()
+
     def _scope_query(
         self,
         db: Session,
