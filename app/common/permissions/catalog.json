@@ -86,6 +86,138 @@
           ]
         },
         {
+          "code": "menu:stamping-stroke-unit-price",
+          "label": "冲次单价",
+          "type": "group",
+          "children": [
+            {
+              "code": "menu:stamping-tonnage-upload",
+              "label": "上传",
+              "type": "menu",
+              "children": [
+                {
+                  "code": "op:stamping-tonnage-upload:view",
+                  "label": "查看",
+                  "type": "op"
+                },
+                {
+                  "code": "op:stamping-tonnage-upload:upload",
+                  "label": "上传",
+                  "type": "op"
+                }
+              ]
+            },
+            {
+              "code": "menu:stamping-tonnage",
+              "label": "冲次单价列表",
+              "type": "menu",
+              "children": [
+                {
+                  "code": "op:stamping-tonnage:view",
+                  "label": "查询",
+                  "type": "op"
+                },
+                {
+                  "code": "op:stamping-tonnage:create",
+                  "label": "新增",
+                  "type": "op"
+                },
+                {
+                  "code": "op:stamping-tonnage:update",
+                  "label": "编辑",
+                  "type": "op"
+                },
+                {
+                  "code": "op:stamping-tonnage:delete",
+                  "label": "删除",
+                  "type": "op"
+                },
+                {
+                  "code": "op:stamping-tonnage:approve",
+                  "label": "审核通过",
+                  "type": "op"
+                },
+                {
+                  "code": "op:stamping-tonnage:reverse",
+                  "label": "反审核",
+                  "type": "op"
+                },
+                {
+                  "code": "op:stamping-tonnage:export",
+                  "label": "导出",
+                  "type": "op"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "menu:stamping-processing-fee",
+          "label": "冲压加工费",
+          "type": "group",
+          "children": [
+            {
+              "code": "menu:stamping-process-fee-calc",
+              "label": "冲压加工费计算",
+              "type": "menu",
+              "children": [
+                {
+                  "code": "op:stamping-process-fee-calc:view",
+                  "label": "查看",
+                  "type": "op"
+                },
+                {
+                  "code": "op:stamping-process-fee-calc:run",
+                  "label": "计算",
+                  "type": "op"
+                },
+                {
+                  "code": "op:stamping-process-fee-calc:delete",
+                  "label": "删除日志",
+                  "type": "op"
+                }
+              ]
+            },
+            {
+              "code": "menu:stamping-process-fee",
+              "label": "冲压加工费列表",
+              "type": "menu",
+              "children": [
+                {
+                  "code": "op:stamping-process-fee:view",
+                  "label": "查询",
+                  "type": "op"
+                },
+                {
+                  "code": "op:stamping-process-fee:update",
+                  "label": "编辑其它费用",
+                  "type": "op"
+                },
+                {
+                  "code": "op:stamping-process-fee:delete",
+                  "label": "删除",
+                  "type": "op"
+                },
+                {
+                  "code": "op:stamping-process-fee:approve",
+                  "label": "审核通过",
+                  "type": "op"
+                },
+                {
+                  "code": "op:stamping-process-fee:reverse",
+                  "label": "反审核",
+                  "type": "op"
+                },
+                {
+                  "code": "op:stamping-process-fee:export",
+                  "label": "导出",
+                  "type": "op"
+                }
+              ]
+            }
+          ]
+        },
+        {
           "code": "menu:stamping-die",
           "label": "冲压模具",
           "type": "group",
@@ -164,123 +296,6 @@
           ]
         },
         {
-          "code": "menu:stamping-gauge-fee-group",
-          "label": "冲压检具费",
-          "type": "group",
-          "children": [
-            {
-              "code": "menu:stamping-gauge-fee-upload",
-              "label": "上传",
-              "type": "menu",
-              "children": [
-                {
-                  "code": "op:stamping-gauge-fee-upload:view",
-                  "label": "查看",
-                  "type": "op"
-                },
-                {
-                  "code": "op:stamping-gauge-fee-upload:upload",
-                  "label": "上传",
-                  "type": "op"
-                }
-              ]
-            },
-            {
-              "code": "menu:stamping-gauge-fee",
-              "label": "检具费列表",
-              "type": "menu",
-              "children": [
-                {
-                  "code": "op:stamping-gauge-fee:view",
-                  "label": "查询",
-                  "type": "op"
-                },
-                {
-                  "code": "op:stamping-gauge-fee:update",
-                  "label": "编辑",
-                  "type": "op"
-                },
-                {
-                  "code": "op:stamping-gauge-fee:delete",
-                  "label": "删除",
-                  "type": "op"
-                },
-                {
-                  "code": "op:stamping-gauge-fee:export",
-                  "label": "导出",
-                  "type": "op"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "code": "menu:stamping-stroke-unit-price",
-          "label": "冲次单价",
-          "type": "group",
-          "children": [
-            {
-              "code": "menu:stamping-tonnage-upload",
-              "label": "上传",
-              "type": "menu",
-              "children": [
-                {
-                  "code": "op:stamping-tonnage-upload:view",
-                  "label": "查看",
-                  "type": "op"
-                },
-                {
-                  "code": "op:stamping-tonnage-upload:upload",
-                  "label": "上传",
-                  "type": "op"
-                }
-              ]
-            },
-            {
-              "code": "menu:stamping-tonnage",
-              "label": "冲次单价列表",
-              "type": "menu",
-              "children": [
-                {
-                  "code": "op:stamping-tonnage:view",
-                  "label": "查询",
-                  "type": "op"
-                },
-                {
-                  "code": "op:stamping-tonnage:create",
-                  "label": "新增",
-                  "type": "op"
-                },
-                {
-                  "code": "op:stamping-tonnage:update",
-                  "label": "编辑",
-                  "type": "op"
-                },
-                {
-                  "code": "op:stamping-tonnage:delete",
-                  "label": "删除",
-                  "type": "op"
-                },
-                {
-                  "code": "op:stamping-tonnage:approve",
-                  "label": "审核通过",
-                  "type": "op"
-                },
-                {
-                  "code": "op:stamping-tonnage:reverse",
-                  "label": "反审核",
-                  "type": "op"
-                },
-                {
-                  "code": "op:stamping-tonnage:export",
-                  "label": "导出",
-                  "type": "op"
-                }
-              ]
-            }
-          ]
-        },
-        {
           "code": "menu:stamping-die-fee-group",
           "label": "冲压模具费",
           "type": "group",
@@ -347,64 +362,49 @@
           ]
         },
         {
-          "code": "menu:stamping-processing-fee",
-          "label": "冲压加工费",
+          "code": "menu:stamping-gauge-fee-group",
+          "label": "冲压检具费",
           "type": "group",
           "children": [
             {
-              "code": "menu:stamping-process-fee-calc",
-              "label": "冲压加工费计算",
+              "code": "menu:stamping-gauge-fee-upload",
+              "label": "上传",
               "type": "menu",
               "children": [
                 {
-                  "code": "op:stamping-process-fee-calc:view",
+                  "code": "op:stamping-gauge-fee-upload:view",
                   "label": "查看",
                   "type": "op"
                 },
                 {
-                  "code": "op:stamping-process-fee-calc:run",
-                  "label": "计算",
-                  "type": "op"
-                },
-                {
-                  "code": "op:stamping-process-fee-calc:delete",
-                  "label": "删除日志",
+                  "code": "op:stamping-gauge-fee-upload:upload",
+                  "label": "上传",
                   "type": "op"
                 }
               ]
             },
             {
-              "code": "menu:stamping-process-fee",
-              "label": "冲压加工费列表",
+              "code": "menu:stamping-gauge-fee",
+              "label": "检具费列表",
               "type": "menu",
               "children": [
                 {
-                  "code": "op:stamping-process-fee:view",
+                  "code": "op:stamping-gauge-fee:view",
                   "label": "查询",
                   "type": "op"
                 },
                 {
-                  "code": "op:stamping-process-fee:update",
-                  "label": "编辑其它费用",
+                  "code": "op:stamping-gauge-fee:update",
+                  "label": "编辑",
                   "type": "op"
                 },
                 {
-                  "code": "op:stamping-process-fee:delete",
+                  "code": "op:stamping-gauge-fee:delete",
                   "label": "删除",
                   "type": "op"
                 },
                 {
-                  "code": "op:stamping-process-fee:approve",
-                  "label": "审核通过",
-                  "type": "op"
-                },
-                {
-                  "code": "op:stamping-process-fee:reverse",
-                  "label": "反审核",
-                  "type": "op"
-                },
-                {
-                  "code": "op:stamping-process-fee:export",
+                  "code": "op:stamping-gauge-fee:export",
                   "label": "导出",
                   "type": "op"
                 }

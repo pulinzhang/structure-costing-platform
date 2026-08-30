@@ -29,6 +29,36 @@ class Perm:
     STAMPING_PARTS_DELETE = "op:stamping-parts:delete"  # 删除
     STAMPING_PARTS_EXPORT = "op:stamping-parts:export"  # 导出
 
+    MENU_STAMPING_STROKE_UNIT_PRICE = "menu:stamping-stroke-unit-price"  # 冲次单价
+
+    MENU_STAMPING_TONNAGE_UPLOAD = "menu:stamping-tonnage-upload"  # 上传
+    STAMPING_TONNAGE_UPLOAD_VIEW = "op:stamping-tonnage-upload:view"  # 查看
+    STAMPING_TONNAGE_UPLOAD_UPLOAD = "op:stamping-tonnage-upload:upload"  # 上传
+
+    MENU_STAMPING_TONNAGE = "menu:stamping-tonnage"  # 冲次单价列表
+    STAMPING_TONNAGE_VIEW = "op:stamping-tonnage:view"  # 查询
+    STAMPING_TONNAGE_CREATE = "op:stamping-tonnage:create"  # 新增
+    STAMPING_TONNAGE_UPDATE = "op:stamping-tonnage:update"  # 编辑
+    STAMPING_TONNAGE_DELETE = "op:stamping-tonnage:delete"  # 删除
+    STAMPING_TONNAGE_APPROVE = "op:stamping-tonnage:approve"  # 审核通过
+    STAMPING_TONNAGE_REVERSE = "op:stamping-tonnage:reverse"  # 反审核
+    STAMPING_TONNAGE_EXPORT = "op:stamping-tonnage:export"  # 导出
+
+    MENU_STAMPING_PROCESSING_FEE = "menu:stamping-processing-fee"  # 冲压加工费
+
+    MENU_STAMPING_PROCESS_FEE_CALC = "menu:stamping-process-fee-calc"  # 冲压加工费计算
+    STAMPING_PROCESS_FEE_CALC_VIEW = "op:stamping-process-fee-calc:view"  # 查看
+    STAMPING_PROCESS_FEE_CALC_RUN = "op:stamping-process-fee-calc:run"  # 计算
+    STAMPING_PROCESS_FEE_CALC_DELETE = "op:stamping-process-fee-calc:delete"  # 删除日志
+
+    MENU_STAMPING_PROCESS_FEE = "menu:stamping-process-fee"  # 冲压加工费列表
+    STAMPING_PROCESS_FEE_VIEW = "op:stamping-process-fee:view"  # 查询
+    STAMPING_PROCESS_FEE_UPDATE = "op:stamping-process-fee:update"  # 编辑其它费用
+    STAMPING_PROCESS_FEE_DELETE = "op:stamping-process-fee:delete"  # 删除
+    STAMPING_PROCESS_FEE_APPROVE = "op:stamping-process-fee:approve"  # 审核通过
+    STAMPING_PROCESS_FEE_REVERSE = "op:stamping-process-fee:reverse"  # 反审核
+    STAMPING_PROCESS_FEE_EXPORT = "op:stamping-process-fee:export"  # 导出
+
     MENU_STAMPING_DIE = "menu:stamping-die"  # 冲压模具
 
     MENU_STAMPING_DIE_UPLOAD = "menu:stamping-die-upload"  # 上传模具布点
@@ -47,33 +77,6 @@ class Perm:
     STAMPING_DIE_UNIT_PRICE_UPDATE = "op:stamping-die-unit-price:update"  # 编辑
     STAMPING_DIE_UNIT_PRICE_DELETE = "op:stamping-die-unit-price:delete"  # 删除
 
-    MENU_STAMPING_GAUGE_FEE_GROUP = "menu:stamping-gauge-fee-group"  # 冲压检具费
-
-    MENU_STAMPING_GAUGE_FEE_UPLOAD = "menu:stamping-gauge-fee-upload"  # 上传
-    STAMPING_GAUGE_FEE_UPLOAD_VIEW = "op:stamping-gauge-fee-upload:view"  # 查看
-    STAMPING_GAUGE_FEE_UPLOAD_UPLOAD = "op:stamping-gauge-fee-upload:upload"  # 上传
-
-    MENU_STAMPING_GAUGE_FEE = "menu:stamping-gauge-fee"  # 检具费列表
-    STAMPING_GAUGE_FEE_VIEW = "op:stamping-gauge-fee:view"  # 查询
-    STAMPING_GAUGE_FEE_UPDATE = "op:stamping-gauge-fee:update"  # 编辑
-    STAMPING_GAUGE_FEE_DELETE = "op:stamping-gauge-fee:delete"  # 删除
-    STAMPING_GAUGE_FEE_EXPORT = "op:stamping-gauge-fee:export"  # 导出
-
-    MENU_STAMPING_STROKE_UNIT_PRICE = "menu:stamping-stroke-unit-price"  # 冲次单价
-
-    MENU_STAMPING_TONNAGE_UPLOAD = "menu:stamping-tonnage-upload"  # 上传
-    STAMPING_TONNAGE_UPLOAD_VIEW = "op:stamping-tonnage-upload:view"  # 查看
-    STAMPING_TONNAGE_UPLOAD_UPLOAD = "op:stamping-tonnage-upload:upload"  # 上传
-
-    MENU_STAMPING_TONNAGE = "menu:stamping-tonnage"  # 冲次单价列表
-    STAMPING_TONNAGE_VIEW = "op:stamping-tonnage:view"  # 查询
-    STAMPING_TONNAGE_CREATE = "op:stamping-tonnage:create"  # 新增
-    STAMPING_TONNAGE_UPDATE = "op:stamping-tonnage:update"  # 编辑
-    STAMPING_TONNAGE_DELETE = "op:stamping-tonnage:delete"  # 删除
-    STAMPING_TONNAGE_APPROVE = "op:stamping-tonnage:approve"  # 审核通过
-    STAMPING_TONNAGE_REVERSE = "op:stamping-tonnage:reverse"  # 反审核
-    STAMPING_TONNAGE_EXPORT = "op:stamping-tonnage:export"  # 导出
-
     MENU_STAMPING_DIE_FEE_GROUP = "menu:stamping-die-fee-group"  # 冲压模具费
 
     MENU_STAMPING_DIE_FEE_CALC = "menu:stamping-die-fee-calc"  # 冲压模具费计算
@@ -89,20 +92,17 @@ class Perm:
     STAMPING_DIE_FEE_REVERSE = "op:stamping-die-fee:reverse"  # 反审核
     STAMPING_DIE_FEE_EXPORT = "op:stamping-die-fee:export"  # 导出
 
-    MENU_STAMPING_PROCESSING_FEE = "menu:stamping-processing-fee"  # 冲压加工费
+    MENU_STAMPING_GAUGE_FEE_GROUP = "menu:stamping-gauge-fee-group"  # 冲压检具费
 
-    MENU_STAMPING_PROCESS_FEE_CALC = "menu:stamping-process-fee-calc"  # 冲压加工费计算
-    STAMPING_PROCESS_FEE_CALC_VIEW = "op:stamping-process-fee-calc:view"  # 查看
-    STAMPING_PROCESS_FEE_CALC_RUN = "op:stamping-process-fee-calc:run"  # 计算
-    STAMPING_PROCESS_FEE_CALC_DELETE = "op:stamping-process-fee-calc:delete"  # 删除日志
+    MENU_STAMPING_GAUGE_FEE_UPLOAD = "menu:stamping-gauge-fee-upload"  # 上传
+    STAMPING_GAUGE_FEE_UPLOAD_VIEW = "op:stamping-gauge-fee-upload:view"  # 查看
+    STAMPING_GAUGE_FEE_UPLOAD_UPLOAD = "op:stamping-gauge-fee-upload:upload"  # 上传
 
-    MENU_STAMPING_PROCESS_FEE = "menu:stamping-process-fee"  # 冲压加工费列表
-    STAMPING_PROCESS_FEE_VIEW = "op:stamping-process-fee:view"  # 查询
-    STAMPING_PROCESS_FEE_UPDATE = "op:stamping-process-fee:update"  # 编辑其它费用
-    STAMPING_PROCESS_FEE_DELETE = "op:stamping-process-fee:delete"  # 删除
-    STAMPING_PROCESS_FEE_APPROVE = "op:stamping-process-fee:approve"  # 审核通过
-    STAMPING_PROCESS_FEE_REVERSE = "op:stamping-process-fee:reverse"  # 反审核
-    STAMPING_PROCESS_FEE_EXPORT = "op:stamping-process-fee:export"  # 导出
+    MENU_STAMPING_GAUGE_FEE = "menu:stamping-gauge-fee"  # 检具费列表
+    STAMPING_GAUGE_FEE_VIEW = "op:stamping-gauge-fee:view"  # 查询
+    STAMPING_GAUGE_FEE_UPDATE = "op:stamping-gauge-fee:update"  # 编辑
+    STAMPING_GAUGE_FEE_DELETE = "op:stamping-gauge-fee:delete"  # 删除
+    STAMPING_GAUGE_FEE_EXPORT = "op:stamping-gauge-fee:export"  # 导出
 
     MENU_BOM = "menu:bom"  # 焊接工程
 

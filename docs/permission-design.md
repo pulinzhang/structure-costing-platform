@@ -343,29 +343,6 @@ root
 │   │       ├── op:stamping-parts:update
 │   │       ├── op:stamping-parts:delete
 │   │       └── op:stamping-parts:export
-│   ├── menu:stamping-die                      # 冲压模具（二级分组，可勾）
-│   │   ├── menu:stamping-die-upload
-│   │   │   ├── op:stamping-die-upload:view
-│   │   │   └── op:stamping-die-upload:upload
-│   │   └── menu:stamping-die-list
-│   │       ├── op:stamping-die-list:view
-│   │       ├── op:stamping-die-list:update
-│   │       ├── op:stamping-die-list:delete
-│   │       └── op:stamping-die-list:export
-│   │   └── menu:stamping-die-unit-price
-│   │       ├── op:stamping-die-unit-price:view
-│   │       ├── op:stamping-die-unit-price:create
-│   │       ├── op:stamping-die-unit-price:update
-│   │       └── op:stamping-die-unit-price:delete
-│   ├── menu:stamping-gauge-fee-group          # 冲压检具费（二级分组，可勾）
-│   │   ├── menu:stamping-gauge-fee-upload
-│   │   │   ├── op:stamping-gauge-fee-upload:view
-│   │   │   └── op:stamping-gauge-fee-upload:upload
-│   │   └── menu:stamping-gauge-fee
-│   │       ├── op:stamping-gauge-fee:view
-│   │       ├── op:stamping-gauge-fee:update
-│   │       ├── op:stamping-gauge-fee:delete
-│   │       └── op:stamping-gauge-fee:export
 │   ├── menu:stamping-stroke-unit-price        # 冲次单价（二级分组，可勾）
 │   │   ├── menu:stamping-tonnage-upload
 │   │   │   ├── op:stamping-tonnage-upload:view
@@ -378,30 +355,53 @@ root
 │   │       ├── op:stamping-tonnage:approve
 │   │       ├── op:stamping-tonnage:reverse
 │   │       └── op:stamping-tonnage:export
-│   └── menu:stamping-die-fee-group           # 冲压模具费（二级分组）
-│       ├── menu:stamping-die-fee-calc
-│       │   ├── op:stamping-die-fee-calc:view
-│       │   ├── op:stamping-die-fee-calc:run
-│       │   └── op:stamping-die-fee-calc:delete
-│       └── menu:stamping-die-fee
-│           ├── op:stamping-die-fee:view
-│           ├── op:stamping-die-fee:update
-│           ├── op:stamping-die-fee:delete
-│           ├── op:stamping-die-fee:approve
-│           ├── op:stamping-die-fee:reverse
-│           └── op:stamping-die-fee:export
-│   └── menu:stamping-processing-fee           # 冲压加工费（二级分组，可勾）
-│       ├── menu:stamping-process-fee-calc
-│       │   ├── op:stamping-process-fee-calc:view
-│       │   ├── op:stamping-process-fee-calc:run
-│       │   └── op:stamping-process-fee-calc:delete
-│       └── menu:stamping-process-fee
-│           ├── op:stamping-process-fee:view
-│           ├── op:stamping-process-fee:update
-│           ├── op:stamping-process-fee:delete
-│           ├── op:stamping-process-fee:approve
-│           ├── op:stamping-process-fee:reverse
-│           └── op:stamping-process-fee:export
+│   ├── menu:stamping-processing-fee           # 冲压加工费（二级分组，可勾）
+│   │   ├── menu:stamping-process-fee-calc
+│   │   │   ├── op:stamping-process-fee-calc:view
+│   │   │   ├── op:stamping-process-fee-calc:run
+│   │   │   └── op:stamping-process-fee-calc:delete
+│   │   └── menu:stamping-process-fee
+│   │       ├── op:stamping-process-fee:view
+│   │       ├── op:stamping-process-fee:update
+│   │       ├── op:stamping-process-fee:delete
+│   │       ├── op:stamping-process-fee:approve
+│   │       ├── op:stamping-process-fee:reverse
+│   │       └── op:stamping-process-fee:export
+│   ├── menu:stamping-die                      # 冲压模具（二级分组，可勾）
+│   │   ├── menu:stamping-die-upload
+│   │   │   ├── op:stamping-die-upload:view
+│   │   │   └── op:stamping-die-upload:upload
+│   │   ├── menu:stamping-die-list
+│   │   │   ├── op:stamping-die-list:view
+│   │   │   ├── op:stamping-die-list:update
+│   │   │   ├── op:stamping-die-list:delete
+│   │   │   └── op:stamping-die-list:export
+│   │   └── menu:stamping-die-unit-price
+│   │       ├── op:stamping-die-unit-price:view
+│   │       ├── op:stamping-die-unit-price:create
+│   │       ├── op:stamping-die-unit-price:update
+│   │       └── op:stamping-die-unit-price:delete
+│   ├── menu:stamping-die-fee-group            # 冲压模具费（二级分组，可勾）
+│   │   ├── menu:stamping-die-fee-calc
+│   │   │   ├── op:stamping-die-fee-calc:view
+│   │   │   ├── op:stamping-die-fee-calc:run
+│   │   │   └── op:stamping-die-fee-calc:delete
+│   │   └── menu:stamping-die-fee
+│   │       ├── op:stamping-die-fee:view
+│   │       ├── op:stamping-die-fee:update
+│   │       ├── op:stamping-die-fee:delete
+│   │       ├── op:stamping-die-fee:approve
+│   │       ├── op:stamping-die-fee:reverse
+│   │       └── op:stamping-die-fee:export
+│   └── menu:stamping-gauge-fee-group          # 冲压检具费（二级分组，可勾）
+│       ├── menu:stamping-gauge-fee-upload
+│       │   ├── op:stamping-gauge-fee-upload:view
+│       │   └── op:stamping-gauge-fee-upload:upload
+│       └── menu:stamping-gauge-fee
+│           ├── op:stamping-gauge-fee:view
+│           ├── op:stamping-gauge-fee:update
+│           ├── op:stamping-gauge-fee:delete
+│           └── op:stamping-gauge-fee:export
 │
 ├── menu:bom                                   # 焊接工程（分组，可勾；技术码仍为 bom）
 │   ├── menu:bom-material-list                 # 材料清单（二级分组）
@@ -851,3 +851,4 @@ static/index.html           # 侧栏 data-page
 | 2026-08-29 | 新增 `menu:stamping-gauge-fee-group`：检具费上传 / 列表（整包删除） |
 | 2026-08-29 | 检具费列表增加 `op:stamping-gauge-fee:update`；支持单条编辑与删除 |
 | 2026-08-29 | 检具费列表增加 `op:stamping-gauge-fee:export`；导出含基地、项目 |
+| 2026-08-30 | 冲压工程权限树顺序与侧栏对齐：工艺 → 冲次单价 → 加工费 → 模具 → 模具费 → 检具费 |
