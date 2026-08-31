@@ -1,4 +1,6 @@
 """
+指挥家：只挥棒，不拉琴。违反指挥家宪法（orchestrator-constitution）即不合格。
+
 L0 核对导出 — 编排器（查库 → 渲染工作簿 → 文件名）
 
 不负责列布局 / 样式 / openpyxl 细节；那些分别在 columns / styles / workbook。

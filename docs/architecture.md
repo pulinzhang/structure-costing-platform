@@ -42,6 +42,7 @@ Parser 是**横向工具**：只被 Service 调用；禁止依赖 Router/Service
 |----|--------|------------|
 | **Router** | 鉴权依赖、参数、调 Service、返回 `ApiResponse`；下载/导出可 `StreamingResponse` / `FileResponse` | 业务逻辑、`db.query`、调 Parser、后台 worker 壳（§5.3）、把 Service 错误元组转 `HTTPException`（§5.2） |
 | **Service** | 业务规则、事务、调 Parser/Repo、ORM→VO、抛业务异常 | 直接写 SQL；用 `(None, str)` 向 Router 报错；手写 datetime/Decimal JSON |
+| **Orchestrator** | 核算指挥：`prepare → engine → persist` | 主方法里 `for` / 掐进度 / 写库（见 [指挥家宪法](orchestrator-constitution.mdc)） |
 | **Repository** | CRUD / 聚合查询；返回 Model 或具名 `TypedDict`（函数体 `return {…}` 合法） | 权限/角色分支决策；签名写成匿名 `dict` / `dict[str, Any]` |
 | **Model** | 表字段 + `relationship` | `to_dict`、业务 `@property` |
 | **Schema** | DTO（`schemas/dto/`）/ VO（`schemas/vo/`） | 业务流程 |
@@ -274,6 +275,7 @@ ApiResponse[AsyncTaskAcceptedVO]
 | 文档 | 位置 | 用途 |
 |------|------|------|
 | **架构宪法** | [architecture-constitution.mdc](architecture-constitution.mdc) · `.cursor/rules/architecture-constitution.mdc` | 分层 + 切片依赖硬规则 |
+| **指挥家宪法** | [orchestrator-constitution.mdc](orchestrator-constitution.mdc) · `.cursor/rules/orchestrator-constitution.mdc` | 核算 Orchestrator 只编排不执行 |
 | **前端规范** | [front-end.mdc](front-end.mdc) · `.cursor/rules/front-end.mdc` | SPA / Brabus / 表格风格 |
 | **浅色主题** | [light-theme-design.md](light-theme-design.md) | 浅色主题改造（设计） |
 | **命名规范** | [naming-convention.mdc](naming-convention.mdc) · `.cursor/rules/…` | 标识符命名 |

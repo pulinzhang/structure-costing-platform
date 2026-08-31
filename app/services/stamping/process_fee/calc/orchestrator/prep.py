@@ -1,0 +1,76 @@
+"""计算开场：范围、冲次单价、零件清单。"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from datetime import datetime
+from decimal import Decimal
+
+from sqlalchemy.orm import Session
+
+from app.common.timezone import now
+from app.exceptions.base import BusinessException
+from app.models.stamping import StampingPart
+from app.schemas.dto.stamping_process_fee_dto import StampingProcessFeeCalcDTO
+from app.services.stamping.process_fee.calc.models import TonnageRateInfo
+from app.services.stamping.process_fee.calc.orchestrator.deps import ProcessFeeCalcDeps
+from app.services.stamping.process_fee.calc.orchestrator.progress import ProgressNotifier
+from app.services.stamping.process_fee.scope import require_scope
+
+
+@dataclass(slots=True)
+class CalcPrepContext:
+    location: str
+    supplier: str
+    rate_map: dict[int, TonnageRateInfo]
+    parts: list[StampingPart]
+    started_at: datetime
+    detail_lines: list[str]
+
+
+def prepare_calc_run(
+    db: Session,
+    deps: ProcessFeeCalcDeps,
+    dto: StampingProcessFeeCalcDTO,
+    progress: ProgressNotifier,
+) -> CalcPrepContext:
+    location, supplier = require_scope(dto)
+    started_at = now()
+    detail_lines = [f"开始计算 year={dto.year} location={location} " f"supplier={supplier}"]
+
+    progress.report(5, "加载冲次单价...")
+    rates = deps.tonnage_repo.list_by_location_year(db, location, dto.year)
+    if not rates:
+        raise BusinessException(
+            f"基地「{location}」年度 {dto.year} 无冲次单价数据，请先维护冲次单价"
+        )
+
+    rate_map: dict[int, TonnageRateInfo] = {
+        int(r.tonnage): TonnageRateInfo(
+            price_per_stroke=Decimal(str(r.price_per_stroke)),
+            tonnage_price_id=r.id,
+        )
+        for r in rates
+    }
+    detail_lines.append(f"冲次单价 {len(rates)} 条")
+
+    progress.report(10, "加载冲压零件...")
+    parts = deps.part_repo.list_with_processes(
+        db,
+        location=location,
+        stamping_supplier=supplier,
+        vehicle_model=dto.vehicle_model,
+        version=dto.version,
+    )
+    if not parts:
+        raise BusinessException(f"基地「{location}」工厂「{supplier}」下未找到匹配的冲压零件")
+    detail_lines.append(f"匹配零件 {len(parts)} 件")
+
+    return CalcPrepContext(
+        location=location,
+        supplier=supplier,
+        rate_map=rate_map,
+        parts=parts,
+        started_at=started_at,
+        detail_lines=detail_lines,
+    )

@@ -8,6 +8,7 @@
 |------|------|
 | [architecture.md](architecture.md) | 架构导读；文末有规范索引 |
 | [architecture-constitution.mdc](architecture-constitution.mdc) | 分层与切片依赖硬规则（与 `.cursor/rules` 同步） |
+| [orchestrator-constitution.mdc](orchestrator-constitution.mdc) | 核算 Orchestrator 只编排不执行（与 `.cursor/rules` 同步） |
 | [front-end.mdc](front-end.mdc) | SPA / Brabus / HUD 表 |
 | [light-theme-design.md](light-theme-design.md) | 浅色主题 |
 | [naming-convention.mdc](naming-convention.mdc) | 标识符命名 |
