@@ -3,7 +3,7 @@
  * 会话字段：is_admin、permissions（来自登录 / me / touch）
  */
 
-import { getUserSession } from './features/login/index.js?v=14';
+import { getUserSession } from './features/login/index.js?v=15';
 
 /** 路由 page → 叶子菜单权限码（系统设置页 / Workspace 共用产品结构权限） */
 const PAGE_MENU_CODE = {

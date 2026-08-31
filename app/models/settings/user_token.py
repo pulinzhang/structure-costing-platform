@@ -9,7 +9,7 @@ from app.models.common.audit_mixin import AuditUserMixin
 
 
 class UserToken(AuditUserMixin, AuxiliaryBase):
-    """用户登录 Token：3 小时无活动自动失效"""
+    """用户登录 Token：无业务请求超时后失效（分钟数见 TOKEN_IDLE_MINUTES）"""
 
     __tablename__ = "user_tokens"
 

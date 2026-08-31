@@ -16,13 +16,13 @@
 import { pageMeta } from './features/index.js?v=32';
 
 // 页面导入（路径与 index.html 菜单树 / features 目录对齐）
-import { getUserSession, initUserMenu, startTokenHeartbeat, updateUserSession } from './features/login/index.js?v=14';
+import { getUserSession, initUserMenu, startTokenHeartbeat, updateUserSession } from './features/login/index.js?v=15';
 import {
     applySidebarPermissions,
     canAccessPage,
     fallbackPageName,
-} from './permissions.js?v=9';
-import { bootLlmAssistant } from './llm-assistant/boot.js?v=26';
+} from './permissions.js?v=10';
+import { bootLlmAssistant } from './llm-assistant/boot.js?v=27';
 import { pageConfig as dashboardPage }      from './features/dashboard/index.js?v=7';
 import { pageConfig as stampingUploadPage } from './features/stamping/process/upload/index.js?v=42';
 import { pageConfig as stampingPartsPage }  from './features/stamping/process/parts/index.js?v=34';
@@ -424,7 +424,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // 顶栏用户头像菜单 + token 心跳续期
+    // 顶栏用户头像菜单 + token 探活（不续期）
     initUserMenu();
     startTokenHeartbeat();
 

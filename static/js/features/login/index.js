@@ -66,9 +66,10 @@ export function clearUserSession() {
 }
 
 /**
- * 定时心跳：顺延服务端 token（默认每 10 分钟）
+ * 定时探活：只检查会话是否仍有效，不续期。
+ * 空闲 15 分钟无业务请求后，下次探活会 401 并回登录页。
  */
-export function startTokenHeartbeat(intervalMs = 10 * 60 * 1000) {
+export function startTokenHeartbeat(intervalMs = 60 * 1000) {
     if (window.__tokenHeartbeatTimer) {
         clearInterval(window.__tokenHeartbeatTimer);
     }

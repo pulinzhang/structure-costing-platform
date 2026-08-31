@@ -7,13 +7,11 @@ from sqlalchemy.orm import Session
 
 from app.common.audit import display_name
 from app.common.timezone import now
+from app.config import settings
 from app.exceptions.base import BusinessException
 from app.models.settings import User, UserToken
 from app.repositories.settings.users.user_repository import UserRepository
-from app.repositories.settings.users.user_token_repository import (
-    TOKEN_IDLE_HOURS,
-    UserTokenRepository,
-)
+from app.repositories.settings.users.user_token_repository import UserTokenRepository
 from app.schemas.dto.user_dto import UserLoginDTO, UserTokenCreate, UserTokenSnapshot
 from app.schemas.vo.user_vo import LoginVO, UserVO
 from app.services.settings.users.permission_service import PermissionService
@@ -43,7 +41,7 @@ class AuthService:
             raise BusinessException("账号或密码错误", code=401)
 
         # 清理过期 token，并作废该用户旧会话
-        self.token_repo.delete_expired(token_db)
+        self.token_repo.delete_expired(token_db, settings.TOKEN_IDLE_MINUTES)
         self.token_repo.delete_by_user_id(token_db, user.id)
 
         token = secrets.token_hex(32)
@@ -103,7 +101,8 @@ class AuthService:
         token_db.commit()
 
     def touch(self, user_db: Session, token_db: Session, token: str) -> UserVO:
-        return self.get_user_by_token(user_db, token_db, token, do_touch=True)
+        """心跳探活：只校验，不顺延 last_active_at。"""
+        return self.get_user_by_token(user_db, token_db, token, do_touch=False)
 
     def get_user_by_token(
         self,
@@ -132,7 +131,7 @@ class AuthService:
         if not row:
             raise PermissionError("登录已失效，请重新登录")
 
-        deadline = row.last_active_at + timedelta(hours=TOKEN_IDLE_HOURS)
+        deadline = row.last_active_at + timedelta(minutes=settings.TOKEN_IDLE_MINUTES)
         if now() > deadline:
             self.token_repo.delete_by_token(token_db, token)
             token_db.commit()

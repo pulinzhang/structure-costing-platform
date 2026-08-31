@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.common.permissions.codes import Perm
 from app.database import get_auxiliary_db, get_db
-from app.deps.auth import extract_token, get_current_user
+from app.deps.auth import extract_token, get_current_user, get_current_user_no_touch
 from app.deps.permissions import require_perm
 from app.schemas.dto.user_dto import (
     UserLoginDTO,
@@ -40,9 +40,9 @@ def login(
     "/touch",
     response_model=ApiResponse[UserVO],
 )
-def touch(current_user: UserVO = Depends(get_current_user)) -> ApiResponse[UserVO]:
-    """心跳：校验并顺延 token（复用 get_current_user）"""
-    return ApiResponse.ok(data=current_user, message="已续期")
+def touch(current_user: UserVO = Depends(get_current_user_no_touch)) -> ApiResponse[UserVO]:
+    """心跳：校验 token 是否仍有效，不顺延空闲计时"""
+    return ApiResponse.ok(data=current_user, message="会话有效")
 
 
 @router.get(
