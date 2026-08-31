@@ -122,6 +122,12 @@ export function dieUploadTemplate() {
                     </div>
                     <div class="p-4 space-y-3 text-[11px] text-[#888888] leading-relaxed">
                         <p class="text-[#ffb74d]">必须先上传该基地+项目的冲压工艺确认表（工艺清单），再传模具布点。项目下拉只列出已入库工艺。</p>
+                        <p>文件名须含「项目冲压模具布点工艺清单」（可简写到「项目冲压模具布点」）。项目代号写在该短语前面，须与所选项目一致（忽略中文前缀与 ①–⑳）。识别不到再看表内标题行。</p>
+                        <p class="font-mono text-[10px] text-[#6E6E73] leading-relaxed">
+                            示意：<span class="text-[#C8C8D0]">T13J项目冲压模具布点工艺清单.xlsx</span><br>
+                            <span class="text-[#C8C8D0]">②T13J项目冲压模具布点工艺清单-2024-01-22.xlsx</span><br>
+                            <span class="text-[#C8C8D0]">副本②T13J项目冲压模具布点工艺清单.xlsx</span>
+                        </p>
                         <p>本表是模具费用计算依据，本期只入库、不算金额。</p>
                         <p>覆盖同一基地+项目；已改的分摊比例会按零件号保留。</p>
                         <p>同一零件的工序号不能重复，否则整单失败并标出 Excel 行号。</p>
