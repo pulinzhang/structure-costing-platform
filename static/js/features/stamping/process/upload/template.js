@@ -146,65 +146,20 @@ export function uploadTemplate() {
 
             <!-- ===== 右栏：信息面板 ===== -->
             <div class="space-y-3">
-                <!-- 技术规格面板 -->
+                <!-- 填写说明 -->
                 <div class="bg-[#1e1e1e] border border-[#2c2c2c]">
-                    <!-- 面板头 -->
                     <div class="px-4 py-3 border-b border-[#222222] flex items-center justify-between">
                         <div class="flex items-center gap-2">
                             <span style="width:2px;height:12px;background:#d32f2f;border-radius:1px;display:inline-block;box-shadow:0 0 6px rgba(211,47,47,0.4);"></span>
-                            <h5 class="text-[11px] font-bold text-[#9e9e9e] mb-0 tracking-widest uppercase">技术规格</h5>
+                            <h5 class="text-[11px] font-bold text-[#9e9e9e] mb-0 tracking-widest">填写说明</h5>
                         </div>
-                        <span class="text-[10px] text-[#4d4d4d] tracking-wider">SPEC</span>
                     </div>
-                    <div class="p-4 space-y-4">
-                        <!-- 文件格式 -->
-                        <div>
-                            <p class="text-[9px] text-[#4a4a4a] tracking-[0.18em] uppercase mb-2">文件格式</p>
-                            <div class="flex gap-2">
-                                <span class="px-2 py-1 bg-[#111111] border border-[#2a2a2a] text-[10px] text-[#888888] font-mono">.xlsx</span>
-                                <span class="px-2 py-1 bg-[#111111] border border-[#2a2a2a] text-[10px] text-[#888888] font-mono">.xls</span>
-                            </div>
-                        </div>
-                        <!-- 文件大小 -->
-                        <div>
-                            <p class="text-[9px] text-[#4a4a4a] tracking-[0.18em] uppercase mb-2">文件大小</p>
-                            <p class="text-[11px] text-[#888888] font-mono">50 MB</p>
-                        </div>
-                        <!-- 数据起始 -->
-                        <div>
-                            <p class="text-[9px] text-[#4a4a4a] tracking-[0.18em] uppercase mb-2">数据起始</p>
-                            <p class="text-[11px] text-[#888888]">第 1 行 · 不留空行。同一零件的工序号（如 OP30）不可重复。</p>
-                        </div>
-                        <!-- 支持字段 -->
-                        <div>
-                            <p class="text-[9px] text-[#4a4a4a] tracking-[0.18em] uppercase mb-2">支持字段</p>
-                            <div class="grid grid-cols-2 gap-1">
-                                <div class="flex items-center gap-1.5">
-                                    <span class="w-0.5 h-2.5 bg-[#3a3a3a]"></span>
-                                    <span class="text-[10px] text-[#666666]">零件号</span>
-                                </div>
-                                <div class="flex items-center gap-1.5">
-                                    <span class="w-0.5 h-2.5 bg-[#3a3a3a]"></span>
-                                    <span class="text-[10px] text-[#666666]">零件名称</span>
-                                </div>
-                                <div class="flex items-center gap-1.5">
-                                    <span class="w-0.5 h-2.5 bg-[#3a3a3a]"></span>
-                                    <span class="text-[10px] text-[#666666]">材料</span>
-                                </div>
-                                <div class="flex items-center gap-1.5">
-                                    <span class="w-0.5 h-2.5 bg-[#3a3a3a]"></span>
-                                    <span class="text-[10px] text-[#666666]">料厚</span>
-                                </div>
-                                <div class="flex items-center gap-1.5">
-                                    <span class="w-0.5 h-2.5 bg-[#3a3a3a]"></span>
-                                    <span class="text-[10px] text-[#666666]">工序数量</span>
-                                </div>
-                                <div class="flex items-center gap-1.5">
-                                    <span class="w-0.5 h-2.5 bg-[#3a3a3a]"></span>
-                                    <span class="text-[10px] text-[#666666]">模具数量</span>
-                                </div>
-                            </div>
-                        </div>
+                    <div class="p-4 space-y-3 text-[11px] text-[#888888] leading-relaxed">
+                        <p class="text-[#ffb74d]">本文件为双方签字的工艺确认表。车型、版本、冲压厂从文件名或表头识别；同基地 + 冲压厂 + 车型 + 版本再次上传将覆盖。</p>
+                        <p><span class="text-[#c8c8c8]">是否利废</span>只看本表「料片式样」：写有「利用××废料」（如利用侧围废料）即记为利废件，材料按成品净重 × 废料月度价（从废料里捡出的成品），不按一事一议新板价。方料 / 卷料 / 条料仍表示料片形状，与利废是两件事。</p>
+                        <p>模具布点是计划，不作为利废依据；与本表不一致时以本表为准。</p>
+                        <p>同一零件的工序号（如 OP30）不可重复，否则整单失败并标出 Excel 行号。</p>
+                        <p>拼焊件：零件号整段合并，料片长/宽可按子片切块。下载模板含普通件与拼焊样例。</p>
                     </div>
                 </div>
 

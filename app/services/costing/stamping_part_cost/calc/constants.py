@@ -6,7 +6,7 @@ from decimal import Decimal, ROUND_HALF_UP
 
 from app.common.money import Q3
 
-FORMULA_VERSION = "part-cost-v7"
+FORMULA_VERSION = "part-cost-v9"
 AMOUNT_QUANTIZE = Decimal("0.000001")
 UTIL_QUANTIZE = Decimal("0.01")
 FEE_QUANTIZE = Q3

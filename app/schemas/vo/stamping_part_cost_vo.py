@@ -30,6 +30,8 @@ class StampingPartCostVO(BaseModel):
     sheet_width: str | None = None
     parts_per_sheet: int | None = None
     sheet_type: str | None = None
+    is_offal_nested: bool = False
+    offal_source: str | None = None
     die_type: str | None = None
     process_method: str | None = None
     automation: str | None = None

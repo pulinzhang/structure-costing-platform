@@ -289,7 +289,7 @@ ApiResponse[AsyncTaskAcceptedVO]
 
 | 切片 | 文档 |
 |------|------|
-| **stamping** | [模具布点](stamping/stamping-die-management-design.md) · [模具单价](stamping/stamping-die-unit-price-design.md) · [检具费档案](stamping/stamping-gauge-fee-design.md) · [年度模具费（不含检具）](stamping/stamping-die-fee-design.md) |
+| **stamping** | [工艺确认表](stamping/stamping-process-confirmation-design.md) · [模具布点](stamping/stamping-die-management-design.md) · [模具单价](stamping/stamping-die-unit-price-design.md) · [检具费档案](stamping/stamping-gauge-fee-design.md) · [年度模具费（不含检具）](stamping/stamping-die-fee-design.md) |
 | **bom** | [年度零件价](bom/bom-annual-part-prices-design.md) |
 | **yishiyiyi** | [牌号分类](yishiyiyi/steel-grade-category-design.md) · [分类级厚度政策](yishiyiyi/thickness-policy-category-level-design.md) |
 | **costing** | [核价引擎](costing/costing-engine-design.md) · [L0 成品核价](costing/l0-assembly-costing-design.md) · [委外分总成](costing/outsourced-assembly-costing-design.md) · [协议价生效期](costing/effective-period-design.md) · [暂估正式](costing/provisional-final-settlement-design.md) · [锚点送货](costing/anchor-true-up-design.md) |

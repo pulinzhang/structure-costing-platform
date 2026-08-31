@@ -13,7 +13,7 @@
 
 from decimal import Decimal
 from datetime import datetime
-from sqlalchemy import DateTime, Index, Integer, Numeric, String, Text, UniqueConstraint
+from sqlalchemy import Boolean, DateTime, Index, Integer, Numeric, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -56,6 +56,17 @@ class StampingPartCost(AuditUserMixin, Base):
     )
     parts_per_sheet: Mapped[int | None] = mapped_column(Integer, nullable=True, comment="可制件数")
     sheet_type: Mapped[str | None] = mapped_column(String(50), nullable=True, comment="料片式样")
+    is_offal_nested: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        comment="是否利废件快照（材料 = 成品净重 × 废料单价）",
+    )
+    offal_source: Mapped[str | None] = mapped_column(
+        String(50),
+        nullable=True,
+        comment="利用哪类废料快照，例：侧围",
+    )
     die_type: Mapped[str | None] = mapped_column(String(50), nullable=True, comment="模具类型")
     process_method: Mapped[str | None] = mapped_column(
         String(50), nullable=True, comment="工艺方法"
@@ -221,7 +232,7 @@ class StampingPartCost(AuditUserMixin, Base):
         Text, nullable=True, comment="计算失败原因"
     )
     formula_version: Mapped[str | None] = mapped_column(
-        String(50), nullable=True, comment="公式版本，如 part-cost-v7"
+        String(50), nullable=True, comment="公式版本，如 part-cost-v9"
     )
     calculated_at: Mapped[datetime | None] = mapped_column(
         DateTime, nullable=True, comment="计算时间"

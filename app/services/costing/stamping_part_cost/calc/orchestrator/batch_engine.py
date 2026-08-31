@@ -154,7 +154,7 @@ class BatchCalculationEngine:
                 location=part.location,
                 supplier=ctx.supplier,
                 part=part,
-                snapshot=part_snapshot(part),
+                snapshot=part_snapshot(part),  # 含是否利废 / 利用哪类废料，按本月落库
                 density=rates.density,
                 loss_rate=rates.loss_rate,
                 recovery_rate=rates.recovery_rate,

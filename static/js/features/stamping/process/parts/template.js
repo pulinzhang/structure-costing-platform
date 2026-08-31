@@ -134,7 +134,7 @@ export function partsTemplate() {
                 </div>
 
                 <div class="overflow-x-auto brabus-bg-grid">
-                    <table class="w-full min-w-[1400px] bg-transparent" id="partsTable">
+                    <table class="w-full min-w-[1480px] bg-transparent" id="partsTable">
                         <thead>
                             <tr class="border-b border-[#17171C] bg-[#0B0B0D]/95">
                                 <th class="p-0 w-0"></th>
@@ -146,6 +146,7 @@ export function partsTemplate() {
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">车型</th>
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap border-r border-[#22222A]">版本</th>
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">材料</th>
+                                <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">利废</th>
                                 <th class="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">厚度</th>
                                 <th class="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">重量</th>
                                 <th class="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">工序</th>
@@ -348,6 +349,52 @@ function detailTableRow([label, value]) {
             </tr>`;
 }
 
+function renderOffalRows(part, canUpdate) {
+    const isOn = Boolean(part.is_offal_nested);
+    const source = part.offal_source || '';
+    if (!canUpdate) {
+        return [
+            detailTableRow(['是否利废', isOn ? '是' : '否']),
+            detailTableRow(['利用哪类废料', esc(source)]),
+        ].join('');
+    }
+    const knobX = isOn ? '16px' : '2px';
+    const trackBg = isOn ? '#d32f2f' : '#1a1a1a';
+    const trackBorder = isOn ? '#d32f2f' : '#2c2c2c';
+    return `
+            <tr class="border-b border-[#161616]">
+                <th class="px-4 py-3 text-left text-[9px] font-medium uppercase tracking-[0.18em] text-[#4d4d4d] w-28">是否利废</th>
+                <td class="px-4 py-3">
+                    <div class="flex items-center gap-2.5 flex-wrap">
+                        <button type="button" id="offalNestedToggle" role="switch"
+                                aria-checked="${isOn ? 'true' : 'false'}"
+                                data-on="${isOn ? '1' : '0'}"
+                                class="relative h-5 w-9 shrink-0 rounded-full border focus:outline-none focus:border-[#ff5252]"
+                                style="background:${trackBg}; border-color:${trackBorder};">
+                            <span id="offalNestedKnob"
+                                  class="absolute top-0.5 h-3.5 w-3.5 rounded-full bg-[#ffffff] pointer-events-none"
+                                  style="left:0; transform:translateX(${knobX}); transition:transform 150ms ease;"></span>
+                        </button>
+                        <span id="offalNestedLabel" class="text-[11px] text-[#9e9e9e] tracking-wide">${isOn ? '是' : '否'}</span>
+                        <button type="button" id="saveOffalBtn" data-active="false"
+                                class="h-7 px-3 text-[10px] text-[#555555] border border-[#2c2c2c] bg-transparent rounded-sm hover:text-[#d32f2f] hover:border-[#d32f2f]/50 transition-all tracking-wide">
+                            保存利废
+                        </button>
+                    </div>
+                    <p class="mt-1.5 text-[9px] text-[#555555] leading-relaxed">从废料里捡成品；材料按成品净重 × 废料单价。改后须重算零件价格才生效。</p>
+                </td>
+            </tr>
+            <tr id="offalSourceRow" class="border-b border-[#161616] ${isOn ? '' : 'hidden'}">
+                <th class="px-4 py-3 text-left text-[9px] font-medium uppercase tracking-[0.18em] text-[#4d4d4d] w-28">利用哪类废料</th>
+                <td class="px-4 py-3">
+                    <input type="text" id="offalSourceInput" maxlength="50"
+                           value="${esc(source)}"
+                           placeholder="如：侧围（可空）"
+                           class="w-full h-8 px-2 text-[11px] bg-[#0a0a0a] border border-[#2c2c2c] text-[#ffffff] placeholder:text-[#616161] focus:outline-none focus:border-[#ff5252] transition-all rounded-sm">
+                </td>
+            </tr>`;
+}
+
 /**
  * Excel 单元格溯源：文件 + 表页 + 表+ 零件号列（与 BOM 防扯皮对齐）
  */
@@ -416,7 +463,8 @@ function renderProcessRow(p, idx) {
                 </tr>`;
 }
 
-export function renderDetailContent(part) {
+export function renderDetailContent(part, options = {}) {
+    const canUpdate = options.canUpdate !== false;
     const sketchUrl = part.sketch_url || '';
 
     const rows = [
@@ -430,12 +478,14 @@ export function renderDetailContent(part) {
         ['工艺方法', esc(part.process_method ?? '-')],
         ['自动化', esc(part.automation ?? '-')],
     ];
-    const rowsRight = [
+    const rowsRightTop = [
         ['厚度', part.thickness != null ? `${part.thickness} mm` : '-'],
         ['重量', part.part_weight != null ? `${part.part_weight} kg` : '-'],
         ['板材尺寸', (part.sheet_length && part.sheet_width) ? `${part.sheet_length}x${part.sheet_width}` : '-'],
         ['可制件数', esc(part.parts_per_sheet)],
         ['板材类型', esc(part.sheet_type)],
+    ];
+    const rowsRightBottom = [
         ['模具类型', part.cost_ratio != null ? `${(part.cost_ratio * 100).toFixed(0)}%` : esc(part.die_type)],
         ['备注', esc(part.remark ?? '-')],
     ];
@@ -470,7 +520,7 @@ export function renderDetailContent(part) {
                         <span class="text-[#353535]">${svgIcon('ruler')}</span>
                         <span class="text-[9px] font-semibold text-[#484848] uppercase tracking-[0.22em]">尺寸参数</span>
                     </div>
-                    <table class="w-full">${rowsRight.map(detailTableRow).join('')}</table>
+                    <table class="w-full">${rowsRightTop.map(detailTableRow).join('')}${renderOffalRows(part, canUpdate)}${rowsRightBottom.map(detailTableRow).join('')}</table>
                 </div>
             </div>
 

@@ -134,11 +134,12 @@ export function partCostListTemplate() {
                 </div>
 
                 <div class="overflow-x-auto bg-[#0A0A0E] brabus-bg-grid">
-                    <table id="costDataTable" class="w-full table-fixed bg-transparent border-collapse" style="min-width: 1640px;">
+                    <table id="costDataTable" class="w-full table-fixed bg-transparent border-collapse" style="min-width: 1720px;">
                         <colgroup id="costColgroup">
                             <col style="width:3px">
                             <col style="width:72px">
                             <col style="width:118px">
+                            <col style="width:64px">
                             <col style="width:128px">
                             <col style="width:68px">
                             <col style="width:58px">
@@ -169,6 +170,7 @@ export function partCostListTemplate() {
                                 <th class="p-0"></th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">年月/基地</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#6E6E73]">零件</th>
+                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]" title="本月核价快照；下月废料不足可改零件后再算下月">利废</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">材质/规格</th>
                                 <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]" title="预估单件材料消耗 M (kg)">消耗</th>
                                 <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]" title="零件净量">净量</th>
@@ -330,6 +332,7 @@ export function renderCostRows(records, breakdownOpen = false) {
                 <div class="text-[#3A3A42] text-[9px] leading-tight truncate" title="${supplier}">${supplier}</div>
             </td>
             <td class="px-2 py-2 overflow-hidden">${partInfoCell(row.part_number, row.part_name)}</td>
+            <td class="px-2 py-2 overflow-hidden">${offalCostCell(row)}</td>
             <td class="px-2 py-2 overflow-hidden">
                 <div class="text-[#8E8E93] text-[10px] truncate" title="${esc(row.material || '')}">${esc(row.material || '—')}</div>
                 <div class="text-[#F0F0F2] text-[10px] mt-0.5 tabular-nums truncate" title="${esc(row.thickness || '')}">${esc(row.thickness || '—')}</div>
@@ -339,9 +342,11 @@ export function renderCostRows(records, breakdownOpen = false) {
             <td class="${num}" title="${esc(fmtNum(row.finished_total_kg, 7))}">${fmtNum(row.finished_total_kg, 3)}</td>
             <td class="${num}" title="${esc(fmtNum(row.scrap_weight_kg, 7))}">${fmtNum(row.scrap_weight_kg, 3)}</td>
             <td class="${num}">${fmtNum(row.material_utilization_pct, 1)}</td>
-            <td class="${num}" title="${esc(row.steel_mill || '')}">
+            <td class="${num}" title="${esc(row.is_offal_nested ? '利废：成品净重 × 废料单价' : (row.steel_mill || ''))}">
                 <div class="text-[#C8C8D0]">${esc(row.steel_ton_price || '—')}</div>
-                ${row.steel_mill ? `<div class="text-[9px] text-[#555555] font-normal mt-0.5 truncate">${esc(row.steel_mill)}</div>` : ''}
+                ${row.is_offal_nested
+                    ? `<div class="text-[9px] text-[#ffb74d] font-normal mt-0.5 truncate">废料价</div>`
+                    : (row.steel_mill ? `<div class="text-[9px] text-[#555555] font-normal mt-0.5 truncate">${esc(row.steel_mill)}</div>` : '')}
             </td>
             <td class="${num}">${fmtNum(row.scrap_ton_price, 0)}</td>
             <td class="cost-breakdown-col ${breakdownHidden} ${num}">${fmtNum(row.material_amount_sheet, 2)}</td>
@@ -417,6 +422,16 @@ function partInfoCell(partNumber, partName) {
     return `
         <div class="text-[10px] font-mono text-[#8E8E93] tracking-wide truncate" title="${esc(full)}">${esc(full) || '—'}</div>
         ${nameLine}`;
+}
+
+function offalCostCell(row) {
+    if (!row.is_offal_nested) {
+        return '<span class="text-[#555555]">否</span>';
+    }
+    const source = row.offal_source ? esc(row.offal_source) : '';
+    return `
+        <div class="text-[10px] text-[#ffb74d]">是</div>
+        <div class="text-[9px] text-[#8E8E93] mt-0.5 truncate" title="${source}">${source || '—'}</div>`;
 }
 
 /** 用筛选汇总刷新HUD（均价/ 待审 / 已审均为全量筛选结果，非本页） */

@@ -10,7 +10,7 @@ import {
     updateCostFilterCapsules,
     shortPartNumber,
     syncBreakdownColumnVisibility,
-} from './template.js?v=46';
+} from './template.js?v=49';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -572,6 +572,8 @@ function showDetailDrawer(row) {
                 ['材质 / 厚度', `${row.material || '—'} / ${row.thickness || '—'} mm`],
                 ['料片尺寸', `${row.sheet_length || '—'} × ${row.sheet_width || '—'} mm`],
                 ['可制件数', row.parts_per_sheet ?? '—'],
+                ['是否利废（本月）', row.is_offal_nested ? '是' : '否'],
+                ['利用哪类废料（本月）', row.offal_source || '—'],
                 ['成品单重', `${fmtNum(row.part_weight, 4)} kg`],
             ])}
 
@@ -590,13 +592,13 @@ function showDetailDrawer(row) {
             ])}
 
             ${detailBlock('价格与吨价', [
-                ['钢厂', row.steel_mill || '—'],
-                ['钢材吨价 P', row.steel_ton_price ? `${row.steel_ton_price} 元/吨` : '—'],
-                ['废料吨价 Q', `￥${fmtNum(row.scrap_ton_price, 2)} /t`],
+                ['钢厂', row.is_offal_nested ? '—' : (row.steel_mill || '—')],
+                ['钢材吨价 P', row.is_offal_nested ? '—（利废不按新板价）' : (row.steel_ton_price ? `${row.steel_ton_price} 元/吨` : '—')],
+                ['废料吨价 Q', `￥${fmtNum(row.scrap_ton_price, 2)} /t${row.is_offal_nested ? '（利废：R = 成品净重 × 废料单价）' : ''}`],
             ])}
 
-            ${detailBlock('原材料成本拆解（R = ①−②−③）', [
-                ['①钢材采购成本（含损耗）', `￥${fmtNum(row.material_amount_sheet, 4)}`],
+            ${detailBlock(row.is_offal_nested ? '原材料成本（利废：R = 成品净重 × 废料单价）' : '原材料成本拆解（R = ①−②−③）', [
+                [row.is_offal_nested ? '①成品净重×废料单价' : '①钢材采购成本（含损耗）', `￥${fmtNum(row.material_amount_sheet, 4)}`],
                 ['②损耗废料扣除（回收率）', `￥${fmtNum(row.loss_scrap_deduction, 4)}`],
                 ['③边角废料扣除（回收率）', `￥${fmtNum(row.process_scrap_deduction, 4)}`],
                 ['废料扣除小计（② + ③）', `￥${fmtNum(row.scrap_amount_sheet, 4)}`],

@@ -86,6 +86,7 @@ if (!can('op:my-page:create')) { /* 隐藏或禁用 */ }
 | 进入页面 | `canAccessPage('stamping-parts')` → `menu:stamping-parts` | 该页所有读 API → `Perm.STAMPING_PARTS_VIEW` |
 | 显示「删除」/「批量删除」按钮 | `can('op:stamping-parts:delete')` | `DELETE` / `POST …/batch-delete` → `Perm.STAMPING_PARTS_DELETE` |
 | 显示「导出 Excel」 | `can('op:stamping-parts:export')` | `GET …/parts/export-download` → `Perm.STAMPING_PARTS_EXPORT` |
+| 零件详情改模具类型 / 是否利废 | `can('op:stamping-parts:update')` | `PUT …/parts/{id}/processes`、`PATCH …/parts/{id}/offal` → `Perm.STAMPING_PARTS_UPDATE` |
 | 显示「上传」 | `can('op:stamping-upload:upload')` | `POST` 上传 → `Perm.STAMPING_UPLOAD_UPLOAD` |
 | 授权抽屉 | 仅 `is_admin` 见按钮 | `require_admin_user` |
 

@@ -15,7 +15,10 @@ from app.repositories.stamping.stamping_repository import (
     StampingPartRepository,
     StampingProcessRepository,
 )
-from app.schemas.dto.stamping_part_dto import StampingPartBatchDeleteDTO
+from app.schemas.dto.stamping_part_dto import (
+    StampingPartBatchDeleteDTO,
+    StampingPartOffalUpdateDTO,
+)
 from app.schemas.dto.stamping_upload_dto import (
     PartData,
     StampingPartPatch,
@@ -24,6 +27,7 @@ from app.schemas.dto.stamping_upload_dto import (
 from app.schemas.vo.stamping_vo import (
     StampingPartQuery,
     StampingPartListResponse,
+    StampingPartResponse,
     StampingPartWithProcessesResponse,
     StampingProcessResponse,
     StampingPartListFilterOptions,
@@ -325,6 +329,27 @@ class StampingPartService:
             db.commit()
             db.refresh(part)
         return part
+
+    def update_offal(
+        self,
+        db: Session,
+        part_id: int,
+        dto: StampingPartOffalUpdateDTO,
+        current_user: UserVO,
+    ) -> StampingPartResponse:
+        """零件详情纠错：是否利废、利用哪类废料。关开关时清空废料来源。"""
+        source = None if not dto.is_offal_nested else dto.offal_source
+        payload: StampingPartPatch = {
+            "is_offal_nested": dto.is_offal_nested,
+            "offal_source": source,
+            "updated_by": display_name(current_user),
+        }
+        part = self.repository.update(db, part_id, payload)
+        if not part:
+            raise NotFoundException(f"零件不存在: id={part_id}")
+        db.commit()
+        db.refresh(part)
+        return StampingPartResponse.model_validate(part)
 
     def batch_delete(
         self,

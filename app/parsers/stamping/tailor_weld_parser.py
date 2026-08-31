@@ -16,6 +16,7 @@ import time
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
+from app.common.offal_nested import parse_offal_from_sheet_type
 from app.parsers.stamping.excel_context import ExcelContext
 from app.parsers.stamping.header_resolver import HeaderResolver
 from app.parsers.stamping.models.header import HeaderContext
@@ -256,7 +257,9 @@ class TailorWeldExcelParser:
         thickness_segments = _split_thickness_segments(thickness_raw)
         material = _as_text(excel_ctx.get_value(start_row, material_col))
         part_name = _as_text(excel_ctx.get_value(start_row, part_name_col))
-        sheet_type = _as_text(excel_ctx.get_value(start_row, sheet_type_col))
+        sheet_type = parse_offal_from_sheet_type(
+            excel_ctx.get_value(start_row, sheet_type_col)
+        ).sheet_type
         parts_per_sheet = parse_int(excel_ctx.get_value(start_row, count_col))
         part_weight = parse_decimal(excel_ctx.get_value(start_row, weight_col))
 

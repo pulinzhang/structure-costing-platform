@@ -59,8 +59,10 @@ class Part:
     # 注意：不是利用率百分比，也不是左右件合计件数。
     parts_per_sheet: int = 0
 
-    # 料片式样（卷料/板料）
+    # 料片式样（卷料/板料几何；利废短语已拆出）
     sheet_type: str | None = None
+    is_offal_nested: bool = False
+    offal_source: str | None = None
 
     # 模具类型（单动/双动）
     die_type: str | None = None

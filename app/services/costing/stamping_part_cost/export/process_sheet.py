@@ -91,6 +91,8 @@ _PROCESS_COL_LETTERS = (
     "AJ",
     "AK",
     "AL",
+    "AM",
+    "AN",
 )
 # 拼焊总成共用列：跨子片行合并（料厚/长/宽/消耗/单价等按片分行）
 _TAILOR_MERGED_COLS = frozenset(
@@ -124,6 +126,8 @@ _TAILOR_MERGED_COLS = frozenset(
         "AJ",
         "AK",
         "AL",
+        "AM",
+        "AN",
     }
 )
 _NUMBER_COLS = frozenset(
@@ -289,8 +293,8 @@ def write_process_sheet_to_workbook(
     """
     sheet = resolve_worksheet(workbook, sheet_title)
 
-    last_col = 38  # AL
-    last_col_letter = "AL"
+    last_col = 40  # AN
+    last_col_letter = "AN"
     trace_cols = _TRACE_COLS
     id_cols = _ID_COLS
     fee_rate_cols = _FEE_RATE_COLS
@@ -422,6 +426,7 @@ def write_process_sheet_to_workbook(
         range(27, 28): fill_group_final,
         range(28, 34): fill_group_trace,
         range(34, 39): fill_group_trace,
+        range(39, 41): fill_group_product,
     }
     for merge_range, label in (
         ("A3:B3", "标识"),
@@ -435,6 +440,7 @@ def write_process_sheet_to_workbook(
         ("AA3:AA3", "最终价"),
         ("AB3:AG3", "溯源"),
         ("AH3:AL3", "关联ID"),
+        ("AM3:AN3", "利废"),
     ):
         sheet.merge_cells(merge_range)
         cell = sheet[merge_range.split(":")[0]]
@@ -492,6 +498,8 @@ def write_process_sheet_to_workbook(
         ("AJ", "加工费ID"),
         ("AK", "模具费ID"),
         ("AL", "检具费ID"),
+        ("AM", "是否利废"),
+        ("AN", "利用哪类废料"),
     ]
     for col_letter, title in headers:
         cell = sheet[f"{col_letter}4"]
@@ -644,8 +652,13 @@ def write_process_sheet_to_workbook(
                 if blank_term_has_mass_inputs(term) and term.steel_kg_price is not None
             ]
             can_formula = len(priced_rows) == len(terms)
-            group_n = build_tailor_group_n_formula(first_row, last_row)
-            group_o = build_tailor_group_o_formula(first_row, last_row)
+            is_offal_nested = bool(getattr(row, "is_offal_nested", False))
+            if is_offal_nested:
+                group_n = ""
+                group_o = ""
+            else:
+                group_n = build_tailor_group_n_formula(first_row, last_row)
+                group_o = build_tailor_group_o_formula(first_row, last_row)
             if can_formula:
                 group_r: Decimal | str = build_tailor_group_r_formula(
                     priced_rows,
@@ -655,8 +668,8 @@ def write_process_sheet_to_workbook(
                     recovery=recovery,
                 )
             else:
-                material_r = to_decimal(row.material_net_per_part)
-                group_r = material_r if material_r is not None else ""
+                net_per_part = to_decimal(row.material_net_per_part)
+                group_r = net_per_part if net_per_part is not None else ""
 
             for index, term in enumerate(terms):
                 blank_row = first_row + index
@@ -716,6 +729,8 @@ def write_process_sheet_to_workbook(
                                 if getattr(row, "gauge_fee_id", None) is not None
                                 else ""
                             ),
+                            "AM": "是" if getattr(row, "is_offal_nested", False) else "否",
+                            "AN": getattr(row, "offal_source", None) or "",
                         }
                     )
                 paint_data_row(blank_row, blank_values, zebra)
@@ -725,6 +740,33 @@ def write_process_sheet_to_workbook(
 
         steel_ton = to_decimal(row.steel_ton_price)
         steel_kg = (steel_ton / Decimal("1000")) if steel_ton is not None else None
+        is_offal_nested = bool(getattr(row, "is_offal_nested", False))
+        if is_offal_nested:
+            # 利废件没有新板边角废料，也没有材料利用率。
+            # N 列是百分比格式：写 100 会显示成 10000%；写 1 才是 100%。此处留空，不展示。
+            material_m = f"=H{excel_row}" if row.part_weight is not None else ""
+            material_n = ""
+            material_o = ""
+            steel_p: float | str = ""
+            material_r = f"=H{excel_row}*Q{excel_row}" if row.part_weight is not None else ""
+            steel_trace = "利废：成品净重×废料单价（从废料里捡出的成品）"
+        else:
+            material_m = (
+                f"=J{excel_row}*K{excel_row}*G{excel_row}"
+                f"*{formula_number(density)}/1000000/L{excel_row}"
+            )
+            material_n = f"=H{excel_row}/M{excel_row}"
+            material_o = f"=M{excel_row}-H{excel_row}"
+            steel_p = float(steel_kg) if steel_kg is not None else ""
+            material_r = (
+                f"=M{excel_row}*P{excel_row}*(1+{formula_number(loss_rate)})"
+                f"-M{excel_row}*{formula_number(loss_rate)}"
+                f"*{formula_number(recovery)}*Q{excel_row}"
+                f"-O{excel_row}*Q{excel_row}*{formula_number(recovery)}"
+            )
+            steel_trace = format_steel_price_excel_trace(
+                steel_by_id.get(row.steel_price_id) if row.steel_price_id is not None else None
+            )
         values: dict[str, object] = {
             "A": seq,
             "B": assembly_supply_no,
@@ -738,20 +780,12 @@ def write_process_sheet_to_workbook(
             "J": _num(row.sheet_length, 2) if row.sheet_length is not None else "",
             "K": _num(row.sheet_width, 2) if row.sheet_width is not None else "",
             "L": row.parts_per_sheet if row.parts_per_sheet is not None else "",
-            "M": (
-                f"=J{excel_row}*K{excel_row}*G{excel_row}"
-                f"*{formula_number(density)}/1000000/L{excel_row}"
-            ),
-            "N": f"=H{excel_row}/M{excel_row}",
-            "O": f"=M{excel_row}-H{excel_row}",
-            "P": float(steel_kg) if steel_kg is not None else "",
+            "M": material_m,
+            "N": material_n,
+            "O": material_o,
+            "P": steel_p,
             "Q": float(scrap_kg) if scrap_kg is not None else "",
-            "R": (
-                f"=M{excel_row}*P{excel_row}*(1+{formula_number(loss_rate)})"
-                f"-M{excel_row}*{formula_number(loss_rate)}"
-                f"*{formula_number(recovery)}*Q{excel_row}"
-                f"-O{excel_row}*Q{excel_row}*{formula_number(recovery)}"
-            ),
+            "R": material_r,
             "S": process_fee_cell,
             "T": die_fee_cell,
             "U": gauge_fee_cell,
@@ -765,9 +799,7 @@ def write_process_sheet_to_workbook(
             "AB": row.excel_filename or "",
             "AC": row.excel_sheet_name or "",
             "AD": part_excel_row_col(row),
-            "AE": format_steel_price_excel_trace(
-                steel_by_id.get(row.steel_price_id) if row.steel_price_id is not None else None
-            ),
+            "AE": steel_trace,
             "AF": scrap_trace,
             "AG": fee_trace,
             "AH": row.steel_price_id if row.steel_price_id is not None else "",
@@ -775,6 +807,8 @@ def write_process_sheet_to_workbook(
             "AJ": row.process_fee_id if row.process_fee_id is not None else "",
             "AK": row.die_fee_id if getattr(row, "die_fee_id", None) is not None else "",
             "AL": row.gauge_fee_id if getattr(row, "gauge_fee_id", None) is not None else "",
+            "AM": "是" if getattr(row, "is_offal_nested", False) else "否",
+            "AN": getattr(row, "offal_source", None) or "",
         }
         paint_data_row(excel_row, values, zebra)
         excel_row += 1
@@ -820,6 +854,8 @@ def write_process_sheet_to_workbook(
         "AJ": 10,
         "AK": 10,
         "AL": 10,
+        "AM": 10,
+        "AN": 14,
     }
     for col_letter, width in widths.items():
         sheet.column_dimensions[col_letter].width = width

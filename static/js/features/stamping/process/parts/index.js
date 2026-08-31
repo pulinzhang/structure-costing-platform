@@ -10,13 +10,23 @@ import {
     updatePartsFilterCapsules,
     updatePartsHud,
     renderPartsPagination,
-} from './template.js?v=21';
+} from './template.js?v=23';
 import {
     DEFAULT_PAGE_SIZE,
     PAGE_SIZE_OPTIONS,
     bindPageSizeSelect,
     normalizePageSize,
 } from '../../../../page-size.js?v=2';
+
+function offalCell(part) {
+    if (!part.is_offal_nested) {
+        return '<span class="text-[#555555]">—</span>';
+    }
+    const source = part.offal_source ? esc(part.offal_source) : '';
+    const label = source || '利废';
+    return `<span class="inline-flex items-center px-1.5 py-0.5 text-[9px] tracking-wide text-[#ffb74d] bg-[#2a1a0a] border border-[#ffb74d]/30" title="是否利废">${label}</span>`;
+}
+
 
 const CASCADE_API = '/api/stamping/filters/cascade';
 const PARTS_API = '/api/stamping/parts';
@@ -378,6 +388,7 @@ export const PartsPage = {
                 <td class="${cell} ${muted}">${esc(part.vehicle_model) || '—'}</td>
                 <td class="${cell} ${muted} border-r border-[#22222A]">${esc(part.version) || '—'}</td>
                 <td class="${cell} ${muted} font-sans">${esc(part.material) || '—'}</td>
+                <td class="${cell}">${offalCell(part)}</td>
                 <td class="${cell} text-right tabular-nums ${muted}">${thickness}</td>
                 <td class="${cell} text-right tabular-nums ${muted}">${partWeight}</td>
                 <td class="${cell} text-right tabular-nums ${muted}">${processCount}</td>
@@ -473,7 +484,9 @@ export const PartsPage = {
         try {
             const result = await HttpClient.get(`${PARTS_API}/${partId}`);
             const part = result.data?.data ?? result.data ?? result;
-            contentEl.innerHTML = renderDetailContent(part);
+            contentEl.innerHTML = renderDetailContent(part, {
+                canUpdate: this.canUpdate !== false,
+            });
 
             const btn = document.getElementById('saveProcessBtn');
             if (btn) {
@@ -482,6 +495,7 @@ export const PartsPage = {
             }
 
             this._bindProcessEditEvents(part.id);
+            this._bindOffalEditEvents(part.id);
             this._bindSketchModal(part);
         } catch (error) {
             contentEl.innerHTML = `
@@ -569,6 +583,45 @@ export const PartsPage = {
         });
     },
 
+    _syncOffalToggleUi() {
+        const toggle = document.getElementById('offalNestedToggle');
+        const knob = document.getElementById('offalNestedKnob');
+        const label = document.getElementById('offalNestedLabel');
+        const sourceRow = document.getElementById('offalSourceRow');
+        if (!toggle) return;
+        const isOn = toggle.dataset.on === '1';
+        toggle.setAttribute('aria-checked', isOn ? 'true' : 'false');
+        toggle.style.background = isOn ? '#d32f2f' : '#1a1a1a';
+        toggle.style.borderColor = isOn ? '#d32f2f' : '#2c2c2c';
+        if (knob) knob.style.transform = `translateX(${isOn ? '16px' : '2px'})`;
+        if (label) label.textContent = isOn ? '是' : '否';
+        if (sourceRow) sourceRow.classList.toggle('hidden', !isOn);
+    },
+
+    _bindOffalEditEvents(partId) {
+        const toggle = document.getElementById('offalNestedToggle');
+        if (!toggle || this.canUpdate === false) return;
+
+        toggle.addEventListener('click', () => {
+            toggle.dataset.on = toggle.dataset.on === '1' ? '0' : '1';
+            this._syncOffalToggleUi();
+            this._activateOffalSaveButton();
+        });
+        document.getElementById('offalSourceInput')?.addEventListener('input', () => {
+            this._activateOffalSaveButton();
+        });
+        document.getElementById('saveOffalBtn')?.addEventListener('click', async () => {
+            await this._saveOffalEdits(partId);
+        });
+    },
+
+    _activateOffalSaveButton() {
+        const btn = document.getElementById('saveOffalBtn');
+        if (!btn || btn.dataset.active === 'true') return;
+        btn.dataset.active = 'true';
+        btn.className = 'h-7 px-3 text-[10px] text-white bg-[#d32f2f] border border-[#d32f2f] rounded-sm hover:bg-[#b71c1c] transition-all tracking-wide';
+    },
+
     _activateSaveButton() {
         const btn = document.getElementById('saveProcessBtn');
         if (!btn || btn.dataset.active === 'true') return;
@@ -615,6 +668,34 @@ export const PartsPage = {
             showToast(error.message || '保存失败', 'error');
             btn.disabled = false;
             btn.innerHTML = `<span class="tracking-[0.2em]">保存</span>`;
+        }
+    },
+
+    async _saveOffalEdits(partId) {
+        if (this.canUpdate === false) {
+            showToast('无编辑权限', 'warning');
+            return;
+        }
+        const toggle = document.getElementById('offalNestedToggle');
+        const btn = document.getElementById('saveOffalBtn');
+        if (!toggle || !btn) return;
+        const isOn = toggle.dataset.on === '1';
+        const sourceRaw = document.getElementById('offalSourceInput')?.value ?? '';
+        const originalHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '保存中..';
+        try {
+            await HttpClient.patch(`${PARTS_API}/${partId}/offal`, {
+                is_offal_nested: isOn,
+                offal_source: isOn ? sourceRaw.trim() || null : null,
+            });
+            showToast('利废设置已保存。零件价格需重算后才会按新规则计价。', 'success');
+            this.loadParts(partsState.currentPage);
+            this.showDetail(partId);
+        } catch (error) {
+            showToast(error.message || '保存失败', 'error');
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
         }
     },
 

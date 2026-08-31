@@ -27,6 +27,11 @@ from app.services.costing.stamping_part_cost.helpers import to_decimal
 
 
 def part_snapshot(part: StampingPart) -> StampingPartCostPartSnapshot:
+    """零件主表 → 当月核价结果快照。
+
+    是否利废、利用哪类废料必须写进结果表（年+月唯一键），不能只活在零件主表：
+    这个月废料够用按利废算，下月废料不足改零件后再算下月，本月行保持原快照。
+    """
     return StampingPartCostPartSnapshot(
         source_part_id=part.id,
         seq_no=part.seq_no,
@@ -39,6 +44,8 @@ def part_snapshot(part: StampingPart) -> StampingPartCostPartSnapshot:
         sheet_width=part.sheet_width,
         parts_per_sheet=part.parts_per_sheet,
         sheet_type=part.sheet_type,
+        is_offal_nested=bool(part.is_offal_nested),
+        offal_source=part.offal_source,
         die_type=part.die_type,
         process_method=part.process_method,
         automation=part.automation,
@@ -85,7 +92,8 @@ class PartCostCalculator:
         pretax_profit_rate: Decimal,
     ) -> StampingPartCostCalcAmounts | StampingPartCostFailedItemVO:
         material = (part.material or "").strip()
-        if not material:
+        is_offal_nested = bool(part.is_offal_nested)
+        if not is_offal_nested and not material:
             return StampingPartCostFailedItemVO(
                 part_number=part.part_number,
                 part_name=part.part_name,
@@ -97,60 +105,103 @@ class PartCostCalculator:
         thickness = to_decimal(part.thickness)
         part_weight = to_decimal(part.part_weight)
         parts_per_sheet = part.parts_per_sheet
+        kg_scale = Decimal("1000")
+        scrap_kg_price = scrap_ton_price / kg_scale
 
-        if (
-            sheet_length is None
-            or sheet_width is None
-            or thickness is None
-            or part_weight is None
-            or parts_per_sheet is None
-        ):
-            return StampingPartCostFailedItemVO(
-                part_number=part.part_number,
-                part_name=part.part_name,
-                reason="料片尺寸/料厚/单重/可制件数不完整",
-            )
-        if parts_per_sheet <= 0:
-            return StampingPartCostFailedItemVO(
-                part_number=part.part_number,
-                part_name=part.part_name,
-                reason="可制件数必须大于 0",
-            )
+        if is_offal_nested:
+            if part_weight is None or part_weight <= 0:
+                return StampingPartCostFailedItemVO(
+                    part_number=part.part_number,
+                    part_name=part.part_name,
+                    reason="利废件须有成品净重",
+                )
+            finished_total_kg = part_weight
+            blank_kg = part_weight
+            scrap_kg = Decimal("0")
+            utilization = quantize(Decimal("100"), UTIL_QUANTIZE)
+            steel_ton_price = scrap_ton_price
+            steel_price_id = None
+            steel_mill = None
+            material_amount_sheet = quantize(part_weight * scrap_kg_price, AMOUNT_QUANTIZE)
+            loss_scrap_deduction = quantize(Decimal("0"), AMOUNT_QUANTIZE)
+            process_scrap_deduction = quantize(Decimal("0"), AMOUNT_QUANTIZE)
+            scrap_amount_sheet = quantize(Decimal("0"), AMOUNT_QUANTIZE)
+            material_net_per_part = material_amount_sheet
+        else:
+            if (
+                sheet_length is None
+                or sheet_width is None
+                or thickness is None
+                or part_weight is None
+                or parts_per_sheet is None
+            ):
+                return StampingPartCostFailedItemVO(
+                    part_number=part.part_number,
+                    part_name=part.part_name,
+                    reason="料片尺寸/料厚/单重/可制件数不完整",
+                )
+            if parts_per_sheet <= 0:
+                return StampingPartCostFailedItemVO(
+                    part_number=part.part_number,
+                    part_name=part.part_name,
+                    reason="可制件数必须大于 0",
+                )
 
-        # 对齐 Excel M：L×W×T×density/1e6/可制件数（不做中间四舍五入）
-        blank_kg = (
-            (sheet_length * sheet_width * thickness * density)
-            / Decimal("1000000")
-            / Decimal(parts_per_sheet)
-        )
-        if blank_kg <= 0:
-            return StampingPartCostFailedItemVO(
-                part_number=part.part_number,
-                part_name=part.part_name,
-                reason="预估单件材料消耗计算结果无效",
+            blank_kg = (
+                (sheet_length * sheet_width * thickness * density)
+                / Decimal("1000000")
+                / Decimal(parts_per_sheet)
             )
+            if blank_kg <= 0:
+                return StampingPartCostFailedItemVO(
+                    part_number=part.part_number,
+                    part_name=part.part_name,
+                    reason="预估单件材料消耗计算结果无效",
+                )
 
-        # Excel：O=M−H，N=H/M；finished 存净重 H
-        finished_total_kg = part_weight
-        scrap_kg = blank_kg - finished_total_kg
-        utilization = quantize((finished_total_kg / blank_kg) * Decimal("100"), UTIL_QUANTIZE)
+            finished_total_kg = part_weight
+            scrap_kg = blank_kg - finished_total_kg
+            utilization = quantize((finished_total_kg / blank_kg) * Decimal("100"), UTIL_QUANTIZE)
 
-        steel_rows = self.price_resolver.find_steel_prices(
-            db,
-            year=year,
-            month=month,
-            location=part.location,
-            grade=material,
-            thickness=thickness,
-        )
-        steel = self.price_resolver.pick_steel_price(steel_rows)
-        if steel is None:
-            return StampingPartCostFailedItemVO(
-                part_number=part.part_number,
-                part_name=part.part_name,
-                reason=f"未匹配到钢材联动价（材质={material}, 料厚={thickness}）",
+            steel_rows = self.price_resolver.find_steel_prices(
+                db,
+                year=year,
+                month=month,
+                location=part.location,
+                grade=material,
+                thickness=thickness,
             )
-        steel_ton_price = Decimal(str(steel.final_price_per_ton))
+            steel = self.price_resolver.pick_steel_price(steel_rows)
+            if steel is None:
+                return StampingPartCostFailedItemVO(
+                    part_number=part.part_number,
+                    part_name=part.part_name,
+                    reason=f"未匹配到钢材联动价（材质={material}, 料厚={thickness}）",
+                )
+            steel_ton_price = Decimal(str(steel.final_price_per_ton))
+            steel_price_id = steel.id
+            steel_mill = steel.steel_mill
+            steel_kg_price = steel_ton_price / kg_scale
+            material_amount_sheet = quantize(
+                blank_kg * steel_kg_price * (Decimal("1") + loss_rate),
+                AMOUNT_QUANTIZE,
+            )
+            loss_scrap_deduction = quantize(
+                blank_kg * loss_rate * recovery_rate * scrap_kg_price,
+                AMOUNT_QUANTIZE,
+            )
+            process_scrap_deduction = quantize(
+                scrap_kg * recovery_rate * scrap_kg_price,
+                AMOUNT_QUANTIZE,
+            )
+            scrap_amount_sheet = quantize(
+                loss_scrap_deduction + process_scrap_deduction,
+                AMOUNT_QUANTIZE,
+            )
+            material_net_per_part = quantize(
+                material_amount_sheet - loss_scrap_deduction - process_scrap_deduction,
+                AMOUNT_QUANTIZE,
+            )
 
         process = self.process_fee_resolver.lookup(db, part=part, year=year, supplier=supplier)
         if isinstance(process, StampingPartCostFailedItemVO):
@@ -169,31 +220,6 @@ class PartCostCalculator:
             part_number=part.part_number,
         )
 
-        # 对齐 Excel R 三项分列：
-        # ① M×P×(1+λ)  ② M×λ×η×Q  ③ O×η×Q   （P/Q=元/kg=吨价/1000）
-        kg_scale = Decimal("1000")
-        steel_kg_price = steel_ton_price / kg_scale
-        scrap_kg_price = scrap_ton_price / kg_scale
-        material_amount_sheet = quantize(
-            blank_kg * steel_kg_price * (Decimal("1") + loss_rate),
-            AMOUNT_QUANTIZE,
-        )
-        loss_scrap_deduction = quantize(
-            blank_kg * loss_rate * recovery_rate * scrap_kg_price,
-            AMOUNT_QUANTIZE,
-        )
-        process_scrap_deduction = quantize(
-            scrap_kg * recovery_rate * scrap_kg_price,
-            AMOUNT_QUANTIZE,
-        )
-        scrap_amount_sheet = quantize(
-            loss_scrap_deduction + process_scrap_deduction,
-            AMOUNT_QUANTIZE,
-        )
-        material_net_per_part = quantize(
-            material_amount_sheet - loss_scrap_deduction - process_scrap_deduction,
-            AMOUNT_QUANTIZE,
-        )
         (
             direct_cost,
             finished_finance_fee,
@@ -220,8 +246,8 @@ class PartCostCalculator:
             finished_total_kg=finished_total_kg,
             scrap_weight_kg=scrap_kg,
             material_utilization_pct=utilization,
-            steel_price_id=steel.id,
-            steel_mill=steel.steel_mill,
+            steel_price_id=steel_price_id,
+            steel_mill=steel_mill,
             steel_ton_price=steel_ton_price,
             scrap_price_id=scrap.id,
             scrap_ton_price=scrap_ton_price,

@@ -14,9 +14,13 @@ from app.database import get_db
 from app.deps.permissions import require_any_perm, require_perm
 from app.services.stamping.stamping_part_export_service import StampingPartExportService
 from app.services.stamping.stamping_service import StampingPartService
-from app.schemas.dto.stamping_part_dto import StampingPartBatchDeleteDTO
+from app.schemas.dto.stamping_part_dto import (
+    StampingPartBatchDeleteDTO,
+    StampingPartOffalUpdateDTO,
+)
 from app.schemas.vo.stamping_vo import (
     StampingPartQuery,
+    StampingPartResponse,
     StampingPartWithProcessesResponse,
     StampingProcessUpdate,
     StampingProcessItemUpdate,
@@ -112,6 +116,21 @@ def get_part(
     """获取单个零件（包含工序）"""
     vo = _stamping_service.get_by_id(db, part_id)
     return ApiResponse.ok(data=vo, message="获取零件成功")
+
+
+@router.patch(
+    "/parts/{part_id}/offal",
+    response_model=ApiResponse[StampingPartResponse],
+)
+def update_part_offal(
+    part_id: int,
+    body: StampingPartOffalUpdateDTO,
+    db: Session = Depends(get_db),
+    current_user: UserVO = Depends(require_perm(Perm.STAMPING_PARTS_UPDATE)),
+) -> ApiResponse[StampingPartResponse]:
+    """零件详情纠错：是否利废、利用哪类废料。"""
+    vo = _stamping_service.update_offal(db, part_id, body, current_user=current_user)
+    return ApiResponse.updated(data=vo, message="利废设置已保存")
 
 
 @router.delete("/parts/{part_id}", response_model=ApiResponse[None])

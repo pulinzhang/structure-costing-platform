@@ -21,6 +21,7 @@
 
 | 文档 | 状态 |
 |------|------|
+| [stamping-process-confirmation-design.md](stamping/stamping-process-confirmation-design.md) | 冲压工艺确认表（已落地）：加工费 + 材料/利废依据 |
 | [stamping-die-management-design.md](stamping/stamping-die-management-design.md) | 模具布点依据（已落地） |
 | [stamping-die-unit-price-design.md](stamping/stamping-die-unit-price-design.md) | 模具单价档案（已落地） |
 | [stamping-gauge-fee-design.md](stamping/stamping-gauge-fee-design.md) | 检具费档案（已落地） |
@@ -50,6 +51,8 @@
 | [effective-period-design.md](costing/effective-period-design.md) | 协议价生效期（设计） |
 | [provisional-final-settlement-design.md](costing/provisional-final-settlement-design.md) | 暂估 / 正式（设计） |
 | [anchor-true-up-design.md](costing/anchor-true-up-design.md) | 锚点送货与价差（设计） |
+| [t13j-offal-nesting-simulation.md](costing/t13j-offal-nesting-simulation.md) | T13J 利废件材料核算模拟（不改代码） |
+| [offal-nested-material-design.md](costing/offal-nested-material-design.md) | 利废件材料价（已落地）：`R = 成品净重×废料单价` |
 
 ## 文件溯源 `file-trace/`
 

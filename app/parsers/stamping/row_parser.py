@@ -15,6 +15,7 @@
 from typing import Any
 from collections.abc import Callable
 
+from app.common.offal_nested import parse_offal_from_sheet_type
 from app.parsers.stamping.value_parser import parse_decimal, parse_int
 from app.parsers.stamping.models.part import Part
 from app.parsers.stamping.models.process import Process
@@ -46,6 +47,7 @@ class RowParser:
         Returns:
             Part 对象，包含该零件的所有字段。
         """
+        offal = parse_offal_from_sheet_type(self._cell(row_idx, "sheet_type"))
         return Part(
             seq_no=parse_int(self._cell(row_idx, "seq", 1)) or 0,
             part_number=self._cell(row_idx, "part_no", 2),
@@ -56,7 +58,9 @@ class RowParser:
             sheet_length=parse_decimal(self._cell(row_idx, "length", 8)),
             sheet_width=parse_decimal(self._cell(row_idx, "width", 9)),
             parts_per_sheet=parse_int(self._cell(row_idx, "count", 10)) or 0,
-            sheet_type=self._cell(row_idx, "sheet_type"),
+            sheet_type=offal.sheet_type,
+            is_offal_nested=offal.is_offal_nested,
+            offal_source=offal.offal_source,
             die_type=self._cell(row_idx, "die_type"),
             process_method=self._cell(row_idx, "method"),
             automation=self._cell(row_idx, "auto"),

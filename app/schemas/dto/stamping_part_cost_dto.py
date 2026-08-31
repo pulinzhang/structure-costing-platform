@@ -71,7 +71,7 @@ class StampingPartCostManualUnitCostDTO(BaseModel):
 
 @dataclass(slots=True)
 class StampingPartCostPartSnapshot:
-    """零件主表快照到核价结果行。"""
+    """零件主表快照到核价结果行（含本月是否利废 / 利用哪类废料）。"""
 
     source_part_id: int | None
     seq_no: int | None
@@ -84,6 +84,8 @@ class StampingPartCostPartSnapshot:
     sheet_width: Decimal | None
     parts_per_sheet: int | None
     sheet_type: str | None
+    is_offal_nested: bool
+    offal_source: str | None
     die_type: str | None
     process_method: str | None
     automation: str | None

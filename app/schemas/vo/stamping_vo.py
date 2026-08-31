@@ -41,6 +41,8 @@ class StampingPartResponse(BaseModel):
         ),
     )
     sheet_type: str | None = None
+    is_offal_nested: bool = False
+    offal_source: str | None = None
     die_type: str | None = None
     process_method: str | None = None
     automation: str | None = Field(
@@ -88,6 +90,8 @@ class StampingPartListResponse(BaseModel):
     die_type: str | None = None
     process_method: str | None = None
     location: str | None = None
+    is_offal_nested: bool = False
+    offal_source: str | None = None
     excel_filename: str | None = None
     excel_sheet_name: str | None = None
     excel_row: int | None = None
@@ -149,6 +153,8 @@ class StampingPartWithProcessesResponse(BaseModel):
         ),
     )
     sheet_type: str | None = None
+    is_offal_nested: bool = False
+    offal_source: str | None = None
     die_type: str | None = None
     process_method: str | None = None
     automation: str | None = Field(

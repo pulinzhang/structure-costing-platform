@@ -54,6 +54,8 @@ class PartData:
         },
     )
     sheet_type: str | None = field(default=None, metadata={"description": "板料类型"})
+    is_offal_nested: bool = field(default=False, metadata={"description": "是否利废件"})
+    offal_source: str | None = field(default=None, metadata={"description": "利用哪类废料"})
     die_type: str | None = field(default=None, metadata={"description": "模具类型"})
     process_method: str | None = field(default=None, metadata={"description": "工序方式"})
     automation: str | None = field(
@@ -125,6 +127,8 @@ class StampingPartPatch(TypedDict, total=False):
     part_number: str
     part_name: str | None
     is_tailor_welded: bool
+    is_offal_nested: bool
+    offal_source: str | None
     material: str | None
     thickness: Decimal | None
     part_weight: Decimal | None

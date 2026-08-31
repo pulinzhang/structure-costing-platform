@@ -24,9 +24,9 @@ import {
 } from './permissions.js?v=9';
 import { bootLlmAssistant } from './llm-assistant/boot.js?v=26';
 import { pageConfig as dashboardPage }      from './features/dashboard/index.js?v=7';
-import { pageConfig as stampingUploadPage } from './features/stamping/process/upload/index.js?v=40';
-import { pageConfig as stampingPartsPage }  from './features/stamping/process/parts/index.js?v=32';
-import { pageConfig as stampingDieUploadPage } from './features/stamping/die/upload/index.js?v=4';
+import { pageConfig as stampingUploadPage } from './features/stamping/process/upload/index.js?v=42';
+import { pageConfig as stampingPartsPage }  from './features/stamping/process/parts/index.js?v=34';
+import { pageConfig as stampingDieUploadPage } from './features/stamping/die/upload/index.js?v=5';
 import { pageConfig as stampingDieListPage } from './features/stamping/die/list/index.js?v=8';
 import { pageConfig as stampingDieUnitPricePage } from './features/stamping/die/unit-price/index.js?v=5';
 import { pageConfig as stampingDieFeeCalcPage } from './features/stamping/die-fee/calc/index.js?v=3';
@@ -40,7 +40,7 @@ import { pageConfig as stampingProcessFeePage } from './features/stamping/proces
 import { pageConfig as steelPriceListPage }   from './features/costing/steel-price/list/index.js?v=57';
 import { pageConfig as steelPriceCalcPage }    from './features/costing/steel-price/calc/index.js?v=18';
 import { pageConfig as stampingPartCostCalcPage } from './features/costing/stamping-part-cost/calc/index.js?v=12';
-import { pageConfig as stampingPartCostPage } from './features/costing/stamping-part-cost/list/index.js?v=57';
+import { pageConfig as stampingPartCostPage } from './features/costing/stamping-part-cost/list/index.js?v=60';
 import { pageConfig as l0AssemblyCostCalcPage } from './features/costing/l0-assembly-cost/calc/index.js?v=3';
 import { pageConfig as l0AssemblyCostPage } from './features/costing/l0-assembly-cost/list/index.js?v=11';
 import { pageConfig as steelPricePolicyUploadPage } from './features/yishiyiyi/policy/upload/index.js?v=37';

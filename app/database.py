@@ -10,6 +10,7 @@ SQLite 使用独立文件，写入不受主业务长事务锁影响。
 from collections.abc import Generator
 
 from sqlalchemy import Engine, create_engine, event
+from sqlalchemy.engine import Connection
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
@@ -245,6 +246,38 @@ class DatabaseConfig:
                     )
                 logger.info("已为 %s 追加列 %s", config_table, column_name)
 
+        part_table = "stamping_parts"
+        if part_table in table_names:
+            part_cols = {col["name"] for col in inspector.get_columns(part_table)}
+            if "is_offal_nested" not in part_cols:
+                with engine.begin() as conn:
+                    conn.execute(
+                        text(
+                            f"ALTER TABLE {part_table} "
+                            "ADD COLUMN is_offal_nested BOOLEAN NOT NULL DEFAULT 0"
+                        )
+                    )
+                    conn.execute(
+                        text(
+                            "CREATE INDEX IF NOT EXISTS ix_part_is_offal_nested "
+                            f"ON {part_table} (is_offal_nested)"
+                        )
+                    )
+                    if "offal_source" not in part_cols:
+                        conn.execute(
+                            text(f"ALTER TABLE {part_table} ADD COLUMN offal_source VARCHAR(50)")
+                        )
+                    cls._backfill_offal_from_sheet_type(conn, part_table)
+                logger.info(
+                    "已为 %s 追加列 is_offal_nested / offal_source 并按料片式样回填", part_table
+                )
+            elif "offal_source" not in part_cols:
+                with engine.begin() as conn:
+                    conn.execute(
+                        text(f"ALTER TABLE {part_table} ADD COLUMN offal_source VARCHAR(50)")
+                    )
+                logger.info("已为 %s 追加列 offal_source", part_table)
+
         cost_table = "stamping_part_costs"
         if cost_table in table_names:
             cost_cols = {col["name"] for col in inspector.get_columns(cost_table)}
@@ -258,6 +291,8 @@ class DatabaseConfig:
                 ("die_fee_amount", "NUMERIC(14, 6)"),
                 ("gauge_fee_id", "INTEGER"),
                 ("gauge_fee_amount", "NUMERIC(14, 6)"),
+                ("is_offal_nested", "BOOLEAN NOT NULL DEFAULT 0"),
+                ("offal_source", "VARCHAR(50)"),
             )
             for column_name, column_def in cost_new_columns:
                 if column_name in cost_cols:
@@ -386,6 +421,35 @@ class DatabaseConfig:
                         text(f"ALTER TABLE {calc_log_table} ADD COLUMN version VARCHAR(20)")
                     )
                 logger.info("已为 %s 追加列 version", calc_log_table)
+
+    @staticmethod
+    def _backfill_offal_from_sheet_type(conn: Connection, part_table: str) -> None:
+        """按与 Parser 相同规则，从已入库料片式样回填利废并改写式样。"""
+        from sqlalchemy import text
+
+        from app.common.offal_nested import parse_offal_from_sheet_type
+
+        rows = conn.execute(text(f"SELECT id, sheet_type FROM {part_table}")).fetchall()
+        update_sql = text(
+            f"UPDATE {part_table} "
+            "SET is_offal_nested = :is_offal_nested, "
+            "offal_source = :offal_source, "
+            "sheet_type = :sheet_type "
+            "WHERE id = :id"
+        )
+        for row in rows:
+            parsed = parse_offal_from_sheet_type(row.sheet_type)
+            if not parsed.is_offal_nested and parsed.sheet_type == row.sheet_type:
+                continue
+            conn.execute(
+                update_sql,
+                {
+                    "id": row.id,
+                    "is_offal_nested": 1 if parsed.is_offal_nested else 0,
+                    "offal_source": parsed.offal_source,
+                    "sheet_type": parsed.sheet_type,
+                },
+            )
 
 
 class AuxiliaryDatabaseConfig:
