@@ -44,6 +44,7 @@ from app.services.stamping.die.die_number_resolver import (
     DieLayoutCheckRow,
     StampingProcessTrace,
     validate_die_layout,
+    format_die_layout_issues,
 )
 from app.services.stamping.die.process_identity import (
     ProcessPartIdentity,
@@ -211,9 +212,8 @@ class StampingDieUploadService:
             )
         ]
         resolved_numbers, issues = validate_die_layout(check_rows, traces)
-        # 临时关闭，resolved_numbers有错误的时候
-        # if issues:
-        #     raise BusinessException(format_die_layout_issues(issues))
+        if issues:
+            raise BusinessException(format_die_layout_issues(issues))
 
         report(40, "正在保存文件...")
         stored_path = self._save_file(file_content, filename, location, vehicle_model)
