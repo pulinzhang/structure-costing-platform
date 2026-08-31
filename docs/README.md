@@ -32,6 +32,8 @@
 | 文档 | 状态 |
 |------|------|
 | [bom-annual-part-prices-design.md](bom/bom-annual-part-prices-design.md) | 年度零件价（已上线） |
+| [welding-fee-design.md](bom/welding-fee-design.md) | 焊接费（已上线）：`bom_welding_fees` + `level`；财务读 `level=0` |
+| [welding-process-breakdown-design.md](bom/welding-process-breakdown-design.md) | 焊接工艺拆解（已上线）：有原文即拆（含分总成），不计费 |
 | [bom-procurement-objects-design.md](bom/bom-procurement-objects-design.md) | 采购对象清单（已落地）：退化供货件 / 分总成 / 冲压件，生成落库、检测、确认 |
 
 ## 一事一议 `yishiyiyi/`

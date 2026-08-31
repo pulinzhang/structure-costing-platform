@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 from app.repositories.bom.annual_part_price_repository import BomAnnualPartPriceRepository
 from app.repositories.bom.bom_repository import BomNodeRepository, BomSnapshotRepository
-from app.repositories.bom.l0_welding_fee_repository import BomL0WeldingFeeRepository
+from app.repositories.bom.welding_fee_repository import BomWeldingFeeRepository
 from app.repositories.bom.packaging_transport_fee_repository import (
     BomPackagingTransportFeeRepository,
 )
@@ -31,7 +31,7 @@ class L0AssemblyCalcDeps:
     bom_node_repo: BomNodeRepository
     stamping_cost_repo: StampingPartCostRepository
     annual_price_repo: BomAnnualPartPriceRepository
-    l0_welding_fee_repo: BomL0WeldingFeeRepository
+    l0_welding_fee_repo: BomWeldingFeeRepository
     packaging_fee_repo: BomPackagingTransportFeeRepository
 
 
@@ -44,6 +44,6 @@ def build_l0_assembly_calc_deps() -> L0AssemblyCalcDeps:
         bom_node_repo=BomNodeRepository(),
         stamping_cost_repo=StampingPartCostRepository(),
         annual_price_repo=BomAnnualPartPriceRepository(),
-        l0_welding_fee_repo=BomL0WeldingFeeRepository(),
+        l0_welding_fee_repo=BomWeldingFeeRepository(),
         packaging_fee_repo=BomPackagingTransportFeeRepository(),
     )

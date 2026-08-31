@@ -446,7 +446,7 @@ HUD：**采购对象**是霓虹强调格；标准件/胶等、待审、已审为
 | `app/models/bom/node.py` | `level` / `parent_id` / `node_role` / `weld_info` / `remark` / `excel_row` |
 | `app/parsers/bom/node_parser.py` | 树怎么进库；L0 材料是否落地 |
 | `app/common/bom/manufacturing_category.py` | L1 叶子是否 `stamping` |
-| `app/services/bom/welding_process_breakdown/bom_tree.py` | 树上备注仍写「退化 L0」，分类条件与它对齐 |
+| [welding-process-breakdown-design.md](welding-process-breakdown-design.md) | 拆解；生成清单时不读 |
 | `app/services/bom/bom_upload_service.py` | 覆盖导入删 snapshot，清单须级联没 |
 | [bom-annual-part-prices-design.md](bom-annual-part-prices-design.md) | 价表；本文不读 |
 | [outsourced-assembly-costing-design.md](../costing/outsourced-assembly-costing-design.md) | 下游应成本；集合以本清单为准 |

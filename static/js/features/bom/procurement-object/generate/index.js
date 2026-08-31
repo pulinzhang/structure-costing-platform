@@ -421,12 +421,15 @@ function showProcessDrawer(log) {
                 生成过程 · ${esc(log.location || '-')} · ${esc(log.vehicle_model || '-')} · ${esc(log.bom_version || '-')}
                 <span class="ml-2 normal-case ${status.className}">${status.label}</span>
             </h5>
-            <button type="button" id="closePoGenProcessDrawer"
+            <div class="flex items-center gap-0.5 shrink-0">
+                ${window.copyProcessReportButtonHtml()}
+                <button type="button" id="closePoGenProcessDrawer"
                     class="flex items-center justify-center w-8 h-8 rounded-md text-[#707070] hover:text-white hover:bg-[#d32f2f] transition-all">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
-            </button>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
         </div>
         <div class="px-5 py-3 border-b border-[#222] text-[10px] text-[#777] space-y-1 shrink-0">
             <div>批次 <span class="font-mono text-[#999]">${esc(log.calc_batch_id || '-')}</span></div>
@@ -439,6 +442,7 @@ function showProcessDrawer(log) {
     `;
     document.body.appendChild(backdrop);
     document.body.appendChild(drawer);
+    window.bindProcessReportCopy(drawer);
     backdrop.addEventListener('click', closeProcessDrawer);
     document.getElementById('closePoGenProcessDrawer')?.addEventListener('click', closeProcessDrawer);
 }

@@ -156,8 +156,8 @@
 | `#/bom-packaging-transport-fee` | 包装运输费列表 | P2 |
 | `#/bom-welding-process-breakdown` | 焊接工艺拆解 | P3 |
 | `#/bom-welding-process-breakdown-list` | 焊接工艺拆解列表 | P2 |
-| `#/bom-l0-welding-fee-calc` | 成品焊接费计算 | P3 |
-| `#/bom-l0-welding-fee-list` | 成品焊接费列表 | P2 |
+| `#/bom-welding-fee-calc` | 焊接费计算 | P3 |
+| `#/bom-welding-fee-list` | 焊接费列表 | P2 |
 
 **一事一议（7）**
 

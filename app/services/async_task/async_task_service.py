@@ -55,7 +55,8 @@ TASK_TYPE_STEEL_PRICE_CALC = "steel_price_calc"
 TASK_TYPE_STAMPING_PROCESS_FEE_CALC = "stamping_process_fee_calc"
 TASK_TYPE_STAMPING_PART_COST_CALC = "stamping_part_cost_calc"
 TASK_TYPE_BOM_WELDING_PROCESS_BREAKDOWN_GENERATE = "bom_welding_process_breakdown_generate"
-TASK_TYPE_BOM_L0_WELDING_FEE_CALC = "bom_l0_welding_fee_calc"
+TASK_TYPE_BOM_WELDING_FEE_CALC = "bom_welding_fee_calc"
+TASK_TYPE_BOM_L0_WELDING_FEE_CALC = TASK_TYPE_BOM_WELDING_FEE_CALC
 TASK_TYPE_L0_ASSEMBLY_COST_CALC = "l0_assembly_cost_calc"
 TASK_TYPE_COSTING_ENGINE_RUN = "costing_engine_run"
 

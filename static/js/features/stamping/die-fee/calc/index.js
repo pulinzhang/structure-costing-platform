@@ -365,7 +365,10 @@ async function openProcessDrawer(logId) {
                 <h5 class="text-[11px] font-semibold tracking-wider text-[#b0b0b0] uppercase">计算过程
                     <span class="ml-2 normal-case ${status.className}">${status.label}</span>
                 </h5>
-                <button type="button" id="closeCalcProcessDrawer" class="w-8 h-8 text-[#707070] hover:text-white">×</button>
+                <div class="flex items-center gap-0.5 shrink-0">
+                    ${window.copyProcessReportButtonHtml()}
+                    <button type="button" id="closeCalcProcessDrawer" class="w-8 h-8 text-[#707070] hover:text-white">×</button>
+                </div>
             </div>
             <div class="px-5 py-3 border-b border-[#222] text-[10px] text-[#777] shrink-0">
                 入库 ${fmtInt(log.success_count)} · 跳过 ${fmtInt(log.skipped_no_die_count)}
@@ -378,6 +381,7 @@ async function openProcessDrawer(logId) {
             </div>`;
         document.body.appendChild(backdrop);
         document.body.appendChild(drawer);
+        window.bindProcessReportCopy(drawer);
         backdrop.addEventListener('click', closeProcessDrawer);
         document.getElementById('closeCalcProcessDrawer')?.addEventListener('click', closeProcessDrawer);
     } catch (error) {

@@ -103,10 +103,11 @@ def prepare_calc_run(
         location=location,
         vehicle_model=vehicle_model,
         bom_version=bom_version,
+        level=0,
     ):
-        final = weld_row.final_l0_welding_fee
+        final = weld_row.final_welding_fee
         if final is None:
-            final = weld_row.total_l0_welding_fee or Decimal("0")
+            final = weld_row.total_welding_fee or Decimal("0")
         welding_by_part[weld_row.part_number] = RollupWeldingFee(
             final_amount=Decimal(str(final)),
             other_fee=Decimal(str(weld_row.other_fee or 0)),

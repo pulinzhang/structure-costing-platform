@@ -14,7 +14,7 @@ import pytest
 from sqlalchemy.orm import Session
 
 from app.models.bom.annual_part_price import BomAnnualPartPrice
-from app.models.bom.l0_welding_fee import BomL0WeldingFee
+from app.models.bom.welding_fee import BomWeldingFee
 from app.models.bom.node import BomNode, BomSnapshot
 from app.models.bom.packaging_transport_fee import BomPackagingTransportFee
 from app.models.costing.stamping_part_cost import StampingPartCost
@@ -127,12 +127,22 @@ def test_dash_suffix_falls_back_to_stamping_base_part_number() -> None:
 def test_dash_suffix_does_not_fall_back_to_annual_base() -> None:
     """「-」前回退只查冲压价，不查年度价。"""
     l0 = SimBomNode(
-        id=1, parent_id=None, level=0, part_number="L0", part_name="A",
-        qty=Decimal("1"), node_role="supply",
+        id=1,
+        parent_id=None,
+        level=0,
+        part_number="L0",
+        part_name="A",
+        qty=Decimal("1"),
+        node_role="supply",
     )
     l1 = SimBomNode(
-        id=2, parent_id=1, level=1, part_number="P-1", part_name="叶子",
-        qty=Decimal("1"), node_role="make",
+        id=2,
+        parent_id=1,
+        level=1,
+        part_number="P-1",
+        part_name="叶子",
+        qty=Decimal("1"),
+        node_role="make",
     )
     result = simulate_l0(
         l0=l0,
@@ -148,20 +158,42 @@ def test_dash_suffix_does_not_fall_back_to_annual_base() -> None:
 def test_l1_with_children_expands_l2_qty_product() -> None:
     """有子件 L1 无一口价 → 拆 L2；有效用量 = L1.qty × L2.qty。"""
     l0 = SimBomNode(
-        id=1, parent_id=None, level=0, part_number="L0", part_name="A",
-        qty=Decimal("1"), node_role="supply",
+        id=1,
+        parent_id=None,
+        level=0,
+        part_number="L0",
+        part_name="A",
+        qty=Decimal("1"),
+        node_role="supply",
     )
     l1 = SimBomNode(
-        id=2, parent_id=1, level=1, part_number="L1-1", part_name="分总成",
-        qty=Decimal("2"), node_role="structure",
+        id=2,
+        parent_id=1,
+        level=1,
+        part_number="L1-1",
+        part_name="分总成",
+        qty=Decimal("2"),
+        node_role="structure",
     )
     l2a = SimBomNode(
-        id=3, parent_id=2, level=2, part_number="L2-A", part_name="板",
-        qty=Decimal("1"), node_role="make", sort_no=1,
+        id=3,
+        parent_id=2,
+        level=2,
+        part_number="L2-A",
+        part_name="板",
+        qty=Decimal("1"),
+        node_role="make",
+        sort_no=1,
     )
     l2b = SimBomNode(
-        id=4, parent_id=2, level=2, part_number="L2-B", part_name="螺母",
-        qty=Decimal("4"), node_role="buy", sort_no=2,
+        id=4,
+        parent_id=2,
+        level=2,
+        part_number="L2-B",
+        part_name="螺母",
+        qty=Decimal("4"),
+        node_role="buy",
+        sort_no=2,
     )
     result = simulate_l0(
         l0=l0,
@@ -179,16 +211,31 @@ def test_l1_with_children_expands_l2_qty_product() -> None:
 def test_l1_bundle_prunes_children() -> None:
     """有子件 L1 命中年度价 → 一口价；L2 落 skipped_by_bundle，不计金额。"""
     l0 = SimBomNode(
-        id=1, parent_id=None, level=0, part_number="L0", part_name="A",
-        qty=Decimal("1"), node_role="supply",
+        id=1,
+        parent_id=None,
+        level=0,
+        part_number="L0",
+        part_name="A",
+        qty=Decimal("1"),
+        node_role="supply",
     )
     l1 = SimBomNode(
-        id=2, parent_id=1, level=1, part_number="L1-BUNDLE", part_name="分总成",
-        qty=Decimal("1"), node_role="structure",
+        id=2,
+        parent_id=1,
+        level=1,
+        part_number="L1-BUNDLE",
+        part_name="分总成",
+        qty=Decimal("1"),
+        node_role="structure",
     )
     l2 = SimBomNode(
-        id=3, parent_id=2, level=2, part_number="L2-IGNORED", part_name="子件",
-        qty=Decimal("99"), node_role="make",
+        id=3,
+        parent_id=2,
+        level=2,
+        part_number="L2-IGNORED",
+        part_name="子件",
+        qty=Decimal("99"),
+        node_role="make",
     )
     result = simulate_l0(
         l0=l0,
@@ -222,12 +269,22 @@ def test_packaging_transport_fees_are_indirect_not_in_monthly_total() -> None:
     )
 
     l0 = SimBomNode(
-        id=1, parent_id=None, level=0, part_number="L0", part_name="A",
-        qty=Decimal("1"), node_role="supply",
+        id=1,
+        parent_id=None,
+        level=0,
+        part_number="L0",
+        part_name="A",
+        qty=Decimal("1"),
+        node_role="supply",
     )
     l1 = SimBomNode(
-        id=2, parent_id=1, level=1, part_number="P", part_name="叶子",
-        qty=Decimal("1"), node_role="make",
+        id=2,
+        parent_id=1,
+        level=1,
+        part_number="P",
+        part_name="叶子",
+        qty=Decimal("1"),
+        node_role="make",
     )
     rates = SimFinishedRates(
         finance_rate=Decimal("0.02"),
@@ -344,18 +401,19 @@ def _load_scope_from_db(
 
     welding_by_part: dict[str, SimWeldingFee] = {}
     for r in (
-        db.query(BomL0WeldingFee)
+        db.query(BomWeldingFee)
         .filter(
-            BomL0WeldingFee.location == LOCATION,
-            BomL0WeldingFee.vehicle_model == VEHICLE_MODEL,
-            BomL0WeldingFee.year == YEAR,
-            BomL0WeldingFee.bom_version == snap.bom_version,
+            BomWeldingFee.location == LOCATION,
+            BomWeldingFee.vehicle_model == VEHICLE_MODEL,
+            BomWeldingFee.year == YEAR,
+            BomWeldingFee.bom_version == snap.bom_version,
+            BomWeldingFee.level == 0,
         )
         .all()
     ):
-        final = r.final_l0_welding_fee
+        final = r.final_welding_fee
         if final is None:
-            final = r.total_l0_welding_fee or Decimal("0")
+            final = r.total_welding_fee or Decimal("0")
         welding_by_part[r.part_number] = SimWeldingFee(
             final_amount=Decimal(str(final)),
             other_fee=Decimal(str(r.other_fee or 0)),
@@ -532,8 +590,7 @@ def test_qingdao_t28_2025_01_bundle_and_dash_fallback(db_session: Session) -> No
     assert left_side.status == "ok"
     assert left_side.bundle_amount == Decimal("6.8800")
     assert any(
-        line.part_number == "502003968AA" and line.source == "bundle"
-        for line in left_side.lines
+        line.part_number == "502003968AA" and line.source == "bundle" for line in left_side.lines
     )
 
     # 551001730AA-1 → 冲压表 551001730AA（unit_cost 含费率叠价）

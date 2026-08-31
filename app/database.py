@@ -117,8 +117,11 @@ class DatabaseConfig:
     @classmethod
     def create_tables(cls) -> None:
         engine = cls.get_engine()
+        cls._migrate_welding_fee_tables(engine)
         Base.metadata.create_all(bind=engine)
         cls._ensure_sqlite_columns(engine)
+        cls._ensure_welding_fee_columns(engine)
+        cls._remap_welding_fee_permissions(engine)
         logger.info("主业务库表创建完成")
 
     @classmethod
@@ -130,40 +133,6 @@ class DatabaseConfig:
 
         inspector = inspect(engine)
         table_names = set(inspector.get_table_names())
-
-        weld_table = "bom_l0_welding_fees"
-        if weld_table in table_names:
-            weld_cols = {col["name"] for col in inspector.get_columns(weld_table)}
-            if "weld_info_raw" not in weld_cols:
-                with engine.begin() as conn:
-                    conn.execute(text(f"ALTER TABLE {weld_table} ADD COLUMN weld_info_raw TEXT"))
-                logger.info("已为 %s 追加列 weld_info_raw", weld_table)
-            if "other_fee" not in weld_cols:
-                with engine.begin() as conn:
-                    conn.execute(
-                        text(f"ALTER TABLE {weld_table} " "ADD COLUMN other_fee NUMERIC(14, 4)")
-                    )
-                logger.info("已为 %s 追加列 other_fee", weld_table)
-            if "final_l0_welding_fee" not in weld_cols:
-                with engine.begin() as conn:
-                    conn.execute(
-                        text(
-                            f"ALTER TABLE {weld_table} "
-                            "ADD COLUMN final_l0_welding_fee NUMERIC(14, 4)"
-                        )
-                    )
-                    conn.execute(
-                        text(
-                            f"UPDATE {weld_table} SET final_l0_welding_fee = "
-                            "total_l0_welding_fee "
-                            "WHERE final_l0_welding_fee IS NULL"
-                        )
-                    )
-                logger.info("已为 %s 追加列 final_l0_welding_fee 并回填", weld_table)
-            if "remark" not in weld_cols:
-                with engine.begin() as conn:
-                    conn.execute(text(f"ALTER TABLE {weld_table} ADD COLUMN remark TEXT"))
-                logger.info("已为 %s 追加列 remark", weld_table)
 
         fee_table = "stamping_process_fees"
         if fee_table in table_names:
@@ -421,6 +390,172 @@ class DatabaseConfig:
                         text(f"ALTER TABLE {calc_log_table} ADD COLUMN version VARCHAR(20)")
                     )
                 logger.info("已为 %s 追加列 version", calc_log_table)
+
+    @classmethod
+    def _migrate_welding_fee_tables(cls, engine: Engine) -> None:
+        """旧三表改名到 bom_welding_fees*，须在 create_all 之前执行。"""
+        from sqlalchemy import inspect, text
+
+        inspector = inspect(engine)
+        tables = set(inspector.get_table_names())
+        old_fee, new_fee = "bom_l0_welding_fees", "bom_welding_fees"
+        old_item, new_item = "bom_l0_welding_fee_items", "bom_welding_fee_items"
+        old_log, new_log = "bom_l0_welding_fee_calc_logs", "bom_welding_fee_calc_logs"
+        if old_fee not in tables:
+            return
+
+        with engine.begin() as conn:
+            if new_fee in tables:
+                new_count = int(conn.execute(text(f"SELECT COUNT(*) FROM {new_fee}")).scalar() or 0)
+                if new_count > 0:
+                    logger.warning("焊接费新旧表同时存在且新表非空，跳过改名")
+                    return
+                conn.execute(text(f"DROP TABLE IF EXISTS {new_item}"))
+                conn.execute(text(f"DROP TABLE IF EXISTS {new_log}"))
+                conn.execute(text(f"DROP TABLE IF EXISTS {new_fee}"))
+                logger.info("已删除空的新焊接费表，准备从旧表改名")
+
+            cls._ensure_legacy_welding_fee_columns(conn, old_fee)
+            conn.execute(text(f"ALTER TABLE {old_fee} RENAME TO {new_fee}"))
+            if old_item in tables:
+                if new_item in tables:
+                    conn.execute(text(f"DROP TABLE IF EXISTS {new_item}"))
+                conn.execute(text(f"ALTER TABLE {old_item} RENAME TO {new_item}"))
+            if old_log in tables:
+                if new_log in tables:
+                    conn.execute(text(f"DROP TABLE IF EXISTS {new_log}"))
+                conn.execute(text(f"ALTER TABLE {old_log} RENAME TO {new_log}"))
+            logger.info("焊接费旧表已改名为 bom_welding_fees*")
+
+    @staticmethod
+    def _table_column_names(conn: Connection, table_name: str, *, is_sqlite: bool) -> set[str]:
+        from sqlalchemy import text
+
+        if is_sqlite:
+            rows = conn.execute(text(f"PRAGMA table_info({table_name})")).fetchall()
+            return {str(row[1]) for row in rows}
+        rows = conn.execute(
+            text(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_name = :table_name"
+            ),
+            {"table_name": table_name},
+        ).fetchall()
+        return {str(row[0]) for row in rows}
+
+    @classmethod
+    def _ensure_legacy_welding_fee_columns(cls, conn: Connection, table_name: str) -> None:
+        from sqlalchemy import text
+
+        is_sqlite = conn.dialect.name == "sqlite"
+        cols = cls._table_column_names(conn, table_name, is_sqlite=is_sqlite)
+        if "weld_info_raw" not in cols:
+            conn.execute(text(f"ALTER TABLE {table_name} ADD COLUMN weld_info_raw TEXT"))
+        if "other_fee" not in cols:
+            conn.execute(text(f"ALTER TABLE {table_name} ADD COLUMN other_fee NUMERIC(14, 4)"))
+        if "final_l0_welding_fee" not in cols and "final_welding_fee" not in cols:
+            conn.execute(
+                text(f"ALTER TABLE {table_name} ADD COLUMN final_l0_welding_fee NUMERIC(14, 4)")
+            )
+            if "total_l0_welding_fee" in cols:
+                conn.execute(
+                    text(
+                        f"UPDATE {table_name} SET final_l0_welding_fee = total_l0_welding_fee "
+                        "WHERE final_l0_welding_fee IS NULL"
+                    )
+                )
+        if "remark" not in cols:
+            conn.execute(text(f"ALTER TABLE {table_name} ADD COLUMN remark TEXT"))
+
+    @classmethod
+    def _ensure_welding_fee_columns(cls, engine: Engine) -> None:
+        from sqlalchemy import inspect, text
+
+        inspector = inspect(engine)
+        if "bom_welding_fees" not in set(inspector.get_table_names()):
+            return
+        is_sqlite = str(engine.url).startswith("sqlite")
+        existing_indexes = {
+            str(idx.get("name") or "") for idx in inspector.get_indexes("bom_welding_fees")
+        }
+        with engine.begin() as conn:
+            cols = cls._table_column_names(conn, "bom_welding_fees", is_sqlite=is_sqlite)
+            if "level" not in cols:
+                conn.execute(
+                    text(
+                        "ALTER TABLE bom_welding_fees "
+                        "ADD COLUMN level SMALLINT NOT NULL DEFAULT 0"
+                    )
+                )
+                logger.info("已为 bom_welding_fees 追加列 level")
+            if "total_welding_fee" not in cols and "total_l0_welding_fee" in cols:
+                conn.execute(
+                    text(
+                        "ALTER TABLE bom_welding_fees "
+                        "RENAME COLUMN total_l0_welding_fee TO total_welding_fee"
+                    )
+                )
+            if "final_welding_fee" not in cols and "final_l0_welding_fee" in cols:
+                conn.execute(
+                    text(
+                        "ALTER TABLE bom_welding_fees "
+                        "RENAME COLUMN final_l0_welding_fee TO final_welding_fee"
+                    )
+                )
+            if "ix_bom_welding_fee_scope_level" not in existing_indexes:
+                conn.execute(
+                    text(
+                        "CREATE INDEX ix_bom_welding_fee_scope_level "
+                        "ON bom_welding_fees (year, location, vehicle_model, bom_version, level)"
+                    )
+                )
+
+    @classmethod
+    def _remap_welding_fee_permissions(cls, engine: Engine) -> None:
+        from sqlalchemy import inspect, text
+
+        inspector = inspect(engine)
+        if "user_permissions" not in set(inspector.get_table_names()):
+            return
+        old_frag = "bom-l0-welding-fee"
+        new_frag = "bom-welding-fee"
+        remapped = 0
+        with engine.begin() as conn:
+            rows = conn.execute(
+                text(
+                    "SELECT id, user_id, permission_code FROM user_permissions "
+                    "WHERE permission_code LIKE :pattern"
+                ),
+                {"pattern": f"%{old_frag}%"},
+            ).fetchall()
+            if not rows:
+                return
+            existing = {
+                (int(user_id), str(code))
+                for user_id, code in conn.execute(
+                    text("SELECT user_id, permission_code FROM user_permissions")
+                ).fetchall()
+            }
+            for row_id, user_id, code in rows:
+                new_code = str(code).replace(old_frag, new_frag)
+                key = (int(user_id), new_code)
+                if key in existing:
+                    conn.execute(
+                        text("DELETE FROM user_permissions WHERE id = :row_id"),
+                        {"row_id": row_id},
+                    )
+                    continue
+                conn.execute(
+                    text(
+                        "UPDATE user_permissions SET permission_code = :new_code "
+                        "WHERE id = :row_id"
+                    ),
+                    {"new_code": new_code, "row_id": row_id},
+                )
+                existing.add(key)
+                remapped += 1
+        if remapped:
+            logger.info("已 remap 焊接费权限码 %s 条", remapped)
 
     @staticmethod
     def _backfill_offal_from_sheet_type(conn: Connection, part_table: str) -> None:

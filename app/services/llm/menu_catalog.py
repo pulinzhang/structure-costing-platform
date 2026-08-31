@@ -93,8 +93,8 @@ SUBJECT_MENU: dict[str, MenuTarget] = {
         label="打开焊接工艺拆解列表",
     ),
     "l0_welding_fee": MenuTarget(
-        hash_page="bom-l0-welding-fee-list",
-        label="打开成品焊接费列表",
+        hash_page="bom-welding-fee-list",
+        label="打开焊接费列表",
     ),
     "part": MenuTarget(
         hash_page="l0-assembly-cost",
@@ -176,8 +176,8 @@ MENU_COVERAGE: tuple[MenuCoverageItem, ...] = (
         "complete",
     ),
     MenuCoverageItem(
-        "bom-l0-welding-fee-list",
-        "成品焊接费列表",
+        "bom-welding-fee-list",
+        "焊接费列表",
         "l0_welding_fee",
         "complete",
     ),
@@ -243,7 +243,7 @@ ENTITY_LIST_PAGES: tuple[tuple[str, str], ...] = (
     ("bom-annual-part-price", "annual_part_price"),
     ("bom-packaging-transport-fee", "packaging_transport_fee"),
     ("bom-welding-process-breakdown-list", "welding_process_breakdown"),
-    ("bom-l0-welding-fee-list", "l0_welding_fee"),
+    ("bom-welding-fee-list", "l0_welding_fee"),
     ("steel-price-policy-download", "steel_price_policy"),
     ("base-price-download", "steel_base_price"),
     ("winning-thickness-download", "winning_thickness"),

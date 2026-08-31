@@ -20,7 +20,7 @@
 |---|---|---|
 | R1 | 入口三参数 | 仅 `location`（基地）、`year`、`month` |
 | R2 | 上传/配置缺失 → 硬停 | 见 §5.1；含 **基准价、厚度加减价**；覆盖不全视为缺失 |
-| R3 | 年度计算所得缺失 → 自动补算 | 加工费、焊接工艺拆解、L0 焊接费 |
+| R3 | 年度计算所得缺失 → 自动补算 | 加工费、焊接工艺拆解、L0 焊接费（`levels=[0]`） |
 | R4 | 多 BOM 版本 → 逐个全算 | 同项目多版本全部进入计划，不「只算最新」 |
 | R5 | 不改公式 | 复用现有 Orchestrator；合册只导出不算价 |
 | R6 | 前端单通道异步 | 一次 `task_id` + 与现网同形的进度 VO |
@@ -40,7 +40,7 @@
 | 成品 L0 核价 | `POST /api/costing/l0-assembly-costs/calc` | ✅ |
 | 冲压加工费 | `POST /api/stamping/process-fees/calc` | ✅ |
 | 焊接工艺拆解 | `POST /api/bom/welding-process-breakdown/generate` | ✅ |
-| 成品焊接费 | `POST /api/bom/l0-welding-fees/calc` | ✅ |
+| 成品焊接费 | `POST /api/bom/welding-fees/calc`（引擎补算传 `levels=[0]`） | ✅ |
 | 月度核对合册 | `GET /api/costing/monthly-bundle/export-download` | 同步导出 |
 
 ### 3.2 实现状态
@@ -509,7 +509,7 @@ can_start: bool   # = not hard_stop 且存在可执行路径
 | 阶段 | 调用 | 注意 |
 |---|---|---|
 | 门禁 | 上游 Repository / 现有 count、政策 match | 覆盖检查集中在 GateChecker |
-| 年度补算 | 加工费 / 拆解 / L0 焊接费 Service | 有结果则跳过 |
+| 年度补算 | 加工费 / 拆解 / L0 焊接费 Service（阶段 id 仍 `annual_l0_welding_fee`，DTO `levels=[0]`） | 有 **level=0** 结果则跳过 |
 | 钢材 | `SteelPriceCalcOrchestrator` | 材料→基价→厚度政策→宽度政策→落库 |
 | 零件价 | `StampingPartCostCalcOrchestrator` | 现 ready：零件∧钢材∧废料∧加工费 |
 | L0 | `L0AssemblyCostCalcOrchestrator` | 不绑工厂；吃基地月成功冲压价+年度价 |

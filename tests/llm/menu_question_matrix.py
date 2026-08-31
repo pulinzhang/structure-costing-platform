@@ -122,7 +122,7 @@ MENU_QUESTION_CASES: tuple[MenuQuestionCase, ...] = (
         "complete",
     ),
     MenuQuestionCase(
-        "bom-l0-welding-fee-list",
+        "bom-welding-fee-list",
         "成品焊接费列表",
         "成品焊接费",
         "l0_welding_fee",

@@ -95,8 +95,8 @@ flowchart LR
 | ① 冲压件 | 当月 `stamping_part_costs.unit_cost`（只读复用，成品侧不重算） | **每月** | ✅ 已有 |
 | ② 年度价/外购 | 基地 + 年度 + 零件号 → `bom_annual_part_prices.unit_price` | **每年** | ✅ 已有 |
 | ③ 分总成一口价 | 同上表；L1 **有子件**且命中 → 包价剪枝 | **每年** | ✅ 同上 |
-| ④ 成品焊接费 | `bom_l0_welding_fees.final_l0_welding_fee` | **每年** | ✅ 已有 |
-| ⑤ 焊接其它费用 | `bom_l0_welding_fees.other_fee` | 按需 | ✅ 已有 |
+| ④ 成品焊接费 | `bom_welding_fees.final_welding_fee`（**`level=0`**） | **每年** | ✅ 已有 |
+| ⑤ 焊接其它费用 | `bom_welding_fees.other_fee`（**`level=0`**） | 按需 | ✅ 已有 |
 
 ```text
 total_amount
@@ -310,7 +310,7 @@ flowchart TD
 | `bom_snapshots` / `bom_nodes` | BOM 结构与用量 |
 | `stamping_part_costs` | 冲压件月度 `unit_cost`（只读） |
 | `bom_annual_part_prices` | 年度价 / 一口价（基地 + 年 + 零件号） |
-| `bom_l0_welding_fees` | 成品焊接费 + 焊接其它 |
+| `bom_welding_fees`（`level=0`） | 成品焊接费 + 焊接其它 |
 | `bom_packaging_transport_fees` | I1 单件运输、I2 仓储费+捆包费（`other_fee`） |
 | `system_configs` | I3～I6 成品费率 |
 
@@ -367,7 +367,7 @@ costing_l0_assembly_cost_calc_logs        可选：计算任务日志
 | | **`indirect_amount`** | Numeric(14,4) | Σ 全部间接项（含分摊） |
 | | **`grand_total`** | Numeric(14,4) | = `total_amount` + `indirect_amount` |
 | 费率快照 | `finance_rate` 等四个 | Numeric(8,6) | 算时拷贝自 `system_configs` |
-| 焊接溯源 | `welding_fee_id` | int? | → `bom_l0_welding_fees.id` |
+| 焊接溯源 | `welding_fee_id` | int? | → `bom_welding_fees.id`（`level=0`） |
 | | `welding_summary` | text? | |
 | 状态 | `calc_status` | varchar | `ok` / `partial` / `failed` / `processing` |
 | | `missing_leaf_count` | int | |
@@ -464,7 +464,7 @@ grand_total = total_amount + indirect_amount
 |--|---------------------|---------------------|
 | 算什么 | 仅焊接工序费 | **成品全成本**（月总账 + 间接 → 总费用） |
 | 粒度 | 年 + 基地 + 项目 + BOM 版本 | 上述 + **月** |
-| 关系 | `welding_amount` **引用** `final_l0_welding_fee` | 汇总主表 |
+| 关系 | `welding_amount` **引用** `final_welding_fee`（`level=0`） | 汇总主表 |
 
 两模块并存：焊接费可单独算、单独审；成品核价将其作为月总账分项之一。
 
@@ -523,10 +523,12 @@ grand_total = total_amount + indirect_amount
 | [architecture.md](../architecture.md) | 分层与切片 |
 | [api-type-safety.md](../api-type-safety.md) | API / 金额 Decimal 约定 |
 | [bom-annual-part-prices-design.md](../bom/bom-annual-part-prices-design.md) | 年度零件价 |
+| [welding-fee-design.md](../bom/welding-fee-design.md) | 焊接费一表 + `level`；本文 ④⑤ 读 **`bom_welding_fees` 且 `level=0`** |
+| [welding-process-breakdown-design.md](../bom/welding-process-breakdown-design.md) | 焊接原文 → 过程量（L0+L1） |
 | `app/models/costing/stamping_part_cost.py` | 冲压零件价 |
 | `app/models/bom/packaging_transport_fee.py` | 包装运输（I1/I2） |
 | `app/models/settings/system_config.py` | 成品费率（I3～I6） |
-| `app/models/bom/l0_welding_fee.py` | L0 焊接费 |
+| `app/models/bom/welding_fee.py` | 焊接费（财务读 level=0） |
 | `tests/costing/l0_assembly_sim.py` | 只读模拟（规则真相源） |
 | `tests/costing/test_l0_assembly_simulation.py` | 单元 + 青岛集成验收 |
 
@@ -541,3 +543,4 @@ grand_total = total_amount + indirect_amount
 | 2026-08-20 | 外购与 L1 一口价合并为 `bom_annual_part_prices` |
 | 2026-08-20 | **与模拟验收对齐**：月总账 / 间接（I1～I6，I2=仓储费+捆包费）/ 总费用；叶子取价顺序与 `-` 回退；上游表状态与结果表字段；样例金额 |
 | 2026-08-20 | **库表拍板**：I2=`warehouse_bundling_fee`；检具/器具分摊计入 `grand_total`；明细保留 `skipped_by_bundle`；模块名 `l0-assembly-cost` |
+| 2026-08-31 | 相关文档增加成品焊接费设计说明 |

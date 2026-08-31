@@ -8,7 +8,7 @@ from decimal import Decimal
 from sqlalchemy.orm import Session
 
 from app.common.part_number import escape_like_fragment, pick_part_row
-from app.models.bom.l0_welding_fee import BomL0WeldingFee
+from app.models.bom.welding_fee import BomWeldingFee
 
 
 def _normalize_location(location: str | None) -> str | None:
@@ -48,26 +48,26 @@ class L0WeldingFeeAnalysisRepository:
         part_number: str | None = None,
         limit: int = 5000,
     ) -> list[L0WeldingFeeRow]:
-        q = db.query(BomL0WeldingFee)
+        q = db.query(BomWeldingFee).filter(BomWeldingFee.level == 0)
         normalized = _normalize_location(location)
         if normalized:
-            q = q.filter(BomL0WeldingFee.location == normalized)
+            q = q.filter(BomWeldingFee.location == normalized)
         if vehicle_model:
-            q = q.filter(BomL0WeldingFee.vehicle_model == vehicle_model)
+            q = q.filter(BomWeldingFee.vehicle_model == vehicle_model)
         if bom_version:
-            q = q.filter(BomL0WeldingFee.bom_version == bom_version)
+            q = q.filter(BomWeldingFee.bom_version == bom_version)
         if start_year is not None:
-            q = q.filter(BomL0WeldingFee.year >= start_year)
+            q = q.filter(BomWeldingFee.year >= start_year)
         if end_year is not None:
-            q = q.filter(BomL0WeldingFee.year <= end_year)
+            q = q.filter(BomWeldingFee.year <= end_year)
         if part_number:
             pattern = f"%{escape_like_fragment(part_number)}%"
-            q = q.filter(BomL0WeldingFee.part_number.like(pattern, escape="\\"))
+            q = q.filter(BomWeldingFee.part_number.like(pattern, escape="\\"))
 
         q = q.order_by(
-            BomL0WeldingFee.year.asc(),
-            BomL0WeldingFee.location.asc(),
-            BomL0WeldingFee.part_number.asc(),
+            BomWeldingFee.year.asc(),
+            BomWeldingFee.location.asc(),
+            BomWeldingFee.part_number.asc(),
         ).limit(limit)
 
         return [
@@ -78,11 +78,11 @@ class L0WeldingFeeAnalysisRepository:
                 bom_version=str(row.bom_version),
                 part_number=str(row.part_number),
                 part_name=row.part_name,
-                total_l0_welding_fee=Decimal(str(row.total_l0_welding_fee or 0)),
+                total_l0_welding_fee=Decimal(str(row.total_welding_fee or 0)),
                 other_fee=(Decimal(str(row.other_fee)) if row.other_fee is not None else None),
                 final_l0_welding_fee=(
-                    Decimal(str(row.final_l0_welding_fee))
-                    if row.final_l0_welding_fee is not None
+                    Decimal(str(row.final_welding_fee))
+                    if row.final_welding_fee is not None
                     else None
                 ),
                 calc_status=str(row.calc_status or "ok"),

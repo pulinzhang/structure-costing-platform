@@ -200,11 +200,11 @@ class L0AssemblyCostExportService:
             records,
             filter_text=filter_text,
         )
-        from app.services.bom.l0_welding_fee.export_service import (
-            BomL0WeldingFeeExportService,
+        from app.services.bom.welding_fee.export_service import (
+            BomWeldingFeeExportService,
         )
 
-        BomL0WeldingFeeExportService().write_to_workbook(
+        BomWeldingFeeExportService().write_to_workbook(
             wb,
             db,
             year=year,
@@ -212,6 +212,7 @@ class L0AssemblyCostExportService:
             vehicle_model=vehicle_model,
             bom_version=bom_version,
             part_number=part_number,
+            level=0,
             sheet_title=welding_sheet_title,
         )
         self._write_indirects_sheet(

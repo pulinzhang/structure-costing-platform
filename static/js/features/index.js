@@ -44,7 +44,7 @@
  * │   ├── welding-process-breakdown/  # 焊接工艺拆解
  * │   │   ├── generate/
  * │   │   └── list/
- * │   └── l0-welding-fee/        # 成品焊接费（技术目录仍用 l0）
+ * │   └── welding-fee/           # 焊接费
  * │       ├── calc/
  * │       └── list/
  * ├── yishiyiyi/                 # 一事一议（钢材政策 / 月度废料价等）
@@ -294,15 +294,15 @@ export const pageMeta = {
         en: 'WELDING_PROCESS_BREAKDOWN_LIST',
         breadcrumb: ['焊接工程', '焊接工艺拆解', '拆解列表'],
     },
-    'bom-l0-welding-fee-calc': {
-        title: '成品焊接费计算',
-        en: 'FINISHED_WELDING_FEE_CALC',
-        breadcrumb: ['焊接工程', '成品焊接费', '计算'],
+    'bom-welding-fee-calc': {
+        title: '焊接费计算',
+        en: 'WELDING_FEE_CALC',
+        breadcrumb: ['焊接工程', '焊接费', '计算'],
     },
-    'bom-l0-welding-fee-list': {
-        title: '成品焊接费列表',
-        en: 'FINISHED_WELDING_FEE_LIST',
-        breadcrumb: ['焊接工程', '成品焊接费', '列表'],
+    'bom-welding-fee-list': {
+        title: '焊接费列表',
+        en: 'WELDING_FEE_LIST',
+        breadcrumb: ['焊接工程', '焊接费', '列表'],
     },
     costing: {
         title: '自动核价引擎',

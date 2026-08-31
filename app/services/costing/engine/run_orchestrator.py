@@ -16,7 +16,7 @@ from app.models.costing.costing_engine_run import CostingEngineRun
 from app.repositories.costing.engine.costing_engine_run_repository import (
     CostingEngineRunRepository,
 )
-from app.schemas.dto.bom_l0_welding_fee_dto import BomL0WeldingFeeCalcDTO
+from app.schemas.dto.bom_welding_fee_dto import BomWeldingFeeCalcDTO
 from app.schemas.dto.bom_welding_process_breakdown_dto import (
     BomWeldingProcessBreakdownGenerateDTO,
 )
@@ -25,7 +25,7 @@ from app.schemas.dto.stamping_part_cost_dto import StampingPartCostCalcDTO
 from app.schemas.dto.stamping_process_fee_dto import StampingProcessFeeCalcDTO
 from app.schemas.vo.costing_engine_vo import CostingEngineAnnualItemVO
 from app.schemas.vo.user_vo import UserVO
-from app.services.bom.l0_welding_fee.calc.orchestrator import BomL0WeldingFeeCalcOrchestrator
+from app.services.bom.welding_fee.calc.orchestrator import BomWeldingFeeCalcOrchestrator
 from app.services.bom.welding_process_breakdown.generate_service import (
     BomWeldingProcessBreakdownGenerateService,
 )
@@ -64,7 +64,7 @@ class RunOrchestrator:
         self.run_repo = CostingEngineRunRepository()
         self.process_fee_orch = StampingProcessFeeCalcOrchestrator()
         self.breakdown_svc = BomWeldingProcessBreakdownGenerateService()
-        self.l0_welding_orch = BomL0WeldingFeeCalcOrchestrator()
+        self.l0_welding_orch = BomWeldingFeeCalcOrchestrator()
         self.steel_orch = SteelPriceCalcOrchestrator()
         self.part_cost_orch = StampingPartCostCalcOrchestrator()
         self.l0_orch = L0AssemblyCostCalcOrchestrator()
@@ -183,11 +183,12 @@ class RunOrchestrator:
             if item.code == "annual_l0_welding_fee":
                 vehicle_model, bom_version = item.scope_key.split("|", 1)
                 scope = self._find_l0(discovery, vehicle_model, bom_version)
-                l0_dto = BomL0WeldingFeeCalcDTO(
+                l0_dto = BomWeldingFeeCalcDTO(
                     year=discovery.year,
                     location=scope.location if scope else discovery.location,
                     vehicle_model=vehicle_model,
                     bom_version=bom_version,
+                    levels=[0],
                 )
                 l0_result = self.l0_welding_orch.calculate(db, l0_dto, current_user=current_user)
                 return (

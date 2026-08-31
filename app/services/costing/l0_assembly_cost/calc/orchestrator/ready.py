@@ -39,6 +39,7 @@ def collect_calc_ready(
         location=location,
         vehicle_model=vehicle_model,
         bom_version=bom_version,
+        level=0,
     )
     pkg_n = deps.packaging_fee_repo.count_by_location_year(db, location=location, year=year)
     ready = l0_count > 0 and (stamping_n > 0 or annual_n > 0)

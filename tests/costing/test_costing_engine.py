@@ -8,6 +8,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from app.schemas.vo.costing_engine_vo import CostingEngineAnnualItemVO, CostingEngineGateItemVO
+from app.services.costing.engine.annual_calc_planner import AnnualCalcPlanner
 from app.services.costing.engine.gate_navigate import build_navigate
 from app.services.costing.engine.progress import map_progress
 from app.services.costing.engine.run_orchestrator import RunOrchestrator
@@ -94,9 +95,7 @@ def test_run_orchestrator_does_not_submit_nested_async_task() -> None:
             message=k.get("message"),
         )
     )
-    orch.run_repo.update_step_fields = MagicMock(
-        side_effect=lambda db, step, **kw: step
-    )
+    orch.run_repo.update_step_fields = MagicMock(side_effect=lambda db, step, **kw: step)
     orch.run_repo.update_run_fields = MagicMock(return_value=run)
 
     discovery = DiscoveryResult(
@@ -128,9 +127,7 @@ def test_run_orchestrator_does_not_submit_nested_async_task() -> None:
         ),
     ]
 
-    steel_result = SimpleNamespace(
-        status="success", created_count=1, updated_count=0
-    )
+    steel_result = SimpleNamespace(status="success", created_count=1, updated_count=0)
     part_result = SimpleNamespace(status="success")
     l0_result = SimpleNamespace(status="success")
 
@@ -192,12 +189,7 @@ def test_delete_running_allows_new_key(monkeypatch: pytest.MonkeyPatch) -> None:
     service.async_task_service.update_task_standalone.assert_called()
     # 删除后查 running 应为空
     service.run_repo.get_running_by_key = MagicMock(return_value=None)
-    assert (
-        service.run_repo.get_running_by_key(
-            db, location="青岛", year=2025, month=1
-        )
-        is None
-    )
+    assert service.run_repo.get_running_by_key(db, location="青岛", year=2025, month=1) is None
 
 
 def test_gate_item_ok_false_requires_navigate_shape() -> None:
@@ -213,3 +205,25 @@ def test_gate_item_ok_false_requires_navigate_shape() -> None:
     assert payload["ok"] is False
     assert payload["navigate"]["page"] == "scrap-price"
     assert payload["navigate"]["query"]["month"] == 2
+
+
+def test_annual_planner_l0_welding_fee_exists_requires_level_zero() -> None:
+    """仅有 L1 焊接费行时仍应计划 annual_l0_welding_fee 补算。"""
+    planner = AnnualCalcPlanner()
+    db = MagicMock()
+    planner.l0_welding_fee_repo = MagicMock()
+    planner.l0_welding_fee_repo.count_by_scope_and_statuses.return_value = 0
+
+    exists = planner._l0_welding_fee_exists(
+        db,
+        year=2026,
+        location="青岛",
+        vehicle_model="T28",
+        bom_version="D-00",
+    )
+
+    assert exists is False
+    kwargs = planner.l0_welding_fee_repo.count_by_scope_and_statuses.call_args.kwargs
+    assert kwargs["level"] == 0
+    assert kwargs["year"] == 2026
+    assert kwargs["vehicle_model"] == "T28"

@@ -5,7 +5,7 @@ from __future__ import annotations
 from sqlalchemy.orm import Session
 
 from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING, AUDIT_REJECTED
-from app.repositories.bom.l0_welding_fee_repository import BomL0WeldingFeeRepository
+from app.repositories.bom.welding_fee_repository import BomWeldingFeeRepository
 from app.repositories.bom.welding_process_breakdown_repository import (
     BomWeldingProcessBreakdownRepository,
 )
@@ -25,7 +25,7 @@ class AnnualCalcPlanner:
     def __init__(self) -> None:
         self.process_fee_repo = StampingProcessFeeRepository()
         self.breakdown_repo = BomWeldingProcessBreakdownRepository()
-        self.l0_welding_fee_repo = BomL0WeldingFeeRepository()
+        self.l0_welding_fee_repo = BomWeldingFeeRepository()
 
     def plan(self, db: Session, discovery: DiscoveryResult) -> list[CostingEngineAnnualItemVO]:
         items: list[CostingEngineAnnualItemVO] = []
@@ -124,6 +124,7 @@ class AnnualCalcPlanner:
                 vehicle_model=vehicle_model,
                 bom_version=bom_version,
                 statuses=_ANY_STATUS,
+                level=0,
             )
             > 0
         )

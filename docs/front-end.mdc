@@ -120,7 +120,7 @@ static/
         ├── bom/packaging-transport-fee/{upload,list}
         ├── bom/procurement-object/{generate,list}
         ├── bom/welding-process-breakdown/{generate,list}
-        ├── bom/l0-welding-fee/{calc,list}
+        ├── bom/welding-fee/{calc,list}
         ├── yishiyiyi/
         │   ├── policy/{upload,list}
         │   ├── base-price/{upload,list}
@@ -175,8 +175,8 @@ static/
 | `#/bom-procurement-object-list` | 采购对象清单 | `bom/procurement-object/list` |
 | `#/bom-welding-process-breakdown` | 焊接工艺拆解 | `bom/welding-process-breakdown/generate` |
 | `#/bom-welding-process-breakdown-list` | 焊接工艺拆解列表 | `bom/welding-process-breakdown/list` |
-| `#/bom-l0-welding-fee-calc` | 成品焊接费计算 | `bom/l0-welding-fee/calc` |
-| `#/bom-l0-welding-fee-list` | 成品焊接费列表 | `bom/l0-welding-fee/list` |
+| `#/bom-welding-fee-calc` | 焊接费计算 | `bom/welding-fee/calc` |
+| `#/bom-welding-fee-list` | 焊接费列表 | `bom/welding-fee/list` |
 | `#/steel-price-policy-upload` | 加减价政策上传 | `yishiyiyi/policy/upload` |
 | `#/steel-price-policy-download` | 加减价政策列表 | `yishiyiyi/policy/list` |
 | `#/base-price-upload` | 基准价格上传 | `yishiyiyi/base-price/upload` |

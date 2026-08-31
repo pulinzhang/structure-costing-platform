@@ -337,7 +337,7 @@ def create_app() -> FastAPI:
     from app.routers.bom.welding_process_breakdown import (
         router as bom_welding_process_breakdown_router,
     )
-    from app.routers.bom.l0_welding_fee import router as bom_l0_welding_fee_router
+    from app.routers.bom.welding_fee import router as bom_welding_fee_router
     from app.routers.costing.engine.crud import router as costing_engine_router
     from app.routers.file_trace.crud import router as file_trace_router
     from app.routers.settings.system.crud import router as settings_router
@@ -415,7 +415,8 @@ def create_app() -> FastAPI:
     app.include_router(bom_packaging_transport_fee_router)
     app.include_router(bom_procurement_object_router)
     app.include_router(bom_welding_process_breakdown_router)
-    app.include_router(bom_l0_welding_fee_router)
+    app.include_router(bom_welding_fee_router, prefix="/api/bom/welding-fees")
+    app.include_router(bom_welding_fee_router, prefix="/api/bom/l0-welding-fees")
     app.include_router(costing_engine_router)
     app.include_router(file_trace_router)
     app.include_router(settings_router)

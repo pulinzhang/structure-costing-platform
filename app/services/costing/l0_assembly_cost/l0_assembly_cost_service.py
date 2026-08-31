@@ -11,7 +11,7 @@ from app.models.costing.l0_assembly_cost_calc_log import L0AssemblyCostCalcLog
 from app.repositories.bom.annual_part_price_repository import (
     BomAnnualPartPriceRepository,
 )
-from app.repositories.bom.l0_welding_fee_repository import BomL0WeldingFeeRepository
+from app.repositories.bom.welding_fee_repository import BomWeldingFeeRepository
 from app.repositories.bom.packaging_transport_fee_repository import (
     BomPackagingTransportFeeRepository,
 )
@@ -69,7 +69,7 @@ class L0AssemblyCostService:
         self.cost_repo = L0AssemblyCostRepository()
         self.stamping_cost_repo = StampingPartCostRepository()
         self.annual_price_repo = BomAnnualPartPriceRepository()
-        self.welding_fee_repo = BomL0WeldingFeeRepository()
+        self.welding_fee_repo = BomWeldingFeeRepository()
         self.packaging_fee_repo = BomPackagingTransportFeeRepository()
         self.orchestrator = L0AssemblyCostCalcOrchestrator()
         self.calc_log_service = L0AssemblyCostCalcLogService()

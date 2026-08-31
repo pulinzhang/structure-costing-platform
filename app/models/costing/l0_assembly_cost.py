@@ -143,7 +143,7 @@ class L0AssemblyCost(AuditUserMixin, Base):
     )
 
     welding_fee_id: Mapped[int | None] = mapped_column(
-        Integer, nullable=True, comment="溯源 bom_l0_welding_fees.id"
+        Integer, nullable=True, comment="溯源 bom_welding_fees.id（财务读 level=0）"
     )
     welding_summary: Mapped[str | None] = mapped_column(Text, nullable=True, comment="焊接摘要")
 

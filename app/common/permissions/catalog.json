@@ -788,64 +788,64 @@
           ]
         },
         {
-          "code": "menu:bom-l0-welding-fee-group",
-          "label": "成品焊接费",
+          "code": "menu:bom-welding-fee-group",
+          "label": "焊接费",
           "type": "group",
           "children": [
             {
-              "code": "menu:bom-l0-welding-fee-calc",
-              "label": "成品焊接费计算",
+              "code": "menu:bom-welding-fee-calc",
+              "label": "焊接费计算",
               "type": "menu",
               "children": [
                 {
-                  "code": "op:bom-l0-welding-fee-calc:view",
+                  "code": "op:bom-welding-fee-calc:view",
                   "label": "查看",
                   "type": "op"
                 },
                 {
-                  "code": "op:bom-l0-welding-fee-calc:run",
+                  "code": "op:bom-welding-fee-calc:run",
                   "label": "计算",
                   "type": "op"
                 },
                 {
-                  "code": "op:bom-l0-welding-fee-calc:delete",
+                  "code": "op:bom-welding-fee-calc:delete",
                   "label": "删除计算日志",
                   "type": "op"
                 }
               ]
             },
             {
-              "code": "menu:bom-l0-welding-fee-list",
-              "label": "成品焊接费列表",
+              "code": "menu:bom-welding-fee-list",
+              "label": "焊接费列表",
               "type": "menu",
               "children": [
                 {
-                  "code": "op:bom-l0-welding-fee-list:view",
+                  "code": "op:bom-welding-fee-list:view",
                   "label": "查询",
                   "type": "op"
                 },
                 {
-                  "code": "op:bom-l0-welding-fee-list:update",
+                  "code": "op:bom-welding-fee-list:update",
                   "label": "编辑其它费用",
                   "type": "op"
                 },
                 {
-                  "code": "op:bom-l0-welding-fee-list:delete",
+                  "code": "op:bom-welding-fee-list:delete",
                   "label": "删除",
                   "type": "op"
                 },
                 {
-                  "code": "op:bom-l0-welding-fee-list:approve",
+                  "code": "op:bom-welding-fee-list:approve",
                   "label": "审核通过",
                   "type": "op"
                 },
                 {
-                  "code": "op:bom-l0-welding-fee-list:reverse",
+                  "code": "op:bom-welding-fee-list:reverse",
                   "label": "反审核",
                   "type": "op"
                 },
                 {
-                  "code": "op:bom-l0-welding-fee-list:export",
+                  "code": "op:bom-welding-fee-list:export",
                   "label": "导出",
                   "type": "op"
                 }

@@ -471,18 +471,18 @@ root
 │   │       ├── op:bom-welding-process-breakdown:approve
 │   │       ├── op:bom-welding-process-breakdown:reverse
 │   │       └── op:bom-welding-process-breakdown:export
-│   └── menu:bom-l0-welding-fee-group             # 成品焊接费
-│       ├── menu:bom-l0-welding-fee-calc          # 成品焊接费计算
-│       │   ├── op:bom-l0-welding-fee-calc:view
-│       │   ├── op:bom-l0-welding-fee-calc:run
-│       │   └── op:bom-l0-welding-fee-calc:delete
-│       └── menu:bom-l0-welding-fee-list          # 成品焊接费列表
-│           ├── op:bom-l0-welding-fee-list:view
-│           ├── op:bom-l0-welding-fee-list:update
-│           ├── op:bom-l0-welding-fee-list:delete
-│           ├── op:bom-l0-welding-fee-list:approve
-│           ├── op:bom-l0-welding-fee-list:reverse
-│           └── op:bom-l0-welding-fee-list:export
+│   └── menu:bom-welding-fee-group                # 焊接费
+│       ├── menu:bom-welding-fee-calc             # 焊接费计算
+│       │   ├── op:bom-welding-fee-calc:view
+│       │   ├── op:bom-welding-fee-calc:run
+│       │   └── op:bom-welding-fee-calc:delete
+│       └── menu:bom-welding-fee-list             # 焊接费列表
+│           ├── op:bom-welding-fee-list:view
+│           ├── op:bom-welding-fee-list:update
+│           ├── op:bom-welding-fee-list:delete
+│           ├── op:bom-welding-fee-list:approve
+│           ├── op:bom-welding-fee-list:reverse
+│           └── op:bom-welding-fee-list:export
 │
 ├── menu:yishiyiyi                             # 一事一议（分组，可勾）
 │   ├── menu:thickness                         # 加减价政策（二级分组，可勾）
@@ -640,8 +640,8 @@ root
 | bom-procurement-object-list | `view` / `update` / `delete` / `approve` / `reverse` / `export` | 查询；单条确认；按范围批量删除；审核；反审核；导出 |
 | bom-welding-process-breakdown | `generate` / `delete-log` | 从 BOM 生成拆解；删除拆解日志 |
 | bom-welding-process-breakdown-list | `view` / `save-lines` / `delete` / `approve` / `reverse` / `export` | 查询；编辑明细；删除；审核；反审核；导出 L0 核对 |
-| bom-l0-welding-fee-calc | `view` / `run` / `delete` | 历史/过程；开始计算；删除计算日志 |
-| bom-l0-welding-fee-list | `view` / `update` / `delete` / `approve` / `reverse` / `export` | 查询；编辑其它费用；删除（含批量）；审核（含批量）；反审核；导出 Excel |
+| bom-welding-fee-calc | `view` / `run` / `delete` | 历史/过程；开始计算；删除计算日志 |
+| bom-welding-fee-list | `view` / `update` / `delete` / `approve` / `reverse` / `export` | 查询；编辑其它费用；删除（含批量）；审核（含批量）；反审核；导出 Excel |
 | steel-price-calc | `view` / `run` / `delete` | 历史/过程；开始计算；删除日志 |
 | steel-price-list | `view` / `update` / `delete` / `approve` / `reject` / `reverse` / `export` | 查询；编辑；删除（含批量）；通过（含批量）；驳回；反审核（含批量）；导出 |
 | stamping-part-cost-calc | `view` / `run` / `delete` | 历史/过程；开始计算；删除日志 |
@@ -866,3 +866,4 @@ static/index.html           # 侧栏 data-page
 | 2026-08-29 | 检具费列表增加 `op:stamping-gauge-fee:export`；导出含基地、项目 |
 | 2026-08-30 | 冲压工程权限树顺序与侧栏对齐：工艺 → 冲次单价 → 加工费 → 模具 → 模具费 → 检具费 |
 | 2026-08-31 | 新增采购对象清单：`menu:bom-procurement-object-group` / `generate` / 列表 `view|update|delete|approve|reverse|export` |
+| 2026-08-31 | 焊接费切片去 L0 专名：`menu/op:bom-l0-welding-fee-*` remap 为 `menu/op:bom-welding-fee-*`（启动时写 `user_permissions`） |

@@ -860,7 +860,7 @@ class AnalysisRunner:
         return out
 
     def _run_l0_welding_fee(self, db: Session, query: AnalysisQuery) -> AnalysisRunResult:
-        """对齐「成品焊接费列表」#/bom-l0-welding-fee-list。"""
+        """对齐「焊接费列表」#/bom-welding-fee-list。"""
         tr = query.time_range
         part_token = query.part_number() or ""
         rows = self._l0_welding_fee_repo.query_rows(
