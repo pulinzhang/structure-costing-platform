@@ -41,6 +41,7 @@ from app.schemas.vo.async_task_vo import AsyncTaskAcceptedVO
 from app.services.async_task import (
     TASK_TYPE_L0_ASSEMBLY_COST_CALC,
     AsyncTaskService,
+    ProgressCallback,
     WorkerTaskOutcome,
     calc_status_label,
     outcome_from_calc_status,
@@ -52,7 +53,6 @@ from app.services.costing.l0_assembly_cost.calc.calc_log_service import (
 )
 from app.services.costing.l0_assembly_cost.calc.orchestrator import (
     L0AssemblyCostCalcOrchestrator,
-    ProgressCallback,
 )
 
 __all__ = [
