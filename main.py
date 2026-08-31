@@ -331,6 +331,9 @@ def create_app() -> FastAPI:
     from app.routers.bom.packaging_transport_fee import (
         router as bom_packaging_transport_fee_router,
     )
+    from app.routers.bom.procurement_object import (
+        router as bom_procurement_object_router,
+    )
     from app.routers.bom.welding_process_breakdown import (
         router as bom_welding_process_breakdown_router,
     )
@@ -410,6 +413,7 @@ def create_app() -> FastAPI:
     app.include_router(bom_welding_unit_price_router)
     app.include_router(bom_annual_part_price_router)
     app.include_router(bom_packaging_transport_fee_router)
+    app.include_router(bom_procurement_object_router)
     app.include_router(bom_welding_process_breakdown_router)
     app.include_router(bom_l0_welding_fee_router)
     app.include_router(costing_engine_router)

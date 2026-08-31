@@ -671,6 +671,62 @@
           ]
         },
         {
+          "code": "menu:bom-procurement-object-group",
+          "label": "采购对象",
+          "type": "group",
+          "children": [
+            {
+              "code": "menu:bom-procurement-object",
+              "label": "生成采购对象清单",
+              "type": "menu",
+              "children": [
+                {
+                  "code": "op:bom-procurement-object:generate",
+                  "label": "生成",
+                  "type": "op"
+                }
+              ]
+            },
+            {
+              "code": "menu:bom-procurement-object-list",
+              "label": "采购对象清单",
+              "type": "menu",
+              "children": [
+                {
+                  "code": "op:bom-procurement-object-list:view",
+                  "label": "查询",
+                  "type": "op"
+                },
+                {
+                  "code": "op:bom-procurement-object-list:update",
+                  "label": "确认",
+                  "type": "op"
+                },
+                {
+                  "code": "op:bom-procurement-object-list:delete",
+                  "label": "删除",
+                  "type": "op"
+                },
+                {
+                  "code": "op:bom-procurement-object-list:approve",
+                  "label": "审核通过",
+                  "type": "op"
+                },
+                {
+                  "code": "op:bom-procurement-object-list:reverse",
+                  "label": "反审核",
+                  "type": "op"
+                },
+                {
+                  "code": "op:bom-procurement-object-list:export",
+                  "label": "导出",
+                  "type": "op"
+                }
+              ]
+            }
+          ]
+        },
+        {
           "code": "menu:bom-welding-process-breakdown-group",
           "label": "焊接工艺拆解",
           "type": "group",

@@ -166,6 +166,19 @@ class Perm:
     BOM_PACKAGING_TRANSPORT_FEE_REVERSE = "op:bom-packaging-transport-fee:reverse"  # 反审核
     BOM_PACKAGING_TRANSPORT_FEE_EXPORT = "op:bom-packaging-transport-fee:export"  # 导出
 
+    MENU_BOM_PROCUREMENT_OBJECT_GROUP = "menu:bom-procurement-object-group"  # 采购对象
+
+    MENU_BOM_PROCUREMENT_OBJECT = "menu:bom-procurement-object"  # 生成采购对象清单
+    BOM_PROCUREMENT_OBJECT_GENERATE = "op:bom-procurement-object:generate"  # 生成
+
+    MENU_BOM_PROCUREMENT_OBJECT_LIST = "menu:bom-procurement-object-list"  # 采购对象清单
+    BOM_PROCUREMENT_OBJECT_LIST_VIEW = "op:bom-procurement-object-list:view"  # 查询
+    BOM_PROCUREMENT_OBJECT_LIST_UPDATE = "op:bom-procurement-object-list:update"  # 确认
+    BOM_PROCUREMENT_OBJECT_LIST_DELETE = "op:bom-procurement-object-list:delete"  # 删除
+    BOM_PROCUREMENT_OBJECT_LIST_APPROVE = "op:bom-procurement-object-list:approve"  # 审核通过
+    BOM_PROCUREMENT_OBJECT_LIST_REVERSE = "op:bom-procurement-object-list:reverse"  # 反审核
+    BOM_PROCUREMENT_OBJECT_LIST_EXPORT = "op:bom-procurement-object-list:export"  # 导出
+
     MENU_BOM_WELDING_PROCESS_BREAKDOWN_GROUP = (
         "menu:bom-welding-process-breakdown-group"  # 焊接工艺拆解
     )

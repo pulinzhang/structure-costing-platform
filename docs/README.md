@@ -30,6 +30,7 @@
 | 文档 | 状态 |
 |------|------|
 | [bom-annual-part-prices-design.md](bom/bom-annual-part-prices-design.md) | 年度零件价（已上线） |
+| [bom-procurement-objects-design.md](bom/bom-procurement-objects-design.md) | 采购对象清单（草案）：退化 L0 / L1 分总成 / L1 冲压件，生成落库、检测、确认 |
 
 ## 一事一议 `yishiyiyi/`
 
@@ -44,7 +45,7 @@
 |------|------|
 | [costing-engine-design.md](costing/costing-engine-design.md) | 月度引擎（已上线） |
 | [l0-assembly-costing-design.md](costing/l0-assembly-costing-design.md) | L0 成品核价（已上线） |
-| [outsourced-assembly-costing-design.md](costing/outsourced-assembly-costing-design.md) | 委外分总成（草案） |
+| [outsourced-assembly-costing-design.md](costing/outsourced-assembly-costing-design.md) | 委外应成本（草案）：核价定公式；集合见采购对象清单 |
 | [effective-period-design.md](costing/effective-period-design.md) | 协议价生效期（设计） |
 | [provisional-final-settlement-design.md](costing/provisional-final-settlement-design.md) | 暂估 / 正式（设计） |
 | [anchor-true-up-design.md](costing/anchor-true-up-design.md) | 锚点送货与价差（设计） |

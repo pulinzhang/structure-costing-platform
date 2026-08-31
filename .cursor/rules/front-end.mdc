@@ -118,6 +118,7 @@ static/
         ├── bom/welding-unit-price/{upload,list}
         ├── bom/annual-part-price/{upload,list}
         ├── bom/packaging-transport-fee/{upload,list}
+        ├── bom/procurement-object/{generate,list}
         ├── bom/welding-process-breakdown/{generate,list}
         ├── bom/l0-welding-fee/{calc,list}
         ├── yishiyiyi/
@@ -170,6 +171,8 @@ static/
 | `#/bom-annual-part-price` | 年度零件价列表 | `bom/annual-part-price/list` |
 | `#/bom-packaging-transport-fee-upload` | 包装运输费上传 | `bom/packaging-transport-fee/upload` |
 | `#/bom-packaging-transport-fee` | 包装运输费列表 | `bom/packaging-transport-fee/list` |
+| `#/bom-procurement-object` | 生成采购对象清单 | `bom/procurement-object/generate` |
+| `#/bom-procurement-object-list` | 采购对象清单 | `bom/procurement-object/list` |
 | `#/bom-welding-process-breakdown` | 焊接工艺拆解 | `bom/welding-process-breakdown/generate` |
 | `#/bom-welding-process-breakdown-list` | 焊接工艺拆解列表 | `bom/welding-process-breakdown/list` |
 | `#/bom-l0-welding-fee-calc` | 成品焊接费计算 | `bom/l0-welding-fee/calc` |

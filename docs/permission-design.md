@@ -449,6 +449,16 @@ root
 │   │       ├── op:bom-packaging-transport-fee:approve
 │   │       ├── op:bom-packaging-transport-fee:reverse
 │   │       └── op:bom-packaging-transport-fee:export
+│   ├── menu:bom-procurement-object-group  # 采购对象
+│   │   ├── menu:bom-procurement-object
+│   │   │   └── op:bom-procurement-object:generate
+│   │   └── menu:bom-procurement-object-list
+│   │       ├── op:bom-procurement-object-list:view
+│   │       ├── op:bom-procurement-object-list:update
+│   │       ├── op:bom-procurement-object-list:delete
+│   │       ├── op:bom-procurement-object-list:approve
+│   │       ├── op:bom-procurement-object-list:reverse
+│   │       └── op:bom-procurement-object-list:export
 │   ├── menu:bom-welding-process-breakdown-group  # 焊接工艺拆解
 │   │   ├── menu:bom-welding-process-breakdown
 │   │   │   ├── op:bom-welding-process-breakdown:generate
@@ -625,6 +635,8 @@ root
 | bom-annual-part-price | `view` / `create` / `update` / `delete` / `approve` / `reverse` / `export` | 查询；新增；编辑；删除；审核；反审核；导出 |
 | bom-packaging-transport-fee-upload | `view` / `upload` | 查看上传页；导入包装运输费 Excel |
 | bom-packaging-transport-fee | `view` / `create` / `update` / `delete` / `approve` / `reverse` / `export` | 查询；新增；编辑；删除；审核；反审核；导出 |
+| bom-procurement-object | `generate` | 从材料清单生成采购对象清单 |
+| bom-procurement-object-list | `view` / `update` / `delete` / `approve` / `reverse` / `export` | 查询；单条确认；按范围批量删除；审核；反审核；导出 |
 | bom-welding-process-breakdown | `generate` / `delete-log` | 从 BOM 生成拆解；删除拆解日志 |
 | bom-welding-process-breakdown-list | `view` / `save-lines` / `delete` / `approve` / `reverse` / `export` | 查询；编辑明细；删除；审核；反审核；导出 L0 核对 |
 | bom-l0-welding-fee-calc | `view` / `run` / `delete` | 历史/过程；开始计算；删除计算日志 |
@@ -852,3 +864,4 @@ static/index.html           # 侧栏 data-page
 | 2026-08-29 | 检具费列表增加 `op:stamping-gauge-fee:update`；支持单条编辑与删除 |
 | 2026-08-29 | 检具费列表增加 `op:stamping-gauge-fee:export`；导出含基地、项目 |
 | 2026-08-30 | 冲压工程权限树顺序与侧栏对齐：工艺 → 冲次单价 → 加工费 → 模具 → 模具费 → 检具费 |
+| 2026-08-31 | 新增采购对象清单：`menu:bom-procurement-object-group` / `generate` / 列表 `view|update|delete|approve|reverse|export` |

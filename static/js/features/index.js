@@ -38,6 +38,9 @@
  * │   ├── packaging-transport-fee/  # 包装运输费
  * │   │   ├── upload/
  * │   │   └── list/
+ * │   ├── procurement-object/     # 采购对象清单
+ * │   │   ├── generate/
+ * │   │   └── list/
  * │   ├── welding-process-breakdown/  # 焊接工艺拆解
  * │   │   ├── generate/
  * │   │   └── list/
@@ -270,6 +273,16 @@ export const pageMeta = {
         title: '包装运输费列表',
         en: 'PKG_TRANSPORT_FEE_MATRIX',
         breadcrumb: ['焊接工程', '包装运输费', '包装运输费列表'],
+    },
+    'bom-procurement-object': {
+        title: '生成采购对象清单',
+        en: 'PROCUREMENT_OBJECT_GENERATE',
+        breadcrumb: ['焊接工程', '采购对象', '生成'],
+    },
+    'bom-procurement-object-list': {
+        title: '采购对象清单',
+        en: 'PROCUREMENT_OBJECT_LIST',
+        breadcrumb: ['焊接工程', '采购对象', '采购对象清单'],
     },
     'bom-welding-process-breakdown': {
         title: '焊接工艺拆解',
