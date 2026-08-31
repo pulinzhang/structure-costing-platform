@@ -66,6 +66,9 @@ from app.services.costing.stamping_part_cost.calc.constants import (
     STATUS_PARTIAL,
     STATUS_SUCCESS,
 )
+from app.services.costing.stamping_part_cost.calc.fees.die import DieFeeResolver
+from app.services.costing.stamping_part_cost.calc.fees.gauge import GaugeFeeResolver
+from app.services.costing.stamping_part_cost.calc.fees.process import ProcessFeeResolver
 from app.services.costing.stamping_part_cost.calc.models import ProgressCallback
 from app.services.costing.stamping_part_cost.calc.part_calculator import (
     PartCostCalculator,
@@ -171,13 +174,20 @@ class StampingPartCostCalcOrchestrator:
             steel_repo=self.steel_repo,
             scrap_repo=self.scrap_repo,
         )
+        self.process_fee_resolver = ProcessFeeResolver(self.fee_repo)
+        self.die_fee_resolver = DieFeeResolver(self.die_fee_repo)
+        self.gauge_fee_resolver = GaugeFeeResolver(self.gauge_fee_repo)
         self.part_calculator = PartCostCalculator(
             price_resolver=self.price_resolver,
-            fee_repo=self.fee_repo,
+            process_fee_resolver=self.process_fee_resolver,
+            die_fee_resolver=self.die_fee_resolver,
+            gauge_fee_resolver=self.gauge_fee_resolver,
         )
         self.tailor_weld_calculator = TailorWeldPartCostCalculator(
             price_resolver=self.price_resolver,
-            fee_repo=self.fee_repo,
+            process_fee_resolver=self.process_fee_resolver,
+            die_fee_resolver=self.die_fee_resolver,
+            gauge_fee_resolver=self.gauge_fee_resolver,
         )
         self.calc_log_service = PartCostCalcLogService(
             calc_log_repo=self.calc_log_repo,
@@ -237,13 +247,13 @@ class StampingPartCostCalcOrchestrator:
             )
 
         if year and location_value:
-            die_fee_count = self.die_fee_repo.count_by_year_location(
+            die_fee_count = self.die_fee_resolver.count_for_ready(
                 db,
                 year=year,
                 location=location_value,
                 vehicle_model=vehicle_model,
             )
-            gauge_fee_count = self.gauge_fee_repo.count_effective(
+            gauge_fee_count = self.gauge_fee_resolver.count_for_ready(
                 db,
                 location=location_value,
                 vehicle_model=vehicle_model,

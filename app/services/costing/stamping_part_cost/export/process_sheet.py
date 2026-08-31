@@ -159,6 +159,14 @@ _TEXT_LEFT_COLS = frozenset({"B", "C", "D", "E", "F", "I"})
 _FILENAME_ILLEGAL = '<>:"/\\|?*'
 
 
+def _fee_amount_cell(value: object, digits: int) -> Decimal | str:
+    """加工费 / 模具费 / 检具费：None 或 0 导出为空，不写 0。"""
+    number = to_decimal(value)
+    if number is None or number == 0:
+        return ""
+    return _num(number, digits)
+
+
 def _finished_fee_formula_cells(
     excel_row: int,
     *,
@@ -171,15 +179,17 @@ def _finished_fee_formula_cells(
 
     顺序：仓储+包装 → 管理费 → 财务费 → 税前利润
     费率须为系统配置 Decimal（禁止用费用÷直接成本反推，会出脏小数）。
+    直接成本为 0 时单元格显示空（与加工费/模具费/检具费一致）。
     """
     v = f"V{excel_row}"
+    direct = f"R{excel_row}+S{excel_row}+T{excel_row}+U{excel_row}"
     return {
-        "V": f"=R{excel_row}+S{excel_row}+T{excel_row}+U{excel_row}",
-        "W": f"={v}*{formula_number(warehouse_packaging_rate)}",
-        "X": f"={v}*{formula_number(management_rate)}",
-        "Y": f"={v}*{formula_number(finance_rate)}",
-        "Z": f"={v}*{formula_number(pretax_profit_rate)}",
-        "AA": f"={v}+W{excel_row}+X{excel_row}+Y{excel_row}+Z{excel_row}",
+        "V": f'=IF(({direct})=0,"",{direct})',
+        "W": f'=IF({v}="","",{v}*{formula_number(warehouse_packaging_rate)})',
+        "X": f'=IF({v}="","",{v}*{formula_number(management_rate)})',
+        "Y": f'=IF({v}="","",{v}*{formula_number(finance_rate)})',
+        "Z": f'=IF({v}="","",{v}*{formula_number(pretax_profit_rate)})',
+        "AA": (f'=IF({v}="","",{v}+W{excel_row}+X{excel_row}' f"+Y{excel_row}+Z{excel_row})"),
     }
 
 
@@ -554,7 +564,7 @@ def write_process_sheet_to_workbook(
                 cell.alignment = Alignment(horizontal="left", vertical="center", wrap_text=True)
             elif col_letter in id_cols:
                 cell.alignment = center
-            elif col_letter in text_left_cols or col_letter in {"Z", "AA"}:
+            elif col_letter in text_left_cols or col_letter == "Z":
                 cell.alignment = left
             elif col_letter in number_cols or col_letter == "A":
                 cell.alignment = right if col_letter != "A" else center
@@ -620,17 +630,9 @@ def write_process_sheet_to_workbook(
         fee_trace = format_process_fee_trace(
             fee_by_id.get(row.process_fee_id) if row.process_fee_id is not None else None
         )
-        process_fee_cell = (
-            _num(row.process_fee_amount, 3) if row.process_fee_amount is not None else ""
-        )
-        die_fee_cell = (
-            _num(row.die_fee_amount, 4) if getattr(row, "die_fee_amount", None) is not None else ""
-        )
-        gauge_fee_cell = (
-            _num(row.gauge_fee_amount, 4)
-            if getattr(row, "gauge_fee_amount", None) is not None
-            else ""
-        )
+        process_fee_cell = _fee_amount_cell(row.process_fee_amount, 3)
+        die_fee_cell = _fee_amount_cell(getattr(row, "die_fee_amount", None), 4)
+        gauge_fee_cell = _fee_amount_cell(getattr(row, "gauge_fee_amount", None), 4)
 
         if display.is_tailor_welded and len(display.blank_terms) >= 2:
             terms = display.blank_terms
@@ -889,10 +891,10 @@ def write_process_sheet_to_workbook(
             "普通件：=M×P×(1+λ)−M×λ×η×Q−O×η×Q；"
             "拼焊件：=Σ(Mi×Pi×(1+λ))−SUM(M)×λ×η×Q−O×η×Q（引用各子片行）",
         ),
-        ("S", "加工费", "元/件；取自加工费核算结果（拼焊父件一行）"),
-        ("T", "模具费", "元/件；取自年度模具费最终价；无档案为 0"),
-        ("U", "检具费", "元/件；检具费（万元）÷ 分摊万台；无生效档案为 0"),
-        ("V", "直接成本", "R + S + T + U"),
+        ("S", "加工费", "元/件；取自加工费核算结果（拼焊父件一行）；0 或空则单元格留空"),
+        ("T", "模具费", "元/件；取自年度模具费最终价；无档案或 0 则单元格留空"),
+        ("U", "检具费", "元/件；检具费（万元）÷ 分摊万台；无生效档案或 0 则单元格留空"),
+        ("V", "直接成本", "R + S + T + U；合计为 0 则单元格留空"),
         ("W", "仓储+包装", "直接成本 × 仓储+包装管理费用率"),
         ("X", "管理费", "直接成本 × 管理费率"),
         ("Y", "财务费", "直接成本 × 财务费率"),

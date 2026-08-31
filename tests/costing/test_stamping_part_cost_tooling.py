@@ -1,14 +1,69 @@
-"""冲压零件核价：模具费/检具费进直接成本。"""
+"""冲压零件核价：模具费 / 检具费按种类分公式。"""
 
 from decimal import Decimal
+from types import SimpleNamespace
 
 from app.services.costing.stamping_part_cost.calc.constants import compute_finished_cost_stack
-from app.services.costing.stamping_part_cost.calc.tooling_fees import gauge_fee_yuan_per_part
+from app.services.costing.stamping_part_cost.calc.fees.die import DieFeeResolver
+from app.services.costing.stamping_part_cost.calc.fees.gauge import (
+    GaugeFeeResolver,
+    gauge_fee_yuan_per_part,
+)
 
 
 def test_gauge_fee_wan_over_wan_units_is_yuan_per_part() -> None:
     assert gauge_fee_yuan_per_part(Decimal("0.8"), Decimal("10")) == Decimal("0.080000")
     assert gauge_fee_yuan_per_part(Decimal("0.8"), Decimal("0")) == Decimal("0")
+
+
+def test_die_fee_uses_final_yuan_per_part_without_reallocating() -> None:
+    """年度模具费最终价已是元/件，不得再按检具费的万元÷万台重摊。"""
+    row = SimpleNamespace(id=11, final_die_fee=Decimal("1.234500"))
+    repo = SimpleNamespace(
+        get_by_year_location_vehicle_part=lambda db, **kwargs: row,
+    )
+    lookup = DieFeeResolver(die_fee_repo=repo).lookup(  # type: ignore[arg-type]
+        None,  # type: ignore[arg-type]
+        year=2026,
+        location="芜湖基地",
+        vehicle_model="T13J",
+        part_number="502008024AA",
+    )
+    assert lookup.die_fee_id == 11
+    assert lookup.die_fee_amount == Decimal("1.234500")
+
+
+def test_die_fee_matches_location_alias() -> None:
+    row = SimpleNamespace(id=3, final_die_fee=Decimal("0.500000"))
+
+    def get_row(db: object, *, location: str, **kwargs: object) -> SimpleNamespace | None:
+        if location == "芜湖":
+            return row
+        return None
+
+    repo = SimpleNamespace(get_by_year_location_vehicle_part=get_row)
+    lookup = DieFeeResolver(die_fee_repo=repo).lookup(  # type: ignore[arg-type]
+        None,  # type: ignore[arg-type]
+        year=2026,
+        location="芜湖基地",
+        vehicle_model="T13J",
+        part_number="502008024AA",
+    )
+    assert lookup.die_fee_id == 3
+    assert lookup.die_fee_amount == Decimal("0.500000")
+
+
+def test_gauge_fee_allocates_wan_over_wan_units() -> None:
+    row = SimpleNamespace(id=7, gauge_fee=Decimal("0.8"), allocation_qty=Decimal("10"))
+    repo = SimpleNamespace(get_effective_by_part=lambda db, **kwargs: row)
+    lookup = GaugeFeeResolver(gauge_fee_repo=repo).lookup(  # type: ignore[arg-type]
+        None,  # type: ignore[arg-type]
+        location="芜湖",
+        vehicle_model="T13J",
+        part_number="502008024AA",
+    )
+    assert lookup.gauge_fee_id == 7
+    assert lookup.gauge_fee_amount == Decimal("0.080000")
 
 
 def test_direct_cost_includes_die_and_gauge_fees() -> None:

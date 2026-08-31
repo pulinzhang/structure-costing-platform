@@ -9,9 +9,6 @@ import pytest
 from sqlalchemy.orm import Session, selectinload
 
 from app.models.stamping import StampingPart
-from app.repositories.stamping.stamping_process_fee_repository import (
-    StampingProcessFeeRepository,
-)
 from app.schemas.vo.stamping_part_cost_vo import StampingPartCostFailedItemVO
 from app.services.costing.steel_price.calc.models import (
     MaterialThicknessRow,
@@ -20,9 +17,10 @@ from app.services.costing.steel_price.calc.models import (
 from app.services.costing.steel_price.calc.steps.apply_adjustments import AdjustmentApplier
 from app.services.costing.steel_price.calc.steps.enrich_base_price import BasePriceEnricher
 from app.services.costing.stamping_part_cost.calc.constants import compute_finished_cost_stack
+from app.services.costing.stamping_part_cost.calc.fees.die import DieFeeResolver
+from app.services.costing.stamping_part_cost.calc.fees.gauge import GaugeFeeResolver
 from app.services.costing.stamping_part_cost.calc.part_calculator import PartCostCalculator
 from app.services.costing.stamping_part_cost.calc.resolvers import PriceResolver
-from app.services.costing.stamping_part_cost.calc.tooling_fees import lookup_tooling_fees
 from app.services.settings.system.settings_service import SettingsService
 
 YEAR = 2026
@@ -134,7 +132,6 @@ def test_stamping_part_cost_golden_wuhu_2026_01(db_session: Session) -> None:
     settings_svc = SettingsService()
     calculator = PartCostCalculator(
         price_resolver=_SteelFromPeriod(mill, steel_ton),  # type: ignore[arg-type]
-        fee_repo=StampingProcessFeeRepository(),
     )
     result = calculator.calc_part_cost(
         db_session,
@@ -161,15 +158,21 @@ def test_stamping_part_cost_golden_wuhu_2026_01(db_session: Session) -> None:
     assert result.loss_scrap_deduction == Decimal("0.008674")
     assert result.process_scrap_deduction == Decimal("1.495778")
     assert result.material_net_per_part == Decimal("4.403562")
-    tooling = lookup_tooling_fees(
+    die = DieFeeResolver().lookup(
         db_session,
         year=YEAR,
         location=LOCATION,
         vehicle_model=part.vehicle_model,
         part_number=part.part_number,
     )
-    assert result.die_fee_amount == tooling.die_fee_amount
-    assert result.gauge_fee_amount == tooling.gauge_fee_amount
+    gauge = GaugeFeeResolver().lookup(
+        db_session,
+        location=LOCATION,
+        vehicle_model=part.vehicle_model,
+        part_number=part.part_number,
+    )
+    assert result.die_fee_amount == die.die_fee_amount
+    assert result.gauge_fee_amount == gauge.gauge_fee_amount
     finance_rate = settings_svc.get_finished_finance_rate(db_session)
     management_rate = settings_svc.get_finished_management_rate(db_session)
     warehouse_packaging_rate = settings_svc.get_finished_warehouse_packaging_rate(db_session)
@@ -184,8 +187,8 @@ def test_stamping_part_cost_golden_wuhu_2026_01(db_session: Session) -> None:
     ) = compute_finished_cost_stack(
         material_net_per_part=Decimal("4.403562"),
         process_fee_amount=Decimal("1.508"),
-        die_fee_amount=tooling.die_fee_amount,
-        gauge_fee_amount=tooling.gauge_fee_amount,
+        die_fee_amount=die.die_fee_amount,
+        gauge_fee_amount=gauge.gauge_fee_amount,
         finance_rate=finance_rate,
         management_rate=management_rate,
         warehouse_packaging_rate=warehouse_packaging_rate,

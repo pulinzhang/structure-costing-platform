@@ -22,20 +22,18 @@ from app.models.costing import SteelPrice
 from app.models.stamping import StampingPart
 from app.models.stamping.tailor_weld_blank import StampingTailorWeldBlank
 from app.models.yishiyiyi import StampingScrapPrice
-from app.repositories.stamping.stamping_process_fee_repository import (
-    StampingProcessFeeRepository,
-)
 from app.schemas.dto.stamping_part_cost_dto import StampingPartCostCalcAmounts
 from app.schemas.vo.stamping_part_cost_vo import StampingPartCostFailedItemVO
 from app.services.costing.stamping_part_cost.calc.constants import (
     AMOUNT_QUANTIZE,
-    FEE_QUANTIZE,
     UTIL_QUANTIZE,
     compute_finished_cost_stack,
     quantize,
 )
+from app.services.costing.stamping_part_cost.calc.fees.die import DieFeeResolver
+from app.services.costing.stamping_part_cost.calc.fees.gauge import GaugeFeeResolver
+from app.services.costing.stamping_part_cost.calc.fees.process import ProcessFeeResolver
 from app.services.costing.stamping_part_cost.calc.resolvers import PriceResolver
-from app.services.costing.stamping_part_cost.calc.tooling_fees import lookup_tooling_fees
 from app.services.costing.stamping_part_cost.helpers import to_decimal
 
 
@@ -45,10 +43,14 @@ class TailorWeldPartCostCalculator:
     def __init__(
         self,
         price_resolver: PriceResolver | None = None,
-        fee_repo: StampingProcessFeeRepository | None = None,
+        process_fee_resolver: ProcessFeeResolver | None = None,
+        die_fee_resolver: DieFeeResolver | None = None,
+        gauge_fee_resolver: GaugeFeeResolver | None = None,
     ) -> None:
         self.price_resolver = price_resolver or PriceResolver()
-        self.fee_repo = fee_repo or StampingProcessFeeRepository()
+        self.process_fee_resolver = process_fee_resolver or ProcessFeeResolver()
+        self.die_fee_resolver = die_fee_resolver or DieFeeResolver()
+        self.gauge_fee_resolver = gauge_fee_resolver or GaugeFeeResolver()
 
     def calc_part_cost(
         self,
@@ -132,31 +134,18 @@ class TailorWeldPartCostCalculator:
         scrap_kg = blank_kg_total - finished_total_kg
         utilization = quantize((finished_total_kg / blank_kg_total) * Decimal("100"), UTIL_QUANTIZE)
 
-        fee = self.fee_repo.get_by_business_key(
+        process = self.process_fee_resolver.lookup(db, part=part, year=year, supplier=supplier)
+        if isinstance(process, StampingPartCostFailedItemVO):
+            return process
+        die = self.die_fee_resolver.lookup(
             db,
             year=year,
             location=part.location,
-            stamping_supplier=supplier,
             vehicle_model=part.vehicle_model,
-            version=part.version,
             part_number=part.part_number,
         )
-        if fee is None:
-            return StampingPartCostFailedItemVO(
-                part_number=part.part_number,
-                part_name=part.part_name,
-                reason="未找到对应加工费结果",
-            )
-        if fee.final_processing_fee is None:
-            return StampingPartCostFailedItemVO(
-                part_number=part.part_number,
-                part_name=part.part_name,
-                reason="加工费确认单价为空，请先完成加工费计算或录入其它费用",
-            )
-        process_fee_amount = quantize(Decimal(str(fee.final_processing_fee)), FEE_QUANTIZE)
-        tooling = lookup_tooling_fees(
+        gauge = self.gauge_fee_resolver.lookup(
             db,
-            year=year,
             location=part.location,
             vehicle_model=part.vehicle_model,
             part_number=part.part_number,
@@ -185,9 +174,9 @@ class TailorWeldPartCostCalculator:
             unit_cost,
         ) = compute_finished_cost_stack(
             material_net_per_part=material_net_per_part,
-            process_fee_amount=process_fee_amount,
-            die_fee_amount=tooling.die_fee_amount,
-            gauge_fee_amount=tooling.gauge_fee_amount,
+            process_fee_amount=process.process_fee_amount,
+            die_fee_amount=die.die_fee_amount,
+            gauge_fee_amount=gauge.gauge_fee_amount,
             finance_rate=finance_rate,
             management_rate=management_rate,
             warehouse_packaging_rate=warehouse_packaging_rate,
@@ -211,12 +200,12 @@ class TailorWeldPartCostCalculator:
             steel_ton_price=steel_ton_price,
             scrap_price_id=scrap.id,
             scrap_ton_price=scrap_ton_price,
-            process_fee_id=fee.id,
-            process_fee_amount=process_fee_amount,
-            die_fee_id=tooling.die_fee_id,
-            die_fee_amount=tooling.die_fee_amount,
-            gauge_fee_id=tooling.gauge_fee_id,
-            gauge_fee_amount=tooling.gauge_fee_amount,
+            process_fee_id=process.process_fee_id,
+            process_fee_amount=process.process_fee_amount,
+            die_fee_id=die.die_fee_id,
+            die_fee_amount=die.die_fee_amount,
+            gauge_fee_id=gauge.gauge_fee_id,
+            gauge_fee_amount=gauge.gauge_fee_amount,
             material_amount_sheet=material_amount_sheet,
             loss_scrap_deduction=loss_scrap_deduction,
             process_scrap_deduction=process_scrap_deduction,
