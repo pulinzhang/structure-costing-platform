@@ -119,6 +119,8 @@ class StampingDieFeeCalcResultVO(BaseModel):
     success_count: int
     skipped_no_die_count: int = 0
     failed_count: int = 0
+    missing_die_number_count: int = 0
+    missing_die_number_hints: list[str] = Field(default_factory=list)
     detail_text: str = ""
     started_at: str | None = None
     finished_at: str | None = None

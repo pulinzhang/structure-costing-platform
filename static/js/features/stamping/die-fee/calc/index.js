@@ -369,6 +369,9 @@ async function openProcessDrawer(logId) {
             </div>
             <div class="px-5 py-3 border-b border-[#222] text-[10px] text-[#777] shrink-0">
                 入库 ${fmtInt(log.success_count)} · 跳过 ${fmtInt(log.skipped_no_die_count)}
+                ${String(log.detail_text || '').includes('有尺寸但无模具编号')
+                    ? ' · <span class="text-[#ffb74d]">有长宽高无模具号（仅提示）</span>'
+                    : ''}
             </div>
             <div class="flex-1 overflow-y-auto p-5">
                 <pre class="text-[11px] font-mono text-[#9e9e9e] whitespace-pre-wrap bg-[#111111] border border-[#262626] p-4">${esc(log.detail_text || '（无过程文本）')}</pre>
@@ -475,10 +478,17 @@ function startPolling(taskId) {
             if (status === 'completed' || status === 'failed') {
                 stopPolling();
                 const result = data.result || {};
-                showToast(
-                    data.msg || (status === 'failed' ? '计算失败' : '计算完成'),
-                    status === 'failed' ? 'error' : 'success',
-                );
+                const missingCount = Number(result.missing_die_number_count) || 0;
+                if (status === 'failed') {
+                    showToast(data.msg || '计算失败', 'error');
+                } else if (missingCount > 0) {
+                    showToast(
+                        `计算完成。有 ${missingCount} 处工序已有长宽高但无模具号（未拦截，详见计算过程）`,
+                        'warning',
+                    );
+                } else {
+                    showToast(data.msg || '计算完成', 'success');
+                }
                 calcState.activeTaskId = null;
                 setCalculating(false);
                 loadCalcReady();

@@ -29,7 +29,7 @@ import { pageConfig as stampingPartsPage }  from './features/stamping/process/pa
 import { pageConfig as stampingDieUploadPage } from './features/stamping/die/upload/index.js?v=4';
 import { pageConfig as stampingDieListPage } from './features/stamping/die/list/index.js?v=8';
 import { pageConfig as stampingDieUnitPricePage } from './features/stamping/die/unit-price/index.js?v=5';
-import { pageConfig as stampingDieFeeCalcPage } from './features/stamping/die-fee/calc/index.js?v=2';
+import { pageConfig as stampingDieFeeCalcPage } from './features/stamping/die-fee/calc/index.js?v=3';
 import { pageConfig as stampingDieFeePage } from './features/stamping/die-fee/list/index.js?v=6';
 import { pageConfig as stampingGaugeFeeUploadPage } from './features/stamping/gauge-fee/upload/index.js?v=4';
 import { pageConfig as stampingGaugeFeePage } from './features/stamping/gauge-fee/list/index.js?v=9';

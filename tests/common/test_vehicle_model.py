@@ -13,6 +13,7 @@ def test_normalize_vehicle_model_strips_chinese_prefix_and_suffix() -> None:
     assert normalize_vehicle_model("青岛T28") == "T28"
     assert normalize_vehicle_model("T28样例") == "T28"
     assert normalize_vehicle_model("T28") == "T28"
+    assert normalize_vehicle_model("②T13J") == "T13J"
     assert normalize_vehicle_model("  青岛 T28  ") == "T28"
     assert normalize_vehicle_model("青岛") is None
     assert normalize_vehicle_model(None) is None

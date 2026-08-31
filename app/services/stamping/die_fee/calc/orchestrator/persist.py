@@ -12,6 +12,9 @@ from app.schemas.vo.user_vo import UserVO
 from app.services.stamping.die_fee.calc.constants import STATUS_SUCCESS
 from app.services.stamping.die_fee.calc.orchestrator.batch_engine import BatchCalcOutcome
 from app.services.stamping.die_fee.calc.orchestrator.deps import DieFeeCalcDeps
+from app.services.stamping.die_fee.calc.orchestrator.missing_die_number import (
+    format_missing_die_number_section,
+)
 from app.services.stamping.die_fee.calc.orchestrator.prep import CalcPrepContext
 from app.services.stamping.die_fee.calc.orchestrator.progress import ProgressNotifier
 
@@ -47,6 +50,9 @@ def persist_calc_result(
     detail_lines.append(
         f"入库 {batch.success_count}，跳过（无模具信息或系统费≤0）{batch.skipped_no_die_count}"
     )
+    hint_section = format_missing_die_number_section(batch.missing_die_number_hints)
+    if hint_section:
+        detail_lines.append(hint_section)
     finished_at = now()
     result = StampingDieFeeCalcResultVO(
         year=dto.year,
@@ -61,6 +67,8 @@ def persist_calc_result(
         success_count=batch.success_count,
         skipped_no_die_count=batch.skipped_no_die_count,
         failed_count=0,
+        missing_die_number_count=len(batch.missing_die_number_hints),
+        missing_die_number_hints=batch.missing_die_number_hints[:30],
         detail_text="\n".join(detail_lines),
         started_at=ctx.started_at.isoformat(timespec="seconds"),
         finished_at=finished_at.isoformat(timespec="seconds"),

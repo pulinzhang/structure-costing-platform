@@ -6,19 +6,22 @@ import re
 
 # CJK 统一表意文字及扩展区（剔除中文前缀如「青岛」、后缀如「样例」）
 _CJK_RE = re.compile(r"[\u2e80-\u9fff\u3400-\u4dbf\uf900-\ufaff]")
+# 文件名序号 ①–⑳（不含业务代号）
+_ENCLOSED_NUM_RE = re.compile(r"[\u2460-\u2473]")
 
 
 def normalize_vehicle_model(value: str | None) -> str | None:
     """
-      将解析出的车型代号归一化为无中文的代号。
+      将解析出的车型代号归一化为无中文、无圈号序号的代号。
 
-      例：青岛T28 → T28，T28样例 → T28，T28 → T28。
-    车型代号业务上不含中文；剔除 CJK 后若为空则返回 None。
+      例：青岛T28 → T28，②T13J → T13J，T28样例 → T28。
+    车型代号业务上不含中文；剔除 CJK 与 ①–⑳ 后若为空则返回 None。
     """
     if value is None:
         return None
     text = str(value).strip()
     if not text:
         return None
-    normalized = _CJK_RE.sub("", text).strip(" -_—/\\")
+    normalized = _CJK_RE.sub("", text)
+    normalized = _ENCLOSED_NUM_RE.sub("", normalized).strip(" -_—/\\")
     return normalized or None

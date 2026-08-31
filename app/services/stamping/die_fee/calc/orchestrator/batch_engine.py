@@ -14,6 +14,9 @@ from app.schemas.dto.stamping_die_fee_dto import (
 )
 from app.schemas.vo.user_vo import UserVO
 from app.services.stamping.die_fee.calc.orchestrator.identity import matches_part
+from app.services.stamping.die_fee.calc.orchestrator.missing_die_number import (
+    collect_missing_die_number_hints,
+)
 from app.services.stamping.die_fee.calc.orchestrator.prep import CalcPrepContext
 from app.services.stamping.die_fee.calc.orchestrator.progress import ProgressNotifier
 from app.services.stamping.die_fee.calc.part_calculator import DieFeePartCalculator
@@ -26,6 +29,7 @@ class BatchCalcOutcome:
     insert_rows: list[DieFeeInsertPayload] = field(default_factory=list)
     success_count: int = 0
     skipped_no_die_count: int = 0
+    missing_die_number_hints: list[str] = field(default_factory=list)
 
 
 class BatchCalculationEngine:
@@ -59,6 +63,7 @@ class BatchCalculationEngine:
                 stamping_supplier=dto.stamping_supplier,
                 version=dto.version,
             ):
+                outcome.missing_die_number_hints.extend(collect_missing_die_number_hints(part))
                 if calculated is None:
                     outcome.skipped_no_die_count += 1
                 else:
