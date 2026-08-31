@@ -30,7 +30,7 @@
 | 文档 | 状态 |
 |------|------|
 | [bom-annual-part-prices-design.md](bom/bom-annual-part-prices-design.md) | 年度零件价（已上线） |
-| [bom-procurement-objects-design.md](bom/bom-procurement-objects-design.md) | 采购对象清单（草案）：退化 L0 / L1 分总成 / L1 冲压件，生成落库、检测、确认 |
+| [bom-procurement-objects-design.md](bom/bom-procurement-objects-design.md) | 采购对象清单（已落地）：退化供货件 / 分总成 / 冲压件，生成落库、检测、确认 |
 
 ## 一事一议 `yishiyiyi/`
 
