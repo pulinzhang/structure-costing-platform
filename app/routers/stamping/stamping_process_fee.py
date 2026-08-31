@@ -322,6 +322,7 @@ def export_download(
         version=version.strip() if version else None,
         part_number=part_number.strip() if part_number else None,
         audit_status=audit_status.strip() if audit_status else None,
+        current_user=current_user,
     )
     return StreamingResponse(
         iter([content]),

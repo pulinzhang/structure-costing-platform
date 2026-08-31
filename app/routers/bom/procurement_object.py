@@ -155,7 +155,7 @@ def export_excel(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BOM_PROCUREMENT_OBJECT_LIST_EXPORT)),
 ) -> StreamingResponse:
-    content, filename = _export_service.export_excel(db, query)
+    content, filename = _export_service.export_excel(db, query, current_user)
     encoded = quote(filename)
     return StreamingResponse(
         iter([content]),

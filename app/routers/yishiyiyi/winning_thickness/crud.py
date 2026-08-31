@@ -124,6 +124,7 @@ def export_download(
         steel_mill=steel_mill,
         category_name=category_name,
         grade=grade,
+        current_user=current_user,
     )
 
     return StreamingResponse(

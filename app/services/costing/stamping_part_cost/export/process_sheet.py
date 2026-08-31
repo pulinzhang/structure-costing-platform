@@ -6,13 +6,13 @@ from typing import Any
 
 import logging
 from decimal import Decimal
-from io import BytesIO
 
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from sqlalchemy.orm import Session
 
 from app.common.excel_workbook import resolve_worksheet
+from app.common.export_watermark import workbook_to_xlsx_bytes
 from app.common.timezone import now
 from app.repositories.bom.bom_repository import BomNodeRepository, BomSnapshotRepository
 from app.repositories.stamping.stamping_process_fee_repository import (
@@ -22,6 +22,7 @@ from app.repositories.yishiyiyi.scrap_price.scrap_price_repository import (
     StampingScrapPriceRepository,
 )
 from app.repositories.costing.steel_price.steel_price_repository import SteelPriceRepository
+from app.schemas.vo.user_vo import UserVO
 from app.services.costing.stamping_part_cost.export.bom_resolver import (
     resolve_assembly_supply_no,
 )
@@ -984,6 +985,7 @@ def export_process_sheet(
     stamping_supplier: str | None = None,
     vehicle_model: str | None = None,
     version: str | None = None,
+    current_user: UserVO,
 ) -> tuple[bytes, str]:
     """
     工艺清单口径：对齐样例至 R 列 + 加工费 + 模具费 + 检具费 + 成品费率费用 + 最终价。
@@ -1012,8 +1014,7 @@ def export_process_sheet(
         version=version,
     )
 
-    buffer = BytesIO()
-    workbook.save(buffer)
+    content = workbook_to_xlsx_bytes(workbook, current_user)
     filename = build_process_sheet_filename(
         rows,
         year=year,
@@ -1024,4 +1025,4 @@ def export_process_sheet(
         version=version,
     )
     logger.info("导出冲压零件核价结果 %s 条 → %s", len(rows), filename)
-    return buffer.getvalue(), filename
+    return content, filename

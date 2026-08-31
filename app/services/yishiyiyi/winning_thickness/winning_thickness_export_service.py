@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
+from app.schemas.vo.user_vo import UserVO
 from app.schemas.vo.winning_thickness_vo import WinningThicknessRowVO
 from app.services.yishiyiyi.winning_thickness.assemble.row_assembler import (
     WinningThicknessRowAssembler,
@@ -96,6 +97,7 @@ class WinningThicknessExportService:
         steel_mill: str | None = None,
         category_name: str | None = None,
         grade: str | None = None,
+        current_user: UserVO,
     ) -> tuple[bytes, str]:
         rows = self.build_rows(
             db,
@@ -106,4 +108,6 @@ class WinningThicknessExportService:
             category_name=category_name,
             grade=grade,
         )
-        return self._exporter.generate(rows, year=year, month=month, location=location)
+        return self._exporter.generate(
+            rows, year=year, month=month, location=location, current_user=current_user
+        )

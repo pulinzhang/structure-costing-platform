@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime
-from io import BytesIO
 from typing import Any
 from urllib.parse import unquote
 
@@ -13,6 +12,7 @@ from openpyxl.styles import Alignment, Font, PatternFill
 from sqlalchemy.orm import Session
 
 from app.common.audit import display_name
+from app.common.export_watermark import workbook_to_xlsx_bytes
 from app.common.operation_log.rules import (
     build_summary,
     infer_action,
@@ -127,6 +127,7 @@ class OperationLogService:
         success: bool | None = None,
         created_from: datetime | None = None,
         created_to: datetime | None = None,
+        current_user: UserVO,
     ) -> tuple[bytes, str]:
         rows = self.repository.list_for_export(
             db,
@@ -191,7 +192,6 @@ class OperationLogService:
                 max_len = max(max_len, len(str(cell.value or "")))
             ws.column_dimensions[letter].width = min(max(max_len + 2, 10), 48)
 
-        buffer = BytesIO()
-        wb.save(buffer)
+        content = workbook_to_xlsx_bytes(wb, current_user)
         stamp = now().strftime("%Y%m%d_%H%M%S")
-        return buffer.getvalue(), f"操作日志_{stamp}.xlsx"
+        return content, f"操作日志_{stamp}.xlsx"

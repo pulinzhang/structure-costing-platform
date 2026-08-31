@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from datetime import datetime
-from io import BytesIO
 from typing import Protocol, cast
 
 from openpyxl import Workbook
@@ -12,10 +11,12 @@ from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.worksheet import Worksheet
 from sqlalchemy.orm import Session
 
+from app.common.export_watermark import workbook_to_xlsx_bytes
 from app.common.timezone import now
 from app.models.bom.procurement_object import BomProcurementObject
 from app.repositories.bom.procurement_object_repository import BomProcurementObjectRepository
 from app.schemas.dto.bom_procurement_object_dto import BomProcurementObjectQuery
+from app.schemas.vo.user_vo import UserVO
 from app.services.bom.procurement_object.classify import (
     SECTION_ANOMALY,
     SECTION_OBJECT,
@@ -203,7 +204,12 @@ class BomProcurementObjectExportService:
     def __init__(self) -> None:
         self.repository = BomProcurementObjectRepository()
 
-    def export_excel(self, db: Session, query: BomProcurementObjectQuery) -> tuple[bytes, str]:
+    def export_excel(
+        self,
+        db: Session,
+        query: BomProcurementObjectQuery,
+        current_user: UserVO,
+    ) -> tuple[bytes, str]:
         rows = self.repository.list_objects_for_export(
             db,
             location=query.location,
@@ -233,10 +239,9 @@ class BomProcurementObjectExportService:
             sheet.sheet_properties.tabColor = tab_color
             self._write_data_sheet(sheet, sheet_rows, query, stamp, title)
 
-        buffer = BytesIO()
-        workbook.save(buffer)
+        content = workbook_to_xlsx_bytes(workbook, current_user)
         filename = self._filename(query, stamp)
-        return buffer.getvalue(), filename
+        return content, filename
 
     def _write_data_sheet(
         self,

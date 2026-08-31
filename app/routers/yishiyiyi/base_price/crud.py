@@ -177,6 +177,7 @@ def export_download(
         category_name=category_name,
         grade=grade,
         spec=spec,
+        current_user=current_user,
     )
     return StreamingResponse(
         iter([content]),

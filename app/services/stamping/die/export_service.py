@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from decimal import Decimal
-from io import BytesIO
 
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
@@ -11,10 +10,12 @@ from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.worksheet import Worksheet
 from sqlalchemy.orm import Session
 
+from app.common.export_watermark import workbook_to_xlsx_bytes
 from app.common.money import Q2, Q4, excel_money_cell
 from app.common.timezone import now
 from app.common.vehicle_model import normalize_vehicle_model
 from app.exceptions.base import BusinessException
+from app.schemas.vo.user_vo import UserVO
 from app.models.stamping.die import StampingDiePart, StampingDieProcess
 from app.repositories.stamping.stamping_die_repository import StampingDiePartRepository
 
@@ -98,6 +99,7 @@ class StampingDieExportService:
         stamping_supplier: str | None = None,
         version: str | None = None,
         part_number: str | None = None,
+        current_user: UserVO,
     ) -> tuple[bytes, str]:
         loc = (location or "").strip()
         vehicle = normalize_vehicle_model(vehicle_model) or ""
@@ -161,8 +163,7 @@ class StampingDieExportService:
         if last_row >= DATA_START_ROW:
             sheet.print_area = f"A1:{get_column_letter(COL_COUNT)}{last_row}"
 
-        buffer = BytesIO()
-        workbook.save(buffer)
+        content = workbook_to_xlsx_bytes(workbook, current_user)
         stamp = now().strftime("%Y%m%d_%H%M%S")
         extra = ""
         if supplier:
@@ -170,7 +171,7 @@ class StampingDieExportService:
         if version_value:
             extra += f"_{version_value}"
         filename = f"冲压模具布点工艺清单_{loc}_{vehicle}{extra}_{stamp}.xlsx"
-        return buffer.getvalue(), filename
+        return content, filename
 
     def _write_banner(
         self,

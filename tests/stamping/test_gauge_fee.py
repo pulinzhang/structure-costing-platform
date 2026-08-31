@@ -338,6 +338,7 @@ def test_export_includes_location_and_vehicle(memory_db: Session) -> None:
         vehicle_model=VEHICLE,
         part_number=None,
         status=None,
+        current_user=SYSTEM_USER,
     )
     assert LOCATION in filename
     assert VEHICLE in filename

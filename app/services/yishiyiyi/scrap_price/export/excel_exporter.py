@@ -13,7 +13,6 @@ from __future__ import annotations
 
 import logging
 from decimal import Decimal
-from io import BytesIO
 from typing import Any
 
 from openpyxl import Workbook
@@ -22,9 +21,11 @@ from openpyxl.comments import Comment
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 
+from app.common.export_watermark import workbook_to_xlsx_bytes
 from app.common.money import Q2, excel_money_cell, parse_decimal
 from app.common.scrap_price_locations import SCRAP_PRICE_LOCATIONS
 from app.common.timezone import now
+from app.schemas.vo.user_vo import UserVO
 
 logger = logging.getLogger("service.stamping_scrap_price.export.excel")
 
@@ -117,6 +118,7 @@ class StampingScrapPriceExporter:
         records_by_year: dict[int, list[Any]],
         *,
         year_filter: int | None = None,
+        current_user: UserVO,
     ) -> tuple[bytes, str]:
         wb = Workbook()
         ws = wb.worksheets[0]
@@ -140,9 +142,7 @@ class StampingScrapPriceExporter:
         for col in range(2, 14):
             ws.column_dimensions[get_column_letter(col)].width = 11
 
-        buffer = BytesIO()
-        wb.save(buffer)
-        content = buffer.getvalue()
+        content = workbook_to_xlsx_bytes(wb, current_user)
 
         stamp = now().strftime("%Y%m%d_%H%M%S")
         if year_filter is not None:

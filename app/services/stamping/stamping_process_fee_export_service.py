@@ -7,7 +7,6 @@
 from __future__ import annotations
 
 import logging
-from io import BytesIO
 from typing import Any
 
 from openpyxl import Workbook
@@ -18,6 +17,7 @@ from sqlalchemy.orm import Session
 from app.common.audit import audit_status_label
 from app.common.excel_workbook import resolve_worksheet
 from app.common.export_filters import require_at_least_one_export_filter
+from app.common.export_watermark import workbook_to_xlsx_bytes
 from app.common.money import Q3, Q4, excel_money_cell
 from app.common.timezone import now
 from app.models.stamping.process_fee import StampingProcessFee
@@ -25,6 +25,7 @@ from app.models.stamping.process_fee_item import StampingProcessFeeItem
 from app.repositories.stamping.stamping_process_fee_repository import (
     StampingProcessFeeRepository,
 )
+from app.schemas.vo.user_vo import UserVO
 
 
 logger = logging.getLogger("service.stamping_process_fee_export")
@@ -142,6 +143,7 @@ class StampingProcessFeeExportService:
         version: str | None = None,
         part_number: str | None = None,
         audit_status: str | None = None,
+        current_user: UserVO,
     ) -> tuple[bytes, str]:
         require_at_least_one_export_filter(
             year,
@@ -165,9 +167,7 @@ class StampingProcessFeeExportService:
             audit_status=audit_status,
         )
 
-        buffer = BytesIO()
-        wb.save(buffer)
-        content = buffer.getvalue()
+        content = workbook_to_xlsx_bytes(wb, current_user)
 
         stamp = now().strftime("%Y%m%d_%H%M%S")
         parts = ["冲压加工费"]

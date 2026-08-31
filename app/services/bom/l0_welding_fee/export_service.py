@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-from io import BytesIO
 from typing import Any
 
 from openpyxl import Workbook
@@ -14,10 +13,12 @@ from sqlalchemy.orm import Session
 from app.common.audit import audit_status_label
 from app.common.excel_workbook import resolve_worksheet
 from app.common.export_filters import require_at_least_one_export_filter
+from app.common.export_watermark import workbook_to_xlsx_bytes
 from app.common.money import Q4, excel_money_cell
 from app.common.timezone import now
 from app.models.bom import BomL0WeldingFee
 from app.repositories.bom.l0_welding_fee_repository import BomL0WeldingFeeRepository
+from app.schemas.vo.user_vo import UserVO
 from app.repositories.bom.welding_process_breakdown_repository import (
     BomWeldingProcessBreakdownRepository,
 )
@@ -246,6 +247,7 @@ class BomL0WeldingFeeExportService:
         part_number: str | None = None,
         audit_status: str | None = None,
         calc_status: str | None = None,
+        current_user: UserVO,
     ) -> tuple[bytes, str]:
         require_at_least_one_export_filter(
             year,
@@ -271,9 +273,7 @@ class BomL0WeldingFeeExportService:
         # header_row is always 5 (banner 1–3 + group 4 + headers 5)
         export_row_count = max(0, wb.worksheets[0].max_row - 5)
 
-        buffer = BytesIO()
-        wb.save(buffer)
-        content = buffer.getvalue()
+        content = workbook_to_xlsx_bytes(wb, current_user)
 
         scope_parts = [
             str(year) if year else None,

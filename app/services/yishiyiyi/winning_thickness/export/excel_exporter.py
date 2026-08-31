@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import logging
-from io import BytesIO
 
 from openpyxl import Workbook
 
+from app.common.export_watermark import workbook_to_xlsx_bytes
 from app.common.timezone import now
+from app.schemas.vo.user_vo import UserVO
 from app.schemas.vo.winning_thickness_vo import WinningThicknessRowVO
 from app.services.yishiyiyi.winning_thickness.export.calc_sheet import write_calc_sheet
 from app.services.yishiyiyi.winning_thickness.export.example_sheet import write_example_sheet
@@ -39,6 +40,7 @@ class WinningThicknessExporter:
         year: int,
         month: int,
         location: str,
+        current_user: UserVO,
     ) -> tuple[bytes, str]:
         export_rows = filter_rows_for_export(rows)
         if len(export_rows) != len(rows):
@@ -86,11 +88,10 @@ class WinningThicknessExporter:
         write_example_sheet(example_sheet, export_rows, meta)
 
         filename = build_filename(year=year, month=month, location=location)
-        output = BytesIO()
-        wb.save(output)
+        content = workbook_to_xlsx_bytes(wb, current_user)
         logger.info(
             "导出中标钢厂厚度价格一览表完成: filename=%s rows=%d",
             filename,
             len(export_rows),
         )
-        return output.getvalue(), filename
+        return content, filename

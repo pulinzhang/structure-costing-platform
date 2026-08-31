@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.repositories.yishiyiyi.base_price import SteelBasePriceRepository
 from app.schemas.vo.steel_base_price_vo import SteelBasePriceExportRow
+from app.schemas.vo.user_vo import UserVO
 from app.services.yishiyiyi.base_price.export.excel_exporter import (
     SteelBasePriceExporter,
 )
@@ -77,6 +78,7 @@ class SteelBasePriceExportService:
         category_name: str | None = None,
         grade: str | None = None,
         spec: str | None = None,
+        current_user: UserVO,
     ) -> tuple[bytes, str]:
         """
         生成基准价格 Excel 导出文件。
@@ -100,4 +102,5 @@ class SteelBasePriceExportService:
             month=month,
             location=location,
             steel_mill=steel_mill,
+            current_user=current_user,
         )

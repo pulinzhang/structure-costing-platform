@@ -18,12 +18,14 @@ from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 from sqlalchemy.orm import Session
 
+from app.common.export_watermark import workbook_to_xlsx_bytes
 from app.common.money import Q2, Q4, excel_money_cell
 from app.common.timezone import now
 from app.config import settings
 from app.exceptions import BusinessException
 from app.models.stamping import StampingPart, StampingProcess, StampingTailorWeldBlank
 from app.repositories.stamping.stamping_part_repository import StampingPartRepository
+from app.schemas.vo.user_vo import UserVO
 
 logger = logging.getLogger("service.stamping.part_export")
 
@@ -103,6 +105,7 @@ class StampingPartExportService:
         vehicle_model: str | None = None,
         version: str | None = None,
         part_number: str | None = None,
+        current_user: UserVO,
     ) -> tuple[bytes, str]:
         location = location.strip()
         stamping_supplier = (stamping_supplier or "").strip() or None
@@ -178,10 +181,8 @@ class StampingPartExportService:
         ws.sheet_view.showGridLines = False
         ws.sheet_view.zoomScale = 90
 
-        buffer = BytesIO()
         try:
-            wb.save(buffer)
-            content = buffer.getvalue()
+            content = workbook_to_xlsx_bytes(wb, current_user)
         finally:
             sketch_buffers.clear()
 

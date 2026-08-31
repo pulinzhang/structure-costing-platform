@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 import logging
-from io import BytesIO
 from typing import Any
 
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 
+from app.common.export_watermark import workbook_to_xlsx_bytes
 from app.common.money import Q2, excel_money_cell, quantize_money
+from app.schemas.vo.user_vo import UserVO
 
 logger = logging.getLogger("service.steel_base_price.export.excel")
 
@@ -25,6 +26,7 @@ class SteelBasePriceExporter:
         month: int | None = None,
         location: str | None = None,
         steel_mill: str | None = None,
+        current_user: UserVO,
     ) -> tuple[bytes, str]:
         wb = Workbook()
         ws = wb.worksheets[0]
@@ -145,12 +147,10 @@ class SteelBasePriceExporter:
         if steel_mill:
             parts.append(steel_mill)
         filename = "_".join(parts) + ".xlsx"
-
-        output = BytesIO()
-        wb.save(output)
+        content = workbook_to_xlsx_bytes(wb, current_user)
         logger.info(
             "导出基准价格 Excel 完成: filename=%s, records=%d",
             filename,
             len(records),
         )
-        return output.getvalue(), filename
+        return content, filename

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from datetime import datetime
-from io import BytesIO
 
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
@@ -11,11 +10,13 @@ from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.worksheet import Worksheet
 from sqlalchemy.orm import Session
 
+from app.common.export_watermark import workbook_to_xlsx_bytes
 from app.common.money import Q0, Q4, excel_money_cell
 from app.common.timezone import now
 from app.common.vehicle_model import normalize_vehicle_model
 from app.models.stamping.gauge_fee import STATUS_EFFECTIVE, STATUS_INVALID, StampingGaugeFee
 from app.repositories.stamping.gauge_fee_repository import StampingGaugeFeeRepository
+from app.schemas.vo.user_vo import UserVO
 
 _COL_COUNT = 7
 _DATA_START = 5
@@ -60,6 +61,7 @@ class StampingGaugeFeeExportService:
         vehicle_model: str | None,
         part_number: str | None,
         status: str | None,
+        current_user: UserVO,
     ) -> tuple[bytes, str]:
         loc = (location or "").strip() or None
         vehicle = normalize_vehicle_model(vehicle_model) if vehicle_model else None
@@ -96,15 +98,14 @@ class StampingGaugeFeeExportService:
         sheet.print_title_rows = "1:4"
         sheet.print_area = f"A1:{get_column_letter(_COL_COUNT)}{last_row}"
 
-        buffer = BytesIO()
-        workbook.save(buffer)
+        content = workbook_to_xlsx_bytes(workbook, current_user)
         name_parts = ["冲压检具费"]
         if loc:
             name_parts.append(loc)
         if vehicle:
             name_parts.append(vehicle)
         filename = "_".join(name_parts) + f"_{stamp.strftime('%Y%m%d_%H%M%S')}.xlsx"
-        return buffer.getvalue(), filename
+        return content, filename
 
     def _write_banner(
         self,

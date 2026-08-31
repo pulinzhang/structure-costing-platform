@@ -95,7 +95,7 @@ def export_steel_grade_categories(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STEEL_GRADE_CATEGORY_EXPORT)),
 ) -> StreamingResponse:
-    content, filename = _export_service.export(db, query)
+    content, filename = _export_service.export(db, query, current_user)
     return StreamingResponse(
         iter([content]),
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

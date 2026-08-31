@@ -46,6 +46,7 @@ def export_policies_excel(
         steel_mill=steel_mill,
         category_name=category_name.strip() if category_name else None,
         grade_value=grade_value.strip() if grade_value else None,
+        current_user=current_user,
     )
 
     return StreamingResponse(

@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from app.models.yishiyiyi import SteelPriceLadderItem, SteelPricePolicy
 from app.repositories.yishiyiyi.policy import SteelPricePolicyRepository
 from app.repositories.yishiyiyi.policy.dto import ExportRow
+from app.schemas.vo.user_vo import UserVO
 from app.services.yishiyiyi.policy.export.excel_exporter import SteelPricePolicyExporter
 from app.services.yishiyiyi.policy.filter_resolver import resolve_policy_category_filter
 
@@ -187,6 +188,7 @@ class SteelPricePolicyExportService:
         steel_mill: str | None = None,
         category_name: str | None = None,
         grade_value: str | None = None,
+        current_user: UserVO,
     ) -> tuple[bytes, str]:
         """
         生成导出 Excel 文件字节数据。
@@ -215,4 +217,5 @@ class SteelPricePolicyExportService:
             year=year,
             month=month,
             steel_mill=steel_mill,
+            current_user=current_user,
         )

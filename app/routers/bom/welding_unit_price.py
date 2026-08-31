@@ -127,6 +127,7 @@ def export_excel(
         db,
         location=location.strip() if location else None,
         year=year,
+        current_user=current_user,
     )
     return StreamingResponse(
         iter([content]),

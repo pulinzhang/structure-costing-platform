@@ -247,6 +247,7 @@ def test_export_workbook_has_styled_sheets_without_cover(db: Session) -> None:
     content, filename = BomProcurementObjectExportService().export_excel(
         db,
         BomProcurementObjectQuery(location="芜湖", vehicle_model="T13J", bom_version="V3"),
+        SYSTEM_USER,
     )
     assert filename.startswith("采购对象清单_芜湖_T13J_V3_")
     assert filename.endswith(".xlsx")
@@ -297,6 +298,7 @@ def test_export_merges_same_l0_assembly_cells(db: Session) -> None:
     content, _filename = BomProcurementObjectExportService().export_excel(
         db,
         BomProcurementObjectQuery(location="芜湖", vehicle_model="T13J", bom_version="V3"),
+        SYSTEM_USER,
     )
     workbook = load_workbook(BytesIO(content))
     object_sheet = workbook["采购对象"]

@@ -107,6 +107,7 @@ def export_download(
         part_number=part_number.strip() if part_number else None,
         audit_status=audit_status.strip() if audit_status else None,
         calc_status=calc_status.strip() if calc_status else None,
+        current_user=current_user,
     )
     return StreamingResponse(
         iter([content]),

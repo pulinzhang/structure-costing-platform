@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime
-from io import BytesIO
 from typing import Any
 
 from openpyxl import Workbook
@@ -18,12 +17,14 @@ from sqlalchemy.orm import Session
 from app.common.audit import audit_status_label
 from app.common.excel_workbook import resolve_worksheet
 from app.common.export_filters import require_at_least_one_export_filter
+from app.common.export_watermark import workbook_to_xlsx_bytes
 from app.common.money import Q4, excel_money_cell
 from app.common.timezone import now
 from app.models.costing.l0_assembly_cost import L0AssemblyCost
 from app.repositories.costing.l0_assembly_cost.l0_assembly_cost_repository import (
     L0AssemblyCostRepository,
 )
+from app.schemas.vo.user_vo import UserVO
 
 logger = logging.getLogger("service.l0_assembly_cost.export")
 
@@ -108,6 +109,7 @@ class L0AssemblyCostExportService:
         part_number: str | None = None,
         audit_status: str | None = None,
         calc_status: str | None = None,
+        current_user: UserVO,
     ) -> tuple[bytes, str]:
         require_at_least_one_export_filter(
             year,
@@ -143,15 +145,13 @@ class L0AssemblyCostExportService:
         scope = "_".join(p for p in scope_parts if p) or "筛选"
         stamp = now().strftime("%Y%m%d_%H%M%S")
         filename = f"成品核价_{scope}_{stamp}.xlsx"
-
-        output = BytesIO()
-        wb.save(output)
+        content = workbook_to_xlsx_bytes(wb, current_user)
         logger.info(
             "导出成品核价 Excel: filename=%s records=%d",
             filename,
             record_count,
         )
-        return output.getvalue(), filename
+        return content, filename
 
     def write_to_workbook(
         self,

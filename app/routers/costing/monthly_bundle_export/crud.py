@@ -46,6 +46,7 @@ def export_download(
         vehicle_model=vehicle_model,
         bom_version=bom_version,
         stamping_supplier=stamping_supplier,
+        current_user=current_user,
     )
     return StreamingResponse(
         iter([content]),

@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 import logging
-from io import BytesIO
 
 from openpyxl import Workbook
 from sqlalchemy.orm import Session
 
+from app.common.export_watermark import workbook_to_xlsx_bytes
 from app.common.timezone import now
 from app.exceptions.base import BusinessException
+from app.schemas.vo.user_vo import UserVO
 from app.services.bom.annual_part_price_export_service import BomAnnualPartPriceExportService
 from app.services.bom.packaging_transport_fee_export_service import (
     BomPackagingTransportFeeExportService,
@@ -56,6 +57,7 @@ class MonthlyBundleExportService:
         vehicle_model: str,
         bom_version: str,
         stamping_supplier: str | None = None,
+        current_user: UserVO,
     ) -> tuple[bytes, str]:
         """
         生成合册 Excel。
@@ -156,11 +158,10 @@ class MonthlyBundleExportService:
         filename = (
             f"核对合册_{year}年{month}月_{location}_" f"{vehicle_model}_{safe_version}_{stamp}.xlsx"
         )
-        output = BytesIO()
-        wb.save(output)
+        content = workbook_to_xlsx_bytes(wb, current_user)
         logger.info(
             "月度核对合册导出完成: filename=%s sheets=%s",
             filename,
             sheet_counts,
         )
-        return output.getvalue(), filename
+        return content, filename

@@ -17,6 +17,7 @@ from app.repositories.costing.stamping_part_cost.stamping_part_cost_repository i
     StampingPartCostRepository,
 )
 from app.repositories.costing.steel_price.steel_price_repository import SteelPriceRepository
+from app.schemas.vo.user_vo import UserVO
 from app.services.costing.stamping_part_cost.export.process_sheet import (
     export_process_sheet,
     write_process_sheet_to_workbook,
@@ -46,6 +47,7 @@ class StampingPartCostExportService:
         version: str | None = None,
         part_number: str | None = None,
         audit_status: str | None = None,
+        current_user: UserVO,
     ) -> tuple[bytes, str]:
         require_at_least_one_export_filter(
             year,
@@ -82,6 +84,7 @@ class StampingPartCostExportService:
             stamping_supplier=stamping_supplier,
             vehicle_model=vehicle_model,
             version=version,
+            current_user=current_user,
         )
 
     def write_to_workbook(

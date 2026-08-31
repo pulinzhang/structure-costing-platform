@@ -102,6 +102,7 @@ def export_excel(
         location=location.strip() if location else None,
         year=year,
         vehicle_model=vehicle_model.strip() if vehicle_model else None,
+        current_user=current_user,
     )
     return StreamingResponse(
         iter([content]),

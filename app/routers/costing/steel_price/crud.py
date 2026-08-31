@@ -160,6 +160,7 @@ def export_download(
         grade=grade.strip() if grade else None,
         steel_mill=steel_mill.strip() if steel_mill else None,
         audit_status=audit_status.strip() if audit_status else None,
+        current_user=current_user,
     )
     return StreamingResponse(
         iter([content]),

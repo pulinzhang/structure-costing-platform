@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime
-from io import BytesIO
 
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
@@ -12,9 +11,11 @@ from openpyxl.utils import get_column_letter
 from sqlalchemy.orm import Session
 
 from app.common.excel_workbook import resolve_worksheet
+from app.common.export_watermark import workbook_to_xlsx_bytes
 from app.common.timezone import now
 from app.repositories.yishiyiyi.steel_grade_category import SteelGradeCategoryRepository
 from app.schemas.dto.steel_grade_category_dto import SteelGradeCategoryExportQuery
+from app.schemas.vo.user_vo import UserVO
 
 logger = logging.getLogger("service.steel_grade_category.export")
 
@@ -47,6 +48,7 @@ class SteelGradeCategoryExportService:
         self,
         db: Session,
         query: SteelGradeCategoryExportQuery,
+        current_user: UserVO,
     ) -> tuple[bytes, str]:
         records = self.repository.list_for_export(
             db,
@@ -118,9 +120,7 @@ class SteelGradeCategoryExportService:
         last_row = max(1, len(records) + 1)
         ws.auto_filter.ref = f"A1:I{last_row}"
 
-        buffer = BytesIO()
-        wb.save(buffer)
-        content = buffer.getvalue()
+        content = workbook_to_xlsx_bytes(wb, current_user)
 
         stamp = now().strftime("%Y%m%d_%H%M%S")
         filename = f"牌号分类_{stamp}.xlsx"

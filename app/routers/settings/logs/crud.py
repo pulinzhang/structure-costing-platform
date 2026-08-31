@@ -64,6 +64,7 @@ def export_operation_logs(
         success=success,
         created_from=created_from,
         created_to=created_to,
+        current_user=current_user,
     )
     return StreamingResponse(
         iter([content]),

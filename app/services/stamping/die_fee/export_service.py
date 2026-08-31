@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 import logging
-from io import BytesIO
 from typing import Any
 
 from openpyxl import Workbook
@@ -17,6 +16,7 @@ from sqlalchemy.orm import Session
 
 from app.common.audit import audit_status_label
 from app.common.excel_workbook import resolve_worksheet
+from app.common.export_watermark import workbook_to_xlsx_bytes
 from app.common.money import Q0, Q2, Q4, excel_money_cell
 from app.common.timezone import now
 from app.common.vehicle_model import normalize_vehicle_model
@@ -26,6 +26,7 @@ from app.models.stamping.die_fee import StampingDieFee
 from app.models.stamping.die_fee_item import StampingDieFeeItem
 from app.repositories.stamping.die_fee_repository import StampingDieFeeRepository
 from app.repositories.stamping.stamping_die_repository import StampingDieProcessRepository
+from app.schemas.vo.user_vo import UserVO
 from app.services.stamping.die.weight_check import DIE_STEEL_DENSITY
 
 logger = logging.getLogger("service.stamping_die_fee_export")
@@ -196,6 +197,7 @@ class StampingDieFeeExportService:
         only_zero: bool,
         stamping_supplier: str | None = None,
         version: str | None = None,
+        current_user: UserVO,
     ) -> tuple[bytes, str]:
         loc = location.strip()
         vehicle = normalize_vehicle_model(vehicle_model)
@@ -219,8 +221,7 @@ class StampingDieFeeExportService:
             version=version_value,
         )
 
-        buffer = BytesIO()
-        workbook.save(buffer)
+        content = workbook_to_xlsx_bytes(workbook, current_user)
         stamp = now().strftime("%Y%m%d_%H%M%S")
         extra_bits = ""
         if supplier:
@@ -229,7 +230,7 @@ class StampingDieFeeExportService:
             extra_bits += f"_{version_value}"
         filename = f"冲压模具费_{year}_{loc}_{vehicle}{extra_bits}_{stamp}.xlsx"
         logger.info("导出冲压模具费 %s 条主表 -> %s", fee_count, filename)
-        return buffer.getvalue(), filename
+        return content, filename
 
     def _write_to_workbook(
         self,

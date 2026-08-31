@@ -4,18 +4,19 @@ L0 核对导出 — openpyxl 工作簿写入（不访问数据库）
 
 from __future__ import annotations
 
-from io import BytesIO
 from typing import Any
 
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, PatternFill
 from openpyxl.utils import get_column_letter
 
+from app.common.export_watermark import workbook_to_xlsx_bytes
 from app.common.timezone import now
 from app.models.bom import (
     BomWeldingProcessBreakdownLine,
     BomWeldingProcessBreakdownNode,
 )
+from app.schemas.vo.user_vo import UserVO
 from app.services.bom.welding_process_breakdown.export.columns import (
     BILLING_COLS,
     CENTER_COLS,
@@ -68,6 +69,7 @@ class L0CheckWorkbookBuilder:
         nodes: list[BomWeldingProcessBreakdownNode],
         *,
         filter_text: str,
+        current_user: UserVO,
     ) -> tuple[bytes, int]:
         style = self.style
         wb = Workbook()
@@ -136,9 +138,8 @@ class L0CheckWorkbookBuilder:
         ws.sheet_view.showGridLines = False
         ws.sheet_view.zoomScale = 90
 
-        buffer = BytesIO()
-        wb.save(buffer)
-        return buffer.getvalue(), export_row_count
+        content = workbook_to_xlsx_bytes(wb, current_user)
+        return content, export_row_count
 
     def _write_banner(
         self,

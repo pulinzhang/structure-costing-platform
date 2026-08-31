@@ -222,6 +222,8 @@ class SteelPricePolicyService:
     def generate_export_excel_bytes(
         self,
         db: Session,
+        *,
+        current_user: UserVO,
         year: int | None = None,
         month: int | None = None,
         steel_mill: str | None = None,
@@ -235,6 +237,7 @@ class SteelPricePolicyService:
             steel_mill=steel_mill,
             category_name=category_name,
             grade_value=grade_value,
+            current_user=current_user,
         )
 
     def delete_by_conditions(

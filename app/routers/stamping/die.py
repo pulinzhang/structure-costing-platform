@@ -158,6 +158,7 @@ def export_die_parts(
         stamping_supplier=stamping_supplier.strip() if stamping_supplier else None,
         version=version.strip() if version else None,
         part_number=part_number.strip() if part_number else None,
+        current_user=current_user,
     )
     return StreamingResponse(
         iter([content]),

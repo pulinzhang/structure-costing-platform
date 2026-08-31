@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.repositories.yishiyiyi.scrap_price.scrap_price_repository import (
     StampingScrapPriceRepository,
 )
+from app.schemas.vo.user_vo import UserVO
 from app.services.yishiyiyi.scrap_price.export.excel_exporter import (
     StampingScrapPriceExporter,
 )
@@ -24,6 +25,7 @@ class StampingScrapPriceExportService:
         db: Session,
         *,
         year: int | None = None,
+        current_user: UserVO,
     ) -> tuple[bytes, str]:
         years = [year] if year is not None else self.repository.list_years_asc(db)
         records_by_year = {
@@ -33,4 +35,5 @@ class StampingScrapPriceExportService:
             years,
             records_by_year,
             year_filter=year,
+            current_user=current_user,
         )

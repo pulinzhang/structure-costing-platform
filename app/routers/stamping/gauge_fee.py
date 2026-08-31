@@ -118,6 +118,7 @@ def export_gauge_fees(
         vehicle_model=query.vehicle_model,
         part_number=query.part_number,
         status=query.status,
+        current_user=current_user,
     )
     return StreamingResponse(
         iter([content]),

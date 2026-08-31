@@ -7,6 +7,7 @@ from io import BytesIO
 
 from openpyxl import load_workbook
 
+from app.common.audit import SYSTEM_USER
 from app.schemas.vo.winning_thickness_vo import WinningThicknessRowVO
 from app.services.yishiyiyi.winning_thickness.export.excel_exporter import (
     WinningThicknessExporter,
@@ -75,6 +76,7 @@ def test_export_has_overview_calc_and_example_sheets() -> None:
         year=2026,
         month=1,
         location="芜湖",
+        current_user=SYSTEM_USER,
     )
 
     assert filename == "中标钢厂厚度价格一览表_2026年_1月_芜湖.xlsx"
@@ -162,6 +164,7 @@ def test_example_sheet_without_rows_still_explains_formula() -> None:
         year=2026,
         month=8,
         location="青岛",
+        current_user=SYSTEM_USER,
     )
     workbook = load_workbook(BytesIO(content))
     example_name = scoped_sheet_name(
@@ -201,6 +204,7 @@ def test_exporter_drops_rows_without_base_price_id() -> None:
         year=2026,
         month=1,
         location="芜湖",
+        current_user=SYSTEM_USER,
     )
     workbook = load_workbook(BytesIO(content))
     overview_name = scoped_sheet_name(

@@ -5,7 +5,6 @@ from __future__ import annotations
 import logging
 from datetime import datetime
 from decimal import Decimal
-from io import BytesIO
 from typing import Any
 
 from openpyxl import Workbook
@@ -14,9 +13,11 @@ from openpyxl.utils import get_column_letter
 from sqlalchemy.orm import Session
 
 from app.common.excel_workbook import resolve_worksheet
+from app.common.export_watermark import workbook_to_xlsx_bytes
 from app.common.money import Q4, excel_money_cell
 from app.common.timezone import now
 from app.repositories.bom.welding_unit_price_repository import BomWeldingUnitPriceRepository
+from app.schemas.vo.user_vo import UserVO
 
 logger = logging.getLogger("service.bom_welding_unit_price_export")
 
@@ -44,12 +45,11 @@ class BomWeldingUnitPriceExportService:
         *,
         location: str | None = None,
         year: int | None = None,
+        current_user: UserVO,
     ) -> tuple[bytes, str]:
         wb = Workbook()
         _title, count = self.write_to_workbook(wb, db, location=location, year=year)
-        buffer = BytesIO()
-        wb.save(buffer)
-        content = buffer.getvalue()
+        content = workbook_to_xlsx_bytes(wb, current_user)
 
         stamp = now().strftime("%Y%m%d_%H%M%S")
         parts = ["焊接单价"]
