@@ -129,7 +129,6 @@ class BomWeldingProcessBreakdownService:
                 level=query.level,
                 audit_status=audit_status,
                 parse_status=query.parse_status,
-                process_line_count_eq=query.process_line_count_eq,
             ),
         }
         return (
@@ -150,9 +149,8 @@ class BomWeldingProcessBreakdownService:
         level: int | None,
         audit_status: str | None,
         parse_status: str | None,
-        process_line_count_eq: int | None,
     ) -> WeldingBreakdownFilterSummary:
-        """HUD：列表口径汇总 + L0 工艺数=0（不受 level/工艺数筛选影响）。"""
+        """HUD：列表口径汇总（不含工艺数钻取）+ L0 工艺数=0（不受层级/工艺数筛选影响）。"""
         summary = self.repository.summarize_by_filters(
             db,
             location=location,
@@ -163,7 +161,6 @@ class BomWeldingProcessBreakdownService:
             level=level,
             audit_status=audit_status,
             parse_status=parse_status,
-            process_line_count_eq=process_line_count_eq,
         )
         summary["l0_zero_process_count"] = self.repository.count_by_filters(
             db,
