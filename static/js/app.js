@@ -52,7 +52,7 @@ import { pageConfig as steelGradeCategoryPage } from './features/yishiyiyi/steel
 import { pageConfig as scrapPricePage } from './features/yishiyiyi/scrap-price/index.js?v=19';
 import { pageConfig as bomStructurePage }  from './features/bom/material/structure/index.js?v=9';
 import { pageConfig as bomVizPage }        from './features/bom/material/viz/index.js?v=29';
-import { pageConfig as bomUploadPage }     from './features/bom/material/upload/index.js?v=5';
+import { pageConfig as bomUploadPage }     from './features/bom/material/upload/index.js?v=6';
 import { pageConfig as bomMaterialListPage } from './features/bom/material/list/index.js?v=3';
 import { pageConfig as bomWeldingUnitPriceUploadPage } from './features/bom/welding-unit-price/upload/index.js?v=8';
 import { pageConfig as bomWeldingUnitPricePage } from './features/bom/welding-unit-price/list/index.js?v=12';

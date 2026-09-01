@@ -11,6 +11,7 @@
 ## 0. 一句话
 
 **一次计算写出该范围全部核价卡；每张卡的根是一个 BOM 节点，公式与 `level` 无关。**  
+本切片只做 **BOM walk + 间接 + 落卡**。冲压件价、焊接费一律 **抄上游已经算完并落库的行**：**零件价没算完，总成核价整趟不开始**（焊接费作业同）。单卡上某个叶子仍可能缺价，那是另一回事。年度价、包装是上传件，缺了不挡整趟。  
 财务读树根卡的 `grand_total`；采购读同一批行里对象卡的 `should_cost`（=`total_amount`）。不是两套引擎。
 
 ```text
@@ -26,7 +27,7 @@ costing_assembly_costs.level     = 核价卡根 bom_nodes.level
 
 | # | 决定 | 不要做成 |
 |---|------|----------|
-| P1 | 一个切片 `assembly_cost`，去尽标识符里的 `l0` | `l0` / `l1` / `outsourced` 三套表或两套 rollup |
+| P1 | 一个切片 `assembly_cost`，**本切片**去尽 `l0` 前缀 | 再开 `l0`/`l1`/`outsourced` 三套表。清单 `object_kind`（`l0_degenerate` 等）是上游枚举，**照抄不改名** |
 | P2 | 一行 = 一个 `source_node_id` × 年 × 月 × 范围 | 仍用零件号当唯一键 |
 | P3 | 核价主体 = A∪B∪C（§4），去重按节点 | 按 level 枚举认人；再扫树发明第四套分类 |
 | P4 | **永不对本卡根剪枝**；一口价只砍 **子孙** | 「根自己有年度价就不 walk」 |
@@ -44,6 +45,60 @@ costing_assembly_costs.level     = 核价卡根 bom_nodes.level
 | P16 | 不建 `costing_outsourced_assembly_*` | 委外第二套结果表 |
 | P17 | 权限一组改名，仍两页：计算 / 一览 | 财务、采购两套菜单码 |
 | P18 | BOM 重导后 `source_node_id` 可能失效 → 必须重算；迁移对不上则失败 | silently 丢历史行 |
+| P19 | **冲压、焊接只读上游结果表**（见 §1.1）。缺某一叶子/节点 → 卡内 `missing` 或焊接 0，不在本切片算 `unit_cost`、不拆焊 | `prepare` 里调用零件核价 / 焊接费 Orchestrator；拆解明细 × 单价临算 |
+| P20 | **计算类上游未完成 → 总成整趟不开始**（零件价、焊接费定义见 §1.2）。引擎补焊必须覆盖本趟要抄的 level，**禁止只补 `levels=[0]`** | 零件价还在 `processing` 就写卡；只补 L0 焊却按全卡抄 L1 工费 |
+
+### 1.1 谁算、谁抄（P19）
+
+| 金额 | 本切片 | 上游（必须先有结果行） |
+|------|--------|------------------------|
+| ① 冲压 | **只读** `stamping_part_costs.unit_cost`（当月、已 `success`） | 零件核价切片已按钢价/加工费/模具费算完 |
+| ④⑤ 焊接 | **只读** `bom_welding_fees.final_welding_fee` / `other_fee` | 焊接费切片已按该节点拆解 × 年单价算完 |
+| ②③ 年度价 / 一口价 / 报价 | **只读** `bom_annual_part_prices` | 年度价上传 |
+| I1/I2 | **只读** `bom_packaging_transport_fees` | 包装运输上传 |
+| I3～I6、材料加总、一口价剪枝、间接 | **本切片算** | — |
+
+本切片的 `prepare` / `calculate` **禁止** `start_calc` 或同步调用上游 Orchestrator「补算」。
+
+### 1.2 未完成就不下一步（P20）
+
+总成核价是 **下游**。抄库的「计算类」上游没做完，本切片 **整趟不跑**（不是先写出一堆 `partial` 再让人猜）。
+
+**冲压零件价（硬门，必须）：**
+
+范围 = 总成计算的年 + 月 + 基地 + 项目。
+
+| 视为未完成（不准进入总成核价） | 视为已完成 |
+|----------------------------------|------------|
+| 该项目工艺库 **一个冲压件都没有** 对应的当月 `stamping_part_costs` | 工艺库该基地+项目下、**每个冲压工厂** 的零件，当月都有结果行且 `calc_status = success` |
+| 任一工厂当月仍有 `processing` 计算日志 | — |
+| 任一工厂当月存在 `failed` / 无 `unit_cost` 且未补成 `success` | — |
+
+零件核价按 **冲压工厂** 分趟算（现网日志锁 `年+月+基地+工厂`）。总成不认工厂、按零件号抄价，所以 **该项目涉及到的每一家工厂都要算完**，缺一家也不下一步。Ready / 异常文案指向零件核价页，列出未完成的工厂。
+
+工艺库该基地+项目 **零件数为 0** → 也视为未完成（本平台总成核价不以「纯外购、无工艺」为合法空集）。
+
+**同零件号多家工厂都有 `success`：** 抄库时若 `unit_cost` 相同，任取一条；**若不同 → 该叶子 `missing` + `match_hint=multi_supplier_unit_cost`**（不挡整趟，作业已完成，是价冲突）。禁止 `dict[part_number]` 静默后写覆盖。
+
+硬门过了之后：某个 BOM 叶子不在工艺库（外购、标准件）→ 仍走年度价 / `missing`，那是 **单卡** 缺价，不挡整趟。不要把「作业没算完」和「这片叶子本来就不是冲压件」混成一件事。
+
+**焊接费（同一纪律，完成定义与零件价对齐到「作业 + 覆盖」）：**
+
+| 视为未完成 | 视为已完成 |
+|------------|------------|
+| 该范围仍有焊接费 `processing` 日志 | 日志非 processing / failed |
+| 从未算过焊接费 | — |
+| BOM 上有 `weld_info` 的节点尚未进拆解 | 有焊信的节点都有拆解行 |
+| 拆解节点没有对应的 `bom_welding_fees`（按 §6 对齐当前 `source_node_id`） | **每个拆解节点一行焊接费**（允许行 `partial`，进总成后该卡 §6 partial） |
+| 焊接费行的拆解/BOM 节点对不上 **当前** snapshot（重导后旧 id） | 对齐的是当前树 |
+
+不要求「BOM 全部节点 = 焊接费行数」。无焊信 → 无拆解 → 无焊接费行，P7。
+
+**与引擎的收口：** 现网年度补焊 `levels=[0]` **与全卡抄 L1 工费矛盾**。落地时引擎补焊改为 **不限 level**（或显式传入拆解出现过的全部 level）。只补 L0 却宣称焊接已完成 → 禁止。本切片仍不调用焊接费 `calculate`。
+
+**上传类（年度价、包装）不是这道门：** 可以缺；卡上报价空、I1/I2=0，或叶子走年度价。不要因为没导年度价就禁止总成计算。
+
+**引擎：** 钢价 → 零件价（各工厂）→（年度补焊若需要）→ **仅当零件价与焊接费均已完成** 才跑 assembly。零件价任一工厂失败 → 本项目 assembly **跳过**，不得抄半成品价凑总成账。本切片仍不负责去补算零件价。
 
 ---
 
@@ -75,7 +130,7 @@ costing_assembly_costs.level     = 核价卡根 bom_nodes.level
   ① stamping_amount  ② purchased_amount  ③ bundle_amount
   material_amount = ①+②+③
 
-工艺（只读 R 自己的焊接费行，§6）
+工艺（**抄** R 自己已落库的焊接费行，§6；不重算）
   welding_amount    = final_welding_fee   // 无行 = 0
   welding_other_fee = other_fee           // 无行 = 0
 
@@ -105,15 +160,15 @@ grand_total          = total_amount + indirect_amount
 
 `formula_version` = `assembly-v1`（替换 `l0-assembly-v1`）。
 
-取价键：
+**抄库键（只 SELECT，不写上游表）：**
 
-| 价 | 匹配 |
-|----|------|
-| 冲压 `unit_cost` | 年 + 月 + 基地 + 项目 + 零件号；须 `calc_status=success`；**不认**冲压工厂；不跨基地 |
-| 年度价 / 一口价 / 报价 | 基地 + 年 + 零件号 |
-| 包装 I1/I2 | 基地 + 年 + **本卡**零件号（不加车型） |
-| 费率 I3～I6 | `system_configs` 单例 × 本卡 `total_amount` |
-| 焊接 | 年 + 基地 + 项目 + BOM 版本 + 拆解行的 `source_node_id = R.id` |
+| 价 | 匹配 | 禁止 |
+|----|------|------|
+| 冲压 `unit_cost` | 年 + 月 + 基地 + 项目 + 零件号；须 `calc_status=success`；**不认**冲压工厂；不跨基地。多工厂冲突见 §1.2 | 从钢价、加工费再推 `unit_cost`；静默覆盖不同工厂的不同单价 |
+| 焊接 | 年 + 基地 + 项目 + BOM 版本 + 拆解行的 `source_node_id = R.id` | 读拆解明细 × `bom_welding_unit_price`；调焊接费 `calculate` |
+| 年度价 / 一口价 / 报价 | 基地 + 年 + 零件号 | 本切片维护价表 |
+| 包装 I1/I2 | 基地 + 年 + **本卡**零件号（不加车型） | 本切片上传包装 |
+| 费率 I3～I6 | `system_configs` 单例 × 本卡 `total_amount` | — |
 
 ---
 
@@ -191,7 +246,8 @@ function walk(node, path_qty):
       if D 有子件 and D.part_number in annual_prices:
           emit bundle(D, q)
           for 每个 D 的后代 G:
-              emit skipped_by_bundle(G, q_G, hint=D.part_number)
+              emit skipped_by_bundle(G, path_qty_from_R_to_G, hint=D.part_number)
+              // path_qty_from_R_to_G = 从 R 的直接子走到 G 的 qty 连乘（规则同 §5.1）
       elif D 有子件:
           walk(D, q)
       else:
@@ -208,9 +264,9 @@ function walk(node, path_qty):
 
 ### 5.3 叶子取价（写死）
 
-1. 完整零件号 → 当月冲压 `unit_cost`  
-2. 否则完整零件号 → 年度价（`0` = 金额 0，**不是**缺价）  
-3. 否则零件号含 `-` → 第一个 `-` 之前 **只回退冲压**
+1. 完整零件号 → **已落库**的当月冲压 `unit_cost`（只读，不重算零件核价）  
+2. 否则完整零件号 → **已落库**年度价（`0` = 金额 0，**不是**缺价）  
+3. 否则零件号含 `-` → 第一个 `-` 之前 **只回退已落库冲压价**
 
 都没有 → `cost_source=missing`，`missing_leaf_count += 1`。
 
@@ -222,7 +278,9 @@ function walk(node, path_qty):
 
 ## 6. 焊接费对齐（现网最大坑）
 
-现网 prep：`list_by_calc_scope(..., level=0)` 再 `welding_by_part[part_number]`。同号两支会撞；L1 工费进不来。
+本卡 ④⑤ **只抄** `bom_welding_fees` 已有行（P19）。没有行就 0，**不要**在总成核价里用拆解明细临算工费。
+
+现网 prep：`list_by_calc_scope(..., level=0)` 再 `welding_by_part[part_number]`。同号两支会撞；L1 工费进不来。对齐方式要改，仍是 **读表**，不是改去算焊。
 
 **正确对齐：**
 
@@ -362,12 +420,12 @@ FK `assembly_cost_id` 级联删。废止 `level_label`。
 指挥家：`prepare → BatchEngine.run → persist`。`calculate` 禁 for。BatchEngine 按 `subjects` 循环 + SAVEPOINT（现网已有）。
 
 ```text
-prep:
+prep（全部 SELECT 已落库数据，禁止调用上游 calculate）:
   载入 snapshot 节点、children 字典
   算 subjects（§4.1）
-  冲压价 dict[part_number]
+  冲压价 dict[part_number]          ← stamping_part_costs
   年度价 dict[part_number] + supplier_name
-  焊接 map[bom_node_id]（§6）
+  焊接 map[bom_node_id]（§6）       ← bom_welding_fees
   包装 dict[part_number]
   费率
   清单 C 的 source_node_id → object_id / object_kind
@@ -381,18 +439,21 @@ persist:
   提交、写日志终态、释放锁
 ```
 
-**Ready（计算页）：**
+**Ready（计算页，P20）：**
 
 | 条件 | ready |
 |------|--------|
 | 无 snapshot | 否 |
 | A∪B 为空 | 否 |
-| 冲压 success=0 且 年度价=0 | 否 |
-| 其余 | 是（焊接/包装/清单缺失只警告） |
+| 冲压零件价未完成（§1.2） | **否**（文案列未完成工厂，跳转零件核价） |
+| 焊接费计算未完成（§1.2） | **否**（跳转焊接费计算） |
+| 其余 | 是 |
 
-Ready VO 增加：`subject_count`、`tree_root_count`、`procurement_object_count`、`welding_fee_count`（全 level）、`welding_fee_level_counts`。保留 `l0_count` 一期别名 = `tree_root_count`（避免旧前端崩），随后删除。
+`calculate` 与 Ready 同一套门：未完成直接 `BusinessException`，不写总成卡、不入队装成「先算着」。
 
-缺清单：警告「采购对象未生成，本趟只出装配∪树根」。
+Ready VO 增加：`subject_count`、`tree_root_count`、`procurement_object_count`、`welding_fee_count`（全 level）、`welding_fee_level_counts`、`stamping_complete`、`stamping_incomplete_suppliers`、`welding_calc_complete`。保留 `l0_count` 一期别名 = `tree_root_count`（避免旧前端崩），随后删除。
+
+缺清单：警告「采购对象未生成，本趟只出装配∪树根」（不挡计算）。年度价/包装为 0：黄灯，不挡。
 
 ---
 
@@ -464,7 +525,7 @@ Ready VO 增加：`subject_count`、`tree_root_count`、`procurement_object_coun
 |------|----------|
 | 包 | `app/services/costing/l0_assembly_cost/**`、`app/routers/costing/l0_assembly_cost/**`、`app/repositories/costing/l0_assembly_cost/**` |
 | 模型 / schema | `L0AssemblyCost*`、`l0_assembly_cost_{dto,vo}` |
-| 引擎 | `run_orchestrator` 阶段 `l0`；`annual_l0_welding_fee` **不改名**（那是焊接费，只改「读 level=0」的成品核价调用） |
+| 引擎 | 零件价完成且 **焊接费覆盖全部要抄的 level** 才跑 assembly（P20）。补焊 **禁止** 只传 `levels=[0]`。阶段 id `l0` → `assembly`。`annual_l0_welding_fee` 阶段可改名为 `annual_welding_fee`（实施时与引擎文档一起改）。本切片不得内部触发上游 |
 | 合册 | `monthly_bundle_export_service` → 树根过滤 |
 | LLM | `menu_catalog`、`field_labels`、`cost_analysis_repository` |
 | 权限 / 种子 | `codes.py`、`permission-design.md` |
@@ -493,7 +554,7 @@ Ready VO 增加：`subject_count`、`tree_root_count`、`procurement_object_coun
 ## 13. 落地顺序
 
 ```text
-D0  本文评审通过（§1 十八条）
+D0  本文评审通过（§1 现为 P1～P20）
 D1  纯函数 rollup_assembly + 青岛/夹具/T13J 结构测试（先测后迁表）
 D2  表改名 + 迁移；切片/API/权限/前端去 l0
 D3  列表双视图；批量带 view；引擎阶段 assembly 默认全卡
@@ -514,7 +575,7 @@ D5  退化树根财务专项签字
 | 树根当叶子（无子件时） | 财务材料长期为 0 |
 | 间接每卡都算、读者选列 | `if level` |
 | 批量跟视图 | 无 view 的全表审核 |
-| 只读清单与焊接费 | 在 `bom` 编排核价；Parser 再拆一套焊 |
+| 抄已算完的冲压零件价、焊接费；未完成则整趟不开始 | 零件价还在算/失败就写总成卡；替上游算零件核价或焊接费 |
 
 ---
 
@@ -537,3 +598,6 @@ D5  退化树根财务专项签字
 |------|------|
 | 2026-09-01 | 初稿：合并两本账、级别无关。 |
 | 2026-09-01 | 详细设计：十八条拍板；卡根不剪枝；焊接按拆解 `source_node_id`；财务=树根而非 level=0；批量必须带 view；全表字段/API/权限/迁移/T13J 卡数。 |
+| 2026-09-01 | **P19：** 冲压、焊接（及年度价/包装）只抄上游已落库结果；本切片不替上游计算。引擎可先跑上游阶段，`prepare` 不得调用上游 Orchestrator。 |
+| 2026-09-01 | **P20：** 冲压零件价（及焊接费作业）未完成则总成核价整趟不开始；与单卡叶子缺价区分。 |
+| 2026-09-01 | 落地检查收口：P1 不改清单 `object_kind`；多工厂同号单价冲突；焊接完成=当前树每个拆解节点有费行；引擎补焊不得只 `levels=[0]`；工艺库 0 件视为未完成。 |

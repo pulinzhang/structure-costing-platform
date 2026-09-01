@@ -433,7 +433,7 @@ const HttpClient = (() => {
         return msg;
     }
 
-    async function request(method, url, { params, body, headers, timeout, skipAuth } = {}) {
+    async function request(method, url, { params, body, headers, timeout, skipAuth, skipToast } = {}) {
         const methodUpper = String(method || 'GET').toUpperCase();
         const query = { ...(params || {}) };
         // GET 加时间戳，避免浏览器/代理缓存旧数据
@@ -482,7 +482,7 @@ const HttpClient = (() => {
                     return { ok: true, status: response.status, data: data.data, message: data.message };
                 }
                 const msg = data.message || data.detail || '请求失败';
-                showToast(msg, 'error');
+                if (!skipToast) showToast(msg, 'error');
                 const err = new Error(msg);
                 err.status = response.status;
                 err.data = data.data;
@@ -491,7 +491,7 @@ const HttpClient = (() => {
 
             if (!response.ok) {
                 const msg = (data && (data.message || data.detail)) || `请求失败 (${response.status})`;
-                showToast(msg, 'error');
+                if (!skipToast) showToast(msg, 'error');
                 const err = new Error(msg);
                 err.status = response.status;
                 throw err;
@@ -502,11 +502,11 @@ const HttpClient = (() => {
             clearTimeout(timer);
             if (isAbortError(error)) {
                 error.message = REQUEST_TIMEOUT_MSG;
-                showToast(REQUEST_TIMEOUT_MSG, 'error');
+                if (!skipToast) showToast(REQUEST_TIMEOUT_MSG, 'error');
             } else if (!error.status) {
                 const msg = humanizeTransportError(error, '网络请求失败');
                 error.message = msg;
-                showToast(msg, 'error');
+                if (!skipToast) showToast(msg, 'error');
             }
             throw error;
         }

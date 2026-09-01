@@ -107,6 +107,33 @@ export function bomUploadTemplate() {
 
                                     <div id="bomUploadFilePreview" class="hidden mb-4"></div>
 
+                                    <div id="bomUploadErrorPanel"
+                                         class="hidden mb-4 border border-[#5c1a1a] bg-[#1a0808]"
+                                         role="alert">
+                                        <div class="flex items-start justify-between gap-3 px-3 py-2.5 border-b border-[#3a1515]">
+                                            <div class="min-w-0">
+                                                <h6 id="bomUploadErrorTitle"
+                                                    class="text-[11px] font-semibold text-[#ef5350] mb-0.5 tracking-wide">导入失败</h6>
+                                                <p class="text-[10px] text-[#8E8E93] mb-0">请对照 Excel 行号修改原始表后重新上传，可复制全文</p>
+                                            </div>
+                                            <div class="flex items-center gap-1 shrink-0">
+                                                <button type="button"
+                                                        id="bomUploadErrorCopyBtn"
+                                                        class="px-2 py-1 text-[10px] text-[#9e9e9e] border border-[#2c2c2c] rounded-sm hover:border-[#9e9e9e] hover:text-white transition-all">
+                                                    复制
+                                                </button>
+                                                <button type="button"
+                                                        id="bomUploadErrorCloseBtn"
+                                                        class="text-[#616161] hover:text-[#ffffff] transition-colors p-1"
+                                                        aria-label="关闭错误提示">
+                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <pre id="bomUploadErrorBody"
+                                             class="m-0 px-3 py-3 text-[12px] font-mono leading-relaxed text-[#ffcdd2] whitespace-pre-wrap break-words max-h-[360px] overflow-y-auto select-text"></pre>
+                                    </div>
+
                                     <div class="flex items-center justify-end gap-3">
                                         <button type="button"
                                                 id="bomUploadResetBtn"
@@ -152,6 +179,7 @@ export function bomUploadTemplate() {
                             <ul class="list-disc list-inside text-xs text-[#616161] space-y-1.5">
                                 <li>唯一键：基地 + 车型 + 版本</li>
                                 <li>同键再次导入将替换整棵树</li>
+                                <li>同一分总成挂在不同总成下时，焊信与二级子件单车用量必须相同</li>
                                 <li>源 Excel 与简图落盘保留</li>
                             </ul>
                         </div>

@@ -19,6 +19,7 @@ const BomUploadPage = {
         this.applyPermissionUi();
         this.bindEvents();
         this.hideProgress();
+        this.hideError();
         this.clearSelectedFile(false);
     },
 
@@ -55,8 +56,12 @@ const BomUploadPage = {
         const selectBtn = document.getElementById('bomUploadSelectFileBtn');
         const resetBtn = document.getElementById('bomUploadResetBtn');
         const templateBtn = document.getElementById('bomUploadTemplateBtn');
+        const errorCopyBtn = document.getElementById('bomUploadErrorCopyBtn');
+        const errorCloseBtn = document.getElementById('bomUploadErrorCloseBtn');
 
         templateBtn?.addEventListener('click', () => this.downloadTemplate());
+        errorCopyBtn?.addEventListener('click', () => this.copyErrorText());
+        errorCloseBtn?.addEventListener('click', () => this.hideError());
 
         zone?.addEventListener('click', (event) => {
             if (this.canUpload === false || this.isUploading) return;
@@ -101,15 +106,16 @@ const BomUploadPage = {
         if (!file || this.isUploading) return;
         const lower = file.name.toLowerCase();
         if (!lower.endsWith('.xlsx') && !lower.endsWith('.xls')) {
-            showToast('仅支持 .xlsx / .xls 文件', 'warning');
+            this.showError('仅支持 .xlsx / .xls 文件');
             return;
         }
         if (file.size > MAX_FILE_SIZE) {
-            showToast('文件过大，最大支持 50MB', 'warning');
+            this.showError('文件过大，最大支持 50MB');
             return;
         }
 
         this.hideProgress();
+        this.hideError();
         this.selectedFile = file;
 
         const preview = document.getElementById('bomUploadFilePreview');
@@ -154,10 +160,11 @@ const BomUploadPage = {
 
     reset() {
         if (this.isUploading) {
-            showToast('导入进行中，请稍候再重置', 'warning');
+            this.showError('导入进行中，请稍候再重置');
             return;
         }
         this.hideProgress();
+        this.hideError();
         this.clearSelectedFile(true);
         const location = document.getElementById('bomUploadLocation');
         if (location) location.value = '';
@@ -184,6 +191,51 @@ const BomUploadPage = {
         if (idle) idle.classList.remove('hidden');
         if (panel) panel.classList.add('hidden');
         if (zone) zone.classList.remove('pointer-events-none');
+    },
+
+    hideError() {
+        const panel = document.getElementById('bomUploadErrorPanel');
+        const body = document.getElementById('bomUploadErrorBody');
+        const copyBtn = document.getElementById('bomUploadErrorCopyBtn');
+        if (panel) panel.classList.add('hidden');
+        if (body) {
+            body.textContent = '';
+            body.dataset.raw = '';
+        }
+        if (copyBtn) copyBtn.textContent = '复制';
+    },
+
+    showError(message) {
+        const panel = document.getElementById('bomUploadErrorPanel');
+        const body = document.getElementById('bomUploadErrorBody');
+        const copyBtn = document.getElementById('bomUploadErrorCopyBtn');
+        const text = String(message || '导入失败').trim() || '导入失败';
+        if (!panel || !body) return;
+        body.textContent = text;
+        body.dataset.raw = text;
+        if (copyBtn) copyBtn.textContent = '复制';
+        panel.classList.remove('hidden');
+        panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    },
+
+    async copyErrorText() {
+        const body = document.getElementById('bomUploadErrorBody');
+        const copyBtn = document.getElementById('bomUploadErrorCopyBtn');
+        const text = body?.dataset?.raw || body?.textContent || '';
+        if (!text) return;
+        try {
+            await navigator.clipboard.writeText(text);
+            if (copyBtn) copyBtn.textContent = '已复制';
+            setTimeout(() => {
+                if (copyBtn && copyBtn.textContent === '已复制') copyBtn.textContent = '复制';
+            }, 1600);
+        } catch (_) {
+            const range = document.createRange();
+            range.selectNodeContents(body);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+        }
     },
 
     setUploading(isUploading) {
@@ -221,18 +273,18 @@ const BomUploadPage = {
 
     async submit() {
         if (this.canUpload === false) {
-            showToast('无上传权限', 'warning');
+            this.showError('无上传权限');
             return;
         }
         if (this.isUploading) return;
 
         const location = document.getElementById('bomUploadLocation')?.value?.trim();
         if (!location) {
-            showToast('请选择采购基地', 'warning');
+            this.showError('请选择采购基地');
             return;
         }
         if (!this.selectedFile) {
-            showToast('请选择 Excel 文件', 'warning');
+            this.showError('请选择 Excel 文件');
             return;
         }
 
@@ -240,23 +292,28 @@ const BomUploadPage = {
         formData.append('location', location);
         formData.append('file', this.selectedFile);
 
+        this.hideError();
         this.setUploading(true);
         this.showProgress();
 
         try {
-            const res = await HttpClient.post('/api/bom/upload', formData);
+            const res = await HttpClient.post('/api/bom/upload', formData, {
+                skipToast: true,
+                timeout: 120000,
+            });
             const data = res.data || {};
             const msg = res.message
                 || data.message
                 || `导入成功：${data.node_count ?? '-'} 个节点`;
             showToast(msg, 'success');
             this.hideProgress();
+            this.hideError();
             this.clearSelectedFile(true);
             const loc = document.getElementById('bomUploadLocation');
             if (loc) loc.value = location;
         } catch (err) {
             this.hideProgress();
-            showToast(err.message || '导入失败', 'error');
+            this.showError(err.message || '导入失败');
         } finally {
             this.setUploading(false);
         }

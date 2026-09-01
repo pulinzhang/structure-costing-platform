@@ -19,6 +19,7 @@ from app.schemas.dto.bom_dto import BomNodeWrite, BomSnapshotWrite
 from app.schemas.vo.bom_vo import BomImportResultVO, BomSnapshotVO
 from app.schemas.vo.user_vo import UserVO
 from app.services.bom.bom_template_builder import build_bom_material_template
+from app.services.bom.subassembly_consistency import validate_subassembly_consistency
 from app.services.file_trace.register import register_existing
 
 logger = logging.getLogger("service.bom.upload")
@@ -64,6 +65,7 @@ class BomUploadService:
         meta = parse_result.meta
         if not parse_result.nodes:
             raise BusinessException("未解析到 BOM 节点，请检查 Excel 格式")
+        validate_subassembly_consistency(parse_result.nodes)
 
         scope = validate_bom_material_upload_scope(
             location=location,
