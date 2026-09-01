@@ -5,7 +5,6 @@ from decimal import Decimal
 from typing import TypedDict
 
 from sqlalchemy import case, func
-
 from sqlalchemy.orm import Query, Session, joinedload, noload
 
 from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING, AUDIT_REJECTED

@@ -25,6 +25,7 @@ from app.parsers.yishiyiyi.policy.boundary_parser import _Boundary
 from app.parsers.yishiyiyi.policy.handlers.constants import BLANK_LIMIT
 from app.parsers.yishiyiyi.policy.models import ParsedPolicy
 from app.parsers.yishiyiyi.policy.models.ladder_item import ParsedLadderItem
+
 from .policy_assembler import PolicyAssembler
 from .sheet_scanner import SheetScanner
 from .thickness_block_finder import ThicknessBlockFinder

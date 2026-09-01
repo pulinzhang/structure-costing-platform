@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from collections.abc import Generator
 from decimal import Decimal
-
 from io import BytesIO
 
 import pytest

@@ -196,7 +196,7 @@ bom_procurement_object_generate_logs  一次「开始生成」一条终态日志
 | `bom_procurement_object_generate_logs` | 生成历史：范围、计数、检测、过程全文 |
 
 归属 **`bom` 切片**。头表 `snapshot_id` 外键 → `bom_snapshots.id`，`ON DELETE CASCADE`。  
-现网覆盖导入会 **删旧 snapshot 再建**：清单随材料清单一起没，必须对新 snapshot **再生成**。一期 **不** 把确认迁到新 snapshot（`source_node_id` 已变，对错行的风险大于省勾选）。
+无直接下游时覆盖导入会 **删旧 snapshot 再建**，清单随材料清单一起没，必须对新 snapshot **再生成**。该版本已有采购对象清单或焊接工艺拆解时 **禁止** 覆盖导入 / 删除材料清单（须升 BOM 版本，或先删这些直接下游）。一期 **不** 把确认迁到新 snapshot（`source_node_id` 已变，对错行的风险大于省勾选）。
 
 ### 8.2 清单头 `bom_procurement_object_lists`
 
@@ -251,7 +251,7 @@ bom_procurement_object_generate_logs  一次「开始生成」一条终态日志
 1. 读该 snapshot 全部 `bom_nodes`，纯函数分类 + 检测。  
 2. **一个事务**：删该 snapshot 旧清单头（级联删行）→ 写新头 + 新行。  
 3. 同一 snapshot 再生成：按 `source_node_id` **带回** 旧行的确认三态 / 确认人时 / 备注。新出现的节点 `pending`；已不在树的确认丢弃。  
-4. 覆盖导入换了 snapshot：旧清单已随旧 snapshot 删掉，新生成全是 `pending`。  
+4. 无直接下游时覆盖导入换了 snapshot：旧清单已随旧 snapshot 删掉，新生成全是 `pending`。已有采购对象或焊接拆解则材料清单禁止覆盖。  
 5. 写一条 `bom_procurement_object_generate_logs`（成功或失败终态）。
 
 检测未通过：照样提交，`qa_passed=false`。不要为了「名单好看」只写一半采购对象。
@@ -414,7 +414,7 @@ HUD：**采购对象**是霓虹强调格；标准件/胶等、待审、已审为
 | 模块 | 关系 |
 |------|------|
 | `bom_nodes` | 分类时只读；对外以采购对象清单为准 |
-| 覆盖导入 | 删 snapshot → 级联删清单 |
+| 覆盖导入 | 有采购对象或焊接拆解则禁止；无直接下游才删 snapshot 并级联删清单 |
 | `node_parser` | 生成不改解析；材料落不到退化供货件时打 `data_gap` |
 | `manufacturing_category` | L1 叶子是否冲压件，复用，不新开词典 |
 | 焊接工艺拆解 | **不读** |
@@ -447,7 +447,7 @@ HUD：**采购对象**是霓虹强调格；标准件/胶等、待审、已审为
 | `app/parsers/bom/node_parser.py` | 树怎么进库；L0 材料是否落地 |
 | `app/common/bom/manufacturing_category.py` | L1 叶子是否 `stamping` |
 | [welding-process-breakdown-design.md](welding-process-breakdown-design.md) | 拆解；生成清单时不读 |
-| `app/services/bom/bom_upload_service.py` | 覆盖导入删 snapshot，清单须级联没 |
+| `app/services/bom/bom_upload_service.py` | 覆盖导入前检查直接下游；无下游才删 snapshot（清单级联没） |
 | [bom-annual-part-prices-design.md](bom-annual-part-prices-design.md) | 价表；本文不读 |
 | [outsourced-assembly-costing-design.md](../costing/outsourced-assembly-costing-design.md) | 下游应成本；集合以本清单为准 |
 | `static/js/features/costing/stamping-part-cost/calc/` | 生成页 UI 对照 |

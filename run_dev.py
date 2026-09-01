@@ -71,9 +71,9 @@ def run_node_check() -> None:
 
 
 if __name__ == "__main__":
-    # 1. 运行 Ruff 语法与导包规范检查
-    run_step(["ruff", "check", "."], "Ruff 代码规范检查")
-
+    # 1. 与 pyproject.toml / pre-commit 同一套规则；不要 --preview / PLR6301
+    # （PLR6301 会把未用 self 的实例方法全判错，含 pytest 与 Service 组织方法）
+    run_step(["ruff", "check", ".", "--extend-select", "I", "--fix"], "Ruff 代码规范检查")
     # 2. 运行 Mypy 静态类型检查
     run_step(["mypy", "app/"], "Mypy 静态类型检查")
 

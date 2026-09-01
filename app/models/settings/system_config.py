@@ -1,8 +1,10 @@
 """系统配置（单例行）。"""
 
 from decimal import Decimal
+
 from sqlalchemy import Integer, Numeric, String
 from sqlalchemy.orm import Mapped, mapped_column
+
 from app.database import Base
 from app.models.common.audit_mixin import AuditUserMixin
 

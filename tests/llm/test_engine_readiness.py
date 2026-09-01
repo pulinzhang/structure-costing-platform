@@ -7,10 +7,10 @@ from unittest.mock import MagicMock
 import pytest
 
 from app.database import DatabaseConfig
+from app.services.llm.context.snapshot_builder import SnapshotBuilder
 from app.services.llm.engine_readiness import EngineReadinessRunner
 from app.services.llm.engine_readiness.runner import render_engine_readiness_markdown
 from app.services.llm.generator import LlmReportGenerator
-from app.services.llm.context.snapshot_builder import SnapshotBuilder
 from app.services.llm.query.intent_router import detect_query_mode
 from app.services.llm.query.query_parser import QueryParser
 

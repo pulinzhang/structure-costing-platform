@@ -76,7 +76,7 @@ class AnnualCalcPlanner:
             )
             items.append(
                 CostingEngineAnnualItemVO(
-                    code="annual_l0_welding_fee",
+                    code="annual_welding_fee",
                     scope_key=scope_key,
                     exists=welding_fee_exists,
                     will_auto_calc=not welding_fee_exists,
@@ -124,7 +124,7 @@ class AnnualCalcPlanner:
                 vehicle_model=vehicle_model,
                 bom_version=bom_version,
                 statuses=_ANY_STATUS,
-                level=0,
+                level=None,
             )
             > 0
         )

@@ -5,8 +5,8 @@
 
 import logging
 import sys
-from typing import Any
 from logging.handlers import RotatingFileHandler
+from typing import Any
 
 from app.config import settings
 

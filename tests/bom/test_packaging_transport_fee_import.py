@@ -24,13 +24,11 @@ from app.parsers.bom.packaging_transport_fee_parser import (
 from app.repositories.bom.packaging_transport_fee_repository import (
     BomPackagingTransportFeeRepository,
 )
-from app.services.bom.packaging_transport_fee_import_service import (
+from app.services.bom.packaging_transport_fee.import_service import (
     BomPackagingTransportFeeImportService,
 )
 
-SAMPLE_XLSX = (
-    Path(__file__).resolve().parents[2] / "excel_sample" / "包装运输费用.xlsx"
-)
+SAMPLE_XLSX = Path(__file__).resolve().parents[2] / "excel_sample" / "包装运输费用.xlsx"
 
 LOCATION = "青岛"
 YEAR = 2025
@@ -137,9 +135,7 @@ class TestPackagingTransportFeeParser:
 
 
 class TestPackagingTransportFeeImport:
-    def test_import_creates_84_rows(
-        self, memory_db: Session, sample_xlsx_bytes: bytes
-    ) -> None:
+    def test_import_creates_84_rows(self, memory_db: Session, sample_xlsx_bytes: bytes) -> None:
         service = BomPackagingTransportFeeImportService()
         result = service.import_excel(
             memory_db,
@@ -171,9 +167,7 @@ class TestPackagingTransportFeeImport:
         assert len(rows) == 84
         assert all(row.audit_status == AUDIT_PENDING for row in rows)
 
-        first = repo.get_by_unique_key(
-            memory_db, LOCATION, YEAR, VEHICLE_MODEL, "501006870AA"
-        )
+        first = repo.get_by_unique_key(memory_db, LOCATION, YEAR, VEHICLE_MODEL, "501006870AA")
         assert first is not None
         assert first.packaging_transport_total == Decimal("3.7194")
         assert first.unit_packaging_fee == Decimal("0.9800")
@@ -182,9 +176,7 @@ class TestPackagingTransportFeeImport:
         assert first.sheet_name
         assert first.excel_row is not None and first.excel_row >= 1
 
-    def test_import_rejects_without_bom(
-        self, memory_db: Session, sample_xlsx_bytes: bytes
-    ) -> None:
+    def test_import_rejects_without_bom(self, memory_db: Session, sample_xlsx_bytes: bytes) -> None:
         service = BomPackagingTransportFeeImportService()
         with pytest.raises(BusinessException, match="未找到材料清单"):
             service.import_excel(
@@ -197,9 +189,7 @@ class TestPackagingTransportFeeImport:
                 current_user=SYSTEM_USER,
             )
 
-    def test_reimport_updates_pending(
-        self, memory_db: Session, sample_xlsx_bytes: bytes
-    ) -> None:
+    def test_reimport_updates_pending(self, memory_db: Session, sample_xlsx_bytes: bytes) -> None:
         service = BomPackagingTransportFeeImportService()
         service.import_excel(
             memory_db,
@@ -223,9 +213,7 @@ class TestPackagingTransportFeeImport:
         assert result.updated_count == 84
         assert result.skipped_count == 0
 
-    def test_import_skips_approved(
-        self, memory_db: Session, sample_xlsx_bytes: bytes
-    ) -> None:
+    def test_import_skips_approved(self, memory_db: Session, sample_xlsx_bytes: bytes) -> None:
         service = BomPackagingTransportFeeImportService()
         service.import_excel(
             memory_db,

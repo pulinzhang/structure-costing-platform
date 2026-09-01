@@ -28,13 +28,13 @@ from app.schemas.vo.bom_annual_part_price_vo import (
     BomAnnualPartPriceResponse,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.services.bom.annual_part_price_export_service import (
+from app.services.bom.annual_part_price import BomAnnualPartPriceService
+from app.services.bom.annual_part_price.export_service import (
     BomAnnualPartPriceExportService,
 )
-from app.services.bom.annual_part_price_import_service import (
+from app.services.bom.annual_part_price.import_service import (
     BomAnnualPartPriceImportService,
 )
-from app.services.bom.annual_part_price_service import BomAnnualPartPriceService
 from app.utils.response import ApiResponse
 
 router = APIRouter(prefix="/api/bom/annual-part-price", tags=["BOM 年度零件价 API"])

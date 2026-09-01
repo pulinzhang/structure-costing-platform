@@ -10,6 +10,7 @@ import pytest
 from sqlalchemy.orm import Session, selectinload
 
 from app.models.stamping import StampingPart
+from app.services.costing.stamping_part_cost.calc.resolvers import PriceResolver
 from app.services.costing.steel_price.calc.models import (
     CalcRow,
     MaterialThicknessRow,
@@ -18,7 +19,6 @@ from app.services.costing.steel_price.calc.models import (
 from app.services.costing.steel_price.calc.steps.apply_adjustments import AdjustmentApplier
 from app.services.costing.steel_price.calc.steps.enrich_base_price import BasePriceEnricher
 from app.services.costing.steel_price.calc.steps.load_materials import MaterialThicknessLoader
-from app.services.costing.stamping_part_cost.calc.resolvers import PriceResolver
 from app.services.stamping.stamping_service import StampingPartService
 from app.services.yishiyiyi.steel_grade_category import SteelGradeCategoryService
 

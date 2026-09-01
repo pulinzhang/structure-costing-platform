@@ -18,7 +18,6 @@ from app.common.timezone import CHINA_TZ_NAME
 from app.config import settings
 from app.utils.logging_config import get_logger
 
-
 logger = get_logger("database")
 
 
@@ -118,10 +117,12 @@ class DatabaseConfig:
     def create_tables(cls) -> None:
         engine = cls.get_engine()
         cls._migrate_welding_fee_tables(engine)
+        cls._migrate_assembly_cost_tables(engine)
         Base.metadata.create_all(bind=engine)
         cls._ensure_sqlite_columns(engine)
         cls._ensure_welding_fee_columns(engine)
         cls._remap_welding_fee_permissions(engine)
+        cls._remap_assembly_cost_permissions(engine)
         logger.info("主业务库表创建完成")
 
     @classmethod
@@ -390,6 +391,231 @@ class DatabaseConfig:
                         text(f"ALTER TABLE {calc_log_table} ADD COLUMN version VARCHAR(20)")
                     )
                 logger.info("已为 %s 追加列 version", calc_log_table)
+
+    @classmethod
+    def _migrate_assembly_cost_tables(cls, engine: Engine) -> None:
+        """costing_l0_assembly_costs* → costing_assembly_costs*，并回填 source_node_id。"""
+        from sqlalchemy import inspect, text
+
+        inspector = inspect(engine)
+        tables = set(inspector.get_table_names())
+        pairs = (
+            ("costing_l0_assembly_costs", "costing_assembly_costs"),
+            ("costing_l0_assembly_cost_items", "costing_assembly_cost_items"),
+            ("costing_l0_assembly_cost_indirects", "costing_assembly_cost_indirects"),
+            ("costing_l0_assembly_cost_calc_logs", "costing_assembly_cost_calc_logs"),
+        )
+        old_main = pairs[0][0]
+        new_main = pairs[0][1]
+        if old_main not in tables and new_main not in tables:
+            return
+        with engine.begin() as conn:
+            if conn.dialect.name == "sqlite":
+                present = {
+                    str(name)
+                    for (name,) in conn.execute(
+                        text("SELECT name FROM sqlite_master WHERE type='table'")
+                    ).fetchall()
+                }
+            else:
+                present = set(inspect(conn).get_table_names())
+            for old_name, new_name in pairs:
+                if conn.dialect.name == "sqlite":
+                    present = {
+                        str(name)
+                        for (name,) in conn.execute(
+                            text("SELECT name FROM sqlite_master WHERE type='table'")
+                        ).fetchall()
+                    }
+                else:
+                    present = set(inspect(conn).get_table_names())
+                if old_name in present and new_name not in present:
+                    conn.execute(text(f"ALTER TABLE {old_name} RENAME TO {new_name}"))
+                    logger.info("已将 %s 改名为 %s", old_name, new_name)
+                elif old_name in present and new_name in present:
+                    new_count = int(
+                        conn.execute(text(f"SELECT COUNT(*) FROM {new_name}")).scalar() or 0
+                    )
+                    if new_count > 0:
+                        logger.warning("总成核价新旧表同时存在且新表非空，跳过改名 %s", old_name)
+                    else:
+                        conn.execute(text(f"DROP TABLE IF EXISTS {new_name}"))
+                        conn.execute(text(f"ALTER TABLE {old_name} RENAME TO {new_name}"))
+            cls._backfill_assembly_cost_columns(conn)
+
+    @classmethod
+    def _backfill_assembly_cost_columns(cls, conn: Connection) -> None:
+        from sqlalchemy import text
+
+        main = "costing_assembly_costs"
+        items = "costing_assembly_cost_items"
+        logs = "costing_assembly_cost_calc_logs"
+        is_sqlite = conn.dialect.name == "sqlite"
+        main_cols = cls._table_column_names(conn, main, is_sqlite=is_sqlite)
+        if not main_cols:
+            return
+        add_cols = [
+            ("source_node_id", "INTEGER NOT NULL DEFAULT 0"),
+            ("level", "SMALLINT NOT NULL DEFAULT 0"),
+            ("is_tree_root", "BOOLEAN NOT NULL DEFAULT 1"),
+            ("parent_node_id", "INTEGER"),
+            ("root_part_number", "VARCHAR(50)"),
+            ("root_part_name", "VARCHAR(200)"),
+            ("procurement_object_id", "INTEGER"),
+            ("object_kind", "VARCHAR(50)"),
+            ("should_cost", "NUMERIC(14, 4) NOT NULL DEFAULT 0"),
+            ("vendor_quote", "NUMERIC(14, 4)"),
+            ("gap_amount", "NUMERIC(14, 4)"),
+            ("vendor_name", "VARCHAR(100)"),
+        ]
+        for name, ddl in add_cols:
+            if name not in main_cols:
+                conn.execute(text(f"ALTER TABLE {main} ADD COLUMN {name} {ddl}"))
+        conn.execute(text(f"UPDATE {main} SET should_cost = total_amount"))
+        conn.execute(
+            text(
+                f"UPDATE {main} SET root_part_number = part_number, "
+                "root_part_name = part_name WHERE root_part_number IS NULL"
+            )
+        )
+
+        unmatched: list[str] = []
+        rows = conn.execute(
+            text(
+                f"SELECT id, location, vehicle_model, bom_version, part_number "
+                f"FROM {main} WHERE source_node_id = 0 OR source_node_id IS NULL"
+            )
+        ).fetchall()
+        for row in rows:
+            matches = conn.execute(
+                text(
+                    "SELECT n.id FROM bom_nodes n "
+                    "JOIN bom_snapshots s ON s.id = n.snapshot_id "
+                    "WHERE s.location = :location AND s.vehicle_model = :vehicle_model "
+                    "AND s.bom_version = :bom_version AND n.part_number = :part_number "
+                    "AND n.parent_id IS NULL"
+                ),
+                {
+                    "location": row.location,
+                    "vehicle_model": row.vehicle_model,
+                    "bom_version": row.bom_version,
+                    "part_number": row.part_number,
+                },
+            ).fetchall()
+            if len(matches) != 1:
+                unmatched.append(
+                    f"id={row.id} {row.location}/{row.vehicle_model}/"
+                    f"{row.bom_version}/{row.part_number} matches={len(matches)}"
+                )
+                continue
+            conn.execute(
+                text(f"UPDATE {main} SET source_node_id = :nid WHERE id = :rid"),
+                {"nid": int(matches[0][0]), "rid": int(row.id)},
+            )
+        if unmatched:
+            raise RuntimeError(
+                "总成核价迁移无法唯一匹配树根 source_node_id:\n" + "\n".join(unmatched[:50])
+            )
+
+        conn.execute(text("DROP INDEX IF EXISTS uix_l0_assembly_cost_scope_part"))
+        conn.execute(text("DROP INDEX IF EXISTS uix_assembly_cost_scope_part"))
+        conn.execute(
+            text(
+                "CREATE UNIQUE INDEX IF NOT EXISTS uix_assembly_cost_scope_node "
+                f"ON {main} (year, month, location, vehicle_model, bom_version, source_node_id)"
+            )
+        )
+
+        item_cols = cls._table_column_names(conn, items, is_sqlite=is_sqlite)
+        if item_cols and "node_level" not in item_cols:
+            conn.execute(
+                text(f"ALTER TABLE {items} ADD COLUMN node_level INTEGER NOT NULL DEFAULT 0")
+            )
+            item_cols = cls._table_column_names(conn, items, is_sqlite=is_sqlite)
+        if item_cols and "level_label" in item_cols:
+            unknown = conn.execute(
+                text(
+                    f"SELECT DISTINCT level_label FROM {items} "
+                    "WHERE level_label NOT IN ('L2', 'L1-leaf', 'L1-bundle', 'L1') "
+                    "AND level_label IS NOT NULL AND level_label != ''"
+                )
+            ).fetchall()
+            if unknown:
+                labels = ", ".join(str(r[0]) for r in unknown)
+                raise RuntimeError(f"总成核价明细 level_label 无法映射 node_level: {labels}")
+            conn.execute(
+                text(
+                    f"UPDATE {items} SET node_level = CASE "
+                    "WHEN level_label = 'L2' THEN 2 "
+                    "WHEN level_label LIKE 'L1%' THEN 1 "
+                    "ELSE node_level END"
+                )
+            )
+            # 旧列 NOT NULL，新 INSERT 只写 node_level，必须删掉否则整批落库失败
+            conn.execute(text(f"ALTER TABLE {items} DROP COLUMN level_label"))
+            logger.info("已删除 %s.level_label（改用 node_level）", items)
+
+        log_cols = cls._table_column_names(conn, logs, is_sqlite=is_sqlite)
+        if log_cols and "subject_total" not in log_cols and "l0_total" in log_cols:
+            conn.execute(text(f"ALTER TABLE {logs} RENAME COLUMN l0_total TO subject_total"))
+        elif log_cols and "subject_total" not in log_cols:
+            conn.execute(
+                text(f"ALTER TABLE {logs} ADD COLUMN subject_total INTEGER NOT NULL DEFAULT 0")
+            )
+        log_cols = cls._table_column_names(conn, logs, is_sqlite=is_sqlite)
+        if log_cols and "detail_text" not in log_cols:
+            conn.execute(
+                text(f"ALTER TABLE {logs} ADD COLUMN detail_text TEXT NOT NULL DEFAULT ''")
+            )
+        if log_cols and "detail_json" not in log_cols:
+            conn.execute(text(f"ALTER TABLE {logs} ADD COLUMN detail_json TEXT"))
+
+    @classmethod
+    def _remap_assembly_cost_permissions(cls, engine: Engine) -> None:
+        from sqlalchemy import inspect, text
+
+        inspector = inspect(engine)
+        if "user_permissions" not in set(inspector.get_table_names()):
+            return
+        old_frag = "l0-assembly-cost"
+        new_frag = "assembly-cost"
+        remapped = 0
+        with engine.begin() as conn:
+            rows = conn.execute(
+                text(
+                    "SELECT id, user_id, permission_code FROM user_permissions "
+                    "WHERE permission_code LIKE :pattern"
+                ),
+                {"pattern": f"%{old_frag}%"},
+            ).fetchall()
+            if not rows:
+                return
+            existing = {
+                (int(user_id), str(code))
+                for user_id, code in conn.execute(
+                    text("SELECT user_id, permission_code FROM user_permissions")
+                ).fetchall()
+            }
+            for row_id, user_id, code in rows:
+                new_code = str(code).replace(old_frag, new_frag)
+                key = (int(user_id), new_code)
+                if key in existing:
+                    conn.execute(
+                        text("DELETE FROM user_permissions WHERE id = :row_id"),
+                        {"row_id": row_id},
+                    )
+                    continue
+                conn.execute(
+                    text(
+                        "UPDATE user_permissions SET permission_code = :new_code "
+                        "WHERE id = :row_id"
+                    ),
+                    {"new_code": new_code, "row_id": row_id},
+                )
+                existing.add(key)
+                remapped += 1
+        if remapped:
+            logger.info("已 remap 总成核价权限码 %s 条", remapped)
 
     @classmethod
     def _migrate_welding_fee_tables(cls, engine: Engine) -> None:

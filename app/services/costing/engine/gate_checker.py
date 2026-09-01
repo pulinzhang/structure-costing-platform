@@ -16,14 +16,14 @@ from app.repositories.stamping.tonnage_price_repository import StampingTonnagePr
 from app.schemas.vo.costing_engine_vo import CostingEngineGateItemVO
 from app.services.costing.engine.gate_navigate import build_navigate
 from app.services.costing.engine.scope_discovery import DiscoveryResult
+from app.services.costing.stamping_part_cost.calc.resolvers import PriceResolver
+from app.services.costing.stamping_part_cost.helpers import location_candidates
 from app.services.costing.steel_price.calc.models import SteelPriceCalcRequest
 from app.services.costing.steel_price.calc.steps import (
     AdjustmentApplier,
     BasePriceEnricher,
     MaterialThicknessLoader,
 )
-from app.services.costing.stamping_part_cost.calc.resolvers import PriceResolver
-from app.services.costing.stamping_part_cost.helpers import location_candidates
 
 _USABLE = [AUDIT_PENDING, AUDIT_APPROVED, AUDIT_REJECTED]
 

@@ -31,7 +31,6 @@ from app.parsers.yishiyiyi.policy.models.policy import (
 )
 from app.parsers.yishiyiyi.policy.value_parser import _to_int_price
 
-
 # ============================================================================
 #  厚度范围写死（用户确认，每月只有价格变化，格式固定）
 #  (row -> (thick_min, thick_min_op, thick_max, thick_max_op))

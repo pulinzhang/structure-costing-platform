@@ -10,14 +10,13 @@ from app.common.audit import (
     AUDIT_APPROVED,
     AUDIT_PENDING,
     AUDIT_REJECTED,
-    display_name,
     audit_update,
+    display_name,
 )
 from app.common.timezone import now
 from app.exceptions.base import BusinessException, NotFoundException
 from app.models.bom import BomWeldingFee
 from app.repositories.bom.welding_fee_repository import BomWeldingFeeRepository
-from app.services.bom.welding_fee.fee_math import resolve_final_welding_fee
 from app.repositories.bom.welding_process_breakdown_repository import (
     BomWeldingProcessBreakdownRepository,
 )
@@ -37,6 +36,7 @@ from app.schemas.vo.bom_welding_fee_vo import (
     WeldingFeeListSummaryVO,
 )
 from app.schemas.vo.user_vo import UserVO
+from app.services.bom.welding_fee.fee_math import resolve_final_welding_fee
 
 
 def _normalize_scope(

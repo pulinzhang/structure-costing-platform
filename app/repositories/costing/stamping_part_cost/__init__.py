@@ -8,6 +8,6 @@ from app.repositories.costing.stamping_part_cost.stamping_part_cost_repository i
 )
 
 __all__ = [
-    "StampingPartCostRepository",
     "StampingPartCostCalcLogRepository",
+    "StampingPartCostRepository",
 ]

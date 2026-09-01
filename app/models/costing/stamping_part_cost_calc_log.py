@@ -1,8 +1,10 @@
 """冲压零件价格核算计算批次日志。"""
 
 from datetime import datetime
+
 from sqlalchemy import DateTime, Index, Integer, String, Text, text
 from sqlalchemy.orm import Mapped, mapped_column
+
 from app.database import Base
 from app.models.common.audit_mixin import AuditUserMixin
 

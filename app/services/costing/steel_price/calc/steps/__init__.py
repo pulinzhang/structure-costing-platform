@@ -5,7 +5,7 @@ from app.services.costing.steel_price.calc.steps.enrich_base_price import BasePr
 from app.services.costing.steel_price.calc.steps.load_materials import MaterialThicknessLoader
 
 __all__ = [
-    "MaterialThicknessLoader",
-    "BasePriceEnricher",
     "AdjustmentApplier",
+    "BasePriceEnricher",
+    "MaterialThicknessLoader",
 ]

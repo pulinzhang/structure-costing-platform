@@ -19,8 +19,8 @@ from typing import Any
 from openpyxl.worksheet.worksheet import Worksheet
 
 from app.parsers.yishiyiyi.policy.handlers.base_handler import BaseSheetHandler
-from .constants import GRADE_LABELS
 
+from .constants import GRADE_LABELS
 
 # 鞍钢集团宽度块：标题列 = 17（Q 列），列头行 = 标题行 + 1
 _W_TITLE_COL = 17

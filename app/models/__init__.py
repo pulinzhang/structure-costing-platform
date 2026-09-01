@@ -12,34 +12,35 @@ import 一遍，SQLAlchemy 才能在 create_all 时发现全部表。
 from app.models.async_task import AsyncTask
 from app.models.bom import (
     BomAnnualPartPrice,
+    BomNode,
     BomPackagingTransportFee,
     BomProcurementObject,
     BomProcurementObjectGenerateLog,
     BomProcurementObjectList,
+    BomSnapshot,
     BomWeldingFee,
     BomWeldingFeeCalcLog,
     BomWeldingFeeItem,
-    BomNode,
-    BomSnapshot,
     BomWeldingProcessBreakdownGenerateLog,
     BomWeldingProcessBreakdownLine,
     BomWeldingProcessBreakdownNode,
     BomWeldingUnitPrice,
 )
 from app.models.common import AuditUserMixin
-from app.models.file_trace import UploadFile
 from app.models.costing import (
+    AssemblyCost,
+    AssemblyCostCalcLog,
+    AssemblyCostIndirect,
+    AssemblyCostItem,
     CostingEngineRun,
     CostingEngineRunStep,
-    L0AssemblyCost,
-    L0AssemblyCostCalcLog,
-    L0AssemblyCostIndirect,
-    L0AssemblyCostItem,
     StampingPartCost,
     StampingPartCostCalcLog,
     SteelPrice,
     SteelPriceCalcLog,
 )
+from app.models.file_trace import UploadFile
+from app.models.llm import LlmAnalysisReport
 from app.models.settings import (
     OperationLog,
     SystemConfig,
@@ -63,7 +64,6 @@ from app.models.stamping import (
     StampingTailorWeldBlank,
     StampingTonnagePrice,
 )
-from app.models.llm import LlmAnalysisReport
 from app.models.yishiyiyi import (
     StampingScrapPrice,
     SteelBasePrice,
@@ -73,30 +73,29 @@ from app.models.yishiyiyi import (
 )
 
 __all__ = [
+    "AssemblyCost",
+    "AssemblyCostCalcLog",
+    "AssemblyCostIndirect",
+    "AssemblyCostItem",
     "AsyncTask",
     "AuditUserMixin",
     "BomAnnualPartPrice",
+    "BomNode",
     "BomPackagingTransportFee",
     "BomProcurementObject",
     "BomProcurementObjectGenerateLog",
     "BomProcurementObjectList",
+    "BomSnapshot",
     "BomWeldingFee",
     "BomWeldingFeeCalcLog",
     "BomWeldingFeeItem",
-    "BomNode",
-    "BomSnapshot",
     "BomWeldingProcessBreakdownGenerateLog",
     "BomWeldingProcessBreakdownLine",
     "BomWeldingProcessBreakdownNode",
     "BomWeldingUnitPrice",
-    "UploadFile",
     "CostingEngineRun",
     "CostingEngineRunStep",
     "LlmAnalysisReport",
-    "L0AssemblyCost",
-    "L0AssemblyCostCalcLog",
-    "L0AssemblyCostIndirect",
-    "L0AssemblyCostItem",
     "OperationLog",
     "StampingDieFee",
     "StampingDieFeeCalcLog",
@@ -122,6 +121,7 @@ __all__ = [
     "SteelPriceLadderItem",
     "SteelPricePolicy",
     "SystemConfig",
+    "UploadFile",
     "User",
     "UserPermission",
     "UserToken",

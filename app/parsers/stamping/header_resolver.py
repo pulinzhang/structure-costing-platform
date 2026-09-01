@@ -10,11 +10,9 @@
 
 from typing import Any
 
-
 from app.common.vehicle_model import normalize_vehicle_model
-from app.utils.logging_config import get_logger
 from app.parsers.stamping.models.header import HeaderContext
-
+from app.utils.logging_config import get_logger
 
 logger = get_logger("parser.stamping.header")
 

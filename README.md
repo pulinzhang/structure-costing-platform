@@ -313,7 +313,7 @@ stamping-costing-platform/
 | `/api/bom/l0-welding-fees` | 成品焊接费 |
 | `/api/costing/steel-price` | 钢材联动计算与列表 |
 | `/api/costing/stamping-part-cost` | 零件价格计算与列表 |
-| `/api/costing/l0-assembly-costs` | 成品核价（L0） |
+| `/api/costing/assembly-costs` | 总成核价 |
 | `/api/costing/monthly-bundle` | 月度核对合册导出 |
 | `/api/costing/engine` | 自动核价引擎 |
 | `/api/file-trace` | 文件溯源（列表 / 鉴权下载） |

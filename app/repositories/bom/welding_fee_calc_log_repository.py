@@ -90,6 +90,27 @@ class BomWeldingFeeCalcLogRepository:
         records = query.order_by(BomWeldingFeeCalcLog.id.desc()).offset(skip).limit(limit).all()
         return records, total
 
+    def get_latest(
+        self,
+        db: Session,
+        *,
+        year: int,
+        location: str,
+        vehicle_model: str,
+        bom_version: str,
+    ) -> BomWeldingFeeCalcLog | None:
+        return (
+            db.query(BomWeldingFeeCalcLog)
+            .filter(
+                BomWeldingFeeCalcLog.year == year,
+                BomWeldingFeeCalcLog.location == location,
+                BomWeldingFeeCalcLog.vehicle_model == vehicle_model,
+                BomWeldingFeeCalcLog.bom_version == bom_version,
+            )
+            .order_by(BomWeldingFeeCalcLog.id.desc())
+            .first()
+        )
+
     def create(self, db: Session, data: BomWeldingFeeCalcLogCreate) -> BomWeldingFeeCalcLog:
         record = model_from_payload(BomWeldingFeeCalcLog, data)
         db.add(record)

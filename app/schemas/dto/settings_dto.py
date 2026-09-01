@@ -1,9 +1,9 @@
 """系统设置 DTO - 请求参数 / Repository 写入载荷"""
 
 from dataclasses import dataclass
+from decimal import Decimal
 from typing import Any, TypedDict
 
-from decimal import Decimal
 from pydantic import BaseModel, Field, field_validator
 
 from app.common.money import Q4, Q6, quantize_money

@@ -7,7 +7,7 @@ from app.services.bom.welding_fee.calc.calc_log_service import (
 from app.services.bom.welding_fee.calc.orchestrator import BomWeldingFeeCalcOrchestrator
 
 __all__ = [
+    "DUPLICATE_SCOPE_CALC_MESSAGE",
     "BomWeldingFeeCalcOrchestrator",
     "DuplicateScopeCalcError",
-    "DUPLICATE_SCOPE_CALC_MESSAGE",
 ]

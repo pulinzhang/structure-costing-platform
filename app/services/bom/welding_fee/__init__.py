@@ -8,8 +8,8 @@ from app.services.bom.welding_fee.calc.orchestrator import BomWeldingFeeCalcOrch
 from app.services.bom.welding_fee.service import BomWeldingFeeService
 
 __all__ = [
-    "BomWeldingFeeService",
-    "BomWeldingFeeCalcOrchestrator",
-    "DuplicateScopeCalcError",
     "DUPLICATE_SCOPE_CALC_MESSAGE",
+    "BomWeldingFeeCalcOrchestrator",
+    "BomWeldingFeeService",
+    "DuplicateScopeCalcError",
 ]

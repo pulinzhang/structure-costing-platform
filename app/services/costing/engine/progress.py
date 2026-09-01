@@ -10,7 +10,7 @@ STAGE_BANDS: dict[str, tuple[int, int]] = {
     "annual": (5, 25),
     "steel": (25, 40),
     "part_cost": (40, 70),
-    "l0": (70, 95),
+    "assembly": (70, 95),
     "summary": (95, 100),
 }
 

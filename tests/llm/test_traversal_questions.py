@@ -61,7 +61,7 @@ def test_traversal_question_matrix_not_empty(traversal_scope: TraversalScope) ->
         db.close()
     assert len(cases) >= len(SUBJECT_MENU)
     menu_ids = {c.case_id for c in cases if c.category == "menu"}
-    assert "menu_l0-assembly-cost" in menu_ids
+    assert "menu_assembly-cost" in menu_ids
 
 
 @pytest.mark.integration

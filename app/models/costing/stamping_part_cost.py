@@ -11,8 +11,9 @@
   ρ_steel / λ / η 来自系统配置快照（默认 7.85 / 0.003 / 0.97）。
 """
 
-from decimal import Decimal
 from datetime import datetime
+from decimal import Decimal
+
 from sqlalchemy import Boolean, DateTime, Index, Integer, Numeric, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 

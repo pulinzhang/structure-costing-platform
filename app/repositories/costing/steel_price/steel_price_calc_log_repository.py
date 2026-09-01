@@ -10,7 +10,6 @@ from app.models.costing import SteelPriceCalcLog
 from app.repositories.persist import apply_payload_fields, model_from_payload
 from app.schemas.dto.steel_price_dto import SteelPriceCalcLogCreate, SteelPriceCalcLogPatch
 
-
 logger = logging.getLogger("repository.steel_price_calc_log")
 
 # 与 CalcLog status 约定一致；Repository 不依赖 Service 层常量，避免循环导入

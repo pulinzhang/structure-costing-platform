@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections import Counter
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import ROUND_HALF_UP, Decimal
 from typing import Any
 
 from app.repositories.llm.bom_material_analysis_repository import BomMaterialNodeRow

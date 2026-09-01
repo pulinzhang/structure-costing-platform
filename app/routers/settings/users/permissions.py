@@ -3,8 +3,8 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from app.deps.permissions import require_admin_user
 from app.database import get_db
+from app.deps.permissions import require_admin_user
 from app.schemas.dto.user_permission_dto import UserPermissionsUpdateDTO
 from app.schemas.vo.permission_vo import PermissionNodeVO
 from app.schemas.vo.user_vo import UserVO

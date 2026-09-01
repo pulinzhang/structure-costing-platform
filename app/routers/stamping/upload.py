@@ -3,13 +3,14 @@
 异步任务：立即返回 task_id，后台线程解析入库，前端轮询进度。
 """
 
-from fastapi import APIRouter, Depends, UploadFile, File, Form
-from fastapi.responses import StreamingResponse
 from urllib.parse import quote
 
+from fastapi import APIRouter, Depends, File, Form, UploadFile
+from fastapi.responses import StreamingResponse
+
 from app.common.permissions.codes import Perm
-from app.utils.logging_config import get_logger
 from app.deps.permissions import require_perm
+from app.schemas.vo.async_task_vo import AsyncTaskAcceptedVO, AsyncTaskProgressVO
 from app.schemas.vo.user_vo import UserVO
 from app.services.async_task import (
     STATUS_PENDING,
@@ -17,9 +18,8 @@ from app.services.async_task import (
     AsyncTaskService,
 )
 from app.services.stamping.upload import StampingUploadService
-from app.schemas.vo.async_task_vo import AsyncTaskAcceptedVO, AsyncTaskProgressVO
+from app.utils.logging_config import get_logger
 from app.utils.response import ApiResponse
-
 
 logger = get_logger("router.stamping.upload")
 router = APIRouter(prefix="/api/stamping/upload", tags=["冲压工艺上传 API"])

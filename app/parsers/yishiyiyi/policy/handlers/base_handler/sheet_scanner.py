@@ -16,13 +16,13 @@ from typing import Any
 from openpyxl.worksheet.worksheet import Worksheet
 
 from app.parsers.yishiyiyi.policy.boundary_parser import _parse_boundary
-from app.parsers.yishiyiyi.policy.value_parser import _to_int_price, _to_str, _to_str_or_none
 from app.parsers.yishiyiyi.policy.handlers.constants import (
     BENCH_PATTERN,
     BLANK_LIMIT,
     GRADE_LABELS,
     THICKNESS_HEADER_KEYWORDS,
 )
+from app.parsers.yishiyiyi.policy.value_parser import _to_int_price, _to_str, _to_str_or_none
 
 
 class SheetScanner:
@@ -220,6 +220,7 @@ class SheetScanner:
         当某列的单元格为空时，其后的列不再属于该块。
         """
         import re
+
         from app.parsers.yishiyiyi.policy.boundary_parser import _parse_boundary_thickness
 
         _PURE_NUM_RE = re.compile(r"^\s*(-?\d+(?:\.\d+)?)\s*$")

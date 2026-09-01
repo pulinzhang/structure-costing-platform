@@ -13,7 +13,6 @@ from app.schemas.dto.stamping_process_fee_dto import (
     ProcessFeeCalcLogPatch,
 )
 
-
 logger = logging.getLogger("repository.stamping_process_fee_calc_log")
 
 _STATUS_PROCESSING = "processing"

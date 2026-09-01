@@ -6,21 +6,22 @@
 """
 
 import logging
+from collections.abc import Callable
 from decimal import Decimal
 from pathlib import Path
-from collections.abc import Callable
+
 from sqlalchemy.orm import Session
 
 from app.common.audit import audit_create, display_name
-from app.common.upload_scope_validation import validate_stamping_process_upload_scope
 from app.common.timezone import now
+from app.common.upload_scope_validation import validate_stamping_process_upload_scope
+from app.config import settings
+from app.exceptions.base import BusinessException
 from app.parsers.stamping.models.part import Part
 from app.parsers.stamping.models.process import Process
 from app.parsers.stamping.models.tailor_weld import TailorWeldAssemblyParsed
 from app.parsers.stamping.stamping_parser import parse_stamping_excel
 from app.parsers.stamping.tailor_weld_parser import parse_tailor_weld_excel
-from app.config import settings
-from app.exceptions.base import BusinessException
 from app.repositories.stamping.stamping_repository import (
     StampingPartRepository,
     StampingProcessRepository,
@@ -35,6 +36,8 @@ from app.services.async_task import (
     AsyncTaskService,
     WorkerTaskOutcome,
 )
+from app.services.file_trace.path_utils import to_upload_relpath
+from app.services.file_trace.register import register_existing
 from app.services.stamping.process_seq_validator import (
     ProcessSeqOccurrence,
     find_duplicate_process_seqs,
@@ -43,11 +46,9 @@ from app.services.stamping.process_seq_validator import (
 from app.services.stamping.tailor_weld_blank_service import StampingTailorWeldBlankService
 from app.services.stamping.upload.cost_ratio_preserver import ProcessCostRatioPreserver
 from app.services.stamping.upload.template_builder import build_stamping_process_template
-from app.services.file_trace.path_utils import to_upload_relpath
-from app.services.file_trace.register import register_existing
 from app.services.yishiyiyi.steel_grade_category import (
-    GradeEnsureItem,
     SOURCE_STAMPING_UPLOAD,
+    GradeEnsureItem,
     SteelGradeCategoryService,
 )
 
@@ -86,8 +87,8 @@ class StampingUploadService:
         主数据：解析完成后用库中已设比率回写工序，再删除旧数据并写入；
         删除与写入在同一事务中，全部成功或全部回滚。
         """
-        import tempfile
         import os
+        import tempfile
 
         def _report(progress: int, msg: str) -> None:
             if progress_callback:

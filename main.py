@@ -7,17 +7,16 @@ FastAPI 应用入口
 - 前端：静态 HTML + JavaScript (通过 Live Server 或 nginx)
 """
 
-from contextlib import asynccontextmanager
 import socket
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
-from app.utils.logging_config import LoggerConfig, log_request, log_response, get_logger
-
+from app.utils.logging_config import LoggerConfig, get_logger, log_request, log_response
 
 # 重要：在导入其他模块之前先配置日志，确保所有模块的 logger 都能正确获取日志器
 # 这解决了模块导入顺序导致的日志器配置问题
@@ -256,8 +255,8 @@ def create_app() -> FastAPI:
     )
 
     # 操作审计：写操作 + 导出（须在 CORS 之后添加，以便作为外层拿到最终响应）
-    from app.middleware.operation_log_middleware import OperationLogMiddleware
     from app.middleware.no_cache_frontend import NoCacheFrontendMiddleware
+    from app.middleware.operation_log_middleware import OperationLogMiddleware
 
     app.add_middleware(OperationLogMiddleware)
     # 前端 JS/CSS/入口页禁止强缓存，避免修复后仍命中旧坏脚本
@@ -291,6 +290,15 @@ def create_app() -> FastAPI:
             headers={"Cache-Control": "no-cache, must-revalidate"},
         )
 
+    @app.get("/assembly-cost-calc-report", include_in_schema=False)
+    async def assembly_cost_calc_report_page():
+        from fastapi.responses import FileResponse
+
+        return FileResponse(
+            "static/assembly-cost-calc-report.html",
+            headers={"Cache-Control": "no-cache, must-revalidate"},
+        )
+
     # 使用帮助站（独立静态目录：index / help / knowledge / example + css/img）
     # /helper → /helper/ ；子页用相对路径，如 help.html、helper.css、img/...
     @app.get("/helper", include_in_schema=False)
@@ -321,67 +329,70 @@ def create_app() -> FastAPI:
         return RedirectResponse(url="/login", status_code=302)
 
     # ========== 导入各个功能模块的路由 ==========
-    from app.routers.dashboard.crud import router as dashboard_router
-    from app.routers.bom.crud import router as bom_router
-    from app.routers.bom.upload import router as bom_upload_router
-    from app.routers.bom.welding_unit_price import router as bom_welding_unit_price_router
     from app.routers.bom.annual_part_price import (
         router as bom_annual_part_price_router,
     )
+    from app.routers.bom.crud import router as bom_router
     from app.routers.bom.packaging_transport_fee import (
         router as bom_packaging_transport_fee_router,
     )
     from app.routers.bom.procurement_object import (
         router as bom_procurement_object_router,
     )
+    from app.routers.bom.upload import router as bom_upload_router
+    from app.routers.bom.welding_fee import router as bom_welding_fee_router
     from app.routers.bom.welding_process_breakdown import (
         router as bom_welding_process_breakdown_router,
     )
-    from app.routers.bom.welding_fee import router as bom_welding_fee_router
+    from app.routers.bom.welding_unit_price import router as bom_welding_unit_price_router
+    from app.routers.costing.assembly_cost.calc import (
+        router as costing_assembly_cost_calc_router,
+    )
+    from app.routers.costing.assembly_cost.crud import (
+        router as costing_assembly_cost_router,
+    )
+    from app.routers.costing.assembly_cost.legacy import (
+        legacy_router as costing_assembly_cost_legacy_router,
+    )
     from app.routers.costing.engine.crud import router as costing_engine_router
-    from app.routers.file_trace.crud import router as file_trace_router
-    from app.routers.settings.system.crud import router as settings_router
-    from app.routers.stamping.crud import router as stamping_crud_router
-    from app.routers.stamping.upload import router as stamping_upload_router
-    from app.routers.stamping.die import router as stamping_die_router
-    from app.routers.stamping.die_unit_price import router as stamping_die_unit_price_router
-    from app.routers.stamping.die_fee import router as stamping_die_fee_router
-    from app.routers.stamping.gauge_fee import router as stamping_gauge_fee_router
-    from app.routers.stamping.tonnage_price import router as stamping_tonnage_price_router
-    from app.routers.stamping.stamping_process_fee import router as stamping_process_fee_router
+    from app.routers.costing.monthly_bundle_export.crud import (
+        router as costing_monthly_bundle_export_router,
+    )
     from app.routers.costing.stamping_part_cost.calc import (
         router as costing_stamping_part_cost_calc_router,
     )
     from app.routers.costing.stamping_part_cost.crud import (
         router as costing_stamping_part_cost_router,
     )
-    from app.routers.costing.l0_assembly_cost.calc import (
-        router as costing_l0_assembly_cost_calc_router,
-    )
-    from app.routers.costing.l0_assembly_cost.crud import (
-        router as costing_l0_assembly_cost_router,
-    )
-    from app.routers.costing.monthly_bundle_export.crud import (
-        router as costing_monthly_bundle_export_router,
-    )
-    from app.routers.costing.steel_price.crud import router as costing_steel_price_router
     from app.routers.costing.steel_price.calc import router as costing_steel_price_calc_router
-    from app.routers.yishiyiyi.policy.upload import router as yishiyiyi_policy_upload_router
-    from app.routers.yishiyiyi.policy.export import router as yishiyiyi_policy_export_router
-    from app.routers.yishiyiyi.policy.crud import router as yishiyiyi_policy_router
+    from app.routers.costing.steel_price.crud import router as costing_steel_price_router
+    from app.routers.dashboard.crud import router as dashboard_router
+    from app.routers.file_trace.crud import router as file_trace_router
+    from app.routers.llm.reports import router as llm_reports_router
+    from app.routers.settings.auth.crud import router as auth_router
+    from app.routers.settings.logs.crud import router as operation_log_router
+    from app.routers.settings.system.crud import router as settings_router
+    from app.routers.settings.users.crud import router as user_crud_router
+    from app.routers.settings.users.permissions import router as permissions_router
+    from app.routers.stamping.crud import router as stamping_crud_router
+    from app.routers.stamping.die import router as stamping_die_router
+    from app.routers.stamping.die_fee import router as stamping_die_fee_router
+    from app.routers.stamping.die_unit_price import router as stamping_die_unit_price_router
+    from app.routers.stamping.gauge_fee import router as stamping_gauge_fee_router
+    from app.routers.stamping.stamping_process_fee import router as stamping_process_fee_router
+    from app.routers.stamping.tonnage_price import router as stamping_tonnage_price_router
+    from app.routers.stamping.upload import router as stamping_upload_router
     from app.routers.yishiyiyi.base_price.crud import router as yishiyiyi_base_price_router
+    from app.routers.yishiyiyi.policy.crud import router as yishiyiyi_policy_router
+    from app.routers.yishiyiyi.policy.export import router as yishiyiyi_policy_export_router
+    from app.routers.yishiyiyi.policy.upload import router as yishiyiyi_policy_upload_router
+    from app.routers.yishiyiyi.scrap_price.crud import router as yishiyiyi_scrap_price_router
     from app.routers.yishiyiyi.steel_grade_category.crud import (
         router as yishiyiyi_steel_grade_category_router,
     )
     from app.routers.yishiyiyi.winning_thickness.crud import (
         router as yishiyiyi_winning_thickness_router,
     )
-    from app.routers.yishiyiyi.scrap_price.crud import router as yishiyiyi_scrap_price_router
-    from app.routers.settings.auth.crud import router as auth_router
-    from app.routers.settings.users.crud import router as user_crud_router
-    from app.routers.settings.users.permissions import router as permissions_router
-    from app.routers.settings.logs.crud import router as operation_log_router
-    from app.routers.llm.reports import router as llm_reports_router
 
     # include_router = 注册路由（鉴权由各端点 Depends(get_current_user) 声明）
     app.include_router(auth_router)
@@ -396,8 +407,9 @@ def create_app() -> FastAPI:
     app.include_router(stamping_process_fee_router)
     app.include_router(costing_stamping_part_cost_calc_router)
     app.include_router(costing_stamping_part_cost_router)
-    app.include_router(costing_l0_assembly_cost_calc_router)
-    app.include_router(costing_l0_assembly_cost_router)
+    app.include_router(costing_assembly_cost_legacy_router)
+    app.include_router(costing_assembly_cost_calc_router)
+    app.include_router(costing_assembly_cost_router)
     app.include_router(costing_monthly_bundle_export_router)
     app.include_router(costing_steel_price_calc_router)
     app.include_router(costing_steel_price_router)
@@ -426,13 +438,13 @@ def create_app() -> FastAPI:
     app.include_router(llm_reports_router)
 
     # ========== 全局异常处理器 ==========
+    from app.exceptions.base import BusinessException
     from app.exceptions.handlers import (
-        http_exception_handler,
-        validation_exception_handler,
         business_exception_handler,
         generic_exception_handler,
+        http_exception_handler,
+        validation_exception_handler,
     )
-    from app.exceptions.base import BusinessException
 
     app.add_exception_handler(HTTPException, http_exception_handler)
     app.add_exception_handler(RequestValidationError, validation_exception_handler)

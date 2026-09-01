@@ -43,8 +43,8 @@ from app.services.stamping.die.alloc_preserver import (
 from app.services.stamping.die.die_number_resolver import (
     DieLayoutCheckRow,
     StampingProcessTrace,
-    validate_die_layout,
     format_die_layout_issues,
+    validate_die_layout,
 )
 from app.services.stamping.die.process_identity import (
     ProcessPartIdentity,

@@ -492,7 +492,7 @@ static/js/llm-assistant/
 
 | `subject` | 落点（参考） |
 |-----------|--------------|
-| `l0` / `cost_total` | `#/l0-assembly-cost` |
+| `l0` / `cost_total` | `#/assembly-cost` |
 | `stamping_part` | `#/stamping-part-cost` |
 | `steel_price` | `#/steel-price-list` |
 | `steel_price_policy` | `#/steel-price-policy-download` |

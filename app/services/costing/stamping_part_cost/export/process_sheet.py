@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 import logging
 from decimal import Decimal
+from typing import Any
 
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
@@ -15,13 +14,13 @@ from app.common.excel_workbook import resolve_worksheet
 from app.common.export_watermark import workbook_to_xlsx_bytes
 from app.common.timezone import now
 from app.repositories.bom.bom_repository import BomNodeRepository, BomSnapshotRepository
+from app.repositories.costing.steel_price.steel_price_repository import SteelPriceRepository
 from app.repositories.stamping.stamping_process_fee_repository import (
     StampingProcessFeeRepository,
 )
 from app.repositories.yishiyiyi.scrap_price.scrap_price_repository import (
     StampingScrapPriceRepository,
 )
-from app.repositories.costing.steel_price.steel_price_repository import SteelPriceRepository
 from app.schemas.vo.user_vo import UserVO
 from app.services.costing.stamping_part_cost.export.bom_resolver import (
     resolve_assembly_supply_no,
@@ -38,18 +37,20 @@ from app.services.costing.stamping_part_cost.export.tailor_weld_display import (
     resolve_part_cost_display,
 )
 from app.services.costing.stamping_part_cost.export.trace_lookups import load_trace_maps
-from app.services.settings.system.settings_service import SettingsService
 from app.services.costing.stamping_part_cost.helpers import (
     DEFAULT_MATERIAL_LOSS_RATE,
     DEFAULT_SCRAP_RECOVERY_RATE,
     DEFAULT_STEEL_DENSITY,
-    format_number as _num,
     format_process_fee_trace,
     format_scrap_price_trace,
     format_steel_price_excel_trace,
     part_excel_row_col,
     to_decimal,
 )
+from app.services.costing.stamping_part_cost.helpers import (
+    format_number as _num,
+)
+from app.services.settings.system.settings_service import SettingsService
 
 logger = logging.getLogger("service.stamping_part_cost_export")
 

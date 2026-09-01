@@ -11,9 +11,8 @@ from typing import Any
 
 import openpyxl
 
-from app.utils.logging_config import get_logger
 from app.parsers.stamping.models.part_no_range import PartNoRange
-
+from app.utils.logging_config import get_logger
 
 logger = get_logger("parser.stamping.excel")
 

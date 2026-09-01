@@ -9,16 +9,16 @@ from typing import TypeVar
 from sqlalchemy import distinct, func
 from sqlalchemy.orm import InstrumentedAttribute, Query, Session, joinedload
 
-from app.models.yishiyiyi import SteelPricePolicy, SteelPriceLadderItem
+from app.models.yishiyiyi import SteelPriceLadderItem, SteelPricePolicy
 from app.repositories.persist import apply_dto_fields, model_from_payload
 from app.repositories.yishiyiyi.policy.dto import FilterOptions
-from app.services.yishiyiyi.steel_grade_category.constants import CANONICAL_CATEGORY_NAMES
 from app.schemas.dto.steel_price_policy_dto import (
     LadderItemUpdate,
     PolicyUpdate,
     SteelPriceLadderItemWrite,
     SteelPricePolicyWrite,
 )
+from app.services.yishiyiyi.steel_grade_category.constants import CANONICAL_CATEGORY_NAMES
 
 TValue = TypeVar("TValue")
 _T = TypeVar("_T")

@@ -47,7 +47,6 @@ from app.services.stamping.stamping_process_fee_service import (
 )
 from app.utils.response import ApiResponse
 
-
 router = APIRouter(prefix="/api/stamping/process-fees", tags=["冲压加工费 API"])
 
 _service = StampingProcessFeeService()

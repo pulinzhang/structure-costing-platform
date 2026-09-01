@@ -40,7 +40,6 @@ from app.schemas.vo.steel_price_vo import (
 from app.schemas.vo.user_vo import UserVO
 from app.services.costing.steel_price.spec_format import build_spec
 
-
 logger = logging.getLogger("service.steel_price")
 
 FORMULA_VERSION = "v1"

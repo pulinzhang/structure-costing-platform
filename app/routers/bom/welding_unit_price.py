@@ -30,13 +30,13 @@ from app.schemas.vo.bom_welding_unit_price_vo import (
     WeldingStandardProcessCatalogItemVO,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.services.bom.welding_unit_price_export_service import (
+from app.services.bom.welding_unit_price import BomWeldingUnitPriceService
+from app.services.bom.welding_unit_price.export_service import (
     BomWeldingUnitPriceExportService,
 )
-from app.services.bom.welding_unit_price_import_service import (
+from app.services.bom.welding_unit_price.import_service import (
     BomWeldingUnitPriceImportService,
 )
-from app.services.bom.welding_unit_price_service import BomWeldingUnitPriceService
 from app.utils.response import ApiResponse
 
 router = APIRouter(prefix="/api/bom/welding-unit-price", tags=["焊接单价 API"])

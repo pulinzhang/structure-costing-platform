@@ -12,13 +12,13 @@
 - 工序结束：op 列（工序号）为空
 """
 
-from typing import Any
 from collections.abc import Callable
+from typing import Any
 
 from app.common.offal_nested import parse_offal_from_sheet_type
-from app.parsers.stamping.value_parser import parse_decimal, parse_int
 from app.parsers.stamping.models.part import Part
 from app.parsers.stamping.models.process import Process
+from app.parsers.stamping.value_parser import parse_decimal, parse_int
 
 
 class RowParser:

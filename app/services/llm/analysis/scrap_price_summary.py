@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import ROUND_HALF_UP, Decimal
 from typing import Any
 
 from app.repositories.llm.scrap_price_analysis_repository import ScrapPricePeriodRow

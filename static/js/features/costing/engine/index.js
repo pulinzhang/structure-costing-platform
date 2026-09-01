@@ -46,7 +46,7 @@ const PIPELINE_STAGES = [
         gateCodes: [
             'annual_process_fee',
             'annual_welding_breakdown',
-            'annual_l0_welding_fee',
+            'annual_welding_fee',
         ],
     },
     {
@@ -69,7 +69,7 @@ const GATE_LABELS = {
     system_rates: '系统费率',
     annual_process_fee: '冲压加工费',
     annual_welding_breakdown: '焊接工艺拆解',
-    annual_l0_welding_fee: '成品焊接费',
+    annual_welding_fee: '焊接费',
 };
 
 const STATUS_META = {

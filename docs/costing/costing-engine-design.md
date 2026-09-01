@@ -37,7 +37,7 @@
 |---|---|---|
 | 钢材联动价 | `POST /api/costing/steel-price/calc` | ✅ AsyncTask |
 | 冲压零件价 | `POST /api/costing/stamping-part-cost/calc` | ✅ |
-| 成品 L0 核价 | `POST /api/costing/l0-assembly-costs/calc` | ✅ |
+| 总成核价 | `POST /api/costing/assembly-costs/calc` | ✅ |
 | 冲压加工费 | `POST /api/stamping/process-fees/calc` | ✅ |
 | 焊接工艺拆解 | `POST /api/bom/welding-process-breakdown/generate` | ✅ |
 | 成品焊接费 | `POST /api/bom/welding-fees/calc`（引擎补算传 `levels=[0]`） | ✅ |
@@ -80,7 +80,7 @@ CostingEngineService                 ← 编排唯一入口
 子计算（已有，引擎路径下同进程调用，不嵌套再开 AsyncTask）：
     SteelPriceCalcOrchestrator
     StampingPartCostCalcOrchestrator
-    L0AssemblyCostCalcOrchestrator
+    AssemblyCostCalcOrchestrator
     冲压加工费 / 焊接拆解 / L0 焊接费 Service
     MonthlyBundleExportService（可选 Phase，只导出）
 ```
@@ -415,7 +415,7 @@ step 表可预留 `child_task_id` 字段供二期，首版可空。
 | 字段意图 | 说明 |
 |---|---|
 | id, run_id | |
-| stage | `annual_process_fee` / `annual_welding_breakdown` / `annual_l0_welding_fee` / `steel` / `part_cost` / `l0` / `export` |
+| stage | `annual_process_fee` / `annual_welding_breakdown` / `annual_welding_fee` / `steel` / `part_cost` / `assembly` / `export` |
 | scope_key | 工厂名，或 `vehicle_model|bom_version` |
 | status | §8.2 |
 | child_task_id / child_log_id | 可选引用 |
@@ -509,10 +509,10 @@ can_start: bool   # = not hard_stop 且存在可执行路径
 | 阶段 | 调用 | 注意 |
 |---|---|---|
 | 门禁 | 上游 Repository / 现有 count、政策 match | 覆盖检查集中在 GateChecker |
-| 年度补算 | 加工费 / 拆解 / L0 焊接费 Service（阶段 id 仍 `annual_l0_welding_fee`，DTO `levels=[0]`） | 有 **level=0** 结果则跳过 |
+| 年度补算 | 加工费 / 拆解 / 焊接费 Service（阶段 id `annual_welding_fee`，全 level） | 有焊接费结果则跳过 |
 | 钢材 | `SteelPriceCalcOrchestrator` | 材料→基价→厚度政策→宽度政策→落库 |
 | 零件价 | `StampingPartCostCalcOrchestrator` | 现 ready：零件∧钢材∧废料∧加工费 |
-| L0 | `L0AssemblyCostCalcOrchestrator` | 不绑工厂；吃基地月成功冲压价+年度价 |
+| 总成 | `AssemblyCostCalcOrchestrator` | 不绑工厂；P20 要求冲压价与焊接费均完成 |
 | 导出 | `MonthlyBundleExportService` | 每成功 L0Scope；可选 |
 
 已审核月度结果：沿用现网「跳过不覆盖」，step 记 `skipped`。
@@ -586,7 +586,7 @@ can_start: bool   # = not hard_stop 且存在可执行路径
 |---|---|
 | 钢材编排 | `app/services/costing/steel_price/calc/orchestrator.py` |
 | 零件价编排 | `app/services/costing/stamping_part_cost/calc/orchestrator.py` |
-| L0 编排 | `app/services/costing/l0_assembly_cost/calc/orchestrator.py` |
+| 总成编排 | `app/services/costing/assembly_cost/calc/orchestrator.py` |
 | 合册 | `app/services/costing/monthly_bundle_export/` |
 | 引擎实现 | `app/routers/costing/engine/`、`app/services/costing/engine/`、`static/js/features/costing/engine/` |
 | 异步任务 | `app/services/async_task/async_task_service.py` |

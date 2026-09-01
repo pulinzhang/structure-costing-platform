@@ -13,7 +13,6 @@ from app.models.yishiyiyi import StampingScrapPrice
 from app.repositories.persist import model_from_payload
 from app.schemas.dto.stamping_scrap_price_dto import FilterOptions, ScrapPriceWrite
 
-
 logger = logging.getLogger("repository.stamping_scrap_price")
 
 

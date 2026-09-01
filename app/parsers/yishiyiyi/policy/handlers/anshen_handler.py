@@ -19,9 +19,10 @@ from decimal import Decimal
 from typing import Any
 
 from openpyxl.worksheet.worksheet import Worksheet
-from ..value_parser import _to_int_price
 
 from app.parsers.yishiyiyi.policy.handlers.base_handler import BaseSheetHandler
+
+from ..value_parser import _to_int_price
 from .constants import parse_thickness_label
 
 

@@ -28,7 +28,6 @@ from app.services.yishiyiyi.scrap_price import (
 )
 from app.utils.response import ApiResponse
 
-
 router = APIRouter(prefix="/api/yishiyiyi/scrap-price", tags=["废料月度销售价格"])
 
 _scrap_price_service = StampingScrapPriceService()

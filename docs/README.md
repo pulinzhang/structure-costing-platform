@@ -48,7 +48,7 @@
 | 文档 | 状态 |
 |------|------|
 | [costing-engine-design.md](costing/costing-engine-design.md) | 月度引擎（已上线） |
-| [assembly-costing-design.md](costing/assembly-costing-design.md) | 总成月核价（设计）：级别无关；财务总费用与采购应成本同一批行 |
+| [assembly-costing-design.md](costing/assembly-costing-design.md) | 总成月核价（已落地）：级别无关；财务总费用与采购应成本同一批行 |
 | [l0-assembly-costing-design.md](costing/l0-assembly-costing-design.md) | 现网 L0 成品核价（已上线；新规则见上一行） |
 | [l1-assembly-costing-design.md](costing/l1-assembly-costing-design.md) | 历史：委外应成本口径（结果表方案已作废） |
 | [effective-period-design.md](costing/effective-period-design.md) | 协议价生效期（设计） |

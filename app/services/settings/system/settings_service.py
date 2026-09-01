@@ -2,15 +2,15 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from decimal import Decimal, InvalidOperation
+from typing import Any
 
 from sqlalchemy.orm import Session
 
 from app.common.audit import audit_create, audit_update
 from app.common.money import Q4, Q6, quantize_money
 from app.config import settings as app_settings
+from app.repositories.settings.system.system_config_repository import SystemConfigRepository
 from app.schemas.dto.settings_dto import (
     SystemConfigPatch,
     SystemConfigUpdateDTO,
@@ -18,7 +18,6 @@ from app.schemas.dto.settings_dto import (
 )
 from app.schemas.vo.settings_vo import ConfigVO
 from app.schemas.vo.user_vo import UserVO
-from app.repositories.settings.system.system_config_repository import SystemConfigRepository
 
 DEFAULT_APP_NAME = "汽车冲压件自动核价平台"
 DEFAULT_STEEL_DENSITY = Decimal("7.85")

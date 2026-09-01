@@ -20,7 +20,6 @@ from app.schemas.vo.user_vo import UserVO
 from app.services.dashboard.dashboard_service import DashboardService
 from app.utils.response import ApiResponse
 
-
 router = APIRouter(prefix="/api/dashboard", tags=["仪表盘 API"])
 
 _dashboard_service = DashboardService()

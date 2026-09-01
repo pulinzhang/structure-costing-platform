@@ -4,8 +4,9 @@
 """
 
 from decimal import Decimal
+
 from sqlalchemy import ForeignKey, Index, Integer, Numeric, String, UniqueConstraint
-from sqlalchemy.orm import Mapped, relationship, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
 from app.models.common.audit_mixin import AuditUserMixin

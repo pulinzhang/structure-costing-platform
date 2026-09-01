@@ -6,9 +6,9 @@ import pytest
 
 from app.schemas.llm.analysis_query import AnalysisQuery, TimeRange
 from app.services.llm.query.intent_router import detect_help_topic, detect_query_mode
+from app.services.llm.usage.corpus import load_corpus_chunks
 from app.services.llm.usage.manifest import retrieve_chunks
 from app.services.llm.usage.runner import UsageHelpRunner
-from app.services.llm.usage.corpus import load_corpus_chunks
 
 
 @pytest.mark.parametrize(

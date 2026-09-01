@@ -9,7 +9,7 @@ from app.routers.settings.users.permissions import router as permissions_router
 __all__ = [
     "auth_router",
     "logs_router",
+    "permissions_router",
     "system_router",
     "users_router",
-    "permissions_router",
 ]

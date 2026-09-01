@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import uuid
 from datetime import datetime, timedelta
@@ -26,7 +27,6 @@ from app.schemas.vo.bom_welding_fee_vo import (
     BomWeldingFeeCalcLogVO,
     BomWeldingFeeCalcResultVO,
 )
-import contextlib
 
 STATUS_PROCESSING = "processing"
 STATUS_SUCCESS = "success"

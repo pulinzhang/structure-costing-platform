@@ -93,7 +93,7 @@ def main() -> None:
 
     # 6 焊接单价
     from app.parsers.bom.welding_unit_price_parser import parse_welding_unit_price_excel
-    from app.services.bom.welding_unit_price_import_service import (
+    from app.services.bom.welding_unit_price.import_service import (
         BomWeldingUnitPriceImportService,
     )
 
@@ -114,7 +114,7 @@ def main() -> None:
     from app.parsers.bom.packaging_transport_fee_parser import (
         parse_packaging_transport_fee_excel,
     )
-    from app.services.bom.packaging_transport_fee_import_service import (
+    from app.services.bom.packaging_transport_fee.import_service import (
         BomPackagingTransportFeeImportService,
     )
 

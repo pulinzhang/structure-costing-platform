@@ -5,9 +5,8 @@
 
 from __future__ import annotations
 
-from typing import NamedTuple
-
 from decimal import Decimal
+from typing import NamedTuple
 
 from sqlalchemy.orm import Session
 

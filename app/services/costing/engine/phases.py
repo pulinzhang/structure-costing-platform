@@ -53,14 +53,14 @@ def execute_annual(
             )
             continue
 
-        if item.code == "annual_l0_welding_fee" and item.scope_key in carry.failed_l0:
+        if item.code == "annual_welding_fee" and item.scope_key in carry.failed_l0:
             step = orch._finish_step(
                 db,
                 run_id=run_id,
                 stage=item.code,
                 scope_key=item.scope_key,
                 status="skipped",
-                message="焊接工艺拆解补算失败，跳过 L0 焊接费",
+                message="焊接工艺拆解补算失败，跳过焊接费",
                 metrics=None,
             )
             carry.step_summaries.append(
@@ -83,7 +83,7 @@ def execute_annual(
             carry.failed_suppliers.add(item.scope_key)
         if not ok and item.code == "annual_welding_breakdown":
             carry.failed_l0.add(item.scope_key)
-        if not ok and item.code == "annual_l0_welding_fee":
+        if not ok and item.code == "annual_welding_fee":
             carry.failed_l0.add(item.scope_key)
         step = orch._finish_step(
             db,
@@ -194,7 +194,7 @@ def execute_part_cost(
         )
 
 
-def execute_l0(
+def execute_assembly(
     orch: RunOrchestrator,
     db: Session,
     *,
@@ -205,47 +205,52 @@ def execute_l0(
     carry: PhaseCarry,
 ) -> None:
     scopes = discovery.l0_scopes
-    l0_total = max(len(scopes), 1)
+    total = max(len(scopes), 1)
     for idx, scope in enumerate(scopes):
         scope_key = f"{scope.vehicle_model}|{scope.bom_version}"
         progress.report_stage(
-            "l0",
+            "assembly",
             idx,
-            l0_total,
-            f"L0 核价 {idx + 1}/{len(scopes)} · {scope.vehicle_model} / {scope.bom_version}",
+            total,
+            f"总成核价 {idx + 1}/{len(scopes)} · {scope.vehicle_model} / {scope.bom_version}",
         )
-        if scope_key in carry.failed_l0:
+        skip_reason = None
+        if carry.failed_suppliers:
+            skip_reason = "零件价未完成，跳过总成核价"
+        elif scope_key in carry.failed_l0:
+            skip_reason = "年度焊接拆解/焊接费补算失败，跳过总成核价"
+        if skip_reason:
             step = orch._finish_step(
                 db,
                 run_id=run_id,
-                stage="l0",
+                stage="assembly",
                 scope_key=scope_key,
                 status="skipped",
-                message="年度焊接拆解/焊接费补算失败，跳过成品核价",
+                message=skip_reason,
                 metrics=None,
             )
             carry.step_summaries.append(
-                orch._step_summary("l0", scope_key, "skipped", step.message)
+                orch._step_summary("assembly", scope_key, "skipped", step.message)
             )
             continue
 
-        ok, message, metrics = orch._run_l0(
+        ok, message, metrics = orch._run_assembly(
             db, discovery=discovery, scope=scope, current_user=current_user
         )
         status = "succeeded" if ok else "failed"
         orch._finish_step(
             db,
             run_id=run_id,
-            stage="l0",
+            stage="assembly",
             scope_key=scope_key,
             status=status,
             message=message,
             metrics=metrics,
         )
-        carry.step_summaries.append(orch._step_summary("l0", scope_key, status, message))
+        carry.step_summaries.append(orch._step_summary("assembly", scope_key, status, message))
         progress.report_stage(
-            "l0",
+            "assembly",
             idx + 1,
-            l0_total,
-            f"L0 核价 {idx + 1}/{len(scopes)} · {scope.vehicle_model} / {scope.bom_version}",
+            total,
+            f"总成核价 {idx + 1}/{len(scopes)} · {scope.vehicle_model} / {scope.bom_version}",
         )

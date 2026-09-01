@@ -272,6 +272,29 @@ class BomWeldingProcessBreakdownRepository:
             .all()
         )
 
+    def exists_by_bom_scope(
+        self,
+        db: Session,
+        *,
+        location: str,
+        vehicle_model: str,
+        bom_version: str,
+    ) -> bool:
+        return (
+            db.query(BomWeldingProcessBreakdownNode.id)
+            .filter(
+                and_(
+                    *self._scope_filter(
+                        location=location,
+                        vehicle_model=vehicle_model,
+                        bom_version=bom_version,
+                    )
+                )
+            )
+            .first()
+            is not None
+        )
+
     def count_by_scope(
         self,
         db: Session,

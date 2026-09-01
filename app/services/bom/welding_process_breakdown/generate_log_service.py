@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import uuid
 from datetime import datetime, timedelta
@@ -27,7 +28,6 @@ from app.schemas.vo.bom_welding_process_breakdown_vo import (
     BomWeldingProcessBreakdownGenerateLogVO,
     BomWeldingProcessBreakdownGenerateResultVO,
 )
-import contextlib
 
 logger = logging.getLogger("service.bom.welding_process_breakdown.generate_log")
 

@@ -1183,59 +1183,59 @@
           ]
         },
         {
-          "code": "menu:l0-assembly-cost-group",
-          "label": "成品核价",
+          "code": "menu:assembly-cost-group",
+          "label": "总成核价",
           "type": "group",
           "children": [
             {
-              "code": "menu:l0-assembly-cost-calc",
-              "label": "成品核价计算",
+              "code": "menu:assembly-cost-calc",
+              "label": "总成核价计算",
               "type": "menu",
               "children": [
                 {
-                  "code": "op:l0-assembly-cost-calc:view",
+                  "code": "op:assembly-cost-calc:view",
                   "label": "查看",
                   "type": "op"
                 },
                 {
-                  "code": "op:l0-assembly-cost-calc:run",
+                  "code": "op:assembly-cost-calc:run",
                   "label": "计算",
                   "type": "op"
                 },
                 {
-                  "code": "op:l0-assembly-cost-calc:delete",
+                  "code": "op:assembly-cost-calc:delete",
                   "label": "删除日志",
                   "type": "op"
                 }
               ]
             },
             {
-              "code": "menu:l0-assembly-cost",
-              "label": "成品核价一览",
+              "code": "menu:assembly-cost",
+              "label": "总成核价一览",
               "type": "menu",
               "children": [
                 {
-                  "code": "op:l0-assembly-cost:view",
+                  "code": "op:assembly-cost:view",
                   "label": "查询",
                   "type": "op"
                 },
                 {
-                  "code": "op:l0-assembly-cost:delete",
+                  "code": "op:assembly-cost:delete",
                   "label": "删除",
                   "type": "op"
                 },
                 {
-                  "code": "op:l0-assembly-cost:approve",
+                  "code": "op:assembly-cost:approve",
                   "label": "审核通过",
                   "type": "op"
                 },
                 {
-                  "code": "op:l0-assembly-cost:reverse",
+                  "code": "op:assembly-cost:reverse",
                   "label": "反审核",
                   "type": "op"
                 },
                 {
-                  "code": "op:l0-assembly-cost:export",
+                  "code": "op:assembly-cost:export",
                   "label": "导出",
                   "type": "op"
                 }

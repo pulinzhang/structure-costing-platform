@@ -6,13 +6,17 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.common.audit import audit_create
-from app.exceptions.base import BusinessException, NotFoundException
 from app.common.bom.manufacturing_category import resolve_manufacturing_category
+from app.exceptions.base import BusinessException, NotFoundException
 from app.models.bom import BomNode
 from app.repositories.bom.bom_repository import (
     BomNodeRepository,
     BomSnapshotListFilters,
     BomSnapshotRepository,
+)
+from app.repositories.bom.procurement_object_repository import BomProcurementObjectRepository
+from app.repositories.bom.welding_process_breakdown_repository import (
+    BomWeldingProcessBreakdownRepository,
 )
 from app.schemas.dto.bom_dto import (
     BomNodeCreate,
@@ -44,6 +48,42 @@ class BomService:
     def __init__(self) -> None:
         self.snapshot_repo = BomSnapshotRepository()
         self.node_repo = BomNodeRepository()
+        self._procurement_repo = BomProcurementObjectRepository()
+        self._breakdown_repo = BomWeldingProcessBreakdownRepository()
+
+    def assert_bom_scope_unused(
+        self,
+        db: Session,
+        *,
+        location: str,
+        vehicle_model: str,
+        bom_version: str,
+        action: str,
+    ) -> None:
+        """有直接下游（采购对象、焊接拆解）则禁止覆盖导入或删除材料清单/节点。"""
+        found: list[str] = []
+        if self._procurement_repo.get_list_by_scope(
+            db,
+            location=location,
+            vehicle_model=vehicle_model,
+            bom_version=bom_version,
+        ):
+            found.append("采购对象清单")
+        if self._breakdown_repo.exists_by_bom_scope(
+            db,
+            location=location,
+            vehicle_model=vehicle_model,
+            bom_version=bom_version,
+        ):
+            found.append("焊接工艺拆解")
+        if not found:
+            return
+        labels = "、".join(found)
+        raise BusinessException(
+            f"该版本已有{labels}，不能{action}材料清单。"
+            "请改用新的 BOM 版本导入，或先删除上述下游后再操作。",
+            code=409,
+        )
 
     @staticmethod
     def _to_node_vo(row: BomNode, *, has_children: bool = False) -> BomNodeVO:
@@ -186,6 +226,13 @@ class BomService:
         row = self.snapshot_repo.get_by_id(db, snapshot_id)
         if not row:
             raise NotFoundException("BOM 清单不存在")
+        self.assert_bom_scope_unused(
+            db,
+            location=row.location,
+            vehicle_model=row.vehicle_model,
+            bom_version=row.bom_version,
+            action="删除",
+        )
         try:
             self.snapshot_repo.delete(db, row)
             db.commit()
@@ -266,6 +313,16 @@ class BomService:
         row = self.node_repo.get_by_id(db, node_id)
         if not row:
             raise NotFoundException("节点不存在")
+        snapshot = self.snapshot_repo.get_by_id(db, row.snapshot_id)
+        if not snapshot:
+            raise NotFoundException("BOM 清单不存在")
+        self.assert_bom_scope_unused(
+            db,
+            location=snapshot.location,
+            vehicle_model=snapshot.vehicle_model,
+            bom_version=snapshot.bom_version,
+            action="删除",
+        )
         try:
             self.node_repo.delete(db, row)
             db.commit()

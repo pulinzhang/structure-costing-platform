@@ -544,17 +544,17 @@ root
 │   │       ├── op:stamping-part-cost:approve
 │   │       ├── op:stamping-part-cost:reverse
 │   │       └── op:stamping-part-cost:export
-│   ├── menu:l0-assembly-cost-group            # 成品核价
-│   │   ├── menu:l0-assembly-cost-calc
-│   │   │   ├── op:l0-assembly-cost-calc:view
-│   │   │   ├── op:l0-assembly-cost-calc:run
-│   │   │   └── op:l0-assembly-cost-calc:delete
-│   │   └── menu:l0-assembly-cost
-│   │       ├── op:l0-assembly-cost:view
-│   │       ├── op:l0-assembly-cost:delete
-│   │       ├── op:l0-assembly-cost:approve
-│   │       ├── op:l0-assembly-cost:reverse
-│   │       └── op:l0-assembly-cost:export
+│   ├── menu:assembly-cost-group            # 总成核价
+│   │   ├── menu:assembly-cost-calc
+│   │   │   ├── op:assembly-cost-calc:view
+│   │   │   ├── op:assembly-cost-calc:run
+│   │   │   └── op:assembly-cost-calc:delete
+│   │   └── menu:assembly-cost
+│   │       ├── op:assembly-cost:view
+│   │       ├── op:assembly-cost:delete
+│   │       ├── op:assembly-cost:approve
+│   │       ├── op:assembly-cost:reverse
+│   │       └── op:assembly-cost:export
 │   └── menu:costing-engine                    # 自动核价引擎（路由 page=costing）
 │       ├── op:costing:view
 │       ├── op:costing:run
@@ -592,7 +592,7 @@ root
 
 | 类别 | 数量 |
 |---|---|
-| 分组 `type=group` | 19（含 `bom-packaging-transport-fee-group` / `l0-assembly-cost-group` 等） |
+| 分组 `type=group` | 19（含 `bom-packaging-transport-fee-group` / `assembly-cost-group` 等） |
 | 叶子 `type=menu` | 39 |
 | 操作 `op` | 139 |
 | 可勾节点合计 | 197（`root` 一般不入库） |
@@ -646,8 +646,8 @@ root
 | steel-price-list | `view` / `update` / `delete` / `approve` / `reject` / `reverse` / `export` | 查询；编辑；删除（含批量）；通过（含批量）；驳回；反审核（含批量）；导出 |
 | stamping-part-cost-calc | `view` / `run` / `delete` | 历史/过程；开始计算；删除日志 |
 | stamping-part-cost | `view` / `update` / `delete` / `approve` / `reverse` / `export` | 查询；失败手工改价；删除（含批量）；审核（含批量）；反审核；导出工艺清单 Excel |
-| l0-assembly-cost-calc | `view` / `run` / `delete` | 历史/过程；开始计算；删除日志 |
-| l0-assembly-cost | `view` / `delete` / `approve` / `reverse` / `export` | 查询；删除；审核；反审核；导出 |
+| assembly-cost-calc | `view` / `run` / `delete` | 历史/过程；开始计算；删除日志 |
+| assembly-cost | `view` / `delete` / `approve` / `reverse` / `export` | 查询；删除；审核；反审核；导出 |
 | costing（菜单码 `menu:costing-engine`） | `view` / `run` / `delete` | 检查就绪；启动月度引擎；删除 Run（含 running） |
 | file-trace | `view` / `download` | 列表/详情；鉴权下载原件 |
 | settings-profile | `view` / `update` / `password` | 查看；改资料/头像；改自己密码 |

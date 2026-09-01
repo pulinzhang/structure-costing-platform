@@ -1,6 +1,7 @@
 """前端静态资源禁用强缓存，避免 ?v= 未变时浏览器继续使用坏脚本。"""
 
 from typing import Any
+
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 

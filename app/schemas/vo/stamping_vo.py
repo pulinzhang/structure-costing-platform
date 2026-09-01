@@ -11,7 +11,6 @@ from pydantic import BaseModel, Field, field_serializer, field_validator
 from app.common.money import Q2, Q4, format_money, optional_format_money, quantize_money
 from app.common.timezone import datetime_to_iso
 
-
 # ==================== 冲次单价 VO ====================
 
 

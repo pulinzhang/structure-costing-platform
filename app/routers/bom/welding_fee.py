@@ -43,7 +43,6 @@ from app.services.bom.welding_fee import (
 from app.services.bom.welding_fee.export_service import BomWeldingFeeExportService
 from app.utils.response import ApiResponse
 
-
 router = APIRouter(tags=["BOM 焊接费 API"])
 
 _service = BomWeldingFeeService()

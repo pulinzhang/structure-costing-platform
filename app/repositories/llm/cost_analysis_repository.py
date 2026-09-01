@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.sql.elements import ColumnElement
 
 from app.common.part_number import escape_like_fragment
-from app.models.costing.l0_assembly_cost import L0AssemblyCost
+from app.models.costing.assembly_cost import AssemblyCost
 from app.repositories.llm._query_guard import run_guarded_query
 from app.services.llm._money import ym_int
 
@@ -56,8 +56,8 @@ class L0PartPeriodRow:
 
 def _is_missing_price() -> ColumnElement[bool]:
     return or_(
-        L0AssemblyCost.grand_total.is_(None),
-        L0AssemblyCost.grand_total <= 0,
+        AssemblyCost.grand_total.is_(None),
+        AssemblyCost.grand_total <= 0,
     )
 
 
@@ -80,7 +80,7 @@ class L0CostAnalysisRepository:
     ) -> list[L0MonthlyTotalRow]:
         """按月从 L0 明细表实时聚合。"""
         return run_guarded_query(
-            sql_summary="costing_l0_assembly_costs.query_monthly_totals",
+            sql_summary="costing_assembly_costs.query_monthly_totals",
             trace_id=trace_id,
             query_fn=lambda: self._query_monthly_totals_impl(
                 db,
@@ -111,7 +111,7 @@ class L0CostAnalysisRepository:
         trace_id: str | None = None,
     ) -> list[L0PartPeriodRow]:
         return run_guarded_query(
-            sql_summary="costing_l0_assembly_costs.query_part_rows",
+            sql_summary="costing_assembly_costs.query_part_rows",
             trace_id=trace_id,
             query_fn=lambda: self._query_part_rows_impl(
                 db,
@@ -142,24 +142,25 @@ class L0CostAnalysisRepository:
     ) -> int:
         start = ym_int(start_year, start_month)
         end = ym_int(end_year, end_month)
-        ym_expr = L0AssemblyCost.year * 100 + L0AssemblyCost.month
+        ym_expr = AssemblyCost.year * 100 + AssemblyCost.month
 
         def _count() -> int:
-            q = db.query(func.count(L0AssemblyCost.id)).filter(
+            q = db.query(func.count(AssemblyCost.id)).filter(
                 ym_expr >= start,
                 ym_expr <= end,
+                AssemblyCost.is_tree_root.is_(True),
                 _is_missing_price(),
             )
             if location:
-                q = q.filter(L0AssemblyCost.location == location)
+                q = q.filter(AssemblyCost.location == location)
             if vehicle_model:
-                q = q.filter(L0AssemblyCost.vehicle_model == vehicle_model)
+                q = q.filter(AssemblyCost.vehicle_model == vehicle_model)
             if bom_version:
-                q = q.filter(L0AssemblyCost.bom_version == bom_version)
+                q = q.filter(AssemblyCost.bom_version == bom_version)
             return int(q.scalar() or 0)
 
         return run_guarded_query(
-            sql_summary="costing_l0_assembly_costs.count_missing_price",
+            sql_summary="costing_assembly_costs.count_missing_price",
             trace_id=trace_id,
             query_fn=_count,
         )
@@ -179,82 +180,86 @@ class L0CostAnalysisRepository:
     ) -> list[L0MonthlyTotalRow]:
         start = ym_int(start_year, start_month)
         end = ym_int(end_year, end_month)
-        ym_expr = L0AssemblyCost.year * 100 + L0AssemblyCost.month
+        ym_expr = AssemblyCost.year * 100 + AssemblyCost.month
 
         priced = case(
             (_is_missing_price(), 0),
-            else_=L0AssemblyCost.grand_total,
+            else_=AssemblyCost.grand_total,
         )
-        ok_count = func.sum(case((L0AssemblyCost.calc_status == "ok", 1), else_=0))
-        partial_count = func.sum(case((L0AssemblyCost.calc_status != "ok", 1), else_=0))
+        ok_count = func.sum(case((AssemblyCost.calc_status == "ok", 1), else_=0))
+        partial_count = func.sum(case((AssemblyCost.calc_status != "ok", 1), else_=0))
         missing_price_count = func.sum(case((_is_missing_price(), 1), else_=0))
 
         q = db.query(
-            L0AssemblyCost.year,
-            L0AssemblyCost.month,
-            L0AssemblyCost.location,
-            func.count(L0AssemblyCost.id),
+            AssemblyCost.year,
+            AssemblyCost.month,
+            AssemblyCost.location,
+            func.count(AssemblyCost.id),
             ok_count,
             partial_count,
             func.coalesce(func.sum(priced), 0),
             func.coalesce(
-                func.sum(case((_is_missing_price(), 0), else_=L0AssemblyCost.total_amount)),
+                func.sum(case((_is_missing_price(), 0), else_=AssemblyCost.total_amount)),
                 0,
             ),
             func.coalesce(
-                func.sum(case((_is_missing_price(), 0), else_=L0AssemblyCost.indirect_amount)),
+                func.sum(case((_is_missing_price(), 0), else_=AssemblyCost.indirect_amount)),
                 0,
             ),
             func.coalesce(
-                func.sum(case((_is_missing_price(), 0), else_=L0AssemblyCost.stamping_amount)),
+                func.sum(case((_is_missing_price(), 0), else_=AssemblyCost.stamping_amount)),
                 0,
             ),
             func.coalesce(
                 func.sum(
                     case(
                         (_is_missing_price(), 0),
-                        else_=L0AssemblyCost.purchased_amount,
+                        else_=AssemblyCost.purchased_amount,
                     )
                 ),
                 0,
             ),
             func.coalesce(
-                func.sum(case((_is_missing_price(), 0), else_=L0AssemblyCost.bundle_amount)),
+                func.sum(case((_is_missing_price(), 0), else_=AssemblyCost.bundle_amount)),
                 0,
             ),
             func.coalesce(
-                func.sum(case((_is_missing_price(), 0), else_=L0AssemblyCost.welding_amount)),
+                func.sum(case((_is_missing_price(), 0), else_=AssemblyCost.welding_amount)),
                 0,
             ),
             func.coalesce(
                 func.sum(
                     case(
                         (_is_missing_price(), 0),
-                        else_=L0AssemblyCost.welding_other_fee,
+                        else_=AssemblyCost.welding_other_fee,
                     )
                 ),
                 0,
             ),
             missing_price_count,
-        ).filter(ym_expr >= start, ym_expr <= end)
+        ).filter(
+            ym_expr >= start,
+            ym_expr <= end,
+            AssemblyCost.is_tree_root.is_(True),
+        )
 
         if locations:
-            q = q.filter(L0AssemblyCost.location.in_(locations))
+            q = q.filter(AssemblyCost.location.in_(locations))
         elif location:
-            q = q.filter(L0AssemblyCost.location == location)
+            q = q.filter(AssemblyCost.location == location)
         if vehicle_model:
-            q = q.filter(L0AssemblyCost.vehicle_model == vehicle_model)
+            q = q.filter(AssemblyCost.vehicle_model == vehicle_model)
         if bom_version:
-            q = q.filter(L0AssemblyCost.bom_version == bom_version)
+            q = q.filter(AssemblyCost.bom_version == bom_version)
 
         q = q.group_by(
-            L0AssemblyCost.year,
-            L0AssemblyCost.month,
-            L0AssemblyCost.location,
+            AssemblyCost.year,
+            AssemblyCost.month,
+            AssemblyCost.location,
         ).order_by(
-            L0AssemblyCost.location.asc(),
-            L0AssemblyCost.year.asc(),
-            L0AssemblyCost.month.asc(),
+            AssemblyCost.location.asc(),
+            AssemblyCost.year.asc(),
+            AssemblyCost.month.asc(),
         )
 
         rows: list[L0MonthlyTotalRow] = []
@@ -296,23 +301,27 @@ class L0CostAnalysisRepository:
     ) -> list[L0PartPeriodRow]:
         start = ym_int(start_year, start_month)
         end = ym_int(end_year, end_month)
-        ym_expr = L0AssemblyCost.year * 100 + L0AssemblyCost.month
+        ym_expr = AssemblyCost.year * 100 + AssemblyCost.month
 
-        q = db.query(L0AssemblyCost).filter(ym_expr >= start, ym_expr <= end)
+        q = db.query(AssemblyCost).filter(
+            ym_expr >= start,
+            ym_expr <= end,
+            AssemblyCost.is_tree_root.is_(True),
+        )
         if location:
-            q = q.filter(L0AssemblyCost.location == location)
+            q = q.filter(AssemblyCost.location == location)
         if vehicle_model:
-            q = q.filter(L0AssemblyCost.vehicle_model == vehicle_model)
+            q = q.filter(AssemblyCost.vehicle_model == vehicle_model)
         if bom_version:
-            q = q.filter(L0AssemblyCost.bom_version == bom_version)
+            q = q.filter(AssemblyCost.bom_version == bom_version)
         if part_number:
             pattern = f"%{escape_like_fragment(part_number)}%"
-            q = q.filter(L0AssemblyCost.part_number.like(pattern, escape="\\"))
+            q = q.filter(AssemblyCost.part_number.like(pattern, escape="\\"))
 
         q = q.order_by(
-            L0AssemblyCost.year.asc(),
-            L0AssemblyCost.month.asc(),
-            L0AssemblyCost.grand_total.desc(),
+            AssemblyCost.year.asc(),
+            AssemblyCost.month.asc(),
+            AssemblyCost.grand_total.desc(),
         ).limit(limit)
 
         return [

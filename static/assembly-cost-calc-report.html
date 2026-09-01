@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>总成核价计算报告</title>
+    <link rel="icon" type="image/x-icon" href="/static/assets/favicon.ico">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --paper: #fffdfa;
+            --ink: #1c1917;
+            --muted: #57534e;
+            --line: #e7e5e4;
+            --ok: #166534;
+            --partial: #b45309;
+            --failed: #b91c1c;
+            --skipped: #57534e;
+            --accent: #9f1239;
+        }
+        * { box-sizing: border-box; }
+        html, body {
+            margin: 0;
+            background: #f3efe6;
+            color: var(--ink);
+            font-family: Inter, "Segoe UI", system-ui, sans-serif;
+        }
+        .page {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 28px 20px 64px;
+        }
+        .sheet {
+            background: var(--paper);
+            border: 1px solid #ddd6c8;
+            box-shadow: 0 10px 30px rgba(28, 25, 23, 0.06);
+        }
+        header.report-head {
+            padding: 28px 32px 20px;
+            border-bottom: 3px solid var(--accent);
+        }
+        header.report-head p {
+            margin: 0 0 6px;
+            font-size: 11px;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--accent);
+        }
+        header.report-head h1 {
+            margin: 0;
+            font-family: "Source Serif 4", Georgia, serif;
+            font-size: 28px;
+            font-weight: 700;
+        }
+        .meta {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 10px 24px;
+            padding: 16px 32px;
+            border-bottom: 1px solid var(--line);
+            font-size: 13px;
+            color: var(--muted);
+        }
+        .meta strong { color: var(--ink); font-weight: 600; }
+        .filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            padding: 14px 32px;
+            background: #faf7f2;
+            border-bottom: 1px solid var(--line);
+            position: sticky;
+            top: 0;
+            z-index: 2;
+        }
+        .filters input, .filters select {
+            height: 34px;
+            padding: 0 10px;
+            border: 1px solid #d6d3d1;
+            background: #fff;
+            color: var(--ink);
+            font-size: 13px;
+        }
+        .filters input { min-width: 220px; }
+        .filters button {
+            height: 34px;
+            padding: 0 12px;
+            border: 1px solid #d6d3d1;
+            background: #fff;
+            color: var(--muted);
+            font-size: 12px;
+            cursor: pointer;
+        }
+        .filters button.is-on {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: #fff1f2;
+        }
+        .body { padding: 20px 32px 32px; }
+        .narrative {
+            margin: 0 0 22px;
+            padding: 16px 18px;
+            background: #fafaf9;
+            border: 1px solid var(--line);
+            white-space: pre-wrap;
+            font-family: ui-monospace, Consolas, monospace;
+            font-size: 12px;
+            line-height: 1.65;
+            color: #44403c;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        th {
+            text-align: left;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--muted);
+            border-bottom: 1px solid #d6d3d1;
+            padding: 8px 8px;
+        }
+        td {
+            padding: 9px 8px;
+            border-bottom: 1px solid #f0ece4;
+            vertical-align: top;
+        }
+        td.num { text-align: right; font-variant-numeric: tabular-nums; font-family: ui-monospace, Consolas, monospace; }
+        .status-ok { color: var(--ok); font-weight: 600; }
+        .status-partial { color: var(--partial); font-weight: 600; }
+        .status-failed { color: var(--failed); font-weight: 600; }
+        .status-skipped { color: var(--skipped); }
+        .empty, .error {
+            padding: 48px 32px;
+            text-align: center;
+            color: var(--muted);
+        }
+        .error { color: var(--failed); }
+        .count { font-size: 12px; color: var(--muted); margin-left: auto; }
+        .missing { color: #9f1239; font-size: 12px; }
+        @media print {
+            body { background: #fff; }
+            .filters { position: static; }
+            .filters button[data-status], .filters input { border-color: #ccc; }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <div class="sheet" id="reportRoot">
+            <div class="empty">加载计算报告…</div>
+        </div>
+    </div>
+    <script type="module" src="/static/js/features/costing/assembly-cost/calc/report.js?v=1"></script>
+</body>
+</html>

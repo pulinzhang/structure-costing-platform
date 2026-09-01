@@ -9,8 +9,8 @@ from pathlib import Path
 from sqlalchemy.orm import Session
 
 from app.common.audit import audit_create
-from app.common.upload_scope_validation import validate_bom_material_upload_scope
 from app.common.timezone import now
+from app.common.upload_scope_validation import validate_bom_material_upload_scope
 from app.config import settings
 from app.exceptions.base import BusinessException
 from app.parsers.bom.bom_parser import BomParsedNode, parse_bom_excel
@@ -18,6 +18,7 @@ from app.repositories.bom.bom_repository import BomNodeRepository, BomSnapshotRe
 from app.schemas.dto.bom_dto import BomNodeWrite, BomSnapshotWrite
 from app.schemas.vo.bom_vo import BomImportResultVO, BomSnapshotVO
 from app.schemas.vo.user_vo import UserVO
+from app.services.bom.bom_service import BomService
 from app.services.bom.bom_template_builder import build_bom_material_template
 from app.services.bom.subassembly_consistency import validate_subassembly_consistency
 from app.services.file_trace.register import register_existing
@@ -35,7 +36,8 @@ class BomUploadService:
         self.snapshot_repo = BomSnapshotRepository()
         self.node_repo = BomNodeRepository()
 
-    def build_template(self) -> tuple[bytes, str]:
+    @staticmethod
+    def build_template() -> tuple[bytes, str]:
         """下载用材料清单导入模板（含三级树样例）。"""
         return build_bom_material_template()
 
@@ -95,6 +97,13 @@ class BomUploadService:
                 db, location, vehicle_model, bom_version
             )
             if existing:
+                BomService().assert_bom_scope_unused(
+                    db,
+                    location=location,
+                    vehicle_model=vehicle_model,
+                    bom_version=bom_version,
+                    action="覆盖导入",
+                )
                 self.snapshot_repo.delete(db, existing)
                 replaced = True
 

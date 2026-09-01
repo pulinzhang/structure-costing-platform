@@ -10,17 +10,17 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.models.stamping import StampingPart
 from app.schemas.vo.stamping_part_cost_vo import StampingPartCostFailedItemVO
+from app.services.costing.stamping_part_cost.calc.constants import compute_finished_cost_stack
+from app.services.costing.stamping_part_cost.calc.fees.die import DieFeeResolver
+from app.services.costing.stamping_part_cost.calc.fees.gauge import GaugeFeeResolver
+from app.services.costing.stamping_part_cost.calc.part_calculator import PartCostCalculator
+from app.services.costing.stamping_part_cost.calc.resolvers import PriceResolver
 from app.services.costing.steel_price.calc.models import (
     MaterialThicknessRow,
     SteelPriceCalcRequest,
 )
 from app.services.costing.steel_price.calc.steps.apply_adjustments import AdjustmentApplier
 from app.services.costing.steel_price.calc.steps.enrich_base_price import BasePriceEnricher
-from app.services.costing.stamping_part_cost.calc.constants import compute_finished_cost_stack
-from app.services.costing.stamping_part_cost.calc.fees.die import DieFeeResolver
-from app.services.costing.stamping_part_cost.calc.fees.gauge import GaugeFeeResolver
-from app.services.costing.stamping_part_cost.calc.part_calculator import PartCostCalculator
-from app.services.costing.stamping_part_cost.calc.resolvers import PriceResolver
 from app.services.settings.system.settings_service import SettingsService
 
 YEAR = 2026

@@ -3,7 +3,7 @@
 import logging
 from collections.abc import Sequence
 from decimal import Decimal
-from typing import TypeVar, TypedDict
+from typing import TypedDict, TypeVar
 
 from sqlalchemy import func
 from sqlalchemy.orm import InstrumentedAttribute, Query, Session
@@ -395,6 +395,22 @@ class StampingPartRepository:
                 StampingPart.stamping_supplier == stamping_supplier,
                 StampingPart.vehicle_model == vehicle_model,
                 StampingPart.version == version,
+            )
+            .all()
+        )
+
+    def list_by_location_and_vehicle(
+        self,
+        db: Session,
+        *,
+        location: str,
+        vehicle_model: str,
+    ) -> list[StampingPart]:
+        return (
+            db.query(StampingPart)
+            .filter(
+                StampingPart.location == location,
+                StampingPart.vehicle_model == vehicle_model,
             )
             .all()
         )

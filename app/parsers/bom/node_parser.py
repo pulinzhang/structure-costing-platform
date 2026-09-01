@@ -6,10 +6,8 @@ BOM 树节点解析
 
 from __future__ import annotations
 
-from typing import Any
-
-
 from decimal import Decimal
+from typing import Any
 
 from app.parsers.bom.models import BomParsedNode
 from app.parsers.bom.value_parser import (

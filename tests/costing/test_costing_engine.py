@@ -44,7 +44,7 @@ def test_progress_bands_monotonic() -> None:
     assert map_progress("annual", 0, 4) == 5
     assert map_progress("steel", 1, 1) == 40
     assert map_progress("part_cost", 1, 2) == 55
-    assert map_progress("l0", 2, 4) == 82
+    assert map_progress("assembly", 2, 4) == 82
     assert map_progress("summary", 1, 1) == 100
 
 
@@ -120,7 +120,7 @@ def test_run_orchestrator_does_not_submit_nested_async_task() -> None:
             will_auto_calc=False,
         ),
         CostingEngineAnnualItemVO(
-            code="annual_l0_welding_fee",
+            code="annual_welding_fee",
             scope_key="T28|D-00",
             exists=True,
             will_auto_calc=False,
@@ -145,7 +145,7 @@ def test_run_orchestrator_does_not_submit_nested_async_task() -> None:
     with (
         patch.object(orch.steel_orch, "calculate", return_value=steel_result) as steel_calc,
         patch.object(orch.part_cost_orch, "calculate", return_value=part_result),
-        patch.object(orch.l0_orch, "calculate", return_value=l0_result),
+        patch.object(orch.assembly_orch, "calculate", return_value=l0_result),
         patch(
             "app.services.async_task.async_task_service.AsyncTaskService.submit",
             side_effect=fake_submit,
@@ -168,7 +168,7 @@ def test_run_orchestrator_does_not_submit_nested_async_task() -> None:
     assert submit_calls == []
     assert summary["status"] in ("succeeded", "partial")
     assert any(s["stage"] == "steel" for s in summary["steps"])
-    assert any(s["stage"] == "l0" for s in summary["steps"])
+    assert any(s["stage"] == "assembly" for s in summary["steps"])
 
 
 def test_delete_running_allows_new_key(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -207,8 +207,8 @@ def test_gate_item_ok_false_requires_navigate_shape() -> None:
     assert payload["navigate"]["query"]["month"] == 2
 
 
-def test_annual_planner_l0_welding_fee_exists_requires_level_zero() -> None:
-    """仅有 L1 焊接费行时仍应计划 annual_l0_welding_fee 补算。"""
+def test_annual_planner_welding_fee_exists_covers_all_levels() -> None:
+    """焊接费是否已有结果按整树计，不按 level=0。"""
     planner = AnnualCalcPlanner()
     db = MagicMock()
     planner.l0_welding_fee_repo = MagicMock()
@@ -224,6 +224,6 @@ def test_annual_planner_l0_welding_fee_exists_requires_level_zero() -> None:
 
     assert exists is False
     kwargs = planner.l0_welding_fee_repo.count_by_scope_and_statuses.call_args.kwargs
-    assert kwargs["level"] == 0
+    assert kwargs["level"] is None
     assert kwargs["year"] == 2026
     assert kwargs["vehicle_model"] == "T28"

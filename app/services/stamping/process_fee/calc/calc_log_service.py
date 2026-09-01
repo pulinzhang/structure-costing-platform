@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import uuid
 from datetime import datetime, timedelta
@@ -28,13 +29,12 @@ from app.schemas.vo.stamping_process_fee_vo import (
 )
 from app.services.stamping.process_fee.calc.constants import (
     DUPLICATE_SCOPE_CALC_MESSAGE,
+    STALE_PROCESSING_SECONDS,
     STATUS_FAILED,
     STATUS_PROCESSING,
-    STALE_PROCESSING_SECONDS,
 )
 from app.services.stamping.process_fee.calc.models import DuplicateScopeCalcError
 from app.services.stamping.process_fee.scope import require_scope
-import contextlib
 
 logger = logging.getLogger("service.stamping.process_fee.calc.log")
 

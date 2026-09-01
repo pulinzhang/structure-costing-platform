@@ -13,8 +13,8 @@ from app.services.stamping.die_fee.calc.weight_resolver import (
 )
 from app.services.stamping.die_fee.fee_math import (
     PRICE_KIND_PROGRESSIVE,
-    DieFeeLineResult,
     ZERO,
+    DieFeeLineResult,
     build_line_basis_text,
     calc_line_die_fee,
     resolve_price_kind,

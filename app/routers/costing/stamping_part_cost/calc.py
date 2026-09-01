@@ -28,7 +28,6 @@ from app.services.costing.stamping_part_cost.stamping_part_cost_service import (
 )
 from app.utils.response import ApiResponse
 
-
 router = APIRouter(
     prefix="/api/costing/stamping-part-cost",
     tags=["冲压零件价格计算"],

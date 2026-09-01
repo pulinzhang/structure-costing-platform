@@ -16,7 +16,6 @@ from app.common.timezone import now
 from app.repositories.stamping.tonnage_price_repository import StampingTonnagePriceRepository
 from app.schemas.vo.user_vo import UserVO
 
-
 logger = logging.getLogger("service.stamping_tonnage_price_export")
 
 

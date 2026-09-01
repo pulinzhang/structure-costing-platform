@@ -14,11 +14,11 @@ from app.models.stamping.tailor_weld_blank import StampingTailorWeldBlank
 from app.models.stamping.tonnage_price import StampingTonnagePrice
 
 __all__ = [
-    "StampingDiePart",
-    "StampingDieProcess",
     "StampingDieFee",
     "StampingDieFeeCalcLog",
     "StampingDieFeeItem",
+    "StampingDiePart",
+    "StampingDieProcess",
     "StampingDieUnitPrice",
     "StampingGaugeFee",
     "StampingPart",

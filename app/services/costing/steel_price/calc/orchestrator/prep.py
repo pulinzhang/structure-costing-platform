@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+import uuid
 from dataclasses import dataclass
 from datetime import datetime
-import uuid
 
 from app.common.timezone import now
 from app.services.costing.steel_price.calc.models import (

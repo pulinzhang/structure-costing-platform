@@ -6,6 +6,7 @@ from decimal import Decimal
 from types import SimpleNamespace
 
 from app.schemas.vo.stamping_part_cost_vo import StampingPartCostFailedItemVO
+from app.services.costing.stamping_part_cost.calc.constants import AMOUNT_QUANTIZE, quantize
 from app.services.costing.stamping_part_cost.calc.fees.die import DieFeeLookup
 from app.services.costing.stamping_part_cost.calc.fees.gauge import GaugeFeeLookup
 from app.services.costing.stamping_part_cost.calc.fees.process import ProcessFeeLookup
@@ -13,7 +14,6 @@ from app.services.costing.stamping_part_cost.calc.part_calculator import (
     PartCostCalculator,
     part_snapshot,
 )
-from app.services.costing.stamping_part_cost.calc.constants import AMOUNT_QUANTIZE, quantize
 
 
 class _BoomSteel:

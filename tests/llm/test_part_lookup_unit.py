@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from decimal import Decimal
 
+from app.repositories.llm.cost_analysis_repository import L0PartPeriodRow
 from app.repositories.llm.stamping_cost_analysis_repository import StampingPartPeriodRow
 from app.repositories.llm.stamping_process_analysis_repository import StampingProcessPartRow
 from app.services.llm.analysis.part_lookup import (
@@ -12,7 +13,6 @@ from app.services.llm.analysis.part_lookup import (
     format_part_lookup_message,
     resolve_part_data_profile,
 )
-from app.repositories.llm.cost_analysis_repository import L0PartPeriodRow
 
 
 def test_build_part_existence_mixed_hits() -> None:

@@ -245,7 +245,7 @@ def check_flat_templates() -> list[str]:
         issues.append("冲次模板解析不足")
 
     from app.parsers.bom.welding_unit_price_parser import parse_welding_unit_price_excel
-    from app.services.bom.welding_unit_price_import_service import (
+    from app.services.bom.welding_unit_price.import_service import (
         BomWeldingUnitPriceImportService,
     )
 
@@ -259,7 +259,7 @@ def check_flat_templates() -> list[str]:
     from app.parsers.bom.packaging_transport_fee_parser import (
         parse_packaging_transport_fee_excel,
     )
-    from app.services.bom.packaging_transport_fee_import_service import (
+    from app.services.bom.packaging_transport_fee.import_service import (
         BomPackagingTransportFeeImportService,
     )
 

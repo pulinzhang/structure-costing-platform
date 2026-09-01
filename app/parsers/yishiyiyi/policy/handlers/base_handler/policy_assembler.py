@@ -16,14 +16,15 @@ from typing import Any
 
 from openpyxl.worksheet.worksheet import Worksheet
 
+from app.exceptions.base import BusinessException
 from app.parsers.yishiyiyi.policy.boundary_parser import (
     _Boundary,
     _parse_boundary,
     is_lte,
     is_strict_gt,
 )
+from app.parsers.yishiyiyi.policy.handlers.constants import GRADE_LABELS
 from app.parsers.yishiyiyi.policy.models import ParsedLadderItem, ParsedPolicy
-from app.exceptions.base import BusinessException
 from app.parsers.yishiyiyi.policy.models.policy import (
     GRADE_TYPE_CATEGORY,
     GRADE_TYPE_GRADE,
@@ -31,15 +32,15 @@ from app.parsers.yishiyiyi.policy.models.policy import (
     POLICY_TYPE_THICKNESS,
     POLICY_TYPE_WIDTH,
 )
-from app.services.yishiyiyi.steel_grade_category.constants import (
-    CANONICAL_CATEGORY_NAMES,
-    normalize_category_name,
-)
 from app.parsers.yishiyiyi.policy.value_parser import (
     _to_int_price,
     is_carry_forward_price,
 )
-from app.parsers.yishiyiyi.policy.handlers.constants import GRADE_LABELS
+from app.services.yishiyiyi.steel_grade_category.constants import (
+    CANONICAL_CATEGORY_NAMES,
+    normalize_category_name,
+)
+
 from .sheet_scanner import SheetScanner
 
 _WIDTH_RANGE_KEYWORDS = ("≤", "≥", "＜", "＞", "W", "宽")
@@ -163,6 +164,7 @@ class PolicyAssembler:
         纯数字（如 "0.5"）规范化为 "<=0.5" 后解析，解析为 min=None, max=数字, max_operator="<="。
         """
         import re
+
         from app.parsers.yishiyiyi.policy.boundary_parser import _parse_boundary_thickness
 
         _PURE_NUM_RE = re.compile(r"^\s*(-?\d+(?:\.\d+)?)\s*$")

@@ -26,9 +26,9 @@ from app.schemas.dto.stamping_die_fee_dto import (
 from app.schemas.vo.stamping_die_fee_vo import StampingDieFeeCalcLogVO
 from app.services.stamping.die_fee.calc.constants import (
     DUPLICATE_SCOPE_CALC_MESSAGE,
+    STALE_PROCESSING_SECONDS,
     STATUS_FAILED,
     STATUS_PROCESSING,
-    STALE_PROCESSING_SECONDS,
 )
 from app.services.stamping.process_fee.calc.models import DuplicateScopeCalcError
 

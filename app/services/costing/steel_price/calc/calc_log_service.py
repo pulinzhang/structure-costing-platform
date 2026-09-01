@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import uuid
 from datetime import datetime, timedelta
@@ -20,13 +21,11 @@ from app.schemas.vo.steel_price_vo import SteelPriceCalcLogVO
 from app.services.costing.steel_price.calc.models import SteelPriceCalcResult
 from app.services.costing.steel_price.calc.status import (
     DUPLICATE_PERIOD_CALC_MESSAGE,
+    STALE_PROCESSING_SECONDS,
     STATUS_FAILED,
     STATUS_PROCESSING,
-    STALE_PROCESSING_SECONDS,
     DuplicatePeriodCalcError,
 )
-import contextlib
-
 
 logger = logging.getLogger("service.steel_price.calc.log")
 

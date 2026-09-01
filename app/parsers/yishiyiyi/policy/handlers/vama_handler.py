@@ -28,14 +28,14 @@ from typing import Any
 
 from openpyxl.worksheet.worksheet import Worksheet
 
+from app.parsers.yishiyiyi.policy.handlers.base_handler import BaseSheetHandler
+
+from ..boundary_parser import _Boundary, is_strict_gt
 from ..models import ParsedPolicy
+from ..models.ladder_item import ParsedLadderItem
 from ..models.policy import GRADE_TYPE_GRADE
 from ..value_parser import _to_int_price
-from app.parsers.yishiyiyi.policy.handlers.base_handler import BaseSheetHandler
-from ..boundary_parser import _Boundary, is_strict_gt
 from .constants import GRADE_LABELS
-
-from ..models.ladder_item import ParsedLadderItem
 
 
 class VamaSheetHandler(BaseSheetHandler):

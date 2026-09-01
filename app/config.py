@@ -5,8 +5,10 @@
 
 import os
 from pathlib import Path
+
 from pydantic import AliasChoices, Field, field_validator
 from pydantic_settings import BaseSettings
+
 # 项目根目录 (app/config.py -> app/ -> 项目根目录)
 
 BASE_DIR: Path = Path(__file__).resolve().parent.parent

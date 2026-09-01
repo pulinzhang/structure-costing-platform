@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 import uuid
 from typing import Any
@@ -39,14 +40,13 @@ from app.services.async_task import (
 )
 from app.services.llm.analysis.idempotency import build_idempotency_key
 from app.services.llm.analysis.runner import AnalysisRunner
-from app.services.llm.engine_readiness import EngineReadinessRunner
-from app.services.llm.usage import UsageHelpRunner
 from app.services.llm.client import LlmClientError
 from app.services.llm.context.snapshot_builder import SnapshotBuilder
+from app.services.llm.engine_readiness import EngineReadinessRunner
 from app.services.llm.generator import LlmReportGenerator
 from app.services.llm.query.query_parser import QueryParser
+from app.services.llm.usage import UsageHelpRunner
 from app.utils.logging_config import get_logger
-import contextlib
 
 logger = get_logger("service.llm.report")
 

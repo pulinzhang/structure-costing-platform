@@ -31,7 +31,7 @@ def export_download(
     bom_version: str = Query(..., min_length=1, description="BOM 版本"),
     stamping_supplier: str | None = Query(None, description="冲压工厂（可选）"),
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(require_perm(Perm.L0_ASSEMBLY_COST_EXPORT)),
+    current_user: UserVO = Depends(require_perm(Perm.ASSEMBLY_COST_EXPORT)),
 ) -> StreamingResponse:
     """
     导出月度核对合册：成品核价 + 冲压零件核价 + 焊接费 + 加工费 + 钢材联动等。

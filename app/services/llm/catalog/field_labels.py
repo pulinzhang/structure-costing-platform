@@ -23,7 +23,7 @@ COMMON_FIELD_LABELS: dict[str, str] = {
     "updated_at": "更新时间",
 }
 
-# L0AssemblyCostVO 及明细/间接
+# AssemblyCostVO 及明细/间接
 L0_FIELD_LABELS: dict[str, str] = {
     **COMMON_FIELD_LABELS,
     "version": "版本",

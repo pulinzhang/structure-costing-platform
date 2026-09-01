@@ -2,10 +2,11 @@
 BOM 焊接工艺拆解路由
 """
 
+from urllib.parse import quote
+
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
-from urllib.parse import quote
 
 from app.common.permissions.codes import Perm
 from app.database import get_db

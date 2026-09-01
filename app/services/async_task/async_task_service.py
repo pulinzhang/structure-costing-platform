@@ -11,14 +11,15 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 import threading
 import time
 import uuid
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
 from typing import Any
-from collections.abc import Callable
 
 from sqlalchemy.orm import Session
 
@@ -29,15 +30,13 @@ from app.models.async_task import AsyncTask
 from app.repositories.async_task import AsyncTaskRepository
 from app.repositories.persist import model_from_payload
 from app.schemas.dto.async_task_dto import AsyncTaskInsert, AsyncTaskPatch
-from app.utils.logging_config import get_logger
 from app.services.async_task.worker_runner import (
     CrashCallback,
     CrashMessageFn,
     CrashResultFn,
     WorkerWork,
 )
-import contextlib
-
+from app.utils.logging_config import get_logger
 
 logger = get_logger("service.async_task")
 
@@ -57,7 +56,8 @@ TASK_TYPE_STAMPING_PART_COST_CALC = "stamping_part_cost_calc"
 TASK_TYPE_BOM_WELDING_PROCESS_BREAKDOWN_GENERATE = "bom_welding_process_breakdown_generate"
 TASK_TYPE_BOM_WELDING_FEE_CALC = "bom_welding_fee_calc"
 TASK_TYPE_BOM_L0_WELDING_FEE_CALC = TASK_TYPE_BOM_WELDING_FEE_CALC
-TASK_TYPE_L0_ASSEMBLY_COST_CALC = "l0_assembly_cost_calc"
+TASK_TYPE_ASSEMBLY_COST_CALC = "assembly_cost_calc"
+TASK_TYPE_L0_ASSEMBLY_COST_CALC = TASK_TYPE_ASSEMBLY_COST_CALC
 TASK_TYPE_COSTING_ENGINE_RUN = "costing_engine_run"
 
 TASK_TTL_SECONDS = 3600

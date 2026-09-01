@@ -16,7 +16,6 @@ from app.services.settings.system.settings_service import SettingsService
 from app.utils.logging_config import get_logger
 from app.utils.response import ApiResponse
 
-
 logger = get_logger("router.settings.system")
 router = APIRouter(prefix="/api/settings/system", tags=["系统设置 API"])
 _service = SettingsService()

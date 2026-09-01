@@ -18,7 +18,9 @@ from app.schemas.dto.bom_procurement_object_dto import (
     BomProcurementObjectListWrite,
     BomProcurementObjectWrite,
 )
-from app.services.bom.procurement_object.classify import SECTION_OBJECT
+
+# 与 classify.SECTION_OBJECT 同值；本层不 import Service，避免仓储→服务成环
+_SECTION_OBJECT = "object"
 
 
 class ProcurementObjectAuditSummary(TypedDict):
@@ -85,6 +87,23 @@ class BomProcurementObjectRepository:
     def get_object_by_id(self, db: Session, object_id: int) -> BomProcurementObject | None:
         return db.query(BomProcurementObject).filter(BomProcurementObject.id == object_id).first()
 
+    def get_confirm_status_by_id(self, db: Session, object_id: int) -> str | None:
+        obj = self.get_object_by_id(db, object_id)
+        if obj is None:
+            return None
+        return obj.confirm_status
+
+    def map_confirm_status_by_ids(self, db: Session, object_ids: list[int]) -> dict[int, str]:
+        unique_ids = [item for item in object_ids if item is not None]
+        if not unique_ids:
+            return {}
+        rows = (
+            db.query(BomProcurementObject.id, BomProcurementObject.confirm_status)
+            .filter(BomProcurementObject.id.in_(unique_ids))
+            .all()
+        )
+        return {int(row_id): status for row_id, status in rows}
+
     def list_objects_by_list_id(self, db: Session, list_id: int) -> list[BomProcurementObject]:
         return (
             db.query(BomProcurementObject)
@@ -98,7 +117,7 @@ class BomProcurementObjectRepository:
             db.query(BomProcurementObject)
             .filter(
                 BomProcurementObject.list_id == list_id,
-                BomProcurementObject.section == SECTION_OBJECT,
+                BomProcurementObject.section == _SECTION_OBJECT,
                 BomProcurementObject.audit_status == AUDIT_APPROVED,
             )
             .count()
@@ -243,14 +262,14 @@ class BomProcurementObjectRepository:
         )
         total = base.count()
         pending = base.filter(
-            BomProcurementObject.section == SECTION_OBJECT,
+            BomProcurementObject.section == _SECTION_OBJECT,
             BomProcurementObject.audit_status == AUDIT_PENDING,
         ).count()
         approved = base.filter(
-            BomProcurementObject.section == SECTION_OBJECT,
+            BomProcurementObject.section == _SECTION_OBJECT,
             BomProcurementObject.audit_status == AUDIT_APPROVED,
         ).count()
-        object_count = base.filter(BomProcurementObject.section == SECTION_OBJECT).count()
+        object_count = base.filter(BomProcurementObject.section == _SECTION_OBJECT).count()
         other_leaf = base.filter(BomProcurementObject.section == "other_leaf").count()
         anomaly = base.filter(BomProcurementObject.section == "anomaly").count()
         return {
@@ -275,7 +294,7 @@ class BomProcurementObjectRepository:
         count = query_update(
             db.query(BomProcurementObject).filter(
                 BomProcurementObject.list_id == list_id,
-                BomProcurementObject.section == SECTION_OBJECT,
+                BomProcurementObject.section == _SECTION_OBJECT,
                 BomProcurementObject.audit_status == AUDIT_PENDING,
             ),
             {
@@ -302,7 +321,7 @@ class BomProcurementObjectRepository:
         count = query_update(
             db.query(BomProcurementObject).filter(
                 BomProcurementObject.list_id == list_id,
-                BomProcurementObject.section == SECTION_OBJECT,
+                BomProcurementObject.section == _SECTION_OBJECT,
                 BomProcurementObject.audit_status == AUDIT_APPROVED,
             ),
             {
@@ -321,7 +340,7 @@ class BomProcurementObjectRepository:
             db.query(BomProcurementObject)
             .filter(
                 BomProcurementObject.list_id == list_id,
-                BomProcurementObject.section == SECTION_OBJECT,
+                BomProcurementObject.section == _SECTION_OBJECT,
                 BomProcurementObject.audit_status == AUDIT_PENDING,
             )
             .delete(synchronize_session=False)

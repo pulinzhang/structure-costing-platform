@@ -13,7 +13,6 @@ from app.schemas.dto.stamping_part_cost_dto import (
     StampingPartCostCalcLogPatch,
 )
 
-
 logger = logging.getLogger("repository.stamping_part_cost_calc_log")
 
 _STATUS_PROCESSING = "processing"
@@ -62,6 +61,27 @@ class StampingPartCostCalcLogRepository:
                 StampingPartCostCalcLog.location == location,
                 StampingPartCostCalcLog.stamping_supplier == stamping_supplier,
                 StampingPartCostCalcLog.status == _STATUS_PROCESSING,
+            )
+            .order_by(StampingPartCostCalcLog.id.desc())
+            .first()
+        )
+
+    def get_latest(
+        self,
+        db: Session,
+        *,
+        year: int,
+        month: int,
+        location: str,
+        stamping_supplier: str,
+    ) -> StampingPartCostCalcLog | None:
+        return (
+            db.query(StampingPartCostCalcLog)
+            .filter(
+                StampingPartCostCalcLog.year == year,
+                StampingPartCostCalcLog.month == month,
+                StampingPartCostCalcLog.location == location,
+                StampingPartCostCalcLog.stamping_supplier == stamping_supplier,
             )
             .order_by(StampingPartCostCalcLog.id.desc())
             .first()

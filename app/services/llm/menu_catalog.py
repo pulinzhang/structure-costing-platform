@@ -45,12 +45,12 @@ SUBJECT_MENU: dict[str, MenuTarget] = {
         label="打开冲压加工费列表",
     ),
     "l0": MenuTarget(
-        hash_page="l0-assembly-cost",
-        label="打开成品核价一览",
+        hash_page="assembly-cost",
+        label="打开总成核价一览",
     ),
     "cost_total": MenuTarget(
-        hash_page="l0-assembly-cost",
-        label="打开成品核价一览",
+        hash_page="assembly-cost",
+        label="打开总成核价一览",
     ),
     "steel_price": MenuTarget(
         hash_page="steel-price-list",
@@ -97,8 +97,8 @@ SUBJECT_MENU: dict[str, MenuTarget] = {
         label="打开焊接费列表",
     ),
     "part": MenuTarget(
-        hash_page="l0-assembly-cost",
-        label="打开成品核价一览",
+        hash_page="assembly-cost",
+        label="打开总成核价一览",
     ),
 }
 
@@ -215,8 +215,8 @@ MENU_COVERAGE: tuple[MenuCoverageItem, ...] = (
         "complete",
     ),
     MenuCoverageItem(
-        "l0-assembly-cost",
-        "成品核价一览",
+        "assembly-cost",
+        "总成核价一览",
         "l0",
         "complete",
         "cost_total 同落点",
@@ -250,7 +250,7 @@ ENTITY_LIST_PAGES: tuple[tuple[str, str], ...] = (
     ("scrap-price", "scrap_price"),
     ("steel-price-list", "steel_price"),
     ("stamping-part-cost", "stamping_part"),
-    ("l0-assembly-cost", "l0"),
+    ("assembly-cost", "l0"),
 )
 
 

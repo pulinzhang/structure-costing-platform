@@ -6,14 +6,14 @@ import logging
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.common.permissions.codes import Perm
-from app.config import settings
 from app.common.audit import (
     SYSTEM_USER,
     audit_create,
     audit_update,
 )
 from app.common.permissions.checks import require_permission
+from app.common.permissions.codes import Perm
+from app.config import settings
 from app.exceptions.base import BusinessException, NotFoundException
 from app.models.settings import User
 from app.repositories.settings.users.user_repository import (
@@ -32,7 +32,6 @@ from app.schemas.dto.user_dto import (
 )
 from app.schemas.vo.user_vo import UserVO
 from app.services.settings.users.permission_service import PermissionService
-
 from app.utils.avatar_storage import delete_avatar_file, save_user_avatar
 
 logger = logging.getLogger("service.user")

@@ -27,7 +27,6 @@ from app.repositories.stamping.stamping_process_fee_repository import (
 )
 from app.schemas.vo.user_vo import UserVO
 
-
 logger = logging.getLogger("service.stamping_process_fee_export")
 
 _FONT = "微软雅黑"

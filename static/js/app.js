@@ -13,7 +13,7 @@
  * 入口 URL 的 query 串驱动整体刷新；每次脚本更新后需要同步递增 ?v= 版本号。
  */
 
-import { pageMeta } from './features/index.js?v=34';
+import { pageMeta } from './features/index.js?v=35';
 
 // 页面导入（路径与 index.html 菜单树 / features 目录对齐）
 import { getUserSession, initUserMenu, startTokenHeartbeat, updateUserSession } from './features/login/index.js?v=15';
@@ -21,7 +21,7 @@ import {
     applySidebarPermissions,
     canAccessPage,
     fallbackPageName,
-} from './permissions.js?v=10';
+} from './permissions.js?v=11';
 import { bootLlmAssistant } from './llm-assistant/boot.js?v=27';
 import { pageConfig as dashboardPage }      from './features/dashboard/index.js?v=7';
 import { pageConfig as stampingUploadPage } from './features/stamping/process/upload/index.js?v=42';
@@ -41,8 +41,8 @@ import { pageConfig as steelPriceListPage }   from './features/costing/steel-pri
 import { pageConfig as steelPriceCalcPage }    from './features/costing/steel-price/calc/index.js?v=19';
 import { pageConfig as stampingPartCostCalcPage } from './features/costing/stamping-part-cost/calc/index.js?v=13';
 import { pageConfig as stampingPartCostPage } from './features/costing/stamping-part-cost/list/index.js?v=60';
-import { pageConfig as l0AssemblyCostCalcPage } from './features/costing/l0-assembly-cost/calc/index.js?v=3';
-import { pageConfig as l0AssemblyCostPage } from './features/costing/l0-assembly-cost/list/index.js?v=11';
+import { pageConfig as assemblyCostCalcPage } from './features/costing/assembly-cost/calc/index.js?v=5';
+import { pageConfig as assemblyCostPage } from './features/costing/assembly-cost/list/index.js?v=13';
 import { pageConfig as steelPricePolicyUploadPage } from './features/yishiyiyi/policy/upload/index.js?v=37';
 import { pageConfig as steelPricePolicyDownloadPage } from './features/yishiyiyi/policy/list/index.js?v=33';
 import { pageConfig as basePriceUploadPage } from './features/yishiyiyi/base-price/upload/index.js?v=38';
@@ -66,7 +66,7 @@ import { pageConfig as bomWeldingProcessBreakdownGeneratePage } from './features
 import { pageConfig as bomWeldingProcessBreakdownListPage } from './features/bom/welding-process-breakdown/list/index.js?v=39';
 import { pageConfig as bomWeldingFeeCalcPage } from './features/bom/welding-fee/calc/index.js?v=3';
 import { pageConfig as bomWeldingFeeListPage } from './features/bom/welding-fee/list/index.js?v=4';
-import { pageConfig as costingPage }        from './features/costing/engine/index.js?v=24';
+import { pageConfig as costingPage }        from './features/costing/engine/index.js?v=25';
 import { pageConfig as fileTracePage }       from './features/file-trace/index.js?v=4';
 import { pageConfig as settingsPage }       from './features/settings/system/index.js?v=16';
 import { pageConfig as settingsUsersPage }  from './features/settings/users/index.js?v=12';
@@ -99,8 +99,8 @@ const pages = {
     'steel-price-calc': steelPriceCalcPage,
     'stamping-part-cost-calc': stampingPartCostCalcPage,
     'stamping-part-cost': stampingPartCostPage,
-    'l0-assembly-cost-calc': l0AssemblyCostCalcPage,
-    'l0-assembly-cost': l0AssemblyCostPage,
+    'assembly-cost-calc': assemblyCostCalcPage,
+    'assembly-cost': assemblyCostPage,
     'steel-price-policy-upload': steelPricePolicyUploadPage,
     'steel-price-policy-download': steelPricePolicyDownloadPage,
     'base-price-upload': basePriceUploadPage,
@@ -171,6 +171,13 @@ function getPageFromHash() {
     }
     if (pageName === 'bom-l0-welding-fee-list') {
         return 'bom-welding-fee-list';
+    }
+
+    if (pageName === 'l0-assembly-cost-calc') {
+        return 'assembly-cost-calc';
+    }
+    if (pageName === 'l0-assembly-cost') {
+        return 'assembly-cost';
     }
 
     return pageName;

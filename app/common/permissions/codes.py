@@ -292,19 +292,19 @@ class Perm:
     STAMPING_PART_COST_REVERSE = "op:stamping-part-cost:reverse"  # 反审核
     STAMPING_PART_COST_EXPORT = "op:stamping-part-cost:export"  # 导出工艺清单
 
-    MENU_L0_ASSEMBLY_COST_GROUP = "menu:l0-assembly-cost-group"  # 成品核价
+    MENU_ASSEMBLY_COST_GROUP = "menu:assembly-cost-group"  # 总成核价
 
-    MENU_L0_ASSEMBLY_COST_CALC = "menu:l0-assembly-cost-calc"  # 成品核价计算
-    L0_ASSEMBLY_COST_CALC_VIEW = "op:l0-assembly-cost-calc:view"  # 查看
-    L0_ASSEMBLY_COST_CALC_RUN = "op:l0-assembly-cost-calc:run"  # 计算
-    L0_ASSEMBLY_COST_CALC_DELETE = "op:l0-assembly-cost-calc:delete"  # 删除日志
+    MENU_ASSEMBLY_COST_CALC = "menu:assembly-cost-calc"  # 总成核价计算
+    ASSEMBLY_COST_CALC_VIEW = "op:assembly-cost-calc:view"  # 查看
+    ASSEMBLY_COST_CALC_RUN = "op:assembly-cost-calc:run"  # 计算
+    ASSEMBLY_COST_CALC_DELETE = "op:assembly-cost-calc:delete"  # 删除日志
 
-    MENU_L0_ASSEMBLY_COST = "menu:l0-assembly-cost"  # 成品核价一览
-    L0_ASSEMBLY_COST_VIEW = "op:l0-assembly-cost:view"  # 查询
-    L0_ASSEMBLY_COST_DELETE = "op:l0-assembly-cost:delete"  # 删除
-    L0_ASSEMBLY_COST_APPROVE = "op:l0-assembly-cost:approve"  # 审核通过
-    L0_ASSEMBLY_COST_REVERSE = "op:l0-assembly-cost:reverse"  # 反审核
-    L0_ASSEMBLY_COST_EXPORT = "op:l0-assembly-cost:export"  # 导出
+    MENU_ASSEMBLY_COST = "menu:assembly-cost"  # 总成核价一览
+    ASSEMBLY_COST_VIEW = "op:assembly-cost:view"  # 查询
+    ASSEMBLY_COST_DELETE = "op:assembly-cost:delete"  # 删除
+    ASSEMBLY_COST_APPROVE = "op:assembly-cost:approve"  # 审核通过
+    ASSEMBLY_COST_REVERSE = "op:assembly-cost:reverse"  # 反审核
+    ASSEMBLY_COST_EXPORT = "op:assembly-cost:export"  # 导出
 
     MENU_COSTING_ENGINE = "menu:costing-engine"  # 自动核价引擎
     COSTING_VIEW = "op:costing:view"  # 查看

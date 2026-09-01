@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import logging
 from datetime import datetime
 from typing import Any
@@ -29,7 +30,6 @@ from app.schemas.vo.operation_log_vo import (
     OperationLogVO,
 )
 from app.schemas.vo.user_vo import UserVO
-import contextlib
 
 logger = logging.getLogger("service.operation_log")
 

@@ -112,7 +112,7 @@ def test_complete_menu_question_routes_correctly(case) -> None:
             id="冲压零件价格一览",
         ),
         pytest.param(
-            next(c for c in complete_cases() if c.hash_page == "l0-assembly-cost"),
+            next(c for c in complete_cases() if c.hash_page == "assembly-cost"),
             {
                 "location": "青岛",
                 "year": "2025",
@@ -120,7 +120,7 @@ def test_complete_menu_question_routes_correctly(case) -> None:
                 "start": "2025-01",
                 "end": "2025-01",
             },
-            id="成品核价一览",
+            id="总成核价一览",
         ),
     ],
 )

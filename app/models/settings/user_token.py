@@ -1,8 +1,10 @@
 """登录 Token 表 — 落在辅助库（auxiliary.db），与主业务库隔离。"""
 
 from datetime import datetime
+
 from sqlalchemy import DateTime, Index, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
+
 from app.common.timezone import now
 from app.database import AuxiliaryBase
 from app.models.common.audit_mixin import AuditUserMixin

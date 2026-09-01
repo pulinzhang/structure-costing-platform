@@ -15,10 +15,10 @@ from app.services.yishiyiyi.steel_grade_category.steel_grade_category_service im
 __all__ = [
     "CANONICAL_CATEGORIES",
     "CANONICAL_CATEGORY_NAMES",
-    "GradeEnsureItem",
-    "GradeEnsureResult",
     "SOURCE_BASE_PRICE",
     "SOURCE_MANUAL",
     "SOURCE_STAMPING_UPLOAD",
+    "GradeEnsureItem",
+    "GradeEnsureResult",
     "SteelGradeCategoryService",
 ]

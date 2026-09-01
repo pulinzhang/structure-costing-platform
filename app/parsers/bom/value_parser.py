@@ -11,7 +11,6 @@ from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
-
 _EMPTY_MARKERS = {"", "/", "／", "-", "—", "无"}
 
 

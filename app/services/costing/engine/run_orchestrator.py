@@ -16,11 +16,11 @@ from app.models.costing.costing_engine_run import CostingEngineRun
 from app.repositories.costing.engine.costing_engine_run_repository import (
     CostingEngineRunRepository,
 )
+from app.schemas.dto.assembly_cost_dto import AssemblyCostCalcDTO
 from app.schemas.dto.bom_welding_fee_dto import BomWeldingFeeCalcDTO
 from app.schemas.dto.bom_welding_process_breakdown_dto import (
     BomWeldingProcessBreakdownGenerateDTO,
 )
-from app.schemas.dto.l0_assembly_cost_dto import L0AssemblyCostCalcDTO
 from app.schemas.dto.stamping_part_cost_dto import StampingPartCostCalcDTO
 from app.schemas.dto.stamping_process_fee_dto import StampingProcessFeeCalcDTO
 from app.schemas.vo.costing_engine_vo import CostingEngineAnnualItemVO
@@ -29,23 +29,23 @@ from app.services.bom.welding_fee.calc.orchestrator import BomWeldingFeeCalcOrch
 from app.services.bom.welding_process_breakdown.generate_service import (
     BomWeldingProcessBreakdownGenerateService,
 )
+from app.services.costing.assembly_cost.calc.orchestrator import (
+    AssemblyCostCalcOrchestrator,
+)
 from app.services.costing.engine.phases import (
     PhaseCarry,
     execute_annual,
-    execute_l0,
+    execute_assembly,
     execute_part_cost,
     execute_steel,
 )
 from app.services.costing.engine.progress import ProgressFn, ProgressNotifier
 from app.services.costing.engine.scope_discovery import DiscoveryResult, L0Scope
-from app.services.costing.l0_assembly_cost.calc.orchestrator import (
-    L0AssemblyCostCalcOrchestrator,
-)
-from app.services.costing.steel_price.calc.models import SteelPriceCalcRequest
-from app.services.costing.steel_price.calc.orchestrator import SteelPriceCalcOrchestrator
 from app.services.costing.stamping_part_cost.calc.orchestrator import (
     StampingPartCostCalcOrchestrator,
 )
+from app.services.costing.steel_price.calc.models import SteelPriceCalcRequest
+from app.services.costing.steel_price.calc.orchestrator import SteelPriceCalcOrchestrator
 from app.services.stamping.process_fee.calc.orchestrator import (
     StampingProcessFeeCalcOrchestrator,
 )
@@ -67,7 +67,7 @@ class RunOrchestrator:
         self.l0_welding_orch = BomWeldingFeeCalcOrchestrator()
         self.steel_orch = SteelPriceCalcOrchestrator()
         self.part_cost_orch = StampingPartCostCalcOrchestrator()
-        self.l0_orch = L0AssemblyCostCalcOrchestrator()
+        self.assembly_orch = AssemblyCostCalcOrchestrator()
 
     def execute(
         self,
@@ -117,7 +117,7 @@ class RunOrchestrator:
             progress=progress,
             carry=carry,
         )
-        execute_l0(
+        execute_assembly(
             self,
             db,
             run_id=run_id,
@@ -180,21 +180,22 @@ class RunOrchestrator:
                     },
                 )
 
-            if item.code == "annual_l0_welding_fee":
+            if item.code == "annual_welding_fee":
                 vehicle_model, bom_version = item.scope_key.split("|", 1)
                 scope = self._find_l0(discovery, vehicle_model, bom_version)
-                l0_dto = BomWeldingFeeCalcDTO(
+                weld_dto = BomWeldingFeeCalcDTO(
                     year=discovery.year,
                     location=scope.location if scope else discovery.location,
                     vehicle_model=vehicle_model,
                     bom_version=bom_version,
-                    levels=[0],
                 )
-                l0_result = self.l0_welding_orch.calculate(db, l0_dto, current_user=current_user)
+                weld_result = self.l0_welding_orch.calculate(
+                    db, weld_dto, current_user=current_user
+                )
                 return (
                     True,
-                    f"L0 焊接费补算完成 status={l0_result.status}",
-                    {"status": l0_result.status},
+                    f"焊接费补算完成 status={weld_result.status}",
+                    {"status": weld_result.status},
                 )
 
             return False, f"未知年度补算 code={item.code}", None
@@ -259,7 +260,7 @@ class RunOrchestrator:
             db.rollback()
             return False, str(exc), None
 
-    def _run_l0(
+    def _run_assembly(
         self,
         db: Session,
         *,
@@ -268,19 +269,19 @@ class RunOrchestrator:
         current_user: UserVO,
     ) -> tuple[bool, str, dict[str, Any] | None]:
         try:
-            dto = L0AssemblyCostCalcDTO(
+            dto = AssemblyCostCalcDTO(
                 year=discovery.year,
                 month=discovery.month,
                 location=scope.location,
                 vehicle_model=scope.vehicle_model,
                 bom_version=scope.bom_version,
             )
-            result = self.l0_orch.calculate(db, dto, current_user=current_user)
+            result = self.assembly_orch.calculate(db, dto, current_user=current_user)
             status = getattr(result, "status", "success")
             ok = status != "failed"
-            return ok, f"L0 核价 status={status}", {"status": status}
+            return ok, f"总成核价 status={status}", {"status": status}
         except Exception as exc:
-            logger.exception("L0 核价失败: %s/%s", scope.vehicle_model, scope.bom_version)
+            logger.exception("总成核价失败: %s/%s", scope.vehicle_model, scope.bom_version)
             db.rollback()
             return False, str(exc), None
 
