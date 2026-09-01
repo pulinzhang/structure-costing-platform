@@ -1,7 +1,8 @@
 # 供货总成（L0）成品核价 — 业务与设计说明
 
+> **后续设计已合并：** 财务成品账与采购应成本并入级别无关的一张月度总成账，见 [assembly-costing-design.md](assembly-costing-design.md)。本文保留现网已上线口径与样例金额，**不再分叉新规则**。  
 > 面向业务、实施与新同事。说明 **如何从 BOM 结构算出每个成品的月度总成本**。  
-> **状态：已上线。** 取价与汇总规则仍以本文为准；只读模拟见 `tests/costing/l0_assembly_sim.py`（青岛 T28 · 2025-01）。  
+> **状态：已上线（现网仍仅树根 / L0）。** 取价与汇总规则（现网）仍以本文为准；只读模拟见 `tests/costing/l0_assembly_sim.py`（青岛 T28 · 2025-01）。  
 > **产品入口：** `#/l0-assembly-cost-calc`、`#/l0-assembly-cost`；API `/api/costing/l0-assembly-costs`。  
 > 硬约束（分层、切片依赖）见 [architecture.md](../architecture.md)。
 

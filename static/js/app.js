@@ -13,7 +13,7 @@
  * 入口 URL 的 query 串驱动整体刷新；每次脚本更新后需要同步递增 ?v= 版本号。
  */
 
-import { pageMeta } from './features/index.js?v=33';
+import { pageMeta } from './features/index.js?v=34';
 
 // 页面导入（路径与 index.html 菜单树 / features 目录对齐）
 import { getUserSession, initUserMenu, startTokenHeartbeat, updateUserSession } from './features/login/index.js?v=15';
@@ -56,7 +56,7 @@ import { pageConfig as bomUploadPage }     from './features/bom/material/upload/
 import { pageConfig as bomMaterialListPage } from './features/bom/material/list/index.js?v=3';
 import { pageConfig as bomWeldingUnitPriceUploadPage } from './features/bom/welding-unit-price/upload/index.js?v=8';
 import { pageConfig as bomWeldingUnitPricePage } from './features/bom/welding-unit-price/list/index.js?v=12';
-import { pageConfig as bomAnnualPartPriceUploadPage } from './features/bom/annual-part-price/upload/index.js?v=4';
+import { pageConfig as bomAnnualPartPriceUploadPage } from './features/bom/annual-part-price/upload/index.js?v=5';
 import { pageConfig as bomAnnualPartPricePage } from './features/bom/annual-part-price/list/index.js?v=5';
 import { pageConfig as bomPackagingTransportFeeUploadPage } from './features/bom/packaging-transport-fee/upload/index.js?v=3';
 import { pageConfig as bomPackagingTransportFeePage } from './features/bom/packaging-transport-fee/list/index.js?v=3';

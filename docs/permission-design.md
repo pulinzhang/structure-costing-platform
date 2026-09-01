@@ -426,18 +426,6 @@ root
 │   │       ├── op:bom-welding-unit-price:approve
 │   │       ├── op:bom-welding-unit-price:reverse
 │   │       └── op:bom-welding-unit-price:export
-│   ├── menu:bom-annual-part-price-group       # 年度零件价（二级分组）
-│   │   ├── menu:bom-annual-part-price-upload
-│   │   │   ├── op:bom-annual-part-price-upload:view
-│   │   │   └── op:bom-annual-part-price-upload:upload
-│   │   └── menu:bom-annual-part-price
-│   │       ├── op:bom-annual-part-price:view
-│   │       ├── op:bom-annual-part-price:create
-│   │       ├── op:bom-annual-part-price:update
-│   │       ├── op:bom-annual-part-price:delete
-│   │       ├── op:bom-annual-part-price:approve
-│   │       ├── op:bom-annual-part-price:reverse
-│   │       └── op:bom-annual-part-price:export
 │   ├── menu:bom-packaging-transport-fee-group # 包装运输费（二级分组）
 │   │   ├── menu:bom-packaging-transport-fee-upload
 │   │   │   ├── op:bom-packaging-transport-fee-upload:view
@@ -460,6 +448,18 @@ root
 │   │       ├── op:bom-procurement-object-list:approve
 │   │       ├── op:bom-procurement-object-list:reverse
 │   │       └── op:bom-procurement-object-list:export
+│   ├── menu:bom-annual-part-price-group       # 年度零件价（采购对象之下）
+│   │   ├── menu:bom-annual-part-price-upload
+│   │   │   ├── op:bom-annual-part-price-upload:view
+│   │   │   └── op:bom-annual-part-price-upload:upload
+│   │   └── menu:bom-annual-part-price
+│   │       ├── op:bom-annual-part-price:view
+│   │       ├── op:bom-annual-part-price:create
+│   │       ├── op:bom-annual-part-price:update
+│   │       ├── op:bom-annual-part-price:delete
+│   │       ├── op:bom-annual-part-price:approve
+│   │       ├── op:bom-annual-part-price:reverse
+│   │       └── op:bom-annual-part-price:export
 │   ├── menu:bom-welding-process-breakdown-group  # 焊接工艺拆解
 │   │   ├── menu:bom-welding-process-breakdown
 │   │   │   ├── op:bom-welding-process-breakdown:generate
@@ -867,3 +867,4 @@ static/index.html           # 侧栏 data-page
 | 2026-08-30 | 冲压工程权限树顺序与侧栏对齐：工艺 → 冲次单价 → 加工费 → 模具 → 模具费 → 检具费 |
 | 2026-08-31 | 新增采购对象清单：`menu:bom-procurement-object-group` / `generate` / 列表 `view|update|delete|approve|reverse|export` |
 | 2026-08-31 | 焊接费切片去 L0 专名：`menu/op:bom-l0-welding-fee-*` remap 为 `menu/op:bom-welding-fee-*`（启动时写 `user_permissions`） |
+| 2026-09-01 | 焊接工程侧栏顺序：年度零件价排在采购对象之下（权限码不变） |

@@ -14,7 +14,16 @@ from sqlalchemy.orm import Session
 from app.common.audit import audit_create, audit_update
 from app.config import settings
 from app.exceptions.base import BusinessException
-from app.parsers.bom.annual_part_price_parser import parse_annual_part_price_excel
+from app.parsers.bom.annual_part_price_parser import (
+    HEADER_PART_NAME,
+    HEADER_PART_NUMBER,
+    HEADER_REMARK,
+    HEADER_SUPPLIER,
+    HEADER_SUPPLY_TYPE,
+    HEADER_UNIT,
+    HEADER_UNIT_PRICE,
+    parse_annual_part_price_excel,
+)
 from app.repositories.bom.annual_part_price_repository import (
     BomAnnualPartPriceRepository,
 )
@@ -25,69 +34,16 @@ from app.schemas.dto.bom_annual_part_price_dto import (
 )
 from app.schemas.vo.bom_annual_part_price_vo import BomAnnualPartPriceImportResultVO
 from app.schemas.vo.user_vo import UserVO
+from app.services.bom.procurement_object.classify import SECTION_OTHER_LEAF
+from app.services.bom.procurement_object.labels import SECTION_LABELS
 from app.services.file_trace.path_utils import to_upload_relpath
 from app.services.file_trace.register import register_existing
 from app.utils.bom_annual_part_price_archive import save_annual_part_price_upload
 
 logger = logging.getLogger("service.bom_annual_part_price_import")
 
-# 零件号, 零件名称, 单位, 单价, 原供货类型, 供应商, 备注
-# 样例来自生产外购价表（基地/年度由上传表单指定，不写进 Excel）
-TEMPLATE_SAMPLE_ROWS: list[tuple[str, str, str, Decimal, str, str, str]] = [
-    ("501004437AA", "中通道后纵梁本体II", "pcs", Decimal("2.1300"), "沿用", "", ""),
-    ("501007904AA", "前排气管吊钩", "pcs", Decimal("4.0000"), "沿用", "", ""),
-    ("501007905AA", "前纵梁排气管吊钩支架", "pcs", Decimal("1.7300"), "沿用", "", ""),
-    ("QR36410", "焊接方螺母", "pcs", Decimal("0.1750"), "标准件", "", ""),
-    ("501005123AA", "流水槽上加强梁本体", "pcs", Decimal("17.0400"), "沿用", "", ""),
-    ("N0111931", "焊接方螺母", "pcs", Decimal("0.0420"), "标准件", "", ""),
-    ("J60-5400253", "螺母盒", "pcs", Decimal("0.5000"), "沿用", "", ""),
-    ("M11-5400251", "螺母板", "pcs", Decimal("2.0000"), "沿用", "", ""),
-    ("J26-5600013", "后保上固定支架", "pcs", Decimal("1.0000"), "沿用", "", ""),
-    ("Q1980616", "承面凸焊螺栓", "pcs", Decimal("0.0500"), "标准件", "", ""),
-    ("504000341AA", "左D柱下结构增强胶块", "pcs", Decimal("31.4900"), "胶块", "", ""),
-    ("504000342AA", "右D柱下结构增强胶块", "pcs", Decimal("31.4900"), "胶块", "", ""),
-    ("501003649AA", "后防撞梁左安装板", "pcs", Decimal("2.8600"), "沿用", "", ""),
-    ("501003650AA", "后防撞梁右安装板", "pcs", Decimal("2.7300"), "沿用", "", ""),
-    ("501003646AA", "后防撞梁本体", "pcs", Decimal("22.1400"), "沿用", "", ""),
-    ("501003651AA", "后拖车钩螺母加强板", "pcs", Decimal("2.5000"), "沿用", "", ""),
-    ("501000701AA", "拖车钩螺母", "pcs", Decimal("5.0000"), "沿用", "", ""),
-    ("N0111941", "焊接方螺母", "pcs", Decimal("0.1000"), "标准件", "", ""),
-    ("T19C-6101521", "支撑柱", "pcs", Decimal("1.5000"), "标准件", "", ""),
-    (
-        "FQ114D0612T21F19E",
-        "弧焊焊接螺柱与盖形螺母组合件",
-        "pcs",
-        Decimal("0.5290"),
-        "标准件",
-        "",
-        "",
-    ),
-    ("502003169AA", "左后门锁扣加强板", "pcs", Decimal("5.3800"), "沿用", "", ""),
-    ("502002729AA", "螺母板总成", "pcs", Decimal("2.0000"), "沿用", "", ""),
-    ("J60-5101162", "安全带加强板", "pcs", Decimal("3.0000"), "沿用", "", ""),
-    ("QR366716", "凸焊螺母", "pcs", Decimal("0.4000"), "标准件", "", ""),
-    ("Q1980620", "承面凸焊螺栓 M6X20", "pcs", Decimal("0.0620"), "标准件", "", ""),
-    ("504000332AA", "C柱下内腔隔音胶块", "pcs", Decimal("0.8400"), "胶块", "", ""),
-    ("504000339AA", "左D柱上结构增强胶块", "pcs", Decimal("19.3600"), "胶块", "", ""),
-    ("504000340AA", "右D柱上结构增强胶块", "pcs", Decimal("19.3600"), "胶块", "", ""),
-    ("TBD", "右D柱上结构增强胶块", "pcs", Decimal("19.3600"), "胶块", "", ""),
-    ("502003968AA", "左前安全带滑轨上固定板总成", "pcs", Decimal("6.8800"), "沿用", "", ""),
-    ("502002095AA", "乘客扶手安装支架I", "pcs", Decimal("1.9400"), "沿用", "", ""),
-    ("502003562AA", "前安全带上安装板Ⅰ", "pcs", Decimal("5.7400"), "沿用", "", ""),
-    ("T15-5400791", "左前卷收器安装板", "pcs", Decimal("0.0000"), "沿用", "", ""),
-    ("QR37108", "焊接方螺母", "pcs", Decimal("0.2100"), "标准件", "", ""),
-    ("T15-5400792", "右前卷收器安装板", "pcs", Decimal("0.0000"), "沿用", "", ""),
-    ("501003196AA", "后地板横梁Ⅱ本体", "pcs", Decimal("14.9100"), "沿用", "", ""),
-    ("501003348AA", "第三排座椅中间安装加强板", "pcs", Decimal("5.7200"), "沿用", "", ""),
-    ("501003289AA", "后地板横梁本体", "pcs", Decimal("14.6800"), "沿用", "", ""),
-    ("501005159AA", "第二排座椅中间安装加强板", "pcs", Decimal("7.6700"), "沿用", "", ""),
-    ("501009677AA", "第二排座椅中间安装加强板I", "pcs", Decimal("9.5200"), "沿用", "", ""),
-    ("501009678AA", "第二排座椅中间安装加强板II", "pcs", Decimal("9.5200"), "沿用", "", ""),
-    ("501004439AA", "油箱后安装支架", "pcs", Decimal("4.7300"), "沿用", "", ""),
-    ("T11-5100233", "焊接六角凸缘螺母M10X1.25", "pcs", Decimal("0.3400"), "标准件", "", ""),
-    ("QR36708", "凸焊螺母座", "pcs", Decimal("0.3500"), "标准件", "", ""),
-    ("M14-4102311", "结构胶", "pcs", Decimal("0.0000"), "胶块", "", ""),
-]
+_TEMPLATE_SUPPLY_TYPE = SECTION_LABELS[SECTION_OTHER_LEAF]
+_TEMPLATE_ZERO_PRICE = Decimal("0.0000")
 
 
 class BomAnnualPartPriceImportService:
@@ -96,8 +52,51 @@ class BomAnnualPartPriceImportService:
     def __init__(self) -> None:
         self.repository = BomAnnualPartPriceRepository()
 
-    def build_template(self) -> tuple[bytes, str]:
-        """生成导入模板。"""
+    def build_template(self, db: Session, *, location: str, year: int) -> tuple[bytes, str]:
+        """按基地采购对象「标准件/胶等」生成导入模板。"""
+        from app.repositories.bom.procurement_object_repository import (
+            BomProcurementObjectRepository,
+        )
+
+        location = (location or "").strip()
+        if not location:
+            raise BusinessException("请选择采购基地")
+        if year < 2000 or year > 2100:
+            raise BusinessException("年度不正确")
+
+        procurement_object_repository = BomProcurementObjectRepository()
+        if not procurement_object_repository.has_list_for_location(db, location):
+            raise BusinessException("请先生成该基地的采购对象清单")
+
+        source_rows = procurement_object_repository.list_objects_for_export(
+            db,
+            location=location,
+            section=SECTION_OTHER_LEAF,
+        )
+        seen_part_numbers: set[str] = set()
+        template_rows: list[tuple[str, str, str, Decimal, str, str, str]] = []
+        for row in source_rows:
+            part_number = (row.part_number or "").strip()
+            if not part_number or part_number in seen_part_numbers:
+                continue
+            seen_part_numbers.add(part_number)
+            unit = (row.qty_unit or "").strip() or "pcs"
+            if unit.upper() == "PCS":
+                unit = "pcs"
+            template_rows.append(
+                (
+                    part_number,
+                    (row.part_name or "").strip(),
+                    unit,
+                    _TEMPLATE_ZERO_PRICE,
+                    _TEMPLATE_SUPPLY_TYPE,
+                    "",
+                    "",
+                )
+            )
+        if not template_rows:
+            raise BusinessException("该基地采购对象清单中没有标准件/胶等，无法生成模板")
+
         workbook = Workbook()
         sheet = workbook.worksheets[0]
         sheet.title = "年度零件价"
@@ -114,13 +113,13 @@ class BomAnnualPartPriceImportService:
         )
 
         headers = [
-            "零件号",
-            "零件名称",
-            "单位",
-            "单价",
-            "原供货类型",
-            "供应商",
-            "备注",
+            HEADER_PART_NUMBER,
+            HEADER_PART_NAME,
+            HEADER_UNIT,
+            HEADER_UNIT_PRICE,
+            HEADER_SUPPLY_TYPE,
+            HEADER_SUPPLIER,
+            HEADER_REMARK,
         ]
         for col, title in enumerate(headers, start=1):
             cell = sheet.cell(row=1, column=col, value=title)
@@ -129,7 +128,7 @@ class BomAnnualPartPriceImportService:
             cell.alignment = header_alignment
             cell.border = thin_border
 
-        for row_idx, sample in enumerate(TEMPLATE_SAMPLE_ROWS, start=2):
+        for row_idx, sample in enumerate(template_rows, start=2):
             values: list[str | Decimal] = list(sample)
             for col, value in enumerate(values, start=1):
                 cell = sheet.cell(row=row_idx, column=col, value=value)
@@ -150,7 +149,8 @@ class BomAnnualPartPriceImportService:
 
         buffer = BytesIO()
         workbook.save(buffer)
-        return buffer.getvalue(), "年度零件价导入模板.xlsx"
+        filename = f"年度零件价导入模板_{location}_{year}.xlsx"
+        return buffer.getvalue(), filename
 
     def import_excel(
         self,

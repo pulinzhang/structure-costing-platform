@@ -56,6 +56,14 @@ class BomProcurementObjectRepository:
             .first()
         )
 
+    def has_list_for_location(self, db: Session, location: str) -> bool:
+        return (
+            db.query(BomProcurementObjectList.id)
+            .filter(BomProcurementObjectList.location == location)
+            .first()
+            is not None
+        )
+
     def get_list_by_scope(
         self,
         db: Session,

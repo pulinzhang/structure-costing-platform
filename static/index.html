@@ -186,22 +186,6 @@
                                 </li>
                             </ul>
                         </li>
-                        <!-- 年度零件价 -->
-                        <li class="submenu-item has-submenu">
-                            <a href="javascript:void(0)" class="submenu-link" data-submenu-toggle="bomAnnualPartPriceSubmenu">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
-                                <span>年度零件价</span>
-                                <svg class="w-3.5 h-3.5 ms-auto submenu-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7"></path></svg>
-                            </a>
-                            <ul class="submenu submenu-nested" id="bomAnnualPartPriceSubmenu">
-                                <li>
-                                    <a href="#/bom-annual-part-price-upload" class="submenu-link submenu-link-nested" data-page="bom-annual-part-price-upload"><span>上传</span></a>
-                                </li>
-                                <li>
-                                    <a href="#/bom-annual-part-price" class="submenu-link submenu-link-nested" data-page="bom-annual-part-price"><span>年度零件价列表</span></a>
-                                </li>
-                            </ul>
-                        </li>
                         <!-- 包装运输费 -->
                         <li class="submenu-item has-submenu">
                             <a href="javascript:void(0)" class="submenu-link" data-submenu-toggle="bomPackagingTransportFeeSubmenu">
@@ -231,6 +215,22 @@
                                 </li>
                                 <li>
                                     <a href="#/bom-procurement-object-list" class="submenu-link submenu-link-nested" data-page="bom-procurement-object-list"><span>采购对象清单</span></a>
+                                </li>
+                            </ul>
+                        </li>
+                        <!-- 年度零件价（须先完成采购对象；模板来自标准件/胶等） -->
+                        <li class="submenu-item has-submenu">
+                            <a href="javascript:void(0)" class="submenu-link" data-submenu-toggle="bomAnnualPartPriceSubmenu">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                                <span>年度零件价</span>
+                                <svg class="w-3.5 h-3.5 ms-auto submenu-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7"></path></svg>
+                            </a>
+                            <ul class="submenu submenu-nested" id="bomAnnualPartPriceSubmenu">
+                                <li>
+                                    <a href="#/bom-annual-part-price-upload" class="submenu-link submenu-link-nested" data-page="bom-annual-part-price-upload"><span>上传</span></a>
+                                </li>
+                                <li>
+                                    <a href="#/bom-annual-part-price" class="submenu-link submenu-link-nested" data-page="bom-annual-part-price"><span>年度零件价列表</span></a>
                                 </li>
                             </ul>
                         </li>
@@ -527,7 +527,7 @@
     <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
 
-    <script src="/static/js/main.js?v=17"></script>
-    <script type="module" src="/static/js/app.js?v=431"></script>
+    <script src="/static/js/main.js?v=18"></script>
+    <script type="module" src="/static/js/app.js?v=432"></script>
 </body>
 </html>

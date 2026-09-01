@@ -1,5 +1,6 @@
 # 委外分总成应成本 — 设计说明
 
+> **后续设计已合并：** 不再单开委外表 / 第二套引擎。与成品月总账合并为 [assembly-costing-design.md](assembly-costing-design.md)（换根打开子树；采购读 `should_cost`）。§7 结果表方案 **作废**。本文保留应成本口径与防双计讨论。  
 > **状态：草案（未实施）。本文只定口径，不改代码。**  
 > 切片：**`costing`**。只读采购对象清单、焊接拆解、冲压零件价、年度零件价、焊接单价。  
 > 采购对象集合：[bom-procurement-objects-design.md](../bom/bom-procurement-objects-design.md)。本文不扫树认人。  

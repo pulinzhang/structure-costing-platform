@@ -415,6 +415,24 @@ const HttpClient = (() => {
         return defaultFilename;
     }
 
+    const NETWORK_UNAVAILABLE_MSG = '无法连接服务器，请确认服务已启动或检查网络';
+    const REQUEST_TIMEOUT_MSG = '请求超时（后端可能仍在处理），请稍后刷新确认结果';
+    const DOWNLOAD_TIMEOUT_MSG = '下载超时，请稍后重试';
+
+    function isAbortError(error) {
+        return Boolean(error && (error.name === 'AbortError' || error.code === 20));
+    }
+
+    /** fetch 失败时浏览器会抛 TypeError（Chrome: Failed to fetch），不要把原文弹给用户 */
+    function humanizeTransportError(error, fallback) {
+        const msg = String((error && error.message) || '').trim();
+        if (!msg) return fallback;
+        if (/Failed to fetch|NetworkError|Load failed|Network request failed|ERR_CONNECTION|ERR_FAILED|ECONNREFUSED/i.test(msg)) {
+            return NETWORK_UNAVAILABLE_MSG;
+        }
+        return msg;
+    }
+
     async function request(method, url, { params, body, headers, timeout, skipAuth } = {}) {
         const methodUpper = String(method || 'GET').toUpperCase();
         const query = { ...(params || {}) };
@@ -482,10 +500,13 @@ const HttpClient = (() => {
             return { ok: true, status: response.status, data };
         } catch (error) {
             clearTimeout(timer);
-            if (error.name === 'AbortError') {
-                showToast('请求超时（后端可能仍在处理），请稍后刷新确认结果', 'error');
+            if (isAbortError(error)) {
+                error.message = REQUEST_TIMEOUT_MSG;
+                showToast(REQUEST_TIMEOUT_MSG, 'error');
             } else if (!error.status) {
-                showToast(error.message || '网络请求失败', 'error');
+                const msg = humanizeTransportError(error, '网络请求失败');
+                error.message = msg;
+                showToast(msg, 'error');
             }
             throw error;
         }
@@ -544,10 +565,13 @@ const HttpClient = (() => {
             return { ok: true, status: response.status, blob, filename };
         } catch (error) {
             clearTimeout(timer);
-            if (error.name === 'AbortError') {
-                showToast('下载超时，请稍后重试', 'error');
+            if (isAbortError(error)) {
+                error.message = DOWNLOAD_TIMEOUT_MSG;
+                showToast(DOWNLOAD_TIMEOUT_MSG, 'error');
             } else if (!error.status) {
-                showToast(error.message || '下载失败', 'error');
+                const msg = humanizeTransportError(error, '下载失败');
+                error.message = msg;
+                showToast(msg, 'error');
             }
             throw error;
         }

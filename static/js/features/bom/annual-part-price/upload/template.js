@@ -59,7 +59,7 @@ export function annualPartPriceUploadTemplate() {
                                                class="upload-input w-full">
                                     </div>
                                 </div>
-                                <p class="ml-6 mt-1.5 text-[11px] text-[#616161]">导入时必须指定基地与年度，写入该基地该年的年度零件价</p>
+                                <p class="ml-6 mt-1.5 text-[11px] text-[#616161]">须先生成该基地采购对象清单。下载模板时零件来自「标准件/胶等」全部去重行；导入写入该基地该年</p>
                             </div>
 
                             <div class="h-px bg-[#1e1e1e] mx-6 mb-4"></div>
@@ -158,39 +158,18 @@ export function annualPartPriceUploadTemplate() {
                         <div>
                             <h6 class="text-[10px] uppercase tracking-wider text-[#616161] mb-2">Excel 列</h6>
                             <ul class="list-disc list-inside text-xs text-[#616161] space-y-1.5">
-                                <li><span class="text-[#9e9e9e]">零件号</span>：必填</li>
+                                <li><span class="text-[#9e9e9e]">零件号</span>：必填；模板从采购对象「标准件/胶等」带出</li>
                                 <li><span class="text-[#9e9e9e]">零件名称</span> / <span class="text-[#9e9e9e]">供应商</span> / <span class="text-[#9e9e9e]">备注</span>：可选</li>
                                 <li><span class="text-[#9e9e9e]">单位</span>：默认 pcs</li>
-                                <li><span class="text-[#9e9e9e]">单价</span>：≥0，四位小数；<span class="text-[#9e9e9e]">0 = 核价不计入</span>（如结构胶）</li>
-                                <li><span class="text-[#9e9e9e]">原供货类型</span>：如 标准件 / 沿用 / 胶块</li>
+                                <li><span class="text-[#9e9e9e]">单价</span>：≥0，四位小数；模板预填 0，请改真实价；<span class="text-[#9e9e9e]">0 = 核价不计入</span></li>
+                                <li><span class="text-[#9e9e9e]">原供货类型</span>：模板预填「标准件/胶等」；导入可另写沿用等</li>
                             </ul>
-                        </div>
-                        <div>
-                            <h6 class="text-[10px] uppercase tracking-wider text-[#616161] mb-2">示例</h6>
-                            <div class="overflow-hidden border border-[#2c2c2c] max-h-[280px] overflow-y-auto">
-                                <table class="w-full">
-                                    <thead class="sticky top-0">
-                                        <tr class="bg-[#0a0a0a] border-b border-[#2c2c2c]">
-                                            <th class="px-2 py-1.5 text-left text-[10px] font-semibold text-[#616161]">零件号</th>
-                                            <th class="px-2 py-1.5 text-left text-[10px] font-semibold text-[#616161]">零件名称</th>
-                                            <th class="px-2 py-1.5 text-left text-[10px] font-semibold text-[#616161]">单位</th>
-                                            <th class="px-2 py-1.5 text-right text-[10px] font-semibold text-[#616161]">单价</th>
-                                            <th class="px-2 py-1.5 text-left text-[10px] font-semibold text-[#616161]">原供货类型</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody class="divide-y divide-[#222222]">
-                                        <tr><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">QR36410</td><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">焊接方螺母</td><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">pcs</td><td class="px-2 py-1.5 text-[11px] text-right font-mono tabular-nums text-[#9e9e9e]">0.1750</td><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">标准件</td></tr>
-                                        <tr><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">501004437AA</td><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">中通道后纵梁本体II</td><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">pcs</td><td class="px-2 py-1.5 text-[11px] text-right font-mono tabular-nums text-[#9e9e9e]">2.1300</td><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">沿用</td></tr>
-                                        <tr><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">M14-4102311</td><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">支装抗冲击结构胶</td><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">mm</td><td class="px-2 py-1.5 text-[11px] text-right font-mono tabular-nums text-[#9e9e9e]">0.0000</td><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">结构胶</td></tr>
-                                    </tbody>
-                                </table>
-                            </div>
                         </div>
                         <div>
                             <h6 class="text-[10px] uppercase tracking-wider text-[#616161] mb-2">写入规则</h6>
                             <ul class="list-disc list-inside text-xs text-[#616161] space-y-1.5">
-                                <li>基地、年度在页面选；唯一键 = 基地 + 年度 + 零件号</li>
-                                <li>同键则更新，否则新增；仅 .xlsx</li>
+                                <li>下载模板须先选基地与年度，且该基地已有采购对象清单</li>
+                                <li>唯一键 = 基地 + 年度 + 零件号；同键则更新，否则新增；仅 .xlsx</li>
                             </ul>
                         </div>
                     </div>

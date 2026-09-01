@@ -3,7 +3,7 @@
  * 同步导入：基地 + 年度必选，仅 .xlsx
  */
 
-import { annualPartPriceUploadTemplate } from './template.js?v=4';
+import { annualPartPriceUploadTemplate } from './template.js?v=5';
 
 
 const API_BASE = '/api/bom/annual-part-price';
@@ -216,9 +216,20 @@ const AnnualPartPriceUploadPage = {
     },
 
     async downloadTemplate() {
+        const location = document.getElementById('annualPartPriceUploadLocation')?.value?.trim();
+        const yearRaw = document.getElementById('annualPartPriceUploadYear')?.value?.trim();
+        if (!location) {
+            showToast('请先选择采购基地', 'warning');
+            return;
+        }
+        if (!yearRaw || !/^\d{4}$/.test(yearRaw)) {
+            showToast('请填写正确的年度（4位年份）', 'warning');
+            return;
+        }
         try {
             const { blob, filename } = await HttpClient.download(`${API_BASE}/template`, {
-                defaultFilename: '年度零件价导入模板.xlsx',
+                params: { location, year: yearRaw },
+                defaultFilename: `年度零件价导入模板_${location}_${yearRaw}.xlsx`,
             });
             const url = window.URL.createObjectURL(blob);
             const anchor = document.createElement('a');

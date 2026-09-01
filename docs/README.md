@@ -48,8 +48,9 @@
 | 文档 | 状态 |
 |------|------|
 | [costing-engine-design.md](costing/costing-engine-design.md) | 月度引擎（已上线） |
-| [l0-assembly-costing-design.md](costing/l0-assembly-costing-design.md) | L0 成品核价（已上线） |
-| [outsourced-assembly-costing-design.md](costing/outsourced-assembly-costing-design.md) | 委外应成本（草案）：核价定公式；集合见采购对象清单 |
+| [assembly-costing-design.md](costing/assembly-costing-design.md) | 总成月核价（设计）：级别无关；财务总费用与采购应成本同一批行 |
+| [l0-assembly-costing-design.md](costing/l0-assembly-costing-design.md) | 现网 L0 成品核价（已上线；新规则见上一行） |
+| [l1-assembly-costing-design.md](costing/l1-assembly-costing-design.md) | 历史：委外应成本口径（结果表方案已作废） |
 | [effective-period-design.md](costing/effective-period-design.md) | 协议价生效期（设计） |
 | [provisional-final-settlement-design.md](costing/provisional-final-settlement-design.md) | 暂估 / 正式（设计） |
 | [anchor-true-up-design.md](costing/anchor-true-up-design.md) | 锚点送货与价差（设计） |

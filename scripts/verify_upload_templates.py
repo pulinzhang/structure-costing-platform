@@ -107,21 +107,8 @@ def main() -> None:
     if not ok:
         failures.append("焊接单价")
 
-    # 7 年度零件价
-    from app.parsers.bom.annual_part_price_parser import parse_annual_part_price_excel
-    from app.services.bom.annual_part_price_import_service import (
-        BomAnnualPartPriceImportService,
-    )
-
-    content, name = BomAnnualPartPriceImportService().build_template()
-    annual = parse_annual_part_price_excel(content)
-    ok = len(annual.rows) >= 3
-    print(
-        f"[7] 年度零件价: rows={len(annual.rows)} errors={annual.errors} "
-        f"-> {'OK' if ok else 'FAIL'}"
-    )
-    if not ok:
-        failures.append("年度零件价")
+    # 7 年度零件价：模板依赖基地采购对象「标准件/胶等」，见 tests/bom/test_annual_part_price_template.py
+    print("[7] 年度零件价: SKIP（须指定基地+年度，零件来自采购对象）")
 
     # 8 包装运输费
     from app.parsers.bom.packaging_transport_fee_parser import (
@@ -134,10 +121,7 @@ def main() -> None:
     content, name = BomPackagingTransportFeeImportService().build_template()
     packaging = parse_packaging_transport_fee_excel(content)
     ok = len(packaging.rows) >= 1
-    print(
-        f"[8] 包装运输费: rows={len(packaging.rows)} "
-        f"-> {'OK' if ok else 'FAIL'}"
-    )
+    print(f"[8] 包装运输费: rows={len(packaging.rows)} " f"-> {'OK' if ok else 'FAIL'}")
     if not ok:
         failures.append("包装运输费")
 

@@ -50,7 +50,7 @@ app/…/bom/annual_part_price*
 static/js/features/bom/annual-part-price/{upload,list}/
 ```
 
-侧栏建议：**焊接工程 → 年度零件价**（上传 / 列表），不要拆成「外购价」「分总成价」两个入口。
+侧栏：**焊接工程 → 采购对象 → 年度零件价**（上传 / 列表）。须先生成该基地采购对象清单；下载模板带出该基地全部「标准件/胶等」去重零件。不要拆成「外购价」「分总成价」两个入口。
 
 ---
 
@@ -162,3 +162,4 @@ Index: (location, year), part_number, supply_type, audit_status
 | 2026-08-20 | 初稿（两表） |
 | 2026-08-20 | 按生产样例去掉 thickness_text / 英文 category，加 supply_type |
 | 2026-08-20 | **合并为单表** `bom_annual_part_prices`：外购与 L1 一口价共用；语义靠 BOM 节点区分 |
+| 2026-09-01 | 导入模板按基地+年度下载；零件来自采购对象「标准件/胶等」；侧栏排在采购对象之下 |

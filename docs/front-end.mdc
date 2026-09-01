@@ -116,9 +116,9 @@ static/
         │   └── die-fee/{calc,list}
         ├── bom/material/{upload,list,structure,viz}   # 侧栏名「焊接工程」
         ├── bom/welding-unit-price/{upload,list}
-        ├── bom/annual-part-price/{upload,list}
         ├── bom/packaging-transport-fee/{upload,list}
         ├── bom/procurement-object/{generate,list}
+        ├── bom/annual-part-price/{upload,list}
         ├── bom/welding-process-breakdown/{generate,list}
         ├── bom/welding-fee/{calc,list}
         ├── yishiyiyi/
@@ -167,12 +167,12 @@ static/
 | `#/bom-viz` | 产品结构图 | `bom/material/viz` |
 | `#/bom-welding-unit-price-upload` | 焊接单价上传 | `bom/welding-unit-price/upload` |
 | `#/bom-welding-unit-price` | 焊接单价列表 | `bom/welding-unit-price/list` |
-| `#/bom-annual-part-price-upload` | 年度零件价上传 | `bom/annual-part-price/upload` |
-| `#/bom-annual-part-price` | 年度零件价列表 | `bom/annual-part-price/list` |
 | `#/bom-packaging-transport-fee-upload` | 包装运输费上传 | `bom/packaging-transport-fee/upload` |
 | `#/bom-packaging-transport-fee` | 包装运输费列表 | `bom/packaging-transport-fee/list` |
 | `#/bom-procurement-object` | 生成采购对象清单 | `bom/procurement-object/generate` |
 | `#/bom-procurement-object-list` | 采购对象清单 | `bom/procurement-object/list` |
+| `#/bom-annual-part-price-upload` | 年度零件价上传 | `bom/annual-part-price/upload` |
+| `#/bom-annual-part-price` | 年度零件价列表 | `bom/annual-part-price/list` |
 | `#/bom-welding-process-breakdown` | 焊接工艺拆解 | `bom/welding-process-breakdown/generate` |
 | `#/bom-welding-process-breakdown-list` | 焊接工艺拆解列表 | `bom/welding-process-breakdown/list` |
 | `#/bom-welding-fee-calc` | 焊接费计算 | `bom/welding-fee/calc` |
