@@ -117,8 +117,8 @@ export function assemblyCostCalcTemplate() {
                                     <th class="py-2 px-2 font-normal whitespace-nowrap">版本</th>
                                     <th class="py-2 px-2 font-normal text-center whitespace-nowrap">状态</th>
                                     <th class="py-2 px-2 font-normal text-right whitespace-nowrap">主体</th>
-                                    <th class="py-2 px-2 font-normal text-right whitespace-nowrap">ok</th>
-                                    <th class="py-2 px-2 font-normal text-right whitespace-nowrap">partial</th>
+                                    <th class="py-2 px-2 font-normal text-right whitespace-nowrap">成功</th>
+                                    <th class="py-2 px-2 font-normal text-right whitespace-nowrap">部分成功</th>
                                     <th class="py-2 px-2 font-normal text-right whitespace-nowrap">失败</th>
                                     <th class="py-2 px-2 font-normal text-right whitespace-nowrap">跳过</th>
                                     <th class="py-2 px-2 font-normal text-right whitespace-nowrap">操作</th>

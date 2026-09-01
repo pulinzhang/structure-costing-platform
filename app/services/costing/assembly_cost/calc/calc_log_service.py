@@ -23,7 +23,11 @@ from app.schemas.vo.assembly_cost_vo import (
     AssemblyCostCalcCardTraceVO,
     AssemblyCostCalcLogVO,
 )
-from app.services.costing.assembly_cost.calc.process_log import parse_card_traces
+from app.services.costing.assembly_cost.calc.process_log import (
+    humanize_legacy_card_message,
+    humanize_legacy_detail_text,
+    parse_card_traces,
+)
 
 STATUS_PROCESSING = "processing"
 STATUS_SUCCESS = "success"
@@ -223,10 +227,18 @@ class AssemblyCostCalcLogService:
         if row is None:
             raise NotFoundException("计算日志不存在")
         vo = AssemblyCostCalcLogVO.model_validate(row)
-        vo.cards = [
-            AssemblyCostCalcCardTraceVO.model_validate(card)
-            for card in parse_card_traces(row.detail_json)
-        ]
+        vo.detail_text = humanize_legacy_detail_text(vo.detail_text)
+        cards: list[AssemblyCostCalcCardTraceVO] = []
+        for card in parse_card_traces(row.detail_json):
+            card_vo = AssemblyCostCalcCardTraceVO.model_validate(card)
+            card_vo.message = humanize_legacy_card_message(
+                card_vo.message,
+                part_number=card_vo.part_number,
+            )
+            cards.append(card_vo)
+        vo.cards = cards
+        if vo.message:
+            vo.message = humanize_legacy_detail_text(vo.message) or vo.message
         return vo
 
     def delete_calc_log(self, db: Session, log_id: int) -> None:

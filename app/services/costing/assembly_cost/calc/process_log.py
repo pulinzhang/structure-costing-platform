@@ -1,4 +1,4 @@
-"""总成核价计算过程（detail_text + 可筛选卡片 JSON）。"""
+"""总成核价计算过程（给人看的说明 + 可筛选卡片 JSON）。"""
 
 from __future__ import annotations
 
@@ -11,6 +11,11 @@ from app.common.money import Q4, optional_format_money
 
 MISSING_PART_LIMIT = 12
 CONFLICT_LIMIT = 30
+
+_MISSING_HINT_LABEL = {
+    "missing": "缺价",
+    "multi_supplier_unit_cost": "价冲突",
+}
 
 
 class CardTracePayload(TypedDict):
@@ -33,6 +38,116 @@ def _money(value: Decimal | None) -> str | None:
     return optional_format_money(value, Q4, 4)
 
 
+def format_missing_part_label(part_number: str, match_hint: str | None) -> str:
+    key = match_hint or "missing"
+    reason = _MISSING_HINT_LABEL.get(key, key)
+    return f"{part_number}（{reason}）"
+
+
+def compose_card_message(
+    *,
+    status: str,
+    missing_leaf_count: int = 0,
+    missing_parts: list[str] | None = None,
+    weld_incomplete: bool = False,
+    extra: str | None = None,
+) -> str | None:
+    """卡片说明：短句。缺价件号放 missing_parts。"""
+    if extra:
+        return extra
+    if status == "skipped":
+        return "已审核，跳过"
+    if status == "ok":
+        return None
+    chunks: list[str] = []
+    if missing_leaf_count > 0:
+        chunks.append(f"缺价 {missing_leaf_count}，补冲压价/年度价后重算")
+    if weld_incomplete:
+        chunks.append("焊接费不完整")
+    if status == "partial" and not chunks:
+        chunks.append("价不齐")
+    return "；".join(chunks) if chunks else None
+
+
+def _unique_constraint_clause(text: str) -> str:
+    """只取约束字段那一行，避免 INSERT 列清单里误伤 part_number。"""
+    marker = "UNIQUE constraint failed:"
+    start = text.find(marker)
+    if start < 0:
+        return ""
+    rest = text[start + len(marker) :]
+    for stop in ("\n", "[SQL", "("):
+        cut = rest.find(stop)
+        if cut >= 0:
+            rest = rest[:cut]
+    return rest.strip()
+
+
+def operator_write_error(exc: BaseException, *, part_number: str) -> str:
+    """落库失败：禁止把 SQL / 堆栈甩给操作员。"""
+    text = str(exc)
+    name = type(exc).__name__
+    is_unique = (
+        name == "IntegrityError"
+        or "UNIQUE constraint" in text
+        or "unique constraint" in text.lower()
+        or "IntegrityError" in text
+    )
+    clause = _unique_constraint_clause(text)
+    if is_unique and "part_number" in clause:
+        return f"{part_number} 零件号冲突，未保存"
+    if is_unique and "source_node_id" in clause:
+        return f"{part_number} BOM 节点已有卡，未保存"
+    if is_unique:
+        return f"{part_number} 写入冲突，未保存"
+    return f"{part_number} 计算失败，未保存"
+
+
+def _looks_like_sql_dump(text: str) -> bool:
+    return any(
+        token in text
+        for token in (
+            "UNIQUE constraint",
+            "IntegrityError",
+            "[SQL:",
+            "[parameters:",
+            "Background on this error",
+        )
+    )
+
+
+def _part_number_from_legacy_line(line: str) -> str:
+    if line.startswith("[") and "] L" in line:
+        bits = line.split()
+        if len(bits) >= 3:
+            return bits[2]
+    return "（见该卡）"
+
+
+def humanize_legacy_card_message(message: str | None, *, part_number: str) -> str | None:
+    """展示旧日志时去掉 SQL。"""
+    if not message:
+        return None
+    if _looks_like_sql_dump(message):
+        return operator_write_error(Exception(message), part_number=part_number)
+    return message
+
+
+def humanize_legacy_detail_text(text: str | None) -> str:
+    if not text:
+        return ""
+    if not _looks_like_sql_dump(text):
+        return text
+    rewritten: list[str] = []
+    for line in text.splitlines():
+        if _looks_like_sql_dump(line):
+            part_number = _part_number_from_legacy_line(line)
+            rewritten.append(operator_write_error(Exception(line), part_number=part_number))
+        else:
+            rewritten.append(line)
+    return "\n".join(rewritten)
+
+
 @dataclass
 class ProcessLogBuilder:
     _lines: list[str] = field(default_factory=list)
@@ -43,13 +158,13 @@ class ProcessLogBuilder:
 
     def section(self, title: str) -> None:
         self._lines.append("")
-        self._lines.append(f"=== {title} ===")
+        self._lines.append(f"【{title}】")
 
     def error(self, message: str) -> None:
-        self._lines.append(f"[错误] {message}")
+        self._lines.append(f"错误：{message}")
 
     def warn(self, message: str) -> None:
-        self._lines.append(f"[警告] {message}")
+        self._lines.append(f"注意：{message}")
 
     def add_card(
         self,
@@ -85,15 +200,6 @@ class ProcessLogBuilder:
             "missing_parts": parts,
         }
         self._cards.append(payload)
-        flag = status.upper()
-        name = part_name or "—"
-        extra = f" {message}" if message else ""
-        self.line(
-            f"[{flag}] L{level} {part_number} {name} "
-            f"应成本={payload['should_cost'] or '—'} "
-            f"总费用={payload['grand_total'] or '—'} "
-            f"缺叶={missing_leaf_count}{extra}"
-        )
 
     def build_text(self) -> str:
         return "\n".join(self._lines).strip() + ("\n" if self._lines else "")

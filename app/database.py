@@ -394,64 +394,52 @@ class DatabaseConfig:
 
     @classmethod
     def _migrate_assembly_cost_tables(cls, engine: Engine) -> None:
-        """costing_l0_assembly_costs* → costing_assembly_costs*，并回填 source_node_id。"""
+        """开发期改过表名/唯一键：SQLite 改不了表内 UNIQUE，错了就删表，由 create_all 重建。
+
+        不搬旧行。T13J 等是测试数据，丢了重算即可。
+        """
         from sqlalchemy import inspect, text
 
         inspector = inspect(engine)
         tables = set(inspector.get_table_names())
-        pairs = (
-            ("costing_l0_assembly_costs", "costing_assembly_costs"),
-            ("costing_l0_assembly_cost_items", "costing_assembly_cost_items"),
-            ("costing_l0_assembly_cost_indirects", "costing_assembly_cost_indirects"),
-            ("costing_l0_assembly_cost_calc_logs", "costing_assembly_cost_calc_logs"),
-        )
-        old_main = pairs[0][0]
-        new_main = pairs[0][1]
-        if old_main not in tables and new_main not in tables:
+        assembly_tables = {
+            "costing_assembly_costs",
+            "costing_assembly_cost_items",
+            "costing_assembly_cost_indirects",
+            "costing_assembly_cost_calc_logs",
+            "costing_l0_assembly_costs",
+            "costing_l0_assembly_cost_items",
+            "costing_l0_assembly_cost_indirects",
+            "costing_l0_assembly_cost_calc_logs",
+        }
+        if not (tables & assembly_tables):
             return
         with engine.begin() as conn:
-            if conn.dialect.name == "sqlite":
-                present = {
-                    str(name)
-                    for (name,) in conn.execute(
-                        text("SELECT name FROM sqlite_master WHERE type='table'")
-                    ).fetchall()
-                }
-            else:
-                present = set(inspect(conn).get_table_names())
-            for old_name, new_name in pairs:
-                if conn.dialect.name == "sqlite":
-                    present = {
-                        str(name)
-                        for (name,) in conn.execute(
-                            text("SELECT name FROM sqlite_master WHERE type='table'")
-                        ).fetchall()
-                    }
-                else:
-                    present = set(inspect(conn).get_table_names())
-                if old_name in present and new_name not in present:
-                    conn.execute(text(f"ALTER TABLE {old_name} RENAME TO {new_name}"))
-                    logger.info("已将 %s 改名为 %s", old_name, new_name)
-                elif old_name in present and new_name in present:
-                    new_count = int(
-                        conn.execute(text(f"SELECT COUNT(*) FROM {new_name}")).scalar() or 0
-                    )
-                    if new_count > 0:
-                        logger.warning("总成核价新旧表同时存在且新表非空，跳过改名 %s", old_name)
-                    else:
-                        conn.execute(text(f"DROP TABLE IF EXISTS {new_name}"))
-                        conn.execute(text(f"ALTER TABLE {old_name} RENAME TO {new_name}"))
-            cls._backfill_assembly_cost_columns(conn)
+            if conn.dialect.name != "sqlite":
+                return
+            present = {
+                str(name)
+                for (name,) in conn.execute(
+                    text("SELECT name FROM sqlite_master WHERE type='table'")
+                ).fetchall()
+            }
+            has_old_name = any(name.startswith("costing_l0_assembly_") for name in present)
+            wrong_unique = cls._assembly_main_uses_part_number_unique(conn)
+            if has_old_name or wrong_unique:
+                cls._drop_assembly_cost_result_tables(conn)
+                logger.info("总成核价表结构不正确，已删表；create_all 将按 source_node_id 重建")
+                return
+            cls._ensure_assembly_cost_sqlite_columns(conn)
 
     @classmethod
-    def _backfill_assembly_cost_columns(cls, conn: Connection) -> None:
+    def _ensure_assembly_cost_sqlite_columns(cls, conn: Connection) -> None:
+        """create_all 不会给已有表加列时补列。"""
         from sqlalchemy import text
 
         main = "costing_assembly_costs"
         items = "costing_assembly_cost_items"
         logs = "costing_assembly_cost_calc_logs"
-        is_sqlite = conn.dialect.name == "sqlite"
-        main_cols = cls._table_column_names(conn, main, is_sqlite=is_sqlite)
+        main_cols = cls._table_column_names(conn, main, is_sqlite=True)
         if not main_cols:
             return
         add_cols = [
@@ -471,104 +459,96 @@ class DatabaseConfig:
         for name, ddl in add_cols:
             if name not in main_cols:
                 conn.execute(text(f"ALTER TABLE {main} ADD COLUMN {name} {ddl}"))
-        conn.execute(text(f"UPDATE {main} SET should_cost = total_amount"))
-        conn.execute(
-            text(
-                f"UPDATE {main} SET root_part_number = part_number, "
-                "root_part_name = part_name WHERE root_part_number IS NULL"
-            )
-        )
 
-        unmatched: list[str] = []
-        rows = conn.execute(
-            text(
-                f"SELECT id, location, vehicle_model, bom_version, part_number "
-                f"FROM {main} WHERE source_node_id = 0 OR source_node_id IS NULL"
-            )
-        ).fetchall()
-        for row in rows:
-            matches = conn.execute(
-                text(
-                    "SELECT n.id FROM bom_nodes n "
-                    "JOIN bom_snapshots s ON s.id = n.snapshot_id "
-                    "WHERE s.location = :location AND s.vehicle_model = :vehicle_model "
-                    "AND s.bom_version = :bom_version AND n.part_number = :part_number "
-                    "AND n.parent_id IS NULL"
-                ),
-                {
-                    "location": row.location,
-                    "vehicle_model": row.vehicle_model,
-                    "bom_version": row.bom_version,
-                    "part_number": row.part_number,
-                },
-            ).fetchall()
-            if len(matches) != 1:
-                unmatched.append(
-                    f"id={row.id} {row.location}/{row.vehicle_model}/"
-                    f"{row.bom_version}/{row.part_number} matches={len(matches)}"
-                )
-                continue
-            conn.execute(
-                text(f"UPDATE {main} SET source_node_id = :nid WHERE id = :rid"),
-                {"nid": int(matches[0][0]), "rid": int(row.id)},
-            )
-        if unmatched:
-            raise RuntimeError(
-                "总成核价迁移无法唯一匹配树根 source_node_id:\n" + "\n".join(unmatched[:50])
-            )
-
-        conn.execute(text("DROP INDEX IF EXISTS uix_l0_assembly_cost_scope_part"))
-        conn.execute(text("DROP INDEX IF EXISTS uix_assembly_cost_scope_part"))
-        conn.execute(
-            text(
-                "CREATE UNIQUE INDEX IF NOT EXISTS uix_assembly_cost_scope_node "
-                f"ON {main} (year, month, location, vehicle_model, bom_version, source_node_id)"
-            )
-        )
-
-        item_cols = cls._table_column_names(conn, items, is_sqlite=is_sqlite)
+        item_cols = cls._table_column_names(conn, items, is_sqlite=True)
         if item_cols and "node_level" not in item_cols:
             conn.execute(
                 text(f"ALTER TABLE {items} ADD COLUMN node_level INTEGER NOT NULL DEFAULT 0")
             )
-            item_cols = cls._table_column_names(conn, items, is_sqlite=is_sqlite)
         if item_cols and "level_label" in item_cols:
-            unknown = conn.execute(
-                text(
-                    f"SELECT DISTINCT level_label FROM {items} "
-                    "WHERE level_label NOT IN ('L2', 'L1-leaf', 'L1-bundle', 'L1') "
-                    "AND level_label IS NOT NULL AND level_label != ''"
-                )
-            ).fetchall()
-            if unknown:
-                labels = ", ".join(str(r[0]) for r in unknown)
-                raise RuntimeError(f"总成核价明细 level_label 无法映射 node_level: {labels}")
-            conn.execute(
-                text(
-                    f"UPDATE {items} SET node_level = CASE "
-                    "WHEN level_label = 'L2' THEN 2 "
-                    "WHEN level_label LIKE 'L1%' THEN 1 "
-                    "ELSE node_level END"
-                )
-            )
-            # 旧列 NOT NULL，新 INSERT 只写 node_level，必须删掉否则整批落库失败
             conn.execute(text(f"ALTER TABLE {items} DROP COLUMN level_label"))
-            logger.info("已删除 %s.level_label（改用 node_level）", items)
 
-        log_cols = cls._table_column_names(conn, logs, is_sqlite=is_sqlite)
+        log_cols = cls._table_column_names(conn, logs, is_sqlite=True)
         if log_cols and "subject_total" not in log_cols and "l0_total" in log_cols:
             conn.execute(text(f"ALTER TABLE {logs} RENAME COLUMN l0_total TO subject_total"))
         elif log_cols and "subject_total" not in log_cols:
             conn.execute(
                 text(f"ALTER TABLE {logs} ADD COLUMN subject_total INTEGER NOT NULL DEFAULT 0")
             )
-        log_cols = cls._table_column_names(conn, logs, is_sqlite=is_sqlite)
+        log_cols = cls._table_column_names(conn, logs, is_sqlite=True)
         if log_cols and "detail_text" not in log_cols:
             conn.execute(
                 text(f"ALTER TABLE {logs} ADD COLUMN detail_text TEXT NOT NULL DEFAULT ''")
             )
         if log_cols and "detail_json" not in log_cols:
             conn.execute(text(f"ALTER TABLE {logs} ADD COLUMN detail_json TEXT"))
+
+    _ASSEMBLY_COST_DROP_ORDER = (
+        "costing_assembly_cost_items",
+        "costing_l0_assembly_cost_items",
+        "costing_assembly_cost_indirects",
+        "costing_l0_assembly_cost_indirects",
+        "costing_assembly_costs",
+        "costing_l0_assembly_costs",
+        "costing_assembly_cost_calc_logs",
+        "costing_l0_assembly_cost_calc_logs",
+    )
+
+    @staticmethod
+    def _sqlite_table_create_sql(conn: Connection, table_name: str) -> str:
+        from sqlalchemy import text
+
+        row = conn.execute(
+            text("SELECT sql FROM sqlite_master WHERE type='table' AND name = :name"),
+            {"name": table_name},
+        ).fetchone()
+        if row is None or row[0] is None:
+            return ""
+        return str(row[0])
+
+    @classmethod
+    def _sqlite_unique_index_columns(cls, conn: Connection, table_name: str) -> list[list[str]]:
+        from sqlalchemy import text
+
+        indexes = conn.execute(text(f'PRAGMA index_list("{table_name}")')).fetchall()
+        result: list[list[str]] = []
+        for row in indexes:
+            is_unique = bool(row[2])
+            if not is_unique:
+                continue
+            index_name = str(row[1])
+            cols = [
+                str(info[2])
+                for info in conn.execute(text(f'PRAGMA index_info("{index_name}")')).fetchall()
+            ]
+            if cols:
+                result.append(cols)
+        return result
+
+    @classmethod
+    def _assembly_main_uses_part_number_unique(cls, conn: Connection) -> bool:
+        """表内 UNIQUE(…, part_number) 无法用 DROP INDEX 去掉。"""
+        sql = cls._sqlite_table_create_sql(conn, "costing_assembly_costs")
+        if not sql:
+            return False
+        compact = " ".join(sql.split())
+        if "uix_l0_assembly_cost_scope_part" in compact:
+            return True
+        if "UNIQUE (year, month, location, vehicle_model, bom_version, part_number)" in compact:
+            return True
+        for cols in cls._sqlite_unique_index_columns(conn, "costing_assembly_costs"):
+            if cols[-1] == "part_number" and "source_node_id" not in cols:
+                return True
+        return False
+
+    @classmethod
+    def _drop_assembly_cost_result_tables(cls, conn: Connection) -> None:
+        from sqlalchemy import text
+
+        conn.execute(text("PRAGMA foreign_keys=OFF"))
+        for table_name in cls._ASSEMBLY_COST_DROP_ORDER:
+            conn.execute(text(f'DROP TABLE IF EXISTS "{table_name}"'))
+        conn.execute(text("PRAGMA foreign_keys=ON"))
 
     @classmethod
     def _remap_assembly_cost_permissions(cls, engine: Engine) -> None:

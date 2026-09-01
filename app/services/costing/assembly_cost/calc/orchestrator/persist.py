@@ -16,6 +16,13 @@ from app.services.costing.assembly_cost.calc.orchestrator.prep import CalcPrepCo
 from app.services.costing.assembly_cost.calc.orchestrator.progress import ProgressNotifier
 
 
+def _result_message(batch: BatchCalcOutcome) -> str:
+    return (
+        f"成功 {batch.ok_n}，部分成功 {batch.partial_n}，"
+        f"失败 {batch.failed_n}，跳过 {batch.skipped}"
+    )
+
+
 def persist_calc_result(
     db: Session,
     deps: AssemblyCalcDeps,
@@ -33,12 +40,7 @@ def persist_calc_result(
         status = STATUS_PARTIAL
     else:
         status = STATUS_SUCCESS
-    message = (
-        f"新增 {batch.created}，更新 {batch.updated}，跳过已审 {batch.skipped}，"
-        f"ok {batch.ok_n}，partial {batch.partial_n}，失败 {batch.failed_n}"
-    )
-    ctx.log_builder.section("结果")
-    ctx.log_builder.line(message)
+    message = _result_message(batch)
     detail_text = ctx.log_builder.build_text()
     detail_json = ctx.log_builder.build_json()
     if log_id is not None:

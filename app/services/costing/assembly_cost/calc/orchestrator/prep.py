@@ -240,7 +240,6 @@ def prepare_calc_run(
         location=location,
         vehicle_model=vehicle_model,
         bom_version=bom_version,
-        snapshot_id=snap.id,
         node_count=len(nodes),
         subjects=subjects,
         procurement_missing=procurement_missing,
@@ -249,7 +248,6 @@ def prepare_calc_run(
         annual_count=len(annual_prices),
         welding_count=len(welding_by_bom_node),
         packaging_count=len(packaging_by_part),
-        rates=rates,
     )
     return CalcPrepContext(
         year=year,
@@ -282,7 +280,6 @@ def _record_prep(
     location: str,
     vehicle_model: str,
     bom_version: str,
-    snapshot_id: int,
     node_count: int,
     subjects: list[RollupBomNode],
     procurement_missing: bool,
@@ -291,29 +288,22 @@ def _record_prep(
     annual_count: int,
     welding_count: int,
     packaging_count: int,
-    rates: RollupFinishedRates,
 ) -> None:
-    log_builder.section("范围")
-    log_builder.line(f"核价期: {year}-{month:02d}")
-    log_builder.line(f"基地/项目/版本: {location} / {vehicle_model} / {bom_version}")
-    log_builder.line(f"snapshot_id={snapshot_id}  BOM 节点 {node_count}")
     by_level = Counter(node.level for node in subjects)
-    level_text = "、".join(f"L{level}={count}" for level, count in sorted(by_level.items()))
-    log_builder.section("核价主体")
-    log_builder.line(f"共 {len(subjects)} 张卡（{level_text or '无'}）")
+    level_text = "、".join(f"L{level} {count}" for level, count in sorted(by_level.items()))
+    log_builder.line(
+        f"{year}-{month:02d}  {location}/{vehicle_model}/{bom_version}  "
+        f"BOM {node_count}  卡 {len(subjects)}（{level_text or '无'}）"
+    )
+    log_builder.line(
+        f"冲压价 {stamping_count}  年度价 {annual_count}  "
+        f"焊接费 {welding_count}  包装 {packaging_count}"
+    )
     if procurement_missing:
-        log_builder.warn("采购对象清单未生成，本趟只出装配∪树根")
-    log_builder.section("上游价表")
-    log_builder.line(f"冲压价 {stamping_count} 条（冲突 {len(conflicted)}）")
+        log_builder.warn("采购对象清单未生成，只出装配∪树根")
     if conflicted:
         shown = sorted(conflicted)[:CONFLICT_LIMIT]
-        log_builder.warn("冲压价冲突零件: " + "、".join(shown))
-        omitted = len(conflicted) - len(shown)
-        if omitted > 0:
-            log_builder.warn(f"另有 {omitted} 个冲突零件未展开")
-    log_builder.line(f"年度价 {annual_count}  焊接费 {welding_count}  包装运输 {packaging_count}")
-    log_builder.line(
-        f"费率 财务={rates.finance_rate} 管理={rates.management_rate} "
-        f"报废={rates.scrap_rate} 税前利润={rates.pretax_profit_rate}"
-    )
-    log_builder.section("核价卡")
+        extra = f" 等{len(conflicted)}个" if len(conflicted) > len(shown) else ""
+        log_builder.warn("冲压价冲突: " + "、".join(shown) + extra)
+    elif stamping_count == 0:
+        log_builder.warn("本月无冲压价")

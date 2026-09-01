@@ -1,0 +1,11 @@
+{
+  "name": "stamping-costing-platform-frontend",
+  "private": true,
+  "description": "仅用于生成 static/css/tailwind.css；日常跑应用不需要 Node。",
+  "scripts": {
+    "build:css": "tailwindcss -i ./static/css/tailwind-src.css -o ./static/css/tailwind.css --minify"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.17"
+  }
+}

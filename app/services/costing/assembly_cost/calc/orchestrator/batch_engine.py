@@ -18,7 +18,12 @@ from app.schemas.vo.user_vo import UserVO
 from app.services.costing.assembly_cost.calc.orchestrator.deps import AssemblyCalcDeps
 from app.services.costing.assembly_cost.calc.orchestrator.prep import CalcPrepContext
 from app.services.costing.assembly_cost.calc.orchestrator.progress import ProgressNotifier
-from app.services.costing.assembly_cost.calc.process_log import MISSING_PART_LIMIT
+from app.services.costing.assembly_cost.calc.process_log import (
+    MISSING_PART_LIMIT,
+    compose_card_message,
+    format_missing_part_label,
+    operator_write_error,
+)
 from app.services.costing.assembly_cost.calc.rollup import FORMULA_VERSION, rollup_assembly
 
 logger = logging.getLogger("service.costing.assembly_cost.calc")
@@ -71,7 +76,7 @@ class BatchCalculationEngine:
                     is_tree_root=root.parent_id is None,
                     object_kind=meta.object_kind if meta else None,
                     status="skipped",
-                    message="已审核跳过",
+                    message=compose_card_message(status="skipped"),
                 )
                 outcome.skipped += 1
                 progress.tick_parts(index, total)
@@ -92,10 +97,27 @@ class BatchCalculationEngine:
                         nodes_by_id=ctx.nodes_by_id,
                     )
                     calc_status: str = result.status
-                    calc_message = None
+                    welding = ctx.welding_by_bom_node.get(root.id)
+                    weld_incomplete = welding is not None and (
+                        welding.missing_price_count > 0
+                        or (welding.calc_status is not None and welding.calc_status != "ok")
+                    )
+                    missing_parts = [
+                        format_missing_part_label(line.part_number, line.match_hint)
+                        for line in result.lines
+                        if line.cost_source == "missing"
+                    ][:MISSING_PART_LIMIT]
+                    calc_message: str | None
                     if not result.identities_ok:
                         calc_status = "failed"
-                        calc_message = "恒等式校验失败"
+                        calc_message = "金额勾稽不平"
+                    else:
+                        calc_message = compose_card_message(
+                            status=calc_status,
+                            missing_leaf_count=result.missing_leaf_count,
+                            missing_parts=missing_parts,
+                            weld_incomplete=weld_incomplete,
+                        )
                     meta = ctx.subject_meta.get(root.id)
                     payload = AssemblyCostUpsertPayload(
                         year=ctx.year,
@@ -182,11 +204,6 @@ class BatchCalculationEngine:
                         ],
                     )
                     _, is_created = self._deps.cost_repo.upsert_with_children(db, payload)
-                missing_parts = [
-                    f"{line.part_number}（{line.match_hint or 'missing'}）"
-                    for line in result.lines
-                    if line.cost_source == "missing"
-                ][:MISSING_PART_LIMIT]
                 ctx.log_builder.add_card(
                     part_number=result.part_number,
                     part_name=result.part_name,
@@ -222,7 +239,7 @@ class BatchCalculationEngine:
                     is_tree_root=root.parent_id is None,
                     object_kind=meta.object_kind if meta else None,
                     status="failed",
-                    message=str(exc),
+                    message=operator_write_error(exc, part_number=root.part_number),
                 )
                 outcome.failed_n += 1
 

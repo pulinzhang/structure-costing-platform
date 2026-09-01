@@ -17,20 +17,21 @@ alwaysApply: true
 
 ### 1.1 技术架构
 
-**前后端分离 SPA（无构建步骤）**
+**前后端分离 SPA（业务页无 Webpack / Vite）**
 
 | 入口 | 路径 | 说明 |
 |------|------|------|
 | 主应用 | `static/index.html` → `/` | Hash 路由 SPA；未登录立即 `replace('/login')` |
 | 登录页 | `static/login.html` → `/login` | 独立页；`#loginRoot` + `features/login/boot.js` |
 
-- **样式**：Tailwind CDN + `static/css/style.css`（主题变量 + 壳层骨架）
-- **字体**：Inter（正文）+ JetBrains Mono（等宽/刻度）
+- **样式**：本地 `static/css/tailwind.css`（Tailwind CLI 预生成并入库）+ `static/css/style.css`（主题变量 + 壳层骨架）。**禁止** `cdn.tailwindcss.com`（Play CDN 每次刷新现场编译）。新增从未出现过的任意值类后执行 `npm run build:css`。
+- **字体**：本地 `static/css/fonts.css` + `static/assets/fonts/`（Inter / JetBrains Mono / Source Serif 4）；**禁止** Google Fonts。
+- **第三方 JS**：`static/js/vendor/`（marked、DOMPurify）；**禁止** jsDelivr 等 CDN。
 - **后端**：FastAPI `/api/*`（JSON）；文件下载走 `HttpClient.download`
 - **脚本加载顺序**（重要）：
   1. `main.js` — **普通 `<script>`**（非 module），保证 `window.*` 先就绪
   2. `app.js` — `type="module"`（主应用）或 `login/boot.js`（登录页）
-- **缓存**：入口与 import 使用 `?v=N` 版本号；改脚本后须同步递增相关 `?v=`
+- **缓存**：入口与 import 使用 `?v=N` 版本号；改脚本后须同步递增相关 `?v=`；改 `tailwind.css` / `fonts.css` 后递增对应 `?v=`
 
 ### 1.2 核心规则
 
@@ -568,7 +569,8 @@ ES Module 导出：`PAGE_SIZE_OPTIONS`、`DEFAULT_PAGE_SIZE`、`PREVIEW_*`、`pa
 ## 九、快速检查清单
 
 - [ ] 新页：`pageMeta` + `app.js` 注册 + 侧栏 `data-page`（如需）+ 权限码
-- [ ] 改脚本后递增相关 `?v=`
+- [ ] 改脚本后递增相关 `?v=`；新增从未出现过的 Tailwind 任意值类后执行 `npm run build:css` 并递增 `tailwind.css?v=`
+- [ ] 入口不引用 Google Fonts / Tailwind Play CDN / jsDelivr
 - [ ] 渲染目标是 `#pageContent`；登录走 `/login` + `login.html`
 - [ ] 未向 `style.css` 新增业务 class
 - [ ] 无 Bootstrap / 无浅色底 / 无 `rounded-lg+`

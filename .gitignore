@@ -16,6 +16,9 @@ venv/
 env/
 .venv/
 
+# Node (仅用于生成 Tailwind CSS)
+node_modules/
+
 # IDE
 .idea/
 .vscode/

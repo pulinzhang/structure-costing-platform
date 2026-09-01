@@ -152,13 +152,13 @@ function render(root) {
             <div>操作人 <strong>${esc(log.operator_name)}</strong></div>
             <div>开始 <strong>${esc(formatWhen(log.started_at))}</strong></div>
             <div>结束 <strong>${esc(formatWhen(log.finished_at))}</strong></div>
-            <div>主体 <strong>${esc(log.subject_total ?? log.l0_total)}</strong></div>
-            <div>ok / partial / 失败 / 跳过
+            <div>核价卡 <strong>${esc(log.subject_total ?? log.l0_total)}</strong></div>
+            <div>成功 / 部分成功 / 失败 / 跳过
                 <strong>${esc(log.ok_count)} / ${esc(log.partial_count)} / ${esc(log.failed_count)} / ${esc(log.skipped_approved_count)}</strong>
             </div>
         </div>
         <div class="filters">
-            <input id="reportKeyword" type="search" placeholder="筛选零件号、名称、缺叶、备注">
+            <input id="reportKeyword" type="search" placeholder="零件号、名称、说明">
             <button type="button" data-status="all">全部</button>
             <button type="button" data-status="ok">成功</button>
             <button type="button" data-status="partial">部分成功</button>
@@ -176,8 +176,8 @@ function render(root) {
             <span class="count">显示 ${filtered.length} / ${cards.length} 张卡</span>
         </div>
         <div class="body">
-            ${log.message ? `<p style="margin:0 0 12px;color:#57534e;font-size:13px;">${esc(log.message)}</p>` : ''}
-            <pre class="narrative">${esc(log.detail_text || '（尚无过程文本。计算完成后会写入范围、上游价表与每张核价卡。）')}</pre>
+            ${log.message ? `<p class="summary">${esc(log.message)}</p>` : ''}
+            ${log.detail_text ? `<pre class="narrative">${esc(log.detail_text)}</pre>` : ''}
             <div id="reportTableHost">${renderTable(filtered)}</div>
         </div>
     `;
@@ -222,7 +222,7 @@ function renderTable(cards) {
                     <th style="text-align:right;">焊接</th>
                     <th style="text-align:right;">应成本</th>
                     <th style="text-align:right;">总费用</th>
-                    <th style="text-align:right;">缺叶</th>
+                    <th style="text-align:right;">缺价</th>
                     <th>说明</th>
                 </tr>
             </thead>

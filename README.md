@@ -37,7 +37,7 @@
 | 层 | 说明 |
 |----|------|
 | 后端 | FastAPI，`/api/*` JSON；`ApiResponse[T]` + `PageResult` |
-| 前端 | `static/` SPA（无构建）：Hash 路由、Tailwind CDN、ES Module |
+| 前端 | `static/` SPA（无 Webpack/Vite）：Hash 路由、本地 `tailwind.css`、ES Module |
 | 分层 | Router → Service → Repository → DB；Parser 仅 Service 调用 |
 | 切片 | 上游 `stamping` / `yishiyiyi` / `bom` / `settings`；横切 `file_trace`；下游 `costing` / `dashboard` 可组合上游 |
 
@@ -52,7 +52,7 @@
 | 后端 | FastAPI、Uvicorn、SQLAlchemy 2、Pydantic v2 |
 | 数据库 | SQLite（主库 `data/stamping_costing.db` + 辅助库 `data/auxiliary.db` 会话/异步任务） |
 | Excel | OpenPyXL、xlrd；Pillow（简图） |
-| 前端 | 原生 JS SPA、Tailwind CDN、Inter + JetBrains Mono |
+| 前端 | 原生 JS SPA、本地 Tailwind CSS、Inter + JetBrains Mono |
 | 鉴权 | Token（`X-Token` / Bearer）+ `Perm.*` 权限码 |
 
 ---

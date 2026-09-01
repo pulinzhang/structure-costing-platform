@@ -5,7 +5,7 @@
 import {
     assemblyCostCalcTemplate,
     renderCalcHistoryPagination,
-} from './template.js?v=3';
+} from './template.js?v=4';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,

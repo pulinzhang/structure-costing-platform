@@ -12,7 +12,7 @@
 |------|------|
 | 名称 | 汽车冲压件自动核价平台 |
 | 后端 | FastAPI + SQLAlchemy + SQLite |
-| 前端 | `static/` SPA（无构建：原生 ES Module + Tailwind CDN） |
+| 前端 | `static/` SPA（无 Webpack/Vite：原生 ES Module + 入库的 `tailwind.css`） |
 | 做什么 | 工艺/政策/BOM 等数据入库 → 钢材联动与零件核价 → 查询、审核、导出 |
 | 典型流程 | 上传 Excel → Parser 解析 → Service 落库 → 下游 costing 组合计算 |
 
