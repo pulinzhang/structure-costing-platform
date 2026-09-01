@@ -79,10 +79,12 @@ def prepare_calc_run(
 
     source_excel_filename = None
     source_sheet_name = None
-    snapshot_id = next(
-        (node.snapshot_id for node in nodes if node.snapshot_id is not None),
-        None,
-    )
+    snapshot_id: int | None = None
+    for node in nodes:
+        raw = getattr(node, "snapshot_id", None)
+        if isinstance(raw, int):
+            snapshot_id = raw
+            break
     if snapshot_id is not None:
         snapshot = BomSnapshotRepository().get_by_id(db, snapshot_id)
         if snapshot is not None:

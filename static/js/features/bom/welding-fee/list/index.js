@@ -10,7 +10,7 @@ import {
     updateL0WeldingFeeFilterCapsules,
     renderFeeDetailItems,
     resolveL0ShortPartNumber,
-} from './template.js?v=14';
+} from './template.js?v=17';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -106,12 +106,12 @@ function fillLevelOptions() {
     const el = document.getElementById('l0wfLevelFilter');
     if (!el) return;
     el.innerHTML = `
+        <option value="">全部</option>
         <option value="0">L0</option>
         <option value="1">L1</option>
         <option value="2">L2</option>
-        <option value="">全部</option>
     `;
-    el.value = '0';
+    el.value = '';
 }
 
 function fillAuditStatusOptions() {
@@ -418,7 +418,7 @@ async function loadData(page = feeState.page) {
         feeState.page = data.page || page;
         feeState.totalPages = data.total_pages || 1;
         feeState.summary = data.filters?.summary || {};
-
+        // HUD 用筛选全量 summary，不用本页 items
         updateL0WeldingFeeHud(
             feeState.summary,
             f.bom_version || (f.vehicle_model ? f.vehicle_model : '—'),

@@ -4,10 +4,11 @@ BOM 焊接费 VO - 响应数据结构
 
 from datetime import datetime
 from decimal import Decimal
+from typing import TypedDict
 
 from pydantic import BaseModel, Field, field_serializer
 
-from app.common.money import Q4, optional_format_money
+from app.common.money import Q4, format_money, optional_format_money
 from app.common.timezone import datetime_to_iso
 
 
@@ -157,6 +158,36 @@ class BomWeldingFeeCalcLogVO(BaseModel):
     @field_serializer("started_at", "finished_at", "created_at")
     def serialize_log_datetime(self, value: datetime | None) -> str | None:
         return datetime_to_iso(value)
+
+
+class WeldingFeeListSummaryVO(BaseModel):
+    """列表 HUD 汇总：按筛选条件全量聚合，不含分页、不含缺单价钻取。"""
+
+    total_count: int = 0
+    total_fee: Decimal = Decimal("0")
+    pending_count: int = 0
+    approved_count: int = 0
+    partial_count: int = 0
+    failed_count: int = 0
+    missing_price_count: int = 0
+
+    @field_serializer("total_fee")
+    def serialize_total_fee(self, value: Decimal) -> str:
+        return format_money(value, Q4, 4)
+
+
+class WeldingFeeListApiFilters(TypedDict):
+    """列表响应 filters：查询回显 + HUD 全量汇总。"""
+
+    year: int | None
+    location: str | None
+    vehicle_model: str | None
+    bom_version: str | None
+    part_number: str | None
+    audit_status: str | None
+    calc_status: str | None
+    level: int | None
+    summary: WeldingFeeListSummaryVO
 
 
 class BomWeldingFeeBatchAuditResultVO(BaseModel):

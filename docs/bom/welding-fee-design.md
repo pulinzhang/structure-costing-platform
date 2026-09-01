@@ -166,11 +166,11 @@ levels: list[int] | 省略
 | `#/bom-l0-welding-fee-list` | `#/bom-welding-fee-list` |
 | `/api/bom/l0-welding-fees` | `/api/bom/welding-fees` |
 | `menu/op:bom-l0-welding-fee-*` | `menu/op:bom-welding-fee-*` |
-| 侧栏「成品焊接费」 | 「焊接费」（列表默认可预选 level=0） |
+| 侧栏「成品焊接费」 | 「焊接费」（列表默认可看全部层级） |
 
 批量删除 / 审核 / 反审核：范围仍是年 + 基地 + 车型 + 版本；**可加可选 `level`**，不传则该范围全部未审行。意见 / 原因必填。
 
-列表、导出必带 `level` 列。
+列表、导出必带「层级」列（导出写 `L0`/`L1`/…）。导出 **跟列表筛选**（含层级：选了 L0 就只出 L0，选全部则各层都出）；行序按主键 `id` 升序。成品核价套表里的焊接费页仍只嵌 `level=0`。
 
 ---
 

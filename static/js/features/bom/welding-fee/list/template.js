@@ -87,7 +87,7 @@ export function l0WeldingFeeListTemplate() {
                                 ${window.svgIcon('trash', 'w-3 h-3')}
                                 批量删除
                             </button>
-                            <button id="l0wfExportBtn" type="button"
+                            <button id="l0wfExportBtn" type="button" title="按当前筛选导出"
                                     class="inline-flex items-center gap-1.5 bg-transparent text-[#6E6E73] border border-[#2A2A35] px-3 py-1.5 text-[11px] font-medium rounded-md hover:border-[#FF1E27]/50 hover:text-[#FF1E27] transition-all">
                                 ${window.svgIcon('download', 'w-3 h-3')}
                                 导出 Excel
@@ -472,19 +472,21 @@ export function resolveL0ShortPartNumber(partNumber) {
     return shortPartNumber(full) || full;
 }
 
+/** HUD 只用 API filters.summary（筛选全量），禁止用本页 items 加总。 */
 export function updateL0WeldingFeeHud(summary = {}, versionLabel = '—') {
     const set = (id, value) => {
         const el = document.getElementById(id);
         if (el) el.textContent = value;
     };
-    const totalFee = summary.total_fee != null ? fmtNum(summary.total_fee, 4) : '—';
+    const data = summary && typeof summary === 'object' ? summary : {};
+    const totalFee = data.total_fee != null ? fmtNum(data.total_fee, 4) : '—';
     set('l0wfHudTotalFee', totalFee);
-    set('l0wfHudTotal', summary.total_count != null ? String(summary.total_count) : '—');
-    set('l0wfHudPending', summary.pending_count != null ? String(summary.pending_count) : '—');
-    set('l0wfHudApproved', summary.approved_count != null ? String(summary.approved_count) : '—');
+    set('l0wfHudTotal', data.total_count != null ? String(data.total_count) : '—');
+    set('l0wfHudPending', data.pending_count != null ? String(data.pending_count) : '—');
+    set('l0wfHudApproved', data.approved_count != null ? String(data.approved_count) : '—');
     set('l0wfHudVersion', versionLabel || '—');
 
-    const partial = Number(summary.partial_count) || 0;
+    const partial = Number(data.partial_count) || 0;
     set('l0wfHudPartial', String(partial));
     document.getElementById('l0wfHudPartialGlow')?.classList.toggle('hidden', partial <= 0);
     document.getElementById('l0wfHudPartialDot')?.classList.toggle('hidden', partial <= 0);

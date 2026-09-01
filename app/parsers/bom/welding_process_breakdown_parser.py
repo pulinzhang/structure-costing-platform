@@ -68,6 +68,8 @@ def _normalize_weld_info_text(raw: str) -> str:
     text = text.replace("㎡", "m2").replace("m²", "m2").replace("M2", "m2")
     # 冒号两侧：保留「名称：数字」语义，统一为全角冒号便于阅读；匹配仍兼容半角
     text = re.sub(r"[:：]", "：", text)
+    # 材料清单笔误「凸焊:：2」→「凸焊：2」
+    text = re.sub(r"(：\s*)+", "：", text)
     # 电泳+喷粉 中间多余空格
     text = re.sub(r"\+\s*", "+", text)
     text = re.sub(r"\s+", " ", text)
@@ -84,6 +86,8 @@ def parse_welding_info_text(weld_info: str | None) -> WeldingProcessBreakdownPar
       凸焊:1 / 植焊:2
       塞焊：3个（90mm）
       黒漆件 电泳面积：0.017m2  → 标准工艺默认「电泳（盐雾试验要求≤244H）」
+      电泳黑漆：0.098m2           → 同上（材料清单常见省略「面积」）
+      凸焊:：2                   → 连续冒号压成「凸焊：2」
       铆接：1 电泳+ 喷粉（黑色） 面积：0.014m2  → 「面积」一律按电泳
     """
     raw = (weld_info or "").strip()
@@ -127,6 +131,8 @@ def parse_welding_info_text(weld_info: str | None) -> WeldingProcessBreakdownPar
         ),
         (r"涂胶：?\s*(\d+(?:\.\d+)?)\s*[mM]{2}", "涂胶", "mm"),
         (r"电泳面积：?\s*([\d.]+)\s*m2", "电泳面积", "m2"),
+        (r"电泳黑漆：?\s*([\d.]+)\s*m2", "电泳面积", "m2"),
+        (r"电泳：?\s*([\d.]+)\s*m2", "电泳面积", "m2"),
         (r"(?<!电泳)面积：?\s*([\d.]+)\s*m2", "面积", "m2"),
     ]
 

@@ -279,7 +279,7 @@ def export_download(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BOM_WELDING_FEE_LIST_EXPORT)),
 ) -> StreamingResponse:
-    """按当前筛选条件导出焊接费 Excel（主表字段打平到工艺明细行）。"""
+    """按当前筛选条件导出焊接费 Excel（主表字段打平到工艺明细行，按 id 升序）。"""
     content, filename = _export_service.export(
         db,
         year=year,

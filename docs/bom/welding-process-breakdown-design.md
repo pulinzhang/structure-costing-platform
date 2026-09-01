@@ -104,8 +104,9 @@ L0.process_qty(token)  ≟  Σ( L1.process_qty × L1.assembly_qty )
 - 归一化全半角冒号、黒→黑、㎡→m2 等。
 - token 映射到 `WeldingStandardProcessName`（与焊接单价 `item_name` 对齐），`map_status`：`ready` / `ambiguous` / `unmapped`。
 - 面积 / 电泳面积默认「电泳（盐雾试验要求≤244H）」；升档见应成本文档盐雾待拍板。
+- 连续冒号（`凸焊:：2`）压成单个冒号；`电泳黑漆：0.098m2` 按电泳面积。
 
-已知原文缺口（拆不出则过程量为空，下游焊接费 `failed`/`partial`）：如 `电泳黑漆：0.098m2`、`凸焊:：2`。修 Parser 后 **重跑拆解**，不要在计费模块补正则。
+材料清单写法再变时 **改 Parser 后重跑拆解**，不要在计费模块补正则。
 
 Router **禁止** 直接调 Parser。
 

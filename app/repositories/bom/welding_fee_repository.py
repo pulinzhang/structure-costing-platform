@@ -27,7 +27,7 @@ _UPSERT_SKIP = frozenset({"id", "created_by", "created_at"})
 
 
 class WeldingFeeFilterSummary(TypedDict):
-    """列表筛选汇总。"""
+    """列表筛选汇总（全量，无分页）。"""
 
     total_count: int
     total_fee: Decimal
@@ -36,20 +36,6 @@ class WeldingFeeFilterSummary(TypedDict):
     partial_count: int
     failed_count: int
     missing_price_count: int
-
-
-class WeldingFeeListFilters(TypedDict):
-    """焊接费列表筛选体。"""
-
-    year: int | None
-    location: str | None
-    vehicle_model: str | None
-    bom_version: str | None
-    part_number: str | None
-    audit_status: str | None
-    calc_status: str | None
-    level: int | None
-    summary: WeldingFeeFilterSummary
 
 
 class BomWeldingFeeRepository:
@@ -289,15 +275,7 @@ class BomWeldingFeeRepository:
         total = q.count()
         rows = (
             q.options(noload(BomWeldingFee.items))
-            .order_by(
-                BomWeldingFee.year.desc(),
-                BomWeldingFee.location,
-                BomWeldingFee.vehicle_model,
-                BomWeldingFee.bom_version,
-                BomWeldingFee.level,
-                BomWeldingFee.part_number,
-                BomWeldingFee.id.asc(),
-            )
+            .order_by(BomWeldingFee.id.asc())
             .offset(skip)
             .limit(limit)
             .all()
@@ -329,17 +307,7 @@ class BomWeldingFeeRepository:
             level=level,
         )
         rows: list[BomWeldingFee] = (
-            q.options(joinedload(BomWeldingFee.items))
-            .order_by(
-                BomWeldingFee.year.desc(),
-                BomWeldingFee.location,
-                BomWeldingFee.vehicle_model,
-                BomWeldingFee.bom_version,
-                BomWeldingFee.level,
-                BomWeldingFee.part_number,
-                BomWeldingFee.id.asc(),
-            )
-            .all()
+            q.options(joinedload(BomWeldingFee.items)).order_by(BomWeldingFee.id.asc()).all()
         )
         return rows
 

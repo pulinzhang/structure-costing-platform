@@ -16,10 +16,7 @@ from app.common.audit import (
 from app.common.timezone import now
 from app.exceptions.base import BusinessException, NotFoundException
 from app.models.bom import BomWeldingFee
-from app.repositories.bom.welding_fee_repository import (
-    BomWeldingFeeRepository,
-    WeldingFeeListFilters,
-)
+from app.repositories.bom.welding_fee_repository import BomWeldingFeeRepository
 from app.services.bom.welding_fee.fee_math import resolve_final_welding_fee
 from app.repositories.bom.welding_process_breakdown_repository import (
     BomWeldingProcessBreakdownRepository,
@@ -36,6 +33,8 @@ from app.schemas.vo.bom_welding_fee_vo import (
     BomWeldingFeeBatchAuditResultVO,
     BomWeldingFeeBatchDeleteResultVO,
     BomWeldingFeeVO,
+    WeldingFeeListApiFilters,
+    WeldingFeeListSummaryVO,
 )
 from app.schemas.vo.user_vo import UserVO
 
@@ -101,7 +100,7 @@ class BomWeldingFeeService:
         self,
         db: Session,
         query: BomWeldingFeeQuery,
-    ) -> tuple[list[BomWeldingFeeVO], int, WeldingFeeListFilters]:
+    ) -> tuple[list[BomWeldingFeeVO], int, WeldingFeeListApiFilters]:
         skip = (query.page - 1) * query.size
         rows, total = self.fee_repo.paginate(
             db,
@@ -117,7 +116,20 @@ class BomWeldingFeeService:
             limit=query.size,
         )
         vos = self._to_vos(db, rows)
-        filters: WeldingFeeListFilters = {
+        # HUD 不含 calc_status，避免点「缺单价待办」后大盘被掏空
+        summary = WeldingFeeListSummaryVO.model_validate(
+            self.fee_repo.summarize_by_filters(
+                db,
+                year=query.year,
+                location=query.location,
+                vehicle_model=query.vehicle_model,
+                bom_version=query.bom_version,
+                part_number=query.part_number,
+                audit_status=query.audit_status,
+                level=query.level,
+            )
+        )
+        filters: WeldingFeeListApiFilters = {
             "year": query.year,
             "location": query.location,
             "vehicle_model": query.vehicle_model,
@@ -126,17 +138,7 @@ class BomWeldingFeeService:
             "audit_status": query.audit_status,
             "calc_status": query.calc_status,
             "level": query.level,
-            "summary": self.fee_repo.summarize_by_filters(
-                db,
-                year=query.year,
-                location=query.location,
-                vehicle_model=query.vehicle_model,
-                bom_version=query.bom_version,
-                part_number=query.part_number,
-                audit_status=query.audit_status,
-                calc_status=query.calc_status,
-                level=query.level,
-            ),
+            "summary": summary,
         }
         return vos, total, filters
 

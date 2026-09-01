@@ -126,6 +126,12 @@ def _num(value: Any) -> Any:
     return excel_money_cell(value, Q4)
 
 
+def _level_label(level: int | None) -> str:
+    if level is None:
+        return ""
+    return f"L{int(level)}"
+
+
 class BomWeldingFeeExportService:
     """按筛选导出焊接费（主表合并 + 工艺明细分行）。"""
 
@@ -314,8 +320,7 @@ class BomWeldingFeeExportService:
             row=2,
             column=1,
             value=(
-                f"{filter_text} · 共 {fee_count} 个成品"
-                f"　　导出 {now().strftime('%Y-%m-%d %H:%M')}"
+                f"{filter_text} · 共 {fee_count} 条" f"　　导出 {now().strftime('%Y-%m-%d %H:%M')}"
             ),
         )
         c2.font = _font(size=9, color="455A64")
@@ -327,7 +332,7 @@ class BomWeldingFeeExportService:
         c3 = ws.cell(
             row=3,
             column=1,
-            value="说明：左侧主表按成品合并；右侧为工艺明细。行费 = 计费量 × 分年单价；仅成品计费。",
+            value="说明：左侧主表按节点合并，含各层级（见「层级」列）；右侧为工艺明细。行费 = 计费量 × 分年单价。",
         )
         c3.font = _font(size=9, color="B71C1C")
         c3.fill = _fill("FFF3E0")
@@ -352,7 +357,7 @@ class BomWeldingFeeExportService:
             end_row=group_row,
             end_column=COL_COUNT,
         )
-        main_group = ws.cell(row=group_row, column=1, value="成品主表")
+        main_group = ws.cell(row=group_row, column=1, value="节点主表")
         main_group.font = white
         main_group.fill = _fill("37474F")
         main_group.alignment = self._center
@@ -412,7 +417,7 @@ class BomWeldingFeeExportService:
                 record.location,
                 record.vehicle_model,
                 record.bom_version,
-                record.level,
+                _level_label(record.level),
                 record.part_number,
                 record.part_name or "",
                 (record.weld_info_raw or "").strip(),
@@ -576,7 +581,7 @@ class BomWeldingFeeExportService:
         if bom_version:
             parts.append(f"版本={bom_version}")
         if level is not None:
-            parts.append(f"层级={level}")
+            parts.append(f"层级={_level_label(level)}")
         if part_number:
             parts.append(f"零件号含={part_number}")
         if audit_status:
