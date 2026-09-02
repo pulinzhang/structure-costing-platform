@@ -19,17 +19,6 @@ _GLUE_NAME_KEYS = ("胶",)
 _FASTENER_NAME_KEYS = ("螺母", "螺栓", "螺钉", "铆钉", "卡扣", "卡子")
 
 
-class OtherLeafTemplateSource:
-    """采购对象 other_leaf 补行（未出现在当前 BOM 叶子扫描中时使用）。"""
-
-    __slots__ = ("part_number", "part_name", "qty_unit")
-
-    def __init__(self, part_number: str, part_name: str, qty_unit: str | None) -> None:
-        self.part_number = part_number
-        self.part_name = part_name
-        self.qty_unit = qty_unit
-
-
 def _normalize_unit(qty_unit: str | None) -> str:
     unit = (qty_unit or "").strip() or "pcs"
     if unit.upper() == "PCS":
@@ -90,9 +79,8 @@ def collect_template_rows_from_snapshot_nodes(
     *,
     other_leaf_part_numbers: set[str],
     stamping_part_numbers: set[str],
-    leftover_other_leaves: Sequence[OtherLeafTemplateSource] = (),
 ) -> list[AnnualPartPriceTemplateRow]:
-    """按 snapshot 顺序扫无子件节点，再补 other_leaf；零件号去重（先出现的保留）。"""
+    """按 snapshot 顺序扫无子件节点；零件号去重（先出现的保留）。"""
     seen_part_numbers: set[str] = set()
     template_rows: list[AnnualPartPriceTemplateRow] = []
     for _snapshot, nodes in snapshot_nodes:
@@ -128,22 +116,4 @@ def collect_template_rows_from_snapshot_nodes(
                     ),
                 )
             )
-
-    for leftover in leftover_other_leaves:
-        part_number = leftover.part_number.strip()
-        if not part_number or part_number in seen_part_numbers:
-            continue
-        seen_part_numbers.add(part_number)
-        part_name = (leftover.part_name or "").strip()
-        template_rows.append(
-            _make_row(
-                part_number=part_number,
-                part_name=part_name,
-                qty_unit=leftover.qty_unit,
-                supply_type=resolve_template_supply_type(
-                    part_name,
-                    is_other_leaf=True,
-                ),
-            )
-        )
     return template_rows

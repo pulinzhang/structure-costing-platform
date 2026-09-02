@@ -254,7 +254,7 @@ def check_flat_templates() -> list[str]:
     if len(welding.rows) < 3:
         issues.append("焊接模板解析不足")
 
-    print("[年度零件价] SKIP（模板依赖基地采购对象标准件/胶等，见单元测试）")
+    print("[年度零件价] SKIP（须指定基地+项目+年度，见单元测试）")
 
     from app.parsers.bom.packaging_transport_fee_parser import (
         parse_packaging_transport_fee_excel,

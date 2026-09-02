@@ -33,7 +33,6 @@ from app.services.bom.annual_part_price.template_builder import (
     render_import_template,
 )
 from app.services.bom.annual_part_price.template_source import (
-    OtherLeafTemplateSource,
     collect_template_rows_from_snapshot_nodes,
 )
 from app.services.bom.procurement_object.classify import SECTION_OTHER_LEAF
@@ -104,27 +103,16 @@ class BomAnnualPartPriceImportService:
                 db, location=location, vehicle_model=vehicle_model
             )
         }
-        other_leaf_part_numbers: set[str] = set()
-        leftover_other_leaves: list[OtherLeafTemplateSource] = []
-        for obj in self.procurement_object_repository.list_objects_for_export(
-            db,
-            location=location,
-            vehicle_model=vehicle_model,
-            section=SECTION_OTHER_LEAF,
-        ):
-            part_number = (obj.part_number or "").strip()
-            if not part_number:
-                continue
-            other_leaf_part_numbers.add(part_number)
-            if int(obj.child_count or 0) > 0:
-                continue
-            leftover_other_leaves.append(
-                OtherLeafTemplateSource(
-                    part_number=part_number,
-                    part_name=(obj.part_name or "").strip(),
-                    qty_unit=obj.qty_unit,
-                )
+        other_leaf_part_numbers = {
+            (obj.part_number or "").strip()
+            for obj in self.procurement_object_repository.list_objects_for_export(
+                db,
+                location=location,
+                vehicle_model=vehicle_model,
+                section=SECTION_OTHER_LEAF,
             )
+            if (obj.part_number or "").strip()
+        }
 
         snapshot_nodes = [
             (snapshot, self.node_repository.list_by_snapshot(db, snapshot.id))
@@ -134,7 +122,6 @@ class BomAnnualPartPriceImportService:
             snapshot_nodes,
             other_leaf_part_numbers=other_leaf_part_numbers,
             stamping_part_numbers=stamping_part_numbers,
-            leftover_other_leaves=leftover_other_leaves,
         )
         if not template_rows:
             raise BusinessException("该基地该项目没有需填年度价的外购叶子，无法生成模板")
