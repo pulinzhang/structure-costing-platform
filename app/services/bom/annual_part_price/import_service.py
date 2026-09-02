@@ -3,30 +3,25 @@
 from __future__ import annotations
 
 import logging
-from decimal import Decimal
-from io import BytesIO
 from pathlib import Path
 
-from openpyxl import Workbook
-from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from sqlalchemy.orm import Session
 
-from app.common.audit import audit_create, audit_update
+from app.common.audit import AUDIT_APPROVED, audit_create, audit_update
 from app.config import settings
 from app.exceptions.base import BusinessException
 from app.parsers.bom.annual_part_price_parser import (
-    HEADER_PART_NAME,
-    HEADER_PART_NUMBER,
-    HEADER_REMARK,
-    HEADER_SUPPLIER,
-    HEADER_SUPPLY_TYPE,
-    HEADER_UNIT,
-    HEADER_UNIT_PRICE,
+    AnnualPartPriceParsedRow,
     parse_annual_part_price_excel,
 )
 from app.repositories.bom.annual_part_price_repository import (
     BomAnnualPartPriceRepository,
 )
+from app.repositories.bom.bom_repository import BomNodeRepository, BomSnapshotRepository
+from app.repositories.bom.procurement_object_repository import (
+    BomProcurementObjectRepository,
+)
+from app.repositories.stamping.stamping_part_repository import StampingPartRepository
 from app.schemas.dto.bom_annual_part_price_dto import (
     BomAnnualPartPriceCreate,
     BomAnnualPartPriceUpdate,
@@ -34,16 +29,47 @@ from app.schemas.dto.bom_annual_part_price_dto import (
 )
 from app.schemas.vo.bom_annual_part_price_vo import BomAnnualPartPriceImportResultVO
 from app.schemas.vo.user_vo import UserVO
+from app.services.bom.annual_part_price.template_builder import (
+    render_import_template,
+)
+from app.services.bom.annual_part_price.template_source import (
+    OtherLeafTemplateSource,
+    collect_template_rows_from_snapshot_nodes,
+)
 from app.services.bom.procurement_object.classify import SECTION_OTHER_LEAF
-from app.services.bom.procurement_object.labels import SECTION_LABELS
 from app.services.file_trace.path_utils import to_upload_relpath
 from app.services.file_trace.register import register_existing
 from app.utils.bom_annual_part_price_archive import save_annual_part_price_upload
 
 logger = logging.getLogger("service.bom_annual_part_price_import")
 
-_TEMPLATE_SUPPLY_TYPE = SECTION_LABELS[SECTION_OTHER_LEAF]
-_TEMPLATE_ZERO_PRICE = Decimal("0.0000")
+
+def _require_location_year(location: str | None, year: int) -> str:
+    location_text = (location or "").strip()
+    if not location_text:
+        raise BusinessException("请选择采购基地")
+    if year < 2000 or year > 2100:
+        raise BusinessException("年度不正确")
+    return location_text
+
+
+def _require_vehicle_model(vehicle_model: str | None) -> str:
+    vehicle_text = (vehicle_model or "").strip()
+    if not vehicle_text:
+        raise BusinessException("请选择项目")
+    return vehicle_text
+
+
+def _require_xlsx_upload(filename: str, file_content: bytes) -> str:
+    original_name = Path(filename or "").name
+    if Path(original_name).suffix.lower() != ".xlsx":
+        raise BusinessException("仅支持 .xlsx 文件")
+    if not file_content:
+        raise BusinessException("文件内容为空")
+    if len(file_content) > settings.MAX_UPLOAD_SIZE:
+        max_mb = settings.MAX_UPLOAD_SIZE // (1024 * 1024)
+        raise BusinessException(f"文件过大，最大支持 {max_mb}MB")
+    return original_name
 
 
 class BomAnnualPartPriceImportService:
@@ -51,106 +77,71 @@ class BomAnnualPartPriceImportService:
 
     def __init__(self) -> None:
         self.repository = BomAnnualPartPriceRepository()
+        self.snapshot_repository = BomSnapshotRepository()
+        self.node_repository = BomNodeRepository()
+        self.stamping_part_repository = StampingPartRepository()
+        self.procurement_object_repository = BomProcurementObjectRepository()
 
-    def build_template(self, db: Session, *, location: str, year: int) -> tuple[bytes, str]:
-        """按基地采购对象「标准件/胶等」生成导入模板。"""
-        from app.repositories.bom.procurement_object_repository import (
-            BomProcurementObjectRepository,
-        )
+    def build_template(
+        self,
+        db: Session,
+        *,
+        location: str,
+        vehicle_model: str,
+        year: int,
+    ) -> tuple[bytes, str]:
+        """按该基地该项目 BOM 外购叶子生成导入模板。"""
+        location = _require_location_year(location, year)
+        vehicle_model = _require_vehicle_model(vehicle_model)
+        snapshots = self.snapshot_repository.list_by_location_model(db, location, vehicle_model)
+        if not snapshots:
+            raise BusinessException("请先上传该基地该项目的材料清单")
+        snapshots = sorted(snapshots, key=lambda item: (item.bom_version, item.id))
 
-        location = (location or "").strip()
-        if not location:
-            raise BusinessException("请选择采购基地")
-        if year < 2000 or year > 2100:
-            raise BusinessException("年度不正确")
-
-        procurement_object_repository = BomProcurementObjectRepository()
-        if not procurement_object_repository.has_list_for_location(db, location):
-            raise BusinessException("请先生成该基地的采购对象清单")
-
-        source_rows = procurement_object_repository.list_objects_for_export(
+        stamping_part_numbers = {
+            row["part_number"]
+            for row in self.stamping_part_repository.list_distinct_parts_for_scope(
+                db, location=location, vehicle_model=vehicle_model
+            )
+        }
+        other_leaf_part_numbers: set[str] = set()
+        leftover_other_leaves: list[OtherLeafTemplateSource] = []
+        for obj in self.procurement_object_repository.list_objects_for_export(
             db,
             location=location,
+            vehicle_model=vehicle_model,
             section=SECTION_OTHER_LEAF,
-        )
-        seen_part_numbers: set[str] = set()
-        template_rows: list[tuple[str, str, str, Decimal, str, str, str]] = []
-        for row in source_rows:
-            part_number = (row.part_number or "").strip()
-            if not part_number or part_number in seen_part_numbers:
+        ):
+            part_number = (obj.part_number or "").strip()
+            if not part_number:
                 continue
-            seen_part_numbers.add(part_number)
-            unit = (row.qty_unit or "").strip() or "pcs"
-            if unit.upper() == "PCS":
-                unit = "pcs"
-            template_rows.append(
-                (
-                    part_number,
-                    (row.part_name or "").strip(),
-                    unit,
-                    _TEMPLATE_ZERO_PRICE,
-                    _TEMPLATE_SUPPLY_TYPE,
-                    "",
-                    "",
+            other_leaf_part_numbers.add(part_number)
+            if int(obj.child_count or 0) > 0:
+                continue
+            leftover_other_leaves.append(
+                OtherLeafTemplateSource(
+                    part_number=part_number,
+                    part_name=(obj.part_name or "").strip(),
+                    qty_unit=obj.qty_unit,
                 )
             )
-        if not template_rows:
-            raise BusinessException("该基地采购对象清单中没有标准件/胶等，无法生成模板")
 
-        workbook = Workbook()
-        sheet = workbook.worksheets[0]
-        sheet.title = "年度零件价"
-
-        header_font = Font(name="微软雅黑", size=10, bold=True, color="FFFFFF")
-        header_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
-        header_alignment = Alignment(horizontal="center", vertical="center")
-        data_font = Font(name="微软雅黑", size=9)
-        thin_border = Border(
-            left=Side(style="thin", color="BFBFBF"),
-            right=Side(style="thin", color="BFBFBF"),
-            top=Side(style="thin", color="BFBFBF"),
-            bottom=Side(style="thin", color="BFBFBF"),
-        )
-
-        headers = [
-            HEADER_PART_NUMBER,
-            HEADER_PART_NAME,
-            HEADER_UNIT,
-            HEADER_UNIT_PRICE,
-            HEADER_SUPPLY_TYPE,
-            HEADER_SUPPLIER,
-            HEADER_REMARK,
+        snapshot_nodes = [
+            (snapshot, self.node_repository.list_by_snapshot(db, snapshot.id))
+            for snapshot in snapshots
         ]
-        for col, title in enumerate(headers, start=1):
-            cell = sheet.cell(row=1, column=col, value=title)
-            cell.font = header_font
-            cell.fill = header_fill
-            cell.alignment = header_alignment
-            cell.border = thin_border
+        template_rows = collect_template_rows_from_snapshot_nodes(
+            snapshot_nodes,
+            other_leaf_part_numbers=other_leaf_part_numbers,
+            stamping_part_numbers=stamping_part_numbers,
+            leftover_other_leaves=leftover_other_leaves,
+        )
+        if not template_rows:
+            raise BusinessException("该基地该项目没有需填年度价的外购叶子，无法生成模板")
 
-        for row_idx, sample in enumerate(template_rows, start=2):
-            values: list[str | Decimal] = list(sample)
-            for col, value in enumerate(values, start=1):
-                cell = sheet.cell(row=row_idx, column=col, value=value)
-                cell.font = data_font
-                cell.border = thin_border
-                if col == 4:
-                    cell.alignment = Alignment(horizontal="right", vertical="center")
-                    cell.number_format = "0.0000"
-                elif col in (3, 5):
-                    cell.alignment = Alignment(horizontal="center", vertical="center")
-                else:
-                    cell.alignment = Alignment(horizontal="left", vertical="center")
-
-        widths = [18, 24, 8, 12, 12, 16, 20]
-        for idx, width in enumerate(widths, start=1):
-            sheet.column_dimensions[chr(64 + idx)].width = width
-        sheet.freeze_panes = "A2"
-
-        buffer = BytesIO()
-        workbook.save(buffer)
-        filename = f"年度零件价导入模板_{location}_{year}.xlsx"
-        return buffer.getvalue(), filename
+        content = render_import_template(template_rows)
+        filename = f"年度零件价导入模板_{location}_{vehicle_model}_{year}.xlsx"
+        return content, filename
 
     def import_excel(
         self,
@@ -162,20 +153,8 @@ class BomAnnualPartPriceImportService:
         year: int,
         current_user: UserVO,
     ) -> BomAnnualPartPriceImportResultVO:
-        location = (location or "").strip()
-        if not location:
-            raise BusinessException("请选择采购基地")
-        if year < 2000 or year > 2100:
-            raise BusinessException("年度不正确")
-
-        original_name = Path(filename or "").name
-        if Path(original_name).suffix.lower() != ".xlsx":
-            raise BusinessException("仅支持 .xlsx 文件")
-        if not file_content:
-            raise BusinessException("文件内容为空")
-        if len(file_content) > settings.MAX_UPLOAD_SIZE:
-            max_mb = settings.MAX_UPLOAD_SIZE // (1024 * 1024)
-            raise BusinessException(f"文件过大，最大支持 {max_mb}MB")
+        location = _require_location_year(location, year)
+        original_name = _require_xlsx_upload(filename, file_content)
 
         archive_path = save_annual_part_price_upload(
             file_content=file_content,
@@ -198,47 +177,15 @@ class BomAnnualPartPriceImportService:
         update_audit = audit_update(current_user)
 
         try:
-            for row in parse_result.rows:
-                unit_price = quantize_unit_price(row.unit_price)
-                existing = self.repository.get_by_location_year_part_number(
-                    db, location, year, row.part_number
-                )
-                if existing:
-                    if existing.audit_status == "approved":
-                        skipped_approved += 1
-                        continue
-                    self.repository.update(
-                        db,
-                        existing.id,
-                        BomAnnualPartPriceUpdate(
-                            part_name=row.part_name,
-                            unit=row.unit,
-                            unit_price=unit_price,
-                            supply_type=row.supply_type,
-                            supplier_name=row.supplier_name,
-                            remark=row.remark,
-                        ),
-                        updated_by=update_audit["updated_by"],
-                    )
-                    updated_count += 1
-                else:
-                    self.repository.create(
-                        db,
-                        BomAnnualPartPriceCreate(
-                            location=location,
-                            year=year,
-                            part_number=row.part_number,
-                            part_name=row.part_name,
-                            unit=row.unit,
-                            unit_price=unit_price,
-                            supply_type=row.supply_type,
-                            supplier_name=row.supplier_name,
-                            remark=row.remark,
-                        ),
-                        created_by=create_audit["created_by"],
-                        updated_by=create_audit["updated_by"],
-                    )
-                    created_count += 1
+            created_count, updated_count, skipped_approved = self._upsert_parsed_rows(
+                db,
+                location=location,
+                year=year,
+                rows=parse_result.rows,
+                created_by=create_audit["created_by"],
+                created_updated_by=create_audit["updated_by"],
+                updated_by=update_audit["updated_by"],
+            )
             register_existing(
                 db,
                 file_category="bom_annual_part_price",
@@ -285,3 +232,60 @@ class BomAnnualPartPriceImportService:
             warnings=warnings,
             message=message,
         )
+
+    def _upsert_parsed_rows(
+        self,
+        db: Session,
+        *,
+        location: str,
+        year: int,
+        rows: list[AnnualPartPriceParsedRow],
+        created_by: str,
+        created_updated_by: str,
+        updated_by: str,
+    ) -> tuple[int, int, int]:
+        created_count = 0
+        updated_count = 0
+        skipped_approved = 0
+        for row in rows:
+            unit_price = quantize_unit_price(row.unit_price)
+            existing = self.repository.get_by_location_year_part_number(
+                db, location, year, row.part_number
+            )
+            if existing:
+                if existing.audit_status == AUDIT_APPROVED:
+                    skipped_approved += 1
+                    continue
+                self.repository.update(
+                    db,
+                    existing.id,
+                    BomAnnualPartPriceUpdate(
+                        part_name=row.part_name,
+                        unit=row.unit,
+                        unit_price=unit_price,
+                        supply_type=row.supply_type,
+                        supplier_name=row.supplier_name,
+                        remark=row.remark,
+                    ),
+                    updated_by=updated_by,
+                )
+                updated_count += 1
+                continue
+            self.repository.create(
+                db,
+                BomAnnualPartPriceCreate(
+                    location=location,
+                    year=year,
+                    part_number=row.part_number,
+                    part_name=row.part_name,
+                    unit=row.unit,
+                    unit_price=unit_price,
+                    supply_type=row.supply_type,
+                    supplier_name=row.supplier_name,
+                    remark=row.remark,
+                ),
+                created_by=created_by,
+                updated_by=created_updated_by,
+            )
+            created_count += 1
+        return created_count, updated_count, skipped_approved

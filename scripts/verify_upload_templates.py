@@ -107,8 +107,8 @@ def main() -> None:
     if not ok:
         failures.append("焊接单价")
 
-    # 7 年度零件价：模板依赖基地采购对象「标准件/胶等」，见 tests/bom/test_annual_part_price_template.py
-    print("[7] 年度零件价: SKIP（须指定基地+年度，零件来自采购对象）")
+    # 7 年度零件价：须指定基地+年度，零件来自 BOM 外购叶子
+    print("[7] 年度零件价: SKIP（须指定基地+年度，零件来自 BOM 外购叶子）")
 
     # 8 包装运输费
     from app.parsers.bom.packaging_transport_fee_parser import (

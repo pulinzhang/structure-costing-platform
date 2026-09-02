@@ -1,6 +1,6 @@
 /**
  * 年度零件价上传 — 模板
- * 基地 + 年度必选；Excel 列：零件号/名称/单位/单价/原供货类型/供应商/备注；同步导入
+ * 下载模板：基地 + 项目 + 年度；导入仍按基地 + 年度写入价表
  */
 
 export function annualPartPriceUploadTemplate() {
@@ -27,9 +27,9 @@ export function annualPartPriceUploadTemplate() {
                                     <span class="w-4 h-4 rounded-full bg-[#2a2a2a] flex items-center justify-center shrink-0">
                                         <span class="text-[10px] font-semibold text-[#d32f2f]">1</span>
                                     </span>
-                                    <span class="text-[13px] text-[#6b6b6b] font-medium tracking-wide uppercase">选择基地与年度</span>
+                                    <span class="text-[13px] text-[#6b6b6b] font-medium tracking-wide uppercase">选择基地、项目与年度</span>
                                 </div>
-                                <div class="ml-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div class="ml-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
                                     <div>
                                         <label for="annualPartPriceUploadLocation" class="upload-label">
                                             采购基地 <span class="text-[#d32f2f]">*</span>
@@ -39,10 +39,17 @@ export function annualPartPriceUploadTemplate() {
                                                 required
                                                 class="upload-input w-full text-[11px]">
                                             <option value="">请选择采购基地</option>
-                                            <option value="大连">大连</option>
-                                            <option value="芜湖">芜湖</option>
-                                            <option value="鄂尔多斯">鄂尔多斯</option>
-                                            <option value="青岛">青岛</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label for="annualPartPriceUploadVehicleModel" class="upload-label">
+                                            项目 <span class="text-[#d32f2f]">*</span>
+                                        </label>
+                                        <select id="annualPartPriceUploadVehicleModel"
+                                                name="vehicle_model"
+                                                required
+                                                class="upload-input w-full text-[11px]">
+                                            <option value="">请先选择采购基地</option>
                                         </select>
                                     </div>
                                     <div>
@@ -59,7 +66,7 @@ export function annualPartPriceUploadTemplate() {
                                                class="upload-input w-full">
                                     </div>
                                 </div>
-                                <p class="ml-6 mt-1.5 text-[11px] text-[#616161]">须先生成该基地采购对象清单。下载模板时零件来自「标准件/胶等」全部去重行；导入写入该基地该年</p>
+                                <p class="ml-6 mt-1.5 text-[11px] text-[#616161]">下载模板须选基地、项目、年度。行来自该项目采购对象标准件与胶，以及 BOM 叶子且不在本项目工艺库的零件。原供货类型按行填写，板料为「沿用」不是「标准件/胶等」。导入仍写入该基地该年</p>
                             </div>
 
                             <div class="h-px bg-[#1e1e1e] mx-6 mb-4"></div>
@@ -158,17 +165,17 @@ export function annualPartPriceUploadTemplate() {
                         <div>
                             <h6 class="text-[10px] uppercase tracking-wider text-[#616161] mb-2">Excel 列</h6>
                             <ul class="list-disc list-inside text-xs text-[#616161] space-y-1.5">
-                                <li><span class="text-[#9e9e9e]">零件号</span>：必填；模板从采购对象「标准件/胶等」带出</li>
+                                <li><span class="text-[#9e9e9e]">零件号</span>：必填；模板按所选项目带出外购叶子（含未进工艺库的板料、L2 标准件）</li>
                                 <li><span class="text-[#9e9e9e]">零件名称</span> / <span class="text-[#9e9e9e]">供应商</span> / <span class="text-[#9e9e9e]">备注</span>：可选</li>
                                 <li><span class="text-[#9e9e9e]">单位</span>：默认 pcs</li>
                                 <li><span class="text-[#9e9e9e]">单价</span>：≥0，四位小数；模板预填 0，请改真实价；<span class="text-[#9e9e9e]">0 = 核价不计入</span></li>
-                                <li><span class="text-[#9e9e9e]">原供货类型</span>：模板预填「标准件/胶等」；导入可另写沿用等</li>
+                                <li><span class="text-[#9e9e9e]">原供货类型</span>：模板按行预填「标准件」/「胶块」/「沿用」（未进本项目工艺库的板料）；导入可改</li>
                             </ul>
                         </div>
                         <div>
                             <h6 class="text-[10px] uppercase tracking-wider text-[#616161] mb-2">写入规则</h6>
                             <ul class="list-disc list-inside text-xs text-[#616161] space-y-1.5">
-                                <li>下载模板须先选基地与年度，且该基地已有采购对象清单</li>
+                                <li>下载模板须先选基地、项目、年度，且该基地该项目已有材料清单</li>
                                 <li>唯一键 = 基地 + 年度 + 零件号；同键则更新，否则新增；仅 .xlsx</li>
                             </ul>
                         </div>

@@ -50,7 +50,9 @@ app/…/bom/annual_part_price*
 static/js/features/bom/annual-part-price/{upload,list}/
 ```
 
-侧栏：**焊接工程 → 采购对象 → 年度零件价**（上传 / 列表）。须先生成该基地采购对象清单；下载模板带出该基地全部「标准件/胶等」去重零件。不要拆成「外购价」「分总成价」两个入口。
+侧栏：**焊接工程 → 采购对象 → 年度零件价**（上传 / 列表）。下载模板按 **基地 + 项目**：采购对象 `other_leaf`（标准件/胶等）∪ 该项目 BOM 无子件且 **不在该项目工艺库** 的叶子（含未进工艺的 L2 板料）。有子件的分总成不进模板。不要拆成「外购价」「分总成价」两个入口。
+
+导入模板 Excel 排版见 [annual-part-price-import-template-design.md](annual-part-price-import-template-design.md)（`template_builder.py`：只写出、不查库）。
 
 ---
 
@@ -64,11 +66,11 @@ static/js/features/bom/annual-part-price/{upload,list}/
        → 按一口价：unit_price × 用量
        → 停止对该 L1 下所有 L2 做成本 rollup
 
-  ② 节点是叶子，或 L1【无子节点】且非冲压
+  ② 节点是叶子，且当月冲压价表无该零件号
        → 按外购：unit_price × 用量
 
-  ③ 冲压叶子（make / 冲压价表命中）
-       → 不走本年价表，走当月 stamping_part_costs
+  ③ 叶子零件号命中当月 stamping_part_costs
+       → 走冲压零件价（不看 BOM 是否 make/有料厚）
 
   ④ L1 有子节点但【价表无记录】
        → 向下拆 L2 分别取价
@@ -77,9 +79,9 @@ static/js/features/bom/annual-part-price/{upload,list}/
 | 价表有没有行 | BOM 上是什么 | 结果 |
 |--------------|--------------|------|
 | 有 | L1 + 有子件 | 一口价，子树跳过 |
-| 有 | 外购叶子 / 无子件非冲压 L1 | 外购计入 |
+| 有 | 叶子且当月冲压价未命中 | 外购计入 |
 | 无 | L1 + 有子件 | 拆散 L2 |
-| 无 | 外购叶子 | partial（缺价） |
+| 无 | 叶子 | 走当月冲压价；都没有则 missing |
 
 > 用户不必理解「我该导进哪张表」——只要零件号 + 单价进这一张表即可。  
 > 若把「有子件的 L1」的价导进来，核价自动当一口价；若是螺栓/胶块，自动当外购。
@@ -163,3 +165,6 @@ Index: (location, year), part_number, supply_type, audit_status
 | 2026-08-20 | 按生产样例去掉 thickness_text / 英文 category，加 supply_type |
 | 2026-08-20 | **合并为单表** `bom_annual_part_prices`：外购与 L1 一口价共用；语义靠 BOM 节点区分 |
 | 2026-09-01 | 导入模板按基地+年度下载；零件来自采购对象「标准件/胶等」；侧栏排在采购对象之下 |
+| 2026-09-02 | 抽出 `template_builder`：导入模板写出与 Import Service 取数分离；见导入模板设计说明 |
+| 2026-09-02 | 模板行源改为 BOM 外购叶子（对齐总成核价叶子取价），不再只取采购对象 `other_leaf` |
+| 2026-09-02 | 模板按基地+项目；行源 = 采购对象 other_leaf ∪ BOM 叶子且不在本项目工艺库；不以 make/料厚排除 |

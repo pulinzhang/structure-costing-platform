@@ -109,12 +109,15 @@ def export_excel(
 @router.get("/template")
 def download_import_template(
     location: str = Query(..., description="采购基地"),
+    vehicle_model: str = Query(..., description="项目/车型"),
     year: int = Query(..., ge=2000, le=2100, description="年度"),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BOM_ANNUAL_PART_PRICE_UPLOAD_VIEW)),
 ) -> StreamingResponse:
-    """下载年度零件价导入模板（零件来自该基地采购对象「标准件/胶等」）。"""
-    content, filename = _import_service.build_template(db, location=location, year=year)
+    """下载年度零件价导入模板（该基地该项目 BOM 外购叶子）。"""
+    content, filename = _import_service.build_template(
+        db, location=location, vehicle_model=vehicle_model, year=year
+    )
     return StreamingResponse(
         iter([content]),
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

@@ -1,27 +1,35 @@
 /**
  * 年度零件价上传页
- * 同步导入：基地 + 年度必选，仅 .xlsx
+ * 下载模板：基地 + 项目 + 年度；导入：基地 + 年度
  */
 
-import { annualPartPriceUploadTemplate } from './template.js?v=5';
+import { annualPartPriceUploadTemplate } from './template.js?v=8';
 
 
 const API_BASE = '/api/bom/annual-part-price';
+const CASCADE_API = '/api/bom/filters/cascade';
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
 const AnnualPartPriceUploadPage = {
     selectedFile: null,
     isUploading: false,
     canUpload: true,
+    hasBomOptions: false,
+    locations: [],
+    vehicleModels: [],
 
     init() {
         this.selectedFile = null;
         this.isUploading = false;
+        this.hasBomOptions = false;
+        this.locations = [];
+        this.vehicleModels = [];
         this.applyPermissionUi();
         this.bindEvents();
         this.hideProgress();
         this.clearSelectedFile(false);
         this.fillDefaultYear();
+        this.loadCascadeFilters();
     },
 
     applyPermissionUi() {
@@ -41,7 +49,7 @@ const AnnualPartPriceUploadPage = {
             fileInput.disabled = true;
             fileInput.value = '';
         }
-        ['annualPartPriceUploadLocation', 'annualPartPriceUploadYear'].forEach((id) => {
+        ['annualPartPriceUploadLocation', 'annualPartPriceUploadVehicleModel', 'annualPartPriceUploadYear'].forEach((id) => {
             const el = document.getElementById(id);
             if (el) el.disabled = true;
         });
@@ -62,6 +70,10 @@ const AnnualPartPriceUploadPage = {
         const selectBtn = document.getElementById('annualPartPriceUploadSelectFileBtn');
         const resetBtn = document.getElementById('annualPartPriceUploadResetBtn');
         const templateBtn = document.getElementById('annualPartPriceUploadTemplateBtn');
+
+        document.getElementById('annualPartPriceUploadLocation')?.addEventListener('change', () => {
+            this.loadCascadeFilters({ clearVehicleModel: true });
+        });
 
         zone?.addEventListener('click', (event) => {
             if (this.canUpload === false || this.isUploading) return;
@@ -107,6 +119,76 @@ const AnnualPartPriceUploadPage = {
         const yearInput = document.getElementById('annualPartPriceUploadYear');
         if (yearInput && !yearInput.value) {
             yearInput.value = String(new Date().getFullYear());
+        }
+    },
+
+    val(id) {
+        return (document.getElementById(id)?.value || '').trim();
+    },
+
+    fillSelect(id, values, selected, emptyLabel) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        let html = `<option value="">${esc(emptyLabel)}</option>`;
+        (values || []).forEach((item) => {
+            const mark = item === selected ? ' selected' : '';
+            html += `<option value="${esc(item)}"${mark}>${esc(item)}</option>`;
+        });
+        el.innerHTML = html;
+        if (selected && (values || []).includes(selected)) {
+            el.value = selected;
+        } else {
+            el.value = '';
+        }
+    },
+
+    async loadCascadeFilters({ clearVehicleModel = false } = {}) {
+        const location = this.val('annualPartPriceUploadLocation');
+        let vehicleModel = clearVehicleModel ? '' : this.val('annualPartPriceUploadVehicleModel');
+        try {
+            const params = { status: '__all__' };
+            if (location) params.location = location;
+            if (vehicleModel) params.vehicle_model = vehicleModel;
+            const res = await HttpClient.get(CASCADE_API, { params });
+            const data = res.data || {};
+            const locations = Array.isArray(data.locations) ? data.locations : [];
+            const vehicleModels = Array.isArray(data.vehicle_models) ? data.vehicle_models : [];
+
+            this.locations = locations;
+            this.vehicleModels = vehicleModels;
+            this.hasBomOptions = locations.length > 0;
+
+            if (location && !locations.includes(location)) {
+                vehicleModel = '';
+            }
+            if (vehicleModel && !vehicleModels.includes(vehicleModel)) {
+                vehicleModel = '';
+            }
+            if (!location && locations.length === 1) {
+                this.fillSelect('annualPartPriceUploadLocation', locations, locations[0], '请选择采购基地');
+                return this.loadCascadeFilters({ clearVehicleModel: true });
+            }
+            if (location && !vehicleModel && vehicleModels.length === 1) {
+                vehicleModel = vehicleModels[0];
+            }
+
+            this.fillSelect(
+                'annualPartPriceUploadLocation',
+                locations,
+                location && locations.includes(location) ? location : '',
+                locations.length ? '请选择采购基地' : '暂无材料清单基地',
+            );
+            this.fillSelect(
+                'annualPartPriceUploadVehicleModel',
+                location ? vehicleModels : [],
+                vehicleModel,
+                location
+                    ? (vehicleModels.length ? '请选择项目' : '该基地暂无项目')
+                    : '请先选择采购基地',
+            );
+        } catch (error) {
+            console.error('加载材料清单基地/项目失败', error);
+            this.hasBomOptions = false;
         }
     },
 
@@ -174,8 +256,11 @@ const AnnualPartPriceUploadPage = {
         const location = document.getElementById('annualPartPriceUploadLocation');
         const year = document.getElementById('annualPartPriceUploadYear');
         if (location) location.value = '';
+        const vehicleModel = document.getElementById('annualPartPriceUploadVehicleModel');
+        if (vehicleModel) vehicleModel.value = '';
         if (year) year.value = '';
         this.fillDefaultYear();
+        this.loadCascadeFilters({ clearVehicleModel: true });
     },
 
     showProgress(msg = '解析并写入数据库，请稍候') {
@@ -207,19 +292,26 @@ const AnnualPartPriceUploadPage = {
         const resetBtn = document.getElementById('annualPartPriceUploadResetBtn');
         const templateBtn = document.getElementById('annualPartPriceUploadTemplateBtn');
         const location = document.getElementById('annualPartPriceUploadLocation');
+        const vehicleModel = document.getElementById('annualPartPriceUploadVehicleModel');
         const year = document.getElementById('annualPartPriceUploadYear');
         if (submitBtn) submitBtn.disabled = isUploading || !this.selectedFile;
         if (resetBtn) resetBtn.disabled = isUploading;
         if (templateBtn) templateBtn.disabled = isUploading;
         if (location && this.canUpload) location.disabled = isUploading;
+        if (vehicleModel && this.canUpload) vehicleModel.disabled = isUploading;
         if (year && this.canUpload) year.disabled = isUploading;
     },
 
     async downloadTemplate() {
-        const location = document.getElementById('annualPartPriceUploadLocation')?.value?.trim();
-        const yearRaw = document.getElementById('annualPartPriceUploadYear')?.value?.trim();
+        const location = this.val('annualPartPriceUploadLocation');
+        const vehicleModel = this.val('annualPartPriceUploadVehicleModel');
+        const yearRaw = this.val('annualPartPriceUploadYear');
         if (!location) {
             showToast('请先选择采购基地', 'warning');
+            return;
+        }
+        if (!vehicleModel) {
+            showToast('请先选择项目', 'warning');
             return;
         }
         if (!yearRaw || !/^\d{4}$/.test(yearRaw)) {
@@ -228,8 +320,8 @@ const AnnualPartPriceUploadPage = {
         }
         try {
             const { blob, filename } = await HttpClient.download(`${API_BASE}/template`, {
-                params: { location, year: yearRaw },
-                defaultFilename: `年度零件价导入模板_${location}_${yearRaw}.xlsx`,
+                params: { location, vehicle_model: vehicleModel, year: yearRaw },
+                defaultFilename: `年度零件价导入模板_${location}_${vehicleModel}_${yearRaw}.xlsx`,
             });
             const url = window.URL.createObjectURL(blob);
             const anchor = document.createElement('a');
