@@ -24,8 +24,8 @@ import {
 } from './permissions.js?v=11';
 import { bootLlmAssistant } from './llm-assistant/boot.js?v=27';
 import { pageConfig as dashboardPage }      from './features/dashboard/index.js?v=7';
-import { pageConfig as stampingUploadPage } from './features/stamping/process/upload/index.js?v=42';
-import { pageConfig as stampingPartsPage }  from './features/stamping/process/parts/index.js?v=34';
+import { pageConfig as stampingUploadPage } from './features/stamping/process/upload/index.js?v=43';
+import { pageConfig as stampingPartsPage }  from './features/stamping/process/parts/index.js?v=36';
 import { pageConfig as stampingDieUploadPage } from './features/stamping/die/upload/index.js?v=5';
 import { pageConfig as stampingDieListPage } from './features/stamping/die/list/index.js?v=8';
 import { pageConfig as stampingDieUnitPricePage } from './features/stamping/die/unit-price/index.js?v=5';
@@ -35,7 +35,7 @@ import { pageConfig as stampingGaugeFeeUploadPage } from './features/stamping/ga
 import { pageConfig as stampingGaugeFeePage } from './features/stamping/gauge-fee/list/index.js?v=9';
 import { pageConfig as stampingTonnagePage } from './features/stamping/tonnage/list/index.js?v=20';
 import { pageConfig as stampingTonnageUploadPage } from './features/stamping/tonnage/upload/index.js?v=4';
-import { pageConfig as stampingProcessFeeCalcPage } from './features/stamping/process-fee/calc/index.js?v=26';
+import { pageConfig as stampingProcessFeeCalcPage } from './features/stamping/process-fee/calc/index.js?v=27';
 import { pageConfig as stampingProcessFeePage } from './features/stamping/process-fee/list/index.js?v=42';
 import { pageConfig as steelPriceListPage }   from './features/costing/steel-price/list/index.js?v=57';
 import { pageConfig as steelPriceCalcPage }    from './features/costing/steel-price/calc/index.js?v=19';
@@ -66,7 +66,7 @@ import { pageConfig as bomWeldingProcessBreakdownGeneratePage } from './features
 import { pageConfig as bomWeldingProcessBreakdownListPage } from './features/bom/welding-process-breakdown/list/index.js?v=39';
 import { pageConfig as bomWeldingFeeCalcPage } from './features/bom/welding-fee/calc/index.js?v=3';
 import { pageConfig as bomWeldingFeeListPage } from './features/bom/welding-fee/list/index.js?v=4';
-import { pageConfig as costingPage }        from './features/costing/engine/index.js?v=25';
+import { pageConfig as costingPage }        from './features/costing/engine/index.js?v=26';
 import { pageConfig as fileTracePage }       from './features/file-trace/index.js?v=4';
 import { pageConfig as settingsPage }       from './features/settings/system/index.js?v=16';
 import { pageConfig as settingsUsersPage }  from './features/settings/users/index.js?v=12';

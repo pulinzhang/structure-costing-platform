@@ -10,7 +10,7 @@ import {
     updatePartsFilterCapsules,
     updatePartsHud,
     renderPartsPagination,
-} from './template.js?v=23';
+} from './template.js?v=24';
 import {
     DEFAULT_PAGE_SIZE,
     PAGE_SIZE_OPTIONS,
@@ -25,6 +25,13 @@ function offalCell(part) {
     const source = part.offal_source ? esc(part.offal_source) : '';
     const label = source || '利废';
     return `<span class="inline-flex items-center px-1.5 py-0.5 text-[9px] tracking-wide text-[#ffb74d] bg-[#2a1a0a] border border-[#ffb74d]/30" title="是否利废">${label}</span>`;
+}
+
+function scrapByproductCell(part) {
+    if (!part.is_scrap_byproduct) {
+        return '<span class="text-[#555555]">—</span>';
+    }
+    return '<span class="inline-flex items-center px-1.5 py-0.5 text-[9px] tracking-wide text-[#8E8E93] bg-[#161620] border border-[#2A2A35]" title="废料副产品，不算冲压费">是</span>';
 }
 
 
@@ -389,6 +396,7 @@ export const PartsPage = {
                 <td class="${cell} ${muted} border-r border-[#22222A]">${esc(part.version) || '—'}</td>
                 <td class="${cell} ${muted} font-sans">${esc(part.material) || '—'}</td>
                 <td class="${cell}">${offalCell(part)}</td>
+                <td class="${cell}">${scrapByproductCell(part)}</td>
                 <td class="${cell} text-right tabular-nums ${muted}">${thickness}</td>
                 <td class="${cell} text-right tabular-nums ${muted}">${partWeight}</td>
                 <td class="${cell} text-right tabular-nums ${muted}">${processCount}</td>

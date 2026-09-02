@@ -11,7 +11,7 @@
 ## 0. 一句话
 
 **本模块是计算模具费用的依据。** 把「冲压模具布点工艺清单」按零件主表 + 工序子表入库：重量、尺寸、共模比例，给后续模具费计算用。  
-对照现网：冲压工艺确认表是 **加工费** 与 **零件材料（含是否利废）** 的依据，见 [stamping-process-confirmation-design.md](stamping-process-confirmation-design.md)；本表是 **模具费** 的依据。两套不要混、也不把布点回写进 `stamping_parts`。  
+对照现网：冲压工艺确认表是 **加工费** 与 **零件材料（含是否利废）** 的依据，见 [stamping-process-confirmation-design.md](stamping-process-confirmation-design.md)；本表是 **模具费** 的依据。两套不要混、也不把布点回写进 `stamping_parts`。家模副产品由工艺表四列全空判定，**禁止**用布点空板料改零件利废标，见 [stamping-family-die-byproduct-design.md](stamping-family-die-byproduct-design.md)。  
 上传形态对齐工艺导入（异步解析、覆盖写入），关注模具字段，**不管理零件简图**。  
 上传必须选择 **采购基地 + 项目**（选项来自已入库冲压工艺）。子表 **分摊比例**（左右共模对半，**不做级进 0.80**）。本期只落模具本身（重量、尺寸、工序、比例），**不算金额**，也 **不记寿命/是否还摊**。满 10 万件是否还摊由后续计算层判定，不进本表。单价政策见 [stamping-die-unit-price-design.md](stamping-die-unit-price-design.md)（另表，按基地+项目维护）。冲压件检具费见 [stamping-gauge-fee-design.md](stamping-gauge-fee-design.md)（按零件另表上传，不进布点主表）。
 
@@ -318,6 +318,7 @@ menu:stamping
 
 | 日期 | 说明 |
 |------|------|
+| 2026-09-02 | 交叉引用家模副产品：布点空板料不覆盖工艺表 |
 | 2026-08-28 | 初稿：A–AC 导入、基地+项目来自冲压、主表分摊状态、子表分摊比例（共模 0.50、不用级进 0.80） |
 | 2026-08-28 | 写死：`alloc_status` 仅主表；子表只有 `alloc_ratio`，工序行不确认状态 |
 | 2026-08-28 | 背景：模具按 10 万件寿命摊；多项目共用已满寿则主表标「不用分摊」，与其它未满寿零件脱钩 |

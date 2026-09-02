@@ -13,7 +13,7 @@
 
 **清单定集合。** 一版材料清单对应一份 **采购对象清单**：按树结构列入退化供货件、分总成、冲压件，检测后落库，供采购核对并确认外发/自制。
 
-「生成」是动作（从树上把该列入的节点写成清单）。本文回答 **谁是采购对象**。不管价、不管合同怎么签。
+「生成」是动作（从树上把该列入的节点写成清单）。本文回答 **谁是采购对象**。指定合同对方见 [bom-procurement-object-supplier-design.md](bom-procurement-object-supplier-design.md)；按月应成本签合同见 [procurement-contract-report-design.md](../costing/procurement-contract-report-design.md)。列入规则仍不管价。
 
 ---
 
@@ -101,7 +101,7 @@ L1 叶子必须把 **板料** 和 **标准件 / 胶 / 塑料** 分开，否则�
 
 约定词（仅打标，可按项目补）：`凸焊总成供货`、`总成供货`、`冲压单件供货`、`单件供货`、`黑漆件供货`、`电泳`。
 
-本文不解析、不猜测二级供应商名称。行上 **禁止** 存单价、一口价、供应商名。
+本文不解析、不猜测二级供应商名称。行上 **禁止** 存单价、一口价。合同对方由采购手填，见指定供应商设计，**禁止**用 `material_mill` 或年度价厂名顶替。
 
 ---
 
@@ -250,7 +250,7 @@ bom_procurement_object_generate_logs  一次「开始生成」一条终态日志
 
 1. 读该 snapshot 全部 `bom_nodes`，纯函数分类 + 检测。  
 2. **一个事务**：删该 snapshot 旧清单头（级联删行）→ 写新头 + 新行。  
-3. 同一 snapshot 再生成：按 `source_node_id` **带回** 旧行的确认三态 / 确认人时 / 备注。新出现的节点 `pending`；已不在树的确认丢弃。  
+3. 同一 snapshot 再生成：按 `source_node_id` **带回** 旧行的确认三态 / 确认人时 / 备注。新出现的节点 `pending`；已不在树的确认丢弃。合同对方 `supplier_name` 的带回见 [指定供应商](bom-procurement-object-supplier-design.md)。  
 4. 无直接下游时覆盖导入换了 snapshot：旧清单已随旧 snapshot 删掉，新生成全是 `pending`。已有采购对象或焊接拆解则材料清单禁止覆盖。  
 5. 写一条 `bom_procurement_object_generate_logs`（成功或失败终态）。
 
@@ -449,7 +449,9 @@ HUD：**采购对象**是霓虹强调格；标准件/胶等、待审、已审为
 | [welding-process-breakdown-design.md](welding-process-breakdown-design.md) | 拆解；生成清单时不读 |
 | `app/services/bom/bom_upload_service.py` | 覆盖导入前检查直接下游；无下游才删 snapshot（清单级联没） |
 | [bom-annual-part-prices-design.md](bom-annual-part-prices-design.md) | 价表；本文不读 |
-| [outsourced-assembly-costing-design.md](../costing/outsourced-assembly-costing-design.md) | 下游应成本；集合以本清单为准 |
+| [bom-procurement-object-supplier-design.md](bom-procurement-object-supplier-design.md) | 行上指定合同对方（未落地） |
+| [assembly-costing-design.md](../costing/assembly-costing-design.md) | 下游应成本；集合以本清单为准 |
+| [procurement-contract-report-design.md](../costing/procurement-contract-report-design.md) | 签约横表（未落地）；只读本清单 + 应成本 |
 | `static/js/features/costing/stamping-part-cost/calc/` | 生成页 UI 对照 |
 | `static/js/features/costing/stamping-part-cost/list/` | 列表页 UI 对照 |
 
@@ -469,3 +471,4 @@ HUD：**采购对象**是霓虹强调格；标准件/胶等、待审、已审为
 | 2026-08-31 | 删除/审核/反审核改为只批量、按 snapshot 范围、意见必填；禁止单条与按 id。 |
 | 2026-08-31 | 生成页/列表页前端必须对齐 `stamping-part-cost` 计算页与一览（HUD / 筛选条 / 密表）。 |
 | 2026-08-31 | 改为已落地：对人展示与内部码分开；补生成日志 / prep-stats；导出三表与列表页签、HUD 与现网一致。 |
+| 2026-09-02 | 手填合同对方与签约报表拆出独立设计；本文仍禁止生成时猜供应商、禁止存单价。 |

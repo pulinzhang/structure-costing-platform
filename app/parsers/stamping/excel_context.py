@@ -27,6 +27,8 @@ class ExcelContext:
         self.max_column: int = 0
         # 零件号合并范围列表（按 start_row 排序）
         self._part_no_ranges: list[PartNoRange] = []
+        # 任意合并区：(row, col) → 左上角 (row, col)；表头探测仍走 get_value 避免串列
+        self._merge_origin: dict[tuple[int, int], tuple[int, int]] = {}
 
     def load(self, file_path: str) -> None:
         """加载 Excel 文件"""
@@ -51,7 +53,19 @@ class ExcelContext:
 
         self.max_row = self.sheet.max_row
         self.max_column = self.sheet.max_column
+        self._build_merge_origin_cache()
         return self.sheet
+
+    def _build_merge_origin_cache(self) -> None:
+        """记录每个合并区内格子对应的左上角，供 get_merged_value 使用。"""
+        self._merge_origin = {}
+        if self.sheet is None:
+            return
+        for merged_range in self.sheet.merged_cells.ranges:
+            origin = (merged_range.min_row, merged_range.min_col)
+            for row in range(merged_range.min_row, merged_range.max_row + 1):
+                for col in range(merged_range.min_col, merged_range.max_col + 1):
+                    self._merge_origin[(row, col)] = origin
 
     def _find_stamping_sheet(self) -> openpyxl.worksheet.worksheet.Worksheet | None:
         """识别冲压数据Sheet"""
@@ -116,10 +130,17 @@ class ExcelContext:
         return None
 
     def get_value(self, row: int, col: int) -> Any:
-        """获取单元格值"""
+        """读取该格自身的值，不解析合并区（表头列映射依赖此行为）。"""
         if self.sheet is None:
             return None
         return self.sheet.cell(row, col).value
+
+    def get_merged_value(self, row: int, col: int) -> Any:
+        """读取合并区左上角的值；未合并则等同 get_value。"""
+        if self.sheet is None:
+            return None
+        origin_row, origin_col = self._merge_origin.get((row, col), (row, col))
+        return self.sheet.cell(origin_row, origin_col).value
 
     def close(self) -> None:
         """关闭工作簿"""
@@ -127,3 +148,5 @@ class ExcelContext:
             self.workbook.close()
             self.workbook = None
             self.sheet = None
+            self._merge_origin = {}
+            self._part_no_ranges = []

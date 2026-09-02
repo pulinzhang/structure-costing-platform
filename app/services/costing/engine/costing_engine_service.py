@@ -43,7 +43,7 @@ from app.services.costing.engine.scope_discovery import ScopeDiscovery
 logger = logging.getLogger("service.costing.engine")
 
 # 仍展示「去处理」提示，但不计入 hard_stop / 不阻断 can_start
-_SOFT_UPLOAD_GATE_CODES = frozenset({"thickness_policy"})
+SOFT_UPLOAD_GATE_CODES = frozenset({"thickness_policy", "packaging_transport"})
 
 
 class CostingEngineHardStopError(BusinessException):
@@ -96,7 +96,7 @@ class CostingEngineService:
         upload_or_config = self.gate_checker.check(db, discovered)
         annual_derived = self.annual_planner.plan(db, discovered)
         hard_stop = any(
-            (not item.ok) and item.code not in _SOFT_UPLOAD_GATE_CODES for item in upload_or_config
+            (not item.ok) and item.code not in SOFT_UPLOAD_GATE_CODES for item in upload_or_config
         )
         has_path = bool(discovered.stamping_suppliers or discovered.l0_scopes)
         can_start = (not hard_stop) and has_path

@@ -22,6 +22,7 @@
 | 文档 | 状态 |
 |------|------|
 | [stamping-process-confirmation-design.md](stamping/stamping-process-confirmation-design.md) | 冲压工艺确认表（已落地）：加工费 + 材料/利废依据 |
+| [stamping-family-die-byproduct-design.md](stamping/stamping-family-die-byproduct-design.md) | 家模废料副产品（上传已落地）：主表 `is_scrap_byproduct`；材料 H×Q，不算冲压费 |
 | [stamping-die-management-design.md](stamping/stamping-die-management-design.md) | 模具布点依据（已落地） |
 | [stamping-die-unit-price-design.md](stamping/stamping-die-unit-price-design.md) | 模具单价档案（已落地） |
 | [stamping-gauge-fee-design.md](stamping/stamping-gauge-fee-design.md) | 检具费档案（已落地） |
@@ -36,6 +37,7 @@
 | [welding-fee-design.md](bom/welding-fee-design.md) | 焊接费（已上线）：`bom_welding_fees` + `level`；财务读 `level=0` |
 | [welding-process-breakdown-design.md](bom/welding-process-breakdown-design.md) | 焊接工艺拆解（已上线）：有原文即拆（含分总成），不计费 |
 | [bom-procurement-objects-design.md](bom/bom-procurement-objects-design.md) | 采购对象清单（已落地）：退化供货件 / 分总成 / 冲压件，生成落库、检测、确认 |
+| [bom-procurement-object-supplier-design.md](bom/bom-procurement-object-supplier-design.md) | 采购对象指定供应商（设计）：行上合同对方 |
 
 ## 一事一议 `yishiyiyi/`
 
@@ -50,6 +52,7 @@
 |------|------|
 | [costing-engine-design.md](costing/costing-engine-design.md) | 月度引擎（已上线） |
 | [assembly-costing-design.md](costing/assembly-costing-design.md) | 总成月核价（已落地）：级别无关；财务总费用与采购应成本同一批行 |
+| [procurement-contract-report-design.md](costing/procurement-contract-report-design.md) | 采购签约报表（设计）：对象 × 起止月应成本横表 |
 | [l0-assembly-costing-design.md](costing/l0-assembly-costing-design.md) | 现网 L0 成品核价（已上线；新规则见上一行） |
 | [l1-assembly-costing-design.md](costing/l1-assembly-costing-design.md) | 历史：委外应成本口径（结果表方案已作废） |
 | [effective-period-design.md](costing/effective-period-design.md) | 协议价生效期（设计） |

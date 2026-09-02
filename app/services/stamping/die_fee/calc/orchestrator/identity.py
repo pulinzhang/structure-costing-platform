@@ -6,6 +6,21 @@ from app.models.stamping.die import StampingDiePart
 from app.services.stamping.die.process_identity import matches_die_identity
 
 
+def die_part_identity_key(part: StampingDiePart) -> tuple[str, str, str]:
+    return (
+        (part.stamping_supplier or "").strip(),
+        (part.version or "").strip(),
+        (part.part_number or "").strip(),
+    )
+
+
+def is_scrap_byproduct_die_part(
+    part: StampingDiePart,
+    scrap_keys: frozenset[tuple[str, str, str]],
+) -> bool:
+    return die_part_identity_key(part) in scrap_keys
+
+
 def strip_optional(value: str | None) -> str | None:
     if value is None:
         return None

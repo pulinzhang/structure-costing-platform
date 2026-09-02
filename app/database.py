@@ -247,6 +247,22 @@ class DatabaseConfig:
                         text(f"ALTER TABLE {part_table} ADD COLUMN offal_source VARCHAR(50)")
                     )
                 logger.info("已为 %s 追加列 offal_source", part_table)
+            part_cols = {col["name"] for col in inspector.get_columns(part_table)}
+            if "is_scrap_byproduct" not in part_cols:
+                with engine.begin() as conn:
+                    conn.execute(
+                        text(
+                            f"ALTER TABLE {part_table} "
+                            "ADD COLUMN is_scrap_byproduct BOOLEAN NOT NULL DEFAULT 0"
+                        )
+                    )
+                    conn.execute(
+                        text(
+                            "CREATE INDEX IF NOT EXISTS ix_part_is_scrap_byproduct "
+                            f"ON {part_table} (is_scrap_byproduct)"
+                        )
+                    )
+                logger.info("已为 %s 追加列 is_scrap_byproduct", part_table)
 
         cost_table = "stamping_part_costs"
         if cost_table in table_names:

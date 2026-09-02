@@ -16,6 +16,7 @@ from collections.abc import Callable
 from typing import Any
 
 from app.common.offal_nested import parse_offal_from_sheet_type
+from app.common.scrap_byproduct import resolve_scrap_byproduct
 from app.parsers.stamping.models.part import Part
 from app.parsers.stamping.models.process import Process
 from app.parsers.stamping.value_parser import parse_decimal, parse_int
@@ -24,13 +25,20 @@ from app.parsers.stamping.value_parser import parse_decimal, parse_int
 class RowParser:
     """行数据解析器"""
 
-    def __init__(self, get_value_fn: Callable[..., Any], col_map: dict[str, int]):
+    def __init__(
+        self,
+        get_value_fn: Callable[..., Any],
+        col_map: dict[str, int],
+        get_merged_value_fn: Callable[..., Any] | None = None,
+    ):
         """
         Args:
-            get_value_fn: 单元格值获取函数 (row, col) -> Any
+            get_value_fn: 单元格值获取函数 (row, col) -> Any；不解析合并区
             col_map: 列映射 {字段名: 列号}
+            get_merged_value_fn: 合并区取左上角值；吨位列用户常纵向合并
         """
         self._get_value = get_value_fn
+        self._get_merged_value = get_merged_value_fn or get_value_fn
         self._col_map = col_map
 
     def _cell(self, row_idx: int, key: str, default_col: int | None = None) -> Any:
@@ -40,6 +48,13 @@ class RowParser:
             return None
         return self._get_value(row_idx, col)
 
+    def _merged_cell(self, row_idx: int, key: str, default_col: int | None = None) -> Any:
+        """按 col_map 取单元格，合并区返回左上角值。"""
+        col = self._col_map.get(key, default_col)
+        if col is None:
+            return None
+        return self._get_merged_value(row_idx, col)
+
     def parse_part_row(self, row_idx: int) -> Part:
         """
         解析零件行。
@@ -47,20 +62,37 @@ class RowParser:
         Returns:
             Part 对象，包含该零件的所有字段。
         """
-        offal = parse_offal_from_sheet_type(self._cell(row_idx, "sheet_type"))
+        raw_sheet_type = self._cell(row_idx, "sheet_type")
+        offal = parse_offal_from_sheet_type(raw_sheet_type)
+        part_number = self._cell(row_idx, "part_no", 2)
+        part_weight = parse_decimal(self._cell(row_idx, "weight", 7))
+        sheet_length = parse_decimal(self._cell(row_idx, "length", 8))
+        sheet_width = parse_decimal(self._cell(row_idx, "width", 9))
+        parts_per_sheet = parse_int(self._cell(row_idx, "count", 10)) or 0
+        scrap = resolve_scrap_byproduct(
+            part_number=part_number,
+            part_weight=part_weight,
+            sheet_length=sheet_length,
+            sheet_width=sheet_width,
+            parts_per_sheet=parts_per_sheet,
+            raw_sheet_type=raw_sheet_type,
+            is_offal_nested=offal.is_offal_nested,
+            offal_source=offal.offal_source,
+        )
         return Part(
             seq_no=parse_int(self._cell(row_idx, "seq", 1)) or 0,
-            part_number=self._cell(row_idx, "part_no", 2),
+            part_number=part_number,
             part_name=self._cell(row_idx, "part_name", 3),
             material=self._cell(row_idx, "material", 5),
             thickness=parse_decimal(self._cell(row_idx, "thickness", 6)),
-            part_weight=parse_decimal(self._cell(row_idx, "weight", 7)),
-            sheet_length=parse_decimal(self._cell(row_idx, "length", 8)),
-            sheet_width=parse_decimal(self._cell(row_idx, "width", 9)),
-            parts_per_sheet=parse_int(self._cell(row_idx, "count", 10)) or 0,
+            part_weight=part_weight,
+            sheet_length=sheet_length,
+            sheet_width=sheet_width,
+            parts_per_sheet=parts_per_sheet,
             sheet_type=offal.sheet_type,
-            is_offal_nested=offal.is_offal_nested,
-            offal_source=offal.offal_source,
+            is_offal_nested=scrap.is_offal_nested,
+            offal_source=scrap.offal_source,
+            is_scrap_byproduct=scrap.is_scrap_byproduct,
             die_type=self._cell(row_idx, "die_type"),
             process_method=self._cell(row_idx, "method"),
             automation=self._cell(row_idx, "auto"),
@@ -98,7 +130,7 @@ class RowParser:
             process_code=self._cell(row_idx, "code", 13),
             die_sets=parse_int(self._cell(row_idx, "die_set", 14)) or 1,
             die_number=_as_die_number(self._cell(row_idx, "die_number")),
-            tonnage=parse_int(self._cell(row_idx, "tonnage", 15)),
+            tonnage=parse_int(self._merged_cell(row_idx, "tonnage", 15)),
             remark=self._cell(row_idx, "remark"),
             excel_row=row_idx,
         )

@@ -134,7 +134,7 @@ export function partsTemplate() {
                 </div>
 
                 <div class="overflow-x-auto brabus-bg-grid">
-                    <table class="w-full min-w-[1480px] bg-transparent" id="partsTable">
+                    <table class="w-full min-w-[1580px] bg-transparent" id="partsTable">
                         <thead>
                             <tr class="border-b border-[#17171C] bg-[#0B0B0D]/95">
                                 <th class="p-0 w-0"></th>
@@ -147,6 +147,7 @@ export function partsTemplate() {
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap border-r border-[#22222A]">版本</th>
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">材料</th>
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">利废</th>
+                                <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">废料副产品</th>
                                 <th class="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">厚度</th>
                                 <th class="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">重量</th>
                                 <th class="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">工序</th>
@@ -356,6 +357,7 @@ function renderOffalRows(part, canUpdate) {
         return [
             detailTableRow(['是否利废', isOn ? '是' : '否']),
             detailTableRow(['利用哪类废料', esc(source)]),
+            detailTableRow(['废料副产品', part.is_scrap_byproduct ? '是' : '否']),
         ].join('');
     }
     const knobX = isOn ? '16px' : '2px';
@@ -392,6 +394,10 @@ function renderOffalRows(part, canUpdate) {
                            placeholder="如：侧围（可空）"
                            class="w-full h-8 px-2 text-[11px] bg-[#0a0a0a] border border-[#2c2c2c] text-[#ffffff] placeholder:text-[#616161] focus:outline-none focus:border-[#ff5252] transition-all rounded-sm">
                 </td>
+            </tr>
+            <tr class="border-b border-[#161616]">
+                <th class="px-4 py-3 text-left text-[9px] font-medium uppercase tracking-[0.18em] text-[#4d4d4d] w-28">废料副产品</th>
+                <td class="px-4 py-3 text-[11px] text-[#6b6b6b] tracking-wider">${part.is_scrap_byproduct ? '是' : '否'}</td>
             </tr>`;
 }
 

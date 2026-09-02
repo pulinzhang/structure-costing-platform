@@ -19,6 +19,7 @@ from app.services.stamping.process_fee.calc.constants import (
 )
 from app.services.stamping.process_fee.calc.orchestrator.batch_engine import BatchCalcOutcome
 from app.services.stamping.process_fee.calc.orchestrator.deps import ProcessFeeCalcDeps
+from app.services.stamping.process_fee.calc.orchestrator.messages import append_result_detail
 from app.services.stamping.process_fee.calc.orchestrator.prep import CalcPrepContext
 from app.services.stamping.process_fee.calc.orchestrator.progress import ProgressNotifier
 
@@ -47,14 +48,10 @@ def persist_calc_result(
         status = STATUS_SUCCESS
 
     detail_lines = list(ctx.detail_lines)
-    detail_lines.append(
-        f"成功 {batch.success_count}，失败 {len(batch.failed_items)}，"
-        f"零价 {batch.zero_fee_count}，跳过已审 {batch.skipped_approved_count}"
-    )
-    if batch.zero_fee_count:
-        detail_lines.append("提醒：存在计算价为 0 的零件，请到列表核对或录入其它费用")
+    append_result_detail(detail_lines, batch)
     for item in batch.failed_items[:20]:
-        detail_lines.append(f"失败 {item.part_number} {item.process_seq or ''}: {item.reason}")
+        seq = f" {item.process_seq}" if item.process_seq else ""
+        detail_lines.append(f"没算上 {item.part_number}{seq}：{item.reason}")
 
     finished_at = now()
     result = StampingProcessFeeCalcResultVO(
@@ -70,6 +67,7 @@ def persist_calc_result(
         success_count=batch.success_count,
         failed_count=len(batch.failed_items),
         zero_fee_count=batch.zero_fee_count,
+        scrap_zero_count=batch.scrap_zero_count,
         skipped_approved_count=batch.skipped_approved_count,
         failed_items=batch.failed_items[:50],
         zero_fee_items=batch.zero_fee_items,

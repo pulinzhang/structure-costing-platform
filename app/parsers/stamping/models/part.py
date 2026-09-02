@@ -63,6 +63,7 @@ class Part:
     sheet_type: str | None = None
     is_offal_nested: bool = False
     offal_source: str | None = None
+    is_scrap_byproduct: bool = False
 
     # 模具类型（单动/双动）
     die_type: str | None = None

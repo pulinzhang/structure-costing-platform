@@ -34,6 +34,7 @@ class BatchCalcOutcome:
     zero_fee_items: list[StampingProcessFeeFailedItemVO] = field(default_factory=list)
     success_count: int = 0
     zero_fee_count: int = 0
+    scrap_zero_count: int = 0
     skipped_approved_count: int = 0
 
 
@@ -73,6 +74,8 @@ class BatchCalculationEngine:
         return outcome
 
     def _select_calculator(self, part: StampingPart) -> PartFeeCalculator | TailorWeldFeeCalculator:
+        if part.is_scrap_byproduct:
+            return self._deps.part_calculator
         if part.is_tailor_welded:
             return self._deps.tailor_weld_calculator
         return self._deps.part_calculator
@@ -120,9 +123,13 @@ class BatchCalculationEngine:
             outcome.success_count += 1
             if processing_fee is not None and Decimal(str(processing_fee)) == 0:
                 outcome.zero_fee_count += 1
+                if part.is_scrap_byproduct:
+                    outcome.scrap_zero_count += 1
                 if len(outcome.zero_fee_items) < 50:
                     zero_reason = (
-                        "拼焊件系统计算不含拼焊费，请到列表录入其它费用"
+                        "废料副产品，冲压加工费为 0"
+                        if part.is_scrap_byproduct
+                        else "拼焊件系统计算不含拼焊费，请到列表录入其它费用"
                         if part.is_tailor_welded
                         else "系统计算加工费为 0，请到列表核对或录入其它费用"
                     )

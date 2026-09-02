@@ -114,7 +114,7 @@ CostingEngineService                 ← 编排唯一入口
 | 焊接单价 | 年 + 基地 | 上传 |
 | BOM 材料清单快照 | 基地 + 项目 + BOM 版本 | 须含 L0 |
 | 年度零件价 | 年 + 基地 | 上传 |
-| 包装运输费 | 年 + 基地 | 上传 |
+| 包装运输费 | 年 + 基地 | 上传；**缺失仅黄灯提示，不硬停**（成品卡 I1/I2 为 0） |
 | **钢材基准价** | **年 + 月 + 基地** | **硬停**；按将算材料钢种覆盖 |
 | **厚度加减价政策** | 政策匹配 | **硬停**；可匹配完整 |
 | 宽度加减价政策 | 政策匹配 | 同属 5.1，硬停（允许「加减为 0 的合法命中」，不允许匹配失败） |
@@ -162,7 +162,7 @@ CostingEngineService                 ← 编排唯一入口
 | `welding_unit_price` | 焊接单价 | `#/bom-welding-unit-price-upload` | `#/bom-welding-unit-price` | `year`, `location` |
 | `bom_snapshot` | BOM 材料清单 | `#/bom-upload` | `#/bom-material` / `#/bom-structure` | `location`；缺版本时文案点名项目 |
 | `annual_part_price` | 年度零件价 | `#/bom-annual-part-price-upload` | `#/bom-annual-part-price` | `year`, `location` |
-| `packaging_transport` | 包装运输费 | `#/bom-packaging-transport-fee-upload` | `#/bom-packaging-transport-fee` | `year`, `location` |
+| `packaging_transport` | 包装运输费（软门） | `#/bom-packaging-transport-fee-upload` | `#/bom-packaging-transport-fee` | `year`, `location` |
 | `base_price` | 钢材基准价 | `#/base-price-upload` | `#/base-price-download` | `year`, `month`, `location` |
 | `thickness_policy` | 厚度加减价政策 | `#/steel-price-policy-upload` | `#/steel-price-policy-download` | 文案提示牌号/厚度缺口 |
 | `width_policy` | 宽度加减价政策 | `#/steel-price-policy-upload` | `#/steel-price-policy-download` | 同上（同一政策模块） |
@@ -602,4 +602,4 @@ can_start: bool   # = not hard_stop 且存在可执行路径
 | 2026-08-21 | 增补 R7 / §5.3：硬停项带 `navigate` 深链；P0 验收含「去处理」跳转 |
 | 2026-08-21 | 增补 R8 / §8.4：`running` 亦可删除 Run，避免本机中断后卡住 |
 | 2026-08-25 | as-built：标记 `#/costing` 与引擎 API 已上线；规则仍以本文为准 |
-| 2026-08-25 | §9.2：引擎 worker 纳入 `async_task` 公共 runner（宪法 §5.3）；领域异常仍留引擎 Service |
+| 2026-09-02 | 包装运输费与厚度加减价同为软门：就绪检查仍提示，不阻断 `can_start` |

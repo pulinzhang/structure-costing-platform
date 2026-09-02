@@ -14,6 +14,11 @@ from app.models.stamping import StampingPart
 from app.schemas.dto.stamping_process_fee_dto import StampingProcessFeeCalcDTO
 from app.services.stamping.process_fee.calc.models import TonnageRateInfo
 from app.services.stamping.process_fee.calc.orchestrator.deps import ProcessFeeCalcDeps
+from app.services.stamping.process_fee.calc.orchestrator.messages import (
+    format_parts_matched,
+    format_prep_opening,
+    format_rate_loaded,
+)
 from app.services.stamping.process_fee.calc.orchestrator.progress import ProgressNotifier
 from app.services.stamping.process_fee.scope import require_scope
 
@@ -36,7 +41,7 @@ def prepare_calc_run(
 ) -> CalcPrepContext:
     location, supplier = require_scope(dto)
     started_at = now()
-    detail_lines = [f"开始计算 year={dto.year} location={location} " f"supplier={supplier}"]
+    detail_lines = [format_prep_opening(dto.year, location, supplier)]
 
     progress.report(5, "加载冲次单价...")
     rates = deps.tonnage_repo.list_by_location_year(db, location, dto.year)
@@ -52,7 +57,7 @@ def prepare_calc_run(
         )
         for r in rates
     }
-    detail_lines.append(f"冲次单价 {len(rates)} 条")
+    detail_lines.append(format_rate_loaded(len(rates)))
 
     progress.report(10, "加载冲压零件...")
     parts = deps.part_repo.list_with_processes(
@@ -64,7 +69,7 @@ def prepare_calc_run(
     )
     if not parts:
         raise BusinessException(f"基地「{location}」工厂「{supplier}」下未找到匹配的冲压零件")
-    detail_lines.append(f"匹配零件 {len(parts)} 件")
+    detail_lines.append(format_parts_matched(len(parts)))
 
     return CalcPrepContext(
         location=location,

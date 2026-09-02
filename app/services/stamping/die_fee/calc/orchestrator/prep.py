@@ -27,6 +27,7 @@ class CalcPrepContext:
     price: StampingDieUnitPrice
     started_at: datetime
     detail_lines: list[str]
+    scrap_byproduct_keys: frozenset[tuple[str, str, str]]
 
 
 def count_approved(db: Session, deps: DieFeeCalcDeps, dto: StampingDieFeeCalcDTO) -> int:
@@ -88,10 +89,14 @@ def prepare_calc_run(
     if count_approved(db, deps, dto):
         raise BusinessException(APPROVED_SCOPE_MESSAGE, code=409)
 
+    scrap_byproduct_keys = deps.part_repo.list_scrap_byproduct_keys(
+        db, location=dto.location, vehicle_model=dto.vehicle_model
+    )
     return CalcPrepContext(
         parts=parts,
         persist_parts=persist_parts,
         price=price,
         started_at=started_at,
         detail_lines=detail_lines,
+        scrap_byproduct_keys=scrap_byproduct_keys,
     )

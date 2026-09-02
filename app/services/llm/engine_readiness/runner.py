@@ -9,12 +9,12 @@ from sqlalchemy.orm import Session
 from app.repositories.llm.scope_options_repository import ScopeOptionsRepository
 from app.schemas.llm.analysis_query import AnalysisQuery
 from app.schemas.vo.costing_engine_vo import CostingEngineGateItemVO, CostingEngineReadyVO
-from app.services.costing.engine.costing_engine_service import CostingEngineService
+from app.services.costing.engine.costing_engine_service import (
+    SOFT_UPLOAD_GATE_CODES,
+    CostingEngineService,
+)
 from app.services.llm.analysis.constants import ANALYSIS_VERSION
 from app.services.llm.analysis.runner import AnalysisRunResult
-
-# 与 CostingEngineService 软门禁一致：仅提示，不阻断 can_start
-_SOFT_GATE_CODES = frozenset({"thickness_policy"})
 
 GATE_LABEL_ZH: dict[str, str] = {
     "stamping_process": "冲压工艺",
@@ -35,8 +35,8 @@ def _gate_to_dict(item: CostingEngineGateItemVO) -> dict[str, Any]:
         "code": item.code,
         "label": GATE_LABEL_ZH.get(item.code, item.code),
         "ok": item.ok,
-        "hard_stop": (not item.ok) and item.code not in _SOFT_GATE_CODES,
-        "soft_hint": item.code in _SOFT_GATE_CODES and bool(item.missing),
+        "hard_stop": (not item.ok) and item.code not in SOFT_UPLOAD_GATE_CODES,
+        "soft_hint": item.code in SOFT_UPLOAD_GATE_CODES and bool(item.missing),
         "message": item.message,
         "missing": list(item.missing or []),
         "navigate_page": item.navigate.page if item.navigate else None,
@@ -46,9 +46,9 @@ def _gate_to_dict(item: CostingEngineGateItemVO) -> dict[str, Any]:
 
 def _ready_to_summary(ready: CostingEngineReadyVO) -> dict[str, Any]:
     gates = ready.gates.upload_or_config
-    hard_fails = [g for g in gates if (not g.ok) and g.code not in _SOFT_GATE_CODES]
-    soft_hints = [g for g in gates if g.code in _SOFT_GATE_CODES and (not g.ok or g.missing)]
-    ok_items = [g for g in gates if g.ok and g.code not in _SOFT_GATE_CODES]
+    hard_fails = [g for g in gates if (not g.ok) and g.code not in SOFT_UPLOAD_GATE_CODES]
+    soft_hints = [g for g in gates if g.code in SOFT_UPLOAD_GATE_CODES and (not g.ok or g.missing)]
+    ok_items = [g for g in gates if g.ok and g.code not in SOFT_UPLOAD_GATE_CODES]
     l0_labels = [f"{s.vehicle_model}/{s.bom_version}" for s in ready.plan.l0_scopes]
     return {
         "kind": "engine_readiness",
@@ -82,7 +82,7 @@ def render_engine_readiness_markdown(
         (
             "**结论：可以启动自动核价**（与「核价 → 自动核价引擎 → 检查就绪」一致）。"
             if ready.can_start
-            else f"**结论：尚有 {sum(1 for g in ready.gates.upload_or_config if not g.ok and g.code not in _SOFT_GATE_CODES)} 项硬门禁未过，暂不能启动。**"
+            else f"**结论：尚有 {sum(1 for g in ready.gates.upload_or_config if not g.ok and g.code not in SOFT_UPLOAD_GATE_CODES)} 项硬门禁未过，暂不能启动。**"
         ),
         "",
         "> 说明：材料清单（BOM）按「基地 + 车型 + 版本」维护，**可跨年复用**，不要求每年重传。",
@@ -90,17 +90,19 @@ def render_engine_readiness_markdown(
     ]
 
     hard_fails = [
-        g for g in ready.gates.upload_or_config if (not g.ok) and g.code not in _SOFT_GATE_CODES
+        g
+        for g in ready.gates.upload_or_config
+        if (not g.ok) and g.code not in SOFT_UPLOAD_GATE_CODES
     ]
     soft_hints = [
         g
         for g in ready.gates.upload_or_config
-        if g.code in _SOFT_GATE_CODES and (g.missing or not g.ok)
+        if g.code in SOFT_UPLOAD_GATE_CODES and (g.missing or not g.ok)
     ]
     ok_items = [
         g
         for g in ready.gates.upload_or_config
-        if g.ok and not (g.code in _SOFT_GATE_CODES and g.missing)
+        if g.ok and not (g.code in SOFT_UPLOAD_GATE_CODES and g.missing)
     ]
 
     if hard_fails:

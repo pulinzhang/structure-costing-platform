@@ -29,7 +29,6 @@ from app.services.async_task import (
     TASK_TYPE_STAMPING_PROCESS_FEE_CALC,
     AsyncTaskService,
     WorkerTaskOutcome,
-    calc_status_label,
     outcome_from_calc_status,
 )
 from app.services.stamping.process_fee.calc.models import ProgressCallback
@@ -39,6 +38,10 @@ from app.services.stamping.process_fee.calc.orchestrator.batch_engine import (
 from app.services.stamping.process_fee.calc.orchestrator.deps import (
     ProcessFeeCalcDeps,
     build_process_fee_calc_deps,
+)
+from app.services.stamping.process_fee.calc.orchestrator.messages import (
+    calc_task_completed_message,
+    calc_task_failed_message,
 )
 from app.services.stamping.process_fee.calc.orchestrator.persist import persist_calc_result
 from app.services.stamping.process_fee.calc.orchestrator.prep import prepare_calc_run
@@ -201,16 +204,10 @@ class StampingProcessFeeCalcOrchestrator:
                 log_id=log_id,
                 calc_batch_id=calc_batch_id,
             )
-            label = calc_status_label(result.status)
             return outcome_from_calc_status(
                 result.status,
-                failed_message=(
-                    f"计算失败：成功 {result.success_count}，失败 {result.failed_count}"
-                ),
-                completed_message=(
-                    f"计算{label}：成功 {result.success_count}，"
-                    f"失败 {result.failed_count}，零价 {result.zero_fee_count}"
-                ),
+                failed_message=calc_task_failed_message(result),
+                completed_message=calc_task_completed_message(result),
                 result=result.model_dump(),
             )
 

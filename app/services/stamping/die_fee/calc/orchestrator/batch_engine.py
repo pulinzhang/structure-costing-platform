@@ -13,7 +13,10 @@ from app.schemas.dto.stamping_die_fee_dto import (
     StampingDieFeeCalcDTO,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.services.stamping.die_fee.calc.orchestrator.identity import matches_part
+from app.services.stamping.die_fee.calc.orchestrator.identity import (
+    is_scrap_byproduct_die_part,
+    matches_part,
+)
 from app.services.stamping.die_fee.calc.orchestrator.missing_die_number import (
     collect_missing_die_number_hints,
 )
@@ -51,6 +54,15 @@ class BatchCalculationEngine:
         price = ctx.price
 
         for index, part in enumerate(ctx.parts, start=1):
+            if is_scrap_byproduct_die_part(part, ctx.scrap_byproduct_keys):
+                if matches_part(
+                    part,
+                    stamping_supplier=dto.stamping_supplier,
+                    version=dto.version,
+                ):
+                    outcome.skipped_no_die_count += 1
+                progress.tick_parts(index, total)
+                continue
             calculated, previous_weights = self._part_calculator.calc_part(
                 part,
                 steel_plate_unit_price=price.steel_plate_unit_price,

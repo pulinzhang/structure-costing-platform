@@ -162,6 +162,7 @@ class StampingProcessFeeCalcResultVO(BaseModel):
     success_count: int
     failed_count: int
     zero_fee_count: int = 0
+    scrap_zero_count: int = 0
     skipped_approved_count: int = 0
     failed_items: list[StampingProcessFeeFailedItemVO] = []
     zero_fee_items: list[StampingProcessFeeFailedItemVO] = []

@@ -70,8 +70,11 @@ def test_engine_readiness_qingdao_2026_02_lists_hard_gates() -> None:
         assert {g["code"] for g in hard_fails} >= {
             "welding_unit_price",
             "annual_part_price",
-            "packaging_transport",
         }
+        pkg = next((g for g in gates if g["code"] == "packaging_transport"), None)
+        if pkg is not None and not pkg.get("ok"):
+            assert pkg.get("hard_stop") is False
+            assert pkg.get("soft_hint") is True
 
         snapshot = SnapshotBuilder().build(query=query, run=run)
         markdown = LlmReportGenerator().render_fallback_markdown(
@@ -87,6 +90,7 @@ def test_engine_readiness_qingdao_2026_02_lists_hard_gates() -> None:
             markdown.split("### 还缺")[1].split("###")[0] if "### 还缺" in markdown else ""
         )
         assert "材料清单" not in hard_section
+        assert "包装运输" not in hard_section
     finally:
         db.close()
 

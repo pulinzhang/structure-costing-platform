@@ -392,6 +392,7 @@ class StampingUploadService:
                     sheet_type=part.sheet_type,
                     is_offal_nested=part.is_offal_nested,
                     offal_source=part.offal_source,
+                    is_scrap_byproduct=part.is_scrap_byproduct,
                     die_type=part.die_type,
                     process_method=part.process_method,
                     automation=part.automation,

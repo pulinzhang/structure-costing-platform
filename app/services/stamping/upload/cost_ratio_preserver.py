@@ -1,8 +1,9 @@
 """
-上传覆盖时处理工序成本比率。
+覆盖上传时处理工序成本比率。
 
 在 Excel 解析完成之后、删旧写入之前：
-- 库中已有同零件号+工序号 → 沿用已设 cost_ratio
+- 废料副产品 → 一律 0，不沿用库中值、不走双槽/合并关键字
+- 其余：库中已有同零件号+工序号 → 沿用已设 cost_ratio
 - 对不上（本次新增）→ 按自动化/工艺方法叠乘默认（双槽/合并/一出二 0.50，级进模 0.80）
 """
 
@@ -20,6 +21,7 @@ from app.services.stamping.upload.cost_ratio_resolver import resolve_cost_ratio
 logger = logging.getLogger("service.stamping_upload.cost_ratio_preserver")
 
 _DEFAULT_COST_RATIO = Decimal("1.00")
+_SCRAP_BYPRODUCT_COST_RATIO = Decimal("0.00")
 
 
 class ProcessCostRatioPreserver:
@@ -49,12 +51,16 @@ class ProcessCostRatioPreserver:
             if not key[0] or not key[1]:
                 process.cost_ratio = _DEFAULT_COST_RATIO
                 continue
+            part = part_by_number.get(key[0])
+            if part is not None and part.is_scrap_byproduct:
+                process.cost_ratio = _SCRAP_BYPRODUCT_COST_RATIO
+                assigned_new += 1
+                continue
             ratio = ratio_by_part_seq.get(key)
             if ratio is not None:
                 process.cost_ratio = ratio
                 preserved += 1
                 continue
-            part = part_by_number.get(key[0])
             process.cost_ratio = resolve_cost_ratio(
                 part.automation if part else None,
                 part.process_method if part else None,

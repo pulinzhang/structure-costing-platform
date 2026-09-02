@@ -341,7 +341,7 @@ function renderHistoryRows(items) {
                 <td class="py-2 px-2 font-mono text-right tabular-nums text-[#777]">${fmtInt(item.total_parts)}</td>
                 <td class="py-2 px-2 font-mono text-right tabular-nums text-[#777]">${fmtInt(item.success_count)}</td>
                 <td class="py-2 px-2 font-mono text-right tabular-nums ${Number(item.failed_count) > 0 ? 'text-[#ef5350]' : 'text-[#777]'}">${fmtInt(item.failed_count)}</td>
-                <td class="py-2 px-2 font-mono text-right tabular-nums ${Number(item.zero_fee_count) > 0 ? 'text-[#ffb74d]' : 'text-[#777]'}">${fmtInt(item.zero_fee_count)}</td>
+                <td class="py-2 px-2 font-mono text-right tabular-nums text-[#777]" title="含废料副产品（按规则记 0）">${fmtInt(item.zero_fee_count)}</td>
                 <td class="py-2 px-2 font-mono text-right tabular-nums text-[#777]">${fmtInt(item.skipped_approved_count)}</td>
                 <td class="py-2 px-2 text-right whitespace-nowrap">
                     ${isProcessing ? `
@@ -413,6 +413,23 @@ async function deleteCalcLog(logId) {
     }
 }
 
+function formatCalcSummary(log) {
+    const total = fmtInt(log.total_parts);
+    const success = fmtInt(log.success_count);
+    const failedCount = Number(log.failed_count) || 0;
+    const skipped = Number(log.skipped_approved_count) || 0;
+    let text = `本批 ${total} 个，成功 ${success} 个`;
+    if (failedCount > 0) {
+        text += `，没算上 ${fmtInt(log.failed_count)} 个`;
+    } else {
+        text += '，没有失败';
+    }
+    if (skipped > 0) {
+        text += `；已审核跳过 ${fmtInt(skipped)} 件`;
+    }
+    return text;
+}
+
 async function openProcessDrawer(logId) {
     if (!logId) return;
     try {
@@ -457,7 +474,7 @@ function showProcessDrawer(log) {
         <div class="px-5 py-3 border-b border-[#222] text-[10px] text-[#777] space-y-1 shrink-0">
             <div>批次<span class="font-mono text-[#999]">${esc(log.calc_batch_id || '-')}</span></div>
             <div>时间：${esc(formatDateTime(log.started_at))} → ${esc(formatDateTime(log.finished_at))}</div>
-            <div>汇总：零件 ${fmtInt(log.total_parts)} · 成功 ${fmtInt(log.success_count)} · 失败 ${fmtInt(log.failed_count)} · 零价 ${fmtInt(log.zero_fee_count)} · 跳过 ${fmtInt(log.skipped_approved_count)}</div>
+            <div>${esc(formatCalcSummary(log))}</div>
         </div>
         <div class="flex-1 overflow-y-auto overscroll-contain p-5">
             <pre class="text-[11px] leading-5 font-mono text-[#9e9e9e] whitespace-pre-wrap break-words bg-[#111111] border border-[#262626] p-4">${esc(log.detail_text || '（无过程文本）')}</pre>
@@ -649,18 +666,19 @@ function startPolling(taskId) {
                 const result = data?.result || {};
                 calcState.lastResult = result;
                 const bizStatus = result.status || 'success';
-                const zero = result.zero_fee_count || 0;
-                if (zero > 0) {
-                    showToast(
-                        `计算${STATUS_META[bizStatus]?.label || '完成'}：成功${fmtInt(result.success_count)}，零价${fmtInt(zero)}，请到列表录入其它费用`,
-                        'warning',
-                    );
-                } else {
-                    showToast(
-                        `计算${STATUS_META[bizStatus]?.label || '完成'}：成功${fmtInt(result.success_count)}，失败${fmtInt(result.failed_count)}`,
-                        bizStatus === 'failed' ? 'error' : bizStatus === 'partial' ? 'warning' : 'success',
-                    );
-                }
+                const failed = Number(result.failed_count) || 0;
+                const scrapZero = Number(result.scrap_zero_count) || 0;
+                const otherZero = Math.max(0, (Number(result.zero_fee_count) || 0) - scrapZero);
+                const toastMsg =
+                    msg ||
+                    `计算${STATUS_META[bizStatus]?.label || '完成'}：成功 ${fmtInt(result.success_count)} 个`;
+                const toastType =
+                    bizStatus === 'failed' || (failed && !result.success_count)
+                        ? 'error'
+                        : failed || otherZero > 0 || bizStatus === 'partial'
+                          ? 'warning'
+                          : 'success';
+                showToast(toastMsg, toastType);
                 calcState.activeTaskId = null;
                 setCalculating(false);
                 loadCalcReady();

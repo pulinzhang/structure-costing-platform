@@ -135,6 +135,37 @@ class StampingPartRepository:
             for part_number, stamping_supplier, version in rows
         ]
 
+    def list_scrap_byproduct_keys(
+        self,
+        db: Session,
+        *,
+        location: str,
+        vehicle_model: str,
+    ) -> frozenset[tuple[str, str, str]]:
+        """基地+项目下废料副产品身份（供应商、版本、零件号）。"""
+        rows = (
+            db.query(
+                StampingPart.stamping_supplier,
+                StampingPart.version,
+                StampingPart.part_number,
+            )
+            .filter(
+                StampingPart.location == location,
+                StampingPart.vehicle_model == vehicle_model,
+                StampingPart.is_scrap_byproduct.is_(True),
+            )
+            .all()
+        )
+        return frozenset(
+            (
+                (stamping_supplier or "").strip(),
+                (version or "").strip(),
+                (part_number or "").strip(),
+            )
+            for stamping_supplier, version, part_number in rows
+            if (part_number or "").strip()
+        )
+
     def get_by_id(self, db: Session, part_id: int) -> StampingPart | None:
         from sqlalchemy.orm import selectinload
 

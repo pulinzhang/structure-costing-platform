@@ -18,6 +18,10 @@ import time
 from typing import Any
 
 from app.exceptions.base import BusinessException
+from app.parsers.stamping.empty_process_copier import (
+    copy_empty_processes_from_previous,
+    empty_process_warning_text,
+)
 from app.parsers.stamping.excel_context import ExcelContext
 from app.parsers.stamping.header_resolver import HeaderResolver
 from app.parsers.stamping.models.header import HeaderContext
@@ -133,7 +137,11 @@ class StampingExcelParser:
         self._excel_ctx.build_merged_cache(part_no_col)
 
         # 行解析器
-        self._row_parser = RowParser(self._excel_ctx.get_value, header_ctx.col_map)
+        self._row_parser = RowParser(
+            self._excel_ctx.get_value,
+            header_ctx.col_map,
+            self._excel_ctx.get_merged_value,
+        )
 
     def _parse_data(self, part_saver: PartSaver) -> None:
         """解析数据主循环：遍历零件号范围"""
@@ -190,6 +198,19 @@ class StampingExcelParser:
         # 保存最后一个零件
         if current_part_number:
             self._save_part(current_part_number, part_saver, process_count, self.result.warnings)
+
+        filled_numbers = copy_empty_processes_from_previous(
+            self.result.parts, self.result.processes
+        )
+        if filled_numbers:
+            skip_warnings = {empty_process_warning_text(number) for number in filled_numbers}
+            self.result.warnings = [
+                item for item in self.result.warnings if item not in skip_warnings
+            ]
+            logger.info(
+                "空工序已按上一件补齐: %s",
+                "、".join(filled_numbers),
+            )
 
     def _save_part(
         self,

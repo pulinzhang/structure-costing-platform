@@ -107,6 +107,13 @@ class PartFeeCalculator:
         if not processes:
             return self.build_failed_item(part, "无工序数据")
 
+        if part.is_scrap_byproduct:
+            return (
+                Decimal("0").quantize(FEE_QUANTIZE, rounding=ROUND_HALF_UP),
+                len(processes),
+                [],
+            )
+
         processes = self._select_processes_for_calc(db, part, processes, prev_part_cache)
         if not processes:
             return self.build_failed_item(part, "共模件按上一件工序方案筛选后无有效工序")
