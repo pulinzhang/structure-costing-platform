@@ -19,12 +19,49 @@ const CARD_STATUS_CLASS = {
 };
 
 const state = {
+    logId: 0,
     log: null,
     keyword: '',
     status: 'all',
     level: 'all',
     treeRoot: 'all',
+    exporting: false,
 };
+
+function hasActiveFilters() {
+    return Boolean(
+        state.keyword.trim()
+        || state.status !== 'all'
+        || state.level !== 'all'
+        || state.treeRoot !== 'all',
+    );
+}
+
+function showToast(message, type) {
+    const node = document.getElementById('reportToast');
+    if (!node) return;
+    node.textContent = message;
+    node.classList.toggle('is-error', type === 'error');
+    node.classList.add('is-on');
+    window.clearTimeout(showToast._timer);
+    showToast._timer = window.setTimeout(() => node.classList.remove('is-on'), 2600);
+}
+
+function parseDownloadFilename(header, fallback) {
+    if (!header) return fallback;
+    const utf8 = /filename\*=UTF-8''([^;]+)/i.exec(header);
+    if (utf8) {
+        try {
+            return decodeURIComponent(utf8[1]);
+        } catch (_error) {
+            return utf8[1];
+        }
+    }
+    const quoted = /filename="([^"]+)"/i.exec(header);
+    if (quoted) return quoted[1];
+    const plain = /filename=([^;]+)/i.exec(header);
+    return plain ? plain[1].trim() : fallback;
+}
 
 function esc(value) {
     if (value == null || value === '') return '—';
@@ -108,15 +145,106 @@ function bindFilters(root) {
         });
     });
     const levelSelect = root.querySelector('#reportLevel');
+    levelSelect.value = state.level;
     levelSelect.addEventListener('change', () => {
         state.level = levelSelect.value;
         refreshRows(root);
     });
     const treeSelect = root.querySelector('#reportTreeRoot');
+    treeSelect.value = state.treeRoot;
     treeSelect.addEventListener('change', () => {
         state.treeRoot = treeSelect.value;
         refreshRows(root);
     });
+    root.querySelector('#reportPrintBtn')?.addEventListener('click', () => window.print());
+    root.querySelector('#reportExportBtn')?.addEventListener('click', () => exportExcel(true));
+    root.querySelector('#reportExportAllBtn')?.addEventListener('click', () => exportExcel(false));
+}
+
+function exportQuery(useFilter) {
+    const params = new URLSearchParams();
+    if (!useFilter) return params;
+    const keyword = state.keyword.trim();
+    if (keyword) params.set('keyword', keyword);
+    if (state.status !== 'all') params.set('status', state.status);
+    if (state.level !== 'all') params.set('level', state.level);
+    if (state.treeRoot !== 'all') params.set('tree_root', state.treeRoot);
+    return params;
+}
+
+async function exportExcel(useFilter) {
+    if (state.exporting || !state.logId) return;
+    const auth = token();
+    if (!auth) {
+        showToast('未登录，无法导出。', 'error');
+        return;
+    }
+    state.exporting = true;
+    refreshExportButtons();
+    const params = exportQuery(useFilter);
+    params.set('_t', String(Date.now()));
+    const query = params.toString();
+    const url = `/api/costing/assembly-costs/calc/logs/${state.logId}/export-download${query ? `?${query}` : ''}`;
+    try {
+        const response = await fetch(url, {
+            headers: {
+                'X-Token': auth,
+                Authorization: `Bearer ${auth}`,
+            },
+        });
+        if (response.status === 401) {
+            throw new Error('登录已过期，请重新登录。');
+        }
+        if (!response.ok) {
+            let message = `导出失败（${response.status}）`;
+            try {
+                const payload = await response.json();
+                message = payload.message || payload.detail || message;
+            } catch (_error) {
+                /* ignore */
+            }
+            throw new Error(message);
+        }
+        const filename = parseDownloadFilename(
+            response.headers.get('Content-Disposition'),
+            '总成核价计算报告.xlsx',
+        );
+        const blob = await response.blob();
+        const objectUrl = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = objectUrl;
+        anchor.download = filename;
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+        URL.revokeObjectURL(objectUrl);
+        showToast(useFilter && hasActiveFilters() ? '已导出当前筛选。' : '已导出全部核价卡。');
+    } catch (error) {
+        showToast(error.message || '导出失败', 'error');
+    } finally {
+        state.exporting = false;
+        refreshExportButtons();
+    }
+}
+
+function refreshExportButtons() {
+    const exportBtn = document.getElementById('reportExportBtn');
+    const exportAllBtn = document.getElementById('reportExportAllBtn');
+    const hint = document.getElementById('reportExportHint');
+    const filtered = hasActiveFilters();
+    if (exportBtn) {
+        exportBtn.disabled = state.exporting;
+        exportBtn.textContent = state.exporting ? '导出中…' : (filtered ? '导出当前筛选' : '导出 Excel');
+    }
+    if (exportAllBtn) {
+        exportAllBtn.hidden = !filtered;
+        exportAllBtn.disabled = state.exporting;
+    }
+    if (hint) {
+        hint.textContent = filtered
+            ? 'Excel 与当前表格一致；需要全量时点「全部」。'
+            : '含封面摘要、核价卡与过程说明。快捷键 Ctrl+E';
+    }
 }
 
 function refreshRows(root) {
@@ -128,6 +256,7 @@ function refreshRows(root) {
     });
     const count = root.querySelector('.count');
     if (count) count.textContent = `显示 ${filtered.length} / ${cards.length} 张卡`;
+    refreshExportButtons();
     const tableHost = root.querySelector('#reportTableHost');
     if (tableHost) tableHost.innerHTML = renderTable(filtered);
 }
@@ -142,8 +271,16 @@ function render(root) {
 
     root.innerHTML = `
         <header class="report-head">
-            <p>Assembly Costing Process Report</p>
-            <h1>总成核价计算报告</h1>
+            <div>
+                <p>Assembly Costing Process Report</p>
+                <h1>总成核价计算报告</h1>
+            </div>
+            <div class="report-actions">
+                <span class="export-hint" id="reportExportHint"></span>
+                <button type="button" id="reportPrintBtn">打印</button>
+                <button type="button" id="reportExportAllBtn" class="btn-ghost" hidden>全部</button>
+                <button type="button" id="reportExportBtn" class="btn-primary">导出 Excel</button>
+            </div>
         </header>
         <div class="meta">
             <div>范围 <strong>${esc(`${log.location} / ${log.vehicle_model} / ${log.bom_version}`)}</strong></div>
@@ -183,6 +320,13 @@ function render(root) {
     `;
     bindFilters(root);
     refreshRows(root);
+}
+
+function onKeydown(event) {
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'e') {
+        event.preventDefault();
+        exportExcel(true);
+    }
 }
 
 function renderTable(cards) {
@@ -238,6 +382,8 @@ async function boot() {
         root.innerHTML = '<p class="error">缺少 log_id。</p>';
         return;
     }
+    state.logId = logId;
+    document.addEventListener('keydown', onKeydown);
     try {
         state.log = await loadLog(logId);
         render(root);

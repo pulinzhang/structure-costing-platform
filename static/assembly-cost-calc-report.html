@@ -36,6 +36,11 @@
             box-shadow: 0 10px 30px rgba(28, 25, 23, 0.06);
         }
         header.report-head {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
             padding: 28px 32px 20px;
             border-bottom: 3px solid var(--accent);
         }
@@ -52,6 +57,66 @@
             font-size: 28px;
             font-weight: 700;
         }
+        .report-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        .report-actions button {
+            height: 36px;
+            padding: 0 14px;
+            border: 1px solid #d6d3d1;
+            background: #fff;
+            color: var(--ink);
+            font-size: 13px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .report-actions button:hover {
+            border-color: #a8a29e;
+        }
+        .report-actions button:disabled {
+            opacity: 0.55;
+            cursor: wait;
+        }
+        .report-actions .btn-primary {
+            border-color: var(--accent);
+            background: var(--accent);
+            color: #fff;
+        }
+        .report-actions .btn-primary:hover {
+            background: #881337;
+            border-color: #881337;
+        }
+        .report-actions .btn-ghost {
+            color: var(--muted);
+        }
+        .export-hint {
+            font-size: 11px;
+            color: var(--muted);
+            max-width: 140px;
+            line-height: 1.35;
+        }
+        .toast {
+            position: fixed;
+            right: 24px;
+            bottom: 24px;
+            z-index: 20;
+            padding: 10px 14px;
+            background: #1c1917;
+            color: #fffdfa;
+            font-size: 13px;
+            box-shadow: 0 10px 30px rgba(28, 25, 23, 0.18);
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(8px);
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+        .toast.is-on { opacity: 1; transform: none; }
+        .toast.is-error { background: #9f1239; }
         .meta {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -147,8 +212,7 @@
         .missing { color: #9f1239; font-size: 12px; }
         @media print {
             body { background: #fff; }
-            .filters { position: static; }
-            .filters button[data-status], .filters input { border-color: #ccc; }
+            .filters, .report-actions, .toast { display: none !important; }
         }
     </style>
 </head>
@@ -158,6 +222,7 @@
             <div class="empty">加载计算报告…</div>
         </div>
     </div>
-    <script type="module" src="/static/js/features/costing/assembly-cost/calc/report.js?v=4"></script>
+    <div class="toast" id="reportToast" role="status"></div>
+    <script type="module" src="/static/js/features/costing/assembly-cost/calc/report.js?v=5"></script>
 </body>
 </html>

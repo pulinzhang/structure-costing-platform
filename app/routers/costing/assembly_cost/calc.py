@@ -4,7 +4,11 @@
 
 from __future__ import annotations
 
+from typing import Literal
+from urllib.parse import quote
+
 from fastapi import APIRouter, Depends, Query
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.common.permissions.codes import Perm
@@ -27,6 +31,9 @@ from app.services.async_task import (
 from app.services.costing.assembly_cost.assembly_cost_service import (
     AssemblyCostService,
 )
+from app.services.costing.assembly_cost.export.calc_report_export_service import (
+    AssemblyCostCalcReportExportService,
+)
 from app.utils.response import ApiResponse
 
 router = APIRouter(
@@ -36,6 +43,7 @@ router = APIRouter(
 
 _service = AssemblyCostService()
 _async_task_service = AsyncTaskService()
+_report_export_service = AssemblyCostCalcReportExportService()
 
 
 @router.get(
@@ -125,6 +133,36 @@ def get_calc_log(
 ) -> ApiResponse[AssemblyCostCalcLogVO]:
     record = _service.get_calc_log(db, log_id)
     return ApiResponse.ok(data=record)
+
+
+@router.get("/calc/logs/{log_id}/export-download")
+def export_calc_report(
+    log_id: int,
+    keyword: str | None = Query(None, description="零件号、名称、说明"),
+    status: str | None = Query(None, description="卡状态：ok/partial/failed/skipped"),
+    level: int | None = Query(None, ge=0, le=20, description="层级"),
+    tree_root: Literal["all", "yes", "no"] = Query("all", description="树根筛选"),
+    db: Session = Depends(get_db),
+    current_user: UserVO = Depends(require_perm(Perm.ASSEMBLY_COST_CALC_VIEW)),
+) -> StreamingResponse:
+    """导出本条计算日志的浅色报告 Excel（当前筛选口径）。"""
+    status_value = status.strip() if status else None
+    if status_value in {"", "all"}:
+        status_value = None
+    content, filename = _report_export_service.export(
+        db,
+        log_id=log_id,
+        keyword=keyword.strip() if keyword else None,
+        status=status_value,
+        level=level,
+        tree_root=tree_root,
+        current_user=current_user,
+    )
+    return StreamingResponse(
+        iter([content]),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{quote(filename)}"},
+    )
 
 
 @router.delete(
