@@ -39,6 +39,26 @@
                         <svg class="w-3.5 h-3.5 ms-auto submenu-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7"></path></svg>
                     </a>
                     <ul class="submenu" id="stampingSubmenu">
+                        <!-- 冲压模具 -->
+                        <!-- 根据APQP流程，冲压模具应放在冲压工艺之前，因为是先有模具后有工艺 -->
+                        <li class="submenu-item has-submenu">
+                            <a href="javascript:void(0)" class="submenu-link" data-submenu-toggle="stampingDieSubmenu">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 7h16M4 12h10M4 17h16M14 12h6"></path></svg>
+                                <span>冲压模具</span>
+                                <svg class="w-3.5 h-3.5 ms-auto submenu-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7"></path></svg>
+                            </a>
+                            <ul class="submenu submenu-nested" id="stampingDieSubmenu">
+                                <li>
+                                    <a href="#/stamping-die-upload" class="submenu-link submenu-link-nested" data-page="stamping-die-upload"><span>上传模具布点</span></a>
+                                </li>
+                                <li>
+                                    <a href="#/stamping-die-list" class="submenu-link submenu-link-nested" data-page="stamping-die-list"><span>模具清单</span></a>
+                                </li>
+                                <li>
+                                    <a href="#/stamping-die-unit-price" class="submenu-link submenu-link-nested" data-page="stamping-die-unit-price"><span>模具单价</span></a>
+                                </li>
+                            </ul>
+                        </li>
                         <!-- 冲压工艺 -->
                         <li class="submenu-item has-submenu">
                             <a href="javascript:void(0)" class="submenu-link" data-submenu-toggle="stampingProcessSubmenu">
@@ -87,25 +107,7 @@
                                 </li>
                             </ul>
                         </li>
-                        <!-- 冲压模具 -->
-                        <li class="submenu-item has-submenu">
-                            <a href="javascript:void(0)" class="submenu-link" data-submenu-toggle="stampingDieSubmenu">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 7h16M4 12h10M4 17h16M14 12h6"></path></svg>
-                                <span>冲压模具</span>
-                                <svg class="w-3.5 h-3.5 ms-auto submenu-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7"></path></svg>
-                            </a>
-                            <ul class="submenu submenu-nested" id="stampingDieSubmenu">
-                                <li>
-                                    <a href="#/stamping-die-upload" class="submenu-link submenu-link-nested" data-page="stamping-die-upload"><span>上传模具布点</span></a>
-                                </li>
-                                <li>
-                                    <a href="#/stamping-die-list" class="submenu-link submenu-link-nested" data-page="stamping-die-list"><span>模具清单</span></a>
-                                </li>
-                                <li>
-                                    <a href="#/stamping-die-unit-price" class="submenu-link submenu-link-nested" data-page="stamping-die-unit-price"><span>模具单价</span></a>
-                                </li>
-                            </ul>
-                        </li>
+                        
                         <!-- 冲压模具费 -->
                         <li class="submenu-item has-submenu">
                             <a href="javascript:void(0)" class="submenu-link" data-submenu-toggle="stampingDieFeeSubmenu">
