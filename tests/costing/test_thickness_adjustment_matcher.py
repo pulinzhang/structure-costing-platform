@@ -4,6 +4,7 @@ from decimal import Decimal
 from types import SimpleNamespace
 
 from app.services.costing.steel_price.calc.models import CalcRow
+from app.services.costing.steel_price.calc.status import collect_row_warnings
 from app.services.costing.steel_price.calc.steps.adjustments.thickness import (
     ThicknessAdjustmentMatcher,
 )
@@ -105,7 +106,9 @@ def test_matcher_does_not_fall_through_to_other_base_thickness_policy() -> None:
     assert matcher.apply(row, [preferred, fallback]) is False
     assert row.thickness_policy_id is None
     assert row.thickness_adjustment == Decimal("0")
-    assert "未命中厚度加减价政策" in row.messages
+    assert "未落入该政策阶梯" in row.messages[0]
+    assert "唐钢" in row.messages[0]
+    assert "1.2" in row.messages[0]
 
 
 def test_matcher_requires_archive_category() -> None:
@@ -121,3 +124,49 @@ def test_matcher_requires_archive_category() -> None:
 
     assert matcher.apply(row, [policy]) is False
     assert "牌号未分类" in row.messages[0]
+
+
+def test_matcher_explains_mill_name_mismatch() -> None:
+    policy = _policy(
+        policy_id=1,
+        mill="鞍本",
+        base_thickness="1.00",
+        items=[
+            _item(item_id=101, sort_order=1, thick_min="0.60", thick_max="0.80", adj=160),
+        ],
+    )
+    matcher = ThicknessAdjustmentMatcher()
+    row = _row(thickness="0.70", mill="鞍神")
+
+    assert matcher.apply(row, [policy]) is False
+    message = row.messages[0]
+    assert "基价钢厂「鞍神」对不上本期厚度政策钢厂" in message
+    assert "鞍本" in message
+
+
+def test_matcher_explains_category_missing_for_mill() -> None:
+    policy = _policy(
+        policy_id=1,
+        mill="唐钢",
+        category_name="镀锌钢",
+        base_thickness="1.00",
+        items=[
+            _item(item_id=101, sort_order=1, thick_min="0.60", thick_max="0.80", adj=160),
+        ],
+    )
+    matcher = ThicknessAdjustmentMatcher()
+    row = _row(thickness="0.70", category_name="冷轧", mill="唐钢")
+
+    assert matcher.apply(row, [policy]) is False
+    message = row.messages[0]
+    assert "没有大类「冷轧」" in message
+    assert "镀锌钢" in message
+
+
+def test_collect_row_warnings_includes_mill_and_category() -> None:
+    row = _row(thickness="0.70", mill="鞍神", category_name="冷轧")
+    row.add_message("基价钢厂「鞍神」对不上本期厚度政策钢厂（政策钢厂：鞍本）")
+    warnings = collect_row_warnings([row], keyword="厚度")
+    assert warnings == [
+        "鞍神 · 冷轧 · DC01 0.7*1250 基价钢厂「鞍神」对不上本期厚度政策钢厂（政策钢厂：鞍本）"
+    ]
