@@ -1,5 +1,6 @@
 """成品核价导出：零件短码列。"""
 
+from decimal import Decimal
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
@@ -221,6 +222,14 @@ def test_procurement_workbook_skips_indirect_sheet() -> None:
     list_sheet = wb[PROCUREMENT_LIST_SHEET]
     assert list_sheet.cell(row=4, column=8).value == "焊接费/电泳黑漆等"
     assert list_sheet.cell(row=5, column=8).value == ""
+    banner = str(list_sheet.cell(row=2, column=1).value)
+    assert "本册对象合计" in banner
+    assert "共 1 个对象（核算正常 1）" in banner
+    assert list_sheet.cell(row=6, column=1).value == "合计"
+    assert list_sheet.cell(row=6, column=7).value == "=SUM(G5:G5)"
+    assert list_sheet.cell(row=6, column=8).value == "=SUM(H5:H5)"
+    assert list_sheet.cell(row=6, column=9).value == "=SUM(I5:I5)"
+    assert list_sheet.auto_filter.ref == "A4:L5"
 
 
 def test_export_procurement_filename_prefix() -> None:
@@ -365,3 +374,133 @@ def test_procurement_export_requires_period_scope() -> None:
         assert "年度" in str(exc) or "版本" in str(exc)
     else:
         raise AssertionError("expected BusinessException")
+
+
+def _write_procurement_workbook(records: list[SimpleNamespace]):
+    service = AssemblyCostExportService()
+    service.builder.repository.list_for_export = MagicMock(return_value=records)
+
+    class _FakeWelding:
+        def write_to_workbook(self, *args: object, **kwargs: object) -> tuple[str, int]:
+            return "采购焊接费", 1
+
+    with (
+        patch(
+            "app.services.bom.welding_fee.export_service.BomWeldingFeeExportService",
+            _FakeWelding,
+        ),
+        patch(
+            "app.services.costing.assembly_cost.export.workbook.builder.BomProcurementObjectRepository"
+        ) as repo_cls,
+    ):
+        repo_cls.return_value.map_confirm_status_by_ids.return_value = {}
+        from openpyxl import Workbook
+
+        wb = Workbook()
+        service.write_to_workbook(
+            wb,
+            MagicMock(),
+            year=2025,
+            month=12,
+            location="青岛",
+            vehicle_model="T2AA",
+            bom_version="D/09",
+            view="procurement",
+        )
+    return wb
+
+
+def test_procurement_list_banner_and_formula_total() -> None:
+    first = _procurement_record_with_items()
+    first.material_amount = Decimal("10.5")
+    first.welding_amount = Decimal("1.25")
+    first.total_amount = Decimal("11.75")
+    first.calc_status = "ok"
+    second = _procurement_record_with_items()
+    second.procurement_object_id = 10
+    second.part_number = "501000003AA"
+    second.material_amount = Decimal("2")
+    second.welding_amount = Decimal("0")
+    second.total_amount = Decimal("2")
+    second.calc_status = "partial"
+    wb = _write_procurement_workbook([first, second])
+    sheet = wb[PROCUREMENT_LIST_SHEET]
+    banner = str(sheet.cell(row=2, column=1).value)
+    assert "共 2 个对象（核算正常 1）" in banner
+    assert "材料 12.5000" in banner
+    assert "焊接 1.2500" in banner
+    assert "总成本 13.7500" in banner
+    assert sheet.cell(row=7, column=1).value == "合计"
+    assert sheet.cell(row=7, column=7).value == "=SUM(G5:G6)"
+    assert sheet.cell(row=7, column=8).value == "=SUM(H5:H6)"
+    assert sheet.cell(row=7, column=9).value == "=SUM(I5:I6)"
+    assert sheet.auto_filter.ref == "A4:L6"
+
+
+def test_finance_list_banner_and_formula_total() -> None:
+    service = AssemblyCostExportService()
+    record = SimpleNamespace(
+        welding_fee_id=88,
+        procurement_object_id=None,
+        items=[],
+        indirects=[],
+        year=2025,
+        month=12,
+        location="青岛",
+        vehicle_model="T2AA",
+        bom_version="D/09",
+        part_number="501000001AA",
+        part_name="总成",
+        level=0,
+        material_amount=Decimal("1"),
+        welding_amount=Decimal("1"),
+        total_amount=Decimal("2"),
+        indirect_amount=Decimal("0"),
+        grand_total=Decimal("2"),
+        should_cost=0,
+        vendor_quote=None,
+        gap_amount=None,
+        object_kind=None,
+        calc_status="ok",
+        audit_status="pending",
+    )
+    service.builder.repository.list_for_export = MagicMock(return_value=[record])
+
+    class _FakeWelding:
+        def write_to_workbook(self, *args: object, **kwargs: object) -> tuple[str, int]:
+            return "成品焊接费", 1
+
+    with patch(
+        "app.services.bom.welding_fee.export_service.BomWeldingFeeExportService",
+        _FakeWelding,
+    ):
+        from openpyxl import Workbook
+
+        wb = Workbook()
+        service.write_to_workbook(
+            wb,
+            MagicMock(),
+            year=2025,
+            month=12,
+            location="青岛",
+            vehicle_model="T2AA",
+            bom_version="D/09",
+            view="finance",
+        )
+    sheet = wb["成品核价一览"]
+    banner = str(sheet.cell(row=2, column=1).value)
+    assert "共 1 条（核算正常 1）" in banner
+    assert "本表合计" in banner
+    assert "材料 1.0000" in banner
+    assert "焊接 1.0000" in banner
+    assert "月总账 2.0000" in banner
+    assert "间接 0.0000" in banner
+    assert "总费用 2.0000" in banner
+    assert "本册对象合计" not in banner
+    assert sheet.cell(row=6, column=1).value == "合计"
+    assert sheet.cell(row=6, column=10).value == "=SUM(J5:J5)"
+    assert sheet.cell(row=6, column=11).value == "=SUM(K5:K5)"
+    assert sheet.cell(row=6, column=12).value == "=SUM(L5:L5)"
+    assert sheet.cell(row=6, column=13).value == "=SUM(M5:M5)"
+    assert sheet.cell(row=6, column=14).value == "=SUM(N5:N5)"
+    assert sheet.auto_filter.ref == "A4:P5"

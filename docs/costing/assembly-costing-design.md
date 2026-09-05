@@ -543,8 +543,8 @@ Ready VO 增加：`subject_count`、`tree_root_count`、`procurement_object_coun
 
 导出（P22，入口随视图，权限仍 `op:assembly-cost:export`）：
 
-- **财务视图：**「导出总成核价」→ `GET /api/costing/assembly-costs/export-download?view=finance`（一览 + 材料 + 焊费按卡 `welding_fee_id` + 间接）。「导出核对合册」→ `GET /api/costing/monthly-bundle/export-download`（**无** `view`，成品块只树根，再叠冲压核价 / 加工费 / 钢材 / 年度价 / 包装 / 焊价）。
-- **采购视图：**只「导出零件成本」→ `export-download?view=procurement`。文件名 `零件成本_2025年12月_青岛_T2AA_…xlsx`。Sheet：成本一览 / 材料明细 / 焊接费。
+- **财务视图：**「导出总成核价」→ `GET /api/costing/assembly-costs/export-download?view=finance`（一览 + 材料 + 焊费按卡 `welding_fee_id` + 间接）。成品核价一览表头写本表合计（条数、核算正常数、材料/焊接/月总账/间接/总费用）；末行 `SUM` 不进筛选。合计是当前导出范围内的树根。「导出核对合册」→ `GET /api/costing/monthly-bundle/export-download`（**无** `view`，成品块只树根，再叠冲压核价 / 加工费 / 钢材 / 年度价 / 包装 / 焊价）。
+- **采购视图：**只「导出零件成本」→ `export-download?view=procurement`。文件名 `零件成本_2025年12月_青岛_T2AA_…xlsx`。Sheet：成本一览 / 材料明细 / 焊接费。成本一览表头写本册对象合计（件数、核算正常数、材料/焊接/总成本）；末行 `SUM` 不进筛选、不随筛选变化。合计是对象卡全量，不是整车月总账。
 
 ---
 
@@ -641,3 +641,5 @@ D5  退化树根财务专项签字
 | 2026-09-05 | 采购应成本一览不展示报价/价差：核算参考，不参与采购业务。 |
 | 2026-09-05 | 采购一览金额列：材料成本、焊接费/电泳黑漆等（数据=焊接费）、总成本（关注列）。 |
 | 2026-09-05 | 采购导出文件名「零件成本」、表页「成本一览 / 材料明细 / 焊接费」。 |
+| 2026-09-05 | 采购成本一览：表头本册对象合计 + 表外 SUM；不进筛选。 |
+| 2026-09-05 | 成品核价一览同样：表头本表合计 + 表外 SUM；不进筛选。 |

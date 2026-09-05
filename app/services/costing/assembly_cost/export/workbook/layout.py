@@ -160,8 +160,14 @@ def apply_freeze_and_filter(
     header_row: int,
     col_count: int,
     row_count: int,
+    filter_empty_placeholder: bool = True,
 ) -> None:
     ws.freeze_panes = f"A{header_row + 1}"
-    ws.auto_filter.ref = (
-        f"A{header_row}:{get_column_letter(col_count)}" f"{header_row + max(row_count, 1)}"
-    )
+    last_col = get_column_letter(col_count)
+    if row_count > 0:
+        last_row = header_row + row_count
+    elif filter_empty_placeholder:
+        last_row = header_row + 1
+    else:
+        last_row = header_row
+    ws.auto_filter.ref = f"A{header_row}:{last_col}{last_row}"
