@@ -10,14 +10,16 @@ from app.common.money import Q2, Q3, Q4, Q6, optional_format_money
 
 
 class DashboardScopeVO(BaseModel):
-    """看板作用域：当期年 / 月 / 基地 + 下拉选项"""
+    """看板作用域：当期年 / 月 / 基地 / 车型 + 下拉选项"""
 
     year: int
     month: int
     location: str | None = None
+    vehicle_model: str | None = None
     years: list[int] = Field(default_factory=list, description="可选年度")
     months: list[int] = Field(default_factory=list, description="可选月份")
     locations: list[str] = Field(default_factory=list, description="可选生产基地")
+    vehicle_models: list[str] = Field(default_factory=list, description="可选配套车型")
 
 
 class DashboardMasterStatsVO(BaseModel):
@@ -29,7 +31,7 @@ class DashboardMasterStatsVO(BaseModel):
 
 
 class DashboardYishiyiyiStatsVO(BaseModel):
-    """一事一议当期依据（基价随基地；政策为当期全国；废料可看基地行）"""
+    """一事一议当期依据（基价随基地；选车型时按该车牌号覆盖；政策为当期全国或按车型分类）"""
 
     base_price_count: int = 0
     policy_count: int = 0
@@ -138,6 +140,7 @@ class SteelPriceCalcFilterOptionsVO(BaseModel):
     years: list[int] = Field(default_factory=list, description="可选年度")
     months: list[int] = Field(default_factory=list, description="可选月份")
     locations: list[str] = Field(default_factory=list, description="可选基地")
+    vehicle_models: list[str] = Field(default_factory=list, description="可选配套车型")
 
 
 class SteelPriceCalcStatsVO(BaseModel):
@@ -147,7 +150,7 @@ class SteelPriceCalcStatsVO(BaseModel):
     adjustment_rule_count: int = Field(..., description="厚/宽调价规则条数")
     thickness_row_count: int = Field(
         ...,
-        description="厚度规格行数（冲压材料+厚度去重；基地/工厂/车型全空时为 0）",
+        description="厚度规格行数（冲压材料+厚度去重；未选基地时为 0；可选车型收窄）",
     )
     filters: SteelPriceCalcFilterOptionsVO = Field(
         default_factory=SteelPriceCalcFilterOptionsVO,

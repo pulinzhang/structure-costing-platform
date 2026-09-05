@@ -99,7 +99,6 @@ def main() -> int:
                 year=YEAR,
                 month=MONTH,
                 location=LOCATION,
-                vehicle_model=VEHICLE,
             ),
             current_user=SYSTEM_USER,
         )

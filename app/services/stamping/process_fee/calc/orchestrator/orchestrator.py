@@ -47,6 +47,7 @@ from app.services.stamping.process_fee.calc.orchestrator.persist import persist_
 from app.services.stamping.process_fee.calc.orchestrator.prep import prepare_calc_run
 from app.services.stamping.process_fee.calc.orchestrator.progress import ProgressNotifier
 from app.services.stamping.process_fee.calc.orchestrator.ready import collect_calc_ready
+from app.services.stamping.process_fee.scope import ALL_SUPPLIERS_LOCK
 
 logger = logging.getLogger("service.stamping.process_fee.calc")
 
@@ -64,7 +65,6 @@ class StampingProcessFeeCalcOrchestrator:
         *,
         year: int,
         location: str | None = None,
-        stamping_supplier: str | None = None,
         vehicle_model: str | None = None,
         version: str | None = None,
     ) -> StampingProcessFeeCalcReadyVO:
@@ -73,7 +73,6 @@ class StampingProcessFeeCalcOrchestrator:
             self._deps,
             year=year,
             location=location,
-            stamping_supplier=stamping_supplier,
             vehicle_model=vehicle_model,
             version=version,
         )
@@ -165,7 +164,7 @@ class StampingProcessFeeCalcOrchestrator:
             "success=%s failed=%s zero_fee=%s skipped_approved=%s",
             dto.year,
             ctx.location,
-            ctx.mill_lock_key,
+            ALL_SUPPLIERS_LOCK,
             result.success_count,
             result.failed_count,
             result.zero_fee_count,

@@ -37,17 +37,18 @@ def prepare_calc_run(
     batch_id = calc_batch_id or f"calc-{uuid.uuid4().hex[:16]}"
     log_builder = ProcessLogBuilder()
 
-    location = request.location.strip() if request.location else None
-    stamping_supplier = request.stamping_supplier.strip() if request.stamping_supplier else None
-    vehicle_model = request.vehicle_model.strip() if request.vehicle_model else None
+    location = request.location.strip()
+    request = SteelPriceCalcRequest(
+        year=request.year,
+        month=request.month,
+        location=location,
+    )
 
     result = SteelPriceCalcResult(
         calc_batch_id=batch_id,
         year=request.year,
         month=request.month,
-        location=location,
-        stamping_supplier=stamping_supplier,
-        vehicle_model=vehicle_model,
+        location=location or None,
         started_at=started.isoformat(timespec="seconds"),
     )
 
@@ -56,8 +57,6 @@ def prepare_calc_run(
     log_builder.line(f"批次号: {batch_id}")
     log_builder.line(f"核价期: {request.year}-{request.month:02d}")
     log_builder.line(f"生产基地: {location or '-'}")
-    log_builder.line(f"冲压工厂: {stamping_supplier or '全部'}")
-    log_builder.line(f"配套车型: {vehicle_model or '全部'}")
     log_builder.line(f"开始时间: {result.started_at}")
 
     return CalcPrepContext(

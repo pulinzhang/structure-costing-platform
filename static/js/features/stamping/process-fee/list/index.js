@@ -10,7 +10,7 @@ import {
     updateFeeHud,
     updateFeeFilterCapsules,
     shortPartNumber,
-} from './template.js?v=41';
+} from './template.js?v=42';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -479,15 +479,32 @@ function requireWorkScope() {
     return filters;
 }
 
+function requireAuditScope() {
+    const filters = requireWorkScope();
+    if (!filters) return null;
+    const scope = {
+        year: Number(filters.year),
+        location: filters.location,
+        vehicle_model: filters.vehicle_model,
+    };
+    if (filters.version) scope.version = filters.version;
+    return scope;
+}
+
 function buildScopeBody(filters) {
     const body = {
         year: Number(filters.year),
         location: filters.location,
         vehicle_model: filters.vehicle_model,
     };
-    if (filters.stamping_supplier) body.stamping_supplier = filters.stamping_supplier;
     if (filters.version) body.version = filters.version;
+    if (filters.stamping_supplier) body.stamping_supplier = filters.stamping_supplier;
     return body;
+}
+
+function formatAuditSummary(filters) {
+    const version = filters.version || '全部版本';
+    return `${fmtYear(filters.year)} · 基地 ${filters.location} · 车型 ${filters.vehicle_model} · 版本 ${version} · 工厂 整车`;
 }
 
 function formatScopeSummary(filters) {
@@ -951,8 +968,8 @@ function getSessionDisplayName() {
 }
 
 function openBatchAuditDrawer(mode) {
-    const filters = requireWorkScope();
-    if (!filters) return;
+    const scope = requireAuditScope();
+    if (!scope) return;
 
     const isApprove = mode === 'approve';
     const modeEl = document.getElementById('feeBatchAuditMode');
@@ -968,8 +985,8 @@ function openBatchAuditDrawer(mode) {
     if (titleEl) titleEl.textContent = isApprove ? '批量审核' : '批量反审核';
     if (hintEl) {
         hintEl.textContent = isApprove
-            ? '仅处理待审已驳回；已通过记录会跳过。'
-            : '仅处理已通过记录；其余状态会跳过。反审核意见必填。';
+            ? '按整车处理待审/已驳回（工厂筛不影响签字范围）；已通过记录会跳过。'
+            : '按整车处理已通过记录（工厂筛不影响签字范围）；其余状态会跳过。反审核意见必填。';
     }
     if (operatorLabel) operatorLabel.textContent = isApprove ? '审核人' : '反审核人';
     if (operatorDisplay) {
@@ -985,7 +1002,7 @@ function openBatchAuditDrawer(mode) {
         remarkEl.placeholder = isApprove ? '请填写审核意见（必填）' : '必填反审核原因';
     }
     if (summaryEl) {
-        summaryEl.textContent = formatScopeSummary(filters);
+        summaryEl.textContent = formatAuditSummary(scope);
     }
     openDrawer('feeBatchAuditDrawer', 'feeBatchAuditDrawerBackdrop');
 }
@@ -998,15 +1015,14 @@ function closeBatchAuditDrawer() {
 async function submitBatchAudit() {
     if (feeState.batchAuditSubmitting) return;
     const mode = document.getElementById('feeBatchAuditMode')?.value || 'approve';
-    const filters = requireWorkScope();
-    if (!filters) return;
+    const body = requireAuditScope();
+    if (!body) return;
     const remark = document.getElementById('feeBatchAuditRemark')?.value.trim() || '';
     if (!remark) {
         showToast(mode === 'approve' ? '审核意见必填' : '反审核意见必填', 'warning');
         return;
     }
 
-    const body = buildScopeBody(filters);
     const url = mode === 'approve'
         ? `${API_BASE}/batch-approve`
         : `${API_BASE}/batch-reverse-audit`;
@@ -1020,7 +1036,7 @@ async function submitBatchAudit() {
     feeState.batchAuditSubmitting = true;
     if (btn) {
         btn.disabled = true;
-        btn.textContent = '提交中—'
+        btn.textContent = '提交中…';
     }
 
     try {

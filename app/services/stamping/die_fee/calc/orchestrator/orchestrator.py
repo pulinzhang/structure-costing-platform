@@ -65,7 +65,6 @@ class StampingDieFeeCalcOrchestrator:
         year: int,
         location: str | None = None,
         vehicle_model: str | None = None,
-        stamping_supplier: str | None = None,
         version: str | None = None,
     ) -> StampingDieFeeCalcReadyVO:
         return collect_calc_ready(
@@ -74,7 +73,6 @@ class StampingDieFeeCalcOrchestrator:
             year=year,
             location=location,
             vehicle_model=vehicle_model,
-            stamping_supplier=stamping_supplier,
             version=version,
         )
 

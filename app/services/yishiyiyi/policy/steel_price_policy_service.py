@@ -196,8 +196,15 @@ class SteelPricePolicyService:
         year: int | None = None,
         month: int | None = None,
         steel_mill: str | None = None,
+        category_names: list[str] | None = None,
     ) -> int:
-        return self._crud.count_policies(db, year=year, month=month, steel_mill=steel_mill)
+        return self._crud.count_policies(
+            db,
+            year=year,
+            month=month,
+            steel_mill=steel_mill,
+            category_names=category_names,
+        )
 
     def get_filter_options(self, db: Session) -> PolicyOptionsResponse:
         return self._crud.get_filter_options(db)

@@ -40,3 +40,5 @@ def test_bundle_always_exports_finance_tree_roots() -> None:
             current_user=MagicMock(),
         )
     assert service.assembly.write_to_workbook.call_args.kwargs["view"] == "finance"
+    assert "stamping_supplier" not in service.part_cost.write_to_workbook.call_args.kwargs
+    assert "stamping_supplier" not in service.process_fee.write_to_workbook.call_args.kwargs

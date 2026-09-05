@@ -61,7 +61,7 @@ def _ready_to_summary(ready: CostingEngineReadyVO) -> dict[str, Any]:
         "soft_hint_count": len(soft_hints),
         "ready_count": len(ok_items),
         "l0_scopes": l0_labels,
-        "stamping_suppliers": [s.stamping_supplier for s in ready.plan.part_cost_scopes],
+        "vehicle_models": [s.vehicle_model for s in ready.plan.part_cost_scopes],
     }
 
 

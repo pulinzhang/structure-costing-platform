@@ -6,7 +6,7 @@
 import {
     processFeeCalcTemplate,
     renderCalcHistoryPagination,
-} from './template.js?v=18';
+} from './template.js?v=19';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -19,7 +19,7 @@ const CALC_READY_API = `${API_BASE}/calc/ready`;
 const CALC_TASK_API = `${API_BASE}/calc/tasks`;
 const CALC_LOGS_API = `${API_BASE}/calc/logs`;
 const POLL_INTERVAL_MS = 1500;
-const DUPLICATE_SCOPE_CALC_MESSAGE = '当前年度/基地范围正在计算中，请勿重复提交。';
+const DUPLICATE_SCOPE_CALC_MESSAGE = '当前年度/基地/车型正在计算中，请勿重复提交。';
 /** 操作页固定要车型；后端允许「车型或工厂」以便引擎按厂补算。 */
 const SCOPE_REQUIRED_MESSAGE = '须选定年度、基地、车型。';
 
@@ -94,21 +94,19 @@ function bindEvents() {
     document.getElementById('calcYear')?.addEventListener('change', () => loadCalcReady());
 
     document.getElementById('calcLocation')?.addEventListener('change', () => {
-        resetDependentFilters(['calcVehicleModel', 'calcVersion', 'calcSupplier']);
+        resetDependentFilters(['calcVehicleModel', 'calcVersion']);
         loadCascadeFilters();
         loadCalcReady();
     });
     document.getElementById('calcVehicleModel')?.addEventListener('change', () => {
-        resetDependentFilters(['calcVersion', 'calcSupplier']);
+        resetDependentFilters(['calcVersion']);
         loadCascadeFilters();
         loadCalcReady();
     });
     document.getElementById('calcVersion')?.addEventListener('change', () => {
-        resetDependentFilters(['calcSupplier']);
         loadCascadeFilters();
         loadCalcReady();
     });
-    document.getElementById('calcSupplier')?.addEventListener('change', () => loadCalcReady());
 
     document.getElementById('startCalcBtn')?.addEventListener('click', () => startCalculation());
     document.getElementById('calcHistoryRefreshBtn')?.addEventListener('click', () => loadCalcHistory(1));
@@ -160,12 +158,10 @@ async function loadCascadeFilters() {
             location: document.getElementById('calcLocation')?.value || '',
             vehicle_model: document.getElementById('calcVehicleModel')?.value || '',
             version: document.getElementById('calcVersion')?.value || '',
-            stamping_supplier: document.getElementById('calcSupplier')?.value || '',
         };
         const res = await HttpClient.get(CASCADE_API, { params });
         const filters = res.data || {};
         fillSelect('calcLocation', filters.locations || []);
-        fillSelect('calcSupplier', filters.stamping_suppliers || []);
         fillSelect('calcVehicleModel', filters.vehicle_models || []);
         fillSelect('calcVersion', filters.versions || []);
     } catch (error) {
@@ -179,7 +175,7 @@ function resetFilters() {
         return;
     }
 
-    ['calcLocation', 'calcSupplier', 'calcVehicleModel', 'calcVersion'].forEach((id) => {
+    ['calcLocation', 'calcVehicleModel', 'calcVersion'].forEach((id) => {
         const el = document.getElementById(id);
         if (el) el.value = '';
     });
@@ -201,7 +197,6 @@ async function loadCalcReady() {
     const yearRaw = document.getElementById('calcYear')?.value;
     const year = yearRaw ? Number(yearRaw) : null;
     const location = document.getElementById('calcLocation')?.value || '';
-    const supplier = document.getElementById('calcSupplier')?.value || '';
     const vehicleModel = document.getElementById('calcVehicleModel')?.value || '';
     const version = document.getElementById('calcVersion')?.value || '';
 
@@ -215,7 +210,6 @@ async function loadCalcReady() {
     try {
         const params = { year };
         if (location) params.location = location;
-        if (supplier) params.stamping_supplier = supplier;
         if (vehicleModel) params.vehicle_model = vehicleModel;
         if (version) params.version = version;
 
@@ -358,7 +352,6 @@ function renderHistoryRows(items) {
                             class="calc-view-result-btn text-[9px] text-[#777] hover:text-white mr-2"
                             data-year="${esc(item.year)}"
                             data-location="${esc(item.location || '')}"
-                            data-supplier="${esc(item.stamping_supplier || '')}"
                             data-vehicle="${esc(item.vehicle_model || '')}"
                             data-version="${esc(item.version || '')}">结果</button>
                     `}
@@ -381,7 +374,6 @@ function renderHistoryRows(items) {
             const qs = new URLSearchParams();
             if (btn.dataset.year) qs.set('year', btn.dataset.year);
             if (btn.dataset.location) qs.set('location', btn.dataset.location);
-            if (btn.dataset.supplier) qs.set('stamping_supplier', btn.dataset.supplier);
             if (btn.dataset.vehicle) qs.set('vehicle_model', btn.dataset.vehicle);
             if (btn.dataset.version) qs.set('version', btn.dataset.version);
             const suffix = qs.toString() ? `?${qs.toString()}` : '';
@@ -449,7 +441,7 @@ function showProcessDrawer(log) {
     closeProcessDrawer();
 
     const status = STATUS_META[log.status] || STATUS_META.failed;
-    const scope = `${fmtYear(log.year) || '-'} · ${log.location || '-'} · ${log.stamping_supplier || '-'}`;
+    const scope = `${fmtYear(log.year) || '-'} · ${log.location || '-'} · ${log.vehicle_model || '-'}`;
     const backdrop = document.createElement('div');
     backdrop.id = 'calcProcessBackdrop';
     backdrop.className = 'fixed inset-0 z-[80] bg-black/70 backdrop-blur-sm';
@@ -523,7 +515,6 @@ async function startCalculation() {
 
     const year = parseInt(document.getElementById('calcYear')?.value, 10);
     const location = document.getElementById('calcLocation')?.value || '';
-    const supplier = document.getElementById('calcSupplier')?.value || '';
     const vehicleModel = document.getElementById('calcVehicleModel')?.value || '';
     const version = document.getElementById('calcVersion')?.value || '';
 
@@ -550,7 +541,6 @@ async function startCalculation() {
         location,
         vehicle_model: vehicleModel,
     };
-    if (supplier) payload.stamping_supplier = supplier;
     if (version) payload.version = version;
 
     setCalculating(true);
@@ -729,7 +719,6 @@ function setCalculating(isCalculating) {
     const filterIds = [
         'calcYear',
         'calcLocation',
-        'calcSupplier',
         'calcVehicleModel',
         'calcVersion',
         'calcResetBtn',

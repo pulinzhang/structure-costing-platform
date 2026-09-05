@@ -176,7 +176,6 @@ def list_versions(
 def get_calc_ready(
     year: int = Query(..., ge=2000, le=2100),
     location: str | None = Query(None),
-    stamping_supplier: str | None = Query(None),
     vehicle_model: str | None = Query(None),
     version: str | None = Query(None),
     db: Session = Depends(get_db),
@@ -186,7 +185,6 @@ def get_calc_ready(
         db,
         year=year,
         location=location or None,
-        stamping_supplier=stamping_supplier or None,
         vehicle_model=vehicle_model or None,
         version=version or None,
     )

@@ -14,18 +14,22 @@ from app.common.money import Q3, optional_quantize_money
 
 class StampingProcessFeeScopeDTO(BaseModel):
     """
-    计算 / 删除 / 审核共用范围。
-    字段约束见 require_scope：年度 + 基地必填，车型与冲压工厂至少一项。
-    操作页始终带车型、工厂可空；引擎按厂补算可只带工厂。
+    计算范围：年度 + 基地 + 车型必填。版本可选。
+    工厂仅列表/批量删除收窄；计算与审核忽略。
     """
 
     year: int = Field(..., ge=2000, le=2100, description="年度")
     location: str = Field(..., min_length=1, description="基地")
-    vehicle_model: str | None = Field(None, description="车型")
+    vehicle_model: str = Field(..., min_length=1, description="车型")
     version: str | None = Field(None, description="版本")
     stamping_supplier: str | None = Field(None, description="冲压工厂")
 
-    @field_validator("vehicle_model", "version", "stamping_supplier", mode="before")
+    @field_validator("vehicle_model", mode="before")
+    @classmethod
+    def _strip_vehicle(cls, value: object) -> str:
+        return str(value).strip() if value is not None else ""
+
+    @field_validator("version", "stamping_supplier", mode="before")
     @classmethod
     def _empty_to_none(cls, value: object) -> str | None:
         if value is None:
@@ -35,7 +39,7 @@ class StampingProcessFeeScopeDTO(BaseModel):
 
 
 class StampingProcessFeeCalcDTO(StampingProcessFeeScopeDTO):
-    """加工费计算。工厂空则覆盖范围内各厂。"""
+    """加工费计算：按车型覆盖各厂；工厂字段忽略。"""
 
 
 class StampingProcessFeeQuery(BaseModel):

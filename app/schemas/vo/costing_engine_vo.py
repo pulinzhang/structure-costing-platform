@@ -40,7 +40,7 @@ class CostingEngineAnnualItemVO(BaseModel):
 
 
 class CostingEnginePartCostScopeVO(BaseModel):
-    stamping_supplier: str
+    vehicle_model: str
 
 
 class CostingEngineL0ScopeVO(BaseModel):

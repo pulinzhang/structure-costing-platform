@@ -80,7 +80,6 @@ def get_calc_ready(
     year: int = Query(..., ge=2000, le=2100),
     location: str | None = Query(None),
     vehicle_model: str | None = Query(None),
-    stamping_supplier: str | None = Query(None),
     version: str | None = Query(None),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_DIE_FEE_CALC_VIEW)),
@@ -92,7 +91,6 @@ def get_calc_ready(
         vehicle_model=normalize_vehicle_model(vehicle_model)
         if (vehicle_model or "").strip()
         else None,
-        stamping_supplier=(stamping_supplier or "").strip() or None,
         version=(version or "").strip() or None,
     )
     return ApiResponse.ok(data=data)

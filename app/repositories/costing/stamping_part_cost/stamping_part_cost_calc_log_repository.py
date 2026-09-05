@@ -2,7 +2,7 @@
 
 import logging
 
-from sqlalchemy import text
+from sqlalchemy import or_, text
 from sqlalchemy.engine import Connection
 from sqlalchemy.orm import Session
 
@@ -17,9 +17,10 @@ logger = logging.getLogger("repository.stamping_part_cost_calc_log")
 
 _STATUS_PROCESSING = "processing"
 
+_DROP_PROCESSING_LOCK_INDEX_SQL = "DROP INDEX IF EXISTS uq_spc_calc_processing"
 _PROCESSING_LOCK_INDEX_SQL = """
 CREATE UNIQUE INDEX IF NOT EXISTS uq_spc_calc_processing
-ON stamping_part_cost_calc_logs(year, month, location, stamping_supplier)
+ON stamping_part_cost_calc_logs(year, month, location, vehicle_model)
 WHERE status = 'processing'
 """
 
@@ -31,6 +32,7 @@ class StampingPartCostCalcLogRepository:
 
     def apply_processing_lock_index(self, conn: Connection) -> None:
         """在调用方连接上执行 DDL；不 commit（由 Service 提交）。"""
+        conn.execute(text(_DROP_PROCESSING_LOCK_INDEX_SQL))
         conn.execute(text(_PROCESSING_LOCK_INDEX_SQL))
 
     def mark_processing_lock_index_ensured(self) -> None:
@@ -66,6 +68,30 @@ class StampingPartCostCalcLogRepository:
             .first()
         )
 
+    def list_processing(
+        self,
+        db: Session,
+        *,
+        year: int,
+        month: int,
+        location: str,
+        vehicle_model: str,
+    ) -> list[StampingPartCostCalcLog]:
+        return (
+            db.query(StampingPartCostCalcLog)
+            .filter(
+                StampingPartCostCalcLog.year == year,
+                StampingPartCostCalcLog.month == month,
+                StampingPartCostCalcLog.location == location,
+                StampingPartCostCalcLog.status == _STATUS_PROCESSING,
+                or_(
+                    StampingPartCostCalcLog.vehicle_model == vehicle_model,
+                    StampingPartCostCalcLog.vehicle_model.is_(None),
+                ),
+            )
+            .all()
+        )
+
     def get_latest(
         self,
         db: Session,
@@ -74,18 +100,17 @@ class StampingPartCostCalcLogRepository:
         month: int,
         location: str,
         stamping_supplier: str,
+        vehicle_model: str | None = None,
     ) -> StampingPartCostCalcLog | None:
-        return (
-            db.query(StampingPartCostCalcLog)
-            .filter(
-                StampingPartCostCalcLog.year == year,
-                StampingPartCostCalcLog.month == month,
-                StampingPartCostCalcLog.location == location,
-                StampingPartCostCalcLog.stamping_supplier == stamping_supplier,
-            )
-            .order_by(StampingPartCostCalcLog.id.desc())
-            .first()
+        query = db.query(StampingPartCostCalcLog).filter(
+            StampingPartCostCalcLog.year == year,
+            StampingPartCostCalcLog.month == month,
+            StampingPartCostCalcLog.location == location,
+            StampingPartCostCalcLog.stamping_supplier == stamping_supplier,
         )
+        if vehicle_model:
+            query = query.filter(StampingPartCostCalcLog.vehicle_model == vehicle_model)
+        return query.order_by(StampingPartCostCalcLog.id.desc()).first()
 
     def paginate(
         self,

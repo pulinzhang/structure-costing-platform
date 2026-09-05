@@ -98,7 +98,7 @@ class CostingEngineService:
         hard_stop = any(
             (not item.ok) and item.code not in SOFT_UPLOAD_GATE_CODES for item in upload_or_config
         )
-        has_path = bool(discovered.stamping_suppliers or discovered.l0_scopes)
+        has_path = bool(discovered.vehicle_models or discovered.l0_scopes)
         can_start = (not hard_stop) and has_path
 
         plan = CostingEnginePlanVO(
@@ -108,8 +108,8 @@ class CostingEngineService:
                 "month": discovered.month,
             },
             part_cost_scopes=[
-                CostingEnginePartCostScopeVO(stamping_supplier=s)
-                for s in discovered.stamping_suppliers
+                CostingEnginePartCostScopeVO(vehicle_model=name)
+                for name in discovered.vehicle_models
             ],
             l0_scopes=[
                 CostingEngineL0ScopeVO(

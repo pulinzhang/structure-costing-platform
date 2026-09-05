@@ -59,7 +59,7 @@ from app.services.costing.stamping_part_cost.calc.models import (
 from app.services.costing.stamping_part_cost.calc.orchestrator import (
     StampingPartCostCalcOrchestrator,
 )
-from app.services.costing.stamping_part_cost.calc.scope import require_scope
+from app.services.costing.stamping_part_cost.calc.scope import require_audit_scope, require_scope
 from app.services.costing.stamping_part_cost.export.tailor_weld_display import (
     build_steel_price_index,
     load_blanks_by_part_id,
@@ -90,7 +90,6 @@ class StampingPartCostService:
         year: int,
         month: int | None = None,
         location: str | None = None,
-        stamping_supplier: str | None = None,
         vehicle_model: str | None = None,
         version: str | None = None,
     ) -> StampingPartCostCalcReadyVO:
@@ -99,7 +98,6 @@ class StampingPartCostService:
             year=year,
             month=month,
             location=location,
-            stamping_supplier=stamping_supplier,
             vehicle_model=vehicle_model,
             version=version,
         )
@@ -260,13 +258,21 @@ class StampingPartCostService:
                 year=query.year,
                 month=query.month,
                 location=query.location,
+                vehicle_model=query.vehicle_model,
+                version=query.version,
             ),
             "vehicle_models": self.cost_repo.get_distinct_vehicle_models(
                 db,
                 year=query.year,
                 month=query.month,
                 location=query.location,
-                stamping_supplier=query.stamping_supplier,
+            ),
+            "versions": self.cost_repo.get_distinct_versions(
+                db,
+                year=query.year,
+                month=query.month,
+                location=query.location,
+                vehicle_model=query.vehicle_model,
             ),
             "summary": self.cost_repo.summarize_by_filters(
                 db,
@@ -377,30 +383,36 @@ class StampingPartCostService:
     def batch_delete(
         self, db: Session, dto: StampingPartCostDeleteDTO
     ) -> StampingPartCostBatchDeleteResultVO:
-        location, supplier = require_scope(dto)
+        scope = require_scope(dto)
         skipped = self.cost_repo.count_by_scope_and_statuses(
             db,
-            year=dto.year,
-            month=dto.month,
-            location=location,
-            stamping_supplier=supplier,
+            year=scope.year,
+            month=scope.month,
+            location=scope.location,
+            stamping_supplier=scope.stamping_supplier,
+            vehicle_model=scope.vehicle_model,
+            version=scope.version,
             statuses=[AUDIT_APPROVED],
         )
         deleted = self.cost_repo.delete_unaudited_by_scope(
             db,
-            year=dto.year,
-            month=dto.month,
-            location=location,
-            stamping_supplier=supplier,
+            year=scope.year,
+            month=scope.month,
+            location=scope.location,
+            stamping_supplier=scope.stamping_supplier,
+            vehicle_model=scope.vehicle_model,
+            version=scope.version,
         )
         db.commit()
         return StampingPartCostBatchDeleteResultVO(
             deleted_count=deleted,
             skipped_approved_count=skipped,
-            year=dto.year,
-            month=dto.month,
-            location=location,
-            stamping_supplier=supplier,
+            year=scope.year,
+            month=scope.month,
+            location=scope.location,
+            vehicle_model=scope.vehicle_model,
+            version=scope.version,
+            stamping_supplier=scope.stamping_supplier,
         )
 
     def batch_approve(
@@ -409,13 +421,15 @@ class StampingPartCostService:
         dto: StampingPartCostBatchApproveDTO,
         current_user: UserVO,
     ) -> StampingPartCostBatchAuditResultVO:
-        location, supplier = require_scope(dto)
+        scope = require_audit_scope(dto)
         updated = self.cost_repo.approve_by_scope(
             db,
-            year=dto.year,
-            month=dto.month,
-            location=location,
-            stamping_supplier=supplier,
+            year=scope.year,
+            month=scope.month,
+            location=scope.location,
+            stamping_supplier=scope.stamping_supplier,
+            vehicle_model=scope.vehicle_model,
+            version=scope.version,
             audited_by=display_name(current_user),
             audited_at=now(),
             audit_remark=dto.audit_remark,
@@ -424,10 +438,12 @@ class StampingPartCostService:
         skipped = (
             self.cost_repo.count_by_scope_and_statuses(
                 db,
-                year=dto.year,
-                month=dto.month,
-                location=location,
-                stamping_supplier=supplier,
+                year=scope.year,
+                month=scope.month,
+                location=scope.location,
+                stamping_supplier=scope.stamping_supplier,
+                vehicle_model=scope.vehicle_model,
+                version=scope.version,
                 statuses=[AUDIT_APPROVED],
             )
             - updated
@@ -436,10 +452,12 @@ class StampingPartCostService:
         return StampingPartCostBatchAuditResultVO(
             updated_count=updated,
             skipped_count=max(skipped, 0),
-            year=dto.year,
-            month=dto.month,
-            location=location,
-            stamping_supplier=supplier,
+            year=scope.year,
+            month=scope.month,
+            location=scope.location,
+            vehicle_model=scope.vehicle_model,
+            version=scope.version,
+            stamping_supplier=scope.stamping_supplier,
         )
 
     def batch_reverse_audit(
@@ -448,13 +466,15 @@ class StampingPartCostService:
         dto: StampingPartCostBatchReverseAuditDTO,
         current_user: UserVO,
     ) -> StampingPartCostBatchAuditResultVO:
-        location, supplier = require_scope(dto)
+        scope = require_audit_scope(dto)
         updated = self.cost_repo.reverse_by_scope(
             db,
-            year=dto.year,
-            month=dto.month,
-            location=location,
-            stamping_supplier=supplier,
+            year=scope.year,
+            month=scope.month,
+            location=scope.location,
+            stamping_supplier=scope.stamping_supplier,
+            vehicle_model=scope.vehicle_model,
+            version=scope.version,
             reverse_audited_by=display_name(current_user),
             reverse_audited_at=now(),
             reverse_audit_remark=dto.reverse_audit_remark,
@@ -464,8 +484,10 @@ class StampingPartCostService:
         return StampingPartCostBatchAuditResultVO(
             updated_count=updated,
             skipped_count=0,
-            year=dto.year,
-            month=dto.month,
-            location=location,
-            stamping_supplier=supplier,
+            year=scope.year,
+            month=scope.month,
+            location=scope.location,
+            vehicle_model=scope.vehicle_model,
+            version=scope.version,
+            stamping_supplier=scope.stamping_supplier,
         )

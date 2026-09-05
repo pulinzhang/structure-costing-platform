@@ -37,7 +37,6 @@ def count_approved(db: Session, deps: DieFeeCalcDeps, dto: StampingDieFeeCalcDTO
         location=dto.location,
         vehicle_model=dto.vehicle_model,
         statuses=[AUDIT_APPROVED],
-        stamping_supplier=dto.stamping_supplier,
         version=dto.version,
     )
 
@@ -49,17 +48,13 @@ def prepare_calc_run(
     progress: ProgressNotifier,
 ) -> CalcPrepContext:
     started_at = now()
-    supplier_filter = dto.stamping_supplier
     version_filter = dto.version
-    identity_bits = [
-        f"supplier={supplier_filter}" if supplier_filter else "",
-        f"version={version_filter}" if version_filter else "",
-    ]
-    identity_label = " ".join(bit for bit in identity_bits if bit) or "全部供应商/版本"
+    version_bit = f"version={version_filter}" if version_filter else ""
     detail_lines = [
         (
             f"开始计算 year={dto.year} location={dto.location} "
-            f"vehicle={dto.vehicle_model} {identity_label}"
+            f"vehicle={dto.vehicle_model} supplier=全部工厂"
+            + (f" {version_bit}" if version_bit else "")
         )
     ]
     progress.report(8, "加载模具布点...")
@@ -71,11 +66,11 @@ def prepare_calc_run(
 
     persist_parts = parts_for_identity(
         parts,
-        stamping_supplier=supplier_filter,
+        stamping_supplier=None,
         version=version_filter,
     )
-    if (supplier_filter or version_filter) and not persist_parts:
-        raise BusinessException("所选供应商/版本下无模具布点")
+    if version_filter and not persist_parts:
+        raise BusinessException("所选版本下无模具布点")
 
     progress.report(15, "加载模具单价...")
     price = deps.unit_price_repo.get_effective(

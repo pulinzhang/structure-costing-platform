@@ -251,7 +251,9 @@ class StampingPartCostBatchDeleteResultVO(BaseModel):
     year: int
     month: int
     location: str
-    stamping_supplier: str
+    vehicle_model: str
+    version: str | None = None
+    stamping_supplier: str | None = None
 
 
 class StampingPartCostBatchAuditResultVO(BaseModel):
@@ -260,4 +262,6 @@ class StampingPartCostBatchAuditResultVO(BaseModel):
     year: int
     month: int
     location: str
-    stamping_supplier: str
+    vehicle_model: str
+    version: str | None = None
+    stamping_supplier: str | None = None

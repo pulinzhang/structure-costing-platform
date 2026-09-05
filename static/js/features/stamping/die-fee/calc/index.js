@@ -2,7 +2,7 @@ import {
     dieFeeCalcTemplate,
     renderCalcHistoryPagination,
     CALC_HISTORY_COLSPAN,
-} from './template.js?v=3';
+} from './template.js?v=4';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -76,10 +76,6 @@ function bindEvents() {
         loadIdentityFilters(true);
         loadCalcReady();
     });
-    document.getElementById('calcSupplier')?.addEventListener('change', () => {
-        loadVersionOptions();
-        loadCalcReady();
-    });
     document.getElementById('calcVersion')?.addEventListener('change', () => loadCalcReady());
     document.getElementById('startCalcBtn')?.addEventListener('click', () => startCalculation());
     document.getElementById('calcHistoryRefreshBtn')?.addEventListener('click', () => loadCalcHistory(1));
@@ -123,37 +119,25 @@ async function loadIdentityFilters(resetDownstream) {
     const location = document.getElementById('calcLocation')?.value || '';
     const vehicle = document.getElementById('calcVehicleModel')?.value || '';
     if (resetDownstream) {
-        ['calcSupplier', 'calcVersion'].forEach((id) => {
-            const el = document.getElementById(id);
-            if (el) el.value = '';
-        });
+        const versionEl = document.getElementById('calcVersion');
+        if (versionEl) versionEl.value = '';
     }
     if (!location || !vehicle) {
-        fillSelect('calcSupplier', [], '', '请先选择项目');
         fillSelect('calcVersion', [], '', '请先选择项目');
         return;
     }
     try {
-        const supplier = document.getElementById('calcSupplier')?.value || '';
         const res = await HttpClient.get(DIE_FILTERS_API, {
             params: {
                 location,
                 vehicle_model: vehicle,
-                stamping_supplier: supplier || undefined,
             },
         });
         const data = res.data || {};
-        fillSelect('calcSupplier', data.stamping_suppliers || [], undefined, '全部');
         fillSelect('calcVersion', data.versions || [], undefined, '全部');
     } catch (error) {
         showToast(error.message || '加载供应商/版本失败', 'error');
     }
-}
-
-async function loadVersionOptions() {
-    const versionEl = document.getElementById('calcVersion');
-    if (versionEl) versionEl.value = '';
-    await loadIdentityFilters(false);
 }
 
 function resetFilters() {
@@ -183,9 +167,7 @@ async function loadCalcReady() {
         const params = { year };
         if (location) params.location = location;
         if (vehicleModel) params.vehicle_model = vehicleModel;
-        const supplier = document.getElementById('calcSupplier')?.value || '';
         const version = document.getElementById('calcVersion')?.value || '';
-        if (supplier) params.stamping_supplier = supplier;
         if (version) params.version = version;
         const res = await HttpClient.get(CALC_READY_API, { params });
         const data = res.data || {};
@@ -296,7 +278,7 @@ function renderHistoryRows(items) {
                 <td class="py-2 px-2 font-mono text-[#ccc]">${esc(fmtYear(item.year))}</td>
                 <td class="py-2 px-2 text-[#ccc]">${esc(item.location || '-')}</td>
                 <td class="py-2 px-2 text-[#ccc]">${esc(item.vehicle_model || '-')}</td>
-                <td class="py-2 px-2 text-[#ccc] whitespace-nowrap">${esc(item.stamping_supplier || '全部')}</td>
+                <td class="py-2 px-2 text-[#ccc] whitespace-nowrap">${esc(item.stamping_supplier || '全部工厂')}</td>
                 <td class="py-2 px-2 text-[#ccc] whitespace-nowrap">${esc(item.version || '全部')}</td>
                 <td class="py-2 px-2 text-center text-[9px] ${status.className}">${status.label}</td>
                 <td class="py-2 px-2 font-mono text-right tabular-nums text-[#777]">${fmtInt(item.total_parts)}</td>
@@ -309,7 +291,6 @@ function renderHistoryRows(items) {
                     <button type="button" class="calc-view-result-btn text-[9px] text-[#777] hover:text-white mr-2"
                         data-year="${esc(item.year)}" data-location="${esc(item.location || '')}"
                         data-vehicle="${esc(item.vehicle_model || '')}"
-                        data-supplier="${esc(item.stamping_supplier || '')}"
                         data-version="${esc(item.version || '')}">结果</button>`}
                     `}
                     ${calcState.canDelete !== false && !isProcessing ? `
@@ -326,7 +307,6 @@ function renderHistoryRows(items) {
             if (btn.dataset.year) qs.set('year', btn.dataset.year);
             if (btn.dataset.location) qs.set('location', btn.dataset.location);
             if (btn.dataset.vehicle) qs.set('vehicle_model', btn.dataset.vehicle);
-            if (btn.dataset.supplier) qs.set('stamping_supplier', btn.dataset.supplier);
             if (btn.dataset.version) qs.set('version', btn.dataset.version);
             window.location.hash = `/stamping-die-fee?${qs.toString()}`;
         });
@@ -399,7 +379,6 @@ async function startCalculation() {
     const year = parseInt(document.getElementById('calcYear')?.value, 10);
     const location = document.getElementById('calcLocation')?.value || '';
     const vehicleModel = document.getElementById('calcVehicleModel')?.value || '';
-    const supplier = document.getElementById('calcSupplier')?.value || '';
     const version = document.getElementById('calcVersion')?.value || '';
     if (Number.isNaN(year) || !location || !vehicleModel) {
         showToast(SCOPE_REQUIRED_MESSAGE, 'warning');
@@ -417,7 +396,6 @@ async function startCalculation() {
             location,
             vehicle_model: vehicleModel,
         };
-        if (supplier) payload.stamping_supplier = supplier;
         if (version) payload.version = version;
         const response = await HttpClient.post(CALC_API, payload);
         const taskId = response.data?.task_id;
@@ -515,7 +493,7 @@ function startPolling(taskId) {
 function setCalculating(isCalculating) {
     calcState.isCalculating = isCalculating;
     const startBtn = document.getElementById('startCalcBtn');
-    ['calcYear', 'calcLocation', 'calcVehicleModel', 'calcSupplier', 'calcVersion', 'calcResetBtn'].forEach((id) => {
+    ['calcYear', 'calcLocation', 'calcVehicleModel', 'calcVersion', 'calcResetBtn'].forEach((id) => {
         const el = document.getElementById(id);
         if (el) el.disabled = isCalculating;
     });

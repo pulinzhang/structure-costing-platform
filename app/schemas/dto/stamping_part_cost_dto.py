@@ -11,19 +11,26 @@ from app.common.money import Q6, quantize_money
 
 
 class StampingPartCostScopeDTO(BaseModel):
-    """范围：年度 + 月份 + 基地 + 冲压工厂。"""
+    """范围：年度 + 月份 + 基地 + 车型必填；版本与工厂可选（工厂仅列表/批量收窄，计算忽略）。"""
 
     year: int = Field(..., ge=2000, le=2100, description="年度")
     month: int = Field(..., ge=1, le=12, description="月份")
     location: str = Field(..., min_length=1, description="基地")
-    stamping_supplier: str = Field(..., min_length=1, description="冲压工厂")
+    vehicle_model: str = Field(..., min_length=1, description="车型")
+    version: str | None = Field(None, description="版本")
+    stamping_supplier: str | None = Field(None, description="冲压工厂")
+
+    @field_validator("version", "stamping_supplier", mode="before")
+    @classmethod
+    def _empty_to_none(cls, value: object) -> str | None:
+        if value is None:
+            return None
+        text = str(value).strip()
+        return text or None
 
 
 class StampingPartCostCalcDTO(StampingPartCostScopeDTO):
-    """计算请求：车型必填，版本可选。"""
-
-    vehicle_model: str = Field(..., min_length=1, description="车型")
-    version: str | None = Field(None, description="版本")
+    """计算请求：按车型覆盖各厂；版本空则覆盖该车各版本。工厂字段忽略。"""
 
 
 class StampingPartCostQuery(BaseModel):

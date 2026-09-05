@@ -45,6 +45,7 @@ from app.schemas.vo.dashboard_vo import (
     SteelPriceCalcFilterOptionsVO,
     SteelPriceCalcStatsVO,
 )
+from app.schemas.vo.stamping_vo import StampingCascadeFilterQuery
 from app.services.stamping.stamping_service import StampingPartService
 from app.services.yishiyiyi.base_price.steel_base_price_service import SteelBasePriceService
 from app.services.yishiyiyi.policy.steel_price_policy_service import (
@@ -53,6 +54,7 @@ from app.services.yishiyiyi.policy.steel_price_policy_service import (
 from app.services.yishiyiyi.scrap_price.scrap_price_service import (
     StampingScrapPriceService,
 )
+from app.services.yishiyiyi.steel_grade_category import SteelGradeCategoryService
 
 
 class _ScrapStatus(NamedTuple):
@@ -72,6 +74,7 @@ class DashboardService:
         self.policy_service = SteelPricePolicyService()
         self.scrap_service = StampingScrapPriceService()
         self.stamping_service = StampingPartService()
+        self.grade_category_service = SteelGradeCategoryService()
         self.process_fee_repo = StampingProcessFeeRepository()
         self.steel_price_repo = SteelPriceRepository()
         self.part_cost_repo = StampingPartCostRepository()
@@ -86,15 +89,25 @@ class DashboardService:
         year: int | None = None,
         month: int | None = None,
         location: str | None = None,
+        vehicle_model: str | None = None,
     ) -> DashboardStatsVO:
         """管理者看板汇总。"""
         location_clean = location.strip() if location else None
-        scope = self._resolve_scope(db, year=year, month=month, location=location_clean)
+        vehicle_clean = vehicle_model.strip() if vehicle_model else None
+        scope = self._resolve_scope(
+            db,
+            year=year,
+            month=month,
+            location=location_clean,
+            vehicle_model=vehicle_clean,
+        )
+        vehicle_clean = scope.vehicle_model
 
         fee_summary = self.process_fee_repo.summarize_by_filters(
             db,
             year=scope.year,
             location=scope.location,
+            vehicle_model=vehicle_clean,
         )
         steel_summary = self.steel_price_repo.summarize_by_filters(
             db,
@@ -107,31 +120,38 @@ class DashboardService:
             year=scope.year,
             month=scope.month,
             location=scope.location,
+            vehicle_model=vehicle_clean,
         )
 
         scrap_status = self._scrap_month_status(
             db, year=scope.year, month=scope.month, location=scope.location
         )
-        bom = self._bom_coverage(db, location=scope.location)
+        bom = self._bom_coverage(
+            db,
+            location=scope.location,
+            vehicle_model=vehicle_clean,
+        )
 
-        master_raw = self.stamping_service.summarize_master(db, location=scope.location)
+        master_raw = self.stamping_service.summarize_master(
+            db,
+            location=scope.location,
+            vehicle_model=vehicle_clean,
+        )
         master = DashboardMasterStatsVO(
             parts=master_raw["parts"],
             processes=master_raw["processes"],
             models=master_raw["models"],
         )
+        base_price_count, policy_count = self._count_base_and_policy(
+            db,
+            year=scope.year,
+            month=scope.month,
+            location=scope.location,
+            vehicle_model=vehicle_clean,
+        )
         yishiyiyi = DashboardYishiyiyiStatsVO(
-            base_price_count=self.base_price_service.count_by_conditions(
-                db,
-                year=scope.year,
-                month=scope.month,
-                location=scope.location,
-            ),
-            policy_count=self.policy_service.count_policies(
-                db,
-                year=scope.year,
-                month=scope.month,
-            ),
+            base_price_count=base_price_count,
+            policy_count=policy_count,
             scrap_filled_count=scrap_status.filled_count,
             scrap_required_count=scrap_status.required_count,
             is_scrap_complete=scrap_status.is_complete,
@@ -188,33 +208,29 @@ class DashboardService:
         year: int,
         month: int,
         location: str | None = None,
-        stamping_supplier: str | None = None,
         vehicle_model: str | None = None,
     ) -> SteelPriceCalcStatsVO:
         """钢价联动计算页数据依据统计。"""
         location = location.strip() if location else None
-        stamping_supplier = stamping_supplier.strip() if stamping_supplier else None
         vehicle_model = vehicle_model.strip() if vehicle_model else None
+        filters = self._build_steel_calc_filter_options(db, location=location)
+        if vehicle_model and vehicle_model not in filters.vehicle_models:
+            vehicle_model = None
 
-        base_price_count = self.base_price_service.count_by_conditions(
+        base_price_count, adjustment_rule_count = self._count_base_and_policy(
             db,
             year=year,
             month=month,
             location=location,
-        )
-        adjustment_rule_count = self.policy_service.count_policies(
-            db,
-            year=year,
-            month=month,
+            vehicle_model=vehicle_model,
         )
 
-        if not location and not stamping_supplier and not vehicle_model:
+        if not location:
             thickness_row_count = 0
         else:
             thickness_row_count = self.stamping_service.count_material_specs(
                 db,
                 location=location,
-                stamping_supplier=stamping_supplier,
                 vehicle_model=vehicle_model,
             )
 
@@ -222,7 +238,7 @@ class DashboardService:
             base_price_count=base_price_count,
             adjustment_rule_count=adjustment_rule_count,
             thickness_row_count=thickness_row_count,
-            filters=self._build_steel_calc_filter_options(db),
+            filters=filters,
         )
 
     def _build_outcome(
@@ -437,6 +453,7 @@ class DashboardService:
         year: int | None,
         month: int | None,
         location: str | None,
+        vehicle_model: str | None,
     ) -> DashboardScopeVO:
         years, months_all, locations = self._collect_scope_options(db)
         clock = now()
@@ -461,13 +478,22 @@ class DashboardService:
         if location and location not in locations:
             locations = sorted({*locations, location})
 
+        cascade = self.stamping_service.get_cascade_filter_options(
+            db,
+            StampingCascadeFilterQuery(location=location),
+        )
+        vehicle_models = list(cascade.vehicle_models)
+        resolved_vehicle = vehicle_model if vehicle_model in vehicle_models else None
+
         return DashboardScopeVO(
             year=resolved_year,
             month=resolved_month,
             location=location,
+            vehicle_model=resolved_vehicle,
             years=years or [resolved_year],
             months=sorted(set(months_for_year)),
             locations=locations,
+            vehicle_models=vehicle_models,
         )
 
     def _preferred_months(self, db: Session, year: int) -> list[int]:
@@ -554,26 +580,102 @@ class DashboardService:
         )
         return status
 
-    def _bom_coverage(self, db: Session, *, location: str | None) -> DashboardBomStatsVO:
+    def _bom_coverage(
+        self,
+        db: Session,
+        *,
+        location: str | None,
+        vehicle_model: str | None = None,
+    ) -> DashboardBomStatsVO:
         _, snapshot_count = self.bom_snapshot_repo.paginate(
             db,
             location=location,
+            vehicle_model=vehicle_model,
             skip=0,
             limit=1,
         )
-        node_count = self.bom_snapshot_repo.count_all_nodes(db, location=location)
+        node_count = self.bom_snapshot_repo.count_all_nodes(
+            db,
+            location=location,
+            vehicle_model=vehicle_model,
+        )
         return DashboardBomStatsVO(
             snapshot_count=int(snapshot_count),
             node_count=node_count,
         )
 
-    def _build_steel_calc_filter_options(self, db: Session) -> SteelPriceCalcFilterOptionsVO:
+    def _count_base_and_policy(
+        self,
+        db: Session,
+        *,
+        year: int,
+        month: int,
+        location: str | None,
+        vehicle_model: str | None,
+    ) -> tuple[int, int]:
+        """
+        基价 / 政策条数。未选车型时按年+月+基地（政策全国）。
+        选了车型则按该车工艺牌号覆盖：基价 grade IN 牌号，政策按牌号分类收窄。
+        """
+        if not vehicle_model:
+            return (
+                self.base_price_service.count_by_conditions(
+                    db,
+                    year=year,
+                    month=month,
+                    location=location,
+                ),
+                self.policy_service.count_policies(
+                    db,
+                    year=year,
+                    month=month,
+                ),
+            )
+
+        grades = self.stamping_service.list_distinct_spec_grades(
+            db,
+            location=location,
+            vehicle_model=vehicle_model,
+        )
+        if not grades:
+            return 0, 0
+
+        base_count = self.base_price_service.count_by_conditions(
+            db,
+            year=year,
+            month=month,
+            location=location,
+            grades_in=grades,
+        )
+        mapped = self.grade_category_service.map_grades(db, grades)
+        categories = sorted({vo.category_name for vo in mapped.values() if vo.category_name})
+        if not categories:
+            return base_count, 0
+        policy_count = self.policy_service.count_policies(
+            db,
+            year=year,
+            month=month,
+            category_names=categories,
+        )
+        return base_count, policy_count
+
+    def _build_steel_calc_filter_options(
+        self,
+        db: Session,
+        *,
+        location: str | None = None,
+    ) -> SteelPriceCalcFilterOptionsVO:
         base_opts = self.base_price_service.get_filter_options(db)
         policy_opts = self.policy_service.get_filter_options(db)
         years = sorted(set(base_opts.years) | set(policy_opts.years), reverse=True)
         months = sorted(set(base_opts.months) | set(policy_opts.months))
+        cascade = self.stamping_service.get_cascade_filter_options(
+            db,
+            StampingCascadeFilterQuery(location=location),
+        )
         return SteelPriceCalcFilterOptionsVO(
             years=years,
             months=months,
             locations=list(base_opts.locations),
+            vehicle_models=list(cascade.vehicle_models),
         )

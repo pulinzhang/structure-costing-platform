@@ -19,6 +19,7 @@ from app.repositories.stamping.stamping_part_repository import StampingPartRepos
 from app.schemas.vo.assembly_cost_vo import AssemblyCostCalcReadyVO
 from app.services.bom.procurement_object.classify import SECTION_OBJECT
 from app.services.costing.assembly_cost.calc.orchestrator.deps import AssemblyCalcDeps
+from app.services.costing.stamping_part_cost.calc.constants import ALL_SUPPLIERS_LOCK
 
 
 def collect_calc_ready(
@@ -193,38 +194,43 @@ def _stamping_complete(
     success_rows = StampingPartCostRepository().list_calc_success_with_unit_cost(
         db, year=year, month=month, location=location, vehicle_model=vehicle_model
     )
+    success_numbers = {row.part_number for row in success_rows if row.part_number}
     success_by_supplier: dict[str, set[str]] = defaultdict(set)
     for row in success_rows:
         supplier = (getattr(row, "stamping_supplier", None) or "").strip()
-        if supplier:
+        if supplier and row.part_number:
             success_by_supplier[supplier].add(row.part_number)
-        else:
-            for sup, numbers in by_supplier.items():
-                if row.part_number in numbers:
-                    success_by_supplier[sup].add(row.part_number)
 
     log_repo = StampingPartCostCalcLogRepository()
-    incomplete: list[str] = []
-    for supplier, numbers in sorted(by_supplier.items()):
-        latest = log_repo.get_latest(
-            db,
-            year=year,
-            month=month,
-            location=location,
-            stamping_supplier=supplier,
+    latest = log_repo.get_latest(
+        db,
+        year=year,
+        month=month,
+        location=location,
+        stamping_supplier=ALL_SUPPLIERS_LOCK,
+        vehicle_model=vehicle_model,
+    )
+    if latest is not None and latest.status in {"processing", "failed"}:
+        return (
+            False,
+            [],
+            "冲压零件价整车计算未完成（进行中或失败），请先到零件核价页算完",
         )
-        if latest is not None and latest.status in {"processing", "failed"}:
-            incomplete.append(supplier)
-            continue
-        covered = success_by_supplier.get(supplier, set())
-        if not numbers.issubset(covered):
-            incomplete.append(supplier)
-    if incomplete:
-        names = "、".join(incomplete)
+
+    expected_numbers = set()
+    for numbers in by_supplier.values():
+        expected_numbers |= numbers
+    if not expected_numbers.issubset(success_numbers):
+        incomplete = [
+            supplier
+            for supplier, numbers in sorted(by_supplier.items())
+            if not numbers.issubset(success_by_supplier.get(supplier, set()))
+        ]
+        names = "、".join(incomplete) if incomplete else "—"
         return (
             False,
             incomplete,
-            f"冲压零件价未完成（工厂：{names}），请先到零件核价页算完",
+            f"冲压零件价未完成（缺件工厂：{names}），请先到零件核价页算完",
         )
     return True, [], "零件价已完成"
 

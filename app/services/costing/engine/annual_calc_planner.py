@@ -31,17 +31,17 @@ class AnnualCalcPlanner:
         items: list[CostingEngineAnnualItemVO] = []
         aliases = discovery.location_aliases or location_candidates(discovery.location)
 
-        for supplier in discovery.stamping_suppliers:
+        for vehicle_model in discovery.vehicle_models:
             exists = self._process_fee_exists(
                 db,
                 year=discovery.year,
                 aliases=aliases,
-                stamping_supplier=supplier,
+                vehicle_model=vehicle_model,
             )
             items.append(
                 CostingEngineAnnualItemVO(
                     code="annual_process_fee",
-                    scope_key=supplier,
+                    scope_key=vehicle_model,
                     exists=exists,
                     will_auto_calc=not exists,
                 )
@@ -91,7 +91,7 @@ class AnnualCalcPlanner:
         *,
         year: int,
         aliases: list[str],
-        stamping_supplier: str,
+        vehicle_model: str,
     ) -> bool:
         for alias in aliases:
             if (
@@ -99,7 +99,7 @@ class AnnualCalcPlanner:
                     db,
                     year=year,
                     location=alias,
-                    stamping_supplier=stamping_supplier,
+                    vehicle_model=vehicle_model,
                     statuses=_ANY_STATUS,
                 )
                 > 0

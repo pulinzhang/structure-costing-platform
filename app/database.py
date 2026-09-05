@@ -459,6 +459,20 @@ class DatabaseConfig:
                     )
                 logger.info("已为 %s 追加列 version", calc_log_table)
 
+        steel_calc_log_table = "steel_price_calc_logs"
+        if steel_calc_log_table in table_names:
+            steel_calc_log_cols = {
+                col["name"] for col in inspector.get_columns(steel_calc_log_table)
+            }
+            for unused_col in ("stamping_supplier", "vehicle_model"):
+                if unused_col not in steel_calc_log_cols:
+                    continue
+                with engine.begin() as conn:
+                    conn.execute(
+                        text(f"ALTER TABLE {steel_calc_log_table} DROP COLUMN {unused_col}")
+                    )
+                logger.info("已从 %s 删除列 %s", steel_calc_log_table, unused_col)
+
     @classmethod
     def _migrate_assembly_cost_tables(cls, engine: Engine) -> None:
         """开发期改过表名/唯一键：SQLite 改不了表内 UNIQUE，错了就删表，由 create_all 重建。

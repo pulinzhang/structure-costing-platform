@@ -17,22 +17,18 @@ def collect_calc_ready(
     year: int,
     month: int | None = None,
     location: str | None = None,
-    stamping_supplier: str | None = None,
     vehicle_model: str | None = None,
     version: str | None = None,
 ) -> StampingPartCostCalcReadyVO:
     location_value = (location or "").strip() or None
-    supplier_value = (stamping_supplier or "").strip() or None
-
     vehicle_value = (vehicle_model or "").strip() or None
     version_value = (version or "").strip() or None
 
     part_count = 0
-    if location_value and supplier_value and vehicle_value:
+    if location_value and vehicle_value:
         parts = deps.part_repo.list_with_processes(
             db,
             location=location_value,
-            stamping_supplier=supplier_value,
             vehicle_model=vehicle_value,
             version=version_value,
         )
@@ -57,12 +53,13 @@ def collect_calc_ready(
         )
         scrap_price_count = 1 if scrap is not None else 0
 
-    if year and location_value and supplier_value:
+    if year and location_value:
         process_fee_count = deps.process_fee_repo.count_by_scope_and_statuses(
             db,
             year=year,
             location=location_value,
-            stamping_supplier=supplier_value,
+            vehicle_model=vehicle_value,
+            version=version_value,
             statuses=[AUDIT_PENDING, AUDIT_APPROVED, AUDIT_REJECTED],
         )
 
@@ -83,7 +80,6 @@ def collect_calc_ready(
         year
         and month
         and location_value
-        and supplier_value
         and vehicle_value
         and part_count > 0
         and steel_price_count > 0
@@ -95,7 +91,7 @@ def collect_calc_ready(
         year=year,
         month=month,
         location=location_value,
-        stamping_supplier=supplier_value,
+        stamping_supplier=None,
         vehicle_model=vehicle_value,
         version=version_value,
         part_count=part_count,

@@ -70,11 +70,11 @@ def test_scope_discovery_multi_bom_dedupe() -> None:
     with patch.object(
         discovery.part_repo,
         "get_cascade_filter_options",
-        return_value={"stamping_suppliers": ["工厂A"]},
+        return_value={"vehicle_models": ["T28"]},
     ):
         result = discovery.discover(db, location="青岛", year=2025, month=1)
 
-    assert result.stamping_suppliers == ["工厂A"]
+    assert result.vehicle_models == ["T28"]
     assert len(result.l0_scopes) == 2
     keys = {(s.vehicle_model, s.bom_version) for s in result.l0_scopes}
     assert keys == {("T28", "D-00"), ("T28", "D-01")}
@@ -103,13 +103,13 @@ def test_run_orchestrator_does_not_submit_nested_async_task() -> None:
         year=2025,
         month=1,
         location_aliases=["青岛", "青岛基地"],
-        stamping_suppliers=["工厂A"],
+        vehicle_models=["T28"],
         l0_scopes=[L0Scope(location="青岛", vehicle_model="T28", bom_version="D-00")],
     )
     annual = [
         CostingEngineAnnualItemVO(
             code="annual_process_fee",
-            scope_key="工厂A",
+            scope_key="T28",
             exists=True,
             will_auto_calc=False,
         ),

@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 @dataclass(slots=True)
 class PhaseCarry:
-    failed_suppliers: set[str] = field(default_factory=set)
+    failed_vehicles: set[str] = field(default_factory=set)
     failed_l0: set[str] = field(default_factory=set)
     step_summaries: list[dict[str, Any]] = field(default_factory=list)
 
@@ -80,7 +80,7 @@ def execute_annual(
         )
         status = "succeeded" if ok else "failed"
         if not ok and item.code == "annual_process_fee":
-            carry.failed_suppliers.add(item.scope_key)
+            carry.failed_vehicles.add(item.scope_key)
         if not ok and item.code == "annual_welding_breakdown":
             carry.failed_l0.add(item.scope_key)
         if not ok and item.code == "annual_welding_fee":
@@ -145,52 +145,54 @@ def execute_part_cost(
     progress: ProgressNotifier,
     carry: PhaseCarry,
 ) -> None:
-    suppliers = discovery.stamping_suppliers
-    part_total = max(len(suppliers), 1)
-    for idx, supplier in enumerate(suppliers):
+    vehicles = discovery.vehicle_models
+    part_total = max(len(vehicles), 1)
+    for idx, vehicle_model in enumerate(vehicles):
         progress.report_stage(
             "part_cost",
             idx,
             part_total,
-            f"零件价 {idx + 1}/{len(suppliers)} · {supplier}",
+            f"零件价 {idx + 1}/{len(vehicles)} · {vehicle_model}",
         )
-        if supplier in carry.failed_suppliers:
+        if vehicle_model in carry.failed_vehicles:
             step = orch._finish_step(
                 db,
                 run_id=run_id,
                 stage="part_cost",
-                scope_key=supplier,
+                scope_key=vehicle_model,
                 status="skipped",
                 message="加工费补算失败，跳过零件价",
                 metrics=None,
             )
             carry.step_summaries.append(
-                orch._step_summary("part_cost", supplier, "skipped", step.message)
+                orch._step_summary("part_cost", vehicle_model, "skipped", step.message)
             )
             continue
 
         ok, message, metrics = orch._run_part_cost(
             db,
             discovery=discovery,
-            stamping_supplier=supplier,
+            vehicle_model=vehicle_model,
             current_user=current_user,
         )
         status = "succeeded" if ok else "failed"
+        if not ok:
+            carry.failed_vehicles.add(vehicle_model)
         orch._finish_step(
             db,
             run_id=run_id,
             stage="part_cost",
-            scope_key=supplier,
+            scope_key=vehicle_model,
             status=status,
             message=message,
             metrics=metrics,
         )
-        carry.step_summaries.append(orch._step_summary("part_cost", supplier, status, message))
+        carry.step_summaries.append(orch._step_summary("part_cost", vehicle_model, status, message))
         progress.report_stage(
             "part_cost",
             idx + 1,
             part_total,
-            f"零件价 {idx + 1}/{len(suppliers)} · {supplier}",
+            f"零件价 {idx + 1}/{len(vehicles)} · {vehicle_model}",
         )
 
 
@@ -215,8 +217,8 @@ def execute_assembly(
             f"总成核价 {idx + 1}/{len(scopes)} · {scope.vehicle_model} / {scope.bom_version}",
         )
         skip_reason = None
-        if carry.failed_suppliers:
-            skip_reason = "零件价未完成，跳过总成核价"
+        if scope.vehicle_model in carry.failed_vehicles:
+            skip_reason = "该车型加工费或零件价未完成，跳过总成核价"
         elif scope_key in carry.failed_l0:
             skip_reason = "年度焊接拆解/焊接费补算失败，跳过总成核价"
         if skip_reason:

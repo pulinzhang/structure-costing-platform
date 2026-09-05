@@ -9,7 +9,6 @@ from sqlalchemy.orm import Session
 
 from app.exceptions.base import BusinessException
 from app.schemas.vo.user_vo import UserVO
-from app.services.costing.steel_price.calc.models import SteelPriceCalcRequest
 from app.services.costing.steel_price.calc.orchestrator.deps import SteelPriceCalcDeps
 from app.services.costing.steel_price.calc.orchestrator.prep import CalcPrepContext
 from app.services.costing.steel_price.calc.orchestrator.progress import ProgressNotifier
@@ -40,25 +39,15 @@ class SteelPricePipeline:
         log_builder = ctx.log_builder
         request = ctx.request
         calc_batch_id = ctx.calc_batch_id
-        location = result.location
-        stamping_supplier = result.stamping_supplier
-        vehicle_model = result.vehicle_model
+        location = request.location.strip()
 
         try:
             if not location:
                 raise BusinessException("计算钢价必须指定生产基地 location")
 
-            normalized = SteelPriceCalcRequest(
-                year=request.year,
-                month=request.month,
-                location=location,
-                stamping_supplier=stamping_supplier,
-                vehicle_model=vehicle_model,
-            )
-
             progress.report(10, "Step1：加载材料厚度规格...")
             log_builder.section("Step1 材料厚度列表")
-            materials = self._deps.material_loader.load(db, normalized)
+            materials = self._deps.material_loader.load(db, request)
             result.material_count = len(materials)
             log_builder.line(f"去重材料+厚度规格: {result.material_count} 条")
             if result.material_count == 0:
@@ -68,7 +57,7 @@ class SteelPricePipeline:
             progress.report(25, "Step2：基价表补齐...")
             log_builder.section("Step2 基价表补齐")
             rows, no_base_count, no_base_details = self._deps.base_price_enricher.enrich(
-                db, normalized, materials
+                db, request, materials
             )
             result.enriched_count = len(rows)
             result.no_base_count = no_base_count
@@ -80,7 +69,7 @@ class SteelPricePipeline:
                 f"Step2 完成：命中 {result.enriched_count} 行，无基价 {result.no_base_count}",
             )
 
-            policies = self._deps.adjustment_applier.load_policies(db, normalized)
+            policies = self._deps.adjustment_applier.load_policies(db, request)
 
             progress.report(45, "Step3：厚度加减价匹配...")
             log_builder.section("Step3 厚度加减价匹配")

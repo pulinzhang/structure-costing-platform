@@ -150,7 +150,7 @@ export function processFeeListTemplate() {
                                 重置
                             </button>
                         </div>
-                        <p class="mt-2 text-[10px] text-[#555555]">筛选均可选；级联为年度 → 基地 → 车型 → 版本 → 冲压工厂。批量删除 / 审核 / 反审核须选定年度、基地、车型；冲压工厂与版本可选。</p>
+                        <p class="mt-2 text-[10px] text-[#555555]">筛选均可选；级联为年度 → 基地 → 车型 → 版本 → 冲压工厂。批量审核 / 反审核按整车签字。批量删除可按工厂收窄。</p>
                     </div>
                 </div>
 

@@ -10,7 +10,7 @@ import {
     updateCostFilterCapsules,
     shortPartNumber,
     syncBreakdownColumnVisibility,
-} from './template.js?v=54';
+} from './template.js?v=58';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -19,15 +19,16 @@ import {
 const API_BASE = '/api/costing/stamping-part-cost';
 const CASCADE_API = '/api/stamping/filters/cascade';
 const DRAWER_ANIMATION_MS = 300;
-const SCOPE_REQUIRED_MESSAGE = '批量操作须选定年度、月份、基地、冲压工厂';
+const SCOPE_REQUIRED_MESSAGE = '批量操作须选定年度、月份、基地、配套车型';
 const EXPORT_VEHICLE_REQUIRED_MESSAGE = '导出须选定配套车型。';
 
 const FILTER_IDS = [
     'costYearFilter',
     'costMonthFilter',
     'costLocationFilter',
-    'costSupplierFilter',
     'costVehicleModelFilter',
+    'costVersionFilter',
+    'costSupplierFilter',
     'costAuditFilter',
 ];
 
@@ -131,8 +132,9 @@ function readHashFilters() {
     const location = params.get('location') || '';
     const stamping_supplier = params.get('stamping_supplier') || '';
     const vehicle_model = params.get('vehicle_model') || '';
-    if (!year && !month && !location && !stamping_supplier && !vehicle_model) return null;
-    return { year, month, location, stamping_supplier, vehicle_model };
+    const version = params.get('version') || '';
+    if (!year && !month && !location && !stamping_supplier && !vehicle_model && !version) return null;
+    return { year, month, location, stamping_supplier, vehicle_model, version };
 }
 
 function setSelectValue(id, value) {
@@ -154,8 +156,9 @@ function applyPendingFiltersToSelects() {
     setSelectValue('costYearFilter', pending.year);
     setSelectValue('costMonthFilter', pending.month);
     setSelectValue('costLocationFilter', pending.location);
-    setSelectValue('costSupplierFilter', pending.stamping_supplier);
     setSelectValue('costVehicleModelFilter', pending.vehicle_model);
+    setSelectValue('costVersionFilter', pending.version);
+    setSelectValue('costSupplierFilter', pending.stamping_supplier);
     listState.pendingFilters = null;
 }
 
@@ -217,22 +220,37 @@ function bindEvents() {
     document.getElementById('costLocationFilter')?.addEventListener('change', () => {
         onFilterChange();
         const vehicleEl = document.getElementById('costVehicleModelFilter');
+        const versionEl = document.getElementById('costVersionFilter');
+        const supplierEl = document.getElementById('costSupplierFilter');
         if (vehicleEl) vehicleEl.value = '';
-        loadCascadeFilters().then(() => {
-            updateCostFilterCapsules();
-            loadList(1);
-        });
-    });
-    document.getElementById('costSupplierFilter')?.addEventListener('change', () => {
-        onFilterChange();
-        const vehicleEl = document.getElementById('costVehicleModelFilter');
-        if (vehicleEl) vehicleEl.value = '';
+        if (versionEl) versionEl.value = '';
+        if (supplierEl) supplierEl.value = '';
         loadCascadeFilters().then(() => {
             updateCostFilterCapsules();
             loadList(1);
         });
     });
     document.getElementById('costVehicleModelFilter')?.addEventListener('change', () => {
+        onFilterChange();
+        const versionEl = document.getElementById('costVersionFilter');
+        const supplierEl = document.getElementById('costSupplierFilter');
+        if (versionEl) versionEl.value = '';
+        if (supplierEl) supplierEl.value = '';
+        loadCascadeFilters().then(() => {
+            updateCostFilterCapsules();
+            loadList(1);
+        });
+    });
+    document.getElementById('costVersionFilter')?.addEventListener('change', () => {
+        onFilterChange();
+        const supplierEl = document.getElementById('costSupplierFilter');
+        if (supplierEl) supplierEl.value = '';
+        loadCascadeFilters().then(() => {
+            updateCostFilterCapsules();
+            loadList(1);
+        });
+    });
+    document.getElementById('costSupplierFilter')?.addEventListener('change', () => {
         onFilterChange();
         loadList(1);
     });
@@ -309,13 +327,16 @@ async function loadCascadeFilters() {
         const pending = listState.pendingFilters;
         const params = {
             location: document.getElementById('costLocationFilter')?.value || pending?.location || '',
+            vehicle_model: document.getElementById('costVehicleModelFilter')?.value || pending?.vehicle_model || '',
+            version: document.getElementById('costVersionFilter')?.value || pending?.version || '',
             stamping_supplier: document.getElementById('costSupplierFilter')?.value || pending?.stamping_supplier || '',
         };
         const res = await HttpClient.get(CASCADE_API, { params });
         const filters = res.data || {};
         fillSelect('costLocationFilter', filters.locations || [], pending?.location || null);
-        fillSelect('costSupplierFilter', filters.stamping_suppliers || [], pending?.stamping_supplier || null);
         fillSelect('costVehicleModelFilter', filters.vehicle_models || [], pending?.vehicle_model || null);
+        fillSelect('costVersionFilter', filters.versions || [], pending?.version || null);
+        fillSelect('costSupplierFilter', filters.stamping_suppliers || [], pending?.stamping_supplier || null);
     } catch (error) {
         console.error(error);
     }
@@ -341,8 +362,9 @@ function getFilters() {
         year: yearRaw ? Number(yearRaw) : undefined,
         month: monthRaw ? Number(monthRaw) : undefined,
         location: document.getElementById('costLocationFilter')?.value || pending?.location || undefined,
-        stamping_supplier: document.getElementById('costSupplierFilter')?.value || pending?.stamping_supplier || undefined,
         vehicle_model: document.getElementById('costVehicleModelFilter')?.value || pending?.vehicle_model || undefined,
+        version: document.getElementById('costVersionFilter')?.value || pending?.version || undefined,
+        stamping_supplier: document.getElementById('costSupplierFilter')?.value || pending?.stamping_supplier || undefined,
         audit_status: document.getElementById('costAuditFilter')?.value || undefined,
         part_number: document.getElementById('costPartNumberFilter')?.value?.trim() || undefined,
     };
@@ -350,17 +372,28 @@ function getFilters() {
 
 function requireScope() {
     const f = getFilters();
-    if (!f.year || !f.month || !f.location || !f.stamping_supplier) {
+    if (!f.year || !f.month || !f.location || !f.vehicle_model) {
         setAdvancedOpen(true);
         showToast(SCOPE_REQUIRED_MESSAGE, 'warning');
         return null;
     }
-    return {
+    const scope = {
         year: f.year,
         month: f.month,
         location: f.location,
-        stamping_supplier: f.stamping_supplier,
+        vehicle_model: f.vehicle_model,
     };
+    if (f.version) scope.version = f.version;
+    if (f.stamping_supplier) scope.stamping_supplier = f.stamping_supplier;
+    return scope;
+}
+
+function requireAuditScope() {
+    const scope = requireScope();
+    if (!scope) return null;
+    const auditScope = { ...scope };
+    delete auditScope.stamping_supplier;
+    return auditScope;
 }
 
 async function loadList(page = 1) {
@@ -395,11 +428,14 @@ async function loadList(page = 1) {
             if (pageData.filters.locations) {
                 fillSelect('costLocationFilter', pageData.filters.locations, filters.location);
             }
-            if (pageData.filters.suppliers) {
-                fillSelect('costSupplierFilter', pageData.filters.suppliers, filters.stamping_supplier);
-            }
             if (pageData.filters.vehicle_models) {
                 fillSelect('costVehicleModelFilter', pageData.filters.vehicle_models, filters.vehicle_model);
+            }
+            if (pageData.filters.versions) {
+                fillSelect('costVersionFilter', pageData.filters.versions, filters.version);
+            }
+            if (pageData.filters.suppliers) {
+                fillSelect('costSupplierFilter', pageData.filters.suppliers, filters.stamping_supplier);
             }
         }
         updateCostFilterCapsules();
@@ -789,7 +825,7 @@ function openBatchAuditDrawer(mode) {
     const isApprove = mode === 'approve';
     if (isApprove && !listState.canApprove) return showToast('无审核权限', 'warning');
     if (!isApprove && !listState.canReverse) return showToast('无反审核权限', 'warning');
-    const scope = requireScope();
+    const scope = requireAuditScope();
     if (!scope) return;
 
     const modeEl = document.getElementById('costBatchAuditMode');
@@ -806,8 +842,8 @@ function openBatchAuditDrawer(mode) {
     if (titleEl) titleEl.textContent = isApprove ? '批量审核' : '批量反审核';
     if (hintEl) {
         hintEl.textContent = isApprove
-            ? '仅按年度、月份、基地、冲压工厂处理待审记录；已通过记录会跳过。'
-            : '仅按年度、月份、基地、冲压工厂处理已通过记录；其余状态会跳过。反审核意见必填。';
+            ? '按年度、月份、基地、配套车型处理待审记录（整车各厂）；版本可选。已通过记录会跳过。'
+            : '按年度、月份、基地、配套车型处理已通过记录（整车各厂）；版本可选。其余状态会跳过。反审核意见必填。';
     }
     if (operatorLabel) operatorLabel.textContent = isApprove ? '审核人' : '反审核人';
     if (operatorDisplay) {
@@ -824,7 +860,8 @@ function openBatchAuditDrawer(mode) {
     }
     if (summaryEl) {
         summaryEl.textContent =
-            `${fmtPeriod(scope.year, scope.month)} · 基地 ${scope.location} · 工厂 ${scope.stamping_supplier}`;
+            `${fmtPeriod(scope.year, scope.month)} · 基地 ${scope.location} · 车型 ${scope.vehicle_model}`
+            + ` · 版本 ${scope.version || '全部'} · 工厂 整车`;
     }
     if (confirmBtn) {
         confirmBtn.textContent = isApprove ? '确认审核通过' : '确认反审核';
@@ -844,7 +881,7 @@ async function submitBatchAudit() {
     if (listState.batchAuditSubmitting) return;
     const mode = document.getElementById('costBatchAuditMode')?.value || 'approve';
     const isApprove = mode === 'approve';
-    const scope = requireScope();
+    const scope = requireAuditScope();
     if (!scope) return;
 
     const remark = document.getElementById('costBatchAuditRemark')?.value.trim() || '';
@@ -924,6 +961,7 @@ async function exportExcel() {
                 location: filters.location || undefined,
                 stamping_supplier: filters.stamping_supplier || undefined,
                 vehicle_model: filters.vehicle_model,
+                version: filters.version || undefined,
                 audit_status: filters.audit_status || undefined,
                 part_number: filters.part_number || undefined,
             },

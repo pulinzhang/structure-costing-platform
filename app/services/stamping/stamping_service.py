@@ -111,19 +111,30 @@ class StampingPartService:
         db: Session,
         *,
         location: str | None = None,
+        vehicle_model: str | None = None,
     ) -> dict[str, int]:
-        """按基地汇总主数据：零件数 / 工序数 / 车型数。"""
+        """按基地 / 车型汇总主数据：零件数 / 工序数 / 车型数。"""
         location_clean = location.strip() if location else None
+        vehicle_clean = vehicle_model.strip() if vehicle_model else None
         _rows, parts = self.repository.paginate(
             db,
             location=location_clean,
+            vehicle_model=vehicle_clean,
             skip=0,
             limit=1,
         )
-        summary = self.repository.summarize_by_filters(db, location=location_clean)
+        summary = self.repository.summarize_by_filters(
+            db,
+            location=location_clean,
+            vehicle_model=vehicle_clean,
+        )
         return {
             "parts": int(parts),
-            "processes": self.process_repository.count_by_part_location(db, location_clean),
+            "processes": self.process_repository.count_by_part_location(
+                db,
+                location_clean,
+                vehicle_clean,
+            ),
             "models": int(summary.get("vehicle_model_count") or 0),
         }
 
@@ -243,36 +254,43 @@ class StampingPartService:
         db: Session,
         *,
         location: str | None = None,
-        stamping_supplier: str | None = None,
         vehicle_model: str | None = None,
-        version: str | None = None,
     ) -> int:
-        """统计去重后的材料+厚度规格行数（含拼焊子片）。"""
+        """统计去重后的材料+厚度规格行数（含拼焊子片；统计可按车型收窄）。"""
+        loc = location.strip() if location else None
+        vehicle = vehicle_model.strip() if vehicle_model else None
+        if not loc and not vehicle:
+            return 0
         return self.repository.count_material_specs(
             db,
-            location=location.strip() if location else None,
-            stamping_supplier=stamping_supplier.strip() if stamping_supplier else None,
-            vehicle_model=vehicle_model.strip() if vehicle_model else None,
-            version=version.strip() if version else None,
+            location=loc,
+            vehicle_model=vehicle,
         )
 
-    def list_material_specs(
+    def list_distinct_spec_grades(
         self,
         db: Session,
         *,
         location: str | None = None,
-        stamping_supplier: str | None = None,
         vehicle_model: str | None = None,
-        version: str | None = None,
-    ) -> list[MaterialSpecRow]:
-        """列出去重后的 基地 + 材料(钢种) + 厚度（含拼焊子片，钢价计算用）。"""
-        return self.repository.list_material_specs(
+    ) -> list[str]:
+        """统计用：范围内去重牌号（含拼焊子片）。"""
+        loc = location.strip() if location else None
+        vehicle = vehicle_model.strip() if vehicle_model else None
+        if not loc and not vehicle:
+            return []
+        return self.repository.list_distinct_spec_grades(
             db,
-            location=location.strip() if location else None,
-            stamping_supplier=stamping_supplier.strip() if stamping_supplier else None,
-            vehicle_model=vehicle_model.strip() if vehicle_model else None,
-            version=version.strip() if version else None,
+            location=loc,
+            vehicle_model=vehicle,
         )
+
+    def list_material_specs(self, db: Session, *, location: str) -> list[MaterialSpecRow]:
+        """列出该基地去重后的 基地 + 材料(钢种) + 厚度（含拼焊子片，钢价计算用）。"""
+        loc = location.strip()
+        if not loc:
+            return []
+        return self.repository.list_material_specs(db, location=loc)
 
     def get_by_id(self, db: Session, part_id: int) -> StampingPartWithProcessesResponse:
         """获取单个零件（含工序）"""

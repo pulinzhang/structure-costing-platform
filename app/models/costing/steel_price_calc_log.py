@@ -29,12 +29,6 @@ class SteelPriceCalcLog(AuditUserMixin, Base):
     year: Mapped[int] = mapped_column(Integer, nullable=False, comment="核价年度")
     month: Mapped[int] = mapped_column(Integer, nullable=False, comment="核价月份")
     location: Mapped[str] = mapped_column(String(50), nullable=False, comment="生产基地")
-    stamping_supplier: Mapped[str | None] = mapped_column(
-        String(50), nullable=True, comment="冲压工厂（筛选）"
-    )
-    vehicle_model: Mapped[str | None] = mapped_column(
-        String(50), nullable=True, comment="配套车型（筛选）"
-    )
 
     status: Mapped[str] = mapped_column(
         String(20),

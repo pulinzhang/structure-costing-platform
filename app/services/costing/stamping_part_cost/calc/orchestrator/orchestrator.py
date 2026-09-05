@@ -22,6 +22,7 @@ from app.schemas.vo.stamping_part_cost_vo import (
     StampingPartCostCalcResultVO,
 )
 from app.schemas.vo.user_vo import UserVO
+from app.services.costing.stamping_part_cost.calc.constants import ALL_SUPPLIERS_LOCK
 from app.services.costing.stamping_part_cost.calc.models import ProgressCallback
 from app.services.costing.stamping_part_cost.calc.orchestrator.batch_engine import (
     BatchCalculationEngine,
@@ -52,7 +53,6 @@ class StampingPartCostCalcOrchestrator:
         year: int,
         month: int | None = None,
         location: str | None = None,
-        stamping_supplier: str | None = None,
         vehicle_model: str | None = None,
         version: str | None = None,
     ) -> StampingPartCostCalcReadyVO:
@@ -62,7 +62,6 @@ class StampingPartCostCalcOrchestrator:
             year=year,
             month=month,
             location=location,
-            stamping_supplier=stamping_supplier,
             vehicle_model=vehicle_model,
             version=version,
         )
@@ -131,7 +130,7 @@ class StampingPartCostCalcOrchestrator:
             dto.year,
             dto.month,
             ctx.location,
-            ctx.supplier,
+            ALL_SUPPLIERS_LOCK,
             result.success_count,
             result.failed_count,
             result.skipped_approved_count,

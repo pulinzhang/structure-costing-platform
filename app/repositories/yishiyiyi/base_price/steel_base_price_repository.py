@@ -3,6 +3,7 @@
 只负责数据库访问，事务由 Service 层管理
 """
 
+from collections.abc import Sequence
 from typing import TypeVar
 
 from sqlalchemy import distinct, func
@@ -381,8 +382,14 @@ class SteelBasePriceRepository:
         category_name: str | None = None,
         grade: str | None = None,
         spec: str | None = None,
+        grades_in: Sequence[str] | None = None,
     ) -> int:
         """统计导出数据总量。"""
+        grade_list: list[str] | None = None
+        if grades_in is not None:
+            grade_list = [item for item in grades_in if item]
+            if not grade_list:
+                return 0
         query = db.query(func.count(SteelBasePrice.id))
 
         if year is not None:
@@ -399,5 +406,7 @@ class SteelBasePriceRepository:
             query = query.filter(SteelBasePrice.grade.contains(grade))
         if spec:
             query = query.filter(SteelBasePrice.spec.contains(spec))
+        if grade_list is not None:
+            query = query.filter(SteelBasePrice.grade.in_(grade_list))
 
         return query.scalar() or 0

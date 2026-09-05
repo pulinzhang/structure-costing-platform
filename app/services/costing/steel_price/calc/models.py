@@ -12,13 +12,11 @@ from app.services.costing.steel_price.spec_format import build_spec
 
 @dataclass
 class SteelPriceCalcRequest:
-    """计算入参（对齐 dashboard 钢价统计筛选）。"""
+    """计算入参：核价期 + 生产基地（与车型、冲压厂无关）。"""
 
     year: int
     month: int
-    location: str | None = None
-    stamping_supplier: str | None = None
-    vehicle_model: str | None = None
+    location: str
 
 
 @dataclass
@@ -210,7 +208,5 @@ class SteelPriceCalcResult:
     started_at: str | None = None
     finished_at: str | None = None
     location: str | None = None
-    stamping_supplier: str | None = None
-    vehicle_model: str | None = None
     year: int | None = None
     month: int | None = None

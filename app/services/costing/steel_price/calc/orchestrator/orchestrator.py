@@ -62,7 +62,7 @@ class SteelPriceCalcOrchestrator:
         operator_name: str | None = None,
     ) -> Any:
         """提交前写入 processing 期别锁。"""
-        location = (request.location or "").strip()
+        location = request.location.strip()
         if not location:
             raise BusinessException("计算钢价必须指定生产基地 location")
         return self.calc_log_service.begin_processing(
@@ -70,10 +70,6 @@ class SteelPriceCalcOrchestrator:
             year=request.year,
             month=request.month,
             location=location,
-            stamping_supplier=(
-                request.stamping_supplier.strip() if request.stamping_supplier else None
-            ),
-            vehicle_model=(request.vehicle_model.strip() if request.vehicle_model else None),
             operator_id=operator_id,
             operator_name=operator_name,
         )
@@ -166,8 +162,6 @@ class SteelPriceCalcOrchestrator:
             year=dto.year,
             month=dto.month,
             location=location,
-            stamping_supplier=dto.stamping_supplier,
-            vehicle_model=dto.vehicle_model,
         )
         lock_log = self.begin_processing(
             db,

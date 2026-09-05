@@ -112,8 +112,6 @@ class SteelPriceCalcDTO(BaseModel):
     year: int = Field(..., ge=2000, le=2100, description="核价年度")
     month: int = Field(..., ge=1, le=12, description="核价月份")
     location: str = Field(..., min_length=1, max_length=50, description="生产基地")
-    stamping_supplier: str | None = Field(None, max_length=50, description="冲压工厂")
-    vehicle_model: str | None = Field(None, max_length=50, description="配套车型")
 
 
 class SteelPriceBatchDeleteDTO(BaseModel):
@@ -245,8 +243,6 @@ class SteelPriceCalcLogCreate:
     status: str
     detail_text: str
     started_at: datetime
-    stamping_supplier: str | None = None
-    vehicle_model: str | None = None
     material_count: int = 0
     enriched_count: int = 0
     no_base_count: int = 0

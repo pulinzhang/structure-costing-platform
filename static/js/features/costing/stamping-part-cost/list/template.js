@@ -39,7 +39,7 @@ export function partCostListTemplate() {
                                 ￥<span id="costHudAvg">—</span>
                                 </div>
                                 <div class="text-[9px] font-mono text-[#FF1E27]/60 mt-1 flex justify-between">
-                                    <span>系统自动计算</span>
+                                    <span id="costHudAvgCaption">整车各厂混合</span>
                                     <span id="costHudSkuCount">— 条</span>
                                 </div>
                             </div>
@@ -96,8 +96,9 @@ export function partCostListTemplate() {
                             <div class="flex items-center gap-2 flex-wrap">
                                 <span id="costCapsulePeriod" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部期间</span>
                                 <span id="costCapsuleLocation" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部基地</span>
-                                <span id="costCapsuleSupplier" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部工厂</span>
                                 <span id="costCapsuleVehicle" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部车型</span>
+                                <span id="costCapsuleVersion" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部版本</span>
+                                <span id="costCapsuleSupplier" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部工厂</span>
                             </div>
                         </div>
                         <div class="flex items-center gap-3 shrink-0">
@@ -121,8 +122,9 @@ export function partCostListTemplate() {
                             ${filterSelect('costYearFilter', '年度')}
                             ${filterSelect('costMonthFilter', '月份')}
                             ${filterSelect('costLocationFilter', '基地')}
-                            ${filterSelect('costSupplierFilter', '冲压工厂')}
                             ${filterSelect('costVehicleModelFilter', '配套车型')}
+                            ${filterSelect('costVersionFilter', '版本')}
+                            ${filterSelect('costSupplierFilter', '冲压工厂')}
                             ${filterSelect('costAuditFilter', '审核状态')}
                             ${filterInput('costPartNumberFilter', '零件号', '短号或完整零件号')}
                             <button id="costResetBtn" type="button"
@@ -131,7 +133,7 @@ export function partCostListTemplate() {
                                 重置
                             </button>
                         </div>
-                        <p class="mt-2 text-[10px] text-[#555555]">批量删除 / 审核 / 反审核须选定年度、月份、基地、冲压工厂。导出须选定配套车型。</p>
+                        <p class="mt-2 text-[10px] text-[#555555]">批量审核 / 反审核按整车签字（工厂筛不影响签字范围）。批量删除与导出可按工厂收窄。导出须选定配套车型。</p>
                     </div>
                 </div>
 
@@ -469,6 +471,8 @@ export function updatePartCostHud(total, summary) {
     setText('costHudSkuCount', `${Number(total || 0).toLocaleString('zh-CN')} 条`);
     setText('costHudPending', String(data.pending_count ?? 0));
     setText('costHudApproved', String(data.approved_count ?? 0));
+    const mill = document.getElementById('costSupplierFilter')?.value || '';
+    setText('costHudAvgCaption', mill ? `工厂 ${mill}` : '整车各厂混合');
 }
 
 /**
@@ -480,6 +484,7 @@ export function updateCostFilterCapsules() {
     const location = document.getElementById('costLocationFilter')?.value || '';
     const supplier = document.getElementById('costSupplierFilter')?.value || '';
     const vehicle = document.getElementById('costVehicleModelFilter')?.value || '';
+    const version = document.getElementById('costVersionFilter')?.value || '';
     const audit = document.getElementById('costAuditFilter')?.value || '';
     const part = document.getElementById('costPartNumberFilter')?.value.trim() || '';
 
@@ -490,6 +495,7 @@ export function updateCostFilterCapsules() {
     const locationEl = document.getElementById('costCapsuleLocation');
     const supplierEl = document.getElementById('costCapsuleSupplier');
     const vehicleEl = document.getElementById('costCapsuleVehicle');
+    const versionEl = document.getElementById('costCapsuleVersion');
     const countEl = document.getElementById('costAdvancedFilterCount');
 
     if (periodEl) {
@@ -506,16 +512,20 @@ export function updateCostFilterCapsules() {
         locationEl.textContent = location || '全部基地';
         locationEl.className = location ? activeCapsule : idleCapsule;
     }
-    if (supplierEl) {
-        supplierEl.textContent = supplier || '全部工厂';
-        supplierEl.className = supplier ? activeCapsule : idleCapsule;
-    }
     if (vehicleEl) {
         vehicleEl.textContent = vehicle || '全部车型';
         vehicleEl.className = vehicle ? activeCapsule : idleCapsule;
     }
+    if (versionEl) {
+        versionEl.textContent = version || '全部版本';
+        versionEl.className = version ? activeCapsule : idleCapsule;
+    }
+    if (supplierEl) {
+        supplierEl.textContent = supplier || '全部工厂';
+        supplierEl.className = supplier ? activeCapsule : idleCapsule;
+    }
 
-    const advancedActive = [year, month, location, supplier, vehicle, audit, part].filter(Boolean).length;
+    const advancedActive = [year, month, location, vehicle, version, supplier, audit, part].filter(Boolean).length;
     if (countEl) countEl.textContent = `(${advancedActive})`;
 }
 

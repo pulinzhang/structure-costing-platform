@@ -39,7 +39,7 @@ class CostingEngineRunStep(Base):
         String(120),
         nullable=False,
         default="",
-        comment="工厂名，或 vehicle_model|bom_version",
+        comment="车型，或 vehicle_model|bom_version",
     )
     status: Mapped[str] = mapped_column(
         String(20),

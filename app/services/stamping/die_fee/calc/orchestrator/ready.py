@@ -22,10 +22,8 @@ def collect_calc_ready(
     year: int,
     location: str | None = None,
     vehicle_model: str | None = None,
-    stamping_supplier: str | None = None,
     version: str | None = None,
 ) -> StampingDieFeeCalcReadyVO:
-    supplier_filter = strip_optional(stamping_supplier)
     version_filter = strip_optional(version)
     has_unit_price = False
     calculable_count = 0
@@ -36,7 +34,7 @@ def collect_calc_ready(
         )
         persist_parts = parts_for_identity(
             all_parts,
-            stamping_supplier=supplier_filter,
+            stamping_supplier=None,
             version=version_filter,
         )
         part_count = len(persist_parts)
@@ -58,7 +56,7 @@ def collect_calc_ready(
                 )
                 if calculated is not None and matches_part(
                     part,
-                    stamping_supplier=supplier_filter,
+                    stamping_supplier=None,
                     version=version_filter,
                 ):
                     calculable_count += 1
@@ -66,7 +64,7 @@ def collect_calc_ready(
         year=year,
         location=location,
         vehicle_model=vehicle_model,
-        stamping_supplier=supplier_filter,
+        stamping_supplier=None,
         version=version_filter,
         part_count=part_count,
         calculable_count=calculable_count,

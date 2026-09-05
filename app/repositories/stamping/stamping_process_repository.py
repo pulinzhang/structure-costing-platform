@@ -28,11 +28,18 @@ class StampingProcessRepository:
         """工序总数。"""
         return db.query(StampingProcess).count()
 
-    def count_by_part_location(self, db: Session, location: str | None = None) -> int:
-        """按零件生产基地统计工序数；location 为空则全库。"""
+    def count_by_part_location(
+        self,
+        db: Session,
+        location: str | None = None,
+        vehicle_model: str | None = None,
+    ) -> int:
+        """按零件生产基地 / 车型统计工序数；空则不收窄该维。"""
         q = db.query(StampingProcess).join(StampingPart, StampingProcess.part_id == StampingPart.id)
         if location:
             q = q.filter(StampingPart.location == location)
+        if vehicle_model:
+            q = q.filter(StampingPart.vehicle_model == vehicle_model)
         return int(q.count())
 
     def get_by_id(self, db: Session, process_id: int) -> StampingProcess | None:

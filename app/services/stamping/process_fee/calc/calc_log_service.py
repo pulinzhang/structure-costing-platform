@@ -34,11 +34,7 @@ from app.services.stamping.process_fee.calc.constants import (
     STATUS_PROCESSING,
 )
 from app.services.stamping.process_fee.calc.models import DuplicateScopeCalcError
-from app.services.stamping.process_fee.scope import (
-    ALL_SUPPLIERS_LOCK,
-    lock_supplier_key,
-    require_scope,
-)
+from app.services.stamping.process_fee.scope import ALL_SUPPLIERS_LOCK, require_calc_scope
 
 logger = logging.getLogger("service.stamping.process_fee.calc.log")
 
@@ -70,20 +66,22 @@ class ProcessFeeCalcLogService:
         operator_id: int | None,
         operator_name: str | None,
     ) -> StampingProcessFeeCalcLog:
-        scope = require_scope(dto)
+        scope = require_calc_scope(dto)
         location = scope.location
-        lock_supplier = lock_supplier_key(scope.stamping_supplier)
+        lock_supplier = ALL_SUPPLIERS_LOCK
         self._ensure_processing_lock_index(db)
         self.expire_stale_processing(
             db,
             year=dto.year,
             location=location,
+            vehicle_model=scope.vehicle_model,
             stamping_supplier=lock_supplier,
         )
         if self._has_conflicting_lock(
             db,
             year=dto.year,
             location=location,
+            vehicle_model=scope.vehicle_model,
             lock_supplier=lock_supplier,
         ):
             raise DuplicateScopeCalcError(DUPLICATE_SCOPE_CALC_MESSAGE)
@@ -148,9 +146,12 @@ class ProcessFeeCalcLogService:
         *,
         year: int,
         location: str,
+        vehicle_model: str,
         lock_supplier: str,
     ) -> bool:
-        rows = self.calc_log_repo.list_processing(db, year=year, location=location)
+        rows = self.calc_log_repo.list_processing(
+            db, year=year, location=location, vehicle_model=vehicle_model
+        )
         return any(self._lock_conflicts(lock_supplier, row.stamping_supplier) for row in rows)
 
     def expire_stale_processing(
@@ -159,10 +160,13 @@ class ProcessFeeCalcLogService:
         *,
         year: int,
         location: str,
+        vehicle_model: str,
         stamping_supplier: str,
     ) -> None:
         changed = False
-        for record in self.calc_log_repo.list_processing(db, year=year, location=location):
+        for record in self.calc_log_repo.list_processing(
+            db, year=year, location=location, vehicle_model=vehicle_model
+        ):
             if not self._lock_conflicts(stamping_supplier, record.stamping_supplier):
                 continue
             if now() - record.started_at < timedelta(seconds=STALE_PROCESSING_SECONDS):

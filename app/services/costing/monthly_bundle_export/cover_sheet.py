@@ -186,7 +186,6 @@ def write_cover_sheet(
     location: str,
     vehicle_model: str,
     bom_version: str,
-    stamping_supplier: str | None = None,
 ) -> str:
     """写入合册首页封皮；返回 sheet 名。"""
     ws = resolve_worksheet(wb, _SHEET_TITLE)

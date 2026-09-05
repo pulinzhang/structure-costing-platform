@@ -16,7 +16,6 @@ from app.models.costing.costing_engine_run import CostingEngineRun
 from app.repositories.costing.engine.costing_engine_run_repository import (
     CostingEngineRunRepository,
 )
-from app.repositories.stamping.stamping_part_repository import StampingPartRepository
 from app.schemas.dto.assembly_cost_dto import AssemblyCostCalcDTO
 from app.schemas.dto.bom_welding_fee_dto import BomWeldingFeeCalcDTO
 from app.schemas.dto.bom_welding_process_breakdown_dto import (
@@ -149,7 +148,7 @@ class RunOrchestrator:
                 process_fee_dto = StampingProcessFeeCalcDTO(
                     year=discovery.year,
                     location=discovery.location,
-                    stamping_supplier=item.scope_key,
+                    vehicle_model=item.scope_key,
                 )
                 process_fee_result = self.process_fee_orch.calculate(
                     db, process_fee_dto, current_user=current_user
@@ -242,41 +241,22 @@ class RunOrchestrator:
         db: Session,
         *,
         discovery: DiscoveryResult,
-        stamping_supplier: str,
+        vehicle_model: str,
         current_user: UserVO,
     ) -> tuple[bool, str, dict[str, Any] | None]:
         try:
-            options = StampingPartRepository().get_cascade_filter_options(
-                db,
+            dto = StampingPartCostCalcDTO(
+                year=discovery.year,
+                month=discovery.month,
                 location=discovery.location,
-                stamping_supplier=stamping_supplier,
+                vehicle_model=vehicle_model,
             )
-            vehicle_models = [
-                name.strip()
-                for name in (options.get("vehicle_models") or [])
-                if (name or "").strip()
-            ]
-            if not vehicle_models:
-                return False, "该工厂无配套车型，无法计算零件价", None
-
-            statuses: list[str] = []
-            all_ok = True
-            for vehicle_model in vehicle_models:
-                dto = StampingPartCostCalcDTO(
-                    year=discovery.year,
-                    month=discovery.month,
-                    location=discovery.location,
-                    stamping_supplier=stamping_supplier,
-                    vehicle_model=vehicle_model,
-                )
-                result = self.part_cost_orch.calculate(db, dto, current_user=current_user)
-                status = getattr(result, "status", "success")
-                statuses.append(f"{vehicle_model}:{status}")
-                if status == "failed":
-                    all_ok = False
-            return all_ok, f"零件价 {'；'.join(statuses)}", {"status": ";".join(statuses)}
+            result = self.part_cost_orch.calculate(db, dto, current_user=current_user)
+            status = getattr(result, "status", "success")
+            ok = status != "failed"
+            return ok, f"零件价 {vehicle_model} status={status}", {"status": status}
         except Exception as exc:
-            logger.exception("零件价失败: %s", stamping_supplier)
+            logger.exception("零件价失败: %s", vehicle_model)
             db.rollback()
             return False, str(exc), None
 

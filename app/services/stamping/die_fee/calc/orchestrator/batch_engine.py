@@ -57,7 +57,7 @@ class BatchCalculationEngine:
             if is_scrap_byproduct_die_part(part, ctx.scrap_byproduct_keys):
                 if matches_part(
                     part,
-                    stamping_supplier=dto.stamping_supplier,
+                    stamping_supplier=None,
                     version=dto.version,
                 ):
                     outcome.skipped_no_die_count += 1
@@ -72,7 +72,7 @@ class BatchCalculationEngine:
             )
             if matches_part(
                 part,
-                stamping_supplier=dto.stamping_supplier,
+                stamping_supplier=None,
                 version=dto.version,
             ):
                 outcome.missing_die_number_hints.extend(collect_missing_die_number_hints(part))

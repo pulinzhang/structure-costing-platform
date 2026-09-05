@@ -25,6 +25,7 @@ from app.schemas.dto.stamping_die_fee_dto import (
 )
 from app.schemas.vo.stamping_die_fee_vo import StampingDieFeeCalcLogVO
 from app.services.stamping.die_fee.calc.constants import (
+    ALL_SUPPLIERS_LOCK,
     DUPLICATE_SCOPE_CALC_MESSAGE,
     STALE_PROCESSING_SECONDS,
     STATUS_FAILED,
@@ -85,7 +86,7 @@ class DieFeeCalcLogService:
                     year=dto.year,
                     location=dto.location,
                     vehicle_model=dto.vehicle_model,
-                    stamping_supplier=dto.stamping_supplier,
+                    stamping_supplier=ALL_SUPPLIERS_LOCK,
                     version=dto.version,
                     status=STATUS_PROCESSING,
                     detail_text="计算进行中...",

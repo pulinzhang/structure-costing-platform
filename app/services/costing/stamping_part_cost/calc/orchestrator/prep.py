@@ -14,7 +14,10 @@ from app.models.stamping import StampingPart
 from app.models.yishiyiyi import StampingScrapPrice
 from app.schemas.dto.stamping_part_cost_dto import StampingPartCostCalcDTO
 from app.schemas.vo.stamping_part_cost_vo import StampingPartCostCalcReadyVO
-from app.services.costing.stamping_part_cost.calc.constants import FORMULA_VERSION
+from app.services.costing.stamping_part_cost.calc.constants import (
+    ALL_SUPPLIERS_LOCK,
+    FORMULA_VERSION,
+)
 from app.services.costing.stamping_part_cost.calc.orchestrator.deps import PartCostCalcDeps
 from app.services.costing.stamping_part_cost.calc.orchestrator.progress import ProgressNotifier
 from app.services.costing.stamping_part_cost.calc.orchestrator.rates import (
@@ -28,7 +31,6 @@ from app.services.costing.stamping_part_cost.calc.scope import require_calc_scop
 @dataclass(frozen=True, slots=True)
 class CalcPrepContext:
     location: str
-    supplier: str
     rates: PartCostCalcRates
     scrap: StampingScrapPrice
     scrap_ton_price: Decimal
@@ -44,12 +46,14 @@ def prepare_calc_run(
     dto: StampingPartCostCalcDTO,
     progress: ProgressNotifier,
 ) -> CalcPrepContext:
-    location, supplier, vehicle_model = require_calc_scope(dto)
+    scope = require_calc_scope(dto)
+    location = scope.location
+    vehicle_model = scope.vehicle_model
     rates = load_part_cost_calc_rates(deps.settings_service, db)
     started_at = now()
     detail_lines = [
         f"开始计算 year={dto.year} month={dto.month} location={location} "
-        f"supplier={supplier} vehicle_model={vehicle_model} "
+        f"supplier={ALL_SUPPLIERS_LOCK} vehicle_model={vehicle_model} "
         f"density={rates.density} loss_rate={rates.loss_rate} "
         f"recovery={rates.recovery_rate} finance={rates.finance_rate} "
         f"management={rates.management_rate} "
@@ -64,7 +68,6 @@ def prepare_calc_run(
         year=dto.year,
         month=dto.month,
         location=location,
-        stamping_supplier=supplier,
         vehicle_model=vehicle_model,
         version=dto.version,
     )
@@ -92,19 +95,15 @@ def prepare_calc_run(
     parts = deps.part_repo.list_with_processes(
         db,
         location=location,
-        stamping_supplier=supplier,
         vehicle_model=vehicle_model,
         version=dto.version,
     )
     if not parts:
-        raise BusinessException(
-            f"基地「{location}」工厂「{supplier}」车型「{vehicle_model}」下未找到匹配的冲压零件"
-        )
+        raise BusinessException(f"基地「{location}」车型「{vehicle_model}」下未找到匹配的冲压零件")
     detail_lines.append(f"匹配零件 {len(parts)} 件")
 
     return CalcPrepContext(
         location=location,
-        supplier=supplier,
         rates=rates,
         scrap=scrap,
         scrap_ton_price=scrap_ton_price,

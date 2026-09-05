@@ -15,7 +15,7 @@ class StampingProcessFeeCalcLog(AuditUserMixin, Base):
 
     一次「开始计算」先写入 processing 行作为范围锁，结束后更新为终态；
     detail_text 记录完整过程。
-    锁范围：year + location + stamping_supplier。
+    锁范围：year + location + vehicle_model（工厂键固定为「全部工厂」）。
     """
 
     __tablename__ = "stamping_process_fee_calc_logs"
@@ -85,7 +85,7 @@ class StampingProcessFeeCalcLog(AuditUserMixin, Base):
             "uq_spf_calc_processing",
             "year",
             "location",
-            "stamping_supplier",
+            "vehicle_model",
             unique=True,
             sqlite_where=text("status = 'processing'"),
         ),

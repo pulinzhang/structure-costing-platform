@@ -20,13 +20,12 @@ from app.services.stamping.process_fee.calc.orchestrator.messages import (
     format_rate_loaded,
 )
 from app.services.stamping.process_fee.calc.orchestrator.progress import ProgressNotifier
-from app.services.stamping.process_fee.scope import lock_supplier_key, require_scope
+from app.services.stamping.process_fee.scope import ALL_SUPPLIERS_LOCK, require_calc_scope
 
 
 @dataclass(slots=True)
 class CalcPrepContext:
     location: str
-    mill_lock_key: str
     rate_map: dict[int, TonnageRateInfo]
     parts: list[StampingPart]
     started_at: datetime
@@ -39,12 +38,10 @@ def prepare_calc_run(
     dto: StampingProcessFeeCalcDTO,
     progress: ProgressNotifier,
 ) -> CalcPrepContext:
-    scope = require_scope(dto)
+    scope = require_calc_scope(dto)
     location = scope.location
-    supplier = scope.stamping_supplier
-    supplier_label = lock_supplier_key(supplier)
     started_at = now()
-    detail_lines = [format_prep_opening(dto.year, location, supplier_label)]
+    detail_lines = [format_prep_opening(dto.year, location, ALL_SUPPLIERS_LOCK)]
 
     progress.report(5, "加载冲次单价...")
     rates = deps.tonnage_repo.list_by_location_year(db, location, dto.year)
@@ -66,7 +63,6 @@ def prepare_calc_run(
     parts = deps.part_repo.list_with_processes(
         db,
         location=location,
-        stamping_supplier=supplier,
         vehicle_model=scope.vehicle_model,
         version=scope.version,
     )
@@ -76,7 +72,6 @@ def prepare_calc_run(
 
     return CalcPrepContext(
         location=location,
-        mill_lock_key=supplier_label,
         rate_map=rate_map,
         parts=parts,
         started_at=started_at,

@@ -98,12 +98,12 @@ class GateChecker:
         year: int,
         month: int,
     ) -> CostingEngineGateItemVO:
-        if not discovery.stamping_suppliers:
+        if not discovery.vehicle_models:
             return self._item(
                 code="stamping_process",
                 ok=False,
                 missing=["未发现该基地下冲压工艺零件"],
-                message="缺少冲压工艺零件/工序数据，无法展开工厂计划",
+                message="缺少冲压工艺零件/工序数据，无法展开车型计划",
                 location=location,
                 year=year,
                 month=month,
@@ -112,7 +112,7 @@ class GateChecker:
             code="stamping_process",
             ok=True,
             missing=[],
-            message=f"已发现 {len(discovery.stamping_suppliers)} 个冲压工厂",
+            message=f"已发现 {len(discovery.vehicle_models)} 个配套车型",
             location=location,
             year=year,
             month=month,

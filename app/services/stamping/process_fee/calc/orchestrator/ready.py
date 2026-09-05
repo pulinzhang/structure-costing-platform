@@ -14,7 +14,6 @@ def collect_calc_ready(
     *,
     year: int,
     location: str | None = None,
-    stamping_supplier: str | None = None,
     vehicle_model: str | None = None,
     version: str | None = None,
 ) -> StampingProcessFeeCalcReadyVO:
@@ -27,14 +26,13 @@ def collect_calc_ready(
         parts = deps.part_repo.list_with_processes(
             db,
             location=location,
-            stamping_supplier=stamping_supplier,
             vehicle_model=vehicle_model,
             version=version,
         )
     return StampingProcessFeeCalcReadyVO(
         year=year,
         location=location,
-        stamping_supplier=stamping_supplier,
+        stamping_supplier=None,
         vehicle_model=vehicle_model,
         version=version,
         part_count=len(parts),

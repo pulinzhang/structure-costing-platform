@@ -13,6 +13,7 @@ from app.schemas.dto.stamping_part_cost_dto import (
 from app.schemas.vo.stamping_part_cost_vo import StampingPartCostCalcResultVO
 from app.schemas.vo.user_vo import UserVO
 from app.services.costing.stamping_part_cost.calc.constants import (
+    ALL_SUPPLIERS_LOCK,
     STATUS_FAILED,
     STATUS_PARTIAL,
     STATUS_SUCCESS,
@@ -61,7 +62,7 @@ def persist_calc_result(
         year=dto.year,
         month=dto.month,
         location=ctx.location,
-        stamping_supplier=ctx.supplier,
+        stamping_supplier=ALL_SUPPLIERS_LOCK,
         vehicle_model=dto.vehicle_model,
         version=dto.version,
         calc_batch_id=calc_batch_id,

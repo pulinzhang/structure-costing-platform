@@ -56,7 +56,6 @@ class MonthlyBundleExportService:
         location: str,
         vehicle_model: str,
         bom_version: str,
-        stamping_supplier: str | None = None,
         current_user: UserVO,
     ) -> tuple[bytes, str]:
         """
@@ -64,13 +63,13 @@ class MonthlyBundleExportService:
 
         bom_version 仅用于 BOM/成品侧（成品核价、焊接费）。
         冲压零件核价与加工费不传版本：工艺版本与 BOM 版本本就不一致。
+        冲压侧按整车导出，不按工厂切分。
         """
         location = (location or "").strip()
         vehicle_model = (vehicle_model or "").strip()
         bom_version = (bom_version or "").strip()
         if not location or not vehicle_model or not bom_version:
             raise BusinessException("基地、项目、版本不能为空")
-        stamping_supplier = (stamping_supplier or "").strip() or None
 
         wb = Workbook()
         sheet_counts: dict[str, int] = {}
@@ -82,7 +81,6 @@ class MonthlyBundleExportService:
             location=location,
             vehicle_model=vehicle_model,
             bom_version=bom_version,
-            stamping_supplier=stamping_supplier,
         )
         sheet_counts[cover_title] = 1
 
@@ -105,7 +103,6 @@ class MonthlyBundleExportService:
             year=year,
             month=month,
             location=location,
-            stamping_supplier=stamping_supplier,
             vehicle_model=vehicle_model,
         )
         sheet_counts[title] = count
@@ -115,7 +112,6 @@ class MonthlyBundleExportService:
             db,
             year=year,
             location=location,
-            stamping_supplier=stamping_supplier,
             vehicle_model=vehicle_model,
         )
         sheet_counts[title] = count

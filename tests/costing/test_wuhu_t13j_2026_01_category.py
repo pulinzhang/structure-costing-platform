@@ -9,7 +9,7 @@ from types import SimpleNamespace
 import pytest
 from sqlalchemy.orm import Session, selectinload
 
-from app.models.stamping import StampingPart
+from app.models.stamping import StampingPart, StampingTailorWeldBlank
 from app.services.costing.stamping_part_cost.calc.resolvers import PriceResolver
 from app.services.costing.steel_price.calc.models import (
     CalcRow,
@@ -19,7 +19,6 @@ from app.services.costing.steel_price.calc.models import (
 from app.services.costing.steel_price.calc.steps.apply_adjustments import AdjustmentApplier
 from app.services.costing.steel_price.calc.steps.enrich_base_price import BasePriceEnricher
 from app.services.costing.steel_price.calc.steps.load_materials import MaterialThicknessLoader
-from app.services.stamping.stamping_service import StampingPartService
 from app.services.yishiyiyi.steel_grade_category import SteelGradeCategoryService
 
 YEAR = 2026
@@ -35,8 +34,54 @@ def _request() -> SteelPriceCalcRequest:
         year=YEAR,
         month=MONTH,
         location=LOCATION,
-        vehicle_model=VEHICLE_MODEL,
     )
+
+
+def _t13j_process_spec_rows(db: Session) -> list[dict[str, object]]:
+    """T13J 工艺规格（含拼焊子片）；仅用于对照断言，不参与钢价取数。"""
+    part_rows = (
+        db.query(StampingPart.location, StampingPart.material, StampingPart.thickness)
+        .filter(
+            StampingPart.location == LOCATION,
+            StampingPart.vehicle_model == VEHICLE_MODEL,
+            StampingPart.material.isnot(None),
+            StampingPart.material != "",
+            StampingPart.thickness.isnot(None),
+        )
+        .all()
+    )
+    blank_rows = (
+        db.query(
+            StampingPart.location,
+            StampingTailorWeldBlank.material,
+            StampingTailorWeldBlank.thickness,
+        )
+        .join(
+            StampingTailorWeldBlank,
+            StampingTailorWeldBlank.part_id == StampingPart.id,
+        )
+        .filter(
+            StampingPart.location == LOCATION,
+            StampingPart.vehicle_model == VEHICLE_MODEL,
+            StampingTailorWeldBlank.material.isnot(None),
+            StampingTailorWeldBlank.material != "",
+            StampingTailorWeldBlank.thickness.isnot(None),
+        )
+        .all()
+    )
+    seen: set[tuple[str, str, str]] = set()
+    rows: list[dict[str, object]] = []
+    for loc, material, thickness in list(part_rows) + list(blank_rows):
+        location = (loc or "").strip()
+        grade = (material or "").strip()
+        if not location or not grade or thickness is None:
+            continue
+        key = (location, grade, str(thickness))
+        if key in seen:
+            continue
+        seen.add(key)
+        rows.append({"location": location, "material": grade, "thickness": thickness})
+    return rows
 
 
 def _ton(row: CalcRow) -> Decimal:
@@ -59,12 +104,10 @@ def _calc_rows(db: Session) -> list[CalcRow]:
 
 @pytest.mark.integration
 def test_t13j_process_grades_map_to_cold_or_galv(db_session: Session) -> None:
-    raw = StampingPartService().list_material_specs(
-        db_session, location=LOCATION, vehicle_model=VEHICLE_MODEL
-    )
+    raw = _t13j_process_spec_rows(db_session)
     if not raw:
         pytest.skip(f"无工艺规格: {LOCATION}/{VEHICLE_MODEL}")
-    grades = sorted({(row.get("material") or "").strip() for row in raw})
+    grades = sorted({str(row.get("material") or "").strip() for row in raw})
     category_map = SteelGradeCategoryService().map_grades(db_session, grades)
     missing = [grade for grade in grades if category_map.get(grade) is None]
     assert not missing, f"牌号未进档案: {missing}"
@@ -100,10 +143,12 @@ def test_t13j_process_grades_map_to_cold_or_galv(db_session: Session) -> None:
 def test_t13j_loader_keeps_every_grade_thickness(db_session: Session) -> None:
     loaded = MaterialThicknessLoader().load(db_session, _request())
     if not loaded:
-        pytest.skip(f"无材料行: {LOCATION}/{VEHICLE_MODEL}")
-    keys = {(row.material, row.thickness) for row in loaded}
-    assert len(keys) == 34
-    assert len(loaded) == 34
+        pytest.skip(f"无材料行: {LOCATION}")
+    t13j = _t13j_process_spec_rows(db_session)
+    t13j_keys = {(str(row["material"]).strip(), Decimal(str(row["thickness"]))) for row in t13j}
+    loaded_keys = {(row.material, row.thickness) for row in loaded}
+    assert t13j_keys <= loaded_keys
+    assert len(t13j_keys) == 34
     assert "DC01" in {row.material for row in loaded}
     assert "DC03" in {row.material for row in loaded}
     assert "DC51D+Z" in {row.material for row in loaded}
@@ -145,9 +190,11 @@ def test_t13j_calc_rows_persist_each_grade_with_mill_category_price(db_session: 
         for row in rows
     }
     assert len(persist_keys) == len(rows)
-    assert {row.grade for row in rows} <= {item.material for item in loaded}
-    assert {row.category_name for row in rows} <= {"冷轧", "镀锌"}
-    assert all(row.grade != row.category_name for row in rows)
+    t13j_grades = {str(row["material"]).strip() for row in _t13j_process_spec_rows(db_session)}
+    t13j_rows = [row for row in rows if row.grade in t13j_grades]
+    assert {row.grade for row in t13j_rows} <= {item.material for item in loaded}
+    assert {row.category_name for row in t13j_rows} <= {"冷轧", "镀锌"}
+    assert all(row.grade != row.category_name for row in t13j_rows)
     assert "DC01" in {row.grade for row in rows}
     assert "HC180Y" in {row.grade for row in rows}
     assert "DC03" not in {row.grade for row in rows}

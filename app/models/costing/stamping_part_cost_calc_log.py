@@ -13,7 +13,7 @@ class StampingPartCostCalcLog(AuditUserMixin, Base):
     """
     零件价格核算批次日志。
 
-    锁范围：year + month + location + stamping_supplier。
+    锁范围：year + month + location + vehicle_model（工厂键固定为「全部工厂」）。
     """
 
     __tablename__ = "stamping_part_cost_calc_logs"
@@ -79,7 +79,7 @@ class StampingPartCostCalcLog(AuditUserMixin, Base):
             "year",
             "month",
             "location",
-            "stamping_supplier",
+            "vehicle_model",
             unique=True,
             sqlite_where=text("status = 'processing'"),
         ),

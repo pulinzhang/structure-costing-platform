@@ -38,7 +38,7 @@ from app.schemas.vo.stamping_process_fee_vo import (
 )
 from app.schemas.vo.user_vo import UserVO
 from app.services.stamping.process_fee.fee_math import resolve_final_fee
-from app.services.stamping.process_fee.scope import require_scope
+from app.services.stamping.process_fee.scope import require_audit_scope, require_scope
 
 
 class StampingProcessFeeService:
@@ -172,7 +172,7 @@ class StampingProcessFeeService:
         dto: StampingProcessFeeBatchApproveDTO,
         current_user: UserVO,
     ) -> StampingProcessFeeBatchAuditResultVO:
-        scope = require_scope(dto)
+        scope = require_audit_scope(dto)
         operator = display_name(current_user)
         if not operator:
             raise BusinessException("无法识别当前登录用户")
@@ -228,7 +228,7 @@ class StampingProcessFeeService:
         dto: StampingProcessFeeBatchReverseAuditDTO,
         current_user: UserVO,
     ) -> StampingProcessFeeBatchAuditResultVO:
-        scope = require_scope(dto)
+        scope = require_audit_scope(dto)
         remark = (dto.reverse_audit_remark or "").strip()
         if not remark:
             raise BusinessException("反审核原因必填")

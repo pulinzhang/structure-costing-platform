@@ -6,7 +6,7 @@ STATUS_PARTIAL = "partial"
 STATUS_FAILED = "failed"
 
 STALE_PROCESSING_SECONDS = 2 * 60 * 60
-DUPLICATE_SCOPE_CALC_MESSAGE = "当前年度/基地范围正在计算中，请勿重复提交。"
+DUPLICATE_SCOPE_CALC_MESSAGE = "当前年度/基地/车型正在计算中，请勿重复提交。"
 
 TONNAGE_SOURCE_SELF = "self"
 TONNAGE_SOURCE_INHERITED = "inherited"

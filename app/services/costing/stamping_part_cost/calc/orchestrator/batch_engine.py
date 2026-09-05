@@ -82,6 +82,10 @@ class BatchCalculationEngine:
 
         return outcome
 
+    @staticmethod
+    def _part_supplier(part: StampingPart) -> str:
+        return (part.stamping_supplier or "").strip()
+
     def _select_calculator(
         self, part: StampingPart
     ) -> PartCostCalculator | TailorWeldPartCostCalculator:
@@ -110,7 +114,7 @@ class BatchCalculationEngine:
             year=dto.year,
             month=dto.month,
             location=part.location,
-            stamping_supplier=ctx.supplier,
+            stamping_supplier=self._part_supplier(part),
             vehicle_model=part.vehicle_model,
             version=part.version,
             part_number=part.part_number,
@@ -124,7 +128,7 @@ class BatchCalculationEngine:
             part=part,
             year=dto.year,
             month=dto.month,
-            supplier=ctx.supplier,
+            supplier=self._part_supplier(part),
             scrap=ctx.scrap,
             scrap_ton_price=ctx.scrap_ton_price,
             density=rates.density,
@@ -153,7 +157,7 @@ class BatchCalculationEngine:
                 year=dto.year,
                 month=dto.month,
                 location=part.location,
-                supplier=ctx.supplier,
+                supplier=self._part_supplier(part),
                 part=part,
                 snapshot=part_snapshot(part),  # 含是否利废 / 利用哪类废料，按本月落库
                 density=rates.density,

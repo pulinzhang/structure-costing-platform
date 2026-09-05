@@ -33,6 +33,7 @@ class PartCostListFilters(TypedDict):
     locations: list[str]
     suppliers: list[str]
     vehicle_models: list[str]
+    versions: list[str]
     summary: PartCostFilterSummary
 
 
@@ -126,13 +127,18 @@ class StampingPartCostRepository:
         year: int,
         month: int,
         location: str,
-        stamping_supplier: str,
+        stamping_supplier: str | None = None,
+        vehicle_model: str | None = None,
+        version: str | None = None,
     ) -> Query[StampingPartCost]:
-        return db.query(StampingPartCost).filter(
-            StampingPartCost.year == year,
-            StampingPartCost.month == month,
-            StampingPartCost.location == location,
-            StampingPartCost.stamping_supplier == stamping_supplier,
+        return self._build_list_query(
+            db,
+            year=year,
+            month=month,
+            location=location,
+            stamping_supplier=stamping_supplier,
+            vehicle_model=vehicle_model,
+            version=version,
         )
 
     def _build_list_query(
@@ -291,7 +297,9 @@ class StampingPartCostRepository:
         year: int,
         month: int,
         location: str,
-        stamping_supplier: str,
+        stamping_supplier: str | None = None,
+        vehicle_model: str | None = None,
+        version: str | None = None,
         statuses: list[str],
     ) -> int:
         return (
@@ -301,6 +309,8 @@ class StampingPartCostRepository:
                 month=month,
                 location=location,
                 stamping_supplier=stamping_supplier,
+                vehicle_model=vehicle_model,
+                version=version,
             )
             .filter(StampingPartCost.audit_status.in_(statuses))
             .count()
@@ -313,7 +323,9 @@ class StampingPartCostRepository:
         year: int,
         month: int,
         location: str,
-        stamping_supplier: str,
+        stamping_supplier: str | None = None,
+        vehicle_model: str | None = None,
+        version: str | None = None,
     ) -> int:
         count = (
             self._scope_query(
@@ -322,16 +334,21 @@ class StampingPartCostRepository:
                 month=month,
                 location=location,
                 stamping_supplier=stamping_supplier,
+                vehicle_model=vehicle_model,
+                version=version,
             )
             .filter(StampingPartCost.audit_status != AUDIT_APPROVED)
             .delete(synchronize_session=False)
         )
         db.flush()
         logger.info(
-            "批量删除未审核零件价格核算: year=%s month=%s location=%s supplier=%s count=%s",
+            "批量删除未审核零件价格核算: year=%s month=%s location=%s vehicle=%s "
+            "version=%s supplier=%s count=%s",
             year,
             month,
             location,
+            vehicle_model,
+            version,
             stamping_supplier,
             count,
         )
@@ -344,7 +361,9 @@ class StampingPartCostRepository:
         year: int,
         month: int,
         location: str,
-        stamping_supplier: str,
+        stamping_supplier: str | None = None,
+        vehicle_model: str | None = None,
+        version: str | None = None,
         audited_by: str,
         audited_at: datetime,
         audit_remark: str | None,
@@ -365,6 +384,8 @@ class StampingPartCostRepository:
                 month=month,
                 location=location,
                 stamping_supplier=stamping_supplier,
+                vehicle_model=vehicle_model,
+                version=version,
             ).filter(StampingPartCost.audit_status.in_([AUDIT_PENDING, AUDIT_REJECTED])),
             values,
         )
@@ -378,7 +399,9 @@ class StampingPartCostRepository:
         year: int,
         month: int,
         location: str,
-        stamping_supplier: str,
+        stamping_supplier: str | None = None,
+        vehicle_model: str | None = None,
+        version: str | None = None,
         reverse_audited_by: str,
         reverse_audited_at: datetime,
         reverse_audit_remark: str,
@@ -399,6 +422,8 @@ class StampingPartCostRepository:
                 month=month,
                 location=location,
                 stamping_supplier=stamping_supplier,
+                vehicle_model=vehicle_model,
+                version=version,
             ).filter(StampingPartCost.audit_status == AUDIT_APPROVED),
             values,
         )
@@ -480,6 +505,8 @@ class StampingPartCostRepository:
         year: int | None = None,
         month: int | None = None,
         location: str | None = None,
+        vehicle_model: str | None = None,
+        version: str | None = None,
     ) -> list[str]:
         q = db.query(StampingPartCost.stamping_supplier).distinct()
         if year is not None:
@@ -488,6 +515,10 @@ class StampingPartCostRepository:
             q = q.filter(StampingPartCost.month == month)
         if location is not None:
             q = q.filter(StampingPartCost.location == location)
+        if vehicle_model is not None:
+            q = q.filter(StampingPartCost.vehicle_model == vehicle_model)
+        if version is not None:
+            q = q.filter(StampingPartCost.version == version)
         results = q.order_by(StampingPartCost.stamping_supplier).all()
         return [r[0] for r in results if r[0]]
 
@@ -509,4 +540,27 @@ class StampingPartCostRepository:
         if stamping_supplier is not None:
             q = q.filter(StampingPartCost.stamping_supplier == stamping_supplier)
         results = q.order_by(StampingPartCost.vehicle_model).all()
+        return [r[0] for r in results if r[0]]
+
+    def get_distinct_versions(
+        self,
+        db: Session,
+        year: int | None = None,
+        month: int | None = None,
+        location: str | None = None,
+        vehicle_model: str | None = None,
+        stamping_supplier: str | None = None,
+    ) -> list[str]:
+        q = db.query(StampingPartCost.version).distinct()
+        if year is not None:
+            q = q.filter(StampingPartCost.year == year)
+        if month is not None:
+            q = q.filter(StampingPartCost.month == month)
+        if location is not None:
+            q = q.filter(StampingPartCost.location == location)
+        if vehicle_model is not None:
+            q = q.filter(StampingPartCost.vehicle_model == vehicle_model)
+        if stamping_supplier is not None:
+            q = q.filter(StampingPartCost.stamping_supplier == stamping_supplier)
+        results = q.order_by(StampingPartCost.version).all()
         return [r[0] for r in results if r[0]]

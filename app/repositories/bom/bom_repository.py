@@ -172,8 +172,13 @@ class BomSnapshotRepository:
             or 0
         )
 
-    def count_all_nodes(self, db: Session, location: str | None = None) -> int:
-        """统计 BOM 节点总量（可按基地过滤）。"""
+    def count_all_nodes(
+        self,
+        db: Session,
+        location: str | None = None,
+        vehicle_model: str | None = None,
+    ) -> int:
+        """统计 BOM 节点总量（可按基地 / 车型过滤）。"""
         node_q = (
             db.query(func.count(BomNode.id))
             .select_from(BomNode)
@@ -181,6 +186,8 @@ class BomSnapshotRepository:
         )
         if location:
             node_q = node_q.filter(BomSnapshot.location == location)
+        if vehicle_model:
+            node_q = node_q.filter(BomSnapshot.vehicle_model == vehicle_model)
         return int(node_q.scalar() or 0)
 
     def discover_l0_scopes(self, db: Session, locations: list[str]) -> list[BomL0ScopeRow]:

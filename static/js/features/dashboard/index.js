@@ -4,7 +4,7 @@
  */
 
 import { canAccessPage } from '../../permissions.js?v=9';
-import { dashboardTemplate } from './template.js?v=7';
+import { dashboardTemplate } from './template.js?v=8';
 
 const DASHBOARD_STATS_API = '/api/dashboard/stats';
 
@@ -12,6 +12,7 @@ const dashState = {
     year: null,
     month: null,
     location: '',
+    vehicleModel: '',
     loading: false,
 };
 
@@ -66,6 +67,7 @@ function applyScopeOptions(scope) {
     dashState.year = scope.year;
     dashState.month = scope.month;
     dashState.location = scope.location || '';
+    dashState.vehicleModel = scope.vehicle_model || '';
 
     fillSelect(document.getElementById('dashYear'), scope.years || [], {
         selected: scope.year,
@@ -79,13 +81,18 @@ function applyScopeOptions(scope) {
         selected: scope.location || '',
         blankLabel: '全部基地',
     });
+    fillSelect(document.getElementById('dashVehicle'), scope.vehicle_models || [], {
+        selected: scope.vehicle_model || '',
+        blankLabel: '全部车型',
+    });
 
     const loc = scope.location || '全部基地';
+    const vehicle = scope.vehicle_model || '全部车型';
     setText(
         'dashScopeLabel',
-        `${fmtPeriod(scope.year, scope.month)} · ${loc}`
+        `${fmtPeriod(scope.year, scope.month)} · ${loc} · ${vehicle}`
     );
-    setText('dashOutcomeSub', `${fmtPeriod(scope.year, scope.month)} · ${loc}`);
+    setText('dashOutcomeSub', `${fmtPeriod(scope.year, scope.month)} · ${loc} · ${vehicle}`);
 }
 
 function renderOutcome(outcome, partCost, steelPrice) {
@@ -94,6 +101,7 @@ function renderOutcome(outcome, partCost, steelPrice) {
     setText(
         'dashPartAvgMeta',
         `已审 ${partCost?.approved_count ?? o.part_cost_approved ?? 0} · 待审 ${partCost?.pending_count ?? o.part_cost_pending ?? 0}`
+            + (dashState.vehicleModel ? ' · 各厂混合' : '')
     );
     setText('dashPendingTotal', String(o.pending_total ?? 0));
     setText(
@@ -221,7 +229,9 @@ function renderContext(master, bom, yishiyiyi, scope) {
                    <a href="#/stamping-upload" data-page="stamping-upload" class="text-[#d32f2f] hover:underline ml-1 text-xs">去上传</a>`
                 : `<span class="text-[#8E8E93]">${loc ? esc(loc) + ' ' : ''}尚无工艺零件</span>`;
         } else {
-            const scopeTag = loc ? `<span class="text-[#555555]">（${esc(loc)}）</span> ` : '<span class="text-[#555555]">（全部基地）</span> ';
+            const scopeTag = loc
+                ? `<span class="text-[#555555]">（${esc(loc)}${scope?.vehicle_model ? ' · ' + esc(scope.vehicle_model) : ''}）</span> `
+                : `<span class="text-[#555555]">（${scope?.vehicle_model ? esc(scope.vehicle_model) : '全部基地'}）</span> `;
             masterEl.innerHTML = `${scopeTag}<span class="text-[#F0F0F2]">冲压零件 ${esc(m.parts)} · 工序 ${esc(m.processes)} · 车型 ${esc(m.models)}</span>`;
         }
     }
@@ -239,9 +249,10 @@ function renderContext(master, bom, yishiyiyi, scope) {
 
     const period = scope ? fmtPeriod(scope.year, scope.month) : '—';
     const bomLoc = loc || '全部';
+    const vehicleTag = scope?.vehicle_model ? ` · ${scope.vehicle_model}` : '';
     setText(
         'dashBomBlock',
-        `${period} · ${bomLoc}：BOM ${b.snapshot_count ?? 0} 版 / ${b.node_count ?? 0} 节点 · 基价 ${y.base_price_count ?? 0} · 政策(全国) ${y.policy_count ?? 0} · ${scrapText}`
+        `${period} · ${bomLoc}${vehicleTag}：BOM ${b.snapshot_count ?? 0} 版 / ${b.node_count ?? 0} 节点 · 基价 ${y.base_price_count ?? 0} · 政策 ${y.policy_count ?? 0} · ${scrapText}`
     );
 }
 
@@ -276,6 +287,7 @@ async function loadStats() {
         if (dashState.year != null) params.year = dashState.year;
         if (dashState.month != null) params.month = dashState.month;
         if (dashState.location) params.location = dashState.location;
+        if (dashState.vehicleModel) params.vehicle_model = dashState.vehicleModel;
         const res = await HttpClient.get(DASHBOARD_STATS_API, { params });
         renderStats(res.data);
     } catch (error) {
@@ -294,14 +306,17 @@ function bindScopeEvents() {
         const yearEl = document.getElementById('dashYear');
         const monthEl = document.getElementById('dashMonth');
         const locationEl = document.getElementById('dashLocation');
+        const vehicleEl = document.getElementById('dashVehicle');
         dashState.year = yearEl?.value ? Number(yearEl.value) : null;
         dashState.month = monthEl?.value ? Number(monthEl.value) : null;
         dashState.location = locationEl?.value || '';
+        dashState.vehicleModel = vehicleEl?.value || '';
         loadStats();
     };
     document.getElementById('dashYear')?.addEventListener('change', reload);
     document.getElementById('dashMonth')?.addEventListener('change', reload);
     document.getElementById('dashLocation')?.addEventListener('change', reload);
+    document.getElementById('dashVehicle')?.addEventListener('change', reload);
 }
 
 export const DashboardPage = {

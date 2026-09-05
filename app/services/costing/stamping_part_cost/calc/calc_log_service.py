@@ -28,6 +28,7 @@ from app.schemas.vo.stamping_part_cost_vo import (
     StampingPartCostCalcResultVO,
 )
 from app.services.costing.stamping_part_cost.calc.constants import (
+    ALL_SUPPLIERS_LOCK,
     DUPLICATE_SCOPE_CALC_MESSAGE,
     STALE_PROCESSING_SECONDS,
     STATUS_FAILED,
@@ -66,23 +67,26 @@ class PartCostCalcLogService:
         operator_id: int | None,
         operator_name: str | None,
     ) -> StampingPartCostCalcLog:
-        location, supplier, vehicle_model = require_calc_scope(dto)
+        scope = require_calc_scope(dto)
+        location = scope.location
+        lock_supplier = ALL_SUPPLIERS_LOCK
         self._ensure_processing_lock_index(db)
         self.expire_stale_processing(
             db,
             year=dto.year,
             month=dto.month,
             location=location,
-            stamping_supplier=supplier,
+            vehicle_model=scope.vehicle_model,
+            stamping_supplier=lock_supplier,
         )
-        existing = self.calc_log_repo.find_processing(
+        if self._has_conflicting_lock(
             db,
             year=dto.year,
             month=dto.month,
             location=location,
-            stamping_supplier=supplier,
-        )
-        if existing is not None:
+            vehicle_model=scope.vehicle_model,
+            lock_supplier=lock_supplier,
+        ):
             raise DuplicateScopeCalcError(DUPLICATE_SCOPE_CALC_MESSAGE)
 
         started_at = now()
@@ -95,8 +99,8 @@ class PartCostCalcLogService:
                     year=dto.year,
                     month=dto.month,
                     location=location,
-                    stamping_supplier=supplier,
-                    vehicle_model=vehicle_model,
+                    stamping_supplier=lock_supplier,
+                    vehicle_model=scope.vehicle_model,
                     version=dto.version,
                     status=STATUS_PROCESSING,
                     detail_text="计算进行中...",
@@ -135,6 +139,30 @@ class PartCostCalcLogService:
         )
         db.commit()
 
+    def _lock_conflicts(self, lock_supplier: str, existing_supplier: str) -> bool:
+        return ALL_SUPPLIERS_LOCK in (lock_supplier, existing_supplier) or (
+            existing_supplier == lock_supplier
+        )
+
+    def _has_conflicting_lock(
+        self,
+        db: Session,
+        *,
+        year: int,
+        month: int,
+        location: str,
+        vehicle_model: str,
+        lock_supplier: str,
+    ) -> bool:
+        rows = self.calc_log_repo.list_processing(
+            db,
+            year=year,
+            month=month,
+            location=location,
+            vehicle_model=vehicle_model,
+        )
+        return any(self._lock_conflicts(lock_supplier, row.stamping_supplier) for row in rows)
+
     def expire_stale_processing(
         self,
         db: Session,
@@ -142,29 +170,33 @@ class PartCostCalcLogService:
         year: int,
         month: int,
         location: str,
+        vehicle_model: str,
         stamping_supplier: str,
     ) -> None:
-        record = self.calc_log_repo.find_processing(
+        changed = False
+        for record in self.calc_log_repo.list_processing(
             db,
             year=year,
             month=month,
             location=location,
-            stamping_supplier=stamping_supplier,
-        )
-        if record is None or record.started_at is None:
-            return
-        if now() - record.started_at < timedelta(seconds=STALE_PROCESSING_SECONDS):
-            return
-        self.calc_log_repo.update(
-            db,
-            record.id,
-            StampingPartCostCalcLogPatch(
-                status=STATUS_FAILED,
-                detail_text=(record.detail_text or "") + "\n超时自动释放计算锁",
-                finished_at=now(),
-            ),
-        )
-        db.commit()
+            vehicle_model=vehicle_model,
+        ):
+            if not self._lock_conflicts(stamping_supplier, record.stamping_supplier):
+                continue
+            if now() - record.started_at < timedelta(seconds=STALE_PROCESSING_SECONDS):
+                continue
+            self.calc_log_repo.update(
+                db,
+                record.id,
+                StampingPartCostCalcLogPatch(
+                    status=STATUS_FAILED,
+                    detail_text=(record.detail_text or "") + "\n超时自动释放计算锁",
+                    finished_at=now(),
+                ),
+            )
+            changed = True
+        if changed:
+            db.commit()
 
     def list_calc_logs(
         self,

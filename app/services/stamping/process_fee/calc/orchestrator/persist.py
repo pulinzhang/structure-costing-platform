@@ -22,6 +22,7 @@ from app.services.stamping.process_fee.calc.orchestrator.deps import ProcessFeeC
 from app.services.stamping.process_fee.calc.orchestrator.messages import append_result_detail
 from app.services.stamping.process_fee.calc.orchestrator.prep import CalcPrepContext
 from app.services.stamping.process_fee.calc.orchestrator.progress import ProgressNotifier
+from app.services.stamping.process_fee.scope import ALL_SUPPLIERS_LOCK
 
 
 def persist_calc_result(
@@ -57,7 +58,7 @@ def persist_calc_result(
     result = StampingProcessFeeCalcResultVO(
         year=dto.year,
         location=ctx.location,
-        stamping_supplier=ctx.mill_lock_key,
+        stamping_supplier=ALL_SUPPLIERS_LOCK,
         vehicle_model=dto.vehicle_model,
         version=dto.version,
         calc_batch_id=calc_batch_id,

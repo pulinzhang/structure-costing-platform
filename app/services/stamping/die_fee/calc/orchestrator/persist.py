@@ -9,7 +9,7 @@ from app.common.timezone import now
 from app.schemas.dto.stamping_die_fee_dto import DieFeeCalcLogPatch, StampingDieFeeCalcDTO
 from app.schemas.vo.stamping_die_fee_vo import StampingDieFeeCalcResultVO
 from app.schemas.vo.user_vo import UserVO
-from app.services.stamping.die_fee.calc.constants import STATUS_SUCCESS
+from app.services.stamping.die_fee.calc.constants import ALL_SUPPLIERS_LOCK, STATUS_SUCCESS
 from app.services.stamping.die_fee.calc.orchestrator.batch_engine import BatchCalcOutcome
 from app.services.stamping.die_fee.calc.orchestrator.deps import DieFeeCalcDeps
 from app.services.stamping.die_fee.calc.orchestrator.missing_die_number import (
@@ -37,7 +37,7 @@ def persist_calc_result(
         year=dto.year,
         location=dto.location,
         vehicle_model=dto.vehicle_model,
-        stamping_supplier=dto.stamping_supplier,
+        stamping_supplier=None,
         version=dto.version,
     )
     for payload in batch.insert_rows:
@@ -63,7 +63,7 @@ def persist_calc_result(
         year=dto.year,
         location=dto.location,
         vehicle_model=dto.vehicle_model,
-        stamping_supplier=dto.stamping_supplier,
+        stamping_supplier=ALL_SUPPLIERS_LOCK,
         version=dto.version,
         calc_batch_id=calc_batch_id,
         log_id=log_id,

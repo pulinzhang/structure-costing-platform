@@ -34,6 +34,13 @@ export function dashboardTemplate() {
                     <option value="">全部基地</option>
                 </select>
             </div>
+            <div class="flex flex-col gap-1">
+                <label class="text-[9px] font-medium tracking-[0.08em] text-[#555555] uppercase" for="dashVehicle">配套车型</label>
+                <select id="dashVehicle"
+                    class="h-9 min-w-[8rem] px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#9e9e9e] appearance-none cursor-pointer focus:outline-none focus:border-[#ff5252] transition-all">
+                    <option value="">全部车型</option>
+                </select>
+            </div>
             <p class="text-[10px] text-[#555555] pb-2 ml-auto font-mono tracking-[0.04em]" id="dashScopeLabel">—</p>
         </div>
 

@@ -684,79 +684,56 @@ class StampingPartRepository:
             .all()
         )
 
-    def _material_spec_filters(
-        self,
-        q: Query[_T],
-        *,
-        location: str | None,
-        stamping_supplier: str | None,
-        vehicle_model: str | None,
-        version: str | None,
-    ) -> Query[_T]:
-        """材料规格查询共用的零件范围过滤。"""
-        if location:
-            q = q.filter(StampingPart.location == location)
-        if stamping_supplier:
-            q = q.filter(StampingPart.stamping_supplier == stamping_supplier)
-        if vehicle_model:
-            q = q.filter(StampingPart.vehicle_model == vehicle_model)
-        if version:
-            q = q.filter(StampingPart.version == version)
-        return q
-
     def _material_specs_union_query(
         self,
         db: Session,
         *,
         location: str | None = None,
-        stamping_supplier: str | None = None,
         vehicle_model: str | None = None,
-        version: str | None = None,
     ) -> Subquery:
         """
         主表零件材质/料厚 ∪ 拼焊子片材质/料厚。
 
-        拼焊总成主表常只落一段料厚（如 0.70），另一段只在子片上；
-        钢价 Step1 必须把子片规格一并纳入去重。
+        拼焊总成主表常只落一段料厚（如 0.70），另一段只在子片上。
+        钢价 Step1 只按基地全量调 list_material_specs；统计可再按车型收窄。
         """
-        part_q = self._material_spec_filters(
-            db.query(
-                StampingPart.location.label("location"),
-                StampingPart.material.label("material"),
-                StampingPart.thickness.label("thickness"),
-            ),
-            location=location,
-            stamping_supplier=stamping_supplier,
-            vehicle_model=vehicle_model,
-            version=version,
+        location_clean = (location or "").strip() or None
+        vehicle_clean = (vehicle_model or "").strip() or None
+
+        part_q = db.query(
+            StampingPart.location.label("location"),
+            StampingPart.material.label("material"),
+            StampingPart.thickness.label("thickness"),
         ).filter(
-            StampingPart.location.isnot(None),
-            StampingPart.location != "",
             StampingPart.material.isnot(None),
             StampingPart.material != "",
             StampingPart.thickness.isnot(None),
         )
+        if location_clean:
+            part_q = part_q.filter(StampingPart.location == location_clean)
+        if vehicle_clean:
+            part_q = part_q.filter(StampingPart.vehicle_model == vehicle_clean)
 
-        blank_q = self._material_spec_filters(
+        blank_q = (
             db.query(
                 StampingPart.location.label("location"),
                 StampingTailorWeldBlank.material.label("material"),
                 StampingTailorWeldBlank.thickness.label("thickness"),
-            ).join(
+            )
+            .join(
                 StampingTailorWeldBlank,
                 StampingTailorWeldBlank.part_id == StampingPart.id,
-            ),
-            location=location,
-            stamping_supplier=stamping_supplier,
-            vehicle_model=vehicle_model,
-            version=version,
-        ).filter(
-            StampingPart.location.isnot(None),
-            StampingPart.location != "",
-            StampingTailorWeldBlank.material.isnot(None),
-            StampingTailorWeldBlank.material != "",
-            StampingTailorWeldBlank.thickness.isnot(None),
+            )
+            .filter(
+                StampingTailorWeldBlank.material.isnot(None),
+                StampingTailorWeldBlank.material != "",
+                StampingTailorWeldBlank.thickness.isnot(None),
+            )
         )
+        if location_clean:
+            blank_q = blank_q.filter(StampingPart.location == location_clean)
+        if vehicle_clean:
+            blank_q = blank_q.filter(StampingPart.vehicle_model == vehicle_clean)
 
         return part_q.union(blank_q).subquery()
 
@@ -765,41 +742,39 @@ class StampingPartRepository:
         db: Session,
         *,
         location: str | None = None,
-        stamping_supplier: str | None = None,
         vehicle_model: str | None = None,
-        version: str | None = None,
     ) -> int:
         """统计去重后的材料+厚度规格行数（含拼焊子片）。"""
         combined = self._material_specs_union_query(
             db,
             location=location,
-            stamping_supplier=stamping_supplier,
             vehicle_model=vehicle_model,
-            version=version,
         )
         return db.query(func.count()).select_from(combined).scalar() or 0
 
-    def list_material_specs(
+    def list_distinct_spec_grades(
         self,
         db: Session,
         *,
         location: str | None = None,
-        stamping_supplier: str | None = None,
         vehicle_model: str | None = None,
-        version: str | None = None,
-    ) -> list[MaterialSpecRow]:
-        """
-        列出去重后的 基地 + 材料(钢种) + 厚度（钢价计算 Step1）。
-
-        含拼焊子片规格。必须带 location，避免跨基地材料串用。
-        """
+    ) -> list[str]:
+        """统计用：范围内去重牌号（含拼焊子片）。"""
         combined = self._material_specs_union_query(
             db,
             location=location,
-            stamping_supplier=stamping_supplier,
             vehicle_model=vehicle_model,
-            version=version,
         )
+        rows = db.query(combined.c.material).distinct().order_by(combined.c.material).all()
+        return [row[0] for row in rows if row[0]]
+
+    def list_material_specs(self, db: Session, *, location: str) -> list[MaterialSpecRow]:
+        """
+        列出该基地去重后的 基地 + 材料(钢种) + 厚度（钢价计算 Step1）。
+
+        含拼焊子片。覆盖该基地全部车型与冲压厂，避免按车型漏规格。
+        """
+        combined = self._material_specs_union_query(db, location=location)
         rows = (
             db.query(combined.c.location, combined.c.material, combined.c.thickness)
             .order_by(

@@ -127,7 +127,7 @@ CostingEngineService                 ← 编排唯一入口
 
 | 结果 | 触发粒度 | 依赖（须已过 5.1） |
 |---|---|---|
-| 冲压加工费 | 每个相关 `stamping_supplier` | 工艺 + 冲次单价 |
+| 冲压加工费 | 每个相关 `vehicle_model`（工厂空则覆盖该车各厂） | 工艺 + 冲次单价 |
 | 焊接工艺拆解 | 每个 L0Scope | BOM + 焊接单价等 |
 | 成品 L0 焊接费 | 每个 L0Scope | 拆解结果 |
 
@@ -193,7 +193,7 @@ navigate: {
 | 结果 | Scope |
 |---|---|
 | 钢材联动价 | `(location, year, month)` 整基地一次 |
-| 冲压零件价 | 每工厂一次 |
+| 冲压零件价 | 每个配套车型一次（覆盖该车各厂、各版本） |
 | 成品 L0 核价 | **每个** `(vehicle_model, bom_version)` 一次 |
 | 月度合册（可选） | 每个成功的 L0Scope 各出一册 |
 
@@ -206,19 +206,19 @@ navigate: {
 ```text
 RunKey       = (location, year, month)
 SteelScope   = (location, year, month)
-PartCostScope = (location, year, month, stamping_supplier)
+PartCostScope = (location, year, month, vehicle_model)
 L0Scope      = (location, year, month, vehicle_model, bom_version)
 ```
 
 ### 6.2 发现规则
 
-1. **工厂**：该基地下存在冲压工艺零件（或等价线索）的 `stamping_supplier` 去重 → 全部进入 PartCost 计划。  
+1. **配套车型**：该基地下存在冲压工艺零件的 `vehicle_model` 去重 → 全部进入加工费补算与 PartCost 计划（一车多厂一次算完）。  
 2. **L0Scope**：该基地下所有 **含 L0 节点** 的 BOM 快照 `(vehicle_model, bom_version)` → **全部进入计划（多版本逐个算）**。  
 3. **地点规范化**：与现网一致处理「青岛」/「青岛基地」等别名（`location_candidates`），门禁与发现用同一套，避免假缺失。
 
 ### 6.3 与合册参数对齐
 
-合册现需：年、月、基地、项目、BOM 版本（+ 可选冲压工厂）。  
+合册现需：年、月、基地、项目、BOM 版本。冲压侧按整车入册，工厂只出现在明细列。  
 引擎导出阶段对每个成功 L0Scope 调用现有导出服务；不在合册内计算。
 
 ---
@@ -232,7 +232,7 @@ flowchart TB
     P2[Phase 2 年度补算计划]
     P3[Phase 3 年度补算]
     P4a[Phase 4.1 钢材联动]
-    P4b[Phase 4.2 零件价 × 工厂]
+    P4b[Phase 4.2 零件价 × 车型]
     P4c[Phase 4.3 L0 × 全部 BOM]
     P5[Phase 5 可选合册]
     P6[Phase 6 汇总]
@@ -246,12 +246,12 @@ flowchart TB
 
 | 阶段 | 行为 |
 |---|---|
-| 0 | ScopeDiscovery：工厂列表、L0Scope 列表 |
+| 0 | ScopeDiscovery：配套车型列表、L0Scope 列表 |
 | 1 | GateChecker：§5.1；失败则 `can_start=false`，不建计算 Run（或仅检查记录） |
 | 2 | 体检 §5.2，生成 `annual_plan` |
-| 3 | 按工厂补加工费；按 L0Scope 补拆解 → L0 焊接费 |
+| 3 | 按车型补加工费（覆盖该车各厂）；按 L0Scope 补拆解 → L0 焊接费 |
 | 4.1 | 整基地钢材联动 |
-| 4.2 | 逐工厂零件价（依赖 4.1 + 废料 + 加工费） |
+| 4.2 | 逐车型零件价（依赖 4.1 + 废料 + 加工费；工厂空） |
 | 4.3 | 逐 L0Scope 成品核价（多 BOM 全跑） |
 | 5 | 可选：成功 L0Scope 导出合册 |
 | 6 | 聚合 Run 状态，写父任务 `result` |
@@ -406,7 +406,7 @@ step 表可预留 `child_task_id` 字段供二期，首版可空。
 | status | §8.1 |
 | task_id | 父 AsyncTask |
 | gate_json | Phase1 快照 |
-| plan_json | 工厂 / L0Scope / 年度补算清单 |
+| plan_json | 车型 / L0Scope / 年度补算清单 |
 | summary_json | 终态摘要 |
 | created_by, created_at, started_at, finished_at | 审计与耗时 |
 
@@ -416,7 +416,7 @@ step 表可预留 `child_task_id` 字段供二期，首版可空。
 |---|---|
 | id, run_id | |
 | stage | `annual_process_fee` / `annual_welding_breakdown` / `annual_welding_fee` / `steel` / `part_cost` / `assembly` / `export` |
-| scope_key | 工厂名，或 `vehicle_model|bom_version` |
+| scope_key | 车型，或 `vehicle_model|bom_version` |
 | status | §8.2 |
 | child_task_id / child_log_id | 可选引用 |
 | message, metrics_json | |
@@ -471,7 +471,7 @@ gates:
 
 plan:
   steel: { ... }
-  part_cost_scopes: [ { stamping_supplier, ... } ]
+  part_cost_scopes: [ { vehicle_model, ... } ]
   l0_scopes: [ { vehicle_model, bom_version, ... } ]  # 全部版本
 
 can_start: bool   # = not hard_stop 且存在可执行路径
@@ -489,7 +489,7 @@ can_start: bool   # = not hard_stop 且存在可执行路径
 
 1. **参数区**：基地、年、月 +「检查就绪」  
 2. **门禁区**：5.1 红灯置顶；每条未通过项展示 `message` + **「去处理」**（读 `navigate`，见 §5.3）；无权限则禁用并提示；5.2 黄灯「将自动计算」  
-3. **计划区**：工厂列表 + **全部** L0Scope（多 BOM 明示）  
+3. **计划区**：配套车型列表 + **全部** L0Scope（多 BOM 明示）  
 4. **运行区**：单进度条 + msg；下方 step 时间线（可从 poll result 或低频拉 `/runs/{id}`）  
 5. **终态 / 历史**：succeeded / partial / failed 摘要；历史列表对 **含 running 在内** 的记录提供删除（§8.4），清理关机残留  
 

@@ -34,12 +34,11 @@ class StampingDieFeeScopeDTO(BaseModel):
 
 
 class StampingDieFeeCalcDTO(StampingDieFeeScopeDTO):
-    """提交计算。供应商/版本可选；锁范围仍是年+基地+项目。"""
+    """提交计算。按项目覆盖各厂；版本可选。锁范围：年+基地+项目。"""
 
-    stamping_supplier: str | None = None
     version: str | None = None
 
-    @field_validator("stamping_supplier", "version", mode="before")
+    @field_validator("version", mode="before")
     @classmethod
     def _strip_identity(cls, value: object) -> str | None:
         if value is None:
