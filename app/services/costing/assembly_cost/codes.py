@@ -1,10 +1,9 @@
-"""零件短码与焊费行收集。"""
+"""成品核价零件短码（无 ORM）。"""
 
 from app.common.bom.manufacturing_category import (
     short_part_number_digits,
     short_weld_part_number,
 )
-from app.models.costing.assembly_cost import AssemblyCost
 
 
 def part_short_code(*, part_number: str | None, level: int | None) -> str:
@@ -24,14 +23,3 @@ def item_short_code(
     if cost_source != "stamping":
         return ""
     return part_short_code(part_number=part_number, level=level)
-
-
-def collect_welding_fee_ids(records: list[AssemblyCost]) -> list[int]:
-    """导出卡实际抄到的焊费行，去重保序。"""
-    seen: dict[int, None] = {}
-    for record in records:
-        fee_id = record.welding_fee_id
-        if fee_id is None:
-            continue
-        seen[int(fee_id)] = None
-    return list(seen)

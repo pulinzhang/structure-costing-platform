@@ -424,7 +424,7 @@ FK `assembly_cost_id` 级联删。废止 `level_label`。
 | `detail_text` | 全过程文本（范围、上游价表、每张卡一行、汇总） |
 | `detail_json` | 每张卡摘要 JSON（状态、金额、缺叶），供报告页筛选；列表接口不解析 |
 
-`GET /api/costing/assembly-costs/calc/logs/{id}` 返回 `detail_text` + `cards`。计算历史点「过程」打开独立页 `/assembly-cost-calc-report?log_id=`（浅色报告，可按状态 / 层级 / 树根 / 零件号筛选；可导出当前筛选或全部核价卡 Excel）。
+`GET /api/costing/assembly-costs/calc/logs/{id}` 返回 `detail_text` + `cards`。计算历史点「过程」打开独立页 `/assembly-cost-calc-report?log_id=`（浅色报告，可按状态 / 层级 / 树根 / 零件号筛选；可导出当前筛选或全部核价卡 Excel）。实现落在 `assembly_cost/calc_report`（脚本 `features/costing/assembly-cost/calc-report/boot.js`），对外 URL 不变。
 
 `GET /api/costing/assembly-costs/calc/logs/{id}/export-download` 导出同口径工作簿（封面摘要 / 核价卡 / 过程说明），查询参数 `keyword`、`status`、`level`、`tree_root` 与报告页筛选一致。
 

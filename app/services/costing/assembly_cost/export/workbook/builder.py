@@ -9,7 +9,6 @@ from app.repositories.bom.procurement_object_repository import BomProcurementObj
 from app.repositories.costing.assembly_cost.assembly_cost_repository import (
     AssemblyCostRepository,
 )
-from app.services.costing.assembly_cost.export.workbook.codes import collect_welding_fee_ids
 from app.services.costing.assembly_cost.export.workbook.columns import (
     FINANCE_INDIRECTS_SHEET,
     FINANCE_ITEMS_SHEET,
@@ -26,6 +25,17 @@ from app.services.costing.assembly_cost.export.workbook.items_sheet import write
 from app.services.costing.assembly_cost.export.workbook.labels import export_filter_text
 from app.services.costing.assembly_cost.export.workbook.layout import SheetLayout
 from app.services.costing.assembly_cost.export.workbook.list_sheet import write_list_sheet
+
+
+def collect_welding_fee_ids(records: list[AssemblyCost]) -> list[int]:
+    """导出卡实际抄到的焊费行，去重保序。"""
+    seen: dict[int, None] = {}
+    for record in records:
+        fee_id = record.welding_fee_id
+        if fee_id is None:
+            continue
+        seen[int(fee_id)] = None
+    return list(seen)
 
 
 class AssemblyCostWorkbookBuilder:

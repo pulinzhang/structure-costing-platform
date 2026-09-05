@@ -4,7 +4,7 @@ from typing import Any
 
 from app.common.audit import audit_status_label
 from app.models.costing.assembly_cost import AssemblyCost
-from app.services.costing.assembly_cost.export.workbook.codes import part_short_code
+from app.services.costing.assembly_cost.codes import part_short_code
 from app.services.costing.assembly_cost.export.workbook.columns import (
     FINANCE_LIST_SHEET,
     LIST_CENTER_COLS,
