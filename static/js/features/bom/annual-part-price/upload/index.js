@@ -28,7 +28,6 @@ const AnnualPartPriceUploadPage = {
         this.bindEvents();
         this.hideProgress();
         this.clearSelectedFile(false);
-        this.fillDefaultYear();
         this.loadCascadeFilters();
     },
 
@@ -113,13 +112,6 @@ const AnnualPartPriceUploadPage = {
             event.preventDefault();
             this.submit();
         });
-    },
-
-    fillDefaultYear() {
-        const yearInput = document.getElementById('annualPartPriceUploadYear');
-        if (yearInput && !yearInput.value) {
-            yearInput.value = String(new Date().getFullYear());
-        }
     },
 
     val(id) {
@@ -259,7 +251,6 @@ const AnnualPartPriceUploadPage = {
         const vehicleModel = document.getElementById('annualPartPriceUploadVehicleModel');
         if (vehicleModel) vehicleModel.value = '';
         if (year) year.value = '';
-        this.fillDefaultYear();
         this.loadCascadeFilters({ clearVehicleModel: true });
     },
 

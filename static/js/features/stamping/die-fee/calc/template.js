@@ -15,11 +15,7 @@ export function dieFeeCalcTemplate() {
             <div class="flex items-center justify-between py-2.5 border-y border-[#1e1e1e]"
                  style="background: linear-gradient(180deg, #181818 0%, #161616 100%);">
                 <div class="flex items-end gap-3 flex-wrap px-1">
-                    <label class="space-y-1">
-                        <span class="block text-[9px] font-semibold text-[#484848] uppercase tracking-[0.12em]">年度<span class="text-[#d32f2f]">*</span></span>
-                        <input id="calcYear" type="number" min="2000" max="2100"
-                               class="w-28 h-7 px-2.5 text-[11px] bg-[#0d0d0d] border border-[#272727] text-[#909090] focus:outline-none focus:border-[#ff5252] rounded-sm">
-                    </label>
+                    ${filterSelect('calcYear', '年度', true)}
                     ${filterSelect('calcLocation', '基地', true)}
                     ${filterSelect('calcVehicleModel', '项目', true)}
                     ${filterSelect('calcVersion', '版本', false, '全部')}

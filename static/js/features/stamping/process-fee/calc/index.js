@@ -6,7 +6,7 @@
 import {
     processFeeCalcTemplate,
     renderCalcHistoryPagination,
-} from './template.js?v=19';
+} from './template.js?v=22';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,

@@ -21,7 +21,6 @@ const TonnageUploadPage = {
         this.bindEvents();
         this.hideProgress();
         this.clearSelectedFile(false);
-        this.fillDefaultYear();
     },
 
     applyPermissionUi() {
@@ -103,13 +102,6 @@ const TonnageUploadPage = {
         });
     },
 
-    fillDefaultYear() {
-        const yearInput = document.getElementById('tonnageUploadYear');
-        if (yearInput && !yearInput.value) {
-            yearInput.value = String(new Date().getFullYear());
-        }
-    },
-
     selectFile(file) {
         if (!file || this.isUploading) return;
         if (!file.name.toLowerCase().endsWith('.xlsx')) {
@@ -175,7 +167,6 @@ const TonnageUploadPage = {
         const year = document.getElementById('tonnageUploadYear');
         if (location) location.value = '';
         if (year) year.value = '';
-        this.fillDefaultYear();
     },
 
     showProgress(msg = '解析并写入数据库，请稍候') {

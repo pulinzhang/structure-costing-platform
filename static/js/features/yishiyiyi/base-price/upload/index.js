@@ -105,14 +105,9 @@ const BasePriceUploadPage = {
     },
 
     fillDefaultPeriod() {
-        const now = new Date();
-        const yearInput = document.getElementById('basePriceYear');
         const monthInput = document.getElementById('basePriceMonth');
-        if (yearInput && !yearInput.value) {
-            yearInput.value = String(now.getFullYear());
-        }
         if (monthInput && !monthInput.value) {
-            monthInput.value = String(now.getMonth() + 1);
+            monthInput.value = String(new Date().getMonth() + 1);
         }
     },
 

@@ -2,7 +2,7 @@ import {
     dieFeeCalcTemplate,
     renderCalcHistoryPagination,
     CALC_HISTORY_COLSPAN,
-} from './template.js?v=4';
+} from './template.js?v=8';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -45,11 +45,11 @@ function init() {
         onChange: () => loadCalcHistory(1),
     });
     applyPermissionUi();
-    const yearEl = document.getElementById('calcYear');
-    if (yearEl && !yearEl.value) yearEl.value = String(new Date().getFullYear());
-    loadFilters().then(() => {
-        loadCalcReady();
-        loadCalcHistory(1);
+    loadYearOptions().then(() => {
+        loadFilters().then(() => {
+            loadCalcReady();
+            loadCalcHistory(1);
+        });
     });
     hideProgress();
 }
@@ -88,7 +88,7 @@ function bindEvents() {
     });
 }
 
-function fillSelect(id, values, preferredValue, placeholder = '请选择') {
+function fillSelect(id, values, preferredValue, placeholder = '请选择', formatLabel = null) {
     const select = document.getElementById(id);
     if (!select) return;
     const current = preferredValue != null ? preferredValue : select.value;
@@ -96,8 +96,21 @@ function fillSelect(id, values, preferredValue, placeholder = '请选择') {
         `<option value="">${esc(placeholder)}</option>` +
         values.map((value) => {
             const text = String(value);
-            return `<option value="${esc(text)}"${text === String(current) ? ' selected' : ''}>${esc(text)}</option>`;
+            const label = formatLabel ? formatLabel(value) : text;
+            return `<option value="${esc(text)}"${text === String(current) ? ' selected' : ''}>${esc(String(label))}</option>`;
         }).join('');
+}
+
+async function loadYearOptions() {
+    try {
+        const res = await HttpClient.get(`${API_BASE}/filters`);
+        const years = Array.isArray(res.data?.years) ? res.data.years.slice() : [];
+        const currentYear = new Date().getFullYear();
+        if (!years.includes(currentYear)) years.unshift(currentYear);
+        fillSelect('calcYear', years, String(currentYear), '请选择', fmtYear);
+    } catch (error) {
+        showToast(error.message || '加载年度失败', 'error');
+    }
 }
 
 async function loadFilters(keepVehicle) {
@@ -145,13 +158,13 @@ function resetFilters() {
         showToast('计算进行中，请稍候再重置', 'warning');
         return;
     }
-    const yearEl = document.getElementById('calcYear');
-    if (yearEl) yearEl.value = String(new Date().getFullYear());
     const loc = document.getElementById('calcLocation');
     if (loc) loc.value = '';
-    loadFilters().then(() => {
-        loadCalcReady();
-        loadCalcHistory(1);
+    loadYearOptions().then(() => {
+        loadFilters().then(() => {
+            loadCalcReady();
+            loadCalcHistory(1);
+        });
     });
 }
 
