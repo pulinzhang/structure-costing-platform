@@ -50,6 +50,11 @@ def persist_calc_result(
     detail_lines.append(
         f"入库 {batch.success_count}，跳过（无模具信息或系统费≤0）{batch.skipped_no_die_count}"
     )
+    if batch.success_count == 0 and batch.skipped_no_die_count:
+        detail_lines.append(
+            "全部未入库：布点工序没有有效预估重量，也无法按共模继承外形。"
+            "请确认上传的是含模具尺寸/重量的布点清单，而不是工艺确认表"
+        )
     hint_section = format_missing_die_number_section(batch.missing_die_number_hints)
     if hint_section:
         detail_lines.append(hint_section)

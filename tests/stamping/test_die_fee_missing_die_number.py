@@ -57,7 +57,7 @@ def test_collect_skips_shared_and_keeps_owned() -> None:
         ],
     )
     hints = collect_missing_die_number_hints(part)
-    assert hints == ["零件 502007709AA 供应商 合肥冲压 工序 OP10 已有模具长/宽/高，但没有模具编号"]
+    assert hints == ["零件 502007709AA 工序 OP10 已有模具长/宽/高，但没有模具编号"]
 
 
 def test_format_section_does_not_block() -> None:

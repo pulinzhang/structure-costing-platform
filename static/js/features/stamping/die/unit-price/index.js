@@ -6,7 +6,7 @@ import {
     dieUnitPriceTemplate,
     renderTableRows,
     renderPagination,
-} from './template.js?v=5';
+} from './template.js?v=6';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -94,6 +94,15 @@ async function loadListFilters(resetVehicle = false) {
     );
 }
 
+function fillDatalist(id, values) {
+    const list = document.getElementById(id);
+    if (!list) return;
+    list.innerHTML = (values || []).map((value) => {
+        const text = String(value);
+        return `<option value="${esc(text)}"></option>`;
+    }).join('');
+}
+
 async function loadEditFilters(location, selectedVehicle) {
     const data = await fetchFilters(location || '');
     fillSelect('dupEditLocation', data.locations || [], '请选择');
@@ -101,19 +110,9 @@ async function loadEditFilters(location, selectedVehicle) {
         const locEl = document.getElementById('dupEditLocation');
         if (locEl) locEl.value = location;
     }
-    const vehicles = [...(data.vehicle_models || [])];
-    if (selectedVehicle && !vehicles.includes(selectedVehicle)) {
-        vehicles.unshift(selectedVehicle);
-    }
-    fillSelect(
-        'dupEditVehicle',
-        vehicles,
-        location ? '请选择项目' : '请先选择基地'
-    );
-    if (selectedVehicle) {
-        const vehicleEl = document.getElementById('dupEditVehicle');
-        if (vehicleEl) vehicleEl.value = selectedVehicle;
-    }
+    fillDatalist('dupEditVehicleOptions', data.vehicle_models || []);
+    const vehicleEl = document.getElementById('dupEditVehicle');
+    if (vehicleEl) vehicleEl.value = selectedVehicle || '';
 }
 
 function applyPermissionUi() {
@@ -232,7 +231,7 @@ async function submitEdit() {
     const status = document.getElementById('dupEditStatus')?.value || 'effective';
 
     if (!location || !vehicleModel) {
-        showToast('请选择基地和项目', 'warning');
+        showToast('请选择基地，并选择或填写项目', 'warning');
         return;
     }
     if (!plate || !progressive) {
@@ -304,7 +303,8 @@ function bindEvents() {
     });
     document.getElementById('dupEditLocation')?.addEventListener('change', () => {
         const location = document.getElementById('dupEditLocation')?.value || '';
-        loadEditFilters(location, '').catch(() => {});
+        const current = document.getElementById('dupEditVehicle')?.value || '';
+        loadEditFilters(location, current).catch(() => {});
     });
 
     document.getElementById('dupTableBody')?.addEventListener('click', (event) => {

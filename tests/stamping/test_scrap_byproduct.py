@@ -142,6 +142,10 @@ def test_die_fee_batch_skips_scrap_and_keeps_previous_weights() -> None:
         material="HC180Y",
         thickness=Decimal("0.7"),
         part_weight=Decimal("2.249"),
+        sheet_length=Decimal("1150"),
+        sheet_width=Decimal("810"),
+        parts_per_sheet=1,
+        sheet_shape="梯形",
         die_type="铸造模",
         die_method="双槽",
         production_mode="自动化",
@@ -175,6 +179,10 @@ def test_die_fee_batch_skips_scrap_and_keeps_previous_weights() -> None:
         material="HC180Y",
         thickness=Decimal("0.7"),
         part_weight=Decimal("0.079"),
+        sheet_length=None,
+        sheet_width=None,
+        parts_per_sheet=None,
+        sheet_shape=None,
         die_type=None,
         die_method=None,
         production_mode=None,
@@ -209,6 +217,106 @@ def test_die_fee_batch_skips_scrap_and_keeps_previous_weights() -> None:
         scrap_byproduct_keys=frozenset({("烟台海众", "V1", "502018924AA")}),
     )
     dto = StampingDieFeeCalcDTO(year=2026, location="烟台", vehicle_model="T2AA")
+    outcome = BatchCalculationEngine(DieFeePartCalculator()).run(
+        ctx=ctx,
+        dto=dto,
+        current_user=SYSTEM_USER,
+        progress=ProgressNotifier(),
+    )
+    assert outcome.success_count == 1
+    assert outcome.skipped_no_die_count == 1
+    assert outcome.insert_rows[0].part_number == "502018915AA"
+
+
+def test_die_fee_batch_skips_scrap_from_blank_sheet_layout() -> None:
+    """未传工艺表时，布点四列全空仍跳过副产品、不继承重量。"""
+    host = SimpleNamespace(
+        id=1,
+        location="青岛",
+        vehicle_model="T2AA",
+        stamping_supplier=None,
+        version=None,
+        part_number="502018915AA",
+        seq_no=24,
+        part_name="左C柱内板",
+        material="HC180Y",
+        thickness=Decimal("0.7"),
+        part_weight=Decimal("2.249"),
+        sheet_length=Decimal("1150"),
+        sheet_width=Decimal("810"),
+        parts_per_sheet=1,
+        sheet_shape="梯形",
+        die_type="铸造模",
+        die_method="双槽",
+        production_mode="自动化",
+        part_grade="B",
+        excel_filename="t.xlsx",
+        processes=[
+            SimpleNamespace(
+                id=11,
+                process_seq="OP10",
+                process_order=1,
+                process_code="DR",
+                estimated_weight_t=Decimal("2"),
+                alloc_ratio=Decimal("0.50"),
+                die_sets=1,
+                die_length=Decimal("100"),
+                die_width=Decimal("80"),
+                die_height=Decimal("50"),
+                die_number="T2AA-OP10",
+            )
+        ],
+    )
+    scrap = SimpleNamespace(
+        id=2,
+        location="青岛",
+        vehicle_model="T2AA",
+        stamping_supplier=None,
+        version=None,
+        part_number="502018924AA",
+        seq_no=26,
+        part_name="左D柱下隔板",
+        material="HC180Y",
+        thickness=Decimal("0.7"),
+        part_weight=Decimal("0.079"),
+        sheet_length=None,
+        sheet_width=None,
+        parts_per_sheet=None,
+        sheet_shape=None,
+        die_type=None,
+        die_method="双槽",
+        production_mode=None,
+        part_grade=None,
+        excel_filename="t.xlsx",
+        processes=[
+            SimpleNamespace(
+                id=22,
+                process_seq="OP10",
+                process_order=1,
+                process_code="合并",
+                estimated_weight_t=None,
+                alloc_ratio=Decimal("0.50"),
+                die_sets=1,
+                die_length=None,
+                die_width=None,
+                die_height=None,
+            )
+        ],
+    )
+    price = SimpleNamespace(
+        steel_plate_unit_price=Decimal("5"),
+        progressive_die_unit_price=Decimal("6"),
+        allocation_qty=Decimal("10"),
+    )
+    ctx = CalcPrepContext(
+        parts=[host, scrap],
+        persist_parts=[host, scrap],
+        price=price,
+        started_at=datetime(2026, 9, 2),
+        detail_lines=[],
+        scrap_byproduct_keys=frozenset(),
+    )
+    dto = StampingDieFeeCalcDTO(year=2026, location="青岛", vehicle_model="T2AA")
     outcome = BatchCalculationEngine(DieFeePartCalculator()).run(
         ctx=ctx,
         dto=dto,

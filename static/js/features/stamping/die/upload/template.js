@@ -28,6 +28,7 @@ export function dieUploadTemplate() {
                                     <select id="dieLocation" name="location" required class="upload-input w-[280px] text-[11px]">
                                         <option value="">请选择采购基地</option>
                                     </select>
+                                    <p class="mt-2 text-[10px] text-[#555555]">必选。</p>
                                 </div>
                             </div>
                             <div class="h-px bg-[#1e1e1e] mx-6 mb-4"></div>
@@ -36,13 +37,13 @@ export function dieUploadTemplate() {
                                     <span class="w-4 h-4 rounded-full bg-[#2a2a2a] flex items-center justify-center shrink-0">
                                         <span class="text-[10px] font-semibold text-[#d32f2f]">2</span>
                                     </span>
-                                    <span class="text-[13px] text-[#6b6b6b] font-medium tracking-wide uppercase">选择项目</span>
+                                    <span class="text-[13px] text-[#6b6b6b] font-medium tracking-wide uppercase">填写项目</span>
                                 </div>
                                 <div class="ml-6">
-                                    <select id="dieVehicleModel" name="vehicle_model" required class="upload-input w-[280px] text-[11px]">
-                                        <option value="">请先选择基地</option>
-                                    </select>
-                        <p class="mt-2 text-[10px] text-[#555555]">须先上传该基地+项目的冲压工艺确认表；选项来自已入库工艺，且须与文件名中的项目一致。每个零件须能唯一对应工艺中的供应商与版本，否则整单拒绝。</p>
+                                    <input id="dieVehicleModel" name="vehicle_model" required
+                                           placeholder="手工填写，如 T13J"
+                                           class="upload-input w-[280px] text-[11px]">
+                                    <p class="mt-2 text-[10px] text-[#555555]">手工录入。须与文件名或标题里的项目一致。</p>
                                 </div>
                             </div>
                             <div class="h-px bg-[#1e1e1e] mx-6 mb-4"></div>
@@ -79,7 +80,7 @@ export function dieUploadTemplate() {
                                                 ${window.svgIcon('folder', 'w-3.5 h-3.5')}
                                                 浏览文件
                                             </button>
-                                            <p class="text-[10px] text-[#3a3a3a] mt-4 mb-0">.xlsx / .xls<span class="mx-2 text-[#2a2a2a]">|</span>最大 50MB · 仅读 A–AC 列</p>
+                                            <p class="text-[10px] text-[#3a3a3a] mt-4 mb-0">.xlsx / .xls<span class="mx-2 text-[#2a2a2a]">|</span>最大 50MB · 项目须与上方填写一致</p>
                                         </div>
                                         <div id="dieProgressPanel" class="hidden text-left w-full">
                                             <div class="flex items-center justify-between gap-3 mb-3">
@@ -121,18 +122,16 @@ export function dieUploadTemplate() {
                         </div>
                     </div>
                     <div class="p-4 space-y-3 text-[11px] text-[#888888] leading-relaxed">
-                        <p class="text-[#ffb74d]">必须先上传该基地+项目的冲压工艺确认表（工艺清单），再传模具布点。项目下拉只列出已入库工艺。</p>
-                        <p>文件名须含「项目冲压模具布点工艺清单」（可简写到「项目冲压模具布点」）。项目代号写在该短语前面，须与所选项目一致（忽略中文前缀与 ①–⑳）。识别不到再看表内标题行。</p>
+                        <p>请先选择采购基地，再手工填写项目。</p>
+                        <p>文件名或标题里的项目必须和填写的一致，不一致将退回、不会入库。</p>
+                        <p>本页不选冲压厂：开模时尚无定点供应商。</p>
+                        <p>模具编号可空，系统按规则自动编号；已填写的编号保持不变。</p>
+                        <p>废料副产品：长/卷料宽、宽/卷料步距、可制件数、板料形状都空，且有零件净重 → 家模带出的小件，分摊比例记 0，不算模具费。不要只空长宽、其它列还填着。</p>
                         <p class="font-mono text-[10px] text-[#6E6E73] leading-relaxed">
-                            示意：<span class="text-[#C8C8D0]">T13J项目冲压模具布点工艺清单.xlsx</span><br>
-                            <span class="text-[#C8C8D0]">②T13J项目冲压模具布点工艺清单-2024-01-22.xlsx</span><br>
-                            <span class="text-[#C8C8D0]">副本②T13J项目冲压模具布点工艺清单.xlsx</span>
+                            示意：<span class="text-[#C8C8D0]">T13J项目冲压模具布点工艺清单.xlsx</span>
                         </p>
-                        <p>本表是模具费用计算依据，本期只入库、不算金额。</p>
-                        <p>覆盖同一基地+项目；已改的分摊比例会按零件号保留。</p>
-                        <p>同一零件的工序号不能重复，否则整单失败并标出 Excel 行号。</p>
-                        <p>布点里找不到工艺零件号/工序，或工序已有模具长宽高却没有唯一模具编号，整单失败并列出原因。</p>
-                        <p>不导入简图与 AD 列以后的费用。</p>
+                        <p>本表是模具费用计算依据，本期只入库、不算金额。覆盖同一基地+项目；已改的分摊比例会按零件号保留（废料副产品除外，一律 0）。</p>
+                        <p>同一零件的工序号不能重复。不导入简图与费用列。</p>
                     </div>
                 </div>
                 <div class="bg-[#1e1e1e] border border-[#2c2c2c]">

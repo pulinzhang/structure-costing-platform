@@ -22,16 +22,14 @@ def process_needs_die_number_hint(process: StampingDieProcess) -> bool:
 def hint_line(
     part_number: str,
     process_seq: str | None,
-    stamping_supplier: str | None,
 ) -> str:
     seq = (process_seq or "").strip() or "-"
-    supplier = (stamping_supplier or "").strip() or "-"
-    return f"零件 {part_number} 供应商 {supplier} 工序 {seq} " f"已有模具长/宽/高，但没有模具编号"
+    return f"零件 {part_number} 工序 {seq} 已有模具长/宽/高，但没有模具编号"
 
 
 def collect_missing_die_number_hints(part: StampingDiePart) -> list[str]:
     return [
-        hint_line(part.part_number, process.process_seq, part.stamping_supplier)
+        hint_line(part.part_number, process.process_seq)
         for process in part.processes or []
         if process_needs_die_number_hint(process)
     ]

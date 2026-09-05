@@ -20,10 +20,10 @@ class StampingDiePart(AuditUserMixin, Base):
     location: Mapped[str] = mapped_column(String(50), nullable=False, comment="采购基地")
     vehicle_model: Mapped[str] = mapped_column(String(50), nullable=False, comment="项目")
     stamping_supplier: Mapped[str | None] = mapped_column(
-        String(50), nullable=True, comment="冲压供应商（从工艺回填）"
+        String(50), nullable=True, comment="冲压供应商（布点阶段不填）"
     )
     version: Mapped[str | None] = mapped_column(
-        String(20), nullable=True, comment="版本（从工艺回填）"
+        String(20), nullable=True, comment="版本（布点阶段不填）"
     )
     seq_no: Mapped[int | None] = mapped_column(Integer, nullable=True, comment="序号")
     part_number: Mapped[str] = mapped_column(String(50), nullable=False, comment="零件号")
@@ -102,7 +102,7 @@ class StampingDieProcess(AuditUserMixin, Base):
     process_code: Mapped[str | None] = mapped_column(String(50), nullable=True, comment="工序")
     die_sets: Mapped[int | None] = mapped_column(Integer, nullable=True, comment="套数")
     die_number: Mapped[str | None] = mapped_column(
-        String(80), nullable=True, comment="模具编号（来自冲压工序，导入时唯一非空）"
+        String(80), nullable=True, comment="模具编号（布点 Excel 或上传按规则生成）"
     )
     die_length: Mapped[Decimal | None] = mapped_column(
         Numeric(10, 2), nullable=True, comment="模具长"

@@ -96,8 +96,6 @@ class StampingDieExportService:
         *,
         location: str,
         vehicle_model: str,
-        stamping_supplier: str | None = None,
-        version: str | None = None,
         part_number: str | None = None,
         current_user: UserVO,
     ) -> tuple[bytes, str]:
@@ -105,15 +103,11 @@ class StampingDieExportService:
         vehicle = normalize_vehicle_model(vehicle_model) or ""
         if not loc or not vehicle:
             raise BusinessException("导出须选择基地和项目")
-        supplier = (stamping_supplier or "").strip() or None
-        version_value = (version or "").strip() or None
         part_filter = (part_number or "").strip() or None
         parts = self.repository.list_for_export(
             db,
             location=loc,
             vehicle_model=vehicle,
-            stamping_supplier=supplier,
-            version=version_value,
             part_number=part_filter,
         )
 
@@ -128,8 +122,6 @@ class StampingDieExportService:
             sheet,
             location=loc,
             vehicle_model=vehicle,
-            stamping_supplier=supplier,
-            version=version_value,
             part_count=len(parts),
             process_count=process_count,
         )
@@ -165,12 +157,7 @@ class StampingDieExportService:
 
         content = workbook_to_xlsx_bytes(workbook, current_user)
         stamp = now().strftime("%Y%m%d_%H%M%S")
-        extra = ""
-        if supplier:
-            extra += f"_{supplier}"
-        if version_value:
-            extra += f"_{version_value}"
-        filename = f"冲压模具布点工艺清单_{loc}_{vehicle}{extra}_{stamp}.xlsx"
+        filename = f"冲压模具布点工艺清单_{loc}_{vehicle}_{stamp}.xlsx"
         return content, filename
 
     def _write_banner(
@@ -179,8 +166,6 @@ class StampingDieExportService:
         *,
         location: str,
         vehicle_model: str,
-        stamping_supplier: str | None,
-        version: str | None,
         part_count: int,
         process_count: int,
     ) -> None:
@@ -193,10 +178,6 @@ class StampingDieExportService:
         sheet.row_dimensions[1].height = 28
 
         scope_bits = [f"基地：{location}", f"项目：{vehicle_model}"]
-        if stamping_supplier:
-            scope_bits.append(f"供应商：{stamping_supplier}")
-        if version:
-            scope_bits.append(f"版本：{version}")
         count_start = 26
         sheet.merge_cells(start_row=2, start_column=1, end_row=2, end_column=count_start - 1)
         scope_cell = sheet.cell(
@@ -228,8 +209,8 @@ class StampingDieExportService:
             1: "序号",
             2: "零件号",
             3: "零件名称",
-            4: "供应商",
-            5: "版本",
+            4: "",
+            5: "",
             6: "材质",
             7: "料厚\n(mm)",
             8: "净重\n(kg)",
@@ -353,10 +334,8 @@ class StampingDieExportService:
         sheet.cell(row=start_row, column=1, value=seq_no)
         sheet.cell(row=start_row, column=2, value=part.part_number or "").alignment = self._left
         sheet.cell(row=start_row, column=3, value=part.part_name or "").alignment = self._left
-        sheet.cell(
-            row=start_row, column=4, value=part.stamping_supplier or ""
-        ).alignment = self._left
-        sheet.cell(row=start_row, column=5, value=part.version or "")
+        sheet.cell(row=start_row, column=4, value="")
+        sheet.cell(row=start_row, column=5, value="")
         sheet.cell(row=start_row, column=6, value=part.material or "")
         _set_num(sheet, start_row, 7, part.thickness, Q4, "0.0000")
         _set_num(sheet, start_row, 8, part.part_weight, Q4, "0.0000")

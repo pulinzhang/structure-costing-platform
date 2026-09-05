@@ -3,13 +3,13 @@
 from sqlalchemy.orm import Session
 
 from app.common.audit import audit_update
+from app.common.procurement_locations import PROCUREMENT_LOCATIONS
 from app.common.vehicle_model import normalize_vehicle_model
 from app.exceptions.base import BusinessException, NotFoundException
 from app.repositories.stamping.stamping_die_repository import (
     StampingDiePartRepository,
     StampingDieProcessRepository,
 )
-from app.repositories.stamping.stamping_part_repository import StampingPartRepository
 from app.schemas.vo.stamping_die_vo import (
     StampingDieAllocRatioUpdate,
     StampingDieBatchDeleteResultVO,
@@ -27,7 +27,6 @@ class StampingDieService:
     def __init__(self) -> None:
         self.die_part_repo = StampingDiePartRepository()
         self.die_process_repo = StampingDieProcessRepository()
-        self.stamping_part_repo = StampingPartRepository()
 
     def _require_scope(self, location: str, vehicle_model: str) -> tuple[str, str]:
         loc = (location or "").strip()
@@ -42,35 +41,14 @@ class StampingDieService:
         self,
         db: Session,
         location: str | None,
-        vehicle_model: str | None = None,
-        stamping_supplier: str | None = None,
     ) -> StampingDieScopeFilterVO:
         location_value = (location or "").strip() or None
-        vehicle_value = normalize_vehicle_model(vehicle_model) or None
-        supplier_value = (stamping_supplier or "").strip() or None
-        raw = self.stamping_part_repo.get_cascade_filter_options(
-            db,
-            location=location_value,
-            stamping_supplier=None,
-            vehicle_model=None,
-        )
-        suppliers: list[str] = []
-        versions: list[str] = []
-        if location_value and vehicle_value:
-            suppliers = self.die_part_repo.list_distinct_suppliers(
-                db, location=location_value, vehicle_model=vehicle_value
-            )
-            versions = self.die_part_repo.list_distinct_versions(
-                db,
-                location=location_value,
-                vehicle_model=vehicle_value,
-                stamping_supplier=supplier_value,
-            )
+        vehicle_models: list[str] = []
+        if location_value:
+            vehicle_models = self.die_part_repo.list_vehicle_models(db, location=location_value)
         return StampingDieScopeFilterVO(
-            locations=list(raw["locations"]),
-            vehicle_models=list(raw["vehicle_models"]),
-            stamping_suppliers=suppliers,
-            versions=versions,
+            locations=list(PROCUREMENT_LOCATIONS),
+            vehicle_models=vehicle_models,
         )
 
     def paginate(
@@ -82,8 +60,6 @@ class StampingDieService:
             db,
             location=location,
             vehicle_model=vehicle_model,
-            stamping_supplier=query.stamping_supplier,
-            version=query.version,
             part_number=query.part_number,
             skip=skip,
             limit=query.size,

@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from decimal import Decimal
 
+from app.common.scrap_byproduct import layout_is_scrap_byproduct_part
 from app.models.stamping.die import StampingDiePart, StampingDieProcess
 from app.services.stamping.die_fee.fee_math import ZERO
 
@@ -55,7 +56,9 @@ def has_real_die_dimensions(process: StampingDieProcess) -> bool:
 
 
 def can_inherit_previous_weight(part: StampingDiePart, process: StampingDieProcess) -> bool:
-    """零件模具方式/生产方式，或本序/同件工序代码含共模标记。"""
+    """零件模具方式/生产方式，或本序/同件工序代码含共模标记。废料副产品不继承。"""
+    if layout_is_scrap_byproduct_part(part):
+        return False
     if has_shared_marker(part.die_method) or has_shared_marker(part.production_mode):
         return True
     if has_shared_marker(process.process_code):

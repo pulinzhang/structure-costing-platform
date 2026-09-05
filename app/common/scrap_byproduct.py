@@ -1,6 +1,6 @@
 """家模废料副产品：料片四列全空且净重 > 0。
 
-只认工艺确认表；不用空长宽单独当利废。模具布点不走这里。
+工艺确认表上传写入零件主表；模具布点用同一判定定分摊（副产品 alloc=0），不改工艺主表。
 """
 
 from __future__ import annotations
@@ -83,3 +83,35 @@ def _is_blank_text(value: object) -> bool:
     if value is None:
         return True
     return not str(value).strip()
+
+
+def layout_is_scrap_byproduct(
+    *,
+    part_number: object,
+    part_weight: Decimal | None,
+    sheet_length: Decimal | None,
+    sheet_width: Decimal | None,
+    parts_per_sheet: int | None,
+    raw_sheet_type: object,
+) -> bool:
+    """布点/工艺共用的四列全空判定，不含利废回写。"""
+    return _is_scrap_byproduct(
+        part_number=part_number,
+        part_weight=part_weight,
+        sheet_length=sheet_length,
+        sheet_width=sheet_width,
+        parts_per_sheet=parts_per_sheet,
+        raw_sheet_type=raw_sheet_type,
+    )
+
+
+def layout_is_scrap_byproduct_part(part: object) -> bool:
+    """从布点零件已存料片列判定；缺字段视为空。"""
+    return layout_is_scrap_byproduct(
+        part_number=getattr(part, "part_number", None),
+        part_weight=getattr(part, "part_weight", None),
+        sheet_length=getattr(part, "sheet_length", None),
+        sheet_width=getattr(part, "sheet_width", None),
+        parts_per_sheet=getattr(part, "parts_per_sheet", None),
+        raw_sheet_type=getattr(part, "sheet_shape", None),
+    )

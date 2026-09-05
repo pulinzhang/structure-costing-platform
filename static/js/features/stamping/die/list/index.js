@@ -1,4 +1,4 @@
-import { dieListTemplate } from './template.js?v=5';
+import { dieListTemplate } from './template.js?v=6';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -78,10 +78,7 @@ export const DieListPage = {
             this.renderEmpty('请先选择基地和项目', '未选齐范围时不会请求列表');
         });
         document.getElementById('dieListVehicle')?.addEventListener('change', () => {
-            this.loadIdentityFilters(true);
-        });
-        document.getElementById('dieListSupplier')?.addEventListener('change', () => {
-            this.loadVersionOptions();
+            this.renderEmpty('请先选择基地和项目', '未选齐范围时不会请求列表');
         });
         document.getElementById('dieListSearchBtn')?.addEventListener('click', () => this.loadList(1));
         document.getElementById('dieListPartNumber')?.addEventListener('keydown', (e) => {
@@ -126,10 +123,8 @@ export const DieListPage = {
     async loadFilters(resetVehicle = false) {
         const location = document.getElementById('dieListLocation')?.value || '';
         if (resetVehicle) {
-            ['dieListVehicle', 'dieListSupplier', 'dieListVersion'].forEach((id) => {
-                const el = document.getElementById(id);
-                if (el) el.value = '';
-            });
+            const el = document.getElementById('dieListVehicle');
+            if (el) el.value = '';
         }
         try {
             const res = await HttpClient.get('/api/stamping/die/filters', {
@@ -146,64 +141,8 @@ export const DieListPage = {
                 data.vehicle_models || [],
                 location ? '请选择项目' : '请先选择基地'
             );
-            await this.loadIdentityFilters(false);
         } catch (error) {
             showToast(error.message || '加载筛选项失败', 'error');
-        }
-    },
-
-    async loadIdentityFilters(resetDownstream) {
-        const location = document.getElementById('dieListLocation')?.value || '';
-        const vehicle = document.getElementById('dieListVehicle')?.value || '';
-        if (resetDownstream) {
-            ['dieListSupplier', 'dieListVersion'].forEach((id) => {
-                const el = document.getElementById(id);
-                if (el) el.value = '';
-            });
-        }
-        if (!location || !vehicle) {
-            this.fillSelect('dieListSupplier', [], '请先选择项目');
-            this.fillSelect('dieListVersion', [], '请先选择项目');
-            return;
-        }
-        try {
-            const supplier = document.getElementById('dieListSupplier')?.value || '';
-            const res = await HttpClient.get('/api/stamping/die/filters', {
-                params: {
-                    location,
-                    vehicle_model: vehicle,
-                    stamping_supplier: supplier || undefined,
-                },
-            });
-            const data = res.data || {};
-            this.fillSelect('dieListSupplier', data.stamping_suppliers || [], '全部');
-            this.fillSelect('dieListVersion', data.versions || [], '全部');
-        } catch (error) {
-            showToast(error.message || '加载供应商/版本失败', 'error');
-        }
-    },
-
-    async loadVersionOptions() {
-        const location = document.getElementById('dieListLocation')?.value || '';
-        const vehicle = document.getElementById('dieListVehicle')?.value || '';
-        const supplier = document.getElementById('dieListSupplier')?.value || '';
-        const versionEl = document.getElementById('dieListVersion');
-        if (versionEl) versionEl.value = '';
-        if (!location || !vehicle) {
-            this.fillSelect('dieListVersion', [], '请先选择项目');
-            return;
-        }
-        try {
-            const res = await HttpClient.get('/api/stamping/die/filters', {
-                params: {
-                    location,
-                    vehicle_model: vehicle,
-                    stamping_supplier: supplier || undefined,
-                },
-            });
-            this.fillSelect('dieListVersion', res.data?.versions || [], '全部');
-        } catch (error) {
-            showToast(error.message || '加载版本失败', 'error');
         }
     },
 
@@ -217,8 +156,6 @@ export const DieListPage = {
     collectListFilters() {
         return {
             ...this.collectScope(),
-            stamping_supplier: document.getElementById('dieListSupplier')?.value?.trim() || '',
-            version: document.getElementById('dieListVersion')?.value?.trim() || '',
             part_number: document.getElementById('dieListPartNumber')?.value?.trim() || '',
         };
     },
@@ -264,8 +201,6 @@ export const DieListPage = {
                 params: {
                     location: filters.location,
                     vehicle_model: filters.vehicle_model,
-                    stamping_supplier: filters.stamping_supplier || undefined,
-                    version: filters.version || undefined,
                     part_number: filters.part_number || undefined,
                     page: dieState.page,
                     size: dieState.pageSize,
@@ -274,10 +209,8 @@ export const DieListPage = {
             const data = res.data || {};
             dieState.items = data.items || [];
             dieState.total = data.total || 0;
-            const extra = [filters.stamping_supplier, filters.version].filter(Boolean).join(' / ');
-            document.getElementById('dieHudScope').textContent = extra
-                ? `${filters.location} / ${filters.vehicle_model} / ${extra}`
-                : `${filters.location} / ${filters.vehicle_model}`;
+            document.getElementById('dieHudScope').textContent =
+                `${filters.location} / ${filters.vehicle_model}`;
             document.getElementById('dieHudTotal').textContent = String(dieState.total);
             this.renderRows();
             document.getElementById('dieListTotalLabel').textContent = `共 ${dieState.total} 条`;
@@ -311,10 +244,6 @@ export const DieListPage = {
                     <td class="px-2 py-2 overflow-hidden">
                         <div class="text-[11px] text-[#C8C8D0] truncate" title="${esc(row.part_name)}">${esc(row.part_name)}</div>
                     </td>
-                    <td class="px-2 py-2 overflow-hidden">
-                        <div class="text-[11px] text-[#C8C8D0] truncate" title="${esc(row.stamping_supplier)}">${esc(row.stamping_supplier)}</div>
-                    </td>
-                    <td class="px-2 py-2 font-mono text-[10px] text-[#8E8E93] truncate">${esc(row.version)}</td>
                     <td class="px-2 py-2 text-[#8E8E93] truncate">${esc(row.die_type)}</td>
                     <td class="px-2 py-2 text-[#8E8E93] truncate">${esc(row.die_method)}</td>
                     <td class="px-2 py-2 text-[#8E8E93] truncate">${esc(row.production_mode)}</td>
@@ -371,7 +300,7 @@ export const DieListPage = {
             <div class="mb-4">
                 <div class="text-[14px] font-bold text-[#F0F0F2] font-mono">${esc(part.part_number)}</div>
                 <div class="text-[11px] text-[#8E8E93] mt-0.5">${esc(part.part_name)}</div>
-                <div class="text-[10px] text-[#555555] mt-1">${esc(part.stamping_supplier)} · ${esc(part.version)}</div>
+                <div class="text-[10px] text-[#555555] mt-1">${esc(part.location)} · ${esc(part.vehicle_model)}</div>
             </div>
             <div class="grid grid-cols-3 gap-3 text-[11px] mb-5">
                 <div class="bg-[#111111] border border-[#222222] p-3">

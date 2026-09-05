@@ -9,6 +9,8 @@ from app.models.stamping.die import StampingDiePart
 from app.parsers.stamping_die.parser import ParsedDiePart
 from app.services.stamping.die.alloc_ratio_resolver import resolve_alloc_ratio
 
+_SCRAP_BYPRODUCT_ALLOC_RATIO = Decimal("0.00")
+
 
 def preserve_die_alloc(
     existing_parts: list[StampingDiePart],
@@ -29,6 +31,8 @@ def resolve_part_ratios(
     parsed: ParsedDiePart,
     preserved: dict[str, dict[str, Decimal]],
 ) -> list[Decimal]:
+    if parsed.is_scrap_byproduct:
+        return [quantize_money(_SCRAP_BYPRODUCT_ALLOC_RATIO, Q2) for _process in parsed.processes]
     by_seq = preserved.get(parsed.part_number.strip())
     default_ratio = resolve_alloc_ratio(parsed.die_method, parsed.production_mode)
     if by_seq is None:

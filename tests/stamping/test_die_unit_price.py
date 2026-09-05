@@ -14,12 +14,12 @@ from sqlalchemy.pool import StaticPool
 from app.common.audit import SYSTEM_USER
 from app.database import Base
 from app.exceptions.base import BusinessException, NotFoundException
+from app.models.stamping.die import StampingDiePart
 from app.models.stamping.die_unit_price import (
     STATUS_EFFECTIVE,
     STATUS_INVALID,
     StampingDieUnitPrice,
 )
-from app.models.stamping.part import StampingPart
 from app.schemas.dto.stamping_die_unit_price_dto import (
     StampingDieUnitPriceCreate,
     StampingDieUnitPriceQuery,
@@ -37,7 +37,7 @@ def memory_db() -> Generator[Session, None, None]:
     )
     Base.metadata.create_all(
         bind=engine,
-        tables=[StampingPart.__table__, StampingDieUnitPrice.__table__],
+        tables=[StampingDiePart.__table__, StampingDieUnitPrice.__table__],
     )
     session_factory = sessionmaker(bind=engine)
     session = session_factory()
@@ -46,25 +46,6 @@ def memory_db() -> Generator[Session, None, None]:
     finally:
         session.close()
         engine.dispose()
-
-
-def _add_process_part(
-    db: Session,
-    *,
-    location: str = "芜湖",
-    vehicle_model: str = "T13J",
-    part_number: str = "501006875AA",
-) -> None:
-    db.add(
-        StampingPart(
-            location=location,
-            vehicle_model=vehicle_model,
-            version="V1",
-            part_number=part_number,
-            excel_filename="T13J工艺确认表.xlsx",
-        )
-    )
-    db.commit()
 
 
 def _create_dto(**overrides: object) -> StampingDieUnitPriceCreate:
@@ -80,14 +61,14 @@ def _create_dto(**overrides: object) -> StampingDieUnitPriceCreate:
     return StampingDieUnitPriceCreate(**payload)
 
 
-def test_create_rejects_missing_process_scope(memory_db: Session) -> None:
+def test_create_without_process_scope(memory_db: Session) -> None:
     service = StampingDieUnitPriceService()
-    with pytest.raises(BusinessException, match="冲压工艺库中不存在"):
-        service.create(memory_db, _create_dto(), current_user=SYSTEM_USER)
+    created = service.create(memory_db, _create_dto(), current_user=SYSTEM_USER)
+    assert created.vehicle_model == "T13J"
+    assert created.location == "芜湖"
 
 
 def test_create_normalizes_vehicle_and_lists(memory_db: Session) -> None:
-    _add_process_part(memory_db)
     service = StampingDieUnitPriceService()
     created = service.create(
         memory_db,
@@ -111,7 +92,6 @@ def test_create_normalizes_vehicle_and_lists(memory_db: Session) -> None:
 
 
 def test_duplicate_scope_is_conflict(memory_db: Session) -> None:
-    _add_process_part(memory_db)
     service = StampingDieUnitPriceService()
     service.create(memory_db, _create_dto(), current_user=SYSTEM_USER)
     with pytest.raises(BusinessException) as exc_info:
@@ -124,8 +104,6 @@ def test_duplicate_scope_is_conflict(memory_db: Session) -> None:
 
 
 def test_update_to_existing_scope_is_rejected(memory_db: Session) -> None:
-    _add_process_part(memory_db)
-    _add_process_part(memory_db, vehicle_model="T28", part_number="501006876AA")
     service = StampingDieUnitPriceService()
     t13j = service.create(memory_db, _create_dto(), current_user=SYSTEM_USER)
     t28 = service.create(
@@ -154,7 +132,6 @@ def test_update_to_existing_scope_is_rejected(memory_db: Session) -> None:
 
 
 def test_update_status_and_reject_missing(memory_db: Session) -> None:
-    _add_process_part(memory_db)
     service = StampingDieUnitPriceService()
     created = service.create(memory_db, _create_dto(), current_user=SYSTEM_USER)
     updated = service.update(
@@ -172,7 +149,6 @@ def test_update_status_and_reject_missing(memory_db: Session) -> None:
 
 
 def test_delete(memory_db: Session) -> None:
-    _add_process_part(memory_db)
     service = StampingDieUnitPriceService()
     created = service.create(memory_db, _create_dto(), current_user=SYSTEM_USER)
     service.delete(memory_db, created.id)
@@ -182,12 +158,10 @@ def test_delete(memory_db: Session) -> None:
 
 def test_wuhu_t13j_full_lifecycle(memory_db: Session) -> None:
     """芜湖 + T13J：筛选项 → 新增示例价 → 列表/详情 → 失效 → 改回 → 冲突 → 删除。"""
-    _add_process_part(memory_db)
     service = StampingDieUnitPriceService()
 
     filters = service.list_scope_filters(memory_db, "芜湖")
     assert "芜湖" in filters.locations
-    assert "T13J" in filters.vehicle_models
 
     created = service.create(memory_db, _create_dto(), current_user=SYSTEM_USER)
     assert created.location == "芜湖"

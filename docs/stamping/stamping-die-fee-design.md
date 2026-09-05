@@ -52,7 +52,7 @@ location ASC, vehicle_model ASC, id ASC
 3. 仍没有 → 该序不算。
 
 **可继承：** 与加工费共模判定同类。零件 `die_method` / `production_mode`，或本序 / 同件任一工序 `process_code` 含「合并」「双槽」「一出二」「共用」。无共模标记的空重量序不继承。上一件同序无真实长宽高则不继承（即使上一件算出了有效重量）。布点不改库：继承只发生在算费，子表快照写入 **有效重量**；`basis_text` 写明「继承 {上一件零件号} {工序} 重量」。  
-**家模副产品例外（设计未落地）：** 工艺件已按料片四列全空打标的，**禁止**作为继承目标，也不给默认 0.50。见 [stamping-family-die-byproduct-design.md](stamping-family-die-byproduct-design.md)。
+**家模副产品：** 工艺件已打标或布点四列全空 → **不算、不继承、不入库**（不报失败）。不要当成共模继承目标，也不给默认 0.50。见 [stamping-family-die-byproduct-design.md](stamping-family-die-byproduct-design.md)。
 
 **该件不入库：** 没有工序、没有任何可算序、或合计 `die_fee <= 0`。不写主表，计入 `skipped_no_die_count`。
 
@@ -231,7 +231,7 @@ app/routers/stamping/die_fee.py
 
 | 日期 | 说明 |
 |---|---|
-| 2026-09-02 | 交叉引用家模副产品：禁止对四列全空件继承共模重量 |
+| 2026-09-05 | 家模副产品：模具费跳过已落地，去掉「设计未落地」 |
 | 2026-08-30 | 年度模具费：布点各序 × 模具单价；只算模具 |
 | 2026-08-30 | 列表/导出：可算件保持布点相对顺序；不与 Excel 逐行一一对应 |
 | 2026-08-30 | 算不出或不入库 0 费；系统 + 调整 = 最终 |

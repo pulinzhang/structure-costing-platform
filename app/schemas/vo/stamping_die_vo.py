@@ -12,13 +12,11 @@ from app.common.timezone import datetime_to_iso
 class StampingDiePartQuery(BaseModel):
     location: str = ""
     vehicle_model: str = ""
-    stamping_supplier: str | None = None
-    version: str | None = None
     part_number: str | None = None
     page: int = Field(1, ge=1)
     size: int = Field(10, ge=1, le=100)
 
-    @field_validator("stamping_supplier", "version", "part_number", mode="before")
+    @field_validator("part_number", mode="before")
     @classmethod
     def _strip_optional(cls, value: object) -> str | None:
         if value is None:
@@ -152,8 +150,6 @@ class StampingDiePartDetailVO(BaseModel):
 class StampingDieScopeFilterVO(BaseModel):
     locations: list[str]
     vehicle_models: list[str]
-    stamping_suppliers: list[str] = Field(default_factory=list)
-    versions: list[str] = Field(default_factory=list)
 
 
 class StampingDieBatchDeleteResultVO(BaseModel):

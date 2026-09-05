@@ -13,11 +13,22 @@ from openpyxl.workbook.workbook import Workbook
 from openpyxl.worksheet.worksheet import Worksheet
 
 from app.common.money import Q2, Q4, parse_decimal, quantize_money
+from app.common.scrap_byproduct import layout_is_scrap_byproduct
 from app.common.vehicle_model import normalize_vehicle_model
 from app.exceptions.base import BusinessException
 
-MAX_COL = 29  # AC
+MAX_COL = 32  # 含模板插入的「模具编号」列；旧 A～AC 样本仍可解析
 _HEADER_SCAN_ROWS = 12
+_CHILD_HEADER_TOKENS = (
+    "工序名称",
+    "工序内容",
+    "长度",
+    "宽度",
+    "高度",
+    "模具长",
+    "模具宽",
+    "模具高",
+)
 
 _VEHICLE_TITLE_MARKERS = (
     "项目冲压模具布点工艺清单",
@@ -42,6 +53,7 @@ class DieColumnMap(TypedDict, total=False):
     process_seq: int
     process_code: int
     die_sets: int
+    die_number: int
     die_length: int
     die_width: int
     die_height: int
@@ -62,6 +74,7 @@ class ParsedDieProcess:
     process_seq: str
     process_code: str | None
     die_sets: int | None
+    die_number: str | None
     die_length: Decimal | None
     die_width: Decimal | None
     die_height: Decimal | None
@@ -95,6 +108,7 @@ class ParsedDiePart:
     excel_sheet_name: str | None
     excel_row: int | None
     excel_part_col: int
+    is_scrap_byproduct: bool = False
     processes: list[ParsedDieProcess] = field(default_factory=list)
 
 
@@ -223,10 +237,9 @@ def _find_header_rows(
             next_row = row + 1
             if next_row <= (sheet.max_row or 1):
                 child_blob = "".join(
-                    str(_cell(sheet, lookup, next_row, item) or "")
-                    for item in range(1, MAX_COL + 1)
+                    _compact(_cell(sheet, lookup, next_row, item)) for item in range(1, MAX_COL + 1)
                 )
-                if any(token in child_blob for token in ("工序名称", "长度", "宽度", "高度")):
+                if any(token in child_blob for token in _CHILD_HEADER_TOKENS):
                     child_row = next_row
             data_start = (child_row or row) + 1
             return row, child_row, data_start
@@ -271,7 +284,7 @@ def _resolve_columns(
     }
     # 先匹配更具体的词，避免「长度」被「长」吃掉、工序列被「工序名称」吃掉。
     for col, path in paths.items():
-        if not path or "简图" in path:
+        if not path or "简图" in path or "图片" in path:
             continue
         if "零件号" in path:
             assign("part_number", col)
@@ -279,37 +292,47 @@ def _resolve_columns(
             assign("part_name", col)
         elif "工序名称" in path:
             assign("process_seq", col)
+        elif "工序内容" in path:
+            assign("process_code", col)
         elif path == "套数" or path.endswith("套数"):
             assign("die_sets", col)
+        elif "模具编号" in path:
+            assign("die_number", col)
+        elif "模具长" in path:
+            assign("die_length", col)
+        elif "模具宽" in path:
+            assign("die_width", col)
+        elif "模具高" in path:
+            assign("die_height", col)
         elif path == "工序" or path.endswith("工序"):
             assign("process_code", col)
         elif "掏空" in path:
             assign("hollow_factor", col)
         elif "重量小计" in path:
             assign("estimated_weight_subtotal_t", col)
-        elif "预估重量" in path:
+        elif "预估重量" in path or "模具重量" in path:
             assign("estimated_weight_t", col)
         elif "吨位" in path:
             assign("tonnage", col)
         elif "模具类型" in path:
             assign("die_type", col)
-        elif "模具方式" in path:
+        elif "模具方式" in path or "工艺方式" in path:
             assign("die_method", col)
-        elif "生产方式" in path:
+        elif "生产方式" in path or "自动化" in path and "凸焊" not in path:
             assign("production_mode", col)
         elif "端拾器" in path:
             assign("needs_end_effector", col)
-        elif "零件等级" in path:
+        elif "零件等级" in path or "难易度" in path:
             assign("part_grade", col)
         elif path == "备注" or path.endswith("备注"):
             assign("remark", col)
-        elif "材质" in path:
+        elif "材质" in path or "牌号" in path:
             assign("material", col)
-        elif "料厚" in path:
+        elif "料厚" in path or "厚度" in path:
             assign("thickness", col)
-        elif "净重" in path:
+        elif "净重" in path or "零件重量" in path:
             assign("part_weight", col)
-        elif "板料形状" in path:
+        elif "板料形状" in path or "料片式样" in path:
             assign("sheet_shape", col)
         elif "可制" in path and "件" in path:
             assign("parts_per_sheet", col)
@@ -325,9 +348,9 @@ def _resolve_columns(
             assign("die_width", col)
         elif "高度" in path:
             assign("die_height", col)
-        elif "长" in path and ("板料" in path or path.endswith("长")):
+        elif "长" in path and ("板料" in path or "料片" in path or path.endswith("长")):
             assign("sheet_length", col)
-        elif "宽" in path and ("板料" in path or path.endswith("宽")):
+        elif "宽" in path and ("板料" in path or "料片" in path or path.endswith("宽")):
             assign("sheet_width", col)
     return columns
 
@@ -379,6 +402,7 @@ def _parse_rows(
                 process_seq=process_seq,
                 process_code=process_code,
                 die_sets=_as_int(_field(sheet, lookup, row, columns, "die_sets")),
+                die_number=_text(_field(sheet, lookup, row, columns, "die_number")),
                 die_length=_as_q2(_field(sheet, lookup, row, columns, "die_length")),
                 die_width=_as_q2(_field(sheet, lookup, row, columns, "die_width")),
                 die_height=_as_q2(_field(sheet, lookup, row, columns, "die_height")),
@@ -393,6 +417,21 @@ def _parse_rows(
     return parts
 
 
+def process_has_die_mass(process: ParsedDieProcess) -> bool:
+    """本序有预估重量或任一外形尺寸，才可能算出模具费。"""
+    weight = process.estimated_weight_t
+    if weight is not None and weight > Decimal("0"):
+        return True
+    return any(
+        value is not None and value > Decimal("0")
+        for value in (process.die_length, process.die_width, process.die_height)
+    )
+
+
+def layout_has_die_mass(parts: list[ParsedDiePart]) -> bool:
+    return any(process_has_die_mass(process) for part in parts for process in part.processes)
+
+
 def _part_from_row(
     sheet: Worksheet,
     lookup: dict[tuple[int, int], object],
@@ -401,17 +440,22 @@ def _part_from_row(
     columns: DieColumnMap,
     part_col: int,
 ) -> ParsedDiePart:
+    part_weight = _as_q4(_field(sheet, lookup, row, columns, "part_weight"))
+    sheet_length = _as_q2(_field(sheet, lookup, row, columns, "sheet_length"))
+    sheet_width = _as_q2(_field(sheet, lookup, row, columns, "sheet_width"))
+    sheet_shape = _text(_field(sheet, lookup, row, columns, "sheet_shape"))
+    parts_per_sheet = _as_int(_field(sheet, lookup, row, columns, "parts_per_sheet"))
     return ParsedDiePart(
         seq_no=_as_int(_field(sheet, lookup, row, columns, "seq_no")),
         part_number=part_number,
         part_name=_text(_field(sheet, lookup, row, columns, "part_name")),
         material=_text(_field(sheet, lookup, row, columns, "material")),
         thickness=_as_q4(_field(sheet, lookup, row, columns, "thickness")),
-        part_weight=_as_q4(_field(sheet, lookup, row, columns, "part_weight")),
-        sheet_length=_as_q2(_field(sheet, lookup, row, columns, "sheet_length")),
-        sheet_width=_as_q2(_field(sheet, lookup, row, columns, "sheet_width")),
-        sheet_shape=_text(_field(sheet, lookup, row, columns, "sheet_shape")),
-        parts_per_sheet=_as_int(_field(sheet, lookup, row, columns, "parts_per_sheet")),
+        part_weight=part_weight,
+        sheet_length=sheet_length,
+        sheet_width=sheet_width,
+        sheet_shape=sheet_shape,
+        parts_per_sheet=parts_per_sheet,
         material_consumption=_as_q4(_field(sheet, lookup, row, columns, "material_consumption")),
         material_utilization=parse_unit_interval(
             _field(sheet, lookup, row, columns, "material_utilization")
@@ -428,6 +472,14 @@ def _part_from_row(
         excel_sheet_name=sheet.title,
         excel_row=row,
         excel_part_col=part_col,
+        is_scrap_byproduct=layout_is_scrap_byproduct(
+            part_number=part_number,
+            part_weight=part_weight,
+            sheet_length=sheet_length,
+            sheet_width=sheet_width,
+            parts_per_sheet=parts_per_sheet,
+            raw_sheet_type=sheet_shape,
+        ),
     )
 
 

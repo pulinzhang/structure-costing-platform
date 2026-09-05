@@ -21,9 +21,10 @@
 
 | 文档 | 状态 |
 |------|------|
+| [stamping-apqp-die-before-process-design.md](stamping/stamping-apqp-die-before-process-design.md) | 产品质量先期策划（APQP）先布点后工艺（设计）：布点必选基地；工艺必选布点项目并对照文件项目号 |
 | [stamping-process-confirmation-design.md](stamping/stamping-process-confirmation-design.md) | 冲压工艺确认表（已落地）：加工费 + 材料/利废依据 |
 | [stamping-family-die-byproduct-design.md](stamping/stamping-family-die-byproduct-design.md) | 家模废料副产品（上传已落地）：主表 `is_scrap_byproduct`；材料 H×Q，不算冲压费 |
-| [stamping-die-management-design.md](stamping/stamping-die-management-design.md) | 模具布点依据（已落地） |
+| [stamping-die-management-design.md](stamping/stamping-die-management-design.md) | 模具布点依据（已落地；导入顺序见上一行 APQP 设计） |
 | [stamping-die-unit-price-design.md](stamping/stamping-die-unit-price-design.md) | 模具单价档案（已落地） |
 | [stamping-gauge-fee-design.md](stamping/stamping-gauge-fee-design.md) | 检具费档案（已落地） |
 | [stamping-die-fee-design.md](stamping/stamping-die-fee-design.md) | 年度模具费（已落地；不含检具） |

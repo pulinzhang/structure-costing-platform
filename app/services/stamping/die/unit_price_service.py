@@ -8,10 +8,11 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.common.audit import audit_create, audit_update
+from app.common.procurement_locations import PROCUREMENT_LOCATIONS
 from app.common.vehicle_model import normalize_vehicle_model
 from app.exceptions.base import BusinessException, NotFoundException
 from app.repositories.stamping.die_unit_price_repository import StampingDieUnitPriceRepository
-from app.repositories.stamping.stamping_part_repository import StampingPartRepository
+from app.repositories.stamping.stamping_die_repository import StampingDiePartRepository
 from app.schemas.dto.stamping_die_unit_price_dto import (
     StampingDieUnitPriceCreate,
     StampingDieUnitPriceInsert,
@@ -31,18 +32,16 @@ logger = logging.getLogger("service.stamping_die_unit_price")
 class StampingDieUnitPriceService:
     def __init__(self) -> None:
         self.repository = StampingDieUnitPriceRepository()
-        self.stamping_part_repo = StampingPartRepository()
+        self.die_part_repo = StampingDiePartRepository()
 
     def list_scope_filters(self, db: Session, location: str | None) -> StampingDieUnitPriceFilterVO:
-        raw = self.stamping_part_repo.get_cascade_filter_options(
-            db,
-            location=(location or "").strip() or None,
-            stamping_supplier=None,
-            vehicle_model=None,
-        )
+        location_value = (location or "").strip() or None
+        vehicle_models: list[str] = []
+        if location_value:
+            vehicle_models = self.die_part_repo.list_vehicle_models(db, location=location_value)
         return StampingDieUnitPriceFilterVO(
-            locations=list(raw["locations"]),
-            vehicle_models=list(raw["vehicle_models"]),
+            locations=list(PROCUREMENT_LOCATIONS),
+            vehicle_models=vehicle_models,
         )
 
     def paginate(
@@ -73,7 +72,7 @@ class StampingDieUnitPriceService:
         dto: StampingDieUnitPriceCreate,
         current_user: UserVO,
     ) -> StampingDieUnitPriceVO:
-        location, vehicle_model = self._require_process_scope(db, dto.location, dto.vehicle_model)
+        location, vehicle_model = self._require_scope(dto.location, dto.vehicle_model)
         self._reject_duplicate_scope(db, location, vehicle_model)
         audit = audit_create(current_user)
         try:
@@ -119,9 +118,7 @@ class StampingDieUnitPriceService:
         vehicle_model = (
             dto.vehicle_model if "vehicle_model" in dto.model_fields_set else record.vehicle_model
         )
-        location, vehicle_model = self._require_process_scope(
-            db, location or "", vehicle_model or ""
-        )
+        location, vehicle_model = self._require_scope(location or "", vehicle_model or "")
         self._reject_duplicate_scope(db, location, vehicle_model, exclude_id=record.id)
         audit = audit_update(current_user)
         patch: StampingDieUnitPricePatch = {"updated_by": audit["updated_by"]}
@@ -199,17 +196,11 @@ class StampingDieUnitPriceService:
                 code=409,
             )
 
-    def _require_process_scope(
-        self, db: Session, location: str, vehicle_model: str
-    ) -> tuple[str, str]:
+    def _require_scope(self, location: str, vehicle_model: str) -> tuple[str, str]:
         loc = (location or "").strip()
         vehicle = normalize_vehicle_model(vehicle_model) or ""
         if not loc:
             raise BusinessException("请选择采购基地")
         if not vehicle:
-            raise BusinessException("请选择项目")
-        if not self.stamping_part_repo.exists_location_vehicle_model(
-            db, location=loc, vehicle_model=vehicle
-        ):
-            raise BusinessException("该基地+项目在冲压工艺库中不存在，请先上传工艺确认表")
+            raise BusinessException("请选择或填写项目")
         return loc, vehicle

@@ -23,7 +23,7 @@
 | 状态 `effective` / `invalid` | 审核流、产量累计、自动满寿 |
 | 筛选项来自冲压工艺库 | 改布点主表、回写 `alloc_status` |
 
-新增须该基地+项目在 `stamping_parts` 至少一条（与布点「先有工艺」一致）。**唯一键**（基地+项目）在 Service 新增/修改保存时校验，返回可读中文提示；库唯一约束只作兜底，不把数据库错误给用户。修改保存也会带上基地+项目并排除本条后查重。
+新增须该基地+项目即可（不依赖 `stamping_parts`）。细则见 [stamping-apqp-die-before-process-design.md](stamping-apqp-die-before-process-design.md)。**唯一键**（基地+项目）在 Service 新增/修改保存时校验，返回可读中文提示；库唯一约束只作兜底，不把数据库错误给用户。修改保存也会带上基地+项目并排除本条后查重。
 
 ---
 

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from app.common.scrap_byproduct import layout_is_scrap_byproduct_part
 from app.models.stamping.die import StampingDiePart
 from app.services.stamping.die.process_identity import matches_die_identity
 
@@ -18,7 +19,9 @@ def is_scrap_byproduct_die_part(
     part: StampingDiePart,
     scrap_keys: frozenset[tuple[str, str, str]],
 ) -> bool:
-    return die_part_identity_key(part) in scrap_keys
+    if die_part_identity_key(part) in scrap_keys:
+        return True
+    return layout_is_scrap_byproduct_part(part)
 
 
 def strip_optional(value: str | None) -> str | None:

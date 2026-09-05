@@ -87,21 +87,12 @@ def get_die_upload_task_progress(
 @router.get("/filters", response_model=ApiResponse[StampingDieScopeFilterVO])
 def list_die_scope_filters(
     location: str | None = Query(None),
-    vehicle_model: str | None = Query(None),
-    stamping_supplier: str | None = Query(None),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(
         require_any_perm(Perm.STAMPING_DIE_UPLOAD_VIEW, Perm.STAMPING_DIE_LIST_VIEW)
     ),
 ) -> ApiResponse[StampingDieScopeFilterVO]:
-    return ApiResponse.ok(
-        data=_die_service.list_scope_filters(
-            db,
-            location,
-            vehicle_model=vehicle_model,
-            stamping_supplier=stamping_supplier,
-        )
-    )
+    return ApiResponse.ok(data=_die_service.list_scope_filters(db, location))
 
 
 @router.get("/parts", response_model=ApiResponse[PageResult[StampingDiePartListVO]])
@@ -145,8 +136,6 @@ def patch_die_process_alloc_ratio(
 def export_die_parts(
     location: str = Query(""),
     vehicle_model: str = Query(""),
-    stamping_supplier: str | None = Query(None),
-    version: str | None = Query(None),
     part_number: str | None = Query(None),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_DIE_LIST_EXPORT)),
@@ -155,8 +144,6 @@ def export_die_parts(
         db,
         location=location,
         vehicle_model=vehicle_model,
-        stamping_supplier=stamping_supplier.strip() if stamping_supplier else None,
-        version=version.strip() if version else None,
         part_number=part_number.strip() if part_number else None,
         current_user=current_user,
     )

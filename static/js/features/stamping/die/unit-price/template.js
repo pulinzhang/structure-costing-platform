@@ -18,7 +18,7 @@ export function dieUnitPriceTemplate() {
                     <div class="flex items-start justify-between gap-4 mb-3">
                         <div>
                             <h2 class="text-[13px] font-semibold text-[#F0F0F2] tracking-wide">模具单价</h2>
-                            <p class="mt-1 text-[11px] text-[#555555]">按基地 + 项目维护钢板模 / 级进模单价与分摊台数，供后续年度模具费取价</p>
+                            <p class="text-[11px] text-[#555555]">按基地 + 项目维护钢板模 / 级进模单价与分摊台数，不必先有冲压工艺</p>
                         </div>
                         <button type="button" id="dupAddBtn"
                                 class="inline-flex items-center gap-1.5 bg-[#FF1E27] text-white px-3 py-1.5 text-[11px] font-semibold rounded hover:bg-[#d32f2f] transition-all">
@@ -92,7 +92,7 @@ export function dieUnitPriceTemplate() {
                 <div id="dupEmptyState" class="hidden flex flex-col items-center justify-center py-16 text-center bg-[#0A0A0E]">
                     <div class="text-[#555555] mb-2">${window.svgIcon('inbox')}</div>
                     <p class="text-[12px] text-[#8E8E93] mb-1">暂无模具单价</p>
-                    <p class="text-[11px] text-[#555555]">先有冲压工艺后，按基地 + 项目新增档案</p>
+                    <p class="text-[11px] text-[#555555]">按基地 + 项目新增档案；新项目可直接填写</p>
                 </div>
                 <div id="dupLoadingState" class="hidden flex flex-col items-center justify-center py-16 gap-2 bg-[#0A0A0E]">
                     <div class="w-5 h-5 border-2 border-[#2c2c2c] border-t-[#FF1E27] rounded-full animate-spin"></div>
@@ -132,11 +132,11 @@ export function dieUnitPriceTemplate() {
                     </div>
                     <div>
                         <label class="text-[10px] font-semibold text-[#616161] tracking-wider mb-1 block">项目 <span class="text-[#FF1E27]">*</span></label>
-                        <select id="dupEditVehicle" required
-                                class="w-full h-8 px-3 text-xs bg-[#0a0a0c] border border-[#2c2c2c] text-[#9e9e9e] appearance-none cursor-pointer focus:outline-none focus:border-[#ff5252]">
-                            <option value="">请先选择基地</option>
-                        </select>
-                        <p id="dupEditScopeHint" class="text-[10px] text-[#616161] mt-1">同一基地+项目只能有一条。保存时会校验，已存在请打开该条修改。</p>
+                        <input id="dupEditVehicle" name="vehicle_model" list="dupEditVehicleOptions" required
+                               placeholder="已有项目可下拉，新项目请直接填写"
+                               class="w-full h-8 px-3 text-xs bg-[#0a0a0c] border border-[#2c2c2c] text-[#ffffff] placeholder:text-[#616161] focus:outline-none focus:border-[#ff5252]">
+                        <datalist id="dupEditVehicleOptions"></datalist>
+                        <p id="dupEditScopeHint" class="text-[10px] text-[#616161] mt-1">已有项目可下拉，新项目请直接填写。同一基地+项目只能有一条。</p>
                     </div>
                     <div>
                         <label class="text-[10px] font-semibold text-[#616161] tracking-wider mb-1 block">钢板模单价（万元/吨） <span class="text-[#FF1E27]">*</span></label>

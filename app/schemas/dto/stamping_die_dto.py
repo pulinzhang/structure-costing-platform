@@ -8,8 +8,8 @@ from decimal import Decimal
 class StampingDiePartInsert:
     location: str
     vehicle_model: str
-    stamping_supplier: str
-    version: str
+    stamping_supplier: str | None
+    version: str | None
     seq_no: int | None
     part_number: str
     part_name: str | None

@@ -12,18 +12,15 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.common.audit import audit_create, display_name
-from app.common.part_number import normalize_part_number_token
 from app.common.timezone import now
 from app.common.vehicle_model import normalize_vehicle_model
 from app.config import settings
 from app.exceptions.base import BusinessException
-from app.parsers.stamping_die.parser import parse_die_layout_excel
+from app.parsers.stamping_die.parser import layout_has_die_mass, parse_die_layout_excel
 from app.repositories.stamping.stamping_die_repository import (
     StampingDiePartRepository,
     StampingDieProcessRepository,
 )
-from app.repositories.stamping.stamping_part_repository import StampingPartRepository
-from app.repositories.stamping.stamping_process_repository import StampingProcessRepository
 from app.schemas.dto.stamping_die_dto import StampingDiePartInsert, StampingDieProcessInsert
 from app.schemas.vo.async_task_vo import AsyncTaskAcceptedVO
 from app.schemas.vo.user_vo import UserVO
@@ -40,16 +37,7 @@ from app.services.stamping.die.alloc_preserver import (
     preserve_die_alloc,
     resolve_part_ratios,
 )
-from app.services.stamping.die.die_number_resolver import (
-    DieLayoutCheckRow,
-    StampingProcessTrace,
-    format_die_layout_issues,
-    validate_die_layout,
-)
-from app.services.stamping.die.process_identity import (
-    ProcessPartIdentity,
-    map_die_parts_to_process,
-)
+from app.services.stamping.die.die_number_assigner import assign_die_numbers
 from app.services.stamping.die.template_builder import build_die_layout_template
 from app.services.stamping.die.weight_check import (
     DieWeightCheckRow,
@@ -70,6 +58,7 @@ logger = logging.getLogger("service.stamping_die_upload")
 class DieUploadResult:
     parts_count: int
     processes_count: int
+    assigned_die_number_count: int
     location: str
     vehicle_model: str
 
@@ -79,8 +68,6 @@ class StampingDieUploadService:
         self.db = db
         self.die_part_repo = StampingDiePartRepository()
         self.die_process_repo = StampingDieProcessRepository()
-        self.stamping_part_repo = StampingPartRepository()
-        self.process_repo = StampingProcessRepository()
 
     @staticmethod
     def build_template() -> tuple[bytes, str]:
@@ -101,11 +88,7 @@ class StampingDieUploadService:
         if not location:
             raise BusinessException("请选择采购基地")
         if not vehicle_model:
-            raise BusinessException("请选择项目")
-        if not self.stamping_part_repo.exists_location_vehicle_model(
-            self.db, location=location, vehicle_model=vehicle_model
-        ):
-            raise BusinessException("所选基地与项目在冲压工艺库中不存在，请先上传冲压工艺确认表")
+            raise BusinessException("请填写项目")
 
         def report(progress: int, message: str) -> None:
             if progress_callback:
@@ -128,10 +111,15 @@ class StampingDieUploadService:
             )
         if parsed_vehicle != vehicle_model:
             raise BusinessException(
-                f"文件项目为 {parsed_vehicle}，与所选项目 {vehicle_model} 不一致"
+                f"文件项目为 {parsed_vehicle}，与填写的项目 {vehicle_model} 不一致"
             )
         if not parsed.parts:
             raise BusinessException("未解析到零件数据")
+        if not layout_has_die_mass(parsed.parts):
+            raise BusinessException(
+                "未读到模具长/宽/高或预估重量。当前文件更像工艺确认表（只有工序和吨位），"
+                "请上传含「模具长/模具宽/模具高」或「预估重量／模具重量」列的模具布点清单"
+            )
 
         duplicate_seqs = find_duplicate_process_seqs(
             [
@@ -168,58 +156,19 @@ class StampingDieUploadService:
         if weight_issues:
             raise BusinessException(format_die_weight_mismatch_issues(weight_issues))
 
-        try:
-            process_identities = map_die_parts_to_process(
-                [part.part_number for part in parsed.parts],
-                [
-                    ProcessPartIdentity(
-                        part_number=row["part_number"],
-                        stamping_supplier=row["stamping_supplier"],
-                        version=row["version"],
-                    )
-                    for row in self.stamping_part_repo.list_die_match_identities(
-                        self.db, location=location, vehicle_model=vehicle_model
-                    )
-                ],
-            )
-        except ValueError as exc:
-            raise BusinessException(str(exc)) from None
-
-        check_rows = [
-            DieLayoutCheckRow(
-                part_number=part.part_number,
-                process_seq=process.process_seq,
-                has_die_size=(
-                    process.die_length is not None
-                    or process.die_width is not None
-                    or process.die_height is not None
-                ),
-            )
-            for part in parsed.parts
-            for process in part.processes
-        ]
-        traces = [
-            StampingProcessTrace(
-                part_number=row["part_number"],
-                process_seq=row["process_seq"],
-                die_number=row["die_number"],
-                excel_filename=row["excel_filename"],
-                stamping_supplier=row["stamping_supplier"],
-                version=row["version"],
-            )
-            for row in self.process_repo.list_layout_traces_for_scope(
-                self.db, location=location, vehicle_model=vehicle_model
-            )
-        ]
-        resolved_numbers, issues = validate_die_layout(check_rows, traces)
-        if issues:
-            raise BusinessException(format_die_layout_issues(issues))
-
-        report(40, "正在保存文件...")
-        stored_path = self._save_file(file_content, filename, location, vehicle_model)
         existing = self.die_part_repo.list_existing_in_scope(
             self.db, location=location, vehicle_model=vehicle_model
         )
+        assigned = assign_die_numbers(
+            vehicle_model=vehicle_model,
+            parts=parsed.parts,
+            existing_numbers=self.die_process_repo.list_die_numbers_for_scope(
+                self.db, location=location, vehicle_model=vehicle_model
+            ),
+        )
+
+        report(40, "正在保存文件...")
+        stored_path = self._save_file(file_content, filename, location, vehicle_model)
         preserved = preserve_die_alloc(existing)
 
         report(55, "正在覆盖写入...")
@@ -229,13 +178,12 @@ class StampingDieUploadService:
             audit = audit_create(current_user)
             part_rows: list[StampingDiePartInsert] = []
             for parsed_part in parsed.parts:
-                identity = process_identities[normalize_part_number_token(parsed_part.part_number)]
                 part_rows.append(
                     StampingDiePartInsert(
                         location=location,
                         vehicle_model=vehicle_model,
-                        stamping_supplier=identity.stamping_supplier,
-                        version=identity.version,
+                        stamping_supplier=None,
+                        version=None,
                         seq_no=parsed_part.seq_no,
                         part_number=parsed_part.part_number,
                         part_name=parsed_part.part_name,
@@ -278,7 +226,7 @@ class StampingDieUploadService:
                             process_order=order,
                             process_code=process.process_code,
                             die_sets=process.die_sets,
-                            die_number=resolved_numbers.get(
+                            die_number=assigned.by_key.get(
                                 (parsed_part.part_number.strip(), process.process_seq.strip())
                             ),
                             die_length=process.die_length,
@@ -316,6 +264,7 @@ class StampingDieUploadService:
         return DieUploadResult(
             parts_count=len(created_parts),
             processes_count=len(process_rows),
+            assigned_die_number_count=assigned.assigned_count,
             location=location,
             vehicle_model=vehicle_model,
         )
@@ -351,7 +300,7 @@ class StampingDieUploadService:
         if not location:
             raise BusinessException("请选择采购基地")
         if not vehicle_model:
-            raise BusinessException("请选择项目")
+            raise BusinessException("请填写项目")
         if not filename:
             raise BusinessException("未提供文件名")
         ext = "." + filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
@@ -390,9 +339,14 @@ class StampingDieUploadService:
                     progress=0,
                     message=str(error),
                 )
+            success_message = (
+                f"上传成功：{result.parts_count} 个零件，{result.processes_count} 道工序"
+            )
+            if result.assigned_die_number_count:
+                success_message += f"，空号已按规则生成 {result.assigned_die_number_count} 条"
             return WorkerTaskOutcome(
                 status=STATUS_COMPLETED,
-                message=f"上传成功：{result.parts_count} 个零件，{result.processes_count} 道工序",
+                message=success_message,
                 result=asdict(result),
             )
 

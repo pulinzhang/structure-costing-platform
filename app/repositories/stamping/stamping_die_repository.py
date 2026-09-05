@@ -290,6 +290,26 @@ class StampingDieProcessRepository:
             return []
         return db.query(StampingDieProcess).filter(StampingDieProcess.id.in_(unique_ids)).all()
 
+    def list_die_numbers_for_scope(
+        self,
+        db: Session,
+        *,
+        location: str,
+        vehicle_model: str,
+    ) -> list[str]:
+        rows = (
+            db.query(StampingDieProcess.die_number)
+            .join(StampingDiePart, StampingDieProcess.die_part_id == StampingDiePart.id)
+            .filter(
+                StampingDiePart.location == location,
+                StampingDiePart.vehicle_model == vehicle_model,
+                StampingDieProcess.die_number.isnot(None),
+                StampingDieProcess.die_number != "",
+            )
+            .all()
+        )
+        return [number for (number,) in rows if (number or "").strip()]
+
     def bulk_create(self, db: Session, rows: list[StampingDieProcessInsert]) -> None:
         for payload in rows:
             db.add(model_from_payload(StampingDieProcess, payload))

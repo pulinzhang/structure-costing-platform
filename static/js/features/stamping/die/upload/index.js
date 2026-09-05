@@ -1,4 +1,4 @@
-import { dieUploadTemplate } from './template.js?v=5';
+import { dieUploadTemplate } from './template.js?v=8';
 
 const MAX_RECENT_UPLOADS = 8;
 const POLL_INTERVAL_MS = 2000;
@@ -119,11 +119,6 @@ export const DieUploadPage = {
                 const locEl = document.getElementById('dieLocation');
                 if (locEl) locEl.value = location;
             }
-            this.fillSelect(
-                'dieVehicleModel',
-                data.vehicle_models || [],
-                location ? '请选择项目' : '请先选择基地'
-            );
         } catch (error) {
             showToast(error.message || '加载筛选项失败', 'error');
         }
@@ -385,7 +380,7 @@ export const DieUploadPage = {
             return;
         }
         if (!vehicleModel) {
-            showToast('请选择项目', 'warning');
+            showToast('请填写项目', 'warning');
             return;
         }
         if (!fileInput?.files?.length) {
