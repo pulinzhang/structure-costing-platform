@@ -115,8 +115,11 @@ def test_write_calc_report_workbook_sheets() -> None:
     assert cover["A1"].value == "总成核价计算报告"
     assert "芜湖" in str(cover["B4"].value)
     cards_sheet = loaded["核价卡"]
+    assert cards_sheet["D4"].value == "零件号"
+    assert cards_sheet["E4"].value == "短码"
     assert cards_sheet["D5"].value == "5010002AA"
-    assert cards_sheet["G5"].value == "部分成功"
-    assert cards_sheet["K5"].value == Decimal("13.0000")
-    assert "P-MISS" in str(cards_sheet["N5"].value)
+    assert cards_sheet["E5"].value == "0002"
+    assert cards_sheet["H5"].value == "部分成功"
+    assert cards_sheet["L5"].value == Decimal("13.0000")
+    assert "P-MISS" in str(cards_sheet["O5"].value)
     assert "芜湖/T13J" in str(loaded["过程说明"]["A3"].value)

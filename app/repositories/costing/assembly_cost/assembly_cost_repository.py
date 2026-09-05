@@ -11,6 +11,7 @@ from sqlalchemy import case, func
 from sqlalchemy.orm import Query, Session, joinedload, noload
 
 from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING
+from app.models.bom.node import BomNode
 from app.models.costing.assembly_cost import AssemblyCost
 from app.models.costing.assembly_cost_indirect import AssemblyCostIndirect
 from app.models.costing.assembly_cost_item import AssemblyCostItem
@@ -344,6 +345,19 @@ class AssemblyCostRepository:
             ).filter(BomProcurementObject.confirm_status == confirm_status)
         return q
 
+    @staticmethod
+    def _order_like_bom_import(q: Query[_T]) -> Query[_T]:
+        """与材料清单导入顺序一致：Excel 行序（BomNode.sort_no），不是零件号。"""
+        return q.outerjoin(BomNode, BomNode.id == AssemblyCost.source_node_id).order_by(
+            AssemblyCost.year.desc(),
+            AssemblyCost.month.desc(),
+            AssemblyCost.location.asc(),
+            AssemblyCost.vehicle_model.asc(),
+            AssemblyCost.bom_version.asc(),
+            func.coalesce(BomNode.sort_no, BomNode.excel_row, 0).asc(),
+            AssemblyCost.id.asc(),
+        )
+
     def paginate(
         self,
         db: Session,
@@ -381,11 +395,12 @@ class AssemblyCostRepository:
         )
         total = q.count()
         rows = (
-            q.options(
-                noload(AssemblyCost.items),
-                noload(AssemblyCost.indirects),
+            self._order_like_bom_import(
+                q.options(
+                    noload(AssemblyCost.items),
+                    noload(AssemblyCost.indirects),
+                )
             )
-            .order_by(AssemblyCost.id.asc())
             .offset(skip)
             .limit(limit)
             .all()
@@ -504,22 +519,23 @@ class AssemblyCostRepository:
             object_kind=object_kind,
             confirm_status=confirm_status,
         )
-        return (
-            q.options(
+        ordered_ids = [
+            int(row[0])
+            for row in self._order_like_bom_import(q.with_entities(AssemblyCost.id)).all()
+        ]
+        if not ordered_ids:
+            return []
+        loaded = (
+            db.query(AssemblyCost)
+            .options(
                 joinedload(AssemblyCost.items),
                 joinedload(AssemblyCost.indirects),
             )
-            .order_by(
-                AssemblyCost.year.desc(),
-                AssemblyCost.month.desc(),
-                AssemblyCost.location,
-                AssemblyCost.vehicle_model,
-                AssemblyCost.bom_version,
-                AssemblyCost.part_number,
-                AssemblyCost.id.asc(),
-            )
+            .filter(AssemblyCost.id.in_(ordered_ids))
             .all()
         )
+        by_id = {int(record.id): record for record in loaded}
+        return [by_id[cost_id] for cost_id in ordered_ids if cost_id in by_id]
 
     def list_ids_by_scope(
         self,

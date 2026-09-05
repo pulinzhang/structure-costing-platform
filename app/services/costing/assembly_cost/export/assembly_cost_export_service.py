@@ -15,6 +15,10 @@ from openpyxl.utils import get_column_letter
 from sqlalchemy.orm import Session
 
 from app.common.audit import audit_status_label
+from app.common.bom.manufacturing_category import (
+    short_part_number_digits,
+    short_weld_part_number,
+)
 from app.common.excel_workbook import resolve_worksheet
 from app.common.export_filters import require_at_least_one_export_filter
 from app.common.export_watermark import workbook_to_xlsx_bytes
@@ -43,6 +47,7 @@ LIST_HEADERS = [
     "月份",
     "基地",
     "零件号",
+    "短码",
     "零件名称",
     "项目",
     "版本",
@@ -54,9 +59,9 @@ LIST_HEADERS = [
     "核算",
     "审核",
 ]
-LIST_WIDTHS = [6, 8, 6, 10, 16, 18, 10, 10, 12, 12, 12, 12, 14, 8, 8]
-LIST_MONEY_COLS = {9, 10, 11, 12, 13}  # 材料～总费用
-LIST_KPI_COL = 13  # 总费用
+LIST_WIDTHS = [6, 8, 6, 10, 16, 10, 18, 10, 10, 12, 12, 12, 12, 14, 8, 8]
+LIST_MONEY_COLS = {10, 11, 12, 13, 14}  # 材料～总费用
+LIST_KPI_COL = 14  # 总费用
 
 
 def _fill(hex_color: str) -> PatternFill:
@@ -70,6 +75,13 @@ def _font(
     color: str = "000000",
 ) -> Font:
     return Font(name=_FONT, size=size, bold=bold, color=color)
+
+
+def part_short_code(*, part_number: str | None, level: int | None) -> str:
+    """L0 数字末四位；分总成带 -N 时保留字母尾。"""
+    if int(level or 0) == 0:
+        return short_part_number_digits(part_number) or ""
+    return short_weld_part_number(part_number) or ""
 
 
 def _num(value: Any) -> Any:
@@ -336,6 +348,7 @@ class AssemblyCostExportService:
                 record.month,
                 record.location or "",
                 record.part_number or "",
+                part_short_code(part_number=record.part_number, level=record.level),
                 record.part_name or "",
                 record.vehicle_model or "",
                 record.bom_version or "",
@@ -362,7 +375,7 @@ class AssemblyCostExportService:
                     cell.fill = _fill(stripe)
                     cell.alignment = self._right
                     cell.number_format = _MONEY_FORMAT
-                elif col in {1, 2, 3, 14, 15}:
+                elif col in {1, 2, 3, 6, 15, 16}:
                     cell.fill = _fill(stripe)
                     cell.alignment = self._center
                 else:
@@ -392,8 +405,10 @@ class AssemblyCostExportService:
             "项目",
             "版本",
             "L0零件号",
+            "L0短码",
             "层级",
             "子件零件号",
+            "子件短码",
             "子件名称",
             "取价来源",
             "匹配说明",
@@ -409,7 +424,7 @@ class AssemblyCostExportService:
             note="说明：含一口价剪枝行（skipped_by_bundle）；行金额为计算快照。",
             col_count=len(headers),
         )
-        self._write_simple_header(ws, header_row, headers, money_cols={13, 14, 15})
+        self._write_simple_header(ws, header_row, headers, money_cols={15, 16, 17})
 
         row_idx = header_row + 1
         seq = 0
@@ -424,8 +439,10 @@ class AssemblyCostExportService:
                     record.vehicle_model or "",
                     record.bom_version or "",
                     record.part_number or "",
+                    part_short_code(part_number=record.part_number, level=record.level),
                     item.node_level,
                     item.part_number or "",
+                    part_short_code(part_number=item.part_number, level=item.node_level),
                     item.part_name or "",
                     item.cost_source or "",
                     item.match_hint or "",
@@ -433,10 +450,10 @@ class AssemblyCostExportService:
                     _num(item.effective_qty),
                     _num(item.line_amount),
                 ]
-                self._append_styled_row(ws, row_idx, row_data, money_cols={13, 14, 15}, seq=seq)
+                self._append_styled_row(ws, row_idx, row_data, money_cols={15, 16, 17}, seq=seq)
                 row_idx += 1
 
-        widths = [6, 8, 6, 10, 10, 10, 16, 10, 16, 18, 14, 18, 12, 10, 12]
+        widths = [6, 8, 6, 10, 10, 10, 16, 10, 8, 16, 10, 18, 14, 18, 12, 10, 12]
         for col, width in enumerate(widths, start=1):
             ws.column_dimensions[get_column_letter(col)].width = width
         ws.freeze_panes = f"A{header_row + 1}"
@@ -456,6 +473,7 @@ class AssemblyCostExportService:
             "项目",
             "版本",
             "L0零件号",
+            "L0短码",
             "代码",
             "名称",
             "金额",
@@ -470,7 +488,7 @@ class AssemblyCostExportService:
             note="说明：I1～I8 一一列出；费率类以月总账为基数（系统快照）。",
             col_count=len(headers),
         )
-        self._write_simple_header(ws, header_row, headers, money_cols={10, 11, 12})
+        self._write_simple_header(ws, header_row, headers, money_cols={11, 12, 13})
 
         row_idx = header_row + 1
         seq = 0
@@ -485,16 +503,17 @@ class AssemblyCostExportService:
                     record.vehicle_model or "",
                     record.bom_version or "",
                     record.part_number or "",
+                    part_short_code(part_number=record.part_number, level=record.level),
                     ind.code or "",
                     ind.label or "",
                     _num(ind.amount),
                     _num(ind.rate) if ind.rate is not None else "",
                     _num(ind.base_amount) if ind.base_amount is not None else "",
                 ]
-                self._append_styled_row(ws, row_idx, row_data, money_cols={10, 11, 12}, seq=seq)
+                self._append_styled_row(ws, row_idx, row_data, money_cols={11, 12, 13}, seq=seq)
                 row_idx += 1
 
-        widths = [6, 8, 6, 10, 10, 10, 16, 14, 20, 12, 10, 12]
+        widths = [6, 8, 6, 10, 10, 10, 16, 10, 14, 20, 12, 10, 12]
         for col, width in enumerate(widths, start=1):
             ws.column_dimensions[get_column_letter(col)].width = width
         ws.freeze_panes = f"A{header_row + 1}"

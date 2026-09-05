@@ -161,7 +161,7 @@ def prepare_calc_run(
         }
     subjects = sorted(
         [nodes_by_id[nid] for nid in subject_ids if nid in nodes_by_id],
-        key=lambda n: (n.level, n.sort_no, n.part_number, n.id),
+        key=lambda n: (n.sort_no, n.id),
     )
     if not subjects:
         raise BusinessException("无核价主体（装配∪树根∪采购对象）")

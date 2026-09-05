@@ -26,6 +26,9 @@ from app.schemas.vo.user_vo import UserVO
 from app.services.costing.assembly_cost.calc.calc_log_service import (
     AssemblyCostCalcLogService,
 )
+from app.services.costing.assembly_cost.export.assembly_cost_export_service import (
+    part_short_code,
+)
 
 logger = logging.getLogger("service.assembly_cost.calc_report_export")
 
@@ -60,6 +63,7 @@ _CARD_HEADERS = [
     "层级",
     "树根",
     "零件号",
+    "短码",
     "零件名称",
     "对象类型",
     "状态",
@@ -71,9 +75,9 @@ _CARD_HEADERS = [
     "说明",
     "缺价零件",
 ]
-_CARD_WIDTHS = [6, 8, 8, 18, 22, 14, 12, 12, 12, 12, 12, 10, 36, 28]
-_MONEY_COLS = {8, 9, 10, 11}
-_KPI_COL = 11
+_CARD_WIDTHS = [6, 8, 8, 18, 10, 22, 14, 12, 12, 12, 12, 12, 10, 36, 28]
+_MONEY_COLS = {9, 10, 11, 12}
+_KPI_COL = 12
 
 TreeRootFilter = Literal["all", "yes", "no"]
 
@@ -128,6 +132,7 @@ def match_calc_report_card(
     hay = " ".join(
         [
             card.part_number or "",
+            part_short_code(part_number=card.part_number, level=card.level),
             card.part_name or "",
             card.message or "",
             card.object_kind or "",
@@ -414,6 +419,7 @@ class AssemblyCostCalcReportExportService:
                 f"L{card.level}",
                 "树根" if card.is_tree_root else "",
                 card.part_number,
+                part_short_code(part_number=card.part_number, level=card.level),
                 card.part_name or "",
                 card.object_kind or "",
                 _STATUS_LABEL.get(card.status, card.status),
@@ -438,7 +444,7 @@ class AssemblyCostCalcReportExportService:
                     cell.font = _font(size=9)
                     cell.alignment = self._right
                     cell.number_format = _MONEY_FORMAT
-                elif col == 7:
+                elif col == 8:
                     cell.fill = _fill(stripe)
                     cell.font = _font(
                         size=9,
@@ -446,7 +452,7 @@ class AssemblyCostCalcReportExportService:
                         color=_STATUS_COLOR.get(card.status, _INK),
                     )
                     cell.alignment = self._center
-                elif col in {1, 2, 3, 12}:
+                elif col in {1, 2, 3, 5, 13}:
                     cell.fill = _fill(stripe)
                     cell.font = _font(size=9)
                     cell.alignment = self._center
