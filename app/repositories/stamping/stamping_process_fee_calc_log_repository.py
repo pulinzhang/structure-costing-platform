@@ -52,18 +52,32 @@ class StampingProcessFeeCalcLogRepository:
         *,
         year: int,
         location: str,
-        stamping_supplier: str,
+        stamping_supplier: str | None = None,
     ) -> StampingProcessFeeCalcLog | None:
+        query = db.query(StampingProcessFeeCalcLog).filter(
+            StampingProcessFeeCalcLog.year == year,
+            StampingProcessFeeCalcLog.location == location,
+            StampingProcessFeeCalcLog.status == _STATUS_PROCESSING,
+        )
+        if stamping_supplier:
+            query = query.filter(StampingProcessFeeCalcLog.stamping_supplier == stamping_supplier)
+        return query.order_by(StampingProcessFeeCalcLog.id.desc()).first()
+
+    def list_processing(
+        self,
+        db: Session,
+        *,
+        year: int,
+        location: str,
+    ) -> list[StampingProcessFeeCalcLog]:
         return (
             db.query(StampingProcessFeeCalcLog)
             .filter(
                 StampingProcessFeeCalcLog.year == year,
                 StampingProcessFeeCalcLog.location == location,
-                StampingProcessFeeCalcLog.stamping_supplier == stamping_supplier,
                 StampingProcessFeeCalcLog.status == _STATUS_PROCESSING,
             )
-            .order_by(StampingProcessFeeCalcLog.id.desc())
-            .first()
+            .all()
         )
 
     def paginate(

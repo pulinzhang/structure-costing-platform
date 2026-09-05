@@ -4,7 +4,7 @@
  * 用于测试部门核对数据，主子表联合查询导出 Excel
  */
 
-import { policyDownloadTemplate, renderPolicyRows } from './template.js?v=29';
+import { policyDownloadTemplate, renderPolicyRows } from './template.js?v=31';
 import {
     DEFAULT_PREVIEW_PAGE_SIZE,
     PREVIEW_PAGE_SIZE_OPTIONS,
@@ -126,14 +126,14 @@ async function loadFilterOptions() {
         if (data.years && Array.isArray(data.years)) {
             fillSelect('policyDownloadYear', data.years.map(y => ({
                 value: y,
-                label: `${y} 年`,
+                label: fmtYear(y),
             })));
         } else {
             // Fallback: 当前年份前后3年
             const currentYear = new Date().getFullYear();
             const years = [];
             for (let y = currentYear - 3; y <= currentYear + 1; y++) {
-                years.push({ value: y, label: `${y} 年` });
+                years.push({ value: y, label: fmtYear(y) });
             }
             fillSelect('policyDownloadYear', years);
         }
@@ -141,7 +141,7 @@ async function loadFilterOptions() {
         // 填充月份
         const months = Array.from({ length: 12 }, (_, i) => ({
             value: i + 1,
-            label: `${i + 1} 月`,
+            label: fmtMonth(i + 1),
         }));
         fillSelect('policyDownloadMonth', months);
 
@@ -169,13 +169,13 @@ async function loadFilterOptions() {
         const currentYear = new Date().getFullYear();
         const years = [];
         for (let y = currentYear - 3; y <= currentYear + 1; y++) {
-            years.push({ value: y, label: `${y} 年` });
+                years.push({ value: y, label: fmtYear(y) });
         }
         fillSelect('policyDownloadYear', years);
 
         const months = Array.from({ length: 12 }, (_, i) => ({
             value: i + 1,
-            label: `${i + 1} 月`,
+            label: fmtMonth(i + 1),
         }));
         fillSelect('policyDownloadMonth', months);
     }
@@ -300,8 +300,8 @@ function bindEvents() {
 function updateConditionsDisplay() {
     const filters = collectFilters();
     const conditions = [];
-    if (filters.year) conditions.push(`年度: ${filters.year}`);
-    if (filters.month) conditions.push(`月份: ${filters.month}`);
+    const period = fmtPeriod(filters.year, filters.month);
+    if (period) conditions.push(period);
     if (filters.category_name) conditions.push(`分类: ${filters.category_name}`);
     if (filters.grade_value) conditions.push(`牌号: ${filters.grade_value}`);
     if (filters.steel_mill) conditions.push(`钢厂: ${filters.steel_mill}`);
@@ -498,7 +498,7 @@ async function batchDeletePolicies() {
 
     const millLabel = steelMill || '全部钢厂';
     const confirmed = window.confirm(
-        `确定要删除以下条件的政策数据吗？\n\n年度: ${year} | 月份: ${month} | 钢厂: ${millLabel}\n\n此操作不可恢复！`
+        `确定要删除以下条件的政策数据吗？\n\n${fmtPeriod(year, month)} · 钢厂: ${millLabel}\n\n此操作不可恢复！`
     );
 
     if (!confirmed) {

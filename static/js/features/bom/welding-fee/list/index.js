@@ -10,7 +10,7 @@ import {
     updateL0WeldingFeeFilterCapsules,
     renderFeeDetailItems,
     resolveL0ShortPartNumber,
-} from './template.js?v=18';
+} from './template.js?v=20';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -211,7 +211,7 @@ function updateCapsules() {
     updateL0WeldingFeeFilterCapsules(getFilters());
 }
 
-function fillSelect(id, values = [], preferred = null) {
+function fillSelect(id, values = [], preferred = null, formatLabel = null) {
     const select = document.getElementById(id);
     if (!select) return;
     const pending = select.dataset.pending || null;
@@ -221,14 +221,15 @@ function fillSelect(id, values = [], preferred = null) {
         `<option value="">全部</option>` +
         values.map((v) => {
             const text = String(v);
-            return `<option value="${esc(text)}"${text === String(current) ? ' selected' : ''}>${esc(text)}</option>`;
+            const label = formatLabel ? formatLabel(v) : text;
+            return `<option value="${esc(text)}"${text === String(current) ? ' selected' : ''}>${esc(String(label))}</option>`;
         }).join('');
 }
 
 async function loadFilterOptions() {
     try {
         const yearRes = await HttpClient.get(`${API_BASE}/filters/years`);
-        fillSelect('l0wfYearFilter', yearRes.data || []);
+        fillSelect('l0wfYearFilter', yearRes.data || [], null, fmtYear);
         await loadLocationOptions();
         await loadVehicleModelOptions();
         await loadBomVersionOptions();
@@ -539,7 +540,7 @@ function openViewDrawer(fee) {
 }
 
 function fillViewFieldsFromRecord(fee) {
-    fillViewField('l0wf-view-year', fee.year);
+    fillViewField('l0wf-view-year', fmtYear(fee.year));
     fillViewField('l0wf-view-location', fee.location);
     fillViewField('l0wf-view-vehicle', fee.vehicle_model);
     fillViewField('l0wf-view-version', fee.bom_version);
@@ -604,7 +605,7 @@ function openEditDrawer(record) {
     }
 
     feeState.editingSystemFee = record.total_welding_fee;
-    fillViewField('l0wf-edit-year', record.year);
+    fillViewField('l0wf-edit-year', fmtYear(record.year));
     fillViewField('l0wf-edit-location', record.location);
     fillViewField('l0wf-edit-vehicle', record.vehicle_model);
     fillViewField('l0wf-edit-version', record.bom_version);
@@ -718,7 +719,7 @@ function openBatchAudit(mode) {
         remark.placeholder = isReverse ? '请填写反审核原因' : '请填写审核意见';
     }
     if (scopeEl) {
-        scopeEl.textContent = `${scope.year} · ${scope.location} · ${scope.vehicle_model} · ${scope.bom_version}`;
+        scopeEl.textContent = `${fmtYear(scope.year)} · ${scope.location} · ${scope.vehicle_model} · ${scope.bom_version}`;
     }
     openDrawer('l0wfBatchAuditDrawer', 'l0wfBatchAuditBackdrop');
 }
@@ -759,7 +760,7 @@ async function submitBatchAudit() {
 async function batchDelete() {
     const scope = requireScope();
     if (!scope) return;
-    if (!window.confirm(`确定删除未审核的焊接费？\n${scope.year} · ${scope.location} · ${scope.vehicle_model} · ${scope.bom_version}\n已审核记录将跳过。`)) {
+    if (!window.confirm(`确定删除未审核的焊接费？\n${fmtYear(scope.year)} · ${scope.location} · ${scope.vehicle_model} · ${scope.bom_version}\n已审核记录将跳过。`)) {
         return;
     }
     try {

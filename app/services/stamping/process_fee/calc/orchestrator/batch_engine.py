@@ -97,7 +97,7 @@ class BatchCalculationEngine:
             db,
             year=dto.year,
             location=part.location,
-            stamping_supplier=ctx.supplier,
+            stamping_supplier=part.stamping_supplier or "",
             vehicle_model=part.vehicle_model,
             version=part.version,
             part_number=part.part_number,
@@ -149,7 +149,7 @@ class BatchCalculationEngine:
             ProcessFeeUpsertPayload(
                 year=dto.year,
                 location=part.location,
-                stamping_supplier=ctx.supplier,
+                stamping_supplier=part.stamping_supplier or "",
                 vehicle_model=part.vehicle_model,
                 version=part.version,
                 snapshot=part_snapshot(part),

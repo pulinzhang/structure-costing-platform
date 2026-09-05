@@ -346,7 +346,7 @@ export function updatePkgFilterCapsules(state) {
             ? 'bg-[#1A080A] border border-[#FF1E27]/40 text-[#FF1E27] px-2.5 py-1 rounded-md'
             : 'bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md';
     };
-    setCap('pkgCapsuleYear', state.selectedYear ? `${state.selectedYear} 年` : '全部年度', !!state.selectedYear);
+    setCap('pkgCapsuleYear', state.selectedYear ? fmtYear(state.selectedYear) : '全部年度', !!state.selectedYear);
     setCap('pkgCapsuleLocation', state.selectedLocation || '全部基地', !!state.selectedLocation);
     setCap('pkgCapsuleVehicle', state.selectedVehicleModel || '全部项目', !!state.selectedVehicleModel);
     const auditLabel = state.selectedAuditStatus === 'pending'
@@ -391,7 +391,7 @@ export function renderTableRows(records) {
         <tr class="group relative font-mono text-[11px] border-b border-[#141418] hover:bg-[#161620] transition-colors duration-100">
             <td class="p-0 relative"><div class="absolute left-0 top-0 bottom-0 w-[2px] bg-[#FF1E27] opacity-0 group-hover:opacity-70 transition-opacity"></div></td>
             <td class="px-2 py-2 text-[#F0F0F2] overflow-hidden truncate">${esc(record.location)}</td>
-            <td class="px-2 py-2 text-[#8E8E93]">${esc(record.year)}</td>
+            <td class="px-2 py-2 text-[#8E8E93]">${esc(fmtYear(record.year))}</td>
             <td class="px-2 py-2 text-[#F0F0F2] overflow-hidden truncate">${esc(record.vehicle_model)}</td>
             <td class="px-2 py-2 overflow-hidden">
                 <div class="text-[12px] font-bold text-[#F0F0F2] truncate" title="${esc(record.part_number)}">${esc(record.part_number)}</div>
@@ -440,7 +440,7 @@ export function renderDetailBody(record) {
     return `
         <div class="space-y-1">
             ${row('基地', record.location)}
-            ${row('年度', record.year)}
+            ${row('年度', fmtYear(record.year))}
             ${row('项目', record.vehicle_model)}
             ${row('零件号', record.part_number)}
             ${row('产品', record.part_name)}

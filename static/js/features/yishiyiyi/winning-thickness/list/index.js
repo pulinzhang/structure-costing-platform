@@ -40,12 +40,12 @@ function applyPermissionUi() {
 
 function buildYearOptions(years) {
     if (Array.isArray(years) && years.length) {
-        return years.map(y => ({ value: y, label: `${y} 年` }));
+        return years.map(y => ({ value: y, label: fmtYear(y) }));
     }
     const currentYear = new Date().getFullYear();
     const fallback = [];
     for (let y = currentYear - 3; y <= currentYear + 1; y++) {
-        fallback.push({ value: y, label: `${y} 年` });
+        fallback.push({ value: y, label: fmtYear(y) });
     }
     return fallback;
 }
@@ -53,7 +53,7 @@ function buildYearOptions(years) {
 function fillMonthOptions() {
     const months = Array.from({ length: 12 }, (_, i) => ({
         value: i + 1,
-        label: `${i + 1} 月`,
+        label: fmtMonth(i + 1),
     }));
     fillSelect('winningThicknessMonth', months, true);
 }
@@ -190,8 +190,8 @@ function bindEvents() {
 function updateConditionsDisplay() {
     const filters = collectFilters();
     const conditions = [];
-    if (filters.year) conditions.push(`年度: ${filters.year}`);
-    if (filters.month) conditions.push(`月份: ${filters.month}`);
+    const period = fmtPeriod(filters.year, filters.month);
+    if (period) conditions.push(period);
     if (filters.location) conditions.push(`基地: ${filters.location}`);
     if (filters.category_name) conditions.push(`分类: ${filters.category_name}`);
     if (filters.grade) conditions.push(`牌号: ${filters.grade}`);
@@ -317,7 +317,7 @@ async function exportExcel() {
         applyFiltersToParams(params, filters);
         const { blob, filename } = await HttpClient.download(`${API_BASE}/export-download`, {
             params,
-            defaultFilename: `中标钢厂厚度价格一览表_${filters.year}年_${filters.month}月_${filters.location}.xlsx`,
+            defaultFilename: `中标钢厂厚度价格一览表_${fmtPeriod(filters.year, filters.month)}_${filters.location}.xlsx`,
         });
 
         const url = window.URL.createObjectURL(blob);

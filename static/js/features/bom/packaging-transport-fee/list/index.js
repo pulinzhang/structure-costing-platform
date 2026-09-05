@@ -11,7 +11,7 @@ import {
     updatePkgHud,
     updatePkgFilterCapsules,
     renderDetailBody,
-} from './template.js?v=3';
+} from './template.js?v=5';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -120,10 +120,10 @@ async function loadFilterOptions() {
             const currentYear = new Date().getFullYear();
             let options = '<option value="">全部</option>';
             pkgState.years.forEach((year) => {
-                options += `<option value="${year}">${year} 年</option>`;
+                options += `<option value="${year}">${esc(fmtYear(year))}</option>`;
             });
             if (!pkgState.years.includes(currentYear)) {
-                options += `<option value="${currentYear}">${currentYear} 年</option>`;
+                options += `<option value="${currentYear}">${esc(fmtYear(currentYear))}</option>`;
             }
             yearFilter.innerHTML = options;
             if (pkgState.selectedYear) yearFilter.value = pkgState.selectedYear;
@@ -309,7 +309,7 @@ function openEdit(record) {
     }
     document.getElementById('pkgEditId').value = String(record.id);
     document.getElementById('pkgEditScopeHint').textContent =
-        `${record.location} · ${record.year} · ${record.vehicle_model} · ${record.part_number}`;
+        `${record.location} · ${fmtYear(record.year)} · ${record.vehicle_model} · ${record.part_number}`;
     document.getElementById('pkgEditPartName').value = record.part_name || '';
     document.getElementById('pkgEditPackagingType').value = record.packaging_type || '';
     document.getElementById('pkgEditPackagingFee').value = feeInputValue(record.unit_packaging_fee);
@@ -411,7 +411,7 @@ async function batchDelete() {
     }
     const year = Number(filters.year);
     const ok = window.confirm(
-        `确定批量删除未审核包装运输费吗？\n\n基地: ${filters.location} | 年度: ${year} | 项目: ${filters.vehicle_model}\n\n仅删除待审记录；已审核通过会跳过。此操作不可恢复！`,
+        `确定批量删除未审核包装运输费吗？\n\n基地: ${filters.location} · ${fmtYear(year)} · 项目: ${filters.vehicle_model}\n\n仅删除待审记录；已审核通过会跳过。此操作不可恢复！`,
     );
     if (!ok) return;
     if (pkgState.isBatchDeleting) return;
@@ -443,7 +443,7 @@ function openBatchAudit(mode) {
     document.getElementById('pkgBatchAuditDrawerTitle').textContent =
         mode === 'approve' ? '批量审核' : '批量反审核';
     document.getElementById('pkgBatchAuditFilterSummary').textContent =
-        `基地：${filters.location} ｜ 年度：${filters.year} ｜ 项目：${filters.vehicle_model}`;
+        `基地：${filters.location} ｜ ${fmtYear(filters.year)} ｜ 项目：${filters.vehicle_model}`;
     document.getElementById('pkgBatchAuditHint').textContent =
         mode === 'approve'
             ? '将范围内待审记录批量审核通过。'

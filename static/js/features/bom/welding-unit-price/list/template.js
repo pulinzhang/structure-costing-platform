@@ -375,7 +375,7 @@ export function updateWeldingFilterCapsules() {
         locEl.className = location ? active : idle;
     }
     if (yearEl) {
-        yearEl.textContent = year ? `${year}年` : '全部年度';
+        yearEl.textContent = year ? fmtYear(year) : '全部年度';
         yearEl.className = year ? active : idle;
     }
     if (auditEl) {
@@ -401,7 +401,7 @@ export function renderTableRows(records) {
             <td class="px-2 py-2 overflow-hidden">
                 <div class="font-semibold text-[#F0F0F2]">${esc(record.location)}</div>
             </td>
-            <td class="px-2 py-2 text-[#8E8E93] tabular-nums">${esc(record.year)}</td>
+            <td class="px-2 py-2 text-[#8E8E93] tabular-nums">${esc(fmtYear(record.year))}</td>
             <td class="px-2 py-2 overflow-hidden">
                 <div class="text-[#C8C8D0] truncate" title="${esc(record.item_name)}">${esc(record.item_name)}</div>
             </td>

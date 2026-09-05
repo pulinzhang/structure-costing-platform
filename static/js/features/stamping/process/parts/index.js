@@ -1,6 +1,6 @@
 /**
  * Parts Page
- * 零件列表 —对齐加工费计算结果列表：进入即加载、筛选均可选、级联联动、批量删除
+ * 零件列表 —进入即加载、筛选均可选、级联（基地 → 车型 → 版本 → 冲压工厂）、批量删除须基地+车型+版本
  * 明细抽屉逻辑保持不变
  */
 
@@ -10,7 +10,7 @@ import {
     updatePartsFilterCapsules,
     updatePartsHud,
     renderPartsPagination,
-} from './template.js?v=25';
+} from './template.js?v=27';
 import {
     DEFAULT_PAGE_SIZE,
     PAGE_SIZE_OPTIONS,
@@ -161,16 +161,16 @@ export const PartsPage = {
 
         pageContent?.addEventListener('change', (e) => {
             const cascadeResets = {
-                locationFilter: ['supplierFilter', 'vehicleModelFilter', 'versionFilter'],
-                supplierFilter: ['vehicleModelFilter', 'versionFilter'],
-                vehicleModelFilter: ['versionFilter'],
+                locationFilter: ['vehicleModelFilter', 'versionFilter', 'supplierFilter'],
+                vehicleModelFilter: ['versionFilter', 'supplierFilter'],
+                versionFilter: ['supplierFilter'],
             };
             if (cascadeResets[e.target.id]) {
                 this.resetDependentFilters(cascadeResets[e.target.id]);
                 this.loadCascadeFilters().then(() => this.loadParts(1));
                 return;
             }
-            if (e.target.id === 'versionFilter') {
+            if (e.target.id === 'supplierFilter') {
                 updatePartsFilterCapsules();
                 this.loadParts(1);
                 return;
@@ -229,8 +229,9 @@ export const PartsPage = {
         try {
             const params = {
                 location: document.getElementById('locationFilter')?.value || '',
-                stamping_supplier: document.getElementById('supplierFilter')?.value || '',
                 vehicle_model: document.getElementById('vehicleModelFilter')?.value || '',
+                version: document.getElementById('versionFilter')?.value || '',
+                stamping_supplier: document.getElementById('supplierFilter')?.value || '',
             };
             const res = await HttpClient.get(CASCADE_API, { params });
             const filters = res.data || {};
@@ -266,9 +267,9 @@ export const PartsPage = {
 
     requireScope(actionLabel) {
         const filters = this.collectScopeFilters();
-        if (!filters.location || !filters.stamping_supplier || !filters.vehicle_model || !filters.version) {
+        if (!filters.location || !filters.vehicle_model || !filters.version) {
             this.setAdvancedOpen(true);
-            showToast(`${actionLabel}须同时选择基地、冲压工厂、车型和版本`, 'warning');
+            showToast(`${actionLabel}须同时选择基地、车型和版本；冲压工厂可选`, 'warning');
             return null;
         }
         return filters;
@@ -398,9 +399,9 @@ export const PartsPage = {
                 </td>
                 <td class="${cell} ${muted} font-sans">${esc(part.part_name) || '—'}</td>
                 <td class="${cell} ${muted}">${esc(part.location) || '—'}</td>
-                <td class="${cell} ${muted} font-sans">${esc(part.stamping_supplier) || '—'}</td>
                 <td class="${cell} ${muted}">${esc(part.vehicle_model) || '—'}</td>
-                <td class="${cell} ${muted} border-r border-[#22222A]">${esc(part.version) || '—'}</td>
+                <td class="${cell} ${muted}">${esc(part.version) || '—'}</td>
+                <td class="${cell} ${muted} font-sans border-r border-[#22222A]">${esc(part.stamping_supplier) || '—'}</td>
                 <td class="${cell} ${muted} font-sans">${esc(part.material) || '—'}</td>
                 <td class="${cell}">${offalCell(part)}</td>
                 <td class="${cell}">${scrapByproductCell(part)}</td>
@@ -433,7 +434,7 @@ export const PartsPage = {
         if (!filters) return;
 
         if (!window.confirm(
-            `确定批量删除零件吗？\n\n基地: ${filters.location}\n工厂: ${filters.stamping_supplier}\n车型: ${filters.vehicle_model}\n版本: ${filters.version}\n\n将同时删除关联工序，此操作不可恢复！`,
+            `确定批量删除零件吗？\n\n基地: ${filters.location}\n车型: ${filters.vehicle_model}\n版本: ${filters.version}\n工厂: ${filters.stamping_supplier || '全部工厂'}\n\n将同时删除关联工序，此操作不可恢复！`,
         )) {
             return;
         }
@@ -451,10 +452,10 @@ export const PartsPage = {
         try {
             const body = {
                 location: filters.location,
-                stamping_supplier: filters.stamping_supplier,
                 vehicle_model: filters.vehicle_model,
                 version: filters.version,
             };
+            if (filters.stamping_supplier) body.stamping_supplier = filters.stamping_supplier;
 
             const res = await HttpClient.post(`${PARTS_API}/batch-delete`, body);
             const result = res.data || {};

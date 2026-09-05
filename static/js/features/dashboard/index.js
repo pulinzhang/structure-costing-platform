@@ -4,7 +4,7 @@
  */
 
 import { canAccessPage } from '../../permissions.js?v=9';
-import { dashboardTemplate } from './template.js?v=6';
+import { dashboardTemplate } from './template.js?v=7';
 
 const DASHBOARD_STATS_API = '/api/dashboard/stats';
 
@@ -67,10 +67,13 @@ function applyScopeOptions(scope) {
     dashState.month = scope.month;
     dashState.location = scope.location || '';
 
-    fillSelect(document.getElementById('dashYear'), scope.years || [], { selected: scope.year });
+    fillSelect(document.getElementById('dashYear'), scope.years || [], {
+        selected: scope.year,
+        format: fmtYear,
+    });
     fillSelect(document.getElementById('dashMonth'), scope.months || [], {
         selected: scope.month,
-        format: (m) => `${m} 月`,
+        format: fmtMonth,
     });
     fillSelect(document.getElementById('dashLocation'), scope.locations || [], {
         selected: scope.location || '',
@@ -80,9 +83,9 @@ function applyScopeOptions(scope) {
     const loc = scope.location || '全部基地';
     setText(
         'dashScopeLabel',
-        `PERIOD ${scope.year}-${String(scope.month).padStart(2, '0')} · ${loc}`
+        `${fmtPeriod(scope.year, scope.month)} · ${loc}`
     );
-    setText('dashOutcomeSub', `${scope.year} 年 ${scope.month} 月 · ${loc}`);
+    setText('dashOutcomeSub', `${fmtPeriod(scope.year, scope.month)} · ${loc}`);
 }
 
 function renderOutcome(outcome, partCost, steelPrice) {
@@ -234,7 +237,7 @@ function renderContext(master, bom, yishiyiyi, scope) {
             : `废料月 ${y.scrap_filled_count ?? 0}/${y.scrap_required_count ?? 0}`;
     }
 
-    const period = scope ? `${scope.year}-${String(scope.month).padStart(2, '0')}` : '—';
+    const period = scope ? fmtPeriod(scope.year, scope.month) : '—';
     const bomLoc = loc || '全部';
     setText(
         'dashBomBlock',

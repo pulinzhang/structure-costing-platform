@@ -5,7 +5,7 @@
 import {
     assemblyCostCalcTemplate,
     renderCalcHistoryPagination,
-} from './template.js?v=4';
+} from './template.js?v=5';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -144,7 +144,7 @@ function resetDependentFilters(ids) {
     });
 }
 
-function fillSelect(id, values = [], preferredValue = null) {
+function fillSelect(id, values = [], preferredValue = null, formatLabel = null) {
     const select = document.getElementById(id);
     if (!select) return;
     const current = preferredValue != null ? preferredValue : select.value;
@@ -153,14 +153,15 @@ function fillSelect(id, values = [], preferredValue = null) {
         `<option value="">${emptyLabel}</option>` +
         values.map((value) => {
             const text = String(value);
-            return `<option value="${esc(text)}"${text === String(current) ? ' selected' : ''}>${esc(text)}</option>`;
+            const label = formatLabel ? formatLabel(value) : text;
+            return `<option value="${esc(text)}"${text === String(current) ? ' selected' : ''}>${esc(String(label))}</option>`;
         }).join('');
 }
 
 function fillMonthOptions() {
     const months = Array.from({ length: 12 }, (_, i) => String(i + 1));
     const currentMonth = String(new Date().getMonth() + 1);
-    fillSelect('lacCalcMonth', months, currentMonth);
+    fillSelect('lacCalcMonth', months, currentMonth, fmtMonth);
 }
 
 async function loadYearOptions() {
@@ -171,10 +172,10 @@ async function loadYearOptions() {
         // 仅当上游尚无任何年度时，才回退当前自然年（就绪检查会提示缺数据）
         if (!years.length) years.push(currentYear);
         const preferred = years.includes(currentYear) ? currentYear : years[0];
-        fillSelect('lacCalcYear', years, String(preferred));
+        fillSelect('lacCalcYear', years, String(preferred), fmtYear);
     } catch (error) {
         const currentYear = new Date().getFullYear();
-        fillSelect('lacCalcYear', [currentYear], String(currentYear));
+        fillSelect('lacCalcYear', [currentYear], String(currentYear), fmtYear);
     }
 }
 
@@ -352,7 +353,7 @@ function renderHistoryRows(items) {
             <tr class="hover:bg-[#1a1a1a]">
                 <td class="py-2 px-2 font-mono text-[#8E8E93] whitespace-nowrap">${esc(started)}</td>
                 <td class="py-2 px-2 text-[#c0c0c0]">${esc(row.operator_name || '-')}</td>
-                <td class="py-2 px-2 font-mono">${esc(`${row.year}-${String(row.month).padStart(2, '0')}`)}</td>
+                <td class="py-2 px-2 font-mono">${esc(fmtPeriod(row.year, row.month))}</td>
                 <td class="py-2 px-2">${esc(row.location)}</td>
                 <td class="py-2 px-2">${esc(row.vehicle_model)}</td>
                 <td class="py-2 px-2 font-mono">${esc(row.bom_version)}</td>

@@ -10,7 +10,7 @@ import {
     updateDieFeeHud,
     updateDieFeeFilterCapsules,
     shortPartNumber,
-} from './template.js?v=6';
+} from './template.js?v=8';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -270,7 +270,7 @@ async function loadFilterOptions() {
     try {
         const res = await HttpClient.get(`${API_BASE}/filters`);
         const data = res.data || {};
-        fillSelect('dieFeeYearFilter', data.years || []);
+        fillSelect('dieFeeYearFilter', data.years || [], fmtYear);
         fillSelect('dieFeeLocationFilter', data.locations || []);
         await loadVehicleOptions();
         await loadIdentityOptions();
@@ -328,7 +328,7 @@ async function loadVersionOptions() {
     await loadIdentityOptions();
 }
 
-function fillSelect(id, values) {
+function fillSelect(id, values, formatLabel) {
     const select = document.getElementById(id);
     if (!select) return;
     const pending = select.dataset.pending || select.value || '';
@@ -336,7 +336,8 @@ function fillSelect(id, values) {
     (values || []).forEach((value) => {
         const text = String(value);
         const selected = text === String(pending) ? ' selected' : '';
-        html += `<option value="${esc(text)}"${selected}>${esc(text)}</option>`;
+        const label = formatLabel ? formatLabel(value) : text;
+        html += `<option value="${esc(text)}"${selected}>${esc(String(label))}</option>`;
     });
     select.innerHTML = html;
     delete select.dataset.pending;
@@ -526,7 +527,7 @@ function openViewDrawer(record) {
 }
 
 function fillViewFieldsFromRecord(record) {
-    fillViewField('die-fee-view-year', record.year);
+    fillViewField('die-fee-view-year', fmtYear(record.year));
     fillViewField('die-fee-view-location', record.location);
     fillViewField('die-fee-view-vehicle', record.vehicle_model);
     fillViewField('die-fee-view-supplier', record.stamping_supplier);
@@ -623,7 +624,7 @@ function openEditDrawer(record) {
         return;
     }
     feeState.editingDieFee = record.die_fee;
-    fillViewField('die-fee-edit-year', record.year);
+    fillViewField('die-fee-edit-year', fmtYear(record.year));
     fillViewField('die-fee-edit-location', record.location);
     fillPartNumberFields('die-fee-edit', record.part_number);
     fillViewField('die-fee-edit-vehicle', record.vehicle_model);
@@ -785,7 +786,7 @@ async function batchDelete() {
         return;
     }
     if (!window.confirm(
-        `确定批量删除未审核记录吗？\n\n年度: ${filters.year} | 基地: ${filters.location} | 项目: ${filters.vehicle_model}\n\n仅删除待审/已驳回；已审核通过会跳过。此操作不可恢复！`,
+        `确定批量删除未审核记录吗？\n\n${fmtYear(filters.year)} · 基地 ${filters.location} · 项目 ${filters.vehicle_model}\n\n仅删除待审/已驳回；已审核通过会跳过。此操作不可恢复！`,
     )) {
         return;
     }
@@ -877,7 +878,7 @@ function openBatchAuditDrawer(mode) {
         remarkEl.placeholder = isApprove ? '请填写审核意见（必填）' : '必填反审核原因';
     }
     if (summaryEl) {
-        summaryEl.textContent = `年度 ${filters.year} · 基地 ${filters.location} · 项目 ${filters.vehicle_model}`;
+        summaryEl.textContent = `${fmtYear(filters.year)} · 基地 ${filters.location} · 项目 ${filters.vehicle_model}`;
     }
     openDrawer('dieFeeBatchAuditDrawer', 'dieFeeBatchAuditDrawerBackdrop');
 }

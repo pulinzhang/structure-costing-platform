@@ -57,7 +57,7 @@ def persist_calc_result(
     result = StampingProcessFeeCalcResultVO(
         year=dto.year,
         location=ctx.location,
-        stamping_supplier=ctx.supplier,
+        stamping_supplier=ctx.mill_lock_key,
         vehicle_model=dto.vehicle_model,
         version=dto.version,
         calc_batch_id=calc_batch_id,

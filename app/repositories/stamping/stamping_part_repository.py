@@ -414,21 +414,19 @@ class StampingPartRepository:
         db: Session,
         *,
         location: str,
-        stamping_supplier: str,
         vehicle_model: str,
         version: str,
+        stamping_supplier: str | None = None,
     ) -> list[StampingPart]:
-        """按唯一范围键查询零件：基地 + 冲压工厂 + 车型 + 版本。"""
-        return (
-            db.query(StampingPart)
-            .filter(
-                StampingPart.location == location,
-                StampingPart.stamping_supplier == stamping_supplier,
-                StampingPart.vehicle_model == vehicle_model,
-                StampingPart.version == version,
-            )
-            .all()
+        """按基地 + 车型 + 版本查询零件；工厂传入则再缩小。"""
+        q = db.query(StampingPart).filter(
+            StampingPart.location == location,
+            StampingPart.vehicle_model == vehicle_model,
+            StampingPart.version == version,
         )
+        if stamping_supplier is not None:
+            q = q.filter(StampingPart.stamping_supplier == stamping_supplier)
+        return q.all()
 
     def list_by_location_and_vehicle(
         self,
@@ -451,11 +449,11 @@ class StampingPartRepository:
         db: Session,
         *,
         location: str,
-        stamping_supplier: str,
         vehicle_model: str,
         version: str,
+        stamping_supplier: str | None = None,
     ) -> int:
-        """按基地 + 冲压工厂 + 车型 + 版本批量删除零件及工序。不提交事务。
+        """按基地 + 车型 + 版本批量删除零件及工序；工厂可选。不提交事务。
 
         使用 bulk DELETE + flush，确保旧行在后续 INSERT 前已从库中消失，
         避免唯一键 (location, supplier, model, version, part_number) 冲突。
@@ -584,22 +582,16 @@ class StampingPartRepository:
         location: str | None = None,
         stamping_supplier: str | None = None,
         vehicle_model: str | None = None,
+        version: str | None = None,
     ) -> dict[str, list[str]]:
         """
-        级联筛选选项：
+        级联筛选选项（未选维度不参与过滤，厂优先与车优先均可）：
         - 基地：全量
-        - 冲压工厂：按基地过滤
-        - 配套车型：按基地 + 冲压工厂过滤
-        - 版本：按基地 + 冲压工厂 + 车型过滤
+        - 配套车型：按已选基地、冲压工厂过滤
+        - 版本：按已选基地、冲压工厂、车型过滤
+        - 冲压工厂：按已选基地、车型、版本过滤
         """
         locations = self._distinct_string_values(db, StampingPart.location)
-
-        supplier_q = db.query(StampingPart.stamping_supplier).distinct()
-        if location:
-            supplier_q = supplier_q.filter(StampingPart.location == location)
-        stamping_suppliers = self._collect_distinct_strings(
-            supplier_q, StampingPart.stamping_supplier
-        )
 
         vehicle_q = db.query(StampingPart.vehicle_model).distinct()
         if location:
@@ -616,6 +608,17 @@ class StampingPartRepository:
         if vehicle_model:
             version_q = version_q.filter(StampingPart.vehicle_model == vehicle_model)
         versions = self._collect_distinct_strings(version_q, StampingPart.version)
+
+        supplier_q = db.query(StampingPart.stamping_supplier).distinct()
+        if location:
+            supplier_q = supplier_q.filter(StampingPart.location == location)
+        if vehicle_model:
+            supplier_q = supplier_q.filter(StampingPart.vehicle_model == vehicle_model)
+        if version:
+            supplier_q = supplier_q.filter(StampingPart.version == version)
+        stamping_suppliers = self._collect_distinct_strings(
+            supplier_q, StampingPart.stamping_supplier
+        )
 
         return {
             "locations": locations,

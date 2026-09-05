@@ -34,7 +34,11 @@ from app.services.stamping.process_fee.calc.constants import (
     STATUS_PROCESSING,
 )
 from app.services.stamping.process_fee.calc.models import DuplicateScopeCalcError
-from app.services.stamping.process_fee.scope import require_scope
+from app.services.stamping.process_fee.scope import (
+    ALL_SUPPLIERS_LOCK,
+    lock_supplier_key,
+    require_scope,
+)
 
 logger = logging.getLogger("service.stamping.process_fee.calc.log")
 
@@ -66,21 +70,22 @@ class ProcessFeeCalcLogService:
         operator_id: int | None,
         operator_name: str | None,
     ) -> StampingProcessFeeCalcLog:
-        location, supplier = require_scope(dto)
+        scope = require_scope(dto)
+        location = scope.location
+        lock_supplier = lock_supplier_key(scope.stamping_supplier)
         self._ensure_processing_lock_index(db)
         self.expire_stale_processing(
             db,
             year=dto.year,
             location=location,
-            stamping_supplier=supplier,
+            stamping_supplier=lock_supplier,
         )
-        existing = self.calc_log_repo.find_processing(
+        if self._has_conflicting_lock(
             db,
             year=dto.year,
             location=location,
-            stamping_supplier=supplier,
-        )
-        if existing is not None:
+            lock_supplier=lock_supplier,
+        ):
             raise DuplicateScopeCalcError(DUPLICATE_SCOPE_CALC_MESSAGE)
 
         started_at = now()
@@ -92,9 +97,9 @@ class ProcessFeeCalcLogService:
                     calc_batch_id=calc_batch_id,
                     year=dto.year,
                     location=location,
-                    stamping_supplier=supplier,
-                    vehicle_model=dto.vehicle_model,
-                    version=dto.version,
+                    stamping_supplier=lock_supplier,
+                    vehicle_model=scope.vehicle_model,
+                    version=scope.version,
                     status=STATUS_PROCESSING,
                     detail_text="计算进行中...",
                     started_at=started_at,
@@ -132,6 +137,22 @@ class ProcessFeeCalcLogService:
         )
         db.commit()
 
+    def _lock_conflicts(self, lock_supplier: str, existing_supplier: str) -> bool:
+        return ALL_SUPPLIERS_LOCK in (lock_supplier, existing_supplier) or (
+            existing_supplier == lock_supplier
+        )
+
+    def _has_conflicting_lock(
+        self,
+        db: Session,
+        *,
+        year: int,
+        location: str,
+        lock_supplier: str,
+    ) -> bool:
+        rows = self.calc_log_repo.list_processing(db, year=year, location=location)
+        return any(self._lock_conflicts(lock_supplier, row.stamping_supplier) for row in rows)
+
     def expire_stale_processing(
         self,
         db: Session,
@@ -140,26 +161,24 @@ class ProcessFeeCalcLogService:
         location: str,
         stamping_supplier: str,
     ) -> None:
-        record = self.calc_log_repo.find_processing(
-            db,
-            year=year,
-            location=location,
-            stamping_supplier=stamping_supplier,
-        )
-        if record is None or record.started_at is None:
-            return
-        if now() - record.started_at < timedelta(seconds=STALE_PROCESSING_SECONDS):
-            return
-        self.calc_log_repo.update(
-            db,
-            record.id,
-            ProcessFeeCalcLogPatch(
-                status=STATUS_FAILED,
-                detail_text=(record.detail_text or "") + "\n超时自动释放计算锁",
-                finished_at=now(),
-            ),
-        )
-        db.commit()
+        changed = False
+        for record in self.calc_log_repo.list_processing(db, year=year, location=location):
+            if not self._lock_conflicts(stamping_supplier, record.stamping_supplier):
+                continue
+            if now() - record.started_at < timedelta(seconds=STALE_PROCESSING_SECONDS):
+                continue
+            self.calc_log_repo.update(
+                db,
+                record.id,
+                ProcessFeeCalcLogPatch(
+                    status=STATUS_FAILED,
+                    detail_text=(record.detail_text or "") + "\n超时自动释放计算锁",
+                    finished_at=now(),
+                ),
+            )
+            changed = True
+        if changed:
+            db.commit()
 
     def list_calc_logs(
         self,

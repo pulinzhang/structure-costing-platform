@@ -467,7 +467,7 @@ export function renderDieFeeRows(records) {
                      style="box-shadow: 0 0 10px #FF1E27;"></div>
             </td>
             <td class="${cell} font-sans whitespace-nowrap">
-                <div class="font-bold text-white text-[12px] group-hover:text-[#FF1E27] transition-colors">${esc(row.year)}</div>
+                <div class="font-bold text-white text-[12px] group-hover:text-[#FF1E27] transition-colors">${esc(fmtYear(row.year))}</div>
                 <div class="text-[#555555] text-[10px] mt-0.5">${esc(row.location)} · ${esc(row.vehicle_model)}</div>
             </td>
             <td class="${cell} ${muted} font-sans whitespace-nowrap">${esc(row.stamping_supplier)}</td>
@@ -613,7 +613,7 @@ export function updateDieFeeFilterCapsules() {
     const countEl = document.getElementById('dieFeeAdvancedFilterCount');
 
     if (yearEl) {
-        yearEl.textContent = year ? `${year}年` : '全部年度';
+        yearEl.textContent = year ? fmtYear(year) : '全部年度';
         yearEl.className = year ? activeCapsule : idleCapsule;
     }
     if (locationEl) {

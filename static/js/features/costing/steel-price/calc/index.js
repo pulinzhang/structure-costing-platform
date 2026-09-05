@@ -3,7 +3,7 @@
  * 钢价计算 —过滤条件 + 异步后台计算 + 进度轮询 + 历史过程日志
  */
 
-import { steelPriceCalcTemplate, renderCalcHistoryPagination } from './template.js?v=4';
+import { steelPriceCalcTemplate, renderCalcHistoryPagination } from './template.js?v=5';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -261,7 +261,7 @@ function renderHistoryRows(items) {
 
     body.innerHTML = items.map(item => {
         const status = STATUS_META[item.status] || STATUS_META.failed;
-        const period = `${item.year}-${String(item.month).padStart(2, '0')}`;
+        const period = fmtPeriod(item.year, item.month);
         const filterParts = [];
         if (item.stamping_supplier) filterParts.push(item.stamping_supplier);
         if (item.vehicle_model) filterParts.push(item.vehicle_model);
@@ -364,7 +364,7 @@ function showProcessDrawer(log) {
     closeProcessDrawer();
 
     const status = STATUS_META[log.status] || STATUS_META.failed;
-    const period = `${log.year}-${String(log.month).padStart(2, '0')}`;
+        const period = fmtPeriod(log.year, log.month);
     const backdrop = document.createElement('div');
     backdrop.id = 'calcProcessBackdrop';
     backdrop.className = 'fixed inset-0 z-[80] bg-black/70 backdrop-blur-sm';
@@ -419,8 +419,8 @@ function renderPeriodFilters(filters, year, month) {
     if (!months.includes(month)) months.push(month);
     months.sort((a, b) => a - b);
 
-    fillSelect('calcYear', years, value => `${value} 年`, String(year));
-    fillSelect('calcMonth', months, value => `${value} 月`, String(month));
+    fillSelect('calcYear', years, fmtYear, String(year));
+    fillSelect('calcMonth', months, fmtMonth, String(month));
 }
 
 function renderCalcStats(stats) {

@@ -136,28 +136,34 @@ class StampingProcessFeeService:
         db: Session,
         dto: StampingProcessFeeDeleteDTO,
     ) -> StampingProcessFeeBatchDeleteResultVO:
-        location, supplier = require_scope(dto)
+        scope = require_scope(dto)
 
         skipped = self.fee_repo.count_by_scope_and_statuses(
             db,
-            year=dto.year,
-            location=location,
-            stamping_supplier=supplier,
+            year=scope.year,
+            location=scope.location,
+            stamping_supplier=scope.stamping_supplier,
+            vehicle_model=scope.vehicle_model,
+            version=scope.version,
             statuses=[AUDIT_APPROVED],
         )
         deleted = self.fee_repo.delete_unaudited_by_scope(
             db,
-            year=dto.year,
-            location=location,
-            stamping_supplier=supplier,
+            year=scope.year,
+            location=scope.location,
+            stamping_supplier=scope.stamping_supplier,
+            vehicle_model=scope.vehicle_model,
+            version=scope.version,
         )
         db.commit()
         return StampingProcessFeeBatchDeleteResultVO(
             deleted_count=deleted,
             skipped_approved_count=skipped,
-            year=dto.year,
-            location=location,
-            stamping_supplier=supplier,
+            year=scope.year,
+            location=scope.location,
+            stamping_supplier=scope.stamping_supplier,
+            vehicle_model=scope.vehicle_model,
+            version=scope.version,
         )
 
     def batch_approve(
@@ -166,23 +172,27 @@ class StampingProcessFeeService:
         dto: StampingProcessFeeBatchApproveDTO,
         current_user: UserVO,
     ) -> StampingProcessFeeBatchAuditResultVO:
-        location, supplier = require_scope(dto)
+        scope = require_scope(dto)
         operator = display_name(current_user)
         if not operator:
             raise BusinessException("无法识别当前登录用户")
 
         skipped = self.fee_repo.count_by_scope_and_statuses(
             db,
-            year=dto.year,
-            location=location,
-            stamping_supplier=supplier,
+            year=scope.year,
+            location=scope.location,
+            stamping_supplier=scope.stamping_supplier,
+            vehicle_model=scope.vehicle_model,
+            version=scope.version,
             statuses=[AUDIT_APPROVED],
         )
         missing_other_fee = self.fee_repo.list_tailor_weld_missing_other_fee_part_numbers(
             db,
-            year=dto.year,
-            location=location,
-            stamping_supplier=supplier,
+            year=scope.year,
+            location=scope.location,
+            stamping_supplier=scope.stamping_supplier,
+            vehicle_model=scope.vehicle_model,
+            version=scope.version,
             statuses=[AUDIT_PENDING, AUDIT_REJECTED],
         )
         if missing_other_fee:
@@ -191,9 +201,11 @@ class StampingProcessFeeService:
             raise BusinessException(f"拼焊件须先录入其它费用（如拼焊费）后再审核：{preview}{extra}")
         updated = self.fee_repo.approve_by_scope(
             db,
-            year=dto.year,
-            location=location,
-            stamping_supplier=supplier,
+            year=scope.year,
+            location=scope.location,
+            stamping_supplier=scope.stamping_supplier,
+            vehicle_model=scope.vehicle_model,
+            version=scope.version,
             audited_by=operator,
             audited_at=now(),
             audit_remark=(dto.audit_remark or "").strip() or None,
@@ -203,9 +215,11 @@ class StampingProcessFeeService:
         return StampingProcessFeeBatchAuditResultVO(
             updated_count=updated,
             skipped_count=skipped,
-            year=dto.year,
-            location=location,
-            stamping_supplier=supplier,
+            year=scope.year,
+            location=scope.location,
+            stamping_supplier=scope.stamping_supplier,
+            vehicle_model=scope.vehicle_model,
+            version=scope.version,
         )
 
     def batch_reverse_audit(
@@ -214,7 +228,7 @@ class StampingProcessFeeService:
         dto: StampingProcessFeeBatchReverseAuditDTO,
         current_user: UserVO,
     ) -> StampingProcessFeeBatchAuditResultVO:
-        location, supplier = require_scope(dto)
+        scope = require_scope(dto)
         remark = (dto.reverse_audit_remark or "").strip()
         if not remark:
             raise BusinessException("反审核原因必填")
@@ -224,16 +238,20 @@ class StampingProcessFeeService:
 
         skipped = self.fee_repo.count_by_scope_and_statuses(
             db,
-            year=dto.year,
-            location=location,
-            stamping_supplier=supplier,
+            year=scope.year,
+            location=scope.location,
+            stamping_supplier=scope.stamping_supplier,
+            vehicle_model=scope.vehicle_model,
+            version=scope.version,
             statuses=[AUDIT_PENDING, AUDIT_REJECTED],
         )
         updated = self.fee_repo.reverse_by_scope(
             db,
-            year=dto.year,
-            location=location,
-            stamping_supplier=supplier,
+            year=scope.year,
+            location=scope.location,
+            stamping_supplier=scope.stamping_supplier,
+            vehicle_model=scope.vehicle_model,
+            version=scope.version,
             reverse_audited_by=operator,
             reverse_audited_at=now(),
             reverse_audit_remark=remark,
@@ -243,9 +261,11 @@ class StampingProcessFeeService:
         return StampingProcessFeeBatchAuditResultVO(
             updated_count=updated,
             skipped_count=skipped,
-            year=dto.year,
-            location=location,
-            stamping_supplier=supplier,
+            year=scope.year,
+            location=scope.location,
+            stamping_supplier=scope.stamping_supplier,
+            vehicle_model=scope.vehicle_model,
+            version=scope.version,
         )
 
     def list_years(self, db: Session) -> list[int]:
@@ -261,8 +281,16 @@ class StampingProcessFeeService:
         db: Session,
         year: int | None = None,
         location: str | None = None,
+        vehicle_model: str | None = None,
+        version: str | None = None,
     ) -> list[str]:
-        return self.fee_repo.get_distinct_suppliers(db, year=year, location=location)
+        return self.fee_repo.get_distinct_suppliers(
+            db,
+            year=year,
+            location=location,
+            vehicle_model=vehicle_model,
+            version=version,
+        )
 
     def list_vehicle_models(
         self,

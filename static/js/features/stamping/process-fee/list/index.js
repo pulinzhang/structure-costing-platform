@@ -10,7 +10,7 @@ import {
     updateFeeHud,
     updateFeeFilterCapsules,
     shortPartNumber,
-} from './template.js?v=37';
+} from './template.js?v=41';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -18,7 +18,8 @@ import {
 
 const API_BASE = '/api/stamping/process-fees';
 const DRAWER_ANIMATION_MS = 300;
-const SCOPE_REQUIRED_MESSAGE = '须选定年度、基地、冲压工厂'
+/** 操作页固定要车型；后端允许「车型或工厂」以便引擎按厂补算。 */
+const SCOPE_REQUIRED_MESSAGE = '须选定年度、基地、车型。';
 
 const TONNAGE_SOURCE_LABEL = {
     self: '自有',
@@ -173,38 +174,38 @@ function bindEvents() {
     document.getElementById('feeBatchReverseBtn')?.addEventListener('click', () => openBatchAuditDrawer('reverse'));
 
     document.getElementById('feeYearFilter')?.addEventListener('change', () => {
+        resetDependentFilters(['feeLocationFilter', 'feeVehicleFilter', 'feeVersionFilter', 'feeSupplierFilter']);
         updateFeeFilterCapsules();
-        loadLocationOptions().then(() => loadSupplierOptions().then(() => {
-            loadVehicleOptions().then(() => loadVersionOptions().then(() => {
-                updateFeeFilterCapsules();
-                loadData(1);
-            }));
-        }));
-    });
-    document.getElementById('feeLocationFilter')?.addEventListener('change', () => {
-        updateFeeFilterCapsules();
-        loadSupplierOptions().then(() => {
-            loadVehicleOptions().then(() => loadVersionOptions().then(() => {
-                updateFeeFilterCapsules();
-                loadData(1);
-            }));
-        });
-    });
-    document.getElementById('feeSupplierFilter')?.addEventListener('change', () => {
-        updateFeeFilterCapsules();
-        loadVehicleOptions().then(() => loadVersionOptions().then(() => {
+        reloadCascadeFromLocation().then(() => {
             updateFeeFilterCapsules();
             loadData(1);
-        }));
+        });
+    });
+    document.getElementById('feeLocationFilter')?.addEventListener('change', () => {
+        resetDependentFilters(['feeVehicleFilter', 'feeVersionFilter', 'feeSupplierFilter']);
+        updateFeeFilterCapsules();
+        reloadCascadeFromVehicle().then(() => {
+            updateFeeFilterCapsules();
+            loadData(1);
+        });
     });
     document.getElementById('feeVehicleFilter')?.addEventListener('change', () => {
+        resetDependentFilters(['feeVersionFilter', 'feeSupplierFilter']);
         updateFeeFilterCapsules();
-        loadVersionOptions().then(() => {
+        reloadCascadeFromVersion().then(() => {
             updateFeeFilterCapsules();
             loadData(1);
         });
     });
     document.getElementById('feeVersionFilter')?.addEventListener('change', () => {
+        resetDependentFilters(['feeSupplierFilter']);
+        updateFeeFilterCapsules();
+        loadSupplierOptions().then(() => {
+            updateFeeFilterCapsules();
+            loadData(1);
+        });
+    });
+    document.getElementById('feeSupplierFilter')?.addEventListener('change', () => {
         updateFeeFilterCapsules();
         loadData(1);
     });
@@ -291,18 +292,42 @@ async function loadFilterOptions() {
             let html = '<option value="">全部</option>';
             years.forEach((year) => {
                 const selected = String(year) === String(pending) ? ' selected' : '';
-                html += `<option value="${esc(year)}"${selected}>${esc(year)}</option>`;
+                html += `<option value="${esc(year)}"${selected}>${esc(fmtYear(year))}</option>`;
             });
             yearEl.innerHTML = html;
             delete yearEl.dataset.pending;
         }
         await loadLocationOptions();
-        await loadSupplierOptions();
         await loadVehicleOptions();
         await loadVersionOptions();
+        await loadSupplierOptions();
     } catch (error) {
         showToast(error.message || '加载筛选失败', 'error');
     }
+}
+
+function resetDependentFilters(ids) {
+    ids.forEach((id) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.value = '';
+        delete el.dataset.pending;
+    });
+}
+
+async function reloadCascadeFromLocation() {
+    await loadLocationOptions();
+    await reloadCascadeFromVehicle();
+}
+
+async function reloadCascadeFromVehicle() {
+    await loadVehicleOptions();
+    await reloadCascadeFromVersion();
+}
+
+async function reloadCascadeFromVersion() {
+    await loadVersionOptions();
+    await loadSupplierOptions();
 }
 
 async function loadLocationOptions() {
@@ -330,9 +355,16 @@ async function loadLocationOptions() {
 async function loadSupplierOptions() {
     const year = document.getElementById('feeYearFilter')?.value || undefined;
     const location = document.getElementById('feeLocationFilter')?.value || undefined;
+    const vehicle = document.getElementById('feeVehicleFilter')?.value || undefined;
+    const version = document.getElementById('feeVersionFilter')?.value || undefined;
     try {
         const res = await HttpClient.get(`${API_BASE}/filters/suppliers`, {
-            params: { year, location },
+            params: {
+                year,
+                location,
+                vehicle_model: vehicle,
+                version,
+            },
         });
         const suppliers = Array.isArray(res.data) ? res.data : [];
         const supplierEl = document.getElementById('feeSupplierFilter');
@@ -412,11 +444,9 @@ function resetFilters() {
     const partEl = document.getElementById('feePartNumberFilter');
     if (partEl) partEl.value = '';
     feeState.onlyZero = false;
-    loadLocationOptions().then(() => loadSupplierOptions().then(() => {
-        loadVehicleOptions().then(() => loadVersionOptions().then(() => {
-            updateFeeFilterCapsules();
-            loadData(1);
-        }));
+    loadLocationOptions().then(() => reloadCascadeFromVehicle().then(() => {
+        updateFeeFilterCapsules();
+        loadData(1);
     }));
 }
 
@@ -424,6 +454,8 @@ function collectScopeFilters() {
     return {
         year: document.getElementById('feeYearFilter')?.value || '',
         location: document.getElementById('feeLocationFilter')?.value || '',
+        vehicle_model: document.getElementById('feeVehicleFilter')?.value || '',
+        version: document.getElementById('feeVersionFilter')?.value || '',
         stamping_supplier: document.getElementById('feeSupplierFilter')?.value || '',
     };
 }
@@ -431,12 +463,37 @@ function collectScopeFilters() {
 function collectListFilters() {
     return {
         ...collectScopeFilters(),
-        vehicle_model: document.getElementById('feeVehicleFilter')?.value || '',
-        version: document.getElementById('feeVersionFilter')?.value || '',
         audit_status: document.getElementById('feeAuditStatusFilter')?.value || '',
         part_number: (document.getElementById('feePartNumberFilter')?.value || '').trim(),
         only_zero: feeState.onlyZero,
     };
+}
+
+function requireWorkScope() {
+    const filters = collectScopeFilters();
+    if (!filters.year || !filters.location || !filters.vehicle_model) {
+        setAdvancedOpen(true);
+        showToast(SCOPE_REQUIRED_MESSAGE, 'warning');
+        return null;
+    }
+    return filters;
+}
+
+function buildScopeBody(filters) {
+    const body = {
+        year: Number(filters.year),
+        location: filters.location,
+        vehicle_model: filters.vehicle_model,
+    };
+    if (filters.stamping_supplier) body.stamping_supplier = filters.stamping_supplier;
+    if (filters.version) body.version = filters.version;
+    return body;
+}
+
+function formatScopeSummary(filters) {
+    const mill = filters.stamping_supplier || '全部工厂';
+    const version = filters.version || '全部版本';
+    return `${fmtYear(filters.year)} · 基地 ${filters.location} · 车型 ${filters.vehicle_model} · 版本 ${version} · 工厂 ${mill}`;
 }
 
 async function loadData(page = 1) {
@@ -552,7 +609,7 @@ function openViewDrawer(record) {
 }
 
 function fillViewFieldsFromRecord(record) {
-    fillViewField('fee-view-year', record.year);
+    fillViewField('fee-view-year', fmtYear(record.year));
     fillViewField('fee-view-location', record.location);
     fillViewField('fee-view-supplier', record.stamping_supplier);
     fillViewField('fee-view-vehicle', record.vehicle_model);
@@ -663,7 +720,7 @@ function openEditDrawer(record) {
     }
     feeState.editingIsTailorWelded = Boolean(record.is_tailor_welded);
     feeState.editingProcessingFee = record.processing_fee;
-    fillViewField('fee-edit-year', record.year);
+    fillViewField('fee-edit-year', fmtYear(record.year));
     fillViewField('fee-edit-location', record.location);
     fillViewField('fee-edit-supplier', record.stamping_supplier);
     fillPartNumberFields('fee-edit', record.part_number);
@@ -843,14 +900,10 @@ async function exportExcel() {
 }
 
 async function batchDelete() {
-    const filters = collectScopeFilters();
-    if (!filters.year || !filters.location || !filters.stamping_supplier) {
-        setAdvancedOpen(true);
-        showToast(SCOPE_REQUIRED_MESSAGE, 'warning');
-        return;
-    }
+    const filters = requireWorkScope();
+    if (!filters) return;
     if (!window.confirm(
-        `确定批量删除未审核记录吗？\n\n年度: ${filters.year} | 基地: ${filters.location} | 工厂: ${filters.stamping_supplier}\n\n仅删除待审已驳回；已审核通过会跳过。此操作不可恢复！`,
+        `确定批量删除未审核记录吗？\n\n${formatScopeSummary(filters)}\n\n仅删除待审已驳回；已审核通过会跳过。此操作不可恢复！`,
     )) {
         return;
     }
@@ -866,11 +919,7 @@ async function batchDelete() {
     }
 
     try {
-        const res = await HttpClient.post(`${API_BASE}/batch-delete`, {
-            year: Number(filters.year),
-            location: filters.location,
-            stamping_supplier: filters.stamping_supplier,
-        });
+        const res = await HttpClient.post(`${API_BASE}/batch-delete`, buildScopeBody(filters));
         const result = res.data || {};
         const deleted = result.deleted_count ?? 0;
         const skipped = result.skipped_approved_count ?? 0;
@@ -902,12 +951,8 @@ function getSessionDisplayName() {
 }
 
 function openBatchAuditDrawer(mode) {
-    const filters = collectScopeFilters();
-    if (!filters.year || !filters.location || !filters.stamping_supplier) {
-        setAdvancedOpen(true);
-        showToast(SCOPE_REQUIRED_MESSAGE, 'warning');
-        return;
-    }
+    const filters = requireWorkScope();
+    if (!filters) return;
 
     const isApprove = mode === 'approve';
     const modeEl = document.getElementById('feeBatchAuditMode');
@@ -940,7 +985,7 @@ function openBatchAuditDrawer(mode) {
         remarkEl.placeholder = isApprove ? '请填写审核意见（必填）' : '必填反审核原因';
     }
     if (summaryEl) {
-        summaryEl.textContent = `年度 ${filters.year} · 基地 ${filters.location} · 工厂 ${filters.stamping_supplier}`;
+        summaryEl.textContent = formatScopeSummary(filters);
     }
     openDrawer('feeBatchAuditDrawer', 'feeBatchAuditDrawerBackdrop');
 }
@@ -953,18 +998,15 @@ function closeBatchAuditDrawer() {
 async function submitBatchAudit() {
     if (feeState.batchAuditSubmitting) return;
     const mode = document.getElementById('feeBatchAuditMode')?.value || 'approve';
-    const filters = collectScopeFilters();
+    const filters = requireWorkScope();
+    if (!filters) return;
     const remark = document.getElementById('feeBatchAuditRemark')?.value.trim() || '';
     if (!remark) {
         showToast(mode === 'approve' ? '审核意见必填' : '反审核意见必填', 'warning');
         return;
     }
 
-    const body = {
-        year: Number(filters.year),
-        location: filters.location,
-        stamping_supplier: filters.stamping_supplier,
-    };
+    const body = buildScopeBody(filters);
     const url = mode === 'approve'
         ? `${API_BASE}/batch-approve`
         : `${API_BASE}/batch-reverse-audit`;

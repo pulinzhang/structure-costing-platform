@@ -97,6 +97,8 @@ def list_locations(
 def list_suppliers(
     year: int | None = Query(None, description="年度"),
     location: str | None = Query(None, description="基地"),
+    vehicle_model: str | None = Query(None, description="车型"),
+    version: str | None = Query(None, description="版本"),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(
         require_any_perm(
@@ -105,7 +107,13 @@ def list_suppliers(
         )
     ),
 ) -> ApiResponse[list[str]]:
-    suppliers = _service.list_suppliers(db, year=year, location=location)
+    suppliers = _service.list_suppliers(
+        db,
+        year=year,
+        location=location,
+        vehicle_model=(vehicle_model or "").strip() or None,
+        version=(version or "").strip() or None,
+    )
     return ApiResponse.ok(data=suppliers)
 
 

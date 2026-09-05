@@ -507,6 +507,7 @@ const numCell = 'px-2 py-2 font-mono text-[10px] text-right tabular-nums text-[#
 | `HttpClient.download` | 文件下载（blob + Content-Disposition 文件名） |
 | `esc(value)` | HTML 转义；`null/undefined` → `'-'` |
 | `fmtNum(value, digits=2)` | 数字格式化 |
+| `fmtYear(year)` / `fmtMonth(month)` / `fmtPeriod(year, month)` | 年度 `2026年`、月份 `07月`、合写 `2026年07月`；禁止 `2026-07`、`2026 年`、未补零 `7月` |
 | `formatFileSize(bytes)` | 文件大小 |
 | `svgIcon(name, extraClass?)` | 内联 SVG |
 | `showToast(message, type)` | `success` / `error` / `warning` |

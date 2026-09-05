@@ -221,7 +221,9 @@ class StampingProcessFeeBatchDeleteResultVO(BaseModel):
     skipped_approved_count: int = 0
     year: int
     location: str
-    stamping_supplier: str
+    stamping_supplier: str | None = None
+    vehicle_model: str | None = None
+    version: str | None = None
 
 
 class StampingProcessFeeBatchAuditResultVO(BaseModel):
@@ -231,4 +233,6 @@ class StampingProcessFeeBatchAuditResultVO(BaseModel):
     skipped_count: int = 0
     year: int
     location: str
-    stamping_supplier: str
+    stamping_supplier: str | None = None
+    vehicle_model: str | None = None
+    version: str | None = None

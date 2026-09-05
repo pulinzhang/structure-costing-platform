@@ -2,7 +2,7 @@
  * 月度智能自动核价引擎 — 页面逻辑 (BRABUS Pure Industrial Spec)
  */
 
-import { costingTemplate } from './template.js?v=20';
+import { costingTemplate } from './template.js?v=21';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -1004,7 +1004,7 @@ function renderPlanScope() {
     const l0Scopes = ready?.plan?.l0_scopes || [];
     const steel = ready?.plan?.steel || {};
     const location = steel.location || ready?.input?.location || '—';
-    const period = `${steel.year || '—'} / ${String(steel.month || 0).padStart(2, '0')}`;
+    const period = fmtPeriod(steel.year, steel.month) || '—';
 
     if (!suppliers.length && !l0Scopes.length) {
         tree.innerHTML =
@@ -1439,7 +1439,7 @@ function renderHistory() {
                     </div>
                 </td>
                 <td class="px-2 py-2.5 text-neutral-400 overflow-hidden truncate" title="${esc(row.location)}">${esc(row.location)}</td>
-                <td class="px-2 py-2.5 text-right text-[10px] text-neutral-500 tabular-nums">${esc(row.year)}-${String(row.month).padStart(2, '0')}</td>
+                <td class="px-2 py-2.5 text-right text-[10px] text-neutral-500 tabular-nums">${esc(fmtPeriod(row.year, row.month))}</td>
                 <td class="px-2 py-2.5 text-center text-[10px] ${meta.className}">${esc(meta.label)}</td>
                 <td class="px-2 py-2.5 text-[10px] text-neutral-500 overflow-hidden truncate">${esc(row.created_by || '-')}</td>
                 <td class="px-2 py-2.5 text-[10px] text-neutral-600 tabular-nums">${esc(formatTs(row.started_at))}</td>

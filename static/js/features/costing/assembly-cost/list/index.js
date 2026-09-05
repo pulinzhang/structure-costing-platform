@@ -5,7 +5,7 @@ import {
     updateLacHud,
     updateLacFilterCapsules,
     updateLacTableHead,
-} from './template.js?v=12';
+} from './template.js?v=13';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -284,7 +284,7 @@ function fillMonthOptions() {
     if (!select) return;
     select.innerHTML =
         `<option value="">全部</option>` +
-        Array.from({ length: 12 }, (_, i) => `<option value="${i + 1}">${i + 1}</option>`).join('');
+        Array.from({ length: 12 }, (_, i) => `<option value="${i + 1}">${esc(fmtMonth(i + 1))}</option>`).join('');
 }
 
 function fillAuditOptions() {
@@ -307,7 +307,7 @@ function fillCalcOptions() {
     `;
 }
 
-function fillSelect(id, values = [], preferredValue = null) {
+function fillSelect(id, values = [], preferredValue = null, formatLabel = null) {
     const select = document.getElementById(id);
     if (!select) return;
     const current = preferredValue != null ? preferredValue : select.value;
@@ -316,7 +316,8 @@ function fillSelect(id, values = [], preferredValue = null) {
         values
             .map((value) => {
                 const text = String(value);
-                return `<option value="${esc(text)}"${text === String(current) ? ' selected' : ''}>${esc(text)}</option>`;
+                const label = formatLabel ? formatLabel(value) : text;
+                return `<option value="${esc(text)}"${text === String(current) ? ' selected' : ''}>${esc(String(label))}</option>`;
             })
             .join('');
     if (preferredValue != null) select.value = String(preferredValue);
@@ -329,6 +330,7 @@ async function loadYearOptions() {
             'lacYearFilter',
             Array.isArray(res.data) ? res.data : [],
             listState.pendingFilters?.year || null,
+            fmtYear,
         );
     } catch (error) {
         console.error(error);
@@ -525,7 +527,7 @@ function openBatchAuditDrawer(mode) {
     }
     if (summaryEl) {
         summaryEl.textContent =
-            `年度 ${scope.year} · 月份 ${scope.month} · 基地 ${scope.location} · 项目 ${scope.vehicle_model} · 版本 ${scope.bom_version}`;
+            `${fmtPeriod(scope.year, scope.month)} · 基地 ${scope.location} · 项目 ${scope.vehicle_model} · 版本 ${scope.bom_version}`;
     }
     if (confirmBtn) {
         confirmBtn.textContent = isApprove ? '确认审核通过' : '确认反审核';

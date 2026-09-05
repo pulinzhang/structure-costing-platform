@@ -265,10 +265,11 @@ class StampingCascadeFilterQuery(BaseModel):
     location: str | None = Field(None, description="采购基地")
     stamping_supplier: str | None = Field(None, description="冲压工厂")
     vehicle_model: str | None = Field(None, description="配套车型")
+    version: str | None = Field(None, description="版本")
 
 
 class StampingCascadeFilterOptionsVO(BaseModel):
-    """冲压级联筛选下拉选项 VO（基地 → 冲压工厂 → 配套车型）"""
+    """冲压级联筛选下拉选项 VO（基地 → 车型 → 版本 → 冲压工厂）"""
 
     locations: list[str] = Field(default_factory=list, description="基地")
     stamping_suppliers: list[str] = Field(default_factory=list, description="冲压工厂")
@@ -317,7 +318,7 @@ class StampingPartBatchDeleteResultVO(BaseModel):
     """零件批量删除结果 VO"""
 
     location: str
-    stamping_supplier: str
+    stamping_supplier: str | None = None
     vehicle_model: str
     version: str
     deleted_count: int = 0

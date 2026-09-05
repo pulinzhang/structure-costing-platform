@@ -17,15 +17,15 @@ import { mountComposer, setComposerBusy } from './chat/composer.js';
 import { humanizeUserFacingError } from './errors.js';
 import { renderThread } from './chat/thread.js?v=9';
 
-import { printAssistantMessage, closePrintPreview } from './export/print.js?v=6';
+import { printAssistantMessage, closePrintPreview } from './export/print.js?v=8';
 
-import { downloadWordDocument } from './export/word.js?v=2';
+import { downloadWordDocument } from './export/word.js?v=4';
 
 import { findPrompt, fillPromptTemplate } from './prompts/catalog.js';
 
 import { applyReportToMessage } from './report/apply-report.js';
 
-import { openHistoryPanel } from './report/history.js?v=5';
+import { openHistoryPanel } from './report/history.js?v=7';
 
 import {
 

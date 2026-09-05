@@ -6,7 +6,7 @@
 import {
     processFeeCalcTemplate,
     renderCalcHistoryPagination,
-} from './template.js?v=15';
+} from './template.js?v=18';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -19,8 +19,9 @@ const CALC_READY_API = `${API_BASE}/calc/ready`;
 const CALC_TASK_API = `${API_BASE}/calc/tasks`;
 const CALC_LOGS_API = `${API_BASE}/calc/logs`;
 const POLL_INTERVAL_MS = 1500;
-const DUPLICATE_SCOPE_CALC_MESSAGE = '当前年度/基地/工厂正在计算中，请勿重复提交。';
-const SCOPE_REQUIRED_MESSAGE = '须选定年度、基地、冲压工厂。';
+const DUPLICATE_SCOPE_CALC_MESSAGE = '当前年度/基地范围正在计算中，请勿重复提交。';
+/** 操作页固定要车型；后端允许「车型或工厂」以便引擎按厂补算。 */
+const SCOPE_REQUIRED_MESSAGE = '须选定年度、基地、车型。';
 
 const STATUS_META = {
     processing: { label: '计算中', className: 'text-[#64b5f6]' },
@@ -93,21 +94,21 @@ function bindEvents() {
     document.getElementById('calcYear')?.addEventListener('change', () => loadCalcReady());
 
     document.getElementById('calcLocation')?.addEventListener('change', () => {
-        resetDependentFilters(['calcSupplier', 'calcVehicleModel', 'calcVersion']);
-        loadCascadeFilters();
-        loadCalcReady();
-    });
-    document.getElementById('calcSupplier')?.addEventListener('change', () => {
-        resetDependentFilters(['calcVehicleModel', 'calcVersion']);
+        resetDependentFilters(['calcVehicleModel', 'calcVersion', 'calcSupplier']);
         loadCascadeFilters();
         loadCalcReady();
     });
     document.getElementById('calcVehicleModel')?.addEventListener('change', () => {
-        resetDependentFilters(['calcVersion']);
+        resetDependentFilters(['calcVersion', 'calcSupplier']);
         loadCascadeFilters();
         loadCalcReady();
     });
-    document.getElementById('calcVersion')?.addEventListener('change', () => loadCalcReady());
+    document.getElementById('calcVersion')?.addEventListener('change', () => {
+        resetDependentFilters(['calcSupplier']);
+        loadCascadeFilters();
+        loadCalcReady();
+    });
+    document.getElementById('calcSupplier')?.addEventListener('change', () => loadCalcReady());
 
     document.getElementById('startCalcBtn')?.addEventListener('click', () => startCalculation());
     document.getElementById('calcHistoryRefreshBtn')?.addEventListener('click', () => loadCalcHistory(1));
@@ -127,7 +128,7 @@ function resetDependentFilters(ids) {
     });
 }
 
-function fillSelect(id, values = [], preferredValue = null) {
+function fillSelect(id, values = [], preferredValue = null, formatLabel = null) {
     const select = document.getElementById(id);
     if (!select) return;
     const current = preferredValue != null ? preferredValue : select.value;
@@ -136,7 +137,8 @@ function fillSelect(id, values = [], preferredValue = null) {
         `<option value="">${emptyLabel}</option>` +
         values.map((value) => {
             const text = String(value);
-            return `<option value="${esc(text)}"${text === String(current) ? ' selected' : ''}>${esc(text)}</option>`;
+            const label = formatLabel ? formatLabel(value) : text;
+            return `<option value="${esc(text)}"${text === String(current) ? ' selected' : ''}>${esc(String(label))}</option>`;
         }).join('');
 }
 
@@ -146,7 +148,7 @@ async function loadYearOptions() {
         const years = Array.isArray(res.data) ? res.data.slice() : [];
         const currentYear = new Date().getFullYear();
         if (!years.includes(currentYear)) years.unshift(currentYear);
-        fillSelect('calcYear', years, String(currentYear));
+        fillSelect('calcYear', years, String(currentYear), fmtYear);
     } catch (error) {
         showToast(error.message || '加载年度失败', 'error');
     }
@@ -156,8 +158,9 @@ async function loadCascadeFilters() {
     try {
         const params = {
             location: document.getElementById('calcLocation')?.value || '',
-            stamping_supplier: document.getElementById('calcSupplier')?.value || '',
             vehicle_model: document.getElementById('calcVehicleModel')?.value || '',
+            version: document.getElementById('calcVersion')?.value || '',
+            stamping_supplier: document.getElementById('calcSupplier')?.value || '',
         };
         const res = await HttpClient.get(CASCADE_API, { params });
         const filters = res.data || {};
@@ -205,7 +208,7 @@ async function loadCalcReady() {
     if (!year) {
         calcState.ready = { part_count: 0, tonnage_rate_count: 0 };
         setReadyCounts(0, 0);
-        validateDataPreparation(location, year, supplier, 0, 0);
+        validateDataPreparation(location, year, vehicleModel, 0, 0);
         return;
     }
 
@@ -222,22 +225,22 @@ async function loadCalcReady() {
         const rateCount = Number(data.tonnage_rate_count) || 0;
         calcState.ready = { part_count: partCount, tonnage_rate_count: rateCount };
         setReadyCounts(partCount, rateCount);
-        validateDataPreparation(location, year, supplier, partCount, rateCount);
+        validateDataPreparation(location, year, vehicleModel, partCount, rateCount);
     } catch (error) {
         console.error('加载计算就绪统计失败:', error);
         calcState.ready = { part_count: 0, tonnage_rate_count: 0 };
         setReadyCounts(0, 0);
-        validateDataPreparation(location, year, supplier, 0, 0);
+        validateDataPreparation(location, year, vehicleModel, 0, 0);
         showToast('加载数据依据失败', 'error');
     }
 }
 
-function validateDataPreparation(location, year, supplier, partCount, rateCount) {
+function validateDataPreparation(location, year, vehicleModel, partCount, rateCount) {
     const startBtn = document.getElementById('startCalcBtn');
     const errorBanner = document.getElementById('dataReadyErrorBanner');
     if (!startBtn || calcState.isCalculating) return;
 
-    const isScopeSelected = Boolean(year && location && supplier);
+    const isScopeSelected = Boolean(year && location && vehicleModel);
     const isDataValid = Number(partCount) > 0 && Number(rateCount) > 0;
     const isReady = isScopeSelected && isDataValid;
 
@@ -333,7 +336,7 @@ function renderHistoryRows(items) {
             <tr class="hover:bg-[#ffffff]/[0.02] transition-colors text-[#999]" data-log-id="${esc(item.id)}">
                 <td class="py-2 px-2 font-mono text-[#666] whitespace-nowrap">${esc(started)}</td>
                 <td class="py-2 px-2 text-[#ccc] whitespace-nowrap">${esc(createdBy)}</td>
-                <td class="py-2 px-2 font-mono text-[#ccc] whitespace-nowrap">${esc(item.year)}</td>
+                <td class="py-2 px-2 font-mono text-[#ccc] whitespace-nowrap">${esc(fmtYear(item.year))}</td>
                 <td class="py-2 px-2 text-[#ccc] whitespace-nowrap">${esc(item.location || '-')}</td>
                 <td class="py-2 px-2 text-[#ccc] whitespace-nowrap">${esc(item.stamping_supplier || '-')}</td>
                 <td class="py-2 px-2 text-[#777] max-w-[140px] truncate" title="${esc(filterText)}">${esc(filterText)}</td>
@@ -446,7 +449,7 @@ function showProcessDrawer(log) {
     closeProcessDrawer();
 
     const status = STATUS_META[log.status] || STATUS_META.failed;
-    const scope = `${log.year || '-'} · ${log.location || '-'} · ${log.stamping_supplier || '-'}`;
+    const scope = `${fmtYear(log.year) || '-'} · ${log.location || '-'} · ${log.stamping_supplier || '-'}`;
     const backdrop = document.createElement('div');
     backdrop.id = 'calcProcessBackdrop';
     backdrop.className = 'fixed inset-0 z-[80] bg-black/70 backdrop-blur-sm';
@@ -493,13 +496,12 @@ function closeProcessDrawer() {
     document.getElementById('calcProcessDrawer')?.remove();
 }
 
-async function isScopeProcessing(year, location, supplier) {
+async function isScopeProcessing(year, location) {
     try {
         const response = await HttpClient.get(CALC_LOGS_API, {
             params: {
                 year,
                 location,
-                stamping_supplier: supplier,
                 page: 1,
                 size: 20,
             },
@@ -525,7 +527,7 @@ async function startCalculation() {
     const vehicleModel = document.getElementById('calcVehicleModel')?.value || '';
     const version = document.getElementById('calcVersion')?.value || '';
 
-    if (Number.isNaN(year) || !location || !supplier) {
+    if (Number.isNaN(year) || !location || !vehicleModel) {
         showToast(SCOPE_REQUIRED_MESSAGE, 'warning');
         return;
     }
@@ -537,7 +539,7 @@ async function startCalculation() {
         return;
     }
 
-    if (await isScopeProcessing(year, location, supplier)) {
+    if (await isScopeProcessing(year, location)) {
         showToast(DUPLICATE_SCOPE_CALC_MESSAGE, 'warning');
         loadCalcHistory(1);
         return;
@@ -546,9 +548,9 @@ async function startCalculation() {
     const payload = {
         year,
         location,
-        stamping_supplier: supplier,
+        vehicle_model: vehicleModel,
     };
-    if (vehicleModel) payload.vehicle_model = vehicleModel;
+    if (supplier) payload.stamping_supplier = supplier;
     if (version) payload.version = version;
 
     setCalculating(true);
@@ -750,7 +752,7 @@ function setCalculating(isCalculating) {
         validateDataPreparation(
             document.getElementById('calcLocation')?.value || '',
             parseInt(document.getElementById('calcYear')?.value, 10) || null,
-            document.getElementById('calcSupplier')?.value || '',
+            document.getElementById('calcVehicleModel')?.value || '',
             calcState.ready.part_count || 0,
             calcState.ready.tonnage_rate_count || 0,
         );

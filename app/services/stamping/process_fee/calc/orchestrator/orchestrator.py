@@ -165,7 +165,7 @@ class StampingProcessFeeCalcOrchestrator:
             "success=%s failed=%s zero_fee=%s skipped_approved=%s",
             dto.year,
             ctx.location,
-            ctx.supplier,
+            ctx.mill_lock_key,
             result.success_count,
             result.failed_count,
             result.zero_fee_count,

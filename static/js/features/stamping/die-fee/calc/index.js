@@ -2,7 +2,7 @@ import {
     dieFeeCalcTemplate,
     renderCalcHistoryPagination,
     CALC_HISTORY_COLSPAN,
-} from './template.js?v=2';
+} from './template.js?v=3';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -293,7 +293,7 @@ function renderHistoryRows(items) {
             <tr class="hover:bg-[#ffffff]/[0.02] text-[#999]">
                 <td class="py-2 px-2 font-mono text-[#666] whitespace-nowrap">${esc(formatDateTime(item.started_at))}</td>
                 <td class="py-2 px-2 text-[#ccc] whitespace-nowrap">${esc(item.created_by || item.operator_name || '-')}</td>
-                <td class="py-2 px-2 font-mono text-[#ccc]">${esc(item.year)}</td>
+                <td class="py-2 px-2 font-mono text-[#ccc]">${esc(fmtYear(item.year))}</td>
                 <td class="py-2 px-2 text-[#ccc]">${esc(item.location || '-')}</td>
                 <td class="py-2 px-2 text-[#ccc]">${esc(item.vehicle_model || '-')}</td>
                 <td class="py-2 px-2 text-[#ccc] whitespace-nowrap">${esc(item.stamping_supplier || '全部')}</td>

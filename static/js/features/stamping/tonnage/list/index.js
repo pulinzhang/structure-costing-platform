@@ -11,7 +11,7 @@ import {
     parsePricePerStrokeInput,
     updateTonnageHud,
     updateTonnageFilterCapsules,
-} from './template.js?v=20';
+} from './template.js?v=22';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -122,10 +122,10 @@ async function loadFilterOptions() {
             const currentYear = new Date().getFullYear();
             let options = `<option value="">全部</option>`;
             tonnagePriceState.years.forEach((year) => {
-                options += `<option value="${year}">${year} 年</option>`;
+                options += `<option value="${year}">${esc(fmtYear(year))}</option>`;
             });
             if (!tonnagePriceState.years.includes(currentYear)) {
-                options += `<option value="${currentYear}">${currentYear} 年</option>`;
+                options += `<option value="${currentYear}">${esc(fmtYear(currentYear))}</option>`;
             }
             yearFilter.innerHTML = options;
             if (tonnagePriceState.selectedYear) {
@@ -387,7 +387,7 @@ function openBatchAuditDrawer(mode) {
     remarkEl.value = '';
     remarkEl.placeholder = isApprove ? '请填写审核意见（必填）' : '必填反审核原因';
     document.getElementById('tonnageBatchAuditFilterSummary').textContent =
-        `基地 ${filters.location} · 年度 ${filters.year}`;
+        `基地 ${filters.location} · ${fmtYear(filters.year)}`;
     openDrawer('tonnageBatchAuditDrawer', 'tonnageBatchAuditDrawerBackdrop');
 }
 
@@ -491,7 +491,7 @@ async function batchDeleteByFilters() {
         return;
     }
     if (!window.confirm(
-        `确定批量删除未审核冲次单价吗？\n\n基地: ${filters.location} | 年度: ${year}\n\n仅删除待审记录；已审核通过会跳过。此操作不可恢复！`,
+        `确定批量删除未审核冲次单价吗？\n\n基地: ${filters.location} · ${fmtYear(year)}\n\n仅删除待审记录；已审核通过会跳过。此操作不可恢复！`,
     )) return;
 
     const btn = document.getElementById('btnBatchDeleteTonnagePrice');

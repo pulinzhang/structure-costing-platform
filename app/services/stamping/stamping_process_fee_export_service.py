@@ -177,6 +177,8 @@ class StampingProcessFeeExportService:
             parts.append(f"{year}年")
         if location:
             parts.append(location)
+        if vehicle_model:
+            parts.append(vehicle_model)
         if stamping_supplier:
             parts.append(stamping_supplier)
         filename = "_".join(parts) + f"_{stamp}.xlsx"

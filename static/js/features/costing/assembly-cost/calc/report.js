@@ -265,7 +265,7 @@ function render(root) {
     const log = state.log;
     const cards = Array.isArray(log.cards) ? log.cards : [];
     const filtered = cards.filter(matches);
-    const period = `${log.year}-${String(log.month).padStart(2, '0')}`;
+    const period = fmtPeriod(log.year, log.month);
     const levels = uniqueLevels(cards);
     document.title = `总成核价计算报告 · ${period} · ${log.vehicle_model || ''}`;
 

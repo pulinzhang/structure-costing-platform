@@ -56,12 +56,12 @@ function applyPermissionUi() {
 
 function buildYearOptions(years) {
     if (Array.isArray(years) && years.length) {
-        return years.map(y => ({ value: y, label: `${y} 年` }));
+        return years.map(y => ({ value: y, label: fmtYear(y) }));
     }
     const currentYear = new Date().getFullYear();
     const fallback = [];
     for (let y = currentYear - 3; y <= currentYear + 1; y++) {
-        fallback.push({ value: y, label: `${y} 年` });
+        fallback.push({ value: y, label: fmtYear(y) });
     }
     return fallback;
 }
@@ -69,7 +69,7 @@ function buildYearOptions(years) {
 function fillMonthOptions() {
     const months = Array.from({ length: 12 }, (_, i) => ({
         value: i + 1,
-        label: `${i + 1} 月`,
+        label: fmtMonth(i + 1),
     }));
     fillSelect('basePriceDownloadMonth', months);
 }
@@ -166,8 +166,8 @@ function bindEvents() {
 function updateConditionsDisplay() {
     const filters = collectFilters();
     const conditions = [];
-    if (filters.year) conditions.push(`年度: ${filters.year}`);
-    if (filters.month) conditions.push(`月份: ${filters.month}`);
+    const period = fmtPeriod(filters.year, filters.month);
+    if (period) conditions.push(period);
     if (filters.location) conditions.push(`基地: ${filters.location}`);
     if (filters.category_name) conditions.push(`钢种: ${filters.category_name}`);
     if (filters.grade) conditions.push(`牌号: ${filters.grade}`);
@@ -357,7 +357,7 @@ async function batchDeleteBasePrices() {
     }
 
     const confirmed = window.confirm(
-        `确定要删除以下条件的基准价格数据吗？\n\n年度: ${year} | 月份: ${month} | 基地: ${location || '全部'} | 钢厂: ${mill || '全部'}\n\n此操作不可恢复！`
+        `确定要删除以下条件的基准价格数据吗？\n\n${fmtPeriod(year, month)} · 基地: ${location || '全部'} · 钢厂: ${mill || '全部'}\n\n此操作不可恢复！`
     );
 
     if (!confirmed) {
@@ -446,8 +446,8 @@ function renderBasePriceRows(records) {
     return records.map((record, index) => `
         <tr class="group border-b border-[#181818] transition-colors duration-150 hover:bg-[#ffffff]/[0.015]">
             <td class="px-3 py-2 text-[11px] text-[#505050] whitespace-nowrap font-mono text-right tabular-nums">${index + 1}</td>
-            <td class="px-3 py-2 text-[11px] text-[#606060] whitespace-nowrap font-mono text-right tabular-nums">${esc(record.year || '')}</td>
-            <td class="px-3 py-2 text-[11px] text-[#606060] whitespace-nowrap font-mono text-right tabular-nums">${esc(record.month || '')}</td>
+            <td class="px-3 py-2 text-[11px] text-[#606060] whitespace-nowrap font-mono text-right tabular-nums">${esc(fmtYear(record.year))}</td>
+            <td class="px-3 py-2 text-[11px] text-[#606060] whitespace-nowrap font-mono text-right tabular-nums">${esc(fmtMonth(record.month))}</td>
             <td class="px-3 py-2 text-[11px] text-[#888888] whitespace-nowrap">${esc(record.location || '')}</td>
             <td class="px-3 py-2 text-[11px] text-[#888888] whitespace-nowrap">${esc(record.steel_mill || '')}</td>
             <td class="px-3 py-2 text-[11px] text-[#888888] whitespace-nowrap">${esc(record.category_name || '')}</td>

@@ -23,7 +23,7 @@ def collect_calc_ready(
     else:
         rates = deps.tonnage_repo.list_by_year(db, year)
     parts = []
-    if location and stamping_supplier:
+    if location:
         parts = deps.part_repo.list_with_processes(
             db,
             location=location,

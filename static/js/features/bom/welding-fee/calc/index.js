@@ -6,7 +6,7 @@
 import {
     l0WeldingFeeCalcTemplate,
     renderCalcHistoryPagination,
-} from './template.js?v=7';
+} from './template.js?v=8';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -119,7 +119,7 @@ function resetDependentFilters(ids) {
     });
 }
 
-function fillSelect(id, values = [], preferredValue = null) {
+function fillSelect(id, values = [], preferredValue = null, formatLabel = null) {
     const select = document.getElementById(id);
     if (!select) return;
     const current = preferredValue != null ? preferredValue : select.value;
@@ -128,7 +128,8 @@ function fillSelect(id, values = [], preferredValue = null) {
         `<option value="">${emptyLabel}</option>` +
         values.map((value) => {
             const text = String(value);
-            return `<option value="${esc(text)}"${text === String(current) ? ' selected' : ''}>${esc(text)}</option>`;
+            const label = formatLabel ? formatLabel(value) : text;
+            return `<option value="${esc(text)}"${text === String(current) ? ' selected' : ''}>${esc(String(label))}</option>`;
         }).join('');
 }
 
@@ -138,7 +139,7 @@ async function loadYearOptions() {
         const years = Array.isArray(res.data) ? res.data.slice() : [];
         const currentYear = new Date().getFullYear();
         if (!years.includes(currentYear)) years.unshift(currentYear);
-        fillSelect('l0wfCalcYear', years, String(currentYear));
+        fillSelect('l0wfCalcYear', years, String(currentYear), fmtYear);
     } catch (error) {
         showToast(error.message || '加载年度失败', 'error');
     }
@@ -366,7 +367,7 @@ function renderHistoryRows(items) {
             <tr class="hover:bg-[#ffffff]/[0.02] transition-colors text-[#999]">
                 <td class="py-2 px-2 font-mono text-[#666] whitespace-nowrap">${esc(formatDateTime(item.started_at))}</td>
                 <td class="py-2 px-2 text-[#ccc] whitespace-nowrap">${esc(item.created_by || item.operator_name || '-')}</td>
-                <td class="py-2 px-2 font-mono text-[#ccc] whitespace-nowrap">${esc(item.year)}</td>
+                <td class="py-2 px-2 font-mono text-[#ccc] whitespace-nowrap">${esc(fmtYear(item.year))}</td>
                 <td class="py-2 px-2 text-[#ccc] whitespace-nowrap">${esc(item.location || '-')}</td>
                 <td class="py-2 px-2 text-[#ccc] whitespace-nowrap">${esc(item.vehicle_model || '-')}</td>
                 <td class="py-2 px-2 text-[#ccc] whitespace-nowrap">${esc(item.bom_version || '-')}</td>

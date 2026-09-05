@@ -113,9 +113,9 @@ export function processFeeListTemplate() {
                             <div class="flex items-center gap-2 flex-wrap">
                                 <span id="feeCapsuleYear" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部年度</span>
                                 <span id="feeCapsuleLocation" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部基地</span>
-                                <span id="feeCapsuleSupplier" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部工厂</span>
                                 <span id="feeCapsuleVehicle" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部车型</span>
                                 <span id="feeCapsuleVersion" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部版本</span>
+                                <span id="feeCapsuleSupplier" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部工厂</span>
                                 <span id="feeCapsuleFailTodo" class="hidden bg-[#FF1E27]/15 border border-[#FF1E27]/40 text-[#FF1E27] px-2.5 py-1 rounded-md font-bold">待补价筛选中</span>
                             </div>
                         </div>
@@ -139,9 +139,9 @@ export function processFeeListTemplate() {
                         <div class="flex items-end gap-3 flex-wrap">
                             ${filterSelect('feeYearFilter', '年度')}
                             ${filterSelect('feeLocationFilter', '基地')}
-                            ${filterSelect('feeSupplierFilter', '冲压工厂')}
                             ${filterSelect('feeVehicleFilter', '车型')}
                             ${filterSelect('feeVersionFilter', '版本')}
+                            ${filterSelect('feeSupplierFilter', '冲压工厂')}
                             ${filterSelect('feeAuditStatusFilter', '审核状态')}
                             ${filterInput('feePartNumberFilter', '零件号', '短号或完整零件号')}
                             <button id="feeResetBtn" type="button"
@@ -150,7 +150,7 @@ export function processFeeListTemplate() {
                                 重置
                             </button>
                         </div>
-                        <p class="mt-2 text-[10px] text-[#555555]">批量删除 / 审核 / 反审核须选定年度、基地、冲压工厂。</p>
+                        <p class="mt-2 text-[10px] text-[#555555]">筛选均可选；级联为年度 → 基地 → 车型 → 版本 → 冲压工厂。批量删除 / 审核 / 反审核须选定年度、基地、车型；冲压工厂与版本可选。</p>
                     </div>
                 </div>
 
@@ -516,7 +516,7 @@ export function renderFeeRows(records) {
                      style="box-shadow: 0 0 10px #FF1E27;"></div>
             </td>
             <td class="${cell} font-sans whitespace-nowrap">
-                <div class="font-bold text-white text-[12px] group-hover:text-[#FF1E27] transition-colors">${esc(row.year)}</div>
+                <div class="font-bold text-white text-[12px] group-hover:text-[#FF1E27] transition-colors">${esc(fmtYear(row.year))}</div>
                 <div class="text-[#555555] text-[10px] mt-0.5">${esc(row.location)} · ${esc(row.stamping_supplier)}</div>
             </td>
             <td class="${cell} font-sans whitespace-nowrap">
@@ -669,7 +669,7 @@ export function updateFeeFilterCapsules() {
     const countEl = document.getElementById('feeAdvancedFilterCount');
 
     if (yearEl) {
-        yearEl.textContent = year ? `${year}年` : '全部年度';
+        yearEl.textContent = year ? fmtYear(year) : '全部年度';
         yearEl.className = year ? activeCapsule : idleCapsule;
     }
     if (locationEl) {

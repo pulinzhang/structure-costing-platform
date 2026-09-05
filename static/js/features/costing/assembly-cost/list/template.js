@@ -331,7 +331,7 @@ export function renderLacRows(records, view = 'finance') {
         in_house: '自制',
     };
     return records.map((row) => {
-        const ym = `${esc(row.year)}-${esc(String(row.month).padStart(2, '0'))}`;
+        const ym = esc(fmtPeriod(row.year, row.month));
         const location = esc(row.location) || '—';
         const actionCell = `
             <td class="px-1 py-2 text-center align-middle">
@@ -471,11 +471,9 @@ export function updateLacFilterCapsules() {
     const countEl = document.getElementById('lacAdvancedFilterCount');
 
     if (periodEl) {
-        if (year && month) {
-            periodEl.textContent = `${year}-${String(month).padStart(2, '0')}`;
-            periodEl.className = activeCapsule;
-        } else if (year) {
-            periodEl.textContent = `${year}年`;
+        const periodText = fmtPeriod(year, month);
+        if (periodText) {
+            periodEl.textContent = periodText;
             periodEl.className = activeCapsule;
         } else {
             periodEl.textContent = '全部期间';

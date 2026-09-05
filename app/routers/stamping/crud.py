@@ -95,12 +95,10 @@ def batch_delete_parts(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_PARTS_DELETE)),
 ) -> ApiResponse[StampingPartBatchDeleteResultVO]:
-    """按基地 + 冲压工厂 + 车型 + 版本批量删除零件（四者同时必填）。"""
+    """按基地 + 车型 + 版本批量删除零件；冲压工厂可选。"""
     result = _stamping_service.batch_delete(db, body)
-    scope = (
-        f"{result.location} / {result.stamping_supplier} / "
-        f"{result.vehicle_model} / {result.version}"
-    )
+    mill = result.stamping_supplier or "全部工厂"
+    scope = f"{result.location} / {mill} / " f"{result.vehicle_model} / {result.version}"
     return ApiResponse.ok(
         data=result,
         message=f"已删除 {result.deleted_count} 个零件（{scope}）",
@@ -198,7 +196,7 @@ def get_cascade_filters(
         )
     ),
 ) -> ApiResponse[StampingCascadeFilterOptionsVO]:
-    """冲压级联筛选选项：基地 → 冲压工厂 → 配套车型"""
+    """冲压级联筛选选项：基地 → 车型 → 版本 → 冲压工厂"""
     options = _stamping_service.get_cascade_filter_options(db, query)
     return ApiResponse.ok(data=options, message="获取成功")
 

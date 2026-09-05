@@ -306,7 +306,7 @@ export function renderCostRows(records, breakdownOpen = false) {
     const breakdownHidden = breakdownOpen ? '' : 'hidden';
     return records.map((row) => {
         const fail = row.calc_status === 'failed';
-        const ym = `${esc(row.year)}-${esc(String(row.month).padStart(2, '0'))}`;
+        const ym = esc(fmtPeriod(row.year, row.month));
         const location = esc(row.location) || '—';
         const supplier = esc(row.stamping_supplier) || '—';
         const num = 'px-2 py-2 font-mono text-[10px] text-right tabular-nums text-[#8E8E93]';
@@ -493,11 +493,9 @@ export function updateCostFilterCapsules() {
     const countEl = document.getElementById('costAdvancedFilterCount');
 
     if (periodEl) {
-        if (year && month) {
-            periodEl.textContent = `${year}-${String(month).padStart(2, '0')}`;
-            periodEl.className = activeCapsule;
-        } else if (year) {
-            periodEl.textContent = `${year}年`;
+        const periodText = fmtPeriod(year, month);
+        if (periodText) {
+            periodEl.textContent = periodText;
             periodEl.className = activeCapsule;
         } else {
             periodEl.textContent = '全部期间';

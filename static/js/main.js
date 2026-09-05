@@ -239,6 +239,30 @@ const fmtNum = (value, digits = 2) => {
     return formatted == null ? '-' : formatted;
 };
 
+/** 年度展示：2026年；无效为空串（option.value / API 仍用数字） */
+const fmtYear = (year) => {
+    if (year == null || year === '') return '';
+    const n = Number(year);
+    if (!Number.isFinite(n) || n < 1) return '';
+    return `${Math.trunc(n)}年`;
+};
+
+/** 月份展示：07月；无效为空串 */
+const fmtMonth = (month) => {
+    if (month == null || month === '') return '';
+    const n = Number(month);
+    if (!Number.isFinite(n) || n < 1 || n > 12) return '';
+    return `${String(Math.trunc(n)).padStart(2, '0')}月`;
+};
+
+/** 年月合写：2026年07月；缺一侧则只出有值的一侧 */
+const fmtPeriod = (year, month) => {
+    const y = fmtYear(year);
+    const m = fmtMonth(month);
+    if (y && m) return `${y}${m}`;
+    return y || m;
+};
+
 /** 给已规范的固定小数字符串加千分位（仅展示用） */
 const withThousandsSep = (fixedDecimalStr) => {
     if (fixedDecimalStr == null || fixedDecimalStr === '') return fixedDecimalStr;
@@ -595,6 +619,9 @@ const HttpClient = (() => {
 window.HttpClient = HttpClient;
 window.esc = esc;
 window.fmtNum = fmtNum;
+window.fmtYear = fmtYear;
+window.fmtMonth = fmtMonth;
+window.fmtPeriod = fmtPeriod;
 window.formatDecimalFixed = formatDecimalFixed;
 window.parseDecimalInput = parseDecimalInput;
 window.scaleDecimalByPow10 = scaleDecimalByPow10;

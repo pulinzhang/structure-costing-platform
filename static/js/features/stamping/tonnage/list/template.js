@@ -357,7 +357,7 @@ export function updateTonnageFilterCapsules() {
         locEl.className = location ? active : idle;
     }
     if (yearEl) {
-        yearEl.textContent = year ? `${year}年` : '全部年度';
+        yearEl.textContent = year ? fmtYear(year) : '全部年度';
         yearEl.className = year ? active : idle;
     }
     if (auditEl) {
@@ -384,7 +384,7 @@ export function renderTableRows(records) {
             <td class="px-2 py-2 overflow-hidden">
                 <div class="font-semibold text-[#F0F0F2]">${esc(record.location)}</div>
             </td>
-            <td class="px-2 py-2 text-[#8E8E93] tabular-nums">${esc(record.year)}</td>
+            <td class="px-2 py-2 text-[#8E8E93] tabular-nums">${esc(fmtYear(record.year))}</td>
             <td class="${numCell} text-[#C8C8D0] font-semibold">${esc(record.tonnage)}</td>
             <td class="px-2 py-1.5 text-right font-mono font-black tabular-nums text-[12px] text-[#FF1E27] bg-[#1A080A] border-x border-[#FF1E27]/20">
                 ${esc(formatPricePerStroke3(record.price_per_stroke))}

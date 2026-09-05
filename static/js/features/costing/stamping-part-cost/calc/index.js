@@ -5,7 +5,7 @@
 import {
     partCostCalcTemplate,
     renderCalcHistoryPagination,
-} from './template.js?v=5';
+} from './template.js?v=6';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -100,7 +100,7 @@ function fillMonthOptions() {
         '<option value="">请选择</option>' +
         Array.from({ length: 12 }, (_, i) => {
             const m = i + 1;
-            return `<option value="${m}"${String(current) === String(m) ? ' selected' : ''}>${m}</option>`;
+            return `<option value="${m}"${String(current) === String(m) ? ' selected' : ''}>${esc(fmtMonth(m))}</option>`;
         }).join('');
 }
 
@@ -144,7 +144,7 @@ function resetDependentFilters(ids) {
     });
 }
 
-function fillSelect(id, values = [], preferredValue = null) {
+function fillSelect(id, values = [], preferredValue = null, formatLabel = null) {
     const select = document.getElementById(id);
     if (!select) return;
     const current = preferredValue != null ? preferredValue : select.value;
@@ -153,7 +153,8 @@ function fillSelect(id, values = [], preferredValue = null) {
         `<option value="">${emptyLabel}</option>` +
         values.map((value) => {
             const text = String(value);
-            return `<option value="${esc(text)}"${text === String(current) ? ' selected' : ''}>${esc(text)}</option>`;
+            const label = formatLabel ? formatLabel(value) : text;
+            return `<option value="${esc(text)}"${text === String(current) ? ' selected' : ''}>${esc(String(label))}</option>`;
         }).join('');
 }
 
@@ -163,7 +164,7 @@ async function loadYearOptions() {
         const years = Array.isArray(res.data) ? res.data.slice() : [];
         const currentYear = new Date().getFullYear();
         if (!years.includes(currentYear)) years.unshift(currentYear);
-        fillSelect('calcYear', years, String(currentYear));
+        fillSelect('calcYear', years, String(currentYear), fmtYear);
     } catch (error) {
         showToast(error.message || '加载年度失败', 'error');
     }
@@ -363,7 +364,7 @@ function renderHistoryRows(items) {
         if (item.vehicle_model) filterParts.push(item.vehicle_model);
         if (item.version) filterParts.push(item.version);
         const filterText = filterParts.length ? filterParts.join(' / ') : '全部';
-        const ym = `${item.year || '-'}-${String(item.month || '').padStart(2, '0')}`;
+        const ym = fmtPeriod(item.year, item.month) || '-';
         const isProcessing = item.status === 'processing';
         return `
             <tr class="hover:bg-[#ffffff]/[0.02] transition-colors text-[#999]" data-log-id="${esc(item.id)}">
@@ -448,7 +449,7 @@ async function openProcessDrawer(logId) {
 function showProcessDrawer(log) {
     closeProcessDrawer();
     const status = STATUS_META[log.status] || STATUS_META.failed;
-    const scope = `${log.year || '-'}-${String(log.month || '').padStart(2, '0')} · ${log.location || '-'} · ${log.stamping_supplier || '-'}`;
+    const scope = `${fmtPeriod(log.year, log.month) || '-'} · ${log.location || '-'} · ${log.stamping_supplier || '-'}`;
     const backdrop = document.createElement('div');
     backdrop.id = 'calcProcessBackdrop';
     backdrop.className = 'fixed inset-0 z-[80] bg-black/70 backdrop-blur-sm';

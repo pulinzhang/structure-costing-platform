@@ -205,7 +205,7 @@ function renderHistoryItem(item) {
             : 'text-[#ffb74d]';
     const question = item.user_question || '（无问句）';
     const scope = item.scope || {};
-    const scopeText = [scope.location, scope.year, scope.month].filter(Boolean).join(' · ');
+    const scopeText = [scope.location, fmtPeriod(scope.year, scope.month)].filter(Boolean).join(' · ');
     const types = item.resolved_report_type
         ? analysesKeyLabelZh(item.resolved_report_type)
         : '';

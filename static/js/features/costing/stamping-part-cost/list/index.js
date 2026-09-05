@@ -10,7 +10,7 @@ import {
     updateCostFilterCapsules,
     shortPartNumber,
     syncBreakdownColumnVisibility,
-} from './template.js?v=53';
+} from './template.js?v=54';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -260,7 +260,7 @@ function fillMonthOptions() {
     if (!select) return;
     select.innerHTML =
         `<option value="">全部</option>` +
-        Array.from({ length: 12 }, (_, i) => `<option value="${i + 1}">${i + 1}</option>`).join('');
+        Array.from({ length: 12 }, (_, i) => `<option value="${i + 1}">${esc(fmtMonth(i + 1))}</option>`).join('');
 }
 
 function fillAuditOptions() {
@@ -274,7 +274,7 @@ function fillAuditOptions() {
     `;
 }
 
-function fillSelect(id, values = [], preferredValue = null) {
+function fillSelect(id, values = [], preferredValue = null, formatLabel = null) {
     const select = document.getElementById(id);
     if (!select) return;
     const current = preferredValue != null ? preferredValue : select.value;
@@ -283,7 +283,8 @@ function fillSelect(id, values = [], preferredValue = null) {
         values
             .map((value) => {
                 const text = String(value);
-                return `<option value="${esc(text)}"${text === String(current) ? ' selected' : ''}>${esc(text)}</option>`;
+                const label = formatLabel ? formatLabel(value) : text;
+                return `<option value="${esc(text)}"${text === String(current) ? ' selected' : ''}>${esc(String(label))}</option>`;
             })
             .join('');
     if (preferredValue != null) select.value = String(preferredValue);
@@ -296,6 +297,7 @@ async function loadYearOptions() {
             'costYearFilter',
             Array.isArray(res.data) ? res.data : [],
             listState.pendingFilters?.year || null,
+            fmtYear,
         );
     } catch (error) {
         console.error(error);
@@ -389,7 +391,7 @@ async function loadList(page = 1) {
             pagination.innerHTML = renderCostPagination(listState.page, listState.totalPages);
         }
         if (pageData.filters) {
-            if (pageData.filters.years) fillSelect('costYearFilter', pageData.filters.years, filters.year);
+            if (pageData.filters.years) fillSelect('costYearFilter', pageData.filters.years, filters.year, fmtYear);
             if (pageData.filters.locations) {
                 fillSelect('costLocationFilter', pageData.filters.locations, filters.location);
             }
@@ -588,7 +590,7 @@ function showDetailDrawer(row) {
                 ['短号', shortNo || '—'],
                 ['零件名称', row.part_name || '—'],
                 ['基地 / 工厂', `${row.location || '—'} / ${row.stamping_supplier || '—'}`],
-                ['核算年月', `${row.year}-${String(row.month).padStart(2, '0')}`],
+                ['核算年月', fmtPeriod(row.year, row.month) || '—'],
                 ['车型 / 版本', `${row.vehicle_model || '—'} / ${row.version || '—'}`],
                 ['材质 / 厚度', `${row.material || '—'} / ${row.thickness || '—'} mm`],
                 ['料片尺寸', `${row.sheet_length || '—'} × ${row.sheet_width || '—'} mm`],
@@ -822,7 +824,7 @@ function openBatchAuditDrawer(mode) {
     }
     if (summaryEl) {
         summaryEl.textContent =
-            `年度 ${scope.year} · 月份 ${scope.month} · 基地 ${scope.location} · 工厂 ${scope.stamping_supplier}`;
+            `${fmtPeriod(scope.year, scope.month)} · 基地 ${scope.location} · 工厂 ${scope.stamping_supplier}`;
     }
     if (confirmBtn) {
         confirmBtn.textContent = isApprove ? '确认审核通过' : '确认反审核';

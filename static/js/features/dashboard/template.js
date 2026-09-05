@@ -34,7 +34,7 @@ export function dashboardTemplate() {
                     <option value="">全部基地</option>
                 </select>
             </div>
-            <p class="text-[10px] text-[#555555] pb-2 ml-auto font-mono tracking-[0.04em]" id="dashScopeLabel">PERIOD —</p>
+            <p class="text-[10px] text-[#555555] pb-2 ml-auto font-mono tracking-[0.04em]" id="dashScopeLabel">—</p>
         </div>
 
         <!-- 本期产出 HUD -->

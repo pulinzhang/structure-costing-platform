@@ -506,7 +506,7 @@ export function updateL0WeldingFeeFilterCapsules(state) {
         el.textContent = value || emptyLabel;
         el.className = value ? active : idle;
     };
-    setCap('l0wfCapsuleYear', '全部年度', state.year ? String(state.year) : '');
+    setCap('l0wfCapsuleYear', '全部年度', state.year ? fmtYear(state.year) : '');
     setCap('l0wfCapsuleLocation', '全部基地', state.location || '');
     setCap('l0wfCapsuleModel', '全部项目', state.vehicle_model || '');
     setCap('l0wfCapsuleVersion', '全部版本', state.bom_version || '');
@@ -549,7 +549,7 @@ export function renderL0WeldingFeeRows(records) {
                 </td>
                 <td class="px-2 py-2 overflow-hidden">
                     <div class="text-[#F0F0F2] font-semibold truncate">${esc(row.location || '-')}</div>
-                    <div class="text-[9px] text-[#555555]">${esc(row.year)}</div>
+                    <div class="text-[9px] text-[#555555]">${esc(fmtYear(row.year))}</div>
                 </td>
                 <td class="px-2 py-2 overflow-hidden">
                     <div class="text-[#C8C8D0] truncate">${esc(row.vehicle_model || '-')}</div>

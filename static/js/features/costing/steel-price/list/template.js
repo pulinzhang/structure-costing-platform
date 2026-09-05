@@ -436,7 +436,7 @@ export function renderSteelPriceRows(records) {
     if (!records || !Array.isArray(records) || records.length === 0) return '';
     return records.map((record) => {
         const approved = record.audit_status === 'approved';
-        const period = `${esc(record.year)}-${esc(String(record.month).padStart(2, '0'))}`;
+        const period = esc(fmtPeriod(record.year, record.month));
         const mill = esc(record.steel_mill) || '—';
         const location = esc(record.location) || '—';
         const cell = 'p-3 border-b border-[#17171C] font-mono text-[11px]';
@@ -535,14 +535,9 @@ export function updateActiveFilterCapsules() {
     const idleCapsule = 'bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md';
 
     if (periodEl) {
-        if (year && month) {
-            periodEl.textContent = `${year}-${String(month).padStart(2, '0')}`;
-            periodEl.className = activeCapsule;
-        } else if (year) {
-            periodEl.textContent = `${year}年`;
-            periodEl.className = activeCapsule;
-        } else if (month) {
-            periodEl.textContent = `${month}月`;
+        const periodText = fmtPeriod(year, month);
+        if (periodText) {
+            periodEl.textContent = periodText;
             periodEl.className = activeCapsule;
         } else {
             periodEl.textContent = '全部期间';

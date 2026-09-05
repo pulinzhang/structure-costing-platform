@@ -191,12 +191,13 @@ class StampingPartService:
         db: Session,
         query: StampingCascadeFilterQuery,
     ) -> StampingCascadeFilterOptionsVO:
-        """获取基地 → 冲压工厂 → 配套车型 级联筛选选项"""
+        """获取基地 → 车型 → 版本 → 冲压工厂 级联筛选选项"""
         raw = self.repository.get_cascade_filter_options(
             db,
             location=query.location.strip() if query.location else None,
             stamping_supplier=query.stamping_supplier.strip() if query.stamping_supplier else None,
             vehicle_model=query.vehicle_model.strip() if query.vehicle_model else None,
+            version=query.version.strip() if query.version else None,
         )
         return StampingCascadeFilterOptionsVO.model_validate(raw)
 
@@ -356,13 +357,13 @@ class StampingPartService:
         db: Session,
         dto: StampingPartBatchDeleteDTO,
     ) -> StampingPartBatchDeleteResultVO:
-        """按基地 + 冲压工厂 + 车型 + 版本批量删除零件（四者同时必填）。"""
+        """按基地 + 车型 + 版本批量删除零件；工厂可选。"""
         location = dto.location.strip()
-        supplier = dto.stamping_supplier.strip()
         vehicle_model = dto.vehicle_model.strip()
         version = dto.version.strip()
-        if not location or not supplier or not vehicle_model or not version:
-            raise BusinessException("基地、冲压工厂、车型和版本不能为空")
+        supplier = dto.stamping_supplier
+        if not location or not vehicle_model or not version:
+            raise BusinessException("基地、车型和版本不能为空")
 
         deleted = self.repository.delete_by_scope(
             db,

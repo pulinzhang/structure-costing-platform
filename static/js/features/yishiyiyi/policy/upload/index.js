@@ -182,7 +182,7 @@ const PolicyUploadPage = {
         });
         this.recentUploads.unshift({
             fileName,
-            periodLabel: `${year}年${month}月`,
+            periodLabel: fmtPeriod(year, month),
             timeLabel,
             summary: summary || '',
         });
