@@ -12,8 +12,10 @@ from app.schemas.vo.assembly_cost_vo import (
     AssemblyCostCalcCardTraceVO,
     AssemblyCostCalcLogVO,
 )
-from app.services.costing.assembly_cost.export.calc_report_export_service import (
-    AssemblyCostCalcReportExportService,
+from app.services.costing.assembly_cost.export.calc_report.builder import (
+    CalcReportWorkbookBuilder,
+)
+from app.services.costing.assembly_cost.export.calc_report.match import (
     match_calc_report_card,
 )
 
@@ -100,7 +102,7 @@ def test_write_calc_report_workbook_sheets() -> None:
     ]
     log = _log(cards)
     wb = Workbook()
-    AssemblyCostCalcReportExportService().write_to_workbook(
+    CalcReportWorkbookBuilder().write(
         wb,
         log,
         [cards[1]],

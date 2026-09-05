@@ -109,6 +109,36 @@ COL = {name: i for i, name in enumerate(HEADERS, start=1)}
 FEE_COLS = frozenset({COL["系统计算"], COL["其它费用"], COL["确认单价"], COL["行费"]})
 COUNT_COLS = frozenset({COL["工艺数"], COL["命中"], COL["缺单价"]})
 LEFT_MAIN_COLS = frozenset({COL["基地"], COL["项目"], COL["版本"], COL["零件名称"], COL["备注"]})
+_SCOPE_HEADERS = frozenset({"年度", "基地", "项目", "版本"})
+_MAIN_HEADERS = tuple(HEADERS[:MAIN_COLS])
+_DETAIL_HEADERS = tuple(HEADERS[MAIN_COLS:])
+_FEE_HEADER_NAMES = ("系统计算", "其它费用", "确认单价", "行费")
+_COUNT_HEADER_NAMES = ("工艺数", "命中", "缺单价")
+_LEFT_MAIN_HEADER_NAMES = ("基地", "项目", "版本", "零件名称", "备注")
+_WIDTH_BY_HEADER = dict(zip(HEADERS, WIDTHS, strict=True))
+
+
+class WeldingSheetLayout:
+    """完整列或去掉范围列（采购册范围已在表头）。"""
+
+    def __init__(self, *, omit_scope: bool) -> None:
+        main = (
+            [name for name in _MAIN_HEADERS if name not in _SCOPE_HEADERS]
+            if omit_scope
+            else list(_MAIN_HEADERS)
+        )
+        self.headers = main + list(_DETAIL_HEADERS)
+        self.widths = [_WIDTH_BY_HEADER[name] for name in self.headers]
+        self.main_cols = len(main)
+        self.col_count = len(self.headers)
+        self.col = {name: index for index, name in enumerate(self.headers, start=1)}
+        self.fee_cols = frozenset(self.col[name] for name in _FEE_HEADER_NAMES)
+        self.count_cols = frozenset(self.col[name] for name in _COUNT_HEADER_NAMES)
+        self.left_main_cols = frozenset(
+            self.col[name] for name in _LEFT_MAIN_HEADER_NAMES if name in self.col
+        )
+        self.omit_scope = omit_scope
+
 
 TITLE_H = 28
 FILTER_H = 20
@@ -165,6 +195,7 @@ class BomWeldingFeeExportService:
         self._thin = _border()
         self._split_main = _border(right=Side(style="medium", color="B71C1C"))
         self._split_detail = _border(left=Side(style="medium", color="B71C1C"))
+        self._layout = WeldingSheetLayout(omit_scope=False)
 
     def write_to_workbook(
         self,
@@ -180,8 +211,11 @@ class BomWeldingFeeExportService:
         calc_status: str | None = None,
         level: int | None = None,
         levels: list[int] | None = None,
+        ids: list[int] | None = None,
         sheet_title: str = "焊接费",
+        omit_scope_columns: bool = False,
     ) -> tuple[str, int]:
+        self._layout = WeldingSheetLayout(omit_scope=omit_scope_columns)
         resolved_levels = resolve_welding_fee_levels(level=level, levels=levels)
         records = self.fee_repo.list_for_export(
             db,
@@ -193,6 +227,7 @@ class BomWeldingFeeExportService:
             audit_status=audit_status,
             calc_status=calc_status,
             levels=resolved_levels,
+            ids=ids,
         )
         self._fill_missing_weld_info(db, records)
 
@@ -207,6 +242,7 @@ class BomWeldingFeeExportService:
             audit_status=audit_status,
             calc_status=calc_status,
             levels=resolved_levels,
+            ids=ids,
         )
         self._write_banner(ws, filter_text=filter_text, fee_count=len(records))
         header_row = self._write_headers(ws)
@@ -251,11 +287,12 @@ class BomWeldingFeeExportService:
                 self._merge_main(ws, group_start, row_idx - 1, main_fill)
 
         last_data = max(header_row, row_idx - 1)
-        for idx, width in enumerate(WIDTHS, start=1):
+        layout = self._layout
+        for idx, width in enumerate(layout.widths, start=1):
             ws.column_dimensions[get_column_letter(idx)].width = width
 
         ws.freeze_panes = f"A{header_row + 1}"
-        ws.auto_filter.ref = f"A{header_row}:{get_column_letter(COL_COUNT)}{last_data}"
+        ws.auto_filter.ref = f"A{header_row}:{get_column_letter(layout.col_count)}{last_data}"
         ws.print_title_rows = f"1:{header_row}"
         ws.page_setup.orientation = "landscape"
         ws.page_setup.fitToPage = True
@@ -332,15 +369,17 @@ class BomWeldingFeeExportService:
 
     def _write_banner(self, ws: Any, *, filter_text: str, fee_count: int) -> None:
         indent = Alignment(horizontal="left", vertical="center", indent=1)
+        layout = self._layout
+        title = "焊接费" if layout.omit_scope else "焊接费核对表"
 
-        ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=COL_COUNT)
-        c1 = ws.cell(row=1, column=1, value="焊接费核对表")
+        ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=layout.col_count)
+        c1 = ws.cell(row=1, column=1, value=title)
         c1.font = _font(size=15, bold=True, color="FFFFFF")
         c1.fill = _fill("1A237E")
         c1.alignment = indent
         ws.row_dimensions[1].height = TITLE_H
 
-        ws.merge_cells(start_row=2, start_column=1, end_row=2, end_column=COL_COUNT)
+        ws.merge_cells(start_row=2, start_column=1, end_row=2, end_column=layout.col_count)
         c2 = ws.cell(
             row=2,
             column=1,
@@ -353,12 +392,14 @@ class BomWeldingFeeExportService:
         c2.alignment = indent
         ws.row_dimensions[2].height = FILTER_H
 
-        ws.merge_cells(start_row=3, start_column=1, end_row=3, end_column=COL_COUNT)
-        c3 = ws.cell(
-            row=3,
-            column=1,
-            value="说明：左侧主表按节点合并，含各层级（见「层级」列）；右侧为工艺明细。行费 = 计费量 × 分年单价。",
+        ws.merge_cells(start_row=3, start_column=1, end_row=3, end_column=layout.col_count)
+        note = (
+            "说明：范围已在表头锁定，表内不再重复年度/基地/项目/版本；"
+            "左侧主表按节点合并，右侧为工艺明细。行费 = 计费量 × 分年单价。"
+            if layout.omit_scope
+            else "说明：左侧主表按节点合并，含各层级（见「层级」列）；右侧为工艺明细。行费 = 计费量 × 分年单价。"
         )
+        c3 = ws.cell(row=3, column=1, value=note)
         c3.font = _font(size=9, color="B71C1C")
         c3.fill = _fill("FFF3E0")
         c3.alignment = indent
@@ -369,52 +410,55 @@ class BomWeldingFeeExportService:
         header_row = 5
         white = _font(size=9, bold=True, color="FFFFFF")
         header_font = _font(bold=True, color="FFFFFF")
+        layout = self._layout
+        main_cols = layout.main_cols
+        col_count = layout.col_count
 
         ws.merge_cells(
             start_row=group_row,
             start_column=1,
             end_row=group_row,
-            end_column=MAIN_COLS,
+            end_column=main_cols,
         )
         ws.merge_cells(
             start_row=group_row,
-            start_column=MAIN_COLS + 1,
+            start_column=main_cols + 1,
             end_row=group_row,
-            end_column=COL_COUNT,
+            end_column=col_count,
         )
         main_group = ws.cell(row=group_row, column=1, value="节点主表")
         main_group.font = white
         main_group.fill = _fill("37474F")
         main_group.alignment = self._center
-        for col in range(1, MAIN_COLS + 1):
+        for col in range(1, main_cols + 1):
             cell = ws.cell(row=group_row, column=col)
             cell.fill = _fill("37474F")
-            cell.border = self._thin if col < MAIN_COLS else self._split_main
+            cell.border = self._thin if col < main_cols else self._split_main
 
-        detail_group = ws.cell(row=group_row, column=MAIN_COLS + 1, value="工艺明细 / 计费")
+        detail_group = ws.cell(row=group_row, column=main_cols + 1, value="工艺明细 / 计费")
         detail_group.font = white
         detail_group.fill = _fill("B71C1C")
         detail_group.alignment = self._center
-        for col in range(MAIN_COLS + 1, COL_COUNT + 1):
+        for col in range(main_cols + 1, col_count + 1):
             cell = ws.cell(row=group_row, column=col)
             cell.fill = _fill("B71C1C")
-            cell.border = self._split_detail if col == MAIN_COLS + 1 else self._thin
+            cell.border = self._split_detail if col == main_cols + 1 else self._thin
         ws.row_dimensions[group_row].height = GROUP_H
 
-        fee_cols = FEE_COLS
-        for col, title in enumerate(HEADERS, start=1):
+        fee_cols = layout.fee_cols
+        for col, title in enumerate(layout.headers, start=1):
             cell = ws.cell(row=header_row, column=col, value=title)
             cell.font = header_font
             cell.alignment = self._center
-            if col <= MAIN_COLS:
+            if col <= main_cols:
                 cell.fill = _fill("EF6C00") if col in fee_cols else _fill("546E7A")
-                cell.border = self._thin if col < MAIN_COLS else self._split_main
+                cell.border = self._thin if col < main_cols else self._split_main
             elif col in fee_cols:
                 cell.fill = _fill("EF6C00")
                 cell.border = self._thin
             else:
                 cell.fill = _fill("C62828")
-                cell.border = self._split_detail if col == MAIN_COLS + 1 else self._thin
+                cell.border = self._split_detail if col == main_cols + 1 else self._thin
         ws.row_dimensions[header_row].height = HEADER_H
         return header_row
 
@@ -430,78 +474,85 @@ class BomWeldingFeeExportService:
         line_index: int,
         main_fill: PatternFill,
     ) -> None:
+        layout = self._layout
+        col_index = layout.col
+        main_cols = layout.main_cols
         detail_fill = _fill("FFFFFF") if line_index % 2 == 0 else _fill("FFEBEE")
         missing = int(record.missing_price_count or 0) > 0
         calc_status = record.calc_status or ""
         match_status = (item.match_status if item else "") or ""
 
         if write_main:
-            main_values: list[Any] = [
-                seq_no,
-                record.year,
-                record.location,
-                record.vehicle_model,
-                record.bom_version,
-                _level_label(record.level),
-                record.part_number,
-                part_short_code(part_number=record.part_number, level=record.level),
-                record.part_name or "",
-                (record.weld_info_raw or "").strip(),
-                record.process_line_count,
-                record.matched_line_count,
-                record.missing_price_count,
-                _num(record.total_welding_fee),
-                _num(record.other_fee),
-                _num(record.final_welding_fee),
-                (record.remark or "").strip(),
-                _CALC_LABEL.get(calc_status, calc_status),
-                audit_status_label(record.audit_status),
+            main_pairs: list[tuple[str, Any]] = [
+                ("序号", seq_no),
+                ("年度", record.year),
+                ("基地", record.location),
+                ("项目", record.vehicle_model),
+                ("版本", record.bom_version),
+                ("层级", _level_label(record.level)),
+                ("零件号", record.part_number),
+                (
+                    "短代码",
+                    part_short_code(part_number=record.part_number, level=record.level),
+                ),
+                ("零件名称", record.part_name or ""),
+                ("焊接信息原文", (record.weld_info_raw or "").strip()),
+                ("工艺数", record.process_line_count),
+                ("命中", record.matched_line_count),
+                ("缺单价", record.missing_price_count),
+                ("系统计算", _num(record.total_welding_fee)),
+                ("其它费用", _num(record.other_fee)),
+                ("确认单价", _num(record.final_welding_fee)),
+                ("备注", (record.remark or "").strip()),
+                ("计算状态", _CALC_LABEL.get(calc_status, calc_status)),
+                ("审核状态", audit_status_label(record.audit_status)),
             ]
+            main_values = [value for name, value in main_pairs if name in col_index]
             for col, value in enumerate(main_values, start=1):
                 cell = ws.cell(row=row_idx, column=col, value="" if value is None else value)
                 cell.fill = main_fill
-                cell.border = self._thin if col < MAIN_COLS else self._split_main
-                if col == COL["序号"]:
+                cell.border = self._thin if col < main_cols else self._split_main
+                if col == col_index["序号"]:
                     cell.font = _font(size=11, bold=True, color="37474F")
                     cell.alignment = self._center
-                elif col == COL["零件号"]:
+                elif col == col_index["零件号"]:
                     cell.font = _font(bold=True, color="1565C0")
                     cell.alignment = self._left
-                elif col == COL["短代码"]:
+                elif col == col_index["短代码"]:
                     cell.font = _font(size=11, bold=True, color="1565C0")
                     cell.alignment = self._center
-                elif col == COL["焊接信息原文"]:
+                elif col == col_index["焊接信息原文"]:
                     cell.font = _font(size=9, color="607D8B")
                     cell.alignment = self._left
-                elif col == COL["系统计算"]:
+                elif col == col_index["系统计算"]:
                     cell.font = _font(size=11, bold=True, color="546E7A")
                     cell.alignment = self._right
-                elif col == COL["其它费用"]:
+                elif col == col_index["其它费用"]:
                     cell.font = _font(size=11, color="37474F")
                     cell.alignment = self._right
-                elif col == COL["确认单价"]:
+                elif col == col_index["确认单价"]:
                     cell.font = _font(size=11, bold=True, color="E65100")
                     cell.alignment = self._right
                     cell.fill = _fill("FFF3E0")
-                elif col == COL["备注"]:
+                elif col == col_index["备注"]:
                     cell.font = _font(size=9, color="607D8B")
                     cell.alignment = self._left
-                elif col in COUNT_COLS:
+                elif col in layout.count_cols:
                     cell.font = (
                         _font(bold=True, color="C62828")
-                        if (col == COL["缺单价"] and missing)
+                        if (col == col_index["缺单价"] and missing)
                         else _font()
                     )
                     cell.alignment = self._center
-                elif col == COL["计算状态"]:
+                elif col == col_index["计算状态"]:
                     cell.font, cell.fill = self._status_tone(calc_status)
                     cell.alignment = self._center
-                elif col == COL["审核状态"]:
+                elif col == col_index["审核状态"]:
                     cell.font, cell.fill = self._audit_tone(record.audit_status)
                     cell.alignment = self._center
                 else:
                     cell.font = _font()
-                    cell.alignment = self._left if col in LEFT_MAIN_COLS else self._center
+                    cell.alignment = self._left if col in layout.left_main_cols else self._center
 
         detail_values: list[Any] = [
             (item.standard_process_name or item.process_token or "") if item else "",
@@ -513,23 +564,23 @@ class BomWeldingFeeExportService:
             _MATCH_LABEL.get(match_status, match_status) if item else "",
         ]
         for offset, value in enumerate(detail_values):
-            col = MAIN_COLS + 1 + offset
+            col = main_cols + 1 + offset
             cell = ws.cell(row=row_idx, column=col, value="" if value is None else value)
             cell.fill = detail_fill
-            cell.border = self._split_detail if col == MAIN_COLS + 1 else self._thin
-            if col == COL["行费"]:
+            cell.border = self._split_detail if col == main_cols + 1 else self._thin
+            if col == col_index["行费"]:
                 cell.font = _font(size=11, bold=True, color="E65100")
                 cell.alignment = self._right
                 cell.fill = _fill("FFF3E0")
-            elif col in {COL["过程量"], COL["单价"]}:
+            elif col in {col_index["过程量"], col_index["单价"]}:
                 cell.font = _font()
                 cell.alignment = self._right
-            elif col == COL["匹配状态"]:
+            elif col == col_index["匹配状态"]:
                 cell.font, cell.fill = self._match_tone(match_status)
                 cell.alignment = self._center
             else:
                 cell.font = _font()
-                cell.alignment = self._left if col == COL["标准工艺"] else self._center
+                cell.alignment = self._left if col == col_index["标准工艺"] else self._center
 
     def _merge_main(
         self,
@@ -538,7 +589,8 @@ class BomWeldingFeeExportService:
         end_row: int,
         main_fill: PatternFill,
     ) -> None:
-        for col in range(1, MAIN_COLS + 1):
+        layout = self._layout
+        for col in range(1, layout.main_cols + 1):
             ws.merge_cells(
                 start_row=start_row,
                 start_column=col,
@@ -546,11 +598,11 @@ class BomWeldingFeeExportService:
                 end_column=col,
             )
             cell = ws.cell(row=start_row, column=col)
-            if col == COL["确认单价"]:
+            if col == layout.col["确认单价"]:
                 cell.fill = _fill("FFF3E0")
             else:
                 cell.fill = main_fill
-            cell.border = self._thin if col < MAIN_COLS else self._split_main
+            cell.border = self._thin if col < layout.main_cols else self._split_main
 
     @staticmethod
     def _row_height(record: BomWeldingFee) -> float:
@@ -602,6 +654,7 @@ class BomWeldingFeeExportService:
         calc_status: str | None,
         level: int | None = None,
         levels: list[int] | None = None,
+        ids: list[int] | None = None,
     ) -> str:
         parts: list[str] = []
         if year is not None:
@@ -615,6 +668,8 @@ class BomWeldingFeeExportService:
         resolved = resolve_welding_fee_levels(level=level, levels=levels)
         if resolved:
             parts.append("层级=" + "+".join(_level_label(item) for item in resolved))
+        if ids is not None:
+            parts.append(f"核价卡焊费 {len(ids)} 条")
         if part_number:
             parts.append(f"零件号含={part_number}")
         if audit_status:

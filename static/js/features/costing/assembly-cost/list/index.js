@@ -5,7 +5,7 @@ import {
     updateLacHud,
     updateLacFilterCapsules,
     updateLacTableHead,
-} from './template.js?v=13';
+} from './template.js?v=20';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -104,6 +104,21 @@ function syncViewButtons() {
     }
     if (procurementBtn) {
         procurementBtn.className = `px-3 py-1.5 text-[11px] font-medium rounded-md transition-all ${listState.view === 'procurement' ? active : idle}`;
+    }
+    const exportBtn = document.getElementById('lacExportBtn');
+    const exportLabel = document.getElementById('lacExportBtnLabel');
+    const bundleBtn = document.getElementById('lacExportBundleBtn');
+    const isProcurement = listState.view === 'procurement';
+    if (exportLabel) {
+        exportLabel.textContent = isProcurement ? '导出零件成本' : '导出总成核价';
+    }
+    if (exportBtn) {
+        exportBtn.title = isProcurement
+            ? '导出零件成本（成本一览 + 材料明细 + 焊接费）'
+            : '导出成品核价（一览 + 材料明细 + 焊接费 + 间接费用；金额为系统快照）';
+    }
+    if (bundleBtn && listState.canExport) {
+        bundleBtn.classList.toggle('hidden', isProcurement);
     }
     updateLacTableHead(listState.view);
 }
@@ -614,7 +629,12 @@ async function batchDelete() {
 async function exportExcel() {
     if (!listState.canExport) return showToast('无导出权限', 'warning');
     const filters = getFilters();
-    if (!Object.values(filters).some(Boolean)) {
+    if (listState.view === 'procurement') {
+        const scope = requireScope('导出零件成本');
+        if (!scope) return;
+    } else if (!filters.year && !filters.month && !filters.location
+        && !filters.vehicle_model && !filters.bom_version
+        && !filters.part_number && !filters.audit_status && !filters.calc_status) {
         showToast('请至少选择一个筛选条件后再导出', 'warning');
         return;
     }
@@ -638,7 +658,7 @@ async function exportExcel() {
                 calc_status: filters.calc_status || undefined,
                 view: listState.view,
             },
-            defaultFilename: '总成核价导出.xlsx',
+            defaultFilename: listState.view === 'procurement' ? '零件成本.xlsx' : '成品核价.xlsx',
         });
         const url = URL.createObjectURL(blob);
         const anchor = document.createElement('a');

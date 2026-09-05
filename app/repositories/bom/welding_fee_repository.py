@@ -332,7 +332,10 @@ class BomWeldingFeeRepository:
         calc_status: str | None = None,
         level: int | None = None,
         levels: list[int] | None = None,
+        ids: list[int] | None = None,
     ) -> list[BomWeldingFee]:
+        if ids is not None and not ids:
+            return []
         q = self._build_list_query(
             db,
             year=year,
@@ -345,6 +348,8 @@ class BomWeldingFeeRepository:
             level=level,
             levels=levels,
         )
+        if ids is not None:
+            q = q.filter(BomWeldingFee.id.in_(ids))
         ordered_ids = [
             int(row.id)
             for row in self._order_like_bom_nodes(q.with_entities(BomWeldingFee.id)).all()

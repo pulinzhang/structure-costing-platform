@@ -3,6 +3,7 @@
  */
 
 import { pageSizeSelectHtml } from '../../../../page-size.js?v=2';
+import { CONFIRM_LABELS, KIND_LABELS } from '../../../bom/procurement-object/labels.js?v=2';
 
 export function assemblyCostListTemplate() {
     return `
@@ -87,13 +88,13 @@ export function assemblyCostListTemplate() {
                             </button>
                             <button id="lacExportBtn" type="button"
                                     class="inline-flex items-center gap-1.5 bg-transparent text-[#6E6E73] border border-[#2A2A35] px-3 py-1.5 text-[11px] font-medium rounded-md hover:border-[#FF1E27]/50 hover:text-[#FF1E27] hover:bg-[#FF1E27]/10 hover:shadow-[0_0_12px_rgba(255,30,39,0.2)] transition-all duration-200"
-                                    title="仅导出总成核价（一览 + 材料明细 + 焊接费 + 间接费用；金额为系统快照）">
+                                    title="导出成品核价（一览 + 材料明细 + 焊接费 + 间接费用；金额为系统快照）">
                                 ${window.svgIcon('download', 'w-3 h-3')}
-                                导出总成核价
+                                <span id="lacExportBtnLabel">导出总成核价</span>
                             </button>
                             <button id="lacExportBundleBtn" type="button"
                                     class="inline-flex items-center gap-1.5 bg-transparent text-[#6E6E73] border border-[#2A2A35] px-3 py-1.5 text-[11px] font-medium rounded-md hover:border-[#FF1E27]/50 hover:text-[#FF1E27] hover:bg-[#FF1E27]/10 hover:shadow-[0_0_12px_rgba(255,30,39,0.2)] transition-all duration-200"
-                                    title="导出核对合册：总成核价 + 冲压零件核价 + 焊接费 + 加工费 + 钢材联动等关联表（须选定年/月/基地/项目/版本）">
+                                    title="导出核对合册：成品核价（树根）+ 冲压零件核价 + 焊接费 + 加工费 + 钢材联动等（须选定年/月/基地/项目/版本）">
                                 ${window.svgIcon('download', 'w-3 h-3')}
                                 导出核对合册
                             </button>
@@ -173,7 +174,7 @@ export function assemblyCostListTemplate() {
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#6E6E73]">零件</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">项目/版本</th>
                                 <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]">材料</th>
-                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]">焊接</th>
+                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]">焊接费</th>
                                 <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#6E6E73]">月总账</th>
                                 <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]">间接</th>
                                 <th class="px-2 py-2 text-right text-[9px] font-semibold tracking-[0.06em] text-[#FF1E27]/90 bg-[#1A080A]">总费用</th>
@@ -325,11 +326,7 @@ function auditBadge(status) {
 export function renderLacRows(records, view = 'finance') {
     if (!records || !Array.isArray(records) || records.length === 0) return '';
     const num = 'px-2 py-2 font-mono text-[10px] text-right tabular-nums text-[#8E8E93]';
-    const confirmLabel = {
-        pending: '待确认',
-        outsourced: '外协',
-        in_house: '自制',
-    };
+    const confirmLabel = CONFIRM_LABELS;
     return records.map((row) => {
         const ym = esc(fmtPeriod(row.year, row.month));
         const location = esc(row.location) || '—';
@@ -355,15 +352,14 @@ export function renderLacRows(records, view = 'finance') {
             </td>
             <td class="px-2 py-2 overflow-hidden">${partInfoCell(row.part_number, row.part_name)}</td>
             <td class="px-2 py-2 overflow-hidden">
-                <div class="text-[#C8C8D0] text-[10px] truncate">${esc(row.object_kind || '—')}</div>
-                <div class="text-[#555555] text-[9px] mt-0.5 font-mono">L${esc(row.level ?? 0)}</div>
+                <div class="text-[#C8C8D0] text-[10px] truncate">${esc(KIND_LABELS[row.object_kind] || row.object_kind || '—')}</div>
+                <div class="text-[#555555] text-[9px] mt-0.5">第${esc(row.level ?? 0)}层</div>
             </td>
+            <td class="${num}">${fmtNum(row.material_amount, 4)}</td>
+            <td class="${num}" title="数据为焊接费用（含电泳、黑漆等）">${Number(row.welding_amount) === 0 ? '' : fmtNum(row.welding_amount, 4)}</td>
             <td class="px-2 py-1.5 text-right font-mono font-black tabular-nums text-[12px] text-[#FF1E27] bg-[#1A080A] border-x border-[#FF1E27]/20">
-                <span style="text-shadow: 0 0 8px rgba(255,30,39,0.45);">${fmtNum(row.should_cost, 4)}</span>
+                <span style="text-shadow: 0 0 8px rgba(255,30,39,0.45);">${fmtNum(row.total_amount, 4)}</span>
             </td>
-            <td class="${num}">${fmtNum(row.welding_amount, 4)}</td>
-            <td class="${num}">${row.vendor_quote == null ? '—' : fmtNum(row.vendor_quote, 4)}</td>
-            <td class="${num}">${row.gap_amount == null ? '—' : fmtNum(row.gap_amount, 4)}</td>
             <td class="px-1 py-2 text-center text-[9px] text-[#8E8E93]">${esc(confirmLabel[row.confirm_status] || row.confirm_status || '—')}</td>
             <td class="px-1 py-2 text-center">${calcStatusBadge(row.calc_status)}</td>
             <td class="px-1 py-2 text-center">${auditBadge(row.audit_status)}</td>
@@ -410,10 +406,9 @@ export function updateLacTableHead(view = 'finance') {
                 ${th('年月/基地', 'text-left tracking-[0.08em]')}
                 ${th('零件', 'text-left tracking-[0.08em] text-[#6E6E73]')}
                 ${th('对象/层', 'text-left tracking-[0.08em]')}
-                <th class="px-2 py-2 text-right text-[9px] font-semibold tracking-[0.06em] text-[#FF1E27]/90 bg-[#1A080A]">应成本</th>
-                ${th('工艺费', 'text-right')}
-                ${th('报价', 'text-right')}
-                ${th('价差', 'text-right')}
+                ${th('材料成本', 'text-right')}
+                ${th('焊接费/电泳黑漆等', 'text-right leading-tight')}
+                <th class="px-2 py-2 text-right text-[9px] font-semibold tracking-[0.06em] text-[#FF1E27]/90 bg-[#1A080A]">总成本</th>
                 ${th('确认', 'text-center')}
                 ${th('核算', 'text-center')}
                 ${th('审核', 'text-center')}
@@ -428,7 +423,7 @@ export function updateLacTableHead(view = 'finance') {
                 ${th('零件', 'text-left tracking-[0.08em] text-[#6E6E73]')}
                 ${th('项目/版本', 'text-left tracking-[0.08em]')}
                 ${th('材料', 'text-right')}
-                ${th('焊接', 'text-right')}
+                ${th('焊接费', 'text-right')}
                 ${th('月总账', 'text-right text-[#6E6E73]')}
                 ${th('间接', 'text-right')}
                 <th class="px-2 py-2 text-right text-[9px] font-semibold tracking-[0.06em] text-[#FF1E27]/90 bg-[#1A080A]">总费用</th>
