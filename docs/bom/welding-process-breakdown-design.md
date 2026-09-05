@@ -105,6 +105,9 @@ L0.process_qty(token)  ≟  Σ( L1.process_qty × L1.assembly_qty )
 - token 映射到 `WeldingStandardProcessName`（与焊接单价 `item_name` 对齐），`map_status`：`ready` / `ambiguous` / `unmapped`。
 - 面积 / 电泳面积默认「电泳（盐雾试验要求≤244H）」；升档见应成本文档盐雾待拍板。
 - 连续冒号（`凸焊:：2`）压成单个冒号；`电泳黑漆：0.098m2` 按电泳面积。
+- `焊缝：3条（60mm）` 与 `焊缝：3条 68mm`（无括号）均拆成 CO2焊缝，计费取 mm 长度。
+- `焊缝：18条 （218+30）mm`：括号内加总（248mm）作为次要过程量 / 计费长度。
+- `搭铁：N个` 按植/螺柱/凸焊。
 
 材料清单写法再变时 **改 Parser 后重跑拆解**，不要在计费模块补正则。
 

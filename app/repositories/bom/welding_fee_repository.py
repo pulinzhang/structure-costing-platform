@@ -13,12 +13,13 @@ from sqlalchemy import case, func
 from sqlalchemy.orm import Query, Session, joinedload, noload
 
 from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING, AUDIT_REJECTED
-from app.models.bom import BomWeldingFee, BomWeldingFeeItem
+from app.models.bom import BomNode, BomWeldingFee, BomWeldingFeeItem, BomWeldingProcessBreakdownNode
 from app.repositories.persist import apply_payload_fields, model_from_payload, query_update
 from app.schemas.dto.bom_welding_fee_dto import (
     BomWeldingFeeItemPayload,
     BomWeldingFeeUpsertPayload,
     WeldingFeePatch,
+    resolve_welding_fee_levels,
 )
 
 logger = logging.getLogger("repository.bom.welding_fee")
@@ -159,6 +160,7 @@ class BomWeldingFeeRepository:
         vehicle_model: str,
         bom_version: str,
         level: int | None = None,
+        levels: list[int] | None = None,
     ) -> Query[BomWeldingFee]:
         q = db.query(BomWeldingFee).filter(
             BomWeldingFee.year == year,
@@ -166,9 +168,7 @@ class BomWeldingFeeRepository:
             BomWeldingFee.vehicle_model == vehicle_model,
             BomWeldingFee.bom_version == bom_version,
         )
-        if level is not None:
-            q = q.filter(BomWeldingFee.level == level)
-        return q
+        return self._filter_levels(q, level=level, levels=levels)
 
     def count_by_calc_scope(
         self,
@@ -226,6 +226,7 @@ class BomWeldingFeeRepository:
         audit_status: str | None = None,
         calc_status: str | None = None,
         level: int | None = None,
+        levels: list[int] | None = None,
     ) -> Query[BomWeldingFee]:
         q = db.query(BomWeldingFee)
         if year is not None:
@@ -242,9 +243,44 @@ class BomWeldingFeeRepository:
             q = q.filter(BomWeldingFee.audit_status == audit_status)
         if calc_status:
             q = q.filter(BomWeldingFee.calc_status == calc_status)
-        if level is not None:
-            q = q.filter(BomWeldingFee.level == level)
-        return q
+        return self._filter_levels(q, level=level, levels=levels)
+
+    @staticmethod
+    def _filter_levels(
+        q: Query[BomWeldingFee],
+        *,
+        level: int | None,
+        levels: list[int] | None,
+    ) -> Query[BomWeldingFee]:
+        resolved = resolve_welding_fee_levels(level=level, levels=levels)
+        if not resolved:
+            return q
+        if len(resolved) == 1:
+            return q.filter(BomWeldingFee.level == resolved[0])
+        return q.filter(BomWeldingFee.level.in_(resolved))
+
+    @staticmethod
+    def _order_like_bom_nodes(q: Query[BomWeldingFee]) -> Query[BomWeldingFee]:
+        """与材料清单 ``list_by_snapshot`` 一致：level → sort_no → id。"""
+        return (
+            q.outerjoin(
+                BomWeldingProcessBreakdownNode,
+                BomWeldingFee.source_breakdown_node_id == BomWeldingProcessBreakdownNode.id,
+            )
+            .outerjoin(
+                BomNode,
+                BomWeldingProcessBreakdownNode.source_node_id == BomNode.id,
+            )
+            .order_by(
+                BomWeldingFee.level.asc(),
+                func.coalesce(
+                    BomNode.sort_no,
+                    BomWeldingProcessBreakdownNode.excel_row,
+                    0,
+                ).asc(),
+                BomWeldingFee.id.asc(),
+            )
+        )
 
     def paginate(
         self,
@@ -258,6 +294,7 @@ class BomWeldingFeeRepository:
         audit_status: str | None = None,
         calc_status: str | None = None,
         level: int | None = None,
+        levels: list[int] | None = None,
         skip: int = 0,
         limit: int = 20,
     ) -> tuple[list[BomWeldingFee], int]:
@@ -271,11 +308,11 @@ class BomWeldingFeeRepository:
             audit_status=audit_status,
             calc_status=calc_status,
             level=level,
+            levels=levels,
         )
         total = q.count()
         rows = (
-            q.options(noload(BomWeldingFee.items))
-            .order_by(BomWeldingFee.id.asc())
+            self._order_like_bom_nodes(q.options(noload(BomWeldingFee.items)))
             .offset(skip)
             .limit(limit)
             .all()
@@ -294,6 +331,7 @@ class BomWeldingFeeRepository:
         audit_status: str | None = None,
         calc_status: str | None = None,
         level: int | None = None,
+        levels: list[int] | None = None,
     ) -> list[BomWeldingFee]:
         q = self._build_list_query(
             db,
@@ -305,11 +343,22 @@ class BomWeldingFeeRepository:
             audit_status=audit_status,
             calc_status=calc_status,
             level=level,
+            levels=levels,
         )
-        rows: list[BomWeldingFee] = (
-            q.options(joinedload(BomWeldingFee.items)).order_by(BomWeldingFee.id.asc()).all()
+        ordered_ids = [
+            int(row.id)
+            for row in self._order_like_bom_nodes(q.with_entities(BomWeldingFee.id)).all()
+        ]
+        if not ordered_ids:
+            return []
+        loaded = (
+            db.query(BomWeldingFee)
+            .options(joinedload(BomWeldingFee.items))
+            .filter(BomWeldingFee.id.in_(ordered_ids))
+            .all()
         )
-        return rows
+        by_id = {int(record.id): record for record in loaded}
+        return [by_id[fee_id] for fee_id in ordered_ids if fee_id in by_id]
 
     def summarize_by_filters(
         self,
@@ -323,6 +372,7 @@ class BomWeldingFeeRepository:
         audit_status: str | None = None,
         calc_status: str | None = None,
         level: int | None = None,
+        levels: list[int] | None = None,
     ) -> WeldingFeeFilterSummary:
         q = self._build_list_query(
             db,
@@ -334,6 +384,7 @@ class BomWeldingFeeRepository:
             audit_status=audit_status,
             calc_status=calc_status,
             level=level,
+            levels=levels,
         )
         row = q.with_entities(
             func.count(BomWeldingFee.id).label("total_count"),
@@ -373,6 +424,7 @@ class BomWeldingFeeRepository:
         bom_version: str,
         statuses: list[str],
         level: int | None = None,
+        levels: list[int] | None = None,
     ) -> int:
         return int(
             self._scope_query(
@@ -382,6 +434,7 @@ class BomWeldingFeeRepository:
                 vehicle_model=vehicle_model,
                 bom_version=bom_version,
                 level=level,
+                levels=levels,
             )
             .filter(BomWeldingFee.audit_status.in_(statuses))
             .count()
@@ -396,6 +449,7 @@ class BomWeldingFeeRepository:
         vehicle_model: str,
         bom_version: str,
         level: int | None = None,
+        levels: list[int] | None = None,
     ) -> int:
         fee_ids = [
             row.id
@@ -407,6 +461,7 @@ class BomWeldingFeeRepository:
                     vehicle_model=vehicle_model,
                     bom_version=bom_version,
                     level=level,
+                    levels=levels,
                 )
                 .filter(BomWeldingFee.audit_status != AUDIT_APPROVED)
                 .with_entities(BomWeldingFee.id)
@@ -427,6 +482,7 @@ class BomWeldingFeeRepository:
                 vehicle_model=vehicle_model,
                 bom_version=bom_version,
                 level=level,
+                levels=levels,
             )
             .filter(BomWeldingFee.audit_status != AUDIT_APPROVED)
             .delete(synchronize_session=False)
@@ -455,6 +511,7 @@ class BomWeldingFeeRepository:
         audit_remark: str | None,
         updated_by: str | None = None,
         level: int | None = None,
+        levels: list[int] | None = None,
     ) -> int:
         values: dict[str, str | datetime | None] = {
             "audit_status": AUDIT_APPROVED,
@@ -472,6 +529,7 @@ class BomWeldingFeeRepository:
                 vehicle_model=vehicle_model,
                 bom_version=bom_version,
                 level=level,
+                levels=levels,
             ).filter(BomWeldingFee.audit_status.in_([AUDIT_PENDING, AUDIT_REJECTED])),
             values,
         )
@@ -491,6 +549,7 @@ class BomWeldingFeeRepository:
         reverse_audit_remark: str,
         updated_by: str | None = None,
         level: int | None = None,
+        levels: list[int] | None = None,
     ) -> int:
         values: dict[str, str | datetime | None] = {
             "audit_status": AUDIT_PENDING,
@@ -508,6 +567,7 @@ class BomWeldingFeeRepository:
                 vehicle_model=vehicle_model,
                 bom_version=bom_version,
                 level=level,
+                levels=levels,
             ).filter(BomWeldingFee.audit_status == AUDIT_APPROVED),
             values,
         )

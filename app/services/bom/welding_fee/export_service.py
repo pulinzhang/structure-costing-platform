@@ -11,6 +11,10 @@ from openpyxl.utils import get_column_letter
 from sqlalchemy.orm import Session
 
 from app.common.audit import audit_status_label
+from app.common.bom.manufacturing_category import (
+    short_part_number_digits,
+    short_weld_part_number,
+)
 from app.common.excel_workbook import resolve_worksheet
 from app.common.export_filters import require_at_least_one_export_filter
 from app.common.export_watermark import workbook_to_xlsx_bytes
@@ -21,6 +25,7 @@ from app.repositories.bom.welding_fee_repository import BomWeldingFeeRepository
 from app.repositories.bom.welding_process_breakdown_repository import (
     BomWeldingProcessBreakdownRepository,
 )
+from app.schemas.dto.bom_welding_fee_dto import resolve_welding_fee_levels
 from app.schemas.vo.user_vo import UserVO
 
 logger = logging.getLogger("service.bom.welding_fee.export")
@@ -39,8 +44,8 @@ _CALC_LABEL = {
 }
 
 # 主表列（纵向合并）+ 明细分隔
-MAIN_COLS = 18
-COL_COUNT = 25
+MAIN_COLS = 19
+COL_COUNT = 26
 HEADERS = [
     "序号",
     "年度",
@@ -49,6 +54,7 @@ HEADERS = [
     "版本",
     "层级",
     "零件号",
+    "短代码",
     "零件名称",
     "焊接信息原文",
     "工艺数",
@@ -76,6 +82,7 @@ WIDTHS = [
     10,
     8,
     16,
+    8,
     18,
     36,
     8,
@@ -95,6 +102,13 @@ WIDTHS = [
     10,
     10,
 ]
+
+assert len(HEADERS) == COL_COUNT
+assert len(WIDTHS) == COL_COUNT
+COL = {name: i for i, name in enumerate(HEADERS, start=1)}
+FEE_COLS = frozenset({COL["系统计算"], COL["其它费用"], COL["确认单价"], COL["行费"]})
+COUNT_COLS = frozenset({COL["工艺数"], COL["命中"], COL["缺单价"]})
+LEFT_MAIN_COLS = frozenset({COL["基地"], COL["项目"], COL["版本"], COL["零件名称"], COL["备注"]})
 
 TITLE_H = 28
 FILTER_H = 20
@@ -132,6 +146,13 @@ def _level_label(level: int | None) -> str:
     return f"L{int(level)}"
 
 
+def part_short_code(*, part_number: str | None, level: int | None) -> str:
+    """L0 末四位；分总成带 -N 时保留字母尾（同拆解列表）。"""
+    if int(level or 0) == 0:
+        return short_part_number_digits(part_number) or ""
+    return short_weld_part_number(part_number) or ""
+
+
 class BomWeldingFeeExportService:
     """按筛选导出焊接费（主表合并 + 工艺明细分行）。"""
 
@@ -158,8 +179,10 @@ class BomWeldingFeeExportService:
         audit_status: str | None = None,
         calc_status: str | None = None,
         level: int | None = None,
+        levels: list[int] | None = None,
         sheet_title: str = "焊接费",
     ) -> tuple[str, int]:
+        resolved_levels = resolve_welding_fee_levels(level=level, levels=levels)
         records = self.fee_repo.list_for_export(
             db,
             year=year,
@@ -169,7 +192,7 @@ class BomWeldingFeeExportService:
             part_number=part_number,
             audit_status=audit_status,
             calc_status=calc_status,
-            level=level,
+            levels=resolved_levels,
         )
         self._fill_missing_weld_info(db, records)
 
@@ -183,7 +206,7 @@ class BomWeldingFeeExportService:
             part_number=part_number,
             audit_status=audit_status,
             calc_status=calc_status,
-            level=level,
+            levels=resolved_levels,
         )
         self._write_banner(ws, filter_text=filter_text, fee_count=len(records))
         header_row = self._write_headers(ws)
@@ -259,6 +282,7 @@ class BomWeldingFeeExportService:
         audit_status: str | None = None,
         calc_status: str | None = None,
         level: int | None = None,
+        levels: list[int] | None = None,
         current_user: UserVO,
     ) -> tuple[bytes, str]:
         require_at_least_one_export_filter(
@@ -282,6 +306,7 @@ class BomWeldingFeeExportService:
             audit_status=audit_status,
             calc_status=calc_status,
             level=level,
+            levels=levels,
         )
         # header_row is always 5 (banner 1–3 + group 4 + headers 5)
         export_row_count = max(0, wb.worksheets[0].max_row - 5)
@@ -376,7 +401,7 @@ class BomWeldingFeeExportService:
             cell.border = self._split_detail if col == MAIN_COLS + 1 else self._thin
         ws.row_dimensions[group_row].height = GROUP_H
 
-        fee_cols = {13, 14, 15, 24}  # 系统计算、其它费用、确认单价、行费
+        fee_cols = FEE_COLS
         for col, title in enumerate(HEADERS, start=1):
             cell = ws.cell(row=header_row, column=col, value=title)
             cell.font = header_font
@@ -419,6 +444,7 @@ class BomWeldingFeeExportService:
                 record.bom_version,
                 _level_label(record.level),
                 record.part_number,
+                part_short_code(part_number=record.part_number, level=record.level),
                 record.part_name or "",
                 (record.weld_info_raw or "").strip(),
                 record.process_line_count,
@@ -435,42 +461,47 @@ class BomWeldingFeeExportService:
                 cell = ws.cell(row=row_idx, column=col, value="" if value is None else value)
                 cell.fill = main_fill
                 cell.border = self._thin if col < MAIN_COLS else self._split_main
-                if col == 1:
+                if col == COL["序号"]:
                     cell.font = _font(size=11, bold=True, color="37474F")
                     cell.alignment = self._center
-                elif col == 7:
+                elif col == COL["零件号"]:
                     cell.font = _font(bold=True, color="1565C0")
                     cell.alignment = self._left
-                elif col == 9:
+                elif col == COL["短代码"]:
+                    cell.font = _font(size=11, bold=True, color="1565C0")
+                    cell.alignment = self._center
+                elif col == COL["焊接信息原文"]:
                     cell.font = _font(size=9, color="607D8B")
                     cell.alignment = self._left
-                elif col == 13:
+                elif col == COL["系统计算"]:
                     cell.font = _font(size=11, bold=True, color="546E7A")
                     cell.alignment = self._right
-                elif col == 14:
+                elif col == COL["其它费用"]:
                     cell.font = _font(size=11, color="37474F")
                     cell.alignment = self._right
-                elif col == 15:
+                elif col == COL["确认单价"]:
                     cell.font = _font(size=11, bold=True, color="E65100")
                     cell.alignment = self._right
                     cell.fill = _fill("FFF3E0")
-                elif col == 16:
+                elif col == COL["备注"]:
                     cell.font = _font(size=9, color="607D8B")
                     cell.alignment = self._left
-                elif col in {10, 11, 12}:
+                elif col in COUNT_COLS:
                     cell.font = (
-                        _font(bold=True, color="C62828") if (col == 12 and missing) else _font()
+                        _font(bold=True, color="C62828")
+                        if (col == COL["缺单价"] and missing)
+                        else _font()
                     )
                     cell.alignment = self._center
-                elif col == 17:
+                elif col == COL["计算状态"]:
                     cell.font, cell.fill = self._status_tone(calc_status)
                     cell.alignment = self._center
-                elif col == 18:
+                elif col == COL["审核状态"]:
                     cell.font, cell.fill = self._audit_tone(record.audit_status)
                     cell.alignment = self._center
                 else:
                     cell.font = _font()
-                    cell.alignment = self._left if col in {3, 4, 5, 8, 16} else self._center
+                    cell.alignment = self._left if col in LEFT_MAIN_COLS else self._center
 
         detail_values: list[Any] = [
             (item.standard_process_name or item.process_token or "") if item else "",
@@ -486,19 +517,19 @@ class BomWeldingFeeExportService:
             cell = ws.cell(row=row_idx, column=col, value="" if value is None else value)
             cell.fill = detail_fill
             cell.border = self._split_detail if col == MAIN_COLS + 1 else self._thin
-            if col == 20:  # 行费
+            if col == COL["行费"]:
                 cell.font = _font(size=11, bold=True, color="E65100")
                 cell.alignment = self._right
                 cell.fill = _fill("FFF3E0")
-            elif col in {16, 18}:
+            elif col in {COL["过程量"], COL["单价"]}:
                 cell.font = _font()
                 cell.alignment = self._right
-            elif col == 21:
+            elif col == COL["匹配状态"]:
                 cell.font, cell.fill = self._match_tone(match_status)
                 cell.alignment = self._center
             else:
                 cell.font = _font()
-                cell.alignment = self._left if col == 15 else self._center
+                cell.alignment = self._left if col == COL["标准工艺"] else self._center
 
     def _merge_main(
         self,
@@ -515,7 +546,7 @@ class BomWeldingFeeExportService:
                 end_column=col,
             )
             cell = ws.cell(row=start_row, column=col)
-            if col == 12:
+            if col == COL["确认单价"]:
                 cell.fill = _fill("FFF3E0")
             else:
                 cell.fill = main_fill
@@ -570,6 +601,7 @@ class BomWeldingFeeExportService:
         audit_status: str | None,
         calc_status: str | None,
         level: int | None = None,
+        levels: list[int] | None = None,
     ) -> str:
         parts: list[str] = []
         if year is not None:
@@ -580,8 +612,9 @@ class BomWeldingFeeExportService:
             parts.append(f"项目={vehicle_model}")
         if bom_version:
             parts.append(f"版本={bom_version}")
-        if level is not None:
-            parts.append(f"层级={_level_label(level)}")
+        resolved = resolve_welding_fee_levels(level=level, levels=levels)
+        if resolved:
+            parts.append("层级=" + "+".join(_level_label(item) for item in resolved))
         if part_number:
             parts.append(f"零件号含={part_number}")
         if audit_status:

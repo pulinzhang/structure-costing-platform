@@ -12,11 +12,11 @@ from decimal import Decimal
 
 from app.models.bom import BomNode
 
-_FASTENER_NAME_RE = re.compile(r"螺母|螺栓|螺柱|植焊|凸焊|铆|支撑柱", re.I)
+_FASTENER_NAME_RE = re.compile(r"螺母|螺栓|螺柱|植焊|凸焊|铆|支撑柱|搭铁", re.I)
 _FASTENER_PN_RE = re.compile(r"^(N|Q|QR|FQ)", re.I)
 
 # 需要与子件用量交叉核对的工艺
-CHECKABLE_TOKENS = frozenset({"凸焊", "植焊", "铆接"})
+CHECKABLE_TOKENS = frozenset({"凸焊", "植焊", "铆接", "搭铁"})
 _CHECKABLE_TOKENS = CHECKABLE_TOKENS  # 兼容旧引用
 
 

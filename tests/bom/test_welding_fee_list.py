@@ -75,3 +75,38 @@ def test_list_fees_hud_ignores_partial_drilldown() -> None:
     assert hud_kw["location"] == "芜湖"
     assert filters["summary"].partial_count == 3
     assert filters["summary"].total_count == 89
+
+
+def test_list_fees_filters_l0_and_l1_levels() -> None:
+    service = BomWeldingFeeService()
+    service.fee_repo = MagicMock()
+    service.breakdown_repo = MagicMock()
+    service.fee_repo.paginate.return_value = ([], 2)
+    service.fee_repo.summarize_by_filters.return_value = _full_summary()
+    service._to_vos = MagicMock(return_value=[])
+
+    _vos, _total, filters = service.list_fees(
+        MagicMock(),
+        BomWeldingFeeQuery(year=2026, location="青岛", levels="0,1", page=1, size=10),
+    )
+
+    assert service.fee_repo.paginate.call_args.kwargs["levels"] == [0, 1]
+    assert "level" not in service.fee_repo.paginate.call_args.kwargs
+    assert service.fee_repo.summarize_by_filters.call_args.kwargs["levels"] == [0, 1]
+    assert filters["levels"] == [0, 1]
+
+
+def test_list_fees_single_level_still_works() -> None:
+    service = BomWeldingFeeService()
+    service.fee_repo = MagicMock()
+    service.breakdown_repo = MagicMock()
+    service.fee_repo.paginate.return_value = ([], 1)
+    service.fee_repo.summarize_by_filters.return_value = _full_summary()
+    service._to_vos = MagicMock(return_value=[])
+
+    service.list_fees(
+        MagicMock(),
+        BomWeldingFeeQuery(year=2026, location="青岛", level=0, page=1, size=10),
+    )
+
+    assert service.fee_repo.paginate.call_args.kwargs["levels"] == [0]

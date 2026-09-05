@@ -187,6 +187,7 @@ class WeldingFeeListApiFilters(TypedDict):
     audit_status: str | None
     calc_status: str | None
     level: int | None
+    levels: list[int] | None
     summary: WeldingFeeListSummaryVO
 
 

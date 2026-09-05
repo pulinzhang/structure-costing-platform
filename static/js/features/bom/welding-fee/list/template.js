@@ -510,11 +510,17 @@ export function updateL0WeldingFeeFilterCapsules(state) {
     setCap('l0wfCapsuleLocation', '全部基地', state.location || '');
     setCap('l0wfCapsuleModel', '全部项目', state.vehicle_model || '');
     setCap('l0wfCapsuleVersion', '全部版本', state.bom_version || '');
-    setCap('l0wfCapsuleLevel', '全部层级', state.level === 0 || state.level ? `L${state.level}` : '');
+    let levelLabel = '';
+    if (Array.isArray(state.levels) && state.levels.length) {
+        levelLabel = state.levels.map((n) => `L${n}`).join('+');
+    } else if (state.level === 0 || state.level) {
+        levelLabel = `L${state.level}`;
+    }
+    setCap('l0wfCapsuleLevel', '全部层级', levelLabel);
     document.getElementById('l0wfCapsulePartial')?.classList.toggle('hidden', !state.onlyPartial);
 
     const count = [state.year, state.location, state.vehicle_model, state.bom_version, state.audit_status, state.part_number]
-        .filter(Boolean).length + (state.onlyPartial ? 1 : 0);
+        .filter(Boolean).length + (state.onlyPartial ? 1 : 0) + (levelLabel ? 1 : 0);
     const countEl = document.getElementById('l0wfAdvancedFilterCount');
     if (countEl) countEl.textContent = `(${count})`;
 }

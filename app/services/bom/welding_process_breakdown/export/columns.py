@@ -23,14 +23,15 @@ MAP_LABEL = {
     "unmapped": "未映射",
 }
 
-# 主表 1–9；明细 10–21
-MAIN_COLS = 9
+# 主表 1–10；明细 11–22
+MAIN_COLS = 10
 HEADERS = [
     "序号",
     "基地",
     "项目",
     "版本",
     "零件号",
+    "短代码",
     "零件名称",
     "焊接原文",
     "工艺数",
@@ -49,15 +50,17 @@ HEADERS = [
     "映射状态",
 ]
 COL_COUNT = len(HEADERS)
-assert COL_COUNT == 21
+assert COL_COUNT == 22
 
-COL = {name: i for i, name in enumerate(HEADERS, start=1)}
+COL: dict[str, int] = {name: i for i, name in enumerate(HEADERS, start=1)}
 STD_COLS = frozenset({COL["标准工艺"], COL["标准单位"]})
 BILLING_COLS = frozenset({COL["计费用量"], COL["计费单位"]})
 QTY_COLS = frozenset({COL["过程量"], COL["次要过程量"], COL["计费用量"]})
+PART_COLS = frozenset({COL["零件号"], COL["短代码"]})
 CENTER_COLS = frozenset(
     {
         COL["序号"],
+        COL["短代码"],
         COL["工艺数"],
         COL["解析状态"],
         COL["行号"],
@@ -88,6 +91,7 @@ WIDTHS = [
     8,
     8,
     16,
+    8,
     16,
     34,
     7,
@@ -105,6 +109,8 @@ WIDTHS = [
     8,
     8,
 ]
+
+assert len(WIDTHS) == COL_COUNT
 
 SHEET_TITLE = "L0工艺核对"
 REPORT_TITLE = "焊接工艺拆解 · L0 过程量核对表"

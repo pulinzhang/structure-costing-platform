@@ -12,6 +12,46 @@ from pydantic import BaseModel, Field, field_validator
 from app.common.money import Q4, optional_quantize_money
 
 
+def coerce_level_list(value: object) -> list[int] | None:
+    """查询/批量入参：``0,1`` / ``[0,1]`` / 单个整数 → 去重后的层级列表。"""
+    if value is None or value == "":
+        return None
+    if isinstance(value, int):
+        return [value] if value >= 0 else None
+    if isinstance(value, str):
+        parts = [part.strip() for part in value.split(",") if part.strip() != ""]
+        numbers = [int(part) for part in parts]
+        return sorted(set(numbers)) or None
+    if isinstance(value, list | tuple):
+        collected: list[int] = []
+        for item in value:
+            if isinstance(item, int):
+                collected.append(item)
+                continue
+            text = str(item).strip()
+            if not text:
+                continue
+            collected.extend(int(part) for part in text.split(",") if part.strip() != "")
+        return sorted(set(collected)) or None
+    return None
+
+
+def resolve_welding_fee_levels(
+    *,
+    level: int | None = None,
+    levels: list[int] | None = None,
+) -> list[int] | None:
+    """单层 ``level`` 与多层 ``levels`` 合并；都空则不过滤。"""
+    selected: list[int] = []
+    if level is not None:
+        selected.append(int(level))
+    if levels:
+        selected.extend(int(item) for item in levels)
+    if not selected:
+        return None
+    return sorted(set(selected))
+
+
 class BomWeldingFeeScopeDTO(BaseModel):
     """范围必填：年度 + 基地 + 车型 + BOM 版本"""
 
@@ -40,29 +80,56 @@ class BomWeldingFeeQuery(BaseModel):
     part_number: str | None = Field(None, description="零件号")
     audit_status: str | None = Field(None, description="审核状态")
     calc_status: str | None = Field(None, description="计算状态")
-    level: int | None = Field(None, ge=0, description="树层级")
+    level: int | None = Field(None, ge=0, description="树层级（单层；与 levels 同时传时合并）")
+    levels: list[int] | None = Field(
+        None,
+        description="树层级（可多选，如 0,1 表示 L0+L1）",
+    )
     page: int = Field(1, ge=1, description="页码")
     size: int = Field(20, ge=1, le=500, description="每页条数")
+
+    @field_validator("levels", mode="before")
+    @classmethod
+    def _coerce_levels(cls, value: object) -> list[int] | None:
+        return coerce_level_list(value)
 
 
 class BomWeldingFeeBatchApproveDTO(BomWeldingFeeScopeDTO):
     """批量审核通过"""
 
-    level: int | None = Field(None, ge=0, description="仅处理该层级；省略则处理范围内全部行")
+    level: int | None = Field(None, ge=0, description="仅处理该层级；与 levels 同时传时合并")
+    levels: list[int] | None = Field(None, description="仅处理这些层级，如 0,1")
     audit_remark: str = Field(..., min_length=1, description="审核意见（必填）")
+
+    @field_validator("levels", mode="before")
+    @classmethod
+    def _coerce_levels(cls, value: object) -> list[int] | None:
+        return coerce_level_list(value)
 
 
 class BomWeldingFeeBatchReverseAuditDTO(BomWeldingFeeScopeDTO):
     """批量反审核"""
 
-    level: int | None = Field(None, ge=0, description="仅处理该层级；省略则处理范围内全部行")
+    level: int | None = Field(None, ge=0, description="仅处理该层级；与 levels 同时传时合并")
+    levels: list[int] | None = Field(None, description="仅处理这些层级，如 0,1")
     reverse_audit_remark: str = Field(..., min_length=1, description="反审核原因（必填）")
+
+    @field_validator("levels", mode="before")
+    @classmethod
+    def _coerce_levels(cls, value: object) -> list[int] | None:
+        return coerce_level_list(value)
 
 
 class BomWeldingFeeBatchDeleteDTO(BomWeldingFeeScopeDTO):
     """批量删除（仅删未审核；已通过跳过）"""
 
-    level: int | None = Field(None, ge=0, description="仅处理该层级；省略则处理范围内全部行")
+    level: int | None = Field(None, ge=0, description="仅处理该层级；与 levels 同时传时合并")
+    levels: list[int] | None = Field(None, description="仅处理这些层级，如 0,1")
+
+    @field_validator("levels", mode="before")
+    @classmethod
+    def _coerce_levels(cls, value: object) -> list[int] | None:
+        return coerce_level_list(value)
 
 
 class BomWeldingFeeUpdateDTO(BaseModel):

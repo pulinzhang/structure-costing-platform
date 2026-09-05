@@ -20,6 +20,7 @@ from app.schemas.dto.bom_welding_fee_dto import (
     BomWeldingFeeCalcDTO,
     BomWeldingFeeQuery,
     BomWeldingFeeUpdateDTO,
+    coerce_level_list,
 )
 from app.schemas.vo.async_task_vo import AsyncTaskAcceptedVO, AsyncTaskProgressVO
 from app.schemas.vo.bom_welding_fee_vo import (
@@ -274,7 +275,8 @@ def export_download(
     part_number: str | None = Query(None, description="零件号"),
     audit_status: str | None = Query(None, description="审核状态"),
     calc_status: str | None = Query(None, description="计算状态"),
-    level: int | None = Query(None, ge=0, description="树层级"),
+    level: int | None = Query(None, ge=0, description="树层级（单层）"),
+    levels: str | None = Query(None, description="树层级，逗号分隔，如 0,1"),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BOM_WELDING_FEE_LIST_EXPORT)),
 ) -> StreamingResponse:
@@ -289,6 +291,7 @@ def export_download(
         audit_status=audit_status.strip() if audit_status else None,
         calc_status=calc_status.strip() if calc_status else None,
         level=level,
+        levels=coerce_level_list(levels),
         current_user=current_user,
     )
     return StreamingResponse(

@@ -55,12 +55,20 @@ def weld_info_hint(weld_info_raw: str | None) -> str | None:
         return "该行焊信有连续冒号（例如「凸焊:：2」），请改成「凸焊：2」。"
     if any(token in weld for token in ("电泳", "黑漆", "涂装")):
         return "该行更像电泳/涂装面积，不是焊接工序。若本件要计焊接费，请改成焊接工序写法；否则可把该行焊信清空后重导。"
+    if "焊缝" in weld:
+        return (
+            "「焊缝：N条 NNmm」应按 CO2焊缝拆解（括号可有可无）。"
+            "不必改材料清单，请重新做焊接工艺拆解后再算焊接费。"
+        )
     return "请把该行焊接信息改成「工序名：数量」（例如「凸焊：2」）。"
 
 
 def excel_reimport_advice(note: FailedNodeNote) -> str:
-    location = _excel_location(note)
     hint = weld_info_hint(note.weld_info_raw)
+    weld = (note.weld_info_raw or "").strip()
+    if "焊缝" in weld and not any(token in weld for token in ("电泳", "黑漆", "涂装")):
+        return hint or "请重新做焊接工艺拆解后再算焊接费。"
+    location = _excel_location(note)
     action = (
         f"请打开 {location}，改焊接信息列后保存，"
         "到「焊接工程 → 材料清单 → 上传材料清单」重新导入该版本，"

@@ -35,6 +35,7 @@ from app.services.bom.welding_process_breakdown.export.columns import (
     NOTE,
     NOTE_H,
     PARSE_LABEL,
+    PART_COLS,
     QTY_COLS,
     REPORT_TITLE,
     SHEET_TITLE,
@@ -52,6 +53,7 @@ from app.services.bom.welding_process_breakdown.export.styles import (
 )
 from app.services.bom.welding_process_breakdown.export.values import (
     billing_qty_unit,
+    part_short_code,
     qty_cell,
     standard_name,
     standard_unit,
@@ -124,7 +126,7 @@ class L0CheckWorkbookBuilder:
         for idx, width in enumerate(WIDTHS, start=1):
             ws.column_dimensions[get_column_letter(idx)].width = width
 
-        ws.freeze_panes = "F6"
+        ws.freeze_panes = "G6"
         ws.auto_filter.ref = f"A{header_row}:{get_column_letter(COL_COUNT)}{last_data}"
         ws.print_title_rows = "1:5"
         ws.page_setup.orientation = "landscape"
@@ -271,9 +273,9 @@ class L0CheckWorkbookBuilder:
             if col == COL["序号"]:
                 cell.font = style.seq
                 cell.alignment = style.center
-            elif col == COL["零件号"]:
+            elif col in PART_COLS:
                 cell.font = style.part
-                cell.alignment = style.left
+                cell.alignment = style.center if col == COL["短代码"] else style.left
             elif col == COL["工艺数"]:
                 cell.font = style.data
                 cell.alignment = style.center
@@ -303,6 +305,7 @@ class L0CheckWorkbookBuilder:
                 node.vehicle_model or "",
                 node.bom_version or "",
                 node.part_number or "",
+                part_short_code(node.part_number),
                 node.part_name or "",
                 node.weld_info_raw or "",
                 int(node.process_line_count or 0),
@@ -358,14 +361,14 @@ class L0CheckWorkbookBuilder:
                 cell.fill = row_fill
                 cell.font = (
                     style.accent
-                    if col in (COL["序号"], COL["零件号"]) or col in STD_COLS | BILLING_COLS
+                    if col in {COL["序号"]} | PART_COLS or col in STD_COLS | BILLING_COLS
                     else style.data
                 )
             elif col <= MAIN_COLS:
                 cell.fill = main_fill
                 if col == COL["序号"]:
                     cell.font = style.seq
-                elif col == COL["零件号"]:
+                elif col in PART_COLS:
                     cell.font = style.part
                 elif col == COL["解析状态"]:
                     cell.font, cell.fill = tone(

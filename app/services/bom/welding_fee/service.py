@@ -27,6 +27,7 @@ from app.schemas.dto.bom_welding_fee_dto import (
     BomWeldingFeeQuery,
     BomWeldingFeeUpdateDTO,
     WeldingFeePatch,
+    resolve_welding_fee_levels,
 )
 from app.schemas.vo.bom_welding_fee_vo import (
     BomWeldingFeeBatchAuditResultVO,
@@ -102,6 +103,7 @@ class BomWeldingFeeService:
         query: BomWeldingFeeQuery,
     ) -> tuple[list[BomWeldingFeeVO], int, WeldingFeeListApiFilters]:
         skip = (query.page - 1) * query.size
+        levels = resolve_welding_fee_levels(level=query.level, levels=query.levels)
         rows, total = self.fee_repo.paginate(
             db,
             year=query.year,
@@ -111,7 +113,7 @@ class BomWeldingFeeService:
             part_number=query.part_number,
             audit_status=query.audit_status,
             calc_status=query.calc_status,
-            level=query.level,
+            levels=levels,
             skip=skip,
             limit=query.size,
         )
@@ -126,7 +128,7 @@ class BomWeldingFeeService:
                 bom_version=query.bom_version,
                 part_number=query.part_number,
                 audit_status=query.audit_status,
-                level=query.level,
+                levels=levels,
             )
         )
         filters: WeldingFeeListApiFilters = {
@@ -138,6 +140,7 @@ class BomWeldingFeeService:
             "audit_status": query.audit_status,
             "calc_status": query.calc_status,
             "level": query.level,
+            "levels": levels,
             "summary": summary,
         }
         return vos, total, filters
@@ -180,6 +183,7 @@ class BomWeldingFeeService:
             bom_version=bom_version,
             statuses=[AUDIT_APPROVED],
             level=dto.level,
+            levels=dto.levels,
         )
         deleted = self.fee_repo.delete_unaudited_by_scope(
             db,
@@ -188,6 +192,7 @@ class BomWeldingFeeService:
             vehicle_model=vehicle_model,
             bom_version=bom_version,
             level=dto.level,
+            levels=dto.levels,
         )
         db.commit()
         return BomWeldingFeeBatchDeleteResultVO(
@@ -222,6 +227,7 @@ class BomWeldingFeeService:
             bom_version=bom_version,
             statuses=[AUDIT_APPROVED],
             level=dto.level,
+            levels=dto.levels,
         )
         updated = self.fee_repo.approve_by_scope(
             db,
@@ -234,6 +240,7 @@ class BomWeldingFeeService:
             audit_remark=(dto.audit_remark or "").strip() or None,
             updated_by=operator,
             level=dto.level,
+            levels=dto.levels,
         )
         db.commit()
         return BomWeldingFeeBatchAuditResultVO(
@@ -271,6 +278,7 @@ class BomWeldingFeeService:
             bom_version=bom_version,
             statuses=[AUDIT_PENDING, AUDIT_REJECTED],
             level=dto.level,
+            levels=dto.levels,
         )
         updated = self.fee_repo.reverse_by_scope(
             db,
@@ -283,6 +291,7 @@ class BomWeldingFeeService:
             reverse_audit_remark=remark,
             updated_by=operator,
             level=dto.level,
+            levels=dto.levels,
         )
         db.commit()
         return BomWeldingFeeBatchAuditResultVO(

@@ -10,7 +10,7 @@ import {
     updateL0WeldingFeeFilterCapsules,
     renderFeeDetailItems,
     resolveL0ShortPartNumber,
-} from './template.js?v=17';
+} from './template.js?v=18';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -107,11 +107,12 @@ function fillLevelOptions() {
     if (!el) return;
     el.innerHTML = `
         <option value="">全部</option>
+        <option value="0,1">L0 + L1</option>
         <option value="0">L0</option>
         <option value="1">L1</option>
         <option value="2">L2</option>
     `;
-    el.value = '';
+    el.value = '0,1';
 }
 
 function fillAuditStatusOptions() {
@@ -129,7 +130,7 @@ function applyHashFilters() {
     const queryIndex = hash.indexOf('?');
     if (queryIndex < 0) return;
     const qs = new URLSearchParams(hash.slice(queryIndex + 1));
-    ['year', 'location', 'vehicle_model', 'bom_version', 'level'].forEach((key) => {
+    ['year', 'location', 'vehicle_model', 'bom_version', 'level', 'levels'].forEach((key) => {
         const value = qs.get(key);
         if (!value) return;
         const idMap = {
@@ -138,10 +139,11 @@ function applyHashFilters() {
             vehicle_model: 'l0wfVehicleModelFilter',
             bom_version: 'l0wfBomVersionFilter',
             level: 'l0wfLevelFilter',
+            levels: 'l0wfLevelFilter',
         };
         const el = document.getElementById(idMap[key]);
         if (!el) return;
-        if (key === 'level') {
+        if (key === 'level' || key === 'levels') {
             el.value = value;
             return;
         }
@@ -161,14 +163,44 @@ function val(id) {
     return (document.getElementById(id)?.value || '').trim();
 }
 
+function parseLevelFilter(raw) {
+    const text = String(raw || '').trim();
+    if (!text) return { level: null, levels: null };
+    if (text.includes(',')) {
+        const levels = text.split(',').map(Number).filter((n) => Number.isInteger(n) && n >= 0);
+        return { level: null, levels: levels.length ? levels : null };
+    }
+    const level = Number(text);
+    if (!Number.isInteger(level) || level < 0) return { level: null, levels: null };
+    return { level, levels: null };
+}
+
+function applyLevelQuery(target, f) {
+    if (Array.isArray(f.levels) && f.levels.length) {
+        target.levels = f.levels.join(',');
+        return;
+    }
+    if (f.level === 0 || f.level) target.level = f.level;
+}
+
+function applyLevelBody(target, f) {
+    if (Array.isArray(f.levels) && f.levels.length) {
+        target.levels = f.levels;
+        return;
+    }
+    if (f.level === 0 || f.level) target.level = f.level;
+}
+
 function getFilters() {
     const yearRaw = val('l0wfYearFilter');
+    const levelParsed = parseLevelFilter(val('l0wfLevelFilter'));
     return {
         year: yearRaw ? Number(yearRaw) : null,
         location: val('l0wfLocationFilter') || null,
         vehicle_model: val('l0wfVehicleModelFilter') || null,
         bom_version: val('l0wfBomVersionFilter') || null,
-        level: val('l0wfLevelFilter') === '' ? null : Number(val('l0wfLevelFilter')),
+        level: levelParsed.level,
+        levels: levelParsed.levels,
         audit_status: val('l0wfAuditStatusFilter') || null,
         part_number: val('l0wfPartNumberFilter') || null,
         onlyPartial: feeState.onlyPartial,
@@ -381,7 +413,7 @@ function requireScope() {
         vehicle_model: f.vehicle_model,
         bom_version: f.bom_version,
     };
-    if (f.level === 0 || f.level) body.level = f.level;
+    applyLevelBody(body, f);
     return body;
 }
 
@@ -404,7 +436,7 @@ async function loadData(page = feeState.page) {
     if (f.location) params.location = f.location;
     if (f.vehicle_model) params.vehicle_model = f.vehicle_model;
     if (f.bom_version) params.bom_version = f.bom_version;
-    if (f.level === 0 || f.level) params.level = f.level;
+    applyLevelQuery(params, f);
     if (f.audit_status) params.audit_status = f.audit_status;
     if (f.part_number) params.part_number = f.part_number;
     if (f.onlyPartial) params.calc_status = 'partial';
@@ -751,7 +783,7 @@ async function exportExcel() {
     if (f.location) params.location = f.location;
     if (f.vehicle_model) params.vehicle_model = f.vehicle_model;
     if (f.bom_version) params.bom_version = f.bom_version;
-    if (f.level === 0 || f.level) params.level = f.level;
+    applyLevelQuery(params, f);
     if (f.audit_status) params.audit_status = f.audit_status;
     if (f.part_number) params.part_number = f.part_number;
     if (f.onlyPartial) params.calc_status = 'partial';
