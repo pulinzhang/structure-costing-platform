@@ -77,6 +77,8 @@ class ClassifyCounts:
     l2_count: int = 0
     subassembly_child_sum: int = 0
     object_l0_degenerate_count: int = 0
+    object_l0_special_process_count: int = 0
+    object_l0_stamping_blank_count: int = 0
     object_l1_subassembly_count: int = 0
     object_l1_stamping_count: int = 0
     other_leaf_count: int = 0
@@ -292,6 +294,18 @@ def classify_nodes(nodes: Sequence[BomNode]) -> ClassifyResult:
         l2_count=len(l2_nodes),
         subassembly_child_sum=sum(child_count_of(n.id) for n in l1_with_children),
         object_l0_degenerate_count=sum(1 for r in rows if r.object_kind == KIND_L0_DEGENERATE),
+        object_l0_special_process_count=sum(
+            1
+            for r in rows
+            if r.object_kind == KIND_L0_DEGENERATE
+            and r.degenerate_subtype == SUBTYPE_SPECIAL_PROCESS
+        ),
+        object_l0_stamping_blank_count=sum(
+            1
+            for r in rows
+            if r.object_kind == KIND_L0_DEGENERATE
+            and r.degenerate_subtype == SUBTYPE_STAMPING_BLANK
+        ),
         object_l1_subassembly_count=sum(1 for r in rows if r.object_kind == KIND_L1_SUBASSEMBLY),
         object_l1_stamping_count=sum(1 for r in rows if r.object_kind == KIND_L1_STAMPING),
         other_leaf_count=sum(1 for r in rows if r.section == SECTION_OTHER_LEAF),
@@ -302,6 +316,21 @@ def classify_nodes(nodes: Sequence[BomNode]) -> ClassifyResult:
     if counts.object_l0_degenerate_count != len(l0_leaves):
         qa_errors.append(
             f"完备失败：L0 无子件 {len(l0_leaves)} ≠ 退化供货件 {counts.object_l0_degenerate_count}"
+        )
+    missing_subtype = sum(
+        1
+        for row in rows
+        if row.object_kind == KIND_L0_DEGENERATE
+        and row.degenerate_subtype not in (SUBTYPE_SPECIAL_PROCESS, SUBTYPE_STAMPING_BLANK)
+    )
+    if missing_subtype:
+        qa_errors.append(f"完备失败：{missing_subtype} 条退化供货件缺少亚类")
+    subtype_sum = counts.object_l0_special_process_count + counts.object_l0_stamping_blank_count
+    if subtype_sum != counts.object_l0_degenerate_count:
+        qa_errors.append(
+            f"完备失败：退化供货件 {counts.object_l0_degenerate_count} ≠ "
+            f"特殊工艺 {counts.object_l0_special_process_count} + "
+            f"冲压毛坯 {counts.object_l0_stamping_blank_count}"
         )
     if counts.object_l1_subassembly_count != len(l1_with_children):
         qa_errors.append(

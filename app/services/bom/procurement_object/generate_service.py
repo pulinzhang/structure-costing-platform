@@ -192,6 +192,8 @@ class BomProcurementObjectGenerateService:
                 anomaly_count=anomaly_count,
                 qa_passed=qa_passed,
                 object_l0_degenerate_count=classified.counts.object_l0_degenerate_count,
+                object_l0_special_process_count=classified.counts.object_l0_special_process_count,
+                object_l0_stamping_blank_count=classified.counts.object_l0_stamping_blank_count,
                 object_l1_subassembly_count=classified.counts.object_l1_subassembly_count,
                 object_l1_stamping_count=classified.counts.object_l1_stamping_count,
                 created_by=audit["created_by"],

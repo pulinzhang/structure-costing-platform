@@ -187,7 +187,17 @@ class BomWeldingProcessBreakdownGenerateService:
         by_id = index_nodes_by_id(bom_nodes)
         children_map = build_children_map(bom_nodes)
         weld_candidates = [n for n in bom_nodes if (n.weld_info or "").strip()]
+        l0_leaf_without_weld = sum(
+            1
+            for node in bom_nodes
+            if int(node.level) == 0
+            and not children_map.get(node.id)
+            and not (node.weld_info or "").strip()
+        )
         process_log.line(f"BOM 节点 {len(bom_nodes)}，含焊接原文 {len(weld_candidates)}")
+        process_log.line(
+            f"L0 无子件且无焊信 {l0_leaf_without_weld} 件（不落拆解；有处理费须补焊信）"
+        )
         audit_fields = audit_create(current_user)
 
         try:

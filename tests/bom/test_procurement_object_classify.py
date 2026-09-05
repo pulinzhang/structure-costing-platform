@@ -20,6 +20,9 @@ from app.services.bom.procurement_object.classify import (
     SUBTYPE_STAMPING_BLANK,
     classify_nodes,
 )
+from app.services.bom.procurement_object.generate_log_service import (
+    BomProcurementObjectGenerateLogService,
+)
 
 
 def _node(
@@ -91,6 +94,8 @@ def test_classify_degenerate_l0_special_process_and_blank() -> None:
     assert kinds["502008112AA"].degenerate_subtype == SUBTYPE_STAMPING_BLANK
     assert kinds["501012176AA"].l0_part_number == "501012176AA"
     assert result.counts.object_l0_degenerate_count == 2
+    assert result.counts.object_l0_special_process_count == 1
+    assert result.counts.object_l0_stamping_blank_count == 1
     assert result.qa_passed is True
 
 
@@ -194,6 +199,8 @@ def test_t13j_from_main_db_if_present(db_session) -> None:
     assert result.counts.l0_count == 44
     assert result.counts.l0_with_children_count == 30
     assert result.counts.object_l0_degenerate_count == 14
+    assert result.counts.object_l0_special_process_count == 6
+    assert result.counts.object_l0_stamping_blank_count == 8
     assert result.counts.object_l1_subassembly_count == 53
     l1_leaves = result.counts.object_l1_stamping_count + result.counts.other_leaf_count
     assert l1_leaves == 152
@@ -211,3 +218,24 @@ def test_t13j_from_main_db_if_present(db_session) -> None:
         "T15-3301097",
         "T15-3301098",
     }
+
+
+def test_generate_log_lists_degenerate_subtype_counts() -> None:
+    text = BomProcurementObjectGenerateLogService._success_detail(
+        location="芜湖",
+        vehicle_model="T13J",
+        bom_version="D/09",
+        node_count=357,
+        object_count=14 + 53 + 80,
+        other_leaf_count=72,
+        anomaly_count=0,
+        qa_passed=True,
+        object_l0_degenerate_count=14,
+        object_l0_special_process_count=6,
+        object_l0_stamping_blank_count=8,
+        object_l1_subassembly_count=53,
+        object_l1_stamping_count=80,
+    )
+    assert "退化供货件亚类：特殊工艺 6 / 冲压毛坯 8" in text
+    assert "冲压毛坯 8 件（可发货；无焊信则不编处理费）" in text
+    assert "已按毛坯供货" not in text

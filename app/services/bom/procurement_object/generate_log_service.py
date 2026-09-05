@@ -25,8 +25,14 @@ from app.services.bom.procurement_object.classify import (
     SECTION_ANOMALY,
     SECTION_OBJECT,
     SECTION_OTHER_LEAF,
+    SUBTYPE_SPECIAL_PROCESS,
+    SUBTYPE_STAMPING_BLANK,
 )
-from app.services.bom.procurement_object.labels import KIND_LABELS, SECTION_LABELS
+from app.services.bom.procurement_object.labels import (
+    KIND_LABELS,
+    SECTION_LABELS,
+    SUBTYPE_LABELS,
+)
 
 logger = logging.getLogger("service.bom.procurement_object.generate_log")
 
@@ -77,6 +83,8 @@ class BomProcurementObjectGenerateLogService:
         anomaly_count: int,
         qa_passed: bool,
         object_l0_degenerate_count: int,
+        object_l0_special_process_count: int,
+        object_l0_stamping_blank_count: int,
         object_l1_subassembly_count: int,
         object_l1_stamping_count: int,
         created_by: str | None,
@@ -106,6 +114,8 @@ class BomProcurementObjectGenerateLogService:
                     anomaly_count=anomaly_count,
                     qa_passed=qa_passed,
                     object_l0_degenerate_count=object_l0_degenerate_count,
+                    object_l0_special_process_count=object_l0_special_process_count,
+                    object_l0_stamping_blank_count=object_l0_stamping_blank_count,
                     object_l1_subassembly_count=object_l1_subassembly_count,
                     object_l1_stamping_count=object_l1_stamping_count,
                 ),
@@ -222,10 +232,14 @@ class BomProcurementObjectGenerateLogService:
         anomaly_count: int,
         qa_passed: bool,
         object_l0_degenerate_count: int,
+        object_l0_special_process_count: int,
+        object_l0_stamping_blank_count: int,
         object_l1_subassembly_count: int,
         object_l1_stamping_count: int,
     ) -> str:
         qa_label = "通过" if qa_passed else "未通过"
+        special_label = SUBTYPE_LABELS[SUBTYPE_SPECIAL_PROCESS]
+        blank_label = SUBTYPE_LABELS[SUBTYPE_STAMPING_BLANK]
         return (
             f"范围：{location} / {vehicle_model} / {bom_version}\n"
             f"材料清单节点：{node_count}\n"
@@ -234,6 +248,9 @@ class BomProcurementObjectGenerateLogService:
             f"（{KIND_LABELS[KIND_L0_DEGENERATE]} {object_l0_degenerate_count} / "
             f"{KIND_LABELS[KIND_L1_SUBASSEMBLY]} {object_l1_subassembly_count} / "
             f"{KIND_LABELS[KIND_L1_STAMPING]} {object_l1_stamping_count}）\n"
+            f"{KIND_LABELS[KIND_L0_DEGENERATE]}亚类：{special_label} {object_l0_special_process_count} / "
+            f"{blank_label} {object_l0_stamping_blank_count}\n"
+            f"{blank_label} {object_l0_stamping_blank_count} 件（可发货；无焊信则不编处理费）\n"
             f"{SECTION_LABELS[SECTION_OTHER_LEAF]}：{other_leaf_count}\n"
             f"{SECTION_LABELS[SECTION_ANOMALY]}：{anomaly_count}"
         )
