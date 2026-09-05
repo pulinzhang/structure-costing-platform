@@ -73,6 +73,7 @@ def write_items_sheet(
         object_seq += 1
         group_start = row_idx
         for item in items:
+            # 财务按子件行号；采购序号列与样式都用 object_seq（同对象多行合并）。
             seq += 1
             if is_procurement:
                 row_data = [
