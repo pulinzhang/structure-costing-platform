@@ -26,7 +26,12 @@
       <ul>
         <li><a href="#start">快速入门</a></li>
         <li><a href="#menu">菜单地图</a></li>
+        <li><a href="#stamping">冲压工程</a></li>
+        <li><a href="#welding">焊接工程</a></li>
+        <li><a href="#yishiyiyi">一事一议</a></li>
+        <li><a href="#costing-pages">核价模块</a></li>
         <li><a href="#engine">自动核价引擎</a></li>
+        <li><a href="#file-trace">文件溯源</a></li>
         <li><a href="#llm-assistant">AI 助理</a></li>
         <li><a href="#export">导出 Excel</a></li>
         <li><a href="#faq">操作问答</a></li>
@@ -43,7 +48,7 @@
       <header class="hero">
         <div class="eyebrow">Operations Guide</div>
         <h1>① 帮助 · 怎么操作系统</h1>
-        <p>本块只讲「按钮点哪里、任务怎么跑」。概念与算账见知识库；真实数字见样例（2025·01·青岛·T28）。</p>
+        <p>本块只讲「按钮点哪里、任务怎么跑」。概念与算账见知识库；真实数字见样例（2025·01·青岛·T28）。侧栏现网顺序：仪表盘 → 冲压工程 → 焊接工程 → 一事一议 → 核价 → 文件溯源 → 设置。</p>
         <div class="hero-actions">
           <a class="back-link" href="index.html">← 帮助入口</a>
           <a class="btn-print" href="print-all.html" style="text-decoration:none;">整本打印 / PDF</a>
@@ -71,7 +76,7 @@
           </li>
           <li>
             <strong>打开导航</strong>
-            点左上角菜单展开侧栏：仪表盘 → 冲压工程 → 焊接工程 → 一事一议 → 核价 → 报价 → 设置。
+            点左上角菜单展开侧栏：仪表盘 → 冲压工程 → 焊接工程 → 一事一议 → 核价 → 文件溯源 → 设置。没有单独的「报价」菜单。
           </li>
           <li>
             <strong>先定维度</strong>
@@ -79,34 +84,113 @@
           </li>
           <li>
             <strong>列表只读核对</strong>
-            上传/计算负责写入；列表负责查询、审核、导出。明细请用操作列按钮。
+            上传/计算负责写入；列表负责查询、审核、导出。明细请用操作列按钮，不要点整行。
           </li>
         </ol>
         <figure class="shot">
           <img src="img/01-dashboard.png" alt="仪表盘">
-          <figcaption>仪表盘 · 看缺口与待办</figcaption>
+          <figcaption>仪表盘 · 看本期产出与待办</figcaption>
         </figure>
       </section>
 
       <section id="menu">
         <h2>菜单地图</h2>
-        <p class="lead">侧栏模块与日常动作对应关系（详细「年/月」见知识库）。</p>
+        <p class="lead">侧栏模块与日常动作对应关系（年/月节奏见知识库）。</p>
         <table>
           <thead>
             <tr><th>菜单</th><th>你在这里做什么</th></tr>
           </thead>
           <tbody>
-            <tr><td>冲压工程</td><td>上传工艺与冲次单价；计算/查看冲压加工费</td></tr>
-            <tr><td>焊接工程</td><td>上传<strong>材料清单</strong>（核价主线）、焊接单价、年度零件价、包装运输；拆解焊接并算成品焊接费</td></tr>
-            <tr><td>一事一议</td><td>基准价、加减价政策、废料月度价（钢价联动输入）</td></tr>
-            <tr><td>核价</td><td>钢材联动 → 冲压零件价 → <strong>成品核价</strong>；自动核价引擎；导出合册</td></tr>
-            <tr><td>顶栏 AI 助理</td><td>用自然语言问核价结果（趋势、动因、对比、下钻、风险）；系统算数，AI 写 Markdown 解释</td></tr>
-            <tr><td>设置</td><td>系统费率、用户权限、操作日志</td></tr>
+            <tr><td>仪表盘</td><td>按年/月/基地/车型看本期产出、待补价、待审</td></tr>
+            <tr><td>冲压工程</td><td>工艺、模具布点与单价、冲次单价、加工费、模具费、检具费</td></tr>
+            <tr><td>焊接工程</td><td>材料清单（核价主线）、焊接单价、包装运输、采购对象、年度零件价、焊接拆解与焊接费</td></tr>
+            <tr><td>一事一议</td><td>加减价政策、基准价、牌号分类、中标钢厂厚度价、废料月度价</td></tr>
+            <tr><td>核价</td><td>钢材联动 → 冲压零件价 → <strong>总成核价</strong>（成品月总账）；自动核价引擎；核对合册</td></tr>
+            <tr><td>文件溯源</td><td>查历史上传的原件（分类、基地、年月、车型、上传人）</td></tr>
+            <tr><td>顶栏 AI 助理</td><td>用自然语言问核价结果或操作步骤；系统算数，AI 写 Markdown 解释</td></tr>
+            <tr><td>设置</td><td>个人资料、系统费率、用户权限、操作日志</td></tr>
           </tbody>
         </table>
         <div class="callout">
           材料清单在「焊接工程」里维护，但它是整棵核价树的主数据；其它菜单多是给树上的节点挂价钱。
+          菜单上的「总成核价」就是按材料清单根节点（供货总成 / 成品）出月总账。
         </div>
+      </section>
+
+      <section id="stamping">
+        <h2>冲压工程</h2>
+        <p class="lead">自制件工艺底盘 + 年度费用。冲次单价一年一传；模具单价是当前生效档，不算年。</p>
+        <table>
+          <thead>
+            <tr><th>菜单</th><th>做什么</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>冲压工艺</td><td>上传工艺确认表；零件列表核对自制件与工序。</td></tr>
+            <tr><td>冲压模具</td><td>上传模具布点；模具清单；维护钢板模 / 级进模单价与分摊万台。</td></tr>
+            <tr><td>冲次单价</td><td>按年 + 基地上传吨位矩阵，供冲压加工费使用。</td></tr>
+            <tr><td>冲压加工费</td><td>按年 + 基地 + 项目计算；缺失时引擎可自动补算。</td></tr>
+            <tr><td>冲压模具费</td><td>按年 + 基地 + 项目，用布点重量 × 模具单价算出元/件最终模具费。引擎<strong>不</strong>自动补算；无档案时零件价里模具费记 0。</td></tr>
+            <tr><td>冲压检具费</td><td>上传检具档案（万元与分摊万台）。零件核价时万元÷万台 = 元/件；无档案记 0。</td></tr>
+          </tbody>
+        </table>
+        <div class="callout">
+          家模副产品（布点四列全空或工艺已打标）不算模具费、不继承共模重量。加工费与模具费公式互不共用。
+        </div>
+      </section>
+
+      <section id="welding">
+        <h2>焊接工程</h2>
+        <p class="lead">先有材料清单树，再挂焊接与采购集合。采购对象<strong>不管价</strong>，只回答「买哪些」。</p>
+        <table>
+          <thead>
+            <tr><th>菜单</th><th>做什么</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>材料清单</td><td>上传、列表、产品结构、结构图。同一套 BOM。</td></tr>
+            <tr><td>焊接单价</td><td>一年一传；拆解与成品焊接费都依赖它。</td></tr>
+            <tr><td>包装运输费</td><td>按年维护成品侧运输 / 仓储捆包。引擎里缺档是<strong>软提示</strong>，不阻断启动。</td></tr>
+            <tr><td>采购对象</td><td>从材料清单生成集合：退化供货件、分总成、冲压件列入；标准件/胶等与异常进核对区。列表可确认外发/自制、指定供应商、导出。</td></tr>
+            <tr><td>年度零件价</td><td>外购件、沿用件、分总成一口价等取价来源。</td></tr>
+            <tr><td>焊接工艺拆解</td><td>按清单 + 当年焊接单价生成；已有结果时引擎默认不覆盖。</td></tr>
+            <tr><td>焊接费</td><td>按拆解结果算成品焊接费；引擎可对缺失结果自动补算。</td></tr>
+          </tbody>
+        </table>
+        <div class="callout">
+          有子件的供货总成永不列入采购对象（主机厂不允许整层外发）。L2 跟在分总成下，不单独列入。
+        </div>
+      </section>
+
+      <section id="yishiyiyi">
+        <h2>一事一议</h2>
+        <p class="lead">钢价联动的输入。每月核价前要齐基准价、厚度加减价政策、废料月度价。</p>
+        <table>
+          <thead>
+            <tr><th>菜单</th><th>做什么</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>加减价政策</td><td>上传厚度 / 分类级加减价。覆盖不全时引擎作软提示（不硬停）。</td></tr>
+            <tr><td>基准价格</td><td>当月各钢厂牌号基价；缺则引擎硬停。</td></tr>
+            <tr><td>牌号分类</td><td>一个牌号一行，挂冷轧 / 镀锌 / 酸洗。基价或工艺导入时自动补行；大类用于厚度 CATEGORY 政策与中标厚度表。</td></tr>
+            <tr><td>中标钢厂厚度价格一览表</td><td>选定年/月/基地后预览或导出：中标基价叠厚度加减价。不改核价库。</td></tr>
+            <tr><td>废料月度销售价</td><td>当月废料扣减依据；缺则引擎硬停。</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="costing-pages">
+        <h2>核价模块</h2>
+        <p class="lead">月度主链：钢材联动 → 冲压零件价 → 总成核价。也可交给自动核价引擎一次跑完。</p>
+        <table>
+          <thead>
+            <tr><th>菜单</th><th>做什么</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>冲压钢材联动价</td><td>政策落到材料规格 → 当月钢价。</td></tr>
+            <tr><td>冲压零件价格核算</td><td>材料净额 + 加工费 + 模具费 + 检具费 → 自制件当月单价。无模具/检具档案则对应费用为 0。</td></tr>
+            <tr><td>总成核价</td><td>按材料清单自下而上汇总成品月总账与总费用。计算页路径 <code>#/assembly-cost-calc</code>，一览 <code>#/assembly-cost</code>。旧称「成品核价 / L0」。</td></tr>
+            <tr><td>自动核价引擎</td><td>只选基地 + 年 + 月；见下一节。</td></tr>
+          </tbody>
+        </table>
       </section>
 
       <section id="engine">
@@ -118,10 +202,19 @@
         </figure>
         <ol class="steps">
           <li><strong>选范围</strong> 例如样例：青岛 · 2025 · 01。</li>
-          <li><strong>检查就绪</strong> 缺上传/配置会红灯，可点「去处理」跳到对应页。</li>
-          <li><strong>启动</strong> 缺的年度计算结果会自动补算；再跑当月钢材 → 冲压零件价 → 成品核价。</li>
-          <li><strong>看历史</strong> 一个任务通道看进度；卡住的任务可删除后重跑。</li>
+          <li><strong>检查就绪</strong> 硬门禁缺上传/配置会红灯，可点「去处理」跳到对应页。厚度加减价、包装运输费为<strong>软提示</strong>，不阻断启动。</li>
+          <li><strong>启动</strong> 缺的年度加工费、焊接拆解、成品焊接费会自动补算；再跑当月钢材 → 冲压零件价 → 全部 BOM 版本的总成核价。模具费 / 检具费 / 采购对象<strong>不在</strong>引擎补算计划里。</li>
+          <li><strong>看历史</strong> 一个任务通道看进度；任意状态（含运行中）的任务都可删除后重跑，避免本机关机后卡住。</li>
         </ol>
+      </section>
+
+      <section id="file-trace">
+        <h2>文件溯源</h2>
+        <p class="lead">侧栏独立入口。所有历史上传的 Excel / 原件在此按分类、基地、年、月、车型、上传人、文件名筛选；操作列打开详情，可核对是哪一次上传写入了核价主数据。</p>
+        <ul>
+          <li>不改业务数据，只查档案。</li>
+          <li>无权限时菜单隐藏。</li>
+        </ul>
       </section>
 
       <section id="llm-assistant">
@@ -153,20 +246,20 @@
         <ul>
           <li>无 <code>LLM_ANALYSIS_RUN</code> 权限时顶栏按钮隐藏。</li>
           <li>未配置 <code>LLM_API_KEY</code> 时仍可分析，但解释层会降级为规则摘要。</li>
-          <li>问操作步骤（如「怎么上传工艺」）会命中本帮助语料，不编造菜单路径。</li>
+          <li>问操作步骤（如「怎么上传工艺」「采购对象在哪」）会命中本帮助语料，不编造菜单路径。</li>
         </ul>
       </section>
 
       <section id="export">
         <h2>导出 Excel</h2>
-        <p class="lead">各列表页有「导出 Excel」；成品核价一览还有「导出核对合册」（多表一本）。</p>
+        <p class="lead">各列表页有「导出 Excel」；总成核价一览还有「导出核对合册」（多表一本）。</p>
         <figure class="shot">
-          <img src="img/17-l0-assembly-cost.png" alt="成品核价一览">
-          <figcaption>成品核价一览 · 单表 / 核对合册</figcaption>
+          <img src="img/17-l0-assembly-cost.png" alt="总成核价一览">
+          <figcaption>总成核价一览 · 单表 / 核对合册</figcaption>
         </figure>
         <ul>
-          <li>合册：同一文件串联成品价、冲压零件价、加工费、钢材联动、年度价、包装运输、焊接单价等，带封皮说明。</li>
-          <li>单表：只审某一环节时用对应列表的导出按钮。</li>
+          <li>合册：须选定年 / 月 / 基地 / 项目 / 清单版本。同一文件串联总成价、冲压零件价、加工费、钢材联动、年度价、包装运输、焊接单价等，带封皮说明。只导出、不算价。</li>
+          <li>单表：只审某一环节时用对应列表的导出按钮（含模具费、检具费、采购对象、中标厚度价）。</li>
           <li>无导出权限时按钮会隐藏或提示。</li>
         </ul>
       </section>
@@ -176,9 +269,9 @@
         <h3>看不到某个菜单？</h3>
         <p>找管理员在「设置 → 用户管理」开通权限后刷新。</p>
         <h3>引擎一直运行中？</h3>
-        <p>本机异常关机可能导致自动核价引擎任务卡住。在「核价 → 自动核价引擎」的<strong>运行历史</strong>中删除该任务后重新启动。</p>
+        <p>本机异常关机可能导致自动核价引擎任务卡住。在「核价 → 自动核价引擎」的<strong>运行历史</strong>中删除该任务后重新启动。删除不会撤销已写入的钢材价、零件价或总成价。</p>
         <h3>成品核价计算卡住了？</h3>
-        <p>本机异常关机或关闭浏览器后，计算历史里可能仍显示<strong>计算中</strong>，系统会拒绝重复提交。打开「核价 → 成品核价计算」，在页面下方<strong>计算历史</strong>中找到状态为「计算中」的记录，点<strong>删除</strong>释放锁，再重新「开始计算」。删除只清日志与计算锁，不会撤销已写入成品核价一览的数据。</p>
+        <p>总成核价（旧称成品核价）计算时，本机异常关机或关闭浏览器后，计算历史里可能仍显示<strong>计算中</strong>，系统会拒绝重复提交。打开「核价 → 总成核价计算」（路径即成品核价计算页），在页面下方<strong>计算历史</strong>中找到状态为「计算中」的记录，点<strong>删除</strong>释放锁，再重新「开始计算」。删除只清日志与计算锁，不会撤销已写入总成核价一览的数据。</p>
         <h3>AI 助理一直分析中？</h3>
         <p>同一时间每人最多 2 个并发任务。若长时间无响应，可缩小时间范围后重试，或清空本机对话后重新提问。</p>
         <h3>需要了解概念或计算细节？</h3>
