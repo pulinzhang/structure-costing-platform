@@ -4,7 +4,10 @@ from decimal import Decimal
 from types import SimpleNamespace
 
 from app.services.costing.steel_price.calc.models import CalcRow
-from app.services.costing.steel_price.calc.status import collect_row_warnings
+from app.services.costing.steel_price.calc.status import (
+    collect_row_warnings,
+    summarize_thickness_outcomes,
+)
 from app.services.costing.steel_price.calc.steps.adjustments.thickness import (
     ThicknessAdjustmentMatcher,
 )
@@ -126,7 +129,7 @@ def test_matcher_requires_archive_category() -> None:
     assert "牌号未分类" in row.messages[0]
 
 
-def test_matcher_explains_mill_name_mismatch() -> None:
+def test_matcher_skips_mill_without_thickness_block() -> None:
     policy = _policy(
         policy_id=1,
         mill="鞍本",
@@ -137,11 +140,16 @@ def test_matcher_explains_mill_name_mismatch() -> None:
     )
     matcher = ThicknessAdjustmentMatcher()
     row = _row(thickness="0.70", mill="鞍神")
+    row.base_price_id = 1
 
     assert matcher.apply(row, [policy]) is False
-    message = row.messages[0]
-    assert "基价钢厂「鞍神」对不上本期厚度政策钢厂" in message
-    assert "鞍本" in message
+    assert row.messages == []
+    assert row.thickness_applicable is False
+    assert row.thickness_policy_id is None
+    row.finalize_status()
+    assert row.match_status == "base_only"
+    assert row.calc_status == "success"
+    assert row.calc_message is None
 
 
 def test_matcher_explains_category_missing_for_mill() -> None:
@@ -164,9 +172,34 @@ def test_matcher_explains_category_missing_for_mill() -> None:
 
 
 def test_collect_row_warnings_includes_mill_and_category() -> None:
-    row = _row(thickness="0.70", mill="鞍神", category_name="冷轧")
-    row.add_message("基价钢厂「鞍神」对不上本期厚度政策钢厂（政策钢厂：鞍本）")
+    row = _row(thickness="0.70", mill="唐钢", category_name="冷轧")
+    row.add_message("钢厂「唐钢」本期厚度政策没有大类「冷轧」（该厂政策大类：镀锌钢）")
     warnings = collect_row_warnings([row], keyword="厚度")
     assert warnings == [
-        "鞍神 · 冷轧 · DC01 0.7*1250 基价钢厂「鞍神」对不上本期厚度政策钢厂（政策钢厂：鞍本）"
+        "唐钢 · 冷轧 · DC01 0.7*1250 钢厂「唐钢」本期厚度政策没有大类「冷轧」（该厂政策大类：镀锌钢）"
     ]
+
+
+def test_thickness_hit_is_success_without_width() -> None:
+    row = _row(thickness="0.70")
+    row.base_price_id = 1
+    row.thickness_policy_id = 10
+    row.finalize_status()
+    assert row.match_status == "full_match"
+    assert row.calc_status == "success"
+
+
+def test_summarize_thickness_outcomes_separates_skip_from_miss() -> None:
+    hit = _row(thickness="0.70", mill="唐钢")
+    hit.thickness_policy_id = 1
+    skip = _row(thickness="0.70", mill="鞍神")
+    skip.thickness_applicable = False
+    miss = _row(thickness="0.70", mill="唐钢", grade="DC04")
+    miss.add_message("钢厂「唐钢」本期厚度政策没有大类「冷轧」")
+    summary = summarize_thickness_outcomes([hit, skip, miss])
+    assert summary == {
+        "hit": 1,
+        "skip": 1,
+        "miss": 1,
+        "skip_mills": ["鞍神"],
+    }

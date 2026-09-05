@@ -18,7 +18,7 @@ from app.services.costing.steel_price.calc.status import (
     collect_row_warnings,
     resolve_batch_status,
     summarize_match_status,
-    summarize_policy_hits,
+    summarize_thickness_outcomes,
 )
 from app.services.costing.steel_price.steel_price_service import FORMULA_VERSION
 
@@ -86,15 +86,23 @@ class SteelPricePipeline:
             log_builder.section("Step3 厚度加减价匹配")
             log_builder.line(f"加减价政策加载: {len(policies)} 条（仅厚度大类）")
             rows = self._deps.adjustment_applier.apply_thickness(db, rows, policies)
-            thickness_hit, thickness_miss = summarize_policy_hits(rows, prefix="thickness")
-            log_builder.line(f"厚度政策命中: {thickness_hit}")
-            log_builder.line(f"厚度政策未命中: {thickness_miss}")
+            thickness = summarize_thickness_outcomes(rows)
+            log_builder.line(f"厚度政策命中: {thickness['hit']}")
+            if thickness["skip"] > 0:
+                mills = "、".join(thickness["skip_mills"]) or "无"
+                log_builder.line(
+                    f"本期无该厂厚度块（按基价计，不报错）: {thickness['skip']}（钢厂：{mills}）"
+                )
+            log_builder.line(f"厚度政策未命中: {thickness['miss']}")
             log_builder.append_limited_details(
                 "厚度未命中/警告",
                 collect_row_warnings(rows, keyword="厚度"),
                 is_error=True,
             )
-            progress.report(55, f"Step3 完成：厚度命中 {thickness_hit}，未命中 {thickness_miss}")
+            progress.report(
+                55,
+                f"Step3 完成：厚度命中 {thickness['hit']}，未命中 {thickness['miss']}",
+            )
 
             progress.report(60, "Step4：宽度加减价（本期跳过）...")
             log_builder.section("Step4 宽度加减价")

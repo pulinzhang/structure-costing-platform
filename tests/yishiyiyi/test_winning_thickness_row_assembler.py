@@ -6,6 +6,7 @@ from types import SimpleNamespace
 from app.services.yishiyiyi.winning_thickness.assemble.row_assembler import (
     WinningThicknessRowAssembler,
     _BaseContext,
+    dedupe_bases_by_mill_grade,
 )
 
 
@@ -166,3 +167,11 @@ def test_rows_from_ladder_skips_when_no_policy():
     )
 
     assert rows == []
+
+
+def test_dedupe_bases_by_mill_grade_keeps_first_spec():
+    first = SimpleNamespace(grade="HC180YD+Z", steel_mill="山钢", id=1)
+    second = SimpleNamespace(grade="HC180YD+Z", steel_mill="山钢", id=2)
+    other = SimpleNamespace(grade="DC51D+Z", steel_mill="山钢", id=3)
+    picked = dedupe_bases_by_mill_grade([first, second, other])
+    assert [row.id for row in picked] == [1, 3]

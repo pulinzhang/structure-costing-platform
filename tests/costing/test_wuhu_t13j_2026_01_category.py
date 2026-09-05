@@ -1,4 +1,4 @@
-"""芜湖 T13J 2026-01：钢厂 + 大类匹配的详细集成测试（现网主库）。"""
+"""芜湖 T13J 2026-01：基价表牌号匹配 + 大类厚度政策（现网主库）。"""
 
 from __future__ import annotations
 
@@ -29,32 +29,6 @@ VEHICLE_MODEL = "T13J"
 VERSION = "V3"
 PART_NUMBER = "502008024AA"
 
-COLD_MILLS = {"唐钢", "宝钢", "邯钢", "首钢", "马钢"}
-GALV_MILLS = {"VAMA", "唐钢", "宝钢", "邯钢", "首钢", "马钢"}
-COLD_THICKNESSES = {
-    Decimal("0.6000"),
-    Decimal("0.6500"),
-    Decimal("0.7000"),
-    Decimal("0.8000"),
-    Decimal("1.0000"),
-    Decimal("1.2000"),
-    Decimal("1.4000"),
-    Decimal("1.5000"),
-    Decimal("1.8000"),
-    Decimal("2.0000"),
-    Decimal("2.5000"),
-}
-GALV_THICKNESSES = {
-    Decimal("0.6000"),
-    Decimal("0.6500"),
-    Decimal("0.7000"),
-    Decimal("0.8000"),
-    Decimal("1.0000"),
-    Decimal("1.2000"),
-    Decimal("1.5000"),
-    Decimal("1.8000"),
-}
-
 
 def _request() -> SteelPriceCalcRequest:
     return SteelPriceCalcRequest(
@@ -74,9 +48,7 @@ def _ton(row: CalcRow) -> Decimal:
 def _calc_rows(db: Session) -> list[CalcRow]:
     request = _request()
     loaded = MaterialThicknessLoader().load(db, request)
-    rows, no_base_count, details = BasePriceEnricher().enrich(db, request, loaded)
-    if no_base_count:
-        pytest.fail(f"T13J 大类基价缺口 {no_base_count}: {details}")
+    rows, _no_base_count, _details = BasePriceEnricher().enrich(db, request, loaded)
     applier = AdjustmentApplier()
     policies = applier.load_policies(db, request)
     if not policies:
@@ -139,39 +111,23 @@ def test_t13j_loader_keeps_every_grade_thickness(db_session: Session) -> None:
 
 
 @pytest.mark.integration
-def test_t13j_former_unmatched_grades_share_cold_rolled_base(db_session: Session) -> None:
-    """原先按牌号报无匹配的 DC03@1.2 / DC04@0.65 / DC04@1.0，现与冷轧同厂同价。"""
+def test_t13j_grades_missing_from_base_table_do_not_borrow_category_price(
+    db_session: Session,
+) -> None:
+    """与中标厚度一览相同：基价表没有的牌号不按冷轧大类回退。"""
     request = SteelPriceCalcRequest(year=YEAR, month=MONTH, location=LOCATION)
-    probes = [
+    for grade, thickness in (
         ("DC03", Decimal("1.2000")),
         ("DC04", Decimal("0.6500")),
-        ("DC04", Decimal("1.0000")),
         ("冷轧", Decimal("1.2000")),
-        ("冷轧", Decimal("0.6500")),
-        ("冷轧", Decimal("1.0000")),
-    ]
-    by_key: dict[tuple[str, Decimal], list[CalcRow]] = {}
-    for grade, thickness in probes:
+    ):
         rows, no_base, details = BasePriceEnricher().enrich(
             db_session,
             request,
             [MaterialThicknessRow(location=LOCATION, material=grade, thickness=thickness)],
         )
-        assert no_base == 0, f"{grade}@{thickness} {details}"
-        mills = {(row.steel_mill or "").strip() for row in rows}
-        assert mills == COLD_MILLS
-        by_key[(grade, thickness)] = rows
-
-    for thickness in (Decimal("1.2000"), Decimal("0.6500"), Decimal("1.0000")):
-        grade_key = "DC03" if thickness == Decimal("1.2000") else "DC04"
-        left = {
-            ((row.steel_mill or "").strip(), row.base_price)
-            for row in by_key[(grade_key, thickness)]
-        }
-        right = {
-            ((row.steel_mill or "").strip(), row.base_price) for row in by_key[("冷轧", thickness)]
-        }
-        assert left == right
+        assert rows == []
+        assert no_base >= 1, f"{grade}@{thickness} 应无基价: {details}"
 
 
 @pytest.mark.integration
@@ -189,19 +145,12 @@ def test_t13j_calc_rows_persist_each_grade_with_mill_category_price(db_session: 
         for row in rows
     }
     assert len(persist_keys) == len(rows)
-    assert {row.grade for row in rows} == {item.material for item in loaded}
-    assert {row.category_name for row in rows} == {"冷轧", "镀锌"}
+    assert {row.grade for row in rows} <= {item.material for item in loaded}
+    assert {row.category_name for row in rows} <= {"冷轧", "镀锌"}
     assert all(row.grade != row.category_name for row in rows)
-
-    mills_by_spec: dict[tuple[str, Decimal], set[str]] = defaultdict(set)
-    for row in rows:
-        mills_by_spec[(row.category_name or "", Decimal(str(row.thickness)))].add(
-            (row.steel_mill or "").strip()
-        )
-    for thickness in COLD_THICKNESSES:
-        assert mills_by_spec[("冷轧", thickness)] == COLD_MILLS
-    for thickness in GALV_THICKNESSES:
-        assert mills_by_spec[("镀锌", thickness)] == GALV_MILLS
+    assert "DC01" in {row.grade for row in rows}
+    assert "HC180Y" in {row.grade for row in rows}
+    assert "DC03" not in {row.grade for row in rows}
 
     magang_07 = [
         row
@@ -213,11 +162,16 @@ def test_t13j_calc_rows_persist_each_grade_with_mill_category_price(db_session: 
     assert magang_07
     assert {row.grade for row in magang_07} <= {item.material for item in loaded}
     assert len({row.grade for row in magang_07}) == len(magang_07)
-    for row in magang_07:
-        assert row.base_price == Decimal("3742.00")
-        assert row.thickness_adjustment == Decimal("160")
-        assert row.processing_fee == Decimal("120.00")
-        assert _ton(row) == Decimal("4022.00")
+    dc01_07 = [row for row in magang_07 if row.grade == "DC01"]
+    assert dc01_07
+    assert dc01_07[0].base_price == Decimal("3742.00")
+    assert dc01_07[0].thickness_adjustment == Decimal("160")
+    assert dc01_07[0].processing_fee == Decimal("120.00")
+    assert _ton(dc01_07[0]) == Decimal("4022.00")
+    hc180y_07 = [row for row in magang_07 if row.grade == "HC180Y"]
+    assert hc180y_07
+    assert hc180y_07[0].base_price == Decimal("3919.00")
+    assert _ton(hc180y_07[0]) == Decimal("4199.00")
 
     magang_06 = [
         row
@@ -227,9 +181,14 @@ def test_t13j_calc_rows_persist_each_grade_with_mill_category_price(db_session: 
         and Decimal(str(row.thickness)) == Decimal("0.6000")
     ]
     assert magang_06
-    for row in magang_06:
-        assert row.thickness_adjustment == Decimal("200")
-        assert _ton(row) == Decimal("4062.00")
+    dc01_06 = [row for row in magang_06 if row.grade == "DC01"]
+    assert dc01_06
+    assert dc01_06[0].thickness_adjustment == Decimal("200")
+    assert _ton(dc01_06[0]) == Decimal("4062.00")
+    hc180y_06 = [row for row in magang_06 if row.grade == "HC180Y"]
+    assert hc180y_06
+    assert hc180y_06[0].base_price == Decimal("3919.00")
+    assert _ton(hc180y_06[0]) == Decimal("4239.00")
 
 
 @pytest.mark.integration
@@ -238,11 +197,13 @@ def test_t13j_galvanized_07_picks_lowest_vama(db_session: Session) -> None:
     galv = [
         row
         for row in rows
-        if row.category_name == "镀锌" and Decimal(str(row.thickness)) == Decimal("0.7000")
+        if row.category_name == "镀锌"
+        and row.grade == "DC51D+Z"
+        and Decimal(str(row.thickness)) == Decimal("0.7000")
     ]
     by_mill = {(row.steel_mill or "").strip(): _ton(row) for row in galv}
+    assert set(by_mill) == {"VAMA"}
     assert by_mill["VAMA"] == Decimal("4269.00")
-    assert by_mill["马钢"] == Decimal("4832.00")
     wrapped = [
         SimpleNamespace(
             id=index,

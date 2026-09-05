@@ -19,25 +19,28 @@ def _join_names(names: set[str]) -> str:
     return "、".join(sorted(names)) if names else "无"
 
 
-def _diagnose_missing_thickness_policy(row: CalcRow, policies: list[SteelPricePolicy]) -> str:
-    """钢厂名对不上，或该厂没有对应大类块。文案须自含钢厂（会写入 calc_message）。"""
-    mill = normalize_steel_mill(row.steel_mill)
-    category = (row.category_name or "").strip()
-    typed = [
+def _thickness_category_policies(policies: list[SteelPricePolicy]) -> list[SteelPricePolicy]:
+    return [
         policy
         for policy in policies
         if policy.policy_type == "THICKNESS"
         and (policy.grade_type or "").strip().upper() == "CATEGORY"
     ]
+
+
+def _diagnose_missing_thickness_policy(
+    row: CalcRow, policies: list[SteelPricePolicy]
+) -> str | None:
+    """该厂有厚度块但未命中时给出原因。该厂本期无厚度块则返回 None（按基价计，不报错）。"""
+    mill = normalize_steel_mill(row.steel_mill)
+    category = (row.category_name or "").strip()
+    typed = _thickness_category_policies(policies)
     if not typed:
         return "本期没有厚度大类政策，无法匹配厚度加减价"
 
     mill_hits = [policy for policy in typed if steel_mill_matches(mill, policy.steel_mill)]
     if not mill_hits:
-        policy_mills = {
-            normalize_steel_mill(policy.steel_mill) for policy in typed if policy.steel_mill
-        }
-        return f"基价钢厂「{mill}」对不上本期厚度政策钢厂（政策钢厂：{_join_names(policy_mills)}）"
+        return None
 
     if not any(grade_category(policy, row) for policy in mill_hits):
         mill_categories = {
@@ -77,7 +80,7 @@ class ThicknessAdjustmentMatcher:
         在当期政策中匹配厚度加减价并写回 row。
 
         Returns:
-            True 表示命中；False 表示未命中（已写入提示消息）。
+            True 表示命中；False 表示未命中。该厂本期无厚度块时不写提示消息。
         """
         if not (row.category_name or "").strip():
             row.add_message("牌号未分类，无法匹配厚度加减价政策")
@@ -85,7 +88,11 @@ class ThicknessAdjustmentMatcher:
 
         policy = find_best_thickness_policy(row, policies)
         if policy is None:
-            row.add_message(_diagnose_missing_thickness_policy(row, policies))
+            reason = _diagnose_missing_thickness_policy(row, policies)
+            if reason is None:
+                row.thickness_applicable = False
+                return False
+            row.add_message(reason)
             return False
 
         item = match_items(

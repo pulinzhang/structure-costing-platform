@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Sequence
 from dataclasses import dataclass
 from decimal import Decimal
 
@@ -24,6 +25,22 @@ from app.services.yishiyiyi.policy.match.adjustment_common import (
 logger = logging.getLogger("service.winning_thickness.assemble")
 
 LadderCacheKey = tuple[str, str, Decimal | None]
+
+
+def dedupe_bases_by_mill_grade(bases: Sequence[SteelBasePrice]) -> list[SteelBasePrice]:
+    """同一牌号+钢厂只保留一条基价（规格不同取先出现行）。"""
+    seen: set[tuple[str, str]] = set()
+    result: list[SteelBasePrice] = []
+    for base in bases:
+        key = (
+            (base.grade or "").strip(),
+            normalize_steel_mill(base.steel_mill),
+        )
+        if key in seen:
+            continue
+        seen.add(key)
+        result.append(base)
+    return result
 
 
 @dataclass(frozen=True, slots=True)
@@ -121,7 +138,7 @@ class WinningThicknessRowAssembler:
         ] = {}
 
         rows: list[WinningThicknessRowVO] = []
-        for base in self._dedupe_bases_by_mill(bases):
+        for base in dedupe_bases_by_mill_grade(bases):
             grade_key = (base.grade or "").strip()
             if not grade_key:
                 continue
@@ -165,22 +182,6 @@ class WinningThicknessRowAssembler:
             len(rows),
         )
         return rows
-
-    @staticmethod
-    def _dedupe_bases_by_mill(bases: list[SteelBasePrice]) -> list[SteelBasePrice]:
-        """同一牌号+钢厂只保留一条基价（规格不同取先出现行）。"""
-        seen: set[tuple[str, str]] = set()
-        result: list[SteelBasePrice] = []
-        for base in bases:
-            key = (
-                (base.grade or "").strip(),
-                normalize_steel_mill(base.steel_mill),
-            )
-            if key in seen:
-                continue
-            seen.add(key)
-            result.append(base)
-        return result
 
     def _expand_grade_ladder(
         self,
