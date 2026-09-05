@@ -17,6 +17,7 @@ from typing import Any
 
 from app.common.offal_nested import parse_offal_from_sheet_type
 from app.common.scrap_byproduct import resolve_scrap_byproduct
+from app.common.swing_shear import contains_swing_shear
 from app.parsers.stamping.models.part import Part
 from app.parsers.stamping.models.process import Process
 from app.parsers.stamping.value_parser import parse_decimal, parse_int
@@ -79,6 +80,21 @@ class RowParser:
             is_offal_nested=offal.is_offal_nested,
             offal_source=offal.offal_source,
         )
+        die_type = self._cell(row_idx, "die_type")
+        process_method = self._cell(row_idx, "method")
+        automation = self._cell(row_idx, "auto")
+        remark = self._cell(row_idx, "remark")
+        # 摆剪常写在零件首行「工序内容」「冲压吨位」，该行没有工序名称，不会进工序子表。
+        header_process_code = self._cell(row_idx, "code", 13)
+        header_tonnage_text = self._merged_cell(row_idx, "tonnage", 15)
+        has_swing_shear = contains_swing_shear(
+            header_process_code,
+            header_tonnage_text,
+            die_type,
+            process_method,
+            automation,
+            remark,
+        )
         return Part(
             seq_no=parse_int(self._cell(row_idx, "seq", 1)) or 0,
             part_number=part_number,
@@ -93,10 +109,11 @@ class RowParser:
             is_offal_nested=scrap.is_offal_nested,
             offal_source=scrap.offal_source,
             is_scrap_byproduct=scrap.is_scrap_byproduct,
-            die_type=self._cell(row_idx, "die_type"),
-            process_method=self._cell(row_idx, "method"),
-            automation=self._cell(row_idx, "auto"),
-            remark=self._cell(row_idx, "remark"),
+            has_swing_shear=has_swing_shear,
+            die_type=die_type,
+            process_method=process_method,
+            automation=automation,
+            remark=remark,
             excel_row=row_idx,
             excel_part_col=self._col_map.get("part_no", 2),
         )

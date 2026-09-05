@@ -5,7 +5,7 @@
 import {
     partCostCalcTemplate,
     renderCalcHistoryPagination,
-} from './template.js?v=4';
+} from './template.js?v=5';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -19,7 +19,7 @@ const CALC_TASK_API = `${API_BASE}/calc/tasks`;
 const CALC_LOGS_API = `${API_BASE}/calc/logs`;
 const POLL_INTERVAL_MS = 1500;
 const DUPLICATE_SCOPE_CALC_MESSAGE = '当前年度/月份/基地/工厂正在计算中，请勿重复提交。'
-const SCOPE_REQUIRED_MESSAGE = '须选定年度、月份、基地、冲压工厂。';
+const SCOPE_REQUIRED_MESSAGE = '须选定年度、月份、基地、冲压工厂、配套车型。';
 
 const STATUS_META = {
     processing: { label: '计算中', className: 'text-[#64b5f6]' },
@@ -280,7 +280,8 @@ function validateDataPreparation() {
     const month = parseInt(document.getElementById('calcMonth')?.value, 10);
     const location = document.getElementById('calcLocation')?.value || '';
     const supplier = document.getElementById('calcSupplier')?.value || '';
-    const isScopeSelected = Boolean(year && month && location && supplier);
+    const vehicleModel = document.getElementById('calcVehicleModel')?.value || '';
+    const isScopeSelected = Boolean(year && month && location && supplier && vehicleModel);
     const isReady = isScopeSelected && calcState.ready.can_calculate;
 
     startBtn.disabled = !isReady;
@@ -384,7 +385,8 @@ function renderHistoryRows(items) {
                     <button type="button" class="calc-view-result-btn text-[9px] text-[#777] hover:text-white mr-2"
                             data-year="${esc(item.year)}" data-month="${esc(item.month || '')}"
                             data-location="${esc(item.location || '')}"
-                            data-supplier="${esc(item.stamping_supplier || '')}">结果</button>`}
+                            data-supplier="${esc(item.stamping_supplier || '')}"
+                            data-vehicle="${esc(item.vehicle_model || '')}">结果</button>`}
                     `}
                     ${calcState.canDelete !== false ? `
                     <button type="button" class="calc-delete-log-btn text-[9px] text-[#777] hover:text-[#ef5350]" data-log-id="${esc(item.id)}" title="含计算中：删除可释放锁">删除</button>` : ''}
@@ -403,6 +405,7 @@ function renderHistoryRows(items) {
             if (btn.dataset.month) qs.set('month', btn.dataset.month);
             if (btn.dataset.location) qs.set('location', btn.dataset.location);
             if (btn.dataset.supplier) qs.set('stamping_supplier', btn.dataset.supplier);
+            if (btn.dataset.vehicle) qs.set('vehicle_model', btn.dataset.vehicle);
             const suffix = qs.toString() ? `?${qs.toString()}` : '';
             window.location.hash = `/stamping-part-cost${suffix}`;
         });
@@ -505,7 +508,7 @@ async function startCalculation() {
     const vehicleModel = document.getElementById('calcVehicleModel')?.value || '';
     const version = document.getElementById('calcVersion')?.value || '';
 
-    if (Number.isNaN(year) || Number.isNaN(month) || !location || !supplier) {
+    if (Number.isNaN(year) || Number.isNaN(month) || !location || !supplier || !vehicleModel) {
         showToast(SCOPE_REQUIRED_MESSAGE, 'warning');
         return;
     }
@@ -520,8 +523,8 @@ async function startCalculation() {
         month,
         location,
         stamping_supplier: supplier,
+        vehicle_model: vehicleModel,
     };
-    if (vehicleModel) payload.vehicle_model = vehicleModel;
     if (version) payload.version = version;
 
     setCalculating(true);

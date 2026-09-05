@@ -1,4 +1,4 @@
-"""核价用系统费率（密度 / 损耗 / 回收 / 成品四项）。"""
+"""核价用系统费率（密度 / 损耗 / 回收 / 成品四项 / 摆剪钢价加价）。"""
 
 from __future__ import annotations
 
@@ -19,6 +19,7 @@ class PartCostCalcRates:
     management_rate: Decimal
     warehouse_packaging_rate: Decimal
     pretax_profit_rate: Decimal
+    swing_shear_fee_per_ton: Decimal
 
 
 def load_part_cost_calc_rates(settings: SettingsService, db: Session) -> PartCostCalcRates:
@@ -30,4 +31,5 @@ def load_part_cost_calc_rates(settings: SettingsService, db: Session) -> PartCos
         management_rate=settings.get_finished_management_rate(db),
         warehouse_packaging_rate=settings.get_finished_warehouse_packaging_rate(db),
         pretax_profit_rate=settings.get_finished_pretax_profit_rate(db),
+        swing_shear_fee_per_ton=settings.get_swing_shear_process_fee_per_ton(db),
     )

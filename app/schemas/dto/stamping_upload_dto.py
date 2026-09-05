@@ -59,6 +59,7 @@ class PartData:
     is_scrap_byproduct: bool = field(
         default=False, metadata={"description": "是否废料副产品（不算冲压加工费）"}
     )
+    has_swing_shear: bool = field(default=False, metadata={"description": "是否含摆剪工序"})
     die_type: str | None = field(default=None, metadata={"description": "模具类型"})
     process_method: str | None = field(default=None, metadata={"description": "工序方式"})
     automation: str | None = field(

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from app.common.swing_shear import is_swing_shear_label
 from app.models.stamping import StampingPart, StampingProcess
 
 
@@ -15,9 +16,7 @@ def is_merged_process_method(text: str | None) -> bool:
 
 def is_swing_shear_process(process: StampingProcess) -> bool:
     """摆剪工序不使用冲压，加工费为 0。"""
-    code = (process.process_code or "").strip()
-    seq = (process.process_seq or "").strip()
-    return "摆剪" in code or "摆剪" in seq
+    return is_swing_shear_label(process.process_code, process.process_seq)
 
 
 def is_tailor_weld_describe_process(process: StampingProcess) -> bool:

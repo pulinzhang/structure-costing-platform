@@ -16,6 +16,7 @@ from app.models.costing.costing_engine_run import CostingEngineRun
 from app.repositories.costing.engine.costing_engine_run_repository import (
     CostingEngineRunRepository,
 )
+from app.repositories.stamping.stamping_part_repository import StampingPartRepository
 from app.schemas.dto.assembly_cost_dto import AssemblyCostCalcDTO
 from app.schemas.dto.bom_welding_fee_dto import BomWeldingFeeCalcDTO
 from app.schemas.dto.bom_welding_process_breakdown_dto import (
@@ -245,16 +246,35 @@ class RunOrchestrator:
         current_user: UserVO,
     ) -> tuple[bool, str, dict[str, Any] | None]:
         try:
-            dto = StampingPartCostCalcDTO(
-                year=discovery.year,
-                month=discovery.month,
+            options = StampingPartRepository().get_cascade_filter_options(
+                db,
                 location=discovery.location,
                 stamping_supplier=stamping_supplier,
             )
-            result = self.part_cost_orch.calculate(db, dto, current_user=current_user)
-            status = getattr(result, "status", "success")
-            ok = status != "failed"
-            return ok, f"零件价 status={status}", {"status": status}
+            vehicle_models = [
+                name.strip()
+                for name in (options.get("vehicle_models") or [])
+                if (name or "").strip()
+            ]
+            if not vehicle_models:
+                return False, "该工厂无配套车型，无法计算零件价", None
+
+            statuses: list[str] = []
+            all_ok = True
+            for vehicle_model in vehicle_models:
+                dto = StampingPartCostCalcDTO(
+                    year=discovery.year,
+                    month=discovery.month,
+                    location=discovery.location,
+                    stamping_supplier=stamping_supplier,
+                    vehicle_model=vehicle_model,
+                )
+                result = self.part_cost_orch.calculate(db, dto, current_user=current_user)
+                status = getattr(result, "status", "success")
+                statuses.append(f"{vehicle_model}:{status}")
+                if status == "failed":
+                    all_ok = False
+            return all_ok, f"零件价 {'；'.join(statuses)}", {"status": ";".join(statuses)}
         except Exception as exc:
             logger.exception("零件价失败: %s", stamping_supplier)
             db.rollback()

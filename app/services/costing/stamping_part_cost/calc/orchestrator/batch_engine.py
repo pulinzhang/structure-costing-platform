@@ -134,6 +134,7 @@ class BatchCalculationEngine:
             management_rate=rates.management_rate,
             warehouse_packaging_rate=rates.warehouse_packaging_rate,
             pretax_profit_rate=rates.pretax_profit_rate,
+            swing_shear_fee_per_ton=rates.swing_shear_fee_per_ton,
         )
         created_by = None if existing else existing_created_by
         updated_by = existing_updated_by if existing else new_updated_by
@@ -159,6 +160,7 @@ class BatchCalculationEngine:
                 loss_rate=rates.loss_rate,
                 recovery_rate=rates.recovery_rate,
                 amounts=amounts,
+                swing_shear_fee_per_ton=rates.swing_shear_fee_per_ton,
                 calc_batch_id=calc_batch_id,
                 calculated_at=calculated_at,
                 calc_status=calc_status,

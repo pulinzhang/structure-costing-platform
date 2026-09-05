@@ -6,6 +6,7 @@ from datetime import datetime
 from decimal import Decimal
 
 from app.common.audit import AUDIT_PENDING
+from app.common.swing_shear import applied_swing_shear_fee_per_ton
 from app.models.stamping import StampingPart
 from app.schemas.dto.stamping_part_cost_dto import (
     StampingPartCostCalcAmounts,
@@ -27,6 +28,7 @@ def build_part_cost_upsert(
     loss_rate: Decimal,
     recovery_rate: Decimal,
     amounts: StampingPartCostCalcAmounts | None,
+    swing_shear_fee_per_ton: Decimal,
     calc_batch_id: str | None,
     calculated_at: datetime,
     calc_status: str,
@@ -55,6 +57,10 @@ def build_part_cost_upsert(
         calculated_at=calculated_at,
     )
     if amounts is None:
+        payload.swing_shear_fee_per_ton = applied_swing_shear_fee_per_ton(
+            has_swing_shear=snapshot.has_swing_shear,
+            fee_per_ton=swing_shear_fee_per_ton,
+        )
         return payload
     payload.density = amounts.density
     payload.material_loss_rate = amounts.material_loss_rate
@@ -66,6 +72,7 @@ def build_part_cost_upsert(
     payload.steel_price_id = amounts.steel_price_id
     payload.steel_mill = amounts.steel_mill
     payload.steel_ton_price = amounts.steel_ton_price
+    payload.swing_shear_fee_per_ton = amounts.swing_shear_fee_per_ton
     payload.scrap_price_id = amounts.scrap_price_id
     payload.scrap_ton_price = amounts.scrap_ton_price
     payload.process_fee_id = amounts.process_fee_id

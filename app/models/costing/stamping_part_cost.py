@@ -68,6 +68,18 @@ class StampingPartCost(AuditUserMixin, Base):
         nullable=True,
         comment="利用哪类废料快照，例：侧围",
     )
+    has_swing_shear: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        comment="是否含摆剪工序快照",
+    )
+    swing_shear_fee_per_ton: Mapped[Decimal] = mapped_column(
+        Numeric(12, 4),
+        nullable=False,
+        default=Decimal("0"),
+        comment="本月核价加到钢价上的摆剪加价(元/吨)；非摆剪为 0，快照当时系统设置",
+    )
     die_type: Mapped[str | None] = mapped_column(String(50), nullable=True, comment="模具类型")
     process_method: Mapped[str | None] = mapped_column(
         String(50), nullable=True, comment="工艺方法"

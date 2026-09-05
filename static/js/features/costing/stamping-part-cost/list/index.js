@@ -10,7 +10,7 @@ import {
     updateCostFilterCapsules,
     shortPartNumber,
     syncBreakdownColumnVisibility,
-} from './template.js?v=49';
+} from './template.js?v=53';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -20,12 +20,14 @@ const API_BASE = '/api/costing/stamping-part-cost';
 const CASCADE_API = '/api/stamping/filters/cascade';
 const DRAWER_ANIMATION_MS = 300;
 const SCOPE_REQUIRED_MESSAGE = '批量操作须选定年度、月份、基地、冲压工厂';
+const EXPORT_VEHICLE_REQUIRED_MESSAGE = '导出须选定配套车型。';
 
 const FILTER_IDS = [
     'costYearFilter',
     'costMonthFilter',
     'costLocationFilter',
     'costSupplierFilter',
+    'costVehicleModelFilter',
     'costAuditFilter',
 ];
 
@@ -128,8 +130,9 @@ function readHashFilters() {
     const month = params.get('month') || '';
     const location = params.get('location') || '';
     const stamping_supplier = params.get('stamping_supplier') || '';
-    if (!year && !month && !location && !stamping_supplier) return null;
-    return { year, month, location, stamping_supplier };
+    const vehicle_model = params.get('vehicle_model') || '';
+    if (!year && !month && !location && !stamping_supplier && !vehicle_model) return null;
+    return { year, month, location, stamping_supplier, vehicle_model };
 }
 
 function setSelectValue(id, value) {
@@ -152,6 +155,7 @@ function applyPendingFiltersToSelects() {
     setSelectValue('costMonthFilter', pending.month);
     setSelectValue('costLocationFilter', pending.location);
     setSelectValue('costSupplierFilter', pending.stamping_supplier);
+    setSelectValue('costVehicleModelFilter', pending.vehicle_model);
     listState.pendingFilters = null;
 }
 
@@ -212,12 +216,23 @@ function bindEvents() {
     });
     document.getElementById('costLocationFilter')?.addEventListener('change', () => {
         onFilterChange();
+        const vehicleEl = document.getElementById('costVehicleModelFilter');
+        if (vehicleEl) vehicleEl.value = '';
         loadCascadeFilters().then(() => {
             updateCostFilterCapsules();
             loadList(1);
         });
     });
     document.getElementById('costSupplierFilter')?.addEventListener('change', () => {
+        onFilterChange();
+        const vehicleEl = document.getElementById('costVehicleModelFilter');
+        if (vehicleEl) vehicleEl.value = '';
+        loadCascadeFilters().then(() => {
+            updateCostFilterCapsules();
+            loadList(1);
+        });
+    });
+    document.getElementById('costVehicleModelFilter')?.addEventListener('change', () => {
         onFilterChange();
         loadList(1);
     });
@@ -292,11 +307,13 @@ async function loadCascadeFilters() {
         const pending = listState.pendingFilters;
         const params = {
             location: document.getElementById('costLocationFilter')?.value || pending?.location || '',
+            stamping_supplier: document.getElementById('costSupplierFilter')?.value || pending?.stamping_supplier || '',
         };
         const res = await HttpClient.get(CASCADE_API, { params });
         const filters = res.data || {};
         fillSelect('costLocationFilter', filters.locations || [], pending?.location || null);
         fillSelect('costSupplierFilter', filters.stamping_suppliers || [], pending?.stamping_supplier || null);
+        fillSelect('costVehicleModelFilter', filters.vehicle_models || [], pending?.vehicle_model || null);
     } catch (error) {
         console.error(error);
     }
@@ -323,6 +340,7 @@ function getFilters() {
         month: monthRaw ? Number(monthRaw) : undefined,
         location: document.getElementById('costLocationFilter')?.value || pending?.location || undefined,
         stamping_supplier: document.getElementById('costSupplierFilter')?.value || pending?.stamping_supplier || undefined,
+        vehicle_model: document.getElementById('costVehicleModelFilter')?.value || pending?.vehicle_model || undefined,
         audit_status: document.getElementById('costAuditFilter')?.value || undefined,
         part_number: document.getElementById('costPartNumberFilter')?.value?.trim() || undefined,
     };
@@ -377,6 +395,9 @@ async function loadList(page = 1) {
             }
             if (pageData.filters.suppliers) {
                 fillSelect('costSupplierFilter', pageData.filters.suppliers, filters.stamping_supplier);
+            }
+            if (pageData.filters.vehicle_models) {
+                fillSelect('costVehicleModelFilter', pageData.filters.vehicle_models, filters.vehicle_model);
             }
         }
         updateCostFilterCapsules();
@@ -573,6 +594,8 @@ function showDetailDrawer(row) {
                 ['料片尺寸', `${row.sheet_length || '—'} × ${row.sheet_width || '—'} mm`],
                 ['可制件数', row.parts_per_sheet ?? '—'],
                 ['是否利废（本月）', row.is_offal_nested ? '是' : '否'],
+                ['是否摆剪（本月）', row.has_swing_shear ? '是' : '否'],
+                ['摆剪加价（本月）', row.has_swing_shear ? `${fmtNum(row.swing_shear_fee_per_ton, 2)} 元/吨` : '—'],
                 ['利用哪类废料（本月）', row.offal_source || '—'],
                 ['成品单重', `${fmtNum(row.part_weight, 4)} kg`],
             ])}
@@ -886,8 +909,9 @@ async function batchDelete() {
 async function exportExcel() {
     if (!listState.canExport) return showToast('无导出权限', 'warning');
     const filters = getFilters();
-    if (!Object.values(filters).some(Boolean)) {
-        showToast('请至少选择一个筛选条件后再导出', 'warning');
+    if (!filters.vehicle_model) {
+        setAdvancedOpen(true);
+        showToast(EXPORT_VEHICLE_REQUIRED_MESSAGE, 'warning');
         return;
     }
     try {
@@ -897,6 +921,7 @@ async function exportExcel() {
                 month: filters.month || undefined,
                 location: filters.location || undefined,
                 stamping_supplier: filters.stamping_supplier || undefined,
+                vehicle_model: filters.vehicle_model,
                 audit_status: filters.audit_status || undefined,
                 part_number: filters.part_number || undefined,
             },

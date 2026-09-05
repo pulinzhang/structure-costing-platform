@@ -15,6 +15,7 @@ from openpyxl.utils import get_column_letter
 from sqlalchemy.orm import Session
 
 from app.common.audit import audit_status_label
+from app.common.bom.manufacturing_category import short_part_number_digits
 from app.common.excel_workbook import resolve_worksheet
 from app.common.export_filters import require_at_least_one_export_filter
 from app.common.export_watermark import workbook_to_xlsx_bytes
@@ -38,8 +39,8 @@ _TONNAGE_SOURCE_LABEL = {
 }
 
 # 主表列（纵向合并）+ 工序明细分隔
-MAIN_COLS = 14
-COL_COUNT = 22
+MAIN_COLS = 15
+COL_COUNT = 23
 HEADERS = [
     "序号",
     "年度",
@@ -48,6 +49,7 @@ HEADERS = [
     "车型",
     "版本",
     "零件号",
+    "短码",
     "零件名称",
     "材质",
     "料厚",
@@ -72,6 +74,7 @@ WIDTHS = [
     10,
     10,
     16,
+    8,
     18,
     10,
     8,
@@ -373,7 +376,7 @@ class StampingProcessFeeExportService:
             cell.border = self._split_detail if col == MAIN_COLS + 1 else self._thin
         ws.row_dimensions[group_row].height = GROUP_H
 
-        fee_cols = {12, 13, 14, 20, 21}  # 系统/其它/确认、冲次单价、单序费用
+        fee_cols = {13, 14, 15, 21, 22}  # 系统/其它/确认、冲次单价、单序费用
         for col, title in enumerate(HEADERS, start=1):
             cell = ws.cell(row=header_row, column=col, value=title)
             cell.font = header_font
@@ -413,6 +416,7 @@ class StampingProcessFeeExportService:
                 record.vehicle_model,
                 record.version,
                 record.part_number,
+                short_part_number_digits(record.part_number) or "",
                 record.part_name or "",
                 record.material or "",
                 _num(record.thickness, Q4),
@@ -431,19 +435,22 @@ class StampingProcessFeeExportService:
                 elif col == 7:
                     cell.font = _font(bold=True, color="1565C0")
                     cell.alignment = self._left
-                elif col == 14:
+                elif col == 8:
+                    cell.font = _font(size=11, bold=True, color="1565C0")
+                    cell.alignment = self._center
+                elif col == 15:
                     cell.font = _font(size=11, bold=True, color="E65100")
                     cell.alignment = self._right
                     cell.fill = _fill("FFF3E0")
-                elif col in {11, 12, 13}:
-                    cell.font = _font(bold=True) if col == 11 else _font()
-                    cell.alignment = self._right if col in {12, 13} else self._center
-                elif col == 10:
+                elif col in {12, 13, 14}:
+                    cell.font = _font(bold=True) if col == 12 else _font()
+                    cell.alignment = self._right if col in {13, 14} else self._center
+                elif col == 11:
                     cell.font = _font()
                     cell.alignment = self._right
                 else:
                     cell.font = _font()
-                    cell.alignment = self._left if col in {3, 4, 5, 6, 8, 9} else self._center
+                    cell.alignment = self._left if col in {3, 4, 5, 6, 9, 10} else self._center
 
         tonnage_source = (item.tonnage_source if item else "") or ""
         detail_values: list[Any] = [
@@ -461,14 +468,14 @@ class StampingProcessFeeExportService:
             cell = ws.cell(row=row_idx, column=col, value="" if value is None else value)
             cell.fill = detail_fill
             cell.border = self._split_detail if col == MAIN_COLS + 1 else self._thin
-            if col == 21:  # 单序费用
+            if col == 22:  # 单序费用
                 cell.font = _font(size=11, bold=True, color="E65100")
                 cell.alignment = self._right
                 cell.fill = _fill("FFF3E0")
-            elif col in {17, 19, 20}:  # 吨位、比例、冲次单价
+            elif col in {18, 20, 21}:  # 吨位、比例、冲次单价
                 cell.font = _font()
                 cell.alignment = self._right
-            elif col == 22:  # 计算依据
+            elif col == 23:  # 计算依据
                 cell.font = _font(size=9, color="607D8B")
                 cell.alignment = self._left
             else:
@@ -490,7 +497,7 @@ class StampingProcessFeeExportService:
                 end_column=col,
             )
             cell = ws.cell(row=start_row, column=col)
-            if col == 14:
+            if col == 15:
                 cell.fill = _fill("FFF3E0")
             else:
                 cell.fill = main_fill

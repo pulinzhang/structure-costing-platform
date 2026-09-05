@@ -22,7 +22,7 @@ from app.services.costing.stamping_part_cost.calc.orchestrator.rates import (
     load_part_cost_calc_rates,
 )
 from app.services.costing.stamping_part_cost.calc.orchestrator.ready import collect_calc_ready
-from app.services.costing.stamping_part_cost.calc.scope import require_scope
+from app.services.costing.stamping_part_cost.calc.scope import require_calc_scope
 
 
 @dataclass(frozen=True, slots=True)
@@ -44,12 +44,13 @@ def prepare_calc_run(
     dto: StampingPartCostCalcDTO,
     progress: ProgressNotifier,
 ) -> CalcPrepContext:
-    location, supplier = require_scope(dto)
+    location, supplier, vehicle_model = require_calc_scope(dto)
     rates = load_part_cost_calc_rates(deps.settings_service, db)
     started_at = now()
     detail_lines = [
         f"开始计算 year={dto.year} month={dto.month} location={location} "
-        f"supplier={supplier} density={rates.density} loss_rate={rates.loss_rate} "
+        f"supplier={supplier} vehicle_model={vehicle_model} "
+        f"density={rates.density} loss_rate={rates.loss_rate} "
         f"recovery={rates.recovery_rate} finance={rates.finance_rate} "
         f"management={rates.management_rate} "
         f"warehouse_packaging={rates.warehouse_packaging_rate} "
@@ -64,7 +65,7 @@ def prepare_calc_run(
         month=dto.month,
         location=location,
         stamping_supplier=supplier,
-        vehicle_model=dto.vehicle_model,
+        vehicle_model=vehicle_model,
         version=dto.version,
     )
     if not ready.can_calculate:
@@ -92,11 +93,13 @@ def prepare_calc_run(
         db,
         location=location,
         stamping_supplier=supplier,
-        vehicle_model=dto.vehicle_model,
+        vehicle_model=vehicle_model,
         version=dto.version,
     )
     if not parts:
-        raise BusinessException(f"基地「{location}」工厂「{supplier}」下未找到匹配的冲压零件")
+        raise BusinessException(
+            f"基地「{location}」工厂「{supplier}」车型「{vehicle_model}」下未找到匹配的冲压零件"
+        )
     detail_lines.append(f"匹配零件 {len(parts)} 件")
 
     return CalcPrepContext(

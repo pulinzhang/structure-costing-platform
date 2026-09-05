@@ -5,7 +5,7 @@ from decimal import Decimal
 
 from pydantic import BaseModel, Field, field_serializer, field_validator
 
-from app.common.money import Q3, Q4, Q6, optional_format_money
+from app.common.money import Q2, Q3, Q4, Q6, format_money, optional_format_money
 from app.common.timezone import datetime_to_iso
 
 
@@ -32,6 +32,8 @@ class StampingPartCostVO(BaseModel):
     sheet_type: str | None = None
     is_offal_nested: bool = False
     offal_source: str | None = None
+    has_swing_shear: bool = False
+    swing_shear_fee_per_ton: Decimal = Decimal("0")
     die_type: str | None = None
     process_method: str | None = None
     automation: str | None = None
@@ -124,6 +126,10 @@ class StampingPartCostVO(BaseModel):
     @field_serializer("scrap_ton_price")
     def serialize_ton_price(self, value: Decimal | None) -> str | None:
         return optional_format_money(value, Q4, 4)
+
+    @field_serializer("swing_shear_fee_per_ton")
+    def serialize_swing_shear_fee(self, value: Decimal) -> str:
+        return format_money(value, Q2, 2)
 
     @field_serializer("process_fee_amount")
     def serialize_process_fee(self, value: Decimal | None) -> str | None:

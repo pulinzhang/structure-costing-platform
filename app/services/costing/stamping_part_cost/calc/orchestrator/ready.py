@@ -24,14 +24,17 @@ def collect_calc_ready(
     location_value = (location or "").strip() or None
     supplier_value = (stamping_supplier or "").strip() or None
 
+    vehicle_value = (vehicle_model or "").strip() or None
+    version_value = (version or "").strip() or None
+
     part_count = 0
-    if location_value and supplier_value:
+    if location_value and supplier_value and vehicle_value:
         parts = deps.part_repo.list_with_processes(
             db,
             location=location_value,
             stamping_supplier=supplier_value,
-            vehicle_model=vehicle_model,
-            version=version,
+            vehicle_model=vehicle_value,
+            version=version_value,
         )
         part_count = len(parts)
 
@@ -68,12 +71,12 @@ def collect_calc_ready(
             db,
             year=year,
             location=location_value,
-            vehicle_model=vehicle_model,
+            vehicle_model=vehicle_value,
         )
         gauge_fee_count = deps.gauge_fee_resolver.count_for_ready(
             db,
             location=location_value,
-            vehicle_model=vehicle_model,
+            vehicle_model=vehicle_value,
         )
 
     can_calculate = bool(
@@ -81,6 +84,7 @@ def collect_calc_ready(
         and month
         and location_value
         and supplier_value
+        and vehicle_value
         and part_count > 0
         and steel_price_count > 0
         and scrap_price_count > 0
@@ -92,8 +96,8 @@ def collect_calc_ready(
         month=month,
         location=location_value,
         stamping_supplier=supplier_value,
-        vehicle_model=vehicle_model,
-        version=version,
+        vehicle_model=vehicle_value,
+        version=version_value,
         part_count=part_count,
         steel_price_count=steel_price_count,
         scrap_price_count=scrap_price_count,

@@ -20,9 +20,9 @@ class StampingPartCostScopeDTO(BaseModel):
 
 
 class StampingPartCostCalcDTO(StampingPartCostScopeDTO):
-    """计算请求（车型/版本可选）。"""
+    """计算请求：车型必填，版本可选。"""
 
-    vehicle_model: str | None = Field(None, description="车型")
+    vehicle_model: str = Field(..., min_length=1, description="车型")
     version: str | None = Field(None, description="版本")
 
 
@@ -71,7 +71,7 @@ class StampingPartCostManualUnitCostDTO(BaseModel):
 
 @dataclass(slots=True)
 class StampingPartCostPartSnapshot:
-    """零件主表快照到核价结果行（含本月是否利废 / 利用哪类废料）。"""
+    """零件主表快照到核价结果行（含本月是否利废 / 摆剪）。"""
 
     source_part_id: int | None
     seq_no: int | None
@@ -86,6 +86,7 @@ class StampingPartCostPartSnapshot:
     sheet_type: str | None
     is_offal_nested: bool
     offal_source: str | None
+    has_swing_shear: bool
     die_type: str | None
     process_method: str | None
     automation: str | None
@@ -111,6 +112,7 @@ class StampingPartCostCalcAmounts:
     steel_price_id: int | None
     steel_mill: str | None
     steel_ton_price: Decimal | None
+    swing_shear_fee_per_ton: Decimal
     scrap_price_id: int | None
     scrap_ton_price: Decimal | None
     process_fee_id: int | None
@@ -157,6 +159,7 @@ class StampingPartCostUpsertPayload:
     steel_price_id: int | None = None
     steel_mill: str | None = None
     steel_ton_price: Decimal | None = None
+    swing_shear_fee_per_ton: Decimal = Decimal("0")
     scrap_price_id: int | None = None
     scrap_ton_price: Decimal | None = None
     process_fee_id: int | None = None

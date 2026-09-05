@@ -43,6 +43,7 @@ class StampingPartResponse(BaseModel):
     is_offal_nested: bool = False
     offal_source: str | None = None
     is_scrap_byproduct: bool = False
+    has_swing_shear: bool = False
     die_type: str | None = None
     process_method: str | None = None
     automation: str | None = Field(
@@ -93,6 +94,7 @@ class StampingPartListResponse(BaseModel):
     is_offal_nested: bool = False
     offal_source: str | None = None
     is_scrap_byproduct: bool = False
+    has_swing_shear: bool = False
     excel_filename: str | None = None
     excel_sheet_name: str | None = None
     excel_row: int | None = None
@@ -157,6 +159,7 @@ class StampingPartWithProcessesResponse(BaseModel):
     is_offal_nested: bool = False
     offal_source: str | None = None
     is_scrap_byproduct: bool = False
+    has_swing_shear: bool = False
     die_type: str | None = None
     process_method: str | None = None
     automation: str | None = Field(

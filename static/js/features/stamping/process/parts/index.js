@@ -10,7 +10,7 @@ import {
     updatePartsFilterCapsules,
     updatePartsHud,
     renderPartsPagination,
-} from './template.js?v=24';
+} from './template.js?v=25';
 import {
     DEFAULT_PAGE_SIZE,
     PAGE_SIZE_OPTIONS,
@@ -32,6 +32,13 @@ function scrapByproductCell(part) {
         return '<span class="text-[#555555]">—</span>';
     }
     return '<span class="inline-flex items-center px-1.5 py-0.5 text-[9px] tracking-wide text-[#8E8E93] bg-[#161620] border border-[#2A2A35]" title="废料副产品，不算冲压费">是</span>';
+}
+
+function swingShearCell(part) {
+    if (!part.has_swing_shear) {
+        return '<span class="text-[#555555]">—</span>';
+    }
+    return '<span class="inline-flex items-center px-1.5 py-0.5 text-[9px] tracking-wide text-[#90caf9] bg-[#0d1a24] border border-[#90caf9]/30" title="含摆剪工序">是</span>';
 }
 
 
@@ -397,6 +404,7 @@ export const PartsPage = {
                 <td class="${cell} ${muted} font-sans">${esc(part.material) || '—'}</td>
                 <td class="${cell}">${offalCell(part)}</td>
                 <td class="${cell}">${scrapByproductCell(part)}</td>
+                <td class="${cell}">${swingShearCell(part)}</td>
                 <td class="${cell} text-right tabular-nums ${muted}">${thickness}</td>
                 <td class="${cell} text-right tabular-nums ${muted}">${partWeight}</td>
                 <td class="${cell} text-right tabular-nums ${muted}">${processCount}</td>

@@ -34,7 +34,7 @@ from app.services.costing.stamping_part_cost.calc.constants import (
     STATUS_PROCESSING,
 )
 from app.services.costing.stamping_part_cost.calc.models import DuplicateScopeCalcError
-from app.services.costing.stamping_part_cost.calc.scope import require_scope
+from app.services.costing.stamping_part_cost.calc.scope import require_calc_scope
 
 logger = logging.getLogger("service.stamping_part_cost.calc.log")
 
@@ -66,7 +66,7 @@ class PartCostCalcLogService:
         operator_id: int | None,
         operator_name: str | None,
     ) -> StampingPartCostCalcLog:
-        location, supplier = require_scope(dto)
+        location, supplier, vehicle_model = require_calc_scope(dto)
         self._ensure_processing_lock_index(db)
         self.expire_stale_processing(
             db,
@@ -96,7 +96,7 @@ class PartCostCalcLogService:
                     month=dto.month,
                     location=location,
                     stamping_supplier=supplier,
-                    vehicle_model=dto.vehicle_model,
+                    vehicle_model=vehicle_model,
                     version=dto.version,
                     status=STATUS_PROCESSING,
                     detail_text="计算进行中...",

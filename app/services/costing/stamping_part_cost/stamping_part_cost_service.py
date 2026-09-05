@@ -261,6 +261,13 @@ class StampingPartCostService:
                 month=query.month,
                 location=query.location,
             ),
+            "vehicle_models": self.cost_repo.get_distinct_vehicle_models(
+                db,
+                year=query.year,
+                month=query.month,
+                location=query.location,
+                stamping_supplier=query.stamping_supplier,
+            ),
             "summary": self.cost_repo.summarize_by_filters(
                 db,
                 year=query.year,

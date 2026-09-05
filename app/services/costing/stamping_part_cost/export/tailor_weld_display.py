@@ -10,6 +10,7 @@ from typing import Any
 from sqlalchemy.orm import Session
 
 from app.common.money import Q2, optional_format_money
+from app.common.swing_shear import steel_kg_price_with_swing_shear
 from app.models.costing import SteelPrice
 from app.models.stamping.tailor_weld_blank import StampingTailorWeldBlank
 from app.repositories.costing.steel_price.steel_price_repository import SteelPriceRepository
@@ -162,7 +163,9 @@ def build_tailor_blank_terms(
         steel = lookup_blank_steel(row, blank, price_index)
         steel_kg = None
         if steel is not None and steel.final_price_per_ton is not None:
-            steel_kg = Decimal(str(steel.final_price_per_ton)) / Decimal("1000")
+            mill_ton = Decimal(str(steel.final_price_per_ton))
+            surcharge = Decimal(str(getattr(row, "swing_shear_fee_per_ton", None) or 0))
+            steel_kg = steel_kg_price_with_swing_shear(mill_ton, surcharge)
         terms.append(
             TailorWeldBlankTerm(
                 blank_seq=int(blank.blank_seq or 0),
@@ -178,19 +181,19 @@ def build_tailor_blank_terms(
 
 
 def build_blank_row_m_formula(excel_row: int, density: Decimal) -> str:
-    """子片行 M：与普通件相同，引用本行 G/J/K/L。"""
+    """子片行 N：与普通件相同，引用本行 H/K/L/M（料厚/长/宽/可制件数）。"""
     return (
-        f"=J{excel_row}*K{excel_row}*G{excel_row}"
-        f"*{formula_number(density)}/1000000/L{excel_row}"
+        f"=K{excel_row}*L{excel_row}*H{excel_row}"
+        f"*{formula_number(density)}/1000000/M{excel_row}"
     )
 
 
 def build_tailor_group_n_formula(first_row: int, last_row: int) -> str:
-    return f"=H{first_row}/SUM(M{first_row}:M{last_row})"
+    return f"=I{first_row}/SUM(N{first_row}:N{last_row})"
 
 
 def build_tailor_group_o_formula(first_row: int, last_row: int) -> str:
-    return f"=SUM(M{first_row}:M{last_row})-H{first_row}"
+    return f"=SUM(N{first_row}:N{last_row})-I{first_row}"
 
 
 def build_tailor_group_r_formula(
@@ -201,14 +204,14 @@ def build_tailor_group_r_formula(
     loss_rate: Decimal,
     recovery: Decimal,
 ) -> str:
-    """R = Σ(Mi×Pi×(1+λ)) − ΣM×λ×η×Q − O×η×Q，Mi/Pi 引用各子片行。"""
+    """S = Σ(Ni×Qi×(1+λ)) − ΣN×λ×η×R − P×η×R，Ni/Qi 引用各子片行。"""
     loss = formula_number(loss_rate)
     eta = formula_number(recovery)
-    purchase = "+".join(f"M{row}*P{row}*(1+{loss})" for row in blank_rows)
+    purchase = "+".join(f"N{row}*Q{row}*(1+{loss})" for row in blank_rows)
     return (
         f"={purchase}"
-        f"-SUM(M{first_row}:M{last_row})*{loss}*{eta}*Q{first_row}"
-        f"-O{first_row}*Q{first_row}*{eta}"
+        f"-SUM(N{first_row}:N{last_row})*{loss}*{eta}*R{first_row}"
+        f"-P{first_row}*R{first_row}*{eta}"
     )
 
 

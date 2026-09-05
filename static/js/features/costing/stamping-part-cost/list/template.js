@@ -78,7 +78,7 @@ export function partCostListTemplate() {
                             </button>
                             <button id="costExportBtn" type="button"
                                     class="inline-flex items-center gap-1.5 bg-transparent text-[#6E6E73] border border-[#2A2A35] px-3 py-1.5 text-[11px] font-medium rounded-md hover:border-[#FF1E27]/50 hover:text-[#FF1E27] hover:bg-[#FF1E27]/10 hover:shadow-[0_0_12px_rgba(255,30,39,0.2)] transition-all duration-200"
-                                    title="按当前筛选导出冲压零件核价结果（含材料费、加工费、模具费、检具费）">
+                                    title="须选定配套车型；按当前筛选导出冲压零件核价结果（含材料费、加工费、模具费、检具费）">
                                 ${window.svgIcon('download', 'w-3 h-3')}
                                 导出 Excel
                             </button>
@@ -97,6 +97,7 @@ export function partCostListTemplate() {
                                 <span id="costCapsulePeriod" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部期间</span>
                                 <span id="costCapsuleLocation" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部基地</span>
                                 <span id="costCapsuleSupplier" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部工厂</span>
+                                <span id="costCapsuleVehicle" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部车型</span>
                             </div>
                         </div>
                         <div class="flex items-center gap-3 shrink-0">
@@ -121,6 +122,7 @@ export function partCostListTemplate() {
                             ${filterSelect('costMonthFilter', '月份')}
                             ${filterSelect('costLocationFilter', '基地')}
                             ${filterSelect('costSupplierFilter', '冲压工厂')}
+                            ${filterSelect('costVehicleModelFilter', '配套车型')}
                             ${filterSelect('costAuditFilter', '审核状态')}
                             ${filterInput('costPartNumberFilter', '零件号', '短号或完整零件号')}
                             <button id="costResetBtn" type="button"
@@ -129,17 +131,18 @@ export function partCostListTemplate() {
                                 重置
                             </button>
                         </div>
-                        <p class="mt-2 text-[10px] text-[#555555]">批量删除 / 审核 / 反审核须选定年度、月份、基地、冲压工厂。</p>
+                        <p class="mt-2 text-[10px] text-[#555555]">批量删除 / 审核 / 反审核须选定年度、月份、基地、冲压工厂。导出须选定配套车型。</p>
                     </div>
                 </div>
 
                 <div class="overflow-x-auto bg-[#0A0A0E] brabus-bg-grid">
-                    <table id="costDataTable" class="w-full table-fixed bg-transparent border-collapse" style="min-width: 1720px;">
+                    <table id="costDataTable" class="w-full table-fixed bg-transparent border-collapse" style="min-width: 1780px;">
                         <colgroup id="costColgroup">
                             <col style="width:3px">
                             <col style="width:72px">
                             <col style="width:118px">
                             <col style="width:64px">
+                            <col style="width:52px">
                             <col style="width:128px">
                             <col style="width:68px">
                             <col style="width:58px">
@@ -171,6 +174,7 @@ export function partCostListTemplate() {
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">年月/基地</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#6E6E73]">零件</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]" title="本月核价快照；下月废料不足可改零件后再算下月">利废</th>
+                                <th class="px-2 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-[#555555]" title="工艺含摆剪时，材料核算把系统摆剪吨价加进钢价；金额为当月快照">摆剪</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">材质/规格</th>
                                 <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]" title="预估单件材料消耗 M (kg)">消耗</th>
                                 <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]" title="零件净量">净量</th>
@@ -333,6 +337,7 @@ export function renderCostRows(records, breakdownOpen = false) {
             </td>
             <td class="px-2 py-2 overflow-hidden">${partInfoCell(row.part_number, row.part_name)}</td>
             <td class="px-2 py-2 overflow-hidden">${offalCostCell(row)}</td>
+            <td class="px-1 py-2 text-center">${swingShearCostCell(row)}</td>
             <td class="px-2 py-2 overflow-hidden">
                 <div class="text-[#8E8E93] text-[10px] truncate" title="${esc(row.material || '')}">${esc(row.material || '—')}</div>
                 <div class="text-[#F0F0F2] text-[10px] mt-0.5 tabular-nums truncate" title="${esc(row.thickness || '')}">${esc(row.thickness || '—')}</div>
@@ -434,6 +439,18 @@ function offalCostCell(row) {
         <div class="text-[9px] text-[#8E8E93] mt-0.5 truncate" title="${source}">${source || '—'}</div>`;
 }
 
+function swingShearCostCell(row) {
+    if (!row.has_swing_shear) {
+        return '<span class="text-[#555555]">否</span>';
+    }
+    const fee = fmtNum(row.swing_shear_fee_per_ton, 2);
+    return `
+        <div class="inline-flex flex-col items-center gap-0.5">
+            <span class="inline-flex items-center px-1.5 py-0.5 text-[9px] tracking-wide text-[#90caf9] bg-[#0d1a24] border border-[#90caf9]/30">是</span>
+            <span class="text-[9px] font-mono tabular-nums text-[#8E8E93]" title="当月加到钢价上的元/吨">+${esc(fee)}</span>
+        </div>`;
+}
+
 /** 用筛选汇总刷新HUD（均价/ 待审 / 已审均为全量筛选结果，非本页） */
 export function updatePartCostHud(total, summary) {
     const setText = (id, value) => {
@@ -462,6 +479,7 @@ export function updateCostFilterCapsules() {
     const month = document.getElementById('costMonthFilter')?.value || '';
     const location = document.getElementById('costLocationFilter')?.value || '';
     const supplier = document.getElementById('costSupplierFilter')?.value || '';
+    const vehicle = document.getElementById('costVehicleModelFilter')?.value || '';
     const audit = document.getElementById('costAuditFilter')?.value || '';
     const part = document.getElementById('costPartNumberFilter')?.value.trim() || '';
 
@@ -471,6 +489,7 @@ export function updateCostFilterCapsules() {
     const periodEl = document.getElementById('costCapsulePeriod');
     const locationEl = document.getElementById('costCapsuleLocation');
     const supplierEl = document.getElementById('costCapsuleSupplier');
+    const vehicleEl = document.getElementById('costCapsuleVehicle');
     const countEl = document.getElementById('costAdvancedFilterCount');
 
     if (periodEl) {
@@ -493,8 +512,12 @@ export function updateCostFilterCapsules() {
         supplierEl.textContent = supplier || '全部工厂';
         supplierEl.className = supplier ? activeCapsule : idleCapsule;
     }
+    if (vehicleEl) {
+        vehicleEl.textContent = vehicle || '全部车型';
+        vehicleEl.className = vehicle ? activeCapsule : idleCapsule;
+    }
 
-    const advancedActive = [year, month, location, supplier, audit, part].filter(Boolean).length;
+    const advancedActive = [year, month, location, supplier, vehicle, audit, part].filter(Boolean).length;
     if (countEl) countEl.textContent = `(${advancedActive})`;
 }
 

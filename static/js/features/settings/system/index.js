@@ -5,7 +5,7 @@
  * 密度按 4 位小数；各类「率」界面按 2 位小数（‰ / %），提交时再换算为小数串。
  */
 
-import { settingsTemplate } from './template.js?v=14';
+import { settingsTemplate } from './template.js?v=16';
 
 const API = '/api/settings/system/config';
 const DEFAULT_APP_NAME = '汽车冲压件自动核价平台';
@@ -17,6 +17,7 @@ const DEFAULT_FINISHED_MANAGEMENT_PERCENT = '2.00';
 const DEFAULT_FINISHED_WAREHOUSE_PACKAGING_PERCENT = '1.00';
 const DEFAULT_FINISHED_SCRAP_PERMILLE = '3.00';
 const DEFAULT_FINISHED_PRETAX_PROFIT_PERCENT = '2.00';
+const DEFAULT_SWING_SHEAR_PROCESS_FEE_PER_TON = '150.00';
 
 const RATE_INPUT_IDS = [
     'settingsSteelDensity',
@@ -27,6 +28,7 @@ const RATE_INPUT_IDS = [
     'settingsFinishedWarehousePackagingPercent',
     'settingsFinishedScrapPermille',
     'settingsFinishedPretaxProfitPercent',
+    'settingsSwingShearProcessFeePerTon',
 ];
 
 /** 小数率 → 界面 %（2 位小数） */
@@ -78,6 +80,7 @@ function applyFormValues({
     warehousePackagingPercent,
     scrapPermille,
     pretaxProfitPercent,
+    swingShearFeePerTon,
 }) {
     const densityEl = document.getElementById('settingsSteelDensity');
     if (densityEl) densityEl.value = density;
@@ -97,6 +100,8 @@ function applyFormValues({
     if (scrapEl) scrapEl.value = scrapPermille;
     const pretaxEl = document.getElementById('settingsFinishedPretaxProfitPercent');
     if (pretaxEl) pretaxEl.value = pretaxProfitPercent;
+    const swingShearEl = document.getElementById('settingsSwingShearProcessFeePerTon');
+    if (swingShearEl) swingShearEl.value = swingShearFeePerTon;
 }
 
 export const SettingsPage = {
@@ -131,6 +136,7 @@ export const SettingsPage = {
             warehousePackagingPercent: DEFAULT_FINISHED_WAREHOUSE_PACKAGING_PERCENT,
             scrapPermille: DEFAULT_FINISHED_SCRAP_PERMILLE,
             pretaxProfitPercent: DEFAULT_FINISHED_PRETAX_PROFIT_PERCENT,
+            swingShearFeePerTon: DEFAULT_SWING_SHEAR_PROCESS_FEE_PER_TON,
         });
         showToast('已填入默认值，点击保存后生效', 'success');
     },
@@ -173,6 +179,12 @@ export const SettingsPage = {
                 pretaxProfitPercent: rateToPercentDisplay(
                     data.finished_pretax_profit_rate, DEFAULT_FINISHED_PRETAX_PROFIT_PERCENT,
                 ),
+                swingShearFeePerTon: (() => {
+                    const fee = formatDecimalFixed(data.swing_shear_process_fee_per_ton, 2);
+                    return fee != null && compareDecimalStrings(fee, '0') >= 0
+                        ? fee
+                        : DEFAULT_SWING_SHEAR_PROCESS_FEE_PER_TON;
+                })(),
             });
         } catch (error) {
             showToast(error.message || '加载系统设置失败', 'error');
@@ -206,6 +218,9 @@ export const SettingsPage = {
         );
         const pretaxProfitPercent = parseDecimalInput(
             document.getElementById('settingsFinishedPretaxProfitPercent')?.value, 2,
+        );
+        const swingShearFeePerTon = parseDecimalInput(
+            document.getElementById('settingsSwingShearProcessFeePerTon')?.value, 2,
         );
         if (!appName) {
             showToast('应用名称缺失，请刷新后重试', 'warning');
@@ -251,6 +266,14 @@ export const SettingsPage = {
             showToast('成品税前利润率须为 0~100%', 'warning');
             return;
         }
+        if (
+            swingShearFeePerTon == null
+            || compareDecimalStrings(swingShearFeePerTon, '0') < 0
+            || compareDecimalStrings(swingShearFeePerTon, '100000') > 0
+        ) {
+            showToast('摆剪工序加工费须为 0~100000 元/吨', 'warning');
+            return;
+        }
 
         const materialLossRate = scaleDecimalByPow10(lossPermille, -3, 6);
         const scrapRecoveryRate = scaleDecimalByPow10(recoveryPercent, -2, 6);
@@ -291,6 +314,7 @@ export const SettingsPage = {
                 finished_warehouse_packaging_rate: finishedWarehousePackagingRate,
                 finished_scrap_rate: finishedScrapRate,
                 finished_pretax_profit_rate: finishedPretaxProfitRate,
+                swing_shear_process_fee_per_ton: swingShearFeePerTon,
             });
             const data = res.data || {};
             if (data.app_name) {
@@ -330,6 +354,10 @@ export const SettingsPage = {
                 pretaxProfitPercent: data.finished_pretax_profit_rate != null
                     ? rateToPercentDisplay(data.finished_pretax_profit_rate, pretaxProfitPercent)
                     : pretaxProfitPercent,
+                swingShearFeePerTon: data.swing_shear_process_fee_per_ton != null
+                    ? (formatDecimalFixed(data.swing_shear_process_fee_per_ton, 2)
+                        || swingShearFeePerTon)
+                    : swingShearFeePerTon,
             });
             showToast(res.message || '保存成功', 'success');
         } catch (error) {

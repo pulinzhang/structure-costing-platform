@@ -13,6 +13,7 @@ from pathlib import Path
 from sqlalchemy.orm import Session
 
 from app.common.audit import audit_create, display_name
+from app.common.swing_shear import is_swing_shear_label
 from app.common.timezone import now
 from app.common.upload_scope_validation import validate_stamping_process_upload_scope
 from app.config import settings
@@ -172,6 +173,10 @@ class StampingUploadService:
                     stamping_supplier,
                     filename,
                     tailor_parent_numbers=tailor_parent_numbers,
+                    swing_shear_part_numbers=self._swing_shear_part_numbers(
+                        parse_result.parts,
+                        parse_result.processes,
+                    ),
                     current_user=current_user,
                 )
                 tailor_assemblies, tailor_blanks, tailor_warnings = (
@@ -338,12 +343,14 @@ class StampingUploadService:
         stamping_supplier: str = "",
         excel_filename: str = "",
         tailor_parent_numbers: set[str] | None = None,
+        swing_shear_part_numbers: set[str] | None = None,
         *,
         current_user: UserVO,
     ) -> dict[str, int]:
         """保存零件数据到数据库，返回 part_number -> part_id 映射"""
         audit = audit_create(current_user)
         tailor_parents = tailor_parent_numbers or set()
+        swing_shear_parts = swing_shear_part_numbers or set()
         location = file_info.safe_location
         self.part_repo.delete_by_scope(
             self.db,
@@ -393,6 +400,7 @@ class StampingUploadService:
                     is_offal_nested=part.is_offal_nested,
                     offal_source=part.offal_source,
                     is_scrap_byproduct=part.is_scrap_byproduct,
+                    has_swing_shear=part_number in swing_shear_parts,
                     die_type=part.die_type,
                     process_method=part.process_method,
                     automation=part.automation,
@@ -422,6 +430,22 @@ class StampingUploadService:
         )
         logger.info("导入零件: %d 个", len(parts_to_create))
         return part_map
+
+    @staticmethod
+    def _swing_shear_part_numbers(parts: list[Part], processes: list[Process]) -> set[str]:
+        numbers: set[str] = set()
+        for part in parts:
+            part_number = (part.part_number or "").strip()
+            if not part_number:
+                continue
+            if part.has_swing_shear:
+                numbers.add(part_number)
+        for process in processes:
+            if is_swing_shear_label(process.process_code, process.process_seq):
+                part_number = (process.part_number or "").strip()
+                if part_number:
+                    numbers.add(part_number)
+        return numbers
 
     def _save_processes(
         self,

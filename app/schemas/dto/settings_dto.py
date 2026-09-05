@@ -6,7 +6,7 @@ from typing import Any, TypedDict
 
 from pydantic import BaseModel, Field, field_validator
 
-from app.common.money import Q4, Q6, quantize_money
+from app.common.money import Q2, Q4, Q6, quantize_money
 
 
 class SystemConfigUpdateDTO(BaseModel):
@@ -61,6 +61,12 @@ class SystemConfigUpdateDTO(BaseModel):
         le=1,
         description="成品税前利润率（小数，如 0.02 表示 2%）",
     )
+    swing_shear_process_fee_per_ton: Decimal = Field(
+        ...,
+        ge=0,
+        le=100000,
+        description="摆剪件加到钢价上的金额（元/吨）",
+    )
 
     @field_validator("steel_density", mode="before")
     @classmethod
@@ -81,6 +87,11 @@ class SystemConfigUpdateDTO(BaseModel):
     def _coerce_rate(cls, value: Any) -> Decimal:
         return quantize_money(value, Q6)
 
+    @field_validator("swing_shear_process_fee_per_ton", mode="before")
+    @classmethod
+    def _coerce_swing_shear_fee(cls, value: Any) -> Decimal:
+        return quantize_money(value, Q2)
+
 
 @dataclass(slots=True)
 class SystemConfigWrite:
@@ -95,6 +106,7 @@ class SystemConfigWrite:
     finished_warehouse_packaging_rate: Decimal
     finished_scrap_rate: Decimal
     finished_pretax_profit_rate: Decimal
+    swing_shear_process_fee_per_ton: Decimal
     created_by: str
     updated_by: str
 
@@ -111,4 +123,5 @@ class SystemConfigPatch(TypedDict, total=False):
     finished_warehouse_packaging_rate: Decimal
     finished_scrap_rate: Decimal
     finished_pretax_profit_rate: Decimal
+    swing_shear_process_fee_per_ton: Decimal
     updated_by: str

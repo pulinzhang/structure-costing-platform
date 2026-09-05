@@ -29,7 +29,7 @@ from app.schemas.vo.user_vo import UserVO
 
 logger = logging.getLogger("service.stamping.part_export")
 
-COL_COUNT = 26
+COL_COUNT = 27
 DATA_START_ROW = 6
 SKETCH_COL = 7
 DEFAULT_ROW_HEIGHT = 18
@@ -70,6 +70,7 @@ WIDTHS = [
     12,
     12,
     14,
+    10,
     8,
     14,
     10,
@@ -228,7 +229,7 @@ class StampingPartExportService:
             scope_parts.append(f"版本：{version}")
         scope_text = "    ".join(scope_parts)
 
-        count_start = 20
+        count_start = 21
         ws.merge_cells(start_row=2, start_column=1, end_row=2, end_column=count_start - 1)
         c2 = ws.cell(row=2, column=1, value=scope_text)
         c2.font = self._meta_font
@@ -264,21 +265,22 @@ class StampingPartExportService:
             14: "料片式样",
             15: "是否利废",
             16: "利用哪类废料",
-            17: "工艺",
-            21: "使用冲压设备吨位",
-            22: "模具类型",
-            23: "工艺方法",
-            24: "自动化",
-            25: "备注",
-            26: "费用比例",
+            17: "是否摆剪",
+            18: "工艺",
+            22: "使用冲压设备吨位",
+            23: "模具类型",
+            24: "工艺方法",
+            25: "自动化",
+            26: "备注",
+            27: "费用比例",
         }
         row5 = {
             11: "长/卷料宽",
             12: "宽/卷料步距",
-            17: "工序名称",
-            18: "工序",
-            19: "套数",
-            20: "模具编号",
+            18: "工序名称",
+            19: "工序",
+            20: "套数",
+            21: "模具编号",
         }
         merges = [
             (4, 1, 5, 1),
@@ -296,13 +298,14 @@ class StampingPartExportService:
             (4, 14, 5, 14),
             (4, 15, 5, 15),
             (4, 16, 5, 16),
-            (4, 17, 4, 20),
-            (4, 21, 5, 21),
+            (4, 17, 5, 17),
+            (4, 18, 4, 21),
             (4, 22, 5, 22),
             (4, 23, 5, 23),
             (4, 24, 5, 24),
             (4, 25, 5, 25),
             (4, 26, 5, 26),
+            (4, 27, 5, 27),
         ]
         for r1, c1, r2, c2 in merges:
             if (r1, c1) != (r2, c2):
@@ -363,10 +366,11 @@ class StampingPartExportService:
             14,
             15,
             16,
-            22,
+            17,
             23,
             24,
             25,
+            26,
         )
         if not blanks:
             part_cols = (*part_cols, 9, 11, 12)
@@ -385,10 +389,11 @@ class StampingPartExportService:
         ws.cell(row=start_row, column=14, value=part.sheet_type or "")
         ws.cell(row=start_row, column=15, value="是" if part.is_offal_nested else "否")
         ws.cell(row=start_row, column=16, value=part.offal_source or "")
-        ws.cell(row=start_row, column=22, value=part.die_type or "")
-        ws.cell(row=start_row, column=23, value=part.process_method or "")
-        ws.cell(row=start_row, column=24, value=part.automation or "")
-        ws.cell(row=start_row, column=25, value=part.remark or "").alignment = self._left
+        ws.cell(row=start_row, column=17, value="是" if part.has_swing_shear else "否")
+        ws.cell(row=start_row, column=23, value=part.die_type or "")
+        ws.cell(row=start_row, column=24, value=part.process_method or "")
+        ws.cell(row=start_row, column=25, value=part.automation or "")
+        ws.cell(row=start_row, column=26, value=part.remark or "").alignment = self._left
 
         if blanks:
             spans = _split_spans(n_rows, len(blanks))
@@ -414,14 +419,14 @@ class StampingPartExportService:
 
         for offset, process in enumerate(processes):
             excel_row = start_row + offset
-            ws.cell(row=excel_row, column=17, value=process.process_seq)
-            ws.cell(row=excel_row, column=18, value=process.process_code or "")
-            ws.cell(row=excel_row, column=19, value=process.die_sets)
-            ws.cell(row=excel_row, column=20, value=process.die_number or "")
-            ws.cell(row=excel_row, column=21, value=process.tonnage)
+            ws.cell(row=excel_row, column=18, value=process.process_seq)
+            ws.cell(row=excel_row, column=19, value=process.process_code or "")
+            ws.cell(row=excel_row, column=20, value=process.die_sets)
+            ws.cell(row=excel_row, column=21, value=process.die_number or "")
+            ws.cell(row=excel_row, column=22, value=process.tonnage)
             ratio_cell = ws.cell(
                 row=excel_row,
-                column=26,
+                column=27,
                 value=_num(process.cost_ratio, Q2),
             )
             ratio_cell.alignment = self._right

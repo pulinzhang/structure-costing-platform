@@ -148,6 +148,7 @@ export function partsTemplate() {
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">材料</th>
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">利废</th>
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">废料副产品</th>
+                                <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">摆剪</th>
                                 <th class="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">厚度</th>
                                 <th class="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">重量</th>
                                 <th class="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">工序</th>
@@ -358,6 +359,7 @@ function renderOffalRows(part, canUpdate) {
             detailTableRow(['是否利废', isOn ? '是' : '否']),
             detailTableRow(['利用哪类废料', esc(source)]),
             detailTableRow(['废料副产品', part.is_scrap_byproduct ? '是' : '否']),
+            detailTableRow(['摆剪工序', part.has_swing_shear ? '是' : '否']),
         ].join('');
     }
     const knobX = isOn ? '16px' : '2px';
@@ -398,6 +400,10 @@ function renderOffalRows(part, canUpdate) {
             <tr class="border-b border-[#161616]">
                 <th class="px-4 py-3 text-left text-[9px] font-medium uppercase tracking-[0.18em] text-[#4d4d4d] w-28">废料副产品</th>
                 <td class="px-4 py-3 text-[11px] text-[#6b6b6b] tracking-wider">${part.is_scrap_byproduct ? '是' : '否'}</td>
+            </tr>
+            <tr class="border-b border-[#161616]">
+                <th class="px-4 py-3 text-left text-[9px] font-medium uppercase tracking-[0.18em] text-[#4d4d4d] w-28">摆剪工序</th>
+                <td class="px-4 py-3 text-[11px] text-[#6b6b6b] tracking-wider">${part.has_swing_shear ? '是' : '否'}</td>
             </tr>`;
 }
 

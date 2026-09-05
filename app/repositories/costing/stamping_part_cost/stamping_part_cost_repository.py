@@ -32,6 +32,7 @@ class PartCostListFilters(TypedDict):
     months: list[int]
     locations: list[str]
     suppliers: list[str]
+    vehicle_models: list[str]
     summary: PartCostFilterSummary
 
 
@@ -488,4 +489,24 @@ class StampingPartCostRepository:
         if location is not None:
             q = q.filter(StampingPartCost.location == location)
         results = q.order_by(StampingPartCost.stamping_supplier).all()
+        return [r[0] for r in results if r[0]]
+
+    def get_distinct_vehicle_models(
+        self,
+        db: Session,
+        year: int | None = None,
+        month: int | None = None,
+        location: str | None = None,
+        stamping_supplier: str | None = None,
+    ) -> list[str]:
+        q = db.query(StampingPartCost.vehicle_model).distinct()
+        if year is not None:
+            q = q.filter(StampingPartCost.year == year)
+        if month is not None:
+            q = q.filter(StampingPartCost.month == month)
+        if location is not None:
+            q = q.filter(StampingPartCost.location == location)
+        if stamping_supplier is not None:
+            q = q.filter(StampingPartCost.stamping_supplier == stamping_supplier)
+        results = q.order_by(StampingPartCost.vehicle_model).all()
         return [r[0] for r in results if r[0]]

@@ -83,6 +83,12 @@ class StampingPart(AuditUserMixin, Base):
         default=False,
         comment="是否废料副产品（家模用废料成形，不算冲压加工费）；默认否",
     )
+    has_swing_shear: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        comment="是否含摆剪工序（导入时按工序代码/序号含「摆剪」落库）",
+    )
 
     # 材料信息（普通件使用；拼焊总成可空，以各子片为准）
     material: Mapped[str | None] = mapped_column(String(50), nullable=True, comment="材质")
@@ -180,6 +186,7 @@ class StampingPart(AuditUserMixin, Base):
         Index("ix_part_is_tailor_welded", "is_tailor_welded"),
         Index("ix_part_is_offal_nested", "is_offal_nested"),
         Index("ix_part_is_scrap_byproduct", "is_scrap_byproduct"),
+        Index("ix_part_has_swing_shear", "has_swing_shear"),
         # 唯一键：基地 + 供应商 + 车型 + 版本 + 零件号
         UniqueConstraint(
             "location",

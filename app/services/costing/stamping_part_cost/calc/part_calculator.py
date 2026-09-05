@@ -6,6 +6,7 @@ from decimal import Decimal
 
 from sqlalchemy.orm import Session
 
+from app.common.swing_shear import applied_swing_shear_fee_per_ton, steel_kg_price_with_swing_shear
 from app.models.stamping import StampingPart
 from app.models.yishiyiyi import StampingScrapPrice
 from app.schemas.dto.stamping_part_cost_dto import (
@@ -46,6 +47,7 @@ def part_snapshot(part: StampingPart) -> StampingPartCostPartSnapshot:
         sheet_type=part.sheet_type,
         is_offal_nested=bool(part.is_offal_nested),
         offal_source=part.offal_source,
+        has_swing_shear=bool(part.has_swing_shear),
         die_type=part.die_type,
         process_method=part.process_method,
         automation=part.automation,
@@ -90,6 +92,7 @@ class PartCostCalculator:
         management_rate: Decimal,
         warehouse_packaging_rate: Decimal,
         pretax_profit_rate: Decimal,
+        swing_shear_fee_per_ton: Decimal = Decimal("0"),
     ) -> StampingPartCostCalcAmounts | StampingPartCostFailedItemVO:
         material = (part.material or "").strip()
         is_offal_nested = bool(part.is_offal_nested)
@@ -107,6 +110,10 @@ class PartCostCalculator:
         parts_per_sheet = part.parts_per_sheet
         kg_scale = Decimal("1000")
         scrap_kg_price = scrap_ton_price / kg_scale
+        applied_swing_fee = applied_swing_shear_fee_per_ton(
+            has_swing_shear=bool(part.has_swing_shear),
+            fee_per_ton=swing_shear_fee_per_ton,
+        )
 
         if is_offal_nested:
             if part_weight is None or part_weight <= 0:
@@ -181,7 +188,7 @@ class PartCostCalculator:
             steel_ton_price = Decimal(str(steel.final_price_per_ton))
             steel_price_id = steel.id
             steel_mill = steel.steel_mill
-            steel_kg_price = steel_ton_price / kg_scale
+            steel_kg_price = steel_kg_price_with_swing_shear(steel_ton_price, applied_swing_fee)
             material_amount_sheet = quantize(
                 blank_kg * steel_kg_price * (Decimal("1") + loss_rate),
                 AMOUNT_QUANTIZE,
@@ -249,6 +256,7 @@ class PartCostCalculator:
             steel_price_id=steel_price_id,
             steel_mill=steel_mill,
             steel_ton_price=steel_ton_price,
+            swing_shear_fee_per_ton=applied_swing_fee,
             scrap_price_id=scrap.id,
             scrap_ton_price=scrap_ton_price,
             process_fee_id=process.process_fee_id,

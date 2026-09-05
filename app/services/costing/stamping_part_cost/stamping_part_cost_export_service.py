@@ -5,7 +5,7 @@ from __future__ import annotations
 from openpyxl import Workbook
 from sqlalchemy.orm import Session
 
-from app.common.export_filters import require_at_least_one_export_filter
+from app.exceptions.base import BusinessException
 from app.repositories.bom.bom_repository import BomNodeRepository, BomSnapshotRepository
 from app.repositories.costing.stamping_part_cost.stamping_part_cost_repository import (
     StampingPartCostRepository,
@@ -22,6 +22,15 @@ from app.services.costing.stamping_part_cost.export.process_sheet import (
     export_process_sheet,
     write_process_sheet_to_workbook,
 )
+
+EXPORT_VEHICLE_REQUIRED_MESSAGE = "导出须选定配套车型。"
+
+
+def require_export_vehicle_model(vehicle_model: str | None) -> str:
+    value = (vehicle_model or "").strip()
+    if not value:
+        raise BusinessException(EXPORT_VEHICLE_REQUIRED_MESSAGE)
+    return value
 
 
 class StampingPartCostExportService:
@@ -43,29 +52,20 @@ class StampingPartCostExportService:
         month: int | None = None,
         location: str | None = None,
         stamping_supplier: str | None = None,
-        vehicle_model: str | None = None,
+        vehicle_model: str,
         version: str | None = None,
         part_number: str | None = None,
         audit_status: str | None = None,
         current_user: UserVO,
     ) -> tuple[bytes, str]:
-        require_at_least_one_export_filter(
-            year,
-            month,
-            location,
-            stamping_supplier,
-            vehicle_model,
-            version,
-            part_number,
-            audit_status,
-        )
+        vehicle_value = require_export_vehicle_model(vehicle_model)
         rows = self.repository.list_for_export(
             db,
             year=year,
             month=month,
             location=location,
             stamping_supplier=stamping_supplier,
-            vehicle_model=vehicle_model,
+            vehicle_model=vehicle_value,
             version=version,
             part_number=part_number,
             audit_status=audit_status,
@@ -82,7 +82,7 @@ class StampingPartCostExportService:
             month=month,
             location=location,
             stamping_supplier=stamping_supplier,
-            vehicle_model=vehicle_model,
+            vehicle_model=vehicle_value,
             version=version,
             current_user=current_user,
         )
@@ -96,19 +96,20 @@ class StampingPartCostExportService:
         month: int | None = None,
         location: str | None = None,
         stamping_supplier: str | None = None,
-        vehicle_model: str | None = None,
+        vehicle_model: str,
         version: str | None = None,
         part_number: str | None = None,
         audit_status: str | None = None,
         sheet_title: str = "冲压核价结果",
     ) -> tuple[str, int]:
+        vehicle_value = require_export_vehicle_model(vehicle_model)
         rows = self.repository.list_for_export(
             db,
             year=year,
             month=month,
             location=location,
             stamping_supplier=stamping_supplier,
-            vehicle_model=vehicle_model,
+            vehicle_model=vehicle_value,
             version=version,
             part_number=part_number,
             audit_status=audit_status,
@@ -126,7 +127,7 @@ class StampingPartCostExportService:
             month=month,
             location=location,
             stamping_supplier=stamping_supplier,
-            vehicle_model=vehicle_model,
+            vehicle_model=vehicle_value,
             version=version,
             sheet_title=sheet_title,
         )

@@ -6,7 +6,7 @@ from decimal import ROUND_HALF_UP, Decimal
 
 from app.common.money import Q3
 
-FORMULA_VERSION = "part-cost-v9"
+FORMULA_VERSION = "part-cost-v10"
 AMOUNT_QUANTIZE = Decimal("0.000001")
 UTIL_QUANTIZE = Decimal("0.01")
 FEE_QUANTIZE = Q3
@@ -19,6 +19,7 @@ STALE_PROCESSING_SECONDS = 2 * 60 * 60
 
 DUPLICATE_SCOPE_CALC_MESSAGE = "当前年度/月份/基地/工厂正在计算中，请勿重复提交。"
 SCOPE_REQUIRED_MESSAGE = "须选定年度、月份、基地、冲压工厂。"
+CALC_SCOPE_REQUIRED_MESSAGE = "须选定年度、月份、基地、冲压工厂、配套车型。"
 
 
 def quantize(value: Decimal, quant: Decimal) -> Decimal:

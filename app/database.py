@@ -204,6 +204,10 @@ class DatabaseConfig:
                     "finished_pretax_profit_rate",
                     "NUMERIC(8, 6) NOT NULL DEFAULT 0.02",
                 ),
+                (
+                    "swing_shear_process_fee_per_ton",
+                    "NUMERIC(12, 4) NOT NULL DEFAULT 150",
+                ),
             )
             for column_name, column_def in config_new_columns:
                 if column_name in config_cols:
@@ -263,6 +267,38 @@ class DatabaseConfig:
                         )
                     )
                 logger.info("已为 %s 追加列 is_scrap_byproduct", part_table)
+            part_cols = {col["name"] for col in inspector.get_columns(part_table)}
+            if "has_swing_shear" not in part_cols:
+                from app.common.swing_shear import SWING_SHEAR_MARK
+
+                swing_like = f"%{SWING_SHEAR_MARK}%"
+                with engine.begin() as conn:
+                    conn.execute(
+                        text(
+                            f"ALTER TABLE {part_table} "
+                            "ADD COLUMN has_swing_shear BOOLEAN NOT NULL DEFAULT 0"
+                        )
+                    )
+                    conn.execute(
+                        text(
+                            "CREATE INDEX IF NOT EXISTS ix_part_has_swing_shear "
+                            f"ON {part_table} (has_swing_shear)"
+                        )
+                    )
+                    if "stamping_processes" in table_names:
+                        conn.execute(
+                            text(
+                                f"UPDATE {part_table} SET has_swing_shear = 1 "
+                                "WHERE EXISTS ("
+                                "SELECT 1 FROM stamping_processes p "
+                                f"WHERE p.part_id = {part_table}.id "
+                                "AND (IFNULL(p.process_code, '') LIKE :swing_like "
+                                "OR IFNULL(p.process_seq, '') LIKE :swing_like)"
+                                ")"
+                            ),
+                            {"swing_like": swing_like},
+                        )
+                logger.info("已为 %s 追加列 has_swing_shear 并按工序回填", part_table)
 
         cost_table = "stamping_part_costs"
         if cost_table in table_names:
@@ -279,6 +315,8 @@ class DatabaseConfig:
                 ("gauge_fee_amount", "NUMERIC(14, 6)"),
                 ("is_offal_nested", "BOOLEAN NOT NULL DEFAULT 0"),
                 ("offal_source", "VARCHAR(50)"),
+                ("has_swing_shear", "BOOLEAN NOT NULL DEFAULT 0"),
+                ("swing_shear_fee_per_ton", "NUMERIC(12, 4) NOT NULL DEFAULT 0"),
             )
             for column_name, column_def in cost_new_columns:
                 if column_name in cost_cols:
@@ -288,6 +326,19 @@ class DatabaseConfig:
                         text(f"ALTER TABLE {cost_table} " f"ADD COLUMN {column_name} {column_def}")
                     )
                 logger.info("已为 %s 追加列 %s", cost_table, column_name)
+            if "has_swing_shear" not in cost_cols and "stamping_parts" in table_names:
+                with engine.begin() as conn:
+                    conn.execute(
+                        text(
+                            f"UPDATE {cost_table} SET has_swing_shear = 1 "
+                            "WHERE has_swing_shear = 0 AND EXISTS ("
+                            "SELECT 1 FROM stamping_parts p "
+                            f"WHERE p.id = {cost_table}.source_part_id "
+                            "AND p.has_swing_shear = 1"
+                            ")"
+                        )
+                    )
+                logger.info("已按零件主表回填 %s.has_swing_shear", cost_table)
 
         pkg_table = "bom_packaging_transport_fees"
         if pkg_table in table_names:

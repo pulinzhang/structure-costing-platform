@@ -18,6 +18,7 @@ from decimal import Decimal
 from sqlalchemy.orm import Session
 
 from app.common.money import Q4
+from app.common.swing_shear import applied_swing_shear_fee_per_ton, steel_kg_price_with_swing_shear
 from app.models.costing import SteelPrice
 from app.models.stamping import StampingPart
 from app.models.stamping.tailor_weld_blank import StampingTailorWeldBlank
@@ -69,6 +70,7 @@ class TailorWeldPartCostCalculator:
         management_rate: Decimal,
         warehouse_packaging_rate: Decimal,
         pretax_profit_rate: Decimal,
+        swing_shear_fee_per_ton: Decimal = Decimal("0"),
     ) -> StampingPartCostCalcAmounts | StampingPartCostFailedItemVO:
         blanks = list(part.tailor_weld_blanks or [])
         blanks = sorted(blanks, key=lambda b: (b.blank_seq or 0, b.id or 0))
@@ -89,6 +91,10 @@ class TailorWeldPartCostCalculator:
 
         kg_scale = Decimal("1000")
         scrap_kg_price = scrap_ton_price / kg_scale
+        applied_swing_fee = applied_swing_shear_fee_per_ton(
+            has_swing_shear=bool(part.has_swing_shear),
+            fee_per_ton=swing_shear_fee_per_ton,
+        )
 
         blank_kg_total = Decimal("0")
         material_amount_raw = Decimal("0")
@@ -109,6 +115,7 @@ class TailorWeldPartCostCalculator:
                 loss_rate=loss_rate,
                 recovery_rate=recovery_rate,
                 scrap_kg_price=scrap_kg_price,
+                swing_shear_fee_per_ton=applied_swing_fee,
             )
             if isinstance(blank_or_error, StampingPartCostFailedItemVO):
                 return blank_or_error
@@ -198,6 +205,7 @@ class TailorWeldPartCostCalculator:
             steel_price_id=steel_price_id,
             steel_mill=steel_mill,
             steel_ton_price=steel_ton_price,
+            swing_shear_fee_per_ton=applied_swing_fee,
             scrap_price_id=scrap.id,
             scrap_ton_price=scrap_ton_price,
             process_fee_id=process.process_fee_id,
@@ -231,6 +239,7 @@ class TailorWeldPartCostCalculator:
         loss_rate: Decimal,
         recovery_rate: Decimal,
         scrap_kg_price: Decimal,
+        swing_shear_fee_per_ton: Decimal,
     ) -> tuple[Decimal, Decimal, Decimal, SteelPrice] | StampingPartCostFailedItemVO:
         blank_label = blank.blank_part_number or f"{part.part_number}-{blank.blank_seq}"
         material = (blank.material or "").strip()
@@ -296,7 +305,8 @@ class TailorWeldPartCostCalculator:
                     f"（材质={material}, 料厚={thickness}）"
                 ),
             )
-        steel_kg_price = Decimal(str(steel.final_price_per_ton)) / Decimal("1000")
+        mill_ton_price = Decimal(str(steel.final_price_per_ton))
+        steel_kg_price = steel_kg_price_with_swing_shear(mill_ton_price, swing_shear_fee_per_ton)
 
         # ①②按子片；③在总成 O 上一次算
         amount_sheet = blank_kg * steel_kg_price * (Decimal("1") + loss_rate)

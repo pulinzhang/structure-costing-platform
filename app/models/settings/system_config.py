@@ -66,3 +66,9 @@ class SystemConfig(AuditUserMixin, Base):
         default=Decimal("0.02"),
         comment="成品税前利润率（小数，默认 0.02=2%）",
     )
+    swing_shear_process_fee_per_ton: Mapped[Decimal] = mapped_column(
+        Numeric(12, 4),
+        nullable=False,
+        default=Decimal("150"),
+        comment="摆剪件加到钢价上的金额（元/吨），默认 150",
+    )
