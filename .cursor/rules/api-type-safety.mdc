@@ -265,9 +265,47 @@ This is a **moderate** ban, not a hunt for every `Any` in a function body: you m
 
 Prefer: HTTP in → DTO; HTTP out → VO (Service → Router only); Service → Repository full row → dataclass; partial update → `TypedDict` with explicit `updated_by=` (do not `**audit_update()` into a narrower TypedDict).
 
-Exceptions (still narrow at the boundary): `ApiResponse.fail` / `ApiResponse.list_` / `PageResult.filters` internals may use `Any`; **business routers** still use `ApiResponse[ConcreteVO]` or `ApiResponse[PageResult[ConcreteVO]]`; untyped third-party objects wrapped in a small function; `json.loads` parsed inside and returned as VO / TypedDict / std types.
+Exceptions (still narrow at the boundary): `ApiResponse.fail` / `ApiResponse.list_` / `PageResult.filters` internals may use `Any`; **business routers** still use `ApiResponse[ConcreteVO]` or `ApiResponse[PageResult[ConcreteVO]]`; untyped third-party objects wrapped in a small function; `json.loads` parsed inside and returned as VO / TypedDict / `object` / std types (see §4.1.1).
 
-Do not keep `dict[str, Any]` on Repository / Service / Router signatures for convenience.
+Do not keep `dict[str, Any]` on Repository / Service / Router **business** signatures for convenience.
+
+### 4.1.1 Contract vs impedance — 这是边界，不是作弊
+
+**Strict (the contract — do not loosen):**
+
+| Surface | Why |
+|---------|-----|
+| Router / Service **public** signatures (HTTP in/out) | Callers must see DTO / VO / `PageResult`, not `Any` |
+| Money / unit price / fee / physical `Decimal` | `float` is a correctness bug |
+| Pagination `page` + `size` and `ApiResponse[PageResult[T]]` | Contract, not style |
+| Exception channel (`NotFoundException` / `BusinessException`) | No `(None, str)` / `if not vo: 404` |
+
+**Allowed at the impedance boundary** (`cast` / narrow here is **documented**, not a type lie to hide a bad API):
+
+| Place | What to do |
+|-------|------------|
+| Persist JSON columns (`Mapped[dict[str, Any] | None]`) | Hold `TypedDict` in Service/Repo args; assign onto the column with `cast(dict[str, Any], summary_json)` |
+| `json.loads` | Returns `Any`; bind to `object` (or a TypedDict / VO) **before** the value leaves the function. Return type may be `object | None` |
+| Checker vs ORM / plugin types | SQLAlchemy JSON, openpyxl cells, snapshot `datetime` vs `float` timestamp — narrow with `isinstance` or `cast` at that line |
+| Untyped third-party | Wrap in a small function; **outgoing** signature stays concrete or `object` |
+
+```python
+# Allowed: TypedDict → JSON column (ORM cannot express TypedDict)
+run.summary_json = cast(dict[str, Any], summary_json)
+
+# Allowed: json.loads Any does not escape as Any
+parsed: object = json.loads(result_json)
+return parsed  # caller model_validate → VO
+```
+
+```python
+# Forbidden: cast to skip the contract
+return cast(UserVO, row)          # must model_validate
+def list_parts(...) -> dict[str, Any]: ...
+price = cast(Decimal, float(x))   # money still must be Decimal end-to-end
+```
+
+**Teaching line:** satisfying mypy at JSON / ORM / third-party edges is a **boundary**. Using the same `cast` to keep a business API as `dict[str, Any]`, or to skip VO conversion, is cheating.
 
 ---
 
@@ -1059,6 +1097,8 @@ dict(model)
 ApiResponse[Any]             # 业务路由；框架 list_/fail 除外
 Any / dict[str, Any] / list[Any] on business function signatures
 money/unit_price/fee/physical as float (use Decimal; JSON string)
+cast to skip VO.model_validate or to keep a business API as dict[str, Any]
+# (cast / object-narrow at JSON column / json.loads / ORM plugin is allowed — §4.1.1)
 ```
 
 Required:
