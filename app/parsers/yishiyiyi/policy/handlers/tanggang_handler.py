@@ -11,14 +11,14 @@
 镀锌块每行都是独立政策。
 """
 
-from typing import Any
-
 from decimal import Decimal
+from typing import Any
 
 from openpyxl.worksheet.worksheet import Worksheet
 
-from app.parsers.yishiyiyi.policy.handlers.base_handler import BaseSheetHandler
 from app.parsers.yishiyiyi.policy.boundary_parser import _Boundary
+from app.parsers.yishiyiyi.policy.handlers.base_handler import BaseSheetHandler
+
 from .constants import GRADE_LABELS, parse_thickness_label
 
 
@@ -216,8 +216,9 @@ class TanggangSheetHandler(BaseSheetHandler):
         需要特殊处理：
         - 纯数字 → min=数字, min_op=">=", max=数字, max_op="<="（等号区间）
         """
-        from app.parsers.yishiyiyi.policy.boundary_parser import _Boundary
         import re
+
+        from app.parsers.yishiyiyi.policy.boundary_parser import _Boundary
 
         result: dict[int, _Boundary] = {}
         _PURE_NUM_RE = re.compile(r"^\s*(-?\d+(?:\.\d+)?)\s*(?:mm)?\s*$", re.IGNORECASE)

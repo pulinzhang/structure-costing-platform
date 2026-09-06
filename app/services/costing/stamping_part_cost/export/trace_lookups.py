@@ -6,13 +6,13 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
+from app.repositories.costing.steel_price.steel_price_repository import SteelPriceRepository
 from app.repositories.stamping.stamping_process_fee_repository import (
     StampingProcessFeeRepository,
 )
 from app.repositories.yishiyiyi.scrap_price.scrap_price_repository import (
     StampingScrapPriceRepository,
 )
-from app.repositories.costing.steel_price.steel_price_repository import SteelPriceRepository
 
 
 def load_trace_maps(

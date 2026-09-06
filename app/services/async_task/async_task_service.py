@@ -11,33 +11,33 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 import threading
 import time
 import uuid
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
-from typing import Any
-from collections.abc import Callable
 
+from sqlalchemy.engine import Connection
 from sqlalchemy.orm import Session
 
 from app.common.timezone import now
+from app.common.types.repository_types import AsyncTaskSnapshot
 from app.database import AuxiliaryDatabaseConfig, DatabaseConfig
 from app.exceptions.base import NotFoundException
 from app.models.async_task import AsyncTask
 from app.repositories.async_task import AsyncTaskRepository
 from app.repositories.persist import model_from_payload
 from app.schemas.dto.async_task_dto import AsyncTaskInsert, AsyncTaskPatch
-from app.utils.logging_config import get_logger
 from app.services.async_task.worker_runner import (
     CrashCallback,
     CrashMessageFn,
     CrashResultFn,
     WorkerWork,
 )
-import contextlib
-
+from app.utils.logging_config import get_logger
 
 logger = get_logger("service.async_task")
 
@@ -48,13 +48,17 @@ STATUS_FAILED = "failed"
 
 TASK_TYPE_POLICY_UPLOAD = "steel_price_policy_upload"
 TASK_TYPE_STAMPING_UPLOAD = "stamping_upload"
+TASK_TYPE_STAMPING_DIE_UPLOAD = "stamping_die_upload"
+TASK_TYPE_STAMPING_DIE_FEE_CALC = "stamping_die_fee_calc"
 TASK_TYPE_BASE_PRICE_IMPORT = "steel_base_price_import"
 TASK_TYPE_STEEL_PRICE_CALC = "steel_price_calc"
 TASK_TYPE_STAMPING_PROCESS_FEE_CALC = "stamping_process_fee_calc"
 TASK_TYPE_STAMPING_PART_COST_CALC = "stamping_part_cost_calc"
 TASK_TYPE_BOM_WELDING_PROCESS_BREAKDOWN_GENERATE = "bom_welding_process_breakdown_generate"
-TASK_TYPE_BOM_L0_WELDING_FEE_CALC = "bom_l0_welding_fee_calc"
-TASK_TYPE_L0_ASSEMBLY_COST_CALC = "l0_assembly_cost_calc"
+TASK_TYPE_BOM_WELDING_FEE_CALC = "bom_welding_fee_calc"
+TASK_TYPE_BOM_L0_WELDING_FEE_CALC = TASK_TYPE_BOM_WELDING_FEE_CALC
+TASK_TYPE_ASSEMBLY_COST_CALC = "assembly_cost_calc"
+TASK_TYPE_L0_ASSEMBLY_COST_CALC = TASK_TYPE_ASSEMBLY_COST_CALC
 TASK_TYPE_COSTING_ENGINE_RUN = "costing_engine_run"
 
 TASK_TTL_SECONDS = 3600
@@ -73,7 +77,7 @@ class AsyncTaskService:
     def __init__(self) -> None:
         self.repository = AsyncTaskRepository()
 
-    def _autocommit_connection(self) -> Any:
+    def _autocommit_connection(self) -> Connection:
         """辅助库独立连接 + AUTOCOMMIT（进度立即对轮询可见）。"""
         engine = AuxiliaryDatabaseConfig.get_engine()
         return engine.connect().execution_options(isolation_level="AUTOCOMMIT")
@@ -88,7 +92,7 @@ class AsyncTaskService:
         *,
         status: str | None,
         progress: int | None,
-        result: Any,
+        result: object | None,
     ) -> bool:
         if status in (STATUS_COMPLETED, STATUS_FAILED) or result is not None:
             with _progress_throttle_lock:
@@ -146,7 +150,7 @@ class AsyncTaskService:
         finally:
             db.close()
 
-    def get_task_snapshot(self, task_id: str) -> dict[str, Any] | None:
+    def get_task_snapshot(self, task_id: str) -> AsyncTaskSnapshot | None:
         """轮询快照：只读辅助库。"""
         record = self.get_by_task_id(task_id)
         if record is None:
@@ -163,7 +167,7 @@ class AsyncTaskService:
             "updated_at": record.updated_at,
         }
 
-    def require_snapshot(self, task_id: str, task_type: str) -> dict[str, Any]:
+    def require_snapshot(self, task_id: str, task_type: str) -> AsyncTaskSnapshot:
         """轮询入口：类型不匹配或已过期则 404。"""
         snapshot = self.get_task_snapshot(task_id)
         if snapshot is None or snapshot.get("task_type") != task_type:
@@ -177,7 +181,7 @@ class AsyncTaskService:
         status: str | None = None,
         progress: int | None = None,
         message: str | None = None,
-        result: Any = None,
+        result: object | None = None,
     ) -> None:
         """AUTOCOMMIT 更新任务（辅助库）。"""
         values: AsyncTaskPatch = {"updated_at": now()}
@@ -186,7 +190,7 @@ class AsyncTaskService:
         if progress is not None:
             values["progress"] = max(0, min(100, int(progress)))
         if message is not None:
-            values["message"] = message[:500]
+            values["message"] = message
         if result is not None:
             values["result_json"] = json.dumps(result, ensure_ascii=False)
 
@@ -200,7 +204,7 @@ class AsyncTaskService:
         status: str | None = None,
         progress: int | None = None,
         message: str | None = None,
-        result: Any = None,
+        result: object | None = None,
     ) -> None:
         """后台线程专用：写入辅助库。"""
         if self._should_skip_db_write(task_id, status=status, progress=progress, result=result):
@@ -314,14 +318,15 @@ class AsyncTaskService:
         )
 
     @staticmethod
-    def parse_result_json(result_json: str | None) -> Any:
+    def parse_result_json(result_json: str | None) -> object | None:
         if not result_json:
             return None
         try:
-            return json.loads(result_json)
+            parsed: object = json.loads(result_json)
         except json.JSONDecodeError:
             return None
+        return parsed
 
     @staticmethod
-    def submit(fn: Callable[..., Any], *args: Any, **kwargs: Any) -> None:
+    def submit(fn: Callable[..., object], *args: object, **kwargs: object) -> None:
         _executor.submit(fn, *args, **kwargs)

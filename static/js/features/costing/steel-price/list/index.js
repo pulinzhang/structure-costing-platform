@@ -9,7 +9,7 @@ import {
     renderSteelPriceRows,
     updateSteelPriceHud,
     updateActiveFilterCapsules,
-} from './template.js?v=47';
+} from './template.js?v=49';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -176,8 +176,8 @@ function getFilterValue(id) {
 }
 
 function renderFilters(filters) {
-    fillSelect('steelPriceYear', filters.years || [], value => `${value} 年`);
-    fillSelect('steelPriceMonth', filters.months || [], value => `${value} 月`);
+    fillSelect('steelPriceYear', filters.years || [], fmtYear);
+    fillSelect('steelPriceMonth', filters.months || [], fmtMonth);
     fillSelect('steelPriceLocation', filters.locations || []);
     fillSelect('steelPriceCategory', filters.category_names || []);
     fillSelect('steelPriceMill', filters.steel_mills || []);
@@ -414,8 +414,7 @@ async function batchDeleteByFilters() {
     }
 
     const parts = [
-        `年度: ${filters.year}`,
-        `月份: ${filters.month}`,
+        fmtPeriod(filters.year, filters.month),
         `基地: ${filters.location}`,
     ];
     if (filters.category_name) parts.push(`钢种: ${filters.category_name}`);
@@ -519,15 +518,15 @@ function openBatchAuditDrawer(mode) {
     }
     if (remarkLabel) {
         remarkLabel.innerHTML = isApprove
-            ? '审核意见'
+            ? '审核意见<span class="text-[#d32f2f]">*</span>'
             : '反审核意见<span class="text-[#d32f2f]">*</span>';
     }
     if (remarkEl) {
         remarkEl.value = '';
-        remarkEl.placeholder = isApprove ? '可选填写审核意见' : '请填写反审核原因（必填）';
+        remarkEl.placeholder = isApprove ? '请填写审核意见（必填）' : '请填写反审核原因（必填）';
     }
     if (summaryEl) {
-        summaryEl.textContent = `年度 ${filters.year} · 月份 ${filters.month} · 基地 ${filters.location}`;
+        summaryEl.textContent = `${fmtPeriod(filters.year, filters.month)} · 基地 ${filters.location}`;
     }
     if (confirmBtn) {
         confirmBtn.textContent = isApprove ? '确认审核通过' : '确认反审核';
@@ -555,8 +554,8 @@ async function submitBatchAudit() {
     }
 
     const remark = document.getElementById('batchAuditRemark')?.value.trim() || '';
-    if (!isApprove && !remark) {
-        showToast('反审核意见必填', 'warning');
+    if (!remark) {
+        showToast(isApprove ? '审核意见必填' : '反审核意见必填', 'warning');
         return;
     }
 
@@ -576,7 +575,7 @@ async function submitBatchAudit() {
         };
         let response;
         if (isApprove) {
-            if (remark) body.audit_remark = remark;
+            body.audit_remark = remark;
             response = await HttpClient.post(`${API_BASE}/batch-approve`, body);
         } else {
             body.reverse_audit_remark = remark;
@@ -720,8 +719,8 @@ function prefixLabel(prefix) {
 
 function openViewDrawer(record) {
     steelPriceState.currentViewId = record.id;
-    fillViewField('view-year', record.year);
-    fillViewField('view-month', record.month);
+    fillViewField('view-year', fmtYear(record.year));
+    fillViewField('view-month', fmtMonth(record.month));
     fillViewField('view-location', record.location);
     fillViewField('view-steel-mill', record.steel_mill);
     fillViewField('view-category-name', record.category_name);
@@ -782,7 +781,7 @@ function openDeleteDrawer(record) {
     const summary = document.getElementById('deleteSummary');
     if (summary) {
         summary.innerHTML = `
-            <span class="text-[#d32f2f] font-mono">${esc(record.year)}-${esc(String(record.month).padStart(2, '0'))}</span>
+            <span class="text-[#d32f2f] font-mono">${esc(fmtPeriod(record.year, record.month))}</span>
             <span class="text-[#9e9e9e]"> / ${esc(record.location)} / ${esc(record.steel_mill)} / ${esc(record.grade)}</span>
             <span class="text-[#9e9e9e]"> / ${esc(formatDecimal(record.thickness, 2))}*${esc(formatWidthPlain(record.width))}</span>
         `;
@@ -857,11 +856,14 @@ async function deleteRecord(id) {
 async function handleApprove() {
     const id = steelPriceState.currentViewId;
     if (!id) return;
-    const auditRemark = window.prompt('审核意见（可选，可留空）');
+    const auditRemark = window.prompt('请输入审核意见（必填）');
     if (auditRemark === null) return;
+    if (!auditRemark.trim()) {
+        showToast('审核意见必填', 'warning');
+        return;
+    }
     try {
-        const body = {};
-        if (auditRemark.trim()) body.audit_remark = auditRemark.trim();
+        const body = { audit_remark: auditRemark.trim() };
         await HttpClient.post(`${API_BASE}/${id}/approve`, body);
         showToast('审核通过', 'success');
         closeDrawer('viewDrawer', 'viewDrawerBackdrop');

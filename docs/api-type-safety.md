@@ -398,9 +398,47 @@ Parser 仅由 Service 调用。切片依赖为**有向无环**（下游 costing/
 
 - 框架出口：`ApiResponse.fail` / `ApiResponse.list_` / `PageResult.filters` 的内部泛型可以是 `Any`；**业务 Router** 仍须 `response_model=ApiResponse[具体VO]` 或 `ApiResponse[PageResult[具体VO]]`
 - 无类型桩的第三方（如 openpyxl worksheet）：包在小函数里，对外签名不用 `Any`
-- `json.loads`：在函数内解析，返回已声明的 VO / TypedDict / 标准类型
+- `json.loads`：在函数内解析，走出函数前收成 VO / TypedDict / `object` / 标准类型（见 §5.1.1）
 
-不要因为「方便」把 `dict[str, Any]` 留在 Repository / Service / Router 签名上。
+不要因为「方便」把 `dict[str, Any]` 留在 Repository / Service / Router 的**业务**签名上。
+
+### 5.1.1 合同 vs 阻抗 — 这是边界，不是作弊
+
+**必须严（合同，不要松）：**
+
+| 面 | 原因 |
+|----|------|
+| Router / Service **对外**签名（HTTP 入/出） | 调用方必须看到 DTO / VO / `PageResult`，不能是 `Any` |
+| 金额 / 单价 / 费用 / 物理量 `Decimal` | `float` 是正确性事故 |
+| 分页 `page` + `size` 与 `ApiResponse[PageResult[T]]` | 契约，不是风格 |
+| 异常通道（`NotFoundException` / `BusinessException`） | 禁止 `(None, str)` / `if not vo: 404` |
+
+**阻抗边界允许收窄或 `cast`**（写在规则里，所以这是**边界**，不是类型撒谎来遮烂 API）：
+
+| 位置 | 做法 |
+|------|------|
+| 持久化 JSON 列（`Mapped[dict[str, Any] | None]`） | Service/Repo 入参继续用 `TypedDict`；赋给列时 `cast(dict[str, Any], summary_json)` |
+| `json.loads` | 返回值是 `Any`；离开函数前赋给 `object`（或 TypedDict / VO）。返回类型可以是 `object | None` |
+| 检查器与 ORM / 插件类型打架 | SQLAlchemy JSON、openpyxl 单元格、快照里 `datetime` vs 时间戳 `float` — 就地 `isinstance` 或 `cast` |
+| 无类型桩的第三方 | 包在小函数里；**对外**签名保持具体类型或 `object` |
+
+```python
+# 允许：TypedDict → JSON 列（ORM 表达不了 TypedDict）
+run.summary_json = cast(dict[str, Any], summary_json)
+
+# 允许：json.loads 的 Any 不以 Any 逃出函数
+parsed: object = json.loads(result_json)
+return parsed  # 调用方 model_validate → VO
+```
+
+```python
+# 禁止：用 cast 绕开合同
+return cast(UserVO, row)          # 必须 model_validate
+def list_parts(...) -> dict[str, Any]: ...
+price = cast(Decimal, float(x))   # 金额全程仍须 Decimal
+```
+
+**口诀：** 在 JSON 列 / ORM / 第三方边上让 mypy 通过，是**边界**。用同一个 `cast` 把业务 API 留成 `dict[str, Any]`，或跳过 VO 转换，才是作弊。
 
 ---
 
@@ -1132,6 +1170,8 @@ dict(model)
 ApiResponse[Any]（应指定具体类型；框架 list_/fail 除外）
 业务函数签名使用 Any / dict[str, Any] / list[Any]（须换成 DTO / dataclass / TypedDict / Model）
 金额/单价/费用/物理量用 float（须 Decimal；JSON 用字符串）
+用 cast 跳过 VO.model_validate，或把业务 API 留成 dict[str, Any]
+#（JSON 列 / json.loads / ORM 插件处的 cast / object 收窄允许 — §5.1.1）
 ```
 
 必须：

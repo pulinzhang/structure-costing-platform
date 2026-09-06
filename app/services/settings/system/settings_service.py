@@ -2,15 +2,15 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from decimal import Decimal, InvalidOperation
+from typing import Any
 
 from sqlalchemy.orm import Session
 
 from app.common.audit import audit_create, audit_update
-from app.common.money import Q4, Q6, quantize_money
+from app.common.money import Q2, Q4, Q6, quantize_money
 from app.config import settings as app_settings
+from app.repositories.settings.system.system_config_repository import SystemConfigRepository
 from app.schemas.dto.settings_dto import (
     SystemConfigPatch,
     SystemConfigUpdateDTO,
@@ -18,7 +18,6 @@ from app.schemas.dto.settings_dto import (
 )
 from app.schemas.vo.settings_vo import ConfigVO
 from app.schemas.vo.user_vo import UserVO
-from app.repositories.settings.system.system_config_repository import SystemConfigRepository
 
 DEFAULT_APP_NAME = "汽车冲压件自动核价平台"
 DEFAULT_STEEL_DENSITY = Decimal("7.85")
@@ -29,6 +28,7 @@ DEFAULT_FINISHED_MANAGEMENT_RATE = Decimal("0.02")  # 2%
 DEFAULT_FINISHED_WAREHOUSE_PACKAGING_RATE = Decimal("0.01")  # 1%
 DEFAULT_FINISHED_SCRAP_RATE = Decimal("0.003")  # 千分之 3
 DEFAULT_FINISHED_PRETAX_PROFIT_RATE = Decimal("0.02")  # 2%
+DEFAULT_SWING_SHEAR_PROCESS_FEE_PER_TON = Decimal("150")  # 元/吨
 APP_VERSION = "1.0.0"
 
 
@@ -52,6 +52,7 @@ class SettingsService:
                 finished_warehouse_packaging_rate=DEFAULT_FINISHED_WAREHOUSE_PACKAGING_RATE,
                 finished_scrap_rate=DEFAULT_FINISHED_SCRAP_RATE,
                 finished_pretax_profit_rate=DEFAULT_FINISHED_PRETAX_PROFIT_RATE,
+                swing_shear_process_fee_per_ton=DEFAULT_SWING_SHEAR_PROCESS_FEE_PER_TON,
             )
         return ConfigVO(
             app_name=row.app_name or DEFAULT_APP_NAME,
@@ -81,6 +82,10 @@ class SettingsService:
                 getattr(row, "finished_pretax_profit_rate", None),
                 DEFAULT_FINISHED_PRETAX_PROFIT_RATE,
             ),
+            swing_shear_process_fee_per_ton=self._normalize_yuan_per_ton(
+                getattr(row, "swing_shear_process_fee_per_ton", None),
+                DEFAULT_SWING_SHEAR_PROCESS_FEE_PER_TON,
+            ),
         )
 
     def update_config(
@@ -101,6 +106,7 @@ class SettingsService:
         )
         finished_scrap_rate = quantize_money(dto.finished_scrap_rate, Q6)
         finished_pretax_profit_rate = quantize_money(dto.finished_pretax_profit_rate, Q6)
+        swing_shear_process_fee_per_ton = quantize_money(dto.swing_shear_process_fee_per_ton, Q2)
         row = self.repository.get_singleton(db)
         if row is None:
             self.repository.create_singleton(
@@ -115,6 +121,7 @@ class SettingsService:
                     finished_warehouse_packaging_rate=finished_warehouse_packaging_rate,
                     finished_scrap_rate=finished_scrap_rate,
                     finished_pretax_profit_rate=finished_pretax_profit_rate,
+                    swing_shear_process_fee_per_ton=swing_shear_process_fee_per_ton,
                     created_by=audit["created_by"],
                     updated_by=audit["updated_by"],
                 ),
@@ -133,6 +140,7 @@ class SettingsService:
                     finished_warehouse_packaging_rate=finished_warehouse_packaging_rate,
                     finished_scrap_rate=finished_scrap_rate,
                     finished_pretax_profit_rate=finished_pretax_profit_rate,
+                    swing_shear_process_fee_per_ton=swing_shear_process_fee_per_ton,
                     updated_by=audit_update(current_user)["updated_by"],
                 ),
             )
@@ -210,6 +218,16 @@ class SettingsService:
             DEFAULT_FINISHED_PRETAX_PROFIT_RATE,
         )
 
+    def get_swing_shear_process_fee_per_ton(self, db: Session) -> Decimal:
+        """核价用：摆剪件加到钢价上的元/吨，无效或缺失则回退 150。"""
+        row = self.repository.get_singleton(db)
+        if row is None:
+            return DEFAULT_SWING_SHEAR_PROCESS_FEE_PER_TON
+        return self._normalize_yuan_per_ton(
+            getattr(row, "swing_shear_process_fee_per_ton", None),
+            DEFAULT_SWING_SHEAR_PROCESS_FEE_PER_TON,
+        )
+
     @staticmethod
     def _normalize_density(value: Any) -> Decimal:
         try:
@@ -261,3 +279,14 @@ class SettingsService:
         if rate < 0:
             return default
         return quantize_money(rate, Q6)
+
+    @staticmethod
+    def _normalize_yuan_per_ton(value: Any, default: Decimal) -> Decimal:
+        """元/吨（≥0）。"""
+        try:
+            amount = Decimal(str(value))
+        except (InvalidOperation, TypeError, ValueError):
+            return default
+        if amount < 0:
+            return default
+        return quantize_money(amount, Q2)

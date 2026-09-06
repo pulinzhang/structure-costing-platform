@@ -1,4 +1,4 @@
-import { policyUploadTemplate } from './template.js';
+import { policyUploadTemplate } from './template.js?v=1';
 
 const MAX_RECENT_UPLOADS = 8;
 const POLL_INTERVAL_MS = 2000;
@@ -182,7 +182,7 @@ const PolicyUploadPage = {
         });
         this.recentUploads.unshift({
             fileName,
-            periodLabel: `${year}年${month}月`,
+            periodLabel: fmtPeriod(year, month),
             timeLabel,
             summary: summary || '',
         });

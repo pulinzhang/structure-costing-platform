@@ -9,58 +9,49 @@ from decimal import Decimal
 from sqlalchemy.orm import Session
 
 from app.common.audit import audit_create, display_name
-from app.common.money import Q2, Q4, optional_format_money
+from app.exceptions import BusinessException, NotFoundException
+from app.models.stamping import StampingPart
 from app.repositories.stamping.stamping_part_repository import MaterialSpecRow
 from app.repositories.stamping.stamping_repository import (
     StampingPartRepository,
     StampingProcessRepository,
 )
-from app.schemas.dto.stamping_part_dto import StampingPartBatchDeleteDTO
+from app.schemas.dto.stamping_part_dto import (
+    StampingPartBatchDeleteDTO,
+    StampingPartOffalUpdateDTO,
+)
 from app.schemas.dto.stamping_upload_dto import (
     PartData,
     StampingPartPatch,
     StampingProcessPatch,
 )
 from app.schemas.vo.stamping_vo import (
-    StampingPartQuery,
-    StampingPartListResponse,
-    StampingPartWithProcessesResponse,
-    StampingProcessResponse,
-    StampingPartListFilterOptions,
     StampingCascadeFilterOptionsVO,
     StampingCascadeFilterQuery,
-    StampingPartBatchDeleteResultVO,
     StampingMaterialQuery,
     StampingMaterialResponse,
+    StampingPartBatchDeleteResultVO,
+    StampingPartListFilterOptions,
+    StampingPartListResponse,
     StampingPartListSummaryVO,
+    StampingPartQuery,
+    StampingPartResponse,
+    StampingPartWithProcessesResponse,
     StampingProcessItemUpdate,
+    StampingProcessResponse,
     StampingProcessUpdate,
 )
-from app.exceptions import BusinessException, NotFoundException
-from app.models.stamping import StampingPart
 from app.schemas.vo.user_vo import UserVO
 
 logger = logging.getLogger("service.stamping")
 
 
-def _join_formatted_numbers(
-    values: list[Decimal | None],
-    quant: Decimal,
-    places: int,
-) -> str | None:
-    """按顺序把数值格式化后用 / 拼接；全空则 None。"""
-    texts: list[str] = []
-    for value in values:
-        text = optional_format_money(value, quant, places)
-        if text is not None:
-            texts.append(text)
-    if not texts:
-        return None
-    return "/".join(texts)
+def _nonempty_decimals(values: list[Decimal | None]) -> list[Decimal]:
+    return [value for value in values if value is not None]
 
 
 def _material_row_from_part(part: StampingPart) -> StampingMaterialResponse:
-    """普通件用主表尺寸；拼焊件用各子片料厚/长/宽拼接。"""
+    """普通件用主表尺寸；拼焊件用各子片料厚/长/宽（JSON 拼接在 VO）。"""
     blanks = sorted(
         list(part.tailor_weld_blanks or []),
         key=lambda blank: (blank.blank_seq or 0, blank.id or 0),
@@ -71,15 +62,15 @@ def _material_row_from_part(part: StampingPart) -> StampingMaterialResponse:
             material = (blanks[0].material or "").strip() or None
         return StampingMaterialResponse(
             material=material,
-            thickness=_join_formatted_numbers([blank.thickness for blank in blanks], Q2, 2),
-            sheet_length=_join_formatted_numbers([blank.sheet_length for blank in blanks], Q2, 2),
-            sheet_width=_join_formatted_numbers([blank.sheet_width for blank in blanks], Q2, 2),
+            thickness=_nonempty_decimals([blank.thickness for blank in blanks]),
+            sheet_length=_nonempty_decimals([blank.sheet_length for blank in blanks]),
+            sheet_width=_nonempty_decimals([blank.sheet_width for blank in blanks]),
         )
     return StampingMaterialResponse(
         material=material,
-        thickness=optional_format_money(part.thickness, Q4, 4),
-        sheet_length=optional_format_money(part.sheet_length, Q2, 2),
-        sheet_width=optional_format_money(part.sheet_width, Q2, 2),
+        thickness=_nonempty_decimals([part.thickness]),
+        sheet_length=_nonempty_decimals([part.sheet_length]),
+        sheet_width=_nonempty_decimals([part.sheet_width]),
     )
 
 
@@ -107,19 +98,30 @@ class StampingPartService:
         db: Session,
         *,
         location: str | None = None,
+        vehicle_model: str | None = None,
     ) -> dict[str, int]:
-        """按基地汇总主数据：零件数 / 工序数 / 车型数。"""
+        """按基地 / 车型汇总主数据：零件数 / 工序数 / 车型数。"""
         location_clean = location.strip() if location else None
+        vehicle_clean = vehicle_model.strip() if vehicle_model else None
         _rows, parts = self.repository.paginate(
             db,
             location=location_clean,
+            vehicle_model=vehicle_clean,
             skip=0,
             limit=1,
         )
-        summary = self.repository.summarize_by_filters(db, location=location_clean)
+        summary = self.repository.summarize_by_filters(
+            db,
+            location=location_clean,
+            vehicle_model=vehicle_clean,
+        )
         return {
             "parts": int(parts),
-            "processes": self.process_repository.count_by_part_location(db, location_clean),
+            "processes": self.process_repository.count_by_part_location(
+                db,
+                location_clean,
+                vehicle_clean,
+            ),
             "models": int(summary.get("vehicle_model_count") or 0),
         }
 
@@ -187,12 +189,13 @@ class StampingPartService:
         db: Session,
         query: StampingCascadeFilterQuery,
     ) -> StampingCascadeFilterOptionsVO:
-        """获取基地 → 冲压工厂 → 配套车型 级联筛选选项"""
+        """获取基地 → 车型 → 版本 → 冲压工厂 级联筛选选项"""
         raw = self.repository.get_cascade_filter_options(
             db,
             location=query.location.strip() if query.location else None,
             stamping_supplier=query.stamping_supplier.strip() if query.stamping_supplier else None,
             vehicle_model=query.vehicle_model.strip() if query.vehicle_model else None,
+            version=query.version.strip() if query.version else None,
         )
         return StampingCascadeFilterOptionsVO.model_validate(raw)
 
@@ -210,10 +213,17 @@ class StampingPartService:
         )
 
         unique_rows: list[StampingMaterialResponse] = []
-        seen: set[tuple[str | None, str | None, str | None, str | None]] = set()
+        seen: set[
+            tuple[str | None, tuple[Decimal, ...], tuple[Decimal, ...], tuple[Decimal, ...]]
+        ] = set()
         for part in parts:
             row = _material_row_from_part(part)
-            key = (row.material, row.thickness, row.sheet_length, row.sheet_width)
+            key = (
+                row.material,
+                tuple(row.thickness),
+                tuple(row.sheet_length),
+                tuple(row.sheet_width),
+            )
             if key in seen:
                 continue
             seen.add(key)
@@ -222,9 +232,9 @@ class StampingPartService:
         unique_rows.sort(
             key=lambda row: (
                 row.material or "",
-                row.thickness or "",
-                row.sheet_length or "",
-                row.sheet_width or "",
+                tuple(row.thickness),
+                tuple(row.sheet_length),
+                tuple(row.sheet_width),
             )
         )
         total = len(unique_rows)
@@ -238,36 +248,43 @@ class StampingPartService:
         db: Session,
         *,
         location: str | None = None,
-        stamping_supplier: str | None = None,
         vehicle_model: str | None = None,
-        version: str | None = None,
     ) -> int:
-        """统计去重后的材料+厚度规格行数（含拼焊子片）。"""
+        """统计去重后的材料+厚度规格行数（含拼焊子片；统计可按车型收窄）。"""
+        loc = location.strip() if location else None
+        vehicle = vehicle_model.strip() if vehicle_model else None
+        if not loc and not vehicle:
+            return 0
         return self.repository.count_material_specs(
             db,
-            location=location.strip() if location else None,
-            stamping_supplier=stamping_supplier.strip() if stamping_supplier else None,
-            vehicle_model=vehicle_model.strip() if vehicle_model else None,
-            version=version.strip() if version else None,
+            location=loc,
+            vehicle_model=vehicle,
         )
 
-    def list_material_specs(
+    def list_distinct_spec_grades(
         self,
         db: Session,
         *,
         location: str | None = None,
-        stamping_supplier: str | None = None,
         vehicle_model: str | None = None,
-        version: str | None = None,
-    ) -> list[MaterialSpecRow]:
-        """列出去重后的 基地 + 材料(钢种) + 厚度（含拼焊子片，钢价计算用）。"""
-        return self.repository.list_material_specs(
+    ) -> list[str]:
+        """统计用：范围内去重牌号（含拼焊子片）。"""
+        loc = location.strip() if location else None
+        vehicle = vehicle_model.strip() if vehicle_model else None
+        if not loc and not vehicle:
+            return []
+        return self.repository.list_distinct_spec_grades(
             db,
-            location=location.strip() if location else None,
-            stamping_supplier=stamping_supplier.strip() if stamping_supplier else None,
-            vehicle_model=vehicle_model.strip() if vehicle_model else None,
-            version=version.strip() if version else None,
+            location=loc,
+            vehicle_model=vehicle,
         )
+
+    def list_material_specs(self, db: Session, *, location: str) -> list[MaterialSpecRow]:
+        """列出该基地去重后的 基地 + 材料(钢种) + 厚度（含拼焊子片，钢价计算用）。"""
+        loc = location.strip()
+        if not loc:
+            return []
+        return self.repository.list_material_specs(db, location=loc)
 
     def get_by_id(self, db: Session, part_id: int) -> StampingPartWithProcessesResponse:
         """获取单个零件（含工序）"""
@@ -326,18 +343,39 @@ class StampingPartService:
             db.refresh(part)
         return part
 
+    def update_offal(
+        self,
+        db: Session,
+        part_id: int,
+        dto: StampingPartOffalUpdateDTO,
+        current_user: UserVO,
+    ) -> StampingPartResponse:
+        """零件详情纠错：是否利废、利用哪类废料。关开关时清空废料来源。"""
+        source = None if not dto.is_offal_nested else dto.offal_source
+        payload: StampingPartPatch = {
+            "is_offal_nested": dto.is_offal_nested,
+            "offal_source": source,
+            "updated_by": display_name(current_user),
+        }
+        part = self.repository.update(db, part_id, payload)
+        if not part:
+            raise NotFoundException(f"零件不存在: id={part_id}")
+        db.commit()
+        db.refresh(part)
+        return StampingPartResponse.model_validate(part)
+
     def batch_delete(
         self,
         db: Session,
         dto: StampingPartBatchDeleteDTO,
     ) -> StampingPartBatchDeleteResultVO:
-        """按基地 + 冲压工厂 + 车型 + 版本批量删除零件（四者同时必填）。"""
+        """按基地 + 车型 + 版本批量删除零件；工厂可选。"""
         location = dto.location.strip()
-        supplier = dto.stamping_supplier.strip()
         vehicle_model = dto.vehicle_model.strip()
         version = dto.version.strip()
-        if not location or not supplier or not vehicle_model or not version:
-            raise BusinessException("基地、冲压工厂、车型和版本不能为空")
+        supplier = dto.stamping_supplier
+        if not location or not vehicle_model or not version:
+            raise BusinessException("基地、车型和版本不能为空")
 
         deleted = self.repository.delete_by_scope(
             db,

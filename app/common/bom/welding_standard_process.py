@@ -34,6 +34,7 @@ TOKEN_TO_STANDARD_PROCESS: dict[str, WeldingStandardProcessName | None] = {
     "焊点": WeldingStandardProcessName.SPOT_WELD,
     "凸焊": WeldingStandardProcessName.STUD_PROJECTION_WELD,
     "植焊": WeldingStandardProcessName.STUD_PROJECTION_WELD,
+    "搭铁": WeldingStandardProcessName.STUD_PROJECTION_WELD,
     "铆接": WeldingStandardProcessName.RIVET,
     "焊缝": WeldingStandardProcessName.CO2_WELD_SEAM,
     "弧焊": WeldingStandardProcessName.CO2_WELD_SEAM,

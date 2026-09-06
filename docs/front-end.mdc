@@ -17,20 +17,21 @@ alwaysApply: true
 
 ### 1.1 技术架构
 
-**前后端分离 SPA（无构建步骤）**
+**前后端分离 SPA（业务页无 Webpack / Vite）**
 
 | 入口 | 路径 | 说明 |
 |------|------|------|
 | 主应用 | `static/index.html` → `/` | Hash 路由 SPA；未登录立即 `replace('/login')` |
 | 登录页 | `static/login.html` → `/login` | 独立页；`#loginRoot` + `features/login/boot.js` |
 
-- **样式**：Tailwind CDN + `static/css/style.css`（主题变量 + 壳层骨架）
-- **字体**：Inter（正文）+ JetBrains Mono（等宽/刻度）
+- **样式**：本地 `static/css/tailwind.css`（Tailwind CLI 预生成并入库）+ `static/css/style.css`（主题变量 + 壳层骨架）。**禁止** `cdn.tailwindcss.com`（Play CDN 每次刷新现场编译）。新增从未出现过的任意值类后执行 `npm run build:css`。
+- **字体**：本地 `static/css/fonts.css` + `static/assets/fonts/`（Inter / JetBrains Mono / Source Serif 4）；**禁止** Google Fonts。
+- **第三方 JS**：`static/js/vendor/`（marked、DOMPurify）；**禁止** jsDelivr 等 CDN。
 - **后端**：FastAPI `/api/*`（JSON）；文件下载走 `HttpClient.download`
 - **脚本加载顺序**（重要）：
   1. `main.js` — **普通 `<script>`**（非 module），保证 `window.*` 先就绪
   2. `app.js` — `type="module"`（主应用）或 `login/boot.js`（登录页）
-- **缓存**：入口与 import 使用 `?v=N` 版本号；改脚本后须同步递增相关 `?v=`
+- **缓存**：入口与 import 使用 `?v=N` 版本号；改脚本后须同步递增相关 `?v=`；改 `tailwind.css` / `fonts.css` 后递增对应 `?v=`
 
 ### 1.2 核心规则
 
@@ -109,17 +110,22 @@ static/
         ├── dashboard/
         ├── stamping/
         │   ├── process/{upload,parts}
+        │   ├── die/{upload,list,unit-price}
+        │   ├── gauge-fee/{upload,list}
         │   ├── tonnage/{upload,list}
-        │   └── process-fee/{calc,list}
+        │   ├── process-fee/{calc,list}
+        │   └── die-fee/{calc,list}
         ├── bom/material/{upload,list,structure,viz}   # 侧栏名「焊接工程」
         ├── bom/welding-unit-price/{upload,list}
-        ├── bom/annual-part-price/{upload,list}
         ├── bom/packaging-transport-fee/{upload,list}
+        ├── bom/procurement-object/{generate,list}
+        ├── bom/annual-part-price/{upload,list}
         ├── bom/welding-process-breakdown/{generate,list}
-        ├── bom/l0-welding-fee/{calc,list}
+        ├── bom/welding-fee/{calc,list}
         ├── yishiyiyi/
         │   ├── policy/{upload,list}
         │   ├── base-price/{upload,list}
+        │   ├── steel-grade-category/
         │   ├── winning-thickness/list/
         │   └── scrap-price/
         ├── costing/
@@ -145,28 +151,38 @@ static/
 | `#/dashboard` | 仪表盘 | `features/dashboard` |
 | `#/stamping-upload` | 上传工艺文件 | `stamping/process/upload` |
 | `#/stamping-parts` | 冲压零件列表 | `stamping/process/parts` |
+| `#/stamping-die-upload` | 上传模具布点 | `stamping/die/upload` |
+| `#/stamping-die-list` | 模具清单 | `stamping/die/list` |
+| `#/stamping-die-unit-price` | 模具单价 | `stamping/die/unit-price` |
+| `#/stamping-gauge-fee-upload` | 检具费上传 | `stamping/gauge-fee/upload` |
+| `#/stamping-gauge-fee` | 检具费列表 | `stamping/gauge-fee/list` |
 | `#/stamping-tonnage-upload` | 冲次单价上传 | `stamping/tonnage/upload` |
 | `#/stamping-tonnage` | 冲次单价列表 | `stamping/tonnage/list` |
 | `#/stamping-process-fee-calc` | 冲压加工费计算 | `stamping/process-fee/calc` |
 | `#/stamping-process-fee` | 冲压加工费列表 | `stamping/process-fee/list` |
+| `#/stamping-die-fee-calc` | 冲压模具费计算 | `stamping/die-fee/calc` |
+| `#/stamping-die-fee` | 冲压模具费列表 | `stamping/die-fee/list` |
 | `#/bom-upload` | 上传材料清单 | `bom/material/upload` |
 | `#/bom-material` | 材料清单列表 | `bom/material/list` |
 | `#/bom-structure` | 产品结构 | `bom/material/structure` |
 | `#/bom-viz` | 产品结构图 | `bom/material/viz` |
 | `#/bom-welding-unit-price-upload` | 焊接单价上传 | `bom/welding-unit-price/upload` |
 | `#/bom-welding-unit-price` | 焊接单价列表 | `bom/welding-unit-price/list` |
-| `#/bom-annual-part-price-upload` | 年度零件价上传 | `bom/annual-part-price/upload` |
-| `#/bom-annual-part-price` | 年度零件价列表 | `bom/annual-part-price/list` |
 | `#/bom-packaging-transport-fee-upload` | 包装运输费上传 | `bom/packaging-transport-fee/upload` |
 | `#/bom-packaging-transport-fee` | 包装运输费列表 | `bom/packaging-transport-fee/list` |
+| `#/bom-procurement-object` | 生成采购对象清单 | `bom/procurement-object/generate` |
+| `#/bom-procurement-object-list` | 采购对象清单 | `bom/procurement-object/list` |
+| `#/bom-annual-part-price-upload` | 年度零件价上传 | `bom/annual-part-price/upload` |
+| `#/bom-annual-part-price` | 年度零件价列表 | `bom/annual-part-price/list` |
 | `#/bom-welding-process-breakdown` | 焊接工艺拆解 | `bom/welding-process-breakdown/generate` |
 | `#/bom-welding-process-breakdown-list` | 焊接工艺拆解列表 | `bom/welding-process-breakdown/list` |
-| `#/bom-l0-welding-fee-calc` | 成品焊接费计算 | `bom/l0-welding-fee/calc` |
-| `#/bom-l0-welding-fee-list` | 成品焊接费列表 | `bom/l0-welding-fee/list` |
+| `#/bom-welding-fee-calc` | 焊接费计算 | `bom/welding-fee/calc` |
+| `#/bom-welding-fee-list` | 焊接费列表 | `bom/welding-fee/list` |
 | `#/steel-price-policy-upload` | 加减价政策上传 | `yishiyiyi/policy/upload` |
 | `#/steel-price-policy-download` | 加减价政策列表 | `yishiyiyi/policy/list` |
 | `#/base-price-upload` | 基准价格上传 | `yishiyiyi/base-price/upload` |
 | `#/base-price-download` | 基准价格列表 | `yishiyiyi/base-price/list` |
+| `#/steel-grade-category` | 牌号分类 | `yishiyiyi/steel-grade-category` |
 | `#/winning-thickness-download` | 中标钢厂厚度价格一览表 | `yishiyiyi/winning-thickness/list` |
 | `#/scrap-price` | 废料月度销售价 | `yishiyiyi/scrap-price` |
 | `#/steel-price-calc` | 冲压钢材联动计算 | `costing/steel-price/calc` |
@@ -491,6 +507,7 @@ const numCell = 'px-2 py-2 font-mono text-[10px] text-right tabular-nums text-[#
 | `HttpClient.download` | 文件下载（blob + Content-Disposition 文件名） |
 | `esc(value)` | HTML 转义；`null/undefined` → `'-'` |
 | `fmtNum(value, digits=2)` | 数字格式化 |
+| `fmtYear(year)` / `fmtMonth(month)` / `fmtPeriod(year, month)` | 年度 `2026年`、月份 `07月`、合写 `2026年07月`；禁止 `2026-07`、`2026 年`、未补零 `7月` |
 | `formatFileSize(bytes)` | 文件大小 |
 | `svgIcon(name, extraClass?)` | 内联 SVG |
 | `showToast(message, type)` | `success` / `error` / `warning` |
@@ -553,7 +570,8 @@ ES Module 导出：`PAGE_SIZE_OPTIONS`、`DEFAULT_PAGE_SIZE`、`PREVIEW_*`、`pa
 ## 九、快速检查清单
 
 - [ ] 新页：`pageMeta` + `app.js` 注册 + 侧栏 `data-page`（如需）+ 权限码
-- [ ] 改脚本后递增相关 `?v=`
+- [ ] 改脚本后递增相关 `?v=`；新增从未出现过的 Tailwind 任意值类后执行 `npm run build:css` 并递增 `tailwind.css?v=`
+- [ ] 入口不引用 Google Fonts / Tailwind Play CDN / jsDelivr
 - [ ] 渲染目标是 `#pageContent`；登录走 `/login` + `login.html`
 - [ ] 未向 `style.css` 新增业务 class
 - [ ] 无 Bootstrap / 无浅色底 / 无 `rounded-lg+`

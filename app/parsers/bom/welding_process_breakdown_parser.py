@@ -66,12 +66,28 @@ def _normalize_weld_info_text(raw: str) -> str:
     text = text.replace("黒", "黑")
     text = text.replace("ｍ", "m").replace("Ｍ", "M")
     text = text.replace("㎡", "m2").replace("m²", "m2").replace("M2", "m2")
+    text = text.replace("＋", "+")
     # 冒号两侧：保留「名称：数字」语义，统一为全角冒号便于阅读；匹配仍兼容半角
     text = re.sub(r"[:：]", "：", text)
-    # 电泳+喷粉 中间多余空格
-    text = re.sub(r"\+\s*", "+", text)
+    # 材料清单笔误「凸焊:：2」→「凸焊：2」
+    text = re.sub(r"(：\s*)+", "：", text)
+    # 电泳+喷粉、焊缝长度 218 + 30
+    text = re.sub(r"\s*\+\s*", "+", text)
     text = re.sub(r"\s+", " ", text)
     return text
+
+
+def _sum_plus_expression(expr: str) -> Decimal | None:
+    """把「218+30」这类加式收成一个量；单段数字原样返回。"""
+    total = Decimal("0")
+    saw_part = False
+    for part in expr.split("+"):
+        number = _to_decimal(part)
+        if number is None:
+            return None
+        total += number
+        saw_part = True
+    return total if saw_part else None
 
 
 def parse_welding_info_text(weld_info: str | None) -> WeldingProcessBreakdownParseResult:
@@ -81,9 +97,13 @@ def parse_welding_info_text(weld_info: str | None) -> WeldingProcessBreakdownPar
     兼容例：
       焊点：99 凸焊：7 涂胶：1550mm
       焊点:23个 焊缝：3条（60mm)   ← 半角冒号 + 括号半全角混用
-      凸焊:1 / 植焊:2
+      焊缝：3条 68mm              ← 条数与长度之间无括号（T2AA 材料清单）
+      焊缝：18条 （218+30）mm     ← 括号内长度加总后作为次要过程量
+      凸焊:1 / 植焊:2 / 搭铁:3   ← 搭铁按植/螺柱/凸焊
       塞焊：3个（90mm）
       黒漆件 电泳面积：0.017m2  → 标准工艺默认「电泳（盐雾试验要求≤244H）」
+      电泳黑漆：0.098m2           → 同上（材料清单常见省略「面积」）
+      凸焊:：2                   → 连续冒号压成「凸焊：2」
       铆接：1 电泳+ 喷粉（黑色） 面积：0.014m2  → 「面积」一律按电泳
     """
     raw = (weld_info or "").strip()
@@ -104,29 +124,33 @@ def parse_welding_info_text(weld_info: str | None) -> WeldingProcessBreakdownPar
     if re.search(r"电镀", text):
         tags.append("电镀")
 
-    # 括号允许 （ ) ( ） 混用；mm 大小写；冒号已归一为 ：
+    # 括号允许 （ ) ( ） 混用；mm 可在括号内（60mm）或括号外（218+30）mm；长度允许加总
+    _mm_after = r"[（(]?\s*(\d+(?:\.\d+)?(?:\+\d+(?:\.\d+)?)*)\s*[）)]?\s*[mM]{2}\s*[）)]?"
     patterns: list[tuple[str, str, str]] = [
         (r"焊点：?\s*(\d+)\s*个?", "焊点", "个"),
         (r"凸焊：?\s*(\d+)\s*个?", "凸焊", "个"),
         (r"植焊：?\s*(\d+)\s*个?", "植焊", "个"),
+        (r"搭铁：?\s*(\d+)\s*个?", "搭铁", "个"),
         (r"铆接：?\s*(\d+)\s*个?", "铆接", "个"),
         (
-            r"塞焊：?\s*(\d+)\s*个?\s*[（(]?\s*(\d+(?:\.\d+)?)\s*[mM]{2}\s*[）)]?",
+            rf"塞焊：?\s*(\d+)\s*个?\s*{_mm_after}",
             "塞焊",
             "个",
         ),
         (
-            r"弧焊：?\s*(\d+)\s*条\s*[（(]\s*(\d+(?:\.\d+)?)\s*[mM]{2}\s*[）)]",
+            rf"弧焊：?\s*(\d+)\s*条\s*{_mm_after}",
             "弧焊",
             "条",
         ),
         (
-            r"焊缝：?\s*(\d+)\s*条\s*[（(]\s*(\d+(?:\.\d+)?)\s*[mM]{2}\s*[）)]",
+            rf"焊缝：?\s*(\d+)\s*条\s*{_mm_after}",
             "焊缝",
             "条",
         ),
         (r"涂胶：?\s*(\d+(?:\.\d+)?)\s*[mM]{2}", "涂胶", "mm"),
         (r"电泳面积：?\s*([\d.]+)\s*m2", "电泳面积", "m2"),
+        (r"电泳黑漆：?\s*([\d.]+)\s*m2", "电泳面积", "m2"),
+        (r"电泳：?\s*([\d.]+)\s*m2", "电泳面积", "m2"),
         (r"(?<!电泳)面积：?\s*([\d.]+)\s*m2", "面积", "m2"),
     ]
 
@@ -144,7 +168,7 @@ def parse_welding_info_text(weld_info: str | None) -> WeldingProcessBreakdownPar
             secondary = None
             secondary_unit = None
             if match.lastindex and match.lastindex >= 2 and match.group(2):
-                secondary = _to_decimal(match.group(2))
+                secondary = _sum_plus_expression(match.group(2))
                 if secondary is not None:
                     secondary_unit = "mm"
             standard_name, map_status = resolve_standard_process_name(token, tags=tuple(tags))

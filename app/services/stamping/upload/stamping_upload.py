@@ -6,20 +6,23 @@
 """
 
 import logging
+from collections.abc import Callable
 from decimal import Decimal
 from pathlib import Path
-from collections.abc import Callable
+
 from sqlalchemy.orm import Session
 
 from app.common.audit import audit_create, display_name
-from app.common.upload_scope_validation import validate_stamping_process_upload_scope
+from app.common.swing_shear import is_swing_shear_label
 from app.common.timezone import now
-from app.parsers.stamping.models.part import Part
-from app.parsers.stamping.models.process import Process
-from app.parsers.stamping.stamping_parser import parse_stamping_excel
-from app.parsers.stamping.tailor_weld_parser import parse_tailor_weld_excel
+from app.common.upload_scope_validation import validate_stamping_process_upload_scope
 from app.config import settings
 from app.exceptions.base import BusinessException
+from app.parsers.stamping.models.part import Part
+from app.parsers.stamping.models.process import Process
+from app.parsers.stamping.models.tailor_weld import TailorWeldAssemblyParsed
+from app.parsers.stamping.stamping_parser import parse_stamping_excel
+from app.parsers.stamping.tailor_weld_parser import parse_tailor_weld_excel
 from app.repositories.stamping.stamping_repository import (
     StampingPartRepository,
     StampingProcessRepository,
@@ -34,11 +37,21 @@ from app.services.async_task import (
     AsyncTaskService,
     WorkerTaskOutcome,
 )
+from app.services.file_trace.path_utils import to_upload_relpath
+from app.services.file_trace.register import register_existing
+from app.services.stamping.process_seq_validator import (
+    ProcessSeqOccurrence,
+    find_duplicate_process_seqs,
+    format_duplicate_process_seq_issues,
+)
 from app.services.stamping.tailor_weld_blank_service import StampingTailorWeldBlankService
 from app.services.stamping.upload.cost_ratio_preserver import ProcessCostRatioPreserver
 from app.services.stamping.upload.template_builder import build_stamping_process_template
-from app.services.file_trace.path_utils import to_upload_relpath
-from app.services.file_trace.register import register_existing
+from app.services.yishiyiyi.steel_grade_category import (
+    SOURCE_STAMPING_UPLOAD,
+    GradeEnsureItem,
+    SteelGradeCategoryService,
+)
 
 # progress_callback(progress: int, msg: str)
 ProgressCallback = Callable[[int, str], None]
@@ -75,8 +88,8 @@ class StampingUploadService:
         主数据：解析完成后用库中已设比率回写工序，再删除旧数据并写入；
         删除与写入在同一事务中，全部成功或全部回滚。
         """
-        import tempfile
         import os
+        import tempfile
 
         def _report(progress: int, msg: str) -> None:
             if progress_callback:
@@ -101,6 +114,21 @@ class StampingUploadService:
             version = scope.version
             stamping_supplier = scope.stamping_supplier
             tailor_parent_numbers = set(tailor_result.parent_part_numbers)
+
+            duplicate_seqs = find_duplicate_process_seqs(
+                [
+                    ProcessSeqOccurrence(
+                        part_number=process.part_number,
+                        process_seq=process.process_seq,
+                        excel_row=process.excel_row,
+                    )
+                    for process in parse_result.processes
+                ]
+            )
+            if duplicate_seqs:
+                raise BusinessException(
+                    format_duplicate_process_seq_issues(duplicate_seqs, source_name="工艺确认表")
+                )
 
             logger.info(
                 "解析 Excel 完成：%d 个零件、%d 道工序、%d 个拼焊总成",
@@ -145,6 +173,10 @@ class StampingUploadService:
                     stamping_supplier,
                     filename,
                     tailor_parent_numbers=tailor_parent_numbers,
+                    swing_shear_part_numbers=self._swing_shear_part_numbers(
+                        parse_result.parts,
+                        parse_result.processes,
+                    ),
                     current_user=current_user,
                 )
                 tailor_assemblies, tailor_blanks, tailor_warnings = (
@@ -158,9 +190,17 @@ class StampingUploadService:
                 process_count = self._save_processes(
                     parse_result.processes, part_map, current_user=current_user
                 )
+                grade_result = SteelGradeCategoryService().ensure_grades(
+                    self.db,
+                    self._collect_upload_grades(parse_result.parts, tailor_result.assemblies),
+                    source=SOURCE_STAMPING_UPLOAD,
+                    current_user=current_user,
+                )
 
                 warnings = list(parse_result.warnings) + list(tailor_result.warnings)
                 warnings.extend(tailor_warnings)
+                if grade_result.conflicts:
+                    warnings.extend(grade_result.conflicts)
                 parse_time_ms = parse_result.parse_time_ms + tailor_result.parse_time_ms
 
                 logger.info(
@@ -205,6 +245,29 @@ class StampingUploadService:
         finally:
             if os.path.exists(tmp_path):
                 os.unlink(tmp_path)
+
+    @staticmethod
+    def _collect_upload_grades(
+        parts: list[Part],
+        assemblies: list[TailorWeldAssemblyParsed],
+    ) -> list[GradeEnsureItem]:
+        seen: set[str] = set()
+        items: list[GradeEnsureItem] = []
+
+        def add_material(raw: str | None) -> None:
+            grade = (raw or "").strip()
+            if not grade or grade in seen:
+                return
+            seen.add(grade)
+            items.append(GradeEnsureItem(grade=grade))
+
+        for part in parts:
+            add_material(part.material)
+        for assembly in assemblies:
+            add_material(assembly.material)
+            for blank in assembly.blanks:
+                add_material(blank.material)
+        return items
 
     def _save_file(
         self,
@@ -280,12 +343,14 @@ class StampingUploadService:
         stamping_supplier: str = "",
         excel_filename: str = "",
         tailor_parent_numbers: set[str] | None = None,
+        swing_shear_part_numbers: set[str] | None = None,
         *,
         current_user: UserVO,
     ) -> dict[str, int]:
         """保存零件数据到数据库，返回 part_number -> part_id 映射"""
         audit = audit_create(current_user)
         tailor_parents = tailor_parent_numbers or set()
+        swing_shear_parts = swing_shear_part_numbers or set()
         location = file_info.safe_location
         self.part_repo.delete_by_scope(
             self.db,
@@ -332,6 +397,10 @@ class StampingUploadService:
                     sheet_width=part.sheet_width,
                     parts_per_sheet=part.parts_per_sheet,
                     sheet_type=part.sheet_type,
+                    is_offal_nested=part.is_offal_nested,
+                    offal_source=part.offal_source,
+                    is_scrap_byproduct=part.is_scrap_byproduct,
+                    has_swing_shear=part_number in swing_shear_parts,
                     die_type=part.die_type,
                     process_method=part.process_method,
                     automation=part.automation,
@@ -361,6 +430,22 @@ class StampingUploadService:
         )
         logger.info("导入零件: %d 个", len(parts_to_create))
         return part_map
+
+    @staticmethod
+    def _swing_shear_part_numbers(parts: list[Part], processes: list[Process]) -> set[str]:
+        numbers: set[str] = set()
+        for part in parts:
+            part_number = (part.part_number or "").strip()
+            if not part_number:
+                continue
+            if part.has_swing_shear:
+                numbers.add(part_number)
+        for process in processes:
+            if is_swing_shear_label(process.process_code, process.process_seq):
+                part_number = (process.part_number or "").strip()
+                if part_number:
+                    numbers.add(part_number)
+        return numbers
 
     def _save_processes(
         self,
@@ -394,6 +479,7 @@ class StampingUploadService:
                     process_order=order,
                     process_code=process.process_code,
                     die_sets=process.die_sets,
+                    die_number=process.die_number,
                     tonnage=process.tonnage,
                     cost_ratio=process.cost_ratio
                     if process.cost_ratio is not None

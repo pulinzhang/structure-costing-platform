@@ -7,6 +7,14 @@
  */
 
 import { pageSizeSelectHtml } from '../../../../page-size.js?v=2';
+import {
+    BRABUS_PANEL,
+    BRABUS_PANEL_HEADER,
+    BRABUS_SECTION_HEADER,
+    BRABUS_TABLE_WRAPPER,
+    BTN_SAVE_DEFAULT,
+    DIE_TYPE_SELECT,
+} from '../../../../ui-classes.js?v=2';
 
 export function partsTemplate() {
     return `
@@ -29,18 +37,18 @@ export function partsTemplate() {
                             </div>
                             <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3 backdrop-blur-sm"
                                  style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);">
-                                <div class="text-[#555555] text-[10px] tracking-wider">冲压工厂</div>
-                                <div class="text-[18px] font-bold text-[#FFFFFF] mt-1 tabular-nums">
-                                    <span id="partsHudSupplier">—</span>
-                                    <span class="text-[10px] text-[#555555] ml-1">个</span>
-                                </div>
-                            </div>
-                            <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3 backdrop-blur-sm"
-                                 style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);">
                                 <div class="text-[#555555] text-[10px] tracking-wider">车型</div>
                                 <div class="text-[18px] font-bold text-[#FFFFFF] mt-1 tabular-nums">
                                     <span id="partsHudVehicle">—</span>
                                     <span class="text-[10px] text-[#555555] ml-1">种</span>
+                                </div>
+                            </div>
+                            <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3 backdrop-blur-sm"
+                                 style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);">
+                                <div class="text-[#555555] text-[10px] tracking-wider">版本</div>
+                                <div class="text-[18px] font-bold text-[#FFFFFF] mt-1 tabular-nums">
+                                    <span id="partsHudVersion">—</span>
+                                    <span class="text-[10px] text-[#555555] ml-1">个</span>
                                 </div>
                             </div>
                             <!-- 零件号：重点指标 -->
@@ -61,9 +69,9 @@ export function partsTemplate() {
                             </div>
                             <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3 backdrop-blur-sm"
                                  style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);">
-                                <div class="text-[#555555] text-[10px] tracking-wider">版本</div>
+                                <div class="text-[#555555] text-[10px] tracking-wider">冲压工厂</div>
                                 <div class="text-[18px] font-bold text-[#FFFFFF] mt-1 tabular-nums">
-                                    <span id="partsHudVersion">—</span>
+                                    <span id="partsHudSupplier">—</span>
                                     <span class="text-[10px] text-[#555555] ml-1">个</span>
                                 </div>
                             </div>
@@ -89,15 +97,15 @@ export function partsTemplate() {
                 <!-- 战术胶囊筛选栏：默认收起-->
                 <div class="px-5 py-3 border-b border-[#14141A]"
                      style="background: linear-gradient(180deg, #0C0C10 0%, #0A0A0E 100%);">
-                    <div class="flex items-center justify-between gap-4 bg-[#0C0C10] border border-[#1E1E26] px-4 py-2.5 rounded-xl font-mono text-[11px]"
+                    <div class="flex items-center justify-between gap-4 bg-[#0C0C10] border border-[#1E1E26] px-4 py-2.5 rounded-md font-mono text-[11px]"
                          style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.02), 0 0 20px rgba(0,0,0,0.3);">
                         <div class="flex items-center gap-3 min-w-0 flex-1">
                             <span class="text-[#555555] shrink-0 tracking-wider">当前筛选：</span>
                             <div class="flex items-center gap-2 flex-wrap">
                                 <span id="partsCapsuleLocation" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部基地</span>
-                                <span id="partsCapsuleSupplier" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部工厂</span>
                                 <span id="partsCapsuleVehicle" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部车型</span>
                                 <span id="partsCapsuleVersion" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部版本</span>
+                                <span id="partsCapsuleSupplier" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部工厂</span>
                             </div>
                         </div>
                         <div class="flex items-center gap-3 shrink-0">
@@ -115,13 +123,13 @@ export function partsTemplate() {
                         </div>
                     </div>
 
-                    <!-- 高级筛选面板（默认折叠；级联：基地 →冲压工厂 →车型）-->
+                    <!-- 高级筛选面板（默认折叠；级联：基地 → 车型 → 版本 → 冲压工厂）-->
                     <div id="partsAdvancedFilterPanel" class="hidden mt-3 pt-3 border-t border-[#1A1A22]">
                         <div class="flex items-end gap-3 flex-wrap">
                             ${filterSelect('locationFilter', '基地')}
-                            ${filterSelect('supplierFilter', '冲压工厂')}
                             ${filterSelect('vehicleModelFilter', '车型')}
                             ${filterSelect('versionFilter', '版本')}
+                            ${filterSelect('supplierFilter', '冲压工厂')}
                             ${filterInput('searchInput', '零件号', '短号或完整零件号')}
                             <button id="partsResetBtn" type="button"
                                     class="inline-flex items-center gap-1.5 h-8 px-3 text-[11px] font-medium rounded-md bg-transparent text-[#6E6E73] border border-[#2A2A35] hover:bg-[#FF1E27]/10 hover:border-[#FF1E27]/50 hover:text-[#FF1E27] transition-all duration-200">
@@ -129,12 +137,12 @@ export function partsTemplate() {
                                 重置
                             </button>
                         </div>
-                        <p class="mt-2 text-[10px] text-[#555555]">筛选均可选；级联联动。导出 / 批量删除须同时选定基地、冲压工厂、车型和版本。</p>
+                        <p class="mt-2 text-[10px] text-[#555555]">筛选均可选；级联为基地 → 车型 → 版本 → 冲压工厂。批量删除须基地、车型、版本；冲压工厂可选。导出须选定基地。</p>
                     </div>
                 </div>
 
                 <div class="overflow-x-auto brabus-bg-grid">
-                    <table class="w-full min-w-[1400px] bg-transparent" id="partsTable">
+                    <table class="w-full min-w-[1580px] bg-transparent" id="partsTable">
                         <thead>
                             <tr class="border-b border-[#17171C] bg-[#0B0B0D]/95">
                                 <th class="p-0 w-0"></th>
@@ -142,10 +150,13 @@ export function partsTemplate() {
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#A1A1A6] whitespace-nowrap">零件号</th>
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">零件名称</th>
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">基地</th>
-                                <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">冲压工厂</th>
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">车型</th>
-                                <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap border-r border-[#22222A]">版本</th>
+                                <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">版本</th>
+                                <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap border-r border-[#22222A]">冲压工厂</th>
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">材料</th>
+                                <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">利废</th>
+                                <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">废料副产品</th>
+                                <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">摆剪</th>
                                 <th class="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">厚度</th>
                                 <th class="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">重量</th>
                                 <th class="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">工序</th>
@@ -231,7 +242,7 @@ function filterInput(id, label, placeholder) {
 }
 
 /**
- * 同步战术胶囊：基地/ 工厂 / 车型 + 高级筛选已启用数量
+ * 同步战术胶囊：基地 / 车型 / 版本 / 工厂 + 高级筛选已启用数量
  */
 export function updatePartsFilterCapsules() {
     const location = document.getElementById('locationFilter')?.value || '';
@@ -271,7 +282,7 @@ export function updatePartsFilterCapsules() {
     if (countEl) countEl.textContent = `(${advancedActive})`;
 
     if (scopeEl) {
-        const parts = [location, supplier, vehicle, version].filter(Boolean);
+        const parts = [location, vehicle, version, supplier].filter(Boolean);
         scopeEl.textContent = parts.length ? parts.join(' · ') : '全部范围';
     }
 }
@@ -348,6 +359,62 @@ function detailTableRow([label, value]) {
             </tr>`;
 }
 
+function renderOffalRows(part, canUpdate) {
+    const isOn = Boolean(part.is_offal_nested);
+    const source = part.offal_source || '';
+    if (!canUpdate) {
+        return [
+            detailTableRow(['是否利废', isOn ? '是' : '否']),
+            detailTableRow(['利用哪类废料', esc(source)]),
+            detailTableRow(['废料副产品', part.is_scrap_byproduct ? '是' : '否']),
+            detailTableRow(['摆剪工序', part.has_swing_shear ? '是' : '否']),
+        ].join('');
+    }
+    const knobX = isOn ? '16px' : '2px';
+    const trackBg = isOn ? '#d32f2f' : '#1a1a1a';
+    const trackBorder = isOn ? '#d32f2f' : '#2c2c2c';
+    return `
+            <tr class="border-b border-[#161616]">
+                <th class="px-4 py-3 text-left text-[9px] font-medium uppercase tracking-[0.18em] text-[#4d4d4d] w-28">是否利废</th>
+                <td class="px-4 py-3">
+                    <div class="flex items-center gap-2.5 flex-wrap">
+                        <button type="button" id="offalNestedToggle" role="switch"
+                                aria-checked="${isOn ? 'true' : 'false'}"
+                                data-on="${isOn ? '1' : '0'}"
+                                class="relative h-5 w-9 shrink-0 rounded-full border focus:outline-none focus:border-[#ff5252]"
+                                style="background:${trackBg}; border-color:${trackBorder};">
+                            <span id="offalNestedKnob"
+                                  class="absolute top-0.5 h-3.5 w-3.5 rounded-full bg-[#ffffff] pointer-events-none"
+                                  style="left:0; transform:translateX(${knobX}); transition:transform 150ms ease;"></span>
+                        </button>
+                        <span id="offalNestedLabel" class="text-[11px] text-[#9e9e9e] tracking-wide">${isOn ? '是' : '否'}</span>
+                        <button type="button" id="saveOffalBtn" data-active="false"
+                                class="h-7 px-3 text-[10px] text-[#555555] border border-[#2c2c2c] bg-transparent rounded-sm hover:text-[#d32f2f] hover:border-[#d32f2f]/50 transition-all tracking-wide">
+                            保存利废
+                        </button>
+                    </div>
+                    <p class="mt-1.5 text-[9px] text-[#555555] leading-relaxed">从废料里捡成品；材料按成品净重 × 废料单价。改后须重算零件价格才生效。</p>
+                </td>
+            </tr>
+            <tr id="offalSourceRow" class="border-b border-[#161616] ${isOn ? '' : 'hidden'}">
+                <th class="px-4 py-3 text-left text-[9px] font-medium uppercase tracking-[0.18em] text-[#4d4d4d] w-28">利用哪类废料</th>
+                <td class="px-4 py-3">
+                    <input type="text" id="offalSourceInput" maxlength="50"
+                           value="${esc(source)}"
+                           placeholder="如：侧围（可空）"
+                           class="w-full h-8 px-2 text-[11px] bg-[#0a0a0a] border border-[#2c2c2c] text-[#ffffff] placeholder:text-[#616161] focus:outline-none focus:border-[#ff5252] transition-all rounded-sm">
+                </td>
+            </tr>
+            <tr class="border-b border-[#161616]">
+                <th class="px-4 py-3 text-left text-[9px] font-medium uppercase tracking-[0.18em] text-[#4d4d4d] w-28">废料副产品</th>
+                <td class="px-4 py-3 text-[11px] text-[#6b6b6b] tracking-wider">${part.is_scrap_byproduct ? '是' : '否'}</td>
+            </tr>
+            <tr class="border-b border-[#161616]">
+                <th class="px-4 py-3 text-left text-[9px] font-medium uppercase tracking-[0.18em] text-[#4d4d4d] w-28">摆剪工序</th>
+                <td class="px-4 py-3 text-[11px] text-[#6b6b6b] tracking-wider">${part.has_swing_shear ? '是' : '否'}</td>
+            </tr>`;
+}
+
 /**
  * Excel 单元格溯源：文件 + 表页 + 表+ 零件号列（与 BOM 防扯皮对齐）
  */
@@ -402,11 +469,12 @@ function renderProcessRow(p, idx) {
                     <td class="px-4 py-4 text-[10px] text-[#4a4a4a] font-mono tracking-[0.06em]">${p.process_order ?? '—'}</td>
                     <td class="px-4 py-4 text-[11px] text-[#888888] font-mono tracking-[0.06em]">${esc(p.process_seq)}</td>
                     <td class="px-4 py-4 text-[11px] text-[#888888] font-medium tracking-[0.05em]">${esc(p.process_code)}</td>
+                    <td class="px-4 py-4 text-[11px] text-[#C8C8D0] font-mono tracking-[0.04em]">${esc(p.die_number)}</td>
                     <td class="px-4 py-4 text-right text-[11px] font-mono text-[#777777] tracking-[0.06em]">${p.die_sets ?? '—'}</td>
                     <td class="px-4 py-4 text-right text-[11px] font-mono text-[#777777] tracking-[0.06em]">${p.tonnage ? `${p.tonnage}T` : '—'}</td>
                     <td class="px-4 py-4">
                         <div class="flex items-center gap-2">
-                            <select class="die-type-select h-7 px-2 text-[10px] bg-[#0a0a0a] border border-[#2c2c2c] appearance-none cursor-pointer text-[#9e9e9e] focus:outline-none focus:border-[#ff5252] transition-all rounded-sm" data-original-die-type="${currentDieType}">
+                            <select class="${DIE_TYPE_SELECT}" data-original-die-type="${currentDieType}">
                                 ${DIE_TYPE_OPTIONS.map(o => `<option value="${o.value}" ${o.value === currentDieType ? 'selected' : ''}>${o.label}</option>`).join('')}
                             </select>
                             <span class="text-[9px] font-mono text-[#555555] tracking-[0.05em]" title="模具成本比例">${p.cost_ratio != null ? `${(p.cost_ratio * 100).toFixed(0)}%` : '—'}</span>
@@ -415,7 +483,8 @@ function renderProcessRow(p, idx) {
                 </tr>`;
 }
 
-export function renderDetailContent(part) {
+export function renderDetailContent(part, options = {}) {
+    const canUpdate = options.canUpdate !== false;
     const sketchUrl = part.sketch_url || '';
 
     const rows = [
@@ -429,12 +498,14 @@ export function renderDetailContent(part) {
         ['工艺方法', esc(part.process_method ?? '-')],
         ['自动化', esc(part.automation ?? '-')],
     ];
-    const rowsRight = [
+    const rowsRightTop = [
         ['厚度', part.thickness != null ? `${part.thickness} mm` : '-'],
         ['重量', part.part_weight != null ? `${part.part_weight} kg` : '-'],
         ['板材尺寸', (part.sheet_length && part.sheet_width) ? `${part.sheet_length}x${part.sheet_width}` : '-'],
         ['可制件数', esc(part.parts_per_sheet)],
         ['板材类型', esc(part.sheet_type)],
+    ];
+    const rowsRightBottom = [
         ['模具类型', part.cost_ratio != null ? `${(part.cost_ratio * 100).toFixed(0)}%` : esc(part.die_type)],
         ['备注', esc(part.remark ?? '-')],
     ];
@@ -442,15 +513,15 @@ export function renderDetailContent(part) {
     const processes = part.processes || [];
     const processRows = processes.length
         ? processes.map((p, idx) => renderProcessRow(p, idx)).join('')
-        : `<tr><td colspan="6" class="px-4 py-12 text-center text-[11px] text-[#333333] tracking-[0.15em]">暂无工序数据</td></tr>`;
+        : `<tr><td colspan="7" class="px-4 py-12 text-center text-[11px] text-[#333333] tracking-[0.15em]">暂无工序数据</td></tr>`;
 
     return `
         <div class="h-full min-h-full flex flex-col" style="background: linear-gradient(175deg, #0a0a0a 0%, #090909 100%);">
             <!-- 顶部信息区域 -->
             <div class="flex gap-3 p-4">
                 <!-- 左侧：基本信息-->
-                <div class="flex-1 brabus-panel">
-                    <div class="brabus-panel-header flex items-center justify-between">
+                <div class="flex-1 ${BRABUS_PANEL}">
+                    <div class="${BRABUS_PANEL_HEADER} flex items-center justify-between">
                         <div class="flex items-center gap-2">
                             <span class="text-[#353535]">${svgIcon('info-circle')}</span>
                             <span class="text-[9px] font-semibold text-[#484848] uppercase tracking-[0.22em]">基本信息</span>
@@ -464,12 +535,12 @@ export function renderDetailContent(part) {
                     <table class="w-full">${rows.map(detailTableRow).join('')}</table>
                 </div>
                 <!-- 右侧：尺寸参数-->
-                <div class="flex-1 brabus-panel">
-                    <div class="brabus-panel-header flex items-center gap-2">
+                <div class="flex-1 ${BRABUS_PANEL}">
+                    <div class="${BRABUS_PANEL_HEADER} flex items-center gap-2">
                         <span class="text-[#353535]">${svgIcon('ruler')}</span>
                         <span class="text-[9px] font-semibold text-[#484848] uppercase tracking-[0.22em]">尺寸参数</span>
                     </div>
-                    <table class="w-full">${rowsRight.map(detailTableRow).join('')}</table>
+                    <table class="w-full">${rowsRightTop.map(detailTableRow).join('')}${renderOffalRows(part, canUpdate)}${rowsRightBottom.map(detailTableRow).join('')}</table>
                 </div>
             </div>
 
@@ -477,13 +548,13 @@ export function renderDetailContent(part) {
 
             <!-- 工序列表 -->
             <div class="mx-4 mb-4 flex flex-col shrink-0">
-                <div class="brabus-section-header flex items-center justify-between">
+                <div class="${BRABUS_SECTION_HEADER} flex items-center justify-between">
                     <div class="flex items-center gap-2">
                         <span class="text-[#353535]">${svgIcon('list-ol')}</span>
                         <span class="text-[9px] font-semibold text-[#484848] uppercase tracking-[0.22em]">工序列表</span>
                     </div>
                     <div class="flex items-center gap-2">
-                        <select id="batchDieTypeSelect" class="die-type-select" style="width:148px;">
+                        <select id="batchDieTypeSelect" class="${DIE_TYPE_SELECT}" style="width:148px;">
                             <option value="">批量修改模具类型</option>
                             ${DIE_TYPE_OPTIONS.map(o => `<option value="${o.value}">${o.label}</option>`).join('')}
                         </select>
@@ -492,13 +563,14 @@ export function renderDetailContent(part) {
                         </button>
                     </div>
                 </div>
-                <div class="brabus-table-wrapper">
+                <div class="${BRABUS_TABLE_WRAPPER}">
                     <table class="w-full">
                         <thead class="shrink-0">
                             <tr style="background:#0c0c0c; border-bottom:1px solid #1a1a1a;">
                                 <th class="px-4 py-2.5 text-left text-[8px] font-semibold uppercase tracking-[0.22em] text-[#353535]">序</th>
                                 <th class="px-4 py-2.5 text-left text-[8px] font-semibold uppercase tracking-[0.22em] text-[#353535]">工序号</th>
                                 <th class="px-4 py-2.5 text-left text-[8px] font-semibold uppercase tracking-[0.22em] text-[#353535]">代号</th>
+                                <th class="px-4 py-2.5 text-left text-[8px] font-semibold uppercase tracking-[0.22em] text-[#353535]">模具编号</th>
                                 <th class="px-4 py-2.5 text-right text-[8px] font-semibold uppercase tracking-[0.22em] text-[#353535]">模数</th>
                                 <th class="px-4 py-2.5 text-right text-[8px] font-semibold uppercase tracking-[0.22em] text-[#353535]">吨位</th>
                                 <th class="px-4 py-2.5 text-left text-[8px] font-semibold uppercase tracking-[0.22em] text-[#353535]">模具类型</th>
@@ -528,7 +600,7 @@ export function renderDetailContent(part) {
                 <div class="flex justify-center">
                     <button type="button" id="saveProcessBtn"
                             data-active="false"
-                            class="btn-save-default">
+                            class="${BTN_SAVE_DEFAULT}">
                         <span class="tracking-[0.2em]">保存</span>
                     </button>
                 </div>

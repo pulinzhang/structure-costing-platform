@@ -216,6 +216,201 @@
               ]
             }
           ]
+        },
+        {
+          "code": "menu:stamping-die",
+          "label": "冲压模具",
+          "type": "group",
+          "children": [
+            {
+              "code": "menu:stamping-die-upload",
+              "label": "上传模具布点",
+              "type": "menu",
+              "children": [
+                {
+                  "code": "op:stamping-die-upload:view",
+                  "label": "查看",
+                  "type": "op"
+                },
+                {
+                  "code": "op:stamping-die-upload:upload",
+                  "label": "上传",
+                  "type": "op"
+                }
+              ]
+            },
+            {
+              "code": "menu:stamping-die-list",
+              "label": "模具清单",
+              "type": "menu",
+              "children": [
+                {
+                  "code": "op:stamping-die-list:view",
+                  "label": "查询",
+                  "type": "op"
+                },
+                {
+                  "code": "op:stamping-die-list:update",
+                  "label": "编辑",
+                  "type": "op"
+                },
+                {
+                  "code": "op:stamping-die-list:delete",
+                  "label": "删除",
+                  "type": "op"
+                },
+                {
+                  "code": "op:stamping-die-list:export",
+                  "label": "导出",
+                  "type": "op"
+                }
+              ]
+            },
+            {
+              "code": "menu:stamping-die-unit-price",
+              "label": "模具单价",
+              "type": "menu",
+              "children": [
+                {
+                  "code": "op:stamping-die-unit-price:view",
+                  "label": "查询",
+                  "type": "op"
+                },
+                {
+                  "code": "op:stamping-die-unit-price:create",
+                  "label": "新增",
+                  "type": "op"
+                },
+                {
+                  "code": "op:stamping-die-unit-price:update",
+                  "label": "编辑",
+                  "type": "op"
+                },
+                {
+                  "code": "op:stamping-die-unit-price:delete",
+                  "label": "删除",
+                  "type": "op"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "menu:stamping-die-fee-group",
+          "label": "冲压模具费",
+          "type": "group",
+          "children": [
+            {
+              "code": "menu:stamping-die-fee-calc",
+              "label": "冲压模具费计算",
+              "type": "menu",
+              "children": [
+                {
+                  "code": "op:stamping-die-fee-calc:view",
+                  "label": "查看",
+                  "type": "op"
+                },
+                {
+                  "code": "op:stamping-die-fee-calc:run",
+                  "label": "计算",
+                  "type": "op"
+                },
+                {
+                  "code": "op:stamping-die-fee-calc:delete",
+                  "label": "删除日志",
+                  "type": "op"
+                }
+              ]
+            },
+            {
+              "code": "menu:stamping-die-fee",
+              "label": "冲压模具费列表",
+              "type": "menu",
+              "children": [
+                {
+                  "code": "op:stamping-die-fee:view",
+                  "label": "查询",
+                  "type": "op"
+                },
+                {
+                  "code": "op:stamping-die-fee:update",
+                  "label": "编辑调整金额",
+                  "type": "op"
+                },
+                {
+                  "code": "op:stamping-die-fee:delete",
+                  "label": "删除",
+                  "type": "op"
+                },
+                {
+                  "code": "op:stamping-die-fee:approve",
+                  "label": "审核通过",
+                  "type": "op"
+                },
+                {
+                  "code": "op:stamping-die-fee:reverse",
+                  "label": "反审核",
+                  "type": "op"
+                },
+                {
+                  "code": "op:stamping-die-fee:export",
+                  "label": "导出",
+                  "type": "op"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "menu:stamping-gauge-fee-group",
+          "label": "冲压检具费",
+          "type": "group",
+          "children": [
+            {
+              "code": "menu:stamping-gauge-fee-upload",
+              "label": "上传",
+              "type": "menu",
+              "children": [
+                {
+                  "code": "op:stamping-gauge-fee-upload:view",
+                  "label": "查看",
+                  "type": "op"
+                },
+                {
+                  "code": "op:stamping-gauge-fee-upload:upload",
+                  "label": "上传",
+                  "type": "op"
+                }
+              ]
+            },
+            {
+              "code": "menu:stamping-gauge-fee",
+              "label": "检具费列表",
+              "type": "menu",
+              "children": [
+                {
+                  "code": "op:stamping-gauge-fee:view",
+                  "label": "查询",
+                  "type": "op"
+                },
+                {
+                  "code": "op:stamping-gauge-fee:update",
+                  "label": "编辑",
+                  "type": "op"
+                },
+                {
+                  "code": "op:stamping-gauge-fee:delete",
+                  "label": "删除",
+                  "type": "op"
+                },
+                {
+                  "code": "op:stamping-gauge-fee:export",
+                  "label": "导出",
+                  "type": "op"
+                }
+              ]
+            }
+          ]
         }
       ]
     },
@@ -476,6 +671,62 @@
           ]
         },
         {
+          "code": "menu:bom-procurement-object-group",
+          "label": "采购对象",
+          "type": "group",
+          "children": [
+            {
+              "code": "menu:bom-procurement-object",
+              "label": "生成采购对象清单",
+              "type": "menu",
+              "children": [
+                {
+                  "code": "op:bom-procurement-object:generate",
+                  "label": "生成",
+                  "type": "op"
+                }
+              ]
+            },
+            {
+              "code": "menu:bom-procurement-object-list",
+              "label": "采购对象清单",
+              "type": "menu",
+              "children": [
+                {
+                  "code": "op:bom-procurement-object-list:view",
+                  "label": "查询",
+                  "type": "op"
+                },
+                {
+                  "code": "op:bom-procurement-object-list:update",
+                  "label": "确认",
+                  "type": "op"
+                },
+                {
+                  "code": "op:bom-procurement-object-list:delete",
+                  "label": "删除",
+                  "type": "op"
+                },
+                {
+                  "code": "op:bom-procurement-object-list:approve",
+                  "label": "审核通过",
+                  "type": "op"
+                },
+                {
+                  "code": "op:bom-procurement-object-list:reverse",
+                  "label": "反审核",
+                  "type": "op"
+                },
+                {
+                  "code": "op:bom-procurement-object-list:export",
+                  "label": "导出",
+                  "type": "op"
+                }
+              ]
+            }
+          ]
+        },
+        {
           "code": "menu:bom-welding-process-breakdown-group",
           "label": "焊接工艺拆解",
           "type": "group",
@@ -537,64 +788,64 @@
           ]
         },
         {
-          "code": "menu:bom-l0-welding-fee-group",
-          "label": "成品焊接费",
+          "code": "menu:bom-welding-fee-group",
+          "label": "焊接费",
           "type": "group",
           "children": [
             {
-              "code": "menu:bom-l0-welding-fee-calc",
-              "label": "成品焊接费计算",
+              "code": "menu:bom-welding-fee-calc",
+              "label": "焊接费计算",
               "type": "menu",
               "children": [
                 {
-                  "code": "op:bom-l0-welding-fee-calc:view",
+                  "code": "op:bom-welding-fee-calc:view",
                   "label": "查看",
                   "type": "op"
                 },
                 {
-                  "code": "op:bom-l0-welding-fee-calc:run",
+                  "code": "op:bom-welding-fee-calc:run",
                   "label": "计算",
                   "type": "op"
                 },
                 {
-                  "code": "op:bom-l0-welding-fee-calc:delete",
+                  "code": "op:bom-welding-fee-calc:delete",
                   "label": "删除计算日志",
                   "type": "op"
                 }
               ]
             },
             {
-              "code": "menu:bom-l0-welding-fee-list",
-              "label": "成品焊接费列表",
+              "code": "menu:bom-welding-fee-list",
+              "label": "焊接费列表",
               "type": "menu",
               "children": [
                 {
-                  "code": "op:bom-l0-welding-fee-list:view",
+                  "code": "op:bom-welding-fee-list:view",
                   "label": "查询",
                   "type": "op"
                 },
                 {
-                  "code": "op:bom-l0-welding-fee-list:update",
+                  "code": "op:bom-welding-fee-list:update",
                   "label": "编辑其它费用",
                   "type": "op"
                 },
                 {
-                  "code": "op:bom-l0-welding-fee-list:delete",
+                  "code": "op:bom-welding-fee-list:delete",
                   "label": "删除",
                   "type": "op"
                 },
                 {
-                  "code": "op:bom-l0-welding-fee-list:approve",
+                  "code": "op:bom-welding-fee-list:approve",
                   "label": "审核通过",
                   "type": "op"
                 },
                 {
-                  "code": "op:bom-l0-welding-fee-list:reverse",
+                  "code": "op:bom-welding-fee-list:reverse",
                   "label": "反审核",
                   "type": "op"
                 },
                 {
-                  "code": "op:bom-l0-welding-fee-list:export",
+                  "code": "op:bom-welding-fee-list:export",
                   "label": "导出",
                   "type": "op"
                 }
@@ -698,6 +949,38 @@
                   "type": "op"
                 }
               ]
+            }
+          ]
+        },
+        {
+          "code": "menu:steel-grade-category",
+          "label": "牌号分类",
+          "type": "menu",
+          "children": [
+            {
+              "code": "op:steel-grade-category:view",
+              "label": "查看",
+              "type": "op"
+            },
+            {
+              "code": "op:steel-grade-category:create",
+              "label": "新增",
+              "type": "op"
+            },
+            {
+              "code": "op:steel-grade-category:update",
+              "label": "编辑",
+              "type": "op"
+            },
+            {
+              "code": "op:steel-grade-category:delete",
+              "label": "删除",
+              "type": "op"
+            },
+            {
+              "code": "op:steel-grade-category:export",
+              "label": "导出",
+              "type": "op"
             }
           ]
         },
@@ -900,59 +1183,59 @@
           ]
         },
         {
-          "code": "menu:l0-assembly-cost-group",
-          "label": "成品核价",
+          "code": "menu:assembly-cost-group",
+          "label": "总成核价",
           "type": "group",
           "children": [
             {
-              "code": "menu:l0-assembly-cost-calc",
-              "label": "成品核价计算",
+              "code": "menu:assembly-cost-calc",
+              "label": "总成核价计算",
               "type": "menu",
               "children": [
                 {
-                  "code": "op:l0-assembly-cost-calc:view",
+                  "code": "op:assembly-cost-calc:view",
                   "label": "查看",
                   "type": "op"
                 },
                 {
-                  "code": "op:l0-assembly-cost-calc:run",
+                  "code": "op:assembly-cost-calc:run",
                   "label": "计算",
                   "type": "op"
                 },
                 {
-                  "code": "op:l0-assembly-cost-calc:delete",
+                  "code": "op:assembly-cost-calc:delete",
                   "label": "删除日志",
                   "type": "op"
                 }
               ]
             },
             {
-              "code": "menu:l0-assembly-cost",
-              "label": "成品核价一览",
+              "code": "menu:assembly-cost",
+              "label": "总成核价一览",
               "type": "menu",
               "children": [
                 {
-                  "code": "op:l0-assembly-cost:view",
+                  "code": "op:assembly-cost:view",
                   "label": "查询",
                   "type": "op"
                 },
                 {
-                  "code": "op:l0-assembly-cost:delete",
+                  "code": "op:assembly-cost:delete",
                   "label": "删除",
                   "type": "op"
                 },
                 {
-                  "code": "op:l0-assembly-cost:approve",
+                  "code": "op:assembly-cost:approve",
                   "label": "审核通过",
                   "type": "op"
                 },
                 {
-                  "code": "op:l0-assembly-cost:reverse",
+                  "code": "op:assembly-cost:reverse",
                   "label": "反审核",
                   "type": "op"
                 },
                 {
-                  "code": "op:l0-assembly-cost:export",
+                  "code": "op:assembly-cost:export",
                   "label": "导出",
                   "type": "op"
                 }

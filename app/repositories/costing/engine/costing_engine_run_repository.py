@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
+from typing import Any, cast
 
 from sqlalchemy.orm import Session, joinedload
 
+from app.common.types.repository_types import GateJson, PlanJson, StepMetricsJson, SummaryJson
 from app.models.costing.costing_engine_run import CostingEngineRun
 from app.models.costing.costing_engine_run_step import CostingEngineRunStep
 
@@ -59,8 +60,8 @@ class CostingEngineRunRepository:
         month: int,
         status: str,
         task_id: str | None,
-        gate_json: dict[str, Any] | None,
-        plan_json: dict[str, Any] | None,
+        gate_json: GateJson | None,
+        plan_json: PlanJson | None,
         created_by: str | None,
         updated_by: str | None,
         started_at: datetime | None,
@@ -111,14 +112,14 @@ class CostingEngineRunRepository:
         run: CostingEngineRun,
         *,
         status: str | None = None,
-        summary_json: dict[str, Any] | None = None,
+        summary_json: SummaryJson | None = None,
         finished_at: datetime | None = None,
         updated_by: str | None = None,
     ) -> CostingEngineRun:
         if status is not None:
             run.status = status
         if summary_json is not None:
-            run.summary_json = summary_json
+            run.summary_json = cast(dict[str, Any], summary_json)
         if finished_at is not None:
             run.finished_at = finished_at
         if updated_by is not None:
@@ -133,7 +134,7 @@ class CostingEngineRunRepository:
         *,
         status: str | None = None,
         message: str | None = None,
-        metrics_json: dict[str, Any] | None = None,
+        metrics_json: StepMetricsJson | None = None,
         child_log_id: int | None = None,
         started_at: datetime | None = None,
         finished_at: datetime | None = None,
@@ -143,7 +144,7 @@ class CostingEngineRunRepository:
         if message is not None:
             step.message = message
         if metrics_json is not None:
-            step.metrics_json = metrics_json
+            step.metrics_json = cast(dict[str, Any], metrics_json)
         if child_log_id is not None:
             step.child_log_id = child_log_id
         if started_at is not None:

@@ -1,4 +1,4 @@
-"""成品核价计算锁：processing unique index 与 409。"""
+"""总成核价计算锁：processing unique index 与 409。"""
 
 from __future__ import annotations
 
@@ -10,20 +10,19 @@ from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.common.timezone import now
-from app.models.costing.l0_assembly_cost_calc_log import L0AssemblyCostCalcLog
-from app.repositories.costing.l0_assembly_cost.l0_assembly_cost_calc_log_repository import (
-    L0AssemblyCostCalcLogRepository,
+from app.models.costing.assembly_cost_calc_log import AssemblyCostCalcLog
+from app.repositories.costing.assembly_cost.assembly_cost_calc_log_repository import (
+    AssemblyCostCalcLogRepository,
 )
-from app.schemas.dto.l0_assembly_cost_dto import L0AssemblyCostCalcDTO
-from app.services.costing.l0_assembly_cost.calc.calc_log_service import (
-    DuplicateScopeCalcError,
-    L0AssemblyCostCalcLogService,
+from app.schemas.dto.assembly_cost_dto import AssemblyCostCalcDTO
+from app.services.costing.assembly_cost.calc.calc_log_service import (
     STATUS_FAILED,
     STATUS_PROCESSING,
+    AssemblyCostCalcLogService,
+    DuplicateScopeCalcError,
 )
 
-
-_DTO = L0AssemblyCostCalcDTO(
+_DTO = AssemblyCostCalcDTO(
     year=2026,
     month=8,
     location="青岛",
@@ -34,12 +33,12 @@ _DTO = L0AssemblyCostCalcDTO(
 
 def _open_session(db_path: Path) -> Session:
     engine = create_engine(f"sqlite:///{db_path}")
-    L0AssemblyCostCalcLog.__table__.create(engine)
+    AssemblyCostCalcLog.__table__.create(engine)
     return sessionmaker(bind=engine)()
 
 
-def _seed_processing(db: Session, *, calc_batch_id: str) -> L0AssemblyCostCalcLog:
-    row = L0AssemblyCostCalcLog(
+def _seed_processing(db: Session, *, calc_batch_id: str) -> AssemblyCostCalcLog:
+    row = AssemblyCostCalcLog(
         year=_DTO.year,
         month=_DTO.month,
         location=_DTO.location,
@@ -60,19 +59,19 @@ def _seed_processing(db: Session, *, calc_batch_id: str) -> L0AssemblyCostCalcLo
 
 @pytest.fixture
 def lock_db(tmp_path: Path) -> Generator[Session, None, None]:
-    L0AssemblyCostCalcLogRepository._lock_index_ensured = False
-    db = _open_session(tmp_path / "l0_calc_log_lock.db")
+    AssemblyCostCalcLogRepository._lock_index_ensured = False
+    db = _open_session(tmp_path / "assembly_calc_log_lock.db")
     try:
         yield db
     finally:
         bind = db.get_bind()
         db.close()
         bind.dispose()
-        L0AssemblyCostCalcLogRepository._lock_index_ensured = False
+        AssemblyCostCalcLogRepository._lock_index_ensured = False
 
 
 def test_second_begin_processing_same_scope_is_409(lock_db: Session) -> None:
-    service = L0AssemblyCostCalcLogService()
+    service = AssemblyCostCalcLogService()
     first = service.begin_processing(lock_db, _DTO, operator_id=1, operator_name="tester")
     assert first.status == STATUS_PROCESSING
 
@@ -80,7 +79,7 @@ def test_second_begin_processing_same_scope_is_409(lock_db: Session) -> None:
         service.begin_processing(lock_db, _DTO, operator_id=1, operator_name="tester")
     assert caught.value.code == 409
 
-    indexes = inspect(lock_db.get_bind()).get_indexes("costing_l0_assembly_cost_calc_logs")
+    indexes = inspect(lock_db.get_bind()).get_indexes("costing_assembly_cost_calc_logs")
     names = {item["name"] for item in indexes}
     assert "uq_l0_assembly_calc_processing" in names
 
@@ -88,14 +87,14 @@ def test_second_begin_processing_same_scope_is_409(lock_db: Session) -> None:
 def test_duplicate_processing_rows_are_collapsed_before_index(lock_db: Session) -> None:
     older = _seed_processing(lock_db, calc_batch_id="old-batch")
     newer = _seed_processing(lock_db, calc_batch_id="new-batch")
-    service = L0AssemblyCostCalcLogService()
+    service = AssemblyCostCalcLogService()
 
     with pytest.raises(DuplicateScopeCalcError):
         service.begin_processing(lock_db, _DTO, operator_id=1, operator_name="tester")
 
     lock_db.expire_all()
-    assert lock_db.get(L0AssemblyCostCalcLog, older.id).status == STATUS_FAILED
-    assert lock_db.get(L0AssemblyCostCalcLog, newer.id).status == STATUS_PROCESSING
+    assert lock_db.get(AssemblyCostCalcLog, older.id).status == STATUS_FAILED
+    assert lock_db.get(AssemblyCostCalcLog, newer.id).status == STATUS_PROCESSING
 
     exists = lock_db.execute(
         text(

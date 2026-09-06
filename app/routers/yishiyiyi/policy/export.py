@@ -18,7 +18,6 @@ from app.schemas.vo.user_vo import UserVO
 from app.services.yishiyiyi.policy import SteelPricePolicyService
 from app.utils.response import ApiResponse
 
-
 router = APIRouter(prefix="/api/yishiyiyi/policy", tags=["钢价政策导出"])
 
 DEFAULT_PAGE_SIZE = 100
@@ -46,6 +45,7 @@ def export_policies_excel(
         steel_mill=steel_mill,
         category_name=category_name.strip() if category_name else None,
         grade_value=grade_value.strip() if grade_value else None,
+        current_user=current_user,
     )
 
     return StreamingResponse(
@@ -85,8 +85,8 @@ def export_policies_preview(
         steel_mill=mill,
         category_name=category,
         grade_value=grade,
-        skip=(page - 1) * size,
-        limit=size,
+        page=page,
+        size=size,
     )
     total = _policy_service.count_export_data(
         db,

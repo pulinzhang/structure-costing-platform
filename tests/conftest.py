@@ -30,7 +30,7 @@ def db_session(db_file_path: Path) -> Generator[Session, None, None]:
         "bom_nodes",
         "stamping_part_costs",
         "bom_annual_part_prices",
-        "bom_l0_welding_fees",
+        "bom_welding_fees",
     )
     missing_tables = [name for name in required if not inspector.has_table(name)]
     if missing_tables:

@@ -10,7 +10,7 @@ import {
     updateCostFilterCapsules,
     shortPartNumber,
     syncBreakdownColumnVisibility,
-} from './template.js?v=43';
+} from './template.js?v=58';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -18,11 +18,16 @@ import {
 
 const API_BASE = '/api/costing/stamping-part-cost';
 const CASCADE_API = '/api/stamping/filters/cascade';
+const DRAWER_ANIMATION_MS = 300;
+const SCOPE_REQUIRED_MESSAGE = '批量操作须选定年度、月份、基地、配套车型';
+const EXPORT_VEHICLE_REQUIRED_MESSAGE = '导出须选定配套车型。';
 
 const FILTER_IDS = [
     'costYearFilter',
     'costMonthFilter',
     'costLocationFilter',
+    'costVehicleModelFilter',
+    'costVersionFilter',
     'costSupplierFilter',
     'costAuditFilter',
 ];
@@ -41,8 +46,32 @@ const listState = {
     breakdownColsOpen: false,
     advancedOpen: false,
     pendingFilters: null,
+    batchAuditSubmitting: false,
     _onEscClose: null,
 };
+
+function openDrawer(drawerId, backdropId) {
+    const drawer = document.getElementById(drawerId);
+    const backdrop = document.getElementById(backdropId);
+    if (!drawer) return;
+    drawer.style.display = 'flex';
+    if (backdrop) backdrop.style.display = 'block';
+    void drawer.offsetWidth;
+    drawer.classList.remove('translate-x-full');
+    drawer.classList.add('translate-x-0');
+}
+
+function closeDrawer(drawerId, backdropId) {
+    const drawer = document.getElementById(drawerId);
+    const backdrop = document.getElementById(backdropId);
+    if (!drawer) return;
+    drawer.classList.remove('translate-x-0');
+    drawer.classList.add('translate-x-full');
+    setTimeout(() => {
+        drawer.style.display = 'none';
+        if (backdrop) backdrop.style.display = 'none';
+    }, DRAWER_ANIMATION_MS);
+}
 
 function init() {
     applyPermissionUi();
@@ -102,8 +131,10 @@ function readHashFilters() {
     const month = params.get('month') || '';
     const location = params.get('location') || '';
     const stamping_supplier = params.get('stamping_supplier') || '';
-    if (!year && !month && !location && !stamping_supplier) return null;
-    return { year, month, location, stamping_supplier };
+    const vehicle_model = params.get('vehicle_model') || '';
+    const version = params.get('version') || '';
+    if (!year && !month && !location && !stamping_supplier && !vehicle_model && !version) return null;
+    return { year, month, location, stamping_supplier, vehicle_model, version };
 }
 
 function setSelectValue(id, value) {
@@ -125,6 +156,8 @@ function applyPendingFiltersToSelects() {
     setSelectValue('costYearFilter', pending.year);
     setSelectValue('costMonthFilter', pending.month);
     setSelectValue('costLocationFilter', pending.location);
+    setSelectValue('costVehicleModelFilter', pending.vehicle_model);
+    setSelectValue('costVersionFilter', pending.version);
     setSelectValue('costSupplierFilter', pending.stamping_supplier);
     listState.pendingFilters = null;
 }
@@ -186,6 +219,32 @@ function bindEvents() {
     });
     document.getElementById('costLocationFilter')?.addEventListener('change', () => {
         onFilterChange();
+        const vehicleEl = document.getElementById('costVehicleModelFilter');
+        const versionEl = document.getElementById('costVersionFilter');
+        const supplierEl = document.getElementById('costSupplierFilter');
+        if (vehicleEl) vehicleEl.value = '';
+        if (versionEl) versionEl.value = '';
+        if (supplierEl) supplierEl.value = '';
+        loadCascadeFilters().then(() => {
+            updateCostFilterCapsules();
+            loadList(1);
+        });
+    });
+    document.getElementById('costVehicleModelFilter')?.addEventListener('change', () => {
+        onFilterChange();
+        const versionEl = document.getElementById('costVersionFilter');
+        const supplierEl = document.getElementById('costSupplierFilter');
+        if (versionEl) versionEl.value = '';
+        if (supplierEl) supplierEl.value = '';
+        loadCascadeFilters().then(() => {
+            updateCostFilterCapsules();
+            loadList(1);
+        });
+    });
+    document.getElementById('costVersionFilter')?.addEventListener('change', () => {
+        onFilterChange();
+        const supplierEl = document.getElementById('costSupplierFilter');
+        if (supplierEl) supplierEl.value = '';
         loadCascadeFilters().then(() => {
             updateCostFilterCapsules();
             loadList(1);
@@ -200,9 +259,10 @@ function bindEvents() {
         loadList(1);
     });
 
-    document.getElementById('costBatchApproveBtn')?.addEventListener('click', () => batchApprove());
-    document.getElementById('costBatchReverseBtn')?.addEventListener('click', () => batchReverse());
+    document.getElementById('costBatchApproveBtn')?.addEventListener('click', () => openBatchAuditDrawer('approve'));
+    document.getElementById('costBatchReverseBtn')?.addEventListener('click', () => openBatchAuditDrawer('reverse'));
     document.getElementById('costBatchDeleteBtn')?.addEventListener('click', () => batchDelete());
+    bindBatchAuditDrawerEvents();
     document.getElementById('costExportBtn')?.addEventListener('click', () => exportExcel());
     document.getElementById('costPagination')?.addEventListener('click', (event) => {
         const btn = event.target.closest('.cost-page-btn');
@@ -218,7 +278,7 @@ function fillMonthOptions() {
     if (!select) return;
     select.innerHTML =
         `<option value="">全部</option>` +
-        Array.from({ length: 12 }, (_, i) => `<option value="${i + 1}">${i + 1}</option>`).join('');
+        Array.from({ length: 12 }, (_, i) => `<option value="${i + 1}">${esc(fmtMonth(i + 1))}</option>`).join('');
 }
 
 function fillAuditOptions() {
@@ -232,7 +292,7 @@ function fillAuditOptions() {
     `;
 }
 
-function fillSelect(id, values = [], preferredValue = null) {
+function fillSelect(id, values = [], preferredValue = null, formatLabel = null) {
     const select = document.getElementById(id);
     if (!select) return;
     const current = preferredValue != null ? preferredValue : select.value;
@@ -241,7 +301,8 @@ function fillSelect(id, values = [], preferredValue = null) {
         values
             .map((value) => {
                 const text = String(value);
-                return `<option value="${esc(text)}"${text === String(current) ? ' selected' : ''}>${esc(text)}</option>`;
+                const label = formatLabel ? formatLabel(value) : text;
+                return `<option value="${esc(text)}"${text === String(current) ? ' selected' : ''}>${esc(String(label))}</option>`;
             })
             .join('');
     if (preferredValue != null) select.value = String(preferredValue);
@@ -254,6 +315,7 @@ async function loadYearOptions() {
             'costYearFilter',
             Array.isArray(res.data) ? res.data : [],
             listState.pendingFilters?.year || null,
+            fmtYear,
         );
     } catch (error) {
         console.error(error);
@@ -265,10 +327,15 @@ async function loadCascadeFilters() {
         const pending = listState.pendingFilters;
         const params = {
             location: document.getElementById('costLocationFilter')?.value || pending?.location || '',
+            vehicle_model: document.getElementById('costVehicleModelFilter')?.value || pending?.vehicle_model || '',
+            version: document.getElementById('costVersionFilter')?.value || pending?.version || '',
+            stamping_supplier: document.getElementById('costSupplierFilter')?.value || pending?.stamping_supplier || '',
         };
         const res = await HttpClient.get(CASCADE_API, { params });
         const filters = res.data || {};
         fillSelect('costLocationFilter', filters.locations || [], pending?.location || null);
+        fillSelect('costVehicleModelFilter', filters.vehicle_models || [], pending?.vehicle_model || null);
+        fillSelect('costVersionFilter', filters.versions || [], pending?.version || null);
         fillSelect('costSupplierFilter', filters.stamping_suppliers || [], pending?.stamping_supplier || null);
     } catch (error) {
         console.error(error);
@@ -295,6 +362,8 @@ function getFilters() {
         year: yearRaw ? Number(yearRaw) : undefined,
         month: monthRaw ? Number(monthRaw) : undefined,
         location: document.getElementById('costLocationFilter')?.value || pending?.location || undefined,
+        vehicle_model: document.getElementById('costVehicleModelFilter')?.value || pending?.vehicle_model || undefined,
+        version: document.getElementById('costVersionFilter')?.value || pending?.version || undefined,
         stamping_supplier: document.getElementById('costSupplierFilter')?.value || pending?.stamping_supplier || undefined,
         audit_status: document.getElementById('costAuditFilter')?.value || undefined,
         part_number: document.getElementById('costPartNumberFilter')?.value?.trim() || undefined,
@@ -303,16 +372,28 @@ function getFilters() {
 
 function requireScope() {
     const f = getFilters();
-    if (!f.year || !f.month || !f.location || !f.stamping_supplier) {
-        showToast('批量操作须选定年度、月份、基地、冲压工厂', 'warning');
+    if (!f.year || !f.month || !f.location || !f.vehicle_model) {
+        setAdvancedOpen(true);
+        showToast(SCOPE_REQUIRED_MESSAGE, 'warning');
         return null;
     }
-    return {
+    const scope = {
         year: f.year,
         month: f.month,
         location: f.location,
-        stamping_supplier: f.stamping_supplier,
+        vehicle_model: f.vehicle_model,
     };
+    if (f.version) scope.version = f.version;
+    if (f.stamping_supplier) scope.stamping_supplier = f.stamping_supplier;
+    return scope;
+}
+
+function requireAuditScope() {
+    const scope = requireScope();
+    if (!scope) return null;
+    const auditScope = { ...scope };
+    delete auditScope.stamping_supplier;
+    return auditScope;
 }
 
 async function loadList(page = 1) {
@@ -343,9 +424,15 @@ async function loadList(page = 1) {
             pagination.innerHTML = renderCostPagination(listState.page, listState.totalPages);
         }
         if (pageData.filters) {
-            if (pageData.filters.years) fillSelect('costYearFilter', pageData.filters.years, filters.year);
+            if (pageData.filters.years) fillSelect('costYearFilter', pageData.filters.years, filters.year, fmtYear);
             if (pageData.filters.locations) {
                 fillSelect('costLocationFilter', pageData.filters.locations, filters.location);
+            }
+            if (pageData.filters.vehicle_models) {
+                fillSelect('costVehicleModelFilter', pageData.filters.vehicle_models, filters.vehicle_model);
+            }
+            if (pageData.filters.versions) {
+                fillSelect('costVersionFilter', pageData.filters.versions, filters.version);
             }
             if (pageData.filters.suppliers) {
                 fillSelect('costSupplierFilter', pageData.filters.suppliers, filters.stamping_supplier);
@@ -521,6 +608,10 @@ function showDetailDrawer(row) {
                         R <span class="text-[#E8E8ED]">￥${fmtNum(row.material_net_per_part, 2)}</span>
                         <span class="text-[#3A3A42] mx-1">+</span>
                         加工费 <span class="text-[#E8E8ED]">￥${fmtNum(row.process_fee_amount, 2)}</span>
+                        <span class="text-[#3A3A42] mx-1">+</span>
+                        模具费 <span class="text-[#E8E8ED]">￥${fmtNum(row.die_fee_amount, 2)}</span>
+                        <span class="text-[#3A3A42] mx-1">+</span>
+                        检具费 <span class="text-[#E8E8ED]">￥${fmtNum(row.gauge_fee_amount, 2)}</span>
                     </div>
                 </div>
                 ${heroCostHtml}
@@ -535,11 +626,15 @@ function showDetailDrawer(row) {
                 ['短号', shortNo || '—'],
                 ['零件名称', row.part_name || '—'],
                 ['基地 / 工厂', `${row.location || '—'} / ${row.stamping_supplier || '—'}`],
-                ['核算年月', `${row.year}-${String(row.month).padStart(2, '0')}`],
+                ['核算年月', fmtPeriod(row.year, row.month) || '—'],
                 ['车型 / 版本', `${row.vehicle_model || '—'} / ${row.version || '—'}`],
                 ['材质 / 厚度', `${row.material || '—'} / ${row.thickness || '—'} mm`],
                 ['料片尺寸', `${row.sheet_length || '—'} × ${row.sheet_width || '—'} mm`],
                 ['可制件数', row.parts_per_sheet ?? '—'],
+                ['是否利废（本月）', row.is_offal_nested ? '是' : '否'],
+                ['是否摆剪（本月）', row.has_swing_shear ? '是' : '否'],
+                ['摆剪加价（本月）', row.has_swing_shear ? `${fmtNum(row.swing_shear_fee_per_ton, 2)} 元/吨` : '—'],
+                ['利用哪类废料（本月）', row.offal_source || '—'],
                 ['成品单重', `${fmtNum(row.part_weight, 4)} kg`],
             ])}
 
@@ -558,13 +653,13 @@ function showDetailDrawer(row) {
             ])}
 
             ${detailBlock('价格与吨价', [
-                ['钢厂', row.steel_mill || '—'],
-                ['钢材吨价 P', row.steel_ton_price ? `${row.steel_ton_price} 元/吨` : '—'],
-                ['废料吨价 Q', `￥${fmtNum(row.scrap_ton_price, 2)} /t`],
+                ['钢厂', row.is_offal_nested ? '—' : (row.steel_mill || '—')],
+                ['钢材吨价 P', row.is_offal_nested ? '—（利废不按新板价）' : (row.steel_ton_price ? `${row.steel_ton_price} 元/吨` : '—')],
+                ['废料吨价 Q', `￥${fmtNum(row.scrap_ton_price, 2)} /t${row.is_offal_nested ? '（利废：R = 成品净重 × 废料单价）' : ''}`],
             ])}
 
-            ${detailBlock('原材料成本拆解（R = ①−②−③）', [
-                ['①钢材采购成本（含损耗）', `￥${fmtNum(row.material_amount_sheet, 4)}`],
+            ${detailBlock(row.is_offal_nested ? '原材料成本（利废：R = 成品净重 × 废料单价）' : '原材料成本拆解（R = ①−②−③）', [
+                [row.is_offal_nested ? '①成品净重×废料单价' : '①钢材采购成本（含损耗）', `￥${fmtNum(row.material_amount_sheet, 4)}`],
                 ['②损耗废料扣除（回收率）', `￥${fmtNum(row.loss_scrap_deduction, 4)}`],
                 ['③边角废料扣除（回收率）', `￥${fmtNum(row.process_scrap_deduction, 4)}`],
                 ['废料扣除小计（② + ③）', `￥${fmtNum(row.scrap_amount_sheet, 4)}`],
@@ -573,11 +668,13 @@ function showDetailDrawer(row) {
                     `<span class="text-[#FF1E27] font-semibold">￥${fmtNum(row.material_net_per_part, 4)}</span>`,
                 ],
                 ['加工费', `￥${fmtNum(row.process_fee_amount, 3)}`],
+                ['模具费', `￥${fmtNum(row.die_fee_amount, 4)}`],
+                ['检具费', `￥${fmtNum(row.gauge_fee_amount, 4)}`],
             ])}
 
             ${detailBlock('成品费率费用', [
                 [
-                    '直接成本（R + 加工费）',
+                    '直接成本（R + 加工费 + 模具费 + 检具费）',
                     `<span class="text-[#E8E8ED] font-semibold">￥${fmtNum(row.direct_cost, 4)}</span>`,
                 ],
                 ['仓储+包装管理费用', `<span class="text-[#6E6E73]">￥${fmtNum(row.finished_warehouse_packaging_fee, 4)}</span>`],
@@ -706,38 +803,131 @@ function closeDetailDrawer() {
     }
 }
 
-async function batchApprove() {
-    if (!listState.canApprove) return showToast('无审核权限', 'warning');
-    const scope = requireScope();
-    if (!scope) return;
-    if (!window.confirm('确认批量审核通过当前范围？')) return;
+function bindBatchAuditDrawerEvents() {
+    document.getElementById('closeCostBatchAuditDrawer')?.addEventListener('click', closeBatchAuditDrawer);
+    document.getElementById('cancelCostBatchAuditBtn')?.addEventListener('click', closeBatchAuditDrawer);
+    document.getElementById('costBatchAuditDrawerBackdrop')?.addEventListener('click', closeBatchAuditDrawer);
+    document.getElementById('confirmCostBatchAuditBtn')?.addEventListener('click', () => submitBatchAudit());
+}
+
+function getSessionDisplayName() {
     try {
-        const res = await HttpClient.post(`${API_BASE}/batch-approve`, scope);
-        showToast(res.message || '审核完成', 'success');
-        loadList(listState.page);
-    } catch (error) {
-        showToast(error.message || '审核失败', 'error');
+        const raw = localStorage.getItem('brabus_user');
+        if (!raw) return '';
+        const session = JSON.parse(raw);
+        return (session.real_name || session.name || session.username || '').trim();
+    } catch (_) {
+        return '';
     }
 }
 
-async function batchReverse() {
-    if (!listState.canReverse) return showToast('无反审核权限', 'warning');
-    const scope = requireScope();
+function openBatchAuditDrawer(mode) {
+    const isApprove = mode === 'approve';
+    if (isApprove && !listState.canApprove) return showToast('无审核权限', 'warning');
+    if (!isApprove && !listState.canReverse) return showToast('无反审核权限', 'warning');
+    const scope = requireAuditScope();
     if (!scope) return;
-    const remark = window.prompt('请输入反审核原因');
-    if (!remark || !remark.trim()) {
-        showToast('反审核原因必填', 'warning');
+
+    const modeEl = document.getElementById('costBatchAuditMode');
+    const titleEl = document.getElementById('costBatchAuditDrawerTitle');
+    const hintEl = document.getElementById('costBatchAuditHint');
+    const operatorLabel = document.getElementById('costBatchAuditOperatorLabel');
+    const remarkLabel = document.getElementById('costBatchAuditRemarkLabel');
+    const operatorDisplay = document.getElementById('costBatchAuditOperatorDisplay');
+    const remarkEl = document.getElementById('costBatchAuditRemark');
+    const summaryEl = document.getElementById('costBatchAuditFilterSummary');
+    const confirmBtn = document.getElementById('confirmCostBatchAuditBtn');
+
+    if (modeEl) modeEl.value = isApprove ? 'approve' : 'reverse';
+    if (titleEl) titleEl.textContent = isApprove ? '批量审核' : '批量反审核';
+    if (hintEl) {
+        hintEl.textContent = isApprove
+            ? '按年度、月份、基地、配套车型处理待审记录（整车各厂）；版本可选。已通过记录会跳过。'
+            : '按年度、月份、基地、配套车型处理已通过记录（整车各厂）；版本可选。其余状态会跳过。反审核意见必填。';
+    }
+    if (operatorLabel) operatorLabel.textContent = isApprove ? '审核人' : '反审核人';
+    if (operatorDisplay) {
+        operatorDisplay.textContent = getSessionDisplayName() || '（当前登录用户）';
+    }
+    if (remarkLabel) {
+        remarkLabel.innerHTML = isApprove
+            ? '审核意见<span class="text-[#d32f2f]">*</span>'
+            : '反审核意见<span class="text-[#d32f2f]">*</span>';
+    }
+    if (remarkEl) {
+        remarkEl.value = '';
+        remarkEl.placeholder = isApprove ? '请填写审核意见（必填）' : '请填写反审核原因（必填）';
+    }
+    if (summaryEl) {
+        summaryEl.textContent =
+            `${fmtPeriod(scope.year, scope.month)} · 基地 ${scope.location} · 车型 ${scope.vehicle_model}`
+            + ` · 版本 ${scope.version || '全部'} · 工厂 整车`;
+    }
+    if (confirmBtn) {
+        confirmBtn.textContent = isApprove ? '确认审核通过' : '确认反审核';
+        confirmBtn.className =
+            'inline-flex items-center gap-1.5 bg-[#d32f2f] text-white px-4 py-2 text-[11px] font-semibold rounded hover:bg-[#b71c1c] transition-all';
+    }
+
+    openDrawer('costBatchAuditDrawer', 'costBatchAuditDrawerBackdrop');
+}
+
+function closeBatchAuditDrawer() {
+    if (listState.batchAuditSubmitting) return;
+    closeDrawer('costBatchAuditDrawer', 'costBatchAuditDrawerBackdrop');
+}
+
+async function submitBatchAudit() {
+    if (listState.batchAuditSubmitting) return;
+    const mode = document.getElementById('costBatchAuditMode')?.value || 'approve';
+    const isApprove = mode === 'approve';
+    const scope = requireAuditScope();
+    if (!scope) return;
+
+    const remark = document.getElementById('costBatchAuditRemark')?.value.trim() || '';
+    if (!remark) {
+        showToast(isApprove ? '审核意见必填' : '反审核意见必填', 'warning');
         return;
     }
+
+    const confirmBtn = document.getElementById('confirmCostBatchAuditBtn');
+    const originalText = confirmBtn ? confirmBtn.textContent : '';
+    listState.batchAuditSubmitting = true;
+    if (confirmBtn) {
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = '提交中…';
+    }
+
     try {
-        const res = await HttpClient.post(`${API_BASE}/batch-reverse-audit`, {
-            ...scope,
-            reverse_audit_remark: remark.trim(),
-        });
-        showToast(res.message || '反审核完成', 'success');
+        const body = { ...scope };
+        let response;
+        if (isApprove) {
+            body.audit_remark = remark;
+            response = await HttpClient.post(`${API_BASE}/batch-approve`, body);
+        } else {
+            body.reverse_audit_remark = remark;
+            response = await HttpClient.post(`${API_BASE}/batch-reverse-audit`, body);
+        }
+        const result = response.data || {};
+        const updated = result.updated_count ?? 0;
+        const skipped = result.skipped_count ?? 0;
+        showToast(
+            response.message ||
+                `${isApprove ? '已审核通过' : '已反审核'} ${updated} 条` +
+                    (skipped ? `，跳过 ${skipped} 条` : ''),
+            updated > 0 ? 'success' : 'warning',
+        );
+        listState.batchAuditSubmitting = false;
+        closeBatchAuditDrawer();
         loadList(listState.page);
     } catch (error) {
-        showToast(error.message || '反审核失败', 'error');
+        showToast(error.message || (isApprove ? '审核失败' : '反审核失败'), 'error');
+    } finally {
+        listState.batchAuditSubmitting = false;
+        if (confirmBtn) {
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = originalText;
+        }
     }
 }
 
@@ -758,8 +948,9 @@ async function batchDelete() {
 async function exportExcel() {
     if (!listState.canExport) return showToast('无导出权限', 'warning');
     const filters = getFilters();
-    if (!Object.values(filters).some(Boolean)) {
-        showToast('请至少选择一个筛选条件后再导出', 'warning');
+    if (!filters.vehicle_model) {
+        setAdvancedOpen(true);
+        showToast(EXPORT_VEHICLE_REQUIRED_MESSAGE, 'warning');
         return;
     }
     try {
@@ -769,6 +960,8 @@ async function exportExcel() {
                 month: filters.month || undefined,
                 location: filters.location || undefined,
                 stamping_supplier: filters.stamping_supplier || undefined,
+                vehicle_model: filters.vehicle_model,
+                version: filters.version || undefined,
                 audit_status: filters.audit_status || undefined,
                 part_number: filters.part_number || undefined,
             },

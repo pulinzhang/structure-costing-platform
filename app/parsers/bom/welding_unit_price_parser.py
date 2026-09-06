@@ -19,7 +19,6 @@ from openpyxl import load_workbook
 from app.common.bom.welding_standard_process import validate_welding_unit_price_catalog
 from app.common.money import Q4, quantize_money
 
-
 HEADER_NAME = "名称"
 HEADER_UNIT = "单位"
 HEADER_UNIT_PRICE = "费用"

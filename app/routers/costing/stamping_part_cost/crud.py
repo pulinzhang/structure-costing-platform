@@ -34,7 +34,6 @@ from app.services.costing.stamping_part_cost.stamping_part_cost_service import (
 )
 from app.utils.response import ApiResponse
 
-
 router = APIRouter(
     prefix="/api/costing/stamping-part-cost",
     tags=["冲压零件价格核算"],
@@ -70,24 +69,25 @@ def export_download(
     month: int | None = Query(None, ge=1, le=12, description="月份"),
     location: str | None = Query(None, description="基地"),
     stamping_supplier: str | None = Query(None, description="冲压工厂"),
-    vehicle_model: str | None = Query(None, description="车型"),
+    vehicle_model: str = Query(..., min_length=1, description="车型"),
     version: str | None = Query(None, description="版本"),
     part_number: str | None = Query(None, description="零件号"),
     audit_status: str | None = Query(None, description="审核状态"),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_PART_COST_EXPORT)),
 ) -> StreamingResponse:
-    """按当前筛选条件导出冲压零件核价结果 Excel（材料费 + 加工费）。"""
+    """按当前筛选条件导出冲压零件核价结果 Excel（材料费 + 加工费 + 模具费 + 检具费）。"""
     content, filename = _export_service.export(
         db,
         year=year,
         month=month,
         location=location.strip() if location else None,
         stamping_supplier=stamping_supplier.strip() if stamping_supplier else None,
-        vehicle_model=vehicle_model.strip() if vehicle_model else None,
+        vehicle_model=vehicle_model.strip(),
         version=version.strip() if version else None,
         part_number=part_number.strip() if part_number else None,
         audit_status=audit_status.strip() if audit_status else None,
+        current_user=current_user,
     )
     return StreamingResponse(
         iter([content]),

@@ -1,31 +1,45 @@
-"""Step2：根据基价表补齐钢厂 / 大类 / 基准价 / 溯源。"""
+"""Step2：按中标厚度一览同一套规则取基价——基价表牌号字面命中，用该行自己的基准价。"""
 
 from __future__ import annotations
 
-from typing import Any
-
-
+from collections.abc import Sequence
 from decimal import Decimal
 
 from sqlalchemy.orm import Session
 
-from app.services.yishiyiyi.base_price.steel_base_price_service import SteelBasePriceService
+from app.common.money import Q4, format_money
+from app.models.yishiyiyi import SteelBasePrice
+from app.services.costing.steel_price.calc.category import resolve_canonical_category
 from app.services.costing.steel_price.calc.models import (
     CalcRow,
     MaterialThicknessRow,
     SteelPriceCalcRequest,
 )
+from app.services.yishiyiyi.base_price.steel_base_price_service import SteelBasePriceService
+from app.services.yishiyiyi.steel_grade_category import SteelGradeCategoryService
+from app.services.yishiyiyi.winning_thickness.assemble.row_assembler import (
+    dedupe_bases_by_mill_grade,
+)
+
+
+def select_winning_base_records(
+    candidates: Sequence[SteelBasePrice],
+    material_grade: str,
+) -> list[SteelBasePrice]:
+    """与一览表相同：grade 去空格后全等，再按牌号+钢厂去重。"""
+    wanted = (material_grade or "").strip()
+    if not wanted:
+        return []
+    matched = [row for row in candidates if (row.grade or "").strip() == wanted]
+    return dedupe_bases_by_mill_grade(matched)
 
 
 class BasePriceEnricher:
-    """
-    匹配键：year + month + location(基地) + grade(=material)
-    同一牌号可对应多条基价（不同钢厂/规格）→ 展开为多行。
-    材料行自带 location，必须与基价 location 一致，避免串基地。
-    """
+    """基地 + 基价表牌号；同一牌号多钢厂展开为多行。"""
 
     def __init__(self) -> None:
         self.base_price_service = SteelBasePriceService()
+        self._grade_category_service = SteelGradeCategoryService()
 
     def enrich(
         self,
@@ -37,21 +51,19 @@ class BasePriceEnricher:
         if not locations and request.location:
             locations = [request.location]
 
-        # 按基地分别加载基价，索引键 = (location, grade)
-        grade_index: dict[tuple[str, str], list[Any]] = {}
+        grades = [
+            (item.material or "").strip() for item in materials if (item.material or "").strip()
+        ]
+        category_map = self._grade_category_service.map_grades(db, grades)
+
+        bases_by_location: dict[str, list[SteelBasePrice]] = {}
         for location in locations:
-            base_records = self.base_price_service.list_for_calc(
+            bases_by_location[location] = self.base_price_service.list_for_calc(
                 db,
                 year=request.year,
                 month=request.month,
                 location=location,
             )
-            for record in base_records:
-                record_location = (record.location or "").strip()
-                key_grade = (record.grade or "").strip()
-                if not record_location or not key_grade:
-                    continue
-                grade_index.setdefault((record_location, key_grade), []).append(record)
 
         rows: list[CalcRow] = []
         no_base_count = 0
@@ -59,11 +71,27 @@ class BasePriceEnricher:
 
         for material in materials:
             location = material.location
-            matches = grade_index.get((location, material.material), [])
+            material_grade = (material.material or "").strip()
+            thickness_text = format_money(material.thickness, Q4, 4)
+            category_name = resolve_canonical_category(material_grade, category_map)
+
+            if not category_name:
+                no_base_count += 1
+                no_base_details.append(
+                    f"[{location}] {material_grade}@{thickness_text} "
+                    "未分类，无法按冷轧/镀锌/酸洗匹配基价"
+                )
+                continue
+
+            matches = select_winning_base_records(
+                bases_by_location.get(location, []),
+                material_grade,
+            )
             if not matches:
                 no_base_count += 1
                 no_base_details.append(
-                    f"[{location}] {material.material}@{float(material.thickness):.4f} 无匹配基价"
+                    f"[{location}] {material_grade}@{thickness_text} "
+                    f"大类={category_name} 基价表无该牌号"
                 )
                 continue
 
@@ -72,16 +100,8 @@ class BasePriceEnricher:
                 if base_location != location:
                     no_base_count += 1
                     no_base_details.append(
-                        f"[{location}] {material.material}@{float(material.thickness):.4f} "
+                        f"[{location}] {material_grade}@{thickness_text} "
                         f"基价基地不一致(base={base_location}, id={base.id})"
-                    )
-                    continue
-
-                if base.width is None or base.thick is None or base.base_price is None:
-                    no_base_count += 1
-                    no_base_details.append(
-                        f"[{location}] {material.material}@{float(material.thickness):.4f} "
-                        f"基价字段不完整(id={base.id})"
                     )
                     continue
 
@@ -90,10 +110,10 @@ class BasePriceEnricher:
                         year=request.year,
                         month=request.month,
                         location=location,
-                        grade=material.material,
+                        grade=material_grade,
                         thickness=material.thickness,
                         steel_mill=base.steel_mill,
-                        category_name=base.category_name,
+                        category_name=category_name,
                         width=Decimal(str(base.width)),
                         base_thickness=Decimal(str(base.thick)),
                         base_price=Decimal(str(base.base_price)),

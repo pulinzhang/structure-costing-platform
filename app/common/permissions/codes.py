@@ -59,6 +59,51 @@ class Perm:
     STAMPING_PROCESS_FEE_REVERSE = "op:stamping-process-fee:reverse"  # 反审核
     STAMPING_PROCESS_FEE_EXPORT = "op:stamping-process-fee:export"  # 导出
 
+    MENU_STAMPING_DIE = "menu:stamping-die"  # 冲压模具
+
+    MENU_STAMPING_DIE_UPLOAD = "menu:stamping-die-upload"  # 上传模具布点
+    STAMPING_DIE_UPLOAD_VIEW = "op:stamping-die-upload:view"  # 查看
+    STAMPING_DIE_UPLOAD_UPLOAD = "op:stamping-die-upload:upload"  # 上传
+
+    MENU_STAMPING_DIE_LIST = "menu:stamping-die-list"  # 模具清单
+    STAMPING_DIE_LIST_VIEW = "op:stamping-die-list:view"  # 查询
+    STAMPING_DIE_LIST_UPDATE = "op:stamping-die-list:update"  # 编辑
+    STAMPING_DIE_LIST_DELETE = "op:stamping-die-list:delete"  # 删除
+    STAMPING_DIE_LIST_EXPORT = "op:stamping-die-list:export"  # 导出
+
+    MENU_STAMPING_DIE_UNIT_PRICE = "menu:stamping-die-unit-price"  # 模具单价
+    STAMPING_DIE_UNIT_PRICE_VIEW = "op:stamping-die-unit-price:view"  # 查询
+    STAMPING_DIE_UNIT_PRICE_CREATE = "op:stamping-die-unit-price:create"  # 新增
+    STAMPING_DIE_UNIT_PRICE_UPDATE = "op:stamping-die-unit-price:update"  # 编辑
+    STAMPING_DIE_UNIT_PRICE_DELETE = "op:stamping-die-unit-price:delete"  # 删除
+
+    MENU_STAMPING_DIE_FEE_GROUP = "menu:stamping-die-fee-group"  # 冲压模具费
+
+    MENU_STAMPING_DIE_FEE_CALC = "menu:stamping-die-fee-calc"  # 冲压模具费计算
+    STAMPING_DIE_FEE_CALC_VIEW = "op:stamping-die-fee-calc:view"  # 查看
+    STAMPING_DIE_FEE_CALC_RUN = "op:stamping-die-fee-calc:run"  # 计算
+    STAMPING_DIE_FEE_CALC_DELETE = "op:stamping-die-fee-calc:delete"  # 删除日志
+
+    MENU_STAMPING_DIE_FEE = "menu:stamping-die-fee"  # 冲压模具费列表
+    STAMPING_DIE_FEE_VIEW = "op:stamping-die-fee:view"  # 查询
+    STAMPING_DIE_FEE_UPDATE = "op:stamping-die-fee:update"  # 编辑调整金额
+    STAMPING_DIE_FEE_DELETE = "op:stamping-die-fee:delete"  # 删除
+    STAMPING_DIE_FEE_APPROVE = "op:stamping-die-fee:approve"  # 审核通过
+    STAMPING_DIE_FEE_REVERSE = "op:stamping-die-fee:reverse"  # 反审核
+    STAMPING_DIE_FEE_EXPORT = "op:stamping-die-fee:export"  # 导出
+
+    MENU_STAMPING_GAUGE_FEE_GROUP = "menu:stamping-gauge-fee-group"  # 冲压检具费
+
+    MENU_STAMPING_GAUGE_FEE_UPLOAD = "menu:stamping-gauge-fee-upload"  # 上传
+    STAMPING_GAUGE_FEE_UPLOAD_VIEW = "op:stamping-gauge-fee-upload:view"  # 查看
+    STAMPING_GAUGE_FEE_UPLOAD_UPLOAD = "op:stamping-gauge-fee-upload:upload"  # 上传
+
+    MENU_STAMPING_GAUGE_FEE = "menu:stamping-gauge-fee"  # 检具费列表
+    STAMPING_GAUGE_FEE_VIEW = "op:stamping-gauge-fee:view"  # 查询
+    STAMPING_GAUGE_FEE_UPDATE = "op:stamping-gauge-fee:update"  # 编辑
+    STAMPING_GAUGE_FEE_DELETE = "op:stamping-gauge-fee:delete"  # 删除
+    STAMPING_GAUGE_FEE_EXPORT = "op:stamping-gauge-fee:export"  # 导出
+
     MENU_BOM = "menu:bom"  # 焊接工程
 
     MENU_BOM_MATERIAL_LIST = "menu:bom-material-list"  # 材料清单
@@ -121,6 +166,19 @@ class Perm:
     BOM_PACKAGING_TRANSPORT_FEE_REVERSE = "op:bom-packaging-transport-fee:reverse"  # 反审核
     BOM_PACKAGING_TRANSPORT_FEE_EXPORT = "op:bom-packaging-transport-fee:export"  # 导出
 
+    MENU_BOM_PROCUREMENT_OBJECT_GROUP = "menu:bom-procurement-object-group"  # 采购对象
+
+    MENU_BOM_PROCUREMENT_OBJECT = "menu:bom-procurement-object"  # 生成采购对象清单
+    BOM_PROCUREMENT_OBJECT_GENERATE = "op:bom-procurement-object:generate"  # 生成
+
+    MENU_BOM_PROCUREMENT_OBJECT_LIST = "menu:bom-procurement-object-list"  # 采购对象清单
+    BOM_PROCUREMENT_OBJECT_LIST_VIEW = "op:bom-procurement-object-list:view"  # 查询
+    BOM_PROCUREMENT_OBJECT_LIST_UPDATE = "op:bom-procurement-object-list:update"  # 确认
+    BOM_PROCUREMENT_OBJECT_LIST_DELETE = "op:bom-procurement-object-list:delete"  # 删除
+    BOM_PROCUREMENT_OBJECT_LIST_APPROVE = "op:bom-procurement-object-list:approve"  # 审核通过
+    BOM_PROCUREMENT_OBJECT_LIST_REVERSE = "op:bom-procurement-object-list:reverse"  # 反审核
+    BOM_PROCUREMENT_OBJECT_LIST_EXPORT = "op:bom-procurement-object-list:export"  # 导出
+
     MENU_BOM_WELDING_PROCESS_BREAKDOWN_GROUP = (
         "menu:bom-welding-process-breakdown-group"  # 焊接工艺拆解
     )
@@ -143,20 +201,20 @@ class Perm:
     BOM_WELDING_PROCESS_BREAKDOWN_REVERSE = "op:bom-welding-process-breakdown:reverse"  # 反审核
     BOM_WELDING_PROCESS_BREAKDOWN_EXPORT = "op:bom-welding-process-breakdown:export"  # 导出L0核对
 
-    MENU_BOM_L0_WELDING_FEE_GROUP = "menu:bom-l0-welding-fee-group"  # 成品焊接费
+    MENU_BOM_WELDING_FEE_GROUP = "menu:bom-welding-fee-group"  # 焊接费
 
-    MENU_BOM_L0_WELDING_FEE_CALC = "menu:bom-l0-welding-fee-calc"  # 成品焊接费计算
-    BOM_L0_WELDING_FEE_CALC_VIEW = "op:bom-l0-welding-fee-calc:view"  # 查看
-    BOM_L0_WELDING_FEE_CALC_RUN = "op:bom-l0-welding-fee-calc:run"  # 计算
-    BOM_L0_WELDING_FEE_CALC_DELETE = "op:bom-l0-welding-fee-calc:delete"  # 删除计算日志
+    MENU_BOM_WELDING_FEE_CALC = "menu:bom-welding-fee-calc"  # 焊接费计算
+    BOM_WELDING_FEE_CALC_VIEW = "op:bom-welding-fee-calc:view"  # 查看
+    BOM_WELDING_FEE_CALC_RUN = "op:bom-welding-fee-calc:run"  # 计算
+    BOM_WELDING_FEE_CALC_DELETE = "op:bom-welding-fee-calc:delete"  # 删除计算日志
 
-    MENU_BOM_L0_WELDING_FEE_LIST = "menu:bom-l0-welding-fee-list"  # 成品焊接费列表
-    BOM_L0_WELDING_FEE_LIST_VIEW = "op:bom-l0-welding-fee-list:view"  # 查询
-    BOM_L0_WELDING_FEE_LIST_UPDATE = "op:bom-l0-welding-fee-list:update"  # 编辑其它费用
-    BOM_L0_WELDING_FEE_LIST_DELETE = "op:bom-l0-welding-fee-list:delete"  # 删除
-    BOM_L0_WELDING_FEE_LIST_APPROVE = "op:bom-l0-welding-fee-list:approve"  # 审核通过
-    BOM_L0_WELDING_FEE_LIST_REVERSE = "op:bom-l0-welding-fee-list:reverse"  # 反审核
-    BOM_L0_WELDING_FEE_LIST_EXPORT = "op:bom-l0-welding-fee-list:export"  # 导出
+    MENU_BOM_WELDING_FEE_LIST = "menu:bom-welding-fee-list"  # 焊接费列表
+    BOM_WELDING_FEE_LIST_VIEW = "op:bom-welding-fee-list:view"  # 查询
+    BOM_WELDING_FEE_LIST_UPDATE = "op:bom-welding-fee-list:update"  # 编辑其它费用
+    BOM_WELDING_FEE_LIST_DELETE = "op:bom-welding-fee-list:delete"  # 删除
+    BOM_WELDING_FEE_LIST_APPROVE = "op:bom-welding-fee-list:approve"  # 审核通过
+    BOM_WELDING_FEE_LIST_REVERSE = "op:bom-welding-fee-list:reverse"  # 反审核
+    BOM_WELDING_FEE_LIST_EXPORT = "op:bom-welding-fee-list:export"  # 导出
 
     MENU_YISHIYIYI = "menu:yishiyiyi"  # 一事一议
 
@@ -181,6 +239,13 @@ class Perm:
     BASE_PRICE_DOWNLOAD_VIEW = "op:base-price-download:view"  # 预览
     BASE_PRICE_DOWNLOAD_EXPORT = "op:base-price-download:export"  # 导出
     BASE_PRICE_DOWNLOAD_DELETE = "op:base-price-download:delete"  # 批量删除
+
+    MENU_STEEL_GRADE_CATEGORY = "menu:steel-grade-category"  # 牌号分类
+    STEEL_GRADE_CATEGORY_VIEW = "op:steel-grade-category:view"  # 查看
+    STEEL_GRADE_CATEGORY_CREATE = "op:steel-grade-category:create"  # 新增
+    STEEL_GRADE_CATEGORY_UPDATE = "op:steel-grade-category:update"  # 编辑
+    STEEL_GRADE_CATEGORY_DELETE = "op:steel-grade-category:delete"  # 删除
+    STEEL_GRADE_CATEGORY_EXPORT = "op:steel-grade-category:export"  # 导出
 
     MENU_WINNING_THICKNESS_DOWNLOAD = "menu:winning-thickness-download"  # 中标钢厂厚度价格一览表
     WINNING_THICKNESS_DOWNLOAD_VIEW = "op:winning-thickness-download:view"  # 预览
@@ -227,19 +292,19 @@ class Perm:
     STAMPING_PART_COST_REVERSE = "op:stamping-part-cost:reverse"  # 反审核
     STAMPING_PART_COST_EXPORT = "op:stamping-part-cost:export"  # 导出工艺清单
 
-    MENU_L0_ASSEMBLY_COST_GROUP = "menu:l0-assembly-cost-group"  # 成品核价
+    MENU_ASSEMBLY_COST_GROUP = "menu:assembly-cost-group"  # 总成核价
 
-    MENU_L0_ASSEMBLY_COST_CALC = "menu:l0-assembly-cost-calc"  # 成品核价计算
-    L0_ASSEMBLY_COST_CALC_VIEW = "op:l0-assembly-cost-calc:view"  # 查看
-    L0_ASSEMBLY_COST_CALC_RUN = "op:l0-assembly-cost-calc:run"  # 计算
-    L0_ASSEMBLY_COST_CALC_DELETE = "op:l0-assembly-cost-calc:delete"  # 删除日志
+    MENU_ASSEMBLY_COST_CALC = "menu:assembly-cost-calc"  # 总成核价计算
+    ASSEMBLY_COST_CALC_VIEW = "op:assembly-cost-calc:view"  # 查看
+    ASSEMBLY_COST_CALC_RUN = "op:assembly-cost-calc:run"  # 计算
+    ASSEMBLY_COST_CALC_DELETE = "op:assembly-cost-calc:delete"  # 删除日志
 
-    MENU_L0_ASSEMBLY_COST = "menu:l0-assembly-cost"  # 成品核价一览
-    L0_ASSEMBLY_COST_VIEW = "op:l0-assembly-cost:view"  # 查询
-    L0_ASSEMBLY_COST_DELETE = "op:l0-assembly-cost:delete"  # 删除
-    L0_ASSEMBLY_COST_APPROVE = "op:l0-assembly-cost:approve"  # 审核通过
-    L0_ASSEMBLY_COST_REVERSE = "op:l0-assembly-cost:reverse"  # 反审核
-    L0_ASSEMBLY_COST_EXPORT = "op:l0-assembly-cost:export"  # 导出
+    MENU_ASSEMBLY_COST = "menu:assembly-cost"  # 总成核价一览
+    ASSEMBLY_COST_VIEW = "op:assembly-cost:view"  # 查询
+    ASSEMBLY_COST_DELETE = "op:assembly-cost:delete"  # 删除
+    ASSEMBLY_COST_APPROVE = "op:assembly-cost:approve"  # 审核通过
+    ASSEMBLY_COST_REVERSE = "op:assembly-cost:reverse"  # 反审核
+    ASSEMBLY_COST_EXPORT = "op:assembly-cost:export"  # 导出
 
     MENU_COSTING_ENGINE = "menu:costing-engine"  # 自动核价引擎
     COSTING_VIEW = "op:costing:view"  # 查看

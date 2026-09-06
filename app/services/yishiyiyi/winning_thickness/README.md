@@ -15,9 +15,9 @@
 
 | 能力 | 说明 |
 |------|------|
-| 行组装 | 去重基价、匹配 THICKNESS 政策、展开阶梯行 |
+| 行组装 | 基价表驱动；档案大类 × CATEGORY 厚度政策；逐牌号展开全部厚度区间 |
 | 预览分页 | 内存分页返回 VO |
-| Excel 导出 | 三页：阅读用一览（含弱化溯源）、计算用（基地/钢种/厚度上下限，无溯源）、使用示例 |
+| Excel 导出 | 三页：阅读用一览（含弱化溯源）、计算用、使用示例；**仅含当期有基价的行** |
 
 **对外入口**：
 
@@ -74,24 +74,27 @@ app/services/yishiyiyi/winning_thickness/
 Router
   └── WinningThicknessExportService
         ├── assemble.WinningThicknessRowAssembler
-        │     ├── base_price Repository
+        │     ├── base_price Repository（驱动行）
+        │     ├── steel_grade_category Repository（大类 → 政策）
         │     ├── policy Repository
-        │     └── costing.steel_price 匹配公共函数
+        │     └── policy.match.adjustment_common
         └── export.WinningThicknessExporter
 ```
 
 | 子包 | 负责 | 不负责 |
 |------|------|--------|
-| `assemble/` | 去重、政策命中、展开 VO | xlsx |
-| `export/` | 工作簿 / 抬头 / 三页表样 | 政策匹配 |
+| `assemble/` | 基价去重、档案取大类、按 CATEGORY 政策逐牌号展开 VO | xlsx |
+| `export/` | 工作簿 / 抬头 / 三页表样；入口过滤无基价溯源行 | 政策匹配、查库补行 |
 
 ---
 
 ## 5. 关键业务约定
 
 - 必填：年、月、基地。  
-- 厚度政策：`policy_type == THICKNESS` 且 `grade_value` 等于牌号；优先 `base_thickness` 一致。  
-- 无政策或无厚度阶梯：仍输出一行，加减价为 0，厚度范围为 `-`；计算页厚 min/max 与符号留空。  
+- **以基价表为据**：当期该基地无基价行的牌号不输出（无基价则厚度加减价无业务意义）。  
+- 大类：牌号分类档案 `category_name`（冷轧/镀锌/酸洗），用于命中 CATEGORY 厚度政策。  
+- 厚度政策：`policy_type == THICKNESS` 且 `grade_type == CATEGORY`；同大类各牌号共用阶梯并各输出全部厚度区间；优先 `base_thickness` 一致。  
+- 无政策或无厚度阶梯：不输出（预览/导出仅展示有效阶梯行）。  
 - 区间文案复用 `policy.export.excel_exporter.format_interval`。  
 - 计算页最终价为 Excel 公式 `基准价+加减价+加工费`；使用示例页从本批真实行摘录，下部附公式说明。
 
@@ -116,8 +119,8 @@ Router
 | 层级 | 路径 |
 |------|------|
 | Router | `app/routers/yishiyiyi/winning_thickness/` |
-| 依赖 Service | `yishiyiyi/base_price`、`yishiyiyi/policy` |
-| 匹配公共 | `costing/steel_price/calc/steps/adjustments/common` |
+| 依赖 Service | `yishiyiyi/steel_grade_category`、`yishiyiyi/base_price`、`yishiyiyi/policy` |
+| 匹配公共 | `yishiyiyi/policy/match/adjustment_common` |
 | 前端 | `static/js/features/yishiyiyi/winning-thickness/` |
 | API 前缀 | `/api/yishiyiyi/winning-thickness` |
 | 对照结构 | `app/services/yishiyiyi/base_price/` |

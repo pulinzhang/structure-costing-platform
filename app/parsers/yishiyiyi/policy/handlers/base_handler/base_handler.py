@@ -25,6 +25,7 @@ from app.parsers.yishiyiyi.policy.boundary_parser import _Boundary
 from app.parsers.yishiyiyi.policy.handlers.constants import BLANK_LIMIT
 from app.parsers.yishiyiyi.policy.models import ParsedPolicy
 from app.parsers.yishiyiyi.policy.models.ladder_item import ParsedLadderItem
+
 from .policy_assembler import PolicyAssembler
 from .sheet_scanner import SheetScanner
 from .thickness_block_finder import ThicknessBlockFinder
@@ -50,13 +51,9 @@ class BaseSheetHandler:
         steel_mill: str,
         warnings: list[str],
     ) -> list[ParsedPolicy]:
-        """解析入口：厚度块 + 宽度块 + 锌层加价块。"""
+        """解析入口：仅厚度加减价（大类一条）；宽度/锌层本期不导入。"""
         del warnings
-        policies: list[ParsedPolicy] = []
-        policies.extend(self._parse_blocks(sheet, steel_mill, "THICKNESS"))
-        policies.extend(self._parse_blocks(sheet, steel_mill, "WIDTH"))
-        policies.extend(self.parse_zinc_coating_blocks(sheet, steel_mill))
-        return policies
+        return self._parse_blocks(sheet, steel_mill, "THICKNESS")
 
     # ------------------------------------------------------------------ #
     # 子类钩子

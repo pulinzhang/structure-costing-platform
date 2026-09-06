@@ -12,7 +12,6 @@ from pydantic import BaseModel, Field, field_serializer
 from app.common.money import Q2, optional_format_money
 from app.common.timezone import datetime_to_iso
 
-
 # ============================
 # 枚举定义（与 DTO 共享一份）
 # ============================

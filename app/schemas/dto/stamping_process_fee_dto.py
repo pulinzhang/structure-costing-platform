@@ -13,18 +13,33 @@ from app.common.money import Q3, optional_quantize_money
 
 
 class StampingProcessFeeScopeDTO(BaseModel):
-    """范围必填：年度 + 基地 + 冲压工厂（计算 / 删除 / 审核 / 反审核共用）"""
+    """
+    计算范围：年度 + 基地 + 车型必填。版本可选。
+    工厂仅列表/批量删除收窄；计算与审核忽略。
+    """
 
     year: int = Field(..., ge=2000, le=2100, description="年度")
     location: str = Field(..., min_length=1, description="基地")
-    stamping_supplier: str = Field(..., min_length=1, description="冲压工厂")
+    vehicle_model: str = Field(..., min_length=1, description="车型")
+    version: str | None = Field(None, description="版本")
+    stamping_supplier: str | None = Field(None, description="冲压工厂")
+
+    @field_validator("vehicle_model", mode="before")
+    @classmethod
+    def _strip_vehicle(cls, value: object) -> str:
+        return str(value).strip() if value is not None else ""
+
+    @field_validator("version", "stamping_supplier", mode="before")
+    @classmethod
+    def _empty_to_none(cls, value: object) -> str | None:
+        if value is None:
+            return None
+        text = str(value).strip()
+        return text or None
 
 
 class StampingProcessFeeCalcDTO(StampingProcessFeeScopeDTO):
-    """冲压加工费计算请求（车型/版本可选，用于缩小计算范围）"""
-
-    vehicle_model: str | None = Field(None, description="车型")
-    version: str | None = Field(None, description="版本")
+    """加工费计算：按车型覆盖各厂；工厂字段忽略。"""
 
 
 class StampingProcessFeeQuery(BaseModel):
@@ -67,7 +82,7 @@ class StampingProcessFeeDeleteDTO(StampingProcessFeeScopeDTO):
 class StampingProcessFeeBatchApproveDTO(StampingProcessFeeScopeDTO):
     """批量审核通过"""
 
-    audit_remark: str | None = Field(None, description="审核意见")
+    audit_remark: str = Field(..., min_length=1, description="审核意见（必填）")
 
 
 class StampingProcessFeeBatchReverseAuditDTO(StampingProcessFeeScopeDTO):

@@ -1,7 +1,16 @@
 /**
  * 年度零件价上传 — 模板
- * 基地 + 年度必选；Excel 列：零件号/名称/单位/单价/原供货类型/供应商/备注；同步导入
+ * 下载模板：基地 + 项目 + 年度；导入仍按基地 + 年度写入价表
  */
+
+import {
+    BTN_FILE_SELECT,
+    BTN_GHOST,
+    BTN_UPLOAD_SUBMIT,
+    UPLOAD_DROPZONE,
+    UPLOAD_INPUT,
+    UPLOAD_LABEL,
+} from '../../../../ui-classes.js?v=1';
 
 export function annualPartPriceUploadTemplate() {
     return `
@@ -27,26 +36,33 @@ export function annualPartPriceUploadTemplate() {
                                     <span class="w-4 h-4 rounded-full bg-[#2a2a2a] flex items-center justify-center shrink-0">
                                         <span class="text-[10px] font-semibold text-[#d32f2f]">1</span>
                                     </span>
-                                    <span class="text-[13px] text-[#6b6b6b] font-medium tracking-wide uppercase">选择基地与年度</span>
+                                    <span class="text-[13px] text-[#6b6b6b] font-medium tracking-wide uppercase">选择基地、项目与年度</span>
                                 </div>
-                                <div class="ml-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div class="ml-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
                                     <div>
-                                        <label for="annualPartPriceUploadLocation" class="upload-label">
+                                        <label for="annualPartPriceUploadLocation" class="${UPLOAD_LABEL}">
                                             采购基地 <span class="text-[#d32f2f]">*</span>
                                         </label>
                                         <select id="annualPartPriceUploadLocation"
                                                 name="location"
                                                 required
-                                                class="upload-input w-full text-[11px]">
+                                                class="${UPLOAD_INPUT} w-full">
                                             <option value="">请选择采购基地</option>
-                                            <option value="大连">大连</option>
-                                            <option value="芜湖">芜湖</option>
-                                            <option value="鄂尔多斯">鄂尔多斯</option>
-                                            <option value="青岛">青岛</option>
                                         </select>
                                     </div>
                                     <div>
-                                        <label for="annualPartPriceUploadYear" class="upload-label">
+                                        <label for="annualPartPriceUploadVehicleModel" class="${UPLOAD_LABEL}">
+                                            项目 <span class="text-[#d32f2f]">*</span>
+                                        </label>
+                                        <select id="annualPartPriceUploadVehicleModel"
+                                                name="vehicle_model"
+                                                required
+                                                class="${UPLOAD_INPUT} w-full">
+                                            <option value="">请先选择采购基地</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label for="annualPartPriceUploadYear" class="${UPLOAD_LABEL}">
                                             年度 <span class="text-[#d32f2f]">*</span>
                                         </label>
                                         <input type="text"
@@ -56,10 +72,10 @@ export function annualPartPriceUploadTemplate() {
                                                required
                                                pattern="[0-9]{4}"
                                                maxlength="4"
-                                               class="upload-input w-full">
+                                               class="${UPLOAD_INPUT} w-full">
                                     </div>
                                 </div>
-                                <p class="ml-6 mt-1.5 text-[11px] text-[#616161]">导入时必须指定基地与年度，写入该基地该年的年度零件价</p>
+                                <p class="ml-6 mt-1.5 text-[11px] text-[#616161]">下载模板须选基地、项目、年度。行来自该项目采购对象标准件与胶，以及 BOM 叶子且不在本项目工艺库的零件。原供货类型按行填写，板料为「沿用」不是「标准件/胶等」。导入仍写入该基地该年</p>
                             </div>
 
                             <div class="h-px bg-[#1e1e1e] mx-6 mb-4"></div>
@@ -72,7 +88,7 @@ export function annualPartPriceUploadTemplate() {
                                     <span class="text-[13px] text-[#6b6b6b] font-medium tracking-wide uppercase">上传年度零件价表</span>
                                 </div>
                                 <div class="ml-6">
-                                    <div id="annualPartPriceUploadZone" class="upload-dropzone mb-4">
+                                    <div id="annualPartPriceUploadZone" class="${UPLOAD_DROPZONE} mb-4" data-dropzone-state="idle">
                                         <div id="annualPartPriceUploadDropIdle" class="flex flex-col items-center gap-0">
                                             <div class="flex items-center gap-3 mb-5 w-full px-3">
                                                 <div class="h-px flex-1 bg-[#2a2a2a]"></div>
@@ -95,7 +111,7 @@ export function annualPartPriceUploadTemplate() {
                                             <input type="file" id="annualPartPriceUploadFileInput" class="hidden" accept=".xlsx">
                                             <button type="button"
                                                     id="annualPartPriceUploadSelectFileBtn"
-                                                    class="btn-file-select">
+                                                    class="${BTN_FILE_SELECT}">
                                                 ${window.svgIcon('folder', 'w-3.5 h-3.5')}
                                                 浏览文件
                                             </button>
@@ -126,14 +142,14 @@ export function annualPartPriceUploadTemplate() {
                                     <div class="flex items-center justify-end gap-3">
                                         <button type="button"
                                                 id="annualPartPriceUploadResetBtn"
-                                                class="btn-ghost">
+                                                class="${BTN_GHOST}">
                                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                                             重置
                                         </button>
                                         <button type="submit"
                                                 id="annualPartPriceUploadSubmitBtn"
                                                 disabled
-                                                class="btn-upload-submit disabled:opacity-30 disabled:pointer-events-none">
+                                                class="${BTN_UPLOAD_SUBMIT}">
                                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
                                             上传
                                         </button>
@@ -158,39 +174,18 @@ export function annualPartPriceUploadTemplate() {
                         <div>
                             <h6 class="text-[10px] uppercase tracking-wider text-[#616161] mb-2">Excel 列</h6>
                             <ul class="list-disc list-inside text-xs text-[#616161] space-y-1.5">
-                                <li><span class="text-[#9e9e9e]">零件号</span>：必填</li>
+                                <li><span class="text-[#9e9e9e]">零件号</span>：必填；模板按所选项目带出外购叶子（含未进工艺库的板料、L2 标准件）</li>
                                 <li><span class="text-[#9e9e9e]">零件名称</span> / <span class="text-[#9e9e9e]">供应商</span> / <span class="text-[#9e9e9e]">备注</span>：可选</li>
                                 <li><span class="text-[#9e9e9e]">单位</span>：默认 pcs</li>
-                                <li><span class="text-[#9e9e9e]">单价</span>：≥0，四位小数；<span class="text-[#9e9e9e]">0 = 核价不计入</span>（如结构胶）</li>
-                                <li><span class="text-[#9e9e9e]">原供货类型</span>：如 标准件 / 沿用 / 胶块</li>
+                                <li><span class="text-[#9e9e9e]">单价</span>：≥0，四位小数；模板预填 0，请改真实价；<span class="text-[#9e9e9e]">0 = 核价不计入</span></li>
+                                <li><span class="text-[#9e9e9e]">原供货类型</span>：模板按行预填「标准件」/「胶块」/「沿用」（未进本项目工艺库的板料）；导入可改</li>
                             </ul>
-                        </div>
-                        <div>
-                            <h6 class="text-[10px] uppercase tracking-wider text-[#616161] mb-2">示例</h6>
-                            <div class="overflow-hidden border border-[#2c2c2c] max-h-[280px] overflow-y-auto">
-                                <table class="w-full">
-                                    <thead class="sticky top-0">
-                                        <tr class="bg-[#0a0a0a] border-b border-[#2c2c2c]">
-                                            <th class="px-2 py-1.5 text-left text-[10px] font-semibold text-[#616161]">零件号</th>
-                                            <th class="px-2 py-1.5 text-left text-[10px] font-semibold text-[#616161]">零件名称</th>
-                                            <th class="px-2 py-1.5 text-left text-[10px] font-semibold text-[#616161]">单位</th>
-                                            <th class="px-2 py-1.5 text-right text-[10px] font-semibold text-[#616161]">单价</th>
-                                            <th class="px-2 py-1.5 text-left text-[10px] font-semibold text-[#616161]">原供货类型</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody class="divide-y divide-[#222222]">
-                                        <tr><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">QR36410</td><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">焊接方螺母</td><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">pcs</td><td class="px-2 py-1.5 text-[11px] text-right font-mono tabular-nums text-[#9e9e9e]">0.1750</td><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">标准件</td></tr>
-                                        <tr><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">501004437AA</td><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">中通道后纵梁本体II</td><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">pcs</td><td class="px-2 py-1.5 text-[11px] text-right font-mono tabular-nums text-[#9e9e9e]">2.1300</td><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">沿用</td></tr>
-                                        <tr><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">M14-4102311</td><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">支装抗冲击结构胶</td><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">mm</td><td class="px-2 py-1.5 text-[11px] text-right font-mono tabular-nums text-[#9e9e9e]">0.0000</td><td class="px-2 py-1.5 text-[11px] text-[#9e9e9e]">结构胶</td></tr>
-                                    </tbody>
-                                </table>
-                            </div>
                         </div>
                         <div>
                             <h6 class="text-[10px] uppercase tracking-wider text-[#616161] mb-2">写入规则</h6>
                             <ul class="list-disc list-inside text-xs text-[#616161] space-y-1.5">
-                                <li>基地、年度在页面选；唯一键 = 基地 + 年度 + 零件号</li>
-                                <li>同键则更新，否则新增；仅 .xlsx</li>
+                                <li>下载模板须先选基地、项目、年度，且该基地该项目已有材料清单</li>
+                                <li>唯一键 = 基地 + 年度 + 零件号；同键则更新，否则新增；仅 .xlsx</li>
                             </ul>
                         </div>
                     </div>

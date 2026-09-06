@@ -6,7 +6,7 @@
 import {
     processFeeCalcTemplate,
     renderCalcHistoryPagination,
-} from './template.js?v=15';
+} from './template.js?v=22';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -19,8 +19,9 @@ const CALC_READY_API = `${API_BASE}/calc/ready`;
 const CALC_TASK_API = `${API_BASE}/calc/tasks`;
 const CALC_LOGS_API = `${API_BASE}/calc/logs`;
 const POLL_INTERVAL_MS = 1500;
-const DUPLICATE_SCOPE_CALC_MESSAGE = '当前年度/基地/工厂正在计算中，请勿重复提交。';
-const SCOPE_REQUIRED_MESSAGE = '须选定年度、基地、冲压工厂。';
+const DUPLICATE_SCOPE_CALC_MESSAGE = '当前年度/基地/车型正在计算中，请勿重复提交。';
+/** 操作页固定要车型；后端允许「车型或工厂」以便引擎按厂补算。 */
+const SCOPE_REQUIRED_MESSAGE = '须选定年度、基地、车型。';
 
 const STATUS_META = {
     processing: { label: '计算中', className: 'text-[#64b5f6]' },
@@ -93,11 +94,6 @@ function bindEvents() {
     document.getElementById('calcYear')?.addEventListener('change', () => loadCalcReady());
 
     document.getElementById('calcLocation')?.addEventListener('change', () => {
-        resetDependentFilters(['calcSupplier', 'calcVehicleModel', 'calcVersion']);
-        loadCascadeFilters();
-        loadCalcReady();
-    });
-    document.getElementById('calcSupplier')?.addEventListener('change', () => {
         resetDependentFilters(['calcVehicleModel', 'calcVersion']);
         loadCascadeFilters();
         loadCalcReady();
@@ -107,7 +103,10 @@ function bindEvents() {
         loadCascadeFilters();
         loadCalcReady();
     });
-    document.getElementById('calcVersion')?.addEventListener('change', () => loadCalcReady());
+    document.getElementById('calcVersion')?.addEventListener('change', () => {
+        loadCascadeFilters();
+        loadCalcReady();
+    });
 
     document.getElementById('startCalcBtn')?.addEventListener('click', () => startCalculation());
     document.getElementById('calcHistoryRefreshBtn')?.addEventListener('click', () => loadCalcHistory(1));
@@ -127,7 +126,7 @@ function resetDependentFilters(ids) {
     });
 }
 
-function fillSelect(id, values = [], preferredValue = null) {
+function fillSelect(id, values = [], preferredValue = null, formatLabel = null) {
     const select = document.getElementById(id);
     if (!select) return;
     const current = preferredValue != null ? preferredValue : select.value;
@@ -136,7 +135,8 @@ function fillSelect(id, values = [], preferredValue = null) {
         `<option value="">${emptyLabel}</option>` +
         values.map((value) => {
             const text = String(value);
-            return `<option value="${esc(text)}"${text === String(current) ? ' selected' : ''}>${esc(text)}</option>`;
+            const label = formatLabel ? formatLabel(value) : text;
+            return `<option value="${esc(text)}"${text === String(current) ? ' selected' : ''}>${esc(String(label))}</option>`;
         }).join('');
 }
 
@@ -146,7 +146,7 @@ async function loadYearOptions() {
         const years = Array.isArray(res.data) ? res.data.slice() : [];
         const currentYear = new Date().getFullYear();
         if (!years.includes(currentYear)) years.unshift(currentYear);
-        fillSelect('calcYear', years, String(currentYear));
+        fillSelect('calcYear', years, String(currentYear), fmtYear);
     } catch (error) {
         showToast(error.message || '加载年度失败', 'error');
     }
@@ -156,13 +156,12 @@ async function loadCascadeFilters() {
     try {
         const params = {
             location: document.getElementById('calcLocation')?.value || '',
-            stamping_supplier: document.getElementById('calcSupplier')?.value || '',
             vehicle_model: document.getElementById('calcVehicleModel')?.value || '',
+            version: document.getElementById('calcVersion')?.value || '',
         };
         const res = await HttpClient.get(CASCADE_API, { params });
         const filters = res.data || {};
         fillSelect('calcLocation', filters.locations || []);
-        fillSelect('calcSupplier', filters.stamping_suppliers || []);
         fillSelect('calcVehicleModel', filters.vehicle_models || []);
         fillSelect('calcVersion', filters.versions || []);
     } catch (error) {
@@ -176,7 +175,7 @@ function resetFilters() {
         return;
     }
 
-    ['calcLocation', 'calcSupplier', 'calcVehicleModel', 'calcVersion'].forEach((id) => {
+    ['calcLocation', 'calcVehicleModel', 'calcVersion'].forEach((id) => {
         const el = document.getElementById(id);
         if (el) el.value = '';
     });
@@ -198,21 +197,19 @@ async function loadCalcReady() {
     const yearRaw = document.getElementById('calcYear')?.value;
     const year = yearRaw ? Number(yearRaw) : null;
     const location = document.getElementById('calcLocation')?.value || '';
-    const supplier = document.getElementById('calcSupplier')?.value || '';
     const vehicleModel = document.getElementById('calcVehicleModel')?.value || '';
     const version = document.getElementById('calcVersion')?.value || '';
 
     if (!year) {
         calcState.ready = { part_count: 0, tonnage_rate_count: 0 };
         setReadyCounts(0, 0);
-        validateDataPreparation(location, year, supplier, 0, 0);
+        validateDataPreparation(location, year, vehicleModel, 0, 0);
         return;
     }
 
     try {
         const params = { year };
         if (location) params.location = location;
-        if (supplier) params.stamping_supplier = supplier;
         if (vehicleModel) params.vehicle_model = vehicleModel;
         if (version) params.version = version;
 
@@ -222,22 +219,22 @@ async function loadCalcReady() {
         const rateCount = Number(data.tonnage_rate_count) || 0;
         calcState.ready = { part_count: partCount, tonnage_rate_count: rateCount };
         setReadyCounts(partCount, rateCount);
-        validateDataPreparation(location, year, supplier, partCount, rateCount);
+        validateDataPreparation(location, year, vehicleModel, partCount, rateCount);
     } catch (error) {
         console.error('加载计算就绪统计失败:', error);
         calcState.ready = { part_count: 0, tonnage_rate_count: 0 };
         setReadyCounts(0, 0);
-        validateDataPreparation(location, year, supplier, 0, 0);
+        validateDataPreparation(location, year, vehicleModel, 0, 0);
         showToast('加载数据依据失败', 'error');
     }
 }
 
-function validateDataPreparation(location, year, supplier, partCount, rateCount) {
+function validateDataPreparation(location, year, vehicleModel, partCount, rateCount) {
     const startBtn = document.getElementById('startCalcBtn');
     const errorBanner = document.getElementById('dataReadyErrorBanner');
     if (!startBtn || calcState.isCalculating) return;
 
-    const isScopeSelected = Boolean(year && location && supplier);
+    const isScopeSelected = Boolean(year && location && vehicleModel);
     const isDataValid = Number(partCount) > 0 && Number(rateCount) > 0;
     const isReady = isScopeSelected && isDataValid;
 
@@ -333,7 +330,7 @@ function renderHistoryRows(items) {
             <tr class="hover:bg-[#ffffff]/[0.02] transition-colors text-[#999]" data-log-id="${esc(item.id)}">
                 <td class="py-2 px-2 font-mono text-[#666] whitespace-nowrap">${esc(started)}</td>
                 <td class="py-2 px-2 text-[#ccc] whitespace-nowrap">${esc(createdBy)}</td>
-                <td class="py-2 px-2 font-mono text-[#ccc] whitespace-nowrap">${esc(item.year)}</td>
+                <td class="py-2 px-2 font-mono text-[#ccc] whitespace-nowrap">${esc(fmtYear(item.year))}</td>
                 <td class="py-2 px-2 text-[#ccc] whitespace-nowrap">${esc(item.location || '-')}</td>
                 <td class="py-2 px-2 text-[#ccc] whitespace-nowrap">${esc(item.stamping_supplier || '-')}</td>
                 <td class="py-2 px-2 text-[#777] max-w-[140px] truncate" title="${esc(filterText)}">${esc(filterText)}</td>
@@ -341,7 +338,7 @@ function renderHistoryRows(items) {
                 <td class="py-2 px-2 font-mono text-right tabular-nums text-[#777]">${fmtInt(item.total_parts)}</td>
                 <td class="py-2 px-2 font-mono text-right tabular-nums text-[#777]">${fmtInt(item.success_count)}</td>
                 <td class="py-2 px-2 font-mono text-right tabular-nums ${Number(item.failed_count) > 0 ? 'text-[#ef5350]' : 'text-[#777]'}">${fmtInt(item.failed_count)}</td>
-                <td class="py-2 px-2 font-mono text-right tabular-nums ${Number(item.zero_fee_count) > 0 ? 'text-[#ffb74d]' : 'text-[#777]'}">${fmtInt(item.zero_fee_count)}</td>
+                <td class="py-2 px-2 font-mono text-right tabular-nums text-[#777]" title="含废料副产品（按规则记 0）">${fmtInt(item.zero_fee_count)}</td>
                 <td class="py-2 px-2 font-mono text-right tabular-nums text-[#777]">${fmtInt(item.skipped_approved_count)}</td>
                 <td class="py-2 px-2 text-right whitespace-nowrap">
                     ${isProcessing ? `
@@ -355,7 +352,6 @@ function renderHistoryRows(items) {
                             class="calc-view-result-btn text-[9px] text-[#777] hover:text-white mr-2"
                             data-year="${esc(item.year)}"
                             data-location="${esc(item.location || '')}"
-                            data-supplier="${esc(item.stamping_supplier || '')}"
                             data-vehicle="${esc(item.vehicle_model || '')}"
                             data-version="${esc(item.version || '')}">结果</button>
                     `}
@@ -378,7 +374,6 @@ function renderHistoryRows(items) {
             const qs = new URLSearchParams();
             if (btn.dataset.year) qs.set('year', btn.dataset.year);
             if (btn.dataset.location) qs.set('location', btn.dataset.location);
-            if (btn.dataset.supplier) qs.set('stamping_supplier', btn.dataset.supplier);
             if (btn.dataset.vehicle) qs.set('vehicle_model', btn.dataset.vehicle);
             if (btn.dataset.version) qs.set('version', btn.dataset.version);
             const suffix = qs.toString() ? `?${qs.toString()}` : '';
@@ -413,6 +408,23 @@ async function deleteCalcLog(logId) {
     }
 }
 
+function formatCalcSummary(log) {
+    const total = fmtInt(log.total_parts);
+    const success = fmtInt(log.success_count);
+    const failedCount = Number(log.failed_count) || 0;
+    const skipped = Number(log.skipped_approved_count) || 0;
+    let text = `本批 ${total} 个，成功 ${success} 个`;
+    if (failedCount > 0) {
+        text += `，没算上 ${fmtInt(log.failed_count)} 个`;
+    } else {
+        text += '，没有失败';
+    }
+    if (skipped > 0) {
+        text += `；已审核跳过 ${fmtInt(skipped)} 件`;
+    }
+    return text;
+}
+
 async function openProcessDrawer(logId) {
     if (!logId) return;
     try {
@@ -429,7 +441,7 @@ function showProcessDrawer(log) {
     closeProcessDrawer();
 
     const status = STATUS_META[log.status] || STATUS_META.failed;
-    const scope = `${log.year || '-'} · ${log.location || '-'} · ${log.stamping_supplier || '-'}`;
+    const scope = `${fmtYear(log.year) || '-'} · ${log.location || '-'} · ${log.vehicle_model || '-'}`;
     const backdrop = document.createElement('div');
     backdrop.id = 'calcProcessBackdrop';
     backdrop.className = 'fixed inset-0 z-[80] bg-black/70 backdrop-blur-sm';
@@ -444,17 +456,20 @@ function showProcessDrawer(log) {
                 计算过程 · ${esc(scope)}
                 <span class="ml-2 normal-case ${status.className}">${status.label}</span>
             </h5>
-            <button type="button" id="closeCalcProcessDrawer"
+            <div class="flex items-center gap-0.5 shrink-0">
+                ${window.copyProcessReportButtonHtml()}
+                <button type="button" id="closeCalcProcessDrawer"
                     class="flex items-center justify-center w-8 h-8 rounded-md text-[#707070] hover:text-white hover:bg-[#d32f2f] transition-all">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
-            </button>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
         </div>
         <div class="px-5 py-3 border-b border-[#222] text-[10px] text-[#777] space-y-1 shrink-0">
             <div>批次<span class="font-mono text-[#999]">${esc(log.calc_batch_id || '-')}</span></div>
             <div>时间：${esc(formatDateTime(log.started_at))} → ${esc(formatDateTime(log.finished_at))}</div>
-            <div>汇总：零件 ${fmtInt(log.total_parts)} · 成功 ${fmtInt(log.success_count)} · 失败 ${fmtInt(log.failed_count)} · 零价 ${fmtInt(log.zero_fee_count)} · 跳过 ${fmtInt(log.skipped_approved_count)}</div>
+            <div>${esc(formatCalcSummary(log))}</div>
         </div>
         <div class="flex-1 overflow-y-auto overscroll-contain p-5">
             <pre class="text-[11px] leading-5 font-mono text-[#9e9e9e] whitespace-pre-wrap break-words bg-[#111111] border border-[#262626] p-4">${esc(log.detail_text || '（无过程文本）')}</pre>
@@ -463,6 +478,7 @@ function showProcessDrawer(log) {
 
     document.body.appendChild(backdrop);
     document.body.appendChild(drawer);
+    window.bindProcessReportCopy(drawer);
     backdrop.addEventListener('click', closeProcessDrawer);
     document.getElementById('closeCalcProcessDrawer')?.addEventListener('click', closeProcessDrawer);
 }
@@ -472,13 +488,12 @@ function closeProcessDrawer() {
     document.getElementById('calcProcessDrawer')?.remove();
 }
 
-async function isScopeProcessing(year, location, supplier) {
+async function isScopeProcessing(year, location) {
     try {
         const response = await HttpClient.get(CALC_LOGS_API, {
             params: {
                 year,
                 location,
-                stamping_supplier: supplier,
                 page: 1,
                 size: 20,
             },
@@ -500,11 +515,10 @@ async function startCalculation() {
 
     const year = parseInt(document.getElementById('calcYear')?.value, 10);
     const location = document.getElementById('calcLocation')?.value || '';
-    const supplier = document.getElementById('calcSupplier')?.value || '';
     const vehicleModel = document.getElementById('calcVehicleModel')?.value || '';
     const version = document.getElementById('calcVersion')?.value || '';
 
-    if (Number.isNaN(year) || !location || !supplier) {
+    if (Number.isNaN(year) || !location || !vehicleModel) {
         showToast(SCOPE_REQUIRED_MESSAGE, 'warning');
         return;
     }
@@ -516,7 +530,7 @@ async function startCalculation() {
         return;
     }
 
-    if (await isScopeProcessing(year, location, supplier)) {
+    if (await isScopeProcessing(year, location)) {
         showToast(DUPLICATE_SCOPE_CALC_MESSAGE, 'warning');
         loadCalcHistory(1);
         return;
@@ -525,9 +539,8 @@ async function startCalculation() {
     const payload = {
         year,
         location,
-        stamping_supplier: supplier,
+        vehicle_model: vehicleModel,
     };
-    if (vehicleModel) payload.vehicle_model = vehicleModel;
     if (version) payload.version = version;
 
     setCalculating(true);
@@ -645,18 +658,19 @@ function startPolling(taskId) {
                 const result = data?.result || {};
                 calcState.lastResult = result;
                 const bizStatus = result.status || 'success';
-                const zero = result.zero_fee_count || 0;
-                if (zero > 0) {
-                    showToast(
-                        `计算${STATUS_META[bizStatus]?.label || '完成'}：成功${fmtInt(result.success_count)}，零价${fmtInt(zero)}，请到列表录入其它费用`,
-                        'warning',
-                    );
-                } else {
-                    showToast(
-                        `计算${STATUS_META[bizStatus]?.label || '完成'}：成功${fmtInt(result.success_count)}，失败${fmtInt(result.failed_count)}`,
-                        bizStatus === 'failed' ? 'error' : bizStatus === 'partial' ? 'warning' : 'success',
-                    );
-                }
+                const failed = Number(result.failed_count) || 0;
+                const scrapZero = Number(result.scrap_zero_count) || 0;
+                const otherZero = Math.max(0, (Number(result.zero_fee_count) || 0) - scrapZero);
+                const toastMsg =
+                    msg ||
+                    `计算${STATUS_META[bizStatus]?.label || '完成'}：成功 ${fmtInt(result.success_count)} 个`;
+                const toastType =
+                    bizStatus === 'failed' || (failed && !result.success_count)
+                        ? 'error'
+                        : failed || otherZero > 0 || bizStatus === 'partial'
+                          ? 'warning'
+                          : 'success';
+                showToast(toastMsg, toastType);
                 calcState.activeTaskId = null;
                 setCalculating(false);
                 loadCalcReady();
@@ -705,7 +719,6 @@ function setCalculating(isCalculating) {
     const filterIds = [
         'calcYear',
         'calcLocation',
-        'calcSupplier',
         'calcVehicleModel',
         'calcVersion',
         'calcResetBtn',
@@ -728,7 +741,7 @@ function setCalculating(isCalculating) {
         validateDataPreparation(
             document.getElementById('calcLocation')?.value || '',
             parseInt(document.getElementById('calcYear')?.value, 10) || null,
-            document.getElementById('calcSupplier')?.value || '',
+            document.getElementById('calcVehicleModel')?.value || '',
             calcState.ready.part_count || 0,
             calcState.ready.tonnage_rate_count || 0,
         );

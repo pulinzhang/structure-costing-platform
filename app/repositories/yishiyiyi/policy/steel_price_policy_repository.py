@@ -9,7 +9,8 @@ from typing import TypeVar
 from sqlalchemy import distinct, func
 from sqlalchemy.orm import InstrumentedAttribute, Query, Session, joinedload
 
-from app.models.yishiyiyi import SteelPricePolicy, SteelPriceLadderItem
+from app.common.steel_grade_category import CANONICAL_CATEGORY_NAMES
+from app.models.yishiyiyi import SteelPriceLadderItem, SteelPricePolicy
 from app.repositories.persist import apply_dto_fields, model_from_payload
 from app.repositories.yishiyiyi.policy.dto import FilterOptions
 from app.schemas.dto.steel_price_policy_dto import (
@@ -32,20 +33,20 @@ class PolicyFilter:
         year: int | None = None,
         month: int | None = None,
         steel_mill: str | None = None,
-        category_name: str | None = None,
+        category_names_in: frozenset[str] | None = None,
+        category_filter_no_match: bool = False,
         policy_type: str | None = None,
         grade_type: str | None = None,
-        grade_value: str | None = None,
         skip: int = 0,
         limit: int = 20,
     ):
         self.year = year
         self.month = month
         self.steel_mill = steel_mill
-        self.category_name = category_name
+        self.category_names_in = category_names_in
+        self.category_filter_no_match = category_filter_no_match
         self.policy_type = policy_type
         self.grade_type = grade_type
-        self.grade_value = grade_value
         self.skip = skip
         self.limit = limit
 
@@ -122,14 +123,15 @@ class SteelPricePolicyRepository:
             query = query.filter(SteelPricePolicy.month == policy_filter.month)
         if policy_filter.steel_mill:
             query = query.filter(SteelPricePolicy.steel_mill == policy_filter.steel_mill)
-        if policy_filter.category_name:
-            query = query.filter(SteelPricePolicy.category_name == policy_filter.category_name)
+        query = self._apply_category_scope(
+            query,
+            category_names_in=policy_filter.category_names_in,
+            category_filter_no_match=policy_filter.category_filter_no_match,
+        )
         if policy_filter.policy_type:
             query = query.filter(SteelPricePolicy.policy_type == policy_filter.policy_type)
         if policy_filter.grade_type:
             query = query.filter(SteelPricePolicy.grade_type == policy_filter.grade_type)
-        if policy_filter.grade_value:
-            query = query.filter(SteelPricePolicy.grade_value.contains(policy_filter.grade_value))
 
         total = query.count()
         records = (
@@ -183,7 +185,7 @@ class SteelPricePolicyRepository:
         )
         months = self._distinct_values(db, SteelPricePolicy.month)
         steel_mills = self._distinct_values(db, SteelPricePolicy.steel_mill)
-        category_names = self._distinct_values(db, SteelPricePolicy.category_name)
+        category_names = list(CANONICAL_CATEGORY_NAMES)
         policy_types = self._distinct_values(db, SteelPricePolicy.policy_type)
         grade_types = [
             value
@@ -441,6 +443,19 @@ class SteelPricePolicyRepository:
 
     # ---- 导出查询（原 get_export_data 相关方法已移至 ExportService）----
 
+    def _apply_category_scope(
+        self,
+        query: Query[_T],
+        *,
+        category_names_in: frozenset[str] | None = None,
+        category_filter_no_match: bool = False,
+    ) -> Query[_T]:
+        if category_filter_no_match:
+            return query.filter(SteelPricePolicy.id < 0)
+        if category_names_in is not None:
+            return query.filter(SteelPricePolicy.category_name.in_(category_names_in))
+        return query
+
     def _apply_export_filters(
         self,
         query: Query[_T],
@@ -448,8 +463,8 @@ class SteelPricePolicyRepository:
         year: int | None = None,
         month: int | None = None,
         steel_mill: str | None = None,
-        category_name: str | None = None,
-        grade_value: str | None = None,
+        category_names_in: frozenset[str] | None = None,
+        category_filter_no_match: bool = False,
         policy_type: str | None = None,
     ) -> Query[_T]:
         """导出查询共用的政策筛选条件。"""
@@ -459,10 +474,11 @@ class SteelPricePolicyRepository:
             query = query.filter(SteelPricePolicy.month == month)
         if steel_mill:
             query = query.filter(SteelPricePolicy.steel_mill == steel_mill)
-        if category_name:
-            query = query.filter(SteelPricePolicy.category_name == category_name)
-        if grade_value:
-            query = query.filter(SteelPricePolicy.grade_value.contains(grade_value))
+        query = self._apply_category_scope(
+            query,
+            category_names_in=category_names_in,
+            category_filter_no_match=category_filter_no_match,
+        )
         if policy_type:
             query = query.filter(SteelPricePolicy.policy_type == policy_type)
         return query
@@ -493,8 +509,8 @@ class SteelPricePolicyRepository:
         year: int | None = None,
         month: int | None = None,
         steel_mill: str | None = None,
-        category_name: str | None = None,
-        grade_value: str | None = None,
+        category_names_in: frozenset[str] | None = None,
+        category_filter_no_match: bool = False,
         skip: int = 0,
         limit: int | None = None,
     ) -> list[SteelPricePolicy]:
@@ -509,8 +525,8 @@ class SteelPricePolicyRepository:
             year=year,
             month=month,
             steel_mill=steel_mill,
-            category_name=category_name,
-            grade_value=grade_value,
+            category_names_in=category_names_in,
+            category_filter_no_match=category_filter_no_match,
         )
 
         query = query.order_by(
@@ -534,8 +550,8 @@ class SteelPricePolicyRepository:
         year: int | None = None,
         month: int | None = None,
         steel_mill: str | None = None,
-        category_name: str | None = None,
-        grade_value: str | None = None,
+        category_names_in: frozenset[str] | None = None,
+        category_filter_no_match: bool = False,
         skip: int = 0,
         limit: int | None = None,
     ) -> list[tuple[SteelPricePolicy, SteelPriceLadderItem | None]]:
@@ -558,8 +574,8 @@ class SteelPricePolicyRepository:
             year=year,
             month=month,
             steel_mill=steel_mill,
-            category_name=category_name,
-            grade_value=grade_value,
+            category_names_in=category_names_in,
+            category_filter_no_match=category_filter_no_match,
         )
         query = query.order_by(
             SteelPricePolicy.year.asc(),
@@ -607,8 +623,8 @@ class SteelPricePolicyRepository:
         year: int | None = None,
         month: int | None = None,
         steel_mill: str | None = None,
-        category_name: str | None = None,
-        grade_value: str | None = None,
+        category_names_in: frozenset[str] | None = None,
+        category_filter_no_match: bool = False,
     ) -> int:
         """统计主表记录数（供 ExportService 调用）。"""
         query = self._apply_export_filters(
@@ -616,8 +632,8 @@ class SteelPricePolicyRepository:
             year=year,
             month=month,
             steel_mill=steel_mill,
-            category_name=category_name,
-            grade_value=grade_value,
+            category_names_in=category_names_in,
+            category_filter_no_match=category_filter_no_match,
         )
         return query.scalar() or 0
 
@@ -628,8 +644,8 @@ class SteelPricePolicyRepository:
         year: int | None = None,
         month: int | None = None,
         steel_mill: str | None = None,
-        category_name: str | None = None,
-        grade_value: str | None = None,
+        category_names_in: frozenset[str] | None = None,
+        category_filter_no_match: bool = False,
     ) -> int:
         """
         统计扁平化导出行数（与 list_export_pairs 同一套 LEFT JOIN）。
@@ -648,8 +664,8 @@ class SteelPricePolicyRepository:
             year=year,
             month=month,
             steel_mill=steel_mill,
-            category_name=category_name,
-            grade_value=grade_value,
+            category_names_in=category_names_in,
+            category_filter_no_match=category_filter_no_match,
         )
         return query.scalar() or 0
 
@@ -660,8 +676,8 @@ class SteelPricePolicyRepository:
         year: int | None = None,
         month: int | None = None,
         steel_mill: str | None = None,
-        category_name: str | None = None,
-        grade_value: str | None = None,
+        category_names_in: frozenset[str] | None = None,
+        category_filter_no_match: bool = False,
         policy_type: str | None = None,
     ) -> int:
         """
@@ -677,8 +693,8 @@ class SteelPricePolicyRepository:
             year=year,
             month=month,
             steel_mill=steel_mill,
-            category_name=category_name,
-            grade_value=grade_value,
+            category_names_in=category_names_in,
+            category_filter_no_match=category_filter_no_match,
             policy_type=policy_type,
         )
         return query.scalar() or 0

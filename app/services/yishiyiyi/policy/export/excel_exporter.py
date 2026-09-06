@@ -3,16 +3,16 @@
 职责：纯 Excel 生成逻辑，不涉及数据库操作
 """
 
-from io import BytesIO
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 
+from app.common.export_watermark import workbook_to_xlsx_bytes
 from app.common.money import Q2, format_money
 from app.repositories.yishiyiyi.policy.dto import ExportRow
-
+from app.schemas.vo.user_vo import UserVO
 
 # =============================================================================
 # 样式常量
@@ -183,6 +183,8 @@ class SteelPricePolicyExporter:
     def generate(
         self,
         records: list[ExportRow],
+        *,
+        current_user: UserVO,
         year: int | None = None,
         month: int | None = None,
         steel_mill: str | None = None,
@@ -201,9 +203,8 @@ class SteelPricePolicyExporter:
         ws.freeze_panes = "A2"
 
         filename = self._build_filename(year, month, steel_mill)
-        output = BytesIO()
-        wb.save(output)
-        return output.getvalue(), filename
+        content = workbook_to_xlsx_bytes(wb, current_user)
+        return content, filename
 
     def _write_headers(self, ws: Any) -> None:
         """写入表头行"""

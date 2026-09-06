@@ -2,10 +2,11 @@
 BOM 焊接工艺拆解路由
 """
 
+from urllib.parse import quote
+
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
-from urllib.parse import quote
 
 from app.common.permissions.codes import Perm
 from app.database import get_db
@@ -99,6 +100,7 @@ def export_l0_excel(
         bom_version=bom_version.strip() if bom_version else None,
         part_number=part_number.strip() if part_number else None,
         process_line_count_eq=process_line_count_eq,
+        current_user=current_user,
     )
     return StreamingResponse(
         iter([content]),

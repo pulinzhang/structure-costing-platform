@@ -5,7 +5,7 @@ from decimal import Decimal
 
 from pydantic import BaseModel, Field, field_serializer, field_validator
 
-from app.common.money import Q3, Q4, Q6, optional_format_money
+from app.common.money import Q2, Q3, Q4, Q6, format_money, optional_format_money
 from app.common.timezone import datetime_to_iso
 
 
@@ -30,6 +30,10 @@ class StampingPartCostVO(BaseModel):
     sheet_width: str | None = None
     parts_per_sheet: int | None = None
     sheet_type: str | None = None
+    is_offal_nested: bool = False
+    offal_source: str | None = None
+    has_swing_shear: bool = False
+    swing_shear_fee_per_ton: Decimal = Decimal("0")
     die_type: str | None = None
     process_method: str | None = None
     automation: str | None = None
@@ -55,6 +59,10 @@ class StampingPartCostVO(BaseModel):
     scrap_ton_price: Decimal | None = None
     process_fee_id: int | None = None
     process_fee_amount: Decimal | None = None
+    die_fee_id: int | None = None
+    die_fee_amount: Decimal | None = None
+    gauge_fee_id: int | None = None
+    gauge_fee_amount: Decimal | None = None
 
     material_amount_sheet: Decimal | None = None
     loss_scrap_deduction: Decimal | None = None
@@ -119,6 +127,10 @@ class StampingPartCostVO(BaseModel):
     def serialize_ton_price(self, value: Decimal | None) -> str | None:
         return optional_format_money(value, Q4, 4)
 
+    @field_serializer("swing_shear_fee_per_ton")
+    def serialize_swing_shear_fee(self, value: Decimal) -> str:
+        return format_money(value, Q2, 2)
+
     @field_serializer("process_fee_amount")
     def serialize_process_fee(self, value: Decimal | None) -> str | None:
         return optional_format_money(value, Q3, 3)
@@ -129,6 +141,8 @@ class StampingPartCostVO(BaseModel):
         "process_scrap_deduction",
         "scrap_amount_sheet",
         "material_net_per_part",
+        "die_fee_amount",
+        "gauge_fee_amount",
         "direct_cost",
         "finished_finance_fee",
         "finished_management_fee",
@@ -226,6 +240,8 @@ class StampingPartCostCalcReadyVO(BaseModel):
     steel_price_count: int = 0
     scrap_price_count: int = 0
     process_fee_count: int = 0
+    die_fee_count: int = 0
+    gauge_fee_count: int = 0
     can_calculate: bool = False
 
 
@@ -235,7 +251,9 @@ class StampingPartCostBatchDeleteResultVO(BaseModel):
     year: int
     month: int
     location: str
-    stamping_supplier: str
+    vehicle_model: str
+    version: str | None = None
+    stamping_supplier: str | None = None
 
 
 class StampingPartCostBatchAuditResultVO(BaseModel):
@@ -244,4 +262,6 @@ class StampingPartCostBatchAuditResultVO(BaseModel):
     year: int
     month: int
     location: str
-    stamping_supplier: str
+    vehicle_model: str
+    version: str | None = None
+    stamping_supplier: str | None = None

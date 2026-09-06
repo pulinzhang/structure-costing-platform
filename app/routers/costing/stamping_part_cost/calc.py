@@ -28,7 +28,6 @@ from app.services.costing.stamping_part_cost.stamping_part_cost_service import (
 )
 from app.utils.response import ApiResponse
 
-
 router = APIRouter(
     prefix="/api/costing/stamping-part-cost",
     tags=["冲压零件价格计算"],
@@ -63,7 +62,6 @@ def get_calc_ready(
     year: int = Query(..., ge=2000, le=2100),
     month: int | None = Query(None, ge=1, le=12),
     location: str | None = Query(None),
-    stamping_supplier: str | None = Query(None),
     vehicle_model: str | None = Query(None),
     version: str | None = Query(None),
     db: Session = Depends(get_db),
@@ -74,7 +72,6 @@ def get_calc_ready(
         year=year,
         month=month,
         location=location or None,
-        stamping_supplier=stamping_supplier or None,
         vehicle_model=vehicle_model or None,
         version=version or None,
     )

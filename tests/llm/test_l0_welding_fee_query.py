@@ -38,6 +38,10 @@ def test_query_parser_l0_welding_fee_subject() -> None:
 def test_l0_welding_fee_qingdao_yoy() -> None:
     db = DatabaseConfig.get_session_factory()()
     try:
+        from sqlalchemy import inspect as sa_inspect
+
+        if "bom_welding_fees" not in set(sa_inspect(db.get_bind()).get_table_names()):
+            pytest.skip("bom_welding_fees 尚未迁移")
         query = QueryParser().parse(
             db,
             user_question="今年与去年，青岛基地，成品焊接费，比较。",

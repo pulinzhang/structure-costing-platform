@@ -5,6 +5,7 @@ from __future__ import annotations
 from unittest.mock import MagicMock
 
 import pytest
+
 from app.exceptions.base import BusinessException
 from app.schemas.dto.llm_analysis_dto import LlmAnalysisReportCreateDTO
 from app.schemas.vo.user_vo import UserVO

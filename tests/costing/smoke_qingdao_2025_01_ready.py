@@ -19,7 +19,7 @@ def main() -> int:
         print(json.dumps(payload, ensure_ascii=False, indent=2))
         print("---")
         print(f"can_start={ready.can_start} hard_stop={ready.gates.hard_stop}")
-        print(f"factories={len(ready.plan.part_cost_scopes)} l0={len(ready.plan.l0_scopes)}")
+        print(f"vehicles={len(ready.plan.part_cost_scopes)} l0={len(ready.plan.l0_scopes)}")
         failed = [g for g in ready.gates.upload_or_config if not g.ok]
         if failed:
             print("HARD STOP items:")

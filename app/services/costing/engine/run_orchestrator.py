@@ -1,48 +1,62 @@
-"""核价引擎 — DAG 串行编排（同进程调用子计算）。"""
+"""
+指挥家：只挥棒，不拉琴。违反指挥家宪法（orchestrator-constitution）即不合格。
+
+核价引擎 — DAG 串行编排（同进程调用子计算）。
+"""
 
 from __future__ import annotations
 
 import logging
-from collections.abc import Callable
-from typing import Any
 
 from sqlalchemy.orm import Session
 
 from app.common.timezone import now
+from app.common.types.repository_types import (
+    EngineCountsJson,
+    EngineStepSummaryJson,
+    StepMetricsJson,
+    SummaryJson,
+)
 from app.models.costing.costing_engine_run import CostingEngineRun
+from app.models.costing.costing_engine_run_step import CostingEngineRunStep
 from app.repositories.costing.engine.costing_engine_run_repository import (
     CostingEngineRunRepository,
 )
-from app.schemas.dto.bom_l0_welding_fee_dto import BomL0WeldingFeeCalcDTO
+from app.schemas.dto.assembly_cost_dto import AssemblyCostCalcDTO
+from app.schemas.dto.bom_welding_fee_dto import BomWeldingFeeCalcDTO
 from app.schemas.dto.bom_welding_process_breakdown_dto import (
     BomWeldingProcessBreakdownGenerateDTO,
 )
-from app.schemas.dto.l0_assembly_cost_dto import L0AssemblyCostCalcDTO
 from app.schemas.dto.stamping_part_cost_dto import StampingPartCostCalcDTO
 from app.schemas.dto.stamping_process_fee_dto import StampingProcessFeeCalcDTO
 from app.schemas.vo.costing_engine_vo import CostingEngineAnnualItemVO
 from app.schemas.vo.user_vo import UserVO
-from app.services.bom.l0_welding_fee.calc.orchestrator import BomL0WeldingFeeCalcOrchestrator
+from app.services.bom.welding_fee.calc.orchestrator import BomWeldingFeeCalcOrchestrator
 from app.services.bom.welding_process_breakdown.generate_service import (
     BomWeldingProcessBreakdownGenerateService,
 )
-from app.services.costing.engine.progress import clamp_progress, map_progress
-from app.services.costing.engine.scope_discovery import DiscoveryResult, L0Scope
-from app.services.costing.l0_assembly_cost.calc.orchestrator import (
-    L0AssemblyCostCalcOrchestrator,
+from app.services.costing.assembly_cost.calc.orchestrator import (
+    AssemblyCostCalcOrchestrator,
 )
-from app.services.costing.steel_price.calc.models import SteelPriceCalcRequest
-from app.services.costing.steel_price.calc.orchestrator import SteelPriceCalcOrchestrator
+from app.services.costing.engine.phases import (
+    PhaseCarry,
+    execute_annual,
+    execute_assembly,
+    execute_part_cost,
+    execute_steel,
+)
+from app.services.costing.engine.progress import ProgressFn, ProgressNotifier
+from app.services.costing.engine.scope_discovery import DiscoveryResult, L0Scope
 from app.services.costing.stamping_part_cost.calc.orchestrator import (
     StampingPartCostCalcOrchestrator,
 )
+from app.services.costing.steel_price.calc.models import SteelPriceCalcRequest
+from app.services.costing.steel_price.calc.orchestrator import SteelPriceCalcOrchestrator
 from app.services.stamping.process_fee.calc.orchestrator import (
     StampingProcessFeeCalcOrchestrator,
 )
 
 logger = logging.getLogger("service.costing.engine.orchestrator")
-
-ProgressFn = Callable[[int, str], None]
 
 
 class RunDeletedError(Exception):
@@ -56,10 +70,10 @@ class RunOrchestrator:
         self.run_repo = CostingEngineRunRepository()
         self.process_fee_orch = StampingProcessFeeCalcOrchestrator()
         self.breakdown_svc = BomWeldingProcessBreakdownGenerateService()
-        self.l0_welding_orch = BomL0WeldingFeeCalcOrchestrator()
+        self.l0_welding_orch = BomWeldingFeeCalcOrchestrator()
         self.steel_orch = SteelPriceCalcOrchestrator()
         self.part_cost_orch = StampingPartCostCalcOrchestrator()
-        self.l0_orch = L0AssemblyCostCalcOrchestrator()
+        self.assembly_orch = AssemblyCostCalcOrchestrator()
 
     def execute(
         self,
@@ -70,198 +84,58 @@ class RunOrchestrator:
         annual_items: list[CostingEngineAnnualItemVO],
         current_user: UserVO,
         progress_callback: ProgressFn | None = None,
-    ) -> dict[str, Any]:
-        def report(progress: int, msg: str) -> None:
-            if progress_callback:
-                progress_callback(clamp_progress(progress), msg)
-
+    ) -> SummaryJson:
+        progress = ProgressNotifier(progress_callback)
         self._ensure_run(db, run_id)
-        report(map_progress("gate_plan", 1, 1), "门禁已通过，开始执行")
+        progress.report_stage("gate_plan", 1, 1, "门禁已通过，开始执行")
 
-        failed_suppliers: set[str] = set()
-        failed_l0: set[str] = set()
-        step_summaries: list[dict[str, Any]] = []
-
-        # ---- Phase 3: annual ----
-        annual_to_run = [i for i in annual_items if i.will_auto_calc]
-        annual_total = max(len(annual_to_run), 1)
-        annual_done = 0
-
-        for item in annual_items:
-            if not item.will_auto_calc:
-                step = self._add_step(
-                    db,
-                    run_id,
-                    stage=item.code,
-                    scope_key=item.scope_key,
-                    status="skipped",
-                    message="已有结果，跳过补算",
-                )
-                step_summaries.append(
-                    self._step_summary(step.stage, step.scope_key, "skipped", step.message)
-                )
-                continue
-
-            # 拆解失败则跳过同 scope 焊接费补算
-            if item.code == "annual_l0_welding_fee" and item.scope_key in failed_l0:
-                step = self._finish_step(
-                    db,
-                    run_id=run_id,
-                    stage=item.code,
-                    scope_key=item.scope_key,
-                    status="skipped",
-                    message="焊接工艺拆解补算失败，跳过 L0 焊接费",
-                    metrics=None,
-                )
-                step_summaries.append(
-                    self._step_summary(item.code, item.scope_key, "skipped", step.message)
-                )
-                annual_done += 1
-                continue
-
-            report(
-                map_progress("annual", annual_done, annual_total),
-                f"年度补算 · {item.code} · {item.scope_key}",
-            )
-            ok, message, metrics = self._run_annual_item(
-                db, discovery=discovery, item=item, current_user=current_user
-            )
-            status = "succeeded" if ok else "failed"
-            if not ok and item.code == "annual_process_fee":
-                failed_suppliers.add(item.scope_key)
-            if not ok and item.code == "annual_welding_breakdown":
-                failed_l0.add(item.scope_key)
-            if not ok and item.code == "annual_l0_welding_fee":
-                failed_l0.add(item.scope_key)
-            step = self._finish_step(
-                db,
-                run_id=run_id,
-                stage=item.code,
-                scope_key=item.scope_key,
-                status=status,
-                message=message,
-                metrics=metrics,
-            )
-            step_summaries.append(self._step_summary(step.stage, step.scope_key, status, message))
-            annual_done += 1
-            report(
-                map_progress("annual", annual_done, annual_total),
-                f"年度补算 {annual_done}/{len(annual_to_run)}",
-            )
-        # ---- Phase 4.1 steel ----
-        report(map_progress("steel", 0, 1), "钢材联动价计算…")
-        steel_ok, steel_msg, steel_metrics = self._run_steel(
-            db, discovery=discovery, current_user=current_user
-        )
-        steel_status = "succeeded" if steel_ok else "failed"
-        step = self._finish_step(
+        carry = PhaseCarry()
+        execute_annual(
+            self,
             db,
             run_id=run_id,
-            stage="steel",
-            scope_key=discovery.location,
-            status=steel_status,
-            message=steel_msg,
-            metrics=steel_metrics,
+            discovery=discovery,
+            annual_items=annual_items,
+            current_user=current_user,
+            progress=progress,
+            carry=carry,
         )
-        step_summaries.append(
-            self._step_summary("steel", discovery.location, steel_status, steel_msg)
+        steel_ok = execute_steel(
+            self,
+            db,
+            run_id=run_id,
+            discovery=discovery,
+            current_user=current_user,
+            progress=progress,
+            carry=carry,
         )
-        report(map_progress("steel", 1, 1), steel_msg or "钢材联动完成")
-
         if not steel_ok:
-            summary = self._build_summary(discovery, step_summaries, run_status="failed")
+            summary = self._build_summary(discovery, carry.step_summaries, run_status="failed")
             self._finalize_run(db, run_id, status="failed", summary=summary)
             return summary
 
-        # ---- Phase 4.2 part cost ----
-        suppliers = discovery.stamping_suppliers
-        part_total = max(len(suppliers), 1)
-        for idx, supplier in enumerate(suppliers):
-            report(
-                map_progress("part_cost", idx, part_total),
-                f"零件价 {idx + 1}/{len(suppliers)} · {supplier}",
-            )
-            if supplier in failed_suppliers:
-                step = self._finish_step(
-                    db,
-                    run_id=run_id,
-                    stage="part_cost",
-                    scope_key=supplier,
-                    status="skipped",
-                    message="加工费补算失败，跳过零件价",
-                    metrics=None,
-                )
-                step_summaries.append(
-                    self._step_summary("part_cost", supplier, "skipped", step.message)
-                )
-                continue
+        execute_part_cost(
+            self,
+            db,
+            run_id=run_id,
+            discovery=discovery,
+            current_user=current_user,
+            progress=progress,
+            carry=carry,
+        )
+        execute_assembly(
+            self,
+            db,
+            run_id=run_id,
+            discovery=discovery,
+            current_user=current_user,
+            progress=progress,
+            carry=carry,
+        )
 
-            ok, message, metrics = self._run_part_cost(
-                db,
-                discovery=discovery,
-                stamping_supplier=supplier,
-                current_user=current_user,
-            )
-            status = "succeeded" if ok else "failed"
-            step = self._finish_step(
-                db,
-                run_id=run_id,
-                stage="part_cost",
-                scope_key=supplier,
-                status=status,
-                message=message,
-                metrics=metrics,
-            )
-            step_summaries.append(self._step_summary("part_cost", supplier, status, message))
-            report(
-                map_progress("part_cost", idx + 1, part_total),
-                f"零件价 {idx + 1}/{len(suppliers)} · {supplier}",
-            )
-
-        # ---- Phase 4.3 L0 ----
-        scopes = discovery.l0_scopes
-        l0_total = max(len(scopes), 1)
-        for idx, scope in enumerate(scopes):
-            scope_key = f"{scope.vehicle_model}|{scope.bom_version}"
-            report(
-                map_progress("l0", idx, l0_total),
-                f"L0 核价 {idx + 1}/{len(scopes)} · {scope.vehicle_model} / {scope.bom_version}",
-            )
-            if scope_key in failed_l0:
-                step = self._finish_step(
-                    db,
-                    run_id=run_id,
-                    stage="l0",
-                    scope_key=scope_key,
-                    status="skipped",
-                    message="年度焊接拆解/焊接费补算失败，跳过成品核价",
-                    metrics=None,
-                )
-                step_summaries.append(self._step_summary("l0", scope_key, "skipped", step.message))
-                continue
-
-            ok, message, metrics = self._run_l0(
-                db, discovery=discovery, scope=scope, current_user=current_user
-            )
-            status = "succeeded" if ok else "failed"
-            step = self._finish_step(
-                db,
-                run_id=run_id,
-                stage="l0",
-                scope_key=scope_key,
-                status=status,
-                message=message,
-                metrics=metrics,
-            )
-            step_summaries.append(self._step_summary("l0", scope_key, status, message))
-            report(
-                map_progress("l0", idx + 1, l0_total),
-                f"L0 核价 {idx + 1}/{len(scopes)} · {scope.vehicle_model} / {scope.bom_version}",
-            )
-
-        run_status = self._resolve_run_status(step_summaries)
-        summary = self._build_summary(discovery, step_summaries, run_status=run_status)
-        report(map_progress("summary", 1, 1), f"完成 · {run_status}")
+        run_status = self._resolve_run_status(carry.step_summaries)
+        summary = self._build_summary(discovery, carry.step_summaries, run_status=run_status)
+        progress.report_stage("summary", 1, 1, f"完成 · {run_status}")
         self._finalize_run(db, run_id, status=run_status, summary=summary)
         return summary
 
@@ -274,13 +148,13 @@ class RunOrchestrator:
         discovery: DiscoveryResult,
         item: CostingEngineAnnualItemVO,
         current_user: UserVO,
-    ) -> tuple[bool, str, dict[str, Any] | None]:
+    ) -> tuple[bool, str, StepMetricsJson | None]:
         try:
             if item.code == "annual_process_fee":
                 process_fee_dto = StampingProcessFeeCalcDTO(
                     year=discovery.year,
                     location=discovery.location,
-                    stamping_supplier=item.scope_key,
+                    vehicle_model=item.scope_key,
                 )
                 process_fee_result = self.process_fee_orch.calculate(
                     db, process_fee_dto, current_user=current_user
@@ -299,33 +173,29 @@ class RunOrchestrator:
                     vehicle_model=vehicle_model,
                     bom_version=bom_version,
                 )
-                result_vo, error = self.breakdown_svc.generate(
-                    db, breakdown_dto, current_user=current_user
-                )
-                if error:
-                    return False, error, None
+                self.breakdown_svc.generate(db, breakdown_dto, current_user=current_user)
                 return (
                     True,
                     "焊接工艺拆解补算完成",
-                    {
-                        "result": bool(result_vo),
-                    },
+                    {"result": True},
                 )
 
-            if item.code == "annual_l0_welding_fee":
+            if item.code == "annual_welding_fee":
                 vehicle_model, bom_version = item.scope_key.split("|", 1)
                 scope = self._find_l0(discovery, vehicle_model, bom_version)
-                l0_dto = BomL0WeldingFeeCalcDTO(
+                weld_dto = BomWeldingFeeCalcDTO(
                     year=discovery.year,
                     location=scope.location if scope else discovery.location,
                     vehicle_model=vehicle_model,
                     bom_version=bom_version,
                 )
-                l0_result = self.l0_welding_orch.calculate(db, l0_dto, current_user=current_user)
+                weld_result = self.l0_welding_orch.calculate(
+                    db, weld_dto, current_user=current_user
+                )
                 return (
                     True,
-                    f"L0 焊接费补算完成 status={l0_result.status}",
-                    {"status": l0_result.status},
+                    f"焊接费补算完成 status={weld_result.status}",
+                    {"status": weld_result.status},
                 )
 
             return False, f"未知年度补算 code={item.code}", None
@@ -340,7 +210,7 @@ class RunOrchestrator:
         *,
         discovery: DiscoveryResult,
         current_user: UserVO,
-    ) -> tuple[bool, str, dict[str, Any] | None]:
+    ) -> tuple[bool, str, StepMetricsJson | None]:
         try:
             request = SteelPriceCalcRequest(
                 year=discovery.year,
@@ -371,47 +241,47 @@ class RunOrchestrator:
         db: Session,
         *,
         discovery: DiscoveryResult,
-        stamping_supplier: str,
+        vehicle_model: str,
         current_user: UserVO,
-    ) -> tuple[bool, str, dict[str, Any] | None]:
+    ) -> tuple[bool, str, StepMetricsJson | None]:
         try:
             dto = StampingPartCostCalcDTO(
                 year=discovery.year,
                 month=discovery.month,
                 location=discovery.location,
-                stamping_supplier=stamping_supplier,
+                vehicle_model=vehicle_model,
             )
             result = self.part_cost_orch.calculate(db, dto, current_user=current_user)
             status = getattr(result, "status", "success")
             ok = status != "failed"
-            return ok, f"零件价 status={status}", {"status": status}
+            return ok, f"零件价 {vehicle_model} status={status}", {"status": status}
         except Exception as exc:
-            logger.exception("零件价失败: %s", stamping_supplier)
+            logger.exception("零件价失败: %s", vehicle_model)
             db.rollback()
             return False, str(exc), None
 
-    def _run_l0(
+    def _run_assembly(
         self,
         db: Session,
         *,
         discovery: DiscoveryResult,
         scope: L0Scope,
         current_user: UserVO,
-    ) -> tuple[bool, str, dict[str, Any] | None]:
+    ) -> tuple[bool, str, StepMetricsJson | None]:
         try:
-            dto = L0AssemblyCostCalcDTO(
+            dto = AssemblyCostCalcDTO(
                 year=discovery.year,
                 month=discovery.month,
                 location=scope.location,
                 vehicle_model=scope.vehicle_model,
                 bom_version=scope.bom_version,
             )
-            result = self.l0_orch.calculate(db, dto, current_user=current_user)
+            result = self.assembly_orch.calculate(db, dto, current_user=current_user)
             status = getattr(result, "status", "success")
             ok = status != "failed"
-            return ok, f"L0 核价 status={status}", {"status": status}
+            return ok, f"总成核价 status={status}", {"status": status}
         except Exception as exc:
-            logger.exception("L0 核价失败: %s/%s", scope.vehicle_model, scope.bom_version)
+            logger.exception("总成核价失败: %s/%s", scope.vehicle_model, scope.bom_version)
             db.rollback()
             return False, str(exc), None
 
@@ -432,7 +302,7 @@ class RunOrchestrator:
         scope_key: str,
         status: str,
         message: str | None,
-    ) -> Any:
+    ) -> CostingEngineRunStep:
         self._ensure_run(db, run_id)
         step = self.run_repo.create_step(
             db,
@@ -456,8 +326,8 @@ class RunOrchestrator:
         scope_key: str,
         status: str,
         message: str | None,
-        metrics: dict[str, Any] | None,
-    ) -> Any:
+        metrics: StepMetricsJson | None,
+    ) -> CostingEngineRunStep:
         self._ensure_run(db, run_id)
         step = self.run_repo.create_step(
             db,
@@ -486,7 +356,7 @@ class RunOrchestrator:
         run_id: int,
         *,
         status: str,
-        summary: dict[str, Any],
+        summary: SummaryJson,
     ) -> None:
         try:
             run = self._ensure_run(db, run_id)
@@ -513,7 +383,7 @@ class RunOrchestrator:
     @staticmethod
     def _step_summary(
         stage: str, scope_key: str, status: str, message: str | None
-    ) -> dict[str, Any]:
+    ) -> EngineStepSummaryJson:
         return {
             "stage": stage,
             "scope_key": scope_key,
@@ -522,8 +392,8 @@ class RunOrchestrator:
         }
 
     @staticmethod
-    def _resolve_run_status(steps: list[dict[str, Any]]) -> str:
-        statuses = [s["status"] for s in steps]
+    def _resolve_run_status(steps: list[EngineStepSummaryJson]) -> str:
+        statuses = [s.get("status") or "" for s in steps]
         has_success = any(s in ("succeeded", "skipped") for s in statuses)
         has_failed = any(s == "failed" for s in statuses)
         # skipped 因已有结果算成功路径；因上游失败的 skipped 仍算未全绿
@@ -536,15 +406,26 @@ class RunOrchestrator:
     @staticmethod
     def _build_summary(
         discovery: DiscoveryResult,
-        steps: list[dict[str, Any]],
+        steps: list[EngineStepSummaryJson],
         *,
         run_status: str,
-    ) -> dict[str, Any]:
-        counts = {"succeeded": 0, "failed": 0, "skipped": 0}
+    ) -> SummaryJson:
+        succeeded = 0
+        failed = 0
+        skipped = 0
         for step in steps:
-            key = step["status"]
-            if key in counts:
-                counts[key] += 1
+            key = step.get("status")
+            if key == "succeeded":
+                succeeded += 1
+            elif key == "failed":
+                failed += 1
+            elif key == "skipped":
+                skipped += 1
+        counts: EngineCountsJson = {
+            "succeeded": succeeded,
+            "failed": failed,
+            "skipped": skipped,
+        }
         return {
             "status": run_status,
             "location": discovery.location,

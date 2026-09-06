@@ -7,13 +7,13 @@
 from app.exceptions.base import (
     BusinessException,
     NotFoundException,
-    ValidationException,
     PermissionException,
+    ValidationException,
 )
 
 __all__ = [
     "BusinessException",
     "NotFoundException",
-    "ValidationException",
     "PermissionException",
+    "ValidationException",
 ]

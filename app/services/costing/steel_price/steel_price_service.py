@@ -40,7 +40,6 @@ from app.schemas.vo.steel_price_vo import (
 from app.schemas.vo.user_vo import UserVO
 from app.services.costing.steel_price.spec_format import build_spec
 
-
 logger = logging.getLogger("service.steel_price")
 
 FORMULA_VERSION = "v1"
@@ -355,7 +354,9 @@ class SteelPriceService:
         audited_by = display_name(current_user)
         if not audited_by:
             raise BusinessException("无法识别当前登录用户")
-        audit_remark = data.audit_remark.strip() if data.audit_remark else None
+        audit_remark = data.audit_remark.strip()
+        if not audit_remark:
+            raise BusinessException("审核意见必填")
 
         try:
             skipped_count = self.repository.count_by_conditions_and_statuses(

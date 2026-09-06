@@ -11,8 +11,9 @@ from sqlalchemy.orm import Session
 from app.models.yishiyiyi import SteelPriceLadderItem, SteelPricePolicy
 from app.repositories.yishiyiyi.policy import SteelPricePolicyRepository
 from app.repositories.yishiyiyi.policy.dto import ExportRow
+from app.schemas.vo.user_vo import UserVO
 from app.services.yishiyiyi.policy.export.excel_exporter import SteelPricePolicyExporter
-
+from app.services.yishiyiyi.policy.filter_resolver import resolve_policy_category_filter
 
 logger = logging.getLogger("service.steel_price_policy.export")
 
@@ -23,6 +24,20 @@ class SteelPricePolicyExportService:
     def __init__(self) -> None:
         self.repository = SteelPricePolicyRepository()
         self._exporter = SteelPricePolicyExporter()
+
+    @staticmethod
+    def _resolved_scope(
+        db: Session,
+        *,
+        category_name: str | None = None,
+        grade_value: str | None = None,
+    ) -> tuple[frozenset[str] | None, bool]:
+        resolved = resolve_policy_category_filter(
+            db,
+            category_name=category_name,
+            grade_value=grade_value,
+        )
+        return resolved.policy_category_names, resolved.no_match
 
     def get_export_data(
         self,
@@ -44,21 +59,26 @@ class SteelPricePolicyExportService:
             year: 筛选 - 年份
             month: 筛选 - 月份
             steel_mill: 筛选 - 钢厂
-            category_name: 筛选 - 钢种大类
-            grade_value: 筛选 - 牌号（模糊）
+            category_name: 筛选 - 档案大类（冷轧/镀锌/酸洗）
+            grade_value: 筛选 - 牌号（先解析档案大类再匹配政策）
             skip: 扁平化导出行偏移（一条阶梯明细一行）
             limit: 每页行数
 
         Returns:
             扁平化的导出行列表
         """
+        category_names_in, category_filter_no_match = self._resolved_scope(
+            db,
+            category_name=category_name,
+            grade_value=grade_value,
+        )
         pairs = self.repository.list_export_pairs(
             db,
             year=year,
             month=month,
             steel_mill=steel_mill,
-            category_name=category_name,
-            grade_value=grade_value,
+            category_names_in=category_names_in,
+            category_filter_no_match=category_filter_no_match,
             skip=skip,
             limit=limit,
         )
@@ -138,19 +158,24 @@ class SteelPricePolicyExportService:
             year: 筛选 - 年份
             month: 筛选 - 月份
             steel_mill: 筛选 - 钢厂
-            category_name: 筛选 - 钢种大类
-            grade_value: 筛选 - 牌号（模糊）
+            category_name: 筛选 - 档案大类（冷轧/镀锌/酸洗）
+            grade_value: 筛选 - 牌号（先解析档案大类再匹配政策）
 
         Returns:
             明细总行数
         """
+        category_names_in, category_filter_no_match = self._resolved_scope(
+            db,
+            category_name=category_name,
+            grade_value=grade_value,
+        )
         return self.repository.count_export_rows(
             db,
             year=year,
             month=month,
             steel_mill=steel_mill,
-            category_name=category_name,
-            grade_value=grade_value,
+            category_names_in=category_names_in,
+            category_filter_no_match=category_filter_no_match,
         )
 
     def export_to_excel(
@@ -162,6 +187,7 @@ class SteelPricePolicyExportService:
         steel_mill: str | None = None,
         category_name: str | None = None,
         grade_value: str | None = None,
+        current_user: UserVO,
     ) -> tuple[bytes, str]:
         """
         生成导出 Excel 文件字节数据。
@@ -171,8 +197,8 @@ class SteelPricePolicyExportService:
             year: 筛选 - 年份
             month: 筛选 - 月份
             steel_mill: 筛选 - 钢厂
-            category_name: 筛选 - 钢种大类
-            grade_value: 筛选 - 牌号（模糊）
+            category_name: 筛选 - 档案大类（冷轧/镀锌/酸洗）
+            grade_value: 筛选 - 牌号（先解析档案大类再匹配政策）
 
         Returns:
             (文件字节数据, 文件名)
@@ -190,4 +216,5 @@ class SteelPricePolicyExportService:
             year=year,
             month=month,
             steel_mill=steel_mill,
+            current_user=current_user,
         )

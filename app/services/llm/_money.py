@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import ROUND_HALF_UP, Decimal
 
 _MONEY_QUANT = Decimal("0.01")
 _RATE_QUANT = Decimal("0.01")

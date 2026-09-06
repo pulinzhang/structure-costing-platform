@@ -7,11 +7,17 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import Any
 
+from app.common.bom.manufacturing_category import short_part_number_digits
 from app.common.bom.welding_standard_process import (
     WeldingStandardProcessName,
     resolve_standard_process_unit,
 )
 from app.models.bom import BomWeldingProcessBreakdownLine
+
+
+def part_short_code(part_number: str | None) -> str:
+    """L0 / 供货总成短代码：零件号数字体末四位。"""
+    return short_part_number_digits(part_number) or ""
 
 
 def qty_cell(value: Any) -> Decimal | str:

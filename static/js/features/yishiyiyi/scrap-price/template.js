@@ -57,8 +57,6 @@ export function subtractPriceStrings(a, b) {
     return `${neg ? '-' : ''}${intPart.toString()}.${frac.toString().padStart(2, '0')}`;
 }
 
-const MONTH_LABELS = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
-
 /** 大盘价：次级数字，右对齐 */
 const MARKET_INPUT =
     'scrap-cell-input w-full max-w-[9.5rem] ml-auto block bg-transparent border-0 border-b border-transparent ' +
@@ -363,7 +361,7 @@ export function renderMonthChips(months, selected) {
         const meta = byMonth.get(month);
         const isActive = selected.month === month;
         const hasData = Boolean(meta);
-        const label = MONTH_LABELS[i];
+        const label = fmtMonth(month);
 
         let cls =
             'scrap-month-chip relative pb-1.5 text-[12px] font-mono tabular-nums transition-colors ';
@@ -379,8 +377,8 @@ export function renderMonthChips(months, selected) {
             ? '<span class="absolute left-0 right-0 bottom-0 h-px bg-[#d32f2f]"></span>'
             : '';
         const title = meta
-            ? `${year}-${String(month).padStart(2, '0')} · ${meta.filled_count}/6`
-            : `${year}-${String(month).padStart(2, '0')}`;
+            ? `${fmtPeriod(year, month)} · ${meta.filled_count}/6`
+            : fmtPeriod(year, month);
 
         return `
             <button type="button"

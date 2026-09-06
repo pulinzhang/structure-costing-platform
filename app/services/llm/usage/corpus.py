@@ -98,7 +98,7 @@ def _faq_chunks(faq_text: str) -> list[CorpusChunk]:
                 text=(
                     "自动核价引擎一直显示运行中：本机异常关机可能导致任务卡住。"
                     "打开「核价 → 自动核价引擎」，在运行历史中删除该任务后重新启动。"
-                    "删除用于清理中断任务，不会撤销已写入的钢材价、零件价或成品价。"
+                    "删除用于清理中断任务，不会撤销已写入的钢材价、零件价或总成价。"
                 ),
                 source_page="help.html",
                 anchor="faq",
@@ -119,11 +119,11 @@ def _faq_chunks(faq_text: str) -> list[CorpusChunk]:
                 chunk_id="faq_calc_stuck",
                 title="成品核价计算卡住怎么办",
                 text=(
-                    "成品核价计算时若一直显示计算中、无法再次提交：通常是上一次异常中断"
+                    "总成核价（旧称成品核价）计算时若一直显示计算中、无法再次提交：通常是上一次异常中断"
                     "（关机、关浏览器），系统仍认为该范围正在计算。"
-                    "打开「核价 → 成品核价计算」，在页面下方计算历史中找到状态为「计算中」的记录，"
+                    "打开「核价 → 总成核价计算」（即成品核价计算页），在页面下方计算历史中找到状态为「计算中」的记录，"
                     "点删除释放锁，再重新开始计算。"
-                    "仅删除日志与计算锁，不会撤销已写入成品核价一览的数据。"
+                    "仅删除日志与计算锁，不会撤销已写入总成核价一览的数据。"
                 ),
                 source_page="help.html",
                 anchor="faq",
@@ -131,6 +131,7 @@ def _faq_chunks(faq_text: str) -> list[CorpusChunk]:
                     "成品核价",
                     "成品价",
                     "成品成本",
+                    "总成核价",
                     "计算中",
                     "卡住",
                     "卡了",
@@ -163,9 +164,9 @@ def _extra_faq_chunks() -> list[CorpusChunk]:
             chunk_id="upload",
             title="如何上传数据",
             text=(
-                "上传入口在侧栏各模块的「上传」页：冲压工艺文件、冲次单价、材料清单、"
-                "焊接单价、年度零件价、基准价与政策等。上传前确认基地、车型、清单版本、"
-                "年月维度与本次核价一致；列表页只读核对，写入靠上传或计算页。"
+                "上传入口在侧栏各模块的「上传」页：冲压工艺文件、模具布点、冲次单价、检具费、"
+                "材料清单、焊接单价、包装运输、年度零件价、基准价与加减价政策等。"
+                "上传前确认基地、车型、清单版本、年月维度与本次核价一致；列表页只读核对，写入靠上传或计算页。"
             ),
             source_page="help.html",
             anchor="menu",
@@ -202,6 +203,53 @@ def _extra_faq_chunks() -> list[CorpusChunk]:
             anchor="start",
             keywords=("操作列", "列表只读", "明细按钮", "列表和上传", "导出"),
         ),
+        CorpusChunk(
+            chunk_id="die_gauge",
+            title="模具费和检具费怎么用",
+            text=(
+                "冲压工程里维护模具布点、模具单价、年度模具费，以及检具费档案。"
+                "零件核价直接成本 = 原材料净成本 + 加工费 + 模具费 + 检具费；无档案时费用为 0。"
+                "自动核价引擎不补算模具费。家模副产品不算模具费。"
+            ),
+            source_page="help.html",
+            anchor="stamping",
+            keywords=("模具费", "检具费", "模具布点", "模具单价", "检具"),
+        ),
+        CorpusChunk(
+            chunk_id="procurement",
+            title="采购对象清单在哪里",
+            text=(
+                "采购对象在「焊接工程 → 采购对象」：从材料清单生成集合。"
+                "列入退化供货件、分总成、冲压件；标准件/胶等与异常进核对区。"
+                "有子件的供货总成永不列入。列表可确认外发/自制、指定供应商。不管价。"
+            ),
+            source_page="help.html",
+            anchor="welding",
+            keywords=("采购对象", "外发", "自制", "供应商", "退化供货件"),
+        ),
+        CorpusChunk(
+            chunk_id="assembly_cost",
+            title="总成核价（成品核价）在哪",
+            text=(
+                "核价菜单「总成核价」核算材料清单根节点（供货总成 / 成品）的月总账与总费用。"
+                "计算页 #/assembly-cost-calc，一览 #/assembly-cost。旧称成品核价 / L0。"
+                "卡住时在计算历史里删除「计算中」记录释放锁。"
+            ),
+            source_page="help.html",
+            anchor="costing-pages",
+            keywords=("总成核价", "成品核价", "L0", "总成核价计算", "成品核价计算"),
+        ),
+        CorpusChunk(
+            chunk_id="yishiyiyi_extra",
+            title="牌号分类与中标厚度价",
+            text=(
+                "一事一议 → 牌号分类：一个牌号一行，挂冷轧 / 镀锌 / 酸洗。"
+                "一事一议 → 中标钢厂厚度价格一览表：选定年/月/基地后预览或导出中标基价叠厚度加减价，不改核价库。"
+            ),
+            source_page="help.html",
+            anchor="yishiyiyi",
+            keywords=("牌号分类", "中标", "厚度价格", "冷轧", "镀锌", "酸洗"),
+        ),
     ]
 
 
@@ -234,8 +282,49 @@ def load_corpus_chunks() -> tuple[CorpusChunk, ...]:
                 "焊接工程",
                 "一事一议",
                 "核价",
+                "文件溯源",
                 "设置",
             ),
+        ),
+        CorpusChunk(
+            chunk_id="stamping",
+            title="冲压工程怎么用",
+            text=_extract_section(help_html, "stamping"),
+            source_page="help.html",
+            anchor="stamping",
+            keywords=("冲压工程", "冲压工艺", "冲次单价", "冲压加工费", "模具", "检具"),
+        ),
+        CorpusChunk(
+            chunk_id="welding",
+            title="焊接工程怎么用",
+            text=_extract_section(help_html, "welding"),
+            source_page="help.html",
+            anchor="welding",
+            keywords=("焊接工程", "焊接单价", "焊接拆解", "焊接费", "包装运输", "采购对象"),
+        ),
+        CorpusChunk(
+            chunk_id="yishiyiyi",
+            title="一事一议怎么用",
+            text=_extract_section(help_html, "yishiyiyi"),
+            source_page="help.html",
+            anchor="yishiyiyi",
+            keywords=("一事一议", "基准价", "加减价", "废料", "牌号分类", "中标钢厂"),
+        ),
+        CorpusChunk(
+            chunk_id="costing-pages",
+            title="核价模块怎么用",
+            text=_extract_section(help_html, "costing-pages"),
+            source_page="help.html",
+            anchor="costing-pages",
+            keywords=("钢材联动", "冲压零件价格", "总成核价", "成品核价"),
+        ),
+        CorpusChunk(
+            chunk_id="file_trace",
+            title="文件溯源",
+            text=_extract_section(help_html, "file-trace"),
+            source_page="help.html",
+            anchor="file-trace",
+            keywords=("文件溯源", "原件", "上传记录", "溯源"),
         ),
         CorpusChunk(
             chunk_id="engine",
@@ -268,6 +357,14 @@ def load_corpus_chunks() -> tuple[CorpusChunk, ...]:
             source_page="knowledge.html",
             anchor="month",
             keywords=("每月", "月度", "当月", "一个月要做", "维护", "哪些数据"),
+        ),
+        CorpusChunk(
+            chunk_id="procurement_knowledge",
+            title="采购对象列入规则",
+            text=_extract_section(knowledge_html, "procurement"),
+            source_page="knowledge.html",
+            anchor="procurement",
+            keywords=("采购对象", "退化供货件", "列入", "标准件"),
         ),
     ]
 

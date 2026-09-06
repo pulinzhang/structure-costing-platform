@@ -534,7 +534,7 @@ class SteelPriceRepository:
         grade: str,
         thickness: Decimal,
     ) -> list[SteelPrice]:
-        """按年月/基地/牌号/料厚精确匹配（中标唯一钢厂场景）。"""
+        """按年月/基地/牌号/料厚匹配（大类取价后可能多钢厂）。"""
         return (
             db.query(SteelPrice)
             .filter(

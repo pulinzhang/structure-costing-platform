@@ -162,6 +162,7 @@ class StampingProcessFeeCalcResultVO(BaseModel):
     success_count: int
     failed_count: int
     zero_fee_count: int = 0
+    scrap_zero_count: int = 0
     skipped_approved_count: int = 0
     failed_items: list[StampingProcessFeeFailedItemVO] = []
     zero_fee_items: list[StampingProcessFeeFailedItemVO] = []
@@ -220,7 +221,9 @@ class StampingProcessFeeBatchDeleteResultVO(BaseModel):
     skipped_approved_count: int = 0
     year: int
     location: str
-    stamping_supplier: str
+    stamping_supplier: str | None = None
+    vehicle_model: str | None = None
+    version: str | None = None
 
 
 class StampingProcessFeeBatchAuditResultVO(BaseModel):
@@ -230,4 +233,6 @@ class StampingProcessFeeBatchAuditResultVO(BaseModel):
     skipped_count: int = 0
     year: int
     location: str
-    stamping_supplier: str
+    stamping_supplier: str | None = None
+    vehicle_model: str | None = None
+    version: str | None = None

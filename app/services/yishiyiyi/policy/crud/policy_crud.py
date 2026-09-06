@@ -34,6 +34,7 @@ from app.schemas.vo.steel_price_policy_vo import (
     PolicyOptionsResponse,
 )
 from app.schemas.vo.user_vo import UserVO
+from app.services.yishiyiyi.policy.filter_resolver import resolve_policy_category_filter
 
 logger = logging.getLogger("service.steel_price_policy.crud")
 
@@ -73,13 +74,18 @@ class SteelPricePolicyCrudService:
     def paginate(
         self, db: Session, query: PolicyQuery
     ) -> tuple[list[PolicyListResponse], int, PolicyOptionsResponse]:
+        resolved = resolve_policy_category_filter(
+            db,
+            category_name=query.category_name.strip() if query.category_name else None,
+            grade_value=query.grade_value.strip() if query.grade_value else None,
+        )
         policy_filter = PolicyFilter(
             year=query.year,
             month=query.month,
             steel_mill=query.steel_mill.strip() if query.steel_mill else None,
-            category_name=query.category_name.strip() if query.category_name else None,
+            category_names_in=resolved.policy_category_names,
+            category_filter_no_match=resolved.no_match,
             policy_type=query.policy_type.value if query.policy_type else None,
-            grade_value=query.grade_value.strip() if query.grade_value else None,
             grade_type=query.grade_type.value if query.grade_type else None,
             skip=(query.page - 1) * query.size,
             limit=query.size,
@@ -372,12 +378,25 @@ class SteelPricePolicyCrudService:
         year: int | None = None,
         month: int | None = None,
         steel_mill: str | None = None,
+        category_names: list[str] | None = None,
     ) -> int:
+        mill = steel_mill.strip() if steel_mill else None
+        if category_names is not None:
+            names = frozenset(name.strip() for name in category_names if name and name.strip())
+            if not names:
+                return 0
+            return self.repository.count_policies_for_export(
+                db,
+                year=year,
+                month=month,
+                steel_mill=mill,
+                category_names_in=names,
+            )
         return self.repository.count_by_conditions(
             db,
             year=year,
             month=month,
-            steel_mill=steel_mill.strip() if steel_mill else None,
+            steel_mill=mill,
         )
 
     def get_filter_options(self, db: Session) -> PolicyOptionsResponse:

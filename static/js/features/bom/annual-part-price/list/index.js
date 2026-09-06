@@ -11,7 +11,7 @@ import {
     parseUnitPriceInput,
     updateAnnualHud,
     updateAnnualFilterCapsules,
-} from './template.js?v=3';
+} from './template.js?v=6';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -123,10 +123,10 @@ async function loadFilterOptions() {
             const currentYear = new Date().getFullYear();
             let options = `<option value="">全部</option>`;
             annualPartPriceState.years.forEach((year) => {
-                options += `<option value="${year}">${year} 年</option>`;
+                options += `<option value="${year}">${esc(fmtYear(year))}</option>`;
             });
             if (!annualPartPriceState.years.includes(currentYear)) {
-                options += `<option value="${currentYear}">${currentYear} 年</option>`;
+                options += `<option value="${currentYear}">${esc(fmtYear(currentYear))}</option>`;
             }
             yearFilter.innerHTML = options;
             if (annualPartPriceState.selectedYear) {
@@ -402,13 +402,13 @@ function openBatchAuditDrawer(mode) {
         getSessionDisplayName() || '（当前登录用户）';
     const remarkLabel = document.getElementById('annualBatchAuditRemarkLabel');
     remarkLabel.innerHTML = isApprove
-        ? '审核意见'
+        ? '审核意见<span class="text-[#d32f2f]">*</span>'
         : '反审核意见<span class="text-[#d32f2f]">*</span>';
     const remarkEl = document.getElementById('annualBatchAuditRemark');
     remarkEl.value = '';
-    remarkEl.placeholder = isApprove ? '可选填写审核意见' : '必填反审核原因';
+    remarkEl.placeholder = isApprove ? '请填写审核意见（必填）' : '必填反审核原因';
     document.getElementById('annualBatchAuditFilterSummary').textContent =
-        `基地 ${filters.location} · 年度 ${filters.year}`;
+        `基地 ${filters.location} · ${fmtYear(filters.year)}`;
     openDrawer('annualBatchAuditDrawer', 'annualBatchAuditDrawerBackdrop');
 }
 
@@ -417,8 +417,8 @@ async function submitBatchAudit() {
     const mode = document.getElementById('annualBatchAuditMode')?.value || 'approve';
     const filters = collectScopeFilters();
     const remark = document.getElementById('annualBatchAuditRemark')?.value.trim() || '';
-    if (mode === 'reverse' && !remark) {
-        showToast('反审核意见必填', 'warning');
+    if (!remark) {
+        showToast(mode === 'approve' ? '审核意见必填' : '反审核意见必填', 'warning');
         return;
     }
     const body = {
@@ -428,7 +428,7 @@ async function submitBatchAudit() {
     const url = mode === 'approve'
         ? `${API_BASE}/batch-approve`
         : `${API_BASE}/batch-reverse-audit`;
-    if (mode === 'approve') body.audit_remark = remark || null;
+    if (mode === 'approve') body.audit_remark = remark;
     else body.reverse_audit_remark = remark;
 
     const btn = document.getElementById('confirmAnnualBatchAuditBtn');
@@ -512,7 +512,7 @@ async function batchDeleteByFilters() {
         return;
     }
     if (!window.confirm(
-        `确定批量删除未审核年度零件价吗？\n\n基地: ${filters.location} | 年度: ${year}\n\n仅删除待审记录；已审核通过会跳过。此操作不可恢复！`,
+        `确定批量删除未审核年度零件价吗？\n\n基地: ${filters.location} · ${fmtYear(year)}\n\n仅删除待审记录；已审核通过会跳过。此操作不可恢复！`,
     )) return;
 
     const btn = document.getElementById('btnBatchDeleteAnnualPartPrice');

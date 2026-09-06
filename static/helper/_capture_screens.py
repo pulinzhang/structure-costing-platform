@@ -25,16 +25,19 @@ PAGES: list[tuple[str, str, str | None]] = [
     ("08-annual-part-price.png", "/app#/bom-annual-part-price", None),
     ("09-packaging-transport.png", "/app#/bom-packaging-transport-fee", None),
     ("10-welding-breakdown.png", "/app#/bom-welding-process-breakdown-list", None),
-    ("11-l0-welding-fee.png", "/app#/bom-l0-welding-fee-list", None),
+    ("11-l0-welding-fee.png", "/app#/bom-welding-fee-list", None),
     ("12-base-price.png", "/app#/base-price-download", None),
     ("13-policy.png", "/app#/steel-price-policy-download", None),
     ("14-scrap-price.png", "/app#/scrap-price", None),
     ("15-steel-price.png", "/app#/steel-price-list", None),
     ("16-stamping-part-cost.png", "/app#/stamping-part-cost", None),
-    ("17-l0-assembly-cost.png", "/app#/l0-assembly-cost", None),
+    ("17-l0-assembly-cost.png", "/app#/assembly-cost", None),
     ("18-costing-engine.png", "/app#/costing", None),
-    ("19-file-trace.png", "/app#/file-trace", None),
-    ("20-settings.png", "/app#/settings", None),
+    ("21-die-fee.png", "/app#/stamping-die-fee", None),
+    ("22-gauge-fee.png", "/app#/stamping-gauge-fee", None),
+    ("23-procurement-object.png", "/app#/bom-procurement-object-list", None),
+    ("24-steel-grade-category.png", "/app#/steel-grade-category", None),
+    ("25-winning-thickness.png", "/app#/winning-thickness-download", None),
 ]
 
 

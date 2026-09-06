@@ -47,7 +47,6 @@ from app.services.stamping.stamping_process_fee_service import (
 )
 from app.utils.response import ApiResponse
 
-
 router = APIRouter(prefix="/api/stamping/process-fees", tags=["冲压加工费 API"])
 
 _service = StampingProcessFeeService()
@@ -98,6 +97,8 @@ def list_locations(
 def list_suppliers(
     year: int | None = Query(None, description="年度"),
     location: str | None = Query(None, description="基地"),
+    vehicle_model: str | None = Query(None, description="车型"),
+    version: str | None = Query(None, description="版本"),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(
         require_any_perm(
@@ -106,7 +107,13 @@ def list_suppliers(
         )
     ),
 ) -> ApiResponse[list[str]]:
-    suppliers = _service.list_suppliers(db, year=year, location=location)
+    suppliers = _service.list_suppliers(
+        db,
+        year=year,
+        location=location,
+        vehicle_model=(vehicle_model or "").strip() or None,
+        version=(version or "").strip() or None,
+    )
     return ApiResponse.ok(data=suppliers)
 
 
@@ -169,7 +176,6 @@ def list_versions(
 def get_calc_ready(
     year: int = Query(..., ge=2000, le=2100),
     location: str | None = Query(None),
-    stamping_supplier: str | None = Query(None),
     vehicle_model: str | None = Query(None),
     version: str | None = Query(None),
     db: Session = Depends(get_db),
@@ -179,7 +185,6 @@ def get_calc_ready(
         db,
         year=year,
         location=location or None,
-        stamping_supplier=stamping_supplier or None,
         vehicle_model=vehicle_model or None,
         version=version or None,
     )
@@ -322,6 +327,7 @@ def export_download(
         version=version.strip() if version else None,
         part_number=part_number.strip() if part_number else None,
         audit_status=audit_status.strip() if audit_status else None,
+        current_user=current_user,
     )
     return StreamingResponse(
         iter([content]),

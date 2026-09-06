@@ -7,8 +7,8 @@ from typing import Any
 from sqlalchemy.orm import Session
 
 from app.common.part_number import extract_part_number_from_text, sanitize_part_number_token
-from app.common.tonnage import extract_tonnage_from_text
 from app.common.timezone import now
+from app.common.tonnage import extract_tonnage_from_text
 from app.schemas.llm.analysis_query import AnalysisKind, AnalysisQuery, TimeRange
 from app.services.llm.client import LlmClientError
 from app.services.llm.query.comparison_basis import default_comparison_basis

@@ -37,7 +37,7 @@ def list_operation_logs(
         total=total,
         page=query.page,
         page_size=query.size,
-        filters=filters.model_dump(),
+        filters=filters,
         message=f"查询到 {total} 条日志",
     )
 
@@ -64,6 +64,7 @@ def export_operation_logs(
         success=success,
         created_from=created_from,
         created_to=created_to,
+        current_user=current_user,
     )
     return StreamingResponse(
         iter([content]),

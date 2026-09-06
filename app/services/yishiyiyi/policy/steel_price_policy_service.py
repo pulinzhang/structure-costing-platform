@@ -21,6 +21,7 @@ from app.schemas.dto.steel_price_policy_dto import (
     PolicyQuery,
     PolicyUpdate,
 )
+from app.schemas.vo.async_task_vo import AsyncTaskAcceptedVO
 from app.schemas.vo.steel_price_policy_vo import (
     ImportResultResponse,
     LadderItemResponse,
@@ -29,7 +30,6 @@ from app.schemas.vo.steel_price_policy_vo import (
     PolicyMatchResponse,
     PolicyOptionsResponse,
 )
-from app.schemas.vo.async_task_vo import AsyncTaskAcceptedVO
 from app.schemas.vo.user_vo import UserVO
 from app.services.async_task import (
     STATUS_COMPLETED,
@@ -157,9 +157,11 @@ class SteelPricePolicyService:
         steel_mill: str | None = None,
         category_name: str | None = None,
         grade_value: str | None = None,
-        skip: int = 0,
-        limit: int | None = None,
+        page: int = 1,
+        size: int | None = None,
     ) -> list[ExportRow]:
+        page = max(page, 1)
+        skip = 0 if size is None else (page - 1) * size
         return self._export_service.get_export_data(
             db,
             year=year,
@@ -168,7 +170,7 @@ class SteelPricePolicyService:
             category_name=category_name,
             grade_value=grade_value,
             skip=skip,
-            limit=limit,
+            limit=size,
         )
 
     def count_export_data(
@@ -196,8 +198,15 @@ class SteelPricePolicyService:
         year: int | None = None,
         month: int | None = None,
         steel_mill: str | None = None,
+        category_names: list[str] | None = None,
     ) -> int:
-        return self._crud.count_policies(db, year=year, month=month, steel_mill=steel_mill)
+        return self._crud.count_policies(
+            db,
+            year=year,
+            month=month,
+            steel_mill=steel_mill,
+            category_names=category_names,
+        )
 
     def get_filter_options(self, db: Session) -> PolicyOptionsResponse:
         return self._crud.get_filter_options(db)
@@ -222,6 +231,8 @@ class SteelPricePolicyService:
     def generate_export_excel_bytes(
         self,
         db: Session,
+        *,
+        current_user: UserVO,
         year: int | None = None,
         month: int | None = None,
         steel_mill: str | None = None,
@@ -235,6 +246,7 @@ class SteelPricePolicyService:
             steel_mill=steel_mill,
             category_name=category_name,
             grade_value=grade_value,
+            current_user=current_user,
         )
 
     def delete_by_conditions(

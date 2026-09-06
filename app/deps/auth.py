@@ -36,17 +36,18 @@ def extract_token(
     return None
 
 
-def get_current_user(
+def _resolve_current_user(
     request: Request,
-    db: Session = Depends(get_db),
-    token_db: Session = Depends(get_auxiliary_db),
-    authorization: str | None = Header(default=None, alias="Authorization"),
-    x_token: str | None = Header(default=None, alias="X-Token"),
+    db: Session,
+    token_db: Session,
+    authorization: str | None,
+    x_token: str | None,
+    *,
+    do_touch: bool,
 ) -> UserVO:
-    """强制登录：校验 token 并顺延活动时间，返回 UserVO。"""
     token = extract_token(authorization, x_token)
     try:
-        user = _auth_service.get_user_by_token(db, token_db, token or "", do_touch=True)
+        user = _auth_service.get_user_by_token(db, token_db, token or "", do_touch=do_touch)
         set_request_user(request, user)
         return user
     except PermissionError as exc:
@@ -54,3 +55,25 @@ def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=str(exc),
         ) from exc
+
+
+def get_current_user(
+    request: Request,
+    db: Session = Depends(get_db),
+    token_db: Session = Depends(get_auxiliary_db),
+    authorization: str | None = Header(default=None, alias="Authorization"),
+    x_token: str | None = Header(default=None, alias="X-Token"),
+) -> UserVO:
+    """强制登录：校验 token 并按业务请求顺延活动时间。"""
+    return _resolve_current_user(request, db, token_db, authorization, x_token, do_touch=True)
+
+
+def get_current_user_no_touch(
+    request: Request,
+    db: Session = Depends(get_db),
+    token_db: Session = Depends(get_auxiliary_db),
+    authorization: str | None = Header(default=None, alias="Authorization"),
+    x_token: str | None = Header(default=None, alias="X-Token"),
+) -> UserVO:
+    """强制登录：只校验，不顺延（心跳探活）。"""
+    return _resolve_current_user(request, db, token_db, authorization, x_token, do_touch=False)

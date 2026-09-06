@@ -4,10 +4,10 @@
 纯函数，无状态，易于单元测试。
 """
 
+import contextlib
 import re
 from decimal import Decimal, InvalidOperation
 from typing import Any
-import contextlib
 
 
 def parse_decimal(value: Any) -> Decimal | None:

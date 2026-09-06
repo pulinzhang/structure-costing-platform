@@ -17,8 +17,9 @@ Excel 对照（材料清单典型列）：
        | 材料 | 料厚 | 厂家 | 重量 | 检具 | 备注
 """
 
-from typing import Any
 from decimal import Decimal
+from typing import Any
+
 from sqlalchemy import (
     Boolean,
     Date,
@@ -31,7 +32,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
 )
-from sqlalchemy.orm import Mapped, relationship, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
 from app.models.common.audit_mixin import AuditUserMixin
@@ -43,7 +44,8 @@ class BomSnapshot(AuditUserMixin, Base):
 
     唯一键：location + vehicle_model + bom_version
     含义：同一采购基地、同一车型、同一清单版本只有一份生效树。
-    覆盖导入时会删旧树再写新树；Excel 原件因带时间戳文件名而保留历史。
+    覆盖导入仅在无直接下游（采购对象清单、焊接工艺拆解）时删旧树再写新树；
+    Excel 原件因带时间戳文件名而保留历史。
 
     另含 AuditUserMixin：created_at / created_by / updated_at / updated_by
     """

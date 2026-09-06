@@ -3,7 +3,7 @@
  * 同步导入：基地 + 年度 + 项目必选；基地/项目取自材料清单（BOM）
  */
 
-import { pkgTransportFeeUploadTemplate } from './template.js?v=3';
+import { pkgTransportFeeUploadTemplate } from './template.js?v=4';
 
 const API_BASE = '/api/bom/packaging-transport-fee';
 const CASCADE_API = '/api/bom/filters/cascade';
@@ -29,7 +29,6 @@ const PkgTransportFeeUploadPage = {
         this.bindEvents();
         this.hideProgress();
         this.clearSelectedFile(false);
-        this.fillDefaultYear();
         this.renderRecentUploads();
         this.loadCascadeFilters();
     },
@@ -103,13 +102,6 @@ const PkgTransportFeeUploadPage = {
             event.preventDefault();
             this.submit();
         });
-    },
-
-    fillDefaultYear() {
-        const yearInput = document.getElementById('pkgTransportFeeUploadYear');
-        if (yearInput && !yearInput.value) {
-            yearInput.value = String(new Date().getFullYear());
-        }
     },
 
     val(id) {
@@ -351,7 +343,6 @@ const PkgTransportFeeUploadPage = {
         this.clearSelectedFile(true);
         const yearEl = document.getElementById('pkgTransportFeeUploadYear');
         if (yearEl) yearEl.value = '';
-        this.fillDefaultYear();
         this.fillSelect('pkgTransportFeeUploadLocation', this.locations, '', this.locations.length ? '请选择采购基地' : '暂无材料清单基地');
         this.fillSelect('pkgTransportFeeUploadVehicleModel', [], '', '请先选择采购基地');
         this.loadCascadeFilters({ clearVehicleModel: true });

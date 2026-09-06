@@ -5,7 +5,7 @@
 import {
     partCostCalcTemplate,
     renderCalcHistoryPagination,
-} from './template.js?v=2';
+} from './template.js?v=9';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -18,8 +18,8 @@ const CALC_READY_API = `${API_BASE}/calc/ready`;
 const CALC_TASK_API = `${API_BASE}/calc/tasks`;
 const CALC_LOGS_API = `${API_BASE}/calc/logs`;
 const POLL_INTERVAL_MS = 1500;
-const DUPLICATE_SCOPE_CALC_MESSAGE = '当前年度/月份/基地/工厂正在计算中，请勿重复提交。'
-const SCOPE_REQUIRED_MESSAGE = '须选定年度、月份、基地、冲压工厂。';
+const DUPLICATE_SCOPE_CALC_MESSAGE = '当前年度/月份/基地/车型正在计算中，请勿重复提交。';
+const SCOPE_REQUIRED_MESSAGE = '须选定年度、月份、基地、配套车型。';
 
 const STATUS_META = {
     processing: { label: '计算中', className: 'text-[#64b5f6]' },
@@ -41,6 +41,8 @@ const calcState = {
         steel_price_count: 0,
         scrap_price_count: 0,
         process_fee_count: 0,
+        die_fee_count: 0,
+        gauge_fee_count: 0,
         can_calculate: false,
     },
     history: {
@@ -98,7 +100,7 @@ function fillMonthOptions() {
         '<option value="">请选择</option>' +
         Array.from({ length: 12 }, (_, i) => {
             const m = i + 1;
-            return `<option value="${m}"${String(current) === String(m) ? ' selected' : ''}>${m}</option>`;
+            return `<option value="${m}"${String(current) === String(m) ? ' selected' : ''}>${esc(fmtMonth(m))}</option>`;
         }).join('');
 }
 
@@ -108,11 +110,6 @@ function bindEvents() {
     document.getElementById('calcMonth')?.addEventListener('change', () => loadCalcReady());
 
     document.getElementById('calcLocation')?.addEventListener('change', () => {
-        resetDependentFilters(['calcSupplier', 'calcVehicleModel', 'calcVersion']);
-        loadCascadeFilters();
-        loadCalcReady();
-    });
-    document.getElementById('calcSupplier')?.addEventListener('change', () => {
         resetDependentFilters(['calcVehicleModel', 'calcVersion']);
         loadCascadeFilters();
         loadCalcReady();
@@ -122,7 +119,10 @@ function bindEvents() {
         loadCascadeFilters();
         loadCalcReady();
     });
-    document.getElementById('calcVersion')?.addEventListener('change', () => loadCalcReady());
+    document.getElementById('calcVersion')?.addEventListener('change', () => {
+        loadCascadeFilters();
+        loadCalcReady();
+    });
 
     document.getElementById('startCalcBtn')?.addEventListener('click', () => startCalculation());
     document.getElementById('calcHistoryRefreshBtn')?.addEventListener('click', () => loadCalcHistory(1));
@@ -142,7 +142,7 @@ function resetDependentFilters(ids) {
     });
 }
 
-function fillSelect(id, values = [], preferredValue = null) {
+function fillSelect(id, values = [], preferredValue = null, formatLabel = null) {
     const select = document.getElementById(id);
     if (!select) return;
     const current = preferredValue != null ? preferredValue : select.value;
@@ -151,7 +151,8 @@ function fillSelect(id, values = [], preferredValue = null) {
         `<option value="">${emptyLabel}</option>` +
         values.map((value) => {
             const text = String(value);
-            return `<option value="${esc(text)}"${text === String(current) ? ' selected' : ''}>${esc(text)}</option>`;
+            const label = formatLabel ? formatLabel(value) : text;
+            return `<option value="${esc(text)}"${text === String(current) ? ' selected' : ''}>${esc(String(label))}</option>`;
         }).join('');
 }
 
@@ -161,7 +162,7 @@ async function loadYearOptions() {
         const years = Array.isArray(res.data) ? res.data.slice() : [];
         const currentYear = new Date().getFullYear();
         if (!years.includes(currentYear)) years.unshift(currentYear);
-        fillSelect('calcYear', years, String(currentYear));
+        fillSelect('calcYear', years, String(currentYear), fmtYear);
     } catch (error) {
         showToast(error.message || '加载年度失败', 'error');
     }
@@ -171,13 +172,12 @@ async function loadCascadeFilters() {
     try {
         const params = {
             location: document.getElementById('calcLocation')?.value || '',
-            stamping_supplier: document.getElementById('calcSupplier')?.value || '',
             vehicle_model: document.getElementById('calcVehicleModel')?.value || '',
+            version: document.getElementById('calcVersion')?.value || '',
         };
         const res = await HttpClient.get(CASCADE_API, { params });
         const filters = res.data || {};
         fillSelect('calcLocation', filters.locations || []);
-        fillSelect('calcSupplier', filters.stamping_suppliers || []);
         fillSelect('calcVehicleModel', filters.vehicle_models || []);
         fillSelect('calcVersion', filters.versions || []);
     } catch (error) {
@@ -190,7 +190,7 @@ function resetFilters() {
         showToast('计算进行中，请稍候再重置', 'warning');
         return;
     }
-    ['calcLocation', 'calcSupplier', 'calcVehicleModel', 'calcVersion'].forEach((id) => {
+    ['calcLocation', 'calcVehicleModel', 'calcVersion'].forEach((id) => {
         const el = document.getElementById(id);
         if (el) el.value = '';
     });
@@ -212,7 +212,6 @@ async function loadCalcReady() {
     const year = parseInt(document.getElementById('calcYear')?.value, 10);
     const month = parseInt(document.getElementById('calcMonth')?.value, 10);
     const location = document.getElementById('calcLocation')?.value || '';
-    const supplier = document.getElementById('calcSupplier')?.value || '';
     const vehicleModel = document.getElementById('calcVehicleModel')?.value || '';
     const version = document.getElementById('calcVersion')?.value || '';
 
@@ -222,6 +221,8 @@ async function loadCalcReady() {
             steel_price_count: 0,
             scrap_price_count: 0,
             process_fee_count: 0,
+            die_fee_count: 0,
+            gauge_fee_count: 0,
             can_calculate: false,
         };
         setReadyCounts(calcState.ready);
@@ -233,7 +234,6 @@ async function loadCalcReady() {
         const params = { year };
         if (month) params.month = month;
         if (location) params.location = location;
-        if (supplier) params.stamping_supplier = supplier;
         if (vehicleModel) params.vehicle_model = vehicleModel;
         if (version) params.version = version;
 
@@ -244,6 +244,8 @@ async function loadCalcReady() {
             steel_price_count: Number(data.steel_price_count) || 0,
             scrap_price_count: Number(data.scrap_price_count) || 0,
             process_fee_count: Number(data.process_fee_count) || 0,
+            die_fee_count: Number(data.die_fee_count) || 0,
+            gauge_fee_count: Number(data.gauge_fee_count) || 0,
             can_calculate: Boolean(data.can_calculate),
         };
         setReadyCounts(calcState.ready);
@@ -255,6 +257,8 @@ async function loadCalcReady() {
             steel_price_count: 0,
             scrap_price_count: 0,
             process_fee_count: 0,
+            die_fee_count: 0,
+            gauge_fee_count: 0,
             can_calculate: false,
         };
         setReadyCounts(calcState.ready);
@@ -271,8 +275,8 @@ function validateDataPreparation() {
     const year = parseInt(document.getElementById('calcYear')?.value, 10);
     const month = parseInt(document.getElementById('calcMonth')?.value, 10);
     const location = document.getElementById('calcLocation')?.value || '';
-    const supplier = document.getElementById('calcSupplier')?.value || '';
-    const isScopeSelected = Boolean(year && month && location && supplier);
+    const vehicleModel = document.getElementById('calcVehicleModel')?.value || '';
+    const isScopeSelected = Boolean(year && month && location && vehicleModel);
     const isReady = isScopeSelected && calcState.ready.can_calculate;
 
     startBtn.disabled = !isReady;
@@ -288,6 +292,8 @@ function setReadyCounts(ready) {
     setCountHtml('cntSteel', ready.steel_price_count, '条');
     setCountHtml('cntScrap', ready.scrap_price_count, '条');
     setCountHtml('cntFee', ready.process_fee_count, '条');
+    setCountHtml('cntDieFee', ready.die_fee_count, '条');
+    setCountHtml('cntGaugeFee', ready.gauge_fee_count, '条');
 }
 
 function setCountHtml(id, count, unit) {
@@ -352,7 +358,7 @@ function renderHistoryRows(items) {
         if (item.vehicle_model) filterParts.push(item.vehicle_model);
         if (item.version) filterParts.push(item.version);
         const filterText = filterParts.length ? filterParts.join(' / ') : '全部';
-        const ym = `${item.year || '-'}-${String(item.month || '').padStart(2, '0')}`;
+        const ym = fmtPeriod(item.year, item.month) || '-';
         const isProcessing = item.status === 'processing';
         return `
             <tr class="hover:bg-[#ffffff]/[0.02] transition-colors text-[#999]" data-log-id="${esc(item.id)}">
@@ -374,7 +380,7 @@ function renderHistoryRows(items) {
                     <button type="button" class="calc-view-result-btn text-[9px] text-[#777] hover:text-white mr-2"
                             data-year="${esc(item.year)}" data-month="${esc(item.month || '')}"
                             data-location="${esc(item.location || '')}"
-                            data-supplier="${esc(item.stamping_supplier || '')}">结果</button>`}
+                            data-vehicle="${esc(item.vehicle_model || '')}">结果</button>`}
                     `}
                     ${calcState.canDelete !== false ? `
                     <button type="button" class="calc-delete-log-btn text-[9px] text-[#777] hover:text-[#ef5350]" data-log-id="${esc(item.id)}" title="含计算中：删除可释放锁">删除</button>` : ''}
@@ -392,7 +398,7 @@ function renderHistoryRows(items) {
             if (btn.dataset.year) qs.set('year', btn.dataset.year);
             if (btn.dataset.month) qs.set('month', btn.dataset.month);
             if (btn.dataset.location) qs.set('location', btn.dataset.location);
-            if (btn.dataset.supplier) qs.set('stamping_supplier', btn.dataset.supplier);
+            if (btn.dataset.vehicle) qs.set('vehicle_model', btn.dataset.vehicle);
             const suffix = qs.toString() ? `?${qs.toString()}` : '';
             window.location.hash = `/stamping-part-cost${suffix}`;
         });
@@ -435,7 +441,7 @@ async function openProcessDrawer(logId) {
 function showProcessDrawer(log) {
     closeProcessDrawer();
     const status = STATUS_META[log.status] || STATUS_META.failed;
-    const scope = `${log.year || '-'}-${String(log.month || '').padStart(2, '0')} · ${log.location || '-'} · ${log.stamping_supplier || '-'}`;
+    const scope = `${fmtPeriod(log.year, log.month) || '-'} · ${log.location || '-'} · ${log.vehicle_model || '-'}`;
     const backdrop = document.createElement('div');
     backdrop.id = 'calcProcessBackdrop';
     backdrop.className = 'fixed inset-0 z-[80] bg-black/70 backdrop-blur-sm';
@@ -449,12 +455,15 @@ function showProcessDrawer(log) {
                 计算过程 · ${esc(scope)}
                 <span class="ml-2 normal-case ${status.className}">${status.label}</span>
             </h5>
-            <button type="button" id="closeCalcProcessDrawer"
+            <div class="flex items-center gap-0.5 shrink-0">
+                ${window.copyProcessReportButtonHtml()}
+                <button type="button" id="closeCalcProcessDrawer"
                     class="flex items-center justify-center w-8 h-8 rounded-md text-[#707070] hover:text-white hover:bg-[#d32f2f] transition-all">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
-            </button>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
         </div>
         <div class="px-5 py-3 border-b border-[#222] text-[10px] text-[#777] space-y-1 shrink-0">
             <div>批次<span class="font-mono text-[#999]">${esc(log.calc_batch_id || '-')}</span></div>
@@ -468,6 +477,7 @@ function showProcessDrawer(log) {
     `;
     document.body.appendChild(backdrop);
     document.body.appendChild(drawer);
+    window.bindProcessReportCopy(drawer);
     backdrop.addEventListener('click', closeProcessDrawer);
     document.getElementById('closeCalcProcessDrawer')?.addEventListener('click', closeProcessDrawer);
 }
@@ -487,11 +497,10 @@ async function startCalculation() {
     const year = parseInt(document.getElementById('calcYear')?.value, 10);
     const month = parseInt(document.getElementById('calcMonth')?.value, 10);
     const location = document.getElementById('calcLocation')?.value || '';
-    const supplier = document.getElementById('calcSupplier')?.value || '';
     const vehicleModel = document.getElementById('calcVehicleModel')?.value || '';
     const version = document.getElementById('calcVersion')?.value || '';
 
-    if (Number.isNaN(year) || Number.isNaN(month) || !location || !supplier) {
+    if (Number.isNaN(year) || Number.isNaN(month) || !location || !vehicleModel) {
         showToast(SCOPE_REQUIRED_MESSAGE, 'warning');
         return;
     }
@@ -505,9 +514,8 @@ async function startCalculation() {
         year,
         month,
         location,
-        stamping_supplier: supplier,
+        vehicle_model: vehicleModel,
     };
-    if (vehicleModel) payload.vehicle_model = vehicleModel;
     if (version) payload.version = version;
 
     setCalculating(true);
@@ -636,7 +644,6 @@ function setCalculating(isCalculating) {
         'calcYear',
         'calcMonth',
         'calcLocation',
-        'calcSupplier',
         'calcVehicleModel',
         'calcVersion',
         'calcResetBtn',

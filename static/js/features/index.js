@@ -10,6 +10,13 @@
  * │   ├── process/               # 冲压工艺
  * │   │   ├── upload/            # 上传工艺文件
  * │   │   └── parts/             # 冲压零件列表
+ * │   ├── die/                   # 冲压模具
+ * │   │   ├── upload/            # 上传模具布点
+ * │   │   ├── list/              # 模具清单
+ * │   │   └── unit-price/        # 模具单价
+ * │   ├── gauge-fee/             # 冲压检具费
+ * │   │   ├── upload/
+ * │   │   └── list/
  * │   ├── tonnage/               # 冲次单价
  * │   │   ├── upload/
  * │   │   └── list/
@@ -25,16 +32,19 @@
  * │   ├── welding-unit-price/    # 焊接单价
  * │   │   ├── upload/
  * │   │   └── list/
- * │   ├── annual-part-price/     # 年度零件价
+ * │   ├── packaging-transport-fee/  # 包装运输费
  * │   │   ├── upload/
  * │   │   └── list/
- * │   ├── packaging-transport-fee/  # 包装运输费
+ * │   ├── procurement-object/     # 采购对象清单
+ * │   │   ├── generate/
+ * │   │   └── list/
+ * │   ├── annual-part-price/     # 年度零件价（采购对象之下）
  * │   │   ├── upload/
  * │   │   └── list/
  * │   ├── welding-process-breakdown/  # 焊接工艺拆解
  * │   │   ├── generate/
  * │   │   └── list/
- * │   └── l0-welding-fee/        # 成品焊接费（技术目录仍用 l0）
+ * │   └── welding-fee/           # 焊接费
  * │       ├── calc/
  * │       └── list/
  * ├── yishiyiyi/                 # 一事一议（钢材政策 / 月度废料价等）
@@ -44,6 +54,7 @@
  * │   ├── base-price/            # 基准价格
  * │   │   ├── upload/
  * │   │   └── list/
+ * │   ├── steel-grade-category/  # 牌号分类
  * │   ├── winning-thickness/     # 中标钢厂厚度价格一览表
  * │   │   └── list/
  * │   └── scrap-price/           # 废料月度销售价
@@ -54,7 +65,7 @@
  * │   ├── stamping-part-cost/    # 冲压零件价格核算
  * │   │   ├── calc/
  * │   │   └── list/
- * │   ├── l0-assembly-cost/      # 成品核价
+ * │   ├── assembly-cost/         # 总成核价
  * │   │   ├── calc/
  * │   │   └── list/
  * │   └── engine/                # 自动核价引擎
@@ -92,6 +103,41 @@ export const pageMeta = {
         title: '冲压零件列表',
         en: 'PARTS_MASTER',
         breadcrumb: ['冲压工程', '冲压工艺', '冲压零件列表'],
+    },
+    'stamping-die-upload': {
+        title: '上传模具布点',
+        en: 'DIE_LAYOUT_UPLOAD',
+        breadcrumb: ['冲压工程', '冲压模具', '上传模具布点'],
+    },
+    'stamping-die-list': {
+        title: '模具清单',
+        en: 'DIE_LAYOUT_LIST',
+        breadcrumb: ['冲压工程', '冲压模具', '模具清单'],
+    },
+    'stamping-die-unit-price': {
+        title: '模具单价',
+        en: 'DIE_UNIT_PRICE',
+        breadcrumb: ['冲压工程', '冲压模具', '模具单价'],
+    },
+    'stamping-die-fee-calc': {
+        title: '冲压模具费计算',
+        en: 'DIE_FEE_CALC',
+        breadcrumb: ['冲压工程', '冲压模具费', '冲压模具费计算'],
+    },
+    'stamping-die-fee': {
+        title: '冲压模具费列表',
+        en: 'DIE_FEE_LIST',
+        breadcrumb: ['冲压工程', '冲压模具费', '冲压模具费列表'],
+    },
+    'stamping-gauge-fee-upload': {
+        title: '检具费上传',
+        en: 'GAUGE_FEE_UPLOAD',
+        breadcrumb: ['冲压工程', '冲压检具费', '上传'],
+    },
+    'stamping-gauge-fee': {
+        title: '检具费列表',
+        en: 'GAUGE_FEE_LIST',
+        breadcrumb: ['冲压工程', '冲压检具费', '检具费列表'],
     },
     'stamping-tonnage-upload': {
         title: '冲次单价上传',
@@ -134,14 +180,24 @@ export const pageMeta = {
         breadcrumb: ['核价', '冲压零件价格核算', '冲压零件价格一览'],
     },
     'l0-assembly-cost-calc': {
-        title: '成品核价计算',
-        en: 'L0_ASSEMBLY_COST_CALC',
-        breadcrumb: ['核价', '成品核价', '成品核价计算'],
+        title: '总成核价计算',
+        en: 'ASSEMBLY_COST_CALC',
+        breadcrumb: ['核价', '总成核价', '总成核价计算'],
     },
     'l0-assembly-cost': {
-        title: '成品核价一览',
-        en: 'L0_ASSEMBLY_COST_LIST',
-        breadcrumb: ['核价', '成品核价', '成品核价一览'],
+        title: '总成核价一览',
+        en: 'ASSEMBLY_COST_LIST',
+        breadcrumb: ['核价', '总成核价', '总成核价一览'],
+    },
+    'assembly-cost-calc': {
+        title: '总成核价计算',
+        en: 'ASSEMBLY_COST_CALC',
+        breadcrumb: ['核价', '总成核价', '总成核价计算'],
+    },
+    'assembly-cost': {
+        title: '总成核价一览',
+        en: 'ASSEMBLY_COST_LIST',
+        breadcrumb: ['核价', '总成核价', '总成核价一览'],
     },
     'steel-price-policy-upload': {
         title: '加减价政策上传',
@@ -162,6 +218,11 @@ export const pageMeta = {
         title: '基准价格列表',
         en: 'BASE_PRICE_DATABASE',
         breadcrumb: ['一事一议', '基准价格', '基准价格列表'],
+    },
+    'steel-grade-category': {
+        title: '牌号分类',
+        en: 'STEEL_GRADE_CATEGORY',
+        breadcrumb: ['一事一议', '牌号分类'],
     },
     'winning-thickness-download': {
         title: '中标钢厂厚度价格一览表',
@@ -203,16 +264,6 @@ export const pageMeta = {
         en: 'WELDING_UNIT_PRICE_MATRIX',
         breadcrumb: ['焊接工程', '焊接单价', '焊接单价列表'],
     },
-    'bom-annual-part-price-upload': {
-        title: '年度零件价上传',
-        en: 'ANNUAL_PART_PRICE_UPLOAD',
-        breadcrumb: ['焊接工程', '年度零件价', '上传'],
-    },
-    'bom-annual-part-price': {
-        title: '年度零件价列表',
-        en: 'ANNUAL_PART_PRICE_MATRIX',
-        breadcrumb: ['焊接工程', '年度零件价', '年度零件价列表'],
-    },
     'bom-packaging-transport-fee-upload': {
         title: '包装运输费上传',
         en: 'PKG_TRANSPORT_FEE_UPLOAD',
@@ -222,6 +273,26 @@ export const pageMeta = {
         title: '包装运输费列表',
         en: 'PKG_TRANSPORT_FEE_MATRIX',
         breadcrumb: ['焊接工程', '包装运输费', '包装运输费列表'],
+    },
+    'bom-procurement-object': {
+        title: '生成采购对象清单',
+        en: 'PROCUREMENT_OBJECT_GENERATE',
+        breadcrumb: ['焊接工程', '采购对象', '生成'],
+    },
+    'bom-procurement-object-list': {
+        title: '采购对象清单',
+        en: 'PROCUREMENT_OBJECT_LIST',
+        breadcrumb: ['焊接工程', '采购对象', '采购对象清单'],
+    },
+    'bom-annual-part-price-upload': {
+        title: '年度零件价上传',
+        en: 'ANNUAL_PART_PRICE_UPLOAD',
+        breadcrumb: ['焊接工程', '年度零件价', '上传'],
+    },
+    'bom-annual-part-price': {
+        title: '年度零件价列表',
+        en: 'ANNUAL_PART_PRICE_MATRIX',
+        breadcrumb: ['焊接工程', '年度零件价', '年度零件价列表'],
     },
     'bom-welding-process-breakdown': {
         title: '焊接工艺拆解',
@@ -233,15 +304,15 @@ export const pageMeta = {
         en: 'WELDING_PROCESS_BREAKDOWN_LIST',
         breadcrumb: ['焊接工程', '焊接工艺拆解', '拆解列表'],
     },
-    'bom-l0-welding-fee-calc': {
-        title: '成品焊接费计算',
-        en: 'FINISHED_WELDING_FEE_CALC',
-        breadcrumb: ['焊接工程', '成品焊接费', '计算'],
+    'bom-welding-fee-calc': {
+        title: '焊接费计算',
+        en: 'WELDING_FEE_CALC',
+        breadcrumb: ['焊接工程', '焊接费', '计算'],
     },
-    'bom-l0-welding-fee-list': {
-        title: '成品焊接费列表',
-        en: 'FINISHED_WELDING_FEE_LIST',
-        breadcrumb: ['焊接工程', '成品焊接费', '列表'],
+    'bom-welding-fee-list': {
+        title: '焊接费列表',
+        en: 'WELDING_FEE_LIST',
+        breadcrumb: ['焊接工程', '焊接费', '列表'],
     },
     costing: {
         title: '自动核价引擎',

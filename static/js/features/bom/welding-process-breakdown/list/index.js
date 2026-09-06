@@ -10,7 +10,7 @@ import {
     updateWpbHud,
     updateWpbCapsules,
     refreshWpbLineDerived,
-} from './template.js?v=38';
+} from './template.js?v=39';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -464,9 +464,9 @@ function openBatchDrawer(mode) {
     if (mode === 'approve') {
         remarkWrap?.classList.remove('hidden');
         if (title) title.textContent = '批量审核';
-        if (hint) hint.textContent = '将范围内待审主表标记为已审核；已审跳过。';
-        if (remarkLabel) remarkLabel.textContent = '审核意见（可选）';
-        if (remark) remark.placeholder = '可选填写审核意见';
+        if (hint) hint.textContent = '将范围内待审主表标记为已审核；已审跳过。审核意见必填。';
+        if (remarkLabel) remarkLabel.innerHTML = '审核意见<span class="text-[#d32f2f]">*</span>';
+        if (remark) remark.placeholder = '请填写审核意见（必填）';
     } else if (mode === 'reverse') {
         remarkWrap?.classList.remove('hidden');
         if (title) title.textContent = '批量反审核';
@@ -487,8 +487,8 @@ async function confirmBatch() {
     if (!scope) return;
     const mode = document.getElementById('wpbBatchMode')?.value || 'approve';
     const remark = (document.getElementById('wpbBatchRemark')?.value || '').trim();
-    if (mode === 'reverse' && !remark) {
-        showToast('反审核原因必填', 'warning');
+    if ((mode === 'approve' || mode === 'reverse') && !remark) {
+        showToast(mode === 'approve' ? '审核意见必填' : '反审核原因必填', 'warning');
         return;
     }
     wpbState.batchSubmitting = true;
@@ -497,7 +497,7 @@ async function confirmBatch() {
         if (mode === 'approve') {
             res = await HttpClient.post(`${API_BASE}/batch-approve`, {
                 ...scope,
-                audit_remark: remark || null,
+                audit_remark: remark,
             });
         } else if (mode === 'reverse') {
             res = await HttpClient.post(`${API_BASE}/batch-reverse-audit`, {

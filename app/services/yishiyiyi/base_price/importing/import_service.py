@@ -8,8 +8,8 @@ from __future__ import annotations
 
 import logging
 import re
-from decimal import Decimal, InvalidOperation
 from collections.abc import Callable
+from decimal import Decimal, InvalidOperation
 
 from sqlalchemy.orm import Session
 
@@ -20,14 +20,19 @@ from app.repositories.yishiyiyi.base_price import SteelBasePriceRepository
 from app.schemas.dto.steel_base_price_dto import SteelBasePriceWrite
 from app.schemas.vo.steel_base_price_vo import SteelBasePriceImportResultResponse
 from app.schemas.vo.user_vo import UserVO
-from app.utils.steel_price_archive import (
-    FILE_KIND_BASE_PRICE,
-    save_steel_price_upload,
-)
 from app.services.file_trace.path_utils import to_upload_relpath
 from app.services.file_trace.register import register_existing
 from app.services.yishiyiyi.base_price.importing.template_builder import (
     build_steel_base_price_template,
+)
+from app.services.yishiyiyi.steel_grade_category import (
+    SOURCE_BASE_PRICE,
+    GradeEnsureItem,
+    SteelGradeCategoryService,
+)
+from app.utils.steel_price_archive import (
+    FILE_KIND_BASE_PRICE,
+    save_steel_price_upload,
 )
 
 ProgressCallback = Callable[[int, str], None]
@@ -222,6 +227,17 @@ class SteelBasePriceImportService:
                 year=year,
                 month=month,
             )
+            grade_result = SteelGradeCategoryService().ensure_grades(
+                db,
+                [
+                    GradeEnsureItem(grade=write.grade, category_name=write.category_name)
+                    for write in writes
+                ],
+                source=SOURCE_BASE_PRICE,
+                current_user=current_user,
+            )
+            if grade_result.conflicts:
+                parse_result.warnings.extend(grade_result.conflicts)
             _report(90, "正在提交事务...")
             db.commit()
         except Exception:

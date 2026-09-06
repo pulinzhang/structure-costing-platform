@@ -28,7 +28,6 @@ from app.services.yishiyiyi.scrap_price import (
 )
 from app.utils.response import ApiResponse
 
-
 router = APIRouter(prefix="/api/yishiyiyi/scrap-price", tags=["废料月度销售价格"])
 
 _scrap_price_service = StampingScrapPriceService()
@@ -127,7 +126,7 @@ def export_excel(
     current_user: UserVO = Depends(require_perm(Perm.SCRAP_PRICE_EXPORT)),
 ) -> StreamingResponse:
     """导出废料销售价宽表 Excel（跨年空行；有扣费三行 / 无扣费一行）。"""
-    content, filename = _scrap_price_export_service.export(db, year=year)
+    content, filename = _scrap_price_export_service.export(db, year=year, current_user=current_user)
     return StreamingResponse(
         iter([content]),
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

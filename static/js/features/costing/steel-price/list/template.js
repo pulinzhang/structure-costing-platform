@@ -87,7 +87,7 @@ export function steelPriceListTemplate() {
                 <!-- 战术胶囊筛选栏：默认收起，抹平 ERP 模版意-->
                 <div class="px-5 py-3 border-b border-[#14141A]"
                      style="background: linear-gradient(180deg, #0C0C10 0%, #0A0A0E 100%);">
-                    <div class="flex items-center justify-between gap-4 bg-[#0C0C10] border border-[#1E1E26] px-4 py-2.5 rounded-xl font-mono text-[11px]"
+                    <div class="flex items-center justify-between gap-4 bg-[#0C0C10] border border-[#1E1E26] px-4 py-2.5 rounded-md font-mono text-[11px]"
                          style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.02), 0 0 20px rgba(0,0,0,0.3);">
                         <div class="flex items-center gap-3 min-w-0 flex-1">
                             <span class="text-[#555555] shrink-0 tracking-wider">当前筛选：</span>
@@ -419,7 +419,7 @@ export function steelPriceListTemplate() {
                     <label class="text-[10px] text-[#777777] mb-1 block" id="batchAuditRemarkLabel">审核意见</label>
                     <textarea id="batchAuditRemark" rows="4" maxlength="500"
                               class="w-full px-3 py-2 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#ffffff] placeholder:text-[#616161] focus:outline-none focus:border-[#ff5252] transition-all rounded resize-none"
-                              placeholder="可选填写审核意见"></textarea>
+                              placeholder="请填写审核意见（必填）"></textarea>
                 </div>
             </div>
             <div class="px-6 py-4 border-t border-[#262626] flex items-center justify-end gap-2 shrink-0">
@@ -436,7 +436,7 @@ export function renderSteelPriceRows(records) {
     if (!records || !Array.isArray(records) || records.length === 0) return '';
     return records.map((record) => {
         const approved = record.audit_status === 'approved';
-        const period = `${esc(record.year)}-${esc(String(record.month).padStart(2, '0'))}`;
+        const period = esc(fmtPeriod(record.year, record.month));
         const mill = esc(record.steel_mill) || '—';
         const location = esc(record.location) || '—';
         const cell = 'p-3 border-b border-[#17171C] font-mono text-[11px]';
@@ -535,14 +535,9 @@ export function updateActiveFilterCapsules() {
     const idleCapsule = 'bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md';
 
     if (periodEl) {
-        if (year && month) {
-            periodEl.textContent = `${year}-${String(month).padStart(2, '0')}`;
-            periodEl.className = activeCapsule;
-        } else if (year) {
-            periodEl.textContent = `${year}年`;
-            periodEl.className = activeCapsule;
-        } else if (month) {
-            periodEl.textContent = `${month}月`;
+        const periodText = fmtPeriod(year, month);
+        if (periodText) {
+            periodEl.textContent = periodText;
             periodEl.className = activeCapsule;
         } else {
             periodEl.textContent = '全部期间';

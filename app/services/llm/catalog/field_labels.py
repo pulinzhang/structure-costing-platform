@@ -23,7 +23,7 @@ COMMON_FIELD_LABELS: dict[str, str] = {
     "updated_at": "更新时间",
 }
 
-# L0AssemblyCostVO 及明细/间接
+# AssemblyCostVO 及明细/间接
 L0_FIELD_LABELS: dict[str, str] = {
     **COMMON_FIELD_LABELS,
     "version": "版本",
@@ -81,6 +81,8 @@ STAMPING_PART_COST_FIELD_LABELS: dict[str, str] = {
     "process_scrap_deduction": "边角废料扣除（元）",
     "scrap_amount_sheet": "废料扣除合计（元）",
     "process_fee_amount": "加工费（元）",
+    "die_fee_amount": "模具费（元/件）",
+    "gauge_fee_amount": "检具费（元/件）",
     "steel_ton_price": "钢材吨价（元/吨）",
     "scrap_ton_price": "废料吨价（元/吨）",
     "steel_mill": "钢厂",
@@ -157,6 +159,8 @@ MONEY_FIELD_NAMES: frozenset[str] = frozenset(
         "process_scrap_deduction",
         "scrap_amount_sheet",
         "process_fee_amount",
+        "die_fee_amount",
+        "gauge_fee_amount",
         "scrap_ton_price",
         "direct_cost",
         "base_price",

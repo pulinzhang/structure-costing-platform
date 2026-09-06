@@ -19,8 +19,7 @@ export function steelPriceCalcTemplate() {
                     ${filterSelect('calcYear', '年度')}
                     ${filterSelect('calcMonth', '月份')}
                     ${filterSelect('calcLocation', '基地')}
-                    ${filterSelect('calcSupplier', '冲压工厂')}
-                    ${filterSelect('calcVehicleModel', '配套车型')}
+                    ${filterSelect('calcVehicle', '配套车型')}
 
                     <button id="calcResetBtn"
                             class="inline-flex items-center gap-1 h-7 px-3 text-[11px] font-medium text-[#616161] hover:text-[#9e9e9e] transition-all duration-150">
@@ -53,7 +52,7 @@ export function steelPriceCalcTemplate() {
 
                 <div class="flex items-center gap-3">
                     <span id="reCalcNotice" class="text-[9px] text-[#666]">
-                        再次计算将覆盖未审核数据；已审核记录跳过
+                        统计可按车型看基价/政策/规格覆盖（一车多厂）；计算仍按基地全量牌号+料厚落库
                     </span>
                     <button id="startCalcBtn"
                             class="h-7 px-4 text-[10px] bg-[#b71c1c] hover:bg-[#c62828] text-white font-medium rounded-sm transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
@@ -101,7 +100,6 @@ export function steelPriceCalcTemplate() {
                                     <th class="py-2 px-2 font-normal whitespace-nowrap">创建人</th>
                                     <th class="py-2 px-2 font-normal whitespace-nowrap">核价期</th>
                                     <th class="py-2 px-2 font-normal whitespace-nowrap">基地</th>
-                                    <th class="py-2 px-2 font-normal whitespace-nowrap">筛选</th>
                                     <th class="py-2 px-2 font-normal text-center whitespace-nowrap">状态</th>
                                     <th class="py-2 px-2 font-normal text-right whitespace-nowrap">材料</th>
                                     <th class="py-2 px-2 font-normal text-right whitespace-nowrap">命中</th>
@@ -114,7 +112,7 @@ export function steelPriceCalcTemplate() {
                             </thead>
                             <tbody id="calcHistoryBody" class="text-[10px] divide-y divide-[#222222]">
                                 <tr>
-                                    <td colspan="13" class="py-8 text-center text-[#555]">加载中..</td>
+                                    <td colspan="12" class="py-8 text-center text-[#555]">加载中..</td>
                                 </tr>
                             </tbody>
                         </table>

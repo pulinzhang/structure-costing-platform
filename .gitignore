@@ -16,6 +16,9 @@ venv/
 env/
 .venv/
 
+# Node (仅用于生成 Tailwind CSS)
+node_modules/
+
 # IDE
 .idea/
 .vscode/
@@ -68,6 +71,10 @@ Thumbs.db
 desktop.ini
 ehthumbs.db
 
+# Internal commercial briefing (partner-only; never commit)
+docs/合伙人备忘*.md
+docs/*商业计划*
+
 # Logs
 *.log
 *.log.*
@@ -80,3 +87,4 @@ uploads/*
 !uploads/avatars/
 uploads/avatars/*
 !uploads/avatars/.gitkeep
+/对内文档/

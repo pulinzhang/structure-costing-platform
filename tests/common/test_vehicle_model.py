@@ -13,6 +13,7 @@ def test_normalize_vehicle_model_strips_chinese_prefix_and_suffix() -> None:
     assert normalize_vehicle_model("青岛T28") == "T28"
     assert normalize_vehicle_model("T28样例") == "T28"
     assert normalize_vehicle_model("T28") == "T28"
+    assert normalize_vehicle_model("②T13J") == "T13J"
     assert normalize_vehicle_model("  青岛 T28  ") == "T28"
     assert normalize_vehicle_model("青岛") is None
     assert normalize_vehicle_model(None) is None
@@ -26,10 +27,9 @@ def test_stamping_title_prefix_normalized_to_t28() -> None:
     assert resolver.find_stamping_vehicle_model(sheet) == "T28"
 
 
-def test_stamping_budian_title_extracts_t2aa_and_version() -> None:
-    """布点工艺清单标题不含「确认表」，仍应抽出车型；版本在标签右侧隔一列。"""
+def test_stamping_title_extracts_version_and_supplier() -> None:
     sheet = Workbook().active
-    sheet["D1"] = "T2AA项目冲压模具布点工艺清-20260818"
+    sheet["D1"] = "T2AA项目冲压工艺确认表-20260818"
     sheet["A2"] = "    冲压承制公司："
     sheet["D2"] = "安庆常庆汽车部件有限公司"
     sheet["P2"] = "版本"

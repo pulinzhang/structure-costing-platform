@@ -18,22 +18,22 @@ from decimal import Decimal
 from sqlalchemy.orm import Session
 
 from app.common.money import Q4
+from app.common.swing_shear import applied_swing_shear_fee_per_ton, steel_kg_price_with_swing_shear
 from app.models.costing import SteelPrice
 from app.models.stamping import StampingPart
 from app.models.stamping.tailor_weld_blank import StampingTailorWeldBlank
 from app.models.yishiyiyi import StampingScrapPrice
-from app.repositories.stamping.stamping_process_fee_repository import (
-    StampingProcessFeeRepository,
-)
 from app.schemas.dto.stamping_part_cost_dto import StampingPartCostCalcAmounts
 from app.schemas.vo.stamping_part_cost_vo import StampingPartCostFailedItemVO
 from app.services.costing.stamping_part_cost.calc.constants import (
     AMOUNT_QUANTIZE,
-    FEE_QUANTIZE,
     UTIL_QUANTIZE,
     compute_finished_cost_stack,
     quantize,
 )
+from app.services.costing.stamping_part_cost.calc.fees.die import DieFeeResolver
+from app.services.costing.stamping_part_cost.calc.fees.gauge import GaugeFeeResolver
+from app.services.costing.stamping_part_cost.calc.fees.process import ProcessFeeResolver
 from app.services.costing.stamping_part_cost.calc.resolvers import PriceResolver
 from app.services.costing.stamping_part_cost.helpers import to_decimal
 
@@ -44,10 +44,14 @@ class TailorWeldPartCostCalculator:
     def __init__(
         self,
         price_resolver: PriceResolver | None = None,
-        fee_repo: StampingProcessFeeRepository | None = None,
+        process_fee_resolver: ProcessFeeResolver | None = None,
+        die_fee_resolver: DieFeeResolver | None = None,
+        gauge_fee_resolver: GaugeFeeResolver | None = None,
     ) -> None:
         self.price_resolver = price_resolver or PriceResolver()
-        self.fee_repo = fee_repo or StampingProcessFeeRepository()
+        self.process_fee_resolver = process_fee_resolver or ProcessFeeResolver()
+        self.die_fee_resolver = die_fee_resolver or DieFeeResolver()
+        self.gauge_fee_resolver = gauge_fee_resolver or GaugeFeeResolver()
 
     def calc_part_cost(
         self,
@@ -66,6 +70,7 @@ class TailorWeldPartCostCalculator:
         management_rate: Decimal,
         warehouse_packaging_rate: Decimal,
         pretax_profit_rate: Decimal,
+        swing_shear_fee_per_ton: Decimal = Decimal("0"),
     ) -> StampingPartCostCalcAmounts | StampingPartCostFailedItemVO:
         blanks = list(part.tailor_weld_blanks or [])
         blanks = sorted(blanks, key=lambda b: (b.blank_seq or 0, b.id or 0))
@@ -86,6 +91,10 @@ class TailorWeldPartCostCalculator:
 
         kg_scale = Decimal("1000")
         scrap_kg_price = scrap_ton_price / kg_scale
+        applied_swing_fee = applied_swing_shear_fee_per_ton(
+            has_swing_shear=bool(part.has_swing_shear),
+            fee_per_ton=swing_shear_fee_per_ton,
+        )
 
         blank_kg_total = Decimal("0")
         material_amount_raw = Decimal("0")
@@ -106,6 +115,7 @@ class TailorWeldPartCostCalculator:
                 loss_rate=loss_rate,
                 recovery_rate=recovery_rate,
                 scrap_kg_price=scrap_kg_price,
+                swing_shear_fee_per_ton=applied_swing_fee,
             )
             if isinstance(blank_or_error, StampingPartCostFailedItemVO):
                 return blank_or_error
@@ -131,28 +141,22 @@ class TailorWeldPartCostCalculator:
         scrap_kg = blank_kg_total - finished_total_kg
         utilization = quantize((finished_total_kg / blank_kg_total) * Decimal("100"), UTIL_QUANTIZE)
 
-        fee = self.fee_repo.get_by_business_key(
+        process = self.process_fee_resolver.lookup(db, part=part, year=year, supplier=supplier)
+        if isinstance(process, StampingPartCostFailedItemVO):
+            return process
+        die = self.die_fee_resolver.lookup(
             db,
             year=year,
             location=part.location,
-            stamping_supplier=supplier,
             vehicle_model=part.vehicle_model,
-            version=part.version,
             part_number=part.part_number,
         )
-        if fee is None:
-            return StampingPartCostFailedItemVO(
-                part_number=part.part_number,
-                part_name=part.part_name,
-                reason="未找到对应加工费结果",
-            )
-        if fee.final_processing_fee is None:
-            return StampingPartCostFailedItemVO(
-                part_number=part.part_number,
-                part_name=part.part_name,
-                reason="加工费确认单价为空，请先完成加工费计算或录入其它费用",
-            )
-        process_fee_amount = quantize(Decimal(str(fee.final_processing_fee)), FEE_QUANTIZE)
+        gauge = self.gauge_fee_resolver.lookup(
+            db,
+            location=part.location,
+            vehicle_model=part.vehicle_model,
+            part_number=part.part_number,
+        )
 
         material_amount_sheet = quantize(material_amount_raw, AMOUNT_QUANTIZE)
         loss_scrap_deduction = quantize(loss_scrap_raw, AMOUNT_QUANTIZE)
@@ -177,7 +181,9 @@ class TailorWeldPartCostCalculator:
             unit_cost,
         ) = compute_finished_cost_stack(
             material_net_per_part=material_net_per_part,
-            process_fee_amount=process_fee_amount,
+            process_fee_amount=process.process_fee_amount,
+            die_fee_amount=die.die_fee_amount,
+            gauge_fee_amount=gauge.gauge_fee_amount,
             finance_rate=finance_rate,
             management_rate=management_rate,
             warehouse_packaging_rate=warehouse_packaging_rate,
@@ -199,10 +205,15 @@ class TailorWeldPartCostCalculator:
             steel_price_id=steel_price_id,
             steel_mill=steel_mill,
             steel_ton_price=steel_ton_price,
+            swing_shear_fee_per_ton=applied_swing_fee,
             scrap_price_id=scrap.id,
             scrap_ton_price=scrap_ton_price,
-            process_fee_id=fee.id,
-            process_fee_amount=process_fee_amount,
+            process_fee_id=process.process_fee_id,
+            process_fee_amount=process.process_fee_amount,
+            die_fee_id=die.die_fee_id,
+            die_fee_amount=die.die_fee_amount,
+            gauge_fee_id=gauge.gauge_fee_id,
+            gauge_fee_amount=gauge.gauge_fee_amount,
             material_amount_sheet=material_amount_sheet,
             loss_scrap_deduction=loss_scrap_deduction,
             process_scrap_deduction=process_scrap_deduction,
@@ -228,6 +239,7 @@ class TailorWeldPartCostCalculator:
         loss_rate: Decimal,
         recovery_rate: Decimal,
         scrap_kg_price: Decimal,
+        swing_shear_fee_per_ton: Decimal,
     ) -> tuple[Decimal, Decimal, Decimal, SteelPrice] | StampingPartCostFailedItemVO:
         blank_label = blank.blank_part_number or f"{part.part_number}-{blank.blank_seq}"
         material = (blank.material or "").strip()
@@ -283,7 +295,8 @@ class TailorWeldPartCostCalculator:
             grade=material,
             thickness=thickness,
         )
-        if not steel_rows:
+        steel = self.price_resolver.pick_steel_price(steel_rows)
+        if steel is None:
             return StampingPartCostFailedItemVO(
                 part_number=part.part_number,
                 part_name=part.part_name,
@@ -292,17 +305,8 @@ class TailorWeldPartCostCalculator:
                     f"（材质={material}, 料厚={thickness}）"
                 ),
             )
-        if len(steel_rows) > 1:
-            return StampingPartCostFailedItemVO(
-                part_number=part.part_number,
-                part_name=part.part_name,
-                reason=(
-                    f"子片 {blank_label} 钢材联动价匹配到 {len(steel_rows)} 条，"
-                    "中标场景应唯一，请检查数据"
-                ),
-            )
-        steel = steel_rows[0]
-        steel_kg_price = Decimal(str(steel.final_price_per_ton)) / Decimal("1000")
+        mill_ton_price = Decimal(str(steel.final_price_per_ton))
+        steel_kg_price = steel_kg_price_with_swing_shear(mill_ton_price, swing_shear_fee_per_ton)
 
         # ①②按子片；③在总成 O 上一次算
         amount_sheet = blank_kg * steel_kg_price * (Decimal("1") + loss_rate)

@@ -28,13 +28,13 @@ from app.schemas.vo.bom_annual_part_price_vo import (
     BomAnnualPartPriceResponse,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.services.bom.annual_part_price_export_service import (
+from app.services.bom.annual_part_price import BomAnnualPartPriceService
+from app.services.bom.annual_part_price.export_service import (
     BomAnnualPartPriceExportService,
 )
-from app.services.bom.annual_part_price_import_service import (
+from app.services.bom.annual_part_price.import_service import (
     BomAnnualPartPriceImportService,
 )
-from app.services.bom.annual_part_price_service import BomAnnualPartPriceService
 from app.utils.response import ApiResponse
 
 router = APIRouter(prefix="/api/bom/annual-part-price", tags=["BOM 年度零件价 API"])
@@ -97,6 +97,7 @@ def export_excel(
         db,
         location=location.strip() if location else None,
         year=year,
+        current_user=current_user,
     )
     return StreamingResponse(
         iter([content]),
@@ -107,10 +108,16 @@ def export_excel(
 
 @router.get("/template")
 def download_import_template(
+    location: str = Query(..., description="采购基地"),
+    vehicle_model: str = Query(..., description="项目/车型"),
+    year: int = Query(..., ge=2000, le=2100, description="年度"),
+    db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BOM_ANNUAL_PART_PRICE_UPLOAD_VIEW)),
 ) -> StreamingResponse:
-    """下载年度零件价导入模板。"""
-    content, filename = _import_service.build_template()
+    """下载年度零件价导入模板（该基地该项目 BOM 外购叶子）。"""
+    content, filename = _import_service.build_template(
+        db, location=location, vehicle_model=vehicle_model, year=year
+    )
     return StreamingResponse(
         iter([content]),
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

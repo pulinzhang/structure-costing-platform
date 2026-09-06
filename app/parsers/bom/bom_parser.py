@@ -16,14 +16,14 @@ from pathlib import Path
 from openpyxl import load_workbook
 
 from app.parsers.bom.meta_parser import parse_bom_meta
-from app.parsers.bom.models import BomParseResult, BomParsedMeta, BomParsedNode
+from app.parsers.bom.models import BomParsedMeta, BomParsedNode, BomParseResult
 from app.parsers.bom.node_parser import parse_bom_nodes
 from app.parsers.bom.sketch_assigner import assign_sketch_images
 
 __all__ = [
+    "BomParseResult",
     "BomParsedMeta",
     "BomParsedNode",
-    "BomParseResult",
     "parse_bom_excel",
 ]
 

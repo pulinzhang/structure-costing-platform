@@ -9,9 +9,6 @@ from app.models.settings import UserToken
 from app.repositories.persist import model_from_payload, query_update
 from app.schemas.dto.user_dto import UserTokenCreate, UserTokenSnapshot
 
-# 无活动超时：3 小时
-TOKEN_IDLE_HOURS = 3
-
 
 class UserTokenRepository:
     """登录 Token 数据访问"""
@@ -87,9 +84,9 @@ class UserTokenRepository:
         db.flush()
         return count
 
-    def delete_expired(self, db: Session, idle_hours: int = TOKEN_IDLE_HOURS) -> int:
-        """删除超过 idle_hours 无活动的 token"""
-        deadline = now() - timedelta(hours=idle_hours)
+    def delete_expired(self, db: Session, idle_minutes: int) -> int:
+        """删除超过 idle_minutes 无业务活动的 token"""
+        deadline = now() - timedelta(minutes=idle_minutes)
         count = (
             db.query(UserToken)
             .filter(UserToken.last_active_at < deadline)

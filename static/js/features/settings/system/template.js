@@ -127,6 +127,17 @@ export function settingsTemplate() {
         max: '100',
         placeholder: '2',
     });
+    const swingShearFeeField = suffixInput({
+        id: 'settingsSwingShearProcessFeePerTon',
+        label: '摆剪钢价加价',
+        tip: '摆剪件材料核算时加到联动钢价上；默认 150 元/吨。改了只影响之后重算。',
+        unit: '元/吨',
+        step: '0.01',
+        min: '0',
+        max: '100000',
+        placeholder: '150',
+        helper: '工艺确认表出现「摆剪」的零件会带此加价',
+    });
 
     return `
         <div class="relative">
@@ -160,6 +171,7 @@ export function settingsTemplate() {
                         ${densityField}
                         ${lossField}
                         ${recoveryField}
+                        ${swingShearFeeField}
                     </div>
                 </section>
 

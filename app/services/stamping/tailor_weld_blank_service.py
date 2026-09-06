@@ -29,8 +29,8 @@ from app.schemas.dto.stamping_tailor_weld_blank_dto import (
     TailorWeldBlankPatch,
     TailorWeldBlankWrite,
 )
-from app.schemas.vo.stamping_tailor_weld_blank_vo import StampingTailorWeldBlankVO
 from app.schemas.dto.stamping_upload_dto import StampingPartPatch
+from app.schemas.vo.stamping_tailor_weld_blank_vo import StampingTailorWeldBlankVO
 from app.schemas.vo.user_vo import UserVO
 
 logger = logging.getLogger("service.stamping.tailor_weld_blank")

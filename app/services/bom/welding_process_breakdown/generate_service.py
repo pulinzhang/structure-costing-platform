@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 
 from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING, audit_create
 from app.common.timezone import now
+from app.exceptions.base import BusinessException, NotFoundException
 from app.models.bom import BomNode, BomSnapshot, BomWeldingProcessBreakdownNode
 from app.parsers.bom.welding_process_breakdown_parser import parse_welding_info_text
 from app.repositories.bom.bom_repository import BomNodeRepository, BomSnapshotRepository
@@ -131,7 +132,7 @@ class BomWeldingProcessBreakdownGenerateService:
         log_id: int | None = None,
         calc_batch_id: str | None = None,
         started_at: datetime | None = None,
-    ) -> tuple[BomWeldingProcessBreakdownGenerateResultVO | None, str | None]:
+    ) -> BomWeldingProcessBreakdownGenerateResultVO:
         location = dto.location.strip()
         vehicle_model = dto.vehicle_model.strip()
         bom_version = dto.bom_version.strip()
@@ -150,47 +151,47 @@ class BomWeldingProcessBreakdownGenerateService:
         )
         report(5, "解析 BOM 快照...")
 
-        snapshot, error = self._resolve_snapshot(
-            db,
-            location=location,
-            vehicle_model=vehicle_model,
-            bom_version=bom_version,
-            customer_name_filter=customer_name_filter,
-        )
-        if error or snapshot is None:
-            process_log.error(error or "未找到 BOM")
-            self._fail_log(
-                db,
-                log_id=log_id,
-                message=error or "未找到 BOM",
-                detail_text=process_log.build(),
-            )
-            return None, error
-
-        process_log.line(f"snapshot_id={snapshot.id} 顾客={snapshot.customer_name or '—'}")
-        report(12, "检查已审核数据...")
-
-        approved_count = self.repository.count_by_scope_and_statuses(
-            db,
-            location=location,
-            vehicle_model=vehicle_model,
-            bom_version=bom_version,
-            statuses=[AUDIT_APPROVED],
-        )
-        if approved_count > 0:
-            err = f"该范围已有 {approved_count} 条已审核拆解，" "请先反审核后再重新生成"
-            process_log.error(err)
-            self._fail_log(db, log_id=log_id, message=err, detail_text=process_log.build())
-            return None, err
-
-        bom_nodes = self.node_repository.list_by_snapshot(db, snapshot.id)
-        by_id = index_nodes_by_id(bom_nodes)
-        children_map = build_children_map(bom_nodes)
-        weld_candidates = [n for n in bom_nodes if (n.weld_info or "").strip()]
-        process_log.line(f"BOM 节点 {len(bom_nodes)}，含焊接原文 {len(weld_candidates)}")
-        audit_fields = audit_create(current_user)
-
         try:
+            snapshot = self._resolve_snapshot(
+                db,
+                location=location,
+                vehicle_model=vehicle_model,
+                bom_version=bom_version,
+                customer_name_filter=customer_name_filter,
+            )
+
+            process_log.line(f"snapshot_id={snapshot.id} 顾客={snapshot.customer_name or '—'}")
+            report(12, "检查已审核数据...")
+
+            approved_count = self.repository.count_by_scope_and_statuses(
+                db,
+                location=location,
+                vehicle_model=vehicle_model,
+                bom_version=bom_version,
+                statuses=[AUDIT_APPROVED],
+            )
+            if approved_count > 0:
+                raise BusinessException(
+                    f"该范围已有 {approved_count} 条已审核拆解，请先反审核后再重新生成"
+                )
+
+            bom_nodes = self.node_repository.list_by_snapshot(db, snapshot.id)
+            by_id = index_nodes_by_id(bom_nodes)
+            children_map = build_children_map(bom_nodes)
+            weld_candidates = [n for n in bom_nodes if (n.weld_info or "").strip()]
+            l0_leaf_without_weld = sum(
+                1
+                for node in bom_nodes
+                if int(node.level) == 0
+                and not children_map.get(node.id)
+                and not (node.weld_info or "").strip()
+            )
+            process_log.line(f"BOM 节点 {len(bom_nodes)}，含焊接原文 {len(weld_candidates)}")
+            process_log.line(
+                f"L0 无子件且无焊信 {l0_leaf_without_weld} 件（不落拆解；有处理费须补焊信）"
+            )
+            audit_fields = audit_create(current_user)
+
             report(20, "清理未审核旧拆解...")
             process_log.section("清理")
             deleted = self.repository.delete_unaudited_by_scope(
@@ -270,18 +271,21 @@ class BomWeldingProcessBreakdownGenerateService:
                 result.node_count,
                 result.line_count,
             )
-            return result, None
-        except Exception as exc:
+            return result
+        except BusinessException as exc:
             db.rollback()
-            logger.exception("生成焊接工艺拆解失败")
-            process_log.error(str(exc))
+            process_log.error(exc.message)
             self._fail_log(
                 db,
                 log_id=log_id,
-                message=str(exc),
+                message=exc.message,
                 detail_text=process_log.build(),
             )
-            return None, str(exc)
+            raise
+        except Exception:
+            db.rollback()
+            logger.exception("生成焊接工艺拆解失败")
+            raise
 
     def mark_log_failed(
         self,
@@ -313,18 +317,20 @@ class BomWeldingProcessBreakdownGenerateService:
         vehicle_model: str,
         bom_version: str,
         customer_name_filter: str | None,
-    ) -> tuple[BomSnapshot | None, str | None]:
+    ) -> BomSnapshot:
         snapshot = self.snapshot_repository.get_by_unique_key(
             db, location, vehicle_model, bom_version
         )
         if not snapshot:
-            return None, (f"未找到 BOM：基地={location} 项目={vehicle_model} 版本={bom_version}")
+            raise NotFoundException(
+                f"未找到 BOM：基地={location} 项目={vehicle_model} 版本={bom_version}"
+            )
         if customer_name_filter and (snapshot.customer_name or "") != customer_name_filter:
-            return None, (
+            raise BusinessException(
                 f"顾客名称不匹配：期望「{customer_name_filter}」，"
                 f"清单为「{snapshot.customer_name or ''}」"
             )
-        return snapshot, None
+        return snapshot
 
     def _persist_node_with_lines(
         self,

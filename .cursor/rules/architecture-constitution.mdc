@@ -11,6 +11,7 @@ alwaysApply: true
 >
 > 可读导读：`docs/architecture.md`（与本文同步维护）
 > 本文副本：`docs/architecture-constitution.mdc`（改规则时两处一起改）
+> 核算编排器另见指挥家宪法：`.cursor/rules/orchestrator-constitution.mdc`
 
 ---
 
@@ -141,6 +142,10 @@ class StampingPartService:
 - 调用 Parser（**唯一能调用 Parser 的层级**）
 - **ORM → VO**（`VO.model_validate`；不在 Model 里写 `to_dict`，不把 VO dump 成 API dict）
 - **异步任务**：`create_task` + `submit`；成功文案与任务终态映射；崩溃时释放计算锁或回写引擎 Run（见 §5.3）
+
+### 2.2.1 核算 Orchestrator（指挥家）
+
+核算/导出编排器是 Service 切片内的**指挥角色**，不是又一层可以写循环的地方。主方法只允许 `prepare → engine/pipeline → persist`。硬规则见指挥家宪法：`.cursor/rules/orchestrator-constitution.mdc` · `docs/orchestrator-constitution.mdc`。
 
 ---
 
@@ -409,7 +414,7 @@ app/
 | **上游 → 下游** | ❌ 禁止。如 `stamping` 不得依赖 `costing` / `llm` |
 | **同层互依** | ❌ 禁止成环。同层确需共享算法时：抽到 `common/`，或明确归属一方、另一方单向依赖 |
 | **调用形态优先序** | ① 上游 Service 的稳定查询 API → ② 只读上游 Repository（批量/导出/计算热路径）→ ③ 抽到 `common/`（真正多切片复用的无领域编排逻辑） |
-| **`llm` 隔离** | 只读上游结果表 Model，不经上游 Service→VO。内部工具留在本切片（如 `_money.py`），**禁止**抽到 `app/common/`。本切片 Repo 用这些纯函数不算主业务「Repo 反向依赖 Service」。细则：`docs/llm-costing-analysis-report-design.md` B.2.1 |
+| **`llm` 隔离** | 只读上游结果表 Model，不经上游 Service→VO。内部工具留在本切片（如 `_money.py`），**禁止**抽到 `app/common/`。本切片 Repo 用这些纯函数不算主业务「Repo 反向依赖 Service」。细则：`docs/llm/llm-costing-analysis-report-design.md` B.2.1 |
 
 ```
 ✅ 正确：
@@ -611,6 +616,7 @@ async def upload_stamping_file(..., current_user: UserVO = Depends(...)):
 - [ ] 把同一套 Session/进度/finally 复制进多个 Service 了吗？（含引擎 worker）→ **禁止**，抽 `async_task` runner
 - [ ] Service 用 `(None, "错误文案")` 或 Router 入口返回 `VO | None` / `bool` 再由 Router 判空了吗？→ **禁止**，抛 `NotFoundException` / `BusinessException`（§5.2）
 - [ ] Router 用 `"不存在" in error` 猜 404、或 `if error:` / `if not vo:` 转 `HTTPException` 了吗？→ **禁止**，交给全局 handler
+- [ ] 核算 `orchestrator.py` 的 `calculate`/`execute` 里有 `for` / `index %` / 写库吗？→ **禁止**，见指挥家宪法
 
 ---
 
@@ -623,6 +629,7 @@ async def upload_stamping_file(..., current_user: UserVO = Depends(...)):
 | Model 里有业务方法 | 耦合数据库和业务 | Model 只定义结构，用 Schema 序列化 |
 | 多层都写同一份逻辑 | 代码重复、难以维护 | 各层各司其职 |
 | Router 直接调用 Parser | 绕过 Service 业务逻辑 | Router → Service → Parser |
+| Orchestrator 主方法里 `for` / 写库 / 掐进度 | 指挥家去拉琴 | `prepare` → `Engine.run` → `persist`（指挥家宪法） |
 | Router 写后台 worker 壳 / 引擎自建 Session 壳 | 进度/异常路径复制多份 | Service `start_*` + `async_task` runner（§5.3） |
 | Service `return None, "错误"` / Router 拆元组或 `if not vo` 猜状态码 | 两套错误通道，404/400/500/409 靠文案或 Router 分支 | Service 抛 `NotFoundException` / `BusinessException`（冲突用 `code=409`）；全局 handler 转响应（§5.2） |
 | Repository 做权限/角色分支 | 违反职责边界 | 策略判断放 Service |

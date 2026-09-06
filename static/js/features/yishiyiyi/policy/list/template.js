@@ -47,8 +47,8 @@ export function policyDownloadTemplate() {
                     <div class="flex items-end gap-3 flex-wrap">
                         ${filterSelect('policyDownloadYear', '年度')}
                         ${filterSelect('policyDownloadMonth', '月份')}
-                        ${filterSelect('policyDownloadCategory', '钢种')}
-                        ${filterInput('policyDownloadGrade', '牌号', '输入牌号（模糊）')}
+                        ${filterSelect('policyDownloadCategory', '分类')}
+                        ${filterInputWithDatalist('policyDownloadGrade', '牌号', 'policyGradeOptions')}
                         ${filterInputWithDatalist('policyDownloadMill', '钢厂', 'steelMillOptions')}
                     </div>
                     <div class="flex items-center gap-2">
@@ -144,7 +144,7 @@ export function policyDownloadTemplate() {
         </div>
 
         <!-- 加载遮罩 -->
-        <div id="downloadLoading" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center">
+        <div id="downloadLoading" class="hidden fixed inset-0 z-[80] bg-black/60 backdrop-blur-sm flex items-center justify-center">
             <div class="bg-[#1e1e1e] border border-[#2c2c2c] rounded p-6 flex flex-col items-center gap-3"
                  style="box-shadow: 0 4px 24px rgba(0,0,0,0.8);">
                 <div class="w-6 h-6 border-2 border-[#2c2c2c] border-t-[#d32f2f] rounded-full animate-spin"></div>
@@ -181,9 +181,9 @@ function filterInput(id, label, placeholder) {
 function filterInputWithDatalist(id, label, datalistId) {
     return `<label class="space-y-1">
         <span class="block text-[9px] font-semibold text-[#484848] uppercase tracking-[0.12em] whitespace-nowrap">${label}</span>
-        <input type="text" id="${id}" list="${datalistId}"
-               class="w-44 h-7 pl-2.5 pr-3 text-[11px] bg-[#0d0d0d] border border-[#272727] text-[#909090] placeholder:text-[#505050] focus:outline-none focus:border-[#ff5252] focus:text-[#d0d0d0] transition-all rounded-sm"
-               placeholder="输入搜索或选择">
+        <input type="text" id="${id}" list="${datalistId}" disabled
+               class="w-44 h-7 pl-2.5 pr-3 text-[11px] bg-[#0d0d0d] border border-[#272727] text-[#909090] placeholder:text-[#505050] focus:outline-none focus:border-[#ff5252] focus:text-[#d0d0d0] transition-all rounded-sm disabled:opacity-50 disabled:cursor-not-allowed"
+               placeholder="请先选择分类">
         <datalist id="${datalistId}"></datalist>
     </label>`;
 }
@@ -214,8 +214,8 @@ export function renderPolicyRows(records) {
         return `
         <tr class="group border-b border-[#181818] transition-colors duration-150 hover:bg-[#ffffff]/[0.015]">
             <td class="px-3 py-2 text-[11px] text-[#505050] whitespace-nowrap font-mono text-right tabular-nums">${esc(record.policy_id || '')}</td>
-            <td class="px-3 py-2 text-[11px] text-[#606060] whitespace-nowrap font-mono text-right tabular-nums">${esc(record.year || '')}</td>
-            <td class="px-3 py-2 text-[11px] text-[#606060] whitespace-nowrap font-mono text-right tabular-nums">${esc(record.month || '')}</td>
+            <td class="px-3 py-2 text-[11px] text-[#606060] whitespace-nowrap font-mono text-right tabular-nums">${esc(fmtYear(record.year))}</td>
+            <td class="px-3 py-2 text-[11px] text-[#606060] whitespace-nowrap font-mono text-right tabular-nums">${esc(fmtMonth(record.month))}</td>
             <td class="px-3 py-2 text-[11px] text-[#888888] whitespace-nowrap">${esc(record.steel_mill || '')}</td>
             <td class="px-3 py-2 text-[11px] text-[#888888] whitespace-nowrap">${esc(record.category_name || '')}</td>
             <td class="px-3 py-2 text-[11px] text-[#888888] whitespace-nowrap">${esc(formatPolicyType(record.policy_type))}</td>

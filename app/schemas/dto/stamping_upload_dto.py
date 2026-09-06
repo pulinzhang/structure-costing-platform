@@ -54,6 +54,12 @@ class PartData:
         },
     )
     sheet_type: str | None = field(default=None, metadata={"description": "板料类型"})
+    is_offal_nested: bool = field(default=False, metadata={"description": "是否利废件"})
+    offal_source: str | None = field(default=None, metadata={"description": "利用哪类废料"})
+    is_scrap_byproduct: bool = field(
+        default=False, metadata={"description": "是否废料副产品（不算冲压加工费）"}
+    )
+    has_swing_shear: bool = field(default=False, metadata={"description": "是否含摆剪工序"})
     die_type: str | None = field(default=None, metadata={"description": "模具类型"})
     process_method: str | None = field(default=None, metadata={"description": "工序方式"})
     automation: str | None = field(
@@ -86,6 +92,7 @@ class ProcessData:
     die_sets: int = field(metadata={"description": "模具套数"})
     # 以下字段有默认值，放在后面
     process_code: str | None = field(default=None, metadata={"description": "工序代码"})
+    die_number: str | None = field(default=None, metadata={"description": "模具编号"})
     tonnage: int | None = field(default=None, metadata={"description": "吨位(T)"})
     cost_ratio: Decimal = field(default=Decimal("1.00"), metadata={"description": "费用比例"})
     remark: str | None = field(default=None, metadata={"description": "备注"})
@@ -124,6 +131,8 @@ class StampingPartPatch(TypedDict, total=False):
     part_number: str
     part_name: str | None
     is_tailor_welded: bool
+    is_offal_nested: bool
+    offal_source: str | None
     material: str | None
     thickness: Decimal | None
     part_weight: Decimal | None

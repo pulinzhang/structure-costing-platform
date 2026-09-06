@@ -39,6 +39,7 @@ const SVG_ICONS = {
     'clock': `<svg class="inline-block w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`,
     'folder': `<svg class="inline-block w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>`,
     'copy': `<svg class="inline-block w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H9.75"/></svg>`,
+    'external-link': `<svg class="inline-block w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/></svg>`,
     'arrows-split': `<svg class="inline-block w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>`,
     'pencil': `<svg class="inline-block w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`,
     'archive': `<svg class="inline-block w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>`,
@@ -53,6 +54,81 @@ const svgIcon = (name, extraClass = '') => {
     if (!extraClass) return SVG_ICONS[name];
     return SVG_ICONS[name].replace(/class="([^"]*)"/, (match, existingClass) => {
         return `class="${existingClass} ${extraClass}"`;
+    });
+};
+
+const openProcessReportButtonHtml = () => `
+<button type="button" data-action="open-process-report" title="新页签查看" aria-label="新页签查看"
+        class="flex items-center justify-center w-7 h-7 rounded text-[#555555] hover:text-[#9e9e9e] hover:bg-[#262626] transition-colors">
+    ${svgIcon('external-link', 'w-3.5 h-3.5')}
+</button>`;
+
+const openProcessReportInNewTab = (root) => {
+    if (!root) return;
+    const title = (root.querySelector('h5')?.innerText || '计算过程').replace(/\s+/g, ' ').trim();
+    const metaParts = [];
+    root.querySelectorAll(':scope > div').forEach((section) => {
+        if (section.querySelector('h5') || section.querySelector('pre')) return;
+        const text = (section.innerText || '').trim();
+        if (text) metaParts.push(text);
+    });
+    const bodyText = (root.querySelector('pre')?.innerText || '').trim() || '（无过程文本）';
+    const metaHtml = metaParts.length
+        ? `<div class="meta">${metaParts.map((part) => esc(part).replace(/\n/g, '<br>')).join('')}</div>`
+        : '';
+    const html = `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${esc(title)}</title>
+<style>
+  html, body { margin: 0; background: #0a0a0a; color: #e4e4e4; }
+  body { font-family: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace; }
+  header {
+    position: sticky; top: 0; z-index: 1;
+    padding: 18px 32px 16px;
+    background: #111111;
+    border-bottom: 1px solid #222222;
+  }
+  h1 {
+    margin: 0; font-size: 13px; font-weight: 600;
+    letter-spacing: 0.08em; text-transform: uppercase; color: #b0b0b0;
+  }
+  .meta {
+    padding: 16px 32px 0; font-size: 13px; line-height: 1.8; color: #888888;
+  }
+  pre {
+    margin: 20px 32px 48px; padding: 0;
+    font: inherit; font-size: 15px; line-height: 1.75;
+    white-space: pre-wrap; word-break: break-word; color: #d0d0d0;
+  }
+</style>
+</head>
+<body>
+  <header><h1>${esc(title)}</h1></header>
+  ${metaHtml}
+  <pre>${esc(bodyText)}</pre>
+</body>
+</html>`;
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const tab = window.open(url, '_blank');
+    if (!tab) {
+        URL.revokeObjectURL(url);
+        showToast('无法打开新页签，请允许弹窗', 'warning');
+        return;
+    }
+    window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+};
+
+const bindProcessReportOpenTab = (root) => {
+    const btn = root?.querySelector('[data-action="open-process-report"]');
+    if (!btn) return;
+    btn.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        openProcessReportInNewTab(root);
     });
 };
 
@@ -161,6 +237,30 @@ const scaleDecimalByPow10 = (value, exp, outDigits, options = {}) => {
 const fmtNum = (value, digits = 2) => {
     const formatted = formatDecimalFixed(value, digits, { allowNegative: true });
     return formatted == null ? '-' : formatted;
+};
+
+/** 年度展示：2026年；无效为空串（option.value / API 仍用数字） */
+const fmtYear = (year) => {
+    if (year == null || year === '') return '';
+    const n = Number(year);
+    if (!Number.isFinite(n) || n < 1) return '';
+    return `${Math.trunc(n)}年`;
+};
+
+/** 月份展示：07月；无效为空串 */
+const fmtMonth = (month) => {
+    if (month == null || month === '') return '';
+    const n = Number(month);
+    if (!Number.isFinite(n) || n < 1 || n > 12) return '';
+    return `${String(Math.trunc(n)).padStart(2, '0')}月`;
+};
+
+/** 年月合写：2026年07月；缺一侧则只出有值的一侧 */
+const fmtPeriod = (year, month) => {
+    const y = fmtYear(year);
+    const m = fmtMonth(month);
+    if (y && m) return `${y}${m}`;
+    return y || m;
 };
 
 /** 给已规范的固定小数字符串加千分位（仅展示用） */
@@ -339,7 +439,25 @@ const HttpClient = (() => {
         return defaultFilename;
     }
 
-    async function request(method, url, { params, body, headers, timeout, skipAuth } = {}) {
+    const NETWORK_UNAVAILABLE_MSG = '无法连接服务器，请确认服务已启动或检查网络';
+    const REQUEST_TIMEOUT_MSG = '请求超时（后端可能仍在处理），请稍后刷新确认结果';
+    const DOWNLOAD_TIMEOUT_MSG = '下载超时，请稍后重试';
+
+    function isAbortError(error) {
+        return Boolean(error && (error.name === 'AbortError' || error.code === 20));
+    }
+
+    /** fetch 失败时浏览器会抛 TypeError（Chrome: Failed to fetch），不要把原文弹给用户 */
+    function humanizeTransportError(error, fallback) {
+        const msg = String((error && error.message) || '').trim();
+        if (!msg) return fallback;
+        if (/Failed to fetch|NetworkError|Load failed|Network request failed|ERR_CONNECTION|ERR_FAILED|ECONNREFUSED/i.test(msg)) {
+            return NETWORK_UNAVAILABLE_MSG;
+        }
+        return msg;
+    }
+
+    async function request(method, url, { params, body, headers, timeout, skipAuth, skipToast } = {}) {
         const methodUpper = String(method || 'GET').toUpperCase();
         const query = { ...(params || {}) };
         // GET 加时间戳，避免浏览器/代理缓存旧数据
@@ -388,7 +506,7 @@ const HttpClient = (() => {
                     return { ok: true, status: response.status, data: data.data, message: data.message };
                 }
                 const msg = data.message || data.detail || '请求失败';
-                showToast(msg, 'error');
+                if (!skipToast) showToast(msg, 'error');
                 const err = new Error(msg);
                 err.status = response.status;
                 err.data = data.data;
@@ -397,7 +515,7 @@ const HttpClient = (() => {
 
             if (!response.ok) {
                 const msg = (data && (data.message || data.detail)) || `请求失败 (${response.status})`;
-                showToast(msg, 'error');
+                if (!skipToast) showToast(msg, 'error');
                 const err = new Error(msg);
                 err.status = response.status;
                 throw err;
@@ -406,10 +524,13 @@ const HttpClient = (() => {
             return { ok: true, status: response.status, data };
         } catch (error) {
             clearTimeout(timer);
-            if (error.name === 'AbortError') {
-                showToast('请求超时（后端可能仍在处理），请稍后刷新确认结果', 'error');
+            if (isAbortError(error)) {
+                error.message = REQUEST_TIMEOUT_MSG;
+                if (!skipToast) showToast(REQUEST_TIMEOUT_MSG, 'error');
             } else if (!error.status) {
-                showToast(error.message || '网络请求失败', 'error');
+                const msg = humanizeTransportError(error, '网络请求失败');
+                error.message = msg;
+                if (!skipToast) showToast(msg, 'error');
             }
             throw error;
         }
@@ -468,10 +589,13 @@ const HttpClient = (() => {
             return { ok: true, status: response.status, blob, filename };
         } catch (error) {
             clearTimeout(timer);
-            if (error.name === 'AbortError') {
-                showToast('下载超时，请稍后重试', 'error');
+            if (isAbortError(error)) {
+                error.message = DOWNLOAD_TIMEOUT_MSG;
+                showToast(DOWNLOAD_TIMEOUT_MSG, 'error');
             } else if (!error.status) {
-                showToast(error.message || '下载失败', 'error');
+                const msg = humanizeTransportError(error, '下载失败');
+                error.message = msg;
+                showToast(msg, 'error');
             }
             throw error;
         }
@@ -495,6 +619,9 @@ const HttpClient = (() => {
 window.HttpClient = HttpClient;
 window.esc = esc;
 window.fmtNum = fmtNum;
+window.fmtYear = fmtYear;
+window.fmtMonth = fmtMonth;
+window.fmtPeriod = fmtPeriod;
 window.formatDecimalFixed = formatDecimalFixed;
 window.parseDecimalInput = parseDecimalInput;
 window.scaleDecimalByPow10 = scaleDecimalByPow10;
@@ -503,3 +630,7 @@ window.compareDecimalStrings = compareDecimalStrings;
 window.formatFileSize = formatFileSize;
 window.showToast = showToast;
 window.svgIcon = svgIcon;
+window.openProcessReportButtonHtml = openProcessReportButtonHtml;
+window.bindProcessReportOpenTab = bindProcessReportOpenTab;
+window.copyProcessReportButtonHtml = openProcessReportButtonHtml;
+window.bindProcessReportCopy = bindProcessReportOpenTab;

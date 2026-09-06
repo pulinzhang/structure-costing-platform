@@ -82,7 +82,7 @@ export function tonnagePriceTemplate() {
 
                 <div class="px-5 py-3 border-b border-[#14141A]"
                      style="background: linear-gradient(180deg, #0C0C10 0%, #0A0A0E 100%);">
-                    <div class="flex items-center justify-between gap-4 bg-[#0C0C10] border border-[#1E1E26] px-4 py-2.5 rounded-xl font-mono text-[11px]"
+                    <div class="flex items-center justify-between gap-4 bg-[#0C0C10] border border-[#1E1E26] px-4 py-2.5 rounded-md font-mono text-[11px]"
                          style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.02), 0 0 20px rgba(0,0,0,0.3);">
                         <div class="flex items-center gap-3 min-w-0 flex-1">
                             <span class="text-[#555555] shrink-0 tracking-wider">当前筛选：</span>
@@ -216,7 +216,7 @@ function batchAuditDrawerHtml(prefix) {
                     <label class="text-[10px] text-[#777777] mb-1 block" id="${prefix}BatchAuditRemarkLabel">审核意见</label>
                     <textarea id="${prefix}BatchAuditRemark" rows="4" maxlength="500"
                               class="w-full px-3 py-2 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#ffffff] placeholder:text-[#616161] focus:outline-none focus:border-[#ff5252] transition-all rounded resize-none"
-                              placeholder="可选填写审核意见"></textarea>
+                              placeholder="请填写审核意见（必填）"></textarea>
                 </div>
             </div>
             <div class="px-6 py-4 border-t border-[#262626] flex items-center justify-end gap-2 shrink-0">
@@ -357,7 +357,7 @@ export function updateTonnageFilterCapsules() {
         locEl.className = location ? active : idle;
     }
     if (yearEl) {
-        yearEl.textContent = year ? `${year}年` : '全部年度';
+        yearEl.textContent = year ? fmtYear(year) : '全部年度';
         yearEl.className = year ? active : idle;
     }
     if (auditEl) {
@@ -384,7 +384,7 @@ export function renderTableRows(records) {
             <td class="px-2 py-2 overflow-hidden">
                 <div class="font-semibold text-[#F0F0F2]">${esc(record.location)}</div>
             </td>
-            <td class="px-2 py-2 text-[#8E8E93] tabular-nums">${esc(record.year)}</td>
+            <td class="px-2 py-2 text-[#8E8E93] tabular-nums">${esc(fmtYear(record.year))}</td>
             <td class="${numCell} text-[#C8C8D0] font-semibold">${esc(record.tonnage)}</td>
             <td class="px-2 py-1.5 text-right font-mono font-black tabular-nums text-[12px] text-[#FF1E27] bg-[#1A080A] border-x border-[#FF1E27]/20">
                 ${esc(formatPricePerStroke3(record.price_per_stroke))}

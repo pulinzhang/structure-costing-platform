@@ -18,8 +18,7 @@ export function processFeeCalcTemplate() {
                 <div class="flex items-end gap-3 flex-wrap px-1">
                     ${filterSelect('calcYear', '年度', true)}
                     ${filterSelect('calcLocation', '基地', true)}
-                    ${filterSelect('calcSupplier', '冲压工厂', true)}
-                    ${filterSelect('calcVehicleModel', '配套车型')}
+                    ${filterSelect('calcVehicleModel', '配套车型', true)}
                     ${filterSelect('calcVersion', '版本')}
 
                     <button id="calcResetBtn"
@@ -70,7 +69,7 @@ export function processFeeCalcTemplate() {
             </div>
 
             <div id="dataReadyErrorBanner" class="hidden text-[10px] text-[#d69e2e] bg-[#1a1710] px-2.5 py-1.5 border-l-2 border-[#d69e2e]">
-                提示：须选定年度、基地、冲压工厂；并确保存在冲次单价与匹配零件。
+                提示：级联为年度 → 基地 → 车型 → 版本。计算须选定年度、基地、车型，覆盖该车各冲压工厂。并确保存在冲次单价与匹配零件。
             </div>
 
             <div class="pt-2">

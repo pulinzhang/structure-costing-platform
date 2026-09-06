@@ -3,7 +3,7 @@
  * 同步导入：基地 + 年度必选，仅 .xlsx
  */
 
-import { weldingUnitPriceUploadTemplate } from './template.js?v=4';
+import { weldingUnitPriceUploadTemplate } from './template.js?v=5';
 
 const API_BASE = '/api/bom/welding-unit-price';
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -23,7 +23,6 @@ const WeldingUnitPriceUploadPage = {
         this.hideProgress();
         this.clearResult();
         this.clearSelectedFile(false);
-        this.fillDefaultYear();
         this.loadStandardCatalog();
     },
 
@@ -106,13 +105,6 @@ const WeldingUnitPriceUploadPage = {
             event.preventDefault();
             this.submit();
         });
-    },
-
-    fillDefaultYear() {
-        const yearInput = document.getElementById('weldingUnitPriceUploadYear');
-        if (yearInput && !yearInput.value) {
-            yearInput.value = String(new Date().getFullYear());
-        }
     },
 
     async loadStandardCatalog() {
@@ -293,7 +285,6 @@ const WeldingUnitPriceUploadPage = {
         const year = document.getElementById('weldingUnitPriceUploadYear');
         if (location) location.value = '';
         if (year) year.value = '';
-        this.fillDefaultYear();
     },
 
     showProgress(msg = '解析并写入数据库，请稍候') {

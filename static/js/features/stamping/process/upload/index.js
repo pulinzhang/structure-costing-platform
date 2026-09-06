@@ -3,7 +3,11 @@
  * 冲压工艺上传 — 异步 task_id + 进度轮询
  */
 
-import { uploadTemplate } from './template.js';
+import { uploadTemplate } from './template.js?v=8';
+import {
+    setDropzoneDragActive,
+    setDropzoneFileSelected,
+} from '../../../../upload-dropzone.js?v=1';
 
 const MAX_RECENT_UPLOADS = 8;
 const POLL_INTERVAL_MS = 2000;
@@ -112,17 +116,17 @@ export const UploadPage = {
         uploadZone.addEventListener('dragover', (e) => {
             if (this.canUpload === false || this.isUploading) return;
             e.preventDefault();
-            uploadZone.classList.add('drag-active');
+            setDropzoneDragActive(uploadZone, true);
         });
 
         uploadZone.addEventListener('dragleave', (e) => {
             e.preventDefault();
-            uploadZone.classList.remove('drag-active');
+            setDropzoneDragActive(uploadZone, false);
         });
 
         uploadZone.addEventListener('drop', (e) => {
             e.preventDefault();
-            uploadZone.classList.remove('drag-active');
+            setDropzoneDragActive(uploadZone, false);
             if (this.canUpload === false || this.isUploading) return;
             this.handleFiles(e.dataTransfer.files);
         });
@@ -173,19 +177,17 @@ export const UploadPage = {
             </div>
         `;
 
-        uploadZone.classList.add('file-selected');
+        setDropzoneFileSelected(uploadZone, true);
         document.getElementById('uploadTitle').textContent = '已选择文件';
         document.getElementById('uploadHint').textContent = file.name;
 
-        const submitBtn = document.getElementById('submitBtn');
-        if (submitBtn) submitBtn.disabled = false;
+        this.updateSubmitEnabled();
     },
 
     clearSelectedFile() {
         const fileInput = document.getElementById('fileInput');
         const preview = document.getElementById('filePreview');
         const uploadZone = document.getElementById('uploadZone');
-        const submitBtn = document.getElementById('submitBtn');
 
         if (fileInput) fileInput.value = '';
         if (preview) {
@@ -193,13 +195,13 @@ export const UploadPage = {
             preview.innerHTML = '';
         }
         if (uploadZone) {
-            uploadZone.classList.remove('file-selected');
+            setDropzoneFileSelected(uploadZone, false);
             const title = document.getElementById('uploadTitle');
             const hint = document.getElementById('uploadHint');
             if (title) title.textContent = '拖拽文件到此处';
             if (hint) hint.textContent = '或点击下方按钮选择文件';
         }
-        if (submitBtn) submitBtn.disabled = true;
+        this.updateSubmitEnabled();
     },
 
     addRecentUpload(fileName, location, summary) {
@@ -261,7 +263,7 @@ export const UploadPage = {
         if (panel) panel.classList.remove('hidden');
         if (zone) {
             zone.classList.add('pointer-events-none');
-            zone.classList.remove('drag-active');
+            setDropzoneDragActive(zone, false);
         }
         this.updateProgress(progress, msg);
     },
@@ -312,21 +314,26 @@ export const UploadPage = {
         }
     },
 
+    updateSubmitEnabled() {
+        const submitBtn = document.getElementById('submitBtn');
+        if (!submitBtn) return;
+        const hasFile = document.getElementById('fileInput')?.files?.length > 0;
+        submitBtn.disabled = this.isUploading || this.canUpload === false || !hasFile;
+    },
+
     setUploading(isUploading) {
         this.isUploading = isUploading;
         const submitBtn = document.getElementById('submitBtn');
         const resetBtn = document.getElementById('stampingResetButton');
         const location = document.getElementById('location');
-        const fileInput = document.getElementById('fileInput');
         const templateBtn = document.getElementById('stampingUploadTemplateBtn');
 
         if (submitBtn) {
-            const hasFile = fileInput?.files?.length > 0;
-            submitBtn.disabled = isUploading || !hasFile;
             submitBtn.innerHTML = isUploading
                 ? `${window.svgIcon('spinner', 'w-3.5 h-3.5')} 解析中...`
                 : `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg> 上传`;
         }
+        this.updateSubmitEnabled();
         if (resetBtn) resetBtn.disabled = isUploading;
         if (location) location.disabled = isUploading;
         if (templateBtn) templateBtn.disabled = isUploading;
@@ -410,9 +417,11 @@ export const UploadPage = {
 
                 if (status === 'failed') {
                     this.stopPolling();
-                    showToast(msg || '上传失败', 'error');
+                    const fullMsg = msg || '上传失败';
+                    showToast(fullMsg.split('\n')[0] || fullMsg, 'error');
                     this.clearActiveTask();
                     this.setUploading(false);
+                    document.getElementById('uploadZone')?.classList.remove('pointer-events-none');
                     return;
                 }
             } catch (error) {

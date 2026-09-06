@@ -8,6 +8,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from app.schemas.vo.costing_engine_vo import CostingEngineAnnualItemVO, CostingEngineGateItemVO
+from app.services.costing.engine.annual_calc_planner import AnnualCalcPlanner
 from app.services.costing.engine.gate_navigate import build_navigate
 from app.services.costing.engine.progress import map_progress
 from app.services.costing.engine.run_orchestrator import RunOrchestrator
@@ -43,7 +44,7 @@ def test_progress_bands_monotonic() -> None:
     assert map_progress("annual", 0, 4) == 5
     assert map_progress("steel", 1, 1) == 40
     assert map_progress("part_cost", 1, 2) == 55
-    assert map_progress("l0", 2, 4) == 82
+    assert map_progress("assembly", 2, 4) == 82
     assert map_progress("summary", 1, 1) == 100
 
 
@@ -69,11 +70,11 @@ def test_scope_discovery_multi_bom_dedupe() -> None:
     with patch.object(
         discovery.part_repo,
         "get_cascade_filter_options",
-        return_value={"stamping_suppliers": ["工厂A"]},
+        return_value={"vehicle_models": ["T28"]},
     ):
         result = discovery.discover(db, location="青岛", year=2025, month=1)
 
-    assert result.stamping_suppliers == ["工厂A"]
+    assert result.vehicle_models == ["T28"]
     assert len(result.l0_scopes) == 2
     keys = {(s.vehicle_model, s.bom_version) for s in result.l0_scopes}
     assert keys == {("T28", "D-00"), ("T28", "D-01")}
@@ -94,9 +95,7 @@ def test_run_orchestrator_does_not_submit_nested_async_task() -> None:
             message=k.get("message"),
         )
     )
-    orch.run_repo.update_step_fields = MagicMock(
-        side_effect=lambda db, step, **kw: step
-    )
+    orch.run_repo.update_step_fields = MagicMock(side_effect=lambda db, step, **kw: step)
     orch.run_repo.update_run_fields = MagicMock(return_value=run)
 
     discovery = DiscoveryResult(
@@ -104,13 +103,13 @@ def test_run_orchestrator_does_not_submit_nested_async_task() -> None:
         year=2025,
         month=1,
         location_aliases=["青岛", "青岛基地"],
-        stamping_suppliers=["工厂A"],
+        vehicle_models=["T28"],
         l0_scopes=[L0Scope(location="青岛", vehicle_model="T28", bom_version="D-00")],
     )
     annual = [
         CostingEngineAnnualItemVO(
             code="annual_process_fee",
-            scope_key="工厂A",
+            scope_key="T28",
             exists=True,
             will_auto_calc=False,
         ),
@@ -121,16 +120,14 @@ def test_run_orchestrator_does_not_submit_nested_async_task() -> None:
             will_auto_calc=False,
         ),
         CostingEngineAnnualItemVO(
-            code="annual_l0_welding_fee",
+            code="annual_welding_fee",
             scope_key="T28|D-00",
             exists=True,
             will_auto_calc=False,
         ),
     ]
 
-    steel_result = SimpleNamespace(
-        status="success", created_count=1, updated_count=0
-    )
+    steel_result = SimpleNamespace(status="success", created_count=1, updated_count=0)
     part_result = SimpleNamespace(status="success")
     l0_result = SimpleNamespace(status="success")
 
@@ -148,7 +145,7 @@ def test_run_orchestrator_does_not_submit_nested_async_task() -> None:
     with (
         patch.object(orch.steel_orch, "calculate", return_value=steel_result) as steel_calc,
         patch.object(orch.part_cost_orch, "calculate", return_value=part_result),
-        patch.object(orch.l0_orch, "calculate", return_value=l0_result),
+        patch.object(orch.assembly_orch, "calculate", return_value=l0_result),
         patch(
             "app.services.async_task.async_task_service.AsyncTaskService.submit",
             side_effect=fake_submit,
@@ -171,7 +168,7 @@ def test_run_orchestrator_does_not_submit_nested_async_task() -> None:
     assert submit_calls == []
     assert summary["status"] in ("succeeded", "partial")
     assert any(s["stage"] == "steel" for s in summary["steps"])
-    assert any(s["stage"] == "l0" for s in summary["steps"])
+    assert any(s["stage"] == "assembly" for s in summary["steps"])
 
 
 def test_delete_running_allows_new_key(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -192,12 +189,7 @@ def test_delete_running_allows_new_key(monkeypatch: pytest.MonkeyPatch) -> None:
     service.async_task_service.update_task_standalone.assert_called()
     # 删除后查 running 应为空
     service.run_repo.get_running_by_key = MagicMock(return_value=None)
-    assert (
-        service.run_repo.get_running_by_key(
-            db, location="青岛", year=2025, month=1
-        )
-        is None
-    )
+    assert service.run_repo.get_running_by_key(db, location="青岛", year=2025, month=1) is None
 
 
 def test_gate_item_ok_false_requires_navigate_shape() -> None:
@@ -213,3 +205,25 @@ def test_gate_item_ok_false_requires_navigate_shape() -> None:
     assert payload["ok"] is False
     assert payload["navigate"]["page"] == "scrap-price"
     assert payload["navigate"]["query"]["month"] == 2
+
+
+def test_annual_planner_welding_fee_exists_covers_all_levels() -> None:
+    """焊接费是否已有结果按整树计，不按 level=0。"""
+    planner = AnnualCalcPlanner()
+    db = MagicMock()
+    planner.l0_welding_fee_repo = MagicMock()
+    planner.l0_welding_fee_repo.count_by_scope_and_statuses.return_value = 0
+
+    exists = planner._l0_welding_fee_exists(
+        db,
+        year=2026,
+        location="青岛",
+        vehicle_model="T28",
+        bom_version="D-00",
+    )
+
+    assert exists is False
+    kwargs = planner.l0_welding_fee_repo.count_by_scope_and_statuses.call_args.kwargs
+    assert kwargs["level"] is None
+    assert kwargs["year"] == 2026
+    assert kwargs["vehicle_model"] == "T28"

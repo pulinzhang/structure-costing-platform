@@ -3,6 +3,12 @@
  * 基准价格上传 — 异步进度在拖拽区原位展示
  */
 
+import {
+    UPLOAD_DROPZONE,
+    UPLOAD_INPUT,
+    UPLOAD_LABEL,
+} from '../../../../ui-classes.js?v=1';
+
 export function basePriceUploadTemplate() {
     return `
         <div class="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-3">
@@ -25,7 +31,7 @@ export function basePriceUploadTemplate() {
                         <!-- 生效期间：年度 + 月份（手工录入） -->
                         <div class="grid grid-cols-2 gap-3 mb-5">
                             <div class="space-y-1">
-                                <label for="basePriceYear" class="upload-label">
+                                <label for="basePriceYear" class="${UPLOAD_LABEL}">
                                     生效年度 <span class="text-[#d32f2f]">*</span>
                                 </label>
                                 <input type="text"
@@ -34,10 +40,10 @@ export function basePriceUploadTemplate() {
                                        placeholder="例如：2026"
                                        required
                                        pattern="[0-9]{4}"
-                                       class="upload-input">
+                                       class="${UPLOAD_INPUT}">
                             </div>
                             <div class="space-y-1">
-                                <label for="basePriceMonth" class="upload-label">
+                                <label for="basePriceMonth" class="${UPLOAD_LABEL}">
                                     生效月份 <span class="text-[#d32f2f]">*</span>
                                 </label>
                                 <input type="text"
@@ -46,12 +52,12 @@ export function basePriceUploadTemplate() {
                                        placeholder="例如：7"
                                        required
                                        pattern="[0-9]{1,2}"
-                                       class="upload-input">
+                                       class="${UPLOAD_INPUT}">
                             </div>
                         </div>
 
                         <!-- 拖拽上传区 -->
-                        <div id="basePriceUploadZone" class="upload-dropzone mb-5">
+                        <div id="basePriceUploadZone" class="${UPLOAD_DROPZONE} mb-5" data-dropzone-state="idle">
                             <div id="basePriceDropIdle">
                                 ${window.svgIcon('upload', 'w-10 h-10 text-[#616161] mx-auto mb-4')}
                                 <h5 id="basePriceUploadTitle" class="text-xs font-medium text-[#9e9e9e] mb-1.5">拖拽文件到此处上传</h5>
@@ -119,24 +125,24 @@ export function basePriceUploadTemplate() {
                         <h5 class="text-xs font-semibold text-[#616161] mb-0">导入说明</h5>
                     </div>
                     <div class="p-5">
-                        <h6 class="upload-label mb-2.5">文件来源</h6>
+                        <h6 class="${UPLOAD_LABEL} mb-2.5">文件来源</h6>
                         <ul class="list-disc list-inside text-xs text-[#616161] space-y-1.5 mb-4">
                             <li>发布价格及中标钢厂 Excel 文件（如：外协钢板2025年7月订单(2025年8月冲焊件原料)发布价格及中标.xlsx）</li>
                             <li>由奇瑞发布的中标钢厂及到厂原卷承兑价格</li>
                         </ul>
-                        <h6 class="upload-label mb-2.5">数据位置</h6>
+                        <h6 class="${UPLOAD_LABEL} mb-2.5">数据位置</h6>
                         <ul class="list-disc list-inside text-xs text-[#616161] space-y-1.5 mb-4">
                             <li>表头位于第4-5行，数据从第6行开始</li>
                             <li>包含钢种、牌号、参考规格及芜湖/青岛基地的中标钢厂和到厂价格</li>
                             <li>具体列位置由后端解析器自动识别</li>
                         </ul>
-                        <h6 class="upload-label mb-2.5">Upsert 规则</h6>
+                        <h6 class="${UPLOAD_LABEL} mb-2.5">Upsert 规则</h6>
                         <ul class="list-disc list-inside text-xs text-[#616161] space-y-1.5 mb-4">
                             <li>按 (年度, 月份, 基地, 钢厂, 牌号, 厚度, 宽度) 匹配</li>
                             <li>已存在的记录会被覆盖替换</li>
                             <li>支持新增和更新</li>
                         </ul>
-                        <h6 class="upload-label mb-2.5">支持的数据</h6>
+                        <h6 class="${UPLOAD_LABEL} mb-2.5">支持的数据</h6>
                         <ul class="list-disc list-inside text-xs text-[#616161] space-y-1.5">
                             <li>芜湖基地中标钢厂及到厂原卷承兑价格</li>
                             <li>青岛基地中标钢厂及到厂原卷承兑价格</li>

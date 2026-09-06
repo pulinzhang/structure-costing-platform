@@ -8,6 +8,6 @@ from app.services.yishiyiyi.scrap_price.scrap_price_service import (
 )
 
 __all__ = [
-    "StampingScrapPriceService",
     "StampingScrapPriceExportService",
+    "StampingScrapPriceService",
 ]

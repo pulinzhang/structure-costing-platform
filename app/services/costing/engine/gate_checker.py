@@ -5,6 +5,7 @@ from __future__ import annotations
 from sqlalchemy.orm import Session
 
 from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING, AUDIT_REJECTED
+from app.common.money import Q4, format_money
 from app.repositories.bom.annual_part_price_repository import BomAnnualPartPriceRepository
 from app.repositories.bom.packaging_transport_fee_repository import (
     BomPackagingTransportFeeRepository,
@@ -16,14 +17,14 @@ from app.repositories.stamping.tonnage_price_repository import StampingTonnagePr
 from app.schemas.vo.costing_engine_vo import CostingEngineGateItemVO
 from app.services.costing.engine.gate_navigate import build_navigate
 from app.services.costing.engine.scope_discovery import DiscoveryResult
+from app.services.costing.stamping_part_cost.calc.resolvers import PriceResolver
+from app.services.costing.stamping_part_cost.helpers import location_candidates
 from app.services.costing.steel_price.calc.models import SteelPriceCalcRequest
 from app.services.costing.steel_price.calc.steps import (
     AdjustmentApplier,
     BasePriceEnricher,
     MaterialThicknessLoader,
 )
-from app.services.costing.stamping_part_cost.calc.resolvers import PriceResolver
-from app.services.costing.stamping_part_cost.helpers import location_candidates
 
 _USABLE = [AUDIT_PENDING, AUDIT_APPROVED, AUDIT_REJECTED]
 
@@ -98,12 +99,12 @@ class GateChecker:
         year: int,
         month: int,
     ) -> CostingEngineGateItemVO:
-        if not discovery.stamping_suppliers:
+        if not discovery.vehicle_models:
             return self._item(
                 code="stamping_process",
                 ok=False,
                 missing=["未发现该基地下冲压工艺零件"],
-                message="缺少冲压工艺零件/工序数据，无法展开工厂计划",
+                message="缺少冲压工艺零件/工序数据，无法展开车型计划",
                 location=location,
                 year=year,
                 month=month,
@@ -112,7 +113,7 @@ class GateChecker:
             code="stamping_process",
             ok=True,
             missing=[],
-            message=f"已发现 {len(discovery.stamping_suppliers)} 个冲压工厂",
+            message=f"已发现 {len(discovery.vehicle_models)} 个配套车型",
             location=location,
             year=year,
             month=month,
@@ -354,9 +355,11 @@ class GateChecker:
         thickness_missing: list[str] = []
 
         for row in rows:
-            self.adjustment_applier.apply_thickness([row], policies)
-            if row.thickness_policy_id is None:
-                thickness_missing.append(f"{row.grade}@{float(row.thickness):.4f}/{row.steel_mill}")
+            self.adjustment_applier.apply_thickness(db, [row], policies)
+            if row.thickness_policy_id is None and row.thickness_applicable:
+                thickness_missing.append(
+                    f"{row.grade}@{format_money(row.thickness, Q4, 4)}/{row.steel_mill}"
+                )
 
         thickness_missing = list(dict.fromkeys(thickness_missing))[:20]
         thickness_ok = len(thickness_missing) == 0

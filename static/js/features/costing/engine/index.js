@@ -2,7 +2,7 @@
  * 月度智能自动核价引擎 — 页面逻辑 (BRABUS Pure Industrial Spec)
  */
 
-import { costingTemplate } from './template.js?v=20';
+import { costingTemplate } from './template.js?v=21';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -14,8 +14,8 @@ const TASK_API = '/api/costing/engine/tasks';
 const CASCADE_API = '/api/stamping/filters/cascade';
 const POLL_INTERVAL_MS = 1500;
 const STORAGE_KEY = 'costing_engine_context';
-/** 与后端 _SOFT_UPLOAD_GATE_CODES 对齐：仅提示，不阻断启动 */
-const SOFT_GATE_CODES = new Set(['thickness_policy']);
+/** 与后端 SOFT_UPLOAD_GATE_CODES 对齐：仅提示，不阻断启动 */
+const SOFT_GATE_CODES = new Set(['thickness_policy', 'packaging_transport']);
 
 /** 核算数据管道阶梯 */
 const PIPELINE_STAGES = [
@@ -46,7 +46,7 @@ const PIPELINE_STAGES = [
         gateCodes: [
             'annual_process_fee',
             'annual_welding_breakdown',
-            'annual_l0_welding_fee',
+            'annual_welding_fee',
         ],
     },
     {
@@ -69,7 +69,7 @@ const GATE_LABELS = {
     system_rates: '系统费率',
     annual_process_fee: '冲压加工费',
     annual_welding_breakdown: '焊接工艺拆解',
-    annual_l0_welding_fee: '成品焊接费',
+    annual_welding_fee: '焊接费',
 };
 
 const STATUS_META = {
@@ -536,6 +536,7 @@ function summarizeGateMessage(item) {
     const msg = (item.message || '').trim();
     if (!msg) return '—';
     return msg
+        .replace(/已发现\s*(\d+)\s*个配套车型/, '$1 车型发现')
         .replace(/已发现\s*(\d+)\s*个冲压工厂/, '$1 工厂发现')
         .replace(/冲次单价\s*(\d+)\s*条/, '冲次 $1')
         .replace(/焊接单价\s*(\d+)\s*条/, '焊接 $1')
@@ -599,17 +600,17 @@ function renderReady(ready) {
         }
     }
 
-    const suppliers = ready?.plan?.part_cost_scopes || [];
+    const vehicles = ready?.plan?.part_cost_scopes || [];
     const l0Scopes = ready?.plan?.l0_scopes || [];
     if (!engineState.scopeExpanded.size) {
-        if (suppliers.length) engineState.scopeExpanded.add('branch:supplier');
+        if (vehicles.length) engineState.scopeExpanded.add('branch:vehicle');
         if (l0Scopes.length) engineState.scopeExpanded.add('branch:l0');
     }
     renderPlanScope();
 
     const scopeSummary = document.getElementById('engineScopeSummary');
     if (scopeSummary) {
-        const nodeCount = suppliers.length + l0Scopes.length;
+        const nodeCount = vehicles.length + l0Scopes.length;
         scopeSummary.textContent = `节点 ${nodeCount}`;
         scopeSummary.className = 'text-[10px] font-mono text-neutral-600 tabular-nums';
     }
@@ -1000,21 +1001,21 @@ function renderPlanScope() {
         return;
     }
 
-    const suppliers = ready?.plan?.part_cost_scopes || [];
+    const vehicles = ready?.plan?.part_cost_scopes || [];
     const l0Scopes = ready?.plan?.l0_scopes || [];
     const steel = ready?.plan?.steel || {};
     const location = steel.location || ready?.input?.location || '—';
-    const period = `${steel.year || '—'} / ${String(steel.month || 0).padStart(2, '0')}`;
+    const period = fmtPeriod(steel.year, steel.month) || '—';
 
-    if (!suppliers.length && !l0Scopes.length) {
+    if (!vehicles.length && !l0Scopes.length) {
         tree.innerHTML =
             '<div class="py-6 text-[10px] text-neutral-700">暂无覆盖节点</div>';
         return;
     }
 
-    const supplierKey = 'branch:supplier';
+    const vehicleKey = 'branch:vehicle';
     const l0Key = 'branch:l0';
-    const supplierOpen = engineState.scopeExpanded.has(supplierKey);
+    const vehicleOpen = engineState.scopeExpanded.has(vehicleKey);
     const l0Open = engineState.scopeExpanded.has(l0Key);
 
     const branchHeader = (key, title, count, open) => `
@@ -1029,10 +1030,11 @@ function renderPlanScope() {
             <span class="text-[10px] font-mono text-neutral-600 tabular-nums shrink-0">${count}</span>
         </button>`;
 
-    const supplierChildren = supplierOpen
-        ? suppliers
-              .map((s, idx) => {
-                  const key = `supplier:${s.stamping_supplier}`;
+    const vehicleChildren = vehicleOpen
+        ? vehicles
+              .map((item, idx) => {
+                  const name = item.vehicle_model || '';
+                  const key = `vehicle:${name}`;
                   const selected = engineState.scopeSelected === key;
                   return `
                 <button type="button"
@@ -1042,7 +1044,7 @@ function renderPlanScope() {
                             selected ? 'text-white' : 'text-neutral-500 hover:text-neutral-300'
                         }">
                     <span class="text-[10px] font-mono text-neutral-700 tabular-nums shrink-0">${String(idx + 1).padStart(2, '0')}</span>
-                    <span class="text-[11px] font-mono truncate" title="${esc(s.stamping_supplier)}">${esc(s.stamping_supplier)}</span>
+                    <span class="text-[11px] font-mono truncate" title="${esc(name)}">${esc(name)}</span>
                 </button>`;
               })
               .join('')
@@ -1100,8 +1102,8 @@ function renderPlanScope() {
                 </div>
             </div>
             <div>
-                ${branchHeader(supplierKey, '冲压供应商', suppliers.length, supplierOpen)}
-                ${supplierChildren}
+                ${branchHeader(vehicleKey, '配套车型', vehicles.length, vehicleOpen)}
+                ${vehicleChildren}
             </div>
             <div class="mt-2">
                 ${branchHeader(l0Key, '车型 BOM', l0Scopes.length, l0Open)}
@@ -1439,7 +1441,7 @@ function renderHistory() {
                     </div>
                 </td>
                 <td class="px-2 py-2.5 text-neutral-400 overflow-hidden truncate" title="${esc(row.location)}">${esc(row.location)}</td>
-                <td class="px-2 py-2.5 text-right text-[10px] text-neutral-500 tabular-nums">${esc(row.year)}-${String(row.month).padStart(2, '0')}</td>
+                <td class="px-2 py-2.5 text-right text-[10px] text-neutral-500 tabular-nums">${esc(fmtPeriod(row.year, row.month))}</td>
                 <td class="px-2 py-2.5 text-center text-[10px] ${meta.className}">${esc(meta.label)}</td>
                 <td class="px-2 py-2.5 text-[10px] text-neutral-500 overflow-hidden truncate">${esc(row.created_by || '-')}</td>
                 <td class="px-2 py-2.5 text-[10px] text-neutral-600 tabular-nums">${esc(formatTs(row.started_at))}</td>

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import TypedDict
+
 from app.exceptions.base import BusinessException
 from app.services.costing.steel_price.calc.models import CalcRow, SteelPriceCalcResult
 from app.services.costing.steel_price.spec_format import build_spec
@@ -48,11 +50,43 @@ def summarize_match_status(rows: list[CalcRow]) -> dict[str, int]:
     return dict(sorted(stats.items()))
 
 
+class ThicknessOutcomeSummary(TypedDict):
+    hit: int
+    skip: int
+    miss: int
+    skip_mills: list[str]
+
+
 def summarize_policy_hits(rows: list[CalcRow], *, prefix: str) -> tuple[int, int]:
     """返回 (命中数, 未命中数)，prefix 为 thickness / width。"""
     attr = f"{prefix}_policy_id"
     hit = sum(1 for row in rows if getattr(row, attr, None) is not None)
     return hit, len(rows) - hit
+
+
+def summarize_thickness_outcomes(rows: list[CalcRow]) -> ThicknessOutcomeSummary:
+    """厚度命中 / 该厂无厚度块（按基价） / 真实未命中。"""
+    hit = 0
+    skip = 0
+    miss = 0
+    skip_mills: set[str] = set()
+    for row in rows:
+        if row.thickness_policy_id is not None:
+            hit += 1
+            continue
+        if not row.thickness_applicable:
+            skip += 1
+            mill = (row.steel_mill or "").strip()
+            if mill:
+                skip_mills.add(mill)
+            continue
+        miss += 1
+    return {
+        "hit": hit,
+        "skip": skip,
+        "miss": miss,
+        "skip_mills": sorted(skip_mills),
+    }
 
 
 def collect_row_warnings(rows: list[CalcRow], *, keyword: str | None = None) -> list[str]:
@@ -67,5 +101,8 @@ def collect_row_warnings(rows: list[CalcRow], *, keyword: str | None = None) -> 
             if not messages:
                 continue
         text = "；".join(messages)
-        warnings.append(f"{row.grade} {build_spec(row.thickness, row.width or 0)} {text}")
+        mill = (row.steel_mill or "").strip() or "-"
+        category = (row.category_name or "").strip() or "-"
+        spec = build_spec(row.thickness, row.width or 0)
+        warnings.append(f"{mill} · {category} · {row.grade} {spec} {text}")
     return warnings

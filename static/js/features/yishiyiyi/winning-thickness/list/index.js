@@ -1,19 +1,28 @@
 /**
  * 中标钢厂厚度价格一览表 — 页面逻辑
+ *
+ * 预览为扁平行：每个牌号 × 各厚度阶梯一行；前端按牌号合并展示。
  */
 
 import {
+    DEFAULT_PREVIEW_PAGE_SIZE,
+    renderPageButtons,
+} from '../../../../page-size.js?v=2';
+import {
     winningThicknessDownloadTemplate,
     renderWinningThicknessRows,
-} from './template.js?v=8';
+} from './template.js?v=11';
 
 const winningThicknessState = {
     records: [],
     total: 0,
+    page: 1,
+    pageSize: DEFAULT_PREVIEW_PAGE_SIZE,
     filterLoadToken: 0,
 };
 
 const API_BASE = '/api/yishiyiyi/winning-thickness';
+const GRADE_CATEGORY_API = '/api/yishiyiyi/steel-grade-category';
 
 function init() {
     bindEvents();
@@ -31,12 +40,12 @@ function applyPermissionUi() {
 
 function buildYearOptions(years) {
     if (Array.isArray(years) && years.length) {
-        return years.map(y => ({ value: y, label: `${y} 年` }));
+        return years.map(y => ({ value: y, label: fmtYear(y) }));
     }
     const currentYear = new Date().getFullYear();
     const fallback = [];
     for (let y = currentYear - 3; y <= currentYear + 1; y++) {
-        fallback.push({ value: y, label: `${y} 年` });
+        fallback.push({ value: y, label: fmtYear(y) });
     }
     return fallback;
 }
@@ -44,7 +53,7 @@ function buildYearOptions(years) {
 function fillMonthOptions() {
     const months = Array.from({ length: 12 }, (_, i) => ({
         value: i + 1,
-        label: `${i + 1} 月`,
+        label: fmtMonth(i + 1),
     }));
     fillSelect('winningThicknessMonth', months, true);
 }
@@ -52,20 +61,65 @@ function fillMonthOptions() {
 async function loadFilterOptions() {
     const token = ++winningThicknessState.filterLoadToken;
     try {
-        const response = await HttpClient.get(`${API_BASE}/options`);
+        const [optionsRes, categoryRes] = await Promise.all([
+            HttpClient.get(`${API_BASE}/options`),
+            HttpClient.get(`${GRADE_CATEGORY_API}/categories`),
+        ]);
         if (token !== winningThicknessState.filterLoadToken) return;
 
-        const data = response.data || {};
+        const data = optionsRes.data || {};
+        const categories = Array.isArray(categoryRes.data) ? categoryRes.data : [];
+
         fillSelect('winningThicknessYear', buildYearOptions(data.years), true);
         fillMonthOptions();
         fillSelect('winningThicknessLocation', data.locations || [], true);
-        fillSelect('winningThicknessCategory', data.category_names || [], false);
+        fillSelect(
+            'winningThicknessCategory',
+            categories.map((item) => ({
+                value: item.category_name,
+                label: item.category_name,
+            })),
+            false,
+        );
         fillSelect('winningThicknessMill', data.steel_mills || [], false);
     } catch (error) {
         if (token !== winningThicknessState.filterLoadToken) return;
         console.error('加载筛选选项失败:', error);
         fillSelect('winningThicknessYear', buildYearOptions(), true);
         fillMonthOptions();
+    }
+}
+
+async function loadGradesForCategory(categoryName) {
+    const datalist = document.getElementById('winningThicknessGradeOptions');
+    const gradeInput = document.getElementById('winningThicknessGrade');
+    if (!datalist) return;
+
+    const category = (categoryName || '').trim();
+    if (!category) {
+        datalist.innerHTML = '';
+        if (gradeInput) {
+            gradeInput.value = '';
+            gradeInput.placeholder = '请先选择分类';
+            gradeInput.disabled = true;
+        }
+        return;
+    }
+
+    if (gradeInput) {
+        gradeInput.disabled = false;
+        gradeInput.placeholder = '输入搜索或选择牌号';
+    }
+
+    try {
+        const response = await HttpClient.get(`${GRADE_CATEGORY_API}/grades`, {
+            params: { category_name: category },
+        });
+        const grades = Array.isArray(response.data) ? response.data : [];
+        datalist.innerHTML = grades.map((g) => `<option value="${esc(g)}">`).join('');
+    } catch (error) {
+        console.error('加载牌号列表失败:', error);
+        datalist.innerHTML = '';
     }
 }
 
@@ -87,18 +141,39 @@ function fillSelect(id, options = [], required = false) {
 }
 
 function bindEvents() {
-    document.getElementById('btnPreviewWinningThickness')?.addEventListener('click', () => previewData());
+    document.getElementById('btnPreviewWinningThickness')?.addEventListener('click', () => {
+        winningThicknessState.page = 1;
+        previewData();
+    });
     document.getElementById('btnExportWinningThickness')?.addEventListener('click', () => exportExcel());
+
+    document.getElementById('winningThicknessPagination')?.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-page]');
+        if (!button || button.disabled) return;
+        const nextPage = parseInt(button.dataset.page, 10);
+        if (!Number.isFinite(nextPage) || nextPage < 1) return;
+        winningThicknessState.page = nextPage;
+        previewData();
+    });
 
     [
         'winningThicknessYear',
         'winningThicknessMonth',
         'winningThicknessLocation',
-        'winningThicknessCategory',
         'winningThicknessMill',
     ].forEach(id => {
         document.getElementById(id)?.addEventListener('change', () => updateConditionsDisplay());
     });
+
+    const categorySelect = document.getElementById('winningThicknessCategory');
+    if (categorySelect) {
+        categorySelect.addEventListener('change', () => {
+            const gradeInput = document.getElementById('winningThicknessGrade');
+            if (gradeInput) gradeInput.value = '';
+            loadGradesForCategory(categorySelect.value);
+            updateConditionsDisplay();
+        });
+    }
 
     const gradeInput = document.getElementById('winningThicknessGrade');
     if (gradeInput) {
@@ -115,10 +190,10 @@ function bindEvents() {
 function updateConditionsDisplay() {
     const filters = collectFilters();
     const conditions = [];
-    if (filters.year) conditions.push(`年度: ${filters.year}`);
-    if (filters.month) conditions.push(`月份: ${filters.month}`);
+    const period = fmtPeriod(filters.year, filters.month);
+    if (period) conditions.push(period);
     if (filters.location) conditions.push(`基地: ${filters.location}`);
-    if (filters.category_name) conditions.push(`钢种: ${filters.category_name}`);
+    if (filters.category_name) conditions.push(`分类: ${filters.category_name}`);
     if (filters.grade) conditions.push(`牌号: ${filters.grade}`);
     if (filters.steel_mill) conditions.push(`钢厂: ${filters.steel_mill}`);
 
@@ -151,6 +226,10 @@ function requireCoreFilters(filters) {
     return true;
 }
 
+/**
+ * 组装一览表查询参数。
+ * category_name / grade 传给后端，用于筛选牌号分类档案行（再与基价、大类政策组合）。
+ */
 function applyFiltersToParams(params, filters) {
     params.year = parseInt(filters.year, 10);
     params.month = parseInt(filters.month, 10);
@@ -181,14 +260,18 @@ async function previewData() {
     try {
         const params = {};
         applyFiltersToParams(params, filters);
-        params.page = 1;
-        params.size = 500;
+        params.page = winningThicknessState.page;
+        params.size = winningThicknessState.pageSize;
         const response = await HttpClient.get(`${API_BASE}/export-preview`, { params });
         const payload = response.data;
         const records = Array.isArray(payload?.items) ? payload.items : [];
         const total = payload?.total ?? records.length;
+        const pageSize = payload?.page_size ?? winningThicknessState.pageSize;
+        const page = payload?.page ?? winningThicknessState.page;
         winningThicknessState.records = records;
         winningThicknessState.total = total;
+        winningThicknessState.page = page;
+        winningThicknessState.pageSize = pageSize;
 
         const recordCount = document.getElementById('winningThicknessRecordCount');
         if (recordCount) recordCount.textContent = total;
@@ -196,6 +279,13 @@ async function previewData() {
         if (tableBody) {
             tableBody.innerHTML = renderWinningThicknessRows(records);
         }
+
+        const pagination = document.getElementById('winningThicknessPagination');
+        if (pagination) {
+            const totalPages = Math.max(1, Math.ceil(total / pageSize));
+            pagination.innerHTML = renderPageButtons(page, totalPages, 'wt-page-btn');
+        }
+
         updateConditionsDisplay();
     } catch (error) {
         console.error('查询失败:', error);
@@ -227,7 +317,7 @@ async function exportExcel() {
         applyFiltersToParams(params, filters);
         const { blob, filename } = await HttpClient.download(`${API_BASE}/export-download`, {
             params,
-            defaultFilename: `中标钢厂厚度价格一览表_${filters.year}年_${filters.month}月_${filters.location}.xlsx`,
+            defaultFilename: `中标钢厂厚度价格一览表_${fmtPeriod(filters.year, filters.month)}_${filters.location}.xlsx`,
         });
 
         const url = window.URL.createObjectURL(blob);

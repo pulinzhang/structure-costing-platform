@@ -12,6 +12,7 @@ from openpyxl.worksheet.worksheet import Worksheet
 
 from app.parsers.yishiyiyi.policy.boundary_parser import _parse_boundary_thickness
 from app.parsers.yishiyiyi.policy.handlers.constants import GRADE_LABELS
+
 from .policy_assembler import PolicyAssembler
 from .sheet_scanner import SheetScanner
 

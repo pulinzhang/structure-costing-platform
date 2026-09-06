@@ -19,9 +19,10 @@ from decimal import Decimal
 from typing import Any
 
 from openpyxl.worksheet.worksheet import Worksheet
-from ..value_parser import _to_int_price
 
 from app.parsers.yishiyiyi.policy.handlers.base_handler import BaseSheetHandler
+
+from ..value_parser import _to_int_price
 from .constants import parse_thickness_label
 
 
@@ -29,8 +30,9 @@ class AnshenSheetHandler(BaseSheetHandler):
     """鞍神 Sheet 处理器（厚度-宽度组合加价）。"""
 
     def parse(self, sheet: Worksheet, steel_mill: str, warnings: list[Any]) -> list[Any]:
-        """鞍神：厚度-宽度组合加价，只走 THICKNESS_WIDTH 通道。"""
-        return self._parse_blocks(sheet, steel_mill, "THICKNESS_WIDTH")
+        """鞍神 THICKNESS_WIDTH 本期不导入。"""
+        warnings.append("鞍神 THICKNESS_WIDTH 政策本期不导入，已跳过")
+        return []
 
     def find_thickness_blocks(self, sheet: Worksheet, steel_mill: str) -> list[dict[str, Any]]:
         return []

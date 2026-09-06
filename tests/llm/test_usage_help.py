@@ -6,9 +6,9 @@ import pytest
 
 from app.schemas.llm.analysis_query import AnalysisQuery, TimeRange
 from app.services.llm.query.intent_router import detect_help_topic, detect_query_mode
+from app.services.llm.usage.corpus import load_corpus_chunks
 from app.services.llm.usage.manifest import retrieve_chunks
 from app.services.llm.usage.runner import UsageHelpRunner
-from app.services.llm.usage.corpus import load_corpus_chunks
 
 
 @pytest.mark.parametrize(
@@ -38,6 +38,9 @@ def test_detect_query_mode(question: str, expected_mode: str) -> None:
         ("材料清单在哪上传", "bom_material"),
         ("引擎一直运行中怎么办", "faq_stuck"),
         ("我在进行成品核价计算时卡住了，怎么办？", "faq_calc_stuck"),
+        ("采购对象在哪确认外发", "procurement"),
+        ("模具费怎么算进零件价", "die_gauge"),
+        ("文件溯源在哪看", "file_trace"),
     ],
 )
 def test_detect_help_topic(question: str, expected_topic: str) -> None:
@@ -56,6 +59,12 @@ def test_load_corpus_has_p1a_sections() -> None:
         "faq_stuck",
         "faq_calc_stuck",
         "monthly",
+        "stamping",
+        "welding",
+        "procurement",
+        "die_gauge",
+        "file_trace",
+        "assembly_cost",
     ):
         assert required in chunk_ids
 

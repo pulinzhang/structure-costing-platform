@@ -5,9 +5,8 @@
 
 from decimal import Decimal
 
-from app.models.yishiyiyi import SteelPricePolicy, SteelPriceLadderItem
+from app.models.yishiyiyi import SteelPriceLadderItem, SteelPricePolicy
 from app.schemas.dto.steel_price_policy_dto import PolicyMatchRequest
-
 
 # =============================================================================
 # 运算符比较

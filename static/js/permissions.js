@@ -3,7 +3,7 @@
  * 会话字段：is_admin、permissions（来自登录 / me / touch）
  */
 
-import { getUserSession } from './features/login/index.js?v=14';
+import { getUserSession } from './features/login/index.js?v=15';
 
 /** 路由 page → 叶子菜单权限码（系统设置页 / Workspace 共用产品结构权限） */
 const PAGE_MENU_CODE = {
@@ -45,6 +45,12 @@ export function canAccessPage(pageName) {
     if (pageName === 'costing') {
         // 兼容旧授权仅勾选 menu:costing 的情况
         return can('menu:costing-engine') || can('menu:costing');
+    }
+    if (pageName === 'assembly-cost-calc' || pageName === 'l0-assembly-cost-calc') {
+        return can('menu:assembly-cost-calc') || can('menu:l0-assembly-cost-calc');
+    }
+    if (pageName === 'assembly-cost' || pageName === 'l0-assembly-cost') {
+        return can('menu:assembly-cost') || can('menu:l0-assembly-cost');
     }
     return can(menuCodeForPage(pageName));
 }

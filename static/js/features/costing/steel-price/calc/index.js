@@ -3,13 +3,12 @@
  * 钢价计算 —过滤条件 + 异步后台计算 + 进度轮询 + 历史过程日志
  */
 
-import { steelPriceCalcTemplate, renderCalcHistoryPagination } from './template.js?v=3';
+import { steelPriceCalcTemplate, renderCalcHistoryPagination } from './template.js?v=8';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
 } from '../../../../page-size.js?v=2';
 
-const STAMPING_CASCADE_FILTERS_API = '/api/stamping/filters/cascade';
 const STEEL_PRICE_CALC_STATS_API = '/api/dashboard/stats/steel-price-calc';
 const STEEL_PRICE_CALC_API = '/api/costing/steel-price/calc';
 const STEEL_PRICE_CALC_TASK_API = '/api/costing/steel-price/calc/tasks';
@@ -55,7 +54,6 @@ export function init() {
         onChange: () => loadCalcHistory(1),
     });
     applyPermissionUi();
-    loadStampingFilters();
     loadCalcStats();
     loadCalcHistory();
 
@@ -85,22 +83,8 @@ function bindEvents() {
     document.getElementById('calcResetBtn')?.addEventListener('click', () => resetFilters());
     document.getElementById('calcYear')?.addEventListener('change', () => loadCalcStats());
     document.getElementById('calcMonth')?.addEventListener('change', () => loadCalcStats());
-
-    document.getElementById('calcLocation')?.addEventListener('change', () => {
-        resetDependentFilters(['calcSupplier', 'calcVehicleModel', 'calcVersion']);
-        loadStampingFilters();
-        loadCalcStats();
-    });
-    document.getElementById('calcSupplier')?.addEventListener('change', () => {
-        resetDependentFilters(['calcVehicleModel', 'calcVersion']);
-        loadStampingFilters();
-        loadCalcStats();
-    });
-    document.getElementById('calcVehicleModel')?.addEventListener('change', () => {
-        resetDependentFilters(['calcVersion']);
-        loadStampingFilters();
-        loadCalcStats();
-    });
+    document.getElementById('calcLocation')?.addEventListener('change', () => loadCalcStats());
+    document.getElementById('calcVehicle')?.addEventListener('change', () => loadCalcStats());
 
     document.getElementById('startCalcBtn')?.addEventListener('click', () => startCalculation());
     document.getElementById('calcHistoryRefreshBtn')?.addEventListener('click', () => loadCalcHistory(1));
@@ -122,23 +106,16 @@ function getSelectedPeriod() {
     return { year, month };
 }
 
-function resetDependentFilters(ids) {
-    ids.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.value = '';
-    });
-}
-
 function resetFilters() {
     if (calcState.isCalculating) {
         showToast('计算进行中，请稍候再重置', 'warning');
         return;
     }
 
-    ['calcLocation', 'calcSupplier', 'calcVehicleModel', 'calcVersion'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.value = '';
-    });
+    const locationEl = document.getElementById('calcLocation');
+    const vehicleEl = document.getElementById('calcVehicle');
+    if (locationEl) locationEl.value = '';
+    if (vehicleEl) vehicleEl.value = '';
 
     const now = new Date();
     const yearEl = document.getElementById('calcYear');
@@ -148,40 +125,18 @@ function resetFilters() {
 
     calcState.lastResult = null;
     hideProgress();
-    loadStampingFilters();
     loadCalcStats();
     loadCalcHistory(1);
-}
-
-async function loadStampingFilters() {
-    try {
-        const params = {
-            location: document.getElementById('calcLocation')?.value || '',
-            stamping_supplier: document.getElementById('calcSupplier')?.value || '',
-            vehicle_model: document.getElementById('calcVehicleModel')?.value || '',
-        };
-        const response = await HttpClient.get(STAMPING_CASCADE_FILTERS_API, { params });
-        const filters = response.data || {};
-
-        fillSelect('calcLocation', filters.locations || []);
-        fillSelect('calcSupplier', filters.stamping_suppliers || []);
-        fillSelect('calcVehicleModel', filters.vehicle_models || []);
-        fillSelect('calcVersion', filters.versions || []);
-    } catch (error) {
-        console.error('加载冲压筛选选项失败:', error);
-    }
 }
 
 async function loadCalcStats() {
     const { year, month } = getSelectedPeriod();
     const location = document.getElementById('calcLocation')?.value || '';
-    const stampingSupplier = document.getElementById('calcSupplier')?.value || '';
-    const vehicleModel = document.getElementById('calcVehicleModel')?.value || '';
+    const vehicleModel = document.getElementById('calcVehicle')?.value || '';
 
     try {
         const params = { year, month };
         if (location) params.location = location;
-        if (stampingSupplier) params.stamping_supplier = stampingSupplier;
         if (vehicleModel) params.vehicle_model = vehicleModel;
 
         const response = await HttpClient.get(STEEL_PRICE_CALC_STATS_API, { params });
@@ -221,7 +176,7 @@ async function loadCalcHistory(page = calcState.history.page) {
         size: calcState.history.size,
     };
 
-    body.innerHTML = `<tr><td colspan="13" class="py-8 text-center text-[#555]">加载中..</td></tr>`;
+    body.innerHTML = `<tr><td colspan="12" class="py-8 text-center text-[#555]">加载中..</td></tr>`;
 
     try {
         const response = await HttpClient.get(STEEL_PRICE_CALC_LOGS_API, { params });
@@ -246,7 +201,7 @@ async function loadCalcHistory(page = calcState.history.page) {
         }
     } catch (error) {
         console.error('加载计算历史失败:', error);
-        body.innerHTML = `<tr><td colspan="13" class="py-8 text-center text-[#ef5350]">加载失败</td></tr>`;
+        body.innerHTML = `<tr><td colspan="12" class="py-8 text-center text-[#ef5350]">加载失败</td></tr>`;
     }
 }
 
@@ -255,17 +210,13 @@ function renderHistoryRows(items) {
     if (!body) return;
 
     if (!items.length) {
-        body.innerHTML = `<tr><td colspan="13" class="py-8 text-center text-[#555]">暂无计算记录</td></tr>`;
+        body.innerHTML = `<tr><td colspan="12" class="py-8 text-center text-[#555]">暂无计算记录</td></tr>`;
         return;
     }
 
     body.innerHTML = items.map(item => {
         const status = STATUS_META[item.status] || STATUS_META.failed;
-        const period = `${item.year}-${String(item.month).padStart(2, '0')}`;
-        const filterParts = [];
-        if (item.stamping_supplier) filterParts.push(item.stamping_supplier);
-        if (item.vehicle_model) filterParts.push(item.vehicle_model);
-        const filterText = filterParts.length ? filterParts.join(' / ') : '全部';
+        const period = fmtPeriod(item.year, item.month);
         const started = formatDateTime(item.started_at);
         const createdBy = item.created_by || item.operator_name || '-';
         const isProcessing = item.status === 'processing';
@@ -276,7 +227,6 @@ function renderHistoryRows(items) {
                 <td class="py-2 px-2 text-[#ccc] whitespace-nowrap">${esc(createdBy)}</td>
                 <td class="py-2 px-2 font-mono text-[#ccc] whitespace-nowrap">${esc(period)}</td>
                 <td class="py-2 px-2 text-[#ccc] whitespace-nowrap">${esc(item.location || '-')}</td>
-                <td class="py-2 px-2 text-[#777] max-w-[140px] truncate" title="${esc(filterText)}">${esc(filterText)}</td>
                 <td class="py-2 px-2 text-center text-[9px] ${status.className}">${status.label}</td>
                 <td class="py-2 px-2 font-mono text-right tabular-nums text-[#777]">${fmtInt(item.material_count)}</td>
                 <td class="py-2 px-2 font-mono text-right tabular-nums text-[#777]">${fmtInt(item.enriched_count)}</td>
@@ -364,7 +314,7 @@ function showProcessDrawer(log) {
     closeProcessDrawer();
 
     const status = STATUS_META[log.status] || STATUS_META.failed;
-    const period = `${log.year}-${String(log.month).padStart(2, '0')}`;
+        const period = fmtPeriod(log.year, log.month);
     const backdrop = document.createElement('div');
     backdrop.id = 'calcProcessBackdrop';
     backdrop.className = 'fixed inset-0 z-[80] bg-black/70 backdrop-blur-sm';
@@ -379,12 +329,15 @@ function showProcessDrawer(log) {
                 计算过程 · ${esc(period)} · ${esc(log.location || '-')}
                 <span class="ml-2 normal-case ${status.className}">${status.label}</span>
             </h5>
-            <button type="button" id="closeCalcProcessDrawer"
+            <div class="flex items-center gap-0.5 shrink-0">
+                ${window.copyProcessReportButtonHtml()}
+                <button type="button" id="closeCalcProcessDrawer"
                     class="flex items-center justify-center w-8 h-8 rounded-md text-[#707070] hover:text-white hover:bg-[#d32f2f] transition-all">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
-            </button>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
         </div>
         <div class="px-5 py-3 border-b border-[#222] text-[10px] text-[#777] space-y-1 shrink-0">
             <div>批次<span class="font-mono text-[#999]">${esc(log.calc_batch_id || '-')}</span></div>
@@ -398,6 +351,7 @@ function showProcessDrawer(log) {
 
     document.body.appendChild(backdrop);
     document.body.appendChild(drawer);
+    window.bindProcessReportCopy(drawer);
     backdrop.addEventListener('click', closeProcessDrawer);
     document.getElementById('closeCalcProcessDrawer')?.addEventListener('click', closeProcessDrawer);
 }
@@ -415,8 +369,10 @@ function renderPeriodFilters(filters, year, month) {
     if (!months.includes(month)) months.push(month);
     months.sort((a, b) => a - b);
 
-    fillSelect('calcYear', years, value => `${value} 年`, String(year));
-    fillSelect('calcMonth', months, value => `${value} 月`, String(month));
+    fillSelect('calcYear', years, fmtYear, String(year));
+    fillSelect('calcMonth', months, fmtMonth, String(month));
+    fillSelect('calcLocation', Array.isArray(filters.locations) ? filters.locations : []);
+    fillSelect('calcVehicle', Array.isArray(filters.vehicle_models) ? filters.vehicle_models : []);
 }
 
 function renderCalcStats(stats) {
@@ -468,8 +424,6 @@ async function startCalculation() {
     const year = parseInt(document.getElementById('calcYear')?.value, 10);
     const month = parseInt(document.getElementById('calcMonth')?.value, 10);
     const location = document.getElementById('calcLocation')?.value || '';
-    const stampingSupplier = document.getElementById('calcSupplier')?.value || '';
-    const vehicleModel = document.getElementById('calcVehicleModel')?.value || '';
 
     if (Number.isNaN(year) || Number.isNaN(month)) {
         showToast('请填写完整的计算年度与月份', 'warning');
@@ -493,8 +447,6 @@ async function startCalculation() {
     }
 
     const payload = { year, month, location };
-    if (stampingSupplier) payload.stamping_supplier = stampingSupplier;
-    if (vehicleModel) payload.vehicle_model = vehicleModel;
 
     setCalculating(true);
     showProgress(0, '已提交计算队列');
@@ -658,7 +610,7 @@ function startPolling(taskId) {
 function setCalculating(isCalculating) {
     calcState.isCalculating = isCalculating;
     const startBtn = document.getElementById('startCalcBtn');
-    const filterIds = ['calcYear', 'calcMonth', 'calcLocation', 'calcSupplier', 'calcVehicleModel', 'calcResetBtn'];
+    const filterIds = ['calcYear', 'calcMonth', 'calcLocation', 'calcVehicle', 'calcResetBtn'];
 
     filterIds.forEach(id => {
         const el = document.getElementById(id);

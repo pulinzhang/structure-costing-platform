@@ -1,4 +1,6 @@
 """
+指挥家：只挥棒，不拉琴。违反指挥家宪法（orchestrator-constitution）即不合格。
+
 L0 核对导出 — 编排器（查库 → 渲染工作簿 → 文件名）
 
 不负责列布局 / 样式 / openpyxl 细节；那些分别在 columns / styles / workbook。
@@ -14,6 +16,7 @@ from app.common.timezone import now
 from app.repositories.bom.welding_process_breakdown_repository import (
     BomWeldingProcessBreakdownRepository,
 )
+from app.schemas.vo.user_vo import UserVO
 from app.services.bom.welding_process_breakdown.export.values import (
     build_filename,
     filter_summary,
@@ -42,6 +45,7 @@ class BomWeldingProcessBreakdownExportOrchestrator:
         bom_version: str | None = None,
         part_number: str | None = None,
         process_line_count_eq: int | None = None,
+        current_user: UserVO,
     ) -> tuple[bytes, str]:
         nodes = self.repository.list_l0_for_export(
             db,
@@ -63,6 +67,7 @@ class BomWeldingProcessBreakdownExportOrchestrator:
                 part_number=part_number,
                 process_line_count_eq=process_line_count_eq,
             ),
+            current_user=current_user,
         )
 
         stamp = now().strftime("%Y%m%d_%H%M%S")

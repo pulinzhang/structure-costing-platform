@@ -1,6 +1,6 @@
 /**
  * Parts Page
- * 零件列表 —对齐加工费计算结果列表：进入即加载、筛选均可选、级联联动、批量删除
+ * 零件列表 —进入即加载、筛选均可选、级联（基地 → 车型 → 版本 → 冲压工厂）、批量删除须基地+车型+版本
  * 明细抽屉逻辑保持不变
  */
 
@@ -10,13 +10,44 @@ import {
     updatePartsFilterCapsules,
     updatePartsHud,
     renderPartsPagination,
-} from './template.js?v=19';
+} from './template.js?v=29';
+import {
+    BTN_SAVE_ACTIVE,
+    BTN_SAVE_DEFAULT,
+    SKETCH_PLACEHOLDER,
+    SKETCH_THUMBNAIL,
+    ZOOM_OVERLAY,
+} from '../../../../ui-classes.js?v=2';
 import {
     DEFAULT_PAGE_SIZE,
     PAGE_SIZE_OPTIONS,
     bindPageSizeSelect,
     normalizePageSize,
 } from '../../../../page-size.js?v=2';
+
+function offalCell(part) {
+    if (!part.is_offal_nested) {
+        return '<span class="text-[#555555]">—</span>';
+    }
+    const source = part.offal_source ? esc(part.offal_source) : '';
+    const label = source || '利废';
+    return `<span class="inline-flex items-center px-1.5 py-0.5 text-[9px] tracking-wide text-[#ffb74d] bg-[#2a1a0a] border border-[#ffb74d]/30" title="是否利废">${label}</span>`;
+}
+
+function scrapByproductCell(part) {
+    if (!part.is_scrap_byproduct) {
+        return '<span class="text-[#555555]">—</span>';
+    }
+    return '<span class="inline-flex items-center px-1.5 py-0.5 text-[9px] tracking-wide text-[#8E8E93] bg-[#161620] border border-[#2A2A35]" title="废料副产品，不算冲压费">是</span>';
+}
+
+function swingShearCell(part) {
+    if (!part.has_swing_shear) {
+        return '<span class="text-[#555555]">—</span>';
+    }
+    return '<span class="inline-flex items-center px-1.5 py-0.5 text-[9px] tracking-wide text-[#90caf9] bg-[#0d1a24] border border-[#90caf9]/30" title="含摆剪工序">是</span>';
+}
+
 
 const CASCADE_API = '/api/stamping/filters/cascade';
 const PARTS_API = '/api/stamping/parts';
@@ -137,16 +168,16 @@ export const PartsPage = {
 
         pageContent?.addEventListener('change', (e) => {
             const cascadeResets = {
-                locationFilter: ['supplierFilter', 'vehicleModelFilter', 'versionFilter'],
-                supplierFilter: ['vehicleModelFilter', 'versionFilter'],
-                vehicleModelFilter: ['versionFilter'],
+                locationFilter: ['vehicleModelFilter', 'versionFilter', 'supplierFilter'],
+                vehicleModelFilter: ['versionFilter', 'supplierFilter'],
+                versionFilter: ['supplierFilter'],
             };
             if (cascadeResets[e.target.id]) {
                 this.resetDependentFilters(cascadeResets[e.target.id]);
                 this.loadCascadeFilters().then(() => this.loadParts(1));
                 return;
             }
-            if (e.target.id === 'versionFilter') {
+            if (e.target.id === 'supplierFilter') {
                 updatePartsFilterCapsules();
                 this.loadParts(1);
                 return;
@@ -205,8 +236,9 @@ export const PartsPage = {
         try {
             const params = {
                 location: document.getElementById('locationFilter')?.value || '',
-                stamping_supplier: document.getElementById('supplierFilter')?.value || '',
                 vehicle_model: document.getElementById('vehicleModelFilter')?.value || '',
+                version: document.getElementById('versionFilter')?.value || '',
+                stamping_supplier: document.getElementById('supplierFilter')?.value || '',
             };
             const res = await HttpClient.get(CASCADE_API, { params });
             const filters = res.data || {};
@@ -242,9 +274,9 @@ export const PartsPage = {
 
     requireScope(actionLabel) {
         const filters = this.collectScopeFilters();
-        if (!filters.location || !filters.stamping_supplier || !filters.vehicle_model || !filters.version) {
+        if (!filters.location || !filters.vehicle_model || !filters.version) {
             this.setAdvancedOpen(true);
-            showToast(`${actionLabel}须同时选择基地、冲压工厂、车型和版本`, 'warning');
+            showToast(`${actionLabel}须同时选择基地、车型和版本；冲压工厂可选`, 'warning');
             return null;
         }
         return filters;
@@ -252,6 +284,16 @@ export const PartsPage = {
 
     requireScopeForBatchDelete() {
         return this.requireScope('批量删除');
+    },
+
+    requireLocationForExport() {
+        const filters = this.collectScopeFilters();
+        if (!filters.location) {
+            this.setAdvancedOpen(true);
+            showToast('导出须选择基地', 'warning');
+            return null;
+        }
+        return filters;
     },
 
     showEmptyHint(title, hint) {
@@ -341,11 +383,11 @@ export const PartsPage = {
         const muted = 'text-[#8E8E93]';
 
         const thumbnailCell = sketchUrl
-            ? `<div class="sketch-thumbnail" title="图纸预览">
-                    <img src="/uploads/${esc(sketchUrl)}" alt="零件图纸" onerror="this.style.display='none';this.nextElementSibling&&(this.nextElementSibling.style.display='flex')">
-                    <div class="zoom-overlay">${window.svgIcon('search')}</div>
+            ? `<div class="${SKETCH_THUMBNAIL}" title="图纸预览">
+                    <img class="w-full h-full object-cover" src="/uploads/${esc(sketchUrl)}" alt="零件图纸" onerror="this.style.display='none';this.nextElementSibling&&(this.nextElementSibling.style.display='flex')">
+                    <div class="${ZOOM_OVERLAY}">${window.svgIcon('search')}</div>
                </div>`
-            : `<div class="sketch-thumbnail-placeholder" title="无图级>
+            : `<div class="${SKETCH_PLACEHOLDER}" title="无图级>
                     ${window.svgIcon('file-earmark')}
                </div>`;
 
@@ -364,10 +406,13 @@ export const PartsPage = {
                 </td>
                 <td class="${cell} ${muted} font-sans">${esc(part.part_name) || '—'}</td>
                 <td class="${cell} ${muted}">${esc(part.location) || '—'}</td>
-                <td class="${cell} ${muted} font-sans">${esc(part.stamping_supplier) || '—'}</td>
                 <td class="${cell} ${muted}">${esc(part.vehicle_model) || '—'}</td>
-                <td class="${cell} ${muted} border-r border-[#22222A]">${esc(part.version) || '—'}</td>
+                <td class="${cell} ${muted}">${esc(part.version) || '—'}</td>
+                <td class="${cell} ${muted} font-sans border-r border-[#22222A]">${esc(part.stamping_supplier) || '—'}</td>
                 <td class="${cell} ${muted} font-sans">${esc(part.material) || '—'}</td>
+                <td class="${cell}">${offalCell(part)}</td>
+                <td class="${cell}">${scrapByproductCell(part)}</td>
+                <td class="${cell}">${swingShearCell(part)}</td>
                 <td class="${cell} text-right tabular-nums ${muted}">${thickness}</td>
                 <td class="${cell} text-right tabular-nums ${muted}">${partWeight}</td>
                 <td class="${cell} text-right tabular-nums ${muted}">${processCount}</td>
@@ -396,7 +441,7 @@ export const PartsPage = {
         if (!filters) return;
 
         if (!window.confirm(
-            `确定批量删除零件吗？\n\n基地: ${filters.location}\n工厂: ${filters.stamping_supplier}\n车型: ${filters.vehicle_model}\n版本: ${filters.version}\n\n将同时删除关联工序，此操作不可恢复！`,
+            `确定批量删除零件吗？\n\n基地: ${filters.location}\n车型: ${filters.vehicle_model}\n版本: ${filters.version}\n工厂: ${filters.stamping_supplier || '全部工厂'}\n\n将同时删除关联工序，此操作不可恢复！`,
         )) {
             return;
         }
@@ -414,10 +459,10 @@ export const PartsPage = {
         try {
             const body = {
                 location: filters.location,
-                stamping_supplier: filters.stamping_supplier,
                 vehicle_model: filters.vehicle_model,
                 version: filters.version,
             };
+            if (filters.stamping_supplier) body.stamping_supplier = filters.stamping_supplier;
 
             const res = await HttpClient.post(`${PARTS_API}/batch-delete`, body);
             const result = res.data || {};
@@ -463,15 +508,18 @@ export const PartsPage = {
         try {
             const result = await HttpClient.get(`${PARTS_API}/${partId}`);
             const part = result.data?.data ?? result.data ?? result;
-            contentEl.innerHTML = renderDetailContent(part);
+            contentEl.innerHTML = renderDetailContent(part, {
+                canUpdate: this.canUpdate !== false,
+            });
 
             const btn = document.getElementById('saveProcessBtn');
             if (btn) {
                 btn.dataset.active = 'false';
-                btn.className = 'btn-save-default';
+                btn.className = BTN_SAVE_DEFAULT;
             }
 
             this._bindProcessEditEvents(part.id);
+            this._bindOffalEditEvents(part.id);
             this._bindSketchModal(part);
         } catch (error) {
             contentEl.innerHTML = `
@@ -559,11 +607,50 @@ export const PartsPage = {
         });
     },
 
+    _syncOffalToggleUi() {
+        const toggle = document.getElementById('offalNestedToggle');
+        const knob = document.getElementById('offalNestedKnob');
+        const label = document.getElementById('offalNestedLabel');
+        const sourceRow = document.getElementById('offalSourceRow');
+        if (!toggle) return;
+        const isOn = toggle.dataset.on === '1';
+        toggle.setAttribute('aria-checked', isOn ? 'true' : 'false');
+        toggle.style.background = isOn ? '#d32f2f' : '#1a1a1a';
+        toggle.style.borderColor = isOn ? '#d32f2f' : '#2c2c2c';
+        if (knob) knob.style.transform = `translateX(${isOn ? '16px' : '2px'})`;
+        if (label) label.textContent = isOn ? '是' : '否';
+        if (sourceRow) sourceRow.classList.toggle('hidden', !isOn);
+    },
+
+    _bindOffalEditEvents(partId) {
+        const toggle = document.getElementById('offalNestedToggle');
+        if (!toggle || this.canUpdate === false) return;
+
+        toggle.addEventListener('click', () => {
+            toggle.dataset.on = toggle.dataset.on === '1' ? '0' : '1';
+            this._syncOffalToggleUi();
+            this._activateOffalSaveButton();
+        });
+        document.getElementById('offalSourceInput')?.addEventListener('input', () => {
+            this._activateOffalSaveButton();
+        });
+        document.getElementById('saveOffalBtn')?.addEventListener('click', async () => {
+            await this._saveOffalEdits(partId);
+        });
+    },
+
+    _activateOffalSaveButton() {
+        const btn = document.getElementById('saveOffalBtn');
+        if (!btn || btn.dataset.active === 'true') return;
+        btn.dataset.active = 'true';
+        btn.className = 'h-7 px-3 text-[10px] text-white bg-[#d32f2f] border border-[#d32f2f] rounded-sm hover:bg-[#b71c1c] transition-all tracking-wide';
+    },
+
     _activateSaveButton() {
         const btn = document.getElementById('saveProcessBtn');
         if (!btn || btn.dataset.active === 'true') return;
         btn.dataset.active = 'true';
-        btn.className = 'btn-save-active';
+        btn.className = BTN_SAVE_ACTIVE;
     },
 
     _collectProcessEdits() {
@@ -596,7 +683,7 @@ export const PartsPage = {
             const saveBtn = document.getElementById('saveProcessBtn');
             if (saveBtn) {
                 saveBtn.dataset.active = 'false';
-                saveBtn.className = 'btn-save-default';
+                saveBtn.className = BTN_SAVE_DEFAULT;
             }
             this.loadParts(partsState.currentPage);
             this.showDetail(partId);
@@ -608,19 +695,45 @@ export const PartsPage = {
         }
     },
 
+    async _saveOffalEdits(partId) {
+        if (this.canUpdate === false) {
+            showToast('无编辑权限', 'warning');
+            return;
+        }
+        const toggle = document.getElementById('offalNestedToggle');
+        const btn = document.getElementById('saveOffalBtn');
+        if (!toggle || !btn) return;
+        const isOn = toggle.dataset.on === '1';
+        const sourceRaw = document.getElementById('offalSourceInput')?.value ?? '';
+        const originalHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '保存中..';
+        try {
+            await HttpClient.patch(`${PARTS_API}/${partId}/offal`, {
+                is_offal_nested: isOn,
+                offal_source: isOn ? sourceRaw.trim() || null : null,
+            });
+            showToast('利废设置已保存。零件价格需重算后才会按新规则计价。', 'success');
+            this.loadParts(partsState.currentPage);
+            this.showDetail(partId);
+        } catch (error) {
+            showToast(error.message || '保存失败', 'error');
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+        }
+    },
+
     async exportExcel() {
         if (this.canExport === false) {
             showToast('无导出权限', 'warning');
             return;
         }
-        const scope = this.requireScope('导出');
+        const scope = this.requireLocationForExport();
         if (!scope) return;
-        const params = {
-            location: scope.location,
-            stamping_supplier: scope.stamping_supplier,
-            vehicle_model: scope.vehicle_model,
-            version: scope.version,
-        };
+        const params = { location: scope.location };
+        if (scope.stamping_supplier) params.stamping_supplier = scope.stamping_supplier;
+        if (scope.vehicle_model) params.vehicle_model = scope.vehicle_model;
+        if (scope.version) params.version = scope.version;
 
         const btn = document.getElementById('partsExportBtn');
         const originalHtml = btn ? btn.innerHTML : '';

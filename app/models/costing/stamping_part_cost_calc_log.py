@@ -1,8 +1,10 @@
 """冲压零件价格核算计算批次日志。"""
 
 from datetime import datetime
+
 from sqlalchemy import DateTime, Index, Integer, String, Text, text
 from sqlalchemy.orm import Mapped, mapped_column
+
 from app.database import Base
 from app.models.common.audit_mixin import AuditUserMixin
 
@@ -11,7 +13,7 @@ class StampingPartCostCalcLog(AuditUserMixin, Base):
     """
     零件价格核算批次日志。
 
-    锁范围：year + month + location + stamping_supplier。
+    锁范围：year + month + location + vehicle_model（工厂键固定为「全部工厂」）。
     """
 
     __tablename__ = "stamping_part_cost_calc_logs"
@@ -77,7 +79,7 @@ class StampingPartCostCalcLog(AuditUserMixin, Base):
             "year",
             "month",
             "location",
-            "stamping_supplier",
+            "vehicle_model",
             unique=True,
             sqlite_where=text("status = 'processing'"),
         ),

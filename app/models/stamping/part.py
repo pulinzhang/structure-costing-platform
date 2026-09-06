@@ -65,6 +65,30 @@ class StampingPart(AuditUserMixin, Base):
         default=False,
         comment="是否拼焊件（对外总成）；默认否。为是时各片材料在子表，工序仍挂本表",
     )
+    # 利废：从废料捡成品，材料 = 净重 × 废料单价；与拼焊互不替代
+    is_offal_nested: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        comment="是否利废件（不采购新板）；默认否。由工艺确认表料片式样「利用××废料」拆出",
+    )
+    offal_source: Mapped[str | None] = mapped_column(
+        String(50),
+        nullable=True,
+        comment="利用哪类废料，例：侧围（从「利用侧围废料」取出）",
+    )
+    is_scrap_byproduct: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        comment="是否废料副产品（家模用废料成形，不算冲压加工费）；默认否",
+    )
+    has_swing_shear: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        comment="是否含摆剪工序（导入时按工序代码/序号含「摆剪」落库）",
+    )
 
     # 材料信息（普通件使用；拼焊总成可空，以各子片为准）
     material: Mapped[str | None] = mapped_column(String(50), nullable=True, comment="材质")
@@ -160,6 +184,9 @@ class StampingPart(AuditUserMixin, Base):
         Index("ix_part_version", "version"),
         Index("ix_part_number", "part_number"),
         Index("ix_part_is_tailor_welded", "is_tailor_welded"),
+        Index("ix_part_is_offal_nested", "is_offal_nested"),
+        Index("ix_part_is_scrap_byproduct", "is_scrap_byproduct"),
+        Index("ix_part_has_swing_shear", "has_swing_shear"),
         # 唯一键：基地 + 供应商 + 车型 + 版本 + 零件号
         UniqueConstraint(
             "location",
@@ -193,6 +220,9 @@ class StampingProcess(AuditUserMixin, Base):
         String(50), nullable=True, comment="工序代码(如DR/TR+PI)"
     )
     die_sets: Mapped[int | None] = mapped_column(Integer, nullable=True, default=1, comment="套数")
+    die_number: Mapped[str | None] = mapped_column(
+        String(80), nullable=True, comment="模具编号（工艺确认表原文，空则无模具）"
+    )
 
     # 设备信息
     tonnage: Mapped[int | None] = mapped_column(Integer, nullable=True, comment="设备吨位(T)")

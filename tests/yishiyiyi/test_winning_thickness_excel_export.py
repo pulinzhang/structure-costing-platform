@@ -7,6 +7,7 @@ from io import BytesIO
 
 from openpyxl import load_workbook
 
+from app.common.audit import SYSTEM_USER
 from app.schemas.vo.winning_thickness_vo import WinningThicknessRowVO
 from app.services.yishiyiyi.winning_thickness.export.excel_exporter import (
     WinningThicknessExporter,
@@ -15,6 +16,7 @@ from app.services.yishiyiyi.winning_thickness.export.values import (
     CALC_SHEET_SUFFIX,
     EXAMPLE_SHEET_SUFFIX,
     OVERVIEW_SHEET_SUFFIX,
+    filter_rows_for_export,
     scoped_sheet_name,
 )
 
@@ -65,17 +67,16 @@ def test_export_has_overview_calc_and_example_sheets() -> None:
             _row(
                 grade="DC04",
                 steel_mill="宝钢",
-                thick_min=None,
-                thick_min_operator=None,
-                thick_max=None,
-                thick_max_operator=None,
-                thickness_range="-",
-                adjustment=Decimal("0"),
+                thick_min=Decimal("1.00"),
+                thick_max=Decimal("1.20"),
+                thickness_range="1.00 ≤ t < 1.20",
+                adjustment=Decimal("80"),
             ),
         ],
         year=2026,
         month=1,
         location="芜湖",
+        current_user=SYSTEM_USER,
     )
 
     assert filename == "中标钢厂厚度价格一览表_2026年_1月_芜湖.xlsx"
@@ -94,7 +95,6 @@ def test_export_has_overview_calc_and_example_sheets() -> None:
     assert overview.cell(3, 2).value == "芜湖"
     assert overview.cell(3, 4).value == "2026年1月"
     assert overview.cell(3, 8).value == "2"
-    assert "最终价 = 基准价 + 厚度加减价 + 加工费" in str(overview.cell(4, 1).value)
     assert overview.cell(_HEADER_ROW, 9).value == "基价溯源"
     assert overview.cell(_DATA_START, 2).value == "DC01"
     assert Decimal(str(overview.cell(_DATA_START, 8).value)) == Decimal("3980")
@@ -123,11 +123,8 @@ def test_export_has_overview_calc_and_example_sheets() -> None:
     assert calc.cell(_DATA_START, 9).value == "0.60 ≤ t < 0.80"
     assert calc.cell(_DATA_START, 13).value == f"=J{_DATA_START}+K{_DATA_START}+L{_DATA_START}"
     second = _DATA_START + 1
-    assert calc.cell(second, 5).value is None
-    assert calc.cell(second, 6).value is None
-    assert calc.cell(second, 7).value is None
-    assert calc.cell(second, 8).value is None
-    assert calc.cell(second, 9).value == "-"
+    assert calc.cell(second, 3).value == "DC04"
+    assert calc.cell(second, 9).value == "1.00 ≤ t < 1.20"
     assert calc.cell(second, 13).value == f"=J{second}+K{second}+L{second}"
 
     example = workbook[example_name]
@@ -167,6 +164,7 @@ def test_example_sheet_without_rows_still_explains_formula() -> None:
         year=2026,
         month=8,
         location="青岛",
+        current_user=SYSTEM_USER,
     )
     workbook = load_workbook(BytesIO(content))
     example_name = scoped_sheet_name(
@@ -183,4 +181,36 @@ def test_example_sheet_without_rows_still_explains_formula() -> None:
     assert "本次无数据可摘录" in joined
     assert "公式说明" in joined
     assert workbook[calc_name].cell(_HEADER_ROW, 13).value == "最终价(元/吨)"
+    workbook.close()
+
+
+def test_filter_rows_for_export_requires_base_price_id() -> None:
+    with_base = _row(grade="DC01", steel_mill="马钢")
+    without_base = _row(grade="DC04", steel_mill="宝钢")
+    without_base.base_price_id = None
+
+    kept = filter_rows_for_export([with_base, without_base])
+
+    assert len(kept) == 1
+    assert kept[0].grade == "DC01"
+
+
+def test_exporter_drops_rows_without_base_price_id() -> None:
+    without_base = _row(grade="DC04", steel_mill="宝钢")
+    without_base.base_price_id = None
+
+    content, _filename = WinningThicknessExporter().generate(
+        [without_base],
+        year=2026,
+        month=1,
+        location="芜湖",
+        current_user=SYSTEM_USER,
+    )
+    workbook = load_workbook(BytesIO(content))
+    overview_name = scoped_sheet_name(
+        year=2026, month=1, location="芜湖", suffix=OVERVIEW_SHEET_SUFFIX
+    )
+    overview = workbook[overview_name]
+    assert overview.cell(3, 8).value == "0"
+    assert overview.cell(_DATA_START, 2).value is None
     workbook.close()

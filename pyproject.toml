@@ -68,6 +68,7 @@ target-version = "py312"
 select = [
   "E",    # pycodestyle errors (语法/缩进)
   "F",    # pyflakes (未使用导入 / 未定义变量)
+  "I",    # isort（导包分组与顺序；与 ruff --fix 对齐）
   "W",    # pycodestyle warnings (多余空格 / 行末换行)
   "UP",   # pyupgrade (旧 typing.List → list; Optional → X|Y; typing.Iterator → collections.abc.Iterator)
   "RUF",  # ruff 专有 (未使用 noqa / 多余括号)

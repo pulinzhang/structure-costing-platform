@@ -3,7 +3,7 @@
  * 基准价格上传 — 异步 task_id + 进度轮询
  */
 
-import { basePriceUploadTemplate } from './template.js?v=36';
+import { basePriceUploadTemplate } from './template.js?v=37';
 
 const POLL_INTERVAL_MS = 2000;
 
@@ -105,14 +105,9 @@ const BasePriceUploadPage = {
     },
 
     fillDefaultPeriod() {
-        const now = new Date();
-        const yearInput = document.getElementById('basePriceYear');
         const monthInput = document.getElementById('basePriceMonth');
-        if (yearInput && !yearInput.value) {
-            yearInput.value = String(now.getFullYear());
-        }
         if (monthInput && !monthInput.value) {
-            monthInput.value = String(now.getMonth() + 1);
+            monthInput.value = String(new Date().getMonth() + 1);
         }
     },
 

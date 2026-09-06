@@ -1,7 +1,8 @@
 # 汽车冲压件自动核价平台 - 架构说明
 
 > 面向开发者的架构导读。  
-> **硬约束以 Cursor Rules / docs 规范为准**（见文末「规范索引」）；本文解释「为什么」与「长什么样」。
+> **硬约束以 Cursor Rules / docs 规范为准**（见文末「规范索引」）；本文解释「为什么」与「长什么样」。  
+> 领域设计按切片放在 `docs/{slice}/`，目录见 [README.md](README.md)。
 
 ---
 
@@ -11,7 +12,7 @@
 |------|------|
 | 名称 | 汽车冲压件自动核价平台 |
 | 后端 | FastAPI + SQLAlchemy + SQLite |
-| 前端 | `static/` SPA（无构建：原生 ES Module + Tailwind CDN） |
+| 前端 | `static/` SPA（无 Webpack/Vite：原生 ES Module + 入库的 `tailwind.css`） |
 | 做什么 | 工艺/政策/BOM 等数据入库 → 钢材联动与零件核价 → 查询、审核、导出 |
 | 典型流程 | 上传 Excel → Parser 解析 → Service 落库 → 下游 costing 组合计算 |
 
@@ -41,6 +42,7 @@ Parser 是**横向工具**：只被 Service 调用；禁止依赖 Router/Service
 |----|--------|------------|
 | **Router** | 鉴权依赖、参数、调 Service、返回 `ApiResponse`；下载/导出可 `StreamingResponse` / `FileResponse` | 业务逻辑、`db.query`、调 Parser、后台 worker 壳（§5.3）、把 Service 错误元组转 `HTTPException`（§5.2） |
 | **Service** | 业务规则、事务、调 Parser/Repo、ORM→VO、抛业务异常 | 直接写 SQL；用 `(None, str)` 向 Router 报错；手写 datetime/Decimal JSON |
+| **Orchestrator** | 核算指挥：`prepare → engine → persist` | 主方法里 `for` / 掐进度 / 写库（见 [指挥家宪法](orchestrator-constitution.mdc)） |
 | **Repository** | CRUD / 聚合查询；返回 Model 或具名 `TypedDict`（函数体 `return {…}` 合法） | 权限/角色分支决策；签名写成匿名 `dict` / `dict[str, Any]` |
 | **Model** | 表字段 + `relationship` | `to_dict`、业务 `@property` |
 | **Schema** | DTO（`schemas/dto/`）/ VO（`schemas/vo/`） | 业务流程 |
@@ -58,7 +60,7 @@ Parser 是**横向工具**：只被 Service 调用；禁止依赖 Router/Service
 
 | 角色 | 切片 | 典型内容 |
 |------|------|----------|
-| **上游 / 基础数据** | `settings` · `stamping` · `bom` · `yishiyiyi` | 用户配置、工艺零件、BOM、基价/政策/废料价 |
+| **上游 / 基础数据** | `settings` · `stamping` · `bom` · `yishiyiyi` | 用户配置、工艺零件、BOM、基价/政策/牌号分类/废料价 |
 | **下游 / 编排核价** | `costing` · `dashboard` | 钢材联动、零件核价、成品核价、引擎编排、KPI |
 | **解释层（隔离特例）** | `llm` | 核价结果自然语言分析；只读上游表；内部工具不进 `common`；上游不得依赖它 |
 | **横切登记** | `file_trace` | 已落盘 Excel 登记与鉴权下载；被上游上传 Service 调用，**不**依赖 costing |
@@ -252,7 +254,7 @@ ApiResponse[AsyncTaskAcceptedVO]
 
 ### 跨切片该不该抽到 common？
 
-领域数据留在所属切片；下游直接组合上游即可。只有**无自然归属**且多方复用的横切能力才进 `common/`。**`llm` 内部工具（金额展示、年月键等）留在本切片，禁止抽到 `common/`**，以免摊进核价主路径。细则见 [LLM 设计 B.2.1](llm-costing-analysis-report-design.md)。
+领域数据留在所属切片；下游直接组合上游即可。只有**无自然归属**且多方复用的横切能力才进 `common/`。**`llm` 内部工具（金额展示、年月键等）留在本切片，禁止抽到 `common/`**，以免摊进核价主路径。细则见 [LLM 设计 B.2.1](llm/llm-costing-analysis-report-design.md)。
 
 ### Model 可以有 relationship 吗？
 
@@ -266,18 +268,32 @@ ApiResponse[AsyncTaskAcceptedVO]
 
 ## 12. 规范索引
 
+领域设计按切片放在 `docs/{slice}/`，完整目录见 [docs/README.md](README.md)。
+
+### 平台（本目录根）
+
 | 文档 | 位置 | 用途 |
 |------|------|------|
 | **架构宪法** | [architecture-constitution.mdc](architecture-constitution.mdc) · `.cursor/rules/architecture-constitution.mdc` | 分层 + 切片依赖硬规则 |
+| **指挥家宪法** | [orchestrator-constitution.mdc](orchestrator-constitution.mdc) · `.cursor/rules/orchestrator-constitution.mdc` | 核算 Orchestrator 只编排不执行 |
 | **前端规范** | [front-end.mdc](front-end.mdc) · `.cursor/rules/front-end.mdc` | SPA / Brabus / 表格风格 |
+| **浅色主题** | [light-theme-design.md](light-theme-design.md) | 浅色主题改造（设计） |
 | **命名规范** | [naming-convention.mdc](naming-convention.mdc) · `.cursor/rules/…` | 标识符命名 |
 | **API 类型安全** | [api-type-safety.md](api-type-safety.md) · `.cursor/rules/api-type-safety.mdc` | `ApiResponse` / `PageResult` / 权限 Depends / `Any` 不进函数签名 |
 | **Python 执行** | `.cursor/rules/python-execution.mdc` | Windows/UTF-8 跑脚本约定 |
 | **权限设计** | [permission-design.md](permission-design.md) | 前后端权限码 |
-| **L0 成品核价设计** | [l0-assembly-costing-design.md](l0-assembly-costing-design.md) | 供货总成月度总账、外购/L1 年度价（已上线：计算/一览/导出） |
-| **BOM 年度零件价表** | [bom-annual-part-prices-design.md](bom-annual-part-prices-design.md) | 外购价 / L1 一口价单表（已上线：上传/列表/审核） |
-| **核价引擎设计** | [costing-engine-design.md](costing-engine-design.md) | 基地+年+月一键编排（已上线） |
-| **文件溯源设计** | [file-trace-design.md](file-trace-design.md) | 已落盘 Excel 登记与鉴权下载（MVP 已上线；深链/导出等见文内非目标） |
-| **核价结果智能分析** | [llm-costing-analysis-report-design.md](llm-costing-analysis-report-design.md) | LLM 解释层；切片隔离特例见文内 B.2.1 |
+| **FastAPI 指南** | [fastapi-guide.md](fastapi-guide.md) | 框架约定 |
+| **生产安装** | [deploy-windows-production.md](deploy-windows-production.md) | Windows 一键安装 |
+
+### 领域（`docs/{slice}/`）
+
+| 切片 | 文档 |
+|------|------|
+| **stamping** | [产品质量先期策划（APQP）先布点后工艺](stamping/stamping-apqp-die-before-process-design.md) · [工艺确认表](stamping/stamping-process-confirmation-design.md) · [模具布点](stamping/stamping-die-management-design.md) · [模具单价](stamping/stamping-die-unit-price-design.md) · [检具费档案](stamping/stamping-gauge-fee-design.md) · [年度模具费（不含检具）](stamping/stamping-die-fee-design.md) |
+| **bom** | [年度零件价](bom/bom-annual-part-prices-design.md) · [焊接工艺拆解](bom/welding-process-breakdown-design.md) · [焊接费](bom/welding-fee-design.md) · [采购对象清单](bom/bom-procurement-objects-design.md) · [指定供应商](bom/bom-procurement-object-supplier-design.md) |
+| **yishiyiyi** | [牌号分类](yishiyiyi/steel-grade-category-design.md) · [分类级厚度政策](yishiyiyi/thickness-policy-category-level-design.md) |
+| **costing** | [核价引擎](costing/costing-engine-design.md) · [总成核价](costing/assembly-costing-design.md) · [L0 成品核价（冻结）](costing/l0-assembly-costing-design.md) · [采购签约报表](costing/procurement-contract-report-design.md) · [协议价生效期](costing/effective-period-design.md) · [暂估正式](costing/provisional-final-settlement-design.md) · [锚点送货](costing/anchor-true-up-design.md) |
+| **file_trace** | [文件溯源](file-trace/file-trace-design.md) |
+| **llm** | [核价结果智能分析](llm/llm-costing-analysis-report-design.md) |
 
 `docs/*.mdc` 与 `.cursor/rules/*.mdc` 应对齐；改规范时两处一起改。

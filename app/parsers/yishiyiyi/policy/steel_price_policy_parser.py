@@ -26,9 +26,9 @@
 """
 
 import io
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
-from collections.abc import Callable
 
 import xlrd
 from openpyxl.worksheet.worksheet import Worksheet

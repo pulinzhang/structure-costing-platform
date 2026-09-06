@@ -5,6 +5,7 @@ from __future__ import annotations
 from unittest.mock import MagicMock
 
 import pytest
+
 from app.exceptions.base import NotFoundException, PermissionException
 from app.schemas.dto.llm_analysis_dto import LlmAnalysisReportQuery
 from app.schemas.vo.user_vo import UserVO

@@ -34,7 +34,14 @@ export function dashboardTemplate() {
                     <option value="">全部基地</option>
                 </select>
             </div>
-            <p class="text-[10px] text-[#555555] pb-2 ml-auto font-mono tracking-[0.04em]" id="dashScopeLabel">PERIOD —</p>
+            <div class="flex flex-col gap-1">
+                <label class="text-[9px] font-medium tracking-[0.08em] text-[#555555] uppercase" for="dashVehicle">配套车型</label>
+                <select id="dashVehicle"
+                    class="h-9 min-w-[8rem] px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#9e9e9e] appearance-none cursor-pointer focus:outline-none focus:border-[#ff5252] transition-all">
+                    <option value="">全部车型</option>
+                </select>
+            </div>
+            <p class="text-[10px] text-[#555555] pb-2 ml-auto font-mono tracking-[0.04em]" id="dashScopeLabel">—</p>
         </div>
 
         <!-- 本期产出 HUD -->
@@ -136,7 +143,7 @@ export function dashboardTemplate() {
                     ${actionLink({ page: 'steel-price-list', label: '审核钢材联动价', sub: '本期联动价一览' })}
                     ${actionLink({ page: 'stamping-part-cost', label: '审核冲压零件价格', sub: '本期冲压件核价确认' })}
                     ${actionLink({ page: 'steel-price-calc', label: '发起钢材联动计算', sub: '基价 + 政策 → 联动价' })}
-                    ${actionLink({ page: 'stamping-part-cost-calc', label: '发起冲压零件价格计算', sub: '材料 + 加工费' })}
+                    ${actionLink({ page: 'stamping-part-cost-calc', label: '发起冲压零件价格计算', sub: '材料 + 加工费 + 模具/检具' })}
                     ${actionLink({ page: 'scrap-price', label: '维护废料月度价', sub: '核价扣减依据' })}
                 </div>
             </div>

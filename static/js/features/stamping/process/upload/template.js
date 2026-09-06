@@ -6,6 +6,14 @@
  * - 拖拽区加大垂直留白
  */
 
+import {
+    BTN_FILE_SELECT,
+    BTN_GHOST,
+    BTN_UPLOAD_SUBMIT,
+    UPLOAD_DROPZONE,
+    UPLOAD_INPUT,
+} from '../../../../ui-classes.js?v=1';
+
 export function uploadTemplate() {
     return `
         <div class="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-3">
@@ -40,7 +48,7 @@ export function uploadTemplate() {
                                     <select id="location"
                                             name="location"
                                             required
-                                            class="upload-input w-[280px] text-[11px]">
+                                            class="${UPLOAD_INPUT} w-[280px]">
                                         <option value="">请选择采购基地</option>
                                         <option value="大连">大连</option>
                                         <option value="芜湖">芜湖</option>
@@ -62,7 +70,7 @@ export function uploadTemplate() {
                                     <span class="text-[13px] text-[#6b6b6b] font-medium tracking-wide uppercase">上传工艺文件</span>
                                 </div>
                                 <div class="ml-6">
-                                    <div id="uploadZone" class="upload-dropzone mb-4">
+                                    <div id="uploadZone" class="${UPLOAD_DROPZONE} mb-4" data-dropzone-state="idle">
                                         <div id="stampingDropIdle" class="flex flex-col items-center gap-0">
                                             <!-- 顶部角标线 -->
                                             <div class="flex items-center gap-3 mb-5 w-full px-3">
@@ -89,7 +97,7 @@ export function uploadTemplate() {
                                             <input type="file" id="fileInput" class="hidden" accept=".xlsx,.xls">
                                             <button type="button"
                                                     id="stampingSelectFileBtn"
-                                                    class="btn-file-select">
+                                                    class="${BTN_FILE_SELECT}">
                                                 ${window.svgIcon('folder', 'w-3.5 h-3.5')}
                                                 浏览文件
                                             </button>
@@ -113,7 +121,7 @@ export function uploadTemplate() {
                                                      class="h-full bg-[#d32f2f] shadow-[0_0_8px_rgba(211,47,47,0.5)] transition-all duration-300"
                                                      style="width: 0%"></div>
                                             </div>
-                                            <p id="stampingProgressMsg" class="text-[11px] text-[#9e9e9e] leading-relaxed mb-0">已提交解析队列</p>
+                                            <p id="stampingProgressMsg" class="text-[11px] text-[#9e9e9e] leading-relaxed mb-0 whitespace-pre-wrap break-words max-h-48 overflow-y-auto">已提交解析队列</p>
                                         </div>
                                     </div>
 
@@ -125,14 +133,14 @@ export function uploadTemplate() {
                                         <button type="button"
                                                 id="stampingResetButton"
                                                 onclick="window.resetUploadForm()"
-                                                class="btn-ghost">
+                                                class="${BTN_GHOST}">
                                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                                             重置
                                         </button>
                                         <button type="submit"
                                                 id="submitBtn"
                                                 disabled
-                                                class="btn-upload-submit disabled:opacity-30 disabled:pointer-events-none">
+                                                class="${BTN_UPLOAD_SUBMIT}">
                                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
                                             上传
                                         </button>
@@ -146,65 +154,22 @@ export function uploadTemplate() {
 
             <!-- ===== 右栏：信息面板 ===== -->
             <div class="space-y-3">
-                <!-- 技术规格面板 -->
+                <!-- 填写说明 -->
                 <div class="bg-[#1e1e1e] border border-[#2c2c2c]">
-                    <!-- 面板头 -->
                     <div class="px-4 py-3 border-b border-[#222222] flex items-center justify-between">
                         <div class="flex items-center gap-2">
                             <span style="width:2px;height:12px;background:#d32f2f;border-radius:1px;display:inline-block;box-shadow:0 0 6px rgba(211,47,47,0.4);"></span>
-                            <h5 class="text-[11px] font-bold text-[#9e9e9e] mb-0 tracking-widest uppercase">技术规格</h5>
+                            <h5 class="text-[11px] font-bold text-[#9e9e9e] mb-0 tracking-widest">填写说明</h5>
                         </div>
-                        <span class="text-[10px] text-[#4d4d4d] tracking-wider">SPEC</span>
                     </div>
-                    <div class="p-4 space-y-4">
-                        <!-- 文件格式 -->
-                        <div>
-                            <p class="text-[9px] text-[#4a4a4a] tracking-[0.18em] uppercase mb-2">文件格式</p>
-                            <div class="flex gap-2">
-                                <span class="px-2 py-1 bg-[#111111] border border-[#2a2a2a] text-[10px] text-[#888888] font-mono">.xlsx</span>
-                                <span class="px-2 py-1 bg-[#111111] border border-[#2a2a2a] text-[10px] text-[#888888] font-mono">.xls</span>
-                            </div>
-                        </div>
-                        <!-- 文件大小 -->
-                        <div>
-                            <p class="text-[9px] text-[#4a4a4a] tracking-[0.18em] uppercase mb-2">文件大小</p>
-                            <p class="text-[11px] text-[#888888] font-mono">50 MB</p>
-                        </div>
-                        <!-- 数据起始 -->
-                        <div>
-                            <p class="text-[9px] text-[#4a4a4a] tracking-[0.18em] uppercase mb-2">数据起始</p>
-                            <p class="text-[11px] text-[#888888]">第 1 行 · 不留空行</p>
-                        </div>
-                        <!-- 支持字段 -->
-                        <div>
-                            <p class="text-[9px] text-[#4a4a4a] tracking-[0.18em] uppercase mb-2">支持字段</p>
-                            <div class="grid grid-cols-2 gap-1">
-                                <div class="flex items-center gap-1.5">
-                                    <span class="w-0.5 h-2.5 bg-[#3a3a3a]"></span>
-                                    <span class="text-[10px] text-[#666666]">零件号</span>
-                                </div>
-                                <div class="flex items-center gap-1.5">
-                                    <span class="w-0.5 h-2.5 bg-[#3a3a3a]"></span>
-                                    <span class="text-[10px] text-[#666666]">零件名称</span>
-                                </div>
-                                <div class="flex items-center gap-1.5">
-                                    <span class="w-0.5 h-2.5 bg-[#3a3a3a]"></span>
-                                    <span class="text-[10px] text-[#666666]">材料</span>
-                                </div>
-                                <div class="flex items-center gap-1.5">
-                                    <span class="w-0.5 h-2.5 bg-[#3a3a3a]"></span>
-                                    <span class="text-[10px] text-[#666666]">料厚</span>
-                                </div>
-                                <div class="flex items-center gap-1.5">
-                                    <span class="w-0.5 h-2.5 bg-[#3a3a3a]"></span>
-                                    <span class="text-[10px] text-[#666666]">工序数量</span>
-                                </div>
-                                <div class="flex items-center gap-1.5">
-                                    <span class="w-0.5 h-2.5 bg-[#3a3a3a]"></span>
-                                    <span class="text-[10px] text-[#666666]">模具数量</span>
-                                </div>
-                            </div>
-                        </div>
+                    <div class="p-4 space-y-3 text-[11px] text-[#888888] leading-relaxed">
+                        <p class="text-[#ffb74d]">本文件为双方签字的工艺确认表。车型、版本、冲压厂从文件名或表头识别；同基地 + 冲压厂 + 车型 + 版本再次上传将覆盖。本页不必选项目，也不必先有模具布点。</p>
+                        <p>模具编号可空。冲压厂若要算模具费，再另传模具布点。</p>
+                        <p><span class="text-[#c8c8c8]">是否利废</span>只看本表「料片式样」。写「利用××废料」（如利用侧围废料）或格里写「利废」（含错写成「利费」）即记为利用件，材料按成品净重 × 废料月度价（从废料里捡出的成品），不按一事一议新板价。写「要利废」表示这件会产出废料给别人用，不是利用件。方料 / 卷料 / 条料仍表示料片形状，与利废是两件事。</p>
+                        <p><span class="text-[#c8c8c8]">废料副产品</span>：长/卷料宽、宽/卷料步距、可制件数、料片式样都空，且有零件净重 → 家模带出的小件，材料同样按废料净重，不算冲压费。不要只空长宽、其它列还填着。</p>
+                        <p>模具布点是计划，不作为利废或废料副产品依据；与本表不一致时以本表为准。</p>
+                        <p>同一零件的工序号（如 OP30）不可重复，否则整单失败并标出 Excel 行号。</p>
+                        <p>拼焊件：零件号整段合并，料片长/宽可按子片切块。下载模板含普通件与拼焊样例。</p>
                     </div>
                 </div>
 

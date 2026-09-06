@@ -24,16 +24,16 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from app.common.part_number import is_temporal_part_number_token  # noqa: E402
 from app.config import settings  # noqa: E402
 from app.database import DatabaseConfig  # noqa: E402
-from app.common.part_number import is_temporal_part_number_token  # noqa: E402
 from app.services.llm.analysis.runner import AnalysisRunner  # noqa: E402
 from app.services.llm.client import LlmClientError  # noqa: E402
 from app.services.llm.context.snapshot_builder import SnapshotBuilder  # noqa: E402
 from app.services.llm.generator import LlmReportGenerator  # noqa: E402
-from app.services.llm.usage.runner import UsageHelpRunner  # noqa: E402
 from app.services.llm.menu_catalog import SUBJECT_MENU  # noqa: E402
 from app.services.llm.query.query_parser import QueryParser  # noqa: E402
+from app.services.llm.usage.runner import UsageHelpRunner  # noqa: E402
 from tests.llm.traversal_question_matrix import (  # noqa: E402
     TraversalCase,
     TraversalScope,

@@ -64,7 +64,7 @@ class StampingTonnagePriceBatchDeleteDTO(StampingTonnagePriceScopeDTO):
 class StampingTonnagePriceBatchApproveDTO(StampingTonnagePriceScopeDTO):
     """批量审核通过"""
 
-    audit_remark: str | None = Field(None, description="审核意见")
+    audit_remark: str = Field(..., min_length=1, description="审核意见（必填）")
 
 
 class StampingTonnagePriceBatchReverseAuditDTO(StampingTonnagePriceScopeDTO):

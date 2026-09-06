@@ -4,7 +4,7 @@
  * 用于测试部门核对数据，主子表联合查询导出 Excel
  */
 
-import { policyDownloadTemplate, renderPolicyRows } from './template.js?v=28';
+import { policyDownloadTemplate, renderPolicyRows } from './template.js?v=32';
 import {
     DEFAULT_PREVIEW_PAGE_SIZE,
     PREVIEW_PAGE_SIZE_OPTIONS,
@@ -25,6 +25,7 @@ const policyDownloadState = {
 
 // API 基础路径
 const API_BASE = '/api/yishiyiyi/policy';
+const GRADE_CATEGORY_API = '/api/yishiyiyi/steel-grade-category';
 
 /**
  * 页面初始化
@@ -43,6 +44,10 @@ function init() {
     policyDownloadState.pendingFilters = readHashFilters();
     loadFilterOptions().then(() => {
         applyPendingFiltersToSelects();
+        const pendingCategory = policyDownloadState.pendingFilters?.category_name;
+        if (pendingCategory) {
+            loadGradesForCategory(pendingCategory);
+        }
         updateConditionsDisplay();
         if (policyDownloadState.pendingFilters) {
             previewData(1);
@@ -106,25 +111,29 @@ function applyPermissionUi() {
 }
 
 /**
- * 加载筛选下拉选项
+ * 加载筛选下拉选项（年度/钢厂来自政策；分类/牌号来自牌号分类档案）
  */
 async function loadFilterOptions() {
     try {
-        const response = await HttpClient.get(`${API_BASE}/options`);
-        const data = response.data || {};
+        const [policyRes, categoryRes] = await Promise.all([
+            HttpClient.get(`${API_BASE}/options`),
+            HttpClient.get(`${GRADE_CATEGORY_API}/categories`),
+        ]);
+        const data = policyRes.data || {};
+        const categories = Array.isArray(categoryRes.data) ? categoryRes.data : [];
 
         // 填充年度选项（从后端获取）
         if (data.years && Array.isArray(data.years)) {
             fillSelect('policyDownloadYear', data.years.map(y => ({
                 value: y,
-                label: `${y} 年`,
+                label: fmtYear(y),
             })));
         } else {
             // Fallback: 当前年份前后3年
             const currentYear = new Date().getFullYear();
             const years = [];
             for (let y = currentYear - 3; y <= currentYear + 1; y++) {
-                years.push({ value: y, label: `${y} 年` });
+                years.push({ value: y, label: fmtYear(y) });
             }
             fillSelect('policyDownloadYear', years);
         }
@@ -132,12 +141,18 @@ async function loadFilterOptions() {
         // 填充月份
         const months = Array.from({ length: 12 }, (_, i) => ({
             value: i + 1,
-            label: `${i + 1} 月`,
+            label: fmtMonth(i + 1),
         }));
         fillSelect('policyDownloadMonth', months);
 
-        // 填充钢种
-        fillSelect('policyDownloadCategory', data.category_names || []);
+        // 分类：档案 canonical（冷轧/镀锌/酸洗）
+        fillSelect(
+            'policyDownloadCategory',
+            categories.map((item) => ({
+                value: item.category_name,
+                label: item.category_name,
+            })),
+        );
 
         // 填充钢厂选项（使用 datalist 实现输入搜索）
         const datalist = document.getElementById('steelMillOptions');
@@ -154,15 +169,48 @@ async function loadFilterOptions() {
         const currentYear = new Date().getFullYear();
         const years = [];
         for (let y = currentYear - 3; y <= currentYear + 1; y++) {
-            years.push({ value: y, label: `${y} 年` });
+                years.push({ value: y, label: fmtYear(y) });
         }
         fillSelect('policyDownloadYear', years);
 
         const months = Array.from({ length: 12 }, (_, i) => ({
             value: i + 1,
-            label: `${i + 1} 月`,
+            label: fmtMonth(i + 1),
         }));
         fillSelect('policyDownloadMonth', months);
+    }
+}
+
+async function loadGradesForCategory(categoryName) {
+    const datalist = document.getElementById('policyGradeOptions');
+    const gradeInput = document.getElementById('policyDownloadGrade');
+    if (!datalist) return;
+
+    const category = (categoryName || '').trim();
+    if (!category) {
+        datalist.innerHTML = '';
+        if (gradeInput) {
+            gradeInput.value = '';
+            gradeInput.placeholder = '请先选择分类';
+            gradeInput.disabled = true;
+        }
+        return;
+    }
+
+    if (gradeInput) {
+        gradeInput.disabled = false;
+        gradeInput.placeholder = '输入搜索或选择牌号';
+    }
+
+    try {
+        const response = await HttpClient.get(`${GRADE_CATEGORY_API}/grades`, {
+            params: { category_name: category },
+        });
+        const grades = Array.isArray(response.data) ? response.data : [];
+        datalist.innerHTML = grades.map((g) => `<option value="${esc(g)}">`).join('');
+    } catch (error) {
+        console.error('加载牌号列表失败:', error);
+        datalist.innerHTML = '';
     }
 }
 
@@ -206,10 +254,20 @@ function bindEvents() {
         btnDelete.addEventListener('click', () => batchDeletePolicies());
     }
 
-    ['policyDownloadYear', 'policyDownloadMonth', 'policyDownloadCategory'].forEach(id => {
+    ['policyDownloadYear', 'policyDownloadMonth'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.addEventListener('change', () => updateConditionsDisplay());
     });
+
+    const categorySelect = document.getElementById('policyDownloadCategory');
+    if (categorySelect) {
+        categorySelect.addEventListener('change', () => {
+            const gradeInput = document.getElementById('policyDownloadGrade');
+            if (gradeInput) gradeInput.value = '';
+            loadGradesForCategory(categorySelect.value);
+            updateConditionsDisplay();
+        });
+    }
 
     const gradeInput = document.getElementById('policyDownloadGrade');
     if (gradeInput) {
@@ -242,9 +300,9 @@ function bindEvents() {
 function updateConditionsDisplay() {
     const filters = collectFilters();
     const conditions = [];
-    if (filters.year) conditions.push(`年度: ${filters.year}`);
-    if (filters.month) conditions.push(`月份: ${filters.month}`);
-    if (filters.category_name) conditions.push(`钢种: ${filters.category_name}`);
+    const period = fmtPeriod(filters.year, filters.month);
+    if (period) conditions.push(period);
+    if (filters.category_name) conditions.push(`分类: ${filters.category_name}`);
     if (filters.grade_value) conditions.push(`牌号: ${filters.grade_value}`);
     if (filters.steel_mill) conditions.push(`钢厂: ${filters.steel_mill}`);
 
@@ -264,20 +322,28 @@ function collectFilters() {
         year: getFilterValue('policyDownloadYear') || pending?.year || '',
         month: getFilterValue('policyDownloadMonth') || pending?.month || '',
         category_name: getFilterValue('policyDownloadCategory') || pending?.category_name || '',
+        // grade_value：仅 UI 展示与级联选牌号，不传给政策 API（见 applyFiltersToParams）
         grade_value: document.getElementById('policyDownloadGrade')?.value.trim() || pending?.grade_value || '',
         steel_mill: getFilterValue('policyDownloadMill') || pending?.steel_mill || '',
     };
 }
 
 function hasAnyFilter(filters) {
-    return !!(filters.year || filters.month || filters.category_name || filters.grade_value || filters.steel_mill);
+    // 牌号仅 UI 级联辅助，不参与 API 筛选判定（见 applyFiltersToParams）
+    return !!(filters.year || filters.month || filters.category_name || filters.steel_mill);
 }
 
+/**
+ * 组装政策查询/导出请求参数。
+ *
+ * 注意：厚度政策已改为大类级存储（grade_type=CATEGORY），政策表不再按单牌号 grade_value 筛选。
+ * 牌号输入框仅用于在牌号分类档案中级联定位分类；实际请求只传 category_name（冷轧/镀锌/酸洗）。
+ * 切勿向 /export-preview、/export 传递 grade_value。
+ */
 function applyFiltersToParams(params, filters) {
     if (filters.year) params.year = filters.year;
     if (filters.month) params.month = filters.month;
     if (filters.category_name) params.category_name = filters.category_name;
-    if (filters.grade_value) params.grade_value = filters.grade_value;
     if (filters.steel_mill) params.steel_mill = filters.steel_mill;
 }
 
@@ -381,14 +447,10 @@ async function exportExcel() {
     if (loading) loading.classList.remove('hidden');
 
     try {
+        const params = {};
+        applyFiltersToParams(params, filters);
         const { blob, filename } = await HttpClient.download(`${API_BASE}/export`, {
-            params: {
-                year: filters.year,
-                month: filters.month,
-                category_name: filters.category_name,
-                grade_value: filters.grade_value,
-                steel_mill: filters.steel_mill,
-            },
+            params,
             headers: {
                 Accept: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             },
@@ -436,7 +498,7 @@ async function batchDeletePolicies() {
 
     const millLabel = steelMill || '全部钢厂';
     const confirmed = window.confirm(
-        `确定要删除以下条件的政策数据吗？\n\n年度: ${year} | 月份: ${month} | 钢厂: ${millLabel}\n\n此操作不可恢复！`
+        `确定要删除以下条件的政策数据吗？\n\n${fmtPeriod(year, month)} · 钢厂: ${millLabel}\n\n此操作不可恢复！`
     );
 
     if (!confirmed) {

@@ -2,9 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Any
-
-
 from sqlalchemy.orm import Session
 
 from app.common.permissions.catalog import (
@@ -19,6 +16,7 @@ from app.exceptions.base import BusinessException, NotFoundException
 from app.models.settings import User
 from app.repositories.settings.users.user_permission_repository import UserPermissionRepository
 from app.repositories.settings.users.user_repository import UserRepository
+from app.schemas.vo.permission_vo import PermissionNodeVO
 from app.schemas.vo.user_vo import UserVO
 
 
@@ -29,9 +27,9 @@ class PermissionService:
         self.user_repo = UserRepository()
         self.perm_repo = UserPermissionRepository()
 
-    def get_permission_tree(self, current_user: UserVO) -> list[dict[str, Any]]:
+    def get_permission_tree(self, current_user: UserVO) -> list[PermissionNodeVO]:
         require_admin(current_user)
-        return get_tree()
+        return [PermissionNodeVO.model_validate(node) for node in get_tree()]
 
     def get_user_permission_codes(
         self,

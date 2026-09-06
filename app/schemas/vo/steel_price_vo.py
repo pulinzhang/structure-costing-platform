@@ -170,8 +170,6 @@ class SteelPriceCalcResultVO(BaseModel):
     year: int | None = None
     month: int | None = None
     location: str | None = None
-    stamping_supplier: str | None = None
-    vehicle_model: str | None = None
     material_count: int = 0
     enriched_count: int = 0
     no_base_count: int = 0
@@ -194,8 +192,6 @@ class SteelPriceCalcLogVO(BaseModel):
     year: int
     month: int
     location: str
-    stamping_supplier: str | None = None
-    vehicle_model: str | None = None
     status: str
     material_count: int = 0
     enriched_count: int = 0

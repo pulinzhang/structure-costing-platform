@@ -71,7 +71,7 @@ def _write_excel(upload_dir: Path, relpath: str, content: bytes = b"excel") -> s
 
 def test_resolve_allowed_categories_intersection() -> None:
     admin = _admin_user()
-    assert len(resolve_allowed_categories(admin)) == 8
+    assert len(resolve_allowed_categories(admin)) == 9
 
     bom_only = _limited_user("menu:file-trace", "op:file-trace:view", "op:bom-upload:view")
     assert resolve_allowed_categories(bom_only) == ["bom_material"]
@@ -101,16 +101,10 @@ def test_resolve_allowed_categories_intersection() -> None:
     assert resolve_allowed_categories(menu_only) == []
 
 
-def test_register_tonnage_price_supersedes_same_scope(
-    memory_db: Session, tmp_path: Path
-) -> None:
+def test_register_tonnage_price_supersedes_same_scope(memory_db: Session, tmp_path: Path) -> None:
     upload_dir = settings.UPLOAD_DIR
-    relpath_v1 = _write_excel(
-        upload_dir, "stamping/tonnage-price/2026/qd/a.xlsx", b"v1"
-    )
-    relpath_v2 = _write_excel(
-        upload_dir, "stamping/tonnage-price/2026/qd/b.xlsx", b"v2"
-    )
+    relpath_v1 = _write_excel(upload_dir, "stamping/tonnage-price/2026/qd/a.xlsx", b"v1")
+    relpath_v2 = _write_excel(upload_dir, "stamping/tonnage-price/2026/qd/b.xlsx", b"v2")
     user = _admin_user()
 
     first = register_existing(
@@ -145,12 +139,8 @@ def test_register_welding_unit_price_supersedes_same_scope(
     memory_db: Session, tmp_path: Path
 ) -> None:
     upload_dir = settings.UPLOAD_DIR
-    relpath_v1 = _write_excel(
-        upload_dir, "bom/welding-unit-price/2026/qd/a.xlsx", b"v1"
-    )
-    relpath_v2 = _write_excel(
-        upload_dir, "bom/welding-unit-price/2026/qd/b.xlsx", b"v2"
-    )
+    relpath_v1 = _write_excel(upload_dir, "bom/welding-unit-price/2026/qd/a.xlsx", b"v1")
+    relpath_v2 = _write_excel(upload_dir, "bom/welding-unit-price/2026/qd/b.xlsx", b"v2")
     user = _admin_user()
 
     first = register_existing(
@@ -185,12 +175,8 @@ def test_register_annual_part_price_supersedes_same_scope(
     memory_db: Session, tmp_path: Path
 ) -> None:
     upload_dir = settings.UPLOAD_DIR
-    relpath_v1 = _write_excel(
-        upload_dir, "bom/annual-part-price/2026/qd/a.xlsx", b"v1"
-    )
-    relpath_v2 = _write_excel(
-        upload_dir, "bom/annual-part-price/2026/qd/b.xlsx", b"v2"
-    )
+    relpath_v1 = _write_excel(upload_dir, "bom/annual-part-price/2026/qd/a.xlsx", b"v1")
+    relpath_v2 = _write_excel(upload_dir, "bom/annual-part-price/2026/qd/b.xlsx", b"v2")
     user = _admin_user()
 
     first = register_existing(

@@ -1,7 +1,7 @@
 """
 成品（L0）月核价 — 测试适配层
 
-计算真相在 app.services.costing.l0_assembly_cost.calc.rollup；
+计算真相在 app.services.costing.assembly_cost.calc.rollup；
 本模块仅做入参/出参适配与报告格式化，避免双轨公式。
 """
 
@@ -11,10 +11,10 @@ from dataclasses import dataclass, field
 from decimal import Decimal
 from typing import Literal
 
-from app.services.costing.l0_assembly_cost.calc.rollup import (
+from app.services.costing.assembly_cost.calc.rollup import (
+    INDIRECT_FINANCE,
     INDIRECT_FIXTURE_ALLOC,
     INDIRECT_GAUGE_ALLOC,
-    INDIRECT_FINANCE,
     INDIRECT_MANAGEMENT,
     INDIRECT_PRETAX_PROFIT,
     INDIRECT_SCRAP,
@@ -33,28 +33,28 @@ from app.services.costing.l0_assembly_cost.calc.rollup import (
 INDIRECT_PACKAGING_OTHER = INDIRECT_WAREHOUSE_BUNDLING
 
 __all__ = [
-    "INDIRECT_UNIT_TRANSPORT",
-    "INDIRECT_PACKAGING_OTHER",
-    "INDIRECT_WAREHOUSE_BUNDLING",
     "INDIRECT_FINANCE",
-    "INDIRECT_MANAGEMENT",
-    "INDIRECT_SCRAP",
-    "INDIRECT_PRETAX_PROFIT",
-    "INDIRECT_GAUGE_ALLOC",
     "INDIRECT_FIXTURE_ALLOC",
+    "INDIRECT_GAUGE_ALLOC",
+    "INDIRECT_MANAGEMENT",
+    "INDIRECT_PACKAGING_OTHER",
+    "INDIRECT_PRETAX_PROFIT",
+    "INDIRECT_SCRAP",
+    "INDIRECT_UNIT_TRANSPORT",
+    "INDIRECT_WAREHOUSE_BUNDLING",
+    "L0SimResult",
     "SimBomNode",
-    "SimWeldingFee",
-    "SimPackagingTransportFee",
     "SimFinishedRates",
+    "SimIndirectLine",
     "SimLine",
     "SimMissing",
-    "SimIndirectLine",
-    "L0SimResult",
-    "quantize_money",
-    "simulate_l0",
-    "simulate_all_l0",
+    "SimPackagingTransportFee",
+    "SimWeldingFee",
     "format_l0_cost_breakdown",
     "format_simulation_report",
+    "quantize_money",
+    "simulate_all_l0",
+    "simulate_l0",
 ]
 
 
@@ -97,9 +97,7 @@ class SimFinishedRates:
 class SimLine:
     level_label: str
     part_number: str
-    source: Literal[
-        "stamping", "annual", "bundle", "skipped_by_bundle", "missing"
-    ]
+    source: Literal["stamping", "annual", "bundle", "skipped_by_bundle", "missing"]
     unit_price: Decimal
     effective_qty: Decimal
     line_amount: Decimal
@@ -203,7 +201,7 @@ def _from_rollup(result: RollupResult) -> L0SimResult:
             )
         lines.append(
             SimLine(
-                level_label=line.level_label,
+                level_label=f"L{line.node_level}",
                 part_number=line.part_number,
                 source=line.cost_source,
                 unit_price=line.unit_price,
@@ -341,9 +339,7 @@ def format_l0_cost_breakdown(result: L0SimResult) -> str:
         rate_hint = ""
         if item.rate is not None and item.base_amount is not None:
             rate_hint = f"  = {item.base_amount} × {item.rate}"
-        out.append(
-            f"  I{index} {item.label:<16} = {item.amount}  ({item.code}){rate_hint}"
-        )
+        out.append(f"  I{index} {item.label:<16} = {item.amount}  ({item.code}){rate_hint}")
     out.extend(
         [
             "  ────────────────",
@@ -377,9 +373,7 @@ def format_simulation_report(
     total_ok = quantize_money(
         sum((r.total_amount for r in results if r.status == "ok"), Decimal("0"))
     )
-    indirect_sum = quantize_money(
-        sum((r.indirect_amount for r in results), Decimal("0"))
-    )
+    indirect_sum = quantize_money(sum((r.indirect_amount for r in results), Decimal("0")))
     grand_all = quantize_money(sum((r.grand_total for r in results), Decimal("0")))
     grand_ok = quantize_money(
         sum((r.grand_total for r in results if r.status == "ok"), Decimal("0"))
@@ -446,8 +440,6 @@ def format_simulation_report(
         lines.append(f"{'零件号':<16} {'角色':<10} {'出现':>4} 名称")
         for part_number in sorted(miss_count):
             name, role = miss_meta[part_number]
-            lines.append(
-                f"{part_number:<16} {role:<10} {miss_count[part_number]:>4} {name or ''}"
-            )
+            lines.append(f"{part_number:<16} {role:<10} {miss_count[part_number]:>4} {name or ''}")
     lines.append("")
     return "\n".join(lines)

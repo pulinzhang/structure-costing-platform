@@ -1,15 +1,17 @@
 """登录 Token 表 — 落在辅助库（auxiliary.db），与主业务库隔离。"""
 
 from datetime import datetime
+
 from sqlalchemy import DateTime, Index, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
+
 from app.common.timezone import now
 from app.database import AuxiliaryBase
 from app.models.common.audit_mixin import AuditUserMixin
 
 
 class UserToken(AuditUserMixin, AuxiliaryBase):
-    """用户登录 Token：3 小时无活动自动失效"""
+    """用户登录 Token：无业务请求超时后失效（分钟数见 TOKEN_IDLE_MINUTES）"""
 
     __tablename__ = "user_tokens"
 

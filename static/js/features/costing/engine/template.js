@@ -168,15 +168,15 @@ ${engineMotionStyles}
       <div class="min-w-[100px]">
         <label class="block text-[10px] text-neutral-600 mb-1.5">核算年度</label>
         <select id="engineYear" class="engine-select-source">
-          <option value="2026">2026</option>
-          <option value="2025">2025</option>
-          <option value="2024">2024</option>
+          <option value="2026">2026年</option>
+          <option value="2025">2025年</option>
+          <option value="2024">2024年</option>
         </select>
       </div>
       <div class="min-w-[100px]">
         <label class="block text-[10px] text-neutral-600 mb-1.5">核算月份</label>
         <select id="engineMonth" class="engine-select-source">
-          ${Array.from({ length: 12 }, (_, i) => `<option value="${i + 1}">${String(i + 1).padStart(2, '0')}月</option>`).join('')}
+          ${Array.from({ length: 12 }, (_, i) => `<option value="${i + 1}">${fmtMonth(i + 1)}</option>`).join('')}
         </select>
       </div>
       <button id="engineReadyBtn" type="button" class="h-10 px-4 border border-white/10 text-neutral-300 text-xs hover:border-white/20 hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none">

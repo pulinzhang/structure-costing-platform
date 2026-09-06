@@ -12,7 +12,7 @@ import {
     parsePriceInput,
     comparePriceStrings,
     subtractPriceStrings,
-} from './template.js?v=17';
+} from './template.js?v=19';
 
 const API_BASE = '/api/yishiyiyi/scrap-price';
 const DRAWER_ANIMATION_MS = 300;
@@ -55,7 +55,7 @@ function closeDrawer(drawerId, backdropId) {
 }
 
 function formatYmLabel(year, month) {
-    return `${year} · ${String(month).padStart(2, '0')}`;
+    return fmtPeriod(year, month);
 }
 
 async function fetchMonthsForYear(year) {
@@ -96,7 +96,7 @@ async function refreshCopyPanelState() {
     } else {
         toMeta.textContent = '尚未维护';
         warn.classList.add('hidden');
-        confirmBtn.textContent = `复制到 ${String(tm).padStart(2, '0')} 月`;
+        confirmBtn.textContent = `复制到 ${fmtMonth(tm)}`;
     }
 }
 
@@ -151,7 +151,7 @@ function syncYearPicker() {
     const menu = document.getElementById('scrapYearMenu');
     if (!yearSelect || !label || !menu) return;
 
-    label.textContent = String(scrapState.year);
+    label.textContent = fmtYear(scrapState.year);
     yearSelect.value = String(scrapState.year);
 
     const itemClass =
@@ -164,7 +164,7 @@ function syncYearPicker() {
             const y = Number(opt.value);
             const isActive = y === scrapState.year;
             return `<button type="button" role="option" data-year="${y}" aria-selected="${isActive}"
-                class="${itemClass}${isActive ? activeClass : idleClass}">${y}</button>`;
+                class="${itemClass}${isActive ? activeClass : idleClass}">${esc(fmtYear(y))}</button>`;
         })
         .join('');
 }
@@ -207,7 +207,7 @@ function updateBadge(sheet) {
         return;
     }
 
-    badge.textContent = `${sheet.year} · ${String(sheet.month).padStart(2, '0')}`;
+    badge.textContent = fmtPeriod(sheet.year, sheet.month);
     if (status) {
         if (sheet.is_complete) {
             status.textContent = '已完整';
@@ -241,14 +241,14 @@ function fillYearMonthSelects() {
     yearSelect.innerHTML = sortedYears
         .map(
             (y) =>
-                `<option value="${y}" ${y === scrapState.year ? 'selected' : ''}>${y}</option>`
+                `<option value="${y}" ${y === scrapState.year ? 'selected' : ''}>${esc(fmtYear(y))}</option>`
         )
         .join('');
 
     monthSelect.innerHTML = Array.from({ length: 12 }, (_, i) => i + 1)
         .map(
             (m) =>
-                `<option value="${m}" ${m === scrapState.month ? 'selected' : ''}>${m} 月</option>`
+                `<option value="${m}" ${m === scrapState.month ? 'selected' : ''}>${esc(fmtMonth(m))}</option>`
         )
         .join('');
 
@@ -492,7 +492,7 @@ async function deleteMonth() {
         showToast('本月尚无数据可删', 'warning');
         return;
     }
-    const label = `${scrapState.year}-${String(scrapState.month).padStart(2, '0')}`;
+    const label = fmtPeriod(scrapState.year, scrapState.month);
     if (!window.confirm(`确认删除 ${label} 整月废料销售价？此操作不可恢复。`)) {
         return;
     }

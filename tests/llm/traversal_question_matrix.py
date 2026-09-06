@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 from sqlalchemy.orm import Session
 
-from app.models.costing.l0_assembly_cost import L0AssemblyCost
+from app.models.costing.assembly_cost import AssemblyCost
 from app.repositories.llm.scope_options_repository import ScopeOptionsRepository
 from app.services.llm.menu_catalog import MENU_COVERAGE
 from tests.llm.menu_question_matrix import MENU_QUESTION_CASES
@@ -57,9 +57,9 @@ def _pick_scope(db: Session) -> TraversalScope:
     year = 2025 if 2025 in years else (years[0] if years else 2025)
 
     row = (
-        db.query(L0AssemblyCost.year, L0AssemblyCost.month)
-        .filter(L0AssemblyCost.location == location)
-        .order_by(L0AssemblyCost.year.desc(), L0AssemblyCost.month.desc())
+        db.query(AssemblyCost.year, AssemblyCost.month)
+        .filter(AssemblyCost.location == location)
+        .order_by(AssemblyCost.year.desc(), AssemblyCost.month.desc())
         .first()
     )
     if row:
@@ -70,12 +70,12 @@ def _pick_scope(db: Session) -> TraversalScope:
     anchor_ym = f"{anchor_year:04d}-{anchor_month:02d}"
 
     part_row = (
-        db.query(L0AssemblyCost.part_number)
+        db.query(AssemblyCost.part_number)
         .filter(
-            L0AssemblyCost.location == location,
-            L0AssemblyCost.grand_total > 0,
+            AssemblyCost.location == location,
+            AssemblyCost.grand_total > 0,
         )
-        .order_by(L0AssemblyCost.id.asc())
+        .order_by(AssemblyCost.id.asc())
         .first()
     )
     part_number = str(part_row[0]) if part_row else "501006873AA"

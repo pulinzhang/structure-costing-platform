@@ -2,7 +2,7 @@
 
 import logging
 
-from sqlalchemy import text
+from sqlalchemy import or_, text
 from sqlalchemy.engine import Connection
 from sqlalchemy.orm import Session
 
@@ -13,14 +13,14 @@ from app.schemas.dto.stamping_process_fee_dto import (
     ProcessFeeCalcLogPatch,
 )
 
-
 logger = logging.getLogger("repository.stamping_process_fee_calc_log")
 
 _STATUS_PROCESSING = "processing"
 
+_DROP_PROCESSING_LOCK_INDEX_SQL = "DROP INDEX IF EXISTS uq_spf_calc_processing"
 _PROCESSING_LOCK_INDEX_SQL = """
 CREATE UNIQUE INDEX IF NOT EXISTS uq_spf_calc_processing
-ON stamping_process_fee_calc_logs(year, location, stamping_supplier)
+ON stamping_process_fee_calc_logs(year, location, vehicle_model)
 WHERE status = 'processing'
 """
 
@@ -32,6 +32,7 @@ class StampingProcessFeeCalcLogRepository:
 
     def apply_processing_lock_index(self, conn: Connection) -> None:
         """在调用方连接上执行 DDL；不 commit（由 Service 提交）。"""
+        conn.execute(text(_DROP_PROCESSING_LOCK_INDEX_SQL))
         conn.execute(text(_PROCESSING_LOCK_INDEX_SQL))
 
     def mark_processing_lock_index_ensured(self) -> None:
@@ -53,18 +54,37 @@ class StampingProcessFeeCalcLogRepository:
         *,
         year: int,
         location: str,
-        stamping_supplier: str,
+        stamping_supplier: str | None = None,
     ) -> StampingProcessFeeCalcLog | None:
+        query = db.query(StampingProcessFeeCalcLog).filter(
+            StampingProcessFeeCalcLog.year == year,
+            StampingProcessFeeCalcLog.location == location,
+            StampingProcessFeeCalcLog.status == _STATUS_PROCESSING,
+        )
+        if stamping_supplier:
+            query = query.filter(StampingProcessFeeCalcLog.stamping_supplier == stamping_supplier)
+        return query.order_by(StampingProcessFeeCalcLog.id.desc()).first()
+
+    def list_processing(
+        self,
+        db: Session,
+        *,
+        year: int,
+        location: str,
+        vehicle_model: str,
+    ) -> list[StampingProcessFeeCalcLog]:
         return (
             db.query(StampingProcessFeeCalcLog)
             .filter(
                 StampingProcessFeeCalcLog.year == year,
                 StampingProcessFeeCalcLog.location == location,
-                StampingProcessFeeCalcLog.stamping_supplier == stamping_supplier,
                 StampingProcessFeeCalcLog.status == _STATUS_PROCESSING,
+                or_(
+                    StampingProcessFeeCalcLog.vehicle_model == vehicle_model,
+                    StampingProcessFeeCalcLog.vehicle_model.is_(None),
+                ),
             )
-            .order_by(StampingProcessFeeCalcLog.id.desc())
-            .first()
+            .all()
         )
 
     def paginate(

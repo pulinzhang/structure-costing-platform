@@ -289,14 +289,40 @@ def filter_candidates(
     return matched
 
 
+def grade_alias_tokens(grade: str | None) -> frozenset[str]:
+    """
+    把政策/基价牌号拆成可互认的别名集合。
+
+    - ``B170P1/HC180Y``：两侧都是独立牌号，互认为同一钢种
+    - ``HC340/590DP``：右侧以数字开头，是双相钢屈服/抗拉写法，整段视为一个牌号
+    """
+    text = (grade or "").strip().replace("//", "/")
+    if not text:
+        return frozenset()
+    parts = [part.strip() for part in text.split("/") if part.strip()]
+    if len(parts) <= 1:
+        return frozenset({text})
+    if any(not part[0].isalpha() for part in parts):
+        return frozenset({text})
+    return frozenset(parts)
+
+
+def grades_match(policy_grade: str | None, row_grade: str | None) -> bool:
+    """牌号是否同一钢种（含斜杠双牌号别名，双向）。"""
+    left = (policy_grade or "").strip()
+    right = (row_grade or "").strip()
+    if not left or not right:
+        return False
+    if left == right:
+        return True
+    return bool(grade_alias_tokens(left) & grade_alias_tokens(right))
+
+
 def grade_exact(policy: SteelPricePolicy, row: PolicyMatchTarget) -> bool:
-    grade_value = (policy.grade_value or "").strip()
-    if not grade_value:
-        return False
-    if grade_value != (row.grade or "").strip():
-        return False
     grade_type = (policy.grade_type or "GRADE").strip().upper()
-    return grade_type in {"GRADE", ""}
+    if grade_type not in {"GRADE", ""}:
+        return False
+    return grades_match(policy.grade_value, row.grade)
 
 
 def grade_generic(policy: SteelPricePolicy) -> bool:
@@ -345,6 +371,36 @@ def order_by_base_thickness(
     nullable.sort(key=mill_key)
     others.sort(key=mill_key)
     return exact + nullable + others
+
+
+def find_best_thickness_policy(
+    row: PolicyMatchTarget,
+    policies: list[SteelPricePolicy],
+) -> SteelPricePolicy | None:
+    """
+    按档案大类锁定一条 THICKNESS + CATEGORY 政策。
+
+    钢厂别名 + 大类别名筛候选，base_thickness 优先，只返回第一条。
+    不按零件料厚跨政策回退（与中标厚度一览一致）。
+    """
+    if not (row.steel_mill or "").strip() or not (row.category_name or "").strip():
+        return None
+    candidates = filter_candidates(row, policies)
+    thickness_policies = [
+        policy
+        for policy in candidates
+        if policy.policy_type == "THICKNESS"
+        and (policy.grade_type or "").strip().upper() == "CATEGORY"
+        and grade_category(policy, row)
+    ]
+    if not thickness_policies:
+        return None
+    ordered = order_by_base_thickness(
+        thickness_policies,
+        row,
+        prefer_base_thickness=True,
+    )
+    return ordered[0] if ordered else None
 
 
 def match_items(

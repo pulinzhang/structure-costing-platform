@@ -6,8 +6,8 @@ from decimal import Decimal
 
 from sqlalchemy.orm import Session
 
-from app.models.yishiyiyi import StampingScrapPrice
 from app.models.costing import SteelPrice
+from app.models.yishiyiyi import StampingScrapPrice
 from app.repositories.costing.steel_price.steel_price_repository import SteelPriceRepository
 from app.repositories.yishiyiyi.scrap_price.scrap_price_repository import (
     StampingScrapPriceRepository,
@@ -16,7 +16,7 @@ from app.services.costing.stamping_part_cost.helpers import location_candidates
 
 
 class PriceResolver:
-    """按基地别名匹配废料价与钢材联动价。"""
+    """按基地别名匹配废料价；钢材联动价按牌号+料厚。"""
 
     def __init__(
         self,
@@ -59,7 +59,7 @@ class PriceResolver:
         grade: str,
         thickness: Decimal,
     ) -> list[SteelPrice]:
-        rows: list[SteelPrice] = []
+        """只按年月/基地/牌号/料厚取价，不对大类回退。"""
         for candidate in location_candidates(location):
             matched = self.steel_repo.list_by_grade_thickness(
                 db,
@@ -70,6 +70,24 @@ class PriceResolver:
                 thickness=thickness,
             )
             if matched:
-                rows.extend(matched)
-                break
-        return rows
+                return matched
+        return []
+
+    def pick_steel_price(self, rows: list[SteelPrice]) -> SteelPrice | None:
+        """同牌号同料厚多钢厂时取最低最终吨价；同价再按钢厂名、id 稳定选取。"""
+        priced: list[SteelPrice] = []
+        for row in rows:
+            ton: object = row.final_price_per_ton
+            if not isinstance(ton, Decimal):
+                continue
+            priced.append(row)
+        if not priced:
+            return None
+        return min(
+            priced,
+            key=lambda row: (
+                Decimal(str(row.final_price_per_ton)),
+                (row.steel_mill or "").strip(),
+                int(row.id or 0),
+            ),
+        )

@@ -31,7 +31,6 @@ from app.services.costing.steel_price import SteelPriceService
 from app.services.costing.steel_price.steel_price_export_service import SteelPriceExportService
 from app.utils.response import ApiResponse
 
-
 router = APIRouter(prefix="/api/costing/steel-price", tags=["钢材价格管理"])
 
 _steel_price_service = SteelPriceService()
@@ -54,7 +53,7 @@ def list_steel_prices(
         total=total,
         page=query.page,
         page_size=query.size,
-        filters=filters.model_dump(),
+        filters=filters,
     )
 
 
@@ -160,6 +159,7 @@ def export_download(
         grade=grade.strip() if grade else None,
         steel_mill=steel_mill.strip() if steel_mill else None,
         audit_status=audit_status.strip() if audit_status else None,
+        current_user=current_user,
     )
     return StreamingResponse(
         iter([content]),

@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, Text, JSON
+from sqlalchemy import JSON, DateTime, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -31,15 +31,15 @@ class CostingEngineRunStep(Base):
         String(40),
         nullable=False,
         comment=(
-            "annual_process_fee / annual_welding_breakdown / annual_l0_welding_fee "
-            "/ steel / part_cost / l0 / export"
+            "annual_process_fee / annual_welding_breakdown / annual_welding_fee "
+            "/ steel / part_cost / assembly / export"
         ),
     )
     scope_key: Mapped[str] = mapped_column(
         String(120),
         nullable=False,
         default="",
-        comment="工厂名，或 vehicle_model|bom_version",
+        comment="车型，或 vehicle_model|bom_version",
     )
     status: Mapped[str] = mapped_column(
         String(20),

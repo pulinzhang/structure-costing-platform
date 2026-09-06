@@ -1,8 +1,10 @@
 """操作审计日志（主库）。"""
 
 from datetime import datetime
+
 from sqlalchemy import Boolean, DateTime, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
+
 from app.common.timezone import now
 from app.database import Base
 

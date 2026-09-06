@@ -4,8 +4,8 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from app.common.permissions.codes import Perm
-from app.deps.permissions import require_perm
 from app.database import get_auxiliary_db, get_db
+from app.deps.permissions import require_perm
 from app.schemas.common.page_result import PageResult
 from app.schemas.dto.user_dto import (
     UserCreateDTO,

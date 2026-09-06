@@ -8,7 +8,7 @@ import pytest
 
 from app.database import DatabaseConfig
 from app.schemas.llm.analysis_query import AnalysisQuery, TimeRange
-from app.services.llm.analysis.runner import AnalysisRunResult, AnalysisRunner
+from app.services.llm.analysis.runner import AnalysisRunner, AnalysisRunResult
 from app.services.llm.context.snapshot_builder import SnapshotBuilder, _build_scope
 from app.services.llm.prompts.registry import PromptRegistry
 from app.services.llm.query.query_parser import QueryParser

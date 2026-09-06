@@ -15,6 +15,7 @@ class _ProcessSample(TypedDict):
     op: str
     code: str
     die_sets: int
+    die_number: str
     tonnage: int
 
 
@@ -147,9 +148,27 @@ def build_stamping_process_template() -> tuple[bytes, str]:
             "sheet_type": "矩形料",
             "die_type": "钢板模",
             "processes": [
-                {"op": "OP10", "code": "BL", "die_sets": 1, "tonnage": 400},
-                {"op": "OP20", "code": "PI", "die_sets": 1, "tonnage": 400},
-                {"op": "OP30", "code": "FL", "die_sets": 1, "tonnage": 630},
+                {
+                    "op": "OP10",
+                    "code": "BL",
+                    "die_sets": 1,
+                    "die_number": "T28-BL-001",
+                    "tonnage": 400,
+                },
+                {
+                    "op": "OP20",
+                    "code": "PI",
+                    "die_sets": 1,
+                    "die_number": "T28-PI-001",
+                    "tonnage": 400,
+                },
+                {
+                    "op": "OP30",
+                    "code": "FL",
+                    "die_sets": 1,
+                    "die_number": "T28-FL-001",
+                    "tonnage": 630,
+                },
             ],
             "blank_segments": None,
         },
@@ -168,9 +187,27 @@ def build_stamping_process_template() -> tuple[bytes, str]:
             "sheet_type": "异形料",
             "die_type": "铸造模",
             "processes": [
-                {"op": "OP10", "code": "DR", "die_sets": 1, "tonnage": 1000},
-                {"op": "OP20", "code": "TR+PI", "die_sets": 1, "tonnage": 800},
-                {"op": "OP30", "code": "RST", "die_sets": 1, "tonnage": 630},
+                {
+                    "op": "OP10",
+                    "code": "DR",
+                    "die_sets": 1,
+                    "die_number": "T28-DR-002",
+                    "tonnage": 1000,
+                },
+                {
+                    "op": "OP20",
+                    "code": "TR+PI",
+                    "die_sets": 1,
+                    "die_number": "T28-TR-002",
+                    "tonnage": 800,
+                },
+                {
+                    "op": "OP30",
+                    "code": "RST",
+                    "die_sets": 1,
+                    "die_number": "T28-RST-002",
+                    "tonnage": 630,
+                },
             ],
             "blank_segments": None,
         },
@@ -189,8 +226,20 @@ def build_stamping_process_template() -> tuple[bytes, str]:
             "sheet_type": "直角梯形料",
             "die_type": "铸造模",
             "processes": [
-                {"op": "OP10", "code": "DR", "die_sets": 1, "tonnage": 1300},
-                {"op": "OP20", "code": "TR+PI", "die_sets": 1, "tonnage": 630},
+                {
+                    "op": "OP10",
+                    "code": "DR",
+                    "die_sets": 1,
+                    "die_number": "T28-DR-003",
+                    "tonnage": 1300,
+                },
+                {
+                    "op": "OP20",
+                    "code": "TR+PI",
+                    "die_sets": 1,
+                    "die_number": "T28-TR-003",
+                    "tonnage": 630,
+                },
             ],
             "blank_segments": None,
         },
@@ -210,11 +259,41 @@ def build_stamping_process_template() -> tuple[bytes, str]:
             "sheet_type": "拼焊板：见2D图",
             "die_type": "铸造模",
             "processes": [
-                {"op": "OP05", "code": "两块方料&拼焊", "die_sets": 1, "tonnage": 0},
-                {"op": "OP10", "code": "DR", "die_sets": 1, "tonnage": 1250},
-                {"op": "OP20", "code": "TR/PI", "die_sets": 1, "tonnage": 630},
-                {"op": "OP30", "code": "UFL/RST/TR", "die_sets": 1, "tonnage": 800},
-                {"op": "OP40", "code": "CPI/PI/RST", "die_sets": 1, "tonnage": 630},
+                {
+                    "op": "OP05",
+                    "code": "两块方料&拼焊",
+                    "die_sets": 1,
+                    "die_number": "",
+                    "tonnage": 0,
+                },
+                {
+                    "op": "OP10",
+                    "code": "DR",
+                    "die_sets": 1,
+                    "die_number": "T28-DR-004",
+                    "tonnage": 1250,
+                },
+                {
+                    "op": "OP20",
+                    "code": "TR/PI",
+                    "die_sets": 1,
+                    "die_number": "T28-TR-004",
+                    "tonnage": 630,
+                },
+                {
+                    "op": "OP30",
+                    "code": "UFL/RST/TR",
+                    "die_sets": 1,
+                    "die_number": "T28-UFL-004",
+                    "tonnage": 800,
+                },
+                {
+                    "op": "OP40",
+                    "code": "CPI/PI/RST",
+                    "die_sets": 1,
+                    "die_number": "T28-CPI-004",
+                    "tonnage": 630,
+                },
             ],
             "blank_segments": [
                 {"start_row": 15, "end_row": 17, "length": 550.0, "width": 465.0},
@@ -277,6 +356,7 @@ def build_stamping_process_template() -> tuple[bytes, str]:
             sheet.cell(row=row, column=14, value=process["op"])
             sheet.cell(row=row, column=15, value=process["code"])
             sheet.cell(row=row, column=16, value=process["die_sets"])
+            sheet.cell(row=row, column=17, value=process["die_number"] or None)
             tonnage = process["tonnage"]
             if tonnage > 0:
                 sheet.cell(row=row, column=18, value=tonnage)
@@ -295,10 +375,12 @@ def build_stamping_process_template() -> tuple[bytes, str]:
         note,
         [
             "本模板对齐「车身件项目冲压工艺确认表」常见排版，含普通件与拼焊件样例。",
+            "是否利废只看「料片式样」：写有「利用××废料」（如利用侧围废料）即记为利废件，材料按成品净重×废料单价；方料/卷料/条料仍表示料片形状。模具布点不作为利废依据。",
             "普通件：零件号与「长/卷料宽」合并行数相同。",
             "拼焊件：零件号整段合并，但「长/卷料宽」拆成多块（行数不等）；料厚写 0.70/1.00 按片对齐。",
             "拼焊样例见序号4（551001690AA）：H15:H17=550、H18:H20=555。",
-            "上传页须先选择采购基地；同基地+车型+版本再次上传将覆盖。",
+            "上传页须先选择采购基地；车型、冲压厂、版本从文件识别。同基地+冲压厂+车型+版本再次上传将覆盖。",
+            "「模具编号」可空；无该列或单元格为空均可导入。",
         ],
     )
 

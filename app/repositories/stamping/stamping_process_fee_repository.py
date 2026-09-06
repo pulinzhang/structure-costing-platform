@@ -175,13 +175,21 @@ class StampingProcessFeeRepository:
         *,
         year: int,
         location: str,
-        stamping_supplier: str,
+        stamping_supplier: str | None = None,
+        vehicle_model: str | None = None,
+        version: str | None = None,
     ) -> Query[StampingProcessFee]:
-        return db.query(StampingProcessFee).filter(
+        q = db.query(StampingProcessFee).filter(
             StampingProcessFee.year == year,
             StampingProcessFee.location == location,
-            StampingProcessFee.stamping_supplier == stamping_supplier,
         )
+        if stamping_supplier:
+            q = q.filter(StampingProcessFee.stamping_supplier == stamping_supplier)
+        if vehicle_model:
+            q = q.filter(StampingProcessFee.vehicle_model == vehicle_model)
+        if version:
+            q = q.filter(StampingProcessFee.version == version)
+        return q
 
     def _build_list_query(
         self,
@@ -370,7 +378,9 @@ class StampingProcessFeeRepository:
         *,
         year: int,
         location: str,
-        stamping_supplier: str,
+        stamping_supplier: str | None = None,
+        vehicle_model: str | None = None,
+        version: str | None = None,
         statuses: list[str],
     ) -> list[str]:
         """范围内待审拼焊件且未录入其它费用的零件号（用结算快照）。"""
@@ -380,6 +390,8 @@ class StampingProcessFeeRepository:
                 year=year,
                 location=location,
                 stamping_supplier=stamping_supplier,
+                vehicle_model=vehicle_model,
+                version=version,
             )
             .filter(
                 StampingProcessFee.audit_status.in_(statuses),
@@ -398,7 +410,9 @@ class StampingProcessFeeRepository:
         *,
         year: int,
         location: str,
-        stamping_supplier: str,
+        stamping_supplier: str | None = None,
+        vehicle_model: str | None = None,
+        version: str | None = None,
         statuses: list[str],
     ) -> int:
         return (
@@ -407,6 +421,8 @@ class StampingProcessFeeRepository:
                 year=year,
                 location=location,
                 stamping_supplier=stamping_supplier,
+                vehicle_model=vehicle_model,
+                version=version,
             )
             .filter(StampingProcessFee.audit_status.in_(statuses))
             .count()
@@ -418,7 +434,9 @@ class StampingProcessFeeRepository:
         *,
         year: int,
         location: str,
-        stamping_supplier: str,
+        stamping_supplier: str | None = None,
+        vehicle_model: str | None = None,
+        version: str | None = None,
     ) -> int:
         fee_ids = [
             row.id
@@ -428,6 +446,8 @@ class StampingProcessFeeRepository:
                     year=year,
                     location=location,
                     stamping_supplier=stamping_supplier,
+                    vehicle_model=vehicle_model,
+                    version=version,
                 )
                 .filter(StampingProcessFee.audit_status != AUDIT_APPROVED)
                 .with_entities(StampingProcessFee.id)
@@ -446,6 +466,8 @@ class StampingProcessFeeRepository:
                 year=year,
                 location=location,
                 stamping_supplier=stamping_supplier,
+                vehicle_model=vehicle_model,
+                version=version,
             )
             .filter(StampingProcessFee.audit_status != AUDIT_APPROVED)
             .delete(synchronize_session=False)
@@ -466,7 +488,9 @@ class StampingProcessFeeRepository:
         *,
         year: int,
         location: str,
-        stamping_supplier: str,
+        stamping_supplier: str | None = None,
+        vehicle_model: str | None = None,
+        version: str | None = None,
         audited_by: str,
         audited_at: datetime,
         audit_remark: str | None,
@@ -486,6 +510,8 @@ class StampingProcessFeeRepository:
                 year=year,
                 location=location,
                 stamping_supplier=stamping_supplier,
+                vehicle_model=vehicle_model,
+                version=version,
             ).filter(StampingProcessFee.audit_status.in_([AUDIT_PENDING, AUDIT_REJECTED])),
             values,
         )
@@ -498,7 +524,9 @@ class StampingProcessFeeRepository:
         *,
         year: int,
         location: str,
-        stamping_supplier: str,
+        stamping_supplier: str | None = None,
+        vehicle_model: str | None = None,
+        version: str | None = None,
         reverse_audited_by: str,
         reverse_audited_at: datetime,
         reverse_audit_remark: str,
@@ -518,6 +546,8 @@ class StampingProcessFeeRepository:
                 year=year,
                 location=location,
                 stamping_supplier=stamping_supplier,
+                vehicle_model=vehicle_model,
+                version=version,
             ).filter(StampingProcessFee.audit_status == AUDIT_APPROVED),
             values,
         )
@@ -545,12 +575,18 @@ class StampingProcessFeeRepository:
         db: Session,
         year: int | None = None,
         location: str | None = None,
+        vehicle_model: str | None = None,
+        version: str | None = None,
     ) -> list[str]:
         q = db.query(StampingProcessFee.stamping_supplier).distinct()
         if year is not None:
             q = q.filter(StampingProcessFee.year == year)
         if location is not None:
             q = q.filter(StampingProcessFee.location == location)
+        if vehicle_model is not None:
+            q = q.filter(StampingProcessFee.vehicle_model == vehicle_model)
+        if version is not None:
+            q = q.filter(StampingProcessFee.version == version)
         results = q.order_by(StampingProcessFee.stamping_supplier).all()
         return [r[0] for r in results if r[0]]
 

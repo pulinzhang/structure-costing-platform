@@ -5,8 +5,10 @@
 
 import os
 from pathlib import Path
-from pydantic import AliasChoices, Field
+
+from pydantic import AliasChoices, Field, field_validator
 from pydantic_settings import BaseSettings
+
 # 项目根目录 (app/config.py -> app/ -> 项目根目录)
 
 BASE_DIR: Path = Path(__file__).resolve().parent.parent
@@ -44,6 +46,18 @@ class Settings(BaseSettings):
 
     # 密码摘要盐（MD5(salt + password)）；生产环境务必通过环境变量覆盖
     PASSWORD_SALT: str = "chery-stamping-costing-2024"
+
+    # 登录会话：无业务请求超时（分钟）。未配置时默认 15；心跳 /api/auth/touch 不续期
+    TOKEN_IDLE_MINUTES: int = Field(default=15, ge=1, le=1440)
+
+    @field_validator("TOKEN_IDLE_MINUTES", mode="before")
+    @classmethod
+    def _default_token_idle_minutes(cls, value: object) -> object:
+        if value is None:
+            return 15
+        if isinstance(value, str) and not value.strip():
+            return 15
+        return value
 
     # 上传配置
     UPLOAD_DIR: Path = BASE_DIR / "uploads"

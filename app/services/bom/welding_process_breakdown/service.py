@@ -12,12 +12,12 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 
 from app.common.audit import AUDIT_APPROVED, audit_update, display_name
-from app.exceptions.base import BusinessException, NotFoundException
 from app.common.bom.welding_standard_process import (
     all_standard_process_names,
     resolve_standard_process_name,
     resolve_standard_process_unit,
 )
+from app.exceptions.base import BusinessException, NotFoundException
 from app.models.bom import (
     BomWeldingProcessBreakdownGenerateLog,
     BomWeldingProcessBreakdownNode,
@@ -39,6 +39,7 @@ from app.schemas.dto.bom_welding_process_breakdown_dto import (
     BomWeldingProcessBreakdownNodePatch,
     BomWeldingProcessBreakdownQuery,
 )
+from app.schemas.vo.async_task_vo import AsyncTaskAcceptedVO
 from app.schemas.vo.bom_welding_process_breakdown_vo import (
     BomWeldingProcessBreakdownBatchAuditResultVO,
     BomWeldingProcessBreakdownBatchDeleteResultVO,
@@ -50,7 +51,6 @@ from app.schemas.vo.bom_welding_process_breakdown_vo import (
     WeldingNodeEvidenceVO,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.schemas.vo.async_task_vo import AsyncTaskAcceptedVO
 from app.services.async_task import (
     STATUS_COMPLETED,
     STATUS_FAILED,
@@ -129,7 +129,6 @@ class BomWeldingProcessBreakdownService:
                 level=query.level,
                 audit_status=audit_status,
                 parse_status=query.parse_status,
-                process_line_count_eq=query.process_line_count_eq,
             ),
         }
         return (
@@ -150,9 +149,8 @@ class BomWeldingProcessBreakdownService:
         level: int | None,
         audit_status: str | None,
         parse_status: str | None,
-        process_line_count_eq: int | None,
     ) -> WeldingBreakdownFilterSummary:
-        """HUD：列表口径汇总 + L0 工艺数=0（不受 level/工艺数筛选影响）。"""
+        """HUD：列表口径汇总（不含工艺数钻取）+ L0 工艺数=0（不受层级/工艺数筛选影响）。"""
         summary = self.repository.summarize_by_filters(
             db,
             location=location,
@@ -163,7 +161,6 @@ class BomWeldingProcessBreakdownService:
             level=level,
             audit_status=audit_status,
             parse_status=parse_status,
-            process_line_count_eq=process_line_count_eq,
         )
         summary["l0_zero_process_count"] = self.repository.count_by_filters(
             db,
@@ -234,7 +231,7 @@ class BomWeldingProcessBreakdownService:
         log_id: int | None = None,
         calc_batch_id: str | None = None,
         started_at: datetime | None = None,
-    ) -> tuple[BomWeldingProcessBreakdownGenerateResultVO | None, str | None]:
+    ) -> BomWeldingProcessBreakdownGenerateResultVO:
         return self._generate_service.generate(
             db,
             dto,
@@ -340,17 +337,18 @@ class BomWeldingProcessBreakdownService:
         )
 
         def work(worker_db: Session, on_progress: ProgressCallback) -> WorkerTaskOutcome:
-            result, error = self.generate_from_bom(
-                worker_db,
-                scoped,
-                current_user,
-                progress_callback=on_progress,
-                log_id=log_id,
-                calc_batch_id=calc_batch_id,
-                started_at=started_at,
-            )
-            if error or result is None:
-                fail_message = error or "拆解失败"
+            try:
+                result = self.generate_from_bom(
+                    worker_db,
+                    scoped,
+                    current_user,
+                    progress_callback=on_progress,
+                    log_id=log_id,
+                    calc_batch_id=calc_batch_id,
+                    started_at=started_at,
+                )
+            except BusinessException as exc:
+                fail_message = exc.message
                 return WorkerTaskOutcome(
                     status=STATUS_FAILED,
                     progress=100,
@@ -363,7 +361,7 @@ class BomWeldingProcessBreakdownService:
                         message=fail_message,
                         calc_batch_id=calc_batch_id,
                         log_id=log_id,
-                        detail_text=error or "",
+                        detail_text=fail_message,
                     ).model_dump(),
                 )
             return WorkerTaskOutcome(

@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any
-
-
 import re
+from typing import Any
 
 from app.common.vehicle_model import normalize_vehicle_model
 from app.parsers.bom.models import BomParsedMeta

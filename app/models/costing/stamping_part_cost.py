@@ -11,9 +11,10 @@
   ρ_steel / λ / η 来自系统配置快照（默认 7.85 / 0.003 / 0.97）。
 """
 
-from decimal import Decimal
 from datetime import datetime
-from sqlalchemy import DateTime, Index, Integer, Numeric, String, Text, UniqueConstraint
+from decimal import Decimal
+
+from sqlalchemy import Boolean, DateTime, Index, Integer, Numeric, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -56,6 +57,29 @@ class StampingPartCost(AuditUserMixin, Base):
     )
     parts_per_sheet: Mapped[int | None] = mapped_column(Integer, nullable=True, comment="可制件数")
     sheet_type: Mapped[str | None] = mapped_column(String(50), nullable=True, comment="料片式样")
+    is_offal_nested: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        comment="是否利废件快照（材料 = 成品净重 × 废料单价）",
+    )
+    offal_source: Mapped[str | None] = mapped_column(
+        String(50),
+        nullable=True,
+        comment="利用哪类废料快照，例：侧围",
+    )
+    has_swing_shear: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        comment="是否含摆剪工序快照",
+    )
+    swing_shear_fee_per_ton: Mapped[Decimal] = mapped_column(
+        Numeric(12, 4),
+        nullable=False,
+        default=Decimal("0"),
+        comment="本月核价加到钢价上的摆剪加价(元/吨)；非摆剪为 0，快照当时系统设置",
+    )
     die_type: Mapped[str | None] = mapped_column(String(50), nullable=True, comment="模具类型")
     process_method: Mapped[str | None] = mapped_column(
         String(50), nullable=True, comment="工艺方法"
@@ -136,6 +160,18 @@ class StampingPartCost(AuditUserMixin, Base):
     process_fee_amount: Mapped[Decimal | None] = mapped_column(
         Numeric(12, 3), nullable=True, comment="加工费(元/件)"
     )
+    die_fee_id: Mapped[int | None] = mapped_column(
+        Integer, nullable=True, comment="年度模具费结果 id"
+    )
+    die_fee_amount: Mapped[Decimal | None] = mapped_column(
+        Numeric(14, 6), nullable=True, comment="模具费(元/件)"
+    )
+    gauge_fee_id: Mapped[int | None] = mapped_column(
+        Integer, nullable=True, comment="检具费档案 id"
+    )
+    gauge_fee_amount: Mapped[Decimal | None] = mapped_column(
+        Numeric(14, 6), nullable=True, comment="检具费(元/件)=万元÷万台"
+    )
 
     # —— 金额（对齐 Excel R：①−②−③）——
     material_amount_sheet: Mapped[Decimal | None] = mapped_column(
@@ -166,7 +202,7 @@ class StampingPartCost(AuditUserMixin, Base):
     direct_cost: Mapped[Decimal | None] = mapped_column(
         Numeric(14, 6),
         nullable=True,
-        comment="直接成本=R(元)+加工费(元)",
+        comment="直接成本=R(元)+加工费+模具费+检具费(元/件)",
     )
     finished_finance_fee: Mapped[Decimal | None] = mapped_column(
         Numeric(14, 6),
@@ -209,7 +245,7 @@ class StampingPartCost(AuditUserMixin, Base):
         Text, nullable=True, comment="计算失败原因"
     )
     formula_version: Mapped[str | None] = mapped_column(
-        String(50), nullable=True, comment="公式版本，如 part-cost-v6"
+        String(50), nullable=True, comment="公式版本，如 part-cost-v9"
     )
     calculated_at: Mapped[datetime | None] = mapped_column(
         DateTime, nullable=True, comment="计算时间"

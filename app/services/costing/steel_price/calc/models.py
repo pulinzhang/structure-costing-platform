@@ -12,18 +12,16 @@ from app.services.costing.steel_price.spec_format import build_spec
 
 @dataclass
 class SteelPriceCalcRequest:
-    """计算入参（对齐 dashboard 钢价统计筛选）。"""
+    """计算入参：核价期 + 生产基地（与车型、冲压厂无关）。"""
 
     year: int
     month: int
-    location: str | None = None
-    stamping_supplier: str | None = None
-    vehicle_model: str | None = None
+    location: str
 
 
 @dataclass
 class MaterialThicknessRow:
-    """Step1：冲压材料厚度规格（基地 + 钢种 + 厚度，三者缺一不可）。"""
+    """Step1：冲压材料厚度规格（基地 + 牌号 + 厚度，三者缺一不可）。"""
 
     location: str
     material: str
@@ -85,28 +83,29 @@ class CalcRow:
     calc_status: str = "failed"
     calc_message: str | None = None
     messages: list[str] = field(default_factory=list)
+    # 本期该厂没有厚度大类块（如仅有已下线的厚宽组合）时为 False，按基价计、不报错
+    thickness_applicable: bool = True
 
     def add_message(self, message: str) -> None:
         self.messages.append(message)
 
     def finalize_status(self) -> None:
-        """根据命中情况回写 match_status / calc_status / calc_message。"""
+        """根据命中情况回写 match_status / calc_status / calc_message。
+
+        宽度加减价本期下线，不再作为成功条件。
+        """
         has_base = self.base_price_id is not None and self.base_price is not None
         has_thickness = self.thickness_policy_id is not None
-        has_width = self.width_policy_id is not None
 
         if not has_base:
             self.match_status = "no_base"
             self.calc_status = "failed"
-        elif has_thickness and has_width:
+        elif has_thickness:
             self.match_status = "full_match"
             self.calc_status = "success"
-        elif has_thickness and not has_width:
-            self.match_status = "no_width_policy"
-            self.calc_status = "partial"
-        elif has_width and not has_thickness:
-            self.match_status = "no_thickness_policy"
-            self.calc_status = "partial"
+        elif not self.thickness_applicable:
+            self.match_status = "base_only"
+            self.calc_status = "success"
         else:
             self.match_status = "base_only"
             self.calc_status = "partial"
@@ -209,7 +208,5 @@ class SteelPriceCalcResult:
     started_at: str | None = None
     finished_at: str | None = None
     location: str | None = None
-    stamping_supplier: str | None = None
-    vehicle_model: str | None = None
     year: int | None = None
     month: int | None = None

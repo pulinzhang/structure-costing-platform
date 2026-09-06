@@ -199,10 +199,10 @@ class BomWeldingProcessBreakdownRepository:
         total = q.count()
         rows = (
             q.order_by(
-                BomWeldingProcessBreakdownNode.supply_part_number,
                 BomWeldingProcessBreakdownNode.level,
-                BomWeldingProcessBreakdownNode.part_number,
                 BomWeldingProcessBreakdownNode.id,
+                BomWeldingProcessBreakdownNode.supply_part_number,
+                BomWeldingProcessBreakdownNode.part_number,
             )
             .offset(skip)
             .limit(limit)
@@ -270,6 +270,29 @@ class BomWeldingProcessBreakdownRepository:
                 BomWeldingProcessBreakdownNode.id,
             )
             .all()
+        )
+
+    def exists_by_bom_scope(
+        self,
+        db: Session,
+        *,
+        location: str,
+        vehicle_model: str,
+        bom_version: str,
+    ) -> bool:
+        return (
+            db.query(BomWeldingProcessBreakdownNode.id)
+            .filter(
+                and_(
+                    *self._scope_filter(
+                        location=location,
+                        vehicle_model=vehicle_model,
+                        bom_version=bom_version,
+                    )
+                )
+            )
+            .first()
+            is not None
         )
 
     def count_by_scope(

@@ -6,17 +6,17 @@ import json
 from dataclasses import dataclass
 
 from app.schemas.llm.analysis_snapshot import AnalysisSnapshot
-from app.services.llm.client import LlmChatResult, OpenAiCompatibleClient
 from app.services.llm.catalog.field_labels import (
     AGGREGATE_FIELD_LABELS,
     L0_FIELD_LABELS,
 )
+from app.services.llm.client import LlmChatResult, OpenAiCompatibleClient
+from app.services.llm.engine_readiness.runner import render_engine_readiness_markdown
 from app.services.llm.prompts.labels import (
     analyses_key_label_zh,
     audience_label_zh,
     sanitize_report_markdown,
 )
-from app.services.llm.engine_readiness.runner import render_engine_readiness_markdown
 from app.services.llm.prompts.registry import PromptRegistry
 
 

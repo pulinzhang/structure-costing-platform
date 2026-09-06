@@ -6,7 +6,7 @@ from decimal import Decimal
 
 from pydantic import BaseModel, Field, field_serializer
 
-from app.common.money import Q4, Q6, format_money
+from app.common.money import Q2, Q4, Q6, format_money
 
 
 class ConfigVO(BaseModel):
@@ -26,6 +26,9 @@ class ConfigVO(BaseModel):
     finished_pretax_profit_rate: Decimal = Field(
         ..., description="成品税前利润率（小数，如 0.02=2%）"
     )
+    swing_shear_process_fee_per_ton: Decimal = Field(
+        ..., description="摆剪件加到钢价上的金额（元/吨）"
+    )
 
     @field_serializer("steel_density")
     def serialize_density(self, value: Decimal) -> str:
@@ -42,3 +45,7 @@ class ConfigVO(BaseModel):
     )
     def serialize_rate(self, value: Decimal) -> str:
         return format_money(value, Q6, 6)
+
+    @field_serializer("swing_shear_process_fee_per_ton")
+    def serialize_swing_shear_fee(self, value: Decimal) -> str:
+        return format_money(value, Q2, 2)

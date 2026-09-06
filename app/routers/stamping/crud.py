@@ -12,27 +12,30 @@ from sqlalchemy.orm import Session
 from app.common.permissions.codes import Perm
 from app.database import get_db
 from app.deps.permissions import require_any_perm, require_perm
-from app.services.stamping.stamping_part_export_service import StampingPartExportService
-from app.services.stamping.stamping_service import StampingPartService
-from app.schemas.dto.stamping_part_dto import StampingPartBatchDeleteDTO
+from app.schemas.common.page_result import PageResult
+from app.schemas.dto.stamping_part_dto import (
+    StampingPartBatchDeleteDTO,
+    StampingPartOffalUpdateDTO,
+)
 from app.schemas.vo.stamping_vo import (
-    StampingPartQuery,
-    StampingPartWithProcessesResponse,
-    StampingProcessUpdate,
-    StampingProcessItemUpdate,
-    StampingPartListResponse,
-    StampingProcessResponse,
+    BatchUpdateResponse,
+    StampingCascadeFilterOptionsVO,
+    StampingCascadeFilterQuery,
     StampingMaterialQuery,
     StampingMaterialResponse,
-    StampingCascadeFilterQuery,
-    StampingCascadeFilterOptionsVO,
     StampingPartBatchDeleteResultVO,
-    BatchUpdateResponse,
+    StampingPartListResponse,
+    StampingPartQuery,
+    StampingPartResponse,
+    StampingPartWithProcessesResponse,
+    StampingProcessItemUpdate,
+    StampingProcessResponse,
+    StampingProcessUpdate,
 )
 from app.schemas.vo.user_vo import UserVO
+from app.services.stamping.stamping_part_export_service import StampingPartExportService
+from app.services.stamping.stamping_service import StampingPartService
 from app.utils.response import ApiResponse
-from app.schemas.common.page_result import PageResult
-
 
 router = APIRouter(prefix="/api/stamping", tags=["冲压工艺 API"])
 
@@ -61,19 +64,20 @@ def list_parts(
 @router.get("/parts/export-download")
 def export_download(
     location: str = Query(..., min_length=1, description="采购基地"),
-    stamping_supplier: str = Query(..., min_length=1, description="冲压工厂"),
-    vehicle_model: str = Query(..., min_length=1, description="车型"),
-    version: str = Query(..., min_length=1, description="版本"),
+    stamping_supplier: str | None = Query(None, description="冲压工厂"),
+    vehicle_model: str | None = Query(None, description="车型"),
+    version: str | None = Query(None, description="版本"),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_PARTS_EXPORT)),
 ) -> StreamingResponse:
-    """按基地 + 冲压工厂 + 车型 + 版本导出工艺确认表（与导入同范围，多费用比例列）。"""
+    """按基地导出工艺确认表；冲压工厂、车型、版本可选。"""
     content, filename = _export_service.export(
         db,
         location=location,
         stamping_supplier=stamping_supplier,
         vehicle_model=vehicle_model,
         version=version,
+        current_user=current_user,
     )
     return StreamingResponse(
         iter([content]),
@@ -91,12 +95,10 @@ def batch_delete_parts(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_PARTS_DELETE)),
 ) -> ApiResponse[StampingPartBatchDeleteResultVO]:
-    """按基地 + 冲压工厂 + 车型 + 版本批量删除零件（四者同时必填）。"""
+    """按基地 + 车型 + 版本批量删除零件；冲压工厂可选。"""
     result = _stamping_service.batch_delete(db, body)
-    scope = (
-        f"{result.location} / {result.stamping_supplier} / "
-        f"{result.vehicle_model} / {result.version}"
-    )
+    mill = result.stamping_supplier or "全部工厂"
+    scope = f"{result.location} / {mill} / " f"{result.vehicle_model} / {result.version}"
     return ApiResponse.ok(
         data=result,
         message=f"已删除 {result.deleted_count} 个零件（{scope}）",
@@ -112,6 +114,21 @@ def get_part(
     """获取单个零件（包含工序）"""
     vo = _stamping_service.get_by_id(db, part_id)
     return ApiResponse.ok(data=vo, message="获取零件成功")
+
+
+@router.patch(
+    "/parts/{part_id}/offal",
+    response_model=ApiResponse[StampingPartResponse],
+)
+def update_part_offal(
+    part_id: int,
+    body: StampingPartOffalUpdateDTO,
+    db: Session = Depends(get_db),
+    current_user: UserVO = Depends(require_perm(Perm.STAMPING_PARTS_UPDATE)),
+) -> ApiResponse[StampingPartResponse]:
+    """零件详情纠错：是否利废、利用哪类废料。"""
+    vo = _stamping_service.update_offal(db, part_id, body, current_user=current_user)
+    return ApiResponse.updated(data=vo, message="利废设置已保存")
 
 
 @router.delete("/parts/{part_id}", response_model=ApiResponse[None])
@@ -179,7 +196,7 @@ def get_cascade_filters(
         )
     ),
 ) -> ApiResponse[StampingCascadeFilterOptionsVO]:
-    """冲压级联筛选选项：基地 → 冲压工厂 → 配套车型"""
+    """冲压级联筛选选项：基地 → 车型 → 版本 → 冲压工厂"""
     options = _stamping_service.get_cascade_filter_options(db, query)
     return ApiResponse.ok(data=options, message="获取成功")
 

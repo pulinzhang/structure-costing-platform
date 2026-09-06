@@ -2,6 +2,7 @@
 
 from datetime import datetime
 from decimal import Decimal
+
 from sqlalchemy import DateTime, ForeignKey, Index, Integer, Numeric, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -22,6 +23,7 @@ class SteelPrice(AuditUserMixin, Base):
     业务唯一键：
       year + month + location + steel_mill + category_name
       + grade + thickness + width
+      （基价/厚度政策按钢厂+大类；grade 存工艺牌号，供零件核价按牌号+料厚取价）
 
     公式：
       final_price_per_ton

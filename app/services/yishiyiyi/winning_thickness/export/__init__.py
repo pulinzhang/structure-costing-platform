@@ -1,14 +1,8 @@
 """
 中标钢厂厚度价格一览 — Excel 导出包
 
-关注点：
-  values.py         列布局 / 溯源文案 / 摘录挑选 / 文件名
-  styles.py         色板字体
-  letterhead.py     外发抬头与打印页眉
-  overview_sheet.py 阅读页
-  calc_sheet.py     计算页（示例页复用表头与数据行）
-  example_sheet.py  使用示例页
-  excel_exporter.py 组工作簿（编排入口）
+以 assemble 组装的 VO 为唯一数据源：仅含当期有中标基价的行。
+export 不查库、不补行；未定基价的牌号不会进入本包。
 """
 
 from app.services.yishiyiyi.winning_thickness.export.excel_exporter import (

@@ -10,11 +10,9 @@
 
 from typing import Any
 
-
 from app.common.vehicle_model import normalize_vehicle_model
-from app.utils.logging_config import get_logger
 from app.parsers.stamping.models.header import HeaderContext
-
+from app.utils.logging_config import get_logger
 
 logger = get_logger("parser.stamping.header")
 
@@ -90,6 +88,9 @@ COLUMN_PATTERNS: dict[str, list[tuple[str, int]]] = {
     "die_set": [
         ("套数", 1000),
     ],
+    "die_number": [
+        ("模具编号", 1000),
+    ],
     "tonnage": [
         ("吨位", 1000),
         ("冲压设备", 950),
@@ -119,9 +120,6 @@ _VEHICLE_TITLE_MARKERS = (
     "车身件项目冲压工艺确认表",
     "项目冲压工艺确认表",
     "冲压工艺确认表",
-    "项目冲压模具布点工艺清单",
-    "项目冲压模具布点工艺清",
-    "项目冲压模具布点",
 )
 _VEHICLE_LABELS = ("项目名称", "车型号", "车型代号", "车型")
 

@@ -20,12 +20,12 @@ from app.schemas.dto.steel_base_price_dto import (
     SteelBasePriceQuery,
     SteelBasePriceUpdate,
 )
+from app.schemas.vo.async_task_vo import AsyncTaskAcceptedVO
 from app.schemas.vo.steel_base_price_vo import (
     SteelBasePriceExportRow,
     SteelBasePriceImportResultResponse,
     SteelBasePriceResponse,
 )
-from app.schemas.vo.async_task_vo import AsyncTaskAcceptedVO
 from app.schemas.vo.user_vo import UserVO
 from app.services.async_task import (
     STATUS_COMPLETED,
@@ -185,6 +185,7 @@ class SteelBasePriceService:
         location: str | None = None,
         steel_mill: str | None = None,
         spec: str | None = None,
+        grades_in: list[str] | None = None,
     ) -> int:
         return self._crud.count_by_conditions(
             db,
@@ -193,6 +194,7 @@ class SteelBasePriceService:
             location=location,
             steel_mill=steel_mill,
             spec=spec,
+            grades_in=grades_in,
         )
 
     def start_import(

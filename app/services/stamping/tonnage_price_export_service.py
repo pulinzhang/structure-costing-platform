@@ -4,17 +4,17 @@ from __future__ import annotations
 
 import logging
 from decimal import Decimal
-from io import BytesIO
 from typing import Any
 
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from sqlalchemy.orm import Session
 
+from app.common.export_watermark import workbook_to_xlsx_bytes
 from app.common.money import Q3, excel_money_cell
 from app.common.timezone import now
 from app.repositories.stamping.tonnage_price_repository import StampingTonnagePriceRepository
-
+from app.schemas.vo.user_vo import UserVO
 
 logger = logging.getLogger("service.stamping_tonnage_price_export")
 
@@ -42,6 +42,7 @@ class StampingTonnagePriceExportService:
         *,
         location: str | None = None,
         year: int | None = None,
+        current_user: UserVO,
     ) -> tuple[bytes, str]:
         records = self.repository.list_for_export(
             db,
@@ -114,9 +115,7 @@ class StampingTonnagePriceExportService:
         ws.freeze_panes = "A2"
         ws.auto_filter.ref = f"A1:H{max(1, len(records) + 1)}"
 
-        buffer = BytesIO()
-        wb.save(buffer)
-        content = buffer.getvalue()
+        content = workbook_to_xlsx_bytes(wb, current_user)
 
         stamp = now().strftime("%Y%m%d_%H%M%S")
         parts = ["冲次单价"]

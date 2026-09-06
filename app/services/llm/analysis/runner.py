@@ -7,19 +7,31 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
+from app.common.part_number import part_numbers_match
+from app.repositories.llm.annual_part_price_analysis_repository import (
+    AnnualPartPriceAnalysisRepository,
+)
 from app.repositories.llm.base_price_analysis_repository import BasePriceAnalysisRepository
+from app.repositories.llm.bom_material_analysis_repository import (
+    BomMaterialAnalysisRepository,
+)
 from app.repositories.llm.cost_analysis_repository import (
     L0CostAnalysisRepository,
     L0PartPeriodRow,
 )
+from app.repositories.llm.l0_welding_fee_analysis_repository import (
+    L0WeldingFeeAnalysisRepository,
+)
+from app.repositories.llm.packaging_transport_fee_analysis_repository import (
+    PackagingTransportFeeAnalysisRepository,
+)
 from app.repositories.llm.policy_analysis_repository import PolicyAnalysisRepository
-from app.repositories.llm.steel_price_analysis_repository import (
-    SteelPriceAnalysisRepository,
+from app.repositories.llm.process_fee_analysis_repository import (
+    ProcessFeeAnalysisRepository,
 )
 from app.repositories.llm.scrap_price_analysis_repository import (
     ScrapPriceAnalysisRepository,
 )
-from app.common.part_number import part_numbers_match
 from app.repositories.llm.stamping_cost_analysis_repository import (
     StampingCostAnalysisRepository,
     StampingPartPeriodRow,
@@ -27,23 +39,11 @@ from app.repositories.llm.stamping_cost_analysis_repository import (
 from app.repositories.llm.stamping_process_analysis_repository import (
     StampingProcessAnalysisRepository,
 )
-from app.repositories.llm.process_fee_analysis_repository import (
-    ProcessFeeAnalysisRepository,
+from app.repositories.llm.steel_price_analysis_repository import (
+    SteelPriceAnalysisRepository,
 )
 from app.repositories.llm.tonnage_price_analysis_repository import (
     TonnagePriceAnalysisRepository,
-)
-from app.repositories.llm.annual_part_price_analysis_repository import (
-    AnnualPartPriceAnalysisRepository,
-)
-from app.repositories.llm.packaging_transport_fee_analysis_repository import (
-    PackagingTransportFeeAnalysisRepository,
-)
-from app.repositories.llm.l0_welding_fee_analysis_repository import (
-    L0WeldingFeeAnalysisRepository,
-)
-from app.repositories.llm.bom_material_analysis_repository import (
-    BomMaterialAnalysisRepository,
 )
 from app.repositories.llm.welding_process_breakdown_analysis_repository import (
     WeldingProcessBreakdownAnalysisRepository,
@@ -54,9 +54,30 @@ from app.repositories.llm.welding_unit_price_analysis_repository import (
 from app.repositories.llm.winning_thickness_analysis_repository import (
     WinningThicknessAnalysisRepository,
 )
+from app.schemas.llm.analysis_query import AnalysisQuery
 from app.services.llm._money import money_str
+from app.services.llm.analysis._formulas import format_missing_price_message
+from app.services.llm.analysis.annual_part_price_summary import (
+    build_annual_part_price_comparison,
+    build_annual_part_price_drilldown,
+    build_annual_part_price_drivers,
+    build_annual_part_price_summary,
+)
 from app.services.llm.analysis.anomaly import build_risks, build_stamping_risks
+from app.services.llm.analysis.base_price_summary import (
+    build_base_price_drivers,
+    build_base_price_mom_anomalies,
+    build_base_price_summary,
+    build_base_price_trend,
+)
+from app.services.llm.analysis.bom_material_summary import (
+    build_bom_material_drilldown,
+    build_bom_material_drivers,
+    build_bom_material_summary,
+)
+from app.services.llm.analysis.comparability import resolve_runtime_comparability
 from app.services.llm.analysis.comparison import build_location_comparison
+from app.services.llm.analysis.constants import ANALYSIS_VERSION
 from app.services.llm.analysis.cost_driver import (
     build_l0_drivers,
     build_l0_mom_anomalies,
@@ -64,19 +85,21 @@ from app.services.llm.analysis.cost_driver import (
 )
 from app.services.llm.analysis.cost_trend import (
     build_cost_trend,
-    build_steel_trend,
     build_stamping_trend,
+    build_steel_trend,
 )
 from app.services.llm.analysis.drilldown import build_drilldown
-from app.services.llm.analysis.base_price_summary import (
-    build_base_price_drivers,
-    build_base_price_mom_anomalies,
-    build_base_price_summary,
-    build_base_price_trend,
+from app.services.llm.analysis.l0_welding_fee_summary import (
+    build_l0_welding_fee_comparison,
+    build_l0_welding_fee_drilldown,
+    build_l0_welding_fee_drivers,
+    build_l0_welding_fee_summary,
 )
-from app.services.llm.analysis.process_fee_summary import (
-    build_process_fee_drilldown,
-    build_process_fee_summary,
+from app.services.llm.analysis.packaging_transport_fee_summary import (
+    build_packaging_transport_fee_comparison,
+    build_packaging_transport_fee_drilldown,
+    build_packaging_transport_fee_drivers,
+    build_packaging_transport_fee_summary,
 )
 from app.services.llm.analysis.part_lookup import (
     build_part_existence,
@@ -89,6 +112,10 @@ from app.services.llm.analysis.policy_summary import (
     build_policy_mom_anomalies,
     build_policy_summary,
     build_policy_trend,
+)
+from app.services.llm.analysis.process_fee_summary import (
+    build_process_fee_drilldown,
+    build_process_fee_summary,
 )
 from app.services.llm.analysis.scrap_price_summary import (
     build_scrap_price_drivers,
@@ -108,48 +135,21 @@ from app.services.llm.analysis.tonnage_price_summary import (
     build_tonnage_price_drilldown,
     build_tonnage_price_summary,
 )
-from app.services.llm.analysis.packaging_transport_fee_summary import (
-    build_packaging_transport_fee_comparison,
-    build_packaging_transport_fee_drilldown,
-    build_packaging_transport_fee_drivers,
-    build_packaging_transport_fee_summary,
-)
-from app.services.llm.analysis.annual_part_price_summary import (
-    build_annual_part_price_comparison,
-    build_annual_part_price_drilldown,
-    build_annual_part_price_drivers,
-    build_annual_part_price_summary,
+from app.services.llm.analysis.welding_process_breakdown_summary import (
+    build_welding_breakdown_drilldown,
+    build_welding_breakdown_drivers,
+    build_welding_breakdown_summary,
 )
 from app.services.llm.analysis.welding_unit_price_summary import (
     build_welding_unit_price_comparison,
     build_welding_unit_price_drivers,
     build_welding_unit_price_summary,
 )
-from app.services.llm.analysis.bom_material_summary import (
-    build_bom_material_drilldown,
-    build_bom_material_drivers,
-    build_bom_material_summary,
-)
-from app.services.llm.analysis.welding_process_breakdown_summary import (
-    build_welding_breakdown_drilldown,
-    build_welding_breakdown_drivers,
-    build_welding_breakdown_summary,
-)
-from app.services.llm.analysis.l0_welding_fee_summary import (
-    build_l0_welding_fee_comparison,
-    build_l0_welding_fee_drilldown,
-    build_l0_welding_fee_drivers,
-    build_l0_welding_fee_summary,
-)
 from app.services.llm.analysis.winning_thickness_summary import (
     build_winning_thickness_drivers,
     build_winning_thickness_summary,
 )
-from app.schemas.llm.analysis_query import AnalysisQuery
 from app.services.llm.menu_catalog import expand_base_price_location
-from app.services.llm.analysis._formulas import format_missing_price_message
-from app.services.llm.analysis.comparability import resolve_runtime_comparability
-from app.services.llm.analysis.constants import ANALYSIS_VERSION
 from app.services.llm.query.comparison_basis import resolve_comparability
 
 
@@ -860,7 +860,7 @@ class AnalysisRunner:
         return out
 
     def _run_l0_welding_fee(self, db: Session, query: AnalysisQuery) -> AnalysisRunResult:
-        """对齐「成品焊接费列表」#/bom-l0-welding-fee-list。"""
+        """对齐「焊接费列表」#/bom-welding-fee-list。"""
         tr = query.time_range
         part_token = query.part_number() or ""
         rows = self._l0_welding_fee_repo.query_rows(
@@ -1230,6 +1230,12 @@ def _build_stamping_drilldown(
         ),
         "process_fee_amount": (
             str(latest.process_fee_amount) if latest.process_fee_amount is not None else None
+        ),
+        "die_fee_amount": (
+            str(latest.die_fee_amount) if latest.die_fee_amount is not None else None
+        ),
+        "gauge_fee_amount": (
+            str(latest.gauge_fee_amount) if latest.gauge_fee_amount is not None else None
         ),
         "calc_status": latest.calc_status,
         "stamping_supplier": latest.stamping_supplier,

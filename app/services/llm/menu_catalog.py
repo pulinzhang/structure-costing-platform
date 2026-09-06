@@ -45,12 +45,12 @@ SUBJECT_MENU: dict[str, MenuTarget] = {
         label="打开冲压加工费列表",
     ),
     "l0": MenuTarget(
-        hash_page="l0-assembly-cost",
-        label="打开成品核价一览",
+        hash_page="assembly-cost",
+        label="打开总成核价一览",
     ),
     "cost_total": MenuTarget(
-        hash_page="l0-assembly-cost",
-        label="打开成品核价一览",
+        hash_page="assembly-cost",
+        label="打开总成核价一览",
     ),
     "steel_price": MenuTarget(
         hash_page="steel-price-list",
@@ -93,12 +93,12 @@ SUBJECT_MENU: dict[str, MenuTarget] = {
         label="打开焊接工艺拆解列表",
     ),
     "l0_welding_fee": MenuTarget(
-        hash_page="bom-l0-welding-fee-list",
-        label="打开成品焊接费列表",
+        hash_page="bom-welding-fee-list",
+        label="打开焊接费列表",
     ),
     "part": MenuTarget(
-        hash_page="l0-assembly-cost",
-        label="打开成品核价一览",
+        hash_page="assembly-cost",
+        label="打开总成核价一览",
     ),
 }
 
@@ -176,8 +176,8 @@ MENU_COVERAGE: tuple[MenuCoverageItem, ...] = (
         "complete",
     ),
     MenuCoverageItem(
-        "bom-l0-welding-fee-list",
-        "成品焊接费列表",
+        "bom-welding-fee-list",
+        "焊接费列表",
         "l0_welding_fee",
         "complete",
     ),
@@ -215,8 +215,8 @@ MENU_COVERAGE: tuple[MenuCoverageItem, ...] = (
         "complete",
     ),
     MenuCoverageItem(
-        "l0-assembly-cost",
-        "成品核价一览",
+        "assembly-cost",
+        "总成核价一览",
         "l0",
         "complete",
         "cost_total 同落点",
@@ -243,14 +243,14 @@ ENTITY_LIST_PAGES: tuple[tuple[str, str], ...] = (
     ("bom-annual-part-price", "annual_part_price"),
     ("bom-packaging-transport-fee", "packaging_transport_fee"),
     ("bom-welding-process-breakdown-list", "welding_process_breakdown"),
-    ("bom-l0-welding-fee-list", "l0_welding_fee"),
+    ("bom-welding-fee-list", "l0_welding_fee"),
     ("steel-price-policy-download", "steel_price_policy"),
     ("base-price-download", "steel_base_price"),
     ("winning-thickness-download", "winning_thickness"),
     ("scrap-price", "scrap_price"),
     ("steel-price-list", "steel_price"),
     ("stamping-part-cost", "stamping_part"),
-    ("l0-assembly-cost", "l0"),
+    ("assembly-cost", "l0"),
 )
 
 

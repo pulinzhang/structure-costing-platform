@@ -115,7 +115,13 @@ def excel_thickness(value: Decimal | None) -> Decimal | None:
     return quantize_money(value, Q2)
 
 
+def filter_rows_for_export(rows: list[WinningThicknessRowVO]) -> list[WinningThicknessRowVO]:
+    """仅保留有基价溯源的行；未定基价的不进入 Excel。"""
+    return [row for row in rows if row.base_price_id is not None]
+
+
 def pick_example_rows(rows: list[WinningThicknessRowVO]) -> list[WinningThicknessRowVO]:
+    rows = filter_rows_for_export(rows)
     if not rows:
         return []
     bounded = [row for row in rows if row.thick_min is not None or row.thick_max is not None]

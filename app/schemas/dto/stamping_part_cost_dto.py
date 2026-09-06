@@ -11,19 +11,26 @@ from app.common.money import Q6, quantize_money
 
 
 class StampingPartCostScopeDTO(BaseModel):
-    """范围：年度 + 月份 + 基地 + 冲压工厂。"""
+    """范围：年度 + 月份 + 基地 + 车型必填；版本与工厂可选（工厂仅列表/批量收窄，计算忽略）。"""
 
     year: int = Field(..., ge=2000, le=2100, description="年度")
     month: int = Field(..., ge=1, le=12, description="月份")
     location: str = Field(..., min_length=1, description="基地")
-    stamping_supplier: str = Field(..., min_length=1, description="冲压工厂")
+    vehicle_model: str = Field(..., min_length=1, description="车型")
+    version: str | None = Field(None, description="版本")
+    stamping_supplier: str | None = Field(None, description="冲压工厂")
+
+    @field_validator("version", "stamping_supplier", mode="before")
+    @classmethod
+    def _empty_to_none(cls, value: object) -> str | None:
+        if value is None:
+            return None
+        text = str(value).strip()
+        return text or None
 
 
 class StampingPartCostCalcDTO(StampingPartCostScopeDTO):
-    """计算请求（车型/版本可选）。"""
-
-    vehicle_model: str | None = Field(None, description="车型")
-    version: str | None = Field(None, description="版本")
+    """计算请求：按车型覆盖各厂；版本空则覆盖该车各版本。工厂字段忽略。"""
 
 
 class StampingPartCostQuery(BaseModel):
@@ -48,7 +55,7 @@ class StampingPartCostDeleteDTO(StampingPartCostScopeDTO):
 class StampingPartCostBatchApproveDTO(StampingPartCostScopeDTO):
     """批量审核通过。"""
 
-    audit_remark: str | None = Field(None, description="审核意见")
+    audit_remark: str = Field(..., min_length=1, description="审核意见（必填）")
 
 
 class StampingPartCostBatchReverseAuditDTO(StampingPartCostScopeDTO):
@@ -71,7 +78,7 @@ class StampingPartCostManualUnitCostDTO(BaseModel):
 
 @dataclass(slots=True)
 class StampingPartCostPartSnapshot:
-    """零件主表快照到核价结果行。"""
+    """零件主表快照到核价结果行（含本月是否利废 / 摆剪）。"""
 
     source_part_id: int | None
     seq_no: int | None
@@ -84,6 +91,9 @@ class StampingPartCostPartSnapshot:
     sheet_width: Decimal | None
     parts_per_sheet: int | None
     sheet_type: str | None
+    is_offal_nested: bool
+    offal_source: str | None
+    has_swing_shear: bool
     die_type: str | None
     process_method: str | None
     automation: str | None
@@ -109,10 +119,15 @@ class StampingPartCostCalcAmounts:
     steel_price_id: int | None
     steel_mill: str | None
     steel_ton_price: Decimal | None
+    swing_shear_fee_per_ton: Decimal
     scrap_price_id: int | None
     scrap_ton_price: Decimal | None
     process_fee_id: int | None
     process_fee_amount: Decimal | None
+    die_fee_id: int | None
+    die_fee_amount: Decimal | None
+    gauge_fee_id: int | None
+    gauge_fee_amount: Decimal | None
     material_amount_sheet: Decimal | None
     loss_scrap_deduction: Decimal | None
     process_scrap_deduction: Decimal | None
@@ -151,10 +166,15 @@ class StampingPartCostUpsertPayload:
     steel_price_id: int | None = None
     steel_mill: str | None = None
     steel_ton_price: Decimal | None = None
+    swing_shear_fee_per_ton: Decimal = Decimal("0")
     scrap_price_id: int | None = None
     scrap_ton_price: Decimal | None = None
     process_fee_id: int | None = None
     process_fee_amount: Decimal | None = None
+    die_fee_id: int | None = None
+    die_fee_amount: Decimal | None = None
+    gauge_fee_id: int | None = None
+    gauge_fee_amount: Decimal | None = None
     material_amount_sheet: Decimal | None = None
     loss_scrap_deduction: Decimal | None = None
     process_scrap_deduction: Decimal | None = None

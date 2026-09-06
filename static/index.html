@@ -6,11 +6,9 @@
     <meta name="description" content="汽车冲压件自动核价平台">
     <title>汽车冲压件自动核价平台</title>
     <link rel="icon" type="image/x-icon" href="/static/assets/favicon.ico">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="/static/css/style.css?v=46" rel="stylesheet">
+    <link href="/static/css/fonts.css?v=1" rel="stylesheet">
+    <link href="/static/css/tailwind.css?v=3" rel="stylesheet">
+    <link href="/static/css/style.css?v=48" rel="stylesheet">
 </head>
 <body class="bg-[#0a0a0a] min-h-screen antialiased">
     <!-- Navigation Layer backdrop -->
@@ -41,6 +39,27 @@
                         <svg class="w-3.5 h-3.5 ms-auto submenu-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7"></path></svg>
                     </a>
                     <ul class="submenu" id="stampingSubmenu">
+                        <!-- 冲压模具 -->
+                        <!-- 根据APQP流程，冲压模具应放在冲压工艺之前，因为是先有模具后有工艺 -->
+                        <li class="submenu-item has-submenu">
+                            <a href="javascript:void(0)" class="submenu-link" data-submenu-toggle="stampingDieSubmenu">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 7h16M4 12h10M4 17h16M14 12h6"></path></svg>
+                                <span>冲压模具</span>
+                                <svg class="w-3.5 h-3.5 ms-auto submenu-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7"></path></svg>
+                            </a>
+                            <ul class="submenu submenu-nested" id="stampingDieSubmenu">
+                                <li>
+                                    <a href="#/stamping-die-upload" class="submenu-link submenu-link-nested" data-page="stamping-die-upload"><span>上传模具布点</span></a>
+                                </li>
+                                <li>
+                                    <a href="#/stamping-die-list" class="submenu-link submenu-link-nested" data-page="stamping-die-list"><span>模具清单</span></a>
+                                </li>
+                                <li>
+                                    <a href="#/stamping-die-unit-price" class="submenu-link submenu-link-nested" data-page="stamping-die-unit-price"><span>模具单价</span></a>
+                                </li>
+                            </ul>
+                        </li>
+                        <!-- 冲压工艺 -->
                         <li class="submenu-item has-submenu">
                             <a href="javascript:void(0)" class="submenu-link" data-submenu-toggle="stampingProcessSubmenu">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
@@ -56,6 +75,7 @@
                                 </li>
                             </ul>
                         </li>
+                        <!-- 冲次单价 -->
                         <li class="submenu-item has-submenu">
                             <a href="javascript:void(0)" class="submenu-link" data-submenu-toggle="stampingTonnageSubmenu">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
@@ -71,6 +91,7 @@
                                 </li>
                             </ul>
                         </li>
+                        <!-- 冲压加工费 -->
                         <li class="submenu-item has-submenu">
                             <a href="javascript:void(0)" class="submenu-link" data-submenu-toggle="stampingProcessFeeSubmenu">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2zM10 8.5a.5.5 0 11-1 0 .5.5 0 011 0zm5 5a.5.5 0 11-1 0 .5.5 0 011 0z"></path></svg>
@@ -86,6 +107,40 @@
                                 </li>
                             </ul>
                         </li>
+                        
+                        <!-- 冲压模具费 -->
+                        <li class="submenu-item has-submenu">
+                            <a href="javascript:void(0)" class="submenu-link" data-submenu-toggle="stampingDieFeeSubmenu">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"></path></svg>
+                                <span>冲压模具费</span>
+                                <svg class="w-3.5 h-3.5 ms-auto submenu-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7"></path></svg>
+                            </a>
+                            <ul class="submenu submenu-nested" id="stampingDieFeeSubmenu">
+                                <li>
+                                    <a href="#/stamping-die-fee-calc" class="submenu-link submenu-link-nested" data-page="stamping-die-fee-calc"><span>冲压模具费计算</span></a>
+                                </li>
+                                <li>
+                                    <a href="#/stamping-die-fee" class="submenu-link submenu-link-nested" data-page="stamping-die-fee"><span>冲压模具费列表</span></a>
+                                </li>
+                            </ul>
+                        </li>
+                        <!-- 冲压检具费 -->
+                        <li class="submenu-item has-submenu">
+                            <a href="javascript:void(0)" class="submenu-link" data-submenu-toggle="stampingGaugeFeeSubmenu">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                                <span>冲压检具费</span>
+                                <svg class="w-3.5 h-3.5 ms-auto submenu-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7"></path></svg>
+                            </a>
+                            <ul class="submenu submenu-nested" id="stampingGaugeFeeSubmenu">
+                                <li>
+                                    <a href="#/stamping-gauge-fee-upload" class="submenu-link submenu-link-nested" data-page="stamping-gauge-fee-upload"><span>上传</span></a>
+                                </li>
+                                <li>
+                                    <a href="#/stamping-gauge-fee" class="submenu-link submenu-link-nested" data-page="stamping-gauge-fee"><span>检具费列表</span></a>
+                                </li>
+                            </ul>
+                        </li>
+                        
                     </ul>
                 </li>
                 <!-- 焊接工程（技术目录仍为 bom）：与冲压工程同为年度核算，紧挨冲压、排在一事一议之前 -->
@@ -96,6 +151,7 @@
                         <svg class="w-3.5 h-3.5 ms-auto submenu-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7"></path></svg>
                     </a>
                     <ul class="submenu" id="bomSubmenu">
+                        <!-- 材料清单 -->
                         <li class="submenu-item has-submenu">
                             <a href="javascript:void(0)" class="submenu-link" data-submenu-toggle="bomMaterialListSubmenu">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 10h16M4 14h10M4 18h7"></path></svg>
@@ -114,6 +170,7 @@
                                 </li>
                             </ul>
                         </li>
+                        <!-- 焊接单价 -->
                         <li class="submenu-item has-submenu">
                             <a href="javascript:void(0)" class="submenu-link" data-submenu-toggle="bomWeldingUnitPriceSubmenu">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
@@ -129,21 +186,7 @@
                                 </li>
                             </ul>
                         </li>
-                        <li class="submenu-item has-submenu">
-                            <a href="javascript:void(0)" class="submenu-link" data-submenu-toggle="bomAnnualPartPriceSubmenu">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
-                                <span>年度零件价</span>
-                                <svg class="w-3.5 h-3.5 ms-auto submenu-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7"></path></svg>
-                            </a>
-                            <ul class="submenu submenu-nested" id="bomAnnualPartPriceSubmenu">
-                                <li>
-                                    <a href="#/bom-annual-part-price-upload" class="submenu-link submenu-link-nested" data-page="bom-annual-part-price-upload"><span>上传</span></a>
-                                </li>
-                                <li>
-                                    <a href="#/bom-annual-part-price" class="submenu-link submenu-link-nested" data-page="bom-annual-part-price"><span>年度零件价列表</span></a>
-                                </li>
-                            </ul>
-                        </li>
+                        <!-- 包装运输费 -->
                         <li class="submenu-item has-submenu">
                             <a href="javascript:void(0)" class="submenu-link" data-submenu-toggle="bomPackagingTransportFeeSubmenu">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
@@ -159,6 +202,39 @@
                                 </li>
                             </ul>
                         </li>
+                        <!-- 采购对象 -->
+                        <li class="submenu-item has-submenu">
+                            <a href="javascript:void(0)" class="submenu-link" data-submenu-toggle="bomProcurementObjectSubmenu">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+                                <span>采购对象</span>
+                                <svg class="w-3.5 h-3.5 ms-auto submenu-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7"></path></svg>
+                            </a>
+                            <ul class="submenu submenu-nested" id="bomProcurementObjectSubmenu">
+                                <li>
+                                    <a href="#/bom-procurement-object" class="submenu-link submenu-link-nested" data-page="bom-procurement-object"><span>生成</span></a>
+                                </li>
+                                <li>
+                                    <a href="#/bom-procurement-object-list" class="submenu-link submenu-link-nested" data-page="bom-procurement-object-list"><span>采购对象清单</span></a>
+                                </li>
+                            </ul>
+                        </li>
+                        <!-- 年度零件价（模板：标准件/胶 ∪ 未进本项目工艺库的 BOM 叶子） -->
+                        <li class="submenu-item has-submenu">
+                            <a href="javascript:void(0)" class="submenu-link" data-submenu-toggle="bomAnnualPartPriceSubmenu">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                                <span>年度零件价</span>
+                                <svg class="w-3.5 h-3.5 ms-auto submenu-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7"></path></svg>
+                            </a>
+                            <ul class="submenu submenu-nested" id="bomAnnualPartPriceSubmenu">
+                                <li>
+                                    <a href="#/bom-annual-part-price-upload" class="submenu-link submenu-link-nested" data-page="bom-annual-part-price-upload"><span>上传</span></a>
+                                </li>
+                                <li>
+                                    <a href="#/bom-annual-part-price" class="submenu-link submenu-link-nested" data-page="bom-annual-part-price"><span>年度零件价列表</span></a>
+                                </li>
+                            </ul>
+                        </li>
+                        <!-- 焊接工艺拆解 -->
                         <li class="submenu-item has-submenu">
                             <a href="javascript:void(0)" class="submenu-link" data-submenu-toggle="bomWeldingProcessBreakdownSubmenu">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
@@ -174,18 +250,19 @@
                                 </li>
                             </ul>
                         </li>
+                        <!-- 焊接费 -->
                         <li class="submenu-item has-submenu">
-                            <a href="javascript:void(0)" class="submenu-link" data-submenu-toggle="bomL0WeldingFeeSubmenu">
+                            <a href="javascript:void(0)" class="submenu-link" data-submenu-toggle="bomWeldingFeeSubmenu">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                <span>成品焊接费</span>
+                                <span>焊接费</span>
                                 <svg class="w-3.5 h-3.5 ms-auto submenu-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7"></path></svg>
                             </a>
-                            <ul class="submenu submenu-nested" id="bomL0WeldingFeeSubmenu">
+                            <ul class="submenu submenu-nested" id="bomWeldingFeeSubmenu">
                                 <li>
-                                    <a href="#/bom-l0-welding-fee-calc" class="submenu-link submenu-link-nested" data-page="bom-l0-welding-fee-calc"><span>成品焊接费计算</span></a>
+                                    <a href="#/bom-welding-fee-calc" class="submenu-link submenu-link-nested" data-page="bom-welding-fee-calc"><span>焊接费计算</span></a>
                                 </li>
                                 <li>
-                                    <a href="#/bom-l0-welding-fee-list" class="submenu-link submenu-link-nested" data-page="bom-l0-welding-fee-list"><span>成品焊接费列表</span></a>
+                                    <a href="#/bom-welding-fee-list" class="submenu-link submenu-link-nested" data-page="bom-welding-fee-list"><span>焊接费列表</span></a>
                                 </li>
                             </ul>
                         </li>
@@ -199,6 +276,7 @@
                         <svg class="w-3.5 h-3.5 ms-auto submenu-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7"></path></svg>
                     </a>
                     <ul class="submenu" id="yishiyiyiSubmenu">
+                        <!-- 加减价政策 -->
                         <li class="submenu-item has-submenu">
                             <a href="javascript:void(0)" class="submenu-link" data-submenu-toggle="thicknessSubmenu">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 5h16v2H4V5zm0 6h16v2H4v-2zm0 6h16v2H4v-2z"></path></svg>
@@ -214,6 +292,7 @@
                                 </li>
                             </ul>
                         </li>
+                        <!-- 基准价格 -->
                         <li class="submenu-item has-submenu">
                             <a href="javascript:void(0)" class="submenu-link" data-submenu-toggle="basePriceSubmenu">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
@@ -229,12 +308,21 @@
                                 </li>
                             </ul>
                         </li>
+                        <!-- 牌号分类 -->
+                        <li>
+                            <a href="#/steel-grade-category" class="submenu-link" data-page="steel-grade-category">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 7h.01M7 3h5.5L21 11.5 12.5 20 3 10.5V5a2 2 0 012-2h2z"></path></svg>
+                                <span>牌号分类</span>
+                            </a>
+                        </li>
+                        <!-- 中标钢厂厚度价格一览表 -->
                         <li>
                             <a href="#/winning-thickness-download" class="submenu-link" data-page="winning-thickness-download">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                                 <span>中标钢厂厚度价格一览表</span>
                             </a>
                         </li>
+                        <!-- 废料月度销售价 -->
                         <li>
                             <a href="#/scrap-price" class="submenu-link" data-page="scrap-price">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
@@ -252,6 +340,7 @@
                         <svg class="w-3.5 h-3.5 ms-auto submenu-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7"></path></svg>
                     </a>
                     <ul class="submenu" id="costingSubmenu">
+                        <!-- 冲压钢材联动价 -->
                         <li class="submenu-item has-submenu">
                             <a href="javascript:void(0)" class="submenu-link" data-submenu-toggle="steelPriceSubmenu">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 7h16M6 3h12a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V5a2 2 0 012-2zm2 8h8m-8 4h5"></path></svg>
@@ -283,22 +372,23 @@
                                 </li>
                             </ul>
                         </li>
-                        <!-- 成品核价 -->
+                        <!-- 总成核价 -->
                         <li class="submenu-item has-submenu">
-                            <a href="javascript:void(0)" class="submenu-link" data-submenu-toggle="l0AssemblyCostSubmenu">
+                            <a href="javascript:void(0)" class="submenu-link" data-submenu-toggle="assemblyCostSubmenu">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
-                                <span>成品核价</span>
+                                <span>总成核价</span>
                                 <svg class="w-3.5 h-3.5 ms-auto submenu-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7"></path></svg>
                             </a>
-                            <ul class="submenu submenu-nested" id="l0AssemblyCostSubmenu">
+                            <ul class="submenu submenu-nested" id="assemblyCostSubmenu">
                                 <li>
-                                    <a href="#/l0-assembly-cost-calc" class="submenu-link submenu-link-nested" data-page="l0-assembly-cost-calc"><span>成品核价计算</span></a>
+                                    <a href="#/assembly-cost-calc" class="submenu-link submenu-link-nested" data-page="assembly-cost-calc"><span>总成核价计算</span></a>
                                 </li>
                                 <li>
-                                    <a href="#/l0-assembly-cost" class="submenu-link submenu-link-nested" data-page="l0-assembly-cost"><span>成品核价一览</span></a>
+                                    <a href="#/assembly-cost" class="submenu-link submenu-link-nested" data-page="assembly-cost"><span>总成核价一览</span></a>
                                 </li>
                             </ul>
                         </li>
+                        <!-- 自动核价引擎 -->
                         <li>
                             <a href="#/costing" class="submenu-link" data-page="costing">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
@@ -322,15 +412,19 @@
                         <svg class="w-3.5 h-3.5 ms-auto submenu-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7"></path></svg>
                     </a>
                     <ul class="submenu" id="settingsSubmenu">
+                        <!-- 个人资料 -->
                         <li>
                             <a href="#/settings-profile" class="submenu-link" data-page="settings-profile"><span>个人资料</span></a>
                         </li>
+                        <!-- 系统设置 -->
                         <li>
                             <a href="#/settings" class="submenu-link" data-page="settings"><span>系统设置</span></a>
                         </li>
+                        <!-- 用户管理 -->
                         <li>
                             <a href="#/settings-users" class="submenu-link" data-page="settings-users"><span>用户管理</span></a>
                         </li>
+                        <!-- 操作日志 -->
                         <li>
                             <a href="#/settings-logs" class="submenu-link" data-page="settings-logs"><span>操作日志</span></a>
                         </li>
@@ -430,10 +524,10 @@
     <!-- Toast 容器由 main.js 动态创建（统一管理生命周期） -->
 
     <!-- 采购助理 Markdown：marked + DOMPurify（净化后再写入 DOM） -->
-    <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+    <script src="/static/js/vendor/marked.min.js"></script>
+    <script src="/static/js/vendor/purify.min.js"></script>
 
-    <script src="/static/js/main.js?v=15"></script>
-    <script type="module" src="/static/js/app.js?v=369"></script>
+    <script src="/static/js/main.js?v=20"></script>
+    <script type="module" src="/static/js/app.js?v=491"></script>
 </body>
 </html>

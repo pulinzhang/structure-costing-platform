@@ -179,6 +179,7 @@ class SteelBasePriceCrudService:
         location: str | None = None,
         steel_mill: str | None = None,
         spec: str | None = None,
+        grades_in: list[str] | None = None,
     ) -> int:
         return self.repository.count_for_export(
             db,
@@ -187,4 +188,5 @@ class SteelBasePriceCrudService:
             location=location.strip() if location else None,
             steel_mill=steel_mill.strip() if steel_mill else None,
             spec=spec.strip() if spec else None,
+            grades_in=grades_in,
         )

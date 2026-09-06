@@ -67,8 +67,8 @@ function applyFilterOptions(data) {
     const labels = data.category_labels || {};
     fillSelect('ftFilterCategory', data.allowed_categories || [], labels, '全部分类');
     fillSelect('ftFilterLocation', data.locations || [], null, '全部基地');
-    fillSelect('ftFilterYear', data.years || [], null, '全部年度');
-    fillSelect('ftFilterMonth', data.months || [], null, '全部月份');
+    fillSelect('ftFilterYear', data.years || [], Object.fromEntries((data.years || []).map((y) => [y, fmtYear(y)])), '全部年度');
+    fillSelect('ftFilterMonth', data.months || [], Object.fromEntries((data.months || []).map((m) => [m, fmtMonth(m)])), '全部月份');
     fillSelect('ftFilterVehicle', data.vehicle_models || [], null, '全部车型');
     fillSelect('ftFilterCreator', data.creators || [], null, '全部上传人');
 

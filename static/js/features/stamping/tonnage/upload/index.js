@@ -3,7 +3,7 @@
  * 同步导入：基地 + 年度必选，仅 .xlsx
  */
 
-import { tonnageUploadTemplate } from './template.js?v=2';
+import { tonnageUploadTemplate } from './template.js?v=3';
 import { can } from '../../../../permissions.js?v=8';
 
 const API_BASE = '/api/stamping/tonnage-price';
@@ -21,7 +21,6 @@ const TonnageUploadPage = {
         this.bindEvents();
         this.hideProgress();
         this.clearSelectedFile(false);
-        this.fillDefaultYear();
     },
 
     applyPermissionUi() {
@@ -103,13 +102,6 @@ const TonnageUploadPage = {
         });
     },
 
-    fillDefaultYear() {
-        const yearInput = document.getElementById('tonnageUploadYear');
-        if (yearInput && !yearInput.value) {
-            yearInput.value = String(new Date().getFullYear());
-        }
-    },
-
     selectFile(file) {
         if (!file || this.isUploading) return;
         if (!file.name.toLowerCase().endsWith('.xlsx')) {
@@ -175,7 +167,6 @@ const TonnageUploadPage = {
         const year = document.getElementById('tonnageUploadYear');
         if (location) location.value = '';
         if (year) year.value = '';
-        this.fillDefaultYear();
     },
 
     showProgress(msg = '解析并写入数据库，请稍候') {

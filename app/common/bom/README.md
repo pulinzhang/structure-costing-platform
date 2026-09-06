@@ -27,7 +27,7 @@
 1. 在 `WeldingStandardProcessName` 增加枚举项（中文 `value` 即业务名，如 `"焊点"`）
 2. 在 `STANDARD_PROCESS_UNIT` 补「名称 → 单位」
 3. 若拆解原文能自动映射：在 `TOKEN_TO_STANDARD_PROCESS` 增加 token（不能唯一确定则映射为 `None`）
-4. （可选）焊接单价导入模板示例价：`app/services/bom/welding_unit_price_import_service.py` 的 `_TEMPLATE_SAMPLE_PRICES`
+4. （可选）焊接单价导入模板示例价：`app/services/bom/welding_unit_price/import_service.py` 的 `_TEMPLATE_SAMPLE_PRICES`
 5. 若前端拆解页仍硬编码 `STANDARD_PROCESS_UNIT`，同步或改为拉目录 API，避免双份真相
 
 门禁与模板会随 `list_welding_standard_catalog()` / `validate_welding_unit_price_catalog` 自动带上新项。
