@@ -1,4 +1,4 @@
-import { policyUploadTemplate } from './template.js';
+import { policyUploadTemplate } from './template.js?v=1';
 
 const MAX_RECENT_UPLOADS = 8;
 const POLL_INTERVAL_MS = 2000;

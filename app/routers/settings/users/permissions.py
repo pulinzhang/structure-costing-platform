@@ -24,8 +24,7 @@ def get_permission_tree(
 ) -> ApiResponse[list[PermissionNodeVO]]:
     """返回权限目录树（仅管理员）"""
     tree = _permission_service.get_permission_tree(current_user)
-    nodes = [PermissionNodeVO.model_validate(n) for n in tree]
-    return ApiResponse.ok(data=nodes, message="查询成功")
+    return ApiResponse.ok(data=tree, message="查询成功")
 
 
 @router.get(

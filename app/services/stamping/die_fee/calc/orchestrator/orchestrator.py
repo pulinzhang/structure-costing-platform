@@ -11,8 +11,6 @@
 
 from __future__ import annotations
 
-import logging
-
 from sqlalchemy.orm import Session
 
 from app.common.audit import display_name
@@ -50,10 +48,10 @@ from app.services.stamping.die_fee.calc.orchestrator.prep import (
 from app.services.stamping.die_fee.calc.orchestrator.progress import ProgressNotifier
 from app.services.stamping.die_fee.calc.orchestrator.ready import collect_calc_ready
 
-logger = logging.getLogger("service.stamping.die_fee.calc")
-
 
 class StampingDieFeeCalcOrchestrator:
+    """冲压年度模具费计算编排器。"""
+
     def __init__(self, deps: DieFeeCalcDeps | None = None) -> None:
         self._deps = deps or build_die_fee_calc_deps()
         self.calc_log_service = self._deps.calc_log_service
@@ -124,19 +122,17 @@ class StampingDieFeeCalcOrchestrator:
         log_id: int | None = None,
         calc_batch_id: str | None = None,
     ) -> StampingDieFeeCalcResultVO:
-        deps = self._deps
         progress = ProgressNotifier(progress_callback)
-
-        ctx = prepare_calc_run(db, deps, dto, progress)
-        batch = BatchCalculationEngine(deps.part_calculator).run(
+        ctx = prepare_calc_run(db, self._deps, dto, progress)
+        batch = BatchCalculationEngine(self._deps.part_calculator).run(
             ctx=ctx,
             dto=dto,
             current_user=current_user,
             progress=progress,
         )
-        result = persist_calc_result(
+        return persist_calc_result(
             db,
-            deps,
+            self._deps,
             dto=dto,
             ctx=ctx,
             batch=batch,
@@ -145,15 +141,6 @@ class StampingDieFeeCalcOrchestrator:
             calc_batch_id=calc_batch_id,
             progress=progress,
         )
-        logger.info(
-            "年度模具费计算完成: year=%s location=%s vehicle=%s success=%s skipped=%s",
-            dto.year,
-            dto.location,
-            dto.vehicle_model,
-            result.success_count,
-            result.skipped_no_die_count,
-        )
-        return result
 
     def start_calc(
         self,

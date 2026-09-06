@@ -1,4 +1,8 @@
-import { dieUploadTemplate } from './template.js?v=8';
+import { dieUploadTemplate } from './template.js?v=9';
+import {
+    setDropzoneDragActive,
+    setDropzoneFileSelected,
+} from '../../../../upload-dropzone.js?v=1';
 
 const MAX_RECENT_UPLOADS = 8;
 const POLL_INTERVAL_MS = 2000;
@@ -73,15 +77,15 @@ export const DieUploadPage = {
         uploadZone?.addEventListener('dragover', (e) => {
             if (!this.canUpload || this.isUploading) return;
             e.preventDefault();
-            uploadZone.classList.add('drag-active');
+            setDropzoneDragActive(uploadZone, true);
         });
         uploadZone?.addEventListener('dragleave', (e) => {
             e.preventDefault();
-            uploadZone.classList.remove('drag-active');
+            setDropzoneDragActive(uploadZone, false);
         });
         uploadZone?.addEventListener('drop', (e) => {
             e.preventDefault();
-            uploadZone.classList.remove('drag-active');
+            setDropzoneDragActive(uploadZone, false);
             if (!this.canUpload || this.isUploading) return;
             this.handleFiles(e.dataTransfer.files);
         });
@@ -161,7 +165,7 @@ export const DieUploadPage = {
                 this.clearSelectedFile();
             });
         }
-        document.getElementById('dieUploadZone')?.classList.add('file-selected');
+        setDropzoneFileSelected(document.getElementById('dieUploadZone'), true);
         const title = document.getElementById('dieUploadTitle');
         const hint = document.getElementById('dieUploadHint');
         if (title) title.textContent = '已选择文件';
@@ -178,7 +182,7 @@ export const DieUploadPage = {
             preview.classList.add('hidden');
             preview.innerHTML = '';
         }
-        document.getElementById('dieUploadZone')?.classList.remove('file-selected');
+        setDropzoneFileSelected(document.getElementById('dieUploadZone'), false);
         const title = document.getElementById('dieUploadTitle');
         const hint = document.getElementById('dieUploadHint');
         if (title) title.textContent = '拖拽文件到此处';

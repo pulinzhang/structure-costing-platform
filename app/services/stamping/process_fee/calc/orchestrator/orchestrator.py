@@ -11,8 +11,6 @@
 
 from __future__ import annotations
 
-import logging
-
 from sqlalchemy.orm import Session
 
 from app.common.audit import display_name
@@ -47,9 +45,6 @@ from app.services.stamping.process_fee.calc.orchestrator.persist import persist_
 from app.services.stamping.process_fee.calc.orchestrator.prep import prepare_calc_run
 from app.services.stamping.process_fee.calc.orchestrator.progress import ProgressNotifier
 from app.services.stamping.process_fee.calc.orchestrator.ready import collect_calc_ready
-from app.services.stamping.process_fee.scope import ALL_SUPPLIERS_LOCK
-
-logger = logging.getLogger("service.stamping.process_fee.calc")
 
 
 class StampingProcessFeeCalcOrchestrator:
@@ -136,20 +131,18 @@ class StampingProcessFeeCalcOrchestrator:
         log_id: int | None = None,
         calc_batch_id: str | None = None,
     ) -> StampingProcessFeeCalcResultVO:
-        deps = self._deps
         progress = ProgressNotifier(progress_callback)
-
-        ctx = prepare_calc_run(db, deps, dto, progress)
-        batch = BatchCalculationEngine(deps).run(
+        ctx = prepare_calc_run(db, self._deps, dto, progress)
+        batch = BatchCalculationEngine(self._deps).run(
             db,
             ctx=ctx,
             dto=dto,
             current_user=current_user,
             progress=progress,
         )
-        result = persist_calc_result(
+        return persist_calc_result(
             db,
-            deps,
+            self._deps,
             dto=dto,
             ctx=ctx,
             batch=batch,
@@ -158,19 +151,6 @@ class StampingProcessFeeCalcOrchestrator:
             calc_batch_id=calc_batch_id,
             progress=progress,
         )
-
-        logger.info(
-            "冲压加工费计算完成: year=%s location=%s supplier=%s "
-            "success=%s failed=%s zero_fee=%s skipped_approved=%s",
-            dto.year,
-            ctx.location,
-            ALL_SUPPLIERS_LOCK,
-            result.success_count,
-            result.failed_count,
-            result.zero_fee_count,
-            result.skipped_approved_count,
-        )
-        return result
 
     def start_calc(
         self,

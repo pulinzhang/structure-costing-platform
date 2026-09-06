@@ -1,3 +1,11 @@
+import {
+    BTN_FILE_SELECT,
+    BTN_GHOST,
+    BTN_UPLOAD_SUBMIT,
+    UPLOAD_DROPZONE,
+    UPLOAD_INPUT,
+} from '../../../../ui-classes.js?v=1';
+
 export function dieUploadTemplate() {
     return `
         <div class="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-3">
@@ -25,7 +33,7 @@ export function dieUploadTemplate() {
                                     <span class="text-[13px] text-[#6b6b6b] font-medium tracking-wide uppercase">选择采购基地</span>
                                 </div>
                                 <div class="ml-6">
-                                    <select id="dieLocation" name="location" required class="upload-input w-[280px] text-[11px]">
+                                    <select id="dieLocation" name="location" required class="${UPLOAD_INPUT} w-[280px]">
                                         <option value="">请选择采购基地</option>
                                     </select>
                                     <p class="mt-2 text-[10px] text-[#555555]">必选。</p>
@@ -42,7 +50,7 @@ export function dieUploadTemplate() {
                                 <div class="ml-6">
                                     <input id="dieVehicleModel" name="vehicle_model" required
                                            placeholder="手工填写，如 T13J"
-                                           class="upload-input w-[280px] text-[11px]">
+                                           class="${UPLOAD_INPUT} w-[280px]">
                                     <p class="mt-2 text-[10px] text-[#555555]">手工录入。须与文件名或标题里的项目一致。</p>
                                 </div>
                             </div>
@@ -55,7 +63,7 @@ export function dieUploadTemplate() {
                                     <span class="text-[13px] text-[#6b6b6b] font-medium tracking-wide uppercase">上传布点文件</span>
                                 </div>
                                 <div class="ml-6">
-                                    <div id="dieUploadZone" class="upload-dropzone mb-4">
+                                    <div id="dieUploadZone" class="${UPLOAD_DROPZONE} mb-4" data-dropzone-state="idle">
                                         <div id="dieDropIdle" class="flex flex-col items-center gap-0">
                                             <div class="flex items-center gap-3 mb-5 w-full px-3">
                                                 <div class="h-px flex-1 bg-[#2a2a2a]"></div>
@@ -76,7 +84,7 @@ export function dieUploadTemplate() {
                                                 <div class="h-px flex-1 bg-[#2a2a2a]"></div>
                                             </div>
                                             <input type="file" id="dieFileInput" class="hidden" accept=".xlsx,.xls">
-                                            <button type="button" id="dieSelectFileBtn" class="btn-file-select">
+                                            <button type="button" id="dieSelectFileBtn" class="${BTN_FILE_SELECT}">
                                                 ${window.svgIcon('folder', 'w-3.5 h-3.5')}
                                                 浏览文件
                                             </button>
@@ -98,11 +106,11 @@ export function dieUploadTemplate() {
                                     </div>
                                     <div id="dieFilePreview" class="hidden mb-4"></div>
                                     <div class="flex items-center justify-end gap-3">
-                                        <button type="button" id="dieResetButton" class="btn-ghost">
+                                        <button type="button" id="dieResetButton" class="${BTN_GHOST}">
                                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                                             重置
                                         </button>
-                                        <button type="submit" id="dieSubmitBtn" disabled class="btn-upload-submit disabled:opacity-30 disabled:pointer-events-none">
+                                        <button type="submit" id="dieSubmitBtn" disabled class="${BTN_UPLOAD_SUBMIT}">
                                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
                                             上传
                                         </button>

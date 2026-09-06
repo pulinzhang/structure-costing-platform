@@ -10,7 +10,14 @@ import {
     updatePartsFilterCapsules,
     updatePartsHud,
     renderPartsPagination,
-} from './template.js?v=27';
+} from './template.js?v=29';
+import {
+    BTN_SAVE_ACTIVE,
+    BTN_SAVE_DEFAULT,
+    SKETCH_PLACEHOLDER,
+    SKETCH_THUMBNAIL,
+    ZOOM_OVERLAY,
+} from '../../../../ui-classes.js?v=2';
 import {
     DEFAULT_PAGE_SIZE,
     PAGE_SIZE_OPTIONS,
@@ -376,11 +383,11 @@ export const PartsPage = {
         const muted = 'text-[#8E8E93]';
 
         const thumbnailCell = sketchUrl
-            ? `<div class="sketch-thumbnail" title="图纸预览">
-                    <img src="/uploads/${esc(sketchUrl)}" alt="零件图纸" onerror="this.style.display='none';this.nextElementSibling&&(this.nextElementSibling.style.display='flex')">
-                    <div class="zoom-overlay">${window.svgIcon('search')}</div>
+            ? `<div class="${SKETCH_THUMBNAIL}" title="图纸预览">
+                    <img class="w-full h-full object-cover" src="/uploads/${esc(sketchUrl)}" alt="零件图纸" onerror="this.style.display='none';this.nextElementSibling&&(this.nextElementSibling.style.display='flex')">
+                    <div class="${ZOOM_OVERLAY}">${window.svgIcon('search')}</div>
                </div>`
-            : `<div class="sketch-thumbnail-placeholder" title="无图级>
+            : `<div class="${SKETCH_PLACEHOLDER}" title="无图级>
                     ${window.svgIcon('file-earmark')}
                </div>`;
 
@@ -508,7 +515,7 @@ export const PartsPage = {
             const btn = document.getElementById('saveProcessBtn');
             if (btn) {
                 btn.dataset.active = 'false';
-                btn.className = 'btn-save-default';
+                btn.className = BTN_SAVE_DEFAULT;
             }
 
             this._bindProcessEditEvents(part.id);
@@ -643,7 +650,7 @@ export const PartsPage = {
         const btn = document.getElementById('saveProcessBtn');
         if (!btn || btn.dataset.active === 'true') return;
         btn.dataset.active = 'true';
-        btn.className = 'btn-save-active';
+        btn.className = BTN_SAVE_ACTIVE;
     },
 
     _collectProcessEdits() {
@@ -676,7 +683,7 @@ export const PartsPage = {
             const saveBtn = document.getElementById('saveProcessBtn');
             if (saveBtn) {
                 saveBtn.dataset.active = 'false';
-                saveBtn.className = 'btn-save-default';
+                saveBtn.className = BTN_SAVE_DEFAULT;
             }
             this.loadParts(partsState.currentPage);
             this.showDetail(partId);

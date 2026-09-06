@@ -6,11 +6,11 @@ from dataclasses import dataclass
 
 from sqlalchemy.orm import Session
 
+from app.common.steel_grade_category import normalize_category_name
 from app.repositories.yishiyiyi.steel_grade_category.steel_grade_category_repository import (
     SteelGradeCategoryRepository,
 )
 from app.services.yishiyiyi.policy.match.adjustment_common import category_aliases
-from app.services.yishiyiyi.steel_grade_category.constants import normalize_category_name
 
 
 @dataclass(frozen=True, slots=True)

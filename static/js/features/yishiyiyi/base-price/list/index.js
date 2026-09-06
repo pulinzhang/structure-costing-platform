@@ -3,7 +3,7 @@
  * 基准价格导出页面逻辑
  */
 
-import { basePriceDownloadTemplate } from './template.js?v=28';
+import { basePriceDownloadTemplate } from './template.js?v=29';
 import {
     DEFAULT_PREVIEW_PAGE_SIZE,
     PREVIEW_PAGE_SIZE_OPTIONS,

@@ -84,7 +84,7 @@ export function annualPartPriceTemplate() {
 
                 <div class="px-5 py-3 border-b border-[#14141A]"
                      style="background: linear-gradient(180deg, #0C0C10 0%, #0A0A0E 100%);">
-                    <div class="flex items-center justify-between gap-4 bg-[#0C0C10] border border-[#1E1E26] px-4 py-2.5 rounded-xl font-mono text-[11px]"
+                    <div class="flex items-center justify-between gap-4 bg-[#0C0C10] border border-[#1E1E26] px-4 py-2.5 rounded-md font-mono text-[11px]"
                          style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.02), 0 0 20px rgba(0,0,0,0.3);">
                         <div class="flex items-center gap-3 min-w-0 flex-1">
                             <span class="text-[#555555] shrink-0 tracking-wider">当前筛选：</span>

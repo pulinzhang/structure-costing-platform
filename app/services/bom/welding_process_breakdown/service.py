@@ -231,7 +231,7 @@ class BomWeldingProcessBreakdownService:
         log_id: int | None = None,
         calc_batch_id: str | None = None,
         started_at: datetime | None = None,
-    ) -> tuple[BomWeldingProcessBreakdownGenerateResultVO | None, str | None]:
+    ) -> BomWeldingProcessBreakdownGenerateResultVO:
         return self._generate_service.generate(
             db,
             dto,
@@ -337,17 +337,18 @@ class BomWeldingProcessBreakdownService:
         )
 
         def work(worker_db: Session, on_progress: ProgressCallback) -> WorkerTaskOutcome:
-            result, error = self.generate_from_bom(
-                worker_db,
-                scoped,
-                current_user,
-                progress_callback=on_progress,
-                log_id=log_id,
-                calc_batch_id=calc_batch_id,
-                started_at=started_at,
-            )
-            if error or result is None:
-                fail_message = error or "拆解失败"
+            try:
+                result = self.generate_from_bom(
+                    worker_db,
+                    scoped,
+                    current_user,
+                    progress_callback=on_progress,
+                    log_id=log_id,
+                    calc_batch_id=calc_batch_id,
+                    started_at=started_at,
+                )
+            except BusinessException as exc:
+                fail_message = exc.message
                 return WorkerTaskOutcome(
                     status=STATUS_FAILED,
                     progress=100,
@@ -360,7 +361,7 @@ class BomWeldingProcessBreakdownService:
                         message=fail_message,
                         calc_batch_id=calc_batch_id,
                         log_id=log_id,
-                        detail_text=error or "",
+                        detail_text=fail_message,
                     ).model_dump(),
                 )
             return WorkerTaskOutcome(

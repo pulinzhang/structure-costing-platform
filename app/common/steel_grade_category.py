@@ -1,4 +1,7 @@
-"""牌号大类写死常量：与现网 steel_base_prices.category_name 逐字相同。"""
+"""牌号大类写死常量：与现网 steel_base_prices.category_name 逐字相同。
+
+Parser / Repository / 多切片 Service 共用，放 common，避免 Parser 反向依赖 Service。
+"""
 
 CANONICAL_CATEGORIES: tuple[tuple[int, str], ...] = (
     (1, "冷轧"),

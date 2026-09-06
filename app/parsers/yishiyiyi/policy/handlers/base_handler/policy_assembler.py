@@ -16,6 +16,10 @@ from typing import Any
 
 from openpyxl.worksheet.worksheet import Worksheet
 
+from app.common.steel_grade_category import (
+    CANONICAL_CATEGORY_NAMES,
+    normalize_category_name,
+)
 from app.exceptions.base import BusinessException
 from app.parsers.yishiyiyi.policy.boundary_parser import (
     _Boundary,
@@ -35,10 +39,6 @@ from app.parsers.yishiyiyi.policy.models.policy import (
 from app.parsers.yishiyiyi.policy.value_parser import (
     _to_int_price,
     is_carry_forward_price,
-)
-from app.services.yishiyiyi.steel_grade_category.constants import (
-    CANONICAL_CATEGORY_NAMES,
-    normalize_category_name,
 )
 
 from .sheet_scanner import SheetScanner

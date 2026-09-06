@@ -11,6 +11,10 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.common.audit import SYSTEM_USER
+from app.common.steel_grade_category import (
+    normalize_category_name,
+    seq_for_category,
+)
 from app.database import Base
 from app.exceptions.base import BusinessException, NotFoundException
 from app.models.yishiyiyi.steel_base_price import SteelBasePrice
@@ -31,10 +35,6 @@ from app.services.yishiyiyi.steel_grade_category import (
     SOURCE_BASE_PRICE,
     SOURCE_STAMPING_UPLOAD,
     SteelGradeCategoryService,
-)
-from app.services.yishiyiyi.steel_grade_category.constants import (
-    normalize_category_name,
-    seq_for_category,
 )
 
 

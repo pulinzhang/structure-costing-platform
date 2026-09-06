@@ -2,6 +2,14 @@
  * 冲压检具费上传 — 基地+项目必选，模板从模具布点带出零件
  */
 
+import {
+    BTN_FILE_SELECT,
+    BTN_GHOST,
+    BTN_UPLOAD_SUBMIT,
+    UPLOAD_DROPZONE,
+    UPLOAD_INPUT,
+} from '../../../../ui-classes.js?v=1';
+
 export function gaugeFeeUploadTemplate() {
     return `
         <div class="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-3">
@@ -28,7 +36,7 @@ export function gaugeFeeUploadTemplate() {
                                     <span class="text-[13px] text-[#6b6b6b] font-medium tracking-wide uppercase">选择采购基地</span>
                                 </div>
                                 <div class="ml-6">
-                                    <select id="gfuLocation" name="location" required class="upload-input w-[280px] text-[11px]">
+                                    <select id="gfuLocation" name="location" required class="${UPLOAD_INPUT} w-[280px]">
                                         <option value="">请选择采购基地</option>
                                     </select>
                                 </div>
@@ -42,7 +50,7 @@ export function gaugeFeeUploadTemplate() {
                                     <span class="text-[13px] text-[#6b6b6b] font-medium tracking-wide uppercase">选择项目</span>
                                 </div>
                                 <div class="ml-6">
-                                    <select id="gfuVehicle" name="vehicle_model" required class="upload-input w-[280px] text-[11px]">
+                                    <select id="gfuVehicle" name="vehicle_model" required class="${UPLOAD_INPUT} w-[280px]">
                                         <option value="">请先选择基地</option>
                                     </select>
                                     <p class="mt-2 text-[10px] text-[#555555]">选项与模具布点相同。须先选基地和项目才能下载模板；模板零件来自已入库模具布点。</p>
@@ -57,7 +65,7 @@ export function gaugeFeeUploadTemplate() {
                                     <span class="text-[13px] text-[#6b6b6b] font-medium tracking-wide uppercase">上传检具费</span>
                                 </div>
                                 <div class="ml-6">
-                                    <div id="gfuZone" class="upload-dropzone mb-4">
+                                    <div id="gfuZone" class="${UPLOAD_DROPZONE} mb-4" data-dropzone-state="idle">
                                         <div id="gfuDropIdle" class="flex flex-col items-center gap-0">
                                             <div class="mb-3 relative">
                                                 <svg class="w-9 h-9 text-[#4a4a4a]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.2">
@@ -67,7 +75,7 @@ export function gaugeFeeUploadTemplate() {
                                             <h5 id="gfuTitle" class="text-[11px] text-[#606060] font-semibold tracking-widest uppercase mb-1">拖拽文件到此处</h5>
                                             <p id="gfuHint" class="text-[10px] text-[#3a3a3a] mb-6">或点击下方按钮选择文件</p>
                                             <input type="file" id="gfuFileInput" class="hidden" accept=".xlsx">
-                                            <button type="button" id="gfuSelectFileBtn" class="btn-file-select">
+                                            <button type="button" id="gfuSelectFileBtn" class="${BTN_FILE_SELECT}">
                                                 ${window.svgIcon('folder', 'w-3.5 h-3.5')}
                                                 浏览文件
                                             </button>
@@ -89,8 +97,8 @@ export function gaugeFeeUploadTemplate() {
                                     </div>
                                     <div id="gfuFilePreview" class="hidden mb-4"></div>
                                     <div class="flex items-center justify-end gap-3">
-                                        <button type="button" id="gfuResetBtn" class="btn-ghost">重置</button>
-                                        <button type="submit" id="gfuSubmitBtn" disabled class="btn-upload-submit disabled:opacity-30 disabled:pointer-events-none">上传</button>
+                                        <button type="button" id="gfuResetBtn" class="${BTN_GHOST}">重置</button>
+                                        <button type="submit" id="gfuSubmitBtn" disabled class="${BTN_UPLOAD_SUBMIT}">上传</button>
                                     </div>
                                 </div>
                             </div>

@@ -8,6 +8,15 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.common.audit import audit_create, display_name
+from app.common.steel_grade_category import (
+    CANONICAL_CATEGORIES,
+    CANONICAL_CATEGORY_NAMES,
+    SOURCE_BASE_PRICE,
+    SOURCE_MANUAL,
+    SOURCE_STAMPING_UPLOAD,
+    normalize_category_name,
+    seq_for_category,
+)
 from app.exceptions.base import BusinessException, NotFoundException
 from app.repositories.yishiyiyi.base_price import SteelBasePriceRepository
 from app.repositories.yishiyiyi.steel_grade_category import SteelGradeCategoryRepository
@@ -25,15 +34,6 @@ from app.schemas.vo.steel_grade_category_vo import (
     SteelGradeCategoryVO,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.services.yishiyiyi.steel_grade_category.constants import (
-    CANONICAL_CATEGORIES,
-    CANONICAL_CATEGORY_NAMES,
-    SOURCE_BASE_PRICE,
-    SOURCE_MANUAL,
-    SOURCE_STAMPING_UPLOAD,
-    normalize_category_name,
-    seq_for_category,
-)
 
 logger = logging.getLogger("service.steel_grade_category")
 

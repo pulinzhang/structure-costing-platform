@@ -3,7 +3,11 @@
  * 冲压工艺上传 — 异步 task_id + 进度轮询
  */
 
-import { uploadTemplate } from './template.js?v=7';
+import { uploadTemplate } from './template.js?v=8';
+import {
+    setDropzoneDragActive,
+    setDropzoneFileSelected,
+} from '../../../../upload-dropzone.js?v=1';
 
 const MAX_RECENT_UPLOADS = 8;
 const POLL_INTERVAL_MS = 2000;
@@ -112,17 +116,17 @@ export const UploadPage = {
         uploadZone.addEventListener('dragover', (e) => {
             if (this.canUpload === false || this.isUploading) return;
             e.preventDefault();
-            uploadZone.classList.add('drag-active');
+            setDropzoneDragActive(uploadZone, true);
         });
 
         uploadZone.addEventListener('dragleave', (e) => {
             e.preventDefault();
-            uploadZone.classList.remove('drag-active');
+            setDropzoneDragActive(uploadZone, false);
         });
 
         uploadZone.addEventListener('drop', (e) => {
             e.preventDefault();
-            uploadZone.classList.remove('drag-active');
+            setDropzoneDragActive(uploadZone, false);
             if (this.canUpload === false || this.isUploading) return;
             this.handleFiles(e.dataTransfer.files);
         });
@@ -173,7 +177,7 @@ export const UploadPage = {
             </div>
         `;
 
-        uploadZone.classList.add('file-selected');
+        setDropzoneFileSelected(uploadZone, true);
         document.getElementById('uploadTitle').textContent = '已选择文件';
         document.getElementById('uploadHint').textContent = file.name;
 
@@ -191,7 +195,7 @@ export const UploadPage = {
             preview.innerHTML = '';
         }
         if (uploadZone) {
-            uploadZone.classList.remove('file-selected');
+            setDropzoneFileSelected(uploadZone, false);
             const title = document.getElementById('uploadTitle');
             const hint = document.getElementById('uploadHint');
             if (title) title.textContent = '拖拽文件到此处';
@@ -259,7 +263,7 @@ export const UploadPage = {
         if (panel) panel.classList.remove('hidden');
         if (zone) {
             zone.classList.add('pointer-events-none');
-            zone.classList.remove('drag-active');
+            setDropzoneDragActive(zone, false);
         }
         this.updateProgress(progress, msg);
     },

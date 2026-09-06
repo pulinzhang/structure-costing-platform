@@ -3,13 +3,17 @@
  * 操作日志 — 对接 /api/settings/logs
  */
 
-import { logsTemplate, renderTableRows, renderPagination } from './template.js';
+import { logsTemplate, renderTableRows, renderPagination } from './template.js?v=1';
+import {
+    DEFAULT_PAGE_SIZE,
+    bindPageSizeSelect,
+} from '../../../page-size.js?v=2';
 
 const logsState = {
     records: [],
     total: 0,
     page: 1,
-    pageSize: 20,
+    pageSize: DEFAULT_PAGE_SIZE,
     totalPages: 1,
     username: '',
     module: '',
@@ -26,6 +30,13 @@ const API_BASE = '/api/settings/logs';
 
 function init() {
     bindEvents();
+    bindPageSizeSelect('logsPageSize', {
+        getSize: () => logsState.pageSize,
+        setSize: (size) => {
+            logsState.pageSize = size;
+        },
+        onChange: () => loadData(1),
+    });
     const btnExport = document.getElementById('btnExportLogs');
     if (btnExport && typeof can === 'function' && !can('op:settings-logs:export')) {
         btnExport.classList.add('hidden');

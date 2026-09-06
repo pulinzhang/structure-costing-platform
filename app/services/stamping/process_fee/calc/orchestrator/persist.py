@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import logging
+
 from sqlalchemy.orm import Session
 
 from app.common.audit import display_name
@@ -23,6 +25,8 @@ from app.services.stamping.process_fee.calc.orchestrator.messages import append_
 from app.services.stamping.process_fee.calc.orchestrator.prep import CalcPrepContext
 from app.services.stamping.process_fee.calc.orchestrator.progress import ProgressNotifier
 from app.services.stamping.process_fee.scope import ALL_SUPPLIERS_LOCK
+
+logger = logging.getLogger("service.stamping_process_fee.calc")
 
 
 def persist_calc_result(
@@ -103,4 +107,15 @@ def persist_calc_result(
         )
 
     progress.report(100, "计算完成")
+    logger.info(
+        "冲压加工费计算完成: year=%s location=%s supplier=%s "
+        "success=%s failed=%s zero_fee=%s skipped_approved=%s",
+        dto.year,
+        ctx.location,
+        ALL_SUPPLIERS_LOCK,
+        result.success_count,
+        result.failed_count,
+        result.zero_fee_count,
+        result.skipped_approved_count,
+    )
     return result

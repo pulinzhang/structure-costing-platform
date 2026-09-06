@@ -3,12 +3,18 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import cast
 
 from sqlalchemy.orm import Session
 
 from app.common.audit import audit_create, display_name
 from app.common.timezone import now
+from app.common.types.repository_types import (
+    EngineWorkerResultJson,
+    GateJson,
+    PlanJson,
+    SummaryJson,
+)
 from app.exceptions.base import BusinessException, NotFoundException
 from app.repositories.costing.engine.costing_engine_run_repository import (
     CostingEngineRunRepository,
@@ -170,8 +176,8 @@ class CostingEngineService:
             month=dto.month,
             status="running",
             task_id=task.task_id,
-            gate_json=ready.gates.model_dump(exclude_none=True),
-            plan_json=ready.plan.model_dump(),
+            gate_json=cast(GateJson, ready.gates.model_dump(exclude_none=True)),
+            plan_json=cast(PlanJson, ready.plan.model_dump()),
             created_by=audit["created_by"],
             updated_by=audit["updated_by"],
             started_at=now(),
@@ -290,7 +296,7 @@ class CostingEngineService:
                     message="用户删除 Run",
                     result={"run_id": run_id, "status": "deleted"},
                 )
-            result_payload: dict[str, Any] = {
+            result_payload: EngineWorkerResultJson = {
                 "run_id": run_id,
                 **summary,
             }
@@ -307,19 +313,20 @@ class CostingEngineService:
             try:
                 run = self.run_repo.get_by_id(db, run_id)
                 if run is not None:
+                    crash_summary: SummaryJson = {
+                        "status": "failed",
+                        "location": location,
+                        "year": year,
+                        "month": month,
+                        "steps": [],
+                        "counts": {"succeeded": 0, "failed": 1, "skipped": 0},
+                        "error": str(error),
+                    }
                     self.run_repo.update_run_fields(
                         db,
                         run,
                         status="failed",
-                        summary_json={
-                            "status": "failed",
-                            "location": location,
-                            "year": year,
-                            "month": month,
-                            "steps": [],
-                            "counts": {"succeeded": 0, "failed": 1, "skipped": 0},
-                            "error": str(error),
-                        },
+                        summary_json=crash_summary,
                         finished_at=now(),
                     )
                     db.commit()

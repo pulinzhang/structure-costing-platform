@@ -6,6 +6,7 @@ from datetime import datetime
 
 from sqlalchemy.orm import Session
 
+from app.common.types.repository_types import OperationLogFilterOptions
 from app.models.settings import OperationLog
 from app.repositories.persist import model_from_payload
 from app.schemas.dto.operation_log_dto import OperationLogCreate
@@ -85,7 +86,7 @@ class OperationLogRepository:
             q = q.filter(OperationLog.created_at <= created_to)
         return q.order_by(OperationLog.id.desc()).limit(limit).all()
 
-    def list_filter_options(self, db: Session) -> dict[str, list[str]]:
+    def list_filter_options(self, db: Session) -> OperationLogFilterOptions:
         modules = [
             r[0]
             for r in db.query(OperationLog.module)

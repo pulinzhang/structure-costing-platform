@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import logging
+
 from sqlalchemy.orm import Session
 
 from app.common.audit import display_name
@@ -17,6 +19,8 @@ from app.services.stamping.die_fee.calc.orchestrator.missing_die_number import (
 )
 from app.services.stamping.die_fee.calc.orchestrator.prep import CalcPrepContext
 from app.services.stamping.die_fee.calc.orchestrator.progress import ProgressNotifier
+
+logger = logging.getLogger("service.stamping.die_fee.calc")
 
 
 def persist_calc_result(
@@ -95,4 +99,12 @@ def persist_calc_result(
         )
     db.commit()
     progress.report(100, "计算完成")
+    logger.info(
+        "年度模具费计算完成: year=%s location=%s vehicle=%s success=%s skipped=%s",
+        dto.year,
+        dto.location,
+        dto.vehicle_model,
+        result.success_count,
+        result.skipped_no_die_count,
+    )
     return result

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import logging
+
 from sqlalchemy.orm import Session
 
 from app.common.audit import display_name
@@ -24,6 +26,8 @@ from app.services.costing.stamping_part_cost.calc.orchestrator.batch_engine impo
 from app.services.costing.stamping_part_cost.calc.orchestrator.deps import PartCostCalcDeps
 from app.services.costing.stamping_part_cost.calc.orchestrator.prep import CalcPrepContext
 from app.services.costing.stamping_part_cost.calc.orchestrator.progress import ProgressNotifier
+
+logger = logging.getLogger("service.stamping_part_cost.calc")
 
 
 def persist_calc_result(
@@ -103,4 +107,15 @@ def persist_calc_result(
         )
 
     progress.report(100, "计算完成")
+    logger.info(
+        "零件价格核算完成: year=%s month=%s location=%s supplier=%s "
+        "success=%s failed=%s skipped_approved=%s",
+        dto.year,
+        dto.month,
+        ctx.location,
+        ALL_SUPPLIERS_LOCK,
+        result.success_count,
+        result.failed_count,
+        result.skipped_approved_count,
+    )
     return result

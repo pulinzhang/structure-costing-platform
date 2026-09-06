@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 
+from app.common.steel_grade_category import as_canonical_category
 from app.schemas.vo.steel_grade_category_vo import SteelGradeCategoryVO
-from app.services.yishiyiyi.steel_grade_category.constants import as_canonical_category
 
 
 def resolve_canonical_category(

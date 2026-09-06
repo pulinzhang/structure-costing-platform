@@ -3,7 +3,7 @@
  * 同步导入：基地 + 年度必选，仅 .xlsx
  */
 
-import { weldingUnitPriceUploadTemplate } from './template.js?v=4';
+import { weldingUnitPriceUploadTemplate } from './template.js?v=5';
 
 const API_BASE = '/api/bom/welding-unit-price';
 const MAX_FILE_SIZE = 5 * 1024 * 1024;

@@ -11,7 +11,7 @@ import {
 import {
     winningThicknessDownloadTemplate,
     renderWinningThicknessRows,
-} from './template.js?v=10';
+} from './template.js?v=11';
 
 const winningThicknessState = {
     records: [],

@@ -9,7 +9,6 @@ from decimal import Decimal
 from sqlalchemy.orm import Session
 
 from app.common.audit import audit_create, display_name
-from app.common.money import Q2, Q4, optional_format_money
 from app.exceptions import BusinessException, NotFoundException
 from app.models.stamping import StampingPart
 from app.repositories.stamping.stamping_part_repository import MaterialSpecRow
@@ -47,24 +46,12 @@ from app.schemas.vo.user_vo import UserVO
 logger = logging.getLogger("service.stamping")
 
 
-def _join_formatted_numbers(
-    values: list[Decimal | None],
-    quant: Decimal,
-    places: int,
-) -> str | None:
-    """按顺序把数值格式化后用 / 拼接；全空则 None。"""
-    texts: list[str] = []
-    for value in values:
-        text = optional_format_money(value, quant, places)
-        if text is not None:
-            texts.append(text)
-    if not texts:
-        return None
-    return "/".join(texts)
+def _nonempty_decimals(values: list[Decimal | None]) -> list[Decimal]:
+    return [value for value in values if value is not None]
 
 
 def _material_row_from_part(part: StampingPart) -> StampingMaterialResponse:
-    """普通件用主表尺寸；拼焊件用各子片料厚/长/宽拼接。"""
+    """普通件用主表尺寸；拼焊件用各子片料厚/长/宽（JSON 拼接在 VO）。"""
     blanks = sorted(
         list(part.tailor_weld_blanks or []),
         key=lambda blank: (blank.blank_seq or 0, blank.id or 0),
@@ -75,15 +62,15 @@ def _material_row_from_part(part: StampingPart) -> StampingMaterialResponse:
             material = (blanks[0].material or "").strip() or None
         return StampingMaterialResponse(
             material=material,
-            thickness=_join_formatted_numbers([blank.thickness for blank in blanks], Q2, 2),
-            sheet_length=_join_formatted_numbers([blank.sheet_length for blank in blanks], Q2, 2),
-            sheet_width=_join_formatted_numbers([blank.sheet_width for blank in blanks], Q2, 2),
+            thickness=_nonempty_decimals([blank.thickness for blank in blanks]),
+            sheet_length=_nonempty_decimals([blank.sheet_length for blank in blanks]),
+            sheet_width=_nonempty_decimals([blank.sheet_width for blank in blanks]),
         )
     return StampingMaterialResponse(
         material=material,
-        thickness=optional_format_money(part.thickness, Q4, 4),
-        sheet_length=optional_format_money(part.sheet_length, Q2, 2),
-        sheet_width=optional_format_money(part.sheet_width, Q2, 2),
+        thickness=_nonempty_decimals([part.thickness]),
+        sheet_length=_nonempty_decimals([part.sheet_length]),
+        sheet_width=_nonempty_decimals([part.sheet_width]),
     )
 
 
@@ -226,10 +213,17 @@ class StampingPartService:
         )
 
         unique_rows: list[StampingMaterialResponse] = []
-        seen: set[tuple[str | None, str | None, str | None, str | None]] = set()
+        seen: set[
+            tuple[str | None, tuple[Decimal, ...], tuple[Decimal, ...], tuple[Decimal, ...]]
+        ] = set()
         for part in parts:
             row = _material_row_from_part(part)
-            key = (row.material, row.thickness, row.sheet_length, row.sheet_width)
+            key = (
+                row.material,
+                tuple(row.thickness),
+                tuple(row.sheet_length),
+                tuple(row.sheet_width),
+            )
             if key in seen:
                 continue
             seen.add(key)
@@ -238,9 +232,9 @@ class StampingPartService:
         unique_rows.sort(
             key=lambda row: (
                 row.material or "",
-                row.thickness or "",
-                row.sheet_length or "",
-                row.sheet_width or "",
+                tuple(row.thickness),
+                tuple(row.sheet_length),
+                tuple(row.sheet_width),
             )
         )
         total = len(unique_rows)

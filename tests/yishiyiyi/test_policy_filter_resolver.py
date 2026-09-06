@@ -1,10 +1,10 @@
 """政策筛选：档案大类 / 牌号 → 政策 category_name 别名。"""
 
+from app.common.steel_grade_category import CANONICAL_CATEGORY_NAMES
 from app.schemas.dto.steel_grade_category_dto import SteelGradeCategoryCreate
 from app.schemas.vo.user_vo import UserVO
 from app.services.yishiyiyi.policy.filter_resolver import resolve_policy_category_filter
 from app.services.yishiyiyi.steel_grade_category import SteelGradeCategoryService
-from app.services.yishiyiyi.steel_grade_category.constants import CANONICAL_CATEGORY_NAMES
 
 
 def _seed_grade(db_session, grade: str, category_name: str) -> None:

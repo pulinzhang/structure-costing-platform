@@ -5,6 +5,7 @@ from typing import TypedDict
 from sqlalchemy import func
 from sqlalchemy.orm import Query, Session
 
+from app.common.types.repository_types import BomCascadeFilterOptions
 from app.models.bom import BomNode, BomSnapshot
 from app.repositories.persist import model_from_payload
 from app.schemas.dto.bom_dto import BomNodeWrite, BomSnapshotWrite
@@ -278,7 +279,7 @@ class BomSnapshotRepository:
         location: str | None = None,
         vehicle_model: str | None = None,
         status: str | None = "active",
-    ) -> dict[str, list[str]]:
+    ) -> BomCascadeFilterOptions:
         """
         材料清单级联：
         - 基地：全量

@@ -53,7 +53,7 @@ def list_steel_prices(
         total=total,
         page=query.page,
         page_size=query.size,
-        filters=filters.model_dump(),
+        filters=filters,
     )
 
 

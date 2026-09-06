@@ -19,11 +19,12 @@ import uuid
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
-from typing import Any
 
+from sqlalchemy.engine import Connection
 from sqlalchemy.orm import Session
 
 from app.common.timezone import now
+from app.common.types.repository_types import AsyncTaskSnapshot
 from app.database import AuxiliaryDatabaseConfig, DatabaseConfig
 from app.exceptions.base import NotFoundException
 from app.models.async_task import AsyncTask
@@ -76,7 +77,7 @@ class AsyncTaskService:
     def __init__(self) -> None:
         self.repository = AsyncTaskRepository()
 
-    def _autocommit_connection(self) -> Any:
+    def _autocommit_connection(self) -> Connection:
         """辅助库独立连接 + AUTOCOMMIT（进度立即对轮询可见）。"""
         engine = AuxiliaryDatabaseConfig.get_engine()
         return engine.connect().execution_options(isolation_level="AUTOCOMMIT")
@@ -91,7 +92,7 @@ class AsyncTaskService:
         *,
         status: str | None,
         progress: int | None,
-        result: Any,
+        result: object | None,
     ) -> bool:
         if status in (STATUS_COMPLETED, STATUS_FAILED) or result is not None:
             with _progress_throttle_lock:
@@ -149,7 +150,7 @@ class AsyncTaskService:
         finally:
             db.close()
 
-    def get_task_snapshot(self, task_id: str) -> dict[str, Any] | None:
+    def get_task_snapshot(self, task_id: str) -> AsyncTaskSnapshot | None:
         """轮询快照：只读辅助库。"""
         record = self.get_by_task_id(task_id)
         if record is None:
@@ -166,7 +167,7 @@ class AsyncTaskService:
             "updated_at": record.updated_at,
         }
 
-    def require_snapshot(self, task_id: str, task_type: str) -> dict[str, Any]:
+    def require_snapshot(self, task_id: str, task_type: str) -> AsyncTaskSnapshot:
         """轮询入口：类型不匹配或已过期则 404。"""
         snapshot = self.get_task_snapshot(task_id)
         if snapshot is None or snapshot.get("task_type") != task_type:
@@ -180,7 +181,7 @@ class AsyncTaskService:
         status: str | None = None,
         progress: int | None = None,
         message: str | None = None,
-        result: Any = None,
+        result: object | None = None,
     ) -> None:
         """AUTOCOMMIT 更新任务（辅助库）。"""
         values: AsyncTaskPatch = {"updated_at": now()}
@@ -203,7 +204,7 @@ class AsyncTaskService:
         status: str | None = None,
         progress: int | None = None,
         message: str | None = None,
-        result: Any = None,
+        result: object | None = None,
     ) -> None:
         """后台线程专用：写入辅助库。"""
         if self._should_skip_db_write(task_id, status=status, progress=progress, result=result):
@@ -317,14 +318,15 @@ class AsyncTaskService:
         )
 
     @staticmethod
-    def parse_result_json(result_json: str | None) -> Any:
+    def parse_result_json(result_json: str | None) -> object | None:
         if not result_json:
             return None
         try:
-            return json.loads(result_json)
+            parsed: object = json.loads(result_json)
         except json.JSONDecodeError:
             return None
+        return parsed
 
     @staticmethod
-    def submit(fn: Callable[..., Any], *args: Any, **kwargs: Any) -> None:
+    def submit(fn: Callable[..., object], *args: object, **kwargs: object) -> None:
         _executor.submit(fn, *args, **kwargs)

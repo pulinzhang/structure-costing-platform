@@ -11,8 +11,6 @@ BOM 焊接费计算编排器（预备 → 引擎 → 收尾）
 
 from __future__ import annotations
 
-import logging
-
 from sqlalchemy.orm import Session
 
 from app.common.audit import display_name
@@ -46,8 +44,6 @@ from app.services.bom.welding_fee.calc.orchestrator.progress import (
 )
 from app.services.bom.welding_fee.calc.orchestrator.ready import collect_calc_ready
 from app.services.bom.welding_fee.calc.staff_report import calc_finish_toast
-
-logger = logging.getLogger("service.bom.welding_fee.calc")
 
 
 class BomWeldingFeeCalcOrchestrator:
@@ -136,20 +132,18 @@ class BomWeldingFeeCalcOrchestrator:
         log_id: int | None = None,
         calc_batch_id: str | None = None,
     ) -> BomWeldingFeeCalcResultVO:
-        deps = self._deps
         progress = ProgressNotifier(progress_callback)
-
-        ctx = prepare_calc_run(db, deps, dto, progress)
-        batch = BatchCalculationEngine(deps).run(
+        ctx = prepare_calc_run(db, self._deps, dto, progress)
+        batch = BatchCalculationEngine(self._deps).run(
             db,
             ctx=ctx,
             current_user=current_user,
             calc_batch_id=calc_batch_id,
             progress=progress,
         )
-        result = persist_calc_result(
+        return persist_calc_result(
             db,
-            deps,
+            self._deps,
             ctx=ctx,
             batch=batch,
             current_user=current_user,
@@ -157,20 +151,6 @@ class BomWeldingFeeCalcOrchestrator:
             calc_batch_id=calc_batch_id,
             progress=progress,
         )
-        logger.info(
-            "焊接费计算完成: year=%s location=%s vehicle=%s version=%s "
-            "created=%s updated=%s failed=%s skipped=%s missing_price=%s",
-            ctx.year,
-            ctx.location,
-            ctx.vehicle_model,
-            ctx.bom_version,
-            result.created_count,
-            result.updated_count,
-            result.failed_count,
-            result.skipped_approved_count,
-            result.missing_price_count,
-        )
-        return result
 
     def start_calc(
         self,

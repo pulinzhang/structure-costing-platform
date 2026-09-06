@@ -76,22 +76,10 @@ class AssemblyCostCalcOrchestrator:
         log_id: int | None = None,
         calc_batch_id: str | None = None,
     ) -> AssemblyCostCalcResultVO:
-        deps = self._deps
         progress = ProgressNotifier(progress_callback)
-
-        def release_lock_on_error(exc: BaseException) -> None:
-            if log_id is None:
-                return
-            try:
-                deps.calc_log_service.mark_log_failed(
-                    db, log_id=log_id, detail_text=f"计算失败: {exc}"
-                )
-            except Exception:
-                logger.exception("释放成品核价计算锁失败: log_id=%s", log_id)
-
         try:
-            ctx = prepare_calc_run(db, deps, dto, progress)
-            batch = BatchCalculationEngine(deps).run(
+            ctx = prepare_calc_run(db, self._deps, dto, progress)
+            batch = BatchCalculationEngine(self._deps).run(
                 db,
                 ctx=ctx,
                 current_user=current_user,
@@ -100,13 +88,28 @@ class AssemblyCostCalcOrchestrator:
             )
             return persist_calc_result(
                 db,
-                deps,
+                self._deps,
                 ctx=ctx,
                 batch=batch,
                 log_id=log_id,
                 progress=progress,
             )
         except Exception as exc:
-            logger.exception("成品核价整批失败: %s", exc)
-            release_lock_on_error(exc)
+            self._release_calc_lock(db, log_id, exc)
             raise
+
+    def _release_calc_lock(
+        self,
+        db: Session,
+        log_id: int | None,
+        exc: BaseException,
+    ) -> None:
+        logger.exception("成品核价整批失败: %s", exc)
+        if log_id is None:
+            return
+        try:
+            self._deps.calc_log_service.mark_log_failed(
+                db, log_id=log_id, detail_text=f"计算失败: {exc}"
+            )
+        except Exception:
+            logger.exception("释放成品核价计算锁失败: log_id=%s", log_id)

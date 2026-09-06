@@ -3,6 +3,15 @@
  * 基地 + 年度 + 项目必选；支持生产样例表或平台扁平模板
  */
 
+import {
+    BTN_FILE_SELECT,
+    BTN_GHOST,
+    BTN_UPLOAD_SUBMIT,
+    UPLOAD_DROPZONE,
+    UPLOAD_INPUT,
+    UPLOAD_LABEL,
+} from '../../../../ui-classes.js?v=1';
+
 export function pkgTransportFeeUploadTemplate() {
     return `
         <div class="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-3">
@@ -31,24 +40,24 @@ export function pkgTransportFeeUploadTemplate() {
                                 </div>
                                 <div class="ml-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
                                     <div>
-                                        <label for="pkgTransportFeeUploadLocation" class="upload-label">
+                                        <label for="pkgTransportFeeUploadLocation" class="${UPLOAD_LABEL}">
                                             采购基地 <span class="text-[#d32f2f]">*</span>
                                         </label>
-                                        <select id="pkgTransportFeeUploadLocation" name="location" required class="upload-input w-full text-[11px]">
+                                        <select id="pkgTransportFeeUploadLocation" name="location" required class="${UPLOAD_INPUT} w-full">
                                             <option value="">请选择采购基地</option>
                                         </select>
                                     </div>
                                     <div>
-                                        <label for="pkgTransportFeeUploadYear" class="upload-label">
+                                        <label for="pkgTransportFeeUploadYear" class="${UPLOAD_LABEL}">
                                             年度 <span class="text-[#d32f2f]">*</span>
                                         </label>
-                                        <input type="text" id="pkgTransportFeeUploadYear" name="year" placeholder="例如：2026" required pattern="[0-9]{4}" maxlength="4" class="upload-input w-full">
+                                        <input type="text" id="pkgTransportFeeUploadYear" name="year" placeholder="例如：2026" required pattern="[0-9]{4}" maxlength="4" class="${UPLOAD_INPUT} w-full">
                                     </div>
                                     <div>
-                                        <label for="pkgTransportFeeUploadVehicleModel" class="upload-label">
+                                        <label for="pkgTransportFeeUploadVehicleModel" class="${UPLOAD_LABEL}">
                                             项目 <span class="text-[#d32f2f]">*</span>
                                         </label>
-                                        <select id="pkgTransportFeeUploadVehicleModel" name="vehicle_model" required class="upload-input w-full text-[11px]">
+                                        <select id="pkgTransportFeeUploadVehicleModel" name="vehicle_model" required class="${UPLOAD_INPUT} w-full">
                                             <option value="">请先选择采购基地</option>
                                         </select>
                                     </div>
@@ -71,7 +80,7 @@ export function pkgTransportFeeUploadTemplate() {
                                     <span class="text-[13px] text-[#6b6b6b] font-medium tracking-wide uppercase">上传包装运输费表</span>
                                 </div>
                                 <div class="ml-6">
-                                    <div id="pkgTransportFeeUploadZone" class="upload-dropzone mb-4">
+                                    <div id="pkgTransportFeeUploadZone" class="${UPLOAD_DROPZONE} mb-4" data-dropzone-state="idle">
                                         <div id="pkgTransportFeeUploadDropIdle" class="flex flex-col items-center gap-0">
                                             <div class="mb-3 relative">
                                                 <div class="absolute inset-0 bg-[#d32f2f]/8 blur-xl rounded-full"></div>
@@ -82,7 +91,7 @@ export function pkgTransportFeeUploadTemplate() {
                                             <h5 id="pkgTransportFeeUploadTitle" class="text-[11px] text-[#606060] font-semibold tracking-widest uppercase mb-1">拖拽文件到此处</h5>
                                             <p id="pkgTransportFeeUploadHint" class="text-[10px] text-[#3a3a3a] mb-6">或点击下方按钮选择文件</p>
                                             <input type="file" id="pkgTransportFeeUploadFileInput" class="hidden" accept=".xlsx">
-                                            <button type="button" id="pkgTransportFeeUploadSelectFileBtn" class="btn-file-select">
+                                            <button type="button" id="pkgTransportFeeUploadSelectFileBtn" class="${BTN_FILE_SELECT}">
                                                 ${window.svgIcon('folder', 'w-3.5 h-3.5')}
                                                 浏览文件
                                             </button>
@@ -101,8 +110,8 @@ export function pkgTransportFeeUploadTemplate() {
                                     </div>
                                     <div id="pkgTransportFeeUploadFilePreview" class="hidden mb-4"></div>
                                     <div class="flex items-center justify-end gap-3">
-                                        <button type="button" id="pkgTransportFeeUploadResetBtn" class="btn-ghost">重置</button>
-                                        <button type="submit" id="pkgTransportFeeUploadSubmitBtn" disabled class="btn-upload-submit disabled:opacity-30 disabled:pointer-events-none">上传</button>
+                                        <button type="button" id="pkgTransportFeeUploadResetBtn" class="${BTN_GHOST}">重置</button>
+                                        <button type="submit" id="pkgTransportFeeUploadSubmitBtn" disabled class="${BTN_UPLOAD_SUBMIT}">上传</button>
                                     </div>
                                 </div>
                             </div>

@@ -7,12 +7,18 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
 
 from sqlalchemy.orm import Session
 
 from app.common.timezone import now
+from app.common.types.repository_types import (
+    EngineCountsJson,
+    EngineStepSummaryJson,
+    StepMetricsJson,
+    SummaryJson,
+)
 from app.models.costing.costing_engine_run import CostingEngineRun
+from app.models.costing.costing_engine_run_step import CostingEngineRunStep
 from app.repositories.costing.engine.costing_engine_run_repository import (
     CostingEngineRunRepository,
 )
@@ -78,7 +84,7 @@ class RunOrchestrator:
         annual_items: list[CostingEngineAnnualItemVO],
         current_user: UserVO,
         progress_callback: ProgressFn | None = None,
-    ) -> dict[str, Any]:
+    ) -> SummaryJson:
         progress = ProgressNotifier(progress_callback)
         self._ensure_run(db, run_id)
         progress.report_stage("gate_plan", 1, 1, "门禁已通过，开始执行")
@@ -142,7 +148,7 @@ class RunOrchestrator:
         discovery: DiscoveryResult,
         item: CostingEngineAnnualItemVO,
         current_user: UserVO,
-    ) -> tuple[bool, str, dict[str, Any] | None]:
+    ) -> tuple[bool, str, StepMetricsJson | None]:
         try:
             if item.code == "annual_process_fee":
                 process_fee_dto = StampingProcessFeeCalcDTO(
@@ -167,17 +173,11 @@ class RunOrchestrator:
                     vehicle_model=vehicle_model,
                     bom_version=bom_version,
                 )
-                result_vo, error = self.breakdown_svc.generate(
-                    db, breakdown_dto, current_user=current_user
-                )
-                if error:
-                    return False, error, None
+                self.breakdown_svc.generate(db, breakdown_dto, current_user=current_user)
                 return (
                     True,
                     "焊接工艺拆解补算完成",
-                    {
-                        "result": bool(result_vo),
-                    },
+                    {"result": True},
                 )
 
             if item.code == "annual_welding_fee":
@@ -210,7 +210,7 @@ class RunOrchestrator:
         *,
         discovery: DiscoveryResult,
         current_user: UserVO,
-    ) -> tuple[bool, str, dict[str, Any] | None]:
+    ) -> tuple[bool, str, StepMetricsJson | None]:
         try:
             request = SteelPriceCalcRequest(
                 year=discovery.year,
@@ -243,7 +243,7 @@ class RunOrchestrator:
         discovery: DiscoveryResult,
         vehicle_model: str,
         current_user: UserVO,
-    ) -> tuple[bool, str, dict[str, Any] | None]:
+    ) -> tuple[bool, str, StepMetricsJson | None]:
         try:
             dto = StampingPartCostCalcDTO(
                 year=discovery.year,
@@ -267,7 +267,7 @@ class RunOrchestrator:
         discovery: DiscoveryResult,
         scope: L0Scope,
         current_user: UserVO,
-    ) -> tuple[bool, str, dict[str, Any] | None]:
+    ) -> tuple[bool, str, StepMetricsJson | None]:
         try:
             dto = AssemblyCostCalcDTO(
                 year=discovery.year,
@@ -302,7 +302,7 @@ class RunOrchestrator:
         scope_key: str,
         status: str,
         message: str | None,
-    ) -> Any:
+    ) -> CostingEngineRunStep:
         self._ensure_run(db, run_id)
         step = self.run_repo.create_step(
             db,
@@ -326,8 +326,8 @@ class RunOrchestrator:
         scope_key: str,
         status: str,
         message: str | None,
-        metrics: dict[str, Any] | None,
-    ) -> Any:
+        metrics: StepMetricsJson | None,
+    ) -> CostingEngineRunStep:
         self._ensure_run(db, run_id)
         step = self.run_repo.create_step(
             db,
@@ -356,7 +356,7 @@ class RunOrchestrator:
         run_id: int,
         *,
         status: str,
-        summary: dict[str, Any],
+        summary: SummaryJson,
     ) -> None:
         try:
             run = self._ensure_run(db, run_id)
@@ -383,7 +383,7 @@ class RunOrchestrator:
     @staticmethod
     def _step_summary(
         stage: str, scope_key: str, status: str, message: str | None
-    ) -> dict[str, Any]:
+    ) -> EngineStepSummaryJson:
         return {
             "stage": stage,
             "scope_key": scope_key,
@@ -392,8 +392,8 @@ class RunOrchestrator:
         }
 
     @staticmethod
-    def _resolve_run_status(steps: list[dict[str, Any]]) -> str:
-        statuses = [s["status"] for s in steps]
+    def _resolve_run_status(steps: list[EngineStepSummaryJson]) -> str:
+        statuses = [s.get("status") or "" for s in steps]
         has_success = any(s in ("succeeded", "skipped") for s in statuses)
         has_failed = any(s == "failed" for s in statuses)
         # skipped 因已有结果算成功路径；因上游失败的 skipped 仍算未全绿
@@ -406,15 +406,26 @@ class RunOrchestrator:
     @staticmethod
     def _build_summary(
         discovery: DiscoveryResult,
-        steps: list[dict[str, Any]],
+        steps: list[EngineStepSummaryJson],
         *,
         run_status: str,
-    ) -> dict[str, Any]:
-        counts = {"succeeded": 0, "failed": 0, "skipped": 0}
+    ) -> SummaryJson:
+        succeeded = 0
+        failed = 0
+        skipped = 0
         for step in steps:
-            key = step["status"]
-            if key in counts:
-                counts[key] += 1
+            key = step.get("status")
+            if key == "succeeded":
+                succeeded += 1
+            elif key == "failed":
+                failed += 1
+            elif key == "skipped":
+                skipped += 1
+        counts: EngineCountsJson = {
+            "succeeded": succeeded,
+            "failed": failed,
+            "skipped": skipped,
+        }
         return {
             "status": run_status,
             "location": discovery.location,

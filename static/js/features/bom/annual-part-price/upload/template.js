@@ -3,6 +3,15 @@
  * 下载模板：基地 + 项目 + 年度；导入仍按基地 + 年度写入价表
  */
 
+import {
+    BTN_FILE_SELECT,
+    BTN_GHOST,
+    BTN_UPLOAD_SUBMIT,
+    UPLOAD_DROPZONE,
+    UPLOAD_INPUT,
+    UPLOAD_LABEL,
+} from '../../../../ui-classes.js?v=1';
+
 export function annualPartPriceUploadTemplate() {
     return `
         <div class="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-3">
@@ -31,29 +40,29 @@ export function annualPartPriceUploadTemplate() {
                                 </div>
                                 <div class="ml-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
                                     <div>
-                                        <label for="annualPartPriceUploadLocation" class="upload-label">
+                                        <label for="annualPartPriceUploadLocation" class="${UPLOAD_LABEL}">
                                             采购基地 <span class="text-[#d32f2f]">*</span>
                                         </label>
                                         <select id="annualPartPriceUploadLocation"
                                                 name="location"
                                                 required
-                                                class="upload-input w-full text-[11px]">
+                                                class="${UPLOAD_INPUT} w-full">
                                             <option value="">请选择采购基地</option>
                                         </select>
                                     </div>
                                     <div>
-                                        <label for="annualPartPriceUploadVehicleModel" class="upload-label">
+                                        <label for="annualPartPriceUploadVehicleModel" class="${UPLOAD_LABEL}">
                                             项目 <span class="text-[#d32f2f]">*</span>
                                         </label>
                                         <select id="annualPartPriceUploadVehicleModel"
                                                 name="vehicle_model"
                                                 required
-                                                class="upload-input w-full text-[11px]">
+                                                class="${UPLOAD_INPUT} w-full">
                                             <option value="">请先选择采购基地</option>
                                         </select>
                                     </div>
                                     <div>
-                                        <label for="annualPartPriceUploadYear" class="upload-label">
+                                        <label for="annualPartPriceUploadYear" class="${UPLOAD_LABEL}">
                                             年度 <span class="text-[#d32f2f]">*</span>
                                         </label>
                                         <input type="text"
@@ -63,7 +72,7 @@ export function annualPartPriceUploadTemplate() {
                                                required
                                                pattern="[0-9]{4}"
                                                maxlength="4"
-                                               class="upload-input w-full">
+                                               class="${UPLOAD_INPUT} w-full">
                                     </div>
                                 </div>
                                 <p class="ml-6 mt-1.5 text-[11px] text-[#616161]">下载模板须选基地、项目、年度。行来自该项目采购对象标准件与胶，以及 BOM 叶子且不在本项目工艺库的零件。原供货类型按行填写，板料为「沿用」不是「标准件/胶等」。导入仍写入该基地该年</p>
@@ -79,7 +88,7 @@ export function annualPartPriceUploadTemplate() {
                                     <span class="text-[13px] text-[#6b6b6b] font-medium tracking-wide uppercase">上传年度零件价表</span>
                                 </div>
                                 <div class="ml-6">
-                                    <div id="annualPartPriceUploadZone" class="upload-dropzone mb-4">
+                                    <div id="annualPartPriceUploadZone" class="${UPLOAD_DROPZONE} mb-4" data-dropzone-state="idle">
                                         <div id="annualPartPriceUploadDropIdle" class="flex flex-col items-center gap-0">
                                             <div class="flex items-center gap-3 mb-5 w-full px-3">
                                                 <div class="h-px flex-1 bg-[#2a2a2a]"></div>
@@ -102,7 +111,7 @@ export function annualPartPriceUploadTemplate() {
                                             <input type="file" id="annualPartPriceUploadFileInput" class="hidden" accept=".xlsx">
                                             <button type="button"
                                                     id="annualPartPriceUploadSelectFileBtn"
-                                                    class="btn-file-select">
+                                                    class="${BTN_FILE_SELECT}">
                                                 ${window.svgIcon('folder', 'w-3.5 h-3.5')}
                                                 浏览文件
                                             </button>
@@ -133,14 +142,14 @@ export function annualPartPriceUploadTemplate() {
                                     <div class="flex items-center justify-end gap-3">
                                         <button type="button"
                                                 id="annualPartPriceUploadResetBtn"
-                                                class="btn-ghost">
+                                                class="${BTN_GHOST}">
                                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                                             重置
                                         </button>
                                         <button type="submit"
                                                 id="annualPartPriceUploadSubmitBtn"
                                                 disabled
-                                                class="btn-upload-submit disabled:opacity-30 disabled:pointer-events-none">
+                                                class="${BTN_UPLOAD_SUBMIT}">
                                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
                                             上传
                                         </button>

@@ -8,6 +8,7 @@ from datetime import datetime, time
 from sqlalchemy import and_, or_
 from sqlalchemy.orm import Query, Session
 
+from app.common.types.repository_types import FileTraceFilterValues
 from app.models.file_trace.upload_file import UploadFile
 from app.schemas.dto.file_trace_dto import UploadFileListQuery
 
@@ -163,7 +164,7 @@ class UploadFileRepository:
         self,
         db: Session,
         allowed_categories: list[str],
-    ) -> dict[str, list[str | int]]:
+    ) -> FileTraceFilterValues:
         if not allowed_categories:
             return {
                 "categories": [],

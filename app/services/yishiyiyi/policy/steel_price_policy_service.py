@@ -157,9 +157,11 @@ class SteelPricePolicyService:
         steel_mill: str | None = None,
         category_name: str | None = None,
         grade_value: str | None = None,
-        skip: int = 0,
-        limit: int | None = None,
+        page: int = 1,
+        size: int | None = None,
     ) -> list[ExportRow]:
+        page = max(page, 1)
+        skip = 0 if size is None else (page - 1) * size
         return self._export_service.get_export_data(
             db,
             year=year,
@@ -168,7 +170,7 @@ class SteelPricePolicyService:
             category_name=category_name,
             grade_value=grade_value,
             skip=skip,
-            limit=limit,
+            limit=size,
         )
 
     def count_export_data(

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import logging
+
 from sqlalchemy.orm import Session
 
 from app.common.audit import display_name
@@ -18,6 +20,8 @@ from app.services.bom.welding_fee.calc.orchestrator.deps import WeldingFeeCalcDe
 from app.services.bom.welding_fee.calc.orchestrator.prep import CalcPrepContext
 from app.services.bom.welding_fee.calc.orchestrator.progress import ProgressNotifier
 from app.services.bom.welding_fee.calc.staff_report import format_failed_staff_section
+
+logger = logging.getLogger("service.bom.welding_fee.calc")
 
 
 def persist_calc_result(
@@ -103,4 +107,17 @@ def persist_calc_result(
         )
 
     progress.report(100, "计算完成")
+    logger.info(
+        "焊接费计算完成: year=%s location=%s vehicle=%s version=%s "
+        "created=%s updated=%s failed=%s skipped=%s missing_price=%s",
+        ctx.year,
+        ctx.location,
+        ctx.vehicle_model,
+        ctx.bom_version,
+        result.created_count,
+        result.updated_count,
+        result.failed_count,
+        result.skipped_approved_count,
+        result.missing_price_count,
+    )
     return result

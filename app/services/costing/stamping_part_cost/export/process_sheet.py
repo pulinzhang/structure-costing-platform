@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 from app.common.bom.manufacturing_category import short_part_number_digits
 from app.common.excel_workbook import resolve_worksheet
 from app.common.export_watermark import workbook_to_xlsx_bytes
+from app.common.money import Q4, excel_money_cell
 from app.common.swing_shear import steel_kg_price_with_swing_shear
 from app.common.timezone import now
 from app.repositories.bom.bom_repository import BomNodeRepository, BomSnapshotRepository
@@ -700,7 +701,7 @@ def write_process_sheet_to_workbook(
                         if blank_term_has_mass_inputs(term)
                         else ""
                     ),
-                    "Q": (float(term.steel_kg_price) if term.steel_kg_price is not None else ""),
+                    "Q": excel_money_cell(term.steel_kg_price, Q4),
                     "AF": format_steel_price_excel_trace(term.steel),
                     "AI": term.steel.id if term.steel is not None else "",
                 }
@@ -715,7 +716,7 @@ def write_process_sheet_to_workbook(
                             "I": (_num(row.part_weight, 4) if row.part_weight is not None else ""),
                             "O": group_n,
                             "P": group_o,
-                            "R": float(scrap_kg) if scrap_kg is not None else "",
+                            "R": excel_money_cell(scrap_kg, Q4),
                             "S": group_r,
                             "T": process_fee_cell,
                             "U": die_fee_cell,
@@ -760,7 +761,7 @@ def write_process_sheet_to_workbook(
             material_n = f"=I{excel_row}" if row.part_weight is not None else ""
             material_o = ""
             material_p = ""
-            steel_q: float | str = ""
+            steel_q: Decimal | str = ""
             material_s = f"=I{excel_row}*R{excel_row}" if row.part_weight is not None else ""
             steel_trace = "利废：成品净重×废料单价（从废料里捡出的成品）"
         else:
@@ -770,7 +771,7 @@ def write_process_sheet_to_workbook(
             )
             material_o = f"=I{excel_row}/N{excel_row}"
             material_p = f"=N{excel_row}-I{excel_row}"
-            steel_q = float(steel_kg) if steel_kg is not None else ""
+            steel_q = excel_money_cell(steel_kg, Q4)
             material_s = (
                 f"=N{excel_row}*Q{excel_row}*(1+{formula_number(loss_rate)})"
                 f"-N{excel_row}*{formula_number(loss_rate)}"
@@ -796,7 +797,7 @@ def write_process_sheet_to_workbook(
             "O": material_o,
             "P": material_p,
             "Q": steel_q,
-            "R": float(scrap_kg) if scrap_kg is not None else "",
+            "R": excel_money_cell(scrap_kg, Q4),
             "S": material_s,
             "T": process_fee_cell,
             "U": die_fee_cell,

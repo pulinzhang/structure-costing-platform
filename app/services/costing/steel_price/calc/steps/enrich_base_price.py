@@ -7,6 +7,7 @@ from decimal import Decimal
 
 from sqlalchemy.orm import Session
 
+from app.common.money import Q4, format_money
 from app.models.yishiyiyi import SteelBasePrice
 from app.services.costing.steel_price.calc.category import resolve_canonical_category
 from app.services.costing.steel_price.calc.models import (
@@ -71,7 +72,7 @@ class BasePriceEnricher:
         for material in materials:
             location = material.location
             material_grade = (material.material or "").strip()
-            thickness_text = f"{float(material.thickness):.4f}"
+            thickness_text = format_money(material.thickness, Q4, 4)
             category_name = resolve_canonical_category(material_grade, category_map)
 
             if not category_name:

@@ -277,24 +277,42 @@ class StampingCascadeFilterOptionsVO(BaseModel):
     versions: list[str] = Field(default_factory=list, description="版本")
 
 
+def _join_decimal_texts(values: list[Decimal], quant: Decimal, places: int) -> str | None:
+    """按顺序格式化后用 / 拼接；空列表则 None（JSON 仍是字符串）。"""
+    if not values:
+        return None
+    return "/".join(format_money(value, quant, places) for value in values)
+
+
 class StampingMaterialResponse(BaseModel):
     """
     材料信息 VO（去重后的 material + 料厚 + 长/宽）。
 
-    普通件为格式化数值字符串；拼焊件按子片顺序用 ``/`` 拼接，
+    Service 传入 Decimal 列表；JSON 由 serializer 输出字符串。
+    普通件为格式化数值；拼焊件按子片顺序用 ``/`` 拼接，
     如厚度 ``0.70/1.00``、长 ``550.00/555.00``。
     """
 
     material: str | None = None
-    thickness: str | None = Field(
-        default=None, description="料厚(mm)；拼焊件为各子片拼接，如 0.70/1.00"
+    thickness: list[Decimal] = Field(
+        default_factory=list, description="料厚(mm)；拼焊件为各子片，JSON 拼接如 0.70/1.00"
     )
-    sheet_length: str | None = Field(
-        default=None, description="料片长/卷料宽(mm)；拼焊件为各子片拼接"
+    sheet_length: list[Decimal] = Field(
+        default_factory=list, description="料片长/卷料宽(mm)；拼焊件为各子片"
     )
-    sheet_width: str | None = Field(
-        default=None, description="料片宽/卷料步距(mm)；拼焊件为各子片拼接"
+    sheet_width: list[Decimal] = Field(
+        default_factory=list, description="料片宽/卷料步距(mm)；拼焊件为各子片"
     )
+
+    @field_serializer("thickness")
+    def serialize_thickness(self, values: list[Decimal]) -> str | None:
+        if len(values) >= 2:
+            return _join_decimal_texts(values, Q2, 2)
+        return _join_decimal_texts(values, Q4, 4)
+
+    @field_serializer("sheet_length", "sheet_width")
+    def serialize_sheet_dims(self, values: list[Decimal]) -> str | None:
+        return _join_decimal_texts(values, Q2, 2)
 
 
 class StampingMaterialQuery(BaseModel):

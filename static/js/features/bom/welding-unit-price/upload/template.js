@@ -3,6 +3,15 @@
  * 基地 + 年度必选；四列 Excel（名称 / 单位 / 费用 / 备注）；同步导入
  */
 
+import {
+    BTN_FILE_SELECT,
+    BTN_GHOST,
+    BTN_UPLOAD_SUBMIT,
+    UPLOAD_DROPZONE,
+    UPLOAD_INPUT,
+    UPLOAD_LABEL,
+} from '../../../../ui-classes.js?v=1';
+
 export function weldingUnitPriceUploadTemplate() {
     return `
         <div class="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-3">
@@ -31,13 +40,13 @@ export function weldingUnitPriceUploadTemplate() {
                                 </div>
                                 <div class="ml-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <div>
-                                        <label for="weldingUnitPriceUploadLocation" class="upload-label">
+                                        <label for="weldingUnitPriceUploadLocation" class="${UPLOAD_LABEL}">
                                             采购基地 <span class="text-[#d32f2f]">*</span>
                                         </label>
                                         <select id="weldingUnitPriceUploadLocation"
                                                 name="location"
                                                 required
-                                                class="upload-input w-full text-[11px]">
+                                                class="${UPLOAD_INPUT} w-full">
                                             <option value="">请选择采购基地</option>
                                             <option value="大连">大连</option>
                                             <option value="芜湖">芜湖</option>
@@ -46,7 +55,7 @@ export function weldingUnitPriceUploadTemplate() {
                                         </select>
                                     </div>
                                     <div>
-                                        <label for="weldingUnitPriceUploadYear" class="upload-label">
+                                        <label for="weldingUnitPriceUploadYear" class="${UPLOAD_LABEL}">
                                             年度 <span class="text-[#d32f2f]">*</span>
                                         </label>
                                         <input type="text"
@@ -56,7 +65,7 @@ export function weldingUnitPriceUploadTemplate() {
                                                required
                                                pattern="[0-9]{4}"
                                                maxlength="4"
-                                               class="upload-input w-full">
+                                               class="${UPLOAD_INPUT} w-full">
                                     </div>
                                 </div>
                                 <p class="ml-6 mt-1.5 text-[11px] text-[#616161]">导入时必须指定基地与年度，写入该基地该年的焊接单价</p>
@@ -72,7 +81,7 @@ export function weldingUnitPriceUploadTemplate() {
                                     <span class="text-[13px] text-[#6b6b6b] font-medium tracking-wide uppercase">上传焊接单价表</span>
                                 </div>
                                 <div class="ml-6">
-                                    <div id="weldingUnitPriceUploadZone" class="upload-dropzone mb-4">
+                                    <div id="weldingUnitPriceUploadZone" class="${UPLOAD_DROPZONE} mb-4" data-dropzone-state="idle">
                                         <div id="weldingUnitPriceUploadDropIdle" class="flex flex-col items-center gap-0">
                                             <div class="flex items-center gap-3 mb-5 w-full px-3">
                                                 <div class="h-px flex-1 bg-[#2a2a2a]"></div>
@@ -95,7 +104,7 @@ export function weldingUnitPriceUploadTemplate() {
                                             <input type="file" id="weldingUnitPriceUploadFileInput" class="hidden" accept=".xlsx">
                                             <button type="button"
                                                     id="weldingUnitPriceUploadSelectFileBtn"
-                                                    class="btn-file-select">
+                                                    class="${BTN_FILE_SELECT}">
                                                 ${window.svgIcon('folder', 'w-3.5 h-3.5')}
                                                 浏览文件
                                             </button>
@@ -148,14 +157,14 @@ export function weldingUnitPriceUploadTemplate() {
                                     <div class="flex items-center justify-end gap-3">
                                         <button type="button"
                                                 id="weldingUnitPriceUploadResetBtn"
-                                                class="btn-ghost">
+                                                class="${BTN_GHOST}">
                                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                                             重置
                                         </button>
                                         <button type="submit"
                                                 id="weldingUnitPriceUploadSubmitBtn"
                                                 disabled
-                                                class="btn-upload-submit disabled:opacity-30 disabled:pointer-events-none">
+                                                class="${BTN_UPLOAD_SUBMIT}">
                                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
                                             上传
                                         </button>

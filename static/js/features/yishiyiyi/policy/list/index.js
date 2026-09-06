@@ -4,7 +4,7 @@
  * 用于测试部门核对数据，主子表联合查询导出 Excel
  */
 
-import { policyDownloadTemplate, renderPolicyRows } from './template.js?v=31';
+import { policyDownloadTemplate, renderPolicyRows } from './template.js?v=32';
 import {
     DEFAULT_PREVIEW_PAGE_SIZE,
     PREVIEW_PAGE_SIZE_OPTIONS,

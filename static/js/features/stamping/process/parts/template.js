@@ -7,6 +7,14 @@
  */
 
 import { pageSizeSelectHtml } from '../../../../page-size.js?v=2';
+import {
+    BRABUS_PANEL,
+    BRABUS_PANEL_HEADER,
+    BRABUS_SECTION_HEADER,
+    BRABUS_TABLE_WRAPPER,
+    BTN_SAVE_DEFAULT,
+    DIE_TYPE_SELECT,
+} from '../../../../ui-classes.js?v=2';
 
 export function partsTemplate() {
     return `
@@ -89,7 +97,7 @@ export function partsTemplate() {
                 <!-- 战术胶囊筛选栏：默认收起-->
                 <div class="px-5 py-3 border-b border-[#14141A]"
                      style="background: linear-gradient(180deg, #0C0C10 0%, #0A0A0E 100%);">
-                    <div class="flex items-center justify-between gap-4 bg-[#0C0C10] border border-[#1E1E26] px-4 py-2.5 rounded-xl font-mono text-[11px]"
+                    <div class="flex items-center justify-between gap-4 bg-[#0C0C10] border border-[#1E1E26] px-4 py-2.5 rounded-md font-mono text-[11px]"
                          style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.02), 0 0 20px rgba(0,0,0,0.3);">
                         <div class="flex items-center gap-3 min-w-0 flex-1">
                             <span class="text-[#555555] shrink-0 tracking-wider">当前筛选：</span>
@@ -466,7 +474,7 @@ function renderProcessRow(p, idx) {
                     <td class="px-4 py-4 text-right text-[11px] font-mono text-[#777777] tracking-[0.06em]">${p.tonnage ? `${p.tonnage}T` : '—'}</td>
                     <td class="px-4 py-4">
                         <div class="flex items-center gap-2">
-                            <select class="die-type-select h-7 px-2 text-[10px] bg-[#0a0a0a] border border-[#2c2c2c] appearance-none cursor-pointer text-[#9e9e9e] focus:outline-none focus:border-[#ff5252] transition-all rounded-sm" data-original-die-type="${currentDieType}">
+                            <select class="${DIE_TYPE_SELECT}" data-original-die-type="${currentDieType}">
                                 ${DIE_TYPE_OPTIONS.map(o => `<option value="${o.value}" ${o.value === currentDieType ? 'selected' : ''}>${o.label}</option>`).join('')}
                             </select>
                             <span class="text-[9px] font-mono text-[#555555] tracking-[0.05em]" title="模具成本比例">${p.cost_ratio != null ? `${(p.cost_ratio * 100).toFixed(0)}%` : '—'}</span>
@@ -512,8 +520,8 @@ export function renderDetailContent(part, options = {}) {
             <!-- 顶部信息区域 -->
             <div class="flex gap-3 p-4">
                 <!-- 左侧：基本信息-->
-                <div class="flex-1 brabus-panel">
-                    <div class="brabus-panel-header flex items-center justify-between">
+                <div class="flex-1 ${BRABUS_PANEL}">
+                    <div class="${BRABUS_PANEL_HEADER} flex items-center justify-between">
                         <div class="flex items-center gap-2">
                             <span class="text-[#353535]">${svgIcon('info-circle')}</span>
                             <span class="text-[9px] font-semibold text-[#484848] uppercase tracking-[0.22em]">基本信息</span>
@@ -527,8 +535,8 @@ export function renderDetailContent(part, options = {}) {
                     <table class="w-full">${rows.map(detailTableRow).join('')}</table>
                 </div>
                 <!-- 右侧：尺寸参数-->
-                <div class="flex-1 brabus-panel">
-                    <div class="brabus-panel-header flex items-center gap-2">
+                <div class="flex-1 ${BRABUS_PANEL}">
+                    <div class="${BRABUS_PANEL_HEADER} flex items-center gap-2">
                         <span class="text-[#353535]">${svgIcon('ruler')}</span>
                         <span class="text-[9px] font-semibold text-[#484848] uppercase tracking-[0.22em]">尺寸参数</span>
                     </div>
@@ -540,13 +548,13 @@ export function renderDetailContent(part, options = {}) {
 
             <!-- 工序列表 -->
             <div class="mx-4 mb-4 flex flex-col shrink-0">
-                <div class="brabus-section-header flex items-center justify-between">
+                <div class="${BRABUS_SECTION_HEADER} flex items-center justify-between">
                     <div class="flex items-center gap-2">
                         <span class="text-[#353535]">${svgIcon('list-ol')}</span>
                         <span class="text-[9px] font-semibold text-[#484848] uppercase tracking-[0.22em]">工序列表</span>
                     </div>
                     <div class="flex items-center gap-2">
-                        <select id="batchDieTypeSelect" class="die-type-select" style="width:148px;">
+                        <select id="batchDieTypeSelect" class="${DIE_TYPE_SELECT}" style="width:148px;">
                             <option value="">批量修改模具类型</option>
                             ${DIE_TYPE_OPTIONS.map(o => `<option value="${o.value}">${o.label}</option>`).join('')}
                         </select>
@@ -555,7 +563,7 @@ export function renderDetailContent(part, options = {}) {
                         </button>
                     </div>
                 </div>
-                <div class="brabus-table-wrapper">
+                <div class="${BRABUS_TABLE_WRAPPER}">
                     <table class="w-full">
                         <thead class="shrink-0">
                             <tr style="background:#0c0c0c; border-bottom:1px solid #1a1a1a;">
@@ -592,7 +600,7 @@ export function renderDetailContent(part, options = {}) {
                 <div class="flex justify-center">
                     <button type="button" id="saveProcessBtn"
                             data-active="false"
-                            class="btn-save-default">
+                            class="${BTN_SAVE_DEFAULT}">
                         <span class="tracking-[0.2em]">保存</span>
                     </button>
                 </div>

@@ -9,6 +9,10 @@ from sqlalchemy import func
 from sqlalchemy.orm import InstrumentedAttribute, Query, Session
 from sqlalchemy.sql.selectable import Subquery
 
+from app.common.types.repository_types import (
+    StampingPartCascadeFilterOptions,
+    StampingPartFilterSummary,
+)
 from app.models.stamping import StampingPart, StampingProcess, StampingTailorWeldBlank
 from app.repositories.persist import apply_payload_fields, model_from_payload
 from app.schemas.dto.stamping_upload_dto import PartData, StampingPartPatch
@@ -270,7 +274,7 @@ class StampingPartRepository:
         part_number: str | None = None,
         part_name: str | None = None,
         stamping_supplier: str | None = None,
-    ) -> dict[str, int]:
+    ) -> StampingPartFilterSummary:
         """按与列表相同的筛选条件汇总去重维度数量。"""
         q = self._build_list_query(
             db,
@@ -583,7 +587,7 @@ class StampingPartRepository:
         stamping_supplier: str | None = None,
         vehicle_model: str | None = None,
         version: str | None = None,
-    ) -> dict[str, list[str]]:
+    ) -> StampingPartCascadeFilterOptions:
         """
         级联筛选选项（未选维度不参与过滤，厂优先与车优先均可）：
         - 基地：全量

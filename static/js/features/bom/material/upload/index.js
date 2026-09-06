@@ -3,7 +3,7 @@
  * 仅负责 Excel 导入，不含列表 / 删除 / 树
  */
 
-import { bomUploadTemplate } from './template.js';
+import { bomUploadTemplate } from './template.js?v=1';
 import { can } from '../../../../permissions.js?v=6';
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024;

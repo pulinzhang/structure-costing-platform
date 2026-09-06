@@ -5,6 +5,7 @@ from __future__ import annotations
 from sqlalchemy.orm import Session
 
 from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING, AUDIT_REJECTED
+from app.common.money import Q4, format_money
 from app.repositories.bom.annual_part_price_repository import BomAnnualPartPriceRepository
 from app.repositories.bom.packaging_transport_fee_repository import (
     BomPackagingTransportFeeRepository,
@@ -356,7 +357,9 @@ class GateChecker:
         for row in rows:
             self.adjustment_applier.apply_thickness(db, [row], policies)
             if row.thickness_policy_id is None and row.thickness_applicable:
-                thickness_missing.append(f"{row.grade}@{float(row.thickness):.4f}/{row.steel_mill}")
+                thickness_missing.append(
+                    f"{row.grade}@{format_money(row.thickness, Q4, 4)}/{row.steel_mill}"
+                )
 
         thickness_missing = list(dict.fromkeys(thickness_missing))[:20]
         thickness_ok = len(thickness_missing) == 0

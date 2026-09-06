@@ -5,6 +5,15 @@
  * - 拖拽区原位显示解析进度条与日志
  */
 
+import {
+    BTN_FILE_SELECT,
+    BTN_GHOST,
+    BTN_UPLOAD_SUBMIT,
+    UPLOAD_DROPZONE,
+    UPLOAD_INPUT,
+    UPLOAD_LABEL,
+} from '../../../../ui-classes.js?v=1';
+
 export function policyUploadTemplate() {
     return `
         <div class="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-3">
@@ -27,7 +36,7 @@ export function policyUploadTemplate() {
                         <!-- 生效期间：年度 + 月份（手工录入） -->
                         <div class="grid grid-cols-2 gap-3 mb-5">
                             <div class="space-y-1">
-                                <label for="policyYear" class="upload-label">
+                                <label for="policyYear" class="${UPLOAD_LABEL}">
                                     生效年度 <span class="text-[#d32f2f]">*</span>
                                 </label>
                                 <input type="text"
@@ -36,10 +45,10 @@ export function policyUploadTemplate() {
                                        placeholder="例如：2026"
                                        required
                                        pattern="[0-9]{4}"
-                                       class="upload-input">
+                                       class="${UPLOAD_INPUT}">
                             </div>
                             <div class="space-y-1">
-                                <label for="policyMonth" class="upload-label">
+                                <label for="policyMonth" class="${UPLOAD_LABEL}">
                                     生效月份 <span class="text-[#d32f2f]">*</span>
                                 </label>
                                 <input type="text"
@@ -48,12 +57,12 @@ export function policyUploadTemplate() {
                                        placeholder="例如：7"
                                        required
                                        pattern="[0-9]{1,2}"
-                                       class="upload-input">
+                                       class="${UPLOAD_INPUT}">
                             </div>
                         </div>
 
                         <!-- 拖拽上传区（解析中切换为进度面板） -->
-                        <div id="policyUploadZone" class="upload-dropzone mb-5">
+                        <div id="policyUploadZone" class="${UPLOAD_DROPZONE} mb-5" data-dropzone-state="idle">
                             <div id="policyDropIdle">
                                 ${window.svgIcon('upload', 'w-10 h-10 text-[#616161] mx-auto mb-4')}
                                 <h5 id="policyUploadTitle" class="text-xs font-medium text-[#9e9e9e] mb-1.5">拖拽文件到此处上传</h5>
@@ -61,7 +70,7 @@ export function policyUploadTemplate() {
                                 <input type="file" id="policyFileInput" class="hidden" accept=".xlsx,.xls,.xlsm">
                                 <button type="button"
                                         id="policySelectFileBtn"
-                                        class="btn-file-select">
+                                        class="${BTN_FILE_SELECT}">
                                     ${window.svgIcon('folder', 'w-3.5 h-3.5')}
                                     选择文件
                                 </button>
@@ -94,14 +103,14 @@ export function policyUploadTemplate() {
                             <button type="button"
                                     onclick="window.resetPolicyUploadForm()"
                                     id="policyResetButton"
-                                    class="btn-ghost">
+                                    class="${BTN_GHOST}">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                                 重置
                             </button>
                             <button type="submit"
                                     id="policySubmitButton"
                                     disabled
-                                    class="btn-upload-submit disabled:opacity-30 disabled:pointer-events-none">
+                                    class="${BTN_UPLOAD_SUBMIT}">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
                                 导入政策
                             </button>
@@ -119,19 +128,19 @@ export function policyUploadTemplate() {
                         <h5 class="text-xs font-semibold text-[#616161] mb-0">导入说明</h5>
                     </div>
                     <div class="p-5">
-                        <h6 class="upload-label mb-2.5">Excel 文件格式要求</h6>
+                        <h6 class="${UPLOAD_LABEL} mb-2.5">Excel 文件格式要求</h6>
                         <ul class="list-disc list-inside text-xs text-[#616161] space-y-1.5 mb-4">
                             <li>文件应包含钢价政策相关信息</li>
                             <li>支持马钢、宝钢、首钢、鞍钢等钢厂</li>
                             <li>数据从第一行开始，不要有空行</li>
                         </ul>
-                        <h6 class="upload-label mb-2.5">upsert 规则</h6>
+                        <h6 class="${UPLOAD_LABEL} mb-2.5">upsert 规则</h6>
                         <ul class="list-disc list-inside text-xs text-[#616161] space-y-1.5 mb-4">
                             <li>按 (年度, 月份, 钢厂, 钢种, 类型, 牌号, 基准厚度) 匹配</li>
                             <li>已存在的政策会被覆盖替换</li>
                             <li>支持新增和更新</li>
                         </ul>
-                        <h6 class="upload-label mb-2.5">支持的政策文件</h6>
+                        <h6 class="${UPLOAD_LABEL} mb-2.5">支持的政策文件</h6>
                         <ul class="list-disc list-inside text-xs text-[#616161] space-y-1.5">
                             <li>马钢政策</li>
                             <li>宝钢政策</li>

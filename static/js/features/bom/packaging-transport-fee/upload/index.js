@@ -3,7 +3,7 @@
  * 同步导入：基地 + 年度 + 项目必选；基地/项目取自材料清单（BOM）
  */
 
-import { pkgTransportFeeUploadTemplate } from './template.js?v=3';
+import { pkgTransportFeeUploadTemplate } from './template.js?v=4';
 
 const API_BASE = '/api/bom/packaging-transport-fee';
 const CASCADE_API = '/api/bom/filters/cascade';

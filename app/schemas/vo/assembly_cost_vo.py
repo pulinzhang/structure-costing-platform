@@ -160,6 +160,12 @@ class AssemblyCostVO(BaseModel):
     def _ser_optional_money(self, value: Decimal | None) -> str | None:
         return _money_str(value)
 
+    @field_serializer(
+        "finance_rate",
+        "management_rate",
+        "scrap_rate",
+        "pretax_profit_rate",
+    )
     def _ser_rate(self, value: Decimal) -> str:
         return f"{value.quantize(Decimal('0.000001'))}"
 

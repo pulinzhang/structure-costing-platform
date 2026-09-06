@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
+from app.common.steel_grade_category import as_canonical_category
 from app.models.yishiyiyi import SteelPricePolicy
 from app.repositories.yishiyiyi.policy import SteelPricePolicyRepository
 from app.schemas.vo.steel_grade_category_vo import SteelGradeCategoryVO
@@ -12,7 +13,6 @@ from app.services.costing.steel_price.calc.steps.adjustments.thickness import (
     ThicknessAdjustmentMatcher,
 )
 from app.services.yishiyiyi.steel_grade_category import SteelGradeCategoryService
-from app.services.yishiyiyi.steel_grade_category.constants import as_canonical_category
 
 
 class AdjustmentApplier:

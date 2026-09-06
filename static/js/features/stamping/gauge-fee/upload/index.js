@@ -2,7 +2,8 @@
  * 冲压检具费同步上传
  */
 
-import { gaugeFeeUploadTemplate } from './template.js?v=3';
+import { gaugeFeeUploadTemplate } from './template.js?v=4';
+import { setDropzoneDragActive } from '../../../../upload-dropzone.js?v=1';
 
 const API_BASE = '/api/stamping/gauge-fees';
 
@@ -57,12 +58,12 @@ const GaugeFeeUploadPage = {
         zone?.addEventListener('dragover', (event) => {
             if (!this.canUpload || this.isUploading) return;
             event.preventDefault();
-            zone.classList.add('drag-active');
+            setDropzoneDragActive(zone, true);
         });
-        zone?.addEventListener('dragleave', () => zone.classList.remove('drag-active'));
+        zone?.addEventListener('dragleave', () => setDropzoneDragActive(zone, false));
         zone?.addEventListener('drop', (event) => {
             event.preventDefault();
-            zone.classList.remove('drag-active');
+            setDropzoneDragActive(zone, false);
             if (!this.canUpload || this.isUploading) return;
             this.selectFile(event.dataTransfer?.files?.[0]);
         });

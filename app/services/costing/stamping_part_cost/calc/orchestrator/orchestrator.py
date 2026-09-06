@@ -11,8 +11,6 @@
 
 from __future__ import annotations
 
-import logging
-
 from sqlalchemy.orm import Session
 
 from app.models.costing import StampingPartCostCalcLog
@@ -22,7 +20,6 @@ from app.schemas.vo.stamping_part_cost_vo import (
     StampingPartCostCalcResultVO,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.services.costing.stamping_part_cost.calc.constants import ALL_SUPPLIERS_LOCK
 from app.services.costing.stamping_part_cost.calc.models import ProgressCallback
 from app.services.costing.stamping_part_cost.calc.orchestrator.batch_engine import (
     BatchCalculationEngine,
@@ -35,8 +32,6 @@ from app.services.costing.stamping_part_cost.calc.orchestrator.persist import pe
 from app.services.costing.stamping_part_cost.calc.orchestrator.prep import prepare_calc_run
 from app.services.costing.stamping_part_cost.calc.orchestrator.progress import ProgressNotifier
 from app.services.costing.stamping_part_cost.calc.orchestrator.ready import collect_calc_ready
-
-logger = logging.getLogger("service.stamping_part_cost.calc")
 
 
 class StampingPartCostCalcOrchestrator:
@@ -100,11 +95,9 @@ class StampingPartCostCalcOrchestrator:
         log_id: int | None = None,
         calc_batch_id: str | None = None,
     ) -> StampingPartCostCalcResultVO:
-        deps = self._deps
         progress = ProgressNotifier(progress_callback)
-
-        ctx = prepare_calc_run(db, deps, dto, progress)
-        batch = BatchCalculationEngine(deps, ctx.rates).run(
+        ctx = prepare_calc_run(db, self._deps, dto, progress)
+        batch = BatchCalculationEngine(self._deps, ctx.rates).run(
             db,
             ctx=ctx,
             dto=dto,
@@ -112,9 +105,9 @@ class StampingPartCostCalcOrchestrator:
             calc_batch_id=calc_batch_id,
             progress=progress,
         )
-        result = persist_calc_result(
+        return persist_calc_result(
             db,
-            deps,
+            self._deps,
             dto=dto,
             ctx=ctx,
             batch=batch,
@@ -123,16 +116,3 @@ class StampingPartCostCalcOrchestrator:
             calc_batch_id=calc_batch_id,
             progress=progress,
         )
-
-        logger.info(
-            "零件价格核算完成: year=%s month=%s location=%s supplier=%s "
-            "success=%s failed=%s skipped_approved=%s",
-            dto.year,
-            dto.month,
-            ctx.location,
-            ALL_SUPPLIERS_LOCK,
-            result.success_count,
-            result.failed_count,
-            result.skipped_approved_count,
-        )
-        return result

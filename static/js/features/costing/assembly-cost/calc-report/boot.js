@@ -47,36 +47,9 @@ function showToast(message, type) {
     showToast._timer = window.setTimeout(() => node.classList.remove('is-on'), 2600);
 }
 
-function parseDownloadFilename(header, fallback) {
-    if (!header) return fallback;
-    const utf8 = /filename\*=UTF-8''([^;]+)/i.exec(header);
-    if (utf8) {
-        try {
-            return decodeURIComponent(utf8[1]);
-        } catch (_error) {
-            return utf8[1];
-        }
-    }
-    const quoted = /filename="([^"]+)"/i.exec(header);
-    if (quoted) return quoted[1];
-    const plain = /filename=([^;]+)/i.exec(header);
-    return plain ? plain[1].trim() : fallback;
-}
-
-function esc(value) {
+function display(value) {
     if (value == null || value === '') return '—';
-    return String(value).replace(/[&<>"']/g, (ch) => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
-    }[ch]));
-}
-
-function token() {
-    try {
-        const session = JSON.parse(localStorage.getItem('brabus_user') || '{}');
-        return session.token || '';
-    } catch (_error) {
-        return '';
-    }
+    return window.esc(value);
 }
 
 function logIdFromUrl() {
@@ -85,24 +58,8 @@ function logIdFromUrl() {
 }
 
 async function loadLog(logId) {
-    const auth = token();
-    if (!auth) {
-        throw new Error('未登录，请先打开主系统登录后再查看报告。');
-    }
-    const response = await fetch(`/api/costing/assembly-costs/calc/logs/${logId}`, {
-        headers: {
-            'X-Token': auth,
-            Authorization: `Bearer ${auth}`,
-        },
-    });
-    const payload = await response.json().catch(() => ({}));
-    if (response.status === 401) {
-        throw new Error('登录已过期，请重新登录。');
-    }
-    if (!response.ok || payload.success === false) {
-        throw new Error(payload.message || `加载失败（${response.status}）`);
-    }
-    return payload.data || {};
+    const res = await HttpClient.get(`/api/costing/assembly-costs/calc/logs/${logId}`);
+    return res.data || {};
 }
 
 function formatWhen(value) {
@@ -161,55 +118,26 @@ function bindFilters(root) {
     root.querySelector('#reportExportAllBtn')?.addEventListener('click', () => exportExcel(false));
 }
 
-function exportQuery(useFilter) {
-    const params = new URLSearchParams();
-    if (!useFilter) return params;
-    const keyword = state.keyword.trim();
-    if (keyword) params.set('keyword', keyword);
-    if (state.status !== 'all') params.set('status', state.status);
-    if (state.level !== 'all') params.set('level', state.level);
-    if (state.treeRoot !== 'all') params.set('tree_root', state.treeRoot);
-    return params;
-}
-
 async function exportExcel(useFilter) {
     if (state.exporting || !state.logId) return;
-    const auth = token();
-    if (!auth) {
-        showToast('未登录，无法导出。', 'error');
-        return;
-    }
     state.exporting = true;
     refreshExportButtons();
-    const params = exportQuery(useFilter);
-    params.set('_t', String(Date.now()));
-    const query = params.toString();
-    const url = `/api/costing/assembly-costs/calc/logs/${state.logId}/export-download${query ? `?${query}` : ''}`;
+    const params = {};
+    if (useFilter) {
+        const keyword = state.keyword.trim();
+        if (keyword) params.keyword = keyword;
+        if (state.status !== 'all') params.status = state.status;
+        if (state.level !== 'all') params.level = state.level;
+        if (state.treeRoot !== 'all') params.tree_root = state.treeRoot;
+    }
     try {
-        const response = await fetch(url, {
-            headers: {
-                'X-Token': auth,
-                Authorization: `Bearer ${auth}`,
+        const { blob, filename } = await HttpClient.download(
+            `/api/costing/assembly-costs/calc/logs/${state.logId}/export-download`,
+            {
+                params,
+                defaultFilename: '总成核价计算报告.xlsx',
             },
-        });
-        if (response.status === 401) {
-            throw new Error('登录已过期，请重新登录。');
-        }
-        if (!response.ok) {
-            let message = `导出失败（${response.status}）`;
-            try {
-                const payload = await response.json();
-                message = payload.message || payload.detail || message;
-            } catch (_error) {
-                /* ignore */
-            }
-            throw new Error(message);
-        }
-        const filename = parseDownloadFilename(
-            response.headers.get('Content-Disposition'),
-            '总成核价计算报告.xlsx',
         );
-        const blob = await response.blob();
         const objectUrl = URL.createObjectURL(blob);
         const anchor = document.createElement('a');
         anchor.href = objectUrl;
@@ -220,7 +148,9 @@ async function exportExcel(useFilter) {
         URL.revokeObjectURL(objectUrl);
         showToast(useFilter && hasActiveFilters() ? '已导出当前筛选。' : '已导出全部核价卡。');
     } catch (error) {
-        showToast(error.message || '导出失败', 'error');
+        if (!error.status) {
+            showToast(error.message || '导出失败', 'error');
+        }
     } finally {
         state.exporting = false;
         refreshExportButtons();
@@ -279,19 +209,19 @@ function render(root) {
                 <span class="export-hint" id="reportExportHint"></span>
                 <button type="button" id="reportPrintBtn">打印</button>
                 <button type="button" id="reportExportAllBtn" class="btn-ghost" hidden>全部</button>
-                <button type="button" id="reportExportBtn" class="btn-primary">导出 Excel</button>
+                <button type="button" id="reportExportBtn" class="btn-export">导出 Excel</button>
             </div>
         </header>
         <div class="meta">
-            <div>范围 <strong>${esc(`${log.location} / ${log.vehicle_model} / ${log.bom_version}`)}</strong></div>
-            <div>核价期 <strong>${esc(period)}</strong></div>
-            <div>状态 <strong>${esc(STATUS_LABEL[log.status] || log.status)}</strong></div>
-            <div>操作人 <strong>${esc(log.operator_name)}</strong></div>
-            <div>开始 <strong>${esc(formatWhen(log.started_at))}</strong></div>
-            <div>结束 <strong>${esc(formatWhen(log.finished_at))}</strong></div>
-            <div>核价卡 <strong>${esc(log.subject_total ?? log.l0_total)}</strong></div>
+            <div>范围 <strong>${display(`${log.location} / ${log.vehicle_model} / ${log.bom_version}`)}</strong></div>
+            <div>核价期 <strong>${display(period)}</strong></div>
+            <div>状态 <strong>${display(STATUS_LABEL[log.status] || log.status)}</strong></div>
+            <div>操作人 <strong>${display(log.operator_name)}</strong></div>
+            <div>开始 <strong>${display(formatWhen(log.started_at))}</strong></div>
+            <div>结束 <strong>${display(formatWhen(log.finished_at))}</strong></div>
+            <div>核价卡 <strong>${display(log.subject_total ?? log.l0_total)}</strong></div>
             <div>成功 / 部分成功 / 失败 / 跳过
-                <strong>${esc(log.ok_count)} / ${esc(log.partial_count)} / ${esc(log.failed_count)} / ${esc(log.skipped_approved_count)}</strong>
+                <strong>${display(log.ok_count)} / ${display(log.partial_count)} / ${display(log.failed_count)} / ${display(log.skipped_approved_count)}</strong>
             </div>
         </div>
         <div class="filters">
@@ -313,8 +243,8 @@ function render(root) {
             <span class="count">显示 ${filtered.length} / ${cards.length} 张卡</span>
         </div>
         <div class="body">
-            ${log.message ? `<p class="summary">${esc(log.message)}</p>` : ''}
-            ${log.detail_text ? `<pre class="narrative">${esc(log.detail_text)}</pre>` : ''}
+            ${log.message ? `<p class="summary">${display(log.message)}</p>` : ''}
+            ${log.detail_text ? `<pre class="narrative">${display(log.detail_text)}</pre>` : ''}
             <div id="reportTableHost">${renderTable(filtered)}</div>
         </div>
     `;
@@ -338,19 +268,19 @@ function renderTable(cards) {
         const missing = (card.missing_parts || []).join('；');
         return `
             <tr>
-                <td>L${esc(card.level)}</td>
+                <td>L${display(card.level)}</td>
                 <td>${card.is_tree_root ? '树根' : '—'}</td>
                 <td>
-                    <div style="font-weight:600;">${esc(card.part_number)}</div>
-                    <div style="color:#78716c;font-size:12px;">${esc(card.part_name)}</div>
+                    <div style="font-weight:600;">${display(card.part_number)}</div>
+                    <div style="color:#78716c;font-size:12px;">${display(card.part_name)}</div>
                 </td>
-                <td class="${statusClass}">${esc(STATUS_LABEL[card.status] || card.status)}</td>
-                <td class="num">${esc(card.material_amount)}</td>
-                <td class="num">${esc(card.welding_amount)}</td>
-                <td class="num">${esc(card.should_cost)}</td>
-                <td class="num">${esc(card.grand_total)}</td>
-                <td class="num">${esc(card.missing_leaf_count)}</td>
-                <td>${esc(card.message)}${missing ? `<div class="missing">${esc(missing)}</div>` : ''}</td>
+                <td class="${statusClass}">${display(STATUS_LABEL[card.status] || card.status)}</td>
+                <td class="num">${display(card.material_amount)}</td>
+                <td class="num">${display(card.welding_amount)}</td>
+                <td class="num">${display(card.should_cost)}</td>
+                <td class="num">${display(card.grand_total)}</td>
+                <td class="num">${display(card.missing_leaf_count)}</td>
+                <td>${display(card.message)}${missing ? `<div class="missing">${display(missing)}</div>` : ''}</td>
             </tr>
         `;
     }).join('');
@@ -388,7 +318,7 @@ async function boot() {
         state.log = await loadLog(logId);
         render(root);
     } catch (error) {
-        root.innerHTML = `<p class="error">${esc(error.message || '加载失败')}</p>`;
+        root.innerHTML = `<p class="error">${display(error.message || '加载失败')}</p>`;
     }
 }
 

@@ -57,7 +57,7 @@ def list_policies(
         page=query.page,
         page_size=query.size,
         message=f"查询到 {total} 条政策",
-        filters=options.model_dump() if options else None,
+        filters=options,
     )
 
 

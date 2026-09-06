@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from sqlalchemy.orm import Session
 
+from app.common.types.repository_types import EngineStepSummaryJson
 from app.schemas.vo.costing_engine_vo import CostingEngineAnnualItemVO
 from app.schemas.vo.user_vo import UserVO
 from app.services.costing.engine.progress import ProgressNotifier
@@ -20,7 +21,7 @@ if TYPE_CHECKING:
 class PhaseCarry:
     failed_vehicles: set[str] = field(default_factory=set)
     failed_l0: set[str] = field(default_factory=set)
-    step_summaries: list[dict[str, Any]] = field(default_factory=list)
+    step_summaries: list[EngineStepSummaryJson] = field(default_factory=list)
 
 
 def execute_annual(

@@ -3,6 +3,8 @@
  * 操作日志 — Brabus Carbon & Precision Dark
  */
 
+import { pageSizeSelectHtml } from '../../../page-size.js?v=2';
+
 export function logsTemplate() {
     return `
         <div class="space-y-2 w-full max-w-full">
@@ -106,7 +108,10 @@ export function logsTemplate() {
                 </div>
 
                 <div class="flex items-center justify-between px-5 py-2 border-t border-[#1e1e1e] bg-[#141414]" id="paginationContainer">
-                    <span id="totalCountPagination" class="text-[10px] text-[#484848]"></span>
+                    <div class="flex items-center gap-3 min-w-0">
+                        <span id="totalCountPagination" class="text-[10px] text-[#484848]"></span>
+                        ${pageSizeSelectHtml('logsPageSize')}
+                    </div>
                     <div class="flex items-center gap-0.5" id="paginationBtns"></div>
                 </div>
 

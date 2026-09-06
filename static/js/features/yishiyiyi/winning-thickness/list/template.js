@@ -106,7 +106,7 @@ export function winningThicknessDownloadTemplate() {
             </div>
         </div>
 
-        <div id="winningThicknessDownloadLoading" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center">
+        <div id="winningThicknessDownloadLoading" class="hidden fixed inset-0 z-[80] bg-black/60 backdrop-blur-sm flex items-center justify-center">
             <div class="bg-[#1e1e1e] border border-[#2c2c2c] rounded p-6 flex flex-col items-center gap-3"
                  style="box-shadow: 0 4px 24px rgba(0,0,0,0.8);">
                 <div class="w-6 h-6 border-2 border-[#2c2c2c] border-t-[#d32f2f] rounded-full animate-spin"></div>

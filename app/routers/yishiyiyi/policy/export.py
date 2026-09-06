@@ -85,8 +85,8 @@ def export_policies_preview(
         steel_mill=mill,
         category_name=category,
         grade_value=grade,
-        skip=(page - 1) * size,
-        limit=size,
+        page=page,
+        size=size,
     )
     total = _policy_service.count_export_data(
         db,
