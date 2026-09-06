@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# 云主机手工发版（可反复执行）：git pull → 重建镜像 → 替换容器
+# 云主机手工发版（可反复执行）：git pull → 重建镜像 → 替换容器 → 跟随日志
 # 数据目录 ./data ./uploads ./logs 始终保留
+# 启动后不退出，打印容器日志；Ctrl+C 只回到 shell，容器继续跑
 #   bash deploy.sh
 #   bash deploy.sh --skip-pull
 #   bash deploy.sh --stop
@@ -9,7 +10,6 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT"
 
-SERVICE_NAME="stamping-costing-platform"
 SKIP_PULL=0
 DO_STOP=0
 
@@ -17,10 +17,12 @@ usage() {
   cat <<'EOF'
 用法: bash deploy.sh [选项]
 
-  （无参数）   git pull --ff-only，重建镜像并替换正在运行的容器
-  --skip-pull  不拉代码，按当前目录重建并替换容器
+  （无参数）   git pull --ff-only，重建镜像并替换容器，然后跟随日志
+  --skip-pull  不拉代码，按当前目录重建并替换容器，然后跟随日志
   --stop       停止并删除容器（保留 ./data ./uploads ./logs）
   -h, --help   显示本说明
+
+启动后脚本停在日志上，便于看完整启动过程。Ctrl+C 退回 shell，容器不停止。
 
 可反复执行：每次发版都会强制重建并换掉旧容器，SQLite / 上传 / 日志目录不动。
 首次：clone 后把 .env.production.example 复制为 .env，改 PASSWORD_SALT 与 CORS_ORIGINS。
@@ -121,21 +123,6 @@ compose up -d --force-recreate --remove-orphans --no-build
 echo "==> 清理本项目旧镜像（不影响其它容器）"
 docker image prune -f --filter "label=com.stamping-costing.platform=true" >/dev/null || true
 
-echo "==> 等待健康检查"
-ready=0
-for _ in $(seq 1 30); do
-  if compose exec -T "$SERVICE_NAME" curl -fsS http://127.0.0.1:8000/login >/dev/null 2>&1; then
-    ready=1
-    break
-  fi
-  sleep 2
-done
-if [[ "$ready" -ne 1 ]]; then
-  echo "启动超时，最近日志：" >&2
-  compose logs --tail=80
-  exit 1
-fi
-
 echo "==> 容器状态"
 compose ps
 
@@ -145,6 +132,12 @@ if grep -qE '^STAMPING_PUBLISH_PORT=' .env; then
 fi
 
 echo
-echo "发版完成（可再次执行本脚本重复发版）。"
-echo "本机探测: curl -I http://127.0.0.1:${publish_port}/login"
-echo "看日志: docker compose logs -f --tail=100"
+echo "发版完成。本机探测: curl -I http://127.0.0.1:${publish_port}/login"
+echo "停止容器: bash deploy.sh --stop"
+echo "==> 跟随容器日志（Ctrl+C 回到 shell，容器继续运行）"
+
+trap 'echo; echo "已停止跟随日志。容器仍在后台。停止: bash deploy.sh --stop"; exit 0' INT
+compose logs -f --tail=all
+# 容器自己退出时 logs -f 会结束；Ctrl+C 走上面的 trap
+echo "日志流已结束。容器状态："
+compose ps
