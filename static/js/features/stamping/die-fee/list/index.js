@@ -198,7 +198,10 @@ function bindEvents() {
         loadData(1);
     });
     document.getElementById('dieFeePartNumberFilter')?.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter') loadData(1);
+        if (event.key !== 'Enter') return;
+        event.preventDefault();
+        updateDieFeeFilterCapsules();
+        loadData(1);
     });
     document.getElementById('dieFeePartNumberFilter')?.addEventListener('input', () => {
         updateDieFeeFilterCapsules();

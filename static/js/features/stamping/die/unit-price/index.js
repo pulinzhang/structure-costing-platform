@@ -299,8 +299,10 @@ function bindEvents() {
     document.getElementById('dupAddBtn')?.addEventListener('click', () => openCreateDrawer());
     document.getElementById('dupListSearchBtn')?.addEventListener('click', () => loadData(1));
     document.getElementById('dupListLocation')?.addEventListener('change', () => {
-        loadListFilters(true).catch(() => {});
+        loadListFilters(true).then(() => loadData(1)).catch(() => {});
     });
+    document.getElementById('dupListVehicle')?.addEventListener('change', () => loadData(1));
+    document.getElementById('dupListStatus')?.addEventListener('change', () => loadData(1));
     document.getElementById('dupEditLocation')?.addEventListener('change', () => {
         const location = document.getElementById('dupEditLocation')?.value || '';
         const current = document.getElementById('dupEditVehicle')?.value || '';

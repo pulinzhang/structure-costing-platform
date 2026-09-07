@@ -294,7 +294,10 @@ function bindEvents() {
         'steelPriceCategory',
         'steelPriceMill',
     ].forEach(id => {
-        document.getElementById(id)?.addEventListener('change', () => updateActiveFilterCapsules());
+        document.getElementById(id)?.addEventListener('change', () => {
+            updateActiveFilterCapsules();
+            loadData(1);
+        });
     });
     document.getElementById('steelPriceResetFilterButton')?.addEventListener('click', () => resetFilters());
     document.getElementById('steelPriceBatchDeleteButton')?.addEventListener('click', () => batchDeleteByFilters());

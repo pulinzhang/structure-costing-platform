@@ -72,6 +72,14 @@ function bindEvents() {
         loadCascade().then(() => loadList(1));
     });
     document.getElementById('poVersionFilter')?.addEventListener('change', () => loadList(1));
+    document.getElementById('poKindFilter')?.addEventListener('change', () => loadList(1));
+    document.getElementById('poConfirmFilter')?.addEventListener('change', () => loadList(1));
+    document.getElementById('poAuditFilter')?.addEventListener('change', () => loadList(1));
+    document.getElementById('poPartFilter')?.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter') return;
+        event.preventDefault();
+        loadList(1);
+    });
     document.querySelectorAll('.po-section-tab').forEach((btn) => {
         btn.addEventListener('click', () => {
             listState.section = btn.dataset.section || '';

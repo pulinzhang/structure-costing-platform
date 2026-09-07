@@ -74,11 +74,10 @@ export const DieListPage = {
     bindEvents() {
         const pageContent = document.getElementById('pageContent');
         document.getElementById('dieListLocation')?.addEventListener('change', () => {
-            this.loadFilters(true);
-            this.renderEmpty('请先选择基地和项目', '未选齐范围时不会请求列表');
+            this.loadFilters(true).then(() => this.loadList(1));
         });
         document.getElementById('dieListVehicle')?.addEventListener('change', () => {
-            this.renderEmpty('请先选择基地和项目', '未选齐范围时不会请求列表');
+            this.loadList(1);
         });
         document.getElementById('dieListSearchBtn')?.addEventListener('click', () => this.loadList(1));
         document.getElementById('dieListPartNumber')?.addEventListener('keydown', (e) => {
@@ -185,8 +184,8 @@ export const DieListPage = {
     },
 
     async loadList(page) {
-        const scope = this.requireScope('查询');
-        if (!scope) {
+        const scope = this.collectScope();
+        if (!scope.location || !scope.vehicle_model) {
             this.renderEmpty('请先选择基地和项目', '未选齐范围时不会请求列表');
             return;
         }

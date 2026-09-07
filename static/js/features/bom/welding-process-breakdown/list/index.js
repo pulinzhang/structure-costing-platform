@@ -153,6 +153,26 @@ function bindEvents() {
         readFiltersFromDom();
         loadData(1);
     });
+    [
+        'wpbLocationFilter',
+        'wpbModelFilter',
+        'wpbVersionFilter',
+        'wpbAuditFilter',
+        'wpbLevelFilter',
+        'wpbProcessCountFilter',
+    ].forEach((id) => {
+        document.getElementById(id)?.addEventListener('change', () => {
+            readFiltersFromDom();
+            loadData(1);
+        });
+    });
+    document.getElementById('wpbPartNumberFilter')?.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            readFiltersFromDom();
+            loadData(1);
+        }
+    });
     document.getElementById('wpbResetFilterBtn')?.addEventListener('click', resetFilters);
     document.querySelector('[data-action="filter-zero-process"]')?.addEventListener('click', () => {
         const card = document.getElementById('wpbHudZeroProcessCard');
