@@ -328,8 +328,8 @@ class BomNode(AuditUserMixin, Base):
         nullable=True,
         comment=(
             "图示相对路径（相对 UPLOAD_DIR）。"
-            "E列总成图示→L0；"
-            "P列单件图示→有L2归L2，无L2时归L1（一级零件图）；"
+            "E列总成图示（锚点可在D）→L0；"
+            "P列单件图示（锚点可在O）→有L2归L2，无L2时归L1（一级零件图）；"
             "例：bom/青岛/T28/D_00/sketches/12_501006875AA.png；访问 /uploads/{sketch_url}"
         ),
     )

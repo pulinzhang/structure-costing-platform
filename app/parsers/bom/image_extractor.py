@@ -7,6 +7,7 @@ BOM Excel 简图抽取
 列约定（0-based）：
 - 4 = 总成图示（E 列）→ 归属 L0 供货总成
 - 15 = 单件图示（P 列）→ 有 L2 归 L2；无 L2 时归 L1（一级零件图）
+图常浮在名称格上，锚点可落在左邻列（D / O），按同族简图收录。
 """
 
 from __future__ import annotations
@@ -29,10 +30,18 @@ _NS = {
 }
 _R_EMBED = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed"
 
-# 只抽取业务图示列
+# 只抽取业务图示列（含左邻：图常锚在名称列）
 ASSEMBLY_SKETCH_COL = 4  # E
 PART_SKETCH_COL = 15  # P
-_SKETCH_COLS = {ASSEMBLY_SKETCH_COL, PART_SKETCH_COL}
+
+
+def sketch_col_family(col_0idx: int) -> int | None:
+    """锚点列归到表头简图列：E 或其左邻 D → 总成；P 或其左邻 O → 单件。"""
+    if col_0idx in {ASSEMBLY_SKETCH_COL, ASSEMBLY_SKETCH_COL - 1}:
+        return ASSEMBLY_SKETCH_COL
+    if col_0idx in {PART_SKETCH_COL, PART_SKETCH_COL - 1}:
+        return PART_SKETCH_COL
+    return None
 
 
 @dataclass
@@ -75,8 +84,8 @@ def extract_bom_images(source: str | Path | bytes) -> list[BomImageAnchor]:
         logger.info(
             "BOM 简图抽取: %s 张 (总成列=%s, 单件列=%s)",
             len(results),
-            sum(1 for x in results if x.col_0idx == ASSEMBLY_SKETCH_COL),
-            sum(1 for x in results if x.col_0idx == PART_SKETCH_COL),
+            sum(1 for x in results if sketch_col_family(x.col_0idx) == ASSEMBLY_SKETCH_COL),
+            sum(1 for x in results if sketch_col_family(x.col_0idx) == PART_SKETCH_COL),
         )
         return results
     finally:
@@ -125,7 +134,7 @@ def _parse_drawing(
         except (TypeError, ValueError):
             skipped += 1
             continue
-        if col not in _SKETCH_COLS or row_0 < 0:
+        if sketch_col_family(col) is None or row_0 < 0:
             skipped += 1
             continue
 
