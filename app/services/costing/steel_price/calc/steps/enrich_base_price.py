@@ -1,4 +1,8 @@
-"""Step2：按中标厚度一览同一套规则取基价——基价表牌号字面命中，用该行自己的基准价。"""
+"""Step2：按中标厚度一览同一套规则取基价——基价表牌号命中，用该行自己的基准价。
+
+牌号比对：去空格后全等，字母 O 与数字 0 视为同一字符（Excel 常见 DCO3 / DCO4）。
+不按冷轧/镀锌/酸洗大类把别的牌号基准价摊过来。
+"""
 
 from __future__ import annotations
 
@@ -8,6 +12,7 @@ from decimal import Decimal
 from sqlalchemy.orm import Session
 
 from app.common.money import Q4, format_money
+from app.common.steel_grade import grade_match_key
 from app.models.yishiyiyi import SteelBasePrice
 from app.services.costing.steel_price.calc.category import resolve_canonical_category
 from app.services.costing.steel_price.calc.models import (
@@ -26,11 +31,11 @@ def select_winning_base_records(
     candidates: Sequence[SteelBasePrice],
     material_grade: str,
 ) -> list[SteelBasePrice]:
-    """与一览表相同：grade 去空格后全等，再按牌号+钢厂去重。"""
-    wanted = (material_grade or "").strip()
+    """与一览表相同：牌号命中后按牌号+钢厂去重。O/0 视为同一字符。"""
+    wanted = grade_match_key(material_grade)
     if not wanted:
         return []
-    matched = [row for row in candidates if (row.grade or "").strip() == wanted]
+    matched = [row for row in candidates if grade_match_key(row.grade) == wanted]
     return dedupe_bases_by_mill_grade(matched)
 
 
