@@ -38,6 +38,7 @@ ARG APT_MIRROR=mirrors.aliyun.com
 WORKDIR ${APP_HOME}
 
 # tzdata：app.common.timezone 使用 ZoneInfo("Asia/Shanghai")，slim 默认没有时区数据
+# libwmf-bin：Linux 将 xlsx 内嵌 WMF 简图转为 PNG（Pillow 仅 Windows 能开 WMF）
 RUN set -eux; \
     if [ -f /etc/apt/sources.list.d/debian.sources ]; then \
       sed -i \
@@ -51,7 +52,7 @@ RUN set -eux; \
         /etc/apt/sources.list; \
     fi; \
     apt-get update; \
-    apt-get install -y --no-install-recommends curl tzdata; \
+    apt-get install -y --no-install-recommends curl tzdata libwmf-bin; \
     rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /root/.local /root/.local

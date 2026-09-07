@@ -2,7 +2,7 @@
 BOM Excel 简图抽取
 
 材料清单中大量图片为 WMF，openpyxl 会丢弃；因此直接从 xlsx ZIP
-读取 xl/drawings + xl/media，再转为 PNG。
+读取 xl/drawings + xl/media，再转为 PNG（Linux 用 wmf2gd）。
 
 列约定（0-based）：
 - 4 = 总成图示（E 列）→ 归属 L0 供货总成
@@ -19,7 +19,7 @@ from pathlib import Path
 from xml.etree import ElementTree as ET
 from zipfile import ZipFile
 
-from PIL import Image
+from app.common.sketch_png import media_bytes_to_png
 
 logger = logging.getLogger("parser.bom.image")
 
@@ -154,7 +154,7 @@ def _parse_drawing(
             skipped += 1
             continue
 
-        png_bytes = _to_png_bytes(raw, media_path)
+        png_bytes = media_bytes_to_png(raw, media_path)
         if not png_bytes:
             skipped += 1
             continue
@@ -171,29 +171,3 @@ def _parse_drawing(
     if skipped:
         logger.debug("BOM drawing 跳过锚点: %s", skipped)
     return out
-
-
-def _to_png_bytes(raw: bytes, media_path: str) -> bytes | None:
-    """任意嵌入图转为 PNG；WMF 在 Windows + Pillow 下可打开。"""
-    if not raw:
-        return None
-    suffix = Path(media_path).suffix.lower()
-    # 已是 PNG
-    if raw[:8] == b"\x89PNG\r\n\x1a\n":
-        return raw
-    try:
-        image: Image.Image = Image.open(BytesIO(raw))
-        if image.mode not in ("RGB", "RGBA"):
-            image = image.convert("RGBA" if "A" in image.getbands() else "RGB")
-        elif image.mode == "RGBA":
-            background = Image.new("RGB", image.size, (255, 255, 255))
-            background.paste(image, mask=image.split()[-1])
-            image = background
-        elif image.mode != "RGB":
-            image = image.convert("RGB")
-        buffer = BytesIO()
-        image.save(buffer, format="PNG")
-        return buffer.getvalue()
-    except Exception as exc:
-        logger.warning("简图转 PNG 失败 %s (%s): %s", media_path, suffix, exc)
-        return None

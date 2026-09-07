@@ -3,13 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from io import BytesIO
-from pathlib import Path
 from xml.etree import ElementTree as ET
 from zipfile import BadZipFile, ZipFile
 
-from PIL import Image
-
+from app.common.sketch_png import media_bytes_to_png
 from app.utils.logging_config import get_logger
 
 logger = get_logger("parser.stamping.sketch")
@@ -112,29 +109,8 @@ def _parse_drawing(
             raw = zip_file.read(media_path)
         except KeyError:
             continue
-        png_bytes = _to_png_bytes(raw, media_path)
+        png_bytes = media_bytes_to_png(raw, media_path)
         if not png_bytes:
             continue
         out.append(SketchAnchor(excel_row=row_0 + 1, col_0idx=col, png_bytes=png_bytes))
     return out
-
-
-def _to_png_bytes(raw: bytes, media_path: str) -> bytes | None:
-    if not raw:
-        return None
-    if raw[:8] == b"\x89PNG\r\n\x1a\n":
-        return raw
-    try:
-        image: Image.Image = Image.open(BytesIO(raw))
-        if image.mode == "RGBA":
-            background = Image.new("RGB", image.size, (255, 255, 255))
-            background.paste(image, mask=image.split()[-1])
-            image = background
-        elif image.mode != "RGB":
-            image = image.convert("RGB")
-        buffer = BytesIO()
-        image.save(buffer, format="PNG")
-        return buffer.getvalue()
-    except Exception as exc:
-        logger.warning("简图转 PNG 失败 %s: %s", Path(media_path).name, exc)
-        return None
