@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 
 from app.common.audit import display_name
 from app.models.stamping import StampingProcessFeeCalcLog
+from app.schemas.common import DeletedCountVO
 from app.schemas.dto.stamping_process_fee_dto import StampingProcessFeeCalcDTO
 from app.schemas.vo.async_task_vo import AsyncTaskAcceptedVO
 from app.schemas.vo.stamping_process_fee_vo import (
@@ -120,6 +121,9 @@ class StampingProcessFeeCalcOrchestrator:
 
     def delete_calc_log(self, db: Session, log_id: int) -> None:
         self.calc_log_service.delete_calc_log(db, log_id)
+
+    def delete_all_calc_logs(self, db: Session) -> DeletedCountVO:
+        return self.calc_log_service.delete_all_logs(db)
 
     def calculate(
         self,

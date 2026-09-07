@@ -23,6 +23,7 @@ from app.repositories.costing.assembly_cost.assembly_cost_repository import (
 from app.repositories.costing.stamping_part_cost.stamping_part_cost_repository import (
     StampingPartCostRepository,
 )
+from app.schemas.common import DeletedCountVO
 from app.schemas.dto.assembly_cost_dto import (
     AssemblyCostBatchApproveDTO,
     AssemblyCostBatchDeleteDTO,
@@ -221,6 +222,9 @@ class AssemblyCostService:
 
     def delete_calc_log(self, db: Session, log_id: int) -> None:
         self.calc_log_service.delete_calc_log(db, log_id)
+
+    def delete_all_calc_logs(self, db: Session) -> DeletedCountVO:
+        return self.calc_log_service.delete_all_logs(db)
 
     def list_years(self, db: Session) -> list[int]:
         """计算页年度：取上游价表并集（从未核算过也能选）。

@@ -18,6 +18,7 @@ from app.models.costing.assembly_cost_calc_log import AssemblyCostCalcLog
 from app.repositories.costing.assembly_cost.assembly_cost_calc_log_repository import (
     AssemblyCostCalcLogRepository,
 )
+from app.schemas.common import DeletedCountVO
 from app.schemas.dto.assembly_cost_dto import AssemblyCostCalcDTO
 from app.schemas.vo.assembly_cost_vo import (
     AssemblyCostCalcCardTraceVO,
@@ -246,3 +247,8 @@ class AssemblyCostCalcLogService:
         if not ok:
             raise NotFoundException("计算日志不存在")
         db.commit()
+
+    def delete_all_logs(self, db: Session) -> DeletedCountVO:
+        deleted_count = self.calc_log_repo.delete_all(db)
+        db.commit()
+        return DeletedCountVO(deleted_count=deleted_count)

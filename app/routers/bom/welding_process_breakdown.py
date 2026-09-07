@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from app.common.permissions.codes import Perm
 from app.database import get_db
 from app.deps.permissions import require_any_perm, require_perm
-from app.schemas.common.page_result import PageResult
+from app.schemas.common import DeletedCountVO, PageResult
 from app.schemas.dto.bom_welding_process_breakdown_dto import (
     BomWeldingProcessBreakdownBatchApproveDTO,
     BomWeldingProcessBreakdownBatchDeleteDTO,
@@ -190,6 +190,18 @@ def get_generate_log(
 ) -> ApiResponse[BomWeldingProcessBreakdownGenerateLogVO]:
     record = _service.get_generate_log(db, log_id)
     return ApiResponse.ok(data=record)
+
+
+@router.delete(
+    "/generate/logs",
+    response_model=ApiResponse[DeletedCountVO],
+)
+def delete_all_generate_logs(
+    db: Session = Depends(get_db),
+    current_user: UserVO = Depends(require_perm(Perm.BOM_WELDING_PROCESS_BREAKDOWN_DELETE_LOG)),
+) -> ApiResponse[DeletedCountVO]:
+    result = _service.delete_all_generate_logs(db)
+    return ApiResponse.ok(data=result, message=f"已删除 {result.deleted_count} 条")
 
 
 @router.delete(

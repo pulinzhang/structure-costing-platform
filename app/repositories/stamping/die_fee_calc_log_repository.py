@@ -102,3 +102,11 @@ class StampingDieFeeCalcLogRepository:
         db.delete(record)
         db.flush()
         return True
+
+    def delete_all(self, db: Session, *, exclude_processing: bool = True) -> int:
+        q = db.query(StampingDieFeeCalcLog)
+        if exclude_processing:
+            q = q.filter(StampingDieFeeCalcLog.status != _STATUS_PROCESSING)
+        deleted = q.delete(synchronize_session=False)
+        db.flush()
+        return int(deleted)

@@ -5,7 +5,7 @@
 import {
     assemblyCostCalcTemplate,
     renderCalcHistoryPagination,
-} from './template.js?v=5';
+} from './template.js?v=6';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -82,6 +82,7 @@ function applyPermissionUi() {
     if (!calcState.canRun) {
         document.getElementById('lacStartCalcBtn')?.classList.add('hidden');
     }
+    document.getElementById('lacCalcHistoryDeleteAllBtn')?.classList.toggle('hidden', !calcState.canDelete);
 }
 
 function bindEvents() {
@@ -99,6 +100,7 @@ function bindEvents() {
     document.getElementById('lacCalcBomVersion')?.addEventListener('change', () => loadCalcReady());
     document.getElementById('lacStartCalcBtn')?.addEventListener('click', startCalculation);
     document.getElementById('lacCalcHistoryRefreshBtn')?.addEventListener('click', () => loadCalcHistory(1));
+    document.getElementById('lacCalcHistoryDeleteAllBtn')?.addEventListener('click', () => deleteAllCalcLogs());
     document.getElementById('lacCalcHistoryPagination')?.addEventListener('click', (event) => {
         const btn = event.target.closest('.lac-calc-history-page-btn');
         if (btn && !btn.disabled) {
@@ -373,6 +375,21 @@ function renderHistoryRows(items) {
             </tr>
         `;
     }).join('');
+}
+
+async function deleteAllCalcLogs() {
+    if (!calcState.canDelete) return;
+    if (!window.confirm('确定删除全部计算历史？仅删除日志，不影响已落库结果。计算中的记录删除后将释放锁。')) {
+        return;
+    }
+    try {
+        const res = await HttpClient.delete(CALC_LOGS_API);
+        const count = res.data?.deleted_count ?? 0;
+        showToast(`已删除 ${count} 条`, 'success');
+        loadCalcHistory(1);
+    } catch (error) {
+        /* HttpClient 已 toast */
+    }
 }
 
 async function deleteCalcLog(logId) {

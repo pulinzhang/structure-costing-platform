@@ -6,7 +6,7 @@
 import {
     weldingProcessBreakdownGenerateTemplate,
     renderCalcHistoryPagination,
-} from './template.js?v=5';
+} from './template.js?v=6';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -81,6 +81,7 @@ function applyPermissionUi() {
     if (!genState.canGenerate) {
         document.getElementById('wpbGenSubmitBtn')?.classList.add('hidden');
     }
+    document.getElementById('calcHistoryDeleteAllBtn')?.classList.toggle('hidden', !genState.canDeleteLog);
 }
 
 function bindEvents() {
@@ -102,6 +103,7 @@ function bindEvents() {
     });
     document.getElementById('wpbGenSubmitBtn')?.addEventListener('click', startGenerate);
     document.getElementById('calcHistoryRefreshBtn')?.addEventListener('click', () => loadCalcHistory(1));
+    document.getElementById('calcHistoryDeleteAllBtn')?.addEventListener('click', () => deleteAllGenerateLogs());
     document.getElementById('calcHistoryPagination')?.addEventListener('click', (event) => {
         const btn = event.target.closest('.calc-history-page-btn');
         if (btn && !btn.disabled) {
@@ -375,6 +377,21 @@ function renderHistoryRows(items) {
     body.querySelectorAll('.calc-delete-log-btn').forEach((btn) => {
         btn.addEventListener('click', () => deleteCalcLog(Number(btn.dataset.logId)));
     });
+}
+
+async function deleteAllGenerateLogs() {
+    if (!genState.canDeleteLog) return;
+    if (!window.confirm('确定删除全部拆解历史？仅删除日志，不影响已落库的拆解数据。拆解中的记录删除后将释放锁。')) {
+        return;
+    }
+    try {
+        const res = await HttpClient.delete(LOGS_API);
+        const count = res.data?.deleted_count ?? 0;
+        showToast(`已删除 ${count} 条`, 'success');
+        loadCalcHistory(1);
+    } catch (error) {
+        console.error('清空拆解历史失败:', error);
+    }
 }
 
 async function deleteCalcLog(logId) {

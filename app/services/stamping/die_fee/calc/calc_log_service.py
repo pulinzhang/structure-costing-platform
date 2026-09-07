@@ -18,6 +18,7 @@ from app.models.stamping.die_fee_calc_log import StampingDieFeeCalcLog
 from app.repositories.stamping.die_fee_calc_log_repository import (
     StampingDieFeeCalcLogRepository,
 )
+from app.schemas.common import DeletedCountVO
 from app.schemas.dto.stamping_die_fee_dto import (
     DieFeeCalcLogCreate,
     DieFeeCalcLogPatch,
@@ -194,3 +195,8 @@ class DieFeeCalcLogService:
         if not deleted:
             raise NotFoundException("计算日志不存在")
         db.commit()
+
+    def delete_all_logs(self, db: Session) -> DeletedCountVO:
+        deleted_count = self.calc_log_repo.delete_all(db, exclude_processing=True)
+        db.commit()
+        return DeletedCountVO(deleted_count=deleted_count)

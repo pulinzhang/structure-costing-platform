@@ -28,6 +28,7 @@ from app.repositories.bom.welding_process_breakdown_repository import (
     WeldingBreakdownFilterSummary,
     WeldingBreakdownListFilters,
 )
+from app.schemas.common import DeletedCountVO
 from app.schemas.dto.bom_welding_process_breakdown_dto import (
     BomWeldingProcessBreakdownBatchApproveDTO,
     BomWeldingProcessBreakdownBatchReverseAuditDTO,
@@ -287,6 +288,9 @@ class BomWeldingProcessBreakdownService:
 
     def delete_generate_log(self, db: Session, log_id: int) -> None:
         self._generate_log_service.delete_log(db, log_id)
+
+    def delete_all_generate_logs(self, db: Session) -> DeletedCountVO:
+        return self._generate_log_service.delete_all_logs(db)
 
     def mark_generate_log_failed(
         self,

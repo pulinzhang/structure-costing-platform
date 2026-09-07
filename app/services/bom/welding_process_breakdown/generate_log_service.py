@@ -20,6 +20,7 @@ from app.models.bom import (
 from app.repositories.bom.welding_process_breakdown_generate_log_repository import (
     BomWeldingProcessBreakdownGenerateLogRepository,
 )
+from app.schemas.common import DeletedCountVO
 from app.schemas.dto.bom_welding_process_breakdown_dto import (
     BomWeldingProcessBreakdownGenerateLogCreate,
     BomWeldingProcessBreakdownGenerateLogPatch,
@@ -102,6 +103,16 @@ class BomWeldingProcessBreakdownGenerateLogService:
             db.rollback()
             logger.exception("删除拆解日志失败: id=%s", log_id)
             raise
+
+    def delete_all_logs(self, db: Session) -> DeletedCountVO:
+        deleted_count = self.repository.delete_all(db)
+        try:
+            db.commit()
+        except Exception:
+            db.rollback()
+            logger.exception("清空拆解日志失败")
+            raise
+        return DeletedCountVO(deleted_count=deleted_count)
 
     def is_scope_processing(
         self,

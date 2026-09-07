@@ -125,3 +125,9 @@ class SteelPriceCalcLogRepository:
         db.flush()
         logger.info("删除计算日志: id=%s batch=%s", log_id, record.calc_batch_id)
         return True
+
+    def delete_all(self, db: Session) -> int:
+        deleted = db.query(SteelPriceCalcLog).delete(synchronize_session=False)
+        db.flush()
+        logger.info("清空计算日志: deleted_count=%s", deleted)
+        return int(deleted)
