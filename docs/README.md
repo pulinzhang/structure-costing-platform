@@ -17,6 +17,14 @@
 | [fastapi-guide.md](fastapi-guide.md) | FastAPI 约定 |
 | [deploy-windows-production.md](deploy-windows-production.md) | Windows 生产安装 |
 
+## 主数据 `masterdata/`
+
+| 文档 | 状态 |
+|------|------|
+| [location-design.md](masterdata/location-design.md) | 基地（设计定稿，未落地）：现网 `location`；绝对上游；启用/禁用；§4.3 删除 |
+| [vehicle-model-design.md](masterdata/vehicle-model-design.md) | 项目（设计初稿）：现网 `vehicle_model`；挂已有基地；生效/失效 |
+| [supplier-design.md](masterdata/supplier-design.md) | 供应商（设计初稿）：缩写 + 全称 + ERP 代码；启用/禁用 |
+
 ## 冲压 `stamping/`
 
 | 文档 | 状态 |
