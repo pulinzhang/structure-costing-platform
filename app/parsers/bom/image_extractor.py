@@ -2,7 +2,7 @@
 BOM Excel 简图抽取
 
 材料清单中大量图片为 WMF，openpyxl 会丢弃；因此直接从 xlsx ZIP
-读取 xl/drawings + xl/media，再转为 PNG（Linux 用 wmf2gd）。
+读取 xl/drawings + xl/media，再转为 PNG。
 
 列约定（0-based）：
 - 4 = 总成图示（E 列）→ 归属 L0 供货总成
