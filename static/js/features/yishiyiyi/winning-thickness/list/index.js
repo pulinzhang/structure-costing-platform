@@ -162,7 +162,7 @@ function bindEvents() {
         'winningThicknessLocation',
         'winningThicknessMill',
     ].forEach(id => {
-        document.getElementById(id)?.addEventListener('change', () => updateConditionsDisplay());
+        document.getElementById(id)?.addEventListener('change', () => queryAfterFilterSelect());
     });
 
     const categorySelect = document.getElementById('winningThicknessCategory');
@@ -171,7 +171,7 @@ function bindEvents() {
             const gradeInput = document.getElementById('winningThicknessGrade');
             if (gradeInput) gradeInput.value = '';
             loadGradesForCategory(categorySelect.value);
-            updateConditionsDisplay();
+            queryAfterFilterSelect();
         });
     }
 
@@ -185,6 +185,14 @@ function bindEvents() {
             }
         });
     }
+}
+
+function queryAfterFilterSelect() {
+    updateConditionsDisplay();
+    const filters = collectFilters();
+    if (!filters.year || !filters.month || !filters.location) return;
+    winningThicknessState.page = 1;
+    previewData();
 }
 
 function updateConditionsDisplay() {

@@ -138,7 +138,7 @@ function bindEvents() {
     ['basePriceDownloadYear', 'basePriceDownloadMonth', 'basePriceDownloadLocation', 'basePriceDownloadCategory', 'basePriceDownloadMill']
         .forEach(id => {
             const el = document.getElementById(id);
-            if (el) el.addEventListener('change', () => updateConditionsDisplay());
+            if (el) el.addEventListener('change', () => queryAfterFilterSelect());
         });
 
     const gradeInput = document.getElementById('basePriceDownloadGrade');
@@ -158,6 +158,13 @@ function bindEvents() {
         const page = Number(btn.getAttribute('data-page'));
         if (Number.isFinite(page) && page >= 1) previewData(page);
     });
+}
+
+function queryAfterFilterSelect() {
+    updateConditionsDisplay();
+    const filters = collectFilters();
+    if (!hasAnyFilter(filters)) return;
+    previewData(1);
 }
 
 /**

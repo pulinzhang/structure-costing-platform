@@ -227,6 +227,20 @@ function bindEvents() {
         });
     }
 
+    [
+        'filterModule',
+        'filterAction',
+        'filterMethod',
+        'filterSuccess',
+        'filterCreatedFrom',
+        'filterCreatedTo',
+    ].forEach((id) => {
+        document.getElementById(id)?.addEventListener('change', () => {
+            applyFiltersToState();
+            loadData(1);
+        });
+    });
+
     const btnExport = document.getElementById('btnExportLogs');
     if (btnExport) {
         btnExport.addEventListener('click', exportLogs);

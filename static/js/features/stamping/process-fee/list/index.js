@@ -214,7 +214,10 @@ function bindEvents() {
         loadData(1);
     });
     document.getElementById('feePartNumberFilter')?.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter') loadData(1);
+        if (event.key !== 'Enter') return;
+        event.preventDefault();
+        updateFeeFilterCapsules();
+        loadData(1);
     });
     document.getElementById('feePartNumberFilter')?.addEventListener('input', () => {
         updateFeeFilterCapsules();

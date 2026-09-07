@@ -256,7 +256,7 @@ function bindEvents() {
 
     ['policyDownloadYear', 'policyDownloadMonth'].forEach(id => {
         const el = document.getElementById(id);
-        if (el) el.addEventListener('change', () => updateConditionsDisplay());
+        if (el) el.addEventListener('change', () => queryAfterFilterSelect());
     });
 
     const categorySelect = document.getElementById('policyDownloadCategory');
@@ -265,7 +265,7 @@ function bindEvents() {
             const gradeInput = document.getElementById('policyDownloadGrade');
             if (gradeInput) gradeInput.value = '';
             loadGradesForCategory(categorySelect.value);
-            updateConditionsDisplay();
+            queryAfterFilterSelect();
         });
     }
 
@@ -284,6 +284,7 @@ function bindEvents() {
     const millSelect = document.getElementById('policyDownloadMill');
     if (millSelect) {
         millSelect.addEventListener('input', () => updateConditionsDisplay());
+        millSelect.addEventListener('change', () => queryAfterFilterSelect());
     }
 
     document.getElementById('policyPagination')?.addEventListener('click', (event) => {
@@ -292,6 +293,13 @@ function bindEvents() {
         const page = Number(btn.getAttribute('data-page'));
         if (Number.isFinite(page) && page >= 1) previewData(page);
     });
+}
+
+function queryAfterFilterSelect() {
+    updateConditionsDisplay();
+    const filters = collectFilters();
+    if (!hasAnyFilter(filters)) return;
+    previewData(1);
 }
 
 /**

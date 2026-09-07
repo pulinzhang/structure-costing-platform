@@ -284,6 +284,12 @@ function bindEvents() {
         readFiltersFromDom();
         loadData(1);
     });
+    ['annualLocationFilter', 'annualYearFilter', 'annualAuditStatusFilter'].forEach((id) => {
+        document.getElementById(id)?.addEventListener('change', () => {
+            readFiltersFromDom();
+            loadData(1);
+        });
+    });
     document.getElementById('annualToggleAdvancedFilter')?.addEventListener('click', () => {
         setAdvancedOpen(!annualPartPriceState.advancedOpen);
     });

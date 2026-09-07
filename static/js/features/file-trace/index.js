@@ -167,6 +167,24 @@ function resetFilters() {
 function bindEvents() {
     document.getElementById('ftBtnSearch')?.addEventListener('click', () => loadData(1));
     document.getElementById('ftBtnReset')?.addEventListener('click', resetFilters);
+    [
+        'ftFilterCategory',
+        'ftFilterLocation',
+        'ftFilterYear',
+        'ftFilterMonth',
+        'ftFilterVehicle',
+        'ftFilterCreator',
+        'ftFilterFrom',
+        'ftFilterTo',
+    ].forEach((id) => {
+        document.getElementById(id)?.addEventListener('change', () => loadData(1));
+    });
+    document.getElementById('ftFilterFilename')?.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            loadData(1);
+        }
+    });
     document.getElementById('ftDrawerClose')?.addEventListener('click', closeDrawer);
     document.getElementById('ftDrawerBackdrop')?.addEventListener('click', closeDrawer);
 

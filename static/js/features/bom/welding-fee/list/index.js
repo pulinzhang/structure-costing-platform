@@ -323,7 +323,10 @@ function bindEvents() {
         loadData(1);
     });
     document.getElementById('l0wfPartNumberFilter')?.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') loadData(1);
+        if (e.key !== 'Enter') return;
+        e.preventDefault();
+        updateCapsules();
+        loadData(1);
     });
     document.getElementById('l0wfPartNumberFilter')?.addEventListener('input', updateCapsules);
 

@@ -243,6 +243,19 @@ function bindEvents() {
         readFiltersFromDom();
         loadData(1);
     });
+    ['pkgLocationFilter', 'pkgYearFilter', 'pkgVehicleFilter', 'pkgAuditStatusFilter'].forEach((id) => {
+        document.getElementById(id)?.addEventListener('change', () => {
+            readFiltersFromDom();
+            loadData(1);
+        });
+    });
+    document.getElementById('pkgKeywordFilter')?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            readFiltersFromDom();
+            loadData(1);
+        }
+    });
     document.getElementById('pkgResetFilterBtn')?.addEventListener('click', () => {
         ['pkgLocationFilter', 'pkgYearFilter', 'pkgVehicleFilter', 'pkgAuditStatusFilter', 'pkgKeywordFilter'].forEach((id) => {
             const el = document.getElementById(id);

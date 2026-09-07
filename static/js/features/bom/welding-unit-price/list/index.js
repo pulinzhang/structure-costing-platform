@@ -276,6 +276,12 @@ function bindEvents() {
         readFiltersFromDom();
         loadData(1);
     });
+    ['locationFilter', 'yearFilter', 'auditStatusFilter'].forEach((id) => {
+        document.getElementById(id)?.addEventListener('change', () => {
+            readFiltersFromDom();
+            loadData(1);
+        });
+    });
     document.getElementById('weldingToggleAdvancedFilter')?.addEventListener('click', () => {
         setAdvancedOpen(!weldingUnitPriceState.advancedOpen);
     });

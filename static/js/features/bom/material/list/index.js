@@ -79,6 +79,12 @@ function bindEvents() {
         readFiltersFromDom();
         loadData(1);
     });
+    ['bomMatLocationFilter', 'bomMatModelFilter', 'bomMatVersionFilter', 'bomMatStatusFilter'].forEach((id) => {
+        document.getElementById(id)?.addEventListener('change', () => {
+            readFiltersFromDom();
+            loadData(1);
+        });
+    });
     document.getElementById('bomMatResetFilterBtn')?.addEventListener('click', resetFilters);
     document.getElementById('bomMatToggleAdvancedFilter')?.addEventListener('click', () => {
         bomMatState.advancedOpen = !bomMatState.advancedOpen;
