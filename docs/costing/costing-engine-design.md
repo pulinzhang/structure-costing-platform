@@ -109,7 +109,8 @@ CostingEngineService                 ← 编排唯一入口
 
 | 数据 | 粒度 | 备注 |
 |---|---|---|
-| 冲压工艺零件 / 工序 | 基地 → 展开工厂 | 上传 |
+| 本期可引入项目 | 基地 + 年 + 月 | 问项目主数据 `list_introducible`；名单空硬停，去一览表 |
+| 冲压工艺零件 / 工序 | 本期项目名单 | 对照零件表；缺工艺才去上传页。不要用空名单冒充「没有冲压零件」 |
 | 冲次单价 | 基地相关 | 加工费输入 |
 | 焊接单价 | 年 + 基地 | 上传 |
 | BOM 材料清单快照 | 基地 + 项目 + BOM 版本 | 须含 L0 |
@@ -157,7 +158,8 @@ CostingEngineService                 ← 编排唯一入口
 
 | gate `code` | 说明 | 主跳转（上传/维护） | 辅跳转（列表核对，可选） | 建议 query |
 |---|---|---|---|---|
-| `stamping_process` | 冲压工艺 | `#/stamping-upload` | `#/stamping-parts` | `location`；有工厂则带提示文案 |
+| `vehicle_model` | 本期可引入项目 | `#/vehicle-model-list` | — | `location`；名单空不要说「没有冲压零件」 |
+| `stamping_process` | 冲压工艺 | `#/stamping-upload` | `#/stamping-parts` | `location`；对照本期项目名单，缺工艺才去上传页 |
 | `tonnage_price` | 冲次单价 | `#/stamping-tonnage-upload` | `#/stamping-tonnage` | `location` |
 | `welding_unit_price` | 焊接单价 | `#/bom-welding-unit-price-upload` | `#/bom-welding-unit-price` | `year`, `location` |
 | `bom_snapshot` | BOM 材料清单 | `#/bom-upload` | `#/bom-material` / `#/bom-structure` | `location`；缺版本时文案点名项目 |
@@ -193,7 +195,7 @@ navigate: {
 | 结果 | Scope |
 |---|---|
 | 钢材联动价 | `(location, year, month)` 整基地一次 |
-| 冲压零件价 | 每个配套车型一次（覆盖该车各厂、各版本） |
+| 冲压零件价 | 每个项目一次（覆盖该车各厂、各版本） |
 | 成品 L0 核价 | **每个** `(vehicle_model, bom_version)` 一次 |
 | 月度合册（可选） | 每个成功的 L0Scope 各出一册 |
 
@@ -212,9 +214,9 @@ L0Scope      = (location, year, month, vehicle_model, bom_version)
 
 ### 6.2 发现规则
 
-1. **配套车型**：该基地下存在冲压工艺零件的 `vehicle_model` 去重 → 全部进入加工费补算与 PartCost 计划（一车多厂一次算完）。  
-2. **L0Scope**：该基地下所有 **含 L0 节点** 的 BOM 快照 `(vehicle_model, bom_version)` → **全部进入计划（多版本逐个算）**。  
-3. **地点规范化**：与现网一致处理「青岛」/「青岛基地」等别名（`location_candidates`），门禁与发现用同一套，避免假缺失。
+1. **项目**：该基地该月 `VehicleModelService.list_introducible` → 全部进入加工费补算与 PartCost 计划（一车多厂一次算完）。名单空则硬停，去项目一览表，不要说「该基地没有冲压零件」。  
+2. **L0Scope**：该基地下所有 **含 L0 节点** 的 BOM 快照 `(vehicle_model, bom_version)`，且 `vehicle_model` 必须落在本期名单 → **全部进入计划（多版本逐个算）**。名单外的 BOM **不进入计划**。  
+3. **地点规范化**：由 `LocationService.expand_for_query` 展开规范名与别名（如「青岛」/「青岛基地」），门禁与发现用同一套，避免假缺失。引擎 `get_ready` / `start_run` 先 `require_enabled`，只写入规范名。
 
 ### 6.3 与合册参数对齐
 
@@ -232,7 +234,7 @@ flowchart TB
     P2[Phase 2 年度补算计划]
     P3[Phase 3 年度补算]
     P4a[Phase 4.1 钢材联动]
-    P4b[Phase 4.2 零件价 × 车型]
+    P4b[Phase 4.2 零件价 × 项目]
     P4c[Phase 4.3 L0 × 全部 BOM]
     P5[Phase 5 可选合册]
     P6[Phase 6 汇总]
@@ -246,12 +248,12 @@ flowchart TB
 
 | 阶段 | 行为 |
 |---|---|
-| 0 | ScopeDiscovery：配套车型列表、L0Scope 列表 |
+| 0 | ScopeDiscovery：本期项目名单、L0Scope 列表 |
 | 1 | GateChecker：§5.1；失败则 `can_start=false`，不建计算 Run（或仅检查记录） |
 | 2 | 体检 §5.2，生成 `annual_plan` |
-| 3 | 按车型补加工费（覆盖该车各厂）；按 L0Scope 补拆解 → L0 焊接费 |
+| 3 | 按项目补加工费（覆盖该车各厂）；按 L0Scope 补拆解 → L0 焊接费 |
 | 4.1 | 整基地钢材联动 |
-| 4.2 | 逐车型零件价（依赖 4.1 + 废料 + 加工费；工厂空） |
+| 4.2 | 逐项目零件价（依赖 4.1 + 废料 + 加工费；工厂空） |
 | 4.3 | 逐 L0Scope 成品核价（多 BOM 全跑） |
 | 5 | 可选：成功 L0Scope 导出合册 |
 | 6 | 聚合 Run 状态，写父任务 `result` |
@@ -406,7 +408,7 @@ step 表可预留 `child_task_id` 字段供二期，首版可空。
 | status | §8.1 |
 | task_id | 父 AsyncTask |
 | gate_json | Phase1 快照 |
-| plan_json | 车型 / L0Scope / 年度补算清单 |
+| plan_json | 项目 / L0Scope / 年度补算清单 |
 | summary_json | 终态摘要 |
 | created_by, created_at, started_at, finished_at | 审计与耗时 |
 
@@ -416,7 +418,7 @@ step 表可预留 `child_task_id` 字段供二期，首版可空。
 |---|---|
 | id, run_id | |
 | stage | `annual_process_fee` / `annual_welding_breakdown` / `annual_welding_fee` / `steel` / `part_cost` / `assembly` / `export` |
-| scope_key | 车型，或 `vehicle_model|bom_version` |
+| scope_key | 项目代号，或 `vehicle_model|bom_version` |
 | status | §8.2 |
 | child_task_id / child_log_id | 可选引用 |
 | message, metrics_json | |
@@ -489,7 +491,7 @@ can_start: bool   # = not hard_stop 且存在可执行路径
 
 1. **参数区**：基地、年、月 +「检查就绪」  
 2. **门禁区**：5.1 红灯置顶；每条未通过项展示 `message` + **「去处理」**（读 `navigate`，见 §5.3）；无权限则禁用并提示；5.2 黄灯「将自动计算」  
-3. **计划区**：配套车型列表 + **全部** L0Scope（多 BOM 明示）  
+3. **计划区**：项目列表 + **全部** L0Scope（多 BOM 明示）  
 4. **运行区**：单进度条 + msg；下方 step 时间线（可从 poll result 或低频拉 `/runs/{id}`）  
 5. **终态 / 历史**：succeeded / partial / failed 摘要；历史列表对 **含 running 在内** 的记录提供删除（§8.4），清理关机残留  
 
@@ -603,3 +605,5 @@ can_start: bool   # = not hard_stop 且存在可执行路径
 | 2026-08-21 | 增补 R8 / §8.4：`running` 亦可删除 Run，避免本机中断后卡住 |
 | 2026-08-25 | as-built：标记 `#/costing` 与引擎 API 已上线；规则仍以本文为准 |
 | 2026-09-02 | 包装运输费与厚度加减价同为软门：就绪检查仍提示，不阻断 `can_start` |
+| 2026-09-08 | 本期项目名单改问 `list_introducible`；空名单硬停去项目一览表；文案「配套车型」→「项目」 |
+| 2026-09-08 | 列表筛 / 仪表盘选项改读 `list_filter_codes`；LLM 词典改读 `vehicle_models` 主数据 |

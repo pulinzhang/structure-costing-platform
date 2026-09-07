@@ -33,6 +33,8 @@ from app.schemas.vo.bom_vo import (
     BomSnapshotVO,
 )
 from app.schemas.vo.user_vo import UserVO
+from app.services.masterdata.location.location_service import LocationService
+from app.services.masterdata.vehicle_model import VehicleModelService
 
 logger = logging.getLogger("service.bom")
 
@@ -111,9 +113,28 @@ class BomService:
         self, db: Session, query: BomSnapshotQuery
     ) -> tuple[list[BomSnapshotVO], int, BomSnapshotListFilters]:
         skip = (query.page - 1) * query.size
+        location_service = LocationService()
+        locations: list[str] | None = None
+        if query.location:
+            locations = location_service.expand_for_query(db, query.location)
+            if not locations:
+                empty_filters: BomSnapshotListFilters = {
+                    "locations": location_service.list_registered(db),
+                    "vehicle_models": VehicleModelService().list_filter_codes(db, query.location),
+                    "bom_versions": self.snapshot_repo.list_bom_versions(db),
+                    "statuses": self.snapshot_repo.list_statuses(db),
+                    "summary": {
+                        "total_count": 0,
+                        "active_count": 0,
+                        "draft_count": 0,
+                        "archived_count": 0,
+                        "total_node_count": 0,
+                    },
+                }
+                return [], 0, empty_filters
         rows, total = self.snapshot_repo.paginate(
             db,
-            location=query.location,
+            locations=locations,
             vehicle_model=query.vehicle_model,
             bom_version=query.bom_version,
             status=query.status,
@@ -128,14 +149,14 @@ class BomService:
 
         summary_raw = self.snapshot_repo.summarize(
             db,
-            location=query.location,
+            locations=locations,
             vehicle_model=query.vehicle_model,
             bom_version=query.bom_version,
             status=query.status,
         )
         filters: BomSnapshotListFilters = {
-            "locations": self.snapshot_repo.list_locations(db),
-            "vehicle_models": self.snapshot_repo.list_vehicle_models(db),
+            "locations": location_service.list_registered(db),
+            "vehicle_models": VehicleModelService().list_filter_codes(db, query.location),
             "bom_versions": self.snapshot_repo.list_bom_versions(db),
             "statuses": self.snapshot_repo.list_statuses(db),
             "summary": summary_raw,
@@ -147,13 +168,38 @@ class BomService:
         db: Session,
         query: BomCascadeFilterQuery,
     ) -> BomCascadeFilterOptionsVO:
+        location_service = LocationService()
+        location_raw = (query.location or "").strip() or None
+        locations: list[str] | None = None
+        if location_raw:
+            locations = location_service.expand_for_query(db, location_raw)
+            if not locations:
+                return BomCascadeFilterOptionsVO(
+                    locations=location_service.list_enabled(db),
+                    vehicle_models=[],
+                    bom_versions=[],
+                )
         raw = self.snapshot_repo.get_cascade_filter_options(
             db,
-            location=query.location,
+            locations=locations,
             vehicle_model=query.vehicle_model,
             status=query.status,
         )
-        return BomCascadeFilterOptionsVO.model_validate(raw)
+        vehicle_svc = VehicleModelService()
+        if location_raw and query.year is not None:
+            if query.month is not None:
+                vehicle_models = vehicle_svc.list_introducible(
+                    db, location_raw, query.year, query.month
+                )
+            else:
+                vehicle_models = vehicle_svc.list_overlaps_year(db, location_raw, query.year)
+        else:
+            vehicle_models = vehicle_svc.list_filter_codes(db, location_raw)
+        return BomCascadeFilterOptionsVO(
+            locations=location_service.list_enabled(db),
+            vehicle_models=vehicle_models,
+            bom_versions=list(raw["bom_versions"]),
+        )
 
     def get_snapshot(self, db: Session, snapshot_id: int) -> BomSnapshotVO:
         row = self.snapshot_repo.get_by_id(db, snapshot_id)
@@ -174,12 +220,13 @@ class BomService:
         if data.status not in _ALLOWED_STATUSES:
             raise BusinessException(f"status 无效，允许: {', '.join(sorted(_ALLOWED_STATUSES))}")
 
+        location = LocationService().require_enabled(db, data.location)
         existing = self.snapshot_repo.get_by_unique_key(
-            db, data.location, data.vehicle_model, data.bom_version
+            db, location, data.vehicle_model, data.bom_version
         )
         if existing:
             raise BusinessException(
-                f"BOM 已存在: {data.location} / {data.vehicle_model} / {data.bom_version}"
+                f"BOM 已存在: {location} / {data.vehicle_model} / {data.bom_version}"
             )
 
         try:
@@ -187,7 +234,7 @@ class BomService:
             row = self.snapshot_repo.create(
                 db,
                 BomSnapshotWrite(
-                    location=data.location,
+                    location=location,
                     vehicle_model=data.vehicle_model,
                     bom_version=data.bom_version,
                     source_filename=data.source_filename,

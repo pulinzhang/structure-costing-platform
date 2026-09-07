@@ -14,18 +14,31 @@ from sqlalchemy.pool import StaticPool
 from app.common.audit import SYSTEM_USER
 from app.database import Base
 from app.exceptions.base import BusinessException, NotFoundException
+from app.models.masterdata.location import Location, LocationAlias
+from app.models.masterdata.vehicle_model import VehicleModel
 from app.models.stamping.die import StampingDiePart
 from app.models.stamping.die_unit_price import (
     STATUS_EFFECTIVE,
     STATUS_INVALID,
     StampingDieUnitPrice,
 )
+from app.repositories.masterdata.location.location_repository import LocationRepository
+from app.schemas.dto.location_dto import LocationAliasInsert, LocationInsert
 from app.schemas.dto.stamping_die_unit_price_dto import (
     StampingDieUnitPriceCreate,
     StampingDieUnitPriceQuery,
     StampingDieUnitPriceUpdate,
 )
+from app.schemas.dto.vehicle_model_dto import VehicleModelCreateDTO
+from app.services.masterdata.vehicle_model import VehicleModelService
 from app.services.stamping.die.unit_price_service import StampingDieUnitPriceService
+
+_SEED_LOCATIONS: tuple[tuple[str, int, str], ...] = (
+    ("大连", 1, "大连基地"),
+    ("芜湖", 2, "芜湖基地"),
+    ("鄂尔多斯", 3, "鄂尔多斯基地"),
+    ("青岛", 4, "青岛基地"),
+)
 
 
 @pytest.fixture
@@ -37,10 +50,43 @@ def memory_db() -> Generator[Session, None, None]:
     )
     Base.metadata.create_all(
         bind=engine,
-        tables=[StampingDiePart.__table__, StampingDieUnitPrice.__table__],
+        tables=[
+            Location.__table__,
+            LocationAlias.__table__,
+            VehicleModel.__table__,
+            StampingDiePart.__table__,
+            StampingDieUnitPrice.__table__,
+        ],
     )
     session_factory = sessionmaker(bind=engine)
     session = session_factory()
+    repo = LocationRepository()
+    for name, sort_order, alias in _SEED_LOCATIONS:
+        repo.create(
+            session,
+            LocationInsert(
+                location=name,
+                is_enabled=True,
+                sort_order=sort_order,
+                created_by="system",
+                updated_by="system",
+            ),
+        )
+        repo.create_alias(session, LocationAliasInsert(alias=alias, location=name))
+    session.flush()
+    vehicle_service = VehicleModelService()
+    for vehicle_model in ("T13J", "T28"):
+        vehicle_service.create(
+            session,
+            VehicleModelCreateDTO(
+                location="芜湖",
+                vehicle_model=vehicle_model,
+                effective_year=2020,
+                effective_month=1,
+            ),
+            current_user=SYSTEM_USER,
+        )
+    session.flush()
     try:
         yield session
     finally:

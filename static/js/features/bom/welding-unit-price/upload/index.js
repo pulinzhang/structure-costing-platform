@@ -3,7 +3,7 @@
  * 同步导入：基地 + 年度必选，仅 .xlsx
  */
 
-import { weldingUnitPriceUploadTemplate } from './template.js?v=5';
+import { weldingUnitPriceUploadTemplate } from './template.js?v=6';
 
 const API_BASE = '/api/bom/welding-unit-price';
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -24,6 +24,7 @@ const WeldingUnitPriceUploadPage = {
         this.clearResult();
         this.clearSelectedFile(false);
         this.loadStandardCatalog();
+        this.loadLocationOptions();
     },
 
     applyPermissionUi() {
@@ -55,6 +56,24 @@ const WeldingUnitPriceUploadPage = {
         const hint = document.getElementById('weldingUnitPriceUploadHint');
         if (title) title.textContent = '无上传权限';
         if (hint) hint.textContent = '当前账号仅可查看本页，无法选择或上传文件';
+    },
+
+    async loadLocationOptions() {
+        try {
+            const res = await HttpClient.get(`${API_BASE}/filters/locations`);
+            const data = res && res.data;
+            const locations = Array.isArray(data)
+                ? data
+                : (data && Array.isArray(data.locations) ? data.locations : []);
+            const el = document.getElementById('weldingUnitPriceUploadLocation');
+            if (!el) return;
+            const current = el.value;
+            el.innerHTML = '<option value="">请选择采购基地</option>' +
+                locations.map((loc) => `<option value="${esc(loc)}">${esc(loc)}</option>`).join('');
+            if (current) el.value = current;
+        } catch (error) {
+            console.error('加载采购基地失败', error);
+        }
     },
 
     bindEvents() {

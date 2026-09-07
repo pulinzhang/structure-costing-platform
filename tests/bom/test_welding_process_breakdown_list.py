@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 from app.schemas.dto.bom_welding_process_breakdown_dto import (
     BomWeldingProcessBreakdownQuery,
@@ -12,13 +12,21 @@ from app.services.bom.welding_process_breakdown.service import (
 )
 
 
-def test_paginate_hud_ignores_zero_process_drilldown() -> None:
+@patch("app.services.bom.welding_process_breakdown.service.LocationService")
+@patch("app.services.bom.welding_process_breakdown.service.VehicleModelService")
+def test_paginate_hud_ignores_zero_process_drilldown(
+    mock_vehicle_cls: MagicMock,
+    mock_location_cls: MagicMock,
+) -> None:
+    mock_location = mock_location_cls.return_value
+    mock_location.list_registered.return_value = []
+    mock_location.expand_for_query.return_value = ["芜湖"]
+    mock_vehicle_cls.return_value.list_filter_codes.return_value = []
+
     service = BomWeldingProcessBreakdownService()
     service.repository = MagicMock()
     service.repository.paginate.return_value = ([], 2)
-    service.repository.get_distinct_locations.return_value = []
     service.repository.get_distinct_customer_names.return_value = []
-    service.repository.get_distinct_vehicle_models.return_value = []
     service.repository.get_distinct_bom_versions.return_value = []
     service.repository.summarize_by_filters.return_value = {
         "total_count": 89,
@@ -44,7 +52,7 @@ def test_paginate_hud_ignores_zero_process_drilldown() -> None:
     assert service.repository.paginate.call_args.kwargs["process_line_count_eq"] == 0
     hud_kw = service.repository.summarize_by_filters.call_args.kwargs
     assert "process_line_count_eq" not in hud_kw
-    assert hud_kw["location"] == "芜湖"
+    assert hud_kw["locations"] == ["芜湖"]
     assert filters["summary"]["total_count"] == 89
     assert filters["summary"]["l0_zero_process_count"] == 3
     zero_kw = service.repository.count_by_filters.call_args.kwargs

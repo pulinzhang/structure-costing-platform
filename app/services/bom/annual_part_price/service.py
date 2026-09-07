@@ -32,6 +32,7 @@ from app.schemas.vo.bom_annual_part_price_vo import (
     BomAnnualPartPriceResponse,
 )
 from app.schemas.vo.user_vo import UserVO
+from app.services.masterdata.location.location_service import LocationService
 
 logger = logging.getLogger("service.bom")
 
@@ -62,9 +63,25 @@ class BomAnnualPartPriceService:
         skip = (query.page - 1) * query.size
         audit_status = query.audit_status.strip() if query.audit_status else None
         keyword = query.keyword.strip() if query.keyword else None
+        location_service = LocationService()
+        locations: list[str] | None = None
+        if query.location:
+            locations = location_service.expand_for_query(db, query.location)
+            if not locations:
+                empty_filters: AnnualPartPriceListFilters = {
+                    "locations": location_service.list_registered(db),
+                    "years": self.repository.get_distinct_years(db),
+                    "audit_status": audit_status,
+                    "summary": {
+                        "total_count": 0,
+                        "pending_count": 0,
+                        "approved_count": 0,
+                    },
+                }
+                return [], 0, empty_filters
         records, total = self.repository.paginate(
             db,
-            location=query.location,
+            locations=locations,
             year=query.year,
             audit_status=audit_status,
             keyword=keyword,
@@ -73,12 +90,12 @@ class BomAnnualPartPriceService:
         )
         rows = [BomAnnualPartPriceResponse.model_validate(r) for r in records]
         filters: AnnualPartPriceListFilters = {
-            "locations": self.repository.get_distinct_locations(db),
+            "locations": location_service.list_registered(db),
             "years": self.repository.get_distinct_years(db),
             "audit_status": audit_status,
             "summary": self.repository.summarize_by_filters(
                 db,
-                location=query.location,
+                locations=locations,
                 year=query.year,
                 audit_status=audit_status,
                 keyword=keyword,
@@ -99,6 +116,9 @@ class BomAnnualPartPriceService:
         current_user: UserVO,
     ) -> BomAnnualPartPriceResponse:
         try:
+            canonical = LocationService().require_enabled(db, data.location)
+            if canonical != data.location:
+                data = data.model_copy(update={"location": canonical})
             audit = audit_create(current_user)
             record = self.repository.create(
                 db,
@@ -302,7 +322,7 @@ class BomAnnualPartPriceService:
         )
 
     def get_locations(self, db: Session) -> list[str]:
-        return self.repository.get_distinct_locations(db)
+        return LocationService().list_registered(db)
 
     def get_years(self, db: Session) -> list[int]:
         return self.repository.get_distinct_years(db)

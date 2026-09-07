@@ -31,6 +31,8 @@ from app.schemas.vo.stamping_die_fee_vo import (
     StampingDieFeeVO,
 )
 from app.schemas.vo.user_vo import UserVO
+from app.services.masterdata.location.location_service import LocationService
+from app.services.masterdata.vehicle_model import VehicleModelService
 from app.services.stamping.die_fee.fee_math import ZERO, resolve_final_die_fee
 
 
@@ -49,20 +51,37 @@ class StampingDieFeeService:
         stamping_supplier: str | None = None,
     ) -> StampingDieFeeFilterVO:
         supplier_value = (stamping_supplier or "").strip() or None
+        location_service = LocationService()
+        location_raw = (location or "").strip() or None
+        locations: list[str] | None = None
+        if location_raw:
+            locations = location_service.expand_for_query(db, location_raw)
+            if not locations:
+                return StampingDieFeeFilterVO(
+                    years=self.fee_repo.get_distinct_years(db),
+                    locations=location_service.list_registered(db),
+                    vehicle_models=[],
+                    stamping_suppliers=[],
+                    versions=[],
+                )
         return StampingDieFeeFilterVO(
             years=self.fee_repo.get_distinct_years(db),
-            locations=self.die_repo.list_locations(db),
-            vehicle_models=self.die_repo.list_vehicle_models(db, location=location),
+            locations=location_service.list_registered(db),
+            vehicle_models=(
+                VehicleModelService().list_overlaps_year(db, location_raw, year)
+                if location_raw and year is not None
+                else VehicleModelService().list_filter_codes(db, location_raw)
+            ),
             stamping_suppliers=self.fee_repo.list_distinct_suppliers(
                 db,
                 year=year,
-                location=location,
+                locations=locations,
                 vehicle_model=vehicle_model,
             ),
             versions=self.fee_repo.list_distinct_versions(
                 db,
                 year=year,
-                location=location,
+                locations=locations,
                 vehicle_model=vehicle_model,
                 stamping_supplier=supplier_value,
             ),
@@ -78,10 +97,28 @@ class StampingDieFeeService:
         self, db: Session, query: StampingDieFeeQuery
     ) -> tuple[list[StampingDieFeeVO], int, DieFeeListFilters]:
         skip = (query.page - 1) * query.size
+        locations: list[str] | None = None
+        if query.location:
+            locations = LocationService().expand_for_query(db, query.location)
+            if not locations:
+                return (
+                    [],
+                    0,
+                    DieFeeListFilters(
+                        year=query.year,
+                        location=query.location,
+                        vehicle_model=query.vehicle_model,
+                        stamping_supplier=query.stamping_supplier,
+                        version=query.version,
+                        part_number=query.part_number,
+                        audit_status=query.audit_status,
+                        only_zero=bool(query.only_zero),
+                    ),
+                )
         rows, total = self.fee_repo.paginate(
             db,
             year=query.year,
-            location=query.location,
+            locations=locations,
             vehicle_model=query.vehicle_model,
             stamping_supplier=query.stamping_supplier,
             version=query.version,
@@ -94,7 +131,7 @@ class StampingDieFeeService:
         summary = self.fee_repo.summarize_by_filters(
             db,
             year=query.year,
-            location=query.location,
+            locations=locations,
             vehicle_model=query.vehicle_model,
             stamping_supplier=query.stamping_supplier,
             version=query.version,

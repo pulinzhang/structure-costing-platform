@@ -99,7 +99,7 @@ def prepare_calc_run(
         version=dto.version,
     )
     if not parts:
-        raise BusinessException(f"基地「{location}」车型「{vehicle_model}」下未找到匹配的冲压零件")
+        raise BusinessException(f"基地「{location}」项目「{vehicle_model}」下未找到匹配的冲压零件")
     detail_lines.append(f"匹配零件 {len(parts)} 件")
 
     return CalcPrepContext(

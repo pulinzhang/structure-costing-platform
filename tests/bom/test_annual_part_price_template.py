@@ -15,10 +15,13 @@ from sqlalchemy.pool import StaticPool
 from app.database import Base
 from app.exceptions.base import BusinessException
 from app.models.bom.node import BomNode, BomSnapshot  # noqa: F401
+from app.models.masterdata.location import Location, LocationAlias  # noqa: F401
 from app.models.stamping.part import StampingPart
 from app.parsers.bom.annual_part_price_parser import parse_annual_part_price_excel
 from app.repositories.bom.bom_repository import BomNodeRepository, BomSnapshotRepository
+from app.repositories.masterdata.location.location_repository import LocationRepository
 from app.schemas.dto.bom_dto import BomNodeWrite, BomSnapshotWrite
+from app.schemas.dto.location_dto import LocationAliasInsert, LocationInsert
 from app.services.bom.annual_part_price.import_service import BomAnnualPartPriceImportService
 from app.services.bom.annual_part_price.template_source import (
     SUPPLY_TYPE_CARRYOVER,
@@ -37,6 +40,19 @@ def db() -> Generator[Session, None, None]:
     Base.metadata.create_all(engine)
     factory = sessionmaker(bind=engine)
     session = factory()
+    repo = LocationRepository()
+    repo.create(
+        session,
+        LocationInsert(
+            location="芜湖",
+            is_enabled=True,
+            sort_order=1,
+            created_by="system",
+            updated_by="system",
+        ),
+    )
+    repo.create_alias(session, LocationAliasInsert(alias="芜湖基地", location="芜湖"))
+    session.flush()
     try:
         yield session
     finally:

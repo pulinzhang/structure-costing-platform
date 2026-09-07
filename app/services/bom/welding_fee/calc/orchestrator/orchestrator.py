@@ -45,6 +45,7 @@ from app.services.bom.welding_fee.calc.orchestrator.progress import (
 )
 from app.services.bom.welding_fee.calc.orchestrator.ready import collect_calc_ready
 from app.services.bom.welding_fee.calc.staff_report import calc_finish_toast
+from app.services.masterdata.vehicle_model import VehicleModelService
 
 
 class BomWeldingFeeCalcOrchestrator:
@@ -162,21 +163,24 @@ class BomWeldingFeeCalcOrchestrator:
         dto: BomWeldingFeeCalcDTO,
         current_user: UserVO,
     ) -> AsyncTaskAcceptedVO:
+        canonical, vehicle_model = VehicleModelService().require_overlaps_year(
+            db, dto.location, dto.vehicle_model, dto.year
+        )
+        scoped = BomWeldingFeeCalcDTO(
+            year=dto.year,
+            location=canonical,
+            vehicle_model=vehicle_model,
+            bom_version=dto.bom_version.strip(),
+            levels=dto.levels,
+        )
         lock_log = self.begin_processing(
             db,
-            dto,
+            scoped,
             operator_id=current_user.id,
             operator_name=display_name(current_user),
         )
         log_id = lock_log.id
         calc_batch_id = lock_log.calc_batch_id
-        scoped = BomWeldingFeeCalcDTO(
-            year=dto.year,
-            location=dto.location.strip(),
-            vehicle_model=dto.vehicle_model.strip(),
-            bom_version=dto.bom_version.strip(),
-            levels=dto.levels,
-        )
         async_task_service = AsyncTaskService()
         task = async_task_service.create_task(
             task_type=TASK_TYPE_BOM_WELDING_FEE_CALC,

@@ -38,18 +38,19 @@ from app.services.bom.annual_part_price.template_source import (
 from app.services.bom.procurement_object.classify import SECTION_OTHER_LEAF
 from app.services.file_trace.path_utils import to_upload_relpath
 from app.services.file_trace.register import register_existing
+from app.services.masterdata.location.location_service import LocationService
 from app.utils.bom_annual_part_price_archive import save_annual_part_price_upload
 
 logger = logging.getLogger("service.bom_annual_part_price_import")
 
 
-def _require_location_year(location: str | None, year: int) -> str:
+def _require_location_year(db: Session, location: str | None, year: int) -> str:
     location_text = (location or "").strip()
     if not location_text:
         raise BusinessException("请选择采购基地")
     if year < 2000 or year > 2100:
         raise BusinessException("年度不正确")
-    return location_text
+    return LocationService().require_enabled(db, location_text)
 
 
 def _require_vehicle_model(vehicle_model: str | None) -> str:
@@ -90,7 +91,7 @@ class BomAnnualPartPriceImportService:
         year: int,
     ) -> tuple[bytes, str]:
         """按该基地该项目 BOM 外购叶子生成导入模板。"""
-        location = _require_location_year(location, year)
+        location = _require_location_year(db, location, year)
         vehicle_model = _require_vehicle_model(vehicle_model)
         snapshots = self.snapshot_repository.list_by_location_model(db, location, vehicle_model)
         if not snapshots:
@@ -140,7 +141,7 @@ class BomAnnualPartPriceImportService:
         year: int,
         current_user: UserVO,
     ) -> BomAnnualPartPriceImportResultVO:
-        location = _require_location_year(location, year)
+        location = _require_location_year(db, location, year)
         original_name = _require_xlsx_upload(filename, file_content)
 
         archive_path = save_annual_part_price_upload(

@@ -1,6 +1,6 @@
 /**
  * Parts Page
- * 零件列表 —进入即加载、筛选均可选、级联（基地 → 车型 → 版本 → 冲压工厂）、批量删除须基地+车型+版本
+ * 零件列表 —进入即加载、筛选均可选、级联（基地 → 项目 → 版本 → 冲压工厂）、批量删除须基地+项目+版本
  * 明细抽屉逻辑保持不变
  */
 
@@ -10,7 +10,7 @@ import {
     updatePartsFilterCapsules,
     updatePartsHud,
     renderPartsPagination,
-} from './template.js?v=29';
+} from './template.js?v=30';
 import {
     BTN_SAVE_ACTIVE,
     BTN_SAVE_DEFAULT,
@@ -276,7 +276,7 @@ export const PartsPage = {
         const filters = this.collectScopeFilters();
         if (!filters.location || !filters.vehicle_model || !filters.version) {
             this.setAdvancedOpen(true);
-            showToast(`${actionLabel}须同时选择基地、车型和版本；冲压工厂可选`, 'warning');
+            showToast(`${actionLabel}须同时选择基地、项目和版本；冲压工厂可选`, 'warning');
             return null;
         }
         return filters;
@@ -441,7 +441,7 @@ export const PartsPage = {
         if (!filters) return;
 
         if (!window.confirm(
-            `确定批量删除零件吗？\n\n基地: ${filters.location}\n车型: ${filters.vehicle_model}\n版本: ${filters.version}\n工厂: ${filters.stamping_supplier || '全部工厂'}\n\n将同时删除关联工序，此操作不可恢复！`,
+            `确定批量删除零件吗？\n\n基地: ${filters.location}\n项目: ${filters.vehicle_model}\n版本: ${filters.version}\n工厂: ${filters.stamping_supplier || '全部工厂'}\n\n将同时删除关联工序，此操作不可恢复！`,
         )) {
             return;
         }

@@ -57,7 +57,7 @@ class BomWeldingFeeScopeDTO(BaseModel):
 
     year: int = Field(..., ge=2000, le=2100, description="年度")
     location: str = Field(..., min_length=1, description="基地")
-    vehicle_model: str = Field(..., min_length=1, description="车型")
+    vehicle_model: str = Field(..., min_length=1, description="项目")
     bom_version: str = Field(..., min_length=1, description="材料清单版本")
 
 
@@ -75,7 +75,7 @@ class BomWeldingFeeQuery(BaseModel):
 
     year: int | None = Field(None, description="年度")
     location: str | None = Field(None, description="基地")
-    vehicle_model: str | None = Field(None, description="车型")
+    vehicle_model: str | None = Field(None, description="项目")
     bom_version: str | None = Field(None, description="材料清单版本")
     part_number: str | None = Field(None, description="零件号")
     audit_status: str | None = Field(None, description="审核状态")

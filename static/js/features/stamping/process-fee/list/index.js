@@ -10,7 +10,7 @@ import {
     updateFeeHud,
     updateFeeFilterCapsules,
     shortPartNumber,
-} from './template.js?v=42';
+} from './template.js?v=43';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -18,8 +18,8 @@ import {
 
 const API_BASE = '/api/stamping/process-fees';
 const DRAWER_ANIMATION_MS = 300;
-/** 操作页固定要车型；后端允许「车型或工厂」以便引擎按厂补算。 */
-const SCOPE_REQUIRED_MESSAGE = '须选定年度、基地、车型。';
+/** 操作页固定要项目；后端允许「项目或工厂」以便引擎按厂补算。 */
+const SCOPE_REQUIRED_MESSAGE = '须选定年度、基地、项目。';
 
 const TONNAGE_SOURCE_LABEL = {
     self: '自有',
@@ -405,7 +405,7 @@ async function loadVehicleOptions() {
         vehicleEl.innerHTML = html;
         delete vehicleEl.dataset.pending;
     } catch (error) {
-        showToast(error.message || '加载车型失败', 'error');
+        showToast(error.message || '加载项目失败', 'error');
     }
 }
 
@@ -507,13 +507,13 @@ function buildScopeBody(filters) {
 
 function formatAuditSummary(filters) {
     const version = filters.version || '全部版本';
-    return `${fmtYear(filters.year)} · 基地 ${filters.location} · 车型 ${filters.vehicle_model} · 版本 ${version} · 工厂 整车`;
+    return `${fmtYear(filters.year)} · 基地 ${filters.location} · 项目 ${filters.vehicle_model} · 版本 ${version} · 工厂 整车`;
 }
 
 function formatScopeSummary(filters) {
     const mill = filters.stamping_supplier || '全部工厂';
     const version = filters.version || '全部版本';
-    return `${fmtYear(filters.year)} · 基地 ${filters.location} · 车型 ${filters.vehicle_model} · 版本 ${version} · 工厂 ${mill}`;
+    return `${fmtYear(filters.year)} · 基地 ${filters.location} · 项目 ${filters.vehicle_model} · 版本 ${version} · 工厂 ${mill}`;
 }
 
 async function loadData(page = 1) {

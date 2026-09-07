@@ -8,7 +8,6 @@ from app.common.audit import audit_update
 from app.common.vehicle_model import normalize_vehicle_model
 from app.exceptions.base import BusinessException, NotFoundException
 from app.repositories.stamping.gauge_fee_repository import StampingGaugeFeeRepository
-from app.repositories.stamping.stamping_part_repository import StampingPartRepository
 from app.schemas.dto.stamping_gauge_fee_dto import (
     StampingGaugeFeePatch,
     StampingGaugeFeeQuery,
@@ -22,6 +21,8 @@ from app.schemas.vo.stamping_gauge_fee_vo import (
     StampingGaugeFeeVO,
 )
 from app.schemas.vo.user_vo import UserVO
+from app.services.masterdata.location.location_service import LocationService
+from app.services.masterdata.vehicle_model import VehicleModelService
 
 logger = logging.getLogger("service.stamping_gauge_fee")
 
@@ -29,37 +30,38 @@ logger = logging.getLogger("service.stamping_gauge_fee")
 class StampingGaugeFeeService:
     def __init__(self) -> None:
         self.repository = StampingGaugeFeeRepository()
-        self.stamping_part_repo = StampingPartRepository()
 
     def list_scope_filters(self, db: Session, location: str | None) -> StampingGaugeFeeFilterVO:
-        raw = self.stamping_part_repo.get_cascade_filter_options(
-            db,
-            location=(location or "").strip() or None,
-            stamping_supplier=None,
-            vehicle_model=None,
-        )
+        location_service = LocationService()
+        location_raw = (location or "").strip() or None
         return StampingGaugeFeeFilterVO(
-            locations=list(raw["locations"]),
-            vehicle_models=list(raw["vehicle_models"]),
+            locations=location_service.list_enabled(db),
+            vehicle_models=VehicleModelService().list_filter_codes(db, location_raw),
         )
 
     def paginate(
         self, db: Session, query: StampingGaugeFeeQuery
     ) -> tuple[list[StampingGaugeFeeVO], int, StampingGaugeFeeListFiltersVO]:
-        location = (query.location or "").strip() or None
+        location_raw = (query.location or "").strip() or None
+        locations: list[str] | None = None
+        if location_raw:
+            locations = LocationService().expand_for_query(db, location_raw)
+            if not locations:
+                empty = StampingGaugeFeeListSummaryVO()
+                return [], 0, StampingGaugeFeeListFiltersVO(summary=empty)
         vehicle = normalize_vehicle_model(query.vehicle_model) if query.vehicle_model else None
         part_number = (query.part_number or "").strip() or None
         skip = (query.page - 1) * query.size
         summary = self.repository.summarize_by_filters(
             db,
-            location=location,
+            locations=locations,
             vehicle_model=vehicle,
             part_number=part_number,
             status=query.status,
         )
         rows = self.repository.list_page(
             db,
-            location=location,
+            locations=locations,
             vehicle_model=vehicle,
             part_number=part_number,
             status=query.status,

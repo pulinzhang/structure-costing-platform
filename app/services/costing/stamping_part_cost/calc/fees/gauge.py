@@ -13,7 +13,7 @@ from app.services.costing.stamping_part_cost.calc.constants import (
     quantize,
 )
 from app.services.costing.stamping_part_cost.calc.fees.match import location_and_vehicle_keys
-from app.services.costing.stamping_part_cost.helpers import location_candidates
+from app.services.masterdata.location.location_service import LocationService
 
 ZERO = Decimal("0")
 
@@ -45,7 +45,8 @@ class GaugeFeeResolver:
         vehicle_model: str | None,
     ) -> int:
         best = 0
-        for candidate in location_candidates(location):
+        names = LocationService().expand_for_query(db, location)
+        for candidate in names:
             count = self.gauge_fee_repo.count_effective(
                 db,
                 location=candidate,
@@ -63,9 +64,8 @@ class GaugeFeeResolver:
         vehicle_model: str,
         part_number: str,
     ) -> GaugeFeeLookup:
-        for loc, vehicle in location_and_vehicle_keys(
-            location=location, vehicle_model=vehicle_model
-        ):
+        names = LocationService().expand_for_query(db, location)
+        for loc, vehicle in location_and_vehicle_keys(locations=names, vehicle_model=vehicle_model):
             row = self.gauge_fee_repo.get_effective_by_part(
                 db,
                 location=loc,

@@ -3,7 +3,7 @@
  * 仅负责 Excel 导入，不含列表 / 删除 / 树
  */
 
-import { bomUploadTemplate } from './template.js?v=1';
+import { bomUploadTemplate } from './template.js?v=4';
 import { can } from '../../../../permissions.js?v=6';
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024;
@@ -21,6 +21,7 @@ const BomUploadPage = {
         this.hideProgress();
         this.hideError();
         this.clearSelectedFile(false);
+        this.loadScopeOptions();
     },
 
     applyPermissionUi() {
@@ -39,6 +40,8 @@ const BomUploadPage = {
         }
         const location = document.getElementById('bomUploadLocation');
         if (location) location.disabled = true;
+        const vehicle = document.getElementById('bomUploadVehicleModel');
+        if (vehicle) vehicle.disabled = true;
 
         const zone = document.getElementById('bomUploadZone');
         if (zone) zone.classList.add('pointer-events-none', 'opacity-60');
@@ -47,6 +50,48 @@ const BomUploadPage = {
         const hint = document.getElementById('bomUploadHint');
         if (title) title.textContent = '无上传权限';
         if (hint) hint.textContent = '当前账号仅可查看本页，无法选择或上传文件';
+    },
+
+    async loadScopeOptions(resetVehicle = false) {
+        const locationEl = document.getElementById('bomUploadLocation');
+        const vehicleEl = document.getElementById('bomUploadVehicleModel');
+        const location = locationEl?.value || '';
+        if (resetVehicle && vehicleEl) vehicleEl.value = '';
+        const now = new Date();
+        try {
+            const params = {
+                year: now.getFullYear(),
+                month: now.getMonth() + 1,
+            };
+            if (location) params.location = location;
+            const res = await HttpClient.get('/api/bom/filters/cascade', { params });
+            const data = res && res.data;
+            const locations = Array.isArray(data)
+                ? data
+                : (data && Array.isArray(data.locations) ? data.locations : []);
+            const vehicles = location && data && Array.isArray(data.vehicle_models)
+                ? data.vehicle_models
+                : [];
+            if (locationEl) {
+                const current = location;
+                locationEl.innerHTML = '<option value="">请选择采购基地</option>' +
+                    locations.map((loc) => `<option value="${esc(loc)}">${esc(loc)}</option>`).join('');
+                if (current) locationEl.value = current;
+            }
+            if (vehicleEl) {
+                const currentVehicle = vehicleEl.value;
+                const placeholder = location
+                    ? (vehicles.length ? '请选择项目' : '该基地本月无可引入项目')
+                    : '请先选择采购基地';
+                vehicleEl.innerHTML = `<option value="">${esc(placeholder)}</option>` +
+                    vehicles.map((code) => `<option value="${esc(code)}">${esc(code)}</option>`).join('');
+                if (currentVehicle && vehicles.includes(currentVehicle)) {
+                    vehicleEl.value = currentVehicle;
+                }
+            }
+        } catch (error) {
+            console.error('加载采购基地/项目失败', error);
+        }
     },
 
     bindEvents() {
@@ -60,6 +105,9 @@ const BomUploadPage = {
         const errorCloseBtn = document.getElementById('bomUploadErrorCloseBtn');
 
         templateBtn?.addEventListener('click', () => this.downloadTemplate());
+        document.getElementById('bomUploadLocation')?.addEventListener('change', () => {
+            this.loadScopeOptions(true);
+        });
         errorCopyBtn?.addEventListener('click', () => this.copyErrorText());
         errorCloseBtn?.addEventListener('click', () => this.hideError());
 
@@ -168,6 +216,8 @@ const BomUploadPage = {
         this.clearSelectedFile(true);
         const location = document.getElementById('bomUploadLocation');
         if (location) location.value = '';
+        const vehicle = document.getElementById('bomUploadVehicleModel');
+        if (vehicle) vehicle.value = '';
     },
 
     showProgress(msg = '解析三级树并落盘简图，请稍候') {
@@ -243,10 +293,12 @@ const BomUploadPage = {
         const submitBtn = document.getElementById('bomUploadSubmitBtn');
         const resetBtn = document.getElementById('bomUploadResetBtn');
         const location = document.getElementById('bomUploadLocation');
+        const vehicle = document.getElementById('bomUploadVehicleModel');
         const templateBtn = document.getElementById('bomUploadTemplateBtn');
         if (submitBtn) submitBtn.disabled = isUploading || !this.selectedFile;
         if (resetBtn) resetBtn.disabled = isUploading;
         if (location && this.canUpload) location.disabled = isUploading;
+        if (vehicle && this.canUpload) vehicle.disabled = isUploading;
         if (templateBtn) templateBtn.disabled = isUploading;
     },
 
@@ -279,8 +331,13 @@ const BomUploadPage = {
         if (this.isUploading) return;
 
         const location = document.getElementById('bomUploadLocation')?.value?.trim();
+        const vehicleModel = document.getElementById('bomUploadVehicleModel')?.value?.trim();
         if (!location) {
             this.showError('请选择采购基地');
+            return;
+        }
+        if (!vehicleModel) {
+            this.showError('请选择项目');
             return;
         }
         if (!this.selectedFile) {
@@ -290,6 +347,7 @@ const BomUploadPage = {
 
         const formData = new FormData();
         formData.append('location', location);
+        formData.append('vehicle_model', vehicleModel);
         formData.append('file', this.selectedFile);
 
         this.hideError();

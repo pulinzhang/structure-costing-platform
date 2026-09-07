@@ -14,7 +14,7 @@ class BomWeldingProcessBreakdownGenerateDTO(BaseModel):
     """从 BOM 生成焊接工艺拆解（按基地+项目+版本）"""
 
     location: str = Field(..., min_length=1, max_length=50, description="采购基地")
-    vehicle_model: str = Field(..., min_length=1, max_length=50, description="项目/车型")
+    vehicle_model: str = Field(..., min_length=1, max_length=50, description="项目")
     bom_version: str = Field(..., min_length=1, max_length=20, description="材料清单版本")
     customer_name: str | None = Field(
         None,
@@ -27,7 +27,7 @@ class BomWeldingProcessBreakdownScopeDTO(BaseModel):
     """范围：基地 + 项目 + 版本"""
 
     location: str = Field(..., min_length=1, max_length=50, description="采购基地")
-    vehicle_model: str = Field(..., min_length=1, max_length=50, description="项目/车型")
+    vehicle_model: str = Field(..., min_length=1, max_length=50, description="项目")
     bom_version: str = Field(..., min_length=1, max_length=20, description="材料清单版本")
 
 
@@ -89,7 +89,7 @@ class BomWeldingProcessBreakdownQuery(BaseModel):
 
     location: str | None = Field(None, description="采购基地")
     customer_name: str | None = Field(None, description="顾客名称")
-    vehicle_model: str | None = Field(None, description="项目/车型")
+    vehicle_model: str | None = Field(None, description="项目")
     bom_version: str | None = Field(None, description="材料清单版本")
     part_number: str | None = Field(None, description="零件号（模糊）")
     level: int | None = Field(None, description="层级 0/1")

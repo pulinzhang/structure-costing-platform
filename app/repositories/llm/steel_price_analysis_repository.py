@@ -9,6 +9,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.models.costing.steel_price import SteelPrice
+from app.repositories.llm.location_in import location_in_clause
 from app.services.llm._money import ym_int
 
 
@@ -48,8 +49,9 @@ class SteelPriceAnalysisRepository:
             func.coalesce(func.max(SteelPrice.final_price_per_ton), 0),
         ).filter(ym_expr >= start, ym_expr <= end)
 
-        if location:
-            q = q.filter(SteelPrice.location == location)
+        loc_filter = location_in_clause(db, SteelPrice.location, location)
+        if loc_filter is not None:
+            q = q.filter(loc_filter)
 
         q = q.group_by(
             SteelPrice.year,

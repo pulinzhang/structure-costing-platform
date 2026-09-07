@@ -35,7 +35,7 @@ STATUS_PARTIAL = "partial"
 STATUS_FAILED = "failed"
 
 STALE_PROCESSING_SECONDS = 2 * 60 * 60
-DUPLICATE_SCOPE_CALC_MESSAGE = "当前年度/基地/车型/版本正在计算中，请勿重复提交。"
+DUPLICATE_SCOPE_CALC_MESSAGE = "当前年度/基地/项目/版本正在计算中，请勿重复提交。"
 
 logger = logging.getLogger("service.bom.welding_fee.calc.log")
 

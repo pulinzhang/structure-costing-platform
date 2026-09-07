@@ -37,7 +37,7 @@ export function partsTemplate() {
                             </div>
                             <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3 backdrop-blur-sm"
                                  style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);">
-                                <div class="text-[#555555] text-[10px] tracking-wider">车型</div>
+                                <div class="text-[#555555] text-[10px] tracking-wider">项目</div>
                                 <div class="text-[18px] font-bold text-[#FFFFFF] mt-1 tabular-nums">
                                     <span id="partsHudVehicle">—</span>
                                     <span class="text-[10px] text-[#555555] ml-1">种</span>
@@ -103,7 +103,7 @@ export function partsTemplate() {
                             <span class="text-[#555555] shrink-0 tracking-wider">当前筛选：</span>
                             <div class="flex items-center gap-2 flex-wrap">
                                 <span id="partsCapsuleLocation" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部基地</span>
-                                <span id="partsCapsuleVehicle" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部车型</span>
+                                <span id="partsCapsuleVehicle" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部项目</span>
                                 <span id="partsCapsuleVersion" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部版本</span>
                                 <span id="partsCapsuleSupplier" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部工厂</span>
                             </div>
@@ -123,11 +123,11 @@ export function partsTemplate() {
                         </div>
                     </div>
 
-                    <!-- 高级筛选面板（默认折叠；级联：基地 → 车型 → 版本 → 冲压工厂）-->
+                    <!-- 高级筛选面板（默认折叠；级联：基地 → 项目 → 版本 → 冲压工厂）-->
                     <div id="partsAdvancedFilterPanel" class="hidden mt-3 pt-3 border-t border-[#1A1A22]">
                         <div class="flex items-end gap-3 flex-wrap">
                             ${filterSelect('locationFilter', '基地')}
-                            ${filterSelect('vehicleModelFilter', '车型')}
+                            ${filterSelect('vehicleModelFilter', '项目')}
                             ${filterSelect('versionFilter', '版本')}
                             ${filterSelect('supplierFilter', '冲压工厂')}
                             ${filterInput('searchInput', '零件号', '短号或完整零件号')}
@@ -137,7 +137,7 @@ export function partsTemplate() {
                                 重置
                             </button>
                         </div>
-                        <p class="mt-2 text-[10px] text-[#555555]">筛选均可选；级联为基地 → 车型 → 版本 → 冲压工厂。批量删除须基地、车型、版本；冲压工厂可选。导出须选定基地。</p>
+                        <p class="mt-2 text-[10px] text-[#555555]">筛选均可选；级联为基地 → 项目 → 版本 → 冲压工厂。批量删除须基地、项目、版本；冲压工厂可选。导出须选定基地。</p>
                     </div>
                 </div>
 
@@ -150,7 +150,7 @@ export function partsTemplate() {
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#A1A1A6] whitespace-nowrap">零件号</th>
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">零件名称</th>
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">基地</th>
-                                <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">车型</th>
+                                <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">项目</th>
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">版本</th>
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap border-r border-[#22222A]">冲压工厂</th>
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">材料</th>
@@ -242,7 +242,7 @@ function filterInput(id, label, placeholder) {
 }
 
 /**
- * 同步战术胶囊：基地 / 车型 / 版本 / 工厂 + 高级筛选已启用数量
+ * 同步战术胶囊：基地 / 项目 / 版本 / 工厂 + 高级筛选已启用数量
  */
 export function updatePartsFilterCapsules() {
     const location = document.getElementById('locationFilter')?.value || '';
@@ -270,7 +270,7 @@ export function updatePartsFilterCapsules() {
         supplierEl.className = supplier ? activeCapsule : idleCapsule;
     }
     if (vehicleEl) {
-        vehicleEl.textContent = vehicle || '全部车型';
+        vehicleEl.textContent = vehicle || '全部项目';
         vehicleEl.className = vehicle ? activeCapsule : idleCapsule;
     }
     if (versionEl) {
@@ -492,7 +492,7 @@ export function renderDetailContent(part, options = {}) {
         ['零件名称', esc(part.part_name)],
         ['采购基地', esc(part.location)],
         ['冲压供应商', esc(part.stamping_supplier)],
-        ['车型', esc(part.vehicle_model)],
+        ['项目', esc(part.vehicle_model)],
         ['版本', esc(part.version)],
         ['材料', esc(part.material)],
         ['工艺方法', esc(part.process_method ?? '-')],

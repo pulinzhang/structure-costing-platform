@@ -109,9 +109,7 @@ async function loadFilterOptions() {
 
         const locationFilter = document.getElementById('pkgLocationFilter');
         if (locationFilter) {
-            const known = ['大连', '芜湖', '鄂尔多斯', '青岛'];
-            const merged = [...new Set([...known, ...pkgState.locations])];
-            locationFilter.innerHTML = `<option value="">全部</option>${merged.map((loc) => `<option value="${esc(loc)}">${esc(loc)}</option>`).join('')}`;
+            locationFilter.innerHTML = `<option value="">全部</option>${pkgState.locations.map((loc) => `<option value="${esc(loc)}">${esc(loc)}</option>`).join('')}`;
             if (pkgState.selectedLocation) locationFilter.value = pkgState.selectedLocation;
         }
 

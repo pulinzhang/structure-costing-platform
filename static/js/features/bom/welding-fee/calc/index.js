@@ -88,7 +88,9 @@ function applyPermissionUi() {
 
 function bindEvents() {
     document.getElementById('l0wfCalcResetBtn')?.addEventListener('click', resetFilters);
-    document.getElementById('l0wfCalcYear')?.addEventListener('change', () => loadCalcReady());
+    document.getElementById('l0wfCalcYear')?.addEventListener('change', () => {
+        loadCascadeFilters().then(() => loadCalcReady());
+    });
     document.getElementById('l0wfCalcLocation')?.addEventListener('change', () => {
         resetDependentFilters(['l0wfCalcVehicleModel', 'l0wfCalcBomVersion']);
         loadCascadeFilters().then(() => loadCalcReady());
@@ -153,6 +155,8 @@ async function loadCascadeFilters() {
             location: val('l0wfCalcLocation'),
             vehicle_model: val('l0wfCalcVehicleModel'),
         };
+        const year = parseInt(val('l0wfCalcYear'), 10);
+        if (Number.isFinite(year)) params.year = year;
         const res = await HttpClient.get(CASCADE_API, { params });
         const filters = res.data || {};
         fillSelect('l0wfCalcLocation', filters.locations || []);

@@ -184,7 +184,20 @@ def _extract_year_month_from_sheet(ws: Any) -> tuple[int | None, int | None]:
     return None, None
 
 
-def _extract_base_configs(ws: Any) -> list[BaseColumnConfig]:
+def _canonical_location_from_header(
+    header: str, location_lookup: dict[str, str] | None
+) -> str | None:
+    stripped = header.strip()
+    if not stripped:
+        return None
+    if location_lookup is None:
+        return stripped
+    return location_lookup.get(stripped)
+
+
+def _extract_base_configs(
+    ws: Any, location_lookup: dict[str, str] | None = None
+) -> list[BaseColumnConfig]:
     """
     从第4行(基地名)和第5行(子标题)动态识别所有基地列对。
     支持：
@@ -226,7 +239,9 @@ def _extract_base_configs(ws: Any) -> list[BaseColumnConfig]:
                 break
 
         if price_col is not None:
-            location = base_name.replace("基地", "").strip()
+            location = _canonical_location_from_header(base_name, location_lookup)
+            if location is None:
+                continue
             configs.append(BaseColumnConfig(location=location, mill_col=idx, price_col=price_col))
         # 如果找不到价格列，跳过该基地（后续可在 warnings 中记录）
 
@@ -242,7 +257,9 @@ def _extract_base_configs(ws: Any) -> list[BaseColumnConfig]:
 
             # 检查是否包含价格关键词（说明这是价格列）
             if sub_text and ("价格" in sub_text or "承兑" in sub_text):
-                location = base_name.replace("基地", "").strip()
+                location = _canonical_location_from_header(base_name, location_lookup)
+                if location is None:
+                    continue
                 configs.append(
                     BaseColumnConfig(
                         location=location,
@@ -255,7 +272,9 @@ def _extract_base_configs(ws: Any) -> list[BaseColumnConfig]:
                 for lookahead in range(idx + 1, len(header_row)):
                     lookahead_sub = _str(sub_row[lookahead]) if lookahead < len(sub_row) else ""
                     if lookahead_sub and ("价格" in lookahead_sub or "承兑" in lookahead_sub):
-                        location = base_name.replace("基地", "").strip()
+                        location = _canonical_location_from_header(base_name, location_lookup)
+                        if location is None:
+                            break
                         configs.append(
                             BaseColumnConfig(location=location, mill_col=idx, price_col=lookahead)
                         )
@@ -524,7 +543,10 @@ def _is_xls_file(file_content: bytes) -> bool:
 # ============================================================
 
 
-def parse_base_price_excel(file_content: bytes) -> ParseResult:
+def parse_base_price_excel(
+    file_content: bytes,
+    location_lookup: dict[str, str] | None = None,
+) -> ParseResult:
     """
     入口函数：解析钢材基准价格 Excel 文件（支持 .xlsx 和 .xls），返回 ParseResult
 
@@ -567,7 +589,7 @@ def parse_base_price_excel(file_content: bytes) -> ParseResult:
     if not year:
         result.warnings.append("无法从 Excel 标题行提取年月，将使用接口传入的年度月份")
 
-    base_configs = _extract_base_configs(ws)
+    base_configs = _extract_base_configs(ws, location_lookup=location_lookup)
     if not base_configs:
         result.errors.append("未能识别任何基地列，请检查表头格式")
         return result

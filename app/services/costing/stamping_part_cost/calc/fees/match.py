@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from app.common.vehicle_model import normalize_vehicle_model
-from app.services.costing.stamping_part_cost.helpers import location_candidates
 
 
 def vehicle_model_candidates(vehicle_model: str) -> list[str]:
@@ -19,11 +18,11 @@ def vehicle_model_candidates(vehicle_model: str) -> list[str]:
 
 def location_and_vehicle_keys(
     *,
-    location: str,
+    locations: list[str],
     vehicle_model: str,
 ) -> list[tuple[str, str]]:
     pairs: list[tuple[str, str]] = []
-    for loc in location_candidates(location):
+    for loc in locations:
         for vehicle in vehicle_model_candidates(vehicle_model):
             pairs.append((loc, vehicle))
     return pairs

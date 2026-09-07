@@ -97,7 +97,7 @@ def list_locations(
 def list_suppliers(
     year: int | None = Query(None, description="年度"),
     location: str | None = Query(None, description="基地"),
-    vehicle_model: str | None = Query(None, description="车型"),
+    vehicle_model: str | None = Query(None, description="项目"),
     version: str | None = Query(None, description="版本"),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(
@@ -150,7 +150,7 @@ def list_versions(
     year: int | None = Query(None, description="年度"),
     location: str | None = Query(None, description="基地"),
     stamping_supplier: str | None = Query(None, description="冲压工厂"),
-    vehicle_model: str | None = Query(None, description="车型"),
+    vehicle_model: str | None = Query(None, description="项目"),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(
         require_any_perm(
@@ -322,7 +322,7 @@ def export_download(
     year: int | None = Query(None, ge=2000, le=2100, description="年度"),
     location: str | None = Query(None, description="基地"),
     stamping_supplier: str | None = Query(None, description="冲压工厂"),
-    vehicle_model: str | None = Query(None, description="车型"),
+    vehicle_model: str | None = Query(None, description="项目"),
     version: str | None = Query(None, description="版本"),
     part_number: str | None = Query(None, description="零件号"),
     audit_status: str | None = Query(None, description="审核状态"),

@@ -146,6 +146,7 @@ class BomProcurementObjectRepository:
         db: Session,
         *,
         location: str | None = None,
+        locations: list[str] | None = None,
         vehicle_model: str | None = None,
         bom_version: str | None = None,
         section: str | None = None,
@@ -161,6 +162,7 @@ class BomProcurementObjectRepository:
         query = self._apply_object_filters(
             db.query(BomProcurementObject).join(BomProcurementObjectList),
             location=location,
+            locations=locations,
             vehicle_model=vehicle_model,
             bom_version=bom_version,
             section=section,
@@ -180,6 +182,7 @@ class BomProcurementObjectRepository:
         db: Session,
         *,
         location: str | None = None,
+        locations: list[str] | None = None,
         vehicle_model: str | None = None,
         bom_version: str | None = None,
         section: str | None = None,
@@ -193,6 +196,7 @@ class BomProcurementObjectRepository:
         query = self._apply_object_filters(
             db.query(BomProcurementObject).join(BomProcurementObjectList),
             location=location,
+            locations=locations,
             vehicle_model=vehicle_model,
             bom_version=bom_version,
             section=section,
@@ -237,6 +241,7 @@ class BomProcurementObjectRepository:
         db: Session,
         *,
         location: str | None = None,
+        locations: list[str] | None = None,
         vehicle_model: str | None = None,
         bom_version: str | None = None,
         section: str | None = None,
@@ -250,6 +255,7 @@ class BomProcurementObjectRepository:
         base = self._apply_object_filters(
             db.query(BomProcurementObject).join(BomProcurementObjectList),
             location=location,
+            locations=locations,
             vehicle_model=vehicle_model,
             bom_version=bom_version,
             section=section,
@@ -368,6 +374,7 @@ class BomProcurementObjectRepository:
         query: Query[BomProcurementObject],
         *,
         location: str | None,
+        locations: list[str] | None = None,
         vehicle_model: str | None,
         bom_version: str | None,
         section: str | None,
@@ -378,7 +385,9 @@ class BomProcurementObjectRepository:
         l0_part_number: str | None,
         excel_row: int | None,
     ) -> Query[BomProcurementObject]:
-        if location:
+        if locations is not None:
+            query = query.filter(BomProcurementObjectList.location.in_(locations))
+        elif location:
             query = query.filter(BomProcurementObjectList.location == location)
         if vehicle_model:
             query = query.filter(BomProcurementObjectList.vehicle_model == vehicle_model)

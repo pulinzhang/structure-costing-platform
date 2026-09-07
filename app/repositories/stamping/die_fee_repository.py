@@ -47,7 +47,8 @@ class StampingDieFeeRepository:
         db: Session,
         *,
         year: int,
-        location: str,
+        location: str | None = None,
+        locations: list[str] | None = None,
         vehicle_model: str,
         part_number: str,
     ) -> StampingDieFee | None:
@@ -84,14 +85,19 @@ class StampingDieFeeRepository:
         db: Session,
         *,
         year: int,
-        location: str,
+        location: str | None = None,
+        locations: list[str] | None = None,
         vehicle_model: str,
     ) -> Query[StampingDieFee]:
-        return db.query(StampingDieFee).filter(
+        query = db.query(StampingDieFee).filter(
             StampingDieFee.year == year,
-            StampingDieFee.location == location,
             StampingDieFee.vehicle_model == vehicle_model,
         )
+        if locations is not None:
+            query = query.filter(StampingDieFee.location.in_(locations))
+        elif location:
+            query = query.filter(StampingDieFee.location == location)
+        return query
 
     def _apply_identity_filters(
         self,
@@ -111,7 +117,8 @@ class StampingDieFeeRepository:
         db: Session,
         *,
         year: int,
-        location: str,
+        location: str | None = None,
+        locations: list[str] | None = None,
         vehicle_model: str,
         statuses: list[str],
         stamping_supplier: str | None = None,
@@ -122,6 +129,7 @@ class StampingDieFeeRepository:
                 db,
                 year=year,
                 location=location,
+                locations=locations,
                 vehicle_model=vehicle_model,
             ),
             stamping_supplier=stamping_supplier,
@@ -134,7 +142,8 @@ class StampingDieFeeRepository:
         db: Session,
         *,
         year: int,
-        location: str,
+        location: str | None = None,
+        locations: list[str] | None = None,
         vehicle_model: str,
         part_number: str | None,
         audit_status: str | None,
@@ -147,6 +156,7 @@ class StampingDieFeeRepository:
                 db,
                 year=year,
                 location=location,
+                locations=locations,
                 vehicle_model=vehicle_model,
             ),
             stamping_supplier=stamping_supplier,
@@ -165,7 +175,8 @@ class StampingDieFeeRepository:
         db: Session,
         *,
         year: int,
-        location: str,
+        location: str | None = None,
+        locations: list[str] | None = None,
         vehicle_model: str,
         part_number: str | None,
         audit_status: str | None,
@@ -179,6 +190,7 @@ class StampingDieFeeRepository:
             db,
             year=year,
             location=location,
+            locations=locations,
             vehicle_model=vehicle_model,
             part_number=part_number,
             audit_status=audit_status,
@@ -205,7 +217,8 @@ class StampingDieFeeRepository:
         db: Session,
         *,
         year: int,
-        location: str,
+        location: str | None = None,
+        locations: list[str] | None = None,
         vehicle_model: str,
         part_number: str | None,
         audit_status: str | None,
@@ -216,6 +229,7 @@ class StampingDieFeeRepository:
             db,
             year=year,
             location=location,
+            locations=locations,
             vehicle_model=vehicle_model,
             part_number=part_number,
             audit_status=audit_status,
@@ -251,7 +265,8 @@ class StampingDieFeeRepository:
         db: Session,
         *,
         year: int,
-        location: str,
+        location: str | None = None,
+        locations: list[str] | None = None,
         vehicle_model: str,
         part_number: str | None,
         audit_status: str | None,
@@ -263,6 +278,7 @@ class StampingDieFeeRepository:
             db,
             year=year,
             location=location,
+            locations=locations,
             vehicle_model=vehicle_model,
             part_number=part_number,
             audit_status=audit_status,
@@ -313,7 +329,8 @@ class StampingDieFeeRepository:
         db: Session,
         *,
         year: int,
-        location: str,
+        location: str | None = None,
+        locations: list[str] | None = None,
         vehicle_model: str,
         stamping_supplier: str | None = None,
         version: str | None = None,
@@ -322,6 +339,7 @@ class StampingDieFeeRepository:
             db,
             year=year,
             location=location,
+            locations=locations,
             vehicle_model=vehicle_model,
             part_number=None,
             audit_status=None,
@@ -351,7 +369,8 @@ class StampingDieFeeRepository:
         db: Session,
         *,
         year: int,
-        location: str,
+        location: str | None = None,
+        locations: list[str] | None = None,
         vehicle_model: str,
     ) -> int:
         fee_ids = [
@@ -382,7 +401,8 @@ class StampingDieFeeRepository:
         db: Session,
         *,
         year: int,
-        location: str,
+        location: str | None = None,
+        locations: list[str] | None = None,
         vehicle_model: str,
         audited_by: str,
         audited_at: datetime,
@@ -411,7 +431,8 @@ class StampingDieFeeRepository:
         db: Session,
         *,
         year: int,
-        location: str,
+        location: str | None = None,
+        locations: list[str] | None = None,
         vehicle_model: str,
         reverse_audited_by: str,
         reverse_audited_at: datetime,
@@ -444,13 +465,21 @@ class StampingDieFeeRepository:
         db: Session,
         *,
         year: int | None,
-        location: str | None,
+        location: str | None = None,
+        locations: list[str] | None = None,
         vehicle_model: str | None,
     ) -> list[str]:
-        if not year or not location or not vehicle_model:
+        if not year or not vehicle_model:
+            return []
+        if locations is not None:
+            if not locations:
+                return []
+        elif not location:
             return []
         rows = (
-            self._scope_query(db, year=year, location=location, vehicle_model=vehicle_model)
+            self._scope_query(
+                db, year=year, location=location, locations=locations, vehicle_model=vehicle_model
+            )
             .with_entities(StampingDieFee.stamping_supplier)
             .filter(
                 StampingDieFee.stamping_supplier.isnot(None),
@@ -467,14 +496,22 @@ class StampingDieFeeRepository:
         db: Session,
         *,
         year: int | None,
-        location: str | None,
+        location: str | None = None,
+        locations: list[str] | None = None,
         vehicle_model: str | None,
         stamping_supplier: str | None = None,
     ) -> list[str]:
-        if not year or not location or not vehicle_model:
+        if not year or not vehicle_model:
+            return []
+        if locations is not None:
+            if not locations:
+                return []
+        elif not location:
             return []
         query = self._apply_identity_filters(
-            self._scope_query(db, year=year, location=location, vehicle_model=vehicle_model),
+            self._scope_query(
+                db, year=year, location=location, locations=locations, vehicle_model=vehicle_model
+            ),
             stamping_supplier=stamping_supplier,
             version=None,
         )

@@ -7,6 +7,8 @@
 
 from __future__ import annotations
 
+from decimal import Decimal
+
 from sqlalchemy.orm import Session
 
 from app.common.audit import (
@@ -37,6 +39,8 @@ from app.schemas.vo.stamping_process_fee_vo import (
     StampingProcessFeeVO,
 )
 from app.schemas.vo.user_vo import UserVO
+from app.services.masterdata.location.location_service import LocationService
+from app.services.masterdata.vehicle_model import VehicleModelService
 from app.services.stamping.process_fee.fee_math import resolve_final_fee
 from app.services.stamping.process_fee.scope import require_audit_scope, require_scope
 
@@ -94,10 +98,38 @@ class StampingProcessFeeService:
         query: StampingProcessFeeQuery,
     ) -> tuple[list[StampingProcessFeeVO], int, ProcessFeeListFilters]:
         skip = (query.page - 1) * query.size
+        location_service = LocationService()
+        locations: list[str] | None = None
+        if query.location:
+            locations = location_service.expand_for_query(db, query.location)
+            if not locations:
+                return (
+                    [],
+                    0,
+                    {
+                        "year": query.year,
+                        "location": query.location,
+                        "stamping_supplier": query.stamping_supplier,
+                        "vehicle_model": query.vehicle_model,
+                        "version": query.version,
+                        "part_number": query.part_number,
+                        "audit_status": query.audit_status,
+                        "only_zero": bool(query.only_zero),
+                        "summary": {
+                            "total_count": 0,
+                            "total_fee": Decimal("0"),
+                            "avg_fee": None,
+                            "zero_count": 0,
+                            "pending_count": 0,
+                            "approved_count": 0,
+                            "version_label": "—",
+                        },
+                    },
+                )
         rows, total = self.fee_repo.paginate(
             db,
             year=query.year,
-            location=query.location,
+            locations=locations,
             stamping_supplier=query.stamping_supplier,
             vehicle_model=query.vehicle_model,
             version=query.version,
@@ -121,7 +153,7 @@ class StampingProcessFeeService:
             "summary": self.fee_repo.summarize_by_filters(
                 db,
                 year=query.year,
-                location=query.location,
+                locations=locations,
                 stamping_supplier=query.stamping_supplier,
                 vehicle_model=query.vehicle_model,
                 version=query.version,
@@ -274,7 +306,7 @@ class StampingProcessFeeService:
         return sorted(set(fee_years) | set(rate_years), reverse=True)
 
     def list_locations(self, db: Session, year: int | None = None) -> list[str]:
-        return self.fee_repo.get_distinct_locations(db, year=year)
+        return LocationService().list_registered(db)
 
     def list_suppliers(
         self,
@@ -284,10 +316,13 @@ class StampingProcessFeeService:
         vehicle_model: str | None = None,
         version: str | None = None,
     ) -> list[str]:
+        locations = self._expand_locations(db, location)
+        if locations is not None and not locations:
+            return []
         return self.fee_repo.get_distinct_suppliers(
             db,
             year=year,
-            location=location,
+            locations=locations,
             vehicle_model=vehicle_model,
             version=version,
         )
@@ -299,12 +334,7 @@ class StampingProcessFeeService:
         location: str | None = None,
         stamping_supplier: str | None = None,
     ) -> list[str]:
-        return self.fee_repo.get_distinct_vehicle_models(
-            db,
-            year=year,
-            location=location,
-            stamping_supplier=stamping_supplier,
-        )
+        return VehicleModelService().list_filter_codes(db, location)
 
     def list_versions(
         self,
@@ -314,10 +344,20 @@ class StampingProcessFeeService:
         stamping_supplier: str | None = None,
         vehicle_model: str | None = None,
     ) -> list[str]:
+        locations = self._expand_locations(db, location)
+        if locations is not None and not locations:
+            return []
         return self.fee_repo.get_distinct_versions(
             db,
             year=year,
-            location=location,
+            locations=locations,
             stamping_supplier=stamping_supplier,
             vehicle_model=vehicle_model,
         )
+
+    @staticmethod
+    def _expand_locations(db: Session, raw: str | None) -> list[str] | None:
+        text = (raw or "").strip()
+        if not text:
+            return None
+        return LocationService().expand_for_query(db, text)

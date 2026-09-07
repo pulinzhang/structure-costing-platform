@@ -7,7 +7,7 @@ from dataclasses import dataclass, replace
 from app.exceptions.base import BusinessException
 from app.schemas.dto.stamping_process_fee_dto import StampingProcessFeeScopeDTO
 
-SCOPE_REQUIRED_MESSAGE = "须选定年度、基地、配套车型。"
+SCOPE_REQUIRED_MESSAGE = "须选定年度、基地、项目。"
 ALL_SUPPLIERS_LOCK = "全部工厂"
 
 
@@ -26,7 +26,7 @@ def _optional_text(value: str | None) -> str | None:
 
 
 def require_scope(dto: StampingProcessFeeScopeDTO) -> ProcessFeeWorkScope:
-    """批量删除：年+基地+车型必填；工厂可选（按查询收窄）。"""
+    """批量删除：年+基地+项目必填；工厂可选（按查询收窄）。"""
     location = (dto.location or "").strip()
     vehicle_model = _optional_text(dto.vehicle_model)
     if not dto.year or not location or not vehicle_model:

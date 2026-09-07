@@ -19,7 +19,7 @@ class DashboardScopeVO(BaseModel):
     years: list[int] = Field(default_factory=list, description="可选年度")
     months: list[int] = Field(default_factory=list, description="可选月份")
     locations: list[str] = Field(default_factory=list, description="可选生产基地")
-    vehicle_models: list[str] = Field(default_factory=list, description="可选配套车型")
+    vehicle_models: list[str] = Field(default_factory=list, description="可选项目")
 
 
 class DashboardMasterStatsVO(BaseModel):
@@ -140,7 +140,7 @@ class SteelPriceCalcFilterOptionsVO(BaseModel):
     years: list[int] = Field(default_factory=list, description="可选年度")
     months: list[int] = Field(default_factory=list, description="可选月份")
     locations: list[str] = Field(default_factory=list, description="可选基地")
-    vehicle_models: list[str] = Field(default_factory=list, description="可选配套车型")
+    vehicle_models: list[str] = Field(default_factory=list, description="可选项目")
 
 
 class SteelPriceCalcStatsVO(BaseModel):
@@ -150,7 +150,7 @@ class SteelPriceCalcStatsVO(BaseModel):
     adjustment_rule_count: int = Field(..., description="厚/宽调价规则条数")
     thickness_row_count: int = Field(
         ...,
-        description="厚度规格行数（冲压材料+厚度去重；未选基地时为 0；可选车型收窄）",
+        description="厚度规格行数（冲压材料+厚度去重；未选基地时为 0；可选项目收窄）",
     )
     filters: SteelPriceCalcFilterOptionsVO = Field(
         default_factory=SteelPriceCalcFilterOptionsVO,

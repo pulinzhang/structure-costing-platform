@@ -13,7 +13,7 @@ COMMON_FIELD_LABELS: dict[str, str] = {
     "year": "年度",
     "month": "月份",
     "location": "采购基地",
-    "vehicle_model": "项目/车型",
+    "vehicle_model": "项目",
     "bom_version": "BOM 版本",
     "part_number": "零件号",
     "part_name": "零件名称",

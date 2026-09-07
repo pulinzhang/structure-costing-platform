@@ -536,7 +536,9 @@ function summarizeGateMessage(item) {
     const msg = (item.message || '').trim();
     if (!msg) return '—';
     return msg
-        .replace(/已发现\s*(\d+)\s*个配套车型/, '$1 车型发现')
+        .replace(/已发现\s*(\d+)\s*个项目/, '$1 项目发现')
+        .replace(/已发现\s*(\d+)\s*个配套车型/, '$1 项目发现')
+        .replace(/已发现\s*(\d+)\s*个项目/, '$1 项目发现')
         .replace(/已发现\s*(\d+)\s*个冲压工厂/, '$1 工厂发现')
         .replace(/冲次单价\s*(\d+)\s*条/, '冲次 $1')
         .replace(/焊接单价\s*(\d+)\s*条/, '焊接 $1')
@@ -1060,7 +1062,7 @@ function renderPlanScope() {
                       ? `
                     <div class="pl-8 py-1.5 space-y-0.5 text-[10px] text-neutral-600">
                         <div class="flex justify-between gap-2">
-                            <span>车型</span>
+                            <span>项目</span>
                             <span class="font-mono text-neutral-400">${esc(s.vehicle_model)}</span>
                         </div>
                         <div class="flex justify-between gap-2">
@@ -1102,11 +1104,11 @@ function renderPlanScope() {
                 </div>
             </div>
             <div>
-                ${branchHeader(vehicleKey, '配套车型', vehicles.length, vehicleOpen)}
+                ${branchHeader(vehicleKey, '项目', vehicles.length, vehicleOpen)}
                 ${vehicleChildren}
             </div>
             <div class="mt-2">
-                ${branchHeader(l0Key, '车型 BOM', l0Scopes.length, l0Open)}
+                ${branchHeader(l0Key, '项目 BOM', l0Scopes.length, l0Open)}
                 ${l0Children}
             </div>
         </div>`;

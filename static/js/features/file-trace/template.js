@@ -27,7 +27,7 @@ export function fileTraceTemplate() {
                             <option value="">全部月份</option>
                         </select>
                         <select id="ftFilterVehicle" class="h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#9e9e9e] focus:outline-none focus:border-[#ff5252]">
-                            <option value="">全部车型</option>
+                            <option value="">全部项目</option>
                         </select>
                         <select id="ftFilterCreator" class="h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#9e9e9e] focus:outline-none focus:border-[#ff5252]">
                             <option value="">全部上传人</option>

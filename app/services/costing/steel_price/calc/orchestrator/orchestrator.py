@@ -45,6 +45,7 @@ from app.services.costing.steel_price.calc.orchestrator.progress import (
     ProgressCallback,
     ProgressNotifier,
 )
+from app.services.masterdata.location.location_service import LocationService
 
 
 class SteelPriceCalcOrchestrator:
@@ -162,6 +163,7 @@ class SteelPriceCalcOrchestrator:
         location = (dto.location or "").strip()
         if not location:
             raise BusinessException("计算钢价必须指定生产基地")
+        location = LocationService().require_enabled(db, location)
         request = SteelPriceCalcRequest(
             year=dto.year,
             month=dto.month,

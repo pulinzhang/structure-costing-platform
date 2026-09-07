@@ -16,7 +16,7 @@ class StampingPartCostScopeDTO(BaseModel):
     year: int = Field(..., ge=2000, le=2100, description="年度")
     month: int = Field(..., ge=1, le=12, description="月份")
     location: str = Field(..., min_length=1, description="基地")
-    vehicle_model: str = Field(..., min_length=1, description="车型")
+    vehicle_model: str = Field(..., min_length=1, description="项目")
     version: str | None = Field(None, description="版本")
     stamping_supplier: str | None = Field(None, description="冲压工厂")
 
@@ -40,7 +40,7 @@ class StampingPartCostQuery(BaseModel):
     month: int | None = Field(None, description="月份")
     location: str | None = Field(None, description="基地")
     stamping_supplier: str | None = Field(None, description="冲压工厂")
-    vehicle_model: str | None = Field(None, description="车型")
+    vehicle_model: str | None = Field(None, description="项目")
     version: str | None = Field(None, description="版本")
     part_number: str | None = Field(None, description="零件号")
     audit_status: str | None = Field(None, description="审核状态")

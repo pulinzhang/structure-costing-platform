@@ -65,12 +65,12 @@ def list_parts(
 def export_download(
     location: str = Query(..., min_length=1, description="采购基地"),
     stamping_supplier: str | None = Query(None, description="冲压工厂"),
-    vehicle_model: str | None = Query(None, description="车型"),
+    vehicle_model: str | None = Query(None, description="项目"),
     version: str | None = Query(None, description="版本"),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_PARTS_EXPORT)),
 ) -> StreamingResponse:
-    """按基地导出工艺确认表；冲压工厂、车型、版本可选。"""
+    """按基地导出工艺确认表；冲压工厂、项目、版本可选。"""
     content, filename = _export_service.export(
         db,
         location=location,
@@ -95,7 +95,7 @@ def batch_delete_parts(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_PARTS_DELETE)),
 ) -> ApiResponse[StampingPartBatchDeleteResultVO]:
-    """按基地 + 车型 + 版本批量删除零件；冲压工厂可选。"""
+    """按基地 + 项目 + 版本批量删除零件；冲压工厂可选。"""
     result = _stamping_service.batch_delete(db, body)
     mill = result.stamping_supplier or "全部工厂"
     scope = f"{result.location} / {mill} / " f"{result.vehicle_model} / {result.version}"
@@ -188,6 +188,7 @@ def get_cascade_filters(
     current_user: UserVO = Depends(
         require_any_perm(
             Perm.STAMPING_PARTS_VIEW,
+            Perm.STAMPING_UPLOAD_VIEW,
             Perm.STEEL_PRICE_CALC_VIEW,
             Perm.STEEL_PRICE_LIST_VIEW,
             Perm.STAMPING_PROCESS_FEE_CALC_VIEW,
@@ -196,7 +197,7 @@ def get_cascade_filters(
         )
     ),
 ) -> ApiResponse[StampingCascadeFilterOptionsVO]:
-    """冲压级联筛选选项：基地 → 车型 → 版本 → 冲压工厂"""
+    """冲压级联筛选选项：基地 → 项目 → 版本 → 冲压工厂"""
     options = _stamping_service.get_cascade_filter_options(db, query)
     return ApiResponse.ok(data=options, message="获取成功")
 

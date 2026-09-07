@@ -45,6 +45,7 @@ from app.services.costing.engine.annual_calc_planner import AnnualCalcPlanner
 from app.services.costing.engine.gate_checker import GateChecker
 from app.services.costing.engine.run_orchestrator import RunDeletedError, RunOrchestrator
 from app.services.costing.engine.scope_discovery import ScopeDiscovery
+from app.services.masterdata.location.location_service import LocationService
 
 logger = logging.getLogger("service.costing.engine")
 
@@ -94,9 +95,7 @@ class CostingEngineService:
         year: int,
         month: int,
     ) -> CostingEngineReadyVO:
-        location_clean = (location or "").strip()
-        if not location_clean:
-            raise BusinessException("请指定生产基地")
+        location_clean = LocationService().require_enabled(db, (location or "").strip())
 
         discovered = self.discovery.discover(db, location=location_clean, year=year, month=month)
         upload_or_config = self.gate_checker.check(db, discovered)

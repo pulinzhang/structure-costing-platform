@@ -8,6 +8,7 @@ from decimal import Decimal
 from sqlalchemy.orm import Session
 
 from app.models.stamping import StampingTonnagePrice
+from app.repositories.llm.location_in import location_in_clause
 
 
 @dataclass(frozen=True, slots=True)
@@ -30,8 +31,9 @@ class TonnagePriceAnalysisRepository:
         limit: int = 500,
     ) -> list[TonnagePriceRow]:
         q = db.query(StampingTonnagePrice)
-        if location:
-            q = q.filter(StampingTonnagePrice.location == location)
+        loc_filter = location_in_clause(db, StampingTonnagePrice.location, location)
+        if loc_filter is not None:
+            q = q.filter(loc_filter)
         if year is not None:
             q = q.filter(StampingTonnagePrice.year == year)
         if tonnage is not None:

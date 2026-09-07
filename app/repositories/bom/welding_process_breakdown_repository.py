@@ -105,6 +105,7 @@ class BomWeldingProcessBreakdownRepository:
         q: Query[BomWeldingProcessBreakdownNode],
         *,
         location: str | None = None,
+        locations: list[str] | None = None,
         customer_name: str | None = None,
         vehicle_model: str | None = None,
         bom_version: str | None = None,
@@ -114,7 +115,9 @@ class BomWeldingProcessBreakdownRepository:
         parse_status: str | None = None,
         process_line_count_eq: int | None = None,
     ) -> Query[BomWeldingProcessBreakdownNode]:
-        if location:
+        if locations is not None:
+            q = q.filter(BomWeldingProcessBreakdownNode.location.in_(locations))
+        elif location:
             q = q.filter(BomWeldingProcessBreakdownNode.location == location)
         if customer_name:
             q = q.filter(BomWeldingProcessBreakdownNode.customer_name == customer_name)
@@ -139,6 +142,7 @@ class BomWeldingProcessBreakdownRepository:
         db: Session,
         *,
         location: str | None = None,
+        locations: list[str] | None = None,
         customer_name: str | None = None,
         vehicle_model: str | None = None,
         bom_version: str | None = None,
@@ -156,6 +160,7 @@ class BomWeldingProcessBreakdownRepository:
         q = self._apply_list_filters(
             q,
             location=location,
+            locations=locations,
             customer_name=customer_name,
             vehicle_model=vehicle_model,
             bom_version=bom_version,
@@ -172,6 +177,7 @@ class BomWeldingProcessBreakdownRepository:
         db: Session,
         *,
         location: str | None = None,
+        locations: list[str] | None = None,
         customer_name: str | None = None,
         vehicle_model: str | None = None,
         bom_version: str | None = None,
@@ -186,6 +192,7 @@ class BomWeldingProcessBreakdownRepository:
         q = self._build_list_query(
             db,
             location=location,
+            locations=locations,
             customer_name=customer_name,
             vehicle_model=vehicle_model,
             bom_version=bom_version,
@@ -215,6 +222,7 @@ class BomWeldingProcessBreakdownRepository:
         db: Session,
         *,
         location: str | None = None,
+        locations: list[str] | None = None,
         customer_name: str | None = None,
         vehicle_model: str | None = None,
         bom_version: str | None = None,
@@ -228,6 +236,7 @@ class BomWeldingProcessBreakdownRepository:
         q = self._build_list_query(
             db,
             location=location,
+            locations=locations,
             customer_name=customer_name,
             vehicle_model=vehicle_model,
             bom_version=bom_version,
@@ -322,6 +331,7 @@ class BomWeldingProcessBreakdownRepository:
         db: Session,
         *,
         location: str | None = None,
+        locations: list[str] | None = None,
         customer_name: str | None = None,
         vehicle_model: str | None = None,
         bom_version: str | None = None,
@@ -335,6 +345,7 @@ class BomWeldingProcessBreakdownRepository:
         return self._build_list_query(
             db,
             location=location,
+            locations=locations,
             customer_name=customer_name,
             vehicle_model=vehicle_model,
             bom_version=bom_version,
@@ -351,6 +362,7 @@ class BomWeldingProcessBreakdownRepository:
         db: Session,
         *,
         location: str | None = None,
+        locations: list[str] | None = None,
         customer_name: str | None = None,
         vehicle_model: str | None = None,
         bom_version: str | None = None,
@@ -364,6 +376,7 @@ class BomWeldingProcessBreakdownRepository:
         q = self._build_list_query(
             db,
             location=location,
+            locations=locations,
             customer_name=customer_name,
             vehicle_model=vehicle_model,
             bom_version=bom_version,
@@ -384,6 +397,7 @@ class BomWeldingProcessBreakdownRepository:
         db: Session,
         *,
         location: str | None = None,
+        locations: list[str] | None = None,
         customer_name: str | None = None,
         vehicle_model: str | None = None,
         bom_version: str | None = None,
@@ -396,6 +410,7 @@ class BomWeldingProcessBreakdownRepository:
         q = self._build_list_query(
             db,
             location=location,
+            locations=locations,
             customer_name=customer_name,
             vehicle_model=vehicle_model,
             bom_version=bom_version,
@@ -467,24 +482,18 @@ class BomWeldingProcessBreakdownRepository:
         )
         return [r[0] for r in rows if r[0]]
 
-    def get_distinct_vehicle_models(self, db: Session) -> list[str]:
-        rows = (
-            db.query(BomWeldingProcessBreakdownNode.vehicle_model)
-            .distinct()
-            .order_by(BomWeldingProcessBreakdownNode.vehicle_model)
-            .all()
-        )
-        return [r[0] for r in rows if r[0]]
-
     def get_distinct_bom_versions(
         self,
         db: Session,
         *,
         location: str | None = None,
+        locations: list[str] | None = None,
         vehicle_model: str | None = None,
     ) -> list[str]:
         q = db.query(BomWeldingProcessBreakdownNode.bom_version)
-        if location:
+        if locations is not None:
+            q = q.filter(BomWeldingProcessBreakdownNode.location.in_(locations))
+        elif location:
             q = q.filter(BomWeldingProcessBreakdownNode.location == location)
         if vehicle_model:
             q = q.filter(BomWeldingProcessBreakdownNode.vehicle_model == vehicle_model)

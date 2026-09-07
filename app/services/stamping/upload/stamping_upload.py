@@ -38,6 +38,7 @@ from app.services.async_task import (
 )
 from app.services.file_trace.path_utils import to_upload_relpath
 from app.services.file_trace.register import register_existing
+from app.services.masterdata.vehicle_model import VehicleModelService
 from app.services.stamping.process_seq_validator import (
     ProcessSeqOccurrence,
     find_duplicate_process_seqs,
@@ -79,6 +80,7 @@ class StampingUploadService:
         file_content: bytes,
         filename: str,
         location: str,
+        vehicle_model: str,
         current_user: UserVO,
         progress_callback: ProgressCallback | None = None,
     ) -> UploadResult:
@@ -88,6 +90,14 @@ class StampingUploadService:
         主数据：解析完成后用库中已设比率回写工序，再删除旧数据并写入；
         删除与写入在同一事务中，全部成功或全部回滚。
         """
+        clock = now()
+        location, selected = VehicleModelService().require_introducible(
+            self.db,
+            (location or "").strip(),
+            (vehicle_model or "").strip(),
+            clock.year,
+            clock.month,
+        )
         import os
         import tempfile
 
@@ -109,8 +119,9 @@ class StampingUploadService:
                 vehicle_model=parse_result.vehicle_model,
                 version=parse_result.version,
             )
+            VehicleModelService().assert_matches_selected(selected, scope.vehicle_model)
             location = scope.location
-            vehicle_model = scope.vehicle_model
+            vehicle_model = selected
             version = scope.version
             stamping_supplier = scope.stamping_supplier
             tailor_parent_numbers = set(tailor_result.parent_part_numbers)
@@ -485,15 +496,22 @@ class StampingUploadService:
     def start_upload(
         cls,
         *,
+        db: Session,
         file_content: bytes,
         filename: str,
         location: str,
+        vehicle_model: str,
         current_user: UserVO,
     ) -> AsyncTaskAcceptedVO:
         """创建异步任务并入队；后台线程开独立 Session 解析入库。"""
-        location = (location or "").strip()
-        if not location:
-            raise BusinessException("请输入基地")
+        clock = now()
+        location, vehicle_model = VehicleModelService().require_introducible(
+            db,
+            (location or "").strip(),
+            (vehicle_model or "").strip(),
+            clock.year,
+            clock.month,
+        )
         if not filename:
             raise BusinessException("未提供文件名")
         ext = "." + filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
@@ -523,6 +541,7 @@ class StampingUploadService:
                     file_content=file_content,
                     filename=filename,
                     location=location,
+                    vehicle_model=vehicle_model,
                     progress_callback=on_progress,
                     current_user=current_user,
                 )

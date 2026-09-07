@@ -21,15 +21,15 @@
 
 | 文档 | 状态 |
 |------|------|
-| [location-design.md](masterdata/location-design.md) | 基地（设计定稿，未落地）：现网 `location`；绝对上游；启用/禁用；§4.3 删除 |
-| [vehicle-model-design.md](masterdata/vehicle-model-design.md) | 项目（设计初稿）：现网 `vehicle_model`；挂已有基地；生效/失效 |
+| [location-design.md](masterdata/location-design.md) | 基地（设计定稿，未落地）：现网 `location`；绝对上游；启用/禁用；§4.3 引用保护（修改与删除） |
+| [vehicle-model-design.md](masterdata/vehicle-model-design.md) | 项目（已落地）：挂基地；上传+一览 HUD 分卡；写门禁已接到工艺/布点/BOM/档案/计算/引擎；下一跳外键另做 |
 | [supplier-design.md](masterdata/supplier-design.md) | 供应商（设计初稿）：缩写 + 全称 + ERP 代码；启用/禁用 |
 
 ## 冲压 `stamping/`
 
 | 文档 | 状态 |
 |------|------|
-| [stamping-apqp-die-before-process-design.md](stamping/stamping-apqp-die-before-process-design.md) | 产品质量先期策划（APQP）先布点后工艺（设计）：布点必选基地；工艺必选布点项目并对照文件项目号 |
+| [stamping-apqp-die-before-process-design.md](stamping/stamping-apqp-die-before-process-design.md) | 产品质量先期策划（APQP）先布点后工艺（已落地）：布点/工艺均必选该月可引入项目；工艺仍不要求布点 |
 | [stamping-process-confirmation-design.md](stamping/stamping-process-confirmation-design.md) | 冲压工艺确认表（已落地）：加工费 + 材料/利废依据 |
 | [stamping-family-die-byproduct-design.md](stamping/stamping-family-die-byproduct-design.md) | 家模废料副产品（上传已落地）：主表 `is_scrap_byproduct`；材料 H×Q，不算冲压费 |
 | [stamping-die-management-design.md](stamping/stamping-die-management-design.md) | 模具布点依据（已落地；导入顺序见上一行 APQP 设计） |
@@ -45,8 +45,8 @@
 | [annual-part-price-import-template-design.md](bom/annual-part-price-import-template-design.md) | 年度零件价导入模板（基地+项目外购叶子） |
 | [welding-fee-design.md](bom/welding-fee-design.md) | 焊接费（已上线）：`bom_welding_fees` + `level`；财务读 `level=0` |
 | [welding-process-breakdown-design.md](bom/welding-process-breakdown-design.md) | 焊接工艺拆解（已上线）：有原文即拆（含分总成），不计费 |
-| [bom-procurement-objects-design.md](bom/bom-procurement-objects-design.md) | 采购对象清单（已落地）：退化供货件 / 分总成 / 冲压件，生成落库、检测、确认 |
-| [bom-procurement-object-supplier-design.md](bom/bom-procurement-object-supplier-design.md) | 采购对象指定供应商（设计）：行上合同对方 |
+| [bom-procurement-objects-design.md](bom/bom-procurement-objects-design.md) | 采购对象清单（已落地）：退化供货件 / 分总成 / 冲压件；生成落库、检测、确认。基地/项目写读见该文 §13 |
+| [bom-procurement-object-supplier-design.md](bom/bom-procurement-object-supplier-design.md) | 采购对象指定供应商（设计）：行上点选主数据缩写 |
 
 ## 一事一议 `yishiyiyi/`
 

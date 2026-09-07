@@ -30,6 +30,7 @@ from app.services.async_task import (
     WorkerTaskOutcome,
     outcome_from_calc_status,
 )
+from app.services.masterdata.vehicle_model import VehicleModelService
 from app.services.stamping.process_fee.calc.models import ProgressCallback
 from app.services.stamping.process_fee.calc.orchestrator.batch_engine import (
     BatchCalculationEngine,
@@ -162,6 +163,10 @@ class StampingProcessFeeCalcOrchestrator:
         dto: StampingProcessFeeCalcDTO,
         current_user: UserVO,
     ) -> AsyncTaskAcceptedVO:
+        canonical, vehicle_model = VehicleModelService().require_overlaps_year(
+            db, dto.location, dto.vehicle_model, dto.year
+        )
+        dto = dto.model_copy(update={"location": canonical, "vehicle_model": vehicle_model})
         lock_log = self.begin_processing(
             db,
             dto,

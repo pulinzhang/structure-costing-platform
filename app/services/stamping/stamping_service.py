@@ -42,6 +42,8 @@ from app.schemas.vo.stamping_vo import (
     StampingProcessUpdate,
 )
 from app.schemas.vo.user_vo import UserVO
+from app.services.masterdata.location.location_service import LocationService
+from app.services.masterdata.vehicle_model import VehicleModelService
 
 logger = logging.getLogger("service.stamping")
 
@@ -103,16 +105,21 @@ class StampingPartService:
         """按基地 / 车型汇总主数据：零件数 / 工序数 / 车型数。"""
         location_clean = location.strip() if location else None
         vehicle_clean = vehicle_model.strip() if vehicle_model else None
+        locations: list[str] | None = None
+        if location_clean:
+            locations = LocationService().expand_for_query(db, location_clean)
+            if not locations:
+                return {"parts": 0, "processes": 0, "models": 0}
         _rows, parts = self.repository.paginate(
             db,
-            location=location_clean,
+            locations=locations,
             vehicle_model=vehicle_clean,
             skip=0,
             limit=1,
         )
         summary = self.repository.summarize_by_filters(
             db,
-            location=location_clean,
+            locations=locations,
             vehicle_model=vehicle_clean,
         )
         return {
@@ -130,7 +137,21 @@ class StampingPartService:
     ) -> tuple[list[StampingPartListResponse], int, StampingPartListFilterOptions]:
         """获取零件列表（不含工序详情，含工序统计数 process_count）"""
         skip = (query.page - 1) * query.size
-        location = query.location
+        location_service = LocationService()
+        locations: list[str] | None = None
+        if query.location:
+            locations = location_service.expand_for_query(db, query.location)
+            if not locations:
+                raw = self.repository.get_filter_options(db)
+                filter_vo = StampingPartListFilterOptions(
+                    locations=location_service.list_registered(db),
+                    vehicle_models=VehicleModelService().list_filter_codes(db, query.location),
+                    versions=list(raw["versions"]),
+                    materials=list(raw["materials"]),
+                    stamping_suppliers=list(raw["stamping_suppliers"]),
+                    summary=StampingPartListSummaryVO(),
+                )
+                return [], 0, filter_vo
         vehicle_model = query.vehicle_model
         version = query.version
         part_number = query.part_number
@@ -138,7 +159,7 @@ class StampingPartService:
         stamping_supplier = query.stamping_supplier
         parts, total = self.repository.paginate(
             db,
-            location=location,
+            locations=locations,
             vehicle_model=vehicle_model,
             version=version,
             part_number=part_number,
@@ -160,15 +181,15 @@ class StampingPartService:
         # 筛选下拉框选项 + 当前筛选下去重维度汇总
         raw = self.repository.get_filter_options(db)
         filter_vo = StampingPartListFilterOptions(
-            locations=list(raw["locations"]),
-            vehicle_models=list(raw["vehicle_models"]),
+            locations=location_service.list_registered(db),
+            vehicle_models=VehicleModelService().list_filter_codes(db, query.location),
             versions=list(raw["versions"]),
             materials=list(raw["materials"]),
             stamping_suppliers=list(raw["stamping_suppliers"]),
             summary=StampingPartListSummaryVO.model_validate(
                 self.repository.summarize_by_filters(
                     db,
-                    location=location,
+                    locations=locations,
                     vehicle_model=vehicle_model,
                     version=version,
                     part_number=part_number,
@@ -182,31 +203,78 @@ class StampingPartService:
     def get_filter_options(self, db: Session) -> StampingPartListFilterOptions:
         """获取筛选下拉框的可选值"""
         raw = self.repository.get_filter_options(db)
-        return StampingPartListFilterOptions.model_validate(raw)
+        return StampingPartListFilterOptions(
+            locations=LocationService().list_registered(db),
+            vehicle_models=VehicleModelService().list_filter_codes(db),
+            versions=list(raw["versions"]),
+            materials=list(raw["materials"]),
+            stamping_suppliers=list(raw["stamping_suppliers"]),
+            summary=StampingPartListSummaryVO(),
+        )
 
     def get_cascade_filter_options(
         self,
         db: Session,
         query: StampingCascadeFilterQuery,
     ) -> StampingCascadeFilterOptionsVO:
-        """获取基地 → 车型 → 版本 → 冲压工厂 级联筛选选项"""
+        """获取基地 → 项目 → 版本 → 冲压工厂 级联筛选选项"""
+        location_service = LocationService()
+        location_raw = query.location.strip() if query.location else None
+        locations: list[str] | None = None
+        if location_raw:
+            locations = location_service.expand_for_query(db, location_raw)
+            if not locations:
+                return StampingCascadeFilterOptionsVO(
+                    locations=location_service.list_enabled(db),
+                    stamping_suppliers=[],
+                    vehicle_models=[],
+                    versions=[],
+                )
         raw = self.repository.get_cascade_filter_options(
             db,
-            location=query.location.strip() if query.location else None,
+            locations=locations,
             stamping_supplier=query.stamping_supplier.strip() if query.stamping_supplier else None,
             vehicle_model=query.vehicle_model.strip() if query.vehicle_model else None,
             version=query.version.strip() if query.version else None,
         )
-        return StampingCascadeFilterOptionsVO.model_validate(raw)
+        vehicle_svc = VehicleModelService()
+        if location_raw and query.year is not None:
+            if query.month is not None:
+                vehicle_models = vehicle_svc.list_introducible(
+                    db, location_raw, query.year, query.month
+                )
+            else:
+                vehicle_models = vehicle_svc.list_overlaps_year(db, location_raw, query.year)
+        else:
+            vehicle_models = vehicle_svc.list_filter_codes(db, location_raw)
+        return StampingCascadeFilterOptionsVO(
+            locations=location_service.list_enabled(db),
+            stamping_suppliers=list(raw["stamping_suppliers"]),
+            vehicle_models=vehicle_models,
+            versions=list(raw["versions"]),
+        )
 
     def list_materials(
         self, db: Session, query: StampingMaterialQuery
     ) -> tuple[list[StampingMaterialResponse], int, StampingPartListFilterOptions]:
         """获取材料列表（去重；拼焊件厚度/长/宽为子片拼接）。"""
         skip = (query.page - 1) * query.size
+        location_service = LocationService()
+        locations: list[str] | None = None
+        if query.location:
+            locations = location_service.expand_for_query(db, query.location)
+            if not locations:
+                filter_vo = StampingPartListFilterOptions(
+                    locations=location_service.list_registered(db),
+                    vehicle_models=[],
+                    versions=[],
+                    materials=[],
+                    stamping_suppliers=[],
+                )
+                return [], 0, filter_vo
         parts = self.repository.list_parts_for_materials(
             db,
-            location=query.location,
+            locations=locations,
             stamping_supplier=query.stamping_supplier,
             vehicle_model=query.vehicle_model,
             version=query.version,
@@ -240,7 +308,13 @@ class StampingPartService:
         total = len(unique_rows)
         page_rows = unique_rows[skip : skip + query.size]
         filter_options = self.repository.get_filter_options(db)
-        filter_vo = StampingPartListFilterOptions.model_validate(filter_options)
+        filter_vo = StampingPartListFilterOptions(
+            locations=location_service.list_registered(db),
+            vehicle_models=VehicleModelService().list_filter_codes(db, query.location),
+            versions=list(filter_options["versions"]),
+            materials=list(filter_options["materials"]),
+            stamping_suppliers=list(filter_options["stamping_suppliers"]),
+        )
         return page_rows, total, filter_vo
 
     def count_material_specs(

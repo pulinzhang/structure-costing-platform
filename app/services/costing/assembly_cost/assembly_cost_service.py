@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from decimal import Decimal
+
 from sqlalchemy.orm import Session
 
 from app.common.audit import display_name
@@ -56,6 +58,8 @@ from app.services.costing.assembly_cost.calc.calc_log_service import (
 from app.services.costing.assembly_cost.calc.orchestrator import (
     AssemblyCostCalcOrchestrator,
 )
+from app.services.masterdata.location.location_service import LocationService
+from app.services.masterdata.vehicle_model import VehicleModelService
 
 __all__ = [
     "DUPLICATE_SCOPE_CALC_MESSAGE",
@@ -145,6 +149,11 @@ class AssemblyCostService:
         dto: AssemblyCostCalcDTO,
         current_user: UserVO,
     ) -> AsyncTaskAcceptedVO:
+        canonical, vehicle_model = VehicleModelService().require_introducible(
+            db, dto.location, dto.vehicle_model, dto.year, dto.month
+        )
+        if canonical != dto.location or vehicle_model != dto.vehicle_model:
+            dto = dto.model_copy(update={"location": canonical, "vehicle_model": vehicle_model})
         lock_log = self.begin_processing(
             db,
             dto,
@@ -242,11 +251,38 @@ class AssemblyCostService:
     def paginate(
         self, db: Session, query: AssemblyCostQuery
     ) -> tuple[list[AssemblyCostVO], int, AssemblyCostListFilters]:
+        locations: list[str] | None = None
+        if query.location:
+            locations = LocationService().expand_for_query(db, query.location)
+            if not locations:
+                empty_filters: AssemblyCostListFilters = {
+                    "year": query.year,
+                    "month": query.month,
+                    "location": query.location,
+                    "vehicle_model": query.vehicle_model,
+                    "bom_version": query.bom_version,
+                    "part_number": query.part_number,
+                    "audit_status": query.audit_status,
+                    "calc_status": query.calc_status,
+                    "view": query.view,
+                    "level": query.level,
+                    "object_kind": query.object_kind,
+                    "summary": {
+                        "total_count": 0,
+                        "ok_count": 0,
+                        "partial_count": 0,
+                        "pending_count": 0,
+                        "approved_count": 0,
+                        "grand_total_sum": Decimal("0"),
+                        "total_amount_sum": Decimal("0"),
+                    },
+                }
+                return [], 0, empty_filters
         rows, total, filters = self.cost_repo.paginate(
             db,
             year=query.year,
             month=query.month,
-            location=query.location,
+            locations=locations,
             vehicle_model=query.vehicle_model,
             bom_version=query.bom_version,
             part_number=query.part_number,

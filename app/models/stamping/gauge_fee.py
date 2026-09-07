@@ -2,7 +2,7 @@
 
 from decimal import Decimal
 
-from sqlalchemy import Index, Integer, Numeric, String, UniqueConstraint
+from sqlalchemy import ForeignKeyConstraint, Index, Integer, Numeric, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -50,4 +50,11 @@ class StampingGaugeFee(AuditUserMixin, Base):
         Index("ix_gauge_fee_vehicle", "vehicle_model"),
         Index("ix_gauge_fee_part_number", "part_number"),
         Index("ix_gauge_fee_status", "status"),
+        ForeignKeyConstraint(
+            ["location", "vehicle_model"],
+            ["vehicle_models.location", "vehicle_models.vehicle_model"],
+            ondelete="RESTRICT",
+            onupdate="RESTRICT",
+            name="fk_stamping_gauge_fees_vehicle_models",
+        ),
     )

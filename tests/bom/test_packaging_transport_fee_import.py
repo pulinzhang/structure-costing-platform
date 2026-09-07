@@ -18,12 +18,15 @@ from app.exceptions.base import BusinessException
 from app.models.bom.node import BomSnapshot
 from app.models.bom.packaging_transport_fee import BomPackagingTransportFee
 from app.models.file_trace.upload_file import UploadFile
+from app.models.masterdata.location import Location, LocationAlias
 from app.parsers.bom.packaging_transport_fee_parser import (
     parse_packaging_transport_fee_excel,
 )
 from app.repositories.bom.packaging_transport_fee_repository import (
     BomPackagingTransportFeeRepository,
 )
+from app.repositories.masterdata.location.location_repository import LocationRepository
+from app.schemas.dto.location_dto import LocationAliasInsert, LocationInsert
 from app.services.bom.packaging_transport_fee.import_service import (
     BomPackagingTransportFeeImportService,
 )
@@ -57,6 +60,8 @@ def memory_db(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Generator[Sess
     Base.metadata.create_all(
         bind=engine,
         tables=[
+            Location.__table__,
+            LocationAlias.__table__,
             BomSnapshot.__table__,
             BomPackagingTransportFee.__table__,
             UploadFile.__table__,
@@ -64,6 +69,20 @@ def memory_db(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Generator[Sess
     )
     session_factory = sessionmaker(bind=engine)
     session = session_factory()
+    repo = LocationRepository()
+    for name, sort_order in (("大连", 1), ("芜湖", 2), ("鄂尔多斯", 3), ("青岛", 4)):
+        repo.create(
+            session,
+            LocationInsert(
+                location=name,
+                is_enabled=True,
+                sort_order=sort_order,
+                created_by="system",
+                updated_by="system",
+            ),
+        )
+        repo.create_alias(session, LocationAliasInsert(alias=f"{name}基地", location=name))
+    session.flush()
     session.add(
         BomSnapshot(
             location=LOCATION,

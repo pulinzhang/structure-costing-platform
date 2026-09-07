@@ -14,7 +14,7 @@ class BomSnapshotCreate(BaseModel):
     """创建 BOM 清单版本"""
 
     location: str = Field(..., min_length=1, max_length=50, description="采购基地")
-    vehicle_model: str = Field(..., min_length=1, max_length=50, description="车型")
+    vehicle_model: str = Field(..., min_length=1, max_length=50, description="项目")
     bom_version: str = Field(..., min_length=1, max_length=20, description="清单版本")
     product_category: str | None = Field(None, max_length=50, description="产品类别")
     customer_name: str | None = Field(None, max_length=100, description="顾客名称")
@@ -34,7 +34,7 @@ class BomSnapshotQuery(BaseModel):
     """BOM 清单分页查询"""
 
     location: str | None = Field(None, description="采购基地")
-    vehicle_model: str | None = Field(None, description="车型")
+    vehicle_model: str | None = Field(None, description="项目")
     bom_version: str | None = Field(None, description="材料清单版本")
     status: str | None = Field(None, description="状态")
     page: int = Field(1, ge=1, description="页码")

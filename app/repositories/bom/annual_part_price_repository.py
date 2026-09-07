@@ -115,12 +115,15 @@ class BomAnnualPartPriceRepository:
         self,
         db: Session,
         location: str | None = None,
+        locations: list[str] | None = None,
         year: int | None = None,
         audit_status: str | None = None,
         keyword: str | None = None,
     ) -> Query[BomAnnualPartPrice]:
         q = db.query(BomAnnualPartPrice)
-        if location is not None:
+        if locations is not None:
+            q = q.filter(BomAnnualPartPrice.location.in_(locations))
+        elif location is not None:
             q = q.filter(BomAnnualPartPrice.location == location)
         if year is not None:
             q = q.filter(BomAnnualPartPrice.year == year)
@@ -140,6 +143,7 @@ class BomAnnualPartPriceRepository:
         self,
         db: Session,
         location: str | None = None,
+        locations: list[str] | None = None,
         year: int | None = None,
         audit_status: str | None = None,
         keyword: str | None = None,
@@ -149,6 +153,7 @@ class BomAnnualPartPriceRepository:
         q = self._build_list_query(
             db,
             location=location,
+            locations=locations,
             year=year,
             audit_status=audit_status,
             keyword=keyword,
@@ -170,6 +175,7 @@ class BomAnnualPartPriceRepository:
         self,
         db: Session,
         location: str | None = None,
+        locations: list[str] | None = None,
         year: int | None = None,
         audit_status: str | None = None,
         keyword: str | None = None,
@@ -177,6 +183,7 @@ class BomAnnualPartPriceRepository:
         q = self._build_list_query(
             db,
             location=location,
+            locations=locations,
             year=year,
             audit_status=audit_status,
             keyword=keyword,
@@ -200,6 +207,7 @@ class BomAnnualPartPriceRepository:
         self,
         db: Session,
         location: str | None = None,
+        locations: list[str] | None = None,
         year: int | None = None,
         audit_status: str | None = None,
         keyword: str | None = None,
@@ -207,6 +215,7 @@ class BomAnnualPartPriceRepository:
         q = self._build_list_query(
             db,
             location=location,
+            locations=locations,
             year=year,
             audit_status=audit_status,
             keyword=keyword,

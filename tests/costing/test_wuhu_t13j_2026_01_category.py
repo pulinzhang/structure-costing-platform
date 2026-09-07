@@ -159,20 +159,37 @@ def test_t13j_loader_keeps_every_grade_thickness(db_session: Session) -> None:
 def test_t13j_grades_missing_from_base_table_do_not_borrow_category_price(
     db_session: Session,
 ) -> None:
-    """与中标厚度一览相同：基价表没有的牌号不按冷轧大类回退。"""
+    """基价表没有的牌号不按冷轧大类回退；DCO3/DCO4 与 DC03/DC04 视为同一牌号。"""
     request = SteelPriceCalcRequest(year=YEAR, month=MONTH, location=LOCATION)
-    for grade, thickness in (
-        ("DC03", Decimal("1.2000")),
-        ("DC04", Decimal("0.6500")),
-        ("冷轧", Decimal("1.2000")),
-    ):
-        rows, no_base, details = BasePriceEnricher().enrich(
-            db_session,
-            request,
-            [MaterialThicknessRow(location=LOCATION, material=grade, thickness=thickness)],
-        )
-        assert rows == []
-        assert no_base >= 1, f"{grade}@{thickness} 应无基价: {details}"
+    dc03_rows, dc03_no_base, dc03_details = BasePriceEnricher().enrich(
+        db_session,
+        request,
+        [MaterialThicknessRow(location=LOCATION, material="DC03", thickness=Decimal("1.2000"))],
+    )
+    assert dc03_no_base == 0, dc03_details
+    assert dc03_rows
+    assert {row.grade for row in dc03_rows} == {"DC03"}
+    assert {(row.steel_mill or "").strip() for row in dc03_rows} == {"邯钢"}
+    assert all(row.base_price == Decimal("3721.00") for row in dc03_rows)
+
+    dc04_rows, dc04_no_base, dc04_details = BasePriceEnricher().enrich(
+        db_session,
+        request,
+        [MaterialThicknessRow(location=LOCATION, material="DC04", thickness=Decimal("0.6500"))],
+    )
+    assert dc04_no_base == 0, dc04_details
+    assert dc04_rows
+    assert {row.grade for row in dc04_rows} == {"DC04"}
+    assert {(row.steel_mill or "").strip() for row in dc04_rows} == {"马钢"}
+    assert all(row.base_price == Decimal("3828.00") for row in dc04_rows)
+
+    category_rows, category_no_base, category_details = BasePriceEnricher().enrich(
+        db_session,
+        request,
+        [MaterialThicknessRow(location=LOCATION, material="冷轧", thickness=Decimal("1.2000"))],
+    )
+    assert category_rows == []
+    assert category_no_base >= 1, f"冷轧@1.2000 应无基价: {category_details}"
 
 
 @pytest.mark.integration
@@ -197,7 +214,8 @@ def test_t13j_calc_rows_persist_each_grade_with_mill_category_price(db_session: 
     assert all(row.grade != row.category_name for row in t13j_rows)
     assert "DC01" in {row.grade for row in rows}
     assert "HC180Y" in {row.grade for row in rows}
-    assert "DC03" not in {row.grade for row in rows}
+    assert "DC03" in {row.grade for row in rows}
+    assert "DC04" in {row.grade for row in rows}
 
     magang_07 = [
         row

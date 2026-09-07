@@ -302,6 +302,7 @@ class AssemblyCostRepository:
         year: int | None,
         month: int | None,
         location: str | None,
+        locations: list[str] | None = None,
         vehicle_model: str | None,
         bom_version: str | None,
         part_number: str | None,
@@ -316,7 +317,9 @@ class AssemblyCostRepository:
             q = q.filter(AssemblyCost.year == year)
         if month is not None:
             q = q.filter(AssemblyCost.month == month)
-        if location:
+        if locations is not None:
+            q = q.filter(AssemblyCost.location.in_(locations))
+        elif location:
             q = q.filter(AssemblyCost.location == location)
         if vehicle_model:
             q = q.filter(AssemblyCost.vehicle_model == vehicle_model)
@@ -365,6 +368,7 @@ class AssemblyCostRepository:
         year: int | None = None,
         month: int | None = None,
         location: str | None = None,
+        locations: list[str] | None = None,
         vehicle_model: str | None = None,
         bom_version: str | None = None,
         part_number: str | None = None,
@@ -383,6 +387,7 @@ class AssemblyCostRepository:
             year=year,
             month=month,
             location=location,
+            locations=locations,
             vehicle_model=vehicle_model,
             bom_version=bom_version,
             part_number=part_number,
@@ -450,6 +455,7 @@ class AssemblyCostRepository:
             year=year,
             month=month,
             location=location,
+            locations=locations,
             vehicle_model=vehicle_model,
             bom_version=bom_version,
             part_number=part_number,
@@ -492,6 +498,7 @@ class AssemblyCostRepository:
         year: int | None = None,
         month: int | None = None,
         location: str | None = None,
+        locations: list[str] | None = None,
         vehicle_model: str | None = None,
         bom_version: str | None = None,
         part_number: str | None = None,
@@ -509,6 +516,7 @@ class AssemblyCostRepository:
             year=year,
             month=month,
             location=location,
+            locations=locations,
             vehicle_model=vehicle_model,
             bom_version=bom_version,
             part_number=part_number,

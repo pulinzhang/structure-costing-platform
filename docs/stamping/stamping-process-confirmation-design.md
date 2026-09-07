@@ -5,7 +5,7 @@
 > 利废计价见 [offal-nested-material-design.md](../costing/offal-nested-material-design.md)。  
 > 四异号家模、料片四列全空见 [stamping-family-die-byproduct-design.md](stamping-family-die-byproduct-design.md)（工艺上传与布点分摊已落地；零件价月快照 / 详情 PATCH 见该文）。  
 > 模具布点是另一套表，见 [stamping-die-management-design.md](stamping-die-management-design.md)。  
-> **导入顺序**：布点不依赖工艺。本表上传 **只选采购基地**，项目从文件识别，**不要求**已有布点（冲压厂可无布点表）。细则见 [stamping-apqp-die-before-process-design.md](stamping-apqp-die-before-process-design.md)。  
+> **导入顺序**：布点不依赖工艺。本表上传 **必选采购基地与该月可引入项目**，文件代号须与所选一致，**不要求**已有布点（冲压厂可无布点表）。细则见 [stamping-apqp-die-before-process-design.md](stamping-apqp-die-before-process-design.md)。  
 > **模具编号**：本表可空、不得挡导入；无该列表头也可解析。强制编号在布点。  
 > 硬约束：分层与切片见 [architecture.md](../architecture.md)。
 
@@ -38,7 +38,7 @@
 ### 2.1 表单
 
 1. **采购基地**必选。  
-2. 项目、版本、冲压厂从文件名或表头解析，须能识别。表单 **不要**传项目。  
+2. **项目**必选（该月可引入下拉）。冲压厂、版本从文件名或表头解析，须能识别；文件项目须与所选一致。  
 3. 拖拽 `.xlsx` / `.xls`（上限 50MB）。  
 4. 同基地 + 冲压厂 + 车型 + 版本再次上传则 **整包覆盖**。  
 5. 提供「下载模板」。
@@ -142,6 +142,7 @@
 | 2026-09-04 | `cost_ratio` 口径收口到本节；代码注释不再复述 |
 | 2026-09-03 | 加工费：多序第一序切词含 PRG 即 0.80；后续双槽从该序起左右 0.50（含空码） |
 | 2026-09-03 | 工艺上传只选基地，不要求布点项目 |
+| 2026-09-08 | 工艺上传必选该月可引入项目，仍不要求布点 |
 | 2026-09-02 | 交叉引用家模副产品设计（四列全空；未改代码） |
 | 2026-08-31 | 零件详情增加是否利废开关（PATCH `/parts/{id}/offal`） |
 | 2026-08-31 | 利废材料改为成品净重×废料单价 |

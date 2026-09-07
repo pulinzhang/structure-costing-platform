@@ -15,6 +15,7 @@ from app.repositories.yishiyiyi.base_price import SteelBasePriceRepository
 from app.repositories.yishiyiyi.policy import SteelPricePolicyRepository
 from app.repositories.yishiyiyi.steel_grade_category import SteelGradeCategoryRepository
 from app.schemas.vo.winning_thickness_vo import WinningThicknessRowVO
+from app.services.masterdata.location.location_service import LocationService
 from app.services.yishiyiyi.policy.export.excel_exporter import format_interval
 from app.services.yishiyiyi.policy.match.adjustment_common import (
     PolicyMatchContext,
@@ -109,6 +110,9 @@ class WinningThicknessRowAssembler:
         location = (location or "").strip()
         if not location:
             raise BusinessException("基地不能为空")
+        locations = LocationService().expand_for_query(db, location)
+        if not locations:
+            return []
 
         grade_filter = grade.strip() if grade else None
         category_filter = category_name.strip() if category_name else None
@@ -128,7 +132,7 @@ class WinningThicknessRowAssembler:
             db,
             year=year,
             month=month,
-            location=location,
+            locations=locations,
             steel_mill=steel_mill.strip() if steel_mill else None,
             grade=grade_filter,
         )

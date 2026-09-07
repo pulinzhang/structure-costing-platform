@@ -113,7 +113,7 @@ def list_vehicle_models(
 def list_bom_versions(
     year: int | None = Query(None, description="年度"),
     location: str | None = Query(None, description="基地"),
-    vehicle_model: str | None = Query(None, description="车型"),
+    vehicle_model: str | None = Query(None, description="项目"),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(
         require_any_perm(

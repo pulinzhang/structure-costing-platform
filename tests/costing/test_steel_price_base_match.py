@@ -1,7 +1,8 @@
-"""钢材联动取基价：与中标厚度一览相同，只认基价表牌号字面。"""
+"""钢材联动取基价：与中标厚度一览相同，只认基价表牌号（O/0 视为同一字符）。"""
 
 from types import SimpleNamespace
 
+from app.common.steel_grade import grade_match_key
 from app.services.costing.steel_price.calc.category import resolve_canonical_category
 from app.services.costing.steel_price.calc.steps.enrich_base_price import (
     select_winning_base_records,
@@ -25,6 +26,29 @@ def _row(
         width=width,
         base_price=price,
     )
+
+
+def test_grade_match_key_treats_letter_o_as_zero() -> None:
+    assert grade_match_key("DCO3") == grade_match_key("DC03")
+    assert grade_match_key("DCO4") == grade_match_key("DC04")
+    assert grade_match_key(" dc03 ") == "DC03"
+    assert grade_match_key("DC03") != grade_match_key("DC01")
+
+
+def test_select_matches_letter_o_as_digit_zero() -> None:
+    candidates = [
+        _row(mill="邯钢", price=3721, row_id=1, grade="DCO3"),
+        _row(mill="马钢", price=3828, row_id=2, grade="DCO4"),
+        _row(mill="马钢", price=3742, row_id=3, grade="DC01"),
+    ]
+    picked = select_winning_base_records(candidates, "DC03")
+    assert [(row.steel_mill, row.grade, row.base_price) for row in picked] == [
+        ("邯钢", "DCO3", 3721),
+    ]
+    picked_dc04 = select_winning_base_records(candidates, "DC04")
+    assert [(row.steel_mill, row.grade, row.base_price) for row in picked_dc04] == [
+        ("马钢", "DCO4", 3828),
+    ]
 
 
 def test_select_skips_grade_not_in_base_table() -> None:

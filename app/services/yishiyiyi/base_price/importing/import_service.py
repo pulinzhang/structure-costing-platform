@@ -22,6 +22,7 @@ from app.schemas.vo.steel_base_price_vo import SteelBasePriceImportResultRespons
 from app.schemas.vo.user_vo import UserVO
 from app.services.file_trace.path_utils import to_upload_relpath
 from app.services.file_trace.register import register_existing
+from app.services.masterdata.location.location_service import LocationService
 from app.services.yishiyiyi.base_price.importing.template_builder import (
     build_steel_base_price_template,
 )
@@ -38,6 +39,16 @@ from app.utils.steel_price_archive import (
 ProgressCallback = Callable[[int, str], None]
 
 logger = logging.getLogger("service.steel_base_price.import")
+
+
+def _build_location_lookup(db: Session) -> dict[str, str]:
+    lookup: dict[str, str] = {}
+    for vo in LocationService().list_all(db):
+        lookup[vo.location] = vo.location
+        for alias in vo.aliases:
+            lookup[alias] = vo.location
+    return lookup
+
 
 # 钢厂名不得为纯数字（含小数），防止列错位把价格读进钢厂
 _NUMERIC_STEEL_MILL_RE = re.compile(r"^[+-]?\d+(\.\d+)?$")
@@ -175,8 +186,17 @@ class SteelBasePriceImportService:
         stored_relpath = to_upload_relpath(archive_path)
 
         _report(10, "正在解析基准价格 Excel...")
-        parse_result = parse_base_price_excel(file_content)
+        lookup = _build_location_lookup(db)
+        parse_result = parse_base_price_excel(file_content, location_lookup=lookup)
         _assert_steel_mills_not_numeric(parse_result.records)
+        unique_locations = {
+            str(record.get("location") or "").strip()
+            for record in parse_result.records
+            if str(record.get("location") or "").strip()
+        }
+        location_service = LocationService()
+        for name in unique_locations:
+            location_service.require_enabled(db, name)
 
         writes = [
             _base_price_write_from_record(

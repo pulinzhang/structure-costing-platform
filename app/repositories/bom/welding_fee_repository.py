@@ -220,6 +220,7 @@ class BomWeldingFeeRepository:
         *,
         year: int | None = None,
         location: str | None = None,
+        locations: list[str] | None = None,
         vehicle_model: str | None = None,
         bom_version: str | None = None,
         part_number: str | None = None,
@@ -231,7 +232,9 @@ class BomWeldingFeeRepository:
         q = db.query(BomWeldingFee)
         if year is not None:
             q = q.filter(BomWeldingFee.year == year)
-        if location is not None:
+        if locations is not None:
+            q = q.filter(BomWeldingFee.location.in_(locations))
+        elif location is not None:
             q = q.filter(BomWeldingFee.location == location)
         if vehicle_model is not None:
             q = q.filter(BomWeldingFee.vehicle_model == vehicle_model)
@@ -288,6 +291,7 @@ class BomWeldingFeeRepository:
         *,
         year: int | None = None,
         location: str | None = None,
+        locations: list[str] | None = None,
         vehicle_model: str | None = None,
         bom_version: str | None = None,
         part_number: str | None = None,
@@ -302,6 +306,7 @@ class BomWeldingFeeRepository:
             db,
             year=year,
             location=location,
+            locations=locations,
             vehicle_model=vehicle_model,
             bom_version=bom_version,
             part_number=part_number,
@@ -325,6 +330,7 @@ class BomWeldingFeeRepository:
         *,
         year: int | None = None,
         location: str | None = None,
+        locations: list[str] | None = None,
         vehicle_model: str | None = None,
         bom_version: str | None = None,
         part_number: str | None = None,
@@ -340,6 +346,7 @@ class BomWeldingFeeRepository:
             db,
             year=year,
             location=location,
+            locations=locations,
             vehicle_model=vehicle_model,
             bom_version=bom_version,
             part_number=part_number,
@@ -371,6 +378,7 @@ class BomWeldingFeeRepository:
         *,
         year: int | None = None,
         location: str | None = None,
+        locations: list[str] | None = None,
         vehicle_model: str | None = None,
         bom_version: str | None = None,
         part_number: str | None = None,
@@ -383,6 +391,7 @@ class BomWeldingFeeRepository:
             db,
             year=year,
             location=location,
+            locations=locations,
             vehicle_model=vehicle_model,
             bom_version=bom_version,
             part_number=part_number,
@@ -590,33 +599,21 @@ class BomWeldingFeeRepository:
         results = q.order_by(BomWeldingFee.location).all()
         return [r[0] for r in results if r[0]]
 
-    def get_distinct_vehicle_models(
-        self,
-        db: Session,
-        *,
-        year: int | None = None,
-        location: str | None = None,
-    ) -> list[str]:
-        q = db.query(BomWeldingFee.vehicle_model).distinct()
-        if year is not None:
-            q = q.filter(BomWeldingFee.year == year)
-        if location is not None:
-            q = q.filter(BomWeldingFee.location == location)
-        results = q.order_by(BomWeldingFee.vehicle_model).all()
-        return [r[0] for r in results if r[0]]
-
     def get_distinct_bom_versions(
         self,
         db: Session,
         *,
         year: int | None = None,
         location: str | None = None,
+        locations: list[str] | None = None,
         vehicle_model: str | None = None,
     ) -> list[str]:
         q = db.query(BomWeldingFee.bom_version).distinct()
         if year is not None:
             q = q.filter(BomWeldingFee.year == year)
-        if location is not None:
+        if locations is not None:
+            q = q.filter(BomWeldingFee.location.in_(locations))
+        elif location is not None:
             q = q.filter(BomWeldingFee.location == location)
         if vehicle_model is not None:
             q = q.filter(BomWeldingFee.vehicle_model == vehicle_model)

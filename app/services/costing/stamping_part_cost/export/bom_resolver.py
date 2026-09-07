@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.repositories.bom.bom_repository import BomNodeRepository, BomSnapshotRepository
 from app.services.costing.stamping_part_cost.export.bom_map import build_part_to_l0_map
-from app.services.costing.stamping_part_cost.helpers import location_candidates
+from app.services.masterdata.location.location_service import LocationService
 
 
 def resolve_assembly_supply_no(
@@ -39,7 +39,8 @@ def resolve_assembly_supply_no(
 
     # 1) 精确版本
     if bom_version:
-        for candidate_location in location_candidates(loc):
+        names = LocationService().expand_for_query(db, loc)
+        for candidate_location in names:
             key = (candidate_location, model, bom_version)
             if key in snapshot_l0_cache:
                 part_to_l0 = snapshot_l0_cache[key]
@@ -58,7 +59,8 @@ def resolve_assembly_supply_no(
 
     # 2) 同车型最新 BOM 回退
     if part_to_l0 is None or (part_to_l0 is not None and pn not in part_to_l0):
-        for candidate_location in location_candidates(loc):
+        names = LocationService().expand_for_query(db, loc)
+        for candidate_location in names:
             fallback_key = (candidate_location, model, "__latest__")
             if fallback_key in snapshot_l0_cache:
                 fallback_map = snapshot_l0_cache[fallback_key]

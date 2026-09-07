@@ -12,6 +12,7 @@ from sqlalchemy.sql.elements import ColumnElement
 from app.common.part_number import escape_like_fragment
 from app.models.costing.assembly_cost import AssemblyCost
 from app.repositories.llm._query_guard import run_guarded_query
+from app.repositories.llm.location_in import location_in_clause, location_in_list_clause
 from app.services.llm._money import ym_int
 
 
@@ -151,8 +152,9 @@ class L0CostAnalysisRepository:
                 AssemblyCost.is_tree_root.is_(True),
                 _is_missing_price(),
             )
-            if location:
-                q = q.filter(AssemblyCost.location == location)
+            loc_filter = location_in_clause(db, AssemblyCost.location, location)
+            if loc_filter is not None:
+                q = q.filter(loc_filter)
             if vehicle_model:
                 q = q.filter(AssemblyCost.vehicle_model == vehicle_model)
             if bom_version:
@@ -244,9 +246,11 @@ class L0CostAnalysisRepository:
         )
 
         if locations:
-            q = q.filter(AssemblyCost.location.in_(locations))
-        elif location:
-            q = q.filter(AssemblyCost.location == location)
+            q = q.filter(location_in_list_clause(db, AssemblyCost.location, locations))
+        else:
+            loc_filter = location_in_clause(db, AssemblyCost.location, location)
+            if loc_filter is not None:
+                q = q.filter(loc_filter)
         if vehicle_model:
             q = q.filter(AssemblyCost.vehicle_model == vehicle_model)
         if bom_version:
@@ -308,8 +312,9 @@ class L0CostAnalysisRepository:
             ym_expr <= end,
             AssemblyCost.is_tree_root.is_(True),
         )
-        if location:
-            q = q.filter(AssemblyCost.location == location)
+        loc_filter = location_in_clause(db, AssemblyCost.location, location)
+        if loc_filter is not None:
+            q = q.filter(loc_filter)
         if vehicle_model:
             q = q.filter(AssemblyCost.vehicle_model == vehicle_model)
         if bom_version:

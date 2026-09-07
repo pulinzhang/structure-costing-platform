@@ -5,11 +5,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from decimal import Decimal
 
-from sqlalchemy import or_
 from sqlalchemy.orm import Session
-from sqlalchemy.sql.elements import ColumnElement
 
 from app.models.yishiyiyi import SteelBasePrice
+from app.repositories.llm.location_in import location_in_clause
 from app.services.llm._money import ym_int
 
 
@@ -24,18 +23,6 @@ class BasePricePeriodRow:
     spec: str
     base_price: Decimal
     processing_fee: Decimal
-
-
-def _location_filter(location: str | None) -> ColumnElement[bool] | None:
-    if not location:
-        return None
-    text = location.strip()
-    if text.endswith("基地"):
-        return SteelBasePrice.location == text
-    return or_(
-        SteelBasePrice.location == text,
-        SteelBasePrice.location == f"{text}基地",
-    )
 
 
 class BasePriceAnalysisRepository:
@@ -58,7 +45,7 @@ class BasePriceAnalysisRepository:
         ym_expr = SteelBasePrice.year * 100 + SteelBasePrice.month
 
         q = db.query(SteelBasePrice).filter(ym_expr >= start, ym_expr <= end)
-        loc_filter = _location_filter(location)
+        loc_filter = location_in_clause(db, SteelBasePrice.location, location)
         if loc_filter is not None:
             q = q.filter(loc_filter)
         if steel_mill:

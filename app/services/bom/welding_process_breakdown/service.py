@@ -74,6 +74,8 @@ from app.services.bom.welding_process_breakdown.generate_service import (
 from app.services.bom.welding_process_breakdown.recompute import (
     recompute_scope_derived_fields,
 )
+from app.services.masterdata.location.location_service import LocationService
+from app.services.masterdata.vehicle_model import VehicleModelService
 
 _STANDARD_PROCESS_NAMES = frozenset(all_standard_process_names())
 
@@ -95,9 +97,30 @@ class BomWeldingProcessBreakdownService:
     ) -> tuple[list[BomWeldingProcessBreakdownNodeVO], int, WeldingBreakdownListFilters]:
         skip = (query.page - 1) * query.size
         audit_status = query.audit_status.strip() if query.audit_status else None
+        location_service = LocationService()
+        locations: list[str] | None = None
+        if query.location:
+            locations = location_service.expand_for_query(db, query.location)
+            if not locations:
+                filters: WeldingBreakdownListFilters = {
+                    "locations": location_service.list_registered(db),
+                    "customer_names": self.repository.get_distinct_customer_names(db),
+                    "vehicle_models": VehicleModelService().list_filter_codes(db, query.location),
+                    "bom_versions": [],
+                    "standard_process_names": all_standard_process_names(),
+                    "audit_status": audit_status,
+                    "summary": {
+                        "total_count": 0,
+                        "pending_count": 0,
+                        "approved_count": 0,
+                        "l0_count": 0,
+                        "l0_zero_process_count": 0,
+                    },
+                }
+                return [], 0, filters
         rows, total = self.repository.paginate(
             db,
-            location=query.location,
+            locations=locations,
             customer_name=query.customer_name,
             vehicle_model=query.vehicle_model,
             bom_version=query.bom_version,
@@ -109,20 +132,20 @@ class BomWeldingProcessBreakdownService:
             skip=skip,
             limit=query.size,
         )
-        filters: WeldingBreakdownListFilters = {
-            "locations": self.repository.get_distinct_locations(db),
+        filters = {
+            "locations": location_service.list_registered(db),
             "customer_names": self.repository.get_distinct_customer_names(db),
-            "vehicle_models": self.repository.get_distinct_vehicle_models(db),
+            "vehicle_models": VehicleModelService().list_filter_codes(db, query.location),
             "bom_versions": self.repository.get_distinct_bom_versions(
                 db,
-                location=query.location,
+                locations=locations,
                 vehicle_model=query.vehicle_model,
             ),
             "standard_process_names": all_standard_process_names(),
             "audit_status": audit_status,
             "summary": self._build_list_summary(
                 db,
-                location=query.location,
+                locations=locations,
                 customer_name=query.customer_name,
                 vehicle_model=query.vehicle_model,
                 bom_version=query.bom_version,
@@ -142,7 +165,8 @@ class BomWeldingProcessBreakdownService:
         self,
         db: Session,
         *,
-        location: str | None,
+        location: str | None = None,
+        locations: list[str] | None = None,
         customer_name: str | None,
         vehicle_model: str | None,
         bom_version: str | None,
@@ -155,6 +179,7 @@ class BomWeldingProcessBreakdownService:
         summary = self.repository.summarize_by_filters(
             db,
             location=location,
+            locations=locations,
             customer_name=customer_name,
             vehicle_model=vehicle_model,
             bom_version=bom_version,
@@ -166,6 +191,7 @@ class BomWeldingProcessBreakdownService:
         summary["l0_zero_process_count"] = self.repository.count_by_filters(
             db,
             location=location,
+            locations=locations,
             customer_name=customer_name,
             vehicle_model=vehicle_model,
             bom_version=bom_version,
@@ -310,7 +336,7 @@ class BomWeldingProcessBreakdownService:
         dto: BomWeldingProcessBreakdownGenerateDTO,
         current_user: UserVO,
     ) -> AsyncTaskAcceptedVO:
-        location = dto.location.strip()
+        location = LocationService().require_enabled(db, dto.location.strip())
         vehicle_model = dto.vehicle_model.strip()
         bom_version = dto.bom_version.strip()
         customer_name = (dto.customer_name or "").strip() or None

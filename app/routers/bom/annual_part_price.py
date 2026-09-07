@@ -109,7 +109,7 @@ def export_excel(
 @router.get("/template")
 def download_import_template(
     location: str = Query(..., description="采购基地"),
-    vehicle_model: str = Query(..., description="项目/车型"),
+    vehicle_model: str = Query(..., description="项目"),
     year: int = Query(..., ge=2000, le=2100, description="年度"),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BOM_ANNUAL_PART_PRICE_UPLOAD_VIEW)),

@@ -13,6 +13,7 @@ from app.schemas.vo.file_trace_vo import UploadFileFiltersVO, UploadFileVO
 from app.schemas.vo.user_vo import UserVO
 from app.services.file_trace.categories import category_label, resolve_allowed_categories
 from app.services.file_trace.path_utils import resolve_upload_path
+from app.services.masterdata.vehicle_model import VehicleModelService
 
 _repo = UploadFileRepository()
 
@@ -53,7 +54,7 @@ class UploadFileService:
             locations=[str(v) for v in values["locations"]],
             years=[int(v) for v in values["years"]],
             months=[int(v) for v in values["months"]],
-            vehicle_models=[str(v) for v in values["vehicle_models"]],
+            vehicle_models=VehicleModelService().list_filter_codes(db),
             creators=[str(v) for v in values["creators"]],
         )
 

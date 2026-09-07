@@ -60,7 +60,7 @@ Parser 是**横向工具**：只被 Service 调用；禁止依赖 Router/Service
 
 | 角色 | 切片 | 典型内容 |
 |------|------|----------|
-| **上游 / 基础数据** | `settings` · `stamping` · `bom` · `yishiyiyi` | 用户配置、工艺零件、BOM、基价/政策/牌号分类/废料价 |
+| **上游 / 基础数据** | `masterdata` · `settings` · `stamping` · `bom` · `yishiyiyi` | 基地/项目主数据、用户配置、工艺零件、BOM、基价/政策/牌号分类/废料价 |
 | **下游 / 编排核价** | `costing` · `dashboard` | 钢材联动、零件核价、成品核价、引擎编排、KPI |
 | **解释层（隔离特例）** | `llm` | 核价结果自然语言分析；只读上游表；内部工具不进 `common`；上游不得依赖它 |
 | **横切登记** | `file_trace` | 已落盘 Excel 登记与鉴权下载；被上游上传 Service 调用，**不**依赖 costing |
@@ -96,13 +96,14 @@ app/parsers/stamping/     # 仅上传类切片有 Parser
 
 > 旧版「切片一律禁止互依、只能走 common」已废弃；以宪法 §四 为准。
 
-### 4.3 删除保护（谁引用谁负责）
+### 4.3 引用保护（谁引用谁负责）
 
-**数据引用**和 **4.2 代码依赖** 方向相反：下游可以 import 上游；父不得 import / 点名子。拦删除的是数据库引擎，不是父在应用里 `count` 子行。
+**数据引用**和 **4.2 代码依赖** 方向相反：下游可以 import 上游；父不得 import / 点名子。拦改主键和删除的是数据库引擎，不是父在应用里 `count` 子行。
 
-- 外键只加在设计图**直接下一跳**（子表 `ForeignKey(..., ondelete="RESTRICT")`）
-- 父删除只 `DELETE` 自己；仍被引用 → `IntegrityError` → `BusinessException("仍被引用，不能删除")`
-- `CASCADE` 只给没有独立身份的附属行；独立主数据之间只用 `RESTRICT`
+- 外键只加在设计图**直接下一跳**（子表 `ForeignKey(..., ondelete="RESTRICT", onupdate="RESTRICT")`）
+- 父改主键或删除只动自己；仍被引用 → `IntegrityError` → `BusinessException("仍被引用，不能修改")` / `BusinessException("仍被引用，不能删除")`
+- 有外键的独立主数据必须**同时提供修改和删除**：非主键修改（启用/禁用）外键不管；改主键与删除都走 `RESTRICT`
+- `CASCADE` 只给没有独立身份的附属行（`ondelete` 与 `onupdate` 都 `CASCADE`）；独立主数据之间改主键和删除都用 `RESTRICT`
 
 细则见 [架构宪法 §4.3](architecture-constitution.mdc)。
 
@@ -270,9 +271,9 @@ ApiResponse[AsyncTaskAcceptedVO]
 
 同切片附属行可以（零件→工序、主单→明细）。禁止的是业务方法与 `to_dict`。跨切片、独立主数据之间禁止父指向子的 `relationship`，引用由子表外键承担（宪法 §4.3）。
 
-### 删除主数据时该不该先查有没有人用？
+### 删除或改主键时该不该先查有没有人用？
 
-不该在父切片里查。直接下游在自己的 Model 上声明 `ON DELETE RESTRICT`，由数据库拒绝；父只把 `IntegrityError` 译成「仍被引用，不能删除」。细则见宪法 [§4.3](architecture-constitution.mdc)。
+不该在父切片里查。直接下游在自己的 Model 上声明 `ON UPDATE RESTRICT` + `ON DELETE RESTRICT`，由数据库拒绝；父只把 `IntegrityError` 译成「仍被引用，不能修改」或「仍被引用，不能删除」。修改与删除必须同时提供。细则见宪法 [§4.3](architecture-constitution.mdc)。
 
 ### 后台解析/计算为什么不能写在 Router？
 
@@ -303,7 +304,7 @@ ApiResponse[AsyncTaskAcceptedVO]
 
 | 切片 | 文档 |
 |------|------|
-| **masterdata** | [基地](masterdata/location-design.md)（设计定稿，未落地）· [项目](masterdata/vehicle-model-design.md) · [供应商](masterdata/supplier-design.md)（后两份仍为设计初稿） |
+| **masterdata** | [基地](masterdata/location-design.md)（已落地）· [项目](masterdata/vehicle-model-design.md)（本切片已落地；下游改读另做）· [供应商](masterdata/supplier-design.md)（设计初稿） |
 | **stamping** | [产品质量先期策划（APQP）先布点后工艺](stamping/stamping-apqp-die-before-process-design.md) · [工艺确认表](stamping/stamping-process-confirmation-design.md) · [模具布点](stamping/stamping-die-management-design.md) · [模具单价](stamping/stamping-die-unit-price-design.md) · [检具费档案](stamping/stamping-gauge-fee-design.md) · [年度模具费（不含检具）](stamping/stamping-die-fee-design.md) |
 | **bom** | [年度零件价](bom/bom-annual-part-prices-design.md) · [焊接工艺拆解](bom/welding-process-breakdown-design.md) · [焊接费](bom/welding-fee-design.md) · [采购对象清单](bom/bom-procurement-objects-design.md) · [指定供应商](bom/bom-procurement-object-supplier-design.md) |
 | **yishiyiyi** | [牌号分类](yishiyiyi/steel-grade-category-design.md) · [分类级厚度政策](yishiyiyi/thickness-policy-category-level-design.md) |

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from decimal import Decimal
 from io import BytesIO
+from unittest.mock import MagicMock, patch
 
 import pytest
 from openpyxl import Workbook
@@ -61,7 +62,9 @@ def test_create_dto_rejects_non_catalog_name() -> None:
         )
 
 
-def test_import_aborts_on_catalog_error() -> None:
+@patch("app.services.bom.welding_unit_price.import_service.LocationService")
+def test_import_aborts_on_catalog_error(mock_location_cls: MagicMock) -> None:
+    mock_location_cls.return_value.require_enabled.return_value = "青岛"
     content = _xlsx_bytes(
         [
             ("焊点", "个", 0.13, ""),

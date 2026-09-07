@@ -7,8 +7,8 @@ from dataclasses import dataclass, field
 from sqlalchemy.orm import Session
 
 from app.repositories.bom.bom_repository import BomSnapshotRepository
-from app.repositories.stamping.stamping_part_repository import StampingPartRepository
-from app.services.costing.stamping_part_cost.helpers import location_candidates
+from app.services.masterdata.location.location_service import LocationService
+from app.services.masterdata.vehicle_model import VehicleModelService
 
 
 @dataclass(frozen=True)
@@ -29,11 +29,11 @@ class DiscoveryResult:
 
 
 class ScopeDiscovery:
-    """发现配套车型与全部含 L0 的 BOM 版本。"""
+    """本期项目名单来自项目主数据；L0Scope 再按该名单过滤。"""
 
     def __init__(self) -> None:
-        self.part_repo = StampingPartRepository()
         self.bom_snapshot_repo = BomSnapshotRepository()
+        self.vehicle_model_service = VehicleModelService()
 
     def discover(
         self,
@@ -44,23 +44,31 @@ class ScopeDiscovery:
         month: int,
     ) -> DiscoveryResult:
         location_clean = (location or "").strip()
-        aliases = location_candidates(location_clean)
-        vehicle_models: list[str] = []
-        for alias in aliases:
-            options = self.part_repo.get_cascade_filter_options(db, location=alias)
-            for name in options.get("vehicle_models") or []:
-                model = (name or "").strip()
-                if model and model not in vehicle_models:
-                    vehicle_models.append(model)
+        aliases = LocationService().expand_for_query(db, location_clean)
+        vehicle_models = self.vehicle_model_service.list_introducible(
+            db, location_clean, year, month
+        )
+        allowed = set(vehicle_models)
 
-        l0_scopes = [
-            L0Scope(
-                location=row["location"],
-                vehicle_model=row["vehicle_model"],
-                bom_version=row["bom_version"],
-            )
-            for row in self.bom_snapshot_repo.discover_l0_scopes(db, aliases)
-        ]
+        l0_scopes: list[L0Scope] = []
+        seen: set[tuple[str, str]] = set()
+        if aliases and allowed:
+            for row in self.bom_snapshot_repo.discover_l0_scopes(db, aliases):
+                code = self.vehicle_model_service.normalize(row["vehicle_model"])
+                version = (row["bom_version"] or "").strip()
+                if not code or not version or code not in allowed:
+                    continue
+                key = (code, version)
+                if key in seen:
+                    continue
+                seen.add(key)
+                l0_scopes.append(
+                    L0Scope(
+                        location=row["location"],
+                        vehicle_model=code,
+                        bom_version=version,
+                    )
+                )
         return DiscoveryResult(
             location=location_clean,
             year=year,

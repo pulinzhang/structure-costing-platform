@@ -3,7 +3,6 @@
 from sqlalchemy.orm import Session
 
 from app.common.audit import audit_update
-from app.common.procurement_locations import PROCUREMENT_LOCATIONS
 from app.common.vehicle_model import normalize_vehicle_model
 from app.exceptions.base import BusinessException, NotFoundException
 from app.repositories.stamping.stamping_die_repository import (
@@ -21,6 +20,8 @@ from app.schemas.vo.stamping_die_vo import (
     StampingDieScopeFilterVO,
 )
 from app.schemas.vo.user_vo import UserVO
+from app.services.masterdata.location.location_service import LocationService
+from app.services.masterdata.vehicle_model import VehicleModelService
 
 
 class StampingDieService:
@@ -41,13 +42,23 @@ class StampingDieService:
         self,
         db: Session,
         location: str | None,
+        *,
+        year: int | None = None,
+        month: int | None = None,
     ) -> StampingDieScopeFilterVO:
+        location_service = LocationService()
         location_value = (location or "").strip() or None
-        vehicle_models: list[str] = []
-        if location_value:
-            vehicle_models = self.die_part_repo.list_vehicle_models(db, location=location_value)
+        vehicle_svc = VehicleModelService()
+        vehicle_models: list[str]
+        if location_value and year is not None:
+            if month is not None:
+                vehicle_models = vehicle_svc.list_introducible(db, location_value, year, month)
+            else:
+                vehicle_models = vehicle_svc.list_overlaps_year(db, location_value, year)
+        else:
+            vehicle_models = vehicle_svc.list_filter_codes(db, location_value)
         return StampingDieScopeFilterVO(
-            locations=list(PROCUREMENT_LOCATIONS),
+            locations=location_service.list_enabled(db),
             vehicle_models=vehicle_models,
         )
 
@@ -55,10 +66,13 @@ class StampingDieService:
         self, db: Session, query: StampingDiePartQuery
     ) -> tuple[list[StampingDiePartListVO], int]:
         location, vehicle_model = self._require_scope(query.location, query.vehicle_model)
+        locations = LocationService().expand_for_query(db, location)
+        if not locations:
+            return [], 0
         skip = (query.page - 1) * query.size
         parts, total = self.die_part_repo.paginate(
             db,
-            location=location,
+            locations=locations,
             vehicle_model=vehicle_model,
             part_number=query.part_number,
             skip=skip,
@@ -99,9 +113,12 @@ class StampingDieService:
 
     def delete_scope(self, db: Session, dto: StampingDieScopeDTO) -> StampingDieBatchDeleteResultVO:
         location, vehicle_model = self._require_scope(dto.location, dto.vehicle_model)
+        locations = LocationService().expand_for_query(db, location)
+        if not locations:
+            return StampingDieBatchDeleteResultVO(deleted_parts=0)
         try:
             deleted = self.die_part_repo.delete_scope(
-                db, location=location, vehicle_model=vehicle_model
+                db, locations=locations, vehicle_model=vehicle_model
             )
             db.commit()
         except Exception:

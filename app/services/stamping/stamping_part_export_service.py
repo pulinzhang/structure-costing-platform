@@ -228,7 +228,7 @@ class StampingPartExportService:
         if stamping_supplier:
             scope_parts.append(f"冲压工厂：{stamping_supplier}")
         if vehicle_model:
-            scope_parts.append(f"车型：{vehicle_model}")
+            scope_parts.append(f"项目：{vehicle_model}")
         if version:
             scope_parts.append(f"版本：{version}")
         scope_text = "    ".join(scope_parts)
@@ -259,7 +259,7 @@ class StampingPartExportService:
             3: "短码",
             4: "零件名称",
             5: "冲压工厂",
-            6: "车型",
+            6: "项目",
             7: "版本",
             8: "零件简图",
             9: "材质",

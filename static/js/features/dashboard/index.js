@@ -4,7 +4,7 @@
  */
 
 import { canAccessPage } from '../../permissions.js?v=9';
-import { dashboardTemplate } from './template.js?v=8';
+import { dashboardTemplate } from './template.js?v=9';
 
 const DASHBOARD_STATS_API = '/api/dashboard/stats';
 
@@ -83,11 +83,11 @@ function applyScopeOptions(scope) {
     });
     fillSelect(document.getElementById('dashVehicle'), scope.vehicle_models || [], {
         selected: scope.vehicle_model || '',
-        blankLabel: '全部车型',
+        blankLabel: '全部项目',
     });
 
     const loc = scope.location || '全部基地';
-    const vehicle = scope.vehicle_model || '全部车型';
+    const vehicle = scope.vehicle_model || '全部项目';
     setText(
         'dashScopeLabel',
         `${fmtPeriod(scope.year, scope.month)} · ${loc} · ${vehicle}`
@@ -232,7 +232,7 @@ function renderContext(master, bom, yishiyiyi, scope) {
             const scopeTag = loc
                 ? `<span class="text-[#555555]">（${esc(loc)}${scope?.vehicle_model ? ' · ' + esc(scope.vehicle_model) : ''}）</span> `
                 : `<span class="text-[#555555]">（${scope?.vehicle_model ? esc(scope.vehicle_model) : '全部基地'}）</span> `;
-            masterEl.innerHTML = `${scopeTag}<span class="text-[#F0F0F2]">冲压零件 ${esc(m.parts)} · 工序 ${esc(m.processes)} · 车型 ${esc(m.models)}</span>`;
+            masterEl.innerHTML = `${scopeTag}<span class="text-[#F0F0F2]">冲压零件 ${esc(m.parts)} · 工序 ${esc(m.processes)} · 项目 ${esc(m.models)}</span>`;
         }
     }
 

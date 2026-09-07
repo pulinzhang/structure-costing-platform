@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING, AUDIT_REJECTED
 from app.schemas.vo.stamping_part_cost_vo import StampingPartCostCalcReadyVO
 from app.services.costing.stamping_part_cost.calc.orchestrator.deps import PartCostCalcDeps
-from app.services.costing.stamping_part_cost.helpers import location_candidates
+from app.services.masterdata.location.location_service import LocationService
 
 
 def collect_calc_ready(
@@ -41,7 +41,8 @@ def collect_calc_ready(
     gauge_fee_count = 0
 
     if year and month and location_value:
-        for candidate in location_candidates(location_value):
+        names = LocationService().expand_for_query(db, location_value)
+        for candidate in names:
             count = deps.steel_repo.count_by_year_month_location(
                 db, year=year, month=month, location=candidate
             )

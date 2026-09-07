@@ -12,7 +12,7 @@ from app.repositories.costing.steel_price.steel_price_repository import SteelPri
 from app.repositories.yishiyiyi.scrap_price.scrap_price_repository import (
     StampingScrapPriceRepository,
 )
-from app.services.costing.stamping_part_cost.helpers import location_candidates
+from app.services.masterdata.location.location_service import LocationService
 
 
 class PriceResolver:
@@ -34,14 +34,7 @@ class PriceResolver:
         year: int,
         month: int,
     ) -> StampingScrapPrice | None:
-        for candidate in location_candidates(location):
-            # 废料表通常存短名（芜湖）；优先短名
-            short = candidate[:-2] if candidate.endswith("基地") else candidate
-            record = self.scrap_repo.get_by_location_year_month(
-                db, location=short, year=year, month=month
-            )
-            if record is not None:
-                return record
+        for candidate in LocationService().expand_for_query(db, location):
             record = self.scrap_repo.get_by_location_year_month(
                 db, location=candidate, year=year, month=month
             )
@@ -60,7 +53,7 @@ class PriceResolver:
         thickness: Decimal,
     ) -> list[SteelPrice]:
         """只按年月/基地/牌号/料厚取价，不对大类回退。"""
-        for candidate in location_candidates(location):
+        for candidate in LocationService().expand_for_query(db, location):
             matched = self.steel_repo.list_by_grade_thickness(
                 db,
                 year=year,

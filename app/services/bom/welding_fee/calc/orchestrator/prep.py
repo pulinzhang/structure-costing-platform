@@ -73,7 +73,7 @@ def prepare_calc_run(
 
     if not nodes:
         raise BusinessException(
-            f"基地「{location}」车型「{vehicle_model}」版本「{bom_version}」"
+            f"基地「{location}」项目「{vehicle_model}」版本「{bom_version}」"
             f"下未找到焊接工艺拆解节点"
         )
 

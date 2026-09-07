@@ -22,8 +22,8 @@ from app.services.costing.stamping_part_cost.helpers import (
     format_ton_price_label,
     join_slash_formatted,
     join_slash_ton_prices,
-    location_candidates,
 )
+from app.services.masterdata.location.location_service import LocationService
 
 SteelPriceKey = tuple[int, int, str, str, Decimal]
 
@@ -91,8 +91,9 @@ def build_steel_price_index(
     index: dict[SteelPriceKey, SteelPrice] = {}
     scopes = {(row.year, row.month, row.location) for row in rows}
     for year, month, location in scopes:
+        names = LocationService().expand_for_query(db, location)
         seen_locations: set[str] = set()
-        for candidate in location_candidates(location):
+        for candidate in names:
             if candidate in seen_locations:
                 continue
             seen_locations.add(candidate)
@@ -100,7 +101,10 @@ def build_steel_price_index(
                 grade = (record.grade or "").strip()
                 if not grade or record.thickness is None:
                     continue
-                for loc in location_candidates(record.location):
+                record_names = LocationService().expand_for_query(db, record.location)
+                if not record_names:
+                    record_names = [(record.location or "").strip()]
+                for loc in record_names:
                     index[(record.year, record.month, loc, grade, record.thickness)] = record
     return index
 
@@ -114,11 +118,10 @@ def lookup_blank_steel(
     thickness = blank.thickness
     if not grade or thickness is None:
         return None
-    for loc in location_candidates(row.location):
-        found = price_index.get((row.year, row.month, loc, grade, thickness))
-        if found is not None:
-            return found
-    return None
+    loc = (getattr(row, "location", None) or "").strip()
+    if not loc:
+        return None
+    return price_index.get((row.year, row.month, loc, grade, thickness))
 
 
 def _join_kg_prices(ton_prices: list[Decimal | None]) -> str | None:

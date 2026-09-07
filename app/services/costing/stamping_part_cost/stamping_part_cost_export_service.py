@@ -23,7 +23,7 @@ from app.services.costing.stamping_part_cost.export.process_sheet import (
     write_process_sheet_to_workbook,
 )
 
-EXPORT_VEHICLE_REQUIRED_MESSAGE = "导出须选定配套车型。"
+EXPORT_VEHICLE_REQUIRED_MESSAGE = "导出须选定项目。"
 
 
 def require_export_vehicle_model(vehicle_model: str | None) -> str:

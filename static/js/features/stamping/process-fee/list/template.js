@@ -113,7 +113,7 @@ export function processFeeListTemplate() {
                             <div class="flex items-center gap-2 flex-wrap">
                                 <span id="feeCapsuleYear" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部年度</span>
                                 <span id="feeCapsuleLocation" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部基地</span>
-                                <span id="feeCapsuleVehicle" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部车型</span>
+                                <span id="feeCapsuleVehicle" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部项目</span>
                                 <span id="feeCapsuleVersion" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部版本</span>
                                 <span id="feeCapsuleSupplier" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部工厂</span>
                                 <span id="feeCapsuleFailTodo" class="hidden bg-[#FF1E27]/15 border border-[#FF1E27]/40 text-[#FF1E27] px-2.5 py-1 rounded-md font-bold">待补价筛选中</span>
@@ -139,7 +139,7 @@ export function processFeeListTemplate() {
                         <div class="flex items-end gap-3 flex-wrap">
                             ${filterSelect('feeYearFilter', '年度')}
                             ${filterSelect('feeLocationFilter', '基地')}
-                            ${filterSelect('feeVehicleFilter', '车型')}
+                            ${filterSelect('feeVehicleFilter', '项目')}
                             ${filterSelect('feeVersionFilter', '版本')}
                             ${filterSelect('feeSupplierFilter', '冲压工厂')}
                             ${filterSelect('feeAuditStatusFilter', '审核状态')}
@@ -150,7 +150,7 @@ export function processFeeListTemplate() {
                                 重置
                             </button>
                         </div>
-                        <p class="mt-2 text-[10px] text-[#555555]">筛选均可选；级联为年度 → 基地 → 车型 → 版本 → 冲压工厂。批量审核 / 反审核按整车签字。批量删除可按工厂收窄。</p>
+                        <p class="mt-2 text-[10px] text-[#555555]">筛选均可选；级联为年度 → 基地 → 项目 → 版本 → 冲压工厂。批量审核 / 反审核按整车签字。批量删除可按工厂收窄。</p>
                     </div>
                 </div>
 
@@ -163,7 +163,7 @@ export function processFeeListTemplate() {
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">核价维度</th>
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#A1A1A6] whitespace-nowrap">零件号</th>
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">零件名称</th>
-                                <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap border-r border-[#22222A]">车型/版本</th>
+                                <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap border-r border-[#22222A]">项目/版本</th>
                                 <th class="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">工序数</th>
                                 <th class="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">系统计算</th>
                                 <th class="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap border-r border-[#22222A]">其它费用</th>
@@ -329,7 +329,7 @@ export function processFeeListTemplate() {
                             ${viewRow('冲压工厂', 'fee-edit-supplier')}
                             ${partNumberViewBlock('fee-edit')}
                             ${viewRow('零件类型', 'fee-edit-part-type')}
-                            ${viewRow('车型', 'fee-edit-vehicle')}
+                            ${viewRow('项目', 'fee-edit-vehicle')}
                             ${viewRow('版本', 'fee-edit-version')}
                         </div>
                     </div>
@@ -375,7 +375,7 @@ export function processFeeListTemplate() {
                         ${partNumberViewBlock('fee-view')}
                         ${viewRow('零件名称', 'fee-view-part-name')}
                         ${viewRow('零件类型', 'fee-view-part-type')}
-                        ${viewRow('车型', 'fee-view-vehicle')}
+                        ${viewRow('项目', 'fee-view-vehicle')}
                         ${viewRow('版本', 'fee-view-version')}
                         ${viewRow('序号', 'fee-view-seq-no')}
                     </div>
@@ -681,7 +681,7 @@ export function updateFeeFilterCapsules() {
         supplierEl.className = supplier ? activeCapsule : idleCapsule;
     }
     if (vehicleEl) {
-        vehicleEl.textContent = vehicle || '全部车型';
+        vehicleEl.textContent = vehicle || '全部项目';
         vehicleEl.className = vehicle ? activeCapsule : idleCapsule;
     }
     if (versionEl) {

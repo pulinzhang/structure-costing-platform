@@ -11,7 +11,6 @@ from sqlalchemy.orm import Session
 from app.common.audit import audit_create
 from app.common.part_number import normalize_part_number_token
 from app.common.timezone import now
-from app.common.vehicle_model import normalize_vehicle_model
 from app.config import settings
 from app.exceptions.base import BusinessException
 from app.parsers.stamping.gauge_fee_parser import parse_gauge_fee_excel
@@ -22,6 +21,8 @@ from app.schemas.vo.stamping_gauge_fee_vo import StampingGaugeFeeImportResultVO
 from app.schemas.vo.user_vo import UserVO
 from app.services.file_trace.path_utils import to_upload_relpath
 from app.services.file_trace.register import register_existing
+from app.services.masterdata.location.location_service import LocationService
+from app.services.masterdata.vehicle_model import VehicleModelService
 from app.services.stamping.gauge_fee.template_builder import build_gauge_fee_template
 
 logger = logging.getLogger("service.stamping_gauge_fee_upload")
@@ -129,12 +130,8 @@ class StampingGaugeFeeUploadService:
         )
 
     def _require_die_scope(self, db: Session, location: str, vehicle_model: str) -> tuple[str, str]:
-        loc = (location or "").strip()
-        vehicle = normalize_vehicle_model(vehicle_model) or ""
-        if not loc:
-            raise BusinessException("请选择采购基地")
-        if not vehicle:
-            raise BusinessException("请选择项目")
+        loc = LocationService().require_enabled(db, (location or "").strip())
+        vehicle = VehicleModelService().require_registered(db, loc, vehicle_model)
         if not self.die_part_repo.exists_location_vehicle_model(
             db, location=loc, vehicle_model=vehicle
         ):

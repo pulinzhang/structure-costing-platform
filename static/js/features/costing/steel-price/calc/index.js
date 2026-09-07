@@ -3,7 +3,7 @@
  * 钢价计算 —过滤条件 + 异步后台计算 + 进度轮询 + 历史过程日志
  */
 
-import { steelPriceCalcTemplate, renderCalcHistoryPagination } from './template.js?v=9';
+import { steelPriceCalcTemplate, renderCalcHistoryPagination } from './template.js?v=10';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,

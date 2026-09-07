@@ -80,7 +80,7 @@ def paginate(
 def export_l0_excel(
     location: str | None = Query(None, description="采购基地"),
     customer_name: str | None = Query(None, description="顾客名称"),
-    vehicle_model: str | None = Query(None, description="项目/车型"),
+    vehicle_model: str | None = Query(None, description="项目"),
     bom_version: str | None = Query(None, description="材料清单版本"),
     part_number: str | None = Query(None, description="零件号（模糊）"),
     process_line_count_eq: int | None = Query(

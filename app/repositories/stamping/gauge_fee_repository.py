@@ -69,7 +69,8 @@ class StampingGaugeFeeRepository:
         self,
         db: Session,
         *,
-        location: str | None,
+        location: str | None = None,
+        locations: list[str] | None = None,
         vehicle_model: str | None,
         part_number: str | None,
         status: str | None,
@@ -80,6 +81,7 @@ class StampingGaugeFeeRepository:
             self._filtered_query(
                 db,
                 location=location,
+                locations=locations,
                 vehicle_model=vehicle_model,
                 part_number=part_number,
                 status=status,
@@ -99,7 +101,8 @@ class StampingGaugeFeeRepository:
         self,
         db: Session,
         *,
-        location: str | None,
+        location: str | None = None,
+        locations: list[str] | None = None,
         vehicle_model: str | None,
         part_number: str | None,
         status: str | None,
@@ -108,6 +111,7 @@ class StampingGaugeFeeRepository:
             self._filtered_query(
                 db,
                 location=location,
+                locations=locations,
                 vehicle_model=vehicle_model,
                 part_number=part_number,
                 status=status,
@@ -125,7 +129,8 @@ class StampingGaugeFeeRepository:
         self,
         db: Session,
         *,
-        location: str | None,
+        location: str | None = None,
+        locations: list[str] | None = None,
         vehicle_model: str | None,
         part_number: str | None,
         status: str | None,
@@ -133,6 +138,7 @@ class StampingGaugeFeeRepository:
         query = self._filtered_query(
             db,
             location=location,
+            locations=locations,
             vehicle_model=vehicle_model,
             part_number=part_number,
             status=status,
@@ -160,13 +166,16 @@ class StampingGaugeFeeRepository:
         self,
         db: Session,
         *,
-        location: str | None,
+        location: str | None = None,
+        locations: list[str] | None = None,
         vehicle_model: str | None,
         part_number: str | None,
         status: str | None,
     ) -> Query[StampingGaugeFee]:
         query = db.query(StampingGaugeFee)
-        if location:
+        if locations is not None:
+            query = query.filter(StampingGaugeFee.location.in_(locations))
+        elif location:
             query = query.filter(StampingGaugeFee.location == location)
         if vehicle_model:
             query = query.filter(StampingGaugeFee.vehicle_model == vehicle_model)

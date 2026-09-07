@@ -69,7 +69,7 @@ def export_download(
     month: int | None = Query(None, ge=1, le=12, description="月份"),
     location: str | None = Query(None, description="基地"),
     stamping_supplier: str | None = Query(None, description="冲压工厂"),
-    vehicle_model: str = Query(..., min_length=1, description="车型"),
+    vehicle_model: str = Query(..., min_length=1, description="项目"),
     version: str | None = Query(None, description="版本"),
     part_number: str | None = Query(None, description="零件号"),
     audit_status: str | None = Query(None, description="审核状态"),

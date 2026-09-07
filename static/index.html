@@ -7,7 +7,7 @@
     <title>汽车冲压件自动核价平台</title>
     <link rel="icon" type="image/x-icon" href="/static/assets/favicon.ico">
     <link href="/static/css/fonts.css?v=1" rel="stylesheet">
-    <link href="/static/css/tailwind.css?v=3" rel="stylesheet">
+    <link href="/static/css/tailwind.css?v=4" rel="stylesheet">
     <link href="/static/css/style.css?v=48" rel="stylesheet">
 </head>
 <body class="bg-[#0a0a0a] min-h-screen antialiased">
@@ -404,6 +404,41 @@
                         <span>文件溯源</span>
                     </a>
                 </li>
+                <!-- 主数据 -->
+                <li class="sidebar-nav-item has-submenu">
+                    <a href="javascript:void(0)" class="sidebar-nav-link" data-submenu-toggle="masterdataSubmenu">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6a2 2 0 012-2h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V6z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 6v12M4 10h16"></path></svg>
+                        <span>主数据</span>
+                        <svg class="w-3.5 h-3.5 ms-auto submenu-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7"></path></svg>
+                    </a>
+                    <ul class="submenu" id="masterdataSubmenu">
+                        <li>
+                            <a href="#/location" class="submenu-link" data-page="location">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                                <span>基地</span>
+                            </a>
+                        </li>
+                        <li class="submenu-item has-submenu">
+                            <a href="javascript:void(0)" class="submenu-link" data-submenu-toggle="vehicleModelSubmenu">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                                <span>项目</span>
+                                <svg class="w-3.5 h-3.5 ms-auto submenu-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7"></path></svg>
+                            </a>
+                            <ul class="submenu submenu-nested" id="vehicleModelSubmenu">
+                                <li>
+                                    <a href="#/vehicle-model-upload" class="submenu-link submenu-link-nested" data-page="vehicle-model-upload">
+                                        <span>上传</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#/vehicle-model-list" class="submenu-link submenu-link-nested" data-page="vehicle-model-list">
+                                        <span>一览表</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+                </li>
                 <!-- 设置 -->
                 <li class="sidebar-nav-item has-submenu">
                     <a href="#/settings" class="sidebar-nav-link" data-submenu-toggle="settingsSubmenu">
@@ -528,6 +563,6 @@
     <script src="/static/js/vendor/purify.min.js"></script>
 
     <script src="/static/js/main.js?v=20"></script>
-    <script type="module" src="/static/js/app.js?v=494"></script>
+    <script type="module" src="/static/js/app.js?v=508"></script>
 </body>
 </html>

@@ -568,6 +568,23 @@ root
 │   ├── op:file-trace:view
 │   └── op:file-trace:download
 │
+├── menu:masterdata                            # 主数据（分组，可勾）
+│   ├── menu:location                          # 基地
+│   │   ├── op:location:view
+│   │   ├── op:location:create                 # 新增基地、新增别名
+│   │   ├── op:location:update                 # 启用/禁用、改/删别名
+│   │   └── op:location:delete                 # 删除基地
+│   └── menu:vehicle-model                     # 项目（分组，无页面）
+│       ├── menu:vehicle-model-upload          # 上传
+│       │   ├── op:vehicle-model-upload:view
+│       │   └── op:vehicle-model-upload:upload
+│       └── menu:vehicle-model-list            # 一览表
+│           ├── op:vehicle-model-list:view
+│           ├── op:vehicle-model-list:export
+│           ├── op:vehicle-model-list:create
+│           ├── op:vehicle-model-list:update
+│           └── op:vehicle-model-list:delete
+│
 └── menu:settings                              # 设置（分组，可勾；强制保留）
     ├── menu:settings-profile                  # 强制
     │   ├── op:settings-profile:view           # 强制
@@ -592,10 +609,10 @@ root
 
 | 类别 | 数量 |
 |---|---|
-| 分组 `type=group` | 19（含 `bom-packaging-transport-fee-group` / `assembly-cost-group` 等） |
-| 叶子 `type=menu` | 39 |
-| 操作 `op` | 139 |
-| 可勾节点合计 | 197（`root` 一般不入库） |
+| 分组 `type=group` | 20（含 `bom-packaging-transport-fee-group` / `assembly-cost-group` 等） |
+| 叶子 `type=menu` | 40 |
+| 操作 `op` | 144 |
+| 可勾节点合计 | 204（`root` 一般不入库） |
 | 新建默认 | 7 |
 | 强制 | 5（均包含在默认集内） |
 
@@ -650,6 +667,9 @@ root
 | assembly-cost | `view` / `delete` / `approve` / `reverse` / `export` | 查询；删除；审核；反审核；导出 |
 | costing（菜单码 `menu:costing-engine`） | `view` / `run` / `delete` | 检查就绪；启动月度引擎；删除 Run（含 running） |
 | file-trace | `view` / `download` | 列表/详情；鉴权下载原件 |
+| location | `view` / `create` / `update` / `delete` | 列表；新增基地/别名；启用禁用与删别名；删除基地 |
+| vehicle-model-upload | `view` / `upload` | 查看上传页；下载模板并导入 |
+| vehicle-model-list | `view` / `export` / `create` / `update` / `delete` | 列表；导出 Excel（列与导入模板相同）；抽屉新增；改生效/失效；删除 |
 | settings-profile | `view` / `update` / `password` | 查看；改资料/头像；改自己密码 |
 | settings-system | `view` / `update` | 查看系统设置；保存设置 |
 | settings-users | `view` / `create` / `update` / `password` / `delete` / `grant` | 查询；新增；编辑；重置他人密码；删除；授权 |
