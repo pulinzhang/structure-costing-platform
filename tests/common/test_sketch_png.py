@@ -1,4 +1,4 @@
-"""嵌入图转 PNG：直通 PNG、抽 WMF 内嵌 DIB。"""
+"""嵌入图转 PNG：直通 PNG、抽 WMF/EMF 内嵌 DIB。"""
 
 from __future__ import annotations
 
@@ -69,6 +69,32 @@ def test_wmf_without_dib_returns_none() -> None:
 
 def test_stretchdib_wmf_extracts_dib() -> None:
     png = media_bytes_to_png(_stretchdib_wmf(_tiny_dib()), "xl/media/image11.wmf")
+    assert png is not None
+    assert png[:8] == _PNG_MAGIC
+    image = Image.open(BytesIO(png))
+    assert image.size == (2, 2)
+
+
+def _stretchdibits_emf(dib: bytes) -> bytes:
+    header = dib[:40]
+    pixels = dib[40:]
+    rec_size = 120 + len(pixels)
+    record = bytearray(rec_size)
+    record[0:4] = _u32(81)
+    record[4:8] = _u32(rec_size)
+    record[40:44] = _u32(2)
+    record[44:48] = _u32(2)
+    record[48:52] = _u32(80)
+    record[52:56] = _u32(40)
+    record[56:60] = _u32(120)
+    record[60:64] = _u32(len(pixels))
+    record[80:120] = header
+    record[120:] = pixels
+    return bytes(record)
+
+
+def test_stretchdibits_emf_extracts_dib() -> None:
+    png = media_bytes_to_png(_stretchdibits_emf(_tiny_dib()), "xl/media/image1.emf")
     assert png is not None
     assert png[:8] == _PNG_MAGIC
     image = Image.open(BytesIO(png))
