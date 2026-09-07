@@ -6,7 +6,7 @@
 import {
     processFeeCalcTemplate,
     renderCalcHistoryPagination,
-} from './template.js?v=22';
+} from './template.js?v=23';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -87,6 +87,7 @@ function applyPermissionUi() {
     if (!canRun) {
         document.getElementById('startCalcBtn')?.classList.add('hidden');
     }
+    document.getElementById('calcHistoryDeleteAllBtn')?.classList.toggle('hidden', !calcState.canDelete);
 }
 
 function bindEvents() {
@@ -110,6 +111,7 @@ function bindEvents() {
 
     document.getElementById('startCalcBtn')?.addEventListener('click', () => startCalculation());
     document.getElementById('calcHistoryRefreshBtn')?.addEventListener('click', () => loadCalcHistory(1));
+    document.getElementById('calcHistoryDeleteAllBtn')?.addEventListener('click', () => deleteAllCalcLogs());
     document.getElementById('calcHistoryPagination')?.addEventListener('click', (event) => {
         const btn = event.target.closest('.calc-history-page-btn');
         if (btn && !btn.disabled) {
@@ -383,6 +385,25 @@ function renderHistoryRows(items) {
     body.querySelectorAll('.calc-delete-log-btn').forEach((btn) => {
         btn.addEventListener('click', () => deleteCalcLog(Number(btn.dataset.logId)));
     });
+}
+
+async function deleteAllCalcLogs() {
+    if (calcState.canDelete === false) {
+        showToast('无删除权限', 'warning');
+        return;
+    }
+    if (!window.confirm('确定删除全部计算历史？仅删除日志，不影响已落库的加工费。计算中的记录删除后将释放锁。')) {
+        return;
+    }
+    try {
+        const res = await HttpClient.delete(CALC_LOGS_API);
+        const count = res.data?.deleted_count ?? 0;
+        showToast(`已删除 ${count} 条`, 'success');
+        loadCalcHistory(1);
+    } catch (error) {
+        console.error('清空计算历史失败:', error);
+        showToast(error.message || '删除失败', 'error');
+    }
 }
 
 async function deleteCalcLog(logId) {

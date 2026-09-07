@@ -18,6 +18,7 @@ from sqlalchemy.orm import Session
 
 from app.common.audit import display_name
 from app.exceptions.base import BusinessException
+from app.schemas.common import DeletedCountVO
 from app.schemas.dto.steel_price_dto import SteelPriceCalcDTO
 from app.schemas.vo.async_task_vo import AsyncTaskAcceptedVO
 from app.schemas.vo.steel_price_vo import SteelPriceCalcLogVO, SteelPriceCalcResultVO
@@ -144,6 +145,9 @@ class SteelPriceCalcOrchestrator:
 
     def delete_log(self, db: Session, log_id: int) -> None:
         self.calc_log_service.delete_log(db, log_id)
+
+    def delete_all_logs(self, db: Session) -> DeletedCountVO:
+        return self.calc_log_service.delete_all_logs(db)
 
     @staticmethod
     def _to_result_vo(result: SteelPriceCalcResult) -> SteelPriceCalcResultVO:

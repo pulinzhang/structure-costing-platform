@@ -615,9 +615,9 @@ root
 | stamping-gauge-fee | `view` / `update` / `delete` / `export` | 查询；编辑检具费/分摊/状态；单条删除或批量删除（须选定基地+项目）；导出 Excel（含基地、项目） |
 | stamping-tonnage-upload | `view` / `upload` | 查看上传页；导入冲次单价 Excel |
 | stamping-tonnage | `view` / `create` / `update` / `delete` / `approve` / `reverse` / `export` | 查询；新增（API）；编辑；删除（含批量，已审跳过）；审核（含批量）；反审核；导出 Excel |
-| stamping-process-fee-calc | `view` / `run` / `delete` | 查看；执行计算；删除计算日志 |
+| stamping-process-fee-calc | `view` / `run` / `delete` | 查看；执行计算；删除计算日志（含清空全部） |
 | stamping-process-fee | `view` / `update` / `delete` / `approve` / `reverse` / `export` | 查询；编辑其它费用；批量删除；审核；反审核；导出 |
-| stamping-die-fee-calc | `view` / `run` / `delete` | 查看；执行计算；删除计算日志 |
+| stamping-die-fee-calc | `view` / `run` / `delete` | 查看；执行计算；删除计算日志（含清空全部，进行中不删） |
 | stamping-die-fee | `view` / `update` / `delete` / `approve` / `reverse` / `export` | 查询；编辑调整金额；单条或范围删未审核；审核；反审核；导出 |
 | scrap-price | `view` / `create` / `update` / `delete` / `copy` / `export` | 查询；整月保存；删除本月；复制月度；导出 Excel |
 | steel-price-policy-upload | `view` / `upload` | 进入页；导入政策 |
@@ -638,15 +638,15 @@ root
 | bom-packaging-transport-fee | `view` / `create` / `update` / `delete` / `approve` / `reverse` / `export` | 查询；新增；编辑；删除；审核；反审核；导出 |
 | bom-procurement-object | `generate` | 从材料清单生成采购对象清单 |
 | bom-procurement-object-list | `view` / `update` / `delete` / `approve` / `reverse` / `export` | 查询；单条确认；按范围批量删除；审核；反审核；导出 |
-| bom-welding-process-breakdown | `generate` / `delete-log` | 从 BOM 生成拆解；删除拆解日志 |
+| bom-welding-process-breakdown | `generate` / `delete-log` | 从 BOM 生成拆解；删除拆解日志（含清空全部） |
 | bom-welding-process-breakdown-list | `view` / `save-lines` / `delete` / `approve` / `reverse` / `export` | 查询；编辑明细；删除；审核；反审核；导出 L0 核对 |
-| bom-welding-fee-calc | `view` / `run` / `delete` | 历史/过程；开始计算；删除计算日志 |
+| bom-welding-fee-calc | `view` / `run` / `delete` | 历史/过程；开始计算；删除计算日志（含清空全部） |
 | bom-welding-fee-list | `view` / `update` / `delete` / `approve` / `reverse` / `export` | 查询；编辑其它费用；删除（含批量）；审核（含批量）；反审核；导出 Excel |
-| steel-price-calc | `view` / `run` / `delete` | 历史/过程；开始计算；删除日志 |
+| steel-price-calc | `view` / `run` / `delete` | 历史/过程；开始计算；删除日志（含清空全部） |
 | steel-price-list | `view` / `update` / `delete` / `approve` / `reject` / `reverse` / `export` | 查询；编辑；删除（含批量）；通过（含批量）；驳回；反审核（含批量）；导出 |
-| stamping-part-cost-calc | `view` / `run` / `delete` | 历史/过程；开始计算；删除日志 |
+| stamping-part-cost-calc | `view` / `run` / `delete` | 历史/过程；开始计算；删除日志（含清空全部） |
 | stamping-part-cost | `view` / `update` / `delete` / `approve` / `reverse` / `export` | 查询；失败手工改价；删除（含批量）；审核（含批量）；反审核；导出工艺清单 Excel |
-| assembly-cost-calc | `view` / `run` / `delete` | 历史/过程；开始计算；删除日志 |
+| assembly-cost-calc | `view` / `run` / `delete` | 历史/过程；开始计算；删除日志（含清空全部） |
 | assembly-cost | `view` / `delete` / `approve` / `reverse` / `export` | 查询；删除；审核；反审核；导出 |
 | costing（菜单码 `menu:costing-engine`） | `view` / `run` / `delete` | 检查就绪；启动月度引擎；删除 Run（含 running） |
 | file-trace | `view` / `download` | 列表/详情；鉴权下载原件 |

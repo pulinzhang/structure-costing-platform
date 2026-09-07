@@ -108,6 +108,11 @@ class AssemblyCostCalcLogRepository:
         db.flush()
         return True
 
+    def delete_all(self, db: Session) -> int:
+        deleted = db.query(AssemblyCostCalcLog).delete(synchronize_session=False)
+        db.flush()
+        return int(deleted)
+
     def expire_stale_processing(self, db: Session, *, older_than: datetime, message: str) -> int:
         rows = (
             db.query(AssemblyCostCalcLog)

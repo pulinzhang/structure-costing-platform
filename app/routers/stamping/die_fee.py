@@ -10,7 +10,7 @@ from app.common.permissions.codes import Perm
 from app.common.vehicle_model import normalize_vehicle_model
 from app.database import get_db
 from app.deps.permissions import require_any_perm, require_perm
-from app.schemas.common.page_result import PageResult
+from app.schemas.common import DeletedCountVO, PageResult
 from app.schemas.dto.stamping_die_fee_dto import (
     StampingDieFeeBatchApproveDTO,
     StampingDieFeeBatchReverseAuditDTO,
@@ -140,6 +140,18 @@ def get_calc_log(
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_DIE_FEE_CALC_VIEW)),
 ) -> ApiResponse[StampingDieFeeCalcLogVO]:
     return ApiResponse.ok(data=_calc_orchestrator.get_calc_log(db, log_id))
+
+
+@router.delete(
+    "/calc/logs",
+    response_model=ApiResponse[DeletedCountVO],
+)
+def delete_all_calc_logs(
+    db: Session = Depends(get_db),
+    current_user: UserVO = Depends(require_perm(Perm.STAMPING_DIE_FEE_CALC_DELETE)),
+) -> ApiResponse[DeletedCountVO]:
+    result = _calc_orchestrator.delete_all_calc_logs(db)
+    return ApiResponse.ok(data=result, message=f"已删除 {result.deleted_count} 条")
 
 
 @router.delete("/calc/logs/{log_id}", response_model=ApiResponse[None])

@@ -7,6 +7,7 @@ from unittest.mock import MagicMock, patch
 from app.services.costing.assembly_cost.codes import (
     item_short_code,
     part_short_code,
+    procurement_part_short_code,
 )
 from app.services.costing.assembly_cost.export.assembly_cost_export_service import (
     AssemblyCostExportService,
@@ -61,19 +62,31 @@ def test_part_short_code_by_level() -> None:
     assert part_short_code(part_number=None, level=0) == ""
 
 
+def test_procurement_part_short_code_matches_list_digits() -> None:
+    assert procurement_part_short_code(part_number="501029961AA") == "9961"
+    assert procurement_part_short_code(part_number="502007710AA-1") == "7101"
+    assert procurement_part_short_code(part_number="551001730AA-1") == "7301"
+    assert procurement_part_short_code(part_number=None) == ""
+
+
 def test_item_short_code_only_for_stamping_source() -> None:
     assert (
         item_short_code(
             part_number="501000011AA",
-            level=1,
             cost_source="stamping",
         )
         == "0011"
     )
     assert (
         item_short_code(
+            part_number="551001730AA-1",
+            cost_source="stamping",
+        )
+        == "7301"
+    )
+    assert (
+        item_short_code(
             part_number="FQ371B06F36",
-            level=2,
             cost_source="annual",
         )
         == ""
@@ -348,6 +361,7 @@ def test_procurement_items_sheet_merges_object_identity() -> None:
     assert "D6:D7" in merged
     assert "G6:G7" not in merged
     assert sheet.cell(row=6, column=1).value == 1
+    assert sheet.cell(row=6, column=2).value == "0002"
     assert sheet.cell(row=6, column=3).value == "501000002AA"
     assert sheet.cell(row=6, column=7).value == "501000011AA"
     assert sheet.cell(row=6, column=6).value == "0011"
@@ -435,6 +449,18 @@ def test_procurement_list_banner_and_formula_total() -> None:
     assert sheet.cell(row=7, column=8).value == "=SUM(H5:H6)"
     assert sheet.cell(row=7, column=9).value == "=SUM(I5:I6)"
     assert sheet.auto_filter.ref == "A4:L6"
+
+
+def test_procurement_list_short_code_uses_digits_not_weld_suffix() -> None:
+    record = _procurement_record_with_items()
+    record.part_number = "502007710AA-1"
+    record.object_kind = "l1_subassembly"
+    record.level = 1
+    workbook = _write_procurement_workbook([record])
+    list_sheet = workbook[PROCUREMENT_LIST_SHEET]
+    assert list_sheet.cell(row=5, column=2).value == "7101"
+    items_sheet = workbook["材料明细"]
+    assert items_sheet.cell(row=6, column=2).value == "7101"
 
 
 def test_finance_list_banner_and_formula_total() -> None:

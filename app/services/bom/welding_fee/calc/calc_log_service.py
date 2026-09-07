@@ -18,6 +18,7 @@ from app.models.bom import BomWeldingFeeCalcLog
 from app.repositories.bom.welding_fee_calc_log_repository import (
     BomWeldingFeeCalcLogRepository,
 )
+from app.schemas.common import DeletedCountVO
 from app.schemas.dto.bom_welding_fee_dto import (
     BomWeldingFeeCalcDTO,
     BomWeldingFeeCalcLogCreate,
@@ -221,6 +222,11 @@ class BomWeldingFeeCalcLogService:
         if not deleted:
             raise NotFoundException("计算日志不存在")
         db.commit()
+
+    def delete_all_logs(self, db: Session) -> DeletedCountVO:
+        deleted_count = self.calc_log_repo.delete_all(db)
+        db.commit()
+        return DeletedCountVO(deleted_count=deleted_count)
 
     def persist(
         self,

@@ -2,7 +2,7 @@ import {
     dieFeeCalcTemplate,
     renderCalcHistoryPagination,
     CALC_HISTORY_COLSPAN,
-} from './template.js?v=8';
+} from './template.js?v=9';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -63,6 +63,7 @@ function applyPermissionUi() {
     calcState.canRun = typeof can === 'function' ? can('op:stamping-die-fee-calc:run') : true;
     calcState.canDelete = typeof can === 'function' ? can('op:stamping-die-fee-calc:delete') : true;
     if (!calcState.canRun) document.getElementById('startCalcBtn')?.classList.add('hidden');
+    document.getElementById('calcHistoryDeleteAllBtn')?.classList.toggle('hidden', !calcState.canDelete);
 }
 
 function bindEvents() {
@@ -79,6 +80,7 @@ function bindEvents() {
     document.getElementById('calcVersion')?.addEventListener('change', () => loadCalcReady());
     document.getElementById('startCalcBtn')?.addEventListener('click', () => startCalculation());
     document.getElementById('calcHistoryRefreshBtn')?.addEventListener('click', () => loadCalcHistory(1));
+    document.getElementById('calcHistoryDeleteAllBtn')?.addEventListener('click', () => deleteAllCalcLogs());
     document.getElementById('calcHistoryPagination')?.addEventListener('click', (event) => {
         const btn = event.target.closest('.calc-history-page-btn');
         if (btn && !btn.disabled) {
@@ -327,6 +329,21 @@ function renderHistoryRows(items) {
     body.querySelectorAll('.calc-delete-log-btn').forEach((btn) => {
         btn.addEventListener('click', () => deleteCalcLog(Number(btn.dataset.logId)));
     });
+}
+
+async function deleteAllCalcLogs() {
+    if (calcState.canDelete === false) return;
+    if (!window.confirm('确定删除全部计算历史？仅删除日志，不影响已落库模具费。进行中的记录不会删除。')) {
+        return;
+    }
+    try {
+        const res = await HttpClient.delete(CALC_LOGS_API);
+        const count = res.data?.deleted_count ?? 0;
+        showToast(`已删除 ${count} 条`, 'success');
+        loadCalcHistory(1);
+    } catch (error) {
+        showToast(error.message || '删除失败', 'error');
+    }
 }
 
 async function deleteCalcLog(logId) {

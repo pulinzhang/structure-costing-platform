@@ -22,6 +22,7 @@ from app.repositories.costing.steel_price.steel_price_repository import SteelPri
 from app.repositories.stamping.tailor_weld_blank_repository import (
     StampingTailorWeldBlankRepository,
 )
+from app.schemas.common import DeletedCountVO
 from app.schemas.dto.stamping_part_cost_dto import (
     StampingPartCostBatchApproveDTO,
     StampingPartCostBatchReverseAuditDTO,
@@ -229,6 +230,9 @@ class StampingPartCostService:
 
     def delete_calc_log(self, db: Session, log_id: int) -> None:
         self.orchestrator.calc_log_service.delete_calc_log(db, log_id)
+
+    def delete_all_calc_logs(self, db: Session) -> DeletedCountVO:
+        return self.orchestrator.calc_log_service.delete_all_logs(db)
 
     def paginate(
         self, db: Session, query: StampingPartCostQuery

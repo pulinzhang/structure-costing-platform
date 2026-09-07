@@ -134,3 +134,8 @@ class BomWeldingFeeCalcLogRepository:
         db.delete(record)
         db.flush()
         return True
+
+    def delete_all(self, db: Session) -> int:
+        deleted = db.query(BomWeldingFeeCalcLog).delete(synchronize_session=False)
+        db.flush()
+        return int(deleted)

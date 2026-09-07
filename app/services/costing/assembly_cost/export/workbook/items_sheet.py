@@ -6,6 +6,7 @@ from app.models.costing.assembly_cost import AssemblyCost
 from app.services.costing.assembly_cost.codes import (
     item_short_code,
     part_short_code,
+    procurement_part_short_code,
 )
 from app.services.costing.assembly_cost.export.workbook.columns import (
     FINANCE_ITEM_HEADERS,
@@ -78,13 +79,12 @@ def write_items_sheet(
             if is_procurement:
                 row_data = [
                     object_seq,
-                    part_short_code(part_number=record.part_number, level=record.level),
+                    procurement_part_short_code(part_number=record.part_number),
                     record.part_number or "",
                     record.part_name or "",
                     tree_level_label(item.node_level),
                     item_short_code(
                         part_number=item.part_number,
-                        level=item.node_level,
                         cost_source=item.cost_source,
                     ),
                     item.part_number or "",
@@ -109,7 +109,6 @@ def write_items_sheet(
                     item.part_number or "",
                     item_short_code(
                         part_number=item.part_number,
-                        level=item.node_level,
                         cost_source=item.cost_source,
                     ),
                     item.part_name or "",

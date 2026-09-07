@@ -18,6 +18,7 @@ from app.models.costing import StampingPartCostCalcLog
 from app.repositories.costing.stamping_part_cost.stamping_part_cost_calc_log_repository import (
     StampingPartCostCalcLogRepository,
 )
+from app.schemas.common import DeletedCountVO
 from app.schemas.dto.stamping_part_cost_dto import (
     StampingPartCostCalcDTO,
     StampingPartCostCalcLogCreate,
@@ -236,6 +237,11 @@ class PartCostCalcLogService:
         if not deleted:
             raise NotFoundException("计算日志不存在")
         db.commit()
+
+    def delete_all_logs(self, db: Session) -> DeletedCountVO:
+        deleted_count = self.calc_log_repo.delete_all(db)
+        db.commit()
+        return DeletedCountVO(deleted_count=deleted_count)
 
     def persist(
         self,

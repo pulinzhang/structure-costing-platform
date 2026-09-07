@@ -9,7 +9,10 @@ from app.common.swing_shear import (
     is_swing_shear_label,
     steel_kg_price_with_swing_shear,
 )
+from app.parsers.stamping.models.part import Part
+from app.parsers.stamping.models.process import Process
 from app.parsers.stamping.stamping_parser import parse_stamping_excel
+from app.services.stamping.upload.swing_shear_resolver import collect_swing_shear_part_numbers
 
 
 def test_is_swing_shear_label_matches_code_or_seq() -> None:
@@ -53,3 +56,51 @@ def test_t2aa_c_pillar_parts_are_swing_shear() -> None:
     assert right.has_swing_shear is True
     inner = next(part for part in result.parts if part.part_number == "501029963AA")
     assert inner.has_swing_shear is False
+
+
+_HAIZHONG_T28 = (
+    Path(__file__).resolve().parents[2]
+    / "excel_sample"
+    / "stamping"
+    / "副本奇瑞T28车身件项目冲压工艺确认表-烟台海众.xlsx"
+)
+
+
+def test_merge_mate_inherits_previous_swing_shear() -> None:
+    parts = [
+        Part(part_number="502005519AA", process_method="合并"),
+        Part(part_number="502005520AA", process_method="合并"),
+    ]
+    processes = [
+        Process(part_number="502005519AA", process_seq="OP05", process_code="摆剪"),
+        Process(part_number="502005519AA", process_seq="OP10", process_code="DR"),
+        Process(part_number="502005520AA", process_seq="OP10", process_code="合并"),
+        Process(part_number="502005520AA", process_seq="OP20", process_code=""),
+    ]
+    numbers = collect_swing_shear_part_numbers(parts, processes)
+    assert "502005519AA" in numbers
+    assert "502005520AA" in numbers
+
+
+def test_unrelated_merge_left_does_not_inherit_swing_shear() -> None:
+    parts = [
+        Part(part_number="A", has_swing_shear=True),
+        Part(part_number="B", process_method="合并"),
+    ]
+    processes = [
+        Process(part_number="A", process_seq="OP10", process_code="摆剪"),
+        Process(part_number="B", process_seq="OP10", process_code="DR"),
+    ]
+    numbers = collect_swing_shear_part_numbers(parts, processes)
+    assert "A" in numbers
+    assert "B" not in numbers
+
+
+@pytest.mark.skipif(
+    not _HAIZHONG_T28.is_file(), reason="海众 T28 工艺确认表样本未放入 excel_sample"
+)
+def test_haizhong_t28_merge_mate_inherits_swing_shear() -> None:
+    result = parse_stamping_excel(str(_HAIZHONG_T28))
+    numbers = collect_swing_shear_part_numbers(result.parts, result.processes)
+    assert "502005519AA" in numbers
+    assert "502005520AA" in numbers

@@ -6,7 +6,7 @@
 import {
     l0WeldingFeeCalcTemplate,
     renderCalcHistoryPagination,
-} from './template.js?v=8';
+} from './template.js?v=9';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -83,6 +83,7 @@ function applyPermissionUi() {
     if (!calcState.canRun) {
         document.getElementById('l0wfStartCalcBtn')?.classList.add('hidden');
     }
+    document.getElementById('l0wfCalcHistoryDeleteAllBtn')?.classList.toggle('hidden', !calcState.canDelete);
 }
 
 function bindEvents() {
@@ -99,6 +100,7 @@ function bindEvents() {
     document.getElementById('l0wfCalcBomVersion')?.addEventListener('change', () => loadCalcReady());
     document.getElementById('l0wfStartCalcBtn')?.addEventListener('click', startCalculation);
     document.getElementById('l0wfCalcHistoryRefreshBtn')?.addEventListener('click', () => loadCalcHistory(1));
+    document.getElementById('l0wfCalcHistoryDeleteAllBtn')?.addEventListener('click', () => deleteAllCalcLogs());
     document.getElementById('l0wfCalcHistoryPagination')?.addEventListener('click', (event) => {
         const btn = event.target.closest('.wf-calc-history-page-btn');
         if (btn && !btn.disabled) {
@@ -412,6 +414,24 @@ function renderHistoryRows(items) {
     body.querySelectorAll('.wf-calc-delete-log-btn').forEach((btn) => {
         btn.addEventListener('click', () => deleteCalcLog(Number(btn.dataset.logId)));
     });
+}
+
+async function deleteAllCalcLogs() {
+    if (calcState.canDelete === false) {
+        showToast('无删除权限', 'warning');
+        return;
+    }
+    if (!window.confirm('确定删除全部计算历史？仅删除日志，不影响已落库的焊接费。计算中的记录删除后将释放锁。')) {
+        return;
+    }
+    try {
+        const res = await HttpClient.delete(CALC_LOGS_API);
+        const count = res.data?.deleted_count ?? 0;
+        showToast(`已删除 ${count} 条`, 'success');
+        loadCalcHistory(1);
+    } catch (error) {
+        showToast(error.message || '删除失败', 'error');
+    }
 }
 
 async function deleteCalcLog(logId) {

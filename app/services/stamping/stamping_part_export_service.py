@@ -1,6 +1,6 @@
 """冲压零件主子表 Excel 导出（对齐工艺确认表版式）。
 
-主表：零件字段纵向合并（含冲压工厂 / 车型 / 版本，便于跨范围核对）。
+主表：零件字段纵向合并（含短码 / 冲压工厂 / 车型 / 版本，便于跨范围核对）。
 子表一：工序（工序名称 / 代号 / 套数 / 模具编号 / 吨位 / 费用比例）。
 子表二：拼焊子片（料厚 / 长宽按片拆分；无拼焊则与主表同高合并）。
 """
@@ -18,6 +18,7 @@ from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 from sqlalchemy.orm import Session
 
+from app.common.bom.manufacturing_category import short_part_number_digits
 from app.common.export_watermark import workbook_to_xlsx_bytes
 from app.common.money import Q2, Q4, excel_money_cell
 from app.common.timezone import now
@@ -29,9 +30,10 @@ from app.schemas.vo.user_vo import UserVO
 
 logger = logging.getLogger("service.stamping.part_export")
 
-COL_COUNT = 27
+COL_COUNT = 28
 DATA_START_ROW = 6
-SKETCH_COL = 7
+SKETCH_COL = 8
+SHORT_CODE_COL = 3
 DEFAULT_ROW_HEIGHT = 18
 # 简图列加宽，约 130px，给 PNG 留出可视区域
 SKETCH_COL_WIDTH = 18
@@ -56,6 +58,7 @@ _FONT_NAME = "微软雅黑"
 WIDTHS = [
     6,
     16,
+    8,
     18,
     14,
     10,
@@ -96,6 +99,7 @@ class StampingPartExportService:
         self._title_font = Font(name=_FONT_NAME, size=14, bold=True, color="FFFFFF")
         self._meta_font = Font(name=_FONT_NAME, size=10, color="1F4E79")
         self._data_font = Font(name=_FONT_NAME, size=9, color="000000")
+        self._short_code_font = Font(name=_FONT_NAME, size=10, bold=True, color="1F4E79")
 
     def export(
         self,
@@ -229,7 +233,7 @@ class StampingPartExportService:
             scope_parts.append(f"版本：{version}")
         scope_text = "    ".join(scope_parts)
 
-        count_start = 21
+        count_start = 22
         ws.merge_cells(start_row=2, start_column=1, end_row=2, end_column=count_start - 1)
         c2 = ws.cell(row=2, column=1, value=scope_text)
         c2.font = self._meta_font
@@ -252,35 +256,36 @@ class StampingPartExportService:
         row4 = {
             1: "序号",
             2: "零件号",
-            3: "零件名称",
-            4: "冲压工厂",
-            5: "车型",
-            6: "版本",
-            7: "零件简图",
-            8: "材质",
-            9: "料厚",
-            10: "零件重量",
-            11: "料片尺寸（mm）",
-            13: "可制件数",
-            14: "料片式样",
-            15: "是否利废",
-            16: "利用哪类废料",
-            17: "是否摆剪",
-            18: "工艺",
-            22: "使用冲压设备吨位",
-            23: "模具类型",
-            24: "工艺方法",
-            25: "自动化",
-            26: "备注",
-            27: "费用比例",
+            3: "短码",
+            4: "零件名称",
+            5: "冲压工厂",
+            6: "车型",
+            7: "版本",
+            8: "零件简图",
+            9: "材质",
+            10: "料厚",
+            11: "零件重量",
+            12: "料片尺寸（mm）",
+            14: "可制件数",
+            15: "料片式样",
+            16: "是否利废",
+            17: "利用哪类废料",
+            18: "是否摆剪",
+            19: "工艺",
+            23: "使用冲压设备吨位",
+            24: "模具类型",
+            25: "工艺方法",
+            26: "自动化",
+            27: "备注",
+            28: "费用比例",
         }
         row5 = {
-            11: "长/卷料宽",
-            12: "宽/卷料步距",
-            18: "工序名称",
-            19: "工序",
-            20: "套数",
-            21: "模具编号",
+            12: "长/卷料宽",
+            13: "宽/卷料步距",
+            19: "工序名称",
+            20: "工序",
+            21: "套数",
+            22: "模具编号",
         }
         merges = [
             (4, 1, 5, 1),
@@ -293,19 +298,20 @@ class StampingPartExportService:
             (4, 8, 5, 8),
             (4, 9, 5, 9),
             (4, 10, 5, 10),
-            (4, 11, 4, 12),
-            (4, 13, 5, 13),
+            (4, 11, 5, 11),
+            (4, 12, 4, 13),
             (4, 14, 5, 14),
             (4, 15, 5, 15),
             (4, 16, 5, 16),
             (4, 17, 5, 17),
-            (4, 18, 4, 21),
-            (4, 22, 5, 22),
+            (4, 18, 5, 18),
+            (4, 19, 4, 22),
             (4, 23, 5, 23),
             (4, 24, 5, 24),
             (4, 25, 5, 25),
             (4, 26, 5, 26),
             (4, 27, 5, 27),
+            (4, 28, 5, 28),
         ]
         for r1, c1, r2, c2 in merges:
             if (r1, c1) != (r2, c2):
@@ -361,72 +367,82 @@ class StampingPartExportService:
             6,
             7,
             8,
-            10,
-            13,
+            9,
+            11,
             14,
             15,
             16,
             17,
-            23,
+            18,
             24,
             25,
             26,
+            27,
         )
         if not blanks:
-            part_cols = (*part_cols, 9, 11, 12)
+            part_cols = (*part_cols, 10, 12, 13)
         for col in part_cols:
             _merge_if_needed(ws, start_row, end_row, col)
 
         ws.cell(row=start_row, column=1, value=seq_no).alignment = self._center
         ws.cell(row=start_row, column=2, value=part.part_number).alignment = self._left
-        ws.cell(row=start_row, column=3, value=part.part_name or "").alignment = self._left
-        ws.cell(row=start_row, column=4, value=part.stamping_supplier or "").alignment = self._left
-        ws.cell(row=start_row, column=5, value=part.vehicle_model or "").alignment = self._center
-        ws.cell(row=start_row, column=6, value=part.version or "").alignment = self._center
-        ws.cell(row=start_row, column=8, value=part.material or "")
-        ws.cell(row=start_row, column=10, value=_num(part.part_weight, Q4)).alignment = self._right
-        ws.cell(row=start_row, column=13, value=part.parts_per_sheet)
-        ws.cell(row=start_row, column=14, value=part.sheet_type or "")
-        ws.cell(row=start_row, column=15, value="是" if part.is_offal_nested else "否")
-        ws.cell(row=start_row, column=16, value=part.offal_source or "")
-        ws.cell(row=start_row, column=17, value="是" if part.has_swing_shear else "否")
-        ws.cell(row=start_row, column=23, value=part.die_type or "")
-        ws.cell(row=start_row, column=24, value=part.process_method or "")
-        ws.cell(row=start_row, column=25, value=part.automation or "")
-        ws.cell(row=start_row, column=26, value=part.remark or "").alignment = self._left
+        short_cell = ws.cell(
+            row=start_row,
+            column=SHORT_CODE_COL,
+            value=short_part_number_digits(part.part_number) or "",
+        )
+        short_cell.alignment = self._center
+        short_cell.font = self._short_code_font
+        ws.cell(row=start_row, column=4, value=part.part_name or "").alignment = self._left
+        ws.cell(row=start_row, column=5, value=part.stamping_supplier or "").alignment = self._left
+        ws.cell(row=start_row, column=6, value=part.vehicle_model or "").alignment = self._center
+        ws.cell(row=start_row, column=7, value=part.version or "").alignment = self._center
+        ws.cell(row=start_row, column=9, value=part.material or "")
+        ws.cell(row=start_row, column=11, value=_num(part.part_weight, Q4)).alignment = self._right
+        ws.cell(row=start_row, column=14, value=part.parts_per_sheet)
+        ws.cell(row=start_row, column=15, value=part.sheet_type or "")
+        ws.cell(row=start_row, column=16, value="是" if part.is_offal_nested else "否")
+        ws.cell(row=start_row, column=17, value=part.offal_source or "")
+        ws.cell(row=start_row, column=18, value="是" if part.has_swing_shear else "否")
+        ws.cell(row=start_row, column=24, value=part.die_type or "")
+        ws.cell(row=start_row, column=25, value=part.process_method or "")
+        ws.cell(row=start_row, column=26, value=part.automation or "")
+        ws.cell(row=start_row, column=27, value=part.remark or "").alignment = self._left
 
         if blanks:
             spans = _split_spans(n_rows, len(blanks))
             for blank, (rel_start, rel_end) in zip(blanks, spans, strict=False):
                 abs_start = start_row + rel_start
                 abs_end = start_row + rel_end
-                for col in (9, 11, 12):
+                for col in (10, 12, 13):
                     _merge_if_needed(ws, abs_start, abs_end, col)
                 thickness = blank.thickness if blank.thickness is not None else part.thickness
                 length = blank.sheet_length if blank.sheet_length is not None else part.sheet_length
                 width = blank.sheet_width if blank.sheet_width is not None else part.sheet_width
-                ws.cell(row=abs_start, column=9, value=_num(thickness, Q4)).alignment = self._right
-                ws.cell(row=abs_start, column=11, value=_num(length, Q2)).alignment = self._right
-                ws.cell(row=abs_start, column=12, value=_num(width, Q2)).alignment = self._right
+                ws.cell(row=abs_start, column=10, value=_num(thickness, Q4)).alignment = self._right
+                ws.cell(row=abs_start, column=12, value=_num(length, Q2)).alignment = self._right
+                ws.cell(row=abs_start, column=13, value=_num(width, Q2)).alignment = self._right
         else:
-            ws.cell(row=start_row, column=9, value=_num(part.thickness, Q4)).alignment = self._right
             ws.cell(
-                row=start_row, column=11, value=_num(part.sheet_length, Q2)
+                row=start_row, column=10, value=_num(part.thickness, Q4)
             ).alignment = self._right
             ws.cell(
-                row=start_row, column=12, value=_num(part.sheet_width, Q2)
+                row=start_row, column=12, value=_num(part.sheet_length, Q2)
+            ).alignment = self._right
+            ws.cell(
+                row=start_row, column=13, value=_num(part.sheet_width, Q2)
             ).alignment = self._right
 
         for offset, process in enumerate(processes):
             excel_row = start_row + offset
-            ws.cell(row=excel_row, column=18, value=process.process_seq)
-            ws.cell(row=excel_row, column=19, value=process.process_code or "")
-            ws.cell(row=excel_row, column=20, value=process.die_sets)
-            ws.cell(row=excel_row, column=21, value=process.die_number or "")
-            ws.cell(row=excel_row, column=22, value=process.tonnage)
+            ws.cell(row=excel_row, column=19, value=process.process_seq)
+            ws.cell(row=excel_row, column=20, value=process.process_code or "")
+            ws.cell(row=excel_row, column=21, value=process.die_sets)
+            ws.cell(row=excel_row, column=22, value=process.die_number or "")
+            ws.cell(row=excel_row, column=23, value=process.tonnage)
             ratio_cell = ws.cell(
                 row=excel_row,
-                column=27,
+                column=28,
                 value=_num(process.cost_ratio, Q2),
             )
             ratio_cell.alignment = self._right
@@ -449,7 +465,7 @@ class StampingPartExportService:
         n_rows: int,
         sketch_buffers: list[BytesIO],
     ) -> bool:
-        """把零件简图锚定到 G 列合并格左上角，按格缩放；缺文件则跳过。"""
+        """把零件简图锚定到短码后的简图列合并格左上角，按格缩放；缺文件则跳过。"""
         sketch_path = _resolve_sketch_path(part)
         if sketch_path is None:
             return False

@@ -16,6 +16,7 @@ from app.common.timezone import now
 from app.exceptions.base import NotFoundException
 from app.models.costing import SteelPriceCalcLog
 from app.repositories.costing.steel_price import SteelPriceCalcLogRepository
+from app.schemas.common import DeletedCountVO
 from app.schemas.dto.steel_price_dto import SteelPriceCalcLogCreate, SteelPriceCalcLogPatch
 from app.schemas.vo.steel_price_vo import SteelPriceCalcLogVO
 from app.services.costing.steel_price.calc.models import SteelPriceCalcResult
@@ -87,6 +88,16 @@ class CalcLogService:
             db.rollback()
             logger.exception("删除计算日志失败: id=%s", log_id)
             raise
+
+    def delete_all_logs(self, db: Session) -> DeletedCountVO:
+        deleted_count = self.repository.delete_all(db)
+        try:
+            db.commit()
+        except Exception:
+            db.rollback()
+            logger.exception("清空计算日志失败")
+            raise
+        return DeletedCountVO(deleted_count=deleted_count)
 
     def is_period_processing(
         self,

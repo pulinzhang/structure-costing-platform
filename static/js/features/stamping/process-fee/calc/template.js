@@ -75,10 +75,16 @@ export function processFeeCalcTemplate() {
             <div class="pt-2">
                 <div class="flex items-center justify-between mb-1.5">
                     <div class="text-[10px] text-[#666] font-medium">计算历史</div>
-                    <button id="calcHistoryRefreshBtn"
-                            class="text-[9px] text-[#616161] hover:text-[#9e9e9e] transition-colors">
-                        刷新
-                    </button>
+                    <div class="flex items-center gap-3">
+                        <button id="calcHistoryDeleteAllBtn" type="button"
+                                class="hidden text-[9px] text-[#c62828] hover:text-[#ef5350] transition-colors">
+                            删除全部
+                        </button>
+                        <button id="calcHistoryRefreshBtn"
+                                class="text-[9px] text-[#616161] hover:text-[#9e9e9e] transition-colors">
+                            刷新
+                        </button>
+                    </div>
                 </div>
                 <div class="bg-[#1e1e1e] border border-[#2c2c2c] overflow-hidden">
                     <div class="overflow-x-auto">
