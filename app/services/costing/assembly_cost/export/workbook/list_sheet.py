@@ -9,7 +9,10 @@ from openpyxl.utils import get_column_letter
 from app.common.audit import audit_status_label
 from app.common.money import Q4, format_money, quantize_money
 from app.models.costing.assembly_cost import AssemblyCost
-from app.services.costing.assembly_cost.codes import part_short_code
+from app.services.costing.assembly_cost.codes import (
+    part_short_code,
+    procurement_part_short_code,
+)
 from app.services.costing.assembly_cost.export.workbook.columns import (
     FINANCE_LIST_SHEET,
     LIST_CENTER_COLS,
@@ -104,7 +107,7 @@ def write_list_sheet(
                 confirm_status = confirm_status_label(raw)
             row_data = [
                 seq,
-                part_short_code(part_number=record.part_number, level=record.level),
+                procurement_part_short_code(part_number=record.part_number),
                 record.part_number or "",
                 record.part_name or "",
                 object_kind_label(record.object_kind),

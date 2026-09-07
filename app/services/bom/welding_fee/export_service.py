@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from decimal import Decimal
 from typing import Any
 
 from openpyxl import Workbook
@@ -18,7 +19,7 @@ from app.common.bom.manufacturing_category import (
 from app.common.excel_workbook import resolve_worksheet
 from app.common.export_filters import require_at_least_one_export_filter
 from app.common.export_watermark import workbook_to_xlsx_bytes
-from app.common.money import Q4, excel_money_cell
+from app.common.money import Q4, excel_money_cell, format_money, quantize_money
 from app.common.timezone import now
 from app.models.bom import BomWeldingFee
 from app.repositories.bom.welding_fee_repository import BomWeldingFeeRepository
@@ -141,11 +142,13 @@ class WeldingSheetLayout:
 
 
 TITLE_H = 28
-FILTER_H = 20
+FILTER_H = 36
 NOTE_H = 20
 GROUP_H = 18
 HEADER_H = 22
 DATA_H = 26
+TOTAL_H = 22
+MONEY_FORMAT = "0.0000"
 
 
 def _fill(hex_color: str) -> PatternFill:
@@ -181,6 +184,40 @@ def part_short_code(*, part_number: str | None, level: int | None) -> str:
     if int(level or 0) == 0:
         return short_part_number_digits(part_number) or ""
     return short_weld_part_number(part_number) or ""
+
+
+def _sum_money_field(records: list[BomWeldingFee], field_name: str) -> Decimal:
+    total = Decimal("0")
+    for record in records:
+        value = getattr(record, field_name, None)
+        if value is None or value == "":
+            continue
+        total += quantize_money(value, Q4, allow_negative=True)
+    return total.quantize(Q4)
+
+
+def _sum_line_fee(records: list[BomWeldingFee]) -> Decimal:
+    total = Decimal("0")
+    for record in records:
+        for item in record.items or []:
+            value = getattr(item, "line_fee", None)
+            if value is None or value == "":
+                continue
+            total += quantize_money(value, Q4, allow_negative=True)
+    return total.quantize(Q4)
+
+
+def _count_label(records: list[BomWeldingFee]) -> str:
+    ok_count = sum(1 for record in records if record.calc_status == "ok")
+    system_fee = format_money(_sum_money_field(records, "total_welding_fee"), Q4, 4)
+    other_fee = format_money(_sum_money_field(records, "other_fee"), Q4, 4)
+    final_fee = format_money(_sum_money_field(records, "final_welding_fee"), Q4, 4)
+    line_fee = format_money(_sum_line_fee(records), Q4, 4)
+    return (
+        f"共 {len(records)} 条（核算正常 {ok_count}） · "
+        f"本表合计　系统计算 {system_fee}　其它费用 {other_fee}　"
+        f"确认单价 {final_fee}　行费 {line_fee}"
+    )
 
 
 class BomWeldingFeeExportService:
@@ -244,7 +281,7 @@ class BomWeldingFeeExportService:
             levels=resolved_levels,
             ids=ids,
         )
-        self._write_banner(ws, filter_text=filter_text, fee_count=len(records))
+        self._write_banner(ws, filter_text=filter_text, records=records)
         header_row = self._write_headers(ws)
 
         row_idx = header_row + 1
@@ -288,6 +325,7 @@ class BomWeldingFeeExportService:
 
         last_data = max(header_row, row_idx - 1)
         layout = self._layout
+        self._write_total_row(ws, header_row=header_row, last_data=last_data)
         for idx, width in enumerate(layout.widths, start=1):
             ws.column_dimensions[get_column_letter(idx)].width = width
 
@@ -345,8 +383,8 @@ class BomWeldingFeeExportService:
             level=level,
             levels=levels,
         )
-        # header_row is always 5 (banner 1–3 + group 4 + headers 5)
-        export_row_count = max(0, wb.worksheets[0].max_row - 5)
+        # header_row is always 5 (banner 1–3 + group 4 + headers 5); last row is 合计
+        export_row_count = max(0, wb.worksheets[0].max_row - 6)
 
         content = workbook_to_xlsx_bytes(wb, current_user)
 
@@ -367,7 +405,13 @@ class BomWeldingFeeExportService:
         )
         return content, filename
 
-    def _write_banner(self, ws: Any, *, filter_text: str, fee_count: int) -> None:
+    def _write_banner(
+        self,
+        ws: Any,
+        *,
+        filter_text: str,
+        records: list[BomWeldingFee],
+    ) -> None:
         indent = Alignment(horizontal="left", vertical="center", indent=1)
         layout = self._layout
         title = "焊接费" if layout.omit_scope else "焊接费核对表"
@@ -384,20 +428,31 @@ class BomWeldingFeeExportService:
             row=2,
             column=1,
             value=(
-                f"{filter_text} · 共 {fee_count} 条" f"　　导出 {now().strftime('%Y-%m-%d %H:%M')}"
+                f"{filter_text} · {_count_label(records)}"
+                f"　　导出 {now().strftime('%Y-%m-%d %H:%M')}"
             ),
         )
         c2.font = _font(size=9, color="455A64")
         c2.fill = _fill("E8EAF6")
-        c2.alignment = indent
+        c2.alignment = Alignment(
+            horizontal="left",
+            vertical="center",
+            indent=1,
+            wrap_text=True,
+        )
         ws.row_dimensions[2].height = FILTER_H
 
         ws.merge_cells(start_row=3, start_column=1, end_row=3, end_column=layout.col_count)
         note = (
             "说明：范围已在表头锁定，表内不再重复年度/基地/项目/版本；"
             "左侧主表按节点合并，右侧为工艺明细。行费 = 计费量 × 分年单价。"
+            "表头与末行为本表合计；末行公式不进筛选、不随筛选变化。"
             if layout.omit_scope
-            else "说明：左侧主表按节点合并，含各层级（见「层级」列）；右侧为工艺明细。行费 = 计费量 × 分年单价。"
+            else (
+                "说明：左侧主表按节点合并，含各层级（见「层级」列）；"
+                "右侧为工艺明细。行费 = 计费量 × 分年单价。"
+                "表头与末行为本表合计；末行公式不进筛选、不随筛选变化。"
+            )
         )
         c3 = ws.cell(row=3, column=1, value=note)
         c3.font = _font(size=9, color="B71C1C")
@@ -603,6 +658,52 @@ class BomWeldingFeeExportService:
             else:
                 cell.fill = main_fill
             cell.border = self._thin if col < layout.main_cols else self._split_main
+
+    def _write_total_row(self, ws: Any, *, header_row: int, last_data: int) -> None:
+        layout = self._layout
+        total_row = last_data + 1
+        has_data = last_data > header_row
+        data_start = header_row + 1
+        kpi_cols = {layout.col["确认单价"], layout.col["行费"]}
+        for col in range(1, layout.col_count + 1):
+            cell = ws.cell(row=total_row, column=col, value=None)
+            cell.font = _font(size=10, bold=True)
+            cell.fill = _fill("ECEFF1")
+            if col in layout.fee_cols:
+                cell.alignment = self._right
+                cell.number_format = MONEY_FORMAT
+                cell.border = self._thin
+            elif col == layout.main_cols:
+                cell.alignment = self._center
+                cell.border = self._split_main
+            elif col == layout.main_cols + 1:
+                cell.alignment = self._center
+                cell.border = self._split_detail
+            else:
+                cell.alignment = self._center
+                cell.border = self._thin
+        label = ws.cell(row=total_row, column=1, value="合计")
+        label.font = _font(size=10, bold=True)
+        label.fill = _fill("ECEFF1")
+        label.alignment = self._center
+        for col in sorted(layout.fee_cols):
+            letter = get_column_letter(col)
+            cell = ws.cell(row=total_row, column=col)
+            if has_data:
+                cell.value = f"=SUM({letter}{data_start}:{letter}{last_data})"
+            else:
+                cell.value = Decimal("0.0000")
+            cell.font = _font(size=10, bold=True, color="B71C1C")
+            cell.fill = _fill("FFCDD2") if col in kpi_cols else _fill("FFF3E0")
+            cell.alignment = self._right
+            cell.number_format = MONEY_FORMAT
+            if col == layout.main_cols:
+                cell.border = self._split_main
+            elif col == layout.main_cols + 1:
+                cell.border = self._split_detail
+            else:
+                cell.border = self._thin
+        ws.row_dimensions[total_row].height = TOTAL_H
 
     @staticmethod
     def _row_height(record: BomWeldingFee) -> float:

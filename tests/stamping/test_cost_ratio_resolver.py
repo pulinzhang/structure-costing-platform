@@ -6,6 +6,7 @@ from app.parsers.stamping.models.part import Part
 from app.parsers.stamping.models.process import Process
 from app.services.stamping.upload.cost_ratio_preserver import ProcessCostRatioPreserver
 from app.services.stamping.upload.cost_ratio_resolver import (
+    is_blanking_first_process_code,
     is_prg_process_code,
     later_ops_are_blank,
     later_ops_have_shared_die,
@@ -28,14 +29,45 @@ def test_progressive_die_and_one_out_of_two_is_0_40() -> None:
     assert resolve_cost_ratio("级进", "合并") == Decimal("0.40")
 
 
-def test_jinjin_blanking_is_not_progressive_die() -> None:
+def test_jinjin_blanking_is_not_part_level_progressive() -> None:
     assert resolve_cost_ratio("级进落料", "一出一") == Decimal("1.00")
+    assert resolve_cost_ratio("级进落料", "单干") == Decimal("1.00")
+
+
+def test_jinjin_blanking_multi_process_first_is_0_80() -> None:
+    assert resolve_new_process_cost_ratio(
+        automation="级进落料",
+        process_method="单干",
+        process_code="BL+PI",
+        is_first_process=True,
+        process_count=2,
+        first_process_code="BL+PI",
+    ) == Decimal("0.80")
+    assert resolve_new_process_cost_ratio(
+        automation="级进落料",
+        process_method="单干",
+        process_code="FO/RST+FL/PI/PI+CPI",
+        is_first_process=False,
+        process_count=2,
+        first_process_code="BL+PI",
+    ) == Decimal("1.00")
 
 
 def test_shared_die_keywords_still_halve() -> None:
     assert resolve_cost_ratio(None, "双槽") == Decimal("0.50")
     assert resolve_cost_ratio(None, "左右合并") == Decimal("0.50")
     assert resolve_cost_ratio("级进模", "双槽") == Decimal("0.40")
+
+
+def test_prg_code_with_merge_hand_line_is_0_40() -> None:
+    assert resolve_cost_ratio("手工线", "合并", process_code="PRG") == Decimal("0.40")
+    assert resolve_cost_ratio(
+        "手工线",
+        "合并",
+        process_code="合并",
+        previous_automation="手工线",
+        previous_first_process_code="PRG",
+    ) == Decimal("0.40")
 
 
 def test_mate_code_inherits_previous_progressive_is_0_40() -> None:
@@ -77,6 +109,16 @@ def test_later_ops_blank_and_full_share_markers() -> None:
     assert later_ops_have_shared_die(["FO+FL"]) is False
     assert later_ops_have_shared_die(["双槽"]) is True
     assert later_ops_have_shared_die(["一出二"]) is False
+
+
+def test_blanking_first_codes() -> None:
+    assert is_blanking_first_process_code("BL") is True
+    assert is_blanking_first_process_code("BL+PI") is True
+    assert is_blanking_first_process_code("BL+PI(共用)") is True
+    assert is_blanking_first_process_code("共用") is True
+    assert is_blanking_first_process_code("DR") is False
+    assert is_blanking_first_process_code("双槽") is False
+    assert is_blanking_first_process_code("FO") is False
 
 
 def test_prg_codes() -> None:
@@ -227,9 +269,71 @@ def test_shared_first_after_prg_ignores_part_level_half() -> None:
     ) == Decimal("0.50")
 
 
+def test_double_cavity_blanking_first_is_1_00_later_0_50() -> None:
+    assert resolve_new_process_cost_ratio(
+        automation="手工线",
+        process_method="双槽",
+        process_code="BL",
+        is_first_process=True,
+        process_count=5,
+        first_process_code="BL",
+    ) == Decimal("1.00")
+    assert resolve_new_process_cost_ratio(
+        automation="手工线",
+        process_method="双槽",
+        process_code="FO",
+        is_first_process=False,
+        process_count=5,
+        first_process_code="BL",
+    ) == Decimal("0.50")
+    assert resolve_new_process_cost_ratio(
+        automation="手工线",
+        process_method="双槽",
+        process_code="共用",
+        is_first_process=True,
+        process_count=5,
+        first_process_code="共用",
+    ) == Decimal("1.00")
+    assert resolve_new_process_cost_ratio(
+        automation="手工线",
+        process_method="共用/双槽",
+        process_code="BL+PI(共用)",
+        is_first_process=True,
+        process_count=4,
+        first_process_code="BL+PI(共用)",
+    ) == Decimal("1.00")
+    assert resolve_new_process_cost_ratio(
+        automation="手工线",
+        process_method="共用/双槽",
+        process_code="左右双槽",
+        is_first_process=False,
+        process_count=4,
+        first_process_code="BL+PI(共用)",
+    ) == Decimal("0.50")
+
+
+def test_double_cavity_drawing_first_stays_0_50() -> None:
+    assert resolve_new_process_cost_ratio(
+        automation="手工线",
+        process_method="双槽",
+        process_code="DR",
+        is_first_process=True,
+        process_count=6,
+        first_process_code="DR",
+    ) == Decimal("0.50")
+    assert resolve_new_process_cost_ratio(
+        automation="手工线",
+        process_method="合并",
+        process_code="DR",
+        is_first_process=True,
+        process_count=5,
+        first_process_code="DR",
+    ) == Decimal("0.50")
+
+
 def test_unrelated_first_after_prg_does_not_enter_exception() -> None:
     assert resolve_new_process_cost_ratio(
-        automation="级进落料",
+        automation="手工",
         process_method="一出一",
         process_code="FO",
         is_first_process=True,
@@ -429,3 +533,80 @@ def test_preserver_gold_t2aa_pairs() -> None:
     assert by_key[("502018922AA", "OP10")] == Decimal("0.50")
     assert by_key[("502027504AA", "OP10")] == Decimal("0.50")
     assert by_key[("502027505AA", "OP10")] == Decimal("0.50")
+
+
+def test_preserver_haizhong_double_cavity_blanking_pairs() -> None:
+    """青岛海众 T28：双槽多序落料第一序 1.00，后序共模 0.50。"""
+    parts = [
+        Part(part_number="552000656AA", process_method="双槽", automation="手工线"),
+        Part(part_number="552000658AA", process_method="双槽", automation="手工线"),
+        Part(part_number="502004383AA", process_method="双槽", automation="手工线"),
+        Part(part_number="502004419AA", process_method="双槽", automation="手工线"),
+        Part(part_number="502006316AA", process_method="共用/双槽", automation="手工线"),
+        Part(part_number="502006317AA", process_method="共用/双槽", automation="手工线"),
+        Part(part_number="502005521AA", process_method="双槽", automation="手工线"),
+        Part(part_number="502005522AA", process_method="双槽", automation="手工线"),
+    ]
+    processes = [
+        Process(part_number="552000656AA", process_seq="OP05", process_code="BL"),
+        Process(part_number="552000656AA", process_seq="OP10", process_code="FO"),
+        Process(part_number="552000658AA", process_seq="OP05", process_code="共用"),
+        Process(part_number="552000658AA", process_seq="OP10", process_code="双槽"),
+        Process(part_number="552000658AA", process_seq="OP20", process_code=""),
+        Process(part_number="502004383AA", process_seq="OP05", process_code="BL"),
+        Process(part_number="502004383AA", process_seq="OP10", process_code="FO"),
+        Process(part_number="502004419AA", process_seq="OP05", process_code="共用"),
+        Process(part_number="502004419AA", process_seq="OP10", process_code="双槽"),
+        Process(part_number="502006316AA", process_seq="OP05", process_code="BL+PI"),
+        Process(part_number="502006316AA", process_seq="OP10", process_code="FO"),
+        Process(part_number="502006317AA", process_seq="OP05", process_code="BL+PI(共用)"),
+        Process(part_number="502006317AA", process_seq="OP10", process_code="左右双槽"),
+        Process(part_number="502005521AA", process_seq="OP05", process_code="DR"),
+        Process(part_number="502005521AA", process_seq="OP10", process_code="FO"),
+        Process(part_number="502005522AA", process_seq="OP05", process_code="双槽"),
+        Process(part_number="502005522AA", process_seq="OP10", process_code=""),
+    ]
+    ProcessCostRatioPreserver().apply(processes, [], parts)
+    by_key = {(p.part_number, p.process_seq): p.cost_ratio for p in processes}
+    assert by_key[("552000656AA", "OP05")] == Decimal("1.00")
+    assert by_key[("552000656AA", "OP10")] == Decimal("0.50")
+    assert by_key[("552000658AA", "OP05")] == Decimal("1.00")
+    assert by_key[("552000658AA", "OP10")] == Decimal("0.50")
+    assert by_key[("552000658AA", "OP20")] == Decimal("0.50")
+    assert by_key[("502004383AA", "OP05")] == Decimal("1.00")
+    assert by_key[("502004383AA", "OP10")] == Decimal("0.50")
+    assert by_key[("502004419AA", "OP05")] == Decimal("1.00")
+    assert by_key[("502004419AA", "OP10")] == Decimal("0.50")
+    assert by_key[("502006316AA", "OP05")] == Decimal("1.00")
+    assert by_key[("502006316AA", "OP10")] == Decimal("0.50")
+    assert by_key[("502006317AA", "OP05")] == Decimal("1.00")
+    assert by_key[("502006317AA", "OP10")] == Decimal("0.50")
+    assert by_key[("502005521AA", "OP05")] == Decimal("0.50")
+    assert by_key[("502005521AA", "OP10")] == Decimal("0.50")
+    assert by_key[("502005522AA", "OP05")] == Decimal("0.50")
+    assert by_key[("502005522AA", "OP10")] == Decimal("0.50")
+
+
+def test_preserver_haizhong_prg_merge_and_jinjin_blanking() -> None:
+    """青岛海众：单序 PRG+合并+手工线 0.40；级进落料第一序 0.80、后序 1.00。"""
+    parts = [
+        Part(part_number="502005543AA", process_method="合并", automation="手工线"),
+        Part(part_number="502005544AA", process_method="合并", automation="手工线"),
+        Part(part_number="502005553AA", process_method="单干", automation="级进落料"),
+    ]
+    processes = [
+        Process(part_number="502005543AA", process_seq="OP10", process_code="PRG"),
+        Process(part_number="502005544AA", process_seq="OP10", process_code="合并"),
+        Process(part_number="502005553AA", process_seq="OP05", process_code="BL+PI"),
+        Process(
+            part_number="502005553AA",
+            process_seq="OP10-OP40",
+            process_code="FO/RST+FL/PI/PI+CPI",
+        ),
+    ]
+    ProcessCostRatioPreserver().apply(processes, [], parts)
+    by_key = {(p.part_number, p.process_seq): p.cost_ratio for p in processes}
+    assert by_key[("502005543AA", "OP10")] == Decimal("0.40")
+    assert by_key[("502005544AA", "OP10")] == Decimal("0.40")
+    assert by_key[("502005553AA", "OP05")] == Decimal("0.80")
+    assert by_key[("502005553AA", "OP10-OP40")] == Decimal("1.00")
