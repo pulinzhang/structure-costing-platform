@@ -74,6 +74,9 @@ def test_sanitize_part_number_token() -> None:
 
 def _mock_parser(parser: QueryParser) -> None:
     parser._aligner._scope_repo.list_locations = MagicMock(return_value=["青岛"])
+    parser._aligner._scope_repo.location_alias_map = MagicMock(
+        return_value={"青岛": "青岛", "青岛基地": "青岛"}
+    )
     parser._aligner._scope_repo.list_vehicle_models = MagicMock(return_value=["T28"])
     parser._aligner._scope_repo.list_bom_versions = MagicMock(return_value=["D/00"])
     parser._aligner._scope_repo.list_part_numbers_matching = MagicMock(return_value=[])
@@ -111,6 +114,10 @@ def test_query_parser_strips_temporal_part_from_llm_filters(
 def test_entity_aligner_skips_temporal_part_mention() -> None:
     aligner = EntityAligner()
     db = MagicMock()
+    aligner._scope_repo.list_locations = MagicMock(return_value=[])
+    aligner._scope_repo.location_alias_map = MagicMock(return_value={})
+    aligner._scope_repo.list_vehicle_models = MagicMock(return_value=[])
+    aligner._scope_repo.list_bom_versions = MagicMock(return_value=[])
     aligner._scope_repo.list_part_numbers_matching = MagicMock(return_value=[])
     result = aligner.align(
         db,
@@ -118,6 +125,21 @@ def test_entity_aligner_skips_temporal_part_mention() -> None:
     )
     assert "part_number" not in result.filters
     assert result.unresolved_mentions == []
+
+
+def test_entity_aligner_normalizes_vehicle_model() -> None:
+    aligner = EntityAligner()
+    db = MagicMock()
+    aligner._scope_repo.list_locations = MagicMock(return_value=[])
+    aligner._scope_repo.location_alias_map = MagicMock(return_value={})
+    aligner._scope_repo.list_vehicle_models = MagicMock(return_value=["T13J"])
+    aligner._scope_repo.list_bom_versions = MagicMock(return_value=[])
+    result = aligner.align(
+        db,
+        mentions=[("vehicle_model", "t13j"), ("vehicle_model", "项目T28")],
+    )
+    assert result.filters["vehicle_model"] == "T13J"
+    assert "vehicle_model:项目T28" in result.unresolved_mentions
 
 
 def test_menu_questions_do_not_resolve_temporal_part_numbers() -> None:

@@ -46,7 +46,7 @@ HEADERS = [
     "年度",
     "基地",
     "冲压工厂",
-    "车型",
+    "项目",
     "版本",
     "零件号",
     "短码",
@@ -532,7 +532,7 @@ class StampingProcessFeeExportService:
         if stamping_supplier:
             parts.append(f"冲压工厂={stamping_supplier}")
         if vehicle_model:
-            parts.append(f"车型={vehicle_model}")
+            parts.append(f"项目={vehicle_model}")
         if version:
             parts.append(f"版本={version}")
         if part_number:

@@ -148,6 +148,7 @@ class StampingPartCostRepository:
         year: int | None = None,
         month: int | None = None,
         location: str | None = None,
+        locations: list[str] | None = None,
         stamping_supplier: str | None = None,
         vehicle_model: str | None = None,
         version: str | None = None,
@@ -159,7 +160,9 @@ class StampingPartCostRepository:
             q = q.filter(StampingPartCost.year == year)
         if month is not None:
             q = q.filter(StampingPartCost.month == month)
-        if location is not None:
+        if locations is not None:
+            q = q.filter(StampingPartCost.location.in_(locations))
+        elif location is not None:
             q = q.filter(StampingPartCost.location == location)
         if stamping_supplier is not None:
             q = q.filter(StampingPartCost.stamping_supplier == stamping_supplier)
@@ -179,6 +182,7 @@ class StampingPartCostRepository:
         year: int | None = None,
         month: int | None = None,
         location: str | None = None,
+        locations: list[str] | None = None,
         stamping_supplier: str | None = None,
         vehicle_model: str | None = None,
         version: str | None = None,
@@ -192,6 +196,7 @@ class StampingPartCostRepository:
             year=year,
             month=month,
             location=location,
+            locations=locations,
             stamping_supplier=stamping_supplier,
             vehicle_model=vehicle_model,
             version=version,
@@ -220,6 +225,7 @@ class StampingPartCostRepository:
         year: int | None = None,
         month: int | None = None,
         location: str | None = None,
+        locations: list[str] | None = None,
         stamping_supplier: str | None = None,
         vehicle_model: str | None = None,
         version: str | None = None,
@@ -232,6 +238,7 @@ class StampingPartCostRepository:
             year=year,
             month=month,
             location=location,
+            locations=locations,
             stamping_supplier=stamping_supplier,
             vehicle_model=vehicle_model,
             version=version,
@@ -260,6 +267,7 @@ class StampingPartCostRepository:
         year: int | None = None,
         month: int | None = None,
         location: str | None = None,
+        locations: list[str] | None = None,
         stamping_supplier: str | None = None,
         vehicle_model: str | None = None,
         version: str | None = None,
@@ -271,7 +279,9 @@ class StampingPartCostRepository:
             q = q.filter(StampingPartCost.year == year)
         if month is not None:
             q = q.filter(StampingPartCost.month == month)
-        if location is not None:
+        if locations is not None:
+            q = q.filter(StampingPartCost.location.in_(locations))
+        elif location is not None:
             q = q.filter(StampingPartCost.location == location)
         if stamping_supplier is not None:
             q = q.filter(StampingPartCost.stamping_supplier == stamping_supplier)
@@ -505,6 +515,7 @@ class StampingPartCostRepository:
         year: int | None = None,
         month: int | None = None,
         location: str | None = None,
+        locations: list[str] | None = None,
         vehicle_model: str | None = None,
         version: str | None = None,
     ) -> list[str]:
@@ -513,7 +524,9 @@ class StampingPartCostRepository:
             q = q.filter(StampingPartCost.year == year)
         if month is not None:
             q = q.filter(StampingPartCost.month == month)
-        if location is not None:
+        if locations is not None:
+            q = q.filter(StampingPartCost.location.in_(locations))
+        elif location is not None:
             q = q.filter(StampingPartCost.location == location)
         if vehicle_model is not None:
             q = q.filter(StampingPartCost.vehicle_model == vehicle_model)
@@ -522,32 +535,13 @@ class StampingPartCostRepository:
         results = q.order_by(StampingPartCost.stamping_supplier).all()
         return [r[0] for r in results if r[0]]
 
-    def get_distinct_vehicle_models(
-        self,
-        db: Session,
-        year: int | None = None,
-        month: int | None = None,
-        location: str | None = None,
-        stamping_supplier: str | None = None,
-    ) -> list[str]:
-        q = db.query(StampingPartCost.vehicle_model).distinct()
-        if year is not None:
-            q = q.filter(StampingPartCost.year == year)
-        if month is not None:
-            q = q.filter(StampingPartCost.month == month)
-        if location is not None:
-            q = q.filter(StampingPartCost.location == location)
-        if stamping_supplier is not None:
-            q = q.filter(StampingPartCost.stamping_supplier == stamping_supplier)
-        results = q.order_by(StampingPartCost.vehicle_model).all()
-        return [r[0] for r in results if r[0]]
-
     def get_distinct_versions(
         self,
         db: Session,
         year: int | None = None,
         month: int | None = None,
         location: str | None = None,
+        locations: list[str] | None = None,
         vehicle_model: str | None = None,
         stamping_supplier: str | None = None,
     ) -> list[str]:
@@ -556,7 +550,9 @@ class StampingPartCostRepository:
             q = q.filter(StampingPartCost.year == year)
         if month is not None:
             q = q.filter(StampingPartCost.month == month)
-        if location is not None:
+        if locations is not None:
+            q = q.filter(StampingPartCost.location.in_(locations))
+        elif location is not None:
             q = q.filter(StampingPartCost.location == location)
         if vehicle_model is not None:
             q = q.filter(StampingPartCost.vehicle_model == vehicle_model)

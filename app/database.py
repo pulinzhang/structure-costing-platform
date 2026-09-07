@@ -121,6 +121,7 @@ class DatabaseConfig:
         Base.metadata.create_all(bind=engine)
         cls._ensure_sqlite_columns(engine)
         cls._ensure_welding_fee_columns(engine)
+        cls._ensure_vehicle_model_child_fks(engine)
         cls._remap_welding_fee_permissions(engine)
         cls._remap_assembly_cost_permissions(engine)
         logger.info("主业务库表创建完成")
@@ -796,6 +797,126 @@ class DatabaseConfig:
                         "ON bom_welding_fees (year, location, vehicle_model, bom_version, level)"
                     )
                 )
+
+    @classmethod
+    def _ensure_vehicle_model_child_fks(cls, engine: Engine) -> None:
+        """已有 SQLite 表补 (location, vehicle_model) → vehicle_models 复合外键。"""
+        if not str(engine.url).startswith("sqlite"):
+            return
+        from sqlalchemy import inspect
+
+        inspector = inspect(engine)
+        table_names = set(inspector.get_table_names())
+        if "vehicle_models" not in table_names:
+            return
+        from app.models.bom.node import BomSnapshot
+        from app.models.bom.packaging_transport_fee import BomPackagingTransportFee
+        from app.models.stamping.die import StampingDiePart
+        from app.models.stamping.die_unit_price import StampingDieUnitPrice
+        from app.models.stamping.gauge_fee import StampingGaugeFee
+        from app.models.stamping.part import StampingPart
+
+        pending = [
+            name
+            for name in (
+                StampingPart.__tablename__,
+                StampingDiePart.__tablename__,
+                StampingDieUnitPrice.__tablename__,
+                StampingGaugeFee.__tablename__,
+                BomSnapshot.__tablename__,
+                BomPackagingTransportFee.__tablename__,
+            )
+            if name in table_names
+        ]
+        if not pending:
+            return
+
+        with engine.connect() as conn:
+            autocommit = conn.execution_options(isolation_level="AUTOCOMMIT")
+            missing = [
+                name for name in pending if not cls._sqlite_has_vehicle_model_fk(autocommit, name)
+            ]
+            if not missing:
+                return
+            orphans = cls._sqlite_vehicle_model_orphan_pairs(autocommit, missing)
+            if orphans:
+                detail = "；".join(
+                    f"{table} {location}/{code}" for table, location, code in orphans
+                )
+                raise RuntimeError(
+                    "无法给项目下一跳加外键：下列 (基地, 项目) 不在 vehicle_models 中。"
+                    "删掉脏行或按正确口径重传，禁止批量改写业务列。"
+                    f" {detail}"
+                )
+            autocommit.exec_driver_sql("PRAGMA foreign_keys=OFF")
+            try:
+                for table_name in missing:
+                    cls._sqlite_rebuild_table(autocommit, table_name)
+                    logger.info("已为 %s 补项目复合外键", table_name)
+            finally:
+                autocommit.exec_driver_sql("PRAGMA foreign_keys=ON")
+
+    @staticmethod
+    def _sqlite_has_vehicle_model_fk(conn: Connection, table_name: str) -> bool:
+        from sqlalchemy import text
+
+        rows = conn.execute(text(f'PRAGMA foreign_key_list("{table_name}")')).fetchall()
+        grouped: dict[int, set[tuple[str, str]]] = {}
+        for row in rows:
+            if str(row[2]) != "vehicle_models":
+                continue
+            grouped.setdefault(int(row[0]), set()).add((str(row[3]), str(row[4])))
+        expected = {("location", "location"), ("vehicle_model", "vehicle_model")}
+        return any(pairs == expected for pairs in grouped.values())
+
+    @staticmethod
+    def _sqlite_vehicle_model_orphan_pairs(
+        conn: Connection,
+        table_names: list[str],
+    ) -> list[tuple[str, str, str]]:
+        from sqlalchemy import text
+
+        found: list[tuple[str, str, str]] = []
+        for table_name in table_names:
+            rows = conn.execute(
+                text(
+                    f'SELECT DISTINCT location, vehicle_model FROM "{table_name}" '
+                    "EXCEPT "
+                    "SELECT location, vehicle_model FROM vehicle_models"
+                )
+            ).fetchall()
+            for location, vehicle_model in rows:
+                found.append((table_name, str(location), str(vehicle_model)))
+        return found
+
+    @classmethod
+    def _sqlite_rebuild_table(cls, conn: Connection, table_name: str) -> None:
+        from sqlalchemy import text
+        from sqlalchemy.schema import CreateTable
+
+        table = Base.metadata.tables.get(table_name)
+        if table is None:
+            raise RuntimeError(f"metadata 中没有表 {table_name}，无法补外键")
+        tmp_name = f"{table_name}__vm_fk"
+        conn.execute(text(f'DROP TABLE IF EXISTS "{tmp_name}"'))
+        compiled = str(CreateTable(table).compile(dialect=conn.dialect)).strip()
+        quoted = f'CREATE TABLE "{table_name}"'
+        plain = f"CREATE TABLE {table_name}"
+        if compiled.startswith(quoted):
+            create_sql = f'CREATE TABLE "{tmp_name}"' + compiled[len(quoted) :]
+        elif compiled.startswith(plain):
+            create_sql = f"CREATE TABLE {tmp_name}" + compiled[len(plain) :]
+        else:
+            raise RuntimeError(f"无法重写 {table_name} 的 CREATE TABLE")
+        conn.execute(text(create_sql))
+        columns = ", ".join(f'"{column.name}"' for column in table.columns)
+        conn.execute(
+            text(f'INSERT INTO "{tmp_name}" ({columns}) SELECT {columns} FROM "{table_name}"')
+        )
+        conn.execute(text(f'DROP TABLE "{table_name}"'))
+        conn.execute(text(f'ALTER TABLE "{tmp_name}" RENAME TO "{table_name}"'))
+        for index in table.indexes:
+            index.create(bind=conn)
 
     @classmethod
     def _remap_welding_fee_permissions(cls, engine: Engine) -> None:

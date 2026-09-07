@@ -10,7 +10,7 @@ import {
     updateCostFilterCapsules,
     shortPartNumber,
     syncBreakdownColumnVisibility,
-} from './template.js?v=58';
+} from './template.js?v=59';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -19,8 +19,8 @@ import {
 const API_BASE = '/api/costing/stamping-part-cost';
 const CASCADE_API = '/api/stamping/filters/cascade';
 const DRAWER_ANIMATION_MS = 300;
-const SCOPE_REQUIRED_MESSAGE = '批量操作须选定年度、月份、基地、配套车型';
-const EXPORT_VEHICLE_REQUIRED_MESSAGE = '导出须选定配套车型。';
+const SCOPE_REQUIRED_MESSAGE = '批量操作须选定年度、月份、基地、项目';
+const EXPORT_VEHICLE_REQUIRED_MESSAGE = '导出须选定项目。';
 
 const FILTER_IDS = [
     'costYearFilter',
@@ -627,7 +627,7 @@ function showDetailDrawer(row) {
                 ['零件名称', row.part_name || '—'],
                 ['基地 / 工厂', `${row.location || '—'} / ${row.stamping_supplier || '—'}`],
                 ['核算年月', fmtPeriod(row.year, row.month) || '—'],
-                ['车型 / 版本', `${row.vehicle_model || '—'} / ${row.version || '—'}`],
+                ['项目 / 版本', `${row.vehicle_model || '—'} / ${row.version || '—'}`],
                 ['材质 / 厚度', `${row.material || '—'} / ${row.thickness || '—'} mm`],
                 ['料片尺寸', `${row.sheet_length || '—'} × ${row.sheet_width || '—'} mm`],
                 ['可制件数', row.parts_per_sheet ?? '—'],
@@ -842,8 +842,8 @@ function openBatchAuditDrawer(mode) {
     if (titleEl) titleEl.textContent = isApprove ? '批量审核' : '批量反审核';
     if (hintEl) {
         hintEl.textContent = isApprove
-            ? '按年度、月份、基地、配套车型处理待审记录（整车各厂）；版本可选。已通过记录会跳过。'
-            : '按年度、月份、基地、配套车型处理已通过记录（整车各厂）；版本可选。其余状态会跳过。反审核意见必填。';
+            ? '按年度、月份、基地、项目处理待审记录（整车各厂）；版本可选。已通过记录会跳过。'
+            : '按年度、月份、基地、项目处理已通过记录（整车各厂）；版本可选。其余状态会跳过。反审核意见必填。';
     }
     if (operatorLabel) operatorLabel.textContent = isApprove ? '审核人' : '反审核人';
     if (operatorDisplay) {
@@ -860,7 +860,7 @@ function openBatchAuditDrawer(mode) {
     }
     if (summaryEl) {
         summaryEl.textContent =
-            `${fmtPeriod(scope.year, scope.month)} · 基地 ${scope.location} · 车型 ${scope.vehicle_model}`
+            `${fmtPeriod(scope.year, scope.month)} · 基地 ${scope.location} · 项目 ${scope.vehicle_model}`
             + ` · 版本 ${scope.version || '全部'} · 工厂 整车`;
     }
     if (confirmBtn) {

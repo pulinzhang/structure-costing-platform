@@ -49,6 +49,7 @@ class BasePriceFilter:
         year: int | None = None,
         month: int | None = None,
         location: str | None = None,
+        locations: list[str] | None = None,
         steel_mill: str | None = None,
         category_name: str | None = None,
         grade: str | None = None,
@@ -59,6 +60,7 @@ class BasePriceFilter:
         self.year = year
         self.month = month
         self.location = location
+        self.locations = locations
         self.steel_mill = steel_mill
         self.category_name = category_name
         self.grade = grade
@@ -88,7 +90,9 @@ class SteelBasePriceRepository:
             query = query.filter(SteelBasePrice.year == base_price_filter.year)
         if base_price_filter.month is not None:
             query = query.filter(SteelBasePrice.month == base_price_filter.month)
-        if base_price_filter.location:
+        if base_price_filter.locations is not None:
+            query = query.filter(SteelBasePrice.location.in_(base_price_filter.locations))
+        elif base_price_filter.location:
             query = query.filter(SteelBasePrice.location == base_price_filter.location)
         if base_price_filter.steel_mill:
             query = query.filter(SteelBasePrice.steel_mill == base_price_filter.steel_mill)
@@ -330,6 +334,7 @@ class SteelBasePriceRepository:
         year: int | None = None,
         month: int | None = None,
         location: str | None = None,
+        locations: list[str] | None = None,
         steel_mill: str | None = None,
         category_name: str | None = None,
         grade: str | None = None,
@@ -344,7 +349,11 @@ class SteelBasePriceRepository:
             query = query.filter(SteelBasePrice.year == year)
         if month is not None:
             query = query.filter(SteelBasePrice.month == month)
-        if location:
+        if locations is not None:
+            if not locations:
+                return []
+            query = query.filter(SteelBasePrice.location.in_(locations))
+        elif location:
             query = query.filter(SteelBasePrice.location == location)
         if steel_mill:
             query = query.filter(SteelBasePrice.steel_mill == steel_mill)

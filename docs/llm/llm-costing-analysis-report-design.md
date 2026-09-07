@@ -371,7 +371,7 @@ POST body：仅 user_question
 第4级（最粗兜底）：LLM 返回非 JSON / 超时 / 字段全缺
     → 全部规则兜底：
        time_range = 当前月份
-       filters = {}（全量分析，不加任何基地/车型过滤）
+       filters = {}（全量分析，不加任何基地/项目过滤）
        analyses = ["summary", "risk"]（最保守的安全组合）
     → meta.data_message = "未能识别具体条件，展示全量数据摘要"
     → 状态仍返回 success（不弹红字报错）
@@ -383,7 +383,7 @@ POST body：仅 user_question
 
 | 步骤 | 做法 |
 |------|------|
-| 词典来源 | `scope_options_repository` DISTINCT + 别名表 |
+| 词典来源 | `scope_options_repository` 读 `vehicle_models` 主数据（只读 Model，禁止调 VehicleModelService）；基地仍读规范名 + 别名表。对齐项目时先 `normalize_vehicle_model` 再比 |
 | 对齐 | 精确 → 别名 → 去后缀「厂/基地」；禁止模糊错配 |
 | 失败 | filter 不写入；`unresolved_mentions` 记入 meta |
 
@@ -399,7 +399,7 @@ POST body：仅 user_question
 
 帮助类问句走 `usage_help`，语料 `static/helper/*.html`，不查核价库。
 
-「还差什么 / 缺什么才能核算（核价）」走 `engine_readiness`：调用与「自动核价引擎 → 检查就绪」同源的 `CostingEngineService.get_ready`；BOM 按基地+车型+版本跨年复用，绿灯时禁止建议重传清单。
+「还差什么 / 缺什么才能核算（核价）」走 `engine_readiness`：调用与「自动核价引擎 → 检查就绪」同源的 `CostingEngineService.get_ready`；BOM 按基地+项目+版本跨年复用，绿灯时禁止建议重传清单。
 
 ### C.5 AnalysisSnapshot 形状
 

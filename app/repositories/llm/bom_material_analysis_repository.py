@@ -9,15 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.common.part_number import escape_like_fragment, pick_part_row
 from app.models.bom.node import BomNode, BomSnapshot
-
-
-def _normalize_location(location: str | None) -> str | None:
-    if not location:
-        return None
-    text = location.strip()
-    if text.endswith("基地"):
-        return text[:-2]
-    return text
+from app.repositories.llm.location_in import location_in_clause
 
 
 @dataclass(frozen=True, slots=True)
@@ -47,9 +39,9 @@ class BomMaterialAnalysisRepository:
         limit: int = 5000,
     ) -> list[BomMaterialNodeRow]:
         q = db.query(BomNode, BomSnapshot).join(BomSnapshot, BomNode.snapshot_id == BomSnapshot.id)
-        normalized = _normalize_location(location)
-        if normalized:
-            q = q.filter(BomSnapshot.location == normalized)
+        loc_filter = location_in_clause(db, BomSnapshot.location, location)
+        if loc_filter is not None:
+            q = q.filter(loc_filter)
         if vehicle_model:
             q = q.filter(BomSnapshot.vehicle_model == vehicle_model)
         if bom_version:

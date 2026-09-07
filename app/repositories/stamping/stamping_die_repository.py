@@ -58,16 +58,18 @@ class StampingDiePartRepository:
         self,
         db: Session,
         *,
-        location: str,
         vehicle_model: str,
+        location: str | None = None,
+        locations: list[str] | None = None,
         stamping_supplier: str | None = None,
         version: str | None = None,
         part_number: str | None = None,
     ) -> Query[StampingDiePart]:
-        query = db.query(StampingDiePart).filter(
-            StampingDiePart.location == location,
-            StampingDiePart.vehicle_model == vehicle_model,
-        )
+        query = db.query(StampingDiePart).filter(StampingDiePart.vehicle_model == vehicle_model)
+        if locations is not None:
+            query = query.filter(StampingDiePart.location.in_(locations))
+        elif location:
+            query = query.filter(StampingDiePart.location == location)
         if stamping_supplier:
             query = query.filter(StampingDiePart.stamping_supplier == stamping_supplier)
         if version:
@@ -80,17 +82,19 @@ class StampingDiePartRepository:
         self,
         db: Session,
         *,
-        location: str,
         vehicle_model: str,
         part_number: str | None,
         skip: int,
         limit: int,
+        location: str | None = None,
+        locations: list[str] | None = None,
         stamping_supplier: str | None = None,
         version: str | None = None,
     ) -> tuple[list[StampingDiePart], int]:
         query = self._scope_query(
             db,
             location=location,
+            locations=locations,
             vehicle_model=vehicle_model,
             stamping_supplier=stamping_supplier,
             version=version,
@@ -179,16 +183,20 @@ class StampingDiePartRepository:
         db.flush()
         return created
 
-    def delete_scope(self, db: Session, *, location: str, vehicle_model: str) -> int:
-        part_ids = [
-            part_id
-            for (part_id,) in db.query(StampingDiePart.id)
-            .filter(
-                StampingDiePart.location == location,
-                StampingDiePart.vehicle_model == vehicle_model,
-            )
-            .all()
-        ]
+    def delete_scope(
+        self,
+        db: Session,
+        *,
+        vehicle_model: str,
+        location: str | None = None,
+        locations: list[str] | None = None,
+    ) -> int:
+        query = db.query(StampingDiePart.id).filter(StampingDiePart.vehicle_model == vehicle_model)
+        if locations is not None:
+            query = query.filter(StampingDiePart.location.in_(locations))
+        elif location:
+            query = query.filter(StampingDiePart.location == location)
+        part_ids = [part_id for (part_id,) in query.all()]
         if not part_ids:
             return 0
         db.query(StampingDieProcess).filter(StampingDieProcess.die_part_id.in_(part_ids)).delete(
@@ -196,10 +204,7 @@ class StampingDiePartRepository:
         )
         deleted = (
             db.query(StampingDiePart)
-            .filter(
-                StampingDiePart.location == location,
-                StampingDiePart.vehicle_model == vehicle_model,
-            )
+            .filter(StampingDiePart.id.in_(part_ids))
             .delete(synchronize_session=False)
         )
         db.flush()
@@ -232,9 +237,17 @@ class StampingDiePartRepository:
         )
         return [row[0] for row in rows if row[0]]
 
-    def list_vehicle_models(self, db: Session, *, location: str | None) -> list[str]:
+    def list_vehicle_models(
+        self,
+        db: Session,
+        *,
+        location: str | None = None,
+        locations: list[str] | None = None,
+    ) -> list[str]:
         query = db.query(StampingDiePart.vehicle_model).distinct()
-        if location:
+        if locations is not None:
+            query = query.filter(StampingDiePart.location.in_(locations))
+        elif location:
             query = query.filter(StampingDiePart.location == location)
         rows = query.order_by(StampingDiePart.vehicle_model.asc()).all()
         return [row[0] for row in rows if row[0]]

@@ -78,7 +78,7 @@ export function partCostListTemplate() {
                             </button>
                             <button id="costExportBtn" type="button"
                                     class="inline-flex items-center gap-1.5 bg-transparent text-[#6E6E73] border border-[#2A2A35] px-3 py-1.5 text-[11px] font-medium rounded-md hover:border-[#FF1E27]/50 hover:text-[#FF1E27] hover:bg-[#FF1E27]/10 hover:shadow-[0_0_12px_rgba(255,30,39,0.2)] transition-all duration-200"
-                                    title="须选定配套车型；按当前筛选导出冲压零件核价结果（含材料费、加工费、模具费、检具费）">
+                                    title="须选定项目；按当前筛选导出冲压零件核价结果（含材料费、加工费、模具费、检具费）">
                                 ${window.svgIcon('download', 'w-3 h-3')}
                                 导出 Excel
                             </button>
@@ -96,7 +96,7 @@ export function partCostListTemplate() {
                             <div class="flex items-center gap-2 flex-wrap">
                                 <span id="costCapsulePeriod" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部期间</span>
                                 <span id="costCapsuleLocation" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部基地</span>
-                                <span id="costCapsuleVehicle" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部车型</span>
+                                <span id="costCapsuleVehicle" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部项目</span>
                                 <span id="costCapsuleVersion" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部版本</span>
                                 <span id="costCapsuleSupplier" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部工厂</span>
                             </div>
@@ -122,7 +122,7 @@ export function partCostListTemplate() {
                             ${filterSelect('costYearFilter', '年度')}
                             ${filterSelect('costMonthFilter', '月份')}
                             ${filterSelect('costLocationFilter', '基地')}
-                            ${filterSelect('costVehicleModelFilter', '配套车型')}
+                            ${filterSelect('costVehicleModelFilter', '项目')}
                             ${filterSelect('costVersionFilter', '版本')}
                             ${filterSelect('costSupplierFilter', '冲压工厂')}
                             ${filterSelect('costAuditFilter', '审核状态')}
@@ -133,7 +133,7 @@ export function partCostListTemplate() {
                                 重置
                             </button>
                         </div>
-                        <p class="mt-2 text-[10px] text-[#555555]">批量审核 / 反审核按整车签字（工厂筛不影响签字范围）。批量删除与导出可按工厂收窄。导出须选定配套车型。</p>
+                        <p class="mt-2 text-[10px] text-[#555555]">批量审核 / 反审核按整车签字（工厂筛不影响签字范围）。批量删除与导出可按工厂收窄。导出须选定项目。</p>
                     </div>
                 </div>
 
@@ -513,7 +513,7 @@ export function updateCostFilterCapsules() {
         locationEl.className = location ? activeCapsule : idleCapsule;
     }
     if (vehicleEl) {
-        vehicleEl.textContent = vehicle || '全部车型';
+        vehicleEl.textContent = vehicle || '全部项目';
         vehicleEl.className = vehicle ? activeCapsule : idleCapsule;
     }
     if (versionEl) {

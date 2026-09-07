@@ -5,7 +5,7 @@
 import {
     partCostCalcTemplate,
     renderCalcHistoryPagination,
-} from './template.js?v=10';
+} from './template.js?v=11';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -18,8 +18,8 @@ const CALC_READY_API = `${API_BASE}/calc/ready`;
 const CALC_TASK_API = `${API_BASE}/calc/tasks`;
 const CALC_LOGS_API = `${API_BASE}/calc/logs`;
 const POLL_INTERVAL_MS = 1500;
-const DUPLICATE_SCOPE_CALC_MESSAGE = '当前年度/月份/基地/车型正在计算中，请勿重复提交。';
-const SCOPE_REQUIRED_MESSAGE = '须选定年度、月份、基地、配套车型。';
+const DUPLICATE_SCOPE_CALC_MESSAGE = '当前年度/月份/基地/项目正在计算中，请勿重复提交。';
+const SCOPE_REQUIRED_MESSAGE = '须选定年度、月份、基地、项目。';
 
 const STATUS_META = {
     processing: { label: '计算中', className: 'text-[#64b5f6]' },
@@ -107,8 +107,14 @@ function fillMonthOptions() {
 
 function bindEvents() {
     document.getElementById('calcResetBtn')?.addEventListener('click', () => resetFilters());
-    document.getElementById('calcYear')?.addEventListener('change', () => loadCalcReady());
-    document.getElementById('calcMonth')?.addEventListener('change', () => loadCalcReady());
+    document.getElementById('calcYear')?.addEventListener('change', () => {
+        loadCascadeFilters();
+        loadCalcReady();
+    });
+    document.getElementById('calcMonth')?.addEventListener('change', () => {
+        loadCascadeFilters();
+        loadCalcReady();
+    });
 
     document.getElementById('calcLocation')?.addEventListener('change', () => {
         resetDependentFilters(['calcVehicleModel', 'calcVersion']);
@@ -177,6 +183,10 @@ async function loadCascadeFilters() {
             vehicle_model: document.getElementById('calcVehicleModel')?.value || '',
             version: document.getElementById('calcVersion')?.value || '',
         };
+        const year = parseInt(document.getElementById('calcYear')?.value, 10);
+        const month = parseInt(document.getElementById('calcMonth')?.value, 10);
+        if (Number.isFinite(year)) params.year = year;
+        if (Number.isFinite(month)) params.month = month;
         const res = await HttpClient.get(CASCADE_API, { params });
         const filters = res.data || {};
         fillSelect('calcLocation', filters.locations || []);

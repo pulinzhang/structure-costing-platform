@@ -8,7 +8,6 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.common.audit import audit_create, audit_update
-from app.common.procurement_locations import PROCUREMENT_LOCATIONS
 from app.common.vehicle_model import normalize_vehicle_model
 from app.exceptions.base import BusinessException, NotFoundException
 from app.repositories.stamping.die_unit_price_repository import StampingDieUnitPriceRepository
@@ -25,6 +24,8 @@ from app.schemas.vo.stamping_die_unit_price_vo import (
     StampingDieUnitPriceVO,
 )
 from app.schemas.vo.user_vo import UserVO
+from app.services.masterdata.location.location_service import LocationService
+from app.services.masterdata.vehicle_model import VehicleModelService
 
 logger = logging.getLogger("service.stamping_die_unit_price")
 
@@ -35,24 +36,27 @@ class StampingDieUnitPriceService:
         self.die_part_repo = StampingDiePartRepository()
 
     def list_scope_filters(self, db: Session, location: str | None) -> StampingDieUnitPriceFilterVO:
+        location_service = LocationService()
         location_value = (location or "").strip() or None
-        vehicle_models: list[str] = []
-        if location_value:
-            vehicle_models = self.die_part_repo.list_vehicle_models(db, location=location_value)
         return StampingDieUnitPriceFilterVO(
-            locations=list(PROCUREMENT_LOCATIONS),
-            vehicle_models=vehicle_models,
+            locations=location_service.list_enabled(db),
+            vehicle_models=VehicleModelService().list_filter_codes(db, location_value),
         )
 
     def paginate(
         self, db: Session, query: StampingDieUnitPriceQuery
     ) -> tuple[list[StampingDieUnitPriceVO], int]:
-        location = (query.location or "").strip() or None
+        location_raw = (query.location or "").strip() or None
+        locations: list[str] | None = None
+        if location_raw:
+            locations = LocationService().expand_for_query(db, location_raw)
+            if not locations:
+                return [], 0
         vehicle = normalize_vehicle_model(query.vehicle_model) if query.vehicle_model else None
         skip = (query.page - 1) * query.size
         rows, total = self.repository.paginate(
             db,
-            location=location,
+            locations=locations,
             vehicle_model=vehicle,
             status=query.status,
             skip=skip,
@@ -72,7 +76,7 @@ class StampingDieUnitPriceService:
         dto: StampingDieUnitPriceCreate,
         current_user: UserVO,
     ) -> StampingDieUnitPriceVO:
-        location, vehicle_model = self._require_scope(dto.location, dto.vehicle_model)
+        location, vehicle_model = self._require_scope(db, dto.location, dto.vehicle_model)
         self._reject_duplicate_scope(db, location, vehicle_model)
         audit = audit_create(current_user)
         try:
@@ -118,7 +122,7 @@ class StampingDieUnitPriceService:
         vehicle_model = (
             dto.vehicle_model if "vehicle_model" in dto.model_fields_set else record.vehicle_model
         )
-        location, vehicle_model = self._require_scope(location or "", vehicle_model or "")
+        location, vehicle_model = self._require_scope(db, location or "", vehicle_model or "")
         self._reject_duplicate_scope(db, location, vehicle_model, exclude_id=record.id)
         audit = audit_update(current_user)
         patch: StampingDieUnitPricePatch = {"updated_by": audit["updated_by"]}
@@ -196,11 +200,13 @@ class StampingDieUnitPriceService:
                 code=409,
             )
 
-    def _require_scope(self, location: str, vehicle_model: str) -> tuple[str, str]:
+    def _require_scope(self, db: Session, location: str, vehicle_model: str) -> tuple[str, str]:
         loc = (location or "").strip()
         vehicle = normalize_vehicle_model(vehicle_model) or ""
         if not loc:
             raise BusinessException("请选择采购基地")
         if not vehicle:
-            raise BusinessException("请选择或填写项目")
+            raise BusinessException("请选择项目")
+        loc = LocationService().require_enabled(db, loc)
+        vehicle = VehicleModelService().require_registered(db, loc, vehicle)
         return loc, vehicle

@@ -45,13 +45,14 @@ export function dieUploadTemplate() {
                                     <span class="w-4 h-4 rounded-full bg-[#2a2a2a] flex items-center justify-center shrink-0">
                                         <span class="text-[10px] font-semibold text-[#d32f2f]">2</span>
                                     </span>
-                                    <span class="text-[13px] text-[#6b6b6b] font-medium tracking-wide uppercase">填写项目</span>
+                                    <span class="text-[13px] text-[#6b6b6b] font-medium tracking-wide uppercase">选择项目</span>
                                 </div>
                                 <div class="ml-6">
-                                    <input id="dieVehicleModel" name="vehicle_model" required
-                                           placeholder="手工填写，如 T13J"
-                                           class="${UPLOAD_INPUT} w-[280px]">
-                                    <p class="mt-2 text-[10px] text-[#555555]">手工录入。须与文件名或标题里的项目一致。</p>
+                                    <select id="dieVehicleModel" name="vehicle_model" required
+                                            class="${UPLOAD_INPUT} w-[280px]">
+                                        <option value="">请先选择采购基地</option>
+                                    </select>
+                                    <p class="mt-2 text-[10px] text-[#555555]">必选该月可引入项目。须与文件名或标题里的项目一致。</p>
                                 </div>
                             </div>
                             <div class="h-px bg-[#1e1e1e] mx-6 mb-4"></div>
@@ -130,8 +131,8 @@ export function dieUploadTemplate() {
                         </div>
                     </div>
                     <div class="p-4 space-y-3 text-[11px] text-[#888888] leading-relaxed">
-                        <p>请先选择采购基地，再手工填写项目。</p>
-                        <p>文件名或标题里的项目必须和填写的一致，不一致将退回、不会入库。</p>
+                        <p>请先选择采购基地，再选择该月可引入项目。</p>
+                        <p>文件名或标题里的项目必须和所选一致，不一致将退回、不会入库。</p>
                         <p>本页不选冲压厂：开模时尚无定点供应商。</p>
                         <p>模具编号可空，系统按规则自动编号；已填写的编号保持不变。</p>
                         <p>废料副产品：长/卷料宽、宽/卷料步距、可制件数、板料形状都空，且有零件净重 → 家模带出的小件，分摊比例记 0，不算模具费。不要只空长宽、其它列还填着。</p>

@@ -7,7 +7,7 @@ import {
     renderDrawerDetail,
     renderPagination,
     renderTableRows,
-} from './template.js?v=1';
+} from './template.js?v=2';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -69,7 +69,7 @@ function applyFilterOptions(data) {
     fillSelect('ftFilterLocation', data.locations || [], null, '全部基地');
     fillSelect('ftFilterYear', data.years || [], Object.fromEntries((data.years || []).map((y) => [y, fmtYear(y)])), '全部年度');
     fillSelect('ftFilterMonth', data.months || [], Object.fromEntries((data.months || []).map((m) => [m, fmtMonth(m)])), '全部月份');
-    fillSelect('ftFilterVehicle', data.vehicle_models || [], null, '全部车型');
+    fillSelect('ftFilterVehicle', data.vehicle_models || [], null, '全部项目');
     fillSelect('ftFilterCreator', data.creators || [], null, '全部上传人');
 
     const noCategory = !(data.allowed_categories || []).length;

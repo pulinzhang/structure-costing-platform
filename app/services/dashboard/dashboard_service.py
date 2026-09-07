@@ -46,6 +46,7 @@ from app.schemas.vo.dashboard_vo import (
     SteelPriceCalcStatsVO,
 )
 from app.schemas.vo.stamping_vo import StampingCascadeFilterQuery
+from app.services.masterdata.location.location_service import LocationService
 from app.services.stamping.stamping_service import StampingPartService
 from app.services.yishiyiyi.base_price.steel_base_price_service import SteelBasePriceService
 from app.services.yishiyiyi.policy.steel_price_policy_service import (
@@ -510,7 +511,6 @@ class DashboardService:
         scrap_opts = self.scrap_service.get_filter_options(db)
         steel_opts = self.steel_price_repo.get_filter_options(db)
         part_years = self.part_cost_repo.get_distinct_years(db)
-        part_locations = self.part_cost_repo.get_distinct_locations(db)
 
         years = sorted(
             set(base_opts.years)
@@ -523,15 +523,7 @@ class DashboardService:
         months = sorted(
             set(base_opts.months) | set(policy_opts.months) | set(steel_opts.get("months") or [])
         )
-        locations = sorted(
-            {
-                *(base_opts.locations or []),
-                *(steel_opts.get("locations") or []),
-                *part_locations,
-                *self.bom_snapshot_repo.list_locations(db),
-                *self.stamping_service.get_filter_options(db).locations,
-            }
-        )
+        locations = LocationService().list_registered(db)
         return years, months, locations
 
     def _months_for_year(
@@ -614,8 +606,8 @@ class DashboardService:
         vehicle_model: str | None,
     ) -> tuple[int, int]:
         """
-        基价 / 政策条数。未选车型时按年+月+基地（政策全国）。
-        选了车型则按该车工艺牌号覆盖：基价 grade IN 牌号，政策按牌号分类收窄。
+        基价 / 政策条数。未选项目时按年+月+基地（政策全国）。
+        选了项目则按该项目工艺牌号覆盖：基价 grade IN 牌号，政策按牌号分类收窄。
         """
         if not vehicle_model:
             return (

@@ -19,7 +19,7 @@ export function steelPriceCalcTemplate() {
                     ${filterSelect('calcYear', '年度')}
                     ${filterSelect('calcMonth', '月份')}
                     ${filterSelect('calcLocation', '基地')}
-                    ${filterSelect('calcVehicle', '配套车型')}
+                    ${filterSelect('calcVehicle', '项目')}
 
                     <button id="calcResetBtn"
                             class="inline-flex items-center gap-1 h-7 px-3 text-[11px] font-medium text-[#616161] hover:text-[#9e9e9e] transition-all duration-150">
@@ -52,7 +52,7 @@ export function steelPriceCalcTemplate() {
 
                 <div class="flex items-center gap-3">
                     <span id="reCalcNotice" class="text-[9px] text-[#666]">
-                        统计可按车型看基价/政策/规格覆盖（一车多厂）；计算仍按基地全量牌号+料厚落库
+                        统计可按项目看基价/政策/规格覆盖（一车多厂）；计算仍按基地全量牌号+料厚落库
                     </span>
                     <button id="startCalcBtn"
                             class="h-7 px-4 text-[10px] bg-[#b71c1c] hover:bg-[#c62828] text-white font-medium rounded-sm transition-colors disabled:opacity-30 disabled:cursor-not-allowed">

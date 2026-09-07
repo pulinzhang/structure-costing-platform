@@ -33,6 +33,7 @@ from app.services.bom.procurement_object.classify import (
 from app.services.bom.procurement_object.generate_log_service import (
     BomProcurementObjectGenerateLogService,
 )
+from app.services.masterdata.location.location_service import LocationService
 
 logger = logging.getLogger("service.bom.procurement_object.generate")
 
@@ -91,7 +92,7 @@ class BomProcurementObjectGenerateService:
         current_user: UserVO,
     ) -> BomProcurementObjectGenerateResultVO:
         started_at = now()
-        location = dto.location.strip()
+        location = LocationService().require_enabled(db, dto.location)
         vehicle_model = dto.vehicle_model.strip()
         bom_version = dto.bom_version.strip()
         snapshot_id: int | None = None

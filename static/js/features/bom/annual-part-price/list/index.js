@@ -106,10 +106,8 @@ async function loadFilterOptions() {
 
         const locationFilter = document.getElementById('annualLocationFilter');
         if (locationFilter) {
-            const known = ['大连', '芜湖', '鄂尔多斯', '青岛'];
-            const merged = [...new Set([...known, ...annualPartPriceState.locations])];
             let options = `<option value="">全部</option>`;
-            merged.forEach((loc) => {
+            annualPartPriceState.locations.forEach((loc) => {
                 options += `<option value="${esc(loc)}">${esc(loc)}</option>`;
             });
             locationFilter.innerHTML = options;

@@ -3,7 +3,7 @@
  * 冲压工艺上传 — 异步 task_id + 进度轮询
  */
 
-import { uploadTemplate } from './template.js?v=8';
+import { uploadTemplate } from './template.js?v=11';
 import {
     setDropzoneDragActive,
     setDropzoneFileSelected,
@@ -26,6 +26,7 @@ export const UploadPage = {
         this.applyPermissionUi();
         this.bindEvents();
         this.renderRecentUploads();
+        this.loadScopeOptions();
 
         if (this.isUploading && this.activeTaskId) {
             this.setUploading(true);
@@ -37,6 +38,49 @@ export const UploadPage = {
         this.isUploading = false;
         this.activeTaskId = null;
         this.hideProgress();
+    },
+
+    async loadScopeOptions(resetVehicle = false) {
+        const locationEl = document.getElementById('location');
+        const vehicleEl = document.getElementById('stampingVehicleModel');
+        const location = locationEl?.value || '';
+        if (resetVehicle && vehicleEl) vehicleEl.value = '';
+        const now = new Date();
+        const params = {
+            year: now.getFullYear(),
+            month: now.getMonth() + 1,
+        };
+        if (location) params.location = location;
+        try {
+            const res = await HttpClient.get('/api/stamping/filters/cascade', { params });
+            const data = res && res.data;
+            const locations = Array.isArray(data)
+                ? data
+                : (data && Array.isArray(data.locations) ? data.locations : []);
+            const vehicles = location && data && Array.isArray(data.vehicle_models)
+                ? data.vehicle_models
+                : [];
+            if (locationEl) {
+                const current = location;
+                locationEl.innerHTML = '<option value="">请选择采购基地</option>' +
+                    locations.map((loc) => `<option value="${esc(loc)}">${esc(loc)}</option>`).join('');
+                if (current) locationEl.value = current;
+            }
+            if (vehicleEl) {
+                const currentVehicle = vehicleEl.value;
+                const placeholder = location
+                    ? (vehicles.length ? '请选择项目' : '该基地本月无可引入项目')
+                    : '请先选择采购基地';
+                vehicleEl.innerHTML = `<option value="">${esc(placeholder)}</option>` +
+                    vehicles.map((code) => `<option value="${esc(code)}">${esc(code)}</option>`).join('');
+                if (currentVehicle && vehicles.includes(currentVehicle)) {
+                    vehicleEl.value = currentVehicle;
+                }
+            }
+        } catch (error) {
+            console.error('加载采购基地/项目失败', error);
+        }
+        this.updateSubmitEnabled();
     },
 
     /**
@@ -55,6 +99,7 @@ export const UploadPage = {
         const fileInput = document.getElementById('fileInput');
         const uploadZone = document.getElementById('uploadZone');
         const location = document.getElementById('location');
+        const vehicle = document.getElementById('stampingVehicleModel');
         const title = document.getElementById('uploadTitle');
         const hint = document.getElementById('uploadHint');
         const actionsRow = submitBtn?.parentElement;
@@ -67,6 +112,7 @@ export const UploadPage = {
             fileInput.value = '';
         }
         if (location) location.disabled = true;
+        if (vehicle) vehicle.disabled = true;
         if (uploadZone) {
             uploadZone.classList.add('pointer-events-none', 'opacity-60');
         }
@@ -94,6 +140,7 @@ export const UploadPage = {
         const templateBtn = document.getElementById('stampingUploadTemplateBtn');
 
         templateBtn?.addEventListener('click', () => this.downloadTemplate());
+        document.getElementById('location')?.addEventListener('change', () => this.loadScopeOptions(true));
 
         if (!uploadZone || !fileInput) return;
 
@@ -318,7 +365,9 @@ export const UploadPage = {
         const submitBtn = document.getElementById('submitBtn');
         if (!submitBtn) return;
         const hasFile = document.getElementById('fileInput')?.files?.length > 0;
-        submitBtn.disabled = this.isUploading || this.canUpload === false || !hasFile;
+        const hasLocation = Boolean(document.getElementById('location')?.value?.trim());
+        const hasVehicle = Boolean(document.getElementById('stampingVehicleModel')?.value?.trim());
+        submitBtn.disabled = this.isUploading || this.canUpload === false || !hasFile || !hasLocation || !hasVehicle;
     },
 
     setUploading(isUploading) {
@@ -326,6 +375,7 @@ export const UploadPage = {
         const submitBtn = document.getElementById('submitBtn');
         const resetBtn = document.getElementById('stampingResetButton');
         const location = document.getElementById('location');
+        const vehicle = document.getElementById('stampingVehicleModel');
         const templateBtn = document.getElementById('stampingUploadTemplateBtn');
 
         if (submitBtn) {
@@ -336,6 +386,7 @@ export const UploadPage = {
         this.updateSubmitEnabled();
         if (resetBtn) resetBtn.disabled = isUploading;
         if (location) location.disabled = isUploading;
+        if (vehicle) vehicle.disabled = isUploading;
         if (templateBtn) templateBtn.disabled = isUploading;
     },
 
@@ -446,11 +497,17 @@ export const UploadPage = {
         if (this.isUploading) return;
 
         const location = document.getElementById('location');
+        const vehicle = document.getElementById('stampingVehicleModel');
         const fileInput = document.getElementById('fileInput');
 
         if (!location.value.trim()) {
             showToast('请选择采购基地', 'warning');
             location.focus();
+            return;
+        }
+        if (!vehicle?.value?.trim()) {
+            showToast('请选择项目', 'warning');
+            vehicle?.focus();
             return;
         }
 
@@ -461,9 +518,11 @@ export const UploadPage = {
 
         const fileName = fileInput.files[0].name;
         const locationValue = location.value.trim();
+        const vehicleValue = vehicle.value.trim();
 
         const formData = new FormData();
         formData.append('location', locationValue);
+        formData.append('vehicle_model', vehicleValue);
         formData.append('file', fileInput.files[0]);
 
         this.setUploading(true);

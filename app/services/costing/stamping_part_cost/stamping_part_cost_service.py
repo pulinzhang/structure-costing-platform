@@ -66,6 +66,8 @@ from app.services.costing.stamping_part_cost.export.tailor_weld_display import (
     load_blanks_by_part_id,
     resolve_part_cost_display,
 )
+from app.services.masterdata.location.location_service import LocationService
+from app.services.masterdata.vehicle_model import VehicleModelService
 
 # 兼容旧导入路径
 __all__ = [
@@ -152,6 +154,11 @@ class StampingPartCostService:
         dto: StampingPartCostCalcDTO,
         current_user: UserVO,
     ) -> AsyncTaskAcceptedVO:
+        canonical, vehicle_model = VehicleModelService().require_introducible(
+            db, dto.location, dto.vehicle_model, dto.year, dto.month
+        )
+        if canonical != dto.location or vehicle_model != dto.vehicle_model:
+            dto = dto.model_copy(update={"location": canonical, "vehicle_model": vehicle_model})
         lock_log = self.begin_processing(
             db,
             dto,
@@ -238,11 +245,30 @@ class StampingPartCostService:
         self, db: Session, query: StampingPartCostQuery
     ) -> tuple[list[StampingPartCostVO], int, PartCostListFilters]:
         skip = (query.page - 1) * query.size
+        location_service = LocationService()
+        locations: list[str] | None = None
+        if query.location:
+            locations = location_service.expand_for_query(db, query.location)
+            if not locations:
+                empty_filters: PartCostListFilters = {
+                    "years": self.cost_repo.get_distinct_years(db),
+                    "months": self.cost_repo.get_distinct_months(db, year=query.year),
+                    "locations": location_service.list_registered(db),
+                    "suppliers": [],
+                    "vehicle_models": VehicleModelService().list_filter_codes(db, query.location),
+                    "versions": [],
+                    "summary": {
+                        "avg_unit_cost": None,
+                        "pending_count": 0,
+                        "approved_count": 0,
+                    },
+                }
+                return [], 0, empty_filters
         rows, total = self.cost_repo.paginate(
             db,
             year=query.year,
             month=query.month,
-            location=query.location,
+            locations=locations,
             stamping_supplier=query.stamping_supplier,
             vehicle_model=query.vehicle_model,
             version=query.version,
@@ -254,35 +280,28 @@ class StampingPartCostService:
         filters: PartCostListFilters = {
             "years": self.cost_repo.get_distinct_years(db),
             "months": self.cost_repo.get_distinct_months(db, year=query.year),
-            "locations": self.cost_repo.get_distinct_locations(
-                db, year=query.year, month=query.month
-            ),
+            "locations": location_service.list_registered(db),
             "suppliers": self.cost_repo.get_distinct_suppliers(
                 db,
                 year=query.year,
                 month=query.month,
-                location=query.location,
+                locations=locations,
                 vehicle_model=query.vehicle_model,
                 version=query.version,
             ),
-            "vehicle_models": self.cost_repo.get_distinct_vehicle_models(
-                db,
-                year=query.year,
-                month=query.month,
-                location=query.location,
-            ),
+            "vehicle_models": VehicleModelService().list_filter_codes(db, query.location),
             "versions": self.cost_repo.get_distinct_versions(
                 db,
                 year=query.year,
                 month=query.month,
-                location=query.location,
+                locations=locations,
                 vehicle_model=query.vehicle_model,
             ),
             "summary": self.cost_repo.summarize_by_filters(
                 db,
                 year=query.year,
                 month=query.month,
-                location=query.location,
+                locations=locations,
                 stamping_supplier=query.stamping_supplier,
                 vehicle_model=query.vehicle_model,
                 version=query.version,
@@ -373,7 +392,7 @@ class StampingPartCostService:
         return sorted(years, reverse=True)
 
     def list_locations(self, db: Session, year: int | None = None) -> list[str]:
-        return self.cost_repo.get_distinct_locations(db, year=year)
+        return LocationService().list_registered(db)
 
     def list_suppliers(
         self,
@@ -382,7 +401,14 @@ class StampingPartCostService:
         month: int | None = None,
         location: str | None = None,
     ) -> list[str]:
-        return self.cost_repo.get_distinct_suppliers(db, year=year, month=month, location=location)
+        locations: list[str] | None = None
+        if location:
+            locations = LocationService().expand_for_query(db, location)
+            if not locations:
+                return []
+        return self.cost_repo.get_distinct_suppliers(
+            db, year=year, month=month, locations=locations
+        )
 
     def batch_delete(
         self, db: Session, dto: StampingPartCostDeleteDTO

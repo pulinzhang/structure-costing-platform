@@ -67,7 +67,7 @@
 
 - **按业务分类**浏览历史上传的 Excel；
 - **下载原件**，核对「当时导入的是不是这份表」；
-- **查看元数据**（谁上传、何时、对应哪期基地/车型/年月）。
+- **查看元数据**（谁上传、何时、对应哪期基地/项目/年月）。
 
 深链到业务列表为可选增强，**不在本期必做**。
 
@@ -76,7 +76,7 @@
 | 上传场景 | 磁盘落盘 | 库内可追溯字段 | 问题 |
 |----------|----------|----------------|------|
 | BOM 材料清单 | `uploads/bom/…` | `bom_snapshots.source_filename / path / hash` | 较完整，但只在 BOM 切片 |
-| 冲压工艺 | `uploads/{基地}/{车型}/{版本}/` | 零件表 `excel_filename`，**无统一 path** | 路径散落，无中央索引 |
+| 冲压工艺 | `uploads/{基地}/{项目}/{版本}/` | 零件表 `excel_filename`，**无统一 path** | 路径散落，无中央索引 |
 | 冲次单价 | `uploads/stamping/tonnage-price/{年}/{基地}/` | 无行级 path | 已归档并登记 |
 | 焊接单价 | `uploads/bom/welding-unit-price/{年}/{基地}/` | 无行级 path | 已归档并登记 |
 | 年度零件价 | `uploads/bom/annual-part-price/{年}/{基地}/` | 无行级 path | 已归档并登记 |
@@ -103,7 +103,7 @@
 
 | 能力 | 说明 |
 |------|------|
-| 列表 | 分页 HUD 密表；分类、基地、年度、月份、车型、上传人、时间范围、文件名模糊 |
+| 列表 | 分页 HUD 密表；分类、基地、年度、月份、项目、上传人、时间范围、文件名模糊 |
 | 下载 | `HttpClient.download` 走 `/api/file-trace/{id}/download` |
 | 详情抽屉 | 分类、原名、scope、SHA256、大小、上传人、时间 + 下载 |
 | 分类 Tab / 筛选 | 仅 §0 所列 `file_category` |
@@ -165,7 +165,7 @@ static/js/features/file-trace/
 
 ```text
 ┌─ 筛选 HUD ─────────────────────────────────────────┐
-│ 分类 ▾  基地 ▾  年度 ▾  月份 ▾  车型 ▾  上传人 ▾     │
+│ 分类 ▾  基地 ▾  年度 ▾  月份 ▾  项目 ▾  上传人 ▾     │
 │ 文件名搜索 [____________]  上传时间 [起]—[止]  [查询] │
 └────────────────────────────────────────────────────┘
 ┌─ 列表（分类徽章 | 原件名 | scope | 大小 | 上传人 | 时间 | 操作）┐
@@ -177,7 +177,7 @@ static/js/features/file-trace/
 
 详情抽屉（z-[85]）：
   - 分类、原始文件名
-  - scope：基地 / 年度 / 月份 / 车型 / bom_version / process_version / 供应商
+  - scope：基地 / 年度 / 月份 / 项目 / bom_version / process_version / 供应商
   - SHA256、字节大小、扩展名
   - 上传人、上传时间
   - [下载原件]
@@ -420,7 +420,7 @@ JSON 端点使用 `response_model=ApiResponse[T]`；**下载为 `StreamingRespon
 4. `uploads/bom/welding-unit-price/` → `bom_welding_unit_price`（scope：年 + 基地）；
 5. `uploads/bom/annual-part-price/` → `bom_annual_part_price`（scope：年 + 基地）；
 6. `uploads/stamping/tonnage-price/` → `stamping_tonnage_price`（scope：年 + 基地）；
-7. 冲压：`uploads/{基地}/{车型}/{版本}/` 下 `*.xlsx`（跳过同目录 `*.png`，跳过顶层 `stamping/`）→ `stamping_process`（scope 从路径段解析）。
+7. 冲压：`uploads/{基地}/{项目}/{版本}/` 下 `*.xlsx`（跳过同目录 `*.png`，跳过顶层 `stamping/`）→ `stamping_process`（scope 从路径段解析）。
 
 规则：幂等（`stored_relpath` 已存在则跳过）；磁盘不存在 → `status=missing`；同 supersede 组仅最新一条 `active`。
 

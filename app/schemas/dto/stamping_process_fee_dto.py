@@ -14,13 +14,13 @@ from app.common.money import Q3, optional_quantize_money
 
 class StampingProcessFeeScopeDTO(BaseModel):
     """
-    计算范围：年度 + 基地 + 车型必填。版本可选。
+    计算范围：年度 + 基地 + 项目必填。版本可选。
     工厂仅列表/批量删除收窄；计算与审核忽略。
     """
 
     year: int = Field(..., ge=2000, le=2100, description="年度")
     location: str = Field(..., min_length=1, description="基地")
-    vehicle_model: str = Field(..., min_length=1, description="车型")
+    vehicle_model: str = Field(..., min_length=1, description="项目")
     version: str | None = Field(None, description="版本")
     stamping_supplier: str | None = Field(None, description="冲压工厂")
 
@@ -48,7 +48,7 @@ class StampingProcessFeeQuery(BaseModel):
     year: int | None = Field(None, description="年度")
     location: str | None = Field(None, description="基地")
     stamping_supplier: str | None = Field(None, description="冲压工厂")
-    vehicle_model: str | None = Field(None, description="车型")
+    vehicle_model: str | None = Field(None, description="项目")
     version: str | None = Field(None, description="版本")
     part_number: str | None = Field(None, description="零件号")
     audit_status: str | None = Field(None, description="审核状态")

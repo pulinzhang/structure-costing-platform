@@ -3,7 +3,7 @@
  * 同步导入：基地 + 年度必选，仅 .xlsx
  */
 
-import { tonnageUploadTemplate } from './template.js?v=3';
+import { tonnageUploadTemplate } from './template.js?v=4';
 import { can } from '../../../../permissions.js?v=8';
 
 const API_BASE = '/api/stamping/tonnage-price';
@@ -21,6 +21,7 @@ const TonnageUploadPage = {
         this.bindEvents();
         this.hideProgress();
         this.clearSelectedFile(false);
+        this.loadLocationOptions();
     },
 
     applyPermissionUi() {
@@ -52,6 +53,24 @@ const TonnageUploadPage = {
         const hint = document.getElementById('tonnageUploadHint');
         if (title) title.textContent = '无上传权限';
         if (hint) hint.textContent = '当前账号仅可查看本页，无法选择或上传文件';
+    },
+
+    async loadLocationOptions() {
+        try {
+            const res = await HttpClient.get(`${API_BASE}/filters/locations`);
+            const data = res && res.data;
+            const locations = Array.isArray(data)
+                ? data
+                : (data && Array.isArray(data.locations) ? data.locations : []);
+            const el = document.getElementById('tonnageUploadLocation');
+            if (!el) return;
+            const current = el.value;
+            el.innerHTML = '<option value="">请选择采购基地</option>' +
+                locations.map((loc) => `<option value="${esc(loc)}">${esc(loc)}</option>`).join('');
+            if (current) el.value = current;
+        } catch (error) {
+            console.error('加载采购基地失败', error);
+        }
     },
 
     bindEvents() {

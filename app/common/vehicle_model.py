@@ -1,4 +1,4 @@
-"""车型代号归一化：冲压工艺表与 BOM 材料清单解析后统一存储格式。"""
+"""项目代号归一化：冲压工艺表与 BOM 材料清单解析后统一存储格式。"""
 
 from __future__ import annotations
 
@@ -11,12 +11,7 @@ _ENCLOSED_NUM_RE = re.compile(r"[\u2460-\u2473]")
 
 
 def normalize_vehicle_model(value: str | None) -> str | None:
-    """
-      将解析出的车型代号归一化为无中文、无圈号序号的代号。
-
-      例：青岛T28 → T28，②T13J → T13J，T28样例 → T28。
-    车型代号业务上不含中文；剔除 CJK 与 ①–⑳ 后若为空则返回 None。
-    """
+    """去 CJK / 圈号后转大写。青岛T28 → T28，青岛t13j → T13J，②T13J → T13J。空则 None。"""
     if value is None:
         return None
     text = str(value).strip()
@@ -24,4 +19,6 @@ def normalize_vehicle_model(value: str | None) -> str | None:
         return None
     normalized = _CJK_RE.sub("", text)
     normalized = _ENCLOSED_NUM_RE.sub("", normalized).strip(" -_—/\\")
-    return normalized or None
+    if not normalized:
+        return None
+    return normalized.upper()

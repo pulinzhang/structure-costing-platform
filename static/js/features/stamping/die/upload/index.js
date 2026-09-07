@@ -1,4 +1,4 @@
-import { dieUploadTemplate } from './template.js?v=9';
+import { dieUploadTemplate } from './template.js?v=11';
 import {
     setDropzoneDragActive,
     setDropzoneFileSelected,
@@ -113,16 +113,25 @@ export const DieUploadPage = {
             const vehicle = document.getElementById('dieVehicleModel');
             if (vehicle) vehicle.value = '';
         }
+        const now = new Date();
         try {
-            const res = await HttpClient.get('/api/stamping/die/filters', {
-                params: location ? { location } : {},
-            });
+            const params = {
+                year: now.getFullYear(),
+                month: now.getMonth() + 1,
+            };
+            if (location) params.location = location;
+            const res = await HttpClient.get('/api/stamping/die/filters', { params });
             const data = res.data || {};
             this.fillSelect('dieLocation', data.locations || [], '请选择采购基地');
             if (location) {
                 const locEl = document.getElementById('dieLocation');
                 if (locEl) locEl.value = location;
             }
+            const vehicles = location ? (data.vehicle_models || []) : [];
+            const vehiclePlaceholder = location
+                ? (vehicles.length ? '请选择项目' : '该基地本月无可引入项目')
+                : '请先选择采购基地';
+            this.fillSelect('dieVehicleModel', vehicles, vehiclePlaceholder);
         } catch (error) {
             showToast(error.message || '加载筛选项失败', 'error');
         }
@@ -384,7 +393,7 @@ export const DieUploadPage = {
             return;
         }
         if (!vehicleModel) {
-            showToast('请填写项目', 'warning');
+            showToast('请选择项目', 'warning');
             return;
         }
         if (!fileInput?.files?.length) {

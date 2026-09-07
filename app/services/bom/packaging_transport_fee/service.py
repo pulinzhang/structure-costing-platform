@@ -26,6 +26,8 @@ from app.schemas.vo.bom_packaging_transport_fee_vo import (
     BomPackagingTransportFeeResponse,
 )
 from app.schemas.vo.user_vo import UserVO
+from app.services.masterdata.location.location_service import LocationService
+from app.services.masterdata.vehicle_model import VehicleModelService
 
 logger = logging.getLogger("service.bom")
 
@@ -47,9 +49,26 @@ class BomPackagingTransportFeeService:
         audit_status = query.audit_status.strip() if query.audit_status else None
         keyword = query.keyword.strip() if query.keyword else None
         vehicle_model = query.vehicle_model.strip() if query.vehicle_model else None
+        location_service = LocationService()
+        locations: list[str] | None = None
+        if query.location:
+            locations = location_service.expand_for_query(db, query.location)
+            if not locations:
+                empty_filters: PackagingTransportFeeListFilters = {
+                    "locations": location_service.list_registered(db),
+                    "years": self.repository.get_distinct_years(db),
+                    "vehicle_models": VehicleModelService().list_filter_codes(db, query.location),
+                    "audit_status": audit_status,
+                    "summary": {
+                        "total_count": 0,
+                        "pending_count": 0,
+                        "approved_count": 0,
+                    },
+                }
+                return [], 0, empty_filters
         records, total = self.repository.paginate(
             db,
-            location=query.location,
+            locations=locations,
             year=query.year,
             vehicle_model=vehicle_model,
             audit_status=audit_status,
@@ -59,13 +78,13 @@ class BomPackagingTransportFeeService:
         )
         rows = [BomPackagingTransportFeeResponse.model_validate(r) for r in records]
         filters: PackagingTransportFeeListFilters = {
-            "locations": self.repository.get_distinct_locations(db),
+            "locations": location_service.list_registered(db),
             "years": self.repository.get_distinct_years(db),
-            "vehicle_models": self.repository.get_distinct_vehicle_models(db),
+            "vehicle_models": VehicleModelService().list_filter_codes(db, query.location),
             "audit_status": audit_status,
             "summary": self.repository.summarize_by_filters(
                 db,
-                location=query.location,
+                locations=locations,
                 year=query.year,
                 vehicle_model=vehicle_model,
                 audit_status=audit_status,
@@ -87,6 +106,9 @@ class BomPackagingTransportFeeService:
         current_user: UserVO,
     ) -> BomPackagingTransportFeeResponse:
         try:
+            canonical = LocationService().require_enabled(db, data.location)
+            if canonical != data.location:
+                data = data.model_copy(update={"location": canonical})
             audit = audit_create(current_user)
             record = self.repository.create(
                 db,
@@ -307,10 +329,10 @@ class BomPackagingTransportFeeService:
         )
 
     def get_locations(self, db: Session) -> list[str]:
-        return self.repository.get_distinct_locations(db)
+        return LocationService().list_registered(db)
 
     def get_years(self, db: Session) -> list[int]:
         return self.repository.get_distinct_years(db)
 
     def get_vehicle_models(self, db: Session) -> list[str]:
-        return self.repository.get_distinct_vehicle_models(db)
+        return VehicleModelService().list_filter_codes(db)

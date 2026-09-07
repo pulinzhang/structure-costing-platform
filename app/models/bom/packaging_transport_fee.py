@@ -12,7 +12,16 @@ BOM 包装运输费数据模型
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import DateTime, Index, Integer, Numeric, String, Text, UniqueConstraint
+from sqlalchemy import (
+    DateTime,
+    ForeignKeyConstraint,
+    Index,
+    Integer,
+    Numeric,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -192,5 +201,12 @@ class BomPackagingTransportFee(AuditUserMixin, Base):
             "vehicle_model",
             "part_number",
             name="uix_pkg_transport_location_year_vehicle_part",
+        ),
+        ForeignKeyConstraint(
+            ["location", "vehicle_model"],
+            ["vehicle_models.location", "vehicle_models.vehicle_model"],
+            ondelete="RESTRICT",
+            onupdate="RESTRICT",
+            name="fk_bom_packaging_transport_fees_vehicle_models",
         ),
     )

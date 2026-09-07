@@ -14,7 +14,6 @@ from app.repositories.stamping.stamping_process_fee_repository import (
 )
 from app.schemas.vo.costing_engine_vo import CostingEngineAnnualItemVO
 from app.services.costing.engine.scope_discovery import DiscoveryResult
-from app.services.costing.stamping_part_cost.helpers import location_candidates
 
 _ANY_STATUS = [AUDIT_PENDING, AUDIT_APPROVED, AUDIT_REJECTED]
 
@@ -29,7 +28,7 @@ class AnnualCalcPlanner:
 
     def plan(self, db: Session, discovery: DiscoveryResult) -> list[CostingEngineAnnualItemVO]:
         items: list[CostingEngineAnnualItemVO] = []
-        aliases = discovery.location_aliases or location_candidates(discovery.location)
+        aliases = discovery.location_aliases
 
         for vehicle_model in discovery.vehicle_models:
             exists = self._process_fee_exists(

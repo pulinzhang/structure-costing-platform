@@ -48,10 +48,6 @@ export function tonnageUploadTemplate() {
                                                 required
                                                 class="${UPLOAD_INPUT} w-full">
                                             <option value="">请选择采购基地</option>
-                                            <option value="大连">大连</option>
-                                            <option value="芜湖">芜湖</option>
-                                            <option value="鄂尔多斯">鄂尔多斯</option>
-                                            <option value="青岛">青岛</option>
                                         </select>
                                     </div>
                                     <div>

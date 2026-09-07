@@ -255,13 +255,8 @@ ENTITY_LIST_PAGES: tuple[tuple[str, str], ...] = (
 
 
 def expand_base_price_location(location: str) -> str:
-    """基准价表用「青岛基地」；核价表用「青岛」。"""
-    text = (location or "").strip()
-    if not text:
-        return ""
-    if text.endswith("基地"):
-        return text
-    return f"{text}基地"
+    """列表筛选用规范名；历史「×基地」由基地主数据 expand_for_query 命中。"""
+    return (location or "").strip()
 
 
 def build_list_params(query: AnalysisQuery) -> dict[str, str]:

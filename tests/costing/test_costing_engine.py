@@ -17,6 +17,7 @@ from app.services.costing.engine.scope_discovery import DiscoveryResult, L0Scope
 
 def test_gate_navigate_hard_stop_codes_have_page() -> None:
     codes = [
+        "vehicle_model",
         "stamping_process",
         "tonnage_price",
         "welding_unit_price",
@@ -33,6 +34,9 @@ def test_gate_navigate_hard_stop_codes_have_page() -> None:
         assert nav is not None
         assert nav.page
         assert nav.label
+        if code == "vehicle_model":
+            assert nav.page == "vehicle-model-list"
+            assert nav.query.get("location") == "青岛"
         if code == "base_price":
             assert nav.query.get("year") == 2025
             assert nav.query.get("month") == 1
@@ -49,35 +53,63 @@ def test_progress_bands_monotonic() -> None:
 
 
 def test_scope_discovery_multi_bom_dedupe() -> None:
-    """同项目多 BOM 版本均进入 L0Scope。"""
+    """本期项目来自主数据；同项目多 BOM 版本均进入 L0Scope，别名重复去重。"""
     discovery = ScopeDiscovery()
     db = MagicMock()
 
-    # 模拟 group_by 查询结果：两版本
-    query = MagicMock()
-    db.query.return_value = query
-    query.join.return_value = query
-    query.filter.return_value = query
-    query.group_by.return_value = query
-    query.having.return_value = query
-    query.order_by.return_value = query
-    query.all.return_value = [
-        ("青岛", "T28", "D-00"),
-        ("青岛", "T28", "D-01"),
-        ("青岛基地", "T28", "D-00"),  # 别名重复应去重
-    ]
-
-    with patch.object(
-        discovery.part_repo,
-        "get_cascade_filter_options",
-        return_value={"vehicle_models": ["T28"]},
+    with (
+        patch("app.services.costing.engine.scope_discovery.LocationService") as location_cls,
+        patch.object(
+            discovery.vehicle_model_service,
+            "list_introducible",
+            return_value=["T28"],
+        ),
+        patch.object(
+            discovery.vehicle_model_service,
+            "normalize",
+            side_effect=lambda value: (value or "").strip() or None,
+        ),
+        patch.object(
+            discovery.bom_snapshot_repo,
+            "discover_l0_scopes",
+            return_value=[
+                {"location": "青岛", "vehicle_model": "T28", "bom_version": "D-00"},
+                {"location": "青岛", "vehicle_model": "T28", "bom_version": "D-01"},
+                {"location": "青岛基地", "vehicle_model": "T28", "bom_version": "D-00"},
+            ],
+        ),
     ):
+        location_cls.return_value.expand_for_query.return_value = ["青岛", "青岛基地"]
         result = discovery.discover(db, location="青岛", year=2025, month=1)
 
     assert result.vehicle_models == ["T28"]
     assert len(result.l0_scopes) == 2
     keys = {(s.vehicle_model, s.bom_version) for s in result.l0_scopes}
     assert keys == {("T28", "D-00"), ("T28", "D-01")}
+
+
+def test_scope_discovery_empty_introducible_skips_l0() -> None:
+    discovery = ScopeDiscovery()
+    db = MagicMock()
+
+    with (
+        patch("app.services.costing.engine.scope_discovery.LocationService") as location_cls,
+        patch.object(
+            discovery.vehicle_model_service,
+            "list_introducible",
+            return_value=[],
+        ),
+        patch.object(
+            discovery.bom_snapshot_repo,
+            "discover_l0_scopes",
+        ) as discover_l0,
+    ):
+        location_cls.return_value.expand_for_query.return_value = ["青岛"]
+        result = discovery.discover(db, location="青岛", year=2025, month=1)
+
+    discover_l0.assert_not_called()
+    assert result.vehicle_models == []
+    assert result.l0_scopes == []
 
 
 def test_run_orchestrator_does_not_submit_nested_async_task() -> None:

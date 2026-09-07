@@ -32,7 +32,7 @@ alwaysApply: true
 | **Router** | 接收请求、参数验证、调用 Service、返回 `ApiResponse`；下载/导出可返回 `StreamingResponse` / `FileResponse` | 禁止写业务逻辑；禁止直接查数据库；禁止直接调用 Parser；禁止写后台 worker 壳（§5.3）；禁止把 Service 错误元组 / `None` 转成 `HTTPException`（§5.2） |
 | **Service** | 业务逻辑、ORM→VO、事务管理、异常处理；**唯一可调用 Parser** | 禁止直接写 SQL（须经 Repository）；禁止用 `(None, str)` 向 Router 返回错误（§5.2）；禁止在 Service 里格式化 datetime/Decimal 给前端 |
 | **Repository** | 数据库 CRUD / 聚合查询构建 | 禁止权限/角色等业务策略判断 |
-| **Model** | 定义数据库表结构；允许 `relationship` | 禁止 `to_dict`、业务 `@property` |
+| **Model** | 定义数据库表结构；允许同切片附属行 `relationship` | 禁止 `to_dict`、业务 `@property`；跨切片独立主数据禁止父指向子（§4.3） |
 | **Schema** | 请求验证（DTO）/ 响应序列化（VO） | 禁止写业务流程逻辑 |
 | **Parser** | 解析文件（纯函数，工具层） | 禁止写业务逻辑；禁止依赖 Router/Service/Repository |
 
@@ -242,6 +242,10 @@ class StampingPart(Base):
         return self.status == "active"
 ```
 
+**`relationship` 边界（与 §4.3 对照）：**
+- ✅ 同切片附属行（零件→工序、主单→明细）可用 `relationship`，`ondelete` / `onupdate` 都用 `"CASCADE"`
+- ❌ 跨切片、独立主数据之间：禁止父 Model 指向子的 `relationship` / import 子 Model。引用由子表 `ForeignKey(..., ondelete="RESTRICT", onupdate="RESTRICT")` 承担，见 §4.3
+
 ---
 
 ### 2.5 Schema 层（模式层）
@@ -396,7 +400,7 @@ app/
 
 ```
 上游 / 基础数据切片（被消费，不依赖下游）
-  settings · stamping · bom · yishiyiyi
+  masterdata · settings · stamping · bom · yishiyiyi
 
 下游 / 编排与核价切片（可组合上游）
   costing · dashboard
@@ -433,6 +437,43 @@ app/
 ```
 
 **原则**：切片目录仍按 feature 垂直组织；跨切片是**显式、单向的业务组合**，不是随意耦合。
+
+### 4.3 引用保护：谁引用谁负责（数据库引擎，不是父点名子）
+
+**数据引用图**和 **4.2 代码依赖** 方向相反，禁止用同一套写法：
+
+| | 代码依赖（§4.2） | 数据引用（本节） |
+|---|---|---|
+| 方向 | 下游 Service **可以** import 上游 | 子表 **声明** 指向父表的外键 |
+| 父知不知道子 | 上游 **禁止** import 下游 | 父 Model **禁止** `relationship` / import 子 Model |
+| 拦改主键 / 删除的是谁 | 不适用 | **数据库引擎**（`ON UPDATE RESTRICT` + `ON DELETE RESTRICT`） |
+
+**硬规则：**
+
+| 规则 | 说明 |
+|------|------|
+| **只拦直接下游** | 外键只加在设计图上下一跳。禁止给全库同名字段（如所有 `location` 列）都挂父表外键 |
+| **子声明、父不知** | 子 Model：`ForeignKey("父表.主键", ondelete="RESTRICT", onupdate="RESTRICT")`。父 Model 不写子、不列子表、改主键/删除前不 `count` 子行 |
+| **引擎拒绝、应用翻译** | 父改主键或删除只动自己。仍被引用 → 引擎 `IntegrityError` → Service 收成 `BusinessException("仍被引用，不能修改")` / `BusinessException("仍被引用，不能删除")`。禁止文案点名具体子切片（父不知道有谁） |
+| **新直接子只改子** | 新增直接下游 = 只在该子 Model 加外键。父的修改/删除代码不变 |
+| **修改与删除同时支持** | 有外键的独立主数据，父切片必须同时提供修改和删除。非主键修改（如启用/禁用）外键不管；改主键与删除都走 `RESTRICT`。禁止只声明 `ondelete` 不声明 `onupdate`；禁止用禁用代替「未声明外键」 |
+
+```
+✅ 项目.location → ForeignKey("locations.location", ondelete="RESTRICT", onupdate="RESTRICT")
+   基地 Service 修改非主键（启用/禁用）：UPDATE，外键不管
+   基地 Service 改主键 / 删除：flush/commit；IntegrityError →
+     改主键 → BusinessException("仍被引用，不能修改")
+     删除 → BusinessException("仍被引用，不能删除")
+
+❌ 基地 Service 调项目 Service / 查项目表再决定能不能改/删（上游依赖下游）
+❌ 父 Model relationship("VehicleModel")（父开始知道子）
+❌ 给 stamping_parts.location、钢价.location 都加基地外键（间接下游，不是直接下一跳）
+❌ ondelete="CASCADE" / onupdate="CASCADE" 用在独立主数据上（改父主键或删父会级联改/删子）
+```
+
+**与现网 `CASCADE` 的分界：** `CASCADE` 只用于**没有独立身份的附属行**（明细、权限行、随父单同生共死；`ondelete` 与 `onupdate` 都 `CASCADE`）。**独立主数据被另一张独立主数据引用** → 改主键和删除都用 `RESTRICT`。
+
+连接须打开外键（SQLite：`PRAGMA foreign_keys=ON`，现网已开）。若某对实体坚持不加外键：该父实体**不准提供改主键、不准提供删除**，只保留禁用。有外键则修改与删除必须同时提供。
 
 ---
 
@@ -610,8 +651,9 @@ async def upload_stamping_file(..., current_user: UserVO = Depends(...)):
 - [ ] 这段代码是**数据转换**吗？ → 放到 **Schema**
 - [ ] 这段代码是**文件解析**吗？ → 放到 **Parser**（只能被 Service 调用）
 - [ ] 我在 Repository 里写**权限/角色**判断了吗？ → **禁止**，移到 Service
-- [ ] 我在 Model 里写 `to_dict` 或业务 `@property` 了吗？ → **禁止**；`relationship` 允许
+- [ ] 我在 Model 里写 `to_dict` 或业务 `@property` 了吗？ → **禁止**；同切片附属行 `relationship` 允许，跨切片独立主数据禁止父指向子（§4.3）
 - [ ] 跨切片依赖是**下游 → 上游**且无环吗？ → 上游不得依赖下游
+- [ ] 改主键 / 删除主数据前有没有在父里 `count` 子 / import 下游？ → **禁止**，改为子表 `ON UPDATE RESTRICT` + `ON DELETE RESTRICT` + `IntegrityError`（§4.3）
 - [ ] 异步上传/计算的 worker 壳写在 **Router** 里了吗？（`_process_*_in_background` / Router 开 Session）→ **禁止**，见 §5.3
 - [ ] 把同一套 Session/进度/finally 复制进多个 Service 了吗？（含引擎 worker）→ **禁止**，抽 `async_task` runner
 - [ ] Service 用 `(None, "错误文案")` 或 Router 入口返回 `VO | None` / `bool` 再由 Router 判空了吗？→ **禁止**，抛 `NotFoundException` / `BusinessException`（§5.2）
@@ -636,6 +678,7 @@ async def upload_stamping_file(..., current_user: UserVO = Depends(...)):
 | 把 TypedDict 函数体的 `return {…}` 当成「返回裸 dict」 | 误解：`TypedDict` 运行时就是 `dict` | 只禁**签名**写成 `dict` / `dict[str, Any]`；`-> FooSummary` + dict 字面量合法 |
 | 把 LLM `_money` 等抽进 `app/common` | 污染核价主路径，破坏 LLM 隔离 | 工具留在 `llm` 切片内；上游不得 import llm |
 | **上游切片依赖下游** | 依赖倒置、易成环 | 只允许下游组合上游；共享算法放 common 或归属唯一切片 |
+| 父改主键/删除前查询子表 / 父 Model `relationship` 指向独立子主数据 | 上游开始知道下游，与 §4.2 冲突 | 子表声明 `ON UPDATE RESTRICT` + `ON DELETE RESTRICT`；父只改/删自己，`IntegrityError` →「仍被引用，不能修改/删除」（§4.3） |
 
 ---
 

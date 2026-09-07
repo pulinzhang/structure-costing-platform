@@ -17,6 +17,9 @@ from tests.llm.menu_question_matrix import (
 
 def _mock_parser(parser: QueryParser) -> None:
     parser._aligner._scope_repo.list_locations = MagicMock(return_value=["青岛"])
+    parser._aligner._scope_repo.location_alias_map = MagicMock(
+        return_value={"青岛": "青岛", "青岛基地": "青岛"}
+    )
     parser._aligner._scope_repo.list_vehicle_models = MagicMock(return_value=["T28"])
     parser._aligner._scope_repo.list_bom_versions = MagicMock(return_value=["V1"])
     parser._extractor.extract = MagicMock(
@@ -71,12 +74,12 @@ def test_complete_menu_question_routes_correctly(case) -> None:
         ),
         pytest.param(
             next(c for c in complete_cases() if c.hash_page == "base-price-download"),
-            {"year": "2025", "month": "1", "location": "青岛基地"},
+            {"year": "2025", "month": "1", "location": "青岛"},
             id="基准价格列表",
         ),
         pytest.param(
             next(c for c in complete_cases() if c.hash_page == "winning-thickness-download"),
-            {"year": "2025", "month": "1", "location": "青岛基地"},
+            {"year": "2025", "month": "1", "location": "青岛"},
             id="中标钢厂厚度价格一览表",
         ),
         pytest.param(

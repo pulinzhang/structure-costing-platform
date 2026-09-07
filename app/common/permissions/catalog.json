@@ -1302,6 +1302,96 @@
       ]
     },
     {
+      "code": "menu:masterdata",
+      "label": "主数据",
+      "type": "group",
+      "children": [
+        {
+          "code": "menu:location",
+          "label": "基地",
+          "type": "menu",
+          "children": [
+            {
+              "code": "op:location:view",
+              "label": "查看",
+              "type": "op"
+            },
+            {
+              "code": "op:location:create",
+              "label": "新增",
+              "type": "op"
+            },
+            {
+              "code": "op:location:update",
+              "label": "编辑",
+              "type": "op"
+            },
+            {
+              "code": "op:location:delete",
+              "label": "删除",
+              "type": "op"
+            }
+          ]
+        },
+        {
+          "code": "menu:vehicle-model",
+          "label": "项目",
+          "type": "group",
+          "children": [
+            {
+              "code": "menu:vehicle-model-upload",
+              "label": "上传",
+              "type": "menu",
+              "children": [
+                {
+                  "code": "op:vehicle-model-upload:view",
+                  "label": "查看",
+                  "type": "op"
+                },
+                {
+                  "code": "op:vehicle-model-upload:upload",
+                  "label": "导入",
+                  "type": "op"
+                }
+              ]
+            },
+            {
+              "code": "menu:vehicle-model-list",
+              "label": "一览表",
+              "type": "menu",
+              "children": [
+                {
+                  "code": "op:vehicle-model-list:view",
+                  "label": "查看",
+                  "type": "op"
+                },
+                {
+                  "code": "op:vehicle-model-list:export",
+                  "label": "导出",
+                  "type": "op"
+                },
+                {
+                  "code": "op:vehicle-model-list:create",
+                  "label": "新增",
+                  "type": "op"
+                },
+                {
+                  "code": "op:vehicle-model-list:update",
+                  "label": "编辑",
+                  "type": "op"
+                },
+                {
+                  "code": "op:vehicle-model-list:delete",
+                  "label": "删除",
+                  "type": "op"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
       "code": "menu:settings",
       "label": "设置",
       "type": "group",

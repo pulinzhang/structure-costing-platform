@@ -31,6 +31,7 @@ from app.schemas.vo.bom_packaging_transport_fee_vo import (
 )
 from app.schemas.vo.user_vo import UserVO
 from app.services.file_trace.register import register_existing
+from app.services.masterdata.location.location_service import LocationService
 from app.utils.bom_packaging_transport_fee_archive import (
     save_packaging_transport_fee_upload,
 )
@@ -154,9 +155,10 @@ class BomPackagingTransportFeeImportService:
         current_user: UserVO,
     ) -> BomPackagingTransportFeeImportResultVO:
         location = (location or "").strip()
-        vehicle_model = (vehicle_model or "").strip()
         if not location:
             raise BusinessException("请选择采购基地")
+        location = LocationService().require_enabled(db, location)
+        vehicle_model = (vehicle_model or "").strip()
         if not vehicle_model:
             raise BusinessException("请选择项目")
         if year < 2000 or year > 2100:

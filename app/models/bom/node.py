@@ -24,6 +24,7 @@ from sqlalchemy import (
     Boolean,
     Date,
     ForeignKey,
+    ForeignKeyConstraint,
     Index,
     Integer,
     Numeric,
@@ -166,6 +167,13 @@ class BomSnapshot(AuditUserMixin, Base):
         Index("ix_bom_snapshot_location", "location"),
         Index("ix_bom_snapshot_vehicle_model", "vehicle_model"),
         Index("ix_bom_snapshot_status", "status"),
+        ForeignKeyConstraint(
+            ["location", "vehicle_model"],
+            ["vehicle_models.location", "vehicle_models.vehicle_model"],
+            ondelete="RESTRICT",
+            onupdate="RESTRICT",
+            name="fk_bom_snapshots_vehicle_models",
+        ),
     )
 
 

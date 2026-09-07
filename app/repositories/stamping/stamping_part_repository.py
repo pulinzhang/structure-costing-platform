@@ -216,6 +216,7 @@ class StampingPartRepository:
         db: Session,
         *,
         location: str | None = None,
+        locations: list[str] | None = None,
         vehicle_model: str | None = None,
         version: str | None = None,
         part_number: str | None = None,
@@ -224,7 +225,9 @@ class StampingPartRepository:
     ) -> Query[StampingPart]:
         """构建与列表相同的筛选查询（不含排序/分页）。"""
         q = db.query(StampingPart)
-        if location is not None:
+        if locations is not None:
+            q = q.filter(StampingPart.location.in_(locations))
+        elif location is not None:
             q = q.filter(StampingPart.location == location)
         if stamping_supplier is not None:
             q = q.filter(StampingPart.stamping_supplier == stamping_supplier)
@@ -242,6 +245,7 @@ class StampingPartRepository:
         self,
         db: Session,
         location: str | None = None,
+        locations: list[str] | None = None,
         vehicle_model: str | None = None,
         version: str | None = None,
         part_number: str | None = None,
@@ -254,6 +258,7 @@ class StampingPartRepository:
         q = self._build_list_query(
             db,
             location=location,
+            locations=locations,
             vehicle_model=vehicle_model,
             version=version,
             part_number=part_number,
@@ -269,6 +274,7 @@ class StampingPartRepository:
         db: Session,
         *,
         location: str | None = None,
+        locations: list[str] | None = None,
         vehicle_model: str | None = None,
         version: str | None = None,
         part_number: str | None = None,
@@ -279,6 +285,7 @@ class StampingPartRepository:
         q = self._build_list_query(
             db,
             location=location,
+            locations=locations,
             vehicle_model=vehicle_model,
             version=version,
             part_number=part_number,
@@ -584,28 +591,33 @@ class StampingPartRepository:
         db: Session,
         *,
         location: str | None = None,
+        locations: list[str] | None = None,
         stamping_supplier: str | None = None,
         vehicle_model: str | None = None,
         version: str | None = None,
     ) -> StampingPartCascadeFilterOptions:
         """
         级联筛选选项（未选维度不参与过滤，厂优先与车优先均可）：
-        - 基地：全量
+        - 基地：全量（Service 用 list_registered 覆盖）
         - 配套车型：按已选基地、冲压工厂过滤
         - 版本：按已选基地、冲压工厂、车型过滤
         - 冲压工厂：按已选基地、车型、版本过滤
         """
-        locations = self._distinct_string_values(db, StampingPart.location)
+        registered_locations = self._distinct_string_values(db, StampingPart.location)
 
         vehicle_q = db.query(StampingPart.vehicle_model).distinct()
-        if location:
+        if locations is not None:
+            vehicle_q = vehicle_q.filter(StampingPart.location.in_(locations))
+        elif location:
             vehicle_q = vehicle_q.filter(StampingPart.location == location)
         if stamping_supplier:
             vehicle_q = vehicle_q.filter(StampingPart.stamping_supplier == stamping_supplier)
         vehicle_models = self._collect_distinct_strings(vehicle_q, StampingPart.vehicle_model)
 
         version_q = db.query(StampingPart.version).distinct()
-        if location:
+        if locations is not None:
+            version_q = version_q.filter(StampingPart.location.in_(locations))
+        elif location:
             version_q = version_q.filter(StampingPart.location == location)
         if stamping_supplier:
             version_q = version_q.filter(StampingPart.stamping_supplier == stamping_supplier)
@@ -614,7 +626,9 @@ class StampingPartRepository:
         versions = self._collect_distinct_strings(version_q, StampingPart.version)
 
         supplier_q = db.query(StampingPart.stamping_supplier).distinct()
-        if location:
+        if locations is not None:
+            supplier_q = supplier_q.filter(StampingPart.location.in_(locations))
+        elif location:
             supplier_q = supplier_q.filter(StampingPart.location == location)
         if vehicle_model:
             supplier_q = supplier_q.filter(StampingPart.vehicle_model == vehicle_model)
@@ -625,7 +639,7 @@ class StampingPartRepository:
         )
 
         return {
-            "locations": locations,
+            "locations": registered_locations,
             "stamping_suppliers": stamping_suppliers,
             "vehicle_models": vehicle_models,
             "versions": versions,
@@ -661,6 +675,7 @@ class StampingPartRepository:
         self,
         db: Session,
         location: str | None = None,
+        locations: list[str] | None = None,
         stamping_supplier: str | None = None,
         vehicle_model: str | None = None,
         version: str | None = None,
@@ -669,7 +684,9 @@ class StampingPartRepository:
         from sqlalchemy.orm import selectinload
 
         q = db.query(StampingPart)
-        if location:
+        if locations is not None:
+            q = q.filter(StampingPart.location.in_(locations))
+        elif location:
             q = q.filter(StampingPart.location == location)
         if stamping_supplier:
             q = q.filter(StampingPart.stamping_supplier == stamping_supplier)

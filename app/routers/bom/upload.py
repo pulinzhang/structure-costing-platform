@@ -39,17 +39,19 @@ def download_bom_import_template(
 )
 async def upload_bom_excel(
     location: str = Form(..., description="采购基地（必填）"),
+    vehicle_model: str = Form(..., description="项目（必填）"),
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BOM_UPLOAD_UPLOAD)),
 ) -> ApiResponse[BomImportResultVO]:
-    """导入车身件材料清单 Excel；基地必选；Excel 原件落盘；同基地+车型+版本覆盖。"""
+    """导入车身件材料清单 Excel；基地+项目必选；Excel 原件落盘；同基地+车型+版本覆盖。"""
     content = await file.read()
     result = _upload_service.import_excel(
         db,
         file_content=content,
         filename=file.filename or "",
         location=location.strip(),
+        vehicle_model=vehicle_model.strip(),
         current_user=current_user,
     )
     return ApiResponse.created(data=result, message=result.message)

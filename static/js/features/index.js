@@ -70,6 +70,11 @@
  * │   │   └── list/
  * │   └── engine/                # 自动核价引擎
  * ├── file-trace/                # 文件溯源
+ * ├── masterdata/                # 主数据
+ * │   ├── location/              # 基地
+ * │   └── vehicle-model/         # 项目
+ * │       ├── upload/
+ * │       └── list/
  * ├── settings/                  # 设置
  * │   ├── profile/
  * │   ├── system/
@@ -323,6 +328,21 @@ export const pageMeta = {
         title: '文件溯源',
         en: 'FILE_TRACE',
         breadcrumb: ['文件溯源'],
+    },
+    location: {
+        title: '基地',
+        en: 'LOCATION',
+        breadcrumb: ['主数据', '基地'],
+    },
+    'vehicle-model-upload': {
+        title: '项目上传',
+        en: 'PROJECT UPLOAD',
+        breadcrumb: ['主数据', '项目', '上传'],
+    },
+    'vehicle-model-list': {
+        title: '项目一览',
+        en: 'PROJECT',
+        breadcrumb: ['主数据', '项目', '一览表'],
     },
     settings: {
         title: '系统设置',

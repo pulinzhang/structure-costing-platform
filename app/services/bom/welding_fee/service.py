@@ -38,6 +38,8 @@ from app.schemas.vo.bom_welding_fee_vo import (
 )
 from app.schemas.vo.user_vo import UserVO
 from app.services.bom.welding_fee.fee_math import resolve_final_welding_fee
+from app.services.masterdata.location.location_service import LocationService
+from app.services.masterdata.vehicle_model import VehicleModelService
 
 
 def _normalize_scope(
@@ -104,10 +106,28 @@ class BomWeldingFeeService:
     ) -> tuple[list[BomWeldingFeeVO], int, WeldingFeeListApiFilters]:
         skip = (query.page - 1) * query.size
         levels = resolve_welding_fee_levels(level=query.level, levels=query.levels)
+        locations: list[str] | None = None
+        if query.location:
+            locations = LocationService().expand_for_query(db, query.location)
+            if not locations:
+                summary = WeldingFeeListSummaryVO()
+                empty_filters = WeldingFeeListApiFilters(
+                    year=query.year,
+                    location=query.location,
+                    vehicle_model=query.vehicle_model,
+                    bom_version=query.bom_version,
+                    part_number=query.part_number,
+                    audit_status=query.audit_status,
+                    calc_status=query.calc_status,
+                    level=query.level,
+                    levels=levels,
+                    summary=summary,
+                )
+                return [], 0, empty_filters
         rows, total = self.fee_repo.paginate(
             db,
             year=query.year,
-            location=query.location,
+            locations=locations,
             vehicle_model=query.vehicle_model,
             bom_version=query.bom_version,
             part_number=query.part_number,
@@ -123,7 +143,7 @@ class BomWeldingFeeService:
             self.fee_repo.summarize_by_filters(
                 db,
                 year=query.year,
-                location=query.location,
+                locations=locations,
                 vehicle_model=query.vehicle_model,
                 bom_version=query.bom_version,
                 part_number=query.part_number,
@@ -307,7 +327,7 @@ class BomWeldingFeeService:
         return self.fee_repo.get_distinct_years(db)
 
     def list_locations(self, db: Session, year: int | None = None) -> list[str]:
-        return self.fee_repo.get_distinct_locations(db, year=year)
+        return LocationService().list_registered(db)
 
     def list_vehicle_models(
         self,
@@ -315,7 +335,7 @@ class BomWeldingFeeService:
         year: int | None = None,
         location: str | None = None,
     ) -> list[str]:
-        return self.fee_repo.get_distinct_vehicle_models(db, year=year, location=location)
+        return VehicleModelService().list_filter_codes(db, location)
 
     def list_bom_versions(
         self,
@@ -324,9 +344,14 @@ class BomWeldingFeeService:
         location: str | None = None,
         vehicle_model: str | None = None,
     ) -> list[str]:
+        locations: list[str] | None = None
+        if location:
+            locations = LocationService().expand_for_query(db, location)
+            if not locations:
+                return []
         return self.fee_repo.get_distinct_bom_versions(
             db,
             year=year,
-            location=location,
+            locations=locations,
             vehicle_model=vehicle_model,
         )

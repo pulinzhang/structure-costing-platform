@@ -49,6 +49,9 @@ def test_normalize_recent_three_months() -> None:
 
 def _mock_aligner(parser: QueryParser) -> None:
     parser._aligner._scope_repo.list_locations = MagicMock(return_value=["青岛"])
+    parser._aligner._scope_repo.location_alias_map = MagicMock(
+        return_value={"青岛": "青岛", "青岛基地": "青岛"}
+    )
     parser._aligner._scope_repo.list_vehicle_models = MagicMock(return_value=["T28"])
     parser._aligner._scope_repo.list_bom_versions = MagicMock(return_value=["V1"])
     parser._aligner._scope_repo.list_part_numbers_matching = MagicMock(return_value=[])
@@ -143,7 +146,10 @@ def test_query_parser_level4_blind_question_forces_safe_analyses() -> None:
 
 
 def test_query_parser_rule_fallback_when_llm_fails() -> None:
+    from app.common.timezone import now
+    from app.services.llm._money import month_key
     from app.services.llm.client import LlmClientError
+    from app.services.llm.query.time_range import shift_month
 
     parser = QueryParser()
     db = MagicMock()
@@ -157,7 +163,9 @@ def test_query_parser_rule_fallback_when_llm_fails() -> None:
     assert query.location() == "青岛"
     assert "trend" in query.analyses
     assert query.parser_fallback_level == 4
-    assert query.time_range.start == "2026-06"
+    current = now()
+    start_year, start_month = shift_month(current.year, current.month, -2)
+    assert query.time_range.start == month_key(start_year, start_month)
 
 
 def test_build_summary_and_trend() -> None:
@@ -516,6 +524,9 @@ def test_query_parser_base_price_question() -> None:
     parser = QueryParser()
     db = MagicMock()
     parser._aligner._scope_repo.list_locations = MagicMock(return_value=["青岛"])
+    parser._aligner._scope_repo.location_alias_map = MagicMock(
+        return_value={"青岛": "青岛", "青岛基地": "青岛"}
+    )
     parser._extractor.extract = MagicMock(
         return_value={
             "time_range": {"start": "2025-01", "end": "2025-01"},
@@ -534,7 +545,7 @@ def test_query_parser_base_price_question() -> None:
     assert "drivers" in query.analyses
 
     params = build_list_params(query)
-    assert params.get("location") == "青岛基地"
+    assert params.get("location") == "青岛"
     assert params.get("year") == "2025"
     assert params.get("month") == "1"
 

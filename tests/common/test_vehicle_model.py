@@ -1,4 +1,4 @@
-"""车型代号归一化测试。"""
+"""项目代号归一化测试。"""
 
 from __future__ import annotations
 
@@ -15,8 +15,11 @@ def test_normalize_vehicle_model_strips_chinese_prefix_and_suffix() -> None:
     assert normalize_vehicle_model("T28") == "T28"
     assert normalize_vehicle_model("②T13J") == "T13J"
     assert normalize_vehicle_model("  青岛 T28  ") == "T28"
+    assert normalize_vehicle_model("青岛t13j") == "T13J"
+    assert normalize_vehicle_model("t13j") == "T13J"
     assert normalize_vehicle_model("青岛") is None
     assert normalize_vehicle_model(None) is None
+    assert normalize_vehicle_model("UNKNOWN") == "UNKNOWN"
 
 
 def test_stamping_title_prefix_normalized_to_t28() -> None:

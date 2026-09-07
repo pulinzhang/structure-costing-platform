@@ -83,6 +83,7 @@ class BomSnapshotRepository:
         self,
         db: Session,
         location: str | None = None,
+        locations: list[str] | None = None,
         vehicle_model: str | None = None,
         bom_version: str | None = None,
         status: str | None = None,
@@ -92,6 +93,7 @@ class BomSnapshotRepository:
         q = self._apply_list_filters(
             db.query(BomSnapshot),
             location=location,
+            locations=locations,
             vehicle_model=vehicle_model,
             bom_version=bom_version,
             status=status,
@@ -114,6 +116,7 @@ class BomSnapshotRepository:
         self,
         db: Session,
         location: str | None = None,
+        locations: list[str] | None = None,
         vehicle_model: str | None = None,
         bom_version: str | None = None,
         status: str | None = None,
@@ -122,6 +125,7 @@ class BomSnapshotRepository:
         q = self._apply_list_filters(
             db.query(BomSnapshot),
             location=location,
+            locations=locations,
             vehicle_model=vehicle_model,
             bom_version=bom_version,
             status=status,
@@ -153,11 +157,14 @@ class BomSnapshotRepository:
         q: Query[BomSnapshot],
         *,
         location: str | None = None,
+        locations: list[str] | None = None,
         vehicle_model: str | None = None,
         bom_version: str | None = None,
         status: str | None = None,
     ) -> Query[BomSnapshot]:
-        if location:
+        if locations is not None:
+            q = q.filter(BomSnapshot.location.in_(locations))
+        elif location:
             q = q.filter(BomSnapshot.location == location)
         if vehicle_model:
             q = q.filter(BomSnapshot.vehicle_model == vehicle_model)
@@ -177,6 +184,7 @@ class BomSnapshotRepository:
         self,
         db: Session,
         location: str | None = None,
+        locations: list[str] | None = None,
         vehicle_model: str | None = None,
     ) -> int:
         """统计 BOM 节点总量（可按基地 / 车型过滤）。"""
@@ -185,7 +193,9 @@ class BomSnapshotRepository:
             .select_from(BomNode)
             .join(BomSnapshot, BomSnapshot.id == BomNode.snapshot_id)
         )
-        if location:
+        if locations is not None:
+            node_q = node_q.filter(BomSnapshot.location.in_(locations))
+        elif location:
             node_q = node_q.filter(BomSnapshot.location == location)
         if vehicle_model:
             node_q = node_q.filter(BomSnapshot.vehicle_model == vehicle_model)
@@ -277,6 +287,7 @@ class BomSnapshotRepository:
         db: Session,
         *,
         location: str | None = None,
+        locations: list[str] | None = None,
         vehicle_model: str | None = None,
         status: str | None = "active",
     ) -> BomCascadeFilterOptions:
@@ -295,12 +306,16 @@ class BomSnapshotRepository:
         loc_q = db.query(BomSnapshot.location).distinct()
         if status is not None:
             loc_q = loc_q.filter(BomSnapshot.status == status)
-        locations = [row[0] for row in loc_q.order_by(BomSnapshot.location).all() if row[0]]
+        distinct_locations = [
+            row[0] for row in loc_q.order_by(BomSnapshot.location).all() if row[0]
+        ]
 
         model_q = db.query(BomSnapshot.vehicle_model).distinct()
         if status is not None:
             model_q = model_q.filter(BomSnapshot.status == status)
-        if location is not None:
+        if locations is not None:
+            model_q = model_q.filter(BomSnapshot.location.in_(locations))
+        elif location is not None:
             model_q = model_q.filter(BomSnapshot.location == location)
         vehicle_models = [
             row[0] for row in model_q.order_by(BomSnapshot.vehicle_model).all() if row[0]
@@ -309,7 +324,9 @@ class BomSnapshotRepository:
         version_q = db.query(BomSnapshot.bom_version).distinct()
         if status is not None:
             version_q = version_q.filter(BomSnapshot.status == status)
-        if location is not None:
+        if locations is not None:
+            version_q = version_q.filter(BomSnapshot.location.in_(locations))
+        elif location is not None:
             version_q = version_q.filter(BomSnapshot.location == location)
         if vehicle_model is not None:
             version_q = version_q.filter(BomSnapshot.vehicle_model == vehicle_model)
@@ -318,7 +335,7 @@ class BomSnapshotRepository:
         ]
 
         return {
-            "locations": locations,
+            "locations": distinct_locations,
             "vehicle_models": vehicle_models,
             "bom_versions": bom_versions,
         }

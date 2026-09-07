@@ -91,11 +91,14 @@ class StampingTonnagePriceRepository:
         self,
         db: Session,
         location: str | None = None,
+        locations: list[str] | None = None,
         year: int | None = None,
         audit_status: str | None = None,
     ) -> Query[StampingTonnagePrice]:
         q = db.query(StampingTonnagePrice)
-        if location is not None:
+        if locations is not None:
+            q = q.filter(StampingTonnagePrice.location.in_(locations))
+        elif location is not None:
             q = q.filter(StampingTonnagePrice.location == location)
         if year is not None:
             q = q.filter(StampingTonnagePrice.year == year)
@@ -107,13 +110,16 @@ class StampingTonnagePriceRepository:
         self,
         db: Session,
         location: str | None = None,
+        locations: list[str] | None = None,
         year: int | None = None,
         audit_status: str | None = None,
         skip: int = 0,
         limit: int = 100,
     ) -> tuple[list[StampingTonnagePrice], int]:
         """分页查询"""
-        q = self._build_list_query(db, location=location, year=year, audit_status=audit_status)
+        q = self._build_list_query(
+            db, location=location, locations=locations, year=year, audit_status=audit_status
+        )
         total = q.count()
         records = (
             q.order_by(
@@ -131,11 +137,14 @@ class StampingTonnagePriceRepository:
         self,
         db: Session,
         location: str | None = None,
+        locations: list[str] | None = None,
         year: int | None = None,
         audit_status: str | None = None,
     ) -> AuditCountSummary:
         """按筛选条件汇总条数 / 待审 / 已审。"""
-        q = self._build_list_query(db, location=location, year=year, audit_status=audit_status)
+        q = self._build_list_query(
+            db, location=location, locations=locations, year=year, audit_status=audit_status
+        )
         row = q.with_entities(
             func.count(StampingTonnagePrice.id).label("total_count"),
             func.sum(case((StampingTonnagePrice.audit_status == AUDIT_PENDING, 1), else_=0)).label(
@@ -155,11 +164,14 @@ class StampingTonnagePriceRepository:
         self,
         db: Session,
         location: str | None = None,
+        locations: list[str] | None = None,
         year: int | None = None,
         audit_status: str | None = None,
     ) -> list[StampingTonnagePrice]:
         """按筛选条件导出全量记录（不分页）"""
-        q = self._build_list_query(db, location=location, year=year, audit_status=audit_status)
+        q = self._build_list_query(
+            db, location=location, locations=locations, year=year, audit_status=audit_status
+        )
         return q.order_by(
             StampingTonnagePrice.location,
             StampingTonnagePrice.year,

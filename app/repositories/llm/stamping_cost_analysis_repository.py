@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.common.part_number import escape_like_fragment
 from app.models.costing.stamping_part_cost import StampingPartCost
+from app.repositories.llm.location_in import location_in_clause
 from app.services.llm._money import ym_int
 
 
@@ -46,8 +47,9 @@ class StampingCostAnalysisRepository:
         ym_expr = StampingPartCost.year * 100 + StampingPartCost.month
 
         q = db.query(StampingPartCost).filter(ym_expr >= start, ym_expr <= end)
-        if location:
-            q = q.filter(StampingPartCost.location == location)
+        loc_filter = location_in_clause(db, StampingPartCost.location, location)
+        if loc_filter is not None:
+            q = q.filter(loc_filter)
         if vehicle_model:
             q = q.filter(StampingPartCost.vehicle_model == vehicle_model)
         if part_number:

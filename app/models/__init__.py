@@ -41,6 +41,7 @@ from app.models.costing import (
 )
 from app.models.file_trace import UploadFile
 from app.models.llm import LlmAnalysisReport
+from app.models.masterdata import Location, LocationAlias, VehicleModel
 from app.models.settings import (
     OperationLog,
     SystemConfig,
@@ -96,6 +97,9 @@ __all__ = [
     "CostingEngineRun",
     "CostingEngineRunStep",
     "LlmAnalysisReport",
+    "Location",
+    "LocationAlias",
+    "VehicleModel",
     "OperationLog",
     "StampingDieFee",
     "StampingDieFeeCalcLog",

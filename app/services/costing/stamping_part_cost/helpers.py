@@ -28,19 +28,6 @@ _DIGITS_TO_QUANT = {
 }
 
 
-def location_candidates(location: str) -> list[str]:
-    """兼容「青岛」与「青岛基地」。"""
-    loc = (location or "").strip()
-    if not loc:
-        return []
-    candidates = [loc]
-    if loc.endswith("基地"):
-        candidates.append(loc[:-2])
-    else:
-        candidates.append(f"{loc}基地")
-    return list(dict.fromkeys(candidates))
-
-
 def to_decimal(value: Any) -> Decimal | None:
     if value is None or value == "":
         return None

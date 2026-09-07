@@ -20,7 +20,7 @@ class BomPackagingTransportFeeCreate(BaseModel):
 
     location: str = Field(..., min_length=1, max_length=50, description="采购基地")
     year: int = Field(..., ge=2000, le=2100, description="定价年度")
-    vehicle_model: str = Field(..., min_length=1, max_length=50, description="项目/车型")
+    vehicle_model: str = Field(..., min_length=1, max_length=50, description="项目")
     part_number: str = Field(..., min_length=1, max_length=50, description="零件号")
     part_name: str | None = Field(None, max_length=200, description="产品名称")
     packaging_type: str | None = Field(None, max_length=50, description="包装类型")
@@ -130,7 +130,7 @@ class BomPackagingTransportFeeQuery(BaseModel):
 
     location: str | None = Field(None, description="采购基地")
     year: int | None = Field(None, description="定价年度")
-    vehicle_model: str | None = Field(None, description="项目/车型")
+    vehicle_model: str | None = Field(None, description="项目")
     audit_status: str | None = Field(None, description="审核状态")
     keyword: str | None = Field(None, max_length=100, description="零件号或名称模糊搜索")
     page: int = Field(1, ge=1, description="页码")
@@ -142,7 +142,7 @@ class BomPackagingTransportFeeScopeDTO(BaseModel):
 
     location: str = Field(..., min_length=1, max_length=50, description="采购基地")
     year: int = Field(..., ge=2000, le=2100, description="年度")
-    vehicle_model: str = Field(..., min_length=1, max_length=50, description="项目/车型")
+    vehicle_model: str = Field(..., min_length=1, max_length=50, description="项目")
 
 
 class BomPackagingTransportFeeBatchDeleteDTO(BomPackagingTransportFeeScopeDTO):

@@ -18,6 +18,8 @@ from app.config import settings
 from app.database import Base
 from app.exceptions.base import BusinessException, NotFoundException
 from app.models.file_trace.upload_file import UploadFile
+from app.models.masterdata.location import Location, LocationAlias
+from app.models.masterdata.vehicle_model import VehicleModel
 from app.models.stamping.die import StampingDiePart
 from app.models.stamping.gauge_fee import (
     DEFAULT_ALLOCATION_QTY,
@@ -34,7 +36,11 @@ from app.parsers.stamping.gauge_fee_parser import (
     HEADER_STATUS,
     parse_gauge_fee_excel,
 )
+from app.repositories.masterdata.location.location_repository import LocationRepository
+from app.schemas.dto.location_dto import LocationAliasInsert, LocationInsert
 from app.schemas.dto.stamping_gauge_fee_dto import StampingGaugeFeeQuery, StampingGaugeFeeUpdate
+from app.schemas.dto.vehicle_model_dto import VehicleModelCreateDTO
+from app.services.masterdata.vehicle_model import VehicleModelService
 from app.services.stamping.gauge_fee.export_service import StampingGaugeFeeExportService
 from app.services.stamping.gauge_fee.gauge_fee_service import StampingGaugeFeeService
 from app.services.stamping.gauge_fee.upload_service import StampingGaugeFeeUploadService
@@ -57,6 +63,9 @@ def memory_db(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Generator[Sess
     Base.metadata.create_all(
         bind=engine,
         tables=[
+            Location.__table__,
+            LocationAlias.__table__,
+            VehicleModel.__table__,
             StampingPart.__table__,
             StampingDiePart.__table__,
             StampingGaugeFee.__table__,
@@ -65,6 +74,30 @@ def memory_db(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Generator[Sess
     )
     session_factory = sessionmaker(bind=engine)
     session = session_factory()
+    repo = LocationRepository()
+    repo.create(
+        session,
+        LocationInsert(
+            location=LOCATION,
+            is_enabled=True,
+            sort_order=1,
+            created_by="system",
+            updated_by="system",
+        ),
+    )
+    repo.create_alias(session, LocationAliasInsert(alias=f"{LOCATION}基地", location=LOCATION))
+    session.flush()
+    VehicleModelService().create(
+        session,
+        VehicleModelCreateDTO(
+            location=LOCATION,
+            vehicle_model=VEHICLE,
+            effective_year=2020,
+            effective_month=1,
+        ),
+        current_user=SYSTEM_USER,
+    )
+    session.flush()
     try:
         yield session
     finally:

@@ -85,7 +85,7 @@ def render_engine_readiness_markdown(
             else f"**结论：尚有 {sum(1 for g in ready.gates.upload_or_config if not g.ok and g.code not in SOFT_UPLOAD_GATE_CODES)} 项硬门禁未过，暂不能启动。**"
         ),
         "",
-        "> 说明：材料清单（BOM）按「基地 + 车型 + 版本」维护，**可跨年复用**，不要求每年重传。",
+        "> 说明：材料清单（BOM）按「基地 + 项目 + 版本」维护，**可跨年复用**，不要求每年重传。",
         "",
     ]
 
@@ -203,7 +203,7 @@ class EngineReadinessRunner:
             },
             evidence={
                 "engine_ready": ready.model_dump(mode="json"),
-                "bom_note": "材料清单按基地+车型+版本维护，不按年失效；绿灯表示已有含 L0 的快照。",
+                "bom_note": "材料清单按基地+项目+版本维护，不按年失效；绿灯表示已有含 L0 的快照。",
             },
             analysis_version=ANALYSIS_VERSION,
         )

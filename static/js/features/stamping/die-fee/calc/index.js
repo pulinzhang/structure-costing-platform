@@ -68,7 +68,9 @@ function applyPermissionUi() {
 
 function bindEvents() {
     document.getElementById('calcResetBtn')?.addEventListener('click', () => resetFilters());
-    document.getElementById('calcYear')?.addEventListener('change', () => loadCalcReady());
+    document.getElementById('calcYear')?.addEventListener('change', () => {
+        loadFilters(true).then(() => loadCalcReady());
+    });
     document.getElementById('calcLocation')?.addEventListener('change', () => {
         loadFilters(true);
         loadCalcReady();
@@ -119,7 +121,12 @@ async function loadFilters(keepVehicle) {
     const location = document.getElementById('calcLocation')?.value || '';
     try {
         const res = await HttpClient.get(`${API_BASE}/filters`, {
-            params: location ? { location } : {},
+            params: {
+                ...(location ? { location } : {}),
+                ...(Number.isFinite(Number(document.getElementById('calcYear')?.value))
+                    ? { year: Number(document.getElementById('calcYear')?.value) }
+                    : {}),
+            },
         });
         const filters = res.data || {};
         fillSelect('calcLocation', filters.locations || []);

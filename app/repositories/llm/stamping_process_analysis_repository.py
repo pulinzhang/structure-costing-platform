@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.common.part_number import escape_like_fragment, pick_part_row
 from app.models.stamping.part import StampingPart, StampingProcess
+from app.repositories.llm.location_in import location_in_clause
 
 
 @dataclass(frozen=True, slots=True)
@@ -66,8 +67,9 @@ class StampingProcessAnalysisRepository:
             process_stats.c.max_tonnage.label("max_tonnage"),
         ).outerjoin(process_stats, StampingPart.id == process_stats.c.part_id)
 
-        if location:
-            q = q.filter(StampingPart.location == location)
+        loc_filter = location_in_clause(db, StampingPart.location, location)
+        if loc_filter is not None:
+            q = q.filter(loc_filter)
         if vehicle_model:
             q = q.filter(StampingPart.vehicle_model == vehicle_model)
         if version:

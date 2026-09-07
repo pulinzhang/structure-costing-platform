@@ -73,6 +73,9 @@ async def lifespan(app: FastAPI):
     db = session_factory()
     try:
         UserService().ensure_default_admin(db)
+        from app.services.masterdata.location import LocationService
+
+        LocationService().ensure_seed_if_empty(db)
     finally:
         db.close()
 
@@ -369,6 +372,10 @@ def create_app() -> FastAPI:
     from app.routers.dashboard.crud import router as dashboard_router
     from app.routers.file_trace.crud import router as file_trace_router
     from app.routers.llm.reports import router as llm_reports_router
+    from app.routers.masterdata.location.crud import router as masterdata_location_router
+    from app.routers.masterdata.vehicle_model.crud import (
+        router as masterdata_vehicle_model_router,
+    )
     from app.routers.settings.auth.crud import router as auth_router
     from app.routers.settings.logs.crud import router as operation_log_router
     from app.routers.settings.system.crud import router as settings_router
@@ -431,6 +438,8 @@ def create_app() -> FastAPI:
     app.include_router(bom_welding_fee_router, prefix="/api/bom/l0-welding-fees")
     app.include_router(costing_engine_router)
     app.include_router(file_trace_router)
+    app.include_router(masterdata_location_router)
+    app.include_router(masterdata_vehicle_model_router)
     app.include_router(settings_router)
     app.include_router(user_crud_router)
     app.include_router(permissions_router)

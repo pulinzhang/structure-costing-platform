@@ -56,10 +56,12 @@ async def upload_die_layout(
     location: str = Form(...),
     vehicle_model: str = Form(...),
     file: UploadFile = File(...),
+    db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_DIE_UPLOAD_UPLOAD)),
 ) -> ApiResponse[AsyncTaskAcceptedVO]:
     content = await file.read()
     accepted = StampingDieUploadService.start_upload(
+        db=db,
         file_content=content,
         filename=file.filename or "",
         location=location.strip(),
@@ -87,12 +89,16 @@ def get_die_upload_task_progress(
 @router.get("/filters", response_model=ApiResponse[StampingDieScopeFilterVO])
 def list_die_scope_filters(
     location: str | None = Query(None),
+    year: int | None = Query(None, ge=2000, le=2100),
+    month: int | None = Query(None, ge=1, le=12),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(
         require_any_perm(Perm.STAMPING_DIE_UPLOAD_VIEW, Perm.STAMPING_DIE_LIST_VIEW)
     ),
 ) -> ApiResponse[StampingDieScopeFilterVO]:
-    return ApiResponse.ok(data=_die_service.list_scope_filters(db, location))
+    return ApiResponse.ok(
+        data=_die_service.list_scope_filters(db, location, year=year, month=month)
+    )
 
 
 @router.get("/parts", response_model=ApiResponse[PageResult[StampingDiePartListVO]])

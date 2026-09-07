@@ -33,6 +33,7 @@ from app.services.async_task import (
 )
 from app.services.file_trace.path_utils import to_upload_relpath
 from app.services.file_trace.register import register_existing
+from app.services.masterdata.vehicle_model import VehicleModelService
 from app.services.stamping.die.alloc_preserver import (
     preserve_die_alloc,
     resolve_part_ratios,
@@ -83,12 +84,15 @@ class StampingDieUploadService:
         current_user: UserVO,
         progress_callback: ProgressCallback | None = None,
     ) -> DieUploadResult:
-        location = (location or "").strip()
-        vehicle_model = normalize_vehicle_model(vehicle_model) or ""
-        if not location:
-            raise BusinessException("请选择采购基地")
-        if not vehicle_model:
-            raise BusinessException("请填写项目")
+        clock = now()
+        location, selected = VehicleModelService().require_introducible(
+            self.db,
+            (location or "").strip(),
+            (vehicle_model or "").strip(),
+            clock.year,
+            clock.month,
+        )
+        vehicle_model = selected
 
         def report(progress: int, message: str) -> None:
             if progress_callback:
@@ -109,10 +113,7 @@ class StampingDieUploadService:
             raise BusinessException(
                 "无法从文件名识别项目，请确认文件名含「项目冲压模具布点工艺清单」"
             )
-        if parsed_vehicle != vehicle_model:
-            raise BusinessException(
-                f"文件项目为 {parsed_vehicle}，与填写的项目 {vehicle_model} 不一致"
-            )
+        VehicleModelService().assert_matches_selected(vehicle_model, parsed_vehicle)
         if not parsed.parts:
             raise BusinessException("未解析到零件数据")
         if not layout_has_die_mass(parsed.parts):
@@ -289,18 +290,21 @@ class StampingDieUploadService:
     def start_upload(
         cls,
         *,
+        db: Session,
         file_content: bytes,
         filename: str,
         location: str,
         vehicle_model: str,
         current_user: UserVO,
     ) -> AsyncTaskAcceptedVO:
-        location = (location or "").strip()
-        vehicle_model = normalize_vehicle_model((vehicle_model or "").strip()) or ""
-        if not location:
-            raise BusinessException("请选择采购基地")
-        if not vehicle_model:
-            raise BusinessException("请填写项目")
+        clock = now()
+        location, vehicle_model = VehicleModelService().require_introducible(
+            db,
+            (location or "").strip(),
+            (vehicle_model or "").strip(),
+            clock.year,
+            clock.month,
+        )
         if not filename:
             raise BusinessException("未提供文件名")
         ext = "." + filename.rsplit(".", 1)[-1].lower() if "." in filename else ""

@@ -41,6 +41,8 @@ from app.services.bom.procurement_object.generate_service import (
     BomProcurementObjectGenerateService,
 )
 from app.services.bom.procurement_object.mapping import to_object_vo
+from app.services.masterdata.location.location_service import LocationService
+from app.services.masterdata.vehicle_model import VehicleModelService
 
 
 class BomProcurementObjectService:
@@ -97,9 +99,29 @@ class BomProcurementObjectService:
         self, db: Session, query: BomProcurementObjectQuery
     ) -> tuple[list[BomProcurementObjectVO], int, ProcurementObjectListFilters]:
         skip = (query.page - 1) * query.size
+        location_service = LocationService()
+        locations: list[str] | None = None
+        if query.location:
+            locations = location_service.expand_for_query(db, query.location)
+            if not locations:
+                _unused, _models, versions = self.repository.get_filter_options(db)
+                filters: ProcurementObjectListFilters = {
+                    "locations": location_service.list_registered(db),
+                    "vehicle_models": VehicleModelService().list_filter_codes(db, query.location),
+                    "bom_versions": versions,
+                    "summary": {
+                        "total_count": 0,
+                        "pending_count": 0,
+                        "approved_count": 0,
+                        "object_count": 0,
+                        "other_leaf_count": 0,
+                        "anomaly_count": 0,
+                    },
+                }
+                return [], 0, filters
         rows, total = self.repository.paginate_objects(
             db,
-            location=query.location,
+            locations=locations,
             vehicle_model=query.vehicle_model,
             bom_version=query.bom_version,
             section=query.section,
@@ -112,10 +134,10 @@ class BomProcurementObjectService:
             skip=skip,
             limit=query.size,
         )
-        locations, models, versions = self.repository.get_filter_options(db)
+        _unused, _models, versions = self.repository.get_filter_options(db)
         summary = self.repository.summarize_objects(
             db,
-            location=query.location,
+            locations=locations,
             vehicle_model=query.vehicle_model,
             bom_version=query.bom_version,
             section=query.section,
@@ -126,9 +148,9 @@ class BomProcurementObjectService:
             l0_part_number=query.l0_part_number,
             excel_row=query.excel_row,
         )
-        filters: ProcurementObjectListFilters = {
-            "locations": locations,
-            "vehicle_models": models,
+        filters = {
+            "locations": location_service.list_registered(db),
+            "vehicle_models": VehicleModelService().list_filter_codes(db, query.location),
             "bom_versions": versions,
             "summary": summary,
         }

@@ -2,7 +2,7 @@
 
 from decimal import Decimal
 
-from sqlalchemy import Index, Integer, Numeric, String, UniqueConstraint
+from sqlalchemy import ForeignKeyConstraint, Index, Integer, Numeric, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -44,4 +44,11 @@ class StampingDieUnitPrice(AuditUserMixin, Base):
         ),
         Index("ix_die_unit_price_vehicle", "vehicle_model"),
         Index("ix_die_unit_price_status", "status"),
+        ForeignKeyConstraint(
+            ["location", "vehicle_model"],
+            ["vehicle_models.location", "vehicle_models.vehicle_model"],
+            ondelete="RESTRICT",
+            onupdate="RESTRICT",
+            name="fk_stamping_die_unit_prices_vehicle_models",
+        ),
     )

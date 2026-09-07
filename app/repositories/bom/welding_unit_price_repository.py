@@ -86,11 +86,14 @@ class BomWeldingUnitPriceRepository:
         self,
         db: Session,
         location: str | None = None,
+        locations: list[str] | None = None,
         year: int | None = None,
         audit_status: str | None = None,
     ) -> Query[BomWeldingUnitPrice]:
         q = db.query(BomWeldingUnitPrice)
-        if location is not None:
+        if locations is not None:
+            q = q.filter(BomWeldingUnitPrice.location.in_(locations))
+        elif location is not None:
             q = q.filter(BomWeldingUnitPrice.location == location)
         if year is not None:
             q = q.filter(BomWeldingUnitPrice.year == year)
@@ -102,12 +105,15 @@ class BomWeldingUnitPriceRepository:
         self,
         db: Session,
         location: str | None = None,
+        locations: list[str] | None = None,
         year: int | None = None,
         audit_status: str | None = None,
         skip: int = 0,
         limit: int = 100,
     ) -> tuple[list[BomWeldingUnitPrice], int]:
-        q = self._build_list_query(db, location=location, year=year, audit_status=audit_status)
+        q = self._build_list_query(
+            db, location=location, locations=locations, year=year, audit_status=audit_status
+        )
         total = q.count()
         records = (
             q.order_by(
@@ -125,10 +131,13 @@ class BomWeldingUnitPriceRepository:
         self,
         db: Session,
         location: str | None = None,
+        locations: list[str] | None = None,
         year: int | None = None,
         audit_status: str | None = None,
     ) -> AuditCountSummary:
-        q = self._build_list_query(db, location=location, year=year, audit_status=audit_status)
+        q = self._build_list_query(
+            db, location=location, locations=locations, year=year, audit_status=audit_status
+        )
         row = q.with_entities(
             func.count(BomWeldingUnitPrice.id).label("total_count"),
             func.sum(case((BomWeldingUnitPrice.audit_status == AUDIT_PENDING, 1), else_=0)).label(
@@ -148,10 +157,13 @@ class BomWeldingUnitPriceRepository:
         self,
         db: Session,
         location: str | None = None,
+        locations: list[str] | None = None,
         year: int | None = None,
         audit_status: str | None = None,
     ) -> list[BomWeldingUnitPrice]:
-        q = self._build_list_query(db, location=location, year=year, audit_status=audit_status)
+        q = self._build_list_query(
+            db, location=location, locations=locations, year=year, audit_status=audit_status
+        )
         return q.order_by(
             BomWeldingUnitPrice.location,
             BomWeldingUnitPrice.year,

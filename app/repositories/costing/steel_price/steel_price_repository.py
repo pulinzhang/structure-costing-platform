@@ -95,6 +95,7 @@ class SteelPriceRepository:
         year: int | None = None,
         month: int | None = None,
         location: str | None = None,
+        locations: list[str] | None = None,
         category_name: str | None = None,
         grade: str | None = None,
         steel_mill: str | None = None,
@@ -105,7 +106,9 @@ class SteelPriceRepository:
             query = query.filter(SteelPrice.year == year)
         if month is not None:
             query = query.filter(SteelPrice.month == month)
-        if location:
+        if locations is not None:
+            query = query.filter(SteelPrice.location.in_(locations))
+        elif location:
             query = query.filter(SteelPrice.location == location)
         if category_name:
             query = query.filter(SteelPrice.category_name == category_name)
@@ -124,6 +127,7 @@ class SteelPriceRepository:
         year: int | None = None,
         month: int | None = None,
         location: str | None = None,
+        locations: list[str] | None = None,
         category_name: str | None = None,
         grade: str | None = None,
         steel_mill: str | None = None,
@@ -136,6 +140,7 @@ class SteelPriceRepository:
             year=year,
             month=month,
             location=location,
+            locations=locations,
             category_name=category_name,
             grade=grade,
             steel_mill=steel_mill,
@@ -166,6 +171,7 @@ class SteelPriceRepository:
         year: int | None = None,
         month: int | None = None,
         location: str | None = None,
+        locations: list[str] | None = None,
         category_name: str | None = None,
         grade: str | None = None,
         steel_mill: str | None = None,
@@ -177,6 +183,7 @@ class SteelPriceRepository:
             year=year,
             month=month,
             location=location,
+            locations=locations,
             category_name=category_name,
             grade=grade,
             steel_mill=steel_mill,
@@ -205,6 +212,7 @@ class SteelPriceRepository:
         year: int | None = None,
         month: int | None = None,
         location: str | None = None,
+        locations: list[str] | None = None,
         category_name: str | None = None,
         grade: str | None = None,
         steel_mill: str | None = None,
@@ -216,6 +224,7 @@ class SteelPriceRepository:
             year=year,
             month=month,
             location=location,
+            locations=locations,
             category_name=category_name,
             grade=grade,
             steel_mill=steel_mill,

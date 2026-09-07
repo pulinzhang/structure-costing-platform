@@ -30,7 +30,7 @@ def get_all_stats(
     year: int | None = Query(None, ge=2000, le=2100, description="核价年度"),
     month: int | None = Query(None, ge=1, le=12, description="核价月份"),
     location: str | None = Query(None, description="生产基地（空=全部）"),
-    vehicle_model: str | None = Query(None, description="配套车型（空=全部）"),
+    vehicle_model: str | None = Query(None, description="项目（空=全部）"),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.DASHBOARD_VIEW)),
 ) -> ApiResponse[DashboardStatsVO]:
@@ -55,7 +55,7 @@ def get_steel_price_calc_stats(
     year: int = Query(..., ge=2000, le=2100, description="核价年度"),
     month: int = Query(..., ge=1, le=12, description="核价月份"),
     location: str | None = Query(None, description="生产基地"),
-    vehicle_model: str | None = Query(None, description="配套车型（空=该基地全部）"),
+    vehicle_model: str | None = Query(None, description="项目（空=该基地全部）"),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STEEL_PRICE_CALC_VIEW)),
 ) -> ApiResponse[SteelPriceCalcStatsVO]:

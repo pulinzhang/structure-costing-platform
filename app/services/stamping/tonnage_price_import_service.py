@@ -25,6 +25,7 @@ from app.schemas.vo.stamping_tonnage_price_vo import StampingTonnagePriceImportR
 from app.schemas.vo.user_vo import UserVO
 from app.services.file_trace.path_utils import to_upload_relpath
 from app.services.file_trace.register import register_existing
+from app.services.masterdata.location.location_service import LocationService
 from app.utils.stamping_tonnage_price_archive import save_tonnage_price_upload
 
 logger = logging.getLogger("service.stamping_tonnage_price_import")
@@ -102,9 +103,7 @@ class StampingTonnagePriceImportService:
         year: int,
         current_user: UserVO,
     ) -> StampingTonnagePriceImportResultVO:
-        location = (location or "").strip()
-        if not location:
-            raise BusinessException("请选择采购基地")
+        location = LocationService().require_enabled(db, (location or "").strip())
         if year < 2000 or year > 2100:
             raise BusinessException("年度不正确")
 

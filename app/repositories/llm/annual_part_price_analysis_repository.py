@@ -9,15 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.common.part_number import escape_like_fragment, pick_part_row
 from app.models.bom.annual_part_price import BomAnnualPartPrice
-
-
-def _normalize_location(location: str | None) -> str | None:
-    if not location:
-        return None
-    text = location.strip()
-    if text.endswith("基地"):
-        return text[:-2]
-    return text
+from app.repositories.llm.location_in import location_in_clause
 
 
 @dataclass(frozen=True, slots=True)
@@ -44,9 +36,9 @@ class AnnualPartPriceAnalysisRepository:
         limit: int = 5000,
     ) -> list[AnnualPartPriceRow]:
         q = db.query(BomAnnualPartPrice)
-        normalized = _normalize_location(location)
-        if normalized:
-            q = q.filter(BomAnnualPartPrice.location == normalized)
+        loc_filter = location_in_clause(db, BomAnnualPartPrice.location, location)
+        if loc_filter is not None:
+            q = q.filter(loc_filter)
         if start_year is not None:
             q = q.filter(BomAnnualPartPrice.year >= start_year)
         if end_year is not None:

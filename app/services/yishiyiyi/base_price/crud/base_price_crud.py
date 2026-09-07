@@ -21,6 +21,7 @@ from app.schemas.dto.steel_base_price_dto import (
 )
 from app.schemas.vo.steel_base_price_vo import SteelBasePriceResponse
 from app.schemas.vo.user_vo import UserVO
+from app.services.masterdata.location.location_service import LocationService
 
 logger = logging.getLogger("service.steel_base_price.crud")
 
@@ -32,7 +33,8 @@ class SteelBasePriceCrudService:
         self.repository = SteelBasePriceRepository()
 
     def get_filter_options(self, db: Session) -> FilterOptions:
-        return self.repository.get_filter_options(db)
+        options = self.repository.get_filter_options(db)
+        return options.model_copy(update={"locations": LocationService().list_registered(db)})
 
     def paginate(
         self,
@@ -40,10 +42,16 @@ class SteelBasePriceCrudService:
         query: SteelBasePriceQuery,
     ) -> tuple[list[SteelBasePriceResponse], int]:
         skip = (query.page - 1) * query.size
+        location_raw = query.location.strip() if query.location else None
+        locations: list[str] | None = None
+        if location_raw:
+            locations = LocationService().expand_for_query(db, location_raw)
+            if not locations:
+                return [], 0
         base_filter = BasePriceFilter(
             year=query.year,
             month=query.month,
-            location=query.location.strip() if query.location else None,
+            locations=locations,
             steel_mill=query.steel_mill.strip() if query.steel_mill else None,
             category_name=query.category_name.strip() if query.category_name else None,
             grade=query.grade.strip() if query.grade else None,
@@ -67,6 +75,9 @@ class SteelBasePriceCrudService:
         current_user: UserVO,
     ) -> SteelBasePriceResponse:
         try:
+            canonical = LocationService().require_enabled(db, body.location)
+            if canonical != body.location:
+                body = body.model_copy(update={"location": canonical})
             audit = audit_create(current_user)
             record = self.repository.create(
                 db,

@@ -22,6 +22,7 @@ from app.services.bom.bom_service import BomService
 from app.services.bom.bom_template_builder import build_bom_material_template
 from app.services.bom.subassembly_consistency import validate_subassembly_consistency
 from app.services.file_trace.register import register_existing
+from app.services.masterdata.vehicle_model import VehicleModelService
 
 logger = logging.getLogger("service.bom.upload")
 
@@ -48,11 +49,17 @@ class BomUploadService:
         file_content: bytes,
         filename: str,
         location: str,
+        vehicle_model: str,
         current_user: UserVO,
     ) -> BomImportResultVO:
-        location = (location or "").strip()
-        if not location:
-            raise BusinessException("请选择采购基地")
+        clock = now()
+        location, selected = VehicleModelService().require_introducible(
+            db,
+            (location or "").strip(),
+            (vehicle_model or "").strip(),
+            clock.year,
+            clock.month,
+        )
 
         original_name = Path(filename).name
         ext = Path(original_name).suffix.lower()
@@ -74,8 +81,9 @@ class BomUploadService:
             vehicle_model=meta.vehicle_model,
             bom_version=meta.bom_version,
         )
+        VehicleModelService().assert_matches_selected(selected, scope.vehicle_model)
         location = scope.location
-        vehicle_model = scope.vehicle_model
+        vehicle_model = selected
         bom_version = scope.bom_version
         file_hash = hashlib.sha256(file_content).hexdigest()
         relative_path = self._save_excel_file(

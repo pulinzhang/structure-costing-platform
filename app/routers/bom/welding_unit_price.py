@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 
 from app.common.permissions.codes import Perm
 from app.database import get_db
-from app.deps.permissions import require_perm
+from app.deps.permissions import require_any_perm, require_perm
 from app.schemas.common.page_result import PageResult
 from app.schemas.dto.bom_welding_unit_price_dto import (
     BomWeldingUnitPriceBatchApproveDTO,
@@ -98,7 +98,12 @@ def paginate(
 @router.get("/filters/locations", response_model=ApiResponse[list[str]])
 def get_locations(
     db: Session = Depends(get_db),
-    current_user: UserVO = Depends(require_perm(Perm.BOM_WELDING_UNIT_PRICE_VIEW)),
+    current_user: UserVO = Depends(
+        require_any_perm(
+            Perm.BOM_WELDING_UNIT_PRICE_VIEW,
+            Perm.BOM_WELDING_UNIT_PRICE_UPLOAD_VIEW,
+        )
+    ),
 ) -> ApiResponse[list[str]]:
     """获取所有基地列表"""
     data = _welding_unit_price_service.get_locations(db)

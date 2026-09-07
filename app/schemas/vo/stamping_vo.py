@@ -195,7 +195,7 @@ class StampingPartQuery(BaseModel):
     """冲压零件查询参数"""
 
     location: str | None = Field(None, description="采购基地")
-    vehicle_model: str | None = Field(None, description="车型")
+    vehicle_model: str | None = Field(None, description="项目")
     version: str | None = Field(None, description="版本")
     part_number: str | None = Field(None, description="零件号")
     part_name: str | None = Field(None, description="零件名称")
@@ -264,8 +264,12 @@ class StampingCascadeFilterQuery(BaseModel):
 
     location: str | None = Field(None, description="采购基地")
     stamping_supplier: str | None = Field(None, description="冲压工厂")
-    vehicle_model: str | None = Field(None, description="配套车型")
+    vehicle_model: str | None = Field(None, description="项目")
     version: str | None = Field(None, description="版本")
+    year: int | None = Field(
+        None, ge=2000, le=2100, description="年度；传入后项目下拉改问项目主数据"
+    )
+    month: int | None = Field(None, ge=1, le=12, description="月份；与年度一起时下拉为该月可引入")
 
 
 class StampingCascadeFilterOptionsVO(BaseModel):
@@ -273,7 +277,7 @@ class StampingCascadeFilterOptionsVO(BaseModel):
 
     locations: list[str] = Field(default_factory=list, description="基地")
     stamping_suppliers: list[str] = Field(default_factory=list, description="冲压工厂")
-    vehicle_models: list[str] = Field(default_factory=list, description="配套车型")
+    vehicle_models: list[str] = Field(default_factory=list, description="项目")
     versions: list[str] = Field(default_factory=list, description="版本")
 
 
@@ -320,7 +324,7 @@ class StampingMaterialQuery(BaseModel):
 
     location: str | None = Field(None, description="采购基地")
     stamping_supplier: str | None = Field(None, description="冲压供应商")
-    vehicle_model: str | None = Field(None, description="车型")
+    vehicle_model: str | None = Field(None, description="项目")
     version: str | None = Field(None, description="版本")
     page: int = Field(1, ge=1, description="页码")
     size: int = Field(50, ge=1, le=500, description="每页条数")

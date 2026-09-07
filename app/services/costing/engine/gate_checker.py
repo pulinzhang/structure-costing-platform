@@ -18,7 +18,6 @@ from app.schemas.vo.costing_engine_vo import CostingEngineGateItemVO
 from app.services.costing.engine.gate_navigate import build_navigate
 from app.services.costing.engine.scope_discovery import DiscoveryResult
 from app.services.costing.stamping_part_cost.calc.resolvers import PriceResolver
-from app.services.costing.stamping_part_cost.helpers import location_candidates
 from app.services.costing.steel_price.calc.models import SteelPriceCalcRequest
 from app.services.costing.steel_price.calc.steps import (
     AdjustmentApplier,
@@ -52,10 +51,11 @@ class GateChecker:
         location = discovery.location
         year = discovery.year
         month = discovery.month
-        aliases = discovery.location_aliases or location_candidates(location)
+        aliases = discovery.location_aliases
 
         items = [
-            self._check_stamping_process(discovery, location, year, month),
+            self._check_period_projects(discovery, location, year, month),
+            self._check_stamping_process(db, discovery, location, year, month),
             self._check_tonnage_price(db, aliases, location, year, month),
             self._check_welding_unit_price(db, aliases, location, year, month),
             self._check_bom_snapshot(discovery, location, year, month),
@@ -92,7 +92,7 @@ class GateChecker:
             navigate=navigate,
         )
 
-    def _check_stamping_process(
+    def _check_period_projects(
         self,
         discovery: DiscoveryResult,
         location: str,
@@ -101,10 +101,63 @@ class GateChecker:
     ) -> CostingEngineGateItemVO:
         if not discovery.vehicle_models:
             return self._item(
+                code="vehicle_model",
+                ok=False,
+                missing=["本期没有可引入项目"],
+                message="没有本期可引入项目，请到项目一览表手工增加或调整生效失效（#/vehicle-model-list）",
+                location=location,
+                year=year,
+                month=month,
+            )
+        return self._item(
+            code="vehicle_model",
+            ok=True,
+            missing=[],
+            message=f"本期项目 {len(discovery.vehicle_models)} 个",
+            location=location,
+            year=year,
+            month=month,
+        )
+
+    def _check_stamping_process(
+        self,
+        db: Session,
+        discovery: DiscoveryResult,
+        location: str,
+        year: int,
+        month: int,
+    ) -> CostingEngineGateItemVO:
+        if not discovery.vehicle_models:
+            return self._item(
+                code="stamping_process",
+                ok=True,
+                missing=[],
+                message="无本期项目，未展开工艺检查",
+                location=location,
+                year=year,
+                month=month,
+            )
+        aliases = discovery.location_aliases
+        options = (
+            self.part_repo.get_cascade_filter_options(db, locations=aliases)
+            if aliases
+            else {
+                "locations": [],
+                "stamping_suppliers": [],
+                "vehicle_models": [],
+                "versions": [],
+            }
+        )
+        part_models = {str(name).strip() for name in (options.get("vehicle_models") or []) if name}
+        missing = [name for name in discovery.vehicle_models if name not in part_models]
+        if missing:
+            preview = "、".join(missing[:8])
+            extra = f" 等 {len(missing)} 个" if len(missing) > 8 else ""
+            return self._item(
                 code="stamping_process",
                 ok=False,
-                missing=["未发现该基地下冲压工艺零件"],
-                message="缺少冲压工艺零件/工序数据，无法展开车型计划",
+                missing=missing[:20],
+                message=f"缺少冲压工艺零件/工序数据：{preview}{extra}",
                 location=location,
                 year=year,
                 month=month,
@@ -113,7 +166,7 @@ class GateChecker:
             code="stamping_process",
             ok=True,
             missing=[],
-            message=f"已发现 {len(discovery.vehicle_models)} 个配套车型",
+            message=f"已发现 {len(discovery.vehicle_models)} 个项目",
             location=location,
             year=year,
             month=month,

@@ -109,13 +109,16 @@ class BomPackagingTransportFeeRepository:
         self,
         db: Session,
         location: str | None = None,
+        locations: list[str] | None = None,
         year: int | None = None,
         vehicle_model: str | None = None,
         audit_status: str | None = None,
         keyword: str | None = None,
     ) -> Query[BomPackagingTransportFee]:
         q = db.query(BomPackagingTransportFee)
-        if location is not None:
+        if locations is not None:
+            q = q.filter(BomPackagingTransportFee.location.in_(locations))
+        elif location is not None:
             q = q.filter(BomPackagingTransportFee.location == location)
         if year is not None:
             q = q.filter(BomPackagingTransportFee.year == year)
@@ -137,6 +140,7 @@ class BomPackagingTransportFeeRepository:
         self,
         db: Session,
         location: str | None = None,
+        locations: list[str] | None = None,
         year: int | None = None,
         vehicle_model: str | None = None,
         audit_status: str | None = None,
@@ -147,6 +151,7 @@ class BomPackagingTransportFeeRepository:
         q = self._build_list_query(
             db,
             location=location,
+            locations=locations,
             year=year,
             vehicle_model=vehicle_model,
             audit_status=audit_status,
@@ -170,6 +175,7 @@ class BomPackagingTransportFeeRepository:
         self,
         db: Session,
         location: str | None = None,
+        locations: list[str] | None = None,
         year: int | None = None,
         vehicle_model: str | None = None,
         audit_status: str | None = None,
@@ -178,6 +184,7 @@ class BomPackagingTransportFeeRepository:
         q = self._build_list_query(
             db,
             location=location,
+            locations=locations,
             year=year,
             vehicle_model=vehicle_model,
             audit_status=audit_status,
@@ -208,6 +215,7 @@ class BomPackagingTransportFeeRepository:
         self,
         db: Session,
         location: str | None = None,
+        locations: list[str] | None = None,
         year: int | None = None,
         vehicle_model: str | None = None,
         audit_status: str | None = None,
@@ -216,6 +224,7 @@ class BomPackagingTransportFeeRepository:
         q = self._build_list_query(
             db,
             location=location,
+            locations=locations,
             year=year,
             vehicle_model=vehicle_model,
             audit_status=audit_status,
@@ -242,15 +251,6 @@ class BomPackagingTransportFeeRepository:
             db.query(BomPackagingTransportFee.year)
             .distinct()
             .order_by(BomPackagingTransportFee.year.desc())
-            .all()
-        )
-        return [r[0] for r in results]
-
-    def get_distinct_vehicle_models(self, db: Session) -> list[str]:
-        results = (
-            db.query(BomPackagingTransportFee.vehicle_model)
-            .distinct()
-            .order_by(BomPackagingTransportFee.vehicle_model)
             .all()
         )
         return [r[0] for r in results]

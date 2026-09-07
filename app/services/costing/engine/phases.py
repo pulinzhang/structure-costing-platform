@@ -219,7 +219,7 @@ def execute_assembly(
         )
         skip_reason = None
         if scope.vehicle_model in carry.failed_vehicles:
-            skip_reason = "该车型加工费或零件价未完成，跳过总成核价"
+            skip_reason = "该项目加工费或零件价未完成，跳过总成核价"
         elif scope_key in carry.failed_l0:
             skip_reason = "年度焊接拆解/焊接费补算失败，跳过总成核价"
         if skip_reason:

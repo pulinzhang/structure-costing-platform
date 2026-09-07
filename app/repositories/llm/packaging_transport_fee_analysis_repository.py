@@ -9,15 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.common.part_number import escape_like_fragment, pick_part_row
 from app.models.bom.packaging_transport_fee import BomPackagingTransportFee
-
-
-def _normalize_location(location: str | None) -> str | None:
-    if not location:
-        return None
-    text = location.strip()
-    if text.endswith("基地"):
-        return text[:-2]
-    return text
+from app.repositories.llm.location_in import location_in_clause
 
 
 @dataclass(frozen=True, slots=True)
@@ -46,9 +38,9 @@ class PackagingTransportFeeAnalysisRepository:
         limit: int = 5000,
     ) -> list[PackagingTransportFeeRow]:
         q = db.query(BomPackagingTransportFee)
-        normalized = _normalize_location(location)
-        if normalized:
-            q = q.filter(BomPackagingTransportFee.location == normalized)
+        loc_filter = location_in_clause(db, BomPackagingTransportFee.location, location)
+        if loc_filter is not None:
+            q = q.filter(loc_filter)
         if vehicle_model:
             q = q.filter(BomPackagingTransportFee.vehicle_model == vehicle_model)
         if start_year is not None:

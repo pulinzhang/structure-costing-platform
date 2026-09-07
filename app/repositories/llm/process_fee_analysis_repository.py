@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.common.part_number import escape_like_fragment, pick_part_row
 from app.models.stamping import StampingProcessFee
+from app.repositories.llm.location_in import location_in_clause
 
 
 @dataclass(frozen=True, slots=True)
@@ -42,8 +43,9 @@ class ProcessFeeAnalysisRepository:
         limit: int = 5000,
     ) -> list[ProcessFeeRow]:
         q = db.query(StampingProcessFee)
-        if location:
-            q = q.filter(StampingProcessFee.location == location)
+        loc_filter = location_in_clause(db, StampingProcessFee.location, location)
+        if loc_filter is not None:
+            q = q.filter(loc_filter)
         if vehicle_model:
             q = q.filter(StampingProcessFee.vehicle_model == vehicle_model)
         if version:

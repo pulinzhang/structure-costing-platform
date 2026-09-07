@@ -8,15 +8,7 @@ from decimal import Decimal
 from sqlalchemy.orm import Session
 
 from app.models.bom.welding_unit_price import BomWeldingUnitPrice
-
-
-def _normalize_location(location: str | None) -> str | None:
-    if not location:
-        return None
-    text = location.strip()
-    if text.endswith("基地"):
-        return text[:-2]
-    return text
+from app.repositories.llm.location_in import location_in_clause
 
 
 @dataclass(frozen=True, slots=True)
@@ -41,9 +33,9 @@ class WeldingUnitPriceAnalysisRepository:
         limit: int = 5000,
     ) -> list[WeldingUnitPriceRow]:
         q = db.query(BomWeldingUnitPrice)
-        normalized = _normalize_location(location)
-        if normalized:
-            q = q.filter(BomWeldingUnitPrice.location == normalized)
+        loc_filter = location_in_clause(db, BomWeldingUnitPrice.location, location)
+        if loc_filter is not None:
+            q = q.filter(loc_filter)
         if start_year is not None:
             q = q.filter(BomWeldingUnitPrice.year >= start_year)
         if end_year is not None:

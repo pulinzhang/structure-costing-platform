@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy import (
     Boolean,
     ForeignKey,
+    ForeignKeyConstraint,
     Index,
     Integer,
     Numeric,
@@ -32,7 +33,7 @@ class StampingPart(AuditUserMixin, Base):
     冲压件主表 - 存储零件基本信息。
 
     唯一键：location + stamping_supplier + vehicle_model + version + part_number。
-    车型/版本直接存于此表，不单独建车型表。
+    (location, vehicle_model) 复合外键指向 vehicle_models；版本仍存本表。
 
     拼焊总成：is_tailor_welded=True，各片子片见 StampingTailorWeldBlank；
     工序仍挂本表（StampingProcess），核价时按子片算后汇总到父。
@@ -49,8 +50,7 @@ class StampingPart(AuditUserMixin, Base):
     stamping_supplier: Mapped[str | None] = mapped_column(
         String(50), nullable=True, comment="冲压供应商，例：安庆常庆汽车部件有限公司"
     )
-    # 车型信息（直接存储，不关联车型表）
-    vehicle_model: Mapped[str] = mapped_column(String(50), nullable=False, comment="车型")
+    vehicle_model: Mapped[str] = mapped_column(String(50), nullable=False, comment="项目代号")
     version: Mapped[str] = mapped_column(String(20), nullable=False, comment="版本")
 
     # 序号和基本信息
@@ -187,7 +187,6 @@ class StampingPart(AuditUserMixin, Base):
         Index("ix_part_is_offal_nested", "is_offal_nested"),
         Index("ix_part_is_scrap_byproduct", "is_scrap_byproduct"),
         Index("ix_part_has_swing_shear", "has_swing_shear"),
-        # 唯一键：基地 + 供应商 + 车型 + 版本 + 零件号
         UniqueConstraint(
             "location",
             "stamping_supplier",
@@ -195,6 +194,13 @@ class StampingPart(AuditUserMixin, Base):
             "version",
             "part_number",
             name="uix_part_unique_key",
+        ),
+        ForeignKeyConstraint(
+            ["location", "vehicle_model"],
+            ["vehicle_models.location", "vehicle_models.vehicle_model"],
+            ondelete="RESTRICT",
+            onupdate="RESTRICT",
+            name="fk_stamping_parts_vehicle_models",
         ),
     )
 

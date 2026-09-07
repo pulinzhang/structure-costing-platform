@@ -1,9 +1,12 @@
 # 采购对象清单 — 设计说明
 
-> **状态：已落地。** 口径与代码以本切片为准；对人展示文案见 `labels.py` / `labels.js`。  
+> **状态：分类 / 生成 / 确认 / 审核已落地。** 口径与代码以本切片为准；对人展示文案见 `labels.py` / `labels.js`。  
+> **主数据对齐（未做完）：** 基地筛已接 `LocationService`；生成查找 snapshot、项目筛、代号大写见 §13。指定合同对方见独立设计。  
 > 切片：**`bom`**。生成时只读 `bom_snapshots` / `bom_nodes`，写入本切片采购对象表与生成日志。  
+> 界面：**项目**。库字段：`vehicle_model`。  
+> 基地：[location-design.md](../masterdata/location-design.md)。项目：[vehicle-model-design.md](../masterdata/vehicle-model-design.md)。  
 > 样本：`excel_sample/T13J项目车身件材料清单 (1).xlsx`（T13J · D/09）。  
-> 硬约束：分层与切片见 [architecture.md](../architecture.md)。
+> 硬约束：分层与切片见 [architecture.md](../architecture.md)；引用保护见宪法 **§4.3**。
 
 **对人展示 vs 内部码。** 页面、生成摘要、Excel 单元格用中文（退化供货件、分总成、冲压件、标准件/胶等）。库字段、API、分类函数仍用 `l0_degenerate` / `other_leaf` 等码。Excel **工作表名**不能含 `/`，标准件分区表名用「标准件及胶等」。
 
@@ -14,6 +17,16 @@
 **清单定集合。** 一版材料清单对应一份 **采购对象清单**：按树结构列入退化供货件、分总成、冲压件，检测后落库，供采购核对并确认外发/自制。
 
 「生成」是动作（从树上把该列入的节点写成清单）。本文回答 **谁是采购对象**。指定合同对方见 [bom-procurement-object-supplier-design.md](bom-procurement-object-supplier-design.md)；按月应成本签合同见 [procurement-contract-report-design.md](../costing/procurement-contract-report-design.md)。列入规则仍不管价。
+
+```
+基地 ★
+  └── 项目
+        └── bom_snapshots     ← 项目直接下一跳（复合 FK）
+              └── 本文清单头   ← 挂 snapshot CASCADE；不是项目下一跳
+                    └── 清单行
+```
+
+生成不是传 BOM，也不立项。没有材料清单：停止，去焊接工程上传。没有基地 / 项目：去主数据页，本切片不代建。
 
 ---
 
@@ -101,7 +114,7 @@ L1 叶子必须把 **板料** 和 **标准件 / 胶 / 塑料** 分开，否则�
 
 约定词（仅打标，可按项目补）：`凸焊总成供货`、`总成供货`、`冲压单件供货`、`单件供货`、`黑漆件供货`、`电泳`。
 
-本文不解析、不猜测二级供应商名称。行上 **禁止** 存单价、一口价。合同对方由采购手填，见指定供应商设计，**禁止**用 `material_mill` 或年度价厂名顶替。
+本文不解析、不猜测二级供应商名称。行上 **禁止** 存单价、一口价。合同对方由采购 **点选** 供应商主数据，见指定供应商设计，**禁止**用 `material_mill` 或年度价厂名顶替，禁止自由填厂名。
 
 ---
 
@@ -209,7 +222,7 @@ bom_procurement_object_generate_logs  一次「开始生成」一条终态日志
 | 字段 | 业务含义 |
 |------|----------|
 | `snapshot_id` | 哪一版材料清单 |
-| `location` / `vehicle_model` / `bom_version` | 从 snapshot 冗余，列表筛选不必总 join |
+| `location` / `vehicle_model` / `bom_version` | 从 snapshot 冗余，列表筛选不必总 join。界面「项目」= `vehicle_model`。新生成抄 snapshot；历史允许别名/小写（§13） |
 | `source_filename` | 该版材料清单导入时的 **原始 Excel 文件名**（`bom_snapshots.source_filename`），页头核对用 |
 | `qa_passed` | 7.1–7.3 全过：这份清单可以给采购用 |
 | `qa_error_text` | 未通过时的人读原因；通过可空 |
@@ -250,7 +263,7 @@ bom_procurement_object_generate_logs  一次「开始生成」一条终态日志
 
 ### 8.4 生成（覆盖写）
 
-入口：选定 **基地 + 车型 + BOM 版本**（服务层解析当前 `snapshot`），点 **生成**（对齐焊接工艺拆解，不是上传 Excel）。口语里可以说「把采购对象从树上生成出来」，界面和表名不要写「抽取」。
+入口：选定 **基地 + 项目 + BOM 版本**（服务层解析当前 `snapshot`），点 **生成**（对齐焊接工艺拆解，不是上传 Excel）。口语里可以说「把采购对象从树上生成出来」，界面和表名不要写「抽取」。写门禁见 §13，**不要**把生成写成「传 BOM」那套墙钟 `require_introducible`。
 
 1. 读该 snapshot 全部 `bom_nodes`，纯函数分类 + 检测。  
 2. **一个事务**：删该 snapshot 旧清单头（级联删行）→ 写新头 + 新行。  
@@ -281,7 +294,7 @@ bom_procurement_object_generate_logs  一次「开始生成」一条终态日志
 
 | 项 | 口径 |
 |----|------|
-| 范围 | 一份清单 = 基地 + 车型 + BOM 版本（对应一个 snapshot）。只处理该清单下 `section=object` |
+| 范围 | 一份清单 = 基地 + 项目 + BOM 版本（对应一个 snapshot）。只处理该清单下 `section=object` |
 | 入口 | 列表工具栏按钮 + 抽屉；**审核意见 / 反审核原因必填**（`min_length=1`） |
 | 删除 | 只删 `pending`；`approved` **跳过**，返回 `skipped_approved_count` |
 | 审核 | 把范围内 `pending` 改为 `approved`；已审跳过；意见写入 `audit_remark` |
@@ -314,11 +327,17 @@ bom_procurement_object_generate_logs  一次「开始生成」一条终态日志
 ### 8.6 分层
 
 ```text
-Router  → Service 门面 → generate / audit / generate_log / export
-              └── classify 纯函数；只读 BomNodeRepository / BomSnapshotRepository
+Router  → ProcurementObjectService 门面（查询 + 委托）
+              ├── GenerateService      写门禁 + 分类 + 覆盖写
+              ├── AuditService         单条确认 / 按范围批量审核·反审核·删除
+              ├── GenerateLogService   成功进生成事务；失败 rollback 后单独提交
+              ├── ExportService        与列表同一套筛选，不分页
+              └── classify / labels / mapping  纯函数
+                    └── 只读 BomNodeRepository / BomSnapshotRepository
 ```
 
-禁止 Router 写 SQL；禁止生成时读年度价、焊接拆解、冲压价。  
+禁止 Router 写 SQL、调 Parser、调 `LocationService` / `VehicleModelService`。  
+禁止生成时读年度价、焊接拆解、冲压价、供应商主数据。  
 Parser 不参与（树已在 `bom_nodes`）。
 
 路径：
@@ -327,7 +346,7 @@ Parser 不参与（树已在 `bom_nodes`）。
 app/models/bom/procurement_object.py
 app/models/bom/procurement_object_generate_log.py
 app/repositories/bom/procurement_object_repository.py
-app/services/bom/procurement_object/   labels · classify · generate · audit · export · mapping · service
+app/services/bom/procurement_object/   service · generate_service · audit_service · generate_log_service · export · classify · labels · mapping
 app/routers/bom/procurement_object.py
 app/schemas/dto|vo/bom_procurement_object_*.py
 static/js/features/bom/procurement-object/
@@ -338,7 +357,7 @@ static/js/features/bom/procurement-object/
 - `app/services/bom/procurement_object/labels.py`
 - `static/js/features/bom/procurement-object/labels.js`
 
-API 前缀：`/api/bom/procurement-objects`。生成与批量范围键均为 **基地 + 车型 + BOM 版本**（不是客户端传 `snapshot_id`）。
+API 前缀：`/api/bom/procurement-objects`。生成与批量范围键均为 **基地 + 项目 + BOM 版本**（不是客户端传 `snapshot_id`）。
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
@@ -382,7 +401,7 @@ HUD：**采购对象**是霓虹强调格；标准件/胶等、待审、已审为
 
 列表页签：**全部**（默认，不传 `section`）| 采购对象 | 标准件/胶等 | 异常。HUD 展示采购对象条数、标准件/胶等、待审、已审。`qa_passed=false` 用错误文案，不要静默当成功。
 
-工具栏：**批量审核 / 批量反审核 / 批量删除** + 导出 Excel。抽屉展示当前清单范围（基地 · 车型 · 版本），意见必填。删除跳过已审。禁止勾选行再批量。
+工具栏：**批量审核 / 批量反审核 / 批量删除** + 导出 Excel。抽屉展示当前清单范围（基地 · 项目 · 版本），意见必填。删除跳过已审。禁止勾选行再批量。
 
 **核对列：** 列表与导出须能直接对回原件：
 
@@ -423,6 +442,9 @@ HUD：**采购对象**是霓虹强调格；标准件/胶等、待审、已审为
 | `manufacturing_category` | L1 叶子是否冲压件，复用，不新开词典 |
 | 焊接工艺拆解 | **不读** |
 | 年度零件价 | **不读** |
+| 基地 | 生成 `require_enabled`；列表筛 `list_registered` + 查询 `expand_for_query`。本表不加基地外键 |
+| 项目 | 列表筛 `list_registered`。生成不 `require_introducible`。本表不加项目外键 |
+| 供应商 | 生成不读、不猜。行上指定对方见独立设计 |
 
 ---
 
@@ -440,6 +462,8 @@ HUD：**采购对象**是霓虹强调格；标准件/胶等、待审、已审为
 | 退化供货件全部列入，再标亚类 | 无工艺就不列入，或编成电泳 |
 | 同一零件号多行都保留 | 按零件号去重 |
 | 对人展示走 `labels` | 页面再写「其它叶子」「退化 L0」当产品文案 |
+| 生成前过基地 `require_enabled`；列表基地筛主数据 | 本切片代建基地/项目；给清单头加基地/项目外键 |
+| 界面写「项目」 | 再写「车型」当产品文案 |
 
 ---
 
@@ -453,11 +477,66 @@ HUD：**采购对象**是霓虹强调格；标准件/胶等、待审、已审为
 | [welding-process-breakdown-design.md](welding-process-breakdown-design.md) | 拆解；生成清单时不读 |
 | `app/services/bom/bom_upload_service.py` | 覆盖导入前检查直接下游；无下游才删 snapshot（清单级联没） |
 | [bom-annual-part-prices-design.md](bom-annual-part-prices-design.md) | 价表；本文不读 |
+| [location-design.md](../masterdata/location-design.md) | 基地；生成写门禁、列表筛 |
+| [vehicle-model-design.md](../masterdata/vehicle-model-design.md) | 项目；列表筛；本文不是下一跳 |
+| [supplier-design.md](../masterdata/supplier-design.md) | 合同对方主数据；生成不读 |
 | [bom-procurement-object-supplier-design.md](bom-procurement-object-supplier-design.md) | 行上指定合同对方（未落地） |
 | [assembly-costing-design.md](../costing/assembly-costing-design.md) | 下游应成本；集合以本清单为准 |
 | [procurement-contract-report-design.md](../costing/procurement-contract-report-design.md) | 签约横表（未落地）；只读本清单 + 应成本 |
 | `static/js/features/costing/stamping-part-cost/calc/` | 生成页 UI 对照 |
 | `static/js/features/costing/stamping-part-cost/list/` | 列表页 UI 对照 |
+
+---
+
+## 13. 基地 / 项目（主数据）
+
+分类规则不改。本节只补 **写谁、筛谁、外键挂谁**。细则不在本文重写，调上游设计。
+
+引用保护（宪法 §4.3）：**子声明、父不知；只拦直接下游。** 项目的下一跳是 `bom_snapshots`，不是本清单。清单头只声明 `snapshot_id → bom_snapshots.id`（`ON DELETE CASCADE`，同切片附属结果）。生成日志、清单行上的 `location` / `vehicle_model` 字符串副本 **不加** 基地外键、**不加** 项目外键。项目 Model 禁止 `relationship` 指向本表。
+
+### 13.1 已定规则
+
+| # | 规则 |
+|---|------|
+| O1 | 没有已启用基地，不能新生成。`LocationService.require_enabled`。找不到 / 已禁用 → 去 `#/location`，不代建 |
+| O2 | 生成不是传 BOM。BOM 上传已过墙钟 `require_introducible`。本文 **禁止** 再套一套 `require_introducible`。已失效项目：已有 snapshot 仍可生成 / 再生成；没有 snapshot 不能生成 |
+| O3 | 不立项。代号对不上已有 snapshot → 「未找到对应材料清单」，去焊接工程上传，不去项目一览表代建 |
+| O4 | 库字段仍 `vehicle_model`。界面、Toast、抽屉、导出页头写 **项目**，不要写车型 |
+| O5 | 代号查找前 `normalize_vehicle_model`（含大写）。`t13j` 与 `T13J` 同一代号。不做项目别名展开（项目设计 P14） |
+| O6 | 清单头 `location` / `vehicle_model` / `bom_version` **抄 snapshot**（现网已如此）。不在生成时改写 snapshot，也不为迁就外键改历史清单头 |
+| O7 | 列表 / 导出：基地选项 `list_registered`；选了基地后查询条件 `expand_for_query`（命中历史「×基地」）。项目选项 `VehicleModelService.list_registered`（先选基地；未选则各基地代号并集）。**禁止**本表 `DISTINCT location` / `DISTINCT vehicle_model` 当身份选项。版本仍列本范围已有 BOM / 清单版本（存在性，不是身份）。HUD 计数仍扫本表 |
+| O8 | 生成页下拉：基地 `list_enabled`（写路径）。项目 / 版本 = 该基地下 **已有** `bom_snapshots` 的 cascade（没有材料清单不能生成）。废止写死四基地。现网 `/api/bom/filters/cascade` 须把基地源改成主数据，不要从本切片 DISTINCT |
+| O9 | 确认 / 审核 / 反审核 / 删除是改已有清单，不过 `require_enabled`。基地禁用后已有清单仍可查、仍可反审核以便清理。新生成仍走 O1 |
+
+### 13.2 生成：怎么找到 snapshot
+
+1. `canonical = LocationService.require_enabled(raw_location)` → 规范名。不过则硬停。  
+2. `code = normalize_vehicle_model(raw_vehicle_model)`。空 / 占位符 → `BusinessException`。  
+3. 先 `get_by_unique_key(canonical, code, bom_version)`。没有：对 `expand_for_query(canonical)` 里每个别名再找（历史 snapshot 可能仍是「青岛基地」）。都没有 → `NotFoundException("未找到对应材料清单")`。  
+4. 清单头抄 **该 snapshot** 的 `location` / `vehicle_model` / `bom_version` / `source_filename`。新行不把别名改写成规范名。  
+5. 其余覆盖写、带回确认、已审 409：§8.4 不变。
+
+现网已做：第 1 步 `require_enabled`；第 3 步只按用户所选字符串 `strip` 精确匹配（未 expand、未 normalize）。第 2 / 3 步是落地缺口。
+
+prep-stats 是读：不强制 `require_enabled`（禁用基地仍可看「将列入」）。文案「请选定基地 / 项目 / 版本」。
+
+失败日志：业务事务 `rollback` 之后 **单独提交** 一条 `failed`（现网 `persist_failed`）。成功日志进同一生成事务。
+
+### 13.3 读
+
+查询按库里的字符串。用户选规范名「青岛」时，条件展开为规范名 + 别名，才能命中历史清单头 `青岛基地`。项目筛双方先 `normalize`；对不上历史小写代号，接受（不写第二套查询）。
+
+筛了一个还没生成的项目 → 空表，不是丢数据。
+
+### 13.4 外键（只此一张）
+
+| 表 | FK | 说明 |
+|----|----|------|
+| `bom_procurement_object_lists.snapshot_id` | → `bom_snapshots.id` `ON DELETE CASCADE` | 同切片附属结果；删 snapshot 清单没 |
+| 清单行 `list_id` | → 清单头 `CASCADE` | 附属行 |
+| 生成日志 | **无** 指向 snapshot / 项目 / 基地 | 与计算日志同类，间接副本 |
+
+禁止：清单头再声明基地 FK、项目复合 FK。拦「项目还能不能删」的是 `bom_snapshots`，不是本表。
 
 ---
 
@@ -476,3 +555,4 @@ HUD：**采购对象**是霓虹强调格；标准件/胶等、待审、已审为
 | 2026-08-31 | 生成页/列表页前端必须对齐 `stamping-part-cost` 计算页与一览（HUD / 筛选条 / 密表）。 |
 | 2026-08-31 | 改为已落地：对人展示与内部码分开；补生成日志 / prep-stats；导出三表与列表页签、HUD 与现网一致。 |
 | 2026-09-02 | 手填合同对方与签约报表拆出独立设计；本文仍禁止生成时猜供应商、禁止存单价。 |
+| 2026-09-08 | 补基地/项目主数据：生成 `require_enabled`、不套 `require_introducible`、清单不是项目下一跳；列表筛主数据；界面「项目」。指定对方改点选供应商主数据（见独立设计）。 |

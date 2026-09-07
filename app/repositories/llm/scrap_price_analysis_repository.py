@@ -8,6 +8,7 @@ from decimal import Decimal
 from sqlalchemy.orm import Session
 
 from app.models.yishiyiyi import StampingScrapPrice
+from app.repositories.llm.location_in import location_in_or_exact_clause
 from app.services.llm._money import ym_int
 
 
@@ -19,15 +20,6 @@ class ScrapPricePeriodRow:
     market_price: Decimal
     deduction_fee: Decimal
     net_price: Decimal
-
-
-def _normalize_scrap_location(location: str | None) -> str | None:
-    if not location:
-        return None
-    text = location.strip()
-    if text.endswith("基地"):
-        return text[:-2]
-    return text
 
 
 class ScrapPriceAnalysisRepository:
@@ -47,9 +39,9 @@ class ScrapPriceAnalysisRepository:
         ym_expr = StampingScrapPrice.year * 100 + StampingScrapPrice.month
 
         q = db.query(StampingScrapPrice).filter(ym_expr >= start, ym_expr <= end)
-        normalized = _normalize_scrap_location(location)
-        if normalized:
-            q = q.filter(StampingScrapPrice.location == normalized)
+        loc_filter = location_in_or_exact_clause(db, StampingScrapPrice.location, location)
+        if loc_filter is not None:
+            q = q.filter(loc_filter)
 
         q = q.order_by(
             StampingScrapPrice.year.asc(),

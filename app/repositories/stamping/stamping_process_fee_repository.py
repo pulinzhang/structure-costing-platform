@@ -196,6 +196,7 @@ class StampingProcessFeeRepository:
         db: Session,
         year: int | None = None,
         location: str | None = None,
+        locations: list[str] | None = None,
         stamping_supplier: str | None = None,
         vehicle_model: str | None = None,
         version: str | None = None,
@@ -206,7 +207,9 @@ class StampingProcessFeeRepository:
         q = db.query(StampingProcessFee)
         if year is not None:
             q = q.filter(StampingProcessFee.year == year)
-        if location is not None:
+        if locations is not None:
+            q = q.filter(StampingProcessFee.location.in_(locations))
+        elif location is not None:
             q = q.filter(StampingProcessFee.location == location)
         if stamping_supplier is not None:
             q = q.filter(StampingProcessFee.stamping_supplier == stamping_supplier)
@@ -227,6 +230,7 @@ class StampingProcessFeeRepository:
         db: Session,
         year: int | None = None,
         location: str | None = None,
+        locations: list[str] | None = None,
         stamping_supplier: str | None = None,
         vehicle_model: str | None = None,
         version: str | None = None,
@@ -240,6 +244,7 @@ class StampingProcessFeeRepository:
             db,
             year=year,
             location=location,
+            locations=locations,
             stamping_supplier=stamping_supplier,
             vehicle_model=vehicle_model,
             version=version,
@@ -267,6 +272,7 @@ class StampingProcessFeeRepository:
         db: Session,
         year: int | None = None,
         location: str | None = None,
+        locations: list[str] | None = None,
         stamping_supplier: str | None = None,
         vehicle_model: str | None = None,
         version: str | None = None,
@@ -278,6 +284,7 @@ class StampingProcessFeeRepository:
             db,
             year=year,
             location=location,
+            locations=locations,
             stamping_supplier=stamping_supplier,
             vehicle_model=vehicle_model,
             version=version,
@@ -307,6 +314,7 @@ class StampingProcessFeeRepository:
             db,
             year=year,
             location=location,
+            locations=locations,
             stamping_supplier=stamping_supplier,
             vehicle_model=vehicle_model,
             version=version,
@@ -345,6 +353,7 @@ class StampingProcessFeeRepository:
         db: Session,
         year: int | None = None,
         location: str | None = None,
+        locations: list[str] | None = None,
         stamping_supplier: str | None = None,
         vehicle_model: str | None = None,
         version: str | None = None,
@@ -355,6 +364,7 @@ class StampingProcessFeeRepository:
             db,
             year=year,
             location=location,
+            locations=locations,
             stamping_supplier=stamping_supplier,
             vehicle_model=vehicle_model,
             version=version,
@@ -575,13 +585,16 @@ class StampingProcessFeeRepository:
         db: Session,
         year: int | None = None,
         location: str | None = None,
+        locations: list[str] | None = None,
         vehicle_model: str | None = None,
         version: str | None = None,
     ) -> list[str]:
         q = db.query(StampingProcessFee.stamping_supplier).distinct()
         if year is not None:
             q = q.filter(StampingProcessFee.year == year)
-        if location is not None:
+        if locations is not None:
+            q = q.filter(StampingProcessFee.location.in_(locations))
+        elif location is not None:
             q = q.filter(StampingProcessFee.location == location)
         if vehicle_model is not None:
             q = q.filter(StampingProcessFee.vehicle_model == vehicle_model)
@@ -590,35 +603,21 @@ class StampingProcessFeeRepository:
         results = q.order_by(StampingProcessFee.stamping_supplier).all()
         return [r[0] for r in results if r[0]]
 
-    def get_distinct_vehicle_models(
-        self,
-        db: Session,
-        year: int | None = None,
-        location: str | None = None,
-        stamping_supplier: str | None = None,
-    ) -> list[str]:
-        q = db.query(StampingProcessFee.vehicle_model).distinct()
-        if year is not None:
-            q = q.filter(StampingProcessFee.year == year)
-        if location is not None:
-            q = q.filter(StampingProcessFee.location == location)
-        if stamping_supplier is not None:
-            q = q.filter(StampingProcessFee.stamping_supplier == stamping_supplier)
-        results = q.order_by(StampingProcessFee.vehicle_model).all()
-        return [r[0] for r in results if r[0]]
-
     def get_distinct_versions(
         self,
         db: Session,
         year: int | None = None,
         location: str | None = None,
+        locations: list[str] | None = None,
         stamping_supplier: str | None = None,
         vehicle_model: str | None = None,
     ) -> list[str]:
         q = db.query(StampingProcessFee.version).distinct()
         if year is not None:
             q = q.filter(StampingProcessFee.year == year)
-        if location is not None:
+        if locations is not None:
+            q = q.filter(StampingProcessFee.location.in_(locations))
+        elif location is not None:
             q = q.filter(StampingProcessFee.location == location)
         if stamping_supplier is not None:
             q = q.filter(StampingProcessFee.stamping_supplier == stamping_supplier)

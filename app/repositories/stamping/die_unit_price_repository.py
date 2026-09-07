@@ -51,14 +51,17 @@ class StampingDieUnitPriceRepository:
         self,
         db: Session,
         *,
-        location: str | None,
+        location: str | None = None,
+        locations: list[str] | None = None,
         vehicle_model: str | None,
         status: str | None,
         skip: int,
         limit: int,
     ) -> tuple[list[StampingDieUnitPrice], int]:
         query = db.query(StampingDieUnitPrice)
-        if location:
+        if locations is not None:
+            query = query.filter(StampingDieUnitPrice.location.in_(locations))
+        elif location:
             query = query.filter(StampingDieUnitPrice.location == location)
         if vehicle_model:
             query = query.filter(StampingDieUnitPrice.vehicle_model == vehicle_model)

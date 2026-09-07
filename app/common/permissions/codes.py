@@ -319,6 +319,27 @@ class Perm:
     FILE_TRACE_VIEW = "op:file-trace:view"  # 查看
     FILE_TRACE_DOWNLOAD = "op:file-trace:download"  # 下载原件
 
+    MENU_MASTERDATA = "menu:masterdata"  # 主数据
+
+    MENU_LOCATION = "menu:location"  # 基地
+    LOCATION_VIEW = "op:location:view"  # 查看
+    LOCATION_CREATE = "op:location:create"  # 新增
+    LOCATION_UPDATE = "op:location:update"  # 编辑
+    LOCATION_DELETE = "op:location:delete"  # 删除
+
+    MENU_VEHICLE_MODEL = "menu:vehicle-model"  # 项目
+
+    MENU_VEHICLE_MODEL_UPLOAD = "menu:vehicle-model-upload"  # 上传
+    VEHICLE_MODEL_UPLOAD_VIEW = "op:vehicle-model-upload:view"  # 查看
+    VEHICLE_MODEL_UPLOAD_UPLOAD = "op:vehicle-model-upload:upload"  # 导入
+
+    MENU_VEHICLE_MODEL_LIST = "menu:vehicle-model-list"  # 一览表
+    VEHICLE_MODEL_LIST_VIEW = "op:vehicle-model-list:view"  # 查看
+    VEHICLE_MODEL_LIST_EXPORT = "op:vehicle-model-list:export"  # 导出
+    VEHICLE_MODEL_LIST_CREATE = "op:vehicle-model-list:create"  # 新增
+    VEHICLE_MODEL_LIST_UPDATE = "op:vehicle-model-list:update"  # 编辑
+    VEHICLE_MODEL_LIST_DELETE = "op:vehicle-model-list:delete"  # 删除
+
     MENU_SETTINGS = "menu:settings"  # 设置
 
     MENU_SETTINGS_PROFILE = "menu:settings-profile"  # 个人资料

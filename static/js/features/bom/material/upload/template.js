@@ -43,12 +43,28 @@ export function bomUploadTemplate() {
                                             required
                                             class="${UPLOAD_INPUT} w-[280px]">
                                         <option value="">请选择采购基地</option>
-                                        <option value="大连">大连</option>
-                                        <option value="芜湖">芜湖</option>
-                                        <option value="鄂尔多斯">鄂尔多斯</option>
-                                        <option value="青岛">青岛</option>
                                     </select>
                                     <p class="mt-1.5 text-[11px] text-[#616161]">核价按基地匹配钢价，导入时必须指定基地</p>
+                                </div>
+                            </div>
+
+                            <div class="h-px bg-[#1e1e1e] mx-6 mb-4"></div>
+
+                            <div class="mb-5">
+                                <div class="flex items-center gap-2 mb-2.5">
+                                    <span class="w-4 h-4 rounded-full bg-[#2a2a2a] flex items-center justify-center shrink-0">
+                                        <span class="text-[10px] font-semibold text-[#d32f2f]">2</span>
+                                    </span>
+                                    <span class="text-[13px] text-[#6b6b6b] font-medium tracking-wide uppercase">选择项目</span>
+                                </div>
+                                <div class="ml-6">
+                                    <select id="bomUploadVehicleModel"
+                                            name="vehicle_model"
+                                            required
+                                            class="${UPLOAD_INPUT} w-[280px]">
+                                        <option value="">请先选择采购基地</option>
+                                    </select>
+                                    <p class="mt-1.5 text-[11px] text-[#616161]">必选该月可引入项目。文件代号须与所选一致。</p>
                                 </div>
                             </div>
 
@@ -57,7 +73,7 @@ export function bomUploadTemplate() {
                             <div>
                                 <div class="flex items-center gap-2 mb-3">
                                     <span class="w-4 h-4 rounded-full bg-[#2a2a2a] flex items-center justify-center shrink-0">
-                                        <span class="text-[10px] font-semibold text-[#d32f2f]">2</span>
+                                        <span class="text-[10px] font-semibold text-[#d32f2f]">3</span>
                                     </span>
                                     <span class="text-[13px] text-[#6b6b6b] font-medium tracking-wide uppercase">上传材料清单</span>
                                 </div>
@@ -179,13 +195,13 @@ export function bomUploadTemplate() {
                             <ul class="list-disc list-inside text-xs text-[#616161] space-y-1.5">
                                 <li>车身件产品材料清单 Excel（.xlsx / .xls）</li>
                                 <li>含三级稀疏树：总成 / 一级 / 二级</li>
-                                <li>车型、版本从文件头自动解析</li>
+                                <li>项目、版本从文件头自动解析</li>
                             </ul>
                         </div>
                         <div>
                             <h6 class="text-[10px] uppercase tracking-wider text-[#616161] mb-2">覆盖规则</h6>
                             <ul class="list-disc list-inside text-xs text-[#616161] space-y-1.5">
-                                <li>唯一键：基地 + 车型 + 版本</li>
+                                <li>唯一键：基地 + 项目 + 版本</li>
                                 <li>同键再次导入将替换整棵树</li>
                                 <li>同一分总成挂在不同总成下时，焊信与二级子件单车用量必须相同</li>
                                 <li>源 Excel 与简图落盘保留</li>
