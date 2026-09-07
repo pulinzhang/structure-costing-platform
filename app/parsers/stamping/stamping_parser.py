@@ -31,9 +31,23 @@ from app.parsers.stamping.row_parser import (
     PartSaver,
     RowParser,
 )
+from app.parsers.stamping.sketch_extractor import SketchAnchor, extract_stamping_sketches
 from app.utils.logging_config import get_logger
 
 logger = get_logger("parser.stamping")
+
+# 默认「零件简图/零件图片」在 D 列（1-based 4）。图常浮在名称格上，锚点落在左邻 C。
+_DEFAULT_SKETCH_COL_1IDX = 4
+
+
+def allowed_sketch_anchor_cols(sketch_header_col_1idx: int | None) -> frozenset[int]:
+    """简图锚点允许的 0-based 列：表头列及其左邻。"""
+    header_1idx = sketch_header_col_1idx or _DEFAULT_SKETCH_COL_1IDX
+    header_0idx = header_1idx - 1
+    allowed = {header_0idx}
+    if header_0idx > 0:
+        allowed.add(header_0idx - 1)
+    return frozenset(allowed)
 
 
 class StampingExcelParser:
@@ -61,7 +75,9 @@ class StampingExcelParser:
         self._excel_ctx: ExcelContext | None = None
         self._header_resolver: HeaderResolver | None = None
         self._row_parser: RowParser | None = None
-        self._processed_images: set[Any] = set()  # 已处理图片集合，避免重复
+        self._processed_images: set[Any] = set()  # openpyxl 回退路径已归属的图
+        self._sketch_anchors: list[SketchAnchor] = []
+        self._used_sketch_indexes: set[int] = set()
 
     def parse(self, file_path: str) -> ParserResult:
         """解析冲压工艺 Excel 文件"""
@@ -139,6 +155,10 @@ class StampingExcelParser:
             header_ctx.col_map,
             self._excel_ctx.get_merged_value,
         )
+
+        sketch_cols = allowed_sketch_anchor_cols(header_ctx.col_map.get("sketch"))
+        self._sketch_anchors = extract_stamping_sketches(file_path, sketch_cols)
+        self._used_sketch_indexes = set()
 
     def _parse_data(self, part_saver: PartSaver) -> None:
         """解析数据主循环：遍历零件号范围"""
@@ -223,9 +243,10 @@ class StampingExcelParser:
         """处理该行的图片归属
 
         Excel 排版规则（基于 excel_sample 样本）：
-        - 简图固定在 D 列（0-indexed col=3）
-        - 图片锚点可能在零件起始行、零件范围中间任意行、或零件结束行的下一行
-          （因为合并单元格会导致图片锚点偏移）
+        - 简图表头多在 D 列（零件图片 / 零件简图）
+        - 图常画在 C–D 合并视觉区，锚点 `_from.col` 可能是 C（左邻）或 D
+        - 图片锚点可能在零件起始行、零件范围中间任意行、或零件结束行
+          （合并单元格会导致图片锚点偏移）
 
         openpyxl 的 anchor._from.col / _from.row 都是 0-indexed，
         调用方 row_idx 是 1-indexed 的 Excel 行号。
@@ -233,12 +254,22 @@ class StampingExcelParser:
         if not part_number:
             return
 
+        part_start = row_idx
+        part_end = end_row
+        for index, sketch in enumerate(self._sketch_anchors):
+            if index in self._used_sketch_indexes:
+                continue
+            if not (part_start <= sketch.excel_row <= part_end):
+                continue
+            self.result.images_by_part[part_number] = sketch.png_bytes
+            self._used_sketch_indexes.add(index)
+            return
+
         sheet = self._excel_ctx.sheet
         if not hasattr(sheet, "_images"):
             return
 
-        # 0-indexed：Excel 的 D 列（"零件简图"列固定位置）
-        sketch_col_0idx = 3
+        sketch_cols_0idx = allowed_sketch_anchor_cols(self.result.col_map.get("sketch"))
 
         for img in sheet._images:
             # 跳过已有归属的图片
@@ -261,7 +292,7 @@ class StampingExcelParser:
                 else:
                     continue
 
-                if col_0idx != sketch_col_0idx:
+                if col_0idx not in sketch_cols_0idx:
                     continue
 
                 # 行匹配：0-indexed 图片行 与 1-indexed 范围的比较
