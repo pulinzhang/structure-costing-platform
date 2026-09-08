@@ -1,8 +1,10 @@
 """冲压工序数据访问。"""
 
 import logging
+from collections.abc import Sequence
 from typing import TypedDict
 
+from sqlalchemy import false
 from sqlalchemy.orm import Session, contains_eager
 
 from app.models.stamping import StampingPart, StampingProcess
@@ -61,23 +63,30 @@ class StampingProcessRepository:
         db: Session,
         *,
         location: str,
-        stamping_supplier: str,
         vehicle_model: str,
         version: str,
+        stamping_supplier: str | None = None,
+        stamping_suppliers: Sequence[str] | None = None,
     ) -> list[StampingProcess]:
         """按基地 + 冲压工厂 + 车型 + 版本查询工序（含所属零件）。"""
-        return (
+        q = (
             db.query(StampingProcess)
             .join(StampingPart, StampingProcess.part_id == StampingPart.id)
             .options(contains_eager(StampingProcess.part))
             .filter(
                 StampingPart.location == location,
-                StampingPart.stamping_supplier == stamping_supplier,
                 StampingPart.vehicle_model == vehicle_model,
                 StampingPart.version == version,
             )
-            .all()
         )
+        if stamping_suppliers is not None:
+            if not stamping_suppliers:
+                q = q.filter(false())
+            else:
+                q = q.filter(StampingPart.stamping_supplier.in_(stamping_suppliers))
+        elif stamping_supplier is not None:
+            q = q.filter(StampingPart.stamping_supplier == stamping_supplier)
+        return q.all()
 
     def create(self, db: Session, process_data: ProcessData) -> StampingProcess:
         process = model_from_payload(StampingProcess, process_data)

@@ -19,7 +19,7 @@ class StampingDieFeeCalcLog(AuditUserMixin, Base):
     year: Mapped[int] = mapped_column(Integer, nullable=False)
     location: Mapped[str] = mapped_column(String(50), nullable=False)
     vehicle_model: Mapped[str] = mapped_column(String(50), nullable=False)
-    stamping_supplier: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    stamping_supplier: Mapped[str | None] = mapped_column(String(100), nullable=True)
     version: Mapped[str | None] = mapped_column(String(20), nullable=True)
     status: Mapped[str] = mapped_column(
         String(20),

@@ -43,6 +43,7 @@ from app.schemas.vo.stamping_vo import (
 )
 from app.schemas.vo.user_vo import UserVO
 from app.services.masterdata.location.location_service import LocationService
+from app.services.masterdata.supplier import SupplierService
 from app.services.masterdata.vehicle_model import VehicleModelService
 
 logger = logging.getLogger("service.stamping")
@@ -148,15 +149,26 @@ class StampingPartService:
                     vehicle_models=VehicleModelService().list_filter_codes(db, query.location),
                     versions=list(raw["versions"]),
                     materials=list(raw["materials"]),
-                    stamping_suppliers=list(raw["stamping_suppliers"]),
+                    stamping_suppliers=SupplierService().list_registered_names(db),
                     summary=StampingPartListSummaryVO(),
                 )
                 return [], 0, filter_vo
+        supplier_names = SupplierService().names_for_query(db, query.stamping_supplier)
+        if supplier_names is not None and not supplier_names:
+            raw = self.repository.get_filter_options(db)
+            filter_vo = StampingPartListFilterOptions(
+                locations=location_service.list_registered(db),
+                vehicle_models=VehicleModelService().list_filter_codes(db, query.location),
+                versions=list(raw["versions"]),
+                materials=list(raw["materials"]),
+                stamping_suppliers=SupplierService().list_registered_names(db),
+                summary=StampingPartListSummaryVO(),
+            )
+            return [], 0, filter_vo
         vehicle_model = query.vehicle_model
         version = query.version
         part_number = query.part_number
         part_name = query.part_name
-        stamping_supplier = query.stamping_supplier
         parts, total = self.repository.paginate(
             db,
             locations=locations,
@@ -164,7 +176,7 @@ class StampingPartService:
             version=version,
             part_number=part_number,
             part_name=part_name,
-            stamping_supplier=stamping_supplier,
+            stamping_suppliers=supplier_names,
             skip=skip,
             limit=query.size,
         )
@@ -185,7 +197,7 @@ class StampingPartService:
             vehicle_models=VehicleModelService().list_filter_codes(db, query.location),
             versions=list(raw["versions"]),
             materials=list(raw["materials"]),
-            stamping_suppliers=list(raw["stamping_suppliers"]),
+            stamping_suppliers=SupplierService().list_registered_names(db),
             summary=StampingPartListSummaryVO.model_validate(
                 self.repository.summarize_by_filters(
                     db,
@@ -194,7 +206,7 @@ class StampingPartService:
                     version=version,
                     part_number=part_number,
                     part_name=part_name,
-                    stamping_supplier=stamping_supplier,
+                    stamping_suppliers=supplier_names,
                 )
             ),
         )
@@ -208,7 +220,7 @@ class StampingPartService:
             vehicle_models=VehicleModelService().list_filter_codes(db),
             versions=list(raw["versions"]),
             materials=list(raw["materials"]),
-            stamping_suppliers=list(raw["stamping_suppliers"]),
+            stamping_suppliers=SupplierService().list_registered_names(db),
             summary=StampingPartListSummaryVO(),
         )
 
@@ -269,13 +281,23 @@ class StampingPartService:
                     vehicle_models=[],
                     versions=[],
                     materials=[],
-                    stamping_suppliers=[],
+                    stamping_suppliers=SupplierService().list_registered_names(db),
                 )
                 return [], 0, filter_vo
+        supplier_names = SupplierService().names_for_query(db, query.stamping_supplier)
+        if supplier_names is not None and not supplier_names:
+            filter_vo = StampingPartListFilterOptions(
+                locations=location_service.list_registered(db),
+                vehicle_models=[],
+                versions=[],
+                materials=[],
+                stamping_suppliers=SupplierService().list_registered_names(db),
+            )
+            return [], 0, filter_vo
         parts = self.repository.list_parts_for_materials(
             db,
             locations=locations,
-            stamping_supplier=query.stamping_supplier,
+            stamping_suppliers=supplier_names,
             vehicle_model=query.vehicle_model,
             version=query.version,
         )
@@ -313,7 +335,7 @@ class StampingPartService:
             vehicle_models=VehicleModelService().list_filter_codes(db, query.location),
             versions=list(filter_options["versions"]),
             materials=list(filter_options["materials"]),
-            stamping_suppliers=list(filter_options["stamping_suppliers"]),
+            stamping_suppliers=SupplierService().list_registered_names(db),
         )
         return page_rows, total, filter_vo
 
@@ -447,14 +469,20 @@ class StampingPartService:
         location = dto.location.strip()
         vehicle_model = dto.vehicle_model.strip()
         version = dto.version.strip()
-        supplier = dto.stamping_supplier
+        supplier = (dto.stamping_supplier or "").strip() or None
         if not location or not vehicle_model or not version:
             raise BusinessException("基地、车型和版本不能为空")
+
+        supplier_names = SupplierService().names_for_query(db, supplier)
+        if supplier and supplier_names is not None and not supplier_names:
+            raise BusinessException(
+                "没有该供应商，请到供应商一览表手工增加或上传（#/supplier-list）"
+            )
 
         deleted = self.repository.delete_by_scope(
             db,
             location=location,
-            stamping_supplier=supplier,
+            stamping_suppliers=supplier_names,
             vehicle_model=vehicle_model,
             version=version,
         )

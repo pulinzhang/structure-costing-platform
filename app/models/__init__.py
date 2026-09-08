@@ -41,7 +41,7 @@ from app.models.costing import (
 )
 from app.models.file_trace import UploadFile
 from app.models.llm import LlmAnalysisReport
-from app.models.masterdata import Location, LocationAlias, VehicleModel
+from app.models.masterdata import Location, LocationAlias, Supplier, SupplierAlias, VehicleModel
 from app.models.settings import (
     OperationLog,
     SystemConfig,
@@ -99,6 +99,8 @@ __all__ = [
     "LlmAnalysisReport",
     "Location",
     "LocationAlias",
+    "Supplier",
+    "SupplierAlias",
     "VehicleModel",
     "OperationLog",
     "StampingDieFee",

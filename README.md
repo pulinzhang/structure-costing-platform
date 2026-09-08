@@ -340,8 +340,6 @@ const res = await HttpClient.get('/api/stamping/parts/list', {
 
 const formData = new FormData();
 formData.append('file', fileInput.files[0]);
-formData.append('vehicle_model', 'T28');
-formData.append('version', '1.0');
 await HttpClient.post('/api/stamping/upload/', formData);
 ```
 

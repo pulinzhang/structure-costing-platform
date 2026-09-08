@@ -72,9 +72,10 @@
  * ├── file-trace/                # 文件溯源
  * ├── masterdata/                # 主数据
  * │   ├── location/              # 基地
- * │   └── vehicle-model/         # 项目
- * │       ├── upload/
- * │       └── list/
+ * │   ├── vehicle-model/         # 项目
+ * │   │   ├── upload/
+ * │   │   └── list/
+ * │   └── supplier/{upload,list}/  # 供应商
  * ├── settings/                  # 设置
  * │   ├── profile/
  * │   ├── system/
@@ -343,6 +344,16 @@ export const pageMeta = {
         title: '项目一览',
         en: 'PROJECT',
         breadcrumb: ['主数据', '项目', '一览表'],
+    },
+    'supplier-upload': {
+        title: '供应商上传',
+        en: 'SUPPLIER UPLOAD',
+        breadcrumb: ['主数据', '供应商', '上传'],
+    },
+    'supplier-list': {
+        title: '供应商一览',
+        en: 'SUPPLIER',
+        breadcrumb: ['主数据', '供应商', '一览表'],
     },
     settings: {
         title: '系统设置',

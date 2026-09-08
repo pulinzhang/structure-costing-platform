@@ -215,6 +215,41 @@ def test_list_filter_codes_unions_across_locations(memory_db: Session) -> None:
     assert service.list_filter_codes(memory_db) == ["T13J", "T28"]
 
 
+def test_require_introducible_by_code_unique(memory_db: Session) -> None:
+    _seed(memory_db)
+    _create(memory_db, location="青岛", vehicle_model="T13J", effective_year=2020)
+    service = VehicleModelService()
+    assert service.require_introducible_by_code(memory_db, "t13j", 2026, 6) == ("青岛", "T13J")
+    with pytest.raises(BusinessException, match="没有该项目"):
+        service.require_introducible_by_code(memory_db, "T99", 2026, 6)
+    with pytest.raises(BusinessException, match="尚未生效"):
+        service.require_introducible_by_code(memory_db, "T13J", 2019, 1)
+
+
+def test_require_introducible_by_code_ambiguous(memory_db: Session) -> None:
+    _seed(memory_db)
+    _create(memory_db, location="青岛", vehicle_model="T13J")
+    _create(memory_db, location="大连", vehicle_model="T13J")
+    with pytest.raises(BusinessException, match="多个可引入基地"):
+        VehicleModelService().require_introducible_by_code(memory_db, "T13J", 2026, 6)
+
+
+def test_require_introducible_by_code_skips_disabled_location(memory_db: Session) -> None:
+    _seed(memory_db)
+    _create(memory_db, location="青岛", vehicle_model="T13J")
+    _create(memory_db, location="大连", vehicle_model="T13J")
+    LocationService().update(
+        memory_db,
+        "大连",
+        LocationUpdateDTO(is_enabled=False),
+        current_user=SYSTEM_USER,
+    )
+    assert VehicleModelService().require_introducible_by_code(memory_db, "T13J", 2026, 6) == (
+        "青岛",
+        "T13J",
+    )
+
+
 def test_disabled_location_card_introducible_is_zero(memory_db: Session) -> None:
     _seed(memory_db)
     _create(memory_db, effective_year=2000, effective_month=1)

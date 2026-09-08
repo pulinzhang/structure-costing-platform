@@ -23,7 +23,7 @@
 |------|------|
 | [location-design.md](masterdata/location-design.md) | 基地（设计定稿，未落地）：现网 `location`；绝对上游；启用/禁用；§4.3 引用保护（修改与删除） |
 | [vehicle-model-design.md](masterdata/vehicle-model-design.md) | 项目（已落地）：挂基地；上传+一览 HUD 分卡；写门禁已接到工艺/布点/BOM/档案/计算/引擎；下一跳外键另做 |
-| [supplier-design.md](masterdata/supplier-design.md) | 供应商（设计初稿）：缩写 + 全称 + ERP 代码；启用/禁用 |
+| [supplier-design.md](masterdata/supplier-design.md) | 供应商（第一期已落地）：全称主键；上传+一览；工艺确认上传写门禁 |
 
 ## 冲压 `stamping/`
 

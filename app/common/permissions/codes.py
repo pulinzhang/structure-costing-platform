@@ -340,6 +340,18 @@ class Perm:
     VEHICLE_MODEL_LIST_UPDATE = "op:vehicle-model-list:update"  # 编辑
     VEHICLE_MODEL_LIST_DELETE = "op:vehicle-model-list:delete"  # 删除
 
+    MENU_SUPPLIER = "menu:supplier"  # 供应商
+
+    MENU_SUPPLIER_UPLOAD = "menu:supplier-upload"  # 上传
+    SUPPLIER_UPLOAD_VIEW = "op:supplier-upload:view"  # 查看
+    SUPPLIER_UPLOAD_UPLOAD = "op:supplier-upload:upload"  # 导入
+
+    MENU_SUPPLIER_LIST = "menu:supplier-list"  # 一览表
+    SUPPLIER_LIST_VIEW = "op:supplier-list:view"  # 查看
+    SUPPLIER_LIST_EXPORT = "op:supplier-list:export"  # 导出
+    SUPPLIER_LIST_CREATE = "op:supplier-list:create"  # 新增
+    SUPPLIER_LIST_UPDATE = "op:supplier-list:update"  # 编辑
+
     MENU_SETTINGS = "menu:settings"  # 设置
 
     MENU_SETTINGS_PROFILE = "menu:settings-profile"  # 个人资料

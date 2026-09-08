@@ -136,7 +136,8 @@ static/
         ├── file-trace/
         ├── masterdata/
         │   ├── location/
-        │   └── vehicle-model/{upload,list}/
+        │   ├── vehicle-model/{upload,list}/
+        │   └── supplier/{upload,list}/
         ├── settings/{profile,system,users,logs}
         └── login/             # template + index（会话）+ boot.js（登录页入口）
 ```
@@ -145,7 +146,7 @@ static/
 
 > 注释里若出现 `ui/` 可复用组件目录：当前仓库**未落地**；新共享逻辑优先 `page-size.js` / `main.js` / 页面内私有模块，勿假设存在 `ui/`。
 >
-> **侧栏顺序**：仪表盘 → 冲压工程 → 焊接工程（`bom`）→ 一事一议 → 核价 → 文件溯源 → 主数据 → 设置。冲压与焊接同为年度核算（加工费 / 焊接费），故焊接工程紧挨冲压、排在一事一议之前。主数据（基地单叶 + 项目二级：上传 / 一览表）插在文件溯源与设置之间，不要并进设置。
+> **侧栏顺序**：仪表盘 → 冲压工程 → 焊接工程（`bom`）→ 一事一议 → 核价 → 文件溯源 → 主数据 → 设置。冲压与焊接同为年度核算（加工费 / 焊接费），故焊接工程紧挨冲压、排在一事一议之前。主数据（基地单叶 + 项目二级：上传 / 一览表 + 供应商二级：上传 / 一览表）插在文件溯源与设置之间，不要并进设置。
 
 ### 2.1 路由名 → 页面映射
 
@@ -199,6 +200,8 @@ static/
 | `#/location` | 基地 | `masterdata/location` |
 | `#/vehicle-model-upload` | 项目上传 | `masterdata/vehicle-model/upload` |
 | `#/vehicle-model-list` | 项目一览 | `masterdata/vehicle-model/list` |
+| `#/supplier-upload` | 供应商上传 | `masterdata/supplier/upload` |
+| `#/supplier-list` | 供应商一览 | `masterdata/supplier/list` |
 | `#/settings` | 系统设置 | `settings/system` |
 | `#/settings-users` | 用户管理 | `settings/users` |
 | `#/settings-logs` | 操作日志 | `settings/logs` |
@@ -208,7 +211,7 @@ static/
 
 - 支持 Hash 查询串：`#/steel-price-list?year=2026` → 页面名仍为 `steel-price-list`
 - `#/login` → 跳转独立 `/login`
-- 兼容：`#/bom` → `bom-upload`；`#/bom-list` → `bom-structure`；`#/vehicle-model` → `vehicle-model-list`
+- 兼容：`#/bom` → `bom-upload`；`#/bom-list` → `bom-structure`；`#/vehicle-model` → `vehicle-model-list`；`#/supplier` → `supplier-list`
 
 **pageMeta 字段**（`features/index.js`）：
 

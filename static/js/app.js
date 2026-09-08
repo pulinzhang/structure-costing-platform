@@ -13,7 +13,7 @@
  * 入口 URL 的 query 串驱动整体刷新；每次脚本更新后需要同步递增 ?v= 版本号。
  */
 
-import { pageMeta } from './features/index.js?v=37';
+import { pageMeta } from './features/index.js?v=38';
 
 // 页面导入（路径与 index.html 菜单树 / features 目录对齐）
 import { getUserSession, initUserMenu, startTokenHeartbeat, updateUserSession } from './features/login/index.js?v=15';
@@ -24,7 +24,7 @@ import {
 } from './permissions.js?v=11';
 import { bootLlmAssistant } from './llm-assistant/boot.js?v=29';
 import { pageConfig as dashboardPage }      from './features/dashboard/index.js?v=12';
-import { pageConfig as stampingUploadPage } from './features/stamping/process/upload/index.js?v=51';
+import { pageConfig as stampingUploadPage } from './features/stamping/process/upload/index.js?v=55';
 import { pageConfig as stampingPartsPage }  from './features/stamping/process/parts/index.js?v=43';
 import { pageConfig as stampingDieUploadPage } from './features/stamping/die/upload/index.js?v=11';
 import { pageConfig as stampingDieListPage } from './features/stamping/die/list/index.js?v=10';
@@ -71,6 +71,8 @@ import { pageConfig as fileTracePage }       from './features/file-trace/index.j
 import { pageConfig as locationPage }        from './features/masterdata/location/index.js?v=7';
 import { pageConfig as vehicleModelUploadPage } from './features/masterdata/vehicle-model/upload/index.js?v=1';
 import { pageConfig as vehicleModelListPage } from './features/masterdata/vehicle-model/list/index.js?v=3';
+import { pageConfig as supplierUploadPage } from './features/masterdata/supplier/upload/index.js?v=1';
+import { pageConfig as supplierListPage } from './features/masterdata/supplier/list/index.js?v=1';
 import { pageConfig as settingsPage }       from './features/settings/system/index.js?v=18';
 import { pageConfig as settingsUsersPage }  from './features/settings/users/index.js?v=12';
 import { pageConfig as settingsLogsPage }   from './features/settings/logs/index.js?v=6';
@@ -132,6 +134,8 @@ const pages = {
     location:         locationPage,
     'vehicle-model-upload': vehicleModelUploadPage,
     'vehicle-model-list': vehicleModelListPage,
+    'supplier-upload': supplierUploadPage,
+    'supplier-list': supplierListPage,
     settings:         settingsPage,
     'settings-users': settingsUsersPage,
     'settings-logs': settingsLogsPage,
@@ -187,6 +191,9 @@ function getPageFromHash() {
     }
     if (pageName === 'vehicle-model') {
         return 'vehicle-model-list';
+    }
+    if (pageName === 'supplier') {
+        return 'supplier-list';
     }
 
     return pageName;

@@ -3,7 +3,7 @@
  * 冲压工艺上传 — 异步 task_id + 进度轮询
  */
 
-import { uploadTemplate } from './template.js?v=11';
+import { uploadTemplate } from './template.js?v=14';
 import {
     setDropzoneDragActive,
     setDropzoneFileSelected,
@@ -19,68 +19,23 @@ export const UploadPage = {
     isUploading: false,
     activeTaskId: null,
     activeFileName: null,
-    activeLocation: null,
 
     init() {
         this.stopPolling();
         this.applyPermissionUi();
         this.bindEvents();
         this.renderRecentUploads();
-        this.loadScopeOptions();
 
         if (this.isUploading && this.activeTaskId) {
             this.setUploading(true);
             this.showProgress(0, '正在恢复任务进度...');
-            this.startPolling(this.activeTaskId, this.activeFileName, this.activeLocation);
+            this.startPolling(this.activeTaskId, this.activeFileName);
             return;
         }
 
         this.isUploading = false;
         this.activeTaskId = null;
         this.hideProgress();
-    },
-
-    async loadScopeOptions(resetVehicle = false) {
-        const locationEl = document.getElementById('location');
-        const vehicleEl = document.getElementById('stampingVehicleModel');
-        const location = locationEl?.value || '';
-        if (resetVehicle && vehicleEl) vehicleEl.value = '';
-        const now = new Date();
-        const params = {
-            year: now.getFullYear(),
-            month: now.getMonth() + 1,
-        };
-        if (location) params.location = location;
-        try {
-            const res = await HttpClient.get('/api/stamping/filters/cascade', { params });
-            const data = res && res.data;
-            const locations = Array.isArray(data)
-                ? data
-                : (data && Array.isArray(data.locations) ? data.locations : []);
-            const vehicles = location && data && Array.isArray(data.vehicle_models)
-                ? data.vehicle_models
-                : [];
-            if (locationEl) {
-                const current = location;
-                locationEl.innerHTML = '<option value="">请选择采购基地</option>' +
-                    locations.map((loc) => `<option value="${esc(loc)}">${esc(loc)}</option>`).join('');
-                if (current) locationEl.value = current;
-            }
-            if (vehicleEl) {
-                const currentVehicle = vehicleEl.value;
-                const placeholder = location
-                    ? (vehicles.length ? '请选择项目' : '该基地本月无可引入项目')
-                    : '请先选择采购基地';
-                vehicleEl.innerHTML = `<option value="">${esc(placeholder)}</option>` +
-                    vehicles.map((code) => `<option value="${esc(code)}">${esc(code)}</option>`).join('');
-                if (currentVehicle && vehicles.includes(currentVehicle)) {
-                    vehicleEl.value = currentVehicle;
-                }
-            }
-        } catch (error) {
-            console.error('加载采购基地/项目失败', error);
-        }
-        this.updateSubmitEnabled();
     },
 
     /**
@@ -98,8 +53,6 @@ export const UploadPage = {
         const resetBtn = document.getElementById('stampingResetButton');
         const fileInput = document.getElementById('fileInput');
         const uploadZone = document.getElementById('uploadZone');
-        const location = document.getElementById('location');
-        const vehicle = document.getElementById('stampingVehicleModel');
         const title = document.getElementById('uploadTitle');
         const hint = document.getElementById('uploadHint');
         const actionsRow = submitBtn?.parentElement;
@@ -111,8 +64,6 @@ export const UploadPage = {
             fileInput.disabled = true;
             fileInput.value = '';
         }
-        if (location) location.disabled = true;
-        if (vehicle) vehicle.disabled = true;
         if (uploadZone) {
             uploadZone.classList.add('pointer-events-none', 'opacity-60');
         }
@@ -140,7 +91,6 @@ export const UploadPage = {
         const templateBtn = document.getElementById('stampingUploadTemplateBtn');
 
         templateBtn?.addEventListener('click', () => this.downloadTemplate());
-        document.getElementById('location')?.addEventListener('change', () => this.loadScopeOptions(true));
 
         if (!uploadZone || !fileInput) return;
 
@@ -365,17 +315,13 @@ export const UploadPage = {
         const submitBtn = document.getElementById('submitBtn');
         if (!submitBtn) return;
         const hasFile = document.getElementById('fileInput')?.files?.length > 0;
-        const hasLocation = Boolean(document.getElementById('location')?.value?.trim());
-        const hasVehicle = Boolean(document.getElementById('stampingVehicleModel')?.value?.trim());
-        submitBtn.disabled = this.isUploading || this.canUpload === false || !hasFile || !hasLocation || !hasVehicle;
+        submitBtn.disabled = this.isUploading || this.canUpload === false || !hasFile;
     },
 
     setUploading(isUploading) {
         this.isUploading = isUploading;
         const submitBtn = document.getElementById('submitBtn');
         const resetBtn = document.getElementById('stampingResetButton');
-        const location = document.getElementById('location');
-        const vehicle = document.getElementById('stampingVehicleModel');
         const templateBtn = document.getElementById('stampingUploadTemplateBtn');
 
         if (submitBtn) {
@@ -385,8 +331,6 @@ export const UploadPage = {
         }
         this.updateSubmitEnabled();
         if (resetBtn) resetBtn.disabled = isUploading;
-        if (location) location.disabled = isUploading;
-        if (vehicle) vehicle.disabled = isUploading;
         if (templateBtn) templateBtn.disabled = isUploading;
     },
 
@@ -422,7 +366,6 @@ export const UploadPage = {
     clearActiveTask() {
         this.activeTaskId = null;
         this.activeFileName = null;
-        this.activeLocation = null;
     },
 
     async fetchTaskProgress(taskId) {
@@ -432,11 +375,10 @@ export const UploadPage = {
         return response.data;
     },
 
-    startPolling(taskId, fileName, locationValue) {
+    startPolling(taskId, fileName) {
         this.stopPolling();
         this.activeTaskId = taskId;
         this.activeFileName = fileName;
-        this.activeLocation = locationValue;
 
         const tick = async () => {
             if (this.pollInFlight) return;
@@ -455,8 +397,11 @@ export const UploadPage = {
                     const parts = result.parts_count || 0;
                     const processes = result.processes_count || 0;
                     const summary = `${parts} 零件 / ${processes} 工序`;
+                    const scopeLabel = [result.location, result.vehicle_model]
+                        .filter(Boolean)
+                        .join(' · ') || '—';
                     showToast(msg || `上传成功: ${parts} 个零件, ${processes} 道工序`, 'success');
-                    this.addRecentUpload(fileName, locationValue, summary);
+                    this.addRecentUpload(fileName, scopeLabel, summary);
                     this.clearActiveTask();
                     this.setUploading(false);
                     this.clearSelectedFile();
@@ -496,20 +441,7 @@ export const UploadPage = {
         }
         if (this.isUploading) return;
 
-        const location = document.getElementById('location');
-        const vehicle = document.getElementById('stampingVehicleModel');
         const fileInput = document.getElementById('fileInput');
-
-        if (!location.value.trim()) {
-            showToast('请选择采购基地', 'warning');
-            location.focus();
-            return;
-        }
-        if (!vehicle?.value?.trim()) {
-            showToast('请选择项目', 'warning');
-            vehicle?.focus();
-            return;
-        }
 
         if (!fileInput.files || fileInput.files.length === 0) {
             showToast('请选择文件', 'warning');
@@ -517,12 +449,8 @@ export const UploadPage = {
         }
 
         const fileName = fileInput.files[0].name;
-        const locationValue = location.value.trim();
-        const vehicleValue = vehicle.value.trim();
 
         const formData = new FormData();
-        formData.append('location', locationValue);
-        formData.append('vehicle_model', vehicleValue);
         formData.append('file', fileInput.files[0]);
 
         this.setUploading(true);
@@ -536,7 +464,7 @@ export const UploadPage = {
             if (!taskId) {
                 throw new Error('未返回任务 ID');
             }
-            this.startPolling(taskId, fileName, locationValue);
+            this.startPolling(taskId, fileName);
         } catch (error) {
             this.stopPolling();
             this.hideProgress();

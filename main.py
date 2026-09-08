@@ -373,6 +373,7 @@ def create_app() -> FastAPI:
     from app.routers.file_trace.crud import router as file_trace_router
     from app.routers.llm.reports import router as llm_reports_router
     from app.routers.masterdata.location.crud import router as masterdata_location_router
+    from app.routers.masterdata.supplier.crud import router as masterdata_supplier_router
     from app.routers.masterdata.vehicle_model.crud import (
         router as masterdata_vehicle_model_router,
     )
@@ -439,6 +440,7 @@ def create_app() -> FastAPI:
     app.include_router(costing_engine_router)
     app.include_router(file_trace_router)
     app.include_router(masterdata_location_router)
+    app.include_router(masterdata_supplier_router)
     app.include_router(masterdata_vehicle_model_router)
     app.include_router(settings_router)
     app.include_router(user_crud_router)

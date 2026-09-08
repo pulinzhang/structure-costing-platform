@@ -27,6 +27,7 @@ from app.repositories.stamping.stamping_process_fee_repository import (
     StampingProcessFeeRepository,
 )
 from app.schemas.vo.user_vo import UserVO
+from app.services.masterdata.supplier import SupplierService
 
 logger = logging.getLogger("service.stamping_process_fee_export")
 
@@ -207,7 +208,7 @@ class StampingProcessFeeExportService:
             db,
             year=year,
             location=location,
-            stamping_supplier=stamping_supplier,
+            stamping_suppliers=SupplierService().names_for_query(db, stamping_supplier),
             vehicle_model=vehicle_model,
             version=version,
             part_number=part_number,

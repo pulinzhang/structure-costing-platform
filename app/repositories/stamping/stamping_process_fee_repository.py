@@ -3,11 +3,12 @@
 """
 
 import logging
+from collections.abc import Sequence
 from datetime import datetime
 from decimal import Decimal
 from typing import TypedDict
 
-from sqlalchemy import case, func, or_
+from sqlalchemy import case, false, func, or_
 from sqlalchemy.orm import Query, Session, joinedload, noload
 from sqlalchemy.sql.elements import ColumnElement
 
@@ -198,6 +199,7 @@ class StampingProcessFeeRepository:
         location: str | None = None,
         locations: list[str] | None = None,
         stamping_supplier: str | None = None,
+        stamping_suppliers: Sequence[str] | None = None,
         vehicle_model: str | None = None,
         version: str | None = None,
         part_number: str | None = None,
@@ -211,7 +213,12 @@ class StampingProcessFeeRepository:
             q = q.filter(StampingProcessFee.location.in_(locations))
         elif location is not None:
             q = q.filter(StampingProcessFee.location == location)
-        if stamping_supplier is not None:
+        if stamping_suppliers is not None:
+            if not stamping_suppliers:
+                q = q.filter(false())
+            else:
+                q = q.filter(StampingProcessFee.stamping_supplier.in_(stamping_suppliers))
+        elif stamping_supplier is not None:
             q = q.filter(StampingProcessFee.stamping_supplier == stamping_supplier)
         if vehicle_model is not None:
             q = q.filter(StampingProcessFee.vehicle_model == vehicle_model)
@@ -232,6 +239,7 @@ class StampingProcessFeeRepository:
         location: str | None = None,
         locations: list[str] | None = None,
         stamping_supplier: str | None = None,
+        stamping_suppliers: Sequence[str] | None = None,
         vehicle_model: str | None = None,
         version: str | None = None,
         part_number: str | None = None,
@@ -246,6 +254,7 @@ class StampingProcessFeeRepository:
             location=location,
             locations=locations,
             stamping_supplier=stamping_supplier,
+            stamping_suppliers=stamping_suppliers,
             vehicle_model=vehicle_model,
             version=version,
             part_number=part_number,
@@ -274,6 +283,7 @@ class StampingProcessFeeRepository:
         location: str | None = None,
         locations: list[str] | None = None,
         stamping_supplier: str | None = None,
+        stamping_suppliers: Sequence[str] | None = None,
         vehicle_model: str | None = None,
         version: str | None = None,
         part_number: str | None = None,
@@ -286,6 +296,7 @@ class StampingProcessFeeRepository:
             location=location,
             locations=locations,
             stamping_supplier=stamping_supplier,
+            stamping_suppliers=stamping_suppliers,
             vehicle_model=vehicle_model,
             version=version,
             part_number=part_number,
@@ -355,6 +366,7 @@ class StampingProcessFeeRepository:
         location: str | None = None,
         locations: list[str] | None = None,
         stamping_supplier: str | None = None,
+        stamping_suppliers: Sequence[str] | None = None,
         vehicle_model: str | None = None,
         version: str | None = None,
         part_number: str | None = None,
@@ -366,6 +378,7 @@ class StampingProcessFeeRepository:
             location=location,
             locations=locations,
             stamping_supplier=stamping_supplier,
+            stamping_suppliers=stamping_suppliers,
             vehicle_model=vehicle_model,
             version=version,
             part_number=part_number,

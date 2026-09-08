@@ -40,6 +40,7 @@ from app.schemas.vo.stamping_process_fee_vo import (
 )
 from app.schemas.vo.user_vo import UserVO
 from app.services.masterdata.location.location_service import LocationService
+from app.services.masterdata.supplier import SupplierService
 from app.services.masterdata.vehicle_model import VehicleModelService
 from app.services.stamping.process_fee.fee_math import resolve_final_fee
 from app.services.stamping.process_fee.scope import require_audit_scope, require_scope
@@ -126,11 +127,36 @@ class StampingProcessFeeService:
                         },
                     },
                 )
+        supplier_names = SupplierService().names_for_query(db, query.stamping_supplier)
+        if supplier_names is not None and not supplier_names:
+            return (
+                [],
+                0,
+                {
+                    "year": query.year,
+                    "location": query.location,
+                    "stamping_supplier": query.stamping_supplier,
+                    "vehicle_model": query.vehicle_model,
+                    "version": query.version,
+                    "part_number": query.part_number,
+                    "audit_status": query.audit_status,
+                    "only_zero": bool(query.only_zero),
+                    "summary": {
+                        "total_count": 0,
+                        "total_fee": Decimal("0"),
+                        "avg_fee": None,
+                        "zero_count": 0,
+                        "pending_count": 0,
+                        "approved_count": 0,
+                        "version_label": "—",
+                    },
+                },
+            )
         rows, total = self.fee_repo.paginate(
             db,
             year=query.year,
             locations=locations,
-            stamping_supplier=query.stamping_supplier,
+            stamping_suppliers=supplier_names,
             vehicle_model=query.vehicle_model,
             version=query.version,
             part_number=query.part_number,
@@ -154,7 +180,7 @@ class StampingProcessFeeService:
                 db,
                 year=query.year,
                 locations=locations,
-                stamping_supplier=query.stamping_supplier,
+                stamping_suppliers=supplier_names,
                 vehicle_model=query.vehicle_model,
                 version=query.version,
                 part_number=query.part_number,
@@ -316,16 +342,7 @@ class StampingProcessFeeService:
         vehicle_model: str | None = None,
         version: str | None = None,
     ) -> list[str]:
-        locations = self._expand_locations(db, location)
-        if locations is not None and not locations:
-            return []
-        return self.fee_repo.get_distinct_suppliers(
-            db,
-            year=year,
-            locations=locations,
-            vehicle_model=vehicle_model,
-            version=version,
-        )
+        return SupplierService().list_registered_names(db)
 
     def list_vehicle_models(
         self,

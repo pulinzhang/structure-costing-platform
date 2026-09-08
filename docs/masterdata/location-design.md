@@ -87,14 +87,14 @@ stamping / bom / yishiyiyi / costing / dashboard / llm
 主数据          ← 一级分组；在设置之上
   基地          ← 单叶
   项目          ← 二级分组（上传 / 一览表），见 [vehicle-model-design.md](vehicle-model-design.md)
-  供应商        ← 不建链，等供应商设计落地
+  供应商        ← 二级分组（上传 / 一览表），见 [supplier-design.md](supplier-design.md)
 设置
 ```
 
 **主数据**放在设置正上方：维护基地不是日常上传/核算路径，菜单按使用频率靠后。业务上仍是绝对上游（§3），**不要**并进「设置」（用户/系统配置与基地不是一类）。也不进一事一议。  
 分组本身**没有页面**（对齐「冲压工程」：`javascript:void(0)` + `data-submenu-toggle`，**不要**学「设置」把父级链到某 hash）。
 
-子菜单：基地为单叶；项目为二级分组（上传 + 一览表）。不要先写「供应商」的 `<a>`。
+子菜单：基地为单叶；项目为二级分组（上传 + 一览表）；供应商为二级分组（上传 + 一览表），见 [supplier-design.md](supplier-design.md)。
 
 无 `menu:location` / 项目两叶均无权限时，`applySidebarPermissions` 会藏叶子，空分组一并隐藏。
 
@@ -209,7 +209,7 @@ CRUD 路由：`view` 看，写操作对应该 `op`。按钮 `can('op:location:�
 
 ### 4.5 下游页：不改菜单位置
 
-工艺上传、布点、冲次、钢价等**侧栏条目不动**。控件文案继续叫 **采购基地**（与「基地」同一实体）。选项改为各切片接口内读本文，废止写死四字。
+布点、冲次、钢价、BOM 等**侧栏条目不动**。这些页控件文案继续叫 **采购基地**（与「基地」同一实体），选项改为各切片接口内读本文，废止写死四字。**工艺确认上传不选手选基地**，规范名由项目主数据行带出。
 
 仪表盘快捷入口**不**加「基地」（主数据不是核算看板）。
 
@@ -331,7 +331,7 @@ B8 与宪法「不加外键则不准提供改主键、不准提供删除」不�
 - 废止 `location_candidates`（`stamping_part_cost/helpers.py` 及引擎 / 零件核价 / 导出引用）
 - 前端写死 `['大连', '芜湖', '鄂尔多斯', '青岛']` 的列表筛选与 `<option>`
 - 各切片 `/filters/locations`（及仪表盘范围选项）：改为调 `list_enabled` / `list_registered`，查询带 `expand_for_query`
-- 工艺 / 布点 / 检具 / 冲次单价 / BOM 上传与列表、一事一议**基价**（上传表头经别名收成规范名再 `require_enabled`；筛选用 `expand_for_query`）、钢材联动与零件核价计算、核价引擎门禁
+- 布点 / 检具 / 冲次单价 / BOM 上传与列表（选手选基地后 `require_enabled`）、一事一议**基价**（上传表头经别名收成规范名再 `require_enabled`；筛选用 `expand_for_query`）、钢材联动与零件核价计算、核价引擎门禁。工艺确认上传不选手选，落库基地仍是项目行上的规范名
 - 采购对象生成 / 列表 / 导出：见 [bom-procurement-objects-design.md](../bom/bom-procurement-objects-design.md)（生成 `require_enabled`；列表筛 `list_registered` + 查询 `expand_for_query`；清单头不加基地外键）
 - LLM：只读本表 Model（解释层隔离，**禁止**调 LocationService）。现网写死的「青岛厂 / 芜湖厂 / 大连厂」**不进种子**；要对上就在基地页加别名，不要在 LLM 里保留第二套地图
 
