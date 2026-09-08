@@ -10,8 +10,8 @@ import pytest
 from app.schemas.vo.costing_engine_vo import CostingEngineAnnualItemVO, CostingEngineGateItemVO
 from app.services.costing.engine.annual_calc_planner import AnnualCalcPlanner
 from app.services.costing.engine.gate_navigate import build_navigate
+from app.services.costing.engine.orchestrator import RunOrchestrator
 from app.services.costing.engine.progress import map_progress
-from app.services.costing.engine.run_orchestrator import RunOrchestrator
 from app.services.costing.engine.scope_discovery import DiscoveryResult, L0Scope, ScopeDiscovery
 
 
@@ -164,7 +164,7 @@ def test_run_orchestrator_does_not_submit_nested_async_task() -> None:
     l0_result = SimpleNamespace(status="success")
 
     with patch(
-        "app.services.costing.engine.run_orchestrator.AsyncTaskService",
+        "app.services.costing.engine.orchestrator.run_orchestrator.AsyncTaskService",
         create=True,
     ) as _:
         pass

@@ -1,6 +1,6 @@
 """供应商主数据 Repository。"""
 
-from sqlalchemy import func, or_
+from sqlalchemy import func, or_, update
 from sqlalchemy.orm import Session, joinedload
 
 from app.models.masterdata.supplier import Supplier, SupplierAlias
@@ -138,6 +138,19 @@ class SupplierRepository:
         apply_payload_fields(record, patch)
         db.flush()
         return record
+
+    def update_full_name(self, db: Session, old_full_name: str, new_full_name: str) -> None:
+        db.execute(
+            update(Supplier)
+            .where(Supplier.full_name == old_full_name)
+            .values(full_name=new_full_name)
+        )
+        db.flush()
+        db.expire_all()
+
+    def delete(self, db: Session, record: Supplier) -> None:
+        db.delete(record)
+        db.flush()
 
     def create_alias(self, db: Session, payload: SupplierAliasInsert) -> SupplierAlias:
         record = model_from_payload(SupplierAlias, payload)

@@ -42,6 +42,12 @@ class BomProcurementObjectConfirmDTO(BaseModel):
     confirm_remark: str | None = Field(None, max_length=500)
 
 
+class BomProcurementObjectSupplierDTO(BaseModel):
+    """指定或清空合同对方。空串由 Service 收成 NULL。"""
+
+    supplier_name: str | None = Field(None, max_length=100)
+
+
 class BomProcurementObjectQuery(BaseModel):
     """列表查询。"""
 
@@ -55,6 +61,8 @@ class BomProcurementObjectQuery(BaseModel):
     part_number: str | None = Field(None, max_length=50)
     l0_part_number: str | None = Field(None, max_length=50)
     excel_row: int | None = Field(None, ge=1)
+    supplier_name: str | None = Field(None, max_length=100)
+    has_supplier: bool | None = Field(None, description="True=已指定对方；False=未指定")
     page: int = Field(1, ge=1)
     size: int = Field(20, ge=1, le=200)
 
@@ -134,6 +142,7 @@ class BomProcurementObjectWrite:
     confirmed_by: str | None
     confirmed_at: datetime | None
     confirm_remark: str | None
+    supplier_name: str | None
     audit_status: str
     created_by: str | None
     updated_by: str | None

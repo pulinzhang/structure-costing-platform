@@ -10,15 +10,17 @@ from app.common.permissions.codes import Perm
 from app.database import get_db
 from app.deps.permissions import require_any_perm, require_perm
 from app.schemas.common import PageResult
+from app.schemas.dto.stamping_die_dto import (
+    StampingDieAllocRatioUpdate,
+    StampingDiePartQuery,
+    StampingDieScopeDTO,
+)
 from app.schemas.vo.async_task_vo import AsyncTaskAcceptedVO, AsyncTaskProgressVO
 from app.schemas.vo.stamping_die_vo import (
-    StampingDieAllocRatioUpdate,
     StampingDieBatchDeleteResultVO,
     StampingDiePartDetailVO,
     StampingDiePartListVO,
-    StampingDiePartQuery,
     StampingDieProcessVO,
-    StampingDieScopeDTO,
     StampingDieScopeFilterVO,
 )
 from app.schemas.vo.user_vo import UserVO

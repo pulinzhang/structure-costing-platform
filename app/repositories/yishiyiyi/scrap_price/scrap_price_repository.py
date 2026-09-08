@@ -9,9 +9,10 @@ from datetime import datetime
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from app.common.types.repository_types import ScrapPriceFilterOptions
 from app.models.yishiyiyi import StampingScrapPrice
 from app.repositories.persist import model_from_payload
-from app.schemas.dto.stamping_scrap_price_dto import FilterOptions, ScrapPriceWrite
+from app.schemas.dto.stamping_scrap_price_dto import ScrapPriceWrite
 
 logger = logging.getLogger("repository.stamping_scrap_price")
 
@@ -109,7 +110,7 @@ class StampingScrapPriceRepository:
         )
         return [(r[0], r[1], int(r[2]), r[3]) for r in rows]
 
-    def get_filter_options(self, db: Session) -> FilterOptions:
+    def get_filter_options(self, db: Session) -> ScrapPriceFilterOptions:
         years = [
             row[0]
             for row in (
@@ -119,7 +120,7 @@ class StampingScrapPriceRepository:
                 .all()
             )
         ]
-        return FilterOptions(years=years)
+        return {"years": years}
 
     def replace_year_month(
         self,

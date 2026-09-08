@@ -337,7 +337,7 @@ class Perm:
     VEHICLE_MODEL_LIST_VIEW = "op:vehicle-model-list:view"  # 查看
     VEHICLE_MODEL_LIST_EXPORT = "op:vehicle-model-list:export"  # 导出
     VEHICLE_MODEL_LIST_CREATE = "op:vehicle-model-list:create"  # 新增
-    VEHICLE_MODEL_LIST_UPDATE = "op:vehicle-model-list:update"  # 编辑
+    VEHICLE_MODEL_LIST_UPDATE = "op:vehicle-model-list:update"  # 编辑生效/失效/供货台数
     VEHICLE_MODEL_LIST_DELETE = "op:vehicle-model-list:delete"  # 删除
 
     MENU_SUPPLIER = "menu:supplier"  # 供应商
@@ -351,6 +351,7 @@ class Perm:
     SUPPLIER_LIST_EXPORT = "op:supplier-list:export"  # 导出
     SUPPLIER_LIST_CREATE = "op:supplier-list:create"  # 新增
     SUPPLIER_LIST_UPDATE = "op:supplier-list:update"  # 编辑
+    SUPPLIER_LIST_DELETE = "op:supplier-list:delete"  # 删除
 
     MENU_SETTINGS = "menu:settings"  # 设置
 

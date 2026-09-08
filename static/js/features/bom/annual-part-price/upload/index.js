@@ -3,7 +3,7 @@
  * 下载模板：基地 + 项目 + 年度；导入：基地 + 年度
  */
 
-import { annualPartPriceUploadTemplate } from './template.js?v=9';
+import { annualPartPriceUploadTemplate } from './template.js?v=12';
 
 
 const API_BASE = '/api/bom/annual-part-price';
@@ -364,10 +364,20 @@ const AnnualPartPriceUploadPage = {
         try {
             const res = await HttpClient.post(`${API_BASE}/upload`, formData);
             const data = res.data || {};
-            const msg = res.message
-                || data.message
-                || `导入成功：新增 ${data.created_count ?? 0}，更新 ${data.updated_count ?? 0}`;
-            showToast(msg, 'success');
+            const created = data.created_count ?? 0;
+            const updated = data.updated_count ?? 0;
+            const skippedApproved = data.skipped_approved_count ?? 0;
+            const written = created + updated;
+            let toastType = 'success';
+            let msg = res.message || data.message || `导入成功：新增 ${created}，更新 ${updated}`;
+            if (written === 0 && skippedApproved > 0) {
+                toastType = 'warning';
+                msg = `更新 0 条：这 ${skippedApproved} 条已审核，导入不会覆盖。如需改价请先在列表反审核。`;
+            } else if (skippedApproved > 0) {
+                toastType = 'warning';
+                msg = `导入完成：新增 ${created} 条，更新 ${updated} 条；另有 ${skippedApproved} 条已审核未覆盖。`;
+            }
+            showToast(msg, toastType);
             this.hideProgress();
             this.clearSelectedFile(true);
         } catch (err) {

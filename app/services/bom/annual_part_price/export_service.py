@@ -104,6 +104,10 @@ class BomAnnualPartPriceExportService:
             "年份",
             "零件号",
             "零件名称",
+            "规格",
+            "采购单位",
+            "采购单价",
+            "转换系数",
             "单位",
             "单价",
             "原供货类型",
@@ -125,6 +129,12 @@ class BomAnnualPartPriceExportService:
                 record.year,
                 record.part_number,
                 record.part_name or "",
+                record.specification or "",
+                record.purchase_unit or "",
+                _unit_price_cell(record.purchase_unit_price)
+                if record.purchase_unit_price is not None
+                else "",
+                int(record.conversion_factor),
                 record.unit,
                 _unit_price_cell(record.unit_price),
                 record.supply_type,
@@ -136,18 +146,21 @@ class BomAnnualPartPriceExportService:
                 cell = ws.cell(row=row_idx, column=col, value=value)
                 cell.font = data_font
                 cell.border = thin_border
-                if col in (2, 5, 7, 10):
+                if col in (2, 6, 9, 11, 14):
                     cell.alignment = align_center
-                elif col == 6:
+                elif col in (7, 10):
                     cell.alignment = align_right
                     cell.number_format = "0.0000"
+                elif col == 8:
+                    cell.alignment = align_center
+                    cell.number_format = "0"
                 else:
                     cell.alignment = align_left
 
-        widths = [12, 10, 18, 24, 8, 12, 12, 16, 20, 10]
+        widths = [12, 10, 18, 24, 16, 12, 12, 12, 8, 12, 12, 16, 20, 10]
         for idx, width in enumerate(widths, start=1):
             ws.column_dimensions[get_column_letter(idx)].width = width
 
         ws.freeze_panes = "A2"
-        ws.auto_filter.ref = f"A1:J{max(1, len(records) + 1)}"
+        ws.auto_filter.ref = f"A1:N{max(1, len(records) + 1)}"
         return ws.title, len(records)

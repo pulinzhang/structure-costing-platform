@@ -10,6 +10,7 @@ from pydantic import BaseModel, field_serializer
 
 from app.common.money import Q3, format_money
 from app.common.timezone import datetime_to_iso
+from app.schemas.common.batch_result import BatchAuditCountsVO, BatchDeleteCountsVO
 
 
 def format_price_per_stroke(value: Any) -> str:
@@ -73,20 +74,16 @@ class StampingTonnagePriceImportResultVO(BaseModel):
     message: str = ""
 
 
-class StampingTonnagePriceBatchDeleteResultVO(BaseModel):
+class StampingTonnagePriceBatchDeleteResultVO(BatchDeleteCountsVO):
     """冲次单价按基地+年度批量删除结果 VO"""
 
     location: str
     year: int
-    deleted_count: int
-    skipped_approved_count: int = 0
     message: str = ""
 
 
-class StampingTonnagePriceBatchAuditResultVO(BaseModel):
+class StampingTonnagePriceBatchAuditResultVO(BatchAuditCountsVO):
     """按基地+年度批量审核 / 反审核结果"""
 
-    updated_count: int = 0
-    skipped_count: int = 0
     location: str
     year: int

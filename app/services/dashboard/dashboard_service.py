@@ -32,6 +32,7 @@ from app.repositories.yishiyiyi.base_price.steel_base_price_repository import (
 from app.repositories.yishiyiyi.policy.steel_price_policy_repository import (
     SteelPricePolicyRepository,
 )
+from app.schemas.dto.stamping_part_dto import StampingCascadeFilterQuery
 from app.schemas.vo.dashboard_vo import (
     DashboardAttentionItemVO,
     DashboardAuditBucketVO,
@@ -45,7 +46,6 @@ from app.schemas.vo.dashboard_vo import (
     SteelPriceCalcFilterOptionsVO,
     SteelPriceCalcStatsVO,
 )
-from app.schemas.vo.stamping_vo import StampingCascadeFilterQuery
 from app.services.masterdata.location.location_service import LocationService
 from app.services.stamping.stamping_service import StampingPartService
 from app.services.yishiyiyi.base_price.steel_base_price_service import SteelBasePriceService

@@ -9,9 +9,11 @@ import {
     renderPagination,
     unitPriceInputValue,
     parseUnitPriceInput,
+    conversionFactorInputValue,
+    parseConversionFactorInput,
     updateAnnualHud,
     updateAnnualFilterCapsules,
-} from './template.js?v=6';
+} from './template.js?v=10';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -33,6 +35,7 @@ const annualPartPriceState = {
     isBatchDeleting: false,
     batchAuditSubmitting: false,
     advancedOpen: false,
+    suppliers: [],
 };
 
 const API_BASE = '/api/bom/annual-part-price';
@@ -206,6 +209,7 @@ async function loadData(page = 1) {
         annualPartPriceState.totalPages = pageResult.total_pages || 1;
 
         const filters = pageResult.filters || {};
+        annualPartPriceState.suppliers = filters.suppliers || [];
         updateAnnualHud(filters.summary || {});
 
         if (tableBody) {
@@ -364,12 +368,38 @@ function openEditDrawer(record) {
     document.getElementById('annualEditYear').value = record.year;
     document.getElementById('annualEditPartNumber').value = record.part_number || '';
     document.getElementById('annualEditPartName').value = record.part_name || '';
+    document.getElementById('annualEditSpecification').value = record.specification || '';
+    document.getElementById('annualEditPurchaseUnit').value = record.purchase_unit || '';
+    document.getElementById('annualEditPurchaseUnitPrice').value =
+        record.purchase_unit_price == null || record.purchase_unit_price === ''
+            ? ''
+            : unitPriceInputValue(record.purchase_unit_price);
+    document.getElementById('annualEditConversionFactor').value =
+        conversionFactorInputValue(record.conversion_factor);
     document.getElementById('annualEditUnit').value = record.unit || '';
     document.getElementById('annualEditUnitPrice').value = unitPriceInputValue(record.unit_price);
     document.getElementById('annualEditSupplyType').value = record.supply_type || '';
-    document.getElementById('annualEditSupplierName').value = record.supplier_name || '';
+    fillAnnualSupplierSelect(record.supplier_name || '');
     document.getElementById('annualEditRemark').value = record.remark || '';
     openDrawer('annualEditDrawer', 'annualEditDrawerBackdrop');
+}
+
+function fillAnnualSupplierSelect(currentValue) {
+    const el = document.getElementById('annualEditSupplierName');
+    if (!el) return;
+    const enabled = annualPartPriceState.suppliers || [];
+    let html = '<option value="">（空）</option>';
+    const seen = new Set();
+    enabled.forEach((item) => {
+        const name = item.full_name || '';
+        seen.add(name);
+        html += `<option value="${esc(name)}">${esc(item.abbreviation || '')}（${esc(name)}）</option>`;
+    });
+    if (currentValue && !seen.has(currentValue)) {
+        html += `<option value="${esc(currentValue)}">${esc(currentValue)}</option>`;
+    }
+    el.innerHTML = html;
+    el.value = currentValue || '';
 }
 
 function openDeleteDrawer(id) {
@@ -556,11 +586,26 @@ async function batchDeleteByFilters() {
 async function saveRecord() {
     const recordId = document.getElementById('annualEditRecordId')?.value;
     const partName = document.getElementById('annualEditPartName')?.value?.trim() || null;
+    const specification = document.getElementById('annualEditSpecification')?.value?.trim() || null;
+    const purchaseUnit = document.getElementById('annualEditPurchaseUnit')?.value?.trim() || null;
+    const purchaseRaw = document.getElementById('annualEditPurchaseUnitPrice')?.value?.trim() || '';
+    const purchaseUnitPrice = purchaseRaw ? parseUnitPriceInput(purchaseRaw) : null;
+    const conversionFactor = parseConversionFactorInput(
+        document.getElementById('annualEditConversionFactor')?.value,
+    );
     const unit = document.getElementById('annualEditUnit')?.value?.trim();
     const unitPrice = parseUnitPriceInput(document.getElementById('annualEditUnitPrice')?.value);
     const supplyType = document.getElementById('annualEditSupplyType')?.value?.trim() || null;
     const supplierName = document.getElementById('annualEditSupplierName')?.value?.trim() || null;
     const remark = document.getElementById('annualEditRemark')?.value?.trim() || null;
+    if (purchaseRaw && purchaseUnitPrice == null) {
+        showToast('采购单价须 ≥ 0，最多4位小数', 'warning');
+        return;
+    }
+    if (!conversionFactor) {
+        showToast('转换系数须为正整数（默认 1；1 打=12 个则填 12）', 'warning');
+        return;
+    }
     if (!recordId || !unit || unitPrice == null) {
         showToast('请填写单位和单价（单价须 ≥ 0，最多4位小数；填 0 表示成品核价不计入该件）', 'warning');
         return;
@@ -572,6 +617,10 @@ async function saveRecord() {
     try {
         await HttpClient.put(`${API_BASE}/${recordId}`, {
             part_name: partName,
+            specification,
+            purchase_unit: purchaseUnit,
+            purchase_unit_price: purchaseUnitPrice,
+            conversion_factor: conversionFactor,
             unit,
             unit_price: unitPrice,
             supply_type: supplyType,

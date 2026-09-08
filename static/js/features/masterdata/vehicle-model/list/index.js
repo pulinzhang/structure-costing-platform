@@ -7,7 +7,7 @@ import {
     renderHudCards,
     renderTableBody,
     vehicleModelListTemplate,
-} from './template.js?v=3';
+} from './template.js?v=4';
 
 const API_BASE = '/api/masterdata/vehicle-models';
 const DRAWER_ANIMATION_MS = 300;
@@ -176,6 +176,20 @@ function readPeriod(prefix) {
     };
 }
 
+function readSuppliedUnits(prefix) {
+    const raw = document.getElementById(`${prefix}SuppliedUnits`)?.value ?? '';
+    if (raw === '') {
+        showToast('请填写当前供货台数', 'warning');
+        return null;
+    }
+    const value = Number(raw);
+    if (!Number.isInteger(value) || value < 0) {
+        showToast('当前供货台数必须为 ≥0 的整数（台）', 'warning');
+        return null;
+    }
+    return value;
+}
+
 function bindHud() {
     document.getElementById('vmHudCards')?.addEventListener('click', (event) => {
         const allBtn = event.target.closest('[data-action="filter-all"]');
@@ -202,6 +216,8 @@ function bindCreateDrawer() {
         fillYearMonthSelects('vmCreate', clock.getFullYear(), clock.getMonth() + 1, null, null);
         const code = document.getElementById('vmCreateCode');
         if (code) code.value = '';
+        const supplied = document.getElementById('vmCreateSuppliedUnits');
+        if (supplied) supplied.value = '0';
         openDrawer('vmCreateDrawer', 'vmCreateBackdrop');
     });
     document.getElementById('vmCloseCreate')?.addEventListener('click', close);
@@ -220,10 +236,13 @@ function bindCreateDrawer() {
         }
         const period = readPeriod('vmCreate');
         if (!period) return;
+        const suppliedUnits = readSuppliedUnits('vmCreate');
+        if (suppliedUnits === null) return;
         try {
             await HttpClient.post(API_BASE, {
                 location,
                 vehicle_model: vehicleModel,
+                current_supplied_units: suppliedUnits,
                 ...period,
             });
             showToast('创建成功', 'success');
@@ -246,10 +265,15 @@ function bindEditDrawer() {
         if (!location || !code) return;
         const period = readPeriod('vmEdit');
         if (!period) return;
+        const suppliedUnits = readSuppliedUnits('vmEdit');
+        if (suppliedUnits === null) return;
         try {
             await HttpClient.patch(
                 `${API_BASE}/${encodeURIComponent(location)}/${encodeURIComponent(code)}`,
-                period,
+                {
+                    ...period,
+                    current_supplied_units: suppliedUnits,
+                },
             );
             showToast('更新成功', 'success');
             close();
@@ -278,6 +302,8 @@ function openEditDrawer(location, vehicleModel) {
         row.expiry_year,
         row.expiry_month,
     );
+    const supplied = document.getElementById('vmEditSuppliedUnits');
+    if (supplied) supplied.value = String(row.current_supplied_units ?? 0);
     openDrawer('vmEditDrawer', 'vmEditBackdrop');
 }
 

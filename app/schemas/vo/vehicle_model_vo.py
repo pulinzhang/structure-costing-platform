@@ -18,6 +18,7 @@ class VehicleModelVO(BaseModel):
     effective_month: int
     expiry_year: int | None = None
     expiry_month: int | None = None
+    current_supplied_units: int = Field(..., description="当前供货台数，单位台")
     period_status: str = Field(..., description="未生效 | 可引入 | 已失效")
 
 

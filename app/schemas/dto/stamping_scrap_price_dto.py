@@ -93,12 +93,6 @@ class StampingScrapPriceCopyMonth(BaseModel):
     target_month: int = Field(..., ge=1, le=12, description="目标月份")
 
 
-class FilterOptions(BaseModel):
-    """筛选选项（Repository → Service 内部）"""
-
-    years: list[int] = Field(default_factory=list)
-
-
 @dataclass(slots=True)
 class ScrapPriceWrite:
     """废料月度销售价整行写入（含净价与审计人）。"""

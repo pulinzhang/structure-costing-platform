@@ -117,6 +117,8 @@ export function procurementObjectListTemplate() {
                             ${filterSelect('poKindFilter', '对象种类')}
                             ${filterSelect('poConfirmFilter', '确认')}
                             ${filterSelect('poAuditFilter', '审核')}
+                            ${filterSelect('poSupplierFilter', '供应商')}
+                            ${filterSelect('poHasSupplierFilter', '对方')}
                             ${filterInput('poPartFilter', '零件号', '零件号或总成')}
                             <button id="poResetBtn" type="button"
                                     class="inline-flex items-center gap-1.5 h-8 px-3 text-[11px] font-medium rounded-md bg-transparent text-[#6E6E73] border border-[#2A2A35] hover:bg-[#FF1E27]/10 hover:border-[#FF1E27]/50 hover:text-[#FF1E27] transition-all duration-200">
@@ -129,7 +131,7 @@ export function procurementObjectListTemplate() {
                 </div>
 
                 <div class="overflow-x-auto bg-[#0A0A0E] brabus-bg-grid">
-                    <table class="w-full table-fixed bg-transparent border-collapse" style="min-width: 1280px;">
+                    <table class="w-full table-fixed bg-transparent border-collapse" style="min-width: 1420px;">
                         <colgroup>
                             <col style="width:3px">
                             <col style="width:88px">
@@ -138,8 +140,9 @@ export function procurementObjectListTemplate() {
                             <col style="width:96px">
                             <col style="width:88px">
                             <col style="width:72px">
+                            <col style="width:140px">
                             <col style="width:72px">
-                            <col style="width:72px">
+                            <col style="width:88px">
                             <col style="width:88px">
                         </colgroup>
                         <thead>
@@ -151,6 +154,7 @@ export function procurementObjectListTemplate() {
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.06em] text-[#555555]">对象种类</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.06em] text-[#555555]">材料</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.06em] text-[#555555]">确认</th>
+                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.06em] text-[#555555]">供应商</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.06em] text-[#555555]">审核</th>
                                 <th class="px-2 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-[#555555]">操作</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.06em] text-[#555555]">范围</th>
@@ -256,6 +260,13 @@ function confirmDrawerHtml() {
                         <option value="in_house">自制</option>
                     </select>
                 </label>
+                <label class="space-y-1 block" id="poConfirmSupplierWrap">
+                    <span class="text-[10px] text-[#777777]">合同对方</span>
+                    <select id="poConfirmSupplier" class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-white focus:outline-none focus:border-[#FF1E27]">
+                        <option value="">未指定</option>
+                    </select>
+                    <p class="text-[10px] text-[#555555]">找不到请到供应商一览补档（#/supplier-list）。自制会清空对方。</p>
+                </label>
                 <label class="space-y-1 block">
                     <span class="text-[10px] text-[#777777]">确认备注</span>
                     <textarea id="poConfirmRemark" rows="3" class="w-full px-3 py-2 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-white focus:outline-none focus:border-[#FF1E27] rounded resize-none"></textarea>
@@ -282,13 +293,17 @@ function detailDrawerHtml() {
     `;
 }
 
-export function renderProcurementObjectRows(records) {
+export function renderProcurementObjectRows(records, suppliers) {
     if (!records || records.length === 0) {
-        return `<tr><td colspan="10" class="py-10 text-center text-[#8E8E93] text-[12px]">暂无数据</td></tr>`;
+        return `<tr><td colspan="11" class="py-10 text-center text-[#8E8E93] text-[12px]">暂无数据</td></tr>`;
     }
     const kindLabel = KIND_LABELS;
     const sectionLabel = SECTION_LABELS;
     const confirmLabel = CONFIRM_LABELS;
+    const abbrByName = {};
+    (suppliers || []).forEach((item) => {
+        if (item && item.full_name) abbrByName[item.full_name] = item.abbreviation || '';
+    });
     return records.map((row) => {
         const confirmBtn = row.section === 'object'
             ? `<button type="button" data-action="confirm" data-id="${esc(row.id)}"
@@ -318,6 +333,13 @@ export function renderProcurementObjectRows(records) {
                 <div class="text-[9px] text-[#555555]">${esc(row.thickness_text || '')}</div>
             </td>
             <td class="px-2 py-2 text-[10px] text-[#C8C8D0]">${esc(confirmLabel[row.confirm_status] || row.confirm_status)}</td>
+            <td class="px-2 py-2 overflow-hidden text-[10px] text-[#8E8E93]">
+                ${row.section === 'object'
+                    ? (row.supplier_name
+                        ? `<div class="truncate text-[#C8C8D0]" title="${esc(row.supplier_name)}">${esc(abbrByName[row.supplier_name] ? `${abbrByName[row.supplier_name]}（${row.supplier_name}）` : row.supplier_name)}</div>`
+                        : `<span class="text-[#555555]">未指定</span>`)
+                    : `<span class="text-[#3A3A42]">—</span>`}
+            </td>
             <td class="px-2 py-2 text-[10px] text-[#8E8E93]">${esc(AUDIT_LABELS[row.audit_status] || row.audit_status)}</td>
             <td class="px-1 py-2 text-center">
                 ${confirmBtn}

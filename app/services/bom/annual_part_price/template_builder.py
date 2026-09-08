@@ -9,11 +9,17 @@ from io import BytesIO
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
+from openpyxl.worksheet.worksheet import Worksheet
 
 from app.parsers.bom.annual_part_price_parser import (
+    DEFAULT_CONVERSION_FACTOR,
+    HEADER_CONVERSION_FACTOR,
     HEADER_PART_NAME,
     HEADER_PART_NUMBER,
+    HEADER_PURCHASE_UNIT,
+    HEADER_PURCHASE_UNIT_PRICE,
     HEADER_REMARK,
+    HEADER_SPECIFICATION,
     HEADER_SUPPLIER,
     HEADER_SUPPLY_TYPE,
     HEADER_UNIT,
@@ -21,18 +27,37 @@ from app.parsers.bom.annual_part_price_parser import (
 )
 
 _SHEET_TITLE = "年度零件价"
+_NOTES_SHEET_TITLE = "填写说明"
 _HEADERS = (
     HEADER_PART_NUMBER,
     HEADER_PART_NAME,
+    HEADER_SPECIFICATION,
+    HEADER_PURCHASE_UNIT,
+    HEADER_PURCHASE_UNIT_PRICE,
+    HEADER_CONVERSION_FACTOR,
     HEADER_UNIT,
     HEADER_UNIT_PRICE,
     HEADER_SUPPLY_TYPE,
     HEADER_SUPPLIER,
     HEADER_REMARK,
 )
-_COLUMN_WIDTHS = (18, 24, 8, 12, 12, 16, 20)
-_UNIT_PRICE_COL = 4
-_CENTER_COLS = frozenset({3, 5})
+_COLUMN_WIDTHS = (18, 24, 16, 12, 12, 12, 10, 12, 12, 16, 20)
+_PURCHASE_PRICE_COL = 5
+_FACTOR_COL = 6
+_UNIT_PRICE_COL = 8
+_CENTER_COLS = frozenset({4, 7, 9})
+
+_TEMPLATE_ZERO_PRICE = Decimal("0.0000")
+
+_FILL_NOTES = (
+    "「单位」「单价」是核价口径：成品核价用 单价 × BOM 用量。用量来自材料清单，单位须与 BOM 一致（pcs、mm 等）。不要把采购包装单位（打、瓶）填进「单位」。",
+    "报价常按包装（打、瓶），BOM 按消耗（个、mm）。量纲不同时填写采购单位、采购单价、转换系数，系统写入核价单价，避免瓶价直接乘 mm。",
+    "转换系数必须是正整数，默认 1。含义：1 个采购单位 = 转换系数 个核价单位。核价单价 = 采购单价 ÷ 转换系数。不要填 1/12 这类分数。",
+    "例：120 元/打、BOM 按个用 → 系数填 12（1 打=12 个），核价单价 10 元/个。例：90 元/瓶、BOM 按 mm、1 瓶=30000 mm → 系数填 30000，核价单价 0.003 元/mm。",
+    "同单位只改「单价」即可，采购单价留空、系数保持 1。不同单位：改采购单位、填采购单价和正整数系数；「单价」可仍为 0，有采购单价时系统按公式覆盖。",
+    "「规格」从 BOM 料厚/规格原文预填，可改；不参与取价（仍按零件号匹配）。",
+    "上传时选择基地+年度。本文件填完即可导入，不必删除「填写说明」页。",
+)
 
 
 @dataclass(frozen=True)
@@ -41,11 +66,26 @@ class AnnualPartPriceTemplateRow:
 
     part_number: str
     part_name: str
-    unit: str
-    unit_price: Decimal
-    supply_type: str
+    specification: str = ""
+    purchase_unit: str = ""
+    purchase_unit_price: Decimal | None = None
+    conversion_factor: int = DEFAULT_CONVERSION_FACTOR
+    unit: str = "pcs"
+    unit_price: Decimal = _TEMPLATE_ZERO_PRICE
+    supply_type: str = ""
     supplier_name: str = ""
     remark: str = ""
+
+
+def _write_notes(sheet: Worksheet, lines: tuple[str, ...]) -> None:
+    sheet["A1"] = "填写说明"
+    sheet["A1"].font = Font(name="微软雅黑", size=12, bold=True, color="C00000")
+    for idx, line in enumerate(lines, start=3):
+        sheet.cell(row=idx, column=1, value=f"{idx - 2}. {line}")
+        sheet.cell(row=idx, column=1).font = Font(name="微软雅黑", size=10)
+        sheet.cell(row=idx, column=1).alignment = Alignment(wrap_text=True, vertical="center")
+        sheet.row_dimensions[idx].height = 36
+    sheet.column_dimensions["A"].width = 96
 
 
 def render_import_template(rows: list[AnnualPartPriceTemplateRow]) -> bytes:
@@ -76,9 +116,13 @@ def render_import_template(rows: list[AnnualPartPriceTemplateRow]) -> bytes:
         cell.border = thin_border
 
     for row_idx, sample in enumerate(rows, start=2):
-        values: list[str | Decimal] = [
+        values: list[str | Decimal | int | None] = [
             sample.part_number,
             sample.part_name,
+            sample.specification,
+            sample.purchase_unit,
+            sample.purchase_unit_price,
+            sample.conversion_factor,
             sample.unit,
             sample.unit_price,
             sample.supply_type,
@@ -89,9 +133,13 @@ def render_import_template(rows: list[AnnualPartPriceTemplateRow]) -> bytes:
             cell = sheet.cell(row=row_idx, column=col, value=value)
             cell.font = data_font
             cell.border = thin_border
-            if col == _UNIT_PRICE_COL:
+            if col in (_UNIT_PRICE_COL, _PURCHASE_PRICE_COL):
                 cell.alignment = align_right
-                cell.number_format = "0.0000"
+                if value is not None:
+                    cell.number_format = "0.0000"
+            elif col == _FACTOR_COL:
+                cell.alignment = align_center
+                cell.number_format = "0"
             elif col in _CENTER_COLS:
                 cell.alignment = align_center
             else:
@@ -100,6 +148,9 @@ def render_import_template(rows: list[AnnualPartPriceTemplateRow]) -> bytes:
     for idx, width in enumerate(_COLUMN_WIDTHS, start=1):
         sheet.column_dimensions[get_column_letter(idx)].width = width
     sheet.freeze_panes = "A2"
+
+    notes = workbook.create_sheet(_NOTES_SHEET_TITLE)
+    _write_notes(notes, _FILL_NOTES)
 
     buffer = BytesIO()
     workbook.save(buffer)

@@ -55,6 +55,24 @@ class OperationLogFilterOptions(TypedDict):
     methods: list[str]
 
 
+class ScrapPriceFilterOptions(TypedDict):
+    """废料价筛选项（仅已有数据的年份）。"""
+
+    years: list[int]
+
+
+class SteelBasePriceFilterOptions(TypedDict):
+    """钢材基准价筛选项。"""
+
+    years: list[int]
+    months: list[int]
+    locations: list[str]
+    steel_mills: list[str]
+    category_names: list[str]
+    grades: list[str]
+    specs: list[str]
+
+
 class FileTraceFilterValues(TypedDict):
     """文件溯源筛选项。"""
 

@@ -102,7 +102,7 @@ class StampingScrapPriceCrudService:
     def get_filter_options(self, db: Session) -> StampingScrapPriceFilterOptionsVO:
         options = self.repository.get_filter_options(db)
         return StampingScrapPriceFilterOptionsVO(
-            years=options.years,
+            years=options["years"],
             locations=list(SCRAP_PRICE_LOCATIONS),
         )
 

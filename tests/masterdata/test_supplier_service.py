@@ -14,7 +14,7 @@ from sqlalchemy.pool import StaticPool
 
 from app.common.audit import SYSTEM_USER
 from app.database import Base
-from app.exceptions.base import BusinessException
+from app.exceptions.base import BusinessException, NotFoundException
 from app.models.masterdata.supplier import Supplier, SupplierAlias
 from app.schemas.dto.supplier_dto import (
     SupplierAliasCreateDTO,
@@ -263,3 +263,44 @@ def test_supplier_service_does_not_import_downstream() -> None:
     assert "app.services.stamping" not in source
     assert "app.services.bom" not in source
     assert "app.services.costing" not in source
+
+
+def test_rename_full_name_keeps_old_as_alias(memory_db: Session) -> None:
+    service = SupplierService()
+    _create(service, memory_db, aliases=["常庆汽配"])
+    updated = service.update(
+        memory_db,
+        "安庆常庆汽车部件有限公司",
+        SupplierUpdateDTO(full_name="安庆常庆汽车部件有限公司新名"),
+        current_user=SYSTEM_USER,
+    )
+    assert updated.full_name == "安庆常庆汽车部件有限公司新名"
+    assert "安庆常庆汽车部件有限公司" in updated.aliases
+    assert "常庆汽配" in updated.aliases
+
+
+def test_rename_to_own_alias(memory_db: Session) -> None:
+    service = SupplierService()
+    _create(service, memory_db, aliases=["常庆汽配"])
+    updated = service.update(
+        memory_db,
+        "安庆常庆汽车部件有限公司",
+        SupplierUpdateDTO(full_name="常庆汽配"),
+        current_user=SYSTEM_USER,
+    )
+    assert updated.full_name == "常庆汽配"
+    assert "安庆常庆汽车部件有限公司" in updated.aliases
+    assert "常庆汽配" not in updated.aliases
+
+
+def test_delete_unreferenced_supplier(memory_db: Session) -> None:
+    service = SupplierService()
+    _create(service, memory_db)
+    service.delete(memory_db, "安庆常庆汽车部件有限公司")
+    with pytest.raises(NotFoundException):
+        service.update(
+            memory_db,
+            "安庆常庆汽车部件有限公司",
+            SupplierUpdateDTO(is_enabled=False),
+            current_user=SYSTEM_USER,
+        )

@@ -29,3 +29,9 @@ class VehicleModel(AuditUserMixin, Base):
         Integer, nullable=True, comment="失效年，与失效月同空或同有"
     )
     expiry_month: Mapped[int | None] = mapped_column(Integer, nullable=True, comment="失效月 1–12")
+    current_supplied_units: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=0,
+        comment="当前供货台数，单位台；日后分摊上限用",
+    )

@@ -19,6 +19,7 @@ from app.common.vehicle_model import normalize_vehicle_model
 from app.exceptions.base import BusinessException, NotFoundException
 from app.models.masterdata.vehicle_model import VehicleModel
 from app.parsers.masterdata.vehicle_model_parser import (
+    HEADER_CURRENT_SUPPLIED_UNITS,
     HEADER_EFFECTIVE_MONTH,
     HEADER_EFFECTIVE_YEAR,
     HEADER_EXPIRY_MONTH,
@@ -58,6 +59,7 @@ _IMPORT_HEADERS = (
     HEADER_EFFECTIVE_MONTH,
     HEADER_EXPIRY_YEAR,
     HEADER_EXPIRY_MONTH,
+    HEADER_CURRENT_SUPPLIED_UNITS,
 )
 
 
@@ -86,8 +88,9 @@ def _new_import_sheet() -> tuple[Workbook, Worksheet, Font, Border]:
         cell.border = thin_border
     sheet.column_dimensions["A"].width = 14
     sheet.column_dimensions["B"].width = 16
-    for col_letter in ("C", "D", "E", "F"):
-        sheet.column_dimensions[col_letter].width = 12
+    for col_letter in ("C", "D", "E", "F", "G"):
+        sheet.column_dimensions[col_letter].width = 14
+    sheet.column_dimensions["G"].width = 16
     return workbook, sheet, data_font, thin_border
 
 
@@ -336,6 +339,7 @@ class VehicleModelService:
                     effective_month=dto.effective_month,
                     expiry_year=dto.expiry_year,
                     expiry_month=dto.expiry_month,
+                    current_supplied_units=dto.current_supplied_units,
                     created_by=audit["created_by"],
                     updated_by=audit["updated_by"],
                 ),
@@ -376,6 +380,7 @@ class VehicleModelService:
             "effective_month": dto.effective_month,
             "expiry_year": dto.expiry_year,
             "expiry_month": dto.expiry_month,
+            "current_supplied_units": dto.current_supplied_units,
             "updated_by": audit["updated_by"],
         }
         try:
@@ -426,7 +431,7 @@ class VehicleModelService:
             raise BusinessException("没有可导入的项目行")
 
         pending: list[VehicleModelInsert] = []
-        seen: dict[tuple[str, str], tuple[int, int, int | None, int | None]] = {}
+        seen: dict[tuple[str, str], tuple[int, int, int | None, int | None, int]] = {}
         skipped_count = 0
         errors: list[str] = []
         audit = audit_create(current_user)
@@ -451,22 +456,23 @@ class VehicleModelService:
             except BusinessException as exc:
                 errors.append(f"第 {row.row_number} 行：{exc.message}")
                 continue
-            period = (
+            fingerprint = (
                 row.effective_year,
                 row.effective_month,
                 row.expiry_year,
                 row.expiry_month,
+                row.current_supplied_units,
             )
             key = (canonical, code)
             if key in seen:
-                if seen[key] == period:
+                if seen[key] == fingerprint:
                     skipped_count += 1
                     continue
                 errors.append(
-                    f"第 {row.row_number} 行：与文件内已有「{canonical} / {code}」生效失效不一致"
+                    f"第 {row.row_number} 行：与文件内已有「{canonical} / {code}」生效失效或供货台数不一致"
                 )
                 continue
-            seen[key] = period
+            seen[key] = fingerprint
             if self.repository.get(db, canonical, code) is not None:
                 skipped_count += 1
                 continue
@@ -478,6 +484,7 @@ class VehicleModelService:
                     effective_month=row.effective_month,
                     expiry_year=row.expiry_year,
                     expiry_month=row.expiry_month,
+                    current_supplied_units=row.current_supplied_units,
                     created_by=audit["created_by"],
                     updated_by=audit["updated_by"],
                 )
@@ -510,7 +517,7 @@ class VehicleModelService:
         _write_import_row(
             sheet,
             2,
-            ("青岛", "T13J", 2026, 1, None, None),
+            ("青岛", "T13J", 2026, 1, None, None, 0),
             data_font,
             thin_border,
         )
@@ -546,6 +553,7 @@ class VehicleModelService:
                     record.effective_month,
                     record.expiry_year,
                     record.expiry_month,
+                    record.current_supplied_units,
                 ),
                 data_font,
                 thin_border,
@@ -631,5 +639,6 @@ class VehicleModelService:
             effective_month=record.effective_month,
             expiry_year=record.expiry_year,
             expiry_month=record.expiry_month,
+            current_supplied_units=record.current_supplied_units,
             period_status=period_status,
         )

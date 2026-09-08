@@ -17,13 +17,13 @@ class Supplier(AuditUserMixin, Base):
     )
 
     full_name: Mapped[str] = mapped_column(
-        String(100), primary_key=True, comment="全称，创建后只读；下游规范名"
+        String(100), primary_key=True, comment="全称，规范名；可改，RESTRICT 拦直接下一跳"
     )
     abbreviation: Mapped[str] = mapped_column(
-        String(50), nullable=False, comment="缩写，创建后只读；界面短名"
+        String(50), nullable=False, comment="缩写，界面短名；可改"
     )
     erp_code: Mapped[str] = mapped_column(
-        String(50), nullable=False, comment="ERP 代码，创建后只读；对外身份"
+        String(50), nullable=False, comment="ERP 代码，对外身份；可改"
     )
     is_enabled: Mapped[bool] = mapped_column(
         Boolean, default=True, nullable=False, comment="启用状态"

@@ -3,6 +3,40 @@
 from dataclasses import dataclass
 from decimal import Decimal
 
+from pydantic import BaseModel, Field, field_validator
+
+from app.common.money import Q2, quantize_money
+
+
+class StampingDiePartQuery(BaseModel):
+    location: str = ""
+    vehicle_model: str = ""
+    part_number: str | None = None
+    page: int = Field(1, ge=1)
+    size: int = Field(10, ge=1, le=100)
+
+    @field_validator("part_number", mode="before")
+    @classmethod
+    def _strip_optional(cls, value: object) -> str | None:
+        if value is None:
+            return None
+        text = str(value).strip()
+        return text or None
+
+
+class StampingDieScopeDTO(BaseModel):
+    location: str = Field(..., min_length=1)
+    vehicle_model: str = Field(..., min_length=1)
+
+
+class StampingDieAllocRatioUpdate(BaseModel):
+    alloc_ratio: Decimal
+
+    @field_validator("alloc_ratio", mode="before")
+    @classmethod
+    def _ratio(cls, value: object) -> Decimal:
+        return quantize_money(value, Q2)
+
 
 @dataclass
 class StampingDiePartInsert:

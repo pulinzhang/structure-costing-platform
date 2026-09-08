@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from collections import defaultdict
 from collections.abc import Sequence
-from decimal import Decimal
 
 from app.models.bom.node import BomNode, BomSnapshot
 from app.services.bom.annual_part_price.template_builder import AnnualPartPriceTemplateRow
@@ -13,8 +12,6 @@ from app.services.bom.annual_part_price.template_builder import AnnualPartPriceT
 SUPPLY_TYPE_STANDARD = "标准件"
 SUPPLY_TYPE_GLUE = "胶块"
 SUPPLY_TYPE_CARRYOVER = "沿用"
-
-_TEMPLATE_ZERO_PRICE = Decimal("0.0000")
 _GLUE_NAME_KEYS = ("胶",)
 _FASTENER_NAME_KEYS = ("螺母", "螺栓", "螺钉", "铆钉", "卡扣", "卡子")
 
@@ -49,13 +46,16 @@ def _make_row(
     part_number: str,
     part_name: str,
     qty_unit: str | None,
+    thickness_text: str | None,
     supply_type: str,
 ) -> AnnualPartPriceTemplateRow:
+    unit = _normalize_unit(qty_unit)
     return AnnualPartPriceTemplateRow(
         part_number=part_number,
         part_name=part_name,
-        unit=_normalize_unit(qty_unit),
-        unit_price=_TEMPLATE_ZERO_PRICE,
+        specification=(thickness_text or "").strip(),
+        purchase_unit=unit,
+        unit=unit,
         supply_type=supply_type,
     )
 
@@ -110,6 +110,7 @@ def collect_template_rows_from_snapshot_nodes(
                     part_number=part_number,
                     part_name=part_name,
                     qty_unit=node.qty_unit,
+                    thickness_text=node.thickness_text,
                     supply_type=resolve_template_supply_type(
                         part_name,
                         is_other_leaf=part_number in other_leaf_part_numbers,

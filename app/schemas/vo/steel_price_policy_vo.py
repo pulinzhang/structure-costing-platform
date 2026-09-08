@@ -1,62 +1,14 @@
 """
 钢价政策 VO - 返回给前端的数据结构
-所有枚举和 Response 类型均定义于此，与 DTO（Request）分离
 """
 
 from datetime import datetime
 from decimal import Decimal
-from enum import Enum
 
 from pydantic import BaseModel, Field, field_serializer
 
 from app.common.money import Q2, optional_format_money
 from app.common.timezone import datetime_to_iso
-
-# ============================
-# 枚举定义（与 DTO 共享一份）
-# ============================
-
-
-class PolicyType(str, Enum):
-    """政策类型枚举"""
-
-    THICKNESS = "THICKNESS"
-    WIDTH = "WIDTH"
-    THICKNESS_WIDTH = "THICKNESS_WIDTH"
-
-
-class GradeType(str, Enum):
-    """grade_value 的语义类型枚举"""
-
-    GRADE = "GRADE"
-    WIDTH_RANGE = "WIDTH_RANGE"
-    CATEGORY = "CATEGORY"
-
-
-class Operator(str, Enum):
-    """区间操作符枚举"""
-
-    GTE = ">="
-    GT = ">"
-    LTE = "<="
-    LT = "<"
-
-
-# ============================
-# 筛选选项 VO
-# ============================
-
-
-class FilterOptions(BaseModel):
-    """筛选选项（Repository 层 → Service → PolicyOptionsResponse 的中间结构）"""
-
-    years: list[int] = Field(default_factory=list)
-    months: list[int] = Field(default_factory=list)
-    steel_mills: list[str] = Field(default_factory=list)
-    category_names: list[str] = Field(default_factory=list)
-    policy_types: list[str] = Field(default_factory=list)
-    grade_types: list[str] = Field(default_factory=list)
-    grade_values: list[str] = Field(default_factory=list)
 
 
 class PolicyOptionsResponse(BaseModel):

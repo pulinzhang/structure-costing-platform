@@ -75,15 +75,16 @@ export function vehicleModelUploadTemplate() {
                                 <li><span class="text-[#9e9e9e]">项目代号</span>：入库一律大写</li>
                                 <li><span class="text-[#9e9e9e]">生效年 / 生效月</span>：必填</li>
                                 <li><span class="text-[#9e9e9e]">失效年 / 失效月</span>：同空或同有</li>
+                                <li><span class="text-[#9e9e9e]">当前供货台数</span>：单位台，空视为 0</li>
                             </ul>
                         </div>
                         <div>
                             <h6 class="text-[10px] uppercase tracking-wider text-[#616161] mb-2">写入规则</h6>
                             <ul class="list-disc list-inside text-xs text-[#616161] space-y-1.5">
                                 <li>主键：基地 + 项目代号</li>
-                                <li>库里已有则跳过，不覆盖生效/失效</li>
+                                <li>库里已有则跳过，不覆盖生效/失效/供货台数</li>
                                 <li>任一行失败则整单不写入</li>
-                                <li>改期请到一览表抽屉</li>
+                                <li>改期或改台数请到一览表抽屉</li>
                             </ul>
                         </div>
                         <a href="#/vehicle-model-list" class="block text-[11px] text-[#d32f2f] hover:text-[#ff5252]">打开项目一览表 →</a>

@@ -143,7 +143,7 @@ costing_assembly_costs.level     = 核价卡根 bom_nodes.level
   grand_total = total_amount + indirect_amount
 
 报价（可空）
-  年度价命中 R.part_number → vendor_quote = unit_price，vendor_name = supplier_name
+  年度价命中 R.part_number → vendor_quote = unit_price，vendor_name = supplier_name（价表档案原文；不过供应商 `require_enabled`）
   否则 vendor_quote / gap_amount / vendor_name 全空（不 failed）
   有报价 → gap_amount = vendor_quote - should_cost
 ```
@@ -525,7 +525,7 @@ Ready VO 增加：`subject_count`、`tree_root_count`、`procurement_object_coun
 | `menu:l0-assembly-cost-calc` + `op:l0-assembly-cost-calc:*` | `menu:assembly-cost-calc` / `op:assembly-cost-calc:view\|run\|delete` |
 | `menu:l0-assembly-cost` + `op:l0-assembly-cost:*` | `menu:assembly-cost` / `op:assembly-cost:view\|delete\|approve\|reverse\|export` |
 
-`docs/permission-design.md` 与 `Perm.*`、角色种子、前端 `can()` **同步改**。一期可在 `canAccessPage` 把旧 pageName 映射到新码，避免未迁角色的账号空白。不新增第二组「应成本」菜单。
+先改 `catalog.json` 再生成 `Perm.*`；前端 `can()` 用同一码。不要在 `permission-design.md` 再抄一棵树。一期可在 `canAccessPage` 把旧 pageName 映射到新码，避免未迁角色的账号空白。不新增第二组「应成本」菜单。
 
 ### 10.4 前端
 
@@ -556,7 +556,7 @@ Ready VO 增加：`subject_count`、`tree_root_count`、`procurement_object_coun
 | 引擎 | 零件价完成且 **焊接费覆盖全部要抄的 level** 才跑 assembly（P20）。补焊 **禁止** 只传 `levels=[0]`。阶段 id `l0` → `assembly`。`annual_l0_welding_fee` 阶段可改名为 `annual_welding_fee`（实施时与引擎文档一起改）。本切片不得内部触发上游 |
 | 合册 | `monthly_bundle_export_service` → 树根过滤 |
 | LLM | `menu_catalog`、`field_labels`、`cost_analysis_repository` |
-| 权限 / 种子 | `codes.py`、`permission-design.md` |
+| 权限 / 种子 | `catalog.json` → `codes.py` |
 | 前端 | `index.html`、`app.js`、`features/index.js`、`l0-assembly-cost/` |
 | 测试 | `tests/costing/l0_assembly_sim.py` 改为 `assembly_sim.py`；青岛金标加「仅树根 + 有子件」过滤；退化根单独用例 |
 | 任务常量 | `TASK_TYPE_L0_ASSEMBLY_COST_CALC` |
@@ -617,7 +617,7 @@ D5  退化树根财务专项签字
 | [l1-assembly-costing-design.md](l1-assembly-costing-design.md) | 应成本口径；§7 委外表 **作废** |
 | [welding-fee-design.md](../bom/welding-fee-design.md) | 按节点工费 |
 | [bom-procurement-objects-design.md](../bom/bom-procurement-objects-design.md) | 集合 C |
-| [bom-procurement-object-supplier-design.md](../bom/bom-procurement-object-supplier-design.md) | 合同对方（未落地）；本切片不存 |
+| [bom-procurement-object-supplier-design.md](../bom/bom-procurement-object-supplier-design.md) | 合同对方（供应商第二期已落地）；本切片不存 |
 | [procurement-contract-report-design.md](procurement-contract-report-design.md) | 签约横表只读 `should_cost`（未落地） |
 | [costing-engine-design.md](costing-engine-design.md) | 阶段改为全卡 |
 | [permission-design.md](../permission-design.md) | 改名 |

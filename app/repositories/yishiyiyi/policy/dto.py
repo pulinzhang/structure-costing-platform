@@ -6,7 +6,7 @@
 from pydantic import BaseModel, Field
 
 
-class FilterOptions(BaseModel):
+class PolicyFilterOptions(BaseModel):
     """筛选选项 DTO"""
 
     years: list[int] = Field(default_factory=list)

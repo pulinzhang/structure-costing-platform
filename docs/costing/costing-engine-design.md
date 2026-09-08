@@ -48,7 +48,7 @@
 | 项 | 状态 |
 |---|---|
 | `#/costing` 与 `/api/costing/engine` | 已上线（就绪检查、启动 Run、轮询、历史删除含 running） |
-| 「基地+年+月」展开为多工厂 × 多 BOM 并串链 | 已上线（`run_orchestrator` / `scope_discovery`） |
+| 「基地+年+月」展开为多工厂 × 多 BOM 并串链 | 已上线（`engine/orchestrator/` / `scope_discovery`） |
 | Run 账本与「上传硬停 / 年度补算 / 月度主链」分类门禁 | 已上线 |
 
 产品规则（R1–R8）仍以本文为准。目标页若暂不读 `navigate.query`，至少落到正确功能页（见 §12）。  
@@ -74,7 +74,7 @@ CostingEngineService                 ← 编排唯一入口
     ├─ ScopeDiscovery                ← 发现工厂、L0Scope（含全部 BOM 版本）
     ├─ GateChecker                   ← 上传/配置硬门禁（覆盖完整性）
     ├─ AnnualCalcPlanner             ← 年度结果缺失 → 补算计划
-    ├─ RunOrchestrator               ← DAG 执行、进度映射、写 step
+    ├─ RunOrchestrator               ← DAG 指挥（ensure → phases → finalize）
     └─ CostingEngineRunRepository    ← run / step 持久化
 
 子计算（已有，引擎路径下同进程调用，不嵌套再开 AsyncTask）：
@@ -561,7 +561,7 @@ can_start: bool   # = not hard_stop 且存在可执行路径
 
 ## 17. 权限（实现时落地）
 
-- 菜单：`menu:costing` / 引擎页码与 [permission-design.md](../permission-design.md) 对齐  
+- 菜单：`menu:costing` / 引擎页码与 `catalog.json` 对齐（流程见 [permission-design.md](../permission-design.md) §0）  
 - 操作：查看 ready、提交 run、查看历史、导出合册  
 - 禁止仅藏按钮；Router 使用 `require_perm(Perm.*)`  
 
@@ -590,7 +590,7 @@ can_start: bool   # = not hard_stop 且存在可执行路径
 | 零件价编排 | `app/services/costing/stamping_part_cost/calc/orchestrator.py` |
 | 总成编排 | `app/services/costing/assembly_cost/calc/orchestrator.py` |
 | 合册 | `app/services/costing/monthly_bundle_export/` |
-| 引擎实现 | `app/routers/costing/engine/`、`app/services/costing/engine/`、`static/js/features/costing/engine/` |
+| 引擎实现 | `app/routers/costing/engine/`、`app/services/costing/engine/`（指挥：`engine/orchestrator/`）、`static/js/features/costing/engine/` |
 | 异步任务 | `app/services/async_task/async_task_service.py` |
 | 进度 VO | `app/schemas/vo/async_task_vo.py` |
 
@@ -606,4 +606,4 @@ can_start: bool   # = not hard_stop 且存在可执行路径
 | 2026-08-25 | as-built：标记 `#/costing` 与引擎 API 已上线；规则仍以本文为准 |
 | 2026-09-02 | 包装运输费与厚度加减价同为软门：就绪检查仍提示，不阻断 `can_start` |
 | 2026-09-08 | 本期项目名单改问 `list_introducible`；空名单硬停去项目一览表；文案「配套车型」→「项目」 |
-| 2026-09-08 | 列表筛 / 仪表盘选项改读 `list_filter_codes`；LLM 词典改读 `vehicle_models` 主数据 |
+| 2026-09-08 | 引擎指挥拆到 `engine/orchestrator/`：`execute` 只 ensure → phases → finalize |

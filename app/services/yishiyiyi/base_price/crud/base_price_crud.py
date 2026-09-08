@@ -14,12 +14,11 @@ from app.repositories.yishiyiyi.base_price.steel_base_price_repository import (
     BasePriceFilter,
 )
 from app.schemas.dto.steel_base_price_dto import (
-    FilterOptions,
     SteelBasePriceCreate,
     SteelBasePriceQuery,
     SteelBasePriceUpdate,
 )
-from app.schemas.vo.steel_base_price_vo import SteelBasePriceResponse
+from app.schemas.vo.steel_base_price_vo import FilterOptionsVO, SteelBasePriceResponse
 from app.schemas.vo.user_vo import UserVO
 from app.services.masterdata.location.location_service import LocationService
 
@@ -32,9 +31,11 @@ class SteelBasePriceCrudService:
     def __init__(self) -> None:
         self.repository = SteelBasePriceRepository()
 
-    def get_filter_options(self, db: Session) -> FilterOptions:
+    def get_filter_options(self, db: Session) -> FilterOptionsVO:
         options = self.repository.get_filter_options(db)
-        return options.model_copy(update={"locations": LocationService().list_registered(db)})
+        return FilterOptionsVO.model_validate(
+            {**options, "locations": LocationService().list_registered(db)}
+        )
 
     def paginate(
         self,

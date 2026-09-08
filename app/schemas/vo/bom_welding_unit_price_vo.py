@@ -10,6 +10,7 @@ from pydantic import BaseModel, field_serializer
 
 from app.common.money import Q4, format_money
 from app.common.timezone import datetime_to_iso
+from app.schemas.common.batch_result import BatchAuditCountsVO, BatchDeleteCountsVO
 
 
 def format_unit_price_decimal(value: Any) -> str:
@@ -75,21 +76,17 @@ class BomWeldingUnitPriceImportResultVO(BaseModel):
     message: str = ""
 
 
-class BomWeldingUnitPriceBatchDeleteResultVO(BaseModel):
+class BomWeldingUnitPriceBatchDeleteResultVO(BatchDeleteCountsVO):
     """焊接工费单价按基地+年度批量删除结果 VO"""
 
     location: str
     year: int
-    deleted_count: int
-    skipped_approved_count: int = 0
     message: str = ""
 
 
-class BomWeldingUnitPriceBatchAuditResultVO(BaseModel):
+class BomWeldingUnitPriceBatchAuditResultVO(BatchAuditCountsVO):
     """按基地+年度批量审核 / 反审核结果"""
 
-    updated_count: int = 0
-    skipped_count: int = 0
     location: str
     year: int
 

@@ -116,23 +116,6 @@ class SteelBasePriceQuery(BaseModel):
 
 
 # ============================
-# 筛选选项 DTO
-# ============================
-
-
-class FilterOptions(BaseModel):
-    """筛选选项 DTO（Repository → Service 层内部使用）"""
-
-    years: list[int] = Field(default_factory=list)
-    months: list[int] = Field(default_factory=list)
-    locations: list[str] = Field(default_factory=list)
-    steel_mills: list[str] = Field(default_factory=list)
-    category_names: list[str] = Field(default_factory=list)
-    grades: list[str] = Field(default_factory=list)
-    specs: list[str] = Field(default_factory=list)
-
-
-# ============================
 # Repository 写入载荷
 # ============================
 

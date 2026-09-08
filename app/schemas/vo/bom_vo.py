@@ -110,21 +110,6 @@ class BomImportResultVO(BaseModel):
     message: str = "导入成功"
 
 
-class BomCascadeFilterQuery(BaseModel):
-    """材料清单级联筛选查询参数：基地 → 项目 → 版本"""
-
-    location: str | None = Field(None, description="采购基地")
-    vehicle_model: str | None = Field(None, description="项目")
-    year: int | None = Field(
-        None, ge=2000, le=2100, description="年度；传入后项目下拉改问项目主数据"
-    )
-    month: int | None = Field(None, ge=1, le=12, description="月份；与年度一起时下拉为该月可引入")
-    status: str | None = Field(
-        "active",
-        description="清单状态，默认 active；传 __all__ 或 * 表示不限状态",
-    )
-
-
 class BomCascadeFilterOptionsVO(BaseModel):
     """材料清单级联下拉选项"""
 

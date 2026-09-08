@@ -30,15 +30,6 @@ class AuditCountSummary(TypedDict):
     approved_count: int
 
 
-class AnnualPartPriceListFilters(TypedDict):
-    """年度零件价列表筛选体。"""
-
-    locations: list[str]
-    years: list[int]
-    audit_status: str | None
-    summary: AuditCountSummary
-
-
 class BomAnnualPartPriceRepository:
     """年度零件价数据访问"""
 

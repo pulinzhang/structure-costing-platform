@@ -15,13 +15,13 @@ from app.config import settings
 from app.exceptions.base import BusinessException
 from app.models.yishiyiyi import SteelBasePrice
 from app.schemas.dto.steel_base_price_dto import (
-    FilterOptions,
     SteelBasePriceCreate,
     SteelBasePriceQuery,
     SteelBasePriceUpdate,
 )
 from app.schemas.vo.async_task_vo import AsyncTaskAcceptedVO
 from app.schemas.vo.steel_base_price_vo import (
+    FilterOptionsVO,
     SteelBasePriceExportRow,
     SteelBasePriceImportResultResponse,
     SteelBasePriceResponse,
@@ -62,7 +62,7 @@ class SteelBasePriceService:
         self._export_service = SteelBasePriceExportService()
         self.repository = self._crud.repository
 
-    def get_filter_options(self, db: Session) -> FilterOptions:
+    def get_filter_options(self, db: Session) -> FilterOptionsVO:
         return self._crud.get_filter_options(db)
 
     def paginate(

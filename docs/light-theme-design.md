@@ -3,7 +3,7 @@
 > 状态：**已否决（不做）**  
 > 决定：2026-08-28。产品立场：**冷艳、不退让。** 维持 Brabus Carbon 深色；不上浅色、不写 `brabus_theme`、不改前端代码。  
 > 下文是否决前的设计与工作量评估，仅作存档。若以后有人再提「有人不习惯深色」，先读本节，不要当成漏做的需求。  
-> 关联：`.cursor/rules/front-end.mdc`、`docs/front-end.mdc`
+> 关联：`.cursor/rules/front-end.mdc`
 
 ---
 
@@ -71,7 +71,7 @@
 | G4 | 浅色 HUD：**实心红 + 淡红底 KPI 列**，去掉 `text-shadow` / 霓虹 glow / 大块黑阴影；深色 HUD 可保留现网发光 |
 | G5 | **前端每一面**（下表 §3.1 全量）读同一 `brabus_theme`；禁止某页仍写死深色 |
 | G6 | 选择只存在本机 `localStorage`，不进用户表、不进 API |
-| G7 | 落地时同步改 `docs/front-end.mdc` 与 `.cursor/rules/front-end.mdc`（两处一起改） |
+| G7 | 落地时只改 `.cursor/rules/front-end.mdc`（规范正文只此一处） |
 
 后端、权限码、Hash 路由名、API 契约 **不在目标内**。不改功能，只换皮。
 
@@ -339,7 +339,7 @@
 - 页内强调红只许 `--brabus-red`（`#d32f2f`），深浅皆然。
 - `--bg-table`、`--bg-raised`、`--overlay`、`--shadow-*`、`--brabus-red-soft` 必须进规范速查，禁止再发明页内私有色。
 
-`docs/front-end.mdc` 与 `.cursor/rules/front-end.mdc` 必须同步改。
+规范正文只改 `.cursor/rules/front-end.mdc`。
 
 ---
 

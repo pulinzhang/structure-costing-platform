@@ -12,7 +12,7 @@ from sqlalchemy.orm import InstrumentedAttribute, Query, Session, joinedload
 from app.common.steel_grade_category import CANONICAL_CATEGORY_NAMES
 from app.models.yishiyiyi import SteelPriceLadderItem, SteelPricePolicy
 from app.repositories.persist import apply_dto_fields, model_from_payload
-from app.repositories.yishiyiyi.policy.dto import FilterOptions
+from app.repositories.yishiyiyi.policy.dto import PolicyFilterOptions
 from app.schemas.dto.steel_price_policy_dto import (
     LadderItemUpdate,
     PolicyUpdate,
@@ -177,7 +177,7 @@ class SteelPricePolicyRepository:
         order_col = column.desc() if descending else column.asc()
         return [r[0] for r in query.order_by(order_col).all()]
 
-    def get_filter_options(self, db: Session) -> FilterOptions:
+    def get_filter_options(self, db: Session) -> PolicyFilterOptions:
         """返回各字段的筛选下拉选项。"""
         years = sorted(
             self._distinct_values(db, SteelPricePolicy.year, descending=True),
@@ -197,7 +197,7 @@ class SteelPricePolicyRepository:
             for value in self._distinct_values(db, SteelPricePolicy.grade_value, filter_none=True)
             if value is not None
         ]
-        return FilterOptions(
+        return PolicyFilterOptions(
             years=years,
             months=months,
             steel_mills=steel_mills,

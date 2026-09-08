@@ -1,8 +1,9 @@
 """
 BOM 年度零件价 Excel 解析器（纯函数，无副作用）
 
-约定列：零件号 | 零件名称 | 单位 | 单价 | 原供货类型 | 供应商 | 备注
+约定列：零件号 | 零件名称 | 规格 | 采购单位 | 采购单价 | 转换系数 | 单位 | 单价 | 原供货类型 | 供应商 | 备注
 基地 / 年度由上传表单传入，不从 Excel 读取。
+只读第一张工作表；填写说明页忽略。
 """
 
 from __future__ import annotations
@@ -14,15 +15,22 @@ from typing import Any
 
 from openpyxl import load_workbook
 
-from app.common.money import Q4, quantize_money
+from app.common.money import Q4, quantize_money, quantize_positive_whole
 
 HEADER_PART_NUMBER = "零件号"
 HEADER_PART_NAME = "零件名称"
+HEADER_SPECIFICATION = "规格"
+HEADER_PURCHASE_UNIT = "采购单位"
+HEADER_PURCHASE_UNIT_PRICE = "采购单价"
+HEADER_CONVERSION_FACTOR = "转换系数"
 HEADER_UNIT = "单位"
 HEADER_UNIT_PRICE = "单价"
 HEADER_SUPPLY_TYPE = "原供货类型"
 HEADER_SUPPLIER = "供应商"
 HEADER_REMARK = "备注"
+
+DEFAULT_CONVERSION_FACTOR = 1
+_ZERO = Decimal("0")
 
 
 @dataclass(frozen=True)
@@ -32,6 +40,10 @@ class AnnualPartPriceParsedRow:
     row_number: int
     part_number: str
     part_name: str | None
+    specification: str | None
+    purchase_unit: str | None
+    purchase_unit_price: Decimal | None
+    conversion_factor: int
     unit: str
     unit_price: Decimal
     supply_type: str
@@ -47,16 +59,66 @@ class AnnualPartPriceParseResult:
     errors: list[str]
 
 
+def _round4(value: Decimal) -> Decimal:
+    return quantize_money(value, Q4)
+
+
+def parse_conversion_factor(value: Any) -> int:
+    """转换系数：空则 1；必须为正整数（1 采购单位 = N 核价单位）。"""
+    if value is None:
+        return DEFAULT_CONVERSION_FACTOR
+    if isinstance(value, str):
+        text = value.strip().replace(",", "")
+        if not text:
+            return DEFAULT_CONVERSION_FACTOR
+        if "/" in text:
+            raise ValueError("转换系数须为正整数，不能填分数")
+        value = text
+    number = quantize_positive_whole(value, label="转换系数")
+    return int(number)
+
+
+def parse_optional_purchase_unit_price(value: Any) -> Decimal | None:
+    """采购单价：空为未填；0 是有效报价。"""
+    if value is None or value == "":
+        return None
+    if isinstance(value, str) and not value.strip():
+        return None
+    number = _parse_unit_price(value)
+    if number is None:
+        raise ValueError("采购单价无效")
+    return number
+
+
+def resolve_annual_unit_price(
+    *,
+    purchase_unit_price: Decimal | None,
+    conversion_factor: int,
+    unit_price: Decimal | None,
+) -> Decimal:
+    """有采购单价时：核价单价 = 采购单价 ÷ 转换系数；单价 0/空视为占位。"""
+    if conversion_factor < 1:
+        raise ValueError("转换系数须为正整数")
+    factor = Decimal(conversion_factor)
+    if purchase_unit_price is None:
+        if unit_price is None:
+            raise ValueError("单价无效")
+        return _round4(unit_price)
+    derived = _round4(purchase_unit_price / factor)
+    if unit_price is None or unit_price == _ZERO:
+        return derived
+    filled = _round4(unit_price)
+    if filled != derived:
+        raise ValueError(f"单价与采购单价÷转换系数不一致（单价 {filled}，派生 {derived}）")
+    return derived
+
+
 def _cell_text(value: Any) -> str:
     if value is None:
         return ""
     if isinstance(value, float) and value.is_integer():
         return str(int(value))
     return str(value).strip()
-
-
-def _round4(value: Decimal) -> Decimal:
-    return quantize_money(value, Q4)
 
 
 def _parse_unit_price(value: Any) -> Decimal | None:
@@ -84,6 +146,10 @@ def _find_header_row(sheet: Any) -> tuple[int, dict[str, int]] | None:
     aliases = {
         HEADER_PART_NUMBER: {HEADER_PART_NUMBER, "零件号", "料号", "part_number"},
         HEADER_PART_NAME: {HEADER_PART_NAME, "零件名称", "名称", "part_name"},
+        HEADER_SPECIFICATION: {HEADER_SPECIFICATION, "specification"},
+        HEADER_PURCHASE_UNIT: {HEADER_PURCHASE_UNIT, "purchase_unit"},
+        HEADER_PURCHASE_UNIT_PRICE: {HEADER_PURCHASE_UNIT_PRICE, "purchase_unit_price"},
+        HEADER_CONVERSION_FACTOR: {HEADER_CONVERSION_FACTOR, "conversion_factor"},
         HEADER_UNIT: {HEADER_UNIT, "单位", "unit"},
         HEADER_UNIT_PRICE: {
             HEADER_UNIT_PRICE,
@@ -99,7 +165,7 @@ def _find_header_row(sheet: Any) -> tuple[int, dict[str, int]] | None:
             "supply_type",
         },
         HEADER_SUPPLIER: {HEADER_SUPPLIER, "供应商", "供方", "supplier_name"},
-        HEADER_REMARK: {HEADER_REMARK, "备注", "说明", "remark"},
+        HEADER_REMARK: {HEADER_REMARK, "备注", "remark"},
     }
     max_scan = min(sheet.max_row or 1, 20)
     max_col = min(sheet.max_column or 1, 20)
@@ -125,7 +191,7 @@ def _find_header_row(sheet: Any) -> tuple[int, dict[str, int]] | None:
 def parse_annual_part_price_excel(file_content: bytes) -> AnnualPartPriceParseResult:
     """
     解析年度零件价 Excel。
-    仅支持 .xlsx（由调用方校验扩展名）。
+    仅支持 .xlsx（由调用方校验扩展名）。只读 worksheets[0]。
     """
     if not file_content:
         return AnnualPartPriceParseResult(rows=[], errors=["文件内容为空"])
@@ -146,8 +212,10 @@ def parse_annual_part_price_excel(file_content: bytes) -> AnnualPartPriceParseRe
                 rows=[],
                 errors=[
                     "未找到表头，请使用列："
-                    f"{HEADER_PART_NUMBER} / {HEADER_PART_NAME} / {HEADER_UNIT} / "
-                    f"{HEADER_UNIT_PRICE} / {HEADER_SUPPLY_TYPE} / "
+                    f"{HEADER_PART_NUMBER} / {HEADER_PART_NAME} / "
+                    f"{HEADER_SPECIFICATION} / {HEADER_PURCHASE_UNIT} / "
+                    f"{HEADER_PURCHASE_UNIT_PRICE} / {HEADER_CONVERSION_FACTOR} / "
+                    f"{HEADER_UNIT} / {HEADER_UNIT_PRICE} / {HEADER_SUPPLY_TYPE} / "
                     f"{HEADER_SUPPLIER} / {HEADER_REMARK}"
                 ],
             )
@@ -155,6 +223,10 @@ def parse_annual_part_price_excel(file_content: bytes) -> AnnualPartPriceParseRe
         header_row, columns = header
         part_number_col = columns[HEADER_PART_NUMBER]
         part_name_col = columns.get(HEADER_PART_NAME)
+        specification_col = columns.get(HEADER_SPECIFICATION)
+        purchase_unit_col = columns.get(HEADER_PURCHASE_UNIT)
+        purchase_price_col = columns.get(HEADER_PURCHASE_UNIT_PRICE)
+        factor_col = columns.get(HEADER_CONVERSION_FACTOR)
         unit_col = columns.get(HEADER_UNIT)
         price_col = columns[HEADER_UNIT_PRICE]
         supply_type_col = columns[HEADER_SUPPLY_TYPE]
@@ -170,6 +242,20 @@ def parse_annual_part_price_excel(file_content: bytes) -> AnnualPartPriceParseRe
             part_name = (
                 _cell_text(sheet.cell(row_idx, part_name_col).value) if part_name_col else ""
             )
+            specification = (
+                _cell_text(sheet.cell(row_idx, specification_col).value)
+                if specification_col
+                else ""
+            )
+            purchase_unit_raw = (
+                _cell_text(sheet.cell(row_idx, purchase_unit_col).value)
+                if purchase_unit_col
+                else ""
+            )
+            purchase_price_raw = (
+                sheet.cell(row_idx, purchase_price_col).value if purchase_price_col else None
+            )
+            factor_raw = sheet.cell(row_idx, factor_col).value if factor_col else None
             unit_raw = _cell_text(sheet.cell(row_idx, unit_col).value) if unit_col else ""
             price_raw = sheet.cell(row_idx, price_col).value
             supply_type = _cell_text(sheet.cell(row_idx, supply_type_col).value)
@@ -193,9 +279,31 @@ def parse_annual_part_price_excel(file_content: bytes) -> AnnualPartPriceParseRe
                 errors.append(f"第 {row_idx} 行：原供货类型超过 50 字符")
                 continue
 
-            unit_price = _parse_unit_price(price_raw)
-            if unit_price is None:
+            try:
+                purchase_unit_price = parse_optional_purchase_unit_price(purchase_price_raw)
+            except ValueError:
+                errors.append(f"第 {row_idx} 行：采购单价无效（{purchase_price_raw!r}）")
+                continue
+
+            try:
+                conversion_factor = parse_conversion_factor(factor_raw)
+            except (InvalidOperation, ValueError) as exc:
+                errors.append(f"第 {row_idx} 行：转换系数无效（{factor_raw!r}）：{exc}")
+                continue
+
+            unit_price_raw = _parse_unit_price(price_raw)
+            if unit_price_raw is None and purchase_unit_price is None:
                 errors.append(f"第 {row_idx} 行：单价无效（{price_raw!r}）")
+                continue
+
+            try:
+                unit_price = resolve_annual_unit_price(
+                    purchase_unit_price=purchase_unit_price,
+                    conversion_factor=conversion_factor,
+                    unit_price=unit_price_raw,
+                )
+            except ValueError as exc:
+                errors.append(f"第 {row_idx} 行：{exc}")
                 continue
 
             if part_number in seen_parts:
@@ -206,12 +314,19 @@ def parse_annual_part_price_excel(file_content: bytes) -> AnnualPartPriceParseRe
             unit = unit_raw or "pcs"
             if unit.upper() == "PCS":
                 unit = "pcs"
+            purchase_unit = purchase_unit_raw[:20] if purchase_unit_raw else None
+            if purchase_unit and purchase_unit.upper() == "PCS":
+                purchase_unit = "pcs"
 
             rows.append(
                 AnnualPartPriceParsedRow(
                     row_number=row_idx,
                     part_number=part_number[:50],
                     part_name=(part_name[:200] if part_name else None),
+                    specification=(specification[:100] if specification else None),
+                    purchase_unit=purchase_unit,
+                    purchase_unit_price=purchase_unit_price,
+                    conversion_factor=conversion_factor,
                     unit=unit[:20],
                     unit_price=unit_price,
                     supply_type=supply_type[:50],

@@ -285,7 +285,7 @@ stamping-costing-platform/
 └── requirements.txt
 ```
 
-前端页面与 Hash 对照见 [docs/front-end.mdc](docs/front-end.mdc) §2.1。
+前端页面与 Hash 对照见 `static/js/features/index.js` 的 `pageMeta` 与 `static/index.html` 侧栏。
 
 ---
 
@@ -351,9 +351,9 @@ await HttpClient.post('/api/stamping/upload/', formData);
 |------|------|
 | [文档目录](docs/README.md) | 按切片分目录的设计文档索引 |
 | [架构说明](docs/architecture.md) | 分层 + 垂直切片导读 |
-| [架构宪法](docs/architecture-constitution.mdc) | 分层与切片依赖硬规则 |
-| [前端规范](docs/front-end.mdc) | SPA、Brabus、HUD 数据表 |
-| [API 类型安全](docs/api-type-safety.md) | `ApiResponse` / `PageResult` / 权限 Depends / `Any` 不进函数签名 |
+| [架构宪法](.cursor/rules/architecture-constitution.mdc) | 分层与切片依赖硬规则 |
+| [前端规范](.cursor/rules/front-end.mdc) | SPA、Brabus、HUD 数据表 |
+| [API 类型安全](.cursor/rules/api-type-safety.mdc) | `ApiResponse` / `PageResult` / 权限 Depends / `Any` 不进函数签名 |
 | [权限设计](docs/permission-design.md) | 前后端权限码 |
 | [生产安装（Windows 一键）](docs/deploy-windows-production.md) | 无 Python 环境用 `scripts/windows/setup.bat` |
 | 云主机 Docker 手工发版 | 仓库根目录 `bash deploy.sh`（拉代码、构建、启动） |

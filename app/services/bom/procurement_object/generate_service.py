@@ -34,6 +34,7 @@ from app.services.bom.procurement_object.generate_log_service import (
     BomProcurementObjectGenerateLogService,
 )
 from app.services.masterdata.location.location_service import LocationService
+from app.services.masterdata.supplier import SupplierService
 
 logger = logging.getLogger("service.bom.procurement_object.generate")
 
@@ -121,7 +122,9 @@ class BomProcurementObjectGenerateService:
             other_leaf_count = classified.counts.other_leaf_count
             anomaly_count = classified.counts.anomaly_count
             existing = self.repository.get_list_by_snapshot_id(db, snapshot.id)
-            confirm_by_node: dict[int, tuple[str, str | None, datetime | None, str | None]] = {}
+            confirm_by_node: dict[
+                int, tuple[str, str | None, datetime | None, str | None, str | None]
+            ] = {}
             if existing is not None:
                 approved = self.repository.count_approved_objects(db, existing.id)
                 if approved:
@@ -137,6 +140,7 @@ class BomProcurementObjectGenerateService:
                         row.confirmed_by,
                         row.confirmed_at,
                         row.confirm_remark,
+                        row.supplier_name,
                     )
 
             generated_at = now()
@@ -169,6 +173,7 @@ class BomProcurementObjectGenerateService:
             )
             payloads = [
                 self._row_write(
+                    db,
                     classified_row,
                     list_id=header.id,
                     confirm_by_node=confirm_by_node,
@@ -263,10 +268,11 @@ class BomProcurementObjectGenerateService:
 
     def _row_write(
         self,
+        db: Session,
         row: ClassifiedRow,
         *,
         list_id: int,
-        confirm_by_node: dict[int, tuple[str, str | None, datetime | None, str | None]],
+        confirm_by_node: dict[int, tuple[str, str | None, datetime | None, str | None, str | None]],
         created_by: str | None,
         updated_by: str | None,
     ) -> BomProcurementObjectWrite:
@@ -274,10 +280,21 @@ class BomProcurementObjectGenerateService:
         confirmed_by = None
         confirmed_at = None
         confirm_remark = None
+        supplier_name = None
         if row.section == SECTION_OBJECT and row.source_node_id in confirm_by_node:
-            confirm_status, confirmed_by, confirmed_at, confirm_remark = confirm_by_node[
-                row.source_node_id
-            ]
+            (
+                confirm_status,
+                confirmed_by,
+                confirmed_at,
+                confirm_remark,
+                supplier_name,
+            ) = confirm_by_node[row.source_node_id]
+        if (
+            confirm_status == "in_house"
+            or supplier_name
+            and not SupplierService().is_registered(db, supplier_name)
+        ):
+            supplier_name = None
         return BomProcurementObjectWrite(
             list_id=list_id,
             section=row.section,
@@ -310,6 +327,7 @@ class BomProcurementObjectGenerateService:
             confirmed_by=confirmed_by,
             confirmed_at=confirmed_at,
             confirm_remark=confirm_remark,
+            supplier_name=supplier_name,
             audit_status=AUDIT_PENDING,
             created_by=created_by,
             updated_by=updated_by,

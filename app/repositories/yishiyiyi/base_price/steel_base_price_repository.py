@@ -9,11 +9,11 @@ from typing import TypeVar
 from sqlalchemy import distinct, func
 from sqlalchemy.orm import InstrumentedAttribute, Session
 
+from app.common.types.repository_types import SteelBasePriceFilterOptions
 from app.models.yishiyiyi import SteelBasePrice
 from app.repositories.persist import apply_dto_fields, apply_payload_fields, model_from_payload
 from app.schemas.dto.steel_base_price_dto import (
     BasePriceUpsertCounts,
-    FilterOptions,
     SteelBasePriceCreate,
     SteelBasePriceUpdate,
     SteelBasePriceWrite,
@@ -180,7 +180,7 @@ class SteelBasePriceRepository:
         order_col = column.desc() if descending else column.asc()
         return [r[0] for r in query.order_by(order_col).all()]
 
-    def get_filter_options(self, db: Session) -> FilterOptions:
+    def get_filter_options(self, db: Session) -> SteelBasePriceFilterOptions:
         """返回各字段的筛选下拉选项。"""
         years = self._distinct_values(db, SteelBasePrice.year, descending=True)
         months = self._distinct_values(db, SteelBasePrice.month)
@@ -189,15 +189,15 @@ class SteelBasePriceRepository:
         category_names = self._distinct_values(db, SteelBasePrice.category_name)
         grades = self._distinct_values(db, SteelBasePrice.grade)
         specs = self._distinct_values(db, SteelBasePrice.spec)
-        return FilterOptions(
-            years=years,
-            months=months,
-            locations=locations,
-            steel_mills=steel_mills,
-            category_names=category_names,
-            grades=grades,
-            specs=specs,
-        )
+        return {
+            "years": years,
+            "months": months,
+            "locations": locations,
+            "steel_mills": steel_mills,
+            "category_names": category_names,
+            "grades": grades,
+            "specs": specs,
+        }
 
     def get_distinct_months_for_year(self, db: Session, year: int) -> list[int]:
         results = (

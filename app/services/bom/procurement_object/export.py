@@ -30,10 +30,11 @@ from app.services.bom.procurement_object.labels import (
     SECTION_SHEET_TITLES,
     SUBTYPE_LABELS,
 )
+from app.services.masterdata.supplier import SupplierService
 
 _FONT = "微软雅黑"
 _ExcelCell = str | int | None
-_COL_COUNT = 20
+_COL_COUNT = 21
 _GROUP_ROW = 4
 _HEADER_ROW = 5
 _DATA_START = 6
@@ -108,10 +109,10 @@ _SPLIT_EVIDENCE = _thin_border(left=Side(style="medium", color="B71C1C"))
 _GROUP_SPANS = (
     (1, 4, "对着原件"),
     (5, 6, "供货总成"),
-    (7, 9, "判定"),
-    (10, 14, "佐证"),
-    (15, 17, "原件补充"),
-    (18, 20, "范围"),
+    (7, 10, "判定"),
+    (11, 15, "佐证"),
+    (16, 18, "原件补充"),
+    (19, 21, "范围"),
 )
 _GROUP_FILLS = (
     _FILL_GROUP_MAIN,
@@ -131,6 +132,7 @@ _HEADERS = (
     "供货总成名称",
     "对象种类",
     "确认",
+    "供应商",
     "审核",
     "材料",
     "料厚",
@@ -153,6 +155,7 @@ _WIDTHS = (
     22,
     12,
     10,
+    22,
     10,
     12,
     10,
@@ -169,14 +172,14 @@ _WIDTHS = (
 _L0_NO_COL = 5
 _L0_NAME_COL = 6
 _CONFIRM_COL = 8
-_PRIMARY_COLS = frozenset({1, 2, 3, 4, 5, 6, 7, 8, 9})
-_CENTER_COLS = frozenset({1, 2, 7, 8, 9, 16})
+_PRIMARY_COLS = frozenset({1, 2, 3, 4, 5, 6, 7, 8, 9, 10})
+_CENTER_COLS = frozenset({1, 2, 7, 8, 10, 17})
 _KEY_COLS = frozenset({1, 3, 5})
 _L0_COLS = (_L0_NO_COL, _L0_NAME_COL)
 
-_JUDGE_END_COL = 9
+_JUDGE_END_COL = 10
 _KPI_COLS = frozenset({8})
-_EVIDENCE_START_COL = 10
+_EVIDENCE_START_COL = 11
 
 _FONT_TITLE = _font(size=15, bold=True, color="FFFFFF")
 _FONT_META = _font(size=9, color="455A64")
@@ -210,19 +213,25 @@ class BomProcurementObjectExportService:
         query: BomProcurementObjectQuery,
         current_user: UserVO,
     ) -> tuple[bytes, str]:
-        rows = self.repository.list_objects_for_export(
-            db,
-            location=query.location,
-            vehicle_model=query.vehicle_model,
-            bom_version=query.bom_version,
-            section=query.section,
-            object_kind=query.object_kind,
-            confirm_status=query.confirm_status,
-            audit_status=query.audit_status,
-            part_number=query.part_number,
-            l0_part_number=query.l0_part_number,
-            excel_row=query.excel_row,
-        )
+        supplier_names = SupplierService().names_for_query(db, query.supplier_name)
+        if supplier_names is not None and not supplier_names:
+            rows: list[BomProcurementObject] = []
+        else:
+            rows = self.repository.list_objects_for_export(
+                db,
+                location=query.location,
+                vehicle_model=query.vehicle_model,
+                bom_version=query.bom_version,
+                section=query.section,
+                object_kind=query.object_kind,
+                confirm_status=query.confirm_status,
+                audit_status=query.audit_status,
+                part_number=query.part_number,
+                l0_part_number=query.l0_part_number,
+                excel_row=query.excel_row,
+                supplier_names=supplier_names,
+                has_supplier=query.has_supplier,
+            )
         stamp = now()
         workbook = Workbook()
         first_sheet = True
@@ -432,6 +441,7 @@ class BomProcurementObjectExportService:
                 row.l0_part_name or "",
                 self._kind_label(row),
                 CONFIRM_LABELS.get(row.confirm_status, row.confirm_status),
+                row.supplier_name or "",
                 AUDIT_LABELS.get(row.audit_status, row.audit_status),
                 row.material or "",
                 row.thickness_text or "",

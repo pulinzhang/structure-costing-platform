@@ -122,6 +122,7 @@ class DatabaseConfig:
         cls._ensure_sqlite_columns(engine)
         cls._ensure_welding_fee_columns(engine)
         cls._ensure_vehicle_model_child_fks(engine)
+        cls._ensure_supplier_child_fks(engine)
         cls._remap_welding_fee_permissions(engine)
         cls._remap_assembly_cost_permissions(engine)
         logger.info("主业务库表创建完成")
@@ -189,6 +190,29 @@ class DatabaseConfig:
                 with engine.begin() as conn:
                     conn.execute(text(f"ALTER TABLE {fee_table} DROP COLUMN manual_unit_price"))
                 logger.info("已从 %s 删除列 manual_unit_price", fee_table)
+
+        annual_table = "bom_annual_part_prices"
+        if annual_table in table_names:
+            annual_cols = {col["name"] for col in inspector.get_columns(annual_table)}
+            annual_new_columns = (
+                ("specification", "VARCHAR(100)"),
+                ("purchase_unit", "VARCHAR(20)"),
+                ("purchase_unit_price", "NUMERIC(12, 4)"),
+                (
+                    "conversion_factor",
+                    "INTEGER NOT NULL DEFAULT 1",
+                ),
+            )
+            for column_name, column_def in annual_new_columns:
+                if column_name in annual_cols:
+                    continue
+                with engine.begin() as conn:
+                    conn.execute(
+                        text(
+                            f"ALTER TABLE {annual_table} " f"ADD COLUMN {column_name} {column_def}"
+                        )
+                    )
+                logger.info("已为 %s 追加列 %s", annual_table, column_name)
 
         config_table = "system_configs"
         if config_table in table_names:
@@ -473,6 +497,35 @@ class DatabaseConfig:
                         text(f"ALTER TABLE {steel_calc_log_table} DROP COLUMN {unused_col}")
                     )
                 logger.info("已从 %s 删除列 %s", steel_calc_log_table, unused_col)
+
+        proc_table = "bom_procurement_objects"
+        if proc_table in table_names:
+            proc_cols = {col["name"] for col in inspector.get_columns(proc_table)}
+            if "supplier_name" not in proc_cols:
+                with engine.begin() as conn:
+                    conn.execute(
+                        text(f"ALTER TABLE {proc_table} ADD COLUMN supplier_name VARCHAR(100)")
+                    )
+                    conn.execute(
+                        text(
+                            "CREATE INDEX IF NOT EXISTS ix_bom_proc_obj_supplier "
+                            f"ON {proc_table} (supplier_name)"
+                        )
+                    )
+                logger.info("已为 %s 追加列 supplier_name", proc_table)
+
+        vehicle_table = "vehicle_models"
+        if vehicle_table in table_names:
+            vehicle_cols = {col["name"] for col in inspector.get_columns(vehicle_table)}
+            if "current_supplied_units" not in vehicle_cols:
+                with engine.begin() as conn:
+                    conn.execute(
+                        text(
+                            f"ALTER TABLE {vehicle_table} "
+                            "ADD COLUMN current_supplied_units INTEGER NOT NULL DEFAULT 0"
+                        )
+                    )
+                logger.info("已为 %s 追加列 current_supplied_units", vehicle_table)
 
     @classmethod
     def _migrate_assembly_cost_tables(cls, engine: Engine) -> None:
@@ -890,14 +943,16 @@ class DatabaseConfig:
         return found
 
     @classmethod
-    def _sqlite_rebuild_table(cls, conn: Connection, table_name: str) -> None:
+    def _sqlite_rebuild_table(
+        cls, conn: Connection, table_name: str, *, tmp_suffix: str = "__vm_fk"
+    ) -> None:
         from sqlalchemy import text
         from sqlalchemy.schema import CreateTable
 
         table = Base.metadata.tables.get(table_name)
         if table is None:
             raise RuntimeError(f"metadata 中没有表 {table_name}，无法补外键")
-        tmp_name = f"{table_name}__vm_fk"
+        tmp_name = f"{table_name}{tmp_suffix}"
         conn.execute(text(f'DROP TABLE IF EXISTS "{tmp_name}"'))
         compiled = str(CreateTable(table).compile(dialect=conn.dialect)).strip()
         quoted = f'CREATE TABLE "{table_name}"'
@@ -917,6 +972,89 @@ class DatabaseConfig:
         conn.execute(text(f'ALTER TABLE "{tmp_name}" RENAME TO "{table_name}"'))
         for index in table.indexes:
             index.create(bind=conn)
+
+    @classmethod
+    def _ensure_supplier_child_fks(cls, engine: Engine) -> None:
+        """已有 SQLite 表补 stamping_supplier / supplier_name → suppliers.full_name。"""
+        if not str(engine.url).startswith("sqlite"):
+            return
+        from sqlalchemy import inspect
+
+        inspector = inspect(engine)
+        table_names = set(inspector.get_table_names())
+        if "suppliers" not in table_names:
+            return
+        from app.models.bom.procurement_object import BomProcurementObject
+        from app.models.stamping.part import StampingPart
+
+        pending: list[tuple[str, str]] = []
+        for table_name, column_name in (
+            (StampingPart.__tablename__, "stamping_supplier"),
+            (BomProcurementObject.__tablename__, "supplier_name"),
+        ):
+            if table_name not in table_names:
+                continue
+            pending.append((table_name, column_name))
+        if not pending:
+            return
+
+        with engine.connect() as conn:
+            autocommit = conn.execution_options(isolation_level="AUTOCOMMIT")
+            missing = [
+                (table_name, column_name)
+                for table_name, column_name in pending
+                if not cls._sqlite_has_supplier_fk(autocommit, table_name, column_name)
+            ]
+            if not missing:
+                return
+            orphans = cls._sqlite_supplier_orphans(autocommit, missing)
+            if orphans:
+                detail = "；".join(f"{table}.{column}={value}" for table, column, value in orphans)
+                raise RuntimeError(
+                    "无法给供应商下一跳加外键：下列非空值不在 suppliers.full_name 中。"
+                    "再传工艺覆盖成规范全称，禁止批量改写业务列。"
+                    f" {detail}"
+                )
+            autocommit.exec_driver_sql("PRAGMA foreign_keys=OFF")
+            try:
+                for table_name, _column_name in missing:
+                    cls._sqlite_rebuild_table(autocommit, table_name, tmp_suffix="__sup_fk")
+                    logger.info("已为 %s 补供应商外键", table_name)
+            finally:
+                autocommit.exec_driver_sql("PRAGMA foreign_keys=ON")
+
+    @staticmethod
+    def _sqlite_has_supplier_fk(conn: Connection, table_name: str, column_name: str) -> bool:
+        from sqlalchemy import text
+
+        rows = conn.execute(text(f'PRAGMA foreign_key_list("{table_name}")')).fetchall()
+        for row in rows:
+            if str(row[2]) != "suppliers":
+                continue
+            if str(row[3]) == column_name and str(row[4]) == "full_name":
+                return True
+        return False
+
+    @staticmethod
+    def _sqlite_supplier_orphans(
+        conn: Connection,
+        tables: list[tuple[str, str]],
+    ) -> list[tuple[str, str, str]]:
+        from sqlalchemy import text
+
+        found: list[tuple[str, str, str]] = []
+        for table_name, column_name in tables:
+            rows = conn.execute(
+                text(
+                    f'SELECT DISTINCT "{column_name}" FROM "{table_name}" '
+                    f'WHERE "{column_name}" IS NOT NULL '
+                    "EXCEPT "
+                    "SELECT full_name FROM suppliers"
+                )
+            ).fetchall()
+            for (value,) in rows:
+                found.append((table_name, column_name, str(value)))
+        return found
 
     @classmethod
     def _remap_welding_fee_permissions(cls, engine: Engine) -> None:

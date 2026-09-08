@@ -480,7 +480,7 @@ HUD：**采购对象**是霓虹强调格；标准件/胶等、待审、已审为
 | [location-design.md](../masterdata/location-design.md) | 基地；生成写门禁、列表筛 |
 | [vehicle-model-design.md](../masterdata/vehicle-model-design.md) | 项目；列表筛；本文不是下一跳 |
 | [supplier-design.md](../masterdata/supplier-design.md) | 合同对方主数据；生成不读 |
-| [bom-procurement-object-supplier-design.md](bom-procurement-object-supplier-design.md) | 行上指定合同对方（未落地） |
+| [bom-procurement-object-supplier-design.md](bom-procurement-object-supplier-design.md) | 行上指定合同对方（已落地；可空 FK → 供应商） |
 | [assembly-costing-design.md](../costing/assembly-costing-design.md) | 下游应成本；集合以本清单为准 |
 | [procurement-contract-report-design.md](../costing/procurement-contract-report-design.md) | 签约横表（未落地）；只读本清单 + 应成本 |
 | `static/js/features/costing/stamping-part-cost/calc/` | 生成页 UI 对照 |

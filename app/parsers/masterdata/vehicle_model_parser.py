@@ -1,6 +1,6 @@
 """项目主数据 Excel 解析器（纯函数，无副作用）。
 
-表头：基地 | 项目代号 | 生效年 | 生效月 | 失效年 | 失效月
+表头：基地 | 项目代号 | 生效年 | 生效月 | 失效年 | 失效月 | 当前供货台数
 禁止调用 Service / Repository。
 """
 
@@ -18,6 +18,7 @@ HEADER_EFFECTIVE_YEAR = "生效年"
 HEADER_EFFECTIVE_MONTH = "生效月"
 HEADER_EXPIRY_YEAR = "失效年"
 HEADER_EXPIRY_MONTH = "失效月"
+HEADER_CURRENT_SUPPLIED_UNITS = "当前供货台数"
 
 
 @dataclass(frozen=True, slots=True)
@@ -31,6 +32,7 @@ class VehicleModelParsedRow:
     effective_month: int
     expiry_year: int | None
     expiry_month: int | None
+    current_supplied_units: int
 
 
 @dataclass(frozen=True, slots=True)
@@ -74,6 +76,7 @@ def _find_header_row(sheet: Any) -> tuple[int, dict[str, int]] | None:
         HEADER_EFFECTIVE_MONTH: {HEADER_EFFECTIVE_MONTH},
         HEADER_EXPIRY_YEAR: {HEADER_EXPIRY_YEAR},
         HEADER_EXPIRY_MONTH: {HEADER_EXPIRY_MONTH},
+        HEADER_CURRENT_SUPPLIED_UNITS: {HEADER_CURRENT_SUPPLIED_UNITS, "供货台数"},
     }
     required = {
         HEADER_LOCATION,
@@ -82,6 +85,7 @@ def _find_header_row(sheet: Any) -> tuple[int, dict[str, int]] | None:
         HEADER_EFFECTIVE_MONTH,
         HEADER_EXPIRY_YEAR,
         HEADER_EXPIRY_MONTH,
+        HEADER_CURRENT_SUPPLIED_UNITS,
     }
     max_scan = min(sheet.max_row or 1, 20)
     max_col = min(sheet.max_column or 1, 20)
@@ -112,7 +116,9 @@ def parse_vehicle_model_excel(file_content: bytes) -> VehicleModelParseResult:
         workbook.close()
         return VehicleModelParseResult(
             rows=[],
-            errors=["未找到表头，需包含：基地、项目代号、生效年、生效月、失效年、失效月"],
+            errors=[
+                "未找到表头，需包含：基地、项目代号、生效年、生效月、失效年、失效月、当前供货台数"
+            ],
         )
     header_row, mapping = found
 
@@ -123,9 +129,11 @@ def parse_vehicle_model_excel(file_content: bytes) -> VehicleModelParseResult:
         effective_month_raw = sheet.cell(row_idx, mapping[HEADER_EFFECTIVE_MONTH]).value
         expiry_year_raw = sheet.cell(row_idx, mapping[HEADER_EXPIRY_YEAR]).value
         expiry_month_raw = sheet.cell(row_idx, mapping[HEADER_EXPIRY_MONTH]).value
+        supplied_raw = sheet.cell(row_idx, mapping[HEADER_CURRENT_SUPPLIED_UNITS]).value
 
         expiry_year_text = _cell_text(expiry_year_raw)
         expiry_month_text = _cell_text(expiry_month_raw)
+        supplied_text = _cell_text(supplied_raw)
         if (
             not location
             and not vehicle_model
@@ -133,6 +141,7 @@ def parse_vehicle_model_excel(file_content: bytes) -> VehicleModelParseResult:
             and effective_month_raw in (None, "")
             and not expiry_year_text
             and not expiry_month_text
+            and not supplied_text
         ):
             continue
 
@@ -164,6 +173,14 @@ def parse_vehicle_model_excel(file_content: bytes) -> VehicleModelParseResult:
                 if expiry_month is None or not (1 <= expiry_month <= 12):
                     row_errors.append("失效月必须为 1–12")
 
+        current_supplied_units = 0
+        if supplied_text:
+            parsed_units = _parse_int(supplied_raw)
+            if parsed_units is None or parsed_units < 0:
+                row_errors.append("当前供货台数必须为 ≥0 整数")
+            else:
+                current_supplied_units = parsed_units
+
         if row_errors:
             errors.append(f"第 {row_idx} 行：" + "；".join(row_errors))
             continue
@@ -178,6 +195,7 @@ def parse_vehicle_model_excel(file_content: bytes) -> VehicleModelParseResult:
                 effective_month=effective_month,
                 expiry_year=expiry_year,
                 expiry_month=expiry_month,
+                current_supplied_units=current_supplied_units,
             )
         )
 

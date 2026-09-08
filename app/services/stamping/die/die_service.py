@@ -9,14 +9,16 @@ from app.repositories.stamping.stamping_die_repository import (
     StampingDiePartRepository,
     StampingDieProcessRepository,
 )
-from app.schemas.vo.stamping_die_vo import (
+from app.schemas.dto.stamping_die_dto import (
     StampingDieAllocRatioUpdate,
+    StampingDiePartQuery,
+    StampingDieScopeDTO,
+)
+from app.schemas.vo.stamping_die_vo import (
     StampingDieBatchDeleteResultVO,
     StampingDiePartDetailVO,
     StampingDiePartListVO,
-    StampingDiePartQuery,
     StampingDieProcessVO,
-    StampingDieScopeDTO,
     StampingDieScopeFilterVO,
 )
 from app.schemas.vo.user_vo import UserVO
