@@ -68,9 +68,22 @@ class SupplierCreateDTO(BaseModel):
 
 
 class SupplierUpdateDTO(BaseModel):
-    """启用 / 禁用。"""
+    """启用 / 禁用，以及改缩写、全称、ERP。未传的字段不改。"""
 
-    is_enabled: bool = Field(..., description="是否启用")
+    abbreviation: str | None = Field(None, min_length=1, max_length=50, description="缩写")
+    full_name: str | None = Field(None, min_length=1, max_length=100, description="全称")
+    erp_code: str | None = Field(None, min_length=1, max_length=50, description="ERP 代码")
+    is_enabled: bool | None = Field(None, description="是否启用")
+
+    @field_validator("abbreviation", "full_name", "erp_code", mode="before")
+    @classmethod
+    def strip_optional_identity(cls, value: object) -> str | None:
+        if value is None:
+            return None
+        text = _strip(value)
+        if not text:
+            raise ValueError("不能为空")
+        return text
 
 
 class SupplierAliasCreateDTO(BaseModel):
@@ -103,6 +116,8 @@ class SupplierInsert:
 class SupplierPatch(TypedDict, total=False):
     """部分更新。"""
 
+    abbreviation: str
+    erp_code: str
     is_enabled: bool
     updated_by: str
 

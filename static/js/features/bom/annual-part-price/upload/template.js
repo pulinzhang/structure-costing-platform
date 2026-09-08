@@ -75,7 +75,7 @@ export function annualPartPriceUploadTemplate() {
                                                class="${UPLOAD_INPUT} w-full">
                                     </div>
                                 </div>
-                                <p class="ml-6 mt-1.5 text-[11px] text-[#616161]">下载模板须选基地、项目、年度。行来自该项目采购对象标准件与胶，以及 BOM 叶子且不在本项目工艺库的零件。原供货类型按行填写，板料为「沿用」不是「标准件/胶等」。导入仍写入该基地该年</p>
+                                <p class="ml-6 mt-1.5 text-[11px] text-[#616161]">下载模板须选基地、项目、年度。第二页「填写说明」写清：转换系数为正整数，核价单价=采购单价÷系数。导入仍写入该基地该年，不必删说明页。</p>
                             </div>
 
                             <div class="h-px bg-[#1e1e1e] mx-6 mb-4"></div>
@@ -175,10 +175,11 @@ export function annualPartPriceUploadTemplate() {
                             <h6 class="text-[10px] uppercase tracking-wider text-[#616161] mb-2">Excel 列</h6>
                             <ul class="list-disc list-inside text-xs text-[#616161] space-y-1.5">
                                 <li><span class="text-[#9e9e9e]">零件号</span>：必填；模板按所选项目带出外购叶子（含未进工艺库的板料、L2 标准件）</li>
-                                <li><span class="text-[#9e9e9e]">零件名称</span> / <span class="text-[#9e9e9e]">供应商</span> / <span class="text-[#9e9e9e]">备注</span>：可选</li>
-                                <li><span class="text-[#9e9e9e]">单位</span>：默认 pcs</li>
-                                <li><span class="text-[#9e9e9e]">单价</span>：≥0，四位小数；模板预填 0，请改真实价；<span class="text-[#9e9e9e]">0 = 核价不计入</span></li>
-                                <li><span class="text-[#9e9e9e]">原供货类型</span>：模板按行预填「标准件」/「胶块」/「沿用」（未进本项目工艺库的板料）；导入可改</li>
+                                <li><span class="text-[#9e9e9e]">零件名称</span> / <span class="text-[#9e9e9e]">规格</span> / <span class="text-[#9e9e9e]">供应商</span> / <span class="text-[#9e9e9e]">备注</span>：可选；规格不参与取价</li>
+                                <li><span class="text-[#9e9e9e]">单位 / 单价</span>：核价口径；单位抄 BOM；单价模板预填 0</li>
+                                <li><span class="text-[#9e9e9e]">采购单位</span>：模板与单位相同；<span class="text-[#9e9e9e]">采购单价</span>留空；<span class="text-[#9e9e9e]">转换系数</span>默认 1</li>
+                                <li><span class="text-[#9e9e9e]">换算</span>：转换系数须为正整数（默认 1）。1 采购单位 = 系数个核价单位。核价单价 = 采购单价 ÷ 系数（打→个填 12，不要填 1/12）</li>
+                                <li><span class="text-[#9e9e9e]">原供货类型</span>：模板按行预填「标准件」/「胶块」/「沿用」；导入可改</li>
                             </ul>
                         </div>
                         <div>
@@ -186,6 +187,7 @@ export function annualPartPriceUploadTemplate() {
                             <ul class="list-disc list-inside text-xs text-[#616161] space-y-1.5">
                                 <li>下载模板须先选基地、项目、年度，且该基地该项目已有材料清单</li>
                                 <li>唯一键 = 基地 + 年度 + 零件号；同键则更新，否则新增；仅 .xlsx</li>
+                                <li>已审核记录导入不会覆盖，所以会出现「更新 0 条」；改价须先在列表反审核</li>
                             </ul>
                         </div>
                     </div>

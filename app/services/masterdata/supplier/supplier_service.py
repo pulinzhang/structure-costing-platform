@@ -35,6 +35,7 @@ from app.schemas.dto.supplier_dto import (
     SupplierUpdateDTO,
 )
 from app.schemas.vo.supplier_vo import (
+    SupplierChoiceVO,
     SupplierUploadResultVO,
     SupplierVO,
 )
@@ -99,6 +100,12 @@ class SupplierService:
 
     def list_enabled(self, db: Session) -> list[SupplierVO]:
         return [self._to_vo(row) for row in self.repository.list_enabled(db)]
+
+    def list_enabled_choices(self, db: Session) -> list[SupplierChoiceVO]:
+        return [
+            SupplierChoiceVO(full_name=row.full_name, abbreviation=row.abbreviation)
+            for row in self.repository.list_enabled(db)
+        ]
 
     def list_registered(self, db: Session) -> list[SupplierVO]:
         return [self._to_vo(row) for row in self.repository.list_all(db)]
@@ -172,6 +179,12 @@ class SupplierService:
             return None
         return self.expand_for_query(db, text)
 
+    def is_registered(self, db: Session, full_name: str) -> bool:
+        name = (full_name or "").strip()
+        if not name:
+            return False
+        return self.repository.get_by_full_name(db, name) is not None
+
     def create(
         self,
         db: Session,
@@ -225,14 +238,56 @@ class SupplierService:
         current_user: UserVO,
     ) -> SupplierVO:
         record = self._require_row(db, full_name)
+        data = dto.model_dump(exclude_unset=True)
+        if not data:
+            raise BusinessException("没有要更新的字段")
+        new_abbreviation = data.get("abbreviation", record.abbreviation)
+        new_full_name = data.get("full_name", record.full_name)
+        new_erp_code = data.get("erp_code", record.erp_code)
+        remaining_aliases = [item.alias for item in record.aliases if item.alias != new_full_name]
+        self._assert_identity_distinct(
+            new_abbreviation,
+            new_full_name,
+            new_erp_code,
+            remaining_aliases,
+        )
+        old_full_name = record.full_name
+        renamed = new_full_name != old_full_name
+        if renamed:
+            self._assert_canonical_available_for(db, new_full_name, old_full_name)
+        if new_abbreviation != record.abbreviation:
+            self._assert_abbreviation_available_for(db, new_abbreviation, old_full_name)
+        if new_erp_code != record.erp_code:
+            self._assert_erp_available_for(db, new_erp_code, old_full_name)
         audit = audit_update(current_user)
-        patch: SupplierPatch = {
-            "is_enabled": dto.is_enabled,
-            "updated_by": audit["updated_by"],
-        }
         try:
+            if renamed:
+                alias_row = self.repository.get_alias(db, new_full_name)
+                if alias_row is not None and alias_row.full_name == old_full_name:
+                    self.repository.delete_alias(db, alias_row)
+                self.repository.update_full_name(db, old_full_name, new_full_name)
+                record = self._require_row(db, new_full_name)
+                occupied = self._lookup_token_owner(db, old_full_name)
+                if occupied is not None:
+                    raise BusinessException("该名称已被占用")
+                self.repository.create_alias(
+                    db,
+                    SupplierAliasInsert(alias=old_full_name, full_name=new_full_name),
+                )
+            patch: SupplierPatch = {"updated_by": audit["updated_by"]}
+            if new_abbreviation != record.abbreviation:
+                patch["abbreviation"] = new_abbreviation
+            if new_erp_code != record.erp_code:
+                patch["erp_code"] = new_erp_code
+            if "is_enabled" in data:
+                patch["is_enabled"] = bool(data["is_enabled"])
             self.repository.apply_patch(db, record, patch)
             db.commit()
+        except IntegrityError:
+            db.rollback()
+            if renamed:
+                raise BusinessException("仍被引用，不能修改") from None
+            raise BusinessException("该全称已有供应商") from None
         except BusinessException:
             db.rollback()
             raise
@@ -240,10 +295,26 @@ class SupplierService:
             db.rollback()
             logger.exception("更新供应商失败")
             raise
-        refreshed = self.repository.get_by_full_name(db, record.full_name)
+        refreshed = self.repository.get_by_full_name(db, new_full_name)
         if refreshed is None:
             raise NotFoundException("供应商不存在")
         return self._to_vo(refreshed)
+
+    def delete(self, db: Session, full_name: str) -> None:
+        record = self._require_row(db, full_name)
+        try:
+            self.repository.delete(db, record)
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+            raise BusinessException("仍被引用，不能删除") from None
+        except BusinessException:
+            db.rollback()
+            raise
+        except Exception:
+            db.rollback()
+            logger.exception("删除供应商失败")
+            raise
 
     def add_alias(
         self,
@@ -513,12 +584,27 @@ class SupplierService:
         if owner is not None:
             raise BusinessException("该全称已有供应商")
 
+    def _assert_canonical_available_for(self, db: Session, name: str, owner: str) -> None:
+        current = self._lookup_token_owner(db, name)
+        if current is not None and current != owner:
+            raise BusinessException("该全称已有供应商")
+
     def _assert_abbreviation_available(self, db: Session, name: str) -> None:
         if self._lookup_token_owner(db, name) is not None:
             raise BusinessException("该缩写已被占用")
 
+    def _assert_abbreviation_available_for(self, db: Session, name: str, owner: str) -> None:
+        current = self._lookup_token_owner(db, name)
+        if current is not None and current != owner:
+            raise BusinessException("该缩写已被占用")
+
     def _assert_erp_available(self, db: Session, name: str) -> None:
         if self._lookup_token_owner(db, name) is not None:
+            raise BusinessException("该 ERP 代码已被占用")
+
+    def _assert_erp_available_for(self, db: Session, name: str, owner: str) -> None:
+        current = self._lookup_token_owner(db, name)
+        if current is not None and current != owner:
             raise BusinessException("该 ERP 代码已被占用")
 
     def _assert_alias_available(self, db: Session, name: str) -> None:

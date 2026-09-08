@@ -5,7 +5,7 @@
 > 利废计价见 [offal-nested-material-design.md](../costing/offal-nested-material-design.md)。  
 > 四异号家模、料片四列全空见 [stamping-family-die-byproduct-design.md](stamping-family-die-byproduct-design.md)（工艺上传与布点分摊已落地；零件价月快照 / 详情 PATCH 见该文）。  
 > 模具布点是另一套表，见 [stamping-die-management-design.md](stamping-die-management-design.md)。  
-> **导入顺序**：布点不依赖工艺。本表上传 **只选文件**，项目从表头解析，采购基地由项目主数据带出，冲压工厂从表头解析后再对照供应商主数据门禁，**不要求**已有布点（冲压厂可无布点表）。细则见 [stamping-apqp-die-before-process-design.md](stamping-apqp-die-before-process-design.md)。  
+> 供应商主数据见 [supplier-design.md](../masterdata/supplier-design.md)（S11 写门禁）。本表 `stamping_parts.stamping_supplier` 是供应商 **直接下一跳**：`ForeignKey(..., ondelete="RESTRICT", onupdate="RESTRICT")`。上传后非空规范全称。供应商改全称 / 删除时若仍有本表行，引擎拒绝（文案不点名本表）。模具布点 **不是** 下一跳。  
 > **模具编号**：本表可空、不得挡导入；无该列表头也可解析。强制编号在布点。  
 > 硬约束：分层与切片见 [architecture.md](../architecture.md)。
 
@@ -137,6 +137,7 @@
 | 日期 | 说明 |
 |------|------|
 | 2026-09-08 | 工艺上传只选文件；项目解析后由主数据带出基地 |
+| 2026-09-08 | `stamping_parts.stamping_supplier` 定为供应商下一跳（`RESTRICT` / `RESTRICT`） |
 | 2026-09-08 | （已废止）曾必选该月可引入项目，仍不要求布点 |
 | 2026-09-07 | 上一件摆剪、下一件第一序合并/双槽/共用 → 右件也记摆剪 |
 | 2026-09-07 | 单序 PRG+合并（自动化手工线）0.40；级进落料多序第一序 0.80 |

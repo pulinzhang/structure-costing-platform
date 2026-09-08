@@ -10,6 +10,7 @@ from pydantic import BaseModel, field_serializer
 
 from app.common.money import Q4, format_money
 from app.common.timezone import datetime_to_iso
+from app.schemas.common.batch_result import BatchAuditCountsVO, BatchDeleteCountsVO
 
 
 def _money_str(value: Any) -> str:
@@ -105,22 +106,18 @@ class BomPackagingTransportFeeImportResultVO(BaseModel):
     source_filename: str | None = None
 
 
-class BomPackagingTransportFeeBatchDeleteResultVO(BaseModel):
+class BomPackagingTransportFeeBatchDeleteResultVO(BatchDeleteCountsVO):
     """批量删除结果"""
 
     location: str
     year: int
     vehicle_model: str
-    deleted_count: int
-    skipped_approved_count: int = 0
     message: str = ""
 
 
-class BomPackagingTransportFeeBatchAuditResultVO(BaseModel):
+class BomPackagingTransportFeeBatchAuditResultVO(BatchAuditCountsVO):
     """批量审核 / 反审核结果"""
 
-    updated_count: int = 0
-    skipped_count: int = 0
     location: str
     year: int
     vehicle_model: str

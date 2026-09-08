@@ -19,6 +19,7 @@ from app.repositories.bom.welding_process_breakdown_repository import (
     BomWeldingProcessBreakdownRepository,
 )
 from app.schemas.dto.bom_dto import (
+    BomCascadeFilterQuery,
     BomNodeCreate,
     BomNodeWrite,
     BomSnapshotCreate,
@@ -27,7 +28,6 @@ from app.schemas.dto.bom_dto import (
 )
 from app.schemas.vo.bom_vo import (
     BomCascadeFilterOptionsVO,
-    BomCascadeFilterQuery,
     BomNodeTreeVO,
     BomNodeVO,
     BomSnapshotVO,

@@ -91,7 +91,7 @@ def _create(
 def _workbook_bytes(rows: list[tuple[object, ...]]) -> bytes:
     workbook = Workbook()
     sheet = workbook.worksheets[0]
-    headers = ["基地", "项目代号", "生效年", "生效月", "失效年", "失效月"]
+    headers = ["基地", "项目代号", "生效年", "生效月", "失效年", "失效月", "当前供货台数"]
     for col, title in enumerate(headers, start=1):
         sheet.cell(row=1, column=col, value=title)
     for row_idx, values in enumerate(rows, start=2):
@@ -118,6 +118,7 @@ def test_create_uppercases_and_allows_same_code_on_other_location(memory_db: Ses
     )
     assert vo.vehicle_model == "T13J"
     assert vo.location == "青岛"
+    assert vo.current_supplied_units == 0
     other = service.create(
         memory_db,
         VehicleModelCreateDTO(
@@ -304,6 +305,49 @@ def test_upload_skip_existing_and_in_file_conflict(memory_db: Session) -> None:
     assert service.list_registered(memory_db, "青岛") == ["T13J"]
 
 
+def test_upload_and_create_current_supplied_units(memory_db: Session) -> None:
+    _seed(memory_db)
+    service = VehicleModelService()
+    created = service.process_upload(
+        memory_db,
+        _workbook_bytes([("青岛", "T13J", 2026, 1, None, None, 8500)]),
+        current_user=SYSTEM_USER,
+    )
+    assert created.created_count == 1
+    page = service.list_page(memory_db)
+    row = next(item for item in page.items if item.vehicle_model == "T13J")
+    assert row.current_supplied_units == 8500
+    with pytest.raises(BusinessException, match="当前供货台数"):
+        service.process_upload(
+            memory_db,
+            _workbook_bytes([("大连", "T28", 2026, 1, None, None, -1)]),
+            current_user=SYSTEM_USER,
+        )
+    with pytest.raises(BusinessException, match="不一致"):
+        service.process_upload(
+            memory_db,
+            _workbook_bytes(
+                [
+                    ("大连", "T28", 2026, 1, None, None, 100),
+                    ("大连", "T28", 2026, 1, None, None, 200),
+                ]
+            ),
+            current_user=SYSTEM_USER,
+        )
+    vo = service.create(
+        memory_db,
+        VehicleModelCreateDTO(
+            location="大连",
+            vehicle_model="T99",
+            effective_year=2026,
+            effective_month=1,
+            current_supplied_units=3,
+        ),
+        current_user=SYSTEM_USER,
+    )
+    assert vo.current_supplied_units == 3
+
+
 def test_upload_alias_location_and_disabled_fails_whole_file(memory_db: Session) -> None:
     _seed(memory_db)
     LocationService().update(
@@ -339,11 +383,13 @@ def test_update_period_and_delete_integrity_message(memory_db: Session) -> None:
             effective_month=3,
             expiry_year=2026,
             expiry_month=12,
+            current_supplied_units=12000,
         ),
         current_user=SYSTEM_USER,
     )
     assert updated.effective_month == 3
     assert updated.expiry_month == 12
+    assert updated.current_supplied_units == 12000
 
     def _raise_integrity(*_args: object, **_kwargs: object) -> None:
         raise IntegrityError("DELETE", {}, Exception("fk"))
@@ -374,6 +420,7 @@ def test_delete_blocked_when_child_row_exists(memory_db: Session) -> None:
             effective_month=1,
             expiry_year=None,
             expiry_month=None,
+            current_supplied_units=0,
         ),
         current_user=SYSTEM_USER,
     )
@@ -453,7 +500,15 @@ def test_export_matches_import_template_and_parses(memory_db: Session) -> None:
     workbook = load_workbook(BytesIO(content))
     headers = [cell.value for cell in workbook.worksheets[0][1]]
     workbook.close()
-    assert headers[:6] == ["基地", "项目代号", "生效年", "生效月", "失效年", "失效月"]
+    assert headers[:7] == [
+        "基地",
+        "项目代号",
+        "生效年",
+        "生效月",
+        "失效年",
+        "失效月",
+        "当前供货台数",
+    ]
     parsed = parse_vehicle_model_excel(content)
     assert parsed.errors == []
     assert [
@@ -464,11 +519,12 @@ def test_export_matches_import_template_and_parses(memory_db: Session) -> None:
             row.effective_month,
             row.expiry_year,
             row.expiry_month,
+            row.current_supplied_units,
         )
         for row in parsed.rows
     ] == [
-        ("芜湖", "T13J", 2025, 1, 2026, 12),
-        ("青岛", "T28", 2025, 1, None, None),
+        ("芜湖", "T13J", 2025, 1, 2026, 12, 0),
+        ("青岛", "T28", 2025, 1, None, None, 0),
     ]
 
 

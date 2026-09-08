@@ -8,6 +8,7 @@ from decimal import Decimal
 from pydantic import BaseModel, field_serializer
 
 from app.common.timezone import datetime_to_iso
+from app.schemas.common.batch_result import BatchAuditCountsVO, BatchDeleteCountsVO
 
 
 class BomWeldingProcessBreakdownLineVO(BaseModel):
@@ -228,18 +229,14 @@ class BomWeldingProcessBreakdownGeneratePrepStatsVO(BaseModel):
     message: str = ""
 
 
-class BomWeldingProcessBreakdownBatchDeleteResultVO(BaseModel):
+class BomWeldingProcessBreakdownBatchDeleteResultVO(BatchDeleteCountsVO):
     location: str
     vehicle_model: str
     bom_version: str
-    deleted_count: int
-    skipped_approved_count: int = 0
     message: str = ""
 
 
-class BomWeldingProcessBreakdownBatchAuditResultVO(BaseModel):
-    updated_count: int = 0
-    skipped_count: int = 0
+class BomWeldingProcessBreakdownBatchAuditResultVO(BatchAuditCountsVO):
     location: str
     vehicle_model: str
     bom_version: str

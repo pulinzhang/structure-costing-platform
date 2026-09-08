@@ -34,12 +34,13 @@
 | P7 | 引擎：基地牙过了之后，本期项目名单来自本文，不从零件表枚举 |
 | P8 | **生效必填，失效可空**（年+月；空 = 尚未失效）。该月可引入 = 项目自身已生效、未失效，**且** 基地已启用（调 [location-design.md](location-design.md)，不在本文重写基地判定）。不做暂停。**未到生效月不准传工艺 / 布点 / BOM**（无年无月用墙钟月问 `require_introducible`）。模具单价、检具费等项目档案不看生效月，见 §6.0 |
 | P9 | 代号创建后不改。所属基地创建后不改。第一期不做项目政策表、不做项目别名 |
-| P10 | **修改与删除同时支持，被引用则由数据库拒绝。** 改生效/失效是改非主键，外键不管。改主键（代号或所属基地）与删除只动自己；仍被直接下游引用 → `IntegrityError` → `BusinessException("仍被引用，不能修改")` / `BusinessException("仍被引用，不能删除")`。拦的是子表 `ON UPDATE RESTRICT` + `ON DELETE RESTRICT`，不是项目去 `count` 零件/BOM。产品不提供改代号/改所属基地（P9）；子表仍必须同时声明 `onupdate="RESTRICT"`，禁止只拦删除 |
+| P10 | **修改与删除同时支持，被引用则由数据库拒绝。** 改生效/失效、当前供货台数是改非主键，外键不管。改主键（代号或所属基地）与删除只动自己；仍被直接下游引用 → `IntegrityError` → `BusinessException("仍被引用，不能修改")` / `BusinessException("仍被引用，不能删除")`。拦的是子表 `ON UPDATE RESTRICT` + `ON DELETE RESTRICT`，不是项目去 `count` 零件/BOM。产品不提供改代号/改所属基地（P9）；子表仍必须同时声明 `onupdate="RESTRICT"`，禁止只拦删除 |
 | P11 | 不从下游表 `DISTINCT vehicle_model` 发明自己 |
 | P12 | **外键只加在设计图直接下一跳（宪法 §4.3）。** 按 `(location, vehicle_model)` 引入的源头表声明复合 `ForeignKey` 指向 `vehicle_models`（`RESTRICT` / `RESTRICT`）。禁止给全库同名字段再挂一套（加工费 / 核价结果 / 文件溯源 / LLM 不是下一跳）。项目 Model **禁止** `relationship` / import 子 Model。不发明项目、不改代号含义 |
 | P13 | **代号一律大写。** 手工、上传、文件核对、落库都走 `normalize_vehicle_model`（去中文/圈号后 `str.upper()`）。`t13j` 与 `T13J` 是同一代号。不要另写第二套大小写规则 |
 | P14 | **历史行允许不正确。** 本平台是新项目，不为脏数据写收口、不为历史开例外。新写入必须规范名 + 大写代号。禁止改写已有业务列去迁就外键。加 FK 时对不上的脏行：删掉或按正确口径重传，禁止批量改写成规范名/大写。读路径不做项目别名展开：筛 `T13J` 对不上历史 `t13j` 行，接受 |
 | P15 | **同一代号可挂不同基地，是不同项目行。** 青岛 `T13J` 与大连 `T13J` 并存。写路径和下拉必须先选基地。未选基地时筛选项是各基地代号并集（同名只出现一次） |
+| P16 | **当前供货台数**挂在项目行上，单位 **台**，整数 ≥ 0，默认 0。本期只录入 / 导入导出 / 一览展示，**不**从下游产量自动累加，**不**在本文算模具费。日后与模具单价「分摊万台」等上限比较（万台 × 10000 = 台）；到达上限则不再分摊——比较与停摊写在费用切片 |
 
 冲压工厂不是项目，见 [supplier-design.md](supplier-design.md)。工艺版本、BOM 版本也不是项目。  
 钢价、冲次单价无项目，走基地设计。
@@ -76,7 +77,7 @@ stamping / bom / costing / dashboard
 | 切片 | `masterdata`（与基地同一切片）。宪法 §4.1 上游 / 基础数据已含 `masterdata` |
 | 代码 | `app/models/masterdata/vehicle_model.py` · `routers/masterdata/vehicle_model/` · `services/masterdata/vehicle_model/` · `repositories/masterdata/vehicle_model/` · `parsers/masterdata/vehicle_model_parser.py`；前端 `static/js/features/masterdata/vehicle-model/{upload,list}/` |
 | 表 | `vehicle_models`（复合主键 `(location, vehicle_model)`，两列皆 `String(50)`，与现网业务列同宽） |
-| HTTP | `/api/masterdata/vehicle-models` **只给项目两页**：列表 / 手工创建 / 改生效失效 / 删除 / **下载模板 / 上传 / 一览导出**。`GET ""` → `ApiResponse[VehicleModelListVO]`（基地卡 + 全部行，服务端不按 `location` 裁切）；`POST ""` 创建（主键冲突 → 「该基地已有此项目」）；`GET /template`；`POST /upload`；`GET /export`（可选 `location=`，列与模板相同）；`PATCH` / `DELETE /{location}/{vehicle_model}`（路径编码中文基地）。下游上传/计算/列表下拉**不另开**这套 HTTP：各切片沿用现有接口，Service 内调本切片。避免工艺上传权限绑 `menu:vehicle-model-upload`。一览表**禁止**再打基地页 HTTP |
+| HTTP | `/api/masterdata/vehicle-models` **只给项目两页**：列表 / 手工创建 / 改生效失效与当前供货台数 / 删除 / **下载模板 / 上传 / 一览导出**。`GET ""` → `ApiResponse[VehicleModelListVO]`（基地卡 + 全部行，服务端不按 `location` 裁切）；`POST ""` 创建（主键冲突 → 「该基地已有此项目」）；`GET /template`；`POST /upload`；`GET /export`（可选 `location=`，列与模板相同）；`PATCH` / `DELETE /{location}/{vehicle_model}`（路径编码中文基地）。下游上传/计算/列表下拉**不另开**这套 HTTP：各切片沿用现有接口，Service 内调本切片。避免工艺上传权限绑 `menu:vehicle-model-upload`。一览表**禁止**再打基地页 HTTP |
 | 前端 | 见本节 4.1～4.6。侧栏 **项目** 是二级分组：叶子 **上传** + **一览表**（对齐加减价政策 / 基准价格） |
 
 基地 Model **禁止** `relationship` 指向项目。项目 Service **可以**调 `LocationService`（下游组合上游）；基地 Service **禁止** import 项目。
@@ -131,7 +132,7 @@ stamping / bom / costing / dashboard
 
 无对应 `menu:` 时藏叶子；两叶都无权限则空「项目」分组一并隐藏。若「基地」「项目」都空且供应商仍无链，空「主数据」一并隐藏。
 
-入口已写入：`static/index.html`、`docs/front-end.mdc`「侧栏顺序」与 §2.1 路由表、`features/index.js` 目录注释。
+入口已写入：`static/index.html`、`features/index.js` 的 `pageMeta`。
 
 兼容：`#/vehicle-model` → `vehicle-model-list`（与现网 `#/bom` → `bom-upload` 同类）。
 
@@ -199,7 +200,7 @@ menu:settings
 | `op:vehicle-model-list:view` | 列表 |
 | `op:vehicle-model-list:export` | 导出 Excel（列与导入模板相同） |
 | `op:vehicle-model-list:create` | 抽屉手工新增 |
-| `op:vehicle-model-list:update` | 改生效/失效 |
+| `op:vehicle-model-list:update` | 改生效/失效、当前供货台数 |
 | `op:vehicle-model-list:delete` | 删除项目 |
 
 CRUD：上传路由绑 `upload` 叶权限；一览写操作绑 `list` 叶对应 `op`。按钮 `can('op:…')`，不能只藏侧栏。
@@ -231,7 +232,7 @@ CRUD：上传路由绑 `upload` 叶权限；一览写操作绑 `list` 叶对应 
 - 外框 `bg-[#0A0A0C] border-[#1A1A22]`；表区 `bg-[#0A0A0E]`；工业阴影允许内联
 - 表头 `text-[9px] text-[#555555]`；表体 `font-mono text-[11px]`；行 hover `bg-[#161620]` + 左侧 2px 红条
 - 操作只在操作列；**禁止**整行点击、禁止行 `cursor-pointer`
-- 新增 / 改生效失效用 **抽屉**（z-index ≥ 80/85）；删除先确认
+- 新增 / 改生效失效与供货台数用 **抽屉**（z-index ≥ 80/85）；删除先确认
 - 筛选胶囊可 `rounded-md`；**表体直角**
 
 不要抄这些：
@@ -269,10 +270,10 @@ CRUD：上传路由绑 `upload` 叶权限；一览写操作绑 `list` 叶对应 
 | 顶 HUD | 「全部」+ 各基地卡；右侧「导出 Excel」（`op:vehicle-model-list:export`）+「新增项目」（`op:vehicle-model-list:create`）。不放上传按钮 |
 | 胶囊 | 当前筛选：全部基地 / 某规范名 |
 | 段标题 | 基地规范名（禁用则附「已禁用」） |
-| 表列 | **项目代号**是主信息（更大更亮）。生效年月、失效年月、该月状态（未生效 / 可引入 / 已失效，只看项目期）用钛灰字，**不要**绿/橙徽章抢代号 |
-| 操作列 | 编辑生效/失效、删除 |
-| 新增 | 抽屉：基地（必选，下拉 `list_enabled()`）、项目代号、生效年+月（必填）、失效年+月（可空）。代号经 `normalize_vehicle_model`（含大写）；空/纯中文/`UNKNOWN`/`未知车型` 拒收。主键已存在 → Toast「该基地已有此项目」 |
-| 编辑 | 抽屉：基地与代号只读；只改生效/失效 |
+| 表列 | **项目代号**是主信息（更大更亮）。生效年月、失效年月、**当前供货台数（台）**、该月状态（未生效 / 可引入 / 已失效，只看项目期）用钛灰字，**不要**绿/橙徽章抢代号 |
+| 操作列 | 编辑生效/失效与供货台数、删除 |
+| 新增 | 抽屉：基地（必选，下拉 `list_enabled()`）、项目代号、生效年+月（必填）、失效年+月（可空）、当前供货台数（必填，默认 0，单位台）。代号经 `normalize_vehicle_model`（含大写）；空/纯中文/`UNKNOWN`/`未知车型` 拒收。主键已存在 → Toast「该基地已有此项目」 |
+| 编辑 | 抽屉：基地与代号只读；改生效/失效、当前供货台数 |
 | 删除 | 确认后 DELETE；仍被引用则 Toast「仍被引用，不能删除」 |
 
 年月展示用 `fmtYear` / `fmtMonth`（`2026年`、`07月`），禁止 `2026-07`。失效空则 `—`（尚未失效）。
@@ -306,7 +307,7 @@ P5 / P6 已覆盖的路径：
 
 ### 4.6 入口对齐（已落地）
 
-侧栏二级、两页 `pageMeta` / `app.js`、权限树 `menu:vehicle-model*`、`docs/front-end.mdc`、[location-design.md](location-design.md) §4.1、引擎名单、界面「项目」、直接下一跳复合外键均已接上。
+侧栏二级、两页 `pageMeta` / `app.js`、权限树 `menu:vehicle-model*`、[location-design.md](location-design.md) §4.1、引擎名单、界面「项目」、直接下一跳复合外键均已接上。
 
 APQP 文档若仍写「只选基地、文件立项」，以本文为准。
 
@@ -326,6 +327,7 @@ APQP 文档若仍写「只选基地、文件立项」，以本文为准。
 | `effective_month` | 生效月，`Integer` 1–12，必填 |
 | `expiry_year` | 失效年，可空。与 `expiry_month` 必须同空或同有 |
 | `expiry_month` | 失效月，可空，1–12 |
+| `current_supplied_units` | 当前供货台数，`Integer`，**必填**，≥ 0，默认 0，单位 **台**（不是万台）。手工/Excel 录入；**禁止** `float` / `Decimal` |
 | 审计 | `AuditUserMixin` |
 
 禁止 `is_paused` / `is_enabled`（启用/禁用是基地的事；期内停用靠改失效）。禁止逻辑删除 / 软删冒充 P10。
@@ -373,6 +375,7 @@ ForeignKeyConstraint(
 | 项目别名 | 代号创建后不改；业务 Excel 前缀/圈号由 `normalize_vehicle_model` 处理，不维护第二套写法 |
 | 项目政策 | P9，第一期不做 |
 | 暂停 | 只有生效/失效。期内不用靠布尔开关；要停引入就改失效 |
+| 按销量自动累加供货台数 | P16：本期只手工/导入；累加与停摊在费用切片日后做 |
 | 启动 / 脚本灌入 | 禁止 `ensure_seed_if_empty`、禁止 `scripts/backfill_vehicle_models` 一类从零件/BOM `DISTINCT` 灌入。一百多个项目用上传页 Excel，不要从下游发明 |
 
 ### 5.4 上传页模板
@@ -387,20 +390,21 @@ Parser 只被本切片 Service 调用。页面**不传** `location`。列（表�
 | 生效月 | 是 | 1–12 |
 | 失效年 | 否 | 与失效月同空或同有 |
 | 失效月 | 否 | 1–12；有值时失效 ≥ 生效 |
+| 当前供货台数 | 否 | 单位台；空 = 0；必须为 ≥ 0 整数，拒绝小数与负数 |
 
 文件内按规范化后的 `(location, vehicle_model)` 去重：
 
-- 同一主键、生效/失效与首次出现相同 → 后行跳过（计入 `skipped_count`）
-- 同一主键、生效/失效不同 → **整单失败**（禁止猜哪一行）
-- 库里已有该主键 → 跳过、**不覆盖**生效/失效（改期走编辑抽屉）
+- 同一主键、生效/失效/当前供货台数与首次出现相同 → 后行跳过（计入 `skipped_count`）
+- 同一主键、生效/失效或当前供货台数不同 → **整单失败**（禁止猜哪一行）
+- 库里已有该主键 → 跳过、**不覆盖**生效/失效/当前供货台数（改期或改台数走编辑抽屉）
 
 整单一个事务，任一行失败（含上条冲突、基地禁用、代号非法）则全部回滚。抽屉 `POST` 遇到已有主键 → `BusinessException("该基地已有此项目")`，不要学 Excel 静默跳过。
 
 `GET /api/masterdata/vehicle-models/template` → `StreamingResponse`（无 `ApiResponse`）。`POST /api/masterdata/vehicle-models/upload` 只收文件，返回 `ApiResponse[VehicleModelUploadResultVO]`（`created_count` / `skipped_count`，具名 VO）。百行量级，同步即可，不走异步任务。
 
-`GET /api/masterdata/vehicle-models/export` → `StreamingResponse`。列与模板完全相同（基地、项目代号、生效年、生效月、失效年、失效月），失效空则空单元格。可选 `location=` 只导出该基地；不传则全量，顺序与一览表相同。不要加「该月状态」列，否则无法再导入。已有主键再导入仍跳过、不覆盖（改期走抽屉）。
+`GET /api/masterdata/vehicle-models/export` → `StreamingResponse`。列与模板完全相同（基地、项目代号、生效年、生效月、失效年、失效月、当前供货台数），失效空则空单元格；供货台数写整数（0 也写出）。可选 `location=` 只导出该基地；不传则全量，顺序与一览表相同。不要加「该月状态」列，否则无法再导入。已有主键再导入仍跳过、不覆盖（改期或改台数走抽屉）。
 
-`PATCH` / `DELETE /api/masterdata/vehicle-models/{location}/{vehicle_model}`：`location`、`vehicle_model` 为路径参数（中文基地须 URL 编码）。PATCH 体只含生效/失效四列。DELETE 无请求体。
+`PATCH` / `DELETE /api/masterdata/vehicle-models/{location}/{vehicle_model}`：`location`、`vehicle_model` 为路径参数（中文基地须 URL 编码）。PATCH 体含生效/失效四列 **以及** `current_supplied_units`。DELETE 无请求体。
 
 ### 5.5 一览表响应 VO
 
@@ -414,7 +418,7 @@ LocationCardVO
   location, is_enabled, project_count, introducible_count, pending_count, expired_count
 
 VehicleModelVO
-  location, vehicle_model, effective_*, expiry_*
+  location, vehicle_model, effective_*, expiry_*, current_supplied_units
   period_status                    # 未生效 | 可引入 | 已失效（只比项目期与 as_of，不含基地启用）
 ```
 
@@ -499,7 +503,7 @@ VehicleModelVO
 
 | 动作 | 行为 |
 |---|------|
-| 改生效 / 失效 | `UPDATE` 四列。**非主键**，外键不管。校验 §5.1。**已有结果不改写**。重算、新计算该月仍走当时的 `require_introducible`：把失效提前等于锁死那个月的重算，要重算就先把失效改回去 |
+| 改生效 / 失效 / 当前供货台数 | `UPDATE` 非主键列，外键不管。校验 §5.1。**已有费用结果不改写**。重算、新计算该月仍走当时的 `require_introducible`：把失效提前等于锁死那个月的重算，要重算就先把失效改回去。改台数本身不触发模具费重算 |
 | 改代号 / 改所属基地 | 产品不提供（P9）。若仍被直接下游引用，引擎 `ON UPDATE RESTRICT` → `IntegrityError` → `BusinessException("仍被引用，不能修改")` |
 | 删除 | 只 `DELETE` 自己。仍被直接下游引用 → `IntegrityError` → `BusinessException("仍被引用，不能删除")` |
 
@@ -568,19 +572,29 @@ L0Scope 仍来自含 L0 的 BOM 快照，但 `vehicle_model` 必须落在本期�
 
 ---
 
-## 9. 特殊处理（预留）
+## 9. 特殊处理（预留）与当前供货台数
 
-日后挂在项目上，第一期不做表。全基地口径若出现，开基地设计，不塞进项目。
+日后政策类特殊处理挂在项目上，第一期不做政策表。全基地口径若出现，开基地设计，不塞进项目。
 
 政策表若落地：由该表声明指向 `vehicle_models` 的复合外键（`RESTRICT` / `RESTRICT`）。只改政策表，项目修改/删除代码不变。
+
+**当前供货台数已落在本表列上（P16），不是政策表。**
+
+| 项 | 定稿 |
+|---|------|
+| 字段 | `current_supplied_units`，单位 **台** |
+| 用途 | 供日后模具费（或其它按台数分摊的费用）判断：已供货台数到达上限则不再分摊 |
+| 上限从哪来 | 不在本表。模具费现网上限是模具单价上的 **分摊万台**（× 10000 = 台）。比较与停摊写在费用切片 |
+| 本期 | 一览列、抽屉、Excel 模板/导出可读写。空导入 = 0。已有行 SQLite 补列默认 0 |
+| 不做 | 自动按销量累加；在项目切片里算模具费；把万台写进本表 |
 
 ---
 
 ## 10. 范围
 
-**做：** 切片 `masterdata` 项目（侧栏二级：上传 + 一览表；抽屉手工增加 + Excel 上传，模板自带基地；一览表导出列与模板相同；挂**已启用**基地、生效/失效）；代号一律大写；同一代号可跨基地（P15）；§4.1～4.6；一览表 HUD 按基地分卡（一份 `VehicleModelListVO`）；写门禁分层（§6.0：档案 / 按年 / 当期引入）；布点/BOM `assert_matches_selected`；引擎名单问本文；工艺上传只选文件、解析后 `require_introducible_by_code` 带出基地、仍不要求布点；未生效月不准传工艺/布点/BOM；界面「项目」；直接下一跳复合外键（改主键/删除 `RESTRICT`，宪法 §4.3）。新写入必须正确；历史行允许不正确。
+**做：** 切片 `masterdata` 项目（侧栏二级：上传 + 一览表；抽屉手工增加 + Excel 上传，模板自带基地；一览表导出列与模板相同；挂**已启用**基地、生效/失效、**当前供货台数**）；代号一律大写；同一代号可跨基地（P15）；§4.1～4.6；一览表 HUD 按基地分卡（一份 `VehicleModelListVO`）；写门禁分层（§6.0：档案 / 按年 / 当期引入）；布点/BOM `assert_matches_selected`；引擎名单问本文；工艺上传只选文件、解析后 `require_introducible_by_code` 带出基地、仍不要求布点；未生效月不准传工艺/布点/BOM；界面「项目」；直接下一跳复合外键（改主键/删除 `RESTRICT`，宪法 §4.3）。新写入必须正确；历史行允许不正确。
 
-**不做：** 上传时选手选基地；禁用基地立项；启动或脚本从下游表灌入种子；基地表/别名；项目别名 / 第二套大小写查询；政策表；下游代建立项；改代号；改所属基地；暂停；基地禁用时改项目生效/失效；未生效月传工艺/布点/BOM；把模具单价/检具费也卡生效月；工艺绑定必须先有布点；全库整型外键；给间接列加项目 FK；改写历史业务列迁就外键；项目切片 `count` 下游；逻辑删除；手改排序；分页；生效到日；异步任务壳（百行同步即可）；一览表再打基地 HTTP；0 项目基地在表里出空段。
+**不做：** 上传时选手选基地；禁用基地立项；启动或脚本从下游表灌入种子；基地表/别名；项目别名 / 第二套大小写查询；政策表；下游代建立项；改代号；改所属基地；暂停；基地禁用时改项目生效/失效；未生效月传工艺/布点/BOM；把模具单价/检具费也卡生效月；工艺绑定必须先有布点；全库整型外键；给间接列加项目 FK；改写历史业务列迁就外键；项目切片 `count` 下游；逻辑删除；手改排序；分页；生效到日；异步任务壳（百行同步即可）；一览表再打基地 HTTP；0 项目基地在表里出空段；按销量自动累加供货台数；在本文里写模具费停摊。
 
 侧栏「项目」与「基地」分开展示、不是同一张表。  
 对基地：本表声明 `RESTRICT`，不在基地切片点名项目。  

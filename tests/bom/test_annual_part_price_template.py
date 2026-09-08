@@ -17,7 +17,16 @@ from app.exceptions.base import BusinessException
 from app.models.bom.node import BomNode, BomSnapshot  # noqa: F401
 from app.models.masterdata.location import Location, LocationAlias  # noqa: F401
 from app.models.stamping.part import StampingPart
-from app.parsers.bom.annual_part_price_parser import parse_annual_part_price_excel
+from app.parsers.bom.annual_part_price_parser import (
+    HEADER_CONVERSION_FACTOR,
+    HEADER_PURCHASE_UNIT,
+    HEADER_PURCHASE_UNIT_PRICE,
+    HEADER_SPECIFICATION,
+    HEADER_SUPPLY_TYPE,
+    HEADER_UNIT,
+    HEADER_UNIT_PRICE,
+    parse_annual_part_price_excel,
+)
 from app.repositories.bom.bom_repository import BomNodeRepository, BomSnapshotRepository
 from app.repositories.masterdata.location.location_repository import LocationRepository
 from app.schemas.dto.bom_dto import BomNodeWrite, BomSnapshotWrite
@@ -143,6 +152,7 @@ def _add_other_leaf(
     part_number: str,
     part_name: str,
     excel_row: int,
+    thickness_text: str | None = None,
 ) -> None:
     node_repo = BomNodeRepository()
     l0 = node_repo.create(
@@ -171,6 +181,7 @@ def _add_other_leaf(
             created_by="tester",
             updated_by="tester",
             qty_unit="pcs",
+            thickness_text=thickness_text,
             excel_filename="t.xlsx",
             excel_row=excel_row + 1,
         ),
@@ -248,6 +259,21 @@ def _add_subassembly_with_l2(
     )
 
 
+def _header_col(sheet, title: str) -> int:
+    for col in range(1, (sheet.max_column or 1) + 1):
+        if sheet.cell(1, col).value == title:
+            return col
+    raise AssertionError(f"missing header {title}")
+
+
+def _row_map(sheet, row_idx: int) -> dict[str, object]:
+    return {
+        str(sheet.cell(1, col).value): sheet.cell(row_idx, col).value
+        for col in range(1, (sheet.max_column or 1) + 1)
+        if sheet.cell(1, col).value
+    }
+
+
 def _download_template(db: Session, *, vehicle_model: str = "T13J"):
     return BomAnnualPartPriceImportService().build_template(
         db, location="芜湖", vehicle_model=vehicle_model, year=2026
@@ -284,6 +310,7 @@ def test_template_unions_project_versions_and_dedupes(db: Session) -> None:
         part_number="QR36410",
         part_name="焊接方螺母",
         excel_row=8,
+        thickness_text="M6",
     )
     second_id = _create_snapshot(db, location="芜湖", vehicle_model="T13J", bom_version="V4")
     _add_other_leaf(
@@ -317,14 +344,29 @@ def test_template_unions_project_versions_and_dedupes(db: Session) -> None:
     assert filename == "年度零件价导入模板_芜湖_T13J_2026.xlsx"
 
     workbook = load_workbook(BytesIO(content), data_only=True)
-    sheet = workbook.active
+    assert workbook.sheetnames[0] == "年度零件价"
+    assert workbook.sheetnames[1] == "填写说明"
+    sheet = workbook.worksheets[0]
     numbers = [str(row[0]) for row in sheet.iter_rows(min_row=2, values_only=True) if row[0]]
     assert numbers == ["QR36410", "M14-4102311"]
     assert "T28-ONLY" not in numbers
-    assert sheet.cell(2, 2).value == "焊接方螺母"
-    assert sheet.cell(2, 5).value == SUPPLY_TYPE_STANDARD
-    assert sheet.cell(3, 5).value == SUPPLY_TYPE_GLUE
-    assert sheet.cell(2, 4).value == Decimal("0.0000") or sheet.cell(2, 4).value == 0
+    row2 = _row_map(sheet, 2)
+    row3 = _row_map(sheet, 3)
+    assert row2["零件名称"] == "焊接方螺母"
+    assert row2[HEADER_SPECIFICATION] == "M6"
+    assert row2[HEADER_PURCHASE_UNIT] == "pcs"
+    assert row2[HEADER_PURCHASE_UNIT_PRICE] in (None, "")
+    assert row2[HEADER_CONVERSION_FACTOR] in (1, Decimal("1"), Decimal("1.00000000"))
+    assert row2[HEADER_UNIT] == "pcs"
+    assert row2[HEADER_UNIT_PRICE] == Decimal("0.0000") or row2[HEADER_UNIT_PRICE] == 0
+    assert row2[HEADER_SUPPLY_TYPE] == SUPPLY_TYPE_STANDARD
+    assert row3[HEADER_SUPPLY_TYPE] == SUPPLY_TYPE_GLUE
+    notes_values = [workbook.worksheets[1].cell(row=idx, column=1).value for idx in range(3, 10)]
+    notes_text = "\n".join(str(item) for item in notes_values if item)
+    assert "核价单价 = 采购单价 ÷ 转换系数" in notes_text
+    assert "必须是正整数" in notes_text
+    assert "不要填 1/12" in notes_text
+    assert "不要把采购包装单位" in notes_text
 
     parsed = parse_annual_part_price_excel(content)
     assert parsed.errors == []
@@ -332,6 +374,9 @@ def test_template_unions_project_versions_and_dedupes(db: Session) -> None:
     assert parsed.rows[0].supply_type == SUPPLY_TYPE_STANDARD
     assert parsed.rows[1].supply_type == SUPPLY_TYPE_GLUE
     assert parsed.rows[0].unit_price == Decimal("0.0000")
+    assert parsed.rows[0].conversion_factor == 1
+    assert parsed.rows[0].purchase_unit_price is None
+    assert parsed.rows[0].specification == "M6"
 
 
 def test_template_includes_l2_not_in_process_library(db: Session) -> None:
@@ -345,9 +390,12 @@ def test_template_includes_l2_not_in_process_library(db: Session) -> None:
     numbers = [str(row[0]) for row in sheet.iter_rows(min_row=2, values_only=True) if row[0]]
     assert numbers == ["551001133AA", "QR36410"]
     assert "551001137AA" not in numbers
-    by_number = {
-        str(row[0]): str(row[4]) for row in sheet.iter_rows(min_row=2, values_only=True) if row[0]
-    }
+    by_number = {}
+    supply_col = _header_col(sheet, HEADER_SUPPLY_TYPE)
+    for row in sheet.iter_rows(min_row=2, values_only=True):
+        if not row[0]:
+            continue
+        by_number[str(row[0])] = str(row[supply_col - 1])
     assert by_number["551001133AA"] == SUPPLY_TYPE_CARRYOVER
     assert by_number["QR36410"] == SUPPLY_TYPE_STANDARD
 

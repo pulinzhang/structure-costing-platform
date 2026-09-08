@@ -10,6 +10,7 @@ from collections.abc import Callable
 from decimal import Decimal
 from pathlib import Path
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.common.audit import audit_create, display_name
@@ -169,7 +170,7 @@ class StampingUploadService:
             )
 
             _report(70, "正在写入零件、工序与拼焊子片到数据库...")
-            with self.db.begin():
+            try:
                 existing_processes = self.process_repo.list_by_scope(
                     self.db,
                     location=file_info.safe_location,
@@ -244,7 +245,7 @@ class StampingUploadService:
                     stamping_supplier=stamping_supplier or None,
                 )
 
-                return UploadResult(
+                result = UploadResult(
                     filename=filename,
                     new_filename=file_info.new_filename,
                     size=len(file_content),
@@ -260,6 +261,18 @@ class StampingUploadService:
                     warnings=warnings,
                     parse_time_ms=parse_time_ms,
                 )
+                self.db.commit()
+                return result
+            except IntegrityError:
+                self.db.rollback()
+                raise BusinessException("该范围零件号冲突，请重试覆盖上传") from None
+            except BusinessException:
+                self.db.rollback()
+                raise
+            except Exception:
+                self.db.rollback()
+                logger.exception("冲压工艺上传落库失败")
+                raise
         finally:
             if os.path.exists(tmp_path):
                 os.unlink(tmp_path)

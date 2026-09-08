@@ -1435,6 +1435,11 @@
                   "code": "op:supplier-list:update",
                   "label": "编辑",
                   "type": "op"
+                },
+                {
+                  "code": "op:supplier-list:delete",
+                  "label": "删除",
+                  "type": "op"
                 }
               ]
             }

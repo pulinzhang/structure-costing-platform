@@ -25,6 +25,7 @@ from app.models.bom.procurement_object_generate_log import (  # noqa: F401
     BomProcurementObjectGenerateLog,
 )
 from app.models.masterdata.location import Location, LocationAlias  # noqa: F401
+from app.models.masterdata.supplier import Supplier, SupplierAlias  # noqa: F401
 from app.repositories.bom.bom_repository import BomNodeRepository, BomSnapshotRepository
 from app.repositories.masterdata.location.location_repository import LocationRepository
 from app.schemas.dto.bom_dto import BomNodeWrite, BomSnapshotWrite
@@ -277,14 +278,15 @@ def test_export_workbook_has_styled_sheets_without_cover(db: Session) -> None:
     assert object_sheet["C5"].value == "零件号"
     assert object_sheet["D5"].value == "零件名称"
     assert object_sheet["G5"].value == "对象种类"
-    assert object_sheet["J5"].value == "材料"
-    assert object_sheet["J4"].value == "佐证"
+    assert object_sheet["I5"].value == "供应商"
+    assert object_sheet["K5"].value == "材料"
+    assert object_sheet["K4"].value == "佐证"
     assert object_sheet.freeze_panes == "G6"
     assert object_sheet["A6"].value == 9
     assert object_sheet["C6"].value == "L1-STAMP"
-    assert object_sheet["R6"].value == "芜湖"
+    assert object_sheet["S6"].value == "芜湖"
     assert object_sheet["C6"].font.color.rgb in {"0037474F", "37474F"}
-    assert object_sheet["R6"].font.color.rgb in {"00455A64", "455A64"}
+    assert object_sheet["S6"].font.color.rgb in {"00455A64", "455A64"}
     assert object_sheet["A1"].fill.fgColor.rgb in {"001A237E", "1A237E"}
     workbook.close()
 

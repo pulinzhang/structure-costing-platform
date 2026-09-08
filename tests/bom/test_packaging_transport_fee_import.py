@@ -19,6 +19,7 @@ from app.models.bom.node import BomSnapshot
 from app.models.bom.packaging_transport_fee import BomPackagingTransportFee
 from app.models.file_trace.upload_file import UploadFile
 from app.models.masterdata.location import Location, LocationAlias
+from app.models.masterdata.vehicle_model import VehicleModel
 from app.parsers.bom.packaging_transport_fee_parser import (
     parse_packaging_transport_fee_excel,
 )
@@ -62,6 +63,7 @@ def memory_db(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Generator[Sess
         tables=[
             Location.__table__,
             LocationAlias.__table__,
+            VehicleModel.__table__,
             BomSnapshot.__table__,
             BomPackagingTransportFee.__table__,
             UploadFile.__table__,
@@ -82,6 +84,19 @@ def memory_db(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Generator[Sess
             ),
         )
         repo.create_alias(session, LocationAliasInsert(alias=f"{name}基地", location=name))
+    session.flush()
+    for location_name in (LOCATION, "芜湖"):
+        session.add(
+            VehicleModel(
+                location=location_name,
+                vehicle_model=VEHICLE_MODEL,
+                effective_year=2020,
+                effective_month=1,
+                current_supplied_units=0,
+                created_by="system",
+                updated_by="system",
+            )
+        )
     session.flush()
     session.add(
         BomSnapshot(
@@ -203,6 +218,26 @@ class TestPackagingTransportFeeImport:
                 file_content=sample_xlsx_bytes,
                 filename="包装运输费用.xlsx",
                 location="芜湖",
+                year=YEAR,
+                vehicle_model=VEHICLE_MODEL,
+                current_user=SYSTEM_USER,
+            )
+
+    def test_import_rejects_year_outside_period(
+        self, memory_db: Session, sample_xlsx_bytes: bytes
+    ) -> None:
+        row = memory_db.get(VehicleModel, (LOCATION, VEHICLE_MODEL))
+        assert row is not None
+        row.expiry_year = 2021
+        row.expiry_month = 12
+        memory_db.commit()
+        service = BomPackagingTransportFeeImportService()
+        with pytest.raises(BusinessException, match="无交集"):
+            service.import_excel(
+                memory_db,
+                file_content=sample_xlsx_bytes,
+                filename="包装运输费用.xlsx",
+                location=LOCATION,
                 year=YEAR,
                 vehicle_model=VEHICLE_MODEL,
                 current_user=SYSTEM_USER,

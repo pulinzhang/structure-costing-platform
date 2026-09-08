@@ -48,7 +48,10 @@ class StampingPart(AuditUserMixin, Base):
     )
     # 【供应商维度】
     stamping_supplier: Mapped[str | None] = mapped_column(
-        String(100), nullable=True, comment="冲压供应商，例：安庆常庆汽车部件有限公司"
+        String(100),
+        ForeignKey("suppliers.full_name", ondelete="RESTRICT", onupdate="RESTRICT"),
+        nullable=True,
+        comment="冲压供应商规范全称；NULL 不引用供应商",
     )
     vehicle_model: Mapped[str] = mapped_column(String(50), nullable=False, comment="项目代号")
     version: Mapped[str] = mapped_column(String(20), nullable=False, comment="版本")

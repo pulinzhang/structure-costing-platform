@@ -111,6 +111,16 @@ def update_supplier(
     return ApiResponse.updated(data=record, message="更新成功")
 
 
+@router.delete("/{full_name}", response_model=ApiResponse[None])
+def delete_supplier(
+    full_name: str,
+    db: Session = Depends(get_db),
+    current_user: UserVO = Depends(require_perm(Perm.SUPPLIER_LIST_DELETE)),
+) -> ApiResponse[None]:
+    _service.delete(db, full_name)
+    return ApiResponse.deleted(message="删除成功")
+
+
 @router.post(
     "/{full_name}/aliases",
     response_model=ApiResponse[SupplierVO],

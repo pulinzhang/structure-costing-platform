@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field, field_serializer
 
 from app.common.money import Q0, Q4, format_money, optional_format_money
 from app.common.timezone import datetime_to_iso
+from app.schemas.common.batch_result import BatchAuditCountsVO, BatchDeleteCountsVO
 
 
 class StampingDieFeeItemVO(BaseModel):
@@ -173,17 +174,13 @@ class StampingDieFeeFilterVO(BaseModel):
     versions: list[str] = Field(default_factory=list)
 
 
-class StampingDieFeeBatchDeleteResultVO(BaseModel):
-    deleted_count: int = 0
-    skipped_approved_count: int = 0
+class StampingDieFeeBatchDeleteResultVO(BatchDeleteCountsVO):
     year: int
     location: str
     vehicle_model: str
 
 
-class StampingDieFeeBatchAuditResultVO(BaseModel):
-    updated_count: int = 0
-    skipped_count: int = 0
+class StampingDieFeeBatchAuditResultVO(BatchAuditCountsVO):
     year: int
     location: str
     vehicle_model: str

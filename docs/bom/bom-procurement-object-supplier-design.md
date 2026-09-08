@@ -1,11 +1,12 @@
 # 采购对象指定供应商 — 设计说明
 
-> **状态：设计稿（未落地）。** 不改分类规则、不算价。  
+> **状态：已落地。** 不改分类规则、不算价。  写入路径见供应商第二期。  
 > 切片：**`bom`**（采购对象清单的行上动作）。  
 > 上游清单：[bom-procurement-objects-design.md](bom-procurement-objects-design.md)。  
-> 对方身份：[supplier-design.md](../masterdata/supplier-design.md)（**点选本文，禁止自由文本**）。  
+> 对方身份：[supplier-design.md](../masterdata/supplier-design.md)（**点选本文，禁止自由文本**；写门禁 S12）。  
 > 下游签约报表：[procurement-contract-report-design.md](../costing/procurement-contract-report-design.md)。  
-> 硬约束：[architecture.md](../architecture.md)。
+> 硬约束：[architecture.md](../architecture.md)。  
+> 年度价 `supplier_name` **不是**本字段：报价档案，不跑 `require_enabled`（供应商设计 S15）。
 
 ---
 
@@ -15,7 +16,7 @@
 
 选项只来自供应商主数据。找不到：停止，去 `#/supplier-list` 补。禁止自由输入，禁止从备注 / 钢厂列 / 年度价发明对方。
 
-写门禁与 [supplier-design.md](../masterdata/supplier-design.md) **§6.0 / S12** 同一套：`SupplierService.require_enabled`。指定或改成非空才跑；清空、再生成带回不跑。供应商切片本期先落工艺上传门禁，本页日后落地时必须接这条，禁止另写校验。
+写门禁与 [supplier-design.md](../masterdata/supplier-design.md) **§6.0 / S12** 同一套：`SupplierService.require_enabled`。指定或改成非空才跑；清空、再生成带回不跑。供应商切片与工艺确认门禁已在第一期落地；**本页是供应商第二期必做**。禁止另写一套校验。
 
 ---
 
@@ -53,11 +54,18 @@
 
 ## 3. 字段
 
-表：`bom_procurement_objects`（现网清单行，不加新表）。本行 **不是** 供应商主数据的下一跳：存字符串规范全称，**不加** 供应商外键（宪法 §4.3：直接下一跳另议；一期业务列继续字符串）。
+表：`bom_procurement_objects`（现网清单行，不加新表）。本行 **是** 供应商主数据的直接下一跳（[supplier-design.md](../masterdata/supplier-design.md) S16）：
+
+```python
+supplier_name: Mapped[str | None]  # String(100)
+ForeignKey("suppliers.full_name", ondelete="RESTRICT", onupdate="RESTRICT")
+```
+
+**可空。** 未指定 / 清空 / 自制清空 = **`NULL`**，禁止存空串 `''`。`NULL` 不引用供应商，不挡供应商改全称、不挡删除。非空必须是规范全称。供应商父 Model **禁止** `relationship` 指向本表。
 
 | 字段 | 类型 | 含义 |
 |------|------|------|
-| `supplier_name` | `String(100)`，可空 | 合同对方 = 供应商主数据 **规范全称**。未指定 = `NULL` |
+| `supplier_name` | `String(100)`，**可空** | 合同对方 = 供应商主数据 **规范全称**。未指定 = `NULL` |
 
 禁止：
 
@@ -68,9 +76,9 @@
 
 写入前：
 
-1. strip；空串视为 `NULL`（清空）。  
+1. strip；空串 / 只空白视为 `NULL`（清空），**不**跑 `require_enabled`，写库必须是 `NULL` 不是 `''`。  
 2. 非空 → `SupplierService.require_enabled`（已登记且已启用）。对不上 / 已禁用 → `BusinessException`，提示去 `#/supplier-list`，不代建。  
-3. 落库只写 **规范全称**。别名 / 缩写命中同一条则通过，仍落全称。
+3. 落库只写 **规范全称**。别名 / 缩写命中同一条则通过，仍落全称。外键只保证全称在 `suppliers` 里，不管启用。
 
 列表可旁注缩写；本行只存全称。
 
@@ -99,7 +107,7 @@
 
 ## 5. 生成带回
 
-同 snapshot 再生成：按 `source_node_id` 带回现网已有的 **确认三态 + 确认备注 + `supplier_name`**。新节点 `supplier_name` 为空。已不在树的指定丢弃。带回 **不** 再跑 `require_enabled`（历史全称可能已禁用，清掉会丢采购指定）。
+同 snapshot 再生成：按 `source_node_id` 带回现网已有的 **确认三态 + 确认备注 + `supplier_name`**。新节点 `supplier_name` 为 `NULL`。已不在树的指定丢弃。带回 **不** 再跑 `require_enabled`（历史全称可能已禁用；外键仍要求父行存在）。若该全称已不在 `suppliers`（删光后再生成的窗口）→ 该行落 `NULL`，**不要**让整次生成因 `IntegrityError` 失败。
 
 覆盖导入换 snapshot：现网不迁确认，**也不迁供应商**（`source_node_id` 已变）。
 
@@ -111,7 +119,7 @@
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| PATCH | `/api/bom/procurement-objects/items/{id}/supplier` | 单条指定或清空。body：`supplier_name`（可空；非空 = 全称或能解析到全称的缩写/别名，Service 收成规范全称） |
+| PATCH | `/api/bom/procurement-objects/items/{id}/supplier` | 单条指定或清空。body：`supplier_name`（可空；`''` 与缺省当清空 → `NULL`；非空 = 全称或能解析到全称的缩写/别名，Service 收成规范全称） |
 | GET | `/` 列表 | 增加筛 `supplier_name`（按规范全称）、`has_supplier`（是/否） |
 | GET | `/export` | 采购对象工作表增加「供应商」列（规范全称） |
 
@@ -125,6 +133,8 @@
 
 前端风格仍对齐现网采购对象列表（HUD / `#FF1E27`），不新开一页。
 
+落地时同步：[supplier-design.md](../masterdata/supplier-design.md) §4.1 第二期清单。权限沿用现网 `op:bom-procurement-object-list:update`，不新增供应商权限码。
+
 ---
 
 ## 7. 分层
@@ -133,7 +143,7 @@
 Router  → 现网 ProcurementObjectService（门面，可下沉 AuditService）
               └── 校验 qa / 审核 / section / 自制清空
               └── SupplierService.require_enabled（非空时）
-              └── Repository 更新 supplier_name（规范全称）
+              └── Repository 更新 supplier_name（规范全称或 NULL）
 ```
 
 禁止：生成分类时读本字段；costing 回写本字段；从年度价/备注/钢厂列自动填；Router 调供应商 Repository。
@@ -144,11 +154,11 @@ Router  → 现网 ProcurementObjectService（门面，可下沉 AuditService）
 
 | 做 | 不做 |
 |----|------|
-| 采购对象行点选一个已启用供应商，存规范全称 | 自由文本、一件多家、合同状态机 |
+| 采购对象行点选一个已启用供应商，存规范全称；未指定 **`NULL`** | 自由文本、一件多家、合同状态机、空串 `''` |
 | 再生成按节点带回（含已禁用的历史全称） | 覆盖导入后自动对到新节点 |
 | 自制清空；已审锁定 | 用钢厂列或年度价厂名顶替 |
 | 列表筛未指定 | 指定参与列入/检测 `qa_passed` |
-| 找不到去 `#/supplier-list` | 本切片代建供应商；给本列加供应商外键（一期）；另写一套厂名校验 |
+| 找不到去 `#/supplier-list` | 本切片代建供应商；给本列存空串 `''`；`CASCADE` 改/删供应商时改清单行；另写一套厂名校验；用年度价 `supplier_name` 顶替 |
 
 ---
 
@@ -159,3 +169,6 @@ Router  → 现网 ProcurementObjectService（门面，可下沉 AuditService）
 | 2026-09-02 | 初稿：清单行 `supplier_name`；与确认/审核锁定对齐；签约报表只读本字段。 |
 | 2026-09-08 | 覆盖「一期自由文本」：点选供应商主数据，落库缩写；禁用后不准新指定、历史行可查。 |
 | 2026-09-08 | 写门禁锁死为供应商设计 `require_enabled`（S12）；深链 `#/supplier-list`。落库改为规范全称（与现网工艺确认一致），缩写只作点选旁注。 |
+| 2026-09-08 | 纳入供应商第二期：工艺门禁已落地；本页未落地。明确与年度价档案（S15）分家。 |
+| 2026-09-08 | 本表改为供应商直接下一跳：`supplier_name` 可空 FK `RESTRICT`/`RESTRICT`。NULL 不挡删/改主键。 |
+| 2026-09-08 | 空串收 `NULL`；带回时父行已删则该行 `NULL`，不整单 FK 失败。 |

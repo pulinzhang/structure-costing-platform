@@ -6,9 +6,9 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Any
 
-from pydantic import BaseModel, Field, field_serializer, field_validator
+from pydantic import BaseModel, Field, field_serializer
 
-from app.common.money import Q2, Q4, format_money, optional_format_money, quantize_money
+from app.common.money import Q2, Q4, format_money, optional_format_money
 from app.common.timezone import datetime_to_iso
 
 # ==================== 冲次单价 VO ====================
@@ -191,53 +191,6 @@ class StampingPartWithProcessesResponse(BaseModel):
         return optional_format_money(value, Q2, 2)
 
 
-class StampingPartQuery(BaseModel):
-    """冲压零件查询参数"""
-
-    location: str | None = Field(None, description="采购基地")
-    vehicle_model: str | None = Field(None, description="项目")
-    version: str | None = Field(None, description="版本")
-    part_number: str | None = Field(None, description="零件号")
-    part_name: str | None = Field(None, description="零件名称")
-    material: str | None = Field(None, description="材质")
-    stamping_supplier: str | None = Field(None, description="冲压供应商")
-    page: int = Field(1, ge=1, description="页码")
-    size: int = Field(100, ge=1, le=500, description="每页条数")
-
-
-class StampingProcessUpdate(BaseModel):
-    """工序更新请求"""
-
-    cost_ratio: Decimal | None = Field(
-        None, ge=0, le=10, description="成本系数（0~10，即0%~1000%）"
-    )
-    remark: str | None = None
-
-    @field_validator("cost_ratio", mode="before")
-    @classmethod
-    def _coerce_cost_ratio(cls, value: Any) -> Decimal | None:
-        if value is None or (isinstance(value, str) and not value.strip()):
-            return None
-        return quantize_money(value, Q2)
-
-
-class StampingProcessItemUpdate(BaseModel):
-    """单个工序更新项"""
-
-    id: int
-    cost_ratio: Decimal | None = Field(
-        None, ge=0, le=10, description="成本系数（0~10，即0%~1000%）"
-    )
-    remark: str | None = None
-
-    @field_validator("cost_ratio", mode="before")
-    @classmethod
-    def _coerce_cost_ratio(cls, value: Any) -> Decimal | None:
-        if value is None or (isinstance(value, str) and not value.strip()):
-            return None
-        return quantize_money(value, Q2)
-
-
 class StampingPartListSummaryVO(BaseModel):
     """列表筛选汇总（去重：基地 / 冲压工厂 / 车型 / 零件号 / 版本）"""
 
@@ -257,19 +210,6 @@ class StampingPartListFilterOptions(BaseModel):
     materials: list[str] = []
     stamping_suppliers: list[str] = []
     summary: StampingPartListSummaryVO | None = None
-
-
-class StampingCascadeFilterQuery(BaseModel):
-    """冲压级联筛选查询参数"""
-
-    location: str | None = Field(None, description="采购基地")
-    stamping_supplier: str | None = Field(None, description="冲压工厂")
-    vehicle_model: str | None = Field(None, description="项目")
-    version: str | None = Field(None, description="版本")
-    year: int | None = Field(
-        None, ge=2000, le=2100, description="年度；传入后项目下拉改问项目主数据"
-    )
-    month: int | None = Field(None, ge=1, le=12, description="月份；与年度一起时下拉为该月可引入")
 
 
 class StampingCascadeFilterOptionsVO(BaseModel):
@@ -317,17 +257,6 @@ class StampingMaterialResponse(BaseModel):
     @field_serializer("sheet_length", "sheet_width")
     def serialize_sheet_dims(self, values: list[Decimal]) -> str | None:
         return _join_decimal_texts(values, Q2, 2)
-
-
-class StampingMaterialQuery(BaseModel):
-    """材料查询参数"""
-
-    location: str | None = Field(None, description="采购基地")
-    stamping_supplier: str | None = Field(None, description="冲压供应商")
-    vehicle_model: str | None = Field(None, description="项目")
-    version: str | None = Field(None, description="版本")
-    page: int = Field(1, ge=1, description="页码")
-    size: int = Field(50, ge=1, le=500, description="每页条数")
 
 
 class BatchUpdateResponse(BaseModel):

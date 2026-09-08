@@ -2,7 +2,7 @@
  * 项目上传页 — 同步导入，页面不选基地
  */
 
-import { vehicleModelUploadTemplate } from './template.js?v=1';
+import { vehicleModelUploadTemplate } from './template.js?v=2';
 
 const API_BASE = '/api/masterdata/vehicle-models';
 const MAX_FILE_SIZE = 5 * 1024 * 1024;

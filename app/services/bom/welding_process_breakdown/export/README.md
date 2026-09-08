@@ -33,7 +33,7 @@ from app.services.bom.welding_process_breakdown.export import (
 ## 2. 为什么这样组织
 
 1. **编排与渲染分离**  
-   `orchestrator` 只做「查库 → 调 builder → 组文件名」；改 Excel 版式不必碰 Repository。
+   `orchestrator.export` 只做 `prepare_export → workbook.build → persist_export`；Repository 查询在 `prep.py`。
 
 2. **列 / 值 / 样式 / 工作簿四层**  
    - 改表头、列宽、说明文案 → `columns.py`（无 openpyxl）  
@@ -55,7 +55,9 @@ from app.services.bom.welding_process_breakdown.export import (
 export/
 ├── README.md                 # 本说明
 ├── __init__.py               # 对外导出 Orchestrator
-├── orchestrator.py           # 编排：筛选取数 → 渲染 → 文件名
+├── orchestrator.py           # 编排：prepare → workbook → persist
+├── prep.py                   # 筛选取数、表头摘要
+├── persist.py                # 文件名、导出日志（不写库）
 ├── columns.py                # 列布局、行高、文案、列号派生
 ├── values.py                 # 单元格取值、筛选摘要、文件名
 ├── styles.py                 # SheetStyle / fill / font / tone
@@ -64,9 +66,11 @@ export/
 
 | 文件 | 负责 | 不负责 |
 |------|------|--------|
-| `orchestrator.py` | Session、Repository、调用 builder、打日志 | 单元格样式细节 |
+| `orchestrator.py` | 三步编排、注入 Repository / builder | 查库、单元格样式 |
+| `prep.py` | Session、`list_l0_for_export`、`filter_summary` | 渲染、文件名 |
+| `persist.py` | `build_filename`、导出日志 | SQL、openpyxl |
 | `columns.py` | `HEADERS`、主表/明细列数、说明 `NOTE`、列宽 | 读库、写 Excel |
-| `values.py` | 计费用量、标准工艺名/单位、文件名 | 颜色、合并格 |
+| `values.py` | 计费用量、标准工艺名/单位、文件名规则 | 颜色、合并格 |
 | `styles.py` | 色板、字体、状态 tone 映射 | 业务口径 |
 | `workbook.py` | 标题/双层表头/数据行/合并/冻结/筛选 | SQL |
 
@@ -77,12 +81,12 @@ export/
 ```text
 Router (welding_process_breakdown.py)
   └── BomWeldingProcessBreakdownExportOrchestrator
-        ├── BomWeldingProcessBreakdownRepository.list_l0_for_export
-        ├── values.filter_summary / build_filename
-        └── L0CheckWorkbookBuilder.build
-              ├── columns.*
-              ├── values.*（行内取值）
-              └── styles.*
+        ├── prep.prepare_export → Repository.list_l0_for_export
+        ├── L0CheckWorkbookBuilder.build
+        │     ├── columns.*
+        │     ├── values.*（行内取值）
+        │     └── styles.*
+        └── persist.persist_export → values.build_filename
 ```
 
 **禁止**：
@@ -150,7 +154,7 @@ Router (welding_process_breakdown.py)
 | 计费口径、标准名/单位回填、文件名规则 | `values.py` |
 | 颜色、字体、解析/映射状态配色 | `styles.py` |
 | 合并主表、冻结窗格、斑马纹、空工艺高亮 | `workbook.py` |
-| 筛选字段、取数范围、日志 | `orchestrator.py` + Repository `list_l0_for_export` |
+| 筛选字段、取数范围、日志 | `prep.py` / `persist.py` + Repository `list_l0_for_export` |
 | 权限 / HTTP 参数 | `app/routers/bom/welding_process_breakdown.py` |
 
 改列时注意：`HEADERS` 变更后，`COL` / `STD_COLS` / `BILLING_COLS` 等由列名派生的集合会跟着变；`workbook` 里若有硬编码列语义，一并核对。

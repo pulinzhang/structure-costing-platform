@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field, field_serializer, field_validator
 
 from app.common.money import Q2, Q3, Q4, Q6, format_money, optional_format_money
 from app.common.timezone import datetime_to_iso
+from app.schemas.common.batch_result import BatchAuditCountsVO, BatchDeleteCountsVO
 
 
 class StampingPartCostVO(BaseModel):
@@ -245,9 +246,7 @@ class StampingPartCostCalcReadyVO(BaseModel):
     can_calculate: bool = False
 
 
-class StampingPartCostBatchDeleteResultVO(BaseModel):
-    deleted_count: int = 0
-    skipped_approved_count: int = 0
+class StampingPartCostBatchDeleteResultVO(BatchDeleteCountsVO):
     year: int
     month: int
     location: str
@@ -256,9 +255,7 @@ class StampingPartCostBatchDeleteResultVO(BaseModel):
     stamping_supplier: str | None = None
 
 
-class StampingPartCostBatchAuditResultVO(BaseModel):
-    updated_count: int = 0
-    skipped_count: int = 0
+class StampingPartCostBatchAuditResultVO(BatchAuditCountsVO):
     year: int
     month: int
     location: str

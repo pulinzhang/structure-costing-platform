@@ -19,6 +19,7 @@ from app.schemas.dto.bom_procurement_object_dto import (
     BomProcurementObjectGenerateLogQuery,
     BomProcurementObjectPrepQuery,
     BomProcurementObjectQuery,
+    BomProcurementObjectSupplierDTO,
 )
 from app.schemas.vo.bom_procurement_object_vo import (
     BomProcurementObjectBatchAuditResultVO,
@@ -189,6 +190,22 @@ def confirm_item(
     return ApiResponse.updated(
         data=_service.confirm(db, object_id, body, current_user=current_user),
         message="确认已保存",
+    )
+
+
+@router.patch(
+    "/items/{object_id}/supplier",
+    response_model=ApiResponse[BomProcurementObjectVO],
+)
+def update_item_supplier(
+    object_id: int,
+    body: BomProcurementObjectSupplierDTO,
+    db: Session = Depends(get_db),
+    current_user: UserVO = Depends(require_perm(Perm.BOM_PROCUREMENT_OBJECT_LIST_UPDATE)),
+) -> ApiResponse[BomProcurementObjectVO]:
+    return ApiResponse.updated(
+        data=_service.update_supplier(db, object_id, body, current_user=current_user),
+        message="供应商已保存",
     )
 
 

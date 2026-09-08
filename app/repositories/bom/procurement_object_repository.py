@@ -32,13 +32,6 @@ class ProcurementObjectAuditSummary(TypedDict):
     anomaly_count: int
 
 
-class ProcurementObjectListFilters(TypedDict):
-    locations: list[str]
-    vehicle_models: list[str]
-    bom_versions: list[str]
-    summary: ProcurementObjectAuditSummary
-
-
 class BomProcurementObjectRepository:
     """采购对象清单数据访问。"""
 
@@ -156,6 +149,8 @@ class BomProcurementObjectRepository:
         part_number: str | None = None,
         l0_part_number: str | None = None,
         excel_row: int | None = None,
+        supplier_names: list[str] | None = None,
+        has_supplier: bool | None = None,
         skip: int = 0,
         limit: int = 20,
     ) -> tuple[list[BomProcurementObject], int]:
@@ -172,6 +167,8 @@ class BomProcurementObjectRepository:
             part_number=part_number,
             l0_part_number=l0_part_number,
             excel_row=excel_row,
+            supplier_names=supplier_names,
+            has_supplier=has_supplier,
         )
         total = query.count()
         rows = self._apply_check_order(query).offset(skip).limit(limit).all()
@@ -192,6 +189,8 @@ class BomProcurementObjectRepository:
         part_number: str | None = None,
         l0_part_number: str | None = None,
         excel_row: int | None = None,
+        supplier_names: list[str] | None = None,
+        has_supplier: bool | None = None,
     ) -> list[BomProcurementObject]:
         query = self._apply_object_filters(
             db.query(BomProcurementObject).join(BomProcurementObjectList),
@@ -206,6 +205,8 @@ class BomProcurementObjectRepository:
             part_number=part_number,
             l0_part_number=l0_part_number,
             excel_row=excel_row,
+            supplier_names=supplier_names,
+            has_supplier=has_supplier,
         )
         return self._apply_check_order(query).all()
 
@@ -251,6 +252,8 @@ class BomProcurementObjectRepository:
         part_number: str | None = None,
         l0_part_number: str | None = None,
         excel_row: int | None = None,
+        supplier_names: list[str] | None = None,
+        has_supplier: bool | None = None,
     ) -> ProcurementObjectAuditSummary:
         base = self._apply_object_filters(
             db.query(BomProcurementObject).join(BomProcurementObjectList),
@@ -265,6 +268,8 @@ class BomProcurementObjectRepository:
             part_number=part_number,
             l0_part_number=l0_part_number,
             excel_row=excel_row,
+            supplier_names=supplier_names,
+            has_supplier=has_supplier,
         )
         total = base.count()
         pending = base.filter(
@@ -384,6 +389,8 @@ class BomProcurementObjectRepository:
         part_number: str | None,
         l0_part_number: str | None,
         excel_row: int | None,
+        supplier_names: list[str] | None = None,
+        has_supplier: bool | None = None,
     ) -> Query[BomProcurementObject]:
         if locations is not None:
             query = query.filter(BomProcurementObjectList.location.in_(locations))
@@ -407,6 +414,12 @@ class BomProcurementObjectRepository:
             query = query.filter(BomProcurementObject.l0_part_number.like(f"%{l0_part_number}%"))
         if excel_row is not None:
             query = query.filter(BomProcurementObject.excel_row == excel_row)
+        if supplier_names is not None:
+            query = query.filter(BomProcurementObject.supplier_name.in_(supplier_names))
+        if has_supplier is True:
+            query = query.filter(BomProcurementObject.supplier_name.isnot(None))
+        elif has_supplier is False:
+            query = query.filter(BomProcurementObject.supplier_name.is_(None))
         return query
 
     @staticmethod

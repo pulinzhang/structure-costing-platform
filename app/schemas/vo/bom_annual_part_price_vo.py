@@ -6,10 +6,11 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Any
 
-from pydantic import BaseModel, field_serializer
+from pydantic import BaseModel, field_serializer, field_validator
 
 from app.common.money import Q4, format_money
 from app.common.timezone import datetime_to_iso
+from app.schemas.common.batch_result import BatchAuditCountsVO, BatchDeleteCountsVO
 
 
 def format_unit_price_decimal(value: Any) -> str:
@@ -25,6 +26,10 @@ class BomAnnualPartPriceResponse(BaseModel):
     year: int
     part_number: str
     part_name: str | None = None
+    specification: str | None = None
+    purchase_unit: str | None = None
+    purchase_unit_price: Decimal | None = None
+    conversion_factor: int = 1
     unit: str
     unit_price: Decimal
     supply_type: str
@@ -42,9 +47,26 @@ class BomAnnualPartPriceResponse(BaseModel):
     created_at: datetime | None = None
     updated_at: datetime | None = None
 
+    @field_validator("conversion_factor", mode="before")
+    @classmethod
+    def _coerce_conversion_factor(cls, value: Any) -> int:
+        if value is None or value == "":
+            return 1
+        return int(value)
+
     @field_serializer("unit_price")
     def serialize_unit_price(self, value: Decimal) -> str:
         return format_unit_price_decimal(value)
+
+    @field_serializer("purchase_unit_price")
+    def serialize_purchase_unit_price(self, value: Decimal | None) -> str | None:
+        if value is None:
+            return None
+        return format_money(value, Q4, 4)
+
+    @field_serializer("conversion_factor")
+    def serialize_conversion_factor(self, value: int) -> str:
+        return str(int(value))
 
     @field_serializer("created_at", "updated_at", "audited_at", "reverse_audited_at")
     def serialize_datetime(self, value: datetime | None) -> str | None:
@@ -62,24 +84,21 @@ class BomAnnualPartPriceImportResultVO(BaseModel):
     updated_count: int
     total_count: int
     skipped_count: int = 0
+    skipped_approved_count: int = 0
     warnings: list[str] = []
     message: str = ""
 
 
-class BomAnnualPartPriceBatchDeleteResultVO(BaseModel):
+class BomAnnualPartPriceBatchDeleteResultVO(BatchDeleteCountsVO):
     """年度零件价按基地+年度批量删除结果 VO"""
 
     location: str
     year: int
-    deleted_count: int
-    skipped_approved_count: int = 0
     message: str = ""
 
 
-class BomAnnualPartPriceBatchAuditResultVO(BaseModel):
+class BomAnnualPartPriceBatchAuditResultVO(BatchAuditCountsVO):
     """按基地+年度批量审核 / 反审核结果"""
 
-    updated_count: int = 0
-    skipped_count: int = 0
     location: str
     year: int

@@ -11,7 +11,7 @@ export function supplierListTemplate() {
                 <div class="p-3 border-b border-[#222222] flex flex-wrap items-center justify-between gap-3 bg-[#16161a]">
                     <div class="min-w-0">
                         <div class="text-xs font-semibold text-white tracking-wider">供应商</div>
-                        <p class="text-[11px] text-[#616161] mt-0.5">全称是规范名，与现网工艺确认一致、给下游存；缩写只给人看；别名吸收表头乱写。创建后三者不改。已启用才能新引入</p>
+                        <p class="text-[11px] text-[#616161] mt-0.5">全称是规范名，与现网工艺确认一致、给下游存；缩写只给人看；别名吸收表头乱写。已启用才能新引入。改全称成功后旧名收成别名；仍被工艺或采购对象引用则不能改名或删除</p>
                     </div>
                     <div class="flex items-center gap-2 shrink-0">
                         <button id="supplierBtnExport" type="button"
@@ -109,7 +109,7 @@ export function supplierListTemplate() {
                         <input type="text" id="supplierCreateFullName" required maxlength="100"
                                placeholder="例如：安庆常庆汽车部件有限公司"
                                class="w-full h-8 px-3 text-xs bg-[#0a0a0c] border border-[#2c2c2c] text-white placeholder:text-[#616161] focus:outline-none focus:border-[#ff5252] transition-colors">
-                        <p class="text-[10px] text-[#616161] mt-1">规范名，创建后不可修改；默认已启用</p>
+                        <p class="text-[10px] text-[#616161] mt-1">规范名；默认已启用</p>
                     </div>
                     <div>
                         <label class="text-[10px] font-semibold text-[#616161] tracking-wider mb-1 block">ERP 代码 <span class="text-[#d32f2f]">*</span></label>
@@ -144,19 +144,19 @@ export function supplierListTemplate() {
             <div class="flex-1 min-h-0 overflow-y-auto p-5 space-y-4">
                 <div>
                     <label class="text-[10px] font-semibold text-[#616161] tracking-wider mb-1 block">缩写</label>
-                    <input type="text" id="supplierEditAbbreviation" readonly
-                           class="w-full h-8 px-3 text-xs bg-[#0a0a0c] border border-[#2c2c2c] text-[#9e9e9e] cursor-not-allowed">
+                    <input type="text" id="supplierEditAbbreviation" maxlength="50"
+                           class="w-full h-8 px-3 text-xs bg-[#0a0a0c] border border-[#2c2c2c] text-white focus:outline-none focus:border-[#ff5252] transition-colors">
                 </div>
                 <div>
                     <label class="text-[10px] font-semibold text-[#616161] tracking-wider mb-1 block">全称</label>
-                    <input type="text" id="supplierEditFullName" readonly
-                           class="w-full h-8 px-3 text-xs bg-[#0a0a0c] border border-[#2c2c2c] text-[#9e9e9e] cursor-not-allowed">
+                    <input type="text" id="supplierEditFullName" maxlength="100"
+                           class="w-full h-8 px-3 text-xs bg-[#0a0a0c] border border-[#2c2c2c] text-white focus:outline-none focus:border-[#ff5252] transition-colors">
                 </div>
                 <div>
                     <label class="text-[10px] font-semibold text-[#616161] tracking-wider mb-1 block">ERP 代码</label>
-                    <input type="text" id="supplierEditErpCode" readonly
-                           class="w-full h-8 px-3 text-xs bg-[#0a0a0c] border border-[#2c2c2c] text-[#9e9e9e] cursor-not-allowed">
-                    <p class="text-[10px] text-[#616161] mt-1">缩写 / 全称 / ERP 代码创建后不可修改</p>
+                    <input type="text" id="supplierEditErpCode" maxlength="50"
+                           class="w-full h-8 px-3 text-xs bg-[#0a0a0c] border border-[#2c2c2c] text-white focus:outline-none focus:border-[#ff5252] transition-colors">
+                    <p class="text-[10px] text-[#616161] mt-1">改全称成功后旧全称会收成别名；仍被引用则不能改</p>
                 </div>
                 <div>
                     <div class="flex items-center justify-between mb-2">
@@ -168,12 +168,15 @@ export function supplierListTemplate() {
                     </div>
                 </div>
             </div>
-            <div class="px-5 py-3 border-t border-[#2c2c2c] bg-[#16161a] shrink-0">
+            <div class="px-5 py-3 border-t border-[#2c2c2c] bg-[#16161a] shrink-0 space-y-2">
                 <form id="supplierEditAliasForm" class="flex items-center gap-2">
                     <input type="text" id="supplierEditAliasInput" maxlength="100" placeholder="新别名，例如：常庆汽配"
                            class="flex-1 min-w-0 h-8 px-3 text-xs bg-[#0a0a0c] border border-[#2c2c2c] text-white placeholder:text-[#616161] focus:outline-none focus:border-[#ff5252] transition-colors">
                     <button type="submit" id="submitSupplierEditAliasBtn" class="h-8 px-4 bg-[#d32f2f] hover:bg-[#b71c1c] text-white text-xs font-semibold shrink-0">添加</button>
                 </form>
+                <div class="flex justify-end">
+                    <button type="button" id="submitSupplierEditBtn" class="h-8 px-4 bg-[#d32f2f] hover:bg-[#b71c1c] text-white text-xs font-semibold">保存资料</button>
+                </div>
             </div>
         </div>
 
@@ -201,6 +204,31 @@ export function supplierListTemplate() {
                 <button type="button" id="confirmSupplierToggleBtn" class="bg-[#d32f2f] hover:bg-[#b71c1c] text-white font-semibold px-4 py-1.5 text-xs">确认禁用</button>
             </div>
         </div>
+
+        <div class="fixed inset-0 z-[80] bg-black/80 backdrop-blur-sm transition-opacity" id="supplierDeleteBackdrop" style="display:none"></div>
+        <div class="fixed inset-y-0 right-0 z-[85] w-[360px] bg-[#121215] border-l border-[#2c2c2c] shadow-2xl transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col"
+             id="supplierDeleteDrawer" style="display:none; max-height: 100vh;">
+            <div class="px-5 py-3.5 flex items-center justify-between border-b border-[#2c2c2c] bg-[#16161a]">
+                <div class="flex items-center gap-2">
+                    <span class="w-1 h-3.5 bg-[#d32f2f]"></span>
+                    <h5 class="text-xs font-semibold text-white tracking-wider">确认删除</h5>
+                </div>
+                <button type="button" id="closeSupplierDeleteDrawer" class="text-[#616161] hover:text-white">✕</button>
+            </div>
+            <div class="flex-1 p-5">
+                <div class="p-3 bg-[#1a080a] border border-[#d32f2f]/30 mb-3">
+                    <p class="text-xs text-[#9e9e9e]">
+                        确认删除供应商
+                        <span id="supplierDeleteName" class="text-[#d32f2f] font-mono font-bold ml-1"></span>
+                    </p>
+                </div>
+                <p class="text-[11px] text-[#616161]">仍被引用则不能删除。别名会一并删除。</p>
+            </div>
+            <div class="px-5 py-3 border-t border-[#2c2c2c] flex items-center justify-end gap-2 bg-[#16161a]">
+                <button type="button" id="cancelSupplierDeleteBtn" class="px-4 py-1.5 text-xs text-[#9e9e9e] hover:text-white border border-[#2c2c2c]">取消</button>
+                <button type="button" id="confirmSupplierDeleteBtn" class="bg-[#c62828] hover:bg-[#b71c1c] text-white font-semibold px-4 py-1.5 text-xs">确认删除</button>
+            </div>
+        </div>
     `;
 }
 
@@ -218,6 +246,7 @@ export function renderSupplierRows(records) {
             ? `<span class="text-[#9e9e9e]">${esc(aliases.join(', '))}</span>`
             : `<span class="text-[#616161]">—</span>`;
         const canUpdate = hasPermission('op:supplier-list:update');
+        const canDelete = hasPermission('op:supplier-list:delete');
         const toggleLabel = isEnabled ? '禁用' : '启用';
         const fullName = esc(record.full_name);
         return `
@@ -240,6 +269,9 @@ export function renderSupplierRows(records) {
                     </button>` : ''}
                     ${canUpdate ? `<button type="button" data-action="toggle" data-enabled="${isEnabled ? '1' : '0'}" class="px-2 h-7 text-[10px] text-[#616161] hover:text-white hover:bg-[#262626] transition-all" title="${toggleLabel}">
                         ${toggleLabel}
+                    </button>` : ''}
+                    ${canDelete ? `<button type="button" data-action="delete" class="p-1.5 text-[#9e9e9e] hover:text-[#ef5350] hover:bg-[#262626] transition-all" title="删除">
+                        ${window.svgIcon('trash', 'w-3.5 h-3.5')}
                     </button>` : ''}
                 </div>
             </td>

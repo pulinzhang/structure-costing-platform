@@ -7,6 +7,7 @@ from pydantic import BaseModel, field_serializer
 
 from app.common.money import Q4, optional_format_money
 from app.common.timezone import datetime_to_iso
+from app.schemas.common.batch_result import BatchAuditCountsVO, BatchDeleteCountsVO
 
 
 class BomProcurementObjectListVO(BaseModel):
@@ -74,6 +75,7 @@ class BomProcurementObjectVO(BaseModel):
     confirmed_by: str | None = None
     confirmed_at: datetime | None = None
     confirm_remark: str | None = None
+    supplier_name: str | None = None
     audit_status: str
     audited_by: str | None = None
     audited_at: datetime | None = None
@@ -126,17 +128,13 @@ class BomProcurementObjectPrepStatsVO(BaseModel):
     message: str = ""
 
 
-class BomProcurementObjectBatchAuditResultVO(BaseModel):
-    updated_count: int
-    skipped_count: int
+class BomProcurementObjectBatchAuditResultVO(BatchAuditCountsVO):
     location: str
     vehicle_model: str
     bom_version: str
 
 
-class BomProcurementObjectBatchDeleteResultVO(BaseModel):
-    deleted_count: int
-    skipped_approved_count: int
+class BomProcurementObjectBatchDeleteResultVO(BatchDeleteCountsVO):
     location: str
     vehicle_model: str
     bom_version: str

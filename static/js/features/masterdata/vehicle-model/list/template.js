@@ -55,12 +55,13 @@ export function vehicleModelListTemplate() {
                 </div>
 
                 <div class="overflow-x-auto bg-[#0A0A0E] brabus-bg-grid">
-                    <table class="w-full table-fixed bg-transparent border-collapse" style="min-width: 720px;">
+                    <table class="w-full table-fixed bg-transparent border-collapse" style="min-width: 820px;">
                         <colgroup>
                             <col style="width: 8px;">
                             <col>
-                            <col style="width: 160px;">
-                            <col style="width: 160px;">
+                            <col style="width: 140px;">
+                            <col style="width: 140px;">
+                            <col style="width: 120px;">
                             <col style="width: 88px;">
                             <col style="width: 88px;">
                         </colgroup>
@@ -70,6 +71,7 @@ export function vehicleModelListTemplate() {
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">项目代号</th>
                                 <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]">生效年月</th>
                                 <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]">失效年月</th>
+                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]">当前供货台数</th>
                                 <th class="px-2 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-[#555555]">该月状态</th>
                                 <th class="px-1 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-[#555555]">操作</th>
                             </tr>
@@ -134,6 +136,12 @@ export function vehicleModelListTemplate() {
                             </select>
                         </div>
                     </div>
+                    <div>
+                        <label class="text-[10px] font-semibold text-[#616161] tracking-wider mb-1 block">当前供货台数 <span class="text-[#FF1E27]">*</span></label>
+                        <input type="number" id="vmCreateSuppliedUnits" min="0" step="1" value="0"
+                               class="w-full h-8 px-3 text-xs bg-[#0a0a0c] border border-[#2c2c2c] text-white placeholder:text-[#616161] focus:outline-none focus:border-[#ff5252]">
+                        <p class="text-[10px] text-[#555555] mt-1">单位：台。日后模具费等分摊到达上限后不再摊。</p>
+                    </div>
                 </form>
             </div>
             <div class="px-5 py-3 border-t border-[#2c2c2c] flex items-center justify-end gap-2 bg-[#16161a] shrink-0">
@@ -148,7 +156,7 @@ export function vehicleModelListTemplate() {
             <div class="px-5 py-3.5 flex items-center justify-between border-b border-[#2c2c2c] bg-[#16161a] shrink-0">
                 <div class="flex items-center gap-2">
                     <span class="w-1 h-3.5 bg-[#FF1E27]"></span>
-                    <h5 class="text-xs font-semibold text-white tracking-wider">编辑生效 / 失效</h5>
+                    <h5 class="text-xs font-semibold text-white tracking-wider">编辑项目</h5>
                 </div>
                 <button type="button" id="vmCloseEdit" class="text-[#616161] hover:text-white w-6 h-6 flex items-center justify-center">✕</button>
             </div>
@@ -182,6 +190,12 @@ export function vehicleModelListTemplate() {
                         <label class="text-[10px] font-semibold text-[#616161] tracking-wider mb-1 block">失效月</label>
                         <select id="vmEditExpiryMonth" class="w-full h-8 px-3 text-xs bg-[#0a0a0c] border border-[#2c2c2c] text-white focus:outline-none focus:border-[#ff5252]"></select>
                     </div>
+                </div>
+                <div>
+                    <label class="text-[10px] font-semibold text-[#616161] tracking-wider mb-1 block">当前供货台数</label>
+                    <input type="number" id="vmEditSuppliedUnits" min="0" step="1"
+                           class="w-full h-8 px-3 text-xs bg-[#0a0a0c] border border-[#2c2c2c] text-white focus:outline-none focus:border-[#ff5252]">
+                    <p class="text-[10px] text-[#555555] mt-1">单位：台。日后模具费等分摊到达上限后不再摊。</p>
                 </div>
             </div>
             <div class="px-5 py-3 border-t border-[#2c2c2c] flex items-center justify-end gap-2 bg-[#16161a] shrink-0">
@@ -276,7 +290,7 @@ export function renderTableBody(locations, items, filterLocation, canUpdate, can
         rows.push(`
             <tr class="bg-[#0B0B0D] border-b border-[#17171C]">
                 <td class="p-0"></td>
-                <td colspan="5" class="px-2 py-1.5 text-[10px] tracking-[0.08em] text-[#6E6E73]">
+                <td colspan="6" class="px-2 py-1.5 text-[10px] tracking-[0.08em] text-[#6E6E73]">
                     ${esc(card.location)}
                     <span class="text-[#3A3A42] ml-2">${card.project_count} 项</span>
                     ${disabledHint}
@@ -290,6 +304,9 @@ export function renderTableBody(locations, items, filterLocation, canUpdate, can
             const effective = typeof fmtPeriod === 'function'
                 ? fmtPeriod(row.effective_year, row.effective_month)
                 : `${row.effective_year}-${row.effective_month}`;
+            const supplied = (typeof fmtNum === 'function')
+                ? fmtNum(row.current_supplied_units ?? 0, 0)
+                : String(row.current_supplied_units ?? 0);
             const editBtn = canUpdate
                 ? `<button type="button" data-action="edit" class="w-7 h-7 inline-flex items-center justify-center text-[#6E6E73] hover:text-[#FF1E27] opacity-0 group-hover:opacity-100 focus:opacity-100" title="编辑">${window.svgIcon('pencil', 'w-3.5 h-3.5')}</button>`
                 : '';
@@ -307,6 +324,7 @@ export function renderTableBody(locations, items, filterLocation, canUpdate, can
                     </td>
                     <td class="${numCell}">${esc(effective)}</td>
                     <td class="${numCell}">${esc(expiry)}</td>
+                    <td class="${numCell}">${esc(supplied)}<span class="text-[9px] text-[#3A3A42] ml-1">台</span></td>
                     <td class="px-2 py-2 text-center text-[9px] font-medium tracking-[0.08em] text-[#555555]">${esc(row.period_status)}</td>
                     <td class="px-1 py-2 text-center whitespace-nowrap">${editBtn}${deleteBtn}</td>
                 </tr>

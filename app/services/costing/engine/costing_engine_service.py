@@ -43,7 +43,8 @@ from app.services.async_task import (
 from app.services.async_task.worker_runner import ProgressCallback
 from app.services.costing.engine.annual_calc_planner import AnnualCalcPlanner
 from app.services.costing.engine.gate_checker import GateChecker
-from app.services.costing.engine.run_orchestrator import RunDeletedError, RunOrchestrator
+from app.services.costing.engine.orchestrator import RunOrchestrator
+from app.services.costing.engine.orchestrator.errors import RunDeletedError
 from app.services.costing.engine.scope_discovery import ScopeDiscovery
 from app.services.masterdata.location.location_service import LocationService
 

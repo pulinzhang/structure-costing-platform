@@ -116,6 +116,12 @@ class BomProcurementObject(AuditUserMixin, Base):
     material: Mapped[str | None] = mapped_column(String(50), nullable=True)
     thickness_text: Mapped[str | None] = mapped_column(String(50), nullable=True)
     material_mill: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    supplier_name: Mapped[str | None] = mapped_column(
+        String(100),
+        ForeignKey("suppliers.full_name", ondelete="RESTRICT", onupdate="RESTRICT"),
+        nullable=True,
+        comment="合同对方规范全称；未指定为 NULL，禁止空串",
+    )
     data_gap: Mapped[str | None] = mapped_column(String(50), nullable=True)
     alert_code: Mapped[str | None] = mapped_column(String(200), nullable=True)
 
@@ -146,4 +152,5 @@ class BomProcurementObject(AuditUserMixin, Base):
         Index("ix_bom_proc_obj_section", "list_id", "section"),
         Index("ix_bom_proc_obj_audit", "list_id", "audit_status"),
         Index("ix_bom_proc_obj_part", "part_number"),
+        Index("ix_bom_proc_obj_supplier", "supplier_name"),
     )

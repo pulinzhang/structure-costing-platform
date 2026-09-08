@@ -1,4 +1,4 @@
-"""核价引擎阶段循环：年度补算 / 钢材 / 零件价 / L0。"""
+"""核价引擎阶段循环：年度补算 / 钢材 / 零件价 / 总成。"""
 
 from __future__ import annotations
 
@@ -10,11 +10,19 @@ from sqlalchemy.orm import Session
 from app.common.types.repository_types import EngineStepSummaryJson
 from app.schemas.vo.costing_engine_vo import CostingEngineAnnualItemVO
 from app.schemas.vo.user_vo import UserVO
+from app.services.costing.engine.orchestrator.persist import add_step, finish_step
+from app.services.costing.engine.orchestrator.runners import (
+    run_annual_item,
+    run_assembly,
+    run_part_cost,
+    run_steel,
+)
+from app.services.costing.engine.orchestrator.summary import resolve_run_status, step_summary
 from app.services.costing.engine.progress import ProgressNotifier
 from app.services.costing.engine.scope_discovery import DiscoveryResult
 
 if TYPE_CHECKING:
-    from app.services.costing.engine.run_orchestrator import RunOrchestrator
+    from app.services.costing.engine.orchestrator.run_orchestrator import RunOrchestrator
 
 
 @dataclass(slots=True)
@@ -22,6 +30,64 @@ class PhaseCarry:
     failed_vehicles: set[str] = field(default_factory=set)
     failed_l0: set[str] = field(default_factory=set)
     step_summaries: list[EngineStepSummaryJson] = field(default_factory=list)
+    run_status: str = "succeeded"
+    halted_after_steel: bool = False
+
+
+def execute_all_phases(
+    orch: RunOrchestrator,
+    db: Session,
+    *,
+    run_id: int,
+    discovery: DiscoveryResult,
+    annual_items: list[CostingEngineAnnualItemVO],
+    current_user: UserVO,
+    progress: ProgressNotifier,
+) -> PhaseCarry:
+    carry = PhaseCarry()
+    execute_annual(
+        orch,
+        db,
+        run_id=run_id,
+        discovery=discovery,
+        annual_items=annual_items,
+        current_user=current_user,
+        progress=progress,
+        carry=carry,
+    )
+    steel_ok = execute_steel(
+        orch,
+        db,
+        run_id=run_id,
+        discovery=discovery,
+        current_user=current_user,
+        progress=progress,
+        carry=carry,
+    )
+    if not steel_ok:
+        carry.run_status = "failed"
+        carry.halted_after_steel = True
+        return carry
+    execute_part_cost(
+        orch,
+        db,
+        run_id=run_id,
+        discovery=discovery,
+        current_user=current_user,
+        progress=progress,
+        carry=carry,
+    )
+    execute_assembly(
+        orch,
+        db,
+        run_id=run_id,
+        discovery=discovery,
+        current_user=current_user,
+        progress=progress,
+        carry=carry,
+    )
+    carry.run_status = resolve_run_status(carry.step_summaries)
+    return carry
 
 
 def execute_annual(
@@ -41,7 +107,8 @@ def execute_annual(
 
     for item in annual_items:
         if not item.will_auto_calc:
-            step = orch._add_step(
+            step = add_step(
+                orch.run_repo,
                 db,
                 run_id,
                 stage=item.code,
@@ -50,12 +117,13 @@ def execute_annual(
                 message="已有结果，跳过补算",
             )
             carry.step_summaries.append(
-                orch._step_summary(step.stage, step.scope_key, "skipped", step.message)
+                step_summary(step.stage, step.scope_key, "skipped", step.message)
             )
             continue
 
         if item.code == "annual_welding_fee" and item.scope_key in carry.failed_l0:
-            step = orch._finish_step(
+            step = finish_step(
+                orch.run_repo,
                 db,
                 run_id=run_id,
                 stage=item.code,
@@ -65,7 +133,7 @@ def execute_annual(
                 metrics=None,
             )
             carry.step_summaries.append(
-                orch._step_summary(item.code, item.scope_key, "skipped", step.message)
+                step_summary(item.code, item.scope_key, "skipped", step.message)
             )
             annual_done += 1
             continue
@@ -76,8 +144,8 @@ def execute_annual(
             annual_total,
             f"年度补算 · {item.code} · {item.scope_key}",
         )
-        ok, message, metrics = orch._run_annual_item(
-            db, discovery=discovery, item=item, current_user=current_user
+        ok, message, metrics = run_annual_item(
+            orch, db, discovery=discovery, item=item, current_user=current_user
         )
         status = "succeeded" if ok else "failed"
         if not ok and item.code == "annual_process_fee":
@@ -86,7 +154,8 @@ def execute_annual(
             carry.failed_l0.add(item.scope_key)
         if not ok and item.code == "annual_welding_fee":
             carry.failed_l0.add(item.scope_key)
-        step = orch._finish_step(
+        step = finish_step(
+            orch.run_repo,
             db,
             run_id=run_id,
             stage=item.code,
@@ -95,7 +164,7 @@ def execute_annual(
             message=message,
             metrics=metrics,
         )
-        carry.step_summaries.append(orch._step_summary(step.stage, step.scope_key, status, message))
+        carry.step_summaries.append(step_summary(step.stage, step.scope_key, status, message))
         annual_done += 1
         progress.report_stage(
             "annual",
@@ -116,11 +185,12 @@ def execute_steel(
     carry: PhaseCarry,
 ) -> bool:
     progress.report_stage("steel", 0, 1, "钢材联动价计算…")
-    steel_ok, steel_msg, steel_metrics = orch._run_steel(
-        db, discovery=discovery, current_user=current_user
+    steel_ok, steel_msg, steel_metrics = run_steel(
+        orch, db, discovery=discovery, current_user=current_user
     )
     steel_status = "succeeded" if steel_ok else "failed"
-    orch._finish_step(
+    finish_step(
+        orch.run_repo,
         db,
         run_id=run_id,
         stage="steel",
@@ -129,9 +199,7 @@ def execute_steel(
         message=steel_msg,
         metrics=steel_metrics,
     )
-    carry.step_summaries.append(
-        orch._step_summary("steel", discovery.location, steel_status, steel_msg)
-    )
+    carry.step_summaries.append(step_summary("steel", discovery.location, steel_status, steel_msg))
     progress.report_stage("steel", 1, 1, steel_msg or "钢材联动完成")
     return steel_ok
 
@@ -156,7 +224,8 @@ def execute_part_cost(
             f"零件价 {idx + 1}/{len(vehicles)} · {vehicle_model}",
         )
         if vehicle_model in carry.failed_vehicles:
-            step = orch._finish_step(
+            step = finish_step(
+                orch.run_repo,
                 db,
                 run_id=run_id,
                 stage="part_cost",
@@ -166,11 +235,12 @@ def execute_part_cost(
                 metrics=None,
             )
             carry.step_summaries.append(
-                orch._step_summary("part_cost", vehicle_model, "skipped", step.message)
+                step_summary("part_cost", vehicle_model, "skipped", step.message)
             )
             continue
 
-        ok, message, metrics = orch._run_part_cost(
+        ok, message, metrics = run_part_cost(
+            orch,
             db,
             discovery=discovery,
             vehicle_model=vehicle_model,
@@ -179,7 +249,8 @@ def execute_part_cost(
         status = "succeeded" if ok else "failed"
         if not ok:
             carry.failed_vehicles.add(vehicle_model)
-        orch._finish_step(
+        finish_step(
+            orch.run_repo,
             db,
             run_id=run_id,
             stage="part_cost",
@@ -188,7 +259,7 @@ def execute_part_cost(
             message=message,
             metrics=metrics,
         )
-        carry.step_summaries.append(orch._step_summary("part_cost", vehicle_model, status, message))
+        carry.step_summaries.append(step_summary("part_cost", vehicle_model, status, message))
         progress.report_stage(
             "part_cost",
             idx + 1,
@@ -223,7 +294,8 @@ def execute_assembly(
         elif scope_key in carry.failed_l0:
             skip_reason = "年度焊接拆解/焊接费补算失败，跳过总成核价"
         if skip_reason:
-            step = orch._finish_step(
+            step = finish_step(
+                orch.run_repo,
                 db,
                 run_id=run_id,
                 stage="assembly",
@@ -233,15 +305,16 @@ def execute_assembly(
                 metrics=None,
             )
             carry.step_summaries.append(
-                orch._step_summary("assembly", scope_key, "skipped", step.message)
+                step_summary("assembly", scope_key, "skipped", step.message)
             )
             continue
 
-        ok, message, metrics = orch._run_assembly(
-            db, discovery=discovery, scope=scope, current_user=current_user
+        ok, message, metrics = run_assembly(
+            orch, db, discovery=discovery, scope=scope, current_user=current_user
         )
         status = "succeeded" if ok else "failed"
-        orch._finish_step(
+        finish_step(
+            orch.run_repo,
             db,
             run_id=run_id,
             stage="assembly",
@@ -250,7 +323,7 @@ def execute_assembly(
             message=message,
             metrics=metrics,
         )
-        carry.step_summaries.append(orch._step_summary("assembly", scope_key, status, message))
+        carry.step_summaries.append(step_summary("assembly", scope_key, status, message))
         progress.report_stage(
             "assembly",
             idx + 1,

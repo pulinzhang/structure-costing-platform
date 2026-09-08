@@ -7,7 +7,8 @@ from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
 
-from app.common.money import Q4, quantize_money
+from app.common.money import Q4, optional_quantize_money, quantize_money
+from app.parsers.bom.annual_part_price_parser import parse_conversion_factor
 
 
 def quantize_unit_price(value: Any) -> Decimal:
@@ -34,11 +35,19 @@ class BomAnnualPartPriceCreate(BaseModel):
     year: int = Field(..., ge=2000, le=2100, description="定价年度")
     part_number: str = Field(..., min_length=1, max_length=50, description="零件号")
     part_name: str | None = Field(None, max_length=200, description="零件名称")
-    unit: str = Field("pcs", min_length=1, max_length=20, description="计量单位")
+    specification: str | None = Field(None, max_length=100, description="规格（展示，不取价）")
+    purchase_unit: str | None = Field(None, max_length=20, description="采购单位")
+    purchase_unit_price: Decimal | None = Field(None, ge=0, description="采购单价")
+    conversion_factor: int = Field(
+        1,
+        ge=1,
+        description="转换系数，正整数，默认 1；核价单价=采购单价÷系数",
+    )
+    unit: str = Field("pcs", min_length=1, max_length=20, description="核价单位")
     unit_price: Decimal = Field(
         ...,
         ge=0,
-        description="单价(元/单位)，≥0；为 0 表示成品核价不计入该件（如结构胶）",
+        description="核价单价(元/核价单位)，≥0；为 0 表示成品核价不计入该件（如结构胶）",
     )
     supply_type: str = Field(..., min_length=1, max_length=50, description="原供货类型")
     supplier_name: str | None = Field(None, max_length=100, description="供应商")
@@ -48,6 +57,16 @@ class BomAnnualPartPriceCreate(BaseModel):
     @classmethod
     def _coerce_supply_type(cls, value: Any) -> str:
         return normalize_supply_type(value)
+
+    @field_validator("purchase_unit_price", mode="before")
+    @classmethod
+    def _coerce_purchase_unit_price(cls, value: Any) -> Decimal | None:
+        return optional_quantize_money(value, Q4)
+
+    @field_validator("conversion_factor", mode="before")
+    @classmethod
+    def _coerce_conversion_factor(cls, value: Any) -> int:
+        return parse_conversion_factor(value)
 
     @field_validator("unit_price", mode="before")
     @classmethod
@@ -59,11 +78,15 @@ class BomAnnualPartPriceUpdate(BaseModel):
     """年度零件价更新请求（exclude_unset 写入）"""
 
     part_name: str | None = Field(None, max_length=200, description="零件名称")
-    unit: str | None = Field(None, min_length=1, max_length=20, description="计量单位")
+    specification: str | None = Field(None, max_length=100, description="规格（展示，不取价）")
+    purchase_unit: str | None = Field(None, max_length=20, description="采购单位")
+    purchase_unit_price: Decimal | None = Field(None, ge=0, description="采购单价")
+    conversion_factor: int | None = Field(None, ge=1, description="转换系数，正整数")
+    unit: str | None = Field(None, min_length=1, max_length=20, description="核价单位")
     unit_price: Decimal = Field(
         ...,
         ge=0,
-        description="单价(元/单位)，≥0；为 0 表示成品核价不计入该件（如结构胶）",
+        description="核价单价(元/核价单位)，≥0；为 0 表示成品核价不计入该件（如结构胶）",
     )
     supply_type: str | None = Field(None, min_length=1, max_length=50, description="原供货类型")
     supplier_name: str | None = Field(None, max_length=100, description="供应商")
@@ -75,6 +98,18 @@ class BomAnnualPartPriceUpdate(BaseModel):
         if value is None or (isinstance(value, str) and not value.strip()):
             return None
         return normalize_supply_type(value)
+
+    @field_validator("purchase_unit_price", mode="before")
+    @classmethod
+    def _coerce_purchase_unit_price(cls, value: Any) -> Decimal | None:
+        return optional_quantize_money(value, Q4)
+
+    @field_validator("conversion_factor", mode="before")
+    @classmethod
+    def _coerce_conversion_factor(cls, value: Any) -> int | None:
+        if value is None or (isinstance(value, str) and not str(value).strip()):
+            return None
+        return parse_conversion_factor(value)
 
     @field_validator("unit_price", mode="before")
     @classmethod

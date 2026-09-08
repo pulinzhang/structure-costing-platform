@@ -55,22 +55,6 @@ _steel_base_price_export_service = SteelBasePriceExportService()
 _async_task_service = AsyncTaskService()
 
 
-def _build_filter_options_vo(service: SteelBasePriceService, db: Session) -> FilterOptionsVO:
-    """从 Repository 获取 FilterOptions 并转换为 VO"""
-    from app.schemas.dto.steel_base_price_dto import FilterOptions
-
-    raw: FilterOptions = service.get_filter_options(db)
-    return FilterOptionsVO(
-        years=raw.years,
-        months=raw.months,
-        locations=raw.locations,
-        steel_mills=raw.steel_mills,
-        category_names=raw.category_names,
-        grades=raw.grades,
-        specs=raw.specs,
-    )
-
-
 @router.get(
     "",
     response_model=ApiResponse[list[SteelBasePriceResponse]],
@@ -106,8 +90,7 @@ def get_base_price_options(
     ),
 ) -> ApiResponse[FilterOptionsVO]:
     """获取筛选下拉选项（年度/月份/基地/钢厂等）。"""
-    filters = _build_filter_options_vo(_steel_base_price_service, db)
-    return ApiResponse.ok(data=filters)
+    return ApiResponse.ok(data=_steel_base_price_service.get_filter_options(db))
 
 
 @router.get(

@@ -196,7 +196,10 @@ class BomAnnualPartPriceImportService:
             f"新增 {created_count} 条，更新 {updated_count} 条"
         )
         if skipped_approved:
-            message += f"，跳过已审核 {skipped_approved} 条"
+            if created_count == 0 and updated_count == 0:
+                message += f"。这 {skipped_approved} 条已审核，导入不会覆盖；如需改价请先反审核"
+            else:
+                message += f"，跳过已审核 {skipped_approved} 条（未覆盖）"
         if parse_result.errors:
             message += f"；有 {len(parse_result.errors)} 行解析跳过"
 
@@ -217,6 +220,7 @@ class BomAnnualPartPriceImportService:
             updated_count=updated_count,
             total_count=created_count + updated_count,
             skipped_count=len(parse_result.errors) + skipped_approved,
+            skipped_approved_count=skipped_approved,
             warnings=warnings,
             message=message,
         )
@@ -249,6 +253,10 @@ class BomAnnualPartPriceImportService:
                     existing.id,
                     BomAnnualPartPriceUpdate(
                         part_name=row.part_name,
+                        specification=row.specification,
+                        purchase_unit=row.purchase_unit,
+                        purchase_unit_price=row.purchase_unit_price,
+                        conversion_factor=row.conversion_factor,
                         unit=row.unit,
                         unit_price=unit_price,
                         supply_type=row.supply_type,
@@ -266,6 +274,10 @@ class BomAnnualPartPriceImportService:
                     year=year,
                     part_number=row.part_number,
                     part_name=row.part_name,
+                    specification=row.specification,
+                    purchase_unit=row.purchase_unit,
+                    purchase_unit_price=row.purchase_unit_price,
+                    conversion_factor=row.conversion_factor,
                     unit=row.unit,
                     unit_price=unit_price,
                     supply_type=row.supply_type,

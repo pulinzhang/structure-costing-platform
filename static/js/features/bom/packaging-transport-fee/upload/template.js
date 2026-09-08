@@ -58,12 +58,12 @@ export function pkgTransportFeeUploadTemplate() {
                                             项目 <span class="text-[#d32f2f]">*</span>
                                         </label>
                                         <select id="pkgTransportFeeUploadVehicleModel" name="vehicle_model" required class="${UPLOAD_INPUT} w-full">
-                                            <option value="">请先选择采购基地</option>
+                                            <option value="">请先选择采购基地和年度</option>
                                         </select>
                                     </div>
                                 </div>
                                 <p id="pkgTransportFeeUploadScopeHint" class="ml-6 mt-1.5 text-[11px] text-[#616161]">
-                                    基地 / 项目取自已上传的材料清单；唯一键 = 基地 + 年度 + 项目 + 零件号
+                                    先选基地再填年度，项目只列出该年与有效期有交集的代号；须已有材料清单。唯一键 = 基地 + 年度 + 项目 + 零件号
                                 </p>
                                 <div id="pkgTransportFeeUploadNoBomBanner" class="hidden ml-6 mt-2 text-[10px] text-[#d69e2e] bg-[#1a1710] px-2.5 py-1.5 border-l-2 border-[#d69e2e]">
                                     尚未上传材料清单，或当前账号无对应清单数据。请先在「上传材料清单」导入 BOM 后再上传包装运输费。

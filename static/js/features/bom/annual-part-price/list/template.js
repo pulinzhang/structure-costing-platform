@@ -22,6 +22,21 @@ export function parseUnitPriceInput(raw) {
     return parseDecimalInput(raw, 4);
 }
 
+export function formatConversionFactor(value) {
+    return formatDecimalFixed(value, 0) ?? '-';
+}
+
+export function conversionFactorInputValue(value) {
+    return formatDecimalFixed(value, 0) ?? '1';
+}
+
+export function parseConversionFactorInput(raw) {
+    const text = String(raw ?? '').trim();
+    if (!text) return '1';
+    if (!/^[1-9]\d*$/.test(text)) return null;
+    return text;
+}
+
 export function annualPartPriceTemplate() {
     return `
         <div class="space-y-2 w-full max-w-full">
@@ -122,28 +137,32 @@ export function annualPartPriceTemplate() {
                                 重置
                             </button>
                         </div>
-                        <p class="mt-2 text-[10px] text-[#555555]">批量删除 / 审核 / 反审核须同时选定基地和年度（与上传条件对等）。已审核记录不可删除、不可修改。单价 ≥ 0；为 0 时成品核价不计入该件（如结构胶）。</p>
+                        <p class="mt-2 text-[10px] text-[#555555]">批量删除 / 审核 / 反审核须同时选定基地和年度（与上传条件对等）。已审核记录不可删除、不可修改。核价单价 ≥ 0；为 0 时成品核价不计入该件。转换系数为正整数（默认 1）；核价单价 = 采购单价 ÷ 转换系数。</p>
                     </div>
                 </div>
 
                 <div class="overflow-x-auto brabus-bg-grid">
-                    <table class="w-full min-w-[1480px] bg-transparent table-fixed border-collapse">
+                    <table class="w-full min-w-[1960px] bg-transparent table-fixed border-collapse">
                         <colgroup>
                             <col style="width:2px">
+                            <col style="width:6%">
+                            <col style="width:5%">
+                            <col style="width:9%">
+                            <col style="width:9%">
+                            <col style="width:7%">
+                            <col style="width:6%">
+                            <col style="width:7%">
                             <col style="width:7%">
                             <col style="width:5%">
-                            <col style="width:11%">
-                            <col style="width:12%">
-                            <col style="width:5%">
-                            <col style="width:8%">
-                            <col style="width:8%">
-                            <col style="width:9%">
-                            <col style="width:8%">
+                            <col style="width:7%">
+                            <col style="width:7%">
+                            <col style="width:7%">
                             <col style="width:6%">
                             <col style="width:5%">
+                            <col style="width:5%">
                             <col style="width:6%">
-                            <col style="width:10%">
-                            <col style="width:6%">
+                            <col style="width:8%">
+                            <col style="width:5%">
                         </colgroup>
                         <thead>
                             <tr class="border-b border-[#17171C] bg-[#0B0B0D]/95">
@@ -152,9 +171,13 @@ export function annualPartPriceTemplate() {
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">年份</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">零件号</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">零件名称</th>
+                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">规格</th>
+                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">采购单位</th>
+                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]">采购单价</th>
+                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]" title="正整数；1采购单位=N核价单位；核价单价=采购单价÷N">转换系数</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">单位</th>
                                 <th class="px-2 py-2 text-right text-[9px] font-semibold tracking-[0.06em] text-[#FF1E27]/90 bg-[#1A080A]"
-                                    title="≥0；填 0 表示成品核价不计入该件（如结构胶）">单价</th>
+                                    title="核价单价；≥0；填 0 表示成品核价不计入该件">单价</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">原供货类型</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">供应商</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">备注</th>
@@ -287,23 +310,50 @@ function editDrawerHtml() {
                                class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#ffffff] rounded focus:outline-none focus:border-[#ff5252]"
                                placeholder="可选" autocomplete="off">
                     </div>
+                    <div>
+                        <label class="text-[10px] text-[#777777] mb-1 block">规格</label>
+                        <input type="text" id="annualEditSpecification" maxlength="100"
+                               class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#ffffff] rounded focus:outline-none focus:border-[#ff5252]"
+                               placeholder="展示用，不参与取价" autocomplete="off">
+                    </div>
                     <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-[10px] text-[#777777] mb-1 block">采购单位</label>
+                            <input type="text" id="annualEditPurchaseUnit" maxlength="20"
+                                   class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#ffffff] rounded focus:outline-none focus:border-[#ff5252]"
+                                   placeholder="如 打、瓶；同核价可空" autocomplete="off">
+                        </div>
+                        <div>
+                            <label class="text-[10px] text-[#777777] mb-1 block">采购单价</label>
+                            <input type="text" id="annualEditPurchaseUnitPrice" inputmode="decimal"
+                                   class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#ffffff] font-mono rounded focus:outline-none focus:border-[#ff5252]"
+                                   placeholder="空=未报采购价" autocomplete="off">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-[10px] text-[#777777] mb-1 block">转换系数</label>
+                            <input type="text" id="annualEditConversionFactor" inputmode="decimal"
+                                   class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#ffffff] font-mono rounded focus:outline-none focus:border-[#ff5252]"
+                                   placeholder="正整数，默认 1；1打=12个则填 12" autocomplete="off">
+                            <p class="mt-1.5 text-[10px] text-[#555555] leading-relaxed">核价单价 = 采购单价 ÷ 转换系数（须为正整数）</p>
+                        </div>
                         <div>
                             <label class="text-[10px] text-[#777777] mb-1 block">单位 <span class="text-[#d32f2f]">*</span></label>
                             <input type="text" id="annualEditUnit" required maxlength="20"
                                    class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#ffffff] rounded focus:outline-none focus:border-[#ff5252]"
-                                   placeholder="如 pcs" autocomplete="off">
+                                   placeholder="核价单位，如 pcs / mm" autocomplete="off">
                         </div>
-                        <div>
-                            <label class="text-[10px] text-[#777777] mb-1 block">单价 <span class="text-[#d32f2f]">*</span></label>
-                            <input type="text" id="annualEditUnitPrice" inputmode="decimal" required
-                                   class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#ffffff] font-mono rounded focus:outline-none focus:border-[#ff5252]"
-                                   placeholder="≥0，保留4位小数，如 0.1750" autocomplete="off">
-                            <p class="mt-1.5 text-[10px] text-[#555555] leading-relaxed">
-                                须 <span class="text-[#8E8E93]">≥ 0</span>，不可为负。
-                                <span class="text-[#8E8E93]">填 0</span> 表示成品核价<span class="text-[#9e9e9e]">不计入</span>该零件成本（如结构胶）；大于 0 按单价 × 用量计入。
-                            </p>
-                        </div>
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-[#777777] mb-1 block">单价 <span class="text-[#d32f2f]">*</span></label>
+                        <input type="text" id="annualEditUnitPrice" inputmode="decimal" required
+                               class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#ffffff] font-mono rounded focus:outline-none focus:border-[#ff5252]"
+                               placeholder="≥0，核价单价，保留4位小数" autocomplete="off">
+                        <p class="mt-1.5 text-[10px] text-[#555555] leading-relaxed">
+                            须 <span class="text-[#8E8E93]">≥ 0</span>。填了采购单价时，单价 0 会按公式覆盖。
+                            <span class="text-[#8E8E93]">填 0</span> 且无采购单价时，成品核价<span class="text-[#9e9e9e]">不计入</span>该件。
+                        </p>
                     </div>
                     <div>
                         <label class="text-[10px] text-[#777777] mb-1 block">原供货类型</label>
@@ -313,9 +363,10 @@ function editDrawerHtml() {
                     </div>
                     <div>
                         <label class="text-[10px] text-[#777777] mb-1 block">供应商</label>
-                        <input type="text" id="annualEditSupplierName" maxlength="100"
-                               class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#ffffff] rounded focus:outline-none focus:border-[#ff5252]"
-                               placeholder="可选" autocomplete="off">
+                        <select id="annualEditSupplierName"
+                               class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#ffffff] rounded focus:outline-none focus:border-[#ff5252]">
+                            <option value="">（空）</option>
+                        </select>
                     </div>
                     <div>
                         <label class="text-[10px] text-[#777777] mb-1 block">备注</label>
@@ -457,6 +508,10 @@ export function renderTableRows(records) {
             <td class="px-2 py-2 overflow-hidden">
                 <div class="text-[#C8C8D0] truncate" title="${esc(record.part_name || '')}">${esc(record.part_name || '—')}</div>
             </td>
+            <td class="px-2 py-2 text-[#8E8E93] overflow-hidden truncate" title="${esc(record.specification || '')}">${esc(record.specification || '—')}</td>
+            <td class="px-2 py-2 text-[#8E8E93] overflow-hidden truncate">${esc(record.purchase_unit || '—')}</td>
+            <td class="px-2 py-2 text-right font-mono tabular-nums text-[#8E8E93]">${record.purchase_unit_price == null || record.purchase_unit_price === '' ? '—' : esc(formatUnitPrice4(record.purchase_unit_price))}</td>
+            <td class="px-2 py-2 text-right font-mono tabular-nums text-[#8E8E93]">${esc(formatConversionFactor(record.conversion_factor))}</td>
             <td class="px-2 py-2 text-[#8E8E93] overflow-hidden truncate">${esc(record.unit)}</td>
             <td class="px-2 py-1.5 text-right font-mono font-black tabular-nums text-[12px] text-[#FF1E27] bg-[#1A080A] border-x border-[#FF1E27]/20">
                 ${esc(formatUnitPrice4(record.unit_price))}

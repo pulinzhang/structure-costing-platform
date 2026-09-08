@@ -13,6 +13,17 @@ def _strip(value: object) -> str | None:
     return text if text else None
 
 
+def _non_negative_int(value: object, *, empty_as_zero: bool = False) -> int:
+    parsed = _optional_int(value)
+    if parsed is None:
+        if empty_as_zero:
+            return 0
+        raise ValueError("必须为整数")
+    if parsed < 0:
+        raise ValueError("不能为负")
+    return parsed
+
+
 def _optional_int(value: object) -> int | None:
     if value is None or value == "":
         return None
@@ -39,6 +50,7 @@ class VehicleModelCreateDTO(BaseModel):
     effective_month: int = Field(..., ge=1, le=12, description="生效月")
     expiry_year: int | None = Field(None, ge=1990, le=2100, description="失效年")
     expiry_month: int | None = Field(None, ge=1, le=12, description="失效月")
+    current_supplied_units: int = Field(0, ge=0, description="当前供货台数，单位台")
 
     @field_validator("location", "vehicle_model", mode="before")
     @classmethod
@@ -52,6 +64,11 @@ class VehicleModelCreateDTO(BaseModel):
     @classmethod
     def coerce_optional_int(cls, value: object) -> int | None:
         return _optional_int(value)
+
+    @field_validator("current_supplied_units", mode="before")
+    @classmethod
+    def coerce_supplied_units(cls, value: object) -> int:
+        return _non_negative_int(value, empty_as_zero=True)
 
     @model_validator(mode="after")
     def expiry_pair(self) -> "VehicleModelCreateDTO":
@@ -69,17 +86,23 @@ class VehicleModelCreateDTO(BaseModel):
 
 
 class VehicleModelUpdateDTO(BaseModel):
-    """改生效 / 失效。"""
+    """改生效 / 失效 / 当前供货台数。"""
 
     effective_year: int = Field(..., ge=1990, le=2100, description="生效年")
     effective_month: int = Field(..., ge=1, le=12, description="生效月")
     expiry_year: int | None = Field(None, ge=1990, le=2100, description="失效年")
     expiry_month: int | None = Field(None, ge=1, le=12, description="失效月")
+    current_supplied_units: int = Field(..., ge=0, description="当前供货台数，单位台")
 
     @field_validator("expiry_year", "expiry_month", mode="before")
     @classmethod
     def coerce_optional_int(cls, value: object) -> int | None:
         return _optional_int(value)
+
+    @field_validator("current_supplied_units", mode="before")
+    @classmethod
+    def coerce_supplied_units(cls, value: object) -> int:
+        return _non_negative_int(value, empty_as_zero=False)
 
     @model_validator(mode="after")
     def expiry_pair(self) -> "VehicleModelUpdateDTO":
@@ -106,6 +129,7 @@ class VehicleModelInsert:
     effective_month: int
     expiry_year: int | None
     expiry_month: int | None
+    current_supplied_units: int
     created_by: str | None
     updated_by: str | None
 
@@ -117,4 +141,5 @@ class VehicleModelPatch(TypedDict, total=False):
     effective_month: int
     expiry_year: int | None
     expiry_month: int | None
+    current_supplied_units: int
     updated_by: str

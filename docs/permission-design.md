@@ -7,7 +7,7 @@
 > - 常量 `app/common/permissions/codes.py`（`Perm.*`）  
 > - 路由依赖 `app/deps/permissions.py`  
 > - 前端 `static/js/permissions.js`（`can` / `canAccessPage` / `applySidebarPermissions`）  
-> - API 类型安全层只留短约束：`docs/api-type-safety.md` §7.0、`.cursor/rules/api-type-safety.mdc` §7.0（**权限细则以本文为准**）  
+> - API 层短约束：`.cursor/rules/api-type-safety.mdc`「权限 Depends」（**权限细则以本文为准**）  
 
 ---
 
@@ -27,7 +27,7 @@
 | 6 | 前端路由 | `app.js` 的 `pages` 注册新 page；`canAccessPage` 自动拦无权限直链 | `static/js/app.js` |
 | 7 | 前端按钮 | 同 `op` 码：`can('op:…')` 或模板条件渲染 | 对应 `features/**/index.js`、`template.js` |
 | 8 | 授权 | admin 在用户授权树勾选后，目标用户重新登录或 `me`/`touch` 刷新会话 | 用户管理「授权」 |
-| 9 | 文档 | 若树结构有评审需要，同步更新本文 §7 可读清单 | `docs/permission-design.md` |
+| 9 | 文档 | **不要**把树再抄进本文 §7。评审打开 `catalog.json` 或授权抽屉（`GET …/permissions/tree`） | — |
 
 ### 0.2 后端写法（强制）
 
@@ -324,306 +324,22 @@ op:settings-profile:password
 
 ---
 
-## 7. 完整权限树
+## 7. 权限树以 catalog 为准
 
-> 实现时以 `catalog.json` 的 `tree` 为准；下文为与 JSON 对齐的可读清单（新增功能时改 JSON，并同步更新本节便于评审）。
+**树、节点文案、`defaults` / `mandatory`、节点数量只维护一处：** `app/common/permissions/catalog.json`。
 
-```text
-root
-│
-├── menu:dashboard
-│   └── op:dashboard:view
-│
-├── menu:stamping                              # 冲压工程（分组，可勾）
-│   ├── menu:stamping-process                  # 冲压工艺（二级分组，可勾）
-│   │   ├── menu:stamping-upload
-│   │   │   ├── op:stamping-upload:view
-│   │   │   └── op:stamping-upload:upload
-│   │   └── menu:stamping-parts
-│   │       ├── op:stamping-parts:view
-│   │       ├── op:stamping-parts:update
-│   │       ├── op:stamping-parts:delete
-│   │       └── op:stamping-parts:export
-│   ├── menu:stamping-stroke-unit-price        # 冲次单价（二级分组，可勾）
-│   │   ├── menu:stamping-tonnage-upload
-│   │   │   ├── op:stamping-tonnage-upload:view
-│   │   │   └── op:stamping-tonnage-upload:upload
-│   │   └── menu:stamping-tonnage
-│   │       ├── op:stamping-tonnage:view
-│   │       ├── op:stamping-tonnage:create
-│   │       ├── op:stamping-tonnage:update
-│   │       ├── op:stamping-tonnage:delete
-│   │       ├── op:stamping-tonnage:approve
-│   │       ├── op:stamping-tonnage:reverse
-│   │       └── op:stamping-tonnage:export
-│   ├── menu:stamping-processing-fee           # 冲压加工费（二级分组，可勾）
-│   │   ├── menu:stamping-process-fee-calc
-│   │   │   ├── op:stamping-process-fee-calc:view
-│   │   │   ├── op:stamping-process-fee-calc:run
-│   │   │   └── op:stamping-process-fee-calc:delete
-│   │   └── menu:stamping-process-fee
-│   │       ├── op:stamping-process-fee:view
-│   │       ├── op:stamping-process-fee:update
-│   │       ├── op:stamping-process-fee:delete
-│   │       ├── op:stamping-process-fee:approve
-│   │       ├── op:stamping-process-fee:reverse
-│   │       └── op:stamping-process-fee:export
-│   ├── menu:stamping-die                      # 冲压模具（二级分组，可勾）
-│   │   ├── menu:stamping-die-upload
-│   │   │   ├── op:stamping-die-upload:view
-│   │   │   └── op:stamping-die-upload:upload
-│   │   ├── menu:stamping-die-list
-│   │   │   ├── op:stamping-die-list:view
-│   │   │   ├── op:stamping-die-list:update
-│   │   │   ├── op:stamping-die-list:delete
-│   │   │   └── op:stamping-die-list:export
-│   │   └── menu:stamping-die-unit-price
-│   │       ├── op:stamping-die-unit-price:view
-│   │       ├── op:stamping-die-unit-price:create
-│   │       ├── op:stamping-die-unit-price:update
-│   │       └── op:stamping-die-unit-price:delete
-│   ├── menu:stamping-die-fee-group            # 冲压模具费（二级分组，可勾）
-│   │   ├── menu:stamping-die-fee-calc
-│   │   │   ├── op:stamping-die-fee-calc:view
-│   │   │   ├── op:stamping-die-fee-calc:run
-│   │   │   └── op:stamping-die-fee-calc:delete
-│   │   └── menu:stamping-die-fee
-│   │       ├── op:stamping-die-fee:view
-│   │       ├── op:stamping-die-fee:update
-│   │       ├── op:stamping-die-fee:delete
-│   │       ├── op:stamping-die-fee:approve
-│   │       ├── op:stamping-die-fee:reverse
-│   │       └── op:stamping-die-fee:export
-│   └── menu:stamping-gauge-fee-group          # 冲压检具费（二级分组，可勾）
-│       ├── menu:stamping-gauge-fee-upload
-│       │   ├── op:stamping-gauge-fee-upload:view
-│       │   └── op:stamping-gauge-fee-upload:upload
-│       └── menu:stamping-gauge-fee
-│           ├── op:stamping-gauge-fee:view
-│           ├── op:stamping-gauge-fee:update
-│           ├── op:stamping-gauge-fee:delete
-│           └── op:stamping-gauge-fee:export
-│
-├── menu:bom                                   # 焊接工程（分组，可勾；技术码仍为 bom）
-│   ├── menu:bom-material-list                 # 材料清单（二级分组）
-│   │   ├── menu:bom-upload
-│   │   │   ├── op:bom-upload:view
-│   │   │   └── op:bom-upload:upload
-│   │   ├── menu:bom-material                  # 材料清单列表
-│   │   │   ├── op:bom-material:view
-│   │   │   └── op:bom-material:delete
-│   │   └── menu:bom-structure                 # 产品结构（路由 page=bom-structure）
-│   │       └── op:bom-structure:view
-│   ├── menu:bom-welding-unit-price-group      # 焊接单价（二级分组）
-│   │   ├── menu:bom-welding-unit-price-upload
-│   │   │   ├── op:bom-welding-unit-price-upload:view
-│   │   │   └── op:bom-welding-unit-price-upload:upload
-│   │   └── menu:bom-welding-unit-price
-│   │       ├── op:bom-welding-unit-price:view
-│   │       ├── op:bom-welding-unit-price:create
-│   │       ├── op:bom-welding-unit-price:update
-│   │       ├── op:bom-welding-unit-price:delete
-│   │       ├── op:bom-welding-unit-price:approve
-│   │       ├── op:bom-welding-unit-price:reverse
-│   │       └── op:bom-welding-unit-price:export
-│   ├── menu:bom-packaging-transport-fee-group # 包装运输费（二级分组）
-│   │   ├── menu:bom-packaging-transport-fee-upload
-│   │   │   ├── op:bom-packaging-transport-fee-upload:view
-│   │   │   └── op:bom-packaging-transport-fee-upload:upload
-│   │   └── menu:bom-packaging-transport-fee
-│   │       ├── op:bom-packaging-transport-fee:view
-│   │       ├── op:bom-packaging-transport-fee:create
-│   │       ├── op:bom-packaging-transport-fee:update
-│   │       ├── op:bom-packaging-transport-fee:delete
-│   │       ├── op:bom-packaging-transport-fee:approve
-│   │       ├── op:bom-packaging-transport-fee:reverse
-│   │       └── op:bom-packaging-transport-fee:export
-│   ├── menu:bom-procurement-object-group  # 采购对象
-│   │   ├── menu:bom-procurement-object
-│   │   │   └── op:bom-procurement-object:generate
-│   │   └── menu:bom-procurement-object-list
-│   │       ├── op:bom-procurement-object-list:view
-│   │       ├── op:bom-procurement-object-list:update
-│   │       ├── op:bom-procurement-object-list:delete
-│   │       ├── op:bom-procurement-object-list:approve
-│   │       ├── op:bom-procurement-object-list:reverse
-│   │       └── op:bom-procurement-object-list:export
-│   ├── menu:bom-annual-part-price-group       # 年度零件价（采购对象之下）
-│   │   ├── menu:bom-annual-part-price-upload
-│   │   │   ├── op:bom-annual-part-price-upload:view
-│   │   │   └── op:bom-annual-part-price-upload:upload
-│   │   └── menu:bom-annual-part-price
-│   │       ├── op:bom-annual-part-price:view
-│   │       ├── op:bom-annual-part-price:create
-│   │       ├── op:bom-annual-part-price:update
-│   │       ├── op:bom-annual-part-price:delete
-│   │       ├── op:bom-annual-part-price:approve
-│   │       ├── op:bom-annual-part-price:reverse
-│   │       └── op:bom-annual-part-price:export
-│   ├── menu:bom-welding-process-breakdown-group  # 焊接工艺拆解
-│   │   ├── menu:bom-welding-process-breakdown
-│   │   │   ├── op:bom-welding-process-breakdown:generate
-│   │   │   └── op:bom-welding-process-breakdown:delete-log
-│   │   └── menu:bom-welding-process-breakdown-list
-│   │       ├── op:bom-welding-process-breakdown:view
-│   │       ├── op:bom-welding-process-breakdown:save-lines
-│   │       ├── op:bom-welding-process-breakdown:delete
-│   │       ├── op:bom-welding-process-breakdown:approve
-│   │       ├── op:bom-welding-process-breakdown:reverse
-│   │       └── op:bom-welding-process-breakdown:export
-│   └── menu:bom-welding-fee-group                # 焊接费
-│       ├── menu:bom-welding-fee-calc             # 焊接费计算
-│       │   ├── op:bom-welding-fee-calc:view
-│       │   ├── op:bom-welding-fee-calc:run
-│       │   └── op:bom-welding-fee-calc:delete
-│       └── menu:bom-welding-fee-list             # 焊接费列表
-│           ├── op:bom-welding-fee-list:view
-│           ├── op:bom-welding-fee-list:update
-│           ├── op:bom-welding-fee-list:delete
-│           ├── op:bom-welding-fee-list:approve
-│           ├── op:bom-welding-fee-list:reverse
-│           └── op:bom-welding-fee-list:export
-│
-├── menu:yishiyiyi                             # 一事一议（分组，可勾）
-│   ├── menu:thickness                         # 加减价政策（二级分组，可勾）
-│   │   ├── menu:steel-price-policy-upload
-│   │   │   ├── op:steel-price-policy-upload:view
-│   │   │   └── op:steel-price-policy-upload:upload
-│   │   └── menu:steel-price-policy-download
-│   │       ├── op:steel-price-policy-download:view
-│   │       ├── op:steel-price-policy-download:export
-│   │       └── op:steel-price-policy-download:delete
-│   ├── menu:base-price                        # 基准价格（二级分组，可勾）
-│   │   ├── menu:base-price-upload
-│   │   │   ├── op:base-price-upload:view
-│   │   │   └── op:base-price-upload:upload
-│   │   └── menu:base-price-download
-│   │       ├── op:base-price-download:view
-│   │       ├── op:base-price-download:export
-│   │       └── op:base-price-download:delete
-│   ├── menu:steel-grade-category              # 牌号分类
-│   │   ├── op:steel-grade-category:view
-│   │   ├── op:steel-grade-category:create
-│   │   ├── op:steel-grade-category:update
-│   │   ├── op:steel-grade-category:delete
-│   │   └── op:steel-grade-category:export
-│   ├── menu:winning-thickness-download        # 中标钢厂厚度价格一览表
-│   │   ├── op:winning-thickness-download:view
-│   │   └── op:winning-thickness-download:export
-│   └── menu:scrap-price                       # 废料月度销售价
-│       ├── op:scrap-price:view
-│       ├── op:scrap-price:create
-│       ├── op:scrap-price:update
-│       ├── op:scrap-price:delete
-│       ├── op:scrap-price:copy
-│       └── op:scrap-price:export
-│
-├── menu:costing                               # 核价（分组，可勾）
-│   ├── menu:steel-price                       # 冲压钢材联动价（核价第一步）
-│   │   ├── menu:steel-price-calc
-│   │   │   ├── op:steel-price-calc:view
-│   │   │   ├── op:steel-price-calc:run
-│   │   │   └── op:steel-price-calc:delete
-│   │   └── menu:steel-price-list
-│   │       ├── op:steel-price-list:view
-│   │       ├── op:steel-price-list:update
-│   │       ├── op:steel-price-list:delete
-│   │       ├── op:steel-price-list:approve
-│   │       ├── op:steel-price-list:reject
-│   │       ├── op:steel-price-list:reverse
-│   │       └── op:steel-price-list:export
-│   ├── menu:stamping-part-cost-group          # 冲压零件价格核算
-│   │   ├── menu:stamping-part-cost-calc
-│   │   │   ├── op:stamping-part-cost-calc:view
-│   │   │   ├── op:stamping-part-cost-calc:run
-│   │   │   └── op:stamping-part-cost-calc:delete
-│   │   └── menu:stamping-part-cost
-│   │       ├── op:stamping-part-cost:view
-│   │       ├── op:stamping-part-cost:update
-│   │       ├── op:stamping-part-cost:delete
-│   │       ├── op:stamping-part-cost:approve
-│   │       ├── op:stamping-part-cost:reverse
-│   │       └── op:stamping-part-cost:export
-│   ├── menu:assembly-cost-group            # 总成核价
-│   │   ├── menu:assembly-cost-calc
-│   │   │   ├── op:assembly-cost-calc:view
-│   │   │   ├── op:assembly-cost-calc:run
-│   │   │   └── op:assembly-cost-calc:delete
-│   │   └── menu:assembly-cost
-│   │       ├── op:assembly-cost:view
-│   │       ├── op:assembly-cost:delete
-│   │       ├── op:assembly-cost:approve
-│   │       ├── op:assembly-cost:reverse
-│   │       └── op:assembly-cost:export
-│   └── menu:costing-engine                    # 自动核价引擎（路由 page=costing）
-│       ├── op:costing:view
-│       ├── op:costing:run
-│       └── op:costing:delete
-│
-├── menu:llm-analysis                          # AI 助理（顶栏浮窗，非侧栏页）
-│   ├── op:llm-analysis:view
-│   └── op:llm-analysis:run
-│
-├── menu:file-trace                            # 文件溯源
-│   ├── op:file-trace:view
-│   └── op:file-trace:download
-│
-├── menu:masterdata                            # 主数据（分组，可勾）
-│   ├── menu:location                          # 基地
-│   │   ├── op:location:view
-│   │   ├── op:location:create                 # 新增基地、新增别名
-│   │   ├── op:location:update                 # 启用/禁用、改/删别名
-│   │   └── op:location:delete                 # 删除基地
-│   ├── menu:vehicle-model                     # 项目（分组，无页面）
-│       ├── menu:vehicle-model-upload          # 上传
-│       │   ├── op:vehicle-model-upload:view
-│       │   └── op:vehicle-model-upload:upload
-│       └── menu:vehicle-model-list            # 一览表
-│           ├── op:vehicle-model-list:view
-│           ├── op:vehicle-model-list:export
-│           ├── op:vehicle-model-list:create
-│           ├── op:vehicle-model-list:update
-│           └── op:vehicle-model-list:delete
-│   └── menu:supplier                          # 供应商（分组，无页面）
-│       ├── menu:supplier-upload               # 上传
-│       │   ├── op:supplier-upload:view
-│       │   └── op:supplier-upload:upload
-│       └── menu:supplier-list                 # 一览表
-│           ├── op:supplier-list:view
-│           ├── op:supplier-list:export
-│           ├── op:supplier-list:create
-│           └── op:supplier-list:update
-│
-└── menu:settings                              # 设置（分组，可勾；强制保留）
-    ├── menu:settings-profile                  # 强制
-    │   ├── op:settings-profile:view           # 强制
-    │   ├── op:settings-profile:update         # 强制
-    │   └── op:settings-profile:password       # 强制
-    ├── menu:settings-system
-    │   ├── op:settings-system:view
-    │   └── op:settings-system:update
-    ├── menu:settings-users
-    │   ├── op:settings-users:view
-    │   ├── op:settings-users:create
-    │   ├── op:settings-users:update
-    │   ├── op:settings-users:password
-    │   ├── op:settings-users:delete
-    │   └── op:settings-users:grant            # 授权；实际仅 is_admin 可执行
-    └── menu:settings-logs
-        ├── op:settings-logs:view
-        └── op:settings-logs:export
-```
+本文**不再手抄**可读树或「分组/叶子/op 合计」表。抄一份就会和 JSON 漂移（历史 §7 已发生过）。
 
-### 7.1 数量汇总
+| 要看什么 | 去哪 |
+|----------|------|
+| 可勾节点与层级 | `catalog.json` 的 `tree` |
+| 新建用户默认码 / 强制码 | 同文件 `defaults` / `mandatory` |
+| 评审授权 UI 实际下发的树 | `GET /api/settings/permissions/tree`（admin） |
+| Python 常量是否与 JSON 一致 | 启动时 `catalog.py` 与 `Perm.*` 双向校验；改 JSON 后跑 `python -X utf8 -m scripts.generate_perm_codes` |
 
-| 类别 | 数量 |
-|---|---|
-| 分组 `type=group` | 26（含 `bom-packaging-transport-fee-group` / `assembly-cost-group` 等） |
-| 叶子 `type=menu` | 54 |
-| 操作 `op` | 193 |
-| 可勾节点合计 | 273（`root` 一般不入库） |
-| 新建默认 | 7 |
-| 强制 | 5（均包含在默认集内） |
+新增功能按 **§0**：改 JSON → 生成 `Perm.*` → 路由 `require_perm` → 前端 `can` / `data-page`。不改本文件来「同步树」。
+
+默认/强制码的产品含义仍见 **§6**（仪表盘、个人资料）；§6 只解释规则，不重复列出整棵树。
 
 ---
 
@@ -678,9 +394,9 @@ root
 | file-trace | `view` / `download` | 列表/详情；鉴权下载原件 |
 | location | `view` / `create` / `update` / `delete` | 列表；新增基地/别名；启用禁用与删别名；删除基地 |
 | vehicle-model-upload | `view` / `upload` | 查看上传页；下载模板并导入 |
-| vehicle-model-list | `view` / `export` / `create` / `update` / `delete` | 列表；导出 Excel（列与导入模板相同）；抽屉新增；改生效/失效；删除 |
+| vehicle-model-list | `view` / `export` / `create` / `update` / `delete` | 列表；导出 Excel（列与导入模板相同）；抽屉新增；改生效/失效与当前供货台数；删除 |
 | supplier-upload | `view` / `upload` | 查看上传页；下载模板并导入 |
-| supplier-list | `view` / `export` / `create` / `update` | 列表；导出 Excel（列与导入模板相同）；抽屉新增；启用禁用与增删别名 |
+| supplier-list | `view` / `export` / `create` / `update` / `delete` | 列表；导出 Excel（列与导入模板相同）；抽屉新增；启用禁用、改缩写/全称/ERP、增删别名；删除（仍被引用则失败） |
 | settings-profile | `view` / `update` / `password` | 查看；改资料/头像；改自己密码 |
 | settings-system | `view` / `update` | 查看系统设置；保存设置 |
 | settings-users | `view` / `create` / `update` / `password` / `delete` / `grant` | 查询；新增；编辑；重置他人密码；删除；授权 |
@@ -900,3 +616,5 @@ static/index.html           # 侧栏 data-page
 | 2026-08-31 | 焊接费切片去 L0 专名：`menu/op:bom-l0-welding-fee-*` remap 为 `menu/op:bom-welding-fee-*`（启动时写 `user_permissions`） |
 | 2026-09-01 | 焊接工程侧栏顺序：年度零件价排在采购对象之下（权限码不变） |
 | 2026-09-08 | 新增 `menu:supplier` 二级分组：上传 / 一览表（无删除；工艺确认上传写门禁） |
+| 2026-09-08 | `op:supplier-list:delete`；`update` 含改全称/缩写/ERP（下一跳 RESTRICT） |
+| 2026-09-08 | §7 不再手抄权限树；目录唯一源 `catalog.json`（评审看 JSON 或授权 API） |

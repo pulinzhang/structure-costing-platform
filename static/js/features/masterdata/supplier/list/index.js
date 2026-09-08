@@ -1,5 +1,5 @@
 /**
- * 供应商一览 — 面板 + 表 + 抽屉；搜索 / 分页 / 导出；无删除
+ * 供应商一览 — 面板 + 表 + 抽屉；搜索 / 分页 / 导出 / 删除
  */
 
 import {
@@ -12,7 +12,7 @@ import {
     renderPagination,
     renderSupplierRows,
     supplierListTemplate,
-} from './template.js?v=1';
+} from './template.js?v=2';
 
 const API_BASE = '/api/masterdata/suppliers';
 const DRAWER_ANIMATION_MS = 300;
@@ -64,6 +64,9 @@ function applyPermissionUi() {
     }
     if (!canOp('op:supplier-list:export')) {
         document.getElementById('supplierBtnExport')?.classList.add('hidden');
+    }
+    if (!canOp('op:supplier-list:update')) {
+        document.getElementById('submitSupplierEditBtn')?.classList.add('hidden');
     }
 }
 
@@ -243,6 +246,30 @@ function bindEditDrawer() {
             /* HttpClient 已 Toast */
         }
     });
+    document.getElementById('submitSupplierEditBtn')?.addEventListener('click', async () => {
+        const oldName = listState.editFullName;
+        if (!oldName) return;
+        const abbreviation = document.getElementById('supplierEditAbbreviation')?.value?.trim() || '';
+        const fullName = document.getElementById('supplierEditFullName')?.value?.trim() || '';
+        const erpCode = document.getElementById('supplierEditErpCode')?.value?.trim() || '';
+        if (!abbreviation || !fullName || !erpCode) {
+            showToast('请填写缩写、全称和 ERP 代码', 'warning');
+            return;
+        }
+        try {
+            await HttpClient.patch(`${API_BASE}/${encodeURIComponent(oldName)}`, {
+                abbreviation,
+                full_name: fullName,
+                erp_code: erpCode,
+            });
+            showToast('更新成功', 'success');
+            listState.editFullName = fullName;
+            await loadData();
+            refreshEditDrawer(fullName);
+        } catch (_) {
+            /* HttpClient 已 Toast */
+        }
+    });
 }
 
 function refreshEditDrawer(fullName) {
@@ -319,6 +346,31 @@ function openToggleDrawer(fullName, currentlyEnabled) {
     openDrawer('supplierToggleDrawer', 'supplierToggleBackdrop');
 }
 
+function bindDeleteDrawer() {
+    const close = () => closeDrawer('supplierDeleteDrawer', 'supplierDeleteBackdrop');
+    document.getElementById('closeSupplierDeleteDrawer')?.addEventListener('click', close);
+    document.getElementById('cancelSupplierDeleteBtn')?.addEventListener('click', close);
+    document.getElementById('supplierDeleteBackdrop')?.addEventListener('click', close);
+    document.getElementById('confirmSupplierDeleteBtn')?.addEventListener('click', async () => {
+        const fullName = document.getElementById('supplierDeleteName')?.textContent || '';
+        if (!fullName) return;
+        try {
+            await HttpClient.delete(`${API_BASE}/${encodeURIComponent(fullName)}`);
+            showToast('删除成功', 'success');
+            close();
+            await loadData();
+        } catch (_) {
+            /* HttpClient 已 Toast */
+        }
+    });
+}
+
+function openDeleteDrawer(fullName) {
+    const nameEl = document.getElementById('supplierDeleteName');
+    if (nameEl) nameEl.textContent = fullName;
+    openDrawer('supplierDeleteDrawer', 'supplierDeleteBackdrop');
+}
+
 function bindTableActions() {
     document.getElementById('supplierTableBody')?.addEventListener('click', (event) => {
         const btn = event.target.closest('[data-action]');
@@ -334,6 +386,10 @@ function bindTableActions() {
         if (action === 'toggle') {
             const enabled = btn.getAttribute('data-enabled') === '1';
             openToggleDrawer(fullName, enabled);
+            return;
+        }
+        if (action === 'delete') {
+            openDeleteDrawer(fullName);
         }
     });
 }
@@ -420,6 +476,7 @@ function init() {
     bindCreateDrawer();
     bindEditDrawer();
     bindToggleDrawer();
+    bindDeleteDrawer();
     bindTableActions();
     bindFilters();
     document.getElementById('supplierBtnExport')?.addEventListener('click', () => exportExcel());

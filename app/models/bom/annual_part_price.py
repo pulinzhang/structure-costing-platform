@@ -46,17 +46,42 @@ class BomAnnualPartPrice(AuditUserMixin, Base):
         comment="零件名称（展示 / 导入校验）",
     )
 
+    specification: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True,
+        comment="规格（展示 / 当档，不参与取价）",
+    )
+
+    purchase_unit: Mapped[str | None] = mapped_column(
+        String(20),
+        nullable=True,
+        comment="采购单位（报价包装，如打、瓶）",
+    )
+
+    purchase_unit_price: Mapped[Decimal | None] = mapped_column(
+        Numeric(12, 4),
+        nullable=True,
+        comment="采购单价(元/采购单位)，Numeric(12,4)",
+    )
+
+    conversion_factor: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=1,
+        comment="转换系数，正整数，默认1；1采购单位=N核价单位；核价单价=采购单价/N",
+    )
+
     unit: Mapped[str] = mapped_column(
         String(20),
         nullable=False,
         default="pcs",
-        comment="计量单位，默认 pcs",
+        comment="核价单位，应对齐 BOM qty_unit，默认 pcs",
     )
 
     unit_price: Mapped[Decimal] = mapped_column(
         Numeric(12, 4),
         nullable=False,
-        comment="单价(元/单位)，Numeric(12,4) 固定4位小数",
+        comment="核价单价(元/核价单位)，Numeric(12,4) 固定4位小数",
     )
 
     supply_type: Mapped[str] = mapped_column(

@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field, field_serializer
 
 from app.common.money import Q2, Q3, Q4, optional_format_money
 from app.common.timezone import datetime_to_iso
+from app.schemas.common.batch_result import BatchAuditCountsVO, BatchDeleteCountsVO
 
 
 class StampingProcessFeeItemVO(BaseModel):
@@ -214,11 +215,9 @@ class StampingProcessFeeCalcReadyVO(BaseModel):
     tonnage_rate_count: int = 0
 
 
-class StampingProcessFeeBatchDeleteResultVO(BaseModel):
+class StampingProcessFeeBatchDeleteResultVO(BatchDeleteCountsVO):
     """按条件批量删除结果"""
 
-    deleted_count: int = 0
-    skipped_approved_count: int = 0
     year: int
     location: str
     stamping_supplier: str | None = None
@@ -226,11 +225,9 @@ class StampingProcessFeeBatchDeleteResultVO(BaseModel):
     version: str | None = None
 
 
-class StampingProcessFeeBatchAuditResultVO(BaseModel):
+class StampingProcessFeeBatchAuditResultVO(BatchAuditCountsVO):
     """按条件批量审核 / 反审核结果"""
 
-    updated_count: int = 0
-    skipped_count: int = 0
     year: int
     location: str
     stamping_supplier: str | None = None

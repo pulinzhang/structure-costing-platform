@@ -9,6 +9,7 @@ from pydantic import BaseModel, field_serializer
 
 from app.common.money import Q4, format_money, optional_format_money
 from app.common.timezone import datetime_to_iso
+from app.schemas.common.batch_result import BatchAuditCountsVO, BatchDeleteCountsVO
 
 
 class SteelPriceListSummaryVO(BaseModel):
@@ -35,21 +36,17 @@ class SteelPriceFilterOptions(BaseModel):
     summary: SteelPriceListSummaryVO | None = None
 
 
-class SteelPriceBatchDeleteResultVO(BaseModel):
+class SteelPriceBatchDeleteResultVO(BatchDeleteCountsVO):
     """按条件批量删除结果"""
 
-    deleted_count: int = 0
-    skipped_approved_count: int = 0
     year: int
     month: int
     location: str
 
 
-class SteelPriceBatchAuditResultVO(BaseModel):
+class SteelPriceBatchAuditResultVO(BatchAuditCountsVO):
     """按条件批量审核 / 反审核结果"""
 
-    updated_count: int = 0
-    skipped_count: int = 0
     year: int
     month: int
     location: str

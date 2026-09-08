@@ -7,13 +7,13 @@
 | 文档 | 说明 |
 |------|------|
 | [architecture.md](architecture.md) | 架构导读；文末有规范索引 |
-| [architecture-constitution.mdc](architecture-constitution.mdc) | 分层与切片依赖硬规则（与 `.cursor/rules` 同步） |
-| [orchestrator-constitution.mdc](orchestrator-constitution.mdc) | 核算 Orchestrator 只编排不执行（与 `.cursor/rules` 同步） |
-| [front-end.mdc](front-end.mdc) | SPA / Brabus / HUD 表 |
+| [architecture-constitution.mdc](architecture-constitution.mdc) | 索引 → `.cursor/rules/architecture-constitution.mdc`（分层正文只维护一处） |
+| [orchestrator-constitution.mdc](orchestrator-constitution.mdc) | 索引 → `.cursor/rules/orchestrator-constitution.mdc` |
+| [front-end.mdc](front-end.mdc) | 索引 → `.cursor/rules/front-end.mdc` |
 | [light-theme-design.md](light-theme-design.md) | 浅色主题 |
-| [naming-convention.mdc](naming-convention.mdc) | 标识符命名 |
-| [api-type-safety.md](api-type-safety.md) | `ApiResponse` / `PageResult` / Decimal |
-| [permission-design.md](permission-design.md) | 权限码与菜单树 |
+| [naming-convention.mdc](naming-convention.mdc) | 索引 → `.cursor/rules/naming-convention.mdc` |
+| [api-type-safety.md](api-type-safety.md) | 索引 → `.cursor/rules/api-type-safety.mdc` |
+| [permission-design.md](permission-design.md) | 权限流程与规则；**树以 `catalog.json` 为准** |
 | [fastapi-guide.md](fastapi-guide.md) | FastAPI 约定 |
 | [deploy-windows-production.md](deploy-windows-production.md) | Windows 生产安装 |
 
@@ -23,7 +23,7 @@
 |------|------|
 | [location-design.md](masterdata/location-design.md) | 基地（设计定稿，未落地）：现网 `location`；绝对上游；启用/禁用；§4.3 引用保护（修改与删除） |
 | [vehicle-model-design.md](masterdata/vehicle-model-design.md) | 项目（已落地）：挂基地；上传+一览 HUD 分卡；写门禁已接到工艺/布点/BOM/档案/计算/引擎；下一跳外键另做 |
-| [supplier-design.md](masterdata/supplier-design.md) | 供应商（第一期已落地）：全称主键；上传+一览；工艺确认上传写门禁 |
+| [supplier-design.md](masterdata/supplier-design.md) | 供应商（第一期已落地；第二期：采购对象可空门禁 + 下一跳 RESTRICT + 改/删） |
 
 ## 冲压 `stamping/`
 
@@ -46,7 +46,7 @@
 | [welding-fee-design.md](bom/welding-fee-design.md) | 焊接费（已上线）：`bom_welding_fees` + `level`；财务读 `level=0` |
 | [welding-process-breakdown-design.md](bom/welding-process-breakdown-design.md) | 焊接工艺拆解（已上线）：有原文即拆（含分总成），不计费 |
 | [bom-procurement-objects-design.md](bom/bom-procurement-objects-design.md) | 采购对象清单（已落地）：退化供货件 / 分总成 / 冲压件；生成落库、检测、确认。基地/项目写读见该文 §13 |
-| [bom-procurement-object-supplier-design.md](bom/bom-procurement-object-supplier-design.md) | 采购对象指定供应商（设计）：行上点选主数据缩写 |
+| [bom-procurement-object-supplier-design.md](bom/bom-procurement-object-supplier-design.md) | 采购对象指定供应商（已落地）：行上点选规范全称 |
 
 ## 一事一议 `yishiyiyi/`
 

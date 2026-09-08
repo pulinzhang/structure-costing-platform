@@ -4,6 +4,7 @@ BOM 年度零件价 Service
 """
 
 import logging
+from typing import TypedDict
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -16,8 +17,13 @@ from app.common.audit import (
 )
 from app.common.timezone import now
 from app.exceptions.base import BusinessException, NotFoundException
+from app.models.bom.annual_part_price import BomAnnualPartPrice
+from app.parsers.bom.annual_part_price_parser import (
+    DEFAULT_CONVERSION_FACTOR,
+    resolve_annual_unit_price,
+)
 from app.repositories.bom.annual_part_price_repository import (
-    AnnualPartPriceListFilters,
+    AuditCountSummary,
     BomAnnualPartPriceRepository,
 )
 from app.schemas.dto.bom_annual_part_price_dto import (
@@ -31,10 +37,64 @@ from app.schemas.vo.bom_annual_part_price_vo import (
     BomAnnualPartPriceBatchAuditResultVO,
     BomAnnualPartPriceResponse,
 )
+from app.schemas.vo.supplier_vo import SupplierChoiceVO
 from app.schemas.vo.user_vo import UserVO
 from app.services.masterdata.location.location_service import LocationService
+from app.services.masterdata.supplier import SupplierService
 
 logger = logging.getLogger("service.bom")
+
+
+def _apply_create_conversion(data: BomAnnualPartPriceCreate) -> BomAnnualPartPriceCreate:
+    try:
+        unit_price = resolve_annual_unit_price(
+            purchase_unit_price=data.purchase_unit_price,
+            conversion_factor=data.conversion_factor,
+            unit_price=data.unit_price,
+        )
+    except ValueError as exc:
+        raise BusinessException(str(exc)) from None
+    return data.model_copy(update={"unit_price": unit_price})
+
+
+def _apply_update_conversion(
+    existing: BomAnnualPartPrice,
+    data: BomAnnualPartPriceUpdate,
+) -> BomAnnualPartPriceUpdate:
+    fields = data.model_fields_set
+    purchase_unit_price = (
+        data.purchase_unit_price
+        if "purchase_unit_price" in fields
+        else existing.purchase_unit_price
+    )
+    if "conversion_factor" in fields and data.conversion_factor is not None:
+        conversion_factor = data.conversion_factor
+    else:
+        conversion_factor = existing.conversion_factor or DEFAULT_CONVERSION_FACTOR
+    try:
+        unit_price = resolve_annual_unit_price(
+            purchase_unit_price=purchase_unit_price,
+            conversion_factor=conversion_factor,
+            unit_price=data.unit_price,
+        )
+    except ValueError as exc:
+        raise BusinessException(str(exc)) from None
+    return data.model_copy(
+        update={
+            "unit_price": unit_price,
+            "conversion_factor": conversion_factor,
+        }
+    )
+
+
+class AnnualPartPriceListFilters(TypedDict):
+    """列表筛选项（Service 组装；含上游供应商下拉）。"""
+
+    locations: list[str]
+    years: list[int]
+    audit_status: str | None
+    summary: AuditCountSummary
+    suppliers: list[SupplierChoiceVO]
 
 
 class BomAnnualPartPriceService:
@@ -64,6 +124,7 @@ class BomAnnualPartPriceService:
         audit_status = query.audit_status.strip() if query.audit_status else None
         keyword = query.keyword.strip() if query.keyword else None
         location_service = LocationService()
+        supplier_choices = SupplierService().list_enabled_choices(db)
         locations: list[str] | None = None
         if query.location:
             locations = location_service.expand_for_query(db, query.location)
@@ -77,6 +138,7 @@ class BomAnnualPartPriceService:
                         "pending_count": 0,
                         "approved_count": 0,
                     },
+                    "suppliers": supplier_choices,
                 }
                 return [], 0, empty_filters
         records, total = self.repository.paginate(
@@ -100,6 +162,7 @@ class BomAnnualPartPriceService:
                 audit_status=audit_status,
                 keyword=keyword,
             ),
+            "suppliers": supplier_choices,
         }
         return rows, total, filters
 
@@ -119,6 +182,7 @@ class BomAnnualPartPriceService:
             canonical = LocationService().require_enabled(db, data.location)
             if canonical != data.location:
                 data = data.model_copy(update={"location": canonical})
+            data = _apply_create_conversion(data)
             audit = audit_create(current_user)
             record = self.repository.create(
                 db,
@@ -155,6 +219,7 @@ class BomAnnualPartPriceService:
             raise NotFoundException("记录不存在")
         if existing.audit_status == AUDIT_APPROVED:
             raise BusinessException("已审核通过，请先反审核后再修改")
+        data = _apply_update_conversion(existing, data)
         try:
             record = self.repository.update(
                 db,

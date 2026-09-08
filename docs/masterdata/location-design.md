@@ -98,7 +98,7 @@ stamping / bom / yishiyiyi / costing / dashboard / llm
 
 无 `menu:location` / 项目两叶均无权限时，`applySidebarPermissions` 会藏叶子，空分组一并隐藏。
 
-落地时同步改：`static/index.html`、`docs/front-end.mdc`「侧栏顺序」与 §2.1 路由表、`features/index.js` 目录注释。
+落地时同步改：`static/index.html` 侧栏、`features/index.js` 的 `pageMeta`。路由表以这两处为准，不要再往规范里抄一份 Hash 清单。
 
 侧栏 HTML 形态（插在「文件溯源」`</li>` 与「设置」之间）：
 
@@ -221,9 +221,8 @@ CRUD 路由：`view` 看，写操作对应该 `op`。按钮 `can('op:location:�
 | `static/js/features/index.js` | `pageMeta.location` + 目录注释 `masterdata/location/` |
 | `static/js/app.js` | 注册页面 |
 | `static/js/features/masterdata/location/` | 模板 + 逻辑 |
-| `app/common/permissions/catalog.json` | §4.3 树；再生成 `Perm.*` |
-| `docs/permission-design.md` §7 可读树 | 同步 `menu:masterdata` |
-| `docs/front-end.mdc` | 侧栏顺序、§2.1、features 目录 |
+| `app/common/permissions/catalog.json` | 增加 `menu:masterdata` 等节点；再生成 `Perm.*`。**不要**再抄进 `permission-design.md` §7 |
+| `static/index.html` / `features/index.js` | 侧栏与 `pageMeta`（路由表以此为准） |
 
 ---
 

@@ -7,10 +7,14 @@ from app.common.permissions.codes import Perm
 from app.database import get_db
 from app.deps.permissions import require_any_perm, require_perm
 from app.schemas.common.page_result import PageResult
-from app.schemas.dto.bom_dto import BomNodeCreate, BomSnapshotCreate, BomSnapshotQuery
+from app.schemas.dto.bom_dto import (
+    BomCascadeFilterQuery,
+    BomNodeCreate,
+    BomSnapshotCreate,
+    BomSnapshotQuery,
+)
 from app.schemas.vo.bom_vo import (
     BomCascadeFilterOptionsVO,
-    BomCascadeFilterQuery,
     BomNodeTreeVO,
     BomNodeVO,
     BomSnapshotVO,

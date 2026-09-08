@@ -2,7 +2,12 @@
 冲压零件 DTO - 请求参数
 """
 
+from decimal import Decimal
+from typing import Any
+
 from pydantic import BaseModel, Field, field_validator
+
+from app.common.money import Q2, quantize_money
 
 
 class StampingPartOffalUpdateDTO(BaseModel):
@@ -35,3 +40,74 @@ class StampingPartBatchDeleteDTO(BaseModel):
             return None
         text = str(value).strip()
         return text or None
+
+
+class StampingPartQuery(BaseModel):
+    """冲压零件查询参数"""
+
+    location: str | None = Field(None, description="采购基地")
+    vehicle_model: str | None = Field(None, description="项目")
+    version: str | None = Field(None, description="版本")
+    part_number: str | None = Field(None, description="零件号")
+    part_name: str | None = Field(None, description="零件名称")
+    material: str | None = Field(None, description="材质")
+    stamping_supplier: str | None = Field(None, description="冲压供应商")
+    page: int = Field(1, ge=1, description="页码")
+    size: int = Field(100, ge=1, le=500, description="每页条数")
+
+
+class StampingProcessUpdate(BaseModel):
+    """工序更新请求"""
+
+    cost_ratio: Decimal | None = Field(
+        None, ge=0, le=10, description="成本系数（0~10，即0%~1000%）"
+    )
+    remark: str | None = None
+
+    @field_validator("cost_ratio", mode="before")
+    @classmethod
+    def _coerce_cost_ratio(cls, value: Any) -> Decimal | None:
+        if value is None or (isinstance(value, str) and not value.strip()):
+            return None
+        return quantize_money(value, Q2)
+
+
+class StampingProcessItemUpdate(BaseModel):
+    """单个工序更新项"""
+
+    id: int
+    cost_ratio: Decimal | None = Field(
+        None, ge=0, le=10, description="成本系数（0~10，即0%~1000%）"
+    )
+    remark: str | None = None
+
+    @field_validator("cost_ratio", mode="before")
+    @classmethod
+    def _coerce_cost_ratio(cls, value: Any) -> Decimal | None:
+        if value is None or (isinstance(value, str) and not value.strip()):
+            return None
+        return quantize_money(value, Q2)
+
+
+class StampingCascadeFilterQuery(BaseModel):
+    """冲压级联筛选查询参数"""
+
+    location: str | None = Field(None, description="采购基地")
+    stamping_supplier: str | None = Field(None, description="冲压工厂")
+    vehicle_model: str | None = Field(None, description="项目")
+    version: str | None = Field(None, description="版本")
+    year: int | None = Field(
+        None, ge=2000, le=2100, description="年度；传入后项目下拉改问项目主数据"
+    )
+    month: int | None = Field(None, ge=1, le=12, description="月份；与年度一起时下拉为该月可引入")
+
+
+class StampingMaterialQuery(BaseModel):
+    """材料查询参数"""
+
+    location: str | None = Field(None, description="采购基地")
+    stamping_supplier: str | None = Field(None, description="冲压供应商")
+    vehicle_model: str | None = Field(None, description="项目")
+    version: str | None = Field(None, description="版本")
+    page: int = Field(1, ge=1, description="页码")
+    size: int = Field(50, ge=1, le=500, description="每页条数")

@@ -6,7 +6,7 @@ import {
     procurementObjectListTemplate,
     renderPoPagination,
     renderProcurementObjectRows,
-} from './template.js?v=8';
+} from './template.js?v=9';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -30,6 +30,7 @@ const listState = {
     canReverse: true,
     canExport: true,
     submitting: false,
+    suppliers: [],
 };
 
 function init() {
@@ -75,6 +76,9 @@ function bindEvents() {
     document.getElementById('poKindFilter')?.addEventListener('change', () => loadList(1));
     document.getElementById('poConfirmFilter')?.addEventListener('change', () => loadList(1));
     document.getElementById('poAuditFilter')?.addEventListener('change', () => loadList(1));
+    document.getElementById('poSupplierFilter')?.addEventListener('change', () => loadList(1));
+    document.getElementById('poHasSupplierFilter')?.addEventListener('change', () => loadList(1));
+    document.getElementById('poConfirmStatus')?.addEventListener('change', syncConfirmSupplierEnabled);
     document.getElementById('poPartFilter')?.addEventListener('keydown', (event) => {
         if (event.key !== 'Enter') return;
         event.preventDefault();
@@ -130,6 +134,10 @@ function fillStaticSelects() {
         ['pending', AUDIT_LABELS.pending],
         ['approved', AUDIT_LABELS.approved],
     ]);
+    fillOptions('poHasSupplierFilter', [
+        ['true', '已指定'],
+        ['false', '未指定'],
+    ]);
 }
 
 function fillOptions(id, pairs) {
@@ -158,6 +166,8 @@ function queryParams() {
     if (val('poKindFilter')) params.object_kind = val('poKindFilter');
     if (val('poConfirmFilter')) params.confirm_status = val('poConfirmFilter');
     if (val('poAuditFilter')) params.audit_status = val('poAuditFilter');
+    if (val('poSupplierFilter')) params.supplier_name = val('poSupplierFilter');
+    if (val('poHasSupplierFilter')) params.has_supplier = val('poHasSupplierFilter') === 'true';
     if (val('poPartFilter')) params.part_number = val('poPartFilter');
     return params;
 }
@@ -200,6 +210,53 @@ function fillSelectKeep(id, values) {
     if (selected && (values || []).includes(selected)) el.value = selected;
 }
 
+function fillSupplierFilter(suppliers) {
+    const el = document.getElementById('poSupplierFilter');
+    if (!el) return;
+    const selected = el.value;
+    let html = '<option value="">全部</option>';
+    (suppliers || []).forEach((item) => {
+        const name = item.full_name || '';
+        const abbr = item.abbreviation || '';
+        html += `<option value="${esc(name)}">${esc(abbr)}（${esc(name)}）</option>`;
+    });
+    el.innerHTML = html;
+    if (selected) el.value = selected;
+}
+
+function fillConfirmSupplierSelect(currentValue, approved) {
+    const el = document.getElementById('poConfirmSupplier');
+    if (!el) return;
+    const enabled = listState.suppliers || [];
+    let html = '<option value="">未指定</option>';
+    const seen = new Set();
+    enabled.forEach((item) => {
+        const name = item.full_name || '';
+        seen.add(name);
+        html += `<option value="${esc(name)}">${esc(item.abbreviation || '')}（${esc(name)}）</option>`;
+    });
+    if (currentValue && !seen.has(currentValue)) {
+        html += `<option value="${esc(currentValue)}">${esc(currentValue)}</option>`;
+    }
+    el.innerHTML = html;
+    el.value = currentValue || '';
+    el.dataset.approved = approved ? '1' : '0';
+    el.disabled = Boolean(approved);
+}
+
+function syncConfirmSupplierEnabled() {
+    const status = val('poConfirmStatus');
+    const el = document.getElementById('poConfirmSupplier');
+    if (!el) return;
+    const approved = el.dataset.approved === '1';
+    if (status === 'in_house') {
+        el.value = '';
+        el.disabled = true;
+        return;
+    }
+    el.disabled = approved;
+}
+
 async function loadList(page) {
     listState.page = page || 1;
     updateCapsules();
@@ -211,13 +268,15 @@ async function loadList(page) {
         listState.total = data.total || 0;
         listState.totalPages = data.total_pages || 1;
         const summary = (data.filters && data.filters.summary) || {};
+        listState.suppliers = (data.filters && data.filters.suppliers) || [];
+        fillSupplierFilter(listState.suppliers);
         setText('poHudObject', String(summary.object_count ?? 0));
         setText('poHudOther', String(summary.other_leaf_count ?? 0));
         setText('poHudPending', String(summary.pending_count ?? 0));
         setText('poHudApproved', String(summary.approved_count ?? 0));
         setText('poTotalLabel', `共 ${listState.total} 条`);
         const body = document.getElementById('poTableBody');
-        if (body) body.innerHTML = renderProcurementObjectRows(listState.items);
+        if (body) body.innerHTML = renderProcurementObjectRows(listState.items, listState.suppliers);
         const pager = document.getElementById('poPagination');
         if (pager) pager.innerHTML = renderPoPagination(listState.page, listState.totalPages);
         loadSummaryBanner();
@@ -290,7 +349,7 @@ function syncTabs() {
 }
 
 function resetFilters() {
-    ['poLocationFilter', 'poModelFilter', 'poVersionFilter', 'poKindFilter', 'poConfirmFilter', 'poAuditFilter', 'poPartFilter']
+    ['poLocationFilter', 'poModelFilter', 'poVersionFilter', 'poKindFilter', 'poConfirmFilter', 'poAuditFilter', 'poSupplierFilter', 'poHasSupplierFilter', 'poPartFilter']
         .forEach((id) => {
             const el = document.getElementById(id);
             if (el) el.value = '';
@@ -416,6 +475,8 @@ function openConfirmDrawer(id) {
     document.getElementById('poConfirmPart').textContent = `${row.part_number} ${row.part_name || ''}`;
     document.getElementById('poConfirmStatus').value = row.confirm_status || 'pending';
     document.getElementById('poConfirmRemark').value = row.confirm_remark || '';
+    fillConfirmSupplierSelect(row.supplier_name || '', row.audit_status === 'approved');
+    syncConfirmSupplierEnabled();
     openDrawer('poConfirmDrawer');
 }
 
@@ -432,6 +493,11 @@ async function saveConfirm() {
             confirm_status: val('poConfirmStatus'),
             confirm_remark: val('poConfirmRemark') || null,
         });
+        if (val('poConfirmStatus') !== 'in_house') {
+            await HttpClient.patch(`${API_BASE}/items/${id}/supplier`, {
+                supplier_name: val('poConfirmSupplier') || null,
+            });
+        }
         showToast('确认已保存', 'success');
         closeConfirmDrawer();
         loadList(listState.page);
@@ -458,6 +524,7 @@ function openDetailDrawer(id) {
             ['焊接', row.weld_info || '—'],
             ['备注', row.remark || '—'],
             ['确认', CONFIRM_LABELS[row.confirm_status] || row.confirm_status],
+            ['供应商', row.supplier_name || '未指定'],
             ['审核', AUDIT_LABELS[row.audit_status] || row.audit_status],
         ].map(([k, v]) => `<div><span class="text-[#555555]">${esc(k)}</span> ${esc(v)}</div>`).join('');
     }

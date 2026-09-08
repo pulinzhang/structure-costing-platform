@@ -3,7 +3,7 @@
  * 同步导入：基地 + 年度 + 项目必选；基地/项目取自材料清单（BOM）
  */
 
-import { pkgTransportFeeUploadTemplate } from './template.js?v=4';
+import { pkgTransportFeeUploadTemplate } from './template.js?v=5';
 
 const API_BASE = '/api/bom/packaging-transport-fee';
 const CASCADE_API = '/api/bom/filters/cascade';
@@ -69,6 +69,9 @@ const PkgTransportFeeUploadPage = {
         document.getElementById('pkgTransportFeeUploadLocation')?.addEventListener('change', () => {
             this.loadCascadeFilters({ clearVehicleModel: true });
         });
+        document.getElementById('pkgTransportFeeUploadYear')?.addEventListener('input', () => {
+            this.loadCascadeFilters({ clearVehicleModel: true });
+        });
         document.getElementById('pkgTransportFeeUploadVehicleModel')?.addEventListener('change', () => {
             this.refreshSubmitState();
         });
@@ -108,6 +111,21 @@ const PkgTransportFeeUploadPage = {
         return (document.getElementById(id)?.value || '').trim();
     },
 
+    parseScopeYear() {
+        const yearRaw = this.val('pkgTransportFeeUploadYear');
+        if (!/^\d{4}$/.test(yearRaw)) return null;
+        const year = Number(yearRaw);
+        if (year < 2000 || year > 2100) return null;
+        return year;
+    },
+
+    vehicleEmptyLabel(location, year) {
+        if (!location) return '请先选择采购基地';
+        if (year == null) return '请先填写年度';
+        if (!this.vehicleModels.length) return '该年度与项目有效期无交集';
+        return '请选择项目';
+    },
+
     fillSelect(id, values, selected, emptyLabel) {
         const el = document.getElementById(id);
         if (!el) return;
@@ -126,15 +144,18 @@ const PkgTransportFeeUploadPage = {
 
     async loadCascadeFilters({ clearVehicleModel = false } = {}) {
         const location = this.val('pkgTransportFeeUploadLocation');
+        const year = this.parseScopeYear();
         let vehicleModel = clearVehicleModel ? '' : this.val('pkgTransportFeeUploadVehicleModel');
         try {
             const params = { status: '__all__' };
             if (location) params.location = location;
-            if (vehicleModel) params.vehicle_model = vehicleModel;
+            if (year != null) params.year = year;
             const res = await HttpClient.get(CASCADE_API, { params });
             const data = res.data || {};
             const locations = Array.isArray(data.locations) ? data.locations : [];
-            const vehicleModels = Array.isArray(data.vehicle_models) ? data.vehicle_models : [];
+            const vehicleModels = (location && year != null && Array.isArray(data.vehicle_models))
+                ? data.vehicle_models
+                : [];
 
             this.locations = locations;
             this.vehicleModels = vehicleModels;
@@ -150,7 +171,7 @@ const PkgTransportFeeUploadPage = {
                 this.fillSelect('pkgTransportFeeUploadLocation', locations, locations[0], '请选择采购基地');
                 return this.loadCascadeFilters({ clearVehicleModel: true });
             }
-            if (location && !vehicleModel && vehicleModels.length === 1) {
+            if (location && year != null && !vehicleModel && vehicleModels.length === 1) {
                 vehicleModel = vehicleModels[0];
             }
 
@@ -162,11 +183,9 @@ const PkgTransportFeeUploadPage = {
             );
             this.fillSelect(
                 'pkgTransportFeeUploadVehicleModel',
-                location ? vehicleModels : [],
+                vehicleModels,
                 vehicleModel,
-                location
-                    ? (vehicleModels.length ? '请选择项目' : '该基地暂无项目')
-                    : '请先选择采购基地',
+                this.vehicleEmptyLabel(location, year),
             );
         } catch (error) {
             console.error('加载材料清单基地/项目失败', error);
@@ -174,7 +193,7 @@ const PkgTransportFeeUploadPage = {
             this.vehicleModels = [];
             this.hasBomOptions = false;
             this.fillSelect('pkgTransportFeeUploadLocation', [], '', '加载失败');
-            this.fillSelect('pkgTransportFeeUploadVehicleModel', [], '', '请先选择采购基地');
+            this.fillSelect('pkgTransportFeeUploadVehicleModel', [], '', '请先选择采购基地和年度');
         }
         this.applyBomGateUi();
         this.refreshSubmitState();
@@ -213,7 +232,9 @@ const PkgTransportFeeUploadPage = {
         if (selectBtn) selectBtn.disabled = false;
         if (fileInput) fileInput.disabled = false;
         if (locationEl && !this.isUploading) locationEl.disabled = false;
-        if (vehicleEl && !this.isUploading) vehicleEl.disabled = false;
+        if (vehicleEl && !this.isUploading) {
+            vehicleEl.disabled = !this.val('pkgTransportFeeUploadLocation') || this.parseScopeYear() == null;
+        }
         if (!this.selectedFile) {
             const title = document.getElementById('pkgTransportFeeUploadTitle');
             const hint = document.getElementById('pkgTransportFeeUploadHint');
@@ -344,7 +365,7 @@ const PkgTransportFeeUploadPage = {
         const yearEl = document.getElementById('pkgTransportFeeUploadYear');
         if (yearEl) yearEl.value = '';
         this.fillSelect('pkgTransportFeeUploadLocation', this.locations, '', this.locations.length ? '请选择采购基地' : '暂无材料清单基地');
-        this.fillSelect('pkgTransportFeeUploadVehicleModel', [], '', '请先选择采购基地');
+        this.fillSelect('pkgTransportFeeUploadVehicleModel', [], '', '请先选择采购基地和年度');
         this.loadCascadeFilters({ clearVehicleModel: true });
     },
 
@@ -429,7 +450,7 @@ const PkgTransportFeeUploadPage = {
             return;
         }
         if (!this.vehicleModels.includes(vehicleModel)) {
-            showToast('项目不在材料清单中，请重新选择', 'warning');
+            showToast('该项目与所选年度无交集，请重新选择', 'warning');
             return;
         }
         if (!this.selectedFile) {

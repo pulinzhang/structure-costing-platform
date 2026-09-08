@@ -7,10 +7,12 @@
 |------|------|
 | `import_service.build_template` | 校验、按基地+项目扫 BOM / 工艺库 / 采购对象、拼文件名 |
 | `template_source` | 哪些叶子进模板（去重、零价、标签） |
-| `template_builder` | 行 → xlsx；不查库 |
-| Parser `HEADER_*` | 表头唯一来源；读回同一套列 |
+| `template_builder` | 行 → xlsx；不查库；第二页填写说明 |
+| Parser `HEADER_*` | 表头唯一来源；只读第一张工作表 |
 
 `GET /template?location=&vehicle_model=&year=` → 流式下载。`year` 只进文件名和上传写价表，**不参与取数**。价表仍无车型列。
+
+下载后的 xlsx **不改一行** 即可再导入（单价允许 0）。
 
 ---
 
@@ -41,19 +43,28 @@
 
 | 列 | 写入 |
 |----|------|
-| 零件号 / 名称 / 单位 | 抄当前树上的节点；单位空或 `PCS` → `pcs` |
+| 零件号 / 名称 | 抄当前树上的节点 |
+| 规格 | 抄 `thickness_text`，空则空 |
+| 采购单位 | 与「单位」相同（`qty_unit`，空或 `PCS` → `pcs`） |
+| 采购单价 | **空**（不要写 0） |
+| 转换系数 | **`1`**（正整数） |
+| 单位 | BOM `qty_unit`（核价单位） |
 | 单价 | 固定 `0.0000`（Decimal，不经 float） |
-| 原供货类型 | **按行**：名称含「胶」→ `胶块`；采购对象 other_leaf 或名称含螺母/螺栓等 → `标准件`；其余未进工艺库叶子 → `沿用`。禁止整列写成「标准件/胶等」 |
+| 原供货类型 | **按行**：名称含「胶」→ `胶块`；采购对象 other_leaf 或名称含螺母/螺栓等 → `标准件`；其余未进工艺库叶子 → `沿用` |
 | 供应商 / 备注 | 空；**不抄**节点 remark |
 | 基地 / 项目 / 年度 | **不进 Excel**（表单传入；上传仍只写基地+年） |
+
+核价单价 = 采购单价 ÷ 转换系数。转换系数必须是正整数（1 采购单位 = N 核价单位）。有采购单价且「单价」为 0/空时用派生值覆盖。
 
 ---
 
 ## 工作簿
 
-表名 `年度零件价`；表头=Parser `HEADER_*`；冻结 `A2`。空 `rows` 仍出表头，拒单在 Service。  
+第一页表名 `年度零件价`；表头=Parser `HEADER_*`；冻结 `A2`。  
+第二页 `填写说明`（换算与原因）；Parser **只读第一页**。  
+空 `rows` 仍出表头，拒单在 Service。  
 文件名：`年度零件价导入模板_{location}_{vehicle_model}_{year}.xlsx`。
 
-与 `export_service` 分家：导出是价表+审核状态+水印，不是这 7 列。
+与 `export_service` 分家：导出是价表+审核状态+水印，不是这套预填 0 的模板。
 
-回归：`tests/bom/test_annual_part_price_template.py`。
+回归：`tests/bom/test_annual_part_price_template.py`、`tests/bom/test_annual_part_price_parser.py`。

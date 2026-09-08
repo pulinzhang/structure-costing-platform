@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING, display_name
@@ -16,6 +17,7 @@ from app.schemas.dto.bom_procurement_object_dto import (
     BomProcurementObjectBatchDeleteDTO,
     BomProcurementObjectBatchReverseAuditDTO,
     BomProcurementObjectConfirmDTO,
+    BomProcurementObjectSupplierDTO,
 )
 from app.schemas.vo.bom_procurement_object_vo import (
     BomProcurementObjectBatchAuditResultVO,
@@ -25,6 +27,7 @@ from app.schemas.vo.bom_procurement_object_vo import (
 from app.schemas.vo.user_vo import UserVO
 from app.services.bom.procurement_object.classify import SECTION_OBJECT
 from app.services.bom.procurement_object.mapping import to_object_vo
+from app.services.masterdata.supplier import SupplierService
 
 logger = logging.getLogger("service.bom.procurement_object.audit")
 
@@ -68,6 +71,8 @@ class BomProcurementObjectAuditService:
             else:
                 row.confirmed_by = operator
                 row.confirmed_at = now()
+            if status == "in_house":
+                row.supplier_name = None
             db.commit()
             db.refresh(row)
         except BusinessException:
@@ -76,6 +81,47 @@ class BomProcurementObjectAuditService:
         except Exception:
             db.rollback()
             logger.exception("确认采购对象失败")
+            raise
+        return to_object_vo(row)
+
+    def update_supplier(
+        self,
+        db: Session,
+        object_id: int,
+        dto: BomProcurementObjectSupplierDTO,
+        current_user: UserVO,
+    ) -> BomProcurementObjectVO:
+        raw = (dto.supplier_name or "").strip() or None
+        row = self.repository.get_object_by_id(db, object_id)
+        if row is None:
+            raise NotFoundException(f"采购对象不存在: id={object_id}")
+        if row.section != SECTION_OBJECT:
+            raise BusinessException("核对区行禁止指定供应商")
+        header = self.repository.get_list_by_id(db, row.list_id)
+        if header is None:
+            raise NotFoundException("所属采购对象清单不存在")
+        if not header.qa_passed:
+            raise BusinessException("检测未通过，禁止改供应商")
+        if row.audit_status == AUDIT_APPROVED:
+            raise BusinessException("已审核记录禁止改供应商，请先批量反审核")
+        canonical = None if raw is None else SupplierService().require_enabled(db, raw)
+        operator = display_name(current_user)
+        try:
+            row.supplier_name = canonical
+            row.updated_by = operator
+            db.commit()
+            db.refresh(row)
+        except IntegrityError:
+            db.rollback()
+            raise BusinessException(
+                "没有该供应商，请到供应商一览表手工增加或上传（#/supplier-list）"
+            ) from None
+        except BusinessException:
+            db.rollback()
+            raise
+        except Exception:
+            db.rollback()
+            logger.exception("更新采购对象供应商失败")
             raise
         return to_object_vo(row)
 

@@ -31,21 +31,6 @@ _export_service = WinningThicknessExportService()
 _base_price_service = SteelBasePriceService()
 
 
-def _build_filter_options_vo(db: Session) -> FilterOptionsVO:
-    from app.schemas.dto.steel_base_price_dto import FilterOptions
-
-    raw: FilterOptions = _base_price_service.get_filter_options(db)
-    return FilterOptionsVO(
-        years=raw.years,
-        months=raw.months,
-        locations=raw.locations,
-        steel_mills=raw.steel_mills,
-        category_names=raw.category_names,
-        grades=raw.grades,
-        specs=raw.specs,
-    )
-
-
 @router.get(
     "/options",
     response_model=ApiResponse[FilterOptionsVO],
@@ -60,7 +45,7 @@ def get_options(
     ),
 ) -> ApiResponse[FilterOptionsVO]:
     """筛选下拉（复用基准价维度）。"""
-    return ApiResponse.ok(data=_build_filter_options_vo(db))
+    return ApiResponse.ok(data=_base_price_service.get_filter_options(db))
 
 
 @router.get(

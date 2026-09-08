@@ -6,7 +6,9 @@
   values.py        单元格取值与文件名
   styles.py        色板字体
   workbook.py      openpyxl 渲染（不访问 DB）
-  orchestrator.py  查库 → 渲染 → 文件名（编排入口）
+  prep.py          筛选取数（Repository）
+  persist.py       文件名与日志
+  orchestrator.py  prepare → workbook → persist
 """
 
 from app.services.bom.welding_process_breakdown.export.orchestrator import (

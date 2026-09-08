@@ -7,6 +7,13 @@ from pydantic import BaseModel, field_serializer
 from app.common.timezone import datetime_to_iso
 
 
+class SupplierChoiceVO(BaseModel):
+    """下游下拉：展示缩写（全称），value 为全称。"""
+
+    full_name: str
+    abbreviation: str
+
+
 class SupplierVO(BaseModel):
     """供应商一行（含别名列表）。"""
 

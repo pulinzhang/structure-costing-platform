@@ -17,7 +17,7 @@
 | 异步计算；锁 `year` + `location` + `vehicle_model` | 读检具、结果出现检具列 |
 | 零件结果 + 各序子表 | 改布点、改模具单价；再解析布点 Excel |
 | 列表 / 改调整金额 / 单条或范围删未审核 / 审核 / 反审核 / 导出 | 手工新增行；系统模具费 ≤ 0 仍入库；最终模具费 < 0；金额用 `float` |
-| 计算日志 processing / success / failed | 满寿、产量累计；铸造模不单列单价档；上传结果 Excel；进零件价 / 核价引擎补算 |
+| 计算日志 processing / success / failed | 满寿、产量累计（项目上已有 `current_supplied_units` 当前供货台数，见 [vehicle-model-design.md](../masterdata/vehicle-model-design.md) P16；**模具费计算本期仍不读、不停摊**）；铸造模不单列单价档；上传结果 Excel；进零件价 / 核价引擎补算 |
 
 计算必填 `year`、`location`、`vehicle_model`（`normalize_vehicle_model`）。一次只算一个项目。供应商、版本为**附加筛**（可空=该项目全部身份）：共模重量仍按该项目**全部布点 `id` 升序**扫描继承；只删除并重写匹配身份的结果行。计算锁仍是 `year` + `location` + `vehicle_model`（不把供应商/版本写入锁）。入队前已审核 409 只看**本次落库身份**下是否已有已审核行。
 

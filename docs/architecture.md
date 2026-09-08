@@ -40,17 +40,17 @@ Parser 是**横向工具**：只被 Service 调用；禁止依赖 Router/Service
 
 | 层 | 做什么 | 不要做什么 |
 |----|--------|------------|
-| **Router** | 鉴权依赖、参数、调 Service、返回 `ApiResponse`；下载/导出可 `StreamingResponse` / `FileResponse` | 业务逻辑、`db.query`、调 Parser、后台 worker 壳（§5.3）、把 Service 错误元组转 `HTTPException`（§5.2） |
+| **Router** | 鉴权依赖、参数、调 Service、返回 `ApiResponse`；下载/导出可 `StreamingResponse` / `FileResponse` | 业务逻辑、`db.query`、调 Parser、后台 worker 壳、把 Service 错误元组转 `HTTPException` |
 | **Service** | 业务规则、事务、调 Parser/Repo、ORM→VO、抛业务异常 | 直接写 SQL；用 `(None, str)` 向 Router 报错；手写 datetime/Decimal JSON |
 | **Orchestrator** | 核算指挥：`prepare → engine → persist` | 主方法里 `for` / 掐进度 / 写库（见 [指挥家宪法](orchestrator-constitution.mdc)） |
 | **Repository** | CRUD / 聚合查询；返回 Model 或具名 `TypedDict`（函数体 `return {…}` 合法） | 权限/角色分支决策；签名写成匿名 `dict` / `dict[str, Any]` |
-| **Model** | 表字段 + `relationship`（同切片附属行） | `to_dict`、业务 `@property`；跨切片独立主数据禁止父指向子（宪法 §4.3） |
+| **Model** | 表字段 + `relationship`（同切片附属行） | `to_dict`、业务 `@property`；跨切片独立主数据禁止父指向子（引用保护） |
 | **Schema** | DTO（`schemas/dto/`）/ VO（`schemas/vo/`） | 业务流程 |
 | **Parser** | 纯解析，无副作用 | 依赖 Router/Service/Repository |
 
 餐厅类比：Router=服务员，Service=厨师，Repository=仓管，Database=冰箱。
 
-详细正反例见 [架构宪法](architecture-constitution.mdc)。
+硬表见 [架构宪法](../.cursor/rules/architecture-constitution.mdc)。
 
 ---
 
@@ -94,7 +94,7 @@ app/parsers/stamping/     # 仅上传类切片有 Parser
 
 优先序：上游稳定查询 API → 只读上游 Repository（批量/导出/热路径）→ 真正无归属的算法再进 `common/`。
 
-> 旧版「切片一律禁止互依、只能走 common」已废弃；以宪法 §四 为准。
+> 旧版「切片一律禁止互依、只能走 common」已废弃；以架构宪法「切片依赖」为准。
 
 ### 4.3 引用保护（谁引用谁负责）
 
@@ -105,7 +105,7 @@ app/parsers/stamping/     # 仅上传类切片有 Parser
 - 有外键的独立主数据必须**同时提供修改和删除**：非主键修改（启用/禁用）外键不管；改主键与删除都走 `RESTRICT`
 - `CASCADE` 只给没有独立身份的附属行（`ondelete` 与 `onupdate` 都 `CASCADE`）；独立主数据之间改主键和删除都用 `RESTRICT`
 
-细则见 [架构宪法 §4.3](architecture-constitution.mdc)。
+细则见 [架构宪法](../.cursor/rules/architecture-constitution.mdc)「引用保护」。
 
 ---
 
@@ -131,7 +131,7 @@ stamping-costing-platform/
 │       ├── main.js / app.js / permissions.js / page-size.js
 │       └── features/…           # 与菜单对齐的页面模块
 ├── docs/                        # 规范与说明（含本文件）
-├── .cursor/rules/               # Cursor 始终应用的规则副本
+├── .cursor/rules/               # Agent 规范正文（按 glob / alwaysApply 加载）
 ├── data/                        # SQLite
 ├── uploads/                     # 上传与简图
 └── logs/
@@ -149,7 +149,7 @@ stamping-costing-platform/
 - Service 返回 VO；Repository 返回 Model（聚合签名用具名 `TypedDict`，函数体 `return {…}` 合法；禁止签名写成匿名 `dict`）
 - **禁止** Model.`to_dict`；JSON 形态用 VO `@field_serializer`（金额/物理量字符串；datetime **必须** `app.common.timezone.datetime_to_iso`）
 
-细则：[架构宪法](architecture-constitution.mdc) + 项目内 `api-type-safety` 规则。
+细则：[架构宪法](../.cursor/rules/architecture-constitution.mdc)（归属）+ [类型安全](../.cursor/rules/api-type-safety.mdc)（形态）。
 
 ### Router 示例（示意）
 
@@ -181,7 +181,7 @@ def list_parts(
 | 全局 | `main.js`（非 module）暴露 `HttpClient` / `esc` / `showToast` … |
 | 列表表 | 默认对齐 HUD 密表（零件价格一览为参照）；允许例外 |
 
-完整约定：[前端规范](front-end.mdc)（与 `.cursor/rules/front-end.mdc` 同步）。
+完整约定：[前端规范](../.cursor/rules/front-end.mdc)。
 
 ---
 
@@ -203,7 +203,7 @@ ApiResponse[AsyncTaskAcceptedVO]
 
 核价计算则是下游 Service **组合**上游零件、政策、基价、废料价等，再写入 costing 表；长计算同样走 `start_calc` + runner，不要在 Router 里开 Session。
 
-硬约束见宪法 [§5.3](architecture-constitution.mdc)。
+硬约束见 [架构宪法](../.cursor/rules/architecture-constitution.mdc)「异步后台任务」。
 
 ---
 
@@ -228,7 +228,7 @@ ApiResponse[AsyncTaskAcceptedVO]
 1. **Schema**：DTO / VO  
 2. **Model**（若新表）+ 迁移/建表策略按项目惯例  
 3. **Repository**  
-4. **Service**（含权限相关业务判断、事务、§5.2 业务异常；异步上传/计算/引擎用 `start_*` + `async_task` runner，见 §9）  
+4. **Service**（含权限相关业务判断、事务、业务异常；异步上传/计算/引擎用 `start_*` + `async_task` runner，见 §9）  
 5. **Router**（JSON：`response_model` + `require_perm` + `ApiResponse`；下载例外；不要翻译业务错误）  
 6. **前端**：`pageMeta` + `app.js` 注册 + 侧栏 `data-page` + 权限码  
 7. 递增前端脚本 `?v=`
@@ -245,7 +245,7 @@ ApiResponse[AsyncTaskAcceptedVO]
 - Repository：怎么查/写库（无角色 if）
 
 教学硬约束：**Repository 禁止 `db.commit` / `db.rollback`**，只 `flush`；写成功后由 Service `commit`，失败 `rollback`。口诀：Repo 只改会话，Service 才落库。  
-特例（仍由 Service 提交）：异步任务进度由 `async_task` runner 经辅助库 AUTOCOMMIT 写入（宪法 §5.3）；计算锁 DDL 用独立连接，`conn.commit()` 在 Service。
+特例（仍由 Service 提交）：异步任务进度由 `async_task` runner 经辅助库 AUTOCOMMIT 写入；计算锁 DDL 用独立连接，`conn.commit()` 在 Service。
 
 ### 简单查询也要 Service 吗？
 
@@ -253,7 +253,7 @@ ApiResponse[AsyncTaskAcceptedVO]
 
 ### 业务失败该返回元组还是抛异常？
 
-抛异常。Service 对 Router：不存在 → `NotFoundException`（404）；普通拒绝 → `BusinessException`（400）；期别冲突 → `BusinessException(..., code=409)`。全局 handler 按 `exc.code` 转 `ApiResponse.fail`。禁止 `(None, str)`，禁止 Router 入口返回 `VO | None` / `bool` 再判空。**业务 Router / 切片 Service 不抛 `HTTPException`**（未登录只在 `deps/auth`）。分页 `(items, total)`、Parser 匹配结果不是错误通道。未预期错误 rollback 后原样抛（500），不要包成 `BusinessException(str(e))`。细则见宪法 [§5.2](architecture-constitution.mdc)。不要用 `ValidationException`；请求体校验走 Pydantic。
+抛异常。Service 对 Router：不存在 → `NotFoundException`（404）；普通拒绝 → `BusinessException`（400）；期别冲突 → `BusinessException(..., code=409)`。全局 handler 按 `exc.code` 转 `ApiResponse.fail`。禁止 `(None, str)`，禁止 Router 入口返回 `VO | None` / `bool` 再判空。**业务 Router / 切片 Service 不抛 `HTTPException`**（未登录只在 `deps/auth`）。分页 `(items, total)`、Parser 匹配结果不是错误通道。未预期错误 rollback 后原样抛（500），不要包成 `BusinessException(str(e))`。细则见 [架构宪法](../.cursor/rules/architecture-constitution.mdc)「事务与异常通道」。不要用 `ValidationException`；请求体校验走 Pydantic。
 
 ### `start_*` 该用 201 还是 200？
 
@@ -269,11 +269,11 @@ ApiResponse[AsyncTaskAcceptedVO]
 
 ### Model 可以有 relationship 吗？
 
-同切片附属行可以（零件→工序、主单→明细）。禁止的是业务方法与 `to_dict`。跨切片、独立主数据之间禁止父指向子的 `relationship`，引用由子表外键承担（宪法 §4.3）。
+同切片附属行可以（零件→工序、主单→明细）。禁止的是业务方法与 `to_dict`。跨切片、独立主数据之间禁止父指向子的 `relationship`，引用由子表外键承担（架构宪法「引用保护」）。
 
 ### 删除或改主键时该不该先查有没有人用？
 
-不该在父切片里查。直接下游在自己的 Model 上声明 `ON UPDATE RESTRICT` + `ON DELETE RESTRICT`，由数据库拒绝；父只把 `IntegrityError` 译成「仍被引用，不能修改」或「仍被引用，不能删除」。修改与删除必须同时提供。细则见宪法 [§4.3](architecture-constitution.mdc)。
+不该在父切片里查。直接下游在自己的 Model 上声明 `ON UPDATE RESTRICT` + `ON DELETE RESTRICT`，由数据库拒绝；父只把 `IntegrityError` 译成「仍被引用，不能修改」或「仍被引用，不能删除」。修改与删除必须同时提供。细则见 [架构宪法](../.cursor/rules/architecture-constitution.mdc)「引用保护」。
 
 ### 后台解析/计算为什么不能写在 Router？
 
@@ -289,22 +289,24 @@ ApiResponse[AsyncTaskAcceptedVO]
 
 | 文档 | 位置 | 用途 |
 |------|------|------|
-| **架构宪法** | [architecture-constitution.mdc](architecture-constitution.mdc) · `.cursor/rules/architecture-constitution.mdc` | 分层 + 切片依赖硬规则 |
-| **指挥家宪法** | [orchestrator-constitution.mdc](orchestrator-constitution.mdc) · `.cursor/rules/orchestrator-constitution.mdc` | 核算 Orchestrator 只编排不执行 |
-| **前端规范** | [front-end.mdc](front-end.mdc) · `.cursor/rules/front-end.mdc` | SPA / Brabus / 表格风格 |
+| **架构宪法** | [`.cursor/rules/architecture-constitution.mdc`](../.cursor/rules/architecture-constitution.mdc) | 分层、切片依赖、外键、事务、异常通道、worker 归属 |
+| **指挥家宪法** | [`.cursor/rules/orchestrator-constitution.mdc`](../.cursor/rules/orchestrator-constitution.mdc) | Orchestrator 主方法只编排 |
+| **前端规范** | [`.cursor/rules/front-end.mdc`](../.cursor/rules/front-end.mdc) | SPA / Brabus / HUD；改 `static/` 时按 glob 加载 |
 | **浅色主题** | [light-theme-design.md](light-theme-design.md) | 浅色主题改造（设计） |
-| **命名规范** | [naming-convention.mdc](naming-convention.mdc) · `.cursor/rules/…` | 标识符命名 |
-| **API 类型安全** | [api-type-safety.md](api-type-safety.md) · `.cursor/rules/api-type-safety.mdc` | `ApiResponse` / `PageResult` / 权限 Depends / `Any` 不进函数签名 |
-| **Python 执行** | `.cursor/rules/python-execution.mdc` | Windows/UTF-8 跑脚本约定 |
+| **命名规范** | [`.cursor/rules/naming-convention.mdc`](../.cursor/rules/naming-convention.mdc) | 标识符命名（always-apply） |
+| **API 类型安全** | [`.cursor/rules/api-type-safety.mdc`](../.cursor/rules/api-type-safety.mdc) | `ApiResponse` / Decimal / `Perm.*` / `Any` 边界 |
+| **Python 执行** | [`.cursor/rules/python-execution.mdc`](../.cursor/rules/python-execution.mdc) | Windows / UTF-8（always-apply） |
 | **权限设计** | [permission-design.md](permission-design.md) | 前后端权限码 |
 | **FastAPI 指南** | [fastapi-guide.md](fastapi-guide.md) | 框架约定 |
 | **生产安装** | [deploy-windows-production.md](deploy-windows-production.md) | Windows 一键安装 |
+
+`docs/` 下同名 `.mdc` / `api-type-safety.md` 只做索引，**不要**再复制规则全文。
 
 ### 领域（`docs/{slice}/`）
 
 | 切片 | 文档 |
 |------|------|
-| **masterdata** | [基地](masterdata/location-design.md)（已落地）· [项目](masterdata/vehicle-model-design.md)（本切片已落地；下游改读另做）· [供应商](masterdata/supplier-design.md)（第一期已落地） |
+| **masterdata** | [基地](masterdata/location-design.md)（已落地）· [项目](masterdata/vehicle-model-design.md)（本切片已落地；下游改读另做）· [供应商](masterdata/supplier-design.md)（第一期 + 第二期已落地：采购对象可空指定、工艺/采购对象 `RESTRICT`、一览改主键/删除） |
 | **stamping** | [产品质量先期策划（APQP）先布点后工艺](stamping/stamping-apqp-die-before-process-design.md) · [工艺确认表](stamping/stamping-process-confirmation-design.md) · [模具布点](stamping/stamping-die-management-design.md) · [模具单价](stamping/stamping-die-unit-price-design.md) · [检具费档案](stamping/stamping-gauge-fee-design.md) · [年度模具费（不含检具）](stamping/stamping-die-fee-design.md) |
 | **bom** | [年度零件价](bom/bom-annual-part-prices-design.md) · [焊接工艺拆解](bom/welding-process-breakdown-design.md) · [焊接费](bom/welding-fee-design.md) · [采购对象清单](bom/bom-procurement-objects-design.md) · [指定供应商](bom/bom-procurement-object-supplier-design.md) |
 | **yishiyiyi** | [牌号分类](yishiyiyi/steel-grade-category-design.md) · [分类级厚度政策](yishiyiyi/thickness-policy-category-level-design.md) |
@@ -312,4 +314,4 @@ ApiResponse[AsyncTaskAcceptedVO]
 | **file_trace** | [文件溯源](file-trace/file-trace-design.md) |
 | **llm** | [核价结果智能分析](llm/llm-costing-analysis-report-design.md) |
 
-`docs/*.mdc` 与 `.cursor/rules/*.mdc` 应对齐；改规范时两处一起改。
+规范正文只改 `.cursor/rules/`；改完不必再贴一份到 `docs/`。

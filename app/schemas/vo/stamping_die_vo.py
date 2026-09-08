@@ -1,42 +1,12 @@
-"""冲压模具 VO / 请求 DTO。"""
+"""冲压模具 VO。"""
 
 from datetime import datetime
 from decimal import Decimal
 
-from pydantic import BaseModel, Field, field_serializer, field_validator
+from pydantic import BaseModel, field_serializer
 
-from app.common.money import Q2, Q4, format_money, optional_format_money, quantize_money
+from app.common.money import Q2, Q4, format_money, optional_format_money
 from app.common.timezone import datetime_to_iso
-
-
-class StampingDiePartQuery(BaseModel):
-    location: str = ""
-    vehicle_model: str = ""
-    part_number: str | None = None
-    page: int = Field(1, ge=1)
-    size: int = Field(10, ge=1, le=100)
-
-    @field_validator("part_number", mode="before")
-    @classmethod
-    def _strip_optional(cls, value: object) -> str | None:
-        if value is None:
-            return None
-        text = str(value).strip()
-        return text or None
-
-
-class StampingDieScopeDTO(BaseModel):
-    location: str = Field(..., min_length=1)
-    vehicle_model: str = Field(..., min_length=1)
-
-
-class StampingDieAllocRatioUpdate(BaseModel):
-    alloc_ratio: Decimal
-
-    @field_validator("alloc_ratio", mode="before")
-    @classmethod
-    def _ratio(cls, value: object) -> Decimal:
-        return quantize_money(value, Q2)
 
 
 class StampingDieProcessVO(BaseModel):
