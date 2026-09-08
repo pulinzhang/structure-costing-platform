@@ -1,11 +1,12 @@
 """冲压零件价格核算结果 Repository。"""
 
 import logging
+from collections.abc import Sequence
 from datetime import datetime
 from decimal import Decimal
 from typing import TypedDict
 
-from sqlalchemy import case, func
+from sqlalchemy import case, false, func
 from sqlalchemy.orm import Query, Session
 
 from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING, AUDIT_REJECTED
@@ -150,6 +151,7 @@ class StampingPartCostRepository:
         location: str | None = None,
         locations: list[str] | None = None,
         stamping_supplier: str | None = None,
+        stamping_suppliers: Sequence[str] | None = None,
         vehicle_model: str | None = None,
         version: str | None = None,
         part_number: str | None = None,
@@ -164,7 +166,12 @@ class StampingPartCostRepository:
             q = q.filter(StampingPartCost.location.in_(locations))
         elif location is not None:
             q = q.filter(StampingPartCost.location == location)
-        if stamping_supplier is not None:
+        if stamping_suppliers is not None:
+            if not stamping_suppliers:
+                q = q.filter(false())
+            else:
+                q = q.filter(StampingPartCost.stamping_supplier.in_(stamping_suppliers))
+        elif stamping_supplier is not None:
             q = q.filter(StampingPartCost.stamping_supplier == stamping_supplier)
         if vehicle_model is not None:
             q = q.filter(StampingPartCost.vehicle_model == vehicle_model)
@@ -184,6 +191,7 @@ class StampingPartCostRepository:
         location: str | None = None,
         locations: list[str] | None = None,
         stamping_supplier: str | None = None,
+        stamping_suppliers: Sequence[str] | None = None,
         vehicle_model: str | None = None,
         version: str | None = None,
         part_number: str | None = None,
@@ -198,6 +206,7 @@ class StampingPartCostRepository:
             location=location,
             locations=locations,
             stamping_supplier=stamping_supplier,
+            stamping_suppliers=stamping_suppliers,
             vehicle_model=vehicle_model,
             version=version,
             part_number=part_number,
@@ -227,6 +236,7 @@ class StampingPartCostRepository:
         location: str | None = None,
         locations: list[str] | None = None,
         stamping_supplier: str | None = None,
+        stamping_suppliers: Sequence[str] | None = None,
         vehicle_model: str | None = None,
         version: str | None = None,
         part_number: str | None = None,
@@ -240,6 +250,7 @@ class StampingPartCostRepository:
             location=location,
             locations=locations,
             stamping_supplier=stamping_supplier,
+            stamping_suppliers=stamping_suppliers,
             vehicle_model=vehicle_model,
             version=version,
             part_number=part_number,
@@ -269,30 +280,25 @@ class StampingPartCostRepository:
         location: str | None = None,
         locations: list[str] | None = None,
         stamping_supplier: str | None = None,
+        stamping_suppliers: Sequence[str] | None = None,
         vehicle_model: str | None = None,
         version: str | None = None,
         part_number: str | None = None,
         audit_status: str | None = None,
     ) -> list[StampingPartCost]:
-        q = db.query(StampingPartCost)
-        if year is not None:
-            q = q.filter(StampingPartCost.year == year)
-        if month is not None:
-            q = q.filter(StampingPartCost.month == month)
-        if locations is not None:
-            q = q.filter(StampingPartCost.location.in_(locations))
-        elif location is not None:
-            q = q.filter(StampingPartCost.location == location)
-        if stamping_supplier is not None:
-            q = q.filter(StampingPartCost.stamping_supplier == stamping_supplier)
-        if vehicle_model is not None:
-            q = q.filter(StampingPartCost.vehicle_model == vehicle_model)
-        if version is not None:
-            q = q.filter(StampingPartCost.version == version)
-        if part_number:
-            q = q.filter(StampingPartCost.part_number.like(f"%{part_number}%"))
-        if audit_status:
-            q = q.filter(StampingPartCost.audit_status == audit_status)
+        q = self._build_list_query(
+            db,
+            year=year,
+            month=month,
+            location=location,
+            locations=locations,
+            stamping_supplier=stamping_supplier,
+            stamping_suppliers=stamping_suppliers,
+            vehicle_model=vehicle_model,
+            version=version,
+            part_number=part_number,
+            audit_status=audit_status,
+        )
         return q.order_by(
             StampingPartCost.year.desc(),
             StampingPartCost.month.desc(),

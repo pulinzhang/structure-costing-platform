@@ -67,6 +67,7 @@ from app.services.costing.stamping_part_cost.export.tailor_weld_display import (
     resolve_part_cost_display,
 )
 from app.services.masterdata.location.location_service import LocationService
+from app.services.masterdata.supplier import SupplierService
 from app.services.masterdata.vehicle_model import VehicleModelService
 
 # 兼容旧导入路径
@@ -254,7 +255,7 @@ class StampingPartCostService:
                     "years": self.cost_repo.get_distinct_years(db),
                     "months": self.cost_repo.get_distinct_months(db, year=query.year),
                     "locations": location_service.list_registered(db),
-                    "suppliers": [],
+                    "suppliers": SupplierService().list_registered_names(db),
                     "vehicle_models": VehicleModelService().list_filter_codes(db, query.location),
                     "versions": [],
                     "summary": {
@@ -264,12 +265,28 @@ class StampingPartCostService:
                     },
                 }
                 return [], 0, empty_filters
+        supplier_names = SupplierService().names_for_query(db, query.stamping_supplier)
+        if supplier_names is not None and not supplier_names:
+            empty_filters = {
+                "years": self.cost_repo.get_distinct_years(db),
+                "months": self.cost_repo.get_distinct_months(db, year=query.year),
+                "locations": location_service.list_registered(db),
+                "suppliers": SupplierService().list_registered_names(db),
+                "vehicle_models": VehicleModelService().list_filter_codes(db, query.location),
+                "versions": [],
+                "summary": {
+                    "avg_unit_cost": None,
+                    "pending_count": 0,
+                    "approved_count": 0,
+                },
+            }
+            return [], 0, empty_filters
         rows, total = self.cost_repo.paginate(
             db,
             year=query.year,
             month=query.month,
             locations=locations,
-            stamping_supplier=query.stamping_supplier,
+            stamping_suppliers=supplier_names,
             vehicle_model=query.vehicle_model,
             version=query.version,
             part_number=query.part_number,
@@ -281,14 +298,7 @@ class StampingPartCostService:
             "years": self.cost_repo.get_distinct_years(db),
             "months": self.cost_repo.get_distinct_months(db, year=query.year),
             "locations": location_service.list_registered(db),
-            "suppliers": self.cost_repo.get_distinct_suppliers(
-                db,
-                year=query.year,
-                month=query.month,
-                locations=locations,
-                vehicle_model=query.vehicle_model,
-                version=query.version,
-            ),
+            "suppliers": SupplierService().list_registered_names(db),
             "vehicle_models": VehicleModelService().list_filter_codes(db, query.location),
             "versions": self.cost_repo.get_distinct_versions(
                 db,
@@ -302,7 +312,7 @@ class StampingPartCostService:
                 year=query.year,
                 month=query.month,
                 locations=locations,
-                stamping_supplier=query.stamping_supplier,
+                stamping_suppliers=supplier_names,
                 vehicle_model=query.vehicle_model,
                 version=query.version,
                 part_number=query.part_number,

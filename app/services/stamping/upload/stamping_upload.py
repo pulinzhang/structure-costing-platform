@@ -38,6 +38,7 @@ from app.services.async_task import (
 )
 from app.services.file_trace.path_utils import to_upload_relpath
 from app.services.file_trace.register import register_existing
+from app.services.masterdata.supplier import SupplierService
 from app.services.masterdata.vehicle_model import VehicleModelService
 from app.services.stamping.process_seq_validator import (
     ProcessSeqOccurrence,
@@ -79,8 +80,6 @@ class StampingUploadService:
         self,
         file_content: bytes,
         filename: str,
-        location: str,
-        vehicle_model: str,
         current_user: UserVO,
         progress_callback: ProgressCallback | None = None,
     ) -> UploadResult:
@@ -89,15 +88,9 @@ class StampingUploadService:
 
         主数据：解析完成后用库中已设比率回写工序，再删除旧数据并写入；
         删除与写入在同一事务中，全部成功或全部回滚。
+        项目与冲压工厂从表头解析；基地由项目主数据带出。
         """
         clock = now()
-        location, selected = VehicleModelService().require_introducible(
-            self.db,
-            (location or "").strip(),
-            (vehicle_model or "").strip(),
-            clock.year,
-            clock.month,
-        )
         import os
         import tempfile
 
@@ -113,17 +106,31 @@ class StampingUploadService:
         try:
             parse_result = parse_stamping_excel(tmp_path)
             tailor_result = parse_tailor_weld_excel(tmp_path)
+            parsed_vehicle = (parse_result.vehicle_model or "").strip()
+            if not parsed_vehicle:
+                raise BusinessException("Excel 未解析到项目，无法导入")
+            parsed_supplier = (parse_result.stamping_supplier or "").strip()
+            if not parsed_supplier:
+                raise BusinessException("Excel 未解析到冲压承制公司，无法导入")
+            location, vehicle_model = VehicleModelService().require_introducible_by_code(
+                self.db,
+                parsed_vehicle,
+                clock.year,
+                clock.month,
+            )
+            supplier_service = SupplierService()
+            canonical_supplier = supplier_service.require_enabled(self.db, parsed_supplier)
             scope = validate_stamping_process_upload_scope(
                 location=location,
-                stamping_supplier=parse_result.stamping_supplier,
-                vehicle_model=parse_result.vehicle_model,
+                stamping_supplier=canonical_supplier,
+                vehicle_model=vehicle_model,
                 version=parse_result.version,
             )
-            VehicleModelService().assert_matches_selected(selected, scope.vehicle_model)
             location = scope.location
-            vehicle_model = selected
+            vehicle_model = scope.vehicle_model
             version = scope.version
-            stamping_supplier = scope.stamping_supplier
+            stamping_supplier = canonical_supplier
+            supplier_names = supplier_service.expand_for_query(self.db, canonical_supplier)
             tailor_parent_numbers = set(tailor_result.parent_part_numbers)
 
             duplicate_seqs = find_duplicate_process_seqs(
@@ -166,7 +173,7 @@ class StampingUploadService:
                 existing_processes = self.process_repo.list_by_scope(
                     self.db,
                     location=file_info.safe_location,
-                    stamping_supplier=stamping_supplier,
+                    stamping_suppliers=supplier_names,
                     vehicle_model=vehicle_model,
                     version=version,
                 )
@@ -366,7 +373,7 @@ class StampingUploadService:
         self.part_repo.delete_by_scope(
             self.db,
             location=location,
-            stamping_supplier=stamping_supplier,
+            stamping_suppliers=SupplierService().expand_for_query(self.db, stamping_supplier),
             vehicle_model=vehicle_model,
             version=version,
         )
@@ -496,22 +503,11 @@ class StampingUploadService:
     def start_upload(
         cls,
         *,
-        db: Session,
         file_content: bytes,
         filename: str,
-        location: str,
-        vehicle_model: str,
         current_user: UserVO,
     ) -> AsyncTaskAcceptedVO:
         """创建异步任务并入队；后台线程开独立 Session 解析入库。"""
-        clock = now()
-        location, vehicle_model = VehicleModelService().require_introducible(
-            db,
-            (location or "").strip(),
-            (vehicle_model or "").strip(),
-            clock.year,
-            clock.month,
-        )
         if not filename:
             raise BusinessException("未提供文件名")
         ext = "." + filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
@@ -540,8 +536,6 @@ class StampingUploadService:
                 result = service.process_upload(
                     file_content=file_content,
                     filename=filename,
-                    location=location,
-                    vehicle_model=vehicle_model,
                     progress_callback=on_progress,
                     current_user=current_user,
                 )

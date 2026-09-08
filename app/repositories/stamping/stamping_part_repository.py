@@ -5,7 +5,7 @@ from collections.abc import Sequence
 from decimal import Decimal
 from typing import TypedDict, TypeVar
 
-from sqlalchemy import func
+from sqlalchemy import false, func
 from sqlalchemy.orm import InstrumentedAttribute, Query, Session
 from sqlalchemy.sql.selectable import Subquery
 
@@ -55,6 +55,21 @@ class StampingPartDieMatchIdentity(TypedDict):
 
 
 logger = logging.getLogger("repository.stamping.part")
+
+
+def _filter_supplier(
+    q: Query[_T],
+    column: _StringColumn,
+    stamping_supplier: str | None,
+    stamping_suppliers: Sequence[str] | None,
+) -> Query[_T]:
+    if stamping_suppliers is not None:
+        if not stamping_suppliers:
+            return q.filter(false())
+        return q.filter(column.in_(stamping_suppliers))
+    if stamping_supplier is not None:
+        return q.filter(column == stamping_supplier)
+    return q
 
 
 class StampingPartRepository:
@@ -222,6 +237,7 @@ class StampingPartRepository:
         part_number: str | None = None,
         part_name: str | None = None,
         stamping_supplier: str | None = None,
+        stamping_suppliers: Sequence[str] | None = None,
     ) -> Query[StampingPart]:
         """构建与列表相同的筛选查询（不含排序/分页）。"""
         q = db.query(StampingPart)
@@ -229,8 +245,12 @@ class StampingPartRepository:
             q = q.filter(StampingPart.location.in_(locations))
         elif location is not None:
             q = q.filter(StampingPart.location == location)
-        if stamping_supplier is not None:
-            q = q.filter(StampingPart.stamping_supplier == stamping_supplier)
+        q = _filter_supplier(
+            q,
+            StampingPart.stamping_supplier,
+            stamping_supplier,
+            stamping_suppliers,
+        )
         if vehicle_model is not None:
             q = q.filter(StampingPart.vehicle_model == vehicle_model)
         if version is not None:
@@ -251,6 +271,7 @@ class StampingPartRepository:
         part_number: str | None = None,
         part_name: str | None = None,
         stamping_supplier: str | None = None,
+        stamping_suppliers: Sequence[str] | None = None,
         skip: int = 0,
         limit: int = 100,
     ) -> tuple[list[StampingPart], int]:
@@ -264,6 +285,7 @@ class StampingPartRepository:
             part_number=part_number,
             part_name=part_name,
             stamping_supplier=stamping_supplier,
+            stamping_suppliers=stamping_suppliers,
         )
         total = q.count()
         parts = q.order_by(StampingPart.id).offset(skip).limit(limit).all()
@@ -280,6 +302,7 @@ class StampingPartRepository:
         part_number: str | None = None,
         part_name: str | None = None,
         stamping_supplier: str | None = None,
+        stamping_suppliers: Sequence[str] | None = None,
     ) -> StampingPartFilterSummary:
         """按与列表相同的筛选条件汇总去重维度数量。"""
         q = self._build_list_query(
@@ -291,6 +314,7 @@ class StampingPartRepository:
             part_number=part_number,
             part_name=part_name,
             stamping_supplier=stamping_supplier,
+            stamping_suppliers=stamping_suppliers,
         )
         row = q.with_entities(
             func.count(func.distinct(StampingPart.location)).label("location_count"),
@@ -428,6 +452,7 @@ class StampingPartRepository:
         vehicle_model: str,
         version: str,
         stamping_supplier: str | None = None,
+        stamping_suppliers: Sequence[str] | None = None,
     ) -> list[StampingPart]:
         """按基地 + 车型 + 版本查询零件；工厂传入则再缩小。"""
         q = db.query(StampingPart).filter(
@@ -435,8 +460,12 @@ class StampingPartRepository:
             StampingPart.vehicle_model == vehicle_model,
             StampingPart.version == version,
         )
-        if stamping_supplier is not None:
-            q = q.filter(StampingPart.stamping_supplier == stamping_supplier)
+        q = _filter_supplier(
+            q,
+            StampingPart.stamping_supplier,
+            stamping_supplier,
+            stamping_suppliers,
+        )
         return q.all()
 
     def list_by_location_and_vehicle(
@@ -463,6 +492,7 @@ class StampingPartRepository:
         vehicle_model: str,
         version: str,
         stamping_supplier: str | None = None,
+        stamping_suppliers: Sequence[str] | None = None,
     ) -> int:
         """按基地 + 车型 + 版本批量删除零件及工序；工厂可选。不提交事务。
 
@@ -473,6 +503,7 @@ class StampingPartRepository:
             db,
             location=location,
             stamping_supplier=stamping_supplier,
+            stamping_suppliers=stamping_suppliers,
             vehicle_model=vehicle_model,
             version=version,
         )
@@ -677,6 +708,7 @@ class StampingPartRepository:
         location: str | None = None,
         locations: list[str] | None = None,
         stamping_supplier: str | None = None,
+        stamping_suppliers: Sequence[str] | None = None,
         vehicle_model: str | None = None,
         version: str | None = None,
     ) -> list[StampingPart]:
@@ -688,8 +720,12 @@ class StampingPartRepository:
             q = q.filter(StampingPart.location.in_(locations))
         elif location:
             q = q.filter(StampingPart.location == location)
-        if stamping_supplier:
-            q = q.filter(StampingPart.stamping_supplier == stamping_supplier)
+        q = _filter_supplier(
+            q,
+            StampingPart.stamping_supplier,
+            stamping_supplier,
+            stamping_suppliers,
+        )
         if vehicle_model:
             q = q.filter(StampingPart.vehicle_model == vehicle_model)
         if version:

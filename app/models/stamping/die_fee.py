@@ -34,7 +34,7 @@ class StampingDieFee(AuditUserMixin, Base):
     location: Mapped[str] = mapped_column(String(50), nullable=False, comment="采购基地")
     vehicle_model: Mapped[str] = mapped_column(String(50), nullable=False, comment="项目")
     stamping_supplier: Mapped[str | None] = mapped_column(
-        String(50), nullable=True, comment="冲压供应商（从布点快照）"
+        String(100), nullable=True, comment="冲压供应商（从布点快照）"
     )
     version: Mapped[str | None] = mapped_column(
         String(20), nullable=True, comment="版本（从布点快照）"

@@ -415,7 +415,7 @@ class DatabaseConfig:
             if "stamping_supplier" not in die_cols:
                 with engine.begin() as conn:
                     conn.execute(
-                        text(f"ALTER TABLE {die_table} ADD COLUMN stamping_supplier VARCHAR(50)")
+                        text(f"ALTER TABLE {die_table} ADD COLUMN stamping_supplier VARCHAR(100)")
                     )
                 logger.info("已为 %s 追加列 stamping_supplier", die_table)
             if "version" not in die_cols:
@@ -430,7 +430,7 @@ class DatabaseConfig:
                 with engine.begin() as conn:
                     conn.execute(
                         text(
-                            f"ALTER TABLE {die_fee_table} ADD COLUMN stamping_supplier VARCHAR(50)"
+                            f"ALTER TABLE {die_fee_table} ADD COLUMN stamping_supplier VARCHAR(100)"
                         )
                     )
                 logger.info("已为 %s 追加列 stamping_supplier", die_fee_table)
@@ -449,7 +449,7 @@ class DatabaseConfig:
                     conn.execute(
                         text(
                             f"ALTER TABLE {calc_log_table} "
-                            "ADD COLUMN stamping_supplier VARCHAR(50)"
+                            "ADD COLUMN stamping_supplier VARCHAR(100)"
                         )
                     )
                 logger.info("已为 %s 追加列 stamping_supplier", calc_log_table)

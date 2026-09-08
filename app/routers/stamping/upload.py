@@ -5,12 +5,10 @@
 
 from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, File, Form, UploadFile
+from fastapi import APIRouter, Depends, File, UploadFile
 from fastapi.responses import StreamingResponse
-from sqlalchemy.orm import Session
 
 from app.common.permissions.codes import Perm
-from app.database import get_db
 from app.deps.permissions import require_perm
 from app.schemas.vo.async_task_vo import AsyncTaskAcceptedVO, AsyncTaskProgressVO
 from app.schemas.vo.user_vo import UserVO
@@ -44,27 +42,19 @@ def download_stamping_import_template(
 
 @router.post("/", response_model=ApiResponse[AsyncTaskAcceptedVO])
 async def upload_stamping_file(
-    location: str = Form(...),
-    vehicle_model: str = Form(...),
     file: UploadFile = File(...),
-    db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_UPLOAD_UPLOAD)),
 ) -> ApiResponse[AsyncTaskAcceptedVO]:
     """上传车型冲压工艺文件，立即返回 task_id，后台解析入库。"""
     logger.info(
-        "接收到车型冲压工艺文件上传: 基地=%s, 项目=%s, 文件=%s",
-        location,
-        vehicle_model,
+        "接收到车型冲压工艺文件上传: 文件=%s",
         file.filename,
     )
 
     content = await file.read()
     accepted = StampingUploadService.start_upload(
-        db=db,
         file_content=content,
         filename=file.filename or "",
-        location=location.strip(),
-        vehicle_model=vehicle_model.strip(),
         current_user=current_user,
     )
     return ApiResponse.ok(

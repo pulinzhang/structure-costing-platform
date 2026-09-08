@@ -1388,6 +1388,57 @@
               ]
             }
           ]
+        },
+        {
+          "code": "menu:supplier",
+          "label": "供应商",
+          "type": "group",
+          "children": [
+            {
+              "code": "menu:supplier-upload",
+              "label": "上传",
+              "type": "menu",
+              "children": [
+                {
+                  "code": "op:supplier-upload:view",
+                  "label": "查看",
+                  "type": "op"
+                },
+                {
+                  "code": "op:supplier-upload:upload",
+                  "label": "导入",
+                  "type": "op"
+                }
+              ]
+            },
+            {
+              "code": "menu:supplier-list",
+              "label": "一览表",
+              "type": "menu",
+              "children": [
+                {
+                  "code": "op:supplier-list:view",
+                  "label": "查看",
+                  "type": "op"
+                },
+                {
+                  "code": "op:supplier-list:export",
+                  "label": "导出",
+                  "type": "op"
+                },
+                {
+                  "code": "op:supplier-list:create",
+                  "label": "新增",
+                  "type": "op"
+                },
+                {
+                  "code": "op:supplier-list:update",
+                  "label": "编辑",
+                  "type": "op"
+                }
+              ]
+            }
+          ]
         }
       ]
     },

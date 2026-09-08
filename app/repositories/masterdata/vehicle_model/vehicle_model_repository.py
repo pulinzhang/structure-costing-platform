@@ -42,6 +42,14 @@ class VehicleModelRepository:
             .all()
         )
 
+    def list_by_code(self, db: Session, vehicle_model: str) -> list[VehicleModel]:
+        return (
+            db.query(VehicleModel)
+            .filter(VehicleModel.vehicle_model == vehicle_model)
+            .order_by(VehicleModel.location.asc())
+            .all()
+        )
+
     def list_distinct_codes(self, db: Session) -> list[str]:
         rows = (
             db.query(VehicleModel.vehicle_model)

@@ -11,7 +11,6 @@ import {
     BTN_GHOST,
     BTN_UPLOAD_SUBMIT,
     UPLOAD_DROPZONE,
-    UPLOAD_INPUT,
 } from '../../../../ui-classes.js?v=1';
 
 export function uploadTemplate() {
@@ -34,55 +33,12 @@ export function uploadTemplate() {
                 <div class="p-5">
                     <form id="uploadForm" enctype="multipart/form-data">
 
-                        <!-- Brabus 机械舱：步骤 1 + 步骤 2 -->
+                        <!-- Brabus 机械舱：上传文件 -->
                         <div class="bg-[#161616] border border-[#252525] p-4">
-                            <!-- 步骤一：选择采购基地 -->
-                            <div class="mb-5">
-                                <div class="flex items-center gap-2 mb-2.5">
-                                    <span class="w-4 h-4 rounded-full bg-[#2a2a2a] flex items-center justify-center shrink-0">
-                                        <span class="text-[10px] font-semibold text-[#d32f2f]">1</span>
-                                    </span>
-                                    <span class="text-[13px] text-[#6b6b6b] font-medium tracking-wide uppercase">选择采购基地</span>
-                                </div>
-                                <div class="ml-6">
-                                    <select id="location"
-                                            name="location"
-                                            required
-                                            class="${UPLOAD_INPUT} w-[280px]">
-                                        <option value="">请选择采购基地</option>
-                                    </select>
-                                    <p class="mt-2 text-[10px] text-[#555555]">必选。</p>
-                                </div>
-                            </div>
-
-                            <div class="h-px bg-[#1e1e1e] mx-6 mb-4"></div>
-
-                            <div class="mb-5">
-                                <div class="flex items-center gap-2 mb-2.5">
-                                    <span class="w-4 h-4 rounded-full bg-[#2a2a2a] flex items-center justify-center shrink-0">
-                                        <span class="text-[10px] font-semibold text-[#d32f2f]">2</span>
-                                    </span>
-                                    <span class="text-[13px] text-[#6b6b6b] font-medium tracking-wide uppercase">选择项目</span>
-                                </div>
-                                <div class="ml-6">
-                                    <select id="stampingVehicleModel"
-                                            name="vehicle_model"
-                                            required
-                                            class="${UPLOAD_INPUT} w-[280px]">
-                                        <option value="">请先选择采购基地</option>
-                                    </select>
-                                    <p class="mt-2 text-[10px] text-[#555555]">必选该月可引入项目。文件代号须与所选一致，不一致将退回。</p>
-                                </div>
-                            </div>
-
-                            <!-- 步骤分隔线 -->
-                            <div class="h-px bg-[#1e1e1e] mx-6 mb-4"></div>
-
-                            <!-- 步骤三：上传文件 -->
                             <div>
                                 <div class="flex items-center gap-2 mb-3">
                                     <span class="w-4 h-4 rounded-full bg-[#2a2a2a] flex items-center justify-center shrink-0">
-                                        <span class="text-[10px] font-semibold text-[#d32f2f]">3</span>
+                                        <span class="text-[10px] font-semibold text-[#d32f2f]">1</span>
                                     </span>
                                     <span class="text-[13px] text-[#6b6b6b] font-medium tracking-wide uppercase">上传工艺文件</span>
                                 </div>
@@ -180,7 +136,7 @@ export function uploadTemplate() {
                         </div>
                     </div>
                     <div class="p-4 space-y-3 text-[11px] text-[#888888] leading-relaxed">
-                        <p class="text-[#ffb74d]">本文件为双方签字的工艺确认表。必选采购基地与该月可引入项目；冲压厂、版本从文件名或表头识别，文件项目须与所选一致。同基地 + 冲压厂 + 项目 + 版本再次上传将覆盖。不必先有模具布点。</p>
+                        <p class="text-[#ffb74d]">本文件为双方签字的工艺确认表。只需选择文件。项目与冲压工厂从表头解析；采购基地由项目主数据带出。未登记、已禁用、该月不可引入，或同一代号挂在多个可引入基地，将退回。落库写规范项目代号与供应商全称。同基地 + 冲压厂 + 项目 + 版本再次上传将覆盖。不必先有模具布点。</p>
                         <p>模具编号可空。冲压厂若要算模具费，再另传模具布点。</p>
                         <p><span class="text-[#c8c8c8]">是否利废</span>只看本表「料片式样」。写「利用××废料」（如利用侧围废料）或格里写「利废」（含错写成「利费」）即记为利用件，材料按成品净重 × 废料月度价（从废料里捡出的成品），不按一事一议新板价。写「要利废」表示这件会产出废料给别人用，不是利用件。方料 / 卷料 / 条料仍表示料片形状，与利废是两件事。</p>
                         <p><span class="text-[#c8c8c8]">废料副产品</span>：长/卷料宽、宽/卷料步距、可制件数、料片式样都空，且有零件净重 → 家模带出的小件，材料同样按废料净重，不算冲压费。不要只空长宽、其它列还填着。</p>

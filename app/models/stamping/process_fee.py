@@ -50,7 +50,7 @@ class StampingProcessFee(AuditUserMixin, Base):
 
     year: Mapped[int] = mapped_column(Integer, nullable=False, comment="计算年度")
     location: Mapped[str] = mapped_column(String(50), nullable=False, comment="采购基地")
-    stamping_supplier: Mapped[str] = mapped_column(String(50), nullable=False, comment="冲压工厂")
+    stamping_supplier: Mapped[str] = mapped_column(String(100), nullable=False, comment="冲压工厂")
     vehicle_model: Mapped[str] = mapped_column(String(50), nullable=False, comment="车型")
     version: Mapped[str] = mapped_column(String(20), nullable=False, comment="版本")
 

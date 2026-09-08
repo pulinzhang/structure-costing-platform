@@ -61,7 +61,8 @@ def validate_stamping_process_upload_scope(
     version: str | None,
 ) -> StampingProcessUploadScope:
     """
-    冲压工艺表导入 scope：基地 + 冲压工厂 + 车型 + 版本（与删除旧数据维度一致）。
+    冲压工艺表导入 scope：基地 + 已门禁的冲压工厂全称 + 车型 + 版本。
+    厂名来自 Parser 抽出后 require_enabled 的规范全称，不是表头原文。
     """
     missing: list[str] = []
     loc = _require_nonempty_text(location, "基地", missing)
@@ -72,7 +73,7 @@ def validate_stamping_process_upload_scope(
     if missing:
         raise BusinessException(
             f"Excel 头信息不完整，无法导入：缺少{_missing_label_text(missing)}。"
-            "请检查表头是否填写冲压承制公司、车型（项目名称）与版本。"
+            "请检查表头是否填写车型（项目名称）与版本。"
         )
 
     return StampingProcessUploadScope(

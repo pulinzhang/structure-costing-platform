@@ -153,6 +153,42 @@ class VehicleModelService:
             raise BusinessException(f"该项目已失效，{_PAGE_HINT}")
         return (canonical, record.vehicle_model)
 
+    def require_introducible_by_code(
+        self,
+        db: Session,
+        vehicle_model: str,
+        year: int,
+        month: int,
+    ) -> tuple[str, str]:
+        """文件识别项目代号：唯一可引入行带出所属基地。"""
+        code = self.normalize(vehicle_model)
+        if not code:
+            raise BusinessException(f"没有该项目，{_PAGE_HINT}")
+        rows = self.repository.list_by_code(db, code)
+        if not rows:
+            raise BusinessException(f"没有该项目，{_PAGE_HINT}")
+
+        introducible: list[VehicleModel] = []
+        for record in rows:
+            try:
+                self.location_service.require_enabled(db, record.location)
+            except BusinessException:
+                continue
+            if self._is_in_period(record, year, month):
+                introducible.append(record)
+
+        if len(introducible) == 1:
+            chosen = introducible[0]
+            return (chosen.location, chosen.vehicle_model)
+        if len(introducible) > 1:
+            names = "、".join(row.location for row in introducible)
+            raise BusinessException(
+                f"项目 {code} 挂在多个可引入基地（{names}），无法自动确定。" f"{_PAGE_HINT}"
+            )
+        if len(rows) == 1:
+            return self.require_introducible(db, rows[0].location, code, year, month)
+        raise BusinessException(f"没有可引入的项目 {code}，{_PAGE_HINT}")
+
     def require_overlaps_year(
         self,
         db: Session,

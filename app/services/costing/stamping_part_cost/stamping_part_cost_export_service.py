@@ -22,6 +22,7 @@ from app.services.costing.stamping_part_cost.export.process_sheet import (
     export_process_sheet,
     write_process_sheet_to_workbook,
 )
+from app.services.masterdata.supplier import SupplierService
 
 EXPORT_VEHICLE_REQUIRED_MESSAGE = "导出须选定项目。"
 
@@ -64,7 +65,7 @@ class StampingPartCostExportService:
             year=year,
             month=month,
             location=location,
-            stamping_supplier=stamping_supplier,
+            stamping_suppliers=SupplierService().names_for_query(db, stamping_supplier),
             vehicle_model=vehicle_value,
             version=version,
             part_number=part_number,
@@ -108,7 +109,7 @@ class StampingPartCostExportService:
             year=year,
             month=month,
             location=location,
-            stamping_supplier=stamping_supplier,
+            stamping_suppliers=SupplierService().names_for_query(db, stamping_supplier),
             vehicle_model=vehicle_value,
             version=version,
             part_number=part_number,

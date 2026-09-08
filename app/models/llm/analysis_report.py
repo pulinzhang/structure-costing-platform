@@ -40,7 +40,7 @@ class LlmAnalysisReport(AuditUserMixin, Base):
     vehicle_model: Mapped[str] = mapped_column(String(50), nullable=False)
     bom_version: Mapped[str] = mapped_column(String(20), nullable=False)
     part_number: Mapped[str | None] = mapped_column(String(50), nullable=True)
-    stamping_supplier: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    stamping_supplier: Mapped[str | None] = mapped_column(String(100), nullable=True)
     engine_run_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     status: Mapped[str] = mapped_column(
