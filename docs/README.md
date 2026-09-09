@@ -31,6 +31,7 @@
 |------|------|
 | [stamping-apqp-die-before-process-design.md](stamping/stamping-apqp-die-before-process-design.md) | 产品质量先期策划（APQP）先布点后工艺（已落地）：布点/工艺均必选该月可引入项目；工艺仍不要求布点 |
 | [stamping-process-confirmation-design.md](stamping/stamping-process-confirmation-design.md) | 冲压工艺确认表（已落地）：加工费 + 材料/利废依据 |
+| [stamping-steel-purchase-export-design.md](stamping/stamping-steel-purchase-export-design.md) | 钢材采购测算导出（已落地）：零件列表填数量，Excel 公式出吨 |
 | [stamping-family-die-byproduct-design.md](stamping/stamping-family-die-byproduct-design.md) | 家模废料副产品（上传已落地）：主表 `is_scrap_byproduct`；材料 H×Q，不算冲压费 |
 | [stamping-die-management-design.md](stamping/stamping-die-management-design.md) | 模具布点依据（已落地；导入顺序见上一行 APQP 设计） |
 | [stamping-die-unit-price-design.md](stamping/stamping-die-unit-price-design.md) | 模具单价档案（已落地） |
@@ -47,6 +48,7 @@
 | [welding-process-breakdown-design.md](bom/welding-process-breakdown-design.md) | 焊接工艺拆解（已上线）：有原文即拆（含分总成），不计费 |
 | [bom-procurement-objects-design.md](bom/bom-procurement-objects-design.md) | 采购对象清单（已落地）：退化供货件 / 分总成 / 冲压件；生成落库、检测、确认。基地/项目写读见该文 §13 |
 | [bom-procurement-object-supplier-design.md](bom/bom-procurement-object-supplier-design.md) | 采购对象指定供应商（已落地）：行上点选规范全称 |
+| [bom-procurement-object-supplier-upload-design.md](bom/bom-procurement-object-supplier-upload-design.md) | 采购对象批量上传供应商（已落地）：范围三项 + 窄表导回 |
 
 ## 一事一议 `yishiyiyi/`
 
@@ -61,7 +63,7 @@
 |------|------|
 | [costing-engine-design.md](costing/costing-engine-design.md) | 月度引擎（已上线） |
 | [assembly-costing-design.md](costing/assembly-costing-design.md) | 总成月核价（已落地）：级别无关；财务总费用与采购应成本同一批行 |
-| [procurement-contract-report-design.md](costing/procurement-contract-report-design.md) | 采购签约报表（设计）：对象 × 起止月应成本横表 |
+| [procurement-contract-report-design.md](costing/procurement-contract-report-design.md) | 采购价格（设计）：对象 × 起止月应成本横表 |
 | [l0-assembly-costing-design.md](costing/l0-assembly-costing-design.md) | 现网 L0 成品核价（已上线；新规则见上一行） |
 | [l1-assembly-costing-design.md](costing/l1-assembly-costing-design.md) | 历史：委外应成本口径（结果表方案已作废） |
 | [effective-period-design.md](costing/effective-period-design.md) | 协议价生效期（设计） |

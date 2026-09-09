@@ -75,7 +75,7 @@ export function annualPartPriceUploadTemplate() {
                                                class="${UPLOAD_INPUT} w-full">
                                     </div>
                                 </div>
-                                <p class="ml-6 mt-1.5 text-[11px] text-[#616161]">下载模板须选基地、项目、年度。第二页「填写说明」写清：转换系数为正整数，核价单价=采购单价÷系数。导入仍写入该基地该年，不必删说明页。</p>
+                                <p class="ml-6 mt-1.5 text-[11px] text-[#616161]">下载模板须选基地、项目、年度。第二页「填写说明」：1 采购单位 = N 核价单位，N 可小数（如 25.4），核价单价=采购单价÷N。导入仍写入该基地该年，不必删说明页。</p>
                             </div>
 
                             <div class="h-px bg-[#1e1e1e] mx-6 mb-4"></div>
@@ -178,7 +178,7 @@ export function annualPartPriceUploadTemplate() {
                                 <li><span class="text-[#9e9e9e]">零件名称</span> / <span class="text-[#9e9e9e]">规格</span> / <span class="text-[#9e9e9e]">供应商</span> / <span class="text-[#9e9e9e]">备注</span>：可选；规格不参与取价</li>
                                 <li><span class="text-[#9e9e9e]">单位 / 单价</span>：核价口径；单位抄 BOM；单价模板预填 0</li>
                                 <li><span class="text-[#9e9e9e]">采购单位</span>：模板与单位相同；<span class="text-[#9e9e9e]">采购单价</span>留空；<span class="text-[#9e9e9e]">转换系数</span>默认 1</li>
-                                <li><span class="text-[#9e9e9e]">换算</span>：转换系数须为正整数（默认 1）。1 采购单位 = 系数个核价单位。核价单价 = 采购单价 ÷ 系数（打→个填 12，不要填 1/12）</li>
+                                <li><span class="text-[#9e9e9e]">换算</span>：1 采购单位 = N 核价单位。N 默认 1，可小数（1 英寸=25.4 mm 填 25.4；1 打=12 填 12）。核价单价 = 采购单价 ÷ N。不要填 1/12</li>
                                 <li><span class="text-[#9e9e9e]">原供货类型</span>：模板按行预填「标准件」/「胶块」/「沿用」；导入可改</li>
                             </ul>
                         </div>

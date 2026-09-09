@@ -200,7 +200,7 @@ class DatabaseConfig:
                 ("purchase_unit_price", "NUMERIC(12, 4)"),
                 (
                     "conversion_factor",
-                    "INTEGER NOT NULL DEFAULT 1",
+                    "NUMERIC(16, 6) NOT NULL DEFAULT 1",
                 ),
             )
             for column_name, column_def in annual_new_columns:
@@ -213,6 +213,19 @@ class DatabaseConfig:
                         )
                     )
                 logger.info("已为 %s 追加列 %s", annual_table, column_name)
+            inspector.clear_cache()
+            factor_meta = next(
+                (
+                    col
+                    for col in inspector.get_columns(annual_table)
+                    if col["name"] == "conversion_factor"
+                ),
+                None,
+            )
+            if factor_meta is not None and "INT" in str(factor_meta["type"]).upper():
+                with engine.begin() as conn:
+                    cls._sqlite_rebuild_table(conn, annual_table, tmp_suffix="__cf_num")
+                logger.info("已将 %s.conversion_factor 改为 NUMERIC(16, 6)", annual_table)
 
         config_table = "system_configs"
         if config_table in table_names:
@@ -513,6 +526,24 @@ class DatabaseConfig:
                         )
                     )
                 logger.info("已为 %s 追加列 supplier_name", proc_table)
+                proc_cols.add("supplier_name")
+            if "internal_number" not in proc_cols:
+                with engine.begin() as conn:
+                    conn.execute(
+                        text(f"ALTER TABLE {proc_table} ADD COLUMN internal_number VARCHAR(50)")
+                    )
+                logger.info("已为 %s 追加列 internal_number", proc_table)
+                proc_cols.add("internal_number")
+            if "bom_nodes" in table_names:
+                with engine.begin() as conn:
+                    conn.execute(
+                        text(
+                            f"UPDATE {proc_table} SET internal_number = ("
+                            "SELECT bom_nodes.internal_number FROM bom_nodes "
+                            f"WHERE bom_nodes.id = {proc_table}.source_node_id"
+                            ") WHERE internal_number IS NULL"
+                        )
+                    )
 
         vehicle_table = "vehicle_models"
         if vehicle_table in table_names:

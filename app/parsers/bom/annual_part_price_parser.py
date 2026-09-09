@@ -15,7 +15,7 @@ from typing import Any
 
 from openpyxl import load_workbook
 
-from app.common.money import Q4, quantize_money, quantize_positive_whole
+from app.common.money import Q4, Q6, quantize_money
 
 HEADER_PART_NUMBER = "零件号"
 HEADER_PART_NAME = "零件名称"
@@ -29,7 +29,7 @@ HEADER_SUPPLY_TYPE = "原供货类型"
 HEADER_SUPPLIER = "供应商"
 HEADER_REMARK = "备注"
 
-DEFAULT_CONVERSION_FACTOR = 1
+DEFAULT_CONVERSION_FACTOR = Decimal("1")
 _ZERO = Decimal("0")
 
 
@@ -43,7 +43,7 @@ class AnnualPartPriceParsedRow:
     specification: str | None
     purchase_unit: str | None
     purchase_unit_price: Decimal | None
-    conversion_factor: int
+    conversion_factor: Decimal
     unit: str
     unit_price: Decimal
     supply_type: str
@@ -63,8 +63,8 @@ def _round4(value: Decimal) -> Decimal:
     return quantize_money(value, Q4)
 
 
-def parse_conversion_factor(value: Any) -> int:
-    """转换系数：空则 1；必须为正整数（1 采购单位 = N 核价单位）。"""
+def parse_conversion_factor(value: Any) -> Decimal:
+    """转换系数：空则 1；须 > 0，最多 6 位小数（1 采购单位 = N 核价单位）。"""
     if value is None:
         return DEFAULT_CONVERSION_FACTOR
     if isinstance(value, str):
@@ -72,10 +72,18 @@ def parse_conversion_factor(value: Any) -> int:
         if not text:
             return DEFAULT_CONVERSION_FACTOR
         if "/" in text:
-            raise ValueError("转换系数须为正整数，不能填分数")
+            raise ValueError("转换系数不能填分数，请填小数，例如 25.4")
         value = text
-    number = quantize_positive_whole(value, label="转换系数")
-    return int(number)
+    number = quantize_money(value, Q6)
+    if number <= 0:
+        raise ValueError("转换系数须大于 0")
+    return number
+
+
+def format_conversion_factor(value: Decimal) -> str:
+    """展示用：量化到 6 位后去掉末尾 0，不强制补齐小数位。"""
+    number = parse_conversion_factor(value)
+    return f"{number:.6f}".rstrip("0").rstrip(".")
 
 
 def parse_optional_purchase_unit_price(value: Any) -> Decimal | None:
@@ -93,13 +101,11 @@ def parse_optional_purchase_unit_price(value: Any) -> Decimal | None:
 def resolve_annual_unit_price(
     *,
     purchase_unit_price: Decimal | None,
-    conversion_factor: int,
+    conversion_factor: Decimal,
     unit_price: Decimal | None,
 ) -> Decimal:
     """有采购单价时：核价单价 = 采购单价 ÷ 转换系数；单价 0/空视为占位。"""
-    if conversion_factor < 1:
-        raise ValueError("转换系数须为正整数")
-    factor = Decimal(conversion_factor)
+    factor = parse_conversion_factor(conversion_factor)
     if purchase_unit_price is None:
         if unit_price is None:
             raise ValueError("单价无效")

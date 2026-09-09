@@ -10,7 +10,7 @@ import {
     updatePartsFilterCapsules,
     updatePartsHud,
     renderPartsPagination,
-} from './template.js?v=30';
+} from './template.js?v=31';
 import {
     BTN_SAVE_ACTIVE,
     BTN_SAVE_DEFAULT,
@@ -131,6 +131,7 @@ export const PartsPage = {
         }
         if (!this.canExport) {
             document.getElementById('partsExportBtn')?.classList.add('hidden');
+            document.getElementById('partsSteelPurchaseExportBtn')?.classList.add('hidden');
         }
     },
 
@@ -165,6 +166,7 @@ export const PartsPage = {
         });
         document.getElementById('partsBatchDeleteBtn')?.addEventListener('click', () => this.batchDelete());
         document.getElementById('partsExportBtn')?.addEventListener('click', () => this.exportExcel());
+        document.getElementById('partsSteelPurchaseExportBtn')?.addEventListener('click', () => this.exportSteelPurchase());
 
         pageContent?.addEventListener('change', (e) => {
             const cascadeResets = {
@@ -724,6 +726,24 @@ export const PartsPage = {
     },
 
     async exportExcel() {
+        await this._downloadExport({
+            path: 'export-download',
+            defaultFilename: '冲压工艺确认表.xlsx',
+            buttonId: 'partsExportBtn',
+            failLog: '导出冲压工艺失败',
+        });
+    },
+
+    async exportSteelPurchase() {
+        await this._downloadExport({
+            path: 'steel-purchase-export-download',
+            defaultFilename: '钢材采购测算.xlsx',
+            buttonId: 'partsSteelPurchaseExportBtn',
+            failLog: '导出钢材测算失败',
+        });
+    },
+
+    async _downloadExport({ path, defaultFilename, buttonId, failLog }) {
         if (this.canExport === false) {
             showToast('无导出权限', 'warning');
             return;
@@ -734,8 +754,10 @@ export const PartsPage = {
         if (scope.stamping_supplier) params.stamping_supplier = scope.stamping_supplier;
         if (scope.vehicle_model) params.vehicle_model = scope.vehicle_model;
         if (scope.version) params.version = scope.version;
+        const partNumber = document.getElementById('searchInput')?.value.trim() || '';
+        if (partNumber) params.part_number = partNumber;
 
-        const btn = document.getElementById('partsExportBtn');
+        const btn = document.getElementById(buttonId);
         const originalHtml = btn ? btn.innerHTML : '';
         if (btn) {
             btn.disabled = true;
@@ -745,21 +767,21 @@ export const PartsPage = {
             `;
         }
         try {
-            const { blob, filename } = await HttpClient.download(`${PARTS_API}/export-download`, {
+            const { blob, filename } = await HttpClient.download(`${PARTS_API}/${path}`, {
                 params,
-                defaultFilename: '冲压工艺确认表.xlsx',
+                defaultFilename,
             });
             const url = window.URL.createObjectURL(blob);
             const anchor = document.createElement('a');
             anchor.href = url;
-            anchor.download = filename || '冲压工艺确认表.xlsx';
+            anchor.download = filename || defaultFilename;
             document.body.appendChild(anchor);
             anchor.click();
             document.body.removeChild(anchor);
             window.URL.revokeObjectURL(url);
             showToast(`导出成功: ${filename}`, 'success');
         } catch (error) {
-            console.error('导出冲压工艺失败', error);
+            console.error(failLog, error);
             showToast(error.message || '导出失败', 'error');
         } finally {
             if (btn) {

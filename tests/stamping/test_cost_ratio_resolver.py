@@ -8,10 +8,12 @@ from app.services.stamping.upload.cost_ratio_preserver import ProcessCostRatioPr
 from app.services.stamping.upload.cost_ratio_resolver import (
     is_blanking_first_process_code,
     is_prg_process_code,
+    is_shared_die_row,
     later_ops_are_blank,
     later_ops_have_shared_die,
     resolve_cost_ratio,
     resolve_new_process_cost_ratio,
+    shared_die_labels,
 )
 
 
@@ -610,3 +612,24 @@ def test_preserver_haizhong_prg_merge_and_jinjin_blanking() -> None:
     assert by_key[("502005544AA", "OP10")] == Decimal("0.40")
     assert by_key[("502005553AA", "OP05")] == Decimal("0.80")
     assert by_key[("502005553AA", "OP10-OP40")] == Decimal("1.00")
+
+
+def test_shared_die_labels_from_process_method_and_ratio() -> None:
+    assert shared_die_labels(
+        die_type="铸造模",
+        process_method="双槽",
+        process_codes=["DR"],
+        cost_ratios=[Decimal("0.50")],
+    ) == ["双槽"]
+    assert is_shared_die_row(
+        die_type=None,
+        process_method=None,
+        process_codes=["合并"],
+        cost_ratios=[],
+    )
+    assert "级进共模" in shared_die_labels(
+        die_type=None,
+        process_method=None,
+        process_codes=[],
+        cost_ratios=[Decimal("0.40")],
+    )

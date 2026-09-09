@@ -15,7 +15,7 @@ from app.database import Base
 from app.models.file_trace.upload_file import UploadFile
 from app.repositories.file_trace.upload_file_repository import UploadFileRepository
 from app.schemas.vo.user_vo import UserVO
-from app.services.file_trace.categories import resolve_allowed_categories
+from app.services.file_trace.categories import FILE_CATEGORY_LABELS, resolve_allowed_categories
 from app.services.file_trace.register import register_existing
 
 _repo = UploadFileRepository()
@@ -71,7 +71,7 @@ def _write_excel(upload_dir: Path, relpath: str, content: bytes = b"excel") -> s
 
 def test_resolve_allowed_categories_intersection() -> None:
     admin = _admin_user()
-    assert len(resolve_allowed_categories(admin)) == 9
+    assert len(resolve_allowed_categories(admin)) == len(FILE_CATEGORY_LABELS)
 
     bom_only = _limited_user("menu:file-trace", "op:file-trace:view", "op:bom-upload:view")
     assert resolve_allowed_categories(bom_only) == ["bom_material"]
@@ -96,6 +96,15 @@ def test_resolve_allowed_categories_intersection() -> None:
         "op:bom-annual-part-price:view",
     )
     assert resolve_allowed_categories(annual_only) == ["bom_annual_part_price"]
+
+    procurement_supplier_only = _limited_user(
+        "menu:file-trace",
+        "op:file-trace:view",
+        "op:bom-procurement-object-supplier-upload:view",
+    )
+    assert resolve_allowed_categories(procurement_supplier_only) == [
+        "bom_procurement_object_supplier"
+    ]
 
     menu_only = _limited_user("menu:file-trace", "op:file-trace:view")
     assert resolve_allowed_categories(menu_only) == []

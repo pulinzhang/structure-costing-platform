@@ -723,6 +723,23 @@
                   "type": "op"
                 }
               ]
+            },
+            {
+              "code": "menu:bom-procurement-object-supplier-upload",
+              "label": "上传供应商",
+              "type": "menu",
+              "children": [
+                {
+                  "code": "op:bom-procurement-object-supplier-upload:view",
+                  "label": "查看",
+                  "type": "op"
+                },
+                {
+                  "code": "op:bom-procurement-object-supplier-upload:upload",
+                  "label": "上传",
+                  "type": "op"
+                }
+              ]
             }
           ]
         },

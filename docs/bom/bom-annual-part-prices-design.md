@@ -101,7 +101,7 @@ static/js/features/bom/annual-part-price/{upload,list}/
 | 规格 | `specification` | | 展示/当档，不取价；可从 BOM `thickness_text` 预填 |
 | 采购单位 | `purchase_unit` | | 报价包装单位，如打、瓶；同核价可空 |
 | 采购单价 | `purchase_unit_price` | | 元/采购单位；空=未报采购价 |
-| 转换系数 | `conversion_factor` | | 正整数，默认 **1**；1 采购单位 = N 核价单位；核价单价 = 采购单价 ÷ 系数 |
+| 转换系数 | `conversion_factor` | | >0，最多 6 位小数，默认 **1**；1 采购单位 = N 核价单位；核价单价 = 采购单价 ÷ 系数；展示不补零 |
 | 单位 | `unit` | ✓ | **核价单位**，默认 `pcs`，应对齐 BOM `qty_unit` |
 | 单价 | `unit_price` | ✓ | **核价单价**；`2.13`；**允许 0** |
 | 原供货类型 | `supply_type` | ✓ | `沿用` / `标准件` / `胶块`；一口价行可用 `分总成` / `一口价` |
@@ -120,7 +120,7 @@ static/js/features/bom/annual-part-price/{upload,list}/
 | `specification` | String(100) | | 规格，展示；**不参与取价** |
 | `purchase_unit` | String(20) | | 采购单位 |
 | `purchase_unit_price` | Numeric(12,4) | | 采购单价 |
-| `conversion_factor` | Integer | ✓ | 正整数，默认 1；`unit_price = purchase_unit_price / conversion_factor` |
+| `conversion_factor` | Numeric(16,6) | ✓ | >0，默认 1；`unit_price = purchase_unit_price / conversion_factor`；JSON/模板按有效小数位写出 |
 | `unit` | String(20) | ✓ | **核价单位**，默认 `pcs` |
 | `unit_price` | Numeric(12,4) | ✓ | **核价单价**（外购与一口价共用；核算读这一列） |
 | `supply_type` | String(50) | ✓ | 原供货类型原文 |
@@ -192,3 +192,4 @@ Index: (location, year), part_number, supply_type, audit_status
 | 2026-09-08 | §5.4：`supplier_name` 是报价档案（供应商 S15）。导入不门禁；列表编辑改下拉、可空。Excel 是点选禁自由输入的例外 |
 | 2026-09-08 | 加规格 / 采购单位 / 采购单价 / 转换系数；`unit`/`unit_price` 为核价口径 |
 | 2026-09-08 | 转换系数改为正整数；核价单价 = 采购单价 ÷ 系数（1 打=12 个则填 12） |
+| 2026-09-08 | 转换系数改为 Numeric(16,6)；1 采购单位=N 核价单位，N 可小数（25.4）；展示不补零 |

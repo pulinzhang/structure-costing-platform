@@ -1,4 +1,4 @@
-"""年度零件价：采购单价 ÷ 正整数转换系数 → 核价单价。"""
+"""年度零件价：采购单价 ÷ 转换系数 → 核价单价。"""
 
 from __future__ import annotations
 
@@ -16,6 +16,7 @@ from app.parsers.bom.annual_part_price_parser import (
     HEADER_SUPPLY_TYPE,
     HEADER_UNIT,
     HEADER_UNIT_PRICE,
+    format_conversion_factor,
     parse_annual_part_price_excel,
     parse_conversion_factor,
     resolve_annual_unit_price,
@@ -29,7 +30,7 @@ from app.services.bom.annual_part_price.template_builder import (
 def test_resolve_same_unit_keeps_unit_price() -> None:
     assert resolve_annual_unit_price(
         purchase_unit_price=None,
-        conversion_factor=1,
+        conversion_factor=parse_conversion_factor(1),
         unit_price=Decimal("2.1300"),
     ) == Decimal("2.1300")
 
@@ -51,15 +52,31 @@ def test_resolve_bottle_to_mm() -> None:
 
 
 def test_parse_conversion_factor_rejects_fraction() -> None:
-    with pytest.raises(ValueError, match="正整数"):
+    with pytest.raises(ValueError, match="分数"):
         parse_conversion_factor("1/12")
+
+
+def test_format_conversion_factor_does_not_pad() -> None:
+    assert format_conversion_factor(Decimal("1")) == "1"
+    assert format_conversion_factor(Decimal("12")) == "12"
+    assert format_conversion_factor(Decimal("25.4")) == "25.4"
+    assert format_conversion_factor(Decimal("10000")) == "10000"
+    assert format_conversion_factor(parse_conversion_factor("25.400000")) == "25.4"
+
+
+def test_resolve_inch_divides() -> None:
+    assert resolve_annual_unit_price(
+        purchase_unit_price=Decimal("25.4000"),
+        conversion_factor=parse_conversion_factor("25.4"),
+        unit_price=Decimal("0"),
+    ) == Decimal("1.0000")
 
 
 def test_resolve_rejects_mismatch() -> None:
     try:
         resolve_annual_unit_price(
             purchase_unit_price=Decimal("120.0000"),
-            conversion_factor=12,
+            conversion_factor=parse_conversion_factor(12),
             unit_price=Decimal("9.0000"),
         )
     except ValueError as exc:
@@ -118,7 +135,24 @@ def test_parser_purchase_price_overrides_zero_unit_price() -> None:
     assert parsed.errors == []
     assert parsed.rows[0].unit_price == Decimal("10.0000")
     assert parsed.rows[0].purchase_unit == "打"
-    assert parsed.rows[0].conversion_factor == 12
+    assert parsed.rows[0].conversion_factor == Decimal("12")
+
+
+def test_parser_inch_factor() -> None:
+    content = _xlsx_with_rows(
+        [
+            HEADER_PART_NUMBER,
+            HEADER_PURCHASE_UNIT_PRICE,
+            HEADER_CONVERSION_FACTOR,
+            HEADER_UNIT_PRICE,
+            HEADER_SUPPLY_TYPE,
+        ],
+        [["P-INCH", Decimal("25.4"), Decimal("25.4"), Decimal("0"), "沿用"]],
+    )
+    parsed = parse_annual_part_price_excel(content)
+    assert parsed.errors == []
+    assert parsed.rows[0].conversion_factor == Decimal("25.400000")
+    assert parsed.rows[0].unit_price == Decimal("1.0000")
 
 
 def test_parser_rejects_fraction_factor() -> None:
@@ -134,7 +168,7 @@ def test_parser_rejects_fraction_factor() -> None:
     )
     parsed = parse_annual_part_price_excel(content)
     assert parsed.rows == []
-    assert any("正整数" in err for err in parsed.errors)
+    assert any("分数" in err for err in parsed.errors)
 
 
 def test_blank_template_roundtrip() -> None:

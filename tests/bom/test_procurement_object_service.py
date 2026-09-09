@@ -112,6 +112,7 @@ def _seed_tree(db: Session) -> None:
             created_by="tester",
             updated_by="tester",
             part_name="加强板",
+            internal_number="ACA674001",
             thickness_mm=Decimal("0.8000"),
             thickness_text="T=0.8",
             excel_filename="t13j.xlsx",
@@ -139,6 +140,7 @@ def test_generate_and_regenerate_keeps_confirm(db: Session) -> None:
         BomProcurementObjectQuery(location="芜湖", vehicle_model="T13J", bom_version="V3", size=50),
     )
     assert total == 1
+    assert items[0].internal_number == "ACA674001"
     confirmed = service.confirm(
         db,
         items[0].id,
@@ -276,17 +278,23 @@ def test_export_workbook_has_styled_sheets_without_cover(db: Session) -> None:
     assert object_sheet["A4"].value == "对着原件"
     assert object_sheet["A5"].value == "Excel行号"
     assert object_sheet["C5"].value == "零件号"
-    assert object_sheet["D5"].value == "零件名称"
-    assert object_sheet["G5"].value == "对象种类"
-    assert object_sheet["I5"].value == "供应商"
-    assert object_sheet["K5"].value == "材料"
-    assert object_sheet["K4"].value == "佐证"
-    assert object_sheet.freeze_panes == "G6"
+    assert object_sheet["D5"].value == "短码"
+    assert object_sheet["E5"].value == "内部号"
+    assert object_sheet["F5"].value == "零件名称"
+    assert object_sheet["I5"].value == "对象种类"
+    assert object_sheet["K5"].value == "供应商"
+    assert object_sheet["M5"].value == "材料"
+    assert object_sheet["M4"].value == "佐证"
+    assert object_sheet.freeze_panes == "I6"
     assert object_sheet["A6"].value == 9
     assert object_sheet["C6"].value == "L1-STAMP"
-    assert object_sheet["S6"].value == "芜湖"
+    assert object_sheet["D6"].value is None
+    assert object_sheet["E6"].value == "ACA674001"
+    assert object_sheet["U6"].value == "芜湖"
     assert object_sheet["C6"].font.color.rgb in {"0037474F", "37474F"}
-    assert object_sheet["S6"].font.color.rgb in {"00455A64", "455A64"}
+    assert object_sheet["D6"].font.color.rgb in {"001F4E79", "1F4E79"}
+    assert object_sheet["E6"].font.color.rgb in {"00808080", "808080"}
+    assert object_sheet["U6"].font.color.rgb in {"00455A64", "455A64"}
     assert object_sheet["A1"].fill.fgColor.rgb in {"001A237E", "1A237E"}
     workbook.close()
 
@@ -306,6 +314,7 @@ def test_export_merges_same_l0_assembly_cells(db: Session) -> None:
             created_by="tester",
             updated_by="tester",
             part_name="加强板2",
+            internal_number="ACA674002",
             thickness_mm=Decimal("0.8000"),
             thickness_text="T=0.8",
             excel_filename="t13j.xlsx",
@@ -322,7 +331,7 @@ def test_export_merges_same_l0_assembly_cells(db: Session) -> None:
     workbook = load_workbook(BytesIO(content))
     object_sheet = workbook["采购对象"]
     merged = {str(item) for item in object_sheet.merged_cells.ranges}
-    assert "E6:E7" in merged
-    assert "F6:F7" in merged
-    assert object_sheet["E6"].value == "L0-A"
+    assert "G6:G7" in merged
+    assert "H6:H7" in merged
+    assert object_sheet["G6"].value == "L0-A"
     workbook.close()

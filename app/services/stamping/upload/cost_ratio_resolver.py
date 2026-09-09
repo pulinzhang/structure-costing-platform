@@ -13,6 +13,7 @@ from app.common.money import Q2, quantize_money
 DEFAULT_COST_RATIO = Decimal("1.00")
 SHARED_DIE_FACTOR = Decimal("0.50")
 PROGRESSIVE_DIE_FACTOR = Decimal("0.80")
+SHARED_DIE_PROGRESSIVE_RATIO = quantize_money(SHARED_DIE_FACTOR * PROGRESSIVE_DIE_FACTOR, Q2)
 
 _SHARED_DIE_KEYWORDS = ("双槽", "合并", "一出二")
 _FULL_SHARED_KEYWORDS = ("双槽", "合并")
@@ -69,6 +70,60 @@ def is_shared_first_process_code(process_code: Any) -> bool:
 def is_mate_process_code(process_code: Any) -> bool:
     """工序代码含合并/双槽/共用（共模右件第一序常见写法）。"""
     return _contains_keyword(process_code, _MATE_PROCESS_CODE_KEYWORDS)
+
+
+def shared_die_labels(
+    *,
+    die_type: Any,
+    process_method: Any,
+    process_codes: list[Any],
+    cost_ratios: list[Any],
+) -> list[str]:
+    """共模中文标签（去重、保序）。关键字仍只来自本模块元组。"""
+    texts = [die_type, process_method, *process_codes]
+    labels: list[str] = []
+    for keyword in (*_SHARED_DIE_KEYWORDS, *_SHARED_FIRST_KEYWORDS):
+        if keyword in labels:
+            continue
+        if any(_contains_keyword(text, (keyword,)) for text in texts):
+            labels.append(keyword)
+    for raw in cost_ratios:
+        if raw is None or raw == "":
+            continue
+        ratio = quantize_money(raw, Q2)
+        if ratio == SHARED_DIE_PROGRESSIVE_RATIO and "级进共模" not in labels:
+            labels.append("级进共模")
+            break
+    return labels
+
+
+def has_shared_die_ratio(cost_ratios: list[Any]) -> bool:
+    """费用比例为共模 0.50 或级进共模 0.40。"""
+    for raw in cost_ratios:
+        if raw is None or raw == "":
+            continue
+        ratio = quantize_money(raw, Q2)
+        if ratio in (SHARED_DIE_FACTOR, SHARED_DIE_PROGRESSIVE_RATIO):
+            return True
+    return False
+
+
+def is_shared_die_row(
+    *,
+    die_type: Any,
+    process_method: Any,
+    process_codes: list[Any],
+    cost_ratios: list[Any],
+) -> bool:
+    """行级是否共模：标签命中，或费用比例为 0.50 / 0.40。"""
+    if shared_die_labels(
+        die_type=die_type,
+        process_method=process_method,
+        process_codes=process_codes,
+        cost_ratios=cost_ratios,
+    ):
+        return True
+    return has_shared_die_ratio(cost_ratios)
 
 
 def is_blanking_first_process_code(process_code: Any) -> bool:

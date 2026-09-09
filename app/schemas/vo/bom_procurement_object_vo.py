@@ -51,6 +51,7 @@ class BomProcurementObjectVO(BaseModel):
     source_node_id: int
     part_number: str
     part_name: str | None = None
+    internal_number: str | None = None
     level: int
     node_role: str
     qty: Decimal | None = None
@@ -166,3 +167,11 @@ class BomProcurementObjectGenerateLogVO(BaseModel):
         return datetime_to_iso(value)
 
     model_config = {"from_attributes": True}
+
+
+class BomProcurementObjectSupplierUploadResultVO(BaseModel):
+    """按范围 Excel 批改供应商结果。"""
+
+    updated_count: int
+    cleared_count: int
+    unchanged_count: int

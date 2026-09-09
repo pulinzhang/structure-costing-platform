@@ -5,7 +5,7 @@
 import {
     procurementObjectGenerateTemplate,
     renderPoGenHistoryPagination,
-} from './template.js?v=4';
+} from './template.js?v=6';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,

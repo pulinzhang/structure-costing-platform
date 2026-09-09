@@ -4,6 +4,7 @@
 > 样本：`excel_sample/T13J/` 下各厂 `T13J项目冲压工艺确认表-….xlsx`。  
 > 利废计价见 [offal-nested-material-design.md](../costing/offal-nested-material-design.md)。  
 > 四异号家模、料片四列全空见 [stamping-family-die-byproduct-design.md](stamping-family-die-byproduct-design.md)（工艺上传与布点分摊已落地；零件价月快照 / 详情 PATCH 见该文）。  
+> 按主机厂数量测算采购钢材吨数（另导出，不替代本表 Excel）见 [stamping-steel-purchase-export-design.md](stamping-steel-purchase-export-design.md)。  
 > 模具布点是另一套表，见 [stamping-die-management-design.md](stamping-die-management-design.md)。  
 > 供应商主数据见 [supplier-design.md](../masterdata/supplier-design.md)（S11 写门禁）。本表 `stamping_parts.stamping_supplier` 是供应商 **直接下一跳**：`ForeignKey(..., ondelete="RESTRICT", onupdate="RESTRICT")`。上传后非空规范全称。供应商改全称 / 删除时若仍有本表行，引擎拒绝（文案不点名本表）。模具布点 **不是** 下一跳。  
 > **模具编号**：本表可空、不得挡导入；无该列表头也可解析。强制编号在布点。  
@@ -116,6 +117,7 @@
 |------|--------|
 | 冲压加工费 | 工序吨位 × 冲次单价 × `cost_ratio` |
 | 冲压零件材料 | 正常件：一事一议 R；利废件：`R = 成品净重 × 废料单价`（从废料捡成品） |
+| 钢材采购测算导出 | 读料片长宽、料厚、可制件数、是否利废、废料副产品；吨公式见专文。不读钢价 |
 | 模具费 | 读布点，不读本表利废 |
 
 缺废料月度价时，利废件与现网缺废料价一样硬停，不退回一事一议。
@@ -136,6 +138,7 @@
 
 | 日期 | 说明 |
 |------|------|
+| 2026-09-08 | 交叉引用钢材采购测算导出（设计中；与本表工艺导出分开） |
 | 2026-09-08 | 工艺上传只选文件；项目解析后由主数据带出基地 |
 | 2026-09-08 | `stamping_parts.stamping_supplier` 定为供应商下一跳（`RESTRICT` / `RESTRICT`） |
 | 2026-09-08 | （已废止）曾必选该月可引入项目，仍不要求布点 |

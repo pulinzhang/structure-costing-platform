@@ -13,7 +13,7 @@ import {
     parseConversionFactorInput,
     updateAnnualHud,
     updateAnnualFilterCapsules,
-} from './template.js?v=10';
+} from './template.js?v=11';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -603,7 +603,7 @@ async function saveRecord() {
         return;
     }
     if (!conversionFactor) {
-        showToast('转换系数须为正整数（默认 1；1 打=12 个则填 12）', 'warning');
+        showToast('转换系数须大于 0（默认 1；1 采购单位=N 核价单位，可小数如 25.4，最多 6 位）', 'warning');
         return;
     }
     if (!recordId || !unit || unitPrice == null) {

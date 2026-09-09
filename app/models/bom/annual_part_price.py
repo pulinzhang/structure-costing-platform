@@ -64,11 +64,11 @@ class BomAnnualPartPrice(AuditUserMixin, Base):
         comment="采购单价(元/采购单位)，Numeric(12,4)",
     )
 
-    conversion_factor: Mapped[int] = mapped_column(
-        Integer,
+    conversion_factor: Mapped[Decimal] = mapped_column(
+        Numeric(16, 6),
         nullable=False,
-        default=1,
-        comment="转换系数，正整数，默认1；1采购单位=N核价单位；核价单价=采购单价/N",
+        default=Decimal("1"),
+        comment="转换系数，>0，最多6位小数，默认1；1采购单位=N核价单位；核价单价=采购单价/N",
     )
 
     unit: Mapped[str] = mapped_column(

@@ -37,6 +37,7 @@
 | `bom_packaging_transport_fee` | `BomPackagingTransportFeeImportService` + `save_packaging_transport_fee_upload` |
 | `bom_welding_unit_price` | `BomWeldingUnitPriceImportService` + `save_welding_unit_price_upload` |
 | `bom_annual_part_price` | `BomAnnualPartPriceImportService` + `save_annual_part_price_upload` |
+| `bom_procurement_object_supplier` | `BomProcurementObjectSupplierUploadService` + `save_procurement_object_supplier_upload` |
 
 **现网全量对照（Excel 相关）：**
 
@@ -52,6 +53,7 @@
 | 包装运输费 | ✅ | ✅ | ✅ |
 | 焊接单价 | ✅ | ✅ | ✅ |
 | 年度零件价 | ✅ | ✅ | ✅ |
+| 采购对象供应商 | ✅ | ✅ | ✅ |
 | 废料销售价 | ❌ | — | ❌ |
 | 冲压加工费 / 焊接工艺拆解 / L0 焊接费等 | ❌ | — | ❌ |
 
@@ -80,6 +82,7 @@
 | 冲次单价 | `uploads/stamping/tonnage-price/{年}/{基地}/` | 无行级 path | 已归档并登记 |
 | 焊接单价 | `uploads/bom/welding-unit-price/{年}/{基地}/` | 无行级 path | 已归档并登记 |
 | 年度零件价 | `uploads/bom/annual-part-price/{年}/{基地}/` | 无行级 path | 已归档并登记 |
+| 采购对象供应商 | `uploads/bom/procurement-object-supplier/{基地}/{项目}/{版本}/` | 无行级 path | 已归档并登记 |
 | 钢价基准价 / 政策 | `uploads/steel-price/{年}/{月}/` | 行级 `excel_filename`，**无 path** | 归档与业务表未关联 |
 | 包装运输费 | `uploads/bom/packaging-transport-fee/…` | 表内有 `excel_filename` | 有归档工具，无统一列表 |
 
@@ -232,6 +235,7 @@ file_trace Service → upload_file Repository（读列表 / 下载）
 | `bom_packaging_transport_fee` | 包装运输费 | `location`, `year`, `vehicle_model` | 包装运输费 import（归档后登记） |
 | `bom_welding_unit_price` | 焊接单价 | `location`, `year` | 焊接单价 import（归档后登记） |
 | `bom_annual_part_price` | 年度零件价 | `location`, `year` | 年度零件价 import（归档后登记） |
+| `bom_procurement_object_supplier` | 采购对象供应商 | `location`, `vehicle_model`, `bom_version` | 采购对象供应商 import（归档后登记） |
 
 字段命名：
 
@@ -300,6 +304,7 @@ file_trace Service → upload_file Repository（读列表 / 下载）
 | `bom_packaging_transport_fee` | `file_category` + `year` + `location` + `vehicle_model` |
 | `bom_welding_unit_price` | `file_category` + `location` + `year` |
 | `bom_annual_part_price` | `file_category` + `location` + `year` |
+| `bom_procurement_object_supplier` | `file_category` + `location` + `vehicle_model` + `bom_version` |
 
 列表默认 `status=active`。
 
@@ -463,6 +468,7 @@ JSON 端点使用 `response_model=ApiResponse[T]`；**下载为 `StreamingRespon
 | `bom_packaging_transport_fee` | `op:bom-packaging-transport-fee-upload:view`, `op:bom-packaging-transport-fee:view` |
 | `bom_welding_unit_price` | `op:bom-welding-unit-price-upload:view`, `op:bom-welding-unit-price:view` |
 | `bom_annual_part_price` | `op:bom-annual-part-price-upload:view`, `op:bom-annual-part-price:view` |
+| `bom_procurement_object_supplier` | `op:bom-procurement-object-supplier-upload:view`, `op:bom-procurement-object-list:view` |
 
 ---
 

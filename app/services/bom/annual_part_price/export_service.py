@@ -134,7 +134,7 @@ class BomAnnualPartPriceExportService:
                 _unit_price_cell(record.purchase_unit_price)
                 if record.purchase_unit_price is not None
                 else "",
-                int(record.conversion_factor),
+                record.conversion_factor,
                 record.unit,
                 _unit_price_cell(record.unit_price),
                 record.supply_type,
@@ -153,7 +153,7 @@ class BomAnnualPartPriceExportService:
                     cell.number_format = "0.0000"
                 elif col == 8:
                     cell.alignment = align_center
-                    cell.number_format = "0"
+                    cell.number_format = "0.######"
                 else:
                     cell.alignment = align_left
 

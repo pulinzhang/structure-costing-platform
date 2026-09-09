@@ -6,7 +6,7 @@ import {
     procurementObjectListTemplate,
     renderPoPagination,
     renderProcurementObjectRows,
-} from './template.js?v=9';
+} from './template.js?v=11';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -30,7 +30,16 @@ const listState = {
     canReverse: true,
     canExport: true,
     submitting: false,
-    suppliers: [],
+};
+
+const supplierPicker = {
+    selectedName: '',
+    selectedLabel: '',
+    highlightIndex: 0,
+    items: [],
+    requestSeq: 0,
+    timer: 0,
+    approved: false,
 };
 
 function init() {
@@ -76,10 +85,19 @@ function bindEvents() {
     document.getElementById('poKindFilter')?.addEventListener('change', () => loadList(1));
     document.getElementById('poConfirmFilter')?.addEventListener('change', () => loadList(1));
     document.getElementById('poAuditFilter')?.addEventListener('change', () => loadList(1));
-    document.getElementById('poSupplierFilter')?.addEventListener('change', () => loadList(1));
     document.getElementById('poHasSupplierFilter')?.addEventListener('change', () => loadList(1));
     document.getElementById('poConfirmStatus')?.addEventListener('change', syncConfirmSupplierEnabled);
+    document.getElementById('poConfirmSupplierSearch')?.addEventListener('input', onSupplierSearchInput);
+    document.getElementById('poConfirmSupplierSearch')?.addEventListener('focus', onSupplierSearchFocus);
+    document.getElementById('poConfirmSupplierSearch')?.addEventListener('keydown', onSupplierSearchKeydown);
+    document.getElementById('poConfirmSupplierMenu')?.addEventListener('mousedown', onSupplierMenuMouseDown);
+    document.addEventListener('click', onSupplierPickerDocumentClick);
     document.getElementById('poPartFilter')?.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter') return;
+        event.preventDefault();
+        loadList(1);
+    });
+    document.getElementById('poSupplierFilter')?.addEventListener('keydown', (event) => {
         if (event.key !== 'Enter') return;
         event.preventDefault();
         loadList(1);
@@ -210,51 +228,164 @@ function fillSelectKeep(id, values) {
     if (selected && (values || []).includes(selected)) el.value = selected;
 }
 
-function fillSupplierFilter(suppliers) {
-    const el = document.getElementById('poSupplierFilter');
-    if (!el) return;
-    const selected = el.value;
-    let html = '<option value="">全部</option>';
-    (suppliers || []).forEach((item) => {
-        const name = item.full_name || '';
-        const abbr = item.abbreviation || '';
-        html += `<option value="${esc(name)}">${esc(abbr)}（${esc(name)}）</option>`;
-    });
-    el.innerHTML = html;
-    if (selected) el.value = selected;
+function supplierChoiceLabel(item) {
+    const name = item.full_name || '';
+    const abbr = item.abbreviation || '';
+    return abbr ? `${abbr}（${name}）` : name;
 }
 
-function fillConfirmSupplierSelect(currentValue, approved) {
-    const el = document.getElementById('poConfirmSupplier');
-    if (!el) return;
-    const enabled = listState.suppliers || [];
-    let html = '<option value="">未指定</option>';
-    const seen = new Set();
-    enabled.forEach((item) => {
-        const name = item.full_name || '';
-        seen.add(name);
-        html += `<option value="${esc(name)}">${esc(item.abbreviation || '')}（${esc(name)}）</option>`;
-    });
-    if (currentValue && !seen.has(currentValue)) {
-        html += `<option value="${esc(currentValue)}">${esc(currentValue)}</option>`;
+function setSupplierPickerValue(fullName, label) {
+    supplierPicker.selectedName = fullName || '';
+    supplierPicker.selectedLabel = label || '';
+    const hidden = document.getElementById('poConfirmSupplier');
+    const search = document.getElementById('poConfirmSupplierSearch');
+    if (hidden) hidden.value = supplierPicker.selectedName;
+    if (search) search.value = supplierPicker.selectedLabel;
+}
+
+function closeSupplierMenu() {
+    document.getElementById('poConfirmSupplierMenu')?.classList.add('hidden');
+}
+
+function renderSupplierMenu() {
+    const menu = document.getElementById('poConfirmSupplierMenu');
+    if (!menu) return;
+    const rows = [{ full_name: '', abbreviation: '', isClear: true }, ...supplierPicker.items];
+    if (supplierPicker.highlightIndex < 0) supplierPicker.highlightIndex = 0;
+    if (supplierPicker.highlightIndex >= rows.length) supplierPicker.highlightIndex = rows.length - 1;
+    menu.innerHTML = rows.map((item, index) => {
+        const active = index === supplierPicker.highlightIndex
+            ? 'bg-[#FF1E27]/15 text-white'
+            : 'text-[#C8C8D0] hover:bg-[#161620]';
+        const text = item.isClear ? '未指定' : supplierChoiceLabel(item);
+        return `<button type="button" data-supplier-index="${index}"
+                class="block w-full text-left px-3 py-1.5 text-[11px] font-mono ${active}">${esc(text)}</button>`;
+    }).join('');
+    menu.classList.remove('hidden');
+}
+
+function pickSupplierByIndex(index) {
+    if (index === 0) {
+        setSupplierPickerValue('', '');
+        closeSupplierMenu();
+        return;
     }
-    el.innerHTML = html;
-    el.value = currentValue || '';
-    el.dataset.approved = approved ? '1' : '0';
-    el.disabled = Boolean(approved);
+    const item = supplierPicker.items[index - 1];
+    if (!item) return;
+    setSupplierPickerValue(item.full_name, supplierChoiceLabel(item));
+    closeSupplierMenu();
+}
+
+async function fetchSupplierChoices(keyword) {
+    const seq = ++supplierPicker.requestSeq;
+    const params = { page: 1, size: 20 };
+    if (keyword) params.q = keyword;
+    const res = await HttpClient.get(`${API_BASE}/supplier-choices`, { params });
+    if (seq !== supplierPicker.requestSeq) return null;
+    const data = res.data || {};
+    return Array.isArray(data.items) ? data.items : [];
+}
+
+async function loadSupplierChoices() {
+    const search = document.getElementById('poConfirmSupplierSearch');
+    if (!search || search.disabled) return;
+    try {
+        const items = await fetchSupplierChoices(search.value.trim());
+        if (items == null) return;
+        supplierPicker.items = items;
+        supplierPicker.highlightIndex = 0;
+        renderSupplierMenu();
+    } catch (error) {
+        console.error('检索供应商失败', error);
+        closeSupplierMenu();
+    }
+}
+
+function onSupplierSearchInput() {
+    if (supplierPicker.timer) window.clearTimeout(supplierPicker.timer);
+    supplierPicker.timer = window.setTimeout(() => {
+        loadSupplierChoices();
+    }, 250);
+}
+
+function onSupplierSearchFocus() {
+    const search = document.getElementById('poConfirmSupplierSearch');
+    if (!search || search.disabled) return;
+    loadSupplierChoices();
+}
+
+function onSupplierSearchKeydown(event) {
+    const menu = document.getElementById('poConfirmSupplierMenu');
+    const menuOpen = menu && !menu.classList.contains('hidden');
+    if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        supplierPicker.highlightIndex += 1;
+        renderSupplierMenu();
+        return;
+    }
+    if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        supplierPicker.highlightIndex -= 1;
+        renderSupplierMenu();
+        return;
+    }
+    if (event.key === 'Enter' && menuOpen) {
+        event.preventDefault();
+        pickSupplierByIndex(supplierPicker.highlightIndex);
+        return;
+    }
+    if (event.key === 'Escape') {
+        closeSupplierMenu();
+        setSupplierPickerValue(supplierPicker.selectedName, supplierPicker.selectedLabel);
+    }
+}
+
+function onSupplierMenuMouseDown(event) {
+    const btn = event.target.closest('[data-supplier-index]');
+    if (!btn) return;
+    event.preventDefault();
+    pickSupplierByIndex(parseInt(btn.dataset.supplierIndex, 10));
+}
+
+function onSupplierPickerDocumentClick(event) {
+    const wrap = document.getElementById('poConfirmSupplierWrap');
+    if (!wrap || wrap.contains(event.target)) return;
+    closeSupplierMenu();
+    const search = document.getElementById('poConfirmSupplierSearch');
+    if (search && !search.disabled) {
+        search.value = supplierPicker.selectedLabel;
+    }
+}
+
+async function initConfirmSupplierPicker(currentValue, approved) {
+    supplierPicker.approved = Boolean(approved);
+    supplierPicker.items = [];
+    closeSupplierMenu();
+    if (!currentValue) {
+        setSupplierPickerValue('', '');
+        return;
+    }
+    setSupplierPickerValue(currentValue, currentValue);
+    try {
+        const items = await fetchSupplierChoices(currentValue);
+        if (!items) return;
+        const hit = items.find((item) => item.full_name === currentValue);
+        if (hit) setSupplierPickerValue(hit.full_name, supplierChoiceLabel(hit));
+    } catch (_) {
+        setSupplierPickerValue(currentValue, currentValue);
+    }
 }
 
 function syncConfirmSupplierEnabled() {
     const status = val('poConfirmStatus');
-    const el = document.getElementById('poConfirmSupplier');
-    if (!el) return;
-    const approved = el.dataset.approved === '1';
+    const search = document.getElementById('poConfirmSupplierSearch');
+    if (!search) return;
+    const locked = supplierPicker.approved || status === 'in_house';
     if (status === 'in_house') {
-        el.value = '';
-        el.disabled = true;
-        return;
+        setSupplierPickerValue('', '');
+        closeSupplierMenu();
     }
-    el.disabled = approved;
+    search.disabled = locked;
 }
 
 async function loadList(page) {
@@ -268,15 +399,13 @@ async function loadList(page) {
         listState.total = data.total || 0;
         listState.totalPages = data.total_pages || 1;
         const summary = (data.filters && data.filters.summary) || {};
-        listState.suppliers = (data.filters && data.filters.suppliers) || [];
-        fillSupplierFilter(listState.suppliers);
         setText('poHudObject', String(summary.object_count ?? 0));
         setText('poHudOther', String(summary.other_leaf_count ?? 0));
         setText('poHudPending', String(summary.pending_count ?? 0));
         setText('poHudApproved', String(summary.approved_count ?? 0));
         setText('poTotalLabel', `共 ${listState.total} 条`);
         const body = document.getElementById('poTableBody');
-        if (body) body.innerHTML = renderProcurementObjectRows(listState.items, listState.suppliers);
+        if (body) body.innerHTML = renderProcurementObjectRows(listState.items);
         const pager = document.getElementById('poPagination');
         if (pager) pager.innerHTML = renderPoPagination(listState.page, listState.totalPages);
         loadSummaryBanner();
@@ -472,15 +601,23 @@ function openConfirmDrawer(id) {
     const row = listState.items.find((item) => item.id === id);
     if (!row) return;
     document.getElementById('poConfirmId').value = String(id);
-    document.getElementById('poConfirmPart').textContent = `${row.part_number} ${row.part_name || ''}`;
+    document.getElementById('poConfirmPart').innerHTML = `
+        <div>${esc(row.part_number)} ${esc(row.part_name || '')}</div>
+        ${row.internal_number
+            ? `<div class="text-[10px] text-[#555555] mt-1" title="内部号（ERP）">${esc(row.internal_number)}</div>`
+            : ''}
+    `;
     document.getElementById('poConfirmStatus').value = row.confirm_status || 'pending';
     document.getElementById('poConfirmRemark').value = row.confirm_remark || '';
-    fillConfirmSupplierSelect(row.supplier_name || '', row.audit_status === 'approved');
+    initConfirmSupplierPicker(row.supplier_name || '', row.audit_status === 'approved').then(() => {
+        syncConfirmSupplierEnabled();
+    });
     syncConfirmSupplierEnabled();
     openDrawer('poConfirmDrawer');
 }
 
 function closeConfirmDrawer() {
+    closeSupplierMenu();
     closeDrawer('poConfirmDrawer');
 }
 
@@ -517,6 +654,7 @@ function openDetailDrawer(id) {
             ['基地·项目·版本', `${row.location || ''} · ${row.vehicle_model || ''} · ${row.bom_version || ''}`],
             ['供货总成', `${row.l0_part_number} ${row.l0_part_name || ''}`],
             ['零件号', row.part_number],
+            ['内部号', row.internal_number || '—'],
             ['零件名称', row.part_name || ''],
             ['对象种类', KIND_LABELS[row.object_kind] || SECTION_LABELS[row.section] || row.object_kind || ''],
             ['Excel', `${row.excel_filename || ''} 行 ${row.excel_row ?? ''}`],

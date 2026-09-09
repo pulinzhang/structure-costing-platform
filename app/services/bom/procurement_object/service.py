@@ -24,6 +24,7 @@ from app.schemas.dto.bom_procurement_object_dto import (
     BomProcurementObjectGenerateLogQuery,
     BomProcurementObjectPrepQuery,
     BomProcurementObjectQuery,
+    BomProcurementObjectSupplierChoiceQuery,
     BomProcurementObjectSupplierDTO,
 )
 from app.schemas.vo.bom_procurement_object_vo import (
@@ -33,6 +34,7 @@ from app.schemas.vo.bom_procurement_object_vo import (
     BomProcurementObjectGenerateResultVO,
     BomProcurementObjectListVO,
     BomProcurementObjectPrepStatsVO,
+    BomProcurementObjectSupplierUploadResultVO,
     BomProcurementObjectVO,
 )
 from app.schemas.vo.supplier_vo import SupplierChoiceVO
@@ -45,19 +47,21 @@ from app.services.bom.procurement_object.generate_service import (
     BomProcurementObjectGenerateService,
 )
 from app.services.bom.procurement_object.mapping import to_object_vo
+from app.services.bom.procurement_object.supplier_upload_service import (
+    BomProcurementObjectSupplierUploadService,
+)
 from app.services.masterdata.location.location_service import LocationService
 from app.services.masterdata.supplier import SupplierService
 from app.services.masterdata.vehicle_model import VehicleModelService
 
 
 class ProcurementObjectListFilters(TypedDict):
-    """列表筛选项（Service 组装；含上游供应商下拉）。"""
+    """列表筛选项（Service 组装）。供应商点选走独立检索，不塞进本结构。"""
 
     locations: list[str]
     vehicle_models: list[str]
     bom_versions: list[str]
     summary: ProcurementObjectAuditSummary
-    suppliers: list[SupplierChoiceVO]
 
 
 class BomProcurementObjectService:
@@ -68,6 +72,7 @@ class BomProcurementObjectService:
         self._generate_service = BomProcurementObjectGenerateService()
         self._generate_log_service = BomProcurementObjectGenerateLogService()
         self._audit_service = BomProcurementObjectAuditService()
+        self._supplier_upload_service = BomProcurementObjectSupplierUploadService()
 
     def prep_stats(
         self, db: Session, query: BomProcurementObjectPrepQuery
@@ -192,8 +197,55 @@ class BomProcurementObjectService:
             "vehicle_models": VehicleModelService().list_filter_codes(db, query.location),
             "bom_versions": versions,
             "summary": summary,
-            "suppliers": SupplierService().list_enabled_choices(db),
         }
+
+    def search_supplier_choices(
+        self,
+        db: Session,
+        query: BomProcurementObjectSupplierChoiceQuery,
+    ) -> tuple[list[SupplierChoiceVO], int]:
+        return SupplierService().search_enabled_choices(
+            db,
+            keyword=query.q,
+            page=query.page,
+            size=query.size,
+        )
+
+    def build_supplier_template(
+        self,
+        db: Session,
+        *,
+        location: str,
+        vehicle_model: str,
+        bom_version: str,
+    ) -> tuple[bytes, str]:
+        return self._supplier_upload_service.build_template(
+            db,
+            location=location,
+            vehicle_model=vehicle_model,
+            bom_version=bom_version,
+        )
+
+    def upload_suppliers(
+        self,
+        db: Session,
+        *,
+        location: str,
+        vehicle_model: str,
+        bom_version: str,
+        filename: str,
+        file_content: bytes,
+        current_user: UserVO,
+    ) -> BomProcurementObjectSupplierUploadResultVO:
+        return self._supplier_upload_service.process_upload(
+            db,
+            location=location,
+            vehicle_model=vehicle_model,
+            bom_version=bom_version,
+            filename=filename,
+            file_content=file_content,
+            current_user=current_user,
+        )
 
     def get_by_id(self, db: Session, object_id: int) -> BomProcurementObjectVO:
         row = self.repository.get_object_by_id(db, object_id)

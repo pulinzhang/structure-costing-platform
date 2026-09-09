@@ -117,7 +117,7 @@ export function procurementObjectListTemplate() {
                             ${filterSelect('poKindFilter', '对象种类')}
                             ${filterSelect('poConfirmFilter', '确认')}
                             ${filterSelect('poAuditFilter', '审核')}
-                            ${filterSelect('poSupplierFilter', '供应商')}
+                            ${filterInput('poSupplierFilter', '供应商', '缩写/全称/ERP')}
                             ${filterSelect('poHasSupplierFilter', '对方')}
                             ${filterInput('poPartFilter', '零件号', '零件号或总成')}
                             <button id="poResetBtn" type="button"
@@ -261,11 +261,16 @@ function confirmDrawerHtml() {
                     </select>
                 </label>
                 <label class="space-y-1 block" id="poConfirmSupplierWrap">
-                    <span class="text-[10px] text-[#777777]">合同对方</span>
-                    <select id="poConfirmSupplier" class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-white focus:outline-none focus:border-[#FF1E27]">
-                        <option value="">未指定</option>
-                    </select>
-                    <p class="text-[10px] text-[#555555]">找不到请到供应商一览补档（#/supplier-list）。自制会清空对方。</p>
+                    <span class="text-[10px] text-[#777777]">供应商</span>
+                    <input type="hidden" id="poConfirmSupplier" value="">
+                    <div class="relative">
+                        <input id="poConfirmSupplierSearch" type="text" autocomplete="off"
+                               placeholder="输入缩写、全称或 ERP 匹配"
+                               class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-white placeholder:text-[#616161] focus:outline-none focus:border-[#FF1E27] disabled:text-[#616161]">
+                        <div id="poConfirmSupplierMenu"
+                             class="hidden absolute left-0 right-0 top-full mt-1 max-h-48 overflow-y-auto bg-[#121212] border border-[#2c2c2c] z-[90]"></div>
+                    </div>
+                    <p class="text-[10px] text-[#555555]">点选匹配结果，不必一次拉全量。找不到请到供应商一览补档（#/supplier-list），或用内部号到 ERP 联查。自制会清空供应商。</p>
                 </label>
                 <label class="space-y-1 block">
                     <span class="text-[10px] text-[#777777]">确认备注</span>
@@ -293,17 +298,13 @@ function detailDrawerHtml() {
     `;
 }
 
-export function renderProcurementObjectRows(records, suppliers) {
+export function renderProcurementObjectRows(records) {
     if (!records || records.length === 0) {
         return `<tr><td colspan="11" class="py-10 text-center text-[#8E8E93] text-[12px]">暂无数据</td></tr>`;
     }
     const kindLabel = KIND_LABELS;
     const sectionLabel = SECTION_LABELS;
     const confirmLabel = CONFIRM_LABELS;
-    const abbrByName = {};
-    (suppliers || []).forEach((item) => {
-        if (item && item.full_name) abbrByName[item.full_name] = item.abbreviation || '';
-    });
     return records.map((row) => {
         const confirmBtn = row.section === 'object'
             ? `<button type="button" data-action="confirm" data-id="${esc(row.id)}"
@@ -326,6 +327,9 @@ export function renderProcurementObjectRows(records, suppliers) {
             <td class="px-2 py-2 overflow-hidden">
                 <div class="font-semibold text-[#F0F0F2] truncate">${esc(row.part_number)}</div>
                 <div class="text-[9px] text-[#555555] truncate">${esc(row.part_name || '')}</div>
+                ${row.internal_number
+                    ? `<div class="text-[9px] text-[#3A3A42] truncate" title="内部号（ERP）">${esc(row.internal_number)}</div>`
+                    : ''}
             </td>
             <td class="px-2 py-2 text-[10px] text-[#8E8E93]">${esc(kindLabel[row.object_kind] || sectionLabel[row.section] || row.section)}</td>
             <td class="px-2 py-2 overflow-hidden text-[10px] text-[#8E8E93]">
@@ -336,7 +340,7 @@ export function renderProcurementObjectRows(records, suppliers) {
             <td class="px-2 py-2 overflow-hidden text-[10px] text-[#8E8E93]">
                 ${row.section === 'object'
                     ? (row.supplier_name
-                        ? `<div class="truncate text-[#C8C8D0]" title="${esc(row.supplier_name)}">${esc(abbrByName[row.supplier_name] ? `${abbrByName[row.supplier_name]}（${row.supplier_name}）` : row.supplier_name)}</div>`
+                        ? `<div class="truncate text-[#C8C8D0]" title="${esc(row.supplier_name)}">${esc(row.supplier_name)}</div>`
                         : `<span class="text-[#555555]">未指定</span>`)
                     : `<span class="text-[#3A3A42]">—</span>`}
             </td>

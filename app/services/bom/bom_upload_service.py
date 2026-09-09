@@ -20,6 +20,7 @@ from app.schemas.vo.bom_vo import BomImportResultVO, BomSnapshotVO
 from app.schemas.vo.user_vo import UserVO
 from app.services.bom.bom_service import BomService
 from app.services.bom.bom_template_builder import build_bom_material_template
+from app.services.bom.internal_number_uniqueness import validate_internal_number_uniqueness
 from app.services.bom.subassembly_consistency import validate_subassembly_consistency
 from app.services.file_trace.register import register_existing
 from app.services.masterdata.vehicle_model import VehicleModelService
@@ -74,6 +75,7 @@ class BomUploadService:
         meta = parse_result.meta
         if not parse_result.nodes:
             raise BusinessException("未解析到 BOM 节点，请检查 Excel 格式")
+        validate_internal_number_uniqueness(parse_result.nodes)
         validate_subassembly_consistency(parse_result.nodes)
 
         scope = validate_bom_material_upload_scope(

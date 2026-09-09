@@ -3,7 +3,7 @@
  * 下载模板：基地 + 项目 + 年度；导入：基地 + 年度
  */
 
-import { annualPartPriceUploadTemplate } from './template.js?v=12';
+import { annualPartPriceUploadTemplate } from './template.js?v=13';
 
 
 const API_BASE = '/api/bom/annual-part-price';

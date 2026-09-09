@@ -147,7 +147,8 @@ suppliers.full_name
 | 文件 / 位置 | 动作 |
 |-------------|------|
 | `app/services/bom/…` 采购对象写路径 | 非空 → `require_enabled`，落规范全称。**`''` / 只空白 → `NULL`**，不跑门禁。再生成带回：父行还在则原样写入（可已禁用）；父行已不在 → 该行落 `NULL`，不要整次生成因 FK 失败 |
-| 采购对象列表前端 | 操作列点选下拉 `list_enabled`（展示「缩写（全称）」，`value = 全称`）；已审禁用；核对区无此控件；Toast 深链 `#/supplier-list` |
+| 采购对象列表前端 | 确认抽屉远程检索已启用供应商（禁止一次拉全量）；已审禁用；核对区无此控件；Toast 深链 `#/supplier-list` |
+| 采购对象 Excel 批改 | 独立上传页，见 [bom-procurement-object-supplier-upload-design.md](../bom/bom-procurement-object-supplier-upload-design.md)。非空同一套 `require_enabled`；禁止当建档入口 |
 | 列表 / 导出筛 | 可选 `supplier_name` / `has_supplier`；查询可用 `expand_for_query` |
 | [bom-procurement-object-supplier-design.md](../bom/bom-procurement-object-supplier-design.md) | 实施对照；状态改为落地后改「已落地」 |
 

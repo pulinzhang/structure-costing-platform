@@ -203,6 +203,7 @@ export function bomUploadTemplate() {
                             <ul class="list-disc list-inside text-xs text-[#616161] space-y-1.5">
                                 <li>唯一键：基地 + 项目 + 版本</li>
                                 <li>同键再次导入将替换整棵树</li>
+                                <li>有内部号的物料必须一物一码（同一零件号对应唯一内部号，反之亦然）</li>
                                 <li>同一分总成挂在不同总成下时，焊信与二级子件单车用量必须相同</li>
                                 <li>源 Excel 与简图落盘保留</li>
                             </ul>

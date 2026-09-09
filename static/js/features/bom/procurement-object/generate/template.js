@@ -69,6 +69,10 @@ export function procurementObjectGenerateTemplate() {
                 </div>
             </div>
 
+            <p class="text-[9px] text-[#484848] leading-relaxed px-1 -mt-1">
+                供货总成无子件，或全部一级件都没有内部号，按退化供货件列入。一级件有内部号才进采购对象。
+            </p>
+
             <div id="poGenProgressPanel" class="hidden border border-[#2c2c2c] bg-[#1a1a1a] px-4 py-3">
                 <div class="flex items-center justify-between gap-3 mb-2.5">
                     <div class="flex items-center gap-2 min-w-0">

@@ -61,29 +61,58 @@ def list_parts(
     )
 
 
+def _xlsx_response(content: bytes, filename: str) -> StreamingResponse:
+    return StreamingResponse(
+        iter([content]),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{quote(filename)}"},
+    )
+
+
 @router.get("/parts/export-download")
 def export_download(
     location: str = Query(..., min_length=1, description="采购基地"),
     stamping_supplier: str | None = Query(None, description="冲压工厂"),
     vehicle_model: str | None = Query(None, description="项目"),
     version: str | None = Query(None, description="版本"),
+    part_number: str | None = Query(None, description="零件号"),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_PARTS_EXPORT)),
 ) -> StreamingResponse:
-    """按基地导出工艺确认表；冲压工厂、项目、版本可选。"""
+    """按基地导出工艺确认表；冲压工厂、项目、版本、零件号可选。"""
     content, filename = _export_service.export(
         db,
         location=location,
         stamping_supplier=stamping_supplier,
         vehicle_model=vehicle_model,
         version=version,
+        part_number=part_number,
         current_user=current_user,
     )
-    return StreamingResponse(
-        iter([content]),
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{quote(filename)}"},
+    return _xlsx_response(content, filename)
+
+
+@router.get("/parts/steel-purchase-export-download")
+def steel_purchase_export_download(
+    location: str = Query(..., min_length=1, description="采购基地"),
+    stamping_supplier: str | None = Query(None, description="冲压工厂"),
+    vehicle_model: str | None = Query(None, description="项目"),
+    version: str | None = Query(None, description="版本"),
+    part_number: str | None = Query(None, description="零件号"),
+    db: Session = Depends(get_db),
+    current_user: UserVO = Depends(require_perm(Perm.STAMPING_PARTS_EXPORT)),
+) -> StreamingResponse:
+    """按基地导出钢材采购测算；冲压工厂、项目、版本、零件号可选。"""
+    content, filename = _export_service.export_steel_purchase(
+        db,
+        location=location,
+        stamping_supplier=stamping_supplier,
+        vehicle_model=vehicle_model,
+        version=version,
+        part_number=part_number,
+        current_user=current_user,
     )
+    return _xlsx_response(content, filename)
 
 
 @router.post(

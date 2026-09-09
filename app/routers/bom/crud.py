@@ -33,7 +33,7 @@ _bom_read = require_any_perm(
     Perm.BOM_UPLOAD_VIEW,
     Perm.BOM_MATERIAL_VIEW,
 )
-# 级联下拉：结构/上传/材料清单列表/焊接拆解/包装运输费上传均可读取
+# 级联下拉：结构/上传/材料清单列表/焊接拆解/包装运输费/采购对象/年度零件价均可读取
 _bom_cascade_read = require_any_perm(
     Perm.BOM_STRUCTURE_VIEW,
     Perm.BOM_UPLOAD_VIEW,
@@ -44,6 +44,7 @@ _bom_cascade_read = require_any_perm(
     Perm.BOM_PACKAGING_TRANSPORT_FEE_VIEW,
     Perm.BOM_PROCUREMENT_OBJECT_GENERATE,
     Perm.BOM_PROCUREMENT_OBJECT_LIST_VIEW,
+    Perm.BOM_PROCUREMENT_OBJECT_SUPPLIER_UPLOAD_VIEW,
     Perm.BOM_ANNUAL_PART_PRICE_UPLOAD_VIEW,
     Perm.BOM_ANNUAL_PART_PRICE_VIEW,
 )

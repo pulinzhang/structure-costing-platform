@@ -38,10 +38,9 @@ class BomAnnualPartPriceCreate(BaseModel):
     specification: str | None = Field(None, max_length=100, description="规格（展示，不取价）")
     purchase_unit: str | None = Field(None, max_length=20, description="采购单位")
     purchase_unit_price: Decimal | None = Field(None, ge=0, description="采购单价")
-    conversion_factor: int = Field(
-        1,
-        ge=1,
-        description="转换系数，正整数，默认 1；核价单价=采购单价÷系数",
+    conversion_factor: Decimal = Field(
+        default=Decimal("1"),
+        description="转换系数，>0，最多6位小数；1采购单位=N核价单位；核价单价=采购单价÷系数",
     )
     unit: str = Field("pcs", min_length=1, max_length=20, description="核价单位")
     unit_price: Decimal = Field(
@@ -65,7 +64,7 @@ class BomAnnualPartPriceCreate(BaseModel):
 
     @field_validator("conversion_factor", mode="before")
     @classmethod
-    def _coerce_conversion_factor(cls, value: Any) -> int:
+    def _coerce_conversion_factor(cls, value: Any) -> Decimal:
         return parse_conversion_factor(value)
 
     @field_validator("unit_price", mode="before")
@@ -81,7 +80,10 @@ class BomAnnualPartPriceUpdate(BaseModel):
     specification: str | None = Field(None, max_length=100, description="规格（展示，不取价）")
     purchase_unit: str | None = Field(None, max_length=20, description="采购单位")
     purchase_unit_price: Decimal | None = Field(None, ge=0, description="采购单价")
-    conversion_factor: int | None = Field(None, ge=1, description="转换系数，正整数")
+    conversion_factor: Decimal | None = Field(
+        None,
+        description="转换系数，>0，最多6位小数",
+    )
     unit: str | None = Field(None, min_length=1, max_length=20, description="核价单位")
     unit_price: Decimal = Field(
         ...,
@@ -106,7 +108,7 @@ class BomAnnualPartPriceUpdate(BaseModel):
 
     @field_validator("conversion_factor", mode="before")
     @classmethod
-    def _coerce_conversion_factor(cls, value: Any) -> int | None:
+    def _coerce_conversion_factor(cls, value: Any) -> Decimal | None:
         if value is None or (isinstance(value, str) and not str(value).strip()):
             return None
         return parse_conversion_factor(value)
