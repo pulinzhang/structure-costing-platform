@@ -1,127 +1,117 @@
 /**
- * 采购价格 — 价目表预览（Brabus Carbon HUD）
+ * 采购价格 — BRABUS 800 中控交车（协议黑匣）
  */
 
 import { pageSizeSelectHtml } from '../../../page-size.js?v=2';
 
+const CARBON_MONOLITH_STYLE =
+    'background-color:#060608;'
+    + 'background-image:repeating-linear-gradient(45deg,rgba(255,255,255,0.025) 0px,rgba(255,255,255,0.025) 1px,transparent 1px,transparent 4px),'
+    + 'repeating-linear-gradient(135deg,rgba(255,255,255,0.02) 0px,rgba(255,255,255,0.02) 1px,transparent 1px,transparent 4px);'
+    + 'box-shadow:0 10px 40px rgba(255,30,39,0.08), inset 0 1px 0 rgba(255,255,255,0.02);';
+
+const RING_SELECT_IDS = [
+    'pcrLocationFilter',
+    'pcrVehicleModelFilter',
+    'pcrBomVersionFilter',
+    'pcrStartYearFilter',
+    'pcrStartMonthFilter',
+    'pcrEndYearFilter',
+    'pcrEndMonthFilter',
+    'pcrSupplierFilter',
+];
+
+const DRIVE_ACTIVE =
+    'h-7 px-3 text-[11px] rounded-sm bg-[#1C0A0C] border border-[#FF1E27]/40 text-[#FF1E27] font-semibold transition-colors';
+const DRIVE_IDLE =
+    'h-7 px-3 text-[11px] rounded-sm bg-transparent border border-transparent text-[#6E6E73] hover:text-[#D0D0D5] transition-colors';
+
+const RING_CHEVRON = `<svg class="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 text-[#555555]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>`;
+
 export function procurementContractReportTemplate() {
     return `
         <div class="space-y-2 w-full max-w-full">
-            <div class="bg-[#0A0A0C] border border-[#1A1A22] overflow-hidden w-full max-w-full"
-                 style="box-shadow: 0 4px 24px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.02);">
+            <div class="border border-[#FF1E27]/40 overflow-hidden w-full max-w-full"
+                 style="${CARBON_MONOLITH_STYLE}">
 
-                <div class="px-5 pt-4 pb-3.5 border-b border-[#14141A]"
-                     style="background: linear-gradient(135deg, #0E0E12 0%, #121218 45%, #0C0C10 100%);">
-                    <div class="flex items-start justify-between gap-4 mb-3">
-                        <div class="grid grid-cols-2 lg:grid-cols-3 gap-3 font-mono flex-1 min-w-0">
-                            <div class="bg-gradient-to-b from-[#18080A] to-[#0D0708] border border-[#FF1E27]/50 p-3.5 relative overflow-hidden"
-                                 style="box-shadow: 0 0 30px rgba(255,30,39,0.15), inset 0 1px 0 rgba(255,30,39,0.12);">
-                                <div class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#FF1E27] to-transparent"
-                                     style="box-shadow: 0 0 10px #FF1E27;"></div>
-                                <div class="flex justify-between items-start">
-                                    <span class="text-[#FF1E27] text-[10px] font-bold tracking-widest">单车合计</span>
-                                    <span class="w-2 h-2 rounded-full bg-[#FF1E27] animate-pulse"
-                                          style="box-shadow: 0 0 8px #FF1E27;"></span>
-                                </div>
-                                <div class="text-[26px] font-black text-[#FF1E27] font-mono mt-1 tracking-tight tabular-nums"
-                                     style="text-shadow: 0 0 12px rgba(255,30,39,0.7);">
-                                    <span id="pcrHudVehicleTotal">—</span>
-                                    <span class="text-[12px] text-[#FF1E27]/70 ml-1">元</span>
-                                </div>
-                                <div id="pcrHudVehicleTotalHint" class="text-[9px] font-mono text-[#FF1E27]/60 mt-1">窗口内各月 · 数量×结算价</div>
+                <div class="px-5 pt-4 pb-3">
+                    <div class="flex items-end gap-2 flex-wrap">
+                        ${ringSelect('pcrLocationFilter', '基地')}
+                        ${ringSelect('pcrVehicleModelFilter', '项目')}
+                        ${ringSelect('pcrBomVersionFilter', '版本')}
+                        ${ringSelect('pcrStartYearFilter', '开始年', 'w-24')}
+                        ${ringSelect('pcrStartMonthFilter', '开始月', 'w-24')}
+                        ${ringSelect('pcrEndYearFilter', '结束年', 'w-24')}
+                        ${ringSelect('pcrEndMonthFilter', '结束月', 'w-24')}
+                        <span id="pcrSupplierFilterWrap">${ringSelect('pcrSupplierFilter', '供应商', 'w-52')}</span>
+                        <button id="pcrResetBtn" type="button"
+                                class="inline-flex items-center gap-1.5 h-8 px-3 text-[11px] font-medium rounded-md bg-transparent text-[#6E6E73] border border-[#2A2A35] hover:text-[#D0D0D5] hover:border-[#3A3A44] transition-colors">
+                            ${window.svgIcon('refresh', 'w-3 h-3')}
+                            重置
+                        </button>
+                    </div>
+                    <p id="pcrIdentityHint" class="mt-2 text-[9px] text-[#555555]">打开即加载最近一次核价的基地 / 项目 / 版本 / 月份。采购对象导出须选定供应商。</p>
+                </div>
+
+                <div class="px-5 pb-3.5 flex items-start justify-between gap-4">
+                    <div class="grid grid-cols-2 lg:grid-cols-3 gap-3 font-mono flex-1 min-w-0">
+                        <div class="bg-[#0A0A0C]/80 border border-[#FF1E27]/30 p-3 relative overflow-hidden">
+                            <div class="absolute top-0 left-0 right-0 h-px bg-[#FF1E27]"></div>
+                            <span class="text-[#FF1E27] text-[10px] font-bold tracking-widest">单车合计</span>
+                            <div class="mt-1 tracking-tight tabular-nums font-black font-mono">
+                                <span id="pcrHudVehicleTotal" class="text-[28px] text-[#FF1E27]"
+                                      style="text-shadow: 0 0 16px rgba(255,30,39,0.5);">—</span>
+                                <span class="text-[12px] text-[#FF1E27]/60 ml-1">元</span>
                             </div>
-                            <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3"
-                                 style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);">
-                                <div class="text-[#555555] text-[10px] tracking-wider">零件</div>
-                                <div class="text-[18px] font-bold text-[#FFFFFF] mt-1 tabular-nums">
-                                    <span id="pcrHudPrice">—</span>
-                                    <span class="text-[10px] text-[#555555] ml-1">种</span>
-                                </div>
-                                <div class="text-[9px] font-mono text-[#555555] mt-1">
-                                    未出结算价 <span id="pcrHudMissing">—</span>
-                                </div>
+                            <div id="pcrHudVehicleTotalHint" class="text-[9px] font-mono text-[#8E8E93] mt-1">窗口内各月 · 数量×结算价</div>
+                        </div>
+                        <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3">
+                            <div class="text-[#8E8E93] text-[10px] tracking-wider">零件</div>
+                            <div class="text-[18px] font-bold text-[#FFFFFF] mt-1 tabular-nums">
+                                <span id="pcrHudPrice">—</span>
+                                <span class="text-[10px] text-[#555555] ml-1">种</span>
                             </div>
-                            <div id="pcrHudSupplierCard" class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3"
-                                 style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);">
-                                <div class="text-[#555555] text-[10px] tracking-wider">已指定供应商</div>
-                                <div class="text-[18px] font-bold text-[#FFFFFF] mt-1 tabular-nums">
-                                    <span id="pcrHudSuppliers">—</span>
-                                    <span class="text-[10px] text-[#555555] ml-1">家</span>
-                                </div>
+                            <div class="text-[9px] font-mono text-[#8E8E93] mt-1">
+                                未出结算价 <span id="pcrHudMissing">—</span>
                             </div>
                         </div>
-                        <div class="flex flex-col items-end gap-2 shrink-0">
-                            <div class="flex items-center gap-1.5" role="group" aria-label="价目视图">
-                                <button id="pcrViewProcurementBtn" type="button"
-                                        class="px-3 py-1.5 text-[11px] font-medium rounded-md bg-[#1A080A] border border-[#FF1E27]/50 text-[#FF1E27] transition-all">
-                                    采购对象
-                                </button>
-                                <button id="pcrViewAssemblyBtn" type="button"
-                                        class="px-3 py-1.5 text-[11px] font-medium rounded-md bg-transparent border border-[#2A2A35] text-[#6E6E73] hover:text-white transition-all">
-                                    总成
-                                </button>
+                        <div id="pcrHudSupplierCard" class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3">
+                            <div class="text-[#8E8E93] text-[10px] tracking-wider">已指定供应商</div>
+                            <div class="text-[18px] font-bold text-[#FFFFFF] mt-1 tabular-nums">
+                                <span id="pcrHudSuppliers">—</span>
+                                <span class="text-[10px] text-[#555555] ml-1">家</span>
                             </div>
-                            <button id="pcrExportBtn" type="button"
-                                    class="inline-flex items-center gap-1.5 bg-transparent text-[#6E6E73] border border-[#2A2A35] px-3 py-1.5 text-[11px] font-medium rounded-md hover:border-[#FF1E27]/50 hover:text-[#FF1E27] hover:bg-[#FF1E27]/10 hover:shadow-[0_0_12px_rgba(255,30,39,0.2)] transition-all duration-200"
-                                    title="导出《批量零部件价格协议》（不分页、无水印）">
-                                ${window.svgIcon('download', 'w-3 h-3')}
-                                导出协议
+                        </div>
+                    </div>
+                    <div class="flex items-end gap-3 shrink-0 pt-1">
+                        <div class="flex items-center bg-[#08080C] border border-[#1A1A24] p-0.5" role="group" aria-label="价目视图">
+                            <button id="pcrViewProcurementBtn" type="button" class="${DRIVE_ACTIVE}">
+                                采购对象
+                            </button>
+                            <button id="pcrViewAssemblyBtn" type="button" class="${DRIVE_IDLE}">
+                                总成
                             </button>
                         </div>
+                        <button id="pcrExportBtn" type="button"
+                                class="inline-flex items-center gap-1.5 px-4 py-2.5 text-[12px] font-semibold tracking-wide text-[#FF1E27] border border-[#FF1E27]/70 rounded-md bg-gradient-to-b from-[#1A1A22] to-[#0A0A0C] hover:border-[#FF1E27] hover:shadow-[0_0_18px_rgba(255,30,39,0.25)] active:translate-y-px transition-all duration-200"
+                                title="导出《批量零部件价格协议》（不分页、无水印）">
+                            ${window.svgIcon('download', 'w-3 h-3')}
+                            导出协议
+                        </button>
                     </div>
                 </div>
 
-                <div class="px-5 py-3 border-b border-[#14141A]"
-                     style="background: linear-gradient(180deg, #0C0C10 0%, #0A0A0E 100%);">
-                    <div class="flex items-center justify-between gap-4 bg-[#0C0C10] border border-[#1E1E26] px-4 py-2.5 rounded-md font-mono text-[11px]"
-                         style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.02), 0 0 20px rgba(0,0,0,0.3);">
-                        <div class="flex items-center gap-3 min-w-0 flex-1">
-                            <span class="text-[#555555] shrink-0 tracking-wider">当前筛选：</span>
-                            <div class="flex items-center gap-2 flex-wrap">
-                                <span id="pcrCapsulePeriod" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">窗口未定</span>
-                                <span id="pcrCapsuleLocation" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部基地</span>
-                                <span id="pcrCapsuleVehicle" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部项目</span>
-                                <input id="pcrPartFilter" type="text" maxlength="100" placeholder="零件号/名称"
-                                       title="模糊匹配零件号或名称"
-                                       class="h-7 w-36 px-2 text-[11px] bg-[#0A0A0E] border border-[#2A2A35] text-white placeholder:text-[#555555] rounded-md focus:outline-none focus:border-[#FF1E27]">
-                                <span id="pcrCapsuleSupplier" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部供应商</span>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-3 shrink-0">
-                            <button type="button" id="pcrToggleAdvancedFilter"
-                                    class="text-[#6E6E73] hover:text-white transition-colors flex items-center gap-1.5 text-[11px]">
-                                <span id="pcrAdvancedFilterLabel">展开高级筛选</span>
-                                <span id="pcrAdvancedFilterCount" class="text-[#555555]">(0)</span>
-                            </button>
-                            <button type="button" id="pcrSearchBtn"
-                                    class="inline-flex items-center gap-1.5 h-7 px-3 text-[11px] font-semibold rounded-sm text-[#c8c8c8] border border-[#8a2020] transition-all duration-200 hover:text-white"
-                                    style="background: linear-gradient(180deg, #3d1515 0%, #2d0f0f 100%); border-color: #6b1a1a; box-shadow: 0 1px 3px rgba(0,0,0,0.4), inset 0 1px 0 rgba(211,47,47,0.1);">
-                                ${window.svgIcon('search', 'w-3 h-3')}
-                                查询
-                            </button>
-                        </div>
-                    </div>
-
-                    <div id="pcrAdvancedFilterPanel" class="hidden mt-3 pt-3 border-t border-[#1A1A22]">
-                        <div class="flex items-end gap-3 flex-wrap">
-                            ${filterSelect('pcrLocationFilter', '基地')}
-                            ${filterSelect('pcrVehicleModelFilter', '项目')}
-                            ${filterSelect('pcrBomVersionFilter', '版本')}
-                            ${filterSelect('pcrStartYearFilter', '开始年')}
-                            ${filterSelect('pcrStartMonthFilter', '开始月')}
-                            ${filterSelect('pcrEndYearFilter', '结束年')}
-                            ${filterSelect('pcrEndMonthFilter', '结束月')}
-                            <span id="pcrSupplierFilterWrap">${filterSelect('pcrSupplierFilter', '供应商')}</span>
-                            <button id="pcrResetBtn" type="button"
-                                    class="inline-flex items-center gap-1.5 h-8 px-3 text-[11px] font-medium rounded-md bg-transparent text-[#6E6E73] border border-[#2A2A35] hover:bg-[#FF1E27]/10 hover:border-[#FF1E27]/50 hover:text-[#FF1E27] transition-all duration-200">
-                                ${window.svgIcon('refresh', 'w-3 h-3')}
-                                重置
-                            </button>
-                        </div>
-                        <p id="pcrAdvancedHint" class="mt-2 text-[10px] text-[#555555]">打开即加载**最近一次核价**的基地 / 项目 / 版本 / 月份。采购对象导出须选定供应商。</p>
+                <div class="px-5 pb-3 border-t border-[#141418]">
+                    <div class="pt-2.5 flex items-center gap-2">
+                        <span class="text-[9px] text-[#555555] tracking-wider shrink-0">零件号</span>
+                        <input id="pcrPartFilter" type="text" maxlength="100" placeholder="零件号/名称"
+                               title="模糊匹配零件号或名称"
+                               class="h-7 w-48 px-2 text-[11px] bg-[#08080C] border border-[#1A1A24] text-[#C8C8D0] placeholder:text-[#555555] rounded-md focus:outline-none focus:border-[#2A2A35]">
                     </div>
                 </div>
+            </div>
 
+            <div class="bg-[#0A0A0C] border border-[#1A1A22] overflow-hidden w-full max-w-full">
                 <div id="pcrQaBanner" class="hidden px-5 py-2 border-b border-[#FF1E27]/30 bg-[#1A080A] text-[11px] text-[#FF1E27] font-mono"></div>
 
                 <div class="relative">
@@ -132,7 +122,7 @@ export function procurementContractReportTemplate() {
                         <table id="pcrTable" class="w-full table-fixed text-left border-collapse bg-transparent"
                                style="min-width: 1100px;">
                             <colgroup id="pcrColgroup"></colgroup>
-                            <thead id="pcrTableHead" class="text-[9px] text-[#555555] uppercase tracking-wider"></thead>
+                            <thead id="pcrTableHead" class="text-[9px] text-[#8E8E93] uppercase tracking-wider"></thead>
                             <tbody id="pcrTableBody"></tbody>
                         </table>
                     </div>
@@ -153,28 +143,46 @@ export function procurementContractReportTemplate() {
     `;
 }
 
-function filterSelect(id, label, widthClass = 'w-32') {
+function ringSelect(id, label, widthClass = 'w-32') {
     const extraStyle = id === 'pcrSupplierFilter' ? 'min-width:13rem;' : '';
-    return `<label class="space-y-1">
+    return `<label class="space-y-1 min-w-0">
         <span class="block text-[9px] font-semibold text-[#555555] uppercase tracking-[0.14em]">${label}</span>
-        <select id="${id}" style="${extraStyle}" class="${widthClass} h-8 pl-2.5 pr-7 text-[11px] bg-[#0A0A0E] border border-[#2A2A35] text-[#A1A1A6] appearance-none cursor-pointer focus:outline-none focus:border-[#FF1E27] rounded-md transition-colors">
-            <option value="">请选择</option>
-        </select>
+        <span class="relative block" data-pcr-ring="${id}">
+            <span data-pcr-ring-dot class="hidden absolute left-1.5 top-1/2 -translate-y-1/2 w-[2px] h-[2px] rounded-full bg-[#FF1E27]"></span>
+            <select id="${id}" style="${extraStyle}" class="${widthClass} h-8 pl-4 pr-7 text-[11px] bg-[#0A0A0C] border border-[#2A2A35] text-[#8E8E93] appearance-none cursor-pointer focus:outline-none focus:border-[#FF1E27]/40 rounded-md transition-colors">
+                <option value="">请选择</option>
+            </select>
+            ${RING_CHEVRON}
+        </span>
     </label>`;
+}
+
+export function updateRingIndicators() {
+    RING_SELECT_IDS.forEach((id) => {
+        const select = document.getElementById(id);
+        const wrap = document.querySelector(`[data-pcr-ring="${id}"]`);
+        if (!select || !wrap) return;
+        const isSet = Boolean((select.value || '').trim());
+        const dot = wrap.querySelector('[data-pcr-ring-dot]');
+        dot?.classList.toggle('hidden', !isSet);
+        select.classList.remove('text-white', 'text-[#8E8E93]', 'border-[#FF1E27]/40', 'border-[#2A2A35]');
+        if (isSet) {
+            select.classList.add('text-white', 'border-[#FF1E27]/40');
+        } else {
+            select.classList.add('text-[#8E8E93]', 'border-[#2A2A35]');
+        }
+    });
 }
 
 export function updatePcrViewButtons(view) {
     const isAssembly = view === 'assembly';
-    const active = 'px-3 py-1.5 text-[11px] font-medium rounded-md bg-[#1A080A] border border-[#FF1E27]/50 text-[#FF1E27] transition-all';
-    const idle = 'px-3 py-1.5 text-[11px] font-medium rounded-md bg-transparent border border-[#2A2A35] text-[#6E6E73] hover:text-white transition-all';
     const procurementBtn = document.getElementById('pcrViewProcurementBtn');
     const assemblyBtn = document.getElementById('pcrViewAssemblyBtn');
-    if (procurementBtn) procurementBtn.className = isAssembly ? idle : active;
-    if (assemblyBtn) assemblyBtn.className = isAssembly ? active : idle;
+    if (procurementBtn) procurementBtn.className = isAssembly ? DRIVE_IDLE : DRIVE_ACTIVE;
+    if (assemblyBtn) assemblyBtn.className = isAssembly ? DRIVE_ACTIVE : DRIVE_IDLE;
     document.getElementById('pcrHudSupplierCard')?.classList.toggle('hidden', isAssembly);
-    document.getElementById('pcrCapsuleSupplier')?.classList.toggle('hidden', isAssembly);
     document.getElementById('pcrSupplierFilterWrap')?.classList.toggle('hidden', isAssembly);
-    const hint = document.getElementById('pcrAdvancedHint');
+    const hint = document.getElementById('pcrIdentityHint');
     if (hint) {
         hint.textContent = isAssembly
             ? '打开即加载最近一次核价的基地 / 项目 / 版本 / 月份。总成整包一份协议，不筛供应商。'
@@ -216,55 +224,6 @@ function fmtHudMoney(value) {
     return Number.isFinite(n) ? n.toFixed(2) : String(value);
 }
 
-export function updatePcrFilterCapsules() {
-    const startYear = document.getElementById('pcrStartYearFilter')?.value || '';
-    const startMonth = document.getElementById('pcrStartMonthFilter')?.value || '';
-    const endYear = document.getElementById('pcrEndYearFilter')?.value || '';
-    const endMonth = document.getElementById('pcrEndMonthFilter')?.value || '';
-    const location = document.getElementById('pcrLocationFilter')?.value || '';
-    const vehicle = document.getElementById('pcrVehicleModelFilter')?.value || '';
-    const version = document.getElementById('pcrBomVersionFilter')?.value || '';
-    const supplier = document.getElementById('pcrSupplierFilter')?.value || '';
-
-    const active = 'bg-[#1A1A22] border border-[#2A2A35] text-white px-2.5 py-1 rounded-md font-bold';
-    const idle = 'bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md';
-
-    const periodEl = document.getElementById('pcrCapsulePeriod');
-    if (periodEl) {
-        const startText = fmtPeriod(startYear, startMonth);
-        const endText = fmtPeriod(endYear, endMonth);
-        if (startText && endText) {
-            periodEl.textContent = startText === endText ? startText : `${startText}～${endText}`;
-            periodEl.className = active;
-        } else {
-            periodEl.textContent = '窗口未定';
-            periodEl.className = idle;
-        }
-    }
-    const locationEl = document.getElementById('pcrCapsuleLocation');
-    if (locationEl) {
-        locationEl.textContent = location || '全部基地';
-        locationEl.className = location ? active : idle;
-    }
-    const vehicleEl = document.getElementById('pcrCapsuleVehicle');
-    if (vehicleEl) {
-        vehicleEl.textContent = vehicle ? (version ? `${vehicle}/${version}` : vehicle) : '全部项目';
-        vehicleEl.className = vehicle ? active : idle;
-    }
-    const supplierEl = document.getElementById('pcrCapsuleSupplier');
-    if (supplierEl) {
-        supplierEl.textContent = supplier || '全部供应商';
-        supplierEl.className = supplier ? active : idle;
-    }
-    const countEl = document.getElementById('pcrAdvancedFilterCount');
-    if (countEl) {
-        const advancedActive = [
-            startYear, startMonth, endYear, endMonth, location, vehicle, version, supplier,
-        ].filter(Boolean).length;
-        countEl.textContent = `(${advancedActive})`;
-    }
-}
-
 export function renderPcrTableHead(months) {
     const head = document.getElementById('pcrTableHead');
     const colgroup = document.getElementById('pcrColgroup');
@@ -280,7 +239,7 @@ export function renderPcrTableHead(months) {
         colgroup.innerHTML = widths.map((width) => `<col style="width:${width}">`).join('');
     }
 
-    const th = 'px-2 py-2 font-semibold text-center border-b border-[#1A1A22] text-[#555555]';
+    const th = 'px-2 py-2 font-semibold text-center border-b border-[#1A1A22] text-[#8E8E93]';
     const monthHeaders = monthCols.map((col) => {
         const label = String(col.header || '').replace(/\n/g, ' ');
         return `<th class="${th} text-right">${esc(label)}</th>`;
@@ -376,10 +335,17 @@ export function renderPcrRows(rows, months) {
     }).join('');
 }
 
+function pageBtnClass(isActive, isDisabled) {
+    const base = 'pcr-page-btn flex items-center justify-center w-6 h-6 text-[10px] border border-transparent box-border';
+    if (isDisabled) return `${base} text-[#2E2E36] cursor-not-allowed`;
+    if (isActive) return `${base} border-[#FF1E27] text-white bg-transparent`;
+    return `${base} text-[#555555] hover:text-[#C8C8D0] hover:bg-[#161620]`;
+}
+
 export function renderPcrPagination(currentPage, totalPages) {
     if (totalPages <= 1) return '';
     let buttons = `
-        <button class="pcr-page-btn flex items-center justify-center w-6 h-6 text-[10px] ${currentPage === 1 ? 'text-[#2E2E36] cursor-not-allowed' : 'text-[#555555] hover:text-[#C8C8D0] hover:bg-[#161620]'} transition-all"
+        <button class="${pageBtnClass(false, currentPage === 1)}"
                 data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}>
             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
         </button>`;
@@ -388,19 +354,18 @@ export function renderPcrPagination(currentPage, totalPages) {
     let endPage = Math.min(totalPages, startPage + maxVisible - 1);
     if (endPage - startPage < maxVisible - 1) startPage = Math.max(1, endPage - maxVisible + 1);
     if (startPage > 1) {
-        buttons += `<button class="pcr-page-btn flex items-center justify-center w-6 h-6 text-[10px] text-[#555555] hover:text-[#C8C8D0] hover:bg-[#161620]" data-page="1">1</button>`;
+        buttons += `<button class="${pageBtnClass(false, false)}" data-page="1">1</button>`;
         if (startPage > 2) buttons += `<span class="px-0.5 text-[#2E2E36] text-[9px]">—</span>`;
     }
     for (let i = startPage; i <= endPage; i += 1) {
-        const isActive = i === currentPage;
-        buttons += `<button class="pcr-page-btn flex items-center justify-center w-6 h-6 text-[10px] ${isActive ? 'bg-[#FF1E27] text-white font-bold' : 'text-[#555555] hover:text-[#C8C8D0] hover:bg-[#161620]'}" data-page="${i}">${i}</button>`;
+        buttons += `<button class="${pageBtnClass(i === currentPage, false)}" data-page="${i}">${i}</button>`;
     }
     if (endPage < totalPages) {
         if (endPage < totalPages - 1) buttons += `<span class="px-0.5 text-[#2E2E36] text-[9px]">—</span>`;
-        buttons += `<button class="pcr-page-btn flex items-center justify-center w-6 h-6 text-[10px] text-[#555555] hover:text-[#C8C8D0] hover:bg-[#161620]" data-page="${totalPages}">${totalPages}</button>`;
+        buttons += `<button class="${pageBtnClass(false, false)}" data-page="${totalPages}">${totalPages}</button>`;
     }
     buttons += `
-        <button class="pcr-page-btn flex items-center justify-center w-6 h-6 text-[10px] ${currentPage === totalPages ? 'text-[#2E2E36] cursor-not-allowed' : 'text-[#555555] hover:text-[#C8C8D0] hover:bg-[#161620]'}"
+        <button class="${pageBtnClass(false, currentPage === totalPages)}"
                 data-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''}>
             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
         </button>`;
