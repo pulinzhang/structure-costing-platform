@@ -68,7 +68,7 @@ class ProcurementContractReportService:
         query: ProcurementContractReportQuery,
     ) -> tuple[list[ProcurementContractReportRowVO], int, ProcurementContractReportFiltersVO]:
         bundle = self.build_report(db, query)
-        rows = _filter_price_rows(bundle.price_rows, query.part_number, query.part_name)
+        rows = _filter_price_rows(bundle.price_rows, query.keyword)
         vehicle_total, vehicle_total_skipped = sum_vehicle_total(rows, bundle.months)
         total = len(rows)
         start = (query.page - 1) * query.size
@@ -83,7 +83,7 @@ class ProcurementContractReportService:
         filters.specified_supplier_count = len(
             {name for row in rows for name in row.supplier_names}
         )
-        if not rows and (query.part_number or query.part_name):
+        if not rows and query.keyword:
             filters.empty_hint = "没有匹配零件号或名称的价目行"
         return [_to_row_vo(row) for row in sliced], total, filters
 
@@ -353,23 +353,15 @@ def _nodes_by_id(nodes: list[BomNode]) -> dict[int, BomNode]:
     return {node.id: node for node in nodes}
 
 
-def _filter_price_rows(
-    rows: list[PriceRow],
-    part_number: str | None,
-    part_name: str | None,
-) -> list[PriceRow]:
-    number_key = (part_number or "").casefold()
-    name_key = (part_name or "").casefold()
-    if not number_key and not name_key:
+def _filter_price_rows(rows: list[PriceRow], keyword: str | None) -> list[PriceRow]:
+    key = (keyword or "").casefold()
+    if not key:
         return rows
-    matched: list[PriceRow] = []
-    for row in rows:
-        if number_key and number_key not in (row.part_number or "").casefold():
-            continue
-        if name_key and name_key not in (row.part_name or "").casefold():
-            continue
-        matched.append(row)
-    return matched
+    return [
+        row
+        for row in rows
+        if key in (row.part_number or "").casefold() or key in (row.part_name or "").casefold()
+    ]
 
 
 def _month_columns(months: list[tuple[int, int]]) -> list[ProcurementContractMonthColumnVO]:
@@ -425,8 +417,7 @@ def _to_filters(
         end_year=query.end_year,
         end_month=query.end_month,
         supplier_name=bundle.supplier_name,
-        part_number=query.part_number,
-        part_name=query.part_name,
+        keyword=query.keyword,
         view=bundle.scope.view,
         qa_passed=bundle.scope.qa_passed,
         qa_error_text=bundle.scope.qa_error_text,

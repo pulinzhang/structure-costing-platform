@@ -10,7 +10,7 @@ import {
     updatePcrFilterCapsules,
     updatePcrHud,
     updatePcrViewButtons,
-} from './template.js?v=15';
+} from './template.js?v=16';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -115,14 +115,12 @@ function bindEvents() {
         updatePcrFilterCapsules();
         loadList(1);
     });
-    ['pcrPartNumberFilter', 'pcrPartNameFilter'].forEach((id) => {
-        document.getElementById(id)?.addEventListener('keydown', (event) => {
-            if (event.key === 'Enter') {
-                event.preventDefault();
-                updatePcrFilterCapsules();
-                loadList(1);
-            }
-        });
+    document.getElementById('pcrPartFilter')?.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            updatePcrFilterCapsules();
+            loadList(1);
+        }
     });
     document.getElementById('pcrPagination')?.addEventListener('click', (event) => {
         const btn = event.target.closest('.pcr-page-btn');
@@ -293,8 +291,7 @@ function readScope(showWarning = false) {
 function queryParams(scope, page, { forExport = false } = {}) {
     const params = { ...scope };
     if (!forExport) {
-        if (val('pcrPartNumberFilter')) params.part_number = val('pcrPartNumberFilter');
-        if (val('pcrPartNameFilter')) params.part_name = val('pcrPartNameFilter');
+        if (val('pcrPartFilter')) params.keyword = val('pcrPartFilter');
     }
     if (page != null) {
         params.page = page;
@@ -442,10 +439,8 @@ async function resetFilters() {
     setSelectValue('pcrVehicleModelFilter', '');
     setSelectValue('pcrBomVersionFilter', '');
     setSelectValue('pcrSupplierFilter', '');
-    const partNumberEl = document.getElementById('pcrPartNumberFilter');
-    const partNameEl = document.getElementById('pcrPartNameFilter');
-    if (partNumberEl) partNumberEl.value = '';
-    if (partNameEl) partNameEl.value = '';
+    const partEl = document.getElementById('pcrPartFilter');
+    if (partEl) partEl.value = '';
     await openWithData();
 }
 

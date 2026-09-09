@@ -2,7 +2,7 @@
  * 采购对象批量上传供应商
  */
 
-import { procurementObjectSupplierUploadTemplate } from './template.js?v=3';
+import { procurementObjectSupplierUploadTemplate } from './template.js?v=4';
 
 const API_BASE = '/api/bom/procurement-objects';
 const CASCADE_API = '/api/bom/filters/cascade';

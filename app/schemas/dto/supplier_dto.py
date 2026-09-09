@@ -16,7 +16,7 @@ def _strip(value: object) -> str | None:
 class SupplierQuery(BaseModel):
     """一览表分页查询。"""
 
-    q: str | None = Field(None, description="关键字：缩写 / 全称 / ERP / 别名")
+    q: str | None = Field(None, description="关键字：缩写 / 工商名称 / ERP / 别名")
     is_enabled: bool | None = Field(None, description="启用状态；不传则全部")
     page: int = Field(1, ge=1, description="页码")
     size: int = Field(10, ge=1, le=100, description="每页条数")
@@ -28,10 +28,12 @@ class SupplierQuery(BaseModel):
 
 
 class SupplierCreateDTO(BaseModel):
-    """手工新增。缩写、全称、ERP 必填；别名可空。默认已启用。"""
+    """手工新增。缩写、工商名称、ERP 必填；别名可空。默认已启用。"""
 
     abbreviation: str = Field(..., min_length=1, max_length=50, description="缩写")
-    full_name: str = Field(..., min_length=1, max_length=100, description="全称")
+    full_name: str = Field(
+        ..., min_length=1, max_length=100, description="工商名称，须与营业执照一致"
+    )
     erp_code: str = Field(..., min_length=1, max_length=50, description="ERP 代码")
     aliases: list[str] = Field(default_factory=list, description="别名，可空")
 
@@ -68,10 +70,12 @@ class SupplierCreateDTO(BaseModel):
 
 
 class SupplierUpdateDTO(BaseModel):
-    """启用 / 禁用，以及改缩写、全称、ERP。未传的字段不改。"""
+    """启用 / 禁用，以及改缩写、工商名称、ERP。未传的字段不改。"""
 
     abbreviation: str | None = Field(None, min_length=1, max_length=50, description="缩写")
-    full_name: str | None = Field(None, min_length=1, max_length=100, description="全称")
+    full_name: str | None = Field(
+        None, min_length=1, max_length=100, description="工商名称，须与营业执照一致"
+    )
     erp_code: str | None = Field(None, min_length=1, max_length=50, description="ERP 代码")
     is_enabled: bool | None = Field(None, description="是否启用")
 

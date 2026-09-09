@@ -8,6 +8,7 @@ import re
 from app.common.money import Q0, Q2, quantize_money
 from app.services.costing.procurement_contract_report.assemble import (
     VIEW_ASSEMBLY,
+    VIEW_PROCUREMENT,
     ReportBundle,
 )
 from app.services.costing.procurement_contract_report.export.columns import (
@@ -42,6 +43,8 @@ def last_column(month_count: int) -> int:
 
 
 def party_b_name(bundle: ReportBundle) -> str:
+    if bundle.scope.view != VIEW_PROCUREMENT:
+        return ""
     if bundle.supplier_name:
         return bundle.supplier_name
     if len(bundle.supplier_names) == 1:
@@ -130,7 +133,8 @@ def build_filename(bundle: ReportBundle) -> str:
 
 
 def agreement_title(bundle: ReportBundle, base_title: str) -> str:
-    title = base_title
+    project_no = (bundle.scope.vehicle_model or "").strip()
+    title = f"{project_no}{base_title}" if project_no else base_title
     if not bundle.scope.qa_passed:
         title = f"{title}（检测未通过）"
     return title

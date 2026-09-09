@@ -117,7 +117,7 @@ export function procurementObjectListTemplate() {
                             ${filterSelect('poKindFilter', '对象种类')}
                             ${filterSelect('poConfirmFilter', '确认')}
                             ${filterSelect('poAuditFilter', '审核')}
-                            ${filterInput('poSupplierFilter', '供应商', '缩写/全称/ERP')}
+                            ${filterInput('poSupplierFilter', '供应商', '缩写/工商名称/ERP')}
                             ${filterSelect('poHasSupplierFilter', '对方')}
                             ${filterInput('poPartFilter', '零件号', '零件号或总成')}
                             <button id="poResetBtn" type="button"
@@ -270,7 +270,7 @@ function confirmDrawerHtml() {
                     <input type="hidden" id="poConfirmSupplier" value="">
                     <div class="relative">
                         <input id="poConfirmSupplierSearch" type="text" autocomplete="off"
-                               placeholder="输入缩写、全称或 ERP 匹配"
+                               placeholder="输入缩写、工商名称或 ERP 匹配"
                                class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-white placeholder:text-[#616161] focus:outline-none focus:border-[#FF1E27] disabled:text-[#616161]">
                         <div id="poConfirmSupplierMenu"
                              class="hidden absolute left-0 right-0 top-full mt-1 max-h-48 overflow-y-auto bg-[#121212] border border-[#2c2c2c] z-[90]"></div>

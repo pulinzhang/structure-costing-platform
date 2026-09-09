@@ -70,8 +70,7 @@ class ProcurementContractReportFiltersVO(BaseModel):
     end_year: int
     end_month: int
     supplier_name: str | None = None
-    part_number: str | None = None
-    part_name: str | None = None
+    keyword: str | None = None
     view: str = "procurement"
     qa_passed: bool
     qa_error_text: str | None = None

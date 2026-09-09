@@ -81,11 +81,10 @@ export function procurementContractReportTemplate() {
                                 <span id="pcrCapsulePeriod" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">窗口未定</span>
                                 <span id="pcrCapsuleLocation" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部基地</span>
                                 <span id="pcrCapsuleVehicle" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部项目</span>
-                                <span id="pcrCapsuleSupplier" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部供应商</span>
-                                <input id="pcrPartNumberFilter" type="text" maxlength="50" placeholder="零件号"
-                                       class="h-7 w-28 px-2 text-[11px] bg-[#0A0A0E] border border-[#2A2A35] text-white placeholder:text-[#555555] rounded-md focus:outline-none focus:border-[#FF1E27]">
-                                <input id="pcrPartNameFilter" type="text" maxlength="100" placeholder="零件名称"
+                                <input id="pcrPartFilter" type="text" maxlength="100" placeholder="零件号/名称"
+                                       title="模糊匹配零件号或名称"
                                        class="h-7 w-36 px-2 text-[11px] bg-[#0A0A0E] border border-[#2A2A35] text-white placeholder:text-[#555555] rounded-md focus:outline-none focus:border-[#FF1E27]">
+                                <span id="pcrCapsuleSupplier" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部供应商</span>
                             </div>
                         </div>
                         <div class="flex items-center gap-3 shrink-0">
@@ -226,8 +225,6 @@ export function updatePcrFilterCapsules() {
     const vehicle = document.getElementById('pcrVehicleModelFilter')?.value || '';
     const version = document.getElementById('pcrBomVersionFilter')?.value || '';
     const supplier = document.getElementById('pcrSupplierFilter')?.value || '';
-    const partNumber = document.getElementById('pcrPartNumberFilter')?.value?.trim() || '';
-    const partName = document.getElementById('pcrPartNameFilter')?.value?.trim() || '';
 
     const active = 'bg-[#1A1A22] border border-[#2A2A35] text-white px-2.5 py-1 rounded-md font-bold';
     const idle = 'bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md';
@@ -263,7 +260,6 @@ export function updatePcrFilterCapsules() {
     if (countEl) {
         const advancedActive = [
             startYear, startMonth, endYear, endMonth, location, vehicle, version, supplier,
-            partNumber, partName,
         ].filter(Boolean).length;
         countEl.textContent = `(${advancedActive})`;
     }

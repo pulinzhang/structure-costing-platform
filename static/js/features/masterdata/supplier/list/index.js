@@ -13,7 +13,7 @@ import {
     renderPagination,
     renderSupplierRows,
     supplierListTemplate,
-} from './template.js?v=2';
+} from './template.js?v=3';
 
 const API_BASE = '/api/masterdata/suppliers';
 const DRAWER_ANIMATION_MS = 300;
@@ -178,7 +178,7 @@ function bindCreateDrawer() {
             return;
         }
         if (!fullName) {
-            showToast('请填写全称', 'warning');
+            showToast('请填写工商名称', 'warning');
             return;
         }
         if (!erpCode) {
@@ -255,7 +255,7 @@ function bindEditDrawer() {
         const fullName = document.getElementById('supplierEditFullName')?.value?.trim() || '';
         const erpCode = document.getElementById('supplierEditErpCode')?.value?.trim() || '';
         if (!abbreviation || !fullName || !erpCode) {
-            showToast('请填写缩写、全称和 ERP 代码', 'warning');
+            showToast('请填写缩写、工商名称和 ERP 代码', 'warning');
             return;
         }
         try {

@@ -51,7 +51,7 @@ class BomProcurementObjectSupplierDTO(BaseModel):
 class BomProcurementObjectSupplierChoiceQuery(BaseModel):
     """确认弹框：已启用供应商分页检索，禁止一次拉全量。"""
 
-    q: str | None = Field(None, description="关键字：缩写 / 全称 / ERP / 别名")
+    q: str | None = Field(None, description="关键字：缩写 / 工商名称 / ERP / 别名")
     page: int = Field(1, ge=1)
     size: int = Field(20, ge=1, le=50)
 

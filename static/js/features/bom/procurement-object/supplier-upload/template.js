@@ -116,7 +116,7 @@ export function procurementObjectSupplierUploadTemplate() {
                         <h5 class="text-[11px] font-bold text-[#9e9e9e] mb-0 tracking-widest uppercase">格式说明</h5>
                     </div>
                     <div class="p-4 space-y-3 text-xs text-[#616161]">
-                        <p>只改第一页「供应商」。「内部号」给人看，方便到 ERP 联查，导入不读。相同零件号只出一行。空=清空。缩写 / 别名 / ERP 可解析为规范全称。</p>
+                        <p>只改第一页「供应商」。「内部号」给人看，方便到 ERP 联查，导入不读。相同零件号只出一行。空=清空。缩写 / 别名 / ERP 可解析为工商名称。</p>
                         <p>找不到的厂到 <span class="text-[#9e9e9e]">#/supplier-list</span> 补档，本页不建档。</p>
                         <p>已审要改须先在清单页反审核。自制禁止填非空供应商。</p>
                     </div>
