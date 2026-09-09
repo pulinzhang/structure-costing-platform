@@ -4,7 +4,7 @@
 
 import { pageSizeSelectHtml } from '../../../page-size.js?v=2';
 
-const HUD_SHELL_STYLE = 'box-shadow:0 4px 20px rgba(0,0,0,0.5);';
+const HUD_SHELL_STYLE = 'background:#0D0D11;border:1px solid rgba(255,255,255,0.08);';
 
 const RING_SELECT_IDS = [
     'pcrLocationFilter',
@@ -18,22 +18,37 @@ const RING_SELECT_IDS = [
 ];
 
 const DRIVE_ACTIVE =
-    'flex-1 py-1 text-[10px] rounded-sm bg-[#121218] border border-[#2A2A35] text-[#A1A1A6] font-medium';
+    'flex-1 h-full text-[10px] rounded-sm bg-[#121218] border border-[#2A2A35] text-[#A1A1A6] font-medium';
 const DRIVE_IDLE =
-    'flex-1 py-1 text-[10px] rounded-sm border border-transparent text-[#555560] hover:text-[#8E8E93] font-medium';
+    'flex-1 h-full text-[10px] rounded-sm border border-transparent text-[#555560] hover:text-[#8E8E93] font-medium';
 
 const IGNITION_STYLE =
-    'background-image:linear-gradient(180deg,#320A0E 0%,#1A0507 48%,#0D0203 100%);'
-    + 'text-shadow:0 0 8px rgba(255,30,39,0.55);';
-const HUD_NUM_STYLE = "font-family:'JetBrains Mono',ui-monospace,monospace;";
+    'background-image:linear-gradient(90deg,#380A0E 0%,#1F0507 50%,#380A0E 100%);'
+    + 'box-shadow:0 0 18px rgba(255,30,39,0.5);';
+const BENTO_H = 'height:72px;padding:8px';
+const KPI_NUM_STYLE = "font-family:'Chakra Petch','JetBrains Mono',ui-monospace,monospace;font-weight:700;letter-spacing:-0.5px;text-shadow:0 0 12px rgba(255,30,39,0.4)";
 const PCR_FX_CSS = `@keyframes pcr-laser-sweep{0%{left:-72px;opacity:1}100%{left:100%;opacity:.2}}`
-    + `@keyframes pcr-ignition-breathe{0%,100%{opacity:.35;box-shadow:0 0 4px #FF1E27}50%{opacity:1;box-shadow:0 0 8px #FF1E27}}`
+    + `@keyframes pcr-ignition-breathe{0%,100%{opacity:.35;box-shadow:0 0 4px #FF1E27}50%{opacity:1;box-shadow:0 0 10px #FF1E27}}`
     + `.pcr-laser-track{position:absolute;top:0;left:0;right:0;height:1px;overflow:hidden;pointer-events:none;z-index:2}`
     + `.pcr-laser-spot{position:absolute;top:0;width:72px;height:1px;`
     + `background:linear-gradient(90deg,transparent,#FF1E27,#fff,#FF1E27,transparent);`
     + `animation:pcr-laser-sweep 100ms linear 1 forwards}`
     + `.pcr-ignition-pulse{animation:pcr-ignition-breathe 2s ease-in-out infinite}`
-    + `@media (prefers-reduced-motion:reduce){.pcr-laser-spot,.pcr-ignition-pulse{animation:none!important}}`;
+    + `.pcr-glass{background:rgba(13,13,17,.58);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid rgba(255,255,255,.08)}`
+    + `.pcr-bento{background:#121218;border:1px solid rgba(255,255,255,.08);transition:border-color .18s ease,box-shadow .18s ease}`
+    + `.pcr-bento:hover{border-color:rgba(255,30,39,.38);box-shadow:0 0 18px rgba(255,30,39,.12)}`
+    + `.pcr-hairline{border-color:rgba(255,255,255,.08)}`
+    + `.pcr-mech-num,#pcrHudVehicleTotal,#pcrHudPrice,#pcrHudSuppliers,#pcrHudMissing,#pcrTable{`
+    + `font-family:"Chakra Petch","JetBrains Mono",ui-monospace,Menlo,Consolas,monospace!important;`
+    + `font-weight:700!important;font-variant-numeric:tabular-nums;letter-spacing:-0.5px}`
+    + `#pcrHudVehicleTotal{text-shadow:0 0 12px rgba(255,30,39,.4)}`
+    + `.pcr-kpi{font-size:22px;line-height:1}`
+    + `.pcr-label{font-size:8px;color:#666;letter-spacing:.12em;line-height:1}`
+    + `.pcr-chip{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08)}`
+    + `.pcr-status-idle{background:#3A3A42}`
+    + `.pcr-status-alert{background:#FF1E27;box-shadow:0 0 6px rgba(255,30,39,.55)}`
+    + `.pcr-export:hover{filter:brightness(1.25)}`
+    + `@media (prefers-reduced-motion:reduce){.pcr-laser-spot,.pcr-ignition-pulse{animation:none!important}.pcr-bento{transition:none}}`;
 
 function cornerMarks() {
     const arm = 'pointer-events-none absolute w-1 h-1 border-[#FF1E27]';
@@ -44,7 +59,7 @@ function cornerMarks() {
         <span class="${arm} bottom-0 right-0 border-b border-r" aria-hidden="true"></span>`;
 }
 
-const CHIP_FACE = 'flex items-center gap-1 bg-[#101018] border border-[#22222E] rounded px-2 h-7 shrink-0';
+const CHIP_FACE = 'pcr-chip flex items-center gap-1 rounded px-2 h-7 shrink-0';
 const CHIP_TRIGGER =
     'pcr-chip-trigger min-w-0 truncate text-left text-[11px] font-medium bg-transparent border-0 p-0 cursor-pointer focus:outline-none text-[#8E8E93] disabled:opacity-40';
 const CHIP_ITEM =
@@ -58,11 +73,11 @@ export function procurementContractReportTemplate() {
     return `
         <div class="w-full max-w-full">
             <style>${PCR_FX_CSS}</style>
-            <div class="relative overflow-hidden bg-[#08080C] border border-[#FF1E27]/30 rounded-md p-2.5 mb-2 w-full max-w-full"
+            <div class="relative rounded-md p-2.5 mb-2 w-full max-w-full"
                  style="${HUD_SHELL_STYLE}">
                 <span class="pcr-laser-track" aria-hidden="true"><span class="pcr-laser-spot"></span></span>
 
-                <div class="flex items-center gap-2 pb-2 mb-2 border-b border-[#1A1A24] text-[11px]">
+                <div class="pcr-glass flex items-center gap-2 -mx-2.5 px-2.5 py-1.5 mb-2 text-[11px]">
                     <div class="flex items-center gap-2 overflow-x-auto min-w-0 flex-1">
                         ${ringChip('pcrLocationFilter', '基地')}
                         ${ringChip('pcrVehicleModelFilter', '项目')}
@@ -72,78 +87,74 @@ export function procurementContractReportTemplate() {
                         <span id="pcrSupplierFilterWrap">${ringChip('pcrSupplierFilter', '供应商', 'max-w-[14rem]')}</span>
                     </div>
                     <button id="pcrResetBtn" type="button"
-                            class="shrink-0 inline-flex items-center gap-1 px-2 h-7 text-[11px] text-[#6E6E73] hover:text-white">
+                            class="shrink-0 inline-flex items-center gap-1 px-2 h-7 text-[11px] text-[#666666] hover:text-white">
                         ${window.svgIcon('refresh', 'w-3 h-3')}
                         重置
                     </button>
                 </div>
 
                 <div class="grid grid-cols-12 gap-2 items-stretch">
-                    <div class="relative col-span-3 bg-[#0E0E14] border border-[#1E1E2A] rounded min-w-0">
+                    <div class="pcr-bento relative col-span-4 rounded min-w-0 flex flex-col justify-center"
+                         style="${BENTO_H}">
                         ${cornerMarks()}
-                        <div class="px-2.5 py-2">
-                            <div class="text-[10px] text-[#6E6E73] tracking-wider">单车合计</div>
-                            <div class="text-[15px] font-bold text-white tabular-nums tracking-tight leading-none mt-0.5"
-                                 style="${HUD_NUM_STYLE}">
-                                <span id="pcrHudVehicleTotal">—</span>
-                                <span class="text-[10px] text-[#6E6E73] font-normal">元</span>
-                            </div>
+                        <div class="pcr-label">单车合计</div>
+                        <div class="pcr-kpi text-white mt-0.5">
+                            <span id="pcrHudVehicleTotal" style="${KPI_NUM_STYLE}">—</span>
+                            <span class="pcr-label align-top ml-0.5">元</span>
                         </div>
-                        <div class="border-t border-[#181822] px-2.5 py-1">
-                            <div id="pcrHudVehicleTotalHint" class="text-[9px] text-[#4A4A55] truncate leading-none">窗口内各月 · 数量×结算价</div>
-                        </div>
+                        <div id="pcrHudVehicleTotalHint" class="text-[9px] text-[#666666] truncate leading-none mt-0.5">窗口内各月 · 数量×结算价</div>
                     </div>
 
-                    <div class="col-span-5 grid grid-cols-2 gap-2">
-                        <div class="bg-[#0E0E14] border border-[#1E1E2A] rounded min-w-0 overflow-hidden">
-                            <div class="px-2.5 py-2">
-                                <div class="text-[10px] text-[#6E6E73]">零件种数</div>
-                                <div class="text-[15px] font-bold text-white mt-0.5 tabular-nums leading-none"
-                                     style="${HUD_NUM_STYLE}">
+                    <div class="col-span-4 grid grid-cols-2 gap-2">
+                        <div id="pcrHudPriceCard" class="pcr-bento rounded min-w-0 flex flex-col justify-center"
+                             style="${BENTO_H}">
+                            <div class="pcr-label">零件种数</div>
+                            <div class="flex items-baseline gap-1.5 mt-0.5">
+                                <span id="pcrHudStatusLamp" class="pcr-status-idle w-1.5 h-1.5 rounded-full shrink-0 translate-y-[-1px]"></span>
+                                <div class="pcr-kpi pcr-mech-num text-white">
                                     <span id="pcrHudPrice">—</span>
-                                    <span class="text-[10px] text-[#6E6E73] font-normal">种</span>
+                                    <span class="pcr-label">种</span>
                                 </div>
                             </div>
-                            <div class="border-t border-[#181822] px-2.5 py-1">
-                                <div class="text-[9px] text-[#4A4A55] truncate leading-none">未出结算价 <span id="pcrHudMissing">—</span></div>
-                            </div>
+                            <div class="text-[9px] text-[#666666] truncate leading-none mt-0.5">未出结算价 <span id="pcrHudMissing">—</span></div>
                         </div>
-                        <div id="pcrHudSupplierCard" class="bg-[#0E0E14] border border-[#1E1E2A] rounded px-2.5 py-2 min-w-0 flex flex-col justify-center">
-                            <div class="text-[10px] text-[#6E6E73]">已指定供应商</div>
-                            <div class="text-[15px] font-bold text-white mt-0.5 tabular-nums leading-none"
-                                 style="${HUD_NUM_STYLE}">
+                        <div id="pcrHudSupplierCard" class="pcr-bento rounded min-w-0 flex flex-col justify-center"
+                             style="${BENTO_H}">
+                            <div class="pcr-label">已指定供应商</div>
+                            <div class="pcr-kpi pcr-mech-num text-white mt-0.5">
                                 <span id="pcrHudSuppliers">—</span>
-                                <span class="text-[10px] text-[#6E6E73] font-normal">家</span>
+                                <span class="pcr-label">家</span>
                             </div>
                         </div>
                     </div>
 
-                    <div class="col-span-4 bg-[#0A0A10] border border-[#1E1E2A] rounded p-2.5 flex flex-col justify-between gap-2 min-w-0">
-                        <div class="flex w-full bg-[#030305] border border-[#161622] rounded p-0.5" role="group" aria-label="价目视图">
+                    <div class="col-span-4 rounded flex flex-col justify-between min-w-0"
+                         style="${BENTO_H};background:#121218;border:1px solid rgba(255,255,255,.08)">
+                        <div class="flex w-full h-6 bg-[#030305] border pcr-hairline rounded p-0.5" role="group" aria-label="价目视图">
                             <button id="pcrViewProcurementBtn" type="button" class="${DRIVE_ACTIVE}">采购对象</button>
                             <button id="pcrViewAssemblyBtn" type="button" class="${DRIVE_IDLE}">总成</button>
                         </div>
                         <button id="pcrExportBtn" type="button"
                                 style="${IGNITION_STYLE}"
-                                class="relative w-full py-2 inline-flex items-center justify-center gap-2 border border-[#FF1E27] [border-top-color:rgba(255,255,255,0.2)] text-[#FF1E27] text-[12px] font-black tracking-widest uppercase rounded shadow-[0_0_15px_rgba(255,30,39,0.25)] hover:shadow-[0_0_25px_rgba(255,30,39,0.45)] active:scale-[0.99] transition-all"
+                                class="pcr-export relative w-full h-8 inline-flex items-center justify-center gap-2 border border-[#FF1E27] [border-top-color:rgba(255,255,255,0.35)] text-[#FF1E27] text-[12px] font-black tracking-widest uppercase rounded active:scale-[0.99] transition-all"
                                 title="导出《批量零部件价格协议》（不分页、无水印）">
                             ${cornerMarks()}
-                            <span class="pcr-ignition-pulse w-1.5 h-1.5 rounded-full bg-[#FF1E27] shrink-0"></span>
-                            导出协议
+                            <span class="pcr-ignition-pulse w-2 h-2 rounded-full bg-[#FF1E27] shrink-0 shadow-[0_0_10px_#FF1E27]"></span>
+                            <span style="text-shadow:0 0 6px rgba(255,30,39,0.8)">导出协议</span>
                         </button>
                     </div>
                 </div>
             </div>
 
-            <div class="bg-[#0A0A0C] border border-[#1A1A22] overflow-hidden w-full max-w-full">
-                <div class="px-4 py-2 border-b border-[#14141A] flex items-center gap-2">
-                    <span class="pointer-events-none text-[#8E8E93] shrink-0">
+            <div class="overflow-hidden w-full max-w-full" style="background:#0D0D11;border:1px solid rgba(255,255,255,.08)">
+                <div class="flex items-center gap-2 h-8 px-3 border-b pcr-hairline">
+                    <span class="pointer-events-none text-[#666666] shrink-0">
                         ${window.svgIcon('search', 'w-3 h-3')}
                     </span>
                     <input id="pcrPartFilter" type="text" maxlength="100" placeholder="零件号 / 名称"
-                           title="模糊匹配零件号或名称" aria-label="零件号或名称"
-                           class="h-7 flex-1 min-w-0 bg-transparent text-[11px] text-[#C8C8D0] placeholder:text-[#8E8E93] focus:outline-none">
-                    <span id="pcrIdentityHint" class="hidden sm:inline text-[9px] text-[#8A8A93] shrink-0 max-w-md text-right">${pcrIdentityHintHtml(false)}</span>
+                           title="打开即加载最近一次核价范围。模糊匹配零件号或名称。" aria-label="零件号或名称"
+                           class="h-7 w-56 max-w-[40%] min-w-0 bg-transparent text-[11px] text-[#C8C8D0] placeholder:text-[#666666] focus:outline-none">
+                    <span id="pcrIdentityHint" class="hidden sm:inline text-[9px] text-[#666666] truncate min-w-0 flex-1 text-right">${pcrIdentityHintHtml(false)}</span>
                 </div>
                 <div id="pcrQaBanner" class="hidden px-5 py-2 border-b border-[#FF1E27]/30 bg-[#1A080A] text-[11px] text-[#FF1E27] font-mono"></div>
 
@@ -155,7 +166,7 @@ export function procurementContractReportTemplate() {
                         <table id="pcrTable" class="w-full table-fixed text-left border-collapse bg-transparent tabular-nums"
                                style="min-width: 1100px; font-family:'JetBrains Mono',ui-monospace,monospace;">
                             <colgroup id="pcrColgroup"></colgroup>
-                            <thead id="pcrTableHead" class="text-[9px] text-[#8E8E93] uppercase tracking-wider"></thead>
+                            <thead id="pcrTableHead" class="text-[9px] text-[#666666] uppercase tracking-wider"></thead>
                             <tbody id="pcrTableBody"></tbody>
                         </table>
                     </div>
@@ -185,7 +196,7 @@ const PERIOD_SELECT_IDS = new Set([
 
 function ringChip(id, label, triggerClass = 'max-w-[10rem]') {
     return `<div class="${CHIP_FACE}" data-pcr-ring="${id}">
-        <span class="text-[#555560] shrink-0">${label}</span>
+        <span class="text-[#666666] text-[10px] shrink-0">${label}</span>
         <select id="${id}" class="sr-only" tabindex="-1" aria-hidden="true">
             <option value="">请选择</option>
         </select>
@@ -199,7 +210,7 @@ function ringChip(id, label, triggerClass = 'max-w-[10rem]') {
 
 function ringPeriodChip(yearId, monthId, label) {
     return `<div class="${CHIP_FACE}" data-pcr-period="${yearId}">
-        <span class="text-[#555560] shrink-0">${label}</span>
+        <span class="text-[#666666] text-[10px] shrink-0">${label}</span>
         <span data-pcr-ring="${yearId}" class="inline-flex items-center gap-0.5">
             <select id="${yearId}" class="sr-only" tabindex="-1" aria-hidden="true">
                 <option value="">年</option>
@@ -378,6 +389,7 @@ export function updatePcrViewButtons(view) {
     if (procurementBtn) procurementBtn.className = isAssembly ? DRIVE_IDLE : DRIVE_ACTIVE;
     if (assemblyBtn) assemblyBtn.className = isAssembly ? DRIVE_ACTIVE : DRIVE_IDLE;
     document.getElementById('pcrHudSupplierCard')?.classList.toggle('hidden', isAssembly);
+    document.getElementById('pcrHudPriceCard')?.classList.toggle('col-span-2', isAssembly);
     document.getElementById('pcrSupplierFilterWrap')?.classList.toggle('hidden', isAssembly);
     const hint = document.getElementById('pcrIdentityHint');
     if (hint) hint.innerHTML = pcrIdentityHintHtml(isAssembly);
@@ -444,6 +456,7 @@ export function updatePcrHud(filters) {
         setText('pcrHudPrice', '—');
         setText('pcrHudMissing', '—');
         setText('pcrHudSuppliers', '—');
+        updateStatusLamp(null);
         return;
     }
     const total = filters.vehicle_total;
@@ -457,6 +470,16 @@ export function updatePcrHud(filters) {
     setText('pcrHudPrice', filters.price_row_count ?? 0);
     setText('pcrHudMissing', filters.missing_month_cell_count ?? 0);
     setText('pcrHudSuppliers', filters.specified_supplier_count ?? 0);
+    updateStatusLamp(filters);
+}
+
+function updateStatusLamp(filters) {
+    const lamp = document.getElementById('pcrHudStatusLamp');
+    if (!lamp) return;
+    const missing = filters ? Number(filters.missing_month_cell_count) || 0 : 0;
+    lamp.className = missing > 0
+        ? 'pcr-status-alert w-1.5 h-1.5 rounded-full shrink-0 translate-y-[-1px]'
+        : 'pcr-status-idle w-1.5 h-1.5 rounded-full shrink-0 translate-y-[-1px]';
 }
 
 function setHudHint(skipped) {
@@ -490,7 +513,7 @@ export function renderPcrTableHead(months, showSupplier = true) {
         colgroup.innerHTML = widths.map((width) => `<col style="width:${width}">`).join('');
     }
 
-    const th = 'px-2 py-2 font-semibold text-center border-b border-[#1A1A22] text-[#8E8E93]';
+    const th = 'px-2 py-2 font-semibold text-center border-b pcr-hairline text-[#666666]';
     const monthHeaders = monthCols.map((col) => {
         const label = String(col.header || '').replace(/\n/g, ' ');
         return `<th class="${th} text-right">${esc(label)}</th>`;
