@@ -385,8 +385,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const closeNav = () => {
         if (!sidebar) return;
+        const focused = document.activeElement;
+        if (focused && sidebar.contains(focused)) {
+            if (sidebarToggle) {
+                sidebarToggle.focus();
+            } else {
+                focused.blur();
+            }
+        }
         sidebar.classList.remove('is-open');
         sidebar.setAttribute('aria-hidden', 'true');
+        sidebar.inert = true;
         if (sidebarBackdrop) {
             sidebarBackdrop.classList.remove('is-visible');
             sidebarBackdrop.setAttribute('aria-hidden', 'true');
@@ -396,6 +405,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const openNav = () => {
         if (!sidebar) return;
+        sidebar.inert = false;
         sidebar.classList.add('is-open');
         sidebar.setAttribute('aria-hidden', 'false');
         if (sidebarBackdrop) {
