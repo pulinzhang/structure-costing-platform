@@ -1261,23 +1261,6 @@
           ]
         },
         {
-          "code": "menu:procurement-contract-report",
-          "label": "采购价格",
-          "type": "menu",
-          "children": [
-            {
-              "code": "op:procurement-contract-report:view",
-              "label": "查询",
-              "type": "op"
-            },
-            {
-              "code": "op:procurement-contract-report:export",
-              "label": "导出",
-              "type": "op"
-            }
-          ]
-        },
-        {
           "code": "menu:costing-engine",
           "label": "自动核价引擎",
           "type": "menu",
@@ -1298,6 +1281,23 @@
               "type": "op"
             }
           ]
+        }
+      ]
+    },
+    {
+      "code": "menu:procurement-contract-report",
+      "label": "采购价格协议",
+      "type": "menu",
+      "children": [
+        {
+          "code": "op:procurement-contract-report:view",
+          "label": "查询",
+          "type": "op"
+        },
+        {
+          "code": "op:procurement-contract-report:export",
+          "label": "导出",
+          "type": "op"
         }
       ]
     },

@@ -432,6 +432,7 @@ def test_list_price_rows_and_tooling(db: Session) -> None:
     assert stamping.seq_label == "5-1"
     assert stamping.internal_number == "ACA674001"
     assert stamping.supplier_name == "烟台海众汽车部件有限公司"
+    assert stamping.supplier_abbreviation == "烟台海众"
     assert stamping.month_amounts[0].should_cost == Decimal("5.5250")
     assert stamping.tooling_alloc_price == Decimal("0.4800")
     assert stamping.tooling_fee == Decimal("48000.0000")
@@ -449,17 +450,17 @@ def test_list_price_rows_and_tooling(db: Session) -> None:
     assert filters.vehicle_total_skipped == 0
 
 
-def test_list_fuzzy_matches_part_number_and_name(db: Session) -> None:
+def test_list_fuzzy_matches_part_number_or_name(db: Session) -> None:
     _seed_pack(db)
     by_number, total_number, _filters = ProcurementContractReportService().paginate(
         db,
-        _query(part_number="096"),
+        _query(keyword="096"),
     )
     assert total_number == 1
     assert by_number[0].part_number == "551003096AA"
     by_name, total_name, _name_filters = ProcurementContractReportService().paginate(
         db,
-        _query(part_name="加强板"),
+        _query(keyword="加强板"),
     )
     assert total_name == 1
     assert by_name[0].part_number == "551003096AA"
@@ -605,7 +606,7 @@ def test_export_matches_template_shape(db: Session) -> None:
     workbook = load_workbook(BytesIO(content))
     sheet = workbook["批量零部件价格协议"]
     assert sheet["A1"].value == "附件二"
-    assert sheet["B1"].value == "批量零部件价格协议"
+    assert sheet["B1"].value == "T13J批量零部件价格协议"
     assert sheet["A2"].value == "编号："
     assert sheet["F2"].value == "币种：人民币"
     assert sheet["H2"].value == "价格均不含增值税"
@@ -652,6 +653,8 @@ def test_export_matches_template_shape(db: Session) -> None:
     }
     assert "日    期：" in date_labels
     assert "日   期：" in date_labels
+    party_b = {str(sheet.cell(row, 8).value) for row in range(1, 50) if sheet.cell(row, 8).value}
+    assert "乙   方：烟台海众汽车部件有限公司" in party_b
 
 
 def test_export_missing_tooling_is_slash(db: Session) -> None:
@@ -866,6 +869,7 @@ def test_assembly_export_blank_party_b_and_no_supplier_in_filename(db: Session) 
     assert "总成" in filename
     assert "烟台海众" not in filename
     sheet = load_workbook(BytesIO(content))["批量零部件价格协议"]
+    assert sheet["B1"].value == "T13J批量零部件价格协议"
     assert sheet["A6"].value == "5"
     assert sheet["B6"].value == "ACA674"
     assert sheet["C6"].value == "551003086AA"

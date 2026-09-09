@@ -35,6 +35,7 @@ class ProcurementContractReportRowVO(BaseModel):
     part_number: str
     part_name: str | None = None
     supplier_name: str | None = None
+    supplier_abbreviation: str | None = None
     vehicle_qty: Decimal
     qty_unit: str = "件"
     object_kind: str | None = None
@@ -70,8 +71,7 @@ class ProcurementContractReportFiltersVO(BaseModel):
     end_year: int
     end_month: int
     supplier_name: str | None = None
-    part_number: str | None = None
-    part_name: str | None = None
+    keyword: str | None = None
     view: str = "procurement"
     qa_passed: bool
     qa_error_text: str | None = None

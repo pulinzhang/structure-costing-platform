@@ -7,20 +7,25 @@ import {
     renderPcrPagination,
     renderPcrRows,
     renderPcrTableHead,
-    updatePcrFilterCapsules,
+    bindPcrChipMenus,
+    unbindPcrChipMenus,
+    syncPcrChipFace,
     updatePcrHud,
+    cancelPcrHudCountUp,
     updatePcrViewButtons,
-} from './template.js?v=15';
+    updateRingIndicators,
+} from './template.js?v=33';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
 } from '../../../page-size.js?v=2';
-import { setSearchBusy } from '../../../search-busy.js?v=1';
 
 const API_BASE = '/api/costing/procurement-contract-report';
 const CASCADE_API = '/api/bom/filters/cascade';
 const MAX_WINDOW_MONTHS = 12;
 const SCOPE_REQUIRED_MESSAGE = '请选定基地、项目、BOM 版本';
+const PART_FILTER_DEBOUNCE_MS = 300;
+const CASCADE_LOCK_IDS = ['pcrVehicleModelFilter', 'pcrBomVersionFilter', 'pcrSupplierFilter'];
 
 const listState = {
     page: 1,
@@ -32,12 +37,15 @@ const listState = {
     view: 'procurement',
     canExport: true,
     isLoading: false,
-    advancedOpen: false,
 };
+
+let cascadeGeneration = 0;
+let partFilterTimer = null;
 
 function init() {
     applyPermissionUi();
     bindEvents();
+    bindPcrChipMenus();
     bindPageSizeSelect('pcrPageSize', {
         getSize: () => listState.pageSize,
         setSize: (size) => {
@@ -48,11 +56,15 @@ function init() {
     fillYearMonthOptions();
     renderPcrTableHead([]);
     updatePcrViewButtons(listState.view);
-    updatePcrFilterCapsules();
+    updateRingIndicators();
     openWithData();
 }
 
-function destroy() {}
+function destroy() {
+    clearPartFilterTimer();
+    unbindPcrChipMenus();
+    cancelPcrHudCountUp();
+}
 
 function applyPermissionUi() {
     const canFn = typeof can === 'function' ? can : () => true;
@@ -62,21 +74,45 @@ function applyPermissionUi() {
     }
 }
 
-function setAdvancedOpen(isOpen) {
-    listState.advancedOpen = isOpen;
-    document.getElementById('pcrAdvancedFilterPanel')?.classList.toggle('hidden', !isOpen);
-    const label = document.getElementById('pcrAdvancedFilterLabel');
-    if (label) label.textContent = isOpen ? '收起高级筛选' : '展开高级筛选';
+function bumpCascadeGeneration() {
+    cascadeGeneration += 1;
+    return cascadeGeneration;
+}
+
+function isCascadeCurrent(generation) {
+    return generation === cascadeGeneration;
+}
+
+function setCascadeLocked(isLocked) {
+    CASCADE_LOCK_IDS.forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.disabled = isLocked;
+        const trigger = document.querySelector(`[data-pcr-chip="${id}"]`);
+        if (trigger) trigger.disabled = isLocked;
+    });
+}
+
+function clearPartFilterTimer() {
+    if (partFilterTimer) {
+        clearTimeout(partFilterTimer);
+        partFilterTimer = null;
+    }
+}
+
+function schedulePartFilter() {
+    clearPartFilterTimer();
+    partFilterTimer = setTimeout(() => {
+        partFilterTimer = null;
+        loadList(1);
+    }, PART_FILTER_DEBOUNCE_MS);
+}
+
+function flushPartFilterAndReload() {
+    clearPartFilterTimer();
+    loadList(1);
 }
 
 function bindEvents() {
-    document.getElementById('pcrSearchBtn')?.addEventListener('click', () => {
-        updatePcrFilterCapsules();
-        refreshSuppliers().then(() => loadList(1));
-    });
-    document.getElementById('pcrToggleAdvancedFilter')?.addEventListener('click', () => {
-        setAdvancedOpen(!listState.advancedOpen);
-    });
     document.getElementById('pcrResetBtn')?.addEventListener('click', resetFilters);
     document.getElementById('pcrExportBtn')?.addEventListener('click', exportExcel);
     document.getElementById('pcrViewProcurementBtn')?.addEventListener('click', () => {
@@ -88,41 +124,69 @@ function bindEvents() {
     document.getElementById('pcrLocationFilter')?.addEventListener('change', () => {
         setSelectValue('pcrVehicleModelFilter', '');
         setSelectValue('pcrBomVersionFilter', '');
-        loadCascade().then(() => {
-            updatePcrFilterCapsules();
-            refreshSuppliers().then(() => loadList(1));
+        const generation = bumpCascadeGeneration();
+        setCascadeLocked(true);
+        loadCascade(generation).then((ok) => {
+            if (!ok) return false;
+            return refreshSuppliers(generation);
+        }).then((ok) => {
+            if (!ok) return;
+            if (!isCascadeCurrent(generation)) return;
+            setCascadeLocked(false);
+            updateRingIndicators();
+            loadList(1);
         });
     });
     document.getElementById('pcrVehicleModelFilter')?.addEventListener('change', () => {
         setSelectValue('pcrBomVersionFilter', '');
-        loadCascade().then(() => {
-            updatePcrFilterCapsules();
-            refreshSuppliers().then(() => loadList(1));
+        const generation = bumpCascadeGeneration();
+        setCascadeLocked(true);
+        loadCascade(generation).then((ok) => {
+            if (!ok) return false;
+            return refreshSuppliers(generation);
+        }).then((ok) => {
+            if (!ok) return;
+            if (!isCascadeCurrent(generation)) return;
+            setCascadeLocked(false);
+            updateRingIndicators();
+            loadList(1);
         });
     });
     document.getElementById('pcrBomVersionFilter')?.addEventListener('change', () => {
-        updatePcrFilterCapsules();
-        refreshSuppliers().then(() => loadList(1));
+        updateRingIndicators();
+        const generation = bumpCascadeGeneration();
+        refreshSuppliers(generation).then((ok) => {
+            if (!ok) return;
+            loadList(1);
+        });
     });
     ['pcrStartYearFilter', 'pcrStartMonthFilter', 'pcrEndYearFilter', 'pcrEndMonthFilter']
         .forEach((id) => {
             document.getElementById(id)?.addEventListener('change', () => {
-                updatePcrFilterCapsules();
-                refreshSuppliers().then(() => loadList(1));
+                updateRingIndicators();
+                const generation = bumpCascadeGeneration();
+                refreshSuppliers(generation).then((ok) => {
+                    if (!ok) return;
+                    loadList(1);
+                });
             });
         });
     document.getElementById('pcrSupplierFilter')?.addEventListener('change', () => {
-        updatePcrFilterCapsules();
+        updateRingIndicators();
         loadList(1);
     });
-    ['pcrPartNumberFilter', 'pcrPartNameFilter'].forEach((id) => {
-        document.getElementById(id)?.addEventListener('keydown', (event) => {
-            if (event.key === 'Enter') {
-                event.preventDefault();
-                updatePcrFilterCapsules();
-                loadList(1);
-            }
-        });
+    const partEl = document.getElementById('pcrPartFilter');
+    partEl?.addEventListener('input', () => {
+        schedulePartFilter();
+    });
+    partEl?.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            flushPartFilterAndReload();
+        }
+    });
+    partEl?.addEventListener('blur', () => {
+        flushPartFilterAndReload();
     });
     document.getElementById('pcrPagination')?.addEventListener('click', (event) => {
         const btn = event.target.closest('.pcr-page-btn');
@@ -137,6 +201,10 @@ function isAssemblyView() {
     return listState.view === 'assembly';
 }
 
+function shouldShowSupplierColumn() {
+    return !isAssemblyView() && !val('pcrSupplierFilter');
+}
+
 function setView(view) {
     if (listState.view === view) return;
     listState.view = view;
@@ -144,8 +212,12 @@ function setView(view) {
         setSelectValue('pcrSupplierFilter', '');
     }
     updatePcrViewButtons(view);
-    updatePcrFilterCapsules();
-    refreshSuppliers().then(() => loadList(1));
+    updateRingIndicators();
+    const generation = bumpCascadeGeneration();
+    refreshSuppliers(generation).then((ok) => {
+        if (!ok) return;
+        loadList(1);
+    });
 }
 
 function val(id) {
@@ -188,27 +260,43 @@ function applyCostWindow(year, month) {
 }
 
 async function openWithData() {
+    const generation = bumpCascadeGeneration();
+    setCascadeLocked(true);
     try {
         const res = await HttpClient.get(`${API_BASE}/filters/defaults`, { skipToast: true });
+        if (!isCascadeCurrent(generation)) return;
         const data = res.data || {};
         if (data.location) {
-            await loadCascade();
+            const stepOne = await loadCascade(generation);
+            if (!stepOne) return;
             setSelectValue('pcrLocationFilter', data.location);
-            await loadCascade();
+            const stepTwo = await loadCascade(generation);
+            if (!stepTwo) return;
             setSelectValue('pcrVehicleModelFilter', data.vehicle_model);
-            await loadCascade();
+            const stepThree = await loadCascade(generation);
+            if (!stepThree) return;
             setSelectValue('pcrBomVersionFilter', data.bom_version);
             applyCostWindow(data.start_year, data.start_month);
         } else {
-            await loadCascade();
+            const ok = await loadCascade(generation);
+            if (!ok) return;
         }
+        if (!isCascadeCurrent(generation)) return;
+        const suppliersOk = await refreshSuppliers(generation);
+        if (!suppliersOk) return;
+        updateRingIndicators();
+        await loadList(1);
     } catch (error) {
         console.error('加载默认范围失败', error);
-        await loadCascade();
+        if (!isCascadeCurrent(generation)) return;
+        const ok = await loadCascade(generation);
+        if (!ok) return;
+        await refreshSuppliers(generation);
+        updateRingIndicators();
+        await loadList(1);
+    } finally {
+        if (isCascadeCurrent(generation)) setCascadeLocked(false);
     }
-    updatePcrFilterCapsules();
-    await refreshSuppliers();
-    await loadList(1);
 }
 
 function fillSelect(id, values, includeEmpty = true, labelFn = null, emptyLabel = '请选择') {
@@ -223,6 +311,7 @@ function fillSelect(id, values, includeEmpty = true, labelFn = null, emptyLabel 
     });
     el.innerHTML = html;
     if (selected && (values || []).map(String).includes(selected)) el.value = selected;
+    syncPcrChipFace(id);
 }
 
 function setSelectValue(id, value) {
@@ -233,20 +322,29 @@ function setSelectValue(id, value) {
         select.insertAdjacentHTML('beforeend', `<option value="${esc(text)}">${esc(text)}</option>`);
     }
     select.value = text;
+    syncPcrChipFace(id);
 }
 
-async function loadCascade() {
+async function loadCascade(generation) {
+    const token = generation == null ? bumpCascadeGeneration() : generation;
+    const locationAtRequest = val('pcrLocationFilter');
+    const vehicleAtRequest = val('pcrVehicleModelFilter');
     try {
         const params = {};
-        if (val('pcrLocationFilter')) params.location = val('pcrLocationFilter');
-        if (val('pcrVehicleModelFilter')) params.vehicle_model = val('pcrVehicleModelFilter');
+        if (locationAtRequest) params.location = locationAtRequest;
+        if (vehicleAtRequest) params.vehicle_model = vehicleAtRequest;
         const res = await HttpClient.get(CASCADE_API, { params });
+        if (!isCascadeCurrent(token)) return false;
+        if (val('pcrLocationFilter') !== locationAtRequest) return false;
+        if (val('pcrVehicleModelFilter') !== vehicleAtRequest) return false;
         const data = res.data || {};
         fillSelect('pcrLocationFilter', data.locations || []);
         fillSelect('pcrVehicleModelFilter', data.vehicle_models || []);
         fillSelect('pcrBomVersionFilter', data.bom_versions || []);
+        return true;
     } catch (error) {
         console.error('加载级联筛选失败', error);
+        return isCascadeCurrent(token);
     }
 }
 
@@ -290,12 +388,9 @@ function readScope(showWarning = false) {
     };
 }
 
-function queryParams(scope, page, { forExport = false } = {}) {
+function queryParams(scope, page, { includeKeyword = true } = {}) {
     const params = { ...scope };
-    if (!forExport) {
-        if (val('pcrPartNumberFilter')) params.part_number = val('pcrPartNumberFilter');
-        if (val('pcrPartNameFilter')) params.part_name = val('pcrPartNameFilter');
-    }
+    if (includeKeyword && val('pcrPartFilter')) params.keyword = val('pcrPartFilter');
     if (page != null) {
         params.page = page;
         params.size = listState.pageSize;
@@ -303,36 +398,42 @@ function queryParams(scope, page, { forExport = false } = {}) {
     return params;
 }
 
-async function refreshSuppliers() {
+async function refreshSuppliers(generation) {
+    const token = generation == null ? cascadeGeneration : generation;
     if (isAssemblyView()) {
+        if (!isCascadeCurrent(token)) return false;
         fillSelect('pcrSupplierFilter', [], true, null, '全部');
-        return;
+        return true;
     }
     const scope = readScope();
     const selected = val('pcrSupplierFilter');
     if (!scope) {
+        if (!isCascadeCurrent(token)) return false;
         fillSelect('pcrSupplierFilter', [], true, null, '全部');
-        return;
+        return true;
     }
     try {
         const res = await HttpClient.get(`${API_BASE}/prep`, {
-            params: queryParams(scope, null, { forExport: true }),
+            params: queryParams(scope, null, { includeKeyword: false }),
             skipToast: true,
         });
+        if (!isCascadeCurrent(token)) return false;
         const names = res.data?.supplier_names || [];
         fillSelect('pcrSupplierFilter', names, true, null, '全部');
         if (selected && names.includes(selected)) {
             setSelectValue('pcrSupplierFilter', selected);
         }
+        return true;
     } catch (_error) {
+        if (!isCascadeCurrent(token)) return false;
         fillSelect('pcrSupplierFilter', selected ? [selected] : [], true, null, '全部');
         if (selected) setSelectValue('pcrSupplierFilter', selected);
+        return true;
     }
 }
 
 function setListLoading(isLoading) {
     listState.isLoading = isLoading;
-    setSearchBusy('pcrSearchBtn', isLoading);
     document.getElementById('pcrLoading')?.classList.toggle('hidden', !isLoading);
     if (isLoading) {
         document.getElementById('pcrEmpty')?.classList.add('hidden');
@@ -369,12 +470,12 @@ async function loadList(page = 1) {
     const body = document.getElementById('pcrTableBody');
     if (!body) return;
     if (listState.isLoading) return;
-    updatePcrFilterCapsules();
+    updateRingIndicators();
     if (!val('pcrLocationFilter') || !val('pcrVehicleModelFilter') || !val('pcrBomVersionFilter')) {
         listState.items = [];
         listState.months = [];
         body.innerHTML = '';
-        renderPcrTableHead([]);
+        renderPcrTableHead([], shouldShowSupplierColumn());
         updatePcrHud(null);
         setQaBanner(null);
         setListLoading(false);
@@ -398,8 +499,9 @@ async function loadList(page = 1) {
         listState.totalPages = pageData.total_pages || 1;
         listState.items = Array.isArray(pageData.items) ? pageData.items : [];
         listState.months = Array.isArray(filters.months) ? filters.months : [];
-        renderPcrTableHead(listState.months);
-        body.innerHTML = renderPcrRows(listState.items, listState.months);
+        const showSupplier = shouldShowSupplierColumn();
+        renderPcrTableHead(listState.months, showSupplier);
+        body.innerHTML = renderPcrRows(listState.items, listState.months, showSupplier);
         updatePcrHud(filters);
         setQaBanner(filters);
         const emptyHint = filters.empty_hint
@@ -438,23 +540,22 @@ async function loadList(page = 1) {
 }
 
 async function resetFilters() {
+    clearPartFilterTimer();
     setSelectValue('pcrLocationFilter', '');
     setSelectValue('pcrVehicleModelFilter', '');
     setSelectValue('pcrBomVersionFilter', '');
     setSelectValue('pcrSupplierFilter', '');
-    const partNumberEl = document.getElementById('pcrPartNumberFilter');
-    const partNameEl = document.getElementById('pcrPartNameFilter');
-    if (partNumberEl) partNumberEl.value = '';
-    if (partNameEl) partNameEl.value = '';
+    const partEl = document.getElementById('pcrPartFilter');
+    if (partEl) partEl.value = '';
     await openWithData();
 }
 
 async function exportExcel() {
     if (!listState.canExport) return showToast('无导出权限', 'warning');
+    clearPartFilterTimer();
     const scope = readScope(true);
     if (!scope) return;
     if (!isAssemblyView() && !scope.supplier_name) {
-        setAdvancedOpen(true);
         return showToast('请先选定供应商再导出协议', 'warning');
     }
     const btn = document.getElementById('pcrExportBtn');
@@ -462,11 +563,11 @@ async function exportExcel() {
     if (btn) {
         btn.disabled = true;
         btn.innerHTML =
-            `<div class="w-3 h-3 border border-[#ef5350] border-t-transparent rounded-full animate-spin"></div>导出中..`;
+            `<div class="w-3 h-3 border border-[#FF1E27] border-t-transparent rounded-full animate-spin"></div>导出中..`;
     }
     try {
         const { blob, filename } = await HttpClient.download(`${API_BASE}/export`, {
-            params: queryParams(scope, null, { forExport: true }),
+            params: queryParams(scope, null),
             defaultFilename: '批量零部件价格协议.xlsx',
             timeout: 120000,
         });

@@ -15,8 +15,7 @@ class ProcurementContractReportQuery(BaseModel):
     end_month: int = Field(..., ge=1, le=12)
     view: Literal["procurement", "assembly"] = "procurement"
     supplier_name: str | None = Field(None, max_length=100)
-    part_number: str | None = Field(None, max_length=50, description="零件号模糊")
-    part_name: str | None = Field(None, max_length=100, description="零件名称模糊")
+    keyword: str | None = Field(None, max_length=100, description="零件号或名称模糊（OR）")
     page: int = Field(1, ge=1)
     size: int = Field(20, ge=1, le=200)
 
@@ -25,8 +24,7 @@ class ProcurementContractReportQuery(BaseModel):
         "vehicle_model",
         "bom_version",
         "supplier_name",
-        "part_number",
-        "part_name",
+        "keyword",
         mode="before",
     )
     @classmethod

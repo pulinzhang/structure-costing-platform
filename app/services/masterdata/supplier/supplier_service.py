@@ -244,7 +244,7 @@ class SupplierService:
             db.refresh(record)
         except IntegrityError:
             db.rollback()
-            raise BusinessException("该全称已有供应商") from None
+            raise BusinessException("该工商名称已有供应商") from None
         except BusinessException:
             db.rollback()
             raise
@@ -311,7 +311,7 @@ class SupplierService:
             db.rollback()
             if renamed:
                 raise BusinessException("仍被引用，不能修改") from None
-            raise BusinessException("该全称已有供应商") from None
+            raise BusinessException("该工商名称已有供应商") from None
         except BusinessException:
             db.rollback()
             raise
@@ -514,7 +514,7 @@ class SupplierService:
             db.commit()
         except IntegrityError:
             db.rollback()
-            raise BusinessException("该全称已有供应商") from None
+            raise BusinessException("该工商名称已有供应商") from None
         except BusinessException:
             db.rollback()
             raise
@@ -602,7 +602,7 @@ class SupplierService:
         seen: set[str] = set()
         for token in tokens:
             if token in seen:
-                raise BusinessException("缩写、全称、ERP 代码与别名不得相同")
+                raise BusinessException("缩写、工商名称、ERP 代码与别名不得相同")
             seen.add(token)
 
     def _lookup_token_owner(self, db: Session, token: str) -> str | None:
@@ -623,12 +623,12 @@ class SupplierService:
     def _assert_canonical_available(self, db: Session, name: str) -> None:
         owner = self._lookup_token_owner(db, name)
         if owner is not None:
-            raise BusinessException("该全称已有供应商")
+            raise BusinessException("该工商名称已有供应商")
 
     def _assert_canonical_available_for(self, db: Session, name: str, owner: str) -> None:
         current = self._lookup_token_owner(db, name)
         if current is not None and current != owner:
-            raise BusinessException("该全称已有供应商")
+            raise BusinessException("该工商名称已有供应商")
 
     def _assert_abbreviation_available(self, db: Session, name: str) -> None:
         if self._lookup_token_owner(db, name) is not None:
@@ -650,7 +650,7 @@ class SupplierService:
 
     def _assert_alias_available(self, db: Session, name: str) -> None:
         if self._lookup_token_owner(db, name) is not None:
-            raise BusinessException("别名不得等于已有缩写、全称、ERP 代码或别名")
+            raise BusinessException("别名不得等于已有缩写、工商名称、ERP 代码或别名")
 
     def _to_vo(self, row: Supplier) -> SupplierVO:
         return SupplierVO(

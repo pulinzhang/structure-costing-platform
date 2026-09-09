@@ -11,7 +11,7 @@ export function supplierListTemplate() {
                 <div class="p-3 border-b border-[#222222] flex flex-wrap items-center justify-between gap-3 bg-[#16161a]">
                     <div class="min-w-0">
                         <div class="text-xs font-semibold text-white tracking-wider">供应商</div>
-                        <p class="text-[11px] text-[#616161] mt-0.5">全称是规范名，与现网工艺确认一致、给下游存；缩写只给人看；别名吸收表头乱写。已启用才能新引入。改全称成功后旧名收成别名；仍被工艺或采购对象引用则不能改名或删除</p>
+                        <p class="text-[11px] text-[#616161] mt-0.5">工商名称须与营业执照一致，将用于签订合同；缩写只给人看；别名吸收表头乱写。已启用才能新引入。改工商名称成功后旧名收成别名；仍被工艺或采购对象引用则不能改名或删除</p>
                     </div>
                     <div class="flex items-center gap-2 shrink-0">
                         <button id="supplierBtnExport" type="button"
@@ -32,7 +32,7 @@ export function supplierListTemplate() {
                         <span class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-[#616161]">
                             ${window.svgIcon('search', 'w-3.5 h-3.5')}
                         </span>
-                        <input type="text" id="supplierFilterKeyword" placeholder="缩写 / 全称 / ERP / 别名"
+                        <input type="text" id="supplierFilterKeyword" placeholder="缩写 / 工商名称 / ERP / 别名"
                                class="w-full h-8 pl-8 pr-3 text-xs bg-[#0a0a0c] border border-[#2c2c2c] text-[#ffffff] placeholder:text-[#616161] focus:outline-none focus:border-[#ff5252] transition-colors">
                     </div>
                     <button id="supplierBtnSearch" type="button"
@@ -52,7 +52,7 @@ export function supplierListTemplate() {
                         <thead>
                             <tr class="bg-[#0e0e11] border-b border-[#2c2c2c] text-[#9e9e9e]">
                                 <th class="px-4 py-3 text-[10px] font-semibold tracking-wider">缩写</th>
-                                <th class="px-4 py-3 text-[10px] font-semibold tracking-wider">全称</th>
+                                <th class="px-4 py-3 text-[10px] font-semibold tracking-wider">工商名称</th>
                                 <th class="px-4 py-3 text-[10px] font-semibold tracking-wider">ERP 代码</th>
                                 <th class="px-4 py-3 text-[10px] font-semibold tracking-wider">别名</th>
                                 <th class="px-4 py-3 text-[10px] font-semibold tracking-wider text-center">状态</th>
@@ -105,11 +105,11 @@ export function supplierListTemplate() {
                                class="w-full h-8 px-3 text-xs bg-[#0a0a0c] border border-[#2c2c2c] text-white placeholder:text-[#616161] focus:outline-none focus:border-[#ff5252] transition-colors">
                     </div>
                     <div>
-                        <label class="text-[10px] font-semibold text-[#616161] tracking-wider mb-1 block">全称 <span class="text-[#d32f2f]">*</span></label>
+                        <label class="text-[10px] font-semibold text-[#616161] tracking-wider mb-1 block">工商名称 <span class="text-[#d32f2f]">*</span></label>
                         <input type="text" id="supplierCreateFullName" required maxlength="100"
-                               placeholder="例如：安庆常庆汽车部件有限公司"
+                               placeholder="须与营业执照一致，例如：安庆常庆汽车部件有限公司"
                                class="w-full h-8 px-3 text-xs bg-[#0a0a0c] border border-[#2c2c2c] text-white placeholder:text-[#616161] focus:outline-none focus:border-[#ff5252] transition-colors">
-                        <p class="text-[10px] text-[#616161] mt-1">规范名；默认已启用</p>
+                        <p class="text-[10px] text-[#616161] mt-1">须与营业执照一致，将用于签订合同；默认已启用</p>
                     </div>
                     <div>
                         <label class="text-[10px] font-semibold text-[#616161] tracking-wider mb-1 block">ERP 代码 <span class="text-[#d32f2f]">*</span></label>
@@ -148,15 +148,16 @@ export function supplierListTemplate() {
                            class="w-full h-8 px-3 text-xs bg-[#0a0a0c] border border-[#2c2c2c] text-white focus:outline-none focus:border-[#ff5252] transition-colors">
                 </div>
                 <div>
-                    <label class="text-[10px] font-semibold text-[#616161] tracking-wider mb-1 block">全称</label>
+                    <label class="text-[10px] font-semibold text-[#616161] tracking-wider mb-1 block">工商名称</label>
                     <input type="text" id="supplierEditFullName" maxlength="100"
                            class="w-full h-8 px-3 text-xs bg-[#0a0a0c] border border-[#2c2c2c] text-white focus:outline-none focus:border-[#ff5252] transition-colors">
+                    <p class="text-[10px] text-[#616161] mt-1">须与营业执照一致，将用于签订合同</p>
                 </div>
                 <div>
                     <label class="text-[10px] font-semibold text-[#616161] tracking-wider mb-1 block">ERP 代码</label>
                     <input type="text" id="supplierEditErpCode" maxlength="50"
                            class="w-full h-8 px-3 text-xs bg-[#0a0a0c] border border-[#2c2c2c] text-white focus:outline-none focus:border-[#ff5252] transition-colors">
-                    <p class="text-[10px] text-[#616161] mt-1">改全称成功后旧全称会收成别名；仍被引用则不能改</p>
+                    <p class="text-[10px] text-[#616161] mt-1">改工商名称成功后旧名会收成别名；仍被引用则不能改</p>
                 </div>
                 <div>
                     <div class="flex items-center justify-between mb-2">

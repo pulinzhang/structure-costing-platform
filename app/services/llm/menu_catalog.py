@@ -222,18 +222,19 @@ MENU_COVERAGE: tuple[MenuCoverageItem, ...] = (
         "cost_total 同落点",
     ),
     MenuCoverageItem(
-        "procurement-contract-report",
-        "采购价格",
-        None,
-        "pending",
-        "查询+导出页，非标准列表分析",
-    ),
-    MenuCoverageItem(
         "costing",
         "自动核价引擎",
         None,
         "pending",
         "编排页，非标准列表分析",
+    ),
+    # 采购价格协议（一级叶子，不在核价组）
+    MenuCoverageItem(
+        "procurement-contract-report",
+        "采购价格协议",
+        None,
+        "pending",
+        "查询+导出页，非标准列表分析",
     ),
 )
 

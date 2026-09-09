@@ -30,7 +30,7 @@ from app.utils.response import ApiResponse
 
 router = APIRouter(
     prefix="/api/costing/procurement-contract-report",
-    tags=["采购价格"],
+    tags=["采购价格协议"],
 )
 
 _service = ProcurementContractReportService()
@@ -48,8 +48,7 @@ def _query_from_params(
     end_month: int,
     supplier_name: str | None,
     view: Literal["procurement", "assembly"] = "procurement",
-    part_number: str | None = None,
-    part_name: str | None = None,
+    keyword: str | None = None,
     page: int,
     size: int,
 ) -> ProcurementContractReportQuery:
@@ -63,8 +62,7 @@ def _query_from_params(
         end_month=end_month,
         view=view,
         supplier_name=supplier_name,
-        part_number=part_number,
-        part_name=part_name,
+        keyword=keyword,
         page=page,
         size=size,
     )
@@ -84,8 +82,7 @@ def list_report(
     end_month: int = Query(..., ge=1, le=12),
     supplier_name: str | None = Query(None),
     view: Literal["procurement", "assembly"] = Query("procurement"),
-    part_number: str | None = Query(None),
-    part_name: str | None = Query(None),
+    keyword: str | None = Query(None),
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=200),
     db: Session = Depends(get_db),
@@ -101,8 +98,7 @@ def list_report(
         end_month=end_month,
         view=view,
         supplier_name=supplier_name,
-        part_number=part_number,
-        part_name=part_name,
+        keyword=keyword,
         page=page,
         size=size,
     )

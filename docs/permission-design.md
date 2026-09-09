@@ -390,8 +390,8 @@ op:settings-profile:password
 | stamping-part-cost | `view` / `update` / `delete` / `approve` / `reverse` / `export` | 查询；失败手工改价；删除（含批量）；审核（含批量）；反审核；导出工艺清单 Excel |
 | assembly-cost-calc | `view` / `run` / `delete` | 历史/过程；开始计算；删除日志（含清空全部） |
 | assembly-cost | `view` / `delete` / `approve` / `reverse` / `export` | 查询；删除；审核；反审核；导出 |
-| procurement-contract-report | `view` / `export` | 查询价目表；导出《批量零部件价格协议》 |
 | costing（菜单码 `menu:costing-engine`） | `view` / `run` / `delete` | 检查就绪；启动月度引擎；删除 Run（含 running） |
+| procurement-contract-report | `view` / `export` | 查询价目表；导出《批量零部件价格协议》（一级菜单，不在核价组） |
 | file-trace | `view` / `download` | 列表/详情；鉴权下载原件 |
 | location | `view` / `create` / `update` / `delete` | 列表；新增基地/别名；启用禁用与删别名；删除基地 |
 | vehicle-model-upload | `view` / `upload` | 查看上传页；下载模板并导入 |
@@ -618,4 +618,6 @@ static/index.html           # 侧栏 data-page
 | 2026-09-01 | 焊接工程侧栏顺序：年度零件价排在采购对象之下（权限码不变） |
 | 2026-09-08 | 新增 `menu:supplier` 二级分组：上传 / 一览表（无删除；工艺确认上传写门禁） |
 | 2026-09-08 | `op:supplier-list:delete`；`update` 含改全称/缩写/ERP（下一跳 RESTRICT） |
+| 2026-09-09 | 侧栏文案改为 **采购价格协议**（码不变） |
+| 2026-09-09 | `menu:procurement-contract-report` 从核价分组提出为一级叶子（码不变）；授权树与侧栏对齐 |
 | 2026-09-08 | §7 不再手抄权限树；目录唯一源 `catalog.json`（评审看 JSON 或授权 API） |

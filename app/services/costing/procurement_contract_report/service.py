@@ -68,7 +68,7 @@ class ProcurementContractReportService:
         query: ProcurementContractReportQuery,
     ) -> tuple[list[ProcurementContractReportRowVO], int, ProcurementContractReportFiltersVO]:
         bundle = self.build_report(db, query)
-        rows = _filter_price_rows(bundle.price_rows, query.part_number, query.part_name)
+        rows = _filter_price_rows(bundle.price_rows, query.keyword)
         vehicle_total, vehicle_total_skipped = sum_vehicle_total(rows, bundle.months)
         total = len(rows)
         start = (query.page - 1) * query.size
@@ -83,9 +83,13 @@ class ProcurementContractReportService:
         filters.specified_supplier_count = len(
             {name for row in rows for name in row.supplier_names}
         )
-        if not rows and (query.part_number or query.part_name):
+        if not rows and query.keyword:
             filters.empty_hint = "没有匹配零件号或名称的价目行"
-        return [_to_row_vo(row) for row in sliced], total, filters
+        return (
+            [_to_row_vo(row, _abbreviation_map(self.supplier_service, db)) for row in sliced],
+            total,
+            filters,
+        )
 
     def prep(
         self,
@@ -353,23 +357,15 @@ def _nodes_by_id(nodes: list[BomNode]) -> dict[int, BomNode]:
     return {node.id: node for node in nodes}
 
 
-def _filter_price_rows(
-    rows: list[PriceRow],
-    part_number: str | None,
-    part_name: str | None,
-) -> list[PriceRow]:
-    number_key = (part_number or "").casefold()
-    name_key = (part_name or "").casefold()
-    if not number_key and not name_key:
+def _filter_price_rows(rows: list[PriceRow], keyword: str | None) -> list[PriceRow]:
+    key = (keyword or "").casefold()
+    if not key:
         return rows
-    matched: list[PriceRow] = []
-    for row in rows:
-        if number_key and number_key not in (row.part_number or "").casefold():
-            continue
-        if name_key and name_key not in (row.part_name or "").casefold():
-            continue
-        matched.append(row)
-    return matched
+    return [
+        row
+        for row in rows
+        if key in (row.part_number or "").casefold() or key in (row.part_name or "").casefold()
+    ]
 
 
 def _month_columns(months: list[tuple[int, int]]) -> list[ProcurementContractMonthColumnVO]:
@@ -389,13 +385,21 @@ def _empty_hint(bundle: ReportBundle) -> str | None:
     return _EMPTY_OBJECT_HINT
 
 
-def _to_row_vo(row: PriceRow) -> ProcurementContractReportRowVO:
+def _to_row_vo(
+    row: PriceRow,
+    abbreviations: dict[str, str],
+) -> ProcurementContractReportRowVO:
+    names = [name for name in row.supplier_names if name]
     return ProcurementContractReportRowVO(
         seq_label=row.seq_label,
         internal_number=row.internal_number,
         part_number=row.part_number,
         part_name=row.part_name,
-        supplier_name="、".join(row.supplier_names) or None,
+        supplier_name="、".join(names) or None,
+        supplier_abbreviation="、".join(
+            abbreviations.get(name) or _fallback_supplier_abbreviation(name) for name in names
+        )
+        or None,
         vehicle_qty=row.vehicle_qty,
         object_kind=row.object_kind,
         tooling_alloc_price=row.tooling_alloc_price,
@@ -412,6 +416,29 @@ def _to_row_vo(row: PriceRow) -> ProcurementContractReportRowVO:
     )
 
 
+def _abbreviation_map(supplier_service: SupplierService, db: Session) -> dict[str, str]:
+    return {vo.full_name: vo.abbreviation for vo in supplier_service.list_registered(db)}
+
+
+_SUPPLIER_SUFFIXES = (
+    "有限责任公司",
+    "股份有限公司",
+    "集团有限公司",
+    "有限公司",
+)
+
+
+def _fallback_supplier_abbreviation(name: str) -> str:
+    text = name.strip()
+    for suffix in _SUPPLIER_SUFFIXES:
+        if text.endswith(suffix):
+            text = text[: -len(suffix)].strip()
+            break
+    if len(text) > 8:
+        return text[:8]
+    return text or name
+
+
 def _to_filters(
     bundle: ReportBundle,
     query: ProcurementContractReportQuery,
@@ -425,8 +452,7 @@ def _to_filters(
         end_year=query.end_year,
         end_month=query.end_month,
         supplier_name=bundle.supplier_name,
-        part_number=query.part_number,
-        part_name=query.part_name,
+        keyword=query.keyword,
         view=bundle.scope.view,
         qa_passed=bundle.scope.qa_passed,
         qa_error_text=bundle.scope.qa_error_text,

@@ -1,5 +1,5 @@
 /**
- * 供应商上传 — 同步导入；列：缩写 / 全称 / ERP 代码 / 别名
+ * 供应商上传 — 同步导入；列：缩写 / 工商名称 / ERP 代码 / 别名
  */
 
 import {
@@ -37,7 +37,7 @@ export function supplierUploadTemplate() {
                                     ${window.svgIcon('folder', 'w-3.5 h-3.5')}
                                     选择文件
                                 </button>
-                                <p class="text-[10px] text-[#616161] mt-5 mb-0">支持 .xlsx, .xls · 同步导入 · 全称是规范名</p>
+                                <p class="text-[10px] text-[#616161] mt-5 mb-0">支持 .xlsx, .xls · 同步导入 · 工商名称须与营业执照一致</p>
                             </div>
                             <div id="supplierUploadProgressPanel" class="hidden text-left w-full">
                                 <div class="flex items-center gap-2 min-w-0 mb-3">
@@ -72,7 +72,7 @@ export function supplierUploadTemplate() {
                             <h6 class="text-[10px] uppercase tracking-wider text-[#616161] mb-2">模板列</h6>
                             <ul class="list-disc list-inside text-xs text-[#616161] space-y-1.5">
                                 <li><span class="text-[#9e9e9e]">缩写</span>：界面短名，不进工艺列</li>
-                                <li><span class="text-[#9e9e9e]">全称</span>：规范名，主键，给下游存</li>
+                                <li><span class="text-[#9e9e9e]">工商名称</span>：须与营业执照一致，将用于签订合同；主键，给下游存</li>
                                 <li><span class="text-[#9e9e9e]">ERP 代码</span>：对外身份，不进工艺列</li>
                                 <li><span class="text-[#9e9e9e]">别名</span>：可空；同一格可多条（顿号 / 逗号 / 换行）</li>
                             </ul>
@@ -80,8 +80,8 @@ export function supplierUploadTemplate() {
                         <div>
                             <h6 class="text-[10px] uppercase tracking-wider text-[#616161] mb-2">写入规则</h6>
                             <ul class="list-disc list-inside text-xs text-[#616161] space-y-1.5">
-                                <li>主键：全称。创建后三者不改</li>
-                                <li>库里已有全称则跳过，不覆盖</li>
+                                <li>主键：工商名称。创建后三者不改</li>
+                                <li>库里已有工商名称则跳过，不覆盖</li>
                                 <li>任一行失败则整单不写入</li>
                                 <li>改启用 / 别名请到一览表抽屉</li>
                             </ul>

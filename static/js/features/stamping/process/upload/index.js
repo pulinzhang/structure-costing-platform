@@ -3,7 +3,7 @@
  * 冲压工艺上传 — 异步 task_id + 进度轮询
  */
 
-import { uploadTemplate } from './template.js?v=15';
+import { uploadTemplate } from './template.js?v=16';
 import {
     setDropzoneDragActive,
     setDropzoneFileSelected,

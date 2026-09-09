@@ -222,7 +222,7 @@ def _extra_faq_chunks() -> list[CorpusChunk]:
                 "采购对象在「焊接工程 → 采购对象」：从材料清单生成集合。"
                 "列入退化供货件、分总成、冲压件；标准件/胶等与异常进核对区。"
                 "有子件的供货总成永不列入。列表可确认外发/自制、指定供应商。不管价。"
-                "要月度结算价、导出《批量零部件价格协议》请去「核价 → 采购价格」。"
+                "要月度结算价、导出《批量零部件价格协议》请去「采购价格协议」。"
             ),
             source_page="help.html",
             anchor="welding",
@@ -242,18 +242,19 @@ def _extra_faq_chunks() -> list[CorpusChunk]:
         ),
         CorpusChunk(
             chunk_id="procurement_contract_report",
-            title="采购价格在哪",
+            title="采购价格协议在哪",
             text=(
-                "核价菜单「采购价格」给二级厂签《批量零部件价格协议》。"
-                "页 #/procurement-contract-report，在总成核价之后、自动核价引擎之前。"
+                "一级菜单「采购价格协议」给二级厂签《批量零部件价格协议》。"
+                "页 #/procurement-contract-report，在核价之后、文件溯源之前。"
                 "只读查询 + 导出协议，不算价、不落结果表。先算总成核价才有结算价。"
                 "双按钮切视图：默认「采购对象」可筛供应商、一家一导；「总成」不筛供应商、整包一份、乙方现场填。"
                 "窗口最多 12 个月；打开默认最近一次核价的单月。缺结算价显示斜杠。"
                 "采购对象视图须先生成焊接工程里的采购对象清单；总成视图不依赖清单。"
             ),
             source_page="help.html",
-            anchor="costing-pages",
+            anchor="procurement-contract-report",
             keywords=(
+                "采购价格协议",
                 "采购价格",
                 "批量零部件价格协议",
                 "价格协议",
@@ -340,7 +341,7 @@ def load_corpus_chunks() -> tuple[CorpusChunk, ...]:
             text=_extract_section(help_html, "costing-pages"),
             source_page="help.html",
             anchor="costing-pages",
-            keywords=("钢材联动", "冲压零件价格", "总成核价", "成品核价", "采购价格"),
+            keywords=("钢材联动", "冲压零件价格", "总成核价", "成品核价"),
         ),
         CorpusChunk(
             chunk_id="file_trace",

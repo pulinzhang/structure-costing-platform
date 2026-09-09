@@ -8,7 +8,7 @@ from app.common.timezone import datetime_to_iso
 
 
 class SupplierChoiceVO(BaseModel):
-    """下游下拉：展示缩写（全称），value 为全称。"""
+    """下游下拉：展示缩写（工商名称），value 为工商名称。"""
 
     full_name: str
     abbreviation: str
