@@ -72,6 +72,7 @@ class ProcurementContractReportFiltersVO(BaseModel):
     supplier_name: str | None = None
     part_number: str | None = None
     part_name: str | None = None
+    view: str = "procurement"
     qa_passed: bool
     qa_error_text: str | None = None
     months: list[ProcurementContractMonthColumnVO]
@@ -102,6 +103,7 @@ class ProcurementContractOpenDefaultsVO(BaseModel):
 
 
 class ProcurementContractReportPrepVO(BaseModel):
+    view: str = "procurement"
     qa_passed: bool
     qa_error_text: str | None = None
     months: list[ProcurementContractMonthColumnVO]

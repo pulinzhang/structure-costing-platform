@@ -18,7 +18,8 @@ def persist_export(ctx: ExportPrepContext, workbook: Workbook) -> tuple[bytes, s
     buffer = BytesIO()
     workbook.save(buffer)
     logger.info(
-        "导出批量零部件价格协议 prep=%s price=%s location=%s model=%s ver=%s -> %s",
+        "导出批量零部件价格协议 view=%s prep=%s price=%s location=%s model=%s ver=%s -> %s",
+        ctx.query.view,
         len(ctx.bundle.prep_rows),
         len(ctx.bundle.price_rows),
         ctx.query.location,

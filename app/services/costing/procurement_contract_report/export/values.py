@@ -5,7 +5,10 @@ from __future__ import annotations
 import calendar
 
 from app.common.money import Q0, Q2, quantize_money
-from app.services.costing.procurement_contract_report.assemble import ReportBundle
+from app.services.costing.procurement_contract_report.assemble import (
+    VIEW_ASSEMBLY,
+    ReportBundle,
+)
 from app.services.costing.procurement_contract_report.export.columns import (
     MISSING_VALUE,
     QTY_UNIT,
@@ -90,20 +93,23 @@ def agreement_remarks(bundle: ReportBundle, company_name: str | None = None) -> 
 
 
 def build_filename(bundle: ReportBundle) -> str:
-    header = bundle.header
+    scope = bundle.scope
     flags: list[str] = []
-    if not header.qa_passed:
+    if not scope.qa_passed:
         flags.append("检测未通过")
     start = bundle.months[0]
     end = bundle.months[-1]
     window = f"{start[0]}{start[1]:02d}-{end[0]}{end[1]:02d}"
-    supplier = bundle.supplier_name or (
-        "多家"
-        if len(bundle.supplier_names) > 1
-        else (bundle.supplier_names[0] if bundle.supplier_names else "未指定")
-    )
+    if scope.view == VIEW_ASSEMBLY:
+        pack = "总成"
+    else:
+        pack = bundle.supplier_name or (
+            "多家"
+            if len(bundle.supplier_names) > 1
+            else (bundle.supplier_names[0] if bundle.supplier_names else "未指定")
+        )
     prefix = "_".join(flags)
-    stem = f"批量零部件价格协议_{header.location}_{header.vehicle_model}_{supplier}_{window}"
+    stem = f"批量零部件价格协议_{scope.location}_{scope.vehicle_model}_{pack}_{window}"
     if prefix:
         return f"{prefix}_{stem}.xlsx"
     return f"{stem}.xlsx"
@@ -111,6 +117,6 @@ def build_filename(bundle: ReportBundle) -> str:
 
 def agreement_title(bundle: ReportBundle, base_title: str) -> str:
     title = base_title
-    if not bundle.header.qa_passed:
+    if not bundle.scope.qa_passed:
         title = f"{title}（检测未通过）"
     return title

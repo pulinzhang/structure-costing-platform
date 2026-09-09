@@ -1,5 +1,7 @@
 """采购价格查询入参。"""
 
+from typing import Literal
+
 from pydantic import BaseModel, Field, field_validator
 
 
@@ -11,6 +13,7 @@ class ProcurementContractReportQuery(BaseModel):
     start_month: int = Field(..., ge=1, le=12)
     end_year: int = Field(..., ge=2000, le=2100)
     end_month: int = Field(..., ge=1, le=12)
+    view: Literal["procurement", "assembly"] = "procurement"
     supplier_name: str | None = Field(None, max_length=100)
     part_number: str | None = Field(None, max_length=50, description="零件号模糊")
     part_name: str | None = Field(None, max_length=100, description="零件名称模糊")

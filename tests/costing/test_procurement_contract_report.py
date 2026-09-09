@@ -767,3 +767,78 @@ def test_pending_objects_appear_in_default_list(db: Session) -> None:
     assert total == 1
     assert filters.empty_hint is None
     assert rows[0].part_number == stamping.part_number
+
+
+def _seed_l0_cost(db: Session, node: BomNode, amount: Decimal) -> None:
+    db.add(
+        AssemblyCost(
+            year=2026,
+            month=1,
+            location="芜湖",
+            vehicle_model="T13J",
+            bom_version="D/09",
+            source_node_id=node.id,
+            part_number=node.part_number,
+            part_name=node.part_name,
+            should_cost=amount,
+            total_amount=amount,
+        )
+    )
+    db.flush()
+
+
+def test_assembly_view_one_tree_root_not_objects(db: Session) -> None:
+    _seed_pack(db)
+    l0 = db.query(BomNode).filter(BomNode.level == 0).one()
+    _seed_l0_cost(db, l0, Decimal("40.0000"))
+    rows, total, filters = ProcurementContractReportService().paginate(
+        db, _query(view="assembly", supplier_name="烟台海众汽车部件有限公司")
+    )
+    assert total == 1
+    assert filters.view == "assembly"
+    assert filters.specified_supplier_count == 0
+    assert filters.supplier_name is None
+    assert rows[0].part_number == "551003086AA"
+    assert rows[0].part_name == "右前门上铰链加强板总成"
+    assert rows[0].internal_number == "ACA674"
+    assert rows[0].seq_label == "5"
+    assert "-" not in rows[0].seq_label
+    assert rows[0].vehicle_qty == Decimal("1")
+    assert rows[0].month_amounts[0].should_cost == Decimal("40.0000")
+    assert rows[0].tooling_alloc_price is None
+
+
+def test_assembly_view_does_not_need_object_list(db: Session) -> None:
+    _seed_masters(db)
+    _snapshot, l0, _stamping, _sub = _seed_tree(db)
+    _seed_l0_cost(db, l0, Decimal("12.3400"))
+    rows, total, filters = ProcurementContractReportService().paginate(db, _query(view="assembly"))
+    assert total == 1
+    assert filters.empty_hint is None
+    assert rows[0].part_number == l0.part_number
+
+
+def test_assembly_missing_snapshot_is_not_found(db: Session) -> None:
+    _seed_masters(db)
+    with pytest.raises(NotFoundException, match="未找到对应材料清单"):
+        ProcurementContractReportService().paginate(db, _query(view="assembly"))
+
+
+def test_assembly_export_blank_party_b_and_no_supplier_in_filename(db: Session) -> None:
+    _seed_pack(db)
+    l0 = db.query(BomNode).filter(BomNode.level == 0).one()
+    _seed_l0_cost(db, l0, Decimal("40.0000"))
+    content, filename = ProcurementContractReportExportOrchestrator().export(
+        db, _query(view="assembly")
+    )
+    assert "总成" in filename
+    assert "烟台海众" not in filename
+    sheet = load_workbook(BytesIO(content))["批量零部件价格协议"]
+    assert sheet["A6"].value == "5"
+    assert sheet["B6"].value == "ACA674"
+    assert sheet["C6"].value == "551003086AA"
+    assert sheet["G6"].value == 40.0
+    assert sheet["I6"].value == "/"
+    party_b = {str(sheet.cell(row, 8).value) for row in range(1, 50) if sheet.cell(row, 8).value}
+    assert "乙   方：" in party_b
+    assert not any("烟台海众" in item or "安徽振华" in item for item in party_b)
