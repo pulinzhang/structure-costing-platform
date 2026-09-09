@@ -13,7 +13,7 @@
  * 入口 URL 的 query 串驱动整体刷新；每次脚本更新后需要同步递增 ?v= 版本号。
  */
 
-import { pageMeta } from './features/index.js?v=40';
+import { pageMeta } from './features/index.js?v=42';
 
 // 页面导入（路径与 index.html 菜单树 / features 目录对齐）
 import { getUserSession, initUserMenu, startTokenHeartbeat, updateUserSession } from './features/login/index.js?v=15';
@@ -43,7 +43,7 @@ import { pageConfig as stampingPartCostCalcPage } from './features/costing/stamp
 import { pageConfig as stampingPartCostPage } from './features/costing/stamping-part-cost/list/index.js?v=72';
 import { pageConfig as assemblyCostCalcPage } from './features/costing/assembly-cost/calc/index.js?v=9';
 import { pageConfig as assemblyCostPage } from './features/costing/assembly-cost/list/index.js?v=26';
-import { pageConfig as procurementContractReportPage } from './features/costing/procurement-contract-report/index.js?v=17';
+import { pageConfig as procurementContractReportPage } from './features/costing/procurement-contract-report/index.js?v=19';
 import { pageConfig as steelPricePolicyUploadPage } from './features/yishiyiyi/policy/upload/index.js?v=39';
 import { pageConfig as steelPricePolicyDownloadPage } from './features/yishiyiyi/policy/list/index.js?v=38';
 import { pageConfig as basePriceUploadPage } from './features/yishiyiyi/base-price/upload/index.js?v=40';

@@ -30,7 +30,7 @@ from app.utils.response import ApiResponse
 
 router = APIRouter(
     prefix="/api/costing/procurement-contract-report",
-    tags=["采购价格"],
+    tags=["采购价格协议"],
 )
 
 _service = ProcurementContractReportService()

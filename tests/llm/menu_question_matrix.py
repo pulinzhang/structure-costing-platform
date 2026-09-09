@@ -151,8 +151,8 @@ MENU_QUESTION_CASES: tuple[MenuQuestionCase, ...] = (
     ),
     MenuQuestionCase(
         "procurement-contract-report",
-        "采购价格",
         "采购价格协议",
+        "采购价格",
         None,
         "pending",
     ),

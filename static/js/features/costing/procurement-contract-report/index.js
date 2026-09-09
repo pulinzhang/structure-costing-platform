@@ -10,7 +10,7 @@ import {
     updatePcrHud,
     updatePcrViewButtons,
     updateRingIndicators,
-} from './template.js?v=17';
+} from './template.js?v=19';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
