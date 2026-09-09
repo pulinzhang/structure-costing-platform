@@ -13,7 +13,7 @@
  * 入口 URL 的 query 串驱动整体刷新；每次脚本更新后需要同步递增 ?v= 版本号。
  */
 
-import { pageMeta } from './features/index.js?v=38';
+import { pageMeta } from './features/index.js?v=39';
 
 // 页面导入（路径与 index.html 菜单树 / features 目录对齐）
 import { getUserSession, initUserMenu, startTokenHeartbeat, updateUserSession } from './features/login/index.js?v=15';
@@ -25,7 +25,7 @@ import {
 import { bootLlmAssistant } from './llm-assistant/boot.js?v=29';
 import { pageConfig as dashboardPage }      from './features/dashboard/index.js?v=12';
 import { pageConfig as stampingUploadPage } from './features/stamping/process/upload/index.js?v=55';
-import { pageConfig as stampingPartsPage }  from './features/stamping/process/parts/index.js?v=43';
+import { pageConfig as stampingPartsPage }  from './features/stamping/process/parts/index.js?v=44';
 import { pageConfig as stampingDieUploadPage } from './features/stamping/die/upload/index.js?v=11';
 import { pageConfig as stampingDieListPage } from './features/stamping/die/list/index.js?v=10';
 import { pageConfig as stampingDieUnitPricePage } from './features/stamping/die/unit-price/index.js?v=7';
@@ -52,16 +52,17 @@ import { pageConfig as steelGradeCategoryPage } from './features/yishiyiyi/steel
 import { pageConfig as scrapPricePage } from './features/yishiyiyi/scrap-price/index.js?v=21';
 import { pageConfig as bomStructurePage }  from './features/bom/material/structure/index.js?v=9';
 import { pageConfig as bomVizPage }        from './features/bom/material/viz/index.js?v=29';
-import { pageConfig as bomUploadPage }     from './features/bom/material/upload/index.js?v=10';
+import { pageConfig as bomUploadPage }     from './features/bom/material/upload/index.js?v=11';
 import { pageConfig as bomMaterialListPage } from './features/bom/material/list/index.js?v=4';
 import { pageConfig as bomWeldingUnitPriceUploadPage } from './features/bom/welding-unit-price/upload/index.js?v=11';
 import { pageConfig as bomWeldingUnitPricePage } from './features/bom/welding-unit-price/list/index.js?v=17';
-import { pageConfig as bomAnnualPartPriceUploadPage } from './features/bom/annual-part-price/upload/index.js?v=13';
-import { pageConfig as bomAnnualPartPricePage } from './features/bom/annual-part-price/list/index.js?v=14';
+import { pageConfig as bomAnnualPartPriceUploadPage } from './features/bom/annual-part-price/upload/index.js?v=14';
+import { pageConfig as bomAnnualPartPricePage } from './features/bom/annual-part-price/list/index.js?v=15';
 import { pageConfig as bomPackagingTransportFeeUploadPage } from './features/bom/packaging-transport-fee/upload/index.js?v=6';
 import { pageConfig as bomPackagingTransportFeePage } from './features/bom/packaging-transport-fee/list/index.js?v=8';
-import { pageConfig as bomProcurementObjectGeneratePage } from './features/bom/procurement-object/generate/index.js?v=5';
-import { pageConfig as bomProcurementObjectListPage } from './features/bom/procurement-object/list/index.js?v=11';
+import { pageConfig as bomProcurementObjectGeneratePage } from './features/bom/procurement-object/generate/index.js?v=7';
+import { pageConfig as bomProcurementObjectListPage } from './features/bom/procurement-object/list/index.js?v=13';
+import { pageConfig as bomProcurementObjectSupplierUploadPage } from './features/bom/procurement-object/supplier-upload/index.js?v=4';
 import { pageConfig as bomWeldingProcessBreakdownGeneratePage } from './features/bom/welding-process-breakdown/generate/index.js?v=8';
 import { pageConfig as bomWeldingProcessBreakdownListPage } from './features/bom/welding-process-breakdown/list/index.js?v=40';
 import { pageConfig as bomWeldingFeeCalcPage } from './features/bom/welding-fee/calc/index.js?v=7';
@@ -125,6 +126,7 @@ const pages = {
     'bom-packaging-transport-fee': bomPackagingTransportFeePage,
     'bom-procurement-object': bomProcurementObjectGeneratePage,
     'bom-procurement-object-list': bomProcurementObjectListPage,
+    'bom-procurement-object-supplier-upload': bomProcurementObjectSupplierUploadPage,
     'bom-welding-process-breakdown': bomWeldingProcessBreakdownGeneratePage,
     'bom-welding-process-breakdown-list': bomWeldingProcessBreakdownListPage,
     'bom-welding-fee-calc': bomWeldingFeeCalcPage,

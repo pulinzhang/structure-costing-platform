@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class BomProcurementObjectScopeDTO(BaseModel):
@@ -46,6 +46,22 @@ class BomProcurementObjectSupplierDTO(BaseModel):
     """指定或清空合同对方。空串由 Service 收成 NULL。"""
 
     supplier_name: str | None = Field(None, max_length=100)
+
+
+class BomProcurementObjectSupplierChoiceQuery(BaseModel):
+    """确认弹框：已启用供应商分页检索，禁止一次拉全量。"""
+
+    q: str | None = Field(None, description="关键字：缩写 / 全称 / ERP / 别名")
+    page: int = Field(1, ge=1)
+    size: int = Field(20, ge=1, le=50)
+
+    @field_validator("q", mode="before")
+    @classmethod
+    def strip_keyword(cls, value: object) -> str | None:
+        if value is None:
+            return None
+        text = str(value).strip()
+        return text if text else None
 
 
 class BomProcurementObjectQuery(BaseModel):
@@ -118,6 +134,7 @@ class BomProcurementObjectWrite:
     source_node_id: int
     part_number: str
     part_name: str | None
+    internal_number: str | None
     level: int
     node_role: str
     qty: Decimal | None

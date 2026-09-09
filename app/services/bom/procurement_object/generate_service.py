@@ -1,4 +1,7 @@
-"""采购对象清单 — 从材料清单树生成。"""
+"""采购对象清单 — 从材料清单树生成。
+
+列入规则在 classify：退化仅 L0（无子件，或全部 L1 无内部号）。L1 有内部号才列入采购对象。
+"""
 
 from __future__ import annotations
 
@@ -112,6 +115,7 @@ class BomProcurementObjectGenerateService:
             node_count = len(nodes)
             if not nodes:
                 raise BusinessException("该材料清单没有节点，无法生成采购对象清单")
+            # 列入：退化仅 L0；L1 有内部号才进采购对象。规则在 classify。
             classified = classify_nodes(nodes)
             qa_passed = classified.qa_passed
             object_count = (
@@ -303,6 +307,7 @@ class BomProcurementObjectGenerateService:
             source_node_id=row.source_node_id,
             part_number=row.part_number,
             part_name=row.part_name,
+            internal_number=row.internal_number,
             level=row.level,
             node_role=row.node_role,
             qty=row.qty,

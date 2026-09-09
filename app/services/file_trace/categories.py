@@ -17,6 +17,7 @@ FILE_CATEGORY_LABELS: dict[str, str] = {
     "bom_packaging_transport_fee": "包装运输费",
     "bom_welding_unit_price": "焊接单价",
     "bom_annual_part_price": "年度零件价",
+    "bom_procurement_object_supplier": "采购对象供应商",
 }
 
 VALID_FILE_CATEGORIES = frozenset(FILE_CATEGORY_LABELS.keys())
@@ -61,6 +62,10 @@ CATEGORY_VIEW_PERMISSIONS: dict[str, tuple[str, ...]] = {
     "bom_annual_part_price": (
         Perm.BOM_ANNUAL_PART_PRICE_UPLOAD_VIEW,
         Perm.BOM_ANNUAL_PART_PRICE_VIEW,
+    ),
+    "bom_procurement_object_supplier": (
+        Perm.BOM_PROCUREMENT_OBJECT_SUPPLIER_UPLOAD_VIEW,
+        Perm.BOM_PROCUREMENT_OBJECT_LIST_VIEW,
     ),
 }
 

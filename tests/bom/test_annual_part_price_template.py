@@ -364,7 +364,7 @@ def test_template_unions_project_versions_and_dedupes(db: Session) -> None:
     notes_values = [workbook.worksheets[1].cell(row=idx, column=1).value for idx in range(3, 10)]
     notes_text = "\n".join(str(item) for item in notes_values if item)
     assert "核价单价 = 采购单价 ÷ 转换系数" in notes_text
-    assert "必须是正整数" in notes_text
+    assert "须大于 0" in notes_text
     assert "不要填 1/12" in notes_text
     assert "不要把采购包装单位" in notes_text
 

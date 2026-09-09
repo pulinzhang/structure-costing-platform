@@ -20,6 +20,14 @@ from app.schemas.dto.stamping_upload_dto import PartData, StampingPartPatch
 _T = TypeVar("_T")
 _StringColumn = InstrumentedAttribute[str] | InstrumentedAttribute[str | None]
 
+_PART_LIST_ORDER = (
+    StampingPart.location,
+    StampingPart.vehicle_model,
+    StampingPart.version,
+    StampingPart.stamping_supplier,
+    StampingPart.id,
+)
+
 
 class StampingPartFilterOptionValues(TypedDict):
     """筛选下拉选项（不含列表汇总，汇总由 Service 拼入）。"""
@@ -275,7 +283,7 @@ class StampingPartRepository:
         skip: int = 0,
         limit: int = 100,
     ) -> tuple[list[StampingPart], int]:
-        """分页查询零件"""
+        """分页查询零件。排序与导出相同：基地 → 车型 → 版本 → 工厂 → id。"""
         q = self._build_list_query(
             db,
             location=location,
@@ -288,7 +296,7 @@ class StampingPartRepository:
             stamping_suppliers=stamping_suppliers,
         )
         total = q.count()
-        parts = q.order_by(StampingPart.id).offset(skip).limit(limit).all()
+        parts = q.order_by(*_PART_LIST_ORDER).offset(skip).limit(limit).all()
         return parts, total
 
     def summarize_by_filters(
@@ -374,7 +382,7 @@ class StampingPartRepository:
     ) -> list[StampingPart]:
         """按列表筛选加载零件 + 工序 + 拼焊子片（导出用，不分页）。
 
-        排序：车型 → 冲压工厂 → 版本 → id。
+        排序与列表分页相同：基地 → 车型 → 版本 → 工厂 → id。
         """
         from sqlalchemy.orm import selectinload
 
@@ -392,12 +400,7 @@ class StampingPartRepository:
                 selectinload(StampingPart.processes),
                 selectinload(StampingPart.tailor_weld_blanks),
             )
-            .order_by(
-                StampingPart.vehicle_model,
-                StampingPart.version,
-                StampingPart.stamping_supplier,
-                StampingPart.id,
-            )
+            .order_by(*_PART_LIST_ORDER)
             .all()
         )
 

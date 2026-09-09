@@ -10,6 +10,10 @@ from pydantic import BaseModel, field_serializer, field_validator
 
 from app.common.money import Q4, format_money
 from app.common.timezone import datetime_to_iso
+from app.parsers.bom.annual_part_price_parser import (
+    format_conversion_factor,
+    parse_conversion_factor,
+)
 from app.schemas.common.batch_result import BatchAuditCountsVO, BatchDeleteCountsVO
 
 
@@ -29,7 +33,7 @@ class BomAnnualPartPriceResponse(BaseModel):
     specification: str | None = None
     purchase_unit: str | None = None
     purchase_unit_price: Decimal | None = None
-    conversion_factor: int = 1
+    conversion_factor: Decimal = Decimal("1")
     unit: str
     unit_price: Decimal
     supply_type: str
@@ -49,10 +53,10 @@ class BomAnnualPartPriceResponse(BaseModel):
 
     @field_validator("conversion_factor", mode="before")
     @classmethod
-    def _coerce_conversion_factor(cls, value: Any) -> int:
+    def _coerce_conversion_factor(cls, value: Any) -> Decimal:
         if value is None or value == "":
-            return 1
-        return int(value)
+            return Decimal("1")
+        return parse_conversion_factor(value)
 
     @field_serializer("unit_price")
     def serialize_unit_price(self, value: Decimal) -> str:
@@ -65,8 +69,8 @@ class BomAnnualPartPriceResponse(BaseModel):
         return format_money(value, Q4, 4)
 
     @field_serializer("conversion_factor")
-    def serialize_conversion_factor(self, value: int) -> str:
-        return str(int(value))
+    def serialize_conversion_factor(self, value: Decimal) -> str:
+        return format_conversion_factor(value)
 
     @field_serializer("created_at", "updated_at", "audited_at", "reverse_audited_at")
     def serialize_datetime(self, value: datetime | None) -> str | None:

@@ -22,19 +22,30 @@ export function parseUnitPriceInput(raw) {
     return parseDecimalInput(raw, 4);
 }
 
+export function stripConversionFactorDisplay(value) {
+    const fixed = formatDecimalFixed(value, 6);
+    if (!fixed) return null;
+    if (!fixed.includes('.')) return fixed;
+    return fixed.replace(/0+$/, '').replace(/\.$/, '');
+}
+
 export function formatConversionFactor(value) {
-    return formatDecimalFixed(value, 0) ?? '-';
+    return stripConversionFactorDisplay(value) ?? '-';
 }
 
 export function conversionFactorInputValue(value) {
-    return formatDecimalFixed(value, 0) ?? '1';
+    return stripConversionFactorDisplay(value) ?? '1';
 }
 
 export function parseConversionFactorInput(raw) {
     const text = String(raw ?? '').trim();
     if (!text) return '1';
-    if (!/^[1-9]\d*$/.test(text)) return null;
-    return text;
+    if (text.includes('/')) return null;
+    const parsed = parseDecimalInput(text, 6);
+    if (!parsed) return null;
+    const display = stripConversionFactorDisplay(parsed);
+    if (!display || display === '0') return null;
+    return display;
 }
 
 export function annualPartPriceTemplate() {
@@ -137,7 +148,7 @@ export function annualPartPriceTemplate() {
                                 重置
                             </button>
                         </div>
-                        <p class="mt-2 text-[10px] text-[#555555]">批量删除 / 审核 / 反审核须同时选定基地和年度（与上传条件对等）。已审核记录不可删除、不可修改。核价单价 ≥ 0；为 0 时成品核价不计入该件。转换系数为正整数（默认 1）；核价单价 = 采购单价 ÷ 转换系数。</p>
+                        <p class="mt-2 text-[10px] text-[#555555]">批量删除 / 审核 / 反审核须同时选定基地和年度（与上传条件对等）。已审核记录不可删除、不可修改。核价单价 ≥ 0；为 0 时成品核价不计入该件。转换系数 > 0（默认 1，最多 6 位小数，展示不补零）；核价单价 = 采购单价 ÷ 转换系数。</p>
                     </div>
                 </div>
 
@@ -174,7 +185,7 @@ export function annualPartPriceTemplate() {
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">规格</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">采购单位</th>
                                 <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]">采购单价</th>
-                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]" title="正整数；1采购单位=N核价单位；核价单价=采购单价÷N">转换系数</th>
+                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]" title="1采购单位=N核价单位；可小数如25.4；核价单价=采购单价÷N">转换系数</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">单位</th>
                                 <th class="px-2 py-2 text-right text-[9px] font-semibold tracking-[0.06em] text-[#FF1E27]/90 bg-[#1A080A]"
                                     title="核价单价；≥0；填 0 表示成品核价不计入该件">单价</th>
@@ -335,8 +346,8 @@ function editDrawerHtml() {
                             <label class="text-[10px] text-[#777777] mb-1 block">转换系数</label>
                             <input type="text" id="annualEditConversionFactor" inputmode="decimal"
                                    class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#ffffff] font-mono rounded focus:outline-none focus:border-[#ff5252]"
-                                   placeholder="正整数，默认 1；1打=12个则填 12" autocomplete="off">
-                            <p class="mt-1.5 text-[10px] text-[#555555] leading-relaxed">核价单价 = 采购单价 ÷ 转换系数（须为正整数）</p>
+                                   placeholder="默认 1；1打=12，1英寸=25.4" autocomplete="off">
+                            <p class="mt-1.5 text-[10px] text-[#555555] leading-relaxed">1 采购单位 = N 核价单位。核价单价 = 采购单价 ÷ N。可小数（如 25.4），最多 6 位，不补零。</p>
                         </div>
                         <div>
                             <label class="text-[10px] text-[#777777] mb-1 block">单位 <span class="text-[#d32f2f]">*</span></label>

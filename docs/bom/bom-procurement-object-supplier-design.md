@@ -123,7 +123,9 @@ ForeignKey("suppliers.full_name", ondelete="RESTRICT", onupdate="RESTRICT")
 | GET | `/` 列表 | 增加筛 `supplier_name`（按规范全称）、`has_supplier`（是/否） |
 | GET | `/export` | 采购对象工作表增加「供应商」列（规范全称） |
 
-禁止：Excel 导回当指定；按 id 勾选批量改供应商（一期）；输入框自由打字。若以后做批量，必须按清单范围 + 意见，与审核同一纪律。
+禁止：用 **列表导出** 文件导回当指定；按表 `id` 勾选批量改供应商；输入框自由打字。
+
+按清单范围用 Excel 批改对方：独立上传页，见 [bom-procurement-object-supplier-upload-design.md](bom-procurement-object-supplier-upload-design.md)（窄表按零件号去重并对账；写门禁与本页 PATCH 相同）。
 
 权限：沿用 `op:bom-procurement-object-list:update`（与单条确认同一操作码）。不新增权限码。
 
@@ -172,3 +174,4 @@ Router  → 现网 ProcurementObjectService（门面，可下沉 AuditService）
 | 2026-09-08 | 纳入供应商第二期：工艺门禁已落地；本页未落地。明确与年度价档案（S15）分家。 |
 | 2026-09-08 | 本表改为供应商直接下一跳：`supplier_name` 可空 FK `RESTRICT`/`RESTRICT`。NULL 不挡删/改主键。 |
 | 2026-09-08 | 空串收 `NULL`；带回时父行已删则该行 `NULL`，不整单 FK 失败。 |
+| 2026-09-08 | 打开 Excel 批改：禁止的是列表导出导回；窄表上传见独立设计。 |

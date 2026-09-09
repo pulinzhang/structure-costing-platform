@@ -11,6 +11,7 @@ from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.worksheet import Worksheet
 from sqlalchemy.orm import Session
 
+from app.common.bom.manufacturing_category import short_part_number_digits
 from app.common.export_watermark import workbook_to_xlsx_bytes
 from app.common.timezone import now
 from app.models.bom.procurement_object import BomProcurementObject
@@ -34,7 +35,7 @@ from app.services.masterdata.supplier import SupplierService
 
 _FONT = "微软雅黑"
 _ExcelCell = str | int | None
-_COL_COUNT = 21
+_COL_COUNT = 23
 _GROUP_ROW = 4
 _HEADER_ROW = 5
 _DATA_START = 6
@@ -107,12 +108,12 @@ _SPLIT_EVIDENCE = _thin_border(left=Side(style="medium", color="B71C1C"))
 
 # 对着原件 | 供货总成 | 判定 | 佐证 | 原件补充 | 范围
 _GROUP_SPANS = (
-    (1, 4, "对着原件"),
-    (5, 6, "供货总成"),
-    (7, 10, "判定"),
-    (11, 15, "佐证"),
-    (16, 18, "原件补充"),
-    (19, 21, "范围"),
+    (1, 6, "对着原件"),
+    (7, 8, "供货总成"),
+    (9, 12, "判定"),
+    (13, 17, "佐证"),
+    (18, 20, "原件补充"),
+    (21, 23, "范围"),
 )
 _GROUP_FILLS = (
     _FILL_GROUP_MAIN,
@@ -127,6 +128,8 @@ _HEADERS = (
     "Excel行号",
     "工作表",
     "零件号",
+    "短码",
+    "内部号",
     "零件名称",
     "供货总成零件号",
     "供货总成名称",
@@ -150,6 +153,8 @@ _WIDTHS = (
     12,
     12,
     18,
+    8,
+    14,
     22,
     18,
     22,
@@ -169,17 +174,19 @@ _WIDTHS = (
     10,
     12,
 )
-_L0_NO_COL = 5
-_L0_NAME_COL = 6
-_CONFIRM_COL = 8
-_PRIMARY_COLS = frozenset({1, 2, 3, 4, 5, 6, 7, 8, 9, 10})
-_CENTER_COLS = frozenset({1, 2, 7, 8, 10, 17})
-_KEY_COLS = frozenset({1, 3, 5})
+_L0_NO_COL = 7
+_L0_NAME_COL = 8
+_CONFIRM_COL = 10
+_SHORT_CODE_COL = 4
+_INTERNAL_NUMBER_COL = 5
+_PRIMARY_COLS = frozenset({1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12})
+_CENTER_COLS = frozenset({1, 2, 4, 9, 10, 12, 19})
+_KEY_COLS = frozenset({1, 3, 7})
 _L0_COLS = (_L0_NO_COL, _L0_NAME_COL)
 
-_JUDGE_END_COL = 10
-_KPI_COLS = frozenset({8})
-_EVIDENCE_START_COL = 11
+_JUDGE_END_COL = 12
+_KPI_COLS = frozenset({10})
+_EVIDENCE_START_COL = 13
 
 _FONT_TITLE = _font(size=15, bold=True, color="FFFFFF")
 _FONT_META = _font(size=9, color="455A64")
@@ -189,6 +196,8 @@ _FONT_HEADER = _font(bold=True, color="FFFFFF")
 _FONT_HEADER_MUTED = _font(size=9, bold=True, color="FFFFFF")
 _FONT_PRIMARY = _font(size=10, color="263238")
 _FONT_PRIMARY_KEY = _font(size=11, bold=True, color="37474F")
+_FONT_SHORT_CODE = Font(name=_FONT, size=10, bold=True, color="1F4E79")
+_FONT_INTERNAL_NUMBER = Font(name=_FONT, size=9, color="808080")
 _FONT_EVIDENCE = _font(size=9, color="455A64")
 
 _SHEETS = (
@@ -287,7 +296,7 @@ class BomProcurementObjectExportService:
 
         for idx, width in enumerate(_WIDTHS, start=1):
             sheet.column_dimensions[get_column_letter(idx)].width = width
-        sheet.freeze_panes = "G6"
+        sheet.freeze_panes = "I6"
         sheet.auto_filter.ref = f"A{_HEADER_ROW}:{get_column_letter(_COL_COUNT)}{last_row}"
         sheet.sheet_view.showGridLines = False
         sheet.sheet_view.zoomScale = 90
@@ -302,7 +311,7 @@ class BomProcurementObjectExportService:
         sheet.page_margins.bottom = 0.35
         sheet.print_options.horizontalCentered = True
         sheet.print_title_rows = "1:5"
-        sheet.print_title_cols = "A:F"
+        sheet.print_title_cols = "A:H"
         sheet.print_area = f"A1:{get_column_letter(_COL_COUNT)}{last_row}"
         _set_footer_text(
             cast(_HeaderFooterItem | None, sheet.oddFooter),
@@ -355,7 +364,7 @@ class BomProcurementObjectExportService:
             row=3,
             column=1,
             value=(
-                "打开原件按「Excel行号」对照零件与供货总成；左侧冻结列为核对主键。"
+                "打开原件按「Excel行号」对照；短码是零件号数字末四位，日常核对用。"
                 + ("" if qa_ok else " 检测未通过：仍可导出，禁止确认/审核。")
             ),
         )
@@ -400,7 +409,7 @@ class BomProcurementObjectExportService:
     def _header_fill(self, col: int) -> PatternFill:
         if col in _KPI_COLS:
             return _FILL_HEADER_KPI
-        if col <= 6:
+        if col <= 8:
             return _FILL_HEADER_MAIN
         if col <= _JUDGE_END_COL:
             return _FILL_HEADER_JUDGE
@@ -436,6 +445,8 @@ class BomProcurementObjectExportService:
                 row.excel_row,
                 row.excel_sheet_name or "",
                 row.part_number,
+                short_part_number_digits(row.part_number),
+                row.internal_number or None,
                 row.part_name or "",
                 row.l0_part_number,
                 row.l0_part_name or "",
@@ -512,6 +523,10 @@ class BomProcurementObjectExportService:
         return _FILL_WHITE
 
     def _cell_font(self, col: int) -> Font:
+        if col == _SHORT_CODE_COL:
+            return _FONT_SHORT_CODE
+        if col == _INTERNAL_NUMBER_COL:
+            return _FONT_INTERNAL_NUMBER
         if col in _KEY_COLS:
             return _FONT_PRIMARY_KEY
         if col in _PRIMARY_COLS:

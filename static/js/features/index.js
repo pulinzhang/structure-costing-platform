@@ -37,7 +37,8 @@
  * │   │   └── list/
  * │   ├── procurement-object/     # 采购对象清单
  * │   │   ├── generate/
- * │   │   └── list/
+ * │   │   ├── list/
+ * │   │   └── supplier-upload/
  * │   ├── annual-part-price/     # 年度零件价（采购对象之下）
  * │   │   ├── upload/
  * │   │   └── list/
@@ -289,6 +290,11 @@ export const pageMeta = {
         title: '采购对象清单',
         en: 'PROCUREMENT_OBJECT_LIST',
         breadcrumb: ['焊接工程', '采购对象', '采购对象清单'],
+    },
+    'bom-procurement-object-supplier-upload': {
+        title: '上传供应商',
+        en: 'PROCUREMENT_OBJECT_SUPPLIER_UPLOAD',
+        breadcrumb: ['焊接工程', '采购对象', '上传供应商'],
     },
     'bom-annual-part-price-upload': {
         title: '年度零件价上传',

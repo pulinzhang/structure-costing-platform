@@ -179,6 +179,16 @@ class Perm:
     BOM_PROCUREMENT_OBJECT_LIST_REVERSE = "op:bom-procurement-object-list:reverse"  # 反审核
     BOM_PROCUREMENT_OBJECT_LIST_EXPORT = "op:bom-procurement-object-list:export"  # 导出
 
+    MENU_BOM_PROCUREMENT_OBJECT_SUPPLIER_UPLOAD = (
+        "menu:bom-procurement-object-supplier-upload"  # 上传供应商
+    )
+    BOM_PROCUREMENT_OBJECT_SUPPLIER_UPLOAD_VIEW = (
+        "op:bom-procurement-object-supplier-upload:view"  # 查看
+    )
+    BOM_PROCUREMENT_OBJECT_SUPPLIER_UPLOAD_UPLOAD = (
+        "op:bom-procurement-object-supplier-upload:upload"  # 上传
+    )
+
     MENU_BOM_WELDING_PROCESS_BREAKDOWN_GROUP = (
         "menu:bom-welding-process-breakdown-group"  # 焊接工艺拆解
     )
@@ -337,7 +347,7 @@ class Perm:
     VEHICLE_MODEL_LIST_VIEW = "op:vehicle-model-list:view"  # 查看
     VEHICLE_MODEL_LIST_EXPORT = "op:vehicle-model-list:export"  # 导出
     VEHICLE_MODEL_LIST_CREATE = "op:vehicle-model-list:create"  # 新增
-    VEHICLE_MODEL_LIST_UPDATE = "op:vehicle-model-list:update"  # 编辑生效/失效/供货台数
+    VEHICLE_MODEL_LIST_UPDATE = "op:vehicle-model-list:update"  # 编辑
     VEHICLE_MODEL_LIST_DELETE = "op:vehicle-model-list:delete"  # 删除
 
     MENU_SUPPLIER = "menu:supplier"  # 供应商

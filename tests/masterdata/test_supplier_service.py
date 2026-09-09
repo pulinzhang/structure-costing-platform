@@ -293,6 +293,44 @@ def test_rename_to_own_alias(memory_db: Session) -> None:
     assert "常庆汽配" not in updated.aliases
 
 
+def test_search_enabled_choices_filters_keyword_and_disabled(memory_db: Session) -> None:
+    service = SupplierService()
+    _create(service, memory_db)
+    _create(
+        service,
+        memory_db,
+        abbreviation="二厂",
+        full_name="芜湖二厂冲压有限公司",
+        erp_code="EC002",
+    )
+    service.update(
+        memory_db,
+        "芜湖二厂冲压有限公司",
+        SupplierUpdateDTO(is_enabled=False),
+        current_user=SYSTEM_USER,
+    )
+    items, total = service.search_enabled_choices(memory_db, keyword="常庆", page=1, size=20)
+    assert total == 1
+    assert items[0].full_name == "安庆常庆汽车部件有限公司"
+    empty, empty_total = service.search_enabled_choices(memory_db, keyword="二厂", page=1, size=20)
+    assert empty_total == 0
+    assert empty == []
+
+
+def test_write_catalog_to_workbook_does_not_rename_first_sheet(memory_db: Session) -> None:
+    service = SupplierService()
+    _create(service, memory_db)
+    workbook = Workbook()
+    first = workbook.worksheets[0]
+    first.title = "采购对象"
+    first["A1"] = "节点"
+    service.write_catalog_to_workbook(memory_db, workbook, is_enabled=True)
+    assert workbook.worksheets[0].title == "采购对象"
+    assert workbook.worksheets[0]["A1"].value == "节点"
+    assert workbook.worksheets[1].title == "供应商"
+    assert workbook.worksheets[1]["B2"].value == "安庆常庆汽车部件有限公司"
+
+
 def test_delete_unreferenced_supplier(memory_db: Session) -> None:
     service = SupplierService()
     _create(service, memory_db)

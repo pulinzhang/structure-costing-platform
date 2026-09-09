@@ -53,9 +53,7 @@ _IMPORT_HEADERS = (
 )
 
 
-def _new_import_sheet() -> tuple[Workbook, Worksheet, Font, Border]:
-    workbook = Workbook()
-    sheet = resolve_worksheet(workbook, "供应商")
+def _catalog_sheet_styles() -> tuple[Font, Font, PatternFill, Alignment, Border]:
     header_font = Font(name="微软雅黑", size=10, bold=True, color="FFFFFF")
     header_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
     header_alignment = Alignment(horizontal="center", vertical="center")
@@ -66,6 +64,12 @@ def _new_import_sheet() -> tuple[Workbook, Worksheet, Font, Border]:
         top=Side(style="thin", color="BFBFBF"),
         bottom=Side(style="thin", color="BFBFBF"),
     )
+    return header_font, data_font, header_fill, header_alignment, thin_border
+
+
+def _attach_catalog_sheet(workbook: Workbook) -> tuple[Worksheet, Font, Border]:
+    sheet = resolve_worksheet(workbook, "供应商")
+    header_font, data_font, header_fill, header_alignment, thin_border = _catalog_sheet_styles()
     for col, title in enumerate(_IMPORT_HEADERS, start=1):
         cell = sheet.cell(row=1, column=col, value=title)
         cell.font = header_font
@@ -76,7 +80,7 @@ def _new_import_sheet() -> tuple[Workbook, Worksheet, Font, Border]:
     sheet.column_dimensions["B"].width = 40
     sheet.column_dimensions["C"].width = 16
     sheet.column_dimensions["D"].width = 36
-    return workbook, sheet, data_font, thin_border
+    return sheet, data_font, thin_border
 
 
 def _write_import_row(
@@ -106,6 +110,26 @@ class SupplierService:
             SupplierChoiceVO(full_name=row.full_name, abbreviation=row.abbreviation)
             for row in self.repository.list_enabled(db)
         ]
+
+    def search_enabled_choices(
+        self,
+        db: Session,
+        *,
+        keyword: str | None,
+        page: int,
+        size: int,
+    ) -> tuple[list[SupplierChoiceVO], int]:
+        skip = (page - 1) * size
+        rows, total = self.repository.paginate(
+            db,
+            keyword=keyword,
+            is_enabled=True,
+            skip=skip,
+            limit=size,
+        )
+        return [
+            SupplierChoiceVO(full_name=row.full_name, abbreviation=row.abbreviation) for row in rows
+        ], total
 
     def list_registered(self, db: Session) -> list[SupplierVO]:
         return [self._to_vo(row) for row in self.repository.list_all(db)]
@@ -503,8 +527,33 @@ class SupplierService:
             skipped_count=skipped_count,
         )
 
+    def write_catalog_to_workbook(
+        self,
+        db: Session,
+        workbook: Workbook,
+        *,
+        keyword: str | None = None,
+        is_enabled: bool | None = True,
+    ) -> None:
+        records = self.repository.list_for_export(
+            db,
+            keyword=keyword,
+            is_enabled=is_enabled,
+        )
+        sheet, data_font, thin_border = _attach_catalog_sheet(workbook)
+        for row_idx, record in enumerate(records, start=2):
+            aliases = "、".join(item.alias for item in record.aliases)
+            _write_import_row(
+                sheet,
+                row_idx,
+                (record.abbreviation, record.full_name, record.erp_code, aliases or None),
+                data_font,
+                thin_border,
+            )
+
     def build_template(self) -> tuple[bytes, str]:
-        workbook, sheet, data_font, thin_border = _new_import_sheet()
+        workbook = Workbook()
+        sheet, data_font, thin_border = _attach_catalog_sheet(workbook)
         _write_import_row(
             sheet,
             2,
@@ -525,21 +574,13 @@ class SupplierService:
         keyword: str | None = None,
         is_enabled: bool | None = None,
     ) -> tuple[bytes, str]:
-        records = self.repository.list_for_export(
+        workbook = Workbook()
+        self.write_catalog_to_workbook(
             db,
+            workbook,
             keyword=keyword,
             is_enabled=is_enabled,
         )
-        workbook, sheet, data_font, thin_border = _new_import_sheet()
-        for row_idx, record in enumerate(records, start=2):
-            aliases = "、".join(item.alias for item in record.aliases)
-            _write_import_row(
-                sheet,
-                row_idx,
-                (record.abbreviation, record.full_name, record.erp_code, aliases or None),
-                data_font,
-                thin_border,
-            )
         stamp = now().strftime("%Y%m%d_%H%M%S")
         return workbook_to_xlsx_bytes(workbook, current_user), f"供应商一览_{stamp}.xlsx"
 

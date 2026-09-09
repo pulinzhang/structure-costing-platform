@@ -2,7 +2,7 @@
 
 from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, File, Form, Query, UploadFile
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
@@ -19,6 +19,7 @@ from app.schemas.dto.bom_procurement_object_dto import (
     BomProcurementObjectGenerateLogQuery,
     BomProcurementObjectPrepQuery,
     BomProcurementObjectQuery,
+    BomProcurementObjectSupplierChoiceQuery,
     BomProcurementObjectSupplierDTO,
 )
 from app.schemas.vo.bom_procurement_object_vo import (
@@ -28,8 +29,10 @@ from app.schemas.vo.bom_procurement_object_vo import (
     BomProcurementObjectGenerateResultVO,
     BomProcurementObjectListVO,
     BomProcurementObjectPrepStatsVO,
+    BomProcurementObjectSupplierUploadResultVO,
     BomProcurementObjectVO,
 )
+from app.schemas.vo.supplier_vo import SupplierChoiceVO
 from app.schemas.vo.user_vo import UserVO
 from app.services.bom.procurement_object import BomProcurementObjectService
 from app.services.bom.procurement_object.export import BomProcurementObjectExportService
@@ -128,6 +131,77 @@ def get_summary(
             bom_version=bom_version,
         )
     )
+
+
+@router.get(
+    "/supplier-choices",
+    response_model=ApiResponse[PageResult[SupplierChoiceVO]],
+)
+def search_supplier_choices(
+    query: BomProcurementObjectSupplierChoiceQuery = Depends(),
+    db: Session = Depends(get_db),
+    current_user: UserVO = Depends(require_perm(Perm.BOM_PROCUREMENT_OBJECT_LIST_VIEW)),
+) -> ApiResponse[PageResult[SupplierChoiceVO]]:
+    items, total = _service.search_supplier_choices(db, query)
+    return ApiResponse.list_(
+        items=items,
+        total=total,
+        page=query.page,
+        page_size=query.size,
+    )
+
+
+@router.get("/supplier-template")
+def download_supplier_template(
+    location: str = Query(..., min_length=1),
+    vehicle_model: str = Query(..., min_length=1),
+    bom_version: str = Query(..., min_length=1),
+    db: Session = Depends(get_db),
+    current_user: UserVO = Depends(require_perm(Perm.BOM_PROCUREMENT_OBJECT_SUPPLIER_UPLOAD_VIEW)),
+) -> StreamingResponse:
+    content, filename = _service.build_supplier_template(
+        db,
+        location=location,
+        vehicle_model=vehicle_model,
+        bom_version=bom_version,
+    )
+    encoded = quote(filename)
+    return StreamingResponse(
+        iter([content]),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{encoded}"},
+    )
+
+
+@router.post(
+    "/supplier-upload",
+    response_model=ApiResponse[BomProcurementObjectSupplierUploadResultVO],
+)
+async def upload_suppliers(
+    location: str = Form(..., min_length=1),
+    vehicle_model: str = Form(..., min_length=1),
+    bom_version: str = Form(..., min_length=1),
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: UserVO = Depends(
+        require_perm(Perm.BOM_PROCUREMENT_OBJECT_SUPPLIER_UPLOAD_UPLOAD)
+    ),
+) -> ApiResponse[BomProcurementObjectSupplierUploadResultVO]:
+    content = await file.read()
+    result = _service.upload_suppliers(
+        db,
+        location=location,
+        vehicle_model=vehicle_model,
+        bom_version=bom_version,
+        filename=file.filename or "upload.xlsx",
+        file_content=content,
+        current_user=current_user,
+    )
+    message = (
+        f"已更新 {result.updated_count} 条，清空 {result.cleared_count} 条，"
+        f"未变 {result.unchanged_count} 条"
+    )
+    return ApiResponse.ok(data=result, message=message)
 
 
 @router.get(

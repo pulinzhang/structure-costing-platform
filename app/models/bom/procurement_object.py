@@ -95,6 +95,11 @@ class BomProcurementObject(AuditUserMixin, Base):
 
     part_number: Mapped[str] = mapped_column(String(50), nullable=False)
     part_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    internal_number: Mapped[str | None] = mapped_column(
+        String(50),
+        nullable=True,
+        comment="内部号（从材料清单节点抄来；业务上当 ERP 编号联查）",
+    )
     level: Mapped[int] = mapped_column(SmallInteger, nullable=False)
     node_role: Mapped[str] = mapped_column(String(20), nullable=False)
     qty: Mapped[Decimal | None] = mapped_column(Numeric(12, 4), nullable=True)
