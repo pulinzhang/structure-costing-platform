@@ -19,7 +19,7 @@ _ANY_STATUS = [AUDIT_PENDING, AUDIT_APPROVED, AUDIT_REJECTED]
 
 
 class AnnualCalcPlanner:
-    """§5.2：缺失年度结果 → will_auto_calc。"""
+    """§5.2：有工艺才判冲压加工费；有 BOM 才判焊接费。缺失年度结果 → will_auto_calc。"""
 
     def __init__(self) -> None:
         self.process_fee_repo = StampingProcessFeeRepository()
@@ -30,7 +30,7 @@ class AnnualCalcPlanner:
         items: list[CostingEngineAnnualItemVO] = []
         aliases = discovery.location_aliases
 
-        for vehicle_model in discovery.vehicle_models:
+        for vehicle_model in discovery.stamping_vehicle_models:
             exists = self._process_fee_exists(
                 db,
                 year=discovery.year,

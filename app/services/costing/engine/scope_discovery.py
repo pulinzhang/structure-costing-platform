@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from sqlalchemy.orm import Session
 
 from app.repositories.bom.bom_repository import BomSnapshotRepository
+from app.repositories.stamping.stamping_part_repository import StampingPartRepository
 from app.services.masterdata.location.location_service import LocationService
 from app.services.masterdata.vehicle_model import VehicleModelService
 
@@ -25,6 +26,7 @@ class DiscoveryResult:
     month: int
     location_aliases: list[str] = field(default_factory=list)
     vehicle_models: list[str] = field(default_factory=list)
+    stamping_vehicle_models: list[str] = field(default_factory=list)
     l0_scopes: list[L0Scope] = field(default_factory=list)
 
 
@@ -33,6 +35,7 @@ class ScopeDiscovery:
 
     def __init__(self) -> None:
         self.bom_snapshot_repo = BomSnapshotRepository()
+        self.part_repo = StampingPartRepository()
         self.vehicle_model_service = VehicleModelService()
 
     def discover(
@@ -69,11 +72,28 @@ class ScopeDiscovery:
                         bom_version=version,
                     )
                 )
+        stamping_vehicle_models = self._list_stamping_vehicle_models(
+            db, aliases=aliases, vehicle_models=vehicle_models
+        )
         return DiscoveryResult(
             location=location_clean,
             year=year,
             month=month,
             location_aliases=aliases,
             vehicle_models=vehicle_models,
+            stamping_vehicle_models=stamping_vehicle_models,
             l0_scopes=l0_scopes,
         )
+
+    def _list_stamping_vehicle_models(
+        self,
+        db: Session,
+        *,
+        aliases: list[str],
+        vehicle_models: list[str],
+    ) -> list[str]:
+        if not aliases or not vehicle_models:
+            return []
+        options = self.part_repo.get_cascade_filter_options(db, locations=aliases)
+        present = {str(name).strip() for name in (options.get("vehicle_models") or []) if name}
+        return [name for name in vehicle_models if name in present]

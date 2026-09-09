@@ -176,8 +176,6 @@ def _stamping_complete(
     parts = StampingPartRepository().list_by_location_and_vehicle(
         db, location=location, vehicle_model=vehicle_model
     )
-    if not parts:
-        return False, [], "工艺库该基地+项目零件数为 0，零件价未完成，请先完成零件核价"
     by_supplier: dict[str, set[str]] = defaultdict(set)
     for part in parts:
         supplier = (part.stamping_supplier or "").strip()
@@ -185,7 +183,7 @@ def _stamping_complete(
             continue
         by_supplier[supplier].add(part.part_number)
     if not by_supplier:
-        return False, [], "工艺库该基地+项目零件数为 0，零件价未完成，请先完成零件核价"
+        return True, [], "无冲压工艺，跳过零件价完成检查"
 
     from app.repositories.costing.stamping_part_cost.stamping_part_cost_repository import (
         StampingPartCostRepository,
