@@ -14,6 +14,7 @@ import {
     bindPageSizeSelect,
     normalizePageSize,
 } from '../../../../page-size.js?v=2';
+import { setSearchBusy } from '../../../../search-busy.js?v=1';
 
 const API_BASE = '/api/stamping/gauge-fees';
 const STORAGE_KEY = 'gaugeFeePageSize';
@@ -109,6 +110,7 @@ function buildQueryParams() {
 
 function setLoading(isLoading) {
     pageState.isLoading = isLoading;
+    setSearchBusy('gflSearchBtn', isLoading);
     document.getElementById('gflLoadingState')?.classList.toggle('hidden', !isLoading);
     if (isLoading) {
         document.getElementById('gflEmptyState')?.classList.add('hidden');

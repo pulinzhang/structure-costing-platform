@@ -2,7 +2,7 @@
 冲压加工费结果表
 按年度 + 基地 + 冲压工厂 + 零件维度存储加工费计算结果
 
-零件主表字段在计算时快照写入，便于列表展示与溯源（不依赖原表后续变更）。
+零件主表字段在计算时快照写入，便于列表展示与溯源。
 
 审核锁定：
   audit_status == 'approved' 时，禁止编辑其它费用、删除、重算覆盖；
@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy import (
     Boolean,
     DateTime,
+    ForeignKey,
     Index,
     Integer,
     Numeric,
@@ -56,7 +57,10 @@ class StampingProcessFee(AuditUserMixin, Base):
 
     # —— 零件主表快照（来自 stamping_parts）——
     source_part_id: Mapped[int | None] = mapped_column(
-        Integer, nullable=True, comment="来源零件主表 id"
+        Integer,
+        ForeignKey("stamping_parts.id", ondelete="RESTRICT", onupdate="RESTRICT"),
+        nullable=True,
+        comment="来源零件主表 id",
     )
     seq_no: Mapped[int | None] = mapped_column(Integer, nullable=True, comment="序号")
     part_number: Mapped[str] = mapped_column(String(50), nullable=False, comment="零件号")
@@ -176,6 +180,7 @@ class StampingProcessFee(AuditUserMixin, Base):
         Index("ix_stamping_process_fee_audit_status", "audit_status"),
         Index("ix_stamping_process_fee_material", "material"),
         Index("ix_stamping_process_fee_is_tailor_welded", "is_tailor_welded"),
+        Index("ix_stamping_process_fee_source_part_id", "source_part_id"),
         UniqueConstraint(
             "year",
             "location",

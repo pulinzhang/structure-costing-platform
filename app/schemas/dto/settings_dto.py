@@ -13,6 +13,12 @@ class SystemConfigUpdateDTO(BaseModel):
     """更新系统配置"""
 
     app_name: str = Field(..., min_length=1, max_length=100, description="应用名称")
+    company_name: str = Field(
+        ...,
+        min_length=1,
+        max_length=100,
+        description="公司名称（采购协议甲方）",
+    )
     steel_density: Decimal = Field(
         ...,
         gt=0,
@@ -92,12 +98,18 @@ class SystemConfigUpdateDTO(BaseModel):
     def _coerce_swing_shear_fee(cls, value: Any) -> Decimal:
         return quantize_money(value, Q2)
 
+    @field_validator("company_name", mode="before")
+    @classmethod
+    def _strip_company_name(cls, value: Any) -> str:
+        return str(value or "").strip()
+
 
 @dataclass(slots=True)
 class SystemConfigWrite:
     """系统配置单例新建。"""
 
     app_name: str
+    company_name: str
     steel_density: Decimal
     material_loss_rate: Decimal
     scrap_recovery_rate: Decimal
@@ -115,6 +127,7 @@ class SystemConfigPatch(TypedDict, total=False):
     """系统配置部分更新。"""
 
     app_name: str
+    company_name: str
     steel_density: Decimal
     material_loss_rate: Decimal
     scrap_recovery_rate: Decimal

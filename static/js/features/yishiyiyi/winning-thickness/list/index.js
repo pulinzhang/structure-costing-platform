@@ -8,6 +8,7 @@ import {
     DEFAULT_PREVIEW_PAGE_SIZE,
     renderPageButtons,
 } from '../../../../page-size.js?v=2';
+import { setSearchBusy } from '../../../../search-busy.js?v=1';
 import {
     winningThicknessDownloadTemplate,
     renderWinningThicknessRows,
@@ -19,6 +20,7 @@ const winningThicknessState = {
     page: 1,
     pageSize: DEFAULT_PREVIEW_PAGE_SIZE,
     filterLoadToken: 0,
+    isLoading: false,
 };
 
 const API_BASE = '/api/yishiyiyi/winning-thickness';
@@ -250,6 +252,9 @@ function applyFiltersToParams(params, filters) {
 async function previewData() {
     const filters = collectFilters();
     if (!requireCoreFilters(filters)) return;
+    if (winningThicknessState.isLoading) return;
+    winningThicknessState.isLoading = true;
+    setSearchBusy('btnPreviewWinningThickness', true);
 
     const tableBody = document.getElementById('winningThicknessPreviewBody');
     if (tableBody) {
@@ -305,6 +310,9 @@ async function previewData() {
                 </tr>
             `;
         }
+    } finally {
+        winningThicknessState.isLoading = false;
+        setSearchBusy('btnPreviewWinningThickness', false);
     }
 }
 

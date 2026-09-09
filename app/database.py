@@ -123,6 +123,7 @@ class DatabaseConfig:
         cls._ensure_welding_fee_columns(engine)
         cls._ensure_vehicle_model_child_fks(engine)
         cls._ensure_supplier_child_fks(engine)
+        cls._ensure_process_fee_part_fk(engine)
         cls._remap_welding_fee_permissions(engine)
         cls._remap_assembly_cost_permissions(engine)
         logger.info("主业务库表创建完成")
@@ -245,6 +246,10 @@ class DatabaseConfig:
                 (
                     "swing_shear_process_fee_per_ton",
                     "NUMERIC(12, 4) NOT NULL DEFAULT 150",
+                ),
+                (
+                    "company_name",
+                    "VARCHAR(100) NOT NULL DEFAULT '上海普炳软件科技有限公司'",
                 ),
             )
             for column_name, column_def in config_new_columns:
@@ -1086,6 +1091,58 @@ class DatabaseConfig:
             for (value,) in rows:
                 found.append((table_name, column_name, str(value)))
         return found
+
+    @classmethod
+    def _ensure_process_fee_part_fk(cls, engine: Engine) -> None:
+        """已有 SQLite 表补 stamping_process_fees.source_part_id → stamping_parts.id。"""
+        if not str(engine.url).startswith("sqlite"):
+            return
+        from sqlalchemy import inspect, text
+
+        inspector = inspect(engine)
+        table_names = set(inspector.get_table_names())
+        fee_table = "stamping_process_fees"
+        if fee_table not in table_names or "stamping_parts" not in table_names:
+            return
+
+        with engine.connect() as conn:
+            autocommit = conn.execution_options(isolation_level="AUTOCOMMIT")
+            if cls._sqlite_has_process_fee_part_fk(autocommit):
+                return
+            autocommit.execute(
+                text(
+                    f'UPDATE "{fee_table}" SET source_part_id = ('
+                    "SELECT p.id FROM stamping_parts p "
+                    f'WHERE p.location = "{fee_table}".location '
+                    f'AND p.stamping_supplier IS "{fee_table}".stamping_supplier '
+                    f'AND p.vehicle_model = "{fee_table}".vehicle_model '
+                    f'AND p.version = "{fee_table}".version '
+                    f'AND p.part_number = "{fee_table}".part_number '
+                    ") "
+                    "WHERE source_part_id IS NULL OR NOT EXISTS ("
+                    "SELECT 1 FROM stamping_parts p "
+                    f'WHERE p.id = "{fee_table}".source_part_id'
+                    ")"
+                )
+            )
+            autocommit.exec_driver_sql("PRAGMA foreign_keys=OFF")
+            try:
+                cls._sqlite_rebuild_table(autocommit, fee_table, tmp_suffix="__part_fk")
+                logger.info("已为 %s 补工艺零件外键", fee_table)
+            finally:
+                autocommit.exec_driver_sql("PRAGMA foreign_keys=ON")
+
+    @staticmethod
+    def _sqlite_has_process_fee_part_fk(conn: Connection) -> bool:
+        from sqlalchemy import text
+
+        rows = conn.execute(text('PRAGMA foreign_key_list("stamping_process_fees")')).fetchall()
+        for row in rows:
+            if str(row[2]) != "stamping_parts":
+                continue
+            if str(row[3]) == "source_part_id" and str(row[4]) == "id":
+                return True
+        return False
 
     @classmethod
     def _remap_welding_fee_permissions(cls, engine: Engine) -> None:

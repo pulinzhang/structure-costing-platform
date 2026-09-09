@@ -390,6 +390,7 @@ op:settings-profile:password
 | stamping-part-cost | `view` / `update` / `delete` / `approve` / `reverse` / `export` | 查询；失败手工改价；删除（含批量）；审核（含批量）；反审核；导出工艺清单 Excel |
 | assembly-cost-calc | `view` / `run` / `delete` | 历史/过程；开始计算；删除日志（含清空全部） |
 | assembly-cost | `view` / `delete` / `approve` / `reverse` / `export` | 查询；删除；审核；反审核；导出 |
+| procurement-contract-report | `view` / `export` | 查询价目表；导出《批量零部件价格协议》 |
 | costing（菜单码 `menu:costing-engine`） | `view` / `run` / `delete` | 检查就绪；启动月度引擎；删除 Run（含 running） |
 | file-trace | `view` / `download` | 列表/详情；鉴权下载原件 |
 | location | `view` / `create` / `update` / `delete` | 列表；新增基地/别名；启用禁用与删别名；删除基地 |

@@ -361,6 +361,9 @@ def create_app() -> FastAPI:
     from app.routers.costing.monthly_bundle_export.crud import (
         router as costing_monthly_bundle_export_router,
     )
+    from app.routers.costing.procurement_contract_report import (
+        router as costing_procurement_contract_report_router,
+    )
     from app.routers.costing.stamping_part_cost.calc import (
         router as costing_stamping_part_cost_calc_router,
     )
@@ -418,6 +421,7 @@ def create_app() -> FastAPI:
     app.include_router(costing_assembly_cost_legacy_router)
     app.include_router(costing_assembly_cost_calc_router)
     app.include_router(costing_assembly_cost_router)
+    app.include_router(costing_procurement_contract_report_router)
     app.include_router(costing_monthly_bundle_export_router)
     app.include_router(costing_steel_price_calc_router)
     app.include_router(costing_steel_price_router)

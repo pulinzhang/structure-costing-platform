@@ -69,6 +69,7 @@
  * │   ├── assembly-cost/         # 总成核价
  * │   │   ├── calc/
  * │   │   └── list/
+ * │   ├── procurement-contract-report/  # 采购价格
  * │   └── engine/                # 自动核价引擎
  * ├── file-trace/                # 文件溯源
  * ├── masterdata/                # 主数据
@@ -205,6 +206,11 @@ export const pageMeta = {
         title: '总成核价一览',
         en: 'ASSEMBLY_COST_LIST',
         breadcrumb: ['核价', '总成核价', '总成核价一览'],
+    },
+    'procurement-contract-report': {
+        title: '采购价格',
+        en: 'PROCUREMENT_PRICE',
+        breadcrumb: ['核价', '采购价格'],
     },
     'steel-price-policy-upload': {
         title: '加减价政策上传',

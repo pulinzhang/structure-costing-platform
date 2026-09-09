@@ -142,21 +142,28 @@ export function settingsTemplate() {
     return `
         <div class="relative">
             <div class="grid grid-cols-1 xl:grid-cols-12 gap-4">
-                <!-- 系统信息：只读 -->
+                <!-- 系统信息 -->
                 <section class="xl:col-span-12 bg-[#1e1e1e] border border-[#2c2c2c]">
                     <div class="px-4 py-2.5 border-b border-[#222222] flex items-center gap-2">
                         <div class="w-[2px] h-3.5 bg-[#d32f2f] rounded-[1px]"></div>
                         <h3 class="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#616161]">系统信息</h3>
                     </div>
-                    <div class="px-4 py-4 flex flex-wrap items-center gap-x-8 gap-y-3">
-                        <div class="min-w-0">
+                    <div class="px-4 py-4 grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                        <div class="md:col-span-4 min-w-0">
                             <div class="text-[10px] text-[#555555] tracking-[0.06em] mb-1">应用名称</div>
                             <div id="settingsAppNameText" class="text-sm text-[#F0F0F2] truncate">—</div>
                         </div>
-                        <div>
+                        <div class="md:col-span-2">
                             <div class="text-[10px] text-[#555555] tracking-[0.06em] mb-1">当前版本</div>
                             <span id="settingsVersionTag"
                                   class="inline-flex items-center h-6 px-2 text-[11px] tracking-[0.04em] text-[#9e9e9e] bg-[#0a0a0a] border border-[#2c2c2c] rounded-sm">—</span>
+                        </div>
+                        <div class="md:col-span-6 min-w-0">
+                            ${fieldLabel('公司名称', '采购协议甲方；空则保存为默认')}
+                            <input id="settingsCompanyName" type="text" maxlength="100"
+                                   class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] rounded-sm text-[#ffffff] focus:outline-none focus:border-[#ff5252] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                   placeholder="上海普炳软件科技有限公司">
+                            <p class="mt-1 text-[10px] leading-relaxed text-[#555555]">导出《批量零部件价格协议》时作为甲方</p>
                         </div>
                     </div>
                 </section>

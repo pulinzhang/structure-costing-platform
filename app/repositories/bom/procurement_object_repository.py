@@ -77,6 +77,16 @@ class BomProcurementObjectRepository:
             .first()
         )
 
+    def get_latest_list(self, db: Session) -> BomProcurementObjectList | None:
+        return (
+            db.query(BomProcurementObjectList)
+            .order_by(
+                BomProcurementObjectList.generated_at.desc(),
+                BomProcurementObjectList.id.desc(),
+            )
+            .first()
+        )
+
     def get_object_by_id(self, db: Session, object_id: int) -> BomProcurementObject | None:
         return db.query(BomProcurementObject).filter(BomProcurementObject.id == object_id).first()
 

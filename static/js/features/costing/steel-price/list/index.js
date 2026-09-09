@@ -14,6 +14,7 @@ import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
 } from '../../../../page-size.js?v=2';
+import { setSearchBusy } from '../../../../search-busy.js?v=1';
 
 const steelPriceState = {
     records: [],
@@ -26,6 +27,7 @@ const steelPriceState = {
     pendingFilters: null,
     batchAuditSubmitting: false,
     advancedFilterOpen: false,
+    isLoading: false,
 };
 
 const API_BASE = '/api/costing/steel-price';
@@ -99,6 +101,9 @@ function readHashFilters() {
 }
 
 async function loadData(page = 1) {
+    if (steelPriceState.isLoading) return;
+    steelPriceState.isLoading = true;
+    setSearchBusy('steelPriceSearchButton', true);
     const tableBody = document.getElementById('steelPriceTableBody');
     const emptyState = document.getElementById('steelPriceEmpty');
     const loadingState = document.getElementById('steelPriceLoading');
@@ -167,6 +172,8 @@ async function loadData(page = 1) {
                 </tr>`;
         }
     } finally {
+        steelPriceState.isLoading = false;
+        setSearchBusy('steelPriceSearchButton', false);
         if (loadingState) loadingState.classList.add('hidden');
     }
 }

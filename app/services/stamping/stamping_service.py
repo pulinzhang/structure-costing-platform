@@ -6,6 +6,7 @@
 import logging
 from decimal import Decimal
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.common.audit import audit_create, display_name
@@ -391,10 +392,14 @@ class StampingPartService:
 
     def delete(self, db: Session, part_id: int) -> None:
         """删除零件（硬删除，不写审计字段）。"""
-        deleted = self.repository.delete(db, part_id)
-        if not deleted:
-            raise NotFoundException(f"零件不存在: id={part_id}")
-        db.commit()
+        try:
+            deleted = self.repository.delete(db, part_id)
+            if not deleted:
+                raise NotFoundException(f"零件不存在: id={part_id}")
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+            raise BusinessException("仍被引用，不能删除") from None
 
     def create(
         self,
@@ -479,14 +484,18 @@ class StampingPartService:
                 "没有该供应商，请到供应商一览表手工增加或上传（#/supplier-list）"
             )
 
-        deleted = self.repository.delete_by_scope(
-            db,
-            location=location,
-            stamping_suppliers=supplier_names,
-            vehicle_model=vehicle_model,
-            version=version,
-        )
-        db.commit()
+        try:
+            deleted = self.repository.delete_by_scope(
+                db,
+                location=location,
+                stamping_suppliers=supplier_names,
+                vehicle_model=vehicle_model,
+                version=version,
+            )
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+            raise BusinessException("仍被引用，不能删除") from None
         return StampingPartBatchDeleteResultVO(
             location=location,
             stamping_supplier=supplier,

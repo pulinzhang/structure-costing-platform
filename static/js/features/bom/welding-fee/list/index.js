@@ -15,6 +15,7 @@ import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
 } from '../../../../page-size.js?v=2';
+import { setSearchBusy } from '../../../../search-busy.js?v=1';
 
 const API_BASE = '/api/bom/welding-fees';
 const DRAWER_ANIMATION_MS = 300;
@@ -32,6 +33,7 @@ const feeState = {
     advancedOpen: false,
     batchAuditMode: null,
     batchAuditSubmitting: false,
+    isLoading: false,
     canUpdate: false,
     editingSystemFee: null,
     viewingFee: null,
@@ -422,6 +424,9 @@ function requireScope() {
 }
 
 async function loadData(page = feeState.page) {
+    if (feeState.isLoading) return;
+    feeState.isLoading = true;
+    setSearchBusy('l0wfSearchBtn', true);
     const body = document.getElementById('l0wfTableBody');
     const empty = document.getElementById('l0wfEmpty');
     if (body) {
@@ -481,6 +486,9 @@ async function loadData(page = feeState.page) {
         if (body) {
             body.innerHTML = `<tr><td colspan="16" class="py-8 text-center text-[#ef5350]">加载失败</td></tr>`;
         }
+    } finally {
+        feeState.isLoading = false;
+        setSearchBusy('l0wfSearchBtn', false);
     }
 }
 

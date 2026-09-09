@@ -240,6 +240,18 @@ def _extra_faq_chunks() -> list[CorpusChunk]:
             keywords=("总成核价", "成品核价", "L0", "总成核价计算", "成品核价计算"),
         ),
         CorpusChunk(
+            chunk_id="procurement_contract_report",
+            title="采购价格在哪",
+            text=(
+                "核价菜单「采购价格」按供应商出《批量零部件价格协议》。"
+                "页 #/procurement-contract-report。只读查询 + 导出，不算价。"
+                "筛基地、项目、BOM 版本、起止年月、供应商；缺结算价填斜杠。"
+            ),
+            source_page="help.html",
+            anchor="costing-pages",
+            keywords=("采购价格", "批量零部件价格协议", "签约", "二级厂"),
+        ),
+        CorpusChunk(
             chunk_id="yishiyiyi_extra",
             title="牌号分类与中标厚度价",
             text=(

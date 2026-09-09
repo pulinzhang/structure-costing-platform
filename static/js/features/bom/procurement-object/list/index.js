@@ -6,11 +6,12 @@ import {
     procurementObjectListTemplate,
     renderPoPagination,
     renderProcurementObjectRows,
-} from './template.js?v=11';
+} from './template.js?v=12';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
 } from '../../../../page-size.js?v=2';
+import { setSearchBusy } from '../../../../search-busy.js?v=1';
 import { AUDIT_LABELS, CONFIRM_LABELS, KIND_LABELS, SECTION_LABELS } from '../labels.js?v=2';
 
 const API_BASE = '/api/bom/procurement-objects';
@@ -30,6 +31,7 @@ const listState = {
     canReverse: true,
     canExport: true,
     submitting: false,
+    isLoading: false,
 };
 
 const supplierPicker = {
@@ -388,10 +390,22 @@ function syncConfirmSupplierEnabled() {
     search.disabled = locked;
 }
 
+function setListLoading(isLoading) {
+    listState.isLoading = isLoading;
+    setSearchBusy('poSearchBtn', isLoading);
+    document.getElementById('poLoadingState')?.classList.toggle('hidden', !isLoading);
+    if (isLoading) {
+        const body = document.getElementById('poTableBody');
+        if (body) body.innerHTML = '';
+    }
+}
+
 async function loadList(page) {
+    if (listState.isLoading) return;
     listState.page = page || 1;
     updateCapsules();
     syncTabs();
+    setListLoading(true);
     try {
         const res = await HttpClient.get(API_BASE, { params: queryParams() });
         const data = res.data || {};
@@ -411,6 +425,8 @@ async function loadList(page) {
         loadSummaryBanner();
     } catch (error) {
         console.error('加载采购对象清单失败', error);
+    } finally {
+        setListLoading(false);
     }
 }
 

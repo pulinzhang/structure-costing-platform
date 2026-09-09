@@ -618,7 +618,7 @@ D5  退化树根财务专项签字
 | [welding-fee-design.md](../bom/welding-fee-design.md) | 按节点工费 |
 | [bom-procurement-objects-design.md](../bom/bom-procurement-objects-design.md) | 集合 C |
 | [bom-procurement-object-supplier-design.md](../bom/bom-procurement-object-supplier-design.md) | 合同对方（供应商第二期已落地）；本切片不存 |
-| [procurement-contract-report-design.md](procurement-contract-report-design.md) | 签约横表只读 `should_cost`（未落地） |
+| [procurement-contract-report-design.md](procurement-contract-report-design.md) | 签约横表只读 `should_cost`（已落地） |
 | [costing-engine-design.md](costing-engine-design.md) | 阶段改为全卡 |
 | [permission-design.md](../permission-design.md) | 改名 |
 

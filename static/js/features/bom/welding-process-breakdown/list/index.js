@@ -15,6 +15,7 @@ import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
 } from '../../../../page-size.js?v=2';
+import { setSearchBusy } from '../../../../search-busy.js?v=1';
 
 const API_BASE = '/api/bom/welding-process-breakdown';
 const DRAWER_MS = 300;
@@ -287,6 +288,7 @@ function fillSelect(id, values, emptyLabel = '全部') {
 async function loadData(page = 1) {
     if (wpbState.isLoading) return;
     wpbState.isLoading = true;
+    setSearchBusy('btnWpbFilter', true);
     const tbody = document.getElementById('wpbTableBody');
     const empty = document.getElementById('wpbEmptyState');
     const loading = document.getElementById('wpbLoadingState');
@@ -362,6 +364,7 @@ async function loadData(page = 1) {
     } finally {
         loading?.classList.add('hidden');
         wpbState.isLoading = false;
+        setSearchBusy('btnWpbFilter', false);
     }
 }
 

@@ -13,6 +13,7 @@ import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
 } from '../../../page-size.js?v=2';
+import { setSearchBusy } from '../../../search-busy.js?v=1';
 
 const usersState = {
     records: [],
@@ -72,6 +73,7 @@ function init() {
 async function loadData(page = 1) {
     if (usersState.isLoading) return;
     usersState.isLoading = true;
+    setSearchBusy('btnFilter', true);
 
     const tableBody = document.getElementById('usersTableBody');
     const emptyState = document.getElementById('emptyState');
@@ -138,6 +140,7 @@ async function loadData(page = 1) {
         updateOverviewStats(null);
     } finally {
         usersState.isLoading = false;
+        setSearchBusy('btnFilter', false);
         if (loadingState) loadingState.classList.add('hidden');
     }
 }

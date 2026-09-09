@@ -7,7 +7,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import TypedDict, TypeVar
 
-from sqlalchemy import case, func
+from sqlalchemy import and_, case, func, or_
 from sqlalchemy.orm import Query, Session, joinedload, noload
 
 from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING
@@ -17,6 +17,19 @@ from app.models.costing.assembly_cost_indirect import AssemblyCostIndirect
 from app.models.costing.assembly_cost_item import AssemblyCostItem
 
 _T = TypeVar("_T")
+_IN_CHUNK = 400
+
+
+def _chunks(values: list[int]) -> list[list[int]]:
+    if not values:
+        return []
+    return [values[index : index + _IN_CHUNK] for index in range(0, len(values), _IN_CHUNK)]
+
+
+def _decimal(value: object) -> Decimal:
+    if isinstance(value, Decimal):
+        return value
+    return Decimal(str(value))
 
 
 @dataclass(frozen=True)
@@ -778,6 +791,70 @@ class AssemblyCostRepository:
         db.flush()
         return int(count)
 
+    def list_should_costs_for_nodes(
+        self,
+        db: Session,
+        *,
+        location: str,
+        vehicle_model: str,
+        bom_version: str,
+        months: list[tuple[int, int]],
+        source_node_ids: list[int],
+    ) -> list[tuple[int, int, int, Decimal]]:
+        """窗口内节点应成本。返回 (year, month, source_node_id, should_cost)。"""
+        if not months or not source_node_ids:
+            return []
+        month_clause = or_(
+            *[
+                and_(AssemblyCost.year == year, AssemblyCost.month == month)
+                for year, month in months
+            ]
+        )
+        rows: list[tuple[int, int, int, Decimal]] = []
+        for chunk in _chunks(source_node_ids):
+            found = (
+                db.query(
+                    AssemblyCost.year,
+                    AssemblyCost.month,
+                    AssemblyCost.source_node_id,
+                    AssemblyCost.should_cost,
+                )
+                .filter(
+                    AssemblyCost.location == location,
+                    AssemblyCost.vehicle_model == vehicle_model,
+                    AssemblyCost.bom_version == bom_version,
+                    month_clause,
+                    AssemblyCost.source_node_id.in_(chunk),
+                )
+                .all()
+            )
+            rows.extend(
+                (int(year), int(month), int(node_id), _decimal(should_cost))
+                for year, month, node_id, should_cost in found
+            )
+        return rows
+
     def list_distinct_years(self, db: Session) -> list[int]:
         rows = db.query(AssemblyCost.year).distinct().order_by(AssemblyCost.year.desc()).all()
         return [int(r[0]) for r in rows]
+
+    def get_latest_scope_year_month(self, db: Session) -> tuple[str, str, str, int, int] | None:
+        """全库最近一次核价月及其基地/项目/版本。"""
+        row = (
+            db.query(
+                AssemblyCost.location,
+                AssemblyCost.vehicle_model,
+                AssemblyCost.bom_version,
+                AssemblyCost.year,
+                AssemblyCost.month,
+            )
+            .order_by(
+                AssemblyCost.year.desc(),
+                AssemblyCost.month.desc(),
+                AssemblyCost.id.desc(),
+            )
+            .first()
+        )
+        if row is None:
+            return None
+        return str(row[0]), str(row[1]), str(row[2]), int(row[3]), int(row[4])

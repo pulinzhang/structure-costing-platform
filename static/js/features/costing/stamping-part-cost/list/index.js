@@ -15,6 +15,7 @@ import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
 } from '../../../../page-size.js?v=2';
+import { setSearchBusy } from '../../../../search-busy.js?v=1';
 
 const API_BASE = '/api/costing/stamping-part-cost';
 const CASCADE_API = '/api/stamping/filters/cascade';
@@ -47,6 +48,7 @@ const listState = {
     advancedOpen: false,
     pendingFilters: null,
     batchAuditSubmitting: false,
+    isLoading: false,
     _onEscClose: null,
 };
 
@@ -168,6 +170,8 @@ function toggleBreakdownColumns() {
 }
 
 function setListLoading(isLoading) {
+    listState.isLoading = isLoading;
+    setSearchBusy('costSearchBtn', isLoading);
     const loading = document.getElementById('costLoading');
     const empty = document.getElementById('costEmpty');
     if (loading) loading.classList.toggle('hidden', !isLoading);
@@ -399,6 +403,7 @@ function requireAuditScope() {
 async function loadList(page = 1) {
     const body = document.getElementById('costTableBody');
     if (!body) return;
+    if (listState.isLoading) return;
     setListLoading(true);
     body.innerHTML = '';
     updateCostFilterCapsules();
@@ -412,7 +417,6 @@ async function loadList(page = 1) {
         listState.total = pageData.total || 0;
         listState.totalPages = pageData.total_pages || 1;
         listState.items = Array.isArray(pageData.items) ? pageData.items : [];
-        setListLoading(false);
         renderRows(listState.items);
         updatePartCostHud(listState.total, pageData.filters?.summary || null);
         const pageInfo = document.getElementById('costPageInfo');
@@ -446,6 +450,8 @@ async function loadList(page = 1) {
         updatePartCostHud(0, null);
         updateCostFilterCapsules();
         showToast(error.message || '加载失败', 'error');
+    } finally {
+        setListLoading(false);
     }
 }
 

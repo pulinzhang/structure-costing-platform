@@ -16,6 +16,7 @@ import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
 } from '../../../../page-size.js?v=2';
+import { setSearchBusy } from '../../../../search-busy.js?v=1';
 
 const pkgState = {
     records: [],
@@ -170,6 +171,7 @@ function hasFullScope(filters) {
 async function loadData(page = 1) {
     if (pkgState.isLoading) return;
     pkgState.isLoading = true;
+    setSearchBusy('btnFilterPkg', true);
 
     const tableBody = document.getElementById('pkgTransportFeeTableBody');
     const emptyState = document.getElementById('pkgEmptyState');
@@ -229,6 +231,7 @@ async function loadData(page = 1) {
         }
     } finally {
         pkgState.isLoading = false;
+        setSearchBusy('btnFilterPkg', false);
         loadingState?.classList.add('hidden');
     }
 }

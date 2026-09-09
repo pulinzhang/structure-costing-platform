@@ -11,6 +11,7 @@ import {
     bindPageSizeSelect,
     renderPageButtons,
 } from '../../../../page-size.js?v=2';
+import { setSearchBusy } from '../../../../search-busy.js?v=1';
 
 // 状态管理
 const policyDownloadState = {
@@ -21,6 +22,7 @@ const policyDownloadState = {
     totalPages: 1,
     filtersLoaded: false,
     pendingFilters: null,
+    isLoading: false,
 };
 
 // API 基础路径
@@ -365,6 +367,9 @@ async function previewData(page = 1) {
         showToast('请至少选择一个筛选条件', 'warning');
         return;
     }
+    if (policyDownloadState.isLoading) return;
+    policyDownloadState.isLoading = true;
+    setSearchBusy('btnPreview', true);
 
     const tableBody = document.getElementById('policyPreviewBody');
     if (tableBody) {
@@ -432,6 +437,9 @@ async function previewData(page = 1) {
         }
         const pagination = document.getElementById('policyPagination');
         if (pagination) pagination.innerHTML = '';
+    } finally {
+        policyDownloadState.isLoading = false;
+        setSearchBusy('btnPreview', false);
     }
 }
 

@@ -15,6 +15,7 @@ import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
 } from '../../../../page-size.js?v=2';
+import { setSearchBusy } from '../../../../search-busy.js?v=1';
 
 const API_BASE = '/api/stamping/process-fees';
 const DRAWER_ANIMATION_MS = 300;
@@ -38,6 +39,7 @@ const feeState = {
     onlyZero: false,
     zeroCount: 0,
     batchAuditSubmitting: false,
+    isLoading: false,
     viewingId: null,
     editingIsTailorWelded: false,
     editingProcessingFee: null,
@@ -517,6 +519,9 @@ function formatScopeSummary(filters) {
 }
 
 async function loadData(page = 1) {
+    if (feeState.isLoading) return;
+    feeState.isLoading = true;
+    setSearchBusy('feeSearchBtn', true);
     const loading = document.getElementById('feeLoading');
     const empty = document.getElementById('feeEmpty');
     const body = document.getElementById('feeTableBody');
@@ -572,6 +577,8 @@ async function loadData(page = 1) {
         empty?.classList.remove('hidden');
         updateFeeHud(0, null, feeState.onlyZero);
     } finally {
+        feeState.isLoading = false;
+        setSearchBusy('feeSearchBtn', false);
         loading?.classList.add('hidden');
     }
 }

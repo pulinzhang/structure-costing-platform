@@ -10,6 +10,7 @@ import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
 } from '../../../../page-size.js?v=2';
+import { setSearchBusy } from '../../../../search-busy.js?v=1';
 
 const API_BASE = '/api/costing/assembly-costs';
 const CASCADE_API = '/api/bom/filters/cascade';
@@ -40,6 +41,7 @@ const listState = {
     advancedOpen: false,
     pendingFilters: null,
     batchAuditSubmitting: false,
+    isLoading: false,
 };
 
 function openDrawer(drawerId, backdropId) {
@@ -190,6 +192,8 @@ function applyPendingFiltersToSelects() {
 }
 
 function setListLoading(isLoading) {
+    listState.isLoading = isLoading;
+    setSearchBusy('lacSearchBtn', isLoading);
     const loading = document.getElementById('lacLoading');
     const empty = document.getElementById('lacEmpty');
     if (loading) loading.classList.toggle('hidden', !isLoading);
@@ -447,6 +451,7 @@ function requireScope(actionLabel = '批量操作') {
 async function loadList(page = 1) {
     const body = document.getElementById('lacTableBody');
     if (!body) return;
+    if (listState.isLoading) return;
     setListLoading(true);
     body.innerHTML = '';
     updateLacFilterCapsules();
@@ -464,7 +469,6 @@ async function loadList(page = 1) {
         listState.total = pageData.total || 0;
         listState.totalPages = pageData.total_pages || 1;
         listState.items = Array.isArray(pageData.items) ? pageData.items : [];
-        setListLoading(false);
         body.innerHTML = renderLacRows(listState.items, listState.view);
         updateLacTableHead(listState.view);
         setListEmpty(listState.items.length === 0);
@@ -479,9 +483,10 @@ async function loadList(page = 1) {
             pagination.innerHTML = renderLacPagination(listState.page, listState.totalPages);
         }
     } catch (error) {
-        setListLoading(false);
         body.innerHTML = '';
         setListEmpty(true);
+    } finally {
+        setListLoading(false);
     }
 }
 

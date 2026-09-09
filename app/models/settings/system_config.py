@@ -18,6 +18,12 @@ class SystemConfig(AuditUserMixin, Base):
         Integer, primary_key=True, autoincrement=False, comment="固定为 1"
     )
     app_name: Mapped[str] = mapped_column(String(100), nullable=False, comment="应用名称")
+    company_name: Mapped[str] = mapped_column(
+        String(100),
+        nullable=False,
+        default="上海普炳软件科技有限公司",
+        comment="公司名称（采购协议甲方）",
+    )
     steel_density: Mapped[Decimal] = mapped_column(
         Numeric(6, 4),
         nullable=False,

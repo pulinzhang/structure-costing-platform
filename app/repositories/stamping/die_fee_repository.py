@@ -491,6 +491,43 @@ class StampingDieFeeRepository:
         )
         return [row[0] for row in rows if row[0]]
 
+    def map_final_die_fee_by_part_numbers(
+        self,
+        db: Session,
+        *,
+        year: int,
+        location: str,
+        vehicle_model: str,
+        part_numbers: list[str],
+    ) -> dict[str, tuple[Decimal, Decimal]]:
+        """零件号 → (最终模具费 元/件, 分摊数量 万件)。"""
+        if not part_numbers:
+            return {}
+        mapped: dict[str, tuple[Decimal, Decimal]] = {}
+        unique_numbers = list(dict.fromkeys(part_numbers))
+        for index in range(0, len(unique_numbers), 400):
+            chunk = unique_numbers[index : index + 400]
+            rows = (
+                db.query(
+                    StampingDieFee.part_number,
+                    StampingDieFee.final_die_fee,
+                    StampingDieFee.allocation_qty,
+                )
+                .filter(
+                    StampingDieFee.year == year,
+                    StampingDieFee.location == location,
+                    StampingDieFee.vehicle_model == vehicle_model,
+                    StampingDieFee.part_number.in_(chunk),
+                )
+                .all()
+            )
+            for part_number, final_die_fee, allocation_qty in rows:
+                mapped[str(part_number)] = (
+                    _sql_money(final_die_fee),
+                    _sql_money(allocation_qty),
+                )
+        return mapped
+
     def list_distinct_versions(
         self,
         db: Session,

@@ -8,6 +8,7 @@ import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
 } from '../../../page-size.js?v=2';
+import { setSearchBusy } from '../../../search-busy.js?v=1';
 
 const logsState = {
     records: [],
@@ -114,6 +115,7 @@ function applyFilterOptions(filters) {
 async function loadData(page = 1) {
     if (logsState.isLoading) return;
     logsState.isLoading = true;
+    setSearchBusy('btnFilter', true);
 
     const tableBody = document.getElementById('logsTableBody');
     const emptyState = document.getElementById('emptyState');
@@ -172,6 +174,7 @@ async function loadData(page = 1) {
     } finally {
         if (loadingState) loadingState.classList.add('hidden');
         logsState.isLoading = false;
+        setSearchBusy('btnFilter', false);
     }
 }
 

@@ -20,6 +20,7 @@ from app.schemas.vo.settings_vo import ConfigVO
 from app.schemas.vo.user_vo import UserVO
 
 DEFAULT_APP_NAME = "汽车冲压件自动核价平台"
+DEFAULT_COMPANY_NAME = "上海普炳软件科技有限公司"
 DEFAULT_STEEL_DENSITY = Decimal("7.85")
 DEFAULT_MATERIAL_LOSS_RATE = Decimal("0.003")  # 千分之 3
 DEFAULT_SCRAP_RECOVERY_RATE = Decimal("0.97")  # 97%
@@ -43,6 +44,7 @@ class SettingsService:
         if row is None:
             return ConfigVO(
                 app_name=app_settings.APP_NAME or DEFAULT_APP_NAME,
+                company_name=DEFAULT_COMPANY_NAME,
                 version=APP_VERSION,
                 steel_density=DEFAULT_STEEL_DENSITY,
                 material_loss_rate=DEFAULT_MATERIAL_LOSS_RATE,
@@ -56,6 +58,7 @@ class SettingsService:
             )
         return ConfigVO(
             app_name=row.app_name or DEFAULT_APP_NAME,
+            company_name=self._normalize_company_name(getattr(row, "company_name", None)),
             version=APP_VERSION,
             steel_density=self._normalize_density(row.steel_density),
             material_loss_rate=self._normalize_loss_rate(getattr(row, "material_loss_rate", None)),
@@ -95,6 +98,7 @@ class SettingsService:
         current_user: UserVO,
     ) -> ConfigVO:
         app_name = dto.app_name.strip() or DEFAULT_APP_NAME
+        company_name = self._normalize_company_name(dto.company_name)
         audit = audit_create(current_user)
         steel_density = quantize_money(dto.steel_density, Q4)
         material_loss_rate = quantize_money(dto.material_loss_rate, Q6)
@@ -113,6 +117,7 @@ class SettingsService:
                 db,
                 SystemConfigWrite(
                     app_name=app_name,
+                    company_name=company_name,
                     steel_density=steel_density,
                     material_loss_rate=material_loss_rate,
                     scrap_recovery_rate=scrap_recovery_rate,
@@ -132,6 +137,7 @@ class SettingsService:
                 row,
                 SystemConfigPatch(
                     app_name=app_name,
+                    company_name=company_name,
                     steel_density=steel_density,
                     material_loss_rate=material_loss_rate,
                     scrap_recovery_rate=scrap_recovery_rate,
@@ -146,6 +152,13 @@ class SettingsService:
             )
         db.commit()
         return self.get_config(db)
+
+    def get_company_name(self, db: Session) -> str:
+        """协议导出用：读公司名称（甲方），空则回退样张默认。"""
+        row = self.repository.get_singleton(db)
+        if row is None:
+            return DEFAULT_COMPANY_NAME
+        return self._normalize_company_name(getattr(row, "company_name", None))
 
     def get_steel_density(self, db: Session) -> Decimal:
         """核价用：读系统配置密度，无效或缺失则回退 7.85。"""
@@ -227,6 +240,11 @@ class SettingsService:
             getattr(row, "swing_shear_process_fee_per_ton", None),
             DEFAULT_SWING_SHEAR_PROCESS_FEE_PER_TON,
         )
+
+    @staticmethod
+    def _normalize_company_name(value: Any) -> str:
+        name = str(value or "").strip()
+        return name or DEFAULT_COMPANY_NAME
 
     @staticmethod
     def _normalize_density(value: Any) -> Decimal:
