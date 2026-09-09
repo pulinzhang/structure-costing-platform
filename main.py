@@ -73,9 +73,6 @@ async def lifespan(app: FastAPI):
     db = session_factory()
     try:
         UserService().ensure_default_admin(db)
-        from app.services.masterdata.location import LocationService
-
-        LocationService().ensure_seed_if_empty(db)
     finally:
         db.close()
 

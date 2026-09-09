@@ -26,6 +26,7 @@ from app.schemas.dto.location_dto import LocationUpdateDTO
 from app.schemas.dto.vehicle_model_dto import VehicleModelCreateDTO, VehicleModelUpdateDTO
 from app.services.masterdata.location import LocationService
 from app.services.masterdata.vehicle_model import VehicleModelService
+from tests.masterdata.location_fixtures import insert_sample_locations
 
 
 @pytest.fixture
@@ -61,7 +62,7 @@ def memory_db() -> Generator[Session, None, None]:
 
 
 def _seed(db: Session) -> None:
-    LocationService().ensure_seed_if_empty(db)
+    insert_sample_locations(db)
 
 
 def _create(
