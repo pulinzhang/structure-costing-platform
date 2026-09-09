@@ -51,7 +51,10 @@ from app.services.masterdata.location.location_service import LocationService
 logger = logging.getLogger("service.costing.engine")
 
 # 仍展示「去处理」提示，但不计入 hard_stop / 不阻断 can_start
-SOFT_UPLOAD_GATE_CODES = frozenset({"thickness_policy", "packaging_transport"})
+# 缺工艺/无 BOM 只提示，不阻断另一条核价路径
+SOFT_UPLOAD_GATE_CODES = frozenset(
+    {"thickness_policy", "packaging_transport", "stamping_process", "bom_snapshot"}
+)
 
 
 class CostingEngineHardStopError(BusinessException):
@@ -104,7 +107,7 @@ class CostingEngineService:
         hard_stop = any(
             (not item.ok) and item.code not in SOFT_UPLOAD_GATE_CODES for item in upload_or_config
         )
-        has_path = bool(discovered.vehicle_models or discovered.l0_scopes)
+        has_path = bool(discovered.stamping_vehicle_models or discovered.l0_scopes)
         can_start = (not hard_stop) and has_path
 
         plan = CostingEnginePlanVO(
@@ -115,7 +118,7 @@ class CostingEngineService:
             },
             part_cost_scopes=[
                 CostingEnginePartCostScopeVO(vehicle_model=name)
-                for name in discovered.vehicle_models
+                for name in discovered.stamping_vehicle_models
             ],
             l0_scopes=[
                 CostingEngineL0ScopeVO(

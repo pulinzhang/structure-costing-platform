@@ -214,7 +214,7 @@ def execute_part_cost(
     progress: ProgressNotifier,
     carry: PhaseCarry,
 ) -> None:
-    vehicles = discovery.vehicle_models
+    vehicles = discovery.stamping_vehicle_models
     part_total = max(len(vehicles), 1)
     for idx, vehicle_model in enumerate(vehicles):
         progress.report_stage(
@@ -279,6 +279,7 @@ def execute_assembly(
     carry: PhaseCarry,
 ) -> None:
     scopes = discovery.l0_scopes
+    stamping_models = set(discovery.stamping_vehicle_models)
     total = max(len(scopes), 1)
     for idx, scope in enumerate(scopes):
         scope_key = f"{scope.vehicle_model}|{scope.bom_version}"
@@ -289,7 +290,7 @@ def execute_assembly(
             f"总成核价 {idx + 1}/{len(scopes)} · {scope.vehicle_model} / {scope.bom_version}",
         )
         skip_reason = None
-        if scope.vehicle_model in carry.failed_vehicles:
+        if scope.vehicle_model in stamping_models and scope.vehicle_model in carry.failed_vehicles:
             skip_reason = "该项目加工费或零件价未完成，跳过总成核价"
         elif scope_key in carry.failed_l0:
             skip_reason = "年度焊接拆解/焊接费补算失败，跳过总成核价"

@@ -80,9 +80,13 @@ def test_scope_discovery_multi_bom_dedupe() -> None:
         ),
     ):
         location_cls.return_value.expand_for_query.return_value = ["青岛", "青岛基地"]
+        discovery.part_repo.get_cascade_filter_options = MagicMock(
+            return_value={"vehicle_models": ["T28"]}
+        )
         result = discovery.discover(db, location="青岛", year=2025, month=1)
 
     assert result.vehicle_models == ["T28"]
+    assert result.stamping_vehicle_models == ["T28"]
     assert len(result.l0_scopes) == 2
     keys = {(s.vehicle_model, s.bom_version) for s in result.l0_scopes}
     assert keys == {("T28", "D-00"), ("T28", "D-01")}
@@ -136,6 +140,7 @@ def test_run_orchestrator_does_not_submit_nested_async_task() -> None:
         month=1,
         location_aliases=["青岛", "青岛基地"],
         vehicle_models=["T28"],
+        stamping_vehicle_models=["T28"],
         l0_scopes=[L0Scope(location="青岛", vehicle_model="T28", bom_version="D-00")],
     )
     annual = [
@@ -259,3 +264,184 @@ def test_annual_planner_welding_fee_exists_covers_all_levels() -> None:
     assert kwargs["level"] is None
     assert kwargs["year"] == 2026
     assert kwargs["vehicle_model"] == "T28"
+
+
+def test_annual_planner_skips_process_fee_without_stamping_process() -> None:
+    planner = AnnualCalcPlanner()
+    db = MagicMock()
+    planner.process_fee_repo = MagicMock()
+    discovery = DiscoveryResult(
+        location="青岛",
+        year=2026,
+        month=1,
+        location_aliases=["青岛"],
+        vehicle_models=["T28"],
+        stamping_vehicle_models=[],
+        l0_scopes=[],
+    )
+
+    items = planner.plan(db, discovery)
+
+    assert all(item.code != "annual_process_fee" for item in items)
+    planner.process_fee_repo.count_by_scope_and_statuses.assert_not_called()
+
+
+def test_annual_planner_skips_welding_without_bom() -> None:
+    planner = AnnualCalcPlanner()
+    db = MagicMock()
+    planner.breakdown_repo = MagicMock()
+    planner.l0_welding_fee_repo = MagicMock()
+    discovery = DiscoveryResult(
+        location="青岛",
+        year=2026,
+        month=1,
+        location_aliases=["青岛"],
+        vehicle_models=["T28"],
+        stamping_vehicle_models=["T28"],
+        l0_scopes=[],
+    )
+    planner.process_fee_repo = MagicMock()
+    planner.process_fee_repo.count_by_scope_and_statuses.return_value = 1
+
+    items = planner.plan(db, discovery)
+
+    assert any(item.code == "annual_process_fee" for item in items)
+    assert all(not item.code.startswith("annual_welding") for item in items)
+    planner.breakdown_repo.count_by_scope.assert_not_called()
+    planner.l0_welding_fee_repo.count_by_scope_and_statuses.assert_not_called()
+
+
+def test_gate_skips_tonnage_without_stamping_process() -> None:
+    from app.services.costing.engine.gate_checker import GateChecker
+
+    checker = GateChecker()
+    db = MagicMock()
+    checker.tonnage_repo = MagicMock()
+    discovery = DiscoveryResult(
+        location="青岛",
+        year=2026,
+        month=1,
+        location_aliases=["青岛"],
+        vehicle_models=["T28"],
+        stamping_vehicle_models=[],
+        l0_scopes=[],
+    )
+
+    item = checker._check_tonnage_price(db, discovery, "青岛", 2026, 1)
+
+    assert item.ok is True
+    assert item.code == "tonnage_price"
+    checker.tonnage_repo.count_by_location_year_and_statuses.assert_not_called()
+
+
+def test_gate_skips_welding_unit_price_without_bom() -> None:
+    from app.services.costing.engine.gate_checker import GateChecker
+
+    checker = GateChecker()
+    db = MagicMock()
+    checker.welding_unit_repo = MagicMock()
+    discovery = DiscoveryResult(
+        location="青岛",
+        year=2026,
+        month=1,
+        location_aliases=["青岛"],
+        vehicle_models=["T28"],
+        stamping_vehicle_models=["T28"],
+        l0_scopes=[],
+    )
+
+    item = checker._check_welding_unit_price(db, discovery, "青岛", 2026, 1)
+
+    assert item.ok is True
+    assert item.code == "welding_unit_price"
+    checker.welding_unit_repo.count_by_location_year_and_statuses.assert_not_called()
+
+
+def test_gate_skips_annual_part_price_without_bom() -> None:
+    from app.services.costing.engine.gate_checker import GateChecker
+
+    checker = GateChecker()
+    db = MagicMock()
+    checker.annual_part_repo = MagicMock()
+    discovery = DiscoveryResult(
+        location="青岛",
+        year=2026,
+        month=1,
+        location_aliases=["青岛"],
+        vehicle_models=["T28"],
+        stamping_vehicle_models=["T28"],
+        l0_scopes=[],
+    )
+
+    item = checker._check_annual_part_price(db, discovery, "青岛", 2026, 1)
+
+    assert item.ok is True
+    checker.annual_part_repo.count_by_location_year_and_statuses.assert_not_called()
+
+
+def test_stamping_complete_skips_without_process() -> None:
+    from app.services.costing.assembly_cost.calc.orchestrator.ready import _stamping_complete
+
+    db = MagicMock()
+    with patch(
+        "app.services.costing.assembly_cost.calc.orchestrator.ready.StampingPartRepository"
+    ) as repo_cls:
+        repo_cls.return_value.list_by_location_and_vehicle.return_value = []
+        ok, suppliers, message = _stamping_complete(
+            db, year=2026, month=1, location="青岛", vehicle_model="T28"
+        )
+
+    assert ok is True
+    assert suppliers == []
+    assert "无冲压工艺" in message
+
+
+def test_execute_assembly_runs_without_stamping_process() -> None:
+    """无冲压工艺时不因加工费/零件价未做而跳过总成。"""
+    from app.services.costing.engine.orchestrator.phases import PhaseCarry, execute_assembly
+    from app.services.costing.engine.orchestrator.run_orchestrator import RunOrchestrator
+
+    orch = RunOrchestrator()
+    db = MagicMock()
+    orch.run_repo.get_by_id = MagicMock(return_value=SimpleNamespace(id=1, status="running"))
+    orch.run_repo.create_step = MagicMock(
+        side_effect=lambda *a, **k: SimpleNamespace(
+            id=1,
+            stage=k.get("stage"),
+            scope_key=k.get("scope_key"),
+            status=k.get("status"),
+            message=k.get("message"),
+        )
+    )
+    orch.run_repo.update_step_fields = MagicMock(side_effect=lambda db, step, **kw: step)
+
+    discovery = DiscoveryResult(
+        location="青岛",
+        year=2026,
+        month=1,
+        location_aliases=["青岛"],
+        vehicle_models=["T28"],
+        stamping_vehicle_models=[],
+        l0_scopes=[L0Scope(location="青岛", vehicle_model="T28", bom_version="D-00")],
+    )
+    carry = PhaseCarry()
+    carry.failed_vehicles.add("T28")
+    progress = MagicMock()
+    user = SimpleNamespace(id=1, username="tester")
+
+    with patch(
+        "app.services.costing.engine.orchestrator.phases.run_assembly",
+        return_value=(True, "总成核价 status=success", {"status": "success"}),
+    ) as run_asm:
+        execute_assembly(
+            orch,
+            db,
+            run_id=1,
+            discovery=discovery,
+            current_user=user,  # type: ignore[arg-type]
+            progress=progress,
+            carry=carry,
+        )
+
+    assert run_asm.called
+    assert any(s["status"] == "succeeded" for s in carry.step_summaries)

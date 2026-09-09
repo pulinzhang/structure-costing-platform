@@ -68,7 +68,7 @@ import { pageConfig as bomWeldingProcessBreakdownGeneratePage } from './features
 import { pageConfig as bomWeldingProcessBreakdownListPage } from './features/bom/welding-process-breakdown/list/index.js?v=41';
 import { pageConfig as bomWeldingFeeCalcPage } from './features/bom/welding-fee/calc/index.js?v=7';
 import { pageConfig as bomWeldingFeeListPage } from './features/bom/welding-fee/list/index.js?v=9';
-import { pageConfig as costingPage }        from './features/costing/engine/index.js?v=30';
+import { pageConfig as costingPage }        from './features/costing/engine/index.js?v=31';
 import { pageConfig as fileTracePage }       from './features/file-trace/index.js?v=8';
 import { pageConfig as locationPage }        from './features/masterdata/location/index.js?v=7';
 import { pageConfig as vehicleModelUploadPage } from './features/masterdata/vehicle-model/upload/index.js?v=2';

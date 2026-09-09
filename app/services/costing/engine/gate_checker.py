@@ -12,7 +12,6 @@ from app.repositories.bom.packaging_transport_fee_repository import (
 )
 from app.repositories.bom.welding_unit_price_repository import BomWeldingUnitPriceRepository
 from app.repositories.settings.system.system_config_repository import SystemConfigRepository
-from app.repositories.stamping.stamping_part_repository import StampingPartRepository
 from app.repositories.stamping.tonnage_price_repository import StampingTonnagePriceRepository
 from app.schemas.vo.costing_engine_vo import CostingEngineGateItemVO
 from app.services.costing.engine.gate_navigate import build_navigate
@@ -32,7 +31,6 @@ class GateChecker:
     """§5.1 硬门禁；ok=false 时附带 navigate。"""
 
     def __init__(self) -> None:
-        self.part_repo = StampingPartRepository()
         self.tonnage_repo = StampingTonnagePriceRepository()
         self.welding_unit_repo = BomWeldingUnitPriceRepository()
         self.annual_part_repo = BomAnnualPartPriceRepository()
@@ -51,19 +49,18 @@ class GateChecker:
         location = discovery.location
         year = discovery.year
         month = discovery.month
-        aliases = discovery.location_aliases
 
         items = [
             self._check_period_projects(discovery, location, year, month),
-            self._check_stamping_process(db, discovery, location, year, month),
-            self._check_tonnage_price(db, aliases, location, year, month),
-            self._check_welding_unit_price(db, aliases, location, year, month),
+            self._check_stamping_process(discovery, location, year, month),
+            self._check_tonnage_price(db, discovery, location, year, month),
+            self._check_welding_unit_price(db, discovery, location, year, month),
             self._check_bom_snapshot(discovery, location, year, month),
-            self._check_annual_part_price(db, aliases, location, year, month),
-            self._check_packaging_transport(db, aliases, location, year, month),
+            self._check_annual_part_price(db, discovery, location, year, month),
+            self._check_packaging_transport(db, discovery, location, year, month),
         ]
         items.extend(self._check_steel_chain(db, discovery))
-        items.append(self._check_scrap_price(db, location, year, month))
+        items.append(self._check_scrap_price(db, discovery, location, year, month))
         items.append(self._check_system_rates(db, location, year, month))
         return items
 
@@ -90,6 +87,25 @@ class GateChecker:
             missing=missing,
             message=message,
             navigate=navigate,
+        )
+
+    def _skipped(
+        self,
+        *,
+        code: str,
+        message: str,
+        location: str,
+        year: int,
+        month: int,
+    ) -> CostingEngineGateItemVO:
+        return self._item(
+            code=code,
+            ok=True,
+            missing=[],
+            message=message,
+            location=location,
+            year=year,
+            month=month,
         )
 
     def _check_period_projects(
@@ -121,7 +137,6 @@ class GateChecker:
 
     def _check_stamping_process(
         self,
-        db: Session,
         discovery: DiscoveryResult,
         location: str,
         year: int,
@@ -137,18 +152,7 @@ class GateChecker:
                 year=year,
                 month=month,
             )
-        aliases = discovery.location_aliases
-        options = (
-            self.part_repo.get_cascade_filter_options(db, locations=aliases)
-            if aliases
-            else {
-                "locations": [],
-                "stamping_suppliers": [],
-                "vehicle_models": [],
-                "versions": [],
-            }
-        )
-        part_models = {str(name).strip() for name in (options.get("vehicle_models") or []) if name}
+        part_models = set(discovery.stamping_vehicle_models)
         missing = [name for name in discovery.vehicle_models if name not in part_models]
         if missing:
             preview = "、".join(missing[:8])
@@ -157,7 +161,10 @@ class GateChecker:
                 code="stamping_process",
                 ok=False,
                 missing=missing[:20],
-                message=f"缺少冲压工艺零件/工序数据：{preview}{extra}",
+                message=(
+                    f"缺少冲压工艺：{preview}{extra}。"
+                    "已跳过这些项目的冲压加工费与零件价；有 BOM 的仍可总成核价"
+                ),
                 location=location,
                 year=year,
                 month=month,
@@ -175,11 +182,20 @@ class GateChecker:
     def _check_tonnage_price(
         self,
         db: Session,
-        aliases: list[str],
+        discovery: DiscoveryResult,
         location: str,
         year: int,
         month: int,
     ) -> CostingEngineGateItemVO:
+        if not discovery.stamping_vehicle_models:
+            return self._skipped(
+                code="tonnage_price",
+                message="无冲压工艺，跳过冲次单价与冲压加工费检查",
+                location=location,
+                year=year,
+                month=month,
+            )
+        aliases = discovery.location_aliases
         total = 0
         for alias in aliases:
             total += self.tonnage_repo.count_by_location_year_and_statuses(
@@ -208,11 +224,20 @@ class GateChecker:
     def _check_welding_unit_price(
         self,
         db: Session,
-        aliases: list[str],
+        discovery: DiscoveryResult,
         location: str,
         year: int,
         month: int,
     ) -> CostingEngineGateItemVO:
+        if not discovery.l0_scopes:
+            return self._skipped(
+                code="welding_unit_price",
+                message="无含 L0 的 BOM，跳过焊接单价与焊接加工费检查",
+                location=location,
+                year=year,
+                month=month,
+            )
+        aliases = discovery.location_aliases
         total = 0
         for alias in aliases:
             total += self.welding_unit_repo.count_by_location_year_and_statuses(
@@ -250,7 +275,7 @@ class GateChecker:
                 code="bom_snapshot",
                 ok=False,
                 missing=["未发现含 L0 的 BOM 快照"],
-                message="缺少含 L0 的材料清单版本，无法成品核价",
+                message="缺少含 L0 的材料清单，已跳过焊接费与总成核价",
                 location=location,
                 year=year,
                 month=month,
@@ -269,11 +294,20 @@ class GateChecker:
     def _check_annual_part_price(
         self,
         db: Session,
-        aliases: list[str],
+        discovery: DiscoveryResult,
         location: str,
         year: int,
         month: int,
     ) -> CostingEngineGateItemVO:
+        if not discovery.l0_scopes:
+            return self._skipped(
+                code="annual_part_price",
+                message="无含 L0 的 BOM，跳过年度零件价检查",
+                location=location,
+                year=year,
+                month=month,
+            )
+        aliases = discovery.location_aliases
         total = 0
         for alias in aliases:
             total += self.annual_part_repo.count_by_location_year_and_statuses(
@@ -302,11 +336,20 @@ class GateChecker:
     def _check_packaging_transport(
         self,
         db: Session,
-        aliases: list[str],
+        discovery: DiscoveryResult,
         location: str,
         year: int,
         month: int,
     ) -> CostingEngineGateItemVO:
+        if not discovery.l0_scopes:
+            return self._skipped(
+                code="packaging_transport",
+                message="无含 L0 的 BOM，跳过包装运输费检查",
+                location=location,
+                year=year,
+                month=month,
+            )
+        aliases = discovery.location_aliases
         total = 0
         for alias in aliases:
             _, count = self.packaging_repo.paginate(db, location=alias, year=year, skip=0, limit=1)
@@ -442,10 +485,19 @@ class GateChecker:
     def _check_scrap_price(
         self,
         db: Session,
+        discovery: DiscoveryResult,
         location: str,
         year: int,
         month: int,
     ) -> CostingEngineGateItemVO:
+        if not discovery.stamping_vehicle_models:
+            return self._skipped(
+                code="scrap_price",
+                message="无冲压工艺，跳过废料价检查",
+                location=location,
+                year=year,
+                month=month,
+            )
         scrap = self.price_resolver.find_scrap_price(db, location=location, year=year, month=month)
         if scrap is None:
             return self._item(
