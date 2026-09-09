@@ -1,4 +1,4 @@
-"""基地主数据：命名空间互斥、空表种子、启用门禁、别名展开、删除文案、Parser 隔离。"""
+"""基地主数据：命名空间互斥、启用门禁、别名展开、删除文案、Parser 隔离。"""
 
 from __future__ import annotations
 
@@ -22,6 +22,7 @@ from app.schemas.dto.location_dto import (
     LocationUpdateDTO,
 )
 from app.services.masterdata.location import LocationService
+from tests.masterdata.location_fixtures import insert_sample_locations
 
 
 @pytest.fixture
@@ -51,15 +52,10 @@ def memory_db() -> Generator[Session, None, None]:
         engine.dispose()
 
 
-def test_ensure_seed_if_empty(memory_db: Session) -> None:
+def test_empty_db_has_no_locations(memory_db: Session) -> None:
     service = LocationService()
-    assert service.repository.count(memory_db) == 0
-    service.ensure_seed_if_empty(memory_db)
-    names = service.list_registered(memory_db)
-    assert names == ["大连", "芜湖", "鄂尔多斯", "青岛"]
-    service.ensure_seed_if_empty(memory_db)
-    assert service.list_registered(memory_db) == names
-    assert "青岛基地" in service.expand_for_query(memory_db, "青岛")
+    assert service.list_registered(memory_db) == []
+    assert not hasattr(service, "ensure_seed_if_empty")
 
 
 def test_create_records_canonical_and_alias(memory_db: Session) -> None:
@@ -89,7 +85,7 @@ def test_create_records_canonical_and_alias(memory_db: Session) -> None:
 
 def test_canonical_and_alias_are_mutually_exclusive(memory_db: Session) -> None:
     service = LocationService()
-    service.ensure_seed_if_empty(memory_db)
+    insert_sample_locations(memory_db)
     with pytest.raises(BusinessException, match="规范名不得等于已有别名"):
         service.create(
             memory_db,
@@ -107,7 +103,7 @@ def test_canonical_and_alias_are_mutually_exclusive(memory_db: Session) -> None:
 
 def test_require_enabled_fails_when_disabled(memory_db: Session) -> None:
     service = LocationService()
-    service.ensure_seed_if_empty(memory_db)
+    insert_sample_locations(memory_db)
     service.update(
         memory_db,
         "青岛",
@@ -123,7 +119,7 @@ def test_require_enabled_fails_when_disabled(memory_db: Session) -> None:
 
 def test_expand_for_query_includes_canonical(memory_db: Session) -> None:
     service = LocationService()
-    service.ensure_seed_if_empty(memory_db)
+    insert_sample_locations(memory_db)
     names = service.expand_for_query(memory_db, "青岛基地")
     assert names[0] == "青岛"
     assert "青岛基地" in names
@@ -133,7 +129,7 @@ def test_expand_for_query_includes_canonical(memory_db: Session) -> None:
 
 def test_delete_integrity_error_message(memory_db: Session) -> None:
     service = LocationService()
-    service.ensure_seed_if_empty(memory_db)
+    insert_sample_locations(memory_db)
 
     def _raise_integrity(*_args: object, **_kwargs: object) -> None:
         raise IntegrityError("DELETE", {}, Exception("fk"))
@@ -154,7 +150,7 @@ def test_parser_does_not_import_location_service() -> None:
 def test_llm_scope_expands_aliases_not_unregistered(memory_db: Session) -> None:
     from app.repositories.llm.scope_options_repository import ScopeOptionsRepository
 
-    LocationService().ensure_seed_if_empty(memory_db)
+    insert_sample_locations(memory_db)
     repo = ScopeOptionsRepository()
     names = repo.expand_location_names(memory_db, "青岛基地")
     assert names[0] == "青岛"

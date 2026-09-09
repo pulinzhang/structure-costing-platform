@@ -7,7 +7,7 @@ import logging
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.common.audit import SYSTEM_USER, audit_create, audit_update
+from app.common.audit import audit_create, audit_update
 from app.exceptions.base import BusinessException, NotFoundException
 from app.models.masterdata.location import Location
 from app.repositories.masterdata.location import LocationRepository
@@ -25,13 +25,6 @@ from app.schemas.vo.user_vo import UserVO
 logger = logging.getLogger("service.location")
 
 _PAGE_HINT = "请到基地页手工增加或启用（#/location）"
-
-_SEED_ROWS: tuple[tuple[str, int, str], ...] = (
-    ("大连", 1, "大连基地"),
-    ("芜湖", 2, "芜湖基地"),
-    ("鄂尔多斯", 3, "鄂尔多斯基地"),
-    ("青岛", 4, "青岛基地"),
-)
 
 
 class LocationService:
@@ -240,34 +233,6 @@ class LocationService:
         if refreshed is None:
             raise NotFoundException("基地不存在")
         return self._to_vo(refreshed)
-
-    def ensure_seed_if_empty(self, db: Session) -> None:
-        """表空时灌入现网四基地 + 「×基地」别名；已有行不覆盖。"""
-        if self.repository.count(db) > 0:
-            return
-        audit = audit_create(SYSTEM_USER)
-        try:
-            for name, sort_order, alias in _SEED_ROWS:
-                self.repository.create(
-                    db,
-                    LocationInsert(
-                        location=name,
-                        is_enabled=True,
-                        sort_order=sort_order,
-                        created_by=audit["created_by"],
-                        updated_by=audit["updated_by"],
-                    ),
-                )
-                self.repository.create_alias(
-                    db,
-                    LocationAliasInsert(alias=alias, location=name),
-                )
-            db.commit()
-            logger.info("已灌入基地种子：大连 / 芜湖 / 鄂尔多斯 / 青岛")
-        except Exception:
-            db.rollback()
-            logger.exception("灌入基地种子失败")
-            raise
 
     def _require_row(self, db: Session, location: str) -> Location:
         name = (location or "").strip()
