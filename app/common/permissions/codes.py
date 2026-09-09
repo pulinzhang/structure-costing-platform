@@ -316,6 +316,10 @@ class Perm:
     ASSEMBLY_COST_REVERSE = "op:assembly-cost:reverse"  # 反审核
     ASSEMBLY_COST_EXPORT = "op:assembly-cost:export"  # 导出
 
+    MENU_PROCUREMENT_CONTRACT_REPORT = "menu:procurement-contract-report"  # 采购价格
+    PROCUREMENT_CONTRACT_REPORT_VIEW = "op:procurement-contract-report:view"  # 查询
+    PROCUREMENT_CONTRACT_REPORT_EXPORT = "op:procurement-contract-report:export"  # 导出
+
     MENU_COSTING_ENGINE = "menu:costing-engine"  # 自动核价引擎
     COSTING_VIEW = "op:costing:view"  # 查看
     COSTING_RUN = "op:costing:run"  # 启动运行

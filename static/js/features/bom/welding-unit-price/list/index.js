@@ -16,6 +16,7 @@ import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
 } from '../../../../page-size.js?v=2';
+import { setSearchBusy } from '../../../../search-busy.js?v=1';
 
 const weldingUnitPriceState = {
     records: [],
@@ -167,6 +168,7 @@ function collectScopeFilters() {
 async function loadData(page = 1) {
     if (weldingUnitPriceState.isLoading) return;
     weldingUnitPriceState.isLoading = true;
+    setSearchBusy('btnFilter', true);
 
     const tableBody = document.getElementById('weldingUnitPriceTableBody');
     const emptyState = document.getElementById('emptyState');
@@ -230,6 +232,7 @@ async function loadData(page = 1) {
         }
     } finally {
         weldingUnitPriceState.isLoading = false;
+        setSearchBusy('btnFilter', false);
         if (loadingState) loadingState.classList.add('hidden');
     }
 }

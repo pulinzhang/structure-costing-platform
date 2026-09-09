@@ -12,6 +12,7 @@ import {
     bindPageSizeSelect,
     normalizePageSize,
 } from '../../../../page-size.js?v=2';
+import { setSearchBusy } from '../../../../search-busy.js?v=1';
 
 const API_BASE = '/api/stamping/die-unit-prices';
 const STORAGE_KEY = 'dieUnitPricePageSize';
@@ -137,6 +138,7 @@ function buildQueryParams() {
 
 function setLoading(isLoading) {
     pageState.isLoading = isLoading;
+    setSearchBusy('dupListSearchBtn', isLoading);
     const loading = document.getElementById('dupLoadingState');
     const empty = document.getElementById('dupEmptyState');
     const body = document.getElementById('dupTableBody');

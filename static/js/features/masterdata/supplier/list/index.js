@@ -7,6 +7,7 @@ import {
     DEFAULT_PAGE_SIZE,
     normalizePageSize,
 } from '../../../../page-size.js?v=2';
+import { setSearchBusy } from '../../../../search-busy.js?v=1';
 import {
     renderAliasItems,
     renderPagination,
@@ -72,6 +73,7 @@ function applyPermissionUi() {
 
 function setLoading(isLoading) {
     listState.isLoading = isLoading;
+    setSearchBusy('supplierBtnSearch', isLoading);
     document.getElementById('supplierLoadingState')?.classList.toggle('hidden', !isLoading);
     if (isLoading) {
         document.getElementById('supplierEmptyState')?.classList.add('hidden');

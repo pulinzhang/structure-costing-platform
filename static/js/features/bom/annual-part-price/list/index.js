@@ -18,6 +18,7 @@ import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
 } from '../../../../page-size.js?v=2';
+import { setSearchBusy } from '../../../../search-busy.js?v=1';
 
 const annualPartPriceState = {
     records: [],
@@ -175,6 +176,7 @@ function collectScopeFilters() {
 async function loadData(page = 1) {
     if (annualPartPriceState.isLoading) return;
     annualPartPriceState.isLoading = true;
+    setSearchBusy('btnFilter', true);
 
     const tableBody = document.getElementById('annualPartPriceTableBody');
     const emptyState = document.getElementById('annualEmptyState');
@@ -242,6 +244,7 @@ async function loadData(page = 1) {
         }
     } finally {
         annualPartPriceState.isLoading = false;
+        setSearchBusy('btnFilter', false);
         if (loadingState) loadingState.classList.add('hidden');
     }
 }

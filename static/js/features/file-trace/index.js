@@ -12,6 +12,7 @@ import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
 } from '../../page-size.js?v=2';
+import { setSearchBusy } from '../../search-busy.js?v=1';
 
 const ftState = {
     items: [],
@@ -21,6 +22,7 @@ const ftState = {
     filters: null,
     detailItem: null,
     drawerOpen: false,
+    isLoading: false,
 };
 
 const API_BASE = '/api/file-trace';
@@ -91,13 +93,26 @@ async function loadData(page = 1) {
         renderList();
         return;
     }
+    if (ftState.isLoading) return;
 
     ftState.page = page;
-    const res = await HttpClient.get(`${API_BASE}/list`, { params: buildQueryParams(page) });
-    const payload = res.data || {};
-    ftState.items = payload.items || [];
-    ftState.total = payload.total || 0;
-    renderList();
+    ftState.isLoading = true;
+    setSearchBusy('ftBtnSearch', true);
+    try {
+        const res = await HttpClient.get(`${API_BASE}/list`, { params: buildQueryParams(page) });
+        const payload = res.data || {};
+        ftState.items = payload.items || [];
+        ftState.total = payload.total || 0;
+        renderList();
+    } catch (error) {
+        console.error('加载文件溯源失败', error);
+        ftState.items = [];
+        ftState.total = 0;
+        renderList();
+    } finally {
+        ftState.isLoading = false;
+        setSearchBusy('ftBtnSearch', false);
+    }
 }
 
 function renderList() {

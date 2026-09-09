@@ -10,7 +10,7 @@ import {
     updatePartsFilterCapsules,
     updatePartsHud,
     renderPartsPagination,
-} from './template.js?v=31';
+} from './template.js?v=33';
 import {
     BTN_SAVE_ACTIVE,
     BTN_SAVE_DEFAULT,
@@ -24,6 +24,7 @@ import {
     bindPageSizeSelect,
     normalizePageSize,
 } from '../../../../page-size.js?v=2';
+import { setSearchBusy } from '../../../../search-busy.js?v=1';
 
 function offalCell(part) {
     if (!part.is_offal_nested) {
@@ -312,6 +313,7 @@ export const PartsPage = {
         if (partsState.isLoading) return;
 
         partsState.isLoading = true;
+        setSearchBusy('partsSearchBtn', true);
         partsState.currentPage = page;
 
         const loading = document.getElementById('partsLoading');
@@ -367,6 +369,7 @@ export const PartsPage = {
         } finally {
             loading?.classList.add('hidden');
             partsState.isLoading = false;
+            setSearchBusy('partsSearchBtn', false);
         }
     },
 
@@ -443,7 +446,7 @@ export const PartsPage = {
         if (!filters) return;
 
         if (!window.confirm(
-            `确定批量删除零件吗？\n\n基地: ${filters.location}\n项目: ${filters.vehicle_model}\n版本: ${filters.version}\n工厂: ${filters.stamping_supplier || '全部工厂'}\n\n将同时删除关联工序，此操作不可恢复！`,
+            `确定批量删除零件吗？\n\n基地: ${filters.location}\n项目: ${filters.vehicle_model}\n版本: ${filters.version}\n工厂: ${filters.stamping_supplier || '全部工厂'}\n\n将同时删除关联工序。有冲压加工费时无法删除。此操作不可恢复！`,
         )) {
             return;
         }
@@ -796,7 +799,7 @@ export const PartsPage = {
             showToast('无删除权限', 'warning');
             return;
         }
-        if (!confirm('确定要删除这个零件吗？')) return;
+        if (!confirm('确定要删除这个零件吗？已有冲压加工费时无法删除。')) return;
         try {
             await HttpClient.delete(`${PARTS_API}/${partId}`);
             showToast('删除成功', 'success');

@@ -4,6 +4,7 @@ import {
     bindPageSizeSelect,
     normalizePageSize,
 } from '../../../../page-size.js?v=2';
+import { setSearchBusy } from '../../../../search-busy.js?v=1';
 
 const STORAGE_KEY = 'dieListPageSize';
 
@@ -12,6 +13,7 @@ const dieState = {
     pageSize: DEFAULT_PAGE_SIZE,
     total: 0,
     items: [],
+    isLoading: false,
 };
 
 function dieDimMm(value) {
@@ -189,8 +191,11 @@ export const DieListPage = {
             this.renderEmpty('请先选择基地和项目', '未选齐范围时不会请求列表');
             return;
         }
+        if (dieState.isLoading) return;
         const filters = this.collectListFilters();
         dieState.page = page || 1;
+        dieState.isLoading = true;
+        setSearchBusy('dieListSearchBtn', true);
         const empty = document.getElementById('dieListEmpty');
         const loading = document.getElementById('dieListLoading');
         empty?.classList.add('hidden');
@@ -222,6 +227,8 @@ export const DieListPage = {
         } catch (error) {
             this.renderEmpty('加载失败', error.message || '请稍后重试');
         } finally {
+            dieState.isLoading = false;
+            setSearchBusy('dieListSearchBtn', false);
             loading?.classList.add('hidden');
         }
     },

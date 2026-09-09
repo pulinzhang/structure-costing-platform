@@ -6,7 +6,8 @@
 > 四异号家模、料片四列全空见 [stamping-family-die-byproduct-design.md](stamping-family-die-byproduct-design.md)（工艺上传与布点分摊已落地；零件价月快照 / 详情 PATCH 见该文）。  
 > 按主机厂数量测算采购钢材吨数（另导出，不替代本表 Excel）见 [stamping-steel-purchase-export-design.md](stamping-steel-purchase-export-design.md)。  
 > 模具布点是另一套表，见 [stamping-die-management-design.md](stamping-die-management-design.md)。  
-> 供应商主数据见 [supplier-design.md](../masterdata/supplier-design.md)（S11 写门禁）。本表 `stamping_parts.stamping_supplier` 是供应商 **直接下一跳**：`ForeignKey(..., ondelete="RESTRICT", onupdate="RESTRICT")`。上传后非空规范全称。供应商改全称 / 删除时若仍有本表行，引擎拒绝（文案不点名本表）。模具布点 **不是** 下一跳。  
+> **供应商主数据**见 [supplier-design.md](../masterdata/supplier-design.md)（S11 写门禁）。本表 `stamping_parts.stamping_supplier` 是供应商 **直接下一跳**：`ForeignKey(..., ondelete="RESTRICT", onupdate="RESTRICT")`。上传后非空规范全称。供应商改全称 / 删除时若仍有本表行，引擎拒绝（文案不点名本表）。模具布点 **不是** 下一跳。  
+> **冲压加工费**是本表直接下一跳：`stamping_process_fees.source_part_id` → `stamping_parts.id`（`RESTRICT`）。有加工费则不能删/覆盖工艺，文案「仍被引用，不能删除」。  
 > **模具编号**：本表可空、不得挡导入；无该列表头也可解析。强制编号在布点。  
 > 硬约束：分层与切片见 [architecture.md](../architecture.md)。
 
@@ -43,7 +44,7 @@
 3. 解析后做主数据门禁：项目走 `require_introducible_by_code`（墙钟月；唯一可引入行带出采购基地）；冲压工厂走 `require_enabled`（全称 / 缩写 / ERP / 别名）。抽不出、未登记、已禁用、该月不可引入、同一代号挂在多个可引入基地 → 硬停，去项目一览或供应商一览补档。  
 4. **落库写规范项目代号与供应商全称**，禁止写表头原文或缩写。基地写项目行上的规范名。  
 5. 拖拽 `.xlsx` / `.xls`（上限 50MB）。  
-6. 同基地 + 冲压厂 + 车型 + 版本再次上传则 **整包覆盖**（覆盖删除 `stamping_supplier IN expand_for_query(规范全称)`）。  
+6. 同基地 + 冲压厂 + 车型 + 版本再次上传则 **整包覆盖**（覆盖删除 `stamping_supplier IN expand_for_query(规范全称)`）。有加工费则拒绝覆盖。  
 7. 提供「下载模板」。
 
 版本仍从文件名或表头解析，须能识别。布点上传不加冲压工厂。供应商主数据见 [supplier-design.md](../masterdata/supplier-design.md) S11。项目主数据见 [vehicle-model-design.md](../masterdata/vehicle-model-design.md)。
@@ -138,6 +139,7 @@
 
 | 日期 | 说明 |
 |------|------|
+| 2026-09-09 | 加工费 `source_part_id` RESTRICT：有加工费则不能删/覆盖工艺 |
 | 2026-09-08 | 交叉引用钢材采购测算导出（设计中；与本表工艺导出分开） |
 | 2026-09-08 | 工艺上传只选文件；项目解析后由主数据带出基地 |
 | 2026-09-08 | `stamping_parts.stamping_supplier` 定为供应商下一跳（`RESTRICT` / `RESTRICT`） |

@@ -13,6 +13,7 @@ import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
 } from '../../../../page-size.js?v=2';
+import { setSearchBusy } from '../../../../search-busy.js?v=1';
 
 const API_BASE = '/api/bom';
 
@@ -170,6 +171,7 @@ function syncFilterSelects() {
 async function loadData(page = 1) {
     if (bomMatState.isLoading) return;
     bomMatState.isLoading = true;
+    setSearchBusy('btnBomMatFilter', true);
     const tbody = document.getElementById('bomMatTableBody');
     const empty = document.getElementById('bomMatEmptyState');
     const loading = document.getElementById('bomMatLoadingState');
@@ -223,6 +225,7 @@ async function loadData(page = 1) {
     } finally {
         loading?.classList.add('hidden');
         bomMatState.isLoading = false;
+        setSearchBusy('btnBomMatFilter', false);
     }
 }
 

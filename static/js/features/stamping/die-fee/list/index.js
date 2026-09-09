@@ -15,6 +15,7 @@ import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
 } from '../../../../page-size.js?v=2';
+import { setSearchBusy } from '../../../../search-busy.js?v=1';
 
 const API_BASE = '/api/stamping/die-fees';
 const DRAWER_ANIMATION_MS = 300;
@@ -31,6 +32,7 @@ const feeState = {
     onlyZero: false,
     zeroCount: 0,
     batchAuditSubmitting: false,
+    isLoading: false,
     viewingId: null,
     editingDieFee: null,
 };
@@ -401,6 +403,7 @@ function showEmpty(message) {
 }
 
 async function loadData(page = 1) {
+    if (feeState.isLoading) return;
     const loading = document.getElementById('dieFeeLoading');
     const empty = document.getElementById('dieFeeEmpty');
     const body = document.getElementById('dieFeeTableBody');
@@ -420,6 +423,8 @@ async function loadData(page = 1) {
         return;
     }
 
+    feeState.isLoading = true;
+    setSearchBusy('dieFeeSearchBtn', true);
     loading?.classList.remove('hidden');
 
     try {
@@ -469,6 +474,8 @@ async function loadData(page = 1) {
         showEmpty('加载失败，请稍后重试');
         updateDieFeeHud(0, null, feeState.onlyZero, scopeLabel(filters));
     } finally {
+        feeState.isLoading = false;
+        setSearchBusy('dieFeeSearchBtn', false);
         loading?.classList.add('hidden');
     }
 }

@@ -10,6 +10,7 @@ import {
     bindPageSizeSelect,
     renderPageButtons,
 } from '../../../../page-size.js?v=2';
+import { setSearchBusy } from '../../../../search-busy.js?v=1';
 
 // 状态管理
 const basePriceDownloadState = {
@@ -19,6 +20,7 @@ const basePriceDownloadState = {
     pageSize: DEFAULT_PREVIEW_PAGE_SIZE,
     totalPages: 1,
     filterLoadToken: 0,
+    isLoading: false,
 };
 
 // API 基础路径
@@ -224,6 +226,9 @@ async function previewData(page = 1) {
         showToast('请至少选择一个筛选条件', 'warning');
         return;
     }
+    if (basePriceDownloadState.isLoading) return;
+    basePriceDownloadState.isLoading = true;
+    setSearchBusy('btnPreviewBasePrice', true);
 
     const tableBody = document.getElementById('basePricePreviewBody');
     if (tableBody) {
@@ -291,6 +296,9 @@ async function previewData(page = 1) {
         }
         const pagination = document.getElementById('basePricePagination');
         if (pagination) pagination.innerHTML = '';
+    } finally {
+        basePriceDownloadState.isLoading = false;
+        setSearchBusy('btnPreviewBasePrice', false);
     }
 }
 

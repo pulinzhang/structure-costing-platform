@@ -150,6 +150,13 @@ MENU_QUESTION_CASES: tuple[MenuQuestionCase, ...] = (
         "complete",
     ),
     MenuQuestionCase(
+        "procurement-contract-report",
+        "采购价格",
+        "采购价格协议",
+        None,
+        "pending",
+    ),
+    MenuQuestionCase(
         "costing",
         "自动核价引擎",
         "自动核价",

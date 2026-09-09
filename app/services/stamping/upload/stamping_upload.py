@@ -383,13 +383,16 @@ class StampingUploadService:
         tailor_parents = tailor_parent_numbers or set()
         swing_shear_parts = swing_shear_part_numbers or set()
         location = file_info.safe_location
-        self.part_repo.delete_by_scope(
-            self.db,
-            location=location,
-            stamping_suppliers=SupplierService().expand_for_query(self.db, stamping_supplier),
-            vehicle_model=vehicle_model,
-            version=version,
-        )
+        try:
+            self.part_repo.delete_by_scope(
+                self.db,
+                location=location,
+                stamping_suppliers=SupplierService().expand_for_query(self.db, stamping_supplier),
+                vehicle_model=vehicle_model,
+                version=version,
+            )
+        except IntegrityError:
+            raise BusinessException("仍被引用，不能删除") from None
         logger.info(
             "已删除旧数据: %s/%s/%s/%s operator=%s",
             location,

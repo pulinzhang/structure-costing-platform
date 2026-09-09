@@ -13,6 +13,7 @@ class ConfigVO(BaseModel):
     """系统配置 VO"""
 
     app_name: str
+    company_name: str = Field(..., description="公司名称（采购协议甲方）")
     version: str
     steel_density: Decimal = Field(..., description="钢材密度(g/cm3)")
     material_loss_rate: Decimal = Field(..., description="冲压材料损耗率（小数，如 0.003=千分之3）")

@@ -50,6 +50,39 @@ class StampingGaugeFeeRepository:
             .first()
         )
 
+    def map_effective_by_part_numbers(
+        self,
+        db: Session,
+        *,
+        location: str,
+        vehicle_model: str,
+        part_numbers: list[str],
+    ) -> dict[str, tuple[Decimal, Decimal]]:
+        """生效检具档：零件号 → (gauge_fee 万元, allocation_qty 万台)。"""
+        if not part_numbers:
+            return {}
+        mapped: dict[str, tuple[Decimal, Decimal]] = {}
+        unique_numbers = list(dict.fromkeys(part_numbers))
+        for index in range(0, len(unique_numbers), 400):
+            chunk = unique_numbers[index : index + 400]
+            rows = (
+                db.query(
+                    StampingGaugeFee.part_number,
+                    StampingGaugeFee.gauge_fee,
+                    StampingGaugeFee.allocation_qty,
+                )
+                .filter(
+                    StampingGaugeFee.location == location,
+                    StampingGaugeFee.vehicle_model == vehicle_model,
+                    StampingGaugeFee.status == STATUS_EFFECTIVE,
+                    StampingGaugeFee.part_number.in_(chunk),
+                )
+                .all()
+            )
+            for part_number, gauge_fee, allocation_qty in rows:
+                mapped[str(part_number)] = (_sql_money(gauge_fee), _sql_money(allocation_qty))
+        return mapped
+
     def count_effective(
         self,
         db: Session,

@@ -102,7 +102,7 @@ export function procurementObjectListTemplate() {
                                 <span>展开高级筛选</span>
                             </button>
                             <button type="button" id="poSearchBtn"
-                                    class="inline-flex items-center gap-1.5 h-7 px-3 text-[11px] font-semibold rounded-sm text-[#c8c8c8] border border-[#8a2020]"
+                                    class="inline-flex items-center gap-1.5 h-7 px-3 text-[11px] font-semibold rounded-sm text-[#c8c8c8] border border-[#8a2020] disabled:opacity-50 disabled:cursor-not-allowed"
                                     style="background: linear-gradient(180deg, #3d1515 0%, #2d0f0f 100%);">
                                 ${window.svgIcon('search', 'w-3 h-3')}
                                 查询
@@ -170,6 +170,11 @@ export function procurementObjectListTemplate() {
                         ${pageSizeSelectHtml('poPageSize')}
                     </div>
                     <div class="flex items-center gap-0.5" id="poPagination"></div>
+                </div>
+
+                <div id="poLoadingState" class="hidden flex items-center justify-center py-14">
+                    <div class="w-5 h-5 border-2 border-[#2A2A35] border-t-[#FF1E27] rounded-full animate-spin"
+                         style="box-shadow: 0 0 12px rgba(255,30,39,0.35);"></div>
                 </div>
             </div>
         </div>
