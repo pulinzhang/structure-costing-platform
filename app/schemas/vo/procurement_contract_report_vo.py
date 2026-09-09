@@ -35,6 +35,7 @@ class ProcurementContractReportRowVO(BaseModel):
     part_number: str
     part_name: str | None = None
     supplier_name: str | None = None
+    supplier_abbreviation: str | None = None
     vehicle_qty: Decimal
     qty_unit: str = "件"
     object_kind: str | None = None

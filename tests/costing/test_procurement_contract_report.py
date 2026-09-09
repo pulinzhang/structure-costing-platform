@@ -432,6 +432,7 @@ def test_list_price_rows_and_tooling(db: Session) -> None:
     assert stamping.seq_label == "5-1"
     assert stamping.internal_number == "ACA674001"
     assert stamping.supplier_name == "烟台海众汽车部件有限公司"
+    assert stamping.supplier_abbreviation == "烟台海众"
     assert stamping.month_amounts[0].should_cost == Decimal("5.5250")
     assert stamping.tooling_alloc_price == Decimal("0.4800")
     assert stamping.tooling_fee == Decimal("48000.0000")

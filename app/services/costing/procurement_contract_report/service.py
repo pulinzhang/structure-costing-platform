@@ -85,7 +85,11 @@ class ProcurementContractReportService:
         )
         if not rows and query.keyword:
             filters.empty_hint = "没有匹配零件号或名称的价目行"
-        return [_to_row_vo(row) for row in sliced], total, filters
+        return (
+            [_to_row_vo(row, _abbreviation_map(self.supplier_service, db)) for row in sliced],
+            total,
+            filters,
+        )
 
     def prep(
         self,
@@ -381,13 +385,21 @@ def _empty_hint(bundle: ReportBundle) -> str | None:
     return _EMPTY_OBJECT_HINT
 
 
-def _to_row_vo(row: PriceRow) -> ProcurementContractReportRowVO:
+def _to_row_vo(
+    row: PriceRow,
+    abbreviations: dict[str, str],
+) -> ProcurementContractReportRowVO:
+    names = [name for name in row.supplier_names if name]
     return ProcurementContractReportRowVO(
         seq_label=row.seq_label,
         internal_number=row.internal_number,
         part_number=row.part_number,
         part_name=row.part_name,
-        supplier_name="、".join(row.supplier_names) or None,
+        supplier_name="、".join(names) or None,
+        supplier_abbreviation="、".join(
+            abbreviations.get(name) or _fallback_supplier_abbreviation(name) for name in names
+        )
+        or None,
         vehicle_qty=row.vehicle_qty,
         object_kind=row.object_kind,
         tooling_alloc_price=row.tooling_alloc_price,
@@ -402,6 +414,29 @@ def _to_row_vo(row: PriceRow) -> ProcurementContractReportRowVO:
             for cell in row.month_amounts
         ],
     )
+
+
+def _abbreviation_map(supplier_service: SupplierService, db: Session) -> dict[str, str]:
+    return {vo.full_name: vo.abbreviation for vo in supplier_service.list_registered(db)}
+
+
+_SUPPLIER_SUFFIXES = (
+    "有限责任公司",
+    "股份有限公司",
+    "集团有限公司",
+    "有限公司",
+)
+
+
+def _fallback_supplier_abbreviation(name: str) -> str:
+    text = name.strip()
+    for suffix in _SUPPLIER_SUFFIXES:
+        if text.endswith(suffix):
+            text = text[: -len(suffix)].strip()
+            break
+    if len(text) > 8:
+        return text[:8]
+    return text or name
 
 
 def _to_filters(

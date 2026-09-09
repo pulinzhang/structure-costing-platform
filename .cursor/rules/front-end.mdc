@@ -34,7 +34,7 @@ JS 标识符：camelCase；页面对象 PascalCase；常量 `UPPER_SNAKE`；与�
 
 ## HUD 密表（新做/大改的业务列表）
 
-参照 `static/js/features/costing/stamping-part-cost/list/template.js`。设置/简单 CRUD、列很少、无金额 KPI 可按 §例外放宽。
+参照 `static/js/features/costing/stamping-part-cost/list/template.js`。设置/简单 CRUD、列很少、无金额 KPI 可按 §例外放宽。采购价格页另守 **指挥舱（非 ERP）**：`.cursor/rules/command-cockpit.mdc`。
 
 - 外框 `bg-[#0A0A0C] border-[#1A1A22]`；表区 `overflow-x-auto`；列多用 `table-fixed` + `colgroup`。
 - 表头 `text-[9px] text-[#555555]`；文本左、金额右、状态中。

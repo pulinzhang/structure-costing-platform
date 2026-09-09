@@ -7,10 +7,14 @@ import {
     renderPcrPagination,
     renderPcrRows,
     renderPcrTableHead,
+    bindPcrChipMenus,
+    unbindPcrChipMenus,
+    syncPcrChipFace,
     updatePcrHud,
+    cancelPcrHudCountUp,
     updatePcrViewButtons,
     updateRingIndicators,
-} from './template.js?v=19';
+} from './template.js?v=30';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -41,6 +45,7 @@ let partFilterTimer = null;
 function init() {
     applyPermissionUi();
     bindEvents();
+    bindPcrChipMenus();
     bindPageSizeSelect('pcrPageSize', {
         getSize: () => listState.pageSize,
         setSize: (size) => {
@@ -57,6 +62,8 @@ function init() {
 
 function destroy() {
     clearPartFilterTimer();
+    unbindPcrChipMenus();
+    cancelPcrHudCountUp();
 }
 
 function applyPermissionUi() {
@@ -80,6 +87,8 @@ function setCascadeLocked(isLocked) {
     CASCADE_LOCK_IDS.forEach((id) => {
         const el = document.getElementById(id);
         if (el) el.disabled = isLocked;
+        const trigger = document.querySelector(`[data-pcr-chip="${id}"]`);
+        if (trigger) trigger.disabled = isLocked;
     });
 }
 
@@ -192,6 +201,10 @@ function isAssemblyView() {
     return listState.view === 'assembly';
 }
 
+function shouldShowSupplierColumn() {
+    return !isAssemblyView() && !val('pcrSupplierFilter');
+}
+
 function setView(view) {
     if (listState.view === view) return;
     listState.view = view;
@@ -298,6 +311,7 @@ function fillSelect(id, values, includeEmpty = true, labelFn = null, emptyLabel 
     });
     el.innerHTML = html;
     if (selected && (values || []).map(String).includes(selected)) el.value = selected;
+    syncPcrChipFace(id);
 }
 
 function setSelectValue(id, value) {
@@ -308,6 +322,7 @@ function setSelectValue(id, value) {
         select.insertAdjacentHTML('beforeend', `<option value="${esc(text)}">${esc(text)}</option>`);
     }
     select.value = text;
+    syncPcrChipFace(id);
 }
 
 async function loadCascade(generation) {
@@ -460,7 +475,7 @@ async function loadList(page = 1) {
         listState.items = [];
         listState.months = [];
         body.innerHTML = '';
-        renderPcrTableHead([]);
+        renderPcrTableHead([], shouldShowSupplierColumn());
         updatePcrHud(null);
         setQaBanner(null);
         setListLoading(false);
@@ -484,8 +499,9 @@ async function loadList(page = 1) {
         listState.totalPages = pageData.total_pages || 1;
         listState.items = Array.isArray(pageData.items) ? pageData.items : [];
         listState.months = Array.isArray(filters.months) ? filters.months : [];
-        renderPcrTableHead(listState.months);
-        body.innerHTML = renderPcrRows(listState.items, listState.months);
+        const showSupplier = shouldShowSupplierColumn();
+        renderPcrTableHead(listState.months, showSupplier);
+        body.innerHTML = renderPcrRows(listState.items, listState.months, showSupplier);
         updatePcrHud(filters);
         setQaBanner(filters);
         const emptyHint = filters.empty_hint

@@ -4,11 +4,7 @@
 
 import { pageSizeSelectHtml } from '../../../page-size.js?v=2';
 
-const CARBON_MONOLITH_STYLE =
-    'background-color:#060608;'
-    + 'background-image:repeating-linear-gradient(45deg,rgba(255,255,255,0.025) 0px,rgba(255,255,255,0.025) 1px,transparent 1px,transparent 4px),'
-    + 'repeating-linear-gradient(135deg,rgba(255,255,255,0.02) 0px,rgba(255,255,255,0.02) 1px,transparent 1px,transparent 4px);'
-    + 'box-shadow:0 10px 40px rgba(255,30,39,0.08), inset 0 1px 0 rgba(255,255,255,0.02);';
+const HUD_SHELL_STYLE = 'box-shadow:0 4px 20px rgba(0,0,0,0.5);';
 
 const RING_SELECT_IDS = [
     'pcrLocationFilter',
@@ -22,98 +18,133 @@ const RING_SELECT_IDS = [
 ];
 
 const DRIVE_ACTIVE =
-    'h-7 px-3 text-[11px] rounded-sm bg-[#1C0A0C] border border-[#FF1E27]/40 text-[#FF1E27] font-semibold transition-colors';
+    'flex-1 py-1 text-[10px] rounded-sm bg-[#121218] border border-[#2A2A35] text-[#A1A1A6] font-medium';
 const DRIVE_IDLE =
-    'h-7 px-3 text-[11px] rounded-sm bg-transparent border border-transparent text-[#6E6E73] hover:text-[#D0D0D5] transition-colors';
+    'flex-1 py-1 text-[10px] rounded-sm border border-transparent text-[#555560] hover:text-[#8E8E93] font-medium';
 
-const RING_CHEVRON = `<svg class="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 text-[#555555]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>`;
+const IGNITION_STYLE =
+    'background-image:linear-gradient(180deg,#320A0E 0%,#1A0507 48%,#0D0203 100%);'
+    + 'text-shadow:0 0 8px rgba(255,30,39,0.55);';
+const HUD_NUM_STYLE = "font-family:'JetBrains Mono',ui-monospace,monospace;";
+const PCR_FX_CSS = `@keyframes pcr-laser-sweep{0%{left:-72px;opacity:1}100%{left:100%;opacity:.2}}`
+    + `@keyframes pcr-ignition-breathe{0%,100%{opacity:.35;box-shadow:0 0 4px #FF1E27}50%{opacity:1;box-shadow:0 0 8px #FF1E27}}`
+    + `.pcr-laser-track{position:absolute;top:0;left:0;right:0;height:1px;overflow:hidden;pointer-events:none;z-index:2}`
+    + `.pcr-laser-spot{position:absolute;top:0;width:72px;height:1px;`
+    + `background:linear-gradient(90deg,transparent,#FF1E27,#fff,#FF1E27,transparent);`
+    + `animation:pcr-laser-sweep 100ms linear 1 forwards}`
+    + `.pcr-ignition-pulse{animation:pcr-ignition-breathe 2s ease-in-out infinite}`
+    + `@media (prefers-reduced-motion:reduce){.pcr-laser-spot,.pcr-ignition-pulse{animation:none!important}}`;
+
+function cornerMarks() {
+    const arm = 'pointer-events-none absolute w-1 h-1 border-[#FF1E27]';
+    return `
+        <span class="${arm} top-0 left-0 border-t border-l" aria-hidden="true"></span>
+        <span class="${arm} top-0 right-0 border-t border-r" aria-hidden="true"></span>
+        <span class="${arm} bottom-0 left-0 border-b border-l" aria-hidden="true"></span>
+        <span class="${arm} bottom-0 right-0 border-b border-r" aria-hidden="true"></span>`;
+}
+
+const CHIP_FACE = 'flex items-center gap-1 bg-[#101018] border border-[#22222E] rounded px-2 h-7 shrink-0';
+const CHIP_TRIGGER =
+    'pcr-chip-trigger min-w-0 truncate text-left text-[11px] font-medium bg-transparent border-0 p-0 cursor-pointer focus:outline-none text-[#8E8E93] disabled:opacity-40';
+const CHIP_ITEM =
+    'pcr-chip-item block w-full text-left px-2.5 py-1.5 text-[11px] text-[#C8C8D0] bg-transparent';
+const PCR_CHIP_MENU_CSS = `#pcrChipMenu [role="option"][aria-selected="true"]{background-color:#FF1E27;color:#fff}`
+    + `#pcrChipMenu:hover [role="option"][aria-selected="true"]:not(:hover){background-color:transparent;color:#C8C8D0}`
+    + `#pcrChipMenu [role="option"]:hover{background-color:#FF1E27;color:#fff}`;
+const CHIP_CHEVRON = `<svg class="w-3 h-3 text-[#555555] shrink-0 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>`;
 
 export function procurementContractReportTemplate() {
     return `
-        <div class="space-y-2 w-full max-w-full">
-            <div class="border border-[#FF1E27]/40 overflow-hidden w-full max-w-full"
-                 style="${CARBON_MONOLITH_STYLE}">
+        <div class="w-full max-w-full">
+            <style>${PCR_FX_CSS}</style>
+            <div class="relative overflow-hidden bg-[#08080C] border border-[#FF1E27]/30 rounded-md p-2.5 mb-2 w-full max-w-full"
+                 style="${HUD_SHELL_STYLE}">
+                <span class="pcr-laser-track" aria-hidden="true"><span class="pcr-laser-spot"></span></span>
 
-                <div class="px-5 pt-4 pb-3">
-                    <div class="flex items-end gap-3 flex-wrap">
-                        ${ringSelect('pcrLocationFilter', '基地')}
-                        ${ringSelect('pcrVehicleModelFilter', '项目')}
-                        ${ringSelect('pcrBomVersionFilter', '版本')}
-                        ${ringPeriod('pcrStartYearFilter', 'pcrStartMonthFilter', '开始年月')}
-                        ${ringPeriod('pcrEndYearFilter', 'pcrEndMonthFilter', '结束年月')}
-                        <span id="pcrSupplierFilterWrap">${ringSelect('pcrSupplierFilter', '供应商', 'w-52')}</span>
-                        <button id="pcrResetBtn" type="button"
-                                class="inline-flex items-center gap-1.5 h-8 px-3 text-[11px] font-medium rounded-md bg-transparent text-[#6E6E73] border border-[#2A2A35] hover:text-[#D0D0D5] hover:border-[#3A3A44] transition-colors">
-                            ${window.svgIcon('refresh', 'w-3 h-3')}
-                            重置
-                        </button>
+                <div class="flex items-center gap-2 pb-2 mb-2 border-b border-[#1A1A24] text-[11px]">
+                    <div class="flex items-center gap-2 overflow-x-auto min-w-0 flex-1">
+                        ${ringChip('pcrLocationFilter', '基地')}
+                        ${ringChip('pcrVehicleModelFilter', '项目')}
+                        ${ringChip('pcrBomVersionFilter', '版本')}
+                        ${ringPeriodChip('pcrStartYearFilter', 'pcrStartMonthFilter', '开始')}
+                        ${ringPeriodChip('pcrEndYearFilter', 'pcrEndMonthFilter', '结束')}
+                        <span id="pcrSupplierFilterWrap">${ringChip('pcrSupplierFilter', '供应商', 'max-w-[14rem]')}</span>
                     </div>
-                    <p id="pcrIdentityHint" class="mt-3 text-[9px] leading-relaxed text-[#8A8A93]">${pcrIdentityHintHtml(false)}</p>
+                    <button id="pcrResetBtn" type="button"
+                            class="shrink-0 inline-flex items-center gap-1 px-2 h-7 text-[11px] text-[#6E6E73] hover:text-white">
+                        ${window.svgIcon('refresh', 'w-3 h-3')}
+                        重置
+                    </button>
                 </div>
 
-                <div class="px-5 pb-3.5 flex items-center justify-between gap-5">
-                    <div class="grid grid-cols-2 lg:grid-cols-3 gap-4 font-mono flex-1 min-w-0">
-                        <div class="bg-[#0A0A0C]/80 border border-[#FF1E27]/30 p-3 relative overflow-hidden">
-                            <div class="absolute top-0 left-0 right-0 h-px bg-[#FF1E27]"></div>
-                            <span class="text-[#FF1E27] text-[10px] font-bold tracking-widest">单车合计</span>
-                            <div class="mt-1 tracking-tight tabular-nums font-black font-mono">
-                                <span id="pcrHudVehicleTotal" class="text-[28px] text-[#FF1E27]"
-                                      style="text-shadow: 0 0 16px rgba(255,30,39,0.5);">—</span>
-                                <span class="text-[12px] text-[#FF1E27]/60 ml-1">元</span>
-                            </div>
-                            <div id="pcrHudVehicleTotalHint" class="text-[9px] font-mono text-[#8E8E93] mt-1">窗口内各月 · 数量×结算价</div>
-                        </div>
-                        <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3">
-                            <div class="text-[#8E8E93] text-[10px] tracking-wider">零件</div>
-                            <div class="text-[18px] font-bold text-[#FFFFFF] mt-1 tabular-nums">
-                                <span id="pcrHudPrice">—</span>
-                                <span class="text-[10px] text-[#555555] ml-1">种</span>
-                            </div>
-                            <div class="text-[9px] font-mono text-[#8E8E93] mt-1">
-                                未出结算价 <span id="pcrHudMissing">—</span>
+                <div class="grid grid-cols-12 gap-2 items-stretch">
+                    <div class="relative col-span-3 bg-[#0E0E14] border border-[#1E1E2A] rounded min-w-0">
+                        ${cornerMarks()}
+                        <div class="px-2.5 py-2">
+                            <div class="text-[10px] text-[#6E6E73] tracking-wider">单车合计</div>
+                            <div class="text-[15px] font-bold text-white tabular-nums tracking-tight leading-none mt-0.5"
+                                 style="${HUD_NUM_STYLE}">
+                                <span id="pcrHudVehicleTotal">—</span>
+                                <span class="text-[10px] text-[#6E6E73] font-normal">元</span>
                             </div>
                         </div>
-                        <div id="pcrHudSupplierCard" class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3">
-                            <div class="text-[#8E8E93] text-[10px] tracking-wider">已指定供应商</div>
-                            <div class="text-[18px] font-bold text-[#FFFFFF] mt-1 tabular-nums">
+                        <div class="border-t border-[#181822] px-2.5 py-1">
+                            <div id="pcrHudVehicleTotalHint" class="text-[9px] text-[#4A4A55] truncate leading-none">窗口内各月 · 数量×结算价</div>
+                        </div>
+                    </div>
+
+                    <div class="col-span-5 grid grid-cols-2 gap-2">
+                        <div class="bg-[#0E0E14] border border-[#1E1E2A] rounded min-w-0 overflow-hidden">
+                            <div class="px-2.5 py-2">
+                                <div class="text-[10px] text-[#6E6E73]">零件种数</div>
+                                <div class="text-[15px] font-bold text-white mt-0.5 tabular-nums leading-none"
+                                     style="${HUD_NUM_STYLE}">
+                                    <span id="pcrHudPrice">—</span>
+                                    <span class="text-[10px] text-[#6E6E73] font-normal">种</span>
+                                </div>
+                            </div>
+                            <div class="border-t border-[#181822] px-2.5 py-1">
+                                <div class="text-[9px] text-[#4A4A55] truncate leading-none">未出结算价 <span id="pcrHudMissing">—</span></div>
+                            </div>
+                        </div>
+                        <div id="pcrHudSupplierCard" class="bg-[#0E0E14] border border-[#1E1E2A] rounded px-2.5 py-2 min-w-0 flex flex-col justify-center">
+                            <div class="text-[10px] text-[#6E6E73]">已指定供应商</div>
+                            <div class="text-[15px] font-bold text-white mt-0.5 tabular-nums leading-none"
+                                 style="${HUD_NUM_STYLE}">
                                 <span id="pcrHudSuppliers">—</span>
-                                <span class="text-[10px] text-[#555555] ml-1">家</span>
+                                <span class="text-[10px] text-[#6E6E73] font-normal">家</span>
                             </div>
                         </div>
                     </div>
-                    <div class="flex items-center gap-3 shrink-0 self-center">
-                        <div class="flex items-center bg-[#08080C] border border-[#1A1A24] p-0.5" role="group" aria-label="价目视图">
-                            <button id="pcrViewProcurementBtn" type="button" class="${DRIVE_ACTIVE}">
-                                采购对象
-                            </button>
-                            <button id="pcrViewAssemblyBtn" type="button" class="${DRIVE_IDLE}">
-                                总成
-                            </button>
+
+                    <div class="col-span-4 bg-[#0A0A10] border border-[#1E1E2A] rounded p-2.5 flex flex-col justify-between gap-2 min-w-0">
+                        <div class="flex w-full bg-[#030305] border border-[#161622] rounded p-0.5" role="group" aria-label="价目视图">
+                            <button id="pcrViewProcurementBtn" type="button" class="${DRIVE_ACTIVE}">采购对象</button>
+                            <button id="pcrViewAssemblyBtn" type="button" class="${DRIVE_IDLE}">总成</button>
                         </div>
                         <button id="pcrExportBtn" type="button"
-                                class="inline-flex items-center gap-1.5 px-4 py-2.5 text-[12px] font-semibold tracking-wide text-[#FF1E27] border border-[#FF1E27]/70 rounded-md bg-gradient-to-b from-[#1A1A22] to-[#0A0A0C] hover:border-[#FF1E27] hover:shadow-[0_0_18px_rgba(255,30,39,0.25)] active:translate-y-px transition-all duration-200"
+                                style="${IGNITION_STYLE}"
+                                class="relative w-full py-2 inline-flex items-center justify-center gap-2 border border-[#FF1E27] [border-top-color:rgba(255,255,255,0.2)] text-[#FF1E27] text-[12px] font-black tracking-widest uppercase rounded shadow-[0_0_15px_rgba(255,30,39,0.25)] hover:shadow-[0_0_25px_rgba(255,30,39,0.45)] active:scale-[0.99] transition-all"
                                 title="导出《批量零部件价格协议》（不分页、无水印）">
-                            ${window.svgIcon('download', 'w-3 h-3')}
+                            ${cornerMarks()}
+                            <span class="pcr-ignition-pulse w-1.5 h-1.5 rounded-full bg-[#FF1E27] shrink-0"></span>
                             导出协议
                         </button>
-                    </div>
-                </div>
-
-                <div class="px-5 pb-3 border-t border-[#141418]">
-                    <div class="pt-2.5">
-                        <div class="relative">
-                            <span class="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-[#8E8E93]">
-                                ${window.svgIcon('search', 'w-3 h-3')}
-                            </span>
-                            <input id="pcrPartFilter" type="text" maxlength="100" placeholder="零件号 / 名称"
-                                   title="模糊匹配零件号或名称" aria-label="零件号或名称"
-                                   class="h-8 w-full pl-8 pr-3 text-[11px] bg-[#030305] border border-[#2A2A35] text-[#C8C8D0] placeholder:text-[#8E8E93] rounded-md focus:outline-none focus:border-[#FF1E27]/40">
-                        </div>
                     </div>
                 </div>
             </div>
 
             <div class="bg-[#0A0A0C] border border-[#1A1A22] overflow-hidden w-full max-w-full">
+                <div class="px-4 py-2 border-b border-[#14141A] flex items-center gap-2">
+                    <span class="pointer-events-none text-[#8E8E93] shrink-0">
+                        ${window.svgIcon('search', 'w-3 h-3')}
+                    </span>
+                    <input id="pcrPartFilter" type="text" maxlength="100" placeholder="零件号 / 名称"
+                           title="模糊匹配零件号或名称" aria-label="零件号或名称"
+                           class="h-7 flex-1 min-w-0 bg-transparent text-[11px] text-[#C8C8D0] placeholder:text-[#8E8E93] focus:outline-none">
+                    <span id="pcrIdentityHint" class="hidden sm:inline text-[9px] text-[#8A8A93] shrink-0 max-w-md text-right">${pcrIdentityHintHtml(false)}</span>
+                </div>
                 <div id="pcrQaBanner" class="hidden px-5 py-2 border-b border-[#FF1E27]/30 bg-[#1A080A] text-[11px] text-[#FF1E27] font-mono"></div>
 
                 <div class="relative">
@@ -121,8 +152,8 @@ export function procurementContractReportTemplate() {
                         <div class="w-6 h-6 border-2 border-[#FF1E27] border-t-transparent rounded-full animate-spin"></div>
                     </div>
                     <div class="overflow-x-auto bg-[#0A0A0E] brabus-bg-grid pr-4">
-                        <table id="pcrTable" class="w-full table-fixed text-left border-collapse bg-transparent"
-                               style="min-width: 1100px;">
+                        <table id="pcrTable" class="w-full table-fixed text-left border-collapse bg-transparent tabular-nums"
+                               style="min-width: 1100px; font-family:'JetBrains Mono',ui-monospace,monospace;">
                             <colgroup id="pcrColgroup"></colgroup>
                             <thead id="pcrTableHead" class="text-[9px] text-[#8E8E93] uppercase tracking-wider"></thead>
                             <tbody id="pcrTableBody"></tbody>
@@ -152,43 +183,42 @@ const PERIOD_SELECT_IDS = new Set([
     'pcrEndMonthFilter',
 ]);
 
-const PERIOD_SELECT_CLASS =
-    'h-8 pl-3 pr-6 text-[11px] bg-transparent border-0 text-[#8E8E93] appearance-none cursor-pointer focus:outline-none';
-
-function ringSelect(id, label, widthClass = 'w-32') {
-    const extraStyle = id === 'pcrSupplierFilter' ? 'min-width:13rem;' : '';
-    return `<label class="space-y-1 min-w-0">
-        <span class="block text-[9px] font-semibold text-[#7A7A85] uppercase tracking-[0.14em]">${label}</span>
-        <span class="relative block" data-pcr-ring="${id}">
-            <span data-pcr-ring-dot class="hidden absolute left-1.5 top-1/2 -translate-y-1/2 w-[2px] h-[2px] rounded-full bg-[#FF1E27]"></span>
-            <select id="${id}" style="${extraStyle}" class="${widthClass} h-8 pl-4 pr-7 text-[11px] bg-[#0A0A0C] border border-[#2A2A35] text-[#8E8E93] appearance-none cursor-pointer focus:outline-none focus:border-[#FF1E27]/40 rounded-md transition-colors">
-                <option value="">请选择</option>
-            </select>
-            ${RING_CHEVRON}
-        </span>
-    </label>`;
+function ringChip(id, label, triggerClass = 'max-w-[10rem]') {
+    return `<div class="${CHIP_FACE}" data-pcr-ring="${id}">
+        <span class="text-[#555560] shrink-0">${label}</span>
+        <select id="${id}" class="sr-only" tabindex="-1" aria-hidden="true">
+            <option value="">请选择</option>
+        </select>
+        <button type="button" data-pcr-chip="${id}" class="${CHIP_TRIGGER} ${triggerClass} inline-flex items-center gap-1"
+                aria-haspopup="listbox" aria-expanded="false">
+            <span data-pcr-chip-label class="truncate">请选择</span>
+            ${CHIP_CHEVRON}
+        </button>
+    </div>`;
 }
 
-function ringPeriod(yearId, monthId, label) {
-    return `<div class="space-y-1 min-w-0">
-        <span class="block text-[9px] font-semibold text-[#7A7A85] uppercase tracking-[0.14em]">${label}</span>
-        <span class="flex h-8 items-stretch rounded-md border border-[#2A2A35] bg-[#0A0A0C] overflow-hidden" data-pcr-period="${yearId}">
-            <span class="relative" data-pcr-ring="${yearId}">
-                <span data-pcr-ring-dot class="hidden absolute left-1.5 top-1/2 -translate-y-1/2 w-[2px] h-[2px] rounded-full bg-[#FF1E27]"></span>
-                <select id="${yearId}" class="w-[4.75rem] ${PERIOD_SELECT_CLASS}">
-                    <option value="">年</option>
-                </select>
-                ${RING_CHEVRON}
-            </span>
-            <span class="w-px self-stretch bg-[#2A2A35]" aria-hidden="true"></span>
-            <span class="relative" data-pcr-ring="${monthId}">
-                <span data-pcr-ring-dot class="hidden absolute left-1.5 top-1/2 -translate-y-1/2 w-[2px] h-[2px] rounded-full bg-[#FF1E27]"></span>
-                <select id="${monthId}" class="w-[4.25rem] ${PERIOD_SELECT_CLASS}">
-                    <option value="">月</option>
-                </select>
-                ${RING_CHEVRON}
-            </span>
+function ringPeriodChip(yearId, monthId, label) {
+    return `<div class="${CHIP_FACE}" data-pcr-period="${yearId}">
+        <span class="text-[#555560] shrink-0">${label}</span>
+        <span data-pcr-ring="${yearId}" class="inline-flex items-center gap-0.5">
+            <select id="${yearId}" class="sr-only" tabindex="-1" aria-hidden="true">
+                <option value="">年</option>
+            </select>
+            <button type="button" data-pcr-chip="${yearId}" class="${CHIP_TRIGGER} max-w-[4.5rem] w-[3.6rem] inline-flex items-center"
+                    aria-haspopup="listbox" aria-expanded="false">
+                <span data-pcr-chip-label class="truncate">年</span>
+            </button>
         </span>
+        <span data-pcr-ring="${monthId}" class="inline-flex items-center gap-0.5">
+            <select id="${monthId}" class="sr-only" tabindex="-1" aria-hidden="true">
+                <option value="">月</option>
+            </select>
+            <button type="button" data-pcr-chip="${monthId}" class="${CHIP_TRIGGER} max-w-[4.25rem] w-[3.4rem] inline-flex items-center"
+                    aria-haspopup="listbox" aria-expanded="false">
+                <span data-pcr-chip-label class="truncate">月</span>
+            </button>
+        </span>
+        ${CHIP_CHEVRON}
     </div>`;
 }
 
@@ -205,25 +235,140 @@ export function updateRingIndicators() {
         const wrap = document.querySelector(`[data-pcr-ring="${id}"]`);
         if (!select || !wrap) return;
         const isSet = Boolean((select.value || '').trim());
-        const dot = wrap.querySelector('[data-pcr-ring-dot]');
-        dot?.classList.toggle('hidden', !isSet);
-        select.classList.remove('text-white', 'text-[#8E8E93]', 'border-[#FF1E27]/40', 'border-[#2A2A35]');
-        if (PERIOD_SELECT_IDS.has(id)) {
-            select.classList.add(isSet ? 'text-white' : 'text-[#8E8E93]');
-            return;
-        }
-        if (isSet) {
-            select.classList.add('text-white', 'border-[#FF1E27]/40');
-        } else {
-            select.classList.add('text-[#8E8E93]', 'border-[#2A2A35]');
-        }
+        syncPcrChipFace(id);
+        if (PERIOD_SELECT_IDS.has(id)) return;
+        wrap.classList.remove('border-[#FF1E27]/40', 'border-[#22222E]');
+        wrap.classList.add(isSet ? 'border-[#FF1E27]/40' : 'border-[#22222E]');
     });
     document.querySelectorAll('[data-pcr-period]').forEach((wrap) => {
         const selects = wrap.querySelectorAll('select');
         const isSet = Array.from(selects).some((el) => Boolean((el.value || '').trim()));
-        wrap.classList.remove('border-[#FF1E27]/40', 'border-[#2A2A35]');
-        wrap.classList.add(isSet ? 'border-[#FF1E27]/40' : 'border-[#2A2A35]');
+        wrap.classList.remove('border-[#FF1E27]/40', 'border-[#22222E]');
+        wrap.classList.add(isSet ? 'border-[#FF1E27]/40' : 'border-[#22222E]');
     });
+}
+
+export function syncPcrChipFace(id) {
+    const select = document.getElementById(id);
+    const trigger = document.querySelector(`[data-pcr-chip="${id}"]`);
+    if (!select || !trigger) return;
+    const opt = select.selectedOptions[0];
+    const label = trigger.querySelector('[data-pcr-chip-label]') || trigger;
+    label.textContent = opt ? opt.textContent : '请选择';
+    trigger.classList.remove('text-white', 'text-[#8E8E93]');
+    trigger.classList.add((select.value || '').trim() ? 'text-white' : 'text-[#8E8E93]');
+}
+
+let chipMenuEl = null;
+let openChipId = null;
+
+function ensureChipMenu() {
+    if (chipMenuEl) return chipMenuEl;
+    chipMenuEl = document.createElement('div');
+    chipMenuEl.id = 'pcrChipMenu';
+    chipMenuEl.className = 'hidden fixed z-[70] max-h-56 overflow-y-auto bg-[#101018] border border-[#22222E] rounded py-1';
+    chipMenuEl.style.boxShadow = '0 8px 24px rgba(0,0,0,0.55)';
+    chipMenuEl.setAttribute('role', 'listbox');
+    document.body.appendChild(chipMenuEl);
+    if (!document.getElementById('pcrChipMenuSkin')) {
+        const skin = document.createElement('style');
+        skin.id = 'pcrChipMenuSkin';
+        skin.textContent = PCR_CHIP_MENU_CSS;
+        document.head.appendChild(skin);
+    }
+    chipMenuEl.addEventListener('click', (event) => {
+        const item = event.target.closest('[data-pcr-chip-value]');
+        if (!item || !openChipId) return;
+        event.preventDefault();
+        const select = document.getElementById(openChipId);
+        if (!select || select.disabled) return;
+        select.value = item.getAttribute('data-pcr-chip-value') || '';
+        closePcrChipMenu();
+        syncPcrChipFace(select.id);
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    return chipMenuEl;
+}
+
+function closePcrChipMenu() {
+    if (!chipMenuEl) return;
+    chipMenuEl.classList.add('hidden');
+    chipMenuEl.innerHTML = '';
+    if (openChipId) {
+        document.querySelector(`[data-pcr-chip="${openChipId}"]`)?.setAttribute('aria-expanded', 'false');
+    }
+    openChipId = null;
+}
+
+function openPcrChipMenu(id) {
+    const select = document.getElementById(id);
+    const trigger = document.querySelector(`[data-pcr-chip="${id}"]`);
+    const menu = ensureChipMenu();
+    if (!select || !trigger || select.disabled) return;
+    if (openChipId === id) {
+        closePcrChipMenu();
+        return;
+    }
+    closePcrChipMenu();
+    const selected = select.value;
+    menu.innerHTML = Array.from(select.options).map((opt) => {
+        const isOn = opt.value === selected;
+        return `<button type="button" role="option" aria-selected="${isOn ? 'true' : 'false'}"
+            data-pcr-chip-value="${esc(opt.value)}"
+            class="${CHIP_ITEM}">${esc(opt.textContent || '')}</button>`;
+    }).join('');
+    menu.classList.remove('hidden');
+    const rect = trigger.getBoundingClientRect();
+    const menuWidth = Math.max(rect.width + 48, 160);
+    let left = rect.left;
+    if (left + menuWidth > window.innerWidth - 8) {
+        left = Math.max(8, window.innerWidth - menuWidth - 8);
+    }
+    menu.style.minWidth = `${menuWidth}px`;
+    menu.style.left = `${left}px`;
+    menu.style.top = `${rect.bottom + 4}px`;
+    openChipId = id;
+    trigger.setAttribute('aria-expanded', 'true');
+}
+
+function onChipTriggerClick(event) {
+    const trigger = event.target.closest('[data-pcr-chip]');
+    if (!trigger) return;
+    event.preventDefault();
+    event.stopPropagation();
+    openPcrChipMenu(trigger.getAttribute('data-pcr-chip'));
+}
+
+function onChipDocClick(event) {
+    if (!openChipId) return;
+    if (event.target.closest('#pcrChipMenu') || event.target.closest('[data-pcr-chip]')) return;
+    closePcrChipMenu();
+}
+
+function onChipKeydown(event) {
+    if (event.key === 'Escape') closePcrChipMenu();
+}
+
+export function bindPcrChipMenus() {
+    ensureChipMenu();
+    document.getElementById('pageContent')?.addEventListener('click', onChipTriggerClick);
+    document.addEventListener('click', onChipDocClick);
+    document.addEventListener('keydown', onChipKeydown);
+    window.addEventListener('resize', closePcrChipMenu);
+    window.addEventListener('scroll', closePcrChipMenu, true);
+    RING_SELECT_IDS.forEach(syncPcrChipFace);
+}
+
+export function unbindPcrChipMenus() {
+    closePcrChipMenu();
+    document.getElementById('pageContent')?.removeEventListener('click', onChipTriggerClick);
+    document.removeEventListener('click', onChipDocClick);
+    document.removeEventListener('keydown', onChipKeydown);
+    window.removeEventListener('resize', closePcrChipMenu);
+    window.removeEventListener('scroll', closePcrChipMenu, true);
+    chipMenuEl?.remove();
+    chipMenuEl = null;
+    document.getElementById('pcrChipMenuSkin')?.remove();
 }
 
 export function updatePcrViewButtons(view) {
@@ -238,14 +383,64 @@ export function updatePcrViewButtons(view) {
     if (hint) hint.innerHTML = pcrIdentityHintHtml(isAssembly);
 }
 
+let vehicleTotalRaf = 0;
+let lastHudVehicleTotal = null;
+
+export function cancelPcrHudCountUp() {
+    if (vehicleTotalRaf) {
+        cancelAnimationFrame(vehicleTotalRaf);
+        vehicleTotalRaf = 0;
+    }
+    lastHudVehicleTotal = null;
+}
+
+function prefersReducedMotion() {
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+function lockHudVehicleTotal(el, target) {
+    cancelAnimationFrame(vehicleTotalRaf);
+    vehicleTotalRaf = 0;
+    if (!el) return;
+    const numeric = Number(target);
+    if (!Number.isFinite(numeric) || prefersReducedMotion()) {
+        lastHudVehicleTotal = numeric;
+        el.textContent = fmtHudMoney(target);
+        return;
+    }
+    if (lastHudVehicleTotal === numeric) {
+        el.textContent = fmtHudMoney(numeric);
+        return;
+    }
+    lastHudVehicleTotal = numeric;
+    const durationMs = 300;
+    const startedAt = performance.now();
+    const tick = (now) => {
+        const t = Math.min(1, (now - startedAt) / durationMs);
+        const eased = 1 - (1 - t) ** 4;
+        const current = t >= 0.97 ? numeric : numeric * eased;
+        el.textContent = fmtHudMoney(current);
+        if (t < 1) {
+            vehicleTotalRaf = requestAnimationFrame(tick);
+            return;
+        }
+        el.textContent = fmtHudMoney(numeric);
+        vehicleTotalRaf = 0;
+    };
+    el.textContent = fmtHudMoney(0);
+    vehicleTotalRaf = requestAnimationFrame(tick);
+}
+
 export function updatePcrHud(filters) {
     const setText = (id, value) => {
         const el = document.getElementById(id);
         if (el) el.textContent = value == null ? '—' : String(value);
     };
+    const totalEl = document.getElementById('pcrHudVehicleTotal');
     if (!filters) {
-        setText('pcrHudVehicleTotal', '—');
-        setText('pcrHudVehicleTotalHint', '窗口内各月汇总');
+        cancelPcrHudCountUp();
+        if (totalEl) totalEl.textContent = '—';
+        setHudHint(0);
         setText('pcrHudPrice', '—');
         setText('pcrHudMissing', '—');
         setText('pcrHudSuppliers', '—');
@@ -253,17 +448,22 @@ export function updatePcrHud(filters) {
     }
     const total = filters.vehicle_total;
     if (total == null || total === '') {
-        setText('pcrHudVehicleTotal', '—');
+        cancelPcrHudCountUp();
+        if (totalEl) totalEl.textContent = '—';
     } else {
-        setText('pcrHudVehicleTotal', fmtHudMoney(total));
+        lockHudVehicleTotal(totalEl, total);
     }
-    const skipped = Number(filters.vehicle_total_skipped) || 0;
-    let hint = '窗口内各月 · 数量×结算价';
-    if (skipped > 0) hint = `${hint} · ${skipped} 种未计入`;
-    setText('pcrHudVehicleTotalHint', hint);
+    setHudHint(Number(filters.vehicle_total_skipped) || 0);
     setText('pcrHudPrice', filters.price_row_count ?? 0);
     setText('pcrHudMissing', filters.missing_month_cell_count ?? 0);
     setText('pcrHudSuppliers', filters.specified_supplier_count ?? 0);
+}
+
+function setHudHint(skipped) {
+    const hint = document.getElementById('pcrHudVehicleTotalHint');
+    if (!hint) return;
+    const extra = skipped > 0 ? ` · ${skipped}种未计入` : '';
+    hint.textContent = `窗口内各月 · 数量×结算价${extra}`;
 }
 
 function fmtHudMoney(value) {
@@ -272,15 +472,18 @@ function fmtHudMoney(value) {
     return Number.isFinite(n) ? n.toFixed(2) : String(value);
 }
 
-export function renderPcrTableHead(months) {
+export function renderPcrTableHead(months, showSupplier = true) {
     const head = document.getElementById('pcrTableHead');
     const colgroup = document.getElementById('pcrColgroup');
     const table = document.getElementById('pcrTable');
     const monthCols = Array.isArray(months) ? months : [];
     const monthCount = Math.max(monthCols.length, 1);
-    if (table) table.style.minWidth = `${1040 + monthCount * 120}px`;
+    const supplierWidth = showSupplier ? 96 : 0;
+    if (table) table.style.minWidth = `${892 + supplierWidth + monthCount * 120}px`;
 
-    const widths = ['72px', '90px', '130px', '144px', '148px', '72px', '56px'];
+    const widths = ['72px', '90px', '130px', '144px'];
+    if (showSupplier) widths.push('96px');
+    widths.push('72px', '56px');
     for (let i = 0; i < monthCount; i += 1) widths.push('120px');
     widths.push('56px', '110px', '128px', '100px', '72px');
     if (colgroup) {
@@ -293,6 +496,7 @@ export function renderPcrTableHead(months) {
         return `<th class="${th} text-right">${esc(label)}</th>`;
     }).join('');
     const fallbackMonth = `<th class="${th} text-right">结算价格（元）</th>`;
+    const supplierHead = showSupplier ? `<th class="${th} text-left">供应商</th>` : '';
     if (head) {
         head.innerHTML = `
             <tr>
@@ -300,7 +504,7 @@ export function renderPcrTableHead(months) {
                 <th class="${th} text-left">存货编码</th>
                 <th class="${th} text-left">零件号</th>
                 <th class="${th} text-left">零件名称</th>
-                <th class="${th} text-left">供应商</th>
+                ${supplierHead}
                 <th class="${th} text-right">单车数量</th>
                 <th class="${th}">计量单位</th>
                 ${monthHeaders || fallbackMonth}
@@ -311,6 +515,18 @@ export function renderPcrTableHead(months) {
                 <th class="${th}">备注</th>
             </tr>`;
     }
+}
+
+function supplierBadgeCell(row) {
+    const full = (row.supplier_name || '').trim();
+    if (!full) {
+        return '<td class="px-2 py-2 text-[#555555]">—</td>';
+    }
+    const shortName = (row.supplier_abbreviation || '').trim() || full;
+    return `<td class="px-1.5 py-2">
+        <span class="inline-block max-w-full truncate px-1.5 py-0.5 text-[10px] text-[#8E8E93] bg-[#101018] border border-[#22222E] rounded"
+              title="${esc(full)}">${esc(shortName)}</span>
+    </td>`;
 }
 
 function cellValue(value) {
@@ -350,7 +566,7 @@ function toolingFeeCell(value) {
     return `<td class="px-2 py-2 pr-4 text-right tabular-nums text-[#C8C8D0]">${esc(text)}</td>`;
 }
 
-export function renderPcrRows(rows, months) {
+export function renderPcrRows(rows, months, showSupplier = true) {
     if (!rows || !rows.length) return '';
     const monthKeys = (months || []).map((col) => `${col.year}-${col.month}`);
     return rows.map((row) => {
@@ -362,7 +578,7 @@ export function renderPcrRows(rows, months) {
             ? monthKeys.map((key) => moneyCell(byMonth[key])).join('')
             : moneyCell(row.month_amounts?.[0]?.should_cost);
         return `
-        <tr class="group relative font-mono text-[11px] border-b border-[#141418] hover:bg-[#161620] transition-colors duration-100">
+        <tr class="group relative text-[11px] border-b border-[#141418] hover:bg-[#161620] transition-colors duration-100">
             <td class="px-2 py-2 text-center text-[#F0F0F2] tabular-nums relative">
                 <div class="absolute left-0 top-0 bottom-0 w-[2px] bg-[#FF1E27] opacity-0 group-hover:opacity-70 transition-opacity"></div>
                 ${esc(row.seq_label || '')}
@@ -370,7 +586,7 @@ export function renderPcrRows(rows, months) {
             <td class="px-2 py-2 text-[#8E8E93] truncate" title="${esc(row.internal_number || '')}">${esc(row.internal_number || '—')}</td>
             <td class="px-2 py-2 text-[#F0F0F2] truncate" title="${esc(row.part_number || '')}">${esc(row.part_number || '')}</td>
             <td class="px-2 py-2 text-[#8E8E93] truncate" title="${esc(row.part_name || '')}">${esc(row.part_name || '—')}</td>
-            <td class="px-2 py-2 text-[#C8C8D0] truncate" title="${esc(row.supplier_name || '')}">${esc(row.supplier_name || '—')}</td>
+            ${showSupplier ? supplierBadgeCell(row) : ''}
             <td class="px-2 py-2 text-right tabular-nums text-[#C8C8D0]">${esc(cellValue(row.vehicle_qty))}</td>
             <td class="px-2 py-2 text-center text-[#8E8E93]">${esc(row.qty_unit || '件')}</td>
             ${monthHtml}
