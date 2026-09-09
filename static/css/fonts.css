@@ -67,10 +67,17 @@
 @font-face {
     font-family: "Chakra Petch";
     font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url("/static/assets/fonts/chakra-petch-latin-700-normal.woff2") format("woff2");
+}
+
+@font-face {
+    font-family: "Chakra Petch";
+    font-style: normal;
     font-weight: 700;
     font-display: swap;
     src: url("/static/assets/fonts/chakra-petch-latin-700-normal.woff2") format("woff2");
-    unicode-range: U+002C, U+002D, U+002E, U+0030-0039;
 }
 
 @font-face {

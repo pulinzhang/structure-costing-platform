@@ -26,7 +26,11 @@ const IGNITION_STYLE =
     'background-image:linear-gradient(90deg,#380A0E 0%,#1F0507 50%,#380A0E 100%);'
     + 'box-shadow:0 0 18px rgba(255,30,39,0.5);';
 const BENTO_H = 'height:72px;padding:8px';
-const KPI_NUM_STYLE = "font-family:'Chakra Petch','JetBrains Mono',ui-monospace,monospace;font-weight:700;letter-spacing:-0.5px;text-shadow:0 0 12px rgba(255,30,39,0.4)";
+const MECH_FONT =
+    "'Chakra Petch','JetBrains Mono',ui-monospace,Menlo,Consolas,monospace";
+const MECH_NUM_STYLE =
+    `font-family:${MECH_FONT};font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-0.5px`;
+const KPI_NUM_STYLE = `${MECH_NUM_STYLE};text-shadow:0 0 12px rgba(255,30,39,0.4)`;
 const PCR_FX_CSS = `@keyframes pcr-laser-sweep{0%{left:-72px;opacity:1}100%{left:100%;opacity:.2}}`
     + `@keyframes pcr-ignition-breathe{0%,100%{opacity:.35;box-shadow:0 0 4px #FF1E27}50%{opacity:1;box-shadow:0 0 10px #FF1E27}}`
     + `.pcr-laser-track{position:absolute;top:0;left:0;right:0;height:1px;overflow:hidden;pointer-events:none;z-index:2}`
@@ -38,9 +42,9 @@ const PCR_FX_CSS = `@keyframes pcr-laser-sweep{0%{left:-72px;opacity:1}100%{left
     + `.pcr-bento{background:#121218;border:1px solid rgba(255,255,255,.08);transition:border-color .18s ease,box-shadow .18s ease}`
     + `.pcr-bento:hover{border-color:rgba(255,30,39,.38);box-shadow:0 0 18px rgba(255,30,39,.12)}`
     + `.pcr-hairline{border-color:rgba(255,255,255,.08)}`
-    + `.pcr-mech-num,#pcrHudVehicleTotal,#pcrHudPrice,#pcrHudSuppliers,#pcrHudMissing,#pcrTable{`
-    + `font-family:"Chakra Petch","JetBrains Mono",ui-monospace,Menlo,Consolas,monospace!important;`
-    + `font-weight:700!important;font-variant-numeric:tabular-nums;letter-spacing:-0.5px}`
+    + `.pcr-num,#pcrHudVehicleTotal,#pcrHudPrice,#pcrHudSuppliers,#pcrHudMissing{`
+    + `font-family:${MECH_FONT}!important;font-weight:700!important;`
+    + `font-variant-numeric:tabular-nums lining-nums;letter-spacing:-0.5px}`
     + `#pcrHudVehicleTotal{text-shadow:0 0 12px rgba(255,30,39,.4)}`
     + `.pcr-kpi{font-size:22px;line-height:1}`
     + `.pcr-label{font-size:8px;color:#666;letter-spacing:.12em;line-height:1}`
@@ -111,18 +115,18 @@ export function procurementContractReportTemplate() {
                             <div class="pcr-label">零件种数</div>
                             <div class="flex items-baseline gap-1.5 mt-0.5">
                                 <span id="pcrHudStatusLamp" class="pcr-status-idle w-1.5 h-1.5 rounded-full shrink-0 translate-y-[-1px]"></span>
-                                <div class="pcr-kpi pcr-mech-num text-white">
-                                    <span id="pcrHudPrice">—</span>
+                                <div class="pcr-kpi text-white">
+                                    <span id="pcrHudPrice" class="pcr-num" style="${MECH_NUM_STYLE}">—</span>
                                     <span class="pcr-label">种</span>
                                 </div>
                             </div>
-                            <div class="text-[9px] text-[#666666] truncate leading-none mt-0.5">未出结算价 <span id="pcrHudMissing">—</span></div>
+                            <div class="text-[9px] text-[#666666] truncate leading-none mt-0.5">未出结算价 <span id="pcrHudMissing" class="pcr-num" style="${MECH_NUM_STYLE}">—</span></div>
                         </div>
                         <div id="pcrHudSupplierCard" class="pcr-bento rounded min-w-0 flex flex-col justify-center"
                              style="${BENTO_H}">
                             <div class="pcr-label">已指定供应商</div>
-                            <div class="pcr-kpi pcr-mech-num text-white mt-0.5">
-                                <span id="pcrHudSuppliers">—</span>
+                            <div class="pcr-kpi text-white mt-0.5">
+                                <span id="pcrHudSuppliers" class="pcr-num" style="${MECH_NUM_STYLE}">—</span>
                                 <span class="pcr-label">家</span>
                             </div>
                         </div>
@@ -164,7 +168,7 @@ export function procurementContractReportTemplate() {
                     </div>
                     <div class="overflow-x-auto bg-[#0A0A0E] brabus-bg-grid pr-4">
                         <table id="pcrTable" class="w-full table-fixed text-left border-collapse bg-transparent tabular-nums"
-                               style="min-width: 1100px; font-family:'JetBrains Mono',ui-monospace,monospace;">
+                               style="min-width: 1100px;">
                             <colgroup id="pcrColgroup"></colgroup>
                             <thead id="pcrTableHead" class="text-[9px] text-[#666666] uppercase tracking-wider"></thead>
                             <tbody id="pcrTableBody"></tbody>
@@ -557,13 +561,17 @@ function cellValue(value) {
     return String(value);
 }
 
+function mechNum(text) {
+    return `<span class="pcr-num" style="${MECH_NUM_STYLE}">${esc(text)}</span>`;
+}
+
 function amountCell(value) {
     const text = cellValue(value);
     const isMissing = text === '/';
     const cls = isMissing
         ? 'px-2 py-2 text-center text-[#555555]'
-        : 'px-2 py-2 text-right tabular-nums text-[#C8C8D0]';
-    return `<td class="${cls}">${esc(text)}</td>`;
+        : 'px-2 py-2 text-right text-[#C8C8D0]';
+    return `<td class="${cls}">${isMissing ? esc(text) : mechNum(text)}</td>`;
 }
 
 function moneyCell(value) {
@@ -574,7 +582,7 @@ function moneyCell(value) {
         ? formatDecimalFixed(value, 2, { allowNegative: true })
         : null;
     if (fixed == null) return amountCell('/');
-    return `<td class="px-2 py-2 text-right tabular-nums text-[#C8C8D0]">${esc(fixed)}</td>`;
+    return `<td class="px-2 py-2 text-right text-[#C8C8D0]">${mechNum(fixed)}</td>`;
 }
 
 function toolingFeeCell(value) {
@@ -586,7 +594,7 @@ function toolingFeeCell(value) {
         : null;
     if (fixed == null) return `<td class="px-2 py-2 pr-4 text-center text-[#555555]">/</td>`;
     const text = typeof withThousandsSep === 'function' ? withThousandsSep(fixed) : fixed;
-    return `<td class="px-2 py-2 pr-4 text-right tabular-nums text-[#C8C8D0]">${esc(text)}</td>`;
+    return `<td class="px-2 py-2 pr-4 text-right text-[#C8C8D0]">${mechNum(text)}</td>`;
 }
 
 export function renderPcrRows(rows, months, showSupplier = true) {
@@ -602,15 +610,15 @@ export function renderPcrRows(rows, months, showSupplier = true) {
             : moneyCell(row.month_amounts?.[0]?.should_cost);
         return `
         <tr class="group relative text-[11px] border-b border-[#141418] hover:bg-[#161620] transition-colors duration-100">
-            <td class="px-2 py-2 text-center text-[#F0F0F2] tabular-nums relative">
+            <td class="px-2 py-2 text-center text-[#F0F0F2] relative">
                 <div class="absolute left-0 top-0 bottom-0 w-[2px] bg-[#FF1E27] opacity-0 group-hover:opacity-70 transition-opacity"></div>
-                ${esc(row.seq_label || '')}
+                ${mechNum(row.seq_label || '')}
             </td>
             <td class="px-2 py-2 text-[#8E8E93] truncate" title="${esc(row.internal_number || '')}">${esc(row.internal_number || '—')}</td>
             <td class="px-2 py-2 text-[#F0F0F2] truncate" title="${esc(row.part_number || '')}">${esc(row.part_number || '')}</td>
             <td class="px-2 py-2 text-[#8E8E93] truncate" title="${esc(row.part_name || '')}">${esc(row.part_name || '—')}</td>
             ${showSupplier ? supplierBadgeCell(row) : ''}
-            <td class="px-2 py-2 text-right tabular-nums text-[#C8C8D0]">${esc(cellValue(row.vehicle_qty))}</td>
+            <td class="px-2 py-2 text-right text-[#C8C8D0]">${mechNum(cellValue(row.vehicle_qty))}</td>
             <td class="px-2 py-2 text-center text-[#8E8E93]">${esc(row.qty_unit || '件')}</td>
             ${monthHtml}
             <td class="px-2 py-2 text-center text-[#8E8E93]">${esc(row.pay_tooling_separately || 'N')}</td>
