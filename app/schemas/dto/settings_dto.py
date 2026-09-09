@@ -14,10 +14,14 @@ class SystemConfigUpdateDTO(BaseModel):
 
     app_name: str = Field(..., min_length=1, max_length=100, description="应用名称")
     company_name: str = Field(
-        ...,
-        min_length=1,
+        "",
         max_length=100,
         description="公司名称（采购协议甲方）",
+    )
+    procurement_agreement_remarks: str = Field(
+        "",
+        max_length=20000,
+        description="采购价格协议文尾条款",
     )
     steel_density: Decimal = Field(
         ...,
@@ -98,9 +102,9 @@ class SystemConfigUpdateDTO(BaseModel):
     def _coerce_swing_shear_fee(cls, value: Any) -> Decimal:
         return quantize_money(value, Q2)
 
-    @field_validator("company_name", mode="before")
+    @field_validator("company_name", "procurement_agreement_remarks", mode="before")
     @classmethod
-    def _strip_company_name(cls, value: Any) -> str:
+    def _strip_text(cls, value: Any) -> str:
         return str(value or "").strip()
 
 
@@ -110,6 +114,7 @@ class SystemConfigWrite:
 
     app_name: str
     company_name: str
+    procurement_agreement_remarks: str
     steel_density: Decimal
     material_loss_rate: Decimal
     scrap_recovery_rate: Decimal
@@ -128,6 +133,7 @@ class SystemConfigPatch(TypedDict, total=False):
 
     app_name: str
     company_name: str
+    procurement_agreement_remarks: str
     steel_density: Decimal
     material_loss_rate: Decimal
     scrap_recovery_rate: Decimal

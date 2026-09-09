@@ -249,7 +249,11 @@ class DatabaseConfig:
                 ),
                 (
                     "company_name",
-                    "VARCHAR(100) NOT NULL DEFAULT '上海普炳软件科技有限公司'",
+                    "VARCHAR(100) NOT NULL DEFAULT ''",
+                ),
+                (
+                    "procurement_agreement_remarks",
+                    "TEXT NOT NULL DEFAULT ''",
                 ),
             )
             for column_name, column_def in config_new_columns:

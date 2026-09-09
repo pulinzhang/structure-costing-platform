@@ -32,5 +32,5 @@ class ProcurementContractReportExportOrchestrator:
         query: ProcurementContractReportQuery,
     ) -> tuple[bytes, str]:
         ctx = prepare_export(db, self.query_service, query)
-        workbook = self.workbook_engine.run(ctx.bundle, ctx.company_name)
+        workbook = self.workbook_engine.run(ctx.bundle, ctx.company_name, ctx.remarks_template)
         return persist_export(ctx, workbook)

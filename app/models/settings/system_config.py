@@ -2,7 +2,7 @@
 
 from decimal import Decimal
 
-from sqlalchemy import Integer, Numeric, String
+from sqlalchemy import Integer, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -21,8 +21,14 @@ class SystemConfig(AuditUserMixin, Base):
     company_name: Mapped[str] = mapped_column(
         String(100),
         nullable=False,
-        default="上海普炳软件科技有限公司",
+        default="",
         comment="公司名称（采购协议甲方）",
+    )
+    procurement_agreement_remarks: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+        default="",
+        comment="采购价格协议文尾条款（占位符见设置页）",
     )
     steel_density: Mapped[Decimal] = mapped_column(
         Numeric(6, 4),

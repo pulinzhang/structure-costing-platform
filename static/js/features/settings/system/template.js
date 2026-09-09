@@ -149,21 +149,14 @@ export function settingsTemplate() {
                         <h3 class="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#616161]">系统信息</h3>
                     </div>
                     <div class="px-4 py-4 grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
-                        <div class="md:col-span-4 min-w-0">
+                        <div class="md:col-span-8 min-w-0">
                             <div class="text-[10px] text-[#555555] tracking-[0.06em] mb-1">应用名称</div>
                             <div id="settingsAppNameText" class="text-sm text-[#F0F0F2] truncate">—</div>
                         </div>
-                        <div class="md:col-span-2">
+                        <div class="md:col-span-4">
                             <div class="text-[10px] text-[#555555] tracking-[0.06em] mb-1">当前版本</div>
                             <span id="settingsVersionTag"
                                   class="inline-flex items-center h-6 px-2 text-[11px] tracking-[0.04em] text-[#9e9e9e] bg-[#0a0a0a] border border-[#2c2c2c] rounded-sm">—</span>
-                        </div>
-                        <div class="md:col-span-6 min-w-0">
-                            ${fieldLabel('公司名称', '采购协议甲方；空则保存为默认')}
-                            <input id="settingsCompanyName" type="text" maxlength="100"
-                                   class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] rounded-sm text-[#ffffff] focus:outline-none focus:border-[#ff5252] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                   placeholder="上海普炳软件科技有限公司">
-                            <p class="mt-1 text-[10px] leading-relaxed text-[#555555]">导出《批量零部件价格协议》时作为甲方</p>
                         </div>
                     </div>
                 </section>
@@ -194,6 +187,37 @@ export function settingsTemplate() {
                         ${warehousePackagingField}
                         ${scrapField}
                         ${pretaxField}
+                    </div>
+                </section>
+
+                <!-- 采购协议备注 -->
+                <section class="xl:col-span-12 bg-[#1e1e1e] border border-[#2c2c2c]">
+                    <div class="px-4 py-2.5 border-b border-[#222222] flex items-center gap-2">
+                        <div class="w-[2px] h-3.5 bg-[#d32f2f] rounded-[1px]"></div>
+                        <h3 class="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#616161]">采购协议备注</h3>
+                    </div>
+                    <div class="px-4 py-4 space-y-4">
+                        <div>
+                            ${fieldLabel('公司名称', '采购协议甲方；未填则导出为空')}
+                            <input id="settingsCompanyName" type="text" maxlength="100"
+                                   class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] rounded-sm text-[#ffffff] focus:outline-none focus:border-[#ff5252] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                   placeholder="芜湖普威技研有限公司">
+                            <p class="mt-1 text-[10px] leading-relaxed text-[#555555]">导出《批量零部件价格协议》时作为甲方</p>
+                        </div>
+                        ${fieldLabel('文尾条款', '导出《批量零部件价格协议》时写入「备注」区')}
+                        <textarea id="settingsProcurementAgreementRemarks" rows="18" maxlength="20000"
+                                  class="w-full min-h-[18rem] px-3 py-2 text-xs font-mono leading-relaxed bg-[#0a0a0a] border border-[#2c2c2c] rounded-sm text-[#ffffff] focus:outline-none focus:border-[#ff5252] transition-colors disabled:opacity-50 disabled:cursor-not-allowed resize-y"
+                                  placeholder=""></textarea>
+                        <p class="mt-1 text-[10px] leading-relaxed text-[#555555]">
+                            空框时显示普威样例，改完后保存才进入导出。占位符：
+                            <span class="font-mono text-[#9e9e9e]">{company_name}</span>
+                            <span class="font-mono text-[#9e9e9e]">{start_year}</span>
+                            <span class="font-mono text-[#9e9e9e]">{start_month}</span>
+                            <span class="font-mono text-[#9e9e9e]">{end_year}</span>
+                            <span class="font-mono text-[#9e9e9e]">{end_month}</span>
+                            <span class="font-mono text-[#9e9e9e]">{end_day}</span>
+                            。空行分段，每段导出成 Excel 一行。
+                        </p>
                     </div>
                 </section>
             </div>

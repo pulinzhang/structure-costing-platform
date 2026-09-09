@@ -5,11 +5,10 @@
  * 密度按 4 位小数；各类「率」界面按 2 位小数（‰ / %），提交时再换算为小数串。
  */
 
-import { settingsTemplate } from './template.js?v=18';
+import { settingsTemplate } from './template.js?v=22';
 
 const API = '/api/settings/system/config';
 const DEFAULT_APP_NAME = '汽车冲压件自动核价平台';
-const DEFAULT_COMPANY_NAME = '上海普炳软件科技有限公司';
 const DEFAULT_DENSITY = '7.8500';
 const DEFAULT_LOSS_PERMILLE = '3.00';
 const DEFAULT_RECOVERY_PERCENT = '97.00';
@@ -22,6 +21,7 @@ const DEFAULT_SWING_SHEAR_PROCESS_FEE_PER_TON = '150.00';
 
 const RATE_INPUT_IDS = [
     'settingsCompanyName',
+    'settingsProcurementAgreementRemarks',
     'settingsSteelDensity',
     'settingsMaterialLossPermille',
     'settingsScrapRecoveryPercent',
@@ -75,6 +75,7 @@ function setSystemInfo(appName, version) {
 
 function applyFormValues({
     companyName,
+    remarks,
     density,
     lossPermille,
     recoveryPercent,
@@ -87,6 +88,8 @@ function applyFormValues({
 }) {
     const companyEl = document.getElementById('settingsCompanyName');
     if (companyEl && companyName != null) companyEl.value = companyName;
+    const remarksEl = document.getElementById('settingsProcurementAgreementRemarks');
+    if (remarksEl && remarks != null) remarksEl.value = remarks;
     const densityEl = document.getElementById('settingsSteelDensity');
     if (densityEl) densityEl.value = density;
     const lossEl = document.getElementById('settingsMaterialLossPermille');
@@ -112,6 +115,7 @@ function applyFormValues({
 export const SettingsPage = {
     canUpdate: false,
     appName: DEFAULT_APP_NAME,
+    remarksSample: '',
 
     init() {
         this.canUpdate = typeof can === 'function' && can('op:settings-system:update');
@@ -133,7 +137,8 @@ export const SettingsPage = {
     resetToDefaults() {
         if (!this.canUpdate) return;
         applyFormValues({
-            companyName: DEFAULT_COMPANY_NAME,
+            companyName: '',
+            remarks: this.remarksSample || '',
             density: DEFAULT_DENSITY,
             lossPermille: DEFAULT_LOSS_PERMILLE,
             recoveryPercent: DEFAULT_RECOVERY_PERCENT,
@@ -152,6 +157,7 @@ export const SettingsPage = {
             const res = await HttpClient.get(API);
             const data = res.data || {};
             this.appName = (data.app_name || DEFAULT_APP_NAME).trim() || DEFAULT_APP_NAME;
+            this.remarksSample = (data.procurement_agreement_remarks_sample || '').trim();
             setSystemInfo(this.appName, data.version || '1.0.0');
 
             const density = formatDecimalFixed(data.steel_density, 4);
@@ -162,7 +168,9 @@ export const SettingsPage = {
                     : DEFAULT_RECOVERY_PERCENT;
             })();
             applyFormValues({
-                companyName: (data.company_name || '').trim() || DEFAULT_COMPANY_NAME,
+                companyName: (data.company_name || '').trim(),
+                remarks: (data.procurement_agreement_remarks || '').trim()
+                    || this.remarksSample,
                 density: density && compareDecimalStrings(density, '0') > 0
                     ? density
                     : DEFAULT_DENSITY,
@@ -206,7 +214,10 @@ export const SettingsPage = {
         const appName = (this.appName || '').trim();
         const companyName = (
             document.getElementById('settingsCompanyName')?.value || ''
-        ).trim() || DEFAULT_COMPANY_NAME;
+        ).trim();
+        const remarks = (
+            document.getElementById('settingsProcurementAgreementRemarks')?.value || ''
+        ).trim();
         const density = parseDecimalInput(document.getElementById('settingsSteelDensity')?.value, 4);
         const lossPermille = parseDecimalInput(
             document.getElementById('settingsMaterialLossPermille')?.value, 2,
@@ -238,6 +249,10 @@ export const SettingsPage = {
         }
         if (companyName.length > 100) {
             showToast('公司名称不超过 100 字', 'warning');
+            return;
+        }
+        if (remarks.length > 20000) {
+            showToast('采购协议备注不超过 20000 字', 'warning');
             return;
         }
         if (
@@ -321,6 +336,7 @@ export const SettingsPage = {
             const res = await HttpClient.put(API, {
                 app_name: appName,
                 company_name: companyName,
+                procurement_agreement_remarks: remarks,
                 steel_density: density,
                 material_loss_rate: materialLossRate,
                 scrap_recovery_rate: scrapRecoveryRate,
@@ -337,7 +353,8 @@ export const SettingsPage = {
             }
             setSystemInfo(this.appName, data.version || '1.0.0');
             applyFormValues({
-                companyName: (data.company_name || '').trim() || companyName,
+                companyName: (data.company_name || '').trim(),
+                remarks: (data.procurement_agreement_remarks || '').trim(),
                 density: data.steel_density != null
                     ? (formatDecimalFixed(data.steel_density, 4) || density)
                     : density,
